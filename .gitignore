@@ -1,0 +1,7 @@
+/kilonova
+/sqldata
+node_modules
+.vscode
+.editorconfig
+/knTests
+/config.json

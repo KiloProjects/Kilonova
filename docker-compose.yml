@@ -1,0 +1,23 @@
+version: "3"
+services:
+    kilonova:
+        build: .
+        ports:
+            - '3000:3000'
+        volumes:
+            - ./:/app
+        restart: always
+        depends_on:
+            - db
+    db:
+        image: mysql
+        volumes:
+            - ./sqldata:/var/lib/mysql
+        restart: always
+        environment: 
+            MYSQL_ROOT_PASSWORD: parola_root
+            MYSQL_DATABASE: kilonova
+            MYSQL_USER: kilonova
+            MYSQL_PASSWORD: kn_password
+        ports: 
+            - '3306:3306'
