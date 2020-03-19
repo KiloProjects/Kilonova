@@ -9,20 +9,12 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// /api/motd
 func (s *API) registerMOTD() chi.Router {
 	r := chi.NewRouter()
-	r.Post("/new", s.newMOTD)
 	r.Get("/get", s.getMOTD)
 	r.Get("/getAll", s.getAllMOTDs)
 	return r
-}
-
-func (s *API) newMOTD(w http.ResponseWriter, r *http.Request) {
-	newMotd := r.PostFormValue("data")
-	s.db.Create(&models.MOTD{Motd: newMotd})
-
-	w.Header().Set("location", "http://localhost:3000/")
-	w.WriteHeader(http.StatusMovedPermanently)
 }
 
 func (s *API) getAllMOTDs(w http.ResponseWriter, r *http.Request) {

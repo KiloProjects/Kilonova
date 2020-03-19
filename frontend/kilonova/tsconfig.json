@@ -24,8 +24,6 @@
         "src/**/*.vue",
         "tests/**/*.ts",
         "tests/**/*.tsx",
-        "src/main.js",
-        "src/defines.js",
         "src/plugins/vue-codemirror.js"
     ],
     "exclude": ["node_modules"]

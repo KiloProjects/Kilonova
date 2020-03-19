@@ -10,6 +10,9 @@ const (
 	python
 )
 
+// KNContextType is the string type for all context values
+type KNContextType string
+
 // Config is the main information for the platform
 type Config struct {
 	SecretKey string `json:"secretKey"`
@@ -18,7 +21,7 @@ type Config struct {
 // Session represents the data storred in a session cookie
 type Session struct {
 	IsAdmin bool `json:"isAdmin"`
-	UserID  int  `json:"userID"`
+	UserID  uint `json:"userID"`
 }
 
 // MOTD presents a random message of the day

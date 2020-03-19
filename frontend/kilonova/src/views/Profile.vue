@@ -26,7 +26,7 @@ export default Vue.extend({
     },
     created: async function() {
         let req = await axios.get(
-            defines.prefixURL + "getUserByName/" + this.$route.params.name
+            defines.prefixURL + "user/getByName?name=" + this.$route.params.name
         );
         this.$data.user = req.data;
     },

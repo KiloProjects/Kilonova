@@ -12,6 +12,7 @@
 import Vue from "vue";
 import { codemirror } from "vue-codemirror";
 import defines from "../defines";
+// import Axios from "axios";
 
 Vue.component("editor", codemirror);
 export default {
@@ -47,6 +48,7 @@ export default {
         onSubmit: function(e) {
             e.preventDefault();
             console.log(e);
+            // Axios.get(defines.prefixURL + "submit")
         },
     },
 };

@@ -6,6 +6,7 @@ import Login from "../views/Login.vue";
 import Profile from "../views/Profile.vue";
 import CreateProblem from "../views/CreateProblem.vue";
 import Problem from "../views/Problem.vue";
+import LogOut from "../views/LogOut.vue";
 
 Vue.use(VueRouter);
 
@@ -38,6 +39,10 @@ const routes = [
     {
         path: "/problem/:id",
         component: Problem,
+    },
+    {
+        path: "/logout",
+        component: LogOut,
     },
 ];
 

@@ -40,7 +40,8 @@ export default Vue.extend({
         };
     },
     created: async function() {
-        let url = defines.prefixURL + "getProblemByID/" + this.$route.params.id;
+        let url =
+            defines.prefixURL + "problem/getByID?id=" + this.$route.params.id;
         let data = await axios.get(url);
         this.$data.problemData = data.data;
     },

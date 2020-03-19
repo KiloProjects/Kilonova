@@ -1,6 +1,7 @@
 export default {
-    prefixURL: "http://localhost:3000/api/",
+    prefixURL: "/api/",
     CMlangs: {
         cpp: "text/x-c++src",
     },
+    getSelf: function() {},
 };

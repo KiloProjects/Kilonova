@@ -15,6 +15,9 @@
                     <b-navbar-brand to="/createProblem">
                         Create Problem
                     </b-navbar-brand>
+                    <b-navbar-brand to="/logout">
+                        Log Out
+                    </b-navbar-brand>
                 </b-navbar-nav>
             </b-navbar>
         </div>
@@ -26,9 +29,15 @@
 
 <script type="ts">
 import Vue from 'vue';
+import Axios from 'axios';
+import defines from './defines';
 
 export default Vue.extend({
     name: "app",
+    created: async function() {
+        let data = await Axios.get(defines.prefixURL + "user/getSelf")
+        console.log(data)
+    }
 });
 </script>
 

@@ -35,21 +35,21 @@ export default Vue.extend({
     },
     created: async function() {
         try {
-            let data = await axios.get(defines.prefixURL + "getUsers");
+            let data = await axios.get(defines.prefixURL + "admin/getUsers");
             console.log(data.data);
             this.users = data.data;
         } catch (e) {
             console.error(e);
         }
         try {
-            let data = await axios.get(defines.prefixURL + "getMOTDs");
+            let data = await axios.get(defines.prefixURL + "motd/getAll");
             console.log(data.data);
             this.motds = data.data;
         } catch (e) {
             console.error(e);
         }
         try {
-            let data = await axios.get(defines.prefixURL + "getProblems");
+            let data = await axios.get(defines.prefixURL + "problem/getAll");
             console.log(data.data);
             this.problems = data.data;
         } catch (e) {
