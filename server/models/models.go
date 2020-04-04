@@ -27,15 +27,15 @@ type Session struct {
 // MOTD presents a random message of the day
 type MOTD struct {
 	gorm.Model
-	Motd string
+	Motd string `json:"motd,omitempty"`
 }
 
 // User represents a user profile
 type User struct {
 	gorm.Model
 	Name           string    `json:"name"`
-	IsAdmin        bool      `json:"isAdmin"`
-	Email          string    `json:"email"`
+	IsAdmin        bool      `json:"isAdmin,omitempty"`
+	Email          string    `json:"email,omitempty"`
 	SolvedProblems []Problem `json:"solvedProblems"`
 	Tasks          []Task    `json:"sentTasks"`
 	Password       string    `json:"-"`
@@ -74,7 +74,7 @@ type EvalTest struct {
 // Task is a source
 type Task struct {
 	gorm.Model
-	SourceCode string     `json:"code"`
+	SourceCode string     `json:"code,omitempty"`
 	Type       int        `json:"type"`
 	UserID     int        `json:"userid"`
 	User       User       `json:"user"`

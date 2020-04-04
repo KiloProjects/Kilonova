@@ -1,0 +1,4 @@
+{
+    "secretKey": "insert-secure-key-here",
+    "reverseProxy": "http://example.com:4000"
+}

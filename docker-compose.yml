@@ -1,23 +1,29 @@
 version: "3"
 services:
     kilonova:
-        build: .
+        build: server
         ports:
-            - '3000:3000'
+            - "8080:8080"
         volumes:
-            - ./:/app
+            - ./data:/data
+            - ./server/:/app
         restart: always
         depends_on:
             - db
+            - frontend
     db:
-        image: mysql
+        image: postgres:12.2
         volumes:
-            - ./sqldata:/var/lib/mysql
+            - ./sqldata:/var/lib/postgresql/data
+        environment:
+            POSTGRES_USER: kilonova
+            POSTGRES_PASSWORD: kn_password
+            POSTGRES_DB: kilonova
         restart: always
-        environment: 
-            MYSQL_ROOT_PASSWORD: parola_root
-            MYSQL_DATABASE: kilonova
-            MYSQL_USER: kilonova
-            MYSQL_PASSWORD: kn_password
-        ports: 
-            - '3306:3306'
+    frontend:
+        build: frontend
+        volumes:
+            - ./frontend/:/app
+        restart: always
+        ports:
+            - "3000:3000"

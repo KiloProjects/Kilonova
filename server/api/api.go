@@ -2,15 +2,13 @@ package api
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/AlexVasiluta/kilonova/models"
 	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
-	"github.com/go-chi/cors"
 	"github.com/gorilla/securecookie"
 	"github.com/jinzhu/gorm"
 )
@@ -30,51 +28,23 @@ func NewAPI(ctx context.Context, db *gorm.DB, config *models.Config) *API {
 	return &API{ctx, db, config, session}
 }
 
-// Run is the magic behind the API
-func (s *API) Run() {
+// GetRouter is the magic behind the API
+func (s *API) GetRouter() *chi.Mux {
 	r := chi.NewRouter()
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.StripSlashes)
-	r.Use(middleware.Timeout(20 * time.Second))
-	corsConfig := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: true,
-		MaxAge:           300,
+
+	r.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("Pinged")
 	})
-	r.Use(corsConfig.Handler)
-
-	r.Route("/api/", func(r chi.Router) {
-
-		r.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-			log.Println("Pinged")
-		})
-
-		r.Mount("/auth", s.registerAuth())
-		r.Mount("/problem", s.registerProblem())
-		r.Mount("/motd", s.registerMOTD())
-		r.Mount("/admin", s.registerAdmin())
-		r.Mount("/tasks", s.registerTasks())
-		r.Mount("/user", s.registerUser())
+	r.Mount("/auth", s.registerAuth())
+	r.Mount("/problem", s.registerProblem())
+	r.Mount("/motd", s.registerMOTD())
+	r.Mount("/admin", s.registerAdmin())
+	r.Mount("/tasks", s.registerTasks())
+	r.Mount("/user", s.registerUser())
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]string{"status": "404", "error": "Not Found"})
 	})
-
-	// graceful setup and shutdown
-	server := &http.Server{Addr: ":3000", Handler: r}
-
-	go func() {
-		if err := server.ListenAndServe(); err != nil {
-			fmt.Println(err)
-		}
-	}()
-
-	// Waiting for SIGINT (pkill -2)
-	<-s.ctx.Done()
-	if err := server.Shutdown(s.ctx); err != nil {
-		fmt.Println(err)
-	}
-
+	return r
 }
 
 // GetSessionCookie reads and returns the data from the session cookie

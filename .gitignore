@@ -1,7 +1,8 @@
-/kilonova
+/server/kilonova
 /sqldata
 node_modules
 .vscode
 .editorconfig
-/knTests
+/knTests/*
 /config.json
+/data

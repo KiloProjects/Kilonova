@@ -25,7 +25,9 @@ func StartEvalListener(ctx context.Context, db *gorm.DB, config *models.Config) 
 				}
 				for _, toEval := range newToEval {
 					fmt.Println(toEval)
+					toEval.Test.Score = 100
 				}
+				db.Save(newToEval)
 			}
 		}
 	}()
