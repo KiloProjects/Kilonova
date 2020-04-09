@@ -59,9 +59,6 @@ func main() {
 	os.MkdirAll("/data/knTests", 0777)
 
 	r := chi.NewRouter()
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.StripSlashes)
-	r.Use(middleware.Timeout(20 * time.Second))
 	corsConfig := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -71,23 +68,26 @@ func main() {
 		MaxAge:           300,
 	})
 	r.Use(corsConfig.Handler)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.StripSlashes)
+	r.Use(middleware.Timeout(20 * time.Second))
+	r.Use(middleware.Logger)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	frontend := api.NewAPI(ctx, db, config)
 
-	r.Handle("/api", api.NewAPI(ctx, db, config).GetRouter())
+	r.Mount("/api", frontend.GetRouter())
 	go eval.StartEvalListener(ctx, db, config)
+
 	// graceful setup and shutdown
-	server := &http.Server{Addr: ":8080", Handler: r}
+	server := &http.Server{Addr: "0.0.0.0:8080", Handler: r}
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil {
 			fmt.Println(err)
 		}
 	}()
-
-	// Waiting for SIGINT (pkill -2)
-	// Setting up signal capturing
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/AlexVasiluta/kilonova/models"
 	"github.com/davecgh/go-spew/spew"
@@ -11,21 +12,31 @@ import (
 )
 
 // /api/admin
-func (s *API) registerAdmin() chi.Router {
+func (s *API) RegisterAdminRoutes() chi.Router {
 	r := chi.NewRouter()
 	// r.Use(s.mustBeAdmin)
 
-	r.Post("/newMOTD", s.newMOTD)
-	r.Post("/createProblem", s.createProblem)
+	r.Get("/makeAdmin", s.MakeAdmin)
+	r.Post("/newMOTD", s.NewMOTD)
+	r.Post("/createProblem", s.CreateProblem)
 	r.Get("/getUsers", func(w http.ResponseWriter, r *http.Request) {
 		var users []models.User
 		s.db.Find(&users)
 		json.NewEncoder(w).Encode(users)
 	})
+	r.HandleFunc("/dropAll", func(w http.ResponseWriter, r *http.Request) {
+		s.db.DropTable(models.User{}, models.EvalTest{}, models.MOTD{}, models.Problem{}, models.Task{}, models.Test{})
+		fmt.Println("restarting")
+		os.Exit(0)
+	})
 	return r
 }
 
-func (s *API) createProblem(w http.ResponseWriter, r *http.Request) {
+func (s *API) MakeAdmin(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (s *API) CreateProblem(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(64 * 1024 * 1024)
 	spew.Dump(r.MultipartForm)
 	tests, err := HandleTests(r)
@@ -43,7 +54,7 @@ func (s *API) createProblem(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusMovedPermanently)
 }
 
-func (s *API) newMOTD(w http.ResponseWriter, r *http.Request) {
+func (s *API) NewMOTD(w http.ResponseWriter, r *http.Request) {
 	newMotd := r.PostFormValue("data")
 	s.db.Create(&models.MOTD{Motd: newMotd})
 

@@ -11,20 +11,20 @@ import (
 )
 
 // /api/problem
-func (s *API) registerProblem() chi.Router {
+func (s *API) RegisterProblemRoutes() chi.Router {
 	r := chi.NewRouter()
-	r.Get("/getAll", s.getAllProblems)
-	r.Get("/getByID", s.getProblemByID)
+	r.Get("/getAll", s.GetAllProblems)
+	r.Get("/getByID", s.GetProblemByID)
 	return r
 }
 
-func (s *API) getAllProblems(w http.ResponseWriter, r *http.Request) {
+func (s *API) GetAllProblems(w http.ResponseWriter, r *http.Request) {
 	var problems []models.Problem
 	s.db.Preload("Tests").Find(&problems)
 	json.NewEncoder(w).Encode(problems)
 }
 
-func (s *API) getProblemByID(w http.ResponseWriter, r *http.Request) {
+func (s *API) GetProblemByID(w http.ResponseWriter, r *http.Request) {
 	var problem models.Problem
 	idstr := r.FormValue("id")
 	id, err := strconv.Atoi(idstr)

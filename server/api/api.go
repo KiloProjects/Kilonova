@@ -2,9 +2,9 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/AlexVasiluta/kilonova/models"
@@ -13,7 +13,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-// API is the base
+// API is the base struct for the project's API
 type API struct {
 	ctx     context.Context
 	db      *gorm.DB
@@ -29,26 +29,38 @@ func NewAPI(ctx context.Context, db *gorm.DB, config *models.Config) *API {
 }
 
 // GetRouter is the magic behind the API
-func (s *API) GetRouter() *chi.Mux {
+func (s *API) GetRouter() chi.Router {
 	r := chi.NewRouter()
 
 	r.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Pinged")
 	})
-	r.Mount("/auth", s.registerAuth())
-	r.Mount("/problem", s.registerProblem())
-	r.Mount("/motd", s.registerMOTD())
-	r.Mount("/admin", s.registerAdmin())
-	r.Mount("/tasks", s.registerTasks())
-	r.Mount("/user", s.registerUser())
-	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]string{"status": "404", "error": "Not Found"})
-	})
+	r.Mount("/auth", s.RegisterAuthRoutes())
+	r.Mount("/problem", s.RegisterProblemRoutes())
+	r.Mount("/motd", s.RegisterMOTDRoutes())
+	r.Mount("/admin", s.RegisterAdminRoutes())
+	r.Mount("/tasks", s.RegisterTaskRoutes())
+	r.Mount("/user", s.RegisterUserRoutes())
 	return r
 }
 
-// GetSessionCookie reads and returns the data from the session cookie
-func (s *API) GetSessionCookie(r *http.Request) *models.Session {
+// GetAuthToken returns the authentication token from a request
+func (s *API) GetAuthToken(r *http.Request) string {
+	header := r.Header.Get("Authorization")
+	if strings.HasPrefix(header, "Bearer ") {
+		return strings.TrimPrefix(header, "Bearer ")
+	}
+	return ""
+}
+
+// GetSession reads and returns the data from the session cookie
+func (s *API) GetSession(r *http.Request) *models.Session {
+	authToken := s.GetAuthToken(r)
+	if authToken != "" { // use Auth tokens by default
+		var ret models.Session
+		s.session.Decode("kn-sessionid", authToken, &ret)
+		return &ret
+	}
 	cookie, err := r.Cookie("kn-sessionid")
 	if err != nil {
 		return nil
@@ -61,19 +73,20 @@ func (s *API) GetSessionCookie(r *http.Request) *models.Session {
 	return &ret
 }
 
-// SetSessionCookie sets the data to the session cookie
-func (s *API) SetSessionCookie(w http.ResponseWriter, sess models.Session) error {
+// SetSession sets the data to the session cookie
+func (s *API) SetSession(w http.ResponseWriter, sess models.Session) (string, error) {
 	encoded, err := s.session.Encode("kn-sessionid", sess)
 	if err != nil {
-		return err
+		return "", err
 	}
 	cookie := &http.Cookie{
-		Name:  "kn-sessionid",
-		Value: encoded,
-		Path:  "/",
+		Name:     "kn-sessionid",
+		Value:    encoded,
+		Path:     "/",
+		HttpOnly: false,
 	}
 	http.SetCookie(w, cookie)
-	return nil
+	return encoded, nil
 }
 
 // RemoveSessionCookie clears the session cookie, effectively revoking it. When setting MaxAge to 0, the browser will also clear it out

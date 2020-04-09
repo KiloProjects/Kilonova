@@ -10,20 +10,20 @@ import (
 )
 
 // /api/motd
-func (s *API) registerMOTD() chi.Router {
+func (s *API) RegisterMOTDRoutes() chi.Router {
 	r := chi.NewRouter()
-	r.Get("/get", s.getMOTD)
-	r.Get("/getAll", s.getAllMOTDs)
+	r.Get("/get", s.GetMOTD)
+	r.Get("/getAll", s.GetAllMOTDs)
 	return r
 }
 
-func (s *API) getAllMOTDs(w http.ResponseWriter, r *http.Request) {
+func (s *API) GetAllMOTDs(w http.ResponseWriter, r *http.Request) {
 	var motds []models.MOTD
 	s.db.Find(&motds)
 	json.NewEncoder(w).Encode(motds)
 }
 
-func (s *API) getMOTD(w http.ResponseWriter, r *http.Request) {
+func (s *API) GetMOTD(w http.ResponseWriter, r *http.Request) {
 	var motds []models.MOTD
 	s.db.Find(&motds)
 	motd := motds[rand.Intn(len(motds))]

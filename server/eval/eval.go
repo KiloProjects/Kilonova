@@ -9,7 +9,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-// StartEvalListener starts listening for all
+// StartEvalListener starts listening for all tasks
 func StartEvalListener(ctx context.Context, db *gorm.DB, config *models.Config) {
 	ticker := time.NewTicker(5 * time.Second)
 	go func() {
