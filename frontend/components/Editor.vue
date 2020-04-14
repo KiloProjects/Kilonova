@@ -23,6 +23,7 @@ int main()
 `,
             options: {
                 theme: 'monokai',
+                mode: 'text/x-c++src',
                 tabSize: 4,
                 lineNumbers: true,
                 line: true,
