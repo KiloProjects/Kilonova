@@ -29,7 +29,11 @@ export default {
     /*
      ** Global CSS
      */
-    css: ['codemirror/lib/codemirror.css', 'codemirror/theme/monokai.css'],
+    css: [
+        'codemirror/lib/codemirror.css',
+        'codemirror/theme/monokai.css',
+        'codemirror/addon/fold/foldgutter.css'
+    ],
     /*
      ** Plugins to load before mounting the App
      */

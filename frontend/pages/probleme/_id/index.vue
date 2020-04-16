@@ -5,9 +5,13 @@
     </div>
 </template>
 <script>
+import Problem from '~/components/Problem'
 export default {
     validate({ params }) {
         return /^\d+$/.test(params.id)
+    },
+    components: {
+        Problem
     },
     data() {
         return {

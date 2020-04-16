@@ -14,12 +14,32 @@ func (s *API) RegisterProblemRoutes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/getAll", s.GetAllProblems)
 	r.Get("/getByID", s.GetProblemByID)
+	r.With(s.MustBeAuthed).Post("/create", s.InitProblem)
 	r.Route("/update/{id}", func(r chi.Router) {
 		r.Post("/title", func(w http.ResponseWriter, r *http.Request) {
 
 		})
 	})
 	return r
+}
+
+// InitProblem assigns an ID for the problem
+func (s *API) InitProblem(w http.ResponseWriter, r *http.Request) {
+	title := r.FormValue("title")
+	if title == "" {
+		s.ErrorData(w, "Title not provided", http.StatusBadRequest)
+		return
+	}
+	var tmp models.Problem
+	s.db.First(&tmp, "lower(name) = lower(?)", title)
+	if tmp.ID != 0 {
+		s.ErrorData(w, "Title already exists in DB", http.StatusBadRequest)
+		return
+	}
+	fmt.Printf("%v\n", r.Context().Value(models.KNContextType("user")).(models.User))
+	s.db.Create(&models.Problem{Name: title, Author: r.Context().Value(models.KNContextType("user")).(models.User)})
+	s.db.First(&tmp, "lower(name) = lower(?)", title)
+	s.ReturnData(w, "success", tmp.ID)
 }
 
 // GetAllProblems returns all the problems from the DB
@@ -38,6 +58,6 @@ func (s *API) GetProblemByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Fprintln(w, "Invalid ID")
 	}
-	s.db.Where("id = ?", id).Preload("Tests").First(&problem)
+	s.db.Where("id = ?", id).Preload("Tests").Preload("Author").First(&problem)
 	s.ReturnData(w, "success", problem)
 }

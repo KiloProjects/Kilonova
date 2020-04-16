@@ -81,6 +81,7 @@ func (s *API) Login(w http.ResponseWriter, r *http.Request) {
 	s.db.First(&user, "lower(name) = lower(?)", username)
 	if user.ID == 0 {
 		http.Error(w, "user not found", http.StatusNotFound)
+		return
 	}
 	spew.Dump(user)
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))

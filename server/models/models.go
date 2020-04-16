@@ -49,6 +49,7 @@ type Problem struct {
 	Tests       []Test  `json:"tests"`
 	TestName    string  `json:"testName"`
 	Author      User    `json:"author"`
+	AuthorID    int     `json:"author_id"`
 	MemoryLimit float32 `json:"memoryLimit"`
 	StackLimit  float32 `json:"stackLimit"`
 	SourceSize  int     `json:"sourceSize"`

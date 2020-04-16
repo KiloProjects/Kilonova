@@ -1,31 +1,37 @@
 <template>
     <div>
         <no-ssr placeholder="Loading...">
-            <codemirror v-model="code" :options="options"></codemirror>
+            <codemirror v-model="value" :options="options"></codemirror>
         </no-ssr>
     </div>
 </template>
 <script>
 export default {
+    props: {
+        value: {
+            default: '',
+            type: String
+        }
+    },
     data() {
         return {
-            code: `#include <iostream>
-using namespace std;
-
-int main()
-{
-    cout << "Hello world!\\n";
-	return 0;
-}
-`,
             options: {
                 theme: 'monokai',
                 mode: 'text/x-c++src',
                 tabSize: 4,
+                indentUnit: 4,
                 lineNumbers: true,
                 line: true,
-                keyMap: 'sublime'
+                keyMap: 'sublime',
+                matchBrackets: true,
+                autoCloseBrackets: true,
+                styleActiveLine: true
             }
+        }
+    },
+    watch: {
+        value(newCode) {
+            this.$emit('input', newCode)
         }
     }
 }

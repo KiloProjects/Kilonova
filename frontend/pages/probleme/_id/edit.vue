@@ -1,5 +1,5 @@
 <template>
-    <div></div>
+    <div>STUB</div>
 </template>
 <script>
 export default {}
