@@ -23,7 +23,7 @@ export default {
     async created() {
         try {
             const probleme = await this.$axios.get('/problem/getAll')
-            this.probleme = probleme.data
+            this.probleme = probleme.data.data
         } catch (err) {
             this.error = err.response.data
         }

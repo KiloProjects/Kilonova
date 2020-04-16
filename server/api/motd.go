@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"math/rand"
 	"net/http"
 
@@ -22,7 +21,7 @@ func (s *API) RegisterMOTDRoutes() chi.Router {
 func (s *API) GetAllMOTDs(w http.ResponseWriter, r *http.Request) {
 	var motds []models.MOTD
 	s.db.Find(&motds)
-	json.NewEncoder(w).Encode(motds)
+	s.ReturnData(w, "success", motds)
 }
 
 // GetMOTD returns a random MOTD from the database
@@ -30,5 +29,5 @@ func (s *API) GetMOTD(w http.ResponseWriter, r *http.Request) {
 	var motds []models.MOTD
 	s.db.Find(&motds)
 	motd := motds[rand.Intn(len(motds))]
-	json.NewEncoder(w).Encode(motd)
+	s.ReturnData(w, "success", motd)
 }

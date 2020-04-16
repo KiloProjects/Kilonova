@@ -20,7 +20,7 @@ export default {
             const data = await this.$axios.get('/problem/getByID', {
                 params: { id: this.$route.params.id }
             })
-            this.data = data.data
+            this.data = data.data.data
         } catch (err) {
             this.error = err.response.data
         }

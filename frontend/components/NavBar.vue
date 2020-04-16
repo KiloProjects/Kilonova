@@ -7,6 +7,9 @@
                 <b-nav-item-dropdown text="Actiuni">
                     <b-dropdown-item href="/probleme">Probleme</b-dropdown-item>
                     <b-dropdown-item href="/profile">Profil</b-dropdown-item>
+                    <b-dropdown-item href="/createProblem">
+                        Problem Editor Testing
+                    </b-dropdown-item>
                 </b-nav-item-dropdown>
             </b-navbar-nav>
             <b-navbar-nav class="ml-auto">

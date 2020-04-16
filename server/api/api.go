@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"strings"
@@ -12,6 +13,12 @@ import (
 	"github.com/gorilla/securecookie"
 	"github.com/jinzhu/gorm"
 )
+
+// RetData should be the way data will be returned
+type RetData struct {
+	Status string      `json:"status"`
+	Data   interface{} `json:"data"`
+}
 
 // API is the base struct for the project's API
 type API struct {
@@ -42,6 +49,27 @@ func (s *API) GetRouter() chi.Router {
 	r.Mount("/tasks", s.RegisterTaskRoutes())
 	r.Mount("/user", s.RegisterUserRoutes())
 	return r
+}
+
+// ReturnData returns the json data to the user
+func (s *API) ReturnData(w http.ResponseWriter, status string, returnData interface{}) {
+	err := json.NewEncoder(w).Encode(RetData{
+		Status: status,
+		Data:   returnData,
+	})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(RetData{
+			Status: "error",
+			Data:   err.Error(),
+		})
+	}
+}
+
+// ErrorData is like ReturnData but sets the corresponding error code in the header
+func (s *API) ErrorData(w http.ResponseWriter, returnData interface{}, errCode int) {
+	w.WriteHeader(errCode)
+	s.ReturnData(w, "error", returnData)
 }
 
 // GetAuthToken returns the authentication token from a request

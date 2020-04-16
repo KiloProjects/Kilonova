@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -22,7 +21,7 @@ func (s *API) RegisterAdminRoutes() chi.Router {
 	r.Get("/getUsers", func(w http.ResponseWriter, r *http.Request) {
 		var users []models.User
 		s.db.Find(&users)
-		json.NewEncoder(w).Encode(users)
+		s.ReturnData(w, "success", users)
 	})
 	r.HandleFunc("/dropAll", func(w http.ResponseWriter, r *http.Request) {
 		s.db.DropTable(models.User{}, models.EvalTest{}, models.MOTD{}, models.Problem{}, models.Task{}, models.Test{})

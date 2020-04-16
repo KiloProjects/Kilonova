@@ -23,7 +23,7 @@ export default {
             const data = await this.$axios.get(
                 `/user/getByName?name=${this.$route.params.name}`
             )
-            this.profil = data.data
+            this.profil = data.data.data
         } catch (err) {
             this.error = err.response.data
         }

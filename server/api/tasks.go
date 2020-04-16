@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/AlexVasiluta/kilonova/models"
@@ -24,7 +23,7 @@ func (s *API) GetTasks(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var tasks []models.Task
 	s.db.Find(&tasks)
-	json.NewEncoder(w).Encode(tasks)
+	s.ReturnData(w, "success", tasks)
 }
 
 // SubmitTask registers a task to be sent to the Eval handler

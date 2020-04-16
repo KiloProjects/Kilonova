@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -28,7 +27,7 @@ func (s *API) RegisterProblemRoutes() chi.Router {
 func (s *API) GetAllProblems(w http.ResponseWriter, r *http.Request) {
 	var problems []models.Problem
 	s.db.Preload("Tests").Find(&problems)
-	json.NewEncoder(w).Encode(problems)
+	s.ReturnData(w, "success", problems)
 }
 
 // GetProblemByID returns a problem from the DB specified by ID
@@ -40,5 +39,5 @@ func (s *API) GetProblemByID(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Invalid ID")
 	}
 	s.db.Where("id = ?", id).Preload("Tests").First(&problem)
-	json.NewEncoder(w).Encode(problem)
+	s.ReturnData(w, "success", problem)
 }

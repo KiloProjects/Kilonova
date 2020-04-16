@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -62,10 +61,7 @@ func (s *API) Signup(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(500), 500)
 		return
 	}
-	json.NewEncoder(w).Encode(struct {
-		CookieData string `json:"cookie_data"`
-	}{CookieData: encoded})
-	w.WriteHeader(http.StatusOK)
+	s.ReturnData(w, "success", encoded)
 }
 
 // Login creates a new Session while checking that the user credentials are correct
@@ -100,16 +96,12 @@ func (s *API) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(500), 500)
 		return
 	}
-	json.NewEncoder(w).Encode(struct {
-		CookieData string `json:"cookie_data"`
-	}{CookieData: encoded})
-	w.WriteHeader(http.StatusOK)
+	s.ReturnData(w, "success", encoded)
 }
 
 // Logout removes the session cookie
 func (s *API) Logout(w http.ResponseWriter, r *http.Request) {
 	s.RemoveSessionCookie(w)
-	w.WriteHeader(http.StatusOK)
 }
 
 // IsAuthed reads the session and says if the requester is authenticated

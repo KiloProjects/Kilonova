@@ -29,16 +29,11 @@ export default {
     /*
      ** Global CSS
      */
-    css: [
-		'codemirror/lib/codemirror.css',
-		'codemirror/theme/monokai.css'
-	],
+    css: ['codemirror/lib/codemirror.css', 'codemirror/theme/monokai.css'],
     /*
      ** Plugins to load before mounting the App
      */
-    plugins: [
-		{src: "~/plugins/codemirror.js", ssr: false}
-	],
+    plugins: [{ src: '~/plugins/codemirror.js', ssr: false }],
     /*
      ** Nuxt.js dev-modules
      */
@@ -76,12 +71,12 @@ export default {
                     login: {
                         url: '/auth/login',
                         method: 'post',
-                        propertyName: 'cookie_data'
+                        propertyName: 'data'
                     },
                     user: {
                         url: '/user/getSelf',
                         method: 'get',
-                        propertyName: false
+                        propertyName: 'data'
                     },
                     logout: {
                         url: '/auth/logout',

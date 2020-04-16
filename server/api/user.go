@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/AlexVasiluta/kilonova/models"
@@ -21,23 +20,18 @@ func (s *API) GetUserByName(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	name := r.FormValue("name")
 	if name == "" {
-		http.Error(w, "Name not specified", http.StatusBadRequest)
+		s.ErrorData(w, "Name not specified", http.StatusBadRequest)
 		return
 	}
 	s.db.First(&user, "lower(name) = lower(?)", name)
 	if user.ID == 0 {
-		http.Error(w, "User not found", http.StatusNotFound)
+		s.ErrorData(w, "User Not Found", http.StatusNotFound)
+		return
 	}
-	err := json.NewEncoder(w).Encode(user)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-	}
+	s.ReturnData(w, "success", user)
 }
 
 // GetSelf returns the authenticated user
 func (s *API) GetSelf(w http.ResponseWriter, r *http.Request) {
-	err := json.NewEncoder(w).Encode(r.Context().Value(models.KNContextType("user")).(models.User))
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-	}
+	s.ReturnData(w, "success", r.Context().Value(models.KNContextType("user")).(models.User))
 }
