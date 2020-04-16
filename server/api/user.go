@@ -8,7 +8,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// /api/user
+// RegisterUserRoutes mounts the user-related routes at /api/user
 func (s *API) RegisterUserRoutes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/getByName", s.GetUserByName)
@@ -16,6 +16,7 @@ func (s *API) RegisterUserRoutes() chi.Router {
 	return r
 }
 
+// GetUserByName returns a user based on a specified name
 func (s *API) GetUserByName(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	name := r.FormValue("name")
@@ -33,7 +34,7 @@ func (s *API) GetUserByName(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetSelf returns the
+// GetSelf returns the authenticated user
 func (s *API) GetSelf(w http.ResponseWriter, r *http.Request) {
 	err := json.NewEncoder(w).Encode(r.Context().Value(models.KNContextType("user")).(models.User))
 	if err != nil {

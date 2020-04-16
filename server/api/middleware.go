@@ -7,6 +7,7 @@ import (
 	"github.com/AlexVasiluta/kilonova/models"
 )
 
+// MustBeVisitor is middleware to make sure the user creating the request is not authenticated
 func (s *API) MustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if s.IsAuthed(r) {
@@ -17,6 +18,7 @@ func (s *API) MustBeVisitor(next http.Handler) http.Handler {
 	})
 }
 
+// MustBeAdmin is middleware to make sure the user creating the request is an admin
 func (s *API) MustBeAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !s.IsAdmin(r) {
@@ -27,6 +29,7 @@ func (s *API) MustBeAdmin(next http.Handler) http.Handler {
 	})
 }
 
+// MustBeAuthed is middleware to make sure the user creating the request is authenticated
 func (s *API) MustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

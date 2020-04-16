@@ -37,6 +37,8 @@ export default {
                 this.response = err.response.data
             }
         }
-    }
+    },
+    middleware: 'auth',
+    auth: 'guest'
 }
 </script>

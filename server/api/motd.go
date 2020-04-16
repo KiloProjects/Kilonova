@@ -9,7 +9,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// /api/motd
+// RegisterMOTDRoutes registers the MOTD routes at /api/motd
 func (s *API) RegisterMOTDRoutes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/get", s.GetMOTD)
@@ -17,12 +17,15 @@ func (s *API) RegisterMOTDRoutes() chi.Router {
 	return r
 }
 
+// GetAllMOTDs returns all MOTDs in the database
+// TODO: Pagination
 func (s *API) GetAllMOTDs(w http.ResponseWriter, r *http.Request) {
 	var motds []models.MOTD
 	s.db.Find(&motds)
 	json.NewEncoder(w).Encode(motds)
 }
 
+// GetMOTD returns a random MOTD from the database
 func (s *API) GetMOTD(w http.ResponseWriter, r *http.Request) {
 	var motds []models.MOTD
 	s.db.Find(&motds)

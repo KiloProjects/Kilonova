@@ -12,6 +12,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// RegisterAuthRoutes registers the Authentication routes on /api/auth
 func (s *API) RegisterAuthRoutes() chi.Router {
 	r := chi.NewRouter()
 	r.With(s.MustBeAuthed).Post("/logout", s.Logout)
@@ -22,6 +23,7 @@ func (s *API) RegisterAuthRoutes() chi.Router {
 
 // middleware
 
+// Signup creates a new user based on the request data
 func (s *API) Signup(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	r.ParseForm()
@@ -66,6 +68,7 @@ func (s *API) Signup(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// Login creates a new Session while checking that the user credentials are correct
 func (s *API) Login(w http.ResponseWriter, r *http.Request) {
 	spew.Dump(r.Form)
 	username := r.FormValue("username")
@@ -103,6 +106,7 @@ func (s *API) Login(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// Logout removes the session cookie
 func (s *API) Logout(w http.ResponseWriter, r *http.Request) {
 	s.RemoveSessionCookie(w)
 	w.WriteHeader(http.StatusOK)

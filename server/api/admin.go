@@ -11,7 +11,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// /api/admin
+// RegisterAdminRoutes registers all of the admin router at /api/admin
 func (s *API) RegisterAdminRoutes() chi.Router {
 	r := chi.NewRouter()
 	// r.Use(s.mustBeAdmin)
@@ -32,10 +32,12 @@ func (s *API) RegisterAdminRoutes() chi.Router {
 	return r
 }
 
+// MakeAdmin updates an account to make it an admin
 func (s *API) MakeAdmin(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// CreateProblem is a stub
 func (s *API) CreateProblem(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(64 * 1024 * 1024)
 	spew.Dump(r.MultipartForm)
@@ -50,16 +52,12 @@ func (s *API) CreateProblem(w http.ResponseWriter, r *http.Request) {
 		Tests: tests,
 	}
 	s.db.Create(&problem)
-	w.Header().Set("location", "http://localhost:3000/")
-	w.WriteHeader(http.StatusMovedPermanently)
 }
 
+// NewMOTD adds a new MOTD to the DB
 func (s *API) NewMOTD(w http.ResponseWriter, r *http.Request) {
-	newMotd := r.PostFormValue("data")
+	newMotd := r.FormValue("data")
 	s.db.Create(&models.MOTD{Motd: newMotd})
-
-	w.Header().Set("location", "http://localhost:3000/")
-	w.WriteHeader(http.StatusMovedPermanently)
 }
 
 // HandleTests fills a models.Test array with the tests from an archive

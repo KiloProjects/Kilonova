@@ -9,16 +9,17 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// Register
+// RegisterTaskRoutes mounts the Task routes at /api/tasks
 func (s *API) RegisterTaskRoutes() chi.Router {
 	r := chi.NewRouter()
-	r.Get("/get", s.GetTasks) // ?start=0&count=25
+	r.Get("/get", s.GetTasks)
 
 	r.Post("/submit", s.SubmitTask)
 	return r
 }
 
-// GetTasks returns all Tasks in a paginated order
+// GetTasks returns all Tasks from the DB
+// TODO: Pagination
 func (s *API) GetTasks(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var tasks []models.Task

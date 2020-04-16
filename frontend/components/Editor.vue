@@ -11,13 +11,10 @@ export default {
         return {
             code: `#include <iostream>
 using namespace std;
-const something = "";
-vector<int> test{1, 2, 3, 4, 5};
+
 int main()
 {
-	for(const auto &i : test)
-		cout << i << "\\n";
-	cout << "Hello World!\\n";
+    cout << "Hello world!\\n";
 	return 0;
 }
 `,
