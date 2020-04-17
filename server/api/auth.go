@@ -56,7 +56,6 @@ func (s *API) Signup(w http.ResponseWriter, r *http.Request) {
 
 	encoded, err := s.SetSession(w, models.Session{IsAdmin: user.IsAdmin, UserID: user.ID})
 	if err != nil {
-
 		fmt.Println(err)
 		http.Error(w, http.StatusText(500), 500)
 		return

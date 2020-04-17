@@ -3,11 +3,12 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/AlexVasiluta/kilonova/datamanager"
 	"github.com/AlexVasiluta/kilonova/models"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/securecookie"
@@ -26,13 +27,14 @@ type API struct {
 	db      *gorm.DB
 	config  *models.Config
 	session *securecookie.SecureCookie
+	manager *datamanager.Manager
 }
 
 // NewAPI declares a new API instance
-func NewAPI(ctx context.Context, db *gorm.DB, config *models.Config) *API {
+func NewAPI(ctx context.Context, db *gorm.DB, config *models.Config, manager *datamanager.Manager) *API {
 	session := securecookie.New([]byte(config.SecretKey), nil)
 	session = session.SetSerializer(securecookie.JSONEncoder{})
-	return &API{ctx, db, config, session}
+	return &API{ctx, db, config, session, manager}
 }
 
 // GetRouter is the magic behind the API
@@ -40,7 +42,7 @@ func (s *API) GetRouter() chi.Router {
 	r := chi.NewRouter()
 
 	r.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Pinged")
+		fmt.Fprintln(w, "pong.")
 	})
 	r.Mount("/auth", s.RegisterAuthRoutes())
 	r.Mount("/problem", s.RegisterProblemRoutes())

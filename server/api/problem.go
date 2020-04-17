@@ -15,9 +15,17 @@ func (s *API) RegisterProblemRoutes() chi.Router {
 	r.Get("/getAll", s.GetAllProblems)
 	r.Get("/getByID", s.GetProblemByID)
 	r.With(s.MustBeAuthed).Post("/create", s.InitProblem)
-	r.Route("/update/{id}", func(r chi.Router) {
+	r.With(s.MustBeAuthed).Route("/update/{id}", func(r chi.Router) {
 		r.Post("/title", func(w http.ResponseWriter, r *http.Request) {
-
+			val := r.FormValue("value")
+			// TODO: Make sure it is the author or admin who does the change
+			s.db.Model(&models.User{}).Where("id = ?", chi.URLParam(r, "id")).Update("name = ?", val)
+		})
+		r.Post("/addTest", func(w http.ResponseWriter, r *http.Request) {
+			// TODO
+		})
+		r.Post("/updateDescription", func(w http.ResponseWriter, r *http.Request) {
+			// TODO
 		})
 	})
 	return r

@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/AlexVasiluta/kilonova/datamanager"
 	"github.com/AlexVasiluta/kilonova/models"
 	"github.com/jinzhu/gorm"
 )
 
 // StartEvalListener starts listening for all tasks
-func StartEvalListener(ctx context.Context, db *gorm.DB, config *models.Config) {
+func StartEvalListener(ctx context.Context, db *gorm.DB, config *models.Config, manager *datamanager.Manager) {
 	ticker := time.NewTicker(5 * time.Second)
 	go func() {
 		for {

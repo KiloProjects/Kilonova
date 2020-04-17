@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/AlexVasiluta/kilonova/api"
+	"github.com/AlexVasiluta/kilonova/datamanager"
 	"github.com/AlexVasiluta/kilonova/eval"
 	"github.com/AlexVasiluta/kilonova/models"
 	"github.com/go-chi/chi"
@@ -23,8 +24,9 @@ import (
 )
 
 var (
-	db     *gorm.DB
-	config *models.Config
+	db      *gorm.DB
+	config  *models.Config
+	manager *datamanager.Manager
 )
 
 func main() {
@@ -56,7 +58,7 @@ func main() {
 	db.AutoMigrate(&models.Test{})
 	db.AutoMigrate(&models.User{})
 
-	os.MkdirAll("/data/knTests", 0777)
+	manager = datamanager.NewManager("/data")
 
 	r := chi.NewRouter()
 	corsConfig := cors.New(cors.Options{
@@ -75,10 +77,10 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	frontend := api.NewAPI(ctx, db, config)
+	frontend := api.NewAPI(ctx, db, config, manager)
 
 	r.Mount("/api", frontend.GetRouter())
-	go eval.StartEvalListener(ctx, db, config)
+	go eval.StartEvalListener(ctx, db, config, manager)
 
 	// graceful setup and shutdown
 	server := &http.Server{Addr: "0.0.0.0:8080", Handler: r}
