@@ -13,20 +13,24 @@ export default {
     components: {
         Problem
     },
+    async asyncData({ params, $axios }) {
+        try {
+            const data = await $axios.get('/problem/getByID', {
+                params: { id: params.id }
+            })
+            return {
+                data: data.data.data
+            }
+        } catch (err) {
+            return {
+                error: err.response.data
+            }
+        }
+    },
     data() {
         return {
             data: null,
             error: null
-        }
-    },
-    async created() {
-        try {
-            const data = await this.$axios.get('/problem/getByID', {
-                params: { id: this.$route.params.id }
-            })
-            this.data = data.data.data
-        } catch (err) {
-            this.error = err.response.data
         }
     }
 }

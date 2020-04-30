@@ -129,3 +129,7 @@ func (s *API) RemoveSessionCookie(w http.ResponseWriter) {
 	}
 	http.SetCookie(w, emptyCookie)
 }
+
+func (s *API) getContextValue(r *http.Request, name string) interface{} {
+	return r.Context().Value(models.KNContextType(name))
+}

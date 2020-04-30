@@ -12,20 +12,22 @@ export default {
         ErrorCard,
         Profile
     },
+    async asyncData({ $axios, params }) {
+        try {
+            const data = await $axios.get(`/user/getByName?name=${params.name}`)
+            return {
+                profil: data.data.data
+            }
+        } catch (err) {
+            return {
+                error: err.response.data
+            }
+        }
+    },
     data() {
         return {
             profil: null,
             error: null
-        }
-    },
-    async created() {
-        try {
-            const data = await this.$axios.get(
-                `/user/getByName?name=${this.$route.params.name}`
-            )
-            this.profil = data.data.data
-        } catch (err) {
-            this.error = err.response.data
         }
     }
 }

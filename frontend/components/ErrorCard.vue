@@ -1,7 +1,7 @@
 <template>
     <b-card
         v-if="err"
-        bg-variant="danger"
+        :bg-variant="status"
         text-variant="white"
         header="Error"
         class="text-center"
@@ -16,6 +16,10 @@ export default {
         err: {
             type: String,
             default: ''
+        },
+        status: {
+            type: String,
+            default: 'danger'
         }
     }
 }

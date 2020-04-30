@@ -2,7 +2,10 @@
     <div>
         <ul v-if="probleme">
             <li v-for="problema in probleme" :key="problema.ID">
-                {{ problema }}
+                <nuxt-link :to="`/probleme/${problema.ID}`">
+                    <b-badge> #{{ problema['ID'] }}</b-badge>
+                    {{ problema['title'] }}
+                </nuxt-link>
             </li>
         </ul>
         <ErrorCard :err="error" />
@@ -14,18 +17,22 @@ export default {
     components: {
         ErrorCard
     },
+    async asyncData({ $axios }) {
+        try {
+            const probleme = await $axios.get('/problem/getAll')
+            return {
+                probleme: probleme.data.data
+            }
+        } catch (err) {
+            return {
+                error: err.response.data
+            }
+        }
+    },
     data() {
         return {
             probleme: null,
             error: null
-        }
-    },
-    async created() {
-        try {
-            const probleme = await this.$axios.get('/problem/getAll')
-            this.probleme = probleme.data.data
-        } catch (err) {
-            this.error = err.response.data
         }
     }
 }

@@ -44,8 +44,8 @@ type User struct {
 // Problem is the main object for problem
 type Problem struct {
 	gorm.Model
-	Name        string  `json:"name"`
-	Text        string  `json:"text"`
+	Name        string  `json:"title"`
+	Text        string  `json:"description"`
 	Tests       []Test  `json:"tests"`
 	TestName    string  `json:"testName"`
 	Author      User    `json:"author"`

@@ -1,8 +1,8 @@
 <template>
     <div>
-        <no-ssr placeholder="Loading...">
+        <client-only placeholder="Loading Editor...">
             <codemirror v-model="value" :options="options"></codemirror>
-        </no-ssr>
+        </client-only>
     </div>
 </template>
 <script>
@@ -10,6 +10,10 @@ export default {
     props: {
         value: {
             default: '',
+            type: String
+        },
+        language: {
+            default: 'text/x-c++src',
             type: String
         }
     },

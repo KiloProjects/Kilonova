@@ -1,5 +1,15 @@
 <template>
-    <div>{{ userString }}</div>
+    <div>
+        <img
+            :src="
+                'http://localhost:8080/api/user/getGravatar?name=' +
+                    this.$props.user.name +
+                    '&s=256'
+            "
+            alt=""
+        /><br />
+        {{ userString }}
+    </div>
 </template>
 <script>
 export default {

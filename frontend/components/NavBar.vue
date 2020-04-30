@@ -18,6 +18,13 @@
                     <b-nav-item href="/login">Log In</b-nav-item>
                 </template>
                 <template v-else>
+                    <b-nav-item href="/profile">
+                        <img
+                            src="http://localhost:8080/api/user/getSelfGravatar?s=32"
+                            alt="Profile Picture"
+                        />
+                        {{ loggedInUser.name }}
+                    </b-nav-item>
                     <b-nav-item @click="logout">Log Out</b-nav-item>
                 </template>
             </b-navbar-nav>
@@ -27,6 +34,9 @@
 <script>
 import { mapGetters } from 'vuex'
 export default {
+    data() {
+        return {}
+    },
     computed: {
         ...mapGetters(['isAuthed', 'loggedInUser'])
     },

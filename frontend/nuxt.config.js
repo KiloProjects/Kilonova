@@ -32,7 +32,8 @@ export default {
     css: [
         'codemirror/lib/codemirror.css',
         'codemirror/theme/monokai.css',
-        'codemirror/addon/fold/foldgutter.css'
+        'codemirror/addon/fold/foldgutter.css',
+        'highlight.js/styles/github.css'
     ],
     /*
      ** Plugins to load before mounting the App

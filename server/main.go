@@ -76,7 +76,6 @@ func main() {
 	r.Use(middleware.Logger)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	frontend := api.NewAPI(ctx, db, config, manager)
 
 	r.Mount("/api", frontend.GetRouter())
@@ -94,11 +93,11 @@ func main() {
 	signal.Notify(stop, os.Interrupt)
 
 	<-stop
+	cancel()
 	fmt.Println("Shutting Down")
 	if err := server.Shutdown(ctx); err != nil {
 		fmt.Println(err)
 	}
-
 }
 
 func readConfig() (*models.Config, error) {

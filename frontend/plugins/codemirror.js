@@ -3,6 +3,7 @@ import CodeMirror from 'vue-codemirror'
 
 // languages
 import 'codemirror/mode/clike/clike.js'
+import 'codemirror/mode/markdown/markdown.js'
 
 // handy stuff
 import 'codemirror/addon/edit/matchbrackets.js'
