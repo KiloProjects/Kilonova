@@ -5,24 +5,17 @@ services:
         ports:
             - "8080:8080"
         volumes:
-            - ./data:/data
-            - ./server/:/app
+            - ./data:/data:Z
+            - ./server/:/app:Z
         restart: always
         depends_on:
             - db
     db:
         image: postgres:12.2
         volumes:
-            - ./sqldata:/var/lib/postgresql/data
+            - ./sqldata:/var/lib/postgresql/data:Z
         environment:
             POSTGRES_USER: kilonova
             POSTGRES_PASSWORD: kn_password
             POSTGRES_DB: kilonova
         restart: always
-    frontend:
-        build: frontend
-        volumes:
-            - ./frontend/:/app
-        restart: always
-        ports:
-            - "3000:3000"

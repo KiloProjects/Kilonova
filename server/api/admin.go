@@ -13,6 +13,7 @@ import (
 // RegisterAdminRoutes registers all of the admin router at /api/admin
 func (s *API) RegisterAdminRoutes() chi.Router {
 	r := chi.NewRouter()
+	// disabled for debugging
 	// r.Use(s.mustBeAdmin)
 
 	r.Get("/makeAdmin", s.MakeAdmin)

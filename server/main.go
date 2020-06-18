@@ -11,10 +11,9 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/AlexVasiluta/kilonova/api"
 	"github.com/AlexVasiluta/kilonova/datamanager"
-	"github.com/AlexVasiluta/kilonova/eval"
 	"github.com/AlexVasiluta/kilonova/models"
+	"github.com/AlexVasiluta/kilonova/server/api"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
@@ -79,7 +78,7 @@ func main() {
 	frontend := api.NewAPI(ctx, db, config, manager)
 
 	r.Mount("/api", frontend.GetRouter())
-	go eval.StartEvalListener(ctx, db, config, manager)
+	// go eval.StartEvalListener(ctx, db, config, manager)
 
 	// graceful setup and shutdown
 	server := &http.Server{Addr: "0.0.0.0:8080", Handler: r}
