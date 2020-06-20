@@ -44,42 +44,60 @@ type User struct {
 // Problem is the main object for problem
 type Problem struct {
 	gorm.Model
-	Name        string  `json:"title"`
-	Text        string  `json:"description"`
-	Tests       []Test  `json:"tests"`
-	TestName    string  `json:"testName"`
-	Author      User    `json:"author"`
-	AuthorID    int     `json:"author_id"`
-	MemoryLimit float32 `json:"memoryLimit"`
-	StackLimit  float32 `json:"stackLimit"`
-	SourceSize  int     `json:"sourceSize"`
+	Name     string `json:"title"`
+	Text     string `json:"description"`
+	Tests    []Test `json:"tests"`
+	TestName string `json:"testName"`
+	// User is the author
+	User       User   `json:"author"`
+	UserID     uint   `json:"author_id"`
+	Limits     Limits `json:"limits"`
+	SourceSize int    `json:"sourceSize"`
 }
 
 // Test is the type for sample test
 type Test struct {
 	gorm.Model
-	Score     int `json:"score"`
-	ProblemID int `json:"problemid"`
+	Score     int  `json:"score"`
+	ProblemID uint `json:"problemID"`
 }
 
 // EvalTest is the type for tests meant for evaluation
 type EvalTest struct {
 	gorm.Model
-	TestID int  `json:"testid"`
+	Done bool `json:"done"`
+
 	Test   Test `json:"test"`
-	UserID int  `json:"userid"`
+	TestID uint `json:"testID"`
+
 	User   User `json:"user"`
-	TaskID int  `json:"taskid"`
+	UserID uint `json:"userID"`
+
+	Task   Task `json:"task"`
+	TaskID uint `json:"taskID"`
 }
 
-// Task is a source
+// Task is the type for user-submitted tasks
 type Task struct {
 	gorm.Model
 	SourceCode string     `json:"code,omitempty"`
 	Type       int        `json:"type"`
-	UserID     int        `json:"userid"`
 	User       User       `json:"user"`
+	UserID     uint       `json:"userid"`
 	Score      *int       `json:"score"`
 	Tests      []EvalTest `json:"tests"`
 	Problem    Problem    `json:"problem"`
+	ProblemID  uint       `json:"problemid"`
+	Language   string
+	Status     int
 }
+
+const (
+	_ = iota
+	// StatusWaiting is the initial state, the Task hasn't been picked up yet
+	StatusWaiting
+	// StatusWorking is the state when a Task has been picked up by a box but hasn't yet finished
+	StatusWorking
+	// StatusDone is the state when a Task has been fully graded
+	StatusDone
+)

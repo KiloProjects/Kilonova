@@ -1,8 +1,10 @@
 package box
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path"
 	"strconv"
@@ -11,9 +13,10 @@ import (
 
 // Directory represents a directory rule
 type Directory struct {
-	In   string
-	Out  string
-	Opts string
+	In      string
+	Out     string
+	Opts    string
+	Removes bool
 }
 
 // Env represents a variable-value pair for an environment variable
@@ -60,6 +63,9 @@ type Config struct {
 type Box struct {
 	path   string
 	Config Config
+
+	// Debug prints additional info
+	Debug bool
 }
 
 // BuildRunFlags compiles all flags into an array
@@ -74,6 +80,10 @@ func (c *Config) BuildRunFlags() (res []string) {
 	}
 
 	for _, dir := range c.Directories {
+		if dir.Removes {
+			res = append(res, "--dir="+dir.In+"=")
+			continue
+		}
 		toAdd := "--dir="
 		toAdd += dir.In + "="
 		if dir.Out == "" {
@@ -132,6 +142,11 @@ func (b *Box) WriteFile(filepath, data string) error {
 	return ioutil.WriteFile(path.Join(b.path, filepath), []byte(data), 0777)
 }
 
+// RemoveFile tries to remove a created file
+func (b *Box) RemoveFile(filepath string) error {
+	return os.Remove(path.Join(b.path, filepath))
+}
+
 // Cleanup is a convenience wrapper for cleanupBox
 func (b *Box) Cleanup() error {
 	var params []string
@@ -143,22 +158,46 @@ func (b *Box) Cleanup() error {
 }
 
 // ExecCommand runs a command
-func (b *Box) ExecCommand(command ...string) (string, error) {
+func (b *Box) ExecCommand(command ...string) (string, string, error) {
 	return b.ExecWithStdin("", command...)
 }
 
-// ExecWithStdin runs the command with the specified stdin
-func (b *Box) ExecWithStdin(stdin string, command ...string) (string, error) {
+// ExecWithStdin runs a command with a specified stdin
+// Returns the stdout, stderr and error (if anything happened)
+func (b *Box) ExecWithStdin(stdin string, command ...string) (string, string, error) {
 	params := append(b.Config.BuildRunFlags(), command...)
 	cmd := exec.Command("isolate", params...)
 	cmd.Stdin = strings.NewReader(stdin)
-	fmt.Println(cmd.String())
-	out, err := cmd.CombinedOutput()
-	return string(out), err
+
+	if b.Debug {
+		fmt.Println("--DEBUG--")
+		for _, dir := range b.Config.Directories {
+			fmt.Printf("%#v %#v %#v %#v\n", dir.In, dir.Out, dir.Opts, dir.Removes)
+		}
+		fmt.Println(cmd.String())
+		fmt.Println("--/DEBG--")
+	}
+
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	err := cmd.Run()
+	return stdout.String(), stderr.String(), err
 }
 
 // NewBox returns a new box instance from the specified ID
-func NewBox(config Config) *Box {
-	ret, _ := exec.Command("isolate", "--cg", fmt.Sprintf("--box-id=%d", config.ID), "--init").CombinedOutput()
-	return &Box{path: strings.TrimSpace(string(ret)), Config: config}
+func NewBox(config Config) (*Box, error) {
+	ret, err := exec.Command("isolate", "--cg", fmt.Sprintf("--box-id=%d", config.ID), "--init").CombinedOutput()
+
+	if strings.HasPrefix(string(ret), "Box already exists") {
+		exec.Command("isolate", "--cg", fmt.Sprintf("--box-id=%d", config.ID), "--cleanup").Run()
+		return NewBox(config)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Box{path: strings.TrimSpace(string(ret)), Config: config}, nil
 }

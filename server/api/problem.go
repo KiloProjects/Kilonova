@@ -31,7 +31,7 @@ func (s *API) RegisterProblemRoutes() chi.Router {
 				return
 			}
 			var test models.Test
-			test.ProblemID = s.getContextValue(r, "pbID").(int)
+			test.ProblemID = s.getContextValue(r, "pbID").(uint)
 			test.Score = score
 			s.db.Save(&test)
 			fmt.Println(test.ID)
@@ -68,7 +68,7 @@ func (s *API) InitProblem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Printf("%v\n", r.Context().Value(models.KNContextType("user")).(models.User))
-	s.db.Create(&models.Problem{Name: title, Author: r.Context().Value(models.KNContextType("user")).(models.User)})
+	s.db.Create(&models.Problem{Name: title, User: r.Context().Value(models.KNContextType("user")).(models.User)})
 	s.db.First(&tmp, "lower(name) = lower(?)", title)
 	s.ReturnData(w, "success", tmp.ID)
 }
@@ -96,12 +96,12 @@ func (s *API) GetProblemByID(w http.ResponseWriter, r *http.Request) {
 // ValidateProblemID pre-emptively returns if there isnt a valid problem ID in the URL params
 func (s *API) ValidateProblemID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		problemID, err := strconv.Atoi(chi.URLParam(r, "id"))
+		problemID, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
 		if err != nil {
 			s.ErrorData(w, "invalid problem ID", http.StatusBadRequest)
 			return
 		}
-		ctx := context.WithValue(r.Context(), models.KNContextType("pbID"), problemID)
+		ctx := context.WithValue(r.Context(), models.KNContextType("pbID"), uint(problemID))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 

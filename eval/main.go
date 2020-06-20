@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os/exec"
 
-	"github.com/AlexVasiluta/kilonova/eval/box"
+	"github.com/AlexVasiluta/kilonova/eval/judge"
+	"github.com/AlexVasiluta/kilonova/models"
 )
 
 func runMake(args ...string) error {
@@ -28,48 +30,27 @@ func runMake(args ...string) error {
 	return nil
 }
 
-var testCode string = `#include <stdio.h>
-
-int main()
-{
-	printf("Hello from container!\n");
-	return 0;
-}
-`
-
 func main() {
-	_, err := exec.LookPath("isolate")
-	if err != nil && err.(*exec.Error).Err == exec.ErrNotFound {
-		fmt.Println("Compiling isolate")
-		runMake()
-		fmt.Println("Installing isolate")
-		runMake("install")
-		fmt.Println("Cleaning up compilation")
-		runMake("clean")
-		fmt.Println("Finished with isolate")
+	var testCpp = `#include <stdio.h>
+	#include <unistd.h>
+	int main()
+	{
+		printf("Hello from Container, I'm C!");
+		return 0;
 	}
-	b := box.NewBox(box.Config{
-		ID:          0,
-		Cgroups:     true,
-		InheritEnv:  true,
-		Directories: []box.Directory{{In: "/etc", Out: "/etc"}},
-	})
-	b.WriteFile("box/file.c", testCode)
-	out, _ := b.ExecWithStdin(testCode, "/usr/bin/g++", "-std=c++11", "-O2", "-pipe", "-s", "/box/file.c")
-	fmt.Println(out)
-	out, _ = b.ExecWithStdin(testCode, "a.out")
-	fmt.Println(out)
-	// out, _ := b.ExecWithStdin(testCode, "/bin/bash", "-c", "echo $PATH")
-	// reader := bufio.NewReader(os.Stdin)
-	// for {
-	// 	text, _ := reader.ReadString('\n')
-	// 	text = strings.TrimSpace(text)
-	// 	fmt.Printf("`%s`\n", text)
-	// 	if text == "exit" {
-	// 		break
-	// 	}
-	// 	out, _ := b.ExecWithStdin(testCode, "/bin/bash", "-c", text)
-	//  fmt.Println(out)
-	// }
-	b.Cleanup()
+	`
+	var testPy = `print("Hello from Container, I'm python!")`
+	bm, err := judge.NewBoxManager(2)
+	if err != nil {
+		log.Fatalln("Could not create box manager: ", err)
+	}
+
+	bm.CompileFile(testCpp, models.Languages["c"])
+	bm.RunTask(models.Languages["c"], models.Limits{MemoryLimit: 32 * 1024, StackLimit: 16 * 1024, TimeLimit: 1.1})
+	bm.Reset()
+
+	bm.CompileFile(testPy, models.Languages["py"])
+	bm.RunTask(models.Languages["py"], models.Limits{})
+	bm.Cleanup()
+
 }
