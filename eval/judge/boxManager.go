@@ -3,7 +3,9 @@ package judge
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/AlexVasiluta/kilonova/datamanager"
 	"github.com/AlexVasiluta/kilonova/eval/box"
 	"github.com/AlexVasiluta/kilonova/models"
 	"github.com/davecgh/go-spew/spew"
@@ -14,6 +16,8 @@ type BoxManager struct {
 	ID       int
 	Box      *box.Box
 	TaskChan chan models.EvalTest
+
+	DataManager *datamanager.Manager
 
 	// If debug mode is enabled, the manager should print more stuff to the command line
 	debug bool
@@ -50,6 +54,12 @@ func (b *BoxManager) CompileFile(SourceCode string, language models.Language) er
 
 	_, _, err := b.Box.ExecCommand(language.CompileCommand...)
 	b.Box.Config = oldConfig
+
+	// if se != "" {
+	// 	fmt.Println("COMPILATION ERROR: ```")
+	// 	fmt.Println(se)
+	// 	fmt.Println("```")
+	// }
 	return err
 }
 
@@ -70,9 +80,22 @@ func (b *BoxManager) RunTask(language models.Language, constraints models.Limits
 	b.Box.Config.TimeLimit = constraints.TimeLimit
 	b.Box.Config.WallTimeLimit = constraints.TimeLimit + 0.5
 
-	so, se, err := b.Box.ExecCommand(language.RunCommand...)
+	ti, to, err := b.DataManager.GetTest(1, 1)
+	fmt.Println("Test Input:", ti)
+	fmt.Println("Test Output:", to)
+
+	// so, se, err := b.Box.ExecCommand(language.RunCommand...)
+	so, se, err := b.Box.ExecWithStdin(ti, language.RunCommand...)
+	so = strings.TrimSpace(so)
+	se = strings.TrimSpace(se)
 
 	b.Box.Config = oldConf
+
+	if to != so {
+		fmt.Println("OUTPUT MISMATCH")
+	} else {
+		fmt.Println("OUTPUTS MATCH")
+	}
 
 	// Debug output
 	if b.debug {
@@ -84,7 +107,14 @@ func (b *BoxManager) RunTask(language models.Language, constraints models.Limits
 		fmt.Println(err)
 	}
 
-	fmt.Println("Program output: ", so)
+	fmt.Println("Program output:", so)
+	fmt.Println()
+
+	// if se != "" {
+	// 	fmt.Println("Standard error: ```")
+	// 	fmt.Println(se)
+	// 	fmt.Println("```")
+	// }
 
 	return err
 }
@@ -131,11 +161,11 @@ func (b *BoxManager) Reset() (err error) {
 }
 
 // NewBoxManager creates a new box
-func NewBoxManager(id int) (*BoxManager, error) {
+func NewBoxManager(id int, dataManager *datamanager.Manager) (*BoxManager, error) {
 	b, err := box.NewBox(box.Config{ID: id})
 	if err != nil {
 		return nil, err
 	}
-	bm := &BoxManager{ID: id, Box: b}
+	bm := &BoxManager{ID: id, Box: b, DataManager: dataManager}
 	return bm, nil
 }

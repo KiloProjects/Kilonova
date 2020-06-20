@@ -36,6 +36,12 @@ func (m *Manager) GetTest(pbID int, testID int) (string, string, error) {
 
 // SaveTest saves an (input, output) pair of strings to disk to be used later as tests
 func (m *Manager) SaveTest(pbID int, testID int, input []byte, output []byte) error {
+	if err := os.MkdirAll(path.Join(m.RootPath, strconv.Itoa(pbID), "input"), 0777); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(path.Join(m.RootPath, strconv.Itoa(pbID), "output"), 0777); err != nil {
+		return err
+	}
 	if err := ioutil.WriteFile(
 		path.Join(m.RootPath, strconv.Itoa(pbID), "input", strconv.Itoa(testID)+".txt"),
 		input, 0777); err != nil {
@@ -43,7 +49,7 @@ func (m *Manager) SaveTest(pbID int, testID int, input []byte, output []byte) er
 	}
 	if err := ioutil.WriteFile(
 		path.Join(m.RootPath, strconv.Itoa(pbID), "output", strconv.Itoa(testID)+".txt"),
-		input, 0777); err != nil {
+		output, 0777); err != nil {
 		return err
 	}
 	return nil

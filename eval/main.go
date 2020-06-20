@@ -6,6 +6,7 @@ import (
 	"log"
 	"os/exec"
 
+	"github.com/AlexVasiluta/kilonova/datamanager"
 	"github.com/AlexVasiluta/kilonova/eval/judge"
 	"github.com/AlexVasiluta/kilonova/models"
 )
@@ -31,22 +32,31 @@ func runMake(args ...string) error {
 }
 
 func main() {
-	var testCpp = `#include <stdio.h>
-	#include <unistd.h>
-	int main()
-	{
-		printf("Hello from Container, I'm C!");
-		return 0;
-	}
-	`
-	var testPy = `print("Hello from Container, I'm python!")`
-	bm, err := judge.NewBoxManager(2)
+
+	dataManager := datamanager.NewManager("/home/alexv/Projects/kilonova/data/")
+
+	dataManager.SaveTest(1, 1, []byte(`1 4`), []byte(`5`))
+
+	var testCpp = `
+#include <bits/stdc++.h>
+using namespace std;
+int main()
+{
+	int n, m;
+	cin >> n >> m;
+	cout << n + m << "\n\n\n\n\n\n\n\n";
+	return 0;
+}`
+	var testPy = `
+n, m = [int(s) for s in input().split()]
+print(n + m)`
+	bm, err := judge.NewBoxManager(2, dataManager)
 	if err != nil {
 		log.Fatalln("Could not create box manager: ", err)
 	}
 
-	bm.CompileFile(testCpp, models.Languages["c"])
-	bm.RunTask(models.Languages["c"], models.Limits{MemoryLimit: 32 * 1024, StackLimit: 16 * 1024, TimeLimit: 1.1})
+	bm.CompileFile(testCpp, models.Languages["cpp"])
+	bm.RunTask(models.Languages["cpp"], models.Limits{MemoryLimit: 32 * 1024, StackLimit: 16 * 1024, TimeLimit: 1.1})
 	bm.Reset()
 
 	bm.CompileFile(testPy, models.Languages["py"])
