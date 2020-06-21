@@ -320,7 +320,8 @@ void init_dir_rules(void)
     set_dir_action_default("lib");
     set_dir_action_default("lib64:maybe");
     set_dir_action_default("proc=proc:fs");
-    set_dir_action_default("tmp:tmp");
+    // disable tmp
+    // set_dir_action_default("tmp:tmp");
     set_dir_action_default("usr");
 }
 

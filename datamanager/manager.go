@@ -22,12 +22,14 @@ type Session struct {
 }
 
 // GetTest returns a test buffer for the specified problem
-func (m *Manager) GetTest(pbID int, testID int) (string, string, error) {
-	input, err := ioutil.ReadFile(path.Join(m.RootPath, strconv.Itoa(pbID), "input", strconv.Itoa(testID)+".txt"))
+func (m *Manager) GetTest(pbID uint, testID uint) (string, string, error) {
+	problem := strconv.FormatUint(uint64(pbID), 10)
+	test := strconv.FormatUint(uint64(testID), 10)
+	input, err := ioutil.ReadFile(path.Join(m.RootPath, problem, "input", test+".txt"))
 	if err != nil {
 		return "", "", err
 	}
-	output, err := ioutil.ReadFile(path.Join(m.RootPath, strconv.Itoa(pbID), "output", strconv.Itoa(testID)+".txt"))
+	output, err := ioutil.ReadFile(path.Join(m.RootPath, problem, "output", test+".txt"))
 	if err != nil {
 		return "", "", err
 	}
@@ -35,20 +37,22 @@ func (m *Manager) GetTest(pbID int, testID int) (string, string, error) {
 }
 
 // SaveTest saves an (input, output) pair of strings to disk to be used later as tests
-func (m *Manager) SaveTest(pbID int, testID int, input []byte, output []byte) error {
-	if err := os.MkdirAll(path.Join(m.RootPath, strconv.Itoa(pbID), "input"), 0777); err != nil {
+func (m *Manager) SaveTest(pbID uint, testID uint, input []byte, output []byte) error {
+	problem := strconv.FormatUint(uint64(pbID), 10)
+	test := strconv.FormatUint(uint64(testID), 10)
+	if err := os.MkdirAll(path.Join(m.RootPath, problem, "input"), 0777); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(path.Join(m.RootPath, strconv.Itoa(pbID), "output"), 0777); err != nil {
+	if err := os.MkdirAll(path.Join(m.RootPath, problem, "output"), 0777); err != nil {
 		return err
 	}
 	if err := ioutil.WriteFile(
-		path.Join(m.RootPath, strconv.Itoa(pbID), "input", strconv.Itoa(testID)+".txt"),
+		path.Join(m.RootPath, problem, "input", test+".txt"),
 		input, 0777); err != nil {
 		return err
 	}
 	if err := ioutil.WriteFile(
-		path.Join(m.RootPath, strconv.Itoa(pbID), "output", strconv.Itoa(testID)+".txt"),
+		path.Join(m.RootPath, problem, "output", test+".txt"),
 		output, 0777); err != nil {
 		return err
 	}

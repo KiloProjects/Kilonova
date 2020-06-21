@@ -49,13 +49,15 @@ type Problem struct {
 	Tests    []Test `json:"tests"`
 	TestName string `json:"testName"`
 	// User is the author
-	User       User   `json:"author"`
-	UserID     uint   `json:"author_id"`
-	Limits     Limits `json:"limits"`
-	SourceSize int    `json:"sourceSize"`
+	User         User   `json:"author"`
+	UserID       uint   `json:"authorID"`
+	Limits       Limits `json:"limits"`
+	SourceSize   int    `json:"sourceSize"`
+	ConsoleInput bool   `json:"consoleInput"`
 }
 
 // Test is the type for sample test
+// NOTE: When Score < 0, it means that an error occured
 type Test struct {
 	gorm.Model
 	Score     int  `json:"score"`
@@ -63,25 +65,24 @@ type Test struct {
 }
 
 // EvalTest is the type for tests meant for evaluation
+// NOTE: When Score < 0, it means that an error occured
 type EvalTest struct {
 	gorm.Model
 	Done bool `json:"done"`
 
-	Test   Test `json:"test"`
-	TestID uint `json:"testID"`
-
-	User   User `json:"user"`
-	UserID uint `json:"userID"`
-
-	Task   Task `json:"task"`
-	TaskID uint `json:"taskID"`
+	// Output is the text displayed on the frontend (like `Fatal signal 11` or `Missing output file`)
+	Output string `json:"resultinfo"`
+	Score  int    `json:"score"`
+	Test   Test   `json:"test"`
+	TestID uint   `json:"testID"`
+	UserID uint   `json:"userID"`
+	TaskID uint   `json:"taskID"`
 }
 
 // Task is the type for user-submitted tasks
 type Task struct {
 	gorm.Model
 	SourceCode string     `json:"code,omitempty"`
-	Type       int        `json:"type"`
 	User       User       `json:"user"`
 	UserID     uint       `json:"userid"`
 	Score      *int       `json:"score"`
@@ -93,9 +94,10 @@ type Task struct {
 }
 
 const (
-	_ = iota
+	// These represent the different possible statuses of a task
+
 	// StatusWaiting is the initial state, the Task hasn't been picked up yet
-	StatusWaiting
+	StatusWaiting = iota
 	// StatusWorking is the state when a Task has been picked up by a box but hasn't yet finished
 	StatusWorking
 	// StatusDone is the state when a Task has been fully graded

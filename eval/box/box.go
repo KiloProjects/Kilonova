@@ -48,6 +48,11 @@ type Config struct {
 	WallTimeLimit  float64
 	ExtraTimeLimit float64
 
+	InputFile  string
+	OutputFile string
+	ErrFile    string
+	MetaFile   string
+
 	// Memory limits (in kbytes)
 	MemoryLimit int
 	StackSize   int
@@ -130,21 +135,39 @@ func (c *Config) BuildRunFlags() (res []string) {
 		res = append(res, "--processes="+strconv.Itoa(c.Processes))
 	}
 
+	if c.InputFile != "" {
+		res = append(res, "--stdin="+c.InputFile)
+	}
+	if c.OutputFile != "" {
+		res = append(res, "--stdout="+c.OutputFile)
+	}
+	if c.ErrFile != "" {
+		res = append(res, "--stderr="+c.ErrFile)
+	}
+	if c.MetaFile != "" {
+		res = append(res, "--meta="+c.MetaFile)
+	}
+
 	if c.Chdir != "" {
 		res = append(res, "--chdir="+c.Chdir)
 	}
-	res = append(res, "--run", "--")
+	res = append(res, "--silent", "--run", "--")
 	return
 }
 
-// WriteFile writes a file to the specified filepath *inside the box*
+// WriteFile writes a file to the specified filepath inside the box
 func (b *Box) WriteFile(filepath, data string) error {
 	return ioutil.WriteFile(path.Join(b.path, filepath), []byte(data), 0777)
 }
 
-// RemoveFile tries to remove a created file
+// RemoveFile tries to remove a created file from inside the sandbox
 func (b *Box) RemoveFile(filepath string) error {
 	return os.Remove(path.Join(b.path, filepath))
+}
+
+// GetFile returns a file from inside the sandbox
+func (b *Box) GetFile(filepath string) ([]byte, error) {
+	return ioutil.ReadFile(path.Join(b.path, filepath))
 }
 
 // Cleanup is a convenience wrapper for cleanupBox
@@ -162,20 +185,27 @@ func (b *Box) ExecCommand(command ...string) (string, string, error) {
 	return b.ExecWithStdin("", command...)
 }
 
+// ExecCombinedOutput runs a command and returns the combined output
+func (b *Box) ExecCombinedOutput(command ...string) ([]byte, error) {
+	params := append(b.Config.BuildRunFlags(), command...)
+	cmd := exec.Command("isolate", params...)
+	if b.Debug {
+		fmt.Println("DEBUG:", cmd.String())
+	}
+	return cmd.CombinedOutput()
+}
+
 // ExecWithStdin runs a command with a specified stdin
-// Returns the stdout, stderr and error (if anything happened)
+// Returns the stdout, stderr and error (if anything bad happened)
 func (b *Box) ExecWithStdin(stdin string, command ...string) (string, string, error) {
 	params := append(b.Config.BuildRunFlags(), command...)
 	cmd := exec.Command("isolate", params...)
-	cmd.Stdin = strings.NewReader(stdin)
+	if stdin != "" {
+		cmd.Stdin = strings.NewReader(stdin)
+	}
 
 	if b.Debug {
-		fmt.Println("--DEBUG--")
-		for _, dir := range b.Config.Directories {
-			fmt.Printf("%#v %#v %#v %#v\n", dir.In, dir.Out, dir.Opts, dir.Removes)
-		}
-		fmt.Println(cmd.String())
-		fmt.Println("--/DEBG--")
+		fmt.Println("DEBUG:", cmd.String())
 	}
 
 	stdout := new(bytes.Buffer)

@@ -36,8 +36,8 @@ func (s *API) RegisterProblemRoutes() chi.Router {
 			s.db.Save(&test)
 			fmt.Println(test.ID)
 			s.manager.SaveTest(
-				s.getContextValue(r, "pbID").(int),
-				int(test.ID),
+				s.getContextValue(r, "pbID").(uint),
+				test.ID,
 				[]byte(r.FormValue("input")),
 				[]byte(r.FormValue("output")),
 			)
