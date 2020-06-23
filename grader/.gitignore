@@ -1,4 +1,4 @@
-eval.exe
+grader
 run.sh
 test
 getTasks.sh

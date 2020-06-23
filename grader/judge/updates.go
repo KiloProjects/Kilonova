@@ -3,7 +3,7 @@ package judge
 import (
 	"fmt"
 
-	"github.com/AlexVasiluta/kilonova/models"
+	"github.com/KiloProjects/Kilonova/models"
 	"github.com/jinzhu/gorm"
 )
 

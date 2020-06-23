@@ -1,4 +1,4 @@
-module github.com/AlexVasiluta/kilonova
+module github.com/KiloProjects/Kilonova
 
 go 1.14
 

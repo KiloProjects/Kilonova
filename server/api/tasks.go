@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/AlexVasiluta/kilonova/models"
+	"github.com/KiloProjects/Kilonova/models"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi"
 )

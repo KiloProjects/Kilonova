@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/AlexVasiluta/kilonova/models"
+	"github.com/KiloProjects/Kilonova/models"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi"
 	"golang.org/x/crypto/bcrypt"

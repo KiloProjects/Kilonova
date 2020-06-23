@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/AlexVasiluta/kilonova/models"
+	"github.com/KiloProjects/Kilonova/models"
 )
 
 // Manager helps open the files in the data directory, this is supposed to be data that should not be stored in the database because it's a binary blob

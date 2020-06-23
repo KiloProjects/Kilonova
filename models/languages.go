@@ -1,6 +1,6 @@
 package models
 
-import "github.com/AlexVasiluta/kilonova/eval/box"
+import "github.com/KiloProjects/Kilonova/grader/box"
 
 // The data in this file should be loosely based on https://github.com/bogdan2412/infoarena/blob/master/eval/utilities.php#L48-L133
 

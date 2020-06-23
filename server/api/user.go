@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"net/http"
 
-	"github.com/AlexVasiluta/kilonova/models"
+	"github.com/KiloProjects/Kilonova/models"
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
 )

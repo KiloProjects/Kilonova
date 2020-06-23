@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/AlexVasiluta/kilonova/datamanager"
-	"github.com/AlexVasiluta/kilonova/eval/box"
-	"github.com/AlexVasiluta/kilonova/models"
+	"github.com/KiloProjects/Kilonova/datamanager"
+	"github.com/KiloProjects/Kilonova/grader/box"
+	"github.com/KiloProjects/Kilonova/models"
 )
 
 // BoxManager manages a box with eval-based tasks

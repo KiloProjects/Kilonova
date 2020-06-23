@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AlexVasiluta/kilonova/datamanager"
-	"github.com/AlexVasiluta/kilonova/models"
+	"github.com/KiloProjects/Kilonova/datamanager"
+	"github.com/KiloProjects/Kilonova/models"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/securecookie"
 	"github.com/jinzhu/gorm"

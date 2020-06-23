@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/AlexVasiluta/kilonova/models"
+	"github.com/KiloProjects/Kilonova/models"
 )
 
 // MustBeVisitor is middleware to make sure the user creating the request is not authenticated

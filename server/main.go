@@ -11,9 +11,9 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/AlexVasiluta/kilonova/datamanager"
-	"github.com/AlexVasiluta/kilonova/models"
-	"github.com/AlexVasiluta/kilonova/server/api"
+	"github.com/KiloProjects/Kilonova/datamanager"
+	"github.com/KiloProjects/Kilonova/models"
+	"github.com/KiloProjects/Kilonova/server/api"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"

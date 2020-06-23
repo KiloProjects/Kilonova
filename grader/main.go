@@ -1,41 +1,19 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os/exec"
 
-	"github.com/AlexVasiluta/kilonova/datamanager"
-	"github.com/AlexVasiluta/kilonova/eval/judge"
-	"github.com/AlexVasiluta/kilonova/models"
+	"github.com/KiloProjects/Kilonova/datamanager"
+	"github.com/KiloProjects/Kilonova/grader/judge"
+	"github.com/KiloProjects/Kilonova/models"
 	"github.com/go-chi/chi"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
-
-func runMake(args ...string) error {
-	args = append(args, "--directory=isolate")
-	cmd := exec.Command("make", args...)
-	var stdout, stderr bytes.Buffer
-	// redirect stdout and stderr
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if len(stdout.String()) > 0 {
-		fmt.Println("STDOUT: ", stdout.String())
-	}
-	if len(stderr.String()) > 0 {
-		fmt.Println("STDERR: ", stderr.String())
-	}
-
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	return nil
-}
 
 var testLimit = models.Limits{MemoryLimit: 32 * 1024, StackLimit: 16 * 1024, TimeLimit: 1.5}
 
