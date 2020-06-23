@@ -10,32 +10,23 @@ I added `.gitignore`s for `run.sh`, which could host your scripts for compilatio
 
 ## STUFF TO DO
 
-- For closed alpha:
+-   For closed alpha:
 
-	- Finish grader
+    -   Finish grader (95%, only more testing is needed)
+    -   Connect grader to DB
+    -   Write minimal web interface
+    -   Properly support user submissions
+    -   Design a user hierarchy
 
-	- Connect grader to DB
+-   For closed beta:
 
-	- Write minimal web interface
+    -   Work on web interface
+    -   Add other tools and rank
+    -   Add various extensions to the task description markup (like MathJax)
+    -   Add more functionality
 
-	- Properly support user submissions
-	
-	- Design a user hierarchy
+-   For open beta:
 
-- For closed beta:
-	
-	- Work on web interface
+    -   We'll see
 
-	- Add other tools and rank
-
-	- Add various extensions to the task description markup (like MathJax)
-
-	- Add more functionality
-
-- For open beta:
-
-	- We'll see
-
-- For release:
-	
-	- If we get here, I'm sure we'll figure out what is missing
+-   For release: - If we get here, I'm sure we'll figure out what is missing

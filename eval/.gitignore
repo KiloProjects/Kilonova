@@ -1,2 +1,5 @@
 eval.exe
 run.sh
+test
+getTasks.sh
+upload.sh

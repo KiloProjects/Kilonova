@@ -82,15 +82,17 @@ type EvalTest struct {
 // Task is the type for user-submitted tasks
 type Task struct {
 	gorm.Model
-	SourceCode string     `json:"code,omitempty"`
-	User       User       `json:"user"`
-	UserID     uint       `json:"userid"`
-	Score      *int       `json:"score"`
-	Tests      []EvalTest `json:"tests"`
-	Problem    Problem    `json:"problem"`
-	ProblemID  uint       `json:"problemid"`
-	Language   string
-	Status     int
+	SourceCode     string     `json:"code,omitempty"`
+	User           User       `json:"user"`
+	UserID         uint       `json:"userid"`
+	Tests          []EvalTest `json:"tests"`
+	Problem        Problem    `json:"problem"`
+	ProblemID      uint       `json:"problemid"`
+	Language       string     `json:"language"`
+	Status         int        `json:"status"`
+	CompileError   bool       `json:"compileError"`
+	CompileMessage string     `json:"compileMessage"`
+	Score          int        `json:"score"`
 }
 
 const (

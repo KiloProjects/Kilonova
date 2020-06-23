@@ -3,6 +3,7 @@ package judge
 import (
 	"fmt"
 
+	"github.com/AlexVasiluta/kilonova/models"
 	"github.com/jinzhu/gorm"
 )
 
@@ -12,25 +13,17 @@ type taskStatusUpdate struct {
 }
 
 func (u taskStatusUpdate) Update(db *gorm.DB) error {
-	// no
-	// fmt.Printf("RECEIVED UPDATE STATUS FOR TASK %d: STATUS %d\n", u.id, u.status)
-	return nil
+	fmt.Println("Updating", u.id, "with status", u.status)
+	return db.Model(&models.Task{}).Where("id = ?", u.id).Update("status", u.status).Error
 }
 
-type testStatusUpdate struct {
-	id     uint
-	result bool
+type taskScoreUpdate struct {
+	id    uint
+	score int
 }
 
-func (u testStatusUpdate) Update(db *gorm.DB) error {
-	res := ""
-	if u.result {
-		res = "IT'S FUCKING GOOD, CA-CHING"
-	} else {
-		res = "(in trump voice) WROOOONG"
-	}
-	fmt.Printf("RECEIVED UPDATE STATUS FOR TEST %d: %s\n", u.id, res)
-	return nil
+func (u taskScoreUpdate) Update(db *gorm.DB) error {
+	return db.Model(&models.Task{}).Where("id = ?", u.id).Update("score", u.score).Error
 }
 
 type testOutputUpdate struct {
@@ -55,5 +48,7 @@ func (u taskCompileUpdate) Update(db *gorm.DB) error {
 		u.compileMessage = "<empty>"
 	}
 	fmt.Printf("RECEIVED UPDATE COMPILE FOR TASK %d (is fatal: %t): %s\n", u.id, u.isFatal, u.compileMessage)
+	db.Model(&models.Task{}).Where("id = ?", u.id).Update("compile_error", u.isFatal)
+	db.Model(&models.Task{}).Where("id = ?", u.id).Update("compile_message", u.compileMessage)
 	return nil
 }
