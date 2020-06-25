@@ -34,7 +34,8 @@ type testOutputUpdate struct {
 
 func (u testOutputUpdate) Update(db *gorm.DB) error {
 	fmt.Printf("RECEIVED UPDATE OUTPUT FOR TEST %d (given score %d): %s\n", u.id, u.score, u.output)
-	return nil
+	return db.Model(&models.EvalTest{}).Where("id = ?", u.id).
+		Update(map[string]interface{}{"score": u.score, "output": u.output}).Error
 }
 
 type taskCompileUpdate struct {
@@ -48,7 +49,6 @@ func (u taskCompileUpdate) Update(db *gorm.DB) error {
 		u.compileMessage = "<empty>"
 	}
 	fmt.Printf("RECEIVED UPDATE COMPILE FOR TASK %d (is fatal: %t): %s\n", u.id, u.isFatal, u.compileMessage)
-	db.Model(&models.Task{}).Where("id = ?", u.id).Update("compile_error", u.isFatal)
-	db.Model(&models.Task{}).Where("id = ?", u.id).Update("compile_message", u.compileMessage)
-	return nil
+	return db.Model(&models.Task{}).Where("id = ?", u.id).
+		Update(map[string]interface{}{"compile_error": u.isFatal, "compile_message": u.compileMessage}).Error
 }

@@ -3,12 +3,22 @@ package box
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	"strconv"
 	"strings"
+)
+
+const (
+	releasePrefix = "https://github.com/KiloProjects/isolate/releases/download/v2.0/"
+	configURL     = releasePrefix + "default.cf"
+	configPath    = "/usr/local/etc/isolate"
+	isolateURL    = releasePrefix + "isolate"
+	isolatePath   = "/data/isolate"
 )
 
 // Directory represents a directory rule
@@ -177,7 +187,7 @@ func (b *Box) Cleanup() error {
 		params = append(params, "--cg")
 	}
 	params = append(params, "--box-id="+strconv.Itoa(b.Config.ID), "--cleanup")
-	return exec.Command("isolate", params...).Run()
+	return exec.Command(isolatePath, params...).Run()
 }
 
 // ExecCommand runs a command
@@ -188,7 +198,7 @@ func (b *Box) ExecCommand(command ...string) (string, string, error) {
 // ExecCombinedOutput runs a command and returns the combined output
 func (b *Box) ExecCombinedOutput(command ...string) ([]byte, error) {
 	params := append(b.Config.BuildRunFlags(), command...)
-	cmd := exec.Command("isolate", params...)
+	cmd := exec.Command(isolatePath, params...)
 	if b.Debug {
 		fmt.Println("DEBUG:", cmd.String())
 	}
@@ -199,7 +209,7 @@ func (b *Box) ExecCombinedOutput(command ...string) ([]byte, error) {
 // Returns the stdout, stderr and error (if anything bad happened)
 func (b *Box) ExecWithStdin(stdin string, command ...string) (string, string, error) {
 	params := append(b.Config.BuildRunFlags(), command...)
-	cmd := exec.Command("isolate", params...)
+	cmd := exec.Command(isolatePath, params...)
 	if stdin != "" {
 		cmd.Stdin = strings.NewReader(stdin)
 	}
@@ -218,10 +228,24 @@ func (b *Box) ExecWithStdin(stdin string, command ...string) (string, string, er
 
 // NewBox returns a new box instance from the specified ID
 func NewBox(config Config) (*Box, error) {
-	ret, err := exec.Command("isolate", "--cg", fmt.Sprintf("--box-id=%d", config.ID), "--init").CombinedOutput()
+	var needsSetup bool
 
+	if _, err := os.Stat(isolatePath); os.IsNotExist(err) {
+		needsSetup = true
+	}
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		needsSetup = true
+	}
+	// if exist != 0b11, then we need to setup isolate
+	if needsSetup {
+		if err := setupIsolate(); err != nil {
+			panic("Can't setup isolate: " + err.Error())
+		}
+	}
+
+	ret, err := exec.Command(isolatePath, "--cg", fmt.Sprintf("--box-id=%d", config.ID), "--init").CombinedOutput()
 	if strings.HasPrefix(string(ret), "Box already exists") {
-		exec.Command("isolate", "--cg", fmt.Sprintf("--box-id=%d", config.ID), "--cleanup").Run()
+		exec.Command(isolatePath, "--cg", fmt.Sprintf("--box-id=%d", config.ID), "--cleanup").Run()
 		return NewBox(config)
 	}
 
@@ -230,4 +254,33 @@ func NewBox(config Config) (*Box, error) {
 	}
 
 	return &Box{path: strings.TrimSpace(string(ret)), Config: config}, nil
+}
+
+func downloadFile(url, path string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(file, resp.Body); err != nil {
+		return err
+	}
+	return nil
+}
+
+func setupIsolate() error {
+	// download isolate
+	if err := downloadFile(isolateURL, isolatePath); err != nil {
+		return err
+	}
+
+	// download the config file
+	if err := downloadFile(configURL, configPath); err != nil {
+		return err
+	}
+
+	return nil
 }

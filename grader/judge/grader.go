@@ -41,6 +41,7 @@ func (g *Grader) Start() {
 	for _, mgr := range g.Managers {
 		mgr.Start(g.ctx)
 	}
+
 	// DB Poller (pushes data to g.MasterTasks)
 	go func() {
 		// We don't want to use max CPU, so we poll every few seconds
@@ -50,12 +51,15 @@ func (g *Grader) Start() {
 			case <-ticker.C:
 				// poll db
 				var tasks []models.Task
-				g.db.Set("gorm:auto_preload", true).
-					Where("status = ?", models.StatusWaiting).
+				g.db.Where("status = ?", models.StatusWaiting).
+					Preload("Problem").Preload("Tests").
 					Find(&tasks)
 
+				if len(tasks) > 0 {
+					fmt.Printf("Found %d tasks\n", len(tasks))
+				}
+
 				// announce update
-				fmt.Printf("Found %d waiting tasks\n", len(tasks))
 				for _, task := range tasks {
 					g.MasterTasks <- task
 				}

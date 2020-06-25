@@ -1,4 +1,4 @@
-package api
+package server
 
 import (
 	"context"
@@ -18,7 +18,7 @@ func (s *API) RegisterProblemRoutes() chi.Router {
 	r.With(s.MustBeAuthed).Post("/create", s.InitProblem)
 	r.With(s.MustBeAuthed).Route("/update/{id}", func(r chi.Router) {
 		// TODO: Make sure it is the author or admin who does the change
-		r = r.With(s.ValidateProblemID)
+		r.Use(s.ValidateProblemID)
 		r.Post("/title", func(w http.ResponseWriter, r *http.Request) {
 			val := r.FormValue("title")
 			s.db.Model(&models.Problem{}).Where("id = ?", s.getContextValue(r, "pbID")).UpdateColumn("name", val)
@@ -31,17 +31,16 @@ func (s *API) RegisterProblemRoutes() chi.Router {
 				return
 			}
 			var test models.Test
-			test.ProblemID = s.getContextValue(r, "pbID").(uint)
+			test.ProblemID = s.pbIDFromReq(r)
 			test.Score = score
 			s.db.Save(&test)
-			fmt.Println(test.ID)
 			s.manager.SaveTest(
-				s.getContextValue(r, "pbID").(uint),
+				s.pbIDFromReq(r),
 				test.ID,
 				[]byte(r.FormValue("input")),
 				[]byte(r.FormValue("output")),
 			)
-			s.ReturnData(w, "success", "Test created successfully")
+			s.ReturnData(w, "success", test.ID)
 		})
 		r.Post("/description", func(w http.ResponseWriter, r *http.Request) {
 			val := r.FormValue("description")
@@ -49,6 +48,13 @@ func (s *API) RegisterProblemRoutes() chi.Router {
 		})
 		r.Post("/updateTest", func(w http.ResponseWriter, r *http.Request) {
 			// TODO
+		})
+		r.Post("/removeTests", func(w http.ResponseWriter, r *http.Request) {
+			var problem models.Problem
+			s.db.Preload("Tests").First(&problem, s.pbIDFromReq(r))
+			if err := s.db.Unscoped().Delete(&problem.Tests).Error; err != nil {
+				s.ErrorData(w, err.Error(), http.StatusInternalServerError)
+			}
 		})
 	})
 	return r
@@ -61,23 +67,28 @@ func (s *API) InitProblem(w http.ResponseWriter, r *http.Request) {
 		s.ErrorData(w, "Title not provided", http.StatusBadRequest)
 		return
 	}
-	var tmp models.Problem
-	s.db.First(&tmp, "lower(name) = lower(?)", title)
-	if tmp.ID != 0 {
+	var cnt int
+	s.db.Model(&models.Problem{}).Where("lower(name) = lower(?)", title).Count(&cnt)
+	if cnt > 0 {
 		s.ErrorData(w, "Title already exists in DB", http.StatusBadRequest)
 		return
 	}
-	fmt.Printf("%v\n", r.Context().Value(models.KNContextType("user")).(models.User))
-	s.db.Create(&models.Problem{Name: title, User: r.Context().Value(models.KNContextType("user")).(models.User)})
-	s.db.First(&tmp, "lower(name) = lower(?)", title)
-	s.ReturnData(w, "success", tmp.ID)
+	var problem models.Problem
+	problem.Name = title
+	problem.User = s.UserFromContext(r)
+	problem.UserID = s.UserFromContext(r).ID
+	fmt.Println("FUCKING EMAIL:", s.UserFromContext(r).Email)
+	s.db.Create(&problem)
+	s.ReturnData(w, "success", problem.ID)
 }
 
 // GetAllProblems returns all the problems from the DB
 // TODO: Pagination
 func (s *API) GetAllProblems(w http.ResponseWriter, r *http.Request) {
 	var problems []models.Problem
-	s.db.Preload("Tests").Preload("Author").Find(&problems)
+	fmt.Println("start")
+	s.db.Preload("Tests").Find(&problems)
+	fmt.Println("end")
 	s.ReturnData(w, "success", problems)
 }
 
@@ -89,7 +100,7 @@ func (s *API) GetProblemByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Fprintln(w, "Invalid ID")
 	}
-	s.db.Where("id = ?", id).Preload("Tests").Preload("Author").First(&problem)
+	s.db.Where("id = ?", id).Set("gorm:auto_preload", true).First(&problem)
 	s.ReturnData(w, "success", problem)
 }
 
@@ -105,4 +116,8 @@ func (s *API) ValidateProblemID(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 
+}
+
+func (s API) pbIDFromReq(r *http.Request) uint {
+	return s.getContextValue(r, "pbID").(uint)
 }

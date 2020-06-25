@@ -1,15 +1,17 @@
 version: "3"
 services:
     kilonova:
-        build: server
+        build: .
         ports:
             - "8080:8080"
         volumes:
             - ./data:/data:Z
-            - ./server/:/app:Z
+            - ./:/app:Z
+            - /sys/fs/cgroup:/sys/fs/cgroup
         restart: always
         depends_on:
             - db
+        privileged: true
     db:
         image: postgres:12.2
         volumes:

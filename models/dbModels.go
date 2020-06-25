@@ -16,6 +16,7 @@ type KNContextType string
 // Config is the main information for the platform
 type Config struct {
 	SecretKey string `json:"secretKey"`
+	Debug     bool   `json:"debugMode"`
 }
 
 // Session represents the data storred in a session cookie
@@ -52,7 +53,8 @@ type Problem struct {
 	User         User   `json:"author"`
 	UserID       uint   `json:"authorID"`
 	Limits       Limits `json:"limits"`
-	SourceSize   int    `json:"sourceSize"`
+	LimitsID     uint   `json:"limitsID"`
+	SourceSize   int64  `json:"sourceSize"`
 	ConsoleInput bool   `json:"consoleInput"`
 }
 

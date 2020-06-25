@@ -1,4 +1,4 @@
-package api
+package server
 
 import (
 	"context"
@@ -39,8 +39,13 @@ func (s *API) MustBeAuthed(next http.Handler) http.Handler {
 		}
 		var user models.User
 		session := s.GetSession(r)
-		s.db.First(&user, "id = ?", session.UserID)
+		s.db.First(&user, session.UserID)
 		ctx = context.WithValue(ctx, models.KNContextType("user"), user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// UserFromContext returns the user from API.MustBeAuther
+func (s *API) UserFromContext(r *http.Request) models.User {
+	return r.Context().Value(models.KNContextType("user")).(models.User)
 }

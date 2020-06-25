@@ -1,9 +1,9 @@
-/server/kilonova
 /sqldata
 node_modules
 .vscode
 # .editorconfig
-/knTests/*
 /config.json
 /data
-kilonova
+Kilonova
+# simulation program
+sim.py

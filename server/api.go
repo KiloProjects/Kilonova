@@ -1,10 +1,12 @@
-package api
+package server
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -28,13 +30,19 @@ type API struct {
 	config  *models.Config
 	session *securecookie.SecureCookie
 	manager *datamanager.Manager
+	logger  *log.Logger
 }
 
 // NewAPI declares a new API instance
 func NewAPI(ctx context.Context, db *gorm.DB, config *models.Config, manager *datamanager.Manager) *API {
 	session := securecookie.New([]byte(config.SecretKey), nil)
 	session = session.SetSerializer(securecookie.JSONEncoder{})
-	return &API{ctx, db, config, session, manager}
+
+	var logger *log.Logger
+	if config.Debug {
+		logger = log.New(os.Stdout, "[API]", log.LstdFlags)
+	}
+	return &API{ctx, db, config, session, manager, logger}
 }
 
 // GetRouter is the magic behind the API
@@ -61,17 +69,26 @@ func (s *API) ReturnData(w http.ResponseWriter, status string, returnData interf
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(RetData{
+		err = json.NewEncoder(w).Encode(RetData{
 			Status: "error",
 			Data:   err.Error(),
 		})
+		if err != nil {
+			s.errlog("Couldn't send return data: %v", err)
+		}
 	}
 }
 
-// ErrorData is like ReturnData but sets the corresponding error code in the header
+// StatusData calls API.ReturnData but also sets a status code
+func (s *API) StatusData(w http.ResponseWriter, status string, returnData interface{}, statusCode int) {
+	w.WriteHeader(statusCode)
+	s.ReturnData(w, status, returnData)
+}
+
+// ErrorData calls API.ReturnData but sets the corresponding error code in the header
+// NOTE: this is shorthand for API.StatusData(w, "error", returnData, errCode)
 func (s *API) ErrorData(w http.ResponseWriter, returnData interface{}, errCode int) {
-	w.WriteHeader(errCode)
-	s.ReturnData(w, "error", returnData)
+	s.StatusData(w, "error", returnData, errCode)
 }
 
 // GetAuthToken returns the authentication token from a request
@@ -132,4 +149,12 @@ func (s *API) RemoveSessionCookie(w http.ResponseWriter) {
 
 func (s *API) getContextValue(r *http.Request, name string) interface{} {
 	return r.Context().Value(models.KNContextType(name))
+}
+
+func (s *API) log(format string, data ...interface{}) {
+	s.logger.Printf(format, data...)
+}
+
+func (s *API) errlog(format string, data ...interface{}) {
+	s.logger.Printf("[ERROR] "+format, data...)
 }

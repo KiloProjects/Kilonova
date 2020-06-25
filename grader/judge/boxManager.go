@@ -134,6 +134,9 @@ func (b *BoxManager) Start(ctx context.Context) {
 
 				b.UpdateChan <- taskStatusUpdate{id: task.ID, status: models.StatusWorking}
 
+				// TODO: remove this
+				task.Problem.TestName = "TESTARINO"
+				task.Problem.ConsoleInput = true
 				// Compile once for the compile output
 				compileOut, err := b.CompileFile(task.SourceCode, models.Languages[task.Language])
 				compileOut = strings.TrimSpace(compileOut)
@@ -257,6 +260,7 @@ func (b *BoxManager) Start(ctx context.Context) {
 					}
 
 				}
+				fmt.Printf("SCORE FOR TASK %d: %d", task.ID, task.Score)
 				b.UpdateChan <- taskScoreUpdate{id: task.ID, score: score}
 				b.UpdateChan <- taskStatusUpdate{id: task.ID, status: models.StatusDone}
 				b.Reset()

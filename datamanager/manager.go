@@ -25,11 +25,11 @@ type Session struct {
 func (m *Manager) GetTest(pbID uint, testID uint) (string, string, error) {
 	problem := strconv.FormatUint(uint64(pbID), 10)
 	test := strconv.FormatUint(uint64(testID), 10)
-	input, err := ioutil.ReadFile(path.Join(m.RootPath, problem, "input", test+".txt"))
+	input, err := ioutil.ReadFile(path.Join(m.RootPath, "problems", problem, "input", test+".txt"))
 	if err != nil {
 		return "", "", err
 	}
-	output, err := ioutil.ReadFile(path.Join(m.RootPath, problem, "output", test+".txt"))
+	output, err := ioutil.ReadFile(path.Join(m.RootPath, "problems", problem, "output", test+".txt"))
 	if err != nil {
 		return "", "", err
 	}
@@ -40,19 +40,19 @@ func (m *Manager) GetTest(pbID uint, testID uint) (string, string, error) {
 func (m *Manager) SaveTest(pbID uint, testID uint, input []byte, output []byte) error {
 	problem := strconv.FormatUint(uint64(pbID), 10)
 	test := strconv.FormatUint(uint64(testID), 10)
-	if err := os.MkdirAll(path.Join(m.RootPath, problem, "input"), 0777); err != nil {
+	if err := os.MkdirAll(path.Join(m.RootPath, "problems", problem, "input"), 0777); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(path.Join(m.RootPath, problem, "output"), 0777); err != nil {
+	if err := os.MkdirAll(path.Join(m.RootPath, "problems", problem, "output"), 0777); err != nil {
 		return err
 	}
 	if err := ioutil.WriteFile(
-		path.Join(m.RootPath, problem, "input", test+".txt"),
+		path.Join(m.RootPath, "problems", problem, "input", test+".txt"),
 		input, 0777); err != nil {
 		return err
 	}
 	if err := ioutil.WriteFile(
-		path.Join(m.RootPath, problem, "output", test+".txt"),
+		path.Join(m.RootPath, "problems", problem, "output", test+".txt"),
 		output, 0777); err != nil {
 		return err
 	}
@@ -61,12 +61,12 @@ func (m *Manager) SaveTest(pbID uint, testID uint, input []byte, output []byte) 
 
 // GetAttachment returns an attachment from disk
 func (m *Manager) GetAttachment(dir string, ID int, name string) ([]byte, error) {
-	return ioutil.ReadFile(path.Join(m.RootPath, dir, strconv.Itoa(ID), "attachment", name))
+	return ioutil.ReadFile(path.Join(m.RootPath, "attachments", dir, strconv.Itoa(ID), name))
 }
 
 // SaveAttachment saves an attachment (ex: image) of something (specified with dir, right now the only thing you are should do is "problem") to disk
 func (m *Manager) SaveAttachment(dir string, ID int, data []byte, name string) error {
-	return ioutil.WriteFile(path.Join(m.RootPath, dir, strconv.Itoa(ID), "attachment", name), data, 0777)
+	return ioutil.WriteFile(path.Join(m.RootPath, "attachments", dir, strconv.Itoa(ID), name), data, 0777)
 }
 
 // NewManager returns a new manager instance

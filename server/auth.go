@@ -1,4 +1,4 @@
-package api
+package server
 
 import (
 	"fmt"
@@ -31,7 +31,7 @@ func (s *API) Signup(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 
 	if email == "" || username == "" || password == "" {
-		http.Error(w, "You must specify an email address, username and password", http.StatusBadRequest)
+		s.ErrorData(w, "You must specify an email address, username and password", http.StatusBadRequest)
 		return
 	}
 	email = strings.ToLower(email)
@@ -39,7 +39,7 @@ func (s *API) Signup(w http.ResponseWriter, r *http.Request) {
 
 	s.db.Find(&foundUser, "email = ? OR lower(name) = lower(?)", email, username)
 	if foundUser.ID > 0 {
-		http.Error(w, "User matching email or username already exists", http.StatusBadRequest)
+		s.ErrorData(w, "User matching email or username already exists", http.StatusBadRequest)
 		return
 	}
 
@@ -48,7 +48,7 @@ func (s *API) Signup(w http.ResponseWriter, r *http.Request) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		fmt.Println(err)
-		http.Error(w, "Could not hash password", http.StatusInternalServerError)
+		s.ErrorData(w, "Could not hash password", http.StatusInternalServerError)
 		return
 	}
 	user.Password = string(hashed)
@@ -57,7 +57,7 @@ func (s *API) Signup(w http.ResponseWriter, r *http.Request) {
 	encoded, err := s.SetSession(w, models.Session{IsAdmin: user.IsAdmin, UserID: user.ID})
 	if err != nil {
 		fmt.Println(err)
-		http.Error(w, http.StatusText(500), 500)
+		s.ErrorData(w, http.StatusText(500), 500)
 		return
 	}
 	s.ReturnData(w, "success", encoded)
@@ -69,31 +69,29 @@ func (s *API) Login(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 
-	fmt.Println(username, password)
-
 	if password == "" || username == "" {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		s.ErrorData(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
 	var user models.User
 	s.db.First(&user, "lower(name) = lower(?)", username)
 	if user.ID == 0 {
-		http.Error(w, "user not found", http.StatusNotFound)
+		s.ErrorData(w, "user not found", http.StatusNotFound)
 		return
 	}
-	spew.Dump(user)
+
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
 		fmt.Println(err)
-		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		s.ErrorData(w, "Invalid username or password", http.StatusUnauthorized)
 		return
 	}
 
 	encoded, err := s.SetSession(w, models.Session{IsAdmin: user.IsAdmin, UserID: user.ID})
 	if err != nil {
 		fmt.Println(err)
-		http.Error(w, http.StatusText(500), 500)
+		s.ErrorData(w, http.StatusText(500), 500)
 		return
 	}
 	s.ReturnData(w, "success", encoded)
