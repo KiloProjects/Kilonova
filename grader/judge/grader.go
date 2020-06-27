@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/KiloProjects/Kilonova/common"
 	"github.com/KiloProjects/Kilonova/datamanager"
-	"github.com/KiloProjects/Kilonova/models"
 	"github.com/jinzhu/gorm"
 )
 
@@ -14,8 +14,8 @@ import (
 // Grader
 type Grader struct {
 	// These are the channels that are propagated to the box managers
-	MasterTasks   chan models.Task
-	MasterUpdater chan models.Updater
+	MasterTasks   chan common.Task
+	MasterUpdater chan common.Updater
 	DataManager   *datamanager.Manager
 	Managers      []*BoxManager
 
@@ -25,8 +25,8 @@ type Grader struct {
 
 // NewGrader returns a new Grader instance (note that, as of the current architectural design, there should be only one grader)
 func NewGrader(ctx context.Context, db *gorm.DB, dataManager *datamanager.Manager) *Grader {
-	taskChan := make(chan models.Task, 5)
-	updateChan := make(chan models.Updater, 20)
+	taskChan := make(chan common.Task, 5)
+	updateChan := make(chan common.Updater, 20)
 	return &Grader{
 		MasterTasks:   taskChan,
 		MasterUpdater: updateChan,
@@ -50,8 +50,8 @@ func (g *Grader) Start() {
 			select {
 			case <-ticker.C:
 				// poll db
-				var tasks []models.Task
-				g.db.Where("status = ?", models.StatusWaiting).
+				var tasks []common.Task
+				g.db.Where("status = ?", common.StatusWaiting).
 					Preload("Problem").Preload("Tests").
 					Find(&tasks)
 

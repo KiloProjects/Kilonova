@@ -8,17 +8,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/KiloProjects/Kilonova/common"
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/grader/box"
-	"github.com/KiloProjects/Kilonova/models"
 )
 
 // BoxManager manages a box with eval-based tasks
 type BoxManager struct {
 	ID         int
 	Box        *box.Box
-	TaskChan   chan models.Task
-	UpdateChan chan models.Updater
+	TaskChan   chan common.Task
+	UpdateChan chan common.Updater
 
 	DataManager *datamanager.Manager
 
@@ -39,7 +39,7 @@ func (b *BoxManager) Cleanup() error {
 }
 
 // CompileFile compiles a file that has the corresponding language
-func (b *BoxManager) CompileFile(SourceCode string, language models.Language) (string, error) {
+func (b *BoxManager) CompileFile(SourceCode string, language common.Language) (string, error) {
 	if err := b.Box.WriteFile(language.SourceName, SourceCode); err != nil {
 		return "", err
 	}
@@ -79,7 +79,7 @@ func (b *BoxManager) CompileFile(SourceCode string, language models.Language) (s
 
 // RunTask runs a program, following the language conventions
 // filenames contains the names for input and output, used if consoleInput is true
-func (b *BoxManager) RunTask(language models.Language, constraints models.Limits, metaFile string, problemFile string) error {
+func (b *BoxManager) RunTask(language common.Language, constraints common.Limits, metaFile string, problemFile string) error {
 	if b.Box.Config.EnvToSet == nil {
 		b.Box.Config.EnvToSet = make(map[string]string)
 	}
@@ -132,17 +132,17 @@ func (b *BoxManager) Start(ctx context.Context) {
 
 				// TODO: This is not that barebones but needs more testing, HANDLE IMPERFECT CASES
 
-				b.UpdateChan <- taskStatusUpdate{id: task.ID, status: models.StatusWorking}
+				b.UpdateChan <- taskStatusUpdate{id: task.ID, status: common.StatusWorking}
 
 				// TODO: remove this
 				task.Problem.TestName = "TESTARINO"
 				task.Problem.ConsoleInput = true
 				// Compile once for the compile output
-				compileOut, err := b.CompileFile(task.SourceCode, models.Languages[task.Language])
+				compileOut, err := b.CompileFile(task.SourceCode, common.Languages[task.Language])
 				compileOut = strings.TrimSpace(compileOut)
 				if err != nil {
 					b.UpdateChan <- taskCompileUpdate{id: task.ID, compileMessage: compileOut, isFatal: true}
-					b.UpdateChan <- taskStatusUpdate{id: task.ID, status: models.StatusDone}
+					b.UpdateChan <- taskStatusUpdate{id: task.ID, status: common.StatusDone}
 
 					if err := b.Reset(); err != nil {
 						fmt.Println("DAFUQ, CAN'T RESET: ", err)
@@ -181,7 +181,7 @@ func (b *BoxManager) Start(ctx context.Context) {
 					}
 
 					// FIXME(alexv): This is very very inefficient for languages like C++, this must be fixed before the beta
-					if _, err := b.CompileFile(task.SourceCode, models.Languages[task.Language]); err != nil {
+					if _, err := b.CompileFile(task.SourceCode, common.Languages[task.Language]); err != nil {
 						// This should never happen unless something actually got messed up
 						fmt.Println("(DAFUQ) Error compiling file **IN TEST**:", err)
 						b.UpdateChan <- testOutputUpdate{
@@ -199,7 +199,7 @@ func (b *BoxManager) Start(ctx context.Context) {
 					if task.Problem.ConsoleInput {
 						testName = task.Problem.TestName
 					}
-					if err := b.RunTask(models.Languages[task.Language], task.Problem.Limits, strconv.Itoa(int(task.ID))+".txt", testName); err != nil {
+					if err := b.RunTask(common.Languages[task.Language], task.Problem.Limits, strconv.Itoa(int(task.ID))+".txt", testName); err != nil {
 						fmt.Println("Error running task:", err)
 						b.UpdateChan <- testOutputUpdate{
 							id:     test.ID,
@@ -262,7 +262,7 @@ func (b *BoxManager) Start(ctx context.Context) {
 				}
 				fmt.Printf("SCORE FOR TASK %d: %d", task.ID, task.Score)
 				b.UpdateChan <- taskScoreUpdate{id: task.ID, score: score}
-				b.UpdateChan <- taskStatusUpdate{id: task.ID, status: models.StatusDone}
+				b.UpdateChan <- taskStatusUpdate{id: task.ID, status: common.StatusDone}
 				b.Reset()
 				fmt.Println()
 				fmt.Println()
@@ -288,17 +288,17 @@ func (b *BoxManager) Reset() (err error) {
 }
 
 // NewBoxManager creates a new box manager
-func NewBoxManager(id int, dataManager *datamanager.Manager, TaskChan chan models.Task, UpdateChan chan models.Updater) (*BoxManager, error) {
+func NewBoxManager(id int, dataManager *datamanager.Manager, TaskChan chan common.Task, UpdateChan chan common.Updater) (*BoxManager, error) {
 	b, err := box.NewBox(box.Config{ID: id})
 	if err != nil {
 		return nil, err
 	}
 	b.Config.EnvToSet = make(map[string]string)
 	if TaskChan == nil {
-		TaskChan = make(chan models.Task, 4)
+		TaskChan = make(chan common.Task, 4)
 	}
 	if UpdateChan == nil {
-		UpdateChan = make(chan models.Updater, 10)
+		UpdateChan = make(chan common.Updater, 10)
 	}
 	bm := &BoxManager{
 		ID:          id,

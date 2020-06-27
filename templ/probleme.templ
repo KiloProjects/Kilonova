@@ -1,0 +1,16 @@
+{{ template "header.templ" . }}
+<div class="container">
+    <ul>
+    	{{range.Problems}}
+    	<li>
+    		<a href="/probleme/{{.ID}}">#{{.ID}}: {{.Name}}</a>
+    	</li>
+    
+    	{{else}}
+    
+    	<li>No problems found</li>
+    
+    	{{end}}
+    </ul>
+</div>
+{{ template "footer.templ" . }}

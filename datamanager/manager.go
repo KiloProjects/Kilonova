@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/KiloProjects/Kilonova/models"
+	"github.com/KiloProjects/Kilonova/common"
 )
 
 // Manager helps open the files in the data directory, this is supposed to be data that should not be stored in the database because it's a binary blob
@@ -17,7 +17,7 @@ type Manager struct {
 
 // Session holds the session data of a specified user
 type Session struct {
-	User    models.User
+	User    common.User
 	Expires time.Time
 }
 

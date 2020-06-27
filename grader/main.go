@@ -7,15 +7,15 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/KiloProjects/Kilonova/common"
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/grader/judge"
-	"github.com/KiloProjects/Kilonova/models"
 	"github.com/go-chi/chi"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
-var testLimit = models.Limits{MemoryLimit: 32 * 1024, StackLimit: 16 * 1024, TimeLimit: 1.5}
+var testLimit = common.Limits{MemoryLimit: 32 * 1024, StackLimit: 16 * 1024, TimeLimit: 1.5}
 
 func main() {
 	dataManager := datamanager.NewManager("/home/alexv/Projects/kilonova/data/")
@@ -28,20 +28,20 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	db.AutoMigrate(&models.EvalTest{})
-	db.AutoMigrate(&models.Test{})
-	db.AutoMigrate(&models.Problem{})
-	db.AutoMigrate(&models.Task{})
+	db.AutoMigrate(&common.EvalTest{})
+	db.AutoMigrate(&common.Test{})
+	db.AutoMigrate(&common.Problem{})
+	db.AutoMigrate(&common.Task{})
 
-	pb1 := models.Problem{
+	pb1 := common.Problem{
 		Limits:       testLimit,
 		ConsoleInput: true,
 		TestName:     "test",
 	}
 	db.Create(&pb1)
 
-	test1 := models.Test{Score: 20, ProblemID: pb1.ID}
-	test2 := models.Test{Score: 20, ProblemID: pb1.ID}
+	test1 := common.Test{Score: 20, ProblemID: pb1.ID}
+	test2 := common.Test{Score: 20, ProblemID: pb1.ID}
 	db.Create(&test1)
 	db.Create(&test2)
 
@@ -53,14 +53,14 @@ func main() {
 	gr.Start()
 	r := chi.NewRouter()
 	r.Get("/getTasks", func(w http.ResponseWriter, r *http.Request) {
-		var tasks []models.Task
+		var tasks []common.Task
 		db.Find(&tasks)
 		json.NewEncoder(w).Encode(tasks)
 	})
 	r.Post("/pushTask", func(w http.ResponseWriter, r *http.Request) {
 		lang := r.FormValue("language")
-		evtest01 := models.EvalTest{Test: test1}
-		evtest02 := models.EvalTest{Test: test2}
+		evtest01 := common.EvalTest{Test: test1}
+		evtest02 := common.EvalTest{Test: test2}
 		code := r.FormValue("sourcecode")
 		if code == "" {
 			file, _, err := r.FormFile("file")
@@ -80,10 +80,10 @@ func main() {
 
 		db.Create(&evtest01)
 		db.Create(&evtest02)
-		task := models.Task{
+		task := common.Task{
 			Language:   lang,
 			Problem:    pb1,
-			Tests:      []models.EvalTest{evtest01, evtest02},
+			Tests:      []common.EvalTest{evtest01, evtest02},
 			SourceCode: code,
 		}
 		db.Create(&task)

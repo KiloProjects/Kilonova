@@ -1,0 +1,18 @@
+{{template "header.templ" . }}
+
+<div class="container">
+	<h1>KiloNova</h1>
+
+	<p>{{ . }}</p>
+
+	{{if not .LoggedIn}}
+	<p><a href="/login">Log in</a></p>
+	<p><a href="/signup">Sign up</a></p>
+	{{else}}
+	<p><a href="/logout">Log out</a></p>
+	<pre>{{- dumpStruct .User -}}</pre>
+	{{ end }}
+	<p><a href="/probleme">Listă probleme</a></p>
+	<br />
+</div>
+{{template "footer.templ" . }}

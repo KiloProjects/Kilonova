@@ -261,7 +261,7 @@ func downloadFile(url, path string) error {
 	if err != nil {
 		return err
 	}
-	file, err := os.Create(path)
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 04777)
 	if err != nil {
 		return err
 	}

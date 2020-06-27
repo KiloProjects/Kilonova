@@ -11,10 +11,11 @@ import (
 	"os/signal"
 	"time"
 
+	common "github.com/KiloProjects/Kilonova/common"
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/grader/judge"
-	"github.com/KiloProjects/Kilonova/models"
 	"github.com/KiloProjects/Kilonova/server"
+	"github.com/KiloProjects/Kilonova/web"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
@@ -25,7 +26,7 @@ import (
 
 var (
 	db      *gorm.DB
-	config  *models.Config
+	config  *common.Config
 	manager *datamanager.Manager
 )
 
@@ -46,13 +47,13 @@ func main() {
 	}
 	fmt.Println("Connected to DB")
 
-	db.AutoMigrate(&models.MOTD{})
-	db.AutoMigrate(&models.EvalTest{})
-	db.AutoMigrate(&models.Problem{})
-	db.AutoMigrate(&models.Task{})
-	db.AutoMigrate(&models.Test{})
-	db.AutoMigrate(&models.User{})
-	db.AutoMigrate(&models.Limits{})
+	db.AutoMigrate(&common.MOTD{})
+	db.AutoMigrate(&common.EvalTest{})
+	db.AutoMigrate(&common.Problem{})
+	db.AutoMigrate(&common.Task{})
+	db.AutoMigrate(&common.Test{})
+	db.AutoMigrate(&common.User{})
+	db.AutoMigrate(&common.Limits{})
 
 	manager = datamanager.NewManager("/data")
 
@@ -85,6 +86,7 @@ func main() {
 	}
 
 	r.Mount("/api", API.GetRouter())
+	r.Mount("/", web.GetRouter())
 	grader.Start()
 
 	// for graceful setup and shutdown
@@ -107,12 +109,12 @@ func main() {
 	db.Close()
 }
 
-func readConfig() (*models.Config, error) {
+func readConfig() (*common.Config, error) {
 	data, err := ioutil.ReadFile("/app/config.json")
 	if err != nil {
 		return nil, err
 	}
-	var config models.Config
+	var config common.Config
 	json.Unmarshal(data, &config)
 	return &config, nil
 }

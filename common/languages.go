@@ -1,4 +1,4 @@
-package models
+package common
 
 import "github.com/KiloProjects/Kilonova/grader/box"
 

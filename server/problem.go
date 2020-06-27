@@ -6,7 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/KiloProjects/Kilonova/models"
+	"github.com/KiloProjects/Kilonova/common"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi"
 )
 
@@ -20,8 +21,15 @@ func (s *API) RegisterProblemRoutes() chi.Router {
 		// TODO: Make sure it is the author or admin who does the change
 		r.Use(s.ValidateProblemID)
 		r.Post("/title", func(w http.ResponseWriter, r *http.Request) {
+			fmt.Println("A", r.ParseForm())
 			val := r.FormValue("title")
-			s.db.Model(&models.Problem{}).Where("id = ?", s.getContextValue(r, "pbID")).UpdateColumn("name", val)
+			fmt.Println(val)
+			spew.Dump(r.PostForm, r.Form)
+			s.db.Model(&common.Problem{}).Where("id = ?", s.getContextValue(r, "pbID")).Update("name", val)
+		})
+		r.Post("/setText", func(w http.ResponseWriter, r *http.Request) {
+			val := r.FormValue("text")
+			s.db.Model(&common.Problem{}).Where("id = ?", s.getContextValue(r, "pbID")).Update("text", val)
 		})
 		r.Post("/addTest", func(w http.ResponseWriter, r *http.Request) {
 			// TODO: Change to files, or make both options interchangeable
@@ -30,7 +38,7 @@ func (s *API) RegisterProblemRoutes() chi.Router {
 				s.ErrorData(w, "Score not integer", http.StatusBadRequest)
 				return
 			}
-			var test models.Test
+			var test common.Test
 			test.ProblemID = s.pbIDFromReq(r)
 			test.Score = score
 			s.db.Save(&test)
@@ -44,13 +52,13 @@ func (s *API) RegisterProblemRoutes() chi.Router {
 		})
 		r.Post("/description", func(w http.ResponseWriter, r *http.Request) {
 			val := r.FormValue("description")
-			s.db.Model(&models.Problem{}).Where("id = ?", s.getContextValue(r, "pbID")).UpdateColumn("text", val)
+			s.db.Model(&common.Problem{}).Where("id = ?", s.getContextValue(r, "pbID")).UpdateColumn("text", val)
 		})
 		r.Post("/updateTest", func(w http.ResponseWriter, r *http.Request) {
 			// TODO
 		})
 		r.Post("/removeTests", func(w http.ResponseWriter, r *http.Request) {
-			var problem models.Problem
+			var problem common.Problem
 			s.db.Preload("Tests").First(&problem, s.pbIDFromReq(r))
 			if err := s.db.Unscoped().Delete(&problem.Tests).Error; err != nil {
 				s.ErrorData(w, err.Error(), http.StatusInternalServerError)
@@ -68,16 +76,15 @@ func (s *API) InitProblem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var cnt int
-	s.db.Model(&models.Problem{}).Where("lower(name) = lower(?)", title).Count(&cnt)
+	s.db.Model(&common.Problem{}).Where("lower(name) = lower(?)", title).Count(&cnt)
 	if cnt > 0 {
 		s.ErrorData(w, "Title already exists in DB", http.StatusBadRequest)
 		return
 	}
-	var problem models.Problem
+	var problem common.Problem
 	problem.Name = title
-	problem.User = s.UserFromContext(r)
-	problem.UserID = s.UserFromContext(r).ID
-	fmt.Println("FUCKING EMAIL:", s.UserFromContext(r).Email)
+	problem.User = common.UserFromContext(r)
+	problem.UserID = common.UserFromContext(r).ID
 	s.db.Create(&problem)
 	s.ReturnData(w, "success", problem.ID)
 }
@@ -85,7 +92,7 @@ func (s *API) InitProblem(w http.ResponseWriter, r *http.Request) {
 // GetAllProblems returns all the problems from the DB
 // TODO: Pagination
 func (s *API) GetAllProblems(w http.ResponseWriter, r *http.Request) {
-	var problems []models.Problem
+	var problems []common.Problem
 	fmt.Println("start")
 	s.db.Preload("Tests").Find(&problems)
 	fmt.Println("end")
@@ -94,7 +101,7 @@ func (s *API) GetAllProblems(w http.ResponseWriter, r *http.Request) {
 
 // GetProblemByID returns a problem from the DB specified by ID
 func (s *API) GetProblemByID(w http.ResponseWriter, r *http.Request) {
-	var problem models.Problem
+	var problem common.Problem
 	idstr := r.FormValue("id")
 	id, err := strconv.Atoi(idstr)
 	if err != nil {
@@ -112,10 +119,9 @@ func (s *API) ValidateProblemID(next http.Handler) http.Handler {
 			s.ErrorData(w, "invalid problem ID", http.StatusBadRequest)
 			return
 		}
-		ctx := context.WithValue(r.Context(), models.KNContextType("pbID"), uint(problemID))
+		ctx := context.WithValue(r.Context(), common.PbID, uint(problemID))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
-
 }
 
 func (s API) pbIDFromReq(r *http.Request) uint {

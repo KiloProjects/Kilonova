@@ -1,0 +1,27 @@
+{{ template "header.templ" . }}
+
+<div class="container">
+	<form id="loginForm">
+		<input type="text" id="name" name="username" placeholder="Username..." /><br />
+		<input type="password" id="pwd" name="password" placeholder="Parolă..." /><br />
+		<input type="submit" value="Trimite" /><br />
+	</form>
+
+	<script>
+		$("#loginForm").submit((e) => {
+			e.preventDefault();
+			let username = $("#loginForm").children("#name").val();
+			let password = $("#loginForm").children("#pwd").val();
+
+			$.post("/api/auth/login", { username, password }, (data, status) => {
+				console.log("DATA:", data, "STATUS:", status);
+				window.location.replace("/");
+			}).fail((jq, status, err) => {
+				console.error("JQ:", jq, "STATUS:", status, "ERR:", err);
+			});
+			console.log(username, password);
+		});
+	</script>
+</div>
+
+{{ template "footer.templ" . }}

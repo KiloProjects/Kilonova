@@ -13,8 +13,8 @@ I added `.gitignore`s for `run.sh`, which could host your scripts for compilatio
 -   For closed alpha:
 
     -   Finish grader (95%, only more testing is needed)
-    -   Connect grader to DB
-    -   Write minimal web interface
+    -   Connect grader to DB (Done)
+    -   Write minimal web interface (in progress)
     -   Properly support user submissions
     -   Design a user hierarchy
 

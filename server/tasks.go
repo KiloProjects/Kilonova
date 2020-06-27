@@ -5,8 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/KiloProjects/Kilonova/models"
-	"github.com/davecgh/go-spew/spew"
+	"github.com/KiloProjects/Kilonova/common"
 	"github.com/go-chi/chi"
 )
 
@@ -23,7 +22,7 @@ func (s *API) RegisterTaskRoutes() chi.Router {
 // TODO: Pagination and filtering
 func (s *API) GetTasks(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var tasks []models.Task
+	var tasks []common.Task
 	s.db.Find(&tasks)
 	s.ReturnData(w, "success", tasks)
 }
@@ -32,15 +31,14 @@ func (s *API) GetTasks(w http.ResponseWriter, r *http.Request) {
 // Required values:
 //	- code=[sourcecode] - source code of the task, mutually exclusive with file uploads
 //  - file=[file] - multipart file, mutually exclusive with the code param
-//  - lang=[language] - language key like in models.Languages
+//  - lang=[language] - language key like in common.Languages
 //  - problemID=[problem] - problem ID that the task will be associated with
 // Note that the `code` param is prioritized over file upload
 func (s *API) SubmitTask(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	spew.Dump(r.Form)
 	var code = r.PostFormValue("code")
 	var language = r.PostFormValue("lang")
-	var user = s.UserFromContext(r)
+	var user = common.UserFromContext(r)
 
 	// try to read problem
 	var problemID = r.PostFormValue("problemID")
@@ -49,14 +47,14 @@ func (s *API) SubmitTask(w http.ResponseWriter, r *http.Request) {
 		s.ErrorData(w, "No problem specified", http.StatusBadRequest)
 		return
 	}
-	var problem models.Problem
+	var problem common.Problem
 	if s.db.Preload("Tests").First(&problem, ipbid).RecordNotFound() {
 		s.ErrorData(w, "Problem not found", http.StatusInternalServerError)
 		return
 	}
 
 	// validate language
-	if _, ok := models.Languages[language]; ok == false {
+	if _, ok := common.Languages[language]; ok == false {
 		s.ErrorData(w, "Invalid language", http.StatusBadRequest)
 		return
 	}
@@ -97,9 +95,9 @@ func (s *API) SubmitTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create the evalTests
-	var evalTests = make([]models.EvalTest, 0)
+	var evalTests = make([]common.EvalTest, 0)
 	for _, test := range problem.Tests {
-		evTest := models.EvalTest{
+		evTest := common.EvalTest{
 			UserID: user.ID,
 			Test:   test,
 		}
@@ -108,7 +106,7 @@ func (s *API) SubmitTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// add the task to the DB
-	task := models.Task{
+	task := common.Task{
 		Tests:      evalTests,
 		User:       user,
 		Problem:    problem,

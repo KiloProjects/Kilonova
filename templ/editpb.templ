@@ -1,0 +1,56 @@
+{{template "header.templ" . }}
+<div class="container">
+	<a href="/probleme/{{- .Problem.ID -}}">[view]</a>
+	<h1>Edit title</h1>
+	<form id="titleForm">
+		<p>
+			<input type="text" id="title" name="title" value="{{.Problem.Name}}" placeholder="Titlu..." />
+		</p>
+		<p>
+			<input type="submit" value="Editare" />
+		</p>
+	</form>
+	<script>
+		$("#titleForm").submit((e) => {
+			e.preventDefault();
+			let titlu = $("#titleForm #title").val();
+			console.log(titlu);
+			$.post("/api/problem/update/{{.Problem.ID}}/title", { title: titlu }, (data, status, _) => {
+				console.log(data, status);
+			}).fail((a, b, c) => console.log(a, b, c));
+		});
+	</script>
+
+	<h1>Edit description</h1>
+	<form id="descForm">
+		<p>
+			<textarea id="description" style="display: none;">{{- .Problem.Text -}}</textarea>
+		</p>
+		<p>
+			<input type="submit" value="Editare" />
+		</p>
+	</form>
+	<script>
+		console.log(CodeMirror);
+		var cm = CodeMirror.fromTextArea(document.getElementById("description"), {
+			lineNumbers: true,
+			indentUnit: 4,
+			mode: {
+				name: "gfm",
+				gitHubSpice: false,
+				emoji: false,
+			},
+		});
+		cm.setSize(null, "100%");
+
+		$("#descForm").submit((e) => {
+			e.preventDefault();
+			let desc = cm.getValue();
+			console.log(desc);
+			$.post("/api/problem/update/{{.Problem.ID}}/setText", { text: desc }, (data, status, _) => {
+				console.log(data, status);
+			}).fail((a, b, c) => console.log(a, b, c));
+		});
+	</script>
+</div>
+{{template "footer.templ" . }}

@@ -1,4 +1,4 @@
-package models
+package common
 
 import "github.com/jinzhu/gorm"
 
@@ -9,9 +9,6 @@ const (
 	golang
 	python
 )
-
-// KNContextType is the string type for all context values
-type KNContextType string
 
 // Config is the main information for the platform
 type Config struct {
@@ -34,12 +31,10 @@ type MOTD struct {
 // User represents a user profile
 type User struct {
 	gorm.Model
-	Name           string    `json:"name"`
-	IsAdmin        bool      `json:"isAdmin,omitempty"`
-	Email          string    `json:"email,omitempty"`
-	SolvedProblems []Problem `json:"solvedProblems"`
-	Tasks          []Task    `json:"sentTasks"`
-	Password       string    `json:"-"`
+	Name     string `json:"name"`
+	IsAdmin  bool   `json:"isAdmin,omitempty"`
+	Email    string `json:"email,omitempty"`
+	Password string `json:"-"`
 }
 
 // Problem is the main object for problem

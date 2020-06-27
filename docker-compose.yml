@@ -5,8 +5,8 @@ services:
         ports:
             - "8080:8080"
         volumes:
-            - ./data:/data:Z
-            - ./:/app:Z
+            - ./data:/data:z
+            - .:/app:z
             - /sys/fs/cgroup:/sys/fs/cgroup
         restart: always
         depends_on:
@@ -15,7 +15,7 @@ services:
     db:
         image: postgres:12.2
         volumes:
-            - ./sqldata:/var/lib/postgresql/data:Z
+            - ./sqldata:/var/lib/postgresql/data:z
         environment:
             POSTGRES_USER: kilonova
             POSTGRES_PASSWORD: kn_password

@@ -5,8 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/KiloProjects/Kilonova/models"
-	"github.com/davecgh/go-spew/spew"
+	"github.com/KiloProjects/Kilonova/common"
 	"github.com/go-chi/chi"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -24,7 +23,7 @@ func (s *API) RegisterAuthRoutes() chi.Router {
 
 // Signup creates a new user based on the request data
 func (s *API) Signup(w http.ResponseWriter, r *http.Request) {
-	var user models.User
+	var user common.User
 	r.ParseForm()
 	email := r.FormValue("email")
 	username := r.FormValue("username")
@@ -35,7 +34,7 @@ func (s *API) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	email = strings.ToLower(email)
-	var foundUser models.User
+	var foundUser common.User
 
 	s.db.Find(&foundUser, "email = ? OR lower(name) = lower(?)", email, username)
 	if foundUser.ID > 0 {
@@ -54,7 +53,7 @@ func (s *API) Signup(w http.ResponseWriter, r *http.Request) {
 	user.Password = string(hashed)
 	s.db.Create(&user)
 
-	encoded, err := s.SetSession(w, models.Session{IsAdmin: user.IsAdmin, UserID: user.ID})
+	encoded, err := common.SetSession(w, common.Session{IsAdmin: user.IsAdmin, UserID: user.ID})
 	if err != nil {
 		fmt.Println(err)
 		s.ErrorData(w, http.StatusText(500), 500)
@@ -65,19 +64,22 @@ func (s *API) Signup(w http.ResponseWriter, r *http.Request) {
 
 // Login creates a new Session while checking that the user credentials are correct
 func (s *API) Login(w http.ResponseWriter, r *http.Request) {
-	spew.Dump(r.Form)
 	username := r.FormValue("username")
 	password := r.FormValue("password")
+
+	if s.config.Debug {
+		fmt.Println(username, password)
+	}
 
 	if password == "" || username == "" {
 		s.ErrorData(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	var user models.User
+	var user common.User
 	s.db.First(&user, "lower(name) = lower(?)", username)
 	if user.ID == 0 {
-		s.ErrorData(w, "user not found", http.StatusNotFound)
+		s.ErrorData(w, "user not found", http.StatusBadRequest)
 		return
 	}
 
@@ -88,7 +90,7 @@ func (s *API) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	encoded, err := s.SetSession(w, models.Session{IsAdmin: user.IsAdmin, UserID: user.ID})
+	encoded, err := common.SetSession(w, common.Session{IsAdmin: user.IsAdmin, UserID: user.ID})
 	if err != nil {
 		fmt.Println(err)
 		s.ErrorData(w, http.StatusText(500), 500)
@@ -99,23 +101,5 @@ func (s *API) Login(w http.ResponseWriter, r *http.Request) {
 
 // Logout removes the session cookie
 func (s *API) Logout(w http.ResponseWriter, r *http.Request) {
-	s.RemoveSessionCookie(w)
-}
-
-// IsAuthed reads the session and says if the requester is authenticated
-func (s *API) IsAuthed(r *http.Request) bool {
-	session := s.GetSession(r)
-	if session == nil {
-		return false
-	}
-	return session.UserID != 0
-}
-
-// IsAdmin reads the session and says if the requester is an admin
-func (s *API) IsAdmin(r *http.Request) bool {
-	session := s.GetSession(r)
-	if session == nil {
-		return false
-	}
-	return session.IsAdmin
+	common.RemoveSessionCookie(w)
 }

@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"net/http"
 
-	"github.com/KiloProjects/Kilonova/models"
+	"github.com/KiloProjects/Kilonova/common"
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
 )
@@ -26,7 +26,7 @@ func (s *API) RegisterUserRoutes() chi.Router {
 
 // GetSelfGravatar returns the gravatar of the authenticated user
 func (s *API) GetSelfGravatar(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value(models.KNContextType("user")).(models.User)
+	user := r.Context().Value(common.UserKey).(common.User)
 	size := r.FormValue("s")
 	if size == "" {
 		size = "128"
@@ -71,7 +71,7 @@ func (s *API) GetUserByName(w http.ResponseWriter, r *http.Request) {
 
 // GetSelf returns the authenticated user
 func (s *API) GetSelf(w http.ResponseWriter, r *http.Request) {
-	s.ReturnData(w, "success", s.getContextValue(r, "user"))
+	s.ReturnData(w, "success", common.UserFromContext(r))
 }
 
 func (s *API) getGravatarURLFromEmail(email string) string {
@@ -79,8 +79,8 @@ func (s *API) getGravatarURLFromEmail(email string) string {
 	return "https://www.gravatar.com/avatar/" + hex.EncodeToString(bSum[:])
 }
 
-func (s *API) getUserByName(name string) (*models.User, error) {
-	var user models.User
+func (s *API) getUserByName(name string) (*common.User, error) {
+	var user common.User
 	s.db.First(&user, "lower(name) = lower(?)", name)
 	if user.ID == 0 {
 		return nil, errUserNotFound

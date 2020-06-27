@@ -4,13 +4,13 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/KiloProjects/Kilonova/models"
+	"github.com/KiloProjects/Kilonova/common"
 )
 
 // MustBeVisitor is middleware to make sure the user creating the request is not authenticated
 func (s *API) MustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if s.IsAuthed(r) {
+		if common.IsAuthed(r) {
 			s.ErrorData(w, "You must not be logged in to view this", http.StatusUnauthorized)
 			return
 		}
@@ -20,32 +20,26 @@ func (s *API) MustBeVisitor(next http.Handler) http.Handler {
 
 // MustBeAdmin is middleware to make sure the user creating the request is an admin
 func (s *API) MustBeAdmin(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !s.IsAdmin(r) {
+	return s.MustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !common.IsAdmin(r) {
 			s.ErrorData(w, "You must be an admin to view this", http.StatusUnauthorized)
 			return
 		}
 		next.ServeHTTP(w, r)
-	})
+	}))
 }
 
 // MustBeAuthed is middleware to make sure the user creating the request is authenticated
 func (s *API) MustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		if !s.IsAuthed(r) {
+		if !common.IsAuthed(r) {
 			s.ErrorData(w, "You must be authenticated to view this", http.StatusUnauthorized)
 			return
 		}
-		var user models.User
-		session := s.GetSession(r)
+		var user common.User
+		session := common.GetSession(r)
 		s.db.First(&user, session.UserID)
-		ctx = context.WithValue(ctx, models.KNContextType("user"), user)
+		ctx := context.WithValue(r.Context(), common.UserKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
-}
-
-// UserFromContext returns the user from API.MustBeAuther
-func (s *API) UserFromContext(r *http.Request) models.User {
-	return r.Context().Value(models.KNContextType("user")).(models.User)
 }

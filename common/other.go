@@ -1,4 +1,5 @@
-package models
+// Package common contains stuff that can be used by all 4 components of the project (grader, API server, data manager and web UI)
+package common
 
 import "github.com/jinzhu/gorm"
 

@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"net/http"
 
-	"github.com/KiloProjects/Kilonova/models"
+	"github.com/KiloProjects/Kilonova/common"
 	"github.com/go-chi/chi"
 )
 
@@ -19,14 +19,14 @@ func (s *API) RegisterMOTDRoutes() chi.Router {
 // GetAllMOTDs returns all MOTDs in the database
 // TODO: Pagination
 func (s *API) GetAllMOTDs(w http.ResponseWriter, r *http.Request) {
-	var motds []models.MOTD
+	var motds []common.MOTD
 	s.db.Find(&motds)
 	s.ReturnData(w, "success", motds)
 }
 
 // GetMOTD returns a random MOTD from the database
 func (s *API) GetMOTD(w http.ResponseWriter, r *http.Request) {
-	var motds []models.MOTD
+	var motds []common.MOTD
 	s.db.Find(&motds)
 	motd := motds[rand.Intn(len(motds))]
 	s.ReturnData(w, "success", motd)
