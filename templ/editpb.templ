@@ -2,7 +2,7 @@
 <div class="container">
 	<a href="/probleme/{{- .Problem.ID -}}">[view]</a>
 	<h1>Edit title</h1>
-	<form id="titleForm">
+	<form id="titleForm" autocomplete="off">
 		<p>
 			<input type="text" id="title" name="title" value="{{.Problem.Name}}" placeholder="Titlu..." />
 		</p>
@@ -22,7 +22,7 @@
 	</script>
 
 	<h1>Edit description</h1>
-	<form id="descForm">
+	<form id="descForm" autocomplete="off">
 		<p>
 			<textarea id="description" style="display: none;">{{- .Problem.Text -}}</textarea>
 		</p>
@@ -35,6 +35,7 @@
 		var cm = CodeMirror.fromTextArea(document.getElementById("description"), {
 			lineNumbers: true,
 			indentUnit: 4,
+			lineWrapping: true,
 			mode: {
 				name: "gfm",
 				gitHubSpice: false,
@@ -50,6 +51,55 @@
 			$.post("/api/problem/update/{{.Problem.ID}}/setText", { text: desc }, (data, status, _) => {
 				console.log(data, status);
 			}).fail((a, b, c) => console.log(a, b, c));
+		});
+	</script>
+	<h1>Edit Tests</h1>
+	{{ range .Problem.Tests }}
+	<h5>Testul #{{ .VisibleID }} (Debug: #{{ .ID }})</h5>
+	<p>Score: {{ .Score }}</p>
+	{{ $testData := getTestData . }}
+	<pre>{{- $testData.In -}}</pre>
+	<pre>{{- $testData.Out -}}</pre>
+	{{ end }}
+	<form id="testUpload" autocomplete="off">
+		<p>
+			<textarea id="newin" placeholder="New test in"></textarea>
+		</p>
+		<p>
+			<textarea id="newout" placeholder="New test out"></textarea>
+		</p>
+		<p>
+			<input type="number" id="scor" placeholder="Scor" />
+		</p>
+		<p>
+			<input type="number" id="idVisibil" placeholder="ID Vizibil" />
+		</p>
+		<p>
+			<input type="submit" value="Adăugare" />
+		</p>
+	</form>
+	<script>
+		$("#testUpload").submit((e) => {
+			e.preventDefault();
+			let testIn = $("#testUpload #newin").val();
+			let testOut = $("#testUpload #newout").val();
+			let scor = $("#testUpload #scor").val();
+			let vID = $("#testUpload #idVisibil").val();
+			console.log("IN:", testIn);
+			console.log("OUT:", testOut);
+			console.log("SCORE:", scor);
+			console.log("ID:", vID);
+			$.post("/api/problem/update/{{ .Problem.ID }}/addTest",
+				{
+					input: testIn,
+					output: testOut,
+					score: scor,
+					visibleID: vID,
+				},
+				(data, status, _) => {
+					console.log(data, status);
+				}
+			).fail((a, b, c) => console.log(a, b, c));
 		});
 	</script>
 </div>

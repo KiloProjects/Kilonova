@@ -11,14 +11,16 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 )
 
-const (
+var (
 	releasePrefix = "https://github.com/KiloProjects/isolate/releases/download/v2.0/"
 	configURL     = releasePrefix + "default.cf"
 	configPath    = "/usr/local/etc/isolate"
 	isolateURL    = releasePrefix + "isolate"
-	isolatePath   = "/data/isolate"
+	// we can't import from common because it would be a circular import
+	isolatePath = "/data/isolate"
 )
 
 // Directory represents a directory rule
@@ -79,8 +81,11 @@ type Box struct {
 	path   string
 	Config Config
 
-	// Debug prints additional info
+	// Debug prints additional info if set
 	Debug bool
+
+	// the mutex makes sure we don't do anything stupid while we do other stuff
+	mu sync.Mutex
 }
 
 // BuildRunFlags compiles all flags into an array
@@ -182,6 +187,8 @@ func (b *Box) GetFile(filepath string) ([]byte, error) {
 
 // Cleanup is a convenience wrapper for cleanupBox
 func (b *Box) Cleanup() error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	var params []string
 	if b.Config.Cgroups {
 		params = append(params, "--cg")
@@ -197,6 +204,8 @@ func (b *Box) ExecCommand(command ...string) (string, string, error) {
 
 // ExecCombinedOutput runs a command and returns the combined output
 func (b *Box) ExecCombinedOutput(command ...string) ([]byte, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	params := append(b.Config.BuildRunFlags(), command...)
 	cmd := exec.Command(isolatePath, params...)
 	if b.Debug {
@@ -208,6 +217,8 @@ func (b *Box) ExecCombinedOutput(command ...string) ([]byte, error) {
 // ExecWithStdin runs a command with a specified stdin
 // Returns the stdout, stderr and error (if anything bad happened)
 func (b *Box) ExecWithStdin(stdin string, command ...string) (string, string, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	params := append(b.Config.BuildRunFlags(), command...)
 	cmd := exec.Command(isolatePath, params...)
 	if stdin != "" {
@@ -228,18 +239,17 @@ func (b *Box) ExecWithStdin(stdin string, command ...string) (string, string, er
 
 // NewBox returns a new box instance from the specified ID
 func NewBox(config Config) (*Box, error) {
-	var needsSetup bool
 
 	if _, err := os.Stat(isolatePath); os.IsNotExist(err) {
-		needsSetup = true
+		// download isolate
+		if err := downloadFile(isolateURL, isolatePath); err != nil {
+			return nil, err
+		}
 	}
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		needsSetup = true
-	}
-	// if exist != 0b11, then we need to setup isolate
-	if needsSetup {
-		if err := setupIsolate(); err != nil {
-			panic("Can't setup isolate: " + err.Error())
+		// download the config file
+		if err := downloadFile(configURL, configPath); err != nil {
+			return nil, err
 		}
 	}
 
@@ -268,19 +278,5 @@ func downloadFile(url, path string) error {
 	if _, err := io.Copy(file, resp.Body); err != nil {
 		return err
 	}
-	return nil
-}
-
-func setupIsolate() error {
-	// download isolate
-	if err := downloadFile(isolateURL, isolatePath); err != nil {
-		return err
-	}
-
-	// download the config file
-	if err := downloadFile(configURL, configPath); err != nil {
-		return err
-	}
-
 	return nil
 }

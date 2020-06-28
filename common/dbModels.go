@@ -42,7 +42,7 @@ type Problem struct {
 	gorm.Model
 	Name     string `json:"title"`
 	Text     string `json:"description"`
-	Tests    []Test `json:"tests"`
+	Tests    []Test `json:"tests,omitempty"`
 	TestName string `json:"testName"`
 	// User is the author
 	User         User   `json:"author"`
@@ -59,6 +59,7 @@ type Test struct {
 	gorm.Model
 	Score     int  `json:"score"`
 	ProblemID uint `json:"problemID"`
+	VisibleID uint `json:"visibleID"`
 }
 
 // EvalTest is the type for tests meant for evaluation
@@ -82,7 +83,7 @@ type Task struct {
 	SourceCode     string     `json:"code,omitempty"`
 	User           User       `json:"user"`
 	UserID         uint       `json:"userid"`
-	Tests          []EvalTest `json:"tests"`
+	Tests          []EvalTest `json:"tests,omitempty"`
 	Problem        Problem    `json:"problem"`
 	ProblemID      uint       `json:"problemid"`
 	Language       string     `json:"language"`

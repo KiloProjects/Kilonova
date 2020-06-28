@@ -1,0 +1,43 @@
+{{ template "header.templ" . }}
+
+<div class="container">
+	<h1>Stare task-uri</h1>
+	<table class="table table-striped">
+		<thead class="thead-dark">
+			<tr>
+				<th scope="col">
+					ID
+				</th>
+				<th scope="col">
+					Autor
+				</th>
+				<th scope="col">
+					Status
+				</th>
+				<th scope="col">
+					Scor
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			{{ range .Tasks }}
+			<tr>
+				<th scope="row">
+					{{- .ID -}}
+				</th>
+				<td>
+					{{- .User.Name -}}
+				</td>
+				<td>
+					{{- taskStatus .Status -}}
+				</td>
+				<td>
+					{{- .Score -}}
+				</td>
+			</tr>
+			{{ end }}
+		</tbody>
+	</table>
+</div>
+
+{{ template "footer.templ" . }}

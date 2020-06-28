@@ -52,7 +52,7 @@ func (g *Grader) Start() {
 				// poll db
 				var tasks []common.Task
 				g.db.Where("status = ?", common.StatusWaiting).
-					Preload("Problem").Preload("Tests").
+					Preload("Problem").Preload("Tests").Preload("Tests.Test").
 					Find(&tasks)
 
 				if len(tasks) > 0 {
@@ -74,7 +74,9 @@ func (g *Grader) Start() {
 		for {
 			select {
 			case update := <-g.MasterUpdater:
-				update.Update(g.db)
+				if err := update.Update(g.db); err != nil {
+					fmt.Println("GRADER DB UPDATE ERROR:", err)
+				}
 			case <-g.ctx.Done():
 				return
 			}

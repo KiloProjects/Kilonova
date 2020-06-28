@@ -86,7 +86,7 @@ func main() {
 	}
 
 	r.Mount("/api", API.GetRouter())
-	r.Mount("/", web.GetRouter())
+	r.Mount("/", web.NewWeb(manager).GetRouter())
 	grader.Start()
 
 	// for graceful setup and shutdown

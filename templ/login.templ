@@ -10,8 +10,8 @@
 	<script>
 		$("#loginForm").submit((e) => {
 			e.preventDefault();
-			let username = $("#loginForm").children("#name").val();
-			let password = $("#loginForm").children("#pwd").val();
+			let username = $("#loginForm #name").val();
+			let password = $("#loginForm #pwd").val();
 
 			$.post("/api/auth/login", { username, password }, (data, status) => {
 				console.log("DATA:", data, "STATUS:", status);

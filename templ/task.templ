@@ -1,0 +1,60 @@
+{{ template "header.templ" . }}
+
+<div class="container">
+	{{ with .Task }}
+	<h2>Task {{ .ID }}</h2>
+	<p>Status: {{ taskStatus .Status }}</p>
+	<p>Limbaj: {{ .Language }}</p>
+	<p>Scor: {{ .Score }} </p>
+	<p>Eroare de compilare?: {{ .CompileError }}</p>
+	<h6>Mesaj Evaluare:</h6>
+	<pre>{{- .CompileMessage -}}</pre>
+
+	<table class="table table-striped">
+		<thead class="thead-dark">
+			<tr>
+				<th scope="col">
+					ID
+				</th>
+				<th scope="col">
+					Status
+				</th>
+				<th scope="col">
+					Scor posibil
+				</th>
+				<th scope="col">
+					Scor obținut
+				</th>
+				<th scope="col">
+					Gata
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			{{ range .Tests }}
+			<tr>
+				<th scope="col">
+					{{- .Test.VisibleID -}}
+				</th>
+				<td>
+					{{- .Output -}}
+				</td>
+				<td>
+					{{- .Test.Score -}}
+				</td>
+				<td>
+					{{- .Score -}}
+				</td>
+				<td>
+					{{- .Done -}}
+				</td>
+			</tr>
+			{{ end }}
+		</tbody>
+	</table>
+	<h3>Codul Sursă:</h3>
+	<pre><code class="{{ .Language }}">{{ .SourceCode }} </code></pre>
+	{{ end }}
+</div>
+
+{{ template "footer.templ" . }}

@@ -240,12 +240,12 @@ func (b *BoxManager) Start(ctx context.Context) {
 					taskOut = bytes.TrimSpace(taskOut)
 					taskOut = bytes.ReplaceAll(taskOut, []byte{'\r', '\n'}, []byte{'\n'})
 					if tOut == string(taskOut) {
+						score += test.Test.Score
 						b.UpdateChan <- testOutputUpdate{
 							id:     test.ID,
 							output: "Correct",
 							score:  test.Test.Score,
 						}
-						score += test.Test.Score
 					} else {
 						b.UpdateChan <- testOutputUpdate{
 							id:     test.ID,
@@ -260,7 +260,7 @@ func (b *BoxManager) Start(ctx context.Context) {
 					}
 
 				}
-				fmt.Printf("SCORE FOR TASK %d: %d", task.ID, task.Score)
+				fmt.Printf("SCORE FOR TASK %d: %d\n", task.ID, score)
 				b.UpdateChan <- taskScoreUpdate{id: task.ID, score: score}
 				b.UpdateChan <- taskStatusUpdate{id: task.ID, status: common.StatusDone}
 				b.Reset()

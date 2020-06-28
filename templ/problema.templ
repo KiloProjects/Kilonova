@@ -11,27 +11,50 @@
 		}
 	</style>
 
-	<div id="hidden-raw-content" style="display: none;">{{- .Problem.Text -}}</div>
 	<div id="problem-content"></div>
 
 	<script>
-		var problemContent = "{{- .Problem.Text -}}";
-		var md = window.markdownit({
-			xhtmlOut: true,
-			breaks: true,
-			linkify: true,
-			highlight: function (str, lang) {
-				if (lang && hljs.getLanguage(lang)) {
-					try {
-						return hljs.highlight(lang, str).value;
-					} catch (err) {
-						console.error(err);
-					}
-				}
-				return "";
-			},
-		});
-		$("#problem-content").html(md.render(problemContent));
+		$("#problem-content").html(md.render("{{- .Problem.Text -}}"));
 	</script>
+
+	<h1>Încărcare sursă</h1>
+	<p>(Dacă mă întrebați de ce merge doar c++ acum: why not?)</p>
+
+	<form id="taskSubmit" autocomplete="off">
+		<textarea id="TaskArea" style="display: none;"></textarea>
+		<input type="submit" value="Trimite">
+	</form>
+
+	<script>
+		var defaultIn = `#include <iostream>
+using namespace std;
+int main()
+{
+	cout << "Hello, world!\\n";
+	return 0;
+}`;
+		$("#TaskArea").html(defaultIn);
+		var cm = CodeMirror.fromTextArea(document.getElementById("TaskArea"), {
+			lineNumbers: true,
+			indentUnit: 4,
+			lineWrapping: true,
+			mode: "text/x-c++src",
+		});
+		cm.setSize(null, "100%");
+		$("#taskSubmit").submit(e => {
+			e.preventDefault();
+			let sendData = {
+				code: cm.getValue(),
+				lang: "cpp",
+				problemID: "{{ .Problem.ID }}",
+			}
+			console.log()
+			$.post("/api/tasks/submit", sendData, (a, b, c) => console.log(a, b, c)).fail((a, b, c) => console.error(a, b, c));
+		})
+	</script>
+	<br />
+	<br />
+	<br />
+	<br />
 </div>
 {{ template "footer.templ" . }}

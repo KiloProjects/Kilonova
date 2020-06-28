@@ -23,7 +23,7 @@ type taskScoreUpdate struct {
 }
 
 func (u taskScoreUpdate) Update(db *gorm.DB) error {
-	return db.Model(&common.Task{}).Where("id = ?", u.id).Update("score", u.score).Error
+	return db.Model(&common.Task{}).Where("id = ?", u.id).Update(map[string]interface{}{"score": u.score}).Error
 }
 
 type testOutputUpdate struct {
@@ -35,7 +35,7 @@ type testOutputUpdate struct {
 func (u testOutputUpdate) Update(db *gorm.DB) error {
 	fmt.Printf("RECEIVED UPDATE OUTPUT FOR TEST %d (given score %d): %s\n", u.id, u.score, u.output)
 	return db.Model(&common.EvalTest{}).Where("id = ?", u.id).
-		Update(map[string]interface{}{"score": u.score, "output": u.output}).Error
+		Update(map[string]interface{}{"score": u.score, "output": u.output, "done": true}).Error
 }
 
 type taskCompileUpdate struct {

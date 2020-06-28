@@ -13,9 +13,26 @@ import (
 func (s *API) RegisterTaskRoutes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/get", s.GetTasks)
+	r.Get("/getByID", s.GetTaskByID)
 
 	r.With(s.MustBeAuthed).Post("/submit", s.SubmitTask)
 	return r
+}
+
+// GetTaskByID returns a task based on an ID
+func (s *API) GetTaskByID(w http.ResponseWriter, r *http.Request) {
+	if r.FormValue("id") == "" {
+		s.ErrorData(w, "No ID specified", http.StatusBadRequest)
+		return
+	}
+	taskID, err := strconv.ParseUint(r.FormValue("id"), 10, 32)
+	if err != nil {
+		s.ErrorData(w, "ID not uint", http.StatusBadRequest)
+		return
+	}
+	var task common.Task
+	s.db.Preload("User").Preload("Tests").Preload("Tests.Test").Find(&task, uint(taskID))
+	s.ReturnData(w, "success", task)
 }
 
 // GetTasks returns all Tasks from the DB
@@ -23,7 +40,7 @@ func (s *API) RegisterTaskRoutes() chi.Router {
 func (s *API) GetTasks(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var tasks []common.Task
-	s.db.Find(&tasks)
+	s.db.Preload("User").Find(&tasks)
 	s.ReturnData(w, "success", tasks)
 }
 

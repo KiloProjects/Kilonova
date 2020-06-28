@@ -3,6 +3,9 @@ package common
 
 import "github.com/jinzhu/gorm"
 
+// DataDir should be where most of the data is stored
+const DataDir = "/data"
+
 // Limits stores the constraints that need to be respected by a task
 type Limits struct {
 	// seconds

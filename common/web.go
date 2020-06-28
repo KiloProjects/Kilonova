@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -26,6 +27,10 @@ const (
 	PbID = KNContextType("pbID")
 	// ProblemKey is the key to be used for adding problems to context
 	ProblemKey = KNContextType("problem")
+	// TaskID  is the key to be used for adding task IDs to context
+	TaskID = KNContextType("taskID")
+	// TaskKey is the key to be used for adding tasks to context
+	TaskKey = KNContextType("task")
 )
 
 // RetData should be the way data is sent between the API and the Client
@@ -51,6 +56,16 @@ func ProblemFromContext(r *http.Request) Problem {
 		return v
 	default:
 		return Problem{}
+	}
+}
+
+// TaskFromContext returns the task from context
+func TaskFromContext(r *http.Request) Task {
+	switch v := r.Context().Value(TaskKey).(type) {
+	case Task:
+		return v
+	default:
+		return Task{}
 	}
 }
 
@@ -132,11 +147,11 @@ func RemoveSessionCookie(w http.ResponseWriter) {
 func init() {
 	// generate secure cookie
 	var secure []byte
-	if _, err := os.Stat("/data/secretKey"); os.IsNotExist(err) {
+	if _, err := os.Stat(path.Join(DataDir, "secretKey")); os.IsNotExist(err) {
 		secure = securecookie.GenerateRandomKey(32)
-		ioutil.WriteFile("/data/secretKey", secure, 0777)
+		ioutil.WriteFile(path.Join(DataDir, "secretKey"), secure, 0777)
 	} else {
-		secure, err = ioutil.ReadFile("/data/secretKey")
+		secure, err = ioutil.ReadFile(path.Join(DataDir, "secretKey"))
 		secure = bytes.TrimSpace(secure)
 	}
 	if len(secure) != 32 {

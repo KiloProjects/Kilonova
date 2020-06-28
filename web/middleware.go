@@ -11,8 +11,13 @@ import (
 	"github.com/go-chi/chi"
 )
 
+type retData struct {
+	Status string      `json:"status"`
+	Data   interface{} `json:"data"`
+}
+
 // ValidateProblemID makes sure the problem ID is a valid uint
-func ValidateProblemID(next http.Handler) http.Handler {
+func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		problemID, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
 		if err != nil {
@@ -21,26 +26,47 @@ func ValidateProblemID(next http.Handler) http.Handler {
 			return
 		}
 		resp, _ := http.Get(fmt.Sprintf("http://localhost:8080/api/problem/getByID?id=%d", problemID))
-		var retData struct {
-			Status string      `json:"status"`
-			Data   interface{} `json:"data"`
-		}
-		json.NewDecoder(resp.Body).Decode(&retData)
-		if retData.Status != "success" {
+		var ret retData
+		json.NewDecoder(resp.Body).Decode(&ret)
+		if ret.Status != "success" {
 			fmt.Println("ValidateProblemID:", err)
-			fmt.Println(err, retData.Data)
-			http.Error(w, retData.Data.(string), http.StatusBadRequest)
+			fmt.Println(err, ret.Data)
+			http.Error(w, ret.Data.(string), http.StatusBadRequest)
 			return
 		}
 		var problem common.Problem
-		remarshal(retData.Data, &problem)
+		rt.remarshal(ret.Data, &problem)
 		ctx := context.WithValue(r.Context(), common.ProblemKey, problem)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 
 }
 
-func mustBeAuthed(next http.Handler) http.Handler {
+// ValidateTaskID puts the ID and the Task in the router context
+func (rt *Web) ValidateTaskID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		taskID, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
+		if err != nil {
+			fmt.Println("ValidateTaskID:", err)
+			http.Error(w, "Invalid task ID", http.StatusBadRequest)
+			return
+		}
+		resp, _ := http.Get(fmt.Sprintf("http://localhost:8080/api/tasks/getByID?id=%d", taskID))
+		var ret retData
+		json.NewDecoder(resp.Body).Decode(&ret)
+		if ret.Status != "success" {
+			fmt.Println(ret.Data)
+			return
+		}
+		ctx := context.WithValue(r.Context(), common.TaskID, uint(taskID))
+		var task common.Task
+		rt.remarshal(ret.Data, &task)
+		ctx = context.WithValue(ctx, common.TaskKey, task)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var defUser common.User
 		if common.UserFromContext(r) == defUser {
@@ -51,8 +77,8 @@ func mustBeAuthed(next http.Handler) http.Handler {
 	})
 }
 
-func mustBeAdmin(next http.Handler) http.Handler {
-	return mustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
+	return rt.mustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !common.UserFromContext(r).IsAdmin {
 			http.Error(w, "You must be an admin", 403)
 			return
@@ -61,7 +87,7 @@ func mustBeAdmin(next http.Handler) http.Handler {
 	}))
 }
 
-func mustBeVisitor(next http.Handler) http.Handler {
+func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var defUser common.User
 		if common.UserFromContext(r) != defUser {
@@ -72,7 +98,7 @@ func mustBeVisitor(next http.Handler) http.Handler {
 	})
 }
 
-func getUser(next http.Handler) http.Handler {
+func (rt *Web) getUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		req, err := http.NewRequest("GET", "http://localhost:8080/api/user/getSelf", nil)
 		cookie, err := r.Cookie("kn-sessionid")
