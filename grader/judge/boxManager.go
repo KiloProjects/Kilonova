@@ -130,13 +130,10 @@ func (b *BoxManager) Start(ctx context.Context) {
 			case task := <-b.TaskChan:
 				fmt.Println("Running task", task.ID)
 
-				// TODO: This is not that barebones but needs more testing, HANDLE IMPERFECT CASES
+				// TODO: this might be slightly buggy, fix it
 
 				b.UpdateChan <- taskStatusUpdate{id: task.ID, status: common.StatusWorking}
 
-				// TODO: remove this
-				task.Problem.TestName = "TESTARINO"
-				task.Problem.ConsoleInput = true
 				// Compile once for the compile output
 				compileOut, err := b.CompileFile(task.SourceCode, common.Languages[task.Language])
 				compileOut = strings.TrimSpace(compileOut)

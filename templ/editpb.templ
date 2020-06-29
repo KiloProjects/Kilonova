@@ -3,12 +3,13 @@
 	<a href="/probleme/{{- .Problem.ID -}}">[view]</a>
 	<h1>Edit title</h1>
 	<form id="titleForm" autocomplete="off">
-		<p>
-			<input type="text" id="title" name="title" value="{{.Problem.Name}}" placeholder="Titlu..." />
-		</p>
-		<p>
-			<input type="submit" value="Editare" />
-		</p>
+		<div class="form-group">
+			<input class="form-control" type="text" id="title" name="title" value="{{.Problem.Name}}"
+				placeholder="Titlu..." />
+		</div>
+		<div class="form-group">
+			<button class="btn btn-primary mb-2" type="submit" class="btn">Editare</button>
+		</div>
 	</form>
 	<script>
 		$("#titleForm").submit((e) => {
@@ -23,12 +24,12 @@
 
 	<h1>Edit description</h1>
 	<form id="descForm" autocomplete="off">
-		<p>
+		<div class="form-group">
 			<textarea id="description" style="display: none;">{{- .Problem.Text -}}</textarea>
-		</p>
-		<p>
-			<input type="submit" value="Editare" />
-		</p>
+		</div>
+		<div class="form-group">
+			<button class="btn btn-primary mb-2" type="submit" class="btn">Editare</button>
+		</div>
 	</form>
 	<script>
 		console.log(CodeMirror);
@@ -62,21 +63,21 @@
 	<pre>{{- $testData.Out -}}</pre>
 	{{ end }}
 	<form id="testUpload" autocomplete="off">
-		<p>
-			<textarea id="newin" placeholder="New test in"></textarea>
-		</p>
-		<p>
-			<textarea id="newout" placeholder="New test out"></textarea>
-		</p>
-		<p>
-			<input type="number" id="scor" placeholder="Scor" />
-		</p>
-		<p>
-			<input type="number" id="idVisibil" placeholder="ID Vizibil" />
-		</p>
-		<p>
-			<input type="submit" value="Adăugare" />
-		</p>
+		<div class="form-group">
+			<textarea class="form-control" id="newin" placeholder="New test in"></textarea>
+		</div>
+		<div class="form-group">
+			<textarea class="form-control" id="newout" placeholder="New test out"></textarea>
+		</div>
+		<div class="form-group">
+			<input class="form-control" type="number" id="scor" placeholder="Scor" />
+		</div>
+		<div class="form-group">
+			<input class="form-control" type="number" id="idVisibil" placeholder="ID Vizibil" />
+		</div>
+		<div class="form-group">
+			<button class="btn btn-primary mb-2" type="submit" class="btn">Adăugare</button>
+		</div>
 	</form>
 	<script>
 		$("#testUpload").submit((e) => {

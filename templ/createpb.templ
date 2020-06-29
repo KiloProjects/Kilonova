@@ -1,0 +1,15 @@
+{{ template "header.templ" . }}
+<div class="container">
+	<form id="problemForm">
+		<!--TODO-->
+		<input class="form-control" type="submit" value="Creare" /><br />
+	</form>
+
+	<script>
+		$("#problemForm").submit((e) => {
+			e.preventDefault();
+			// todo
+		});
+	</script>
+</div>
+{{ template "footer.templ" . }}

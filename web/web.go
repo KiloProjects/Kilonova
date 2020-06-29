@@ -93,6 +93,13 @@ func (rt *Web) GetRouter() chi.Router {
 				fmt.Println(err)
 			}
 		})
+		r.Get("/create", func(w http.ResponseWriter, r *http.Request) {
+			templ := rt.hydrateTemplate(r)
+			templ.Title = "Creare problemă"
+			if err := templates.ExecuteTemplate(w, "createpb.templ", templ); err != nil {
+				fmt.Println(err)
+			}
+		})
 		r.Route("/{id}", func(r chi.Router) {
 			r.Use(rt.ValidateProblemID)
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {

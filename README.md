@@ -14,8 +14,7 @@ I added `.gitignore`s for `run.sh`, which could host your scripts for compilatio
 
     -   Finish grader (95%, only more testing is needed)
     -   Connect grader to DB (Done)
-    -   Write minimal web interface (in progress)
-    -   Properly support user submissions
+    -   Write minimal web interface (80% done)
     -   Design a user hierarchy
 
 -   For closed beta:

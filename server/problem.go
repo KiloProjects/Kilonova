@@ -9,6 +9,7 @@ import (
 	"github.com/KiloProjects/Kilonova/common"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi"
+	"github.com/gosimple/slug"
 )
 
 // RegisterProblemRoutes registers the problem routes at /api/problem
@@ -163,6 +164,10 @@ func (s *API) InitProblem(w http.ResponseWriter, r *http.Request) {
 	problem.Name = title
 	problem.User = common.UserFromContext(r)
 	problem.UserID = common.UserFromContext(r).ID
+	// default to console input but still have a sane default for test names
+	problem.ConsoleInput = true
+	problem.TestName = slug.Make(title)
+
 	s.db.Create(&problem)
 	s.ReturnData(w, "success", problem.ID)
 }
@@ -171,9 +176,7 @@ func (s *API) InitProblem(w http.ResponseWriter, r *http.Request) {
 // TODO: Pagination
 func (s *API) GetAllProblems(w http.ResponseWriter, r *http.Request) {
 	var problems []common.Problem
-	fmt.Println("start")
 	s.db.Preload("Tests").Find(&problems)
-	fmt.Println("end")
 	s.ReturnData(w, "success", problems)
 }
 

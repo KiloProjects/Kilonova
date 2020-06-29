@@ -3,16 +3,20 @@
 <div class="container">
 	<h1>KiloNova</h1>
 
-	<p>{{ . }}</p>
-
-	{{if not .LoggedIn}}
-	<p><a href="/login">Log in</a></p>
-	<p><a href="/signup">Sign up</a></p>
-	{{else}}
-	<p><a href="/logout">Log out</a></p>
-	<pre>{{- dumpStruct .User -}}</pre>
-	{{ end }}
-	<p><a href="/probleme">Listă probleme</a></p>
+	<ul class="list-group">
+		{{if not .LoggedIn}}
+		<a href="/login" class="list-group-item list-group-item-action">Log in</a>
+		<a href="/signup" class="list-group-item list-group-item-action">Sign up</a>
+		{{else}}
+		<a href="/logout" class="list-group-item list-group-item-action">Log out</a>
+		{{ end }}
+		<a href="/probleme" class="list-group-item list-group-item-action">Listă probleme</a>
+	</ul>
 	<br />
+	<script>
+	</script>
+
+	<pre>{{- dumpStruct .User -}}</pre>
+
 </div>
 {{template "footer.templ" . }}
