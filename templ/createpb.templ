@@ -1,15 +1,33 @@
-{{ template "header.templ" . }}
+{{ template "util/header" . }}
 <div class="container">
 	<form id="problemForm">
 		<!--TODO-->
-		<input class="form-control" type="submit" value="Creare" /><br />
+		<div class="form-group">
+			<label for="pbname">Nume problemă</label>
+			<input type="text" class="form-control" placeholder="Nume..." id="pbname" name="pbname" required>
+		</div>
+		<div class="custom-control custom-switch">
+			<input type="checkbox" class="custom-control-input" id="cInputSwitch">
+			<label class="custom-control-label" for="cInputSwitch">Intrare din consolă</label>
+		</div>
+		<button type="submit" class="btn btn-primary">Creare</button><br />
 	</form>
 
 	<script>
 		$("#problemForm").submit((e) => {
 			e.preventDefault();
-			// todo
+			let name = $("#problemForm #pbname").val();
+			let cInput = $("#problemForm #cInputSwitch").val();
+			if (cInput == "on") {
+				cInput = true
+			} else {
+				cInput = false
+			}
+			$.post("/api/problem/create", { title: name, consoleInput: cInput }, (a, b, c) => {
+				console.log(a, b, c)
+				window.location.assign(`/probleme/${JSON.parse(a)["data"]}`)
+			}).fail((a, b, c) => console.error(a, b, c))
 		});
 	</script>
 </div>
-{{ template "footer.templ" . }}
+{{ template "util/footer" . }}

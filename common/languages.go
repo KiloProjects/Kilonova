@@ -83,6 +83,7 @@ var Languages = map[string]Language{
 	"golang": {
 		Extensions:     []string{".go"},
 		IsCompiled:     true,
+		CommonEnv:      map[string]string{"GOMAXPROCS": "1"},
 		BuildEnv:       map[string]string{"GOPATH": "/box/go", "GOCACHE": "/box/go/cache"},
 		CompileCommand: []string{"/usr/lib/golang/bin/go", "build", "/box/main.go"},
 		RunCommand:     []string{"/box/main"},

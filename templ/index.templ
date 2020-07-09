@@ -1,9 +1,9 @@
-{{template "header.templ" . }}
+{{template "util/header" . }}
 
 <div class="container">
 	<h1>KiloNova</h1>
 
-	<ul class="list-group">
+	<div class="list-group">
 		{{if not .LoggedIn}}
 		<a href="/login" class="list-group-item list-group-item-action">Log in</a>
 		<a href="/signup" class="list-group-item list-group-item-action">Sign up</a>
@@ -11,7 +11,9 @@
 		<a href="/logout" class="list-group-item list-group-item-action">Log out</a>
 		{{ end }}
 		<a href="/probleme" class="list-group-item list-group-item-action">Listă probleme</a>
-	</ul>
+		<a href="/probleme/create" class="list-group-item list-group-item-action">Creare problemă</a>
+		<a href="/tasks" class="list-group-item list-group-item-action">Listă task-uri</a>
+	</div>
 	<br />
 	<script>
 	</script>
@@ -19,4 +21,4 @@
 	<pre>{{- dumpStruct .User -}}</pre>
 
 </div>
-{{template "footer.templ" . }}
+{{template "util/footer" . }}

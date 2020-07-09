@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="ro">
 
 <head>
 	<meta charset="utf-8" />
@@ -11,10 +11,17 @@
 	{{end}}
 
 	<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com/">
-	<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+
+	<!--jQuery-->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
 	<!--bootstrap-->
-	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+	<link rel="stylesheet"
+		href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css" />
+
+	<!--Toastr.js-->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.css" />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js"></script>
 
 	<!--highlight.js-->
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/default.min.css" />
@@ -23,10 +30,6 @@
 	<!--markdown-it.js-->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/11.0.0/markdown-it.min.js"></script>
 
-	<!--Mathjax-->
-	<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-	<!--jQuery-->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
 	<!--Codemirror (it's gonna be a long list)-->
 	<!--CSS-->
@@ -60,11 +63,7 @@
 			linkify: true,
 			highlight: function (str, lang) {
 				if (lang && hljs.getLanguage(lang)) {
-					try {
-						return hljs.highlight(lang, str).value;
-					} catch (err) {
-						console.error(err);
-					}
+					try { return hljs.highlight(lang, str).value; } catch (err) { console.error(err); }
 				}
 				return "";
 			},
@@ -75,4 +74,5 @@
 
 <body>
 	<br />
+	<a href="/">Pagină Principală</a>
 	<br />

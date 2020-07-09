@@ -1,4 +1,4 @@
-{{ template "header.templ" . }}
+{{ template "util/header" . }}
 <div class="container">
 	<a href="/probleme/{{- .Problem.ID -}}/edit">[edit]</a>
 	<h1>#{{.Problem.ID}}: {{.Problem.Name}}</h1>
@@ -58,4 +58,4 @@ int main()
 	<br />
 	<br />
 </div>
-{{ template "footer.templ" . }}
+{{ template "util/footer" . }}

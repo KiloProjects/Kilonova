@@ -1,0 +1,56 @@
+{{ template "util/header" . }}
+
+<div class="container">
+    <a href="/probleme/{{- .Problem.ID -}}">[view]</a>
+    <h1>Editare teste</h1>
+    {{ range .Problem.Tests }}
+    <h5>Testul #{{ .VisibleID }} (Debug: #{{ .ID }})</h5>
+    <p>Score: {{ .Score }}</p>
+    {{ $testData := getTestData . }}
+    <pre>{{- $testData.In -}}</pre>
+    <pre>{{- $testData.Out -}}</pre>
+    {{ end }}
+    <form id="testUpload" autocomplete="off">
+        <div class="form-group">
+            <textarea class="form-control" id="newin" placeholder="Intrare test nou..." required></textarea>
+        </div>
+        <div class="form-group">
+            <textarea class="form-control" id="newout" placeholder="Ieșire test nou..." required></textarea>
+        </div>
+        <div class="form-group">
+            <input class="form-control" type="number" id="scor" placeholder="Scor" required />
+        </div>
+        <div class="form-group">
+            <input class="form-control" type="number" id="idVisibil" placeholder="ID Vizibil" required />
+        </div>
+        <div class="form-group">
+            <button class="btn btn-primary mb-2" type="submit" class="btn">Adăugare</button>
+        </div>
+    </form>
+    <script>
+        $("#testUpload").submit((e) => {
+            e.preventDefault();
+            let testIn = $("#testUpload #newin").val();
+            let testOut = $("#testUpload #newout").val();
+            let scor = $("#testUpload #scor").val();
+            let vID = $("#testUpload #idVisibil").val();
+            console.log("IN:", testIn);
+            console.log("OUT:", testOut);
+            console.log("SCORE:", scor);
+            console.log("ID:", vID);
+            $.post("/api/problem/{{ .Problem.ID }}/update/addTest",
+                {
+                    input: testIn,
+                    output: testOut,
+                    score: scor,
+                    visibleID: vID,
+                },
+                (data, status, _) => {
+                    console.log(data, status);
+                }
+            ).fail((a, b, c) => console.log(a, b, c));
+        });
+    </script>
+</div>
+
+{{ template "util/footer" . }}

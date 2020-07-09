@@ -12,13 +12,14 @@ I added `.gitignore`s for `run.sh`, which could host your scripts for compilatio
 
 -   For closed alpha:
 
-    -   Finish grader (95%, only more testing is needed)
+    -   Finish grader (95%, only more testing is needed AND ALSO PARSE THE META FILES MADE)
     -   Connect grader to DB (Done)
     -   Write minimal web interface (80% done)
     -   Design a user hierarchy
 
 -   For closed beta:
 
+    -   MAKE A TON OF TESTS (need to find something easy to develop tests with)
     -   Work on web interface
     -   Add other tools and rank
     -   Add various extensions to the task description markup (like MathJax)

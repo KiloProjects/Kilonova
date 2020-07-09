@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	releasePrefix = "https://github.com/KiloProjects/isolate/releases/download/v2.0/"
+	releasePrefix = "https://github.com/KiloProjects/isolate/releases/download/v2.1/"
 	configURL     = releasePrefix + "default.cf"
 	configPath    = "/usr/local/etc/isolate"
 	isolateURL    = releasePrefix + "isolate"
@@ -167,11 +167,12 @@ func (c *Config) BuildRunFlags() (res []string) {
 		res = append(res, "--chdir="+c.Chdir)
 	}
 	res = append(res, "--silent", "--run", "--")
+
 	return
 }
 
 // WriteFile writes a file to the specified filepath inside the box
-func (b *Box) WriteFile(filepath, data string) error {
+func (b *Box) WriteFile(filepath string, data []byte) error {
 	return ioutil.WriteFile(path.Join(b.path, filepath), []byte(data), 0777)
 }
 
@@ -183,6 +184,21 @@ func (b *Box) RemoveFile(filepath string) error {
 // GetFile returns a file from inside the sandbox
 func (b *Box) GetFile(filepath string) ([]byte, error) {
 	return ioutil.ReadFile(path.Join(b.path, filepath))
+}
+
+// GetFilePath returns a path to the file location on disk of a box file
+func (b *Box) GetFilePath(boxpath string) string {
+	return path.Join(b.path, boxpath)
+}
+
+// MoveFromBox moves a file from the box to the outside world
+func (b *Box) MoveFromBox(boxpath string, rootpath string) error {
+	return os.Rename(b.GetFilePath(boxpath), rootpath)
+}
+
+// LinkInBox links a file to the box from the outside world
+func (b *Box) LinkInBox(rootpath string, boxpath string) error {
+	return os.Link(rootpath, b.GetFilePath(boxpath))
 }
 
 // Cleanup is a convenience wrapper for cleanupBox
@@ -242,20 +258,31 @@ func NewBox(config Config) (*Box, error) {
 
 	if _, err := os.Stat(isolatePath); os.IsNotExist(err) {
 		// download isolate
+		fmt.Println("Downloading isolate binary")
 		if err := downloadFile(isolateURL, isolatePath); err != nil {
 			return nil, err
 		}
+		fmt.Println("Isolate binary downloaded")
 	}
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		// download the config file
+		fmt.Println("Downloading isolate config")
 		if err := downloadFile(configURL, configPath); err != nil {
 			return nil, err
 		}
+		fmt.Println("Isolate config downloaded")
 	}
 
 	ret, err := exec.Command(isolatePath, "--cg", fmt.Sprintf("--box-id=%d", config.ID), "--init").CombinedOutput()
 	if strings.HasPrefix(string(ret), "Box already exists") {
 		exec.Command(isolatePath, "--cg", fmt.Sprintf("--box-id=%d", config.ID), "--cleanup").Run()
+		return NewBox(config)
+	}
+	if strings.HasPrefix(string(ret), "Must be started as root") {
+		if err := os.Chown(isolatePath, 0, 0); err != nil {
+			fmt.Println("Couldn't chown root the isolate binary:", err)
+			return nil, err
+		}
 		return NewBox(config)
 	}
 

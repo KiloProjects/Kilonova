@@ -1,0 +1,50 @@
+{{ template "util/header" . }}
+
+<div class="container">
+    <a href="/probleme/{{- .Problem.ID -}}">[view]</a>
+    <h1>Editare limite</h1>
+
+    <form id="limits">
+        <div class="form-group">
+            <div class="input-group">
+                <input type="number" class="form-control" id="memoryTotal" placeholder="Limită de memorie (total)"
+                    min="0.1" step="0.1" value="{{- .Problem.Limits.MemoryLimit -}}">
+                <div class="input-group-append">
+                    <span class="input-group-text" id="basic-addon2">MB</span>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="input-group">
+                <input type="number" class="form-control" id="memoryStack" placeholder="Limită de memorie (stack)"
+                    min="0.1" step="0.1" value="{{- .Problem.Limits.StackLimit -}}">
+                <div class="input-group-append">
+                    <span class="input-group-text" id="basic-addon2">MB</span>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="sr-only" for="timeLimit">Limită de timp</label>
+            <div class="input-group">
+                <input type="number" class="form-control" id="timeLimit" placeholder="Limită de timp..." min="0.1"
+                    step="0.1" value="{{- .Problem.Limits.TimeLimit -}}">
+                <div class="input-group-append">
+                    <span class="input-group-text" id="basic-addon2">secunde</span>
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Editare</button>
+    </form>
+    <script>
+        $("#limits").submit(e => {
+            e.preventDefault();
+            let memoryLimit = $("#limits #memoryTotal").val();
+            let stackLimit = $("#limits #memoryStack").val();
+            let timeLimit = $("#limits #timeLimit").val();
+            console.log(memoryLimit, stackLimit, timeLimit);
+            $.post("/api/problem/{{.Problem.ID}}/update/limits", { memoryLimit, stackLimit, timeLimit }, (a, b, c) => console.log(a, b, c)).fail((a, b, c) => console.error(a, b, c))
+        })
+    </script>
+</div>
+
+{{ template "util/footer" . }}

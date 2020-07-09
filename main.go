@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -14,6 +15,7 @@ import (
 	common "github.com/KiloProjects/Kilonova/common"
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/grader/judge"
+	"github.com/KiloProjects/Kilonova/kndb"
 	"github.com/KiloProjects/Kilonova/server"
 	"github.com/KiloProjects/Kilonova/web"
 	"github.com/go-chi/chi"
@@ -25,12 +27,17 @@ import (
 )
 
 var (
-	db      *gorm.DB
-	config  *common.Config
-	manager *datamanager.Manager
+	masterDB *gorm.DB
+	config   *common.Config
+	manager  *datamanager.StorageManager
+	db       *kndb.DB
+
+	dataDir    = flag.String("data", "/data", "Data directory")
+	configFile = flag.String("config", "/app/config.json", "Config directory")
 )
 
 func main() {
+	flag.Parse()
 
 	config, err := readConfig()
 	if err != nil {
@@ -40,22 +47,18 @@ func main() {
 
 	fmt.Println("Trying to connect to DB until it works")
 	for {
-		db, err = gorm.Open("postgres", "sslmode=disable host=db user=kilonova password=kn_password dbname=kilonova")
+		masterDB, err = gorm.Open("postgres", "sslmode=disable host=db user=kilonova password=kn_password dbname=kilonova")
 		if err == nil {
 			break
 		}
 	}
 	fmt.Println("Connected to DB")
 
-	db.AutoMigrate(&common.MOTD{})
-	db.AutoMigrate(&common.EvalTest{})
-	db.AutoMigrate(&common.Problem{})
-	db.AutoMigrate(&common.Task{})
-	db.AutoMigrate(&common.Test{})
-	db.AutoMigrate(&common.User{})
-	db.AutoMigrate(&common.Limits{})
+	db = kndb.New(masterDB)
 
-	manager = datamanager.NewManager("/data")
+	db.AutoMigrate()
+
+	manager = datamanager.NewManager(*dataDir)
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -78,7 +81,7 @@ func main() {
 
 	// Initialize components
 	API := server.NewAPI(ctx, db, config, manager)
-	grader := judge.NewGrader(ctx, db, manager)
+	grader := judge.NewGrader(ctx, db.DB, manager)
 
 	err = grader.NewManager(2)
 	if err != nil {
@@ -86,8 +89,11 @@ func main() {
 	}
 
 	r.Mount("/api", API.GetRouter())
-	r.Mount("/", web.NewWeb(manager).GetRouter())
+	r.Mount("/", web.NewWeb(manager, db).GetRouter())
+
+	// TODO: Find out why memory usage is higher than on pbinfo.ro (which also uses `isolate`) for the same program
 	grader.Start()
+	defer grader.Shutdown()
 
 	// for graceful setup and shutdown
 	server := &http.Server{Addr: "0.0.0.0:8080", Handler: r}
@@ -106,11 +112,13 @@ func main() {
 	if err := server.Shutdown(ctx); err != nil {
 		fmt.Println(err)
 	}
-	db.Close()
+	if err := db.Cleanup(); err != nil {
+		fmt.Println("Could not clean up DB:", err)
+	}
 }
 
 func readConfig() (*common.Config, error) {
-	data, err := ioutil.ReadFile("/app/config.json")
+	data, err := ioutil.ReadFile(*configFile)
 	if err != nil {
 		return nil, err
 	}

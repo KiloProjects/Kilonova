@@ -7,14 +7,18 @@ import (
 
 	"github.com/KiloProjects/Kilonova/common"
 	"github.com/go-chi/chi"
+	"github.com/jinzhu/gorm"
 )
 
 // RegisterTaskRoutes mounts the Task routes at /api/tasks
 func (s *API) RegisterTaskRoutes() chi.Router {
 	r := chi.NewRouter()
+	// /tasks/get
 	r.Get("/get", s.GetTasks)
+	// /tasks/getByID
 	r.Get("/getByID", s.GetTaskByID)
 
+	// /tasks/submit
 	r.With(s.MustBeAuthed).Post("/submit", s.SubmitTask)
 	return r
 }
@@ -30,8 +34,11 @@ func (s *API) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 		s.ErrorData(w, "ID not uint", http.StatusBadRequest)
 		return
 	}
-	var task common.Task
-	s.db.Preload("User").Preload("Tests").Preload("Tests.Test").Find(&task, uint(taskID))
+	task, err := s.db.GetTaskByID(uint(taskID))
+	if err != nil {
+		s.ErrorData(w, "Could not find test", http.StatusBadRequest)
+		return
+	}
 	s.ReturnData(w, "success", task)
 }
 
@@ -39,8 +46,11 @@ func (s *API) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 // TODO: Pagination and filtering
 func (s *API) GetTasks(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var tasks []common.Task
-	s.db.Preload("User").Find(&tasks)
+	tasks, err := s.db.GetAllTasks()
+	if err != nil {
+		s.ReturnData(w, http.StatusText(500), 500)
+		return
+	}
 	s.ReturnData(w, "success", tasks)
 }
 
@@ -59,14 +69,19 @@ func (s *API) SubmitTask(w http.ResponseWriter, r *http.Request) {
 
 	// try to read problem
 	var problemID = r.PostFormValue("problemID")
-	ipbid, _ := strconv.Atoi(problemID)
+	ipbid, _ := strconv.ParseUint(problemID, 10, 32)
 	if problemID == "" {
 		s.ErrorData(w, "No problem specified", http.StatusBadRequest)
 		return
 	}
-	var problem common.Problem
-	if s.db.Preload("Tests").First(&problem, ipbid).RecordNotFound() {
-		s.ErrorData(w, "Problem not found", http.StatusInternalServerError)
+	problem, err := s.db.GetProblemByID(uint(ipbid))
+	if err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			s.ErrorData(w, "Problem not found", http.StatusBadRequest)
+			return
+		}
+		// shouldn't happen, but still log it
+		s.errlog("/tasks/submit: Couldn't get problem by ID %d: %s", ipbid, err)
 		return
 	}
 
@@ -118,7 +133,7 @@ func (s *API) SubmitTask(w http.ResponseWriter, r *http.Request) {
 			UserID: user.ID,
 			Test:   test,
 		}
-		s.db.Create(&evTest)
+		s.db.Save(&evTest)
 		evalTests = append(evalTests, evTest)
 	}
 
@@ -126,12 +141,12 @@ func (s *API) SubmitTask(w http.ResponseWriter, r *http.Request) {
 	task := common.Task{
 		Tests:      evalTests,
 		User:       user,
-		Problem:    problem,
+		Problem:    *problem,
 		SourceCode: code,
 		Language:   language,
 	}
-	if err := s.db.Create(&task).Error; err != nil {
-		s.ErrorData(w, "Couldn't create test", http.StatusInternalServerError)
+	if err := s.db.Save(&task); err != nil {
+		s.ErrorData(w, "Couldn't create test", 500)
 		s.errlog("Could not create task: %v", err)
 		return
 	}

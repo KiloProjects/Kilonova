@@ -2,13 +2,13 @@ package web
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/KiloProjects/Kilonova/common"
 	"github.com/go-chi/chi"
+	"github.com/jinzhu/gorm"
 )
 
 type retData struct {
@@ -25,17 +25,17 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 			http.Error(w, "Invalid problem ID", http.StatusBadRequest)
 			return
 		}
-		resp, _ := http.Get(fmt.Sprintf("http://localhost:8080/api/problem/getByID?id=%d", problemID))
-		var ret retData
-		json.NewDecoder(resp.Body).Decode(&ret)
-		if ret.Status != "success" {
+		// this is practically equivalent to /api/problem/getByID?id=problemID, but let's keep it fast
+		problem, err := rt.db.GetProblemByID(uint(problemID))
+		if err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				http.Error(w, "Problema nu există", http.StatusBadRequest)
+				return
+			}
 			fmt.Println("ValidateProblemID:", err)
-			fmt.Println(err, ret.Data)
-			http.Error(w, ret.Data.(string), http.StatusBadRequest)
+			http.Error(w, http.StatusText(500), 500)
 			return
 		}
-		var problem common.Problem
-		rt.remarshal(ret.Data, &problem)
 		ctx := context.WithValue(r.Context(), common.ProblemKey, problem)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -51,16 +51,19 @@ func (rt *Web) ValidateTaskID(next http.Handler) http.Handler {
 			http.Error(w, "Invalid task ID", http.StatusBadRequest)
 			return
 		}
-		resp, _ := http.Get(fmt.Sprintf("http://localhost:8080/api/tasks/getByID?id=%d", taskID))
-		var ret retData
-		json.NewDecoder(resp.Body).Decode(&ret)
-		if ret.Status != "success" {
-			fmt.Println(ret.Data)
+		// this is equivalent to /api/tasks/getByID but it's faster to directly access
+		task, err := rt.db.GetTaskByID(uint(taskID))
+		if err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				http.Error(w, "Task-ul nu există", http.StatusBadRequest)
+				return
+			}
+			fmt.Println(err)
+			http.Error(w, http.StatusText(500), 500)
 			return
 		}
+
 		ctx := context.WithValue(r.Context(), common.TaskID, uint(taskID))
-		var task common.Task
-		rt.remarshal(ret.Data, &task)
 		ctx = context.WithValue(ctx, common.TaskKey, task)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -79,7 +82,7 @@ func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 	return rt.mustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.UserFromContext(r).IsAdmin {
+		if !common.UserFromContext(r).IsAdmin && common.UserFromContext(r).ID != 1 {
 			http.Error(w, "You must be an admin", 403)
 			return
 		}
@@ -100,23 +103,17 @@ func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 
 func (rt *Web) getUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		req, err := http.NewRequest("GET", "http://localhost:8080/api/user/getSelf", nil)
-		cookie, err := r.Cookie("kn-sessionid")
-		if err != nil {
-			ctx := context.WithValue(r.Context(), common.UserKey, nil)
-			next.ServeHTTP(w, r.WithContext(ctx))
+		// this is analogous to doing a web request to /api/user/getSelf, but it's faster to directly interact with the DB
+		sess := common.GetSession(r)
+		if sess == nil {
+			next.ServeHTTP(w, r)
 			return
 		}
-		req.Header.Add("Authorization", "Bearer "+cookie.Value)
-		resp, err := http.DefaultClient.Do(req)
-		var user common.User
-		var ret struct {
-			Status string      `json:"status"`
-			Data   common.User `json:"data"`
+		user, err := rt.db.GetUserByID(sess.UserID)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
 		}
-		err = json.NewDecoder(resp.Body).
-			Decode(&ret)
-		user = ret.Data
 		ctx := context.WithValue(r.Context(), common.UserKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

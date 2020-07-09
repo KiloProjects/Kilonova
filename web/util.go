@@ -10,10 +10,12 @@ import (
 
 // hydrateTemplate fills a templateData struct with generic stuff liek Params, User and LoggedIn
 func (rt *Web) hydrateTemplate(r *http.Request) templateData {
+	user := common.UserFromContext(r)
+
 	return templateData{
 		Params:   rt.globParams(r),
-		User:     common.UserFromContext(r),
-		LoggedIn: common.UserFromContext(r) != common.User{},
+		User:     &user,
+		LoggedIn: user.ID != 0,
 	}
 }
 
@@ -42,8 +44,8 @@ type testDataType struct {
 func (rt *Web) getTestData(test common.Test) testDataType {
 	in, out, err := rt.dm.GetTest(test.ProblemID, test.VisibleID)
 	if err != nil {
-		in = "err"
-		out = "err"
+		in = []byte("err")
+		out = []byte("err")
 	}
-	return testDataType{In: in, Out: out}
+	return testDataType{In: string(in), Out: string(out)}
 }

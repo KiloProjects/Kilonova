@@ -2,6 +2,7 @@ package judge
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -16,7 +17,7 @@ type Grader struct {
 	// These are the channels that are propagated to the box managers
 	MasterTasks   chan common.Task
 	MasterUpdater chan common.Updater
-	DataManager   *datamanager.Manager
+	DataManager   datamanager.Manager
 	Managers      []*BoxManager
 
 	ctx context.Context
@@ -24,7 +25,7 @@ type Grader struct {
 }
 
 // NewGrader returns a new Grader instance (note that, as of the current architectural design, there should be only one grader)
-func NewGrader(ctx context.Context, db *gorm.DB, dataManager *datamanager.Manager) *Grader {
+func NewGrader(ctx context.Context, db *gorm.DB, dataManager datamanager.Manager) *Grader {
 	taskChan := make(chan common.Task, 5)
 	updateChan := make(chan common.Updater, 20)
 	return &Grader{
@@ -52,7 +53,7 @@ func (g *Grader) Start() {
 				// poll db
 				var tasks []common.Task
 				g.db.Where("status = ?", common.StatusWaiting).
-					Preload("Problem").Preload("Tests").Preload("Tests.Test").
+					Set("gorm:auto_preload", true).
 					Find(&tasks)
 
 				if len(tasks) > 0 {
@@ -84,12 +85,49 @@ func (g *Grader) Start() {
 	}()
 }
 
+// StopManagers does a graceful shutdown of all managers
+func (g *Grader) StopManagers() error {
+	type grErr struct {
+		id  int
+		err error
+	}
+	var errs []grErr
+	for _, mgr := range g.Managers {
+		if err := mgr.Cleanup(); err != nil {
+			errs = append(errs, grErr{mgr.ID, err})
+		}
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	if len(errs) == 1 {
+		return fmt.Errorf("Could not stop manager %d: %v", errs[0].id, errs[0].err)
+	}
+	retStr := "Multiple managers could not be stopped:\n"
+	for _, err := range errs {
+		retStr += fmt.Sprintf("Manager %d: %s\n", err.id, err.err)
+	}
+
+	return errors.New(retStr)
+}
+
+// Shutdown does a grateful shutdown of the grader
+func (g *Grader) Shutdown() error {
+	if err := g.StopManagers(); err != nil {
+		return err
+	}
+	close(g.MasterTasks)
+	close(g.MasterUpdater)
+	return nil
+}
+
 // NewManager creates a new manager and assigns the master channels to it
 func (g *Grader) NewManager(id int) error {
 	mgr, err := NewBoxManager(id, g.DataManager, g.MasterTasks, g.MasterUpdater)
 	if err != nil {
 		return err
 	}
+	mgr.ToggleDebug()
 	g.Managers = append(g.Managers, mgr)
 	return nil
 }

@@ -1,0 +1,26 @@
+{{ template "util/header" . }}
+
+<div class="container">
+	<h1>
+		Super secret admin crib
+	</h1>
+	<form id="dbDropper">
+		<h2>Drop the DB</h2>
+		<input type="form-control" id="confirmationKey" placeholder="Very secure safety key">
+		<button type="submit" class="btn btn-primary">Drop DB</button>
+	</form>
+
+	<script>
+		$("#dbDropper").submit(e => {
+			e.preventDefault();
+			let key = $("#dbDropper #confirmationKey").val();
+			if (key == "IAmAbsolutelySureIWantToDoThis") {
+				$.post("/api/admin/dropAll", { "IAmAbsolutelySureIWantToDoThis": true }, (a, b, c) => console.log(a, b, c)).fail((a, b, c) => console.error(a, b, c))
+			} else {
+				console.error("Incorrect key value")
+			}
+		})
+	</script>
+</div>
+
+{{ template "util/footer" . }}

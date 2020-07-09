@@ -9,6 +9,7 @@ import (
 // MetaFile holds all data of a meta file
 // These are arranged in the order of the manual: https://www.ucw.cz/moe/isolate.1.html
 type MetaFile struct {
+	CgEnabled   bool `json:"cg-enabled"`
 	CgMem       int  `json:"cg-mem"`
 	CgOOMKilled bool `json:"cg-oom-killed"`
 
@@ -65,11 +66,13 @@ func ParseMetaFile(data string) *MetaFile {
 			file.Time, _ = strconv.ParseFloat(l[1], 32)
 		case "time-wall":
 			file.WallTime, _ = strconv.ParseFloat(l[1], 32)
+		case "cg-enabled":
+			if l[1] == "true" {
+				file.CgEnabled = true
+			}
 		default:
 			fmt.Printf("Unknown meta variable %s with value %s\n", l[0], l[1])
 		}
-
-		fmt.Println(string(line))
 	}
 
 	return file

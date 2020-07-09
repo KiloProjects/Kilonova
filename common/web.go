@@ -1,11 +1,7 @@
 package common
 
 import (
-	"bytes"
-	"io/ioutil"
 	"net/http"
-	"os"
-	"path"
 	"strings"
 	"time"
 
@@ -44,6 +40,8 @@ func UserFromContext(r *http.Request) User {
 	switch v := r.Context().Value(UserKey).(type) {
 	case User:
 		return v
+	case *User:
+		return *v
 	default:
 		return User{}
 	}
@@ -54,6 +52,8 @@ func ProblemFromContext(r *http.Request) Problem {
 	switch v := r.Context().Value(ProblemKey).(type) {
 	case Problem:
 		return v
+	case *Problem:
+		return *v
 	default:
 		return Problem{}
 	}
@@ -64,6 +64,8 @@ func TaskFromContext(r *http.Request) Task {
 	switch v := r.Context().Value(TaskKey).(type) {
 	case Task:
 		return v
+	case *Task:
+		return *v
 	default:
 		return Task{}
 	}
@@ -98,24 +100,6 @@ func GetAuthToken(r *http.Request) string {
 	return ""
 }
 
-// IsAuthed reads the session and says if the requester is authenticated
-func IsAuthed(r *http.Request) bool {
-	session := GetSession(r)
-	if session == nil {
-		return false
-	}
-	return session.UserID != 0
-}
-
-// IsAdmin reads the session and says if the requester is an admin
-func IsAdmin(r *http.Request) bool {
-	session := GetSession(r)
-	if session == nil {
-		return false
-	}
-	return session.IsAdmin
-}
-
 // SetSession sets the data to the session cookie
 func SetSession(w http.ResponseWriter, sess Session) (string, error) {
 	encoded, err := Cookies.Encode("kn-sessionid", sess)
@@ -142,20 +126,4 @@ func RemoveSessionCookie(w http.ResponseWriter) {
 		Expires: time.Unix(0, 0),
 	}
 	http.SetCookie(w, emptyCookie)
-}
-
-func init() {
-	// generate secure cookie
-	var secure []byte
-	if _, err := os.Stat(path.Join(DataDir, "secretKey")); os.IsNotExist(err) {
-		secure = securecookie.GenerateRandomKey(32)
-		ioutil.WriteFile(path.Join(DataDir, "secretKey"), secure, 0777)
-	} else {
-		secure, err = ioutil.ReadFile(path.Join(DataDir, "secretKey"))
-		secure = bytes.TrimSpace(secure)
-	}
-	if len(secure) != 32 {
-		panic("Invalid secure key length")
-	}
-	Cookies = securecookie.New(secure, nil).SetSerializer(securecookie.JSONEncoder{})
 }

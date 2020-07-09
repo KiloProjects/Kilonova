@@ -10,24 +10,6 @@ const (
 	python
 )
 
-// Config is the main information for the platform
-type Config struct {
-	SecretKey string `json:"secretKey"`
-	Debug     bool   `json:"debugMode"`
-}
-
-// Session represents the data storred in a session cookie
-type Session struct {
-	IsAdmin bool `json:"isAdmin"`
-	UserID  uint `json:"userID"`
-}
-
-// MOTD presents a random message of the day
-type MOTD struct {
-	gorm.Model
-	Motd string `json:"motd,omitempty"`
-}
-
 // User represents a user profile
 type User struct {
 	gorm.Model
@@ -35,6 +17,17 @@ type User struct {
 	IsAdmin  bool   `json:"isAdmin,omitempty"`
 	Email    string `json:"email,omitempty"`
 	Password string `json:"-"`
+}
+
+// Limits stores the constraints that need to be respected by a task
+type Limits struct {
+	gorm.Model
+	ProblemID uint `json:"-"`
+	// seconds
+	TimeLimit float64 `json:"timeLimit"`
+	// kilobytes
+	StackLimit  float64 `json:"stackLimit"`
+	MemoryLimit float64 `json:"memoryLimit"`
 }
 
 // Problem is the main object for problem
@@ -46,9 +39,8 @@ type Problem struct {
 	TestName string `json:"testName"`
 	// User is the author
 	User         User   `json:"author"`
-	UserID       uint   `json:"authorID"`
+	UserID       uint   `json:"-"`
 	Limits       Limits `json:"limits"`
-	LimitsID     uint   `json:"limitsID"`
 	SourceSize   int64  `json:"sourceSize"`
 	ConsoleInput bool   `json:"consoleInput"`
 }
@@ -69,12 +61,15 @@ type EvalTest struct {
 	Done bool `json:"done"`
 
 	// Output is the text displayed on the frontend (like `Fatal signal 11` or `Missing output file`)
-	Output string `json:"resultinfo"`
-	Score  int    `json:"score"`
-	Test   Test   `json:"test"`
-	TestID uint   `json:"testID"`
-	UserID uint   `json:"userID"`
-	TaskID uint   `json:"taskID"`
+	Output   string  `json:"resultinfo"`
+	Time     float64 `json:"timeTaken"`
+	WallTime float64 `json:"wallTime"`
+	Memory   int     `json:"memoryUsed"`
+	Score    int     `json:"score"`
+	Test     Test    `json:"test"`
+	TestID   uint    `json:"testID"`
+	UserID   uint    `json:"userID"`
+	TaskID   uint    `json:"taskID"`
 }
 
 // Task is the type for user-submitted tasks

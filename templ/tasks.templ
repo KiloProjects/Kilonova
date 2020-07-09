@@ -1,4 +1,4 @@
-{{ template "header.templ" . }}
+{{ template "util/header" . }}
 
 <div class="container">
 	<h1>Stare task-uri</h1>
@@ -10,6 +10,9 @@
 				</th>
 				<th scope="col">
 					Autor
+				</th>
+				<th scope="col">
+					Problemă
 				</th>
 				<th scope="col">
 					Status
@@ -29,7 +32,10 @@
 					{{- .User.Name -}}
 				</td>
 				<td>
-					{{- taskStatus .Status -}}
+					<a href="/probleme/{{.Problem.ID}}">{{- .Problem.Name -}}</a>
+				</td>
+				<td>
+					<a href="/tasks/{{.ID}}">{{- taskStatus .Status -}}</a>
 				</td>
 				<td>
 					{{- .Score -}}
@@ -40,4 +46,4 @@
 	</table>
 </div>
 
-{{ template "footer.templ" . }}
+{{ template "util/footer" . }}
