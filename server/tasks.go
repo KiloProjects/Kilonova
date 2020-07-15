@@ -1,13 +1,14 @@
 package server
 
 import (
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 
 	"github.com/KiloProjects/Kilonova/common"
 	"github.com/go-chi/chi"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 // RegisterTaskRoutes mounts the Task routes at /api/tasks
@@ -76,7 +77,7 @@ func (s *API) SubmitTask(w http.ResponseWriter, r *http.Request) {
 	}
 	problem, err := s.db.GetProblemByID(uint(ipbid))
 	if err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			s.ErrorData(w, "Problem not found", http.StatusBadRequest)
 			return
 		}

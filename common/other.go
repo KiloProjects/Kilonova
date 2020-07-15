@@ -8,7 +8,7 @@ import (
 	"path"
 
 	"github.com/gorilla/securecookie"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 // DataDir should be where most of the data is stored

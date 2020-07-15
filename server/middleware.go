@@ -2,10 +2,11 @@ package server
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/KiloProjects/Kilonova/common"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 func (s *API) isAuthed(r *http.Request) bool {
@@ -70,7 +71,7 @@ func (s *API) SetupSession(next http.Handler) http.Handler {
 		}
 		user, err := s.db.GetUserByID(session.UserID)
 		if err != nil {
-			if gorm.IsRecordNotFoundError(err) {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				next.ServeHTTP(w, r)
 				return
 			}

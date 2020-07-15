@@ -138,10 +138,12 @@ func (c *Config) BuildRunFlags() (res []string) {
 	}
 
 	if c.MemoryLimit != 0 {
-		res = append(res, "--mem="+strconv.Itoa(c.MemoryLimit))
+		memLim := approxMemory(c.MemoryLimit)
+		res = append(res, "--mem="+strconv.Itoa(memLim))
 	}
 	if c.StackSize != 0 {
-		res = append(res, "--stack="+strconv.Itoa(c.StackSize))
+		stackSize := approxMemory(c.StackSize)
+		res = append(res, "--stack="+strconv.Itoa(stackSize))
 	}
 
 	if c.Processes == 0 {
@@ -306,4 +308,13 @@ func downloadFile(url, path string) error {
 		return err
 	}
 	return nil
+}
+
+// Approximate to the nearest 128kb
+func approxMemory(memory int) int {
+	rem := memory % 128
+	if rem == 0 {
+		return memory
+	}
+	return memory + 128 - rem
 }

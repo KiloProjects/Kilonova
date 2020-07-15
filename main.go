@@ -21,10 +21,13 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	// _ "github.com/jinzhu/gorm/dialects/mysql"
+	"gorm.io/driver/postgres"
+	_ "gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
+
+// go:generate pkger
 
 var (
 	masterDB *gorm.DB
@@ -47,7 +50,8 @@ func main() {
 
 	fmt.Println("Trying to connect to DB until it works")
 	for {
-		masterDB, err = gorm.Open("postgres", "sslmode=disable host=db user=kilonova password=kn_password dbname=kilonova")
+		dsn := "sslmode=disable host=db user=kilonova password=kn_password dbname=kilonova"
+		masterDB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err == nil {
 			break
 		}
@@ -57,6 +61,8 @@ func main() {
 	db = kndb.New(masterDB)
 
 	db.AutoMigrate()
+
+	db.DB.Logger = logger.Default.LogMode(logger.Warn)
 
 	manager = datamanager.NewManager(*dataDir)
 
@@ -75,6 +81,7 @@ func main() {
 	r.Use(middleware.StripSlashes)
 	r.Use(middleware.Timeout(20 * time.Second))
 	r.Use(middleware.Logger)
+	r.Use(middleware.RealIP)
 
 	// Setup context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -103,6 +110,7 @@ func main() {
 			fmt.Println(err)
 		}
 	}()
+	fmt.Println("Successfully started")
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 
@@ -111,9 +119,6 @@ func main() {
 	fmt.Println("Shutting Down")
 	if err := server.Shutdown(ctx); err != nil {
 		fmt.Println(err)
-	}
-	if err := db.Cleanup(); err != nil {
-		fmt.Println("Could not clean up DB:", err)
 	}
 }
 

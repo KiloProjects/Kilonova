@@ -1,6 +1,8 @@
 package kndb
 
-import "github.com/KiloProjects/Kilonova/common"
+import (
+	"github.com/KiloProjects/Kilonova/common"
+)
 
 // GetTaskByID returns a task with the specified ID
 func (d *DB) GetTaskByID(id uint) (*common.Task, error) {

@@ -2,13 +2,14 @@ package web
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/KiloProjects/Kilonova/common"
 	"github.com/go-chi/chi"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type retData struct {
@@ -28,7 +29,7 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 		// this is practically equivalent to /api/problem/getByID?id=problemID, but let's keep it fast
 		problem, err := rt.db.GetProblemByID(uint(problemID))
 		if err != nil {
-			if gorm.IsRecordNotFoundError(err) {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				http.Error(w, "Problema nu există", http.StatusBadRequest)
 				return
 			}
@@ -54,7 +55,7 @@ func (rt *Web) ValidateTaskID(next http.Handler) http.Handler {
 		// this is equivalent to /api/tasks/getByID but it's faster to directly access
 		task, err := rt.db.GetTaskByID(uint(taskID))
 		if err != nil {
-			if gorm.IsRecordNotFoundError(err) {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				http.Error(w, "Task-ul nu există", http.StatusBadRequest)
 				return
 			}

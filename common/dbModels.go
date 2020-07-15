@@ -1,6 +1,6 @@
 package common
 
-import "github.com/jinzhu/gorm"
+import "gorm.io/gorm"
 
 const (
 	_ = iota
@@ -19,17 +19,6 @@ type User struct {
 	Password string `json:"-"`
 }
 
-// Limits stores the constraints that need to be respected by a task
-type Limits struct {
-	gorm.Model
-	ProblemID uint `json:"-"`
-	// seconds
-	TimeLimit float64 `json:"timeLimit"`
-	// kilobytes
-	StackLimit  float64 `json:"stackLimit"`
-	MemoryLimit float64 `json:"memoryLimit"`
-}
-
 // Problem is the main object for problem
 type Problem struct {
 	gorm.Model
@@ -38,11 +27,17 @@ type Problem struct {
 	Tests    []Test `json:"tests,omitempty"`
 	TestName string `json:"testName"`
 	// User is the author
-	User         User   `json:"author"`
-	UserID       uint   `json:"-"`
-	Limits       Limits `json:"limits"`
-	SourceSize   int64  `json:"sourceSize"`
-	ConsoleInput bool   `json:"consoleInput"`
+	User   User `json:"author"`
+	UserID uint `json:"-"`
+	/// LIMITS
+	// seconds
+	TimeLimit float64 `json:"timeLimit"`
+	// kilobytes
+	StackLimit  float64 `json:"stackLimit"`
+	MemoryLimit float64 `json:"memoryLimit"`
+	/// /LIMITS
+	SourceSize   int64 `json:"sourceSize"`
+	ConsoleInput bool  `json:"consoleInput"`
 }
 
 // Test is the type for sample test

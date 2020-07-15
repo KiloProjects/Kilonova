@@ -31,7 +31,7 @@ func (s *API) RegisterAdminRoutes() chi.Router {
 			s.ErrorData(w, "Sorry, you need a specific form value. Look into the source code if you're sure", http.StatusBadRequest)
 			return
 		}
-		s.db.DB.DropTable(&common.EvalTest{}, &common.Problem{}, &common.Task{}, &common.Test{}, &common.User{}, &common.Limits{})
+		s.db.DB.Migrator().DropTable(&common.EvalTest{}, &common.Problem{}, &common.Task{}, &common.Test{}, &common.User{})
 		s.ReturnData(w, "success", "I hope you're proud")
 	})
 	return r

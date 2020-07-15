@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	"github.com/KiloProjects/Kilonova/common"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/jinzhu/gorm"
 )
 
 // GetUserByID returns a user from the ID
@@ -33,7 +31,6 @@ func (d *DB) GetUserByName(name string) (*common.User, error) {
 		// this should never happen, but just in case it happens, log it so i can fix it
 		fmt.Println("User ID is 0, huh?")
 	}
-	spew.Dump(user)
 	return &user, nil
 }
 
@@ -54,8 +51,8 @@ func (d *DB) GetUserByEmail(email string) (*common.User, error) {
 // UserExists returns a bool indicating if the user with a specified email or username exists
 // Note that if an argument is empty (ie, it's equal to ""), it's ignored
 func (d *DB) UserExists(email string, username string) bool {
+	var cnt int64
 	if email != "" {
-		var cnt int
 		if err := d.DB.Model(&common.User{}).Where("lower(email) = lower(?)", email).Count(&cnt).Error; err != nil {
 			fmt.Println("Error counting in DB:", err)
 			return false
@@ -65,7 +62,6 @@ func (d *DB) UserExists(email string, username string) bool {
 		}
 	}
 	if username != "" {
-		var cnt int
 		if err := d.DB.Model(&common.User{}).Where("lower(name) = lower(?)", username).Count(&cnt).Error; err != nil {
 			fmt.Println("Error counting in DB:", err)
 			return false
@@ -89,7 +85,7 @@ func (d *DB) GetAllUsers() ([]common.User, error) {
 
 // MakeAdmin turns a user into admin
 func (d *DB) MakeAdmin(id uint) error {
-	return d.DB.Model(&common.User{}).Where("id = ?", id).Update(gorm.ToColumnName("IsAdmin"), true).Error
+	return d.DB.Model(&common.User{}).Where("id = ?", id).Update("is_admin", true).Error
 }
 
 // SetEmail sets the email of a user with the set ID

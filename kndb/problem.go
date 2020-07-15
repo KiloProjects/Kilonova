@@ -7,7 +7,7 @@ import (
 // GetProblemByID returns a problem with the specified ID
 func (d *DB) GetProblemByID(id uint) (*common.Problem, error) {
 	var problem common.Problem
-	if err := d.DB.Set("gorm:auto_preload", true).First(&problem, id).Error; err != nil {
+	if err := d.DB.Preload("Tests").Preload("User").First(&problem, id).Error; err != nil {
 		return nil, err
 	}
 	return &problem, nil
@@ -17,7 +17,7 @@ func (d *DB) GetProblemByID(id uint) (*common.Problem, error) {
 // TODO: Pagination
 func (d *DB) GetAllProblems() ([]common.Problem, error) {
 	var problems []common.Problem
-	if err := d.DB.Preload("Tests").Find(&problems).Error; err != nil {
+	if err := d.DB.Find(&problems).Error; err != nil {
 		return nil, err
 	}
 	return problems, nil
@@ -25,7 +25,7 @@ func (d *DB) GetAllProblems() ([]common.Problem, error) {
 
 // ProblemExists returns a bool if a problem with the specified name exists
 func (d *DB) ProblemExists(name string) bool {
-	var cnt int
+	var cnt int64
 	if err := d.DB.Model(&common.Problem{}).Where("lower(name) = lower(?)", name).Count(&cnt).Error; err != nil {
 		return false
 	}
@@ -47,5 +47,5 @@ func (d *DB) UpdateProblemField(id uint, fieldName string, fieldValue interface{
 
 // UpdateLimit takes a problem id and a map[string]interface{} (which has the fields that will be changed)
 func (d *DB) UpdateLimit(pbid uint, limit map[string]interface{}) error {
-	return d.DB.Preload("Limits").Model(&common.Problem{}).Where("id = ?", pbid).Update(limit).Error
+	return d.DB.Model(&common.Problem{}).Where("id = ?", pbid).Updates(limit).Error
 }

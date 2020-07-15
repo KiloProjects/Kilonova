@@ -13,8 +13,17 @@ import (
 	"github.com/KiloProjects/Kilonova/common"
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/grader/box"
-	"github.com/davecgh/go-spew/spew"
 )
+
+// limits stores the constraints that need to be respected by a task
+// this has been moved from common because I want to remove another dependency
+type limits struct {
+	// seconds
+	TimeLimit float64
+	// kilobytes
+	StackLimit  float64
+	MemoryLimit float64
+}
 
 // BoxManager manages a box with eval-based tasks
 type BoxManager struct {
@@ -82,7 +91,7 @@ func (b *BoxManager) CompileFile(SourceCode []byte, language common.Language) (s
 
 // RunTask runs a program, following the language conventions
 // filenames contains the names for input and output, used if consoleInput is true
-func (b *BoxManager) RunTask(language common.Language, constraints common.Limits, metaFile string, problemFile string) (*box.MetaFile, error) {
+func (b *BoxManager) RunTask(language common.Language, constraints limits, metaFile string, problemFile string) (*box.MetaFile, error) {
 	if b.Box.Config.EnvToSet == nil {
 		b.Box.Config.EnvToSet = make(map[string]string)
 	}
@@ -109,7 +118,7 @@ func (b *BoxManager) RunTask(language common.Language, constraints common.Limits
 	b.Box.Config.MemoryLimit = int(constraints.MemoryLimit * 1024)
 	// CgroupMem is disabled for now, it causes a sandbox error "Cannot set /sys/fs/cgroup/memory/box-2/memory.limit_in_bytes"
 	// and i don't want to deal with it right now
-	// b.Box.Config.CgroupMem = int(constraints.MemoryLimit * 1024)
+	b.Box.Config.CgroupMem = int(constraints.MemoryLimit * 1024)
 	b.Box.Config.StackSize = int(constraints.StackLimit * 1024)
 	b.Box.Config.TimeLimit = constraints.TimeLimit
 	// give a little bit more wall time
@@ -201,8 +210,12 @@ func (b *BoxManager) ExecuteTest(task common.Task, test common.EvalTest) (int, e
 	if task.Problem.ConsoleInput {
 		testName = task.Problem.TestName
 	}
-	meta, err := b.RunTask(common.Languages[task.Language], task.Problem.Limits, strconv.Itoa(int(task.ID))+".txt", testName)
-	spew.Dump(meta)
+	lim := limits{
+		MemoryLimit: task.Problem.MemoryLimit,
+		StackLimit:  task.Problem.StackLimit,
+		TimeLimit:   task.Problem.TimeLimit,
+	}
+	meta, err := b.RunTask(common.Languages[task.Language], lim, strconv.Itoa(int(task.ID))+".txt", testName)
 	b.UpdateChan <- testMetaUpdate{id: test.ID, meta: meta}
 	if meta.Status == "TO" { // Time limit exceeded
 		b.UpdateChan <- testOutputUpdate{
@@ -318,6 +331,7 @@ func (b *BoxManager) ExecuteTask(task common.Task) error {
 		return err
 	}
 
+	fmt.Println("RUNNING TESTS")
 	var score int
 	for _, test := range task.Tests {
 		testScore, err := b.ExecuteTest(task, test)

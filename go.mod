@@ -8,8 +8,10 @@ require (
 	github.com/go-chi/cors v1.1.1
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gosimple/slug v1.9.0
-	github.com/jinzhu/gorm v1.9.13
+	github.com/jackc/pgx/v4 v4.7.2 // indirect
 	github.com/markbates/pkger v0.17.0
 	github.com/pkg/errors v0.9.1
-	golang.org/x/crypto v0.0.0-20191205180655-e7c4368fe9dd
+	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
+	gorm.io/driver/postgres v0.2.5
+	gorm.io/gorm v0.2.20
 )

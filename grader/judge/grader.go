@@ -8,7 +8,7 @@ import (
 
 	"github.com/KiloProjects/Kilonova/common"
 	"github.com/KiloProjects/Kilonova/datamanager"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 // Grader is the *actual* high-level grader
@@ -46,6 +46,7 @@ func (g *Grader) Start() {
 	// DB Poller (pushes data to g.MasterTasks)
 	go func() {
 		// We don't want to use max CPU, so we poll every few seconds
+		// TODO: DECREASE POLL TIME, THIS WAS SET HIGH FOR DEBUGGING PURPOSES
 		ticker := time.NewTicker(4 * time.Second)
 		for {
 			select {
@@ -53,7 +54,7 @@ func (g *Grader) Start() {
 				// poll db
 				var tasks []common.Task
 				g.db.Where("status = ?", common.StatusWaiting).
-					Set("gorm:auto_preload", true).
+					Preload("Tests").Preload("Problem").Preload("Tests.Test").
 					Find(&tasks)
 
 				if len(tasks) > 0 {

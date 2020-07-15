@@ -8,11 +8,13 @@ Kilonova is a (work-in-progress) platform for competitive programming.
 
 I added `.gitignore`s for `run.sh`, which could host your scripts for compilation, execution, everything.
 
+Also, running `pkger` involves moving `sqldata` out of the project directory, i don't know how to mitigate this since pkger doesn't have an `-exclude` option yet (though it seems they are working on it).
+
 ## STUFF TO DO
 
 -   For closed alpha:
 
-    -   Finish grader (95%, only more testing is needed AND ALSO PARSE THE META FILES MADE)
+    -   Finish grader (95%, only more testing is needed)
     -   Connect grader to DB (Done)
     -   Write minimal web interface (80% done)
     -   Design a user hierarchy
@@ -28,5 +30,6 @@ I added `.gitignore`s for `run.sh`, which could host your scripts for compilatio
 -   For open beta:
 
     -   We'll see
+    -   Remove gorm dependency, rely on pure SQL
 
 -   For release: - If we get here, I'm sure we'll figure out what is missing

@@ -10,7 +10,6 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi"
 	"github.com/gosimple/slug"
-	"github.com/jinzhu/gorm"
 )
 
 // RegisterProblemRoutes registers the problem routes at /api/problem
@@ -66,9 +65,9 @@ func (s *API) RegisterProblemRoutes() chi.Router {
 				val := r.FormValue("isSet")
 				problem := common.ProblemFromContext(r)
 				if val == "true" {
-					s.db.UpdateProblemField(problem.ID, gorm.ToColumnName("ConsoleInput"), true)
+					s.db.UpdateProblemField(problem.ID, "console_input", true)
 				} else if val == "false" {
-					s.db.UpdateProblemField(problem.ID, gorm.ToColumnName("ConsoleInput"), false)
+					s.db.UpdateProblemField(problem.ID, "console_input", false)
 				} else {
 					s.ErrorData(w, "Invalid value for `isSet` form value", http.StatusBadRequest)
 				}
@@ -80,7 +79,7 @@ func (s *API) RegisterProblemRoutes() chi.Router {
 					return
 				}
 				problem := common.ProblemFromContext(r)
-				s.db.UpdateProblemField(problem.ID, gorm.ToColumnName("TestName"), val)
+				s.db.UpdateProblemField(problem.ID, "test_name", val)
 			})
 		})
 		r.Route("/get", func(r chi.Router) {
@@ -123,11 +122,8 @@ func (s *API) RegisterProblemRoutes() chi.Router {
 // SetLimits sets the limits for a problem
 func (s *API) SetLimits(w http.ResponseWriter, r *http.Request) {
 	pb := common.ProblemFromContext(r)
-	lim := pb.Limits
-	spew.Dump(lim)
 
 	// in case limits is empty, set up the problem ID to save it to the DB
-	lim.ProblemID = pb.ID
 
 	if r.FormValue("memoryLimit") != "" {
 		memoryLimit, err := strconv.ParseFloat(r.FormValue("memoryLimit"), 64)
@@ -136,7 +132,7 @@ func (s *API) SetLimits(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		fmt.Println("memory limit:", memoryLimit)
-		lim.MemoryLimit = memoryLimit
+		pb.MemoryLimit = memoryLimit
 	}
 	if r.FormValue("stackLimit") != "" {
 		stackLimit, err := strconv.ParseFloat(r.FormValue("stackLimit"), 64)
@@ -145,7 +141,7 @@ func (s *API) SetLimits(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		fmt.Println("stack limit:", stackLimit)
-		lim.StackLimit = stackLimit
+		pb.StackLimit = stackLimit
 	}
 	if r.FormValue("timeLimit") != "" {
 		timeLimit, err := strconv.ParseFloat(r.FormValue("timeLimit"), 64)
@@ -154,9 +150,9 @@ func (s *API) SetLimits(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		fmt.Println("time limit:", timeLimit)
-		lim.TimeLimit = timeLimit
+		pb.TimeLimit = timeLimit
 	}
-	if err := s.db.Save(&lim); err != nil {
+	if err := s.db.Save(&pb); err != nil {
 		s.errlog("API: /problem/%d/update/limits, db saving error: %s\n", pb.ID, err)
 		s.ErrorData(w, http.StatusText(500), 500)
 		return
@@ -242,11 +238,9 @@ func (s *API) InitProblem(w http.ResponseWriter, r *http.Request) {
 	problem.ConsoleInput = consoleInput
 	problem.TestName = slug.Make(title)
 	// default limits
-	problem.Limits = common.Limits{
-		MemoryLimit: 64,  // 64MB
-		StackLimit:  16,  // 16MB
-		TimeLimit:   0.1, // 0.1s
-	}
+	problem.MemoryLimit = 64
+	problem.StackLimit = 16
+	problem.TimeLimit = 0.1
 
 	if err := s.db.Save(&problem); err != nil {
 		s.errlog("API: /problem/create, db saving error: %s\n", err)
