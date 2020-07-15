@@ -18,6 +18,7 @@ Also, running `pkger` involves moving `sqldata` out of the project directory, i 
     -   Connect grader to DB (Done)
     -   Write minimal web interface (80% done)
     -   Design a user hierarchy
+    -   Toasts
 
 -   For closed beta:
 

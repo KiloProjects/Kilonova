@@ -2,6 +2,8 @@ package web
 
 import (
 	"encoding/json"
+	"fmt"
+	"html/template"
 	"net/http"
 
 	"github.com/KiloProjects/Kilonova/common"
@@ -17,6 +19,36 @@ func (rt *Web) hydrateTemplate(r *http.Request) templateData {
 		User:     &user,
 		LoggedIn: user.ID != 0,
 	}
+}
+
+func gradient(score, maxscore int) template.CSS {
+	clamp := func(val, min, max int) int {
+		if val < min {
+			val = min
+		}
+		if val > max {
+			val = max
+		}
+		return val
+	}
+	type color struct {
+		red   int
+		green int
+		blue  int
+	}
+	score = clamp(score, 0, maxscore)
+	percent := int(float64(score) / float64(maxscore) * 100)
+	first := color{255, 130, 121}
+	second := color{189, 255, 124}
+	dr := -(first.red - second.red)
+	dg := -(first.green - second.green)
+	db := -(first.blue - second.blue)
+	val := fmt.Sprintf("background-color: rgb(%d, %d, %d);",
+		clamp(first.red+dr*percent/99, 0, 255),
+		clamp(first.green+dg*percent/99, 0, 255),
+		clamp(first.blue+db*percent/99, 0, 255),
+	)
+	return template.CSS(val)
 }
 
 func (rt *Web) globParams(r *http.Request) map[string]string {

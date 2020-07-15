@@ -43,7 +43,7 @@
 		</thead>
 		<tbody>
 			{{ range .Tests }}
-			<tr>
+			<tr style="{{ gradient .Score .Test.Score }}">
 				<th scope="col">
 					{{- .Test.VisibleID -}}
 				</th>

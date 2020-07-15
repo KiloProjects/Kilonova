@@ -2,7 +2,8 @@
 
 <div class="container">
 	<h1>Stare task-uri</h1>
-	<table class="table table-striped">
+
+	<table class="table">
 		<thead class="thead-dark">
 			<tr>
 				<th scope="col">
@@ -24,7 +25,7 @@
 		</thead>
 		<tbody>
 			{{ range .Tasks }}
-			<tr>
+			<tr style="{{ gradient .Score 100 }}">
 				<th scope="row">
 					{{- .ID -}}
 				</th>

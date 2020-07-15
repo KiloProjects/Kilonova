@@ -73,6 +73,14 @@ func (rt *Web) GetRouter() chi.Router {
 		"KBtoMB": func(kb int) float64 {
 			return float64(kb) / 1024.0
 		},
+		"gradient": gradient,
+		"zeroto100": func() []int {
+			var v []int = make([]int, 0)
+			for i := 0; i <= 20; i++ {
+				v = append(v, i)
+			}
+			return v
+		},
 	})
 	templates = template.Must(parseAllTemplates(templates, root))
 

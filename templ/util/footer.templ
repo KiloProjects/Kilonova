@@ -5,9 +5,20 @@
 		positionClass: "toast-bottom-right",
 	}
 
-	function createToast(title, description, status = "info", position = "toast-bottom-right", onclick = function () { }) {
-		console.log(status, toastr[status])
-		toastr[status](description, title, { positionClass: position, onclick })
+	/* createToast SETTINGS
+		title: the toast title
+		status: the toast status (default "info")
+		position: the toast position (default "toast-bottom-right")
+		onclick: onClick handler
+	*/
+	function createToast(options) {
+		if (options.status == null) options.status = "info"
+		if (options.position == null) options.position = "toast-bottom-right"
+		if (options.onclick == null) options.onclick = function () { }
+		toastr[options.status](options.description, options.title, {
+			positionClass: options.position,
+			onclick: options.onclick
+		})
 	}
 </script>
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.0.5/es5/tex-mml-chtml.js"></script>

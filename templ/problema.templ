@@ -5,12 +5,6 @@
 
 	<h5>Made by {{.Problem.User.Name}}</h5>
 
-	<style>
-		#problem-content h1 {
-			color: orange;
-		}
-	</style>
-
 	<div id="problem-content"></div>
 
 	<script>
@@ -50,7 +44,11 @@ int main()
 				problemID: "{{ .Problem.ID }}",
 			}
 			console.log()
-			$.post("/api/tasks/submit", sendData, (a, b, c) => console.log(a, b, c)).fail((a, b, c) => console.error(a, b, c));
+			$.post("/api/tasks/submit", sendData, (a, b, c) => createToast({
+				description: "Uploaded", onclick: function () {
+					window.location.assign(`/tasks/${JSON.parse(a)["data"]}`)
+				}
+			})).fail((a, b, c) => console.error(a, b, c));
 		})
 	</script>
 	<br />
