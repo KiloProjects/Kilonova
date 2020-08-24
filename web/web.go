@@ -69,6 +69,13 @@ func (rt *Web) GetRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.StripSlashes)
 
+	// table for gradient, initialize here so it panics if we make a mistake
+	colorTable := gradientTable{
+		{mustParseHex("#ff8279"), 0.0},
+		{mustParseHex("#eaf200"), 0.45},
+		{mustParseHex("#00933e"), 1.0},
+	}
+
 	templates = template.New("web").Funcs(template.FuncMap{
 		"dumpStruct": spew.Sdump,
 		"dumpAsJson": func(v interface{}) string {
@@ -91,7 +98,9 @@ func (rt *Web) GetRouter() chi.Router {
 		"KBtoMB": func(kb int) float64 {
 			return float64(kb) / 1024.0
 		},
-		"gradient": gradient,
+		"gradient": func(score, maxscore int) template.CSS {
+			return gradient(score, maxscore, colorTable)
+		},
 		"zeroto100": func() []int {
 			var v []int = make([]int, 0)
 			for i := 0; i <= 100; i++ {

@@ -9,6 +9,7 @@ require (
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gosimple/slug v1.9.0
 	github.com/jackc/pgx/v4 v4.7.2 // indirect
+	github.com/lucasb-eyer/go-colorful v1.0.3
 	github.com/markbates/pkger v0.17.0
 	github.com/pkg/errors v0.9.1
 	gocloud.dev v0.20.0 // indirect

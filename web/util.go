@@ -1,8 +1,6 @@
 package web
 
 import (
-	"fmt"
-	"html/template"
 	"net/http"
 
 	"github.com/KiloProjects/Kilonova/common"
@@ -27,44 +25,6 @@ func (rt *Web) hydrateTemplate(r *http.Request) templateData {
 
 func (rt *Web) isProblemAuthor(r *http.Request) bool {
 	return true
-}
-
-func gradient(score, maxscore int) template.CSS {
-	clamp := func(val, min, max int) int {
-		if val < min {
-			val = min
-		}
-		if val > max {
-			val = max
-		}
-		return val
-	}
-	type color struct {
-		red   int
-		green int
-		blue  int
-	}
-	score = clamp(score, 0, maxscore)
-	percent := int(float64(score) / float64(maxscore) * 100)
-
-	// When it's perfect, we want to have another color for all this
-	if percent == 100 {
-		return template.CSS("background-color: rgb(189, 255, 124);")
-	}
-	first := color{255, 130, 121}
-	// pbinfo color
-	//second := color{189, 255, 124}
-	// color proposed by Boostatu#8262
-	second := color{0, 147, 62}
-	dr := -(first.red - second.red)
-	dg := -(first.green - second.green)
-	db := -(first.blue - second.blue)
-	val := fmt.Sprintf("background-color: rgb(%d, %d, %d);",
-		clamp(first.red+dr*percent/99, 0, 255),
-		clamp(first.green+dg*percent/99, 0, 255),
-		clamp(first.blue+db*percent/99, 0, 255),
-	)
-	return template.CSS(val)
 }
 
 func globParams(r *http.Request) map[string]string {
