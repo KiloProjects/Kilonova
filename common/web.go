@@ -71,6 +71,46 @@ func TaskFromContext(r *http.Request) Task {
 	}
 }
 
+func IsAuthed(r *http.Request) bool {
+	user := UserFromContext(r)
+	if user.ID == 0 {
+		return false
+	}
+	return true
+}
+
+func IsAdmin(r *http.Request) bool {
+	if !IsAuthed(r) {
+		return false
+	}
+	user := UserFromContext(r)
+	return user.ID == 1 || user.Admin
+}
+
+func IsProposer(r *http.Request) bool {
+	if !IsAuthed(r) {
+		return false
+	}
+	user := UserFromContext(r)
+	return user.ID == 1 || user.Admin || user.Proposer
+}
+
+// IsProblemEditor says if the authed User can edit the Problem
+func IsProblemEditor(r *http.Request) bool {
+	if !IsAuthed(r) {
+		return false
+	}
+	if IsAdmin(r) {
+		return true
+	}
+	user := UserFromContext(r)
+	if user.ID == 0 {
+		return false
+	}
+	problem := ProblemFromContext(r)
+	return user.ID == problem.UserID
+}
+
 // GetSession reads and returns the data from the session cookie
 func GetSession(r *http.Request) *Session {
 	authToken := GetAuthToken(r)

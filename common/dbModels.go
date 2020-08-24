@@ -14,7 +14,8 @@ const (
 type User struct {
 	gorm.Model
 	Name     string `json:"name"`
-	IsAdmin  bool   `json:"isAdmin,omitempty"`
+	Admin    bool   `json:"isAdmin,omitempty"`
+	Proposer bool   `json:"isProposer,omitempty"`
 	Email    string `json:"email,omitempty"`
 	Password string `json:"-"`
 }
@@ -41,7 +42,7 @@ type Problem struct {
 }
 
 // Test is the type for sample test
-// NOTE: When Score < 0, it means that an error occured
+// NOTE: When Score < 0, it means that an error occurred
 type Test struct {
 	gorm.Model
 	Score     int  `json:"score"`
@@ -50,21 +51,20 @@ type Test struct {
 }
 
 // EvalTest is the type for tests meant for evaluation
-// NOTE: When Score < 0, it means that an error occured
+// NOTE: When Score < 0, it means that an error occurred
 type EvalTest struct {
 	gorm.Model
 	Done bool `json:"done"`
 
 	// Output is the text displayed on the frontend (like `Fatal signal 11` or `Missing output file`)
-	Output   string  `json:"resultinfo"`
-	Time     float64 `json:"timeTaken"`
-	WallTime float64 `json:"wallTime"`
-	Memory   int     `json:"memoryUsed"`
-	Score    int     `json:"score"`
-	Test     Test    `json:"test"`
-	TestID   uint    `json:"testID"`
-	UserID   uint    `json:"userID"`
-	TaskID   uint    `json:"taskID"`
+	Output string  `json:"resultinfo"`
+	Time   float64 `json:"timeTaken"`
+	Memory int     `json:"memoryUsed"`
+	Score  int     `json:"score"`
+	Test   Test    `json:"test"`
+	TestID uint    `json:"testID"`
+	UserID uint    `json:"userID"`
+	TaskID uint    `json:"taskID"`
 }
 
 // Task is the type for user-submitted tasks

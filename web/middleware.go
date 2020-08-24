@@ -72,9 +72,18 @@ func (rt *Web) ValidateTaskID(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var defUser common.User
-		if common.UserFromContext(r) == defUser {
-			http.Error(w, "You must be logged in", 403)
+		if !common.IsAuthed(r) {
+			http.Error(w, "You must be logged in", 401)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (rt *Web) mustBeProposer(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !common.IsProposer(r) {
+			http.Error(w, "You must be a proposer", 401)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -83,8 +92,8 @@ func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 	return rt.mustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.UserFromContext(r).IsAdmin && common.UserFromContext(r).ID != 1 {
-			http.Error(w, "You must be an admin", 403)
+		if !common.IsAdmin(r) {
+			http.Error(w, "You must be an admin", 401)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -93,9 +102,18 @@ func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var defUser common.User
-		if common.UserFromContext(r) != defUser {
-			http.Error(w, "You must not be logged in", 403)
+		if common.IsAuthed(r) {
+			http.Error(w, "You must not be logged in", 401)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (rt *Web) mustBeEditor(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !common.IsProblemEditor(r) {
+			http.Error(w, "You must be the problem author", 401)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -104,7 +122,7 @@ func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 
 func (rt *Web) getUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// this is analogous to doing a web request to /api/user/getSelf, but it's faster to directly interact with the DB
+		// this is analogous to doing a web request to /api/user/getSelf, but it's faster (and easier) to directly interact with the DB
 		sess := common.GetSession(r)
 		if sess == nil {
 			next.ServeHTTP(w, r)

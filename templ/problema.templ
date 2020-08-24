@@ -1,6 +1,8 @@
 {{ template "util/header" . }}
 <div class="container">
-	<a href="/probleme/{{- .Problem.ID -}}/edit">[edit]</a>
+	{{ if .ProblemEditor }}
+	<a href="/probleme/{{- .Problem.ID -}}/edit">[edit]</a>	
+	{{ end }}
 	<h1>#{{.Problem.ID}}: {{.Problem.Name}}</h1>
 
 	<h5>Made by {{.Problem.User.Name}}</h5>

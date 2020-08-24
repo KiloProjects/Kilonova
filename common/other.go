@@ -3,16 +3,16 @@ package common
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 
 	"github.com/gorilla/securecookie"
-	"gorm.io/gorm"
 )
 
 // DataDir should be where most of the data is stored
-const DataDir = "/data"
+var DataDir = "/data"
 
 // Config is the main information for the platform
 type Config struct {
@@ -24,12 +24,17 @@ type Session struct {
 	UserID uint `json:"userID"`
 }
 
-// Updater is an interface for a DB updater made by the boxManager (like updating the status of a task)
-type Updater interface {
-	Update(*gorm.DB) error
+// SetDataDir sets DataDir to the specified path
+func SetDataDir(d string) {
+	DataDir = d
 }
 
-func init() {
+// Initialize must be called after setting the DataDir, but before everything else
+func Initialize() {
+	if err := os.MkdirAll(DataDir, 0775); err != nil {
+		panic(err)
+	}
+
 	// generate secure cookie
 	var secure []byte
 	if _, err := os.Stat(path.Join(DataDir, "secretKey")); os.IsNotExist(err) {
@@ -37,6 +42,9 @@ func init() {
 		ioutil.WriteFile(path.Join(DataDir, "secretKey"), secure, 0777)
 	} else {
 		secure, err = ioutil.ReadFile(path.Join(DataDir, "secretKey"))
+		if err != nil {
+			panic(fmt.Sprintln("Could not read the secret key:", err))
+		}
 		secure = bytes.TrimSpace(secure)
 	}
 	if len(secure) != 32 {

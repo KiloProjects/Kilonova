@@ -2,9 +2,7 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/KiloProjects/Kilonova/common"
@@ -37,51 +35,64 @@ func (s *API) GetRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Use(s.SetupSession)
 
-	// /ping
-	r.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-		s.ReturnData(w, "success", "pong")
+	r.Route("/admin", func(r chi.Router) {
+		r.Use(s.MustBeAdmin)
+
+		r.Get("/makeAdmin", s.makeAdmin)
+		r.Get("/stripAdmin", s.stripAdmin)
+
+		r.Get("/makeProposer", s.makeProposer)
+		r.Get("/stripProposer", s.stripProposer)
+
+		r.Get("/getAllUsers", s.getUsers)
+		r.Get("/dropAll", s.dropAll)
 	})
-	r.Mount("/auth", s.RegisterAuthRoutes())
-	r.Mount("/problem", s.RegisterProblemRoutes())
-	r.Mount("/admin", s.RegisterAdminRoutes())
-	r.Mount("/tasks", s.RegisterTaskRoutes())
-	r.Mount("/user", s.RegisterUserRoutes())
+
+	r.Route("/auth", func(r chi.Router) {
+		r.With(s.MustBeAuthed).Post("/logout", s.logout)
+		r.With(s.MustBeVisitor).Post("/signup", s.signup)
+		r.With(s.MustBeVisitor).Post("/login", s.login)
+	})
+	r.Route("/problem", func(r chi.Router) {
+		r.Get("/getAll", s.getAllProblems)
+		r.Get("/getByID", s.getProblemByID)
+		r.With(s.MustBeProposer).Post("/create", s.initProblem)
+		r.With(s.MustBeProposer).Route("/{id}", func(r chi.Router) {
+			r.Use(s.validateProblemID)
+			r.Use(s.validateProblemEditor)
+
+			r.Route("/update", func(r chi.Router) {
+				r.Post("/title", s.updateTitle)
+				r.Post("/description", s.updateDescription)
+				r.Post("/addTest", s.createTest)
+				r.Post("/limits", s.setLimits)
+				r.Post("/updateTest", s.updateTest)
+				r.Post("/removeTests", s.purgeTests)
+				r.Post("/setConsoleInput", s.setInputType)
+				r.Post("/setTestName", s.setTestName)
+			})
+			r.Route("/get", func(r chi.Router) {
+				r.Get("/tests", s.getTests)
+				r.Get("/test", s.getTest)
+
+				r.Get("/testData", s.getTestData)
+			})
+		})
+	})
+	r.Route("/tasks", func(r chi.Router) {
+		r.Get("/get", s.getTasks)
+		r.Get("/getByID", s.getTaskByID)
+
+		r.With(s.MustBeAuthed).Post("/submit", s.submitTask)
+	})
+	r.Route("/user", func(r chi.Router) {
+		r.Get("/getByName", s.getUserByName)
+		r.With(s.MustBeAuthed).Get("/getSelf", s.getSelf)
+
+		r.Get("/getGravatar", s.getGravatar)
+		r.With(s.MustBeAuthed).Get("/getSelfGravatar", s.getSelfGravatar)
+
+		r.With(s.MustBeAuthed).Post("/changeEmail", s.changeEmail)
+	})
 	return r
-}
-
-// ReturnData returns the json data to the user
-func (s *API) ReturnData(w http.ResponseWriter, status string, returnData interface{}) {
-	s.StatusData(w, status, returnData, 200)
-}
-
-// StatusData calls API.ReturnData but also sets a status code
-func (s *API) StatusData(w http.ResponseWriter, status string, returnData interface{}, statusCode int) {
-	w.WriteHeader(statusCode)
-	err := json.NewEncoder(w).Encode(common.RetData{
-		Status: status,
-		Data:   returnData,
-	})
-	if err != nil {
-		if err != nil {
-			s.errlog("Couldn't send return data: %v", err)
-		}
-	}
-}
-
-// ErrorData calls API.ReturnData but sets the corresponding error code in the header
-// NOTE: this is shorthand for API.StatusData(w, "error", returnData, errCode)
-func (s *API) ErrorData(w http.ResponseWriter, returnData interface{}, errCode int) {
-	s.StatusData(w, "error", returnData, errCode)
-}
-
-func (s *API) getContextValue(r *http.Request, name string) interface{} {
-	return r.Context().Value(common.KNContextType(name))
-}
-
-func (s *API) log(format string, data ...interface{}) {
-	s.logger.Printf(format, data...)
-}
-
-func (s *API) errlog(format string, data ...interface{}) {
-	s.logger.Printf("[ERROR] "+format, data...)
 }

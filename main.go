@@ -12,9 +12,9 @@ import (
 	"os/signal"
 	"time"
 
-	common "github.com/KiloProjects/Kilonova/common"
+	"github.com/KiloProjects/Kilonova/common"
 	"github.com/KiloProjects/Kilonova/datamanager"
-	"github.com/KiloProjects/Kilonova/grader/judge"
+	"github.com/KiloProjects/Kilonova/grader"
 	"github.com/KiloProjects/Kilonova/kndb"
 	"github.com/KiloProjects/Kilonova/server"
 	"github.com/KiloProjects/Kilonova/web"
@@ -22,7 +22,6 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
 	"gorm.io/driver/postgres"
-	_ "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -42,6 +41,9 @@ var (
 func main() {
 	flag.Parse()
 
+	common.SetDataDir(*dataDir)
+	common.Initialize()
+
 	config, err := readConfig()
 	if err != nil {
 		log.Fatalln(err)
@@ -50,7 +52,7 @@ func main() {
 
 	fmt.Println("Trying to connect to DB until it works")
 	for {
-		dsn := "sslmode=disable host=db user=kilonova password=kn_password dbname=kilonova"
+		dsn := "sslmode=disable user=alexv dbname=kilonova"
 		masterDB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err == nil {
 			break
@@ -88,19 +90,13 @@ func main() {
 
 	// Initialize components
 	API := server.NewAPI(ctx, db, config, manager)
-	grader := judge.NewGrader(ctx, db.DB, manager)
-
-	err = grader.NewManager(2)
-	if err != nil {
-		panic(err)
-	}
+	grader := grader.NewHandler(ctx, db, manager)
 
 	r.Mount("/api", API.GetRouter())
 	r.Mount("/", web.NewWeb(manager, db).GetRouter())
 
-	// TODO: Find out why memory usage is higher than on pbinfo.ro (which also uses `isolate`) for the same program
+	// TODO: Find out why memory usage is higher than on pbinfo.ro for the same program
 	grader.Start()
-	defer grader.Shutdown()
 
 	// for graceful setup and shutdown
 	server := &http.Server{Addr: "0.0.0.0:8080", Handler: r}

@@ -1,12 +1,12 @@
-/sqldata
 node_modules
 .vscode
 # .editorconfig
 /config.json
-/data
 Kilonova
 # simulation program
 sim.py
 
 # pkger
 pkged.go
+
+/run.sh

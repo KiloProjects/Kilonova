@@ -7,7 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
+	"path"
+	"strings"
 
 	"github.com/KiloProjects/Kilonova/common"
 	"github.com/KiloProjects/Kilonova/datamanager"
@@ -38,6 +41,9 @@ type templateData struct {
 	Task  *common.Task
 
 	ProblemID uint
+
+	// ProblemAuthor tells us if the authed .User is able to edit the .Problem
+	ProblemEditor bool
 }
 
 // Web is the struct representing this whole package
@@ -46,7 +52,19 @@ type Web struct {
 	db *kndb.DB
 }
 
+func pushStuff(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if pusher, ok := w.(http.Pusher); ok {
+			if err := pusher.Push("/static/jquery.js", nil); err != nil {
+				log.Printf("Failed to push: %v", err)
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // GetRouter returns a chi.Router
+// TODO: Split routes in functions
 func (rt *Web) GetRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.StripSlashes)
@@ -76,13 +94,32 @@ func (rt *Web) GetRouter() chi.Router {
 		"gradient": gradient,
 		"zeroto100": func() []int {
 			var v []int = make([]int, 0)
-			for i := 0; i <= 20; i++ {
+			for i := 0; i <= 100; i++ {
 				v = append(v, i)
 			}
 			return v
 		},
 	})
 	templates = template.Must(parseAllTemplates(templates, root))
+
+	r.Mount("/static", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := path.Clean(r.RequestURI)
+		if !strings.HasPrefix(p, "/static") {
+			http.Error(w, http.StatusText(404), 404)
+			return
+		}
+		file, err := pkger.Open(p)
+		if err != nil {
+			http.Error(w, http.StatusText(404), 404)
+			return
+		}
+		fstat, err := file.Stat()
+		if err != nil {
+			http.Error(w, http.StatusText(404), 404)
+			return
+		}
+		http.ServeContent(w, r, fstat.Name(), fstat.ModTime(), file)
+	}))
 
 	r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		file, err := pkger.Open("/static/favicon.ico")
@@ -97,12 +134,12 @@ func (rt *Web) GetRouter() chi.Router {
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
-		file.Stat()
 		http.ServeContent(w, r, fstat.Name(), fstat.ModTime(), file)
 	})
 
 	// Optimization: get the user only on routes that need to
-	r.With(rt.getUser).Route("/", func(r chi.Router) {
+	// Also enable server push
+	r.With(rt.getUser).With(pushStuff).Route("/", func(r chi.Router) {
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			templ := rt.hydrateTemplate(r)
 			if err := templates.ExecuteTemplate(w, "index", templ); err != nil {
@@ -125,7 +162,7 @@ func (rt *Web) GetRouter() chi.Router {
 					fmt.Println(err)
 				}
 			})
-			r.Get("/create", func(w http.ResponseWriter, r *http.Request) {
+			r.With(rt.mustBeProposer).Get("/create", func(w http.ResponseWriter, r *http.Request) {
 				templ := rt.hydrateTemplate(r)
 				templ.Title = "Creare problemă"
 				if err := templates.ExecuteTemplate(w, "createpb", templ); err != nil {
@@ -139,46 +176,45 @@ func (rt *Web) GetRouter() chi.Router {
 
 					templ := rt.hydrateTemplate(r)
 					templ.Title = fmt.Sprintf("#%d: %s", problem.ID, problem.Name)
-					templ.Problem = &problem
+
 					if err := templates.ExecuteTemplate(w, "problema", templ); err != nil {
 						fmt.Println(err)
 					}
 				})
-				r.Get("/edit", func(w http.ResponseWriter, r *http.Request) {
-					problem := common.ProblemFromContext(r)
-					templ := rt.hydrateTemplate(r)
-					templ.Title = fmt.Sprintf("EDIT | #%d: %s", problem.ID, problem.Name)
-					templ.Problem = &problem
-					if err := templates.ExecuteTemplate(w, "edit/index", templ); err != nil {
-						fmt.Println(err)
-					}
-				})
-				r.Get("/edit/enunt", func(w http.ResponseWriter, r *http.Request) {
-					problem := common.ProblemFromContext(r)
-					templ := rt.hydrateTemplate(r)
-					templ.Title = fmt.Sprintf("ENUNT - EDIT | #%d: %s", problem.ID, problem.Name)
-					templ.Problem = &problem
-					if err := templates.ExecuteTemplate(w, "edit/enunt", templ); err != nil {
-						fmt.Println(err)
-					}
-				})
-				r.Get("/edit/limite", func(w http.ResponseWriter, r *http.Request) {
-					problem := common.ProblemFromContext(r)
-					templ := rt.hydrateTemplate(r)
-					templ.Title = fmt.Sprintf("LIMITE - EDIT | #%d: %s", problem.ID, problem.Name)
-					templ.Problem = &problem
-					if err := templates.ExecuteTemplate(w, "edit/limite", templ); err != nil {
-						fmt.Println(err)
-					}
-				})
-				r.Get("/edit/teste", func(w http.ResponseWriter, r *http.Request) {
-					problem := common.ProblemFromContext(r)
-					templ := rt.hydrateTemplate(r)
-					templ.Title = fmt.Sprintf("TESTE - EDIT | #%d: %s", problem.ID, problem.Name)
-					templ.Problem = &problem
-					if err := templates.ExecuteTemplate(w, "edit/tests", templ); err != nil {
-						fmt.Println(err)
-					}
+				r.Route("/edit", func(r chi.Router) {
+					r.Use(rt.mustBeEditor)
+					r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+						problem := common.ProblemFromContext(r)
+						templ := rt.hydrateTemplate(r)
+						templ.Title = fmt.Sprintf("EDIT | #%d: %s", problem.ID, problem.Name)
+						if err := templates.ExecuteTemplate(w, "edit/index", templ); err != nil {
+							fmt.Println(err)
+						}
+					})
+					r.Get("/enunt", func(w http.ResponseWriter, r *http.Request) {
+						problem := common.ProblemFromContext(r)
+						templ := rt.hydrateTemplate(r)
+						templ.Title = fmt.Sprintf("ENUNT - EDIT | #%d: %s", problem.ID, problem.Name)
+						if err := templates.ExecuteTemplate(w, "edit/enunt", templ); err != nil {
+							fmt.Println(err)
+						}
+					})
+					r.Get("/limite", func(w http.ResponseWriter, r *http.Request) {
+						problem := common.ProblemFromContext(r)
+						templ := rt.hydrateTemplate(r)
+						templ.Title = fmt.Sprintf("LIMITE - EDIT | #%d: %s", problem.ID, problem.Name)
+						if err := templates.ExecuteTemplate(w, "edit/limite", templ); err != nil {
+							fmt.Println(err)
+						}
+					})
+					r.Get("/teste", func(w http.ResponseWriter, r *http.Request) {
+						problem := common.ProblemFromContext(r)
+						templ := rt.hydrateTemplate(r)
+						templ.Title = fmt.Sprintf("TESTE - EDIT | #%d: %s", problem.ID, problem.Name)
+						if err := templates.ExecuteTemplate(w, "edit/tests", templ); err != nil {
+							fmt.Println(err)
+						}
+					})
 				})
 			})
 		})
@@ -194,42 +230,32 @@ func (rt *Web) GetRouter() chi.Router {
 				templ := rt.hydrateTemplate(r)
 				templ.Title = "Tasks"
 				templ.Tasks = &tasks
-				if err := templates.ExecuteTemplate(w, "tasks", templ); err != nil {
-					fmt.Println(err)
-				}
+				check(templates.ExecuteTemplate(w, "tasks", templ))
 			})
 			r.With(rt.ValidateTaskID).Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
 				task := common.TaskFromContext(r)
 				templ := rt.hydrateTemplate(r)
 				templ.Title = fmt.Sprintf("Task %d", task.ID)
 				templ.Task = &task
-				if err := templates.ExecuteTemplate(w, "task", templ); err != nil {
-					fmt.Println(err)
-				}
+				check(templates.ExecuteTemplate(w, "task", templ))
 			})
 		})
 
 		r.With(rt.mustBeAdmin).Get("/admin", func(w http.ResponseWriter, r *http.Request) {
 			templ := rt.hydrateTemplate(r)
 			templ.Title = "Admin switches"
-			if err := templates.ExecuteTemplate(w, "admin", templ); err != nil {
-				fmt.Println(err)
-			}
+			check(templates.ExecuteTemplate(w, "admin", templ))
 		})
 
 		r.With(rt.mustBeVisitor).Get("/login", func(w http.ResponseWriter, r *http.Request) {
 			templ := rt.hydrateTemplate(r)
 			templ.Title = "Log In"
-			if err := templates.ExecuteTemplate(w, "login", templ); err != nil {
-				fmt.Println(err)
-			}
+			check(templates.ExecuteTemplate(w, "login", templ))
 		})
 		r.With(rt.mustBeVisitor).Get("/signup", func(w http.ResponseWriter, r *http.Request) {
 			templ := rt.hydrateTemplate(r)
 			templ.Title = "Sign Up"
-			if err := templates.ExecuteTemplate(w, "signup", templ); err != nil {
-				fmt.Println(err)
-			}
+			check(templates.ExecuteTemplate(w, "signup", templ))
 		})
 
 		r.With(rt.mustBeAuthed).Get("/logout", func(w http.ResponseWriter, r *http.Request) {
@@ -245,6 +271,12 @@ func (rt *Web) GetRouter() chi.Router {
 // NewWeb returns a new web instance
 func NewWeb(dm datamanager.Manager, db *kndb.DB) *Web {
 	return &Web{dm: dm, db: db}
+}
+
+func check(err error) {
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func init() {

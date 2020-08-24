@@ -85,7 +85,19 @@ func (d *DB) GetAllUsers() ([]common.User, error) {
 
 // MakeAdmin turns a user into admin
 func (d *DB) MakeAdmin(id uint) error {
-	return d.DB.Model(&common.User{}).Where("id = ?", id).Update("is_admin", true).Error
+	return d.DB.Model(&common.User{}).Where("id = ?", id).Update("admin", true).Error
+}
+
+func (d *DB) MakeProposer(id uint) error {
+	return d.DB.Model(&common.User{}).Where("id = ?", id).Update("proposer", true).Error
+}
+
+func (d *DB) RemoveAdmin(id uint) error {
+	return d.DB.Model(&common.User{}).Where("id = ?", id).Update("admin", false).Error
+}
+
+func (d *DB) RemoveProposer(id uint) error {
+	return d.DB.Model(&common.User{}).Where("id = ?", id).Update("proposer", false).Error
 }
 
 // SetEmail sets the email of a user with the set ID
