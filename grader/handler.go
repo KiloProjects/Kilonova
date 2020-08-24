@@ -140,18 +140,17 @@ func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) e
 	return nil
 }
 
-func (h *Handler) Start() {
+func (h *Handler) Start(path string) {
 	go h.chFeeder()
 
 	go func() {
-		// TODO: Replace tcp with unix
-		conn, err := net.Dial("tcp", ":8081")
+		conn, err := net.Dial("unix", path)
 		if err != nil {
 			log.Println("Dialing error:", err)
 			return
 		}
 		defer conn.Close()
-		log.Println("Listening...")
+		log.Println("Connected to eval")
 
 		if err := proto.Handle(conn, h.Handle); err != nil {
 			log.Println("Handling error:", err)

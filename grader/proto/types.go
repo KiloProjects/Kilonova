@@ -41,7 +41,7 @@ var Languages = map[string]Language{
 	"cpp": {
 		Extensions:     []string{".cpp", ".c++", ".cc", ".cxx"},
 		IsCompiled:     true,
-		CompileCommand: []string{"/usr/bin/g++", "-std=c++11", "-O2", "-pipe", "-static", "-s", "main.cpp", "-o", "output"},
+		CompileCommand: []string{"/usr/bin/g++", "-std=c++11", "-O2", "-s", "-static", "main.cpp", "-o", "output"},
 		RunCommand:     []string{"/box/output"},
 		Mounts: []Directory{
 			{In: "/etc"},
@@ -52,7 +52,7 @@ var Languages = map[string]Language{
 	"c": {
 		Extensions:     []string{".c", ".h"},
 		IsCompiled:     true,
-		CompileCommand: []string{"/usr/bin/gcc", "-std=c11", "-O2", "-pipe", "-static", "-s", "/main.c", "-o", "/output"},
+		CompileCommand: []string{"/usr/bin/gcc", "-std=c11", "-O2", "-s", "-static", "main.c", "-o", "/output"},
 		RunCommand:     []string{"/output"},
 		Mounts: []Directory{
 			{In: "/etc"},

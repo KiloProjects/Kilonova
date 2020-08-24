@@ -36,6 +36,7 @@ var (
 
 	dataDir    = flag.String("data", "/data", "Data directory")
 	configFile = flag.String("config", "/app/config.json", "Config directory")
+	evalSocket = flag.String("evalSocket", "/tmp/kiloeval.sock", "Path to the eval socket, must be the same as the `socketPath` flag in KiloEval")
 )
 
 func main() {
@@ -96,7 +97,7 @@ func main() {
 	r.Mount("/", web.NewWeb(manager, db).GetRouter())
 
 	// TODO: Find out why memory usage is higher than on pbinfo.ro for the same program
-	grader.Start()
+	grader.Start(*evalSocket)
 
 	// for graceful setup and shutdown
 	server := &http.Server{Addr: "0.0.0.0:8080", Handler: r}
