@@ -100,7 +100,7 @@ func main() {
 	grader.Start(*evalSocket)
 
 	// for graceful setup and shutdown
-	server := &http.Server{Addr: "0.0.0.0:8080", Handler: r}
+	server := &http.Server{Addr: "127.0.0.1:8070", Handler: r}
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil {

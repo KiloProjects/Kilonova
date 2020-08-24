@@ -38,11 +38,11 @@ func (s *API) GetRouter() chi.Router {
 	r.Route("/admin", func(r chi.Router) {
 		r.Use(s.MustBeAdmin)
 
-		r.Get("/makeAdmin", s.makeAdmin)
-		r.Get("/stripAdmin", s.stripAdmin)
+		r.Post("/makeAdmin", s.makeAdmin)
+		r.Post("/stripAdmin", s.stripAdmin)
 
-		r.Get("/makeProposer", s.makeProposer)
-		r.Get("/stripProposer", s.stripProposer)
+		r.Post("/makeProposer", s.makeProposer)
+		r.Post("/stripProposer", s.stripProposer)
 
 		r.Get("/getAllUsers", s.getUsers)
 		r.Get("/dropAll", s.dropAll)

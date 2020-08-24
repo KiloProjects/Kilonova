@@ -11,7 +11,7 @@
 		<a href="/logout" class="list-group-item list-group-item-action">Log out</a>
 		{{ end }}
 		<a href="/probleme" class="list-group-item list-group-item-action">Listă probleme</a>
-		{{if .User.Proposer}}
+		{{if (or .User.Proposer .User.Admin)}}
 		<a href="/probleme/create" class="list-group-item list-group-item-action">Creare problemă</a>
 		{{ end }}
 		<a href="/tasks" class="list-group-item list-group-item-action">Listă task-uri</a>

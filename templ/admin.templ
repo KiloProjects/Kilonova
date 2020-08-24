@@ -4,11 +4,163 @@
 	<h1>
 		Super secret admin crib
 	</h1>
-	<form id="dbDropper">
+	<script>
+		async function getUser(name) {
+			let resp = await fetch(`/api/user/getByName?name=${name}`);
+			return await resp.json();
+		}
+		async function postCall(call, id) {
+			let resp = await fetch(`/api/admin/${call}?id=${id}`, {method: 'POST'});
+			return await resp.json();
+		}
+		getUser("alexvasiluta");
+	</script>
+
+	<form id="makeAdmin">
+		<h2>Fă admin:</h2>
+		<input class="form-control" type="text" id="userToAdmin" placeholder="User să faci admin">
+		<button type="submit" class="btn btn-primary">Fă Admin</button>
+	</form>
+	<script>
+		$("#makeAdmin").submit(e => {
+			e.preventDefault();
+			let user = $("#makeAdmin #userToAdmin").val();
+			(async () => {
+				let res = await getUser(user);
+				if(res.status == "error") {
+					createToast({
+						status: "error",
+						title: "Could not admin user",
+						description: res.data
+					})
+					return
+				}
+				res = await postCall("makeAdmin", res.data.ID)
+				if(res.status == "error") {
+					createToast({
+						status: "error",
+						title: "Could not admin user",
+						description: res.data
+					})
+					return
+				}
+				createToast({
+					description: res.data
+				})
+			})();
+		})
+	</script>
+	<br/>
+	<form id="stripAdmin">
+		<h2>Șterge admin:</h2>
+		<input class="form-control" type="text" id="userToDeAdmin" placeholder="User la care ștergi admin-ul">
+		<button type="submit" class="btn btn-primary">Șterge Admin</button>
+	</form>
+	<script>
+		$("#stripAdmin").submit(e => {
+			e.preventDefault();
+			let user = $("#stripAdmin #userToDeAdmin").val();
+			(async () => {
+				let res = await getUser(user);
+				if(res.status == "error") {
+					createToast({
+						status: "error",
+						title: "Could not strip admin for user",
+						description: res.data
+					})
+					return
+				}
+				res = await postCall("stripAdmin", res.data.ID)
+				if(res.status == "error") {
+					createToast({
+						status: "error",
+						title: "Could not strip admin for user",
+						description: res.data
+					})
+					return
+				}
+				createToast({
+					description: res.data
+				})
+			})();
+		})
+	</script>
+	<br/>
+	<form id="makeProposer">
+		<h2>Fă propunător:</h2>
+		<input class="form-control" type="text" id="userToPropose" placeholder="User să faci propunător">
+		<button type="submit" class="btn btn-primary">Fă propunător</button>
+	</form>
+	<script>
+		$("#makeProposer").submit(e => {
+			e.preventDefault();
+			let user = $("#makeProposer #userToPropose").val();
+			(async () => {
+				let res = await getUser(user);
+				if(res.status == "error") {
+					createToast({
+						status: "error",
+						title: "Could not make user a proposer",
+						description: res.data
+					})
+					return
+				}
+				res = await postCall("makeProposer", res.data.ID)
+				if(res.status == "error") {
+					createToast({
+						status: "error",
+						title: "Could not make user a proposer",
+						description: res.data
+					})
+					return
+				}
+				createToast({
+					description: res.data
+				})
+			})();
+		})
+	</script>
+	<br/>
+	<form id="stripProposer">
+		<h2>Șterge propunător:</h2>
+		<input class="form-control" type="text" id="userToUnPropose" placeholder="User să ștergi propunător">
+		<button type="submit" class="btn btn-primary">Șterge propunător</button>
+	</form>
+	<script>
+		$("#stripProposer").submit(e => {
+			e.preventDefault();
+			let user = $("#stripProposer #userToUnPropose").val();
+			(async () => {
+				let res = await getUser(user);
+				if(res.status == "error") {
+					createToast({
+						status: "error",
+						title: "Could not strip user's proposer",
+						description: res.data
+					})
+					return
+				}
+				res = await postCall("stripProposer", res.data.ID)
+				if(res.status == "error") {
+					createToast({
+						status: "error",
+						title: "Could not strip user's proposer",
+						description: res.data
+					})
+					return
+				}
+				createToast({
+					description: res.data
+				})
+			})();
+		})
+	</script>
+	<!--<form id="dbDropper">
 		<h2>Drop the DB</h2>
 		<input type="form-control" id="confirmationKey" placeholder="Very secure safety key">
 		<button type="submit" class="btn btn-primary">Drop DB</button>
 	</form>
+
 
 	<script>
 		$("#dbDropper").submit(e => {
@@ -20,7 +172,7 @@
 				console.error("Incorrect key value")
 			}
 		})
-	</script>
+	</script>-->
 </div>
 
 {{ template "util/footer" . }}

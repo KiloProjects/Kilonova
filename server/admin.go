@@ -36,6 +36,7 @@ func (s *API) makeAdmin(w http.ResponseWriter, r *http.Request) {
 		if err := s.db.MakeAdmin(id); err != nil {
 			errorData(w, err.Error(), 500)
 		}
+		returnData(w, "success", "Succesfully added admin")
 	}
 }
 
@@ -55,6 +56,7 @@ func (s *API) stripAdmin(w http.ResponseWriter, r *http.Request) {
 		if err := s.db.RemoveAdmin(id); err != nil {
 			errorData(w, err.Error(), 500)
 		}
+		returnData(w, "success", "Succesfully removed admin")
 	}
 }
 
@@ -72,6 +74,7 @@ func (s *API) stripProposer(w http.ResponseWriter, r *http.Request) {
 		if err := s.db.RemoveProposer(id); err != nil {
 			errorData(w, err.Error(), 500)
 		}
+		returnData(w, "success", "Succesfully stripped proposer role")
 	}
 }
 
@@ -81,6 +84,7 @@ func (s *API) makeProposer(w http.ResponseWriter, r *http.Request) {
 		if err := s.db.MakeProposer(id); err != nil {
 			errorData(w, err.Error(), 500)
 		}
+		returnData(w, "success", "Succesfully made proposer")
 	}
 }
 

@@ -20,7 +20,7 @@ func (d *DB) GetTaskByID(id uint) (*common.Task, error) {
 // TODO: Pagination
 func (d *DB) GetAllTasks() ([]common.Task, error) {
 	var tasks []common.Task
-	if err := d.DB.Preload("Problem").Preload("User").Order("id").Find(&tasks).Error; err != nil {
+	if err := d.DB.Preload("Problem").Preload("User").Order("id desc").Find(&tasks).Error; err != nil {
 		return nil, err
 	}
 	return tasks, nil
