@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -23,10 +24,15 @@ func (s *API) getTaskByID(w http.ResponseWriter, r *http.Request) {
 	}
 	task, err := s.db.GetTaskByID(uint(taskID))
 	if err != nil {
-		errorData(w, "Could not find test", http.StatusBadRequest)
+		errorData(w, "Could not find task", http.StatusBadRequest)
 		return
 	}
-	returnData(w, "success", task)
+
+	if !common.IsTaskVisible(*task, common.UserFromContext(r)) {
+		task.SourceCode = ""
+	}
+
+	returnData(w, "success", *task)
 }
 
 // getTasks returns all Tasks from the DB
@@ -38,7 +44,61 @@ func (s *API) getTasks(w http.ResponseWriter, r *http.Request) {
 		returnData(w, http.StatusText(500), 500)
 		return
 	}
+
+	user := common.UserFromContext(r)
+	for i := 0; i < len(tasks); i++ {
+		if !common.IsTaskVisible(tasks[i], user) {
+			tasks[i].SourceCode = ""
+		}
+	}
 	returnData(w, "success", tasks)
+}
+
+func (s *API) setTaskVisible(w http.ResponseWriter, r *http.Request) {
+	if r.FormValue("visible") == "" {
+		errorData(w, "`visible` not specified", http.StatusBadRequest)
+		return
+	}
+
+	if r.FormValue("id") == "" {
+		errorData(w, "`id` not specified", http.StatusBadRequest)
+		return
+	}
+
+	b, err := strconv.ParseBool(r.FormValue("visible"))
+	if err != nil {
+		errorData(w, "`visible` not valid bool", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.ParseUint(r.FormValue("id"), 10, 0)
+	if err != nil {
+		errorData(w, "`id` not valid unsigned int", http.StatusBadRequest)
+		return
+	}
+
+	task, err := s.db.GetTaskByID(uint(id))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			errorData(w, "Task not found", http.StatusNotFound)
+			return
+		}
+		fmt.Println(err)
+		errorData(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	if !common.IsTaskEditor(*task, common.UserFromContext(r)) {
+		errorData(w, "You are not allowed to do this", 403)
+		return
+	}
+
+	if err := s.db.UpdateTaskVisibility(uint(id), b); err != nil {
+		errorData(w, err.Error(), 500)
+		return
+	}
+
+	returnData(w, "success", "Updated visibility status")
 }
 
 // submitTask registers a task to be sent to the Eval handler

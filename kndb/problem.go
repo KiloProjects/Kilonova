@@ -23,6 +23,14 @@ func (d *DB) GetAllProblems() ([]common.Problem, error) {
 	return problems, nil
 }
 
+func (d *DB) GetAllVisibleProblems(user common.User) ([]common.Problem, error) {
+	problems, err := d.GetAllProblems()
+	if err != nil {
+		return nil, err
+	}
+	return common.FilterVisible(problems, user), nil
+}
+
 // ProblemExists returns a bool if a problem with the specified name exists
 func (d *DB) ProblemExists(name string) bool {
 	var cnt int64

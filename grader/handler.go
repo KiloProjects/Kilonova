@@ -19,11 +19,13 @@ type Handler struct {
 	db    *kndb.DB
 	dm    datamanager.Manager
 	ctx   context.Context
+	done  chan bool
 }
 
 func NewHandler(ctx context.Context, db *kndb.DB, dm datamanager.Manager) *Handler {
 	ch := make(chan common.Task, 5)
-	return &Handler{tChan: ch, db: db, dm: dm, ctx: ctx}
+	done := make(chan bool, 5)
+	return &Handler{tChan: ch, db: db, dm: dm, ctx: ctx, done: done}
 }
 
 // chFeeder "feeds" tChan with relevant data
@@ -44,6 +46,7 @@ func (h *Handler) chFeeder() {
 				}
 			}
 		case <-h.ctx.Done():
+		case <-h.done:
 			ticker.Stop()
 			return
 		}
@@ -153,6 +156,9 @@ func (h *Handler) Start(path string) {
 	go h.chFeeder()
 
 	go func() {
+		defer func() {
+			h.done <- true
+		}()
 		conn, err := net.Dial("unix", path)
 		if err != nil {
 			log.Println("Dialing error:", err)

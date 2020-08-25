@@ -9,6 +9,23 @@ import (
 	"github.com/gosimple/slug"
 )
 
+func (s *API) setProblemVisible(w http.ResponseWriter, r *http.Request) {
+	if r.FormValue("visible") == "" {
+		errorData(w, "`visible` not specified", http.StatusBadRequest)
+		return
+	}
+	b, err := strconv.ParseBool(r.FormValue("visible"))
+	if err != nil {
+		errorData(w, "`visible` not valid bool", http.StatusBadRequest)
+		return
+	}
+	if err := s.db.UpdateProblemField(getContextValue(r, "pbID").(uint), "visible", b); err != nil {
+		errorData(w, err.Error(), 500)
+		return
+	}
+	returnData(w, "success", "Updated visibility status")
+}
+
 func (s *API) updateTitle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("A", r.ParseForm())
 	val := r.FormValue("title")
@@ -232,7 +249,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 // getAllProblems returns all the problems from the DB
 // TODO: Pagination
 func (s *API) getAllProblems(w http.ResponseWriter, r *http.Request) {
-	problems, err := s.db.GetAllProblems()
+	problems, err := s.db.GetAllVisibleProblems(common.UserFromContext(r))
 	if err != nil {
 		//s.errlog("%s", err)
 		returnData(w, http.StatusText(500), 500)

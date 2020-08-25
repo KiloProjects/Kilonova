@@ -82,6 +82,9 @@ type Task struct {
 	CompileError   bool       `json:"compileError"`
 	CompileMessage string     `json:"compileMessage"`
 	Score          int        `json:"score"`
+
+	// Visible controls the visibility of source code of the task to non-admin and not-author users
+	Visible bool `json:"visible"`
 }
 
 const (

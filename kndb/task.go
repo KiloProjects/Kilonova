@@ -40,6 +40,12 @@ func (d *DB) GetWaitingTasks() ([]common.Task, error) {
 	return tasks, err
 }
 
+func (d *DB) UpdateTaskVisibility(id uint, visible bool) error {
+	var tmp common.Task
+	tmp.ID = id
+	return d.DB.Model(&tmp).Update("visible", visible).Error
+}
+
 func (d *DB) UpdateCompilation(c proto.CResponse) error {
 	var tmp common.Task
 	tmp.ID = uint(c.ID)

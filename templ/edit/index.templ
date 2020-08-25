@@ -13,19 +13,34 @@
         </div>
     </form>
 
-	{{ if not .Problem.ConsoleInput }}
+	{{ if (and (not .Problem.ConsoleInput) false) }}
 		<div id="editFilename">
-		<h3>Editare nume teste (NOT IMPLEMENTED YET)</h3>
-		<form id="filenameForm" autocomplete="off">
-			<div class="form-group">
-				<input class="form-control" type="text" id="testname" name="testName" value="{{.Problem.TestName}}" placeholder="Nume teste..." required>
-			</div>
-			<div class="form-group">
-				<button class="btn btn-primary mb-2" type="submit">Editare</button>
-			</div>
-		</form>
+			<h3>Editare nume teste (NOT IMPLEMENTED YET)</h3>
+			<form id="filenameForm" autocomplete="off">
+				<div class="form-group">
+					<input class="form-control" type="text" id="testname" name="testName" value="{{.Problem.TestName}}" placeholder="Nume teste..." required>
+				</div>
+				<div class="form-group">
+					<button class="btn btn-primary mb-2" type="submit">Editare</button>
+				</div>
+			</form>
 		</div>
 	{{end}}
+
+	<script>
+		let problemID = {{.Problem.ID}}
+		let visible = {{.Problem.Visible}}
+
+		async function toggleVisiblity() {
+			visible = !visible
+			let res = await postCall(`/problem/${problemID}/update/setVisible`, {visible})
+			createToast({
+				status: res.status,
+				title: `Made ${(visible ? "visible" : "invisible")}`,
+				description: res.data
+			})
+		}
+	</script>
 
     <div class="list-group">
         <span class="list-group-item active">Alte edit-uri</span>
@@ -33,15 +48,17 @@
         <a class="list-group-item list-group-item-action" href="/probleme/{{.Problem.ID}}/edit/limite">Editare
             limite</a>
         <a class="list-group-item list-group-item-action" href="/probleme/{{.Problem.ID}}/edit/teste">Editare teste</a>
-    </div>
+    	<button class="list-group-item list-group-item-action" onclick="toggleVisiblity()">Fă vizibilă/invizibilă</button>
+	</div>
     <script>
+
         $("#titleForm").submit((e) => {
             e.preventDefault();
             let title = $("#titleForm #title").val();
             console.log(title);
 			
 			(async () => {
-				let res = await postCall("/problem/{{.Problem.ID}}/update/title", {title})
+				let res = await postCall(`/problem/${problemID}/update/title`, {title})
 				if(res.status == "error") {
 					createToast({
 						status: "error",
@@ -50,14 +67,9 @@
 					})
 					return
 				}
-				createToast({description: "Successfully updated title", onclick: () => window.location.assign("/probleme/{{.Problem.ID}}")})
+				createToast({description: "Successfully updated title", onclick: () => window.location.assign(`/probleme/${problemID}`)})
 			})()
-			/*
-			$.post("/api/problem/{{.Problem.ID}}/update/title", { title: titlu }, (data, status, _) => {
-                console.log(data, status);
-            }).fail((a, b, c) => console.log(a, b, c));
-			*/
         });
-    </script>
+	</script>
 </div>
 {{template "util/footer" . }}

@@ -23,14 +23,14 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 		problemID, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
 		if err != nil {
 			fmt.Println("ValidateProblemID:", err)
-			http.Error(w, "Invalid problem ID", http.StatusBadRequest)
+			http.Error(w, "ID invalid", http.StatusBadRequest)
 			return
 		}
 		// this is practically equivalent to /api/problem/getByID?id=problemID, but let's keep it fast
 		problem, err := rt.db.GetProblemByID(uint(problemID))
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				http.Error(w, "Problema nu există", http.StatusBadRequest)
+				http.Error(w, "Problema nu a fost găsită", 404)
 				return
 			}
 			fmt.Println("ValidateProblemID:", err)
@@ -41,6 +41,16 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 
+}
+
+func (rt *Web) ValidateVisible(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !common.IsRProblemVisible(r) {
+			http.Error(w, "Problema nu a fost găsită", 404)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // ValidateTaskID puts the ID and the Task in the router context
@@ -64,6 +74,10 @@ func (rt *Web) ValidateTaskID(next http.Handler) http.Handler {
 			return
 		}
 
+		if !common.IsTaskVisible(*task, common.UserFromContext(r)) {
+			task.SourceCode = ""
+		}
+
 		ctx := context.WithValue(r.Context(), common.TaskID, uint(taskID))
 		ctx = context.WithValue(ctx, common.TaskKey, task)
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -72,7 +86,7 @@ func (rt *Web) ValidateTaskID(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsAuthed(r) {
+		if !common.IsRAuthed(r) {
 			http.Error(w, "You must be logged in", 401)
 			return
 		}
@@ -82,7 +96,7 @@ func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeProposer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsProposer(r) {
+		if !common.IsRProposer(r) {
 			http.Error(w, "You must be a proposer", 401)
 			return
 		}
@@ -92,7 +106,7 @@ func (rt *Web) mustBeProposer(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 	return rt.mustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsAdmin(r) {
+		if !common.IsRAdmin(r) {
 			http.Error(w, "You must be an admin", 401)
 			return
 		}
@@ -102,7 +116,7 @@ func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if common.IsAuthed(r) {
+		if common.IsRAuthed(r) {
 			http.Error(w, "You must not be logged in", 401)
 			return
 		}
@@ -112,7 +126,7 @@ func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsProblemEditor(r) {
+		if !common.IsRProblemEditor(r) {
 			http.Error(w, "You must be the problem author", 401)
 			return
 		}

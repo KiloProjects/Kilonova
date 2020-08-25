@@ -8,6 +8,9 @@
 				<th scope="col">Citire/Afișare</th>
 				<th scope="col">Limită memorie</th>
 				<th scope="col">Limită timp</th>
+				{{ if .ProblemEditor }}
+				<th scope="col">Vizibilă</th>
+				{{ end }}
 			</tr>
 		</thead>
 		<tbody>
@@ -22,7 +25,10 @@
 				{{end}}
 				</th>
 				<th>{{- KBtoMB .Problem.MemoryLimit -}}MB/{{- KBtoMB .Problem.StackLimit -}}MB</th>
-				<th>{{- .Problem.TimeLimit}}s</th>
+				<th>{{- .Problem.TimeLimit -}}s</th>
+				{{ if .ProblemEditor }}
+				<th>{{.Problem.Visible}}</th>
+				{{ end }}
 			</tr>
 		</tbody>
 	</table>

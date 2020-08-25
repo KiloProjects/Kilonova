@@ -42,8 +42,11 @@ type templateData struct {
 
 	ProblemID uint
 
-	// ProblemAuthor tells us if the authed .User is able to edit the .Problem
+	// ProblemEditor tells us if the authed .User is able to edit the .Problem
 	ProblemEditor bool
+
+	// TaskEditor tells us if the authed .User is able to change visibility of the .Task
+	TaskEditor bool
 }
 
 // Web is the struct representing this whole package
@@ -158,7 +161,7 @@ func (rt *Web) GetRouter() chi.Router {
 
 		r.Route("/probleme", func(r chi.Router) {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				problems, err := rt.db.GetAllProblems()
+				problems, err := rt.db.GetAllVisibleProblems(common.UserFromContext(r))
 				if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 					fmt.Println("/probleme/", err)
 					http.Error(w, http.StatusText(500), 500)
@@ -180,6 +183,7 @@ func (rt *Web) GetRouter() chi.Router {
 			})
 			r.Route("/{id}", func(r chi.Router) {
 				r.Use(rt.ValidateProblemID)
+				r.Use(rt.ValidateVisible)
 				r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 					problem := common.ProblemFromContext(r)
 

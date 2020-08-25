@@ -70,6 +70,7 @@ func (s *API) GetRouter() chi.Router {
 				r.Post("/removeTests", s.purgeTests)
 				r.Post("/setConsoleInput", s.setInputType)
 				r.Post("/setTestName", s.setTestName)
+				r.With(s.MustBeAdmin).Post("/setVisible", s.setProblemVisible)
 			})
 			r.Route("/get", func(r chi.Router) {
 				r.Get("/tests", s.getTests)
@@ -83,6 +84,7 @@ func (s *API) GetRouter() chi.Router {
 		r.Get("/get", s.getTasks)
 		r.Get("/getByID", s.getTaskByID)
 
+		r.With(s.MustBeAuthed).Post("/setVisible", s.setTaskVisible)
 		r.With(s.MustBeAuthed).Post("/submit", s.submitTask)
 	})
 	r.Route("/user", func(r chi.Router) {

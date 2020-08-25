@@ -19,7 +19,8 @@ func (rt *Web) hydrateTemplate(r *http.Request) templateData {
 		Problem:  &problem,
 
 		// HACK: Move this somewhere else
-		ProblemEditor: common.IsProblemEditor(r),
+		ProblemEditor: common.IsRProblemEditor(r),
+		TaskEditor:    common.IsRTaskEditor(r),
 	}
 }
 

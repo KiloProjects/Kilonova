@@ -27,6 +27,8 @@ const (
 	TaskID = KNContextType("taskID")
 	// TaskKey is the key to be used for adding tasks to context
 	TaskKey = KNContextType("task")
+	// TaskEditorKey is the key to be used for adding the task editor bool to context
+	TaskEditorKey = KNContextType("taskEditor")
 )
 
 // RetData should be the way data is sent between the API and the Client
@@ -35,7 +37,7 @@ type RetData struct {
 	Data   interface{} `json:"data"`
 }
 
-// UserFromContext returns the user from context
+// UserFromContext returns the user from request context
 func UserFromContext(r *http.Request) User {
 	switch v := r.Context().Value(UserKey).(type) {
 	case User:
@@ -47,7 +49,7 @@ func UserFromContext(r *http.Request) User {
 	}
 }
 
-// ProblemFromContext returns the problem from context
+// ProblemFromContext returns the problem from request context
 func ProblemFromContext(r *http.Request) Problem {
 	switch v := r.Context().Value(ProblemKey).(type) {
 	case Problem:
@@ -59,7 +61,7 @@ func ProblemFromContext(r *http.Request) Problem {
 	}
 }
 
-// TaskFromContext returns the task from context
+// TaskFromContext returns the task from request context
 func TaskFromContext(r *http.Request) Task {
 	switch v := r.Context().Value(TaskKey).(type) {
 	case Task:
@@ -71,44 +73,93 @@ func TaskFromContext(r *http.Request) Task {
 	}
 }
 
-func IsAuthed(r *http.Request) bool {
-	user := UserFromContext(r)
-	if user.ID == 0 {
-		return false
-	}
-	return true
+// CONVENTION: IsR* is shorthand for getting the required stuff from request and passing it to its non-R counterpart
+
+func IsAuthed(user User) bool {
+	return user.ID != 0
 }
 
-func IsAdmin(r *http.Request) bool {
-	if !IsAuthed(r) {
+func IsAdmin(user User) bool {
+	if !IsAuthed(user) {
 		return false
 	}
-	user := UserFromContext(r)
 	return user.ID == 1 || user.Admin
 }
 
-func IsProposer(r *http.Request) bool {
-	if !IsAuthed(r) {
+func IsProposer(user User) bool {
+	if !IsAuthed(user) {
 		return false
 	}
-	user := UserFromContext(r)
 	return user.ID == 1 || user.Admin || user.Proposer
 }
 
-// IsProblemEditor says if the authed User can edit the Problem
-func IsProblemEditor(r *http.Request) bool {
-	if !IsAuthed(r) {
+func IsProblemEditor(user User, problem Problem) bool {
+	if !IsAuthed(user) {
 		return false
 	}
-	if IsAdmin(r) {
+	if IsAdmin(user) {
 		return true
 	}
-	user := UserFromContext(r)
-	if user.ID == 0 {
+	return user.ID == problem.UserID
+}
+
+func IsProblemVisible(user User, problem Problem) bool {
+	if problem.Visible {
+		return true
+	}
+	return IsProblemEditor(user, problem)
+}
+
+func IsTaskEditor(task Task, user User) bool {
+	if !IsAuthed(user) {
 		return false
 	}
-	problem := ProblemFromContext(r)
-	return user.ID == problem.UserID
+	return IsAdmin(user) || user.ID == task.UserID
+}
+
+func IsTaskVisible(task Task, user User) bool {
+	if task.Visible {
+		return true
+	}
+	return IsTaskEditor(task, user)
+}
+
+func IsRAuthed(r *http.Request) bool {
+	return IsAuthed(UserFromContext(r))
+}
+
+func IsRAdmin(r *http.Request) bool {
+	return IsAdmin(UserFromContext(r))
+}
+
+func IsRProposer(r *http.Request) bool {
+	return IsProposer(UserFromContext(r))
+}
+
+func IsRProblemEditor(r *http.Request) bool {
+	return IsProblemEditor(UserFromContext(r), ProblemFromContext(r))
+}
+
+func IsRProblemVisible(r *http.Request) bool {
+	return IsProblemVisible(UserFromContext(r), ProblemFromContext(r))
+}
+
+func IsRTaskEditor(r *http.Request) bool {
+	return IsTaskEditor(TaskFromContext(r), UserFromContext(r))
+}
+
+func IsRTaskVisible(r *http.Request) bool {
+	return IsTaskVisible(TaskFromContext(r), UserFromContext(r))
+}
+
+func FilterVisible(problems []Problem, user User) []Problem {
+	var showedProblems []Problem
+	for _, pb := range problems {
+		if IsProblemVisible(user, pb) {
+			showedProblems = append(showedProblems, pb)
+		}
+	}
+	return showedProblems
 }
 
 // GetSession reads and returns the data from the session cookie

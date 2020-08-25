@@ -14,7 +14,7 @@ import (
 // MustBeVisitor is middleware to make sure the user creating the request is not authenticated
 func (s *API) MustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if common.IsAuthed(r) {
+		if common.IsRAuthed(r) {
 			errorData(w, "You must not be logged in to do this", http.StatusUnauthorized)
 			return
 		}
@@ -25,7 +25,7 @@ func (s *API) MustBeVisitor(next http.Handler) http.Handler {
 // MustBeAdmin is middleware to make sure the user creating the request is an admin
 func (s *API) MustBeAdmin(next http.Handler) http.Handler {
 	return s.MustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsAdmin(r) {
+		if !common.IsRAdmin(r) {
 			errorData(w, "You must be an admin to do this", http.StatusUnauthorized)
 			return
 		}
@@ -36,7 +36,7 @@ func (s *API) MustBeAdmin(next http.Handler) http.Handler {
 // MustBeAuthed is middleware to make sure the user creating the request is authenticated
 func (s *API) MustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsAuthed(r) {
+		if !common.IsRAuthed(r) {
 			errorData(w, "You must be authenticated to do this", http.StatusUnauthorized)
 			return
 		}
@@ -47,7 +47,7 @@ func (s *API) MustBeAuthed(next http.Handler) http.Handler {
 // MustBeProposer is middleware to make sure the user creating the request is a proposer
 func (s *API) MustBeProposer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsProposer(r) {
+		if !common.IsRProposer(r) {
 			errorData(w, "You must be a proposer to do this", http.StatusUnauthorized)
 			return
 		}
@@ -79,7 +79,7 @@ func (s *API) SetupSession(next http.Handler) http.Handler {
 
 func (s *API) validateProblemEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsProblemEditor(r) {
+		if !common.IsRProblemEditor(r) {
 			errorData(w, "You must be authorized to edit the problem", http.StatusUnauthorized)
 			return
 		}
