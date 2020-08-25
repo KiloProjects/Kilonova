@@ -17,6 +17,7 @@ func (rt *Web) hydrateTemplate(r *http.Request) templateData {
 		User:     &user,
 		LoggedIn: user.ID != 0,
 		Problem:  &problem,
+		Version:  common.Version,
 
 		// HACK: Move this somewhere else
 		ProblemEditor: common.IsRProblemEditor(r),

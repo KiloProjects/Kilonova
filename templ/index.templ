@@ -1,7 +1,7 @@
 {{template "util/header" . }}
 
 <div class="container">
-	<h1>Welcome to Kilonova{{if .LoggedIn}}, {{.User.Name}}{{end}}!</h1>
+	<h1>Welcome to Kilonova {{.Version}}{{if .LoggedIn}}, {{.User.Name}}{{end}}!</h1>
 
 	<div class="list-group">
 		{{if not .LoggedIn}}

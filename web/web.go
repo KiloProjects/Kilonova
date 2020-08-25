@@ -42,6 +42,8 @@ type templateData struct {
 
 	ProblemID uint
 
+	Version string
+
 	// ProblemEditor tells us if the authed .User is able to edit the .Problem
 	ProblemEditor bool
 

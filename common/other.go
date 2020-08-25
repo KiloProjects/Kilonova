@@ -14,6 +14,8 @@ import (
 // DataDir should be where most of the data is stored
 var DataDir = "/data"
 
+const Version = "v0.1.0"
+
 // Config is the main information for the platform
 type Config struct {
 	Debug bool `json:"debugMode"`

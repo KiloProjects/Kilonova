@@ -42,6 +42,8 @@ var (
 func main() {
 	flag.Parse()
 
+	fmt.Printf("Starting Kilonova %s\n", common.Version)
+
 	common.SetDataDir(*dataDir)
 	common.Initialize()
 
