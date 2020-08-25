@@ -155,7 +155,14 @@ func (rt *Web) GetRouter() chi.Router {
 	// Also enable server push
 	r.With(rt.getUser).With(pushStuff).Route("/", func(r chi.Router) {
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			problems, err := rt.db.GetAllVisibleProblems(common.UserFromContext(r))
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				fmt.Println("/", err)
+				http.Error(w, http.StatusText(500), 500)
+				return
+			}
 			templ := rt.hydrateTemplate(r)
+			templ.Problems = &problems
 			if err := templates.ExecuteTemplate(w, "index", templ); err != nil {
 				fmt.Println(err)
 			}

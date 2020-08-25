@@ -6,7 +6,9 @@ Kilonova
 # simulation program
 sim.py
 
+
 # pkger
 pkged.go
 
 /run.sh
+/prod.sh

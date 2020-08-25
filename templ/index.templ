@@ -10,15 +10,20 @@
 		{{else}}
 		<a href="/logout" class="list-group-item list-group-item-action">Log out</a>
 		{{ end }}
-		<a href="/probleme" class="list-group-item list-group-item-action">Listă probleme</a>
+		<!--<a href="/probleme" class="list-group-item list-group-item-action">Listă probleme</a>-->
 		{{if (or .User.Proposer .User.Admin)}}
 		<a href="/probleme/create" class="list-group-item list-group-item-action">Creare problemă</a>
 		{{ end }}
 		<a href="/tasks" class="list-group-item list-group-item-action">Listă task-uri</a>
 	</div>
 	<br />
-	<script>
-	</script>
-
+	{{ with .Problems }}
+		<h1> Probleme </h1>
+		<div class="list-group">
+			{{ range . }}
+				<a href="/probleme/{{.ID}}" class="list-group-item list-group-item-action">#{{.ID}}: {{.Name}}</a>
+			{{ end }}
+		</div>
+	{{ end }} 
 </div>
 {{template "util/footer" . }}

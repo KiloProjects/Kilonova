@@ -83,14 +83,14 @@ func IsAdmin(user User) bool {
 	if !IsAuthed(user) {
 		return false
 	}
-	return user.ID == 1 || user.Admin
+	return user.Admin
 }
 
 func IsProposer(user User) bool {
 	if !IsAuthed(user) {
 		return false
 	}
-	return user.ID == 1 || user.Admin || user.Proposer
+	return user.Admin || user.Proposer
 }
 
 func IsProblemEditor(user User, problem Problem) bool {
