@@ -2,12 +2,15 @@ package kndb
 
 import (
 	"github.com/KiloProjects/Kilonova/common"
+	"gorm.io/gorm"
 )
 
 // GetProblemByID returns a problem with the specified ID
 func (d *DB) GetProblemByID(id uint) (*common.Problem, error) {
 	var problem common.Problem
-	if err := d.DB.Preload("Tests").Preload("User").First(&problem, id).Error; err != nil {
+	if err := d.DB.Preload("Tests", func(db *gorm.DB) *gorm.DB {
+		return db.Order("tests.visible_id")
+	}).Preload("User").First(&problem, id).Error; err != nil {
 		return nil, err
 	}
 	return &problem, nil

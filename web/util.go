@@ -49,5 +49,11 @@ func (rt *Web) getTestData(test common.Test) testDataType {
 		in = []byte("err")
 		out = []byte("err")
 	}
+	if len(in) > 1000000 { // 1Mb
+		in = []byte("too long to show")
+	}
+	if len(out) > 1000000 { // 1Mb
+		out = []byte("too long to show")
+	}
 	return testDataType{In: string(in), Out: string(out)}
 }
