@@ -1,29 +1,9 @@
 <script>
-	toastr.options = {
-		closeButton: true,
-		newestOnTop: true,
-		positionClass: "toast-bottom-right",
-	}
-
-	/* createToast SETTINGS
-		title: the toast title
-		status: the toast status (default "info")
-		position: the toast position (default "toast-bottom-right")
-		onclick: onClick handler
-	*/
-	function createToast(options) {
-		if (options.status == null) options.status = "info"
-		if (options.position == null) options.position = "toast-bottom-right"
-		if (options.onclick == null) options.onclick = function () { }
-		toastr[options.status](options.description, options.title, {
-			positionClass: options.position,
-			onclick: options.onclick
-		})
-	}
+	
 </script>
-<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.0.5/es5/tex-mml-chtml.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.4.2/umd/popper.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/js/bootstrap.min.js"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.0.5/es5/tex-mml-chtml.js"></script>
 </body>
 
 </html>

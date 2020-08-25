@@ -29,9 +29,18 @@
             e.preventDefault();
             let desc = cm.getValue();
             console.log(desc);
-            $.post("/api/problem/{{.Problem.ID}}/update/description", { text: desc }, (data, status, _) => {
-                console.log(data, status);
-            }).fail((a, b, c) => console.log(a, b, c));
+			(async () => {
+				let res = await postCall("/problem/{{.Problem.ID}}/update/description", {text: desc})
+				if(res.status == "error") {
+					createToast({
+						status: "error",
+						title: "Could not update description",
+						description: res.data
+					})
+					return
+				}
+				createToast({description: "Updated description", onclick: () => window.location.assign("/probleme/{{.Problem.ID}}")})
+			})()
         });
     </script>
 </div>

@@ -42,7 +42,19 @@
             let stackLimit = $("#limits #memoryStack").val();
             let timeLimit = $("#limits #timeLimit").val();
             console.log(memoryLimit, stackLimit, timeLimit);
-            $.post("/api/problem/{{.Problem.ID}}/update/limits", { memoryLimit, stackLimit, timeLimit }, (a, b, c) => console.log(a, b, c)).fail((a, b, c) => console.error(a, b, c))
+			(async () => {
+				let res = await postCall("/problem/{{.Problem.ID}}/update/limits", {memoryLimit, stackLimit, timeLimit})
+				if(res.status == "error") {
+					createToast({
+						status: "error",
+						title: "Could not update limits",
+						description: res.data
+					})
+					return
+				}
+				createToast({description: "Updated limits", onclick: () => window.location.assign("/probleme/{{.Problem.ID}}")})
+			})()
+			//            $.post("/api/problem/{{.Problem.ID}}/update/limits", { memoryLimit, stackLimit, timeLimit }, (a, b, c) => console.log(a, b, c)).fail((a, b, c) => console.error(a, b, c))
         })
     </script>
 </div>

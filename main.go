@@ -71,6 +71,7 @@ func main() {
 
 	// Initialize router
 	r := chi.NewRouter()
+
 	corsConfig := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -80,11 +81,14 @@ func main() {
 		MaxAge:           300,
 	})
 	r.Use(corsConfig.Handler)
+
+	r.Use(middleware.Compress(-1))
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.StripSlashes)
 	r.Use(middleware.Timeout(20 * time.Second))
 	r.Use(middleware.Logger)
-	r.Use(middleware.RealIP)
 
 	// Setup context
 	ctx, cancel := context.WithCancel(context.Background())

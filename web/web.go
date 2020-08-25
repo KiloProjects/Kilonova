@@ -95,7 +95,7 @@ func (rt *Web) GetRouter() chi.Router {
 				return template.HTML("Stare necunoscută")
 			}
 		},
-		"KBtoMB": func(kb int) float64 {
+		"KBtoMB": func(kb uint64) float64 {
 			return float64(kb) / 1024.0
 		},
 		"gradient": func(score, maxscore int) template.CSS {

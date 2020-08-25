@@ -18,10 +18,10 @@
             <textarea class="form-control" id="newout" placeholder="Ieșire test nou..." required></textarea>
         </div>
         <div class="form-group">
-            <input class="form-control" type="number" id="scor" placeholder="Scor" required />
+            <input class="form-control" type="number" min="0" max="100" step="1" id="scor" placeholder="Scor" required />
         </div>
         <div class="form-group">
-            <input class="form-control" type="number" id="idVisibil" placeholder="ID Vizibil" required />
+            <input class="form-control" type="number" min="0" step="1" id="idVisibil" placeholder="ID Vizibil" required />
         </div>
         <div class="form-group">
             <button class="btn btn-primary mb-2" type="submit" class="btn">Adăugare</button>
@@ -30,15 +30,28 @@
     <script>
         $("#testUpload").submit((e) => {
             e.preventDefault();
-            let testIn = $("#testUpload #newin").val();
-            let testOut = $("#testUpload #newout").val();
-            let scor = $("#testUpload #scor").val();
-            let vID = $("#testUpload #idVisibil").val();
-            console.log("IN:", testIn);
-            console.log("OUT:", testOut);
-            console.log("SCORE:", scor);
-            console.log("ID:", vID);
-            $.post("/api/problem/{{ .Problem.ID }}/update/addTest",
+            let input = $("#testUpload #newin").val();
+            let output = $("#testUpload #newout").val();
+            let score = $("#testUpload #scor").val();
+            let visibleID = $("#testUpload #idVisibil").val();
+            console.log("IN:", input);
+            console.log("OUT:", output);
+            console.log("SCORE:", score);
+            console.log("ID:", visibleID);
+			(async () => {
+				let res = await postCall("/problem/{{.Problem.ID}}/update/addTest", {input, output, score, visibleID})
+				if(res.status == "error") {
+					createToast({
+						status: "error", 
+						title: "Could not add test",
+						description: res.data
+					})
+					return
+				}
+				createToast({description: "Created test", onclick: () => window.location.assign("/probleme/{{.Problem.ID}}")})
+			})()
+			/*
+			$.post("/api/problem/{{ .Problem.ID }}/update/addTest",
                 {
                     input: testIn,
                     output: testOut,
@@ -49,6 +62,7 @@
                     console.log(data, status);
                 }
             ).fail((a, b, c) => console.log(a, b, c));
+			*/
         });
     </script>
 </div>

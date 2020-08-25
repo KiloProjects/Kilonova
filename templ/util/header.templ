@@ -5,9 +5,9 @@
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	{{with .Title}}
-	<title>{{- . }} | Kilonova</title>
+		<title>{{- . }} | Kilonova</title>
 	{{else}}
-	<title>Kilonova</title>
+		<title>Kilonova</title>
 	{{end}}
 
 	<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com/">
@@ -55,6 +55,10 @@
 			-o-tab-size: 4;
 			background-color: #f0f0f0;
 		}
+
+		code {
+			background-color: #f3f3f3;
+		}
 	</style>
 	<script>
 		var md = window.markdownit({
@@ -69,6 +73,54 @@
 			},
 		});
 		hljs.initHighlightingOnLoad();
+	</script>
+
+	<script>
+		// Util functions
+		toastr.options = {
+			closeButton: true,
+			newestOnTop: true,
+			positionClass: "toast-bottom-right",
+		}
+
+		/* createToast SETTINGS
+			title: the toast title
+			status: the toast status (default "info")
+			position: the toast position (default "toast-bottom-right")
+			onclick: onClick handler
+		*/
+		function createToast(options) {
+			if (options.status == null) options.status = "info"
+			if (options.position == null) options.position = "toast-bottom-right"
+			if (options.onclick == null) options.onclick = function () { }
+			toastr[options.status](options.description, options.title, {
+				positionClass: options.position,
+				onclick: options.onclick
+			})
+		}
+
+		async function getCall(call, params) {
+			if(call.startsWith('/')) {
+				call = call.substr(1)
+			}
+			let resp = await fetch(`/api/${call}?${$.param(params)}`, {headers: {'Accept': 'application/json'}});
+			return await resp.json()
+		}
+		async function postCall(call, params) {
+			if(call.startsWith('/')) {
+				call = call.substr(1)
+			}
+			let resp = await fetch(`/api/${call}`, {
+				method: 'POST',
+				headers: {'Content-Type': 'application/x-www-form-urlencoded','Accept': 'application/json'},
+				body: $.param(params)
+			});
+			return await resp.json();
+		}
+		
+		async function getUser(name) {
+			return await getCall('/user/getByName', {name: name})
+		}
 	</script>
 </head>
 

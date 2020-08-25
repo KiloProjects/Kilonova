@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/KiloProjects/Kilonova/common"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gosimple/slug"
 )
 
@@ -14,14 +13,22 @@ func (s *API) updateTitle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("A", r.ParseForm())
 	val := r.FormValue("title")
 	fmt.Println(val)
-	spew.Dump(r.PostForm, r.Form)
-	s.db.UpdateProblemField(getContextValue(r, "pbID").(uint), "name", val)
+	if err := s.db.UpdateProblemField(getContextValue(r, "pbID").(uint), "name", val); err != nil {
+		errorData(w, err.Error(), 500)
+		return
+	}
+	returnData(w, "success", "Updated title")
 }
 
 func (s *API) updateDescription(w http.ResponseWriter, r *http.Request) {
 	val := r.FormValue("text")
-	s.db.UpdateProblemField(getContextValue(r, "pbID").(uint), "text", val)
+	if err := s.db.UpdateProblemField(getContextValue(r, "pbID").(uint), "text", val); err != nil {
+		errorData(w, err.Error(), 500)
+		return
+	}
+	returnData(w, "success", "Updated description")
 }
+
 func (s *API) updateTest(w http.ResponseWriter, r *http.Request) {
 	// TODO
 }
@@ -69,7 +76,11 @@ func (s *API) setTestName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	problem := common.ProblemFromContext(r)
-	s.db.UpdateProblemField(problem.ID, "test_name", val)
+	if err := s.db.UpdateProblemField(problem.ID, "test_name", val); err != nil {
+		errorData(w, err.Error(), 500)
+		return
+	}
+	returnData(w, "success", "Updated test name")
 }
 
 func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
@@ -85,6 +96,7 @@ func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
 			errorData(w, err.Error(), 500)
 		}
 	}
+	returnData(w, "success", "Purged all tests")
 }
 
 func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +105,7 @@ func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
 	// in case limits is empty, set up the problem ID to save it to the DB
 
 	if r.FormValue("memoryLimit") != "" {
-		memoryLimit, err := strconv.ParseFloat(r.FormValue("memoryLimit"), 64)
+		memoryLimit, err := strconv.ParseUint(r.FormValue("memoryLimit"), 10, 0)
 		if err != nil || memoryLimit <= 0 {
 			errorData(w, "memoryLimit must be a valid float", http.StatusBadRequest)
 			return
@@ -102,7 +114,7 @@ func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
 		pb.MemoryLimit = memoryLimit
 	}
 	if r.FormValue("stackLimit") != "" {
-		stackLimit, err := strconv.ParseFloat(r.FormValue("stackLimit"), 64)
+		stackLimit, err := strconv.ParseUint(r.FormValue("stackLimit"), 10, 0)
 		if err != nil || stackLimit <= 0 {
 			errorData(w, "stackLimit must be a valid float", http.StatusBadRequest)
 			return
@@ -283,5 +295,4 @@ func (s API) getTestData(w http.ResponseWriter, r *http.Request) {
 		ret.Out = string(out)
 	}
 	returnData(w, "success", ret)
-	return
 }

@@ -9,63 +9,72 @@
 	<p>Problemă: <a href="/probleme/{{.Problem.ID}}">{{ .Problem.Name }}</a></p>
 	<p>Scor: {{ .Score }} </p>
 	<p>Eroare de compilare?: {{ .CompileError }}</p>
-	<h6>Mesaj Evaluare:</h6>
-	<pre>{{- .CompileMessage -}}</pre>
+	
+	{{ with .CompileMessage }}
 
-	<table class="table table-striped">
-		<thead class="thead-dark">
-			<tr>
-				<th scope="col">
-					ID
-				</th>
-				<th scope="col">
-					Status
-				</th>
-				<th scope="col">
-					Scor posibil
-				</th>
-				<th scope="col">
-					Scor obținut
-				</th>
-				<th scope="col">
-					Timp
-				</th>
-				<th scope="col">
-					Memorie utilizată
-				</th>
-				<th scope="col">
-					Gata
-				</th>
-			</tr>
-		</thead>
-		<tbody>
-			{{ range .Tests }}
-			<tr style="{{ gradient .Score .Test.Score }}">
-				<th scope="col">
-					{{- .Test.VisibleID -}}
-				</th>
-				<td>
-					{{- .Output -}}
-				</td>
-				<td>
-					{{- .Test.Score -}}
-				</td>
-				<td>
-					{{- .Score -}}
-				</td>
-				<td>
-					{{- printf "%.2f" .Time -}}
-				</td>
-				<td>
-					{{- .Memory -}}KB
-				</td>
-				<td>
-					{{- .Done -}}
-				</td>
-			</tr>
-			{{ end }}
-		</tbody>
-	</table>
+	<h6>Mesaj Evaluare:</h6>
+	<pre>{{- . -}}</pre>
+	
+	{{ end }}
+
+	{{ if not .CompileError }}
+		<table class="table table-striped">
+			<thead class="thead-dark">
+				<tr>
+					<th scope="col">
+						ID
+					</th>
+					<th scope="col">
+						Status
+					</th>
+					<th scope="col">
+						Scor posibil
+					</th>
+					<th scope="col">
+						Scor obținut
+					</th>
+					<th scope="col">
+						Timp
+					</th>
+					<th scope="col">
+						Memorie utilizată
+					</th>
+					<th scope="col">
+						Gata
+					</th>
+				</tr>
+			</thead>
+			<tbody>
+				{{ range .Tests }}
+				<tr style="{{ gradient .Score .Test.Score }}">
+					<th scope="col">
+						{{- .Test.VisibleID -}}
+					</th>
+					<td>
+						{{- .Output -}}
+					</td>
+					<td>
+						{{- .Test.Score -}}
+					</td>
+					<td>
+						{{- .Score -}}
+					</td>
+					<td>
+						{{- printf "%.2f" .Time -}}
+					</td>
+					<td>
+						{{- .Memory -}}KB
+					</td>
+					<td>
+						{{- .Done -}}
+					</td>
+				</tr>
+				{{ end }}
+			</tbody>
+		</table>
+
+	{{ end }}
+
 	<h3>Codul Sursă:</h3>
 	<pre><code class="{{ .Language }}">{{ .SourceCode }} </code></pre>
 	{{ end }}

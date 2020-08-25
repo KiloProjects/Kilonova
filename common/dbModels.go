@@ -34,11 +34,12 @@ type Problem struct {
 	// seconds
 	TimeLimit float64 `json:"timeLimit"`
 	// kilobytes
-	StackLimit  float64 `json:"stackLimit"`
-	MemoryLimit float64 `json:"memoryLimit"`
+	StackLimit  uint64 `json:"stackLimit"`
+	MemoryLimit uint64 `json:"memoryLimit"`
 	/// /LIMITS
 	SourceSize   int64 `json:"sourceSize"`
 	ConsoleInput bool  `json:"consoleInput"`
+	Visible      bool  `json:"visible"`
 }
 
 // Test is the type for sample test

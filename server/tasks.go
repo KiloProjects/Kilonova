@@ -50,12 +50,12 @@ func (s *API) getTasks(w http.ResponseWriter, r *http.Request) {
 // Note that the `code` param is prioritized over file upload
 func (s *API) submitTask(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var code = r.PostFormValue("code")
-	var language = r.PostFormValue("lang")
+	var code = r.FormValue("code")
+	var language = r.FormValue("lang")
 	var user = common.UserFromContext(r)
 
 	// try to read problem
-	var problemID = r.PostFormValue("problemID")
+	var problemID = r.FormValue("problemID")
 	ipbid, _ := strconv.ParseUint(problemID, 10, 32)
 	if problemID == "" {
 		errorData(w, "No problem specified", http.StatusBadRequest)

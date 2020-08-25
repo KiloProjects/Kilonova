@@ -17,16 +17,19 @@
 		$("#problemForm").submit((e) => {
 			e.preventDefault();
 			let name = $("#problemForm #pbname").val();
-			let cInput = $("#problemForm #cInputSwitch").val();
-			if (cInput == "on") {
-				cInput = true
-			} else {
-				cInput = false
-			}
-			$.post("/api/problem/create", { title: name, consoleInput: cInput }, (a, b, c) => {
-				console.log(a, b, c)
-				window.location.assign(`/probleme/${JSON.parse(a)["data"]}`)
-			}).fail((a, b, c) => console.error(a, b, c))
+			let cInput = $("#problemForm #cInputSwitch")[0].checked;
+			(async () => {
+				let res = await postCall('/problem/create', {title: name, consoleInput: cInput})
+				if(res.status == "error") {
+					createToast({
+						status: "error",
+						title: "Could not create problem",
+						description: res.data
+					})
+					return
+				}
+				createToast({description:"Successfully created problem", onclick: ()=>{window.location.assign(`/probleme/${res.data}`)}})
+			})()
 		});
 	</script>
 </div>

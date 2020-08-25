@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"unicode"
 
 	"github.com/KiloProjects/Kilonova/common"
 	"github.com/davecgh/go-spew/spew"
@@ -18,6 +19,16 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 
 	if email == "" || username == "" || password == "" {
 		errorData(w, "You must specify an email address, username and password", http.StatusBadRequest)
+		return
+	}
+
+	if strings.IndexFunc(username, unicode.IsSpace) != -1 {
+		errorData(w, "Username must not contain spaces", http.StatusBadRequest)
+		return
+	}
+
+	if strings.IndexFunc(email, unicode.IsSpace) != -1 || len(email) > 254 || len(email) < 3 {
+		errorData(w, "Invalid e-mail address", http.StatusBadRequest)
 		return
 	}
 

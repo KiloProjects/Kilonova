@@ -1,16 +1,31 @@
 {{template "util/header" . }}
 <div class="container">
     <a href="/probleme/{{- .Problem.ID -}}">[view]</a>
-    <h1>Editare titlu</h1>
+	<h1>Editare Problemă</h1>
+	<h3>Editare titlu</h3>
     <form id="titleForm" autocomplete="off">
         <div class="form-group">
             <input class="form-control" type="text" id="title" name="title" value="{{.Problem.Name}}"
                 placeholder="Titlu..." required />
         </div>
         <div class="form-group">
-            <button class="btn btn-primary mb-2" type="submit" class="btn">Editare</button>
+            <button class="btn btn-primary mb-2" type="submit">Editare</button>
         </div>
     </form>
+
+	{{ if not .Problem.ConsoleInput }}
+		<div id="editFilename">
+		<h3>Editare nume teste (NOT IMPLEMENTED YET)</h3>
+		<form id="filenameForm" autocomplete="off">
+			<div class="form-group">
+				<input class="form-control" type="text" id="testname" name="testName" value="{{.Problem.TestName}}" placeholder="Nume teste..." required>
+			</div>
+			<div class="form-group">
+				<button class="btn btn-primary mb-2" type="submit">Editare</button>
+			</div>
+		</form>
+		</div>
+	{{end}}
 
     <div class="list-group">
         <span class="list-group-item active">Alte edit-uri</span>
@@ -22,11 +37,26 @@
     <script>
         $("#titleForm").submit((e) => {
             e.preventDefault();
-            let titlu = $("#titleForm #title").val();
-            console.log(titlu);
-            $.post("/api/problem/{{.Problem.ID}}/update/title", { title: titlu }, (data, status, _) => {
+            let title = $("#titleForm #title").val();
+            console.log(title);
+			
+			(async () => {
+				let res = await postCall("/problem/{{.Problem.ID}}/update/title", {title})
+				if(res.status == "error") {
+					createToast({
+						status: "error",
+						title: "Could not update title",
+						description: res.data
+					})
+					return
+				}
+				createToast({description: "Successfully updated title", onclick: () => window.location.assign("/probleme/{{.Problem.ID}}")})
+			})()
+			/*
+			$.post("/api/problem/{{.Problem.ID}}/update/title", { title: titlu }, (data, status, _) => {
                 console.log(data, status);
             }).fail((a, b, c) => console.log(a, b, c));
+			*/
         });
     </script>
 </div>

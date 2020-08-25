@@ -1,61 +1,112 @@
 {{ template "util/header" . }}
 <div class="container">
+	<table class="table">
+		<thead class="thead-dark">
+			<tr>
+				<th scope="col">ID</th>
+				<th scope="col">Autor</th>
+				<th scope="col">Citire/Afișare</th>
+				<th scope="col">Limită memorie</th>
+				<th scope="col">Limită timp</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<th scope="row">{{- .Problem.ID -}}</th>
+				<th>{{.Problem.User.Name}}</th>
+				<th>
+				{{if .Problem.ConsoleInput}}
+					{{- printf "Consolă" -}}
+				{{else}}
+					{{- .Problem.TestName -}}.in/{{- .Problem.TestName -}}.out
+				{{end}}
+				</th>
+				<th>{{- KBtoMB .Problem.MemoryLimit -}}MB/{{- KBtoMB .Problem.StackLimit -}}MB</th>
+				<th>{{- .Problem.TimeLimit}}s</th>
+			</tr>
+		</tbody>
+	</table>
+
+
 	{{ if .ProblemEditor }}
-	<a href="/probleme/{{- .Problem.ID -}}/edit">[edit]</a>	
+		<a href="/probleme/{{- .Problem.ID -}}/edit">[editare]</a>	
 	{{ end }}
-	<h1>#{{.Problem.ID}}: {{.Problem.Name}}</h1>
+	
+	<h1>Problema <code>{{.Problem.Name}}</code></h1>
+	<hr/>
+	
+	<div>
 
-	<h5>Made by {{.Problem.User.Name}}</h5>
+		<div id="problem-content"></div>
 
-	<div id="problem-content"></div>
+		<script>
+			$("#problem-content").html(md.render("{{- .Problem.Text -}}"));
+		</script>
 
-	<script>
-		$("#problem-content").html(md.render("{{- .Problem.Text -}}"));
-	</script>
+		{{ if .LoggedIn }}
 
-	<h1>Încărcare sursă</h1>
-	<p>(Dacă mă întrebați de ce merge doar c++ acum: why not?)</p>
+			<h1>Încărcare sursă</h1>
+			<p>(Dacă mă întrebați de ce merge doar c++ acum: why not?)</p>
 
-	<form id="taskSubmit" autocomplete="off">
-		<textarea id="TaskArea" style="display: none;"></textarea>
-		<button class="btn btn-primary mb-2" type="submit">Trimite</button>
+			<form id="taskSubmit" autocomplete="off">
+				<textarea id="TaskArea" style="display: none;"></textarea>
+				<button class="btn btn-primary mb-2" type="submit">Trimite</button>
 
-	</form>
+			</form>
 
-	<script>
-		var defaultIn = `#include <iostream>
+			<script>
+				var defaultIn = `#include <iostream>
 using namespace std;
 int main()
 {
 	cout << "Hello, world!\\n";
 	return 0;
 }`;
-		$("#TaskArea").html(defaultIn);
-		var cm = CodeMirror.fromTextArea(document.getElementById("TaskArea"), {
-			lineNumbers: true,
-			indentUnit: 4,
-			lineWrapping: true,
-			mode: "text/x-c++src",
-		});
-		cm.setSize(null, "100%");
-		$("#taskSubmit").submit(e => {
-			e.preventDefault();
-			let sendData = {
-				code: cm.getValue(),
-				lang: "cpp",
-				problemID: "{{ .Problem.ID }}",
-			}
-			console.log()
-			$.post("/api/tasks/submit", sendData, (a, b, c) => createToast({
-				description: "Uploaded", onclick: function () {
-					window.location.assign(`/tasks/${JSON.parse(a)["data"]}`)
-				}
-			})).fail((a, b, c) => console.error(a, b, c));
-		})
-	</script>
-	<br />
-	<br />
-	<br />
-	<br />
+				$("#TaskArea").html(defaultIn);
+				var cm = CodeMirror.fromTextArea(document.getElementById("TaskArea"), {
+					lineNumbers: true,
+					indentUnit: 4,
+					lineWrapping: true,
+					mode: "text/x-c++src",
+				});
+				cm.setSize(null, "100%");
+				$("#taskSubmit").submit(e => {
+					e.preventDefault();
+					let sendData = {
+						problemID: "{{ .Problem.ID }}",
+						lang: "cpp",
+						code: cm.getValue(),
+					};
+					
+					(async () => {
+						let res = await postCall("/tasks/submit", sendData)
+						if(res.status == "error") {
+							createToast({
+								status: "error",
+								title: "Could not submit task",
+								description: res.data
+							})
+							return
+						}
+						createToast({description: "Uploaded", onclick: () => window.location.assign(`/tasks/${res.data}`)})
+					})()
+
+					/*console.log()
+					$.post("/api/tasks/submit", sendData, (a, b, c) => createToast({
+						description: "Uploaded", onclick: function () {
+							window.location.assign(`/tasks/${JSON.parse(a)["data"]}`)
+						}
+					})).fail((a, b, c) => console.error(a, b, c));*/
+				})
+			</script>
+			<br />
+			<br />
+			<br />
+			<br />
+
+		{{ end }}
+
+	</div>
+
 </div>
 {{ template "util/footer" . }}

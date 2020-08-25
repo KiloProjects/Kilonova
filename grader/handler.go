@@ -69,8 +69,14 @@ func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) e
 
 		proto.DecodeArgs(msg, &resp)
 		spew.Dump(resp)
+
 		if err := h.db.UpdateCompilation(resp); err != nil {
 			log.Println("Error during update of compile information:", err)
+			continue
+		}
+
+		if resp.Success == false {
+			h.db.UpdateStatus(t.ID, common.StatusDone, score)
 			continue
 		}
 
@@ -122,6 +128,9 @@ func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) e
 
 			if equal {
 				testScore = test.Test.Score
+				if resp.Comments == "" {
+					resp.Comments = "Correct Answer"
+				}
 			} else if resp.Comments == "" {
 				resp.Comments = "Wrong Answer"
 			}

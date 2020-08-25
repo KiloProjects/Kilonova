@@ -4,18 +4,6 @@
 	<h1>
 		Super secret admin crib
 	</h1>
-	<script>
-		async function getUser(name) {
-			let resp = await fetch(`/api/user/getByName?name=${name}`);
-			return await resp.json();
-		}
-		async function postCall(call, id) {
-			let resp = await fetch(`/api/admin/${call}?id=${id}`, {method: 'POST'});
-			return await resp.json();
-		}
-		getUser("alexvasiluta");
-	</script>
-
 	<form id="makeAdmin">
 		<h2>Fă admin:</h2>
 		<input class="form-control" type="text" id="userToAdmin" placeholder="User să faci admin">
@@ -35,7 +23,7 @@
 					})
 					return
 				}
-				res = await postCall("makeAdmin", res.data.ID)
+				res = await postCall("/admin/makeAdmin", res.data.ID)
 				if(res.status == "error") {
 					createToast({
 						status: "error",
@@ -70,7 +58,7 @@
 					})
 					return
 				}
-				res = await postCall("stripAdmin", res.data.ID)
+				res = await postCall("/admin/stripAdmin", res.data.ID)
 				if(res.status == "error") {
 					createToast({
 						status: "error",
@@ -105,7 +93,7 @@
 					})
 					return
 				}
-				res = await postCall("makeProposer", res.data.ID)
+				res = await postCall("/admin/makeProposer", res.data.ID)
 				if(res.status == "error") {
 					createToast({
 						status: "error",
@@ -140,7 +128,7 @@
 					})
 					return
 				}
-				res = await postCall("stripProposer", res.data.ID)
+				res = await postCall("/admin/stripProposer", res.data.ID)
 				if(res.status == "error") {
 					createToast({
 						status: "error",
