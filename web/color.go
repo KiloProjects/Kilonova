@@ -52,7 +52,7 @@ func gradient(score, maxscore int, table gradientTable) template.CSS {
 
 	// When it's perfect, we want to have another color for all this
 	if percent == 1.0 {
-		color = mustParseHex("#bdff7c")
+		color = mustParseHex("#81f542")
 	}
 
 	return template.CSS(fmt.Sprint("background-color:", color.Hex()))
