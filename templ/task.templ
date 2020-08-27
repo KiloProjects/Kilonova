@@ -82,11 +82,7 @@
 			<pre><code class="{{ .Language }}">{{ .SourceCode }} </code></pre>
 			
 			{{ if $editor }}
-				{{ if .Visible }}
-					<button id="vButton" class="btn btn-primary mb-2" onclick="toggleVisible()">Fă codul invizibil</button>
-				{{ else }}
-					<button id="vButton" class="btn btn-primary mb-2" onclick="toggleVisible()">Fă codul vizibil</button>
-				{{ end }}
+				<button id="vButton" class="btn btn-primary mb-2" onclick="toggleVisible()">Fă codul {{ if .Visible}}invizibil{{else}}vizibil{{end}}</button>
 
 				<script>
 					let visible = {{ .Visible }};
@@ -100,6 +96,8 @@
 							title: (res.status == "success" ? (visible ? "Made visible" : "Made invisible") : "Error changing visibility"),
 							description: res.data
 						});
+
+						$("#vButton").html(`Fă codul ${visible ? "invizibil" : "vizibil"}`)
 					}
 				</script>
 			{{ end }}

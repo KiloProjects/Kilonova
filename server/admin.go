@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -24,67 +25,102 @@ func getIDFromForm(w http.ResponseWriter, r *http.Request) (uint, bool) {
 func (s *API) getUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := s.db.GetAllUsers()
 	if err != nil {
+		log.Println(err)
 		errorData(w, "Could not read from DB", 500)
 		return
 	}
 	returnData(w, "success", users)
 }
 
-func (s *API) makeAdmin(w http.ResponseWriter, r *http.Request) {
-	id, ok := getIDFromForm(w, r)
-	if ok {
-		if err := s.db.MakeAdmin(id); err != nil {
-			errorData(w, err.Error(), 500)
-		}
-		returnData(w, "success", "Succesfully added admin")
-	}
-}
-
-func (s *API) stripAdmin(w http.ResponseWriter, r *http.Request) {
-	if common.UserFromContext(r).ID != 1 {
-		errorData(w, "Only the root user can strip admin", http.StatusUnauthorized)
+func (s *API) getAdmins(w http.ResponseWriter, r *http.Request) {
+	admins, err := s.db.GetAllAdmins()
+	if err != nil {
+		log.Println(err)
+		errorData(w, "Could not read from DB", 500)
 		return
 	}
+	returnData(w, "success", admins)
+}
 
+func (s *API) getProposers(w http.ResponseWriter, r *http.Request) {
+	proposers, err := s.db.GetAllProposers()
+	if err != nil {
+		log.Println(err)
+		errorData(w, "Could not read from DB", 500)
+		return
+	}
+	returnData(w, "success", proposers)
+}
+
+func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
 	id, ok := getIDFromForm(w, r)
 	if ok {
-		if id == 1 {
-			errorData(w, "You can't remove the admin of the root user", http.StatusNotAcceptable)
+		sset := r.FormValue("set")
+		if sset == "" {
+			errorData(w, "Missing `set` param", http.StatusBadRequest)
+			return
+		}
+		set, err := strconv.ParseBool(sset)
+		if err != nil {
+			errorData(w, "`set` not valid bool", http.StatusBadRequest)
 			return
 		}
 
-		if err := s.db.RemoveAdmin(id); err != nil {
+		if set == false { // additional checks for removing
+			if id == 1 {
+				errorData(w, "You can't remove admin of the root user", http.StatusNotAcceptable)
+				return
+			}
+			if id == common.UserFromContext(r).ID {
+				errorData(w, "You can't remove your own admin", http.StatusNotAcceptable)
+				return
+			}
+		}
+
+		if err := s.db.SetAdmin(id, set); err != nil {
 			errorData(w, err.Error(), 500)
 		}
-		returnData(w, "success", "Succesfully removed admin")
+		if set {
+			returnData(w, "success", "Succesfully added admin")
+		} else {
+			returnData(w, "success", "Succesfully removed admin")
+		}
 	}
 }
 
-func (s *API) stripProposer(w http.ResponseWriter, r *http.Request) {
+func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 	id, ok := getIDFromForm(w, r)
 	if ok {
-		if id == 1 {
-			errorData(w, "You can't remove the proposer rank of the root user", http.StatusNotAcceptable)
+		sset := r.FormValue("set")
+		if sset == "" {
+			errorData(w, "Missing `set` param", http.StatusBadRequest)
 			return
 		}
-		if id == common.UserFromContext(r).ID {
-			errorData(w, "You can't remove your own proposer rank", http.StatusNotAcceptable)
+		set, err := strconv.ParseBool(sset)
+		if err != nil {
+			errorData(w, "`set` not valid bool", http.StatusBadRequest)
 			return
 		}
-		if err := s.db.RemoveProposer(id); err != nil {
-			errorData(w, err.Error(), 500)
-		}
-		returnData(w, "success", "Succesfully stripped proposer role")
-	}
-}
 
-func (s *API) makeProposer(w http.ResponseWriter, r *http.Request) {
-	id, ok := getIDFromForm(w, r)
-	if ok {
-		if err := s.db.MakeProposer(id); err != nil {
+		if set == false { // additional checks for removing
+			if id == 1 {
+				errorData(w, "You can't remove the proposer rank of the root user", http.StatusNotAcceptable)
+				return
+			}
+			if id == common.UserFromContext(r).ID {
+				errorData(w, "You can't remove your own proposer rank", http.StatusNotAcceptable)
+				return
+			}
+		}
+
+		if err := s.db.SetProposer(id, set); err != nil {
 			errorData(w, err.Error(), 500)
 		}
-		returnData(w, "success", "Succesfully made proposer")
+		if set {
+			returnData(w, "success", "Succesfully added proposer")
+		} else {
+			returnData(w, "success", "Succesfully removed proposer")
+		}
 	}
 }
 

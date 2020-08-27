@@ -9,15 +9,13 @@ import (
 
 // hydrateTemplate fills a templateData struct with generic stuff like Params, User and LoggedIn
 func (rt *Web) hydrateTemplate(r *http.Request) templateData {
-	user := common.UserFromContext(r)
-	problem := common.ProblemFromContext(r)
-
 	return templateData{
 		Params:   globParams(r),
-		User:     &user,
-		LoggedIn: user.ID != 0,
-		Problem:  &problem,
+		User:     common.UserFromContext(r),
+		LoggedIn: common.IsRAuthed(r),
+		Problem:  common.ProblemFromContext(r),
 		Version:  common.Version,
+		Task:     common.TaskFromContext(r),
 
 		// HACK: Move this somewhere else
 		ProblemEditor: common.IsRProblemEditor(r),
@@ -43,17 +41,22 @@ type testDataType struct {
 	Out string
 }
 
-func (rt *Web) getTestData(test common.Test) testDataType {
+func (rt *Web) getFullTestData(test common.Test) testDataType {
 	in, out, err := rt.dm.GetTest(test.ProblemID, test.VisibleID)
 	if err != nil {
 		in = []byte("err")
 		out = []byte("err")
 	}
-	if len(in) > 1000000 { // 1Mb
-		in = []byte("too long to show")
-	}
-	if len(out) > 1000000 { // 1Mb
-		out = []byte("too long to show")
-	}
 	return testDataType{In: string(in), Out: string(out)}
+}
+
+func (rt *Web) getTestData(test common.Test) testDataType {
+	t := rt.getFullTestData(test)
+	if len(t.In) > 128*1024 { // 128KB
+		t.In = "too long to show here"
+	}
+	if len(t.Out) > 128*1024 { // 128KB
+		t.Out = "too long to show here"
+	}
+	return t
 }

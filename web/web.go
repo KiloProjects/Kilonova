@@ -27,18 +27,18 @@ var templates *template.Template
 type templateData struct {
 	Title    string
 	Params   map[string]string
-	User     *common.User
+	User     common.User
 	LoggedIn bool
 
 	// Page-specific data
 	// it is easier to just put this stuff here instead of in a `Data` interface
-	Problems *[]common.Problem
-	Problem  *common.Problem
+	Problems []common.Problem
+	Problem  common.Problem
 
-	ContentUser *common.User
+	ContentUser common.User
 
-	Tasks *[]common.Task
-	Task  *common.Task
+	Tasks []common.Task
+	Task  common.Task
 
 	ProblemID uint
 
@@ -87,7 +87,8 @@ func (rt *Web) GetRouter() chi.Router {
 			b, _ := json.MarshalIndent(v, "", "    ")
 			return string(b)
 		},
-		"getTestData": rt.getTestData,
+		"getTestData":  rt.getTestData,
+		"getFullTests": rt.getFullTestData,
 		"taskStatus": func(id int) template.HTML {
 			switch id {
 			case common.StatusWaiting:
@@ -162,7 +163,7 @@ func (rt *Web) GetRouter() chi.Router {
 				return
 			}
 			templ := rt.hydrateTemplate(r)
-			templ.Problems = &problems
+			templ.Problems = problems
 			if err := templates.ExecuteTemplate(w, "index", templ); err != nil {
 				fmt.Println(err)
 			}
@@ -178,7 +179,7 @@ func (rt *Web) GetRouter() chi.Router {
 				}
 				templ := rt.hydrateTemplate(r)
 				templ.Title = "Probleme"
-				templ.Problems = &problems
+				templ.Problems = problems
 				if err := templates.ExecuteTemplate(w, "probleme", templ); err != nil {
 					fmt.Println(err)
 				}
@@ -237,6 +238,8 @@ func (rt *Web) GetRouter() chi.Router {
 							fmt.Println(err)
 						}
 					})
+					r.Get("/teste/{id}", func(w http.ResponseWriter, r *http.Request) {
+					})
 				})
 			})
 		})
@@ -251,14 +254,12 @@ func (rt *Web) GetRouter() chi.Router {
 				}
 				templ := rt.hydrateTemplate(r)
 				templ.Title = "Tasks"
-				templ.Tasks = &tasks
+				templ.Tasks = tasks
 				check(templates.ExecuteTemplate(w, "tasks", templ))
 			})
 			r.With(rt.ValidateTaskID).Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
-				task := common.TaskFromContext(r)
 				templ := rt.hydrateTemplate(r)
-				templ.Title = fmt.Sprintf("Task %d", task.ID)
-				templ.Task = &task
+				templ.Title = fmt.Sprintf("Task %d", templ.Task.ID)
 				check(templates.ExecuteTemplate(w, "task", templ))
 			})
 		})

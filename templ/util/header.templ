@@ -99,6 +99,13 @@
 			})
 		}
 
+		function apiToast(res) {
+			createToast({
+				status: res.status,
+				description: res.data
+			})
+		}
+
 		async function getCall(call, params) {
 			if(call.startsWith('/')) {
 				call = call.substr(1)

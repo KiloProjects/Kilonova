@@ -2,165 +2,103 @@
 
 <div class="container">
 	<h1>
-		Super secret admin crib
+		Butoanele administratorilor	
 	</h1>
-	<form id="makeAdmin">
-		<h2>Fă admin:</h2>
-		<input class="form-control" type="text" id="userToAdmin" placeholder="User să faci admin">
-		<button type="submit" class="btn btn-primary">Fă Admin</button>
-	</form>
-	<script>
-		$("#makeAdmin").submit(e => {
-			e.preventDefault();
-			let user = $("#makeAdmin #userToAdmin").val();
-			(async () => {
-				let res = await getUser(user);
-				if(res.status == "error") {
-					createToast({
-						status: "error",
-						title: "Could not admin user",
-						description: res.data
-					})
-					return
-				}
-				res = await postCall("/admin/makeAdmin", res.data.ID)
-				if(res.status == "error") {
-					createToast({
-						status: "error",
-						title: "Could not admin user",
-						description: res.data
-					})
-					return
-				}
-				createToast({
-					description: res.data
-				})
-			})();
-		})
-	</script>
-	<br/>
-	<form id="stripAdmin">
-		<h2>Șterge admin:</h2>
-		<input class="form-control" type="text" id="userToDeAdmin" placeholder="User la care ștergi admin-ul">
-		<button type="submit" class="btn btn-primary">Șterge Admin</button>
-	</form>
-	<script>
-		$("#stripAdmin").submit(e => {
-			e.preventDefault();
-			let user = $("#stripAdmin #userToDeAdmin").val();
-			(async () => {
-				let res = await getUser(user);
-				if(res.status == "error") {
-					createToast({
-						status: "error",
-						title: "Could not strip admin for user",
-						description: res.data
-					})
-					return
-				}
-				res = await postCall("/admin/stripAdmin", res.data.ID)
-				if(res.status == "error") {
-					createToast({
-						status: "error",
-						title: "Could not strip admin for user",
-						description: res.data
-					})
-					return
-				}
-				createToast({
-					description: res.data
-				})
-			})();
-		})
-	</script>
-	<br/>
-	<form id="makeProposer">
-		<h2>Fă propunător:</h2>
-		<input class="form-control" type="text" id="userToPropose" placeholder="User să faci propunător">
-		<button type="submit" class="btn btn-primary">Fă propunător</button>
-	</form>
-	<script>
-		$("#makeProposer").submit(e => {
-			e.preventDefault();
-			let user = $("#makeProposer #userToPropose").val();
-			(async () => {
-				let res = await getUser(user);
-				if(res.status == "error") {
-					createToast({
-						status: "error",
-						title: "Could not make user a proposer",
-						description: res.data
-					})
-					return
-				}
-				res = await postCall("/admin/makeProposer", res.data.ID)
-				if(res.status == "error") {
-					createToast({
-						status: "error",
-						title: "Could not make user a proposer",
-						description: res.data
-					})
-					return
-				}
-				createToast({
-					description: res.data
-				})
-			})();
-		})
-	</script>
-	<br/>
-	<form id="stripProposer">
-		<h2>Șterge propunător:</h2>
-		<input class="form-control" type="text" id="userToUnPropose" placeholder="User să ștergi propunător">
-		<button type="submit" class="btn btn-primary">Șterge propunător</button>
-	</form>
-	<script>
-		$("#stripProposer").submit(e => {
-			e.preventDefault();
-			let user = $("#stripProposer #userToUnPropose").val();
-			(async () => {
-				let res = await getUser(user);
-				if(res.status == "error") {
-					createToast({
-						status: "error",
-						title: "Could not strip user's proposer",
-						description: res.data
-					})
-					return
-				}
-				res = await postCall("/admin/stripProposer", res.data.ID)
-				if(res.status == "error") {
-					createToast({
-						status: "error",
-						title: "Could not strip user's proposer",
-						description: res.data
-					})
-					return
-				}
-				createToast({
-					description: res.data
-				})
-			})();
-		})
-	</script>
-	<!--<form id="dbDropper">
-		<h2>Drop the DB</h2>
-		<input type="form-control" id="confirmationKey" placeholder="Very secure safety key">
-		<button type="submit" class="btn btn-primary">Drop DB</button>
-	</form>
+	<h2>Schimbă rolurile:</h2>
+	<div class="form-group">
+		<input class="form-control" type="text" id="userToChange" placeholder="User să administrezi">
+	</div>
+	<div class="form-group">
+		<button class="btn btn-primary" onclick="setFormAdmin(true)">Fă Admin</button>
+		<button class="btn btn-primary" onclick="setFormProposer(true)">Fă Propunător</button>
+	</div>
 
+	<h3>Admini:</h3>
+	<div id="admin-group" class="list-group">
+		Loading...
+	</div>
+	<br/>
+	<h3>Propunători:</h3>
+	<div id="proposer-group" class="list-group">
+		Loading...
+	</div>
 
 	<script>
-		$("#dbDropper").submit(e => {
-			e.preventDefault();
-			let key = $("#dbDropper #confirmationKey").val();
-			if (key == "IAmAbsolutelySureIWantToDoThis") {
-				$.post("/api/admin/dropAll", { "IAmAbsolutelySureIWantToDoThis": true }, (a, b, c) => console.log(a, b, c)).fail((a, b, c) => console.error(a, b, c))
-			} else {
-				console.error("Incorrect key value")
+		async function setAdmin(id, set) {
+			let res = await postCall("/admin/setAdmin", {id, set})
+			apiToast(res)
+			if(res.status == "error") {
+				return
 			}
-		})
-	</script>-->
+			loadAdmins()
+			loadProposers()
+		}
+		async function setProposer(id, set) {
+			let res = await postCall("/admin/setProposer", {id, set})
+			apiToast(res)
+			if(res.status == "error") {
+				return
+			}
+			loadProposers()
+		}
+
+		async function setFormAdmin(toSet) {
+			let user = $("#userToChange").val();
+			let res = await getUser(user);
+			if(res.status == "error") {
+				apiToast(res)
+				return
+			}
+			await setAdmin(res.data.ID, toSet)
+		}
+		async function setFormProposer(toSet) {
+			let user = $("#userToChange").val();
+			let res = await getUser(user);
+			if(res.status == "error") {
+				apiToast(res)
+				return
+			}
+			await setProposer(res.data.ID, toSet)
+		}
+
+		async function loadAdmins(id = "#admin-group") {
+			$(id).html("Loading...")
+			let res = await getCall("/admin/getAllAdmins")
+			if(res.status == "error") {
+				apiToast(res)
+				return
+			}
+			console.log(res.data)
+			let outhtml = ""
+			for(let user of res.data) {
+				outhtml += `<div class="list-group-item d-flex justify-content-between align-items-center">
+					${user.name}
+					<span onclick="setAdmin(${user.ID}, false)">X</span>
+				</div>`	
+			}
+			$(id).html(outhtml)
+		}
+		async function loadProposers(id = "#proposer-group") {
+			$(id).html("Loading...")
+			let res = await getCall("/admin/getAllProposers")
+			if(res.status == "error") {
+				apiToast(res)
+				return
+			}
+			let outhtml = ""
+			console.log(res.data)
+			for(let user of res.data) {
+				outhtml += `<div class="list-group-item d-flex justify-content-between align-items-center">${user.name}`
+				if(!user.isAdmin) {
+					outhtml += `<span onclick="setProposer(${user.ID}, false)">X</span>`
+				}
+				outhtml += `</div>`	
+			}
+			$(id).html(outhtml)
+		}
+		loadAdmins();
+		loadProposers();
+	</script>
 </div>
 
 {{ template "util/footer" . }}

@@ -21,8 +21,8 @@ func (d *DB) RegisterUser(email, username, password string) (*common.User, error
 	user.Password = string(hashed)
 	d.DB.Create(&user)
 	if user.ID == 1 {
-		d.MakeAdmin(1)
-		d.MakeProposer(1)
+		d.SetAdmin(1, true)
+		d.SetProposer(1, true)
 	}
 	return &user, nil
 }

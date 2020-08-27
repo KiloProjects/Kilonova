@@ -5,16 +5,18 @@
 
 	<div class="list-group">
 		{{if not .LoggedIn}}
-		<a href="/login" class="list-group-item list-group-item-action">Log in</a>
-		<a href="/signup" class="list-group-item list-group-item-action">Sign up</a>
+		<a class="list-group-item list-group-item-action" href="/login">Log in</a>
+		<a class="list-group-item list-group-item-action" href="/signup">Sign up</a>
 		{{else}}
-		<a href="/logout" class="list-group-item list-group-item-action">Log out</a>
+		<a class="list-group-item list-group-item-action" href="/logout">Log out</a>
 		{{ end }}
-		<!--<a href="/probleme" class="list-group-item list-group-item-action">Listă probleme</a>-->
 		{{if (or .User.Proposer .User.Admin)}}
-		<a href="/probleme/create" class="list-group-item list-group-item-action">Creare problemă</a>
+		<a class="list-group-item list-group-item-action" href="/probleme/create">Creare problemă</a>
 		{{ end }}
-		<a href="/tasks" class="list-group-item list-group-item-action">Listă task-uri</a>
+		{{if .User.Admin}}
+		<a class="list-group-item list-group-item-action" href="/admin">Butoane administrative</a>
+		{{end}}
+		<a class="list-group-item list-group-item-action" href="/tasks">Listă task-uri</a>
 	</div>
 	<br />
 	{{ with .Problems }}

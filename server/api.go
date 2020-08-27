@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/KiloProjects/Kilonova/common"
@@ -38,13 +39,13 @@ func (s *API) GetRouter() chi.Router {
 	r.Route("/admin", func(r chi.Router) {
 		r.Use(s.MustBeAdmin)
 
-		r.Post("/makeAdmin", s.makeAdmin)
-		r.Post("/stripAdmin", s.stripAdmin)
-
-		r.Post("/makeProposer", s.makeProposer)
-		r.Post("/stripProposer", s.stripProposer)
+		r.Post("/setAdmin", s.setAdmin)
+		r.Post("/setProposer", s.setProposer)
 
 		r.Get("/getAllUsers", s.getUsers)
+		r.Get("/getAllAdmins", s.getAdmins)
+		r.Get("/getAllProposers", s.getProposers)
+
 		r.Get("/dropAll", s.dropAll)
 	})
 
@@ -96,5 +97,10 @@ func (s *API) GetRouter() chi.Router {
 
 		r.With(s.MustBeAuthed).Post("/changeEmail", s.changeEmail)
 	})
+
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		errorData(w, "Endpoint not found", 404)
+	})
+
 	return r
 }

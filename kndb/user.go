@@ -83,21 +83,28 @@ func (d *DB) GetAllUsers() ([]common.User, error) {
 	return users, nil
 }
 
-// MakeAdmin turns a user into admin
-func (d *DB) MakeAdmin(id uint) error {
-	return d.DB.Model(&common.User{}).Where("id = ?", id).Update("admin", true).Error
+func (d *DB) GetAllAdmins() ([]common.User, error) {
+	var users []common.User
+	if err := d.DB.Where("admin = ?", true).Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
-func (d *DB) MakeProposer(id uint) error {
-	return d.DB.Model(&common.User{}).Where("id = ?", id).Update("proposer", true).Error
+func (d *DB) GetAllProposers() ([]common.User, error) {
+	var users []common.User
+	if err := d.DB.Where("proposer = ? or admin = ?", true, true).Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
-func (d *DB) RemoveAdmin(id uint) error {
-	return d.DB.Model(&common.User{}).Where("id = ?", id).Update("admin", false).Error
+func (d *DB) SetAdmin(id uint, on bool) error {
+	return d.DB.Model(&common.User{}).Where("id = ?", id).Update("admin", on).Error
 }
 
-func (d *DB) RemoveProposer(id uint) error {
-	return d.DB.Model(&common.User{}).Where("id = ?", id).Update("proposer", false).Error
+func (d *DB) SetProposer(id uint, on bool) error {
+	return d.DB.Model(&common.User{}).Where("id = ?", id).Update("proposer", on).Error
 }
 
 // SetEmail sets the email of a user with the set ID
