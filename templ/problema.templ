@@ -114,5 +114,51 @@ int main()
 
 	</div>
 
+	{{ with (problemTasks .Problem .User) }}
+		<h3> Submisii anterioare </h3>
+		<table class="table">
+			<thead class="thead-dark">
+				<tr>
+					<th scope="col">
+						ID
+					</th>
+					<th scope="col">
+						Autor
+					</th>
+					<th scope="col">
+						Problemă
+					</th>
+					<th scope="col">
+						Status
+					</th>
+					<th scope="col">
+						Scor
+					</th>
+				</tr>
+			</thead>
+			<tbody>
+				{{ range . }}
+					<tr style="{{ gradient .Score 100 }}">
+					<th scope="row">
+						{{- .ID -}}
+					</th>
+					<td>
+						{{- .User.Name -}}
+					</td>
+					<td>
+						<a href="/probleme/{{.Problem.ID}}">{{- .Problem.Name -}}</a>
+					</td>
+					<td>
+						<a href="/tasks/{{.ID}}">{{- taskStatus .Status -}}</a>
+					</td>
+					<td>
+						{{- .Score -}}
+					</td>
+				</tr>
+				{{ end }}
+			</tbody>
+		</table>
+	{{ end }}
+
 </div>
 {{ template "util/footer" . }}

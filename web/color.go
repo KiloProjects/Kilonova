@@ -12,15 +12,15 @@ import (
 
 /* Most of this GradientTable stuff is directly copied from https://github.com/lucasb-eyer/go-colorful/blob/master/doc/gradientgen/gradientgen.go, credit to the author */
 
-type gradientTable []struct {
+type gTable []struct {
 	Col colorful.Color
 	Pos float64
 }
 
-func (self gradientTable) Interpolate(t float64) colorful.Color {
-	for i := 0; i < len(self)-1; i++ {
-		c1 := self[i]
-		c2 := self[i+1]
+func (g gTable) Interpolate(t float64) colorful.Color {
+	for i := 0; i < len(g)-1; i++ {
+		c1 := g[i]
+		c2 := g[i+1]
 		if c1.Pos <= t && t <= c2.Pos {
 			// We are in between c1 and c2. Go blend them!
 			t := (t - c1.Pos) / (c2.Pos - c1.Pos)
@@ -28,7 +28,7 @@ func (self gradientTable) Interpolate(t float64) colorful.Color {
 		}
 	}
 
-	return self[len(self)-1].Col
+	return g[len(g)-1].Col
 }
 
 func mustParseHex(s string) colorful.Color {
@@ -39,7 +39,7 @@ func mustParseHex(s string) colorful.Color {
 	return c
 }
 
-func gradient(score, maxscore int, table gradientTable) template.CSS {
+func gradient(score, maxscore int, table gTable) template.CSS {
 	if score < 0 {
 		score = 0
 	}

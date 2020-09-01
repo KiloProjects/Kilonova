@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/KiloProjects/Kilonova/common"
+	"github.com/KiloProjects/Kilonova/grader/proto"
 	"gorm.io/gorm"
 )
 
@@ -32,7 +33,7 @@ func (s *API) getTaskByID(w http.ResponseWriter, r *http.Request) {
 		task.SourceCode = ""
 	}
 
-	returnData(w, "success", *task)
+	returnData(w, *task)
 }
 
 // getTasks returns all Tasks from the DB
@@ -41,7 +42,7 @@ func (s *API) getTasks(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	tasks, err := s.db.GetAllTasks()
 	if err != nil {
-		returnData(w, http.StatusText(500), 500)
+		errorData(w, http.StatusText(500), 500)
 		return
 	}
 
@@ -51,7 +52,38 @@ func (s *API) getTasks(w http.ResponseWriter, r *http.Request) {
 			tasks[i].SourceCode = ""
 		}
 	}
-	returnData(w, "success", tasks)
+	returnData(w, tasks)
+}
+
+func (s *API) getTasksForProblem(w http.ResponseWriter, r *http.Request) {
+	pid, ok := getFormInt(w, r, "pid")
+	if !ok {
+		return
+	}
+	uid, ok := getFormInt(w, r, "uid")
+	if !ok {
+		return
+	}
+	tasks, err := s.db.UserTasksOnProblem(uint(uid), uint(pid))
+	if err != nil {
+		errorData(w, err.Error(), 500)
+		return
+	}
+	returnData(w, tasks)
+}
+
+func (s *API) getSelfTasksForProblem(w http.ResponseWriter, r *http.Request) {
+	pid, ok := getFormInt(w, r, "pid")
+	if !ok {
+		return
+	}
+	uid := common.UserFromContext(r).ID
+	tasks, err := s.db.UserTasksOnProblem(uint(uid), uint(pid))
+	if err != nil {
+		errorData(w, err.Error(), 500)
+		return
+	}
+	returnData(w, tasks)
 }
 
 func (s *API) setTaskVisible(w http.ResponseWriter, r *http.Request) {
@@ -71,9 +103,8 @@ func (s *API) setTaskVisible(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := strconv.ParseUint(r.FormValue("id"), 10, 0)
-	if err != nil {
-		errorData(w, "`id` not valid unsigned int", http.StatusBadRequest)
+	id, ok := getFormInt(w, r, "id")
+	if !ok {
 		return
 	}
 
@@ -98,7 +129,7 @@ func (s *API) setTaskVisible(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	returnData(w, "success", "Updated visibility status")
+	returnData(w, "Updated visibility status")
 }
 
 // submitTask registers a task to be sent to the Eval handler
@@ -113,31 +144,24 @@ func (s *API) submitTask(w http.ResponseWriter, r *http.Request) {
 	var code = r.FormValue("code")
 	var language = r.FormValue("lang")
 	var user = common.UserFromContext(r)
-
-	// try to read problem
-	var problemID = r.FormValue("problemID")
-	ipbid, _ := strconv.ParseUint(problemID, 10, 32)
-	if problemID == "" {
-		errorData(w, "No problem specified", http.StatusBadRequest)
+	ipbid, ok := getFormInt(w, r, "problemID")
+	if !ok {
 		return
 	}
+
 	problem, err := s.db.GetProblemByID(uint(ipbid))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			errorData(w, "Problem not found", http.StatusBadRequest)
 			return
 		}
-		// shouldn't happen, but still log it
-		//s.errlog("/tasks/submit: Couldn't get problem by ID %d: %s", ipbid, err)
 		return
 	}
 
-	// validate language
-	// TODO: Move language info from protoServer (also move protoServer to another repo idk)
-	//if _, ok := protoServer.Languages[language]; ok == false {
-	//	errorData(w, "Invalid language", http.StatusBadRequest)
-	//	return
-	//}
+	if _, ok := proto.Languages[language]; ok == false {
+		errorData(w, "Invalid language", http.StatusBadRequest)
+		return
+	}
 
 	// figure out if the code is in a file or in a form value
 	if code == "" {
@@ -149,19 +173,18 @@ func (s *API) submitTask(w http.ResponseWriter, r *http.Request) {
 		file, header, err := r.FormFile("file")
 		if err != nil {
 			errorData(w, "Could not read file", http.StatusBadRequest)
-			//s.errlog("Could not read multipart file: %v", err.Error())
 			return
 		}
 
 		if problem.SourceSize != 0 && header.Size > problem.SourceSize {
 			errorData(w, "File too large", http.StatusBadRequest)
+			return
 		}
 
 		// Everything should be ok now
 		c, err := ioutil.ReadAll(file)
 		if err != nil {
 			errorData(w, "Could not read file", http.StatusBadRequest)
-			//s.errlog("Could not read file: %v", err)
 			return
 		}
 
@@ -195,7 +218,6 @@ func (s *API) submitTask(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.db.Save(&task); err != nil {
 		errorData(w, "Couldn't create test", 500)
-		//s.errlog("Could not create task: %v", err)
 		return
 	}
 

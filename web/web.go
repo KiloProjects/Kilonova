@@ -75,7 +75,7 @@ func (rt *Web) GetRouter() chi.Router {
 	r.Use(middleware.StripSlashes)
 
 	// table for gradient, initialize here so it panics if we make a mistake
-	colorTable := gradientTable{
+	colorTable := gTable{
 		{mustParseHex("#ff8279"), 0.0},
 		{mustParseHex("#eaf200"), 0.45},
 		{mustParseHex("#00933e"), 1.0},
@@ -113,6 +113,20 @@ func (rt *Web) GetRouter() chi.Router {
 				v = append(v, i)
 			}
 			return v
+		},
+		"taskScore": func(problem common.Problem, user common.User) string {
+			score, err := rt.db.MaxScoreFor(user.ID, problem.ID)
+			if err != nil || score < 0 {
+				return "-"
+			}
+			return fmt.Sprint(score)
+		},
+		"problemTasks": func(problem common.Problem, user common.User) []common.Task {
+			tasks, err := rt.db.UserTasksOnProblem(user.ID, problem.ID)
+			if err != nil {
+				return nil
+			}
+			return tasks
 		},
 	})
 	templates = template.Must(parseAllTemplates(templates, root))

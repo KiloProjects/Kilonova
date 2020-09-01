@@ -73,7 +73,7 @@
 			for(let user of res.data) {
 				outhtml += `<div class="list-group-item d-flex justify-content-between align-items-center">
 					${user.name}
-					<span onclick="setAdmin(${user.ID}, false)">X</span>
+					<span style="cursor: pointer;" onclick="setAdmin(${user.ID}, false)">X</span>
 				</div>`	
 			}
 			$(id).html(outhtml)
@@ -90,7 +90,7 @@
 			for(let user of res.data) {
 				outhtml += `<div class="list-group-item d-flex justify-content-between align-items-center">${user.name}`
 				if(!user.isAdmin) {
-					outhtml += `<span onclick="setProposer(${user.ID}, false)">X</span>`
+					outhtml += `<span style="cursor: pointer;" onclick="setProposer(${user.ID}, false)">X</span>`
 				}
 				outhtml += `</div>`	
 			}

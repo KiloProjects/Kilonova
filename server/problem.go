@@ -23,7 +23,31 @@ func (s *API) setProblemVisible(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err.Error(), 500)
 		return
 	}
-	returnData(w, "success", "Updated visibility status")
+	returnData(w, "Updated visibility status")
+}
+
+func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
+	id := getContextValue(r, "pbID").(uint)
+	uid, ok := getFormInt(w, r, "userid")
+	if !ok {
+		return
+	}
+	max, err := s.db.MaxScoreFor(uint(uid), id)
+	if err != nil {
+		errorData(w, err.Error(), 500)
+		return
+	}
+	returnData(w, max)
+}
+
+func (s *API) maxScoreSelf(w http.ResponseWriter, r *http.Request) {
+	id := getContextValue(r, "pbID").(uint)
+	max, err := s.db.MaxScoreFor(common.UserFromContext(r).ID, id)
+	if err != nil {
+		errorData(w, err.Error(), 500)
+		return
+	}
+	returnData(w, max)
 }
 
 func (s *API) updateTitle(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +58,7 @@ func (s *API) updateTitle(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err.Error(), 500)
 		return
 	}
-	returnData(w, "success", "Updated title")
+	returnData(w, "Updated title")
 }
 
 func (s *API) updateDescription(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +67,7 @@ func (s *API) updateDescription(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err.Error(), 500)
 		return
 	}
-	returnData(w, "success", "Updated description")
+	returnData(w, "Updated description")
 }
 
 func (s *API) updateTest(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +75,7 @@ func (s *API) updateTest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getTests(w http.ResponseWriter, r *http.Request) {
-	returnData(w, "success", common.ProblemFromContext(r).Tests)
+	returnData(w, common.ProblemFromContext(r).Tests)
 }
 
 func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +91,7 @@ func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, t := range common.ProblemFromContext(r).Tests {
 		if t.VisibleID == uint(id) {
-			returnData(w, "success", t)
+			returnData(w, t)
 			return
 		}
 	}
@@ -97,7 +121,7 @@ func (s *API) setTestName(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err.Error(), 500)
 		return
 	}
-	returnData(w, "success", "Updated test name")
+	returnData(w, "Updated test name")
 }
 
 func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
@@ -113,7 +137,7 @@ func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
 			errorData(w, err.Error(), 500)
 		}
 	}
-	returnData(w, "success", "Purged all tests")
+	returnData(w, "Purged all tests")
 }
 
 func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
@@ -149,11 +173,10 @@ func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
 		pb.TimeLimit = timeLimit
 	}
 	if err := s.db.Save(&pb); err != nil {
-		//s.errlog("API: /problem/%d/update/limits, db saving error: %s\n", pb.ID, err)
 		errorData(w, http.StatusText(500), 500)
 		return
 	}
-	returnData(w, "success", "Limits saved")
+	returnData(w, "Limits saved")
 }
 
 // createTest inserts a new test to the problem
@@ -200,7 +223,7 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 	); err != nil {
 		fmt.Println("Hăăăăăă", err)
 	}
-	returnData(w, "success", test.ID)
+	returnData(w, test.ID)
 }
 
 // initProblem assigns an ID for the problem
@@ -239,11 +262,10 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 	problem.TimeLimit = 0.1
 
 	if err := s.db.Save(&problem); err != nil {
-		//s.errlog("API: /problem/create, db saving error: %s\n", err)
-		returnData(w, http.StatusText(500), 500)
+		errorData(w, http.StatusText(500), 500)
 		return
 	}
-	returnData(w, "success", problem.ID)
+	returnData(w, problem.ID)
 }
 
 // getAllProblems returns all the problems from the DB
@@ -251,11 +273,10 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 func (s *API) getAllProblems(w http.ResponseWriter, r *http.Request) {
 	problems, err := s.db.GetAllVisibleProblems(common.UserFromContext(r))
 	if err != nil {
-		//s.errlog("%s", err)
-		returnData(w, http.StatusText(500), 500)
+		errorData(w, http.StatusText(500), 500)
 		return
 	}
-	returnData(w, "success", problems)
+	returnData(w, problems)
 }
 
 func (s API) pbIDFromReq(r *http.Request) uint {
@@ -274,7 +295,7 @@ func (s *API) getProblemByID(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Problem with ID doesn't exist", http.StatusBadRequest)
 		return
 	}
-	returnData(w, "success", problem)
+	returnData(w, problem)
 }
 
 // getTestData returns the test data from a specified test of a specified problem
@@ -311,5 +332,5 @@ func (s API) getTestData(w http.ResponseWriter, r *http.Request) {
 	if r.FormValue("noOut") == "" {
 		ret.Out = string(out)
 	}
-	returnData(w, "success", ret)
+	returnData(w, ret)
 }

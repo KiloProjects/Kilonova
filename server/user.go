@@ -52,13 +52,13 @@ func (s *API) getUserByName(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	returnData(w, "success", user)
+	returnData(w, user)
 
 }
 
 func (s *API) getSelf(w http.ResponseWriter, r *http.Request) {
 	spew.Dump(common.UserFromContext(r))
-	returnData(w, "success", common.UserFromContext(r))
+	returnData(w, common.UserFromContext(r))
 }
 
 func getGravatarFromEmail(email string) string {
@@ -75,8 +75,7 @@ func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.db.SetEmail(user.ID, email); err != nil {
-		// shouldn't happen, so log it
-		//s.errlog("/user/changeEmail Couldn't change email of user with id %d: %s", user.ID, email)
-		returnData(w, http.StatusText(500), 500)
+		errorData(w, http.StatusText(500), 500)
 	}
+	returnData(w, "Successfully changed email")
 }

@@ -49,7 +49,7 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		errorData(w, http.StatusText(500), 500)
 		return
 	}
-	returnData(w, "success", encoded)
+	returnData(w, encoded)
 }
 
 func (s *API) login(w http.ResponseWriter, r *http.Request) {
@@ -90,7 +90,7 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 		errorData(w, http.StatusText(500), 500)
 		return
 	}
-	returnData(w, "success", encoded)
+	returnData(w, encoded)
 }
 
 func (s *API) logout(w http.ResponseWriter, r *http.Request) {

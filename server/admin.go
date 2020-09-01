@@ -9,17 +9,8 @@ import (
 )
 
 func getIDFromForm(w http.ResponseWriter, r *http.Request) (uint, bool) {
-	sid := r.FormValue("id")
-	if sid == "" {
-		errorData(w, "Missing User ID", http.StatusBadRequest)
-		return 0, false
-	}
-	id, err := strconv.ParseUint(sid, 10, 32)
-	if err != nil {
-		errorData(w, "ID is not int", http.StatusBadRequest)
-		return 0, false
-	}
-	return uint(id), true
+	id, bl := getFormInt(w, r, "id")
+	return uint(id), bl
 }
 
 func (s *API) getUsers(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +20,7 @@ func (s *API) getUsers(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Could not read from DB", 500)
 		return
 	}
-	returnData(w, "success", users)
+	returnData(w, users)
 }
 
 func (s *API) getAdmins(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +30,7 @@ func (s *API) getAdmins(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Could not read from DB", 500)
 		return
 	}
-	returnData(w, "success", admins)
+	returnData(w, admins)
 }
 
 func (s *API) getProposers(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +40,7 @@ func (s *API) getProposers(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Could not read from DB", 500)
 		return
 	}
-	returnData(w, "success", proposers)
+	returnData(w, proposers)
 }
 
 func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
@@ -81,9 +72,9 @@ func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
 			errorData(w, err.Error(), 500)
 		}
 		if set {
-			returnData(w, "success", "Succesfully added admin")
+			returnData(w, "Succesfully added admin")
 		} else {
-			returnData(w, "success", "Succesfully removed admin")
+			returnData(w, "Succesfully removed admin")
 		}
 	}
 }
@@ -117,9 +108,9 @@ func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 			errorData(w, err.Error(), 500)
 		}
 		if set {
-			returnData(w, "success", "Succesfully added proposer")
+			returnData(w, "Succesfully added proposer")
 		} else {
-			returnData(w, "success", "Succesfully removed proposer")
+			returnData(w, "Succesfully removed proposer")
 		}
 	}
 }
@@ -130,5 +121,5 @@ func (s *API) dropAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.db.DB.Migrator().DropTable(&common.EvalTest{}, &common.Problem{}, &common.Task{}, &common.Test{}, &common.User{})
-	returnData(w, "success", "I hope you're proud")
+	returnData(w, "I hope you're proud")
 }

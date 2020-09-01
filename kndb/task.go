@@ -18,6 +18,31 @@ func (d *DB) GetTaskByID(id uint) (*common.Task, error) {
 	return &task, nil
 }
 
+func (d *DB) UserTasksOnProblem(userid uint, problemid uint) ([]common.Task, error) {
+	var tasks []common.Task
+	if err := d.DB.Preload("Problem").Preload("User").Preload("Tests", func(db *gorm.DB) *gorm.DB {
+		return db.Order("eval_tests.id")
+	}).Preload("Tests.Test").Where("user_id = ? and problem_id = ?", userid, problemid).
+		Order("id desc").Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
+func (d *DB) MaxScoreFor(userid uint, problemid uint) (int, error) {
+	tasks, err := d.UserTasksOnProblem(userid, problemid)
+	if err != nil {
+		return -1, err
+	}
+	maxscore := -1
+	for _, task := range tasks {
+		if task.Score > maxscore {
+			maxscore = task.Score
+		}
+	}
+	return maxscore, nil
+}
+
 // GetAllTasks returns all tasks
 // TODO: Pagination
 func (d *DB) GetAllTasks() ([]common.Task, error) {

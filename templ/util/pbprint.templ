@@ -1,0 +1,13 @@
+{{ $user := .User }}
+{{ with .Problems }}
+	<h1> Probleme </h1>
+	<div class="list-group">
+		{{ range . }}
+			<a href="/probleme/{{.ID}}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+				#{{.ID}}: {{.Name}}
+				<span class="badge badge-pill badge-info">{{ taskScore . $user }}</span>
+			</a>
+					{{ end }}
+	</div>
+{{ end }} 
+

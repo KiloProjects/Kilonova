@@ -19,13 +19,11 @@ type Handler struct {
 	db    *kndb.DB
 	dm    datamanager.Manager
 	ctx   context.Context
-	done  chan bool
 }
 
 func NewHandler(ctx context.Context, db *kndb.DB, dm datamanager.Manager) *Handler {
 	ch := make(chan common.Task, 5)
-	done := make(chan bool, 5)
-	return &Handler{tChan: ch, db: db, dm: dm, ctx: ctx, done: done}
+	return &Handler{tChan: ch, db: db, dm: dm, ctx: ctx}
 }
 
 // chFeeder "feeds" tChan with relevant data
@@ -46,7 +44,6 @@ func (h *Handler) chFeeder() {
 				}
 			}
 		case <-h.ctx.Done():
-		case <-h.done:
 			ticker.Stop()
 			return
 		}
@@ -153,17 +150,16 @@ func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) e
 }
 
 func (h *Handler) Start(path string) {
+	// Dial here to pre-emptively exit in case it fails
+	conn, err := net.Dial("unix", path)
+	if err != nil {
+		log.Println("Dialing error:", err)
+		return
+	}
+
 	go h.chFeeder()
 
 	go func() {
-		defer func() {
-			h.done <- true
-		}()
-		conn, err := net.Dial("unix", path)
-		if err != nil {
-			log.Println("Dialing error:", err)
-			return
-		}
 		defer conn.Close()
 		log.Println("Connected to eval")
 

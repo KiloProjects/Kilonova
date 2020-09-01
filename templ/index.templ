@@ -19,13 +19,6 @@
 		<a class="list-group-item list-group-item-action" href="/tasks">Listă task-uri</a>
 	</div>
 	<br />
-	{{ with .Problems }}
-		<h1> Probleme </h1>
-		<div class="list-group">
-			{{ range . }}
-				<a href="/probleme/{{.ID}}" class="list-group-item list-group-item-action">#{{.ID}}: {{.Name}}</a>
-			{{ end }}
-		</div>
-	{{ end }} 
+	{{template "util/pbprint" .}}
 </div>
 {{template "util/footer" . }}

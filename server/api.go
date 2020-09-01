@@ -57,6 +57,7 @@ func (s *API) GetRouter() chi.Router {
 	r.Route("/problem", func(r chi.Router) {
 		r.Get("/getAll", s.getAllProblems)
 		r.Get("/getByID", s.getProblemByID)
+
 		r.With(s.MustBeProposer).Post("/create", s.initProblem)
 		r.With(s.MustBeProposer).Route("/{id}", func(r chi.Router) {
 			r.Use(s.validateProblemID)
@@ -77,6 +78,9 @@ func (s *API) GetRouter() chi.Router {
 				r.Get("/tests", s.getTests)
 				r.Get("/test", s.getTest)
 
+				r.With(s.MustBeAuthed).Get("/selfMaxScore", s.maxScoreSelf)
+				r.Get("/maxScore", s.maxScore)
+
 				r.Get("/testData", s.getTestData)
 			})
 		})
@@ -84,6 +88,8 @@ func (s *API) GetRouter() chi.Router {
 	r.Route("/tasks", func(r chi.Router) {
 		r.Get("/get", s.getTasks)
 		r.Get("/getByID", s.getTaskByID)
+		r.Get("/getForProblem", s.getTasksForProblem)
+		r.With(s.MustBeAuthed).Get("/getSelfForProblem", s.getSelfTasksForProblem)
 
 		r.With(s.MustBeAuthed).Post("/setVisible", s.setTaskVisible)
 		r.With(s.MustBeAuthed).Post("/submit", s.submitTask)
