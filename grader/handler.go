@@ -73,7 +73,13 @@ func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) e
 		}
 
 		proto.DecodeArgs(msg, &resp)
-		ldump(h.logger, resp)
+
+		{
+			old := resp.Output
+			resp.Output = "<output stripped>"
+			ldump(h.logger, resp)
+			resp.Output = old
+		}
 
 		if err := h.db.UpdateCompilation(resp); err != nil {
 			h.logger.Println("Error during update of compile information:", err)
@@ -121,7 +127,13 @@ func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) e
 			}
 
 			proto.DecodeArgs(msg, &resp)
-			ldump(h.logger, resp)
+
+			{
+				old := resp.Output
+				resp.Output = "<output stripped>"
+				ldump(h.logger, resp)
+				resp.Output = old
+			}
 
 			var testScore int
 
