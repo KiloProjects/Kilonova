@@ -123,21 +123,28 @@ func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) e
 			proto.DecodeArgs(msg, &resp)
 			ldump(h.logger, resp)
 
-			_, out, err := h.dm.GetTest(t.ProblemID, test.Test.VisibleID)
-			if err != nil {
-				h.logger.Println("Error during test getting (2):", err)
-				continue
-			}
-			equal := compareOutputs(out, []byte(resp.Output))
 			var testScore int
 
-			if equal {
-				testScore = test.Test.Score
-				if resp.Comments == "" {
-					resp.Comments = "Correct Answer"
+			if resp.Comments == "" {
+				_, out, err := h.dm.GetTest(t.ProblemID, test.Test.VisibleID)
+				if err != nil {
+					h.logger.Println("Error during test getting (2):", err)
+					continue
 				}
-			} else if resp.Comments == "" {
-				resp.Comments = "Wrong Answer"
+				equal := compareOutputs(out, []byte(resp.Output))
+
+				if equal {
+					testScore = test.Test.Score
+					resp.Comments = "Correct Answer"
+				} else {
+					resp.Comments = "Wrong Answer"
+				}
+			}
+
+			// Make sure TLEs are fully handled
+			if resp.Time > t.Problem.TimeLimit {
+				resp.Comments = "TLE"
+				testScore = 0
 			}
 
 			if err := h.db.UpdateEvalTest(resp, testScore); err != nil {
