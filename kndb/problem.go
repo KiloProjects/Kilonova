@@ -16,7 +16,7 @@ func (d *DB) GetProblemByID(id uint) (*common.Problem, error) {
 	return &problem, nil
 }
 
-// GetAllProblems returns a slice with all problems
+// GetAllProblems returns a slice with all problems (without any preloaded stuff)
 // TODO: Pagination
 func (d *DB) GetAllProblems() ([]common.Problem, error) {
 	var problems []common.Problem

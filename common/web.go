@@ -29,12 +29,25 @@ const (
 	TaskKey = KNContextType("task")
 	// TaskEditorKey is the key to be used for adding the task editor bool to context
 	TaskEditorKey = KNContextType("taskEditor")
+	// TestKey is the key to be used for adding test IDs to context
+	TestID = KNContextType("testID")
+	// TestKey is the key to be used for adding tests to context
+	TestKey = KNContextType("test")
 )
 
 // RetData should be the way data is sent between the API and the Client
 type RetData struct {
 	Status string      `json:"status"`
 	Data   interface{} `json:"data"`
+}
+
+func IDFromContext(r *http.Request, tp KNContextType) uint {
+	switch v := r.Context().Value(tp).(type) {
+	case uint:
+		return v
+	default:
+		return 99999
+	}
 }
 
 // UserFromContext returns the user from request context
@@ -70,6 +83,18 @@ func TaskFromContext(r *http.Request) Task {
 		return *v
 	default:
 		return Task{}
+	}
+}
+
+// TestFromContext returns the test from request context
+func TestFromContext(r *http.Request) Test {
+	switch v := r.Context().Value(TestKey).(type) {
+	case Test:
+		return v
+	case *Test:
+		return *v
+	default:
+		return Test{}
 	}
 }
 

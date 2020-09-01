@@ -37,11 +37,16 @@ type templateData struct {
 	ContentUser common.User
 
 	Tasks []common.Task
-	Task  common.Task
+
+	Task   common.Task
+	TaskID uint
 
 	ProblemID uint
 
 	Version string
+
+	Test   common.Test
+	TestID uint
 
 	// ProblemEditor tells us if the authed .User is able to edit the .Problem
 	ProblemEditor bool
@@ -243,11 +248,20 @@ func (rt *Web) GetRouter() chi.Router {
 						problem := common.ProblemFromContext(r)
 						templ := rt.hydrateTemplate(r)
 						templ.Title = fmt.Sprintf("TESTE - EDIT | #%d: %s", problem.ID, problem.Name)
-						if err := templates.ExecuteTemplate(w, "edit/tests", templ); err != nil {
+						if err := templates.ExecuteTemplate(w, "edit/testAdd", templ); err != nil {
 							fmt.Println(err)
 						}
 					})
-					r.Get("/teste/{id}", func(w http.ResponseWriter, r *http.Request) {
+					r.With(rt.ValidateTestID).Get("/teste/{tid}", func(w http.ResponseWriter, r *http.Request) {
+						// TODO: VALIDATE TEST AND ADD IT TO TEMPL
+						// MAYBE CREATE A common.TestFromContext
+						test := common.TestFromContext(r)
+						problem := common.ProblemFromContext(r)
+						templ := rt.hydrateTemplate(r)
+						templ.Title = fmt.Sprintf("Teste - EDIT %d | #%d: %s", test.VisibleID, problem.ID, problem.Name)
+						if err := templates.ExecuteTemplate(w, "edit/testEdit", templ); err != nil {
+							fmt.Println(err)
+						}
 					})
 				})
 			})

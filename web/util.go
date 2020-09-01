@@ -13,9 +13,15 @@ func (rt *Web) hydrateTemplate(r *http.Request) templateData {
 		Params:   globParams(r),
 		User:     common.UserFromContext(r),
 		LoggedIn: common.IsRAuthed(r),
-		Problem:  common.ProblemFromContext(r),
 		Version:  common.Version,
-		Task:     common.TaskFromContext(r),
+
+		Problem: common.ProblemFromContext(r),
+		Task:    common.TaskFromContext(r),
+		Test:    common.TestFromContext(r),
+
+		ProblemID: common.IDFromContext(r, common.PbID),
+		TaskID:    common.IDFromContext(r, common.TaskID),
+		TestID:    common.IDFromContext(r, common.TestID),
 
 		// HACK: Move this somewhere else
 		ProblemEditor: common.IsRProblemEditor(r),

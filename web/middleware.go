@@ -22,7 +22,6 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		problemID, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
 		if err != nil {
-			fmt.Println("ValidateProblemID:", err)
 			http.Error(w, "ID invalid", http.StatusBadRequest)
 			return
 		}
@@ -58,7 +57,6 @@ func (rt *Web) ValidateTaskID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		taskID, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
 		if err != nil {
-			fmt.Println("ValidateTaskID:", err)
 			http.Error(w, "Invalid task ID", http.StatusBadRequest)
 			return
 		}
@@ -80,6 +78,29 @@ func (rt *Web) ValidateTaskID(next http.Handler) http.Handler {
 
 		ctx := context.WithValue(r.Context(), common.TaskID, uint(taskID))
 		ctx = context.WithValue(ctx, common.TaskKey, task)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (rt *Web) ValidateTestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testID, err := strconv.ParseUint(chi.URLParam(r, "tid"), 10, 32)
+		if err != nil {
+			http.Error(w, "Invalid test ID", http.StatusBadRequest)
+		}
+		// TODO: Use KeyID
+		test, err := rt.db.GetTestByVisibleID(common.ProblemFromContext(r).ID, uint(testID))
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				http.Error(w, "Testul nu există", http.StatusBadRequest)
+				return
+			}
+			fmt.Println(err)
+			http.Error(w, http.StatusText(500), 500)
+			return
+		}
+		ctx := context.WithValue(r.Context(), common.TestID, uint(testID))
+		ctx = context.WithValue(ctx, common.TestKey, test)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

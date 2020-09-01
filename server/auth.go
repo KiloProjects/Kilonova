@@ -7,7 +7,6 @@ import (
 	"unicode"
 
 	"github.com/KiloProjects/Kilonova/common"
-	"github.com/davecgh/go-spew/spew"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -56,10 +55,6 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 
-	if s.config.Debug {
-		fmt.Println(username, password)
-	}
-
 	if password == "" || username == "" {
 		errorData(w, "You must specify an username and a password", http.StatusBadRequest)
 		return
@@ -72,7 +67,6 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user = quser
-	spew.Config.Dump(user)
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		errorData(w, "Invalid username or password", http.StatusUnauthorized)

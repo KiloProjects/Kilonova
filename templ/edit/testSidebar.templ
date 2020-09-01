@@ -1,0 +1,22 @@
+<!-- Sidebar -->
+<div class="bg-light border-right" id="sidebar-wrapper">
+	<div class="sidebar-heading">Editare teste</div>
+	{{ $id := .Problem.ID }}
+	{{ $tid := .TestID }}
+	<div class="list-group list-group-flush border-top">
+		{{ range .Problem.Tests }}
+			{{ if (eq .VisibleID $tid) }}
+				<a class="list-group-item list-group-item-action active" href="/probleme/{{ $id }}/edit/teste/{{ .VisibleID }}">Testul #{{ .VisibleID }}</a>
+			{{ else }}
+				<a class="list-group-item list-group-item-action bg-light" href="/probleme/{{ $id }}/edit/teste/{{ .VisibleID }}">Testul #{{ .VisibleID }}</a>
+			{{ end }}
+		{{ end }}
+		{{ if (eq $tid 99999) }}
+			<a class="list-group-item list-group-item-action border-bottom active" href="/probleme/{{ $id }}/edit/teste">Creare test</a>
+		{{ else }}
+			<a class="list-group-item list-group-item-action border-bottom bg-light" href="/probleme/{{ $id }}/edit/teste">Creare test</a>
+		{{ end}}
+	</div>
+</div>
+<!-- /Sidebar -->
+

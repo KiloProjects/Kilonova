@@ -132,7 +132,7 @@
 </head>
 
 <body>
-	<nav class="navbar navbar-expand-lg navbar-light bg-light">
+	<nav class="navbar navbar-expand-md navbar-light bg-light">
 		<div class="container">
 			<a class="navbar-brand" href="/">Kilonova</a>
 			<button class="navbar-toggler" 
@@ -150,23 +150,26 @@
 					<a class="nav-link" href="/tasks">Listă task-uri</a>
 				</div>
 				<div class="nav navbar-nav">
-					{{if (or .User.Proposer .User.Admin)}}
-						<a class="nav-link" href="/probleme/create">Creare problemă</a>	
-					{{end}}
-					{{if .User.Admin}}
-						<a class="nav-link" href="/admin">Admin</a>
-					{{end}}
 					{{if not .LoggedIn}}
 						<a class="nav-link" href="/signup">Sign Up</a>
 						<a class="nav-link" href="/login">Log In</a>
 					{{else}}
-						<a class="nav-link active" href="#">{{ .User.Name }}</a>
-						<a class="nav-link" href="/logout">Log Out</a>
+						<div class="dropdown">
+							<button class="btn dropdown-toggle" type="button" id="profileMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+								{{ .User.Name }}
+							</button>
+							<div class="dropdown-menu" aria-labelledby="profileMenuButton">
+								{{if (or .User.Proposer .User.Admin)}}
+									<a class="dropdown-item" href="/probleme/create">Creare Problemă</a>	
+								{{end}}
+								{{if .User.Admin}}
+									<a class="dropdown-item" href="/admin">Butoane Admin</a>
+								{{end}}
+								<a class="dropdown-item" href="/logout">Log Out</a>
+							</div>
+						</div>
 					{{end}}
 				</div>
 			</div>
 		</div>
 	</nav>
-	<br />
-	<!--<a href="/">Pagină Principală</a>
-	--><br />
