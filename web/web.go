@@ -3,7 +3,6 @@
 package web
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -82,11 +81,7 @@ func (rt *Web) GetRouter() chi.Router {
 	}
 
 	templates = template.New("web").Funcs(template.FuncMap{
-		"dumpStruct": spew.Sdump,
-		"dumpAsJson": func(v interface{}) string {
-			b, _ := json.MarshalIndent(v, "", "    ")
-			return string(b)
-		},
+		"dumpStruct":   spew.Sdump,
 		"getTestData":  rt.getTestData,
 		"getFullTests": rt.getFullTestData,
 		"taskStatus": func(id int) template.HTML {

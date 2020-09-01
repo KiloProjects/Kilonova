@@ -132,6 +132,41 @@
 </head>
 
 <body>
+	<nav class="navbar navbar-expand-lg navbar-light bg-light">
+		<div class="container">
+			<a class="navbar-brand" href="/">Kilonova</a>
+			<button class="navbar-toggler" 
+				type="button" 
+				data-toggle="collapse" 
+				data-target="#navbarSupportedContent" 
+				aria-controls="navbarSupportedContent" 
+				aria-expanded="false" 
+				aria-label="Toggle navigation">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+
+			<div class="collapse navbar-collapse" id="navbarSupportedContent">
+				<div class="nav navbar-nav mr-auto">
+					<a class="nav-link" href="/tasks">Listă task-uri</a>
+				</div>
+				<div class="nav navbar-nav">
+					{{if (or .User.Proposer .User.Admin)}}
+						<a class="nav-link" href="/probleme/create">Creare problemă</a>	
+					{{end}}
+					{{if .User.Admin}}
+						<a class="nav-link" href="/admin">Admin</a>
+					{{end}}
+					{{if not .LoggedIn}}
+						<a class="nav-link" href="/signup">Sign Up</a>
+						<a class="nav-link" href="/login">Log In</a>
+					{{else}}
+						<a class="nav-link active" href="#">{{ .User.Name }}</a>
+						<a class="nav-link" href="/logout">Log Out</a>
+					{{end}}
+				</div>
+			</div>
+		</div>
+	</nav>
 	<br />
 	<!--<a href="/">Pagină Principală</a>
 	--><br />

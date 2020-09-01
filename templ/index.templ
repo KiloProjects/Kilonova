@@ -3,21 +3,6 @@
 <div class="container">
 	<h1>Welcome to Kilonova {{.Version}}{{if .LoggedIn}}, {{.User.Name}}{{end}}!</h1>
 
-	<div class="list-group">
-		{{if not .LoggedIn}}
-		<a class="list-group-item list-group-item-action" href="/login">Log in</a>
-		<a class="list-group-item list-group-item-action" href="/signup">Sign up</a>
-		{{else}}
-		<a class="list-group-item list-group-item-action" href="/logout">Log out</a>
-		{{ end }}
-		{{if (or .User.Proposer .User.Admin)}}
-		<a class="list-group-item list-group-item-action" href="/probleme/create">Creare problemă</a>
-		{{ end }}
-		{{if .User.Admin}}
-		<a class="list-group-item list-group-item-action" href="/admin">Butoane administrative</a>
-		{{end}}
-		<a class="list-group-item list-group-item-action" href="/tasks">Listă task-uri</a>
-	</div>
 	<br />
 	{{template "util/pbprint" .}}
 </div>
