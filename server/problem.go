@@ -20,7 +20,7 @@ func (s *API) setProblemVisible(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.db.UpdateProblemField(getContextValue(r, "pbID").(uint), "visible", b); err != nil {
-		errorData(w, err.Error(), 500)
+		errorData(w, err, 500)
 		return
 	}
 	returnData(w, "Updated visibility status")
@@ -34,7 +34,7 @@ func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
 	}
 	max, err := s.db.MaxScoreFor(uint(uid), id)
 	if err != nil {
-		errorData(w, err.Error(), 500)
+		errorData(w, err, 500)
 		return
 	}
 	returnData(w, max)
@@ -44,7 +44,7 @@ func (s *API) maxScoreSelf(w http.ResponseWriter, r *http.Request) {
 	id := getContextValue(r, "pbID").(uint)
 	max, err := s.db.MaxScoreFor(common.UserFromContext(r).ID, id)
 	if err != nil {
-		errorData(w, err.Error(), 500)
+		errorData(w, err, 500)
 		return
 	}
 	returnData(w, max)
@@ -55,7 +55,7 @@ func (s *API) updateTitle(w http.ResponseWriter, r *http.Request) {
 	val := r.FormValue("title")
 	fmt.Println(val)
 	if err := s.db.UpdateProblemField(getContextValue(r, "pbID").(uint), "name", val); err != nil {
-		errorData(w, err.Error(), 500)
+		errorData(w, err, 500)
 		return
 	}
 	returnData(w, "Updated title")
@@ -64,14 +64,40 @@ func (s *API) updateTitle(w http.ResponseWriter, r *http.Request) {
 func (s *API) updateDescription(w http.ResponseWriter, r *http.Request) {
 	val := r.FormValue("text")
 	if err := s.db.UpdateProblemField(getContextValue(r, "pbID").(uint), "text", val); err != nil {
-		errorData(w, err.Error(), 500)
+		errorData(w, err, 500)
 		return
 	}
 	returnData(w, "Updated description")
 }
 
-func (s *API) updateTest(w http.ResponseWriter, r *http.Request) {
-	// TODO
+func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
+	in := r.FormValue("input")
+	out := r.FormValue("output")
+	id, ok := getFormInt(w, r, "id")
+	if !ok {
+		return
+	}
+	if err := s.manager.SaveTest(common.IDFromContext(r, common.PbID), uint(id), []byte(in), []byte(out)); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	returnData(w, "Updated test data")
+}
+
+func (s *API) updateTestID(w http.ResponseWriter, r *http.Request) {
+	newID, ok := getFormInt(w, r, "newID")
+	if !ok {
+		return
+	}
+	testID, ok := getFormInt(w, r, "id")
+	if !ok {
+		return
+	}
+	if err := s.db.UpdateProblemTestVisibleID(common.IDFromContext(r, common.PbID), uint(testID), uint(newID)); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	returnData(w, "Updated test id")
 }
 
 func (s *API) getTests(w http.ResponseWriter, r *http.Request) {
@@ -118,7 +144,7 @@ func (s *API) setTestName(w http.ResponseWriter, r *http.Request) {
 	}
 	problem := common.ProblemFromContext(r)
 	if err := s.db.UpdateProblemField(problem.ID, "test_name", val); err != nil {
-		errorData(w, err.Error(), 500)
+		errorData(w, err, 500)
 		return
 	}
 	returnData(w, "Updated test name")
@@ -134,7 +160,7 @@ func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Trying to delete test with ID", t.ID)
 		if err := s.db.DB.Delete(&t).Error; err != nil {
 			// fixme(alexv): don't send the error
-			errorData(w, err.Error(), 500)
+			errorData(w, err, 500)
 		}
 	}
 	returnData(w, "Purged all tests")
@@ -318,7 +344,7 @@ func (s API) getTestData(w http.ResponseWriter, r *http.Request) {
 
 	in, out, err := s.manager.GetTest(s.pbIDFromReq(r), uint(id))
 	if err != nil {
-		errorData(w, err.Error(), 500)
+		errorData(w, err, 500)
 		return
 	}
 

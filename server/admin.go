@@ -69,7 +69,7 @@ func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := s.db.SetAdmin(id, set); err != nil {
-			errorData(w, err.Error(), 500)
+			errorData(w, err, 500)
 		}
 		if set {
 			returnData(w, "Succesfully added admin")
@@ -105,7 +105,7 @@ func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := s.db.SetProposer(id, set); err != nil {
-			errorData(w, err.Error(), 500)
+			errorData(w, err, 500)
 		}
 		if set {
 			returnData(w, "Succesfully added proposer")

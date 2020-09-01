@@ -59,29 +59,39 @@ func (s *API) GetRouter() chi.Router {
 		r.Get("/getByID", s.getProblemByID)
 
 		r.With(s.MustBeProposer).Post("/create", s.initProblem)
-		r.With(s.MustBeProposer).Route("/{id}", func(r chi.Router) {
+		r.Route("/{id}", func(r chi.Router) {
 			r.Use(s.validateProblemID)
-			r.Use(s.validateProblemEditor)
 
 			r.Route("/update", func(r chi.Router) {
+				r.Use(s.MustBeProposer)
+				r.Use(s.validateProblemEditor)
+
 				r.Post("/title", s.updateTitle)
 				r.Post("/description", s.updateDescription)
-				r.Post("/addTest", s.createTest)
-				r.Post("/limits", s.setLimits)
-				r.Post("/updateTest", s.updateTest)
-				r.Post("/removeTests", s.purgeTests)
 				r.Post("/setConsoleInput", s.setInputType)
+				r.Post("/limits", s.setLimits)
+
+				r.Post("/addTest", s.createTest)
+				r.Post("/saveTestData", s.saveTestData)
+				r.Post("/updateTestID", s.updateTestID)
+				r.Post("/removeTests", s.purgeTests)
 				r.Post("/setTestName", s.setTestName)
+
 				r.With(s.MustBeAdmin).Post("/setVisible", s.setProblemVisible)
 			})
 			r.Route("/get", func(r chi.Router) {
-				r.Get("/tests", s.getTests)
-				r.Get("/test", s.getTest)
-
 				r.With(s.MustBeAuthed).Get("/selfMaxScore", s.maxScoreSelf)
-				r.Get("/maxScore", s.maxScore)
+				r.Group(func(r chi.Router) {
+					r.Use(s.MustBeProposer)
+					r.Use(s.validateProblemEditor)
 
-				r.Get("/testData", s.getTestData)
+					r.Get("/tests", s.getTests)
+					r.Get("/test", s.getTest)
+
+					r.Get("/maxScore", s.maxScore)
+
+					r.Get("/testData", s.getTestData)
+				})
 			})
 		})
 	})
@@ -106,6 +116,10 @@ func (s *API) GetRouter() chi.Router {
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Endpoint not found", 404)
+	})
+
+	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+		errorData(w, "Method not allowed", 405)
 	})
 
 	return r

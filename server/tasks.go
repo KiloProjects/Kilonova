@@ -66,7 +66,7 @@ func (s *API) getTasksForProblem(w http.ResponseWriter, r *http.Request) {
 	}
 	tasks, err := s.db.UserTasksOnProblem(uint(uid), uint(pid))
 	if err != nil {
-		errorData(w, err.Error(), 500)
+		errorData(w, err, 500)
 		return
 	}
 	returnData(w, tasks)
@@ -80,7 +80,7 @@ func (s *API) getSelfTasksForProblem(w http.ResponseWriter, r *http.Request) {
 	uid := common.UserFromContext(r).ID
 	tasks, err := s.db.UserTasksOnProblem(uint(uid), uint(pid))
 	if err != nil {
-		errorData(w, err.Error(), 500)
+		errorData(w, err, 500)
 		return
 	}
 	returnData(w, tasks)
@@ -115,7 +115,7 @@ func (s *API) setTaskVisible(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		fmt.Println(err)
-		errorData(w, err.Error(), http.StatusNotFound)
+		errorData(w, err, http.StatusNotFound)
 		return
 	}
 
@@ -125,7 +125,7 @@ func (s *API) setTaskVisible(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.db.UpdateTaskVisibility(uint(id), b); err != nil {
-		errorData(w, err.Error(), 500)
+		errorData(w, err, 500)
 		return
 	}
 

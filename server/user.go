@@ -35,7 +35,7 @@ func (s *API) getGravatar(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := s.db.GetUserByName(name)
 	if err != nil {
-		errorData(w, err.Error(), http.StatusNotFound)
+		errorData(w, err, http.StatusNotFound)
 		return
 	}
 	http.Redirect(w, r, getGravatarFromEmail(user.Email)+"?s="+size, http.StatusTemporaryRedirect)
@@ -49,7 +49,7 @@ func (s *API) getUserByName(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := s.db.GetUserByName(name)
 	if err != nil {
-		errorData(w, err.Error(), http.StatusNotFound)
+		errorData(w, err, http.StatusNotFound)
 		return
 	}
 	returnData(w, user)

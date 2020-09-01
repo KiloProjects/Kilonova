@@ -17,3 +17,11 @@ func (d *DB) GetTestByVisibleID(pbid uint, vid uint) (*common.Test, error) {
 	}
 	return &test, nil
 }
+
+func (d *DB) UpdateVisibleID(testID uint, vid uint) error {
+	return d.DB.Model(&common.Test{}).Where("id = ?", testID).Update("visible_id", vid).Error
+}
+
+func (d *DB) UpdateProblemTestVisibleID(pID, oldVID, vid uint) error {
+	return d.DB.Model(&common.Test{}).Where("problem_id = ? AND visible_id = ?", pID, oldVID).Update("visible_id", vid).Error
+}
