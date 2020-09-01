@@ -73,7 +73,6 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 	}
 	user = quser
 	spew.Config.Dump(user)
-	fmt.Println(user.Password)
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		errorData(w, "Invalid username or password", http.StatusUnauthorized)

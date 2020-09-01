@@ -5,9 +5,18 @@
 		{{ range . }}
 			<a href="/probleme/{{.ID}}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
 				#{{.ID}}: {{.Name}}
-				<span class="badge badge-pill badge-info">{{ taskScore . $user }}</span>
-			</a>
+				<div>
+					{{ if $user.Admin }}
+						{{ if .Visible }}
+							<span class="badge badge-pill badge-success">Publicată</span>
+						{{ else }}
+							<span class="badge badge-pill badge-danger">Nepublicată</span>
+						{{ end }}
 					{{ end }}
+					<span class="badge badge-pill badge-info">{{ taskScore . $user }}</span>
+				</div>
+			</a>
+		{{ end }}
 	</div>
 {{ end }} 
 
