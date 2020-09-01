@@ -4,16 +4,18 @@
 	{{ $editor := .TaskEditor }}
 	{{ with .Task }}
 		<h2>Task {{ .ID }}</h2>
+		<p>Autor: {{ .User.Name }}</p>
 		<p>Data încărcării: {{ .CreatedAt }}</p>
 		<p>Status: {{ taskStatus .Status }}</p>
 		<p>Limbaj: {{ .Language }}</p>
 		<p>Problemă: <a href="/probleme/{{.Problem.ID}}">{{ .Problem.Name }}</a></p>
 		<p>Scor: {{ .Score }} </p>
-		<p>Eroare de compilare?: {{ .CompileError }}</p>
-		
+			
 		{{ with .CompileMessage }}
+		
+		<p>Eroare de compilare?: {{ .CompileError }}</p>
 
-		<h6>Mesaj Evaluare:</h6>
+		<h5>Mesaj Evaluare:</h5>
 		<pre>{{- . -}}</pre>
 		
 		{{ end }}
