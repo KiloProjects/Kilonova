@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -51,9 +50,7 @@ func (s *API) maxScoreSelf(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) updateTitle(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("A", r.ParseForm())
 	val := r.FormValue("title")
-	fmt.Println(val)
 	if err := s.db.UpdateProblemField(getContextValue(r, "pbID").(uint), "name", val); err != nil {
 		errorData(w, err, 500)
 		return
@@ -157,7 +154,7 @@ func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
 	copy(tests, problem.Tests)
 	s.db.UpdateProblemField(problem.ID, "tests", []common.Test{})
 	for _, t := range tests {
-		fmt.Println("Trying to delete test with ID", t.ID)
+		s.logger.Println("Trying to delete test with ID", t.ID)
 		if err := s.db.DB.Delete(&t).Error; err != nil {
 			// fixme(alexv): don't send the error
 			errorData(w, err, 500)
@@ -177,7 +174,6 @@ func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
 			errorData(w, "memoryLimit must be a valid float", http.StatusBadRequest)
 			return
 		}
-		fmt.Println("memory limit:", memoryLimit)
 		pb.MemoryLimit = memoryLimit
 	}
 	if r.FormValue("stackLimit") != "" {
@@ -186,7 +182,6 @@ func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
 			errorData(w, "stackLimit must be a valid float", http.StatusBadRequest)
 			return
 		}
-		fmt.Println("stack limit:", stackLimit)
 		pb.StackLimit = stackLimit
 	}
 	if r.FormValue("timeLimit") != "" {
@@ -195,7 +190,6 @@ func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
 			errorData(w, "timeLimit must be a valid float", http.StatusBadRequest)
 			return
 		}
-		fmt.Println("time limit:", timeLimit)
 		pb.TimeLimit = timeLimit
 	}
 	if err := s.db.Save(&pb); err != nil {
@@ -247,7 +241,8 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 		[]byte(r.FormValue("input")),
 		[]byte(r.FormValue("output")),
 	); err != nil {
-		fmt.Println("Hăăăăăă", err)
+		errorData(w, "Couldn't create test", 500)
+		s.logger.Println("Couldn't create test", err)
 	}
 	returnData(w, test.ID)
 }
@@ -313,7 +308,7 @@ func (s API) pbIDFromReq(r *http.Request) uint {
 func (s *API) getProblemByID(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseUint(r.FormValue("id"), 10, 64)
 	if err != nil {
-		fmt.Fprintln(w, "Invalid ID")
+		errorData(w, "Invalid ID", 401)
 		return
 	}
 	problem, err := s.db.GetProblemByID(uint(id))

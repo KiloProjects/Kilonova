@@ -15,15 +15,16 @@ import (
 )
 
 type Handler struct {
-	tChan chan common.Task
-	db    *kndb.DB
-	dm    datamanager.Manager
-	ctx   context.Context
+	tChan  chan common.Task
+	db     *kndb.DB
+	dm     datamanager.Manager
+	ctx    context.Context
+	logger *log.Logger
 }
 
-func NewHandler(ctx context.Context, db *kndb.DB, dm datamanager.Manager) *Handler {
+func NewHandler(ctx context.Context, db *kndb.DB, dm datamanager.Manager, logger *log.Logger) *Handler {
 	ch := make(chan common.Task, 5)
-	return &Handler{tChan: ch, db: db, dm: dm, ctx: ctx}
+	return &Handler{ch, db, dm, ctx, logger}
 }
 
 // chFeeder "feeds" tChan with relevant data
@@ -34,11 +35,11 @@ func (h *Handler) chFeeder() {
 		case <-ticker.C:
 			tasks, err := h.db.GetWaitingTasks()
 			if err != nil {
-				log.Println("Error fetching tasks:", err)
+				h.logger.Println("Error fetching tasks:", err)
 				continue
 			}
 			if tasks != nil {
-				log.Printf("Found %d tasks\n", len(tasks))
+				h.logger.Printf("Found %d tasks\n", len(tasks))
 				for _, task := range tasks {
 					h.tChan <- task
 				}
@@ -48,6 +49,10 @@ func (h *Handler) chFeeder() {
 			return
 		}
 	}
+}
+
+func ldump(logger *log.Logger, args ...interface{}) {
+	spew.Fdump(logger.Writer(), args...)
 }
 
 func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) error {
@@ -64,14 +69,14 @@ func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) e
 		if msg.Type == "Error" {
 			var perr proto.Error
 			proto.DecodeArgs(msg, &perr)
-			log.Println("Error from eval:", perr.Value)
+			h.logger.Println("Error from eval:", perr.Value)
 		}
 
 		proto.DecodeArgs(msg, &resp)
-		spew.Dump(resp)
+		ldump(h.logger, resp)
 
 		if err := h.db.UpdateCompilation(resp); err != nil {
-			log.Println("Error during update of compile information:", err)
+			h.logger.Println("Error during update of compile information:", err)
 			continue
 		}
 
@@ -83,7 +88,7 @@ func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) e
 		for _, test := range t.Tests {
 			input, _, err := h.dm.GetTest(t.ProblemID, test.Test.VisibleID)
 			if err != nil {
-				log.Println("Error during test getting (1):", err)
+				h.logger.Println("Error during test getting (1):", err)
 				continue
 			}
 
@@ -112,15 +117,15 @@ func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) e
 			if msg.Type == "Error" {
 				var perr proto.Error
 				proto.DecodeArgs(msg, &perr)
-				log.Println("Error from eval:", perr.Value)
+				h.logger.Println("Error from eval:", perr.Value)
 			}
 
 			proto.DecodeArgs(msg, &resp)
-			spew.Dump(resp)
+			ldump(h.logger, resp)
 
 			_, out, err := h.dm.GetTest(t.ProblemID, test.Test.VisibleID)
 			if err != nil {
-				log.Println("Error during test getting (2):", err)
+				h.logger.Println("Error during test getting (2):", err)
 				continue
 			}
 			equal := compareOutputs(out, []byte(resp.Output))
@@ -136,7 +141,7 @@ func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) e
 			}
 
 			if err := h.db.UpdateEvalTest(resp, testScore); err != nil {
-				log.Println("Error during evaltest updating:", err)
+				h.logger.Println("Error during evaltest updating:", err)
 			}
 
 			score += testScore

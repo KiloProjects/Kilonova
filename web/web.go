@@ -60,8 +60,9 @@ type templateData struct {
 
 // Web is the struct representing this whole package
 type Web struct {
-	dm datamanager.Manager
-	db *kndb.DB
+	dm     datamanager.Manager
+	db     *kndb.DB
+	logger *log.Logger
 }
 
 func pushStuff(next http.Handler) http.Handler {
@@ -83,9 +84,9 @@ func (rt *Web) GetRouter() chi.Router {
 
 	// table for gradient, initialize here so it panics if we make a mistake
 	colorTable := gTable{
-		{mustParseHex("#ff8279"), 0.0},
-		{mustParseHex("#eaf200"), 0.45},
-		{mustParseHex("#00933e"), 1.0},
+		{mustParseHex("#f11722"), 0.0},
+		{mustParseHex("#eaf200"), 0.5},
+		{mustParseHex("#64ce3a"), 1.0},
 	}
 
 	templates = template.New("web").Funcs(template.FuncMap{
@@ -156,57 +157,50 @@ func (rt *Web) GetRouter() chi.Router {
 	r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		file, err := pkger.Open("/static/favicon.ico")
 		if err != nil {
-			fmt.Println("CAN'T OPEN FAVICON")
+			rt.logger.Println("CAN'T OPEN FAVICON")
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
 		fstat, err := file.Stat()
 		if err != nil {
-			fmt.Println("CAN'T STAT FAVICON")
+			rt.logger.Println("CAN'T STAT FAVICON")
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
 		http.ServeContent(w, r, fstat.Name(), fstat.ModTime(), file)
 	})
 
-	// Optimization: get the user only on routes that need to
-	// Also enable server push
+	// Enable server push
 	r.With(rt.getUser).With(pushStuff).Route("/", func(r chi.Router) {
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			problems, err := rt.db.GetAllVisibleProblems(common.UserFromContext(r))
 			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-				fmt.Println("/", err)
+				rt.logger.Println("/", err)
 				http.Error(w, http.StatusText(500), 500)
 				return
 			}
 			templ := rt.hydrateTemplate(r)
 			templ.Problems = problems
-			if err := templates.ExecuteTemplate(w, "index", templ); err != nil {
-				fmt.Println(err)
-			}
+			rt.check(templates.ExecuteTemplate(w, "index", templ))
 		})
 
 		r.Route("/probleme", func(r chi.Router) {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 				problems, err := rt.db.GetAllVisibleProblems(common.UserFromContext(r))
 				if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-					fmt.Println("/probleme/", err)
+					rt.logger.Println("/probleme/", err)
 					http.Error(w, http.StatusText(500), 500)
 					return
 				}
 				templ := rt.hydrateTemplate(r)
 				templ.Title = "Probleme"
 				templ.Problems = problems
-				if err := templates.ExecuteTemplate(w, "probleme", templ); err != nil {
-					fmt.Println(err)
-				}
+				rt.check(templates.ExecuteTemplate(w, "probleme", templ))
 			})
 			r.With(rt.mustBeProposer).Get("/create", func(w http.ResponseWriter, r *http.Request) {
 				templ := rt.hydrateTemplate(r)
 				templ.Title = "Creare problemă"
-				if err := templates.ExecuteTemplate(w, "createpb", templ); err != nil {
-					fmt.Println(err)
-				}
+				rt.check(templates.ExecuteTemplate(w, "createpb", templ))
 			})
 			r.Route("/{id}", func(r chi.Router) {
 				r.Use(rt.ValidateProblemID)
@@ -216,10 +210,7 @@ func (rt *Web) GetRouter() chi.Router {
 
 					templ := rt.hydrateTemplate(r)
 					templ.Title = fmt.Sprintf("#%d: %s", problem.ID, problem.Name)
-
-					if err := templates.ExecuteTemplate(w, "problema", templ); err != nil {
-						fmt.Println(err)
-					}
+					rt.check(templates.ExecuteTemplate(w, "problema", templ))
 				})
 				r.Route("/edit", func(r chi.Router) {
 					r.Use(rt.mustBeEditor)
@@ -227,25 +218,19 @@ func (rt *Web) GetRouter() chi.Router {
 						problem := common.ProblemFromContext(r)
 						templ := rt.hydrateTemplate(r)
 						templ.Title = fmt.Sprintf("EDIT | #%d: %s", problem.ID, problem.Name)
-						if err := templates.ExecuteTemplate(w, "edit/index", templ); err != nil {
-							fmt.Println(err)
-						}
+						rt.check(templates.ExecuteTemplate(w, "edit/index", templ))
 					})
 					r.Get("/enunt", func(w http.ResponseWriter, r *http.Request) {
 						problem := common.ProblemFromContext(r)
 						templ := rt.hydrateTemplate(r)
 						templ.Title = fmt.Sprintf("ENUNT - EDIT | #%d: %s", problem.ID, problem.Name)
-						if err := templates.ExecuteTemplate(w, "edit/enunt", templ); err != nil {
-							fmt.Println(err)
-						}
+						rt.check(templates.ExecuteTemplate(w, "edit/enunt", templ))
 					})
 					r.Get("/limite", func(w http.ResponseWriter, r *http.Request) {
 						problem := common.ProblemFromContext(r)
 						templ := rt.hydrateTemplate(r)
 						templ.Title = fmt.Sprintf("LIMITE - EDIT | #%d: %s", problem.ID, problem.Name)
-						if err := templates.ExecuteTemplate(w, "edit/limite", templ); err != nil {
-							fmt.Println(err)
-						}
+						rt.check(templates.ExecuteTemplate(w, "edit/limite", templ))
 					})
 					r.Route("/teste", func(r chi.Router) {
 						r.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -253,9 +238,7 @@ func (rt *Web) GetRouter() chi.Router {
 							templ := rt.hydrateTemplate(r)
 							templ.IsInTestEditor = true
 							templ.Title = fmt.Sprintf("TESTE - EDIT | #%d: %s", problem.ID, problem.Name)
-							if err := templates.ExecuteTemplate(w, "edit/testAdd", templ); err != nil {
-								fmt.Println(err)
-							}
+							rt.check(templates.ExecuteTemplate(w, "edit/testAdd", templ))
 						})
 						r.With(rt.ValidateTestID).Get("/{tid}", func(w http.ResponseWriter, r *http.Request) {
 							test := common.TestFromContext(r)
@@ -263,9 +246,7 @@ func (rt *Web) GetRouter() chi.Router {
 							templ := rt.hydrateTemplate(r)
 							templ.IsInTestEditor = true
 							templ.Title = fmt.Sprintf("Teste - EDIT %d | #%d: %s", test.VisibleID, problem.ID, problem.Name)
-							if err := templates.ExecuteTemplate(w, "edit/testEdit", templ); err != nil {
-								fmt.Println(err)
-							}
+							rt.check(templates.ExecuteTemplate(w, "edit/testEdit", templ))
 						})
 					})
 				})
@@ -276,37 +257,37 @@ func (rt *Web) GetRouter() chi.Router {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 				tasks, err := rt.db.GetAllTasks()
 				if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-					fmt.Println("/tasks/", err)
+					rt.logger.Println("/tasks/", err)
 					http.Error(w, http.StatusText(500), 500)
 					return
 				}
 				templ := rt.hydrateTemplate(r)
 				templ.Title = "Tasks"
 				templ.Tasks = tasks
-				check(templates.ExecuteTemplate(w, "tasks", templ))
+				rt.check(templates.ExecuteTemplate(w, "tasks", templ))
 			})
 			r.With(rt.ValidateTaskID).Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
 				templ := rt.hydrateTemplate(r)
 				templ.Title = fmt.Sprintf("Task %d", templ.Task.ID)
-				check(templates.ExecuteTemplate(w, "task", templ))
+				rt.check(templates.ExecuteTemplate(w, "task", templ))
 			})
 		})
 
 		r.With(rt.mustBeAdmin).Get("/admin", func(w http.ResponseWriter, r *http.Request) {
 			templ := rt.hydrateTemplate(r)
 			templ.Title = "Admin switches"
-			check(templates.ExecuteTemplate(w, "admin", templ))
+			rt.check(templates.ExecuteTemplate(w, "admin", templ))
 		})
 
 		r.With(rt.mustBeVisitor).Get("/login", func(w http.ResponseWriter, r *http.Request) {
 			templ := rt.hydrateTemplate(r)
 			templ.Title = "Log In"
-			check(templates.ExecuteTemplate(w, "login", templ))
+			rt.check(templates.ExecuteTemplate(w, "login", templ))
 		})
 		r.With(rt.mustBeVisitor).Get("/signup", func(w http.ResponseWriter, r *http.Request) {
 			templ := rt.hydrateTemplate(r)
 			templ.Title = "Sign Up"
-			check(templates.ExecuteTemplate(w, "signup", templ))
+			rt.check(templates.ExecuteTemplate(w, "signup", templ))
 		})
 
 		r.With(rt.mustBeAuthed).Get("/logout", func(w http.ResponseWriter, r *http.Request) {
@@ -320,13 +301,13 @@ func (rt *Web) GetRouter() chi.Router {
 }
 
 // NewWeb returns a new web instance
-func NewWeb(dm datamanager.Manager, db *kndb.DB) *Web {
-	return &Web{dm: dm, db: db}
+func NewWeb(dm datamanager.Manager, db *kndb.DB, logger *log.Logger) *Web {
+	return &Web{dm, db, logger}
 }
 
-func check(err error) {
+func (rt *Web) check(err error) {
 	if err != nil {
-		fmt.Println(err)
+		rt.logger.Println(err)
 	}
 }
 

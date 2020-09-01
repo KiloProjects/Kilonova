@@ -14,6 +14,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	gocloud.dev v0.20.0 // indirect
 	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gorm.io/driver/postgres v0.2.5
 	gorm.io/gorm v0.2.20
 )

@@ -1,8 +1,6 @@
 package kndb
 
 import (
-	"fmt"
-
 	"github.com/KiloProjects/Kilonova/common"
 )
 
@@ -15,7 +13,7 @@ func (d *DB) GetUserByID(id uint) (*common.User, error) {
 	}
 	if user.ID == 0 {
 		// this should never happen, but just in case it happens, log it so i can fix it if it ever happens
-		fmt.Println("User ID is 0, huh?")
+		d.logger.Println("User ID is 0, huh?")
 	}
 	return &user, nil
 }
@@ -29,7 +27,7 @@ func (d *DB) GetUserByName(name string) (*common.User, error) {
 	}
 	if user.ID == 0 {
 		// this should never happen, but just in case it happens, log it so i can fix it
-		fmt.Println("User ID is 0, huh?")
+		d.logger.Println("User ID is 0, huh?")
 	}
 	return &user, nil
 }
@@ -43,7 +41,7 @@ func (d *DB) GetUserByEmail(email string) (*common.User, error) {
 	}
 	if user.ID == 0 {
 		// this should never happen, but just in case it happens, log it so i can fix it
-		fmt.Println("User ID is 0, huh?")
+		d.logger.Println("User ID is 0, huh?")
 	}
 	return &user, nil
 }
@@ -54,7 +52,7 @@ func (d *DB) UserExists(email string, username string) bool {
 	var cnt int64
 	if email != "" {
 		if err := d.DB.Model(&common.User{}).Where("lower(email) = lower(?)", email).Count(&cnt).Error; err != nil {
-			fmt.Println("Error counting in DB:", err)
+			d.logger.Println("Error counting in DB:", err)
 			return false
 		}
 		if cnt > 0 {
@@ -63,7 +61,7 @@ func (d *DB) UserExists(email string, username string) bool {
 	}
 	if username != "" {
 		if err := d.DB.Model(&common.User{}).Where("lower(name) = lower(?)", username).Count(&cnt).Error; err != nil {
-			fmt.Println("Error counting in DB:", err)
+			d.logger.Println("Error counting in DB:", err)
 			return false
 		}
 		if cnt > 0 {

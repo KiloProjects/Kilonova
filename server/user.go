@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/Kilonova/common"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 )
 
@@ -57,7 +56,6 @@ func (s *API) getUserByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getSelf(w http.ResponseWriter, r *http.Request) {
-	spew.Dump(common.UserFromContext(r))
 	returnData(w, common.UserFromContext(r))
 }
 

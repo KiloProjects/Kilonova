@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"unicode"
@@ -44,7 +43,7 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 
 	encoded, err := common.SetSession(w, common.Session{UserID: user.ID})
 	if err != nil {
-		fmt.Println(err)
+		s.logger.Println(err)
 		errorData(w, http.StatusText(500), 500)
 		return
 	}
@@ -72,14 +71,14 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Invalid username or password", http.StatusUnauthorized)
 		return
 	} else if err != nil {
-		fmt.Println(err)
+		s.logger.Println(err)
 		errorData(w, http.StatusText(500), 500)
 		return
 	}
 
 	encoded, err := common.SetSession(w, common.Session{UserID: user.ID})
 	if err != nil {
-		fmt.Println(err)
+		s.logger.Println(err)
 		errorData(w, http.StatusText(500), 500)
 		return
 	}

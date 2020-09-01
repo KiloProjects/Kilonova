@@ -2,7 +2,6 @@ package server
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -114,7 +113,7 @@ func (s *API) setTaskVisible(w http.ResponseWriter, r *http.Request) {
 			errorData(w, "Task not found", http.StatusNotFound)
 			return
 		}
-		fmt.Println(err)
+		s.logger.Println(err)
 		errorData(w, err, http.StatusNotFound)
 		return
 	}

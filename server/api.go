@@ -4,9 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
 
-	"github.com/KiloProjects/Kilonova/common"
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/kndb"
 	"github.com/go-chi/chi"
@@ -16,19 +14,13 @@ import (
 type API struct {
 	ctx     context.Context
 	db      *kndb.DB
-	config  *common.Config
 	manager datamanager.Manager
 	logger  *log.Logger
 }
 
 // NewAPI declares a new API instance
-func NewAPI(ctx context.Context, db *kndb.DB, config *common.Config, manager datamanager.Manager) *API {
-
-	var logger *log.Logger
-	if config.Debug {
-		logger = log.New(os.Stdout, "[API]", log.LstdFlags)
-	}
-	return &API{ctx, db, config, manager, logger}
+func NewAPI(ctx context.Context, db *kndb.DB, manager datamanager.Manager, logger *log.Logger) *API {
+	return &API{ctx, db, manager, logger}
 }
 
 // GetRouter is the magic behind the API

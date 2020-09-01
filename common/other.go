@@ -16,11 +16,6 @@ var DataDir = "/data"
 
 const Version = "v0.2.1"
 
-// Config is the main information for the platform
-type Config struct {
-	Debug bool `json:"debugMode"`
-}
-
 // Session represents the data storred in a session cookie
 type Session struct {
 	UserID uint `json:"userID"`

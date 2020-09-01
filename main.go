@@ -2,14 +2,13 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
 	"time"
 
 	"github.com/KiloProjects/Kilonova/common"
@@ -21,6 +20,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -30,30 +30,38 @@ import (
 
 var (
 	masterDB *gorm.DB
-	config   *common.Config
 	manager  *datamanager.StorageManager
 	db       *kndb.DB
+	logg     *log.Logger
 
+	logDir     = flag.String("logDir", "/data/knLogs", "Directory to write logs to")
+	debug      = flag.Bool("debug", false, "Debug mode")
 	dataDir    = flag.String("data", "/data", "Data directory")
-	configFile = flag.String("config", "/app/config.json", "Config directory")
 	evalSocket = flag.String("evalSocket", "/tmp/kiloeval.sock", "Path to the eval socket, must be the same as the `socketPath` flag in KiloEval")
 )
 
 func main() {
 	flag.Parse()
 
-	fmt.Printf("Starting Kilonova %s\n", common.Version)
+	if !path.IsAbs(*logDir) {
+		log.Fatal("logDir not absolute")
+	}
+
+	if err := os.MkdirAll(*logDir, 0755); err != nil {
+		log.Fatal(err)
+	}
+
+	logg = log.New(&lumberjack.Logger{
+		Filename: path.Join(*logDir, "access.log"),
+	}, "", 0)
+
+	logg.Printf("Starting Kilonova %s\n", common.Version)
 
 	common.SetDataDir(*dataDir)
 	common.Initialize()
 
-	config, err := readConfig()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	fmt.Println("Read config")
-
-	fmt.Println("Trying to connect to DB until it works")
+	var err error
+	logg.Println("Trying to connect to DB until it works")
 	for {
 		dsn := "sslmode=disable user=alexv dbname=kilonova"
 		masterDB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
@@ -61,12 +69,10 @@ func main() {
 			break
 		}
 	}
-	fmt.Println("Connected to DB")
+	logg.Println("Connected to DB")
 
-	db = kndb.New(masterDB)
-
+	db = kndb.New(masterDB, logg)
 	db.AutoMigrate()
-
 	db.DB.Logger = logger.Default.LogMode(logger.Warn)
 
 	manager = datamanager.NewManager(*dataDir)
@@ -90,17 +96,20 @@ func main() {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.StripSlashes)
 	r.Use(middleware.Timeout(20 * time.Second))
-	r.Use(middleware.Logger)
+	r.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{
+		Logger:  logg,
+		NoColor: true,
+	}))
 
 	// Setup context
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Initialize components
-	API := server.NewAPI(ctx, db, config, manager)
-	grader := grader.NewHandler(ctx, db, manager)
+	API := server.NewAPI(ctx, db, manager, logg)
+	grader := grader.NewHandler(ctx, db, manager, logg)
 
 	r.Mount("/api", API.GetRouter())
-	r.Mount("/", web.NewWeb(manager, db).GetRouter())
+	r.Mount("/", web.NewWeb(manager, db, logg).GetRouter())
 
 	// TODO: Find out why memory usage is higher than on pbinfo.ro for the same program
 	grader.Start(*evalSocket)
@@ -123,14 +132,4 @@ func main() {
 	if err := server.Shutdown(ctx); err != nil {
 		fmt.Println(err)
 	}
-}
-
-func readConfig() (*common.Config, error) {
-	data, err := ioutil.ReadFile(*configFile)
-	if err != nil {
-		return nil, err
-	}
-	var config common.Config
-	json.Unmarshal(data, &config)
-	return &config, nil
 }

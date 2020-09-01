@@ -5,6 +5,8 @@ TODO LIST KILONOVA:
 	- [x] Interfață web pentru administrarea ierarhiei
 	- [x] Toast-uri
 - [ ] Pentru beta:
+	- [ ] Profil user
+		- [ ] Setări Vizibilitate default
 	- [ ] Implementează server.UpdateTest
 	- [ ] Reduce nr de TODOs
 	- [ ] Rezolvat bug-ul de la https://discordapp.com/channels/713844353390346322/723768974411694171/729462280718385233
@@ -12,6 +14,8 @@ TODO LIST KILONOVA:
 	- [ ] folosește pure SQL pentru backend, fără GORM
 	- [ ] Site mai drăguț
 		- [x] NavBar
+		- [ ] Scor bazat pe ranks (gen 0 wood, 1-20 ruby, 21-49 diamond, 100 gold, etc)
+		- [ ] Dark theme
 		- [ ] Experiență mai bună pentru editat problemele
 		- [ ] "Custom input" ca pe hackerrank/leetcode
 	- [ ] Integrare cu Polygon

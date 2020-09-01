@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 
@@ -16,7 +15,7 @@ func getIDFromForm(w http.ResponseWriter, r *http.Request) (uint, bool) {
 func (s *API) getUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := s.db.GetAllUsers()
 	if err != nil {
-		log.Println(err)
+		s.logger.Println(err)
 		errorData(w, "Could not read from DB", 500)
 		return
 	}
@@ -26,7 +25,7 @@ func (s *API) getUsers(w http.ResponseWriter, r *http.Request) {
 func (s *API) getAdmins(w http.ResponseWriter, r *http.Request) {
 	admins, err := s.db.GetAllAdmins()
 	if err != nil {
-		log.Println(err)
+		s.logger.Println(err)
 		errorData(w, "Could not read from DB", 500)
 		return
 	}
@@ -36,7 +35,7 @@ func (s *API) getAdmins(w http.ResponseWriter, r *http.Request) {
 func (s *API) getProposers(w http.ResponseWriter, r *http.Request) {
 	proposers, err := s.db.GetAllProposers()
 	if err != nil {
-		log.Println(err)
+		s.logger.Println(err)
 		errorData(w, "Could not read from DB", 500)
 		return
 	}

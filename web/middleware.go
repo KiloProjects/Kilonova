@@ -3,7 +3,6 @@ package web
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -32,7 +31,7 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 				http.Error(w, "Problema nu a fost găsită", 404)
 				return
 			}
-			fmt.Println("ValidateProblemID:", err)
+			rt.logger.Println("ValidateProblemID:", err)
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
@@ -67,7 +66,7 @@ func (rt *Web) ValidateTaskID(next http.Handler) http.Handler {
 				http.Error(w, "Task-ul nu există", http.StatusBadRequest)
 				return
 			}
-			fmt.Println(err)
+			rt.logger.Println(err)
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
@@ -95,7 +94,7 @@ func (rt *Web) ValidateTestID(next http.Handler) http.Handler {
 				http.Error(w, "Testul nu există", http.StatusBadRequest)
 				return
 			}
-			fmt.Println(err)
+			rt.logger.Println(err)
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
