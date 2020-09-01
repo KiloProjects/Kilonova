@@ -1,20 +1,24 @@
 {{ $user := .User }}
+{{ $logged := .LoggedIn }}
 {{ with .Problems }}
 	<h2> Probleme </h2>
 	<div class="list-group">
 		{{ range . }}
 			<a href="/probleme/{{.ID}}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
 				#{{.ID}}: {{.Name}}
-				<div>
-					{{ if (or $user.Admin (eq $user.ID .UserID)) }}
-						{{ if .Visible }}
-							<span class="badge badge-pill badge-success">Publicată</span>
-						{{ else }}
-							<span class="badge badge-pill badge-danger">Nepublicată</span>
+
+				{{ if $logged }}
+					<div>
+						{{ if (or $user.Admin (eq $user.ID .UserID)) }}
+							{{ if .Visible }}
+								<span class="badge badge-pill badge-success">Publicată</span>
+							{{ else }}
+								<span class="badge badge-pill badge-danger">Nepublicată</span>
+							{{ end }}
 						{{ end }}
-					{{ end }}
-					<span class="badge badge-pill badge-info">{{ taskScore . $user }}</span>
-				</div>
+						<span class="badge badge-pill badge-info">{{ taskScore . $user }}</span>
+					</div>
+				{{ end }}	
 			</a>
 		{{ end }}
 	</div>

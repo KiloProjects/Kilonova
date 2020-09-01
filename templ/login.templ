@@ -2,11 +2,18 @@
 
 <div class="container">
 	<form id="loginForm">
-		<input class="form-control" type="text" id="name" name="username" placeholder="Username..." /><br />
-		<input class="form-control" type="password" id="pwd" name="password" placeholder="Parolă..." /><br />
-		<input class="form-control" type="submit" value="Trimite" /><br />
+		<div class="form-group">
+			<label for="name">Username</label>
+			<input class="form-control" type="text" id="name" name="username" />
+		</div>
+		<div class="form-group">
+			<label for="pwd">Parolă</label>
+			<input class="form-control" type="password" id="pwd" name="password" />
+		</div>
+		<button type="submit" class="btn btn-primary">Logare</button>
+		<small class="form-text text-muted">N-ai cont? <a href="/signup">înregistrează-te</a></small>
 	</form>
-
+	
 	<script>
 		$("#loginForm").submit((e) => {
 			e.preventDefault();

@@ -132,7 +132,7 @@
 </head>
 
 <body>
-	<nav class="navbar navbar-expand-md navbar-light bg-light">
+	<nav class="shadow-sm navbar navbar-expand-md navbar-light bg-light">
 		<div class="container">
 			<a class="navbar-brand" href="/">Kilonova</a>
 			<button class="navbar-toggler" 
@@ -173,3 +173,6 @@
 			</div>
 		</div>
 	</nav>
+	{{ if not .IsInTestEditor }}
+	<br/>
+	{{ end }}
