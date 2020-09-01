@@ -5,22 +5,27 @@ TODO LIST KILONOVA:
 	- [x] Interfață web pentru administrarea ierarhiei
 	- [x] Toast-uri
 - [ ] Pentru beta:
+	- [x] Mathjax
 	- [ ] Profil user
 		- [ ] Setări Vizibilitate default
 	- [ ] Implementează server.UpdateTest
 	- [ ] Reduce nr de TODOs
 	- [ ] Rezolvat bug-ul de la https://discordapp.com/channels/713844353390346322/723768974411694171/729462280718385233
-	- [x] Mathjax
 	- [ ] folosește pure SQL pentru backend, fără GORM
-	- [ ] Site mai drăguț
+	- [ ] Site mai drăguț:
 		- [x] NavBar
-		- [ ] Scor bazat pe ranks (gen 0 wood, 1-20 ruby, 21-49 diamond, 100 gold, etc)
-		- [ ] Dark theme
+		- [ ] Auto reîncărcare pagină task
 		- [ ] Experiență mai bună pentru editat problemele
-		- [ ] "Custom input" ca pe hackerrank/leetcode
-	- [ ] Integrare cu Polygon
-	- [ ] Alte briz-briz-uri importante, vedem
+		- ? [ ] Scor bazat pe ranks pentru amuzament (gen 0 wood, 1-20 ruby, 21-49 diamond, 100 gold, etc)
+		- [ ] Dark theme	
+	- [ ] Filtre tasks
+	- [ ] "Custom input" ca pe hackerrank/leetcode
+	- [ ] Surse de calitate (apar sus când filtrezi după tasks cu sursa publică)
 - [ ] Pentru release:
+	- [ ] Integrare cu Polygon
+	- [ ] PbInfo problem import (înseamnă că e nevoie să termin PbAPI)
+	- [ ] De gândit beneficii tari pentru "KiloNova Pro"
+	- [ ] Guilds
+	- [ ] Blog
 	- [ ] Probleme interactive
-	- [ ] Categorii de probleme
-	- [ ] Alte briz-briz-uri mai puțin importante :)))
+	- [ ] Etichete probleme
