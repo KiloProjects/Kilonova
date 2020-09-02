@@ -28,7 +28,7 @@
         </div>
     </form>
     <script>
-        $("#testUpload").submit((e) => {
+        $("#testUpload").submit(async (e) => {
             e.preventDefault();
             let input = $("#testUpload #newin").val();
             let output = $("#testUpload #newout").val();
@@ -38,32 +38,18 @@
             console.log("OUT:", output);
             console.log("SCORE:", score);
             console.log("ID:", visibleID);
-			(async () => {
-				let res = await postCall("/problem/{{.Problem.ID}}/update/addTest", {input, output, score, visibleID})
-				if(res.status == "error") {
-					createToast({
-						status: "error", 
-						title: "Could not add test",
-						description: res.data
-					})
-					return
-				}
-				createToast({description: "Created test", onclick: () => window.location.assign("/probleme/{{.Problem.ID}}")})
-			})()
-			/*
-			$.post("/api/problem/{{ .Problem.ID }}/update/addTest",
-                {
-                    input: testIn,
-                    output: testOut,
-                    score: scor,
-                    visibleID: vID,
-                },
-                (data, status, _) => {
-                    console.log(data, status);
-                }
-            ).fail((a, b, c) => console.log(a, b, c));
-			*/
-        });
+
+			let res = await postCall("/problem/{{.Problem.ID}}/update/addTest", {input, output, score, visibleID})
+			if(res.status == "error") {
+				createToast({
+					status: "error", 
+					title: "Could not add test",
+					description: res.data
+				})
+				return
+			}
+			createToast({description: "Created test", onclick: () => window.location.assign("/probleme/{{.Problem.ID}}")})
+       	});
     </script>
 </div>
 

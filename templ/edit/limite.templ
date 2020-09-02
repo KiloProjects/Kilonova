@@ -36,25 +36,22 @@
         <button type="submit" class="btn btn-primary">Editare</button>
     </form>
     <script>
-        $("#limits").submit(e => {
+        $("#limits").submit(async e => {
             e.preventDefault();
             let memoryLimit = $("#limits #memoryTotal").val();
             let stackLimit = $("#limits #memoryStack").val();
             let timeLimit = $("#limits #timeLimit").val();
             console.log(memoryLimit, stackLimit, timeLimit);
-			(async () => {
-				let res = await postCall("/problem/{{.Problem.ID}}/update/limits", {memoryLimit, stackLimit, timeLimit})
-				if(res.status == "error") {
-					createToast({
-						status: "error",
-						title: "Could not update limits",
-						description: res.data
-					})
-					return
-				}
-				createToast({description: "Updated limits", onclick: () => window.location.assign("/probleme/{{.Problem.ID}}")})
-			})()
-			//            $.post("/api/problem/{{.Problem.ID}}/update/limits", { memoryLimit, stackLimit, timeLimit }, (a, b, c) => console.log(a, b, c)).fail((a, b, c) => console.error(a, b, c))
+			let res = await postCall("/problem/{{.Problem.ID}}/update/limits", {memoryLimit, stackLimit, timeLimit})
+			if(res.status == "error") {
+				createToast({
+					status: "error",
+					title: "Could not update limits",
+					description: res.data
+				})
+				return
+			}
+			createToast({description: "Updated limits", onclick: () => window.location.assign("/probleme/{{.Problem.ID}}")})
         })
     </script>
 </div>

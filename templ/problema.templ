@@ -76,7 +76,7 @@ int main()
 					mode: "text/x-c++src",
 				});
 				cm.setSize(null, "100%");
-				$("#taskSubmit").submit(e => {
+				$("#taskSubmit").submit(async e => {
 					e.preventDefault();
 					let sendData = {
 						problemID: "{{ .Problem.ID }}",
@@ -84,25 +84,16 @@ int main()
 						code: cm.getValue(),
 					};
 					
-					(async () => {
-						let res = await postCall("/tasks/submit", sendData)
-						if(res.status == "error") {
-							createToast({
-								status: "error",
-								title: "Could not submit task",
-								description: res.data
-							})
-							return
-						}
-						createToast({description: "Uploaded", onclick: () => window.location.assign(`/tasks/${res.data}`)})
-					})()
-
-					/*console.log()
-					$.post("/api/tasks/submit", sendData, (a, b, c) => createToast({
-						description: "Uploaded", onclick: function () {
-							window.location.assign(`/tasks/${JSON.parse(a)["data"]}`)
-						}
-					})).fail((a, b, c) => console.error(a, b, c));*/
+					let res = await postCall("/tasks/submit", sendData)
+					if(res.status == "error") {
+						createToast({
+							status: "error",
+							title: "Could not submit task",
+							description: res.data
+						})
+						return
+					}
+					createToast({description: "Uploaded", onclick: () => window.location.assign(`/tasks/${res.data}`)})
 				})
 			</script>
 			<br />

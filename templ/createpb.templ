@@ -14,22 +14,20 @@
 	</form>
 
 	<script>
-		$("#problemForm").submit((e) => {
+		$("#problemForm").submit(async (e) => {
 			e.preventDefault();
 			let name = $("#problemForm #pbname").val();
 			let cInput = $("#problemForm #cInputSwitch")[0].checked;
-			(async () => {
-				let res = await postCall('/problem/create', {title: name, consoleInput: cInput})
-				if(res.status == "error") {
-					createToast({
-						status: "error",
-						title: "Could not create problem",
-						description: res.data
-					})
-					return
-				}
-				createToast({description:"Successfully created problem", onclick: ()=>{window.location.assign(`/probleme/${res.data}`)}})
-			})()
+			let res = await postCall('/problem/create', {title: name, consoleInput: cInput})
+			if(res.status == "error") {
+				createToast({
+					status: "error",
+					title: "Could not create problem",
+					description: res.data
+				})
+				return
+			}
+			createToast({description:"Successfully created problem", onclick: ()=>{window.location.assign(`/probleme/${res.data}`)}})
 		});
 	</script>
 </div>
