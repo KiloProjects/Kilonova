@@ -1,8 +1,8 @@
 <!-- Sidebar -->
 <div class="bg-light border-right" id="sidebar-wrapper">
-	<div class="sidebar-heading">Editare teste</div>
 	{{ $id := .Problem.ID }}
 	{{ $tid := .TestID }}
+	<div class="sidebar-heading">Editare teste <a href="/probleme/{{$id}}">{{ .Problem.Name }}</a></div>
 	<div class="list-group list-group-flush border-top">
 		{{ range .Problem.Tests }}
 			{{ if (eq .VisibleID $tid) }}

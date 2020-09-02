@@ -133,6 +133,9 @@
 
 <body>
 	<nav class="shadow-sm navbar navbar-expand-md navbar-light bg-light">
+		{{ if .Sidebar }}
+		<button class="btn btn-outline-secondary" id="menu-toggle"><span class="navbar-toggler-icon"></span></button>
+		{{ end }}
 		<div class="container">
 			<a class="navbar-brand" href="/">Kilonova</a>
 			<button class="navbar-toggler" 
@@ -173,6 +176,14 @@
 			</div>
 		</div>
 	</nav>
-	{{ if not .IsInTestEditor }}
-	<br/>
+	{{ if .Sidebar }}
+	<script>
+		$("#menu-toggle").click(e => {
+			e.preventDefault();
+			$("#wrapper").toggleClass("toggled")
+		})
+	</script>
+	{{ end }}
+	{{ if not .Sidebar }}
+		<br/>
 	{{ end }}

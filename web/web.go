@@ -54,8 +54,7 @@ type templateData struct {
 	// TaskEditor tells us if the authed .User is able to change visibility of the .Task
 	TaskEditor bool
 
-	// this is to not add a <br> in the test editor
-	IsInTestEditor bool
+	Sidebar bool
 }
 
 // Web is the struct representing this whole package
@@ -236,16 +235,16 @@ func (rt *Web) GetRouter() chi.Router {
 						r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 							problem := common.ProblemFromContext(r)
 							templ := rt.hydrateTemplate(r)
-							templ.IsInTestEditor = true
 							templ.Title = fmt.Sprintf("TESTE - EDIT | #%d: %s", problem.ID, problem.Name)
+							templ.Sidebar = true
 							rt.check(templates.ExecuteTemplate(w, "edit/testAdd", templ))
 						})
 						r.With(rt.ValidateTestID).Get("/{tid}", func(w http.ResponseWriter, r *http.Request) {
 							test := common.TestFromContext(r)
 							problem := common.ProblemFromContext(r)
 							templ := rt.hydrateTemplate(r)
-							templ.IsInTestEditor = true
 							templ.Title = fmt.Sprintf("Teste - EDIT %d | #%d: %s", test.VisibleID, problem.ID, problem.Name)
+							templ.Sidebar = true
 							rt.check(templates.ExecuteTemplate(w, "edit/testEdit", templ))
 						})
 					})
