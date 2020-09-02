@@ -13,15 +13,11 @@ import (
 
 // GetTaskByID returns a task based on an ID
 func (s *API) getTaskByID(w http.ResponseWriter, r *http.Request) {
-	if r.FormValue("id") == "" {
-		errorData(w, "No ID specified", http.StatusBadRequest)
+	taskID, ok := getFormInt(w, r, "id")
+	if !ok {
 		return
 	}
-	taskID, err := strconv.ParseUint(r.FormValue("id"), 10, 32)
-	if err != nil {
-		errorData(w, "ID not uint", http.StatusBadRequest)
-		return
-	}
+
 	task, err := s.db.GetTaskByID(uint(taskID))
 	if err != nil {
 		errorData(w, "Could not find task", http.StatusBadRequest)
@@ -63,11 +59,25 @@ func (s *API) getTasksForProblem(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+
 	tasks, err := s.db.UserTasksOnProblem(uint(uid), uint(pid))
 	if err != nil {
 		errorData(w, err, 500)
 		return
 	}
+
+	user, err := s.db.GetUserByID(uint(uid))
+	if err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	for i := 0; i < len(tasks); i++ {
+		if !common.IsTaskVisible(tasks[i], *user) {
+			tasks[i].SourceCode = ""
+		}
+	}
+
 	returnData(w, tasks)
 }
 
@@ -86,16 +96,6 @@ func (s *API) getSelfTasksForProblem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) setTaskVisible(w http.ResponseWriter, r *http.Request) {
-	if r.FormValue("visible") == "" {
-		errorData(w, "`visible` not specified", http.StatusBadRequest)
-		return
-	}
-
-	if r.FormValue("id") == "" {
-		errorData(w, "`id` not specified", http.StatusBadRequest)
-		return
-	}
-
 	b, err := strconv.ParseBool(r.FormValue("visible"))
 	if err != nil {
 		errorData(w, "`visible` not valid bool", http.StatusBadRequest)

@@ -97,6 +97,22 @@ func (s *API) updateTestID(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Updated test id")
 }
 
+func (s *API) updateTestScore(w http.ResponseWriter, r *http.Request) {
+	newScore, ok := getFormInt(w, r, "score")
+	if !ok {
+		return
+	}
+	testID, ok := getFormInt(w, r, "id")
+	if !ok {
+		return
+	}
+	if err := s.db.UpdateProblemTestScore(common.IDFromContext(r, common.PbID), uint(testID), newScore); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	returnData(w, "Updated test score")
+}
+
 func (s *API) getTests(w http.ResponseWriter, r *http.Request) {
 	returnData(w, common.ProblemFromContext(r).Tests)
 }
@@ -244,7 +260,7 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Couldn't create test", 500)
 		s.logger.Println("Couldn't create test", err)
 	}
-	returnData(w, test.ID)
+	returnData(w, "Created test")
 }
 
 // initProblem assigns an ID for the problem
