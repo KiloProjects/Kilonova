@@ -4,6 +4,11 @@
 	{{ $tid := .TestID }}
 	<div class="sidebar-heading">Editare teste <a href="/probleme/{{$id}}">{{ .Problem.Name }}</a></div>
 	<div class="list-group list-group-flush border-top">
+		{{ if (eq $tid 99999) }}
+			<a class="list-group-item list-group-item-action border-bottom active" href="/probleme/{{ $id }}/edit/teste">Creare test</a>
+		{{ else }}
+			<a class="list-group-item list-group-item-action border-bottom bg-light" href="/probleme/{{ $id }}/edit/teste">Creare test</a>
+		{{ end}}
 		{{ range .Problem.Tests }}
 			{{ if (eq .VisibleID $tid) }}
 				<a class="list-group-item list-group-item-action active" href="/probleme/{{ $id }}/edit/teste/{{ .VisibleID }}">Testul #{{ .VisibleID }}</a>
@@ -11,11 +16,6 @@
 				<a class="list-group-item list-group-item-action bg-light" href="/probleme/{{ $id }}/edit/teste/{{ .VisibleID }}">Testul #{{ .VisibleID }}</a>
 			{{ end }}
 		{{ end }}
-		{{ if (eq $tid 99999) }}
-			<a class="list-group-item list-group-item-action border-bottom active" href="/probleme/{{ $id }}/edit/teste">Creare test</a>
-		{{ else }}
-			<a class="list-group-item list-group-item-action border-bottom bg-light" href="/probleme/{{ $id }}/edit/teste">Creare test</a>
-		{{ end}}
 	</div>
 </div>
 <!-- /Sidebar -->

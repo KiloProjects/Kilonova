@@ -10,13 +10,13 @@
 			<label for="pwd">Parolă</label>
 			<input class="form-control" type="password" id="pwd" name="password" />
 		</div>
-		<button onclick="login()" class="btn btn-primary">Logare</button>
+		<button type="submit" class="btn btn-primary">Logare</button>
 		<small class="form-text text-muted">N-ai cont? <a href="/signup">înregistrează-te</a></small>
 	</form>
 	
 	<script>
-
-		async function login() {
+		$("#loginForm").submit(async e => {
+			e.preventDefault();
 			let username = $("#loginForm #name").val();
 			let password = $("#loginForm #pwd").val();
 			
@@ -30,7 +30,7 @@
 				return
 			}
 			window.location.replace("/")
-		}
+		})
 	</script>
 </div>
 
