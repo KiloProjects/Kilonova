@@ -4,8 +4,48 @@
 	{{ template "edit/testSidebar" . }}
 	<div class="container-fluid" id="page-content-wrapper">
 		<br/>
-		<h1> Hello, please create test plz. </h1>	
+		<h1> Hello, please create test plz. </h1>
+		<div class="form-row">
+			<div class="col-md-6 mb-3">
+				<h3><label for="vID">ID</label></h3>
+				<input id="vID" type="number" class="form-control" required />
+			</div>
+			<div class="col-md-6 mb-3">
+				<h3><label for="score">Scor</label></h3>
+				<input id="score" type="number" class="form-control" required />
+			</div>
+		</div>
+		<h3> Input: </h3>
+		<textarea id="input" style="display: none;"></textarea>
+		<h3> Output: </h3>
+		<textarea id="output" style="display: none;"></textarea>
+		<button class="btn btn-primary mb-2" onclick="addTest()">Adăugare</button>
 	</div>
 </div>
+
+<script>
+	var inCM = CodeMirror.fromTextArea(document.getElementById("input"), {
+		lineNumbers: true,
+		indentUnit: 4,
+		lineWrapping: true
+	})
+	var outCM = CodeMirror.fromTextArea(document.getElementById("output"), {
+		lineNumbers: true,
+		indentUnit: 4,
+		lineWrapping: true
+	})
+
+	async function addTest() {
+		let q = {
+			visibleID: $("#vID").val(), 
+			input: inCM.getValue(),
+			output: outCM.getValue(),
+			score: $("#score").val(),
+		};
+		let res = await postCall("/problem/{{ .Problem.ID }}/update/addTest", q)
+		console.log(res)
+		apiToast(res)
+	}
+</script>
 
 {{ template "util/footer" . }}
