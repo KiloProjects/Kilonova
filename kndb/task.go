@@ -1,14 +1,14 @@
 package kndb
 
 import (
-	"github.com/KiloProjects/Kilonova/common"
 	"github.com/KiloProjects/Kilonova/grader/proto"
+	"github.com/KiloProjects/Kilonova/internal/models"
 	"gorm.io/gorm"
 )
 
 // GetTaskByID returns a task with the specified ID
-func (d *DB) GetTaskByID(id uint) (*common.Task, error) {
-	var task common.Task
+func (d *DB) GetTaskByID(id uint) (*models.Task, error) {
+	var task models.Task
 	if err := d.DB.
 		Preload("Problem").Preload("User").Preload("Tests", func(db *gorm.DB) *gorm.DB {
 		return db.Order("eval_tests.id")
@@ -18,8 +18,8 @@ func (d *DB) GetTaskByID(id uint) (*common.Task, error) {
 	return &task, nil
 }
 
-func (d *DB) UserTasksOnProblem(userid uint, problemid uint) ([]common.Task, error) {
-	var tasks []common.Task
+func (d *DB) UserTasksOnProblem(userid uint, problemid uint) ([]models.Task, error) {
+	var tasks []models.Task
 	if err := d.DB.Preload("Problem").Preload("User").Preload("Tests", func(db *gorm.DB) *gorm.DB {
 		return db.Order("eval_tests.id")
 	}).Preload("Tests.Test").Where("user_id = ? and problem_id = ?", userid, problemid).
@@ -45,8 +45,8 @@ func (d *DB) MaxScoreFor(userid uint, problemid uint) (int, error) {
 
 // GetAllTasks returns all tasks
 // TODO: Pagination
-func (d *DB) GetAllTasks() ([]common.Task, error) {
-	var tasks []common.Task
+func (d *DB) GetAllTasks() ([]models.Task, error) {
+	var tasks []models.Task
 	if err := d.DB.Preload("Problem").Preload("User").Order("id desc").Find(&tasks).Error; err != nil {
 		return nil, err
 	}
@@ -55,9 +55,9 @@ func (d *DB) GetAllTasks() ([]common.Task, error) {
 
 // For use by the judge
 
-func (d *DB) GetWaitingTasks() ([]common.Task, error) {
-	var tasks []common.Task
-	err := d.DB.Where("status = ?", common.StatusWaiting).
+func (d *DB) GetWaitingTasks() ([]models.Task, error) {
+	var tasks []models.Task
+	err := d.DB.Where("status = ?", models.StatusWaiting).
 		Preload("Tests").Preload("Problem").Preload("Tests.Test").
 		Find(&tasks).Error
 
@@ -68,13 +68,13 @@ func (d *DB) GetWaitingTasks() ([]common.Task, error) {
 }
 
 func (d *DB) UpdateTaskVisibility(id uint, visible bool) error {
-	var tmp common.Task
+	var tmp models.Task
 	tmp.ID = id
 	return d.DB.Model(&tmp).Update("visible", visible).Error
 }
 
 func (d *DB) UpdateCompilation(c proto.CResponse) error {
-	var tmp common.Task
+	var tmp models.Task
 	tmp.ID = uint(c.ID)
 	return d.DB.Model(&tmp).Updates(map[string]interface{}{
 		"compile_error":   !c.Success,
@@ -83,7 +83,7 @@ func (d *DB) UpdateCompilation(c proto.CResponse) error {
 }
 
 func (d *DB) UpdateStatus(id uint, status, score int) error {
-	var tmp common.Task
+	var tmp models.Task
 	tmp.ID = id
 	return d.DB.Model(&tmp).Updates(map[string]interface{}{
 		"status": status,
@@ -92,7 +92,7 @@ func (d *DB) UpdateStatus(id uint, status, score int) error {
 }
 
 func (d *DB) UpdateEvalTest(r proto.STResponse, score int) error {
-	var tmp common.EvalTest
+	var tmp models.EvalTest
 	tmp.ID = uint(r.TID)
 	return d.DB.Model(&tmp).Updates(map[string]interface{}{
 		"output": r.Comments,

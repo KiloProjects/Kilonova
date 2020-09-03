@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/KiloProjects/Kilonova/common"
+	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/go-chi/chi"
 	"gorm.io/gorm"
 )
@@ -35,7 +36,7 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
-		ctx := context.WithValue(r.Context(), common.ProblemKey, problem)
+		ctx := context.WithValue(r.Context(), util.ProblemKey, problem)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 
@@ -43,7 +44,7 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 
 func (rt *Web) ValidateVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsRProblemVisible(r) {
+		if !util.IsRProblemVisible(r) {
 			http.Error(w, "Problema nu a fost găsită", 404)
 			return
 		}
@@ -71,12 +72,12 @@ func (rt *Web) ValidateTaskID(next http.Handler) http.Handler {
 			return
 		}
 
-		if !common.IsTaskVisible(*task, common.UserFromContext(r)) {
+		if !util.IsTaskVisible(*task, util.UserFromContext(r)) {
 			task.SourceCode = ""
 		}
 
-		ctx := context.WithValue(r.Context(), common.TaskID, uint(taskID))
-		ctx = context.WithValue(ctx, common.TaskKey, task)
+		ctx := context.WithValue(r.Context(), util.TaskID, uint(taskID))
+		ctx = context.WithValue(ctx, util.TaskKey, task)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -87,8 +88,7 @@ func (rt *Web) ValidateTestID(next http.Handler) http.Handler {
 		if err != nil {
 			http.Error(w, "Invalid test ID", http.StatusBadRequest)
 		}
-		// TODO: Use KeyID
-		test, err := rt.db.GetTestByVisibleID(common.ProblemFromContext(r).ID, uint(testID))
+		test, err := rt.db.GetTestByVisibleID(util.ProblemFromContext(r).ID, uint(testID))
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				http.Error(w, "Testul nu există", http.StatusBadRequest)
@@ -98,15 +98,15 @@ func (rt *Web) ValidateTestID(next http.Handler) http.Handler {
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
-		ctx := context.WithValue(r.Context(), common.TestID, uint(testID))
-		ctx = context.WithValue(ctx, common.TestKey, test)
+		ctx := context.WithValue(r.Context(), util.TestID, uint(testID))
+		ctx = context.WithValue(ctx, util.TestKey, test)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsRAuthed(r) {
+		if !util.IsRAuthed(r) {
 			http.Error(w, "You must be logged in", 401)
 			return
 		}
@@ -116,7 +116,7 @@ func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeProposer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsRProposer(r) {
+		if !util.IsRProposer(r) {
 			http.Error(w, "You must be a proposer", 401)
 			return
 		}
@@ -126,7 +126,7 @@ func (rt *Web) mustBeProposer(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 	return rt.mustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsRAdmin(r) {
+		if !util.IsRAdmin(r) {
 			http.Error(w, "You must be an admin", 401)
 			return
 		}
@@ -136,7 +136,7 @@ func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if common.IsRAuthed(r) {
+		if util.IsRAuthed(r) {
 			http.Error(w, "You must not be logged in", 401)
 			return
 		}
@@ -146,7 +146,7 @@ func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsRProblemEditor(r) {
+		if !util.IsRProblemEditor(r) {
 			http.Error(w, "You must be the problem author", 401)
 			return
 		}
@@ -167,7 +167,7 @@ func (rt *Web) getUser(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		ctx := context.WithValue(r.Context(), common.UserKey, user)
+		ctx := context.WithValue(r.Context(), util.UserKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

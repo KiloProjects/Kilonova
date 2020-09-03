@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/KiloProjects/Kilonova/common"
+	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/go-chi/chi"
 	"gorm.io/gorm"
 )
@@ -14,7 +15,7 @@ import (
 // MustBeVisitor is middleware to make sure the user creating the request is not authenticated
 func (s *API) MustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if common.IsRAuthed(r) {
+		if util.IsRAuthed(r) {
 			errorData(w, "You must not be logged in to do this", http.StatusUnauthorized)
 			return
 		}
@@ -25,7 +26,7 @@ func (s *API) MustBeVisitor(next http.Handler) http.Handler {
 // MustBeAdmin is middleware to make sure the user creating the request is an admin
 func (s *API) MustBeAdmin(next http.Handler) http.Handler {
 	return s.MustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsRAdmin(r) {
+		if !util.IsRAdmin(r) {
 			errorData(w, "You must be an admin to do this", http.StatusUnauthorized)
 			return
 		}
@@ -36,7 +37,7 @@ func (s *API) MustBeAdmin(next http.Handler) http.Handler {
 // MustBeAuthed is middleware to make sure the user creating the request is authenticated
 func (s *API) MustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsRAuthed(r) {
+		if !util.IsRAuthed(r) {
 			errorData(w, "You must be authenticated to do this", http.StatusUnauthorized)
 			return
 		}
@@ -47,7 +48,7 @@ func (s *API) MustBeAuthed(next http.Handler) http.Handler {
 // MustBeProposer is middleware to make sure the user creating the request is a proposer
 func (s *API) MustBeProposer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsRProposer(r) {
+		if !util.IsRProposer(r) {
 			errorData(w, "You must be a proposer to do this", http.StatusUnauthorized)
 			return
 		}
@@ -72,14 +73,14 @@ func (s *API) SetupSession(next http.Handler) http.Handler {
 			errorData(w, http.StatusText(500), 500)
 			return
 		}
-		ctx := context.WithValue(r.Context(), common.UserKey, user)
+		ctx := context.WithValue(r.Context(), util.UserKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func (s *API) validateProblemEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !common.IsRProblemEditor(r) {
+		if !util.IsRProblemEditor(r) {
 			errorData(w, "You must be authorized to edit the problem", http.StatusUnauthorized)
 			return
 		}
@@ -102,8 +103,8 @@ func (s *API) validateProblemID(next http.Handler) http.Handler {
 			errorData(w, "problem does not exist", http.StatusBadRequest)
 			return
 		}
-		ctx := context.WithValue(r.Context(), common.PbID, uint(problemID))
-		ctx = context.WithValue(ctx, common.ProblemKey, problem)
+		ctx := context.WithValue(r.Context(), util.PbID, uint(problemID))
+		ctx = context.WithValue(ctx, util.ProblemKey, problem)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

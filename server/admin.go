@@ -4,7 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/KiloProjects/Kilonova/common"
+	"github.com/KiloProjects/Kilonova/internal/models"
+	"github.com/KiloProjects/Kilonova/internal/util"
 )
 
 func getIDFromForm(w http.ResponseWriter, r *http.Request) (uint, bool) {
@@ -61,7 +62,7 @@ func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
 				errorData(w, "You can't remove admin of the root user", http.StatusNotAcceptable)
 				return
 			}
-			if id == common.UserFromContext(r).ID {
+			if id == util.UserFromContext(r).ID {
 				errorData(w, "You can't remove your own admin", http.StatusNotAcceptable)
 				return
 			}
@@ -97,7 +98,7 @@ func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 				errorData(w, "You can't remove the proposer rank of the root user", http.StatusNotAcceptable)
 				return
 			}
-			if id == common.UserFromContext(r).ID {
+			if id == util.UserFromContext(r).ID {
 				errorData(w, "You can't remove your own proposer rank", http.StatusNotAcceptable)
 				return
 			}
@@ -119,6 +120,6 @@ func (s *API) dropAll(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Sorry, you need a specific form value. Look into the source code if you're sure", http.StatusBadRequest)
 		return
 	}
-	s.db.DB.Migrator().DropTable(&common.EvalTest{}, &common.Problem{}, &common.Task{}, &common.Test{}, &common.User{})
+	s.db.DB.Migrator().DropTable(&models.EvalTest{}, &models.Problem{}, &models.Task{}, &models.Test{}, &models.User{})
 	returnData(w, "I hope you're proud")
 }

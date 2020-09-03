@@ -1,20 +1,15 @@
-package common
+package util
 
 import (
 	"net/http"
-	"strings"
-	"time"
 
-	"github.com/gorilla/securecookie"
+	"github.com/KiloProjects/Kilonova/internal/models"
 )
 
 // this file stores stuff to both the server and web parts
 
 // KNContextType is the string type for all context values
 type KNContextType string
-
-// Cookies is the securecookie instance that should be called by everyone
-var Cookies *securecookie.SecureCookie
 
 const (
 	// UserKey is the key to be used for adding user objects to context
@@ -51,74 +46,74 @@ func IDFromContext(r *http.Request, tp KNContextType) uint {
 }
 
 // UserFromContext returns the user from request context
-func UserFromContext(r *http.Request) User {
+func UserFromContext(r *http.Request) models.User {
 	switch v := r.Context().Value(UserKey).(type) {
-	case User:
+	case models.User:
 		return v
-	case *User:
+	case *models.User:
 		return *v
 	default:
-		return User{}
+		return models.User{}
 	}
 }
 
 // ProblemFromContext returns the problem from request context
-func ProblemFromContext(r *http.Request) Problem {
+func ProblemFromContext(r *http.Request) models.Problem {
 	switch v := r.Context().Value(ProblemKey).(type) {
-	case Problem:
+	case models.Problem:
 		return v
-	case *Problem:
+	case *models.Problem:
 		return *v
 	default:
-		return Problem{}
+		return models.Problem{}
 	}
 }
 
 // TaskFromContext returns the task from request context
-func TaskFromContext(r *http.Request) Task {
+func TaskFromContext(r *http.Request) models.Task {
 	switch v := r.Context().Value(TaskKey).(type) {
-	case Task:
+	case models.Task:
 		return v
-	case *Task:
+	case *models.Task:
 		return *v
 	default:
-		return Task{}
+		return models.Task{}
 	}
 }
 
 // TestFromContext returns the test from request context
-func TestFromContext(r *http.Request) Test {
+func TestFromContext(r *http.Request) models.Test {
 	switch v := r.Context().Value(TestKey).(type) {
-	case Test:
+	case models.Test:
 		return v
-	case *Test:
+	case *models.Test:
 		return *v
 	default:
-		return Test{}
+		return models.Test{}
 	}
 }
 
 // CONVENTION: IsR* is shorthand for getting the required stuff from request and passing it to its non-R counterpart
 
-func IsAuthed(user User) bool {
+func IsAuthed(user models.User) bool {
 	return user.ID != 0
 }
 
-func IsAdmin(user User) bool {
+func IsAdmin(user models.User) bool {
 	if !IsAuthed(user) {
 		return false
 	}
 	return user.Admin
 }
 
-func IsProposer(user User) bool {
+func IsProposer(user models.User) bool {
 	if !IsAuthed(user) {
 		return false
 	}
 	return user.Admin || user.Proposer
 }
 
-func IsProblemEditor(user User, problem Problem) bool {
+func IsProblemEditor(user models.User, problem models.Problem) bool {
 	if !IsAuthed(user) {
 		return false
 	}
@@ -128,21 +123,21 @@ func IsProblemEditor(user User, problem Problem) bool {
 	return user.ID == problem.UserID
 }
 
-func IsProblemVisible(user User, problem Problem) bool {
+func IsProblemVisible(user models.User, problem models.Problem) bool {
 	if problem.Visible {
 		return true
 	}
 	return IsProblemEditor(user, problem)
 }
 
-func IsTaskEditor(task Task, user User) bool {
+func IsTaskEditor(task models.Task, user models.User) bool {
 	if !IsAuthed(user) {
 		return false
 	}
 	return IsAdmin(user) || user.ID == task.UserID
 }
 
-func IsTaskVisible(task Task, user User) bool {
+func IsTaskVisible(task models.Task, user models.User) bool {
 	if task.Visible {
 		return true
 	}
@@ -177,69 +172,12 @@ func IsRTaskVisible(r *http.Request) bool {
 	return IsTaskVisible(TaskFromContext(r), UserFromContext(r))
 }
 
-func FilterVisible(problems []Problem, user User) []Problem {
-	var showedProblems []Problem
+func FilterVisible(problems []models.Problem, user models.User) []models.Problem {
+	var showedProblems []models.Problem
 	for _, pb := range problems {
 		if IsProblemVisible(user, pb) {
 			showedProblems = append(showedProblems, pb)
 		}
 	}
 	return showedProblems
-}
-
-// GetSession reads and returns the data from the session cookie
-func GetSession(r *http.Request) *Session {
-	authToken := GetAuthToken(r)
-	if authToken != "" { // use Auth tokens by default
-		var ret Session
-		Cookies.Decode("kn-sessionid", authToken, &ret)
-		return &ret
-	}
-	cookie, err := r.Cookie("kn-sessionid")
-	if err != nil {
-		return nil
-	}
-	if cookie.Value == "" {
-		return nil
-	}
-	var ret Session
-	Cookies.Decode(cookie.Name, cookie.Value, &ret)
-	return &ret
-}
-
-// GetAuthToken returns the authentication token from a request
-func GetAuthToken(r *http.Request) string {
-	header := r.Header.Get("Authorization")
-	if strings.HasPrefix(header, "Bearer ") {
-		return strings.TrimPrefix(header, "Bearer ")
-	}
-	return ""
-}
-
-// SetSession sets the data to the session cookie
-func SetSession(w http.ResponseWriter, sess Session) (string, error) {
-	encoded, err := Cookies.Encode("kn-sessionid", sess)
-	if err != nil {
-		return "", err
-	}
-	cookie := &http.Cookie{
-		Name:     "kn-sessionid",
-		Value:    encoded,
-		Path:     "/",
-		HttpOnly: false,
-		SameSite: http.SameSiteDefaultMode,
-	}
-	http.SetCookie(w, cookie)
-	return encoded, nil
-}
-
-// RemoveSessionCookie clears the session cookie, effectively revoking it. When setting MaxAge to 0, the browser will also clear it out
-func RemoveSessionCookie(w http.ResponseWriter) {
-	emptyCookie := &http.Cookie{
-		Name:    "kn-sessionid",
-		Value:   "",
-		Path:    "/",
-		Expires: time.Unix(0, 0),
-	}
-	http.SetCookie(w, emptyCookie)
 }

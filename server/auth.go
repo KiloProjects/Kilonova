@@ -6,6 +6,7 @@ import (
 	"unicode"
 
 	"github.com/KiloProjects/Kilonova/common"
+	"github.com/KiloProjects/Kilonova/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -59,7 +60,7 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user *common.User
+	var user *models.User
 	quser, err := s.db.GetUserByName(username)
 	if err != nil {
 		errorData(w, "user not found", http.StatusBadRequest)

@@ -1,13 +1,11 @@
 package kndb
 
-import (
-	"github.com/KiloProjects/Kilonova/common"
-)
+import "github.com/KiloProjects/Kilonova/internal/models"
 
 // GetUserByID returns a user from the ID
 // If the user does not exist (or something happened), it provides an error
-func (d *DB) GetUserByID(id uint) (*common.User, error) {
-	var user common.User
+func (d *DB) GetUserByID(id uint) (*models.User, error) {
+	var user models.User
 	if err := d.DB.First(&user, id).Error; err != nil {
 		return nil, err
 	}
@@ -20,8 +18,8 @@ func (d *DB) GetUserByID(id uint) (*common.User, error) {
 
 // GetUserByName returns a user from the username (note that this is case-insensitive)
 // If the user does not exist (or something happened), it provides an error
-func (d *DB) GetUserByName(name string) (*common.User, error) {
-	var user common.User
+func (d *DB) GetUserByName(name string) (*models.User, error) {
+	var user models.User
 	if err := d.DB.First(&user, "lower(name) = lower(?)", name).Error; err != nil {
 		return nil, err
 	}
@@ -34,8 +32,8 @@ func (d *DB) GetUserByName(name string) (*common.User, error) {
 
 // GetUserByEmail returns a user from the email (note that this is case-insensitive)
 // If the user does not exist (or something happened), it provides an error
-func (d *DB) GetUserByEmail(email string) (*common.User, error) {
-	var user common.User
+func (d *DB) GetUserByEmail(email string) (*models.User, error) {
+	var user models.User
 	if err := d.DB.First(&user, "lower(email) = lower(?)", email).Error; err != nil {
 		return nil, err
 	}
@@ -51,7 +49,7 @@ func (d *DB) GetUserByEmail(email string) (*common.User, error) {
 func (d *DB) UserExists(email string, username string) bool {
 	var cnt int64
 	if email != "" {
-		if err := d.DB.Model(&common.User{}).Where("lower(email) = lower(?)", email).Count(&cnt).Error; err != nil {
+		if err := d.DB.Model(&models.User{}).Where("lower(email) = lower(?)", email).Count(&cnt).Error; err != nil {
 			d.logger.Println("Error counting in DB:", err)
 			return false
 		}
@@ -60,7 +58,7 @@ func (d *DB) UserExists(email string, username string) bool {
 		}
 	}
 	if username != "" {
-		if err := d.DB.Model(&common.User{}).Where("lower(name) = lower(?)", username).Count(&cnt).Error; err != nil {
+		if err := d.DB.Model(&models.User{}).Where("lower(name) = lower(?)", username).Count(&cnt).Error; err != nil {
 			d.logger.Println("Error counting in DB:", err)
 			return false
 		}
@@ -73,24 +71,24 @@ func (d *DB) UserExists(email string, username string) bool {
 
 // GetAllUsers returns a slice of all users
 // TODO: Should add pagination later
-func (d *DB) GetAllUsers() ([]common.User, error) {
-	var users []common.User
+func (d *DB) GetAllUsers() ([]models.User, error) {
+	var users []models.User
 	if err := d.DB.Find(&users).Error; err != nil {
 		return nil, err
 	}
 	return users, nil
 }
 
-func (d *DB) GetAllAdmins() ([]common.User, error) {
-	var users []common.User
+func (d *DB) GetAllAdmins() ([]models.User, error) {
+	var users []models.User
 	if err := d.DB.Where("admin = ?", true).Find(&users).Error; err != nil {
 		return nil, err
 	}
 	return users, nil
 }
 
-func (d *DB) GetAllProposers() ([]common.User, error) {
-	var users []common.User
+func (d *DB) GetAllProposers() ([]models.User, error) {
+	var users []models.User
 	if err := d.DB.Where("proposer = ? or admin = ?", true, true).Find(&users).Error; err != nil {
 		return nil, err
 	}
@@ -98,16 +96,16 @@ func (d *DB) GetAllProposers() ([]common.User, error) {
 }
 
 func (d *DB) SetAdmin(id uint, on bool) error {
-	return d.DB.Model(&common.User{}).Where("id = ?", id).Update("admin", on).Error
+	return d.DB.Model(&models.User{}).Where("id = ?", id).Update("admin", on).Error
 }
 
 func (d *DB) SetProposer(id uint, on bool) error {
-	return d.DB.Model(&common.User{}).Where("id = ?", id).Update("proposer", on).Error
+	return d.DB.Model(&models.User{}).Where("id = ?", id).Update("proposer", on).Error
 }
 
 // SetEmail sets the email of a user with the set ID
 func (d *DB) SetEmail(id uint, email string) error {
-	var user common.User
+	var user models.User
 	user.ID = id
 	return d.DB.Model(&user).Update("email", email).Error
 }

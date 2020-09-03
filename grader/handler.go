@@ -7,15 +7,15 @@ import (
 	"net"
 	"time"
 
-	"github.com/KiloProjects/Kilonova/common"
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/grader/proto"
+	"github.com/KiloProjects/Kilonova/internal/models"
 	"github.com/KiloProjects/Kilonova/kndb"
 	"github.com/davecgh/go-spew/spew"
 )
 
 type Handler struct {
-	tChan  chan common.Task
+	tChan  chan models.Task
 	db     *kndb.DB
 	dm     datamanager.Manager
 	ctx    context.Context
@@ -23,7 +23,7 @@ type Handler struct {
 }
 
 func NewHandler(ctx context.Context, db *kndb.DB, dm datamanager.Manager, logger *log.Logger) *Handler {
-	ch := make(chan common.Task, 5)
+	ch := make(chan models.Task, 5)
 	return &Handler{ch, db, dm, ctx, logger}
 }
 
@@ -58,7 +58,7 @@ func ldump(logger *log.Logger, args ...interface{}) {
 func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) error {
 	// TODO: Change to "stdin" for input, also maybe allow separate filename for stdout
 	for t := range h.tChan {
-		h.db.UpdateStatus(t.ID, common.StatusWorking, 0)
+		h.db.UpdateStatus(t.ID, models.StatusWorking, 0)
 		var score int
 
 		send <- proto.ArgToMessage(proto.Compile{ID: int(t.ID), Code: t.SourceCode, Language: t.Language})
@@ -87,7 +87,7 @@ func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) e
 		}
 
 		if resp.Success == false {
-			h.db.UpdateStatus(t.ID, common.StatusDone, score)
+			h.db.UpdateStatus(t.ID, models.StatusDone, score)
 			continue
 		}
 
@@ -168,7 +168,7 @@ func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) e
 
 		send <- proto.ArgToMessage(proto.TRemove{ID: int(t.ID)})
 
-		h.db.UpdateStatus(t.ID, common.StatusDone, score)
+		h.db.UpdateStatus(t.ID, models.StatusDone, score)
 	}
 	return nil
 }

@@ -1,13 +1,13 @@
 package kndb
 
 import (
-	"github.com/KiloProjects/Kilonova/common"
+	"github.com/KiloProjects/Kilonova/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // RegisterUser registers a user in the DB and returns a user instance to use later
-func (d *DB) RegisterUser(email, username, password string) (*common.User, error) {
-	var user common.User
+func (d *DB) RegisterUser(email, username, password string) (*models.User, error) {
+	var user models.User
 	user.Name = username
 	user.Email = email
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

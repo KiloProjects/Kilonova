@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/KiloProjects/Kilonova/common"
+	"github.com/KiloProjects/Kilonova/internal/util"
 )
 
 func getFormInt(w http.ResponseWriter, r *http.Request, name string) (int, bool) {
@@ -30,7 +30,7 @@ func returnData(w http.ResponseWriter, retData interface{}) {
 
 func statusData(w http.ResponseWriter, status string, retData interface{}, statusCode int) {
 	w.WriteHeader(statusCode)
-	err := json.NewEncoder(w).Encode(common.RetData{
+	err := json.NewEncoder(w).Encode(util.RetData{
 		Status: status,
 		Data:   retData,
 	})
@@ -46,5 +46,5 @@ func errorData(w http.ResponseWriter, retData interface{}, errCode int) {
 }
 
 func getContextValue(r *http.Request, name string) interface{} {
-	return r.Context().Value(common.KNContextType(name))
+	return r.Context().Value(util.KNContextType(name))
 }

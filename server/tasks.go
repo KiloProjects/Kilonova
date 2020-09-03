@@ -6,8 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/KiloProjects/Kilonova/common"
 	"github.com/KiloProjects/Kilonova/grader/proto"
+	"github.com/KiloProjects/Kilonova/internal/models"
+	"github.com/KiloProjects/Kilonova/internal/util"
 	"gorm.io/gorm"
 )
 
@@ -24,7 +25,7 @@ func (s *API) getTaskByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !common.IsTaskVisible(*task, common.UserFromContext(r)) {
+	if !util.IsTaskVisible(*task, util.UserFromContext(r)) {
 		task.SourceCode = ""
 	}
 
@@ -41,9 +42,9 @@ func (s *API) getTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := common.UserFromContext(r)
+	user := util.UserFromContext(r)
 	for i := 0; i < len(tasks); i++ {
-		if !common.IsTaskVisible(tasks[i], user) {
+		if !util.IsTaskVisible(tasks[i], user) {
 			tasks[i].SourceCode = ""
 		}
 	}
@@ -73,7 +74,7 @@ func (s *API) getTasksForProblem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i := 0; i < len(tasks); i++ {
-		if !common.IsTaskVisible(tasks[i], *user) {
+		if !util.IsTaskVisible(tasks[i], *user) {
 			tasks[i].SourceCode = ""
 		}
 	}
@@ -86,7 +87,7 @@ func (s *API) getSelfTasksForProblem(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	uid := common.UserFromContext(r).ID
+	uid := util.UserFromContext(r).ID
 	tasks, err := s.db.UserTasksOnProblem(uint(uid), uint(pid))
 	if err != nil {
 		errorData(w, err, 500)
@@ -118,7 +119,7 @@ func (s *API) setTaskVisible(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !common.IsTaskEditor(*task, common.UserFromContext(r)) {
+	if !util.IsTaskEditor(*task, util.UserFromContext(r)) {
 		errorData(w, "You are not allowed to do this", 403)
 		return
 	}
@@ -142,7 +143,7 @@ func (s *API) submitTask(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var code = r.FormValue("code")
 	var language = r.FormValue("lang")
-	var user = common.UserFromContext(r)
+	var user = util.UserFromContext(r)
 	ipbid, ok := getFormInt(w, r, "problemID")
 	if !ok {
 		return
@@ -197,9 +198,9 @@ func (s *API) submitTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create the evalTests
-	var evalTests = make([]common.EvalTest, 0)
+	var evalTests = make([]models.EvalTest, 0)
 	for _, test := range problem.Tests {
-		evTest := common.EvalTest{
+		evTest := models.EvalTest{
 			UserID: user.ID,
 			Test:   test,
 		}
@@ -208,7 +209,7 @@ func (s *API) submitTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// add the task to the DB
-	task := common.Task{
+	task := models.Task{
 		Tests:      evalTests,
 		User:       user,
 		Problem:    *problem,

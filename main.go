@@ -71,7 +71,10 @@ func main() {
 	}
 	logg.Println("Connected to DB")
 
-	db = kndb.New(masterDB, logg)
+	db, err = kndb.New(masterDB, logg)
+	if err != nil {
+		log.Fatal(err)
+	}
 	db.AutoMigrate()
 	db.DB.Logger = logger.Default.LogMode(logger.Warn)
 

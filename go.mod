@@ -6,6 +6,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-chi/cors v1.1.1
+	github.com/go-redis/redis/v8 v8.0.0-beta.9
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gosimple/slug v1.9.0
 	github.com/jackc/pgx/v4 v4.7.2 // indirect

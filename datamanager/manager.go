@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/KiloProjects/Kilonova/common"
+	"github.com/KiloProjects/Kilonova/internal/models"
 )
 
 // StorageManager helps open the files in the data directory, this is supposed to be data that should not be stored in the DB
@@ -26,7 +26,7 @@ type Manager interface {
 
 // Session holds the session data of a specified user
 type Session struct {
-	User    common.User
+	User    models.User
 	Expires time.Time
 }
 

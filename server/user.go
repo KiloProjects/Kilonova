@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"net/http"
 
-	"github.com/KiloProjects/Kilonova/common"
+	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/pkg/errors"
 )
 
@@ -14,7 +14,7 @@ var (
 )
 
 func (s *API) getSelfGravatar(w http.ResponseWriter, r *http.Request) {
-	email := common.UserFromContext(r).Email
+	email := util.UserFromContext(r).Email
 	size := r.FormValue("s")
 	if size == "" {
 		size = "128"
@@ -56,7 +56,7 @@ func (s *API) getUserByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getSelf(w http.ResponseWriter, r *http.Request) {
-	returnData(w, common.UserFromContext(r))
+	returnData(w, util.UserFromContext(r))
 }
 
 func getGravatarFromEmail(email string) string {
@@ -66,7 +66,7 @@ func getGravatarFromEmail(email string) string {
 
 // ChangeEmail changes the e-mail of the saved user
 func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
-	user := common.UserFromContext(r)
+	user := util.UserFromContext(r)
 	email := r.FormValue("email")
 	if email == "" {
 		errorData(w, "You must provide a new email to change to", http.StatusBadRequest)

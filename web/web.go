@@ -13,6 +13,8 @@ import (
 
 	"github.com/KiloProjects/Kilonova/common"
 	"github.com/KiloProjects/Kilonova/datamanager"
+	"github.com/KiloProjects/Kilonova/internal/models"
+	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/KiloProjects/Kilonova/kndb"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi"
@@ -26,26 +28,26 @@ var templates *template.Template
 type templateData struct {
 	Title    string
 	Params   map[string]string
-	User     common.User
+	User     models.User
 	LoggedIn bool
 
 	// Page-specific data
 	// it is easier to just put this stuff here instead of in a `Data` interface
-	Problems []common.Problem
-	Problem  common.Problem
+	Problems []models.Problem
+	Problem  models.Problem
 
-	ContentUser common.User
+	ContentUser models.User
 
-	Tasks []common.Task
+	Tasks []models.Task
 
-	Task   common.Task
+	Task   models.Task
 	TaskID uint
 
 	ProblemID uint
 
 	Version string
 
-	Test   common.Test
+	Test   models.Test
 	TestID uint
 
 	// ProblemEditor tells us if the authed .User is able to edit the .Problem
@@ -94,11 +96,11 @@ func (rt *Web) GetRouter() chi.Router {
 		"getFullTests": rt.getFullTestData,
 		"taskStatus": func(id int) template.HTML {
 			switch id {
-			case common.StatusWaiting:
+			case models.StatusWaiting:
 				return template.HTML("În așteptare...")
-			case common.StatusWorking:
+			case models.StatusWorking:
 				return template.HTML("În lucru...")
-			case common.StatusDone:
+			case models.StatusDone:
 				return template.HTML("Finalizată")
 			default:
 				return template.HTML("Stare necunoscută")
@@ -117,14 +119,14 @@ func (rt *Web) GetRouter() chi.Router {
 			}
 			return v
 		},
-		"taskScore": func(problem common.Problem, user common.User) string {
+		"taskScore": func(problem models.Problem, user models.User) string {
 			score, err := rt.db.MaxScoreFor(user.ID, problem.ID)
 			if err != nil || score < 0 {
 				return "-"
 			}
 			return fmt.Sprint(score)
 		},
-		"problemTasks": func(problem common.Problem, user common.User) []common.Task {
+		"problemTasks": func(problem models.Problem, user models.User) []models.Task {
 			tasks, err := rt.db.UserTasksOnProblem(user.ID, problem.ID)
 			if err != nil {
 				return nil
@@ -172,7 +174,7 @@ func (rt *Web) GetRouter() chi.Router {
 	// Enable server push
 	r.With(rt.getUser).With(pushStuff).Route("/", func(r chi.Router) {
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			problems, err := rt.db.GetAllVisibleProblems(common.UserFromContext(r))
+			problems, err := rt.db.GetAllVisibleProblems(util.UserFromContext(r))
 			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 				rt.logger.Println("/", err)
 				http.Error(w, http.StatusText(500), 500)
@@ -185,7 +187,7 @@ func (rt *Web) GetRouter() chi.Router {
 
 		r.Route("/probleme", func(r chi.Router) {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				problems, err := rt.db.GetAllVisibleProblems(common.UserFromContext(r))
+				problems, err := rt.db.GetAllVisibleProblems(util.UserFromContext(r))
 				if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 					rt.logger.Println("/probleme/", err)
 					http.Error(w, http.StatusText(500), 500)
@@ -205,7 +207,7 @@ func (rt *Web) GetRouter() chi.Router {
 				r.Use(rt.ValidateProblemID)
 				r.Use(rt.ValidateVisible)
 				r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-					problem := common.ProblemFromContext(r)
+					problem := util.ProblemFromContext(r)
 
 					templ := rt.hydrateTemplate(r)
 					templ.Title = fmt.Sprintf("#%d: %s", problem.ID, problem.Name)
@@ -214,34 +216,34 @@ func (rt *Web) GetRouter() chi.Router {
 				r.Route("/edit", func(r chi.Router) {
 					r.Use(rt.mustBeEditor)
 					r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-						problem := common.ProblemFromContext(r)
+						problem := util.ProblemFromContext(r)
 						templ := rt.hydrateTemplate(r)
 						templ.Title = fmt.Sprintf("EDIT | #%d: %s", problem.ID, problem.Name)
 						rt.check(templates.ExecuteTemplate(w, "edit/index", templ))
 					})
 					r.Get("/enunt", func(w http.ResponseWriter, r *http.Request) {
-						problem := common.ProblemFromContext(r)
+						problem := util.ProblemFromContext(r)
 						templ := rt.hydrateTemplate(r)
 						templ.Title = fmt.Sprintf("ENUNT - EDIT | #%d: %s", problem.ID, problem.Name)
 						rt.check(templates.ExecuteTemplate(w, "edit/enunt", templ))
 					})
 					r.Get("/limite", func(w http.ResponseWriter, r *http.Request) {
-						problem := common.ProblemFromContext(r)
+						problem := util.ProblemFromContext(r)
 						templ := rt.hydrateTemplate(r)
 						templ.Title = fmt.Sprintf("LIMITE - EDIT | #%d: %s", problem.ID, problem.Name)
 						rt.check(templates.ExecuteTemplate(w, "edit/limite", templ))
 					})
 					r.Route("/teste", func(r chi.Router) {
 						r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-							problem := common.ProblemFromContext(r)
+							problem := util.ProblemFromContext(r)
 							templ := rt.hydrateTemplate(r)
 							templ.Title = fmt.Sprintf("TESTE - EDIT | #%d: %s", problem.ID, problem.Name)
 							templ.Sidebar = true
 							rt.check(templates.ExecuteTemplate(w, "edit/testAdd", templ))
 						})
 						r.With(rt.ValidateTestID).Get("/{tid}", func(w http.ResponseWriter, r *http.Request) {
-							test := common.TestFromContext(r)
-							problem := common.ProblemFromContext(r)
+							test := util.TestFromContext(r)
+							problem := util.ProblemFromContext(r)
 							templ := rt.hydrateTemplate(r)
 							templ.Title = fmt.Sprintf("Teste - EDIT %d | #%d: %s", test.VisibleID, problem.ID, problem.Name)
 							templ.Sidebar = true

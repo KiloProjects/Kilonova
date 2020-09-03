@@ -4,7 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/KiloProjects/Kilonova/common"
+	"github.com/KiloProjects/Kilonova/internal/models"
+	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/gosimple/slug"
 )
 
@@ -41,7 +42,7 @@ func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) maxScoreSelf(w http.ResponseWriter, r *http.Request) {
 	id := getContextValue(r, "pbID").(uint)
-	max, err := s.db.MaxScoreFor(common.UserFromContext(r).ID, id)
+	max, err := s.db.MaxScoreFor(util.UserFromContext(r).ID, id)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -74,7 +75,7 @@ func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := s.manager.SaveTest(common.IDFromContext(r, common.PbID), uint(id), []byte(in), []byte(out)); err != nil {
+	if err := s.manager.SaveTest(util.IDFromContext(r, util.PbID), uint(id), []byte(in), []byte(out)); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -90,7 +91,7 @@ func (s *API) updateTestID(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := s.db.UpdateProblemTestVisibleID(common.IDFromContext(r, common.PbID), uint(testID), uint(newID)); err != nil {
+	if err := s.db.UpdateProblemTestVisibleID(util.IDFromContext(r, util.PbID), uint(testID), uint(newID)); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -106,7 +107,7 @@ func (s *API) updateTestScore(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := s.db.UpdateProblemTestScore(common.IDFromContext(r, common.PbID), uint(testID), newScore); err != nil {
+	if err := s.db.UpdateProblemTestScore(util.IDFromContext(r, util.PbID), uint(testID), newScore); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -114,7 +115,7 @@ func (s *API) updateTestScore(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getTests(w http.ResponseWriter, r *http.Request) {
-	returnData(w, common.ProblemFromContext(r).Tests)
+	returnData(w, util.ProblemFromContext(r).Tests)
 }
 
 func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
@@ -128,7 +129,7 @@ func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Invalid test ID", http.StatusBadRequest)
 		return
 	}
-	for _, t := range common.ProblemFromContext(r).Tests {
+	for _, t := range util.ProblemFromContext(r).Tests {
 		if t.VisibleID == uint(id) {
 			returnData(w, t)
 			return
@@ -139,7 +140,7 @@ func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) setInputType(w http.ResponseWriter, r *http.Request) {
 	val := r.FormValue("isSet")
-	problem := common.ProblemFromContext(r)
+	problem := util.ProblemFromContext(r)
 	if val == "true" {
 		s.db.UpdateProblemField(problem.ID, "console_input", true)
 	} else if val == "false" {
@@ -155,7 +156,7 @@ func (s *API) setTestName(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "You must set the `testName` form value", http.StatusBadRequest)
 		return
 	}
-	problem := common.ProblemFromContext(r)
+	problem := util.ProblemFromContext(r)
 	if err := s.db.UpdateProblemField(problem.ID, "test_name", val); err != nil {
 		errorData(w, err, 500)
 		return
@@ -164,11 +165,11 @@ func (s *API) setTestName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
-	problem := common.ProblemFromContext(r)
+	problem := util.ProblemFromContext(r)
 
-	var tests = make([]common.Test, len(problem.Tests))
+	var tests = make([]models.Test, len(problem.Tests))
 	copy(tests, problem.Tests)
-	s.db.UpdateProblemField(problem.ID, "tests", []common.Test{})
+	s.db.UpdateProblemField(problem.ID, "tests", []models.Test{})
 	for _, t := range tests {
 		s.logger.Println("Trying to delete test with ID", t.ID)
 		if err := s.db.DB.Delete(&t).Error; err != nil {
@@ -180,7 +181,7 @@ func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
-	pb := common.ProblemFromContext(r)
+	pb := util.ProblemFromContext(r)
 
 	// in case limits is empty, set up the problem ID to save it to the DB
 
@@ -232,7 +233,7 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// set it to be the largest visible id of a test + 1
-		tests := common.ProblemFromContext(r).Tests
+		tests := util.ProblemFromContext(r).Tests
 		var max uint = 0
 		for _, t := range tests {
 			if max < t.VisibleID {
@@ -246,7 +247,7 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var test common.Test
+	var test models.Test
 	test.ProblemID = s.pbIDFromReq(r)
 	test.Score = score
 	test.VisibleID = uint(visibleID)
@@ -288,9 +289,9 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var problem common.Problem
+	var problem models.Problem
 	problem.Name = title
-	problem.User = common.UserFromContext(r)
+	problem.User = util.UserFromContext(r)
 	problem.ConsoleInput = consoleInput
 	problem.TestName = slug.Make(title)
 	// default limits
@@ -308,7 +309,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 // getAllProblems returns all the problems from the DB
 // TODO: Pagination
 func (s *API) getAllProblems(w http.ResponseWriter, r *http.Request) {
-	problems, err := s.db.GetAllVisibleProblems(common.UserFromContext(r))
+	problems, err := s.db.GetAllVisibleProblems(util.UserFromContext(r))
 	if err != nil {
 		errorData(w, http.StatusText(500), 500)
 		return
