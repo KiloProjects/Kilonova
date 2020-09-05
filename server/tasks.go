@@ -52,22 +52,23 @@ func (s *API) getTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getTasksForProblem(w http.ResponseWriter, r *http.Request) {
-	pid, ok := getFormInt(w, r, "pid")
-	if !ok {
-		return
+	r.ParseForm()
+	var args struct {
+		PID uint
+		UID uint
 	}
-	uid, ok := getFormInt(w, r, "uid")
-	if !ok {
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, http.StatusBadRequest)
 		return
 	}
 
-	tasks, err := s.db.UserTasksOnProblem(uint(uid), uint(pid))
+	tasks, err := s.db.UserTasksOnProblem(args.UID, args.PID)
 	if err != nil {
 		errorData(w, err, 500)
 		return
 	}
 
-	user, err := s.db.GetUserByID(uint(uid))
+	user, err := s.db.GetUserByID(args.UID)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -97,18 +98,17 @@ func (s *API) getSelfTasksForProblem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) setTaskVisible(w http.ResponseWriter, r *http.Request) {
-	b, err := strconv.ParseBool(r.FormValue("visible"))
-	if err != nil {
-		errorData(w, "`visible` not valid bool", http.StatusBadRequest)
+	r.ParseForm()
+	var args struct {
+		Visible bool
+		ID      uint
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, http.StatusBadRequest)
 		return
 	}
 
-	id, ok := getFormInt(w, r, "id")
-	if !ok {
-		return
-	}
-
-	task, err := s.db.GetTaskByID(uint(id))
+	task, err := s.db.GetTaskByID(args.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			errorData(w, "Task not found", http.StatusNotFound)
@@ -124,7 +124,7 @@ func (s *API) setTaskVisible(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.db.UpdateTaskVisibility(uint(id), b); err != nil {
+	if err := s.db.UpdateTaskVisibility(args.ID, args.Visible); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -141,15 +141,19 @@ func (s *API) setTaskVisible(w http.ResponseWriter, r *http.Request) {
 // Note that the `code` param is prioritized over file upload
 func (s *API) submitTask(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var code = r.FormValue("code")
-	var language = r.FormValue("lang")
-	var user = util.UserFromContext(r)
-	ipbid, ok := getFormInt(w, r, "problemID")
-	if !ok {
+	var args struct {
+		Code      string
+		Language  string
+		ProblemID uint
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, http.StatusBadRequest)
 		return
 	}
 
-	problem, err := s.db.GetProblemByID(uint(ipbid))
+	var user = util.UserFromContext(r)
+
+	problem, err := s.db.GetProblemByID(args.ProblemID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			errorData(w, "Problem not found", http.StatusBadRequest)
@@ -158,13 +162,13 @@ func (s *API) submitTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := proto.Languages[language]; ok == false {
+	if _, ok := proto.Languages[args.Language]; ok == false {
 		errorData(w, "Invalid language", http.StatusBadRequest)
 		return
 	}
 
 	// figure out if the code is in a file or in a form value
-	if code == "" {
+	if args.Code == "" {
 		if r.MultipartForm == nil {
 			errorData(w, "No code sent", http.StatusBadRequest)
 			return
@@ -188,8 +192,8 @@ func (s *API) submitTask(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		code = string(c)
-		if code == "" {
+		args.Code = string(c)
+		if args.Code == "" {
 			if r.MultipartForm == nil {
 				errorData(w, "No code sent", http.StatusBadRequest)
 				return
@@ -213,8 +217,8 @@ func (s *API) submitTask(w http.ResponseWriter, r *http.Request) {
 		Tests:      evalTests,
 		User:       user,
 		Problem:    *problem,
-		SourceCode: code,
-		Language:   language,
+		SourceCode: args.Code,
+		Language:   args.Language,
 	}
 	if err := s.db.Save(&task); err != nil {
 		errorData(w, "Couldn't create test", 500)

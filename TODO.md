@@ -1,31 +1,47 @@
 TODO LIST KILONOVA:
 - [x] Pentru closed alpha:
-	- [x] Termină cu grader-ul 
+	- [x] Termină cu grader-ul IOI
 	- [x] Ierarhie conturi
 	- [x] Interfață web pentru administrarea ierarhiei
 	- [x] Toast-uri
 - [ ] Pentru beta:
 	- [x] Mathjax
 	- [ ] Profil user
-		- [ ] Setări Vizibilitate default
-	- [ ] Implementează server.UpdateTest
-	- [ ] Reduce nr de TODOs
+		- [ ] Listă probleme făcute
+		- [ ] Setări Vizibilitate default la tasks
+	- [x] Implementează server.UpdateTest
+	- [ ] Reduce nr de TODOs în cod
 	- [ ] Rezolvat bug-ul de la https://discordapp.com/channels/713844353390346322/723768974411694171/729462280718385233
+		- S-ar putea să nu fie posibil cu isolate, ar trebui să găsesc altceva
+			- Maybe https://github.com/adrian-budau/ia-sandbox ????
 	- [ ] folosește pure SQL pentru backend, fără GORM
 	- [ ] Site mai drăguț:
 		- [x] NavBar
-		- [ ] Auto reîncărcare pagină task
+		- [ ] Interfață mai bună tasks
+			- [ ] Auto reîncărcare pagină task nu e finalizată evaluarea
 		- [ ] Experiență mai bună pentru editat problemele
-		- ? [ ] Scor bazat pe ranks pentru amuzament (gen 0 wood, 1-20 ruby, 21-49 diamond, 100 gold, etc)
+		- [ ] ? Scor bazat pe ranks pentru amuzament (gen 0 wood, 1-20 ruby, 21-49 diamond, 100 gold, etc)
 		- [ ] Dark theme	
 	- [ ] Filtre tasks
 	- [ ] "Custom input" ca pe hackerrank/leetcode
 	- [ ] Surse de calitate (apar sus când filtrezi după tasks cu sursa publică)
+	- [ ] Multi-eval support
 - [ ] Pentru release:
+	- [ ] Sistem de contests
+	- [ ] Mai multe tipuri de probleme:
+		- [ ] interactive
+		- [ ] ? ACM
 	- [ ] Integrare cu Polygon
 	- [ ] PbInfo problem import (înseamnă că e nevoie să termin PbAPI)
-	- [ ] De gândit beneficii tari pentru "KiloNova Pro"
-	- [ ] Guilds
-	- [ ] Blog
-	- [ ] Probleme interactive
+	- [ ] De gândit beneficii tari pentru monetizare ("KiloNova PRO")
+		- [ ] ? cosmetice
+		- [ ] Sistem de priority queue 
+	- [ ] Versiune engleză
+	- [ ] Instrumente de translation:
+		- [ ] Useri traducători
+		- [ ] Enunțuri multi-language
+	- [ ] Social:
+		- [ ] Guilds
+		- [ ] Friendships
+		- [ ] Blog
 	- [ ] Etichete probleme

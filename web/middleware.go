@@ -167,7 +167,8 @@ func (rt *Web) getUser(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		ctx := context.WithValue(r.Context(), util.UserKey, user)
+		ctx := context.WithValue(r.Context(), util.UserID, user.ID)
+		ctx = context.WithValue(ctx, util.UserKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

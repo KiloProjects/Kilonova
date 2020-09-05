@@ -10,16 +10,13 @@ import (
 )
 
 func (s *API) setProblemVisible(w http.ResponseWriter, r *http.Request) {
-	if r.FormValue("visible") == "" {
-		errorData(w, "`visible` not specified", http.StatusBadRequest)
+	r.ParseForm()
+	var args struct{ Visible bool }
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 500)
 		return
 	}
-	b, err := strconv.ParseBool(r.FormValue("visible"))
-	if err != nil {
-		errorData(w, "`visible` not valid bool", http.StatusBadRequest)
-		return
-	}
-	if err := s.db.UpdateProblemField(getContextValue(r, "pbID").(uint), "visible", b); err != nil {
+	if err := s.db.UpdateProblemField(getContextValue(r, "pbID").(uint), "visible", args.Visible); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -27,12 +24,15 @@ func (s *API) setProblemVisible(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
-	id := getContextValue(r, "pbID").(uint)
-	uid, ok := getFormInt(w, r, "userid")
-	if !ok {
+	r.ParseForm()
+	id := util.IDFromContext(r, util.PbID)
+	var args struct{ UserID uint }
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 500)
 		return
 	}
-	max, err := s.db.MaxScoreFor(uint(uid), id)
+
+	max, err := s.db.MaxScoreFor(args.UserID, id)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -41,8 +41,9 @@ func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) maxScoreSelf(w http.ResponseWriter, r *http.Request) {
-	id := getContextValue(r, "pbID").(uint)
-	max, err := s.db.MaxScoreFor(util.UserFromContext(r).ID, id)
+	id := util.IDFromContext(r, util.PbID)
+	uid := util.IDFromContext(r, util.UserID)
+	max, err := s.db.MaxScoreFor(uint(uid), uint(id))
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -83,15 +84,16 @@ func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) updateTestID(w http.ResponseWriter, r *http.Request) {
-	newID, ok := getFormInt(w, r, "newID")
-	if !ok {
+	r.ParseForm()
+	var args struct {
+		NewID uint
+		ID    uint
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	testID, ok := getFormInt(w, r, "id")
-	if !ok {
-		return
-	}
-	if err := s.db.UpdateProblemTestVisibleID(util.IDFromContext(r, util.PbID), uint(testID), uint(newID)); err != nil {
+	if err := s.db.UpdateProblemTestVisibleID(util.IDFromContext(r, util.PbID), args.ID, args.NewID); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -99,15 +101,16 @@ func (s *API) updateTestID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) updateTestScore(w http.ResponseWriter, r *http.Request) {
-	newScore, ok := getFormInt(w, r, "score")
-	if !ok {
+	r.ParseForm()
+	var args struct {
+		Score int
+		ID    uint
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	testID, ok := getFormInt(w, r, "id")
-	if !ok {
-		return
-	}
-	if err := s.db.UpdateProblemTestScore(util.IDFromContext(r, util.PbID), uint(testID), newScore); err != nil {
+	if err := s.db.UpdateProblemTestScore(util.IDFromContext(r, util.PbID), args.ID, args.Score); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -119,18 +122,14 @@ func (s *API) getTests(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
-	sid := r.FormValue("id")
-	if sid == "" {
-		errorData(w, "You must specify a test ID", http.StatusBadRequest)
-		return
-	}
-	id, err := strconv.ParseUint(sid, 10, 32)
-	if err != nil {
-		errorData(w, "Invalid test ID", http.StatusBadRequest)
+	r.ParseForm()
+	var args struct{ ID uint }
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, http.StatusBadRequest)
 		return
 	}
 	for _, t := range util.ProblemFromContext(r).Tests {
-		if t.VisibleID == uint(id) {
+		if t.VisibleID == uint(args.ID) {
 			returnData(w, t)
 			return
 		}
@@ -173,7 +172,6 @@ func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
 	for _, t := range tests {
 		s.logger.Println("Trying to delete test with ID", t.ID)
 		if err := s.db.DB.Delete(&t).Error; err != nil {
-			// fixme(alexv): don't send the error
 			errorData(w, err, 500)
 		}
 	}
@@ -185,30 +183,21 @@ func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
 
 	// in case limits is empty, set up the problem ID to save it to the DB
 
-	if r.FormValue("memoryLimit") != "" {
-		memoryLimit, err := strconv.ParseUint(r.FormValue("memoryLimit"), 10, 0)
-		if err != nil || memoryLimit <= 0 {
-			errorData(w, "memoryLimit must be a valid float", http.StatusBadRequest)
-			return
-		}
-		pb.MemoryLimit = memoryLimit
+	r.ParseForm()
+	var args struct {
+		MemoryLimit uint64  `schema:"memoryLimit"`
+		StackLimit  uint64  `schema:"stackLimit"`
+		TimeLimit   float64 `schema:"timeLimit"`
 	}
-	if r.FormValue("stackLimit") != "" {
-		stackLimit, err := strconv.ParseUint(r.FormValue("stackLimit"), 10, 0)
-		if err != nil || stackLimit <= 0 {
-			errorData(w, "stackLimit must be a valid float", http.StatusBadRequest)
-			return
-		}
-		pb.StackLimit = stackLimit
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, http.StatusBadRequest)
+		return
 	}
-	if r.FormValue("timeLimit") != "" {
-		timeLimit, err := strconv.ParseFloat(r.FormValue("timeLimit"), 64)
-		if err != nil || timeLimit <= 0 {
-			errorData(w, "timeLimit must be a valid float", http.StatusBadRequest)
-			return
-		}
-		pb.TimeLimit = timeLimit
-	}
+
+	pb.MemoryLimit = args.MemoryLimit
+	pb.StackLimit = args.StackLimit
+	pb.TimeLimit = args.TimeLimit
+
 	if err := s.db.Save(&pb); err != nil {
 		errorData(w, http.StatusText(500), 500)
 		return

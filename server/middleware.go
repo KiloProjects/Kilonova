@@ -73,7 +73,8 @@ func (s *API) SetupSession(next http.Handler) http.Handler {
 			errorData(w, http.StatusText(500), 500)
 			return
 		}
-		ctx := context.WithValue(r.Context(), util.UserKey, user)
+		ctx := context.WithValue(r.Context(), util.UserID, user.ID)
+		ctx = context.WithValue(ctx, util.UserKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

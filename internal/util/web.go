@@ -12,6 +12,7 @@ import (
 type KNContextType string
 
 const (
+	UserID = KNContextType("userID")
 	// UserKey is the key to be used for adding user objects to context
 	UserKey = KNContextType("user")
 	// PbID is the key to be used for adding problem IDs to context

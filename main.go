@@ -114,7 +114,6 @@ func main() {
 	r.Mount("/api", API.GetRouter())
 	r.Mount("/", web.NewWeb(manager, db, logg).GetRouter())
 
-	// TODO: Find out why memory usage is higher than on pbinfo.ro for the same program
 	grader.Start(*evalSocket)
 
 	// for graceful setup and shutdown
@@ -125,6 +124,7 @@ func main() {
 			fmt.Println(err)
 		}
 	}()
+
 	fmt.Println("Successfully started")
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)

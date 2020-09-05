@@ -12,31 +12,37 @@ import (
 
 func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	email := strings.ToLower(r.FormValue("email"))
-	username := r.FormValue("username")
-	password := r.FormValue("password")
+	var auth struct {
+		Username string
+		Email    string
+		Password string
+	}
+	if err := decoder.Decode(&auth, r.Form); err != nil {
+		errorData(w, err, http.StatusBadRequest)
+		return
+	}
 
-	if email == "" || username == "" || password == "" {
+	if auth.Email == "" || auth.Username == "" || auth.Password == "" {
 		errorData(w, "You must specify an email address, username and password", http.StatusBadRequest)
 		return
 	}
 
-	if strings.IndexFunc(username, unicode.IsSpace) != -1 {
+	if strings.IndexFunc(auth.Username, unicode.IsSpace) != -1 {
 		errorData(w, "Username must not contain spaces", http.StatusBadRequest)
 		return
 	}
 
-	if strings.IndexFunc(email, unicode.IsSpace) != -1 || len(email) > 254 || len(email) < 3 {
+	if strings.IndexFunc(auth.Email, unicode.IsSpace) != -1 || len(auth.Email) > 254 || len(auth.Email) < 3 {
 		errorData(w, "Invalid e-mail address", http.StatusBadRequest)
 		return
 	}
 
-	if s.db.UserExists(email, username) {
+	if s.db.UserExists(auth.Email, auth.Username) {
 		errorData(w, "User matching email or username already exists", http.StatusBadRequest)
 		return
 	}
 
-	user, err := s.db.RegisterUser(email, username, password)
+	user, err := s.db.RegisterUser(auth.Email, auth.Username, auth.Password)
 	if err != nil {
 		errorData(w, "Couldn't register user", 500)
 		return
@@ -52,22 +58,29 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) login(w http.ResponseWriter, r *http.Request) {
-	username := r.FormValue("username")
-	password := r.FormValue("password")
+	r.ParseForm()
+	var auth struct {
+		Username string
+		Password string
+	}
 
-	if password == "" || username == "" {
+	if err := decoder.Decode(&auth, r.Form); err != nil {
+		errorData(w, err, http.StatusBadRequest)
+	}
+
+	if auth.Password == "" || auth.Username == "" {
 		errorData(w, "You must specify an username and a password", http.StatusBadRequest)
 		return
 	}
 
 	var user *models.User
-	quser, err := s.db.GetUserByName(username)
+	quser, err := s.db.GetUserByName(auth.Username)
 	if err != nil {
 		errorData(w, "user not found", http.StatusBadRequest)
 		return
 	}
 	user = quser
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(auth.Password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		errorData(w, "Invalid username or password", http.StatusUnauthorized)
 		return

@@ -8,7 +8,10 @@ import (
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/kndb"
 	"github.com/go-chi/chi"
+	"github.com/gorilla/schema"
 )
+
+var decoder = schema.NewDecoder()
 
 // API is the base struct for the project's API
 type API struct {
