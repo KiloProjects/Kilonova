@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 
 	"github.com/KiloProjects/Kilonova/grader/proto"
 	"github.com/KiloProjects/Kilonova/internal/models"
