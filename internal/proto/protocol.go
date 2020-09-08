@@ -1,5 +1,4 @@
 // Package proto implements a simple protocol for communicating in messages
-// It is used by the Kilonova project (github.com/KiloProjects/Kilonova) to interact with the Grader bilaterally
 // It is by no means perfect, I will keep adjusting it as time goes on
 package proto
 

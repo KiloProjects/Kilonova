@@ -1,0 +1,72 @@
+/**************  Protocol  ***************/
+Evaler           ||     Client
+				<---   connect
+/*****  Task procedure  *******/
+				<---   Compile 
+CResponse		--->
+				<---   STask
+				<---   STask
+STResponse		--->
+				<---   STask
+STResponse		--->
+STResponse		--->
+				<---   TRemove
+/***** /Task Procedure\  *******/
+
+/************** /Protocol\ ***************/
+
+/**************   Types  *****************/
+Compile - compile task and save the executable somewhere
+		- args:
+			- "code": string = source code to compile
+			- "lang": string = language key as defined in proto/types.go
+			- "id": int = ID that corresponds to this task
+
+CResponse - Response for a Compile type
+		- args:
+			- "id": int = ID to the corresponding compiled task
+		  	- "output": string = compilation output
+			- "success": bool = determine if it was successful
+			- "other": string = other errors that might happen
+
+STask - SubTask (test) add task with specified input to queue
+		- args:
+			- "id": int = ID of executable to be run
+			- "tid": int = ID of the test that is currently run, used for STResponse
+			- "input": string = test input
+			- "filename": string = if "input", then stdin is used, otherwise the filename to save the input to
+			- "timelimit": float = time limit (in seconds), 0 for no limits
+			- "memorylimit": int = memory limit (in kilobytes), 0 for no limits
+			- "stacklimit": int = stack limit (in kilobytes), 0 for no limits
+
+STResponse - SubTask response (note that it is the client's responsibility to validate output)
+		- args:
+			- "tid": int = the "tid" specified in STask
+			- "output": string = test output
+			- "time": float = time taken (in seconds)
+			- "memory": int = memory consumed (in kilobytes)
+			- "status": int = exit status
+			- "comments": string = Extra stuff (like "Killed by signal 11" or "Sandbox error")
+
+TRemove - mark task executable as safe to remove
+		- args:
+			- "id": int = ID of task
+
+Error - just a simple error
+		- args:
+			- "value": string = error string
+
+/****  Possible  ****/
+Assign - assign a number of boxes
+	   - can be called anytime to adjust (to add or remove boxes)
+	   - when connecting, a single box is assigned
+	   - args: 
+	   		- "count": int = number of boxes to assign
+
+QLen - change task queue length
+	 - might be possible due to language issues
+	 - args:
+	 	- "length": int = length of task queue
+/**** /Possible\ ****/
+
+/**************  /Types\ *****************/

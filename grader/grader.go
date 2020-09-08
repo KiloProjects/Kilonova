@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/KiloProjects/Kilonova/datamanager"
-	"github.com/KiloProjects/Kilonova/grader/proto"
 	"github.com/KiloProjects/Kilonova/internal/models"
+	"github.com/KiloProjects/Kilonova/internal/proto"
 	"github.com/KiloProjects/Kilonova/kndb"
 	"github.com/davecgh/go-spew/spew"
 )

@@ -1,8 +1,8 @@
 package kndb
 
 import (
-	"github.com/KiloProjects/Kilonova/grader/proto"
 	"github.com/KiloProjects/Kilonova/internal/models"
+	"github.com/KiloProjects/Kilonova/internal/proto"
 	"gorm.io/gorm"
 )
 
