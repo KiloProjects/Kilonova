@@ -31,10 +31,6 @@ func (rt *Web) hydrateTemplate(r *http.Request) templateData {
 	}
 }
 
-func (rt *Web) isProblemAuthor(r *http.Request) bool {
-	return true
-}
-
 func globParams(r *http.Request) map[string]string {
 	ctx := chi.RouteContext(r.Context())
 	params := make(map[string]string)

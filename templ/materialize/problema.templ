@@ -1,0 +1,157 @@
+{{ template "util/header" . }}
+<div class="container">
+	<table class="table">
+		<thead class="thead-dark">
+			<tr>
+				<th scope="col">ID</th>
+				<th scope="col">Autor</th>
+				<th scope="col">Citire/Afișare</th>
+				<th scope="col">Limită memorie</th>
+				<th scope="col">Limită timp</th>
+				{{ if .ProblemEditor }}
+				<th scope="col">Vizibilă</th>
+				{{ end }}
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<th scope="row">{{- .Problem.ID -}}</th>
+				<th>{{.Problem.User.Name}}</th>
+				<th>
+				{{if .Problem.ConsoleInput}}
+					{{- printf "Consolă" -}}
+				{{else}}
+					{{- .Problem.TestName -}}.in/{{- .Problem.TestName -}}.out
+				{{end}}
+				</th>
+				<th>{{- KBtoMB .Problem.MemoryLimit -}}MB/{{- KBtoMB .Problem.StackLimit -}}MB</th>
+				<th>{{- .Problem.TimeLimit -}}s</th>
+				{{ if .ProblemEditor }}
+				<th>{{.Problem.Visible}}</th>
+				{{ end }}
+			</tr>
+		</tbody>
+	</table>
+
+
+	{{ if .ProblemEditor }}
+		<a href="/probleme/{{- .Problem.ID -}}/edit">[editare]</a>	
+	{{ end }}
+	
+	<h1>Problema <code>{{.Problem.Name}}</code></h1>
+	<hr/>
+	
+	<div>
+
+		<div id="problem-content"></div>
+
+		<script>
+			$("#problem-content").html(md.render("{{- .Problem.Text -}}"));
+		</script>
+
+		{{ if .LoggedIn }}
+
+			<h1>Încărcare sursă</h1>
+			<p>(Dacă mă întrebați de ce merge doar c++ acum: why not?)</p>
+
+			<form id="taskSubmit" autocomplete="off">
+				<div class="input-field">
+				<textarea id="TaskArea" style="display: none;"></textarea>
+				</div>
+				<button class="btn btn-primary mb-2" type="submit">Trimite</button>
+
+			</form>
+
+			<script>
+				var defaultIn = `#include <iostream>
+using namespace std;
+int main()
+{
+	cout << "Hello, world!\\n";
+	return 0;
+}`;
+				$("#TaskArea").html(defaultIn);
+				var cm = CodeMirror.fromTextArea(document.getElementById("TaskArea"), {
+					lineNumbers: true,
+					indentUnit: 4,
+					lineWrapping: true,
+					mode: "text/x-c++src",
+				});
+				cm.setSize(null, "100%");
+				$("#taskSubmit").submit(async e => {
+					e.preventDefault();
+					let sendData = {
+						problemID: "{{ .Problem.ID }}",
+						lang: "cpp",
+						code: cm.getValue(),
+					};
+					
+					let res = await postCall("/tasks/submit", sendData)
+					if(res.status == "error") {
+						createToast({
+							status: "error",
+							title: "Could not submit task",
+							description: res.data
+						})
+						return
+					}
+					createToast({description: "Uploaded", onclick: () => window.location.assign(`/tasks/${res.data}`)})
+				})
+			</script>
+			<br />
+			<br />
+			<br />
+			<br />
+
+		{{ end }}
+
+	</div>
+
+	{{ with (problemTasks .Problem .User) }}
+		<h3> Submisii anterioare </h3>
+		<table class="table">
+			<thead class="thead-dark">
+				<tr>
+					<th scope="col">
+						ID
+					</th>
+					<th scope="col">
+						Autor
+					</th>
+					<th scope="col">
+						Problemă
+					</th>
+					<th scope="col">
+						Status
+					</th>
+					<th scope="col">
+						Scor
+					</th>
+				</tr>
+			</thead>
+			<tbody>
+				{{ range . }}
+					<tr style="{{ gradient .Score 100 }}">
+					<th scope="row">
+						{{- .ID -}}
+					</th>
+					<td>
+						{{- .User.Name -}}
+					</td>
+					<td>
+						<a href="/probleme/{{.Problem.ID}}">{{- .Problem.Name -}}</a>
+					</td>
+					<td>
+						<a href="/tasks/{{.ID}}">{{- taskStatus .Status -}}</a>
+					</td>
+					<td>
+						{{- .Score -}}
+					</td>
+				</tr>
+				{{ end }}
+			</tbody>
+		</table>
+	{{ end }}
+
+</div>
+{{ template "util/footer" . }}

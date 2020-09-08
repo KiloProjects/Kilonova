@@ -1,0 +1,25 @@
+{{ $user := .User }}
+{{ $logged := .LoggedIn }}
+{{ with .Problems }}
+	<h2> Probleme </h2>
+	<div class="collection">
+		{{ range . }}
+			<a href="/probleme/{{.ID}}" class="collection-item">
+				{{ if $logged }}
+					<div>
+						<span class="badge badge-pill grey darken-2 white-text">{{ taskScore . $user }}</span>
+						{{ if (or $user.Admin (eq $user.ID .UserID)) }}
+							{{ if .Visible }}
+								<span class="badge badge-pill green darken-1 white-text">Publicată</span>
+							{{ else }}
+								<span class="badge badge-pill red lighten-1 white-text">Nepublicată</span>
+							{{ end }}
+						{{ end }}
+					</div>
+				{{ end }}	
+				#{{.ID}}: {{.Name}}
+			</a>
+		{{ end }}
+	</div>
+{{ end }} 
+

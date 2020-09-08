@@ -21,7 +21,7 @@ func (d *DB) GetProblemByID(id uint) (*models.Problem, error) {
 // TODO: Pagination
 func (d *DB) GetAllProblems() ([]models.Problem, error) {
 	var problems []models.Problem
-	if err := d.DB.Find(&problems).Error; err != nil {
+	if err := d.DB.Order("problems.id").Find(&problems).Error; err != nil {
 		return nil, err
 	}
 	return problems, nil

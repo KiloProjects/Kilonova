@@ -142,7 +142,7 @@ func (s *API) submitTask(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
 		Code      string
-		Language  string
+		Lang      string
 		ProblemID uint
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
@@ -161,7 +161,7 @@ func (s *API) submitTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := proto.Languages[args.Language]; ok == false {
+	if _, ok := proto.Languages[args.Lang]; ok == false {
 		errorData(w, "Invalid language", http.StatusBadRequest)
 		return
 	}
@@ -217,7 +217,7 @@ func (s *API) submitTask(w http.ResponseWriter, r *http.Request) {
 		User:       user,
 		Problem:    *problem,
 		SourceCode: args.Code,
-		Language:   args.Language,
+		Language:   args.Lang,
 	}
 	if err := s.db.Save(&task); err != nil {
 		errorData(w, "Couldn't create test", 500)

@@ -66,31 +66,15 @@ type Web struct {
 	logger *log.Logger
 }
 
-func pushStuff(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if pusher, ok := w.(http.Pusher); ok {
-			if err := pusher.Push("/static/jquery.js", nil); err != nil {
-				log.Printf("Failed to push: %v", err)
-			}
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-// GetRouter returns a chi.Router
-// TODO: Split routes in functions
-func (rt *Web) GetRouter() chi.Router {
-	r := chi.NewRouter()
-	r.Use(middleware.StripSlashes)
-
+func (rt *Web) newTemplate() *template.Template {
 	// table for gradient, initialize here so it panics if we make a mistake
 	colorTable := gTable{
-		{mustParseHex("#f11722"), 0.0},
+		{mustParseHex("#f45d64"), 0.0},
 		{mustParseHex("#eaf200"), 0.5},
 		{mustParseHex("#64ce3a"), 1.0},
 	}
 
-	templates = template.New("web").Funcs(template.FuncMap{
+	return template.New("web").Funcs(template.FuncMap{
 		"dumpStruct":   spew.Sdump,
 		"getTestData":  rt.getTestData,
 		"getFullTests": rt.getFullTestData,
@@ -110,7 +94,7 @@ func (rt *Web) GetRouter() chi.Router {
 			return float64(kb) / 1024.0
 		},
 		"gradient": func(score, maxscore int) template.CSS {
-			return gradient(score, maxscore, colorTable)
+			return gradient(int(score), maxscore, colorTable)
 		},
 		"zeroto100": func() []int {
 			var v []int = make([]int, 0)
@@ -134,7 +118,23 @@ func (rt *Web) GetRouter() chi.Router {
 			return tasks
 		},
 	})
+}
+
+// GetRouter returns a chi.Router
+// TODO: Split routes in functions
+func (rt *Web) GetRouter() chi.Router {
+	r := chi.NewRouter()
+	r.Use(middleware.StripSlashes)
+
+	templates = rt.newTemplate()
 	templates = template.Must(parseAllTemplates(templates, root))
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			templates = rt.newTemplate()
+			templates = template.Must(parseAllTemplates(templates, root))
+			next.ServeHTTP(w, r)
+		})
+	})
 
 	r.Mount("/static", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := path.Clean(r.RequestURI)
@@ -171,8 +171,7 @@ func (rt *Web) GetRouter() chi.Router {
 		http.ServeContent(w, r, fstat.Name(), fstat.ModTime(), file)
 	})
 
-	// Enable server push
-	r.With(rt.getUser).With(pushStuff).Route("/", func(r chi.Router) {
+	r.With(rt.getUser).Route("/", func(r chi.Router) {
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			problems, err := rt.db.GetAllVisibleProblems(util.UserFromContext(r))
 			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {

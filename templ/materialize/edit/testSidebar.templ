@@ -1,0 +1,31 @@
+<!-- Sidebar -->
+<style>
+.container {
+	padding-left: 300px;
+}
+@media only screen and (max-width: 992px) {
+	.container {
+		padding-left: 0;
+	}
+}
+</style>
+<ul id="testBar" class="sidenav sidenav-fixed">
+	{{ $id := .Problem.ID }}
+	{{ $tid := .TestID }}
+	<li><h4 class="center-align">Editare teste <a href="/probleme/{{$id}}">{{ .Problem.Name }}</a></h4></li>
+	{{ if (eq $tid 99999) }}
+		<li class="active"><a href="/probleme/{{ $id }}/edit/teste">Creare test</a></li>
+	{{ else }}
+		<li><a href="/probleme/{{ $id }}/edit/teste">Creare test</a></li>
+	{{ end }}
+	{{ range .Problem.Tests }}
+		{{ if (eq .VisibleID $tid) }}
+			<li class="active"><a href="/probleme/{{ $id }}/edit/teste/{{ .VisibleID }}">Testul #{{ .VisibleID }}</a></li>
+		{{ else }}
+			<li><a href="/probleme/{{ $id }}/edit/teste/{{ .VisibleID }}">Testul #{{ .VisibleID }}</a></li>
+		{{ end }}
+	{{ end }}
+</div>
+<a href="#" data-target="testBar" class="sidenav-trigger">hamburger</a>
+<!-- /Sidebar -->
+

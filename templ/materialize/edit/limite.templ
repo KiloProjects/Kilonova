@@ -1,0 +1,47 @@
+{{ template "util/header" . }}
+
+<div class="container">
+    <a href="/probleme/{{- .Problem.ID -}}">[view]</a>
+    <h1>Editare limite</h1>
+
+    <form id="limits">
+		<div class="input-field">
+			<label for="memoryTotal">Limită de memorie (total)</label>
+			<input type="number" id="memoryTotal" min="0" step="128" max="131072" value="{{- .Problem.MemoryLimit -}}">
+			<span class="helper-text">KB</span>
+		</div>
+		<div class="input-field">
+			<label for="memoryStack">Limită de memorie (stack)</label>
+			<input type="number" id="memoryStack" min="0" step="128" max="131072" value="{{- .Problem.StackLimit -}}">
+			<span class="helper-text">KB</span>
+		</div>
+		<div class="input-field">
+		<label class="sr-only" for="timeLimit">Limită de timp</label>
+			<input type="number" class="form-control" id="timeLimit" min="0.1"
+				step="0.1" value="{{- .Problem.TimeLimit -}}">
+			<span class="helper-text">secunde</span>
+		</div>
+        <button type="submit" class="btn btn-primary">Editare</button>
+    </form>
+    <script>
+        $("#limits").submit(async e => {
+            e.preventDefault();
+            let memoryLimit = $("#limits #memoryTotal").val();
+            let stackLimit = $("#limits #memoryStack").val();
+            let timeLimit = $("#limits #timeLimit").val();
+            console.log(memoryLimit, stackLimit, timeLimit);
+			let res = await postCall("/problem/{{.Problem.ID}}/update/limits", {memoryLimit, stackLimit, timeLimit})
+			if(res.status == "error") {
+				createToast({
+					status: "error",
+					title: "Could not update limits",
+					description: res.data
+				})
+				return
+			}
+			createToast({description: "Updated limits", onclick: () => window.location.assign("/probleme/{{.Problem.ID}}")})
+        })
+    </script>
+</div>
+
+{{ template "util/footer" . }}

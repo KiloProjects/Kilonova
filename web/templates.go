@@ -13,8 +13,8 @@ import (
 // templates.go has a few functions for parsing templates using pkger
 // because I can't specify a custom filesystem for ParseGlob or ParseFiles
 
-const prefix = ".templ"
-const root = "/templ/"
+const suffix = ".templ"
+const root = "/templ/materialize/"
 
 // parseAllTemplates parses all templates in the specified root (remember that in pkger, the root directory is the one with go.mod)
 // note that the root will be stripped
@@ -23,13 +23,13 @@ func parseAllTemplates(t *template.Template, root string) (*template.Template, e
 		if err != nil {
 			return err
 		}
-		if info.IsDir() || !strings.HasSuffix(fpath, prefix) {
+		if info.IsDir() || !strings.HasSuffix(fpath, suffix) {
 			return nil
 		}
 
 		absPath := strings.SplitN(fpath, ":", 2)[1]
 		absPath = strings.TrimPrefix(absPath, root)
-		absPath = strings.TrimSuffix(absPath, prefix)
+		absPath = strings.TrimSuffix(absPath, suffix)
 
 		var tmpl *template.Template
 		if tmpl == nil {

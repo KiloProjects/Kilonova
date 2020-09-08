@@ -1,0 +1,75 @@
+{{template "util/header" . }}
+<div class="container">
+    <a href="/probleme/{{- .Problem.ID -}}">[view]</a>
+	<h1>Editare Problemă</h1>
+
+	<div class="input-field">
+		<label for="titleChange">Titlu</label>
+		<input type="text" id="titleChange" value="{{.Problem.Name}}"/>
+	</div>
+	<div class="input-field">
+		<button class="btn btn-primary mb-2" onclick="changeTitle()">Editare titlu</button>
+	</div>
+    <script>
+		async function changeTitle() {
+            let title = $("#titleChange").val();
+            console.log(title);
+			if(title === "" || title === undefined) {
+				createToast({
+					status: "error",
+					description: "Empty field"
+				})
+				return
+			}
+			let res = await postCall(`/problem/${problemID}/update/title`, {title})
+			
+			createToast({
+				status: res.status,
+				description: res.data,
+				onclick: () => window.location.assign(`/probleme/${problemID}`)
+			})
+        }
+	</script>
+
+	{{ if (and (not .Problem.ConsoleInput) false) }}
+		<div id="editFilename">
+			<h3>Editare nume teste (NOT IMPLEMENTED YET)</h3>
+			<form id="filenameForm" autocomplete="off">
+				<div class="input-field">
+					<label for="testname">Nume teste</label>
+					<input type="text" id="testname" name="testName" value="{{.Problem.TestName}}" required>
+				</div>
+				<div class="input-field">
+					<button class="btn btn-primary mb-2" type="submit">Editare</button>
+				</div>
+			</form>
+		</div>
+	{{end}}
+    <div class="collection">
+        <div class="collection-item active">Alte edit-uri</div>
+        <a class="collection-item" href="/probleme/{{.Problem.ID}}/edit/enunt">Editare enunț</a>
+        <a class="collection-item" href="/probleme/{{.Problem.ID}}/edit/limite">Editare
+            limite</a>
+        <a class="collection-item" href="/probleme/{{.Problem.ID}}/edit/teste">Editare teste</a>
+		<a href="#" class="collection-item" id="vButton" onclick="toggleVisiblity()">Fă {{if not .Problem.Visible}}vizibilă{{else}}invizibilă{{end}}</button>
+	</div>
+
+	<script>
+		let problemID = {{.Problem.ID}}
+		let visible = {{.Problem.Visible}}
+
+		async function toggleVisiblity() {
+			visible = !visible
+			let res = await postCall(`/problem/${problemID}/update/setVisible`, {visible})
+			createToast({
+				status: res.status,
+				title: `Made ${(visible ? "visible" : "invisible")}`,
+				description: res.data
+			})
+			$("#vButton").html(`Fă ${visible ? "invizibilă" : "vizibilă"}`)
+		}
+	</script>
+
+
+</div>
+{{template "util/footer" . }}
