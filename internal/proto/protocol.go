@@ -5,6 +5,7 @@ package proto
 // This file should be kept on par with the one in Kilonova
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -20,12 +21,12 @@ type Message struct {
 }
 
 // Handler is the function called by Handle()
-type Handler func(send chan<- Message, recv <-chan Message) error
+type Handler func(ctx context.Context, send chan<- Message, recv <-chan Message) error
 
 // Handle is a handler for receiving and sending messages
 // It calls the handler parameter with sender and receiver channels
 // Please note that it is a blocking call
-func Handle(conn net.Conn, handler Handler) error {
+func Handle(ctx context.Context, conn net.Conn, handler Handler) error {
 	// we want to create a waitgroup to avoid leaving the handler while a message is being written
 	// it is expected that the caller might close the connection
 	var wg sync.WaitGroup
@@ -38,15 +39,9 @@ func Handle(conn net.Conn, handler Handler) error {
 			if err := dec.Decode(&msg); err != nil {
 				close(recvChan)
 				if errors.Is(err, io.EOF) {
-					// Connection closed
 				} else {
 					log.Printf("%v\n", err)
 				}
-				/* Most of the time it's a read after connection close, they don't really matter
-				else {
-					log.Printf("Decoding error: %v\n", err)
-				}
-				*/
 				return
 			}
 			recvChan <- msg
@@ -56,15 +51,23 @@ func Handle(conn net.Conn, handler Handler) error {
 	go func() { // message sending goroutine
 		defer wg.Done()
 		enc := json.NewEncoder(conn)
-		for msg := range sendChan {
-			if err := enc.Encode(msg); err != nil {
-				log.Printf("Encoding error: %v\n", err)
+		for {
+			select {
+			case msg, more := <-sendChan:
+				if !more {
+					return
+				}
+				if err := enc.Encode(msg); err != nil {
+					log.Printf("Encoding error: %v\n", err)
+				}
+			case <-ctx.Done():
+				close(sendChan)
+				return
 			}
 		}
 	}()
 	return func() error {
-		err := handler(sendChan, recvChan)
-		close(sendChan)
+		err := handler(ctx, sendChan, recvChan)
 		if err != nil {
 			return err
 		}

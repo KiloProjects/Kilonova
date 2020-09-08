@@ -8,7 +8,6 @@ import (
 
 	"github.com/KiloProjects/Kilonova/internal/box"
 	"github.com/KiloProjects/Kilonova/internal/proto"
-	"github.com/davecgh/go-spew/spew"
 )
 
 var compilePath string
@@ -70,14 +69,8 @@ func (b *BoxManager) CompileFile(SourceCode []byte, language proto.Language) (st
 		b.Box.Config.EnvToSet[key] = val
 	}
 
-	fmt.Println("Running compiler")
-
 	combinedOut, err := b.Box.ExecCombinedOutput(language.CompileCommand...)
 	b.Box.Config = oldConfig
-
-	fmt.Println(string(combinedOut))
-
-	fmt.Println("Running compiler end")
 
 	if err != nil {
 		return string(combinedOut), err
@@ -192,8 +185,6 @@ func (b *BoxManager) ExecuteSTask(task proto.STask) (*proto.STResponse, error) {
 	meta, err := b.RunTask(proto.Languages[task.Language], lim, strconv.Itoa(int(task.ID))+".txt", consoleInput)
 	response.Time = meta.Time
 	response.Memory = meta.CgMem
-	fmt.Print("Meta dump: ")
-	spew.Dump(meta)
 
 	if err != nil {
 		response.Comments = fmt.Sprintf("Error running task: %v", err)

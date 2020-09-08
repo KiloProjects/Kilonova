@@ -167,7 +167,6 @@ func (c *Config) BuildRunFlags() (res []string) {
 
 // WriteFile writes a file to the specified filepath inside the box
 func (b *Box) WriteFile(filepath string, data []byte) error {
-	fmt.Println("To:", b.GetFilePath(filepath))
 	return ioutil.WriteFile(b.GetFilePath(filepath), data, 0777)
 }
 

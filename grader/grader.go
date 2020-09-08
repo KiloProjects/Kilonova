@@ -55,69 +55,23 @@ func ldump(logger *log.Logger, args ...interface{}) {
 	spew.Fdump(logger.Writer(), args...)
 }
 
-func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) error {
+func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-chan proto.Message) error {
 	// TODO: Change to "stdin" for input, also maybe allow separate filename for stdout
-	for t := range h.tChan {
-		h.db.UpdateStatus(t.ID, models.StatusWorking, 0)
-		var score int
-
-		send <- proto.ArgToMessage(proto.Compile{ID: int(t.ID), Code: t.SourceCode, Language: t.Language})
-
-		var resp proto.CResponse
-
-		msg := <-recv
-		if msg.Type == "Error" {
-			var perr proto.Error
-			proto.DecodeArgs(msg, &perr)
-			h.logger.Println("Error from eval:", perr.Value)
-		}
-
-		proto.DecodeArgs(msg, &resp)
-
-		{
-			old := resp.Output
-			resp.Output = "<output stripped>"
-			ldump(h.logger, resp)
-			resp.Output = old
-		}
-
-		if err := h.db.UpdateCompilation(resp); err != nil {
-			h.logger.Println("Error during update of compile information:", err)
-			continue
-		}
-
-		if resp.Success == false {
-			h.db.UpdateStatus(t.ID, models.StatusDone, score)
-			continue
-		}
-
-		for _, test := range t.Tests {
-			input, _, err := h.dm.GetTest(t.ProblemID, test.Test.VisibleID)
-			if err != nil {
-				h.logger.Println("Error during test getting (1):", err)
-				continue
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case t, more := <-h.tChan:
+			if !more {
+				return nil
 			}
 
-			filename := t.Problem.TestName
-			if t.Problem.ConsoleInput {
-				filename = "input"
-			}
+			h.db.UpdateStatus(t.ID, models.StatusWorking, 0)
+			var score int
 
-			send <- proto.ArgToMessage(proto.STask{
-				ID:          int(t.ID),
-				TID:         int(test.ID),
-				Filename:    filename,
-				StackLimit:  int(t.Problem.StackLimit),
-				MemoryLimit: int(t.Problem.MemoryLimit),
-				TimeLimit:   t.Problem.TimeLimit,
-				Language:    t.Language,
-				Input:       string(input),
-			})
-		}
+			send <- proto.ArgToMessage(proto.Compile{ID: int(t.ID), Code: t.SourceCode, Language: t.Language})
 
-		// this depends on the fact that we do stuff on a single loop
-		for _, test := range t.Tests {
-			var resp proto.STResponse
+			var resp proto.CResponse
 
 			msg := <-recv
 			if msg.Type == "Error" {
@@ -135,42 +89,96 @@ func (h *Handler) Handle(send chan<- proto.Message, recv <-chan proto.Message) e
 				resp.Output = old
 			}
 
-			var testScore int
+			if err := h.db.UpdateCompilation(resp); err != nil {
+				h.logger.Println("Error during update of compile information:", err)
+				continue
+			}
 
-			if resp.Comments == "" {
-				_, out, err := h.dm.GetTest(t.ProblemID, test.Test.VisibleID)
+			if resp.Success == false {
+				h.db.UpdateStatus(t.ID, models.StatusDone, score)
+				continue
+			}
+
+			for _, test := range t.Tests {
+				input, _, err := h.dm.GetTest(t.ProblemID, test.Test.VisibleID)
 				if err != nil {
-					h.logger.Println("Error during test getting (2):", err)
+					h.logger.Println("Error during test getting (1):", err)
 					continue
 				}
-				equal := compareOutputs(out, []byte(resp.Output))
 
-				if equal {
-					testScore = test.Test.Score
-					resp.Comments = "Correct Answer"
-				} else {
-					resp.Comments = "Wrong Answer"
+				filename := t.Problem.TestName
+				if t.Problem.ConsoleInput {
+					filename = "input"
 				}
+
+				send <- proto.ArgToMessage(proto.STask{
+					ID:          int(t.ID),
+					TID:         int(test.ID),
+					Filename:    filename,
+					StackLimit:  int(t.Problem.StackLimit),
+					MemoryLimit: int(t.Problem.MemoryLimit),
+					TimeLimit:   t.Problem.TimeLimit,
+					Language:    t.Language,
+					Input:       string(input),
+				})
 			}
 
-			// Make sure TLEs are fully handled
-			if resp.Time > t.Problem.TimeLimit {
-				resp.Comments = "TLE"
-				testScore = 0
+			// this depends on the fact that we do stuff on a single loop
+			for _, test := range t.Tests {
+				var resp proto.STResponse
+
+				msg := <-recv
+				if msg.Type == "Error" {
+					var perr proto.Error
+					proto.DecodeArgs(msg, &perr)
+					h.logger.Println("Error from eval:", perr.Value)
+				}
+
+				proto.DecodeArgs(msg, &resp)
+
+				{
+					old := resp.Output
+					resp.Output = "<output stripped>"
+					ldump(h.logger, resp)
+					resp.Output = old
+				}
+
+				var testScore int
+
+				if resp.Comments == "" {
+					_, out, err := h.dm.GetTest(t.ProblemID, test.Test.VisibleID)
+					if err != nil {
+						h.logger.Println("Error during test getting (2):", err)
+						continue
+					}
+					equal := compareOutputs(out, []byte(resp.Output))
+
+					if equal {
+						testScore = test.Test.Score
+						resp.Comments = "Correct Answer"
+					} else {
+						resp.Comments = "Wrong Answer"
+					}
+				}
+
+				// Make sure TLEs are fully handled
+				if resp.Time > t.Problem.TimeLimit {
+					resp.Comments = "TLE"
+					testScore = 0
+				}
+
+				if err := h.db.UpdateEvalTest(resp, testScore); err != nil {
+					h.logger.Println("Error during evaltest updating:", err)
+				}
+
+				score += testScore
 			}
 
-			if err := h.db.UpdateEvalTest(resp, testScore); err != nil {
-				h.logger.Println("Error during evaltest updating:", err)
-			}
+			send <- proto.ArgToMessage(proto.TRemove{ID: int(t.ID)})
 
-			score += testScore
+			h.db.UpdateStatus(t.ID, models.StatusDone, score)
 		}
-
-		send <- proto.ArgToMessage(proto.TRemove{ID: int(t.ID)})
-
-		h.db.UpdateStatus(t.ID, models.StatusDone, score)
 	}
-	return nil
 }
 
 func (h *Handler) Start(path string) {
@@ -187,7 +195,7 @@ func (h *Handler) Start(path string) {
 		defer conn.Close()
 		log.Println("Connected to eval")
 
-		if err := proto.Handle(conn, h.Handle); err != nil {
+		if err := proto.Handle(h.ctx, conn, h.Handle); err != nil {
 			log.Println("Handling error:", err)
 		}
 	}()
