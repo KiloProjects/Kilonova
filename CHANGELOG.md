@@ -1,3 +1,6 @@
+- 0.3.3:
+	- Add OpenGraph tags
+
 - 0.3.2:
 	- Add viewable changelog on website
 
