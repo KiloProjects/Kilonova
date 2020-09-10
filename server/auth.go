@@ -9,7 +9,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var unameValidation = []validation.Rule{validation.Required, validation.Length(3, 32), is.Alphanumeric}
+var unameValidation = []validation.Rule{validation.Required, validation.Length(3, 32), is.PrintableASCII}
 var pwdValidation = []validation.Rule{validation.Required, validation.Length(6, 64)}
 
 type signupForm struct {
