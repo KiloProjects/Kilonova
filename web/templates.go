@@ -19,6 +19,7 @@ const root = "/templ/materialize/"
 // parseAllTemplates parses all templates in the specified root (remember that in pkger, the root directory is the one with go.mod)
 // note that the root will be stripped
 func parseAllTemplates(t *template.Template, root string) (*template.Template, error) {
+
 	pkger.Walk(root, func(fpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err

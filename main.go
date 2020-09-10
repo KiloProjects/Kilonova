@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compress/flate"
 	"context"
 	"flag"
 	"fmt"
@@ -93,7 +94,7 @@ func main() {
 	})
 	r.Use(corsConfig.Handler)
 
-	r.Use(middleware.Compress(-1))
+	r.Use(middleware.Compress(flate.DefaultCompression))
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
@@ -112,7 +113,7 @@ func main() {
 	grader := grader.NewHandler(ctx, db, manager, logg)
 
 	r.Mount("/api", API.GetRouter())
-	r.Mount("/", web.NewWeb(manager, db, logg).GetRouter())
+	r.Mount("/", web.NewWeb(manager, db, logg, *debug).GetRouter())
 
 	grader.Start(*evalSocket)
 

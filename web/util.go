@@ -28,6 +28,8 @@ func (rt *Web) hydrateTemplate(r *http.Request) templateData {
 		// HACK: Move this somewhere else
 		ProblemEditor: util.IsRProblemEditor(r),
 		TaskEditor:    util.IsRTaskEditor(r),
+
+		OGUrl: r.URL.RequestURI(),
 	}
 }
 

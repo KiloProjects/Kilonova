@@ -21,10 +21,13 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/markbates/pkger"
+	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/minify/v2/html"
 	"gorm.io/gorm"
 )
 
 var templates *template.Template
+var minifier *minify.M
 
 type templateData struct {
 	Title    string
@@ -60,6 +63,13 @@ type templateData struct {
 	Sidebar bool
 
 	Changelog string
+
+	// OpenGraph stuff
+	OGTitle string
+	OGType  string
+	OGUrl   string
+	OGImage string
+	OGDesc  string
 }
 
 // Web is the struct representing this whole package
@@ -67,6 +77,7 @@ type Web struct {
 	dm     datamanager.Manager
 	db     *kndb.DB
 	logger *log.Logger
+	debug  bool
 }
 
 func (rt *Web) newTemplate() *template.Template {
@@ -77,7 +88,7 @@ func (rt *Web) newTemplate() *template.Template {
 		{mustParseHex("#64ce3a"), 1.0},
 	}
 
-	return template.New("web").Funcs(template.FuncMap{
+	return template.Must(parseAllTemplates(template.New("web").Funcs(template.FuncMap{
 		"dumpStruct":   spew.Sdump,
 		"getTestData":  rt.getTestData,
 		"getFullTests": rt.getFullTestData,
@@ -120,7 +131,17 @@ func (rt *Web) newTemplate() *template.Template {
 			}
 			return tasks
 		},
-	})
+	}), root))
+}
+
+func (rt *Web) build(w http.ResponseWriter, r *http.Request, name string, temp templateData) {
+	writer := minifier.Writer("text/html", w)
+	if err := templates.ExecuteTemplate(writer, name, temp); err != nil {
+		rt.logger.Printf("%s: %v\n", temp.OGUrl, err)
+	}
+	if err := writer.Close(); err != nil {
+		rt.logger.Printf("%s: %v\n", temp.OGUrl, err)
+	}
 }
 
 // GetRouter returns a chi.Router
@@ -130,14 +151,15 @@ func (rt *Web) GetRouter() chi.Router {
 	r.Use(middleware.StripSlashes)
 
 	templates = rt.newTemplate()
-	templates = template.Must(parseAllTemplates(templates, root))
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			templates = rt.newTemplate()
-			templates = template.Must(parseAllTemplates(templates, root))
-			next.ServeHTTP(w, r)
+
+	if rt.debug {
+		r.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				templates = rt.newTemplate()
+				next.ServeHTTP(w, r)
+			})
 		})
-	})
+	}
 
 	r.Mount("/static", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := path.Clean(r.RequestURI)
@@ -184,7 +206,7 @@ func (rt *Web) GetRouter() chi.Router {
 			}
 			templ := rt.hydrateTemplate(r)
 			templ.Problems = problems
-			rt.check(templates.ExecuteTemplate(w, "index", templ))
+			rt.build(w, r, "index", templ)
 		})
 
 		r.Get("/changelog", func(w http.ResponseWriter, r *http.Request) {
@@ -197,7 +219,7 @@ func (rt *Web) GetRouter() chi.Router {
 			changelog, _ := ioutil.ReadAll(file)
 			templ := rt.hydrateTemplate(r)
 			templ.Changelog = string(changelog)
-			rt.check(templates.ExecuteTemplate(w, "changelog", templ))
+			rt.build(w, r, "changelog", templ)
 		})
 
 		r.Route("/probleme", func(r chi.Router) {
@@ -211,12 +233,12 @@ func (rt *Web) GetRouter() chi.Router {
 				templ := rt.hydrateTemplate(r)
 				templ.Title = "Probleme"
 				templ.Problems = problems
-				rt.check(templates.ExecuteTemplate(w, "probleme", templ))
+				rt.build(w, r, "probleme", templ)
 			})
 			r.With(rt.mustBeProposer).Get("/create", func(w http.ResponseWriter, r *http.Request) {
 				templ := rt.hydrateTemplate(r)
 				templ.Title = "Creare problemă"
-				rt.check(templates.ExecuteTemplate(w, "createpb", templ))
+				rt.build(w, r, "createpb", templ)
 			})
 			r.Route("/{id}", func(r chi.Router) {
 				r.Use(rt.ValidateProblemID)
@@ -226,7 +248,7 @@ func (rt *Web) GetRouter() chi.Router {
 
 					templ := rt.hydrateTemplate(r)
 					templ.Title = fmt.Sprintf("#%d: %s", problem.ID, problem.Name)
-					rt.check(templates.ExecuteTemplate(w, "problema", templ))
+					rt.build(w, r, "problema", templ)
 				})
 				r.Route("/edit", func(r chi.Router) {
 					r.Use(rt.mustBeEditor)
@@ -234,19 +256,19 @@ func (rt *Web) GetRouter() chi.Router {
 						problem := util.ProblemFromContext(r)
 						templ := rt.hydrateTemplate(r)
 						templ.Title = fmt.Sprintf("EDIT | #%d: %s", problem.ID, problem.Name)
-						rt.check(templates.ExecuteTemplate(w, "edit/index", templ))
+						rt.build(w, r, "edit/index", templ)
 					})
 					r.Get("/enunt", func(w http.ResponseWriter, r *http.Request) {
 						problem := util.ProblemFromContext(r)
 						templ := rt.hydrateTemplate(r)
 						templ.Title = fmt.Sprintf("ENUNT - EDIT | #%d: %s", problem.ID, problem.Name)
-						rt.check(templates.ExecuteTemplate(w, "edit/enunt", templ))
+						rt.build(w, r, "edit/enunt", templ)
 					})
 					r.Get("/limite", func(w http.ResponseWriter, r *http.Request) {
 						problem := util.ProblemFromContext(r)
 						templ := rt.hydrateTemplate(r)
 						templ.Title = fmt.Sprintf("LIMITE - EDIT | #%d: %s", problem.ID, problem.Name)
-						rt.check(templates.ExecuteTemplate(w, "edit/limite", templ))
+						rt.build(w, r, "edit/limite", templ)
 					})
 					r.Route("/teste", func(r chi.Router) {
 						r.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -254,7 +276,7 @@ func (rt *Web) GetRouter() chi.Router {
 							templ := rt.hydrateTemplate(r)
 							templ.Title = fmt.Sprintf("TESTE - EDIT | #%d: %s", problem.ID, problem.Name)
 							templ.Sidebar = true
-							rt.check(templates.ExecuteTemplate(w, "edit/testAdd", templ))
+							rt.build(w, r, "edit/testAdd", templ)
 						})
 						r.With(rt.ValidateTestID).Get("/{tid}", func(w http.ResponseWriter, r *http.Request) {
 							test := util.TestFromContext(r)
@@ -262,7 +284,7 @@ func (rt *Web) GetRouter() chi.Router {
 							templ := rt.hydrateTemplate(r)
 							templ.Title = fmt.Sprintf("Teste - EDIT %d | #%d: %s", test.VisibleID, problem.ID, problem.Name)
 							templ.Sidebar = true
-							rt.check(templates.ExecuteTemplate(w, "edit/testEdit", templ))
+							rt.build(w, r, "edit/testEdit", templ)
 						})
 					})
 				})
@@ -280,30 +302,30 @@ func (rt *Web) GetRouter() chi.Router {
 				templ := rt.hydrateTemplate(r)
 				templ.Title = "Tasks"
 				templ.Tasks = tasks
-				rt.check(templates.ExecuteTemplate(w, "tasks", templ))
+				rt.build(w, r, "tasks", templ)
 			})
 			r.With(rt.ValidateTaskID).Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
 				templ := rt.hydrateTemplate(r)
 				templ.Title = fmt.Sprintf("Task %d", templ.Task.ID)
-				rt.check(templates.ExecuteTemplate(w, "task", templ))
+				rt.build(w, r, "task", templ)
 			})
 		})
 
 		r.With(rt.mustBeAdmin).Get("/admin", func(w http.ResponseWriter, r *http.Request) {
 			templ := rt.hydrateTemplate(r)
 			templ.Title = "Admin switches"
-			rt.check(templates.ExecuteTemplate(w, "admin", templ))
+			rt.build(w, r, "admin", templ)
 		})
 
 		r.With(rt.mustBeVisitor).Get("/login", func(w http.ResponseWriter, r *http.Request) {
 			templ := rt.hydrateTemplate(r)
 			templ.Title = "Log In"
-			rt.check(templates.ExecuteTemplate(w, "login", templ))
+			rt.build(w, r, "login", templ)
 		})
 		r.With(rt.mustBeVisitor).Get("/signup", func(w http.ResponseWriter, r *http.Request) {
 			templ := rt.hydrateTemplate(r)
 			templ.Title = "Sign Up"
-			rt.check(templates.ExecuteTemplate(w, "signup", templ))
+			rt.build(w, r, "signup", templ)
 		})
 
 		r.With(rt.mustBeAuthed).Get("/logout", func(w http.ResponseWriter, r *http.Request) {
@@ -317,17 +339,14 @@ func (rt *Web) GetRouter() chi.Router {
 }
 
 // NewWeb returns a new web instance
-func NewWeb(dm datamanager.Manager, db *kndb.DB, logger *log.Logger) *Web {
-	return &Web{dm, db, logger}
-}
-
-func (rt *Web) check(err error) {
-	if err != nil {
-		rt.logger.Println(err)
-	}
+func NewWeb(dm datamanager.Manager, db *kndb.DB, logger *log.Logger, debug bool) *Web {
+	return &Web{dm, db, logger, debug}
 }
 
 func init() {
 	pkger.Include("/include")
 	pkger.Include("/static")
+
+	minifier = minify.New()
+	minifier.AddFunc("text/html", html.Minify)
 }

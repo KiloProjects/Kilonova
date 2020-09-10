@@ -10,6 +10,37 @@
 		<title>Kilonova</title>
 	{{end}}
 
+
+	<!-- OpenGraph stuff -->
+	{{with .OGTitle}}
+		<meta property="og:title" content="{{- . -}}" />
+	{{else}}
+		{{with .Title}}
+			<meta property="og:title" content="{{- . -}}" />
+		{{else}}
+		<meta property="og:title" content="Kilonova" />
+		{{end}}
+	{{end}}
+	{{with .OGType}}
+		<meta property="og:type" content="{{- . -}}" />
+	{{else}}
+		<meta property="og:type" content="website" />
+	{{end}}
+	<meta property="og:url" content="https://alpha.kilonova.ro{{- .OGUrl -}}" />
+	{{with .OGImage}}
+		<meta property="og:image" content="{{- .OGImage -}}" />
+	{{else}}
+		<meta property="og:image" content="https://cdn.kilonova.ro/m/ti2SMt/logo.png" />
+	{{end}}
+	{{with .OGDesc}}
+		<meta property="og:description" content="{{- .OGDesc -}}" />
+	{{else}}
+		<meta property="og:description" content="Programming platform for learning and exercising" />
+	{{end}}
+	<meta property="og:locale" content="ro_RO" />
+	<meta property="og:site_name" content="Kilonova" />
+
+	<!--Prefetch cdnjs domain-->
 	<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com/">
 
 	<!--jQuery-->
@@ -17,9 +48,7 @@
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"/>
 	
-	<link href="https://fonts.googleapis.com/css2?family=Open+Sans&family=Roboto&display=swap" rel="stylesheet">
-	<!--Material Icons-->
-	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Open+Sans&family=Roboto&family=Material+Icons&display=swap" rel="stylesheet">
 	<!--materialize-->
 	<link rel="stylesheet" href="/static/materialize.css">
 
