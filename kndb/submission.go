@@ -6,75 +6,75 @@ import (
 	"gorm.io/gorm"
 )
 
-// GetTaskByID returns a task with the specified ID
-func (d *DB) GetTaskByID(id uint) (*models.Task, error) {
-	var task models.Task
+// GetSubmissionByID returns a submissionwith the specified ID
+func (d *DB) GetSubmissionByID(id uint) (*models.Submission, error) {
+	var sub models.Submission
 	if err := d.DB.
 		Preload("Problem").Preload("User").Preload("Tests", func(db *gorm.DB) *gorm.DB {
 		return db.Order("eval_tests.id")
-	}).Preload("Tests.Test").First(&task, id).Error; err != nil {
+	}).Preload("Tests.Test").First(&sub, id).Error; err != nil {
 		return nil, err
 	}
-	return &task, nil
+	return &sub, nil
 }
 
-func (d *DB) UserTasksOnProblem(userid uint, problemid uint) ([]models.Task, error) {
-	var tasks []models.Task
+func (d *DB) UserSubmissionsOnProblem(userid uint, problemid uint) ([]models.Submission, error) {
+	var submissions []models.Submission
 	if err := d.DB.Preload("Problem").Preload("User").Preload("Tests", func(db *gorm.DB) *gorm.DB {
 		return db.Order("eval_tests.id")
 	}).Preload("Tests.Test").Where("user_id = ? and problem_id = ?", userid, problemid).
-		Order("id desc").Find(&tasks).Error; err != nil {
+		Order("id desc").Find(&submissions).Error; err != nil {
 		return nil, err
 	}
-	return tasks, nil
+	return submissions, nil
 }
 
 func (d *DB) MaxScoreFor(userid uint, problemid uint) (int, error) {
-	tasks, err := d.UserTasksOnProblem(userid, problemid)
+	subs, err := d.UserSubmissionsOnProblem(userid, problemid)
 	if err != nil {
 		return -1, err
 	}
 	maxscore := -1
-	for _, task := range tasks {
-		if task.Score > maxscore {
-			maxscore = task.Score
+	for _, subs := range subs {
+		if subs.Score > maxscore {
+			maxscore = subs.Score
 		}
 	}
 	return maxscore, nil
 }
 
-// GetAllTasks returns all tasks
+// GetAllSubmissions returns all submissions
 // TODO: Pagination
-func (d *DB) GetAllTasks() ([]models.Task, error) {
-	var tasks []models.Task
-	if err := d.DB.Preload("Problem").Preload("User").Order("id desc").Find(&tasks).Error; err != nil {
+func (d *DB) GetAllSubmissions() ([]models.Submission, error) {
+	var submissions []models.Submission
+	if err := d.DB.Preload("Problem").Preload("User").Order("id desc").Find(&submissions).Error; err != nil {
 		return nil, err
 	}
-	return tasks, nil
+	return submissions, nil
 }
 
 // For use by the judge
 
-func (d *DB) GetWaitingTasks() ([]models.Task, error) {
-	var tasks []models.Task
+func (d *DB) GetWaitingSubmissions() ([]models.Submission, error) {
+	var submissions []models.Submission
 	err := d.DB.Where("status = ?", models.StatusWaiting).
 		Preload("Tests").Preload("Problem").Preload("Tests.Test").
-		Find(&tasks).Error
+		Find(&submissions).Error
 
-	if len(tasks) == 0 {
+	if len(submissions) == 0 {
 		return nil, err
 	}
-	return tasks, err
+	return submissions, err
 }
 
-func (d *DB) UpdateTaskVisibility(id uint, visible bool) error {
-	var tmp models.Task
+func (d *DB) UpdateSubmissionVisibility(id uint, visible bool) error {
+	var tmp models.Submission
 	tmp.ID = id
 	return d.DB.Model(&tmp).Update("visible", visible).Error
 }
 
 func (d *DB) UpdateCompilation(c proto.CResponse) error {
-	var tmp models.Task
+	var tmp models.Submission
 	tmp.ID = uint(c.ID)
 	return d.DB.Model(&tmp).Updates(map[string]interface{}{
 		"compile_error":   !c.Success,
@@ -83,7 +83,7 @@ func (d *DB) UpdateCompilation(c proto.CResponse) error {
 }
 
 func (d *DB) UpdateStatus(id uint, status, score int) error {
-	var tmp models.Task
+	var tmp models.Submission
 	tmp.ID = id
 	return d.DB.Model(&tmp).Updates(map[string]interface{}{
 		"status": status,
@@ -91,7 +91,7 @@ func (d *DB) UpdateStatus(id uint, status, score int) error {
 	}).Error
 }
 
-func (d *DB) UpdateEvalTest(r proto.STResponse, score int) error {
+func (d *DB) UpdateEvalTest(r proto.TResponse, score int) error {
 	var tmp models.EvalTest
 	tmp.ID = uint(r.TID)
 	return d.DB.Model(&tmp).Updates(map[string]interface{}{

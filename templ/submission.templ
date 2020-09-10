@@ -1,12 +1,12 @@
 {{ template "util/header" . }}
 
 <div class="container">
-	{{ $editor := .TaskEditor }}
-	{{ with .Task }}
-		<h2>Task {{ .ID }}</h2>
+	{{ $editor := .SubEditor }}
+	{{ with .Submission }}
+		<h2>Submission {{ .ID }}</h2>
 		<p>Autor: {{ .User.Name }}</p>
 		<p>Data încărcării: {{ .CreatedAt }}</p>
-		<p>Status: {{ taskStatus .Status }}</p>
+		<p>Status: {{ subStatus .Status }}</p>
 		<p>Limbaj: {{ .Language }}</p>
 		<p>Problemă: <a href="/probleme/{{.Problem.ID}}">{{ .Problem.Name }}</a></p>
 		<p>Scor: {{ .Score }} </p>
@@ -95,7 +95,7 @@
 
 					async function toggleVisible() {
 						visible = !visible;
-						let res = await postCall("/tasks/setVisible", {visible, id});
+						let res = await postCall("/submissions/setVisible", {visible, id});
 						createToast({
 							status: res.status,
 							title: (res.status == "success" ? (visible ? "Made visible" : "Made invisible") : "Error changing visibility"),

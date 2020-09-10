@@ -1,56 +1,56 @@
 /**************  Protocol  ***************/
 Evaler           ||     Client
 				<---   connect
-/*****  Task procedure  *******/
+/*****  Submission procedure  *******/
 				<---   Compile 
 CResponse		--->
-				<---   STask
-				<---   STask
-STResponse		--->
-				<---   STask
-STResponse		--->
-STResponse		--->
+				<---   Test
+				<---   Test
+TResponse		--->
+				<---   Test
+TResponse		--->
+TResponse		--->
 				<---   TRemove
-/***** /Task Procedure\  *******/
+/***** /Submission Procedure\ *******/
 
 /************** /Protocol\ ***************/
 
 /**************   Types  *****************/
-Compile - compile task and save the executable somewhere
+Compile - compile submission and save the executable somewhere
 		- args:
 			- "code": string = source code to compile
-			- "lang": string = language key as defined in proto/types.go
-			- "id": int = ID that corresponds to this task
+			- "lang": string = language key as defined in internal/proto/types.go
+			- "id": int = ID that corresponds to this submission
 
-CResponse - Response for a Compile type
+CResponse - Response for a Compile message
 		- args:
-			- "id": int = ID to the corresponding compiled task
+			- "id": int = ID to the corresponding compiled submission
 		  	- "output": string = compilation output
 			- "success": bool = determine if it was successful
 			- "other": string = other errors that might happen
 
-STask - SubTask (test) add task with specified input to queue
+Test - Test: add submission with specified input to queue
 		- args:
 			- "id": int = ID of executable to be run
-			- "tid": int = ID of the test that is currently run, used for STResponse
+			- "tid": int = ID of the test that is currently run, used for TResponse
 			- "input": string = test input
 			- "filename": string = if "input", then stdin is used, otherwise the filename to save the input to
 			- "timelimit": float = time limit (in seconds), 0 for no limits
 			- "memorylimit": int = memory limit (in kilobytes), 0 for no limits
 			- "stacklimit": int = stack limit (in kilobytes), 0 for no limits
 
-STResponse - SubTask response (note that it is the client's responsibility to validate output)
+TResponse - Test response (note that it is the client's responsibility to validate output)
 		- args:
-			- "tid": int = the "tid" specified in STask
+			- "tid": int = the "tid" specified in Test
 			- "output": string = test output
 			- "time": float = time taken (in seconds)
 			- "memory": int = memory consumed (in kilobytes)
 			- "status": int = exit status
 			- "comments": string = Extra stuff (like "Killed by signal 11" or "Sandbox error")
 
-TRemove - mark task executable as safe to remove
+SRemove - mark submission executable as safe to remove
 		- args:
-			- "id": int = ID of task
+			- "id": int = ID of submission
 
 Error - just a simple error
 		- args:
@@ -63,10 +63,10 @@ Assign - assign a number of boxes
 	   - args: 
 	   		- "count": int = number of boxes to assign
 
-QLen - change task queue length
+QLen - change submission queue length
 	 - might be possible due to language issues
 	 - args:
-	 	- "length": int = length of task queue
+	 	- "length": int = length of submission queue
 /**** /Possible\ ****/
 
 /**************  /Types\ *****************/

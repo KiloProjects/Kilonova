@@ -8,7 +8,7 @@ TODO LIST KILONOVA:
 	- [x] Mathjax
 	- [ ] Profil user
 		- [ ] Listă probleme făcute
-		- [ ] Setări Vizibilitate default la tasks
+		- [ ] Setări Vizibilitate default la submissions
 	- [x] Implementează server.UpdateTest
 	- [ ] Reduce nr de TODOs în cod
 	- [ ] Rezolvat bug-ul de la https://discordapp.com/channels/713844353390346322/723768974411694171/729462280718385233
@@ -17,14 +17,14 @@ TODO LIST KILONOVA:
 	- [ ] folosește pure SQL pentru backend, fără GORM
 	- [ ] Site mai drăguț:
 		- [x] NavBar
-		- [ ] Interfață mai bună tasks
-			- [ ] Auto reîncărcare pagină task nu e finalizată evaluarea
+		- [ ] Interfață mai bună submissions
+			- [ ] Auto reîncărcare pagină submission nu e finalizată evaluarea
 		- [ ] Experiență mai bună pentru editat problemele
 		- [ ] ? Scor bazat pe ranks pentru amuzament (gen 0 wood, 1-20 ruby, 21-49 diamond, 100 gold, etc)
 		- [ ] Dark theme	
-	- [ ] Filtre tasks
+	- [ ] Filtre submissions
 	- [ ] "Custom input" ca pe hackerrank/leetcode
-	- [ ] Surse de calitate (apar sus când filtrezi după tasks cu sursa publică)
+	- [ ] Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
 	- [ ] Multi-eval support
 - [ ] Pentru release:
 	- [ ] Sistem de contests

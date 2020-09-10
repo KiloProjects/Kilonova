@@ -58,18 +58,18 @@ type EvalTest struct {
 	Done bool `json:"done"`
 
 	// Output is the text displayed on the frontend (like `Fatal signal 11` or `Missing output file`)
-	Output string  `json:"resultinfo"`
-	Time   float64 `json:"timeTaken"`
-	Memory int     `json:"memoryUsed"`
-	Score  int     `json:"score"`
-	Test   Test    `json:"test"`
-	TestID uint    `json:"testID"`
-	UserID uint    `json:"userID"`
-	TaskID uint    `json:"taskID"`
+	Output       string  `json:"resultinfo"`
+	Time         float64 `json:"timeTaken"`
+	Memory       int     `json:"memoryUsed"`
+	Score        int     `json:"score"`
+	Test         Test    `json:"test"`
+	TestID       uint    `json:"testID"`
+	UserID       uint    `json:"userID"`
+	SubmissionID uint    `json:"submissionID"`
 }
 
-// Task is the type for user-submitted tasks
-type Task struct {
+// Submission is the type for user-submitted submissions
+type Submission struct {
 	gorm.Model
 	SourceCode     string     `json:"code,omitempty"`
 	User           User       `json:"user"`
@@ -83,17 +83,17 @@ type Task struct {
 	CompileMessage string     `json:"compileMessage"`
 	Score          int        `json:"score"`
 
-	// Visible controls the visibility of source code of the task to non-admin and not-author users
+	// Visible controls the visibility of source code of the submission to non-admin and not-author users
 	Visible bool `json:"visible"`
 }
 
 const (
-	// These represent the different possible statuses of a task
+	// These represent the different possible statuses of a submission
 
-	// StatusWaiting is the initial state, the Task hasn't been picked up yet
+	// StatusWaiting is the initial state, the Submission hasn't been picked up yet
 	StatusWaiting = iota
-	// StatusWorking is the state when a Task has been picked up by a box but hasn't yet finished
+	// StatusWorking is the state when a Submission has been picked up by a box but hasn't yet finished
 	StatusWorking
-	// StatusDone is the state when a Task has been fully graded
+	// StatusDone is the state when a Submission has been fully graded
 	StatusDone
 )

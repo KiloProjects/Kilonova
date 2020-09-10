@@ -52,19 +52,19 @@ func (rt *Web) ValidateVisible(next http.Handler) http.Handler {
 	})
 }
 
-// ValidateTaskID puts the ID and the Task in the router context
-func (rt *Web) ValidateTaskID(next http.Handler) http.Handler {
+// ValidateSubmissionID puts the ID and the Submission in the router context
+func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		taskID, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
+		subID, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
 		if err != nil {
-			http.Error(w, "Invalid task ID", http.StatusBadRequest)
+			http.Error(w, "Invalid submission ID", http.StatusBadRequest)
 			return
 		}
-		// this is equivalent to /api/tasks/getByID but it's faster to directly access
-		task, err := rt.db.GetTaskByID(uint(taskID))
+		// this is equivalent to /api/submissions/getByID but it's faster to directly access
+		sub, err := rt.db.GetSubmissionByID(uint(subID))
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				http.Error(w, "Task-ul nu există", http.StatusBadRequest)
+				http.Error(w, "Submisia nu există", http.StatusBadRequest)
 				return
 			}
 			rt.logger.Println(err)
@@ -72,12 +72,12 @@ func (rt *Web) ValidateTaskID(next http.Handler) http.Handler {
 			return
 		}
 
-		if !util.IsTaskVisible(*task, util.UserFromContext(r)) {
-			task.SourceCode = ""
+		if !util.IsSubmissionVisible(*sub, util.UserFromContext(r)) {
+			sub.SourceCode = ""
 		}
 
-		ctx := context.WithValue(r.Context(), util.TaskID, uint(taskID))
-		ctx = context.WithValue(ctx, util.TaskKey, task)
+		ctx := context.WithValue(r.Context(), util.SubID, uint(subID))
+		ctx = context.WithValue(ctx, util.SubKey, sub)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

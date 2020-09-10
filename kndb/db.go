@@ -36,5 +36,5 @@ func (d *DB) AutoMigrate() {
 	d.DB.AutoMigrate(&models.Problem{})
 	d.DB.AutoMigrate(&models.Test{})
 	d.DB.AutoMigrate(&models.EvalTest{})
-	d.DB.AutoMigrate(&models.Task{})
+	d.DB.AutoMigrate(&models.Submission{})
 }

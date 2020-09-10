@@ -12,7 +12,7 @@ import (
 
 var compilePath string
 
-// limits stores the constraints that need to be respected by a task
+// limits stores the constraints that need to be respected by a submission
 // this has been moved from common because I want to remove another dependency
 type limits struct {
 	// seconds
@@ -22,7 +22,7 @@ type limits struct {
 	MemoryLimit int
 }
 
-// BoxManager manages a box with eval-based tasks
+// BoxManager manages a box with eval-based submissions
 type BoxManager struct {
 	ID  int
 	Box *box.Box
@@ -79,9 +79,9 @@ func (b *BoxManager) CompileFile(SourceCode []byte, language proto.Language) (st
 	return string(combinedOut), b.Box.RemoveFile(language.SourceName)
 }
 
-// RunTask runs a program, following the language conventions
+// RunSubmission runs a program, following the language conventions
 // filenames contains the names for input and output, used if consoleInput is true
-func (b *BoxManager) RunTask(language proto.Language, constraints limits, metaFile string, consoleInput bool) (*box.MetaFile, error) {
+func (b *BoxManager) RunSubmission(language proto.Language, constraints limits, metaFile string, consoleInput bool) (*box.MetaFile, error) {
 	if b.Box.Config.EnvToSet == nil {
 		b.Box.Config.EnvToSet = make(map[string]string)
 	}
@@ -146,7 +146,7 @@ func (b *BoxManager) RunTask(language proto.Language, constraints limits, metaFi
 }
 
 // ExecuteTest executes a new test
-func (b *BoxManager) ExecuteSTask(task proto.STask) (*proto.STResponse, error) {
+func (b *BoxManager) ExecuteTest(sub proto.Test) (*proto.TResponse, error) {
 	defer func() {
 		// After doing stuff, we need to clean up after ourselves ;)
 		if err := b.Reset(); err != nil {
@@ -154,40 +154,40 @@ func (b *BoxManager) ExecuteSTask(task proto.STask) (*proto.STResponse, error) {
 		}
 	}()
 
-	response := &proto.STResponse{TID: task.TID}
+	response := &proto.TResponse{TID: sub.TID}
 
-	if err := b.Box.WriteFile("/box/"+task.Filename+".in", []byte(task.Input)); err != nil {
+	if err := b.Box.WriteFile("/box/"+sub.Filename+".in", []byte(sub.Input)); err != nil {
 		fmt.Println("Can't write input file:", err)
 		response.Comments = "Sandbox error: Couldn't write input file"
 		return response, err
 	}
-	consoleInput := task.Filename == "input"
+	consoleInput := sub.Filename == "input"
 
-	lang := proto.Languages[task.Language]
+	lang := proto.Languages[sub.Language]
 	/*if lang.IsCompiled {*/
-	if err := b.Box.CopyInBox(path.Join(compilePath, fmt.Sprintf("%d.bin", task.ID)), lang.CompiledName); err != nil {
+	if err := b.Box.CopyInBox(path.Join(compilePath, fmt.Sprintf("%d.bin", sub.ID)), lang.CompiledName); err != nil {
 		response.Comments = "Couldn't link executable in box"
 		return response, err
 	}
 	/* TODO: Change SourceName in interpreted languages to CompiledName (if I haven't done this already)
 	} else {
-		if err := b.Box.WriteFile(lang.SourceName, []byte(task.SourceCode)); err != nil {
+		if err := b.Box.WriteFile(lang.SourceName, []byte(sub.SourceCode)); err != nil {
 			response.Comments = "Couldn't write interpreter file"
 			return response, err
 		}
 	}*/
 
 	lim := limits{
-		MemoryLimit: task.MemoryLimit,
-		StackLimit:  task.StackLimit,
-		TimeLimit:   task.TimeLimit,
+		MemoryLimit: sub.MemoryLimit,
+		StackLimit:  sub.StackLimit,
+		TimeLimit:   sub.TimeLimit,
 	}
-	meta, err := b.RunTask(proto.Languages[task.Language], lim, strconv.Itoa(int(task.ID))+".txt", consoleInput)
+	meta, err := b.RunSubmission(proto.Languages[sub.Language], lim, strconv.Itoa(int(sub.ID))+".txt", consoleInput)
 	response.Time = meta.Time
 	response.Memory = meta.CgMem
 
 	if err != nil {
-		response.Comments = fmt.Sprintf("Error running task: %v", err)
+		response.Comments = fmt.Sprintf("Error running submission: %v", err)
 		return response, err
 	}
 
@@ -202,7 +202,7 @@ func (b *BoxManager) ExecuteSTask(task proto.STask) (*proto.STResponse, error) {
 		response.Comments = "Sandbox Error: " + meta.Message
 	}
 
-	file, err := b.Box.GetFile("/box/" + task.Filename + ".out")
+	file, err := b.Box.GetFile("/box/" + sub.Filename + ".out")
 	if err != nil {
 		response.Comments = "Missing output file"
 		return response, nil
@@ -210,53 +210,9 @@ func (b *BoxManager) ExecuteSTask(task proto.STask) (*proto.STResponse, error) {
 	response.Output = string(file)
 
 	return response, nil
-	/*
-		TODO: MOVE THIS PART TO THE CLIENT SIDE, SINCE IT'S SAFER TO NOT HAVE THE OUTPUT
-
-		// Checking if files are ok
-		taskOut, err := b.Box.GetFile("/box/" + task.Problem.TestName + ".out")
-		if err != nil {
-			if os.IsNotExist(err) {
-				b.UpdateChan <- testOutputUpdate{
-					id:     test.ID,
-					output: "Missing output file",
-					score:  0,
-				}
-				return 0, err
-			}
-			fmt.Println("Some error happened and idk what to do:", err)
-			b.UpdateChan <- testOutputUpdate{
-				id:     test.ID,
-				output: "Internal grader error",
-				score:  -5,
-			}
-			return -5, err
-		}
-
-		tOut = bytes.TrimSpace(tOut)
-		tOut = bytes.ReplaceAll(tOut, []byte{'\r', '\n'}, []byte{'\n'})
-		taskOut = bytes.TrimSpace(taskOut)
-		taskOut = bytes.ReplaceAll(taskOut, []byte{'\r', '\n'}, []byte{'\n'})
-
-		if bytes.Equal(tOut, taskOut) {
-			testScore = test.Test.Score
-			b.UpdateChan <- testOutputUpdate{
-				id:     test.ID,
-				output: "Correct",
-				score:  test.Test.Score,
-			}
-		} else {
-			testScore = 0
-			b.UpdateChan <- testOutputUpdate{
-				id:     test.ID,
-				output: "Wrong Answer",
-				score:  0,
-			}
-		}
-	*/
 }
 
-func (b *BoxManager) CompileTask(c proto.Compile) *proto.CResponse {
+func (b *BoxManager) CompileSubmission(c proto.Compile) *proto.CResponse {
 	defer b.Reset()
 	lang := proto.Languages[c.Language]
 
@@ -290,24 +246,6 @@ func (b *BoxManager) CompileTask(c proto.Compile) *proto.CResponse {
 
 	return resp
 }
-
-/*
-// ExecuteTask executes a specific task
-func (b *BoxManager) ExecuteTask(task common.Task) error {
-	// move the compiled binary to tmp if necessary
-	lang := common.Languages[task.Language]
-	if lang.IsCompiled {
-		if err := b.Box.MoveFromBox(lang.CompiledName, path.Join("/tmp", fmt.Sprintf("%d.bin", task.ID))); err != nil {
-			return err
-		}
-	}
-
-	if err := b.Reset(); err != nil {
-		return err
-	}
-
-	return nil
-}*/
 
 // Reset reintializes a box
 // Should be run after finishing running a batch of tests

@@ -15,7 +15,7 @@ import (
 )
 
 type Handler struct {
-	tChan  chan models.Task
+	tChan  chan models.Submission
 	db     *kndb.DB
 	dm     datamanager.Manager
 	ctx    context.Context
@@ -23,7 +23,7 @@ type Handler struct {
 }
 
 func NewHandler(ctx context.Context, db *kndb.DB, dm datamanager.Manager, logger *log.Logger) *Handler {
-	ch := make(chan models.Task, 5)
+	ch := make(chan models.Submission, 5)
 	return &Handler{ch, db, dm, ctx, logger}
 }
 
@@ -33,15 +33,15 @@ func (h *Handler) chFeeder() {
 	for {
 		select {
 		case <-ticker.C:
-			tasks, err := h.db.GetWaitingTasks()
+			subs, err := h.db.GetWaitingSubmissions()
 			if err != nil {
-				h.logger.Println("Error fetching tasks:", err)
+				h.logger.Println("Error fetching submissions:", err)
 				continue
 			}
-			if tasks != nil {
-				h.logger.Printf("Found %d tasks\n", len(tasks))
-				for _, task := range tasks {
-					h.tChan <- task
+			if subs != nil {
+				h.logger.Printf("Found %d submissions\n", len(subs))
+				for _, sub := range subs {
+					h.tChan <- sub
 				}
 			}
 		case <-h.ctx.Done():
@@ -111,7 +111,7 @@ func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-
 					filename = "input"
 				}
 
-				send <- proto.ArgToMessage(proto.STask{
+				send <- proto.ArgToMessage(proto.Test{
 					ID:          int(t.ID),
 					TID:         int(test.ID),
 					Filename:    filename,
@@ -125,7 +125,7 @@ func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-
 
 			// this depends on the fact that we do stuff on a single loop
 			for _, test := range t.Tests {
-				var resp proto.STResponse
+				var resp proto.TResponse
 
 				msg := <-recv
 				if msg.Type == "Error" {

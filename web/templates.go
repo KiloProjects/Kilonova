@@ -14,7 +14,7 @@ import (
 // because I can't specify a custom filesystem for ParseGlob or ParseFiles
 
 const suffix = ".templ"
-const root = "/templ/materialize/"
+const root = "/templ/"
 
 // parseAllTemplates parses all templates in the specified root (remember that in pkger, the root directory is the one with go.mod)
 // note that the root will be stripped

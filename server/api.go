@@ -90,14 +90,14 @@ func (s *API) GetRouter() chi.Router {
 			})
 		})
 	})
-	r.Route("/tasks", func(r chi.Router) {
-		r.Get("/get", s.getTasks)
-		r.Get("/getByID", s.getTaskByID)
-		r.Get("/getForProblem", s.getTasksForProblem)
-		r.With(s.MustBeAuthed).Get("/getSelfForProblem", s.getSelfTasksForProblem)
+	r.Route("/submissions", func(r chi.Router) {
+		r.Get("/get", s.getSubmissions)
+		r.Get("/getByID", s.getSubmissionByID)
+		r.Get("/getForProblem", s.getSubmissionsForProblem)
+		r.With(s.MustBeAuthed).Get("/getSelfForProblem", s.getSelfSubmissionsForProblem)
 
-		r.With(s.MustBeAuthed).Post("/setVisible", s.setTaskVisible)
-		r.With(s.MustBeAuthed).Post("/submit", s.submitTask)
+		r.With(s.MustBeAuthed).Post("/setVisible", s.setSubmissionVisible)
+		r.With(s.MustBeAuthed).Post("/submit", s.submissionSend)
 	})
 	r.Route("/user", func(r chi.Router) {
 		r.Get("/getByName", s.getUserByName)

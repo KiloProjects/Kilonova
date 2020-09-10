@@ -48,15 +48,15 @@ func Handle(ctx context.Context, send chan<- proto.Message, recv <-chan proto.Me
 				var args proto.Compile
 				proto.DecodeArgs(msg, &args)
 
-				resp := mgr.CompileTask(args)
+				resp := mgr.CompileSubmission(args)
 				if resp != nil {
 					send <- proto.ArgToMessage(resp)
 				}
-			case "STask":
-				var args proto.STask
+			case "Test":
+				var args proto.Test
 				proto.DecodeArgs(msg, &args)
 
-				resp, err := mgr.ExecuteSTask(args)
+				resp, err := mgr.ExecuteTest(args)
 				if err != nil {
 					send <- proto.WrapErr(err)
 					continue

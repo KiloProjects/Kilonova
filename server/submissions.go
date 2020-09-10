@@ -11,46 +11,46 @@ import (
 	"gorm.io/gorm"
 )
 
-// GetTaskByID returns a task based on an ID
-func (s *API) getTaskByID(w http.ResponseWriter, r *http.Request) {
-	taskID, ok := getFormInt(w, r, "id")
+// GetSubmissionByID returns a submission based on an ID
+func (s *API) getSubmissionByID(w http.ResponseWriter, r *http.Request) {
+	subID, ok := getFormInt(w, r, "id")
 	if !ok {
 		return
 	}
 
-	task, err := s.db.GetTaskByID(uint(taskID))
+	sub, err := s.db.GetSubmissionByID(uint(subID))
 	if err != nil {
-		errorData(w, "Could not find task", http.StatusBadRequest)
+		errorData(w, "Could not find submission", http.StatusBadRequest)
 		return
 	}
 
-	if !util.IsTaskVisible(*task, util.UserFromContext(r)) {
-		task.SourceCode = ""
+	if !util.IsSubmissionVisible(*sub, util.UserFromContext(r)) {
+		sub.SourceCode = ""
 	}
 
-	returnData(w, *task)
+	returnData(w, *sub)
 }
 
-// getTasks returns all Tasks from the DB
+// getSubmissions returns all Submissions from the DB
 // TODO: Pagination and filtering
-func (s *API) getTasks(w http.ResponseWriter, r *http.Request) {
+func (s *API) getSubmissions(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	tasks, err := s.db.GetAllTasks()
+	subs, err := s.db.GetAllSubmissions()
 	if err != nil {
 		errorData(w, http.StatusText(500), 500)
 		return
 	}
 
 	user := util.UserFromContext(r)
-	for i := 0; i < len(tasks); i++ {
-		if !util.IsTaskVisible(tasks[i], user) {
-			tasks[i].SourceCode = ""
+	for i := 0; i < len(subs); i++ {
+		if !util.IsSubmissionVisible(subs[i], user) {
+			subs[i].SourceCode = ""
 		}
 	}
-	returnData(w, tasks)
+	returnData(w, subs)
 }
 
-func (s *API) getTasksForProblem(w http.ResponseWriter, r *http.Request) {
+func (s *API) getSubmissionsForProblem(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
 		PID uint
@@ -61,7 +61,7 @@ func (s *API) getTasksForProblem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tasks, err := s.db.UserTasksOnProblem(args.UID, args.PID)
+	subs, err := s.db.UserSubmissionsOnProblem(args.UID, args.PID)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -73,30 +73,30 @@ func (s *API) getTasksForProblem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i := 0; i < len(tasks); i++ {
-		if !util.IsTaskVisible(tasks[i], *user) {
-			tasks[i].SourceCode = ""
+	for i := 0; i < len(subs); i++ {
+		if !util.IsSubmissionVisible(subs[i], *user) {
+			subs[i].SourceCode = ""
 		}
 	}
 
-	returnData(w, tasks)
+	returnData(w, subs)
 }
 
-func (s *API) getSelfTasksForProblem(w http.ResponseWriter, r *http.Request) {
+func (s *API) getSelfSubmissionsForProblem(w http.ResponseWriter, r *http.Request) {
 	pid, ok := getFormInt(w, r, "pid")
 	if !ok {
 		return
 	}
 	uid := util.UserFromContext(r).ID
-	tasks, err := s.db.UserTasksOnProblem(uint(uid), uint(pid))
+	subs, err := s.db.UserSubmissionsOnProblem(uint(uid), uint(pid))
 	if err != nil {
 		errorData(w, err, 500)
 		return
 	}
-	returnData(w, tasks)
+	returnData(w, subs)
 }
 
-func (s *API) setTaskVisible(w http.ResponseWriter, r *http.Request) {
+func (s *API) setSubmissionVisible(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
 		Visible bool
@@ -107,10 +107,10 @@ func (s *API) setTaskVisible(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := s.db.GetTaskByID(args.ID)
+	sub, err := s.db.GetSubmissionByID(args.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			errorData(w, "Task not found", http.StatusNotFound)
+			errorData(w, "Submission not found", http.StatusNotFound)
 			return
 		}
 		s.logger.Println(err)
@@ -118,12 +118,12 @@ func (s *API) setTaskVisible(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !util.IsTaskEditor(*task, util.UserFromContext(r)) {
+	if !util.IsSubmissionEditor(*sub, util.UserFromContext(r)) {
 		errorData(w, "You are not allowed to do this", 403)
 		return
 	}
 
-	if err := s.db.UpdateTaskVisibility(args.ID, args.Visible); err != nil {
+	if err := s.db.UpdateSubmissionVisibility(args.ID, args.Visible); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -131,14 +131,14 @@ func (s *API) setTaskVisible(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Updated visibility status")
 }
 
-// submitTask registers a task to be sent to the Eval handler
+// submissionSend registers a submission to be sent to the Eval handler
 // Required values:
-//	- code=[sourcecode] - source code of the task, mutually exclusive with file uploads
+//	- code=[sourcecode] - source code of the submission, mutually exclusive with file uploads
 //  - file=[file] - multipart file, mutually exclusive with the code param
 //  - lang=[language] - language key like in common.Languages
-//  - problemID=[problem] - problem ID that the task will be associated with
+//  - problemID=[problem] - problem ID that the submission will be associated with
 // Note that the `code` param is prioritized over file upload
-func (s *API) submitTask(w http.ResponseWriter, r *http.Request) {
+func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
 		Code      string
@@ -211,18 +211,18 @@ func (s *API) submitTask(w http.ResponseWriter, r *http.Request) {
 		evalTests = append(evalTests, evTest)
 	}
 
-	// add the task to the DB
-	task := models.Task{
+	// add the submission to the DB
+	sub := models.Submission{
 		Tests:      evalTests,
 		User:       user,
 		Problem:    *problem,
 		SourceCode: args.Code,
 		Language:   args.Lang,
 	}
-	if err := s.db.Save(&task); err != nil {
+	if err := s.db.Save(&sub); err != nil {
 		errorData(w, "Couldn't create test", 500)
 		return
 	}
 
-	statusData(w, "success", task.ID, http.StatusCreated)
+	statusData(w, "success", sub.ID, http.StatusCreated)
 }

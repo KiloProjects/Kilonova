@@ -17,17 +17,17 @@ func (rt *Web) hydrateTemplate(r *http.Request) templateData {
 		LoggedIn: util.IsRAuthed(r),
 		Version:  common.Version,
 
-		Problem: util.ProblemFromContext(r),
-		Task:    util.TaskFromContext(r),
-		Test:    util.TestFromContext(r),
+		Problem:    util.ProblemFromContext(r),
+		Submission: util.SubmissionFromContext(r),
+		Test:       util.TestFromContext(r),
 
 		ProblemID: util.IDFromContext(r, util.PbID),
-		TaskID:    util.IDFromContext(r, util.TaskID),
+		SubID:     util.IDFromContext(r, util.SubID),
 		TestID:    util.IDFromContext(r, util.TestID),
 
 		// HACK: Move this somewhere else
 		ProblemEditor: util.IsRProblemEditor(r),
-		TaskEditor:    util.IsRTaskEditor(r),
+		SubEditor:     util.IsRSubmissionEditor(r),
 
 		OGUrl: r.URL.RequestURI(),
 	}

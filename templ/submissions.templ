@@ -1,12 +1,7 @@
 {{ template "util/header" . }}
 
-{{ range zeroto100 }}
-<div style="{{gradient . 100}} height: 8px;"></div>
-{{ end }}
-
-
 <div class="container">
-	<h1>Stare task-uri</h1>
+	<h1>Stare submisii</h1>
 
 	<table class="table">
 		<thead class="thead-dark">
@@ -29,7 +24,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			{{ with .Tasks }}
+			{{ with .Submissions }}
 				{{ range . }}
 					<tr style="{{ gradient .Score 100 }}">
 					<th scope="row">
@@ -42,7 +37,7 @@
 						<a href="/probleme/{{.Problem.ID}}">{{- .Problem.Name -}}</a>
 					</td>
 					<td>
-						<a href="/tasks/{{.ID}}">{{- taskStatus .Status -}}</a>
+						<a href="/submissions/{{.ID}}">{{- subStatus .Status -}}</a>
 					</td>
 					<td>
 						{{- .Score -}}

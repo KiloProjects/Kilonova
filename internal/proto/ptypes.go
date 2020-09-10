@@ -15,7 +15,7 @@ type CResponse struct {
 	Other   string `json:"other"`
 }
 
-type STask struct {
+type Test struct {
 	ID          int     `json:"id"`
 	TID         int     `json:"tid"`
 	Language    string  `json:"language"`
@@ -26,7 +26,7 @@ type STask struct {
 	StackLimit  int     `json:"stacklimit"`
 }
 
-type STResponse struct {
+type TResponse struct {
 	TID      int     `json:"tid"`
 	Output   string  `json:"output"`
 	Time     float64 `json:"time"`

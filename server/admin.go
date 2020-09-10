@@ -107,6 +107,6 @@ func (s *API) dropAll(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Sorry, you need a specific form value. Look into the source code if you're sure", http.StatusBadRequest)
 		return
 	}
-	s.db.DB.Migrator().DropTable(&models.EvalTest{}, &models.Problem{}, &models.Task{}, &models.Test{}, &models.User{})
+	s.db.DB.Migrator().DropTable(&models.EvalTest{}, &models.Problem{}, &models.Submission{}, &models.Test{}, &models.User{})
 	returnData(w, "I hope you're proud")
 }

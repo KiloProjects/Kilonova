@@ -54,10 +54,8 @@
 			<h1>Încărcare sursă</h1>
 			<p>(Dacă mă întrebați de ce merge doar c++ acum: why not?)</p>
 
-			<form id="taskSubmit" autocomplete="off">
-				<div class="input-field">
-				<textarea id="TaskArea" style="display: none;"></textarea>
-				</div>
+			<form id="submissionSend" autocomplete="off">
+				<textarea id="SubArea" style="display: none;"></textarea>
 				<button class="btn btn-primary mb-2" type="submit">Trimite</button>
 
 			</form>
@@ -70,15 +68,15 @@ int main()
 	cout << "Hello, world!\\n";
 	return 0;
 }`;
-				$("#TaskArea").html(defaultIn);
-				var cm = CodeMirror.fromTextArea(document.getElementById("TaskArea"), {
+				$("#SubArea").html(defaultIn);
+				var cm = CodeMirror.fromTextArea(document.getElementById("SubArea"), {
 					lineNumbers: true,
 					indentUnit: 4,
 					lineWrapping: true,
 					mode: "text/x-c++src",
 				});
 				cm.setSize(null, "100%");
-				$("#taskSubmit").submit(async e => {
+				$("#submissionSend").submit(async e => {
 					e.preventDefault();
 					let sendData = {
 						problemID: "{{ .Problem.ID }}",
@@ -86,16 +84,16 @@ int main()
 						code: cm.getValue(),
 					};
 					
-					let res = await postCall("/tasks/submit", sendData)
+					let res = await postCall("/submissions/submit", sendData)
 					if(res.status == "error") {
 						createToast({
 							status: "error",
-							title: "Could not submit task",
+							title: "Could not send submission",
 							description: res.data
 						})
 						return
 					}
-					createToast({description: "Uploaded", onclick: () => window.location.assign(`/tasks/${res.data}`)})
+					createToast({description: "Uploaded", onclick: () => window.location.assign(`/submissions/${res.data}`)})
 				})
 			</script>
 			<br />
@@ -107,7 +105,7 @@ int main()
 
 	</div>
 
-	{{ with (problemTasks .Problem .User) }}
+	{{ with (problemSubs .Problem .User) }}
 		<h3> Submisii anterioare </h3>
 		<table class="table">
 			<thead class="thead-dark">
@@ -142,7 +140,7 @@ int main()
 						<a href="/probleme/{{.Problem.ID}}">{{- .Problem.Name -}}</a>
 					</td>
 					<td>
-						<a href="/tasks/{{.ID}}">{{- taskStatus .Status -}}</a>
+						<a href="/submissions/{{.ID}}">{{- subStatus .Status -}}</a>
 					</td>
 					<td>
 						{{- .Score -}}

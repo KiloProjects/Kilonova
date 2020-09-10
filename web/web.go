@@ -42,10 +42,10 @@ type templateData struct {
 
 	ContentUser models.User
 
-	Tasks []models.Task
+	Submissions []models.Submission
 
-	Task   models.Task
-	TaskID uint
+	Submission models.Submission
+	SubID      uint
 
 	ProblemID uint
 
@@ -57,8 +57,8 @@ type templateData struct {
 	// ProblemEditor tells us if the authed .User is able to edit the .Problem
 	ProblemEditor bool
 
-	// TaskEditor tells us if the authed .User is able to change visibility of the .Task
-	TaskEditor bool
+	// SubEditor tells us if the authed .User is able to change visibility of the .Submission
+	SubEditor bool
 
 	Sidebar bool
 
@@ -92,7 +92,7 @@ func (rt *Web) newTemplate() *template.Template {
 		"dumpStruct":   spew.Sdump,
 		"getTestData":  rt.getTestData,
 		"getFullTests": rt.getFullTestData,
-		"taskStatus": func(id int) template.HTML {
+		"subStatus": func(id int) template.HTML {
 			switch id {
 			case models.StatusWaiting:
 				return template.HTML("În așteptare...")
@@ -117,25 +117,26 @@ func (rt *Web) newTemplate() *template.Template {
 			}
 			return v
 		},
-		"taskScore": func(problem models.Problem, user models.User) string {
+		"subScore": func(problem models.Problem, user models.User) string {
 			score, err := rt.db.MaxScoreFor(user.ID, problem.ID)
 			if err != nil || score < 0 {
 				return "-"
 			}
 			return fmt.Sprint(score)
 		},
-		"problemTasks": func(problem models.Problem, user models.User) []models.Task {
-			tasks, err := rt.db.UserTasksOnProblem(user.ID, problem.ID)
+		"problemSubs": func(problem models.Problem, user models.User) []models.Submission {
+			subs, err := rt.db.UserSubmissionsOnProblem(user.ID, problem.ID)
 			if err != nil {
 				return nil
 			}
-			return tasks
+			return subs
 		},
 	}), root))
 }
 
 func (rt *Web) build(w http.ResponseWriter, r *http.Request, name string, temp templateData) {
 	if err := templates.ExecuteTemplate(w, name, temp); err != nil {
+		fmt.Println(err)
 		rt.logger.Printf("%s: %v\n", temp.OGUrl, err)
 	}
 }
@@ -287,23 +288,23 @@ func (rt *Web) GetRouter() chi.Router {
 			})
 		})
 
-		r.Route("/tasks", func(r chi.Router) {
+		r.Route("/submissions", func(r chi.Router) {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				tasks, err := rt.db.GetAllTasks()
+				subs, err := rt.db.GetAllSubmissions()
 				if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-					rt.logger.Println("/tasks/", err)
+					rt.logger.Println("/submissions/", err)
 					http.Error(w, http.StatusText(500), 500)
 					return
 				}
 				templ := rt.hydrateTemplate(r)
-				templ.Title = "Tasks"
-				templ.Tasks = tasks
-				rt.build(w, r, "tasks", templ)
+				templ.Title = "Submissions"
+				templ.Submissions = subs
+				rt.build(w, r, "submissions", templ)
 			})
-			r.With(rt.ValidateTaskID).Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
+			r.With(rt.ValidateSubmissionID).Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
 				templ := rt.hydrateTemplate(r)
-				templ.Title = fmt.Sprintf("Task %d", templ.Task.ID)
-				rt.build(w, r, "task", templ)
+				templ.Title = fmt.Sprintf("Submission %d", templ.Submission.ID)
+				rt.build(w, r, "submission", templ)
 			})
 		})
 
