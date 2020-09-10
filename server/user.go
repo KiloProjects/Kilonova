@@ -74,6 +74,7 @@ func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.db.SetEmail(user.ID, email); err != nil {
 		errorData(w, http.StatusText(500), 500)
+		return
 	}
 	returnData(w, "Successfully changed email")
 }

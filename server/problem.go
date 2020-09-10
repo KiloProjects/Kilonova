@@ -138,15 +138,13 @@ func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) setInputType(w http.ResponseWriter, r *http.Request) {
-	val := r.FormValue("isSet")
 	problem := util.ProblemFromContext(r)
-	if val == "true" {
-		s.db.UpdateProblemField(problem.ID, "console_input", true)
-	} else if val == "false" {
-		s.db.UpdateProblemField(problem.ID, "console_input", false)
-	} else {
-		errorData(w, "Invalid value for `isSet` form value", http.StatusBadRequest)
+	var args struct{ IsSet bool }
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, http.StatusBadRequest)
+		return
 	}
+	s.db.UpdateProblemField(problem.ID, "console_input", args.IsSet)
 }
 
 func (s *API) setTestName(w http.ResponseWriter, r *http.Request) {
@@ -173,6 +171,7 @@ func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
 		s.logger.Println("Trying to delete test with ID", t.ID)
 		if err := s.db.DB.Delete(&t).Error; err != nil {
 			errorData(w, err, 500)
+			return
 		}
 	}
 	returnData(w, "Purged all tests")
@@ -247,8 +246,9 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 		[]byte(r.FormValue("input")),
 		[]byte(r.FormValue("output")),
 	); err != nil {
-		errorData(w, "Couldn't create test", 500)
 		s.logger.Println("Couldn't create test", err)
+		errorData(w, "Couldn't create test", 500)
+		return
 	}
 	returnData(w, "Created test")
 }

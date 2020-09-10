@@ -32,7 +32,6 @@
 		function updateCheck() {
 			let pval = $("#pwd").val();
 			let cval = $("#pwd_check").val();
-			console.log("focusout:",pval,cval)
 			if(cval == "" || pval == "") {
 				$("#pwd_check").removeClass("valid").removeClass("invalid");
 				$("#check_lock").removeClass("red-text").removeClass("green-text")
@@ -47,7 +46,6 @@
 			}
 		}
 		$("#pwd").on("focusout", updateCheck)
-
 		$("#pwd_check").on("keyup", updateCheck)
 
 		$("#signupForm").submit(async (e) => {
@@ -57,6 +55,7 @@
 			let password = $("#signupForm #pwd").val();
 
 			let res = await postCall("/auth/signup", {email,username,password})
+			console.log(res)
 			if(res.status == "error") {
 				createToast({
 					status: "error",

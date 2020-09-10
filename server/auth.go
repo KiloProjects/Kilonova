@@ -2,38 +2,40 @@ package server
 
 import (
 	"net/http"
-	"strings"
-	"unicode"
 
 	"github.com/KiloProjects/Kilonova/common"
-	"github.com/KiloProjects/Kilonova/internal/models"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"golang.org/x/crypto/bcrypt"
 )
 
+var unameValidation = []validation.Rule{validation.Required, validation.Length(3, 32), is.Alphanumeric}
+var pwdValidation = []validation.Rule{validation.Required, validation.Length(6, 64)}
+
+type signupForm struct {
+	Username string
+	Email    string
+	Password string
+}
+
+func (s signupForm) Validate() error {
+	return validation.ValidateStruct(&s,
+		validation.Field(&s.Username, unameValidation...),
+		validation.Field(&s.Email, validation.Required, is.Email),
+		validation.Field(&s.Password, pwdValidation...),
+	)
+}
+
 func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var auth struct {
-		Username string
-		Email    string
-		Password string
-	}
+	var auth signupForm
 	if err := decoder.Decode(&auth, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
 
-	if auth.Email == "" || auth.Username == "" || auth.Password == "" {
-		errorData(w, "You must specify an email address, username and password", http.StatusBadRequest)
-		return
-	}
-
-	if strings.IndexFunc(auth.Username, unicode.IsSpace) != -1 {
-		errorData(w, "Username must not contain spaces", http.StatusBadRequest)
-		return
-	}
-
-	if strings.IndexFunc(auth.Email, unicode.IsSpace) != -1 || len(auth.Email) > 254 || len(auth.Email) < 3 {
-		errorData(w, "Invalid e-mail address", http.StatusBadRequest)
+	if err := auth.Validate(); err != nil {
+		errorData(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -57,29 +59,38 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 	returnData(w, encoded)
 }
 
+type loginForm struct {
+	Username string
+	Password string
+}
+
+func (l loginForm) Validate() error {
+	return validation.ValidateStruct(&l,
+		validation.Field(&l.Username, unameValidation...),
+		validation.Field(&l.Password, pwdValidation...),
+	)
+}
+
 func (s *API) login(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var auth struct {
-		Username string
-		Password string
-	}
+	var auth loginForm
 
 	if err := decoder.Decode(&auth, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
-	}
-
-	if auth.Password == "" || auth.Username == "" {
-		errorData(w, "You must specify an username and a password", http.StatusBadRequest)
 		return
 	}
 
-	var user *models.User
-	quser, err := s.db.GetUserByName(auth.Username)
+	if err := auth.Validate(); err != nil {
+		errorData(w, err, http.StatusBadRequest)
+		return
+	}
+
+	user, err := s.db.GetUserByName(auth.Username)
 	if err != nil {
 		errorData(w, "user not found", http.StatusBadRequest)
 		return
 	}
-	user = quser
+
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(auth.Password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		errorData(w, "Invalid username or password", http.StatusUnauthorized)

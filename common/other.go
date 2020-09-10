@@ -17,7 +17,7 @@ import (
 // DataDir should be where most of the data is stored
 var DataDir = "/data"
 
-const Version = "v0.3.0"
+const Version = "v0.3.1"
 
 // Cookies is the securecookie instance that should be called by everyone
 var Cookies *securecookie.SecureCookie
