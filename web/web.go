@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"path"
@@ -57,6 +58,8 @@ type templateData struct {
 	TaskEditor bool
 
 	Sidebar bool
+
+	Changelog string
 }
 
 // Web is the struct representing this whole package
@@ -182,6 +185,19 @@ func (rt *Web) GetRouter() chi.Router {
 			templ := rt.hydrateTemplate(r)
 			templ.Problems = problems
 			rt.check(templates.ExecuteTemplate(w, "index", templ))
+		})
+
+		r.Get("/changelog", func(w http.ResponseWriter, r *http.Request) {
+			file, err := pkger.Open("/CHANGELOG.md")
+			if err != nil {
+				rt.logger.Println("CAN'T OPEN CHANGELOG")
+				http.Error(w, http.StatusText(500), 500)
+				return
+			}
+			changelog, _ := ioutil.ReadAll(file)
+			templ := rt.hydrateTemplate(r)
+			templ.Changelog = string(changelog)
+			rt.check(templates.ExecuteTemplate(w, "changelog", templ))
 		})
 
 		r.Route("/probleme", func(r chi.Router) {

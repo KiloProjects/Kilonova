@@ -1,3 +1,9 @@
+- 0.3.2:
+	- Add viewable changelog on website
+
+- 0.3.1:
+	- Add (basic) input validation for signup and login
+
 - 0.3.0:
 	- A more under-the-hood update:
 		- Move KiloEval from a separate project into this one

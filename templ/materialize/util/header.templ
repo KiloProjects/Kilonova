@@ -124,6 +124,7 @@
 				<a class="brand-logo" href="/">Kilonova</a>
 				<a data-target="navbarside" href="#" class="sidenav-trigger"><i class="material-icons">menu</i></a>
 				<ul id="nav-mobile" class="right hide-on-med-and-down">
+					<li><a href="/changelog">Changelog</a></li>
 					<li><a href="/tasks">Listă task-uri</a></li>
 					{{ if not .LoggedIn }}
 					<li><a href="/signup">Sign Up</a></li>
@@ -140,7 +141,7 @@
 		{{ if not .LoggedIn }}
 		<li><a href="/signup">Sign Up</a></li>
 		<li><a href="/login">Log In</a></li>
-		{{ end}}
+		{{ end }}
 
 		{{if (or .User.Proposer .User.Admin)}}
 		<li><a href="/probleme/create">Creare Problemă</a></li>
@@ -149,6 +150,7 @@
 		<li><a href="/admin">Butoane Administrative</a></li>
 		{{end}}
 		<li><a href="/logout">Log Out</a></li>
+		<li><a href="/changelog">Changelog</a></li>
 	</ul>
 	<ul id="userDropdown" class="dropdown-content">
 		{{if (or .User.Proposer .User.Admin)}}
