@@ -9,7 +9,7 @@
 		{{ else }}
 			<a class="list-group-item list-group-item-action border-bottom bg-light" href="/probleme/{{ $id }}/edit/teste">Creare test</a>
 		{{ end}}
-		{{ range .Problem.Tests }}
+		{{ range (problemTests .Problem) }}
 			{{ if (eq .VisibleID $tid) }}
 				<a class="list-group-item list-group-item-action active" href="/probleme/{{ $id }}/edit/teste/{{ .VisibleID }}">Testul #{{ .VisibleID }}</a>
 			{{ else }}

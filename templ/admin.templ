@@ -49,7 +49,7 @@
 				apiToast(res)
 				return
 			}
-			await setAdmin(res.data.ID, toSet)
+			await setAdmin(res.data.id, toSet)
 		}
 		async function setFormProposer(toSet) {
 			let user = $("#userToChange").val();
@@ -58,7 +58,7 @@
 				apiToast(res)
 				return
 			}
-			await setProposer(res.data.ID, toSet)
+			await setProposer(res.data.id, toSet)
 		}
 
 		async function loadAdmins(id = "#admin-group") {
@@ -73,7 +73,7 @@
 			for(let user of res.data) {
 				outhtml += `<div class="list-group-item d-flex justify-content-between align-items-center">
 					${user.name}
-					<span style="cursor: pointer;" onclick="setAdmin(${user.ID}, false)">X</span>
+					<span style="cursor: pointer;" onclick="setAdmin(${user.id}, false)">X</span>
 				</div>`	
 			}
 			$(id).html(outhtml)

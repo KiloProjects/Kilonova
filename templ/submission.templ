@@ -2,26 +2,28 @@
 
 <div class="container">
 	{{ $editor := .SubEditor }}
+	{{ $problem := subProblem .Submission }}
+	{{ $author := subAuthor .Submission }}
 	{{ with .Submission }}
 		<h2>Submission {{ .ID }}</h2>
-		<p>Autor: {{ .User.Name }}</p>
+		<p>Autor: {{ $author.Name }}</p>
 		<p>Data încărcării: {{ .CreatedAt }}</p>
 		<p>Status: {{ subStatus .Status }}</p>
 		<p>Limbaj: {{ .Language }}</p>
-		<p>Problemă: <a href="/probleme/{{.Problem.ID}}">{{ .Problem.Name }}</a></p>
+		<p>Problemă: <a href="/probleme/{{$problem.ID}}">{{ $problem.Name }}</a></p>
 		<p>Scor: {{ .Score }} </p>
 			
-		{{ if .CompileMessage }}
+		{{ if and .CompileError.Valid .CompileError.Bool }}
 		
-		<p>Eroare de compilare?: {{ .CompileError }}</p>
+		<p>Eroare de compilare?: {{ .CompileError.Bool }}</p>
 
 		<h5>Mesaj Evaluare:</h5>
-		<pre>{{- .CompileMessage -}}</pre>
+		<pre>{{- .CompileMessage.String -}}</pre>
 		
 		{{ end }}
 
-		{{ if not .CompileError }}
-			{{ with .Tests }}
+		{{ if not .CompileError.Bool }}
+			{{ with (subTests .) }}
 				<table class="table">
 						<thead class="thead-dark">
 						<tr>
@@ -47,24 +49,25 @@
 					</thead>
 					<tbody>
 						{{ range . }}
+							{{ $test := getTest .TestID }}
 							{{ if .Done }}
-								<tr style="{{ gradient .Score .Test.Score }}">
+								<tr style="{{ gradient .Score $test.Score }}">
 							{{ else }}
 								<tr>
 							{{ end }}
 							<th scope="col">
-									{{- .Test.VisibleID -}}
+									{{- $test.VisibleID -}}
 								</th>
 								<td>
 									{{ if .Done }}
-										{{- .Output -}}
+										{{- .Verdict -}}
 									{{ else }}
 									<div class="spinner-border spinner-border-sm" role="status"></div>
 										Waiting...
 									{{ end }}
 								</td>
 								<td>
-									{{- .Test.Score -}}
+									{{- $test.Score -}}
 								</td>
 								<td>
 									{{- .Score -}}
@@ -82,9 +85,9 @@
 			{{ end }}
 		{{ end }}
 
-		{{ if not (eq .SourceCode "") }}
+		{{ if not (eq .Code "") }}
 			<h3>Codul Sursă:</h3>
-			<pre><code class="{{ .Language }}">{{ .SourceCode }} </code></pre>
+			<pre><code class="{{ .Language }}">{{ .Code }} </code></pre>
 			
 			{{ if $editor }}
 				<button id="vButton" class="btn btn-primary mb-2" onclick="toggleVisible()">Fă codul {{ if .Visible}}invizibil{{else}}vizibil{{end}}</button>

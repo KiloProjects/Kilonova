@@ -3,9 +3,9 @@ package web
 import (
 	"net/http"
 
-	"github.com/KiloProjects/Kilonova/common"
-	"github.com/KiloProjects/Kilonova/internal/models"
+	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/util"
+	"github.com/KiloProjects/Kilonova/internal/version"
 	"github.com/go-chi/chi"
 )
 
@@ -15,7 +15,7 @@ func (rt *Web) hydrateTemplate(r *http.Request) templateData {
 		Params:   globParams(r),
 		User:     util.UserFromContext(r),
 		LoggedIn: util.IsRAuthed(r),
-		Version:  common.Version,
+		Version:  version.Version,
 
 		Problem:    util.ProblemFromContext(r),
 		Submission: util.SubmissionFromContext(r),
@@ -47,8 +47,8 @@ type testDataType struct {
 	Out string
 }
 
-func (rt *Web) getFullTestData(test models.Test) testDataType {
-	in, out, err := rt.dm.GetTest(test.ProblemID, test.VisibleID)
+func (rt *Web) getFullTestData(test db.Test) testDataType {
+	in, out, err := rt.dm.GetTest(test.ProblemID, int64(test.VisibleID))
 	if err != nil {
 		in = []byte("err")
 		out = []byte("err")
@@ -56,7 +56,7 @@ func (rt *Web) getFullTestData(test models.Test) testDataType {
 	return testDataType{In: string(in), Out: string(out)}
 }
 
-func (rt *Web) getTestData(test models.Test) testDataType {
+func (rt *Web) getTestData(test db.Test) testDataType {
 	t := rt.getFullTestData(test)
 	if len(t.In) > 128*1024 { // 128KB
 		t.In = "too long to show here"

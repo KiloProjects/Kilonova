@@ -1,9 +1,10 @@
 package util
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/KiloProjects/Kilonova/internal/models"
+	"github.com/KiloProjects/Kilonova/internal/db"
 )
 
 // this file stores stuff to both the server and web parts
@@ -37,108 +38,114 @@ type RetData struct {
 	Data   interface{} `json:"data"`
 }
 
-func IDFromContext(r *http.Request, tp KNContextType) uint {
+func IDFromContext(r *http.Request, tp KNContextType) int64 {
 	switch v := r.Context().Value(tp).(type) {
+	case int:
+		return int64(v)
 	case uint:
+		return int64(v)
+	case int32:
+		return int64(v)
+	case int64:
 		return v
 	default:
-		return 99999
+		return -1
 	}
 }
 
 // UserFromContext returns the user from request context
-func UserFromContext(r *http.Request) models.User {
+func UserFromContext(r *http.Request) db.User {
 	switch v := r.Context().Value(UserKey).(type) {
-	case models.User:
+	case db.User:
 		return v
-	case *models.User:
+	case *db.User:
 		return *v
 	default:
-		return models.User{}
+		return db.User{}
 	}
 }
 
 // ProblemFromContext returns the problem from request context
-func ProblemFromContext(r *http.Request) models.Problem {
+func ProblemFromContext(r *http.Request) db.Problem {
 	switch v := r.Context().Value(ProblemKey).(type) {
-	case models.Problem:
+	case db.Problem:
 		return v
-	case *models.Problem:
+	case *db.Problem:
 		return *v
 	default:
-		return models.Problem{}
+		return db.Problem{}
 	}
 }
 
 // SubmissionFromContext returns the submission from request context
-func SubmissionFromContext(r *http.Request) models.Submission {
+func SubmissionFromContext(r *http.Request) db.Submission {
 	switch v := r.Context().Value(SubKey).(type) {
-	case models.Submission:
+	case db.Submission:
 		return v
-	case *models.Submission:
+	case *db.Submission:
 		return *v
 	default:
-		return models.Submission{}
+		return db.Submission{}
 	}
 }
 
 // TestFromContext returns the test from request context
-func TestFromContext(r *http.Request) models.Test {
+func TestFromContext(r *http.Request) db.Test {
 	switch v := r.Context().Value(TestKey).(type) {
-	case models.Test:
+	case db.Test:
 		return v
-	case *models.Test:
+	case *db.Test:
 		return *v
 	default:
-		return models.Test{}
+		return db.Test{}
 	}
 }
 
 // CONVENTION: IsR* is shorthand for getting the required stuff from request and passing it to its non-R counterpart
 
-func IsAuthed(user models.User) bool {
+func IsAuthed(user db.User) bool {
 	return user.ID != 0
 }
 
-func IsAdmin(user models.User) bool {
+func IsAdmin(user db.User) bool {
 	if !IsAuthed(user) {
 		return false
 	}
 	return user.Admin
 }
 
-func IsProposer(user models.User) bool {
+func IsProposer(user db.User) bool {
 	if !IsAuthed(user) {
 		return false
 	}
 	return user.Admin || user.Proposer
 }
 
-func IsProblemEditor(user models.User, problem models.Problem) bool {
+func IsProblemEditor(user db.User, problem db.Problem) bool {
 	if !IsAuthed(user) {
 		return false
 	}
 	if IsAdmin(user) {
 		return true
 	}
-	return user.ID == problem.UserID
+	return user.ID == problem.AuthorID
 }
 
-func IsProblemVisible(user models.User, problem models.Problem) bool {
+func IsProblemVisible(user db.User, problem db.Problem) bool {
 	if problem.Visible {
 		return true
 	}
 	return IsProblemEditor(user, problem)
 }
 
-func IsSubmissionEditor(sub models.Submission, user models.User) bool {
+func IsSubmissionEditor(sub db.Submission, user db.User) bool {
 	if !IsAuthed(user) {
 		return false
 	}
 	return IsAdmin(user) || user.ID == sub.UserID
 }
 
-func IsSubmissionVisible(sub models.Submission, user models.User) bool {
+func IsSubmissionVisible(sub db.Submission, user db.User) bool {
 	if sub.Visible {
 		return true
 	}
@@ -173,12 +180,9 @@ func IsRSubmissionVisible(r *http.Request) bool {
 	return IsSubmissionVisible(SubmissionFromContext(r), UserFromContext(r))
 }
 
-func FilterVisible(problems []models.Problem, user models.User) []models.Problem {
-	var showedProblems []models.Problem
-	for _, pb := range problems {
-		if IsProblemVisible(user, pb) {
-			showedProblems = append(showedProblems, pb)
-		}
+func GetVisible(kdb *db.Queries, ctx context.Context, user db.User) ([]db.Problem, error) {
+	if user.Admin {
+		return kdb.Problems(ctx)
 	}
-	return showedProblems
+	return kdb.VisibleProblems(ctx, user.ID)
 }

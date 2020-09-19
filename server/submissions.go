@@ -1,50 +1,51 @@
 package server
 
 import (
+	"database/sql"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/KiloProjects/Kilonova/internal/models"
+	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/proto"
 	"github.com/KiloProjects/Kilonova/internal/util"
-	"gorm.io/gorm"
 )
 
-// GetSubmissionByID returns a submission based on an ID
+// getSubmissionByID returns a submission based on an ID
 func (s *API) getSubmissionByID(w http.ResponseWriter, r *http.Request) {
 	subID, ok := getFormInt(w, r, "id")
 	if !ok {
 		return
 	}
 
-	sub, err := s.db.GetSubmissionByID(uint(subID))
+	sub, err := s.db.Submission(r.Context(), subID)
 	if err != nil {
 		errorData(w, "Could not find submission", http.StatusBadRequest)
 		return
 	}
 
-	if !util.IsSubmissionVisible(*sub, util.UserFromContext(r)) {
-		sub.SourceCode = ""
+	if !util.IsSubmissionVisible(sub, util.UserFromContext(r)) {
+		sub.Code = ""
 	}
 
-	returnData(w, *sub)
+	returnData(w, sub)
 }
 
 // getSubmissions returns all Submissions from the DB
 // TODO: Pagination and filtering
 func (s *API) getSubmissions(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	subs, err := s.db.GetAllSubmissions()
+	subs, err := s.db.Submissions(r.Context())
 	if err != nil {
 		errorData(w, http.StatusText(500), 500)
 		return
 	}
 
 	user := util.UserFromContext(r)
-	for i := 0; i < len(subs); i++ {
+	for i := range subs {
 		if !util.IsSubmissionVisible(subs[i], user) {
-			subs[i].SourceCode = ""
+			subs[i].Code = ""
 		}
 	}
 	returnData(w, subs)
@@ -53,29 +54,29 @@ func (s *API) getSubmissions(w http.ResponseWriter, r *http.Request) {
 func (s *API) getSubmissionsForProblem(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		PID uint
-		UID uint
+		PID int64
+		UID int64
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
 
-	subs, err := s.db.UserSubmissionsOnProblem(args.UID, args.PID)
+	subs, err := s.db.UserProblemSubmissions(r.Context(), db.UserProblemSubmissionsParams{UserID: args.UID, ProblemID: args.PID})
 	if err != nil {
 		errorData(w, err, 500)
 		return
 	}
 
-	user, err := s.db.GetUserByID(args.UID)
+	user, err := s.db.User(r.Context(), args.UID)
 	if err != nil {
 		errorData(w, err, 500)
 		return
 	}
 
-	for i := 0; i < len(subs); i++ {
-		if !util.IsSubmissionVisible(subs[i], *user) {
-			subs[i].SourceCode = ""
+	for i := range subs {
+		if !util.IsSubmissionVisible(subs[i], user) {
+			subs[i].Code = ""
 		}
 	}
 
@@ -88,7 +89,7 @@ func (s *API) getSelfSubmissionsForProblem(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	uid := util.UserFromContext(r).ID
-	subs, err := s.db.UserSubmissionsOnProblem(uint(uid), uint(pid))
+	subs, err := s.db.UserProblemSubmissions(r.Context(), db.UserProblemSubmissionsParams{UserID: uid, ProblemID: pid})
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -100,16 +101,16 @@ func (s *API) setSubmissionVisible(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
 		Visible bool
-		ID      uint
+		ID      int64
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
 
-	sub, err := s.db.GetSubmissionByID(args.ID)
+	sub, err := s.db.Submission(r.Context(), args.ID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, sql.ErrNoRows) {
 			errorData(w, "Submission not found", http.StatusNotFound)
 			return
 		}
@@ -118,12 +119,12 @@ func (s *API) setSubmissionVisible(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !util.IsSubmissionEditor(*sub, util.UserFromContext(r)) {
+	if !util.IsSubmissionEditor(sub, util.UserFromContext(r)) {
 		errorData(w, "You are not allowed to do this", 403)
 		return
 	}
 
-	if err := s.db.UpdateSubmissionVisibility(args.ID, args.Visible); err != nil {
+	if err := s.db.SetSubmissionVisibility(r.Context(), db.SetSubmissionVisibilityParams{ID: args.ID, Visible: args.Visible}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -135,7 +136,7 @@ func (s *API) setSubmissionVisible(w http.ResponseWriter, r *http.Request) {
 // Required values:
 //	- code=[sourcecode] - source code of the submission, mutually exclusive with file uploads
 //  - file=[file] - multipart file, mutually exclusive with the code param
-//  - lang=[language] - language key like in common.Languages
+//  - lang=[language] - language key like in proto.Languages
 //  - problemID=[problem] - problem ID that the submission will be associated with
 // Note that the `code` param is prioritized over file upload
 func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
@@ -143,7 +144,7 @@ func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
 	var args struct {
 		Code      string
 		Lang      string
-		ProblemID uint
+		ProblemID int64
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
@@ -152,9 +153,9 @@ func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
 
 	var user = util.UserFromContext(r)
 
-	problem, err := s.db.GetProblemByID(args.ProblemID)
+	problem, err := s.db.Problem(r.Context(), args.ProblemID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, sql.ErrNoRows) {
 			errorData(w, "Problem not found", http.StatusBadRequest)
 			return
 		}
@@ -179,7 +180,7 @@ func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if problem.SourceSize != 0 && header.Size > problem.SourceSize {
+		if problem.SourceSize != 0 && header.Size > int64(problem.SourceSize) {
 			errorData(w, "File too large", http.StatusBadRequest)
 			return
 		}
@@ -200,29 +201,21 @@ func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// create the evalTests
-	var evalTests = make([]models.EvalTest, 0)
-	for _, test := range problem.Tests {
-		evTest := models.EvalTest{
-			UserID: user.ID,
-			Test:   test,
-		}
-		s.db.Save(&evTest)
-		evalTests = append(evalTests, evTest)
-	}
-
 	// add the submission to the DB
-	sub := models.Submission{
-		Tests:      evalTests,
-		User:       user,
-		Problem:    *problem,
-		SourceCode: args.Code,
-		Language:   args.Lang,
-	}
-	if err := s.db.Save(&sub); err != nil {
+	id, err := s.db.CreateSubmission(r.Context(), db.CreateSubmissionParams{UserID: user.ID, ProblemID: problem.ID, Code: args.Code, Language: args.Lang})
+	if err != nil {
+		fmt.Println(err)
 		errorData(w, "Couldn't create test", 500)
 		return
 	}
 
-	statusData(w, "success", sub.ID, http.StatusCreated)
+	// create the subtests
+	tests, err := s.db.ProblemTests(r.Context(), problem.ID)
+	for _, test := range tests {
+		if err := s.db.CreateSubTest(r.Context(), db.CreateSubTestParams{UserID: user.ID, TestID: test.ID, SubmissionID: id}); err != nil {
+			s.logger.Println(err)
+		}
+	}
+
+	statusData(w, "success", id, http.StatusCreated)
 }

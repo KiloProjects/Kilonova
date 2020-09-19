@@ -3,28 +3,28 @@ package grader
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"log"
 	"net"
 	"time"
 
 	"github.com/KiloProjects/Kilonova/datamanager"
-	"github.com/KiloProjects/Kilonova/internal/models"
+	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/proto"
-	"github.com/KiloProjects/Kilonova/kndb"
 	"github.com/davecgh/go-spew/spew"
 )
 
 type Handler struct {
-	tChan  chan models.Submission
-	db     *kndb.DB
+	tChan  chan db.Submission
+	db     *db.Queries
 	dm     datamanager.Manager
 	ctx    context.Context
 	logger *log.Logger
 }
 
-func NewHandler(ctx context.Context, db *kndb.DB, dm datamanager.Manager, logger *log.Logger) *Handler {
-	ch := make(chan models.Submission, 5)
-	return &Handler{ch, db, dm, ctx, logger}
+func NewHandler(ctx context.Context, DB *db.Queries, dm datamanager.Manager, logger *log.Logger) *Handler {
+	ch := make(chan db.Submission, 5)
+	return &Handler{ch, DB, dm, ctx, logger}
 }
 
 // chFeeder "feeds" tChan with relevant data
@@ -33,7 +33,7 @@ func (h *Handler) chFeeder() {
 	for {
 		select {
 		case <-ticker.C:
-			subs, err := h.db.GetWaitingSubmissions()
+			subs, err := h.db.WaitingSubmissions(h.ctx)
 			if err != nil {
 				h.logger.Println("Error fetching submissions:", err)
 				continue
@@ -66,10 +66,13 @@ func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-
 				return nil
 			}
 
-			h.db.UpdateStatus(t.ID, models.StatusWorking, 0)
-			var score int
+			err := h.db.SetSubmissionStatus(ctx, db.SetSubmissionStatusParams{ID: t.ID, Status: db.StatusWorking})
+			if err != nil {
+				h.logger.Println(err)
+			}
+			var score int32
 
-			send <- proto.ArgToMessage(proto.Compile{ID: int(t.ID), Code: t.SourceCode, Language: t.Language})
+			send <- proto.ArgToMessage(proto.Compile{ID: t.ID, Code: t.Code, Language: t.Language})
 
 			var resp proto.CResponse
 
@@ -89,42 +92,67 @@ func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-
 				resp.Output = old
 			}
 
-			if err := h.db.UpdateCompilation(resp); err != nil {
+			if err := h.db.SetCompilation(ctx, db.SetCompilationParams{
+				ID:             resp.ID,
+				CompileError:   sql.NullBool{Bool: !resp.Success, Valid: true},
+				CompileMessage: sql.NullString{String: resp.Output, Valid: true}}); err != nil {
+
 				h.logger.Println("Error during update of compile information:", err)
 				continue
 			}
 
-			if resp.Success == false {
-				h.db.UpdateStatus(t.ID, models.StatusDone, score)
+			problem, err := h.db.Problem(ctx, t.ProblemID)
+			if err != nil {
+				h.logger.Println("Error during submission problem getting:", err)
 				continue
 			}
 
-			for _, test := range t.Tests {
-				input, _, err := h.dm.GetTest(t.ProblemID, test.Test.VisibleID)
+			tests, err := h.db.SubTests(ctx, t.ID)
+			if resp.Success == false || err != nil {
+				if err := h.db.SetSubmissionStatus(ctx, db.SetSubmissionStatusParams{ID: t.ID, Status: db.StatusFinished, Score: score}); err != nil {
+					h.logger.Println(err)
+				}
+				continue
+			}
+
+			for _, test := range tests {
+				pbTest, err := h.db.Test(ctx, test.TestID)
+				if err != nil {
+					h.logger.Println("Error during test getting (0.5):", err)
+					continue
+				}
+
+				input, _, err := h.dm.GetTest(t.ProblemID, int64(pbTest.VisibleID))
 				if err != nil {
 					h.logger.Println("Error during test getting (1):", err)
 					continue
 				}
 
-				filename := t.Problem.TestName
-				if t.Problem.ConsoleInput {
+				filename := problem.TestName
+				if problem.ConsoleInput {
 					filename = "input"
 				}
 
 				send <- proto.ArgToMessage(proto.Test{
-					ID:          int(t.ID),
-					TID:         int(test.ID),
+					ID:          t.ID,
+					TID:         test.ID,
 					Filename:    filename,
-					StackLimit:  int(t.Problem.StackLimit),
-					MemoryLimit: int(t.Problem.MemoryLimit),
-					TimeLimit:   t.Problem.TimeLimit,
+					StackLimit:  int(problem.StackLimit),
+					MemoryLimit: int(problem.MemoryLimit),
+					TimeLimit:   problem.TimeLimit,
 					Language:    t.Language,
 					Input:       string(input),
 				})
 			}
 
-			// this depends on the fact that we do stuff on a single loop
-			for _, test := range t.Tests {
+			// TODO: this depends on the fact that we do stuff on a single loop
+			for _, test := range tests {
+				pbTest, err := h.db.Test(ctx, test.TestID)
+				if err != nil {
+					h.logger.Println("Error during test getting (0.5):", err)
+					continue
+				}
+
 				var resp proto.TResponse
 
 				msg := <-recv
@@ -143,10 +171,10 @@ func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-
 					resp.Output = old
 				}
 
-				var testScore int
+				var testScore int32
 
 				if resp.Comments == "" {
-					_, out, err := h.dm.GetTest(t.ProblemID, test.Test.VisibleID)
+					_, out, err := h.dm.GetTest(t.ProblemID, int64(pbTest.VisibleID))
 					if err != nil {
 						h.logger.Println("Error during test getting (2):", err)
 						continue
@@ -154,7 +182,7 @@ func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-
 					equal := compareOutputs(out, []byte(resp.Output))
 
 					if equal {
-						testScore = test.Test.Score
+						testScore = pbTest.Score
 						resp.Comments = "Correct Answer"
 					} else {
 						resp.Comments = "Wrong Answer"
@@ -162,21 +190,21 @@ func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-
 				}
 
 				// Make sure TLEs are fully handled
-				if resp.Time > t.Problem.TimeLimit {
+				if resp.Time > problem.TimeLimit {
 					resp.Comments = "TLE"
 					testScore = 0
 				}
 
-				if err := h.db.UpdateEvalTest(resp, testScore); err != nil {
+				if err := h.db.SetSubmissionTest(ctx, db.SetSubmissionTestParams{ID: resp.TID, Memory: int32(resp.Memory), Score: testScore, Time: resp.Time, Verdict: resp.Comments}); err != nil {
 					h.logger.Println("Error during evaltest updating:", err)
 				}
 
 				score += testScore
 			}
 
-			send <- proto.ArgToMessage(proto.TRemove{ID: int(t.ID)})
+			send <- proto.ArgToMessage(proto.TRemove{ID: t.ID})
 
-			h.db.UpdateStatus(t.ID, models.StatusDone, score)
+			h.db.SetSubmissionStatus(ctx, db.SetSubmissionStatusParams{ID: t.ID, Status: db.StatusFinished, Score: score})
 		}
 	}
 }

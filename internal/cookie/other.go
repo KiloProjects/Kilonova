@@ -1,5 +1,4 @@
-// Package common contains stuff that can be used by all 4 components of the project (grader, API server, data manager and web UI)
-package common
+package cookie
 
 import (
 	"bytes"
@@ -13,11 +12,6 @@ import (
 
 	"github.com/gorilla/securecookie"
 )
-
-// DataDir should be where most of the data is stored
-var DataDir = "/data"
-
-const Version = "v0.4.0"
 
 // Cookies is the securecookie instance that should be called by everyone
 var Cookies *securecookie.SecureCookie
@@ -81,27 +75,22 @@ func RemoveSessionCookie(w http.ResponseWriter) {
 
 // Session represents the data storred in a session cookie
 type Session struct {
-	UserID uint `json:"userID"`
-}
-
-// SetDataDir sets DataDir to the specified path
-func SetDataDir(d string) {
-	DataDir = d
+	UserID int64
 }
 
 // Initialize must be called after setting the DataDir, but before everything else
-func Initialize() {
-	if err := os.MkdirAll(DataDir, 0775); err != nil {
+func Initialize(dataDir string) {
+	if err := os.MkdirAll(dataDir, 0775); err != nil {
 		panic(err)
 	}
 
 	// generate secure cookie
 	var secure []byte
-	if _, err := os.Stat(path.Join(DataDir, "secretKey")); os.IsNotExist(err) {
+	if _, err := os.Stat(path.Join(dataDir, "secretKey")); os.IsNotExist(err) {
 		secure = securecookie.GenerateRandomKey(32)
-		ioutil.WriteFile(path.Join(DataDir, "secretKey"), secure, 0777)
+		ioutil.WriteFile(path.Join(dataDir, "secretKey"), secure, 0777)
 	} else {
-		secure, err = ioutil.ReadFile(path.Join(DataDir, "secretKey"))
+		secure, err = ioutil.ReadFile(path.Join(dataDir, "secretKey"))
 		if err != nil {
 			panic(fmt.Sprintln("Could not read the secret key:", err))
 		}

@@ -3,6 +3,8 @@
 package web
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"html/template"
@@ -12,18 +14,16 @@ import (
 	"path"
 	"strings"
 
-	"github.com/KiloProjects/Kilonova/common"
 	"github.com/KiloProjects/Kilonova/datamanager"
-	"github.com/KiloProjects/Kilonova/internal/models"
+	"github.com/KiloProjects/Kilonova/internal/cookie"
+	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/util"
-	"github.com/KiloProjects/Kilonova/kndb"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/markbates/pkger"
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/html"
-	"gorm.io/gorm"
 )
 
 var templates *template.Template
@@ -32,27 +32,27 @@ var minifier *minify.M
 type templateData struct {
 	Title    string
 	Params   map[string]string
-	User     models.User
+	User     db.User
 	LoggedIn bool
 
 	// Page-specific data
 	// it is easier to just put this stuff here instead of in a `Data` interface
-	Problems []models.Problem
-	Problem  models.Problem
+	Problems []db.Problem
+	Problem  db.Problem
 
-	ContentUser models.User
+	ContentUser db.User
 
-	Submissions []models.Submission
+	Submissions []db.Submission
 
-	Submission models.Submission
-	SubID      uint
+	Submission db.Submission
+	SubID      int64
 
-	ProblemID uint
+	ProblemID int64
 
 	Version string
 
-	Test   models.Test
-	TestID uint
+	Test   db.Test
+	TestID int64
 
 	// ProblemEditor tells us if the authed .User is able to edit the .Problem
 	ProblemEditor bool
@@ -75,7 +75,7 @@ type templateData struct {
 // Web is the struct representing this whole package
 type Web struct {
 	dm     datamanager.Manager
-	db     *kndb.DB
+	db     *db.Queries
 	logger *log.Logger
 	debug  bool
 }
@@ -92,23 +92,23 @@ func (rt *Web) newTemplate() *template.Template {
 		"dumpStruct":   spew.Sdump,
 		"getTestData":  rt.getTestData,
 		"getFullTests": rt.getFullTestData,
-		"subStatus": func(id int) template.HTML {
-			switch id {
-			case models.StatusWaiting:
+		"subStatus": func(status db.Status) template.HTML {
+			switch status {
+			case db.StatusWaiting:
 				return template.HTML("În așteptare...")
-			case models.StatusWorking:
+			case db.StatusWorking:
 				return template.HTML("În lucru...")
-			case models.StatusDone:
+			case db.StatusFinished:
 				return template.HTML("Finalizată")
 			default:
 				return template.HTML("Stare necunoscută")
 			}
 		},
-		"KBtoMB": func(kb uint64) float64 {
+		"KBtoMB": func(kb int32) float64 {
 			return float64(kb) / 1024.0
 		},
-		"gradient": func(score, maxscore int) template.CSS {
-			return gradient(int(score), maxscore, colorTable)
+		"gradient": func(score, maxscore int32) template.CSS {
+			return gradient(int(score), int(maxscore), colorTable)
 		},
 		"zeroto100": func() []int {
 			var v []int = make([]int, 0)
@@ -117,19 +117,63 @@ func (rt *Web) newTemplate() *template.Template {
 			}
 			return v
 		},
-		"subScore": func(problem models.Problem, user models.User) string {
-			score, err := rt.db.MaxScoreFor(user.ID, problem.ID)
+		"subScore": func(problem db.Problem, user db.User) string {
+			score, err := rt.db.MaxScore(context.Background(), db.MaxScoreParams{UserID: user.ID, ProblemID: problem.ID})
 			if err != nil || score < 0 {
 				return "-"
 			}
 			return fmt.Sprint(score)
 		},
-		"problemSubs": func(problem models.Problem, user models.User) []models.Submission {
-			subs, err := rt.db.UserSubmissionsOnProblem(user.ID, problem.ID)
+		"problemSubs": func(problem db.Problem, user db.User) []db.Submission {
+			subs, err := rt.db.UserProblemSubmissions(context.Background(), db.UserProblemSubmissionsParams{UserID: user.ID, ProblemID: problem.ID})
 			if err != nil {
 				return nil
 			}
 			return subs
+		},
+		"problemTests": func(problem db.Problem) []db.Test {
+			tests, err := rt.db.ProblemTests(context.Background(), problem.ID)
+			if err != nil {
+				return nil
+			}
+			return tests
+		},
+		"problemAuthor": func(problem db.Problem) db.User {
+			user, err := rt.db.User(context.Background(), problem.AuthorID)
+			if err != nil {
+				return db.User{}
+			}
+			user.Password = ""
+			return user
+		},
+		"subAuthor": func(sub db.Submission) db.User {
+			user, err := rt.db.User(context.Background(), sub.UserID)
+			if err != nil {
+				return db.User{}
+			}
+			user.Password = ""
+			return user
+		},
+		"subProblem": func(sub db.Submission) db.Problem {
+			pb, err := rt.db.Problem(context.Background(), sub.ProblemID)
+			if err != nil {
+				return db.Problem{}
+			}
+			return pb
+		},
+		"subTests": func(sub db.Submission) []db.SubmissionTest {
+			tests, err := rt.db.SubTests(context.Background(), sub.ID)
+			if err != nil {
+				return nil
+			}
+			return tests
+		},
+		"getTest": func(id int64) db.Test {
+			test, err := rt.db.Test(context.Background(), id)
+			if err != nil {
+				return db.Test{}
+			}
+			return test
 		},
 	}), root))
 }
@@ -195,8 +239,12 @@ func (rt *Web) GetRouter() chi.Router {
 
 	r.With(rt.getUser).Route("/", func(r chi.Router) {
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			problems, err := rt.db.GetAllVisibleProblems(util.UserFromContext(r))
-			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			problems, err := util.GetVisible(rt.db, r.Context(), util.UserFromContext(r))
+			if err != nil {
+				http.Error(w, http.StatusText(500), 500)
+				return
+			}
+			if err != nil && !errors.Is(err, sql.ErrNoRows) {
 				rt.logger.Println("/", err)
 				http.Error(w, http.StatusText(500), 500)
 				return
@@ -221,9 +269,9 @@ func (rt *Web) GetRouter() chi.Router {
 
 		r.Route("/probleme", func(r chi.Router) {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				problems, err := rt.db.GetAllVisibleProblems(util.UserFromContext(r))
-				if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-					rt.logger.Println("/probleme/", err)
+				problems, err := util.GetVisible(rt.db, r.Context(), util.UserFromContext(r))
+				if err != nil {
+					fmt.Println(err)
 					http.Error(w, http.StatusText(500), 500)
 					return
 				}
@@ -290,8 +338,8 @@ func (rt *Web) GetRouter() chi.Router {
 
 		r.Route("/submissions", func(r chi.Router) {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				subs, err := rt.db.GetAllSubmissions()
-				if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				subs, err := rt.db.Submissions(r.Context())
+				if err != nil && !errors.Is(err, sql.ErrNoRows) {
 					rt.logger.Println("/submissions/", err)
 					http.Error(w, http.StatusText(500), 500)
 					return
@@ -327,7 +375,7 @@ func (rt *Web) GetRouter() chi.Router {
 
 		r.With(rt.mustBeAuthed).Get("/logout", func(w http.ResponseWriter, r *http.Request) {
 			// i could redirect to /api/auth/logout, but it's easier to do it like this
-			common.RemoveSessionCookie(w)
+			cookie.RemoveSessionCookie(w)
 			http.Redirect(w, r, "/", http.StatusFound)
 		})
 	})
@@ -336,7 +384,7 @@ func (rt *Web) GetRouter() chi.Router {
 }
 
 // NewWeb returns a new web instance
-func NewWeb(dm datamanager.Manager, db *kndb.DB, logger *log.Logger, debug bool) *Web {
+func NewWeb(dm datamanager.Manager, db *db.Queries, logger *log.Logger, debug bool) *Web {
 	return &Web{dm, db, logger, debug}
 }
 

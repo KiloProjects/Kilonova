@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"net/http"
 
+	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/pkg/errors"
 )
@@ -32,7 +33,7 @@ func (s *API) getGravatar(w http.ResponseWriter, r *http.Request) {
 	if size == "" {
 		size = "128"
 	}
-	user, err := s.db.GetUserByName(name)
+	user, err := s.db.UserByName(r.Context(), name)
 	if err != nil {
 		errorData(w, err, http.StatusNotFound)
 		return
@@ -46,7 +47,8 @@ func (s *API) getUserByName(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Name not specified", http.StatusBadRequest)
 		return
 	}
-	user, err := s.db.GetUserByName(name)
+	user, err := s.db.UserByName(r.Context(), name)
+	user.Password = ""
 	if err != nil {
 		errorData(w, err, http.StatusNotFound)
 		return
@@ -72,8 +74,8 @@ func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "You must provide a new email to change to", http.StatusBadRequest)
 		return
 	}
-	if err := s.db.SetEmail(user.ID, email); err != nil {
-		errorData(w, http.StatusText(500), 500)
+	if err := s.db.SetEmail(r.Context(), db.SetEmailParams{ID: user.ID, Email: email}); err != nil {
+		errorData(w, err, 500)
 		return
 	}
 	returnData(w, "Successfully changed email")

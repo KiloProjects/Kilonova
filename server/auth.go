@@ -1,9 +1,12 @@
 package server
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 
-	"github.com/KiloProjects/Kilonova/common"
+	"github.com/KiloProjects/Kilonova/internal/cookie"
+	"github.com/KiloProjects/Kilonova/internal/db"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"golang.org/x/crypto/bcrypt"
@@ -26,6 +29,16 @@ func (s signupForm) Validate() error {
 	)
 }
 
+func userExists(number int64, err error) bool {
+	if err != nil {
+		log.Println(err)
+	}
+	if number > 0 {
+		return true
+	}
+	return false
+}
+
 func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var auth signupForm
@@ -38,22 +51,40 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	if s.db.UserExists(auth.Email, auth.Username) {
+	cnt, err := s.db.CountUsers(r.Context(), db.CountUsersParams{Username: auth.Username, Email: auth.Email})
+	fmt.Println(cnt, err)
+	if userExists(cnt, err) {
 		errorData(w, "User matching email or username already exists", http.StatusBadRequest)
 		return
 	}
 
-	user, err := s.db.RegisterUser(auth.Email, auth.Username, auth.Password)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(auth.Password), bcrypt.DefaultCost)
 	if err != nil {
-		errorData(w, "Couldn't register user", 500)
+		errorData(w, "Couldn't create password hash", 500)
 		return
 	}
 
-	encoded, err := common.SetSession(w, common.Session{UserID: user.ID})
+	user, err := s.db.CreateUser(r.Context(), db.CreateUserParams{Email: auth.Email, Name: auth.Username, Password: string(hashed)})
+	if err != nil {
+		errorData(w, "Couldn't create user", 500)
+		return
+	}
+
+	if user == 1 {
+		err1 := s.db.SetAdmin(r.Context(), db.SetAdminParams{ID: user, Admin: true})
+		err2 := s.db.SetProposer(r.Context(), db.SetProposerParams{ID: user, Proposer: true})
+		if err1 != nil || err2 != nil { // TODO: Make this nicer
+			fmt.Println(err1, err2)
+			errorData(w, "aaa", 500)
+			return
+		}
+	}
+
+	encoded, err := cookie.SetSession(w, cookie.Session{UserID: user})
 	if err != nil {
 		s.logger.Println(err)
-		errorData(w, http.StatusText(500), 500)
+		fmt.Println(err)
+		errorData(w, "Could not set session", 500)
 		return
 	}
 	returnData(w, encoded)
@@ -85,7 +116,7 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.db.GetUserByName(auth.Username)
+	user, err := s.db.UserByName(r.Context(), auth.Username)
 	if err != nil {
 		errorData(w, "user not found", http.StatusBadRequest)
 		return
@@ -97,19 +128,19 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if err != nil {
 		s.logger.Println(err)
-		errorData(w, http.StatusText(500), 500)
+		errorData(w, err, 500)
 		return
 	}
 
-	encoded, err := common.SetSession(w, common.Session{UserID: user.ID})
+	encoded, err := cookie.SetSession(w, cookie.Session{UserID: user.ID})
 	if err != nil {
 		s.logger.Println(err)
-		errorData(w, http.StatusText(500), 500)
+		errorData(w, err, 500)
 		return
 	}
 	returnData(w, encoded)
 }
 
 func (s *API) logout(w http.ResponseWriter, r *http.Request) {
-	common.RemoveSessionCookie(w)
+	cookie.RemoveSessionCookie(w)
 }

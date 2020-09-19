@@ -2,14 +2,15 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
-	"github.com/KiloProjects/Kilonova/common"
+	"github.com/KiloProjects/Kilonova/internal/cookie"
 	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/go-chi/chi"
-	"gorm.io/gorm"
 )
 
 // MustBeVisitor is middleware to make sure the user creating the request is not authenticated
@@ -59,17 +60,19 @@ func (s *API) MustBeProposer(next http.Handler) http.Handler {
 // SetupSession adds the user with the specified user ID to context
 func (s *API) SetupSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session := common.GetSession(r)
+		session := cookie.GetSession(r)
 		if session == nil {
 			next.ServeHTTP(w, r)
 			return
 		}
-		user, err := s.db.GetUserByID(session.UserID)
+		user, err := s.db.User(r.Context(), session.UserID)
+		user.Password = ""
 		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
+			if errors.Is(err, sql.ErrNoRows) {
 				next.ServeHTTP(w, r)
 				return
 			}
+			fmt.Println(err)
 			errorData(w, http.StatusText(500), 500)
 			return
 		}
@@ -94,17 +97,17 @@ func (s *API) validateProblemEditor(next http.Handler) http.Handler {
 // Also, it fetches the problem from the DB and makes sure it exists
 func (s *API) validateProblemID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		problemID, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
+		problemID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 		if err != nil {
 			errorData(w, "invalid problem ID", http.StatusBadRequest)
 			return
 		}
-		problem, err := s.db.GetProblemByID(uint(problemID))
+		problem, err := s.db.Problem(r.Context(), problemID)
 		if err != nil {
 			errorData(w, "problem does not exist", http.StatusBadRequest)
 			return
 		}
-		ctx := context.WithValue(r.Context(), util.PbID, uint(problemID))
+		ctx := context.WithValue(r.Context(), util.PbID, problemID)
 		ctx = context.WithValue(ctx, util.ProblemKey, problem)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

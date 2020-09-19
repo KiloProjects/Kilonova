@@ -3,6 +3,7 @@ package main
 import (
 	"compress/flate"
 	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -12,29 +13,24 @@ import (
 	"path"
 	"time"
 
-	"github.com/KiloProjects/Kilonova/common"
 	"github.com/KiloProjects/Kilonova/datamanager"
-	"github.com/KiloProjects/Kilonova/grader"
-	"github.com/KiloProjects/Kilonova/kndb"
+	"github.com/KiloProjects/Kilonova/internal/cookie"
+	"github.com/KiloProjects/Kilonova/internal/db"
+	"github.com/KiloProjects/Kilonova/internal/grader"
+	"github.com/KiloProjects/Kilonova/internal/version"
 	"github.com/KiloProjects/Kilonova/server"
 	"github.com/KiloProjects/Kilonova/web"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+
+	_ "github.com/lib/pq"
 )
 
 // go:generate pkger
 
 var (
-	masterDB *gorm.DB
-	manager  *datamanager.StorageManager
-	db       *kndb.DB
-	logg     *log.Logger
-
 	logDir     = flag.String("logDir", "/data/knLogs", "Directory to write logs to")
 	debug      = flag.Bool("debug", false, "Debug mode")
 	dataDir    = flag.String("data", "/data", "Data directory")
@@ -44,42 +40,39 @@ var (
 func main() {
 	flag.Parse()
 
+	// Print welcome message
+	fmt.Printf("Starting Kilonova %s\n", version.Version)
+
+	// Logger setup
 	if !path.IsAbs(*logDir) {
 		log.Fatal("logDir not absolute")
 	}
-
 	if err := os.MkdirAll(*logDir, 0755); err != nil {
-		log.Fatal(err)
+		log.Fatalf("Could not create log dir: %v", err)
 	}
-
-	logg = log.New(&lumberjack.Logger{
+	logg := log.New(&lumberjack.Logger{
 		Filename: path.Join(*logDir, "access.log"),
 	}, "", 0)
 
-	logg.Printf("Starting Kilonova %s\n", common.Version)
+	// Session Cookie setup
+	cookie.Initialize(*dataDir)
 
-	common.SetDataDir(*dataDir)
-	common.Initialize()
-
-	var err error
-	logg.Println("Trying to connect to DB until it works")
-	for {
-		dsn := "sslmode=disable user=alexv dbname=kilonova"
-		masterDB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-		if err == nil {
-			break
-		}
+	// DB Setup
+	dsn := "sslmode=disable host=/tmp user=alexv dbname=kilonova"
+	sqlDB, err := sql.Open("postgres", dsn)
+	if err != nil {
+		log.Fatalf("Could not connect to DB: %v", err)
 	}
+
 	logg.Println("Connected to DB")
 
-	db, err = kndb.New(masterDB, logg)
+	ndb, err := db.Prepare(context.Background(), sqlDB)
 	if err != nil {
 		log.Fatal(err)
 	}
-	db.AutoMigrate()
-	db.DB.Logger = logger.Default.LogMode(logger.Warn)
 
-	manager = datamanager.NewManager(*dataDir)
+	// Data Manager setup
+	manager := datamanager.NewManager(*dataDir)
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -109,11 +102,11 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Initialize components
-	API := server.NewAPI(ctx, db, manager, logg)
-	grader := grader.NewHandler(ctx, db, manager, logg)
+	API := server.NewAPI(ctx, manager, logg, ndb)
+	grader := grader.NewHandler(ctx, ndb, manager, logg)
 
 	r.Mount("/api", API.GetRouter())
-	r.Mount("/", web.NewWeb(manager, db, logg, *debug).GetRouter())
+	r.Mount("/", web.NewWeb(manager, ndb, logg, *debug).GetRouter())
 
 	grader.Start(*evalSocket)
 
@@ -122,6 +115,7 @@ func main() {
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil {
+			cancel()
 			fmt.Println(err)
 		}
 	}()
@@ -130,10 +124,16 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 
-	<-stop
-	cancel()
-	fmt.Println("Shutting Down")
-	if err := server.Shutdown(ctx); err != nil {
-		fmt.Println(err)
+	defer func() {
+		fmt.Println("Shutting Down")
+		if err := server.Shutdown(ctx); err != nil {
+			fmt.Println(err)
+		}
+	}()
+
+	select {
+	case <-stop:
+		cancel()
+	case <-ctx.Done():
 	}
 }

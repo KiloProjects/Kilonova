@@ -13,7 +13,6 @@ import (
 var compilePath string
 
 // limits stores the constraints that need to be respected by a submission
-// this has been moved from common because I want to remove another dependency
 type limits struct {
 	// seconds
 	TimeLimit float64

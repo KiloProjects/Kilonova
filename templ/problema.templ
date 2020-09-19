@@ -16,7 +16,7 @@
 		<tbody>
 			<tr>
 				<th scope="row">{{- .Problem.ID -}}</th>
-				<th>{{.Problem.User.Name}}</th>
+				<th>{{ (problemAuthor .Problem).Name }}</th>
 				<th>
 				{{if .Problem.ConsoleInput}}
 					{{- printf "Consolă" -}}
@@ -46,8 +46,9 @@
 		<div id="problem-content"></div>
 
 		<script>
-			$("#problem-content").html(md.render("{{- .Problem.Text -}}"));
+			$("#problem-content").html(md.render("{{- .Problem.Description -}}"));
 		</script>
+
 
 		{{ if .LoggedIn }}
 
@@ -105,6 +106,9 @@ int main()
 
 	</div>
 
+	{{ $user := .User }}
+	{{ $problem := .Problem }}
+
 	{{ with (problemSubs .Problem .User) }}
 		<h3> Submisii anterioare </h3>
 		<table class="table">
@@ -134,10 +138,10 @@ int main()
 						{{- .ID -}}
 					</th>
 					<td>
-						{{- .User.Name -}}
+						{{- $user.Name -}}
 					</td>
 					<td>
-						<a href="/probleme/{{.Problem.ID}}">{{- .Problem.Name -}}</a>
+						<a href="/probleme/{{$problem.ID}}">{{- $problem.Name -}}</a>
 					</td>
 					<td>
 						<a href="/submissions/{{.ID}}">{{- subStatus .Status -}}</a>

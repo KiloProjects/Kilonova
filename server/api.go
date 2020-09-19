@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/Kilonova/datamanager"
-	"github.com/KiloProjects/Kilonova/kndb"
+	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/schema"
 )
@@ -16,14 +16,14 @@ var decoder = schema.NewDecoder()
 // API is the base struct for the project's API
 type API struct {
 	ctx     context.Context
-	db      *kndb.DB
 	manager datamanager.Manager
 	logger  *log.Logger
+	db      *db.Queries
 }
 
 // NewAPI declares a new API instance
-func NewAPI(ctx context.Context, db *kndb.DB, manager datamanager.Manager, logger *log.Logger) *API {
-	return &API{ctx, db, manager, logger}
+func NewAPI(ctx context.Context, manager datamanager.Manager, logger *log.Logger, kdb *db.Queries) *API {
+	return &API{ctx, manager, logger, kdb}
 }
 
 // GetRouter is the magic behind the API
@@ -40,8 +40,6 @@ func (s *API) GetRouter() chi.Router {
 		r.Get("/getAllUsers", s.getUsers)
 		r.Get("/getAllAdmins", s.getAdmins)
 		r.Get("/getAllProposers", s.getProposers)
-
-		r.Get("/dropAll", s.dropAll)
 	})
 
 	r.Route("/auth", func(r chi.Router) {

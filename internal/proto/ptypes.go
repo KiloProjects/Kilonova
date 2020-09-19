@@ -5,19 +5,19 @@ package proto
 type Compile struct {
 	Code     string `json:"code"`
 	Language string `json:"lang"`
-	ID       int    `json:"id"`
+	ID       int64  `json:"id"`
 }
 
 type CResponse struct {
-	ID      int    `json:"id"`
+	ID      int64  `json:"id"`
 	Output  string `json:"output"`
 	Success bool   `json:"success"`
 	Other   string `json:"other"`
 }
 
 type Test struct {
-	ID          int     `json:"id"`
-	TID         int     `json:"tid"`
+	ID          int64   `json:"id"`
+	TID         int64   `json:"tid"`
 	Language    string  `json:"language"`
 	Input       string  `json:"input"`
 	Filename    string  `json:"filename"`
@@ -27,7 +27,7 @@ type Test struct {
 }
 
 type TResponse struct {
-	TID      int     `json:"tid"`
+	TID      int64   `json:"tid"`
 	Output   string  `json:"output"`
 	Time     float64 `json:"time"`
 	Memory   int     `json:"memory"`
@@ -36,7 +36,7 @@ type TResponse struct {
 }
 
 type TRemove struct {
-	ID int `json:"id"`
+	ID int64 `json:"id"`
 }
 
 type Error struct {

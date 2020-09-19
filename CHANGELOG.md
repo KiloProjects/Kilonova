@@ -1,3 +1,6 @@
+- 0.5.0:
+	- Reorganization
+	- Migrate from [GORM](https://gorm.io) to [sqlc](https://github.com/kyleconroy/sqlc)
 - 0.4.0:
 	- Move back to bootstrap from materialize.css
 	- Completely change terminology of "Tasks" to "Submissions"

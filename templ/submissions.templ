@@ -26,15 +26,17 @@
 		<tbody>
 			{{ with .Submissions }}
 				{{ range . }}
+					{{ $author := subAuthor . }}
+					{{ $problem := subProblem . }}
 					<tr style="{{ gradient .Score 100 }}">
 					<th scope="row">
 						{{- .ID -}}
 					</th>
 					<td>
-						{{- .User.Name -}}
+						{{- $author.Name -}}
 					</td>
 					<td>
-						<a href="/probleme/{{.Problem.ID}}">{{- .Problem.Name -}}</a>
+						<a href="/probleme/{{$problem.ID}}">{{- $problem.Name -}}</a>
 					</td>
 					<td>
 						<a href="/submissions/{{.ID}}">{{- subStatus .Status -}}</a>

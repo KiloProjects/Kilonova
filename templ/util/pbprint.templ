@@ -9,7 +9,7 @@
 
 				{{ if $logged }}
 					<div>
-						{{ if (or $user.Admin (eq $user.ID .UserID)) }}
+						{{ if (or $user.Admin (eq $user.ID .AuthorID)) }}
 							{{ if .Visible }}
 								<span class="badge badge-pill badge-success">Publicată</span>
 							{{ else }}

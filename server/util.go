@@ -10,18 +10,18 @@ import (
 	"github.com/KiloProjects/Kilonova/internal/util"
 )
 
-func getFormInt(w http.ResponseWriter, r *http.Request, name string) (int, bool) {
+func getFormInt(w http.ResponseWriter, r *http.Request, name string) (int64, bool) {
 	sid := r.FormValue(name)
 	if sid == "" {
 		errorData(w, fmt.Sprintf("Missing param %s", name), http.StatusBadRequest)
 		return 0, false
 	}
-	id, err := strconv.ParseInt(sid, 10, 32)
+	id, err := strconv.ParseInt(sid, 10, 64)
 	if err != nil {
 		errorData(w, fmt.Sprintf("Param `%s` not int", name), http.StatusBadRequest)
 		return 0, false
 	}
-	return int(id), true
+	return id, true
 }
 
 func returnData(w http.ResponseWriter, retData interface{}) {

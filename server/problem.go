@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/KiloProjects/Kilonova/internal/models"
+	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/gosimple/slug"
 )
@@ -16,23 +16,23 @@ func (s *API) setProblemVisible(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, 500)
 		return
 	}
-	if err := s.db.UpdateProblemField(getContextValue(r, "pbID").(uint), "visible", args.Visible); err != nil {
+	if err := s.db.SetProblemVisibility(r.Context(), db.SetProblemVisibilityParams{ID: util.IDFromContext(r, util.PbID), Visible: args.Visible}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
-	returnData(w, "Updated visibility status")
+	returnData(w, "Set visibility status")
 }
 
 func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	id := util.IDFromContext(r, util.PbID)
-	var args struct{ UserID uint }
+	var args struct{ UserID int64 }
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 500)
 		return
 	}
 
-	max, err := s.db.MaxScoreFor(args.UserID, id)
+	max, err := s.db.MaxScore(r.Context(), db.MaxScoreParams{UserID: args.UserID, ProblemID: id})
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -43,7 +43,7 @@ func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
 func (s *API) maxScoreSelf(w http.ResponseWriter, r *http.Request) {
 	id := util.IDFromContext(r, util.PbID)
 	uid := util.IDFromContext(r, util.UserID)
-	max, err := s.db.MaxScoreFor(uint(uid), uint(id))
+	max, err := s.db.MaxScore(r.Context(), db.MaxScoreParams{UserID: uid, ProblemID: id})
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -53,7 +53,7 @@ func (s *API) maxScoreSelf(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) updateTitle(w http.ResponseWriter, r *http.Request) {
 	val := r.FormValue("title")
-	if err := s.db.UpdateProblemField(getContextValue(r, "pbID").(uint), "name", val); err != nil {
+	if err := s.db.SetProblemName(r.Context(), db.SetProblemNameParams{ID: util.IDFromContext(r, util.PbID), Name: val}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -62,7 +62,7 @@ func (s *API) updateTitle(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) updateDescription(w http.ResponseWriter, r *http.Request) {
 	val := r.FormValue("text")
-	if err := s.db.UpdateProblemField(getContextValue(r, "pbID").(uint), "text", val); err != nil {
+	if err := s.db.SetProblemDescription(r.Context(), db.SetProblemDescriptionParams{ID: util.IDFromContext(r, util.PbID), Description: val}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -76,7 +76,7 @@ func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := s.manager.SaveTest(util.IDFromContext(r, util.PbID), uint(id), []byte(in), []byte(out)); err != nil {
+	if err := s.manager.SaveTest(util.IDFromContext(r, util.PbID), int64(id), []byte(in), []byte(out)); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -86,14 +86,14 @@ func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
 func (s *API) updateTestID(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		NewID uint
-		ID    uint
+		NewID int32
+		ID    int32
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	if err := s.db.UpdateProblemTestVisibleID(util.IDFromContext(r, util.PbID), args.ID, args.NewID); err != nil {
+	if err := s.db.SetPbTestVisibleID(r.Context(), db.SetPbTestVisibleIDParams{ProblemID: util.IDFromContext(r, util.PbID), OldID: args.ID, NewID: args.NewID}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -104,13 +104,13 @@ func (s *API) updateTestScore(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
 		Score int
-		ID    uint
+		ID    int32
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	if err := s.db.UpdateProblemTestScore(util.IDFromContext(r, util.PbID), args.ID, args.Score); err != nil {
+	if err := s.db.SetPbTestScore(r.Context(), db.SetPbTestScoreParams{ProblemID: util.IDFromContext(r, util.PbID), VisibleID: args.ID, Score: int32(args.Score)}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -118,33 +118,44 @@ func (s *API) updateTestScore(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getTests(w http.ResponseWriter, r *http.Request) {
-	returnData(w, util.ProblemFromContext(r).Tests)
+	tests, err := s.db.ProblemTests(r.Context(), util.IDFromContext(r, util.PbID))
+	if err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	returnData(w, tests)
 }
 
 func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var args struct{ ID uint }
+	var args struct{ ID int32 }
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	for _, t := range util.ProblemFromContext(r).Tests {
-		if t.VisibleID == uint(args.ID) {
-			returnData(w, t)
-			return
-		}
+
+	test, err := s.db.TestVisibleID(r.Context(), db.TestVisibleIDParams{ProblemID: util.IDFromContext(r, util.PbID), VisibleID: args.ID})
+	if err != nil {
+		errorData(w, err, 500)
+		return
 	}
-	errorData(w, "Test not found (did put the visible ID?)", http.StatusBadRequest)
+
+	returnData(w, test)
 }
 
 func (s *API) setInputType(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
 	problem := util.ProblemFromContext(r)
 	var args struct{ IsSet bool }
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	s.db.UpdateProblemField(problem.ID, "console_input", args.IsSet)
+	if err := s.db.SetConsoleInput(r.Context(), db.SetConsoleInputParams{ID: problem.ID, ConsoleInput: args.IsSet}); err != nil {
+		errorData(w, err, http.StatusInternalServerError)
+		return
+	}
+	returnData(w, "Updated input type")
 }
 
 func (s *API) setTestName(w http.ResponseWriter, r *http.Request) {
@@ -154,7 +165,7 @@ func (s *API) setTestName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	problem := util.ProblemFromContext(r)
-	if err := s.db.UpdateProblemField(problem.ID, "test_name", val); err != nil {
+	if err := s.db.SetTestName(r.Context(), db.SetTestNameParams{ID: problem.ID, TestName: val}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -162,18 +173,11 @@ func (s *API) setTestName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
-	problem := util.ProblemFromContext(r)
-
-	var tests = make([]models.Test, len(problem.Tests))
-	copy(tests, problem.Tests)
-	s.db.UpdateProblemField(problem.ID, "tests", []models.Test{})
-	for _, t := range tests {
-		s.logger.Println("Trying to delete test with ID", t.ID)
-		if err := s.db.DB.Delete(&t).Error; err != nil {
-			errorData(w, err, 500)
-			return
-		}
+	if err := s.db.PurgePbTests(r.Context(), util.IDFromContext(r, util.PbID)); err != nil {
+		errorData(w, err, 500)
+		return
 	}
+
 	returnData(w, "Purged all tests")
 }
 
@@ -184,8 +188,8 @@ func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
 	var args struct {
-		MemoryLimit uint64  `schema:"memoryLimit"`
-		StackLimit  uint64  `schema:"stackLimit"`
+		MemoryLimit int32   `schema:"memoryLimit"`
+		StackLimit  int32   `schema:"stackLimit"`
 		TimeLimit   float64 `schema:"timeLimit"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
@@ -197,8 +201,8 @@ func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
 	pb.StackLimit = args.StackLimit
 	pb.TimeLimit = args.TimeLimit
 
-	if err := s.db.Save(&pb); err != nil {
-		errorData(w, http.StatusText(500), 500)
+	if err := s.db.SetLimits(r.Context(), db.SetLimitsParams{ID: pb.ID, MemoryLimit: args.MemoryLimit, StackLimit: args.StackLimit, TimeLimit: args.TimeLimit}); err != nil {
+		errorData(w, err, 500)
 		return
 	}
 	returnData(w, "Limits saved")
@@ -212,37 +216,35 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Score not integer", http.StatusBadRequest)
 		return
 	}
-	var visibleID uint64
+	var visibleID int64
 	if vID := r.FormValue("visibleID"); vID != "" {
-		visibleID, err = strconv.ParseUint(vID, 10, 32)
+		visibleID, err = strconv.ParseInt(vID, 10, 32)
 		if err != nil {
 			errorData(w, "Visible ID not int", http.StatusBadRequest)
 			return
 		}
 	} else {
 		// set it to be the largest visible id of a test + 1
-		tests := util.ProblemFromContext(r).Tests
-		var max uint = 0
-		for _, t := range tests {
-			if max < t.VisibleID {
-				max = t.VisibleID
-			}
+		max, err := s.db.BiggestVID(r.Context(), util.IDFromContext(r, util.PbID))
+		if err != nil {
+			max = 0
 		}
-		if max == 0 {
+		if max <= 0 {
 			visibleID = 1
 		} else {
-			visibleID = uint64(max)
+			visibleID = int64(max)
 		}
 	}
 
-	var test models.Test
-	test.ProblemID = s.pbIDFromReq(r)
-	test.Score = score
-	test.VisibleID = uint(visibleID)
-	s.db.Save(&test)
+	pbID := util.IDFromContext(r, util.PbID)
+	if err := s.db.CreateTest(r.Context(), db.CreateTestParams{ProblemID: pbID, VisibleID: int32(visibleID), Score: int32(score)}); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
 	if err := s.manager.SaveTest(
-		s.pbIDFromReq(r),
-		uint(test.VisibleID),
+		pbID,
+		int64(visibleID),
 		[]byte(r.FormValue("input")),
 		[]byte(r.FormValue("output")),
 	); err != nil {
@@ -273,32 +275,34 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 		consoleInput = ci
 	}
 
-	if s.db.ProblemExists(title) {
+	nr, err := s.db.CountProblems(r.Context(), title)
+	if nr != 0 || err != nil {
 		errorData(w, "Problem with specified title already exists in DB", http.StatusBadRequest)
 		return
 	}
 
-	var problem models.Problem
-	problem.Name = title
-	problem.User = util.UserFromContext(r)
-	problem.ConsoleInput = consoleInput
-	problem.TestName = slug.Make(title)
 	// default limits
-	problem.MemoryLimit = 65536
-	problem.StackLimit = 16384
-	problem.TimeLimit = 0.1
-
-	if err := s.db.Save(&problem); err != nil {
-		errorData(w, http.StatusText(500), 500)
+	id, err := s.db.CreateProblem(r.Context(), db.CreateProblemParams{
+		Name:         title,
+		AuthorID:     util.IDFromContext(r, util.UserID),
+		ConsoleInput: consoleInput,
+		TestName:     slug.Make(title),
+		MemoryLimit:  65536, // 64 * 1024 KB = 64MB
+		StackLimit:   16384, // 16 * 1024 KB = 16MB
+		TimeLimit:    0.1,   // 0.1s
+	})
+	if err != nil {
+		errorData(w, err, 500)
 		return
 	}
-	returnData(w, problem.ID)
+
+	returnData(w, id)
 }
 
 // getAllProblems returns all the problems from the DB
 // TODO: Pagination
 func (s *API) getAllProblems(w http.ResponseWriter, r *http.Request) {
-	problems, err := s.db.GetAllVisibleProblems(util.UserFromContext(r))
+	problems, err := util.GetVisible(s.db, r.Context(), util.UserFromContext(r))
 	if err != nil {
 		errorData(w, http.StatusText(500), 500)
 		return
@@ -312,12 +316,12 @@ func (s API) pbIDFromReq(r *http.Request) uint {
 
 // getProblemByID returns a problem from the DB specified by ID
 func (s *API) getProblemByID(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseUint(r.FormValue("id"), 10, 64)
+	id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
 	if err != nil {
 		errorData(w, "Invalid ID", 401)
 		return
 	}
-	problem, err := s.db.GetProblemByID(uint(id))
+	problem, err := s.db.Problem(r.Context(), id)
 	if err != nil {
 		errorData(w, "Problem with ID doesn't exist", http.StatusBadRequest)
 		return
@@ -337,13 +341,13 @@ func (s API) getTestData(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "You must specify a test ID", http.StatusBadRequest)
 		return
 	}
-	id, err := strconv.ParseUint(sid, 10, 32)
+	id, err := strconv.ParseInt(sid, 10, 64)
 	if err != nil {
 		errorData(w, "Invalid test ID", http.StatusBadRequest)
 		return
 	}
 
-	in, out, err := s.manager.GetTest(s.pbIDFromReq(r), uint(id))
+	in, out, err := s.manager.GetTest(util.IDFromContext(r, util.PbID), id)
 	if err != nil {
 		errorData(w, err, 500)
 		return
