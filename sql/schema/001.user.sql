@@ -5,6 +5,6 @@ CREATE TABLE users (
 	admin 		boolean 	NOT NULL DEFAULT false,
 	proposer 	boolean		NOT NULL DEFAULT false,
 	email 		text 	  	NOT NULL UNIQUE,
-	password 	text 	  	NOT NULL -- json: -
+	password 	text 	  	NOT NULL
 );
 

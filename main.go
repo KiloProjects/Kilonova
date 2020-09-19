@@ -58,7 +58,7 @@ func main() {
 	cookie.Initialize(*dataDir)
 
 	// DB Setup
-	dsn := "sslmode=disable host=/tmp user=alexv dbname=kilonova"
+	dsn := "sslmode=disable host=/var/run/postgresql user=alexv dbname=kilonova"
 	sqlDB, err := sql.Open("postgres", dsn)
 	if err != nil {
 		log.Fatalf("Could not connect to DB: %v", err)
