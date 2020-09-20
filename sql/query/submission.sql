@@ -2,9 +2,19 @@
 SELECT * FROM submissions
 WHERE id = $1;
 
+-- name: Submissions :many
+SELECT * FROM submissions
+ORDER BY id desc;
+
+-- name: WaitingSubmissions :many
+SELECT * FROM submissions
+WHERE status = 'waiting'
+ORDER BY id asc;
+
 -- name: SubTests :many
 SELECT * FROM submission_tests 
-WHERE submission_id = $1;
+WHERE submission_id = $1
+ORDER BY id asc;
 
 -- name: CreateSubmission :one
 INSERT INTO submissions (
@@ -29,13 +39,6 @@ SELECT score FROM submissions
 WHERE user_id = $1 AND problem_id = $2 
 ORDER BY score desc 
 LIMIT 1;
-
--- name: Submissions :many
-SELECT * FROM submissions;
-
--- name: WaitingSubmissions :many
-SELECT * FROM submissions
-WHERE status = 'waiting';
 
 -- name: SetSubmissionVisibility :exec
 UPDATE submissions

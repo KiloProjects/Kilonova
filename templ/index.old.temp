@@ -1,0 +1,9 @@
+{{template "util/header" . }}
+
+<div class="container">
+	<h1>Welcome to Kilonova {{.Version}}{{if .LoggedIn}}, {{.User.Name}}{{end}}!</h1>
+
+	<br />
+	{{template "util/pbprint" .}}
+</div>
+{{template "util/footer" . }}

@@ -20,6 +20,7 @@ func (s *API) getSelfGravatar(w http.ResponseWriter, r *http.Request) {
 	if size == "" {
 		size = "128"
 	}
+	w.Header().Add("cache-control", "max-age=150")
 	http.Redirect(w, r, getGravatarFromEmail(email)+"?s="+size, http.StatusTemporaryRedirect)
 }
 
@@ -38,7 +39,39 @@ func (s *API) getGravatar(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, http.StatusNotFound)
 		return
 	}
+	w.Header().Add("cache-control", "max-age=150")
 	http.Redirect(w, r, getGravatarFromEmail(user.Email)+"?s="+size, http.StatusTemporaryRedirect)
+}
+
+func (s *API) setBio(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct{ Bio string }
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	if err := s.db.SetBio(r.Context(), db.SetBioParams{ID: util.UserFromContext(r).ID, Bio: args.Bio}); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	returnData(w, "Updated bio")
+}
+
+func (s *API) purgeBio(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct{ ID int64 }
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	if err := s.db.SetBio(r.Context(), db.SetBioParams{ID: args.ID, Bio: ""}); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	returnData(w, "Removed bio")
 }
 
 func (s *API) getUserByName(w http.ResponseWriter, r *http.Request) {
@@ -49,8 +82,8 @@ func (s *API) getUserByName(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := s.db.UserByName(r.Context(), name)
 	user.Password = ""
-	if err != nil {
-		errorData(w, err, http.StatusNotFound)
+	if err != nil || user.ID == 0 {
+		errorData(w, "User not found", http.StatusNotFound)
 		return
 	}
 	returnData(w, user)

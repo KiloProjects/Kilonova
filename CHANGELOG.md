@@ -1,7 +1,11 @@
-- 0.5.0:
-	- Reorganization
+- 0.5.1a:
+	- Align dropdown on navbar
+	- Add a simple settings page (for now, you can only change bio)
+	- Add a simple profile page (only bio for now, nothing big)
+- 0.5.0a:
+	- Backend Reorganization
 	- Migrate from [GORM](https://gorm.io) to [sqlc](https://github.com/kyleconroy/sqlc)
-- 0.4.0:
+- 0.4.0a:
 	- Move back to bootstrap from materialize.css
 	- Completely change terminology of "Tasks" to "Submissions"
 - 0.3.3:

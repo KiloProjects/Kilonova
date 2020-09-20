@@ -8,25 +8,29 @@ TODO LIST KILONOVA:
 	- [x] Mathjax
 	- [ ] Profil user
 		- [ ] Listă probleme făcute
+		- [ ] Bio
+	- [ ] Pagină settings
 		- [ ] Setări Vizibilitate default la submissions
 	- [x] Implementează server.UpdateTest
-	- [ ] Reduce nr de TODOs în cod
-	- [ ] Rezolvat bug-ul de la https://discordapp.com/channels/713844353390346322/723768974411694171/729462280718385233
+	- [x] Reduce nr de TODOs în cod
+	- [x] Rezolvat bug-ul de la https://discordapp.com/channels/713844353390346322/723768974411694171/729462280718385233
+		- wontfix
 		- S-ar putea să nu fie posibil cu isolate, ar trebui să găsesc altceva
 			- Maybe https://github.com/adrian-budau/ia-sandbox ????
-	- [ ] folosește pure SQL pentru backend, fără GORM
+	- [x] folosește pure SQL pentru backend, fără GORM
 	- [ ] Site mai drăguț:
 		- [x] NavBar
-		- [ ] Interfață mai bună submissions
-			- [ ] Auto reîncărcare pagină submission nu e finalizată evaluarea
+		- [ ] Auto reîncărcare pagină submission când nu e finalizată evaluarea
 		- [ ] Experiență mai bună pentru editat problemele
-		- [ ] ? Scor bazat pe ranks pentru amuzament (gen 0 wood, 1-20 ruby, 21-49 diamond, 100 gold, etc)
-		- [ ] Dark theme	
 	- [ ] Filtre submissions
-	- [ ] "Custom input" ca pe hackerrank/leetcode
 	- [ ] Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
 	- [ ] Multi-eval support
 - [ ] Pentru release:
+	- [ ] "Custom input" ca pe hackerrank/leetcode
+	- [ ] Pagină profil (cont.):
+		- [ ] Mai customizabil
+	- [ ] Site mai drăguț:
+		- [ ] Dark theme	
 	- [ ] Sistem de contests
 	- [ ] Mai multe tipuri de probleme:
 		- [ ] interactive

@@ -41,6 +41,7 @@ type templateData struct {
 	Problem  db.Problem
 
 	ContentUser db.User
+	IsCUser     bool
 
 	Submissions []db.Submission
 
@@ -185,9 +186,9 @@ func (rt *Web) build(w http.ResponseWriter, r *http.Request, name string, temp t
 	}
 }
 
-// GetRouter returns a chi.Router
+// Router returns a chi.Router
 // TODO: Split routes in functions
-func (rt *Web) GetRouter() chi.Router {
+func (rt *Web) Router() chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.StripSlashes)
 
@@ -239,7 +240,7 @@ func (rt *Web) GetRouter() chi.Router {
 
 	r.With(rt.getUser).Route("/", func(r chi.Router) {
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			problems, err := util.GetVisible(rt.db, r.Context(), util.UserFromContext(r))
+			problems, err := util.Visible(rt.db, r.Context(), util.UserFromContext(r))
 			if err != nil {
 				http.Error(w, http.StatusText(500), 500)
 				return
@@ -252,6 +253,32 @@ func (rt *Web) GetRouter() chi.Router {
 			templ := rt.hydrateTemplate(r)
 			templ.Problems = problems
 			rt.build(w, r, "index", templ)
+		})
+
+		r.Route("/profile", func(r chi.Router) {
+			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+				templ := rt.hydrateTemplate(r)
+				templ.ContentUser = util.UserFromContext(r)
+				templ.IsCUser = true
+				rt.build(w, r, "profile", templ)
+			})
+			r.Get("/{user}", func(w http.ResponseWriter, r *http.Request) {
+				user, err := rt.db.UserByName(r.Context(), chi.URLParam(r, "user"))
+				if err != nil {
+					fmt.Println(err)
+					http.Error(w, http.StatusText(500), 500)
+					return
+				}
+
+				templ := rt.hydrateTemplate(r)
+				templ.ContentUser = user
+				rt.build(w, r, "profile", templ)
+			})
+		})
+
+		r.Get("/settings", func(w http.ResponseWriter, r *http.Request) {
+			templ := rt.hydrateTemplate(r)
+			rt.build(w, r, "settings", templ)
 		})
 
 		r.Get("/changelog", func(w http.ResponseWriter, r *http.Request) {
@@ -269,7 +296,7 @@ func (rt *Web) GetRouter() chi.Router {
 
 		r.Route("/probleme", func(r chi.Router) {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				problems, err := util.GetVisible(rt.db, r.Context(), util.UserFromContext(r))
+				problems, err := util.Visible(rt.db, r.Context(), util.UserFromContext(r))
 				if err != nil {
 					fmt.Println(err)
 					http.Error(w, http.StatusText(500), 500)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -91,8 +90,7 @@ func (rt *Web) ValidateTestID(next http.Handler) http.Handler {
 		if err != nil {
 			http.Error(w, "Invalid test ID", http.StatusBadRequest)
 		}
-		fmt.Println(util.IDFromContext(r, util.PbID), testID)
-		test, err := rt.db.TestVisibleID(r.Context(), db.TestVisibleIDParams{ProblemID: util.IDFromContext(r, util.PbID), VisibleID: int32(testID)}) // TODO: FIX
+		test, err := rt.db.TestVisibleID(r.Context(), db.TestVisibleIDParams{ProblemID: util.IDFromContext(r, util.PbID), VisibleID: int32(testID)})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "Testul nu există", http.StatusBadRequest)

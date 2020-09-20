@@ -29,15 +29,14 @@ func returnData(w http.ResponseWriter, retData interface{}) {
 }
 
 func statusData(w http.ResponseWriter, status string, retData interface{}, statusCode int) {
+	w.Header().Add("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(statusCode)
 	err := json.NewEncoder(w).Encode(util.RetData{
 		Status: status,
 		Data:   retData,
 	})
 	if err != nil {
-		if err != nil {
-			log.Printf("[ERROR] Couldn't send return data: %v", err)
-		}
+		log.Printf("[ERROR] Couldn't send return data: %v", err)
 	}
 }
 

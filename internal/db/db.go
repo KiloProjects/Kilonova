@@ -70,6 +70,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.setAdminStmt, err = db.PrepareContext(ctx, setAdmin); err != nil {
 		return nil, fmt.Errorf("error preparing query SetAdmin: %w", err)
 	}
+	if q.setBioStmt, err = db.PrepareContext(ctx, setBio); err != nil {
+		return nil, fmt.Errorf("error preparing query SetBio: %w", err)
+	}
 	if q.setCompilationStmt, err = db.PrepareContext(ctx, setCompilation); err != nil {
 		return nil, fmt.Errorf("error preparing query SetCompilation: %w", err)
 	}
@@ -243,6 +246,11 @@ func (q *Queries) Close() error {
 	if q.setAdminStmt != nil {
 		if cerr := q.setAdminStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing setAdminStmt: %w", cerr)
+		}
+	}
+	if q.setBioStmt != nil {
+		if cerr := q.setBioStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing setBioStmt: %w", cerr)
 		}
 	}
 	if q.setCompilationStmt != nil {
@@ -450,6 +458,7 @@ type Queries struct {
 	proposersStmt               *sql.Stmt
 	purgePbTestsStmt            *sql.Stmt
 	setAdminStmt                *sql.Stmt
+	setBioStmt                  *sql.Stmt
 	setCompilationStmt          *sql.Stmt
 	setConsoleInputStmt         *sql.Stmt
 	setEmailStmt                *sql.Stmt
@@ -502,6 +511,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		proposersStmt:               q.proposersStmt,
 		purgePbTestsStmt:            q.purgePbTestsStmt,
 		setAdminStmt:                q.setAdminStmt,
+		setBioStmt:                  q.setBioStmt,
 		setCompilationStmt:          q.setCompilationStmt,
 		setConsoleInputStmt:         q.setConsoleInputStmt,
 		setEmailStmt:                q.setEmailStmt,

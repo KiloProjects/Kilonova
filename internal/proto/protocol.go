@@ -38,7 +38,7 @@ func Handle(ctx context.Context, conn net.Conn, handler Handler) error {
 			var msg Message
 			if err := dec.Decode(&msg); err != nil {
 				close(recvChan)
-				if errors.Is(err, io.EOF) {
+				if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
 				} else {
 					log.Printf("%v\n", err)
 				}

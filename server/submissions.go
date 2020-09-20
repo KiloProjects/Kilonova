@@ -33,7 +33,6 @@ func (s *API) getSubmissionByID(w http.ResponseWriter, r *http.Request) {
 }
 
 // getSubmissions returns all Submissions from the DB
-// TODO: Pagination and filtering
 func (s *API) getSubmissions(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	subs, err := s.db.Submissions(r.Context())

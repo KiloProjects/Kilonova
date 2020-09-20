@@ -105,8 +105,8 @@ func main() {
 	API := server.NewAPI(ctx, manager, logg, ndb)
 	grader := grader.NewHandler(ctx, ndb, manager, logg)
 
-	r.Mount("/api", API.GetRouter())
-	r.Mount("/", web.NewWeb(manager, ndb, logg, *debug).GetRouter())
+	r.Mount("/api", API.Router())
+	r.Mount("/", web.NewWeb(manager, ndb, logg, *debug).Router())
 
 	grader.Start(*evalSocket)
 

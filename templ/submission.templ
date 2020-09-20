@@ -24,26 +24,23 @@
 
 		{{ if not .CompileError.Bool }}
 			{{ with (subTests .) }}
-				<table class="table">
+				<table class="table table-hover">
 						<thead class="thead-dark">
 						<tr>
 							<th scope="col">
 								ID
 							</th>
 							<th scope="col">
-								Status
-							</th>
-							<th scope="col">
-								Scor posibil
-							</th>
-							<th scope="col">
-								Scor obținut
-							</th>
-							<th scope="col">
 								Timp
 							</th>
 							<th scope="col">
-								Memorie utilizată
+								Memorie
+							</th>
+							<th scope="col">
+								Verdict
+							</th>
+							<th scope="col">
+								Scor
 							</th>
 						</tr>
 					</thead>
@@ -51,13 +48,19 @@
 						{{ range . }}
 							{{ $test := getTest .TestID }}
 							{{ if .Done }}
-								<tr style="{{ gradient .Score $test.Score }}">
+							<tr style="{{ gradient .Score $test.Score }}">
 							{{ else }}
-								<tr>
+							<tr>
 							{{ end }}
-							<th scope="col">
+								<th scope="col">
 									{{- $test.VisibleID -}}
 								</th>
+								<td>
+									{{- printf "%.2f" .Time -}}
+								</td>
+								<td>
+									{{- .Memory -}}KB
+								</td>
 								<td>
 									{{ if .Done }}
 										{{- .Verdict -}}
@@ -67,16 +70,7 @@
 									{{ end }}
 								</td>
 								<td>
-									{{- $test.Score -}}
-								</td>
-								<td>
-									{{- .Score -}}
-								</td>
-								<td>
-									{{- printf "%.2f" .Time -}}
-								</td>
-								<td>
-									{{- .Memory -}}KB
+									{{- $test.Score -}}/{{- .Score -}}
 								</td>
 							</tr>
 						{{ end }}
@@ -90,7 +84,7 @@
 			<pre><code class="{{ .Language }}">{{ .Code }} </code></pre>
 			
 			{{ if $editor }}
-				<button id="vButton" class="btn btn-primary mb-2" onclick="toggleVisible()">Fă codul {{ if .Visible}}invizibil{{else}}vizibil{{end}}</button>
+				<button id="vButton" class="btn btn-primary mb-2" onclick="toggleVisible()"><i class="fas fa-share-square"></i> Fă codul {{ if .Visible}}invizibil{{else}}vizibil{{end}}</button>
 
 				<script>
 					let visible = {{ .Visible }};
@@ -105,7 +99,7 @@
 							description: res.data
 						});
 
-						$("#vButton").html(`Fă codul ${visible ? "invizibil" : "vizibil"}`)
+						$("#vButton").html(`<i class="fas fa-share-square"></i> Fă codul ${visible ? "invizibil" : "vizibil"}`)
 					}
 				</script>
 			{{ end }}

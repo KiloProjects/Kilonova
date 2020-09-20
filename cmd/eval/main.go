@@ -126,7 +126,6 @@ func main() {
 	}
 	defer l.Close()
 
-	// TODO: Setup something to allow only kilonova to access the socket
 	if err := os.Chmod(*socketPath, 0777); err != nil {
 		log.Fatal(err)
 	}

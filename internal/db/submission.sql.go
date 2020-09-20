@@ -151,6 +151,7 @@ func (q *Queries) SetSubmissionVisibility(ctx context.Context, arg SetSubmission
 const subTests = `-- name: SubTests :many
 SELECT id, created_at, done, verdict, time, memory, score, test_id, user_id, submission_id FROM submission_tests 
 WHERE submission_id = $1
+ORDER BY id asc
 `
 
 func (q *Queries) SubTests(ctx context.Context, submissionID int64) ([]SubmissionTest, error) {
@@ -213,6 +214,7 @@ func (q *Queries) Submission(ctx context.Context, id int64) (Submission, error) 
 
 const submissions = `-- name: Submissions :many
 SELECT id, created_at, user_id, problem_id, language, code, status, compile_error, compile_message, score, visible FROM submissions
+ORDER BY id desc
 `
 
 func (q *Queries) Submissions(ctx context.Context) ([]Submission, error) {
@@ -298,6 +300,7 @@ func (q *Queries) UserProblemSubmissions(ctx context.Context, arg UserProblemSub
 const waitingSubmissions = `-- name: WaitingSubmissions :many
 SELECT id, created_at, user_id, problem_id, language, code, status, compile_error, compile_message, score, visible FROM submissions
 WHERE status = 'waiting'
+ORDER BY id asc
 `
 
 func (q *Queries) WaitingSubmissions(ctx context.Context) ([]Submission, error) {

@@ -121,8 +121,8 @@ func (b *BoxManager) RunSubmission(language proto.Language, constraints limits, 
 	}
 
 	if consoleInput {
-		b.Box.Config.InputFile = "/box/input.in"
-		b.Box.Config.OutputFile = "/box/input.out"
+		b.Box.Config.InputFile = "/box/stdin.in"
+		b.Box.Config.OutputFile = "/box/stdin.out"
 	}
 
 	defer func() {
@@ -160,21 +160,13 @@ func (b *BoxManager) ExecuteTest(sub proto.Test) (*proto.TResponse, error) {
 		response.Comments = "Sandbox error: Couldn't write input file"
 		return response, err
 	}
-	consoleInput := sub.Filename == "input"
+	consoleInput := sub.Filename == "stdin"
 
 	lang := proto.Languages[sub.Language]
-	/*if lang.IsCompiled {*/
 	if err := b.Box.CopyInBox(path.Join(compilePath, fmt.Sprintf("%d.bin", sub.ID)), lang.CompiledName); err != nil {
 		response.Comments = "Couldn't link executable in box"
 		return response, err
 	}
-	/* TODO: Change SourceName in interpreted languages to CompiledName (if I haven't done this already)
-	} else {
-		if err := b.Box.WriteFile(lang.SourceName, []byte(sub.SourceCode)); err != nil {
-			response.Comments = "Couldn't write interpreter file"
-			return response, err
-		}
-	}*/
 
 	lim := limits{
 		MemoryLimit: sub.MemoryLimit,
@@ -236,7 +228,6 @@ func (b *BoxManager) CompileSubmission(c proto.Compile) *proto.CResponse {
 		return resp
 	}
 
-	// TODO: Run syntax checker for interpreted languages
 	err := ioutil.WriteFile(outName, []byte(c.Code), 0644)
 	if err != nil {
 		resp.Other = err.Error()
@@ -253,7 +244,7 @@ func (b *BoxManager) Reset() (err error) {
 	if err != nil {
 		return
 	}
-	b.Box, err = box.NewBox(box.Config{ID: b.ID, Cgroups: true})
+	b.Box, err = box.New(box.Config{ID: b.ID, Cgroups: true})
 	b.Box.Debug = b.debug
 	return
 }
@@ -264,7 +255,7 @@ func SetCompilePath(path string) {
 
 // New creates a new box manager
 func New(id int) (*BoxManager, error) {
-	b, err := box.NewBox(box.Config{ID: id, Cgroups: true})
+	b, err := box.New(box.Config{ID: id, Cgroups: true})
 	if err != nil {
 		return nil, err
 	}

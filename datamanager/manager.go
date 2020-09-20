@@ -17,10 +17,10 @@ type StorageManager struct {
 
 // Manager represents an interface for the manager
 type Manager interface {
-	GetTest(pbID, testID int64) ([]byte, []byte, error)
-	SaveTest(pbID, testID int64, input, output []byte) error
+	Test(pbID int64, testID int32) ([]byte, []byte, error)
+	SaveTest(pbID int64, testID int32, input, output []byte) error
 
-	GetAttachment(dir string, ID int64, name string) ([]byte, error)
+	Attachment(dir string, ID int64, name string) ([]byte, error)
 	SaveAttachment(dir string, ID int64, data []byte, name string) error
 }
 
@@ -30,8 +30,8 @@ type Session struct {
 	Expires time.Time
 }
 
-// GetTest returns a test for the specified problem
-func (m *StorageManager) GetTest(pbID, testID int64) ([]byte, []byte, error) {
+// Test returns a test for the specified problem
+func (m *StorageManager) Test(pbID int64, testID int32) ([]byte, []byte, error) {
 	problem := strconv.FormatUint(uint64(pbID), 10)
 	test := strconv.FormatUint(uint64(testID), 10)
 	input, err := ioutil.ReadFile(path.Join(m.RootPath, "problems", problem, "input", test+".txt"))
@@ -46,9 +46,9 @@ func (m *StorageManager) GetTest(pbID, testID int64) ([]byte, []byte, error) {
 }
 
 // SaveTest saves an (input, output) pair of strings to disk to be used later as tests
-func (m *StorageManager) SaveTest(pbID, testID int64, input, output []byte) error {
+func (m *StorageManager) SaveTest(pbID int64, testID int32, input, output []byte) error {
 	problem := strconv.FormatInt(pbID, 10)
-	test := strconv.FormatInt(testID, 10)
+	test := strconv.FormatInt(int64(testID), 10)
 	if err := os.MkdirAll(path.Join(m.RootPath, "problems", problem, "input"), 0777); err != nil {
 		return err
 	}
@@ -68,10 +68,10 @@ func (m *StorageManager) SaveTest(pbID, testID int64, input, output []byte) erro
 	return nil
 }
 
-// (Get|Save)Attachment are considered deprecated until further notice
+// (|Save)Attachment are considered deprecated until further notice
 
-// GetAttachment returns an "attachment" from disk
-func (m *StorageManager) GetAttachment(dir string, ID int64, name string) ([]byte, error) {
+// Attachment returns an "attachment" from disk
+func (m *StorageManager) Attachment(dir string, ID int64, name string) ([]byte, error) {
 	return ioutil.ReadFile(path.Join(m.RootPath, "attachments", dir, strconv.FormatInt(ID, 10), name))
 }
 

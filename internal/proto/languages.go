@@ -33,9 +33,6 @@ type Language struct {
 	CompiledName string
 }
 
-// List of languages that are harder to compile
-// C# (Building something requires running inside a project, why can't it build just a single file?!??!?!?!)
-
 // Languages is the map with all languages
 var Languages = map[string]Language{
 	"cpp": {
@@ -61,40 +58,41 @@ var Languages = map[string]Language{
 		CompiledName: "/output",
 	},
 	"python": {
-		Extensions: []string{".py", ".py3"},
-		IsCompiled: false,
-		Mounts:     []Directory{},
-		RunCommand: []string{"/usr/bin/python3", "/main.py"},
-		SourceName: "/main.py",
-	},
-	"java": {
-		Extensions: []string{".java"},
-		IsCompiled: true,
-		Mounts: []Directory{
-			{In: "/etc"},
+		Extensions:   []string{".py", ".py3"},
+		IsCompiled:   false,
+		Mounts:       []Directory{},
+		RunCommand:   []string{"/usr/bin/python3", "/main.py"},
+		SourceName:   "/main.py",
+		CompiledName: "/main.py",
+	}, /*
+		"java": {
+			Extensions: []string{".java"},
+			IsCompiled: true,
+			Mounts: []Directory{
+				{In: "/etc"},
+			},
+			CompileCommand: []string{"/usr/bin/javac", "/Main.java"},
+			RunCommand:     []string{"/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.252.b09-1.fc32.x86_64/jre/bin/java", "Main"},
+			SourceName:     "/Main.java",
+			CompiledName:   "/Main.class",
 		},
-		CompileCommand: []string{"/usr/bin/javac", "/Main.java"},
-		RunCommand:     []string{"/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.252.b09-1.fc32.x86_64/jre/bin/java", "Main"},
-		SourceName:     "/Main.java",
-		CompiledName:   "/Main.class",
-	},
-	"haskell": {
-		Extensions:     []string{".hs", ".lhs"},
-		IsCompiled:     true,
-		Mounts:         []Directory{},
-		CompileCommand: []string{"/usr/bin/ghc", "-o", "/output", "/main.hs"},
-		RunCommand:     []string{"/output"},
-		SourceName:     "/main.hs",
-		CompiledName:   "/output",
-	},
-	"golang": {
-		Extensions:     []string{".go"},
-		IsCompiled:     true,
-		CommonEnv:      map[string]string{"GOMAXPROCS": "1"},
-		BuildEnv:       map[string]string{"GOPATH": "/go", "GOCACHE": "/go/cache"},
-		CompileCommand: []string{"/usr/lib/golang/bin/go", "build", "/main.go"},
-		RunCommand:     []string{"/main"},
-		SourceName:     "/main.go",
-		CompiledName:   "/main",
-	},
+		"haskell": {
+			Extensions:     []string{".hs", ".lhs"},
+			IsCompiled:     true,
+			Mounts:         []Directory{},
+			CompileCommand: []string{"/usr/bin/ghc", "-o", "/output", "/main.hs"},
+			RunCommand:     []string{"/output"},
+			SourceName:     "/main.hs",
+			CompiledName:   "/output",
+		},
+		"golang": {
+			Extensions:     []string{".go"},
+			IsCompiled:     true,
+			CommonEnv:      map[string]string{"GOMAXPROCS": "1"},
+			BuildEnv:       map[string]string{"GOPATH": "/go", "GOCACHE": "/go/cache"},
+			CompileCommand: []string{"/usr/lib/golang/bin/go", "build", "/main.go"},
+			RunCommand:     []string{"/main"},
+			SourceName:     "/main.go",
+			CompiledName:   "/main",
+		}, */
 }

@@ -34,7 +34,7 @@ Test - Test: add submission with specified input to queue
 			- "id": int = ID of executable to be run
 			- "tid": int = ID of the test that is currently run, used for TResponse
 			- "input": string = test input
-			- "filename": string = if "input", then stdin is used, otherwise the filename to save the input to
+			- "filename": string = if "stdin", then stdin is used, otherwise the filename to save the input to
 			- "timelimit": float = time limit (in seconds), 0 for no limits
 			- "memorylimit": int = memory limit (in kilobytes), 0 for no limits
 			- "stacklimit": int = stack limit (in kilobytes), 0 for no limits

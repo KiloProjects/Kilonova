@@ -45,6 +45,10 @@ UPDATE users SET admin = $2
 WHERE id = $1;
 
 
+-- name: SetBio :exec
+UPDATE users SET bio = $2
+WHERE id = $1;
+
 
 -- name: SetEmail :exec
 UPDATE users SET email = $2

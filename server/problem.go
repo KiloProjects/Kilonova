@@ -76,7 +76,7 @@ func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := s.manager.SaveTest(util.IDFromContext(r, util.PbID), int64(id), []byte(in), []byte(out)); err != nil {
+	if err := s.manager.SaveTest(util.IDFromContext(r, util.PbID), int32(id), []byte(in), []byte(out)); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -210,7 +210,6 @@ func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
 
 // createTest inserts a new test to the problem
 func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
-	// TODO: Change to files, or make both options interchangeable
 	score, err := strconv.Atoi(r.FormValue("score"))
 	if err != nil {
 		errorData(w, "Score not integer", http.StatusBadRequest)
@@ -244,7 +243,7 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.manager.SaveTest(
 		pbID,
-		int64(visibleID),
+		int32(visibleID),
 		[]byte(r.FormValue("input")),
 		[]byte(r.FormValue("output")),
 	); err != nil {
@@ -256,7 +255,6 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 }
 
 // initProblem assigns an ID for the problem
-// TODO: Handle limits
 func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 	title := r.FormValue("title")
 	if title == "" {
@@ -302,7 +300,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 // getAllProblems returns all the problems from the DB
 // TODO: Pagination
 func (s *API) getAllProblems(w http.ResponseWriter, r *http.Request) {
-	problems, err := util.GetVisible(s.db, r.Context(), util.UserFromContext(r))
+	problems, err := util.Visible(s.db, r.Context(), util.UserFromContext(r))
 	if err != nil {
 		errorData(w, http.StatusText(500), 500)
 		return
@@ -347,7 +345,7 @@ func (s API) getTestData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in, out, err := s.manager.GetTest(util.IDFromContext(r, util.PbID), id)
+	in, out, err := s.manager.Test(util.IDFromContext(r, util.PbID), int32(id))
 	if err != nil {
 		errorData(w, err, 500)
 		return

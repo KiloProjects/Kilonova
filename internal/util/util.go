@@ -180,7 +180,7 @@ func IsRSubmissionVisible(r *http.Request) bool {
 	return IsSubmissionVisible(SubmissionFromContext(r), UserFromContext(r))
 }
 
-func GetVisible(kdb *db.Queries, ctx context.Context, user db.User) ([]db.Problem, error) {
+func Visible(kdb *db.Queries, ctx context.Context, user db.User) ([]db.Problem, error) {
 	if user.Admin {
 		return kdb.Problems(ctx)
 	}

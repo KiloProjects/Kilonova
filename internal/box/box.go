@@ -275,12 +275,12 @@ func (b *Box) ExecWithStdin(stdin string, command ...string) (string, string, er
 	return stdout.String(), stderr.String(), err
 }
 
-// NewBox returns a new box instance from the specified ID
-func NewBox(config Config) (*Box, error) {
+// New returns a new box instance from the specified ID
+func New(config Config) (*Box, error) {
 	ret, err := exec.Command(isolatePath, "--cg", fmt.Sprintf("--box-id=%d", config.ID), "--init").CombinedOutput()
 	if strings.HasPrefix(string(ret), "Box already exists") {
 		exec.Command(isolatePath, "--cg", fmt.Sprintf("--box-id=%d", config.ID), "--cleanup").Run()
-		return NewBox(config)
+		return New(config)
 	}
 
 	if strings.HasPrefix(string(ret), "Must be started as root") {
@@ -288,7 +288,7 @@ func NewBox(config Config) (*Box, error) {
 			fmt.Println("Couldn't chown root the isolate binary:", err)
 			return nil, err
 		}
-		return NewBox(config)
+		return New(config)
 	}
 
 	if err != nil {

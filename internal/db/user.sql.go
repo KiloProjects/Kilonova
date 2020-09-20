@@ -8,7 +8,7 @@ import (
 )
 
 const admins = `-- name: Admins :many
-SELECT id, created_at, name, admin, proposer, email, password FROM users
+SELECT id, created_at, name, admin, proposer, email, password, bio FROM users
 WHERE admin = true
 `
 
@@ -29,6 +29,7 @@ func (q *Queries) Admins(ctx context.Context) ([]User, error) {
 			&i.Proposer,
 			&i.Email,
 			&i.Password,
+			&i.Bio,
 		); err != nil {
 			return nil, err
 		}
@@ -83,7 +84,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, 
 }
 
 const proposers = `-- name: Proposers :many
-SELECT id, created_at, name, admin, proposer, email, password FROM users 
+SELECT id, created_at, name, admin, proposer, email, password, bio FROM users 
 WHERE proposer = true
 `
 
@@ -104,6 +105,7 @@ func (q *Queries) Proposers(ctx context.Context) ([]User, error) {
 			&i.Proposer,
 			&i.Email,
 			&i.Password,
+			&i.Bio,
 		); err != nil {
 			return nil, err
 		}
@@ -133,10 +135,25 @@ func (q *Queries) SetAdmin(ctx context.Context, arg SetAdminParams) error {
 	return err
 }
 
+const setBio = `-- name: SetBio :exec
+UPDATE users SET bio = $2
+WHERE id = $1
+`
+
+type SetBioParams struct {
+	ID  int64  `json:"id"`
+	Bio string `json:"bio"`
+}
+
+func (q *Queries) SetBio(ctx context.Context, arg SetBioParams) error {
+	_, err := q.exec(ctx, q.setBioStmt, setBio, arg.ID, arg.Bio)
+	return err
+}
+
 const setEmail = `-- name: SetEmail :exec
 UPDATE users SET email = $2
 WHERE id = $1
-RETURNING id, created_at, name, admin, proposer, email, password
+RETURNING id, created_at, name, admin, proposer, email, password, bio
 `
 
 type SetEmailParams struct {
@@ -165,7 +182,7 @@ func (q *Queries) SetProposer(ctx context.Context, arg SetProposerParams) error 
 }
 
 const user = `-- name: User :one
-SELECT id, created_at, name, admin, proposer, email, password FROM users 
+SELECT id, created_at, name, admin, proposer, email, password, bio FROM users 
 WHERE id = $1
 `
 
@@ -180,12 +197,13 @@ func (q *Queries) User(ctx context.Context, id int64) (User, error) {
 		&i.Proposer,
 		&i.Email,
 		&i.Password,
+		&i.Bio,
 	)
 	return i, err
 }
 
 const userByEmail = `-- name: UserByEmail :one
-SELECT id, created_at, name, admin, proposer, email, password FROM users 
+SELECT id, created_at, name, admin, proposer, email, password, bio FROM users 
 WHERE lower(email) = lower($1)
 `
 
@@ -200,12 +218,13 @@ func (q *Queries) UserByEmail(ctx context.Context, email string) (User, error) {
 		&i.Proposer,
 		&i.Email,
 		&i.Password,
+		&i.Bio,
 	)
 	return i, err
 }
 
 const userByName = `-- name: UserByName :one
-SELECT id, created_at, name, admin, proposer, email, password FROM users 
+SELECT id, created_at, name, admin, proposer, email, password, bio FROM users 
 WHERE lower(name) = lower($1)
 `
 
@@ -220,12 +239,13 @@ func (q *Queries) UserByName(ctx context.Context, username string) (User, error)
 		&i.Proposer,
 		&i.Email,
 		&i.Password,
+		&i.Bio,
 	)
 	return i, err
 }
 
 const users = `-- name: Users :many
-SELECT id, created_at, name, admin, proposer, email, password FROM users
+SELECT id, created_at, name, admin, proposer, email, password, bio FROM users
 `
 
 func (q *Queries) Users(ctx context.Context) ([]User, error) {
@@ -245,6 +265,7 @@ func (q *Queries) Users(ctx context.Context) ([]User, error) {
 			&i.Proposer,
 			&i.Email,
 			&i.Password,
+			&i.Bio,
 		); err != nil {
 			return nil, err
 		}

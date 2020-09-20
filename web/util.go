@@ -48,7 +48,7 @@ type testDataType struct {
 }
 
 func (rt *Web) getFullTestData(test db.Test) testDataType {
-	in, out, err := rt.dm.GetTest(test.ProblemID, int64(test.VisibleID))
+	in, out, err := rt.dm.Test(test.ProblemID, test.VisibleID)
 	if err != nil {
 		in = []byte("err")
 		out = []byte("err")

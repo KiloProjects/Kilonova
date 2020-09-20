@@ -56,7 +56,6 @@ func ldump(logger *log.Logger, args ...interface{}) {
 }
 
 func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-chan proto.Message) error {
-	// TODO: Change to "stdin" for input, also maybe allow separate filename for stdout
 	for {
 		select {
 		case <-ctx.Done():
@@ -122,7 +121,7 @@ func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-
 					continue
 				}
 
-				input, _, err := h.dm.GetTest(t.ProblemID, int64(pbTest.VisibleID))
+				input, _, err := h.dm.Test(t.ProblemID, pbTest.VisibleID)
 				if err != nil {
 					h.logger.Println("Error during test getting (1):", err)
 					continue
@@ -130,7 +129,7 @@ func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-
 
 				filename := problem.TestName
 				if problem.ConsoleInput {
-					filename = "input"
+					filename = "stdin"
 				}
 
 				send <- proto.ArgToMessage(proto.Test{
@@ -174,7 +173,7 @@ func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-
 				var testScore int32
 
 				if resp.Comments == "" {
-					_, out, err := h.dm.GetTest(t.ProblemID, int64(pbTest.VisibleID))
+					_, out, err := h.dm.Test(t.ProblemID, pbTest.VisibleID)
 					if err != nil {
 						h.logger.Println("Error during test getting (2):", err)
 						continue

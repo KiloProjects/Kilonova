@@ -71,12 +71,11 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user == 1 {
-		err1 := s.db.SetAdmin(r.Context(), db.SetAdminParams{ID: user, Admin: true})
-		err2 := s.db.SetProposer(r.Context(), db.SetProposerParams{ID: user, Proposer: true})
-		if err1 != nil || err2 != nil { // TODO: Make this nicer
-			fmt.Println(err1, err2)
-			errorData(w, "aaa", 500)
-			return
+		if err := s.db.SetAdmin(r.Context(), db.SetAdminParams{ID: user, Admin: true}); err != nil {
+			fmt.Println(err)
+		}
+		if err := s.db.SetProposer(r.Context(), db.SetProposerParams{ID: user, Proposer: true}); err != nil {
+			fmt.Println(err)
 		}
 	}
 

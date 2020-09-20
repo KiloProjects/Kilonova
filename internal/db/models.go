@@ -86,4 +86,5 @@ type User struct {
 	Proposer  bool      `json:"proposer"`
 	Email     string    `json:"email"`
 	Password  string    `json:"password"`
+	Bio       string    `json:"bio"`
 }

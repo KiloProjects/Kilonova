@@ -27,7 +27,7 @@ func NewAPI(ctx context.Context, manager datamanager.Manager, logger *log.Logger
 }
 
 // GetRouter is the magic behind the API
-func (s *API) GetRouter() chi.Router {
+func (s *API) Router() chi.Router {
 	r := chi.NewRouter()
 	r.Use(s.SetupSession)
 
@@ -98,6 +98,9 @@ func (s *API) GetRouter() chi.Router {
 		r.With(s.MustBeAuthed).Post("/submit", s.submissionSend)
 	})
 	r.Route("/user", func(r chi.Router) {
+		r.With(s.MustBeAuthed).Post("/setBio", s.setBio)
+		r.With(s.MustBeAdmin).Post("/purgeBio", s.purgeBio)
+
 		r.Get("/getByName", s.getUserByName)
 		r.With(s.MustBeAuthed).Get("/getSelf", s.getSelf)
 
