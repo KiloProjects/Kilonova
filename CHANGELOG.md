@@ -1,3 +1,5 @@
+- 0.5.2a:
+	- Add user gravatar and link on admin menu
 - 0.5.1a:
 	- Align dropdown on navbar
 	- Add a simple settings page (for now, you can only change bio)

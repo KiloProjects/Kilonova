@@ -5,6 +5,7 @@ package db
 
 import (
 	"context"
+	"time"
 )
 
 const admins = `-- name: Admins :many
@@ -179,6 +180,68 @@ type SetProposerParams struct {
 func (q *Queries) SetProposer(ctx context.Context, arg SetProposerParams) error {
 	_, err := q.exec(ctx, q.setProposerStmt, setProposer, arg.ID, arg.Proposer)
 	return err
+}
+
+const top100 = `-- name: Top100 :many
+SELECT us.id, us.created_at, us.name, us.admin, us.proposer, us.email, us.password, us.bio, COUNT(sub.user_id) AS number_problems
+FROM users us
+LEFT JOIN (
+	SELECT problem_id, user_id
+	FROM submissions 
+	WHERE score = 100 
+	GROUP BY problem_id, user_id
+) sub
+ON   sub.user_id = us.id
+GROUP BY us.id 
+ORDER BY COUNT(sub.user_id) desc, us.id 
+LIMIT 100
+`
+
+type Top100Row struct {
+	ID             int64     `json:"id"`
+	CreatedAt      time.Time `json:"created_at"`
+	Name           string    `json:"name"`
+	Admin          bool      `json:"admin"`
+	Proposer       bool      `json:"proposer"`
+	Email          string    `json:"email"`
+	Password       string    `json:"password"`
+	Bio            string    `json:"bio"`
+	NumberProblems int64     `json:"number_problems"`
+}
+
+// I am extremely proud of this
+// TODO: Cache this bad boy into redis
+func (q *Queries) Top100(ctx context.Context) ([]Top100Row, error) {
+	rows, err := q.query(ctx, q.top100Stmt, top100)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Top100Row
+	for rows.Next() {
+		var i Top100Row
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.Name,
+			&i.Admin,
+			&i.Proposer,
+			&i.Email,
+			&i.Password,
+			&i.Bio,
+			&i.NumberProblems,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const user = `-- name: User :one

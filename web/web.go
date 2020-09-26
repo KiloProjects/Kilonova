@@ -55,6 +55,8 @@ type templateData struct {
 	Test   db.Test
 	TestID int64
 
+	Top100 []db.Top100Row
+
 	// ProblemEditor tells us if the authed .User is able to edit the .Problem
 	ProblemEditor bool
 
@@ -292,6 +294,18 @@ func (rt *Web) Router() chi.Router {
 			templ := rt.hydrateTemplate(r)
 			templ.Changelog = string(changelog)
 			rt.build(w, r, "changelog", templ)
+		})
+
+		r.Get("/top100", func(w http.ResponseWriter, r *http.Request) {
+			top100, err := rt.db.Top100(r.Context())
+			if err != nil {
+				fmt.Println(err)
+				http.Error(w, err.Error(), 500)
+				return
+			}
+			templ := rt.hydrateTemplate(r)
+			templ.Top100 = top100
+			rt.build(w, r, "top100", templ)
 		})
 
 		r.Route("/probleme", func(r chi.Router) {

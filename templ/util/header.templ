@@ -85,6 +85,14 @@
 			-o-tab-size: 4;
 		}
 
+		body {
+			font-family: 'Open Sans';
+		}
+
+		h1 h2 h3 h4 h5 h6 {
+			font-family: 'Roboto';
+		}
+
 		pre {
 			tab-size: 4;
 			-moz-tab-size: 4;
@@ -175,7 +183,7 @@
 		<button class="btn btn-outline-secondary" id="menu-toggle"><span class="navbar-toggler-icon"></span></button>
 		{{ end }}
 		<div class="container">
-			<a class="navbar-brand" href="/">Kilonova</a>
+			<a class="navbar-brand" href="/">Kilonova {{.Version -}}</a>
 			<button class="navbar-toggler" 
 				type="button" 
 				data-toggle="collapse" 

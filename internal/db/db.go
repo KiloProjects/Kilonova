@@ -142,6 +142,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.testVisibleIDStmt, err = db.PrepareContext(ctx, testVisibleID); err != nil {
 		return nil, fmt.Errorf("error preparing query TestVisibleID: %w", err)
 	}
+	if q.top100Stmt, err = db.PrepareContext(ctx, top100); err != nil {
+		return nil, fmt.Errorf("error preparing query Top100: %w", err)
+	}
 	if q.userStmt, err = db.PrepareContext(ctx, user); err != nil {
 		return nil, fmt.Errorf("error preparing query User: %w", err)
 	}
@@ -368,6 +371,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing testVisibleIDStmt: %w", cerr)
 		}
 	}
+	if q.top100Stmt != nil {
+		if cerr := q.top100Stmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing top100Stmt: %w", cerr)
+		}
+	}
 	if q.userStmt != nil {
 		if cerr := q.userStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing userStmt: %w", cerr)
@@ -482,6 +490,7 @@ type Queries struct {
 	submissionsStmt             *sql.Stmt
 	testStmt                    *sql.Stmt
 	testVisibleIDStmt           *sql.Stmt
+	top100Stmt                  *sql.Stmt
 	userStmt                    *sql.Stmt
 	userByEmailStmt             *sql.Stmt
 	userByNameStmt              *sql.Stmt
@@ -535,6 +544,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		submissionsStmt:             q.submissionsStmt,
 		testStmt:                    q.testStmt,
 		testVisibleIDStmt:           q.testVisibleIDStmt,
+		top100Stmt:                  q.top100Stmt,
 		userStmt:                    q.userStmt,
 		userByEmailStmt:             q.userByEmailStmt,
 		userByNameStmt:              q.userByNameStmt,
