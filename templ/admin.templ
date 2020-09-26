@@ -71,7 +71,7 @@
 			console.log(res.data)
 			let outhtml = ""
 			for(let user of res.data) {
-				outhtml += `<div class="list-group-item d-flex justify-content-between align-items-center">${user.name}`
+				outhtml += `<div class="list-group-item d-flex justify-content-between align-items-center"><a href="/profile/${user.name}"><img class="rounded img-fluid" src="/api/user/getGravatar?name=${user.name}&s=32" width="32" height="32" alt="Avatar"/> ${user.name}</a>`
 				if(user.id != 1 && {{.User.ID}} == 1) {
 					outhtml += `<span style="cursor: pointer;" onclick="setAdmin(${user.id}, false)">X</span>`
 				}
@@ -89,7 +89,7 @@
 			let outhtml = ""
 			console.log(res.data)
 			for(let user of res.data) {
-				outhtml += `<div class="list-group-item d-flex justify-content-between align-items-center">${user.name}`
+				outhtml += `<div class="list-group-item d-flex justify-content-between align-items-center"><a href="/profile/${user.name}"><img class="rounded img-fluid" src="/api/user/getGravatar?name=${user.name}&s=32" width="32" height="32" alt="Avatar"/> ${user.name}</a>`
 				if(!user.admin && user.id != 1 && user.id != {{.User.ID}}) {
 					outhtml += `<span style="cursor: pointer;" onclick="setProposer(${user.id}, false)">X</span>`
 				}
