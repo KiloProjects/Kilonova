@@ -10,8 +10,10 @@ import (
 )
 
 // hydrateTemplate fills a templateData struct with generic stuff like Params, User and LoggedIn
-func (rt *Web) hydrateTemplate(r *http.Request) templateData {
+func (rt *Web) hydrateTemplate(r *http.Request, title string) templateData {
 	return templateData{
+		Title: title,
+
 		Params:   globParams(r),
 		User:     util.UserFromContext(r),
 		LoggedIn: util.IsRAuthed(r),

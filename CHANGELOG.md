@@ -1,5 +1,6 @@
 - 0.5.2a:
 	- Add user gravatar and link on admin menu
+	- Optimize a bit by only loading CodeMirror only where needed
 - 0.5.1a:
 	- Align dropdown on navbar
 	- Add a simple settings page (for now, you can only change bio)

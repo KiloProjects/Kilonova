@@ -57,6 +57,9 @@ type templateData struct {
 
 	Top100 []db.Top100Row
 
+	// Since codemirror is a particulairly big library, we should load it only when needed
+	Codemirror bool
+
 	// ProblemEditor tells us if the authed .User is able to edit the .Problem
 	ProblemEditor bool
 
@@ -252,15 +255,16 @@ func (rt *Web) Router() chi.Router {
 				http.Error(w, http.StatusText(500), 500)
 				return
 			}
-			templ := rt.hydrateTemplate(r)
+			templ := rt.hydrateTemplate(r, "")
 			templ.Problems = problems
 			rt.build(w, r, "index", templ)
 		})
 
 		r.Route("/profile", func(r chi.Router) {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				templ := rt.hydrateTemplate(r)
-				templ.ContentUser = util.UserFromContext(r)
+				user := util.UserFromContext(r)
+				templ := rt.hydrateTemplate(r, fmt.Sprintf("Profil %s", user.Name))
+				templ.ContentUser = user
 				templ.IsCUser = true
 				rt.build(w, r, "profile", templ)
 			})
@@ -272,14 +276,14 @@ func (rt *Web) Router() chi.Router {
 					return
 				}
 
-				templ := rt.hydrateTemplate(r)
+				templ := rt.hydrateTemplate(r, fmt.Sprintf("Profil %s", user.Name))
 				templ.ContentUser = user
 				rt.build(w, r, "profile", templ)
 			})
 		})
 
 		r.Get("/settings", func(w http.ResponseWriter, r *http.Request) {
-			templ := rt.hydrateTemplate(r)
+			templ := rt.hydrateTemplate(r, "Setări")
 			rt.build(w, r, "settings", templ)
 		})
 
@@ -291,7 +295,7 @@ func (rt *Web) Router() chi.Router {
 				return
 			}
 			changelog, _ := ioutil.ReadAll(file)
-			templ := rt.hydrateTemplate(r)
+			templ := rt.hydrateTemplate(r, "Changelog")
 			templ.Changelog = string(changelog)
 			rt.build(w, r, "changelog", templ)
 		})
@@ -303,7 +307,7 @@ func (rt *Web) Router() chi.Router {
 				http.Error(w, err.Error(), 500)
 				return
 			}
-			templ := rt.hydrateTemplate(r)
+			templ := rt.hydrateTemplate(r, "Top 100")
 			templ.Top100 = top100
 			rt.build(w, r, "top100", templ)
 		})
@@ -316,14 +320,12 @@ func (rt *Web) Router() chi.Router {
 					http.Error(w, http.StatusText(500), 500)
 					return
 				}
-				templ := rt.hydrateTemplate(r)
-				templ.Title = "Probleme"
+				templ := rt.hydrateTemplate(r, "Probleme")
 				templ.Problems = problems
 				rt.build(w, r, "probleme", templ)
 			})
 			r.With(rt.mustBeProposer).Get("/create", func(w http.ResponseWriter, r *http.Request) {
-				templ := rt.hydrateTemplate(r)
-				templ.Title = "Creare problemă"
+				templ := rt.hydrateTemplate(r, "Creare problemă")
 				rt.build(w, r, "createpb", templ)
 			})
 			r.Route("/{id}", func(r chi.Router) {
@@ -332,44 +334,42 @@ func (rt *Web) Router() chi.Router {
 				r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 					problem := util.ProblemFromContext(r)
 
-					templ := rt.hydrateTemplate(r)
-					templ.Title = fmt.Sprintf("#%d: %s", problem.ID, problem.Name)
+					templ := rt.hydrateTemplate(r, fmt.Sprintf("Problema #%d: %s", problem.ID, problem.Name))
+					templ.Codemirror = true
 					rt.build(w, r, "problema", templ)
 				})
 				r.Route("/edit", func(r chi.Router) {
 					r.Use(rt.mustBeEditor)
 					r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 						problem := util.ProblemFromContext(r)
-						templ := rt.hydrateTemplate(r)
-						templ.Title = fmt.Sprintf("EDIT | #%d: %s", problem.ID, problem.Name)
+						templ := rt.hydrateTemplate(r, fmt.Sprintf("EDIT | Problema #%d: %s", problem.ID, problem.Name))
 						rt.build(w, r, "edit/index", templ)
 					})
 					r.Get("/enunt", func(w http.ResponseWriter, r *http.Request) {
 						problem := util.ProblemFromContext(r)
-						templ := rt.hydrateTemplate(r)
-						templ.Title = fmt.Sprintf("ENUNT - EDIT | #%d: %s", problem.ID, problem.Name)
+						templ := rt.hydrateTemplate(r, fmt.Sprintf("EDITARE ENUNȚ | Problema #%d: %s", problem.ID, problem.Name))
+						templ.Codemirror = true
 						rt.build(w, r, "edit/enunt", templ)
 					})
 					r.Get("/limite", func(w http.ResponseWriter, r *http.Request) {
 						problem := util.ProblemFromContext(r)
-						templ := rt.hydrateTemplate(r)
-						templ.Title = fmt.Sprintf("LIMITE - EDIT | #%d: %s", problem.ID, problem.Name)
+						templ := rt.hydrateTemplate(r, fmt.Sprintf("EDITARE LIMITE | Problema #%d: %s", problem.ID, problem.Name))
 						rt.build(w, r, "edit/limite", templ)
 					})
 					r.Route("/teste", func(r chi.Router) {
 						r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 							problem := util.ProblemFromContext(r)
-							templ := rt.hydrateTemplate(r)
-							templ.Title = fmt.Sprintf("TESTE - EDIT | #%d: %s", problem.ID, problem.Name)
+							templ := rt.hydrateTemplate(r, fmt.Sprintf("CREARE TEST | Problema #%d: %s", problem.ID, problem.Name))
 							templ.Sidebar = true
+							templ.Codemirror = true
 							rt.build(w, r, "edit/testAdd", templ)
 						})
 						r.With(rt.ValidateTestID).Get("/{tid}", func(w http.ResponseWriter, r *http.Request) {
 							test := util.TestFromContext(r)
 							problem := util.ProblemFromContext(r)
-							templ := rt.hydrateTemplate(r)
-							templ.Title = fmt.Sprintf("Teste - EDIT %d | #%d: %s", test.VisibleID, problem.ID, problem.Name)
+							templ := rt.hydrateTemplate(r, fmt.Sprintf("EDITARE TESTUL %d | Problema #%d: %s", test.VisibleID, problem.ID, problem.Name))
 							templ.Sidebar = true
+							templ.Codemirror = true
 							rt.build(w, r, "edit/testEdit", templ)
 						})
 					})
@@ -385,32 +385,27 @@ func (rt *Web) Router() chi.Router {
 					http.Error(w, http.StatusText(500), 500)
 					return
 				}
-				templ := rt.hydrateTemplate(r)
-				templ.Title = "Submissions"
+				templ := rt.hydrateTemplate(r, "Submisii")
 				templ.Submissions = subs
 				rt.build(w, r, "submissions", templ)
 			})
 			r.With(rt.ValidateSubmissionID).Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
-				templ := rt.hydrateTemplate(r)
-				templ.Title = fmt.Sprintf("Submission %d", templ.Submission.ID)
+				templ := rt.hydrateTemplate(r, fmt.Sprintf("Submisia %d", util.SubmissionFromContext(r).ID))
 				rt.build(w, r, "submission", templ)
 			})
 		})
 
 		r.With(rt.mustBeAdmin).Get("/admin", func(w http.ResponseWriter, r *http.Request) {
-			templ := rt.hydrateTemplate(r)
-			templ.Title = "Admin switches"
+			templ := rt.hydrateTemplate(r, "Interfață Admin")
 			rt.build(w, r, "admin", templ)
 		})
 
 		r.With(rt.mustBeVisitor).Get("/login", func(w http.ResponseWriter, r *http.Request) {
-			templ := rt.hydrateTemplate(r)
-			templ.Title = "Log In"
+			templ := rt.hydrateTemplate(r, "Log In")
 			rt.build(w, r, "login", templ)
 		})
 		r.With(rt.mustBeVisitor).Get("/signup", func(w http.ResponseWriter, r *http.Request) {
-			templ := rt.hydrateTemplate(r)
-			templ.Title = "Sign Up"
+			templ := rt.hydrateTemplate(r, "Înregistrare")
 			rt.build(w, r, "signup", templ)
 		})
 

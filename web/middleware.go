@@ -44,6 +44,7 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 
 }
 
+// ValidateVisible checks if the problem from context is visible from the logged in user
 func (rt *Web) ValidateVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRProblemVisible(r) {
@@ -84,11 +85,13 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 	})
 }
 
+// ValidateTestID checks for the correctness of the test ID and adds it to context if ok
 func (rt *Web) ValidateTestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		testID, err := strconv.ParseInt(chi.URLParam(r, "tid"), 10, 32)
 		if err != nil {
 			http.Error(w, "Invalid test ID", http.StatusBadRequest)
+			return
 		}
 		test, err := rt.db.TestVisibleID(r.Context(), db.TestVisibleIDParams{ProblemID: util.IDFromContext(r, util.PbID), VisibleID: int32(testID)})
 		if err != nil {
