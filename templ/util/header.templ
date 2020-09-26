@@ -33,8 +33,10 @@
 	{{end}}
 	{{with .OGDesc}}
 		<meta property="og:description" content="{{- .OGDesc -}}" />
+		<meta name="description" content="{{- .OGDesc -}}" />
 	{{else}}
 		<meta property="og:description" content="Programming platform for learning and exercising" />
+		<meta name="description" content="Programming platform for learning and exercising" />
 	{{end}}
 	<meta property="og:locale" content="ro_RO" />
 	<meta property="og:site_name" content="Kilonova" />
