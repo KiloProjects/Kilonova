@@ -1,7 +1,10 @@
-- 0.5.2a:
+- v0.5.3a:
+	- Add proper error pages
+- v0.5.2a:
 	- Add user gravatar and link on admin menu
 	- Optimize a bit by only loading CodeMirror only where needed
-- 0.5.1a:
+	- Actually use the Open Sans font
+- v0.5.1a:
 	- Align dropdown on navbar
 	- Add a simple settings page (for now, you can only change bio)
 	- Add a simple profile page (only bio for now, nothing big)

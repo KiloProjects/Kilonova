@@ -23,18 +23,18 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		problemID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 		if err != nil {
-			http.Error(w, "ID invalid", http.StatusBadRequest)
+			rt.status(w, r, http.StatusBadRequest, "ID invalid")
 			return
 		}
 		// this is practically equivalent to /api/problem/getByID?id=problemID, but let's keep it fast
 		problem, err := rt.db.Problem(r.Context(), problemID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				http.Error(w, "Problema nu a fost găsită", 404)
+				rt.status(w, r, 404, "Problema nu a fost găsită")
 				return
 			}
 			rt.logger.Println("ValidateProblemID:", err)
-			http.Error(w, http.StatusText(500), 500)
+			rt.status(w, r, 500, "")
 			return
 		}
 		ctx := context.WithValue(r.Context(), util.ProblemKey, problem)
@@ -48,7 +48,7 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 func (rt *Web) ValidateVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRProblemVisible(r) {
-			http.Error(w, "Problema nu a fost găsită", 404)
+			rt.status(w, r, 404, "Problema nu a fost găsită")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -60,18 +60,18 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		subID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 		if err != nil {
-			http.Error(w, "Invalid submission ID", http.StatusBadRequest)
+			rt.status(w, r, 400, "ID submisie invalid")
 			return
 		}
 		// this is equivalent to /api/submissions/getByID but it's faster to directly access
 		sub, err := rt.db.Submission(r.Context(), subID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				http.Error(w, "Submisia nu există", http.StatusBadRequest)
+				rt.status(w, r, 400, "Submisia nu există")
 				return
 			}
 			rt.logger.Println(err)
-			http.Error(w, http.StatusText(500), 500)
+			rt.status(w, r, 500, "")
 			return
 		}
 
@@ -90,17 +90,17 @@ func (rt *Web) ValidateTestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		testID, err := strconv.ParseInt(chi.URLParam(r, "tid"), 10, 32)
 		if err != nil {
-			http.Error(w, "Invalid test ID", http.StatusBadRequest)
+			rt.status(w, r, 400, "Test invalid")
 			return
 		}
 		test, err := rt.db.TestVisibleID(r.Context(), db.TestVisibleIDParams{ProblemID: util.IDFromContext(r, util.PbID), VisibleID: int32(testID)})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				http.Error(w, "Testul nu există", http.StatusBadRequest)
+				rt.status(w, r, 404, "Testul nu există")
 				return
 			}
 			rt.logger.Println(err)
-			http.Error(w, http.StatusText(500), 500)
+			rt.status(w, r, 500, "")
 			return
 		}
 		ctx := context.WithValue(r.Context(), util.TestID, uint(testID))
@@ -112,7 +112,7 @@ func (rt *Web) ValidateTestID(next http.Handler) http.Handler {
 func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRAuthed(r) {
-			http.Error(w, "You must be logged in", 401)
+			rt.status(w, r, 401, "Trebuie să fii logat")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -122,7 +122,7 @@ func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 func (rt *Web) mustBeProposer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRProposer(r) {
-			http.Error(w, "You must be a proposer", 401)
+			rt.status(w, r, 401, "Trebuie să fii propunător")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -132,7 +132,7 @@ func (rt *Web) mustBeProposer(next http.Handler) http.Handler {
 func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 	return rt.mustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRAdmin(r) {
-			http.Error(w, "You must be an admin", 401)
+			rt.status(w, r, 401, "Trebuie să fii admin")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -142,7 +142,7 @@ func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if util.IsRAuthed(r) {
-			http.Error(w, "You must not be logged in", 401)
+			rt.status(w, r, 401, "Trebuie să fii delogat")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -152,7 +152,7 @@ func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 func (rt *Web) mustBeEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRProblemEditor(r) {
-			http.Error(w, "You must be the problem author", 401)
+			rt.status(w, r, 401, "Trebuie să fii autorul problemei")
 			return
 		}
 		next.ServeHTTP(w, r)

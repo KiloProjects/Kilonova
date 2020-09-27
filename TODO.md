@@ -37,9 +37,14 @@ TODO LIST KILONOVA:
 		- [ ] ? ACM
 	- [ ] Integrare cu Polygon
 	- [ ] PbInfo problem import (înseamnă că e nevoie să termin PbAPI)
-	- [ ] De gândit beneficii tari pentru monetizare ("KiloNova PRO")
+	- [ ] "Kilonova PRO"
+		- [ ] Sistem de plată/donații
 		- [ ] ? cosmetice
 		- [ ] Sistem de priority queue 
+		- [ ] Sistem NOVA
+			- sub-instanțe de kilonova
+			- [ ] Restructurare sistem de webserver
+			- [ ] Control asupra subdomeniilor (e nevoie de modificări mari la webserver-ul meu privat dpdv al routing-ului și al certificatelor)
 	- [ ] Versiune engleză
 	- [ ] Instrumente de translation:
 		- [ ] Useri traducători

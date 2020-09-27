@@ -1,0 +1,14 @@
+{{ template "util/header" . }}
+
+<div class="container">
+	<div class="text-center">
+		<h2>{{.Code}}</h2>
+		{{ with .Error }}
+			<h1>{{.}}</h1>
+		{{ else }}
+			<p>That's an error</p>
+		{{ end }}
+	</div>
+</div>
+
+{{ template "util/footer" . }}

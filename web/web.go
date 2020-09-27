@@ -3,7 +3,6 @@
 package web
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -18,7 +17,6 @@ import (
 	"github.com/KiloProjects/Kilonova/internal/cookie"
 	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/util"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/markbates/pkger"
@@ -30,15 +28,28 @@ var templates *template.Template
 var minifier *minify.M
 
 type templateData struct {
+	Version  string
 	Title    string
 	Params   map[string]string
 	User     db.User
 	LoggedIn bool
 
+	// for the status code page
+	Code  string
+	Error string
+
+	// ProblemEditor tells us if the authed .User is able to edit the .Problem
+	ProblemEditor bool
+
+	// SubEditor tells us if the authed .User is able to change visibility of the .Submission
+	SubEditor bool
+
 	// Page-specific data
 	// it is easier to just put this stuff here instead of in a `Data` interface
 	Problems []db.Problem
-	Problem  db.Problem
+
+	Problem   db.Problem
+	ProblemID int64
 
 	ContentUser db.User
 	IsCUser     bool
@@ -48,10 +59,6 @@ type templateData struct {
 	Submission db.Submission
 	SubID      int64
 
-	ProblemID int64
-
-	Version string
-
 	Test   db.Test
 	TestID int64
 
@@ -59,12 +66,6 @@ type templateData struct {
 
 	// Since codemirror is a particulairly big library, we should load it only when needed
 	Codemirror bool
-
-	// ProblemEditor tells us if the authed .User is able to edit the .Problem
-	ProblemEditor bool
-
-	// SubEditor tells us if the authed .User is able to change visibility of the .Submission
-	SubEditor bool
 
 	Sidebar bool
 
@@ -86,109 +87,18 @@ type Web struct {
 	debug  bool
 }
 
-func (rt *Web) newTemplate() *template.Template {
-	// table for gradient, initialize here so it panics if we make a mistake
-	colorTable := gTable{
-		{mustParseHex("#f45d64"), 0.0},
-		{mustParseHex("#eaf200"), 0.5},
-		{mustParseHex("#64ce3a"), 1.0},
-	}
+func (rt *Web) status(w http.ResponseWriter, r *http.Request, statusCode int, err string) {
+	code := fmt.Sprintf("%d: %s", statusCode, http.StatusText(statusCode))
+	templ := rt.hydrateTemplate(r, code)
+	templ.Code = code
+	templ.Error = err
 
-	return template.Must(parseAllTemplates(template.New("web").Funcs(template.FuncMap{
-		"dumpStruct":   spew.Sdump,
-		"getTestData":  rt.getTestData,
-		"getFullTests": rt.getFullTestData,
-		"subStatus": func(status db.Status) template.HTML {
-			switch status {
-			case db.StatusWaiting:
-				return template.HTML("În așteptare...")
-			case db.StatusWorking:
-				return template.HTML("În lucru...")
-			case db.StatusFinished:
-				return template.HTML("Finalizată")
-			default:
-				return template.HTML("Stare necunoscută")
-			}
-		},
-		"KBtoMB": func(kb int32) float64 {
-			return float64(kb) / 1024.0
-		},
-		"gradient": func(score, maxscore int32) template.CSS {
-			return gradient(int(score), int(maxscore), colorTable)
-		},
-		"zeroto100": func() []int {
-			var v []int = make([]int, 0)
-			for i := 0; i <= 100; i++ {
-				v = append(v, i)
-			}
-			return v
-		},
-		"subScore": func(problem db.Problem, user db.User) string {
-			score, err := rt.db.MaxScore(context.Background(), db.MaxScoreParams{UserID: user.ID, ProblemID: problem.ID})
-			if err != nil || score < 0 {
-				return "-"
-			}
-			return fmt.Sprint(score)
-		},
-		"problemSubs": func(problem db.Problem, user db.User) []db.Submission {
-			subs, err := rt.db.UserProblemSubmissions(context.Background(), db.UserProblemSubmissionsParams{UserID: user.ID, ProblemID: problem.ID})
-			if err != nil {
-				return nil
-			}
-			return subs
-		},
-		"problemTests": func(problem db.Problem) []db.Test {
-			tests, err := rt.db.ProblemTests(context.Background(), problem.ID)
-			if err != nil {
-				return nil
-			}
-			return tests
-		},
-		"problemAuthor": func(problem db.Problem) db.User {
-			user, err := rt.db.User(context.Background(), problem.AuthorID)
-			if err != nil {
-				return db.User{}
-			}
-			user.Password = ""
-			return user
-		},
-		"subAuthor": func(sub db.Submission) db.User {
-			user, err := rt.db.User(context.Background(), sub.UserID)
-			if err != nil {
-				return db.User{}
-			}
-			user.Password = ""
-			return user
-		},
-		"subProblem": func(sub db.Submission) db.Problem {
-			pb, err := rt.db.Problem(context.Background(), sub.ProblemID)
-			if err != nil {
-				return db.Problem{}
-			}
-			return pb
-		},
-		"subTests": func(sub db.Submission) []db.SubmissionTest {
-			tests, err := rt.db.SubTests(context.Background(), sub.ID)
-			if err != nil {
-				return nil
-			}
-			return tests
-		},
-		"getTest": func(id int64) db.Test {
-			test, err := rt.db.Test(context.Background(), id)
-			if err != nil {
-				return db.Test{}
-			}
-			return test
-		},
-	}), root))
+	w.WriteHeader(statusCode)
+	rt.build(w, r, "statusCode", templ)
 }
 
-func (rt *Web) build(w http.ResponseWriter, r *http.Request, name string, temp templateData) {
-	if err := templates.ExecuteTemplate(w, name, temp); err != nil {
-		fmt.Println(err)
-		rt.logger.Printf("%s: %v\n", temp.OGUrl, err)
-	}
+func (rt *Web) notFound(w http.ResponseWriter, r *http.Request) {
+	rt.status(w, r, 404, "")
 }
 
 // Router returns a chi.Router
@@ -243,16 +153,19 @@ func (rt *Web) Router() chi.Router {
 		http.ServeContent(w, r, fstat.Name(), fstat.ModTime(), file)
 	})
 
-	r.With(rt.getUser).Route("/", func(r chi.Router) {
+	r.Group(func(r chi.Router) {
+		r.Use(rt.getUser)
+
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			problems, err := util.Visible(rt.db, r.Context(), util.UserFromContext(r))
 			if err != nil {
-				http.Error(w, http.StatusText(500), 500)
+				fmt.Println("/:", err)
+				rt.status(w, r, 500, "")
 				return
 			}
 			if err != nil && !errors.Is(err, sql.ErrNoRows) {
 				rt.logger.Println("/", err)
-				http.Error(w, http.StatusText(500), 500)
+				rt.status(w, r, 500, "")
 				return
 			}
 			templ := rt.hydrateTemplate(r, "")
@@ -261,7 +174,7 @@ func (rt *Web) Router() chi.Router {
 		})
 
 		r.Route("/profile", func(r chi.Router) {
-			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			r.With(rt.mustBeAuthed).Get("/", func(w http.ResponseWriter, r *http.Request) {
 				user := util.UserFromContext(r)
 				templ := rt.hydrateTemplate(r, fmt.Sprintf("Profil %s", user.Name))
 				templ.ContentUser = user
@@ -272,7 +185,7 @@ func (rt *Web) Router() chi.Router {
 				user, err := rt.db.UserByName(r.Context(), chi.URLParam(r, "user"))
 				if err != nil {
 					fmt.Println(err)
-					http.Error(w, http.StatusText(500), 500)
+					rt.status(w, r, 500, "")
 					return
 				}
 
@@ -291,7 +204,7 @@ func (rt *Web) Router() chi.Router {
 			file, err := pkger.Open("/CHANGELOG.md")
 			if err != nil {
 				rt.logger.Println("CAN'T OPEN CHANGELOG")
-				http.Error(w, http.StatusText(500), 500)
+				rt.status(w, r, 500, "Can't open changelog")
 				return
 			}
 			changelog, _ := ioutil.ReadAll(file)
@@ -304,7 +217,7 @@ func (rt *Web) Router() chi.Router {
 			top100, err := rt.db.Top100(r.Context())
 			if err != nil {
 				fmt.Println(err)
-				http.Error(w, err.Error(), 500)
+				rt.status(w, r, 500, err.Error())
 				return
 			}
 			templ := rt.hydrateTemplate(r, "Top 100")
@@ -317,7 +230,7 @@ func (rt *Web) Router() chi.Router {
 				problems, err := util.Visible(rt.db, r.Context(), util.UserFromContext(r))
 				if err != nil {
 					fmt.Println(err)
-					http.Error(w, http.StatusText(500), 500)
+					rt.status(w, r, 500, "")
 					return
 				}
 				templ := rt.hydrateTemplate(r, "Probleme")
@@ -382,7 +295,7 @@ func (rt *Web) Router() chi.Router {
 				subs, err := rt.db.Submissions(r.Context())
 				if err != nil && !errors.Is(err, sql.ErrNoRows) {
 					rt.logger.Println("/submissions/", err)
-					http.Error(w, http.StatusText(500), 500)
+					rt.status(w, r, 500, "")
 					return
 				}
 				templ := rt.hydrateTemplate(r, "Submisii")
@@ -414,6 +327,8 @@ func (rt *Web) Router() chi.Router {
 			cookie.RemoveSessionCookie(w)
 			http.Redirect(w, r, "/", http.StatusFound)
 		})
+
+		r.NotFound(rt.notFound)
 	})
 
 	return r
