@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -94,7 +95,7 @@ func Serve(ctx context.Context, l net.Listener, handler proto.Handler) error {
 				(nErr.Timeout() || nErr.Temporary()) {
 				continue
 			}
-			if err.Error() == "use of closed network connection" {
+			if errors.Is(err, net.ErrClosed) {
 				return err
 			}
 			continue
