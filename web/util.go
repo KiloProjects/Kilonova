@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"time"
 
 	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/util"
@@ -22,6 +23,7 @@ func (rt *Web) hydrateTemplate(r *http.Request, title string) templateData {
 		User:     util.UserFromContext(r),
 		LoggedIn: util.IsRAuthed(r),
 		Version:  version.Version,
+		Debug:    rt.debug,
 
 		Problem:    util.ProblemFromContext(r),
 		Submission: util.SubmissionFromContext(r),
@@ -166,6 +168,9 @@ func (rt *Web) newTemplate() *template.Template {
 				return db.Test{}
 			}
 			return test
+		},
+		"timeToUnix": func(t time.Time) int64 {
+			return t.Unix()
 		},
 	}), root))
 }

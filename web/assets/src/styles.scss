@@ -1,0 +1,164 @@
+
+@import "variables";
+@import "@fortawesome/fontawesome-free/scss/brands";
+@import "@fortawesome/fontawesome-free/scss/regular";
+@import "@fortawesome/fontawesome-free/scss/solid";
+@import "@fortawesome/fontawesome-free/scss/fontawesome";
+
+
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+
+@layer base {
+	.bg-hljs {
+		background: #f0f0f0;
+	}
+
+	table {
+		@apply border-collapse;
+	}
+
+	h1 {
+		@apply text-3xl;
+	}
+
+	h2 {
+		@apply text-2xl;
+	}
+
+	h3 {
+		@apply text-xl;
+	}
+
+	h4 {
+		@apply text-lg;
+	}
+
+	a {
+		@apply text-blue-500;
+	}
+	a:hover {
+		@apply text-blue-600;
+	}
+	a:focus {
+		@apply text-blue-600;
+	}
+	a:active {
+		@apply text-blue-600;
+	}
+
+	.CodeMirror {
+		@apply text-lg;
+	}
+}
+
+@layer components {
+
+	.dropdown-divider {
+		@apply h-0 my-2 border-t border-gray-200;
+	}
+
+	// bootstrap container 
+	.c-container {
+		max-width: 100%;
+		padding-left: 15px;
+		padding-right: 15px;
+		@apply mx-auto min-h-screen mt-6;
+	}
+	@media (min-width: 576px) {
+		.c-container {
+			max-width: 540px;
+		}
+	}
+	@media (min-width: 768px) {
+		.c-container {
+			max-width: 720px;
+		}
+	}
+	@media (min-width: 992px) {
+		.c-container {
+			max-width: 960px;
+		}
+	}
+	@media (min-width: 1200px) {
+		.c-container {
+			max-width: 1140px;
+		}
+	}
+
+	// end bootstrap-like container
+
+	.roboto .navbar-brand h1 h2 h3 h4 h5 h6 {
+		font-family: 'Roboto';
+	}
+
+	.black-anchor {
+		@apply text-gray-600;
+	}	
+	.black-anchor:hover {
+		@apply text-black;
+	}
+	.black-anchor:focus {
+		@apply text-black outline-none;
+	}
+	.black-anchor:active {
+		@apply text-black;
+	}
+
+	.list-group {
+		@apply rounded-lg border border-gray-300 w-full;
+	}
+	.list-group-item {
+		@apply block border-t border-gray-200 w-full px-4 py-3 black-anchor text-lg;
+	}
+
+	.btn {
+		@apply inline-flex justify-center px-4 py-2 leading-5 rounded-md;
+		@apply border border-gray-300;
+		@apply transition ease-in-out duration-150;
+		@apply bg-white text-gray-700 font-medium;
+		font-family: inherit;
+	}
+	.btn:focus {
+		@apply outline-none shadow-outline-gray;
+	}
+
+	.btn-blue {
+		@apply bg-blue-500 text-white border-blue-400;
+	}
+
+	.btn-blue:hover {
+		@apply bg-blue-700;
+	}
+	.btn-blue:active {
+		@apply bg-blue-700;
+	}
+	.btn-blue:focus {
+		@apply bg-blue-700 outline-none shadow-outline-blue;
+	}
+}
+
+@layer utilities {
+	code {
+		@apply bg-hljs rounded-md mt-1 mb-2 px-1;
+	}
+
+	pre {
+		tab-size: 4;
+		@apply bg-hljs rounded-lg;
+	}
+
+	body {
+		@apply font-sans;
+		//font-family: 'Open Sans',Inter var,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
+	}
+
+	html {
+		tab-size: 4;	
+	}
+}
+
+
+

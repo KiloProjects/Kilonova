@@ -1,0 +1,54 @@
+{{ template "util/header" . }}
+
+<div class="grid grid-cols-1 lg:grid-cols-6 gap-4">
+	{{ template "edit/testSidebar" . }}
+	<div class="lg:col-span-5 mx-2 lg:mx-0">
+		<br/>
+		<h1> Creare test </h1>
+		
+		<label class="block my-2">
+			<span class="mr-2 text-xl">ID: </span>
+			<input id="vID" type="number" class="inline-block rounded-lg border border-gray-300 px-2 py-2" required />
+		</label>
+		<label class="block my-2">
+			<span class="mr-2 text-xl">Scor: </span>
+			<input id="score" type="number" class="inline-block rounded-lg border border-gray-300 px-2 py-2" required />
+		</label>
+		<div class="mb-3">
+			<h3> Input: </h3>
+			<textarea id="input" style="display: none;"></textarea>
+		</div>
+		<div class="mb-3">
+			<h3> Output: </h3>
+			<textarea id="output" style="display: none;"></textarea>
+		</div>
+		<button class="btn btn-blue mb-2" onclick="addTest()">Adăugare</button>
+	</div>
+</div>
+
+<script>
+	var inCM = CodeMirror.fromTextArea(document.getElementById("input"), {
+		lineNumbers: true,
+		indentUnit: 4,
+		lineWrapping: true
+	})
+	var outCM = CodeMirror.fromTextArea(document.getElementById("output"), {
+		lineNumbers: true,
+		indentUnit: 4,
+		lineWrapping: true
+	})
+
+	async function addTest() {
+		let q = {
+			visibleID: $("#vID").val(), 
+			input: inCM.getValue(),
+			output: outCM.getValue(),
+			score: $("#score").val(),
+		};
+		let res = await postCall("/problem/{{ .Problem.ID }}/update/addTest", q)
+		console.log(res)
+		apiToast(res)
+	}
+</script>
+
+{{ template "util/footer" . }}

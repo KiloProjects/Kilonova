@@ -2,4 +2,4 @@
 package version
 
 // Version is the version of the platform
-const Version = "v0.5.3a"
+const Version = "v0.5.4a"

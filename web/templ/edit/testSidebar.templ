@@ -1,0 +1,21 @@
+<!-- Sidebar -->
+{{ $id := .Problem.ID }}
+{{ $tid := .TestID }}
+<div class="lg:col-span-1 lg:min-h-screen list-group w-full rounded-none border-0 lg:border-r lg:border-gray-200">
+	<div class="list-group-item border-0 text-2xl">
+		Editare teste <a href="/probleme/{{$id}}">{{ .Problem.Name }}</a>
+	</div>
+	{{ if (eq $tid -1) }}
+	<a class="list-group-item bg-gray-200 hover:bg-gray-700 hover:text-white focus:text-white" href="/probleme/{{$id}}/edit/teste">Creare Test</a>
+	{{ else }}
+	<a class="list-group-item hover:bg-gray-700 hover:text-white focus:text-white" href="/probleme/{{$id}}/edit/teste">Creare Test</a>
+	{{ end }}
+	{{ range (problemTests .Problem) }}
+		{{ if (eq .VisibleID $tid) }}
+			<a class="list-group-item bg-gray-200 hover:bg-gray-700 hover:text-white focus:text-white" href="/probleme/{{$id}}/edit/teste/{{.VisibleID}}">Testul #{{.VisibleID}}</a>
+		{{ else }}
+			<a class="list-group-item hover:bg-gray-700 hover:text-white focus:text-white" href="/probleme/{{$id}}/edit/teste/{{.VisibleID}}">Testul #{{.VisibleID}}</a>
+		{{ end }}
+	{{ end }}
+</div>
+<!-- /Sidebar -->

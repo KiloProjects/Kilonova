@@ -11,6 +11,7 @@ import (
 const admins = `-- name: Admins :many
 SELECT id, created_at, name, admin, proposer, email, password, bio FROM users
 WHERE admin = true
+ORDER BY id
 `
 
 func (q *Queries) Admins(ctx context.Context) ([]User, error) {
@@ -86,7 +87,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, 
 
 const proposers = `-- name: Proposers :many
 SELECT id, created_at, name, admin, proposer, email, password, bio FROM users 
-WHERE proposer = true
+WHERE proposer = true OR admin = true
+ORDER BY id
 `
 
 func (q *Queries) Proposers(ctx context.Context) ([]User, error) {
@@ -309,6 +311,7 @@ func (q *Queries) UserByName(ctx context.Context, username string) (User, error)
 
 const users = `-- name: Users :many
 SELECT id, created_at, name, admin, proposer, email, password, bio FROM users
+ORDER BY id
 `
 
 func (q *Queries) Users(ctx context.Context) ([]User, error) {

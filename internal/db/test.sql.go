@@ -112,6 +112,7 @@ func (q *Queries) Test(ctx context.Context, id int64) (Test, error) {
 const testVisibleID = `-- name: TestVisibleID :one
 SELECT id, created_at, score, problem_id, visible_id FROM tests 
 WHERE problem_id = $1 AND visible_id = $2
+ORDER BY visible_id
 `
 
 type TestVisibleIDParams struct {

@@ -1,0 +1,38 @@
+{{ template "util/header" . }}
+
+<div class="c-container">
+	<h1 class="mb-2">Autentificare</h1>
+	<form id="loginForm">
+		<label class="block mb-2">
+			<span class="text-xl text-gray-700">Username</span>
+			<input class="form-input w-full" type="text" id="name" name="username" />
+		</label>
+		<label class="block mb-2">
+			<span class="text-xl text-gray-700">Parolă</span>
+			<input class="form-input w-full" type="password" id="pwd" name="password" />
+		</label>
+		<button type="submit" class="block btn btn-blue">Logare</button>
+		<small class="text-gray-600">N-ai cont? <a href="/signup">înregistrează-te</a></small>
+	</form>
+	
+	<script>
+		$("#loginForm").submit(async e => {
+			e.preventDefault();
+			let username = $("#loginForm #name").val();
+			let password = $("#loginForm #pwd").val();
+			
+			let res = await postCall("/auth/login", {username, password})
+			if(res.status == "error") {
+				createToast({
+					status: "error",
+					title: "Could not log in",
+					description: res.data
+				})
+				return
+			}
+			window.location.replace("/")
+		})
+	</script>
+</div>
+
+{{ template "util/footer" . }}

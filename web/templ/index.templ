@@ -1,0 +1,11 @@
+{{template "util/header" . }}
+
+<div class="c-container">
+	<h1>Welcome to Kilonova {{.Version}}{{if .LoggedIn}}, {{.User.Name}}{{end}}!</h1>
+	
+	<p class="text-gray-600 text-sm">Pssst! Anunță-mă ce mai vrei de la site, trimite-mi mesaj la CNC#9999 sau pe #kilonova</p>
+
+	<br />
+	{{template "util/pbprint" .}}
+</div>
+{{template "util/footer" . }}

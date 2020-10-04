@@ -1,0 +1,146 @@
+{{ template "util/header" . }}
+<div class="c-container">
+	<!--
+	<table class="table-auto w-full">
+		<thead>
+			<tr>
+				<th scope="col" class="w-12 text-center border px-4 py-2">ID</th>
+				<th scope="col" class="border px-4 py-2">Autor</th>
+				<th scope="col" class="border px-4 py-2">Citire/Afișare</th>
+				<th scope="col" class="border px-4 py-2">Limită memorie</th>
+				<th scope="col" class="border px-4 py-2">Limită timp</th>
+				{{ if .ProblemEditor }}
+				<th scope="col" class="border px-4 py-2">Vizibilă</th>
+				{{end}}
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<th scope="row" class="border px-4 py-2">{{- .Problem.ID -}}</th>
+				<th class="border px-4 py-2">{{ (problemAuthor .Problem).Name }}</th>
+				<th class="border px-4 py-2">
+				{{if .Problem.ConsoleInput}}
+					{{- printf "Consolă" -}}
+				{{else}}
+					{{- .Problem.TestName -}}.in/{{- .Problem.TestName -}}.out
+				{{end}}
+				</th>
+				<th class="border px-4 py-2">{{- KBtoMB .Problem.MemoryLimit -}}MB/{{- KBtoMB .Problem.StackLimit -}}MB</th>
+				<th class="border px-4 py-2">{{- .Problem.TimeLimit -}}s</th>
+				{{ if .ProblemEditor }}
+				<th class="border px-4 py-2">{{.Problem.Visible}}</th>
+				{{ end }}
+			</tr>
+		</tbody>
+	</table>-->
+
+
+
+	
+	<h1 class="mt-4">Problema <code>{{.Problem.Name}}</code>
+	{{- if .ProblemEditor -}}
+		<a href="/probleme/{{- .Problem.ID -}}/edit"> [editare]</a>	
+	{{- end -}}
+	</h1>
+	<hr/>
+	
+	<div class="mb-12">
+		
+		<div class="flex flex-wrap lg:border-b lg:border-gray-200">
+			<div class="w-full mt-6 lg:flex-1 lg:pr-2" id="problem-content"></div>
+			<div class="w-full lg:w-3/12 lg:border-l lg:border-gray-200">
+				<div class="lg:mt-6 lg:pl-4 pl-2 pb-3 font-semibold">
+					<h2 class="text-xl">Informații generale</h2>
+					<p>ID: {{.Problem.ID}}</p>
+					<p>Autor: {{(problemAuthor .Problem).Name}}</p>
+					<p>Intrare: {{if .Problem.ConsoleInput}}Consolă{{else}}{{.Problem.TestName}}.in/{{.Problem.TestName}}.out{{end}}</p>
+					<p>Memorie: {{KBtoMB .Problem.MemoryLimit}}MB/{{KBtoMB .Problem.StackLimit}}MB</p>
+					<p>Timp: {{.Problem.TimeLimit}}s</p>
+					{{ if .ProblemEditor }}
+					<p>Vizibilitate: 
+					{{if .Problem.Visible}}
+						<span class="rounded-md text-sm px-2 py-1 bg-green-500 text-white text-sm">Vizibilă</span>
+					{{else}}
+						<span class="rounded-md text-sm px-2 py-1 bg-red-500 text-white text-sm">Invizibilă</span>
+					{{end}}
+					</p>
+					{{end}}
+				</div>
+				<div class="h-0 w-full border-t border-gray-200"></div>
+				<div class="mt-2 lg:pl-2 lg:pb-2">
+					<p class="text-lg px-2">Submisii anterioare</p>
+					{{ with (problemSubs .Problem .User) }}
+					{{ range . }}
+					<a class="black-anchor flex justify-between items-center rounded py-1 px-2 hover:bg-gray-200" href="/submissions/{{.ID}}">
+						<span id="submission-{{.ID}}"></span>
+						<script>
+						$("#submission-{{.ID}}").text(dayjs.unix({{timeToUnix .CreatedAt}}).format('DD/MM/YYYY HH:mm'))
+						</script>
+						<span class="rounded-md px-2 py-1 bg-teal-400 text-white text-sm">{{.Score}}</span>
+					</a>
+					{{ end }}
+					{{ else }}
+					<p class="px-2">Nicio submisie</p>
+					{{ end }}
+				</div>
+			</div>
+
+		</div>
+	
+		<script>
+			$("#problem-content").html(md.render("{{- .Problem.Description -}}"));
+		</script>
+
+
+		{{ if .LoggedIn }}
+
+			<h1 class="mt-4">Încărcare sursă</h1>
+			<p class="mb-4 text-gray-600">(Dacă mă întrebați de ce merge doar c++ acum: why not?)</p>
+
+			<form id="submissionSend" autocomplete="off">
+				<textarea id="SubArea" style="display: none;"></textarea>
+				<button class="btn btn-blue mt-2" type="submit">Trimite</button>
+			</form>
+
+			<script>
+				var defaultIn = `#include <iostream>
+using namespace std;
+int main()
+{
+	cout << "Hello, world!\\n";
+	return 0;
+}`;
+				$("#SubArea").html(defaultIn);
+				var cm = CodeMirror.fromTextArea(document.getElementById("SubArea"), {
+					lineNumbers: true,
+					indentUnit: 4,
+					lineWrapping: true,
+					mode: "text/x-c++src",
+				});
+				cm.setSize(null, "100%");
+				$("#submissionSend").submit(async e => {
+					e.preventDefault();
+					let sendData = {
+						problemID: "{{ .Problem.ID }}",
+						lang: "cpp",
+						code: cm.getValue(),
+					};
+					
+					let res = await postCall("/submissions/submit", sendData)
+					if(res.status == "error") {
+						createToast({
+							status: "error",
+							title: "Could not send submission",
+							description: res.data
+						})
+						return
+					}
+					createToast({description: "Uploaded", onclick: () => window.location.assign(`/submissions/${res.data}`)})
+				})
+			</script>
+		{{ end }}
+
+	</div>
+
+</div>
+{{ template "util/footer" . }}

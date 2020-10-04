@@ -1,3 +1,6 @@
+- v0.5.4a:
+	- Hopefully last redesign
+	- This time it's [Tailwind CSS](https://tailwindcss.com)
 - v0.5.3a:
 	- Add proper error pages
 - v0.5.2a:

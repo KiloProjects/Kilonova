@@ -32,7 +32,8 @@ INSERT INTO submission_tests (
 
 -- name: UserProblemSubmissions :many
 SELECT * FROM submissions 
-WHERE user_id = $1 AND problem_id = $2;
+WHERE user_id = $1 AND problem_id = $2
+ORDER BY id desc;
 
 -- name: MaxScore :one
 SELECT score FROM submissions 

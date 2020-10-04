@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ro">
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	{{with .Title}}
+		<title>{{- . }} | Kilonova</title>
+	{{else}}
+		<title>Kilonova</title>
+	{{end}}
+
+	<!-- OpenGraph stuff -->
+	{{with .OGTitle}}
+		<meta property="og:title" content="{{- . -}}" />
+	{{else}}
+		{{with .Title}}
+			<meta property="og:title" content="{{- . -}}" />
+		{{else}}
+		<meta property="og:title" content="Kilonova" />
+		{{end}}
+	{{end}}
+	{{with .OGType}}
+		<meta property="og:type" content="{{- . -}}" />
+	{{else}}
+		<meta property="og:type" content="website" />
+	{{end}}
+	<meta property="og:url" content="https://alpha.kilonova.ro{{- .OGUrl -}}" />
+	{{with .OGImage}}
+		<meta property="og:image" content="{{- .OGImage -}}" />
+	{{else}}
+		<meta property="og:image" content="https://cdn.kilonova.ro/m/ti2SMt/logo.png" />
+	{{end}}
+	{{with .OGDesc}}
+		<meta property="og:description" content="{{- .OGDesc -}}" />
+		<meta name="description" content="{{- .OGDesc -}}" />
+	{{else}}
+		<meta property="og:description" content="Programming platform for learning and exercising" />
+		<meta name="description" content="Programming platform for learning and exercising" />
+	{{end}}
+	<meta property="og:locale" content="ro_RO" />
+	<meta property="og:site_name" content="Kilonova" />
+
+	<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com/">
+
+	<!--jQuery-->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+	<link href="https://fonts.googleapis.com/css2?family=Open+Sans&family=Roboto&display=swap" rel="stylesheet">
+	<!--bootstrap-->
+	
+	<!-- much fun, very disabled
+	<link rel="stylesheet"
+		href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css" />
+	-->
+
+	<!-- pretty icons (fontawesome) -->
+	<!--<script src="https://kit.fontawesome.com/bf2ce59e80.js"></script>
+	-->
+
+	<!--date processing-->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.9.1/dayjs.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.9.1/locale/ro.min.js"></script>
+	<script>dayjs.locale('ro')</script>
+
+	<!--Toastr.js-->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.css" />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js"></script>
+
+	<!--highlight.js-->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/default.min.css" />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js"></script>
+
+	<!--markdown-it.js-->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/11.0.0/markdown-it.min.js"></script>
+
+
+	<!--Codemirror-->
+	{{ if .Codemirror }}
+		<!--CSS-->
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.55.0/codemirror.min.css" />
+		<!--JS-->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.55.0/codemirror.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.55.0/addon/mode/overlay.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.55.0/mode/meta.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.55.0/mode/markdown/markdown.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.55.0/mode/gfm/gfm.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.55.0/mode/clike/clike.min.js"></script>
+	{{ end }}
+
+	<link rel="stylesheet" href="/styles.css" />
+
+	{{ if .Sidebar }}
+		<link rel="stylesheet" href="/sidebar.css" />
+	{{ end }}
+
+	<script>
+		var md = window.markdownit({
+			xhtmlOut: true,
+			breaks: true,
+			linkify: true,
+			highlight: function (str, lang) {
+				console.log(lang, "::");
+				console.log(str)
+				if (lang && hljs.getLanguage(lang)) {
+					try { return hljs.highlight(lang, str).value; } catch (err) { console.error(err); }
+				}
+				return "";
+			},
+		});
+		hljs.initHighlightingOnLoad();
+	</script>
+
+	<script>
+		// Util functions
+		toastr.options = {
+			closeButton: true,
+			newestOnTop: true,
+			positionClass: "toast-bottom-right",
+		}
+
+		/* createToast OPTIONS
+			title: the toast title
+			status: the toast status (default "info")
+			position: the toast position (default "toast-bottom-right")
+			onclick: onClick handler
+		*/
+		function createToast(options) {
+			if (options.status == null) options.status = "info"
+			if (options.position == null) options.position = "toast-bottom-right"
+			if (options.onclick == null) options.onclick = function () { }
+			toastr[options.status](options.description, options.title, {
+				positionClass: options.position,
+				onclick: options.onclick
+			})
+		}
+
+		function apiToast(res, overwrite) {
+			if(overwrite === null || overwrite === undefined) {
+				overwrite = {}
+			}
+			overwrite["status"] = res.status 
+			overwrite["description"] = res.data
+			createToast(overwrite)
+		}
+
+		async function getCall(call, params) {
+			if(call.startsWith('/')) {
+				call = call.substr(1)
+			}
+			let resp = await fetch(`/api/${call}?${$.param(params)}`, {headers: {'Accept': 'application/json'}});
+			return await resp.json()
+		}
+		async function postCall(call, params) {
+			if(call.startsWith('/')) {
+				call = call.substr(1)
+			}
+			let resp = await fetch(`/api/${call}`, {
+				method: 'POST',
+				headers: {'Content-Type': 'application/x-www-form-urlencoded','Accept': 'application/json'},
+				body: $.param(params)
+			});
+			return await resp.json();
+		}
+		
+		async function getUser(name) {
+			return await getCall('/user/getByName', {name: name})
+		}
+	</script>
+</head>
+
+<body>
+	{{ template "util/navbar" . }}

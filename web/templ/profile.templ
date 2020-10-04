@@ -1,0 +1,23 @@
+{{ template "util/header" . }}
+
+<div class="c-container">
+	<div>
+		<div class="flex">
+			<img class="rounded-lg my-auto" src="/api/user/getGravatar?name={{.ContentUser.Name}}&s=128" alt="Poză profil {{.ContentUser.Name}}"/>
+			<div class="ml-3">
+				<h1>{{.ContentUser.Name}}</h1>
+				<span>{{.ContentUser.Bio}}
+				{{ if .IsCUser }}
+					{{if .ContentUser.Bio}}
+					<a href="/settings#bio"><i class="fas fa-edit"></i> Editare bio</a>
+					{{else}}
+					<a href="/settings#bio"><i class="fas fa-edit"></i> Create bio</a>
+					{{end}}
+				{{ end }}</span>
+			</div>
+		</div>
+		<div>TODO: Probleme rezolvate</div>
+	</div>
+</div>
+
+{{ template "util/footer" . }}

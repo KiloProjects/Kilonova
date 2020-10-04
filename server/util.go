@@ -31,7 +31,10 @@ func returnData(w http.ResponseWriter, retData interface{}) {
 func statusData(w http.ResponseWriter, status string, retData interface{}, statusCode int) {
 	w.Header().Add("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(statusCode)
-	err := json.NewEncoder(w).Encode(util.RetData{
+	err := json.NewEncoder(w).Encode(struct {
+		Status string      `json:"status"`
+		Data   interface{} `json:"data"`
+	}{
 		Status: status,
 		Data:   retData,
 	})

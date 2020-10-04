@@ -255,6 +255,7 @@ func (q *Queries) Submissions(ctx context.Context) ([]Submission, error) {
 const userProblemSubmissions = `-- name: UserProblemSubmissions :many
 SELECT id, created_at, user_id, problem_id, language, code, status, compile_error, compile_message, score, visible FROM submissions 
 WHERE user_id = $1 AND problem_id = $2
+ORDER BY id desc
 `
 
 type UserProblemSubmissionsParams struct {

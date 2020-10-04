@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/KiloProjects/Kilonova/internal/db"
@@ -37,7 +36,6 @@ func (s *API) getAdmins(w http.ResponseWriter, r *http.Request) {
 func (s *API) getProposers(w http.ResponseWriter, r *http.Request) {
 	proposers, err := s.db.Proposers(r.Context())
 	if err != nil {
-		s.logger.Println(err)
 		errorData(w, "Could not read from DB", 500)
 		return
 	}
@@ -100,7 +98,6 @@ func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(args)
 	if args.Set == false { // additional checks for removing
 		if args.ID == 1 {
 			errorData(w, "You can't remove the proposer rank of the root user", http.StatusNotAcceptable)

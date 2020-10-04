@@ -1,0 +1,26 @@
+{{ $user := .User }}
+{{ $logged := .LoggedIn }}
+{{ with .Problems }}
+	<h2 class="text-2xl mb-2"> Probleme </h2>
+	<div class="list-group">
+		{{ range . }}
+			<a href="/probleme/{{.ID}}" class="list-group-item flex justify-between">
+				#{{.ID}}: {{.Name}}
+
+				{{ if $logged }}
+					<div>
+						{{ if (or $user.Admin (eq $user.ID .AuthorID)) }}
+							{{ if .Visible }}
+								<span class="rounded-full py-1 px-2 text-base bg-green-500 text-white font-semibold">Publicată</span>
+							{{ else }}
+								<span class="rounded-full py-1 px-2 text-base bg-red-500 text-white font-semibold">Nepublicată</span>
+							{{ end }}
+						{{ end }}
+						<span class="rounded-full py-1 px-2 text-base bg-teal-500 text-white font-semibold">{{ subScore . $user }}</span>
+					</div>
+				{{ end }}	
+			</a>
+		{{ end }}
+	</div>
+{{ end }} 
+

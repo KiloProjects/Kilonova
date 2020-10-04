@@ -1,0 +1,94 @@
+<header class="text-2xl bg-gray-100 md:flex md:justify-between md:px-5 md:py-3 md:items-center">
+	<div class="flex items-center justify-between px-4 py-3 md:p-0">
+		<div class="inline-block">
+			<a class="roboto h-8 black-anchor" href="/">Kilonova {{.Version}}</a>
+		</div>
+		<div class="md:hidden">
+			<button id="nav-toggler" type="button" onclick="setNavbar(!isNavbarOpen)" class="fas fa-bars text-gray-500 hover:text-black focus:text-black focus:outline-none h-6 w-6"></button>
+		</div>
+	</div>
+	<nav id="nav-dropdown" class="px-2 pt-1 pb-3 md:flex md:p-0">
+		<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hover:bg-gray-200" href="/submissions">Listă submisii</a>
+		{{if not .LoggedIn }}
+			<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hover:bg-gray-200" href="/signup">Sign up</a>
+			<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hover:bg-gray-200" href="/login">Log in</a>
+		{{else}}
+			<div id="pr-dropdown" class="relative">
+				<button onclick="setDropdown(!isDropdownOpen)" id="profile-dropdown-button" class="relative z-10 block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hover:bg-gray-200">{{.User.Name}}<i id="dropdown-caret" class="ml-1 fas fa-caret-down"></i></button>
+				<div id="profile-dropdown" class="absolute right-0 w-64 py-1 mt-1 text-xl bg-white rounded-lg shadow-lg">
+					<a class="block px-4 py-1 text-gray-800 focus:text-gray-800 hover:text-gray-800 focus:bg-gray-200 hover:bg-gray-200" href="/profile">
+						<i class="ml-n2 fas fa-user fa-fw"></i> Profil
+					</a>	
+					<a class="block px-4 py-1 text-gray-800 focus:text-gray-800 hover:text-gray-800 focus:bg-gray-200 hover:bg-gray-200" href="/settings">
+						<i class="ml-n2 fas fa-cog fa-fw"></i> Setări
+					</a>
+					{{if (or .User.Proposer .User.Admin)}}
+						<div class="dropdown-divider"></div>
+						<a class="block px-4 py-1 text-gray-800 focus:text-gray-800 hover:text-gray-800 focus:bg-gray-200 hover:bg-gray-200" href="/probleme/create">
+							<i class="ml-n2 fas fa-plus-square fa-fw"></i> Creare Problemă
+						</a>	
+					{{end}}
+					{{if .User.Admin}}
+						<a class="block px-4 py-1 text-gray-800 focus:text-gray-800 hover:text-gray-800 focus:bg-gray-200 hover:bg-gray-200" href="/admin">
+							<i class="ml-n2 fas fa-sliders-h fa-fw"></i> Butoane Admin
+						</a>
+					{{end}}
+					<div class="dropdown-divider"></div>
+					<a class="block px-4 py-1 text-gray-800 focus:text-gray-800 hover:text-gray-800 focus:bg-gray-200 hover:bg-gray-200" href="/logout">
+						<i class="ml-n2 fas fa-sign-out-alt fa-fw"></i> Log Out
+					</a>
+				</div>
+			</div>
+		{{end}}
+	</nav>
+</header>
+
+
+<script>
+var isNavbarOpen = false;
+
+function setNavbar(open) {
+	isNavbarOpen = open;
+	if(isNavbarOpen) {
+		$("#nav-toggler").removeClass("fa-bars");
+		$("#nav-toggler").addClass("fa-times");
+		$("#nav-dropdown").removeClass("hidden");
+		$("#nav-dropdown").addClass("block");
+	} else {
+		$("#nav-toggler").removeClass("fa-times");
+		$("#nav-toggler").addClass("fa-bars");
+		$("#nav-dropdown").removeClass("block");
+		$("#nav-dropdown").addClass("hidden");
+	}
+}
+
+var isDropdownOpen = false;
+function setDropdown(open) {
+	isDropdownOpen = open;
+	if(isDropdownOpen) {
+		$("#profile-dropdown").removeClass("hidden");	
+		$("#dropdown-caret").removeClass("fa-caret-down");	
+		$("#dropdown-caret").addClass("fa-caret-up");
+	} else {
+		$("#profile-dropdown").addClass("hidden");
+		$("#dropdown-caret").addClass("fa-caret-down");
+		$("#dropdown-caret").removeClass("fa-caret-up");	
+	}
+}
+
+setNavbar(false);
+setDropdown(false);
+
+document.addEventListener('keydown', (e) => {
+	if(e.key === "Esc" || e.key === "Escape") {
+		setDropdown(false);
+	}
+})
+
+document.addEventListener('click', (e) => {
+	if(isDropdownOpen && !(e.target.id === "profile-dropdown-button" || $(e.target).parents("#pr-dropdown").length)) {
+		setDropdown(false);
+	}
+})
+
+</script>

@@ -1,0 +1,25 @@
+{{ template "util/header" . }}
+
+<div class="c-container">
+	<h1> Pagină în Construcție </h1>
+	<form id="bioUpdateForm">
+		<label class="block mb-2">
+			<span id="bio" class="text-lg">Actualizare Bio</span>
+			<textarea id="newBio" class="form-textarea w-full" autocapitalize="sentences" autocomplete="off" maxlength="120" placeholder="Bio...">{{.User.Bio}}</textarea>
+		</label>
+		<button class="form-group btn btn-blue" type="submit">Actualizare</button>
+	</form>
+	<div>TODO: Mai multe setări</div>
+</div>
+
+<script>
+$("#bioUpdateForm").submit(async e => {
+	e.preventDefault();
+	var bio = $("#bioUpdateForm #newBio").val();
+	
+	let res = await postCall("/user/setBio", {bio})
+	apiToast(res, {onclick: () => window.location.assign("/profile")}) 
+})
+</script>
+
+{{ template "util/footer" . }}

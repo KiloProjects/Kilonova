@@ -11,7 +11,6 @@ import (
 	"log"
 	"net/http"
 	"path"
-	"strings"
 
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/internal/cookie"
@@ -21,7 +20,6 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/markbates/pkger"
 	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/minify/v2/html"
 )
 
 var templates *template.Template
@@ -33,6 +31,7 @@ type templateData struct {
 	Params   map[string]string
 	User     db.User
 	LoggedIn bool
+	Debug    bool
 
 	// for the status code page
 	Code  string
@@ -118,40 +117,41 @@ func (rt *Web) Router() chi.Router {
 		})
 	}
 
-	r.Mount("/static", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		p := path.Clean(r.RequestURI)
-		if !strings.HasPrefix(p, "/static") {
-			http.Error(w, http.StatusText(404), 404)
-			return
-		}
-		file, err := pkger.Open(p)
-		if err != nil {
-			http.Error(w, http.StatusText(404), 404)
-			return
-		}
-		fstat, err := file.Stat()
-		if err != nil {
-			http.Error(w, http.StatusText(404), 404)
-			return
-		}
-		http.ServeContent(w, r, fstat.Name(), fstat.ModTime(), file)
-	}))
+	/*
+		r.Mount("/static", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			p := path.Clean(r.RequestURI)
+			if !strings.HasPrefix(p, "/static") {
+				http.Error(w, http.StatusText(404), 404)
+				return
+			}
+			file, err := pkger.Open(p)
+			if err != nil {
+				http.Error(w, http.StatusText(404), 404)
+				return
+			}
+			fstat, err := file.Stat()
+			if err != nil {
+				http.Error(w, http.StatusText(404), 404)
+				return
+			}
+			http.ServeContent(w, r, fstat.Name(), fstat.ModTime(), file)
+		}))
 
-	r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
-		file, err := pkger.Open("/static/favicon.ico")
-		if err != nil {
-			rt.logger.Println("CAN'T OPEN FAVICON")
-			http.Error(w, http.StatusText(500), 500)
-			return
-		}
-		fstat, err := file.Stat()
-		if err != nil {
-			rt.logger.Println("CAN'T STAT FAVICON")
-			http.Error(w, http.StatusText(500), 500)
-			return
-		}
-		http.ServeContent(w, r, fstat.Name(), fstat.ModTime(), file)
-	})
+		r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+			file, err := pkger.Open("/static/favicon.ico")
+			if err != nil {
+				rt.logger.Println("CAN'T OPEN FAVICON")
+				http.Error(w, http.StatusText(500), 500)
+				return
+			}
+			fstat, err := file.Stat()
+			if err != nil {
+				rt.logger.Println("CAN'T STAT FAVICON")
+				http.Error(w, http.StatusText(500), 500)
+				return
+			}
+			http.ServeContent(w, r, fstat.Name(), fstat.ModTime(), file)
+		})*/
 
 	r.Group(func(r chi.Router) {
 		r.Use(rt.getUser)
@@ -184,6 +184,10 @@ func (rt *Web) Router() chi.Router {
 			r.Get("/{user}", func(w http.ResponseWriter, r *http.Request) {
 				user, err := rt.db.UserByName(r.Context(), chi.URLParam(r, "user"))
 				if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						rt.status(w, r, 404, "")
+						return
+					}
 					fmt.Println(err)
 					rt.status(w, r, 500, "")
 					return
@@ -215,7 +219,7 @@ func (rt *Web) Router() chi.Router {
 
 		r.Get("/top100", func(w http.ResponseWriter, r *http.Request) {
 			top100, err := rt.db.Top100(r.Context())
-			if err != nil {
+			if err != nil && !errors.Is(err, sql.ErrNoRows) {
 				fmt.Println(err)
 				rt.status(w, r, 500, err.Error())
 				return
@@ -328,8 +332,24 @@ func (rt *Web) Router() chi.Router {
 			http.Redirect(w, r, "/", http.StatusFound)
 		})
 
-		r.NotFound(rt.notFound)
 	})
+
+	r.Mount("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := path.Clean(r.RequestURI)
+		p = path.Join("/static", p)
+		file, err := pkger.Open(p)
+		if err != nil {
+			rt.notFound(w, r)
+			return
+		}
+		fstat, err := file.Stat()
+		if err != nil {
+			rt.notFound(w, r)
+			return
+		}
+		http.ServeContent(w, r, fstat.Name(), fstat.ModTime(), file)
+	}))
+	r.NotFound(rt.notFound)
 
 	return r
 }
@@ -340,9 +360,6 @@ func NewWeb(dm datamanager.Manager, db *db.Queries, logger *log.Logger, debug bo
 }
 
 func init() {
-	pkger.Include("/include")
+	pkger.Include("/web/templ")
 	pkger.Include("/static")
-
-	minifier = minify.New()
-	minifier.AddFunc("text/html", html.Minify)
 }

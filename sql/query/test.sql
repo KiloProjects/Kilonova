@@ -5,7 +5,8 @@ WHERE id = $1;
 
 -- name: TestVisibleID :one
 SELECT * FROM tests 
-WHERE problem_id = $1 AND visible_id = $2;
+WHERE problem_id = $1 AND visible_id = $2
+ORDER BY visible_id;
 
 -- name: CreateTest :exec
 INSERT INTO tests (

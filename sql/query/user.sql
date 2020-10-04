@@ -24,15 +24,18 @@ SELECT COUNT(*) FROM users
 WHERE lower(name) = lower(sqlc.arg(username)) OR lower(email) = lower(sqlc.arg(email));
 
 -- name: Users :many
-SELECT * FROM users;
+SELECT * FROM users
+ORDER BY id;
 
 -- name: Admins :many
 SELECT * FROM users
-WHERE admin = true;
+WHERE admin = true
+ORDER BY id;
 
 -- name: Proposers :many
 SELECT * FROM users 
-WHERE proposer = true;
+WHERE proposer = true OR admin = true
+ORDER BY id;
 
 
 -- name: Top100 :many
