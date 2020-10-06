@@ -1,42 +1,5 @@
 {{ template "util/header" . }}
 <div class="c-container">
-	<!--
-	<table class="table-auto w-full">
-		<thead>
-			<tr>
-				<th scope="col" class="w-12 text-center border px-4 py-2">ID</th>
-				<th scope="col" class="border px-4 py-2">Autor</th>
-				<th scope="col" class="border px-4 py-2">Citire/Afișare</th>
-				<th scope="col" class="border px-4 py-2">Limită memorie</th>
-				<th scope="col" class="border px-4 py-2">Limită timp</th>
-				{{ if .ProblemEditor }}
-				<th scope="col" class="border px-4 py-2">Vizibilă</th>
-				{{end}}
-			</tr>
-		</thead>
-		<tbody>
-			<tr>
-				<th scope="row" class="border px-4 py-2">{{- .Problem.ID -}}</th>
-				<th class="border px-4 py-2">{{ (problemAuthor .Problem).Name }}</th>
-				<th class="border px-4 py-2">
-				{{if .Problem.ConsoleInput}}
-					{{- printf "Consolă" -}}
-				{{else}}
-					{{- .Problem.TestName -}}.in/{{- .Problem.TestName -}}.out
-				{{end}}
-				</th>
-				<th class="border px-4 py-2">{{- KBtoMB .Problem.MemoryLimit -}}MB/{{- KBtoMB .Problem.StackLimit -}}MB</th>
-				<th class="border px-4 py-2">{{- .Problem.TimeLimit -}}s</th>
-				{{ if .ProblemEditor }}
-				<th class="border px-4 py-2">{{.Problem.Visible}}</th>
-				{{ end }}
-			</tr>
-		</tbody>
-	</table>-->
-
-
-
-	
 	<h1 class="mt-4">Problema <code>{{.Problem.Name}}</code>
 	{{- if .ProblemEditor -}}
 		<a href="/probleme/{{- .Problem.ID -}}/edit"> [editare]</a>	
@@ -66,23 +29,25 @@
 					</p>
 					{{end}}
 				</div>
-				<div class="h-0 w-full border-t border-gray-200"></div>
-				<div class="mt-2 lg:pl-2 lg:pb-2">
-					<p class="text-lg px-2">Submisii anterioare</p>
-					{{ with (problemSubs .Problem .User) }}
-					{{ range . }}
-					<a class="black-anchor flex justify-between items-center rounded py-1 px-2 hover:bg-gray-200" href="/submissions/{{.ID}}">
-						<span id="submission-{{.ID}}"></span>
-						<script>
-						$("#submission-{{.ID}}").text(dayjs.unix({{timeToUnix .CreatedAt}}).format('DD/MM/YYYY HH:mm'))
-						</script>
-						<span class="rounded-md px-2 py-1 bg-teal-400 text-white text-sm">{{.Score}}</span>
-					</a>
-					{{ end }}
-					{{ else }}
-					<p class="px-2">Nicio submisie</p>
-					{{ end }}
-				</div>
+				{{ if .LoggedIn }}
+					<div class="h-0 w-full border-t border-gray-200"></div>
+					<div class="mt-2 lg:pl-2 lg:pb-2">
+						<p class="text-lg px-2">Submisii anterioare</p>
+						{{ with (problemSubs .Problem .User) }}
+						{{ range . }}
+						<a class="black-anchor flex justify-between items-center rounded py-1 px-2 hover:bg-gray-200" href="/submissions/{{.ID}}">
+							<span id="submission-{{.ID}}"></span>
+							<script>
+							$("#submission-{{.ID}}").text(dayjs.unix({{timeToUnix .CreatedAt}}).format('DD/MM/YYYY HH:mm'))
+							</script>
+							<span class="rounded-md px-2 py-1 bg-teal-400 text-white text-sm">{{.Score}}</span>
+						</a>
+						{{ end }}
+						{{ else }}
+						<p class="px-2">Nicio submisie</p>
+						{{ end }}
+					</div>
+				{{ end }}
 			</div>
 
 		</div>
