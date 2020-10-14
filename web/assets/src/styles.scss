@@ -118,11 +118,17 @@
 		@apply inline-flex justify-center px-4 py-2 leading-5 rounded-md;
 		@apply border border-gray-300;
 		@apply transition ease-in-out duration-150;
-		@apply bg-white text-gray-700 font-medium;
+		@apply bg-gray-200 text-gray-800 font-medium;
 		font-family: inherit;
 	}
+	.btn:hover {
+		@apply bg-gray-700 text-white border-gray-800;
+	}
+	.btn:active {
+		@apply bg-gray-700 text-white border-gray-800;
+	}
 	.btn:focus {
-		@apply outline-none shadow-outline-gray;
+		@apply bg-gray-700 text-white border-gray-800 outline-none shadow-outline-gray;
 	}
 
 	.btn-blue {

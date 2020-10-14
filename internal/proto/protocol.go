@@ -11,7 +11,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"sync"
 )
 
 // Message represents a simple message, all messages are categorized by a Type argument and a list of arguments
@@ -29,9 +28,9 @@ type Handler func(ctx context.Context, send chan<- Message, recv <-chan Message)
 func Handle(ctx context.Context, conn net.Conn, handler Handler) error {
 	// we want to create a waitgroup to avoid leaving the handler while a message is being written
 	// it is expected that the caller might close the connection
-	var wg sync.WaitGroup
 	sendChan := make(chan Message, 4)
 	recvChan := make(chan Message, 1)
+	finished := make(chan bool, 1)
 	go func() { // message receiving goroutine
 		dec := json.NewDecoder(conn)
 		for {
@@ -47,10 +46,9 @@ func Handle(ctx context.Context, conn net.Conn, handler Handler) error {
 			recvChan <- msg
 		}
 	}()
-	wg.Add(1)
 	go func() { // message sending goroutine
-		defer wg.Done()
 		enc := json.NewEncoder(conn)
+		defer func() { close(sendChan) }()
 		for {
 			select {
 			case msg, more := <-sendChan:
@@ -61,17 +59,14 @@ func Handle(ctx context.Context, conn net.Conn, handler Handler) error {
 					log.Printf("Encoding error: %v\n", err)
 				}
 			case <-ctx.Done():
-				close(sendChan)
+				return
+			case <-finished:
 				return
 			}
 		}
 	}()
-	return func() error {
-		err := handler(ctx, sendChan, recvChan)
-		if err != nil {
-			return err
-		}
-		wg.Wait()
-		return err
-	}()
+
+	err := handler(ctx, sendChan, recvChan)
+	finished <- true
+	return err
 }

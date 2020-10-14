@@ -59,7 +59,7 @@
 
 		{{ if .LoggedIn }}
 
-			<h1 class="mt-4">Încărcare sursă</h1>
+			<h1 class="mt-4">Încărcare submisie</h1>
 			<p class="mb-4 text-gray-600">(Dacă mă întrebați de ce merge doar c++ acum: why not?)</p>
 
 			<form id="submissionSend" autocomplete="off">
@@ -95,12 +95,12 @@ int main()
 					if(res.status == "error") {
 						createToast({
 							status: "error",
-							title: "Could not send submission",
+							title: "Nu am putut trimite submisia",
 							description: res.data
 						})
 						return
 					}
-					createToast({description: "Uploaded", onclick: () => window.location.assign(`/submissions/${res.data}`)})
+					createToast({title: "Submisie încărcată", description: `<button class="btn text-sm mt-2" href="/submissions/${res.data}">Vizualizare</btn>`, onclick: () => window.location.assign(`/submissions/${res.data}`)})
 				})
 			</script>
 		{{ end }}

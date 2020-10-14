@@ -14,6 +14,7 @@ import (
 	"github.com/KiloProjects/Kilonova/internal/box"
 	"github.com/KiloProjects/Kilonova/internal/manager"
 	"github.com/KiloProjects/Kilonova/internal/proto"
+	"github.com/davecgh/go-spew/spew"
 )
 
 var (
@@ -93,12 +94,13 @@ func Serve(ctx context.Context, l net.Listener, handler proto.Handler) error {
 		if err != nil {
 			if nErr, ok := err.(*net.OpError); ok &&
 				(nErr.Timeout() || nErr.Temporary()) {
+				spew.Dump(nErr)
 				continue
 			}
-			if errors.Is(err, net.ErrClosed) {
-				return err
+			if errors.Is(err, net.ErrClosed) { // it's normal
+				return nil
 			}
-			continue
+			return err
 		}
 		go func(conn net.Conn, handler proto.Handler) {
 			defer conn.Close()
@@ -117,8 +119,8 @@ func main() {
 	}
 	manager.SetCompilePath(*compilePath)
 	box.Initialize(*isolateBin)
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	os.RemoveAll(*socketPath)
 	l, err := net.Listen("unix", *socketPath)
@@ -134,6 +136,7 @@ func main() {
 	log.Println("Listening...")
 
 	go func() {
+		defer cancel()
 		if err := Serve(ctx, l, Handle); err != nil {
 			panic(err)
 		}
@@ -141,7 +144,8 @@ func main() {
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, os.Kill)
-	<-sig
-	cancel()
-
+	select {
+	case <-sig:
+	case <-ctx.Done():
+	}
 }
