@@ -5,13 +5,14 @@ import (
 	"context"
 	"database/sql"
 	"log"
-	"net"
+	"sync"
 	"time"
 
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/internal/db"
-	"github.com/KiloProjects/Kilonova/internal/proto"
+	pb "github.com/KiloProjects/Kilonova/internal/grpc"
 	"github.com/davecgh/go-spew/spew"
+	"google.golang.org/grpc"
 )
 
 type Handler struct {
@@ -20,11 +21,12 @@ type Handler struct {
 	dm     datamanager.Manager
 	ctx    context.Context
 	logger *log.Logger
+	debug  bool
 }
 
-func NewHandler(ctx context.Context, DB *db.Queries, dm datamanager.Manager, logger *log.Logger) *Handler {
+func NewHandler(ctx context.Context, DB *db.Queries, dm datamanager.Manager, logger *log.Logger, debug bool) *Handler {
 	ch := make(chan db.Submission, 5)
-	return &Handler{ch, DB, dm, ctx, logger}
+	return &Handler{ch, DB, dm, ctx, logger, debug}
 }
 
 // chFeeder "feeds" tChan with relevant data
@@ -55,7 +57,7 @@ func ldump(logger *log.Logger, args ...interface{}) {
 	spew.Fdump(logger.Writer(), args...)
 }
 
-func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-chan proto.Message) error {
+func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -68,23 +70,20 @@ func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-
 			err := h.db.SetSubmissionStatus(ctx, db.SetSubmissionStatusParams{ID: t.ID, Status: db.StatusWorking})
 			if err != nil {
 				h.logger.Println(err)
+				continue
 			}
+
+			var score_mu sync.Mutex
 			var score int32
 
-			send <- proto.ArgToMessage(proto.Compile{ID: t.ID, Code: t.Code, Language: t.Language})
+			resp, err := client.Compile(ctx, &pb.CompileRequest{ID: int32(t.ID), Code: t.Code, Lang: t.Language})
 
-			var resp proto.CResponse
-
-			msg := <-recv
-			if msg.Type == "Error" {
-				var perr proto.Error
-				proto.DecodeArgs(msg, &perr)
-				h.logger.Println("Error from eval:", perr.Value)
+			if err != nil {
+				h.logger.Println("Error from eval:", err)
+				continue
 			}
 
-			proto.DecodeArgs(msg, &resp)
-
-			{
+			if h.debug {
 				old := resp.Output
 				resp.Output = "<output stripped>"
 				ldump(h.logger, resp)
@@ -92,7 +91,7 @@ func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-
 			}
 
 			if err := h.db.SetCompilation(ctx, db.SetCompilationParams{
-				ID:             resp.ID,
+				ID:             t.ID,
 				CompileError:   sql.NullBool{Bool: !resp.Success, Valid: true},
 				CompileMessage: sql.NullString{String: resp.Output, Valid: true}}); err != nil {
 
@@ -114,7 +113,10 @@ func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-
 				continue
 			}
 
+			var wg sync.WaitGroup
+
 			for _, test := range tests {
+				wg.Add(1)
 				pbTest, err := h.db.Test(ctx, test.TestID)
 				if err != nil {
 					h.logger.Println("Error during test getting (0.5):", err)
@@ -132,76 +134,80 @@ func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-
 					filename = "stdin"
 				}
 
-				send <- proto.ArgToMessage(proto.Test{
-					ID:          t.ID,
-					TID:         test.ID,
+				test := &pb.Test{
+					ID:          int32(t.ID),
+					TID:         int32(test.ID),
 					Filename:    filename,
-					StackLimit:  int(problem.StackLimit),
-					MemoryLimit: int(problem.MemoryLimit),
+					StackLimit:  int32(problem.StackLimit),
+					MemoryLimit: int32(problem.MemoryLimit),
 					TimeLimit:   problem.TimeLimit,
-					Language:    t.Language,
-					Input:       string(input),
-				})
-			}
-
-			// TODO: this depends on the fact that we do stuff on a single loop
-			for _, test := range tests {
-				pbTest, err := h.db.Test(ctx, test.TestID)
-				if err != nil {
-					h.logger.Println("Error during test getting (0.5):", err)
-					continue
+					Lang:        t.Language,
+					Input:       input,
 				}
+				go func() {
+					defer wg.Done()
+					pbTest := pbTest
 
-				var resp proto.TResponse
-
-				msg := <-recv
-				if msg.Type == "Error" {
-					var perr proto.Error
-					proto.DecodeArgs(msg, &perr)
-					h.logger.Println("Error from eval:", perr.Value)
-				}
-
-				proto.DecodeArgs(msg, &resp)
-
-				{
-					old := resp.Output
-					resp.Output = "<output stripped>"
-					ldump(h.logger, resp)
-					resp.Output = old
-				}
-
-				var testScore int32
-
-				if resp.Comments == "" {
-					_, out, err := h.dm.Test(t.ProblemID, pbTest.VisibleID)
+					resp, err := client.Execute(ctx, test)
 					if err != nil {
-						h.logger.Println("Error during test getting (2):", err)
-						continue
+						h.logger.Printf("Error executing test: %v\n", err)
+						return
 					}
-					equal := compareOutputs(out, []byte(resp.Output))
 
-					if equal {
-						testScore = pbTest.Score
-						resp.Comments = "Correct Answer"
-					} else {
-						resp.Comments = "Wrong Answer"
+					if h.debug {
+						old := resp.Output
+						resp.Output = []byte("<output stripped>")
+						ldump(h.logger, resp)
+						resp.Output = old
 					}
-				}
 
-				// Make sure TLEs are fully handled
-				if resp.Time > problem.TimeLimit {
-					resp.Comments = "TLE"
-					testScore = 0
-				}
+					var testScore int32
 
-				if err := h.db.SetSubmissionTest(ctx, db.SetSubmissionTestParams{ID: resp.TID, Memory: int32(resp.Memory), Score: testScore, Time: resp.Time, Verdict: resp.Comments}); err != nil {
-					h.logger.Println("Error during evaltest updating:", err)
-				}
+					if resp.Comments == "" {
+						_, out, err := h.dm.Test(t.ProblemID, pbTest.VisibleID)
+						if err != nil {
+							h.logger.Println("Error during test getting (2):", err)
+							return
+						}
+						equal := compareOutputs(out, []byte(resp.Output))
 
-				score += testScore
+						if equal {
+							testScore = pbTest.Score
+							resp.Comments = "Correct Answer"
+						} else {
+							resp.Comments = "Wrong Answer"
+						}
+					}
+
+					// Make sure TLEs are fully handled
+					if resp.Time > problem.TimeLimit {
+						resp.Comments = "TLE"
+						testScore = 0
+					}
+
+					if err := h.db.SetSubmissionTest(ctx, db.SetSubmissionTestParams{
+						ID:      int64(resp.TID),
+						Memory:  int32(resp.Memory),
+						Score:   testScore,
+						Time:    resp.Time,
+						Verdict: resp.Comments,
+					}); err != nil {
+						h.logger.Println("Error during evaltest updating:", err)
+						return
+					}
+
+					score_mu.Lock()
+					score += testScore
+					score_mu.Unlock()
+
+				}()
 			}
 
-			send <- proto.ArgToMessage(proto.TRemove{ID: t.ID})
+			wg.Wait()
+
+			if _, err := client.Clean(ctx, &pb.CleanArgs{ID: int32(t.ID)}); err != nil {
+				h.logger.Printf("Couldn't clean task: %s\n", err)
+			}
 
 			h.db.SetSubmissionStatus(ctx, db.SetSubmissionStatusParams{ID: t.ID, Status: db.StatusFinished, Score: score})
 		}
@@ -210,11 +216,12 @@ func (h *Handler) Handle(ctx context.Context, send chan<- proto.Message, recv <-
 
 func (h *Handler) Start(path string) {
 	// Dial here to pre-emptively exit in case it fails
-	conn, err := net.Dial("unix", path)
+	conn, err := grpc.Dial("localhost:8001", grpc.WithInsecure())
 	if err != nil {
 		log.Println("Dialing error:", err)
 		return
 	}
+	client := pb.NewEvalClient(conn)
 
 	go h.chFeeder()
 
@@ -222,7 +229,7 @@ func (h *Handler) Start(path string) {
 		defer conn.Close()
 		log.Println("Connected to eval")
 
-		if err := proto.Handle(h.ctx, conn, h.Handle); err != nil {
+		if err := h.Handle(h.ctx, client); err != nil {
 			log.Println("Handling error:", err)
 		}
 	}()

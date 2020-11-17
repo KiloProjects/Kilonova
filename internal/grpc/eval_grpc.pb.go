@@ -19,9 +19,9 @@ const _ = grpc.SupportPackageIsVersion7
 type EvalClient interface {
 	// Compile compiles a program, to be used for later execution
 	Compile(ctx context.Context, in *CompileRequest, opts ...grpc.CallOption) (*CompileResponse, error)
-	// Execute runs a stream of tests, returning their output
-	// warning: the executable for the ID will be deleted after this is finished
-	Execute(ctx context.Context, opts ...grpc.CallOption) (Eval_ExecuteClient, error)
+	// Execute runs a test, returning their output
+	Execute(ctx context.Context, in *Test, opts ...grpc.CallOption) (*TestResponse, error)
+	Clean(ctx context.Context, in *CleanArgs, opts ...grpc.CallOption) (*EmptyResponse, error)
 }
 
 type evalClient struct {
@@ -41,35 +41,22 @@ func (c *evalClient) Compile(ctx context.Context, in *CompileRequest, opts ...gr
 	return out, nil
 }
 
-func (c *evalClient) Execute(ctx context.Context, opts ...grpc.CallOption) (Eval_ExecuteClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Eval_serviceDesc.Streams[0], "/eval.Eval/Execute", opts...)
+func (c *evalClient) Execute(ctx context.Context, in *Test, opts ...grpc.CallOption) (*TestResponse, error) {
+	out := new(TestResponse)
+	err := c.cc.Invoke(ctx, "/eval.Eval/Execute", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &evalExecuteClient{stream}
-	return x, nil
+	return out, nil
 }
 
-type Eval_ExecuteClient interface {
-	Send(*Test) error
-	Recv() (*TestResponse, error)
-	grpc.ClientStream
-}
-
-type evalExecuteClient struct {
-	grpc.ClientStream
-}
-
-func (x *evalExecuteClient) Send(m *Test) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *evalExecuteClient) Recv() (*TestResponse, error) {
-	m := new(TestResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
+func (c *evalClient) Clean(ctx context.Context, in *CleanArgs, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, "/eval.Eval/Clean", in, out, opts...)
+	if err != nil {
 		return nil, err
 	}
-	return m, nil
+	return out, nil
 }
 
 // EvalServer is the server API for Eval service.
@@ -78,9 +65,9 @@ func (x *evalExecuteClient) Recv() (*TestResponse, error) {
 type EvalServer interface {
 	// Compile compiles a program, to be used for later execution
 	Compile(context.Context, *CompileRequest) (*CompileResponse, error)
-	// Execute runs a stream of tests, returning their output
-	// warning: the executable for the ID will be deleted after this is finished
-	Execute(Eval_ExecuteServer) error
+	// Execute runs a test, returning their output
+	Execute(context.Context, *Test) (*TestResponse, error)
+	Clean(context.Context, *CleanArgs) (*EmptyResponse, error)
 	mustEmbedUnimplementedEvalServer()
 }
 
@@ -91,8 +78,11 @@ type UnimplementedEvalServer struct {
 func (UnimplementedEvalServer) Compile(context.Context, *CompileRequest) (*CompileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Compile not implemented")
 }
-func (UnimplementedEvalServer) Execute(Eval_ExecuteServer) error {
-	return status.Errorf(codes.Unimplemented, "method Execute not implemented")
+func (UnimplementedEvalServer) Execute(context.Context, *Test) (*TestResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Execute not implemented")
+}
+func (UnimplementedEvalServer) Clean(context.Context, *CleanArgs) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Clean not implemented")
 }
 func (UnimplementedEvalServer) mustEmbedUnimplementedEvalServer() {}
 
@@ -125,30 +115,40 @@ func _Eval_Compile_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Eval_Execute_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(EvalServer).Execute(&evalExecuteServer{stream})
-}
-
-type Eval_ExecuteServer interface {
-	Send(*TestResponse) error
-	Recv() (*Test, error)
-	grpc.ServerStream
-}
-
-type evalExecuteServer struct {
-	grpc.ServerStream
-}
-
-func (x *evalExecuteServer) Send(m *TestResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *evalExecuteServer) Recv() (*Test, error) {
-	m := new(Test)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
+func _Eval_Execute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Test)
+	if err := dec(in); err != nil {
 		return nil, err
 	}
-	return m, nil
+	if interceptor == nil {
+		return srv.(EvalServer).Execute(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/eval.Eval/Execute",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EvalServer).Execute(ctx, req.(*Test))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Eval_Clean_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CleanArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EvalServer).Clean(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/eval.Eval/Clean",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EvalServer).Clean(ctx, req.(*CleanArgs))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _Eval_serviceDesc = grpc.ServiceDesc{
@@ -159,14 +159,15 @@ var _Eval_serviceDesc = grpc.ServiceDesc{
 			MethodName: "Compile",
 			Handler:    _Eval_Compile_Handler,
 		},
-	},
-	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Execute",
-			Handler:       _Eval_Execute_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
+			MethodName: "Execute",
+			Handler:    _Eval_Execute_Handler,
+		},
+		{
+			MethodName: "Clean",
+			Handler:    _Eval_Clean_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "eval.proto",
 }

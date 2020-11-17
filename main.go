@@ -28,7 +28,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// go:generate pkger
+//go:generate pkger
 
 var (
 	logDir     = flag.String("logDir", "/data/knLogs", "Directory to write logs to")
@@ -103,7 +103,7 @@ func main() {
 
 	// Initialize components
 	API := server.NewAPI(ctx, manager, logg, ndb)
-	grader := grader.NewHandler(ctx, ndb, manager, logg)
+	grader := grader.NewHandler(ctx, ndb, manager, logg, *debug)
 
 	r.Mount("/api", API.Router())
 	r.Mount("/", web.NewWeb(manager, ndb, logg, *debug).Router())

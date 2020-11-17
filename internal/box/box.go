@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/KiloProjects/Kilonova/internal/proto"
+	"github.com/KiloProjects/Kilonova/internal/languages"
 )
 
 var (
@@ -38,10 +38,10 @@ type Config struct {
 	// Mark if Cgroups should be enabled
 	Cgroups bool
 	// Maximum Cgroup memory (in kbytes)
-	CgroupMem int
+	CgroupMem int32
 
 	// Directories represents the list of mounted directories
-	Directories []proto.Directory
+	Directories []languages.Directory
 
 	// Environment
 	InheritEnv   bool
@@ -59,8 +59,8 @@ type Config struct {
 	MetaFile   string
 
 	// Memory limits (in kbytes)
-	MemoryLimit int
-	StackSize   int
+	MemoryLimit int32
+	StackSize   int32
 
 	// Processes represents the maximum number of processes the program can create
 	Processes int
@@ -88,7 +88,7 @@ func (c *Config) BuildRunFlags() (res []string) {
 	if c.Cgroups {
 		res = append(res, "--cg", "--cg-timing")
 		if c.CgroupMem != 0 {
-			res = append(res, "--cg-mem="+strconv.Itoa(c.CgroupMem))
+			res = append(res, "--cg-mem="+strconv.Itoa(int(c.CgroupMem)))
 		}
 	}
 	for _, dir := range c.Directories {
@@ -131,11 +131,11 @@ func (c *Config) BuildRunFlags() (res []string) {
 
 	if c.MemoryLimit != 0 {
 		memLim := approxMemory(c.MemoryLimit)
-		res = append(res, "--mem="+strconv.Itoa(memLim))
+		res = append(res, "--mem="+strconv.Itoa(int(memLim)))
 	}
 	if c.StackSize != 0 {
 		stackSize := approxMemory(c.StackSize)
-		res = append(res, "--stack="+strconv.Itoa(stackSize))
+		res = append(res, "--stack="+strconv.Itoa(int(stackSize)))
 	}
 
 	if c.Processes == 0 {
@@ -319,7 +319,7 @@ func downloadFile(url, path string, perm os.FileMode) error {
 }
 
 // Approximate to the nearest 128kb
-func approxMemory(memory int) int {
+func approxMemory(memory int32) int32 {
 	rem := memory % 128
 	if rem == 0 {
 		return memory

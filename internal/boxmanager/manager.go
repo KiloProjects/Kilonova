@@ -1,13 +1,15 @@
-package manager
+package boxmanager
 
 import (
 	"fmt"
 	"io/ioutil"
 	"path"
 	"strconv"
+	"sync"
 
 	"github.com/KiloProjects/Kilonova/internal/box"
-	"github.com/KiloProjects/Kilonova/internal/proto"
+	pb "github.com/KiloProjects/Kilonova/internal/grpc"
+	"github.com/KiloProjects/Kilonova/internal/languages"
 )
 
 var compilePath string
@@ -17,14 +19,17 @@ type limits struct {
 	// seconds
 	TimeLimit float64
 	// kilobytes
-	StackLimit  int
-	MemoryLimit int
+	StackLimit  int32
+	MemoryLimit int32
 }
 
 // BoxManager manages a box with eval-based submissions
 type BoxManager struct {
 	ID  int
 	Box *box.Box
+
+	compileLock   sync.Mutex
+	executionLock sync.Mutex
 
 	// If debug mode is enabled, the manager should print more stuff to the command line
 	debug bool
@@ -43,7 +48,7 @@ func (b *BoxManager) Cleanup() error {
 }
 
 // CompileFile compiles a file that has the corresponding language
-func (b *BoxManager) CompileFile(SourceCode []byte, language proto.Language) (string, error) {
+func (b *BoxManager) CompileFile(SourceCode []byte, language languages.Language) (string, error) {
 	if err := b.Box.WriteFile(language.SourceName, SourceCode); err != nil {
 		return "", err
 	}
@@ -80,7 +85,7 @@ func (b *BoxManager) CompileFile(SourceCode []byte, language proto.Language) (st
 
 // RunSubmission runs a program, following the language conventions
 // filenames contains the names for input and output, used if consoleInput is true
-func (b *BoxManager) RunSubmission(language proto.Language, constraints limits, metaFile string, consoleInput bool) (*box.MetaFile, error) {
+func (b *BoxManager) RunSubmission(language languages.Language, constraints limits, metaFile string, consoleInput bool) (*box.MetaFile, error) {
 	if b.Box.Config.EnvToSet == nil {
 		b.Box.Config.EnvToSet = make(map[string]string)
 	}
@@ -145,7 +150,10 @@ func (b *BoxManager) RunSubmission(language proto.Language, constraints limits, 
 }
 
 // ExecuteTest executes a new test
-func (b *BoxManager) ExecuteTest(sub proto.Test) (*proto.TResponse, error) {
+func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
+	b.executionLock.Lock()
+	defer b.executionLock.Unlock()
+
 	defer func() {
 		// After doing stuff, we need to clean up after ourselves ;)
 		if err := b.Reset(); err != nil {
@@ -153,7 +161,7 @@ func (b *BoxManager) ExecuteTest(sub proto.Test) (*proto.TResponse, error) {
 		}
 	}()
 
-	response := &proto.TResponse{TID: sub.TID}
+	response := &pb.TestResponse{TID: sub.TID}
 
 	if err := b.Box.WriteFile("/box/"+sub.Filename+".in", []byte(sub.Input)); err != nil {
 		fmt.Println("Can't write input file:", err)
@@ -162,7 +170,7 @@ func (b *BoxManager) ExecuteTest(sub proto.Test) (*proto.TResponse, error) {
 	}
 	consoleInput := sub.Filename == "stdin"
 
-	lang := proto.Languages[sub.Language]
+	lang := languages.Languages[sub.Lang]
 	if err := b.Box.CopyInBox(path.Join(compilePath, fmt.Sprintf("%d.bin", sub.ID)), lang.CompiledName); err != nil {
 		response.Comments = "Couldn't link executable in box"
 		return response, err
@@ -173,9 +181,9 @@ func (b *BoxManager) ExecuteTest(sub proto.Test) (*proto.TResponse, error) {
 		StackLimit:  sub.StackLimit,
 		TimeLimit:   sub.TimeLimit,
 	}
-	meta, err := b.RunSubmission(proto.Languages[sub.Language], lim, strconv.Itoa(int(sub.ID))+".txt", consoleInput)
+	meta, err := b.RunSubmission(languages.Languages[sub.Lang], lim, strconv.Itoa(int(sub.ID))+".txt", consoleInput)
 	response.Time = meta.Time
-	response.Memory = meta.CgMem
+	response.Memory = int32(meta.CgMem)
 
 	if err != nil {
 		response.Comments = fmt.Sprintf("Error running submission: %v", err)
@@ -198,19 +206,21 @@ func (b *BoxManager) ExecuteTest(sub proto.Test) (*proto.TResponse, error) {
 		response.Comments = "Missing output file"
 		return response, nil
 	}
-	response.Output = string(file)
+	response.Output = file
 
 	return response, nil
 }
 
-func (b *BoxManager) CompileSubmission(c proto.Compile) *proto.CResponse {
+func (b *BoxManager) CompileSubmission(c *pb.CompileRequest) (*pb.CompileResponse, error) {
+	b.compileLock.Lock()
+	defer b.compileLock.Unlock()
+
 	defer b.Reset()
-	lang := proto.Languages[c.Language]
+	lang := languages.Languages[c.Lang]
 
 	outName := path.Join(compilePath, fmt.Sprintf("%d.bin", c.ID))
-	resp := &proto.CResponse{}
+	resp := &pb.CompileResponse{}
 	resp.Success = true
-	resp.ID = c.ID
 
 	if lang.IsCompiled {
 		out, err := b.CompileFile([]byte(c.Code), lang)
@@ -225,7 +235,7 @@ func (b *BoxManager) CompileSubmission(c proto.Compile) *proto.CResponse {
 			}
 		}
 
-		return resp
+		return resp, nil
 	}
 
 	err := ioutil.WriteFile(outName, []byte(c.Code), 0644)
@@ -234,7 +244,7 @@ func (b *BoxManager) CompileSubmission(c proto.Compile) *proto.CResponse {
 		resp.Success = false
 	}
 
-	return resp
+	return resp, nil
 }
 
 // Reset reintializes a box

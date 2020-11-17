@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"path"
+	"strings"
 
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/internal/cookie"
@@ -117,41 +118,40 @@ func (rt *Web) Router() chi.Router {
 		})
 	}
 
-	/*
-		r.Mount("/static", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			p := path.Clean(r.RequestURI)
-			if !strings.HasPrefix(p, "/static") {
-				http.Error(w, http.StatusText(404), 404)
-				return
-			}
-			file, err := pkger.Open(p)
-			if err != nil {
-				http.Error(w, http.StatusText(404), 404)
-				return
-			}
-			fstat, err := file.Stat()
-			if err != nil {
-				http.Error(w, http.StatusText(404), 404)
-				return
-			}
-			http.ServeContent(w, r, fstat.Name(), fstat.ModTime(), file)
-		}))
+	r.Mount("/static", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := path.Clean(r.RequestURI)
+		if !strings.HasPrefix(p, "/static") {
+			http.Error(w, http.StatusText(404), 404)
+			return
+		}
+		file, err := pkger.Open(p)
+		if err != nil {
+			http.Error(w, http.StatusText(404), 404)
+			return
+		}
+		fstat, err := file.Stat()
+		if err != nil {
+			http.Error(w, http.StatusText(404), 404)
+			return
+		}
+		http.ServeContent(w, r, fstat.Name(), fstat.ModTime(), file)
+	}))
 
-		r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
-			file, err := pkger.Open("/static/favicon.ico")
-			if err != nil {
-				rt.logger.Println("CAN'T OPEN FAVICON")
-				http.Error(w, http.StatusText(500), 500)
-				return
-			}
-			fstat, err := file.Stat()
-			if err != nil {
-				rt.logger.Println("CAN'T STAT FAVICON")
-				http.Error(w, http.StatusText(500), 500)
-				return
-			}
-			http.ServeContent(w, r, fstat.Name(), fstat.ModTime(), file)
-		})*/
+	r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		file, err := pkger.Open("/static/favicon.ico")
+		if err != nil {
+			rt.logger.Println("CAN'T OPEN FAVICON")
+			http.Error(w, http.StatusText(500), 500)
+			return
+		}
+		fstat, err := file.Stat()
+		if err != nil {
+			rt.logger.Println("CAN'T STAT FAVICON")
+			http.Error(w, http.StatusText(500), 500)
+			return
+		}
+		http.ServeContent(w, r, fstat.Name(), fstat.ModTime(), file)
+	})
 
 	r.Group(func(r chi.Router) {
 		r.Use(rt.getUser)
@@ -342,6 +342,7 @@ func (rt *Web) Router() chi.Router {
 			rt.notFound(w, r)
 			return
 		}
+		defer file.Close()
 		fstat, err := file.Stat()
 		if err != nil {
 			rt.notFound(w, r)

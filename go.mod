@@ -9,6 +9,7 @@ require (
 	github.com/go-chi/cors v1.1.1
 	github.com/go-ozzo/ozzo-validation/v4 v4.2.2
 	github.com/go-redis/redis/v8 v8.0.0-beta.9
+	github.com/golang/protobuf v1.4.2
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gosimple/slug v1.9.0
@@ -20,6 +21,8 @@ require (
 	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
 	golang.org/x/net v0.0.0-20200625001655-4c5254603344 // indirect
 	golang.org/x/text v0.3.3 // indirect
+	google.golang.org/grpc v1.33.2
+	google.golang.org/protobuf v1.25.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )

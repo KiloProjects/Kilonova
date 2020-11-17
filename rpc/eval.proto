@@ -10,11 +10,18 @@ service Eval {
 	// Compile compiles a program, to be used for later execution
 	rpc Compile(CompileRequest) returns (CompileResponse) {}
 
-	// Execute runs a stream of tests, returning their output
-	// warning: the executable for the ID will be deleted after this is finished
-	rpc Execute(stream Test) returns (stream TestResponse) {}
+	// Execute runs a test, returning their output
+	rpc Execute(Test) returns (TestResponse) {}
+
+	rpc Clean(CleanArgs) returns (EmptyResponse) {}
 
 }
+
+message CleanArgs {
+	int32 ID = 1;
+}
+
+message EmptyResponse {}
 
 message CompileRequest {
 	int32 ID = 1; // ID that corresponds to the submission

@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/Kilonova/internal/db"
-	"github.com/KiloProjects/Kilonova/internal/proto"
+	"github.com/KiloProjects/Kilonova/internal/languages"
 	"github.com/KiloProjects/Kilonova/internal/util"
 )
 
@@ -135,7 +135,7 @@ func (s *API) setSubmissionVisible(w http.ResponseWriter, r *http.Request) {
 // Required values:
 //	- code=[sourcecode] - source code of the submission, mutually exclusive with file uploads
 //  - file=[file] - multipart file, mutually exclusive with the code param
-//  - lang=[language] - language key like in proto.Languages
+//  - lang=[language] - language key like in languages.Languages
 //  - problemID=[problem] - problem ID that the submission will be associated with
 // Note that the `code` param is prioritized over file upload
 func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
@@ -161,7 +161,7 @@ func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := proto.Languages[args.Lang]; ok == false {
+	if _, ok := languages.Languages[args.Lang]; ok == false {
 		errorData(w, "Invalid language", http.StatusBadRequest)
 		return
 	}

@@ -1,7 +1,8 @@
-package proto
+package languages
 
 // LANGUAGE DEFINITIONS
 // The data in this file should be loosely based on https://github.com/bogdan2412/infoarena/blob/master/eval/utilities.php#L48-L133
+// On second thought, this should be dynamically loaded from somewhere, but I can't be bothered with it
 
 // Directory represents a directory rule
 type Directory struct {
