@@ -11,7 +11,6 @@ import (
 	"github.com/KiloProjects/Kilonova/internal/box"
 	"github.com/KiloProjects/Kilonova/internal/boxmanager"
 	pb "github.com/KiloProjects/Kilonova/internal/grpc"
-	"github.com/davecgh/go-spew/spew"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -27,12 +26,10 @@ type evalServer struct {
 }
 
 func (s *evalServer) Compile(_ context.Context, req *pb.CompileRequest) (*pb.CompileResponse, error) {
-	spew.Dump(req)
 	return s.mgr.CompileSubmission(req)
 }
 
 func (s *evalServer) Execute(_ context.Context, test *pb.Test) (*pb.TestResponse, error) {
-	spew.Dump(test)
 	return s.mgr.ExecuteTest(test)
 }
 
