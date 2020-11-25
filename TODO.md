@@ -8,7 +8,8 @@ TODO LIST KILONOVA:
 	- [x] Mathjax
 	- [ ] Profil user
 		- [ ] Listă probleme făcute
-		- [ ] Bio
+			- !!!! Trb făcut discret încât să nu promoveze nr mai mare de pb
+		- [x] Bio
 	- [ ] Pagină settings
 		- [ ] Setări Vizibilitate default la submissions
 	- [x] Implementează server.UpdateTest
@@ -23,25 +24,29 @@ TODO LIST KILONOVA:
 		- [ ] Auto reîncărcare pagină submission când nu e finalizată evaluarea
 		- [ ] Experiență mai bună pentru editat problemele
 	- [ ] Filtre submissions
-	- [ ] Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
 	- [ ] Multi-eval support
-- [ ] Pentru release:
+- [ ] Pentru release (TODO: Split chestii în mai multe stages):
+	- [ ] Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
+	- [ ] CDN
+	- [ ] Împarte în mai multe services
 	- [ ] "Custom input" ca pe hackerrank/leetcode
+	- [ ] Etichete probleme
 	- [ ] Pagină profil (cont.):
 		- [ ] Mai customizabil
 	- [ ] Site mai drăguț:
-		- [ ] Dark theme	
+		- [ ] Dark theme
+		- [ ] More theme
 	- [ ] Sistem de contests
 	- [ ] Mai multe tipuri de probleme:
 		- [ ] interactive
 		- [ ] ? ACM
-	- [ ] Integrare cu Polygon
+	- [ ] ? Integrare cu Polygon
 	- [ ] PbInfo problem import (înseamnă că e nevoie să termin PbAPI)
 	- [ ] "Kilonova PRO"
 		- [ ] Sistem de plată/donații
 		- [ ] ? cosmetice
 		- [ ] Sistem de priority queue 
-		- [ ] Sistem NOVA
+		- [ ] ? Sistem NOVA
 			- sub-instanțe de kilonova
 			- [ ] Restructurare sistem de webserver
 			- [ ] Control asupra subdomeniilor (e nevoie de modificări mari la webserver-ul meu privat dpdv al routing-ului și al certificatelor)
@@ -53,4 +58,3 @@ TODO LIST KILONOVA:
 		- [ ] Guilds
 		- [ ] Friendships
 		- [ ] Blog
-	- [ ] Etichete probleme

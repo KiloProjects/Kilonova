@@ -6,14 +6,15 @@ package eval;
 
 // Eval does something
 service Eval {
-	
+	rpc Ping(Empty) returns (Empty) {}
+
 	// Compile compiles a program, to be used for later execution
 	rpc Compile(CompileRequest) returns (CompileResponse) {}
 
 	// Execute runs a test, returning their output
 	rpc Execute(Test) returns (TestResponse) {}
 
-	rpc Clean(CleanArgs) returns (EmptyResponse) {}
+	rpc Clean(CleanArgs) returns (Empty) {}
 
 }
 
@@ -21,7 +22,7 @@ message CleanArgs {
 	int32 ID = 1;
 }
 
-message EmptyResponse {}
+message Empty {}
 
 message CompileRequest {
 	int32 ID = 1; // ID that corresponds to the submission

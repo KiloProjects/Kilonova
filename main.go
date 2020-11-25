@@ -13,12 +13,12 @@ import (
 	"path"
 	"time"
 
+	"github.com/KiloProjects/Kilonova/api"
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/internal/cookie"
 	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/grader"
 	"github.com/KiloProjects/Kilonova/internal/version"
-	"github.com/KiloProjects/Kilonova/server"
 	"github.com/KiloProjects/Kilonova/web"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -102,7 +102,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Initialize components
-	API := server.NewAPI(ctx, manager, logg, ndb)
+	API := api.New(ctx, manager, logg, ndb)
 	grader := grader.NewHandler(ctx, ndb, manager, logg, *debug)
 
 	r.Mount("/api", API.Router())

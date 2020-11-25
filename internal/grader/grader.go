@@ -221,7 +221,13 @@ func (h *Handler) Start(path string) {
 		log.Println("Dialing error:", err)
 		return
 	}
+
 	client := pb.NewEvalClient(conn)
+
+	if _, err = client.Ping(context.Background(), nil); err != nil {
+		log.Println(err)
+		return
+	}
 
 	go h.chFeeder()
 

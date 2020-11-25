@@ -1,4 +1,4 @@
-package server
+package api
 
 import (
 	"context"
@@ -21,8 +21,8 @@ type API struct {
 	db      *db.Queries
 }
 
-// NewAPI declares a new API instance
-func NewAPI(ctx context.Context, manager datamanager.Manager, logger *log.Logger, kdb *db.Queries) *API {
+// New declares a new API instance
+func New(ctx context.Context, manager datamanager.Manager, logger *log.Logger, kdb *db.Queries) *API {
 	return &API{ctx, manager, logger, kdb}
 }
 

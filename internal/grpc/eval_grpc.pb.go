@@ -17,11 +17,12 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EvalClient interface {
+	Ping(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
 	// Compile compiles a program, to be used for later execution
 	Compile(ctx context.Context, in *CompileRequest, opts ...grpc.CallOption) (*CompileResponse, error)
 	// Execute runs a test, returning their output
 	Execute(ctx context.Context, in *Test, opts ...grpc.CallOption) (*TestResponse, error)
-	Clean(ctx context.Context, in *CleanArgs, opts ...grpc.CallOption) (*EmptyResponse, error)
+	Clean(ctx context.Context, in *CleanArgs, opts ...grpc.CallOption) (*Empty, error)
 }
 
 type evalClient struct {
@@ -30,6 +31,15 @@ type evalClient struct {
 
 func NewEvalClient(cc grpc.ClientConnInterface) EvalClient {
 	return &evalClient{cc}
+}
+
+func (c *evalClient) Ping(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, "/eval.Eval/Ping", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *evalClient) Compile(ctx context.Context, in *CompileRequest, opts ...grpc.CallOption) (*CompileResponse, error) {
@@ -50,8 +60,8 @@ func (c *evalClient) Execute(ctx context.Context, in *Test, opts ...grpc.CallOpt
 	return out, nil
 }
 
-func (c *evalClient) Clean(ctx context.Context, in *CleanArgs, opts ...grpc.CallOption) (*EmptyResponse, error) {
-	out := new(EmptyResponse)
+func (c *evalClient) Clean(ctx context.Context, in *CleanArgs, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
 	err := c.cc.Invoke(ctx, "/eval.Eval/Clean", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -63,11 +73,12 @@ func (c *evalClient) Clean(ctx context.Context, in *CleanArgs, opts ...grpc.Call
 // All implementations must embed UnimplementedEvalServer
 // for forward compatibility
 type EvalServer interface {
+	Ping(context.Context, *Empty) (*Empty, error)
 	// Compile compiles a program, to be used for later execution
 	Compile(context.Context, *CompileRequest) (*CompileResponse, error)
 	// Execute runs a test, returning their output
 	Execute(context.Context, *Test) (*TestResponse, error)
-	Clean(context.Context, *CleanArgs) (*EmptyResponse, error)
+	Clean(context.Context, *CleanArgs) (*Empty, error)
 	mustEmbedUnimplementedEvalServer()
 }
 
@@ -75,13 +86,16 @@ type EvalServer interface {
 type UnimplementedEvalServer struct {
 }
 
+func (UnimplementedEvalServer) Ping(context.Context, *Empty) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
 func (UnimplementedEvalServer) Compile(context.Context, *CompileRequest) (*CompileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Compile not implemented")
 }
 func (UnimplementedEvalServer) Execute(context.Context, *Test) (*TestResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Execute not implemented")
 }
-func (UnimplementedEvalServer) Clean(context.Context, *CleanArgs) (*EmptyResponse, error) {
+func (UnimplementedEvalServer) Clean(context.Context, *CleanArgs) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Clean not implemented")
 }
 func (UnimplementedEvalServer) mustEmbedUnimplementedEvalServer() {}
@@ -95,6 +109,24 @@ type UnsafeEvalServer interface {
 
 func RegisterEvalServer(s grpc.ServiceRegistrar, srv EvalServer) {
 	s.RegisterService(&_Eval_serviceDesc, srv)
+}
+
+func _Eval_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EvalServer).Ping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/eval.Eval/Ping",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EvalServer).Ping(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Eval_Compile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -155,6 +187,10 @@ var _Eval_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "eval.Eval",
 	HandlerType: (*EvalServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Ping",
+			Handler:    _Eval_Ping_Handler,
+		},
 		{
 			MethodName: "Compile",
 			Handler:    _Eval_Compile_Handler,
