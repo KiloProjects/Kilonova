@@ -8,7 +8,7 @@ ORDER BY id;
 
 -- name: ProblemTests :many
 SELECT * FROM tests 
-WHERE problem_id = $1
+WHERE problem_id = $1 AND orphaned = false
 ORDER BY visible_id;
 
 -- name: VisibleProblems :many
@@ -74,5 +74,7 @@ SET test_name = $2
 WHERE id = $1;
 
 -- name: PurgePbTests :exec
-DELETE FROM tests 
+-- Since there is a key constraint on these tests, instead of removing them, we simply orphan them so they don't get used in the future
+UPDATE tests 
+SET orphaned = true
 WHERE problem_id = $1;

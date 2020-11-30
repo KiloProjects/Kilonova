@@ -1,11 +1,20 @@
 package api
 
 import (
+	"archive/zip"
+	"errors"
+	"io"
+	"io/fs"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"path"
 	"strconv"
+	"strings"
 
 	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/util"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gosimple/slug"
 )
 
@@ -247,11 +256,219 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 		[]byte(r.FormValue("input")),
 		[]byte(r.FormValue("output")),
 	); err != nil {
-		s.logger.Println("Couldn't create test", err)
+		log.Println("Couldn't create test", err)
 		errorData(w, "Couldn't create test", 500)
 		return
 	}
 	returnData(w, "Created test")
+}
+
+type testPair struct {
+	InFile  fs.File
+	OutFile fs.File
+	Score   int
+}
+
+type archiveCtx struct {
+	tests        map[int]testPair
+	hasScoreFile bool
+	scoredTests  []int
+}
+
+func getFirstInt(s string) int {
+	var poz int
+	for poz < len(s) && s[poz] >= '0' && s[poz] <= '9' {
+		poz++
+	}
+	val, err := strconv.Atoi(s[:poz])
+	if err != nil {
+		return -1
+	}
+	return val
+}
+
+var errBadTestFile = errors.New("Bad test score file")
+var errBadArchive = errors.New("Bad archive")
+
+func analyzeFile(ctx *archiveCtx, r *zip.Reader, name string, file fs.File) error {
+	if name == "test.txt" || name == "tests.txt" {
+		ctx.hasScoreFile = true
+
+		data, err := io.ReadAll(file)
+		if err != nil {
+			return errBadArchive
+		}
+
+		lines := strings.Split(string(data), "\n")
+		if len(lines) > 256 { // impose a hard limit on test lines
+			return errBadTestFile
+		}
+
+		for _, line := range lines {
+			vals := strings.Fields(line)
+			if line == "" { // empty line, skip
+				continue
+			}
+			if len(vals) != 2 {
+				return errBadTestFile
+			}
+			testID, err := strconv.Atoi(vals[0])
+			if err != nil || testID < 0 {
+				return errBadTestFile
+			}
+			score, err := strconv.Atoi(vals[1])
+			if err != nil {
+				return errBadTestFile
+			}
+			test := ctx.tests[testID]
+			test.Score = score
+			ctx.tests[testID] = test
+			for _, ex := range ctx.scoredTests {
+				if ex == testID {
+					return errBadTestFile
+				}
+			}
+			log.Println(testID)
+			ctx.scoredTests = append(ctx.scoredTests, testID)
+		}
+		return nil
+	}
+	tid := getFirstInt(name)
+	if tid == -1 {
+		return errBadArchive
+	}
+	if strings.HasSuffix(name, ".in") {
+		tf := ctx.tests[tid]
+		if tf.InFile != nil {
+			return errBadArchive
+		}
+
+		tf.InFile = file
+		ctx.tests[tid] = tf
+	}
+	if strings.HasSuffix(name, ".out") || strings.HasSuffix(name, ".ok") {
+		tf := ctx.tests[tid]
+		if tf.OutFile != nil {
+			return errBadArchive
+		}
+
+		tf.OutFile = file
+		ctx.tests[tid] = tf
+	}
+	return nil
+}
+
+func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
+	// Since this operation can take at most 100MB, I am putting this lock as a precaution.
+	// This might create a problem with timeouts, and this should be handled asynchronously.
+	// (ie not in a request), but eh, I cant be bothered right now to do it the right way.
+	// TODO: Do this the right way (low priority)
+	s.testArchiveLock.Lock()
+	defer s.testArchiveLock.Unlock()
+	r.ParseMultipartForm(100 * 1024 * 1024) // 100MB, I should document this hard limit sometime TODO (low priority)
+
+	if r.MultipartForm == nil || r.MultipartForm.File == nil {
+		errorData(w, "Missing archive", 400)
+		return
+	}
+
+	ctx := archiveCtx{}
+	ctx.tests = make(map[int]testPair)
+	ctx.scoredTests = make([]int, 0, 10)
+
+	// Process zip file
+	file, fh, err := r.FormFile("testArchive")
+	if err != nil {
+		log.Println(err)
+		errorData(w, err.Error(), 400)
+		return
+	}
+	defer file.Close()
+
+	ar, err := zip.NewReader(file, fh.Size)
+	if err != nil {
+		errorData(w, errBadArchive, 400)
+		return
+	}
+	for _, file := range ar.File {
+		if file.FileInfo().IsDir() {
+			continue
+		}
+		f, err := ar.Open(file.Name)
+		if err != nil {
+			log.Println(err)
+			errorData(w, "Unknown error", 500)
+			return
+		}
+		defer f.Close() // This will always close all files, regardless of when the program leaves
+		if err := analyzeFile(&ctx, ar, path.Base(file.Name), f); err != nil {
+			errorData(w, err.Error(), 400)
+			return
+		}
+	}
+	spew.Dump(ctx.scoredTests)
+	log.Println(ctx.tests)
+
+	if len(ctx.scoredTests) != len(ctx.tests) {
+		errorData(w, errBadArchive, 400)
+		return
+	}
+
+	for _, v := range ctx.tests {
+		if v.InFile == nil || v.OutFile == nil {
+			errorData(w, errBadArchive, 400)
+			return
+		}
+	}
+
+	if !ctx.hasScoreFile {
+		errorData(w, "Missing test score file", 400)
+		return
+	}
+
+	// If we are loading an archive, the user might want to remove all tests first
+	// So let's do it for them
+	if err := s.db.PurgePbTests(r.Context(), util.IDFromContext(r, util.PbID)); err != nil {
+		log.Println(err)
+		errorData(w, err, 500)
+		return
+	}
+
+	for testID, v := range ctx.tests {
+		inFile, err := ioutil.ReadAll(v.InFile)
+		if err != nil {
+			log.Println(err)
+			errorData(w, err, 500)
+			return
+		}
+
+		outFile, err := ioutil.ReadAll(v.OutFile)
+		if err != nil {
+			log.Println(err)
+			errorData(w, err, 500)
+			return
+		}
+
+		pbID := util.IDFromContext(r, util.PbID)
+		if err := s.db.CreateTest(r.Context(), db.CreateTestParams{ProblemID: pbID, VisibleID: int32(testID), Score: int32(v.Score)}); err != nil {
+			log.Println(err)
+			errorData(w, err, 500)
+			return
+		}
+
+		if err := s.manager.SaveTest(
+			pbID,
+			int32(testID),
+			inFile,
+			outFile,
+		); err != nil {
+			log.Println("Couldn't create test", err)
+			errorData(w, "Couldn't create test", 500)
+			return
+		}
+	}
+
+	returnData(w, "Processed tests")
 }
 
 // initProblem assigns an ID for the problem
@@ -308,7 +525,7 @@ func (s *API) getAllProblems(w http.ResponseWriter, r *http.Request) {
 	returnData(w, problems)
 }
 
-func (s API) pbIDFromReq(r *http.Request) uint {
+func (s *API) pbIDFromReq(r *http.Request) uint {
 	return getContextValue(r, "pbID").(uint)
 }
 
@@ -333,7 +550,7 @@ func (s *API) getProblemByID(w http.ResponseWriter, r *http.Request) {
 //  - id - the test id
 //  - noIn - if not null, the input file won't be sent
 //  - noOut - if not null, the output file won't be sent
-func (s API) getTestData(w http.ResponseWriter, r *http.Request) {
+func (s *API) getTestData(w http.ResponseWriter, r *http.Request) {
 	sid := r.FormValue("id")
 	if sid == "" {
 		errorData(w, "You must specify a test ID", http.StatusBadRequest)

@@ -10,7 +10,7 @@ import (
 const biggestVID = `-- name: BiggestVID :one
 SELECT visible_id 
 FROM tests 
-WHERE problem_id = $1
+WHERE problem_id = $1 AND orphaned = false
 ORDER BY visible_id desc
 LIMIT 1
 `
@@ -44,7 +44,7 @@ func (q *Queries) CreateTest(ctx context.Context, arg CreateTestParams) error {
 const setPbTestScore = `-- name: SetPbTestScore :exec
 UPDATE tests 
 SET score = $3
-WHERE problem_id = $1 AND visible_id = $2
+WHERE problem_id = $1 AND visible_id = $2 AND orphaned = false
 `
 
 type SetPbTestScoreParams struct {
@@ -61,7 +61,7 @@ func (q *Queries) SetPbTestScore(ctx context.Context, arg SetPbTestScoreParams) 
 const setPbTestVisibleID = `-- name: SetPbTestVisibleID :exec
 UPDATE tests 
 SET visible_id = $1
-WHERE problem_id = $2 AND visible_id = $3
+WHERE problem_id = $2 AND visible_id = $3 AND orphaned = false
 `
 
 type SetPbTestVisibleIDParams struct {
@@ -78,7 +78,7 @@ func (q *Queries) SetPbTestVisibleID(ctx context.Context, arg SetPbTestVisibleID
 const setVisibleID = `-- name: SetVisibleID :exec
 UPDATE tests 
 SET visible_id = $2
-WHERE id = $1
+WHERE id = $1 AND orphaned = false
 `
 
 type SetVisibleIDParams struct {
@@ -92,8 +92,8 @@ func (q *Queries) SetVisibleID(ctx context.Context, arg SetVisibleIDParams) erro
 }
 
 const test = `-- name: Test :one
-SELECT id, created_at, score, problem_id, visible_id FROM tests 
-WHERE id = $1
+SELECT id, created_at, score, problem_id, visible_id, orphaned FROM tests 
+WHERE id = $1 AND orphaned = false
 `
 
 func (q *Queries) Test(ctx context.Context, id int64) (Test, error) {
@@ -105,13 +105,14 @@ func (q *Queries) Test(ctx context.Context, id int64) (Test, error) {
 		&i.Score,
 		&i.ProblemID,
 		&i.VisibleID,
+		&i.Orphaned,
 	)
 	return i, err
 }
 
 const testVisibleID = `-- name: TestVisibleID :one
-SELECT id, created_at, score, problem_id, visible_id FROM tests 
-WHERE problem_id = $1 AND visible_id = $2
+SELECT id, created_at, score, problem_id, visible_id, orphaned FROM tests 
+WHERE problem_id = $1 AND visible_id = $2 AND orphaned = false
 ORDER BY visible_id
 `
 
@@ -129,6 +130,7 @@ func (q *Queries) TestVisibleID(ctx context.Context, arg TestVisibleIDParams) (T
 		&i.Score,
 		&i.ProblemID,
 		&i.VisibleID,
+		&i.Orphaned,
 	)
 	return i, err
 }

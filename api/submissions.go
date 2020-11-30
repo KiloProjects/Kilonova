@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/KiloProjects/Kilonova/internal/db"
@@ -113,7 +114,7 @@ func (s *API) setSubmissionVisible(w http.ResponseWriter, r *http.Request) {
 			errorData(w, "Submission not found", http.StatusNotFound)
 			return
 		}
-		s.logger.Println(err)
+		log.Println(err)
 		errorData(w, err, http.StatusNotFound)
 		return
 	}
@@ -212,7 +213,7 @@ func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
 	tests, err := s.db.ProblemTests(r.Context(), problem.ID)
 	for _, test := range tests {
 		if err := s.db.CreateSubTest(r.Context(), db.CreateSubTestParams{UserID: user.ID, TestID: test.ID, SubmissionID: id}); err != nil {
-			s.logger.Println(err)
+			log.Println(err)
 		}
 	}
 

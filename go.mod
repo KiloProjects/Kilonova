@@ -16,8 +16,10 @@ require (
 	github.com/lib/pq v1.3.0
 	github.com/lucasb-eyer/go-colorful v1.0.3
 	github.com/markbates/pkger v0.17.0
+	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/tdewolff/minify/v2 v2.9.4
+	github.com/urfave/cli/v2 v2.3.0 // indirect
 	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
 	golang.org/x/net v0.0.0-20200625001655-4c5254603344 // indirect
 	golang.org/x/text v0.3.3 // indirect

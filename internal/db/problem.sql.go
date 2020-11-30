@@ -79,8 +79,8 @@ func (q *Queries) Problem(ctx context.Context, id int64) (Problem, error) {
 }
 
 const problemTests = `-- name: ProblemTests :many
-SELECT id, created_at, score, problem_id, visible_id FROM tests 
-WHERE problem_id = $1
+SELECT id, created_at, score, problem_id, visible_id, orphaned FROM tests 
+WHERE problem_id = $1 AND orphaned = false
 ORDER BY visible_id
 `
 
@@ -99,6 +99,7 @@ func (q *Queries) ProblemTests(ctx context.Context, problemID int64) ([]Test, er
 			&i.Score,
 			&i.ProblemID,
 			&i.VisibleID,
+			&i.Orphaned,
 		); err != nil {
 			return nil, err
 		}
@@ -155,10 +156,12 @@ func (q *Queries) Problems(ctx context.Context) ([]Problem, error) {
 }
 
 const purgePbTests = `-- name: PurgePbTests :exec
-DELETE FROM tests 
+UPDATE tests 
+SET orphaned = true
 WHERE problem_id = $1
 `
 
+// Since there is a key constraint on these tests, instead of removing them, we simply orphan them so they don't get used in the future
 func (q *Queries) PurgePbTests(ctx context.Context, problemID int64) error {
 	_, err := q.exec(ctx, q.purgePbTestsStmt, purgePbTests, problemID)
 	return err

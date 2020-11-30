@@ -76,6 +76,7 @@ type Test struct {
 	Score     int32     `json:"score"`
 	ProblemID int64     `json:"problem_id"`
 	VisibleID int32     `json:"visible_id"`
+	Orphaned  bool      `json:"orphaned"`
 }
 
 type User struct {

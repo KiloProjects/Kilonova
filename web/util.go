@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"time"
 
@@ -178,6 +179,6 @@ func (rt *Web) newTemplate() *template.Template {
 func (rt *Web) build(w http.ResponseWriter, r *http.Request, name string, temp templateData) {
 	if err := templates.ExecuteTemplate(w, name, temp); err != nil {
 		fmt.Println(err)
-		rt.logger.Printf("%s: %v\n", temp.OGUrl, err)
+		log.Printf("%s: %v\n", temp.OGUrl, err)
 	}
 }

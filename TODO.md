@@ -1,3 +1,7 @@
+Additional reading I should do for a better platform:
+- https://pace.dev/blog/2020/02/12/why-you-shouldnt-use-func-main-in-golang-by-mat-ryer.html
+- https://ieftimov.com/post/four-steps-daemonize-your-golang-programs/
+
 TODO LIST KILONOVA:
 - [x] Pentru closed alpha:
 	- [x] Termină cu grader-ul IOI
@@ -25,6 +29,7 @@ TODO LIST KILONOVA:
 		- [ ] Experiență mai bună pentru editat problemele
 	- [ ] Filtre submissions
 	- [ ] Multi-eval support
+	- [ ] Verificator custom
 - [ ] Pentru release (TODO: Split chestii în mai multe stages):
 	- [ ] Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
 	- [ ] CDN

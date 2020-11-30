@@ -82,7 +82,7 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 
 	encoded, err := cookie.SetSession(w, cookie.Session{UserID: user})
 	if err != nil {
-		s.logger.Println(err)
+		log.Println(err)
 		fmt.Println(err)
 		errorData(w, "Could not set session", 500)
 		return
@@ -127,14 +127,14 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Invalid username or password", http.StatusUnauthorized)
 		return
 	} else if err != nil {
-		s.logger.Println(err)
+		log.Println(err)
 		errorData(w, err, 500)
 		return
 	}
 
 	encoded, err := cookie.SetSession(w, cookie.Session{UserID: user.ID})
 	if err != nil {
-		s.logger.Println(err)
+		log.Println(err)
 		errorData(w, err, 500)
 		return
 	}

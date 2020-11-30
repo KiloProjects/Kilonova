@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/KiloProjects/Kilonova/internal/db"
@@ -10,7 +11,7 @@ import (
 func (s *API) getUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := s.db.Users(r.Context())
 	if err != nil {
-		s.logger.Println(err)
+		log.Println(err)
 		errorData(w, "Could not read from DB", 500)
 		return
 	}
@@ -23,7 +24,7 @@ func (s *API) getUsers(w http.ResponseWriter, r *http.Request) {
 func (s *API) getAdmins(w http.ResponseWriter, r *http.Request) {
 	admins, err := s.db.Admins(r.Context())
 	if err != nil {
-		s.logger.Println(err)
+		log.Println(err)
 		errorData(w, "Could not read from DB", 500)
 		return
 	}

@@ -165,19 +165,19 @@ func (c *Config) BuildRunFlags() (res []string) {
 	return
 }
 
-// WriteFile writes a file to the specified filepath inside the box
-func (b *Box) WriteFile(filepath string, data []byte) error {
-	return ioutil.WriteFile(b.GetFilePath(filepath), data, 0777)
+// WriteFile writes a file to the specified path inside the box
+func (b *Box) WriteFile(fpath string, data []byte) error {
+	return ioutil.WriteFile(b.GetFilePath(fpath), data, 0777)
 }
 
 // RemoveFile tries to remove a created file from inside the sandbox
-func (b *Box) RemoveFile(filepath string) error {
-	return os.Remove(b.GetFilePath(filepath))
+func (b *Box) RemoveFile(fpath string) error {
+	return os.Remove(b.GetFilePath(fpath))
 }
 
 // GetFile returns a file from inside the sandbox
-func (b *Box) GetFile(filepath string) ([]byte, error) {
-	return ioutil.ReadFile(b.GetFilePath(filepath))
+func (b *Box) GetFile(fpath string) ([]byte, error) {
+	return ioutil.ReadFile(b.GetFilePath(fpath))
 }
 
 // GetFilePath returns a path to the file location on disk of a box file

@@ -2,8 +2,8 @@ package api
 
 import (
 	"context"
-	"log"
 	"net/http"
+	"sync"
 
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/internal/db"
@@ -15,15 +15,15 @@ var decoder = schema.NewDecoder()
 
 // API is the base struct for the project's API
 type API struct {
-	ctx     context.Context
-	manager datamanager.Manager
-	logger  *log.Logger
-	db      *db.Queries
+	ctx             context.Context
+	manager         datamanager.Manager
+	db              *db.Queries
+	testArchiveLock sync.Mutex
 }
 
 // New declares a new API instance
-func New(ctx context.Context, manager datamanager.Manager, logger *log.Logger, kdb *db.Queries) *API {
-	return &API{ctx, manager, logger, kdb}
+func New(ctx context.Context, manager datamanager.Manager, kdb *db.Queries) *API {
+	return &API{ctx, manager, kdb, sync.Mutex{}}
 }
 
 // GetRouter is the magic behind the API
@@ -69,6 +69,7 @@ func (s *API) Router() chi.Router {
 				r.Post("/updateTestID", s.updateTestID)
 				r.Post("/removeTests", s.purgeTests)
 				r.Post("/setTestName", s.setTestName)
+				r.Post("/processTestArchive", s.processTestArchive)
 
 				r.With(s.MustBeAdmin).Post("/setVisible", s.setProblemVisible)
 			})

@@ -16,17 +16,16 @@ import (
 )
 
 type Handler struct {
-	tChan  chan db.Submission
-	db     *db.Queries
-	dm     datamanager.Manager
-	ctx    context.Context
-	logger *log.Logger
-	debug  bool
+	tChan chan db.Submission
+	db    *db.Queries
+	dm    datamanager.Manager
+	ctx   context.Context
+	debug bool
 }
 
-func NewHandler(ctx context.Context, DB *db.Queries, dm datamanager.Manager, logger *log.Logger, debug bool) *Handler {
+func NewHandler(ctx context.Context, DB *db.Queries, dm datamanager.Manager, debug bool) *Handler {
 	ch := make(chan db.Submission, 5)
-	return &Handler{ch, DB, dm, ctx, logger, debug}
+	return &Handler{ch, DB, dm, ctx, debug}
 }
 
 // chFeeder "feeds" tChan with relevant data
@@ -37,11 +36,11 @@ func (h *Handler) chFeeder() {
 		case <-ticker.C:
 			subs, err := h.db.WaitingSubmissions(h.ctx)
 			if err != nil {
-				h.logger.Println("Error fetching submissions:", err)
+				log.Println("Error fetching submissions:", err)
 				continue
 			}
 			if subs != nil {
-				h.logger.Printf("Found %d submissions\n", len(subs))
+				log.Printf("Found %d submissions\n", len(subs))
 				for _, sub := range subs {
 					h.tChan <- sub
 				}
@@ -51,10 +50,6 @@ func (h *Handler) chFeeder() {
 			return
 		}
 	}
-}
-
-func ldump(logger *log.Logger, args ...interface{}) {
-	spew.Fdump(logger.Writer(), args...)
 }
 
 func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
@@ -69,7 +64,7 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 
 			err := h.db.SetSubmissionStatus(ctx, db.SetSubmissionStatusParams{ID: t.ID, Status: db.StatusWorking})
 			if err != nil {
-				h.logger.Println(err)
+				log.Println(err)
 				continue
 			}
 
@@ -79,14 +74,14 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 			resp, err := client.Compile(ctx, &pb.CompileRequest{ID: int32(t.ID), Code: t.Code, Lang: t.Language})
 
 			if err != nil {
-				h.logger.Println("Error from eval:", err)
+				log.Println("Error from eval:", err)
 				continue
 			}
 
 			if h.debug {
 				old := resp.Output
 				resp.Output = "<output stripped>"
-				ldump(h.logger, resp)
+				spew.Dump(resp)
 				resp.Output = old
 			}
 
@@ -95,20 +90,20 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 				CompileError:   sql.NullBool{Bool: !resp.Success, Valid: true},
 				CompileMessage: sql.NullString{String: resp.Output, Valid: true}}); err != nil {
 
-				h.logger.Println("Error during update of compile information:", err)
+				log.Println("Error during update of compile information:", err)
 				continue
 			}
 
 			problem, err := h.db.Problem(ctx, t.ProblemID)
 			if err != nil {
-				h.logger.Println("Error during submission problem getting:", err)
+				log.Println("Error during submission problem getting:", err)
 				continue
 			}
 
 			tests, err := h.db.SubTests(ctx, t.ID)
 			if resp.Success == false || err != nil {
 				if err := h.db.SetSubmissionStatus(ctx, db.SetSubmissionStatusParams{ID: t.ID, Status: db.StatusFinished, Score: score}); err != nil {
-					h.logger.Println(err)
+					log.Println(err)
 				}
 				continue
 			}
@@ -119,13 +114,13 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 				wg.Add(1)
 				pbTest, err := h.db.Test(ctx, test.TestID)
 				if err != nil {
-					h.logger.Println("Error during test getting (0.5):", err)
+					log.Println("Error during test getting (0.5):", err)
 					continue
 				}
 
 				input, _, err := h.dm.Test(t.ProblemID, pbTest.VisibleID)
 				if err != nil {
-					h.logger.Println("Error during test getting (1):", err)
+					log.Println("Error during test getting (1):", err)
 					continue
 				}
 
@@ -150,14 +145,14 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 
 					resp, err := client.Execute(ctx, test)
 					if err != nil {
-						h.logger.Printf("Error executing test: %v\n", err)
+						log.Printf("Error executing test: %v\n", err)
 						return
 					}
 
 					if h.debug {
 						old := resp.Output
 						resp.Output = []byte("<output stripped>")
-						ldump(h.logger, resp)
+						spew.Dump(resp)
 						resp.Output = old
 					}
 
@@ -166,7 +161,7 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 					if resp.Comments == "" {
 						_, out, err := h.dm.Test(t.ProblemID, pbTest.VisibleID)
 						if err != nil {
-							h.logger.Println("Error during test getting (2):", err)
+							log.Println("Error during test getting (2):", err)
 							return
 						}
 						equal := compareOutputs(out, []byte(resp.Output))
@@ -192,7 +187,7 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 						Time:    resp.Time,
 						Verdict: resp.Comments,
 					}); err != nil {
-						h.logger.Println("Error during evaltest updating:", err)
+						log.Println("Error during evaltest updating:", err)
 						return
 					}
 
@@ -206,7 +201,7 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 			wg.Wait()
 
 			if _, err := client.Clean(ctx, &pb.CleanArgs{ID: int32(t.ID)}); err != nil {
-				h.logger.Printf("Couldn't clean task: %s\n", err)
+				log.Printf("Couldn't clean task: %s\n", err)
 			}
 
 			h.db.SetSubmissionStatus(ctx, db.SetSubmissionStatusParams{ID: t.ID, Status: db.StatusFinished, Score: score})
@@ -214,7 +209,7 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 	}
 }
 
-func (h *Handler) Start(path string) {
+func (h *Handler) Start() {
 	// Dial here to pre-emptively exit in case it fails
 	conn, err := grpc.Dial("localhost:8001", grpc.WithInsecure())
 	if err != nil {
@@ -224,7 +219,7 @@ func (h *Handler) Start(path string) {
 
 	client := pb.NewEvalClient(conn)
 
-	if _, err = client.Ping(context.Background(), nil); err != nil {
+	if _, err = client.Ping(context.Background(), &pb.Empty{}); err != nil {
 		log.Println(err)
 		return
 	}

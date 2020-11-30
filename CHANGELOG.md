@@ -1,3 +1,7 @@
+- v0.6.0a:
+	- TODO: Finish the changelog!
+- v0.5.5a:
+	- Minor internal changes (move from own protocol to GRPC and prepare for a more service-oriented architecture)
 - v0.5.4a:
 	- Hopefully last redesign
 	- This time it's [Tailwind CSS](https://tailwindcss.com)

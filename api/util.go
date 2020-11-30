@@ -29,6 +29,9 @@ func returnData(w http.ResponseWriter, retData interface{}) {
 }
 
 func statusData(w http.ResponseWriter, status string, retData interface{}, statusCode int) {
+	if err, ok := retData.(error); ok {
+		retData = err.Error()
+	}
 	w.Header().Add("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(statusCode)
 	err := json.NewEncoder(w).Encode(struct {

@@ -81,10 +81,9 @@ type templateData struct {
 
 // Web is the struct representing this whole package
 type Web struct {
-	dm     datamanager.Manager
-	db     *db.Queries
-	logger *log.Logger
-	debug  bool
+	dm    datamanager.Manager
+	db    *db.Queries
+	debug bool
 }
 
 func (rt *Web) status(w http.ResponseWriter, r *http.Request, statusCode int, err string) {
@@ -140,13 +139,13 @@ func (rt *Web) Router() chi.Router {
 	r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		file, err := pkger.Open("/static/favicon.ico")
 		if err != nil {
-			rt.logger.Println("CAN'T OPEN FAVICON")
+			log.Println("CAN'T OPEN FAVICON")
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
 		fstat, err := file.Stat()
 		if err != nil {
-			rt.logger.Println("CAN'T STAT FAVICON")
+			log.Println("CAN'T STAT FAVICON")
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
@@ -159,12 +158,12 @@ func (rt *Web) Router() chi.Router {
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			problems, err := util.Visible(rt.db, r.Context(), util.UserFromContext(r))
 			if err != nil {
-				fmt.Println("/:", err)
+				log.Println("/:", err)
 				rt.status(w, r, 500, "")
 				return
 			}
 			if err != nil && !errors.Is(err, sql.ErrNoRows) {
-				rt.logger.Println("/", err)
+				log.Println("/", err)
 				rt.status(w, r, 500, "")
 				return
 			}
@@ -207,7 +206,7 @@ func (rt *Web) Router() chi.Router {
 		r.Get("/changelog", func(w http.ResponseWriter, r *http.Request) {
 			file, err := pkger.Open("/CHANGELOG.md")
 			if err != nil {
-				rt.logger.Println("CAN'T OPEN CHANGELOG")
+				log.Println("CAN'T OPEN CHANGELOG")
 				rt.status(w, r, 500, "Can't open changelog")
 				return
 			}
@@ -298,7 +297,7 @@ func (rt *Web) Router() chi.Router {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 				subs, err := rt.db.Submissions(r.Context())
 				if err != nil && !errors.Is(err, sql.ErrNoRows) {
-					rt.logger.Println("/submissions/", err)
+					log.Println("/submissions/", err)
 					rt.status(w, r, 500, "")
 					return
 				}
@@ -356,8 +355,8 @@ func (rt *Web) Router() chi.Router {
 }
 
 // NewWeb returns a new web instance
-func NewWeb(dm datamanager.Manager, db *db.Queries, logger *log.Logger, debug bool) *Web {
-	return &Web{dm, db, logger, debug}
+func NewWeb(dm datamanager.Manager, db *db.Queries, debug bool) *Web {
+	return &Web{dm, db, debug}
 }
 
 func init() {

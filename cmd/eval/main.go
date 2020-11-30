@@ -33,9 +33,13 @@ func (s *evalServer) Execute(_ context.Context, test *pb.Test) (*pb.TestResponse
 	return s.mgr.ExecuteTest(test)
 }
 
-func (s *evalServer) Clean(_ context.Context, clean *pb.CleanArgs) (*pb.EmptyResponse, error) {
+func (s *evalServer) Clean(_ context.Context, clean *pb.CleanArgs) (*pb.Empty, error) {
 	p := path.Join(*compilePath, fmt.Sprintf("%d.bin", clean.ID))
-	return &pb.EmptyResponse{}, os.Remove(p)
+	return &pb.Empty{}, os.Remove(p)
+}
+
+func (s *evalServer) Ping(_ context.Context, _ *pb.Empty) (*pb.Empty, error) {
+	return &pb.Empty{}, nil
 }
 
 func newEvalServer() *evalServer {

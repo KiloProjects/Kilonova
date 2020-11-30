@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -33,7 +34,7 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 				rt.status(w, r, 404, "Problema nu a fost găsită")
 				return
 			}
-			rt.logger.Println("ValidateProblemID:", err)
+			log.Println("ValidateProblemID:", err)
 			rt.status(w, r, 500, "")
 			return
 		}
@@ -70,7 +71,7 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 				rt.status(w, r, 400, "Submisia nu există")
 				return
 			}
-			rt.logger.Println(err)
+			log.Println(err)
 			rt.status(w, r, 500, "")
 			return
 		}
@@ -99,7 +100,7 @@ func (rt *Web) ValidateTestID(next http.Handler) http.Handler {
 				rt.status(w, r, 404, "Testul nu există")
 				return
 			}
-			rt.logger.Println(err)
+			log.Println(err)
 			rt.status(w, r, 500, "")
 			return
 		}
