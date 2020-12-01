@@ -15,9 +15,9 @@ ORDER BY visible_id desc
 LIMIT 1
 `
 
-func (q *Queries) BiggestVID(ctx context.Context, problemID int64) (int32, error) {
+func (q *Queries) BiggestVID(ctx context.Context, problemID int64) (int64, error) {
 	row := q.queryRow(ctx, q.biggestVIDStmt, biggestVID, problemID)
-	var visible_id int32
+	var visible_id int64
 	err := row.Scan(&visible_id)
 	return visible_id, err
 }
@@ -32,7 +32,7 @@ INSERT INTO tests (
 
 type CreateTestParams struct {
 	ProblemID int64 `json:"problem_id"`
-	VisibleID int32 `json:"visible_id"`
+	VisibleID int64 `json:"visible_id"`
 	Score     int32 `json:"score"`
 }
 
@@ -49,7 +49,7 @@ WHERE problem_id = $1 AND visible_id = $2 AND orphaned = false
 
 type SetPbTestScoreParams struct {
 	ProblemID int64 `json:"problem_id"`
-	VisibleID int32 `json:"visible_id"`
+	VisibleID int64 `json:"visible_id"`
 	Score     int32 `json:"score"`
 }
 
@@ -65,9 +65,9 @@ WHERE problem_id = $2 AND visible_id = $3 AND orphaned = false
 `
 
 type SetPbTestVisibleIDParams struct {
-	NewID     int32 `json:"new_id"`
+	NewID     int64 `json:"new_id"`
 	ProblemID int64 `json:"problem_id"`
-	OldID     int32 `json:"old_id"`
+	OldID     int64 `json:"old_id"`
 }
 
 func (q *Queries) SetPbTestVisibleID(ctx context.Context, arg SetPbTestVisibleIDParams) error {
@@ -83,7 +83,7 @@ WHERE id = $1 AND orphaned = false
 
 type SetVisibleIDParams struct {
 	ID        int64 `json:"id"`
-	VisibleID int32 `json:"visible_id"`
+	VisibleID int64 `json:"visible_id"`
 }
 
 func (q *Queries) SetVisibleID(ctx context.Context, arg SetVisibleIDParams) error {
@@ -118,7 +118,7 @@ ORDER BY visible_id
 
 type TestVisibleIDParams struct {
 	ProblemID int64 `json:"problem_id"`
-	VisibleID int32 `json:"visible_id"`
+	VisibleID int64 `json:"visible_id"`
 }
 
 func (q *Queries) TestVisibleID(ctx context.Context, arg TestVisibleIDParams) (Test, error) {

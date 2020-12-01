@@ -3,7 +3,7 @@
 	{{ template "edit/testSidebar" . }}
 	<div class="lg:col-span-5 mx-2 lg:mx-0">
 		<br/>
-		<h1> Editare test {{ .Test.VisibleID }} (Încă nu e gata) </h1>	
+		<h1> Editare test {{ .Test.VisibleID }} </h1>	
 	
 		<label class="block my-2">
 			<span class="mr-2 text-xl">ID: </span>
@@ -15,13 +15,15 @@
 			<input id="score" type="number" class="inline-block rounded-lg border border-gray-300 px-2 py-2" value="{{ .Test.Score }}" required />
 		</label>
 		<button class="btn btn-blue mb-6" onclick="updateScore()">Actualizare scor</button>
+		{{ $test := getFullTests .Test }}
+
 		<div class="mb-3">
 			<h3> Input: </h3>
-			<textarea id="input" class="hidden"></textarea>
+			<textarea id="input" class="hidden">{{$test.In}}</textarea>
 		</div>
 		<div class="mb-3">
 			<h3> Output: </h3>
-			<textarea id="output" class="hidden"></textarea>
+			<textarea id="output" class="hidden">{{$test.Out}}</textarea>
 		</div>
 		<button class="btn btn-blue mb-2" onclick="updateData()">Actualizare date</button>
 	</div>
@@ -38,15 +40,37 @@
 			indentUnit: 4,
 			lineWrapping: true
 		})
-		const errObj = {status: "error", description: "Not yet implemented"}
+		// const errObj = {status: "error", description: "Not yet implemented"}
 		async function updateID() {
-			createToast(errObj)
+			let q = {
+				id: $("#vID").val()
+			}
+			console.log(q);
+			let res = await postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/id", q);
+			console.log(res)
+			apiToast(res)
+			// createToast(errObj)
 		}
 		async function updateScore() {
-			createToast(errObj)
+			let q = {
+				score: $("#score").val()
+			}
+			console.log(q);
+			let res = await postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/score", q);
+			console.log(res)
+			apiToast(res)
+			// createToast(errObj)
 		}
 		async function updateData() {
-			createToast(errObj)
+			let q = {
+				input: inCM.getValue(),
+				output: outCM.getValue()
+			};
+			console.log(q);
+			let res = await postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/data", q)
+			console.log(res);
+			apiToast(res);
+			// createToast(errObj)
 		}
 		// TODO
 	</script>

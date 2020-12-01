@@ -66,7 +66,8 @@ func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
 			errorData(w, "You can't remove admin of the root user", http.StatusNotAcceptable)
 			return
 		}
-		if args.ID == util.UserFromContext(r).ID {
+		// TODO: I think this should be util.ID(r, util.UserID) but i dont have time to check
+		if args.ID == util.User(r).ID {
 			errorData(w, "You can't remove your own admin", http.StatusNotAcceptable)
 			return
 		}
@@ -104,7 +105,7 @@ func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 			errorData(w, "You can't remove the proposer rank of the root user", http.StatusNotAcceptable)
 			return
 		}
-		if args.ID == util.UserFromContext(r).ID {
+		if args.ID == util.User(r).ID {
 			errorData(w, "You can't remove your own proposer rank", http.StatusNotAcceptable)
 			return
 		}

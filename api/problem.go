@@ -14,7 +14,6 @@ import (
 
 	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/util"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gosimple/slug"
 )
 
@@ -25,7 +24,7 @@ func (s *API) setProblemVisible(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, 500)
 		return
 	}
-	if err := s.db.SetProblemVisibility(r.Context(), db.SetProblemVisibilityParams{ID: util.IDFromContext(r, util.PbID), Visible: args.Visible}); err != nil {
+	if err := s.db.SetProblemVisibility(r.Context(), db.SetProblemVisibilityParams{ID: util.ID(r, util.PbID), Visible: args.Visible}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -34,7 +33,7 @@ func (s *API) setProblemVisible(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	id := util.IDFromContext(r, util.PbID)
+	id := util.ID(r, util.PbID)
 	var args struct{ UserID int64 }
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 500)
@@ -50,8 +49,8 @@ func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) maxScoreSelf(w http.ResponseWriter, r *http.Request) {
-	id := util.IDFromContext(r, util.PbID)
-	uid := util.IDFromContext(r, util.UserID)
+	id := util.ID(r, util.PbID)
+	uid := util.ID(r, util.UserID)
 	max, err := s.db.MaxScore(r.Context(), db.MaxScoreParams{UserID: uid, ProblemID: id})
 	if err != nil {
 		errorData(w, err, 500)
@@ -62,7 +61,7 @@ func (s *API) maxScoreSelf(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) updateTitle(w http.ResponseWriter, r *http.Request) {
 	val := r.FormValue("title")
-	if err := s.db.SetProblemName(r.Context(), db.SetProblemNameParams{ID: util.IDFromContext(r, util.PbID), Name: val}); err != nil {
+	if err := s.db.SetProblemName(r.Context(), db.SetProblemNameParams{ID: util.ID(r, util.PbID), Name: val}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -71,7 +70,7 @@ func (s *API) updateTitle(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) updateDescription(w http.ResponseWriter, r *http.Request) {
 	val := r.FormValue("text")
-	if err := s.db.SetProblemDescription(r.Context(), db.SetProblemDescriptionParams{ID: util.IDFromContext(r, util.PbID), Description: val}); err != nil {
+	if err := s.db.SetProblemDescription(r.Context(), db.SetProblemDescriptionParams{ID: util.ID(r, util.PbID), Description: val}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -79,13 +78,15 @@ func (s *API) updateDescription(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
-	in := r.FormValue("input")
-	out := r.FormValue("output")
-	id, ok := getFormInt(w, r, "id")
-	if !ok {
+	var args struct {
+		Input  string
+		Output string
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	if err := s.manager.SaveTest(util.IDFromContext(r, util.PbID), int32(id), []byte(in), []byte(out)); err != nil {
+	if err := s.manager.SaveTest(util.ID(r, util.PbID), util.ID(r, util.TestID), []byte(args.Input), []byte(args.Output)); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -94,15 +95,13 @@ func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) updateTestID(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var args struct {
-		NewID int32
-		ID    int32
-	}
+	var args struct{ ID int64 }
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	if err := s.db.SetPbTestVisibleID(r.Context(), db.SetPbTestVisibleIDParams{ProblemID: util.IDFromContext(r, util.PbID), OldID: args.ID, NewID: args.NewID}); err != nil {
+	log.Println(args.ID, util.ID(r, util.TestID))
+	if err := s.db.SetPbTestVisibleID(r.Context(), db.SetPbTestVisibleIDParams{ProblemID: util.ID(r, util.PbID), OldID: util.ID(r, util.TestID), NewID: args.ID}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -111,15 +110,12 @@ func (s *API) updateTestID(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) updateTestScore(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var args struct {
-		Score int
-		ID    int32
-	}
+	var args struct{ Score int32 }
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	if err := s.db.SetPbTestScore(r.Context(), db.SetPbTestScoreParams{ProblemID: util.IDFromContext(r, util.PbID), VisibleID: args.ID, Score: int32(args.Score)}); err != nil {
+	if err := s.db.SetPbTestScore(r.Context(), db.SetPbTestScoreParams{ProblemID: util.ID(r, util.PbID), VisibleID: util.ID(r, util.TestID), Score: int32(args.Score)}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -127,7 +123,7 @@ func (s *API) updateTestScore(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getTests(w http.ResponseWriter, r *http.Request) {
-	tests, err := s.db.ProblemTests(r.Context(), util.IDFromContext(r, util.PbID))
+	tests, err := s.db.ProblemTests(r.Context(), util.ID(r, util.PbID))
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -137,13 +133,13 @@ func (s *API) getTests(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var args struct{ ID int32 }
+	var args struct{ ID int64 }
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
 
-	test, err := s.db.TestVisibleID(r.Context(), db.TestVisibleIDParams{ProblemID: util.IDFromContext(r, util.PbID), VisibleID: args.ID})
+	test, err := s.db.TestVisibleID(r.Context(), db.TestVisibleIDParams{ProblemID: util.ID(r, util.PbID), VisibleID: args.ID})
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -154,7 +150,7 @@ func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) setInputType(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	problem := util.ProblemFromContext(r)
+	problem := util.Problem(r)
 	var args struct{ IsSet bool }
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
@@ -173,7 +169,7 @@ func (s *API) setTestName(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "You must set the `testName` form value", http.StatusBadRequest)
 		return
 	}
-	problem := util.ProblemFromContext(r)
+	problem := util.Problem(r)
 	if err := s.db.SetTestName(r.Context(), db.SetTestNameParams{ID: problem.ID, TestName: val}); err != nil {
 		errorData(w, err, 500)
 		return
@@ -182,7 +178,7 @@ func (s *API) setTestName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
-	if err := s.db.PurgePbTests(r.Context(), util.IDFromContext(r, util.PbID)); err != nil {
+	if err := s.db.PurgePbTests(r.Context(), util.ID(r, util.PbID)); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -191,7 +187,7 @@ func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
-	pb := util.ProblemFromContext(r)
+	pb := util.Problem(r)
 
 	// in case limits is empty, set up the problem ID to save it to the DB
 
@@ -233,7 +229,7 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// set it to be the largest visible id of a test + 1
-		max, err := s.db.BiggestVID(r.Context(), util.IDFromContext(r, util.PbID))
+		max, err := s.db.BiggestVID(r.Context(), util.ID(r, util.PbID))
 		if err != nil {
 			max = 0
 		}
@@ -244,15 +240,15 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	pbID := util.IDFromContext(r, util.PbID)
-	if err := s.db.CreateTest(r.Context(), db.CreateTestParams{ProblemID: pbID, VisibleID: int32(visibleID), Score: int32(score)}); err != nil {
+	pbID := util.ID(r, util.PbID)
+	if err := s.db.CreateTest(r.Context(), db.CreateTestParams{ProblemID: pbID, VisibleID: visibleID, Score: int32(score)}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
 
 	if err := s.manager.SaveTest(
 		pbID,
-		int32(visibleID),
+		visibleID,
 		[]byte(r.FormValue("input")),
 		[]byte(r.FormValue("output")),
 	); err != nil {
@@ -270,17 +266,17 @@ type testPair struct {
 }
 
 type archiveCtx struct {
-	tests        map[int]testPair
+	tests        map[int64]testPair
 	hasScoreFile bool
-	scoredTests  []int
+	scoredTests  []int64
 }
 
-func getFirstInt(s string) int {
+func getFirstInt(s string) int64 {
 	var poz int
 	for poz < len(s) && s[poz] >= '0' && s[poz] <= '9' {
 		poz++
 	}
-	val, err := strconv.Atoi(s[:poz])
+	val, err := strconv.ParseInt(s[:poz], 10, 64)
 	if err != nil {
 		return -1
 	}
@@ -312,7 +308,7 @@ func analyzeFile(ctx *archiveCtx, r *zip.Reader, name string, file fs.File) erro
 			if len(vals) != 2 {
 				return errBadTestFile
 			}
-			testID, err := strconv.Atoi(vals[0])
+			testID, err := strconv.ParseInt(vals[0], 10, 64)
 			if err != nil || testID < 0 {
 				return errBadTestFile
 			}
@@ -373,8 +369,8 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := archiveCtx{}
-	ctx.tests = make(map[int]testPair)
-	ctx.scoredTests = make([]int, 0, 10)
+	ctx.tests = make(map[int64]testPair)
+	ctx.scoredTests = make([]int64, 0, 10)
 
 	// Process zip file
 	file, fh, err := r.FormFile("testArchive")
@@ -406,8 +402,6 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	spew.Dump(ctx.scoredTests)
-	log.Println(ctx.tests)
 
 	if len(ctx.scoredTests) != len(ctx.tests) {
 		errorData(w, errBadArchive, 400)
@@ -428,7 +422,7 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 
 	// If we are loading an archive, the user might want to remove all tests first
 	// So let's do it for them
-	if err := s.db.PurgePbTests(r.Context(), util.IDFromContext(r, util.PbID)); err != nil {
+	if err := s.db.PurgePbTests(r.Context(), util.ID(r, util.PbID)); err != nil {
 		log.Println(err)
 		errorData(w, err, 500)
 		return
@@ -449,8 +443,8 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		pbID := util.IDFromContext(r, util.PbID)
-		if err := s.db.CreateTest(r.Context(), db.CreateTestParams{ProblemID: pbID, VisibleID: int32(testID), Score: int32(v.Score)}); err != nil {
+		pbID := util.ID(r, util.PbID)
+		if err := s.db.CreateTest(r.Context(), db.CreateTestParams{ProblemID: pbID, VisibleID: testID, Score: int32(v.Score)}); err != nil {
 			log.Println(err)
 			errorData(w, err, 500)
 			return
@@ -458,7 +452,7 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 
 		if err := s.manager.SaveTest(
 			pbID,
-			int32(testID),
+			testID,
 			inFile,
 			outFile,
 		); err != nil {
@@ -499,7 +493,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 	// default limits
 	id, err := s.db.CreateProblem(r.Context(), db.CreateProblemParams{
 		Name:         title,
-		AuthorID:     util.IDFromContext(r, util.UserID),
+		AuthorID:     util.ID(r, util.UserID),
 		ConsoleInput: consoleInput,
 		TestName:     slug.Make(title),
 		MemoryLimit:  65536, // 64 * 1024 KB = 64MB
@@ -517,7 +511,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 // getAllProblems returns all the problems from the DB
 // TODO: Pagination
 func (s *API) getAllProblems(w http.ResponseWriter, r *http.Request) {
-	problems, err := util.Visible(s.db, r.Context(), util.UserFromContext(r))
+	problems, err := util.Visible(s.db, r.Context(), util.User(r))
 	if err != nil {
 		errorData(w, http.StatusText(500), 500)
 		return
@@ -562,7 +556,7 @@ func (s *API) getTestData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in, out, err := s.manager.Test(util.IDFromContext(r, util.PbID), int32(id))
+	in, out, err := s.manager.Test(util.ID(r, util.PbID), id)
 	if err != nil {
 		errorData(w, err, 500)
 		return

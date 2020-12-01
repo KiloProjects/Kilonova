@@ -65,8 +65,16 @@ func (s *API) Router() chi.Router {
 				r.Post("/limits", s.setLimits)
 
 				r.Post("/addTest", s.createTest)
-				r.Post("/saveTestData", s.saveTestData)
-				r.Post("/updateTestID", s.updateTestID)
+				r.Route("/test/{tID}", func(r chi.Router) {
+					// test update stuff
+					r.Use(s.validateTestID)
+					// data:
+					r.Post("/data", s.saveTestData)
+					// visible id:
+					r.Post("/id", s.updateTestID)
+					// score:
+					r.Post("/score", s.updateTestScore)
+				})
 				r.Post("/removeTests", s.purgeTests)
 				r.Post("/setTestName", s.setTestName)
 				r.Post("/processTestArchive", s.processTestArchive)

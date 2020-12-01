@@ -19,5 +19,5 @@ CREATE TABLE tests (
 	created_at 	timestamp 	NOT NULL DEFAULT NOW(),
 	score 		integer 	NOT NULL,
 	problem_id  bigint		NOT NULL REFERENCES problems(id),
-	visible_id  integer 	NOT NULL
+	visible_id  bigint 		NOT NULL
 );

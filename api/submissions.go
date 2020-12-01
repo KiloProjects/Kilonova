@@ -26,7 +26,7 @@ func (s *API) getSubmissionByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !util.IsSubmissionVisible(sub, util.UserFromContext(r)) {
+	if !util.IsSubmissionVisible(sub, util.User(r)) {
 		sub.Code = ""
 	}
 
@@ -42,7 +42,7 @@ func (s *API) getSubmissions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := util.UserFromContext(r)
+	user := util.User(r)
 	for i := range subs {
 		if !util.IsSubmissionVisible(subs[i], user) {
 			subs[i].Code = ""
@@ -88,7 +88,7 @@ func (s *API) getSelfSubmissionsForProblem(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		return
 	}
-	uid := util.UserFromContext(r).ID
+	uid := util.User(r).ID
 	subs, err := s.db.UserProblemSubmissions(r.Context(), db.UserProblemSubmissionsParams{UserID: uid, ProblemID: pid})
 	if err != nil {
 		errorData(w, err, 500)
@@ -119,7 +119,7 @@ func (s *API) setSubmissionVisible(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !util.IsSubmissionEditor(sub, util.UserFromContext(r)) {
+	if !util.IsSubmissionEditor(sub, util.User(r)) {
 		errorData(w, "You are not allowed to do this", 403)
 		return
 	}
@@ -151,7 +151,7 @@ func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user = util.UserFromContext(r)
+	var user = util.User(r)
 
 	problem, err := s.db.Problem(r.Context(), args.ProblemID)
 	if err != nil {

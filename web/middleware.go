@@ -76,7 +76,7 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 			return
 		}
 
-		if !util.IsSubmissionVisible(sub, util.UserFromContext(r)) {
+		if !util.IsSubmissionVisible(sub, util.User(r)) {
 			sub.Code = ""
 		}
 
@@ -94,7 +94,7 @@ func (rt *Web) ValidateTestID(next http.Handler) http.Handler {
 			rt.status(w, r, 400, "Test invalid")
 			return
 		}
-		test, err := rt.db.TestVisibleID(r.Context(), db.TestVisibleIDParams{ProblemID: util.IDFromContext(r, util.PbID), VisibleID: int32(testID)})
+		test, err := rt.db.TestVisibleID(r.Context(), db.TestVisibleIDParams{ProblemID: util.ID(r, util.PbID), VisibleID: testID})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				rt.status(w, r, 404, "Testul nu există")

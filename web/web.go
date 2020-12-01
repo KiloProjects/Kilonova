@@ -156,7 +156,7 @@ func (rt *Web) Router() chi.Router {
 		r.Use(rt.getUser)
 
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			problems, err := util.Visible(rt.db, r.Context(), util.UserFromContext(r))
+			problems, err := util.Visible(rt.db, r.Context(), util.User(r))
 			if err != nil {
 				log.Println("/:", err)
 				rt.status(w, r, 500, "")
@@ -174,7 +174,7 @@ func (rt *Web) Router() chi.Router {
 
 		r.Route("/profile", func(r chi.Router) {
 			r.With(rt.mustBeAuthed).Get("/", func(w http.ResponseWriter, r *http.Request) {
-				user := util.UserFromContext(r)
+				user := util.User(r)
 				templ := rt.hydrateTemplate(r, fmt.Sprintf("Profil %s", user.Name))
 				templ.ContentUser = user
 				templ.IsCUser = true
@@ -230,7 +230,7 @@ func (rt *Web) Router() chi.Router {
 
 		r.Route("/probleme", func(r chi.Router) {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				problems, err := util.Visible(rt.db, r.Context(), util.UserFromContext(r))
+				problems, err := util.Visible(rt.db, r.Context(), util.User(r))
 				if err != nil {
 					fmt.Println(err)
 					rt.status(w, r, 500, "")
@@ -248,7 +248,7 @@ func (rt *Web) Router() chi.Router {
 				r.Use(rt.ValidateProblemID)
 				r.Use(rt.ValidateVisible)
 				r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-					problem := util.ProblemFromContext(r)
+					problem := util.Problem(r)
 
 					templ := rt.hydrateTemplate(r, fmt.Sprintf("Problema #%d: %s", problem.ID, problem.Name))
 					templ.Codemirror = true
@@ -257,32 +257,32 @@ func (rt *Web) Router() chi.Router {
 				r.Route("/edit", func(r chi.Router) {
 					r.Use(rt.mustBeEditor)
 					r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-						problem := util.ProblemFromContext(r)
+						problem := util.Problem(r)
 						templ := rt.hydrateTemplate(r, fmt.Sprintf("EDIT | Problema #%d: %s", problem.ID, problem.Name))
 						rt.build(w, r, "edit/index", templ)
 					})
 					r.Get("/enunt", func(w http.ResponseWriter, r *http.Request) {
-						problem := util.ProblemFromContext(r)
+						problem := util.Problem(r)
 						templ := rt.hydrateTemplate(r, fmt.Sprintf("EDITARE ENUNȚ | Problema #%d: %s", problem.ID, problem.Name))
 						templ.Codemirror = true
 						rt.build(w, r, "edit/enunt", templ)
 					})
 					r.Get("/limite", func(w http.ResponseWriter, r *http.Request) {
-						problem := util.ProblemFromContext(r)
+						problem := util.Problem(r)
 						templ := rt.hydrateTemplate(r, fmt.Sprintf("EDITARE LIMITE | Problema #%d: %s", problem.ID, problem.Name))
 						rt.build(w, r, "edit/limite", templ)
 					})
 					r.Route("/teste", func(r chi.Router) {
 						r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-							problem := util.ProblemFromContext(r)
+							problem := util.Problem(r)
 							templ := rt.hydrateTemplate(r, fmt.Sprintf("CREARE TEST | Problema #%d: %s", problem.ID, problem.Name))
 							templ.Sidebar = true
 							templ.Codemirror = true
 							rt.build(w, r, "edit/testAdd", templ)
 						})
 						r.With(rt.ValidateTestID).Get("/{tid}", func(w http.ResponseWriter, r *http.Request) {
-							test := util.TestFromContext(r)
-							problem := util.ProblemFromContext(r)
+							test := util.Test(r)
+							problem := util.Problem(r)
 							templ := rt.hydrateTemplate(r, fmt.Sprintf("EDITARE TESTUL %d | Problema #%d: %s", test.VisibleID, problem.ID, problem.Name))
 							templ.Sidebar = true
 							templ.Codemirror = true
@@ -306,7 +306,7 @@ func (rt *Web) Router() chi.Router {
 				rt.build(w, r, "submissions", templ)
 			})
 			r.With(rt.ValidateSubmissionID).Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
-				templ := rt.hydrateTemplate(r, fmt.Sprintf("Submisia %d", util.SubmissionFromContext(r).ID))
+				templ := rt.hydrateTemplate(r, fmt.Sprintf("Submisia %d", util.Submission(r).ID))
 				rt.build(w, r, "submission", templ)
 			})
 		})

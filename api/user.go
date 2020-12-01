@@ -15,7 +15,7 @@ var (
 )
 
 func (s *API) getSelfGravatar(w http.ResponseWriter, r *http.Request) {
-	email := util.UserFromContext(r).Email
+	email := util.User(r).Email
 	size := r.FormValue("s")
 	if size == "" {
 		size = "128"
@@ -51,7 +51,7 @@ func (s *API) setBio(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.db.SetBio(r.Context(), db.SetBioParams{ID: util.UserFromContext(r).ID, Bio: args.Bio}); err != nil {
+	if err := s.db.SetBio(r.Context(), db.SetBioParams{ID: util.User(r).ID, Bio: args.Bio}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -91,7 +91,7 @@ func (s *API) getUserByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getSelf(w http.ResponseWriter, r *http.Request) {
-	returnData(w, util.UserFromContext(r))
+	returnData(w, util.User(r))
 }
 
 func getGravatarFromEmail(email string) string {
@@ -101,7 +101,7 @@ func getGravatarFromEmail(email string) string {
 
 // ChangeEmail changes the e-mail of the saved user
 func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
-	user := util.UserFromContext(r)
+	user := util.User(r)
 	email := r.FormValue("email")
 	if email == "" {
 		errorData(w, "You must provide a new email to change to", http.StatusBadRequest)

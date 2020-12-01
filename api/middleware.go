@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/KiloProjects/Kilonova/internal/cookie"
+	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/go-chi/chi"
 )
@@ -90,6 +91,27 @@ func (s *API) validateProblemEditor(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r)
+	})
+}
+
+// validateTestID pre-emptively returns if there isnt a valid test ID in the URL params
+// Also, it fetches the test from the DB and makes sure it exists
+// NOTE: This does not fetch the test data from disk
+func (s *API) validateTestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testID, err := strconv.ParseInt(chi.URLParam(r, "tID"), 10, 64)
+		if err != nil {
+			errorData(w, "invalid test ID", http.StatusBadRequest)
+			return
+		}
+		test, err := s.db.TestVisibleID(r.Context(), db.TestVisibleIDParams{VisibleID: testID, ProblemID: util.ID(r, util.PbID)})
+		if err != nil {
+			errorData(w, "test does not exist", http.StatusBadRequest)
+			return
+		}
+		ctx := context.WithValue(r.Context(), util.TestID, testID)
+		ctx = context.WithValue(ctx, util.TestKey, test)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

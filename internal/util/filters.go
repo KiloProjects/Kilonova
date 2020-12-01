@@ -61,31 +61,31 @@ func IsSubmissionVisible(sub db.Submission, user db.User) bool {
 }
 
 func IsRAuthed(r *http.Request) bool {
-	return IsAuthed(UserFromContext(r))
+	return IsAuthed(User(r))
 }
 
 func IsRAdmin(r *http.Request) bool {
-	return IsAdmin(UserFromContext(r))
+	return IsAdmin(User(r))
 }
 
 func IsRProposer(r *http.Request) bool {
-	return IsProposer(UserFromContext(r))
+	return IsProposer(User(r))
 }
 
 func IsRProblemEditor(r *http.Request) bool {
-	return IsProblemEditor(UserFromContext(r), ProblemFromContext(r))
+	return IsProblemEditor(User(r), Problem(r))
 }
 
 func IsRProblemVisible(r *http.Request) bool {
-	return IsProblemVisible(UserFromContext(r), ProblemFromContext(r))
+	return IsProblemVisible(User(r), Problem(r))
 }
 
 func IsRSubmissionEditor(r *http.Request) bool {
-	return IsSubmissionEditor(SubmissionFromContext(r), UserFromContext(r))
+	return IsSubmissionEditor(Submission(r), User(r))
 }
 
 func IsRSubmissionVisible(r *http.Request) bool {
-	return IsSubmissionVisible(SubmissionFromContext(r), UserFromContext(r))
+	return IsSubmissionVisible(Submission(r), User(r))
 }
 
 func Visible(kdb *db.Queries, ctx context.Context, user db.User) ([]db.Problem, error) {

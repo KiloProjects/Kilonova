@@ -75,7 +75,7 @@ type Test struct {
 	CreatedAt time.Time `json:"created_at"`
 	Score     int32     `json:"score"`
 	ProblemID int64     `json:"problem_id"`
-	VisibleID int32     `json:"visible_id"`
+	VisibleID int64     `json:"visible_id"`
 	Orphaned  bool      `json:"orphaned"`
 }
 

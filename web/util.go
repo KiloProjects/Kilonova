@@ -21,18 +21,18 @@ func (rt *Web) hydrateTemplate(r *http.Request, title string) templateData {
 		Title: title,
 
 		Params:   globParams(r),
-		User:     util.UserFromContext(r),
+		User:     util.User(r),
 		LoggedIn: util.IsRAuthed(r),
 		Version:  version.Version,
 		Debug:    rt.debug,
 
-		Problem:    util.ProblemFromContext(r),
-		Submission: util.SubmissionFromContext(r),
-		Test:       util.TestFromContext(r),
+		Problem:    util.Problem(r),
+		Submission: util.Submission(r),
+		Test:       util.Test(r),
 
-		ProblemID: util.IDFromContext(r, util.PbID),
-		SubID:     util.IDFromContext(r, util.SubID),
-		TestID:    util.IDFromContext(r, util.TestID),
+		ProblemID: util.ID(r, util.PbID),
+		SubID:     util.ID(r, util.SubID),
+		TestID:    util.ID(r, util.TestID),
 
 		// HACK: Move this somewhere else
 		ProblemEditor: util.IsRProblemEditor(r),
