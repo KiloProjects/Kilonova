@@ -68,8 +68,10 @@ WHERE id = $1;
 UPDATE users SET bio = $2
 WHERE id = $1;
 
+-- name: SetDefaultVisibility :exec
+UPDATE users SET default_visible = $2
+WHERE id = $1;
 
 -- name: SetEmail :exec
 UPDATE users SET email = $2
-WHERE id = $1
-RETURNING *;
+WHERE id = $1;

@@ -76,7 +76,7 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 			return
 		}
 
-		if !util.IsSubmissionVisible(sub, util.User(r)) {
+		if !util.IsSubmissionVisible(sub, util.User(r), rt.db) {
 			sub.Code = ""
 		}
 

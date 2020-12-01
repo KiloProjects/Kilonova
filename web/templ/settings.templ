@@ -1,18 +1,21 @@
 {{ template "util/header" . }}
 
 <div class="c-container">
-	<h1> Pagină în Construcție </h1>
+	<h1> Preferințele Profilului </h1>
+	<h2> Actualizare Bio </h2>
 	<form id="bioUpdateForm">
-		<label class="block mb-2">
-			<span id="bio" class="text-lg">Actualizare Bio</span>
-			<textarea id="newBio" class="form-textarea w-full" autocapitalize="sentences" autocomplete="off" maxlength="120" placeholder="Bio...">{{.User.Bio}}</textarea>
-		</label>
+		<textarea id="newBio" class="form-textarea w-full" autocapitalize="sentences" autocomplete="off" maxlength="120" placeholder="Bio...">{{.User.Bio}}</textarea>
 		<button class="form-group btn btn-blue" type="submit">Actualizare</button>
 	</form>
-	<div>TODO: Mai multe setări</div>
+
+	<h2> Vizibilitate </h2>
+	<button id="vButton" class="btn btn-blue mb-2 text-semibold text-lg" onclick="toggleVisibility()"><i class="fas fa-share-square mr-2"></i> Fă submisiile implicit {{if .User.DefaultVisible}}invizibile{{else}}vizibile{{end}}</button>
+
+	<!--<div>TODO: Mai multe setări</div>-->
 </div>
 
 <script>
+let visible = {{.User.DefaultVisible}};
 $("#bioUpdateForm").submit(async e => {
 	e.preventDefault();
 	var bio = $("#bioUpdateForm #newBio").val();
@@ -20,6 +23,13 @@ $("#bioUpdateForm").submit(async e => {
 	let res = await postCall("/user/setBio", {bio})
 	apiToast(res, {onclick: () => window.location.assign("/profile")}) 
 })
+async function toggleVisibility() {
+	visible = !visible;
+	let res = await postCall("/user/setSubVisibility", {visibility: visible});
+	console.log(res);
+	apiToast(res);
+	$("#vButton").html(`<i class="fas fa-share-square mr-2"></i> Fă submisiile implicit ${visible ? "invizibile" : "vizibile"}`)
+}
 </script>
 
 {{ template "util/footer" . }}

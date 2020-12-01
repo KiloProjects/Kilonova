@@ -43,11 +43,31 @@ func (s *API) getGravatar(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, getGravatarFromEmail(user.Email)+"?s="+size, http.StatusTemporaryRedirect)
 }
 
+func (s *API) setSubVisibility(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct{ Visibility bool }
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 400)
+		return
+	}
+
+	if err := s.db.SetDefaultVisibility(r.Context(), db.SetDefaultVisibilityParams{ID: util.User(r).ID, DefaultVisible: args.Visibility}); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	if args.Visibility {
+		returnData(w, "Made visible")
+	} else {
+		returnData(w, "Made invisible")
+	}
+}
+
 func (s *API) setBio(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct{ Bio string }
 	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 500)
+		errorData(w, err, 400)
 		return
 	}
 

@@ -80,12 +80,13 @@ type Test struct {
 }
 
 type User struct {
-	ID        int64     `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	Name      string    `json:"name"`
-	Admin     bool      `json:"admin"`
-	Proposer  bool      `json:"proposer"`
-	Email     string    `json:"email"`
-	Password  string    `json:"password"`
-	Bio       string    `json:"bio"`
+	ID             int64     `json:"id"`
+	CreatedAt      time.Time `json:"created_at"`
+	Name           string    `json:"name"`
+	Admin          bool      `json:"admin"`
+	Proposer       bool      `json:"proposer"`
+	Email          string    `json:"email"`
+	Password       string    `json:"password"`
+	Bio            string    `json:"bio"`
+	DefaultVisible bool      `json:"default_visible"`
 }

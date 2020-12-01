@@ -29,9 +29,9 @@ func (q *Queries) CreateSubTest(ctx context.Context, arg CreateSubTestParams) er
 
 const createSubmission = `-- name: CreateSubmission :one
 INSERT INTO submissions (
-	user_id, problem_id, code, language
+	user_id, problem_id, code, language, visible
 ) VALUES (
-	$1, $2, $3, $4
+	$1, $2, $3, $4, $5
 ) RETURNING id
 `
 
@@ -40,6 +40,7 @@ type CreateSubmissionParams struct {
 	ProblemID int64  `json:"problem_id"`
 	Code      string `json:"code"`
 	Language  string `json:"language"`
+	Visible   bool   `json:"visible"`
 }
 
 func (q *Queries) CreateSubmission(ctx context.Context, arg CreateSubmissionParams) (int64, error) {
@@ -48,6 +49,7 @@ func (q *Queries) CreateSubmission(ctx context.Context, arg CreateSubmissionPara
 		arg.ProblemID,
 		arg.Code,
 		arg.Language,
+		arg.Visible,
 	)
 	var id int64
 	err := row.Scan(&id)

@@ -28,9 +28,9 @@ TODO LIST KILONOVA:
 		- [ ] Auto reîncărcare pagină submission când nu e finalizată evaluarea
 		- [ ] Experiență mai bună pentru editat problemele
 	- [ ] Filtre submissions
+- [ ] Pentru release (TODO: Split chestii în mai multe stages):
 	- [ ] Multi-eval support
 	- [ ] Verificator custom
-- [ ] Pentru release (TODO: Split chestii în mai multe stages):
 	- [ ] Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
 	- [ ] CDN
 	- [ ] Împarte în mai multe services

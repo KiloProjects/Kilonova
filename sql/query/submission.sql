@@ -18,9 +18,9 @@ ORDER BY id asc;
 
 -- name: CreateSubmission :one
 INSERT INTO submissions (
-	user_id, problem_id, code, language
+	user_id, problem_id, code, language, visible
 ) VALUES (
-	$1, $2, $3, $4
+	$1, $2, $3, $4, $5
 ) RETURNING id;
 
 -- name: CreateSubTest :exec

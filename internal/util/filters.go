@@ -53,11 +53,20 @@ func IsSubmissionEditor(sub db.Submission, user db.User) bool {
 	return IsAdmin(user) || user.ID == sub.UserID
 }
 
-func IsSubmissionVisible(sub db.Submission, user db.User) bool {
+func IsSubmissionVisible(sub db.Submission, user db.User, database *db.Queries) bool {
 	if sub.Visible {
 		return true
 	}
-	return IsSubmissionEditor(sub, user)
+	if IsSubmissionEditor(sub, user) {
+		return true
+	}
+
+	score, err := database.MaxScore(context.Background(), db.MaxScoreParams{UserID: user.ID, ProblemID: sub.ProblemID})
+	if err == nil && score == 100 {
+		return true
+	}
+
+	return false
 }
 
 func IsRAuthed(r *http.Request) bool {
@@ -84,8 +93,8 @@ func IsRSubmissionEditor(r *http.Request) bool {
 	return IsSubmissionEditor(Submission(r), User(r))
 }
 
-func IsRSubmissionVisible(r *http.Request) bool {
-	return IsSubmissionVisible(Submission(r), User(r))
+func IsRSubmissionVisible(r *http.Request, database *db.Queries) bool {
+	return IsSubmissionVisible(Submission(r), User(r), database)
 }
 
 func Visible(kdb *db.Queries, ctx context.Context, user db.User) ([]db.Problem, error) {

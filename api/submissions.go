@@ -26,7 +26,7 @@ func (s *API) getSubmissionByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !util.IsSubmissionVisible(sub, util.User(r)) {
+	if !util.IsSubmissionVisible(sub, util.User(r), s.db) {
 		sub.Code = ""
 	}
 
@@ -44,7 +44,7 @@ func (s *API) getSubmissions(w http.ResponseWriter, r *http.Request) {
 
 	user := util.User(r)
 	for i := range subs {
-		if !util.IsSubmissionVisible(subs[i], user) {
+		if !util.IsSubmissionVisible(subs[i], user, s.db) {
 			subs[i].Code = ""
 		}
 	}
@@ -75,7 +75,7 @@ func (s *API) getSubmissionsForProblem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i := range subs {
-		if !util.IsSubmissionVisible(subs[i], user) {
+		if !util.IsSubmissionVisible(subs[i], user, s.db) {
 			subs[i].Code = ""
 		}
 	}
@@ -202,7 +202,12 @@ func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// add the submission to the DB
-	id, err := s.db.CreateSubmission(r.Context(), db.CreateSubmissionParams{UserID: user.ID, ProblemID: problem.ID, Code: args.Code, Language: args.Lang})
+	id, err := s.db.CreateSubmission(r.Context(), db.CreateSubmissionParams{
+		UserID:    user.ID,
+		ProblemID: problem.ID,
+		Code:      args.Code,
+		Language:  args.Lang,
+		Visible:   user.DefaultVisible})
 	if err != nil {
 		fmt.Println(err)
 		errorData(w, "Couldn't create test", 500)

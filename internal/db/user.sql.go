@@ -9,7 +9,7 @@ import (
 )
 
 const admins = `-- name: Admins :many
-SELECT id, created_at, name, admin, proposer, email, password, bio FROM users
+SELECT id, created_at, name, admin, proposer, email, password, bio, default_visible FROM users
 WHERE admin = true
 ORDER BY id
 `
@@ -32,6 +32,7 @@ func (q *Queries) Admins(ctx context.Context) ([]User, error) {
 			&i.Email,
 			&i.Password,
 			&i.Bio,
+			&i.DefaultVisible,
 		); err != nil {
 			return nil, err
 		}
@@ -86,7 +87,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, 
 }
 
 const proposers = `-- name: Proposers :many
-SELECT id, created_at, name, admin, proposer, email, password, bio FROM users 
+SELECT id, created_at, name, admin, proposer, email, password, bio, default_visible FROM users 
 WHERE proposer = true OR admin = true
 ORDER BY id
 `
@@ -109,6 +110,7 @@ func (q *Queries) Proposers(ctx context.Context) ([]User, error) {
 			&i.Email,
 			&i.Password,
 			&i.Bio,
+			&i.DefaultVisible,
 		); err != nil {
 			return nil, err
 		}
@@ -153,10 +155,24 @@ func (q *Queries) SetBio(ctx context.Context, arg SetBioParams) error {
 	return err
 }
 
+const setDefaultVisibility = `-- name: SetDefaultVisibility :exec
+UPDATE users SET default_visible = $2
+WHERE id = $1
+`
+
+type SetDefaultVisibilityParams struct {
+	ID             int64 `json:"id"`
+	DefaultVisible bool  `json:"default_visible"`
+}
+
+func (q *Queries) SetDefaultVisibility(ctx context.Context, arg SetDefaultVisibilityParams) error {
+	_, err := q.exec(ctx, q.setDefaultVisibilityStmt, setDefaultVisibility, arg.ID, arg.DefaultVisible)
+	return err
+}
+
 const setEmail = `-- name: SetEmail :exec
 UPDATE users SET email = $2
 WHERE id = $1
-RETURNING id, created_at, name, admin, proposer, email, password, bio
 `
 
 type SetEmailParams struct {
@@ -185,7 +201,7 @@ func (q *Queries) SetProposer(ctx context.Context, arg SetProposerParams) error 
 }
 
 const top100 = `-- name: Top100 :many
-SELECT us.id, us.created_at, us.name, us.admin, us.proposer, us.email, us.password, us.bio, COUNT(sub.user_id) AS number_problems
+SELECT us.id, us.created_at, us.name, us.admin, us.proposer, us.email, us.password, us.bio, us.default_visible, COUNT(sub.user_id) AS number_problems
 FROM users us
 LEFT JOIN (
 	SELECT problem_id, user_id
@@ -208,6 +224,7 @@ type Top100Row struct {
 	Email          string    `json:"email"`
 	Password       string    `json:"password"`
 	Bio            string    `json:"bio"`
+	DefaultVisible bool      `json:"default_visible"`
 	NumberProblems int64     `json:"number_problems"`
 }
 
@@ -231,6 +248,7 @@ func (q *Queries) Top100(ctx context.Context) ([]Top100Row, error) {
 			&i.Email,
 			&i.Password,
 			&i.Bio,
+			&i.DefaultVisible,
 			&i.NumberProblems,
 		); err != nil {
 			return nil, err
@@ -247,7 +265,7 @@ func (q *Queries) Top100(ctx context.Context) ([]Top100Row, error) {
 }
 
 const user = `-- name: User :one
-SELECT id, created_at, name, admin, proposer, email, password, bio FROM users 
+SELECT id, created_at, name, admin, proposer, email, password, bio, default_visible FROM users 
 WHERE id = $1
 `
 
@@ -263,12 +281,13 @@ func (q *Queries) User(ctx context.Context, id int64) (User, error) {
 		&i.Email,
 		&i.Password,
 		&i.Bio,
+		&i.DefaultVisible,
 	)
 	return i, err
 }
 
 const userByEmail = `-- name: UserByEmail :one
-SELECT id, created_at, name, admin, proposer, email, password, bio FROM users 
+SELECT id, created_at, name, admin, proposer, email, password, bio, default_visible FROM users 
 WHERE lower(email) = lower($1)
 `
 
@@ -284,12 +303,13 @@ func (q *Queries) UserByEmail(ctx context.Context, email string) (User, error) {
 		&i.Email,
 		&i.Password,
 		&i.Bio,
+		&i.DefaultVisible,
 	)
 	return i, err
 }
 
 const userByName = `-- name: UserByName :one
-SELECT id, created_at, name, admin, proposer, email, password, bio FROM users 
+SELECT id, created_at, name, admin, proposer, email, password, bio, default_visible FROM users 
 WHERE lower(name) = lower($1)
 `
 
@@ -305,12 +325,13 @@ func (q *Queries) UserByName(ctx context.Context, username string) (User, error)
 		&i.Email,
 		&i.Password,
 		&i.Bio,
+		&i.DefaultVisible,
 	)
 	return i, err
 }
 
 const users = `-- name: Users :many
-SELECT id, created_at, name, admin, proposer, email, password, bio FROM users
+SELECT id, created_at, name, admin, proposer, email, password, bio, default_visible FROM users
 ORDER BY id
 `
 
@@ -332,6 +353,7 @@ func (q *Queries) Users(ctx context.Context) ([]User, error) {
 			&i.Email,
 			&i.Password,
 			&i.Bio,
+			&i.DefaultVisible,
 		); err != nil {
 			return nil, err
 		}

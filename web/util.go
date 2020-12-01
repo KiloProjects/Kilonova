@@ -75,6 +75,15 @@ func (rt *Web) getTestData(test db.Test) testDataType {
 	}
 	return t
 }
+
+func (rt *Web) maxScore(userID int64, problemID int64) int32 {
+	score, err := rt.db.MaxScore(context.Background(), db.MaxScoreParams{UserID: userID, ProblemID: problemID})
+	if err != nil {
+		return -1
+	}
+	return score
+}
+
 func (rt *Web) newTemplate() *template.Template {
 	// table for gradient, initialize here so it panics if we make a mistake
 	colorTable := gTable{

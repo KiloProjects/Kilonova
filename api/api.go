@@ -108,6 +108,7 @@ func (s *API) Router() chi.Router {
 	})
 	r.Route("/user", func(r chi.Router) {
 		r.With(s.MustBeAuthed).Post("/setBio", s.setBio)
+		r.With(s.MustBeAuthed).Post("/setSubVisibility", s.setSubVisibility)
 		r.With(s.MustBeAdmin).Post("/purgeBio", s.purgeBio)
 
 		r.Get("/getByName", s.getUserByName)

@@ -79,6 +79,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.setConsoleInputStmt, err = db.PrepareContext(ctx, setConsoleInput); err != nil {
 		return nil, fmt.Errorf("error preparing query SetConsoleInput: %w", err)
 	}
+	if q.setDefaultVisibilityStmt, err = db.PrepareContext(ctx, setDefaultVisibility); err != nil {
+		return nil, fmt.Errorf("error preparing query SetDefaultVisibility: %w", err)
+	}
 	if q.setEmailStmt, err = db.PrepareContext(ctx, setEmail); err != nil {
 		return nil, fmt.Errorf("error preparing query SetEmail: %w", err)
 	}
@@ -264,6 +267,11 @@ func (q *Queries) Close() error {
 	if q.setConsoleInputStmt != nil {
 		if cerr := q.setConsoleInputStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing setConsoleInputStmt: %w", cerr)
+		}
+	}
+	if q.setDefaultVisibilityStmt != nil {
+		if cerr := q.setDefaultVisibilityStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing setDefaultVisibilityStmt: %w", cerr)
 		}
 	}
 	if q.setEmailStmt != nil {
@@ -469,6 +477,7 @@ type Queries struct {
 	setBioStmt                  *sql.Stmt
 	setCompilationStmt          *sql.Stmt
 	setConsoleInputStmt         *sql.Stmt
+	setDefaultVisibilityStmt    *sql.Stmt
 	setEmailStmt                *sql.Stmt
 	setLimitsStmt               *sql.Stmt
 	setMemoryLimitStmt          *sql.Stmt
@@ -523,6 +532,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		setBioStmt:                  q.setBioStmt,
 		setCompilationStmt:          q.setCompilationStmt,
 		setConsoleInputStmt:         q.setConsoleInputStmt,
+		setDefaultVisibilityStmt:    q.setDefaultVisibilityStmt,
 		setEmailStmt:                q.setEmailStmt,
 		setLimitsStmt:               q.setLimitsStmt,
 		setMemoryLimitStmt:          q.setMemoryLimitStmt,
