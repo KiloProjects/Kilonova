@@ -3,19 +3,19 @@ Additional reading I should do for a better platform:
 - https://ieftimov.com/post/four-steps-daemonize-your-golang-programs/
 
 TODO LIST KILONOVA:
-- [x] Pentru closed alpha:
+- [x] Pentru closed alpha (v0.1.0a-v0.7.0a):
 	- [x] Termină cu grader-ul IOI
 	- [x] Ierarhie conturi
 	- [x] Interfață web pentru administrarea ierarhiei
 	- [x] Toast-uri
-- [ ] Pentru beta:
+- [ ] Pentru early beta (v0.8.0b-?):
 	- [x] Mathjax
 	- [ ] Profil user
 		- [ ] Listă probleme făcute
 			- !!!! Trb făcut discret încât să nu promoveze nr mai mare de pb
 		- [x] Bio
-	- [ ] Pagină settings
-		- [ ] Setări Vizibilitate default la submissions
+	- [x] Pagină settings
+		- [x] Setări Vizibilitate default la submissions
 	- [x] Implementează server.UpdateTest
 	- [x] Reduce nr de TODOs în cod
 	- [x] Rezolvat bug-ul de la https://discordapp.com/channels/713844353390346322/723768974411694171/729462280718385233
@@ -26,36 +26,34 @@ TODO LIST KILONOVA:
 	- [ ] Site mai drăguț:
 		- [x] NavBar
 		- [ ] Auto reîncărcare pagină submission când nu e finalizată evaluarea
-		- [ ] Experiență mai bună pentru editat problemele
+		- [x] Experiență mai bună pentru editat problemele
 	- [ ] Filtre submissions
-- [ ] Pentru release (TODO: Split chestii în mai multe stages):
+- [ ] Pentru middle beta:
 	- [ ] Multi-eval support
 	- [ ] Verificator custom
+	- [ ] Împarte în mai multe services
 	- [ ] Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
 	- [ ] CDN
-	- [ ] Împarte în mai multe services
-	- [ ] "Custom input" ca pe hackerrank/leetcode
-	- [ ] Etichete probleme
-	- [ ] Pagină profil (cont.):
-		- [ ] Mai customizabil
 	- [ ] Site mai drăguț:
 		- [ ] Dark theme
-		- [ ] More theme
-	- [ ] Sistem de contests
+		- [ ] More themes
+	- [ ] Pagină profil (cont.):
+		- [ ] Mai customizabil
+	- [ ] Versiune engleză
+- [ ] Pentru late beta:
+	- [ ] "Custom input" ca pe hackerrank/leetcode
 	- [ ] Mai multe tipuri de probleme:
 		- [ ] interactive
 		- [ ] ? ACM
-	- [ ] ? Integrare cu Polygon
 	- [ ] PbInfo problem import (înseamnă că e nevoie să termin PbAPI)
+	- [ ] Sistem de contests
 	- [ ] "Kilonova PRO"
 		- [ ] Sistem de plată/donații
 		- [ ] ? cosmetice
 		- [ ] Sistem de priority queue 
-		- [ ] ? Sistem NOVA
-			- sub-instanțe de kilonova
-			- [ ] Restructurare sistem de webserver
-			- [ ] Control asupra subdomeniilor (e nevoie de modificări mari la webserver-ul meu privat dpdv al routing-ului și al certificatelor)
-	- [ ] Versiune engleză
+- [ ] Pentru release:
+	- [ ] ? Integrare cu Polygon
+	- [ ] Etichete probleme
 	- [ ] Instrumente de translation:
 		- [ ] Useri traducători
 		- [ ] Enunțuri multi-language
@@ -63,3 +61,8 @@ TODO LIST KILONOVA:
 		- [ ] Guilds
 		- [ ] Friendships
 		- [ ] Blog
+	- [ ] "Kilonova PRO" cont.
+		- [ ] ? Sistem NOVA
+			- sub-instanțe de kilonova
+			- [ ] Restructurare sistem de webserver
+			- [ ] Control asupra subdomeniilor (e nevoie de modificări mari la webserver-ul meu privat dpdv al routing-ului și al certificatelor)
