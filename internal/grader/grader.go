@@ -3,7 +3,6 @@ package grader
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"log"
 	"sync"
 	"time"
@@ -11,21 +10,23 @@ import (
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/internal/db"
 	pb "github.com/KiloProjects/Kilonova/internal/grpc"
+	"github.com/KiloProjects/Kilonova/internal/logic"
 	"github.com/davecgh/go-spew/spew"
 	"google.golang.org/grpc"
 )
 
 type Handler struct {
-	tChan chan db.Submission
-	db    *db.Queries
-	dm    datamanager.Manager
 	ctx   context.Context
+	tChan chan *db.Submission
+	kn    *logic.Kilonova
+	db    *db.DB
+	dm    datamanager.Manager
 	debug bool
 }
 
-func NewHandler(ctx context.Context, DB *db.Queries, dm datamanager.Manager, debug bool) *Handler {
-	ch := make(chan db.Submission, 5)
-	return &Handler{ch, DB, dm, ctx, debug}
+func NewHandler(ctx context.Context, kn *logic.Kilonova) *Handler {
+	ch := make(chan *db.Submission, 5)
+	return &Handler{ctx, ch, kn, kn.DB, kn.DM, kn.Debug}
 }
 
 // chFeeder "feeds" tChan with relevant data
@@ -62,14 +63,14 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 				return nil
 			}
 
-			err := h.db.SetSubmissionStatus(ctx, db.SetSubmissionStatusParams{ID: t.ID, Status: db.StatusWorking})
+			err := t.SetStatus(db.StatusWorking, 0)
 			if err != nil {
 				log.Println(err)
 				continue
 			}
 
 			var score_mu sync.Mutex
-			var score int32
+			var score int
 
 			resp, err := client.Compile(ctx, &pb.CompileRequest{ID: int32(t.ID), Code: t.Code, Lang: t.Language})
 
@@ -85,11 +86,7 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 				resp.Output = old
 			}
 
-			if err := h.db.SetCompilation(ctx, db.SetCompilationParams{
-				ID:             t.ID,
-				CompileError:   sql.NullBool{Bool: !resp.Success, Valid: true},
-				CompileMessage: sql.NullString{String: resp.Output, Valid: true}}); err != nil {
-
+			if err := t.SetCompilation(!resp.Success, resp.Output); err != nil {
 				log.Println("Error during update of compile information:", err)
 				continue
 			}
@@ -102,7 +99,7 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 
 			tests, err := h.db.SubTests(ctx, t.ID)
 			if resp.Success == false || err != nil {
-				if err := h.db.SetSubmissionStatus(ctx, db.SetSubmissionStatusParams{ID: t.ID, Status: db.StatusFinished, Score: score}); err != nil {
+				if err := t.SetStatus(db.StatusFinished, score); err != nil {
 					log.Println(err)
 				}
 				continue
@@ -111,8 +108,9 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 			var wg sync.WaitGroup
 
 			for _, test := range tests {
+				test := test
 				wg.Add(1)
-				pbTest, err := h.db.Test(ctx, test.TestID)
+				pbTest, err := h.db.TestByID(ctx, test.TestID)
 				if err != nil {
 					log.Println("Error during test getting (0.5):", err)
 					continue
@@ -129,7 +127,7 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 					filename = "stdin"
 				}
 
-				test := &pb.Test{
+				pbtest := &pb.Test{
 					ID:          int32(t.ID),
 					TID:         int32(test.ID),
 					Filename:    filename,
@@ -141,9 +139,10 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 				}
 				go func() {
 					defer wg.Done()
+					subTestID := test.ID
 					pbTest := pbTest
 
-					resp, err := client.Execute(ctx, test)
+					resp, err := client.Execute(ctx, pbtest)
 					if err != nil {
 						log.Printf("Error executing test: %v\n", err)
 						return
@@ -156,7 +155,7 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 						resp.Output = old
 					}
 
-					var testScore int32
+					var testScore int
 
 					if resp.Comments == "" {
 						_, out, err := h.dm.Test(t.ProblemID, pbTest.VisibleID)
@@ -167,7 +166,7 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 						equal := compareOutputs(out, []byte(resp.Output))
 
 						if equal {
-							testScore = pbTest.Score
+							testScore = int(pbTest.Score)
 							resp.Comments = "Correct Answer"
 						} else {
 							resp.Comments = "Wrong Answer"
@@ -180,13 +179,13 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 						testScore = 0
 					}
 
-					if err := h.db.SetSubmissionTest(ctx, db.SetSubmissionTestParams{
-						ID:      int64(resp.TID),
-						Memory:  int32(resp.Memory),
-						Score:   testScore,
-						Time:    resp.Time,
-						Verdict: resp.Comments,
-					}); err != nil {
+					subTest, err := h.db.SubTest(h.ctx, subTestID)
+					if err != nil {
+						log.Printf("Error getting subtest: %v\n", err)
+						return
+					}
+
+					if err := subTest.SetData(resp.Memory, testScore, resp.Time, resp.Comments); err != nil {
 						log.Println("Error during evaltest updating:", err)
 						return
 					}
@@ -204,7 +203,7 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 				log.Printf("Couldn't clean task: %s\n", err)
 			}
 
-			h.db.SetSubmissionStatus(ctx, db.SetSubmissionStatusParams{ID: t.ID, Status: db.StatusFinished, Score: score})
+			t.SetStatus(db.StatusFinished, score)
 		}
 	}
 }

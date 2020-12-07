@@ -3,7 +3,6 @@ package main
 import (
 	"compress/flate"
 	"context"
-	"database/sql"
 	"errors"
 	"flag"
 	"fmt"
@@ -20,6 +19,7 @@ import (
 	"github.com/KiloProjects/Kilonova/internal/cookie"
 	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/grader"
+	"github.com/KiloProjects/Kilonova/internal/logic"
 	"github.com/KiloProjects/Kilonova/internal/version"
 	"github.com/KiloProjects/Kilonova/web"
 	"github.com/davecgh/go-spew/spew"
@@ -115,20 +115,19 @@ func Main(c *cli.Context) error {
 	cookie.Initialize(dataDir)
 
 	// DB Setup
-	sqlDB, err := sql.Open("postgres", config.C.Database.String())
-	if err != nil {
-		return fmt.Errorf("Could not connect to DB: %w", err)
-	}
-
-	log.Println("Connected to DB")
-
-	ndb, err := db.Prepare(context.Background(), sqlDB)
+	db, err := db.New(config.C.Database.String())
 	if err != nil {
 		return err
 	}
+	log.Println("Connected to DB")
 
 	// Data Manager setup
 	manager := datamanager.NewManager(dataDir)
+
+	kn, err := logic.New(db, manager, debug)
+	if err != nil {
+		return err
+	}
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -158,11 +157,11 @@ func Main(c *cli.Context) error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Initialize components
-	API := api.New(ctx, manager, ndb)
-	grader := grader.NewHandler(ctx, ndb, manager, debug)
+	API := api.New(kn)
+	grader := grader.NewHandler(ctx, kn)
 
 	r.Mount("/api", API.Router())
-	r.Mount("/", web.NewWeb(manager, ndb, debug).Router())
+	r.Mount("/", web.NewWeb(kn).Router())
 
 	grader.Start()
 

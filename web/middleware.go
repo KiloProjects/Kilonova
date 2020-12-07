@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/KiloProjects/Kilonova/internal/cookie"
-	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/go-chi/chi"
 )
@@ -28,7 +27,7 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 			return
 		}
 		// this is practically equivalent to /api/problem/getByID?id=problemID, but let's keep it fast
-		problem, err := rt.db.Problem(r.Context(), problemID)
+		problem, err := rt.kn.DB.Problem(r.Context(), problemID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				rt.status(w, r, 404, "Problema nu a fost găsită")
@@ -65,7 +64,7 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 			return
 		}
 		// this is equivalent to /api/submissions/getByID but it's faster to directly access
-		sub, err := rt.db.Submission(r.Context(), subID)
+		sub, err := rt.kn.DB.Submission(r.Context(), subID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				rt.status(w, r, 400, "Submisia nu există")
@@ -76,7 +75,7 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 			return
 		}
 
-		if !util.IsSubmissionVisible(sub, util.User(r), rt.db) {
+		if !util.IsSubmissionVisible(sub, util.User(r)) {
 			sub.Code = ""
 		}
 
@@ -94,7 +93,7 @@ func (rt *Web) ValidateTestID(next http.Handler) http.Handler {
 			rt.status(w, r, 400, "Test invalid")
 			return
 		}
-		test, err := rt.db.TestVisibleID(r.Context(), db.TestVisibleIDParams{ProblemID: util.ID(r, util.PbID), VisibleID: testID})
+		test, err := util.Problem(r).Test(testID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				rt.status(w, r, 404, "Testul nu există")
@@ -168,7 +167,7 @@ func (rt *Web) getUser(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		user, err := rt.db.User(r.Context(), sess.UserID)
+		user, err := rt.kn.DB.User(r.Context(), sess.UserID)
 		user.Password = ""
 		if err != nil {
 			next.ServeHTTP(w, r)

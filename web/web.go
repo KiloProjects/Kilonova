@@ -16,6 +16,7 @@ import (
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/internal/cookie"
 	"github.com/KiloProjects/Kilonova/internal/db"
+	"github.com/KiloProjects/Kilonova/internal/logic"
 	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -30,7 +31,7 @@ type templateData struct {
 	Version  string
 	Title    string
 	Params   map[string]string
-	User     db.User
+	User     *db.User
 	LoggedIn bool
 	Debug    bool
 
@@ -46,20 +47,20 @@ type templateData struct {
 
 	// Page-specific data
 	// it is easier to just put this stuff here instead of in a `Data` interface
-	Problems []db.Problem
+	Problems []*db.Problem
 
-	Problem   db.Problem
+	Problem   *db.Problem
 	ProblemID int64
 
-	ContentUser db.User
+	ContentUser *db.User
 	IsCUser     bool
 
-	Submissions []db.Submission
+	Submissions []*db.Submission
 
-	Submission db.Submission
+	Submission *db.Submission
 	SubID      int64
 
-	Test   db.Test
+	Test   *db.Test
 	TestID int64
 
 	Top100 []db.Top100Row
@@ -81,8 +82,8 @@ type templateData struct {
 
 // Web is the struct representing this whole package
 type Web struct {
+	kn    *logic.Kilonova
 	dm    datamanager.Manager
-	db    *db.Queries
 	debug bool
 }
 
@@ -156,7 +157,7 @@ func (rt *Web) Router() chi.Router {
 		r.Use(rt.getUser)
 
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			problems, err := util.Visible(rt.db, r.Context(), util.User(r))
+			problems, err := rt.kn.DB.VisibleProblems(r.Context(), util.User(r))
 			if err != nil {
 				log.Println("/:", err)
 				rt.status(w, r, 500, "")
@@ -181,7 +182,7 @@ func (rt *Web) Router() chi.Router {
 				rt.build(w, r, "profile", templ)
 			})
 			r.Get("/{user}", func(w http.ResponseWriter, r *http.Request) {
-				user, err := rt.db.UserByName(r.Context(), chi.URLParam(r, "user"))
+				user, err := rt.kn.DB.UserByName(r.Context(), chi.URLParam(r, "user"))
 				if err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						rt.status(w, r, 404, "")
@@ -217,7 +218,7 @@ func (rt *Web) Router() chi.Router {
 		})
 
 		r.Get("/top100", func(w http.ResponseWriter, r *http.Request) {
-			top100, err := rt.db.Top100(r.Context())
+			top100, err := rt.kn.DB.Top100(r.Context())
 			if err != nil && !errors.Is(err, sql.ErrNoRows) {
 				fmt.Println(err)
 				rt.status(w, r, 500, err.Error())
@@ -230,7 +231,7 @@ func (rt *Web) Router() chi.Router {
 
 		r.Route("/probleme", func(r chi.Router) {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				problems, err := util.Visible(rt.db, r.Context(), util.User(r))
+				problems, err := rt.kn.DB.VisibleProblems(r.Context(), util.User(r))
 				if err != nil {
 					fmt.Println(err)
 					rt.status(w, r, 500, "")
@@ -295,7 +296,7 @@ func (rt *Web) Router() chi.Router {
 
 		r.Route("/submissions", func(r chi.Router) {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				subs, err := rt.db.Submissions(r.Context())
+				subs, err := rt.kn.DB.Submissions(r.Context())
 				if err != nil && !errors.Is(err, sql.ErrNoRows) {
 					log.Println("/submissions/", err)
 					rt.status(w, r, 500, "")
@@ -355,8 +356,8 @@ func (rt *Web) Router() chi.Router {
 }
 
 // NewWeb returns a new web instance
-func NewWeb(dm datamanager.Manager, db *db.Queries, debug bool) *Web {
-	return &Web{dm, db, debug}
+func NewWeb(kn *logic.Kilonova) *Web {
+	return &Web{kn, kn.DM, kn.Debug}
 }
 
 func init() {

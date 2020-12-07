@@ -8,12 +8,12 @@ SELECT * FROM tests
 WHERE problem_id = $1 AND visible_id = $2 AND orphaned = false
 ORDER BY visible_id;
 
--- name: CreateTest :exec
+-- name: CreateTest :one
 INSERT INTO tests (
 	problem_id, visible_id, score 
 ) VALUES (
 	$1, $2, $3
-);
+) RETURNING *;
 
 -- name: SetVisibleID :exec
 UPDATE tests 

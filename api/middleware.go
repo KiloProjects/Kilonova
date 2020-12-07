@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/KiloProjects/Kilonova/internal/cookie"
-	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/go-chi/chi"
 )
@@ -104,7 +103,7 @@ func (s *API) validateTestID(next http.Handler) http.Handler {
 			errorData(w, "invalid test ID", http.StatusBadRequest)
 			return
 		}
-		test, err := s.db.TestVisibleID(r.Context(), db.TestVisibleIDParams{VisibleID: testID, ProblemID: util.ID(r, util.PbID)})
+		test, err := util.Problem(r).Test(testID)
 		if err != nil {
 			errorData(w, "test does not exist", http.StatusBadRequest)
 			return

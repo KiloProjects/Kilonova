@@ -1,5 +1,23 @@
 - v0.6.0a:
-	- TODO: Finish the changelog!
+	- Add default visibiliy for submissions
+		- Users with 100p on a problem can see all submissions
+		- Changeable in settings
+	- Add test archive upload
+	- Finish test editing
+	- Get rid of fontawesome stuff, it didnt look well to be her
+	- Re-compress tailwind (whoops, 4MB CSS was uploaded by mistake)
+		- I cant wait to see all that git history size :(
+	- Fleshed out roadmap
+	- Added password change API endpoint
+		- TODO: Add a page for this
+	- Internal stuff:
+		- Create a DB wrapper to simplify stuff
+		- Start moving business logic to a separate package
+		- TODO: ADD VUEJS FUNCTIONALITY
+	- TODO: CHECK EVERYTHING IS OK
+	- TODO: MOVE TESTS TO A SINGLE LOCATION ON DISK
+		- THIS WILL BREAK PROD
+	- TODO: Finish the changelog! More stuff i do
 - v0.5.5a:
 	- Minor internal changes (move from own protocol to GRPC and prepare for a more service-oriented architecture)
 - v0.5.4a:

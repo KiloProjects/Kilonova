@@ -3,12 +3,10 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 
-	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/languages"
 	"github.com/KiloProjects/Kilonova/internal/util"
 )
@@ -26,7 +24,7 @@ func (s *API) getSubmissionByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !util.IsSubmissionVisible(sub, util.User(r), s.db) {
+	if !util.IsSubmissionVisible(sub, util.User(r)) {
 		sub.Code = ""
 	}
 
@@ -44,7 +42,7 @@ func (s *API) getSubmissions(w http.ResponseWriter, r *http.Request) {
 
 	user := util.User(r)
 	for i := range subs {
-		if !util.IsSubmissionVisible(subs[i], user, s.db) {
+		if !util.IsSubmissionVisible(subs[i], user) {
 			subs[i].Code = ""
 		}
 	}
@@ -62,20 +60,20 @@ func (s *API) getSubmissionsForProblem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subs, err := s.db.UserProblemSubmissions(r.Context(), db.UserProblemSubmissionsParams{UserID: args.UID, ProblemID: args.PID})
-	if err != nil {
-		errorData(w, err, 500)
-		return
-	}
-
 	user, err := s.db.User(r.Context(), args.UID)
 	if err != nil {
 		errorData(w, err, 500)
 		return
 	}
 
+	subs, err := user.ProblemSubs(args.PID)
+	if err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
 	for i := range subs {
-		if !util.IsSubmissionVisible(subs[i], user, s.db) {
+		if !util.IsSubmissionVisible(subs[i], user) {
 			subs[i].Code = ""
 		}
 	}
@@ -88,8 +86,7 @@ func (s *API) getSelfSubmissionsForProblem(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		return
 	}
-	uid := util.User(r).ID
-	subs, err := s.db.UserProblemSubmissions(r.Context(), db.UserProblemSubmissionsParams{UserID: uid, ProblemID: pid})
+	subs, err := util.User(r).ProblemSubs(pid)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -124,7 +121,7 @@ func (s *API) setSubmissionVisible(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.db.SetSubmissionVisibility(r.Context(), db.SetSubmissionVisibilityParams{ID: args.ID, Visible: args.Visible}); err != nil {
+	if err := sub.SetVisibility(args.Visible); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -201,26 +198,8 @@ func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// add the submission to the DB
-	id, err := s.db.CreateSubmission(r.Context(), db.CreateSubmissionParams{
-		UserID:    user.ID,
-		ProblemID: problem.ID,
-		Code:      args.Code,
-		Language:  args.Lang,
-		Visible:   user.DefaultVisible})
-	if err != nil {
-		fmt.Println(err)
-		errorData(w, "Couldn't create test", 500)
-		return
-	}
-
-	// create the subtests
-	tests, err := s.db.ProblemTests(r.Context(), problem.ID)
-	for _, test := range tests {
-		if err := s.db.CreateSubTest(r.Context(), db.CreateSubTestParams{UserID: user.ID, TestID: test.ID, SubmissionID: id}); err != nil {
-			log.Println(err)
-		}
-	}
+	// add the submission along with subtests to the DB
+	id, err := s.db.AddSubmission(r.Context(), user.ID, problem.ID, args.Code, args.Lang, user.DefaultVisible)
 
 	statusData(w, "success", id, http.StatusCreated)
 }

@@ -22,15 +22,15 @@ INSERT INTO problems (
 ) VALUES (
 	$1, $2, $3, $4, $5, $6, $7
 )
-RETURNING id;
+RETURNING *;
 
 -- name: SetLimits :exec
 UPDATE problems 
 SET memory_limit = $2, stack_limit = $3, time_limit = $4
 WHERE id = $1;
 
--- name: CountProblems :one
-SELECT COUNT(*) FROM problems 
+-- name: ProblemByName :one
+SELECT * FROM problems
 WHERE lower(name) = lower(sqlc.arg(name));
 
 -- name: SetTimeLimit :exec

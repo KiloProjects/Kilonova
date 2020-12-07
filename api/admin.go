@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/util"
 )
 
@@ -15,9 +14,9 @@ func (s *API) getUsers(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Could not read from DB", 500)
 		return
 	}
-	for i := range users {
+	/*	for i := range users {
 		users[i].Password = ""
-	}
+	}*/
 	returnData(w, users)
 }
 
@@ -28,9 +27,10 @@ func (s *API) getAdmins(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Could not read from DB", 500)
 		return
 	}
-	for i := range admins {
-		admins[i].Password = ""
-	}
+	/*
+		for i := range admins {
+			admins[i].Password = ""
+		}*/
 	returnData(w, admins)
 }
 
@@ -40,9 +40,10 @@ func (s *API) getProposers(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Could not read from DB", 500)
 		return
 	}
-	for i := range proposers {
-		proposers[i].Password = ""
-	}
+	/*
+		for i := range proposers {
+			proposers[i].Password = ""
+		}*/
 	returnData(w, proposers)
 }
 
@@ -57,8 +58,8 @@ func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if args.ID == 0 {
-		errorData(w, "Empty ID", http.StatusBadRequest)
+	if args.ID <= 0 {
+		errorData(w, "Invalid ID", http.StatusBadRequest)
 	}
 
 	if args.Set == false { // additional checks for removing
@@ -66,14 +67,19 @@ func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
 			errorData(w, "You can't remove admin of the root user", http.StatusNotAcceptable)
 			return
 		}
-		// TODO: I think this should be util.ID(r, util.UserID) but i dont have time to check
 		if args.ID == util.User(r).ID {
 			errorData(w, "You can't remove your own admin", http.StatusNotAcceptable)
 			return
 		}
 	}
 
-	if err := s.db.SetAdmin(r.Context(), db.SetAdminParams{ID: args.ID, Admin: args.Set}); err != nil {
+	user, err := s.db.User(r.Context(), args.ID)
+	if err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	if err := user.SetAdmin(args.Set); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -111,10 +117,17 @@ func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := s.db.SetProposer(r.Context(), db.SetProposerParams{ID: args.ID, Proposer: args.Set}); err != nil {
+	user, err := s.db.User(r.Context(), args.ID)
+	if err != nil {
 		errorData(w, err, 500)
 		return
 	}
+
+	if err := user.SetProposer(args.Set); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
 	if args.Set {
 		returnData(w, "Succesfully added proposer")
 	} else {

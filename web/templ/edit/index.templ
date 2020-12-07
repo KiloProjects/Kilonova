@@ -59,11 +59,7 @@
 		async function toggleVisiblity() {
 			visible = !visible
 			let res = await postCall(`/problem/${problemID}/update/setVisible`, {visible})
-			createToast({
-				status: res.status,
-				title: `Made ${(visible ? "visible" : "invisible")}`,
-				description: res.data
-			})
+			apiToast(res)
 			$("#vButton").html(`Fă ${visible ? "invizibilă" : "vizibilă"}`)
 		}
 	</script>

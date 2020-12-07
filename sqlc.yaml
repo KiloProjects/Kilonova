@@ -1,7 +1,7 @@
 version: "1"
 packages:
-  - name: "db"
-    path: "internal/db"
+  - name: "rawdb"
+    path: "internal/rawdb"
     queries: "./sql/query/"
     schema: "./sql/schema/"
     engine: "postgresql"

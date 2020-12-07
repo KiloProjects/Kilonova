@@ -12,9 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/util"
-	"github.com/gosimple/slug"
 )
 
 func (s *API) setProblemVisible(w http.ResponseWriter, r *http.Request) {
@@ -24,44 +22,35 @@ func (s *API) setProblemVisible(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, 500)
 		return
 	}
-	if err := s.db.SetProblemVisibility(r.Context(), db.SetProblemVisibilityParams{ID: util.ID(r, util.PbID), Visible: args.Visible}); err != nil {
+	if err := util.Problem(r).SetVisibility(args.Visible); err != nil {
 		errorData(w, err, 500)
 		return
 	}
-	returnData(w, "Set visibility status")
+	if args.Visible {
+		returnData(w, "Made visible")
+	} else {
+		returnData(w, "Made invisible")
+	}
 }
 
 func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	id := util.ID(r, util.PbID)
 	var args struct{ UserID int64 }
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 500)
 		return
 	}
 
-	max, err := s.db.MaxScore(r.Context(), db.MaxScoreParams{UserID: args.UserID, ProblemID: id})
-	if err != nil {
-		errorData(w, err, 500)
-		return
-	}
-	returnData(w, max)
+	returnData(w, util.Problem(r).MaxScore(args.UserID))
 }
 
 func (s *API) maxScoreSelf(w http.ResponseWriter, r *http.Request) {
-	id := util.ID(r, util.PbID)
-	uid := util.ID(r, util.UserID)
-	max, err := s.db.MaxScore(r.Context(), db.MaxScoreParams{UserID: uid, ProblemID: id})
-	if err != nil {
-		errorData(w, err, 500)
-		return
-	}
-	returnData(w, max)
+	returnData(w, util.User(r).MaxScore(util.ID(r, util.PbID)))
 }
 
 func (s *API) updateTitle(w http.ResponseWriter, r *http.Request) {
 	val := r.FormValue("title")
-	if err := s.db.SetProblemName(r.Context(), db.SetProblemNameParams{ID: util.ID(r, util.PbID), Name: val}); err != nil {
+	if err := util.Problem(r).SetName(val); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -70,7 +59,7 @@ func (s *API) updateTitle(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) updateDescription(w http.ResponseWriter, r *http.Request) {
 	val := r.FormValue("text")
-	if err := s.db.SetProblemDescription(r.Context(), db.SetProblemDescriptionParams{ID: util.ID(r, util.PbID), Description: val}); err != nil {
+	if err := util.Problem(r).SetDescription(val); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -100,8 +89,7 @@ func (s *API) updateTestID(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	log.Println(args.ID, util.ID(r, util.TestID))
-	if err := s.db.SetPbTestVisibleID(r.Context(), db.SetPbTestVisibleIDParams{ProblemID: util.ID(r, util.PbID), OldID: util.ID(r, util.TestID), NewID: args.ID}); err != nil {
+	if err := util.Test(r).SetVID(args.ID); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -115,7 +103,7 @@ func (s *API) updateTestScore(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	if err := s.db.SetPbTestScore(r.Context(), db.SetPbTestScoreParams{ProblemID: util.ID(r, util.PbID), VisibleID: util.ID(r, util.TestID), Score: int32(args.Score)}); err != nil {
+	if err := util.Test(r).SetScore(args.Score); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -123,7 +111,7 @@ func (s *API) updateTestScore(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getTests(w http.ResponseWriter, r *http.Request) {
-	tests, err := s.db.ProblemTests(r.Context(), util.ID(r, util.PbID))
+	tests, err := util.Problem(r).Tests()
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -139,7 +127,7 @@ func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	test, err := s.db.TestVisibleID(r.Context(), db.TestVisibleIDParams{ProblemID: util.ID(r, util.PbID), VisibleID: args.ID})
+	test, err := s.db.Test(r.Context(), util.Problem(r).ID, args.ID)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -150,13 +138,13 @@ func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) setInputType(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	problem := util.Problem(r)
 	var args struct{ IsSet bool }
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	if err := s.db.SetConsoleInput(r.Context(), db.SetConsoleInputParams{ID: problem.ID, ConsoleInput: args.IsSet}); err != nil {
+
+	if err := util.Problem(r).SetConsoleInput(args.IsSet); err != nil {
 		errorData(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -169,8 +157,8 @@ func (s *API) setTestName(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "You must set the `testName` form value", http.StatusBadRequest)
 		return
 	}
-	problem := util.Problem(r)
-	if err := s.db.SetTestName(r.Context(), db.SetTestNameParams{ID: problem.ID, TestName: val}); err != nil {
+
+	if err := util.Problem(r).SetTestName(val); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -178,7 +166,7 @@ func (s *API) setTestName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
-	if err := s.db.PurgePbTests(r.Context(), util.ID(r, util.PbID)); err != nil {
+	if err := util.Problem(r).ClearTests(); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -187,10 +175,6 @@ func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
-	pb := util.Problem(r)
-
-	// in case limits is empty, set up the problem ID to save it to the DB
-
 	r.ParseForm()
 	var args struct {
 		MemoryLimit int32   `schema:"memoryLimit"`
@@ -202,11 +186,7 @@ func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pb.MemoryLimit = args.MemoryLimit
-	pb.StackLimit = args.StackLimit
-	pb.TimeLimit = args.TimeLimit
-
-	if err := s.db.SetLimits(r.Context(), db.SetLimitsParams{ID: pb.ID, MemoryLimit: args.MemoryLimit, StackLimit: args.StackLimit, TimeLimit: args.TimeLimit}); err != nil {
+	if err := util.Problem(r).SetLimits(args.MemoryLimit, args.StackLimit, args.TimeLimit); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -214,6 +194,7 @@ func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
 }
 
 // createTest inserts a new test to the problem
+// TODO: Move most stuff to logic
 func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 	score, err := strconv.Atoi(r.FormValue("score"))
 	if err != nil {
@@ -229,7 +210,7 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// set it to be the largest visible id of a test + 1
-		max, err := s.db.BiggestVID(r.Context(), util.ID(r, util.PbID))
+		max, err := util.Problem(r).BiggestVID()
 		if err != nil {
 			max = 0
 		}
@@ -241,7 +222,7 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pbID := util.ID(r, util.PbID)
-	if err := s.db.CreateTest(r.Context(), db.CreateTestParams{ProblemID: pbID, VisibleID: visibleID, Score: int32(score)}); err != nil {
+	if _, err := s.db.CreateTest(r.Context(), pbID, visibleID, int32(score)); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -354,6 +335,7 @@ func analyzeFile(ctx *archiveCtx, r *zip.Reader, name string, file fs.File) erro
 	return nil
 }
 
+// TODO: Move most stuff to logic
 func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 	// Since this operation can take at most 100MB, I am putting this lock as a precaution.
 	// This might create a problem with timeouts, and this should be handled asynchronously.
@@ -422,7 +404,7 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 
 	// If we are loading an archive, the user might want to remove all tests first
 	// So let's do it for them
-	if err := s.db.PurgePbTests(r.Context(), util.ID(r, util.PbID)); err != nil {
+	if err := util.Problem(r).ClearTests(); err != nil {
 		log.Println(err)
 		errorData(w, err, 500)
 		return
@@ -444,7 +426,7 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 		}
 
 		pbID := util.ID(r, util.PbID)
-		if err := s.db.CreateTest(r.Context(), db.CreateTestParams{ProblemID: pbID, VisibleID: testID, Score: int32(v.Score)}); err != nil {
+		if _, err := s.db.CreateTest(r.Context(), pbID, testID, int32(v.Score)); err != nil {
 			log.Println(err)
 			errorData(w, err, 500)
 			return
@@ -466,6 +448,7 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 }
 
 // initProblem assigns an ID for the problem
+// TODO: Move most stuff to logic
 func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 	title := r.FormValue("title")
 	if title == "" {
@@ -484,34 +467,26 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 		consoleInput = ci
 	}
 
-	nr, err := s.db.CountProblems(r.Context(), title)
-	if nr != 0 || err != nil {
+	pb, err := s.db.ProblemByName(r.Context(), title)
+	if pb != nil || err == nil {
 		errorData(w, "Problem with specified title already exists in DB", http.StatusBadRequest)
 		return
 	}
 
 	// default limits
-	id, err := s.db.CreateProblem(r.Context(), db.CreateProblemParams{
-		Name:         title,
-		AuthorID:     util.ID(r, util.UserID),
-		ConsoleInput: consoleInput,
-		TestName:     slug.Make(title),
-		MemoryLimit:  65536, // 64 * 1024 KB = 64MB
-		StackLimit:   16384, // 16 * 1024 KB = 16MB
-		TimeLimit:    0.1,   // 0.1s
-	})
+	pb, err = s.db.CreateProblem(r.Context(), title, util.User(r).ID, consoleInput)
 	if err != nil {
 		errorData(w, err, 500)
 		return
 	}
 
-	returnData(w, id)
+	returnData(w, pb.ID)
 }
 
 // getAllProblems returns all the problems from the DB
 // TODO: Pagination
 func (s *API) getAllProblems(w http.ResponseWriter, r *http.Request) {
-	problems, err := util.Visible(s.db, r.Context(), util.User(r))
+	problems, err := s.db.VisibleProblems(r.Context(), util.User(r))
 	if err != nil {
 		errorData(w, http.StatusText(500), 500)
 		return

@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"net/http"
 
-	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/pkg/errors"
 )
@@ -51,7 +50,7 @@ func (s *API) setSubVisibility(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.db.SetDefaultVisibility(r.Context(), db.SetDefaultVisibilityParams{ID: util.User(r).ID, DefaultVisible: args.Visibility}); err != nil {
+	if err := util.User(r).SetDefaultVisibility(args.Visibility); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -71,7 +70,7 @@ func (s *API) setBio(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.db.SetBio(r.Context(), db.SetBioParams{ID: util.User(r).ID, Bio: args.Bio}); err != nil {
+	if err := util.User(r).SetBio(args.Bio); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -87,10 +86,17 @@ func (s *API) purgeBio(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.db.SetBio(r.Context(), db.SetBioParams{ID: args.ID, Bio: ""}); err != nil {
+	user, err := s.db.User(r.Context(), args.ID)
+	if err != nil {
 		errorData(w, err, 500)
 		return
 	}
+
+	if err := user.SetBio(""); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
 	returnData(w, "Removed bio")
 }
 
@@ -101,11 +107,11 @@ func (s *API) getUserByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user, err := s.db.UserByName(r.Context(), name)
-	user.Password = ""
 	if err != nil || user.ID == 0 {
 		errorData(w, "User not found", http.StatusNotFound)
 		return
 	}
+	user.Password = ""
 	returnData(w, user)
 
 }
@@ -119,15 +125,36 @@ func getGravatarFromEmail(email string) string {
 	return "https://www.gravatar.com/avatar/" + hex.EncodeToString(bSum[:])
 }
 
+func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
+	password := r.FormValue("password")
+	if password == "" {
+		errorData(w, "You must provide a new password", http.StatusBadRequest)
+		return
+	}
+
+	hash, err := s.kn.GenHash(password)
+	if err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	if err := util.User(r).SetPasswordHash(hash); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	returnData(w, "Successfully changed password")
+}
+
 // ChangeEmail changes the e-mail of the saved user
+// TODO: Check this is not a scam and the user actually wants to change email
 func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
-	user := util.User(r)
 	email := r.FormValue("email")
 	if email == "" {
 		errorData(w, "You must provide a new email to change to", http.StatusBadRequest)
 		return
 	}
-	if err := s.db.SetEmail(r.Context(), db.SetEmailParams{ID: user.ID, Email: email}); err != nil {
+	if err := util.User(r).SetEmail(email); err != nil {
 		errorData(w, err, 500)
 		return
 	}

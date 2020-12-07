@@ -1,7 +1,6 @@
 package util
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/KiloProjects/Kilonova/internal/db"
@@ -11,25 +10,25 @@ import (
 
 // CONVENTION: IsR* is shorthand for getting the required stuff from request and passing it to its non-R counterpart
 
-func IsAuthed(user db.User) bool {
-	return user.ID != 0
+func IsAuthed(user *db.User) bool {
+	return user != nil && !user.Empty && user.ID != 0
 }
 
-func IsAdmin(user db.User) bool {
+func IsAdmin(user *db.User) bool {
 	if !IsAuthed(user) {
 		return false
 	}
 	return user.Admin
 }
 
-func IsProposer(user db.User) bool {
+func IsProposer(user *db.User) bool {
 	if !IsAuthed(user) {
 		return false
 	}
 	return user.Admin || user.Proposer
 }
 
-func IsProblemEditor(user db.User, problem db.Problem) bool {
+func IsProblemEditor(user *db.User, problem *db.Problem) bool {
 	if !IsAuthed(user) {
 		return false
 	}
@@ -39,21 +38,21 @@ func IsProblemEditor(user db.User, problem db.Problem) bool {
 	return user.ID == problem.AuthorID
 }
 
-func IsProblemVisible(user db.User, problem db.Problem) bool {
+func IsProblemVisible(user *db.User, problem *db.Problem) bool {
 	if problem.Visible {
 		return true
 	}
 	return IsProblemEditor(user, problem)
 }
 
-func IsSubmissionEditor(sub db.Submission, user db.User) bool {
+func IsSubmissionEditor(sub *db.Submission, user *db.User) bool {
 	if !IsAuthed(user) {
 		return false
 	}
 	return IsAdmin(user) || user.ID == sub.UserID
 }
 
-func IsSubmissionVisible(sub db.Submission, user db.User, database *db.Queries) bool {
+func IsSubmissionVisible(sub *db.Submission, user *db.User) bool {
 	if sub.Visible {
 		return true
 	}
@@ -61,8 +60,11 @@ func IsSubmissionVisible(sub db.Submission, user db.User, database *db.Queries) 
 		return true
 	}
 
-	score, err := database.MaxScore(context.Background(), db.MaxScoreParams{UserID: user.ID, ProblemID: sub.ProblemID})
-	if err == nil && score == 100 {
+	if !IsAuthed(user) {
+		return false
+	}
+	score := user.MaxScore(sub.ProblemID)
+	if score == 100 {
 		return true
 	}
 
@@ -93,13 +95,6 @@ func IsRSubmissionEditor(r *http.Request) bool {
 	return IsSubmissionEditor(Submission(r), User(r))
 }
 
-func IsRSubmissionVisible(r *http.Request, database *db.Queries) bool {
-	return IsSubmissionVisible(Submission(r), User(r), database)
-}
-
-func Visible(kdb *db.Queries, ctx context.Context, user db.User) ([]db.Problem, error) {
-	if user.Admin {
-		return kdb.Problems(ctx)
-	}
-	return kdb.VisibleProblems(ctx, user.ID)
+func IsRSubmissionVisible(r *http.Request) bool {
+	return IsSubmissionVisible(Submission(r), User(r))
 }

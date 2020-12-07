@@ -2,6 +2,10 @@
 SELECT * FROM submissions
 WHERE id = $1;
 
+-- name: SubTest :one
+SELECT * FROM submission_tests
+WHERE id = $1;
+
 -- name: Submissions :many
 SELECT * FROM submissions
 ORDER BY id desc;

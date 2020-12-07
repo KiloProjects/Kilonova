@@ -28,6 +28,7 @@ TODO LIST KILONOVA:
 		- [ ] Auto reîncărcare pagină submission când nu e finalizată evaluarea
 		- [x] Experiență mai bună pentru editat problemele
 	- [ ] Filtre submissions
+	- [ ] Caching
 - [ ] Pentru middle beta:
 	- [ ] Multi-eval support
 	- [ ] Verificator custom

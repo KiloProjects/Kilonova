@@ -4,7 +4,7 @@ INSERT INTO users (
 ) VALUES (
 	$1, $2, $3
 ) 
-RETURNING id;
+RETURNING *;
 
 -- name: User :one
 SELECT * FROM users 
@@ -74,4 +74,8 @@ WHERE id = $1;
 
 -- name: SetEmail :exec
 UPDATE users SET email = $2
+WHERE id = $1;
+
+-- name: SetPassword :exec
+UPDATE users SET password = $2
 WHERE id = $1;

@@ -46,49 +46,49 @@ func ID(r *http.Request, tp KNContextType) int64 {
 }
 
 // User returns the user from request context
-func User(r *http.Request) db.User {
+func User(r *http.Request) *db.User {
 	switch v := r.Context().Value(UserKey).(type) {
 	case db.User:
-		return v
+		return &v
 	case *db.User:
-		return *v
+		return v
 	default:
-		return db.User{}
+		return &db.User{Empty: true}
 	}
 }
 
 // Problem returns the problem from request context
-func Problem(r *http.Request) db.Problem {
+func Problem(r *http.Request) *db.Problem {
 	switch v := r.Context().Value(ProblemKey).(type) {
 	case db.Problem:
-		return v
+		return &v
 	case *db.Problem:
-		return *v
+		return v
 	default:
-		return db.Problem{}
+		return &db.Problem{Empty: true}
 	}
 }
 
 // Submission returns the submission from request context
-func Submission(r *http.Request) db.Submission {
+func Submission(r *http.Request) *db.Submission {
 	switch v := r.Context().Value(SubKey).(type) {
 	case db.Submission:
-		return v
+		return &v
 	case *db.Submission:
-		return *v
+		return v
 	default:
-		return db.Submission{}
+		return &db.Submission{Empty: true}
 	}
 }
 
 // Test returns the test from request context
-func Test(r *http.Request) db.Test {
+func Test(r *http.Request) *db.Test {
 	switch v := r.Context().Value(TestKey).(type) {
 	case db.Test:
-		return v
+		return &v
 	case *db.Test:
-		return *v
+		return v
 	default:
-		return db.Test{}
+		return &db.Test{Empty: true}
 	}
 }

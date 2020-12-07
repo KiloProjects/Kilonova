@@ -56,7 +56,7 @@ type testDataType struct {
 	Out string
 }
 
-func (rt *Web) getFullTestData(test db.Test) testDataType {
+func (rt *Web) getFullTestData(test *db.Test) testDataType {
 	in, out, err := rt.dm.Test(test.ProblemID, test.VisibleID)
 	if err != nil {
 		in = []byte("err")
@@ -65,7 +65,7 @@ func (rt *Web) getFullTestData(test db.Test) testDataType {
 	return testDataType{In: string(in), Out: string(out)}
 }
 
-func (rt *Web) getTestData(test db.Test) testDataType {
+func (rt *Web) getTestData(test *db.Test) testDataType {
 	t := rt.getFullTestData(test)
 	if len(t.In) > 128*1024 { // 128KB
 		t.In = "too long to show here"
@@ -76,12 +76,12 @@ func (rt *Web) getTestData(test db.Test) testDataType {
 	return t
 }
 
-func (rt *Web) maxScore(userID int64, problemID int64) int32 {
-	score, err := rt.db.MaxScore(context.Background(), db.MaxScoreParams{UserID: userID, ProblemID: problemID})
+func (rt *Web) maxScore(userID int64, problemID int64) int {
+	user, err := rt.kn.DB.User(context.Background(), userID)
 	if err != nil {
-		return -1
+		return 0
 	}
-	return score
+	return user.MaxScore(problemID)
 }
 
 func (rt *Web) newTemplate() *template.Template {
@@ -121,61 +121,61 @@ func (rt *Web) newTemplate() *template.Template {
 			}
 			return v
 		},
-		"subScore": func(problem db.Problem, user db.User) string {
-			score, err := rt.db.MaxScore(context.Background(), db.MaxScoreParams{UserID: user.ID, ProblemID: problem.ID})
-			if err != nil || score < 0 {
+		"subScore": func(problem *db.Problem, user *db.User) string {
+			score := user.MaxScore(problem.ID)
+			if score <= 0 {
 				return "-"
 			}
 			return fmt.Sprint(score)
 		},
-		"problemSubs": func(problem db.Problem, user db.User) []db.Submission {
-			subs, err := rt.db.UserProblemSubmissions(context.Background(), db.UserProblemSubmissionsParams{UserID: user.ID, ProblemID: problem.ID})
+		"problemSubs": func(problem *db.Problem, user *db.User) []*db.Submission {
+			subs, err := user.ProblemSubs(problem.ID)
 			if err != nil {
 				return nil
 			}
 			return subs
 		},
-		"problemTests": func(problem db.Problem) []db.Test {
-			tests, err := rt.db.ProblemTests(context.Background(), problem.ID)
+		"problemTests": func(problem *db.Problem) []*db.Test {
+			tests, err := problem.Tests()
 			if err != nil {
 				return nil
 			}
 			return tests
 		},
-		"problemAuthor": func(problem db.Problem) db.User {
-			user, err := rt.db.User(context.Background(), problem.AuthorID)
+		"problemAuthor": func(problem *db.Problem) *db.User {
+			user, err := problem.GetAuthor()
 			if err != nil {
-				return db.User{}
+				return &db.User{}
 			}
 			user.Password = ""
 			return user
 		},
-		"subAuthor": func(sub db.Submission) db.User {
-			user, err := rt.db.User(context.Background(), sub.UserID)
+		"subAuthor": func(sub *db.Submission) *db.User {
+			user, err := rt.kn.DB.User(context.Background(), sub.UserID)
 			if err != nil {
-				return db.User{}
+				return &db.User{}
 			}
 			user.Password = ""
 			return user
 		},
-		"subProblem": func(sub db.Submission) db.Problem {
-			pb, err := rt.db.Problem(context.Background(), sub.ProblemID)
+		"subProblem": func(sub *db.Submission) *db.Problem {
+			pb, err := rt.kn.DB.Problem(context.Background(), sub.ProblemID)
 			if err != nil {
-				return db.Problem{}
+				return &db.Problem{}
 			}
 			return pb
 		},
-		"subTests": func(sub db.Submission) []db.SubmissionTest {
-			tests, err := rt.db.SubTests(context.Background(), sub.ID)
+		"subTests": func(sub *db.Submission) []*db.SubTest {
+			tests, err := rt.kn.DB.SubTests(context.Background(), sub.ID)
 			if err != nil {
 				return nil
 			}
 			return tests
 		},
-		"getTest": func(id int64) db.Test {
-			test, err := rt.db.Test(context.Background(), id)
+		"getTest": func(id int64) *db.Test {
+			test, err := rt.kn.DB.TestByID(context.Background(), id)
 			if err != nil {
-				return db.Test{}
+				return &db.Test{}
 			}
 			return test
 		},

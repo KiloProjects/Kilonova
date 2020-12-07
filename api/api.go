@@ -1,12 +1,12 @@
 package api
 
 import (
-	"context"
 	"net/http"
 	"sync"
 
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/internal/db"
+	"github.com/KiloProjects/Kilonova/internal/logic"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/schema"
 )
@@ -15,15 +15,18 @@ var decoder = schema.NewDecoder()
 
 // API is the base struct for the project's API
 type API struct {
-	ctx             context.Context
-	manager         datamanager.Manager
-	db              *db.Queries
+	kn *logic.Kilonova
+	db *db.DB
+
+	// manager is deprecated
+	manager datamanager.Manager
+
 	testArchiveLock sync.Mutex
 }
 
 // New declares a new API instance
-func New(ctx context.Context, manager datamanager.Manager, kdb *db.Queries) *API {
-	return &API{ctx, manager, kdb, sync.Mutex{}}
+func New(kn *logic.Kilonova) *API {
+	return &API{kn, kn.DB, kn.DM, sync.Mutex{}}
 }
 
 // GetRouter is the magic behind the API
@@ -118,6 +121,7 @@ func (s *API) Router() chi.Router {
 		r.With(s.MustBeAuthed).Get("/getSelfGravatar", s.getSelfGravatar)
 
 		r.With(s.MustBeAuthed).Post("/changeEmail", s.changeEmail)
+		r.With(s.MustBeAuthed).Post("/changePassword", s.changePassword)
 	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
