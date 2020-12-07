@@ -48,7 +48,7 @@ func newEvalServer() *evalServer {
 	return &evalServer{mgr: mgr}
 }
 
-func Eval(c *cli.Context) error {
+func Eval(_ *cli.Context) error {
 	if err := os.MkdirAll(config.C.Eval.CompilePath, 0777); err != nil {
 		return err
 	}

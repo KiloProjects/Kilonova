@@ -9,9 +9,18 @@ import (
 
 // ConfigStruct is the glue for all configuration sections
 type ConfigStruct struct {
+	Cache    Cache    `toml:"cache"`
 	Common   Common   `toml:"common"`
 	Database Database `toml:"database"`
 	Eval     Eval     `toml:"eval"`
+}
+
+// Cache is the data required for the redis part (when I eventually make it)
+type Cache struct {
+	Enable   bool   `toml:"enable"`
+	Host     string `toml:"host"`
+	Password string `toml:"password"`
+	DB       int    `toml:"DB"`
 }
 
 // Eval is the data required for the eval service

@@ -28,7 +28,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func Kilonova(c *cli.Context) error {
+func Kilonova(_ *cli.Context) error {
 	// Print welcome message
 	fmt.Printf("Starting Kilonova %s\n", version.Version)
 
