@@ -2,22 +2,19 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"path"
 
 	"github.com/KiloProjects/Kilonova/internal/box"
 	"github.com/KiloProjects/Kilonova/internal/boxmanager"
+	"github.com/KiloProjects/Kilonova/internal/config"
 	pb "github.com/KiloProjects/Kilonova/internal/grpc"
+	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-)
-
-var (
-	isolateBin  = flag.String("isolatePath", "/tmp/isolate", "The path to the isolate binary (if it does not exist, it will be created there")
-	compilePath = flag.String("compilePath", "/tmp/kncompiles", "The path to a directory to store the resulting executable in")
 )
 
 type evalServer struct {
@@ -34,7 +31,7 @@ func (s *evalServer) Execute(_ context.Context, test *pb.Test) (*pb.TestResponse
 }
 
 func (s *evalServer) Clean(_ context.Context, clean *pb.CleanArgs) (*pb.Empty, error) {
-	p := path.Join(*compilePath, fmt.Sprintf("%d.bin", clean.ID))
+	p := path.Join(config.C.Eval.CompilePath, fmt.Sprintf("%d.bin", clean.ID))
 	return &pb.Empty{}, os.Remove(p)
 }
 
@@ -51,27 +48,24 @@ func newEvalServer() *evalServer {
 	return &evalServer{mgr: mgr}
 }
 
-func main() {
-	flag.Parse()
-	if err := os.MkdirAll(*compilePath, 0777); err != nil {
-		panic(err)
+func Eval(c *cli.Context) error {
+	if err := os.MkdirAll(config.C.Eval.CompilePath, 0777); err != nil {
+		return err
 	}
 
-	boxmanager.SetCompilePath(*compilePath)
-	box.Initialize(*isolateBin)
+	boxmanager.SetCompilePath(config.C.Eval.CompilePath)
+	box.Initialize(config.C.Eval.IsolatePath)
 
 	lis, err := net.Listen("tcp", "localhost:8001")
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	server := grpc.NewServer()
 	pb.RegisterEvalServer(server, newEvalServer())
 	reflection.Register(server)
 
-	fmt.Println("Warmed up")
+	log.Println("Warmed up")
 
-	if err := server.Serve(lis); err != nil {
-		panic(err)
-	}
+	return server.Serve(lis)
 }

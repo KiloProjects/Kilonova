@@ -11,6 +11,13 @@ import (
 type ConfigStruct struct {
 	Common   Common   `toml:"common"`
 	Database Database `toml:"database"`
+	Eval     Eval     `toml:"eval"`
+}
+
+// Eval is the data required for the eval service
+type Eval struct {
+	IsolatePath string `toml:"isolatePath"`
+	CompilePath string `toml:"compilePath"`
 }
 
 // Common is the data required for all services
