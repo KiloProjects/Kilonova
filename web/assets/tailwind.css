@@ -1,10 +1,7 @@
 
-@import "variables";
-
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
-
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
 	.bg-hljs {
@@ -55,7 +52,6 @@
 		@apply h-0 my-2 border-t border-gray-200;
 	}
 
-	// bootstrap container 
 	.c-container {
 		max-width: 100%;
 		padding-left: 15px;
@@ -82,8 +78,6 @@
 			max-width: 1140px;
 		}
 	}
-
-	// end bootstrap-like container
 
 	.roboto .navbar-brand h1 h2 h3 h4 h5 h6 {
 		font-family: 'Roboto';
