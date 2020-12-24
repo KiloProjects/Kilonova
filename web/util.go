@@ -4,15 +4,19 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
+	"net/url"
+	"path"
 	"time"
 
 	"github.com/KiloProjects/Kilonova/internal/db"
+	"github.com/KiloProjects/Kilonova/internal/logic"
 	"github.com/KiloProjects/Kilonova/internal/util"
-	"github.com/KiloProjects/Kilonova/internal/version"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 // hydrateTemplate fills a templateData struct with generic stuff like Params, User and LoggedIn
@@ -23,7 +27,7 @@ func (rt *Web) hydrateTemplate(r *http.Request, title string) templateData {
 		Params:   globParams(r),
 		User:     util.User(r),
 		LoggedIn: util.IsRAuthed(r),
-		Version:  version.Version,
+		Version:  logic.Version,
 		Debug:    rt.debug,
 
 		Problem:    util.Problem(r),
@@ -59,10 +63,21 @@ type testDataType struct {
 func (rt *Web) getFullTestData(test *db.Test) testDataType {
 	in, out, err := rt.dm.Test(test.ProblemID, test.VisibleID)
 	if err != nil {
-		in = []byte("err")
-		out = []byte("err")
+		return testDataType{In: "err", Out: "err"}
 	}
-	return testDataType{In: string(in), Out: string(out)}
+
+	defer in.Close()
+	defer out.Close()
+	inData, err := io.ReadAll(in)
+	if err != nil {
+		inData = []byte("err")
+	}
+	outData, err := io.ReadAll(out)
+	if err != nil {
+		outData = []byte("err")
+	}
+
+	return testDataType{In: string(inData), Out: string(outData)}
 }
 
 func (rt *Web) getTestData(test *db.Test) testDataType {
@@ -84,15 +99,63 @@ func (rt *Web) maxScore(userID int64, problemID int64) int {
 	return user.MaxScore(problemID)
 }
 
-func (rt *Web) newTemplate() *template.Template {
-	// table for gradient, initialize here so it panics if we make a mistake
-	colorTable := gTable{
-		{mustParseHex("#f45d64"), 0.0},
-		{mustParseHex("#eaf200"), 0.5},
-		{mustParseHex("#64ce3a"), 1.0},
+func gradient(score, maxscore int32) template.CSS {
+	col := "#e3dd71" // a yellow hue, indicating something is wrong
+	var rap float64
+	if maxscore == 0 || score == 0 {
+		rap = 0
+	} else {
+		rap = float64(score) / float64(maxscore)
+	}
+	if rap == 1.0 {
+		col = "#7fff00"
 	}
 
+	if rap < 1.0 {
+		col = "#67cf39"
+	}
+
+	if rap <= 0.8 {
+		col = "#9fdd2e"
+	}
+
+	if rap <= 0.6 {
+		col = "#d2eb19"
+	}
+
+	if rap <= 0.4 {
+		col = "#f1d011"
+	}
+
+	if rap <= 0.2 {
+		col = "#f6881e"
+	}
+
+	if rap == 0 {
+		col = "#f11722"
+	}
+
+	return template.CSS(fmt.Sprintf("background-color: %s\n", col))
+}
+
+// isPdfLink does a simple analysis if it is a link, note that it does not check if the content is actually a PDF
+// I should check it sometime, or use it as a db field for the problem
+func isPdfLink(link string) bool {
+	u, err := url.Parse(link)
+	if err != nil {
+		return false
+	}
+	return path.Ext(u.Path) == ".pdf"
+}
+
+func sanitize(input string) string {
+	return bluemonday.UGCPolicy().Sanitize(input)
+}
+
+func (rt *Web) newTemplate() *template.Template {
+
 	return template.Must(parseAllTemplates(template.New("web").Funcs(template.FuncMap{
+		"ispdflink":    isPdfLink,
 		"dumpStruct":   spew.Sdump,
 		"getTestData":  rt.getTestData,
 		"getFullTests": rt.getFullTestData,
@@ -111,9 +174,7 @@ func (rt *Web) newTemplate() *template.Template {
 		"KBtoMB": func(kb int32) float64 {
 			return float64(kb) / 1024.0
 		},
-		"gradient": func(score, maxscore int32) template.CSS {
-			return gradient(int(score), int(maxscore), colorTable)
-		},
+		"gradient": gradient,
 		"zeroto100": func() []int {
 			var v []int = make([]int, 0)
 			for i := 0; i <= 100; i++ {
@@ -181,6 +242,20 @@ func (rt *Web) newTemplate() *template.Template {
 		},
 		"timeToUnix": func(t time.Time) int64 {
 			return t.Unix()
+		},
+		"sanitize": sanitize,
+		"html": func(s string) template.HTML {
+			return template.HTML(sanitize(s))
+		},
+		"unsafeHTML": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+		"solvedProblems": func(user *db.User) []*db.Problem {
+			pbs, err := user.SolvedProblems()
+			if err != nil {
+				return nil
+			}
+			return pbs
 		},
 	}), root))
 }

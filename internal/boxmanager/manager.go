@@ -2,11 +2,12 @@ package boxmanager
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"strconv"
 	"sync"
 
+	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/internal/box"
 	pb "github.com/KiloProjects/Kilonova/internal/grpc"
 	"github.com/KiloProjects/Kilonova/internal/languages"
@@ -27,6 +28,7 @@ type limits struct {
 type BoxManager struct {
 	ID  int
 	Box *box.Box
+	dm  datamanager.Manager
 
 	compileLock   sync.Mutex
 	executionLock sync.Mutex
@@ -52,8 +54,6 @@ func (b *BoxManager) CompileFile(SourceCode []byte, language languages.Language)
 	if err := b.Box.WriteFile(language.SourceName, SourceCode); err != nil {
 		return "", err
 	}
-
-	/* ***/
 
 	if b.Box.Config.EnvToSet == nil {
 		b.Box.Config.EnvToSet = make(map[string]string)
@@ -136,11 +136,12 @@ func (b *BoxManager) RunSubmission(language languages.Language, constraints limi
 
 	_, _, err := b.Box.ExecCommand(language.RunCommand...)
 	if metaFile != "" {
-		data, err := ioutil.ReadFile(metaFile)
+		f, err := os.Open(metaFile)
 		if err != nil {
 			return nil, err
 		}
-		return box.ParseMetaFile(string(data)), nil
+		defer f.Close()
+		return box.ParseMetaFile(f), nil
 	}
 	if err != nil {
 		return nil, err
@@ -163,7 +164,13 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 
 	response := &pb.TestResponse{TID: sub.TID}
 
-	if err := b.Box.WriteFile("/box/"+sub.Filename+".in", []byte(sub.Input)); err != nil {
+	in, err := b.dm.TestInput(sub.ProblemID, sub.TestID)
+	if err != nil {
+		return response, err
+	}
+	defer in.Close()
+
+	if err := b.Box.WriteReader("/box/"+sub.Filename+".in", in); err != nil {
 		fmt.Println("Can't write input file:", err)
 		response.Comments = "Sandbox error: Couldn't write input file"
 		return response, err
@@ -201,12 +208,27 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 		response.Comments = "Sandbox Error: " + meta.Message
 	}
 
-	file, err := b.Box.GetFile("/box/" + sub.Filename + ".out")
-	if err != nil {
-		response.Comments = "Missing output file"
+	boxOut := fmt.Sprintf("/box/%s.out", sub.Filename)
+	if _, err := b.Box.Stat(boxOut); err != nil {
+		response.Comments = "No output file found"
 		return response, nil
 	}
-	response.Output = file
+
+	w, err := b.dm.SubtestWriter(sub.TID)
+	if err != nil {
+		response.Comments = "Could not open problem output"
+		return response, nil
+	}
+
+	if err := b.Box.CopyFromBoxInWriter(boxOut, w); err != nil {
+		response.Comments = "Could not write output file"
+		return response, nil
+	}
+
+	if err := w.Close(); err != nil {
+		response.Comments = "Could not close output file"
+		return response, nil
+	}
 
 	return response, nil
 }
@@ -238,8 +260,7 @@ func (b *BoxManager) CompileSubmission(c *pb.CompileRequest) (*pb.CompileRespons
 		return resp, nil
 	}
 
-	err := ioutil.WriteFile(outName, []byte(c.Code), 0644)
-	if err != nil {
+	if err := os.WriteFile(outName, []byte(c.Code), 0644); err != nil {
 		resp.Other = err.Error()
 		resp.Success = false
 	}
@@ -264,7 +285,7 @@ func SetCompilePath(path string) {
 }
 
 // New creates a new box manager
-func New(id int) (*BoxManager, error) {
+func New(id int, dm datamanager.Manager) (*BoxManager, error) {
 	b, err := box.New(box.Config{ID: id, Cgroups: true})
 	if err != nil {
 		return nil, err
@@ -274,6 +295,7 @@ func New(id int) (*BoxManager, error) {
 	bm := &BoxManager{
 		ID:  id,
 		Box: b,
+		dm:  dm,
 	}
 	return bm, nil
 }

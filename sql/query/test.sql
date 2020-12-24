@@ -1,7 +1,6 @@
-
 -- name: Test :one
 SELECT * FROM tests 
-WHERE id = $1 AND orphaned = false;
+WHERE id = $1;
 
 -- name: TestVisibleID :one
 SELECT * FROM tests 

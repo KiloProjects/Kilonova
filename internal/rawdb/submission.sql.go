@@ -23,7 +23,7 @@ type CreateSubTestParams struct {
 }
 
 func (q *Queries) CreateSubTest(ctx context.Context, arg CreateSubTestParams) error {
-	_, err := q.exec(ctx, q.createSubTestStmt, createSubTest, arg.UserID, arg.TestID, arg.SubmissionID)
+	_, err := q.db.ExecContext(ctx, createSubTest, arg.UserID, arg.TestID, arg.SubmissionID)
 	return err
 }
 
@@ -44,7 +44,7 @@ type CreateSubmissionParams struct {
 }
 
 func (q *Queries) CreateSubmission(ctx context.Context, arg CreateSubmissionParams) (int64, error) {
-	row := q.queryRow(ctx, q.createSubmissionStmt, createSubmission,
+	row := q.db.QueryRowContext(ctx, createSubmission,
 		arg.UserID,
 		arg.ProblemID,
 		arg.Code,
@@ -69,10 +69,21 @@ type MaxScoreParams struct {
 }
 
 func (q *Queries) MaxScore(ctx context.Context, arg MaxScoreParams) (int32, error) {
-	row := q.queryRow(ctx, q.maxScoreStmt, maxScore, arg.UserID, arg.ProblemID)
+	row := q.db.QueryRowContext(ctx, maxScore, arg.UserID, arg.ProblemID)
 	var score int32
 	err := row.Scan(&score)
 	return score, err
+}
+
+const resetWaitingStatus = `-- name: ResetWaitingStatus :exec
+UPDATE submissions
+SET status = 'waiting'
+WHERE status = 'working'
+`
+
+func (q *Queries) ResetWaitingStatus(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, resetWaitingStatus)
+	return err
 }
 
 const setCompilation = `-- name: SetCompilation :exec
@@ -88,7 +99,7 @@ type SetCompilationParams struct {
 }
 
 func (q *Queries) SetCompilation(ctx context.Context, arg SetCompilationParams) error {
-	_, err := q.exec(ctx, q.setCompilationStmt, setCompilation, arg.ID, arg.CompileError, arg.CompileMessage)
+	_, err := q.db.ExecContext(ctx, setCompilation, arg.ID, arg.CompileError, arg.CompileMessage)
 	return err
 }
 
@@ -105,7 +116,7 @@ type SetSubmissionStatusParams struct {
 }
 
 func (q *Queries) SetSubmissionStatus(ctx context.Context, arg SetSubmissionStatusParams) error {
-	_, err := q.exec(ctx, q.setSubmissionStatusStmt, setSubmissionStatus, arg.ID, arg.Status, arg.Score)
+	_, err := q.db.ExecContext(ctx, setSubmissionStatus, arg.ID, arg.Status, arg.Score)
 	return err
 }
 
@@ -124,7 +135,7 @@ type SetSubmissionTestParams struct {
 }
 
 func (q *Queries) SetSubmissionTest(ctx context.Context, arg SetSubmissionTestParams) error {
-	_, err := q.exec(ctx, q.setSubmissionTestStmt, setSubmissionTest,
+	_, err := q.db.ExecContext(ctx, setSubmissionTest,
 		arg.ID,
 		arg.Verdict,
 		arg.Time,
@@ -146,7 +157,7 @@ type SetSubmissionVisibilityParams struct {
 }
 
 func (q *Queries) SetSubmissionVisibility(ctx context.Context, arg SetSubmissionVisibilityParams) error {
-	_, err := q.exec(ctx, q.setSubmissionVisibilityStmt, setSubmissionVisibility, arg.ID, arg.Visible)
+	_, err := q.db.ExecContext(ctx, setSubmissionVisibility, arg.ID, arg.Visible)
 	return err
 }
 
@@ -156,7 +167,7 @@ WHERE id = $1
 `
 
 func (q *Queries) SubTest(ctx context.Context, id int64) (SubmissionTest, error) {
-	row := q.queryRow(ctx, q.subTestStmt, subTest, id)
+	row := q.db.QueryRowContext(ctx, subTest, id)
 	var i SubmissionTest
 	err := row.Scan(
 		&i.ID,
@@ -180,7 +191,7 @@ ORDER BY id asc
 `
 
 func (q *Queries) SubTests(ctx context.Context, submissionID int64) ([]SubmissionTest, error) {
-	rows, err := q.query(ctx, q.subTestsStmt, subTests, submissionID)
+	rows, err := q.db.QueryContext(ctx, subTests, submissionID)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +230,7 @@ WHERE id = $1
 `
 
 func (q *Queries) Submission(ctx context.Context, id int64) (Submission, error) {
-	row := q.queryRow(ctx, q.submissionStmt, submission, id)
+	row := q.db.QueryRowContext(ctx, submission, id)
 	var i Submission
 	err := row.Scan(
 		&i.ID,
@@ -243,7 +254,7 @@ ORDER BY id desc
 `
 
 func (q *Queries) Submissions(ctx context.Context) ([]Submission, error) {
-	rows, err := q.query(ctx, q.submissionsStmt, submissions)
+	rows, err := q.db.QueryContext(ctx, submissions)
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +300,7 @@ type UserProblemSubmissionsParams struct {
 }
 
 func (q *Queries) UserProblemSubmissions(ctx context.Context, arg UserProblemSubmissionsParams) ([]Submission, error) {
-	rows, err := q.query(ctx, q.userProblemSubmissionsStmt, userProblemSubmissions, arg.UserID, arg.ProblemID)
+	rows, err := q.db.QueryContext(ctx, userProblemSubmissions, arg.UserID, arg.ProblemID)
 	if err != nil {
 		return nil, err
 	}
@@ -330,7 +341,7 @@ ORDER BY id asc
 `
 
 func (q *Queries) WaitingSubmissions(ctx context.Context) ([]Submission, error) {
-	rows, err := q.query(ctx, q.waitingSubmissionsStmt, waitingSubmissions)
+	rows, err := q.db.QueryContext(ctx, waitingSubmissions)
 	if err != nil {
 		return nil, err
 	}

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/internal/box"
 	"github.com/KiloProjects/Kilonova/internal/boxmanager"
 	"github.com/KiloProjects/Kilonova/internal/config"
@@ -19,6 +20,7 @@ import (
 
 type evalServer struct {
 	mgr *boxmanager.BoxManager
+	dm  datamanager.Manager
 	pb.UnimplementedEvalServer
 }
 
@@ -39,13 +41,18 @@ func (s *evalServer) Ping(_ context.Context, _ *pb.Empty) (*pb.Empty, error) {
 	return &pb.Empty{}, nil
 }
 
-func newEvalServer() *evalServer {
-	mgr, err := boxmanager.New(2)
+func newEvalServer() (*evalServer, error) {
+	dmgr, err := datamanager.NewManager(config.C.Common.DataDir)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return &evalServer{mgr: mgr}
+	mgr, err := boxmanager.New(2, dmgr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &evalServer{mgr: mgr, dm: dmgr}, nil
 }
 
 func Eval(_ *cli.Context) error {
@@ -56,13 +63,18 @@ func Eval(_ *cli.Context) error {
 	boxmanager.SetCompilePath(config.C.Eval.CompilePath)
 	box.Initialize(config.C.Eval.IsolatePath)
 
-	lis, err := net.Listen("tcp", "localhost:8001")
+	lis, err := net.Listen("tcp", config.C.Eval.Address)
+	if err != nil {
+		return err
+	}
+
+	sv, err := newEvalServer()
 	if err != nil {
 		return err
 	}
 
 	server := grpc.NewServer()
-	pb.RegisterEvalServer(server, newEvalServer())
+	pb.RegisterEvalServer(server, sv)
 	reflection.Register(server)
 
 	log.Println("Warmed up")

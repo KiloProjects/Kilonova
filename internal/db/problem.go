@@ -30,6 +30,16 @@ type Problem struct {
 	Visible      bool      `json:"visible"`
 }
 
+func (p *Problem) CreateTest(vid int64, score int32) (*Test, error) {
+	t, err := p.db.CreateTest(p.ctx, p.ID, vid, score)
+	if err != nil {
+		return nil, err
+	}
+
+	t.Problem = p
+	return t, nil
+}
+
 func (p *Problem) SetName(name string) error {
 	if err := p.db.raw.SetProblemName(p.ctx, rawdb.SetProblemNameParams{ID: p.ID, Name: name}); err != nil {
 		return err
@@ -130,7 +140,7 @@ func (p *Problem) Tests() ([]*Test, error) {
 		return nil, err
 	}
 
-	for i := 0; i < len(tests); i++ {
+	for i := range tests {
 		tests[i].Problem = p
 	}
 	return tests, nil

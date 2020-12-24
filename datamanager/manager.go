@@ -1,7 +1,8 @@
 package datamanager
 
 import (
-	"io/ioutil"
+	"io"
+	"io/fs"
 	"os"
 	"path"
 	"strconv"
@@ -17,11 +18,14 @@ type StorageManager struct {
 
 // Manager represents an interface for the manager
 type Manager interface {
-	Test(pbID int64, testID int64) ([]byte, []byte, error)
-	SaveTest(pbID int64, testID int64, input, output []byte) error
+	TestInput(pbID int64, testID int64) (io.ReadCloser, error)
+	TestOutput(pbID int64, testID int64) (io.ReadCloser, error)
+	Test(pbID int64, testID int64) (io.ReadCloser, io.ReadCloser, error)
 
-	Attachment(dir string, ID int64, name string) ([]byte, error)
-	SaveAttachment(dir string, ID int64, data []byte, name string) error
+	SaveTest(pbID int64, testID int64, input, output io.Reader) error
+
+	SubtestWriter(subtest int64) (io.WriteCloser, error)
+	SubtestReader(subtest int64) (io.ReadCloser, error)
 }
 
 var _ Manager = &StorageManager{}
@@ -32,37 +36,43 @@ type Session struct {
 	Expires time.Time
 }
 
+func (m *StorageManager) TestInput(pbID int64, testID int64) (io.ReadCloser, error) {
+	return os.Open(path.Join(m.RootPath, "problems", strconv.FormatInt(pbID, 10), "input", strconv.FormatInt(testID, 10)+".txt"))
+}
+func (m *StorageManager) TestOutput(pbID int64, testID int64) (io.ReadCloser, error) {
+	return os.Open(path.Join(m.RootPath, "problems", strconv.FormatInt(pbID, 10), "output", strconv.FormatInt(testID, 10)+".txt"))
+}
+
 // Test returns a test for the specified problem
-func (m *StorageManager) Test(pbID int64, testID int64) ([]byte, []byte, error) {
-	problem := strconv.FormatUint(uint64(pbID), 10)
-	test := strconv.FormatUint(uint64(testID), 10)
-	input, err := ioutil.ReadFile(path.Join(m.RootPath, "problems", problem, "input", test+".txt"))
+func (m *StorageManager) Test(pbID int64, testID int64) (io.ReadCloser, io.ReadCloser, error) {
+	input, err := m.TestInput(pbID, testID)
 	if err != nil {
-		return []byte{}, []byte{}, err
+		return nil, nil, err
 	}
-	output, err := ioutil.ReadFile(path.Join(m.RootPath, "problems", problem, "output", test+".txt"))
+	output, err := m.TestOutput(pbID, testID)
 	if err != nil {
-		return []byte{}, []byte{}, err
+		input.Close()
+		return nil, nil, err
 	}
 	return input, output, err
 }
 
 // SaveTest saves an (input, output) pair of strings to disk to be used later as tests
-func (m *StorageManager) SaveTest(pbID int64, testID int64, input, output []byte) error {
+func (m *StorageManager) SaveTest(pbID int64, testID int64, input, output io.Reader) error {
 	problem := strconv.FormatInt(pbID, 10)
-	test := strconv.FormatInt(int64(testID), 10)
+	test := strconv.FormatInt(testID, 10)
 	if err := os.MkdirAll(path.Join(m.RootPath, "problems", problem, "input"), 0777); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(path.Join(m.RootPath, "problems", problem, "output"), 0777); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(
+	if err := writeFile(
 		path.Join(m.RootPath, "problems", problem, "input", test+".txt"),
 		input, 0777); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(
+	if err := writeFile(
 		path.Join(m.RootPath, "problems", problem, "output", test+".txt"),
 		output, 0777); err != nil {
 		return err
@@ -70,20 +80,45 @@ func (m *StorageManager) SaveTest(pbID int64, testID int64, input, output []byte
 	return nil
 }
 
-// (|Save)Attachment are considered deprecated until further notice
-
-// Attachment returns an "attachment" from disk
-func (m *StorageManager) Attachment(dir string, ID int64, name string) ([]byte, error) {
-	return ioutil.ReadFile(path.Join(m.RootPath, "attachments", dir, strconv.FormatInt(ID, 10), name))
+// SubtestWriter should be used by the eval server
+func (m *StorageManager) SubtestWriter(subtest int64) (io.WriteCloser, error) {
+	return os.OpenFile(m.subtestPath(subtest), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
 }
 
-// SaveAttachment saves an "attachment"
-func (m *StorageManager) SaveAttachment(dir string, ID int64, data []byte, name string) error {
-	return ioutil.WriteFile(path.Join(m.RootPath, "attachments", dir, strconv.FormatInt(ID, 10), name), data, 0777)
+// SubtestReader should be used by the grader
+func (m *StorageManager) SubtestReader(subtest int64) (io.ReadCloser, error) {
+	return os.Open(m.subtestPath(subtest))
 }
 
 // NewManager returns a new manager instance
-func NewManager(path string) *StorageManager {
-	os.MkdirAll(path, 0777)
-	return &StorageManager{RootPath: path}
+func NewManager(p string) (*StorageManager, error) {
+	if err := os.MkdirAll(p, 0777); err != nil {
+		return nil, err
+	}
+
+	if err := os.MkdirAll(path.Join(p, "subtests"), 0777); err != nil {
+		return nil, err
+	}
+
+	if err := os.MkdirAll(path.Join(p, "problems"), 0777); err != nil {
+		return nil, err
+	}
+
+	return &StorageManager{RootPath: p}, nil
+}
+
+func (m *StorageManager) subtestPath(subtest int64) string {
+	return path.Join(m.RootPath, "subtests", strconv.FormatInt(subtest, 10))
+}
+
+func writeFile(path string, r io.Reader, perms fs.FileMode) error {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perms)
+	if err != nil {
+		return err
+	}
+	_, err = f.ReadFrom(r)
+	if err1 := f.Close(); err1 != nil && err == nil {
+		err = err1
+	}
+	return err
 }

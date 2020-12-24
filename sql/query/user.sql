@@ -40,7 +40,6 @@ ORDER BY id;
 
 -- name: Top100 :many
 -- I am extremely proud of this
--- TODO: Cache this bad boy into redis
 SELECT us.*, COUNT(sub.user_id) AS number_problems
 FROM users us
 LEFT JOIN (
@@ -54,6 +53,11 @@ GROUP BY us.id
 ORDER BY COUNT(sub.user_id) desc, us.id 
 LIMIT 100;
 
+-- name: SolvedProblems :many
+SELECT problem_id FROM submissions
+WHERE score = 100 AND user_id = $1
+GROUP BY problem_id
+ORDER BY problem_id;
 
 -- name: SetProposer :exec
 UPDATE users SET proposer = $2

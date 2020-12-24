@@ -27,7 +27,7 @@ type CreateProblemParams struct {
 }
 
 func (q *Queries) CreateProblem(ctx context.Context, arg CreateProblemParams) (Problem, error) {
-	row := q.queryRow(ctx, q.createProblemStmt, createProblem,
+	row := q.db.QueryRowContext(ctx, createProblem,
 		arg.Name,
 		arg.AuthorID,
 		arg.ConsoleInput,
@@ -60,7 +60,7 @@ WHERE id = $1
 `
 
 func (q *Queries) Problem(ctx context.Context, id int64) (Problem, error) {
-	row := q.queryRow(ctx, q.problemStmt, problem, id)
+	row := q.db.QueryRowContext(ctx, problem, id)
 	var i Problem
 	err := row.Scan(
 		&i.ID,
@@ -85,7 +85,7 @@ WHERE lower(name) = lower($1)
 `
 
 func (q *Queries) ProblemByName(ctx context.Context, name string) (Problem, error) {
-	row := q.queryRow(ctx, q.problemByNameStmt, problemByName, name)
+	row := q.db.QueryRowContext(ctx, problemByName, name)
 	var i Problem
 	err := row.Scan(
 		&i.ID,
@@ -111,7 +111,7 @@ ORDER BY visible_id
 `
 
 func (q *Queries) ProblemTests(ctx context.Context, problemID int64) ([]Test, error) {
-	rows, err := q.query(ctx, q.problemTestsStmt, problemTests, problemID)
+	rows, err := q.db.QueryContext(ctx, problemTests, problemID)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ ORDER BY id
 `
 
 func (q *Queries) Problems(ctx context.Context) ([]Problem, error) {
-	rows, err := q.query(ctx, q.problemsStmt, problems)
+	rows, err := q.db.QueryContext(ctx, problems)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ WHERE problem_id = $1
 
 // Since there is a key constraint on these tests, instead of removing them, we simply orphan them so they don't get used in the future
 func (q *Queries) PurgePbTests(ctx context.Context, problemID int64) error {
-	_, err := q.exec(ctx, q.purgePbTestsStmt, purgePbTests, problemID)
+	_, err := q.db.ExecContext(ctx, purgePbTests, problemID)
 	return err
 }
 
@@ -205,7 +205,7 @@ type SetConsoleInputParams struct {
 }
 
 func (q *Queries) SetConsoleInput(ctx context.Context, arg SetConsoleInputParams) error {
-	_, err := q.exec(ctx, q.setConsoleInputStmt, setConsoleInput, arg.ID, arg.ConsoleInput)
+	_, err := q.db.ExecContext(ctx, setConsoleInput, arg.ID, arg.ConsoleInput)
 	return err
 }
 
@@ -223,7 +223,7 @@ type SetLimitsParams struct {
 }
 
 func (q *Queries) SetLimits(ctx context.Context, arg SetLimitsParams) error {
-	_, err := q.exec(ctx, q.setLimitsStmt, setLimits,
+	_, err := q.db.ExecContext(ctx, setLimits,
 		arg.ID,
 		arg.MemoryLimit,
 		arg.StackLimit,
@@ -244,7 +244,7 @@ type SetMemoryLimitParams struct {
 }
 
 func (q *Queries) SetMemoryLimit(ctx context.Context, arg SetMemoryLimitParams) error {
-	_, err := q.exec(ctx, q.setMemoryLimitStmt, setMemoryLimit, arg.ID, arg.MemoryLimit)
+	_, err := q.db.ExecContext(ctx, setMemoryLimit, arg.ID, arg.MemoryLimit)
 	return err
 }
 
@@ -260,7 +260,7 @@ type SetProblemDescriptionParams struct {
 }
 
 func (q *Queries) SetProblemDescription(ctx context.Context, arg SetProblemDescriptionParams) error {
-	_, err := q.exec(ctx, q.setProblemDescriptionStmt, setProblemDescription, arg.ID, arg.Description)
+	_, err := q.db.ExecContext(ctx, setProblemDescription, arg.ID, arg.Description)
 	return err
 }
 
@@ -276,7 +276,7 @@ type SetProblemNameParams struct {
 }
 
 func (q *Queries) SetProblemName(ctx context.Context, arg SetProblemNameParams) error {
-	_, err := q.exec(ctx, q.setProblemNameStmt, setProblemName, arg.ID, arg.Name)
+	_, err := q.db.ExecContext(ctx, setProblemName, arg.ID, arg.Name)
 	return err
 }
 
@@ -292,7 +292,7 @@ type SetProblemVisibilityParams struct {
 }
 
 func (q *Queries) SetProblemVisibility(ctx context.Context, arg SetProblemVisibilityParams) error {
-	_, err := q.exec(ctx, q.setProblemVisibilityStmt, setProblemVisibility, arg.ID, arg.Visible)
+	_, err := q.db.ExecContext(ctx, setProblemVisibility, arg.ID, arg.Visible)
 	return err
 }
 
@@ -308,7 +308,7 @@ type SetStackLimitParams struct {
 }
 
 func (q *Queries) SetStackLimit(ctx context.Context, arg SetStackLimitParams) error {
-	_, err := q.exec(ctx, q.setStackLimitStmt, setStackLimit, arg.ID, arg.StackLimit)
+	_, err := q.db.ExecContext(ctx, setStackLimit, arg.ID, arg.StackLimit)
 	return err
 }
 
@@ -324,7 +324,7 @@ type SetTestNameParams struct {
 }
 
 func (q *Queries) SetTestName(ctx context.Context, arg SetTestNameParams) error {
-	_, err := q.exec(ctx, q.setTestNameStmt, setTestName, arg.ID, arg.TestName)
+	_, err := q.db.ExecContext(ctx, setTestName, arg.ID, arg.TestName)
 	return err
 }
 
@@ -340,7 +340,7 @@ type SetTimeLimitParams struct {
 }
 
 func (q *Queries) SetTimeLimit(ctx context.Context, arg SetTimeLimitParams) error {
-	_, err := q.exec(ctx, q.setTimeLimitStmt, setTimeLimit, arg.ID, arg.TimeLimit)
+	_, err := q.db.ExecContext(ctx, setTimeLimit, arg.ID, arg.TimeLimit)
 	return err
 }
 
@@ -351,7 +351,7 @@ ORDER BY id
 `
 
 func (q *Queries) VisibleProblems(ctx context.Context, authorID int64) ([]Problem, error) {
-	rows, err := q.query(ctx, q.visibleProblemsStmt, visibleProblems, authorID)
+	rows, err := q.db.QueryContext(ctx, visibleProblems, authorID)
 	if err != nil {
 		return nil, err
 	}

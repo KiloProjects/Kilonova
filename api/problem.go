@@ -2,16 +2,13 @@ package api
 
 import (
 	"archive/zip"
-	"errors"
+	"bytes"
 	"io"
-	"io/fs"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"path"
 	"strconv"
-	"strings"
 
+	"github.com/KiloProjects/Kilonova/internal/logic"
 	"github.com/KiloProjects/Kilonova/internal/util"
 )
 
@@ -75,7 +72,7 @@ func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	if err := s.manager.SaveTest(util.ID(r, util.PbID), util.ID(r, util.TestID), []byte(args.Input), []byte(args.Output)); err != nil {
+	if err := s.manager.SaveTest(util.ID(r, util.PbID), util.ID(r, util.TestID), bytes.NewBufferString(args.Input), bytes.NewBufferString(args.Output)); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -230,8 +227,8 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 	if err := s.manager.SaveTest(
 		pbID,
 		visibleID,
-		[]byte(r.FormValue("input")),
-		[]byte(r.FormValue("output")),
+		bytes.NewBufferString(r.FormValue("input")),
+		bytes.NewBufferString(r.FormValue("output")),
 	); err != nil {
 		log.Println("Couldn't create test", err)
 		errorData(w, "Couldn't create test", 500)
@@ -241,8 +238,8 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 }
 
 type testPair struct {
-	InFile  fs.File
-	OutFile fs.File
+	InFile  io.Reader
+	OutFile io.Reader
 	Score   int
 }
 
@@ -250,89 +247,6 @@ type archiveCtx struct {
 	tests        map[int64]testPair
 	hasScoreFile bool
 	scoredTests  []int64
-}
-
-func getFirstInt(s string) int64 {
-	var poz int
-	for poz < len(s) && s[poz] >= '0' && s[poz] <= '9' {
-		poz++
-	}
-	val, err := strconv.ParseInt(s[:poz], 10, 64)
-	if err != nil {
-		return -1
-	}
-	return val
-}
-
-var errBadTestFile = errors.New("Bad test score file")
-var errBadArchive = errors.New("Bad archive")
-
-func analyzeFile(ctx *archiveCtx, r *zip.Reader, name string, file fs.File) error {
-	if name == "test.txt" || name == "tests.txt" {
-		ctx.hasScoreFile = true
-
-		data, err := io.ReadAll(file)
-		if err != nil {
-			return errBadArchive
-		}
-
-		lines := strings.Split(string(data), "\n")
-		if len(lines) > 256 { // impose a hard limit on test lines
-			return errBadTestFile
-		}
-
-		for _, line := range lines {
-			vals := strings.Fields(line)
-			if line == "" { // empty line, skip
-				continue
-			}
-			if len(vals) != 2 {
-				return errBadTestFile
-			}
-			testID, err := strconv.ParseInt(vals[0], 10, 64)
-			if err != nil || testID < 0 {
-				return errBadTestFile
-			}
-			score, err := strconv.Atoi(vals[1])
-			if err != nil {
-				return errBadTestFile
-			}
-			test := ctx.tests[testID]
-			test.Score = score
-			ctx.tests[testID] = test
-			for _, ex := range ctx.scoredTests {
-				if ex == testID {
-					return errBadTestFile
-				}
-			}
-			log.Println(testID)
-			ctx.scoredTests = append(ctx.scoredTests, testID)
-		}
-		return nil
-	}
-	tid := getFirstInt(name)
-	if tid == -1 {
-		return errBadArchive
-	}
-	if strings.HasSuffix(name, ".in") {
-		tf := ctx.tests[tid]
-		if tf.InFile != nil {
-			return errBadArchive
-		}
-
-		tf.InFile = file
-		ctx.tests[tid] = tf
-	}
-	if strings.HasSuffix(name, ".out") || strings.HasSuffix(name, ".ok") {
-		tf := ctx.tests[tid]
-		if tf.OutFile != nil {
-			return errBadArchive
-		}
-
-		tf.OutFile = file
-		ctx.tests[tid] = tf
-	}
-	return nil
 }
 
 // TODO: Move most stuff to logic
@@ -350,10 +264,6 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := archiveCtx{}
-	ctx.tests = make(map[int64]testPair)
-	ctx.scoredTests = make([]int64, 0, 10)
-
 	// Process zip file
 	file, fh, err := r.FormFile("testArchive")
 	if err != nil {
@@ -365,83 +275,13 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 
 	ar, err := zip.NewReader(file, fh.Size)
 	if err != nil {
-		errorData(w, errBadArchive, 400)
-		return
-	}
-	for _, file := range ar.File {
-		if file.FileInfo().IsDir() {
-			continue
-		}
-		f, err := ar.Open(file.Name)
-		if err != nil {
-			log.Println(err)
-			errorData(w, "Unknown error", 500)
-			return
-		}
-		defer f.Close() // This will always close all files, regardless of when the program leaves
-		if err := analyzeFile(&ctx, ar, path.Base(file.Name), f); err != nil {
-			errorData(w, err.Error(), 400)
-			return
-		}
-	}
-
-	if len(ctx.scoredTests) != len(ctx.tests) {
-		errorData(w, errBadArchive, 400)
+		errorData(w, logic.ErrBadArchive, 400)
 		return
 	}
 
-	for _, v := range ctx.tests {
-		if v.InFile == nil || v.OutFile == nil {
-			errorData(w, errBadArchive, 400)
-			return
-		}
-	}
-
-	if !ctx.hasScoreFile {
-		errorData(w, "Missing test score file", 400)
+	if err := s.kn.ProcessZipTestArchive(util.Problem(r), ar); err != nil {
+		errorData(w, err, 400)
 		return
-	}
-
-	// If we are loading an archive, the user might want to remove all tests first
-	// So let's do it for them
-	if err := util.Problem(r).ClearTests(); err != nil {
-		log.Println(err)
-		errorData(w, err, 500)
-		return
-	}
-
-	for testID, v := range ctx.tests {
-		inFile, err := ioutil.ReadAll(v.InFile)
-		if err != nil {
-			log.Println(err)
-			errorData(w, err, 500)
-			return
-		}
-
-		outFile, err := ioutil.ReadAll(v.OutFile)
-		if err != nil {
-			log.Println(err)
-			errorData(w, err, 500)
-			return
-		}
-
-		pbID := util.ID(r, util.PbID)
-		if _, err := s.db.CreateTest(r.Context(), pbID, testID, int32(v.Score)); err != nil {
-			log.Println(err)
-			errorData(w, err, 500)
-			return
-		}
-
-		if err := s.manager.SaveTest(
-			pbID,
-			testID,
-			inFile,
-			outFile,
-		); err != nil {
-			log.Println("Couldn't create test", err)
-			errorData(w, "Couldn't create test", 500)
-			return
-		}
 	}
 
 	returnData(w, "Processed tests")
@@ -536,15 +376,27 @@ func (s *API) getTestData(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, 500)
 		return
 	}
+	defer in.Close()
+	defer out.Close()
 
 	var ret struct {
 		In  string `json:"in"`
 		Out string `json:"out"`
 	}
 	if r.FormValue("noIn") == "" {
+		in, err := io.ReadAll(in)
+		if err != nil {
+			errorData(w, err, 500)
+			return
+		}
 		ret.In = string(in)
 	}
 	if r.FormValue("noOut") == "" {
+		out, err := io.ReadAll(out)
+		if err != nil {
+			errorData(w, err, 500)
+			return
+		}
 		ret.Out = string(out)
 	}
 	returnData(w, ret)

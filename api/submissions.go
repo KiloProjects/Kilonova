@@ -3,10 +3,11 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 
+	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/languages"
 	"github.com/KiloProjects/Kilonova/internal/util"
 )
@@ -24,73 +25,63 @@ func (s *API) getSubmissionByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !util.IsSubmissionVisible(sub, util.User(r)) {
-		sub.Code = ""
-	}
-
-	returnData(w, sub)
-}
-
-// getSubmissions returns all Submissions from the DB
-func (s *API) getSubmissions(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	subs, err := s.db.Submissions(r.Context())
-	if err != nil {
-		errorData(w, http.StatusText(500), 500)
-		return
-	}
-
-	user := util.User(r)
-	for i := range subs {
-		if !util.IsSubmissionVisible(subs[i], user) {
-			subs[i].Code = ""
+	if r.FormValue("expanded") != "" {
+		if err := sub.LoadAll(); err != nil {
+			log.Println("Couldn't get some stuff:", err)
+			errorData(w, err, 500)
+			return
 		}
 	}
-	returnData(w, subs)
+
+	s.kn.FilterCode(sub, util.User(r))
+
+	returnData(w, struct {
+		SubEditor  bool           `json:"sub_editor"`
+		Submission *db.Submission `json:"sub"`
+	}{
+		SubEditor:  util.IsSubmissionEditor(sub, util.User(r)),
+		Submission: sub,
+	})
 }
 
-func (s *API) getSubmissionsForProblem(w http.ResponseWriter, r *http.Request) {
+func (s *API) filterSubs(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		PID int64
-		UID int64
+		LoadUser    bool
+		LoadProblem bool
+		db.SubmissionFilter
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
 
-	user, err := s.db.User(r.Context(), args.UID)
+	subs, err := s.db.FilterSubmissions(r.Context(), args.SubmissionFilter)
 	if err != nil {
-		errorData(w, err, 500)
+		log.Println(err)
+		errorData(w, http.StatusText(500), 500)
 		return
 	}
 
-	subs, err := user.ProblemSubs(args.PID)
-	if err != nil {
-		errorData(w, err, 500)
-		return
-	}
-
+	user := util.User(r)
 	for i := range subs {
-		if !util.IsSubmissionVisible(subs[i], user) {
-			subs[i].Code = ""
+		s.kn.FilterCode(subs[i], user)
+		if args.LoadUser {
+			if _, err := subs[i].GetUser(); err != nil {
+				log.Println("Couldn't get some stuff:", err)
+				errorData(w, err, 500)
+				return
+			}
+		}
+		if args.LoadProblem {
+			if _, err := subs[i].GetProblem(); err != nil {
+				log.Println("Couldn't get some stuff:", err)
+				errorData(w, err, 500)
+				return
+			}
 		}
 	}
 
-	returnData(w, subs)
-}
-
-func (s *API) getSelfSubmissionsForProblem(w http.ResponseWriter, r *http.Request) {
-	pid, ok := getFormInt(w, r, "pid")
-	if !ok {
-		return
-	}
-	subs, err := util.User(r).ProblemSubs(pid)
-	if err != nil {
-		errorData(w, err, 500)
-		return
-	}
 	returnData(w, subs)
 }
 
@@ -183,7 +174,7 @@ func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Everything should be ok now
-		c, err := ioutil.ReadAll(file)
+		c, err := io.ReadAll(file)
 		if err != nil {
 			errorData(w, "Could not read file", http.StatusBadRequest)
 			return

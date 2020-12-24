@@ -1,7 +1,9 @@
 package box
 
 import (
-	"fmt"
+	"bufio"
+	"io"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -31,16 +33,16 @@ type MetaFile struct {
 }
 
 // ParseMetaFile parses a specified meta file
-func ParseMetaFile(data string) *MetaFile {
+func ParseMetaFile(r io.Reader) *MetaFile {
 	var file = new(MetaFile)
 
-	lines := strings.Split(data, "\n")
-	for _, line := range lines {
-		if !strings.Contains(line, ":") {
+	s := bufio.NewScanner(r)
+
+	for s.Scan() {
+		if !strings.Contains(s.Text(), ":") {
 			continue
 		}
-
-		l := strings.SplitN(string(line), ":", 2)
+		l := strings.SplitN(s.Text(), ":", 2)
 		switch l[0] {
 		case "cg-mem":
 			file.CgMem, _ = strconv.Atoi(l[1])
@@ -71,7 +73,7 @@ func ParseMetaFile(data string) *MetaFile {
 				file.CgEnabled = true
 			}
 		default:
-			fmt.Printf("Unknown meta variable %s with value %s\n", l[0], l[1])
+			log.Printf("Unknown meta variable %s with value %s\n", l[0], l[1])
 		}
 	}
 

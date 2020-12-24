@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/KiloProjects/Kilonova/internal/cookie"
 	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/go-chi/chi"
 )
@@ -60,13 +59,12 @@ func (s *API) MustBeProposer(next http.Handler) http.Handler {
 // SetupSession adds the user with the specified user ID to context
 func (s *API) SetupSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session := cookie.GetSession(r)
-		if session == nil {
+		session := s.kn.GetRSession(r)
+		if session == -1 {
 			next.ServeHTTP(w, r)
 			return
 		}
-		user, err := s.db.User(r.Context(), session.UserID)
-		user.Password = ""
+		user, err := s.db.User(r.Context(), session)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				next.ServeHTTP(w, r)
@@ -76,6 +74,7 @@ func (s *API) SetupSession(next http.Handler) http.Handler {
 			errorData(w, http.StatusText(500), 500)
 			return
 		}
+		user.Password = ""
 		ctx := context.WithValue(r.Context(), util.UserID, user.ID)
 		ctx = context.WithValue(ctx, util.UserKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))

@@ -6,7 +6,7 @@
 
 go build -v -tags netgo,osusergo || exit 2
 
-./Kilonova eval
+sudo ./Kilonova eval
 # ./Kilonova -dataDir="/home/alexv/src/kninfo/data" -debug=true main
 
 # ./Kilonova -data="/home/alexv/src/kninfo/data" -debug=true -logDir="/home/alexv/src/kninfo/logs"

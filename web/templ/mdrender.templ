@@ -1,0 +1,11 @@
+{{ template "util/header" . }}
+
+<div class="c-container">
+	<div id="markdown-content" class="mb-10">{{html .Markdown}}</div>
+	<script>
+		$("#markdown-content ul").addClass("list-disc list-inside")
+		$("#markdown-content li").addClass("pl-8")
+	</script>
+</div>
+
+{{ template "util/footer" . }}

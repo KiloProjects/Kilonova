@@ -10,7 +10,13 @@
 	<div class="mb-12">
 		
 		<div class="flex flex-wrap lg:border-b lg:border-gray-200">
-			<div class="w-full mt-6 lg:flex-1 lg:pr-2" id="problem-content"></div>
+			<div class="w-full mt-6 lg:flex-1 lg:pr-2" id="problem-content">
+				{{if ispdflink .Problem.Description}}
+					<p><a target='_blank' href='{{.Problem.Description}}'>{{.Problem.Description}}</a></p> <embed class='mx-2 my-2' type='application/pdf' src='{{.Problem.Description}}' width='95%' height='500px'>
+				{{else}}
+					{{html .Markdown}}
+				{{end}}
+			</div>
 			<div class="w-full lg:w-3/12 lg:border-l lg:border-gray-200">
 				<div class="lg:mt-6 lg:pl-4 pl-2 pb-3 font-semibold">
 					<h2 class="text-xl">Informații generale</h2>
@@ -31,36 +37,101 @@
 				</div>
 				{{ if .LoggedIn }}
 					<div class="h-0 w-full border-t border-gray-200"></div>
-					<div class="mt-2 lg:pl-2 lg:pb-2">
+					<div class="mt-2 lg:pl-2 lg:pb-2" id="problemSidebar">
 						<p class="text-lg px-2">Submisii anterioare</p>
-						{{ with (problemSubs .Problem .User) }}
-						{{ range . }}
-						<a class="black-anchor flex justify-between items-center rounded py-1 px-2 hover:bg-gray-200" href="/submissions/{{.ID}}">
-							<span id="submission-{{.ID}}"></span>
-							<script>
-							$("#submission-{{.ID}}").text(dayjs.unix({{timeToUnix .CreatedAt}}).format('DD/MM/YYYY HH:mm'))
-							</script>
-							<span class="rounded-md px-2 py-1 bg-teal-400 text-white text-sm">{{.Score}}</span>
+						
+						<div v-if="subs.length > 0">
+							<a class="black-anchor flex justify-between items-center rounded py-1 px-2 hover:bg-gray-200" v-for="sub in subs" :href="'/submissions/' + sub.id">
+								<span>${timeStr(sub.created_at)}</span>
+								<span class="rounded-md px-2 py-1 bg-teal-400 text-white text-sm" v-if="sub.status == 'finished'">${sub.score}</span>
+								<span class="rounded-md px-2 py-1 bg-teal-400 text-white text-sm" v-else-if="sub.status == 'working'"><i class="fas fa-cog animate-spin"></i></span>
+								<span class="rounded-md px-2 py-1 bg-teal-400 text-white text-sm" v-else><i class="fas fa-clock"></i></span>
+							</a>
+						</div>
+						<p class="px-2" v-else>Nicio submisie</p>
+						<a v-if="limited" :href="'/submissions/?problemid='+problemid+'&userid='+userid">
+							Vezi încă ${total - subs.length} ${total - subs.length >= 10 ? 'de ' : ''}submisii
 						</a>
-						{{ end }}
-						{{ else }}
-						<p class="px-2">Nicio submisie</p>
-						{{ end }}
 					</div>
 				{{ end }}
 			</div>
 
 		</div>
+
+<script>
+let loadingIDs = new Map();
+function makeSubWaiter(id) {
+	if(loadingIDs.has(id)) {
+		return `Will not watch ${id}`
+	}
+	loadingIDs.set(id, "reserved")
+	let interv = setInterval(async () => {
+		let res = await getCall("/submissions/getByID", {id: id})
+		if(res.status == "error") {
+			console.log(res);
+			return
+		}
+		var lastStatus = loadingIDs.get(id);
+		if(res.data.sub.status !== lastStatus) {
+			app.poll();
+		}
+		if(res.data.sub.status == "finished") {
+			createToast({title: "Evaluare finalizată", description: `Scor submisie #${id}: ${res.data.sub.score}`, status: "success"})
+			clearInterval(interv);
+		}
+		loadingIDs.set(id, res.data.sub.status)
+	}, 2000)
+	return `Watching ${id}...`
+}
+
+var app = new Vue({
+	el: "#problemSidebar",
+	data: {
+		userid: {{.User.ID}},
+		problemid: {{.Problem.ID}},
+		subs: [],
+		limit: 10,
+		limited: false,
+		total: -1,
+	},
+	methods: {
+		poll: async function() {
+			console.log("Polling...");
+			let res = await getCall("/submissions/get", {userid: this.userid, problemid: this.problemid})
+			if(res.status !== "success") {
+				console.log(res);
+				return
+			}
+			if(res.data != null) {
+				this.subs = res.data.slice(0, this.limit)
+				this.total = res.data.length;
+				this.limited = false;
+				if(res.data.length != this.subs.length) { // it was sliced
+					this.limited = true
+				}
+				for(let sub of this.subs) {
+					if(sub.status !== "finished") {
+						console.log(sub);
+						console.log(sub.id, makeSubWaiter(sub.id))
+					}
+				}
+			}
+		},
+		timeStr: function(s) {
+			return dayjs(s).format('DD/MM/YYYY HH:mm')
+		}
+	},
+	created: function() {
+		this.poll()
+	},
+	delimiters: ['${', '}']
+});
+</script>
 	
-		<script>
-			$("#problem-content").html(md.render("{{- .Problem.Description -}}"));
-		</script>
-
-
 		{{ if .LoggedIn }}
 
-			<h1 class="mt-4">Încărcare submisie</h1>
-			<p class="mb-4 text-gray-600">(Dacă mă întrebați de ce merge doar c++ acum: why not?)</p>
+		<h1 class="mt-4">Încărcare submisie</h1>
+			<p class="mb-4 text-gray-600">(Dacă mă întrebați de ce merge doar c++ acum: mi-e lene)</p>
 
 			<form id="submissionSend" autocomplete="off">
 				<textarea id="SubArea" style="display: none;"></textarea>
@@ -68,40 +139,45 @@
 			</form>
 
 			<script>
-				var defaultIn = `#include <iostream>
+var defaultIn = `#include <iostream>
 using namespace std;
 int main()
 {
 	cout << "Hello, world!\\n";
 	return 0;
 }`;
-				$("#SubArea").html(defaultIn);
-				var cm = CodeMirror.fromTextArea(document.getElementById("SubArea"), {
-					lineNumbers: true,
-					indentUnit: 4,
-					lineWrapping: true,
-					mode: "text/x-c++src",
-				});
-				cm.setSize(null, "100%");
-				$("#submissionSend").submit(async e => {
-					e.preventDefault();
-					let sendData = {
-						problemID: "{{ .Problem.ID }}",
-						lang: "cpp",
-						code: cm.getValue(),
-					};
-					
-					let res = await postCall("/submissions/submit", sendData)
-					if(res.status == "error") {
-						createToast({
-							status: "error",
-							title: "Nu am putut trimite submisia",
-							description: res.data
-						})
-						return
-					}
-					createToast({title: "Submisie încărcată", description: `<button class="btn text-sm mt-2" href="/submissions/${res.data}">Vizualizare</btn>`, onclick: () => window.location.assign(`/submissions/${res.data}`)})
-				})
+$("#SubArea").html(defaultIn);
+var cm = CodeMirror.fromTextArea(document.getElementById("SubArea"), {
+	lineNumbers: true,
+	indentUnit: 4,
+	tabSize: 4,
+	indentWithTabs: true,
+	lineWrapping: true,
+	mode: "text/x-c++src",
+});
+cm.setSize(null, "100%");
+
+$("#submissionSend").submit(async e => {
+	e.preventDefault();
+	let sendData = {
+		problemID: "{{ .Problem.ID }}",
+		lang: "cpp",
+		code: cm.getValue(),
+	};
+	
+	let res = await postCall("/submissions/submit", sendData)
+	if(res.status == "error") {
+		createToast({
+			status: "error",
+			title: "Nu am putut trimite submisia",
+			description: res.data
+		})
+		return
+	}
+	createToast({title: "Submisie încărcată", description: `<button class="btn text-sm mt-2" href="/submissions/${res.data}">Vizualizare</btn>`, onclick: () => window.location.assign(`/submissions/${res.data}`)})
+	console.log(res.data, makeSubWaiter(res.data));
+	await app.poll();
+})
 			</script>
 		{{ end }}
 

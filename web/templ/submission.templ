@@ -1,114 +1,155 @@
 {{ template "util/header" . }}
 
 <div class="c-container">
-	{{ $editor := .SubEditor }}
-	{{ $problem := subProblem .Submission }}
-	{{ $author := subAuthor .Submission }}
-	{{ with .Submission }}
-		<h2>Submission {{ .ID }}</h2>
-		<p>Autor: {{ $author.Name }}</p>
-		<p>Data încărcării: <span id="sub-{{.ID}}"></span></p>
+	<div id="subTests" v-cloak>
+
+		<div class="mb-10" v-if="Object.keys(submission).length !== 0">
+			<h2>Submission ${submission.id}</h2>
+			<p>Autor: <a :href="'/profile/'+submission.user.name">${submission.user.name}</a></p>
+			<p>Data încărcării: ${parseTime(submission.created_at)}</p>
+			<p>Status: ${submission.status}</p>
+			<p>Limbaj: ${submission.language}</p>
+			<p>Problemă: <a :href="'/probleme/'+submission.problem.id">${submission.problem.name}</a></p>
+			<p>Scor: ${submission.score} </p>
+			
+			<div v-if="submission.compile_error">	
+				<h4>Eroare de compilare</h4>
+				<h5>Mesaj Evaluare:</h5>
+				<pre>${submission.compile_message}</pre>
+			</div>
+			
+			{{/*<tr class="text-center border-t" style="{{ gradient .Score $test.Score }}">*/}}
+			
+			<table class="border-2 border-collapse table-auto w-full" v-if="subTests.length > 0">
+				<thead>
+					<tr>
+						<th class="py-2" scope="col">
+							ID
+						</th>
+						<th scope="col">
+							Timp
+						</th>
+						<th scope="col">
+							Memorie
+						</th>
+						<th scope="col">
+							Verdict
+						</th>
+						<th scope="col">
+							Scor
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr class="text-center border-t" v-if="subTests.length > 0" v-for="test in subTests" :key="test.id">
+						<th class="py-3" scope="row">
+							${test.test.visible_id}	
+						</th>
+						<td>
+							${test.time.toFixed(3)}
+						</td>
+						<td>
+							${toMB(test.memory)}
+						</td>
+						<td v-if="test.done">
+							${test.verdict}
+						</td>
+						<td v-else>
+							<div class="fas fa-spinner animate-spin" role="status"></div>
+								În așteptare...	
+						</td>
+						<td :style="test.done ? 'background-color: '+getGradient(test.score, test.test.score) : ''">
+							${test.score} / ${test.test.score}
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<div v-if="submission.code">
+				<h3>Codul Sursă:</h3>
+				<div>
+					<highlightjs :language="submission.language" :code="submission.code" />
+				</div>
+				<button 
+				 class="btn btn-blue mb-2 text-semibold text-lg"
+				 v-if="subEditor" @click="toggleVisible"> 
+					<i class="fas fa-share-square mr-2"></i>
+					Fă codul ${submission.visible ? "invizibil" : "vizibil"}</button>
+			</div>
+		</div>
+		<div class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center" v-else>
+			<div><i class="fas fa-spinner animate-spin"></i> Se încarcă...</div>
+		</div>
+	</div>
 		<script>
-			$("#sub-{{.ID}}").text(dayjs.unix({{timeToUnix .CreatedAt}}).format('DD/MM/YYYY HH:mm'))
+Vue.use(hljs.vuePlugin);
+var app = new Vue({
+	el: '#subTests',
+	data: {
+		subTests: [],
+		poller: null,
+		id: {{.Submission.ID}},
+		submission: {},
+		subEditor: false,
+		poll_mu: false,
+	},
+	methods: {
+		poll: async function() {
+			if(this.poll_mu === false) this.poll_mu = true;
+			else return
+			console.log("Poll")
+			console.log(this.id)
+			let res = await getCall("/submissions/getByID", {id: this.id, expanded: true})
+			if(res.status !== "success") {
+				apiToast(res)
+				console.log(res)
+				this.poll_mu = false;
+				return
+			}
+			
+			res = res.data
+
+			if(res.sub.status === "finished") {
+				clearInterval(this.poller)
+			}
+			
+			if(res.sub.sub_tests)
+				this.subTests = res.sub.sub_tests
+			this.submission = res.sub
+			this.subEditor = res.sub_editor
+			console.log(res)
+			this.poll_mu = false;
+		},
+		getGradient: function(score, maxscore) {
+			return getGradient(score, maxscore)
+		},
+		toggleVisible: async function() {
+			this.submission.visible = !(this.submission.visible)
+			let res = await postCall("/submissions/setVisible", {visible: this.submission.visible, id: this.id});
+			createToast({
+				status: res.status,
+				title: (res.status == "success" ? (this.submission.visible ? "Made visible" : "Made invisible") : "Error changing visibility"),
+				description: res.data
+			});
+		},
+		toMB: function(mem) {
+			return `${(mem/1024).toFixed(2)} MB`
+		},
+		parseTime: function(str) {
+			if(!str)
+				return ""
+			return dayjs(str).format('DD/MM/YYYY HH:mm')
+		}
+	},
+	created: function() {
+		this.poller = setInterval(this.poll, 1000)
+		this.poll()
+	},
+	beforeDestroy: () => {
+		clearInterval(this.poller)
+	},
+	delimiters: ['${', '}']
+});
 		</script>
-		<p>Status: {{ subStatus .Status }}</p>
-		<p>Limbaj: {{ .Language }}</p>
-		<p>Problemă: <a href="/probleme/{{$problem.ID}}">{{ $problem.Name }}</a></p>
-		<p>Scor: {{ .Score }} </p>
-			
-		{{ if and .CompileError.Valid .CompileError.Bool }}
-		
-		<p>Eroare de compilare?: {{ .CompileError.Bool }}</p>
-
-		<h5>Mesaj Evaluare:</h5>
-		<pre>{{- .CompileMessage.String -}}</pre>
-		
-		{{ end }}
-
-		{{ if not .CompileError.Bool }}
-			{{ with (subTests .) }}
-				<table class="border-2 border-collapse table-auto w-full">
-					<thead>
-						<tr>
-							<th class="py-2" scope="col">
-								ID
-							</th>
-							<th scope="col">
-								Timp
-							</th>
-							<th scope="col">
-								Memorie
-							</th>
-							<th scope="col">
-								Verdict
-							</th>
-							<th scope="col">
-								Scor
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						{{ range . }}
-							{{ $test := getTest .TestID }}
-							{{ if .Done }}
-							<tr class="text-center border-t" style="{{ gradient .Score $test.Score }}">
-							{{ else }}
-							<tr class="text-center border-t">
-							{{ end }}
-								<th class="py-3" scope="row">
-									{{- $test.VisibleID -}}
-								</th>
-								<td>
-									{{- printf "%.2f" .Time -}}
-								</td>
-								<td>
-									{{- .Memory -}}KB
-								</td>
-								<td>
-									{{ if .Done }}
-										{{- .Verdict -}}
-									{{ else }}
-									<div class="fas fa-spinner animate-spin" role="status"></div>
-										Waiting...
-									{{ end }}
-								</td>
-								<td>
-									{{- .Score -}}/{{- $test.Score -}}
-								</td>
-							</tr>
-						{{ end }}
-					</tbody>
-				</table>
-			{{ end }}
-		{{ end }}
-
-		{{ if not (eq .Code "") }}
-			<h3>Codul Sursă:</h3>
-			<pre><code class="{{ .Language }}">{{ .Code }} </code></pre>
-			
-			{{ if $editor }}
-				<button id="vButton" class="btn btn-blue mb-2 text-semibold text-lg" onclick="toggleVisible()"><i class="fas fa-share-square mr-2"></i> Fă codul {{if .Visible}}invizibil{{else}}vizibil{{end}}</button>
-
-				<script>
-					let visible = {{ .Visible }};
-					let id = {{ .ID }};
-
-					async function toggleVisible() {
-						visible = !visible;
-						let res = await postCall("/submissions/setVisible", {visible, id});
-						createToast({
-							status: res.status,
-							title: (res.status == "success" ? (visible ? "Made visible" : "Made invisible") : "Error changing visibility"),
-							description: res.data
-						});
-
-						$("#vButton").html(`<i class="fas fa-share-square mr-2"></i> Fă codul ${visible ? "invizibil" : "vizibil"}`)
-					}
-				</script>
-			{{ end }}
-
-		{{ end }}
-	{{ end }}
 </div>
 
 {{ template "util/footer" . }}

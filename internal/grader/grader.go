@@ -3,11 +3,13 @@ package grader
 import (
 	"bytes"
 	"context"
+	"io"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/KiloProjects/Kilonova/datamanager"
+	"github.com/KiloProjects/Kilonova/internal/config"
 	"github.com/KiloProjects/Kilonova/internal/db"
 	pb "github.com/KiloProjects/Kilonova/internal/grpc"
 	"github.com/KiloProjects/Kilonova/internal/logic"
@@ -43,6 +45,10 @@ func (h *Handler) chFeeder() {
 			if subs != nil {
 				log.Printf("Found %d submissions\n", len(subs))
 				for _, sub := range subs {
+					if err := sub.SetStatus(db.StatusWorking, 0); err != nil {
+						log.Println(err)
+						continue
+					}
 					h.tChan <- sub
 				}
 			}
@@ -63,16 +69,10 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 				return nil
 			}
 
-			err := t.SetStatus(db.StatusWorking, 0)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-
 			var score_mu sync.Mutex
 			var score int
 
-			resp, err := client.Compile(ctx, &pb.CompileRequest{ID: int32(t.ID), Code: t.Code, Lang: t.Language})
+			resp, err := client.Compile(ctx, &pb.CompileRequest{ID: t.ID, Code: t.Code, Lang: t.Language})
 
 			if err != nil {
 				log.Println("Error from eval:", err)
@@ -116,26 +116,21 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 					continue
 				}
 
-				input, _, err := h.dm.Test(t.ProblemID, pbTest.VisibleID)
-				if err != nil {
-					log.Println("Error during test getting (1):", err)
-					continue
-				}
-
 				filename := problem.TestName
 				if problem.ConsoleInput {
 					filename = "stdin"
 				}
 
 				pbtest := &pb.Test{
-					ID:          int32(t.ID),
-					TID:         int32(test.ID),
+					ID:          t.ID,
+					TID:         test.ID,
 					Filename:    filename,
 					StackLimit:  int32(problem.StackLimit),
 					MemoryLimit: int32(problem.MemoryLimit),
 					TimeLimit:   problem.TimeLimit,
 					Lang:        t.Language,
-					Input:       input,
+					ProblemID:   problem.ID,
+					TestID:      pbTest.VisibleID,
 				}
 				go func() {
 					defer wg.Done()
@@ -149,21 +144,38 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 					}
 
 					if h.debug {
-						old := resp.Output
-						resp.Output = []byte("<output stripped>")
 						spew.Dump(resp)
-						resp.Output = old
 					}
 
 					var testScore int
 
 					if resp.Comments == "" {
-						_, out, err := h.dm.Test(t.ProblemID, pbTest.VisibleID)
+						// TODO: FINISH MOVE TO FILE
+						out, err := h.dm.TestOutput(t.ProblemID, pbTest.VisibleID)
 						if err != nil {
 							log.Println("Error during test getting (2):", err)
 							return
 						}
-						equal := compareOutputs(out, []byte(resp.Output))
+						defer out.Close()
+						outData, err := io.ReadAll(out)
+						if err != nil {
+							log.Println("Error during test getting (2.1):", err)
+							return
+						}
+
+						r, err := h.dm.SubtestReader(subTestID)
+						if err != nil {
+							log.Println("Error during test getting (2.3):", err)
+							return
+						}
+
+						outfile, err := io.ReadAll(r)
+						if err != nil {
+							log.Println("Error during test getting (2.2):", err)
+							return
+						}
+
+						equal := compareOutputs(outData, outfile)
 
 						if equal {
 							testScore = int(pbTest.Score)
@@ -210,7 +222,7 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 
 func (h *Handler) Start() {
 	// Dial here to pre-emptively exit in case it fails
-	conn, err := grpc.Dial("localhost:8001", grpc.WithInsecure())
+	conn, err := grpc.Dial(config.C.Eval.Address, grpc.WithInsecure())
 	if err != nil {
 		log.Println("Dialing error:", err)
 		return

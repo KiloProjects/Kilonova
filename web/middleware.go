@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/KiloProjects/Kilonova/internal/cookie"
 	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/go-chi/chi"
 )
@@ -162,17 +161,17 @@ func (rt *Web) mustBeEditor(next http.Handler) http.Handler {
 func (rt *Web) getUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// this is analogous to doing a web request to /api/user/getSelf, but it's faster (and easier) to directly interact with the DB
-		sess := cookie.GetSession(r)
-		if sess == nil {
+		sess := rt.kn.GetRSession(r)
+		if sess == -1 {
 			next.ServeHTTP(w, r)
 			return
 		}
-		user, err := rt.kn.DB.User(r.Context(), sess.UserID)
-		user.Password = ""
+		user, err := rt.kn.DB.User(r.Context(), sess)
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
 		}
+		user.Password = ""
 		ctx := context.WithValue(r.Context(), util.UserID, user.ID)
 		ctx = context.WithValue(ctx, util.UserKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))

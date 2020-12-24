@@ -14,10 +14,9 @@
 		- Create a DB wrapper to simplify stuff
 		- Start moving business logic to a separate package
 		- TODO: ADD VUEJS FUNCTIONALITY
+		- Redis support
 	- TODO: CHECK EVERYTHING IS OK
-	- TODO: MOVE TESTS TO A SINGLE LOCATION ON DISK
-		- THIS WILL BREAK PROD
-	- TODO: Finish the changelog! More stuff i do
+	- TODO: Finish the changelog! I will do more stuff but this is what I did rn
 - v0.5.5a:
 	- Minor internal changes (move from own protocol to GRPC and prepare for a more service-oriented architecture)
 - v0.5.4a:
@@ -51,4 +50,4 @@
 - 0.2.3:
 	- Complete redesign: 
 		- Change from bootstrap to materialize.css
-- I didn't record any changes before 0.2.3, I'll add them sometime else
+- I didn't record any changes before 0.2.3, but the platform didn't have a lot of things so it isn't really worth it to document their changes.

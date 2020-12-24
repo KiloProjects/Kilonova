@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"net/http"
+	"strings"
 
 	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/pkg/errors"
@@ -19,8 +20,19 @@ func (s *API) getSelfGravatar(w http.ResponseWriter, r *http.Request) {
 	if size == "" {
 		size = "128"
 	}
-	w.Header().Add("cache-control", "max-age=150")
-	http.Redirect(w, r, getGravatarFromEmail(email)+"?s="+size, http.StatusTemporaryRedirect)
+	url := getGravatarFromEmail(email) + "?s=" + size
+	etag := `KN-Gravatar "` + util.User(r).Name + `"`
+	w.Header().Set("Etag", etag)
+	w.Header().Add("Cache-Control", "max-age=1440")
+
+	if match := r.Header.Get("If-None-Match"); match != "" {
+		if strings.Contains(match, etag) {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+	}
+
+	http.Redirect(w, r, url, http.StatusPermanentRedirect)
 }
 
 func (s *API) getGravatar(w http.ResponseWriter, r *http.Request) {
@@ -38,8 +50,21 @@ func (s *API) getGravatar(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, http.StatusNotFound)
 		return
 	}
-	w.Header().Add("cache-control", "max-age=150")
-	http.Redirect(w, r, getGravatarFromEmail(user.Email)+"?s="+size, http.StatusTemporaryRedirect)
+	email := user.Email
+
+	url := getGravatarFromEmail(email) + "?s=" + size
+	etag := `KN-Gravatar "` + user.Name + `"`
+	w.Header().Set("Etag", etag)
+	w.Header().Add("Cache-Control", "max-age=1440")
+
+	if match := r.Header.Get("If-None-Match"); match != "" {
+		if strings.Contains(match, etag) {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+	}
+
+	http.Redirect(w, r, url, http.StatusPermanentRedirect)
 }
 
 func (s *API) setSubVisibility(w http.ResponseWriter, r *http.Request) {
@@ -111,13 +136,21 @@ func (s *API) getUserByName(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "User not found", http.StatusNotFound)
 		return
 	}
-	user.Password = ""
 	returnData(w, user)
 
 }
 
 func (s *API) getSelf(w http.ResponseWriter, r *http.Request) {
 	returnData(w, util.User(r))
+}
+
+func (s *API) getSelfSolvedProblems(w http.ResponseWriter, r *http.Request) {
+	pbs, err := util.User(r).SolvedProblems()
+	if err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	returnData(w, pbs)
 }
 
 func getGravatarFromEmail(email string) string {

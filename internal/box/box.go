@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"io/fs"
 	"net/http"
 	"os"
 	"os/exec"
@@ -165,9 +165,18 @@ func (c *Config) BuildRunFlags() (res []string) {
 	return
 }
 
+func (b *Box) WriteReader(fpath string, r io.Reader) error {
+	return writeReader(b.GetFilePath(fpath), r, 0777)
+}
+
 // WriteFile writes a file to the specified path inside the box
 func (b *Box) WriteFile(fpath string, data []byte) error {
-	return ioutil.WriteFile(b.GetFilePath(fpath), data, 0777)
+	return os.WriteFile(b.GetFilePath(fpath), data, 0777)
+}
+
+// FileExists returns the stat of a file with the box filepath
+func (b *Box) Stat(fpath string) (os.FileInfo, error) {
+	return os.Stat(b.GetFilePath(fpath))
 }
 
 // RemoveFile tries to remove a created file from inside the sandbox
@@ -177,7 +186,7 @@ func (b *Box) RemoveFile(fpath string) error {
 
 // GetFile returns a file from inside the sandbox
 func (b *Box) GetFile(fpath string) ([]byte, error) {
-	return ioutil.ReadFile(b.GetFilePath(fpath))
+	return os.ReadFile(b.GetFilePath(fpath))
 }
 
 // GetFilePath returns a path to the file location on disk of a box file
@@ -185,45 +194,45 @@ func (b *Box) GetFilePath(boxpath string) string {
 	return path.Join(b.path, boxpath)
 }
 
-// CopyFromBox moves a file from the box to the outside world
+// CopyFromBox copies a file from the box to the outside world
 // It will inherit all permissions
-func (b *Box) CopyFromBox(boxpath string, rootpath string) error {
+func (b *Box) CopyFromBox(boxpath, rootpath string) error {
 	return copyFile(b.GetFilePath(boxpath), rootpath)
 }
 
-// CopyInBox links a file to the box from the outside world
-func (b *Box) CopyInBox(rootpath string, boxpath string) error {
-	return copyFile(rootpath, b.GetFilePath(boxpath))
-}
-
-func copyFile(startpath string, endpath string) error {
-	// just renaming doesn't work cross-disc (like moving to /tmp), so we create a new copy
-	infile, err := os.Open(startpath)
-	defer infile.Close()
+func (b *Box) CopyFromBoxInWriter(boxpath string, w io.Writer) error {
+	f, err := os.Open(b.GetFilePath(boxpath))
 	if err != nil {
 		return err
 	}
+	defer f.Close()
+
+	_, err = io.Copy(w, f)
+	return err
+}
+
+// CopyInBox copies a file to the box from the outside world
+// It will inherit all permissions
+func (b *Box) CopyInBox(rootpath, boxpath string) error {
+	return copyFile(rootpath, b.GetFilePath(boxpath))
+}
+
+func copyFile(startpath, endpath string) error {
+	// just renaming doesn't work cross-disc (like moving to /tmp), so we create a new copy
+	infile, err := os.Open(startpath)
+	if err != nil {
+		return err
+	}
+	defer infile.Close()
 
 	stat, err := infile.Stat()
 	if err != nil {
 		return err
 	}
 
-	outfile, err := os.Create(endpath)
-	defer outfile.Close()
-	if err != nil {
-		return err
-	}
-
-	_, err = io.Copy(outfile, infile)
-	if err != nil {
-		return err
-	}
-
-	return outfile.Chmod(stat.Mode())
+	return writeReader(endpath, infile, stat.Mode())
 }
 
-// Cleanup is a convenience wrapper for cleanupBox
 func (b *Box) Cleanup() error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -350,4 +359,16 @@ func Initialize(isolateBin string) error {
 	}
 
 	return nil
+}
+
+func writeReader(path string, r io.Reader, perms fs.FileMode) error {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perms)
+	if err != nil {
+		return err
+	}
+	_, err = f.ReadFrom(r)
+	if err1 := f.Close(); err1 != nil && err == nil {
+		err = err1
+	}
+	return err
 }

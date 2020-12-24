@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/KiloProjects/Kilonova/internal/cookie"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"golang.org/x/crypto/bcrypt"
@@ -64,13 +63,13 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	encoded, err := cookie.SetSession(w, cookie.Session{UserID: user.ID})
+	sid, err := s.kn.SetRSession(w, user.ID)
 	if err != nil {
 		log.Println(err)
 		errorData(w, "Could not set session", 500)
 		return
 	}
-	returnData(w, encoded)
+	returnData(w, sid)
 }
 
 type loginForm struct {
@@ -102,7 +101,7 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.db.UserByName(r.Context(), auth.Username)
 	if err != nil {
-		errorData(w, "user not found", http.StatusBadRequest)
+		errorData(w, "User not found", http.StatusBadRequest)
 		return
 	}
 
@@ -116,15 +115,15 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	encoded, err := cookie.SetSession(w, cookie.Session{UserID: user.ID})
+	sid, err := s.kn.SetRSession(w, user.ID)
 	if err != nil {
 		log.Println(err)
 		errorData(w, err, 500)
 		return
 	}
-	returnData(w, encoded)
+	returnData(w, sid)
 }
 
 func (s *API) logout(w http.ResponseWriter, r *http.Request) {
-	cookie.RemoveSessionCookie(w)
+	s.kn.RemoveSessionCookie(w, r)
 }

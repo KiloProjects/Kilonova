@@ -16,7 +16,7 @@ LIMIT 1
 `
 
 func (q *Queries) BiggestVID(ctx context.Context, problemID int64) (int64, error) {
-	row := q.queryRow(ctx, q.biggestVIDStmt, biggestVID, problemID)
+	row := q.db.QueryRowContext(ctx, biggestVID, problemID)
 	var visible_id int64
 	err := row.Scan(&visible_id)
 	return visible_id, err
@@ -37,7 +37,7 @@ type CreateTestParams struct {
 }
 
 func (q *Queries) CreateTest(ctx context.Context, arg CreateTestParams) (Test, error) {
-	row := q.queryRow(ctx, q.createTestStmt, createTest, arg.ProblemID, arg.VisibleID, arg.Score)
+	row := q.db.QueryRowContext(ctx, createTest, arg.ProblemID, arg.VisibleID, arg.Score)
 	var i Test
 	err := row.Scan(
 		&i.ID,
@@ -63,7 +63,7 @@ type SetPbTestScoreParams struct {
 }
 
 func (q *Queries) SetPbTestScore(ctx context.Context, arg SetPbTestScoreParams) error {
-	_, err := q.exec(ctx, q.setPbTestScoreStmt, setPbTestScore, arg.ProblemID, arg.VisibleID, arg.Score)
+	_, err := q.db.ExecContext(ctx, setPbTestScore, arg.ProblemID, arg.VisibleID, arg.Score)
 	return err
 }
 
@@ -80,7 +80,7 @@ type SetPbTestVisibleIDParams struct {
 }
 
 func (q *Queries) SetPbTestVisibleID(ctx context.Context, arg SetPbTestVisibleIDParams) error {
-	_, err := q.exec(ctx, q.setPbTestVisibleIDStmt, setPbTestVisibleID, arg.NewID, arg.ProblemID, arg.OldID)
+	_, err := q.db.ExecContext(ctx, setPbTestVisibleID, arg.NewID, arg.ProblemID, arg.OldID)
 	return err
 }
 
@@ -96,17 +96,17 @@ type SetVisibleIDParams struct {
 }
 
 func (q *Queries) SetVisibleID(ctx context.Context, arg SetVisibleIDParams) error {
-	_, err := q.exec(ctx, q.setVisibleIDStmt, setVisibleID, arg.ID, arg.VisibleID)
+	_, err := q.db.ExecContext(ctx, setVisibleID, arg.ID, arg.VisibleID)
 	return err
 }
 
 const test = `-- name: Test :one
 SELECT id, created_at, score, problem_id, visible_id, orphaned FROM tests 
-WHERE id = $1 AND orphaned = false
+WHERE id = $1
 `
 
 func (q *Queries) Test(ctx context.Context, id int64) (Test, error) {
-	row := q.queryRow(ctx, q.testStmt, test, id)
+	row := q.db.QueryRowContext(ctx, test, id)
 	var i Test
 	err := row.Scan(
 		&i.ID,
@@ -131,7 +131,7 @@ type TestVisibleIDParams struct {
 }
 
 func (q *Queries) TestVisibleID(ctx context.Context, arg TestVisibleIDParams) (Test, error) {
-	row := q.queryRow(ctx, q.testVisibleIDStmt, testVisibleID, arg.ProblemID, arg.VisibleID)
+	row := q.db.QueryRowContext(ctx, testVisibleID, arg.ProblemID, arg.VisibleID)
 	var i Test
 	err := row.Scan(
 		&i.ID,

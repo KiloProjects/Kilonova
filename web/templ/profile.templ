@@ -16,7 +16,11 @@
 				{{ end }}</span>
 			</div>
 		</div>
-		<div>TODO: Probleme rezolvate</div>
+		{{- $solved := solvedProblems .ContentUser }}
+		<p>{{if eq 1 (len $solved)}}O problemă rezolvată:{{else}}{{len $solved}} probleme rezolvate:{{end}} {{ range $solved -}}
+		<a href="/probleme/{{.ID}}">{{.Name}}</a>
+		{{ end -}}
+		</p>
 	</div>
 </div>
 

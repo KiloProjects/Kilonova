@@ -15,11 +15,10 @@ import (
 	"github.com/KiloProjects/Kilonova/api"
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/internal/config"
-	"github.com/KiloProjects/Kilonova/internal/cookie"
 	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/grader"
 	"github.com/KiloProjects/Kilonova/internal/logic"
-	"github.com/KiloProjects/Kilonova/internal/version"
+	"github.com/KiloProjects/Kilonova/internal/rclient"
 	"github.com/KiloProjects/Kilonova/web"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -30,7 +29,7 @@ import (
 
 func Kilonova(_ *cli.Context) error {
 	// Print welcome message
-	fmt.Printf("Starting Kilonova %s\n", version.Version)
+	fmt.Printf("Starting Kilonova %s\n", logic.Version)
 
 	dataDir := config.C.Common.DataDir
 	logDir := config.C.Common.LogDir
@@ -52,20 +51,26 @@ func Kilonova(_ *cli.Context) error {
 		Filename: path.Join(logDir, "access.log"),
 	}, "", 0)
 
-	// Session Cookie setup
-	cookie.Initialize(dataDir)
+	// Redis setup
+	c, err := rclient.New()
+	if err != nil {
+		return err
+	}
 
 	// DB Setup
-	db, err := db.New(config.C.Database.String())
+	dbc, err := db.New(config.C.Database.String(), c)
 	if err != nil {
 		return err
 	}
 	log.Println("Connected to DB")
 
 	// Data Manager setup
-	manager := datamanager.NewManager(dataDir)
+	manager, err := datamanager.NewManager(dataDir)
+	if err != nil {
+		return err
+	}
 
-	kn, err := logic.New(db, manager, debug)
+	kn, err := logic.New(dbc, manager, c, debug)
 	if err != nil {
 		return err
 	}

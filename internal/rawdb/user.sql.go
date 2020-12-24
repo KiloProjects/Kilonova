@@ -15,7 +15,7 @@ ORDER BY id
 `
 
 func (q *Queries) Admins(ctx context.Context) ([]User, error) {
-	rows, err := q.query(ctx, q.adminsStmt, admins)
+	rows, err := q.db.QueryContext(ctx, admins)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ type CountUsersParams struct {
 }
 
 func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, error) {
-	row := q.queryRow(ctx, q.countUsersStmt, countUsers, arg.Username, arg.Email)
+	row := q.db.QueryRowContext(ctx, countUsers, arg.Username, arg.Email)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -80,7 +80,7 @@ type CreateUserParams struct {
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.queryRow(ctx, q.createUserStmt, createUser, arg.Email, arg.Name, arg.Password)
+	row := q.db.QueryRowContext(ctx, createUser, arg.Email, arg.Name, arg.Password)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -103,7 +103,7 @@ ORDER BY id
 `
 
 func (q *Queries) Proposers(ctx context.Context) ([]User, error) {
-	rows, err := q.query(ctx, q.proposersStmt, proposers)
+	rows, err := q.db.QueryContext(ctx, proposers)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ type SetAdminParams struct {
 }
 
 func (q *Queries) SetAdmin(ctx context.Context, arg SetAdminParams) error {
-	_, err := q.exec(ctx, q.setAdminStmt, setAdmin, arg.ID, arg.Admin)
+	_, err := q.db.ExecContext(ctx, setAdmin, arg.ID, arg.Admin)
 	return err
 }
 
@@ -161,7 +161,7 @@ type SetBioParams struct {
 }
 
 func (q *Queries) SetBio(ctx context.Context, arg SetBioParams) error {
-	_, err := q.exec(ctx, q.setBioStmt, setBio, arg.ID, arg.Bio)
+	_, err := q.db.ExecContext(ctx, setBio, arg.ID, arg.Bio)
 	return err
 }
 
@@ -176,7 +176,7 @@ type SetDefaultVisibilityParams struct {
 }
 
 func (q *Queries) SetDefaultVisibility(ctx context.Context, arg SetDefaultVisibilityParams) error {
-	_, err := q.exec(ctx, q.setDefaultVisibilityStmt, setDefaultVisibility, arg.ID, arg.DefaultVisible)
+	_, err := q.db.ExecContext(ctx, setDefaultVisibility, arg.ID, arg.DefaultVisible)
 	return err
 }
 
@@ -191,7 +191,7 @@ type SetEmailParams struct {
 }
 
 func (q *Queries) SetEmail(ctx context.Context, arg SetEmailParams) error {
-	_, err := q.exec(ctx, q.setEmailStmt, setEmail, arg.ID, arg.Email)
+	_, err := q.db.ExecContext(ctx, setEmail, arg.ID, arg.Email)
 	return err
 }
 
@@ -206,7 +206,7 @@ type SetPasswordParams struct {
 }
 
 func (q *Queries) SetPassword(ctx context.Context, arg SetPasswordParams) error {
-	_, err := q.exec(ctx, q.setPasswordStmt, setPassword, arg.ID, arg.Password)
+	_, err := q.db.ExecContext(ctx, setPassword, arg.ID, arg.Password)
 	return err
 }
 
@@ -221,8 +221,38 @@ type SetProposerParams struct {
 }
 
 func (q *Queries) SetProposer(ctx context.Context, arg SetProposerParams) error {
-	_, err := q.exec(ctx, q.setProposerStmt, setProposer, arg.ID, arg.Proposer)
+	_, err := q.db.ExecContext(ctx, setProposer, arg.ID, arg.Proposer)
 	return err
+}
+
+const solvedProblems = `-- name: SolvedProblems :many
+SELECT problem_id FROM submissions
+WHERE score = 100 AND user_id = $1
+GROUP BY problem_id
+ORDER BY problem_id
+`
+
+func (q *Queries) SolvedProblems(ctx context.Context, userID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, solvedProblems, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var problem_id int64
+		if err := rows.Scan(&problem_id); err != nil {
+			return nil, err
+		}
+		items = append(items, problem_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const top100 = `-- name: Top100 :many
@@ -254,9 +284,8 @@ type Top100Row struct {
 }
 
 // I am extremely proud of this
-// TODO: Cache this bad boy into redis
 func (q *Queries) Top100(ctx context.Context) ([]Top100Row, error) {
-	rows, err := q.query(ctx, q.top100Stmt, top100)
+	rows, err := q.db.QueryContext(ctx, top100)
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +324,7 @@ WHERE id = $1
 `
 
 func (q *Queries) User(ctx context.Context, id int64) (User, error) {
-	row := q.queryRow(ctx, q.userStmt, user, id)
+	row := q.db.QueryRowContext(ctx, user, id)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -317,7 +346,7 @@ WHERE lower(email) = lower($1)
 `
 
 func (q *Queries) UserByEmail(ctx context.Context, email string) (User, error) {
-	row := q.queryRow(ctx, q.userByEmailStmt, userByEmail, email)
+	row := q.db.QueryRowContext(ctx, userByEmail, email)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -339,7 +368,7 @@ WHERE lower(name) = lower($1)
 `
 
 func (q *Queries) UserByName(ctx context.Context, username string) (User, error) {
-	row := q.queryRow(ctx, q.userByNameStmt, userByName, username)
+	row := q.db.QueryRowContext(ctx, userByName, username)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -361,7 +390,7 @@ ORDER BY id
 `
 
 func (q *Queries) Users(ctx context.Context) ([]User, error) {
-	rows, err := q.query(ctx, q.usersStmt, users)
+	rows, err := q.db.QueryContext(ctx, users)
 	if err != nil {
 		return nil, err
 	}

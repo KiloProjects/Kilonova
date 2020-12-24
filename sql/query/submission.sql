@@ -15,6 +15,11 @@ SELECT * FROM submissions
 WHERE status = 'waiting'
 ORDER BY id asc;
 
+-- name: ResetWaitingStatus :exec
+UPDATE submissions
+SET status = 'waiting'
+WHERE status = 'working';
+
 -- name: SubTests :many
 SELECT * FROM submission_tests 
 WHERE submission_id = $1

@@ -96,6 +96,27 @@ func (u *User) ProblemSubs(pbID int64) ([]*Submission, error) {
 	return submissions, nil
 }
 
+func (u *User) SolvedProblemIDs() ([]int64, error) {
+	return u.db.raw.SolvedProblems(u.ctx, u.ID)
+}
+
+func (u *User) SolvedProblems() ([]*Problem, error) {
+	ids, err := u.SolvedProblemIDs()
+	if err != nil {
+		return nil, err
+	}
+	var problems []*Problem
+	for _, id := range ids {
+		pb, err := u.db.Problem(u.ctx, id)
+		if err != nil {
+			return problems, err
+		}
+
+		problems = append(problems, pb)
+	}
+	return problems, nil
+}
+
 func (db *DB) UserExists(ctx context.Context, username, email string) bool {
 	cnt, err := db.raw.CountUsers(ctx, rawdb.CountUsersParams{Username: username, Email: email})
 	if err != nil {

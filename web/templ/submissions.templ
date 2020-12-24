@@ -2,8 +2,272 @@
 
 <div class="c-container">
 	<h1>Stare submisii</h1>
+	
+	<div id="subs" v-cloak>
+		<div class="flex flex-wrap lg:border-t lg:border-gray-200">
+			<div class="w-full lg:w-3/12 lg:pr-2 lg:border-r lg:border-gray-200">
+				<div class="mt-6"></div>
+				<label class="block mb-2">
+					<span class="text-xl text-gray-700">ID User (0 = ignore):</span>
+					<input class="form-input" type="number" v-model="filters.userid">
+				</label>
+				<label class="block mb-2">
+					<span class="text-xl text-gray-700">ID Problemă (0 = ignore):</span>
+					<input class="form-input" type="number" v-model="filters.problemid">
+				</label>
+				<label class="block mb-2">
+					<span class="text-xl text-gray-700">Status:</span>
+					<select class="form-select" v-model="filters.status">
+						<option value="">-</option>
+						<option value="finished">Finalizat</option>
+						<option value="working">În lucru</option>
+						<option value="waiting">În așteptare</option>
+					</select>
+				</label>
+				<label class="block mb-2">
+					<span class="text-xl text-gray-700">Limbaj:</span>
+					<select class="form-select" v-model="filters.lang">
+						<option value="">-</option>
+						<option value="cpp">C++</option>
+					</select>
+				</label>
+				<label class="block mb-2">
+					<span class="text-xl text-gray-700">Scor (-1 = ignore):</span>
+					<input class="form-input" type="number" min="-1" max="100" v-model="filters.score" placeholder="100">
+				</label>
+				<label class="block mb-2">
+					<span class="text-xl text-gray-700">Vizibilă:</span>
+					<select class="form-select" v-model="filters.visible">
+						<option value="">-</option>
+						<option value="true">Da</option>
+						<option value="false">Nu</option>
+					</select>
+				</label>
+				<label class="block mb-2">
+					<span class="text-xl text-gray-700">Eroare de Compilare:</span>
+					<select class="form-select" v-model="filters.compileerror">
+						<option value="">-</option>
+						<option value="true">Da</option>
+						<option value="false">Nu</option>
+					</select>
+				</label>
+				<button class="btn btn-blue mb-4" @click="poll()">Încărcare</button>
+				<button class="btn btn-blue mb-4" @click="getQuery()">Copiere link filtre</button>
+			</div>
+			<div class="mw-full mt-2 lg:flex-1 lg:px-2 lg:py-2">
+				<div class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center" v-if="loading">
+					<div><i class="fas fa-spinner animate-spin"></i> Se încarcă...</div>
+				</div>
+				<div v-else-if="submissions.length > 0">
+					<h1>${getRezStr()}</h1>
+					<table class="table-fixed w-full border mb-4">
+						<thead>
+							<tr>
+								<th scope="col" class="w-12 text-center px-4 py-2">
+									ID
+								</th>
+								<th scope="col" class="px-4 py-2">
+									Autor
+								</th>
+								<th scope="col" class="px-4 py-2">
+									Dată încărcare
+								</th>
+								<th scope="col" class="px-4 py-2">
+									Problemă
+								</th>
+								<th scope="col" class="px-4 py-2">
+									Status
+								</th>
+								<th scope="col" class="border-r px-4 py-2">
+									Scor
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr class="border-t" v-for="sub in submissions">
+								<th scope="row" class="text-center px-4 py-2">
+									${sub.id}
+								</th>
+								<td class="px-4 py-2">
+									<a class="inline-flex align-middle items-center" :href="'/profile/'+sub.user.name"><img class="flex-none mr-2 rounded" :src="'/api/user/getGravatar?s=32&name='+sub.user.name" width="32" height="32" alt="Avatar" /><span class="flex-1">${sub.user.name}</span></a>
+								</td>
+								<td class="text-center px-4 py-2">
+									${timeStr(sub.created_at)}
+								</td>
+								<td class="text-center px-4 py-2">
+									<a :href="'/probleme/'+sub.problem.id">${sub.problem.name}</a>
+								</td>
+								<td class="text-center px-4 py-2">
+									<a :href="'/submissions/'+sub.id">${sub.status}</a>
+								</td>
+								<td class="text-center px-4 py-2" :style="sub.status == 'finished' ? 'background-color: ' + getGradient(sub.score, 100) : ''">
+									${sub.score}
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
 
-	{{ template "util/subtable" .Submissions }}
+				<div class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center" v-else>
+					Nicio submisie găsită.
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+var app = new Vue({
+	el: '#subs',
+	data: {
+		submissions: [],
+		filters: {loadUser: true, loadProblem: true, userid: null, problemid: null, status: "", lang: "", visible: "", compileerror: ""},
+		loading: true 
+	},
+	methods: {
+		poll: async function() {
+			this.loading = true
+			let res = await getCall("/submissions/get", this.getFilters(this.filters))
+			if(res.status !== "success") {
+				apiToast(res)
+				this.loading = false
+				return
+			}
+			console.log(res.data)
+			if(res.data == null) {
+				this.submissions = []
+			} else {
+				this.submissions = res.data
+			}
+			this.loading = false
+		},
+		getRezStr: function() {
+			let l = this.submissions.length;
+			if(l == 1) {
+				return "Un rezultat."
+			}
+			if(l < 20) {
+				return l + " rezultate."
+			}
+			return l + " de rezultate."
+		},
+		getFilters: function(old) {
+			var res = {};
+			res.loadUser = old.loadUser
+			res.loadProblem = old.loadProblem
+			if(old.userid > 0) {
+				res.userid = old.userid
+			}
+			if(old.problemid > 0) {
+				res.problemid = old.problemid
+			}
+			if(old.status != "") {
+				res.status = old.status
+			}
+			if(old.score >= 0) {
+				res.score = old.score
+			}
+			res.lang = old.lang
+			if(old.visible == "true" || old.visible == "false") {
+				res.visible = old.visible == "true";
+			}
+			if(old.compileerror == "true" || old.compileerror == "false") {
+				res.compileerror = old.compileerror == "true";
+			}
+			console.log(old, res)
+			return res;
+		},
+		getGradient: function(score, maxscore) {
+			return getGradient(score, maxscore)
+		},
+		timeStr: function(d) {
+			return dayjs(d).format('DD/MM/YYYY HH:mm')
+		},
+		getQuery: async function() {
+			var p = new URLSearchParams();
+			if(this.filters.userid > 0) {
+				p.append("userid", this.filters.userid);
+			}
+			if(this.filters.problemid > 0) {
+				p.append("problemid", this.filters.problemid);
+			}
+			if(this.filters.status !== "") {
+				p.append("status", this.filters.status);
+			}
+			if(this.filters.score >= 0) {
+				p.append("score", this.filters.score);
+			}
+			if(this.filters.lang !== "") {
+				p.append("lang", this.filters.lang);
+			}
+			if(this.filters.visible !== "") {
+				p.append("visible", this.filters.visible);
+			}
+			if(this.filters.compileerror !== "") {
+				p.append("compileerror", this.filters.compileerror);
+			}
+			let url = window.location.origin + window.location.pathname + "?" + p.toString();
+			try {
+				await navigator.clipboard.writeText(url)
+				createToast({status: "success", title: "Copied URL to clipboard"});
+			} catch(e) {
+				console.log(e);
+				createToast({status: "error", title: "Couldn't copy to clipboard"})
+			}
+		}
+	},
+	watch: {
+		filters: function(val) {
+			if(val.userid == 0) {
+				this.filters.userid = null
+			}
+			if(val.problemid == 0) {
+				this.filters.problemid = null
+			}
+		}
+	},
+	created: function() {
+		const params = new URLSearchParams(window.location.search);
+		const userid = params.get("userid");
+		const problemid = params.get("problemid");
+		const status = params.get("status");
+		const score = params.get("score");
+		const lang = params.get("lang");
+		const visible = params.get("visible");
+		const compileerror = params.get("compileerror");
+
+		if(userid !== null && Number(userid) !== NaN) {
+			this.filters.userid = Number(userid);
+		}
+		
+		if(problemid !== null && Number(problemid) !== NaN) {
+			this.filters.problemid = Number(problemid);
+		}
+
+		if(status == "working" || status == "finished" || status == "waiting") {
+			this.filters.status = status;
+		}
+
+		if(score !== null && Number(score) !== NaN) {
+			this.filters.score = Number(score);
+		}
+
+		if(lang !== null) {
+			this.filters.lang = lang;
+		}
+
+		if(visible == "true" || visible == "false") {
+			this.filters.visible = visible == "true";
+		}
+
+		if(compileerror == "true" || compileerror == "false") {
+			this.filters.compileerror = compileerror == "true";
+		}
+
+		this.poll()
+	},
+	delimiters: ['${', '}']	
+})
+	</script>
 
 </div> 
 

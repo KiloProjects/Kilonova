@@ -7,14 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"path"
 	"strings"
 
 	"github.com/KiloProjects/Kilonova/datamanager"
-	"github.com/KiloProjects/Kilonova/internal/cookie"
 	"github.com/KiloProjects/Kilonova/internal/db"
 	"github.com/KiloProjects/Kilonova/internal/logic"
 	"github.com/KiloProjects/Kilonova/internal/util"
@@ -52,6 +51,10 @@ type templateData struct {
 	Problem   *db.Problem
 	ProblemID int64
 
+	// for problem page
+	Markdown         string
+	IsPdfDescription bool
+
 	ContentUser *db.User
 	IsCUser     bool
 
@@ -84,6 +87,7 @@ type templateData struct {
 type Web struct {
 	kn    *logic.Kilonova
 	dm    datamanager.Manager
+	rd    *Renderer
 	debug bool
 }
 
@@ -208,13 +212,62 @@ func (rt *Web) Router() chi.Router {
 			file, err := pkger.Open("/CHANGELOG.md")
 			if err != nil {
 				log.Println("CAN'T OPEN CHANGELOG")
-				rt.status(w, r, 500, "Can't open changelog")
+				rt.status(w, r, 500, "Can't load changelog")
 				return
 			}
-			changelog, _ := ioutil.ReadAll(file)
+			changelog, _ := io.ReadAll(file)
+			ch, err := rt.rd.Render(changelog)
+			if err != nil {
+				log.Println("CAN'T RENDER CHANGELOG")
+				rt.status(w, r, 500, "Can't render changelog")
+				return
+			}
+
 			templ := rt.hydrateTemplate(r, "Changelog")
-			templ.Changelog = string(changelog)
-			rt.build(w, r, "changelog", templ)
+			templ.Markdown = ch.String()
+			rt.build(w, r, "mdrender", templ)
+		})
+
+		r.Get("/todo", func(w http.ResponseWriter, r *http.Request) {
+			file, err := pkger.Open("/TODO.md")
+			if err != nil {
+				log.Println("CAN'T OPEN TODO")
+				rt.status(w, r, 500, "Can't load todo list")
+				return
+			}
+
+			todo, _ := io.ReadAll(file)
+			t, err := rt.rd.Render(todo)
+			if err != nil {
+				log.Println("CAN'T RENDER TODO")
+				rt.status(w, r, 500, "Can't render todo list")
+				return
+			}
+
+			templ := rt.hydrateTemplate(r, "Todo list")
+			templ.Markdown = t.String()
+			rt.build(w, r, "mdrender", templ)
+		})
+
+		r.Get("/about", func(w http.ResponseWriter, r *http.Request) {
+			file, err := pkger.Open("/ABOUT.md")
+			if err != nil {
+				log.Println("CAN'T OPEN ABOUT")
+				rt.status(w, r, 500, "Can't load About page")
+				return
+			}
+
+			about, _ := io.ReadAll(file)
+			t, err := rt.rd.Render(about)
+			if err != nil {
+				log.Println("CAN'T RENDER ABOUT")
+				rt.status(w, r, 500, "Can't render About page")
+				return
+			}
+
+			templ := rt.hydrateTemplate(r, "To do list")
+			templ.Markdown = t.String()
+			rt.build(w, r, "mdrender", templ)
 		})
 
 		r.Get("/top100", func(w http.ResponseWriter, r *http.Request) {
@@ -251,8 +304,13 @@ func (rt *Web) Router() chi.Router {
 				r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 					problem := util.Problem(r)
 
+					buf, err := rt.rd.Render([]byte(problem.Description))
+					if err != nil {
+						log.Println(err)
+					}
 					templ := rt.hydrateTemplate(r, fmt.Sprintf("Problema #%d: %s", problem.ID, problem.Name))
 					templ.Codemirror = true
+					templ.Markdown = buf.String()
 					rt.build(w, r, "problema", templ)
 				})
 				r.Route("/edit", func(r chi.Router) {
@@ -296,14 +354,7 @@ func (rt *Web) Router() chi.Router {
 
 		r.Route("/submissions", func(r chi.Router) {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				subs, err := rt.kn.DB.Submissions(r.Context())
-				if err != nil && !errors.Is(err, sql.ErrNoRows) {
-					log.Println("/submissions/", err)
-					rt.status(w, r, 500, "")
-					return
-				}
 				templ := rt.hydrateTemplate(r, "Submisii")
-				templ.Submissions = subs
 				rt.build(w, r, "submissions", templ)
 			})
 			r.With(rt.ValidateSubmissionID).Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
@@ -312,23 +363,14 @@ func (rt *Web) Router() chi.Router {
 			})
 		})
 
-		r.With(rt.mustBeAdmin).Get("/admin", func(w http.ResponseWriter, r *http.Request) {
-			templ := rt.hydrateTemplate(r, "Interfață Admin")
-			rt.build(w, r, "admin", templ)
-		})
+		r.With(rt.mustBeAdmin).Get("/admin", rt.simpleTempl("Interfață Admin", "admin"))
 
-		r.With(rt.mustBeVisitor).Get("/login", func(w http.ResponseWriter, r *http.Request) {
-			templ := rt.hydrateTemplate(r, "Log In")
-			rt.build(w, r, "login", templ)
-		})
-		r.With(rt.mustBeVisitor).Get("/signup", func(w http.ResponseWriter, r *http.Request) {
-			templ := rt.hydrateTemplate(r, "Înregistrare")
-			rt.build(w, r, "signup", templ)
-		})
+		r.With(rt.mustBeVisitor).Get("/login", rt.simpleTempl("Log In", "login"))
+		r.With(rt.mustBeVisitor).Get("/signup", rt.simpleTempl("Înregistrare", "signup"))
 
 		r.With(rt.mustBeAuthed).Get("/logout", func(w http.ResponseWriter, r *http.Request) {
 			// i could redirect to /api/auth/logout, but it's easier to do it like this
-			cookie.RemoveSessionCookie(w)
+			rt.kn.RemoveSessionCookie(w, r)
 			http.Redirect(w, r, "/", http.StatusFound)
 		})
 
@@ -355,9 +397,20 @@ func (rt *Web) Router() chi.Router {
 	return r
 }
 
+func (rt *Web) simpleTempl(title, templName string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		templ := rt.hydrateTemplate(r, title)
+		rt.build(w, r, templName, templ)
+	}
+}
+
 // NewWeb returns a new web instance
 func NewWeb(kn *logic.Kilonova) *Web {
-	return &Web{kn, kn.DM, kn.Debug}
+	rd, err := NewRenderer()
+	if err != nil {
+		panic(err)
+	}
+	return &Web{kn, kn.DM, rd, kn.Debug}
 }
 
 func init() {

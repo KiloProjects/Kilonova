@@ -2,17 +2,11 @@ Additional reading I should do for a better platform:
 - https://pace.dev/blog/2020/02/12/why-you-shouldnt-use-func-main-in-golang-by-mat-ryer.html
 - https://ieftimov.com/post/four-steps-daemonize-your-golang-programs/
 
-TODO LIST KILONOVA:
-- [x] Pentru closed alpha (v0.1.0a-v0.7.0a):
-	- [x] Termină cu grader-ul IOI
-	- [x] Ierarhie conturi
-	- [x] Interfață web pentru administrarea ierarhiei
-	- [x] Toast-uri
-- [ ] Pentru early beta (v0.8.0b-?):
+## TODO LIST KILONOVA:
+- [ ] Pre-Early beta (v0.1.0a-v0.5.5a):
 	- [x] Mathjax
-	- [ ] Profil user
-		- [ ] Listă probleme făcute
-			- !!!! Trb făcut discret încât să nu promoveze nr mai mare de pb
+	- [x] Profil user
+		- [x] Listă probleme făcute
 		- [x] Bio
 	- [x] Pagină settings
 		- [x] Setări Vizibilitate default la submissions
@@ -23,25 +17,56 @@ TODO LIST KILONOVA:
 		- S-ar putea să nu fie posibil cu isolate, ar trebui să găsesc altceva
 			- Maybe https://github.com/adrian-budau/ia-sandbox ????
 	- [x] folosește pure SQL pentru backend, fără GORM
-	- [ ] Site mai drăguț:
+	- [x] Site mai drăguț:
 		- [x] NavBar
-		- [ ] Auto reîncărcare pagină submission când nu e finalizată evaluarea
+		- [x] Auto reîncărcare pagină submission când nu e finalizată evaluarea
+			- [x] Afișare scor maxim posibil pentru fiecare test
 		- [x] Experiență mai bună pentru editat problemele
-	- [ ] Filtre submissions
+	- [x] Enunț PDF
+	- [x] Filtre submissions
+		- [x] API
+		- [x] Web
+	- [x] Auto actualizare când încarci submisia:
+		- [x] Mutare la vue pentru bara de submisii anterioare
+			- [x] Limitare nr de submisii vizibile acolo, cu un link la filtrul pe pb aia (e nevoie de filtre subs)
+		- [x] Când e gata submisia, afișează scorul ca notificare
+	- [x] SCHIMBARE MOD DE TRANSMITERE FIȘIER INTRARE/IEȘIRE EVALUATOR
+		 - Dă depășire de protocol pt fișiere foarte mari
+- [ ] Pre-Middle beta (v0.6.0b-?):
+	- [ ] Email package
+		- [ ] Verificare user
+		- [ ] Mail updates
+		- [ ] Other stuff
+	- [ ] Move tests to a single directory, based on the test ID, not problem + visible ID
+		- This will break prod
+	- [ ] Serivice-ificare:
+		- [ ] Împarte în mai multe services (Core/API/Web/Eval/Eval Worker)
+		- [ ] Separare main core de inputs (API/Web)
+		- [ ] Eval-ul se conectează la core (și eval worker la eval), nu invers
+	- [ ] Reduce nr de TODOs din nou
+	- [ ] Security Improvements:
+		- [ ] Anti-CSRF protection
+		- [ ] Sanitize all user inputs
 	- [ ] Caching
-- [ ] Pentru middle beta:
 	- [ ] Multi-eval support
 	- [ ] Verificator custom
-	- [ ] Împarte în mai multe services
 	- [ ] Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
 	- [ ] CDN
+		- [ ] Pune toate imaginile găsite pe CDN și redirecționează-le acolo
+		- [ ] Adaugă redirect în stil steam 
+			- monitorizează pe ce dai click 
+			- ? avertizează dacă un domeniu nu e pe whitelist
+		- [ ] Mutare CSS pe CDN
+	- [ ] Phase out sqlc în favoarea sqlx (să nu mai depindem așa mult de code generation)
 	- [ ] Site mai drăguț:
 		- [ ] Dark theme
 		- [ ] More themes
-	- [ ] Pagină profil (cont.):
-		- [ ] Mai customizabil
 	- [ ] Versiune engleză
-- [ ] Pentru late beta:
+		- [ ] Cumva facem asta
+		- [ ] Instrumente de translation:
+			- [ ] Propunători traducători
+			- [ ] Enunțuri multi-language
+- [ ] pre-late beta:
 	- [ ] "Custom input" ca pe hackerrank/leetcode
 	- [ ] Mai multe tipuri de probleme:
 		- [ ] interactive
@@ -52,17 +77,19 @@ TODO LIST KILONOVA:
 		- [ ] Sistem de plată/donații
 		- [ ] ? cosmetice
 		- [ ] Sistem de priority queue 
-- [ ] Pentru release:
-	- [ ] ? Integrare cu Polygon
+	- [ ] Pagină profil (cont.):
+		- [ ] Mai customizabil
 	- [ ] Etichete probleme
-	- [ ] Instrumente de translation:
-		- [ ] Useri traducători
-		- [ ] Enunțuri multi-language
 	- [ ] Social:
-		- [ ] Guilds
 		- [ ] Friendships
-		- [ ] Blog
+		- [ ] Blog (poate fi mutat la pentru release)
+- [ ] pre-release:
+	- [ ] ? Integrare cu Polygon
+	- [ ] Social (cont.):
+		- [ ] Guilds
+		- [ ] Circles (ca google circles, explicat aici: https://discord.com/channels/287285563118190592/295942451041140746/786857659584348181 )
 	- [ ] "Kilonova PRO" cont.
+		- [ ] Pro-ii pot crea custom contests, ca "summer challange" pe hackerrank
 		- [ ] ? Sistem NOVA
 			- sub-instanțe de kilonova
 			- [ ] Restructurare sistem de webserver

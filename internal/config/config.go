@@ -2,9 +2,9 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 
 	"github.com/BurntSushi/toml"
+	"github.com/go-redis/redis/v8"
 )
 
 // ConfigStruct is the glue for all configuration sections
@@ -17,16 +17,24 @@ type ConfigStruct struct {
 
 // Cache is the data required for the redis part (when I eventually make it)
 type Cache struct {
-	Enable   bool   `toml:"enable"`
 	Host     string `toml:"host"`
 	Password string `toml:"password"`
 	DB       int    `toml:"DB"`
+}
+
+func (c Cache) GenOptions() *redis.Options {
+	return &redis.Options{
+		Addr:     c.Host,
+		Password: c.Password,
+		DB:       c.DB,
+	}
 }
 
 // Eval is the data required for the eval service
 type Eval struct {
 	IsolatePath string `toml:"isolatePath"`
 	CompilePath string `toml:"compilePath"`
+	Address     string `toml:"address"`
 }
 
 // Common is the data required for all services
@@ -53,9 +61,6 @@ func (d Database) String() string {
 var C ConfigStruct
 
 func Load(path string) error {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	return toml.Unmarshal(data, &C)
+	_, err := toml.DecodeFile(path, &C)
+	return err
 }

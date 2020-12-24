@@ -25,7 +25,7 @@
 	{{else}}
 		<meta property="og:type" content="website" />
 	{{end}}
-	<meta property="og:url" content="https://alpha.kilonova.ro{{- .OGUrl -}}" />
+	<meta property="og:url" content="https://kilonova.ro{{- .OGUrl -}}" />
 	{{with .OGImage}}
 		<meta property="og:image" content="{{- .OGImage -}}" />
 	{{else}}
@@ -67,8 +67,8 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js"></script>
 
 	<!--highlight.js-->
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/default.min.css" />
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.4.1/styles/default.min.css" />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.4.1/highlight.min.js"></script>
 
 	<!--markdown-it.js-->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/11.0.0/markdown-it.min.js"></script>
@@ -76,14 +76,14 @@
 	<!--Codemirror-->
 	{{ if .Codemirror }}
 		<!--CSS-->
-		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.55.0/codemirror.min.css" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/codemirror.min.css" />
 		<!--JS-->
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.55.0/codemirror.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.55.0/addon/mode/overlay.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.55.0/mode/meta.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.55.0/mode/markdown/markdown.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.55.0/mode/gfm/gfm.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.55.0/mode/clike/clike.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/codemirror.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/addon/mode/overlay.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/meta.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/markdown/markdown.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/gfm/gfm.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/clike/clike.min.js"></script>
 	{{ end }}
 
 	{{ if .Debug }}
@@ -105,12 +105,14 @@
 				console.log(lang, "::");
 				console.log(str)
 				if (lang && hljs.getLanguage(lang)) {
+					console.log("aaa");
 					try { return hljs.highlight(lang, str).value; } catch (err) { console.error(err); }
 				}
 				return "";
 			},
 		});
-		hljs.initHighlightingOnLoad();
+hljs.configure({languages:['cpp', 'py']}) // TODO
+hljs.initHighlightingOnLoad();
 	</script>
 
 	<script>
@@ -123,6 +125,7 @@
 
 		/* createToast OPTIONS
 			title: the toast title
+			description: the toast description
 			status: the toast status (default "info")
 			position: the toast position (default "toast-bottom-right")
 			onclick: onClick handler
@@ -180,6 +183,20 @@
 		async function getUser(name) {
 			return await getCall('/user/getByName', {name: name})
 		}
+
+		function getGradient(score, maxscore) {
+			let col = "#e3dd71", rap = 0.0;
+			if(maxscore != 0 && score != 0) { rap = score / maxscore }	
+			if(rap == 1.0) { col = "#7fff00" }
+			if(rap < 1.0) { col = "#67cf39" }
+			if(rap <= 0.8) { col = "#9fdd2e" }
+			if(rap <= 0.6) { col = "#d2eb19" }
+			if(rap <= 0.4) { col = "#f1d011" }
+			if(rap <= 0.2) { col = "#f6881e" }
+			if(rap == 0) { col = "#f11722" }
+			return col
+		}
+
 	</script>
 </head>
 

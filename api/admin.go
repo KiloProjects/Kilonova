@@ -7,6 +7,15 @@ import (
 	"github.com/KiloProjects/Kilonova/internal/util"
 )
 
+func (s *API) resetWaitingSubs(w http.ResponseWriter, r *http.Request) {
+	err := s.db.ResetWaitingStatus(r.Context())
+	if err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	returnData(w, "Reset waiting subs")
+}
+
 func (s *API) getUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := s.db.Users(r.Context())
 	if err != nil {
@@ -14,9 +23,6 @@ func (s *API) getUsers(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Could not read from DB", 500)
 		return
 	}
-	/*	for i := range users {
-		users[i].Password = ""
-	}*/
 	returnData(w, users)
 }
 
@@ -27,10 +33,6 @@ func (s *API) getAdmins(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Could not read from DB", 500)
 		return
 	}
-	/*
-		for i := range admins {
-			admins[i].Password = ""
-		}*/
 	returnData(w, admins)
 }
 
@@ -40,10 +42,6 @@ func (s *API) getProposers(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Could not read from DB", 500)
 		return
 	}
-	/*
-		for i := range proposers {
-			proposers[i].Password = ""
-		}*/
 	returnData(w, proposers)
 }
 

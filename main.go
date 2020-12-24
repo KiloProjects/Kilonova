@@ -3,10 +3,12 @@ package main
 import (
 	"flag"
 	"log"
+	"math/rand"
 	"os"
+	"time"
 
 	"github.com/KiloProjects/Kilonova/internal/config"
-	"github.com/KiloProjects/Kilonova/internal/version"
+	"github.com/KiloProjects/Kilonova/internal/logic"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/urfave/cli/v2"
 
@@ -20,6 +22,7 @@ var (
 )
 
 func main() { // TODO: finish this
+	rand.Seed(time.Now().UnixNano())
 	flag.Parse()
 	if err := config.Load(*confPath); err != nil {
 		panic(err)
@@ -30,7 +33,7 @@ func main() { // TODO: finish this
 	app := &cli.App{
 		Name:    "Kilonova",
 		Usage:   "Control the platform",
-		Version: version.Version,
+		Version: logic.Version,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "config",

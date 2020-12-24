@@ -6,7 +6,7 @@ module.exports = {
   plugins: [
 		require("postcss-import"),
 	  	require("tailwindcss"),
-		process.env.NODE_ENV === 'production' ? require("autoprefixer") : null,
+		require("autoprefixer"),
 		process.env.NODE_ENV === 'production' ? cssnano({preset: "default"}) : null,
 	  	purgecss({
 			content: glob.sync('../templ/**/*', {nodir: true}),
