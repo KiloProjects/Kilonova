@@ -20,7 +20,7 @@
 			
 			{{/*<tr class="text-center border-t" style="{{ gradient .Score $test.Score }}">*/}}
 			
-			<table class="border-2 border-collapse table-auto w-full" v-if="subTests.length > 0">
+			<table class="border-2 border-collapse table-auto w-full" v-if="subTests.length > 0 && !submission.compile_error">
 				<thead>
 					<tr>
 						<th class="py-2" scope="col">
