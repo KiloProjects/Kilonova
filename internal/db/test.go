@@ -103,7 +103,7 @@ func (db *DB) testFromRaw(ctx context.Context, test rawdb.Test) *Test {
 		db:  db,
 
 		ID:        test.ID,
-		CreatedAt: test.CreatedAt,
+		CreatedAt: test.CreatedAt.UTC(),
 		Score:     test.Score,
 		ProblemID: test.ProblemID,
 		VisibleID: test.VisibleID,

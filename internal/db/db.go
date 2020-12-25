@@ -59,6 +59,7 @@ func New(dsn string, cache *rclient.RClient) (*DB, error) {
 		return nil, err
 	}
 	connConf.Logger = logger{}
+	connConf.RuntimeParams["timezone"] = "UTC"
 	cst := stdlib.RegisterConnConfig(connConf)
 
 	rawConn, err := sqlx.Connect("pgx", cst)

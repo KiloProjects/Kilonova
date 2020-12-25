@@ -326,7 +326,7 @@ func (db *DB) subFromRaw(ctx context.Context, sub rawdb.Submission) *Submission 
 		db:  db,
 
 		ID:             sub.ID,
-		CreatedAt:      sub.CreatedAt,
+		CreatedAt:      sub.CreatedAt.UTC(),
 		UserID:         sub.UserID,
 		ProblemID:      sub.ProblemID,
 		Language:       sub.Language,
@@ -345,7 +345,7 @@ func (db *DB) subTestFromRaw(ctx context.Context, subTest rawdb.SubmissionTest) 
 		db:  db,
 
 		ID:           subTest.ID,
-		CreatedAt:    subTest.CreatedAt,
+		CreatedAt:    subTest.CreatedAt.UTC(),
 		Done:         subTest.Done,
 		Verdict:      subTest.Verdict,
 		Time:         subTest.Time,

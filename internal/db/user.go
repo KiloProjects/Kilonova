@@ -186,7 +186,7 @@ func (db *DB) Top100(ctx context.Context) ([]Top100Row, error) {
 			db:  db,
 
 			ID:             row.ID,
-			CreatedAt:      row.CreatedAt,
+			CreatedAt:      row.CreatedAt.UTC(),
 			Name:           row.Name,
 			Admin:          row.Admin,
 			Proposer:       row.Proposer,
@@ -219,7 +219,7 @@ func (db *DB) userFromRaw(ctx context.Context, u rawdb.User) *User {
 		db:  db,
 
 		ID:             u.ID,
-		CreatedAt:      u.CreatedAt,
+		CreatedAt:      u.CreatedAt.UTC(),
 		Name:           u.Name,
 		Admin:          u.Admin,
 		Proposer:       u.Proposer,

@@ -222,7 +222,7 @@ func (db *DB) pbFromRaw(ctx context.Context, pb rawdb.Problem) *Problem {
 		db:  db,
 
 		ID:           pb.ID,
-		CreatedAt:    pb.CreatedAt,
+		CreatedAt:    pb.CreatedAt.UTC(),
 		Name:         pb.Name,
 		Description:  pb.Description,
 		TestName:     pb.TestName,

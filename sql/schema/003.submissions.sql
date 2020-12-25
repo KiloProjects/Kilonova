@@ -5,17 +5,17 @@ CREATE TYPE status AS ENUM (
 );
 
 CREATE TABLE submissions (
-	id 				bigserial 	PRIMARY KEY,
-	created_at 		timestamp 	NOT NULL DEFAULT NOW(),
-	user_id 		bigint		NOT NULL REFERENCES users(id),
-	problem_id 		bigint  	NOT NULL REFERENCES problems(id),
-	language		text 		NOT NULL,
-	code 			text 		NOT NULL,
-	status 			status 		NOT NULL DEFAULT 'waiting',
+	id 				bigserial 		PRIMARY KEY,
+	created_at 		timestamp 		NOT NULL DEFAULT NOW(),
+	user_id 		bigint			NOT NULL REFERENCES users(id),
+	problem_id 		bigint  		NOT NULL REFERENCES problems(id),
+	language		text 			NOT NULL,
+	code 			text 			NOT NULL,
+	status 			status 			NOT NULL DEFAULT 'waiting',
 	compile_error 	boolean,
 	compile_message text,
-	score 			integer		NOT NULL DEFAULT 0,
-	visible 		boolean		NOT NULL DEFAULT false
+	score 			integer			NOT NULL DEFAULT 0,
+	visible 		boolean			NOT NULL DEFAULT false
 );
 
 CREATE TABLE submission_tests (
