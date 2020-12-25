@@ -14,8 +14,16 @@ type Kilonova struct {
 	DM      datamanager.Manager
 	RClient *rclient.RClient
 	Debug   bool
+	email   *Email
 }
 
 func New(db *db.DB, dm datamanager.Manager, rclient *rclient.RClient, debug bool) (*Kilonova, error) {
-	return &Kilonova{db, dm, rclient, debug}, nil
+	email, err := NewEmail()
+	if err != nil {
+		return nil, err
+	}
+
+	email.SendEmail("alexv@siluta.ro", "Test Subject", "Dacă ai primit asta, ești boss de boss")
+
+	return &Kilonova{db, dm, rclient, debug, email}, nil
 }

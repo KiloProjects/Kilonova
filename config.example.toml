@@ -15,6 +15,12 @@
   sslmode = "disable"
   user = "DBUSER"
 
+[email]
+  host = "EMAILHOST"
+  port = 587
+  username = "EMAILSERNAME"
+  password = "EMAILPASSWORD"
+
 [eval]
   address = "localhost:8001"
   compilePath = "/tmp/kncompiles"

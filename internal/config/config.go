@@ -16,6 +16,14 @@ type ConfigStruct struct {
 	Database  Database            `toml:"database"`
 	Eval      Eval                `toml:"eval"`
 	Languages map[string]Language `toml:"languages"`
+	Email     Email               `toml:"email"`
+}
+
+type Email struct {
+	Host     string `toml:"host"`
+	Port     int    `toml:"port"`
+	Username string `toml:"username"`
+	Password string `toml:"password"`
 }
 
 // Cache is the data required for the redis part (when I eventually make it)
