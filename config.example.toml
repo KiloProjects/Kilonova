@@ -1,0 +1,89 @@
+
+[cache]
+  DB = 0
+  host = "localhost:6379"
+  password = ""
+
+[common]
+  data_dir = "DATADIR"
+  debug = true
+  log_dir = "LOGDIR"
+
+[database]
+  dbname = "kilonova"
+  host = "/var/run/postgresql"
+  sslmode = "disable"
+  user = "DBUSER"
+
+[eval]
+  address = "localhost:8001"
+  compilePath = "/tmp/kncompiles"
+  isolatePath = "/tmp/isolate"
+
+[languages]
+
+  [languages.c]
+    compile_command = ["/usr/bin/gcc", "-std=c11", "-O2", "-s", "-static", "/box/main.c", "-o", "/box/output"]
+    compiled_name = "/box/output"
+    extensions = [".c"]
+    is_compiled = true
+    run_command = ["/box/output"]
+    source_name = "/box/main.c"
+
+    [[languages.c.mounts]]
+      in = "/etc"
+
+  [languages.cpp]
+    compile_command = ["/usr/bin/g++", "-std=c++11", "-O2", "-s", "-static", "/box/main.cpp", "-o", "/box/output"]
+    compiled_name = "/box/output"
+    extensions = [".cpp", ".c++", ".cc", ".cxx"]
+    is_compiled = true
+    run_command = ["/box/output"]
+    source_name = "/box/main.cpp"
+
+    [[languages.cpp.mounts]]
+      in = "/etc"
+
+  [languages.golang]
+    compile_command = ["/usr/lib/golang/bin/go", "build", "/main.go"]
+    compiled_name = "/main"
+    disabled = true
+    extensions = [".go"]
+    is_compiled = true
+    run_command = ["/main"]
+    source_name = "/main.go"
+
+    [languages.golang.build_env]
+      GOCACHE = "/go/cache"
+      GOPATH = "/go"
+
+    [languages.golang.common_env]
+      GOMAXPROCS = "1"
+
+  [languages.haskell]
+    compile_command = ["/usr/bin/ghc", "-o", "/box/output", "/box/main.hs"]
+    compiled_name = "/box/output"
+    disabled = true
+    extensions = [".hs", ".lhs"]
+    is_compiled = true
+    run_command = ["/box/output"]
+    source_name = "/box/main.hs"
+
+  [languages.java]
+    compile_command = ["/usr/bin/javac", "/Main.java"]
+    compiled_name = "/Main.class"
+    disabled = true
+    extensions = [".java"]
+    is_compiled = true
+    run_command = ["/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.252.b09-1.fc32.x86_64/jre/bin/java", "Main"]
+    source_name = "/Main.java"
+
+    [[languages.java.mounts]]
+      in = "/etc"
+
+  [languages.python]
+    compiled_name = "/box/main.py"
+    extensions = [".py", ".py3"]
+    is_compiled = false
+    run_command = ["/usr/bin/python3", "/box/main.py"]
+    source_name = "/box/main.py"

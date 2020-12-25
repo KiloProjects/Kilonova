@@ -1,4 +1,8 @@
-- v0.6.0a:
+- v0.6.1b:
+	- Show links to submission filters
+	- Fix bug with timezones
+	- Move language definitions to the config file
+- v0.6.0b:
 	- Add default visibiliy for submissions
 		- Users with 100p on a problem can see all submissions
 		- Changeable in settings
@@ -9,14 +13,10 @@
 		- I cant wait to see all that git history size :(
 	- Fleshed out roadmap
 	- Added password change API endpoint
-		- TODO: Add a page for this
-	- Internal stuff:
-		- Create a DB wrapper to simplify stuff
-		- Start moving business logic to a separate package
-		- TODO: ADD VUEJS FUNCTIONALITY
-		- Redis support
-	- TODO: CHECK EVERYTHING IS OK
-	- TODO: Finish the changelog! I will do more stuff but this is what I did rn
+	- Internal stuff
+	- Added submission filter system
+	- Show submission result as popup on problem
+	- Some more stuff
 - v0.5.5a:
 	- Minor internal changes (move from own protocol to GRPC and prepare for a more service-oriented architecture)
 - v0.5.4a:

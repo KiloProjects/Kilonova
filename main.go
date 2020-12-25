@@ -9,7 +9,6 @@ import (
 
 	"github.com/KiloProjects/Kilonova/internal/config"
 	"github.com/KiloProjects/Kilonova/internal/logic"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/urfave/cli/v2"
 
 	_ "github.com/lib/pq"
@@ -27,8 +26,6 @@ func main() { // TODO: finish this
 	if err := config.Load(*confPath); err != nil {
 		panic(err)
 	}
-
-	spew.Dump(config.C)
 
 	app := &cli.App{
 		Name:    "Kilonova",

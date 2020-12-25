@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"syscall"
 	"time"
 
 	"github.com/KiloProjects/Kilonova/api"
@@ -118,15 +119,15 @@ func Kilonova(_ *cli.Context) error {
 	}
 
 	go func() {
-		if err := server.ListenAndServe(); err != nil {
-			cancel()
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			fmt.Println(err)
+			cancel()
 		}
 	}()
 
 	fmt.Println("Successfully started")
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
 	defer func() {
 		fmt.Println("Shutting Down")
@@ -137,6 +138,7 @@ func Kilonova(_ *cli.Context) error {
 
 	select {
 	case <-stop:
+		signal.Stop(stop)
 		cancel()
 	case <-ctx.Done():
 	}

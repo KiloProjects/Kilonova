@@ -9,8 +9,8 @@ import (
 
 	"github.com/KiloProjects/Kilonova/datamanager"
 	"github.com/KiloProjects/Kilonova/internal/box"
+	"github.com/KiloProjects/Kilonova/internal/config"
 	pb "github.com/KiloProjects/Kilonova/internal/grpc"
-	"github.com/KiloProjects/Kilonova/internal/languages"
 )
 
 var compilePath string
@@ -50,7 +50,7 @@ func (b *BoxManager) Cleanup() error {
 }
 
 // CompileFile compiles a file that has the corresponding language
-func (b *BoxManager) CompileFile(SourceCode []byte, language languages.Language) (string, error) {
+func (b *BoxManager) CompileFile(SourceCode []byte, language config.Language) (string, error) {
 	if err := b.Box.WriteFile(language.SourceName, SourceCode); err != nil {
 		return "", err
 	}
@@ -85,7 +85,7 @@ func (b *BoxManager) CompileFile(SourceCode []byte, language languages.Language)
 
 // RunSubmission runs a program, following the language conventions
 // filenames contains the names for input and output, used if consoleInput is true
-func (b *BoxManager) RunSubmission(language languages.Language, constraints limits, metaFile string, consoleInput bool) (*box.MetaFile, error) {
+func (b *BoxManager) RunSubmission(language config.Language, constraints limits, metaFile string, consoleInput bool) (*box.MetaFile, error) {
 	if b.Box.Config.EnvToSet == nil {
 		b.Box.Config.EnvToSet = make(map[string]string)
 	}
@@ -177,7 +177,7 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 	}
 	consoleInput := sub.Filename == "stdin"
 
-	lang := languages.Languages[sub.Lang]
+	lang := config.C.Languages[sub.Lang]
 	if err := b.Box.CopyInBox(path.Join(compilePath, fmt.Sprintf("%d.bin", sub.ID)), lang.CompiledName); err != nil {
 		response.Comments = "Couldn't link executable in box"
 		return response, err
@@ -188,7 +188,7 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 		StackLimit:  sub.StackLimit,
 		TimeLimit:   sub.TimeLimit,
 	}
-	meta, err := b.RunSubmission(languages.Languages[sub.Lang], lim, strconv.Itoa(int(sub.ID))+".txt", consoleInput)
+	meta, err := b.RunSubmission(config.C.Languages[sub.Lang], lim, strconv.Itoa(int(sub.ID))+".txt", consoleInput)
 	response.Time = meta.Time
 	response.Memory = int32(meta.CgMem)
 
@@ -238,7 +238,7 @@ func (b *BoxManager) CompileSubmission(c *pb.CompileRequest) (*pb.CompileRespons
 	defer b.compileLock.Unlock()
 
 	defer b.Reset()
-	lang := languages.Languages[c.Lang]
+	lang := config.C.Languages[c.Lang]
 
 	outName := path.Join(compilePath, fmt.Sprintf("%d.bin", c.ID))
 	resp := &pb.CompileResponse{}

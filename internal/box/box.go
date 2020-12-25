@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/KiloProjects/Kilonova/internal/languages"
+	"github.com/KiloProjects/Kilonova/internal/config"
 )
 
 var (
@@ -41,7 +41,7 @@ type Config struct {
 	CgroupMem int32
 
 	// Directories represents the list of mounted directories
-	Directories []languages.Directory
+	Directories []config.Directory
 
 	// Environment
 	InheritEnv   bool
