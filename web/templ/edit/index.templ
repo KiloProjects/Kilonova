@@ -3,67 +3,93 @@
     <a href="/probleme/{{- .Problem.ID -}}">[view]</a>
 	<h1>Editare Problemă</h1>
 
-	<div class="form-group">
-		<input class="form-input" type="text" id="titleChange" value="{{.Problem.Name}}"
-			placeholder="Titlu..."/>
-	</div>
-	<div class="form-group">
-		<button class="btn btn-blue mb-2" onclick="changeTitle()">Editare titlu</button>
-	</div>
-    <script>
-		async function changeTitle() {
-            let title = $("#titleChange").val();
-            console.log(title);
-			if(title === "" || title === undefined) {
-				createToast({
-					status: "error",
-					description: "Empty field"
-				})
-				return
-			}
-			let res = await postCall(`/problem/${problemID}/update/title`, {title})
-			
-			createToast({
-				status: res.status,
-				description: res.data,
-				onclick: () => window.location.assign(`/probleme/${problemID}`)
-			})
-        }
-	</script>
-
-	{{ if (and (not .Problem.ConsoleInput) false) }}
-		<div id="editFilename">
-			<h3>Editare nume teste (NOT IMPLEMENTED YET)</h3>
-			<form id="filenameForm" autocomplete="off">
-				<div class="form-group">
-					<input class="form-control" type="text" id="testname" name="testName" value="{{.Problem.TestName}}" placeholder="Nume teste..." required>
-				</div>
-				<div class="form-group">
-					<button class="btn btn-blue mb-2" type="submit">Editare</button>
-				</div>
-			</form>
+	<div id="editApp" v-cloak>
+		<div v-if="problem">
+			<div class="block my-2">
+				<label>
+					<span class="mr-2 text-xl">Titlu:</span>
+					<input type="text" class="form-input" v-model="problem.name" />
+				</label>
+				<button class="btn btn-blue ml-2" @click="changeTitle">Editare</button>
+			</div>
+			<div class="block my-2">
+				<label>
+					<span class="mr-2 text-xl">Credite:</span>
+					<input type="text" class="form-input" v-model="problem.credits" />
+				</label>
+				<button class="btn btn-blue ml-2" @click="changeCredits">Editare</button>
+			</div>
+			<div class="block my-2">
+				<button class="btn btn-blue" @click="toggleVisibility" v-if="admin">Fă ${problem.visible ? "invizibilă" : "vizibilă"}</button>
+				<button class="btn btn-blue" @click="toggleConsoleInput">Fă intrarea prin ${problem.console_input ? "fișiere" : "consolă"}</button>
+			</div>
+			<div class="block my-2" v-if="!problem.console_input">
+				<label>
+					<span class="mr-2 text-xl">Nume test:</span>
+					<input type="text" class="form-input" v-model="problem.test_name" />
+				</label>
+				<button class="btn btn-blue ml-2" @click="changeTestName">Editare</button>
+			</div>
+			<div class="list-group my-2">
+				<a class="block list-group-item" :href="`/probleme/${problem.id}/edit/enunt`">Editare enunț</a>
+				<a class="block list-group-item" :href="`/probleme/${problem.id}/edit/limite`">Editare limite</a>
+				<a class="block list-group-item" :href="`/probleme/${problem.id}/edit/teste`">Editare teste</a>
+			</div>
 		</div>
-	{{end}}
-    <div class="list-group">
-        <a class="block list-group-item" href="/probleme/{{.Problem.ID}}/edit/enunt">Editare enunț</a>
-        <a class="block list-group-item" href="/probleme/{{.Problem.ID}}/edit/limite">Editare
-            limite</a>
-        <a class="block list-group-item" href="/probleme/{{.Problem.ID}}/edit/teste">Editare teste</a>
-		<button class="list-group-item text-left" id="vButton" onclick="toggleVisiblity()">Fă {{if not .Problem.Visible}}vizibilă{{else}}invizibilă{{end}}</button>
+		<div class="text-4xl mx-auto w-full text-center" v-else>
+			<i class="fas fa-spinner animate-spin"></i> Se încarcă...
+		</div>
 	</div>
 
 	<script>
-		let problemID = {{.Problem.ID}}
-		let visible = {{.Problem.Visible}}
-
-		async function toggleVisiblity() {
-			visible = !visible
-			let res = await postCall(`/problem/${problemID}/update/setVisible`, {visible})
-			apiToast(res)
-			$("#vButton").html(`Fă ${visible ? "invizibilă" : "vizibilă"}`)
+var app = new Vue({
+	el: "#editApp",
+	delimiters: ['${', '}'],
+	data: {
+		problem: null,
+		admin: {{.User.Admin}}
+	},
+	methods: {
+		changeTitle: async function() {
+			if(this.problem == null || this.problem.name === "") {
+				createToast({status: "error", description: "Titlu gol"});
+				return
+			}
+			let res = await postCall(`/problem/${this.problem.id}/update/title`, {title: this.problem.name})
+			apiToast(res);
+		},
+		changeCredits: async function() {
+			let res = await postCall(`/problem/${this.problem.id}/update/credits`, {credits: this.problem.credits})
+			apiToast(res);
+		},
+		changeTestName: async function() {
+			let res = await postCall(`/problem/${this.problem.id}/update/setTestName`, {testName: this.problem.test_name})
+			apiToast(res);
+		},
+		toggleVisibility: async function() {
+			let res = await postCall(`/problem/${this.problem.id}/update/setVisible`, {visible: !this.problem.visible})
+			if(res.status === "success") {
+				this.problem.visible = !this.problem.visible;
+			}
+			apiToast(res);
+		},
+		toggleConsoleInput: async function() {
+			let res = await postCall(`/problem/${this.problem.id}/update/consoleInput`, {isset: !this.problem.console_input})
+			if(res.status === "success") {
+				this.problem.console_input = !this.problem.console_input;
+			}
+			apiToast(res);
 		}
+	},
+	created: async function() {
+		let res = await getCall("/problem/getByID", {id: {{.Problem.ID}} })
+		if(res.status == "error") {
+			apiToast(res);
+			return;
+		}
+		this.problem = res.data;
+	}
+});
 	</script>
-
-
 </div>
 {{template "util/footer" . }}

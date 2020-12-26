@@ -21,7 +21,7 @@
 				<div class="lg:mt-6 lg:pl-4 pl-2 pb-3 font-semibold">
 					<h2 class="text-xl">Informații generale</h2>
 					<p>ID: {{.Problem.ID}}</p>
-					<p>Autor: {{(problemAuthor .Problem).Name}}</p>
+					<p>Uploader: {{(problemAuthor .Problem).Name}}</p>
 					<p>Intrare: {{if .Problem.ConsoleInput}}Consolă{{else}}{{.Problem.TestName}}.in/{{.Problem.TestName}}.out{{end}}</p>
 					<p>Memorie: {{KBtoMB .Problem.MemoryLimit}}MB/{{KBtoMB .Problem.StackLimit}}MB</p>
 					<p>Timp: {{.Problem.TimeLimit}}s</p>
@@ -34,14 +34,19 @@
 					{{end}}
 					</p>
 					{{end}}
+					{{- if .Problem.Credits -}}
+						<p>Credite: {{.Problem.Credits}}</p>
+					{{- end -}}
 					<p><a href="/submissions/?problemid={{.Problem.ID}}">Submisii</a></p>
 				</div>
 				{{ if .LoggedIn }}
 					<div class="h-0 w-full border-t border-gray-200"></div>
-					<div class="mt-2 lg:pl-2 lg:pb-2" id="problemSidebar">
+					<div class="mt-2 lg:pl-2 lg:pb-2" id="problemSidebar" v-cloak>
 						<p class="text-lg px-2">Submisii anterioare</p>
-						
-						<div v-if="subs.length > 0">
+						<div class="mx-auto w-full text-center" v-if="loading">
+							<i class="fas fa-spinner animate-spin"></i> Se încarcă...	
+						</div>
+						<div v-else-if="subs.length > 0">
 							<a class="black-anchor flex justify-between items-center rounded py-1 px-2 hover:bg-gray-200" v-for="sub in subs" :href="'/submissions/' + sub.id">
 								<span>${timeStr(sub.created_at)}</span>
 								<span class="rounded-md px-2 py-1 bg-teal-400 text-white text-sm" v-if="sub.status == 'finished'">${sub.score}</span>
@@ -87,12 +92,14 @@ function makeSubWaiter(id) {
 
 var app = new Vue({
 	el: "#problemSidebar",
+	delimiters: ['${', '}'],
 	data: {
 		userid: {{.User.ID}},
 		problemid: {{.Problem.ID}},
 		subs: [],
 		limit: 10,
 		limited: false,
+		loading: true,
 		total: -1,
 	},
 	methods: {
@@ -122,10 +129,10 @@ var app = new Vue({
 			return dayjs(s).format('DD/MM/YYYY HH:mm')
 		}
 	},
-	created: function() {
-		this.poll()
-	},
-	delimiters: ['${', '}']
+	created: async function() {
+		await this.poll()
+		this.loading = false
+	}
 });
 </script>
 	

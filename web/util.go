@@ -61,13 +61,18 @@ type testDataType struct {
 }
 
 func (rt *Web) getFullTestData(test *db.Test) testDataType {
-	in, out, err := rt.dm.Test(test.ProblemID, test.VisibleID)
+	in, err := rt.dm.TestInput(test.ID)
 	if err != nil {
 		return testDataType{In: "err", Out: "err"}
 	}
-
 	defer in.Close()
+
+	out, err := rt.dm.TestOutput(test.ID)
+	if err != nil {
+		return testDataType{In: "err", Out: "err"}
+	}
 	defer out.Close()
+
 	inData, err := io.ReadAll(in)
 	if err != nil {
 		inData = []byte("err")
