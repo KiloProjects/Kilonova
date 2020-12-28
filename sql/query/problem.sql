@@ -48,17 +48,22 @@ UPDATE problems
 SET stack_limit = $2
 WHERE id = $1;
 
--- name: SetProblemVisibility :exec
+-- name: SetPbCredits :exec
+UPDATE problems
+SET credits = $2
+WHERE id = $1;
+
+-- name: SetPbVisibility :exec
 UPDATE problems 
 SET visible = $2
 WHERE id = $1;
 
--- name: SetProblemName :exec
+-- name: SetPbName :exec
 UPDATE problems 
 SET name = $2 
 WHERE id = $1;
 
--- name: SetProblemDescription :exec
+-- name: SetPbDescription :exec
 UPDATE problems 
 SET description = $2
 WHERE id = $1;

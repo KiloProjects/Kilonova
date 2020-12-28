@@ -13,7 +13,7 @@ INSERT INTO problems (
 ) VALUES (
 	$1, $2, $3, $4, $5, $6, $7
 )
-RETURNING id, created_at, name, description, test_name, author_id, time_limit, memory_limit, stack_limit, source_size, console_input, visible
+RETURNING id, created_at, name, description, test_name, author_id, time_limit, memory_limit, stack_limit, source_size, console_input, visible, credits
 `
 
 type CreateProblemParams struct {
@@ -50,12 +50,13 @@ func (q *Queries) CreateProblem(ctx context.Context, arg CreateProblemParams) (P
 		&i.SourceSize,
 		&i.ConsoleInput,
 		&i.Visible,
+		&i.Credits,
 	)
 	return i, err
 }
 
 const problem = `-- name: Problem :one
-SELECT id, created_at, name, description, test_name, author_id, time_limit, memory_limit, stack_limit, source_size, console_input, visible FROM problems
+SELECT id, created_at, name, description, test_name, author_id, time_limit, memory_limit, stack_limit, source_size, console_input, visible, credits FROM problems
 WHERE id = $1
 `
 
@@ -75,12 +76,13 @@ func (q *Queries) Problem(ctx context.Context, id int64) (Problem, error) {
 		&i.SourceSize,
 		&i.ConsoleInput,
 		&i.Visible,
+		&i.Credits,
 	)
 	return i, err
 }
 
 const problemByName = `-- name: ProblemByName :one
-SELECT id, created_at, name, description, test_name, author_id, time_limit, memory_limit, stack_limit, source_size, console_input, visible FROM problems
+SELECT id, created_at, name, description, test_name, author_id, time_limit, memory_limit, stack_limit, source_size, console_input, visible, credits FROM problems
 WHERE lower(name) = lower($1)
 `
 
@@ -100,6 +102,7 @@ func (q *Queries) ProblemByName(ctx context.Context, name string) (Problem, erro
 		&i.SourceSize,
 		&i.ConsoleInput,
 		&i.Visible,
+		&i.Credits,
 	)
 	return i, err
 }
@@ -141,7 +144,7 @@ func (q *Queries) ProblemTests(ctx context.Context, problemID int64) ([]Test, er
 }
 
 const problems = `-- name: Problems :many
-SELECT id, created_at, name, description, test_name, author_id, time_limit, memory_limit, stack_limit, source_size, console_input, visible FROM problems
+SELECT id, created_at, name, description, test_name, author_id, time_limit, memory_limit, stack_limit, source_size, console_input, visible, credits FROM problems
 ORDER BY id
 `
 
@@ -167,6 +170,7 @@ func (q *Queries) Problems(ctx context.Context) ([]Problem, error) {
 			&i.SourceSize,
 			&i.ConsoleInput,
 			&i.Visible,
+			&i.Credits,
 		); err != nil {
 			return nil, err
 		}
@@ -248,51 +252,67 @@ func (q *Queries) SetMemoryLimit(ctx context.Context, arg SetMemoryLimitParams) 
 	return err
 }
 
-const setProblemDescription = `-- name: SetProblemDescription :exec
+const setPbCredits = `-- name: SetPbCredits :exec
+UPDATE problems
+SET credits = $2
+WHERE id = $1
+`
+
+type SetPbCreditsParams struct {
+	ID      int64  `json:"id"`
+	Credits string `json:"credits"`
+}
+
+func (q *Queries) SetPbCredits(ctx context.Context, arg SetPbCreditsParams) error {
+	_, err := q.db.ExecContext(ctx, setPbCredits, arg.ID, arg.Credits)
+	return err
+}
+
+const setPbDescription = `-- name: SetPbDescription :exec
 UPDATE problems 
 SET description = $2
 WHERE id = $1
 `
 
-type SetProblemDescriptionParams struct {
+type SetPbDescriptionParams struct {
 	ID          int64  `json:"id"`
 	Description string `json:"description"`
 }
 
-func (q *Queries) SetProblemDescription(ctx context.Context, arg SetProblemDescriptionParams) error {
-	_, err := q.db.ExecContext(ctx, setProblemDescription, arg.ID, arg.Description)
+func (q *Queries) SetPbDescription(ctx context.Context, arg SetPbDescriptionParams) error {
+	_, err := q.db.ExecContext(ctx, setPbDescription, arg.ID, arg.Description)
 	return err
 }
 
-const setProblemName = `-- name: SetProblemName :exec
+const setPbName = `-- name: SetPbName :exec
 UPDATE problems 
 SET name = $2 
 WHERE id = $1
 `
 
-type SetProblemNameParams struct {
+type SetPbNameParams struct {
 	ID   int64  `json:"id"`
 	Name string `json:"name"`
 }
 
-func (q *Queries) SetProblemName(ctx context.Context, arg SetProblemNameParams) error {
-	_, err := q.db.ExecContext(ctx, setProblemName, arg.ID, arg.Name)
+func (q *Queries) SetPbName(ctx context.Context, arg SetPbNameParams) error {
+	_, err := q.db.ExecContext(ctx, setPbName, arg.ID, arg.Name)
 	return err
 }
 
-const setProblemVisibility = `-- name: SetProblemVisibility :exec
+const setPbVisibility = `-- name: SetPbVisibility :exec
 UPDATE problems 
 SET visible = $2
 WHERE id = $1
 `
 
-type SetProblemVisibilityParams struct {
+type SetPbVisibilityParams struct {
 	ID      int64 `json:"id"`
 	Visible bool  `json:"visible"`
 }
 
-func (q *Queries) SetProblemVisibility(ctx context.Context, arg SetProblemVisibilityParams) error {
-	_, err := q.db.ExecContext(ctx, setProblemVisibility, arg.ID, arg.Visible)
+func (q *Queries) SetPbVisibility(ctx context.Context, arg SetPbVisibilityParams) error {
+	_, err := q.db.ExecContext(ctx, setPbVisibility, arg.ID, arg.Visible)
 	return err
 }
 
@@ -345,7 +365,7 @@ func (q *Queries) SetTimeLimit(ctx context.Context, arg SetTimeLimitParams) erro
 }
 
 const visibleProblems = `-- name: VisibleProblems :many
-SELECT id, created_at, name, description, test_name, author_id, time_limit, memory_limit, stack_limit, source_size, console_input, visible FROM problems 
+SELECT id, created_at, name, description, test_name, author_id, time_limit, memory_limit, stack_limit, source_size, console_input, visible, credits FROM problems 
 WHERE visible = true OR author_id = $1
 ORDER BY id
 `
@@ -372,6 +392,7 @@ func (q *Queries) VisibleProblems(ctx context.Context, authorID int64) ([]Proble
 			&i.SourceSize,
 			&i.ConsoleInput,
 			&i.Visible,
+			&i.Credits,
 		); err != nil {
 			return nil, err
 		}

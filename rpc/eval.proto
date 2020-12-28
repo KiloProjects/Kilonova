@@ -48,8 +48,6 @@ message Test {
 	string lang = 8; // language
 	
 	// These are used by the data manager to get a test
-	// When I switch to just-test-ID categorization (instead of problemid + visible id), this will change
-	int64 ProblemID = 9; // Problem ID
 	int64 TestID = 10; // Test VID 
 }
 

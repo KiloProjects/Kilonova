@@ -47,11 +47,24 @@ func (s *API) maxScoreSelf(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) updateTitle(w http.ResponseWriter, r *http.Request) {
 	val := r.FormValue("title")
+	if val == "" {
+		errorData(w, "Title must not be empty", 400)
+		return
+	}
 	if err := util.Problem(r).SetName(val); err != nil {
 		errorData(w, err, 500)
 		return
 	}
 	returnData(w, "Updated title")
+}
+
+func (s *API) updateCredits(w http.ResponseWriter, r *http.Request) {
+	val := r.FormValue("credits")
+	if err := util.Problem(r).SetCredits(val); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	returnData(w, "Updated credits")
 }
 
 func (s *API) updateDescription(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +77,7 @@ func (s *API) updateDescription(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
 	var args struct {
 		Input  string
 		Output string
@@ -72,7 +86,11 @@ func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	if err := s.manager.SaveTest(util.ID(r, util.PbID), util.ID(r, util.TestID), bytes.NewBufferString(args.Input), bytes.NewBufferString(args.Output)); err != nil {
+	if err := s.manager.SaveTestInput(util.Test(r).ID, bytes.NewBufferString(args.Input)); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	if err := s.manager.SaveTestOutput(util.Test(r).ID, bytes.NewBufferString(args.Output)); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -151,7 +169,7 @@ func (s *API) setInputType(w http.ResponseWriter, r *http.Request) {
 func (s *API) setTestName(w http.ResponseWriter, r *http.Request) {
 	val := r.FormValue("testName")
 	if val == "" {
-		errorData(w, "You must set the `testName` form value", http.StatusBadRequest)
+		errorData(w, "testName is empty", http.StatusBadRequest)
 		return
 	}
 
@@ -218,20 +236,20 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	pbID := util.ID(r, util.PbID)
-	if _, err := s.db.CreateTest(r.Context(), pbID, visibleID, int32(score)); err != nil {
+	test, err := s.db.CreateTest(r.Context(), util.Problem(r).ID, visibleID, int32(score))
+	if err != nil {
 		errorData(w, err, 500)
 		return
 	}
 
-	if err := s.manager.SaveTest(
-		pbID,
-		visibleID,
-		bytes.NewBufferString(r.FormValue("input")),
-		bytes.NewBufferString(r.FormValue("output")),
-	); err != nil {
-		log.Println("Couldn't create test", err)
-		errorData(w, "Couldn't create test", 500)
+	if err := s.manager.SaveTestInput(test.ID, bytes.NewBufferString(r.FormValue("input"))); err != nil {
+		log.Println("Couldn't create test input", err)
+		errorData(w, "Couldn't create test input", 500)
+		return
+	}
+	if err := s.manager.SaveTestOutput(test.ID, bytes.NewBufferString(r.FormValue("output"))); err != nil {
+		log.Println("Couldn't create test output", err)
+		errorData(w, "Couldn't create test output", 500)
 		return
 	}
 	returnData(w, "Created test")
@@ -357,8 +375,8 @@ func (s *API) getProblemByID(w http.ResponseWriter, r *http.Request) {
 // /problem/{id}/get/testData
 // URL params:
 //  - id - the test id
-//  - noIn - if not null, the input file won't be sent
-//  - noOut - if not null, the output file won't be sent
+//  - noIn - if not empty, the input file won't be sent
+//  - noOut - if not empty, the output file won't be sent
 func (s *API) getTestData(w http.ResponseWriter, r *http.Request) {
 	sid := r.FormValue("id")
 	if sid == "" {
@@ -371,33 +389,46 @@ func (s *API) getTestData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in, out, err := s.manager.Test(util.ID(r, util.PbID), id)
-	if err != nil {
-		errorData(w, err, 500)
+	if _, err := s.db.Test(r.Context(), util.Problem(r).ID, id); err != nil {
+		errorData(w, "Test doesn't exist", 400)
 		return
 	}
-	defer in.Close()
-	defer out.Close()
 
 	var ret struct {
 		In  string `json:"in"`
 		Out string `json:"out"`
 	}
 	if r.FormValue("noIn") == "" {
-		in, err := io.ReadAll(in)
+		in, err := s.manager.TestInput(id)
 		if err != nil {
 			errorData(w, err, 500)
 			return
 		}
-		ret.In = string(in)
+
+		inText, err := io.ReadAll(in)
+		if err != nil {
+			errorData(w, err, 500)
+			return
+		}
+
+		in.Close()
+		ret.In = string(inText)
 	}
 	if r.FormValue("noOut") == "" {
-		out, err := io.ReadAll(out)
+		out, err := s.manager.TestOutput(id)
 		if err != nil {
 			errorData(w, err, 500)
 			return
 		}
-		ret.Out = string(out)
+
+		outText, err := io.ReadAll(out)
+		if err != nil {
+			errorData(w, err, 500)
+			return
+		}
+
+		out.Close()
+		ret.Out = string(outText)
 	}
 	returnData(w, ret)
 }

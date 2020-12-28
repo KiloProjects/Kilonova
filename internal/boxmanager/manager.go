@@ -164,7 +164,7 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 
 	response := &pb.TestResponse{TID: sub.TID}
 
-	in, err := b.dm.TestInput(sub.ProblemID, sub.TestID)
+	in, err := b.dm.TestInput(sub.TestID)
 	if err != nil {
 		return response, err
 	}

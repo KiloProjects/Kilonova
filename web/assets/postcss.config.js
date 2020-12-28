@@ -8,10 +8,10 @@ module.exports = {
 	  	require("tailwindcss"),
 		require("autoprefixer"),
 		process.env.NODE_ENV === 'production' ? cssnano({preset: "default"}) : null,
-	  	purgecss({
+	  	process.env.NODE_ENV === 'production' ? purgecss({
 			content: glob.sync('../templ/**/*', {nodir: true}),
 			defaultExtractor: content => content.match(/[\w-/:]+(?<!:)/g) || []
-		})
+		}) : null
   ]
 }
 

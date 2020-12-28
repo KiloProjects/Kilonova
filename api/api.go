@@ -65,7 +65,8 @@ func (s *API) Router() chi.Router {
 
 				r.Post("/title", s.updateTitle)
 				r.Post("/description", s.updateDescription)
-				r.Post("/setConsoleInput", s.setInputType)
+				r.Post("/consoleInput", s.setInputType)
+				r.Post("/credits", s.updateCredits)
 				r.Post("/limits", s.setLimits)
 
 				r.Post("/addTest", s.createTest)

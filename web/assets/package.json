@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Stylesheet for Kilonova",
   "scripts": {
-    "build": "postcss tailwind.css -o ../../static/styles.css"
+    "build": "postcss tailwind.css -o ../../static/styles.css",
+	"prod": "NODE_ENV=production postcss tailwind.css -o ../../static/styles.css"
   },
   "license": "",
   "private": true,

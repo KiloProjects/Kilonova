@@ -23,7 +23,5 @@ func New(db *db.DB, dm datamanager.Manager, rclient *rclient.RClient, debug bool
 		return nil, err
 	}
 
-	email.SendEmail("alexv@siluta.ro", "Test Subject", "Dacă ai primit asta, ești boss de boss")
-
 	return &Kilonova{db, dm, rclient, debug, email}, nil
 }

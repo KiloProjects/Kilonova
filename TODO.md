@@ -37,26 +37,32 @@ Additional reading I should do for a better platform:
 		- [ ] Verificare user
 		- [ ] Mail updates
 		- [ ] Other stuff
-	- [ ] Move tests to a single directory, based on the test ID, not problem + visible ID
-		- This will break prod
+		- [ ] Broadcast din admin panel
+	- [x] Permite schimbarea tipului de intrare din interfața problemei
+	- [ ] Moderation tools
+		- [ ] Nuke accounts
+		- [ ] Ștergere submisie
+	- [x] Move tests to a single directory, based on the test ID, not problem + visible ID
+		- [x] Migration tool
+		- [ ] După ce pun pe server, șterge migrator tool
 	- [ ] Serivice-ificare:
 		- [ ] Împarte în mai multe services (Core/API/Web/Eval/Eval Worker)
 		- [ ] Separare main core de inputs (API/Web)
 		- [ ] Eval-ul se conectează la core (și eval worker la eval), nu invers
-	- [ ] Reduce nr de TODOs din nou
 	- [ ] Security Improvements:
 		- [ ] Anti-CSRF protection
 		- [ ] Sanitize all user inputs
-	- [ ] Caching
-	- [ ] Multi-eval support
-	- [ ] Verificator custom
-	- [ ] Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
 	- [ ] CDN
 		- [ ] Pune toate imaginile găsite pe CDN și redirecționează-le acolo
 		- [ ] Adaugă redirect în stil steam 
 			- monitorizează pe ce dai click 
 			- ? avertizează dacă un domeniu nu e pe whitelist
 		- [ ] Mutare CSS pe CDN
+	- [ ] Caching
+	- [ ] Multi-eval support
+	- [ ] Verificator custom
+	- [ ] Reduce nr de TODOs din nou
+	- [ ] Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
 	- [ ] Phase out sqlc în favoarea sqlx (să nu mai depindem așa mult de code generation)
 	- [ ] Site mai drăguț:
 		- [ ] Dark theme

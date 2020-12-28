@@ -1,6 +1,7 @@
 package datamanager
 
 import (
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -18,11 +19,11 @@ type StorageManager struct {
 
 // Manager represents an interface for the manager
 type Manager interface {
-	TestInput(pbID int64, testID int64) (io.ReadCloser, error)
-	TestOutput(pbID int64, testID int64) (io.ReadCloser, error)
-	Test(pbID int64, testID int64) (io.ReadCloser, io.ReadCloser, error)
+	TestInput(testID int64) (io.ReadCloser, error)
+	TestOutput(testID int64) (io.ReadCloser, error)
 
-	SaveTest(pbID int64, testID int64, input, output io.Reader) error
+	SaveTestInput(testID int64, input io.Reader) error
+	SaveTestOutput(testID int64, output io.Reader) error
 
 	SubtestWriter(subtest int64) (io.WriteCloser, error)
 	SubtestReader(subtest int64) (io.ReadCloser, error)
@@ -36,48 +37,30 @@ type Session struct {
 	Expires time.Time
 }
 
-func (m *StorageManager) TestInput(pbID int64, testID int64) (io.ReadCloser, error) {
+// OldTestInput is used just for the migration tool, TODO: Delete in v0.6.2
+func (m *StorageManager) OldTestInput(pbID int64, testID int64) (io.ReadCloser, error) {
 	return os.Open(path.Join(m.RootPath, "problems", strconv.FormatInt(pbID, 10), "input", strconv.FormatInt(testID, 10)+".txt"))
 }
-func (m *StorageManager) TestOutput(pbID int64, testID int64) (io.ReadCloser, error) {
+
+// OldTestOutput is used just for the migration tool, TODO: Delete in v0.6.2
+func (m *StorageManager) OldTestOutput(pbID int64, testID int64) (io.ReadCloser, error) {
 	return os.Open(path.Join(m.RootPath, "problems", strconv.FormatInt(pbID, 10), "output", strconv.FormatInt(testID, 10)+".txt"))
 }
 
-// Test returns a test for the specified problem
-func (m *StorageManager) Test(pbID int64, testID int64) (io.ReadCloser, io.ReadCloser, error) {
-	input, err := m.TestInput(pbID, testID)
-	if err != nil {
-		return nil, nil, err
-	}
-	output, err := m.TestOutput(pbID, testID)
-	if err != nil {
-		input.Close()
-		return nil, nil, err
-	}
-	return input, output, err
+func (m *StorageManager) TestInput(testID int64) (io.ReadCloser, error) {
+	return os.Open(path.Join(m.RootPath, "tests", strconv.FormatInt(testID, 10)+".in"))
 }
 
-// SaveTest saves an (input, output) pair of strings to disk to be used later as tests
-func (m *StorageManager) SaveTest(pbID int64, testID int64, input, output io.Reader) error {
-	problem := strconv.FormatInt(pbID, 10)
-	test := strconv.FormatInt(testID, 10)
-	if err := os.MkdirAll(path.Join(m.RootPath, "problems", problem, "input"), 0777); err != nil {
-		return err
-	}
-	if err := os.MkdirAll(path.Join(m.RootPath, "problems", problem, "output"), 0777); err != nil {
-		return err
-	}
-	if err := writeFile(
-		path.Join(m.RootPath, "problems", problem, "input", test+".txt"),
-		input, 0777); err != nil {
-		return err
-	}
-	if err := writeFile(
-		path.Join(m.RootPath, "problems", problem, "output", test+".txt"),
-		output, 0777); err != nil {
-		return err
-	}
-	return nil
+func (m *StorageManager) TestOutput(testID int64) (io.ReadCloser, error) {
+	return os.Open(path.Join(m.RootPath, "tests", strconv.FormatInt(testID, 10)+".out"))
+}
+
+func (m *StorageManager) SaveTestInput(testID int64, input io.Reader) error {
+	return writeFile(path.Join(m.RootPath, "tests", fmt.Sprintf("%d.in", testID)), input, 0777)
+}
+
+func (m *StorageManager) SaveTestOutput(testID int64, output io.Reader) error {
+	return writeFile(path.Join(m.RootPath, "tests", fmt.Sprintf("%d.out", testID)), output, 0777)
 }
 
 // SubtestWriter should be used by the eval server
@@ -100,7 +83,7 @@ func NewManager(p string) (*StorageManager, error) {
 		return nil, err
 	}
 
-	if err := os.MkdirAll(path.Join(p, "problems"), 0777); err != nil {
+	if err := os.MkdirAll(path.Join(p, "tests"), 0777); err != nil {
 		return nil, err
 	}
 

@@ -28,6 +28,7 @@ type Problem struct {
 	SourceSize   int32     `json:"source_size"`
 	ConsoleInput bool      `json:"console_input"`
 	Visible      bool      `json:"visible"`
+	Credits      string    `json:"credits"`
 }
 
 func (p *Problem) CreateTest(vid int64, score int32) (*Test, error) {
@@ -41,7 +42,7 @@ func (p *Problem) CreateTest(vid int64, score int32) (*Test, error) {
 }
 
 func (p *Problem) SetName(name string) error {
-	if err := p.db.raw.SetProblemName(p.ctx, rawdb.SetProblemNameParams{ID: p.ID, Name: name}); err != nil {
+	if err := p.db.raw.SetPbName(p.ctx, rawdb.SetPbNameParams{ID: p.ID, Name: name}); err != nil {
 		return err
 	}
 
@@ -50,7 +51,7 @@ func (p *Problem) SetName(name string) error {
 }
 
 func (p *Problem) SetDescription(desc string) error {
-	if err := p.db.raw.SetProblemDescription(p.ctx, rawdb.SetProblemDescriptionParams{ID: p.ID, Description: desc}); err != nil {
+	if err := p.db.raw.SetPbDescription(p.ctx, rawdb.SetPbDescriptionParams{ID: p.ID, Description: desc}); err != nil {
 		return err
 	}
 
@@ -59,7 +60,7 @@ func (p *Problem) SetDescription(desc string) error {
 }
 
 func (p *Problem) SetVisibility(visible bool) error {
-	if err := p.db.raw.SetProblemVisibility(p.ctx, rawdb.SetProblemVisibilityParams{ID: p.ID, Visible: visible}); err != nil {
+	if err := p.db.raw.SetPbVisibility(p.ctx, rawdb.SetPbVisibilityParams{ID: p.ID, Visible: visible}); err != nil {
 		return err
 	}
 
@@ -93,6 +94,14 @@ func (p *Problem) SetLimits(memoryLimit, stackLimit int32, timeLimit float64) er
 	p.MemoryLimit = memoryLimit
 	p.StackLimit = stackLimit
 	p.TimeLimit = timeLimit
+	return nil
+}
+
+func (p *Problem) SetCredits(credits string) error {
+	if err := p.db.raw.SetPbCredits(p.ctx, rawdb.SetPbCreditsParams{ID: p.ID, Credits: credits}); err != nil {
+		return err
+	}
+	p.Credits = credits
 	return nil
 }
 
@@ -233,5 +242,6 @@ func (db *DB) pbFromRaw(ctx context.Context, pb rawdb.Problem) *Problem {
 		SourceSize:   pb.SourceSize,
 		ConsoleInput: pb.ConsoleInput,
 		Visible:      pb.Visible,
+		Credits:      pb.Credits,
 	}
 }

@@ -147,19 +147,19 @@ func (kn *Kilonova) ProcessZipTestArchive(pb *db.Problem, ar *zip.Reader) error 
 	}
 
 	for testID, v := range ctx.tests {
-		if _, err := pb.CreateTest(testID, int32(v.Score)); err != nil {
+		test, err := pb.CreateTest(testID, int32(v.Score))
+		if err != nil {
 			log.Println(err)
 			return err
 		}
 
-		if err := kn.DM.SaveTest(
-			pb.ID,
-			testID,
-			v.InFile,
-			v.OutFile,
-		); err != nil {
-			log.Println("Couldn't create test", err)
-			return errors.New("Couldn't create test")
+		if err := kn.DM.SaveTestInput(test.ID, v.InFile); err != nil {
+			log.Println("Couldn't create test input", err)
+			return fmt.Errorf("Couldn't create test input: %w", err)
+		}
+		if err := kn.DM.SaveTestOutput(test.ID, v.OutFile); err != nil {
+			log.Println("Couldn't create test output", err)
+			return fmt.Errorf("Couldn't create test output: %w", err)
 		}
 	}
 

@@ -41,6 +41,7 @@ type Problem struct {
 	SourceSize   int32     `json:"source_size"`
 	ConsoleInput bool      `json:"console_input"`
 	Visible      bool      `json:"visible"`
+	Credits      string    `json:"credits"`
 }
 
 type Submission struct {

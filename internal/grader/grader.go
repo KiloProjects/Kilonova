@@ -129,8 +129,7 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 					MemoryLimit: int32(problem.MemoryLimit),
 					TimeLimit:   problem.TimeLimit,
 					Lang:        t.Language,
-					ProblemID:   problem.ID,
-					TestID:      pbTest.VisibleID,
+					TestID:      pbTest.ID,
 				}
 				go func() {
 					defer wg.Done()
@@ -151,7 +150,7 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 
 					if resp.Comments == "" {
 						// TODO: FINISH MOVE TO FILE
-						out, err := h.dm.TestOutput(t.ProblemID, pbTest.VisibleID)
+						out, err := h.dm.TestOutput(pbTest.ID)
 						if err != nil {
 							log.Println("Error during test getting (2):", err)
 							return
