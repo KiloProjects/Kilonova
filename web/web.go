@@ -18,7 +18,6 @@ import (
 	"github.com/KiloProjects/Kilonova/internal/logic"
 	"github.com/KiloProjects/Kilonova/internal/util"
 	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
 	"github.com/markbates/pkger"
 	"github.com/tdewolff/minify/v2"
 )
@@ -109,7 +108,6 @@ func (rt *Web) notFound(w http.ResponseWriter, r *http.Request) {
 // TODO: Split routes in functions
 func (rt *Web) Router() chi.Router {
 	r := chi.NewRouter()
-	r.Use(middleware.StripSlashes)
 
 	templates = rt.newTemplate()
 
@@ -185,21 +183,23 @@ func (rt *Web) Router() chi.Router {
 				templ.IsCUser = true
 				rt.build(w, r, "profile", templ)
 			})
-			r.Get("/{user}", func(w http.ResponseWriter, r *http.Request) {
-				user, err := rt.kn.DB.UserByName(r.Context(), chi.URLParam(r, "user"))
-				if err != nil {
-					if errors.Is(err, sql.ErrNoRows) {
-						rt.status(w, r, 404, "")
+			r.Route("/{user}", func(r chi.Router) {
+				r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+					user, err := rt.kn.DB.UserByName(r.Context(), chi.URLParam(r, "user"))
+					if err != nil {
+						if errors.Is(err, sql.ErrNoRows) {
+							rt.status(w, r, 404, "")
+							return
+						}
+						fmt.Println(err)
+						rt.status(w, r, 500, "")
 						return
 					}
-					fmt.Println(err)
-					rt.status(w, r, 500, "")
-					return
-				}
 
-				templ := rt.hydrateTemplate(r, fmt.Sprintf("Profil %s", user.Name))
-				templ.ContentUser = user
-				rt.build(w, r, "profile", templ)
+					templ := rt.hydrateTemplate(r, fmt.Sprintf("Profil %s", user.Name))
+					templ.ContentUser = user
+					rt.build(w, r, "profile", templ)
+				})
 			})
 		})
 

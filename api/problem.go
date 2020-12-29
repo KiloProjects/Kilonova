@@ -275,7 +275,7 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 	// TODO: Do this the right way (low priority)
 	s.testArchiveLock.Lock()
 	defer s.testArchiveLock.Unlock()
-	r.ParseMultipartForm(100 * 1024 * 1024) // 100MB, I should document this hard limit sometime TODO (low priority)
+	r.ParseMultipartForm(100 * 1024 * 1024)
 
 	if r.MultipartForm == nil || r.MultipartForm.File == nil {
 		errorData(w, "Missing archive", 400)

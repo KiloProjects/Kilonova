@@ -6,20 +6,20 @@
 
     <form id="limits">
 		<label class="block my-2">
-			<span class="mr-2 text-xl">Limită de memorie:</span>
-			<input type="number" class="inline-block rounded-lg border border-gray-300 px-2 py-2" id="memoryTotal" placeholder="Limită de memorie (total)"
+			<span class="form-label">Limită de memorie:</span>
+			<input type="number" class="form-input" id="memoryTotal" placeholder="Limită de memorie (total)"
 				min="0" step="128" max="131072" value="{{- .Problem.MemoryLimit -}}">
 			<span class="ml-1 text-xl">KB</span>
 		</label>
 		<label class="block my-2">
-			<span class="mr-2 text-xl">Limită de stack:</span>
-			<input type="number" class="inline-block rounded-lg border border-gray-300 px-2 py-2" id="memoryStack" placeholder="Limită de memorie (stack)"
+			<span class="form-label">Limită de stack:</span>
+			<input type="number" class="form-input" id="memoryStack" placeholder="Limită de memorie (stack)"
 				min="0" step="128" max="131072" value="{{- .Problem.StackLimit -}}">
 			<span class="ml-1 text-xl">KB</span>
 		</label>
         <label class="block my-2">
-            <span class="mr-2 text-xl">Limită de timp</span>
-			<input type="number" class="inline-block rounded-lg border border-gray-300 px-2 py-2" id="timeLimit" placeholder="Limită de timp..." min="0"
+            <span class="form-label">Limită de timp:</span>
+			<input type="number" class="form-input" id="timeLimit" placeholder="Limită de timp..." min="0"
 				step="0.1" value="{{- .Problem.TimeLimit -}}">
 			<span class="ml-1 text-xl">secunde</span>
         </label>

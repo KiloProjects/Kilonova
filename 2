@@ -5,7 +5,7 @@
 	<h1 class="text-4xl mb-2">Top 💯</h1>
 	
 	{{ with .Top100 }}
-		<table class="kn-table">
+		<table class="table-fixed w-full border-2">
 			<thead>
 				<tr>
 					<th class="w-1/12 py-4" scope="col">Nr.</th>
@@ -15,13 +15,13 @@
 			</thead>
 			<tbody>
 				{{ range $i, $el := . }}
-					<tr class="kn-table-row">
+					<tr class="border-t">
 						<th class="py-2" scope="row">{{$i}}</th>
 						<th class="py-2">
 							<div>
 								<a class="inline-flex items-center align-middle" href="/profile/{{$el.User.Name}}">
-									<img class="flex-none rounded" src="/api/user/getGravatar?name={{$el.User.Name}}&s=32" width="32" height="32" alt="Avatar" />
-									<span class="flex-1 ml-2">{{$el.User.Name}}</span>
+									<img class="flex-none rounded" src="/api/user/getGravatar?name={{$el.Name}}&s=32" width="32" height="32" alt="Avatar" />
+									<span class="flex-1 ml-2">{{$el.Name}}</span>
 								</a>
 							</div>
 						</th>

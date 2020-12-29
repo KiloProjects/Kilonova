@@ -4,15 +4,15 @@
 	<h1 class="mb-2">Autentificare</h1>
 	<form id="loginForm">
 		<label class="block mb-2">
-			<span class="text-xl text-gray-700">Username</span>
+			<span class="form-label">Username</span>
 			<input class="form-input w-full" type="text" id="name" name="username" />
 		</label>
 		<label class="block mb-2">
-			<span class="text-xl text-gray-700">Parolă</span>
+			<span class="form-label">Parolă</span>
 			<input class="form-input w-full" type="password" id="pwd" name="password" />
 		</label>
 		<button type="submit" class="block btn btn-blue">Logare</button>
-		<small class="text-gray-600">N-ai cont? <a href="/signup">înregistrează-te</a></small>
+		<small class="text-gray-600 dark:text-gray-300">N-ai cont? <a href="/signup">înregistrează-te</a></small>
 	</form>
 	
 	<script>
@@ -30,6 +30,7 @@
 				})
 				return
 			}
+			Cookies.set("kn-sessionid", res.data)
 			window.location.replace("/")
 		})
 	</script>

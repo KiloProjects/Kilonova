@@ -64,9 +64,7 @@ Additional reading I should do for a better platform:
 	- [ ] Reduce nr de TODOs din nou
 	- [ ] Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
 	- [ ] Phase out sqlc în favoarea sqlx (să nu mai depindem așa mult de code generation)
-	- [ ] Site mai drăguț:
-		- [ ] Dark theme
-		- [ ] More themes
+	- [x] Dark theme
 	- [ ] Versiune engleză
 		- [ ] Cumva facem asta
 		- [ ] Instrumente de translation:

@@ -4,11 +4,11 @@
 	<h1> Preferințele Profilului </h1>
 	<h2> Actualizare Bio </h2>
 	<form id="bioUpdateForm">
-		<textarea id="newBio" class="form-textarea w-full" autocapitalize="sentences" autocomplete="off" maxlength="120" placeholder="Bio...">{{.User.Bio}}</textarea>
-		<button class="form-group btn btn-blue" type="submit">Actualizare</button>
+		<textarea id="newBio" class="form-input w-full mb-2" autocapitalize="sentences" autocomplete="off" maxlength="120" placeholder="Bio...">{{.User.Bio}}</textarea>
+		<button class="btn btn-blue" type="submit">Actualizare</button>
 	</form>
 
-	<h2> Vizibilitate </h2>
+	<h2 class="mt-4"> Vizibilitate </h2>
 	<button id="vButton" class="btn btn-blue mb-2 text-semibold text-lg" onclick="toggleVisibility()"><i class="fas fa-share-square mr-2"></i> Fă submisiile implicit {{if .User.DefaultVisible}}invizibile{{else}}vizibile{{end}}</button>
 
 	<div>TODO: password change form</div>

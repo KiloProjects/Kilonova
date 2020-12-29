@@ -3,23 +3,23 @@
 	<h1 class="mb-2">Înregistrare</h1>
 	<form id="signupForm">
 		<label class="block mb-2">
-			<span class="text-xl text-gray-700">E-mail</span>
+			<span class="form-select">E-mail</span>
 			<input class="form-input w-full" type="email" id="email" name="email" autocomplete="email" required />
 		</label>
 		<label class="block mb-2">
-			<span class="text-xl text-gray-700">Username</span>
+			<span class="form-select">Username</span>
 			<input class="form-input w-full" type="text" id="name" name="username" autocomplete="username" required />
 		</label>
 		<label class="block mb-2">
-			<span class="text-xl text-gray-700">Parolă</span>
+			<span class="form-select">Parolă</span>
 			<input class="form-input w-full" type="password" id="pwd" name="password" autocomplete="new-password" required />
 		</label>
 		<label class="block mb-2">
-			<span class="text-xl text-gray-700">Verificare Parolă</span>
+			<span class="form-select">Verificare Parolă</span>
 			<input class="form-input w-full" type="password" id="pwd_check" name="pwd_check" autocomplete="new-password" required />
 		</label>
 		<button type="submit" class="block btn btn-blue">Înregistrare</button>
-		<small class="text-gray-400"> Ai deja cont? <a href="/login">Loghează-te</a></small>
+		<small class="text-gray-500 dark:text-gray-300"> Ai deja cont? <a href="/login">Loghează-te</a></small>
 	</form>
 
 	<script>
@@ -55,6 +55,7 @@
 				})
 				return
 			}
+			Cookies.set("kn-sessionid", res.data);
 			window.location.replace("/");
 		});
 	</script>

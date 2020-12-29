@@ -7,26 +7,26 @@
 		<div v-if="problem">
 			<div class="block my-2">
 				<label>
-					<span class="mr-2 text-xl">Titlu:</span>
-					<input type="text" class="form-input" v-model="problem.name" />
+					<span class="form-label">Titlu:</span>
+					<input class="form-input" type="text" v-model="problem.name" />
 				</label>
 				<button class="btn btn-blue ml-2" @click="changeTitle">Editare</button>
 			</div>
 			<div class="block my-2">
 				<label>
-					<span class="mr-2 text-xl">Credite:</span>
-					<input type="text" class="form-input" v-model="problem.credits" />
+					<span class="form-label">Credite:</span>
+					<input class="form-input" type="text" size="50" v-model="problem.credits" />
 				</label>
 				<button class="btn btn-blue ml-2" @click="changeCredits">Editare</button>
 			</div>
 			<div class="block my-2">
-				<button class="btn btn-blue" @click="toggleVisibility" v-if="admin">Fă ${problem.visible ? "invizibilă" : "vizibilă"}</button>
+				<button class="btn btn-blue mr-2" @click="toggleVisibility" v-if="admin">Fă ${problem.visible ? "invizibilă" : "vizibilă"}</button>
 				<button class="btn btn-blue" @click="toggleConsoleInput">Fă intrarea prin ${problem.console_input ? "fișiere" : "consolă"}</button>
 			</div>
 			<div class="block my-2" v-if="!problem.console_input">
 				<label>
 					<span class="mr-2 text-xl">Nume test:</span>
-					<input type="text" class="form-input" v-model="problem.test_name" />
+					<input class="form-input" type="text" v-model="problem.test_name" />
 				</label>
 				<button class="btn btn-blue ml-2" @click="changeTestName">Editare</button>
 			</div>
@@ -42,12 +42,14 @@
 	</div>
 
 	<script>
-var app = new Vue({
-	el: "#editApp",
+Vue.createApp({
+	el: "",
 	delimiters: ['${', '}'],
-	data: {
-		problem: null,
-		admin: {{.User.Admin}}
+	data: () => {
+		return {
+			problem: null,
+			admin: {{.User.Admin}}
+		}
 	},
 	methods: {
 		changeTitle: async function() {
@@ -89,7 +91,7 @@ var app = new Vue({
 		}
 		this.problem = res.data;
 	}
-});
+}).mount("#editApp");
 	</script>
 </div>
 {{template "util/footer" . }}

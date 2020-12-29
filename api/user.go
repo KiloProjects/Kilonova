@@ -53,7 +53,7 @@ func (s *API) getGravatar(w http.ResponseWriter, r *http.Request) {
 	email := user.Email
 
 	url := getGravatarFromEmail(email) + "?s=" + size
-	etag := `KN-Gravatar "` + user.Name + `"`
+	etag := `KN-Gravatar"` + user.Name + `"`
 	w.Header().Set("Etag", etag)
 	w.Header().Add("Cache-Control", "max-age=1440")
 

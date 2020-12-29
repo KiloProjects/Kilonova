@@ -4,10 +4,10 @@
 	{{ template "edit/testSidebar" . }}
 	<div class="lg:col-span-5 mx-2 lg:mx-0">
 		<br/>
-		<h1> Încărcare arhivă .zip cu teste </h1>
+		<h1> Încărcare arhivă .zip cu teste (maxim 100MB) </h1>
 		<label class="block my-2">
 			<span class="mr-2 text-xl"> Arhivă:</span>
-			<input id="tests" type="file" class="inline-form" required />
+			<input id="tests" type="file" class="form-input" required />
 		</label>
 		<button class="btn btn-blue mb-2" onclick="uploadTests()">Încărcare teste</button>
 
@@ -30,35 +30,27 @@ async function uploadTests() {
 		
 		<label class="block my-2">
 			<span class="mr-2 text-xl">ID: </span>
-			<input id="vID" type="number" class="inline-block rounded-lg border border-gray-300 px-2 py-2" required />
+			<input id="vID" type="number" class="form-input" required />
 		</label>
 		<label class="block my-2">
 			<span class="mr-2 text-xl">Scor: </span>
-			<input id="score" type="number" class="inline-block rounded-lg border border-gray-300 px-2 py-2" required />
+			<input id="score" type="number" class="form-input" required />
 		</label>
 		<div class="mb-3">
 			<h3> Input: </h3>
-			<textarea id="input" style="display: none;"></textarea>
+			<textarea class="form-input" id="input" style="display: none;"></textarea>
 		</div>
 		<div class="mb-3">
 			<h3> Output: </h3>
-			<textarea id="output" style="display: none;"></textarea>
+			<textarea class="form-input" id="output" style="display: none;"></textarea>
 		</div>
 		<button class="btn btn-blue mb-2" onclick="addTest()">Adăugare</button>
 	</div>
 </div>
 
 <script>
-	var inCM = CodeMirror.fromTextArea(document.getElementById("input"), {
-		lineNumbers: true,
-		indentUnit: 4,
-		lineWrapping: true
-	})
-	var outCM = CodeMirror.fromTextArea(document.getElementById("output"), {
-		lineNumbers: true,
-		indentUnit: 4,
-		lineWrapping: true
-	})
+	var inCM = CodeMirror.fromTextArea(document.getElementById("input"), {})
+	var outCM = CodeMirror.fromTextArea(document.getElementById("output"), {})
 
 	async function addTest() {
 		let q = {

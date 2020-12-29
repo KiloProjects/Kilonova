@@ -2,6 +2,9 @@
 	- Show links to submission filters
 	- Fix bug with timezones
 	- Move language definitions to the config file
+	- Dark Theme
+	- Update libraries
+	- Internal changes. Run the migrator!
 - v0.6.0b:
 	- Add default visibiliy for submissions
 		- Users with 100p on a problem can see all submissions

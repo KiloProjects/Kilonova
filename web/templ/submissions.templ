@@ -8,16 +8,16 @@
 			<div class="w-full lg:w-3/12 lg:pr-2 lg:border-r lg:border-gray-200">
 				<div class="mt-6"></div>
 				<label class="block mb-2">
-					<span class="text-xl text-gray-700">ID User (0 = ignore):</span>
+					<span class="form-label">ID User (0 = ignore):</span>
 					<input class="form-input" type="number" v-model="filters.userid">
 				</label>
 				<label class="block mb-2">
-					<span class="text-xl text-gray-700">ID Problemă (0 = ignore):</span>
+					<span class="form-label">ID Problemă (0 = ignore):</span>
 					<input class="form-input" type="number" v-model="filters.problemid">
 				</label>
 				<label class="block mb-2">
-					<span class="text-xl text-gray-700">Status:</span>
-					<select class="form-select" v-model="filters.status">
+					<span class="form-label">Status:</span>
+					<select class="form-input" v-model="filters.status">
 						<option value="">-</option>
 						<option value="finished">Finalizat</option>
 						<option value="working">În lucru</option>
@@ -25,34 +25,34 @@
 					</select>
 				</label>
 				<label class="block mb-2">
-					<span class="text-xl text-gray-700">Limbaj:</span>
-					<select class="form-select" v-model="filters.lang">
+					<span class="form-label">Limbaj:</span>
+					<select class="form-input" v-model="filters.lang">
 						<option value="">-</option>
 						<option value="cpp">C++</option>
 					</select>
 				</label>
 				<label class="block mb-2">
-					<span class="text-xl text-gray-700">Scor (-1 = ignore):</span>
+					<span class="form-label">Scor (-1 = ignore):</span>
 					<input class="form-input" type="number" min="-1" max="100" v-model="filters.score" placeholder="100">
 				</label>
 				<label class="block mb-2">
-					<span class="text-xl text-gray-700">Vizibilă:</span>
-					<select class="form-select" v-model="filters.visible">
+					<span class="form-label">Vizibilă:</span>
+					<select class="form-input" v-model="filters.visible">
 						<option value="">-</option>
 						<option value="true">Da</option>
 						<option value="false">Nu</option>
 					</select>
 				</label>
 				<label class="block mb-2">
-					<span class="text-xl text-gray-700">Eroare de Compilare:</span>
-					<select class="form-select" v-model="filters.compileerror">
+					<span class="form-label">Eroare de Compilare:</span>
+					<select class="form-input" v-model="filters.compileerror">
 						<option value="">-</option>
 						<option value="true">Da</option>
 						<option value="false">Nu</option>
 					</select>
 				</label>
-				<button class="btn btn-blue mb-4" @click="poll()">Încărcare</button>
-				<button class="btn btn-blue mb-4" @click="getQuery()">Copiere link filtre</button>
+				<button class="btn btn-blue mb-4 mr-2" @click="poll()">Încărcare</button>
+				<button class="btn mb-4" @click="getQuery()">Copiere link filtre</button>
 			</div>
 			<div class="mw-full mt-2 lg:flex-1 lg:px-2 lg:py-2">
 				<div class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center" v-if="loading">
@@ -60,31 +60,31 @@
 				</div>
 				<div v-else-if="submissions.length > 0">
 					<h1>${getRezStr()}</h1>
-					<table class="table-fixed w-full border mb-4">
+					<table class="kn-table">
 						<thead>
 							<tr>
 								<th scope="col" class="w-12 text-center px-4 py-2">
 									ID
 								</th>
-								<th scope="col" class="px-4 py-2">
+								<th scope="col">
 									Autor
 								</th>
-								<th scope="col" class="px-4 py-2">
+								<th scope="col">
 									Dată încărcare
 								</th>
-								<th scope="col" class="px-4 py-2">
+								<th scope="col">
 									Problemă
 								</th>
-								<th scope="col" class="px-4 py-2">
+								<th scope="col">
 									Status
 								</th>
-								<th scope="col" class="border-r px-4 py-2">
+								<th scope="col" class="w-1/6">
 									Scor
 								</th>
 							</tr>
 						</thead>
 						<tbody>
-							<tr class="border-t" v-for="sub in submissions">
+							<tr class="kn-table-row" v-for="sub in submissions" :key="sub.id">
 								<th scope="row" class="text-center px-4 py-2">
 									${sub.id}
 								</th>
@@ -100,7 +100,7 @@
 								<td class="text-center px-4 py-2">
 									<a :href="'/submissions/'+sub.id">${sub.status}</a>
 								</td>
-								<td class="text-center px-4 py-2" :style="sub.status == 'finished' ? 'background-color: ' + getGradient(sub.score, 100) : ''">
+								<td :class="sub.status === 'finished' ? 'text-black' : '' + ' text-center px-4 py-2'" :style="sub.status == 'finished' ? 'background-color: ' + getGradient(sub.score, 100) : ''">
 									${sub.score}
 								</td>
 							</tr>
@@ -116,12 +116,13 @@
 	</div>
 
 	<script>
-var app = new Vue({
-	el: '#subs',
-	data: {
-		submissions: [],
-		filters: {loadUser: true, loadProblem: true, userid: null, problemid: null, status: "", lang: "", visible: "", compileerror: ""},
-		loading: true 
+var Submissions = {
+	data: () => {
+		return {
+			submissions: [],
+			filters: {loadUser: true, loadProblem: true, userid: null, problemid: null, status: "", lang: "", visible: "", compileerror: ""},
+			loading: true 
+		}
 	},
 	methods: {
 		poll: async function() {
@@ -266,7 +267,8 @@ var app = new Vue({
 		this.poll()
 	},
 	delimiters: ['${', '}']	
-})
+}
+Vue.createApp(Submissions).mount("#subs")
 	</script>
 
 </div> 

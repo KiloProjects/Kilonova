@@ -89,7 +89,7 @@ func Kilonova(_ *cli.Context) error {
 	})
 	r.Use(corsConfig.Handler)
 
-	r.Use(middleware.Compress(flate.DefaultCompression))
+	r.Use(middleware.Compress(flate.BestCompression))
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)

@@ -63,7 +63,7 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sid, err := s.kn.SetRSession(w, user.ID)
+	sid, err := s.kn.CreateSession(user.ID)
 	if err != nil {
 		log.Println(err)
 		errorData(w, "Could not set session", 500)
@@ -115,7 +115,19 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sid, err := s.kn.SetRSession(w, user.ID)
+	/*
+		NOTE: This is how a cookie should look like (set by the frontend)
+			cookie := &http.Cookie{
+				Name:     "kn-sessionid",
+				Value:    sid,
+				Path:     "/",
+				HttpOnly: false,
+				SameSite: http.SameSiteDefaultMode,
+				Expires:  time.Now().Add(time.Hour * 24 * 30),
+			}
+	*/
+
+	sid, err := s.kn.CreateSession(user.ID)
 	if err != nil {
 		log.Println(err)
 		errorData(w, err, 500)

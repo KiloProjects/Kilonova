@@ -7,12 +7,12 @@
 	
 		<label class="block my-2">
 			<span class="mr-2 text-xl">ID: </span>
-			<input id="vID" type="number" class="inline-block rounded-lg border border-gray-300 px-2 py-2" value="{{ .Test.VisibleID }}" required />
+			<input id="vID" type="number" class="form-input" value="{{ .Test.VisibleID }}" required />
 		</label>
 		<button class="btn btn-blue mb-2" onclick="updateID()">Actualizare ID</button>
 		<label class="block my-2">
 			<span class="mr-2 text-xl">Scor: </span>
-			<input id="score" type="number" class="inline-block rounded-lg border border-gray-300 px-2 py-2" value="{{ .Test.Score }}" required />
+			<input id="score" type="number" class="form-input" value="{{ .Test.Score }}" required />
 		</label>
 		<button class="btn btn-blue mb-6" onclick="updateScore()">Actualizare scor</button>
 		{{ $test := getFullTests .Test }}
@@ -30,16 +30,8 @@
 </div>
 
 	<script>
-		var inCM = CodeMirror.fromTextArea(document.getElementById("input"), {
-			lineNumbers: true,
-			indentUnit: 4,
-			lineWrapping: true
-		})
-		var outCM = CodeMirror.fromTextArea(document.getElementById("output"), {
-			lineNumbers: true,
-			indentUnit: 4,
-			lineWrapping: true
-		})
+		var inCM = CodeMirror.fromTextArea(document.getElementById("input"), {})
+		var outCM = CodeMirror.fromTextArea(document.getElementById("output"), {})
 		// const errObj = {status: "error", description: "Not yet implemented"}
 		async function updateID() {
 			let q = {

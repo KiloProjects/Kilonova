@@ -158,11 +158,18 @@ func (rt *Web) mustBeEditor(next http.Handler) http.Handler {
 	})
 }
 
+func getSessCookie(r *http.Request) string {
+	cookie, err := r.Cookie("kn-sessionid")
+	if err != nil {
+		return ""
+	}
+	return cookie.Value
+}
+
 func (rt *Web) getUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// this is analogous to doing a web request to /api/user/getSelf, but it's faster (and easier) to directly interact with the DB
-		sess := rt.kn.GetRSession(r)
-		if sess == -1 {
+		sess, err := rt.kn.GetSession(getSessCookie(r))
+		if err != nil {
 			next.ServeHTTP(w, r)
 			return
 		}

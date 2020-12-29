@@ -4,40 +4,40 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	{{with .Title}}
+	{{- with .Title -}}
 		<title>{{- . }} | Kilonova</title>
-	{{else}}
+	{{- else -}}
 		<title>Kilonova</title>
-	{{end}}
+	{{- end -}}
 
 	<!-- OpenGraph stuff -->
-	{{with .OGTitle}}
+	{{- with .OGTitle -}}
 		<meta property="og:title" content="{{- . -}}" />
-	{{else}}
-		{{with .Title}}
+	{{- else -}}
+		{{- with .Title -}}
 			<meta property="og:title" content="{{- . -}}" />
-		{{else}}
+		{{- else -}}
 		<meta property="og:title" content="Kilonova" />
-		{{end}}
-	{{end}}
-	{{with .OGType}}
+		{{- end -}}
+	{{- end -}}
+	{{- with .OGType -}}
 		<meta property="og:type" content="{{- . -}}" />
-	{{else}}
+	{{- else -}}
 		<meta property="og:type" content="website" />
-	{{end}}
+	{{- end -}}
 	<meta property="og:url" content="https://kilonova.ro{{- .OGUrl -}}" />
-	{{with .OGImage}}
+	{{- with .OGImage -}}
 		<meta property="og:image" content="{{- .OGImage -}}" />
-	{{else}}
+	{{- else -}}
 		<meta property="og:image" content="https://cdn.kilonova.ro/m/ti2SMt/logo.png" />
-	{{end}}
-	{{with .OGDesc}}
+	{{- end -}}
+	{{- with .OGDesc -}}
 		<meta property="og:description" content="{{- .OGDesc -}}" />
 		<meta name="description" content="{{- .OGDesc -}}" />
-	{{else}}
+	{{- else -}}
 		<meta property="og:description" content="Programming platform for learning and exercising" />
 		<meta name="description" content="Programming platform for learning and exercising" />
-	{{end}}
+	{{- end -}}
 	<meta property="og:locale" content="ro_RO" />
 	<meta property="og:site_name" content="Kilonova" />
 
@@ -45,38 +45,28 @@
 
 	<!--jQuery-->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-
-	<link href="https://fonts.googleapis.com/css2?family=Open+Sans&family=Roboto&display=swap" rel="stylesheet">
-	<!--bootstrap-->
-	
-	<!-- much fun, very disabled
-	<link rel="stylesheet"
-		href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css" />
-	-->
-
 	<!-- pretty icons (fontawesome) -->
-	<script src="https://kit.fontawesome.com/bf2ce59e80.js" crossorigin="anonymous"></script>
-
+	<script src="https://kit.fontawesome.com/bf2ce59e80.js"></script>
+	<!-- You don't like cookies? Sorry -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.2.1/js.cookie.min.js"></script>
 	<!--date processing-->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.9.1/dayjs.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.9.1/locale/ro.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.9.8/dayjs.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.9.8/locale/ro.min.js"></script>
 	<script>dayjs.locale('ro')</script>
-
 	<!--Toastr.js-->
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.css" />
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js"></script>
-
 	<!--highlight.js-->
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.4.1/styles/default.min.css" />
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.4.1/highlight.min.js"></script>
-
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css" />
+	<style>@import url("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/monokai.min.css") (prefers-color-scheme: dark);</style>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
 	<!--markdown-it.js-->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/11.0.0/markdown-it.min.js"></script>
-
 	<!--Codemirror-->
-	{{ if .Codemirror }}
+	{{- if .Codemirror -}}
 		<!--CSS-->
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/codemirror.min.css" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/theme/monokai.css" />
 		<!--JS-->
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/codemirror.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/addon/mode/overlay.min.js"></script>
@@ -84,35 +74,64 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/markdown/markdown.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/gfm/gfm.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/clike/clike.min.js"></script>
-	{{ end }}
+	<script>
+// TODO: List defaults here
+CodeMirror.defaults.lineNumbers = true;
+CodeMirror.defaults.indentUnit = 4;
+CodeMirror.defaults.tabSize = 4;
+CodeMirror.defaults.indentWithTabs = true;
+CodeMirror.defaults.lineWrapping = true;
+if(window.matchMedia('(prefers-color-scheme: dark)').matches) { // Dark Mode
+	CodeMirror.defaults.theme = "monokai";
+}
+	</script>
+	{{- end -}}
 
-	{{ if .Debug }}
+	{{- if .Debug -}}
 		<!-- development version, includes helpful console warnings -->
-		<script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
-	{{ else }}
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.0.4/vue.global.js"></script>
+	{{- else -}}
 		<!-- production version, optimized for size and speed -->
-		<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-	{{ end }}
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.0.4/vue.global.prod.js"></script>
+	{{- end -}}
 
 	<link rel="stylesheet" href="/styles.css" />
-
-	<script>
-		var md = window.markdownit({
-			xhtmlOut: true,
-			breaks: true,
-			linkify: true,
-			highlight: function (str, lang) {
-				console.log(lang, "::");
-				console.log(str)
-				if (lang && hljs.getLanguage(lang)) {
-					console.log("aaa");
-					try { return hljs.highlight(lang, str).value; } catch (err) { console.error(err); }
-				}
-				return "";
-			},
-		});
-hljs.configure({languages:['cpp', 'py']}) // TODO
+<script>
+hljs.configure({languages:['c', 'cpp', 'py']}) // TODO
 hljs.initHighlightingOnLoad();
+</script>
+	<script>
+		const highlightjs = {
+			props: ["language", "code", "autodetect"],
+			data: () => {
+				return {detectedLanguage: "", unknownLanguage: false}
+			},
+			computed: {
+				className() {
+					if(this.unknownLanguage) return "";
+					return "hljs " + this.detectedLanguage;
+				},
+				highlighted() {
+					if(!this.autoDetect && !hljs.getLanguage(this.language)) {
+						console.warn(`Unknown language ${this.language}`)
+						return this.code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;'); 
+					}
+					let result = {};
+					if(this.autoDetect) {
+						result = hljs.highlightAuto(this.code);
+						this.detectedLanguage = result.language;
+					} else {
+						result = hljs.highlight(this.language, this.code, true);
+						this.detectedLanguage = this.language;
+					}
+					return result.value;
+				},
+				autoDetect() {
+					return !this.language || Boolean(this.autodetect || this.autodetect === "");
+				}
+			},
+			template: `<pre><code :class="className" v-html="highlighted"></code></pre>`
+		};
 	</script>
 
 	<script>
@@ -153,7 +172,7 @@ hljs.initHighlightingOnLoad();
 			if(call.startsWith('/')) {
 				call = call.substr(1)
 			}
-			let resp = await fetch(`/api/${call}?${$.param(params)}`, {headers: {'Accept': 'application/json'}});
+			let resp = await fetch(`/api/${call}?${$.param(params)}`, {headers: {'Accept': 'application/json', 'Authorization': Cookies.get('kn-sessionid') || "guest"}});
 			return await resp.json()
 		}
 		async function postCall(call, params) {
@@ -162,7 +181,7 @@ hljs.initHighlightingOnLoad();
 			}
 			let resp = await fetch(`/api/${call}`, {
 				method: 'POST',
-				headers: {'Content-Type': 'application/x-www-form-urlencoded','Accept': 'application/json'},
+				headers: {'Content-Type': 'application/x-www-form-urlencoded','Accept': 'application/json', 'Authorization': Cookies.get('kn-sessionid') || "guest"},
 				body: $.param(params)
 			});
 			return await resp.json();

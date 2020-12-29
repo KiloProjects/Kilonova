@@ -85,8 +85,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, name string, file io.Reader) error {
 	if strings.HasSuffix(name, ".in") { // test input file
 		tf := ctx.tests[tid]
 		if tf.InFile != nil { // in file already exists
-			log.Println("In file already declared")
-			return ErrBadArchive
+			return fmt.Errorf("Multiple input files for test %d", tid)
 		}
 
 		tf.InFile = file
@@ -95,8 +94,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, name string, file io.Reader) error {
 	if strings.HasSuffix(name, ".out") || strings.HasSuffix(name, ".ok") { // test output file
 		tf := ctx.tests[tid]
 		if tf.OutFile != nil { // out file already exists
-			log.Println("Out file already declared")
-			return ErrBadArchive
+			return fmt.Errorf("Multiple output files for test %d", tid)
 		}
 
 		tf.OutFile = file
@@ -125,13 +123,12 @@ func (kn *Kilonova) ProcessZipTestArchive(pb *db.Problem, ar *zip.Reader) error 
 	}
 
 	if len(ctx.scoredTests) != len(ctx.tests) {
-		log.Println("idK")
-		return ErrBadArchive
+		return errors.New("Mismatched number of tests in archive and scored tests")
 	}
 
-	for _, v := range ctx.tests {
+	for k, v := range ctx.tests {
 		if v.InFile == nil || v.OutFile == nil {
-			return ErrBadArchive
+			return fmt.Errorf("Missing input or output file for test %d", k)
 		}
 	}
 

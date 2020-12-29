@@ -20,7 +20,7 @@
 			
 			{{/*<tr class="text-center border-t" style="{{ gradient .Score $test.Score }}">*/}}
 			
-			<table class="border-2 border-collapse table-auto w-full" v-if="subTests.length > 0 && !submission.compile_error">
+			<table class="kn-table" v-if="subTests.length > 0 && !submission.compile_error">
 				<thead>
 					<tr>
 						<th class="py-2" scope="col">
@@ -41,7 +41,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr class="text-center border-t" v-if="subTests.length > 0" v-for="test in subTests" :key="test.id">
+					<tr class="kn-table-row" v-if="subTests.length > 0" v-for="test in subTests" :key="test.id">
 						<th class="py-3" scope="row">
 							${test.test.visible_id}	
 						</th>
@@ -58,7 +58,7 @@
 							<div class="fas fa-spinner animate-spin" role="status"></div>
 								În așteptare...	
 						</td>
-						<td :style="test.done ? 'background-color: '+getGradient(test.score, test.test.score) : ''">
+						<td :class="test.done ? 'text-black' : ''" :style="test.done ? 'background-color: '+getGradient(test.score, test.test.score) : ''">
 							${test.score} / ${test.test.score}
 						</td>
 					</tr>
@@ -81,16 +81,16 @@
 		</div>
 	</div>
 		<script>
-Vue.use(hljs.vuePlugin);
-var app = new Vue({
-	el: '#subTests',
-	data: {
-		subTests: [],
-		poller: null,
-		id: {{.Submission.ID}},
-		submission: {},
-		subEditor: false,
-		poll_mu: false,
+var app = Vue.createApp({
+	data: () => {
+		return {
+			subTests: [],
+			poller: null,
+			id: {{.Submission.ID}},
+			submission: {},
+			subEditor: false,
+			poll_mu: false
+		}
 	},
 	methods: {
 		poll: async function() {
@@ -99,7 +99,7 @@ var app = new Vue({
 			console.log("Poll")
 			console.log(this.id)
 			let res = await getCall("/submissions/getByID", {id: this.id, expanded: true})
-			if(res.status !== "success") {
+			if(res.status !== "success"){
 				apiToast(res)
 				console.log(res)
 				this.poll_mu = false;
@@ -144,11 +144,13 @@ var app = new Vue({
 		this.poller = setInterval(this.poll, 1000)
 		this.poll()
 	},
-	beforeDestroy: () => {
+	beforeUnmount: () => {
 		clearInterval(this.poller)
 	},
 	delimiters: ['${', '}']
 });
+app.component("highlightjs", highlightjs);
+app.mount("#subTests");
 		</script>
 </div>
 
