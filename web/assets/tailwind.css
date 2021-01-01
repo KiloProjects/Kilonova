@@ -140,6 +140,14 @@
 	.kn-table-row {
 		@apply text-center border-t hoverable;
 	}
+
+	.alert {
+		@apply w-full;
+	}
+
+	.alert-green {
+		@apply bg-green-200;
+	}
 	
 	.btn {
 		@apply inline-flex justify-center px-4 py-2 leading-5 rounded-md font-medium ring-1 ring-opacity-50;

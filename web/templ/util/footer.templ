@@ -48,6 +48,17 @@ MathJax = {
   }
 };
 </script>
+
+<!-- Delayed to v0.6.2
+<script>
+(async () => {
+	let res = await getCall("/user/getVerified");
+	if(res.status === "success" && res.data === false) {
+		var html = `<div class="w-full rounded-md py-1 px-2 bg-green-200 text-black text-center">It looks like you haven't verified your email. Click <a class="underline" href="/resendVerification">here</a> to resend the verification email</div>`;
+		$(".c-container").prepend(html);
+	}
+})()
+</script> -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.4.2/umd/popper.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/js/bootstrap.min.js"></script>
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.0.5/es5/tex-mml-chtml.js"></script>

@@ -111,12 +111,13 @@ func (s *API) Router() chi.Router {
 	})
 	r.Route("/user", func(r chi.Router) {
 		r.With(s.MustBeAuthed).Post("/setSubVisibility", s.setSubVisibility)
-		r.With(s.MustBeAuthed).Post("/setBio", s.setBio)
+		r.With(s.MustBeAuthed).Post("/setBio", s.setBio())
 		r.With(s.MustBeAdmin).Post("/purgeBio", s.purgeBio)
 
 		r.Get("/getByName", s.getUserByName)
 		r.With(s.MustBeAuthed).Get("/getSelf", s.getSelf)
 		r.With(s.MustBeAuthed).Get("/getSelfSolvedProblems", s.getSelfSolvedProblems)
+		r.With(s.MustBeAuthed).Get("/getVerified", s.getSelfVerified)
 
 		r.Get("/getGravatar", s.getGravatar)
 		r.With(s.MustBeAuthed).Get("/getSelfGravatar", s.getSelfGravatar)

@@ -18,7 +18,6 @@ WHERE lower(email) = lower(sqlc.arg(email));
 SELECT * FROM users 
 WHERE lower(name) = lower(sqlc.arg(username));
 
-
 -- name: CountUsers :one
 SELECT COUNT(*) FROM users 
 WHERE lower(name) = lower(sqlc.arg(username)) OR lower(email) = lower(sqlc.arg(email));
@@ -82,4 +81,8 @@ WHERE id = $1;
 
 -- name: SetPassword :exec
 UPDATE users SET password = $2
+WHERE id = $1;
+
+-- name: SetVerification :exec
+UPDATE users SET verified_email = $2
 WHERE id = $1;

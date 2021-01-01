@@ -90,4 +90,7 @@ type User struct {
 	Password       string    `json:"password"`
 	Bio            string    `json:"bio"`
 	DefaultVisible bool      `json:"default_visible"`
+	VerifiedEmail  bool      `json:"verified_email"`
+	Banned         bool      `json:"banned"`
+	Disabled       bool      `json:"disabled"`
 }

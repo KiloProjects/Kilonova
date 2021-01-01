@@ -7,7 +7,7 @@ import (
 )
 
 // Version is the version of the platform
-const Version = "Beta v0.6.0"
+const Version = "Beta v0.6.1"
 
 type Kilonova struct {
 	DB      *db.DB

@@ -23,6 +23,11 @@ type User struct {
 	Password       string    `json:"-"`
 	Bio            string    `json:"bio"`
 	DefaultVisible bool      `json:"default_visible"`
+
+	VerifiedEmail bool `json:"verified_email"`
+
+	Banned   bool `json:"banned,omitempty"`
+	Disabled bool `json:"disabled,omitempty"`
 }
 
 func (u *User) SetAdmin(admin bool) error {
@@ -76,6 +81,15 @@ func (u *User) SetPasswordHash(hash string) error {
 	}
 
 	u.Password = hash
+	return nil
+}
+
+func (u *User) SetVerification(verified bool) error {
+	if err := u.db.raw.SetVerification(u.ctx, rawdb.SetVerificationParams{ID: u.ID, VerifiedEmail: verified}); err != nil {
+		return err
+	}
+
+	u.VerifiedEmail = verified
 	return nil
 }
 

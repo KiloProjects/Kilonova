@@ -7,6 +7,9 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/Kilonova/internal/util"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/pkg/errors"
 )
 
@@ -87,20 +90,25 @@ func (s *API) setSubVisibility(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *API) setBio(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	var args struct{ Bio string }
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 400)
-		return
-	}
+func (s *API) setBio() func(w http.ResponseWriter, r *http.Request) {
+	p := bluemonday.UGCPolicy()
+	return func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+		var args struct{ Bio string }
+		if err := decoder.Decode(&args, r.Form); err != nil {
+			errorData(w, err, 400)
+			return
+		}
 
-	if err := util.User(r).SetBio(args.Bio); err != nil {
-		errorData(w, err, 500)
-		return
-	}
+		safe := p.Sanitize(args.Bio)
 
-	returnData(w, "Updated bio")
+		if err := util.User(r).SetBio(safe); err != nil {
+			errorData(w, err, 500)
+			return
+		}
+
+		returnData(w, "Updated bio")
+	}
 }
 
 func (s *API) purgeBio(w http.ResponseWriter, r *http.Request) {
@@ -153,6 +161,10 @@ func (s *API) getSelfSolvedProblems(w http.ResponseWriter, r *http.Request) {
 	returnData(w, pbs)
 }
 
+func (s *API) getSelfVerified(w http.ResponseWriter, r *http.Request) {
+	returnData(w, util.User(r).VerifiedEmail)
+}
+
 func getGravatarFromEmail(email string) string {
 	bSum := md5.Sum([]byte(email))
 	return "https://www.gravatar.com/avatar/" + hex.EncodeToString(bSum[:])
@@ -184,8 +196,11 @@ func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
 func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	if email == "" {
-		errorData(w, "You must provide a new email to change to", http.StatusBadRequest)
+		errorData(w, "You must provide a new email to change to", 400)
 		return
+	}
+	if err := validation.Validate(&email, is.Email); err != nil {
+		errorData(w, "Invalid email", 400)
 	}
 	if err := util.User(r).SetEmail(email); err != nil {
 		errorData(w, err, 500)

@@ -59,6 +59,7 @@ Additional reading I should do for a better platform:
 			- ? avertizează dacă un domeniu nu e pe whitelist
 		- [ ] Mutare CSS pe CDN
 	- [ ] Caching
+	- [ ] Code share ca pe cses
 	- [ ] Multi-eval support
 	- [ ] Verificator custom
 	- [ ] Reduce nr de TODOs din nou
