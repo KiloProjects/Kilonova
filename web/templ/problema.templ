@@ -2,7 +2,7 @@
 <div class="c-container">
 	<h1 class="mt-4">Problema <code>{{.Problem.Name}}</code>
 	{{- if .ProblemEditor -}}
-		<a href="/probleme/{{- .Problem.ID -}}/edit"> [editare]</a>	
+		<a target="_blank" href="/probleme/{{- .Problem.ID -}}/edit"> [editare]</a>	
 	{{- end -}}
 	</h1>
 	<hr/>
@@ -177,13 +177,13 @@ $("#submissionSend").submit(async e => {
 	let res = await postCall("/submissions/submit", sendData)
 	if(res.status == "error") {
 		createToast({
-			status: "error",
+			status: "error",`
 			title: "Nu am putut trimite submisia",
 			description: res.data
 		})
 		return
 	}
-	createToast({title: "Submisie încărcată", description: `<button class="btn text-sm mt-2" href="/submissions/${res.data}">Vizualizare</btn>`, onclick: () => window.location.assign(`/submissions/${res.data}`)})
+	createToast({title: "Submisie încărcată", description: `<a target="_blank" href="/submissions/${res.data}">Vizualizare</btn>`})
 	console.log(res.data, makeSubWaiter(res.data));
 	await app.poll();
 })
