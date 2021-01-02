@@ -22,7 +22,9 @@ async function uploadTests() {
 	form.append("testArchive", files[0]);
 
 	let res = await multipartCall("/problem/{{.Problem.ID}}/update/processTestArchive", form)
-	window.location.reload();
+	if(res.status === "success") {
+		window.location.reload();
+	}
 }
 </script>
 
