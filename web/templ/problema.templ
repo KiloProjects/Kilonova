@@ -84,7 +84,7 @@ function makeSubWaiter(id) {
 		}
 		var lastStatus = loadingIDs.get(id);
 		if(res.data.sub.status !== lastStatus) {
-			app.poll();
+			document.dispatchEvent(new Event("kn-poll"))
 		}
 		if(res.data.sub.status == "finished") {
 			createToast({title: "Evaluare finalizată", description: `Scor submisie #${id}: ${res.data.sub.score}`, status: "success"})
@@ -95,7 +95,7 @@ function makeSubWaiter(id) {
 	return `Watching ${id}...`
 }
 
-Vue.createApp({
+let app = Vue.createApp({
 	delimiters: ['${', '}'],
 	data: () => {
 		return {
@@ -138,8 +138,13 @@ Vue.createApp({
 	created: async function() {
 		await this.poll()
 		this.loading = false
+		document.addEventListener("kn-poll", async e => {
+			e.preventDefault();
+			await this.poll();
+		})
 	}
-}).mount("#problemSidebar");
+});
+app.mount("#problemSidebar");
 </script>
 	
 		{{ if .LoggedIn }}
@@ -177,7 +182,7 @@ $("#submissionSend").submit(async e => {
 	let res = await postCall("/submissions/submit", sendData)
 	if(res.status == "error") {
 		createToast({
-			status: "error",`
+			status: "error",
 			title: "Nu am putut trimite submisia",
 			description: res.data
 		})

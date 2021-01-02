@@ -1,10 +1,9 @@
 package grader
 
 import (
-	"bytes"
 	"context"
-	"io"
 	"log"
+	"os/exec"
 	"sync"
 	"time"
 
@@ -149,32 +148,10 @@ func (h *Handler) Handle(ctx context.Context, client pb.EvalClient) error {
 					var testScore int
 
 					if resp.Comments == "" {
-						// TODO: FINISH MOVE TO FILE
-						out, err := h.dm.TestOutput(pbTest.ID)
-						if err != nil {
-							log.Println("Error during test getting (2):", err)
-							return
-						}
-						defer out.Close()
-						outData, err := io.ReadAll(out)
-						if err != nil {
-							log.Println("Error during test getting (2.1):", err)
-							return
-						}
+						tPath := h.dm.TestOutputPath(pbTest.ID)
+						sPath := h.dm.SubtestPath(subTestID)
 
-						r, err := h.dm.SubtestReader(subTestID)
-						if err != nil {
-							log.Println("Error during test getting (2.3):", err)
-							return
-						}
-
-						outfile, err := io.ReadAll(r)
-						if err != nil {
-							log.Println("Error during test getting (2.2):", err)
-							return
-						}
-
-						equal := compareOutputs(outData, outfile)
+						equal := compareOutputs(tPath, sPath)
 
 						if equal {
 							testScore = int(pbTest.Score)
@@ -246,12 +223,14 @@ func (h *Handler) Start() {
 	}()
 }
 
-func compareOutputs(tOut, cOut []byte) bool {
-	tOut = bytes.TrimSpace(tOut)
-	tOut = bytes.ReplaceAll(tOut, []byte{'\r', '\n'}, []byte{'\n'})
-
-	cOut = bytes.TrimSpace(cOut)
-	cOut = bytes.ReplaceAll(cOut, []byte{'\r', '\n'}, []byte{'\n'})
-
-	return bytes.Equal(tOut, cOut)
+func compareOutputs(tPath, cPath string) bool {
+	// temporary solution until i find something better
+	cmd := exec.Command("diff", "-qBbEa", tPath, cPath)
+	if err := cmd.Run(); err != nil {
+		if err, ok := err.(*exec.ExitError); ok {
+			return err.ExitCode() == 0
+		}
+		return false
+	}
+	return true
 }

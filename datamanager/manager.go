@@ -21,12 +21,14 @@ type StorageManager struct {
 type Manager interface {
 	TestInput(testID int64) (io.ReadCloser, error)
 	TestOutput(testID int64) (io.ReadCloser, error)
+	TestOutputPath(testID int64) string
 
 	SaveTestInput(testID int64, input io.Reader) error
 	SaveTestOutput(testID int64, output io.Reader) error
 
 	SubtestWriter(subtest int64) (io.WriteCloser, error)
 	SubtestReader(subtest int64) (io.ReadCloser, error)
+	SubtestPath(subtest int64) string
 }
 
 var _ Manager = &StorageManager{}
@@ -37,12 +39,6 @@ type Session struct {
 	Expires time.Time
 }
 
-// OldTestInput is used just for the migration tool, TODO: Delete in v0.6.2
-func (m *StorageManager) OldTestInput(pbID int64, testID int64) (io.ReadCloser, error) {
-	return os.Open(path.Join(m.RootPath, "problems", strconv.FormatInt(pbID, 10), "input", strconv.FormatInt(testID, 10)+".txt"))
-}
-
-// OldTestOutput is used just for the migration tool, TODO: Delete in v0.6.2
 func (m *StorageManager) OldTestOutput(pbID int64, testID int64) (io.ReadCloser, error) {
 	return os.Open(path.Join(m.RootPath, "problems", strconv.FormatInt(pbID, 10), "output", strconv.FormatInt(testID, 10)+".txt"))
 }
@@ -52,7 +48,11 @@ func (m *StorageManager) TestInput(testID int64) (io.ReadCloser, error) {
 }
 
 func (m *StorageManager) TestOutput(testID int64) (io.ReadCloser, error) {
-	return os.Open(path.Join(m.RootPath, "tests", strconv.FormatInt(testID, 10)+".out"))
+	return os.Open(m.TestOutputPath(testID))
+}
+
+func (m *StorageManager) TestOutputPath(testID int64) string {
+	return path.Join(m.RootPath, "tests", strconv.FormatInt(testID, 10)+".out")
 }
 
 func (m *StorageManager) SaveTestInput(testID int64, input io.Reader) error {
@@ -65,12 +65,12 @@ func (m *StorageManager) SaveTestOutput(testID int64, output io.Reader) error {
 
 // SubtestWriter should be used by the eval server
 func (m *StorageManager) SubtestWriter(subtest int64) (io.WriteCloser, error) {
-	return os.OpenFile(m.subtestPath(subtest), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
+	return os.OpenFile(m.SubtestPath(subtest), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
 }
 
 // SubtestReader should be used by the grader
 func (m *StorageManager) SubtestReader(subtest int64) (io.ReadCloser, error) {
-	return os.Open(m.subtestPath(subtest))
+	return os.Open(m.SubtestPath(subtest))
 }
 
 // NewManager returns a new manager instance
@@ -90,7 +90,7 @@ func NewManager(p string) (*StorageManager, error) {
 	return &StorageManager{RootPath: p}, nil
 }
 
-func (m *StorageManager) subtestPath(subtest int64) string {
+func (m *StorageManager) SubtestPath(subtest int64) string {
 	return path.Join(m.RootPath, "subtests", strconv.FormatInt(subtest, 10))
 }
 
