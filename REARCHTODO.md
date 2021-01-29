@@ -1,0 +1,8 @@
+- Finish submission.go, test.go, subtest.go skeletons
+- Finish psql/CreateUser
+- Finish psql/ProblemService
+- Make all other services
+- Wrap all errors (maybe also handle them)
+- More fields for kilonova.ProblemFilter
+- Test to see it all works fine
+- Handle all TODOs
