@@ -3,7 +3,7 @@ Additional reading I should do for a better platform:
 - https://ieftimov.com/post/four-steps-daemonize-your-golang-programs/
 
 ## TODO LIST KILONOVA:
-- [ ] Pre-Early beta (v0.1.0a-v0.5.5a):
+- [x] Pre-Early beta (v0.1.0a-v0.5.5a):
 	- [x] Mathjax
 	- [x] Profil user
 		- [x] Listă probleme făcute
@@ -33,44 +33,61 @@ Additional reading I should do for a better platform:
 	- [x] SCHIMBARE MOD DE TRANSMITERE FIȘIER INTRARE/IEȘIRE EVALUATOR
 		 - Dă depășire de protocol pt fișiere foarte mari
 - [ ] Pre-Middle beta (v0.6.0b-?):
-	- [ ] Email package
-		- [ ] Verificare user
+	- [ ] Email stuff 
+		- [x] Verificare user
 		- [ ] Mail updates
 		- [ ] Other stuff
-		- [ ] Broadcast din admin panel
+		- [ ] ? Broadcast din admin panel
 	- [x] Permite schimbarea tipului de intrare din interfața problemei
 	- [ ] Moderation tools
 		- [ ] Nuke accounts
 		- [ ] Ștergere submisie
-	- [x] Move tests to a single directory, based on the test ID, not problem + visible ID
-		- [x] Migration tool
-		- [ ] După ce pun pe server, șterge migrator tool
-	- [ ] Serivice-ificare:
-		- [ ] Împarte în mai multe services (Core/API/Web/Eval/Eval Worker)
-		- [ ] Separare main core de inputs (API/Web)
-		- [ ] Eval-ul se conectează la core (și eval worker la eval), nu invers
+	- [~] Use a single bundle for all javascript/css
 	- [ ] Security Improvements:
-		- [ ] Anti-CSRF protection
+		- [ ] Anti-CSRF protection 
+			- [x] API
+			- [?] Web
 		- [ ] Sanitize all user inputs
+	- [ ] Caching
+	- [ ] Restructurare web: 
+		- [ ] Get rid of vue
+		- [ ] Re-adăugare forms pentru \<input\>-uri, ca să poți da enter pentru submit
+			- Am scăpat de ele fiindcă mi-era prea lene să fac handle la ele la început, dar ar trebui să rezolv asta într-o metodă ok
+		- [ ] Permite toate limbajele în UI
+			- [ ] Dezactivare automată dacă nu găsește compilator/executor bun în sistem
+		- [ ] Tranziție către [halfmoon](https://gethalfmoon.com) când apare v1.2.0 (sau v1.3 dacă lipsesc chestii importante)
+	- [ ] Restructurare backend:
+		- [ ] Serivice-ificare:
+			- [ ] Împarte în mai multe services (Core/API/Web/Eval/Eval Worker)
+			- [ ] Separare main core de inputs (API/Web)
+			- Eval-ul se conectează la core (și eval worker la eval), nu invers
+		- [ ] Multi-eval support
+		- [ ] Phase out sqlc în favoarea sqlx (să nu mai depindem așa mult de code generation)
+		- [ ] Better telemetry
+			- [ ] Prometheus integration
+			- [ ] ? Sentry
+	- [ ] New features:
+		- [ ] Admin tools diverse
+			- [ ] Mai multe informații în admin panel
+		- [ ] Code share ca pe cses
+		- [ ] Verificator custom la probleme
+		- [ ] ? Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
+		- [x] Dark theme
+		- [ ] Versiune engleză
+			- [ ] Cumva facem asta
+			- [ ] Instrumente de translation:
+				- [ ] Propunători traducători
+				- [ ] Enunțuri multi-language
 	- [ ] CDN
+		- [ ] Backbone
+		- [ ] Mutare CSS pe CDN
+		- [ ] Mutare js bundle pe CDN
 		- [ ] Pune toate imaginile găsite pe CDN și redirecționează-le acolo
-		- [ ] Adaugă redirect în stil steam 
+		- [ ] ? Adaugă redirect în stil steam 
 			- monitorizează pe ce dai click 
 			- ? avertizează dacă un domeniu nu e pe whitelist
-		- [ ] Mutare CSS pe CDN
-	- [ ] Caching
-	- [ ] Code share ca pe cses
-	- [ ] Multi-eval support
-	- [ ] Verificator custom
-	- [ ] Reduce nr de TODOs din nou
-	- [ ] Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
-	- [ ] Phase out sqlc în favoarea sqlx (să nu mai depindem așa mult de code generation)
-	- [x] Dark theme
-	- [ ] Versiune engleză
-		- [ ] Cumva facem asta
-		- [ ] Instrumente de translation:
-			- [ ] Propunători traducători
-			- [ ] Enunțuri multi-language
+	- [ ] Late edition maintenance:
+		- [ ] Reduce nr de TODOs din nou
 - [ ] pre-late beta:
 	- [ ] "Custom input" ca pe hackerrank/leetcode
 	- [ ] Mai multe tipuri de probleme:

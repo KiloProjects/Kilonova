@@ -1,3 +1,10 @@
+- v0.6.2b:
+	- Added email verification stuff
+	- Internal Changes:
+		- IN WORKS: restructuring
+		- Got rid of jquery
+		- Changed toast library
+		- # TODO: WRAP ERRORS IN KILONOVA ERRORS
 - v0.6.1b:
 	- Show links to submission filters
 	- Fix bug with timezones
