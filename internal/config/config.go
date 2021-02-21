@@ -3,37 +3,49 @@ package config
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/BurntSushi/toml"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-redis/redis/v8"
 )
 
-// ConfigStruct is the glue for all configuration sections
-type ConfigStruct struct {
-	Cache     Cache               `toml:"cache"`
-	Common    Common              `toml:"common"`
-	Database  Database            `toml:"database"`
-	Eval      Eval                `toml:"eval"`
+var (
+	Cache     CacheConf
+	Common    CommonConf
+	Database  DBConf
+	Eval      EvalConf
+	Languages map[string]Language
+	Email     EmailConf
+)
+
+// configStruct is the glue for all configuration sections when unmarshaling
+// After load, it will disperse all the data in variables
+type configStruct struct {
+	Cache     CacheConf           `toml:"cache"`
+	Common    CommonConf          `toml:"common"`
+	Database  DBConf              `toml:"database"`
+	Eval      EvalConf            `toml:"eval"`
 	Languages map[string]Language `toml:"languages"`
-	Email     Email               `toml:"email"`
+	Email     EmailConf           `toml:"email"`
 }
 
-type Email struct {
+// EmailConf is the data required for the email part
+type EmailConf struct {
 	Host     string `toml:"host"`
-	Port     int    `toml:"port"`
 	Username string `toml:"username"`
 	Password string `toml:"password"`
 }
 
-// Cache is the data required for the redis part (when I eventually make it)
-type Cache struct {
+// CacheConf is the data required for the redis part (when I eventually make it)
+type CacheConf struct {
 	Host     string `toml:"host"`
 	Password string `toml:"password"`
 	DB       int    `toml:"DB"`
 }
 
-func (c Cache) GenOptions() *redis.Options {
+func (c CacheConf) GenOptions() *redis.Options {
 	return &redis.Options{
 		Addr:     c.Host,
 		Password: c.Password,
@@ -41,22 +53,23 @@ func (c Cache) GenOptions() *redis.Options {
 	}
 }
 
-// Eval is the data required for the eval service
-type Eval struct {
+// EvalConf is the data required for the eval service
+type EvalConf struct {
 	IsolatePath string `toml:"isolatePath"`
 	CompilePath string `toml:"compilePath"`
 	Address     string `toml:"address"`
 }
 
-// Common is the data required for all services
-type Common struct {
-	LogDir  string `toml:"log_dir"`
-	DataDir string `toml:"data_dir"`
-	Debug   bool   `toml:"debug"`
+// CommonConf is the data required for all services
+type CommonConf struct {
+	LogDir     string `toml:"log_dir"`
+	DataDir    string `toml:"data_dir"`
+	Debug      bool   `toml:"debug"`
+	HostPrefix string `toml:"host_prefix"`
 }
 
-// Database is the data required to establish a PostgreSQL connection
-type Database struct {
+// DBConf is the data required to establish a PostgreSQL connection
+type DBConf struct {
 	DBname  string `toml:"dbname"`
 	Host    string `toml:"host"`
 	SSLmode string `toml:"sslmode"`
@@ -64,7 +77,7 @@ type Database struct {
 }
 
 // String returns a DSN with all information from the struct
-func (d Database) String() string {
+func (d DBConf) String() string {
 	return fmt.Sprintf("sslmode=%s host=%s user=%s dbname=%s", d.SSLmode, d.Host, d.User, d.DBname)
 }
 
@@ -86,6 +99,8 @@ type Language struct {
 	Extensions []string `toml:"extensions"`
 	IsCompiled bool     `toml:"is_compiled"`
 
+	Printable string `tmol:"printable"`
+
 	CompileCommand []string `toml:"compile_command"`
 	RunCommand     []string `toml:"run_command"`
 
@@ -104,14 +119,58 @@ type Language struct {
 
 // /LANGUAGE DEFINITION STUFF --------------------
 
-// C represents the loaded config
-var C ConfigStruct
+// c represents the loaded config
+var c configStruct
+
+func spread() {
+	Cache = c.Cache
+	Common = c.Common
+	Database = c.Database
+	Email = c.Email
+	Eval = c.Eval
+	Languages = c.Languages
+}
+
+func compactify() {
+	c.Cache = Cache
+	c.Common = Common
+	c.Database = Database
+	c.Email = Email
+	c.Eval = Eval
+	c.Languages = Languages
+}
+
+func Save(path string) error {
+	compactify()
+
+	// Make the directories just in case they don't exist
+	if err := os.MkdirAll(filepath.Dir(path), 0666); err != nil {
+		return err
+	}
+
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+
+	enc := toml.NewEncoder(file)
+	enc.Indent = " "
+	if err := enc.Encode(c); err != nil {
+		file.Close() // We don't care if it errors out, it's over anyway
+		return err
+	}
+
+	return file.Close()
+}
 
 func Load(path string) error {
-	md, err := toml.DecodeFile(path, &C)
+	md, err := toml.DecodeFile(path, &c)
 	if len(md.Undecoded()) > 0 {
 		log.Println("NOTE: There were a few undecoded keys")
 		spew.Dump(md.Undecoded())
+	}
+	if err == nil {
+		spread()
 	}
 	return err
 }

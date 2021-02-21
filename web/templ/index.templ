@@ -3,9 +3,12 @@
 <div class="c-container">
 	<h1>Welcome to Kilonova {{.Version}}{{if .LoggedIn}}, {{.User.Name}}{{end}}!</h1>
 	
-	<p class="text-gray-600 dark:text-gray-300 text-sm">Pssst! Anunță-mă ce mai vrei de la site, trimite-mi mesaj pe <a target="_blank" href="https://discord.gg/Qa6Ytgh">Discord</a></p>
-
+	<p class="text-gray-600 dark:text-gray-300 text-sm">Pssst! Anunță-mă ce mai vrei de la site, trimite-mi mesaj pe <a target="_blank" rel="noopener noreferrer" href="https://discord.gg/Qa6Ytgh">Discord</a></p>
+	<div class="alert alert-red">
+		Disclaimer: Această platformă este în continuă dezvoltare. Versiunea finală s-ar putea să arate semnificativ diferit față de ce vedeți acum.
+	</div>
 	<br />
 	{{template "util/pbprint" .}}
+	<br />
 </div>
 {{template "util/footer" . }}

@@ -1,69 +1,79 @@
 package util
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/KiloProjects/Kilonova/internal/db"
+	"github.com/KiloProjects/kilonova"
 )
 
 // this file stores stuff to both the server and web parts
 
 // CONVENTION: IsR* is shorthand for getting the required stuff from request and passing it to its non-R counterpart
 
-func IsAuthed(user *db.User) bool {
-	return user != nil && !user.Empty && user.ID != 0
+func IsAuthed(user *kilonova.User) bool {
+	return user != nil && user.ID != 0
 }
 
-func IsAdmin(user *db.User) bool {
+func IsAdmin(user *kilonova.User) bool {
 	if !IsAuthed(user) {
 		return false
 	}
 	return user.Admin
 }
 
-func IsProposer(user *db.User) bool {
+func IsProposer(user *kilonova.User) bool {
 	if !IsAuthed(user) {
 		return false
 	}
 	return user.Admin || user.Proposer
 }
 
-func IsProblemEditor(user *db.User, problem *db.Problem) bool {
+func IsProblemEditor(user *kilonova.User, problem *kilonova.Problem) bool {
 	if !IsAuthed(user) {
 		return false
 	}
 	if IsAdmin(user) {
 		return true
 	}
+	if problem == nil {
+		return false
+	}
 	return user.ID == problem.AuthorID
 }
 
-func IsProblemVisible(user *db.User, problem *db.Problem) bool {
+func IsProblemVisible(user *kilonova.User, problem *kilonova.Problem) bool {
+	if problem == nil {
+		return false
+	}
 	if problem.Visible {
 		return true
 	}
 	return IsProblemEditor(user, problem)
 }
 
-func IsSubmissionEditor(sub *db.Submission, user *db.User) bool {
+func IsSubmissionEditor(sub *kilonova.Submission, user *kilonova.User) bool {
 	if !IsAuthed(user) {
+		return false
+	}
+	if sub == nil {
 		return false
 	}
 	return IsAdmin(user) || user.ID == sub.UserID
 }
 
-func IsSubmissionVisible(sub *db.Submission, user *db.User) bool {
-	if sub.Visible {
-		return true
+func IsSubmissionVisible(sub *kilonova.Submission, user *kilonova.User, sserv kilonova.SubmissionService) bool {
+	if sub == nil {
+		return false
 	}
-	if IsSubmissionEditor(sub, user) {
+	if sub.Visible || IsSubmissionEditor(sub, user) {
 		return true
 	}
 
 	if !IsAuthed(user) {
 		return false
 	}
-	score := user.MaxScore(sub.ProblemID)
+	score := sserv.MaxScore(context.Background(), user.ID, sub.ProblemID)
 	if score == 100 {
 		return true
 	}
@@ -95,6 +105,6 @@ func IsRSubmissionEditor(r *http.Request) bool {
 	return IsSubmissionEditor(Submission(r), User(r))
 }
 
-func IsRSubmissionVisible(r *http.Request) bool {
-	return IsSubmissionVisible(Submission(r), User(r))
+func IsRSubmissionVisible(r *http.Request, sserv kilonova.SubmissionService) bool {
+	return IsSubmissionVisible(Submission(r), User(r), sserv)
 }

@@ -1,44 +1,42 @@
 package logic
 
 import (
-	"errors"
+	"net"
+	"net/smtp"
 
-	"github.com/KiloProjects/Kilonova/internal/config"
-	"gopkg.in/gomail.v2"
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/jordan-wright/email"
 )
 
-type Email struct {
-	sender gomail.SendCloser
+var _ kilonova.Mailer = &emailer{}
+
+type emailer struct {
+	host string
+	auth smtp.Auth
+	from string
 }
 
-func (e *Email) SendEmail(to, subject, content string) error {
-	if to == "" {
-		return errors.New("No `to` specified")
+func (e *emailer) SendEmail(msg *kilonova.MailerMessage) error {
+	em := email.NewEmail()
+
+	em.From = e.from
+	em.To = []string{msg.To}
+	if msg.ReplyTo != "" {
+		em.ReplyTo = []string{msg.ReplyTo}
 	}
-	m := gomail.NewMessage()
-	m.SetHeader("From", config.C.Email.Username)
-	m.SetHeader("To", to)
-	if subject != "" {
-		m.SetHeader("Subject", subject)
-	}
-	m.SetBody("text/plain", content)
 
-	return gomail.Send(e.sender, m)
+	em.Subject = msg.Subject
+	em.Text = []byte(msg.PlainContent)
+	em.HTML = []byte(msg.HTMLContent)
+	return em.Send(e.host, e.auth)
+
 }
 
-func (e *Email) SendComplexEmail(msg *gomail.Message) error {
-	return gomail.Send(e.sender, msg)
-}
-
-func (e *Email) Close() error {
-	return e.sender.Close()
-}
-
-func NewEmail() (*Email, error) {
-	d := gomail.NewDialer(config.C.Email.Host, config.C.Email.Port, config.C.Email.Username, config.C.Email.Password)
-	sender, err := d.Dial()
+func NewMailer() (kilonova.Mailer, error) {
+	host, _, err := net.SplitHostPort(config.Email.Host)
 	if err != nil {
 		return nil, err
 	}
-	return &Email{sender}, nil
+	return &emailer{config.Email.Host, smtp.PlainAuth("", config.Email.Username, config.Email.Password, host), config.Email.Username}, nil
 }

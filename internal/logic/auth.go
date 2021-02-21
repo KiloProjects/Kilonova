@@ -7,12 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/KiloProjects/Kilonova/internal/db"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/KiloProjects/kilonova"
 )
 
 // GetSession reads and returns the data from the session cookie
-func (kn *Kilonova) GetRSession(r *http.Request) int64 {
+func (kn *Kilonova) GetRSession(r *http.Request) int {
 	authToken := getAuthHeader(r)
 	if authToken != "" { // use Auth tokens by default
 		id, err := kn.GetSession(authToken)
@@ -23,11 +22,11 @@ func (kn *Kilonova) GetRSession(r *http.Request) int64 {
 	return -1
 }
 
-func (kn *Kilonova) CreateSession(id int64) (string, error) {
+func (kn *Kilonova) CreateSession(id int) (string, error) {
 	return kn.RClient.CreateSession(context.Background(), id)
 }
 
-func (kn *Kilonova) GetSession(id string) (int64, error) {
+func (kn *Kilonova) GetSession(id string) (int, error) {
 	if id == "" {
 		return -1, errors.New("Unauthed")
 	}
@@ -52,37 +51,35 @@ func (kn *Kilonova) RemoveSessionCookie(w http.ResponseWriter, r *http.Request) 
 }
 
 func (kn *Kilonova) GenHash(password string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hash), err
+	return kilonova.HashPassword(password)
 }
 
-func (kn *Kilonova) AddUser(ctx context.Context, username, email, password string) (*db.User, error) {
+func (kn *Kilonova) AddUser(ctx context.Context, username, email, password string) (*kilonova.User, error) {
 	hash, err := kn.GenHash(password)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := kn.DB.CreateUser(ctx, username, email, hash)
+	var user kilonova.User
+	user.Name = username
+	user.Email = email
+	user.Password = hash
+
+	err = kn.userv.CreateUser(ctx, &user)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
 
 	if user.ID == 1 {
-		if err := user.SetAdmin(true); err != nil {
+		var True = true
+		if err := kn.userv.UpdateUser(ctx, user.ID, kilonova.UserUpdate{Admin: &True, Proposer: &True}); err != nil {
 			log.Println(err)
-			return user, err
-		}
-		if err := user.SetProposer(true); err != nil {
-			log.Println(err)
-			return user, err
+			return &user, err
 		}
 	}
 
-	return user, nil
-}
-
-func (kn *Kilonova) ValidCreds(ctx context.Context, username, password string) (*db.User, error) {
-	return nil, nil
+	return &user, nil
 }
 
 func getAuthHeader(r *http.Request) string {

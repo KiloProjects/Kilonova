@@ -4,11 +4,12 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/KiloProjects/Kilonova/internal/util"
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/util"
 )
 
 func (s *API) resetWaitingSubs(w http.ResponseWriter, r *http.Request) {
-	err := s.db.ResetWaitingStatus(r.Context())
+	err := s.sserv.BulkUpdateSubmissions(r.Context(), kilonova.SubmissionFilter{Status: kilonova.StatusWorking}, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting})
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -17,7 +18,14 @@ func (s *API) resetWaitingSubs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := s.db.Users(r.Context())
+	r.ParseForm()
+	var args kilonova.UserFilter
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, http.StatusBadRequest)
+		return
+	}
+
+	users, err := s.userv.Users(r.Context(), args)
 	if err != nil {
 		log.Println(err)
 		errorData(w, "Could not read from DB", 500)
@@ -26,29 +34,10 @@ func (s *API) getUsers(w http.ResponseWriter, r *http.Request) {
 	returnData(w, users)
 }
 
-func (s *API) getAdmins(w http.ResponseWriter, r *http.Request) {
-	admins, err := s.db.Admins(r.Context())
-	if err != nil {
-		log.Println(err)
-		errorData(w, "Could not read from DB", 500)
-		return
-	}
-	returnData(w, admins)
-}
-
-func (s *API) getProposers(w http.ResponseWriter, r *http.Request) {
-	proposers, err := s.db.Proposers(r.Context())
-	if err != nil {
-		errorData(w, "Could not read from DB", 500)
-		return
-	}
-	returnData(w, proposers)
-}
-
 func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		ID  int64
+		ID  int
 		Set bool
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
@@ -71,13 +60,7 @@ func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	user, err := s.db.User(r.Context(), args.ID)
-	if err != nil {
-		errorData(w, err, 500)
-		return
-	}
-
-	if err := user.SetAdmin(args.Set); err != nil {
+	if err := s.userv.UpdateUser(r.Context(), args.ID, kilonova.UserUpdate{Admin: &args.Set}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -91,7 +74,7 @@ func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
 func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		ID  int64
+		ID  int
 		Set bool
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
@@ -115,13 +98,7 @@ func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	user, err := s.db.User(r.Context(), args.ID)
-	if err != nil {
-		errorData(w, err, 500)
-		return
-	}
-
-	if err := user.SetProposer(args.Set); err != nil {
+	if err := s.userv.UpdateUser(r.Context(), args.ID, kilonova.UserUpdate{Proposer: &args.Set}); err != nil {
 		errorData(w, err, 500)
 		return
 	}

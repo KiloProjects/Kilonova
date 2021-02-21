@@ -1,27 +1,28 @@
 package logic
 
 import (
-	"github.com/KiloProjects/Kilonova/datamanager"
-	"github.com/KiloProjects/Kilonova/internal/db"
-	"github.com/KiloProjects/Kilonova/internal/rclient"
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/rclient"
 )
 
 // Version is the version of the platform
-const Version = "Beta v0.6.1"
+const Version = "v0.7.0"
 
 type Kilonova struct {
-	DB      *db.DB
-	DM      datamanager.Manager
+	DM      kilonova.DataStore
 	RClient *rclient.RClient
 	Debug   bool
-	email   *Email
+	mailer  kilonova.Mailer
+
+	userv kilonova.UserService
+	tserv kilonova.TestService
 }
 
-func New(db *db.DB, dm datamanager.Manager, rclient *rclient.RClient, debug bool) (*Kilonova, error) {
-	email, err := NewEmail()
+func New(db kilonova.TypeServicer, dm kilonova.DataStore, rclient *rclient.RClient, debug bool) (*Kilonova, error) {
+	mailer, err := NewMailer()
 	if err != nil {
 		return nil, err
 	}
 
-	return &Kilonova{db, dm, rclient, debug, email}, nil
+	return &Kilonova{dm, rclient, debug, mailer, db.UserService(), db.TestService()}, nil
 }

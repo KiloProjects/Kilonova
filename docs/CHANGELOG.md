@@ -1,10 +1,14 @@
-- v0.6.2b:
-	- Added email verification stuff
-	- Internal Changes:
-		- IN WORKS: restructuring
-		- Got rid of jquery
-		- Changed toast library
-		- # TODO: WRAP ERRORS IN KILONOVA ERRORS
+- v0.7.0b:
+	- Added email verification stuff;
+	- Renamed all paths to english versions (`/problema/1` => `/problems/1`) because it's nicer;
+	- Default points can be awarded for problems;
+	- You can now delete individual tests (and also all tests) from a problem;
+	- You can now upload arbitrary files to the platform, no longer needing to link to outside sources for images in problems.
+	- Performance improvements 
+	- HUGE Internal Restructuring (most of the non-boilerplate code has been moved around and changed);
+	- Removed "Top 100" meme page;
+	- Other small details;
+	- Other stuff I think I forgot to write down.
 - v0.6.1b:
 	- Show links to submission filters
 	- Fix bug with timezones

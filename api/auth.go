@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/KiloProjects/kilonova"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"golang.org/x/crypto/bcrypt"
@@ -51,7 +52,7 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if s.db.UserExists(r.Context(), auth.Username, auth.Email) {
+	if exists, err := s.userv.UserExists(r.Context(), auth.Username, auth.Email); err != nil || exists {
 		errorData(w, "User matching email or username already exists", http.StatusBadRequest)
 		return
 	}
@@ -60,6 +61,11 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 		errorData(w, "Couldn't create user", 500)
+		return
+	}
+
+	if err := s.kn.SendVerificationEmail(auth.Email, auth.Username, user.ID); err != nil {
+		log.Println("Couldn't send user verification email:", err)
 		return
 	}
 
@@ -84,7 +90,6 @@ func (l loginForm) Validate() error {
 	)
 }
 
-// TODO: Move login logic to internal/logic
 func (s *API) login(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var auth loginForm
@@ -99,11 +104,12 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.db.UserByName(r.Context(), auth.Username)
-	if err != nil {
+	users, err := s.userv.Users(r.Context(), kilonova.UserFilter{Name: &auth.Username, Limit: 1})
+	if err != nil || len(users) == 0 {
 		errorData(w, "User not found", http.StatusBadRequest)
 		return
 	}
+	user := users[0]
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(auth.Password))
 	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {

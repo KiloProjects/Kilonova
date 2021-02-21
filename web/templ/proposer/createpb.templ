@@ -1,0 +1,35 @@
+<div id="problem_create" class="border-2 border-gr p-2">
+<h2>Creare Problemă</h2>
+	<form id="problem_create_form">
+		<label class="block mb-2">
+			<span class="form-label">Nume problemă</span>
+			<input type="text" class="form-input w-full" placeholder="Nume..." id="pbname" name="pbname" required>
+		</label>
+		<div class="block mb-3">
+			<label class="inline-flex items-center text-lg">
+				<input class="form-input" type="checkbox" id="cInputSwitch">
+				<span class="ml-2">Intrare din consolă</span>
+			</label>
+		</div>
+		<button class="btn btn-blue">Creare</button><br />
+	</form>
+
+	<script>
+		async function createProblem(e) {
+			e.preventDefault();
+			let name = document.getElementById("pbname").value;
+			let cInput = document.getElementById("cInputSwitch").checked;
+			let res = await postCall('/problem/create', {title: name, consoleInput: cInput})
+			if(res.status == "error") {
+				createToast({
+					status: "error",
+					title: "Could not create problem",
+					description: res.data
+				})
+				return
+			}
+			window.location.assign(`/problems/${res.data}`)
+		}
+		document.getElementById("problem_create_form").addEventListener("submit", createProblem)
+	</script>
+</div>

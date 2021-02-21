@@ -2,20 +2,31 @@ package rclient
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"log"
 	"strconv"
 	"time"
 
-	"github.com/KiloProjects/Kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/go-redis/redis/v8"
-	"github.com/google/uuid"
 )
 
 type RClient struct {
 	client *redis.Client
 }
 
+func readRandom(nBytes int) string {
+	var rnd = make([]byte, nBytes, nBytes)
+	if _, err := rand.Reader.Read(rnd); err != nil {
+		log.Println("ERROR GETTING RANDOM DATA:", err)
+		return "ASDFGH"
+	}
+	return hex.EncodeToString(rnd)
+}
+
 func New() (*RClient, error) {
-	rdb := redis.NewClient(config.C.Cache.GenOptions())
+	rdb := redis.NewClient(config.Cache.GenOptions())
 	_, err := rdb.Ping(context.Background()).Result()
 	if err != nil {
 		return nil, err
@@ -23,25 +34,25 @@ func New() (*RClient, error) {
 	return &RClient{rdb}, nil
 }
 
-func (c *RClient) CreateSession(ctx context.Context, uid int64) (string, error) {
-	id := uuid.New()
-	_, err := c.client.Set(ctx, id.String(), strconv.FormatInt(uid, 10), time.Hour*24*30).Result()
+func sessName(sess string) string {
+	return "sessions:" + sess
+}
+
+func (c *RClient) CreateSession(ctx context.Context, uid int) (string, error) {
+	id := readRandom(12)
+	_, err := c.client.Set(ctx, sessName(id), strconv.Itoa(uid), time.Hour*24*30).Result()
 	if err != nil {
 		return "", err
 	}
-	return id.String(), nil
+	return id, nil
 }
 
-func (c *RClient) GetSession(ctx context.Context, sess string) (int64, error) {
-	id, err := uuid.Parse(sess)
+func (c *RClient) GetSession(ctx context.Context, sess string) (int, error) {
+	val, err := c.client.Get(ctx, sessName(sess)).Result()
 	if err != nil {
 		return -1, err
 	}
-	val, err := c.client.Get(ctx, id.String()).Result()
-	if err != nil {
-		return -1, err
-	}
-	uid, err := strconv.ParseInt(val, 10, 64)
+	uid, err := strconv.Atoi(val)
 	if err != nil {
 		return -1, err
 	}
@@ -49,10 +60,36 @@ func (c *RClient) GetSession(ctx context.Context, sess string) (int64, error) {
 }
 
 func (c *RClient) RemoveSession(ctx context.Context, sess string) error {
-	id, err := uuid.Parse(sess)
+	_, err := c.client.Del(ctx, sessName(sess)).Result()
+	return err
+}
+
+func verifName(verif string) string {
+	return "verification:" + verif
+}
+
+func (c *RClient) CreateVerification(ctx context.Context, uid int) (string, error) {
+	id := readRandom(10)
+	_, err := c.client.Set(ctx, verifName(id), strconv.Itoa(uid), time.Hour*24*30).Result()
 	if err != nil {
-		return err
+		return "", err
 	}
-	_, err = c.client.Del(ctx, id.String()).Result()
+	return id, nil
+}
+
+func (c *RClient) GetVerification(ctx context.Context, verif string) (int, error) {
+	val, err := c.client.Get(ctx, verifName(verif)).Result()
+	if err != nil {
+		return -1, err
+	}
+	uid, err := strconv.Atoi(val)
+	if err != nil {
+		return -1, err
+	}
+	return uid, nil
+}
+
+func (c *RClient) RemoveVerification(ctx context.Context, verif string) error {
+	_, err := c.client.Del(ctx, verifName(verif)).Result()
 	return err
 }

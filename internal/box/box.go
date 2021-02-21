@@ -13,11 +13,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/KiloProjects/Kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/internal/config"
 )
 
 var (
-	releasePrefix = "https://github.com/KiloProjects/isolate/releases/download/v2.1/"
+	releasePrefix = "https://github.com/KiloProjects/isolate/releases/latest/download/"
 	configURL     = releasePrefix + "default.cf"
 	configPath    = "/usr/local/etc/isolate"
 	isolateURL    = releasePrefix + "isolate"

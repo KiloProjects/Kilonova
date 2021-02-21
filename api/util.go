@@ -7,16 +7,16 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/KiloProjects/Kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/internal/util"
 )
 
-func getFormInt(w http.ResponseWriter, r *http.Request, name string) (int64, bool) {
+func getFormInt(w http.ResponseWriter, r *http.Request, name string) (int, bool) {
 	sid := r.FormValue(name)
 	if sid == "" {
 		errorData(w, fmt.Sprintf("Missing param %s", name), http.StatusBadRequest)
 		return 0, false
 	}
-	id, err := strconv.ParseInt(sid, 10, 64)
+	id, err := strconv.Atoi(sid)
 	if err != nil {
 		errorData(w, fmt.Sprintf("Param `%s` not int", name), http.StatusBadRequest)
 		return 0, false

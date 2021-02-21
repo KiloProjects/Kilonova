@@ -7,11 +7,12 @@ module.exports = {
 		require("postcss-import"),
 	  	require("tailwindcss"),
 		require("autoprefixer"),
-		process.env.NODE_ENV === 'production' ? cssnano({preset: "default"}) : null,
 	  	process.env.NODE_ENV === 'production' ? purgecss({
 			content: glob.sync('../templ/**/*', {nodir: true}),
-			defaultExtractor: content => content.match(/[\w-/:]+(?<!:)/g) || []
-		}) : null
+			defaultExtractor: content => content.match(/[\w-/:]+(?<!:)/g) || [],
+			safelist: [/^notyf/]
+		}) : null,
+		process.env.NODE_ENV === 'production' ? cssnano({preset: "default"}) : null,
   ]
 }
 

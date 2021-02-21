@@ -2,6 +2,8 @@
 
 <div class="c-container">
 	<h1>Stare submisii</h1>
+	<h1> TODO: FIX FILTERS </h1>
+	<h1> TODO: TERMINĂ PAGINARE </h1>
 	
 	<div id="subs" v-cloak>
 		<div class="flex flex-wrap lg:border-t lg:border-gray-200">
@@ -55,7 +57,7 @@
 				<button class="btn mb-4" @click="getQuery()">Copiere link filtre</button>
 			</div>
 			<div class="mw-full mt-2 lg:flex-1 lg:px-2 lg:py-2">
-				<div class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center" v-if="loading">
+				<div class="text-4xl mx-auto my-auto w-full my-10 text-center" v-if="loading">
 					<div><i class="fas fa-spinner animate-spin"></i> Se încarcă...</div>
 				</div>
 				<div v-else-if="submissions.length > 0">
@@ -86,22 +88,22 @@
 						<tbody>
 							<tr class="kn-table-row" v-for="sub in submissions" :key="sub.id">
 								<th scope="row" class="text-center px-4 py-2">
-									${sub.id}
+									${sub.sub.id}
 								</th>
 								<td class="px-4 py-2">
-									<a class="inline-flex align-middle items-center" :href="'/profile/'+sub.user.name"><img class="flex-none mr-2 rounded" :src="'/api/user/getGravatar?s=32&name='+sub.user.name" width="32" height="32" alt="Avatar" /><span class="flex-1">${sub.user.name}</span></a>
+									<a class="inline-flex align-middle items-center" :href="'/profile/'+sub.author.name"><img class="flex-none mr-2 rounded" :src="'/api/user/getGravatar?s=32&name='+sub.author.name" width="32" height="32" alt="Avatar" /><span class="flex-1">${sub.author.name}</span></a>
 								</td>
 								<td class="text-center px-4 py-2">
-									${timeStr(sub.created_at)}
+									${timeStr(sub.sub.created_at)}
 								</td>
 								<td class="text-center px-4 py-2">
-									<a :href="'/probleme/'+sub.problem.id">${sub.problem.name}</a>
+									<a :href="'/problems/'+sub.problem.id">${sub.problem.name}</a>
 								</td>
 								<td class="text-center px-4 py-2">
-									<a :href="'/submissions/'+sub.id">${sub.status}</a>
+									<a :href="'/submissions/'+sub.sub.id">${sub.sub.status}</a>
 								</td>
-								<td :class="sub.status === 'finished' ? 'text-black' : '' + ' text-center px-4 py-2'" :style="sub.status == 'finished' ? 'background-color: ' + getGradient(sub.score, 100) : ''">
-									${sub.score}
+								<td :class="sub.sub.status === 'finished' ? 'text-black' : '' + ' text-center px-4 py-2'" :style="sub.sub.status == 'finished' ? 'background-color: ' + getGradient(sub.sub.score, 100) : ''">
+									${sub.sub.score}
 								</td>
 							</tr>
 						</tbody>
@@ -133,16 +135,16 @@ var Submissions = {
 				this.loading = false
 				return
 			}
-			console.log(res.data)
 			if(res.data == null) {
 				this.submissions = []
 			} else {
-				this.submissions = res.data
+				this.submissions = res.data.subs
+				this.subCount = res.data.count
 			}
 			this.loading = false
 		},
 		getRezStr: function() {
-			let l = this.submissions.length;
+			let l = this.subCount;
 			if(l == 1) {
 				return "Un rezultat."
 			}
@@ -167,21 +169,22 @@ var Submissions = {
 			if(old.score >= 0) {
 				res.score = old.score
 			}
-			res.lang = old.lang
+			if(old.lang !== "" ) {
+				res.lang = old.lang
+			}
 			if(old.visible == "true" || old.visible == "false") {
 				res.visible = old.visible == "true";
 			}
 			if(old.compileerror == "true" || old.compileerror == "false") {
 				res.compileerror = old.compileerror == "true";
 			}
-			console.log(old, res)
 			return res;
 		},
 		getGradient: function(score, maxscore) {
 			return getGradient(score, maxscore)
 		},
 		timeStr: function(d) {
-			return dayjs(d).format('DD/MM/YYYY HH:mm')
+			return bundled.dayjs(d).format('DD/MM/YYYY HH:mm')
 		},
 		getQuery: async function() {
 			var p = new URLSearchParams();
@@ -211,7 +214,7 @@ var Submissions = {
 				await navigator.clipboard.writeText(url)
 				createToast({status: "success", title: "Copied URL to clipboard"});
 			} catch(e) {
-				console.log(e);
+				console.error(e);
 				createToast({status: "error", title: "Couldn't copy to clipboard"})
 			}
 		}

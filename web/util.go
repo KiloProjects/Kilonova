@@ -2,25 +2,36 @@ package web
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"time"
 
-	"github.com/KiloProjects/Kilonova/internal/db"
-	"github.com/KiloProjects/Kilonova/internal/logic"
-	"github.com/KiloProjects/Kilonova/internal/util"
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/internal/logic"
+	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi"
-	"github.com/microcosm-cc/bluemonday"
 )
 
 // hydrateTemplate fills a templateData struct with generic stuff like Params, User and LoggedIn
 func (rt *Web) hydrateTemplate(r *http.Request, title string) templateData {
+	// halfmoon stuff for when v1.2.0 is launched
+	var shouldDarkMode bool
+	darkModeCookie, err := r.Cookie("halfmoon_preferredMode")
+	if err == nil {
+		shouldDarkMode = darkModeCookie.Value == "dark-mode"
+	}
+
 	return templateData{
 		Title: title,
 
@@ -29,6 +40,9 @@ func (rt *Web) hydrateTemplate(r *http.Request, title string) templateData {
 		LoggedIn: util.IsRAuthed(r),
 		Version:  logic.Version,
 		Debug:    rt.debug,
+		DarkMode: shouldDarkMode,
+
+		Languages: config.Languages,
 
 		Problem:    util.Problem(r),
 		Submission: util.Submission(r),
@@ -60,7 +74,7 @@ type testDataType struct {
 	Out string
 }
 
-func (rt *Web) getFullTestData(test *db.Test) testDataType {
+func (rt *Web) getFullTestData(test *kilonova.Test) testDataType {
 	in, err := rt.dm.TestInput(test.ID)
 	if err != nil {
 		return testDataType{In: "err", Out: "err"}
@@ -85,26 +99,11 @@ func (rt *Web) getFullTestData(test *db.Test) testDataType {
 	return testDataType{In: string(inData), Out: string(outData)}
 }
 
-func (rt *Web) getTestData(test *db.Test) testDataType {
-	t := rt.getFullTestData(test)
-	if len(t.In) > 128*1024 { // 128KB
-		t.In = "too long to show here"
-	}
-	if len(t.Out) > 128*1024 { // 128KB
-		t.Out = "too long to show here"
-	}
-	return t
+func (rt *Web) maxScore(userID int, problemID int) int {
+	return rt.sserv.MaxScore(context.Background(), userID, problemID)
 }
 
-func (rt *Web) maxScore(userID int64, problemID int64) int {
-	user, err := rt.kn.DB.User(context.Background(), userID)
-	if err != nil {
-		return 0
-	}
-	return user.MaxScore(problemID)
-}
-
-func gradient(score, maxscore int32) template.CSS {
+func gradient(score, maxscore int) template.CSS {
 	col := "#e3dd71" // a yellow hue, indicating something is wrong
 	var rap float64
 	if maxscore == 0 || score == 0 {
@@ -154,29 +153,37 @@ func isPdfLink(link string) bool {
 }
 
 func sanitize(input string) string {
-	return bluemonday.UGCPolicy().Sanitize(input)
+	return kilonova.Sanitizer.Sanitize(input)
 }
 
 func (rt *Web) newTemplate() *template.Template {
+	var f fs.FS
+	if rt.debug {
+		f = os.DirFS("./web/templ")
+	} else {
+		f, _ = fs.Sub(templateDir, "templ")
+	}
 
 	return template.Must(parseAllTemplates(template.New("web").Funcs(template.FuncMap{
 		"ispdflink":    isPdfLink,
 		"dumpStruct":   spew.Sdump,
-		"getTestData":  rt.getTestData,
 		"getFullTests": rt.getFullTestData,
-		"subStatus": func(status db.Status) template.HTML {
+		"hashedName": func(s string) string {
+			return fsys.HashName(s)
+		},
+		"subStatus": func(status kilonova.Status) template.HTML {
 			switch status {
-			case db.StatusWaiting:
+			case kilonova.StatusWaiting:
 				return template.HTML("În așteptare...")
-			case db.StatusWorking:
+			case kilonova.StatusWorking:
 				return template.HTML("În lucru...")
-			case db.StatusFinished:
+			case kilonova.StatusFinished:
 				return template.HTML("Finalizată")
 			default:
 				return template.HTML("Stare necunoscută")
 			}
 		},
-		"KBtoMB": func(kb int32) float64 {
+		"KBtoMB": func(kb int) float64 {
 			return float64(kb) / 1024.0
 		},
 		"gradient": gradient,
@@ -187,63 +194,34 @@ func (rt *Web) newTemplate() *template.Template {
 			}
 			return v
 		},
-		"subScore": func(problem *db.Problem, user *db.User) string {
-			score := user.MaxScore(problem.ID)
-			if score <= 0 {
+		"subScore": func(problem *kilonova.Problem, user *kilonova.User) string {
+			score := rt.sserv.MaxScore(context.Background(), user.ID, problem.ID)
+			if score < 0 {
 				return "-"
 			}
 			return fmt.Sprint(score)
 		},
-		"problemSubs": func(problem *db.Problem, user *db.User) []*db.Submission {
-			subs, err := user.ProblemSubs(problem.ID)
+		"problemSubs": func(problem *kilonova.Problem, user *kilonova.User) []*kilonova.Submission {
+			subs, err := rt.sserv.Submissions(context.Background(), kilonova.SubmissionFilter{UserID: &user.ID, ProblemID: &problem.ID})
 			if err != nil {
 				return nil
 			}
 			return subs
 		},
-		"problemTests": func(problem *db.Problem) []*db.Test {
-			tests, err := problem.Tests()
+		"problemTests": func(problem *kilonova.Problem) []*kilonova.Test {
+			tests, err := rt.tserv.Tests(context.Background(), problem.ID)
 			if err != nil {
 				return nil
 			}
 			return tests
 		},
-		"problemAuthor": func(problem *db.Problem) *db.User {
-			user, err := problem.GetAuthor()
+		"problemAuthor": func(problem *kilonova.Problem) *kilonova.User {
+			user, err := rt.userv.UserByID(context.Background(), problem.AuthorID)
 			if err != nil {
-				return &db.User{}
+				return &kilonova.User{}
 			}
 			user.Password = ""
 			return user
-		},
-		"subAuthor": func(sub *db.Submission) *db.User {
-			user, err := rt.kn.DB.User(context.Background(), sub.UserID)
-			if err != nil {
-				return &db.User{}
-			}
-			user.Password = ""
-			return user
-		},
-		"subProblem": func(sub *db.Submission) *db.Problem {
-			pb, err := rt.kn.DB.Problem(context.Background(), sub.ProblemID)
-			if err != nil {
-				return &db.Problem{}
-			}
-			return pb
-		},
-		"subTests": func(sub *db.Submission) []*db.SubTest {
-			tests, err := rt.kn.DB.SubTests(context.Background(), sub.ID)
-			if err != nil {
-				return nil
-			}
-			return tests
-		},
-		"getTest": func(id int64) *db.Test {
-			test, err := rt.kn.DB.TestByID(context.Background(), id)
-			if err != nil {
-				return &db.Test{}
-			}
-			return test
 		},
 		"timeToUnix": func(t time.Time) int64 {
 			return t.Unix()
@@ -255,14 +233,28 @@ func (rt *Web) newTemplate() *template.Template {
 		"unsafeHTML": func(s string) template.HTML {
 			return template.HTML(s)
 		},
-		"solvedProblems": func(user *db.User) []*db.Problem {
-			pbs, err := user.SolvedProblems()
+		"solvedProblems": func(user *kilonova.User) []*kilonova.Problem {
+			ids, err := rt.sserv.SolvedProblems(context.Background(), user.ID)
 			if err != nil {
 				return nil
 			}
+			var pbs []*kilonova.Problem
+			for _, id := range ids {
+				pb, err := rt.pserv.ProblemByID(context.Background(), id)
+				if err != nil {
+					log.Println(err)
+					return pbs
+				}
+
+				pbs = append(pbs, pb)
+			}
 			return pbs
 		},
-	}), root))
+		"encodeJSON": func(data interface{}) (string, error) {
+			d, err := json.Marshal(data)
+			return base64.StdEncoding.EncodeToString(d), err
+		},
+	}), f))
 }
 
 func (rt *Web) build(w http.ResponseWriter, r *http.Request, name string, temp templateData) {

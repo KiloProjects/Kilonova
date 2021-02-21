@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/KiloProjects/Kilonova/internal/grpc";
+option go_package = "github.com/KiloProjects/kilonova/internal/grpc";
 
 package eval;
 
@@ -25,7 +25,7 @@ message CleanArgs {
 message Empty {}
 
 message CompileRequest {
-	int64 ID = 1; // ID that corresponds to the submission
+	int32 ID = 1; // ID that corresponds to the submission
 	string code = 2; // source code to compile
 	string lang = 3; // language key
 }
@@ -38,8 +38,8 @@ message CompileResponse {
 }
 
 message Test {
-	int64 ID = 1; // ID of executable to run
-	int64 TID = 2; // ID of the test that is run, used for TestResponse, might delete
+	int32 ID = 1; // ID of executable to run
+	int32 TID = 2; // ID of the test that is run, used for TestResponse, might delete
 	// bytes input = 3; // test input
 	string filename = 4; // either stdin, or a filename to use for output
 	double time_limit = 5; // time limit
@@ -52,7 +52,7 @@ message Test {
 }
 
 message TestResponse {
-	int64 TID = 1; // the tid specified in test
+	int32 TID = 1; // the tid specified in test
 	double time = 3; // time taken
 	int32 memory = 4; // memory usage
 	int32 status = 5; // exit status

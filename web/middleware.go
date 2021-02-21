@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/KiloProjects/Kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi"
 )
 
@@ -20,13 +20,13 @@ type retData struct {
 // ValidateProblemID makes sure the problem ID is a valid uint
 func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		problemID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+		problemID, err := strconv.Atoi(chi.URLParam(r, "id"))
 		if err != nil {
 			rt.status(w, r, http.StatusBadRequest, "ID invalid")
 			return
 		}
 		// this is practically equivalent to /api/problem/getByID?id=problemID, but let's keep it fast
-		problem, err := rt.kn.DB.Problem(r.Context(), problemID)
+		problem, err := rt.pserv.ProblemByID(r.Context(), problemID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				rt.status(w, r, 404, "Problema nu a fost găsită")
@@ -57,13 +57,13 @@ func (rt *Web) ValidateVisible(next http.Handler) http.Handler {
 // ValidateSubmissionID puts the ID and the Submission in the router context
 func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		subID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+		subID, err := strconv.Atoi(chi.URLParam(r, "id"))
 		if err != nil {
 			rt.status(w, r, 400, "ID submisie invalid")
 			return
 		}
 		// this is equivalent to /api/submissions/getByID but it's faster to directly access
-		sub, err := rt.kn.DB.Submission(r.Context(), subID)
+		sub, err := rt.sserv.SubmissionByID(r.Context(), subID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				rt.status(w, r, 400, "Submisia nu există")
@@ -74,11 +74,11 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 			return
 		}
 
-		if !util.IsSubmissionVisible(sub, util.User(r)) {
+		if !util.IsSubmissionVisible(sub, util.User(r), rt.sserv) {
 			sub.Code = ""
 		}
 
-		ctx := context.WithValue(r.Context(), util.SubID, uint(subID))
+		ctx := context.WithValue(r.Context(), util.SubID, subID)
 		ctx = context.WithValue(ctx, util.SubKey, sub)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -87,12 +87,12 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 // ValidateTestID checks for the correctness of the test ID and adds it to context if ok
 func (rt *Web) ValidateTestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		testID, err := strconv.ParseInt(chi.URLParam(r, "tid"), 10, 32)
+		testID, err := strconv.Atoi(chi.URLParam(r, "tid"))
 		if err != nil {
 			rt.status(w, r, 400, "Test invalid")
 			return
 		}
-		test, err := util.Problem(r).Test(testID)
+		test, err := rt.tserv.Test(r.Context(), util.Problem(r).ID, testID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				rt.status(w, r, 404, "Testul nu există")
@@ -173,7 +173,7 @@ func (rt *Web) getUser(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		user, err := rt.kn.DB.User(r.Context(), sess)
+		user, err := rt.userv.UserByID(r.Context(), sess)
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return

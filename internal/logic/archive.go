@@ -3,6 +3,7 @@ package logic
 import (
 	"archive/zip"
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -10,7 +11,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/KiloProjects/Kilonova/internal/db"
+	"github.com/KiloProjects/kilonova"
 )
 
 var (
@@ -26,12 +27,12 @@ type archiveTest struct {
 
 type ArchiveCtx struct {
 	hasScoreFile bool
-	tests        map[int64]archiveTest
-	scoredTests  []int64
+	tests        map[int]archiveTest
+	scoredTests  []int
 }
 
 func NewArchiveCtx() *ArchiveCtx {
-	return &ArchiveCtx{tests: make(map[int64]archiveTest), scoredTests: make([]int64, 0, 10), hasScoreFile: false}
+	return &ArchiveCtx{tests: make(map[int]archiveTest), scoredTests: make([]int, 0, 10), hasScoreFile: false}
 }
 
 func ProcessArchiveFile(ctx *ArchiveCtx, name string, file io.Reader) error {
@@ -52,7 +53,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, name string, file io.Reader) error {
 				continue
 			}
 
-			var testID int64
+			var testID int
 			var score int
 			if _, err := fmt.Sscanf(line, "%d %d\n", &testID, &score); err != nil {
 				log.Println(err)
@@ -76,7 +77,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, name string, file io.Reader) error {
 		return br.Err()
 	}
 
-	var tid int64
+	var tid int
 	if _, err := fmt.Sscanf(name, "%d-", &tid); err != nil {
 		log.Println("Bad name:", name)
 		return ErrBadArchive
@@ -103,7 +104,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, name string, file io.Reader) error {
 	return nil
 }
 
-func (kn *Kilonova) ProcessZipTestArchive(pb *db.Problem, ar *zip.Reader) error {
+func (kn *Kilonova) ProcessZipTestArchive(pb *kilonova.Problem, ar *zip.Reader) error {
 	ctx := NewArchiveCtx()
 
 	for _, file := range ar.File {
@@ -138,14 +139,17 @@ func (kn *Kilonova) ProcessZipTestArchive(pb *db.Problem, ar *zip.Reader) error 
 
 	// If we are loading an archive, the user might want to remove all tests first
 	// So let's do it for them
-	if err := pb.ClearTests(); err != nil {
+	if err := kn.tserv.OrphanProblemTests(context.Background(), pb.ID); err != nil {
 		log.Println(err)
 		return err
 	}
 
 	for testID, v := range ctx.tests {
-		test, err := pb.CreateTest(testID, int32(v.Score))
-		if err != nil {
+		var test kilonova.Test
+		test.ProblemID = pb.ID
+		test.VisibleID = testID
+		test.Score = v.Score
+		if err := kn.tserv.CreateTest(context.Background(), &test); err != nil {
 			log.Println(err)
 			return err
 		}

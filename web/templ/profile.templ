@@ -15,11 +15,20 @@
 					{{end}}
 				{{ end }}</span>
 				<p><a href="/submissions/?userid={{.ContentUser.ID}}">Listă submisii</a></p>
+				{{- if (or .User.Admin (eq .User.ID .ContentUser.ID)) -}}
+				<p>E-mail: {{.ContentUser.Email}}</p>
+				<p>E-mail verificat? 
+					{{ if .ContentUser.VerifiedEmail -}}
+						Da
+					{{- else -}}
+						Nu | <button class="btn btn-blue" onclick="bundled.resendEmail()">Retrimite</button>
+					{{- end -}}</p>
+				{{- end -}}
 			</div>
 		</div>
 		{{- $solved := solvedProblems .ContentUser }}
 		<p>{{if eq 1 (len $solved)}}O problemă rezolvată:{{else}}{{len $solved}} probleme rezolvate:{{end}} {{ range $solved -}}
-		<a href="/probleme/{{.ID}}">{{.Name}}</a>
+		<a href="/problems/{{.ID}}">{{.Name}}</a>
 		{{ end -}}
 		</p>
 	</div>

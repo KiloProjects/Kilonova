@@ -1,0 +1,11 @@
+{{ template "util/header" . }}
+
+<div class="c-container">
+	<div class="katex"></div>
+	<button class="btn btn-blue block" onclick="createToast({status:'info',title:'titlu',description:'harley quinn is better than joker'})">Info notif</button>
+	<button class="btn btn-blue block" onclick="createToast({status:'success',title:'titlu',description:'of course i still love you'})">Success notif</button>
+	<button class="btn btn-blue block" onclick="createToast({status:'error',title:'titlu',description:'fanica iz best!!!!!'})">Error notif</button>
+	<button class="btn btn-red block">Buton roșu</button>
+</div>
+
+{{ template "util/footer" . }}

@@ -9,7 +9,14 @@
 	{{- else -}}
 		<title>Kilonova</title>
 	{{- end -}}
+	
+	{{$fav := hashedName "static/favicon.ico"}}
+	{{$bundle := hashedName "static/bundle.js"}}
+	{{$style := hashedName "static/styles.css"}}
 
+	<link rel="icon" type="image/x-icon" href="/{{$fav}}"/>
+	<link rel="shortcut icon" type="image/x-icon" href="/{{$fav}}"/>
+	
 	<!-- OpenGraph stuff -->
 	{{- with .OGTitle -}}
 		<meta property="og:title" content="{{- . -}}" />
@@ -43,25 +50,36 @@
 
 	<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com/">
 
-	<!--jQuery-->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 	<!-- pretty icons (fontawesome) -->
-	<script src="https://kit.fontawesome.com/bf2ce59e80.js"></script>
-	<!-- You don't like cookies? Sorry -->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.2.1/js.cookie.min.js"></script>
-	<!--date processing-->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.9.8/dayjs.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.9.8/locale/ro.min.js"></script>
-	<script>dayjs.locale('ro')</script>
-	<!--Toastr.js-->
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.css" />
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css"/>
+	<!--<script src="https://kit.fontawesome.com/bf2ce59e80.js"></script>-->
+
+	<!--Dependency bundle-->
+	<script src="/{{$bundle}}"></script>
+
 	<!--highlight.js-->
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css" />
 	<style>@import url("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/monokai.min.css") (prefers-color-scheme: dark);</style>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-	<!--markdown-it.js-->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/11.0.0/markdown-it.min.js"></script>
+
+	<!--Use KaTeX instead of MathJax-->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.12.0/katex.min.css" />
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.12.0/katex.min.js"></script>
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.12.0/contrib/auto-render.min.js"></script>
+	<script>
+		function loadKaTeX() {
+			renderMathInElement(document.body, {
+				delimiters:	[
+					{left: "$$", right: "$$", display: true},
+					{left: "$", right: "$", display: false},
+					{left: "\\(", right: "\\)", display: false},
+					{left: "\\[", right: "\\]", display: true}
+				]
+			});
+		}
+		window.onload = loadKaTeX;
+	</script>
+
 	<!--Codemirror-->
 	{{- if .Codemirror -}}
 		<!--CSS-->
@@ -74,150 +92,44 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/markdown/markdown.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/gfm/gfm.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/clike/clike.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/go/go.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/python/python.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/haskell/haskell.min.js"></script>
 	<script>
-// TODO: List defaults here
 CodeMirror.defaults.lineNumbers = true;
 CodeMirror.defaults.indentUnit = 4;
 CodeMirror.defaults.tabSize = 4;
 CodeMirror.defaults.indentWithTabs = true;
 CodeMirror.defaults.lineWrapping = true;
+CodeMirror.defaults.viewportMargin = Infinity;
 if(window.matchMedia('(prefers-color-scheme: dark)').matches) { // Dark Mode
 	CodeMirror.defaults.theme = "monokai";
 }
 	</script>
 	{{- end -}}
 
-	{{- if .Debug -}}
-		<!-- development version, includes helpful console warnings -->
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.0.4/vue.global.js"></script>
-	{{- else -}}
-		<!-- production version, optimized for size and speed -->
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.0.4/vue.global.prod.js"></script>
+	{{- if .Vue -}}
+		{{- if .Debug -}}
+			<!-- development version, includes helpful console warnings -->
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.0.4/vue.global.js"></script>
+		{{- else -}}
+			<!-- production version, optimized for size and speed -->
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.0.4/vue.global.prod.js"></script>
+		{{- end -}}
 	{{- end -}}
 
-	<link rel="stylesheet" href="/styles.css" />
+	<link rel="stylesheet" href="/{{$style}}" />
 <script>
 hljs.configure({languages:['c', 'cpp', 'py']}) // TODO
 hljs.initHighlightingOnLoad();
 </script>
-	<script>
-		const highlightjs = {
-			props: ["language", "code", "autodetect"],
-			data: () => {
-				return {detectedLanguage: "", unknownLanguage: false}
-			},
-			computed: {
-				className() {
-					if(this.unknownLanguage) return "";
-					return "hljs " + this.detectedLanguage;
-				},
-				highlighted() {
-					if(!this.autoDetect && !hljs.getLanguage(this.language)) {
-						console.warn(`Unknown language ${this.language}`)
-						return this.code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;'); 
-					}
-					let result = {};
-					if(this.autoDetect) {
-						result = hljs.highlightAuto(this.code);
-						this.detectedLanguage = result.language;
-					} else {
-						result = hljs.highlight(this.language, this.code, true);
-						this.detectedLanguage = this.language;
-					}
-					return result.value;
-				},
-				autoDetect() {
-					return !this.language || Boolean(this.autodetect || this.autodetect === "");
-				}
-			},
-			template: `<pre><code :class="className" v-html="highlighted"></code></pre>`
-		};
-	</script>
-
-	<script>
-		// Util functions
-		toastr.options = {
-			closeButton: true,
-			newestOnTop: true,
-			positionClass: "toast-bottom-right",
-		}
-
-		/* createToast OPTIONS
-			title: the toast title
-			description: the toast description
-			status: the toast status (default "info")
-			position: the toast position (default "toast-bottom-right")
-			onclick: onClick handler
-		*/
-		function createToast(options) {
-			if (options.status == null) options.status = "info"
-			if (options.position == null) options.position = "toast-bottom-right"
-			if (options.onclick == null) options.onclick = function () { }
-			toastr[options.status](options.description, options.title, {
-				positionClass: options.position,
-				onclick: options.onclick
-			})
-		}
-
-		function apiToast(res, overwrite) {
-			if(overwrite === null || overwrite === undefined) {
-				overwrite = {}
-			}
-			overwrite["status"] = res.status 
-			overwrite["description"] = res.data
-			createToast(overwrite)
-		}
-
-		async function getCall(call, params) {
-			if(call.startsWith('/')) {
-				call = call.substr(1)
-			}
-			let resp = await fetch(`/api/${call}?${$.param(params)}`, {headers: {'Accept': 'application/json', 'Authorization': Cookies.get('kn-sessionid') || "guest"}});
-			return await resp.json()
-		}
-		async function postCall(call, params) {
-			if(call.startsWith('/')) {
-				call = call.substr(1)
-			}
-			let resp = await fetch(`/api/${call}`, {
-				method: 'POST',
-				headers: {'Content-Type': 'application/x-www-form-urlencoded','Accept': 'application/json', 'Authorization': Cookies.get('kn-sessionid') || "guest"},
-				body: $.param(params)
-			});
-			return await resp.json();
-		}
-
-		async function multipartCall(call, formdata) {
-			if(call.startsWith('/')) {
-				call = call.substr(1)
-			}
-			let resp = await fetch(`/api/${call}`, {
-				method: 'POST',
-				headers: {'Accept': 'application/json', 'Authorization': Cookies.get('kn-sessionid') || "guest"},
-				body: formdata
-			});
-			return await resp.json();
-		}
-		
-		async function getUser(name) {
-			return await getCall('/user/getByName', {name: name})
-		}
-
-		function getGradient(score, maxscore) {
-			let col = "#e3dd71", rap = 0.0;
-			if(maxscore != 0 && score != 0) { rap = score / maxscore }	
-			if(rap == 1.0) { col = "#7fff00" }
-			if(rap < 1.0) { col = "#67cf39" }
-			if(rap <= 0.8) { col = "#9fdd2e" }
-			if(rap <= 0.6) { col = "#d2eb19" }
-			if(rap <= 0.4) { col = "#f1d011" }
-			if(rap <= 0.2) { col = "#f6881e" }
-			if(rap == 0) { col = "#f11722" }
-			return col
-		}
-
-	</script>
 </head>
 
 <body>
 	{{ template "util/navbar" . }}
+
+	{{ if .LoggedIn }}
+		{{ if not .User.VerifiedEmail }}
+			<div class="w-full py-1 px-2 bg-green-200 dark:bg-green-700 text-black dark:text-white text-center">Se pare că încă nu ți-ai verificat e-mail-ul. Apasă <a class="underline text-black dark:text-white" href="/verify/resend">aici</a> dacă trebuie să reprimești verificarea.</div>
+		{{ end }}
+	{{ end }}

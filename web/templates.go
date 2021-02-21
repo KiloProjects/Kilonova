@@ -4,23 +4,18 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/fs"
 	"os"
 	"strings"
-
-	"github.com/markbates/pkger"
 )
 
-// templates.go has a few functions for parsing templates using pkger
-// because I can't specify a custom filesystem for ParseGlob or ParseFiles
+// templates.go has a few functions for parsing templates
 
 const suffix = ".templ"
-const root = "/web/templ/"
 
-// parseAllTemplates parses all templates in the specified root (remember that in pkger, the root directory is the one with go.mod)
-// note that the root will be stripped
-func parseAllTemplates(t *template.Template, root string) (*template.Template, error) {
-
-	pkger.Walk(root, func(fpath string, info os.FileInfo, err error) error {
+// parseAllTemplates parses all templates in the specified fs.
+func parseAllTemplates(t *template.Template, root fs.FS) (*template.Template, error) {
+	err := fs.WalkDir(root, ".", func(fpath string, info os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -28,9 +23,8 @@ func parseAllTemplates(t *template.Template, root string) (*template.Template, e
 			return nil
 		}
 
-		absPath := strings.SplitN(fpath, ":", 2)[1]
-		absPath = strings.TrimPrefix(absPath, root)
-		absPath = strings.TrimSuffix(absPath, suffix)
+		absPath := strings.TrimSuffix(fpath, suffix)
+		absPath = strings.TrimPrefix(absPath, "/")
 
 		var tmpl *template.Template
 		if tmpl == nil {
@@ -42,7 +36,7 @@ func parseAllTemplates(t *template.Template, root string) (*template.Template, e
 			tmpl = t.New(absPath)
 		}
 
-		file, err := pkger.Open(fpath)
+		file, err := root.Open(fpath)
 		if err != nil {
 			panic(fmt.Sprintf("OPEN ERROR FOR FILE %s: %v\n", fpath, err))
 		}
@@ -58,5 +52,5 @@ func parseAllTemplates(t *template.Template, root string) (*template.Template, e
 
 		return nil
 	})
-	return t, nil
+	return t, err
 }

@@ -1,12 +1,12 @@
 package logic
 
 import (
-	"github.com/KiloProjects/Kilonova/internal/db"
-	"github.com/KiloProjects/Kilonova/internal/util"
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/util"
 )
 
-func (kn *Kilonova) FilterCode(s *db.Submission, user *db.User) {
-	if !util.IsSubmissionVisible(s, user) {
+func (kn *Kilonova) FilterCode(s *kilonova.Submission, user *kilonova.User, sserv kilonova.SubmissionService) {
+	if !util.IsSubmissionVisible(s, user, sserv) {
 		s.Code = ""
 	}
 }

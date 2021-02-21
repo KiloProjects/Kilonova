@@ -2,15 +2,19 @@ package boxmanager
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"os/exec"
 	"path"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 
-	"github.com/KiloProjects/Kilonova/datamanager"
-	"github.com/KiloProjects/Kilonova/internal/box"
-	"github.com/KiloProjects/Kilonova/internal/config"
-	pb "github.com/KiloProjects/Kilonova/internal/grpc"
+	"github.com/KiloProjects/kilonova"
+	pb "github.com/KiloProjects/kilonova/grpc"
+	"github.com/KiloProjects/kilonova/internal/box"
+	"github.com/KiloProjects/kilonova/internal/config"
 )
 
 var compilePath string
@@ -28,7 +32,7 @@ type limits struct {
 type BoxManager struct {
 	ID  int
 	Box *box.Box
-	dm  datamanager.Manager
+	dm  kilonova.DataStore
 
 	compileLock   sync.Mutex
 	executionLock sync.Mutex
@@ -73,7 +77,13 @@ func (b *BoxManager) CompileFile(SourceCode []byte, language config.Language) (s
 		b.Box.Config.EnvToSet[key] = val
 	}
 
-	combinedOut, err := b.Box.ExecCombinedOutput(language.CompileCommand...)
+	goodCmd, err := makeGoodCommand(language.CompileCommand)
+	if err != nil {
+		log.Printf("WARNING: function makeGoodCommand returned an error: %q. This is not good, so we'll use the command from the config file. The supplied command was %#v", err, language.CompileCommand)
+		goodCmd = language.CompileCommand
+	}
+
+	combinedOut, err := b.Box.ExecCombinedOutput(goodCmd...)
 	b.Box.Config = oldConfig
 
 	if err != nil {
@@ -134,7 +144,13 @@ func (b *BoxManager) RunSubmission(language config.Language, constraints limits,
 		b.Box.Config = oldConf
 	}()
 
-	_, _, err := b.Box.ExecCommand(language.RunCommand...)
+	goodCmd, err := makeGoodCommand(language.RunCommand)
+	if err != nil {
+		log.Printf("WARNING: function makeGoodCommand returned an error: %q. This is not good, so we'll use the command from the config file. The supplied command was %#v", err, language.RunCommand)
+		goodCmd = language.RunCommand
+	}
+
+	_, _, err = b.Box.ExecCommand(goodCmd...)
 	if metaFile != "" {
 		f, err := os.Open(metaFile)
 		if err != nil {
@@ -164,7 +180,7 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 
 	response := &pb.TestResponse{TID: sub.TID}
 
-	in, err := b.dm.TestInput(sub.TestID)
+	in, err := b.dm.TestInput(int(sub.TestID))
 	if err != nil {
 		return response, err
 	}
@@ -177,7 +193,7 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 	}
 	consoleInput := sub.Filename == "stdin"
 
-	lang := config.C.Languages[sub.Lang]
+	lang := config.Languages[sub.Lang]
 	if err := b.Box.CopyInBox(path.Join(compilePath, fmt.Sprintf("%d.bin", sub.ID)), lang.CompiledName); err != nil {
 		response.Comments = "Couldn't link executable in box"
 		return response, err
@@ -188,7 +204,7 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 		StackLimit:  sub.StackLimit,
 		TimeLimit:   sub.TimeLimit,
 	}
-	meta, err := b.RunSubmission(config.C.Languages[sub.Lang], lim, strconv.Itoa(int(sub.ID))+".txt", consoleInput)
+	meta, err := b.RunSubmission(config.Languages[sub.Lang], lim, strconv.Itoa(int(sub.ID))+".txt", consoleInput)
 	response.Time = meta.Time
 	response.Memory = int32(meta.CgMem)
 
@@ -214,7 +230,7 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 		return response, nil
 	}
 
-	w, err := b.dm.SubtestWriter(sub.TID)
+	w, err := b.dm.SubtestWriter(int(sub.TID))
 	if err != nil {
 		response.Comments = "Could not open problem output"
 		return response, nil
@@ -238,7 +254,7 @@ func (b *BoxManager) CompileSubmission(c *pb.CompileRequest) (*pb.CompileRespons
 	defer b.compileLock.Unlock()
 
 	defer b.Reset()
-	lang := config.C.Languages[c.Lang]
+	lang := config.Languages[c.Lang]
 
 	outName := path.Join(compilePath, fmt.Sprintf("%d.bin", c.ID))
 	resp := &pb.CompileResponse{}
@@ -285,7 +301,7 @@ func SetCompilePath(path string) {
 }
 
 // New creates a new box manager
-func New(id int, dm datamanager.Manager) (*BoxManager, error) {
+func New(id int, dm kilonova.DataStore) (*BoxManager, error) {
 	b, err := box.New(box.Config{ID: id, Cgroups: true})
 	if err != nil {
 		return nil, err
@@ -298,4 +314,28 @@ func New(id int, dm datamanager.Manager) (*BoxManager, error) {
 		dm:  dm,
 	}
 	return bm, nil
+}
+
+// makeGoodCommand makes sure it's a full path (with no symlinks) for the command.
+// Some languages (like java) are hidden pretty deep in symlinks, and we don't want a hardcoded path that could be different on other platforms.
+func makeGoodCommand(command []string) ([]string, error) {
+	tmp := make([]string, len(command))
+	copy(tmp, command)
+
+	if strings.HasPrefix(tmp[0], "/box") {
+		return tmp, nil
+	}
+
+	cmd, err := exec.LookPath(tmp[0])
+	if err != nil {
+		return nil, err
+	}
+
+	cmd, err = filepath.EvalSymlinks(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	tmp[0] = cmd
+	return tmp, nil
 }

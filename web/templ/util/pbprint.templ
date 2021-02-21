@@ -2,9 +2,9 @@
 {{ $logged := .LoggedIn }}
 {{ with .Problems }}
 	<h2 class="text-2xl mb-2"> Probleme </h2>
-	<div class="list-group list-group-rounded">
+	<div class="list-group list-group-rounded mb-6">
 		{{ range . }}
-			<a href="/probleme/{{.ID}}" class="list-group-item flex justify-between">
+			<a href="/problems/{{.ID}}" class="list-group-item flex justify-between">
 				#{{.ID}}: {{.Name -}}
 
 				{{- if $logged -}}

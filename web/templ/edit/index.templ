@@ -1,58 +1,104 @@
 {{template "util/header" . }}
 <div class="c-container">
-    <a href="/probleme/{{- .Problem.ID -}}">[view]</a>
+    <a href="/problems/{{- .Problem.ID -}}">[view]</a>
 	<h1>Editare Problemă</h1>
 
 	<div id="editApp" v-cloak>
-		<div v-if="problem">
+		<form @submit="changeTitle">
 			<div class="block my-2">
 				<label>
 					<span class="form-label">Titlu:</span>
 					<input class="form-input" type="text" v-model="problem.name" />
 				</label>
-				<button class="btn btn-blue ml-2" @click="changeTitle">Editare</button>
+				<button class="btn btn-blue ml-2">Editare</button>
 			</div>
+		</form>
+		<form @submit="changeAuthorCredits">
 			<div class="block my-2">
 				<label>
-					<span class="form-label">Credite:</span>
-					<input class="form-input" type="text" size="50" v-model="problem.credits" />
+					<span class="form-label">Autor:</span>
+					<input class="form-input" type="text" size="50" v-model="problem.author_credits" />
 				</label>
-				<button class="btn btn-blue ml-2" @click="changeCredits">Editare</button>
+				<button class="btn btn-blue ml-2">Editare</button>
 			</div>
+		</form>
+		<form @submit="changeSourceCredits">
 			<div class="block my-2">
-				<button class="btn btn-blue mr-2" @click="toggleVisibility" v-if="admin">Fă ${problem.visible ? "invizibilă" : "vizibilă"}</button>
-				<button class="btn btn-blue" @click="toggleConsoleInput">Fă intrarea prin ${problem.console_input ? "fișiere" : "consolă"}</button>
+				<label>
+					<span class="form-label">Sursă:</span>
+					<input class="form-input" type="text" size="50" v-model="problem.source_credits" />
+				</label>
+				<button class="btn btn-blue ml-2">Editare</button>
 			</div>
+		</form>
+		<div class="block my-2">
+			<form class="inline" @submit="toggleVisibility">
+				<button class="btn btn-blue mr-2" v-if="admin">Fă ${problem.visible ? "invizibilă" : "vizibilă"}</button>
+			</form>
+		</div>
+		<div class="block my-2">
+			<form class="inline" @submit="toggleConsoleInput">
+				<button class="btn btn-blue">Fă intrarea prin ${problem.console_input ? "fișiere" : "consolă"}</button>
+			</form>
+		</div>
+		<form @submit="changeTestName">
 			<div class="block my-2" v-if="!problem.console_input">
 				<label>
 					<span class="mr-2 text-xl">Nume test:</span>
 					<input class="form-input" type="text" v-model="problem.test_name" />
 				</label>
-				<button class="btn btn-blue ml-2" @click="changeTestName">Editare</button>
+				<button class="btn btn-blue ml-2">Editare</button>
 			</div>
+		</form>
+		<form @submit="updateLimits">
+			<label class="block my-2">
+				<span class="form-label">Limită de memorie:</span>
+				<input type="number" class="form-input" id="memoryTotal" placeholder="Limită de memorie (total)" min="0" step="128" max="131072" v-model="problem.memory_limit">
+				<span class="ml-1 text-xl">KB</span>
+			</label>
+			<label class="block my-2">
+				<span class="form-label">Limită de stack:</span>
+				<input type="number" class="form-input" id="memoryStack" placeholder="Limită de memorie (stack)" min="0" step="128" max="131072" v-model="problem.stack_limit">
+				<span class="ml-1 text-xl">KB</span>
+			</label>
+			<label class="block my-2">
+				<span class="form-label">Limită de timp:</span>
+				<input type="number" class="form-input" id="timeLimit" placeholder="Limită de timp..." min="0" step="0.01" v-model="problem.time_limit">
+				<span class="ml-1 text-xl">secunde</span>
+			</label>
+			<button type="submit" class="btn btn-blue">Actualizare limite</button>
+		</form>
+		<form @submit="updateDefaultPoints">
+			<div class="block my-2">
+				<label>
+					<span class="form-label">Puncte din oficiu:</span>
+					<input class="form-input" type="number" min="0" max="100" step="1" pattern="\d*" v-model="problem.default_points" />
+				</label>
+				<button class="btn btn-blue ml-2">Editare</button>
+			</div>
+		</form>
 			<div class="list-group my-2">
-				<a class="block list-group-item" :href="`/probleme/${problem.id}/edit/enunt`">Editare enunț</a>
-				<a class="block list-group-item" :href="`/probleme/${problem.id}/edit/limite`">Editare limite</a>
-				<a class="block list-group-item" :href="`/probleme/${problem.id}/edit/teste`">Editare teste</a>
+				<a class="block list-group-item" :href="`/problems/${problem.id}/edit/desc`">Editare enunț</a>
+				<a class="block list-group-item" :href="`/problems/${problem.id}/edit/test`">Editare teste</a>
 			</div>
-		</div>
-		<div class="text-4xl mx-auto w-full text-center" v-else>
-			<i class="fas fa-spinner animate-spin"></i> Se încarcă...
-		</div>
 	</div>
 
 	<script>
+let problemEnc = bundled.Base64.decode({{encodeJSON .Problem}});
+let problem = JSON.parse(problemEnc);
+
 Vue.createApp({
 	el: "",
 	delimiters: ['${', '}'],
 	data: () => {
 		return {
-			problem: null,
+			problem: problem,
 			admin: {{.User.Admin}}
 		}
 	},
 	methods: {
-		changeTitle: async function() {
+		changeTitle: async function(e) {
+			e.preventDefault();
 			if(this.problem == null || this.problem.name === "") {
 				createToast({status: "error", description: "Titlu gol"});
 				return
@@ -60,37 +106,53 @@ Vue.createApp({
 			let res = await postCall(`/problem/${this.problem.id}/update/title`, {title: this.problem.name})
 			apiToast(res);
 		},
-		changeCredits: async function() {
-			let res = await postCall(`/problem/${this.problem.id}/update/credits`, {credits: this.problem.credits})
+		changeSourceCredits: async function(e) {
+			e.preventDefault();
+			let res = await postCall(`/problem/${this.problem.id}/update/sourceCredits`, {credits: this.problem.source_credits})
 			apiToast(res);
 		},
-		changeTestName: async function() {
+		changeAuthorCredits: async function(e) {
+			e.preventDefault();
+			let res = await postCall(`/problem/${this.problem.id}/update/authorCredits`, {credits: this.problem.author_credits})
+			apiToast(res);
+		},
+		changeTestName: async function(e) {
+			e.preventDefault();
 			let res = await postCall(`/problem/${this.problem.id}/update/setTestName`, {testName: this.problem.test_name})
 			apiToast(res);
 		},
-		toggleVisibility: async function() {
+		toggleVisibility: async function(e) {
+			e.preventDefault();
 			let res = await postCall(`/problem/${this.problem.id}/update/setVisible`, {visible: !this.problem.visible})
 			if(res.status === "success") {
 				this.problem.visible = !this.problem.visible;
 			}
 			apiToast(res);
 		},
-		toggleConsoleInput: async function() {
+		toggleConsoleInput: async function(e) {
+			e.preventDefault();
 			let res = await postCall(`/problem/${this.problem.id}/update/consoleInput`, {isset: !this.problem.console_input})
 			if(res.status === "success") {
 				this.problem.console_input = !this.problem.console_input;
 			}
 			apiToast(res);
+		},
+		updateLimits: async function(e) {
+			e.preventDefault();
+			let q = {
+				memoryLimit: this.problem.memory_limit, 
+				stackLimit: this.problem.stack_limit, 
+				timeLimit: this.problem.time_limit
+			}
+			let res = await postCall(`/problem/${this.problem.id}/update/limits`, q)
+			apiToast(res);
+		},
+		updateDefaultPoints: async function(e) {
+			e.preventDefault();
+			let res = await postCall(`/problem/${this.problem.id}/update/defaultPoints`, {defaultPoints: this.problem.default_points})
+			apiToast(res)
 		}
 	},
-	created: async function() {
-		let res = await getCall("/problem/getByID", {id: {{.Problem.ID}} })
-		if(res.status == "error") {
-			apiToast(res);
-			return;
-		}
-		this.problem = res.data;
-	}
 }).mount("#editApp");
 	</script>
 </div>

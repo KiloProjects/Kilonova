@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/KiloProjects/Kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi"
 )
 
@@ -64,7 +64,7 @@ func (s *API) SetupSession(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		user, err := s.db.User(r.Context(), session)
+		user, err := s.userv.UserByID(r.Context(), session)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				next.ServeHTTP(w, r)
@@ -97,12 +97,12 @@ func (s *API) validateProblemEditor(next http.Handler) http.Handler {
 // NOTE: This does not fetch the test data from disk
 func (s *API) validateTestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		testID, err := strconv.ParseInt(chi.URLParam(r, "tID"), 10, 64)
+		testID, err := strconv.Atoi(chi.URLParam(r, "tID"))
 		if err != nil {
 			errorData(w, "invalid test ID", http.StatusBadRequest)
 			return
 		}
-		test, err := util.Problem(r).Test(testID)
+		test, err := s.tserv.Test(r.Context(), util.Problem(r).ID, testID)
 		if err != nil {
 			errorData(w, "test does not exist", http.StatusBadRequest)
 			return
@@ -117,12 +117,12 @@ func (s *API) validateTestID(next http.Handler) http.Handler {
 // Also, it fetches the problem from the DB and makes sure it exists
 func (s *API) validateProblemID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		problemID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+		problemID, err := strconv.Atoi(chi.URLParam(r, "id"))
 		if err != nil {
 			errorData(w, "invalid problem ID", http.StatusBadRequest)
 			return
 		}
-		problem, err := s.db.Problem(r.Context(), problemID)
+		problem, err := s.pserv.ProblemByID(r.Context(), problemID)
 		if err != nil {
 			errorData(w, "problem does not exist", http.StatusBadRequest)
 			return

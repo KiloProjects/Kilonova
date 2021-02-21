@@ -1,0 +1,22 @@
+{{ template "util/header" . }}
+
+<div class="c-container">
+	<h1>Useri</h1>
+
+	<template id="userTempl">
+	</template>
+
+	<div id="users" class="list-group list-group-rounded mb-2">
+	</div>
+</div>
+
+<script>
+var userDiv = document.getElementById("users");
+var userTempl = document.getElementById("userTempl");
+
+var renderTemplate(user) {
+}
+
+</script>
+
+{{ template "util/footer" . }}

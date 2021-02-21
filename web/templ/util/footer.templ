@@ -5,7 +5,7 @@
 				<div class="text-lg">Link-uri utile</div>
 				<ul>
 					<li><a class="black-anchor" href="/">Pagina principală</a></li>
-					<li><a class="black-anchor" href="/probleme">Listă Probleme</a></li>
+					<li><a class="black-anchor" href="/problems">Listă Probleme</a></li>
 					<li><a class="black-anchor" href="/submissions">Listă Submisii</a></li>
 				</ul>
 			</div>
@@ -22,46 +22,22 @@
 			<div class="h-auto">
 				<div class="text-lg">Alte informații</div>
 				<ul>
-					<li><a class="black-anchor" target="_blank" href="https://github.com/KiloProjects/Kilonova"><i class="fab fa-github"></i> Github</a></li>
-					<li><a class="black-anchor" target="_blank" href="mailto:admin@kilonova.ro?subject=Contact"><i class="fas fa-envelope"></i> Contact</a></li>
+					<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="https://github.com/KiloProjects/Kilonova"><i class="fab fa-github"></i> Github</a></li>
+					<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="mailto:admin@kilonova.ro?subject=Contact"><i class="fas fa-envelope"></i> Contact</a></li>
 				</ul>
 			</div>
 			<div class="h-auto">
 				<div class="text-lg">Sociale</div>
 				<ul>
-					<li><a class="black-anchor inline-flex items-center" target="_blank" href="https://twitter.com/KiloProjects"><i class="text-3xl fab fa-twitter-square mr-1"></i> @KiloProjects</a></li>
-					<li><a class="black-anchor inline-flex items-center" target="_blank" href="https://discord.gg/Qa6Ytgh"><i class="text-3xl fab fa-discord mr-1"></i> KiloProjects Discord</a></li>
-					<li><a class="black-anchor inline-flex items-center" target="_blank" href="https://github.com/KiloProjects"><i class="text-3xl fab fa-github-square mr-1"></i> @KiloProjects</a></li>
+					<li><a class="black-anchor inline-flex items-center" target="_blank" rel="noopener noreferrer" href="https://twitter.com/KiloProjects"><i class="text-3xl fab fa-twitter-square mr-1"></i> @KiloProjects</a></li>
+					<li><a class="black-anchor inline-flex items-center" target="_blank" rel="noopener noreferrer" href="https://discord.gg/Qa6Ytgh"><i class="text-3xl fab fa-discord mr-1"></i> KiloProjects Discord</a></li>
+					<li><a class="black-anchor inline-flex items-center" target="_blank" rel="noopener noreferrer" href="https://github.com/KiloProjects"><i class="text-3xl fab fa-github-square mr-1"></i> @KiloProjects</a></li>
 				</ul>
 			</div>
 		</div>
 		<p>&copy; KiloProjects 2020</p>
 	</div>
 </footer>
-<script>
-MathJax = {
-  tex: {
-    inlineMath: [['$', '$'], ['\\(', '\\)']]
-  },
-  svg: {
-    fontCache: 'global'
-  }
-};
-</script>
-
-<!-- Delayed to v0.6.2
-<script>
-(async () => {
-	let res = await getCall("/user/getVerified");
-	if(res.status === "success" && res.data === false) {
-		var html = `<div class="w-full rounded-md py-1 px-2 bg-green-200 text-black text-center">It looks like you haven't verified your email. Click <a class="underline" href="/resendVerification">here</a> to resend the verification email</div>`;
-		$(".c-container").prepend(html);
-	}
-})()
-</script> -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.4.2/umd/popper.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/js/bootstrap.min.js"></script>
-<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.0.5/es5/tex-mml-chtml.js"></script>
 </body>
 
 </html>

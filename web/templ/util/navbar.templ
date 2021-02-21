@@ -10,7 +10,7 @@
 	<nav id="nav-dropdown" class="px-2 pt-1 pb-3 md:flex md:p-0">
 		<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/submissions">Listă submisii</a>
 		{{if not .LoggedIn }}
-			<!--<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/signup">Sign up</a>-->
+			<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/signup">Sign up</a>
 			<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/login">Log in</a>
 		{{else}}
 			<div id="pr-dropdown" class="relative">
@@ -20,17 +20,17 @@
 						<i class="ml-n2 fas fa-user fa-fw"></i> Profil
 					</a>	
 					<a class="dropdown-list-item" href="/settings">
-						<i class="ml-n2 fas fa-cog fa-fw"></i> Setări
+						<i class="ml-n2 fas fa-user-cog fa-fw"></i> Setări
 					</a>
 					{{if (or .User.Proposer .User.Admin)}}
 						<div class="dropdown-divider"></div>
-						<a class="dropdown-list-item" href="/probleme/create">
-							<i class="ml-n2 fas fa-plus-square fa-fw"></i> Creare Problemă
-						</a>	
+						<a class="dropdown-list-item" href="/proposer">
+							<i class="ml-n2 fas fa-chalkboard-teacher fa-fw"></i> Panou Propunător
+						</a>
 					{{end}}
 					{{if .User.Admin}}
 						<a class="dropdown-list-item" href="/admin">
-							<i class="ml-n2 fas fa-sliders-h fa-fw"></i> Butoane Admin
+							<i class="ml-n2 fas fa-sliders-h fa-fw"></i> Panou Admin
 						</a>
 					{{end}}
 					<div class="dropdown-divider"></div>
@@ -49,31 +49,18 @@ var isNavbarOpen = false;
 
 function setNavbar(open) {
 	isNavbarOpen = open;
-	if(isNavbarOpen) {
-		$("#nav-toggler").removeClass("fa-bars");
-		$("#nav-toggler").addClass("fa-times");
-		$("#nav-dropdown").removeClass("hidden");
-		$("#nav-dropdown").addClass("block");
-	} else {
-		$("#nav-toggler").removeClass("fa-times");
-		$("#nav-toggler").addClass("fa-bars");
-		$("#nav-dropdown").removeClass("block");
-		$("#nav-dropdown").addClass("hidden");
-	}
+	document.getElementById("nav-toggler").classList.toggle("fa-times", isNavbarOpen);
+	document.getElementById("nav-toggler").classList.toggle("fa-bars", !isNavbarOpen);
+	document.getElementById("nav-dropdown").classList.toggle("block", isNavbarOpen);
+	document.getElementById("nav-dropdown").classList.toggle("hidden", !isNavbarOpen);
 }
 
 var isDropdownOpen = false;
 function setDropdown(open) {
 	isDropdownOpen = open;
-	if(isDropdownOpen) {
-		$("#profile-dropdown").removeClass("hidden");	
-		$("#dropdown-caret").removeClass("fa-caret-down");	
-		$("#dropdown-caret").addClass("fa-caret-up");
-	} else {
-		$("#profile-dropdown").addClass("hidden");
-		$("#dropdown-caret").addClass("fa-caret-down");
-		$("#dropdown-caret").removeClass("fa-caret-up");	
-	}
+	document.getElementById("profile-dropdown")?.classList.toggle("hidden", !isDropdownOpen);
+	document.getElementById("dropdown-caret")?.classList.toggle("fa-caret-down", !isDropdownOpen);
+	document.getElementById("dropdown-caret")?.classList.toggle("fa-caret-up", isDropdownOpen);
 }
 
 setNavbar(false);
@@ -85,8 +72,17 @@ document.addEventListener('keydown', (e) => {
 	}
 })
 
+function hasParentWithID(element, id) {
+	for(let p = element && element.parentElement; p; p = p.parentElement) {
+		if(p.id == id) {
+			return true
+		}
+	}
+	return false
+}
+
 document.addEventListener('click', (e) => {
-	if(isDropdownOpen && !(e.target.id === "profile-dropdown-button" || $(e.target).parents("#pr-dropdown").length)) {
+	if(isDropdownOpen && !(e.target.id === "profile-dropdown-button" || hasParentWithID(e.target, "pr-dropdown"))) {
 		setDropdown(false);
 	}
 })

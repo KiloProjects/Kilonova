@@ -2,7 +2,7 @@ node_modules
 .vscode
 # .editorconfig
 /config.toml
-Kilonova
+kn
 # simulation program
 sim.py
 

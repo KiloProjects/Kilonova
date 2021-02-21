@@ -1,3 +1,4 @@
+@import "notyf/notyf.min.css";
 
 @tailwind base;
 @tailwind components;
@@ -40,40 +41,51 @@
 		@apply text-blue-500 hover:text-blue-600 active:text-blue-600 focus:text-blue-600;
 	}
 
+/* purgecss start ignore */
+	
+	.katex {
+		@apply text-base;
+	}
+	
+	.notyf__message a {
+		@apply text-gray-300 hover:text-gray-400 active:text-blue-500 focus:text-blue-500;
+	}
+
+/* purgecss end ignore */
+
 	.CodeMirror {
 		@apply text-lg leading-normal rounded-lg;
 	}
 
+	.reset-list ul {
+		@apply list-disc list-inside;
+	}
+
+	.reset-list li {
+		@apply pl-8;
+	}
 }
 
 @layer components {
 	.c-container {
-		max-width: 100%;
-		padding-left: 15px;
-		padding-right: 15px;
+		max-width: 98%;
 		@apply mx-auto min-h-screen mt-6;
 	}
 	@media (min-width: 576px) {
 		.c-container {
-			max-width: 98%;
+			max-width: 97%;
 		}
 	}
 	@media (min-width: 768px) {
 		.c-container {
-			max-width: 95%;
+			max-width: 96%;
 		}
 	}
 	@media (min-width: 992px) {
 		.c-container {
-			max-width: 93%;
+			max-width: 95%;
 		}
 	}
-	@media (min-width: 1200px) {
-		.c-container {
-			max-width: 90%;
-		}
-	}
-
 
 
 	.roboto .navbar-brand h1 h2 h3 h4 h5 h6 {
@@ -85,16 +97,16 @@
 		@apply dark:border-gray-700 dark:bg-gray-800;
 	}
 	.list-group-item {
-		@apply block border-t border-gray-200 dark:border-gray-700 w-full px-4 py-3 black-anchor text-lg leading-normal;
+		@apply block border-t border-gray-300 dark:border-gray-700 w-full px-4 py-3 black-anchor text-lg leading-normal;
 		@apply hover:bg-gray-100;
 		@apply dark:hover:bg-gray-600;
 	}
 	.list-group-item:first-child {
-		@apply border-gray-300 dark:border-gray-700;
+		@apply border-t-0 border-gray-300 dark:border-gray-700;
 	}
 
 	.list-group-rounded {
-		@apply rounded-lg;
+		/*@apply rounded-lg;*/
 	}
 	.list-group-rounded > .list-group-item:first-child {
 		@apply rounded-t-lg;
@@ -102,13 +114,17 @@
 	.list-group-rounded > .list-group-item:last-child {
 		@apply rounded-b-lg;
 	}
-	
+
+	.border-gr {
+		@apply border-gray-300 dark:border-gray-700;
+	}
+
 	.dropdown-divider {
 		@apply h-0 my-1 border-t border-gray-200;
 		@apply dark:border-black;
 	}
 	.dropdown-list {
-		@apply absolute right-0 w-64;
+		@apply absolute right-0 w-full md:w-64;
 		@apply py-1 mt-1 text-xl bg-white rounded-lg shadow-lg;
 		@apply dark:bg-gray-800;
 	}
@@ -168,11 +184,33 @@
 	.btn-blue {
 		@apply bg-blue-500 text-white ring-blue-400;
 		@apply hover:bg-blue-700 active:bg-blue-700;
-		@apply focus:bg-blue-700 focus:outline-none hover:ring-blue-500 focus:ring-blue-500;
-		@apply dark:bg-blue-600;
+		@apply focus:bg-blue-700 focus:outline-none hover:ring-blue-600 focus:ring-blue-600;
+		@apply dark:bg-blue-600 dark:ring-blue-500;
+		@apply dark:hover:ring-blue-500 dark:focus:ring-blue-500;
 		@apply dark:hover:bg-blue-800 dark:active:bg-blue-800 dark:focus:bg-blue-800;
 		@apply dark:hover:text-white dark:active:text-white dark:focus:text-white;
 	}
+
+	.btn-red {
+		@apply bg-red-500 text-white ring-red-400;
+		@apply hover:bg-red-700 active:bg-red-700;
+		@apply focus:bg-red-700 focus:outline-none hover:ring-red-600 focus:ring-red-600;
+		@apply dark:bg-red-600 dark:ring-red-500;
+		@apply dark:hover:ring-red-500 dark:focus:ring-red-500;
+		@apply dark:hover:bg-red-800 dark:active:bg-red-800 dark:focus:bg-red-800;
+		@apply dark:hover:text-white dark:active:text-white dark:focus:text-white;
+	}
+
+	.is-invalid {
+		@apply ring-red-500 ring-1;
+		@apply transition ease-out duration-500;
+	}
+
+	.is-valid {
+		@apply ring-green-500 ring-1;
+		@apply transition ease-out duration-500;
+	}
+
 }
 
 @layer utilities {

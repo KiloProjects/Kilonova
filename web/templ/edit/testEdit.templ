@@ -5,66 +5,89 @@
 		<br/>
 		<h1> Editare test {{ .Test.VisibleID }} </h1>	
 	
-		<label class="block my-2">
-			<span class="mr-2 text-xl">ID: </span>
-			<input id="vID" type="number" class="form-input" value="{{ .Test.VisibleID }}" required />
-		</label>
-		<button class="btn btn-blue mb-2" onclick="updateID()">Actualizare ID</button>
-		<label class="block my-2">
-			<span class="mr-2 text-xl">Scor: </span>
-			<input id="score" type="number" class="form-input" value="{{ .Test.Score }}" required />
-		</label>
-		<button class="btn btn-blue mb-6" onclick="updateScore()">Actualizare scor</button>
-		{{ $test := getFullTests .Test }}
 
-		<div class="mb-3">
-			<h3> Input: </h3>
-			<textarea id="input" class="hidden">{{$test.In}}</textarea>
-		</div>
-		<div class="mb-3">
-			<h3> Output: </h3>
-			<textarea id="output" class="hidden">{{$test.Out}}</textarea>
-		</div>
-		<button class="btn btn-blue mb-2" onclick="updateData()">Actualizare date</button>
+		<form id="test_id_edit_form">
+			<label class="block my-2">
+				<span class="mr-2 text-xl">ID: </span>
+				<input id="vID" type="number" class="form-input" value="{{ .Test.VisibleID }}" required />
+			</label>
+			<button class="btn btn-blue mb-2">Actualizare ID</button>
+		</form>
+		<form id="test_score_edit_form">
+			<label class="block my-2">
+				<span class="mr-2 text-xl">Scor: </span>
+				<input id="score" type="number" class="form-input" value="{{ .Test.Score }}" required />
+			</label>
+			<button class="btn btn-blue mb-6">Actualizare scor</button>
+		</form>
+
+		<button id="orphan_button" class="btn btn-red block my-2"> Ștergere test </button>
+
+		<form id="test_edit_form">
+			{{ $test := getFullTests .Test }}
+			<div class="mb-3">
+				<h3> Input: </h3>
+				<textarea id="input" class="hidden">{{$test.In}}</textarea>
+			</div>
+			<div class="mb-3">
+				<h3> Output: </h3>
+				<textarea id="output" class="hidden">{{$test.Out}}</textarea>
+			</div>
+			<button class="btn btn-blue mb-2" >Actualizare date</button>
+		</form>
 	</div>
 </div>
 
 	<script>
 		var inCM = CodeMirror.fromTextArea(document.getElementById("input"), {})
 		var outCM = CodeMirror.fromTextArea(document.getElementById("output"), {})
-		// const errObj = {status: "error", description: "Not yet implemented"}
-		async function updateID() {
+		async function updateID(e) {
+			e.preventDefault()
 			let q = {
-				id: $("#vID").val()
+				id: document.getElementById("vID").value
 			}
-			console.log(q);
 			let res = await postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/id", q);
-			console.log(res)
-			apiToast(res)
-			// createToast(errObj)
-		}
-		async function updateScore() {
-			let q = {
-				score: $("#score").val()
+			if(res.status === "success") {
+				window.location.replace("/problems/{{.Problem.ID}}/edit/test/"+q.id)
+				return
 			}
-			console.log(q);
-			let res = await postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/score", q);
-			console.log(res)
 			apiToast(res)
-			// createToast(errObj)
 		}
-		async function updateData() {
+		async function updateScore(e) {
+			e.preventDefault()
+			let q = {
+				score: document.getElementById("score").value
+			}
+			let res = await postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/score", q);
+			apiToast(res)
+		}
+		async function updateData(e) {
+			e.preventDefault()
 			let q = {
 				input: inCM.getValue(),
 				output: outCM.getValue()
 			};
-			console.log(q);
 			let res = await postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/data", q)
-			console.log(res);
 			apiToast(res);
-			// createToast(errObj)
 		}
-		// TODO
+
+		async function removeTest(e) {
+			e.preventDefault()
+
+			if(!confirm("Sunteți siguri că vreți să ștergeți testul?")) {
+				return
+			}
+			let res = await postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/orphan", {})
+			if(res.status === "success") {
+				window.location.replace("/problems/{{.Problem.ID}}/edit/test")
+				return
+			}
+			apiToast(res);
+		}
+		document.getElementById("test_edit_form").addEventListener("submit", updateData)
+		document.getElementById("test_score_edit_form").addEventListener("submit", updateScore)
+		document.getElementById("test_id_edit_form").addEventListener("submit", updateID)
+		document.getElementById("orphan_button").addEventListener("click", removeTest)
 	</script>
 
 {{ template "util/footer" . }}

@@ -1,0 +1,227 @@
+
+<div class="border-2 border-gr p-1 pt-2 mb-2">
+<h2> Administrare fișiere </h2>
+
+	<div id="cdn_mgr" v-cloak>
+		<div v-if="!loading">
+			<div v-html="getFilePath()"></div>
+			<div class="list-group" v-if="dirs.length > 0 || files.length > 0">
+				<a href="#a" class="list-group-item text-xl px-2 py-1" v-if="actualLen > 0" @click="goBack()">
+					...
+				</a>
+				<template v-if="dirs.length > 0">
+					<div class="list-group-item px-2 py-1 flex justify-between" v-for="dir in dirs" :key="'d-'+dir.name">
+						<a class="text-xl" href="#a" @click="goToDir(dir.name)">
+							<i class="fas fa-fw fa-folder"></i> ${dir.name} 
+						</a>
+						<div class="text-base">
+							${printModTime(dir.mod_time)} | 
+							<button class="rounded py-1 px-2 text-xs bg-red-700 text-white font-semibold" @click="deleteObjectGen(dir.name)">
+								X
+							</button>
+						</div>
+					</div>
+				</template>
+				<template v-if="files.length > 0">
+					<div class="list-group-item px-2 py-1 flex justify-between" v-if="files.length > 0" v-for="file in files" :key="'f-'+file.name">
+						<a class="text-xl" target="_blank" :href="filePath(file.name)">
+							<i :class="'fas fa-fw ' + getFileIcon(file.name)"></i> ${file.name}
+						</a>
+						<div class="text-base">
+							<div>
+								${printSize(file.size)} | ${printModTime(file.mod_time)} | 
+								<button class="rounded py-1 px-2 text-xs bg-red-700 text-white font-semibold" @click="deleteObjectGen(file.name)">
+									X
+								</button>
+							</div>
+						</div>
+					</div>
+				</template>
+			</div>
+			<div v-else>
+				<a href="#a" class="block border border-gr text-xl px-2 py-1" v-if="actualLen > 0" @click="goBack()">
+					...
+				</a>
+				<div class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center">Director gol.<br/>
+					<button class="text-xl btn btn-blue" v-if="actualLen > 0" @click="deleteObjectGen(path) && goBack()">Ștergere</button> 
+				</div>
+			</div>
+		</div>
+		<div class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center" v-else>
+			<div><i class="fas fa-spinner animate-spin"></i> Se încarcă...</div>
+		</div>
+		<div class="mt-6 grid grid-cols-1 md:grid-cols-2">
+			<div class="border border-gr px-2 py-3">
+				<form @submit="uploadFile">
+					<h2 class="mb-2">Încărcare fișier</h2>
+					<input id="cdn_file_upl" class="block mb-2" type="file" required>
+					<input type="submit" class="btn btn-blue" value="Încărcare">
+				</form>
+			</div>
+			<div class="border border-gr px-2 py-3">
+				<form @submit="createFolder">
+					<h2>Creare folder</h2>
+					<label class="block mb-2">
+						<span class="form-label">Nume: </span>
+						<input class="form-input" type="text" v-model="inCreation">
+					</label>
+					<input type="submit" class="btn btn-blue" value="Creare">
+				</form>
+			</div>
+		</div>
+	</div>
+
+<script>
+let fileMatches = {};
+
+for(let t of ['png', 'jpg', 'jpeg', 'gif']) {
+	fileMatches[t] = 'fa-file-image'
+}
+
+for(let t of ['mp4', 'mkv']) {
+	fileMatches[t] = 'fa-file-video'
+}
+
+fileMatches['pdf'] = 'fa-file-pdf'
+fileMatches['csv'] = 'fa-file-csv'
+fileMatches['ppt'] = 'fa-file-powerpoint'
+fileMatches['pptx'] = 'fa-file-powerpoint'
+fileMatches['xls'] = 'fa-file-excel'
+fileMatches['xlsx'] = 'fa-file-excel'
+fileMatches['doc'] = 'fa-file-word'
+fileMatches['docx'] = 'fa-file-word'
+
+for(let t of ['zip', 'rar', '7z', 'gz', 'tar']) {
+	fileMatches[t] = 'fa-file-archive'
+}
+
+for(let t of ['c', 'cpp', 'go', 'pas', 'py', 'py3', 'java', 'js']) {
+	fileMatches[t] = 'fa-file-code'
+}
+
+for(let t of ['md', 'html', 'txt']) {
+	fileMatches[t] = 'fa-file-alt'
+}
+
+let app = Vue.createApp({
+	delimiters: ['${', '}'],
+	data: () => {
+		return {
+			loading: true,
+			canReadFirst: false,
+			dirs: [],
+			files: [],
+			paths: ["."],
+			actualLen: -1,
+			inCreation: "",
+		}
+	},
+	methods: {
+		poll: async function() {
+			let res = await getCall("/cdn/readDir", {path: this.paths.join('/')})
+			if(res.status !== "success") {
+				apiToast(res)
+				return
+			}
+			this.dirs = res.data.dirs.filter(e => e.type == "directory")
+			this.files = res.data.dirs.filter(e => e.type == "file")
+			this.paths = res.data.path
+			this.canReadFirst = res.data.can_read_first
+			if(!this.canReadFirst) {
+				this.paths.shift();
+			}
+			this.actualLen = this.paths.length
+			this.loading = false
+		},
+		goToDir: async function(dir) {
+			this.paths.push(dir)
+			await this.poll()
+		},
+		goBack: async function() {
+			this.paths.pop()
+			await this.poll()
+		},
+		createFolder: async function(e) {
+			e.preventDefault();
+			let p = [...this.paths, this.inCreation].join('/'); 
+			
+			let res = await postCall("/cdn/createDir", {path: p}) 
+			if(res.status !== "success") {
+				apiToast(res);
+				return
+			}
+			// this.path = res.data
+			await this.poll()
+			createToast({status: "success", title: "Created directory"})
+		},
+		deleteObjectGen: async function(path) {
+			let p = [...this.paths, path].join('/')
+			console.log(p)
+			let res = await postCall("/cdn/deleteObject", {path: p})
+			if(res.status === "success") {
+				await this.poll();
+			}
+			apiToast(res);
+		},
+		uploadFile: async function(e) {
+			e.preventDefault();
+			let files = document.getElementById("cdn_file_upl").files
+			if(files === null || files.length == 0) {
+				createToast({status: "error", title: "No files specified"})
+				return
+			}
+			let form = new FormData()
+			form.append("file", files[0])
+			form.append("path", this.paths.join('/'))
+			console.log(form)
+
+			let res = await multipartCall("/cdn/saveFile", form)
+			if(res.status !== "success") {
+				apiToast(res)
+				return
+			}
+			await this.poll();
+			createToast({status: "success", title: "Uploaded file"})
+		},
+		filePath: function(file) {
+			return ['/cdn', ...this.paths, file].join('/')
+		},
+		printModTime: function(time) {
+			if(!time)
+				return ""
+			return bundled.dayjs(time).format('DD/MM/YYYY HH:mm')
+		},
+		getFileIcon: function(name) {
+			let extension = name.split('.').pop();
+			if(fileMatches[extension] != null) {
+				return fileMatches[extension]
+			}
+			return "fa-file"
+		},
+		printSize: function(size) {
+			if(size > 1024*1024) {
+				return (size/1024/1024).toFixed(2) + "MB"
+			}
+			if(size > 1024) {
+				return (size/1024).toFixed(2) + "KB"
+			}
+			return size + "B"
+		},
+		getFilePath: function() {
+			let p = [...this.paths]
+			let ret = ""
+			ret += '<div class="inline mx-2 text-xl text-gray-200">/</div>';
+			for(let el of p) {
+				ret += el	
+				ret += '<div class="inline mx-2 text-xl text-gray-200">/</div>';
+			}
+			return ret
+		},
+	},
+	created: async function() {
+		await this.poll()
+	}
+})
+app.mount("#cdn_mgr");
+</script>
+</div>

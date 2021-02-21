@@ -1,9 +1,11 @@
 package util
 
 import (
+	"log"
 	"net/http"
+	"reflect"
 
-	"github.com/KiloProjects/Kilonova/internal/db"
+	"github.com/KiloProjects/kilonova"
 )
 
 // KNContextType is the string type for all context values
@@ -30,65 +32,68 @@ const (
 )
 
 // ID returns the ID with that specific key from context
-func ID(r *http.Request, tp KNContextType) int64 {
+func ID(r *http.Request, tp KNContextType) int {
 	switch v := r.Context().Value(tp).(type) {
 	case int:
-		return int64(v)
-	case uint:
-		return int64(v)
-	case int32:
-		return int64(v)
-	case int64:
 		return v
+	case uint:
+		return int(v)
+	case int32:
+		return int(v)
+	case int64:
+		return int(v)
+	case nil:
+		return 0
 	default:
+		log.Println("ID with type:", reflect.TypeOf(v))
 		return -1
 	}
 }
 
 // User returns the user from request context
-func User(r *http.Request) *db.User {
+func User(r *http.Request) *kilonova.User {
 	switch v := r.Context().Value(UserKey).(type) {
-	case db.User:
+	case kilonova.User:
 		return &v
-	case *db.User:
+	case *kilonova.User:
 		return v
 	default:
-		return &db.User{Empty: true}
+		return nil
 	}
 }
 
 // Problem returns the problem from request context
-func Problem(r *http.Request) *db.Problem {
+func Problem(r *http.Request) *kilonova.Problem {
 	switch v := r.Context().Value(ProblemKey).(type) {
-	case db.Problem:
+	case kilonova.Problem:
 		return &v
-	case *db.Problem:
+	case *kilonova.Problem:
 		return v
 	default:
-		return &db.Problem{Empty: true}
+		return nil
 	}
 }
 
 // Submission returns the submission from request context
-func Submission(r *http.Request) *db.Submission {
+func Submission(r *http.Request) *kilonova.Submission {
 	switch v := r.Context().Value(SubKey).(type) {
-	case db.Submission:
+	case kilonova.Submission:
 		return &v
-	case *db.Submission:
+	case *kilonova.Submission:
 		return v
 	default:
-		return &db.Submission{Empty: true}
+		return nil
 	}
 }
 
 // Test returns the test from request context
-func Test(r *http.Request) *db.Test {
+func Test(r *http.Request) *kilonova.Test {
 	switch v := r.Context().Value(TestKey).(type) {
-	case db.Test:
+	case kilonova.Test:
 		return &v
-	case *db.Test:
+	case *kilonova.Test:
 		return v
 	default:
-		return &db.Test{Empty: true}
+		return nil
 	}
 }
