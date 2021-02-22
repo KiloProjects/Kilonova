@@ -102,7 +102,7 @@ let app = Vue.createApp({
 	delimiters: ['${', '}'],
 	data: () => {
 		return {
-			userid: {{.User.ID}},
+			userid: {{if .User}}{{.User.ID}}{{else}}0{{end}},
 			problemid: {{.Problem.ID}},
 			subs: [],
 			limit: 5,

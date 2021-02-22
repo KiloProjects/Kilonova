@@ -85,8 +85,6 @@ type templateData struct {
 
 	Sidebar bool
 
-	Changelog string
-
 	// OpenGraph stuff
 	OGTitle string
 	OGType  string
@@ -346,7 +344,6 @@ func (rt *Web) Handler() http.Handler {
 			})
 			r.With(rt.ValidateSubmissionID).Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
 				templ := rt.hydrateTemplate(r, fmt.Sprintf("Submisia %d", util.Submission(r).ID))
-				templ.Vue = true
 				rt.build(w, r, "submission", templ)
 			})
 		})

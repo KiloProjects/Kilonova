@@ -2,27 +2,16 @@ package rclient
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
-	"log"
 	"strconv"
 	"time"
 
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/go-redis/redis/v8"
 )
 
 type RClient struct {
 	client *redis.Client
-}
-
-func readRandom(nBytes int) string {
-	var rnd = make([]byte, nBytes, nBytes)
-	if _, err := rand.Reader.Read(rnd); err != nil {
-		log.Println("ERROR GETTING RANDOM DATA:", err)
-		return "ASDFGH"
-	}
-	return hex.EncodeToString(rnd)
 }
 
 func New() (*RClient, error) {
@@ -39,7 +28,7 @@ func sessName(sess string) string {
 }
 
 func (c *RClient) CreateSession(ctx context.Context, uid int) (string, error) {
-	id := readRandom(12)
+	id := kilonova.RandomString(16)
 	_, err := c.client.Set(ctx, sessName(id), strconv.Itoa(uid), time.Hour*24*30).Result()
 	if err != nil {
 		return "", err
@@ -69,7 +58,7 @@ func verifName(verif string) string {
 }
 
 func (c *RClient) CreateVerification(ctx context.Context, uid int) (string, error) {
-	id := readRandom(10)
+	id := kilonova.RandomString(16)
 	_, err := c.client.Set(ctx, verifName(id), strconv.Itoa(uid), time.Hour*24*30).Result()
 	if err != nil {
 		return "", err

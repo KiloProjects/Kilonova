@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/ro';
 
 import cookie from 'js-cookie';
+
 import { Notyf } from 'notyf';
 
 import qs from 'qs';
@@ -10,52 +11,24 @@ export {Base64} from 'js-base64';
 
 dayjs.locale('ro')
 
-export function makeHljsPlugin(hljs) {
-	const Component = {
-		props: ["language", "code", "autodetect"],
-		data: function() {
-		  return {
-			detectedLanguage: "",
-			unknownLanguage: false
-		  };
-		},
-		computed: {
-		  className() {
-			if (this.unknownLanguage) return "";
-
-			return "hljs " + this.detectedLanguage;
-		  },
-		  highlighted() {
-			// no idea what language to use, return raw code
-			if (!this.autoDetect && !hljs.getLanguage(this.language)) {
-			  console.warn(`The language "${this.language}" you specified could not be found.`);
-			  this.unknownLanguage = true;
-			  return this.code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
-			}
-
-			let result = {};
-			if (this.autoDetect) {
-			  result = hljs.highlightAuto(this.code);
-			  this.detectedLanguage = result.language;
-			} else {
-			  result = hljs.highlight(this.language, this.code, this.ignoreIllegals);
-			  this.detectedLanguage = this.language;
-			}
-			return result.value;
-		  },
-		  autoDetect() {
-			return !this.language || (this.autodetect || this.autodetect === "");
-		  },
-		  ignoreIllegals() {
-			return true;
-		  }
-		},
-		template: `<pre><code :class="className" v-html="highlighted"></code></pre>`
-	};
-	return Component
+export function sizeFormatter(size) {
+	if(size > 1024*1024) {
+		return (size/1024/1024).toFixed(2) + " MB"
+	}
+	if(size > 1024) {
+		return (size/1024).toFixed(2) + " KB"
+	}
+	return size + " B"
 }
 
-// Waiting for halfmoon 1.2.0 to launch
+export function parseTime(str) {
+	if(!str) {
+		return ""
+	}
+	return dayjs(str).format('DD/MM/YYYY HH:mm')
+}
+
+// Waiting for halfmoon 1.2.0 to release 
 // import halfmoon from 'halfmoon';
 // window.addEventListener('DOMContentLoaded', () => {
 //	halfmoon.onDOMContentLoaded()

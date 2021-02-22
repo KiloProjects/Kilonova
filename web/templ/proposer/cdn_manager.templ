@@ -186,26 +186,14 @@ let app = Vue.createApp({
 		filePath: function(file) {
 			return ['/cdn', ...this.paths, file].join('/')
 		},
-		printModTime: function(time) {
-			if(!time)
-				return ""
-			return bundled.dayjs(time).format('DD/MM/YYYY HH:mm')
-		},
+		printModTime: bundled.parseTime,
+		printSize: bundled.sizeFormatter,
 		getFileIcon: function(name) {
 			let extension = name.split('.').pop();
 			if(fileMatches[extension] != null) {
 				return fileMatches[extension]
 			}
 			return "fa-file"
-		},
-		printSize: function(size) {
-			if(size > 1024*1024) {
-				return (size/1024/1024).toFixed(2) + "MB"
-			}
-			if(size > 1024) {
-				return (size/1024).toFixed(2) + "KB"
-			}
-			return size + "B"
 		},
 		getFilePath: function() {
 			let p = [...this.paths]

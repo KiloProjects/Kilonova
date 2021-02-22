@@ -15,7 +15,7 @@
 					{{end}}
 				{{ end }}</span>
 				<p><a href="/submissions/?userid={{.ContentUser.ID}}">Listă submisii</a></p>
-				{{- if (or .User.Admin (eq .User.ID .ContentUser.ID)) -}}
+				{{- if .User -}} {{if (or .User.Admin (eq .User.ID .ContentUser.ID)) -}}
 				<p>E-mail: {{.ContentUser.Email}}</p>
 				<p>E-mail verificat? 
 					{{ if .ContentUser.VerifiedEmail -}}
@@ -23,7 +23,7 @@
 					{{- else -}}
 						Nu | <button class="btn btn-blue" onclick="bundled.resendEmail()">Retrimite</button>
 					{{- end -}}</p>
-				{{- end -}}
+				{{- end -}} {{- end -}}
 			</div>
 		</div>
 		{{- $solved := solvedProblems .ContentUser }}

@@ -1,9 +1,0 @@
-- [x] Finish submission.go, test.go, subtest.go skeletons
-- [x] Finish psql/CreateUser
-- [x] Finish psql/ProblemService
-- [x] Finish psql/\*
-- [x] Make all other services
-- [x] Get rid of internal/db
-- [ ] Wrap all errors (maybe also handle them)
-- [ ] Test to see it all works fine
-- [ ] Handle all TODOs
