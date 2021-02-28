@@ -20,7 +20,7 @@
     "autoprefixer": "^10.2.0",
     "cssnano": "^4.1.10",
     "dayjs": "^1.10.2",
-    "esbuild": "^0.8.31",
+    "esbuild": "^0.8.50",
     "glob": "^7.1.6",
     "halfmoon": "^1.1.1",
     "js-base64": "^3.6.0",

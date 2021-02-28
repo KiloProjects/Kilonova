@@ -193,4 +193,6 @@ export {
 	resendEmail
 };
 
+export { SubmissionManager } from './sub_manager.js';
+
 // export {halfmoon};
