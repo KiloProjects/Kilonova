@@ -71,6 +71,12 @@ Additional reading I should do for a better platform:
 	- [ ] Late edition maintenance:
 		- [ ] Reduce nr de TODOs din nou
 		- [ ] Check that all CDN stuff is safe, I might have missed something and I don't want it to backfire and get bad actors to do nasty stuff
+		- [ ] Termeni și Condiții
+			- Nu au voie să facă site-uri (sau rubrici ale unor site-uri) cu scopul de a publica surse de 100p pentru probleme
+			- Comportament civilizat pe platformă etc etc
+			- Nu abuzați platforma
+			- Pedeapsa este la discreția administratorilor
+			- ???
 - [ ] pre-late beta:
 	- [ ] ? "Custom input" ca pe hackerrank/leetcode
 	- [ ] Mai multe tipuri de probleme:

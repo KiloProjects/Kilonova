@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 )
 
@@ -165,43 +166,35 @@ func (c *Config) BuildRunFlags() (res []string) {
 	return
 }
 
-func (b *Box) WriteReader(fpath string, r io.Reader) error {
-	return writeReader(b.GetFilePath(fpath), r, 0777)
-}
-
 // WriteFile writes a file to the specified path inside the box
-func (b *Box) WriteFile(fpath string, data []byte) error {
-	return os.WriteFile(b.GetFilePath(fpath), data, 0777)
+func (b *Box) WriteFile(fpath string, r io.Reader) error {
+	return writeReader(b.getFilePath(fpath), r, 0777)
 }
 
-// FileExists returns the stat of a file with the box filepath
-func (b *Box) Stat(fpath string) (os.FileInfo, error) {
-	return os.Stat(b.GetFilePath(fpath))
+// FileExists returns if a file exists or not
+func (b *Box) FileExists(fpath string) bool {
+	_, err := os.Stat(b.getFilePath(fpath))
+	if err != nil {
+		// TODO: Only fs.ErrNotExist should happen, make sure it is that way
+		return false
+	}
+	return true
 }
 
 // RemoveFile tries to remove a created file from inside the sandbox
 func (b *Box) RemoveFile(fpath string) error {
-	return os.Remove(b.GetFilePath(fpath))
+	return os.Remove(b.getFilePath(fpath))
 }
 
-// GetFile returns a file from inside the sandbox
-func (b *Box) GetFile(fpath string) ([]byte, error) {
-	return os.ReadFile(b.GetFilePath(fpath))
-}
-
-// GetFilePath returns a path to the file location on disk of a box file
-func (b *Box) GetFilePath(boxpath string) string {
+// getFilePath returns a path to the file location on disk of a box file
+func (b *Box) getFilePath(boxpath string) string {
 	return path.Join(b.path, boxpath)
 }
 
-// CopyFromBox copies a file from the box to the outside world
+// CopyFromBox copies a file from the box to the writer
 // It will inherit all permissions
-func (b *Box) CopyFromBox(boxpath, rootpath string) error {
-	return copyFile(b.GetFilePath(boxpath), rootpath)
-}
-
-func (b *Box) CopyFromBoxInWriter(boxpath string, w io.Writer) error {
-	f, err := os.Open(b.GetFilePath(boxpath))
+func (b *Box) CopyFromBox(boxpath string, w io.Writer) error {
+	f, err := os.Open(b.getFilePath(boxpath))
 	if err != nil {
 		return err
 	}
@@ -214,7 +207,7 @@ func (b *Box) CopyFromBoxInWriter(boxpath string, w io.Writer) error {
 // CopyInBox copies a file to the box from the outside world
 // It will inherit all permissions
 func (b *Box) CopyInBox(rootpath, boxpath string) error {
-	return copyFile(rootpath, b.GetFilePath(boxpath))
+	return copyFile(rootpath, b.getFilePath(boxpath))
 }
 
 func copyFile(startpath, endpath string) error {
@@ -233,7 +226,7 @@ func copyFile(startpath, endpath string) error {
 	return writeReader(endpath, infile, stat.Mode())
 }
 
-func (b *Box) Cleanup() error {
+func (b *Box) Close() error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	var params []string
@@ -244,44 +237,41 @@ func (b *Box) Cleanup() error {
 	return exec.Command(isolatePath, params...).Run()
 }
 
-// ExecCommand runs a command
-func (b *Box) ExecCommand(command ...string) (string, string, error) {
-	return b.ExecWithStdin("", command...)
+func (b *Box) RunCommand(command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer) (*kilonova.RunStats, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	params := append(b.Config.BuildRunFlags(), command...)
+	cmd := exec.Command(isolatePath, params...)
+
+	if b.Debug {
+		fmt.Println("DEBUG:", cmd.String())
+	}
+
+	metaFile := path.Join(os.TempDir(), "kn-"+kilonova.RandomString(6))
+	b.Config.MetaFile = metaFile
+
+	cmd.Stdin = stdin
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	err := cmd.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	// read Meta File
+	f, err := os.Open(metaFile)
+	if err != nil {
+		return nil, nil
+	}
+	defer f.Close()
+	return ParseMetaFile(f), nil
 }
 
 // ExecCombinedOutput runs a command and returns the combined output
 func (b *Box) ExecCombinedOutput(command ...string) ([]byte, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	params := append(b.Config.BuildRunFlags(), command...)
-	cmd := exec.Command(isolatePath, params...)
-	if b.Debug {
-		fmt.Println("DEBUG:", cmd.String())
-	}
-	return cmd.CombinedOutput()
-}
-
-// ExecWithStdin runs a command with a specified stdin
-// Returns the stdout, stderr and error (if anything bad happened)
-func (b *Box) ExecWithStdin(stdin string, command ...string) (string, string, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	params := append(b.Config.BuildRunFlags(), command...)
-	cmd := exec.Command(isolatePath, params...)
-	if stdin != "" {
-		cmd.Stdin = strings.NewReader(stdin)
-	}
-
-	if b.Debug {
-		fmt.Println("DEBUG:", cmd.String())
-	}
-
-	stdout := new(bytes.Buffer)
-	stderr := new(bytes.Buffer)
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	err := cmd.Run()
-	return stdout.String(), stderr.String(), err
+	var output bytes.Buffer
+	_, err := b.RunCommand(command, nil, &output, &output)
+	return output.Bytes(), err
 }
 
 // New returns a new box instance from the specified ID

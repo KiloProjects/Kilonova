@@ -1,13 +1,13 @@
 package boxmanager
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -50,12 +50,12 @@ func (b *BoxManager) ToggleDebug() {
 
 // Cleanup cleans up the boxes
 func (b *BoxManager) Cleanup() error {
-	return b.Box.Cleanup()
+	return b.Box.Close()
 }
 
 // CompileFile compiles a file that has the corresponding language
 func (b *BoxManager) CompileFile(SourceCode []byte, language config.Language) (string, error) {
-	if err := b.Box.WriteFile(language.SourceName, SourceCode); err != nil {
+	if err := b.Box.WriteFile(language.SourceName, bytes.NewReader(SourceCode)); err != nil {
 		return "", err
 	}
 
@@ -95,7 +95,7 @@ func (b *BoxManager) CompileFile(SourceCode []byte, language config.Language) (s
 
 // RunSubmission runs a program, following the language conventions
 // filenames contains the names for input and output, used if consoleInput is true
-func (b *BoxManager) RunSubmission(language config.Language, constraints limits, metaFile string, consoleInput bool) (*box.MetaFile, error) {
+func (b *BoxManager) RunSubmission(language config.Language, constraints limits, consoleInput bool) (*kilonova.RunStats, error) {
 	if b.Box.Config.EnvToSet == nil {
 		b.Box.Config.EnvToSet = make(map[string]string)
 	}
@@ -130,11 +130,6 @@ func (b *BoxManager) RunSubmission(language config.Language, constraints limits,
 		b.Box.Config.WallTimeLimit = 15
 	}
 
-	if metaFile != "" {
-		metaFile = path.Join("/tmp/", metaFile)
-		b.Box.Config.MetaFile = metaFile
-	}
-
 	if consoleInput {
 		b.Box.Config.InputFile = "/box/stdin.in"
 		b.Box.Config.OutputFile = "/box/stdin.out"
@@ -150,20 +145,7 @@ func (b *BoxManager) RunSubmission(language config.Language, constraints limits,
 		goodCmd = language.RunCommand
 	}
 
-	_, _, err = b.Box.ExecCommand(goodCmd...)
-	if metaFile != "" {
-		f, err := os.Open(metaFile)
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
-		return box.ParseMetaFile(f), nil
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return nil, nil
+	return b.Box.RunCommand(goodCmd, nil, nil, nil)
 }
 
 // ExecuteTest executes a new test
@@ -186,7 +168,7 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 	}
 	defer in.Close()
 
-	if err := b.Box.WriteReader("/box/"+sub.Filename+".in", in); err != nil {
+	if err := b.Box.WriteFile("/box/"+sub.Filename+".in", in); err != nil {
 		fmt.Println("Can't write input file:", err)
 		response.Comments = "Sandbox error: Couldn't write input file"
 		return response, err
@@ -204,9 +186,9 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 		StackLimit:  sub.StackLimit,
 		TimeLimit:   sub.TimeLimit,
 	}
-	meta, err := b.RunSubmission(config.Languages[sub.Lang], lim, strconv.Itoa(int(sub.ID))+".txt", consoleInput)
+	meta, err := b.RunSubmission(config.Languages[sub.Lang], lim, consoleInput)
 	response.Time = meta.Time
-	response.Memory = int32(meta.CgMem)
+	response.Memory = int32(meta.Memory)
 
 	if err != nil {
 		response.Comments = fmt.Sprintf("Error running submission: %v", err)
@@ -225,7 +207,7 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 	}
 
 	boxOut := fmt.Sprintf("/box/%s.out", sub.Filename)
-	if _, err := b.Box.Stat(boxOut); err != nil {
+	if !b.Box.FileExists(boxOut) {
 		response.Comments = "No output file found"
 		return response, nil
 	}
@@ -236,7 +218,7 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 		return response, nil
 	}
 
-	if err := b.Box.CopyFromBoxInWriter(boxOut, w); err != nil {
+	if err := b.Box.CopyFromBox(boxOut, w); err != nil {
 		response.Comments = "Could not write output file"
 		return response, nil
 	}
@@ -249,7 +231,7 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 	return response, nil
 }
 
-func (b *BoxManager) CompileSubmission(c *pb.CompileRequest) (*pb.CompileResponse, error) {
+func (b *BoxManager) CompileSubmission(c *pb.CompileRequest) *pb.CompileResponse {
 	b.compileLock.Lock()
 	defer b.compileLock.Unlock()
 
@@ -267,13 +249,23 @@ func (b *BoxManager) CompileSubmission(c *pb.CompileRequest) (*pb.CompileRespons
 		if err != nil {
 			resp.Success = false
 		} else {
-			if err := b.Box.CopyFromBox(lang.CompiledName, outName); err != nil {
+			f, err := os.OpenFile(outName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
+			if err != nil {
+				resp.Other = err.Error()
+				resp.Success = false
+				return resp
+			}
+			if err := b.Box.CopyFromBox(lang.CompiledName, f); err != nil {
+				resp.Other = err.Error()
+				resp.Success = false
+			}
+			if err := f.Close(); err != nil {
 				resp.Other = err.Error()
 				resp.Success = false
 			}
 		}
 
-		return resp, nil
+		return resp
 	}
 
 	if err := os.WriteFile(outName, []byte(c.Code), 0644); err != nil {
@@ -281,13 +273,13 @@ func (b *BoxManager) CompileSubmission(c *pb.CompileRequest) (*pb.CompileRespons
 		resp.Success = false
 	}
 
-	return resp, nil
+	return resp
 }
 
 // Reset reintializes a box
 // Should be run after finishing running a batch of tests
 func (b *BoxManager) Reset() (err error) {
-	err = b.Box.Cleanup()
+	err = b.Box.Close()
 	if err != nil {
 		return
 	}
