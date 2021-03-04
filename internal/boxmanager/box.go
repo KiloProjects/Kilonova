@@ -1,7 +1,9 @@
-package box
+package boxmanager
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/fs"
@@ -15,6 +17,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/davecgh/go-spew/spew"
 )
 
 var (
@@ -25,6 +28,8 @@ var (
 	isolatePath   string
 )
 
+var _ kilonova.Sandbox = &Box{}
+
 // Env represents a variable-value pair for an environment variable
 type Env struct {
 	Var   string
@@ -33,11 +38,6 @@ type Env struct {
 
 // Config is the struct that controls the sandbox
 type Config struct {
-	// Box ID
-	ID int
-
-	// Mark if Cgroups should be enabled
-	Cgroups bool
 	// Maximum Cgroup memory (in kbytes)
 	CgroupMem int32
 
@@ -56,41 +56,37 @@ type Config struct {
 
 	InputFile  string
 	OutputFile string
-	ErrFile    string
 	MetaFile   string
 
 	// Memory limits (in kbytes)
-	MemoryLimit int32
-	StackSize   int32
+	MemoryLimit int
+	StackSize   int
 
 	// Processes represents the maximum number of processes the program can create
 	Processes int
-
-	// Chdir is the directory (relative to the box root) to switch in
-	Chdir string
 }
 
 // Box is the struct for the current box
 type Box struct {
-	path   string
-	Config Config
+	path  string
+	boxID int
 
 	// Debug prints additional info if set
 	Debug bool
 
 	// the mutex makes sure we don't do anything stupid while we do other stuff
-	mu sync.Mutex
+	mu       sync.Mutex
+	metaFile string
 }
 
 // BuildRunFlags compiles all flags into an array
-func (c *Config) BuildRunFlags() (res []string) {
-	res = append(res, "--box-id="+strconv.Itoa(c.ID))
+func (b *Box) BuildRunFlags(c *kilonova.RunConfig) (res []string) {
+	//c := b.Config
+	res = append(res, "--box-id="+strconv.Itoa(b.boxID))
 
-	if c.Cgroups {
-		res = append(res, "--cg", "--cg-timing")
-		if c.CgroupMem != 0 {
-			res = append(res, "--cg-mem="+strconv.Itoa(int(c.CgroupMem)))
-		}
+	res = append(res, "--cg", "--cg-timing")
+	if c.MemoryLimit != 0 {
+		res = append(res, "--cg-mem="+strconv.Itoa(c.MemoryLimit))
 	}
 	for _, dir := range c.Directories {
 		if dir.Removes {
@@ -116,8 +112,11 @@ func (c *Config) BuildRunFlags() (res []string) {
 	for _, env := range c.EnvToInherit {
 		res = append(res, "--env="+env)
 	}
-	for key, val := range c.EnvToSet {
-		res = append(res, "--env="+key+"="+val)
+
+	if c.EnvToSet != nil {
+		for key, val := range c.EnvToSet {
+			res = append(res, "--env="+key+"="+val)
+		}
 	}
 
 	if c.TimeLimit != 0 {
@@ -134,33 +133,27 @@ func (c *Config) BuildRunFlags() (res []string) {
 		memLim := approxMemory(c.MemoryLimit)
 		res = append(res, "--mem="+strconv.Itoa(int(memLim)))
 	}
-	if c.StackSize != 0 {
-		stackSize := approxMemory(c.StackSize)
+	if c.StackLimit != 0 {
+		stackSize := approxMemory(c.StackLimit)
 		res = append(res, "--stack="+strconv.Itoa(int(stackSize)))
 	}
 
-	if c.Processes == 0 {
+	if c.MaxProcs == 0 {
 		res = append(res, "--processes")
 	} else {
-		res = append(res, "--processes="+strconv.Itoa(c.Processes))
+		res = append(res, "--processes="+strconv.Itoa(c.MaxProcs))
 	}
 
-	if c.InputFile != "" {
-		res = append(res, "--stdin="+c.InputFile)
+	if c.InputPath != "" {
+		res = append(res, "--stdin="+c.InputPath)
 	}
-	if c.OutputFile != "" {
-		res = append(res, "--stdout="+c.OutputFile)
+	if c.OutputPath != "" {
+		res = append(res, "--stdout="+c.OutputPath)
 	}
-	if c.ErrFile != "" {
-		res = append(res, "--stderr="+c.ErrFile)
-	}
-	if c.MetaFile != "" {
-		res = append(res, "--meta="+c.MetaFile)
+	if b.metaFile != "" {
+		res = append(res, "--meta="+b.metaFile)
 	}
 
-	if c.Chdir != "" {
-		res = append(res, "--chdir="+c.Chdir)
-	}
 	res = append(res, "--silent", "--run", "--")
 
 	return
@@ -169,6 +162,10 @@ func (c *Config) BuildRunFlags() (res []string) {
 // WriteFile writes a file to the specified path inside the box
 func (b *Box) WriteFile(fpath string, r io.Reader) error {
 	return writeReader(b.getFilePath(fpath), r, 0777)
+}
+
+func (b *Box) ReadFile(fpath string) (io.ReadSeekCloser, error) {
+	return os.Open(b.getFilePath(fpath))
 }
 
 // FileExists returns if a file exists or not
@@ -230,37 +227,42 @@ func (b *Box) Close() error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	var params []string
-	if b.Config.Cgroups {
-		params = append(params, "--cg")
-	}
-	params = append(params, "--box-id="+strconv.Itoa(b.Config.ID), "--cleanup")
+	params = append(params, "--cg")
+	params = append(params, "--box-id="+strconv.Itoa(b.boxID), "--cleanup")
 	return exec.Command(isolatePath, params...).Run()
 }
 
-func (b *Box) RunCommand(command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer) (*kilonova.RunStats, error) {
+func (b *Box) RunCommand(ctx context.Context, command []string, conf *kilonova.RunConfig) (*kilonova.RunStats, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	params := append(b.Config.BuildRunFlags(), command...)
-	cmd := exec.Command(isolatePath, params...)
-
-	if b.Debug {
-		fmt.Println("DEBUG:", cmd.String())
-	}
 
 	metaFile := path.Join(os.TempDir(), "kn-"+kilonova.RandomString(6))
-	b.Config.MetaFile = metaFile
+	b.metaFile = metaFile
 
-	cmd.Stdin = stdin
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
+	params := append(b.BuildRunFlags(conf), command...)
+	cmd := exec.CommandContext(ctx, isolatePath, params...)
+
+	b.metaFile = ""
+
+	if b.Debug {
+		// fmt.Println("DEBUG:", cmd.String())
+	}
+
+	if conf != nil {
+		cmd.Stdin = conf.Stdin
+		cmd.Stdout = conf.Stdout
+		cmd.Stderr = conf.Stderr
+	}
 	err := cmd.Run()
-	if err != nil {
+	if _, ok := err.(*exec.ExitError); err != nil && !ok {
+		spew.Dump(err)
 		return nil, err
 	}
 
 	// read Meta File
 	f, err := os.Open(metaFile)
 	if err != nil {
+		fmt.Println("Couldn't open meta file, wtf", err)
 		return nil, nil
 	}
 	defer f.Close()
@@ -268,18 +270,20 @@ func (b *Box) RunCommand(command []string, stdin io.Reader, stdout io.Writer, st
 }
 
 // ExecCombinedOutput runs a command and returns the combined output
-func (b *Box) ExecCombinedOutput(command ...string) ([]byte, error) {
+func (b *Box) ExecCombinedOutput(ctx context.Context, cmd []string, conf *kilonova.RunConfig) ([]byte, error) {
 	var output bytes.Buffer
-	_, err := b.RunCommand(command, nil, &output, &output)
+	conf.Stdout = &output
+	conf.Stderr = &output
+	_, err := b.RunCommand(ctx, cmd, conf)
 	return output.Bytes(), err
 }
 
-// New returns a new box instance from the specified ID
-func New(config Config) (*Box, error) {
-	ret, err := exec.Command(isolatePath, "--cg", fmt.Sprintf("--box-id=%d", config.ID), "--init").CombinedOutput()
+// newBox returns a new box instance from the specified ID
+func newBox(id int) (*Box, error) {
+	ret, err := exec.Command(isolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--init").CombinedOutput()
 	if strings.HasPrefix(string(ret), "Box already exists") {
-		exec.Command(isolatePath, "--cg", fmt.Sprintf("--box-id=%d", config.ID), "--cleanup").Run()
-		return New(config)
+		exec.Command(isolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--cleanup").Run()
+		return newBox(id)
 	}
 
 	if strings.HasPrefix(string(ret), "Must be started as root") {
@@ -287,14 +291,25 @@ func New(config Config) (*Box, error) {
 			fmt.Println("Couldn't chown root the isolate binary:", err)
 			return nil, err
 		}
-		return New(config)
+		return newBox(id)
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &Box{path: strings.TrimSpace(string(ret)), Config: config}, nil
+	return &Box{path: strings.TrimSpace(string(ret)), boxID: id}, nil
+}
+
+func CheckCanRun() bool {
+	box, err := newBox(0)
+	if err != nil {
+		return false
+	}
+	if err := box.Close(); err != nil {
+		return false
+	}
+	return true
 }
 
 func downloadFile(url, path string, perm os.FileMode) error {
@@ -318,7 +333,7 @@ func downloadFile(url, path string, perm os.FileMode) error {
 }
 
 // Approximate to the nearest 128kb
-func approxMemory(memory int32) int32 {
+func approxMemory(memory int) int {
 	rem := memory % 128
 	if rem == 0 {
 		return memory
@@ -361,4 +376,43 @@ func writeReader(path string, r io.Reader, perms fs.FileMode) error {
 		err = err1
 	}
 	return err
+}
+
+// ParseMetaFile parses a specified meta file
+func ParseMetaFile(r io.Reader) *kilonova.RunStats {
+	if r == nil {
+		return nil
+	}
+	var file = new(kilonova.RunStats)
+
+	s := bufio.NewScanner(r)
+
+	for s.Scan() {
+		if !strings.Contains(s.Text(), ":") {
+			continue
+		}
+		l := strings.SplitN(s.Text(), ":", 2)
+		switch l[0] {
+		case "cg-mem":
+			file.Memory, _ = strconv.Atoi(l[1])
+		case "exitcode":
+			file.ExitCode, _ = strconv.Atoi(l[1])
+		case "exitsig":
+			file.ExitSignal, _ = strconv.Atoi(l[1])
+		case "killed":
+			file.Killed = true
+		case "message":
+			file.Message = l[1]
+		case "status":
+			file.Status = l[1]
+		case "time":
+			file.Time, _ = strconv.ParseFloat(l[1], 32)
+		case "time-wall":
+			file.WallTime, _ = strconv.ParseFloat(l[1], 32)
+		default:
+			continue
+		}
+	}
+
+	return file
 }

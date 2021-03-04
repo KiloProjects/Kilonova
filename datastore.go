@@ -13,36 +13,40 @@ var (
 	ErrNotExist     = &Error{Code: ENOTFOUND, Message: "Error doesn't exist"}
 )
 
-type CDNDirEntry struct {
-	Type    string    `json:"type"`
-	Name    string    `json:"name"`
-	ModTime time.Time `json:"mod_time"`
-	Size    int       `json:"size"`
-}
-
-// DataStore represents an interface for the Data Storage Manager
-type DataStore interface {
+type TestStore interface {
 	SaveTestInput(testID int, input io.Reader) error
 	SaveTestOutput(testID int, output io.Reader) error
 	TestInput(testID int) (io.ReadCloser, error)
 	TestOutput(testID int) (io.ReadCloser, error)
+}
 
-	// I should merge SubtestWriter/SubtestReader sometime (returning an io.ReadWriteCloser), idk
+type SubtestStore interface {
 	SubtestWriter(subtest int) (io.WriteCloser, error)
 	SubtestReader(subtest int) (io.ReadCloser, error)
 
 	RemoveSubtestData(subtest int) error
+}
 
-	// SubtestPath and TestOutputPath are bad workarounds for getting a valid path to the checker in internal/grader/grader.go.
-	// I should fix this sometime, so i can have multiple different data store sources.
-	SubtestPath(subtest int) string
-	TestOutputPath(testID int) string
-
-	// For CDN
+// For CDN
+type CDNStore interface {
 	SaveFile(path string, r io.Reader) error
 	CreateDir(path string) error
 	// GetFile returns a ReadSeeker that must be Closed, the modtime and an error if anything occurs
 	GetFile(path string) (io.ReadSeekCloser, time.Time, error)
 	DeleteObject(path string) error
 	ReadDir(path string) ([]CDNDirEntry, error)
+}
+
+// DataStore represents an interface for the Data Storage Manager
+type DataStore interface {
+	TestStore
+	SubtestStore
+	CDNStore
+}
+
+type CDNDirEntry struct {
+	Type    string    `json:"type"`
+	Name    string    `json:"name"`
+	ModTime time.Time `json:"mod_time"`
+	Size    int       `json:"size"`
 }

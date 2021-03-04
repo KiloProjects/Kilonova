@@ -2,6 +2,7 @@ package boxmanager
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -9,72 +10,60 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/KiloProjects/kilonova"
-	pb "github.com/KiloProjects/kilonova/grpc"
-	"github.com/KiloProjects/kilonova/internal/box"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"golang.org/x/sync/semaphore"
 )
 
-var compilePath string
+var _ kilonova.Runner = &BoxManager{}
 
 // limits stores the constraints that need to be respected by a submission
 type limits struct {
 	// seconds
 	TimeLimit float64
 	// kilobytes
-	StackLimit  int32
-	MemoryLimit int32
+	StackLimit  int
+	MemoryLimit int
 }
 
 // BoxManager manages a box with eval-based submissions
 type BoxManager struct {
-	ID  int
-	Box *box.Box
-	dm  kilonova.DataStore
+	dm kilonova.DataStore
 
-	compileLock   sync.Mutex
-	executionLock sync.Mutex
+	numConcurrent int
+	sem           *semaphore.Weighted
+
+	availableIDs chan int
 
 	// If debug mode is enabled, the manager should print more stuff to the command line
 	debug bool
 }
 
-// ToggleDebug is a convenience function to setting up debug mode in the box and the box manager
+// ToggleDebug is a convenience function to setting up debug mode in the box manager and all future boxes
 // It should print additional output
 func (b *BoxManager) ToggleDebug() {
 	b.debug = !b.debug
-	b.Box.Debug = b.debug
-}
-
-// Cleanup cleans up the boxes
-func (b *BoxManager) Cleanup() error {
-	return b.Box.Close()
 }
 
 // CompileFile compiles a file that has the corresponding language
-func (b *BoxManager) CompileFile(SourceCode []byte, language config.Language) (string, error) {
-	if err := b.Box.WriteFile(language.SourceName, bytes.NewReader(SourceCode)); err != nil {
+func (b *BoxManager) CompileFile(ctx context.Context, box *Box, SourceCode []byte, language config.Language) (string, error) {
+	if err := box.WriteFile(language.SourceName, bytes.NewReader(SourceCode)); err != nil {
 		return "", err
 	}
 
-	if b.Box.Config.EnvToSet == nil {
-		b.Box.Config.EnvToSet = make(map[string]string)
-	}
+	var conf kilonova.RunConfig
+	conf.EnvToSet = make(map[string]string)
 
-	oldConfig := b.Box.Config
-	b.Box.Config.InheritEnv = true
-	for _, dir := range language.Mounts {
-		b.Box.Config.Directories = append(b.Box.Config.Directories, dir)
-	}
+	conf.InheritEnv = true
+	conf.Directories = append(conf.Directories, language.Mounts...)
 
 	for key, val := range language.CommonEnv {
-		b.Box.Config.EnvToSet[key] = val
+		conf.EnvToSet[key] = val
 	}
 
 	for key, val := range language.BuildEnv {
-		b.Box.Config.EnvToSet[key] = val
+		conf.EnvToSet[key] = val
 	}
 
 	goodCmd, err := makeGoodCommand(language.CompileCommand)
@@ -83,61 +72,46 @@ func (b *BoxManager) CompileFile(SourceCode []byte, language config.Language) (s
 		goodCmd = language.CompileCommand
 	}
 
-	combinedOut, err := b.Box.ExecCombinedOutput(goodCmd...)
-	b.Box.Config = oldConfig
+	combinedOut, err := box.ExecCombinedOutput(ctx, goodCmd, &conf)
 
 	if err != nil {
 		return string(combinedOut), err
 	}
 
-	return string(combinedOut), b.Box.RemoveFile(language.SourceName)
+	return string(combinedOut), box.RemoveFile(language.SourceName)
 }
 
 // RunSubmission runs a program, following the language conventions
 // filenames contains the names for input and output, used if consoleInput is true
-func (b *BoxManager) RunSubmission(language config.Language, constraints limits, consoleInput bool) (*kilonova.RunStats, error) {
-	if b.Box.Config.EnvToSet == nil {
-		b.Box.Config.EnvToSet = make(map[string]string)
-	}
-
-	oldConf := b.Box.Config
+func (b *BoxManager) RunSubmission(ctx context.Context, box *Box, language config.Language, constraints limits, consoleInput bool) (*kilonova.RunStats, error) {
+	var runConf kilonova.RunConfig
+	runConf.EnvToSet = make(map[string]string)
 
 	// if our specified language is not compiled, then it means that
 	// the mounts specified should be added at runtime
 	if !language.IsCompiled {
-		for _, dir := range language.Mounts {
-			b.Box.Config.Directories = append(b.Box.Config.Directories, dir)
-		}
+		runConf.Directories = append(runConf.Directories, language.Mounts...)
 	}
 
 	for key, val := range language.CommonEnv {
-		b.Box.Config.EnvToSet[key] = val
+		runConf.EnvToSet[key] = val
 	}
 	for key, val := range language.RunEnv {
-		b.Box.Config.EnvToSet[key] = val
+		runConf.EnvToSet[key] = val
 	}
 
-	//b.Box.Config.MemoryLimit = constraints.MemoryLimit
-	// CgroupMem is disabled for now, it causes a sandbox error "Cannot set /sys/fs/cgroup/memory/box-2/memory.limit_in_bytes"
-	// and i don't want to deal with it right now
-	b.Box.Config.CgroupMem = constraints.MemoryLimit
-	b.Box.Config.StackSize = constraints.StackLimit
-	b.Box.Config.TimeLimit = constraints.TimeLimit
-	// give a little bit more wall time
-	b.Box.Config.WallTimeLimit = constraints.TimeLimit + 1
+	runConf.MemoryLimit = constraints.MemoryLimit
+	runConf.StackLimit = constraints.StackLimit
+	runConf.TimeLimit = constraints.TimeLimit
+	runConf.WallTimeLimit = constraints.TimeLimit + 1
 	if constraints.TimeLimit == 0 {
-		// set a hard limit at 15 seconds if no time is specified
-		b.Box.Config.WallTimeLimit = 15
+		runConf.WallTimeLimit = 15
 	}
 
 	if consoleInput {
-		b.Box.Config.InputFile = "/box/stdin.in"
-		b.Box.Config.OutputFile = "/box/stdin.out"
+		runConf.InputPath = "/box/stdin.in"
+		runConf.OutputPath = "/box/stdin.out"
 	}
-
-	defer func() {
-		b.Box.Config = oldConf
-	}()
 
 	goodCmd, err := makeGoodCommand(language.RunCommand)
 	if err != nil {
@@ -145,22 +119,23 @@ func (b *BoxManager) RunSubmission(language config.Language, constraints limits,
 		goodCmd = language.RunCommand
 	}
 
-	return b.Box.RunCommand(goodCmd, nil, nil, nil)
+	return box.RunCommand(ctx, goodCmd, &runConf)
 }
 
-// ExecuteTest executes a new test
-func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
-	b.executionLock.Lock()
-	defer b.executionLock.Unlock()
+func (b *BoxManager) Execute(ctx context.Context, sub *kilonova.ExecRequest) (*kilonova.ExecResponse, error) {
+	response := &kilonova.ExecResponse{SubtestID: sub.SubtestID}
 
-	defer func() {
-		// After doing stuff, we need to clean up after ourselves ;)
-		if err := b.Reset(); err != nil {
-			fmt.Printf("CAN'T RESET BOX %d: %d", b.ID, err)
-		}
-	}()
+	box, err := b.GetSandbox(ctx)
+	if err != nil {
+		return response, err
+	}
 
-	response := &pb.TestResponse{TID: sub.TID}
+	// After doing stuff, we need to clean up after ourselves ;)
+	defer b.ReleaseSandbox(box)
+
+	if b.debug {
+		log.Printf("Executing test %d using box %d\n", sub.SubtestID, box.boxID)
+	}
 
 	in, err := b.dm.TestInput(int(sub.TestID))
 	if err != nil {
@@ -168,7 +143,7 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 	}
 	defer in.Close()
 
-	if err := b.Box.WriteFile("/box/"+sub.Filename+".in", in); err != nil {
+	if err := box.WriteFile("/box/"+sub.Filename+".in", in); err != nil {
 		fmt.Println("Can't write input file:", err)
 		response.Comments = "Sandbox error: Couldn't write input file"
 		return response, err
@@ -176,24 +151,23 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 	consoleInput := sub.Filename == "stdin"
 
 	lang := config.Languages[sub.Lang]
-	if err := b.Box.CopyInBox(path.Join(compilePath, fmt.Sprintf("%d.bin", sub.ID)), lang.CompiledName); err != nil {
+	if err := box.CopyInBox(path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", sub.SubID)), lang.CompiledName); err != nil {
 		response.Comments = "Couldn't link executable in box"
 		return response, err
 	}
 
 	lim := limits{
-		MemoryLimit: sub.MemoryLimit,
-		StackLimit:  sub.StackLimit,
+		MemoryLimit: int(sub.MemoryLimit),
+		StackLimit:  int(sub.StackLimit),
 		TimeLimit:   sub.TimeLimit,
 	}
-	meta, err := b.RunSubmission(config.Languages[sub.Lang], lim, consoleInput)
-	response.Time = meta.Time
-	response.Memory = int32(meta.Memory)
-
+	meta, err := b.RunSubmission(ctx, box, config.Languages[sub.Lang], lim, consoleInput)
 	if err != nil {
 		response.Comments = fmt.Sprintf("Error running submission: %v", err)
-		return response, err
+		return response, nil
 	}
+	response.Time = meta.Time
+	response.Memory = meta.Memory
 
 	switch meta.Status {
 	case "TO":
@@ -207,18 +181,18 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 	}
 
 	boxOut := fmt.Sprintf("/box/%s.out", sub.Filename)
-	if !b.Box.FileExists(boxOut) {
+	if !box.FileExists(boxOut) {
 		response.Comments = "No output file found"
 		return response, nil
 	}
 
-	w, err := b.dm.SubtestWriter(int(sub.TID))
+	w, err := b.dm.SubtestWriter(sub.SubtestID)
 	if err != nil {
 		response.Comments = "Could not open problem output"
 		return response, nil
 	}
 
-	if err := b.Box.CopyFromBox(boxOut, w); err != nil {
+	if err := box.CopyFromBox(boxOut, w); err != nil {
 		response.Comments = "Could not write output file"
 		return response, nil
 	}
@@ -231,19 +205,26 @@ func (b *BoxManager) ExecuteTest(sub *pb.Test) (*pb.TestResponse, error) {
 	return response, nil
 }
 
-func (b *BoxManager) CompileSubmission(c *pb.CompileRequest) *pb.CompileResponse {
-	b.compileLock.Lock()
-	defer b.compileLock.Unlock()
+func (b *BoxManager) Compile(ctx context.Context, c *kilonova.CompileRequest) (*kilonova.CompileResponse, error) {
+	box, err := b.GetSandbox(ctx)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	defer b.ReleaseSandbox(box)
 
-	defer b.Reset()
+	if b.debug {
+		log.Printf("Compiling file using box %d\n", box.boxID)
+	}
+
 	lang := config.Languages[c.Lang]
 
-	outName := path.Join(compilePath, fmt.Sprintf("%d.bin", c.ID))
-	resp := &pb.CompileResponse{}
+	outName := path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", c.ID))
+	resp := &kilonova.CompileResponse{}
 	resp.Success = true
 
 	if lang.IsCompiled {
-		out, err := b.CompileFile([]byte(c.Code), lang)
+		out, err := b.CompileFile(ctx, box, c.Code, lang)
 		resp.Output = out
 
 		if err != nil {
@@ -253,9 +234,9 @@ func (b *BoxManager) CompileSubmission(c *pb.CompileRequest) *pb.CompileResponse
 			if err != nil {
 				resp.Other = err.Error()
 				resp.Success = false
-				return resp
+				return resp, nil
 			}
-			if err := b.Box.CopyFromBox(lang.CompiledName, f); err != nil {
+			if err := box.CopyFromBox(lang.CompiledName, f); err != nil {
 				resp.Other = err.Error()
 				resp.Success = false
 			}
@@ -265,45 +246,67 @@ func (b *BoxManager) CompileSubmission(c *pb.CompileRequest) *pb.CompileResponse
 			}
 		}
 
-		return resp
+		return resp, nil
 	}
 
-	if err := os.WriteFile(outName, []byte(c.Code), 0644); err != nil {
+	if err := os.WriteFile(outName, c.Code, 0644); err != nil {
 		resp.Other = err.Error()
 		resp.Success = false
 	}
 
-	return resp
+	return resp, nil
 }
 
-// Reset reintializes a box
-// Should be run after finishing running a batch of tests
-func (b *BoxManager) Reset() (err error) {
-	err = b.Box.Close()
-	if err != nil {
-		return
-	}
-	b.Box, err = box.New(box.Config{ID: b.ID, Cgroups: true})
-	b.Box.Debug = b.debug
-	return
-}
-
-func SetCompilePath(path string) {
-	compilePath = path
-}
-
-// New creates a new box manager
-func New(id int, dm kilonova.DataStore) (*BoxManager, error) {
-	b, err := box.New(box.Config{ID: id, Cgroups: true})
+func (b *BoxManager) NewSandbox() (*Box, error) {
+	box, err := newBox(<-b.availableIDs)
 	if err != nil {
 		return nil, err
 	}
-	b.Config.EnvToSet = make(map[string]string)
+	box.Debug = b.debug
+	return box, nil
+}
+
+func (b *BoxManager) GetSandbox(ctx context.Context) (*Box, error) {
+	if err := b.sem.Acquire(ctx, 1); err != nil {
+		return nil, err
+	}
+	return b.NewSandbox()
+}
+
+func (b *BoxManager) ReleaseSandbox(sb *Box) {
+	b.availableIDs <- sb.boxID
+	b.sem.Release(1)
+	if err := sb.Close(); err != nil {
+		log.Printf("Could not release sandbox %d: %v\n", sb.boxID, err)
+	}
+}
+
+func (b *BoxManager) Clean(ctx context.Context, subid int) error {
+	p := path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", subid))
+	return os.Remove(p)
+}
+
+func (b *BoxManager) Close(ctx context.Context) error {
+	b.sem.Acquire(ctx, int64(b.numConcurrent))
+	close(b.availableIDs)
+	return nil
+}
+
+// New creates a new box manager
+func New(count int, dm kilonova.DataStore) (*BoxManager, error) {
+
+	sem := semaphore.NewWeighted(int64(count))
+
+	availableIDs := make(chan int, 3*count)
+	for i := 1; i <= 2*count; i++ {
+		availableIDs <- i
+	}
 
 	bm := &BoxManager{
-		ID:  id,
-		Box: b,
-		dm:  dm,
+		dm:            dm,
+		sem:           sem,
+		availableIDs:  availableIDs,
+		numConcurrent: count,
 	}
 	return bm, nil
 }
@@ -330,4 +333,52 @@ func makeGoodCommand(command []string) ([]string, error) {
 
 	tmp[0] = cmd
 	return tmp, nil
+}
+
+func disableLang(key string) {
+	lang := config.Languages[key]
+	lang.Disabled = true
+	config.Languages[key] = lang
+}
+
+// CheckLanguages disables all languages that are *not* detected by the system in the current configuration
+// It should be run at the start of the execution (and implemented more nicely tbh)
+func CheckLanguages() {
+	for k, v := range config.Languages {
+		var toSearch []string
+		if v.IsCompiled {
+			toSearch = v.CompileCommand
+		} else {
+			toSearch = v.RunCommand
+		}
+		if len(toSearch) == 0 {
+			disableLang(k)
+			log.Printf("Language %q was disabled because of empty line\n", k)
+			continue
+		}
+		cmd, err := exec.LookPath(toSearch[0])
+		if err != nil {
+			disableLang(k)
+			log.Printf("Language %q was disabled because the compiler/interpreter was not found in PATH\n", k)
+			continue
+		}
+		cmd, err = filepath.EvalSymlinks(cmd)
+		if err != nil {
+			disableLang(k)
+			log.Printf("Language %q was disabled because the compiler/interpreter had a bad symlink\n", k)
+			continue
+		}
+		stat, err := os.Stat(cmd)
+		if err != nil {
+			disableLang(k)
+			log.Printf("Language %q was disabled because the compiler/interpreter binary was not found\n", k)
+			continue
+		}
+
+		if stat.Mode()&0111 == 0 {
+			disableLang(k)
+			log.Printf("Language %q was disabled because the compiler/interpreter binary is not executable\n", k)
+		}
+
+	}
 }

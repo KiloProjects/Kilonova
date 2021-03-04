@@ -6,8 +6,6 @@ package eval;
 
 // Eval does something
 service Eval {
-	rpc Ping(Empty) returns (Empty) {}
-
 	// Compile compiles a program, to be used for later execution
 	rpc Compile(CompileRequest) returns (CompileResponse) {}
 

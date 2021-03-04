@@ -22,6 +22,7 @@ require (
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/yuin/goldmark v1.3.2
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	google.golang.org/grpc v1.35.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0

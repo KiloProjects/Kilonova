@@ -35,7 +35,7 @@ Additional reading I should do for a better platform:
 			- [ ] Împarte în mai multe services (Core/API/Web/Eval/Eval Worker)
 			- [ ] Separare main core de inputs (API/Web)
 			- Eval-ul se conectează la core (și eval worker la eval), nu invers
-		- [ ] Multi-eval support
+		- [x] Multi-eval support
 		- [x] Phase out sqlc în favoarea sqlx (să nu mai depindem așa mult de code generation)
 		- [ ] Better telemetry
 			- [ ] Prometheus integration
@@ -60,8 +60,8 @@ Additional reading I should do for a better platform:
 			- [ ] Instrumente de translation:
 				- [ ] Propunători traducători
 				- [ ] Enunțuri multi-language
-	- [ ] CDN
-		- [ ] Backbone
+	- [~] CDN
+		- [x] Backbone
 		- [ ] Mutare CSS pe CDN
 		- [ ] Mutare js bundle pe CDN
 		- [ ] Pune toate imaginile găsite pe CDN și redirecționează-le acolo

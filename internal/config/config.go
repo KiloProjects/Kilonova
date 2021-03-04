@@ -55,9 +55,10 @@ func (c CacheConf) GenOptions() *redis.Options {
 
 // EvalConf is the data required for the eval service
 type EvalConf struct {
-	IsolatePath string `toml:"isolatePath"`
-	CompilePath string `toml:"compilePath"`
-	Address     string `toml:"address"`
+	IsolatePath   string `toml:"isolatePath"`
+	CompilePath   string `toml:"compilePath"`
+	Address       string `toml:"address"`
+	NumConcurrent int    `toml:"num_concurrent"`
 }
 
 // CommonConf is the data required for all services

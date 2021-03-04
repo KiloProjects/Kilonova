@@ -14,7 +14,7 @@ import (
 type CDN struct {
 	kn    *logic.Kilonova
 	userv kilonova.UserService
-	cdn   kilonova.DataStore
+	cdn   kilonova.CDNStore
 }
 
 func (s *CDN) Handler() http.Handler {

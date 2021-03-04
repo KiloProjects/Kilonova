@@ -2,19 +2,16 @@ package grader
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"log"
-	"os/exec"
 	"sync"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	pb "github.com/KiloProjects/kilonova/grpc"
+	"github.com/KiloProjects/kilonova/checkers"
+	"github.com/KiloProjects/kilonova/internal/boxmanager"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/logic"
 	"github.com/davecgh/go-spew/spew"
-	"google.golang.org/grpc"
 )
 
 var True = true
@@ -22,10 +19,13 @@ var waitingSubs = kilonova.SubmissionFilter{Status: kilonova.StatusWaiting}
 var workingUpdate = kilonova.SubmissionUpdate{Status: kilonova.StatusWorking}
 
 type Handler struct {
-	ctx    context.Context
-	sChan  chan *kilonova.Submission
-	kn     *logic.Kilonova
-	dm     kilonova.DataStore
+	ctx   context.Context
+	sChan chan *kilonova.Submission
+	kn    *logic.Kilonova
+	dm    kilonova.DataStore
+
+	checker checkers.DiffChecker
+
 	debug  bool
 	sserv  kilonova.SubmissionService
 	pserv  kilonova.ProblemService
@@ -35,7 +35,7 @@ type Handler struct {
 
 func NewHandler(ctx context.Context, kn *logic.Kilonova, db kilonova.TypeServicer) *Handler {
 	ch := make(chan *kilonova.Submission, 5)
-	return &Handler{ctx, ch, kn, kn.DM, kn.Debug,
+	return &Handler{ctx, ch, kn, kn.DM, checkers.DiffChecker{}, kn.Debug,
 		db.SubmissionService(), db.ProblemService(), db.SubTestService(), db.TestService()}
 }
 
@@ -68,7 +68,7 @@ func (h *Handler) chFeeder(d time.Duration) {
 	}
 }
 
-func (h *Handler) handle(ctx context.Context, client pb.EvalClient) error {
+func (h *Handler) handle(ctx context.Context, client kilonova.Runner) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -81,7 +81,7 @@ func (h *Handler) handle(ctx context.Context, client pb.EvalClient) error {
 			var score_mu sync.Mutex
 			var score int
 
-			resp, err := client.Compile(ctx, &pb.CompileRequest{ID: int32(sub.ID), Code: sub.Code, Lang: sub.Language})
+			resp, err := client.Compile(ctx, &kilonova.CompileRequest{ID: sub.ID, Code: []byte(sub.Code), Lang: sub.Language})
 
 			if err != nil {
 				log.Println("Error from eval:", err)
@@ -95,8 +95,8 @@ func (h *Handler) handle(ctx context.Context, client pb.EvalClient) error {
 				resp.Output = old
 			}
 
-			// if err := sub.SetCompilation(!resp.Success, resp.Output); err != nil {
-			if err := h.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{}); err != nil {
+			compileError := !resp.Success
+			if err := h.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{CompileError: &compileError, CompileMessage: &resp.Output}); err != nil {
 				log.Println("Error during update of compile information:", err)
 				continue
 			}
@@ -134,15 +134,15 @@ func (h *Handler) handle(ctx context.Context, client pb.EvalClient) error {
 					filename = "stdin"
 				}
 
-				protobufTest := &pb.Test{
-					ID:          int32(sub.ID),
-					TID:         int32(test.ID),
+				protobufTest := &kilonova.ExecRequest{
+					SubID:       sub.ID,
+					SubtestID:   test.ID,
+					TestID:      pbTest.ID,
 					Filename:    filename,
-					StackLimit:  int32(problem.StackLimit),
-					MemoryLimit: int32(problem.MemoryLimit),
+					StackLimit:  problem.StackLimit,
+					MemoryLimit: problem.MemoryLimit,
 					TimeLimit:   problem.TimeLimit,
 					Lang:        sub.Language,
-					TestID:      int64(pbTest.ID),
 				}
 				go func() {
 					defer wg.Done()
@@ -168,24 +168,18 @@ func (h *Handler) handle(ctx context.Context, client pb.EvalClient) error {
 					}
 
 					if resp.Comments == "" {
-						tPath := h.dm.TestOutputPath(pbTest.ID)
-						sPath := h.dm.SubtestPath(subTestID)
-
-						equal := compareOutputs(tPath, sPath)
-
-						// After comparing outputs, I think we can safely delete the submission.
-						// In actuality we can't because it's a file made by root
-						// TODO
-						/*if err := h.dm.RemoveSubtestData(subTestID); err != nil {
-							log.Printf("WARNING: Couldn't remove subtest data for %d: %q", subTestID, err)
-						}*/
-
-						if equal {
-							testScore = int(pbTest.Score)
-							resp.Comments = "Correct Answer"
-						} else {
-							resp.Comments = "Wrong Answer"
+						tout, err := h.dm.TestOutput(pbTest.ID)
+						if err != nil {
+							resp.Comments = "Internal grader error"
+							score = 0
 						}
+						sout, err := h.dm.SubtestReader(subTestID)
+						if err != nil {
+							resp.Comments = "Internal grader error"
+							score = 0
+						}
+
+						resp.Comments, score = h.checker.RunChecker(tout, sout, int(pbTest.Score))
 					}
 
 					mem := int(resp.Memory)
@@ -203,7 +197,7 @@ func (h *Handler) handle(ctx context.Context, client pb.EvalClient) error {
 
 			wg.Wait()
 
-			if _, err := client.Clean(ctx, &pb.CleanArgs{ID: int32(sub.ID)}); err != nil {
+			if err := client.Clean(ctx, sub.ID); err != nil {
 				log.Printf("Couldn't clean task: %s\n", err)
 			}
 
@@ -215,27 +209,19 @@ func (h *Handler) handle(ctx context.Context, client pb.EvalClient) error {
 }
 
 func (h *Handler) Start() error {
-	// Dial here to pre-emptively exit in case it fails
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	conn, err := grpc.DialContext(ctx, config.Eval.Address, grpc.WithInsecure(), grpc.WithBlock())
+	runner, err := h.GetAppropriateRunner()
 	if err != nil {
-		if err == context.DeadlineExceeded {
-			return errors.New("WARNING: No grader found, will not grade submissions")
-		}
-		return fmt.Errorf("Dialing error: %w", err)
+		return err
 	}
-
-	client := pb.NewEvalClient(conn)
 
 	go h.chFeeder(4 * time.Second)
 
 	eCh := make(chan error, 1)
 	go func() {
-		defer conn.Close()
+		defer runner.Close(h.ctx)
 		log.Println("Connected to eval")
 
-		err := h.handle(h.ctx, client)
+		err := h.handle(h.ctx, runner)
 		if err != nil {
 			log.Println("Handling error:", err)
 		}
@@ -245,14 +231,23 @@ func (h *Handler) Start() error {
 	return <-eCh
 }
 
-func compareOutputs(tPath, cPath string) bool {
-	// temporary solution until i find something better
-	cmd := exec.Command("diff", "-qBbEa", tPath, cPath)
-	if err := cmd.Run(); err != nil {
-		if err, ok := err.(*exec.ExitError); ok {
-			return err.ExitCode() == 0
-		}
-		return false
+func (h *Handler) getLocalRunner() (kilonova.Runner, error) {
+	log.Println("Trying to spin up local grader")
+	bm, err := boxmanager.New(config.Eval.NumConcurrent, h.dm)
+	if err != nil {
+		return nil, err
 	}
-	return true
+	log.Println("Running local grader")
+	return bm, nil
+}
+
+func (h *Handler) GetAppropriateRunner() (kilonova.Runner, error) {
+	if boxmanager.CheckCanRun() {
+		runner, err := h.getLocalRunner()
+		if err == nil {
+			return runner, nil
+		}
+	}
+	log.Println("Could not spin up local grader, trying to contact remote")
+	return newGrpcRunner(config.Eval.Address)
 }

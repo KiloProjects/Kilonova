@@ -1,11 +1,9 @@
 package kilonova
 
 import (
-	"context"
 	"embed"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/microcosm-cc/bluemonday"
 )
@@ -95,14 +93,4 @@ func Errorf(code string, format string, args ...interface{}) *Error {
 		Code:    code,
 		Message: fmt.Sprintf(format, args...),
 	}
-}
-
-// Error reporting stuff
-
-var ReportError = func(ctx context.Context, err error) {
-	log.Println("Error:", err)
-}
-
-var ReportPanic = func(err interface{}) {
-	log.Println("PANIC:", err)
 }
