@@ -107,7 +107,7 @@
 	}
 
 	.list-group-rounded {
-		/*@apply rounded-lg;*/
+		@apply rounded-lg;
 	}
 	.list-group-rounded > .list-group-item:first-child {
 		@apply rounded-t-lg;

@@ -56,7 +56,7 @@
 				return
 			}
 
-			let res = await postCall("/auth/signup", {email: em, username, password})
+			let res = await bundled.postCall("/auth/signup", {email: em, username, password})
 			if(res.status == "error") {
 				bundled.createToast({
 					status: "error",

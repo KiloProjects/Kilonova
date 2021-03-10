@@ -100,42 +100,42 @@ Vue.createApp({
 		changeTitle: async function(e) {
 			e.preventDefault();
 			if(this.problem == null || this.problem.name === "") {
-				createToast({status: "error", description: "Titlu gol"});
+				bundled.createToast({status: "error", description: "Titlu gol"});
 				return
 			}
-			let res = await postCall(`/problem/${this.problem.id}/update/title`, {title: this.problem.name})
-			apiToast(res);
+			let res = await bundled.postCall(`/problem/${this.problem.id}/update/title`, {title: this.problem.name})
+			bundled.apiToast(res);
 		},
 		changeSourceCredits: async function(e) {
 			e.preventDefault();
-			let res = await postCall(`/problem/${this.problem.id}/update/sourceCredits`, {credits: this.problem.source_credits})
-			apiToast(res);
+			let res = await bundled.postCall(`/problem/${this.problem.id}/update/sourceCredits`, {credits: this.problem.source_credits})
+			bundled.apiToast(res);
 		},
 		changeAuthorCredits: async function(e) {
 			e.preventDefault();
-			let res = await postCall(`/problem/${this.problem.id}/update/authorCredits`, {credits: this.problem.author_credits})
-			apiToast(res);
+			let res = await bundled.postCall(`/problem/${this.problem.id}/update/authorCredits`, {credits: this.problem.author_credits})
+			bundled.apiToast(res);
 		},
 		changeTestName: async function(e) {
 			e.preventDefault();
-			let res = await postCall(`/problem/${this.problem.id}/update/setTestName`, {testName: this.problem.test_name})
-			apiToast(res);
+			let res = await bundled.postCall(`/problem/${this.problem.id}/update/setTestName`, {testName: this.problem.test_name})
+			bundled.apiToast(res);
 		},
 		toggleVisibility: async function(e) {
 			e.preventDefault();
-			let res = await postCall(`/problem/${this.problem.id}/update/setVisible`, {visible: !this.problem.visible})
+			let res = await bundled.postCall(`/problem/${this.problem.id}/update/setVisible`, {visible: !this.problem.visible})
 			if(res.status === "success") {
 				this.problem.visible = !this.problem.visible;
 			}
-			apiToast(res);
+			bundled.apiToast(res);
 		},
 		toggleConsoleInput: async function(e) {
 			e.preventDefault();
-			let res = await postCall(`/problem/${this.problem.id}/update/consoleInput`, {isset: !this.problem.console_input})
+			let res = await bundled.postCall(`/problem/${this.problem.id}/update/consoleInput`, {isset: !this.problem.console_input})
 			if(res.status === "success") {
 				this.problem.console_input = !this.problem.console_input;
 			}
-			apiToast(res);
+			bundled.apiToast(res);
 		},
 		updateLimits: async function(e) {
 			e.preventDefault();
@@ -144,13 +144,13 @@ Vue.createApp({
 				stackLimit: this.problem.stack_limit, 
 				timeLimit: this.problem.time_limit
 			}
-			let res = await postCall(`/problem/${this.problem.id}/update/limits`, q)
-			apiToast(res);
+			let res = await bundled.postCall(`/problem/${this.problem.id}/update/limits`, q)
+			bundled.apiToast(res);
 		},
 		updateDefaultPoints: async function(e) {
 			e.preventDefault();
-			let res = await postCall(`/problem/${this.problem.id}/update/defaultPoints`, {defaultPoints: this.problem.default_points})
-			apiToast(res)
+			let res = await bundled.postCall(`/problem/${this.problem.id}/update/defaultPoints`, {defaultPoints: this.problem.default_points})
+			bundled.apiToast(res)
 		}
 	},
 }).mount("#editApp");

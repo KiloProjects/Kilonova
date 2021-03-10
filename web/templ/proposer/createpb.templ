@@ -19,9 +19,9 @@
 			e.preventDefault();
 			let name = document.getElementById("pbname").value;
 			let cInput = document.getElementById("cInputSwitch").checked;
-			let res = await postCall('/problem/create', {title: name, consoleInput: cInput})
+			let res = await bundled.postCall('/problem/create', {title: name, consoleInput: cInput})
 			if(res.status == "error") {
-				createToast({
+				bundled.createToast({
 					status: "error",
 					title: "Could not create problem",
 					description: res.data

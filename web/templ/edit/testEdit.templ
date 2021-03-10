@@ -46,20 +46,20 @@
 			let q = {
 				id: document.getElementById("vID").value
 			}
-			let res = await postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/id", q);
+			let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/id", q);
 			if(res.status === "success") {
 				window.location.replace("/problems/{{.Problem.ID}}/edit/test/"+q.id)
 				return
 			}
-			apiToast(res)
+			bundled.apiToast(res)
 		}
 		async function updateScore(e) {
 			e.preventDefault()
 			let q = {
 				score: document.getElementById("score").value
 			}
-			let res = await postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/score", q);
-			apiToast(res)
+			let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/score", q);
+			bundled.apiToast(res)
 		}
 		async function updateData(e) {
 			e.preventDefault()
@@ -67,8 +67,8 @@
 				input: inCM.getValue(),
 				output: outCM.getValue()
 			};
-			let res = await postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/data", q)
-			apiToast(res);
+			let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/data", q)
+			bundled.apiToast(res);
 		}
 
 		async function removeTest(e) {
@@ -77,12 +77,12 @@
 			if(!confirm("Sunteți siguri că vreți să ștergeți testul?")) {
 				return
 			}
-			let res = await postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/orphan", {})
+			let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/orphan", {})
 			if(res.status === "success") {
 				window.location.replace("/problems/{{.Problem.ID}}/edit/test")
 				return
 			}
-			apiToast(res);
+			bundled.apiToast(res);
 		}
 		document.getElementById("test_edit_form").addEventListener("submit", updateData)
 		document.getElementById("test_score_edit_form").addEventListener("submit", updateScore)

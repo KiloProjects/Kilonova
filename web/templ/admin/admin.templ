@@ -28,12 +28,12 @@
 
 	<script>
 		async function resetSubs() {
-			let res = await postCall("/admin/maintenance/resetWaitingSubs", {});
-			apiToast(res)
+			let res = await bundled.postCall("/admin/maintenance/resetWaitingSubs", {});
+			bundled.apiToast(res)
 		}
 		async function setAdmin(id, set) {
-			let res = await postCall("/admin/setAdmin", {id, set})
-			apiToast(res)
+			let res = await bundled.postCall("/admin/setAdmin", {id, set})
+			bundled.apiToast(res)
 			if(res.status == "error") {
 				return
 			}
@@ -41,8 +41,8 @@
 			loadUsers({proposer: true}, "proposer-group", "setProposer");
 		}
 		async function setProposer(id, set) {
-			let res = await postCall("/admin/setProposer", {id, set})
-			apiToast(res)
+			let res = await bundled.postCall("/admin/setProposer", {id, set})
+			bundled.apiToast(res)
 			if(res.status == "error") {
 				return
 			}
@@ -51,18 +51,18 @@
 
 		async function setFormAdmin(toSet) {
 			let user = document.getElementById("userToChange").value;
-			let res = await getUser(user);
+			let res = await bundled.getCall('/user/getByName', {name: user})
 			if(res.status == "error") {
-				apiToast(res)
+				bundled.apiToast(res)
 				return
 			}
 			await setAdmin(res.data.id, toSet)
 		}
 		async function setFormProposer(toSet) {
 			let user = document.getElementById("userToChange").value;
-			let res = await getUser(user);
+			let res = await bundled.getCall('/user/getByName', {name: user})
 			if(res.status == "error") {
-				apiToast(res)
+				bundled.apiToast(res)
 				return
 			}
 			await setProposer(res.data.id, toSet)
@@ -70,9 +70,9 @@
 
 		async function loadUsers(q, id = "admin-group", cb) {
 			document.getElementById(id).innerHTML = "Loading..."
-			let res = await getCall("/admin/getAllUsers", q)
+			let res = await bundled.getCall("/admin/getAllUsers", q)
 			if(res.status == "error") {
-				apiToast(res)
+				bundled.apiToast(res)
 				return
 			}
 			let outhtml = ""

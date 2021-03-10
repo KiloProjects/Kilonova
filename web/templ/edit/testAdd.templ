@@ -21,17 +21,17 @@ async function uploadTests(e) {
 	var form = new FormData();
 	var files = document.getElementById("tests").files;
 	if(files === null || files.length === 0) {
-		createToast({status: "error", title: "Niciun fișier specificat"})
+		bundled.createToast({status: "error", title: "Niciun fișier specificat"})
 		return
 	}
 	form.append("testArchive", files[0]);
 
-	let res = await multipartCall("/problem/{{.Problem.ID}}/update/processTestArchive", form)
+	let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/processTestArchive", form)
 	if(res.status === "success") {
 		window.location.reload();
 		return
 	}
-	apiToast(res)
+	bundled.apiToast(res)
 }
 
 async function removeTests(e) {
@@ -39,12 +39,12 @@ async function removeTests(e) {
 	if(!confirm("Sigur vreți să ștergeți toate testele?")) {
 		return
 	}
-	let res = await postCall("/problem/{{.Problem.ID}}/update/orphanTests", {})
+	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/orphanTests", {})
 	if(res.status === "success") {
 		window.location.reload();
 		return
 	}
-	apiToast(res)
+	bundled.apiToast(res)
 }
 
 document.getElementById("test_add_form").addEventListener("submit", uploadTests)
@@ -86,7 +86,7 @@ document.getElementById("orphaninator").addEventListener("click", removeTests)
 			output: outCM.getValue(),
 			score: document.getElementById("score").value,
 		};
-		let res = await postCall("/problem/{{ .Problem.ID }}/update/addTest", q)
+		let res = await bundled.postCall("/problem/{{ .Problem.ID }}/update/addTest", q)
 		if(res.status === "success") {
 			window.location.reload();
 		}

@@ -33,6 +33,7 @@ export function parseTime(str) {
 // window.addEventListener('DOMContentLoaded', () => {
 //	halfmoon.onDOMContentLoaded()
 //})
+// export {halfmoon};
 
 
 // util functions
@@ -166,33 +167,18 @@ let multipartCall = async (call, formdata) => {
 	return await resp.json();
 }
 
-let getUser = async (name) => {
-	return await getCall('/user/getByName', {name: name})
-}
-
 let resendEmail = async () => {
 	let res = await postCall('/user/resendEmail')	
 	apiToast(res)
 	return res
 }
 
-// backwards compat, TODO should be deleted ASAP
-window.createToast = createToast 
-window.getGradient = getGradient
-window.apiToast = apiToast
-
-window.getCall = getCall
-window.postCall = postCall
-window.multipartCall = multipartCall
-window.getUser = getUser
-
 export { 
 	dayjs, cookie, 
 	createToast, getGradient, apiToast,
-	getCall, postCall, multipartCall, getUser,
+	getCall, postCall, multipartCall,
 	resendEmail
 };
 
-export { SubmissionManager } from './sub_manager.js';
-
-// export {halfmoon};
+export { SubmissionManager } from './sub_mgr.js';
+export { getFileIcon, extensionIcons, CDNManager } from './cdn_mgr.js';

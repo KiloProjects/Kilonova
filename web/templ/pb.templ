@@ -2,7 +2,7 @@
 <div class="c-container">
 	<h1 class="mt-4">Problema <code>{{.Problem.Name}}</code>
 	{{- if .ProblemEditor -}}
-		<a target="_blank" href="/problems/{{- .Problem.ID -}}/edit"> [editare]</a>	
+		<a href="/problems/{{- .Problem.ID -}}/edit"> [editare]</a>	
 	{{- end -}}
 	</h1>
 	<hr/>
@@ -80,7 +80,7 @@ function makeSubWaiter(id) {
 	}
 	loadingIDs.set(id, "reserved")
 	let interv = setInterval(async () => {
-		let res = await getCall("/submissions/getByID", {id: id})
+		let res = await bundled.getCall("/submissions/getByID", {id: id})
 		if(res.status == "error") {
 			console.error(res);
 			return
@@ -90,7 +90,7 @@ function makeSubWaiter(id) {
 			document.dispatchEvent(new Event("kn-poll"))
 		}
 		if(res.data.sub.status == "finished") {
-			createToast({title: "Evaluare finalizată", description: `Scor submisie #${id}: ${res.data.sub.score}`, status: "success"})
+			bundled.createToast({title: "Evaluare finalizată", description: `Scor submisie #${id}: ${res.data.sub.score}`, status: "success"})
 			clearInterval(interv);
 		}
 		loadingIDs.set(id, res.data.sub.status)
@@ -120,7 +120,7 @@ let app = Vue.createApp({
 			}
 			this.polling = true;
 			console.info("Polling...");
-			let res = await getCall("/submissions/get", {userid: this.userid, problemid: this.problemid, limit: this.limit})
+			let res = await bundled.getCall("/submissions/get", {userid: this.userid, problemid: this.problemid, limit: this.limit})
 			if(res.status !== "success") {
 				console.error(res);
 				this.polling = false;
@@ -216,16 +216,16 @@ async function sendSub() {
 		code: cm.getValue(),
 	};
 	
-	let res = await postCall("/submissions/submit", sendData)
+	let res = await bundled.postCall("/submissions/submit", sendData)
 	if(res.status == "error") {
-		createToast({
+		bundled.createToast({
 			status: "error",
 			title: "Nu am putut trimite submisia",
 			description: res.data
 		})
 		return
 	}
-	createToast({title: "Submisie încărcată", description: `<a target="_blank" href="/submissions/${res.data}">Vizualizare</btn>`})
+	bundled.createToast({title: "Submisie încărcată", description: `<a href="/submissions/${res.data}">Vizualizare</btn>`})
 	console.log(res.data, makeSubWaiter(res.data));
 	document.dispatchEvent(new Event("kn-poll"));
 }

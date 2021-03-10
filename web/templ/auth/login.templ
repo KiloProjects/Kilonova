@@ -24,9 +24,9 @@
 			let username = document.getElementById("uname").value;
 			let password = document.getElementById("upwd").value;
 			
-			let res = await postCall("/auth/login", {username, password})
+			let res = await bundled.postCall("/auth/login", {username, password})
 			if(res.status == "error") {
-				createToast({
+				bundled.createToast({
 					status: "error",
 					title: "Could not log in",
 					description: res.data

@@ -34,9 +34,9 @@ export class SubmissionManager {
 		if(this.poll_mu === false) this.poll_mu = true
 		else return
 		console.log("Poll", this.id)
-		let res = await getCall("/submissions/getByID", {id: this.id, expanded: true})
+		let res = await bundled.getCall("/submissions/getByID", {id: this.id, expanded: true})
 		if(res.status !== "success") {
-			apiToast(res)
+			bundled.apiToast(res)
 			console.error(res)
 			this.poll_mu = false
 			return
@@ -63,7 +63,7 @@ export class SubmissionManager {
 	}
 
 	async toggleVisible() {
-		let res = await postCall("/submissions/setVisible", {visible: !this.sub.visible, id: this.id});
+		let res = await bundled.postCall("/submissions/setVisible", {visible: !this.sub.visible, id: this.id});
 		bundled.createToast({
 			status: res.status,
 			title: (res.status == "success" ? (this.sub.visible ? "Made visible" : "Made invisible") : "Error changing visibility"),
@@ -81,7 +81,7 @@ export class SubmissionManager {
 			<p>Data încărcării: ${bundled.parseTime(this.sub.created_at)}</p>
 			<p>Status: ${this.sub.status}</p>`;
 		if(this.sub.code) {
-			html += `<p v-if="submission.code">Dimensiune: ${this.sub.code.length}B</p>`
+			html += `<p v-if="submission.code">Dimensiune: ${bundled.sizeFormatter(this.sub.code.length)}</p>`
 		}
 		html += `<p>Limbaj: ${this.sub.language}</p><p>Problemă: <a href="/problems/${this.subProblem.id}">${this.subProblem.name}</a></p>`
 		if(this.subProblem.default_points > 0) {

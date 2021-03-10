@@ -29,13 +29,13 @@ async function updateBio(e) {
 	e.preventDefault()
 	var bio = document.getElementById("newBio").value;
 
-	let res = await postCall("/user/setBio", {bio})
-	apiToast(res, {onclick: () => window.location.assign("/profile")}) 
+	let res = await bundled.postCall("/user/setBio", {bio})
+	bundled.apiToast(res, {onclick: () => window.location.assign("/profile")}) 
 }
 async function toggleVisibility() {
 	visible = !visible;
-	let res = await postCall("/user/setSubVisibility", {visibility: visible});
-	apiToast(res);
+	let res = await bundled.postCall("/user/setSubVisibility", {visibility: visible});
+	bundled.apiToast(res);
 	document.getElementById("vButton").innerHTML = `<i class="fas fa-share-square mr-2"></i> Fă submisiile implicit ${visible ? "invizibile" : "vizibile"}`
 }
 async function updatePassword() {

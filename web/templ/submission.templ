@@ -2,30 +2,6 @@
 
 <div class="c-container">
 
-	<div id="subTests" v-cloak>
-
-		<div class="mb-10" v-if="Object.keys(submission).length !== 0">
-			<h2>Submission ${submission.id}</h2>
-			<p>Autor: <a :href="'/profile/'+subAuthor.name">${subAuthor.name}</a></p>
-			<p>Data încărcării: ${parseTime(submission.created_at)}</p>
-			<p>Status: ${submission.status}</p>
-			<p v-if="submission.code">Dimensiune: ${submission.code.length}B</p>
-			<p>Limbaj: ${submission.language}</p>
-			<p>Problemă: <a :href="'/problems/'+subProblem.id">${subProblem.name}</a></p>
-			<p v-if="subProblem.default_points > 0">Puncte din oficiu: ${subProblem.default_points}</p>
-			<p v-if="submission.status === 'finished'">Scor: ${submission.score} </p>
-
-			<div v-if="submission.compile_error.Bool">	
-				<h4>Eroare de compilare</h4>
-				<h5>Mesaj Evaluare:</h5>
-				<pre>${submission.compile_message.String}</pre>
-			</div>
-		</div>
-		<div class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center" v-else>
-			<div><i class="fas fa-spinner animate-spin"></i> Se încarcă...</div>
-		</div>
-	</div>
-	
 	<div id="submission_view">
 		<div id="sub_placeholder" class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center">
 			<div><i class="fas fa-spinner animate-spin"></i> Se încarcă...</div>

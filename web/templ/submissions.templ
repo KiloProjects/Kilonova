@@ -102,7 +102,7 @@
 								<td class="text-center px-4 py-2">
 									<a :href="'/submissions/'+sub.sub.id">${sub.sub.status}</a>
 								</td>
-								<td :class="sub.sub.status === 'finished' ? 'text-black' : '' + ' text-center px-4 py-2'" :style="sub.sub.status == 'finished' ? 'background-color: ' + getGradient(sub.sub.score, 100) : ''">
+								<td :class="sub.sub.status === 'finished' ? 'text-black' : '' + ' text-center px-4 py-2'" :style="sub.sub.status == 'finished' ? 'background-color: ' + bundled.getGradient(sub.sub.score, 100) : ''">
 									${sub.sub.score}
 								</td>
 							</tr>
@@ -129,9 +129,9 @@ var Submissions = {
 	methods: {
 		poll: async function() {
 			this.loading = true
-			let res = await getCall("/submissions/get", this.getFilters(this.filters))
+			let res = await bundled.getCall("/submissions/get", this.getFilters(this.filters))
 			if(res.status !== "success") {
-				apiToast(res)
+				bundled.apiToast(res)
 				this.loading = false
 				return
 			}
@@ -181,7 +181,7 @@ var Submissions = {
 			return res;
 		},
 		getGradient: function(score, maxscore) {
-			return getGradient(score, maxscore)
+			return bundled.getGradient(score, maxscore)
 		},
 		timeStr: function(d) {
 			return bundled.dayjs(d).format('DD/MM/YYYY HH:mm')
@@ -212,10 +212,10 @@ var Submissions = {
 			let url = window.location.origin + window.location.pathname + "?" + p.toString();
 			try {
 				await navigator.clipboard.writeText(url)
-				createToast({status: "success", title: "Copied URL to clipboard"});
+				bundled.createToast({status: "success", title: "Copied URL to clipboard"});
 			} catch(e) {
 				console.error(e);
-				createToast({status: "error", title: "Couldn't copy to clipboard"})
+				bundled.createToast({status: "error", title: "Couldn't copy to clipboard"})
 			}
 		}
 	},

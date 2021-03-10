@@ -72,36 +72,6 @@
 	</div>
 
 <script>
-let fileMatches = {};
-
-for(let t of ['png', 'jpg', 'jpeg', 'gif']) {
-	fileMatches[t] = 'fa-file-image'
-}
-
-for(let t of ['mp4', 'mkv']) {
-	fileMatches[t] = 'fa-file-video'
-}
-
-fileMatches['pdf'] = 'fa-file-pdf'
-fileMatches['csv'] = 'fa-file-csv'
-fileMatches['ppt'] = 'fa-file-powerpoint'
-fileMatches['pptx'] = 'fa-file-powerpoint'
-fileMatches['xls'] = 'fa-file-excel'
-fileMatches['xlsx'] = 'fa-file-excel'
-fileMatches['doc'] = 'fa-file-word'
-fileMatches['docx'] = 'fa-file-word'
-
-for(let t of ['zip', 'rar', '7z', 'gz', 'tar']) {
-	fileMatches[t] = 'fa-file-archive'
-}
-
-for(let t of ['c', 'cpp', 'go', 'pas', 'py', 'py3', 'java', 'js']) {
-	fileMatches[t] = 'fa-file-code'
-}
-
-for(let t of ['md', 'html', 'txt']) {
-	fileMatches[t] = 'fa-file-alt'
-}
 
 let app = Vue.createApp({
 	delimiters: ['${', '}'],
@@ -118,9 +88,9 @@ let app = Vue.createApp({
 	},
 	methods: {
 		poll: async function() {
-			let res = await getCall("/cdn/readDir", {path: this.paths.join('/')})
+			let res = await bundled.getCall("/cdn/readDir", {path: this.paths.join('/')})
 			if(res.status !== "success") {
-				apiToast(res)
+				bundled.apiToast(res)
 				return
 			}
 			this.dirs = res.data.dirs.filter(e => e.type == "directory")
@@ -145,29 +115,29 @@ let app = Vue.createApp({
 			e.preventDefault();
 			let p = [...this.paths, this.inCreation].join('/'); 
 			
-			let res = await postCall("/cdn/createDir", {path: p}) 
+			let res = await bundled.postCall("/cdn/createDir", {path: p}) 
 			if(res.status !== "success") {
-				apiToast(res);
+				bundled.apiToast(res);
 				return
 			}
 			// this.path = res.data
 			await this.poll()
-			createToast({status: "success", title: "Created directory"})
+			bundled.createToast({status: "success", title: "Created directory"})
 		},
 		deleteObjectGen: async function(path) {
 			let p = [...this.paths, path].join('/')
 			console.log(p)
-			let res = await postCall("/cdn/deleteObject", {path: p})
+			let res = await bundled.postCall("/cdn/deleteObject", {path: p})
 			if(res.status === "success") {
 				await this.poll();
 			}
-			apiToast(res);
+			bundled.apiToast(res);
 		},
 		uploadFile: async function(e) {
 			e.preventDefault();
 			let files = document.getElementById("cdn_file_upl").files
 			if(files === null || files.length == 0) {
-				createToast({status: "error", title: "No files specified"})
+				bundled.createToast({status: "error", title: "No files specified"})
 				return
 			}
 			let form = new FormData()
@@ -175,13 +145,13 @@ let app = Vue.createApp({
 			form.append("path", this.paths.join('/'))
 			console.log(form)
 
-			let res = await multipartCall("/cdn/saveFile", form)
+			let res = await bundled.multipartCall("/cdn/saveFile", form)
 			if(res.status !== "success") {
-				apiToast(res)
+				bundled.apiToast(res)
 				return
 			}
 			await this.poll();
-			createToast({status: "success", title: "Uploaded file"})
+			bundled.createToast({status: "success", title: "Uploaded file"})
 		},
 		filePath: function(file) {
 			return ['/cdn', ...this.paths, file].join('/')
@@ -190,8 +160,8 @@ let app = Vue.createApp({
 		printSize: bundled.sizeFormatter,
 		getFileIcon: function(name) {
 			let extension = name.split('.').pop();
-			if(fileMatches[extension] != null) {
-				return fileMatches[extension]
+			if(bundled.extensionIcons[extension] != null) {
+				return bundled.extensionIcons[extension]
 			}
 			return "fa-file"
 		},
