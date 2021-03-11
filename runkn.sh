@@ -2,4 +2,4 @@
 
 go build -v -tags netgo,osusergo ./cmd/kn || exit 2
 
-./kn main
+sudo ./kn main

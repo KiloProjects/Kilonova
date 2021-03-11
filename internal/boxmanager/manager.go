@@ -3,6 +3,7 @@ package boxmanager
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -18,8 +19,8 @@ import (
 
 var _ kilonova.Runner = &BoxManager{}
 
-// limits stores the constraints that need to be respected by a submission
-type limits struct {
+// Limits stores the constraints that need to be respected by a submission
+type Limits struct {
 	// seconds
 	TimeLimit float64
 	// kilobytes
@@ -46,9 +47,19 @@ func (b *BoxManager) ToggleDebug() {
 	b.debug = !b.debug
 }
 
+func (b *BoxManager) RunJob(ctx context.Context, job kilonova.Job) error {
+	box, err := b.GetSandbox(ctx)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer b.ReleaseSandbox(box)
+	return job.Execute(ctx, box)
+}
+
 // CompileFile compiles a file that has the corresponding language
-func (b *BoxManager) CompileFile(ctx context.Context, box *Box, SourceCode []byte, language config.Language) (string, error) {
-	if err := box.WriteFile(language.SourceName, bytes.NewReader(SourceCode)); err != nil {
+func CompileFile(ctx context.Context, box kilonova.Sandbox, SourceCode []byte, language config.Language) (string, error) {
+	if err := box.WriteFile(language.SourceName, bytes.NewReader(SourceCode), 0644); err != nil {
 		return "", err
 	}
 
@@ -66,39 +77,31 @@ func (b *BoxManager) CompileFile(ctx context.Context, box *Box, SourceCode []byt
 		conf.EnvToSet[key] = val
 	}
 
-	goodCmd, err := makeGoodCommand(language.CompileCommand)
+	goodCmd, err := MakeGoodCommand(language.CompileCommand)
 	if err != nil {
 		log.Printf("WARNING: function makeGoodCommand returned an error: %q. This is not good, so we'll use the command from the config file. The supplied command was %#v", err, language.CompileCommand)
 		goodCmd = language.CompileCommand
 	}
 
-	combinedOut, err := box.ExecCombinedOutput(ctx, goodCmd, &conf)
+	var out bytes.Buffer
+	conf.Stdout = &out
+	conf.Stderr = &out
+
+	_, err = box.RunCommand(ctx, goodCmd, &conf)
+	combinedOut := out.String()
 
 	if err != nil {
-		return string(combinedOut), err
+		return combinedOut, err
 	}
 
-	return string(combinedOut), box.RemoveFile(language.SourceName)
+	return combinedOut, box.RemoveFile(language.SourceName)
 }
 
 // RunSubmission runs a program, following the language conventions
 // filenames contains the names for input and output, used if consoleInput is true
-func (b *BoxManager) RunSubmission(ctx context.Context, box *Box, language config.Language, constraints limits, consoleInput bool) (*kilonova.RunStats, error) {
-	var runConf kilonova.RunConfig
-	runConf.EnvToSet = make(map[string]string)
+func RunSubmission(ctx context.Context, box kilonova.Sandbox, language config.Language, constraints Limits, consoleInput bool) (*kilonova.RunStats, error) {
 
-	// if our specified language is not compiled, then it means that
-	// the mounts specified should be added at runtime
-	if !language.IsCompiled {
-		runConf.Directories = append(runConf.Directories, language.Mounts...)
-	}
-
-	for key, val := range language.CommonEnv {
-		runConf.EnvToSet[key] = val
-	}
-	for key, val := range language.RunEnv {
-		runConf.EnvToSet[key] = val
-	}
+	runConf := kilonova.LangToRunConf(language)
 
 	runConf.MemoryLimit = constraints.MemoryLimit
 	runConf.StackLimit = constraints.StackLimit
@@ -113,13 +116,13 @@ func (b *BoxManager) RunSubmission(ctx context.Context, box *Box, language confi
 		runConf.OutputPath = "/box/stdin.out"
 	}
 
-	goodCmd, err := makeGoodCommand(language.RunCommand)
+	goodCmd, err := MakeGoodCommand(language.RunCommand)
 	if err != nil {
 		log.Printf("WARNING: function makeGoodCommand returned an error: %q. This is not good, so we'll use the command from the config file. The supplied command was %#v", err, language.RunCommand)
 		goodCmd = language.RunCommand
 	}
 
-	return box.RunCommand(ctx, goodCmd, &runConf)
+	return box.RunCommand(ctx, goodCmd, runConf)
 }
 
 func (b *BoxManager) Execute(ctx context.Context, sub *kilonova.ExecRequest) (*kilonova.ExecResponse, error) {
@@ -134,7 +137,7 @@ func (b *BoxManager) Execute(ctx context.Context, sub *kilonova.ExecRequest) (*k
 	defer b.ReleaseSandbox(box)
 
 	if b.debug {
-		log.Printf("Executing test %d using box %d\n", sub.SubtestID, box.boxID)
+		log.Printf("Executing test %d using box %d\n", sub.SubtestID, box.GetID())
 	}
 
 	in, err := b.dm.TestInput(int(sub.TestID))
@@ -143,7 +146,7 @@ func (b *BoxManager) Execute(ctx context.Context, sub *kilonova.ExecRequest) (*k
 	}
 	defer in.Close()
 
-	if err := box.WriteFile("/box/"+sub.Filename+".in", in); err != nil {
+	if err := box.WriteFile("/box/"+sub.Filename+".in", in, 0644); err != nil {
 		fmt.Println("Can't write input file:", err)
 		response.Comments = "Sandbox error: Couldn't write input file"
 		return response, err
@@ -151,17 +154,17 @@ func (b *BoxManager) Execute(ctx context.Context, sub *kilonova.ExecRequest) (*k
 	consoleInput := sub.Filename == "stdin"
 
 	lang := config.Languages[sub.Lang]
-	if err := box.CopyInBox(path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", sub.SubID)), lang.CompiledName); err != nil {
-		response.Comments = "Couldn't link executable in box"
+	if err := kilonova.CopyInBox(box, path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", sub.SubID)), lang.CompiledName); err != nil {
+		response.Comments = "Couldn't copy executable in box"
 		return response, err
 	}
 
-	lim := limits{
+	lim := Limits{
 		MemoryLimit: int(sub.MemoryLimit),
 		StackLimit:  int(sub.StackLimit),
 		TimeLimit:   sub.TimeLimit,
 	}
-	meta, err := b.RunSubmission(ctx, box, config.Languages[sub.Lang], lim, consoleInput)
+	meta, err := RunSubmission(ctx, box, config.Languages[sub.Lang], lim, consoleInput)
 	if err != nil {
 		response.Comments = fmt.Sprintf("Error running submission: %v", err)
 		return response, nil
@@ -192,7 +195,7 @@ func (b *BoxManager) Execute(ctx context.Context, sub *kilonova.ExecRequest) (*k
 		return response, nil
 	}
 
-	if err := box.CopyFromBox(boxOut, w); err != nil {
+	if err := kilonova.CopyFromBox(box, boxOut, w); err != nil {
 		response.Comments = "Could not write output file"
 		return response, nil
 	}
@@ -214,17 +217,21 @@ func (b *BoxManager) Compile(ctx context.Context, c *kilonova.CompileRequest) (*
 	defer b.ReleaseSandbox(box)
 
 	if b.debug {
-		log.Printf("Compiling file using box %d\n", box.boxID)
+		log.Printf("Compiling file using box %d\n", box.GetID())
 	}
 
-	lang := config.Languages[c.Lang]
+	lang, ok := config.Languages[c.Lang]
+	if !ok {
+		log.Printf("Language for submission %d could not be found\n", c.ID)
+		return nil, errors.New("No language found")
+	}
 
 	outName := path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", c.ID))
 	resp := &kilonova.CompileResponse{}
 	resp.Success = true
 
 	if lang.IsCompiled {
-		out, err := b.CompileFile(ctx, box, c.Code, lang)
+		out, err := CompileFile(ctx, box, c.Code, lang)
 		resp.Output = out
 
 		if err != nil {
@@ -236,7 +243,7 @@ func (b *BoxManager) Compile(ctx context.Context, c *kilonova.CompileRequest) (*
 				resp.Success = false
 				return resp, nil
 			}
-			if err := box.CopyFromBox(lang.CompiledName, f); err != nil {
+			if err := kilonova.CopyFromBox(box, lang.CompiledName, f); err != nil {
 				resp.Other = err.Error()
 				resp.Success = false
 			}
@@ -266,19 +273,19 @@ func (b *BoxManager) NewSandbox() (*Box, error) {
 	return box, nil
 }
 
-func (b *BoxManager) GetSandbox(ctx context.Context) (*Box, error) {
+func (b *BoxManager) GetSandbox(ctx context.Context) (kilonova.Sandbox, error) {
 	if err := b.sem.Acquire(ctx, 1); err != nil {
 		return nil, err
 	}
 	return b.NewSandbox()
 }
 
-func (b *BoxManager) ReleaseSandbox(sb *Box) {
-	b.availableIDs <- sb.boxID
+func (b *BoxManager) ReleaseSandbox(sb kilonova.Sandbox) {
 	b.sem.Release(1)
 	if err := sb.Close(); err != nil {
-		log.Printf("Could not release sandbox %d: %v\n", sb.boxID, err)
+		log.Printf("Could not release sandbox %d: %v\n", sb.GetID(), err)
 	}
+	b.availableIDs <- sb.GetID()
 }
 
 func (b *BoxManager) Clean(ctx context.Context, subid int) error {
@@ -313,7 +320,7 @@ func New(count int, dm kilonova.DataStore) (*BoxManager, error) {
 
 // makeGoodCommand makes sure it's a full path (with no symlinks) for the command.
 // Some languages (like java) are hidden pretty deep in symlinks, and we don't want a hardcoded path that could be different on other platforms.
-func makeGoodCommand(command []string) ([]string, error) {
+func MakeGoodCommand(command []string) ([]string, error) {
 	tmp := make([]string, len(command))
 	copy(tmp, command)
 

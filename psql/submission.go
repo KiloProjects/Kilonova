@@ -60,7 +60,6 @@ func (s *SubmissionService) CreateSubmission(ctx context.Context, sub *kilonova.
 }
 
 func (s *SubmissionService) UpdateSubmission(ctx context.Context, id int, upd kilonova.SubmissionUpdate) error {
-	// TODO: test it 100% works
 	toUpd, args := s.updateQueryMaker(&upd)
 	if len(toUpd) == 0 {
 		return kilonova.ErrNoUpdates

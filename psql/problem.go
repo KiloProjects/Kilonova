@@ -159,5 +159,15 @@ func (s *ProblemService) updateQueryMaker(upd *kilonova.ProblemUpdate) ([]string
 		toUpd, args = append(toUpd, "author_credits = ?"), append(args, v)
 	}
 
+	if v := upd.Type; v != kilonova.ProblemTypeNone {
+		toUpd, args = append(toUpd, "pb_type = ?"), append(args, v)
+	}
+	if v := upd.HelperCode; v != nil {
+		toUpd, args = append(toUpd, "helper_code = ?"), append(args, v)
+	}
+	if v := upd.HelperCodeLang; v != nil {
+		toUpd, args = append(toUpd, "helper_code_lang = ?"), append(args, v)
+	}
+
 	return toUpd, args
 }

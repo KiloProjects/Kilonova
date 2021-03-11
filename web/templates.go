@@ -3,7 +3,6 @@ package web
 import (
 	"fmt"
 	"html/template"
-	"io"
 	"io/fs"
 	"os"
 	"strings"
@@ -36,12 +35,7 @@ func parseAllTemplates(t *template.Template, root fs.FS) (*template.Template, er
 			tmpl = t.New(absPath)
 		}
 
-		file, err := root.Open(fpath)
-		if err != nil {
-			panic(fmt.Sprintf("OPEN ERROR FOR FILE %s: %v\n", fpath, err))
-		}
-
-		dat, err := io.ReadAll(file)
+		dat, err := fs.ReadFile(root, fpath)
 		if err != nil {
 			panic(fmt.Sprintf("READ ERROR FOR FILE %s: %v\n", fpath, err))
 		}

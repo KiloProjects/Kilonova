@@ -71,15 +71,20 @@ type CommonConf struct {
 
 // DBConf is the data required to establish a PostgreSQL connection
 type DBConf struct {
-	DBname  string `toml:"dbname"`
-	Host    string `toml:"host"`
-	SSLmode string `toml:"sslmode"`
-	User    string `toml:"user"`
+	DBname   string `toml:"dbname"`
+	Host     string `toml:"host"`
+	SSLmode  string `toml:"sslmode"`
+	User     string `toml:"user"`
+	Password string `toml:"password"`
 }
 
 // String returns a DSN with all information from the struct
 func (d DBConf) String() string {
-	return fmt.Sprintf("sslmode=%s host=%s user=%s dbname=%s", d.SSLmode, d.Host, d.User, d.DBname)
+	auth := fmt.Sprintf("sslmode=%s host=%s user=%s dbname=%s", d.SSLmode, d.Host, d.User, d.DBname)
+	if d.Password != "" {
+		auth += " password=" + d.Password
+	}
+	return auth
 }
 
 //  LANGUAGE DEFINITION STUFF --------------------

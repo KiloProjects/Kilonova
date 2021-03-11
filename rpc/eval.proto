@@ -12,12 +12,16 @@ service Eval {
 	// Execute runs a test, returning their output
 	rpc Execute(Test) returns (TestResponse) {}
 
-	rpc Clean(CleanArgs) returns (Empty) {}
+	rpc Clean(CleanArgs) returns (CleanResp) {}
 
 }
 
 message CleanArgs {
 	int32 ID = 1;
+}
+
+message CleanResp {
+	bool success = 1;
 }
 
 message Empty {}

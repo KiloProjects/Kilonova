@@ -2,6 +2,7 @@ package grader
 
 import (
 	"context"
+	"errors"
 	"log"
 	"sync"
 	"time"
@@ -24,8 +25,6 @@ type Handler struct {
 	kn    *logic.Kilonova
 	dm    kilonova.DataStore
 
-	checker checkers.DiffChecker
-
 	debug  bool
 	sserv  kilonova.SubmissionService
 	pserv  kilonova.ProblemService
@@ -35,7 +34,7 @@ type Handler struct {
 
 func NewHandler(ctx context.Context, kn *logic.Kilonova, db kilonova.TypeServicer) *Handler {
 	ch := make(chan *kilonova.Submission, 5)
-	return &Handler{ctx, ch, kn, kn.DM, checkers.DiffChecker{}, kn.Debug,
+	return &Handler{ctx, ch, kn, kn.DM, kn.Debug,
 		db.SubmissionService(), db.ProblemService(), db.SubTestService(), db.TestService()}
 }
 
@@ -119,6 +118,17 @@ func (h *Handler) handle(ctx context.Context, client kilonova.Runner) error {
 
 			var wg sync.WaitGroup
 
+			checker, err := h.GetAppropriateChecker(client, sub, problem)
+			if err != nil {
+				log.Println("Could not get checker:", err)
+				continue
+			}
+
+			if err := checker.Prepare(ctx); err != nil {
+				log.Println("Checker prepare error:", err)
+				continue
+			}
+
 			for _, test := range tests {
 				test := test
 				wg.Add(1)
@@ -179,7 +189,7 @@ func (h *Handler) handle(ctx context.Context, client kilonova.Runner) error {
 							score = 0
 						}
 
-						resp.Comments, score = h.checker.RunChecker(tout, sout, int(pbTest.Score))
+						resp.Comments, testScore = checker.RunChecker(ctx, tout, sout, int(pbTest.Score))
 					}
 
 					mem := int(resp.Memory)
@@ -199,6 +209,10 @@ func (h *Handler) handle(ctx context.Context, client kilonova.Runner) error {
 
 			if err := client.Clean(ctx, sub.ID); err != nil {
 				log.Printf("Couldn't clean task: %s\n", err)
+			}
+
+			if err := checker.Cleanup(ctx); err != nil {
+				log.Printf("Couldn't clean checker: %s\n", err)
 			}
 
 			if err := h.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score}); err != nil {
@@ -248,6 +262,24 @@ func (h *Handler) GetAppropriateRunner() (kilonova.Runner, error) {
 			return runner, nil
 		}
 	}
-	log.Println("Could not spin up local grader, trying to contact remote")
-	return newGrpcRunner(config.Eval.Address)
+	log.Fatalln("Remote grader has been disabled because it can't run problems with custom checker")
+	return nil, nil
+	/*
+		Disabled until it fully works
+		return nil, nil
+		log.Println("Could not spin up local grader, trying to contact remote")
+		return newGrpcRunner(config.Eval.Address)
+	*/
+}
+
+func (h *Handler) GetAppropriateChecker(runner kilonova.Runner, sub *kilonova.Submission, pb *kilonova.Problem) (kilonova.Checker, error) {
+	switch pb.Type {
+	case kilonova.ProblemTypeClassic:
+		return &checkers.DiffChecker{}, nil
+	case kilonova.ProblemTypeCustomChecker:
+		return checkers.NewCustomChecker(runner, pb, sub)
+	default:
+		log.Println("Unknown problem type", pb.Type)
+		return nil, errors.New("Unknown problem type")
+	}
 }

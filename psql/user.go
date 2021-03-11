@@ -73,9 +73,10 @@ func (s *UserService) DeleteUser(ctx context.Context, id int) error {
 
 func (s *UserService) updateUser(ctx context.Context, id int, upd *kilonova.UserUpdate) error {
 	toUpd, args := []string{}, []interface{}{}
-	if v := upd.Name; v != nil {
+
+	/*if v := upd.Name; v != nil {
 		toUpd, args = append(toUpd, "name = ?"), append(args, v)
-	}
+	}*/
 	if v := upd.Email; v != nil {
 		toUpd, args = append(toUpd, "email = ?"), append(args, v)
 	}

@@ -1,6 +1,7 @@
 Additional reading I should do for a better platform:
 - https://pace.dev/blog/2020/02/12/why-you-shouldnt-use-func-main-in-golang-by-mat-ryer.html
 - https://ieftimov.com/post/four-steps-daemonize-your-golang-programs/
+- https://philipptanlak.com/web-frontends-in-go/
 
 ## TODO LIST KILONOVA:
 - [ ] Pre-Middle beta (v0.6.0b-?):
@@ -43,13 +44,13 @@ Additional reading I should do for a better platform:
 	- [ ] New features:
 		- [ ] ".kna"
 		- [x] Scor din oficiu
-		- [ ] Abilitate să ștergi unul sau toate testele direct
+		- [x] Abilitate să ștergi unul sau toate testele direct
 		- [ ] Admin tools diverse
 			- [ ] Mai multe informații în admin panel
 		- [ ] Code share ca pe cses
 		- [ ] Enhancements evaluare:
-			- [ ] Rezolvare edge case în care evaluarea găsește o submisie la care încă n-au fost inserate toate subtests;
-			- [ ] Verificator custom la probleme;
+			- [x] Rezolvare edge case în care evaluarea găsește o submisie la care încă n-au fost inserate toate subtests;
+			- [~] Verificator custom la probleme;
 			- [ ] Subtasks;
 			- [ ] ? Folder upload pentru teste
 		- [ ] ? Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
@@ -76,6 +77,7 @@ Additional reading I should do for a better platform:
 			- Comportament civilizat pe platformă etc etc
 			- Nu abuzați platforma
 			- Pedeapsa este la discreția administratorilor
+			- Fără reclamă la platformele altora. Reclama la concursuri e ok, la discreția moderatorilor.
 			- ???
 - [ ] pre-late beta:
 	- [ ] ? "Custom input" ca pe hackerrank/leetcode

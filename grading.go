@@ -3,6 +3,8 @@ package kilonova
 import (
 	"context"
 	"io"
+	"io/fs"
+	"os"
 
 	"github.com/KiloProjects/kilonova/internal/config"
 )
@@ -11,12 +13,11 @@ import (
 
 type Sandbox interface {
 	ReadFile(path string) (io.ReadSeekCloser, error)
-	WriteFile(path string, r io.Reader) error
+	WriteFile(path string, r io.Reader, mode fs.FileMode) error
+	RemoveFile(path string) error
 	FileExists(path string) bool
 
-	// TODO: Delete
-	CopyFromBox(p1 string, w io.Writer) error
-	CopyInBox(p1, p2 string) error
+	GetID() int
 
 	// if stdout == stderr, then it will act like exec.CombinedOutput()
 	RunCommand(ctx context.Context, cmd []string, conf *RunConfig) (*RunStats, error)
@@ -24,15 +25,27 @@ type Sandbox interface {
 	Close() error
 }
 
+// Checker is an interface for a function that statelessly tries to evaluate a subtest from a submission
 type Checker interface {
-	RunChecker(programOut io.Reader, correctOut io.Reader, maxScore int) (string, int)
+	Prepare(context.Context) error
+	Cleanup(context.Context) error
+	RunChecker(ctx context.Context, programOut, correctOut io.Reader, maxScore int) (string, int)
 }
 
 type Runner interface {
-	Compile(ctx context.Context, cr *CompileRequest) (*CompileResponse, error)
-	Execute(ctx context.Context, er *ExecRequest) (*ExecResponse, error)
+	RunJob(context.Context, Job) error
+
+	Compile(context.Context, *CompileRequest) (*CompileResponse, error)
+	Execute(context.Context, *ExecRequest) (*ExecResponse, error)
 	Clean(ctx context.Context, subid int) error
-	Close(ctx context.Context) error
+	Close(context.Context) error
+
+	GetSandbox(context.Context) (Sandbox, error)
+	ReleaseSandbox(Sandbox)
+}
+
+type Job interface {
+	Execute(context.Context, Sandbox) error
 }
 
 type CompileRequest struct {
@@ -47,20 +60,6 @@ type CompileResponse struct {
 	Other   string
 }
 
-// TODO
-
-/*
-	protobufTest := &kilonova.ExecRequest{
-		ID:          int32(sub.ID),
-		TID:         int32(test.ID),
-		Filename:    filename,
-		StackLimit:  int32(problem.StackLimit),
-		MemoryLimit: int32(problem.MemoryLimit),
-		TimeLimit:   problem.TimeLimit,
-		Lang:        sub.Language,
-		TestID:      int64(pbTest.ID),
-	}
-*/
 type ExecRequest struct {
 	SubID       int
 	SubtestID   int
@@ -91,9 +90,8 @@ type RunConfig struct {
 	MemoryLimit int
 	StackLimit  int
 
-	TimeLimit      float64
-	WallTimeLimit  float64
-	ExtraTimeLimit float64
+	TimeLimit     float64
+	WallTimeLimit float64
 
 	MaxProcs int
 
@@ -118,17 +116,48 @@ type RunStats struct {
 	WallTime float64 `json:"wall_time"`
 }
 
-type Grader interface {
-	Compile(code string, lang string) error
+func CopyFromBox(b Sandbox, p string, w io.Writer) error {
+	f, err := b.ReadFile(p)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(w, f)
+	return err
 }
 
-type FullProblem struct {
-	Problem
-	Tests []*FullTest
+func CopyInBox(b Sandbox, p1 string, p2 string) error {
+	file, err := os.Open(p1)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
+	return b.WriteFile(p2, file, stat.Mode())
 }
 
-type FullTest struct {
-	Test
-	Input  io.ReadCloser
-	Output io.ReadCloser
+func LangToRunConf(language config.Language) *RunConfig {
+	var runConf RunConfig
+	runConf.EnvToSet = make(map[string]string)
+
+	// if our specified language is not compiled, then it means that
+	// the mounts specified should be added at runtime
+	if !language.IsCompiled {
+		runConf.Directories = append(runConf.Directories, language.Mounts...)
+	}
+
+	for key, val := range language.CommonEnv {
+		runConf.EnvToSet[key] = val
+	}
+	for key, val := range language.RunEnv {
+		runConf.EnvToSet[key] = val
+	}
+
+	return &runConf
 }

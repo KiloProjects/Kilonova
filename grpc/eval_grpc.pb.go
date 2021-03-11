@@ -21,7 +21,7 @@ type EvalClient interface {
 	Compile(ctx context.Context, in *CompileRequest, opts ...grpc.CallOption) (*CompileResponse, error)
 	// Execute runs a test, returning their output
 	Execute(ctx context.Context, in *Test, opts ...grpc.CallOption) (*TestResponse, error)
-	Clean(ctx context.Context, in *CleanArgs, opts ...grpc.CallOption) (*Empty, error)
+	Clean(ctx context.Context, in *CleanArgs, opts ...grpc.CallOption) (*CleanResp, error)
 }
 
 type evalClient struct {
@@ -50,8 +50,8 @@ func (c *evalClient) Execute(ctx context.Context, in *Test, opts ...grpc.CallOpt
 	return out, nil
 }
 
-func (c *evalClient) Clean(ctx context.Context, in *CleanArgs, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
+func (c *evalClient) Clean(ctx context.Context, in *CleanArgs, opts ...grpc.CallOption) (*CleanResp, error) {
+	out := new(CleanResp)
 	err := c.cc.Invoke(ctx, "/eval.Eval/Clean", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ type EvalServer interface {
 	Compile(context.Context, *CompileRequest) (*CompileResponse, error)
 	// Execute runs a test, returning their output
 	Execute(context.Context, *Test) (*TestResponse, error)
-	Clean(context.Context, *CleanArgs) (*Empty, error)
+	Clean(context.Context, *CleanArgs) (*CleanResp, error)
 	mustEmbedUnimplementedEvalServer()
 }
 
@@ -81,7 +81,7 @@ func (UnimplementedEvalServer) Compile(context.Context, *CompileRequest) (*Compi
 func (UnimplementedEvalServer) Execute(context.Context, *Test) (*TestResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Execute not implemented")
 }
-func (UnimplementedEvalServer) Clean(context.Context, *CleanArgs) (*Empty, error) {
+func (UnimplementedEvalServer) Clean(context.Context, *CleanArgs) (*CleanResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Clean not implemented")
 }
 func (UnimplementedEvalServer) mustEmbedUnimplementedEvalServer() {}

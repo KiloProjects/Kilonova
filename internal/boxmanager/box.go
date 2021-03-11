@@ -2,11 +2,11 @@ package boxmanager
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -50,9 +50,8 @@ type Config struct {
 	EnvToSet     map[string]string
 
 	// Time limits (in seconds)
-	TimeLimit      float64
-	WallTimeLimit  float64
-	ExtraTimeLimit float64
+	TimeLimit     float64
+	WallTimeLimit float64
 
 	InputFile  string
 	OutputFile string
@@ -79,8 +78,8 @@ type Box struct {
 	metaFile string
 }
 
-// BuildRunFlags compiles all flags into an array
-func (b *Box) BuildRunFlags(c *kilonova.RunConfig) (res []string) {
+// buildRunFlags compiles all flags into an array
+func (b *Box) buildRunFlags(c *kilonova.RunConfig) (res []string) {
 	//c := b.Config
 	res = append(res, "--box-id="+strconv.Itoa(b.boxID))
 
@@ -125,9 +124,6 @@ func (b *Box) BuildRunFlags(c *kilonova.RunConfig) (res []string) {
 	if c.WallTimeLimit != 0 {
 		res = append(res, "--wall-time="+strconv.FormatFloat(c.WallTimeLimit, 'f', -1, 64))
 	}
-	if c.ExtraTimeLimit != 0 {
-		res = append(res, "--extra-time="+strconv.FormatFloat(c.ExtraTimeLimit, 'f', -1, 64))
-	}
 
 	if c.MemoryLimit != 0 {
 		memLim := approxMemory(c.MemoryLimit)
@@ -160,12 +156,16 @@ func (b *Box) BuildRunFlags(c *kilonova.RunConfig) (res []string) {
 }
 
 // WriteFile writes a file to the specified path inside the box
-func (b *Box) WriteFile(fpath string, r io.Reader) error {
-	return writeReader(b.getFilePath(fpath), r, 0777)
+func (b *Box) WriteFile(fpath string, r io.Reader, mode fs.FileMode) error {
+	return writeReader(b.getFilePath(fpath), r, mode)
 }
 
 func (b *Box) ReadFile(fpath string) (io.ReadSeekCloser, error) {
 	return os.Open(b.getFilePath(fpath))
+}
+
+func (b *Box) GetID() int {
+	return b.boxID
 }
 
 // FileExists returns if a file exists or not
@@ -188,41 +188,6 @@ func (b *Box) getFilePath(boxpath string) string {
 	return path.Join(b.path, boxpath)
 }
 
-// CopyFromBox copies a file from the box to the writer
-// It will inherit all permissions
-func (b *Box) CopyFromBox(boxpath string, w io.Writer) error {
-	f, err := os.Open(b.getFilePath(boxpath))
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = io.Copy(w, f)
-	return err
-}
-
-// CopyInBox copies a file to the box from the outside world
-// It will inherit all permissions
-func (b *Box) CopyInBox(rootpath, boxpath string) error {
-	return copyFile(rootpath, b.getFilePath(boxpath))
-}
-
-func copyFile(startpath, endpath string) error {
-	// just renaming doesn't work cross-disc (like moving to /tmp), so we create a new copy
-	infile, err := os.Open(startpath)
-	if err != nil {
-		return err
-	}
-	defer infile.Close()
-
-	stat, err := infile.Stat()
-	if err != nil {
-		return err
-	}
-
-	return writeReader(endpath, infile, stat.Mode())
-}
-
 func (b *Box) Close() error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -239,7 +204,7 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *kilonova.R
 	metaFile := path.Join(os.TempDir(), "kn-"+kilonova.RandomString(6))
 	b.metaFile = metaFile
 
-	params := append(b.BuildRunFlags(conf), command...)
+	params := append(b.buildRunFlags(conf), command...)
 	cmd := exec.CommandContext(ctx, isolatePath, params...)
 
 	b.metaFile = ""
@@ -269,15 +234,6 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *kilonova.R
 	return ParseMetaFile(f), nil
 }
 
-// ExecCombinedOutput runs a command and returns the combined output
-func (b *Box) ExecCombinedOutput(ctx context.Context, cmd []string, conf *kilonova.RunConfig) ([]byte, error) {
-	var output bytes.Buffer
-	conf.Stdout = &output
-	conf.Stderr = &output
-	_, err := b.RunCommand(ctx, cmd, conf)
-	return output.Bytes(), err
-}
-
 // newBox returns a new box instance from the specified ID
 func newBox(id int) (*Box, error) {
 	ret, err := exec.Command(isolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--init").CombinedOutput()
@@ -304,9 +260,11 @@ func newBox(id int) (*Box, error) {
 func CheckCanRun() bool {
 	box, err := newBox(0)
 	if err != nil {
+		log.Println(err)
 		return false
 	}
 	if err := box.Close(); err != nil {
+		log.Println(err)
 		return false
 	}
 	return true

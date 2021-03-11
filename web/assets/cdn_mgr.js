@@ -40,6 +40,7 @@ export function getFileIcon(name) {
 
 export { extensionIcons };
 
+// TODO
 export class CDNManager {
 	// startPath is an array with the respective path pieces to start with
 	constructor(startPath, target_id, can_edit) {

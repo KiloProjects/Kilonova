@@ -50,7 +50,7 @@ type UserFilter struct {
 
 // UserUpdate is the struct with all updatable fields on the user
 type UserUpdate struct {
-	Name    *string `json:"name"`
+	//Name    *string `json:"name"`
 	Email   *string `json:"email"`
 	PwdHash *string `json:"pwd_hash"`
 

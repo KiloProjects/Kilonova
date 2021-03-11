@@ -294,6 +294,7 @@ func (s *API) addSubmission(ctx context.Context, userID int, problemID int, code
 	sub.Code = code
 	sub.Language = lang
 	sub.Visible = visible
+	sub.Status = kilonova.StatusCreating
 	if err := s.sserv.CreateSubmission(ctx, &sub); err != nil {
 		return nil, err
 	}
@@ -303,6 +304,10 @@ func (s *API) addSubmission(ctx context.Context, userID int, problemID int, code
 		if err := s.stserv.CreateSubTest(ctx, &kilonova.SubTest{UserID: userID, TestID: test.ID, SubmissionID: sub.ID}); err != nil {
 			return nil, err
 		}
+	}
+
+	if err := s.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting}); err != nil {
+		return nil, err
 	}
 
 	return &sub, nil

@@ -11,6 +11,7 @@ type Status string
 
 const (
 	StatusNone     Status = ""
+	StatusCreating Status = "creating"
 	StatusWaiting  Status = "waiting"
 	StatusWorking  Status = "working"
 	StatusFinished Status = "finished"

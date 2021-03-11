@@ -48,12 +48,26 @@ func (g *grpcRunner) Execute(ctx context.Context, er *kilonova.ExecRequest) (*ki
 }
 
 func (g *grpcRunner) Clean(ctx context.Context, subid int) error {
-	_, err := g.client.Clean(ctx, &pb.CleanArgs{ID: int32(subid)})
+	succ, err := g.client.Clean(ctx, &pb.CleanArgs{ID: int32(subid)})
+	if err == nil && !succ.Success {
+		return errors.New("Couldn't clean submission")
+	}
 	return err
 }
 
 func (g *grpcRunner) Close(_ context.Context) error {
 	return g.conn.Close()
+}
+
+func (g *grpcRunner) GetSandbox(ctx context.Context) (kilonova.Sandbox, error) {
+	panic("TODO")
+}
+
+func (g *grpcRunner) ReleaseSandbox(box kilonova.Sandbox) {
+	panic("TODO")
+}
+func (g *grpcRunner) RunJob(ctx context.Context, job kilonova.Job) error {
+	panic("TODO")
 }
 
 func newGrpcRunner(address string) (*grpcRunner, error) {

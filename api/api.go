@@ -70,6 +70,9 @@ func (s *API) Handler() http.Handler {
 
 				r.Post("/title", s.updateTitle)
 				r.Post("/description", s.updateDescription)
+				//r.Post("/shortDescription", s.updateShortDescription)
+				//r.Post("/helperCode", s.updateHelperCode)
+				//r.Post("/problemType", s.updateProblemType)
 				r.Post("/consoleInput", s.setInputType)
 				r.Post("/sourceCredits", s.updateSourceCredits)
 				r.Post("/authorCredits", s.updateAuthorCredits)
@@ -80,11 +83,8 @@ func (s *API) Handler() http.Handler {
 				r.Route("/test/{tID}", func(r chi.Router) {
 					// test update stuff
 					r.Use(s.validateTestID)
-					// data:
 					r.Post("/data", s.saveTestData)
-					// visible id:
 					r.Post("/id", s.updateTestID)
-					// score:
 					r.Post("/score", s.updateTestScore)
 					// orphan:
 					r.Post("/orphan", s.orphanTest)

@@ -36,9 +36,9 @@ type Problem struct {
 	SourceCredits string `json:"source_credits" db:"source_credits"`
 	AuthorCredits string `json:"author_credits" db:"author_credits"`
 
-	//Type ProblemType `json:"type" db:"pb_type"`
-	//HelperCode string `json:"helper_code" db:"helper_code_text"`
-	//HelperCodeLang string `json:"helper_code_lang" db:"helper_code_lang"`
+	Type           ProblemType `json:"type" db:"pb_type"`
+	HelperCode     string      `json:"-" db:"helper_code_text"`
+	HelperCodeLang string      `json:"-" db:"helper_code_lang"`
 }
 
 // ProblemFilter is the struct with all filterable fields on the problem
@@ -74,6 +74,10 @@ type ProblemUpdate struct {
 
 	SourceCredits *string `json:"source_credits"`
 	AuthorCredits *string `json:"author_credits"`
+
+	Type           ProblemType `json:"type"`
+	HelperCode     *string     `json:"helper_code"`
+	HelperCodeLang *string     `json:"helper_code_lang"`
 }
 
 type ProblemService interface {
