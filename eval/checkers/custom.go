@@ -10,7 +10,7 @@ import (
 	"strconv"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/boxmanager"
+	"github.com/KiloProjects/kilonova/eval/boxmanager"
 	"github.com/KiloProjects/kilonova/internal/config"
 )
 

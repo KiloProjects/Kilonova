@@ -20,7 +20,7 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/logic"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/KiloProjects/kilonova/mdrenderer"
+	"github.com/KiloProjects/kilonova/web/mdrenderer"
 	"github.com/benbjohnson/hashfs"
 	"github.com/go-chi/chi"
 )

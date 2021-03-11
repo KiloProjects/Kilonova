@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/checkers"
-	"github.com/KiloProjects/kilonova/internal/boxmanager"
+	"github.com/KiloProjects/kilonova/eval/boxmanager"
+	"github.com/KiloProjects/kilonova/eval/checkers"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/logic"
 	"github.com/davecgh/go-spew/spew"
