@@ -1,4 +1,4 @@
-package cdn
+package web
 
 import (
 	"errors"
@@ -39,6 +39,6 @@ func (s *CDN) Handler() http.Handler {
 	})
 }
 
-func New(kn *logic.Kilonova, db kilonova.TypeServicer) *CDN {
+func NewCDN(kn *logic.Kilonova, db kilonova.TypeServicer) *CDN {
 	return &CDN{kn: kn, userv: db.UserService(), cdn: kn.DM}
 }

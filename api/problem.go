@@ -87,6 +87,40 @@ func (s *API) updateDescription(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Updated description")
 }
 
+func (s *API) updateHelperCode(w http.ResponseWriter, r *http.Request) {
+	val := r.FormValue("code")
+	if err := s.pserv.UpdateProblem(r.Context(), util.Problem(r).ID, kilonova.ProblemUpdate{HelperCode: &val}); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	returnData(w, "Updated helper code")
+}
+
+func (s *API) updateHelperCodeLang(w http.ResponseWriter, r *http.Request) {
+	val := r.FormValue("lang")
+	if err := s.pserv.UpdateProblem(r.Context(), util.Problem(r).ID, kilonova.ProblemUpdate{HelperCodeLang: &val}); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	returnData(w, "Updated helper code language")
+}
+
+func (s *API) updateProblemType(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		Type kilonova.ProblemType
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, http.StatusBadRequest)
+		return
+	}
+	if err := s.pserv.UpdateProblem(r.Context(), util.Problem(r).ID, kilonova.ProblemUpdate{Type: args.Type}); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	returnData(w, "Updated problem type")
+}
+
 func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {

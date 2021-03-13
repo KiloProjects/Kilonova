@@ -17,7 +17,7 @@ type SubTestService struct {
 
 func (s *SubTestService) SubTestsBySubID(ctx context.Context, subid int) ([]*kilonova.SubTest, error) {
 	var subtests []*kilonova.SubTest
-	err := s.db.SelectContext(ctx, &subtests, "SELECT * FROM submission_tests WHERE submission_id = $1", subid)
+	err := s.db.SelectContext(ctx, &subtests, "SELECT * FROM submission_tests WHERE submission_id = $1 ORDER BY id ASC", subid)
 	return subtests, err
 }
 

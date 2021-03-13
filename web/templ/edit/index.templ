@@ -31,6 +31,18 @@
 				<button class="btn btn-blue ml-2">Editare</button>
 			</div>
 		</form>
+		<form @submit="changeProblemType">
+			<div class="block my-2">
+				<label>
+					<span class="form-label">Tip Problemă:</span>
+					<select class="form-input" v-model="problem.type">
+						<option value="classic">Clasic</option>
+						<option value="custom_checker">Checker</option>
+					</select>
+				</label>
+				<button class="btn btn-blue ml-2">Editare</button>
+			</div>
+		</form>
 		<div class="block my-2">
 			<form class="inline" @submit="toggleVisibility">
 				<button class="btn btn-blue mr-2" v-if="admin">Fă ${problem.visible ? "invizibilă" : "vizibilă"}</button>
@@ -80,6 +92,7 @@
 			<div class="list-group my-2">
 				<a class="block list-group-item" :href="`/problems/${problem.id}/edit/desc`">Editare enunț</a>
 				<a class="block list-group-item" :href="`/problems/${problem.id}/edit/test`">Editare teste</a>
+				<a class="block list-group-item" :href="`/problems/${problem.id}/edit/checker`" v-if="problem.type == 'custom_checker'">!!! Editare checker</a>
 			</div>
 	</div>
 
@@ -109,6 +122,11 @@ Vue.createApp({
 		changeSourceCredits: async function(e) {
 			e.preventDefault();
 			let res = await bundled.postCall(`/problem/${this.problem.id}/update/sourceCredits`, {credits: this.problem.source_credits})
+			bundled.apiToast(res);
+		},
+		changeProblemType: async function(e) {
+			e.preventDefault();
+			let res = await bundled.postCall(`/problem/${this.problem.id}/update/type`, {type: this.problem.type})
 			bundled.apiToast(res);
 		},
 		changeAuthorCredits: async function(e) {

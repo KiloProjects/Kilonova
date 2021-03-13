@@ -37,7 +37,7 @@ type Problem struct {
 	AuthorCredits string `json:"author_credits" db:"author_credits"`
 
 	Type           ProblemType `json:"type" db:"pb_type"`
-	HelperCode     string      `json:"-" db:"helper_code_text"`
+	HelperCode     string      `json:"-" db:"helper_code"`
 	HelperCodeLang string      `json:"-" db:"helper_code_lang"`
 }
 

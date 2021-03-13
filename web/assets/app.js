@@ -173,6 +173,17 @@ let resendEmail = async () => {
 	return res
 }
 
+let languages = {
+	"c": "text/x-csrc",
+	"cpp": "text/x-c++src",
+	"golang": "text/x-go",
+	"haskell": "text/x-haskell",
+	"java": "text/x-java",
+	"python": "text/x-python",
+}
+
+export { languages };
+
 export { 
 	dayjs, cookie, 
 	createToast, getGradient, apiToast,

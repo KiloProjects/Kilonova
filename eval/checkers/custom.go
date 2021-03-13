@@ -10,14 +10,15 @@ import (
 	"strconv"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/boxmanager"
 	"github.com/KiloProjects/kilonova/internal/config"
 )
 
-var _ kilonova.Checker = &CustomChecker{}
+var _ eval.Checker = &CustomChecker{}
 
 type CustomChecker struct {
-	mgr kilonova.Runner
+	mgr eval.Runner
 	pb  *kilonova.Problem
 	sub *kilonova.Submission
 }
@@ -30,7 +31,7 @@ func (c *CustomChecker) Prepare(ctx context.Context) error {
 	}
 	defer c.mgr.ReleaseSandbox(box)
 
-	resp, err := c.mgr.Compile(ctx, &kilonova.CompileRequest{
+	resp, err := c.mgr.Compile(ctx, &eval.CompileRequest{
 		ID:   -c.sub.ID,
 		Code: []byte(c.pb.HelperCode),
 		Lang: c.pb.HelperCodeLang,
@@ -47,7 +48,7 @@ func (c *CustomChecker) Prepare(ctx context.Context) error {
 }
 
 /*
-var _ kilonova.Job = &CustomCheckerJob{}
+var _ eval.Job = &CustomCheckerJob{}
 
 type CustomCheckerJob struct {
 	pOut     io.Reader
@@ -56,7 +57,7 @@ type CustomCheckerJob struct {
 	c        *CustomChecker
 }
 
-func (c *CustomCheckerJob) Execute(ctx context.Context, box kilonova.Sandbox) error {
+func (c *CustomCheckerJob) Execute(ctx context.Context, box eval.Sandbox) error {
 	return nil
 }
 */
@@ -79,7 +80,7 @@ func (c *CustomChecker) RunChecker(ctx context.Context, pOut, cOut io.Reader, ma
 	if err := box.WriteFile("/box/correct.out", cOut, 0644); err != nil {
 		return ErrOut, 0
 	}
-	if err := kilonova.CopyInBox(box, path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", -c.sub.ID)), lang.CompiledName); err != nil {
+	if err := eval.CopyInBox(box, path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", -c.sub.ID)), lang.CompiledName); err != nil {
 		return ErrOut, 0
 	}
 
@@ -93,7 +94,7 @@ func (c *CustomChecker) RunChecker(ctx context.Context, pOut, cOut io.Reader, ma
 
 	var out bytes.Buffer
 
-	conf := &kilonova.RunConfig{
+	conf := &eval.RunConfig{
 		Stdout: &out,
 
 		MemoryLimit: 64 * 1024,
@@ -118,6 +119,6 @@ func (c *CustomChecker) Cleanup(ctx context.Context) error {
 	return c.mgr.Clean(ctx, -c.sub.ID)
 }
 
-func NewCustomChecker(mgr kilonova.Runner, pb *kilonova.Problem, sub *kilonova.Submission) (*CustomChecker, error) {
+func NewCustomChecker(mgr eval.Runner, pb *kilonova.Problem, sub *kilonova.Submission) (*CustomChecker, error) {
 	return &CustomChecker{mgr, pb, sub}, nil
 }

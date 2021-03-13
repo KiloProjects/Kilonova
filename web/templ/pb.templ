@@ -189,21 +189,13 @@ int main()
 document.getElementById("SubArea").innerHTML = defaultIn;
 */
 // TODO: Keep this in line with other places
-var languages = {
-	"c": "text/x-csrc",
-	"cpp": "text/x-c++src",
-	"golang": "text/x-go",
-	"haskell": "text/x-haskell",
-	"java": "text/x-java",
-	"python": "text/x-python",
-};
 var cm = CodeMirror.fromTextArea(document.getElementById("SubArea"), {
-	mode: languages["cpp"],
+	mode: bundled.languages["cpp"],
 });
 //cm.setSize(null, "auto");
 
 document.getElementById("sub_language").addEventListener("change", (e) => {
-	let lang = languages[e.target.value]
+	let lang = bundled.languages[e.target.value]
 	if(lang !== null) {
 		cm.setOption("mode", lang)
 	}

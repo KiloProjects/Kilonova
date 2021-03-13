@@ -20,7 +20,6 @@
         cm.setSize(null, "100%");
 
 		async function setDescription() {
-			// TODO: Test it works
             let desc = cm.getValue();
             console.log(desc);
 			let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/description", {text: desc})

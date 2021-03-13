@@ -315,6 +315,12 @@ func (rt *Web) Handler() http.Handler {
 						templ.Codemirror = true
 						rt.build(w, r, "edit/desc", templ)
 					})
+					r.Get("/checker", func(w http.ResponseWriter, r *http.Request) {
+						problem := util.Problem(r)
+						templ := rt.hydrateTemplate(r, fmt.Sprintf("EDITARE CHECKER | Problema #%d: %s", problem.ID, problem.Name))
+						templ.Codemirror = true
+						rt.build(w, r, "edit/checker", templ)
+					})
 					r.Route("/test", func(r chi.Router) {
 						r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 							problem := util.Problem(r)

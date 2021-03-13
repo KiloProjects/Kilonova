@@ -13,11 +13,12 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"golang.org/x/sync/semaphore"
 )
 
-var _ kilonova.Runner = &BoxManager{}
+var _ eval.Runner = &BoxManager{}
 
 // Limits stores the constraints that need to be respected by a submission
 type Limits struct {
@@ -47,7 +48,7 @@ func (b *BoxManager) ToggleDebug() {
 	b.debug = !b.debug
 }
 
-func (b *BoxManager) RunJob(ctx context.Context, job kilonova.Job) error {
+func (b *BoxManager) RunJob(ctx context.Context, job eval.Job) error {
 	box, err := b.GetSandbox(ctx)
 	if err != nil {
 		log.Println(err)
@@ -58,12 +59,12 @@ func (b *BoxManager) RunJob(ctx context.Context, job kilonova.Job) error {
 }
 
 // CompileFile compiles a file that has the corresponding language
-func CompileFile(ctx context.Context, box kilonova.Sandbox, SourceCode []byte, language config.Language) (string, error) {
+func CompileFile(ctx context.Context, box eval.Sandbox, SourceCode []byte, language config.Language) (string, error) {
 	if err := box.WriteFile(language.SourceName, bytes.NewReader(SourceCode), 0644); err != nil {
 		return "", err
 	}
 
-	var conf kilonova.RunConfig
+	var conf eval.RunConfig
 	conf.EnvToSet = make(map[string]string)
 
 	conf.InheritEnv = true
@@ -99,9 +100,9 @@ func CompileFile(ctx context.Context, box kilonova.Sandbox, SourceCode []byte, l
 
 // RunSubmission runs a program, following the language conventions
 // filenames contains the names for input and output, used if consoleInput is true
-func RunSubmission(ctx context.Context, box kilonova.Sandbox, language config.Language, constraints Limits, consoleInput bool) (*kilonova.RunStats, error) {
+func RunSubmission(ctx context.Context, box eval.Sandbox, language config.Language, constraints Limits, consoleInput bool) (*eval.RunStats, error) {
 
-	runConf := kilonova.LangToRunConf(language)
+	runConf := eval.LangToRunConf(language)
 
 	runConf.MemoryLimit = constraints.MemoryLimit
 	runConf.StackLimit = constraints.StackLimit
@@ -125,8 +126,8 @@ func RunSubmission(ctx context.Context, box kilonova.Sandbox, language config.La
 	return box.RunCommand(ctx, goodCmd, runConf)
 }
 
-func (b *BoxManager) Execute(ctx context.Context, sub *kilonova.ExecRequest) (*kilonova.ExecResponse, error) {
-	response := &kilonova.ExecResponse{SubtestID: sub.SubtestID}
+func (b *BoxManager) Execute(ctx context.Context, sub *eval.ExecRequest) (*eval.ExecResponse, error) {
+	response := &eval.ExecResponse{SubtestID: sub.SubtestID}
 
 	box, err := b.GetSandbox(ctx)
 	if err != nil {
@@ -154,7 +155,7 @@ func (b *BoxManager) Execute(ctx context.Context, sub *kilonova.ExecRequest) (*k
 	consoleInput := sub.Filename == "stdin"
 
 	lang := config.Languages[sub.Lang]
-	if err := kilonova.CopyInBox(box, path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", sub.SubID)), lang.CompiledName); err != nil {
+	if err := eval.CopyInBox(box, path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", sub.SubID)), lang.CompiledName); err != nil {
 		response.Comments = "Couldn't copy executable in box"
 		return response, err
 	}
@@ -195,7 +196,7 @@ func (b *BoxManager) Execute(ctx context.Context, sub *kilonova.ExecRequest) (*k
 		return response, nil
 	}
 
-	if err := kilonova.CopyFromBox(box, boxOut, w); err != nil {
+	if err := eval.CopyFromBox(box, boxOut, w); err != nil {
 		response.Comments = "Could not write output file"
 		return response, nil
 	}
@@ -208,7 +209,7 @@ func (b *BoxManager) Execute(ctx context.Context, sub *kilonova.ExecRequest) (*k
 	return response, nil
 }
 
-func (b *BoxManager) Compile(ctx context.Context, c *kilonova.CompileRequest) (*kilonova.CompileResponse, error) {
+func (b *BoxManager) Compile(ctx context.Context, c *eval.CompileRequest) (*eval.CompileResponse, error) {
 	box, err := b.GetSandbox(ctx)
 	if err != nil {
 		log.Println(err)
@@ -227,7 +228,7 @@ func (b *BoxManager) Compile(ctx context.Context, c *kilonova.CompileRequest) (*
 	}
 
 	outName := path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", c.ID))
-	resp := &kilonova.CompileResponse{}
+	resp := &eval.CompileResponse{}
 	resp.Success = true
 
 	if lang.IsCompiled {
@@ -243,7 +244,7 @@ func (b *BoxManager) Compile(ctx context.Context, c *kilonova.CompileRequest) (*
 				resp.Success = false
 				return resp, nil
 			}
-			if err := kilonova.CopyFromBox(box, lang.CompiledName, f); err != nil {
+			if err := eval.CopyFromBox(box, lang.CompiledName, f); err != nil {
 				resp.Other = err.Error()
 				resp.Success = false
 			}
@@ -273,14 +274,14 @@ func (b *BoxManager) NewSandbox() (*Box, error) {
 	return box, nil
 }
 
-func (b *BoxManager) GetSandbox(ctx context.Context) (kilonova.Sandbox, error) {
+func (b *BoxManager) GetSandbox(ctx context.Context) (eval.Sandbox, error) {
 	if err := b.sem.Acquire(ctx, 1); err != nil {
 		return nil, err
 	}
 	return b.NewSandbox()
 }
 
-func (b *BoxManager) ReleaseSandbox(sb kilonova.Sandbox) {
+func (b *BoxManager) ReleaseSandbox(sb eval.Sandbox) {
 	b.sem.Release(1)
 	if err := sb.Close(); err != nil {
 		log.Printf("Could not release sandbox %d: %v\n", sb.GetID(), err)

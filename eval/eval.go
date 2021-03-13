@@ -1,4 +1,4 @@
-package kilonova
+package eval
 
 import (
 	"context"

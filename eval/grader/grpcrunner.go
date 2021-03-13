@@ -6,28 +6,28 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval"
 	pb "github.com/KiloProjects/kilonova/grpc"
 	"google.golang.org/grpc"
 )
 
-var _ kilonova.Runner = &grpcRunner{}
+var _ eval.Runner = &grpcRunner{}
 
 type grpcRunner struct {
 	conn   *grpc.ClientConn
 	client pb.EvalClient
 }
 
-func (g *grpcRunner) Compile(ctx context.Context, cr *kilonova.CompileRequest) (*kilonova.CompileResponse, error) {
+func (g *grpcRunner) Compile(ctx context.Context, cr *eval.CompileRequest) (*eval.CompileResponse, error) {
 	resp, err := g.client.Compile(ctx, &pb.CompileRequest{ID: int32(cr.ID), Code: string(cr.Code), Lang: cr.Lang})
-	return &kilonova.CompileResponse{
+	return &eval.CompileResponse{
 		Output:  resp.Output,
 		Success: resp.Success,
 		Other:   resp.Other,
 	}, err
 }
 
-func (g *grpcRunner) Execute(ctx context.Context, er *kilonova.ExecRequest) (*kilonova.ExecResponse, error) {
+func (g *grpcRunner) Execute(ctx context.Context, er *eval.ExecRequest) (*eval.ExecResponse, error) {
 	resp, err := g.client.Execute(ctx, &pb.Test{
 		ID:          int32(er.SubID),
 		TID:         int32(er.SubtestID),
@@ -38,7 +38,7 @@ func (g *grpcRunner) Execute(ctx context.Context, er *kilonova.ExecRequest) (*ki
 		TimeLimit:   er.TimeLimit,
 		Lang:        er.Lang,
 	})
-	return &kilonova.ExecResponse{
+	return &eval.ExecResponse{
 		SubtestID:  int(resp.TID),
 		Time:       resp.Time,
 		Memory:     int(resp.Memory),
@@ -59,14 +59,14 @@ func (g *grpcRunner) Close(_ context.Context) error {
 	return g.conn.Close()
 }
 
-func (g *grpcRunner) GetSandbox(ctx context.Context) (kilonova.Sandbox, error) {
+func (g *grpcRunner) GetSandbox(ctx context.Context) (eval.Sandbox, error) {
 	panic("TODO")
 }
 
-func (g *grpcRunner) ReleaseSandbox(box kilonova.Sandbox) {
+func (g *grpcRunner) ReleaseSandbox(box eval.Sandbox) {
 	panic("TODO")
 }
-func (g *grpcRunner) RunJob(ctx context.Context, job kilonova.Job) error {
+func (g *grpcRunner) RunJob(ctx context.Context, job eval.Job) error {
 	panic("TODO")
 }
 

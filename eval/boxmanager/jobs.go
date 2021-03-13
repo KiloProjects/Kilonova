@@ -3,26 +3,26 @@ package boxmanager
 import (
 	"context"
 
-	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval"
 )
 
-var _ kilonova.Job = &CompileJob{}
-var _ kilonova.Job = &ExecuteJob{}
+var _ eval.Job = &CompileJob{}
+var _ eval.Job = &ExecuteJob{}
 
 type CompileJob struct {
-	Req  *kilonova.CompileRequest
-	Resp *kilonova.CompileResponse
+	Req  *eval.CompileRequest
+	Resp *eval.CompileResponse
 }
 
-func (job *CompileJob) Execute(ctx context.Context, box kilonova.Sandbox) error {
+func (job *CompileJob) Execute(ctx context.Context, box eval.Sandbox) error {
 	panic("TODO")
 }
 
 type ExecuteJob struct {
-	Req  *kilonova.ExecRequest
-	Resp *kilonova.ExecResponse
+	Req  *eval.ExecRequest
+	Resp *eval.ExecResponse
 }
 
-func (job *ExecuteJob) Execute(ctx context.Context, box kilonova.Sandbox) error {
+func (job *ExecuteJob) Execute(ctx context.Context, box eval.Sandbox) error {
 	panic("TODO")
 }

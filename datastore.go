@@ -14,10 +14,11 @@ var (
 )
 
 type TestStore interface {
-	SaveTestInput(testID int, input io.Reader) error
-	SaveTestOutput(testID int, output io.Reader) error
 	TestInput(testID int) (io.ReadCloser, error)
 	TestOutput(testID int) (io.ReadCloser, error)
+
+	SaveTestInput(testID int, input io.Reader) error
+	SaveTestOutput(testID int, output io.Reader) error
 }
 
 type SubtestStore interface {

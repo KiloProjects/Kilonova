@@ -6,16 +6,16 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval"
 )
 
 const (
-	ErrOut     = "Internal grader error"
+	ErrOut     = "Internal checker error"
 	CorrectOut = "Correct"
 	WrongOut   = "Wrong Answer"
 )
 
-var _ kilonova.Checker = &DiffChecker{}
+var _ eval.Checker = &DiffChecker{}
 
 type DiffChecker struct{}
 
@@ -34,6 +34,13 @@ func (d *DiffChecker) RunChecker(ctx context.Context, pOut, cOut io.Reader, maxS
 		return ErrOut, 0
 	}
 	defer cf.Close()
+
+	if _, err := io.Copy(tf, pOut); err != nil {
+		return ErrOut, 0
+	}
+	if _, err := io.Copy(cf, cOut); err != nil {
+		return ErrOut, 0
+	}
 
 	cmd := exec.CommandContext(ctx, "diff", "-qBbEa", tf.Name(), cf.Name())
 	if err := cmd.Run(); err != nil {

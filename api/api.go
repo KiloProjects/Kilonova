@@ -70,9 +70,13 @@ func (s *API) Handler() http.Handler {
 
 				r.Post("/title", s.updateTitle)
 				r.Post("/description", s.updateDescription)
+
 				//r.Post("/shortDescription", s.updateShortDescription)
-				//r.Post("/helperCode", s.updateHelperCode)
-				//r.Post("/problemType", s.updateProblemType)
+				r.Post("/helperCode", s.updateHelperCode)
+				// support only c++ helper code for now
+				//r.Post("/helperCodeLang", s.updateHelperCodeLang)
+				r.Post("/type", s.updateProblemType)
+
 				r.Post("/consoleInput", s.setInputType)
 				r.Post("/sourceCredits", s.updateSourceCredits)
 				r.Post("/authorCredits", s.updateAuthorCredits)

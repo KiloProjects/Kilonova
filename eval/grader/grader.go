@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/boxmanager"
 	"github.com/KiloProjects/kilonova/eval/checkers"
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -67,7 +68,7 @@ func (h *Handler) chFeeder(d time.Duration) {
 	}
 }
 
-func (h *Handler) handle(ctx context.Context, client kilonova.Runner) error {
+func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -80,7 +81,7 @@ func (h *Handler) handle(ctx context.Context, client kilonova.Runner) error {
 			var score_mu sync.Mutex
 			var score int
 
-			resp, err := client.Compile(ctx, &kilonova.CompileRequest{ID: sub.ID, Code: []byte(sub.Code), Lang: sub.Language})
+			resp, err := runner.Compile(ctx, &eval.CompileRequest{ID: sub.ID, Code: []byte(sub.Code), Lang: sub.Language})
 
 			if err != nil {
 				log.Println("Error from eval:", err)
@@ -118,7 +119,7 @@ func (h *Handler) handle(ctx context.Context, client kilonova.Runner) error {
 
 			var wg sync.WaitGroup
 
-			checker, err := h.GetAppropriateChecker(client, sub, problem)
+			checker, err := h.GetAppropriateChecker(runner, sub, problem)
 			if err != nil {
 				log.Println("Could not get checker:", err)
 				continue
@@ -144,7 +145,7 @@ func (h *Handler) handle(ctx context.Context, client kilonova.Runner) error {
 					filename = "stdin"
 				}
 
-				protobufTest := &kilonova.ExecRequest{
+				protobufTest := &eval.ExecRequest{
 					SubID:       sub.ID,
 					SubtestID:   test.ID,
 					TestID:      pbTest.ID,
@@ -159,15 +160,17 @@ func (h *Handler) handle(ctx context.Context, client kilonova.Runner) error {
 					subTestID := test.ID
 					pbTest := pbTest
 
-					resp, err := client.Execute(ctx, protobufTest)
+					resp, err := runner.Execute(ctx, protobufTest)
 					if err != nil {
 						log.Printf("Error executing test: %v\n", err)
 						return
 					}
 
-					if h.debug {
-						spew.Dump(resp)
-					}
+					/*
+						if h.debug {
+							spew.Dump(resp)
+						}
+					*/
 
 					var testScore int
 
@@ -207,7 +210,7 @@ func (h *Handler) handle(ctx context.Context, client kilonova.Runner) error {
 
 			wg.Wait()
 
-			if err := client.Clean(ctx, sub.ID); err != nil {
+			if err := runner.Clean(ctx, sub.ID); err != nil {
 				log.Printf("Couldn't clean task: %s\n", err)
 			}
 
@@ -245,7 +248,7 @@ func (h *Handler) Start() error {
 	return <-eCh
 }
 
-func (h *Handler) getLocalRunner() (kilonova.Runner, error) {
+func (h *Handler) getLocalRunner() (eval.Runner, error) {
 	log.Println("Trying to spin up local grader")
 	bm, err := boxmanager.New(config.Eval.NumConcurrent, h.dm)
 	if err != nil {
@@ -255,7 +258,7 @@ func (h *Handler) getLocalRunner() (kilonova.Runner, error) {
 	return bm, nil
 }
 
-func (h *Handler) GetAppropriateRunner() (kilonova.Runner, error) {
+func (h *Handler) GetAppropriateRunner() (eval.Runner, error) {
 	if boxmanager.CheckCanRun() {
 		runner, err := h.getLocalRunner()
 		if err == nil {
@@ -272,7 +275,7 @@ func (h *Handler) GetAppropriateRunner() (kilonova.Runner, error) {
 	*/
 }
 
-func (h *Handler) GetAppropriateChecker(runner kilonova.Runner, sub *kilonova.Submission, pb *kilonova.Problem) (kilonova.Checker, error) {
+func (h *Handler) GetAppropriateChecker(runner eval.Runner, sub *kilonova.Submission, pb *kilonova.Problem) (eval.Checker, error) {
 	switch pb.Type {
 	case kilonova.ProblemTypeClassic:
 		return &checkers.DiffChecker{}, nil

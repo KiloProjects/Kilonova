@@ -16,6 +16,7 @@ import (
 	"sync"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/davecgh/go-spew/spew"
 )
@@ -28,7 +29,7 @@ var (
 	isolatePath   string
 )
 
-var _ kilonova.Sandbox = &Box{}
+var _ eval.Sandbox = &Box{}
 
 // Env represents a variable-value pair for an environment variable
 type Env struct {
@@ -79,7 +80,7 @@ type Box struct {
 }
 
 // buildRunFlags compiles all flags into an array
-func (b *Box) buildRunFlags(c *kilonova.RunConfig) (res []string) {
+func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
 	//c := b.Config
 	res = append(res, "--box-id="+strconv.Itoa(b.boxID))
 
@@ -197,7 +198,7 @@ func (b *Box) Close() error {
 	return exec.Command(isolatePath, params...).Run()
 }
 
-func (b *Box) RunCommand(ctx context.Context, command []string, conf *kilonova.RunConfig) (*kilonova.RunStats, error) {
+func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunConfig) (*eval.RunStats, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -321,6 +322,10 @@ func Initialize(isolateBin string) error {
 		fmt.Println("Isolate config downloaded")
 	}
 
+	if err := os.MkdirAll(config.Eval.CompilePath, 0777); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -337,11 +342,11 @@ func writeReader(path string, r io.Reader, perms fs.FileMode) error {
 }
 
 // ParseMetaFile parses a specified meta file
-func ParseMetaFile(r io.Reader) *kilonova.RunStats {
+func ParseMetaFile(r io.Reader) *eval.RunStats {
 	if r == nil {
 		return nil
 	}
-	var file = new(kilonova.RunStats)
+	var file = new(eval.RunStats)
 
 	s := bufio.NewScanner(r)
 

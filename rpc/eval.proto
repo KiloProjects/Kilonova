@@ -16,6 +16,18 @@ service Eval {
 
 }
 
+service Sandbox {
+	
+	rpc GetID(GetIDArgs) returns (GetIDResponse) {}
+}
+
+message GetIDArgs {
+}
+
+message GetIDResponse {
+	int32 ID = 1;
+}
+
 message CleanArgs {
 	int32 ID = 1;
 }
