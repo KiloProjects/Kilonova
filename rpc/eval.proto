@@ -66,7 +66,6 @@ message Test {
 }
 
 message TestResponse {
-	int32 TID = 1; // the tid specified in test
 	double time = 3; // time taken
 	int32 memory = 4; // memory usage
 	int32 status = 5; // exit status

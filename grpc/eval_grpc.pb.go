@@ -171,3 +171,86 @@ var _Eval_serviceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "eval.proto",
 }
+
+// SandboxClient is the client API for Sandbox service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type SandboxClient interface {
+	GetID(ctx context.Context, in *GetIDArgs, opts ...grpc.CallOption) (*GetIDResponse, error)
+}
+
+type sandboxClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewSandboxClient(cc grpc.ClientConnInterface) SandboxClient {
+	return &sandboxClient{cc}
+}
+
+func (c *sandboxClient) GetID(ctx context.Context, in *GetIDArgs, opts ...grpc.CallOption) (*GetIDResponse, error) {
+	out := new(GetIDResponse)
+	err := c.cc.Invoke(ctx, "/eval.Sandbox/GetID", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SandboxServer is the server API for Sandbox service.
+// All implementations must embed UnimplementedSandboxServer
+// for forward compatibility
+type SandboxServer interface {
+	GetID(context.Context, *GetIDArgs) (*GetIDResponse, error)
+	mustEmbedUnimplementedSandboxServer()
+}
+
+// UnimplementedSandboxServer must be embedded to have forward compatible implementations.
+type UnimplementedSandboxServer struct {
+}
+
+func (UnimplementedSandboxServer) GetID(context.Context, *GetIDArgs) (*GetIDResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetID not implemented")
+}
+func (UnimplementedSandboxServer) mustEmbedUnimplementedSandboxServer() {}
+
+// UnsafeSandboxServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to SandboxServer will
+// result in compilation errors.
+type UnsafeSandboxServer interface {
+	mustEmbedUnimplementedSandboxServer()
+}
+
+func RegisterSandboxServer(s grpc.ServiceRegistrar, srv SandboxServer) {
+	s.RegisterService(&_Sandbox_serviceDesc, srv)
+}
+
+func _Sandbox_GetID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetIDArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SandboxServer).GetID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/eval.Sandbox/GetID",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SandboxServer).GetID(ctx, req.(*GetIDArgs))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Sandbox_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "eval.Sandbox",
+	HandlerType: (*SandboxServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetID",
+			Handler:    _Sandbox_GetID_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "eval.proto",
+}

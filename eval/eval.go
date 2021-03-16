@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"io/fs"
-	"os"
 
 	"github.com/KiloProjects/kilonova/internal/config"
 )
@@ -34,14 +33,7 @@ type Checker interface {
 
 type Runner interface {
 	RunJob(context.Context, Job) error
-
-	Compile(context.Context, *CompileRequest) (*CompileResponse, error)
-	Execute(context.Context, *ExecRequest) (*ExecResponse, error)
-	Clean(ctx context.Context, subid int) error
 	Close(context.Context) error
-
-	GetSandbox(context.Context) (Sandbox, error)
-	ReleaseSandbox(Sandbox)
 }
 
 type Job interface {
@@ -72,7 +64,6 @@ type ExecRequest struct {
 }
 
 type ExecResponse struct {
-	SubtestID  int
 	Time       float64
 	Memory     int
 	ExitStatus int
@@ -116,48 +107,11 @@ type RunStats struct {
 	WallTime float64 `json:"wall_time"`
 }
 
-func CopyFromBox(b Sandbox, p string, w io.Writer) error {
-	f, err := b.ReadFile(p)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = io.Copy(w, f)
-	return err
-}
-
-func CopyInBox(b Sandbox, p1 string, p2 string) error {
-	file, err := os.Open(p1)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	stat, err := file.Stat()
-	if err != nil {
-		return err
-	}
-
-	return b.WriteFile(p2, file, stat.Mode())
-}
-
-func LangToRunConf(language config.Language) *RunConfig {
-	var runConf RunConfig
-	runConf.EnvToSet = make(map[string]string)
-
-	// if our specified language is not compiled, then it means that
-	// the mounts specified should be added at runtime
-	if !language.IsCompiled {
-		runConf.Directories = append(runConf.Directories, language.Mounts...)
-	}
-
-	for key, val := range language.CommonEnv {
-		runConf.EnvToSet[key] = val
-	}
-	for key, val := range language.RunEnv {
-		runConf.EnvToSet[key] = val
-	}
-
-	return &runConf
+// Limits stores the constraints that need to be respected by a submission
+type Limits struct {
+	// seconds
+	TimeLimit float64
+	// kilobytes
+	StackLimit  int
+	MemoryLimit int
 }

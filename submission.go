@@ -69,6 +69,7 @@ type SubTest struct {
 	TestID       int       `db:"test_id" json:"test_id"`
 	UserID       int       `db:"user_id" json:"user_id"`
 	SubmissionID int       `db:"submission_id" json:"submission_id"`
+	Skipped      bool      `json:"skipped"`
 }
 
 type SubTestUpdate struct {
@@ -77,6 +78,7 @@ type SubTestUpdate struct {
 	Score   *int
 	Verdict *string
 	Done    *bool
+	Skipped *bool
 }
 
 type SubmissionService interface {

@@ -13,15 +13,13 @@ var (
 	ErrNotExist     = &Error{Code: ENOTFOUND, Message: "Error doesn't exist"}
 )
 
-type TestStore interface {
+type GraderStore interface {
 	TestInput(testID int) (io.ReadCloser, error)
 	TestOutput(testID int) (io.ReadCloser, error)
 
 	SaveTestInput(testID int, input io.Reader) error
 	SaveTestOutput(testID int, output io.Reader) error
-}
 
-type SubtestStore interface {
 	SubtestWriter(subtest int) (io.WriteCloser, error)
 	SubtestReader(subtest int) (io.ReadCloser, error)
 
@@ -40,8 +38,7 @@ type CDNStore interface {
 
 // DataStore represents an interface for the Data Storage Manager
 type DataStore interface {
-	TestStore
-	SubtestStore
+	GraderStore
 	CDNStore
 }
 

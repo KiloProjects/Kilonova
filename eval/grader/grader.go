@@ -11,20 +11,23 @@ import (
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/boxmanager"
 	"github.com/KiloProjects/kilonova/eval/checkers"
+	"github.com/KiloProjects/kilonova/eval/jobs"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/logic"
 	"github.com/davecgh/go-spew/spew"
 )
 
-var True = true
-var waitingSubs = kilonova.SubmissionFilter{Status: kilonova.StatusWaiting}
-var workingUpdate = kilonova.SubmissionUpdate{Status: kilonova.StatusWorking}
+var (
+	True          = true
+	waitingSubs   = kilonova.SubmissionFilter{Status: kilonova.StatusWaiting}
+	workingUpdate = kilonova.SubmissionUpdate{Status: kilonova.StatusWorking}
+)
 
 type Handler struct {
 	ctx   context.Context
 	sChan chan *kilonova.Submission
 	kn    *logic.Kilonova
-	dm    kilonova.DataStore
+	dm    kilonova.GraderStore
 
 	debug  bool
 	sserv  kilonova.SubmissionService
@@ -81,13 +84,17 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 			var score_mu sync.Mutex
 			var score int
 
-			resp, err := runner.Compile(ctx, &eval.CompileRequest{ID: sub.ID, Code: []byte(sub.Code), Lang: sub.Language})
-
+			job := &jobs.CompileJob{
+				Req:   &eval.CompileRequest{ID: sub.ID, Code: []byte(sub.Code), Lang: sub.Language},
+				Debug: h.debug,
+			}
+			err := runner.RunJob(ctx, job)
 			if err != nil {
 				log.Println("Error from eval:", err)
 				continue
 			}
 
+			resp := job.Resp
 			if h.debug {
 				old := resp.Output
 				resp.Output = "<output stripped>"
@@ -119,7 +126,7 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 
 			var wg sync.WaitGroup
 
-			checker, err := h.GetAppropriateChecker(runner, sub, problem)
+			checker, err := getAppropriateChecker(runner, sub, problem)
 			if err != nil {
 				log.Println("Could not get checker:", err)
 				continue
@@ -145,7 +152,7 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 					filename = "stdin"
 				}
 
-				protobufTest := &eval.ExecRequest{
+				execRequest := &eval.ExecRequest{
 					SubID:       sub.ID,
 					SubtestID:   test.ID,
 					TestID:      pbTest.ID,
@@ -160,11 +167,19 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 					subTestID := test.ID
 					pbTest := pbTest
 
-					resp, err := runner.Execute(ctx, protobufTest)
+					job := &jobs.ExecuteJob{
+						Req:   execRequest,
+						Resp:  &eval.ExecResponse{},
+						Debug: h.debug,
+					}
+
+					err := runner.RunJob(ctx, job)
 					if err != nil {
 						log.Printf("Error executing test: %v\n", err)
 						return
 					}
+
+					resp := job.Resp
 
 					/*
 						if h.debug {
@@ -210,7 +225,7 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 
 			wg.Wait()
 
-			if err := runner.Clean(ctx, sub.ID); err != nil {
+			if err := eval.CleanCompilation(sub.ID); err != nil {
 				log.Printf("Couldn't clean task: %s\n", err)
 			}
 
@@ -226,7 +241,7 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 }
 
 func (h *Handler) Start() error {
-	runner, err := h.GetAppropriateRunner()
+	runner, err := h.getAppropriateRunner()
 	if err != nil {
 		return err
 	}
@@ -258,7 +273,7 @@ func (h *Handler) getLocalRunner() (eval.Runner, error) {
 	return bm, nil
 }
 
-func (h *Handler) GetAppropriateRunner() (eval.Runner, error) {
+func (h *Handler) getAppropriateRunner() (eval.Runner, error) {
 	if boxmanager.CheckCanRun() {
 		runner, err := h.getLocalRunner()
 		if err == nil {
@@ -275,7 +290,7 @@ func (h *Handler) GetAppropriateRunner() (eval.Runner, error) {
 	*/
 }
 
-func (h *Handler) GetAppropriateChecker(runner eval.Runner, sub *kilonova.Submission, pb *kilonova.Problem) (eval.Checker, error) {
+func getAppropriateChecker(runner eval.Runner, sub *kilonova.Submission, pb *kilonova.Problem) (eval.Checker, error) {
 	switch pb.Type {
 	case kilonova.ProblemTypeClassic:
 		return &checkers.DiffChecker{}, nil

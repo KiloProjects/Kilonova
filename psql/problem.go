@@ -141,13 +141,6 @@ func (s *ProblemService) updateQueryMaker(upd *kilonova.ProblemUpdate) ([]string
 		toUpd, args = append(toUpd, "stack_limit = ?"), append(args, v)
 	}
 
-	if v := upd.ConsoleInput; v != nil {
-		toUpd, args = append(toUpd, "console_input = ?"), append(args, v)
-	}
-	if v := upd.Visible; v != nil {
-		toUpd, args = append(toUpd, "visible = ?"), append(args, v)
-	}
-
 	if v := upd.DefaultPoints; v != nil {
 		toUpd, args = append(toUpd, "default_points = ?"), append(args, v)
 	}
@@ -167,6 +160,16 @@ func (s *ProblemService) updateQueryMaker(upd *kilonova.ProblemUpdate) ([]string
 	}
 	if v := upd.HelperCodeLang; v != nil {
 		toUpd, args = append(toUpd, "helper_code_lang = ?"), append(args, v)
+	}
+	if v := upd.SubtaskString; v != nil {
+		toUpd, args = append(toUpd, "subtasks = ?"), append(args, v)
+	}
+
+	if v := upd.ConsoleInput; v != nil {
+		toUpd, args = append(toUpd, "console_input = ?"), append(args, v)
+	}
+	if v := upd.Visible; v != nil {
+		toUpd, args = append(toUpd, "visible = ?"), append(args, v)
 	}
 
 	return toUpd, args

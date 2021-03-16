@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/fs"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -21,49 +20,12 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-var (
-	releasePrefix = "https://github.com/KiloProjects/isolate/releases/latest/download/"
-	configURL     = releasePrefix + "default.cf"
-	configPath    = "/usr/local/etc/isolate"
-	isolateURL    = releasePrefix + "isolate"
-	isolatePath   string
-)
-
 var _ eval.Sandbox = &Box{}
 
 // Env represents a variable-value pair for an environment variable
 type Env struct {
 	Var   string
 	Value string
-}
-
-// Config is the struct that controls the sandbox
-type Config struct {
-	// Maximum Cgroup memory (in kbytes)
-	CgroupMem int32
-
-	// Directories represents the list of mounted directories
-	Directories []config.Directory
-
-	// Environment
-	InheritEnv   bool
-	EnvToInherit []string
-	EnvToSet     map[string]string
-
-	// Time limits (in seconds)
-	TimeLimit     float64
-	WallTimeLimit float64
-
-	InputFile  string
-	OutputFile string
-	MetaFile   string
-
-	// Memory limits (in kbytes)
-	MemoryLimit int
-	StackSize   int
-
-	// Processes represents the maximum number of processes the program can create
-	Processes int
 }
 
 // Box is the struct for the current box
@@ -81,7 +43,6 @@ type Box struct {
 
 // buildRunFlags compiles all flags into an array
 func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
-	//c := b.Config
 	res = append(res, "--box-id="+strconv.Itoa(b.boxID))
 
 	res = append(res, "--cg", "--cg-timing")
@@ -195,7 +156,7 @@ func (b *Box) Close() error {
 	var params []string
 	params = append(params, "--cg")
 	params = append(params, "--box-id="+strconv.Itoa(b.boxID), "--cleanup")
-	return exec.Command(isolatePath, params...).Run()
+	return exec.Command(config.Eval.IsolatePath, params...).Run()
 }
 
 func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunConfig) (*eval.RunStats, error) {
@@ -206,7 +167,7 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 	b.metaFile = metaFile
 
 	params := append(b.buildRunFlags(conf), command...)
-	cmd := exec.CommandContext(ctx, isolatePath, params...)
+	cmd := exec.CommandContext(ctx, config.Eval.IsolatePath, params...)
 
 	b.metaFile = ""
 
@@ -232,19 +193,19 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 		return nil, nil
 	}
 	defer f.Close()
-	return ParseMetaFile(f), nil
+	return parseMetaFile(f), nil
 }
 
 // newBox returns a new box instance from the specified ID
 func newBox(id int) (*Box, error) {
-	ret, err := exec.Command(isolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--init").CombinedOutput()
+	ret, err := exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--init").CombinedOutput()
 	if strings.HasPrefix(string(ret), "Box already exists") {
-		exec.Command(isolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--cleanup").Run()
+		exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--cleanup").Run()
 		return newBox(id)
 	}
 
 	if strings.HasPrefix(string(ret), "Must be started as root") {
-		if err := os.Chown(isolatePath, 0, 0); err != nil {
+		if err := os.Chown(config.Eval.IsolatePath, 0, 0); err != nil {
 			fmt.Println("Couldn't chown root the isolate binary:", err)
 			return nil, err
 		}
@@ -271,26 +232,6 @@ func CheckCanRun() bool {
 	return true
 }
 
-func downloadFile(url, path string, perm os.FileMode) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = io.Copy(file, resp.Body)
-	if err != nil {
-		return err
-	}
-
-	return file.Chmod(perm)
-}
-
 // Approximate to the nearest 128kb
 func approxMemory(memory int) int {
 	rem := memory % 128
@@ -298,35 +239,6 @@ func approxMemory(memory int) int {
 		return memory
 	}
 	return memory + 128 - rem
-}
-
-// Initialize should be called after reading the flags, but before manager.New
-func Initialize(isolateBin string) error {
-	isolatePath = isolateBin
-
-	// Test right now if they exist
-	if _, err := os.Stat(isolatePath); os.IsNotExist(err) {
-		// download isolate
-		fmt.Println("Downloading isolate binary")
-		if err := downloadFile(isolateURL, isolatePath, 0744); err != nil {
-			return err
-		}
-		fmt.Println("Isolate binary downloaded")
-	}
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		// download the config file
-		fmt.Println("Downloading isolate config")
-		if err := downloadFile(configURL, configPath, 0644); err != nil {
-			return err
-		}
-		fmt.Println("Isolate config downloaded")
-	}
-
-	if err := os.MkdirAll(config.Eval.CompilePath, 0777); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func writeReader(path string, r io.Reader, perms fs.FileMode) error {
@@ -341,8 +253,8 @@ func writeReader(path string, r io.Reader, perms fs.FileMode) error {
 	return err
 }
 
-// ParseMetaFile parses a specified meta file
-func ParseMetaFile(r io.Reader) *eval.RunStats {
+// parseMetaFile parses a specified meta file
+func parseMetaFile(r io.Reader) *eval.RunStats {
 	if r == nil {
 		return nil
 	}

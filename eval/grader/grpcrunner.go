@@ -39,7 +39,6 @@ func (g *grpcRunner) Execute(ctx context.Context, er *eval.ExecRequest) (*eval.E
 		Lang:        er.Lang,
 	})
 	return &eval.ExecResponse{
-		SubtestID:  int(resp.TID),
 		Time:       resp.Time,
 		Memory:     int(resp.Memory),
 		ExitStatus: int(resp.Status),

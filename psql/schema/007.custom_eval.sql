@@ -12,3 +12,4 @@ ALTER TABLE problems ADD COLUMN helper_code text NOT NULL DEFAULT '';
 ALTER TABLE problems ADD COLUMN helper_code_lang text NOT NULL DEFAULT 'cpp';
 
 ALTER TABLE problems ADD COLUMN subtasks text NOT NULL DEFAULT '';
+ALTER TABLE submission_tests ADD COLUMN skipped boolean NOT NULL DEFAULT false;

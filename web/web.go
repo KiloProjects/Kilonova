@@ -298,7 +298,7 @@ func (rt *Web) Handler() http.Handler {
 					templ.Codemirror = true
 					templ.Vue = true
 					templ.Markdown = template.HTML(buf)
-					templ.OGDesc = problem.ShortDescription
+					templ.OGDesc = problem.ShortDesc
 					rt.build(w, r, "pb", templ)
 				})
 				r.Route("/edit", func(r chi.Router) {

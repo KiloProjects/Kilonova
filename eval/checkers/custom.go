@@ -11,7 +11,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/eval/boxmanager"
+	"github.com/KiloProjects/kilonova/eval/jobs"
 	"github.com/KiloProjects/kilonova/internal/config"
 )
 
@@ -25,22 +25,20 @@ type CustomChecker struct {
 
 // Prepare compiles the grader
 func (c *CustomChecker) Prepare(ctx context.Context) error {
-	box, err := c.mgr.GetSandbox(ctx)
-	if err != nil {
-		return err
+	job := &jobs.CompileJob{
+		Req: &eval.CompileRequest{
+			ID:   -c.sub.ID,
+			Code: []byte(c.pb.HelperCode),
+			Lang: c.pb.HelperCodeLang,
+		},
 	}
-	defer c.mgr.ReleaseSandbox(box)
 
-	resp, err := c.mgr.Compile(ctx, &eval.CompileRequest{
-		ID:   -c.sub.ID,
-		Code: []byte(c.pb.HelperCode),
-		Lang: c.pb.HelperCodeLang,
-	})
+	err := c.mgr.RunJob(ctx, job)
 	if err != nil {
 		return err
 	}
 
-	if !resp.Success {
+	if !job.Resp.Success {
 		return errors.New("Invalid helper code")
 	}
 
@@ -62,35 +60,47 @@ func (c *CustomCheckerJob) Execute(ctx context.Context, box eval.Sandbox) error 
 }
 */
 
-func (c *CustomChecker) RunChecker(ctx context.Context, pOut, cOut io.Reader, maxScore int) (string, int) {
-	box, err := c.mgr.GetSandbox(ctx)
-	if err != nil {
-		return ErrOut, 0
-	}
-	defer c.mgr.ReleaseSandbox(box)
+type customCheckerJob struct {
+	c        *CustomChecker
+	maxScore int
+	pOut     io.Reader
+	cOut     io.Reader
 
-	lang, ok := config.Languages[c.pb.HelperCodeLang]
+	// filled by Execute
+	score  int
+	output string
+}
+
+var customJobErr = errors.New(ErrOut)
+
+func (job *customCheckerJob) Execute(ctx context.Context, box eval.Sandbox) error {
+	lang, ok := config.Languages[job.c.pb.HelperCodeLang]
 	if !ok {
-		return ErrOut, 0
+		job.output = ErrOut
+		return nil
 	}
 
-	if err := box.WriteFile("/box/program.out", pOut, 0644); err != nil {
-		return ErrOut, 0
+	if err := box.WriteFile("/box/program.out", job.pOut, 0644); err != nil {
+		job.output = ErrOut
+		return nil
 	}
-	if err := box.WriteFile("/box/correct.out", cOut, 0644); err != nil {
-		return ErrOut, 0
+	if err := box.WriteFile("/box/correct.out", job.cOut, 0644); err != nil {
+		job.output = ErrOut
+		return nil
 	}
-	if err := eval.CopyInBox(box, path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", -c.sub.ID)), lang.CompiledName); err != nil {
-		return ErrOut, 0
+	if err := eval.CopyInBox(box, path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", -job.c.sub.ID)), lang.CompiledName); err != nil {
+		job.output = ErrOut
+		return nil
 	}
 
-	goodCmd, err := boxmanager.MakeGoodCommand(lang.RunCommand)
+	goodCmd, err := eval.MakeGoodCommand(lang.RunCommand)
 	if err != nil {
-		return ErrOut, 0
+		job.output = ErrOut
+		return nil
 	}
 	// TODO: Make sure all supported languages can have this
 	// Add the program output, correct output and max score parameters
-	goodCmd = append(goodCmd, "/box/program.out", "/box/correct.out", strconv.Itoa(maxScore))
+	goodCmd = append(goodCmd, "/box/program.out", "/box/correct.out", strconv.Itoa(job.maxScore))
 
 	var out bytes.Buffer
 
@@ -104,19 +114,36 @@ func (c *CustomChecker) RunChecker(ctx context.Context, pOut, cOut io.Reader, ma
 	}
 
 	if _, err := box.RunCommand(ctx, goodCmd, conf); err != nil {
+		job.output = ErrOut
+		return nil
+	}
+
+	if _, err := fmt.Fscanf(&out, "%d ", &job.score); err != nil {
+		job.output = "Wrong checker output"
+		return nil
+	}
+
+	job.output = out.String()
+	return nil
+}
+
+func (c *CustomChecker) RunChecker(ctx context.Context, pOut, cOut io.Reader, maxScore int) (string, int) {
+	job := &customCheckerJob{
+		c:        c,
+		maxScore: maxScore,
+		pOut:     pOut,
+		cOut:     cOut,
+	}
+
+	if err := c.mgr.RunJob(ctx, job); err != nil {
 		return ErrOut, 0
 	}
 
-	var score int
-	if _, err := fmt.Fscanf(&out, "%d ", &score); err != nil {
-		return "Wrong checker output", 0
-	}
-
-	return out.String(), score
+	return job.output, job.score
 }
 
-func (c *CustomChecker) Cleanup(ctx context.Context) error {
-	return c.mgr.Clean(ctx, -c.sub.ID)
+func (c *CustomChecker) Cleanup(_ context.Context) error {
+	return eval.CleanCompilation(-c.sub.ID)
 }
 
 func NewCustomChecker(mgr eval.Runner, pb *kilonova.Problem, sub *kilonova.Submission) (*CustomChecker, error) {

@@ -67,6 +67,9 @@ func (s *SubTestService) updateQueryMaker(upd *kilonova.SubTestUpdate) ([]string
 	if v := upd.Done; v != nil {
 		toUpd, args = append(toUpd, "done = ?"), append(args, v)
 	}
+	if v := upd.Skipped; v != nil {
+		toUpd, args = append(toUpd, "skipped = ?"), append(args, v)
+	}
 
 	return toUpd, args
 }

@@ -2,6 +2,7 @@ Additional reading I should do for a better platform:
 - https://pace.dev/blog/2020/02/12/why-you-shouldnt-use-func-main-in-golang-by-mat-ryer.html
 - https://ieftimov.com/post/four-steps-daemonize-your-golang-programs/
 - https://philipptanlak.com/web-frontends-in-go/
+- https://www.youtube.com/watch?v=o_TH-Y78tt4
 
 ## TODO LIST KILONOVA:
 - [ ] Pre-Middle beta (v0.6.0b-?):
@@ -50,8 +51,11 @@ Additional reading I should do for a better platform:
 		- [ ] Code share ca pe cses
 		- [ ] Enhancements evaluare:
 			- [x] Rezolvare edge case în care evaluarea găsește o submisie la care încă n-au fost inserate toate subtests;
-			- [~] Verificator custom la probleme;
-			- [ ] Subtasks;
+			- [x] Verificator custom la probleme;
+			- [~] Subtasks;
+				- [x] Adăugare field skipped
+				- [ ] Subtask String Parser
+				- [ ] Actual support
 			- [ ] ? Folder upload pentru teste
 		- [ ] ? Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
 		- [x] Dark theme
