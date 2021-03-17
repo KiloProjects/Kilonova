@@ -157,6 +157,34 @@ func (s *API) purgeBio(w http.ResponseWriter, r *http.Request) {
 
 	returnData(w, "Updated bio")
 }
+func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		ID int
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	user, err := s.userv.UserByID(r.Context(), args.ID)
+	if err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	if user.Admin {
+		errorData(w, "You can't erase a fellow admin! Unmod him first", 400)
+		return
+	}
+
+	if err := s.userv.DeleteUser(r.Context(), args.ID); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	returnData(w, "Deleted user")
+}
 
 func (s *API) getUserByName(w http.ResponseWriter, r *http.Request) {
 	name := strings.TrimSpace(r.FormValue("name"))

@@ -3,6 +3,7 @@ package api
 import (
 	"archive/zip"
 	"bytes"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -119,6 +120,38 @@ func (s *API) updateProblemType(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	returnData(w, "Updated problem type")
+}
+
+func (s *API) updateSubtaskString(w http.ResponseWriter, r *http.Request) {
+	substr := r.FormValue("subtask_string")
+	if !kilonova.SubtaskRegex.MatchString(substr) {
+		errorData(w, "No subtask string found", 400)
+		return
+	}
+
+	taskstr := kilonova.SubtaskRegex.FindString(substr)
+	if err := s.pserv.UpdateProblem(r.Context(), util.Problem(r).ID, kilonova.ProblemUpdate{SubtaskString: &taskstr}); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	returnData(w, fmt.Sprintf("Set subtask string to %q", taskstr))
+}
+
+func (s *API) deleteProblem(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		ID int
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 400)
+		return
+	}
+	if err := s.pserv.DeleteProblem(r.Context(), args.ID); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	returnData(w, "Deleted problem")
 }
 
 func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {

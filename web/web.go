@@ -183,7 +183,7 @@ func (rt *Web) Handler() http.Handler {
 					name := strings.TrimSpace(chi.URLParam(r, "user"))
 					users, err := rt.userv.Users(r.Context(), kilonova.UserFilter{Name: &name})
 					if err != nil || len(users) == 0 {
-						if errors.Is(err, sql.ErrNoRows) {
+						if errors.Is(err, sql.ErrNoRows) || len(users) == 0 {
 							rt.status(w, r, 404, "")
 							return
 						}

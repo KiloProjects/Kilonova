@@ -102,7 +102,7 @@
 								<td class="text-center px-4 py-2">
 									<a :href="'/submissions/'+sub.sub.id">${sub.sub.status}</a>
 								</td>
-								<td :class="sub.sub.status === 'finished' ? 'text-black' : '' + ' text-center px-4 py-2'" :style="sub.sub.status == 'finished' ? 'background-color: ' + bundled.getGradient(sub.sub.score, 100) : ''">
+								<td :class="sub.sub.status === 'finished' ? 'text-black' : '' + ' text-center px-4 py-2'" :style="sub.sub.status == 'finished' ? 'background-color: ' + getGradient(sub.sub.score, 100) : ''">
 									${sub.sub.score}
 								</td>
 							</tr>

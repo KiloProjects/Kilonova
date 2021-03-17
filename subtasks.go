@@ -1,5 +1,11 @@
 package kilonova
 
+import "regexp"
+
+var (
+	SubtaskRegex = regexp.MustCompile("(;?[tf]?[0-9]+-[0-9]+;?)+")
+)
+
 // SubTasks are split in the following format:
 // - semicolons are placed between "subtask groups".
 // 		A semicolon is assumed to be automatically considered to be a part at the start and at the end of the string
@@ -7,6 +13,7 @@ package kilonova
 //     In other words, if the flag is true, then all tests will be run regardless of correctness. If the flag is false, the first test that does not get a max score is the last one evaluated in the group.
 // All tests that do not fit in a subtask group are put in a separate subtask group
 // - a range `start-end` marking all grouped tests for the subtask.
+// The regex for a valid subtask string is `/(;?[tf]?[0-9]+-[0-9]+;?)+/g`
 // The subtask string must not have any overlapping ranges.
 // The subtask string must have all ranges in ascending order.
 // The remaining subtask modes run in `true` flag mode.

@@ -31,6 +31,30 @@
 		<a href="/problems/{{.ID}}">{{.Name}}</a>
 		{{ end -}}
 		</p>
+		
+{{if .User}}
+{{if .User.Admin}}
+{{if not .ContentUser.Admin}}
+	<button class="mt-6 block btn btn-red" onclick="deleteAccount()">Ștergere Cont</button>
+
+<script>
+async function deleteAccount() {
+	
+	if(!confirm("Sunteți siguri că vreți să ștergeți utilizatorul?")) {
+		return
+	}
+
+	let res = await bundled.postCall("/user/moderation/deleteUser", {id: {{.ContentUser.ID}} });
+	if(res.status === "success") {
+		window.location.assign("/");
+	}
+	bundled.apiToast(res);
+}
+</script>
+
+{{end}}
+{{end}}
+{{end}}
 	</div>
 </div>
 

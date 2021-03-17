@@ -76,6 +76,7 @@ func (s *API) Handler() http.Handler {
 				// support only c++ helper code for now
 				//r.Post("/helperCodeLang", s.updateHelperCodeLang)
 				r.Post("/type", s.updateProblemType)
+				r.Post("/subtaskString", s.updateSubtaskString)
 
 				r.Post("/consoleInput", s.setInputType)
 				r.Post("/sourceCredits", s.updateSourceCredits)
@@ -113,6 +114,8 @@ func (s *API) Handler() http.Handler {
 					r.Get("/testData", s.getTestData)
 				})
 			})
+
+			r.With(s.MustBeAdmin).Post("/delete", s.deleteProblem)
 		})
 	})
 	r.Route("/submissions", func(r chi.Router) {
@@ -136,8 +139,9 @@ func (s *API) Handler() http.Handler {
 		r.With(s.MustBeAdmin).Route("/moderation", func(r chi.Router) {
 			r.Post("/purgeBio", s.purgeBio)
 			// TODO
-			// r.Post("/nukeAccount", s.nukeAccount)
-			// r.Post("/banAccount", s.banAccount)
+			// r.Post("/nukeUser", s.nukeUser)
+			// r.Post("/banUser", s.banUser)
+			r.Post("/deleteUser", s.deleteUser)
 		})
 
 		r.Get("/getGravatar", s.getGravatar)
