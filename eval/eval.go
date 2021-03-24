@@ -32,11 +32,11 @@ type Checker interface {
 }
 
 type Runner interface {
-	RunJob(context.Context, Job) error
+	RunTask(context.Context, Task) error
 	Close(context.Context) error
 }
 
-type Job interface {
+type Task interface {
 	Execute(context.Context, Sandbox) error
 }
 

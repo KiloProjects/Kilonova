@@ -11,11 +11,12 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/eval/jobs"
+	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/KiloProjects/kilonova/internal/config"
 )
 
 var _ eval.Checker = &CustomChecker{}
+var _ eval.Task = &customCheckerTask{}
 
 type CustomChecker struct {
 	mgr eval.Runner
@@ -25,7 +26,7 @@ type CustomChecker struct {
 
 // Prepare compiles the grader
 func (c *CustomChecker) Prepare(ctx context.Context) error {
-	job := &jobs.CompileJob{
+	job := &tasks.CompileTask{
 		Req: &eval.CompileRequest{
 			ID:   -c.sub.ID,
 			Code: []byte(c.pb.HelperCode),
@@ -33,7 +34,7 @@ func (c *CustomChecker) Prepare(ctx context.Context) error {
 		},
 	}
 
-	err := c.mgr.RunJob(ctx, job)
+	err := c.mgr.RunTask(ctx, job)
 	if err != nil {
 		return err
 	}
@@ -45,22 +46,7 @@ func (c *CustomChecker) Prepare(ctx context.Context) error {
 	return nil
 }
 
-/*
-var _ eval.Job = &CustomCheckerJob{}
-
-type CustomCheckerJob struct {
-	pOut     io.Reader
-	cOut     io.Reader
-	maxScore int
-	c        *CustomChecker
-}
-
-func (c *CustomCheckerJob) Execute(ctx context.Context, box eval.Sandbox) error {
-	return nil
-}
-*/
-
-type customCheckerJob struct {
+type customCheckerTask struct {
 	c        *CustomChecker
 	maxScore int
 	pOut     io.Reader
@@ -71,9 +57,9 @@ type customCheckerJob struct {
 	output string
 }
 
-var customJobErr = errors.New(ErrOut)
+var customTaskErr = errors.New(ErrOut)
 
-func (job *customCheckerJob) Execute(ctx context.Context, box eval.Sandbox) error {
+func (job *customCheckerTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	lang, ok := config.Languages[job.c.pb.HelperCodeLang]
 	if !ok {
 		job.output = ErrOut
@@ -128,18 +114,18 @@ func (job *customCheckerJob) Execute(ctx context.Context, box eval.Sandbox) erro
 }
 
 func (c *CustomChecker) RunChecker(ctx context.Context, pOut, cOut io.Reader, maxScore int) (string, int) {
-	job := &customCheckerJob{
+	task := &customCheckerTask{
 		c:        c,
 		maxScore: maxScore,
 		pOut:     pOut,
 		cOut:     cOut,
 	}
 
-	if err := c.mgr.RunJob(ctx, job); err != nil {
+	if err := c.mgr.RunTask(ctx, task); err != nil {
 		return ErrOut, 0
 	}
 
-	return job.output, job.score
+	return task.output, task.score
 }
 
 func (c *CustomChecker) Cleanup(_ context.Context) error {

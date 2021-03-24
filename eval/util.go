@@ -165,9 +165,9 @@ func disableLang(key string) {
 	config.Languages[key] = lang
 }
 
-// CheckLanguages disables all languages that are *not* detected by the system in the current configuration
+// checkLanguages disables all languages that are *not* detected by the system in the current configuration
 // It should be run at the start of the execution (and implemented more nicely tbh)
-func CheckLanguages() {
+func checkLanguages() {
 	for k, v := range config.Languages {
 		var toSearch []string
 		if v.IsCompiled {
@@ -231,6 +231,8 @@ func Initialize() error {
 	if err := os.MkdirAll(config.Eval.CompilePath, 0777); err != nil {
 		return err
 	}
+
+	checkLanguages()
 
 	return nil
 }

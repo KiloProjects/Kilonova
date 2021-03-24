@@ -13,7 +13,7 @@ Additional reading I should do for a better platform:
 		- [ ] ? Broadcast din admin panel
 	- [x] Permite schimbarea tipului de intrare din interfața problemei
 	- [ ] Moderation tools
-		- [ ] Nuke accounts
+		- [x] Nuke accounts
 		- [ ] Ștergere submisie
 		- [ ] More info in admin panel 
 	- [~] Use a single bundle for all javascript/css
@@ -31,9 +31,8 @@ Additional reading I should do for a better platform:
 			- [ ] restul
 		- [x] Permite toate limbajele în UI
 		- [ ] Paignă de login când nu ai voie fiindcă ești unauthed
-		- [ ] Tranziție către [halfmoon](https://gethalfmoon.com) când apare v1.2.0 (sau v1.3 dacă lipsesc chestii importante)
 	- [ ] Restructurare backend:
-		- [ ] Serivice-ificare:
+		- [ ] ? Serivice-ificare:
 			- [ ] Împarte în mai multe services (Core/API/Web/Eval/Eval Worker)
 			- [ ] Separare main core de inputs (API/Web)
 			- Eval-ul se conectează la core (și eval worker la eval), nu invers
@@ -69,7 +68,7 @@ Additional reading I should do for a better platform:
 		- [x] Backbone
 		- [ ] Mutare CSS pe CDN
 		- [ ] Mutare js bundle pe CDN
-		- [ ] Pune toate imaginile găsite pe CDN și redirecționează-le acolo
+		- [ ] ? Pune toate imaginile găsite pe CDN și redirecționează-le acolo
 		- [ ] ? Adaugă redirect în stil steam 
 			- monitorizează pe ce dai click 
 			- ? avertizează dacă un domeniu nu e pe whitelist

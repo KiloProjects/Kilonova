@@ -30,14 +30,14 @@ func (b *BoxManager) ToggleDebug() {
 	b.debug = !b.debug
 }
 
-func (b *BoxManager) RunJob(ctx context.Context, job eval.Job) error {
+func (b *BoxManager) RunTask(ctx context.Context, task eval.Task) error {
 	box, err := b.getSandbox(ctx)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 	defer b.ReleaseSandbox(box)
-	return job.Execute(ctx, box)
+	return task.Execute(ctx, box)
 }
 
 func (b *BoxManager) newSandbox() (*Box, error) {

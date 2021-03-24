@@ -11,7 +11,7 @@ import (
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/boxmanager"
 	"github.com/KiloProjects/kilonova/eval/checkers"
-	"github.com/KiloProjects/kilonova/eval/jobs"
+	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/logic"
 	"github.com/davecgh/go-spew/spew"
@@ -84,17 +84,17 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 			var score_mu sync.Mutex
 			var score int
 
-			job := &jobs.CompileJob{
+			task := &tasks.CompileTask{
 				Req:   &eval.CompileRequest{ID: sub.ID, Code: []byte(sub.Code), Lang: sub.Language},
 				Debug: h.debug,
 			}
-			err := runner.RunJob(ctx, job)
+			err := runner.RunTask(ctx, task)
 			if err != nil {
 				log.Println("Error from eval:", err)
 				continue
 			}
 
-			resp := job.Resp
+			resp := task.Resp
 			if h.debug {
 				old := resp.Output
 				resp.Output = "<output stripped>"
@@ -167,19 +167,19 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 					subTestID := test.ID
 					pbTest := pbTest
 
-					job := &jobs.ExecuteJob{
+					task := &tasks.ExecuteTask{
 						Req:   execRequest,
 						Resp:  &eval.ExecResponse{},
 						Debug: h.debug,
 					}
 
-					err := runner.RunJob(ctx, job)
+					err := runner.RunTask(ctx, task)
 					if err != nil {
 						log.Printf("Error executing test: %v\n", err)
 						return
 					}
 
-					resp := job.Resp
+					resp := task.Resp
 
 					/*
 						if h.debug {

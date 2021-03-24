@@ -1,9 +1,13 @@
 package kilonova
 
-import "regexp"
+import (
+	"regexp"
+
+	"github.com/davecgh/go-spew/spew"
+)
 
 var (
-	SubtaskRegex = regexp.MustCompile("(;?[tf]?[0-9]+-[0-9]+;?)+")
+	SubtaskRegex = regexp.MustCompilePOSIX("(;?[tf]?[0-9]+-[0-9]+;?)+")
 )
 
 // SubTasks are split in the following format:
@@ -44,5 +48,6 @@ func (s *SubTasks) Split(subtests []*SubTest) []*SubTestGroup {
 
 func ParseSubtaskString(subtaskString string) (*SubTasks, error) {
 	// TODO
+	spew.Dump(SubtaskRegex.FindStringSubmatch(subtaskString))
 	return &SubTasks{}, nil
 }

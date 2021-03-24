@@ -65,7 +65,7 @@ func (g *grpcRunner) GetSandbox(ctx context.Context) (eval.Sandbox, error) {
 func (g *grpcRunner) ReleaseSandbox(box eval.Sandbox) {
 	panic("TODO")
 }
-func (g *grpcRunner) RunJob(ctx context.Context, job eval.Job) error {
+func (g *grpcRunner) RunTask(ctx context.Context, task eval.Task) error {
 	panic("TODO")
 }
 

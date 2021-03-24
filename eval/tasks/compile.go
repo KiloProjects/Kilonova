@@ -1,4 +1,4 @@
-package jobs
+package tasks
 
 import (
 	"context"
@@ -12,15 +12,15 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 )
 
-var _ eval.Job = &CompileJob{}
+var _ eval.Task = &CompileTask{}
 
-type CompileJob struct {
+type CompileTask struct {
 	Req   *eval.CompileRequest
 	Resp  eval.CompileResponse
 	Debug bool
 }
 
-func (job *CompileJob) Execute(ctx context.Context, box eval.Sandbox) error {
+func (job *CompileTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	if job.Debug {
 		log.Printf("Compiling file using box %d\n", box.GetID())
 	}

@@ -1,4 +1,4 @@
-package jobs
+package tasks
 
 import (
 	"context"
@@ -11,16 +11,16 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 )
 
-var _ eval.Job = &ExecuteJob{}
+var _ eval.Task = &ExecuteTask{}
 
-type ExecuteJob struct {
+type ExecuteTask struct {
 	Req   *eval.ExecRequest
 	Resp  *eval.ExecResponse
 	DM    kilonova.DataStore
 	Debug bool
 }
 
-func (job *ExecuteJob) Execute(ctx context.Context, box eval.Sandbox) error {
+func (job *ExecuteTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	if job.Debug {
 		log.Printf("Executing test %d using box %d\n", job.Req.SubtestID, box.GetID())
 	}
