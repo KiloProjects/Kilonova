@@ -17,7 +17,6 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
-	"github.com/KiloProjects/kilonova/internal/logic"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi"
@@ -38,7 +37,7 @@ func (rt *Web) hydrateTemplate(r *http.Request, title string) templateData {
 		Params:   globParams(r),
 		User:     util.User(r),
 		LoggedIn: util.IsRAuthed(r),
-		Version:  logic.Version,
+		Version:  kilonova.Version,
 		Debug:    rt.debug,
 		DarkMode: shouldDarkMode,
 

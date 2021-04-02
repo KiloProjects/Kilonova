@@ -11,14 +11,23 @@ export {Base64} from 'js-base64';
 
 dayjs.locale('ro')
 
-export function sizeFormatter(size) {
-	if(size > 1024*1024) {
-		return (size/1024/1024).toFixed(2) + " MB"
+// if max_step is 0, it will format until the MB region
+// else if max_step is 1, it will only format until the KB region
+// else if max_step >= 2, it will append a " B" to the end of the number
+export function sizeFormatter(size, max_step, floor) {
+	var units = size
+	var suffix = "B"
+	if(size > 1024*1024 && max_step == 0) {
+		units = (size/1024/1024).toFixed(2) 
+		suffix = "MB"
+	} else if(size > 1024 && max_step <= 1) {
+		units = (size/1024).toFixed(2)
+		suffix = "KB"
 	}
-	if(size > 1024) {
-		return (size/1024).toFixed(2) + " KB"
+	if(floor) {
+		units = Math.floor(units)
 	}
-	return size + " B"
+	return units + " " + suffix
 }
 
 export function parseTime(str) {

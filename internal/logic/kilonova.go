@@ -5,9 +5,6 @@ import (
 	"github.com/KiloProjects/kilonova/internal/rclient"
 )
 
-// Version is the version of the platform
-const Version = "v0.7.0 \"Zinc\""
-
 type Kilonova struct {
 	DM     kilonova.DataStore
 	Debug  bool

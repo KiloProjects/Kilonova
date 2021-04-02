@@ -126,8 +126,8 @@ export class SubmissionManager {
 			if(test.subtest.done) {
 				verdict.innerHTML = test.subtest.verdict
 				
-				time.innerHTML = test.subtest.time.toFixed(3)
-				mem.innerHTML = bundled.sizeFormatter(test.subtest.memory*1024)
+				time.innerHTML = Math.floor(test.subtest.time * 1000) + " ms";
+				mem.innerHTML = bundled.sizeFormatter(test.subtest.memory*1024, 1, true)
 
 				score.classList.add("text-black")
 				score.style = "background-color:" + bundled.getGradient(test.subtest.score, test.pb_test.score) + ";"

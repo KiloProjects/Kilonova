@@ -2,6 +2,8 @@ package kilonova
 
 import "context"
 
+const Version = "v0.7.0 \"Zinc\""
+
 type Mailer interface {
 	SendEmail(msg *MailerMessage) error
 }
