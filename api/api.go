@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/schema"
 )
 
-var decoder = schema.NewDecoder()
+var decoder *schema.Decoder
 
 // API is the base struct for the project's API
 type API struct {
@@ -169,4 +169,9 @@ func (s *API) Handler() http.Handler {
 	})
 
 	return r
+}
+
+func init() {
+	decoder = schema.NewDecoder()
+	decoder.SetAliasTag("json")
 }

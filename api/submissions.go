@@ -104,8 +104,8 @@ func (s *API) filterSubs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		var args struct {
-			LoadUser    bool `schema:"loadUser"`
-			LoadProblem bool `schema:"loadProblem"`
+			LoadUser    bool `json:"loadUser"`
+			LoadProblem bool `json:"loadProblem"`
 			kilonova.SubmissionFilter
 		}
 		if err := decoder.Decode(&args, r.Form); err != nil {

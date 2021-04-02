@@ -1,4 +1,8 @@
-- v0.7.0b:
+- v0.7.0 "Zinc":
+	- IT IS A VERY UNSTABLE RELEASE
+	- A LOT IS BROKEN
+	- AND A LOT DOESN'T WORK
+	- BUT I WANT TO RELEASE IT ASAP
 	- Added email verification stuff;
 	- Renamed all paths to english versions (`/problema/1` => `/problems/1`) because it's nicer;
 	- Default points can be awarded for problems;

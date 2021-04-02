@@ -284,9 +284,9 @@ func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
 func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		MemoryLimit int     `schema:"memoryLimit"`
-		StackLimit  int     `schema:"stackLimit"`
-		TimeLimit   float64 `schema:"timeLimit"`
+		MemoryLimit int     `json:"memoryLimit"`
+		StackLimit  int     `json:"stackLimit"`
+		TimeLimit   float64 `json:"timeLimit"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
@@ -303,7 +303,7 @@ func (s *API) setLimits(w http.ResponseWriter, r *http.Request) {
 func (s *API) setDefaultPoints(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		DefaultPoints int `schema:"defaultPoints"`
+		DefaultPoints int `json:"defaultPoints"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)

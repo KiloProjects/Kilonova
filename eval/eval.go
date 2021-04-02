@@ -8,8 +8,6 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 )
 
-// EVERYTHING IS A TODO HERE AND WILL CHANGE ACCORDING TO PLAN
-
 type Sandbox interface {
 	ReadFile(path string) (io.ReadSeekCloser, error)
 	WriteFile(path string, r io.Reader, mode fs.FileMode) error

@@ -45,7 +45,7 @@
 					{{- if gt .Problem.DefaultPoints 0 -}}
 						<p>Puncte din oficiu: {{.Problem.DefaultPoints}}p</p>
 					{{- end -}}
-					<p><a href="/submissions/?problemid={{.Problem.ID}}">Submisii</a></p>
+					<p><a href="/submissions/?problem_id={{.Problem.ID}}">Submisii</a></p>
 				</div>
 				{{ if .LoggedIn }}
 					<div class="h-0 w-full border-t border-gray-200"></div>
@@ -63,7 +63,7 @@
 							</a>
 						</div>
 						<p class="px-2" v-else>Nicio submisie</p>
-						<a v-if="limited && hidden > 0" :href="'/submissions/?problemid='+problemid+'&userid='+userid">
+						<a v-if="limited && hidden > 0" :href="'/submissions/?problem_id='+problemid+'&user_id='+userid">
 							Vezi încă ${hidden} ${hidden >= 10 ? 'de ' : ''}submisii
 						</a>
 					</div>

@@ -2,8 +2,7 @@
 
 <div class="c-container">
 	<h1>Stare submisii</h1>
-	<h1> TODO: FIX FILTERS </h1>
-	<h1> TODO: TERMINĂ PAGINARE </h1>
+	<h3> Paginarea încă nu a fost terminată, așa că numai ultimele 50 de submisii pot fi vizualizate pe această pagină </h3>
 	
 	<div id="subs" v-cloak>
 		<div class="flex flex-wrap lg:border-t lg:border-gray-200">
@@ -11,11 +10,11 @@
 				<div class="mt-6"></div>
 				<label class="block mb-2">
 					<span class="form-label">ID User (0 = ignore):</span>
-					<input class="form-input" type="number" v-model="filters.userid">
+					<input class="form-input" type="number" v-model="filters.user_id">
 				</label>
 				<label class="block mb-2">
 					<span class="form-label">ID Problemă (0 = ignore):</span>
-					<input class="form-input" type="number" v-model="filters.problemid">
+					<input class="form-input" type="number" v-model="filters.problem_id">
 				</label>
 				<label class="block mb-2">
 					<span class="form-label">Status:</span>
@@ -47,7 +46,7 @@
 				</label>
 				<label class="block mb-2">
 					<span class="form-label">Eroare de Compilare:</span>
-					<select class="form-input" v-model="filters.compileerror">
+					<select class="form-input" v-model="filters.compile_error">
 						<option value="">-</option>
 						<option value="true">Da</option>
 						<option value="false">Nu</option>
@@ -122,7 +121,7 @@ var Submissions = {
 	data: () => {
 		return {
 			submissions: [],
-			filters: {loadUser: true, loadProblem: true, userid: null, problemid: null, status: "", lang: "", visible: "", compileerror: ""},
+			filters: {loadUser: true, loadProblem: true, user_id: null, problem_id: null, status: "", lang: "", visible: "", compile_error: ""},
 			loading: true 
 		}
 	},
@@ -157,11 +156,11 @@ var Submissions = {
 			var res = {};
 			res.loadUser = old.loadUser
 			res.loadProblem = old.loadProblem
-			if(old.userid > 0) {
-				res.userid = old.userid
+			if(old.user_id > 0) {
+				res.user_id = old.user_id
 			}
-			if(old.problemid > 0) {
-				res.problemid = old.problemid
+			if(old.problem_id > 0) {
+				res.problem_id = old.problem_id
 			}
 			if(old.status != "") {
 				res.status = old.status
@@ -175,8 +174,8 @@ var Submissions = {
 			if(old.visible == "true" || old.visible == "false") {
 				res.visible = old.visible == "true";
 			}
-			if(old.compileerror == "true" || old.compileerror == "false") {
-				res.compileerror = old.compileerror == "true";
+			if(old.compile_error == "true" || old.compile_error == "false") {
+				res.compile_error = old.compile_error == "true";
 			}
 			return res;
 		},
@@ -188,11 +187,11 @@ var Submissions = {
 		},
 		getQuery: async function() {
 			var p = new URLSearchParams();
-			if(this.filters.userid > 0) {
-				p.append("userid", this.filters.userid);
+			if(this.filters.user_id > 0) {
+				p.append("user_id", this.filters.user_id);
 			}
-			if(this.filters.problemid > 0) {
-				p.append("problemid", this.filters.problemid);
+			if(this.filters.problem_id > 0) {
+				p.append("problem_id", this.filters.problem_id);
 			}
 			if(this.filters.status !== "") {
 				p.append("status", this.filters.status);
@@ -206,8 +205,8 @@ var Submissions = {
 			if(this.filters.visible !== "") {
 				p.append("visible", this.filters.visible);
 			}
-			if(this.filters.compileerror !== "") {
-				p.append("compileerror", this.filters.compileerror);
+			if(this.filters.compile_error !== "") {
+				p.append("compile_error", this.filters.compile_error);
 			}
 			let url = window.location.origin + window.location.pathname + "?" + p.toString();
 			try {
@@ -221,30 +220,30 @@ var Submissions = {
 	},
 	watch: {
 		filters: function(val) {
-			if(val.userid == 0) {
-				this.filters.userid = null
+			if(val.user_id == 0) {
+				this.filters.user_id = null
 			}
-			if(val.problemid == 0) {
-				this.filters.problemid = null
+			if(val.problem_id == 0) {
+				this.filters.problem_id = null
 			}
 		}
 	},
 	created: function() {
 		const params = new URLSearchParams(window.location.search);
-		const userid = params.get("userid");
-		const problemid = params.get("problemid");
+		const user_id = params.get("user_id");
+		const problem_id = params.get("problem_id");
 		const status = params.get("status");
 		const score = params.get("score");
 		const lang = params.get("lang");
 		const visible = params.get("visible");
-		const compileerror = params.get("compileerror");
+		const compile_error = params.get("compile_error");
 
-		if(userid !== null && Number(userid) !== NaN) {
-			this.filters.userid = Number(userid);
+		if(user_id !== null && Number(user_id) !== NaN) {
+			this.filters.user_id = Number(user_id);
 		}
 		
-		if(problemid !== null && Number(problemid) !== NaN) {
-			this.filters.problemid = Number(problemid);
+		if(problem_id !== null && Number(problem_id) !== NaN) {
+			this.filters.problem_id = Number(problem_id);
 		}
 
 		if(status == "working" || status == "finished" || status == "waiting") {
@@ -263,8 +262,8 @@ var Submissions = {
 			this.filters.visible = visible == "true";
 		}
 
-		if(compileerror == "true" || compileerror == "false") {
-			this.filters.compileerror = compileerror == "true";
+		if(compile_error == "true" || compile_error == "false") {
+			this.filters.compile_error = compile_error == "true";
 		}
 
 		this.poll()
