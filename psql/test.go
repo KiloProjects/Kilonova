@@ -73,7 +73,7 @@ func (s *TestService) updateTest(ctx context.Context, id int, upd kilonova.TestU
 }
 
 func (s *TestService) createTest(ctx context.Context, test *kilonova.Test) error {
-	if test.ProblemID == 0 || test.VisibleID == 0 || test.Score == 0 {
+	if test.ProblemID == 0 || test.Score == 0 {
 		return kilonova.ErrMissingRequired
 	}
 
