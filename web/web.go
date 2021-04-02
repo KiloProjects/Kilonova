@@ -467,7 +467,7 @@ func (rt *Web) Handler() http.Handler {
 				}
 
 				// Do this to disable the popup
-				if user.ID == util.User(r).ID {
+				if user != nil && user.ID == util.User(r).ID {
 					util.User(r).VerifiedEmail = true
 				}
 

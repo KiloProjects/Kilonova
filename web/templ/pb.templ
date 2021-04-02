@@ -120,7 +120,7 @@ let app = Vue.createApp({
 			}
 			this.polling = true;
 			console.info("Polling...");
-			let res = await bundled.getCall("/submissions/get", {userid: this.userid, problemid: this.problemid, limit: this.limit})
+			let res = await bundled.getCall("/submissions/get", {user_id: this.userid, problem_id: this.problemid, limit: this.limit})
 			if(res.status !== "success") {
 				console.error(res);
 				this.polling = false;
