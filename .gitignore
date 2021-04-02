@@ -2,10 +2,10 @@ node_modules
 .vscode
 # .editorconfig
 /config.toml
-kn
 # simulation program
 sim.py
 
+knnnn
 
 # pkger
 pkged.go
