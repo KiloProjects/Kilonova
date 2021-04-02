@@ -208,7 +208,7 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 							score = 0
 						}
 
-						resp.Comments, testScore = checker.RunChecker(ctx, tout, sout, int(pbTest.Score))
+						resp.Comments, testScore = checker.RunChecker(ctx, sout, tout, int(pbTest.Score))
 					}
 
 					mem := int(resp.Memory)

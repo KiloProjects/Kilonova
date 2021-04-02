@@ -270,7 +270,7 @@ func (rt *Web) Handler() http.Handler {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 				var problems []*kilonova.Problem
 				var err error
-				if util.User(r).Admin {
+				if util.User(r) != nil && util.User(r).Admin {
 					problems, err = rt.pserv.Problems(r.Context(), kilonova.ProblemFilter{})
 				} else {
 					problems, err = rt.pserv.Problems(r.Context(), kilonova.ProblemFilter{LookingUserID: &util.User(r).ID})
