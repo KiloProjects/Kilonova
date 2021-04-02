@@ -124,6 +124,7 @@ func (kn *Kilonova) ProcessZipTestArchive(pb *kilonova.Problem, ar *zip.Reader) 
 	}
 
 	if len(ctx.scoredTests) != len(ctx.tests) {
+		log.Println(len(ctx.scoredTests), len(ctx.tests))
 		return errors.New("Mismatched number of tests in archive and scored tests")
 	}
 

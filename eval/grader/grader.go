@@ -171,6 +171,7 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 						Req:   execRequest,
 						Resp:  &eval.ExecResponse{},
 						Debug: h.debug,
+						DM:    h.dm,
 					}
 
 					err := runner.RunTask(ctx, task)

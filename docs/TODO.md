@@ -4,6 +4,8 @@ Additional reading I should do for a better platform:
 - https://philipptanlak.com/web-frontends-in-go/
 - https://www.youtube.com/watch?v=o_TH-Y78tt4
 
+- Switch to ms and kb for  submissions plox
+
 ## TODO LIST KILONOVA:
 - [ ] Pre-Middle beta (v0.6.0b-?):
 	- [ ] Email stuff 
@@ -64,6 +66,7 @@ Additional reading I should do for a better platform:
 			- [ ] Instrumente de translation:
 				- [ ] Propunători traducători
 				- [ ] Enunțuri multi-language
+		- [ ] Rate limits
 	- [~] CDN
 		- [x] Backbone
 		- [ ] Mutare CSS pe CDN

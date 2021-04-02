@@ -23,7 +23,7 @@ var emailT = template.Must(template.New("emailTempl").Parse(emailTempl))
 
 // CreateVerification creates a new verification request
 func (kn *Kilonova) CreateVerification(userid int) (string, error) {
-	return kn.RClient.CreateVerification(context.Background(), userid)
+	return kn.Verif.CreateVerification(context.Background(), userid)
 }
 
 func (kn *Kilonova) SendVerificationEmail(email, name string, uid int) error {
@@ -46,7 +46,7 @@ func (kn *Kilonova) SendVerificationEmail(email, name string, uid int) error {
 }
 
 func (kn *Kilonova) CheckVerificationEmail(vid string) bool {
-	val, err := kn.RClient.GetVerification(context.Background(), vid)
+	val, err := kn.Verif.GetVerification(context.Background(), vid)
 	if err != nil || val == 0 {
 		return false
 	}
@@ -56,7 +56,7 @@ func (kn *Kilonova) CheckVerificationEmail(vid string) bool {
 var True = true
 
 func (kn *Kilonova) ConfirmVerificationEmail(vid string, user *kilonova.User) error {
-	if err := kn.RClient.RemoveVerification(context.Background(), vid); err != nil {
+	if err := kn.Verif.RemoveVerification(context.Background(), vid); err != nil {
 		return err
 	}
 

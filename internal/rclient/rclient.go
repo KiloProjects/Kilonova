@@ -2,6 +2,7 @@ package rclient
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"time"
 
@@ -9,6 +10,9 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/go-redis/redis/v8"
 )
+
+var _ kilonova.Sessioner = &RClient{}
+var _ kilonova.Verificationer = &RClient{}
 
 type RClient struct {
 	client *redis.Client
@@ -37,13 +41,19 @@ func (c *RClient) CreateSession(ctx context.Context, uid int) (string, error) {
 }
 
 func (c *RClient) GetSession(ctx context.Context, sess string) (int, error) {
+	if sess == "" {
+		return -1, errors.New("Unauthed")
+	}
 	val, err := c.client.Get(ctx, sessName(sess)).Result()
 	if err != nil {
-		return -1, err
+		return -1, errors.New("Unauthed")
 	}
 	uid, err := strconv.Atoi(val)
 	if err != nil {
-		return -1, err
+		return -1, errors.New("Invalid session data")
+	}
+	if uid == 0 {
+		return -1, errors.New("Invalid session data")
 	}
 	return uid, nil
 }

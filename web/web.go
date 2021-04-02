@@ -452,7 +452,7 @@ func (rt *Web) Handler() http.Handler {
 					return
 				}
 
-				uid, err := rt.kn.RClient.GetVerification(r.Context(), vid)
+				uid, err := rt.kn.Verif.GetVerification(r.Context(), vid)
 				if err != nil {
 					log.Println(err)
 					rt.notFound(w, r)

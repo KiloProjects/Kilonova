@@ -16,7 +16,7 @@ var _ eval.Task = &ExecuteTask{}
 type ExecuteTask struct {
 	Req   *eval.ExecRequest
 	Resp  *eval.ExecResponse
-	DM    kilonova.DataStore
+	DM    kilonova.GraderStore
 	Debug bool
 }
 

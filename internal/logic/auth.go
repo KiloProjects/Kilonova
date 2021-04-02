@@ -2,7 +2,6 @@ package logic
 
 import (
 	"context"
-	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -23,14 +22,11 @@ func (kn *Kilonova) GetRSession(r *http.Request) int {
 }
 
 func (kn *Kilonova) CreateSession(id int) (string, error) {
-	return kn.RClient.CreateSession(context.Background(), id)
+	return kn.Sess.CreateSession(context.Background(), id)
 }
 
 func (kn *Kilonova) GetSession(id string) (int, error) {
-	if id == "" {
-		return -1, errors.New("Unauthed")
-	}
-	return kn.RClient.GetSession(context.Background(), id)
+	return kn.Sess.GetSession(context.Background(), id)
 }
 
 // RemoveSessionCookie clears the session cookie
@@ -47,7 +43,7 @@ func (kn *Kilonova) RemoveSessionCookie(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		return
 	}
-	kn.RClient.RemoveSession(context.Background(), c.Value)
+	kn.Sess.RemoveSession(context.Background(), c.Value)
 }
 
 func (kn *Kilonova) GenHash(password string) (string, error) {

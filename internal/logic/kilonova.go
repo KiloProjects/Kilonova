@@ -9,13 +9,15 @@ import (
 const Version = "v0.7.0 \"Zinc\""
 
 type Kilonova struct {
-	DM      kilonova.DataStore
-	RClient *rclient.RClient
-	Debug   bool
-	mailer  kilonova.Mailer
+	DM     kilonova.DataStore
+	Debug  bool
+	mailer kilonova.Mailer
 
 	userv kilonova.UserService
 	tserv kilonova.TestService
+
+	Sess  kilonova.Sessioner
+	Verif kilonova.Verificationer
 }
 
 func New(db kilonova.TypeServicer, dm kilonova.DataStore, rclient *rclient.RClient, debug bool) (*Kilonova, error) {
@@ -24,5 +26,5 @@ func New(db kilonova.TypeServicer, dm kilonova.DataStore, rclient *rclient.RClie
 		return nil, err
 	}
 
-	return &Kilonova{dm, rclient, debug, mailer, db.UserService(), db.TestService()}, nil
+	return &Kilonova{dm, debug, mailer, db.UserService(), db.TestService(), rclient, rclient}, nil
 }
