@@ -429,7 +429,7 @@ func (rt *Web) Handler() http.Handler {
 				}
 				t := time.Now().Sub(u.EmailVerifSentAt.Time)
 				if t < 5*time.Minute {
-					text := fmt.Sprintf("Trebuie să mai aștepți %s până poți retrimite email de verificare", t)
+					text := fmt.Sprintf("Trebuie să mai aștepți %s până poți retrimite email de verificare", (5*time.Minute - t).Truncate(time.Millisecond))
 					rt.status(w, r, http.StatusForbidden, text)
 					return
 				}
@@ -467,7 +467,7 @@ func (rt *Web) Handler() http.Handler {
 				}
 
 				// Do this to disable the popup
-				if user != nil && user.ID == util.User(r).ID {
+				if util.User(r) != nil && user.ID == util.User(r).ID {
 					util.User(r).VerifiedEmail = true
 				}
 
