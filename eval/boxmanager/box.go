@@ -46,9 +46,9 @@ func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
 	res = append(res, "--box-id="+strconv.Itoa(b.boxID))
 
 	res = append(res, "--cg", "--cg-timing")
-	if c.MemoryLimit != 0 {
+	/*if c.MemoryLimit != 0 {
 		res = append(res, "--cg-mem="+strconv.Itoa(c.MemoryLimit))
-	}
+	}*/
 	for _, dir := range c.Directories {
 		if dir.Removes {
 			res = append(res, "--dir="+dir.In+"=")
@@ -88,12 +88,10 @@ func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
 	}
 
 	if c.MemoryLimit != 0 {
-		memLim := approxMemory(c.MemoryLimit)
-		res = append(res, "--mem="+strconv.Itoa(int(memLim)))
+		res = append(res, "--mem="+strconv.Itoa(c.MemoryLimit))
 	}
 	if c.StackLimit != 0 {
-		stackSize := approxMemory(c.StackLimit)
-		res = append(res, "--stack="+strconv.Itoa(int(stackSize)))
+		res = append(res, "--stack="+strconv.Itoa(c.StackLimit))
 	}
 
 	if c.MaxProcs == 0 {
@@ -230,15 +228,6 @@ func CheckCanRun() bool {
 		return false
 	}
 	return true
-}
-
-// Approximate to the nearest 128kb
-func approxMemory(memory int) int {
-	rem := memory % 128
-	if rem == 0 {
-		return memory
-	}
-	return memory + 128 - rem
 }
 
 func writeReader(path string, r io.Reader, perms fs.FileMode) error {
