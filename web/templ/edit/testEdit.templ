@@ -27,11 +27,11 @@
 			{{ $test := getFullTests .Test }}
 			<div class="mb-3">
 				<h3> Input: </h3>
-				<textarea id="input" class="hidden">{{$test.In}}</textarea>
+				<textarea class="form-input" style="width:80%;" rows="15" id="input">{{$test.In}}</textarea>
 			</div>
 			<div class="mb-3">
 				<h3> Output: </h3>
-				<textarea id="output" class="hidden">{{$test.Out}}</textarea>
+				<textarea class="form-input" style="width:80%;" rows="15" id="output">{{$test.Out}}</textarea>
 			</div>
 			<button class="btn btn-blue mb-2" >Actualizare date</button>
 		</form>
@@ -39,8 +39,6 @@
 </div>
 
 	<script>
-		var inCM = CodeMirror.fromTextArea(document.getElementById("input"), {})
-		var outCM = CodeMirror.fromTextArea(document.getElementById("output"), {})
 		async function updateID(e) {
 			e.preventDefault()
 			let q = {
@@ -64,8 +62,8 @@
 		async function updateData(e) {
 			e.preventDefault()
 			let q = {
-				input: inCM.getValue(),
-				output: outCM.getValue()
+				input: document.getElementById("input").value,
+				output: document.getElementById("output").value
 			};
 			let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/data", q)
 			bundled.apiToast(res);

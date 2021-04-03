@@ -14,7 +14,7 @@
 					<a href="/settings#bio"><i class="fas fa-edit"></i> Create bio</a>
 					{{end}}
 				{{ end }}</span>
-				<p><a href="/submissions/?userid={{.ContentUser.ID}}">Listă submisii</a></p>
+				<p><a href="/submissions/?user_id={{.ContentUser.ID}}">Listă submisii</a></p>
 				{{- if .User -}} {{if (or .User.Admin (eq .User.ID .ContentUser.ID)) -}}
 				<p>E-mail: {{.ContentUser.Email}}</p>
 				<p>E-mail verificat? 

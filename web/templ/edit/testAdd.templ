@@ -63,11 +63,11 @@ document.getElementById("orphaninator").addEventListener("click", removeTests)
 			</label>
 			<div class="mb-3">
 				<h3> Input: </h3>
-				<textarea class="form-input" id="input" style="display: none;"></textarea>
+				<textarea class="form-input" id="input" rows="15" style="width: 80%;"></textarea>
 			</div>
 			<div class="mb-3">
 				<h3> Output: </h3>
-				<textarea class="form-input" id="output" style="display: none;"></textarea>
+				<textarea class="form-input" id="output" rows="15" style="width: 80%;"></textarea>
 			</div>
 			<button class="btn btn-blue mb-2">Adăugare</button>
 		</form>
@@ -75,15 +75,12 @@ document.getElementById("orphaninator").addEventListener("click", removeTests)
 </div>
 
 <script>
-	var inCM = CodeMirror.fromTextArea(document.getElementById("input"), {})
-	var outCM = CodeMirror.fromTextArea(document.getElementById("output"), {})
-
 	async function addTest(e) {
 		e.preventDefault()
 		let q = {
 			visibleID: document.getElementById("vID").value, 
-			input: inCM.getValue(),
-			output: outCM.getValue(),
+			input: document.getElementById("input").value,
+			output: document.getElementById("output").value,
 			score: document.getElementById("score").value,
 		};
 		let res = await bundled.postCall("/problem/{{ .Problem.ID }}/update/addTest", q)

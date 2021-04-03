@@ -78,6 +78,7 @@
 			let outhtml = ""
 			for(let user of res.data) {
 				outhtml += `<div class="list-group-item flex justify-between items-center"><a href="/profile/${user.name}"><img class="rounded inline-block mr-2" src="/api/user/getGravatar?name=${user.name}&s=32" width="32" height="32" alt="Avatar"/>${user.name}</a>`
+				// TODO: CHECK IT DOES WHAT I WANT
 				if(user.id != 1 && {{.User.ID}} == 1) {
 					outhtml += `<span style="cursor: pointer;" onclick="${cb}(${user.id}, false)">X</span>`
 				}
