@@ -56,7 +56,7 @@
 						</div>
 						<div v-else-if="subs.length > 0">
 							<a class="black-anchor flex justify-between items-center rounded py-1 px-2 hoverable" v-for="sub in subs" :key="sub.sub.id" :href="'/submissions/' + sub.sub.id">
-								<span>${timeStr(sub.created_at)}</span>
+								<span>${timeStr(sub.sub.created_at)}</span>
 								<span class="rounded-md px-2 py-1 bg-teal-700 text-white text-sm" v-if="sub.sub.status == 'finished'">${sub.sub.score}</span>
 								<span class="rounded-md px-2 py-1 bg-teal-700 text-white text-sm" v-else-if="sub.sub.status == 'working'"><i class="fas fa-cog animate-spin"></i></span>
 								<span class="rounded-md px-2 py-1 bg-teal-700 text-white text-sm" v-else><i class="fas fa-clock"></i></span>
@@ -145,6 +145,7 @@ let app = Vue.createApp({
 			this.polling = false;
 		},
 		timeStr: function(s) {
+			//console.log(s, bundled.dayjs(s).format('DD/MM/YYYY HH:mm'))
 			return bundled.dayjs(s).format('DD/MM/YYYY HH:mm')
 		}
 	},
