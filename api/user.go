@@ -197,7 +197,7 @@ func (s *API) getUserByName(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "User not found", http.StatusNotFound)
 		return
 	}
-	returnData(w, users[1])
+	returnData(w, users[0])
 
 }
 

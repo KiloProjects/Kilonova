@@ -65,6 +65,11 @@ Additional reading I should do for a better platform:
 				- [ ] Propunători traducători
 				- [ ] Enunțuri multi-language
 		- [ ] Rate limits
+		- [ ] https://discord.com/channels/@me/775486536358559764/827623755806146570
+		- [ ] https://discord.com/channels/@me/775486536358559764/827623285885763594
+			- [ ] Timp/Memorie maxima
+			- [ ] Sortare dupa timp/memorie
+			- [ ] Liste de probleme
 	- [~] CDN
 		- [x] Backbone
 		- [ ] Mutare CSS pe CDN
