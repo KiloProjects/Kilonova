@@ -25,7 +25,7 @@ type CustomChecker struct {
 }
 
 // Prepare compiles the grader
-func (c *CustomChecker) Prepare(ctx context.Context) error {
+func (c *CustomChecker) Prepare(ctx context.Context) (string, error) {
 	job := &tasks.CompileTask{
 		Req: &eval.CompileRequest{
 			ID:   -c.sub.ID,
@@ -36,14 +36,14 @@ func (c *CustomChecker) Prepare(ctx context.Context) error {
 
 	err := c.mgr.RunTask(ctx, job)
 	if err != nil {
-		return err
+		return "Couldn't compile checker", err
 	}
 
 	if !job.Resp.Success {
-		return errors.New("Invalid helper code")
+		return fmt.Sprintf("Output:\n%s\nOther:\n%s", job.Resp.Output, job.Resp.Other), errors.New("Invalid helper code")
 	}
 
-	return nil
+	return "", nil
 }
 
 type customCheckerTask struct {

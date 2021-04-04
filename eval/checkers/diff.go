@@ -19,7 +19,7 @@ var _ eval.Checker = &DiffChecker{}
 
 type DiffChecker struct{}
 
-func (d *DiffChecker) Prepare(_ context.Context) error { return nil }
+func (d *DiffChecker) Prepare(_ context.Context) (string, error) { return "", nil }
 
 func (d *DiffChecker) Cleanup(_ context.Context) error { return nil }
 

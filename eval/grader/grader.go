@@ -81,6 +81,12 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 				return nil
 			}
 
+			problem, err := h.pserv.ProblemByID(ctx, sub.ProblemID)
+			if err != nil {
+				log.Println("Error during submission problem getting:", err)
+				continue
+			}
+
 			var score_mu sync.Mutex
 			var score int
 
@@ -88,7 +94,7 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 				Req:   &eval.CompileRequest{ID: sub.ID, Code: []byte(sub.Code), Lang: sub.Language},
 				Debug: h.debug,
 			}
-			err := runner.RunTask(ctx, task)
+			err = runner.RunTask(ctx, task)
 			if err != nil {
 				log.Println("Error from eval:", err)
 				continue
@@ -108,9 +114,19 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 				continue
 			}
 
-			problem, err := h.pserv.ProblemByID(ctx, sub.ProblemID)
+			checker, err := getAppropriateChecker(runner, sub, problem)
 			if err != nil {
-				log.Println("Error during submission problem getting:", err)
+				log.Println("Could not get checker:", err)
+				continue
+			}
+
+			if info, err := checker.Prepare(ctx); err != nil {
+				log.Println("Checker prepare error:", err)
+				t := true
+				if err := h.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{CompileError: &t, CompileMessage: &info}); err != nil {
+					log.Println("Error during update of compile information:", err)
+					continue
+				}
 				continue
 			}
 
@@ -125,17 +141,6 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 			}
 
 			var wg sync.WaitGroup
-
-			checker, err := getAppropriateChecker(runner, sub, problem)
-			if err != nil {
-				log.Println("Could not get checker:", err)
-				continue
-			}
-
-			if err := checker.Prepare(ctx); err != nil {
-				log.Println("Checker prepare error:", err)
-				continue
-			}
 
 			for _, test := range tests {
 				test := test

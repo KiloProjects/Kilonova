@@ -24,7 +24,7 @@ type Sandbox interface {
 
 // Checker is an interface for a function that statelessly tries to evaluate a subtest from a submission
 type Checker interface {
-	Prepare(context.Context) error
+	Prepare(context.Context) (string, error)
 	Cleanup(context.Context) error
 	RunChecker(ctx context.Context, programOut, correctOut io.Reader, maxScore int) (string, int)
 }
