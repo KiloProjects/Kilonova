@@ -80,7 +80,7 @@ func (s *API) updateAuthorCredits(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) updateDescription(w http.ResponseWriter, r *http.Request) {
-	val := kilonova.Sanitizer.Sanitize(r.FormValue("text"))
+	val := r.FormValue("text")
 	if err := s.pserv.UpdateProblem(r.Context(), util.Problem(r).ID, kilonova.ProblemUpdate{Description: &val}); err != nil {
 		errorData(w, err, 500)
 		return

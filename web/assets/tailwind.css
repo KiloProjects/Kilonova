@@ -62,7 +62,7 @@
 		@apply list-disc list-inside;
 	}
 
-	.reset-list li {
+	.reset-list ul > li {
 		@apply pl-8;
 	}
 }
