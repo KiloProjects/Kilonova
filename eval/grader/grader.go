@@ -88,7 +88,7 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 			}
 
 			var score_mu sync.Mutex
-			var score int
+			var score = problem.DefaultPoints
 
 			task := &tasks.CompileTask{
 				Req:   &eval.CompileRequest{ID: sub.ID, Code: []byte(sub.Code), Lang: sub.Language},
@@ -123,14 +123,11 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 			if info, err := checker.Prepare(ctx); err != nil {
 				log.Println("Checker prepare error:", err)
 				t := true
-				if err := h.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{CompileError: &t, CompileMessage: &info}); err != nil {
+				if err := h.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score, CompileError: &t, CompileMessage: &info}); err != nil {
 					log.Println("Error during update of compile information:", err)
-					continue
 				}
 				continue
 			}
-
-			score = problem.DefaultPoints
 
 			tests, err := h.stserv.SubTestsBySubID(ctx, sub.ID)
 			if resp.Success == false || err != nil {
