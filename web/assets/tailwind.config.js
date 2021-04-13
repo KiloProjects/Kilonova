@@ -1,10 +1,11 @@
 const allcolors = require('tailwindcss/colors');
 
 module.exports = {
+//  mode: 'jit',
   darkMode: 'media',
   purge: [
 	'../../web/templ/**/*.templ',
-	'../../web/templ/*.templ'
+	'../../web/templ/*.templ',
   ],
   theme: {
     extend: {},

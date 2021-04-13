@@ -13,7 +13,7 @@
 	}
 	@media (prefers-color-scheme: dark) {
 		.bg-hljs {
-			background: #272822;
+			@apply bg-gray-700;
 		}
 	}
 

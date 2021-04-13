@@ -148,32 +148,44 @@ let getCall = async (call, params) => {
 	if(call.startsWith('/')) {
 		call = call.substr(1)
 	}
-	let resp = await fetch(`/api/${call}?${qs.stringify(params)}`, {headers: {'Accept': 'application/json', 'Authorization': cookie.get('kn-sessionid') || "guest"}});
-	return await resp.json()
+	try {
+		let resp = await fetch(`/api/${call}?${qs.stringify(params)}`, {headers: {'Accept': 'application/json', 'Authorization': cookie.get('kn-sessionid') || "guest"}});
+		return await resp.json()
+	} catch(e) {
+		return {status: "error", data: e.toString()}
+	}
 }
 
 let postCall = async (call, params) => {
 	if(call.startsWith('/')) {
 		call = call.substr(1)
 	}
-	let resp = await fetch(`/api/${call}`, {
-		method: 'POST',
-		headers: {'Content-Type': 'application/x-www-form-urlencoded','Accept': 'application/json', 'Authorization': cookie.get('kn-sessionid') || "guest"},
-		body: qs.stringify(params)
-	});
-	return await resp.json();
+	try {
+		let resp = await fetch(`/api/${call}`, {
+			method: 'POST',
+			headers: {'Content-Type': 'application/x-www-form-urlencoded','Accept': 'application/json', 'Authorization': cookie.get('kn-sessionid') || "guest"},
+			body: qs.stringify(params)
+		});
+		return await resp.json();
+	} catch(e) {
+		return {status: "error", data: e.toString()}
+	}
 }
 
 let multipartCall = async (call, formdata) => {
 	if(call.startsWith('/')) {
 		call = call.substr(1)
 	}
-	let resp = await fetch(`/api/${call}`, {
-		method: 'POST',
-		headers: {'Accept': 'application/json', 'Authorization': cookie.get('kn-sessionid') || "guest"},
-		body: formdata
-	});
-	return await resp.json();
+	try {
+		let resp = await fetch(`/api/${call}`, {
+			method: 'POST',
+			headers: {'Accept': 'application/json', 'Authorization': cookie.get('kn-sessionid') || "guest"},
+			body: formdata
+		});
+		return await resp.json();
+	} catch(e) {
+		return {status: "error", data: e.toString()}
+	}
 }
 
 let resendEmail = async () => {

@@ -17,7 +17,7 @@ export class SubmissionManager {
 		console.log("Started poller")
 		await this.poll()
 		if(!this.finished) {
-			this.poller = setInterval(this.poll, 2000)
+			this.poller = setInterval(async () => this.poll(), 2000)
 		}
 	}
 
@@ -52,7 +52,6 @@ export class SubmissionManager {
 		this.problemEditor = res.problem_editor
 		this.subAuthor = res.author
 		this.subProblem = res.problem
-		this.poll_mu = false;
 
 		if(this.sub.status === "finished") {
 			this.stopPoller()
@@ -60,6 +59,7 @@ export class SubmissionManager {
 		}
 
 		this.render()
+		this.poll_mu = false
 	}
 
 	async toggleVisible() {

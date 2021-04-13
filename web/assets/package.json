@@ -29,7 +29,7 @@
     "postcss": "^8.2.2",
     "postcss-import": "^14.0.0",
     "qs": "^6.9.6",
-    "tailwindcss": "^2.0.2",
+    "tailwindcss": "^2.1.1",
     "toastr": "^2.1.4"
   }
 }
