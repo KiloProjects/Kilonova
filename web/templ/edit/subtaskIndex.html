@@ -1,0 +1,171 @@
+{{ define "title" }}SubTask-uri{{ end }}
+{{ define "content" }}
+{{ template "subtaskTopbar.html" . }}
+
+<div class="segment-container">
+	<h2>Overview SubTasks</h2>
+	{{ with .ProblemSubTasks }}
+		<table class="kn-table my-2" style="table-layout: fixed">
+			<thead>
+				<th scope="col" class="w-1/4">
+					<input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
+				</th>
+				<th scope="col" class="w-1/4 text-center px-4 py-2">
+					ID
+				</th>
+				<th scope="col" class="w-1/4">
+					Scor
+				</th>
+			</thead>
+			<tbody>
+			{{ range . }} 
+				<tr id="row-subtask-{{.VisibleID}}" class="kn-table-row">
+					<td class="kn-table-cell">
+						<input class="form-checkbox" type="checkbox" id="pb-subtask-{{.VisibleID}}" autocomplete="off" />
+					</td>
+					<td class="kn-table-cell">
+						{{.VisibleID}}
+					</td>
+					<td class="kn-table-cell">
+						<input class="form-input" type="number" id="score-subtask-{{.VisibleID}}" value="{{.Score}}" min="0" max="100" autocomplete="off" />
+					</td>
+				</tr>
+			{{ end }}
+				<tr class="kn-table-simple">
+					<td colspan="2" class="kn-table-cell"></td>
+					<td id="scoreOutput" class="kn-table-cell"></td>
+				</tr>
+			</tbody>
+		</table>
+		<button class="btn btn-red mr-2" onclick="deleteSubTasks()">Șterge SubTask-uri selectate</button>
+		<button class="btn btn-blue" onclick="updateSubTasks()">Actualizează scorurile SubTask-urilor</button>
+	{{ else }}
+		<h3> Nu există niciun subtask, se vor evalua toate testele individual </h3>
+	{{ end }}
+	
+<script>
+var pbid = {{.Problem.ID}}, rowreg = /row-subtask-([0-9]+)/;
+var overall = document.getElementById("selectAllBox");
+var checks = document.querySelectorAll("[id^='pb-subtask-']");
+var scores = document.querySelectorAll("[id^='score-subtask-']");
+overall.addEventListener('input', e => {
+	for(let ee of checks) {
+		ee.checked = e.target.checked;
+	}
+})
+for(let e of checks) {
+	e.addEventListener('input', updateAllChecked);
+}
+for(let e of scores) {
+	e.addEventListener('input', updateFinalScore);
+}
+
+function updateAllChecked() {
+	var numChecked = 0;
+	for(let e of checks) {
+		numChecked += e.checked;
+	}
+	if(numChecked == checks.length) {
+		overall.indeterminate = false;
+		overall.checked = true;
+	} else if(numChecked == 0) {
+		overall.indeterminate = false;
+		overall.checked = false;
+	} else {
+		overall.checked = false;
+		overall.indeterminate = true;
+	}
+}
+
+function updateFinalScore() {
+	var score = 0;
+	var defaultPoints = {{.Problem.DefaultPoints}};
+	score += defaultPoints;
+	for(let e of scores) {
+		score += Number(e.value);
+	}
+	let suffix = "";
+	if(defaultPoints > 0) {
+		suffix = ` (${defaultPoints} by default)`;
+	}
+	console.log(score)
+	if(score != 100) {
+		document.getElementById("scoreOutput").innerHTML = `<span class='text-red-600 dark:text-red-400'>${score}</span>` + suffix;	
+	} else {
+		document.getElementById("scoreOutput").innerHTML = score + suffix;
+	}
+}
+
+updateAllChecked();
+updateFinalScore();
+
+async function deleteSubTasks() {
+	var subTasks = [];
+	for(let e of document.querySelectorAll("[id^='row-subtask-']")) {
+		let id = rowreg.exec(e.id)[1];
+		let checked = document.getElementById(`pb-subtask-${id}`).checked;
+		if(checked) {
+			subTasks.push(id);
+		}
+	}
+	let res = await bundled.postCall(`/problem/${pbid}/update/bulkDeleteSubTasks`, {subTasks: subTasks.join(',')});
+	if(res.status === "success") {
+		window.location.reload();
+		return;
+	}
+	bundled.apiToast(res);
+}
+
+async function updateSubTasks() {
+	var subTasks = {};
+	for(let e of document.querySelectorAll("[id^='row-subtask-']")) {
+		let id = rowreg.exec(e.id)[1];
+		let score = document.getElementById(`score-subtask-${id}`).value;
+		subTasks[id] = Number(score);
+	}
+	console.log(subTasks);
+	let res = await bundled.bodyCall(`/problem/${pbid}/update/bulkUpdateSubTaskScores`, subTasks);
+	if(res.status === "success") {
+		window.location.reload();
+		return;
+	}
+	bundled.apiToast(res);
+}
+
+
+</script>
+</div>
+
+{{ $root := . }}
+
+<div class="segment-container">
+	<h3> Asocieri teste </h3>
+	{{ with .ProblemTests }}
+		<table class="kn-table my-2" style="table-layout: fixed">
+			<thead>
+				<th scope="col" class="w-1/2 text-center px-4 py-2">
+					ID
+				</th>
+				<th scope="col" class="w-1/2">
+					SubTask-uri
+				</th>
+			</thead>
+			<tbody>
+			{{ range . }} 
+				<tr class="kn-table-row">
+					<td class="kn-table-cell">
+						{{.VisibleID}}
+					</td>
+					<td class="kn-table-cell">
+						{{$root.TestSubTasks .ID}}
+					</td>
+				</tr>
+			{{ end }}
+			</tbody>
+		</table>
+	{{ else }} 
+		<h3> Nu există niciun test, ar fi bine să creezi unul :) </h3>
+	{{ end }}
+</div>
+
+{{ end }}

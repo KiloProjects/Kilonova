@@ -1,0 +1,74 @@
+{{ define "title" }} Lista #{{.ProblemList.ID}} {{ end }}
+{{ define "content" }}
+
+{{ $user := .User }}
+{{ $root := . }}
+{{ with .ProblemList }}
+	<div class="segment-container">
+		<h1>{{.Title}}</h1>
+		{{ if .Description }}<h3>{{$.RenderMarkdown .Description}}</h3>{{end}}
+		{{ with ($root.ListProblems .) }}
+			<div class="list-group list-group-updated">
+				{{ range . }}
+					<a href="/problems/{{.ID}}" class="list-group-item flex justify-between">
+						<span>#{{.ID}}: {{.Name}}</span>
+						{{ if $user }}
+							<div>
+								<span class="rounded-full py-2 px-2 text-base bg-teal-700 text-white font-semibold">{{ $root.SubScore . }}</span>
+							</div>
+						{{ end }}
+					</a>
+				{{ end }}
+			</div>
+		{{ else }}
+			<p> This is awkward... Nu există nicio problemă în lista de probleme </p>
+		{{ end }}
+	</div>
+	{{ if $user }}
+	{{ if or (eq $user.ID .AuthorID) $user.Admin }}
+	<form id="pblist-update" class="segment-container" autocomplete="off">
+		<h1> Actualizare Listă </h1>
+		<div class="block my-2">
+			<label>
+				<span class="form-label">Titlu: </span>
+				<input type="text" id="pblist-title" class="form-input" value="{{.Title}}">
+			</label>
+		</div>
+		<div class="block my-2">
+			<label>
+				<span class="form-label">Descriere: </span>
+				<input type="text" id="pblist-desc" class="form-input" value="{{.Description}}">
+			</label>
+		</div>
+		<div class="block my-2">
+			<label>
+				<span class="form-label">Listă:</span>
+				<input type="text" id="pblist-list" class="form-input" pattern="([0-9]+,?)+" value="{{intList .List}}">
+			</label>
+		</div>
+		<button class="btn btn-blue" type="submit">Actualizare</button>
+	</form>
+<script>
+async function updateProblemList(e) {
+	e.preventDefault();
+	let data = {
+		id: {{.ID}},
+		title: document.getElementById("pblist-title").value,
+		description: document.getElementById("pblist-desc").value,
+		list: document.getElementById("pblist-list").value,
+	};
+	let res = await bundled.postCall("/problemList/update", data)
+	if(res.status === "success") {
+		window.location.reload();
+		return
+	}
+	bundled.apiToast(res)
+}
+document.getElementById("pblist-update").addEventListener("submit", updateProblemList)
+</script>
+	{{ end }}
+	{{ end }}
+{{ end }}
+
+
+{{ end }}

@@ -29,6 +29,7 @@
     "postcss": "^8.2.2",
     "postcss-import": "^14.0.0",
     "qs": "^6.9.6",
+    "slugify": "^1.5.1",
     "tailwindcss": "^2.1.1",
     "toastr": "^2.1.4"
   }

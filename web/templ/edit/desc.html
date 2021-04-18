@@ -1,0 +1,37 @@
+{{ define "title" }} Editare Descriere | Problema #{{.Problem.ID}}: {{.Problem.Name}} {{ end }}
+{{ define "content" }}
+<a href="/problems/{{- .Problem.ID -}}">[view]</a>
+<h1>Editare enunț</h1>
+<div class="mb-2">
+	<textarea id="description" class="hidden">{{- .Problem.Description -}}</textarea>
+</div>
+<div class="mb-2">
+	<button class="btn btn-blue" onclick="setDescription()">Editare</button>
+</div>
+<script>
+	var cm = CodeMirror.fromTextArea(document.getElementById("description"), {
+		mode: {
+			name: "gfm",
+			gitHubSpice: false,
+			emoji: false,
+		},
+	});
+	cm.setSize(null, "100%");
+
+	async function setDescription() {
+		let desc = cm.getValue();
+		console.log(desc);
+		let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/description", {text: desc})
+		if(res.status == "error") {
+			bundled.createToast({
+				status: "error",
+				title: "Could not update description",
+				description: res.data
+			})
+			return
+		}
+		bundled.createToast({description: "Updated description", onclick: () => window.location.assign("/problems/{{.Problem.ID}}")})
+	};
+</script>
+
+{{ end }}

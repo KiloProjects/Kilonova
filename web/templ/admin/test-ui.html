@@ -1,0 +1,35 @@
+{{ define "title" }} Testare UI {{ end }}
+{{ define "content" }}
+
+<div class="katex"></div>
+<button class="btn btn-blue block" onclick="bundled.createToast({status:'info',title:'titlu',description:'i am the one who knocks'})">Info notif</button>
+<button class="btn btn-blue block" onclick="bundled.createToast({status:'success',title:'titlu',description:'of course i still love you'})">Success notif</button>
+<button class="btn btn-blue block" onclick="bundled.createToast({status:'error',title:'titlu',description:'fanica iz best!!!!!'})">Error notif</button>
+<button class="btn btn-red block">Buton roșu</button>
+
+<div class="list-group my-2">
+	<details class="list-group-item">
+		<summary>
+			Admini
+		</summary>
+		<div class="list-group m-1">
+			<div class="list-group-item">May</div>
+			<div class="list-group-item">Sami</div>
+			<div class="list-group-item">Sebi</div>
+			<div class="list-group-item">Alex</div>
+		</div>
+	</details>
+	<details class="list-group-item">
+		<summary>
+			Moderatori
+		</summary>
+		<div class="list-group m-1">
+			<div class="list-group-item">Adminii + </div>
+			<div class="list-group-item">Alex Tz</div>
+			<div class="list-group-item">Liviu</div>
+			<div class="list-group-item">nu Marco</div>
+		</div>
+	</details>
+</div>
+
+{{ end }}

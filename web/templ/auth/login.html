@@ -1,0 +1,41 @@
+{{ define "title" }} Logare {{ end }}
+{{ define "content" }}
+
+<h1 class="mb-2">Autentificare</h1>
+<form id="login_form">
+	<label class="block mb-2">
+		<span class="form-label">Username</span>
+		<input class="form-input w-full" type="text" id="uname" name="username" />
+	</label>
+	<label class="block mb-2">
+		<span class="form-label">Parolă</span>
+		<input class="form-input w-full" type="password" id="upwd" name="password" />
+	</label>
+	<button class="block btn btn-blue">Logare</button>
+	<p class="text-gray-600 dark:text-gray-300">N-ai cont? <a href="/signup">înregistrează-te</a></p>
+</form>
+
+<script>
+	document.getElementById("login_form").addEventListener("submit", e => {
+		e.preventDefault();
+		login();
+	})
+	async function login() {
+		let username = document.getElementById("uname").value;
+		let password = document.getElementById("upwd").value;
+		
+		let res = await bundled.postCall("/auth/login", {username, password})
+		if(res.status == "error") {
+			bundled.createToast({
+				status: "error",
+				title: "Could not log in",
+				description: res.data
+			})
+			return
+		}
+		bundled.cookie.set("kn-sessionid", res.data, {expires: 29, sameSite: 'strict'})
+		window.location.assign("/")
+	}
+</script>
+
+{{ end }}

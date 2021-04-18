@@ -52,16 +52,7 @@ func (m *StorageManager) SaveFile(fpath string, r io.Reader) error {
 
 func (m *StorageManager) DeleteObject(fpath string) error {
 	fpath = m.getCDNPath(fpath)
-	if err := os.Remove(fpath); err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return kilonova.ErrNotExist
-		}
-		if errors.Is(err, syscall.ENOTEMPTY) {
-			return kilonova.ErrNotEmpty
-		}
-		return kilonova.WrapInternal(err)
-	}
-	return nil
+	return kilonova.WrapInternal(os.RemoveAll(fpath))
 }
 
 func (m *StorageManager) CreateDir(fpath string) error {

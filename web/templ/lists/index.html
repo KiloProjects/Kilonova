@@ -1,0 +1,36 @@
+{{ define "title" }} Liste {{ end }}
+{{ define "content" }}
+
+{{ $root := . }}
+{{ $user := .User }}
+
+{{ if .User }}
+<a class="mb-2" href="/problem_lists/create">[Creare]</a>
+{{ end }}
+
+{{ range .ProblemLists }}
+	<div class="segment-container">
+		<h1><a href="/problem_lists/{{.ID}}">#{{.ID}}</a> {{.Title}}</h1>
+		{{ if .Description }}<h3>{{.Description}}</h3>{{end}}
+		{{ with ($root.ListProblems .) }}
+			<div class="list-group list-group-updated">
+				{{ range . }}
+					<a href="/problems/{{.ID}}" class="list-group-item flex justify-between">
+						<span>#{{.ID}}: {{.Name}}</span>
+						{{ if $user }}
+							<div>
+								<span class="rounded-full py-2 px-2 text-base bg-teal-700 text-white font-semibold">{{ $root.SubScore . }}</span>
+							</div>
+						{{ end }}
+					</a>
+				{{ end }}
+			</div>
+		{{ else }}
+			<p> This is awkward... Nu există nicio problemă în lista de probleme </p>
+		{{ end }}
+	</div>
+{{ else }}
+	<p> Nu există nicio listă de probleme </p>
+{{ end }}
+
+{{ end }}

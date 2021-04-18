@@ -1,4 +1,18 @@
-- v0.7.0 "Zinc":
+- v0.8.0:
+	- Bug fixes and many possible bug creations
+	- Proposers can delete problems
+	- Admins can delete submissions
+	- Rework for the frontend architecture
+	- Rework for the test interface
+	- You can now use the program input for custom checkers
+	- Grader rework
+	- SubTasks
+	- Problem lists
+	- Recommended submissions
+	- .kna
+	- Added support for SQLite databases instead of postgresql
+	- Delete RPC stuff
+- v0.7.0:
 	- IT IS A VERY UNSTABLE RELEASE
 	- A LOT IS BROKEN
 	- AND A LOT DOESN'T WORK

@@ -1,34 +1,40 @@
 package config
 
 import (
-	"fmt"
+	"errors"
 	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/go-redis/redis/v8"
 )
 
 var (
-	Cache     CacheConf
-	Common    CommonConf
-	Database  DBConf
-	Eval      EvalConf
-	Languages map[string]Language
-	Email     EmailConf
+	configPath string
+	Common     CommonConf
+	Database   DBConf
+	Eval       EvalConf
+	Languages  map[string]Language
+	Email      EmailConf
+	Index      IndexConf
 )
 
 // configStruct is the glue for all configuration sections when unmarshaling
 // After load, it will disperse all the data in variables
 type configStruct struct {
-	Cache     CacheConf           `toml:"cache"`
 	Common    CommonConf          `toml:"common"`
 	Database  DBConf              `toml:"database"`
 	Eval      EvalConf            `toml:"eval"`
 	Languages map[string]Language `toml:"languages"`
 	Email     EmailConf           `toml:"email"`
+	Index     IndexConf           `toml:"index"`
+}
+
+type IndexConf struct {
+	Lists        []int  `toml:"lists_to_show"`
+	ShowProblems bool   `toml:"show_problems"`
+	Description  string `toml:"description"`
 }
 
 // EmailConf is the data required for the email part
@@ -36,21 +42,6 @@ type EmailConf struct {
 	Host     string `toml:"host"`
 	Username string `toml:"username"`
 	Password string `toml:"password"`
-}
-
-// CacheConf is the data required for the redis part (when I eventually make it)
-type CacheConf struct {
-	Host     string `toml:"host"`
-	Password string `toml:"password"`
-	DB       int    `toml:"DB"`
-}
-
-func (c CacheConf) GenOptions() *redis.Options {
-	return &redis.Options{
-		Addr:     c.Host,
-		Password: c.Password,
-		DB:       c.DB,
-	}
 }
 
 // EvalConf is the data required for the eval service
@@ -71,20 +62,8 @@ type CommonConf struct {
 
 // DBConf is the data required to establish a PostgreSQL connection
 type DBConf struct {
-	DBname   string `toml:"dbname"`
-	Host     string `toml:"host"`
-	SSLmode  string `toml:"sslmode"`
-	User     string `toml:"user"`
-	Password string `toml:"password"`
-}
-
-// String returns a DSN with all information from the struct
-func (d DBConf) String() string {
-	auth := fmt.Sprintf("sslmode=%s host=%s user=%s dbname=%s", d.SSLmode, d.Host, d.User, d.DBname)
-	if d.Password != "" {
-		auth += " password=" + d.Password
-	}
-	return auth
+	Type string `toml:"dbtype"`
+	DSN  string `toml:"dsn"`
 }
 
 //  LANGUAGE DEFINITION STUFF --------------------
@@ -105,7 +84,7 @@ type Language struct {
 	Extensions []string `toml:"extensions"`
 	IsCompiled bool     `toml:"is_compiled"`
 
-	Printable string `tmol:"printable"`
+	Printable string `toml:"printable"`
 
 	CompileCommand []string `toml:"compile_command"`
 	RunCommand     []string `toml:"run_command"`
@@ -129,32 +108,39 @@ type Language struct {
 var c configStruct
 
 func spread() {
-	Cache = c.Cache
 	Common = c.Common
 	Database = c.Database
 	Email = c.Email
 	Eval = c.Eval
 	Languages = c.Languages
+	Index = c.Index
 }
 
 func compactify() {
-	c.Cache = Cache
 	c.Common = Common
 	c.Database = Database
 	c.Email = Email
 	c.Eval = Eval
 	c.Languages = Languages
+	c.Index = Index
 }
 
-func Save(path string) error {
+func SetConfigPath(path string) {
+	configPath = path
+}
+
+func Save() error {
 	compactify()
+	if configPath == "" {
+		return errors.New("Invalid config path")
+	}
 
 	// Make the directories just in case they don't exist
-	if err := os.MkdirAll(filepath.Dir(path), 0666); err != nil {
+	if err := os.MkdirAll(filepath.Dir(configPath), 0666); err != nil {
 		return err
 	}
 
-	file, err := os.Create(path)
+	file, err := os.Create(configPath)
 	if err != nil {
 		return err
 	}
@@ -169,8 +155,11 @@ func Save(path string) error {
 	return file.Close()
 }
 
-func Load(path string) error {
-	md, err := toml.DecodeFile(path, &c)
+func Load() error {
+	if configPath == "" {
+		return errors.New("Invalid config path")
+	}
+	md, err := toml.DecodeFile(configPath, &c)
 	if len(md.Undecoded()) > 0 {
 		log.Println("NOTE: There were a few undecoded keys")
 		spew.Dump(md.Undecoded())

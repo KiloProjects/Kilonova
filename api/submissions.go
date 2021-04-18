@@ -44,6 +44,7 @@ func (s *API) getSubmissionByID() func(w http.ResponseWriter, r *http.Request) {
 		User          *kilonova.User       `json:"author,omitempty"`
 		Problem       *kilonova.Problem    `json:"problem,omitempty"`
 		SubTests      []subTestLine        `json:"subtests,omitempty"`
+		SubTasks      []*kilonova.SubTask  `json:"subtasks,omitempty"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		subID, ok := getFormInt(w, r, "id")
@@ -64,7 +65,13 @@ func (s *API) getSubmissionByID() func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		l := line{SubEditor: util.IsSubmissionEditor(sub, util.User(r)), ProblemEditor: util.IsProblemEditor(util.User(r), pb), Sub: sub}
+		stks, err := s.stkserv.SubTasks(r.Context(), pb.ID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			errorData(w, err, 500)
+			return
+		}
+
+		l := line{SubEditor: util.IsSubmissionEditor(sub, util.User(r)), ProblemEditor: util.IsProblemEditor(util.User(r), pb), Sub: sub, SubTasks: stks}
 
 		st, err := s.fetchSubTests(r.Context(), sub)
 		if err != nil {
@@ -162,6 +169,41 @@ func (s *API) filterSubs() http.HandlerFunc {
 
 		returnData(w, toRet{Subs: ret, TotalCount: count})
 	}
+}
+
+func (s *API) setSubmissionQuality(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		Quality bool
+		ID      int
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, http.StatusBadRequest)
+		return
+	}
+
+	sub, err := s.sserv.SubmissionByID(r.Context(), args.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			errorData(w, "Submission not found", http.StatusNotFound)
+			return
+		}
+		log.Println(err)
+		errorData(w, err, http.StatusNotFound)
+		return
+	}
+
+	if !util.IsSubmissionEditor(sub, util.User(r)) {
+		errorData(w, "You are not allowed to do this", 403)
+		return
+	}
+
+	if err := s.sserv.UpdateSubmission(r.Context(), sub.ID, kilonova.SubmissionUpdate{Quality: &args.Quality}); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	returnData(w, "Updated quality status")
 }
 
 func (s *API) setSubmissionVisible(w http.ResponseWriter, r *http.Request) {
@@ -294,7 +336,6 @@ func (s *API) addSubmission(ctx context.Context, userID int, problemID int, code
 	sub.Code = code
 	sub.Language = lang
 	sub.Visible = visible
-	sub.Status = kilonova.StatusCreating
 	if err := s.sserv.CreateSubmission(ctx, &sub); err != nil {
 		return nil, err
 	}
@@ -311,4 +352,22 @@ func (s *API) addSubmission(ctx context.Context, userID int, problemID int, code
 	}
 
 	return &sub, nil
+}
+
+func (s *API) deleteSubmission(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		ID int
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, http.StatusBadRequest)
+		return
+	}
+
+	if err := s.sserv.DeleteSubmission(r.Context(), args.ID); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	returnData(w, "Deleted submission")
 }

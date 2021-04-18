@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	ErrBadTestFile = errors.New("Bad test score file")
-	ErrBadArchive  = errors.New("Bad archive")
+	ErrBadTestFile = &kilonova.Error{Code: kilonova.EINVALID, Message: "Bad test score file"}
+	ErrBadArchive  = &kilonova.Error{Code: kilonova.EINVALID, Message: "Bad archive"}
 )
 
 type archiveTest struct {

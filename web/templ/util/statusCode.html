@@ -1,0 +1,13 @@
+{{ define "title" }} Error {{.Code}} | Kilonvoa {{ end }}
+{{ define "content" }}
+
+<div class="text-center">
+	<h2>{{.Code}}</h2>
+	{{ with .Message }}
+		<h1>{{.}}</h1>
+	{{ else }}
+		<p>That's an error</p>
+	{{ end }}
+</div>
+
+{{ end }}

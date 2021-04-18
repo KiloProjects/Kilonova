@@ -20,12 +20,11 @@ type retData struct {
 // ValidateProblemID makes sure the problem ID is a valid uint
 func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		problemID, err := strconv.Atoi(chi.URLParam(r, "id"))
+		problemID, err := strconv.Atoi(chi.URLParam(r, "pbid"))
 		if err != nil {
 			rt.status(w, r, http.StatusBadRequest, "ID invalid")
 			return
 		}
-		// this is practically equivalent to /api/problem/getByID?id=problemID, but let's keep it fast
 		problem, err := rt.pserv.ProblemByID(r.Context(), problemID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -36,11 +35,52 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 			rt.status(w, r, 500, "")
 			return
 		}
-		ctx := context.WithValue(r.Context(), util.ProblemKey, problem)
-		ctx = context.WithValue(ctx, util.PbID, problem.ID)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemKey, problem)))
 	})
 
+}
+
+// ValidateListID makes sure the list ID is a valid uint
+func (rt *Web) ValidateListID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		listID, err := strconv.Atoi(chi.URLParam(r, "id"))
+		if err != nil {
+			rt.status(w, r, http.StatusBadRequest, "ID invalid")
+			return
+		}
+		list, err := rt.plserv.ProblemList(r.Context(), listID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				rt.status(w, r, 404, "Lista nu a fost găsită")
+				return
+			}
+			log.Println("ValidateListID:", err)
+			rt.status(w, r, 500, "")
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemListKey, list)))
+	})
+
+}
+func (rt *Web) ValidateSubTaskID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		subtaskID, err := strconv.Atoi(chi.URLParam(r, "stid"))
+		if err != nil {
+			rt.status(w, r, http.StatusBadRequest, "ID invalid")
+			return
+		}
+		subtask, err := rt.stkserv.SubTask(r.Context(), util.Problem(r).ID, subtaskID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				rt.status(w, r, 404, "SubTask-ul nu există")
+				return
+			}
+			log.Println("ValidateSubTaskID:", err)
+			rt.status(w, r, 500, "")
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.SubTaskKey, subtask)))
+	})
 }
 
 // ValidateVisible checks if the problem from context is visible from the logged in user
@@ -62,7 +102,6 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 			rt.status(w, r, 400, "ID submisie invalid")
 			return
 		}
-		// this is equivalent to /api/submissions/getByID but it's faster to directly access
 		sub, err := rt.sserv.SubmissionByID(r.Context(), subID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -78,9 +117,7 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 			sub.Code = ""
 		}
 
-		ctx := context.WithValue(r.Context(), util.SubID, subID)
-		ctx = context.WithValue(ctx, util.SubKey, sub)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.SubKey, sub)))
 	})
 }
 
@@ -102,9 +139,7 @@ func (rt *Web) ValidateTestID(next http.Handler) http.Handler {
 			rt.status(w, r, 500, "")
 			return
 		}
-		ctx := context.WithValue(r.Context(), util.TestID, uint(testID))
-		ctx = context.WithValue(ctx, util.TestKey, test)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.TestKey, test)))
 	})
 }
 
@@ -179,8 +214,6 @@ func (rt *Web) getUser(next http.Handler) http.Handler {
 			return
 		}
 		user.Password = ""
-		ctx := context.WithValue(r.Context(), util.UserID, user.ID)
-		ctx = context.WithValue(ctx, util.UserKey, user)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.UserKey, user)))
 	})
 }

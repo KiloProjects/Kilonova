@@ -1,0 +1,44 @@
+{{ define "title" }} Adăugare Test | Problema #{{.Problem.ID}}: {{.Problem.Name}} {{ end }}
+{{ define "content" }}
+
+{{ template "testTopbar.html" . }}
+
+<form id="test_create_form" class="segment-container">	
+	<h2> Creare test </h2>
+	<label class="block my-2">
+		<span class="mr-2 text-xl">ID: </span>
+		<input id="vID" type="number" class="form-input" required />
+	</label>
+	<label class="block my-2">
+		<span class="mr-2 text-xl">Scor: </span>
+		<input id="score" type="number" class="form-input" required />
+	</label>
+	<div class="mb-3">
+		<h3> Input: </h3>
+		<textarea class="form-textarea" id="input" rows="15" style="width: 80%;"></textarea>
+	</div>
+	<div class="mb-3">
+		<h3> Output: </h3>
+		<textarea class="form-textarea" id="output" rows="15" style="width: 80%;"></textarea>
+	</div>
+	<button class="btn btn-blue mb-2">Adăugare</button>
+</form>
+
+<script>
+async function addTest(e) {
+	e.preventDefault()
+	let q = {
+		visibleID: document.getElementById("vID").value, 
+		input: document.getElementById("input").value,
+		output: document.getElementById("output").value,
+		score: document.getElementById("score").value,
+	};
+	let res = await bundled.postCall("/problem/{{ .Problem.ID }}/update/addTest", q)
+	if(res.status === "success") {
+		window.location.reload();
+	}
+}
+document.getElementById("test_create_form").addEventListener("submit", addTest)
+</script>
+
+{{ end }}

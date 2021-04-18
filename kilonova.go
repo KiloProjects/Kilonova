@@ -4,14 +4,12 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-
-	"github.com/microcosm-cc/bluemonday"
 )
+
+const Version = "v0.8.0"
 
 //go:embed docs
 var Docs embed.FS
-
-var Sanitizer = bluemonday.UGCPolicy()
 
 // Error handling
 
@@ -65,6 +63,9 @@ func WrapError(code, message string, err error) error {
 }
 
 func WrapInternal(err error) error {
+	if err == nil {
+		return nil
+	}
 	return &Error{Code: EINTERNAL, Err: err}
 }
 

@@ -1,0 +1,152 @@
+{{ define "title" }} Editare Problemă | Problema #{{.Problem.ID}}: {{.Problem.Name}} {{end}}
+{{ define "content" }}
+<a href="/problems/{{- .Problem.ID -}}">[view]</a>
+<h1>Editare Problemă</h1>
+
+<div id="editApp" v-cloak>
+	<form @submit="updateProblem">
+		<div class="block my-2">
+			<label>
+				<span class="form-label">Titlu:</span>
+				<input class="form-input" type="text" v-model="problem.name" />
+			</label>
+		</div>
+		<div class="block my-2">
+			<label>
+				<span class="form-label">Autor:</span>
+				<input class="form-input" type="text" size="50" v-model="problem.author_credits" />
+			</label>
+		</div>
+		<div class="block my-2">
+			<label>
+				<span class="form-label">Sursă:</span>
+				<input class="form-input" type="text" size="50" v-model="problem.source_credits" />
+			</label>
+		</div>
+		<div class="block my-2">
+			<label>
+				<span class="form-label">Tip Problemă:</span>
+				<select class="form-select" v-model="problem.type">
+					<option value="classic">Clasic</option>
+					<option value="custom_checker">Checker</option>
+				</select>
+			</label>
+		</div>
+		<div class="block my-2" v-if="admin">
+			<label>
+				<input class="form-checkbox" type="checkbox" v-model="problem.visible">
+				<span class="form-label ml-2">Problemă vizibilă</span>
+			</label>
+		</div>
+		<div class="block my-2">
+			<label>
+				<input class="form-checkbox" type="checkbox" v-model="problem.console_input">
+				<span class="form-label ml-2">Intrare din consolă</span>
+			</label>
+		</div>
+		<div class="block my-2" v-if="!problem.console_input">
+			<label>
+				<span class="mr-2 text-xl">Nume test:</span>
+				<input class="form-input" type="text" v-model="problem.test_name" />
+			</label>
+		</div>
+		<div class="block my-2">
+			<label>
+				<span class="form-label">Limită de memorie:</span>
+				<input type="number" class="form-input" id="memoryTotal" placeholder="Limită de memorie (total)" min="0" step="128" max="131072" v-model="problem.memory_limit">
+				<span class="ml-1 text-xl">KB</span>
+			</label>
+		</div>
+		<div class="block my-2">
+			<label>
+				<span class="form-label">Limită de stack:</span>
+				<input type="number" class="form-input" id="memoryStack" placeholder="Limită de memorie (stack)" min="0" step="128" max="131072" v-model="problem.stack_limit">
+				<span class="ml-1 text-xl">KB</span>
+			</label>
+		</div>
+		<div class="block my-2">
+			<label>
+				<span class="form-label">Limită de timp:</span>
+				<input type="number" class="form-input" id="timeLimit" placeholder="Limită de timp..." min="0" step="0.01" v-model="problem.time_limit">
+				<span class="ml-1 text-xl">secunde</span>
+			</label>
+		</div>
+		<div class="block my-2">
+			<label>
+				<span class="form-label">Puncte din oficiu:</span>
+				<input class="form-input" type="number" min="0" max="100" step="1" pattern="\d*" v-model="problem.default_points" />
+			</label>
+		</div>
+		<button type="submit" class="btn btn-blue">Actualizare date problemă</button>
+	</form>
+	<div class="list-group my-2">
+		<a class="block list-group-item" :href="`/problems/${problem.id}/edit/desc`">Editare enunț</a>
+		<a class="block list-group-item" :href="`/problems/${problem.id}/edit/test`">Editare teste</a>
+		<a class="block list-group-item" :href="`/problems/${problem.id}/edit/subtasks`">Editare subtasks</a>
+		<a class="block list-group-item" :href="`/problems/${problem.id}/edit/checker`" v-if="problem.type == 'custom_checker'">!!! Editare checker</a>
+	</div>
+	<div class="block my-2">
+		<form class="inline" @submit="deleteProblem">
+			<button class="btn btn-red mr-2">Șterge problema</button>
+		</form>
+	</div>
+</div>
+
+<script>
+let problemEnc = bundled.Base64.decode({{encodeJSON .Problem}});
+let problem = JSON.parse(problemEnc);
+
+Vue.createApp({
+	el: "",
+	delimiters: ['${', '}'],
+	data: () => {
+		return {
+			problem: problem,
+			admin: {{.User.Admin}}
+		}
+	},
+	methods: {
+		updateProblem: async function(e){
+			e.preventDefault();
+			if(this.problem.name === "") {
+				bundled.createToast({status: "error", description: "Titlu gol"});
+				return
+			}
+			let data = {
+				title: this.problem.name,
+				default_points: this.problem.default_points,
+
+				source_credits: this.problem.source_credits,
+				author_credits: this.problem.author_credits,
+				
+				type: this.problem.type,
+				console_input: this.problem.console_input,
+				test_name: this.problem.test_name,
+		
+				memory_limit: this.problem.memory_limit,
+				stack_limit: this.problem.stack_limit,
+				time_limit: this.problem.time_limit,
+
+			};
+			if(this.admin) {
+				data.visible = this.problem.visible;
+			}
+			let res = await bundled.postCall(`/problem/${this.problem.id}/update/`, data)
+			bundled.apiToast(res);
+		},
+		deleteProblem: async function(e) {
+			e.preventDefault();
+			if(!confirm("Sigur vreți să ștergeți problema?")) {
+				return
+			}
+			let res = await bundled.postCall(`/problem/${this.problem.id}/delete`, {})
+			if(res.status === "success") {
+				window.location.assign("/");
+				return
+			}
+			bundled.apiToast(res)
+		}
+	},
+}).mount("#editApp");
+</script>
+{{ end }}

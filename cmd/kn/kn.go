@@ -1,35 +1,63 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"os/signal"
 	"path"
-	"syscall"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/api"
 	"github.com/KiloProjects/kilonova/datastore"
+	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/eval/grader"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/logic"
-	"github.com/KiloProjects/kilonova/internal/rclient"
-	"github.com/KiloProjects/kilonova/psql"
 	"github.com/KiloProjects/kilonova/web"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
-	"github.com/urfave/cli/v2"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func Kilonova(_ *cli.Context) error {
+func executeExperiment(dm kilonova.DataStore, db kilonova.TypeServicer) error {
+	pb, err := db.ProblemService().ProblemByID(context.Background(), 1)
+	if err != nil {
+		return err
+	}
+	pb1, err := db.ProblemService().ProblemByID(context.Background(), 2)
+	if err != nil {
+		return err
+	}
+
+	rd, err := kilonova.GenKNA([]*kilonova.Problem{pb, pb1}, db.TestService(), db.SubTaskService(), dm)
+	if err != nil {
+		return err
+	}
+
+	b, err := io.ReadAll(rd)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile("./plm.db", b, 0777); err != nil {
+		return err
+	}
+
+	d, err := os.ReadFile("./plm.db")
+	spew.Dump(kilonova.ReadKNA(bytes.NewReader(d)))
+	return nil
+}
+
+func Kilonova() error {
 	// Print welcome message
 	fmt.Printf("Starting Kilonova %s\n", kilonova.Version)
 
@@ -43,7 +71,7 @@ func Kilonova(_ *cli.Context) error {
 
 	// Data directory setup
 	if !path.IsAbs(dataDir) {
-		return errors.New("logDir not absolute")
+		return &kilonova.Error{Code: kilonova.EINVALID, Message: "logDir not absolute"}
 	}
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
 		return fmt.Errorf("Could not create log dir: %w", err)
@@ -53,21 +81,12 @@ func Kilonova(_ *cli.Context) error {
 		return err
 	}
 
-	logg := log.New(&lumberjack.Logger{
-		Filename: path.Join(logDir, "access.log"),
-	}, "", 0)
-
-	// Redis setup
-	c, err := rclient.New()
-	if err != nil {
-		return err
-	}
-
 	// DB Setup
-	db, err := psql.New(config.Database.String())
+	db, err := db.AppropriateDB(context.Background(), config.Database)
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 	log.Println("Connected to DB")
 
 	// Data Store setup
@@ -76,7 +95,9 @@ func Kilonova(_ *cli.Context) error {
 		return err
 	}
 
-	kn, err := logic.New(db, manager, c, debug)
+	//return executeExperiment(manager, db)
+
+	kn, err := logic.New(db, manager, debug)
 	if err != nil {
 		return err
 	}
@@ -94,16 +115,22 @@ func Kilonova(_ *cli.Context) error {
 	})
 	r.Use(corsConfig.Handler)
 
-	//r.Use(middleware.Compress(flate.DefaultCompression))
-	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.StripSlashes)
 	r.Use(middleware.Timeout(20 * time.Second))
-	r.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{
-		Logger:  logg,
-		NoColor: true,
-	}))
+	/*
+		r.Use(middleware.Compress(flate.DefaultCompression))
+		r.Use(middleware.RequestID)
+		logg := log.New(&lumberjack.Logger{
+			Filename: path.Join(logDir, "access.log"),
+		}, "", 0)
+
+		r.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{
+			Logger:  logg,
+			NoColor: true,
+		}))
+	*/
 
 	// Setup context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -112,7 +139,7 @@ func Kilonova(_ *cli.Context) error {
 	grader := grader.NewHandler(ctx, kn, db)
 
 	r.Mount("/api", api.New(kn, db).Handler())
-	r.Mount("/cdn", http.StripPrefix("/cdn/", web.NewCDN(kn, db).Handler()))
+	r.Mount("/cdn", http.StripPrefix("/cdn/", &web.CDN{CDN: manager}))
 	r.Mount("/", web.NewWeb(kn, db).Handler())
 
 	go func() {
@@ -137,8 +164,7 @@ func Kilonova(_ *cli.Context) error {
 	}()
 
 	log.Println("Successfully started")
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, os.Kill)
 
 	defer func() {
 		fmt.Println("Shutting Down")
@@ -148,9 +174,6 @@ func Kilonova(_ *cli.Context) error {
 	}()
 
 	select {
-	case <-stop:
-		signal.Stop(stop)
-		cancel()
 	case <-ctx.Done():
 	}
 

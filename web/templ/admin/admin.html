@@ -1,0 +1,135 @@
+{{ define "title" }} Panou Administrare {{ end }}
+{{ define "content" }}
+
+<h1>
+	Butoanele administratorilor	(TODO: Fancy stats data)
+</h1>
+<a href="/admin/kna">Generare Kilonova Archive (.kna)</a>
+<button class="btn-blue font-bold py-2 px-4 rounded-lg mt-3 mb-5" onclick="resetSubs()">Resetare Submisii în Așteptare</button>
+
+<div class="segment-container">
+	<h2>Schimbă rolurile:</h2>
+	<label class="block">
+		<span class="form-label">User:</span>
+		<input class="form-input my-1 block" type="text" id="userToChange" placeholder="AlexVasiluta">
+	</label>
+	<div class="mt-2 mb-2 inline-flex">
+		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-l" onclick="setFormAdmin(true)">Fă Administrator</button>
+		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-r" onclick="setFormProposer(true)">Fă Propunător</button>
+	</div>
+</div>
+
+<div class="segment-container">
+	<h3 class="text-2xl">Administratori:</h3>
+	<div id="admin-group" class="list-group list-group-rounded mb-2">
+		Loading...
+	</div>
+	<br/>
+	<h3 class="text-2xl">Propunători:</h3>
+	<div id="proposer-group" class="list-group list-group-rounded mb-2">
+		Loading...
+	</div>
+</div>
+
+<script>
+	async function resetSubs() {
+		let res = await bundled.postCall("/admin/maintenance/resetWaitingSubs", {});
+		bundled.apiToast(res)
+	}
+	async function setAdmin(id, set) {
+		let res = await bundled.postCall("/admin/setAdmin", {id, set})
+		bundled.apiToast(res)
+		if(res.status == "error") {
+			return
+		}
+		loadUsers({admin: true}, "admin-group", "setAdmin");
+		loadUsers({proposer: true}, "proposer-group", "setProposer");
+	}
+	async function setProposer(id, set) {
+		let res = await bundled.postCall("/admin/setProposer", {id, set})
+		bundled.apiToast(res)
+		if(res.status == "error") {
+			return
+		}
+		loadUsers({proposer: true}, "proposer-group", "setProposer");
+	}
+
+	async function setFormAdmin(toSet) {
+		let user = document.getElementById("userToChange").value;
+		let res = await bundled.getCall('/user/getByName', {name: user})
+		if(res.status == "error") {
+			bundled.apiToast(res)
+			return
+		}
+		await setAdmin(res.data.id, toSet)
+	}
+	async function setFormProposer(toSet) {
+		let user = document.getElementById("userToChange").value;
+		let res = await bundled.getCall('/user/getByName', {name: user})
+		if(res.status == "error") {
+			bundled.apiToast(res)
+			return
+		}
+		await setProposer(res.data.id, toSet)
+	}
+
+	async function loadUsers(q, id = "admin-group", cb) {
+		document.getElementById(id).innerHTML = "Loading..."
+		let res = await bundled.getCall("/admin/getAllUsers", q)
+		if(res.status == "error") {
+			bundled.apiToast(res)
+			return
+		}
+		let outhtml = ""
+		for(let user of res.data) {
+			outhtml += `<div class="list-group-item flex justify-between items-center"><a href="/profile/${user.name}"><img class="rounded inline-block mr-2" src="/api/user/getGravatar?name=${user.name}&s=32" width="32" height="32" alt="Avatar"/>${user.name}</a>`
+			if(user.id != 1 && {{.User.ID}} == 1) {
+				outhtml += `<span style="cursor: pointer;" onclick="${cb}(${user.id}, false)">X</span>`
+			}
+			outhtml += `</div>`
+		}
+		document.getElementById(id).innerHTML = outhtml
+	}
+	loadUsers({admin: true}, "admin-group", "setAdmin");
+	loadUsers({proposer: true}, "proposer-group", "setProposer");
+</script>
+
+<form id="index-form" class="segment-container">
+	<h1> Administrare Pagină Principală </h1>
+	<div class="block my-2">
+		<label>
+			<span class="form-label">Listă de probleme (listă de ID-urile listelor, separate prin o virgulă):</span>
+			<input class="form-input" id="index-pblist" type="text" pattern="([0-9]+,?)+" value="{{.IndexLists}}">
+		</label>
+	</div>
+	<div class="block my-2">
+		<label>
+			<input class="form-checkbox" id="index-listall" type="checkbox" {{if .IndexListAll}} checked {{end}}>
+			<span class="form-label">Afișare toate problemele</span>
+		</label>
+	</div>
+	<div class="block my-2">
+		<label>
+			<span class="form-label">Descriere:</span>
+			<input class="form-input" id="index-desc" type="text" value="{{.IndexDesc}}">
+		</label>
+	</div>
+	<button class="btn btn-blue" type="submit">Actualizare</button>
+</form>
+
+<script>
+async function updateIndex(e) {
+	e.preventDefault();
+	const data = {
+		desc: document.getElementById("index-desc").value,
+		listAll: document.getElementById("index-listall").checked,
+		pbList: document.getElementById("index-pblist").value,
+	};
+	let res = await bundled.postCall("/admin/updateIndex", data);
+	bundled.apiToast(res);
+}
+
+document.getElementById("index-form").addEventListener("submit", updateIndex);
+</script>
+
+{{ end }}

@@ -1,0 +1,114 @@
+{{ define "title" }}Editare SubTask {{.SubTask.ID}}{{ end }}
+{{ define "content" }}
+{{ template "subtaskTopbar.html" . }}
+
+{{ $root := . }}
+
+<form class="segment-container" id="subtask-update">
+	<h2> Editare SubTask #{{.SubTask.ID}} </h2>
+	{{ if not (len .SubTask.Tests) }} WARNING: SubTask gol, va afișa mereu 0 puncte {{ end }}
+
+	{{ with .ProblemTests }}
+		<div class="block my-2">
+			<label>
+				<span class="form-label">ID: </span>
+				<input class="form-input" id="subtask-id" type="number" min="0" value="{{$root.SubTask.VisibleID}}" autocomplete="off">
+			</label>
+		</div>
+		<div class="block my-2">
+			<label>
+				<span class="form-label">Scor: </span>
+				<input class="form-input" id="subtask-score" type="number" min="0" max="100" value="{{$root.SubTask.Score}}" autocomplete="off">
+			</label>
+		</div>
+		<table class="kn-table my-2" style="table-layout: fixed">
+			<thead>
+				<th scope="col" class="w-1/2">
+					<input class="form-checkbox" type="checkbox" id="selectAllBox" />
+				</th>
+				<td scope="col" class="w-1/2 text-center px-4 py-2">
+					ID Test
+				</td>
+			</thead>
+			<tbody>
+			{{ range . }}
+				<tr id="row-test-{{.VisibleID}}" class="kn-table-row">
+					<td class="kn-table-cell">
+						<input class="form-checkbox" type="checkbox" id="pb-test-{{.VisibleID}}" autocomplete="off" {{if $root.TestInSubTask .}}checked{{end}}>
+					</td>
+					<td class="kn-table-cell">
+						{{.VisibleID}}
+					</td>
+				</tr>
+			{{ end }}
+			</tbody>
+		</table>
+		<button class="btn btn-blue block my-2" type="submit">Actualizare</button>
+	{{ else }}
+		<h3> Nu există niciun test, așa ceva n-ar trebui să se întâmple!</h3>
+	{{ end }}
+</form>
+
+<script>
+var pbid = {{.Problem.ID}}, rowreg = /row-test-([0-9]+)/;
+var overall = document.getElementById("selectAllBox");
+var checks = document.querySelectorAll("[id^='pb-test-']");
+overall.addEventListener('input', e => {
+	for(let ee of checks) {
+		ee.checked = e.target.checked;
+	}
+})
+for(let e of checks) {
+	e.addEventListener('input', updateAllChecked);
+}
+
+function updateAllChecked() {
+	var numChecked = 0;
+	for(let e of checks) {
+		numChecked += e.checked;
+	}
+	if(numChecked == checks.length) {
+		overall.indeterminate = false;
+		overall.checked = true;
+	} else if(numChecked == 0) {
+		overall.indeterminate = false;
+		overall.checked = false;
+	} else {
+		overall.checked = false;
+		overall.indeterminate = true;
+	}
+}
+updateAllChecked();
+
+async function updateSubTask(e) {
+	e.preventDefault();
+	let data = {
+		subtask_id: {{.SubTask.VisibleID}},
+		new_id: document.getElementById('subtask-id').value,
+		score: document.getElementById('subtask-score').value,
+		tests: ""
+	};
+	
+	let tests = [];
+	for(let e of document.querySelectorAll("[id^='row-test-']")) {
+		let id = rowreg.exec(e.id)[1];
+		let checked = document.getElementById(`pb-test-${id}`).checked;
+		if(checked) {
+			tests.push(id);
+		}
+	}
+
+	data.tests = tests.join(',');
+	console.log(data);
+	let res = await bundled.postCall(`/problem/${pbid}/update/updateSubTask`, data)
+	if(res.status === "success") {
+		window.location.assign(`/problems/${pbid}/edit/subtasks/${data.new_id}`);
+		return;
+	}
+	bundled.apiToast(res);
+}
+
+document.getElementById("subtask-update").addEventListener("submit", updateSubTask);
+</script>
+
+{{ end }}

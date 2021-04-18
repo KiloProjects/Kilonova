@@ -1,9 +1,7 @@
 package util
 
 import (
-	"log"
 	"net/http"
-	"reflect"
 
 	"github.com/KiloProjects/kilonova"
 )
@@ -12,43 +10,19 @@ import (
 type KNContextType string
 
 const (
-	UserID = KNContextType("userID")
 	// UserKey is the key to be used for adding user objects to context
 	UserKey = KNContextType("user")
-	// PbID is the key to be used for adding problem IDs to context
-	PbID = KNContextType("pbID")
 	// ProblemKey is the key to be used for adding problems to context
 	ProblemKey = KNContextType("problem")
-	// SubID  is the key to be used for adding submission IDs to context
-	SubID = KNContextType("subID")
 	// SubKey is the key to be used for adding submissions to context
 	SubKey = KNContextType("submission")
-	// SubEditorKey is the key to be used for adding the submission editor bool to context
-	SubEditorKey = KNContextType("subEditor")
-	// TestKey is the key to be used for adding test IDs to context
-	TestID = KNContextType("testID")
 	// TestKey is the key to be used for adding tests to context
 	TestKey = KNContextType("test")
+	// SubTaskKey is the key to be used for adding subtasks to context
+	SubTaskKey = KNContextType("test")
+	// ProblemListKey is the key to be used for adding problem lists to context
+	ProblemListKey = KNContextType("problemList")
 )
-
-// ID returns the ID with that specific key from context
-func ID(r *http.Request, tp KNContextType) int {
-	switch v := r.Context().Value(tp).(type) {
-	case int:
-		return v
-	case uint:
-		return int(v)
-	case int32:
-		return int(v)
-	case int64:
-		return int(v)
-	case nil:
-		return 0
-	default:
-		log.Println("ID with type:", reflect.TypeOf(v))
-		return -1
-	}
-}
 
 // User returns the user from request context
 func User(r *http.Request) *kilonova.User {
@@ -68,6 +42,28 @@ func Problem(r *http.Request) *kilonova.Problem {
 	case kilonova.Problem:
 		return &v
 	case *kilonova.Problem:
+		return v
+	default:
+		return nil
+	}
+}
+
+func ProblemList(r *http.Request) *kilonova.ProblemList {
+	switch v := r.Context().Value(ProblemListKey).(type) {
+	case kilonova.ProblemList:
+		return &v
+	case *kilonova.ProblemList:
+		return v
+	default:
+		return nil
+	}
+}
+
+func SubTask(r *http.Request) *kilonova.SubTask {
+	switch v := r.Context().Value(SubTaskKey).(type) {
+	case kilonova.SubTask:
+		return &v
+	case *kilonova.SubTask:
 		return v
 	default:
 		return nil

@@ -1,0 +1,320 @@
+{{ define "title" }} Submisii {{ end }}
+
+{{ define "scripts" }}
+{{ template "vue" }}
+{{ end }}
+
+{{ define "content" }}
+
+<h1>Stare submisii</h1>
+<h3> Paginarea încă nu a fost terminată, așa că numai ultimele 50 de submisii pot fi vizualizate pe această pagină </h3>
+
+<div id="subs" v-cloak>
+	<div class="flex flex-wrap lg:border-t lg:border-gray-200">
+		<div class="w-full lg:w-3/12 lg:pr-2 lg:border-r lg:border-gray-200">
+			<div class="mt-6"></div>
+			<label class="block mb-2">
+				<span class="form-label">Pagină:</span>
+				<input class="form-input" type="number" min="1" v-model="page">
+			</label>
+			<label class="block mb-2">
+				<span class="form-label">ID User (0 = ignore):</span>
+				<input class="form-input" type="number" min="0" v-model="filters.user_id">
+			</label>
+			<label class="block mb-2">
+				<span class="form-label">ID Problemă (0 = ignore):</span>
+				<input class="form-input" type="number" min="0" v-model="filters.problem_id">
+			</label>
+			<label class="block mb-2">
+				<span class="form-label">Status:</span>
+				<select class="form-select" v-model="filters.status">
+					<option value="">-</option>
+					<option value="finished">Finalizat</option>
+					<option value="working">În lucru</option>
+					<option value="waiting">În așteptare</option>
+				</select>
+			</label>
+			<label class="block mb-2">
+				<span class="form-label">Limbaj:</span>
+				<select class="form-select" v-model="filters.lang">
+					<option value="">-</option>
+					<option value="cpp">C++</option>
+				</select>
+			</label>
+			<label class="block mb-2">
+				<span class="form-label">Scor (-1 = ignore):</span>
+				<input class="form-input" type="number" min="-1" max="100" v-model="filters.score" placeholder="100">
+			</label>
+			<label class="block mb-2">
+				<span class="form-label">Vizibilă:</span>
+				<select class="form-select" v-model="filters.visible">
+					<option value="">-</option>
+					<option value="true">Da</option>
+					<option value="false">Nu</option>
+				</select>
+			</label>
+			<label class="block mb-2">
+				<span class="form-label">De calitate:</span>
+				<select class="form-select" v-model="filters.quality">
+					<option value="">-</option>
+					<option value="true">Da</option>
+					<option value="false">Nu</option>
+				</select>
+			</label>
+			<label class="block mb-2">
+				<span class="form-label">Eroare de Compilare:</span>
+				<select class="form-select" v-model="filters.compile_error">
+					<option value="">-</option>
+					<option value="true">Da</option>
+					<option value="false">Nu</option>
+				</select>
+			</label>
+			<button class="btn btn-blue mb-4 mr-2" @click="poll()">Încărcare</button>
+			<button class="btn mb-4" @click="getQuery()">Copiere link filtre</button>
+		</div>
+		<div class="mw-full mt-2 lg:flex-1 lg:px-2 lg:py-2">
+			<div class="text-4xl mx-auto my-auto w-full my-10 text-center" v-if="loading">
+				<div><i class="fas fa-spinner animate-spin"></i> Se încarcă...</div>
+			</div>
+			<div v-else-if="submissions.length > 0">
+				<h1>${getRezStr()}</h1>
+				<table class="kn-table">
+					<thead>
+						<tr>
+							<th scope="col" class="w-12 text-center px-4 py-2">
+								ID
+							</th>
+							<th scope="col">
+								Autor
+							</th>
+							<th scope="col">
+								Dată încărcare
+							</th>
+							<th scope="col">
+								Problemă
+							</th>
+							<th scope="col" class="w-1/6">
+								Status	
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr class="kn-table-row" :style="sub.sub.quality ? 'background-color: #fbffc7;' : ''" v-for="sub in submissions" :key="sub.id">
+							<th scope="row" class="text-center px-4 py-2">
+								${sub.sub.id}
+							</th>
+							<td class="px-4 py-2">
+								<a class="inline-flex align-middle items-center" :href="'/profile/'+sub.author.name"><img class="flex-none mr-2 rounded" :src="'/api/user/getGravatar?s=32&name='+sub.author.name" width="32" height="32" alt="Avatar" /><span class="flex-1">${sub.author.name}</span></a>
+							</td>
+							<td class="text-center px-4 py-2">
+								${timeStr(sub.sub.created_at)}
+							</td>
+							<td class="text-center px-4 py-2">
+								<a :href="'/problems/'+sub.problem.id">${sub.problem.name}</a>
+							</td>
+							<td :class="sub.sub.status === 'finished' ? 'text-black' : '' + ' text-center px-4 py-2'" :style="sub.sub.status == 'finished' ? 'background-color: ' + getGradient(sub.sub.score, 100) : ''">
+								<a :href="'/submissions/'+sub.sub.id">${formatStatus(sub.sub)}</a>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center" v-else>
+				Nicio submisie găsită.
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+var Submissions = {
+	data: () => {
+		return {
+			submissions: [],
+			filters: {loadUser: true, loadProblem: true, user_id: null, problem_id: null, status: "", lang: "", visible: "", quality: "", compile_error: "", offset: 0},
+			page: 1,
+			loading: true 
+		}
+	},
+	methods: {
+		poll: async function() {
+			this.loading = true
+			console.log(this.getFilters(this.filters))
+			let res = await bundled.getCall("/submissions/get", this.getFilters(this.filters))
+			if(res.status !== "success") {
+				bundled.apiToast(res)
+				this.loading = false
+				return
+			}
+			if(res.data == null) {
+				this.submissions = []
+			} else {
+				this.submissions = res.data.subs
+				this.subCount = res.data.count
+			}
+			this.loading = false
+		},
+		formatStatus: function(sub) {
+			if(sub.status === "finished") {
+				return "Evaluat: " + sub.score + " puncte"
+			} else if(sub.status === "working") {
+				return "În evaluare..."
+			}
+			return "În așteptare..."
+		},
+		getRezStr: function() {
+			let l = this.subCount;
+			if(l == 1) {
+				return "Un rezultat."
+			}
+			if(l < 20) {
+				return l + " rezultate."
+			}
+			return l + " de rezultate."
+		},
+		getFilters: function(old) {
+			var res = {};
+			res.loadUser = old.loadUser
+			res.loadProblem = old.loadProblem
+			if(old.user_id > 0) {
+				res.user_id = old.user_id
+			}
+			if(old.problem_id > 0) {
+				res.problem_id = old.problem_id
+			}
+			if(old.status != "") {
+				res.status = old.status
+			}
+			if(old.score >= 0) {
+				res.score = old.score
+			}
+			if(old.lang !== "" ) {
+				res.lang = old.lang
+			}
+			if(old.visible == "true" || old.visible == "false") {
+				res.visible = old.visible == "true";
+			}
+			console.log(old)
+			if(old.quality == "true" || old.quality == "false") {
+				res.quality = old.quality == "true";
+			}
+			if(old.compile_error == "true" || old.compile_error == "false") {
+				res.compile_error = old.compile_error == "true";
+			}
+			res.offset = (this.page - 1) * 50;
+			return res;
+		},
+		getGradient: function(score, maxscore) {
+			return bundled.getGradient(score, maxscore)
+		},
+		timeStr: function(d) {
+			return bundled.dayjs(d).format('DD/MM/YYYY HH:mm')
+		},
+		getQuery: async function() {
+			var p = new URLSearchParams();
+			if(this.filters.user_id > 0) {
+				p.append("user_id", this.filters.user_id);
+			}
+			if(this.filters.problem_id > 0) {
+				p.append("problem_id", this.filters.problem_id);
+			}
+			if(this.filters.status !== "") {
+				p.append("status", this.filters.status);
+			}
+			if(this.filters.score >= 0) {
+				p.append("score", this.filters.score);
+			}
+			if(this.filters.lang !== "") {
+				p.append("lang", this.filters.lang);
+			}
+			if(this.filters.visible !== "") {
+				p.append("visible", this.filters.visible);
+			}
+			if(this.filters.quality !== "") {
+				p.append("quality", this.filters.quality);
+			}
+			if(this.filters.compile_error !== "") {
+				p.append("compile_error", this.filters.compile_error);
+			}
+			p.append("page", this.page);
+			let url = window.location.origin + window.location.pathname + "?" + p.toString();
+			try {
+				await navigator.clipboard.writeText(url)
+				bundled.createToast({status: "success", title: "Copied URL to clipboard"});
+			} catch(e) {
+				console.error(e);
+				bundled.createToast({status: "error", title: "Couldn't copy to clipboard"})
+			}
+		}
+	},
+	watch: {
+		filters: function(val) {
+			if(val.user_id == 0) {
+				this.filters.user_id = null
+			}
+			if(val.problem_id == 0) {
+				this.filters.problem_id = null
+			}
+		},
+		page: async function() {
+			await this.poll()
+		}
+	},
+	created: function() {
+		const params = new URLSearchParams(window.location.search);
+		const user_id = params.get("user_id");
+		const problem_id = params.get("problem_id");
+		const status = params.get("status");
+		const score = params.get("score");
+		const lang = params.get("lang");
+		const visible = params.get("visible");
+		const quality = params.get("quality");
+		const compile_error = params.get("compile_error");
+
+		let page = Number(params.get("page"));
+		if(page == 0 || page !== NaN) {
+			page = 1;
+		}
+		this.page = page;
+
+		if(user_id !== null && Number(user_id) !== NaN) {
+			this.filters.user_id = Number(user_id);
+		}
+		
+		if(problem_id !== null && Number(problem_id) !== NaN) {
+			this.filters.problem_id = Number(problem_id);
+		}
+
+		if(status == "working" || status == "finished" || status == "waiting") {
+			this.filters.status = status;
+		}
+
+		if(score !== null && Number(score) !== NaN) {
+			this.filters.score = Number(score);
+		}
+
+		if(lang !== null) {
+			this.filters.lang = lang;
+		}
+
+		if(visible == "true" || visible == "false") {
+			this.filters.visible = (visible == "true").toString();
+		}
+
+		if(quality == "true" || quality == "false") {
+			this.filters.quality = (quality == "true").toString();
+		}
+
+		if(compile_error == "true" || compile_error == "false") {
+			this.filters.compile_error = (compile_error == "true").toString();
+		}
+
+		this.poll()
+	},
+	delimiters: ['${', '}']	
+}
+Vue.createApp(Submissions).mount("#subs")
+</script>
+
+{{ end }} 

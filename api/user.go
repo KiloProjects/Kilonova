@@ -14,16 +14,15 @@ import (
 	"strings"
 	"time"
 
-	"errors"
-
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 var (
-	errUserNotFound = errors.New("User Not Found")
+	errUserNotFound = &kilonova.Error{Code: kilonova.ENOTFOUND, Message: "User not found"}
 )
 
 func (s *API) serveGravatar(w http.ResponseWriter, r *http.Request, user *kilonova.User, size int) {
@@ -120,7 +119,7 @@ func (s *API) setBio() func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		safe := strings.TrimSpace(kilonova.Sanitizer.Sanitize(args.Bio))
+		safe := strings.TrimSpace(bluemonday.StrictPolicy().Sanitize(args.Bio))
 
 		if err := s.userv.UpdateUser(
 			r.Context(),
@@ -206,24 +205,36 @@ func (s *API) getSelf(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getSelfSolvedProblems(w http.ResponseWriter, r *http.Request) {
-	ids, err := s.sserv.SolvedProblems(r.Context(), util.User(r).ID)
+	pbs, err := kilonova.SolvedProblems(r.Context(), util.User(r).ID, s.sserv, s.pserv)
 	if err != nil {
 		errorData(w, err, 500)
 		return
 	}
-	var pbs []*kilonova.Problem
-	for _, id := range ids {
-		pb, err := s.pserv.ProblemByID(r.Context(), id)
-		if err != nil {
-			log.Println(err)
-			returnData(w, pbs)
-		}
+	returnData(w, pbs)
+}
 
-		pbs = append(pbs, pb)
+func (s *API) getSolvedProblems(w http.ResponseWriter, r *http.Request) {
+	// TODO: Test
+	name := strings.TrimSpace(r.FormValue("name"))
+	if name == "" {
+		errorData(w, "Name not specified", http.StatusBadRequest)
+		return
+	}
+	users, err := s.userv.Users(r.Context(), kilonova.UserFilter{Name: &name, Limit: 1})
+	if err != nil || len(users) == 0 {
+		errorData(w, "User not found", http.StatusNotFound)
+		return
+	}
+	pbs, err := kilonova.SolvedProblems(r.Context(), util.User(r).ID, s.sserv, s.pserv)
+	if err != nil {
+		errorData(w, err, 500)
+		return
 	}
 	returnData(w, pbs)
 }
 
+// ChangeEmail changes the password of the saved user
+// TODO: Check this is not a scam and the user actually wants to change password
 func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 	if password == "" {

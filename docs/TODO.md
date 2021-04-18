@@ -51,14 +51,13 @@ Additional reading I should do for a better platform:
 		- [ ] Enhancements evaluare:
 			- [x] Rezolvare edge case în care evaluarea găsește o submisie la care încă n-au fost inserate toate subtests;
 			- [x] Verificator custom la probleme;
-			- [~] Subtasks;
+			- [x] Subtasks;
 				- [x] Adăugare field skipped
-				- [ ] Subtask String Parser
-				- [ ] Actual support
+				- [x] Actual support
 			- [ ] ? Folder upload pentru teste
 		- [ ] ? Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
 		- [x] Dark theme
-		- [ ] Etichete probleme
+		- [ ] ? Etichete probleme
 		- [ ] Versiune engleză
 			- [ ] Cumva facem asta
 			- [ ] Instrumente de translation:
@@ -68,8 +67,9 @@ Additional reading I should do for a better platform:
 		- [ ] https://discord.com/channels/@me/775486536358559764/827623755806146570
 		- [ ] https://discord.com/channels/@me/775486536358559764/827623285885763594
 			- [ ] Timp/Memorie maxima
-			- [ ] Sortare dupa timp/memorie
-			- [ ] Liste de probleme
+			- [ ] ? Sortare dupa timp/memorie
+			- [x] Liste de probleme
+		- [ ] Improve shoddy implementation of problem lists
 	- [~] CDN
 		- [x] Backbone
 		- [ ] Mutare CSS pe CDN

@@ -16,22 +16,22 @@ var decoder *schema.Decoder
 type API struct {
 	kn *logic.Kilonova
 
-	userv  kilonova.UserService
-	sserv  kilonova.SubmissionService
-	pserv  kilonova.ProblemService
-	tserv  kilonova.TestService
-	stserv kilonova.SubTestService
+	userv   kilonova.UserService
+	sserv   kilonova.SubmissionService
+	pserv   kilonova.ProblemService
+	plserv  kilonova.ProblemListService
+	tserv   kilonova.TestService
+	stserv  kilonova.SubTestService
+	stkserv kilonova.SubTaskService
 
 	manager kilonova.DataStore
 
-	testArchiveLock sync.Mutex
+	testArchiveLock *sync.Mutex
 }
 
 // New declares a new API instance
 func New(kn *logic.Kilonova, db kilonova.TypeServicer) *API {
-	return &API{kn: kn,
-		userv: db.UserService(), sserv: db.SubmissionService(), pserv: db.ProblemService(), tserv: db.TestService(), stserv: db.SubTestService(),
-		manager: kn.DM}
+	return &API{kn, db.UserService(), db.SubmissionService(), db.ProblemService(), db.ProblemListService(), db.TestService(), db.SubTestService(), db.SubTaskService(), kn.DM, &sync.Mutex{}}
 }
 
 // Handler is the magic behind the API
@@ -43,9 +43,11 @@ func (s *API) Handler() http.Handler {
 
 		r.Post("/setAdmin", s.setAdmin)
 		r.Post("/setProposer", s.setProposer)
+		r.Post("/updateIndex", s.updateIndex)
 
 		r.Route("/maintenance", func(r chi.Router) {
 			r.Post("/resetWaitingSubs", s.resetWaitingSubs)
+			r.Post("/reevaluateSubmission", s.reevaluateSubmission)
 		})
 
 		r.Get("/getAllUsers", s.getUsers)
@@ -57,74 +59,55 @@ func (s *API) Handler() http.Handler {
 		r.With(s.MustBeVisitor).Post("/login", s.login)
 	})
 	r.Route("/problem", func(r chi.Router) {
-		r.Get("/getAll", s.getAllProblems)
-		r.Get("/getByID", s.getProblemByID)
+		r.Get("/get", s.getProblems)
 
 		r.With(s.MustBeProposer).Post("/create", s.initProblem)
+		r.Get("/maxScore", s.maxScore)
+
 		r.Route("/{id}", func(r chi.Router) {
 			r.Use(s.validateProblemID)
+			r.Use(s.MustBeProposer)
+			r.Use(s.validateProblemEditor)
 
 			r.Route("/update", func(r chi.Router) {
-				r.Use(s.MustBeProposer)
-				r.Use(s.validateProblemEditor)
-
-				r.Post("/title", s.updateTitle)
-				r.Post("/description", s.updateDescription)
-
-				//r.Post("/shortDescription", s.updateShortDescription)
-				r.Post("/helperCode", s.updateHelperCode)
-				// support only c++ helper code for now
-				//r.Post("/helperCodeLang", s.updateHelperCodeLang)
-				r.Post("/type", s.updateProblemType)
-				r.Post("/subtaskString", s.updateSubtaskString)
-
-				r.Post("/consoleInput", s.setInputType)
-				r.Post("/sourceCredits", s.updateSourceCredits)
-				r.Post("/authorCredits", s.updateAuthorCredits)
-				r.Post("/limits", s.setLimits)
-				r.Post("/defaultPoints", s.setDefaultPoints)
+				r.Post("/", s.updateProblem)
 
 				r.Post("/addTest", s.createTest)
 				r.Route("/test/{tID}", func(r chi.Router) {
-					// test update stuff
 					r.Use(s.validateTestID)
 					r.Post("/data", s.saveTestData)
 					r.Post("/id", s.updateTestID)
 					r.Post("/score", s.updateTestScore)
-					// orphan:
 					r.Post("/orphan", s.orphanTest)
 				})
+				r.Post("/bulkDeleteTests", s.bulkDeleteTests)
+				r.Post("/bulkUpdateTestScores", s.bulkUpdateTestScores)
 				r.Post("/orphanTests", s.purgeTests)
-				r.Post("/setTestName", s.setTestName)
 				r.Post("/processTestArchive", s.processTestArchive)
 
-				r.With(s.MustBeAdmin).Post("/setVisible", s.setProblemVisible)
+				r.Post("/addSubTask", s.createSubTask)
+				r.Post("/updateSubTask", s.updateSubTask)
+				r.Post("/bulkUpdateSubTaskScores", s.bulkUpdateSubTaskScores)
+				r.Post("/bulkDeleteSubTasks", s.bulkDeleteSubTasks)
+
 			})
 			r.Route("/get", func(r chi.Router) {
-				r.With(s.MustBeAuthed).Get("/selfMaxScore", s.maxScoreSelf)
-				r.Group(func(r chi.Router) {
-					r.Use(s.MustBeProposer)
-					r.Use(s.validateProblemEditor)
+				r.Get("/tests", s.getTests)
+				r.Get("/test", s.getTest)
 
-					r.Get("/tests", s.getTests)
-					r.Get("/test", s.getTest)
-
-					r.Get("/maxScore", s.maxScore)
-
-					r.Get("/testData", s.getTestData)
-				})
+				r.Get("/testData", s.getTestData)
 			})
-
-			r.With(s.MustBeAdmin).Post("/delete", s.deleteProblem)
+			r.Post("/delete", s.deleteProblem)
 		})
 	})
 	r.Route("/submissions", func(r chi.Router) {
 		r.Get("/get", s.filterSubs())
-		// TODO: Allow getting multiple IDs
 		r.Get("/getByID", s.getSubmissionByID())
 
 		r.With(s.MustBeAuthed).Post("/setVisible", s.setSubmissionVisible)
+		r.With(s.MustBeAuthed).Post("/setQuality", s.setSubmissionQuality)
 		r.With(s.MustBeAuthed).Post("/submit", s.submissionSend)
+		r.With(s.MustBeAdmin).Post("/delete", s.deleteSubmission)
 	})
 	r.Route("/user", func(r chi.Router) {
 		r.With(s.MustBeAuthed).Post("/setSubVisibility", s.setSubVisibility)
@@ -135,6 +118,7 @@ func (s *API) Handler() http.Handler {
 		r.Get("/getByName", s.getUserByName)
 		r.With(s.MustBeAuthed).Get("/getSelf", s.getSelf)
 		r.With(s.MustBeAuthed).Get("/getSelfSolvedProblems", s.getSelfSolvedProblems)
+		r.With(s.MustBeAuthed).Get("/getSolvedProblems", s.getSolvedProblems)
 
 		r.With(s.MustBeAdmin).Route("/moderation", func(r chi.Router) {
 			r.Post("/purgeBio", s.purgeBio)
@@ -158,6 +142,17 @@ func (s *API) Handler() http.Handler {
 		r.Post("/createDir", s.createCDNDir)
 		r.Post("/deleteObject", s.deleteCDNObject)
 		r.Get("/readDir", s.readCDNDirectory)
+	})
+	r.Route("/problemList", func(r chi.Router) {
+		r.Get("/get", s.getProblemList)
+		r.Get("/filter", s.filterProblemList)
+		r.With(s.MustBeProposer).Post("/create", s.initProblemList)
+		r.With(s.MustBeAuthed).Post("/update", s.updateProblemList)
+		r.With(s.MustBeAuthed).Post("/delete", s.deleteProblemList)
+	})
+	r.With(s.MustBeAdmin).Route("/kna", func(r chi.Router) {
+		r.Get("/createArchive", s.createKNA)
+		r.Post("/loadArchive", s.loadKNA)
 	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {

@@ -2,12 +2,12 @@ package tasks
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"path"
 
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 )
@@ -28,7 +28,7 @@ func (job *CompileTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	lang, ok := config.Languages[job.Req.Lang]
 	if !ok {
 		log.Printf("Language for submission %d could not be found\n", job.Req.ID)
-		return errors.New("No language found")
+		return &kilonova.Error{Code: kilonova.EINTERNAL, Message: "No language found"}
 	}
 
 	outName := path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", job.Req.ID))

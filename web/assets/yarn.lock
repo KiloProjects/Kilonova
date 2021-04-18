@@ -1627,6 +1627,11 @@ simple-swizzle@^0.2.2:
   dependencies:
     is-arrayish "^0.3.1"
 
+slugify@^1.5.1:
+  version "1.5.1"
+  resolved "https://registry.yarnpkg.com/slugify/-/slugify-1.5.1.tgz#ef268872982a3a3b18f213ddee8cd1a28ac7a130"
+  integrity sha512-54gP60qIkxaUCFXORn/u+tNPqdTsqvqonB2nxjQV52wWTCuJJ4kbfU7URkpn8646Lr2T3CSh8ecDzzBK/dD9jA==
+
 source-map@^0.6.1:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/source-map/-/source-map-0.6.1.tgz#74722af32e9614e9c287a8d0bbde48b5e2f1a263"

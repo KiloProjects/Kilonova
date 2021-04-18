@@ -1,0 +1,41 @@
+{{ define "title" }} Submisia {{.Submission.ID}} {{ end }} 
+{{ define "content" }}
+
+<div id="submission_view">
+	<div id="sub_placeholder" class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center">
+		<div><i class="fas fa-spinner animate-spin"></i> Se încarcă...</div>
+	</div>
+	{{if .User }}
+	{{if .User.Admin}}
+	<button onclick="deleteSubmission()" class="btn btn-red mb-2">Ștergere submisie</button>
+	<button onclick="reevaluateSubmission()" class="btn btn-blue mb-2">Reevaluare submisie</button>
+	<script>
+async function deleteSubmission() {
+	const args = {id: {{.Submission.ID}}};
+	let res = await bundled.postCall("/submissions/delete", args)
+	if(res.status === "success") {
+		window.location.assign("/submissions")
+		return
+	}
+	bundled.apiToast(res)
+}
+async function reevaluateSubmission() {
+	const args = {id: {{.Submission.ID}}};
+	let res = await bundled.postCall("/admin/maintenance/reevaluateSubmission", args);
+	if(res.status === "success") {
+		window.location.reload();
+		return
+	}
+	bundled.apiToast(res);
+}
+	</script>
+	{{end}}
+	{{end}}
+</div>
+<script>
+var mgr = new bundled.SubmissionManager({{.Submission.ID}}, 'sub_placeholder');
+mgr.startPoller()
+
+</script>
+
+{{ end }}

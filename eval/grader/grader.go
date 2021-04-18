@@ -2,8 +2,11 @@ package grader
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 	"log"
+	"math"
 	"sync"
 	"time"
 
@@ -29,17 +32,18 @@ type Handler struct {
 	kn    *logic.Kilonova
 	dm    kilonova.GraderStore
 
-	debug  bool
-	sserv  kilonova.SubmissionService
-	pserv  kilonova.ProblemService
-	stserv kilonova.SubTestService
-	tserv  kilonova.TestService
+	debug   bool
+	sserv   kilonova.SubmissionService
+	pserv   kilonova.ProblemService
+	stserv  kilonova.SubTestService
+	tserv   kilonova.TestService
+	stkserv kilonova.SubTaskService
 }
 
 func NewHandler(ctx context.Context, kn *logic.Kilonova, db kilonova.TypeServicer) *Handler {
 	ch := make(chan *kilonova.Submission, 5)
 	return &Handler{ctx, ch, kn, kn.DM, kn.Debug,
-		db.SubmissionService(), db.ProblemService(), db.SubTestService(), db.TestService()}
+		db.SubmissionService(), db.ProblemService(), db.SubTestService(), db.TestService(), db.SubTaskService()}
 }
 
 // chFeeder "feeds" tChan with relevant data
@@ -54,7 +58,10 @@ func (h *Handler) chFeeder(d time.Duration) {
 				continue
 			}
 			if subs != nil {
-				log.Printf("Found %d submissions\n", len(subs))
+				if config.Common.Debug {
+					log.Printf("Found %d submissions\n", len(subs))
+				}
+
 				for _, sub := range subs {
 					//if err := sub.SetStatus(kilonova.StatusWorking, 0); err != nil {
 					if err := h.sserv.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
@@ -81,20 +88,11 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 				return nil
 			}
 
-			problem, err := h.pserv.ProblemByID(ctx, sub.ProblemID)
-			if err != nil {
-				log.Println("Error during submission problem getting:", err)
-				continue
-			}
-
-			var score_mu sync.Mutex
-			var score = problem.DefaultPoints
-
 			task := &tasks.CompileTask{
 				Req:   &eval.CompileRequest{ID: sub.ID, Code: []byte(sub.Code), Lang: sub.Language},
 				Debug: h.debug,
 			}
-			err = runner.RunTask(ctx, task)
+			err := runner.RunTask(ctx, task)
 			if err != nil {
 				log.Println("Error from eval:", err)
 				continue
@@ -114,6 +112,12 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 				continue
 			}
 
+			problem, err := h.pserv.ProblemByID(ctx, sub.ProblemID)
+			if err != nil {
+				log.Println("Error during submission problem getting:", err)
+				continue
+			}
+
 			checker, err := getAppropriateChecker(runner, sub, problem)
 			if err != nil {
 				log.Println("Could not get checker:", err)
@@ -123,15 +127,15 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 			if info, err := checker.Prepare(ctx); err != nil {
 				log.Println("Checker prepare error:", err)
 				t := true
-				if err := h.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score, CompileError: &t, CompileMessage: &info}); err != nil {
+				if err := h.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints, CompileError: &t, CompileMessage: &info}); err != nil {
 					log.Println("Error during update of compile information:", err)
 				}
 				continue
 			}
 
-			tests, err := h.stserv.SubTestsBySubID(ctx, sub.ID)
+			subTests, err := h.stserv.SubTestsBySubID(ctx, sub.ID)
 			if resp.Success == false || err != nil {
-				if err := h.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score}); err != nil {
+				if err := h.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints}); err != nil {
 					log.Println(err)
 				}
 				continue
@@ -139,94 +143,23 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 
 			var wg sync.WaitGroup
 
-			for _, test := range tests {
-				test := test
+			for _, subTest := range subTests {
+				subTest := subTest
 				wg.Add(1)
 
-				pbTest, err := h.tserv.TestByID(ctx, test.TestID)
-				if err != nil {
-					log.Println("Error during test getting (0.5):", err)
-					continue
-				}
-
-				filename := problem.TestName
-				if problem.ConsoleInput {
-					filename = "stdin"
-				}
-
-				execRequest := &eval.ExecRequest{
-					SubID:       sub.ID,
-					SubtestID:   test.ID,
-					TestID:      pbTest.ID,
-					Filename:    filename,
-					StackLimit:  problem.StackLimit,
-					MemoryLimit: problem.MemoryLimit,
-					TimeLimit:   problem.TimeLimit,
-					Lang:        sub.Language,
-				}
 				go func() {
 					defer wg.Done()
-					subTestID := test.ID
-					pbTest := pbTest
-
-					task := &tasks.ExecuteTask{
-						Req:   execRequest,
-						Resp:  &eval.ExecResponse{},
-						Debug: h.debug,
-						DM:    h.dm,
+					if err := h.HandleSubTest(ctx, runner, checker, sub, problem, subTest); err != nil {
+						log.Println("Error handling subTest:", err)
 					}
-
-					err := runner.RunTask(ctx, task)
-					if err != nil {
-						log.Printf("Error executing test: %v\n", err)
-						return
-					}
-
-					resp := task.Resp
-
-					/*
-						if h.debug {
-							spew.Dump(resp)
-						}
-					*/
-
-					var testScore int
-
-					// Make sure TLEs are fully handled
-					if resp.Time > problem.TimeLimit {
-						resp.Comments = "TLE"
-						testScore = 0
-					}
-
-					if resp.Comments == "" {
-						tout, err := h.dm.TestOutput(pbTest.ID)
-						if err != nil {
-							resp.Comments = "Internal grader error"
-							score = 0
-						}
-						sout, err := h.dm.SubtestReader(subTestID)
-						if err != nil {
-							resp.Comments = "Internal grader error"
-							score = 0
-						}
-
-						resp.Comments, testScore = checker.RunChecker(ctx, sout, tout, int(pbTest.Score))
-					}
-
-					mem := int(resp.Memory)
-					if err := h.stserv.UpdateSubTest(ctx, subTestID, kilonova.SubTestUpdate{Memory: &mem, Score: &testScore, Time: &resp.Time, Verdict: &resp.Comments, Done: &True}); err != nil {
-						log.Println("Error during evaltest updating:", err)
-						return
-					}
-
-					score_mu.Lock()
-					score += testScore
-					score_mu.Unlock()
-
 				}()
 			}
 
 			wg.Wait()
+
+			if err := h.ScoreTests(ctx, sub, problem); err != nil {
+				log.Printf("Couldn't score test: %s\n", err)
+			}
 
 			if err := eval.CleanCompilation(sub.ID); err != nil {
 				log.Printf("Couldn't clean task: %s\n", err)
@@ -235,12 +168,132 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 			if err := checker.Cleanup(ctx); err != nil {
 				log.Printf("Couldn't clean checker: %s\n", err)
 			}
-
-			if err := h.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score}); err != nil {
-				log.Println("Error 1214:", err)
-			}
 		}
 	}
+}
+
+func (h *Handler) HandleSubTest(ctx context.Context, runner eval.Runner, checker eval.Checker, sub *kilonova.Submission, problem *kilonova.Problem, subTest *kilonova.SubTest) error {
+	pbTest, err := h.tserv.TestByID(ctx, subTest.TestID)
+	if err != nil {
+		return fmt.Errorf("Error during test getting (0.5): %w", err)
+	}
+
+	execRequest := &eval.ExecRequest{
+		SubID:       sub.ID,
+		SubtestID:   subTest.ID,
+		TestID:      pbTest.ID,
+		Filename:    problem.TestName,
+		StackLimit:  problem.StackLimit,
+		MemoryLimit: problem.MemoryLimit,
+		TimeLimit:   problem.TimeLimit,
+		Lang:        sub.Language,
+	}
+	if problem.ConsoleInput {
+		execRequest.Filename = "stdin"
+	}
+
+	task := &tasks.ExecuteTask{
+		Req:   execRequest,
+		Resp:  &eval.ExecResponse{},
+		Debug: h.debug,
+		DM:    h.dm,
+	}
+
+	err = runner.RunTask(ctx, task)
+	if err != nil {
+		return fmt.Errorf("Error executing test: %w", err)
+	}
+
+	resp := task.Resp
+	var testScore int
+
+	// Make sure TLEs are fully handled
+	if resp.Time > problem.TimeLimit {
+		resp.Comments = "TLE"
+	}
+
+	if resp.Comments == "" {
+		var skipped bool
+		tin, err := h.dm.TestInput(pbTest.ID)
+		if err != nil {
+			resp.Comments = "Internal grader error"
+			skipped = true
+		}
+		defer tin.Close()
+		tout, err := h.dm.TestOutput(pbTest.ID)
+		if err != nil {
+			resp.Comments = "Internal grader error"
+			skipped = true
+		}
+		defer tout.Close()
+		sout, err := h.dm.SubtestReader(subTest.ID)
+		if err != nil {
+			resp.Comments = "Internal grader error"
+			skipped = true
+		}
+		defer sout.Close()
+
+		if !skipped {
+			resp.Comments, testScore = checker.RunChecker(ctx, sout, tin, tout)
+		}
+	}
+
+	if err := h.stserv.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{Memory: &resp.Memory, Score: &testScore, Time: &resp.Time, Verdict: &resp.Comments, Done: &True}); err != nil {
+		return fmt.Errorf("Error during evaltest updating: %w", err)
+	}
+	return nil
+}
+
+func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, problem *kilonova.Problem) error {
+	subtests, err := h.stserv.SubTestsBySubID(ctx, sub.ID)
+	if err != nil {
+		return err
+	}
+
+	subTasks, err := h.stkserv.SubTasks(ctx, problem.ID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+
+	var score = problem.DefaultPoints
+
+	if subTasks != nil && len(subTasks) > 0 {
+		if h.debug {
+			log.Println("Evaluating by subtasks")
+		}
+		subMap := make(map[int]*kilonova.SubTest)
+		for _, st := range subtests {
+			subMap[st.TestID] = st
+		}
+		for _, stk := range subTasks {
+			percentage := 100
+			for _, id := range stk.Tests {
+				st, ok := subMap[id]
+				if !ok {
+					log.Printf("Warning: couldn't find a subtest for subtask %d\n", stk.VisibleID)
+					continue
+				}
+				if st.Score < percentage {
+					percentage = st.Score
+				}
+			}
+			score += int(math.Round(float64(stk.Score) * float64(percentage) / 100.0))
+		}
+	} else {
+		if h.debug {
+			log.Println("Evaluating by addition")
+		}
+		for _, subtest := range subtests {
+			pbTest, err := h.tserv.TestByID(ctx, subtest.TestID)
+			if err != nil {
+				log.Println("Couldn't get test (0xasdf):", err)
+				continue
+			}
+			score += int(math.Round(float64(pbTest.Score) * float64(subtest.Score) / 100.0))
+		}
+	}
+
+	return h.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score})
 }
 
 func (h *Handler) Start() error {
@@ -301,6 +354,6 @@ func getAppropriateChecker(runner eval.Runner, sub *kilonova.Submission, pb *kil
 		return checkers.NewCustomChecker(runner, pb, sub)
 	default:
 		log.Println("Unknown problem type", pb.Type)
-		return nil, errors.New("Unknown problem type")
+		return nil, &kilonova.Error{Code: kilonova.EINTERNAL, Message: "Unknown problem type"}
 	}
 }

@@ -1,0 +1,76 @@
+{{ define "title" }} Înregistrare {{ end }}
+{{ define "content" }}
+<h1 class="mb-2">Înregistrare</h1>
+<form id="signup_form">
+	<label class="block mb-2">
+		<span>E-mail</span>
+		<input class="form-input w-full" type="email" id="email" name="email" autocomplete="email" required />
+	</label>
+	<label class="block mb-2">
+		<span>Username</span>
+		<input class="form-input w-full" type="text" id="name" name="username" autocomplete="username" required />
+	</label>
+	<label class="block mb-2">
+		<span>Parolă</span>
+		<input class="form-input w-full" type="password" id="pwd" name="password" autocomplete="new-password" required />
+	</label>
+	<label class="block mb-2">
+		<span>Verificare Parolă</span>
+		<input class="form-input w-full" type="password" id="pwd_check" name="pwd_check" autocomplete="new-password" required />
+	</label>
+	<button type="submit" class="block btn btn-blue">Înregistrare</button>
+	<p class="text-gray-500 dark:text-gray-300"> Ai deja cont? <a href="/login">Loghează-te</a></p>
+</form>
+
+<script>
+	let email = document.querySelector("#signup_form #email")
+	let username = document.querySelector("#signup_form #name")
+	let pwd = document.querySelector("#signup_form #pwd")
+	let pwd_check = document.querySelector("#signup_form #pwd_check")
+	function updateCheck() {
+		let pval = pwd.value;
+		let cval = pwd_check.value;
+		if(cval == "" || pval == "") {
+			pwd_check.classList.remove("is-valid", "is-invalid")
+		} else {
+			pwd_check.classList.toggle("is-valid", pval === cval)
+			pwd_check.classList.toggle("is-invalid", pval !== cval)
+			pwd.classList.toggle("is-valid", pval === cval)
+			pwd.classList.toggle("is-invalid", pval !== cval)
+		}
+	}
+	pwd.addEventListener("focusout", updateCheck)
+	pwd_check.addEventListener("keyup", updateCheck)
+	
+	async function signup() {
+		let em = email.value;
+		let name = username.value;
+		let password = pwd.value;
+		
+		let pwdVerify = pwd_check.value;
+		if(password !== pwdVerify) {
+			bundled.createToast({
+				status: "error",
+				title: "Cele două câmpuri pentru parolă nu sunt identice"
+			})
+			return
+		}
+
+		let res = await bundled.postCall("/auth/signup", {email: em, username: name, password})
+		if(res.status == "error") {
+			bundled.createToast({
+				status: "error",
+				title: "Could not sign up",
+				description: res.data
+			})
+			return
+		}
+		bundled.cookie.set("kn-sessionid", res.data, {expires: 29, sameSite: 'strict'})
+		window.location.assign("/");
+	}
+	document.getElementById("signup_form").addEventListener("submit", e => {
+		e.preventDefault()
+		signup()
+	})
+</script>
+{{ end }}

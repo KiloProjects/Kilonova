@@ -31,6 +31,7 @@ type Submission struct {
 
 	Score   int  `json:"score"`
 	Visible bool `json:"visible"`
+	Quality bool `json:"quality"`
 }
 
 type SubmissionUpdate struct {
@@ -41,6 +42,7 @@ type SubmissionUpdate struct {
 	CompileMessage *string
 
 	Visible *bool
+	Quality *bool
 }
 
 type SubmissionFilter struct {
@@ -53,6 +55,7 @@ type SubmissionFilter struct {
 	Visible      *bool   `json:"visible"`
 	Score        *int    `json:"score"`
 	CompileError *bool   `json:"compile_error"`
+	Quality      *bool   `json:"quality"`
 
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
@@ -69,7 +72,6 @@ type SubTest struct {
 	TestID       int       `db:"test_id" json:"test_id"`
 	UserID       int       `db:"user_id" json:"user_id"`
 	SubmissionID int       `db:"submission_id" json:"submission_id"`
-	Skipped      bool      `json:"skipped"`
 }
 
 type SubTestUpdate struct {
@@ -78,7 +80,6 @@ type SubTestUpdate struct {
 	Score   *int
 	Verdict *string
 	Done    *bool
-	Skipped *bool
 }
 
 type SubmissionService interface {
@@ -94,6 +95,7 @@ type SubmissionService interface {
 	DeleteSubmission(ctx context.Context, id int) error
 
 	MaxScore(ctx context.Context, userid, problemid int) int
+	MaxScores(ctx context.Context, userid int, problemids []int) map[int]int
 	SolvedProblems(ctx context.Context, userid int) ([]int, error)
 }
 
@@ -103,6 +105,7 @@ type SubTestService interface {
 
 	CreateSubTest(ctx context.Context, subtest *SubTest) error
 	UpdateSubTest(ctx context.Context, id int, upd SubTestUpdate) error
+	UpdateSubmissionSubTests(ctx context.Context, subID int, upd SubTestUpdate) error
 }
 
 // Utils for backends (I know, not so agnostic, but it makes life easier)

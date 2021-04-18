@@ -8,11 +8,11 @@ import (
 type ProblemType string
 
 const (
-	ProblemTypeNone    ProblemType = ""
-	ProblemTypeClassic ProblemType = "classic"
-	// TODO
-	ProblemTypeInteractive   ProblemType = "interactive"
+	ProblemTypeNone          ProblemType = ""
+	ProblemTypeClassic       ProblemType = "classic"
 	ProblemTypeCustomChecker ProblemType = "custom_checker"
+	// TODO
+	ProblemTypeInteractive ProblemType = "interactive"
 )
 
 type Problem struct {
@@ -22,7 +22,6 @@ type Problem struct {
 	Description   string    `json:"description"`
 	ShortDesc     string    `json:"short_description" db:"short_description"`
 	TestName      string    `json:"test_name" db:"test_name"`
-	Author        *User     `json:"author,omitempty"`
 	AuthorID      int       `json:"author_id" db:"author_id"`
 	Visible       bool      `json:"visible"`
 	DefaultPoints int       `json:"default_points" db:"default_points"`
@@ -40,7 +39,6 @@ type Problem struct {
 	Type           ProblemType `json:"type" db:"pb_type"`
 	HelperCode     string      `json:"-" db:"helper_code"`
 	HelperCodeLang string      `json:"-" db:"helper_code_lang"`
-	SubtaskString  string      `json:"-" db:"subtasks"`
 	ConsoleInput   bool        `json:"console_input" db:"console_input"`
 }
 
@@ -49,6 +47,7 @@ type Problem struct {
 // This list might be expanded as time goes on
 type ProblemFilter struct {
 	ID           *int    `json:"id"`
+	IDs          []int   `json:"ids"`
 	AuthorID     *int    `json:"author_id"`
 	ConsoleInput *bool   `json:"console_input"`
 	Visible      *bool   `json:"visible"`
@@ -86,12 +85,10 @@ type ProblemUpdate struct {
 
 type ProblemService interface {
 	ProblemByID(ctx context.Context, id int) (*Problem, error)
-
 	Problems(ctx context.Context, filter ProblemFilter) ([]*Problem, error)
 
 	CreateProblem(ctx context.Context, problem *Problem) error
-
 	UpdateProblem(ctx context.Context, id int, upd ProblemUpdate) error
-
+	BulkUpdateProblems(ctx context.Context, filter ProblemFilter, upd ProblemUpdate) error
 	DeleteProblem(ctx context.Context, id int) error
 }

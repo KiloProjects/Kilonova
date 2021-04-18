@@ -1,0 +1,47 @@
+{{ define "title" }} Creare Listă {{ end }}
+{{ define "content" }}
+
+<form id="list-form">
+	<div class="block my-2">
+		<label>
+			<span class="form-label">Nume</span>
+			<input id="list-title" type="text" class="form-input" required>
+		</label>
+	</div>
+	<div class="block my-2">
+		<label>
+			<span class="form-label">Descriere</span>
+			<input id="list-desc" type="text" class="form-input">
+		</label>
+	</div>
+	<div class="block my-2">
+		<label>
+			<span class="form-label">Probleme (ID-uri separate prin virgulă)</span>
+			<input id="list-pbs" type="text" class="form-input" pattern="([0-9]+,?)+" required>
+		</label>
+	</div>
+	<button type="submit" class="btn btn-blue">Creare</button>
+</form>
+
+<script>
+async function createList(e) {
+	e.preventDefault()
+
+	let data = {
+		title: document.getElementById("list-title").value,
+		description: document.getElementById("list-desc").value,
+		ids: document.getElementById("list-pbs").value,
+	};
+
+	let res = await bundled.postCall("/problemList/create", data)
+	if(res.status === "success") {
+		window.location.reload();
+		return
+	}
+	bundled.apiToast(res)
+}
+
+document.getElementById("list-form").addEventListener("submit", createList)
+</script>
+
+{{ end }}}

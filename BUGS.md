@@ -1,3 +1,0 @@
-- Submission class thing does not auto reload
-- Eval breaks on time limit and other stuff
-	- It is broken in general lmao

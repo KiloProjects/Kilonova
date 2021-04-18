@@ -30,6 +30,17 @@ export function sizeFormatter(size, max_step, floor) {
 	return units + " " + suffix
 }
 
+export function downloadBlob(blob, filename) {
+	if (window.navigator.msSaveBlob) { // IE10+
+		window.navigator.msSaveBlob(file, filename)
+	} else {
+		var a = document.createElement('a');
+		a.href = URL.createObjectURL(blob);
+		a.download = filename;
+		a.click();
+	}
+}
+
 export function parseTime(str) {
 	if(!str) {
 		return ""
@@ -172,6 +183,22 @@ let postCall = async (call, params) => {
 	}
 }
 
+let bodyCall = async (call, body) => {
+	if(call.startsWith('/')) {
+		call = call.substr(1)
+	}
+	try {
+		let resp = await fetch(`/api/${call}`, {
+			method: 'POST',
+			headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': cookie.get('kn-sessionid') || "guest"},
+			body: JSON.stringify(body)
+		});
+		return await resp.json();
+	} catch(e) {
+		return {status: "error", data: e.toString()}
+	}
+}
+
 let multipartCall = async (call, formdata) => {
 	if(call.startsWith('/')) {
 		call = call.substr(1)
@@ -208,7 +235,7 @@ export { languages };
 export { 
 	dayjs, cookie, 
 	createToast, getGradient, apiToast,
-	getCall, postCall, multipartCall,
+	getCall, postCall, bodyCall, multipartCall,
 	resendEmail
 };
 

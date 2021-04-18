@@ -4,8 +4,9 @@ module.exports = {
 //  mode: 'jit',
   darkMode: 'media',
   purge: [
-	'../../web/templ/**/*.templ',
-	'../../web/templ/*.templ',
+	'../../web/templ/**/*.html',
+	'../../web/templ/*.html',
+	'./*.js'
   ],
   theme: {
     extend: {},

@@ -88,6 +88,9 @@
 		}
 	}
 
+	.kn-border {
+		@apply border-gray-700 dark:border-gray-200;
+	}
 
 	.roboto .navbar-brand h1 h2 h3 h4 h5 h6 {
 		font-family: 'Roboto';
@@ -151,11 +154,19 @@
 	}
 
 	.kn-table {
-		@apply border-2 border-collapse table-auto w-full mb-2;
+		@apply border-2 border-collapse table-auto w-full mb-2 kn-border;
+	}
+
+	.kn-table-simple {
+		@apply text-center border-t kn-border;
 	}
 
 	.kn-table-row {
-		@apply text-center border-t hoverable;
+		@apply kn-table-simple hoverable;
+	}
+	
+	.kn-table-cell {
+		@apply text-center border-r px-4 py-2 kn-border;
 	}
 
 	.alert {
@@ -164,6 +175,10 @@
 
 	.alert-green {
 		@apply bg-green-200;
+	}
+
+	.segment-container {
+		@apply border-2 border-gr p-2 mb-2;
 	}
 	
 	.btn {
@@ -237,17 +252,21 @@
 		tab-size: 4;
 		@apply dark:bg-gray-900 dark:text-white;
 	}
+
+	.form-input, .form-textarea, .form-select, .form-multiselect {
+		@apply dark:bg-gray-600 dark:text-white;
+	}
 	
 	.form-input {
 		@apply rounded-lg inline-block px-2 py-2 border border-gray-300 bg-white text-black;
-		@apply dark:bg-gray-600 dark:text-white dark:border-gray-700;
+		@apply dark:border-gray-700;
 	}
 
-	select.form-input {
+	select.form-select {
 		@apply pr-8;
 	}
 
-	.form-input::placeholder {
+	.form-input::placeholder, .form-select::placeholder, .form-textarea::placeholder {
 		@apply text-gray-800 dark:text-gray-500;
 	}
 

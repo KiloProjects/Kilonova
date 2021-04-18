@@ -23,7 +23,7 @@ func (d *DiffChecker) Prepare(_ context.Context) (string, error) { return "", ni
 
 func (d *DiffChecker) Cleanup(_ context.Context) error { return nil }
 
-func (d *DiffChecker) RunChecker(ctx context.Context, pOut, cOut io.Reader, maxScore int) (string, int) {
+func (d *DiffChecker) RunChecker(ctx context.Context, pOut, cIn, cOut io.Reader) (string, int) {
 	tf, err := os.CreateTemp("", "prog-out-*")
 	if err != nil {
 		return ErrOut, 0
@@ -46,7 +46,7 @@ func (d *DiffChecker) RunChecker(ctx context.Context, pOut, cOut io.Reader, maxS
 	if err := cmd.Run(); err != nil {
 		if err, ok := err.(*exec.ExitError); ok {
 			if err.ExitCode() == 0 {
-				return CorrectOut, maxScore
+				return CorrectOut, 100
 			}
 
 			return WrongOut, 0
@@ -55,5 +55,5 @@ func (d *DiffChecker) RunChecker(ctx context.Context, pOut, cOut io.Reader, maxS
 		return WrongOut, 0
 	}
 
-	return CorrectOut, maxScore
+	return CorrectOut, 100
 }

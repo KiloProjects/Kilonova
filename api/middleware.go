@@ -75,9 +75,7 @@ func (s *API) SetupSession(next http.Handler) http.Handler {
 			return
 		}
 		user.Password = ""
-		ctx := context.WithValue(r.Context(), util.UserID, user.ID)
-		ctx = context.WithValue(ctx, util.UserKey, user)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.UserKey, user)))
 	})
 }
 
@@ -107,9 +105,7 @@ func (s *API) validateTestID(next http.Handler) http.Handler {
 			errorData(w, "test does not exist", http.StatusBadRequest)
 			return
 		}
-		ctx := context.WithValue(r.Context(), util.TestID, testID)
-		ctx = context.WithValue(ctx, util.TestKey, test)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.TestKey, test)))
 	})
 }
 
@@ -127,8 +123,6 @@ func (s *API) validateProblemID(next http.Handler) http.Handler {
 			errorData(w, "problem does not exist", http.StatusBadRequest)
 			return
 		}
-		ctx := context.WithValue(r.Context(), util.PbID, problemID)
-		ctx = context.WithValue(ctx, util.ProblemKey, problem)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemKey, problem)))
 	})
 }

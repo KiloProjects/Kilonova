@@ -1,0 +1,45 @@
+{{ define "title" }} Editare Checker | Problema #{{.Problem.ID}}: {{.Problem.Name}} {{ end }}
+{{ define "content" }}
+<a href="/problems/{{- .Problem.ID -}}">[view]</a>
+<h1>Editare checker</h1>
+
+<!--
+<form id="checker_lang_form">
+	<div class="block my-2">
+		<label>
+			<span class="form-label">Limbaj:</span>
+			<input class="form-input" type="text" value="{{.Problem.HelperCodeLang}}">
+		</label>
+		<button class="btn btn-blue ml-2">Editare</button>
+	</div>
+</form>
+-->
+<div class="mb-2">
+	<textarea id="checker" class="hidden">{{- .Problem.HelperCode -}}</textarea>
+</div>
+<div class="mb-2">
+	<button class="btn btn-blue" onclick="setChecker()">Actualizare</button>
+</div>
+
+<script>
+	var cm = CodeMirror.fromTextArea(document.getElementById("checker"), {
+		mode: bundled.languages['cpp']
+	});
+	cm.setSize(null, "100%");
+
+	async function setCheckerLang(e) {
+		e.preventDefault();
+		console.log(e);
+		return 0;
+		let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/helperCodeLang", {lang: 'cpp'})
+		bundled.apiToast(res)
+	}
+	document.getElementById('checker_lang_form').addEventListener("submit", setCheckerLang)
+
+	async function setChecker() {
+		let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/helperCode", {code: cm.getValue()})
+		bundled.apiToast(res)
+	}
+</script>
+
+{{ end }}

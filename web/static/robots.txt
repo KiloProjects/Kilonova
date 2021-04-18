@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /api/
+Disallow: /submissions/
+Disallow: /submissions?
+Allow: /submissions/$
+

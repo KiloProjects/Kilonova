@@ -3,11 +3,9 @@ package checkers
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"path"
-	"strconv"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
@@ -40,24 +38,24 @@ func (c *CustomChecker) Prepare(ctx context.Context) (string, error) {
 	}
 
 	if !job.Resp.Success {
-		return fmt.Sprintf("Output:\n%s\nOther:\n%s", job.Resp.Output, job.Resp.Other), errors.New("Invalid helper code")
+		return fmt.Sprintf("Output:\n%s\nOther:\n%s", job.Resp.Output, job.Resp.Other), &kilonova.Error{Code: kilonova.EINVALID, Message: "Invalid helper code"}
 	}
 
 	return "", nil
 }
 
 type customCheckerTask struct {
-	c        *CustomChecker
-	maxScore int
-	pOut     io.Reader
-	cOut     io.Reader
+	c    *CustomChecker
+	pOut io.Reader
+	cIn  io.Reader
+	cOut io.Reader
 
 	// filled by Execute
 	score  int
 	output string
 }
 
-var customTaskErr = errors.New(ErrOut)
+var customTaskErr = kilonova.Error{Code: kilonova.EINTERNAL, Message: ErrOut}
 
 func (job *customCheckerTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	lang, ok := config.Languages[job.c.pb.HelperCodeLang]
@@ -67,6 +65,10 @@ func (job *customCheckerTask) Execute(ctx context.Context, box eval.Sandbox) err
 	}
 
 	if err := box.WriteFile("/box/program.out", job.pOut, 0644); err != nil {
+		job.output = ErrOut
+		return nil
+	}
+	if err := box.WriteFile("/box/correct.in", job.cIn, 0644); err != nil {
 		job.output = ErrOut
 		return nil
 	}
@@ -86,7 +88,7 @@ func (job *customCheckerTask) Execute(ctx context.Context, box eval.Sandbox) err
 	}
 	// TODO: Make sure all supported languages can have this
 	// Add the program output, correct output and max score parameters
-	goodCmd = append(goodCmd, "/box/program.out", "/box/correct.out", strconv.Itoa(job.maxScore))
+	goodCmd = append(goodCmd, "/box/program.out", "/box/correct.out", "/box/program.in")
 
 	var out bytes.Buffer
 
@@ -113,12 +115,12 @@ func (job *customCheckerTask) Execute(ctx context.Context, box eval.Sandbox) err
 	return nil
 }
 
-func (c *CustomChecker) RunChecker(ctx context.Context, pOut, cOut io.Reader, maxScore int) (string, int) {
+func (c *CustomChecker) RunChecker(ctx context.Context, pOut, cIn, cOut io.Reader) (string, int) {
 	task := &customCheckerTask{
-		c:        c,
-		maxScore: maxScore,
-		pOut:     pOut,
-		cOut:     cOut,
+		c:    c,
+		pOut: pOut,
+		cIn:  cIn,
+		cOut: cOut,
 	}
 
 	if err := c.mgr.RunTask(ctx, task); err != nil {

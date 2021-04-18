@@ -1,7 +1,8 @@
 node_modules
 .vscode
 # .editorconfig
-/config.toml
+/config.*
+!/config.example.toml
 # simulation program
 sim.py
 

@@ -10,8 +10,10 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -27,71 +29,13 @@ import (
 
 var templates *template.Template
 
-//go:embed static/*
+//go:embed static
 var embedded embed.FS
 
 //go:embed templ
 var templateDir embed.FS
 
 var fsys = hashfs.NewFS(embedded)
-
-type templateData struct {
-	Version  string
-	Title    string
-	Params   map[string]string
-	User     *kilonova.User
-	LoggedIn bool
-	Debug    bool
-	DarkMode bool
-
-	// for the status code page
-	Code  string
-	Error string
-
-	// For code submission page
-	Languages map[string]config.Language
-
-	// ProblemEditor tells us if the authed .User is able to edit the .Problem
-	ProblemEditor bool
-
-	// SubEditor tells us if the authed .User is able to change visibility of the .Submission
-	SubEditor bool
-
-	// Page-specific data
-	// it is easier to just put this stuff here instead of in a `Data` interface
-	Problems []*kilonova.Problem
-
-	Problem   *kilonova.Problem
-	ProblemID int
-
-	// for problem page
-	Markdown         template.HTML
-	IsPdfDescription bool
-
-	ContentUser *kilonova.User
-	IsCUser     bool
-
-	Submissions []*kilonova.Submission
-
-	Submission *kilonova.Submission
-	SubID      int
-
-	Test   *kilonova.Test
-	TestID int
-
-	// Since codemirror and vue are particulairly big libraries, we should load them only when needed
-	Codemirror bool
-	Vue        bool
-
-	Sidebar bool
-
-	// OpenGraph stuff
-	OGTitle string
-	OGType  string
-	OGUrl   string
-	OGImage string
-	OGDesc  string
-}
 
 // Web is the struct representing this whole package
 type Web struct {
@@ -100,25 +44,21 @@ type Web struct {
 	rd    kilonova.MarkdownRenderer
 	debug bool
 
-	userv  kilonova.UserService
-	sserv  kilonova.SubmissionService
-	pserv  kilonova.ProblemService
-	tserv  kilonova.TestService
-	stserv kilonova.SubTestService
+	userv   kilonova.UserService
+	sserv   kilonova.SubmissionService
+	pserv   kilonova.ProblemService
+	tserv   kilonova.TestService
+	stkserv kilonova.SubTaskService
+	stserv  kilonova.SubTestService
+	plserv  kilonova.ProblemListService
 }
 
 func (rt *Web) status(w http.ResponseWriter, r *http.Request, statusCode int, err string) {
-	code := fmt.Sprintf("%d: %s", statusCode, http.StatusText(statusCode))
-	templ := rt.hydrateTemplate(r, code)
-	templ.Code = code
-	templ.Error = err
-
-	w.WriteHeader(statusCode)
-	rt.build(w, r, "util/statusCode", templ)
-}
-
-func (rt *Web) notFound(w http.ResponseWriter, r *http.Request) {
-	rt.status(w, r, 404, "")
+	Status(w, &StatusParams{
+		User:    util.User(r),
+		Code:    statusCode,
+		Message: err,
+	})
 }
 
 // Handler returns a http.Handler
@@ -126,57 +66,38 @@ func (rt *Web) notFound(w http.ResponseWriter, r *http.Request) {
 func (rt *Web) Handler() http.Handler {
 	r := chi.NewRouter()
 
-	templates = rt.newTemplate()
-
-	if rt.debug {
-		r.Use(func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				templates = rt.newTemplate()
-				next.ServeHTTP(w, r)
-			})
-		})
-	}
-
 	r.Mount("/static", hashfs.FileServer(fsys))
 
 	r.Group(func(r chi.Router) {
 		r.Use(rt.getUser)
 
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			var problems []*kilonova.Problem
-			var err error
-			if util.User(r) != nil && util.User(r).Admin {
-				problems, err = rt.pserv.Problems(r.Context(), kilonova.ProblemFilter{})
-			} else {
-				var uid int
-				if util.User(r) != nil {
-					uid = util.User(r).ID
-				}
-				problems, err = rt.pserv.Problems(r.Context(), kilonova.ProblemFilter{LookingUserID: &uid})
-			}
-			if err != nil {
-				log.Println("/:", err)
-				rt.status(w, r, 500, "")
-				return
-			}
-			if err != nil && !errors.Is(err, sql.ErrNoRows) {
-				log.Println("/", err)
-				rt.status(w, r, 500, "")
-				return
-			}
-			templ := rt.hydrateTemplate(r, "")
-			templ.Problems = problems
-			rt.build(w, r, "index", templ)
+			log.Println(index.Execute(w, &IndexParams{
+				User:    util.User(r),
+				Version: kilonova.Version,
+				Config:  config.Index,
+				ctx:     r.Context(),
+				sserv:   rt.sserv,
+				plserv:  rt.plserv,
+				pserv:   rt.pserv,
+				r:       rt.rd,
+			}))
 		})
 
 		r.Route("/profile", func(r chi.Router) {
 			r.With(rt.mustBeAuthed).Get("/", func(w http.ResponseWriter, r *http.Request) {
-				user := util.User(r)
 
-				templ := rt.hydrateTemplate(r, fmt.Sprintf("Profil %s", user.Name))
-				templ.ContentUser = user
-				templ.IsCUser = true
-				rt.build(w, r, "profile", templ)
+				pbs, err := kilonova.SolvedProblems(r.Context(), util.User(r).ID, rt.sserv, rt.pserv)
+				if err != nil {
+					Status(w, &StatusParams{util.User(r), 500, ""})
+					return
+				}
+
+				Profile(w, &ProfileParams{
+					User:         util.User(r),
+					ContentUser:  util.User(r),
+					UserProblems: pbs,
+				})
 			})
 			r.Route("/{user}", func(r chi.Router) {
 				r.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -184,112 +105,44 @@ func (rt *Web) Handler() http.Handler {
 					users, err := rt.userv.Users(r.Context(), kilonova.UserFilter{Name: &name})
 					if err != nil || len(users) == 0 {
 						if errors.Is(err, sql.ErrNoRows) || len(users) == 0 {
-							rt.status(w, r, 404, "")
+							Status(w, &StatusParams{util.User(r), 404, ""})
 							return
 						}
 						fmt.Println(err)
-						rt.status(w, r, 500, "")
+						Status(w, &StatusParams{util.User(r), 500, ""})
 						return
 					}
-					user := users[0]
-					templ := rt.hydrateTemplate(r, fmt.Sprintf("Profil %s", user.Name))
-					templ.ContentUser = user
-					rt.build(w, r, "profile", templ)
+
+					pbs, err := kilonova.SolvedProblems(r.Context(), users[0].ID, rt.sserv, rt.pserv)
+					if err != nil {
+						Status(w, &StatusParams{util.User(r), 500, ""})
+						return
+					}
+
+					Profile(w, &ProfileParams{
+						User:         util.User(r),
+						ContentUser:  users[0],
+						UserProblems: pbs,
+					})
 				})
 			})
 		})
 
 		r.Get("/settings", func(w http.ResponseWriter, r *http.Request) {
-			templ := rt.hydrateTemplate(r, "Setări")
-			rt.build(w, r, "settings", templ)
-		})
-
-		r.Get("/changelog", func(w http.ResponseWriter, r *http.Request) {
-			file, err := kilonova.Docs.Open("docs/CHANGELOG.md")
-			if err != nil {
-				log.Println("CAN'T OPEN CHANGELOG")
-				rt.status(w, r, 500, "Can't load changelog")
-				return
-			}
-			changelog, _ := io.ReadAll(file)
-			ch, err := rt.rd.Render(changelog)
-			if err != nil {
-				log.Println("CAN'T RENDER CHANGELOG")
-				rt.status(w, r, 500, "Can't render changelog")
-				return
-			}
-
-			templ := rt.hydrateTemplate(r, "Changelog")
-			templ.Markdown = template.HTML(ch)
-			rt.build(w, r, "util/mdrender", templ)
-		})
-
-		r.Get("/todo", func(w http.ResponseWriter, r *http.Request) {
-			file, err := kilonova.Docs.Open("docs/TODO.md")
-			if err != nil {
-				log.Println("CAN'T OPEN TODO")
-				rt.status(w, r, 500, "Can't load todo list")
-				return
-			}
-
-			todo, _ := io.ReadAll(file)
-			t, err := rt.rd.Render(todo)
-			if err != nil {
-				log.Println("CAN'T RENDER TODO")
-				rt.status(w, r, 500, "Can't render todo list")
-				return
-			}
-
-			templ := rt.hydrateTemplate(r, "Todo list")
-			templ.Markdown = template.HTML(t)
-			rt.build(w, r, "util/mdrender", templ)
-		})
-
-		r.Get("/about", func(w http.ResponseWriter, r *http.Request) {
-			file, err := kilonova.Docs.Open("docs/ABOUT.md")
-			if err != nil {
-				log.Println("CAN'T OPEN ABOUT")
-				rt.status(w, r, 500, "Can't load About page")
-				return
-			}
-
-			about, _ := io.ReadAll(file)
-			t, err := rt.rd.Render(about)
-			if err != nil {
-				log.Println("CAN'T RENDER ABOUT")
-				rt.status(w, r, 500, "Can't render About page")
-				return
-			}
-
-			templ := rt.hydrateTemplate(r, "To do list")
-			templ.Markdown = template.HTML(t)
-			rt.build(w, r, "util/mdrender", templ)
+			settings.Execute(w, &SimpleParams{util.User(r)})
 		})
 
 		r.Route("/problems", func(r chi.Router) {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				var problems []*kilonova.Problem
-				var err error
-
-				if util.User(r) != nil && util.User(r).Admin {
-					problems, err = rt.pserv.Problems(r.Context(), kilonova.ProblemFilter{})
-				} else {
-					var uid int
-					if util.User(r) != nil {
-						uid = util.User(r).ID
-					}
-					problems, err = rt.pserv.Problems(r.Context(), kilonova.ProblemFilter{LookingUserID: &uid})
-				}
-				if err != nil {
-					fmt.Println(err)
-					rt.status(w, r, 500, "")
-					return
-				}
-				templ := rt.hydrateTemplate(r, "Probleme")
-				templ.Problems = problems
-				rt.build(w, r, "pbs", templ)
+				pbs.Execute(w, &IndexParams{
+					User:    util.User(r),
+					Version: kilonova.Version,
+					ctx:     r.Context(),
+					sserv:   rt.sserv,
+					pserv:   rt.pserv,
+				})
 			})
-			r.Route("/{id}", func(r chi.Router) {
+			r.Route("/{pbid}", func(r chi.Router) {
 				r.Use(rt.ValidateProblemID)
 				r.Use(rt.ValidateVisible)
 				r.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -297,50 +150,58 @@ func (rt *Web) Handler() http.Handler {
 
 					buf, err := rt.rd.Render([]byte(problem.Description))
 					if err != nil {
-						log.Println(err)
+						log.Println("Rendering markdown:", err)
 					}
-					templ := rt.hydrateTemplate(r, fmt.Sprintf("Problema #%d: %s", problem.ID, problem.Name))
-					templ.Codemirror = true
-					templ.Vue = true
-					templ.Markdown = template.HTML(buf)
-					templ.OGDesc = problem.ShortDesc
-					rt.build(w, r, "pb", templ)
+
+					author, err := rt.userv.UserByID(r.Context(), problem.AuthorID)
+					if err != nil {
+						log.Println("Getting author:", err)
+						rt.status(w, r, 500, "Couldn't get author")
+						return
+					}
+
+					pb.Execute(w, &ProblemParams{
+						User:          util.User(r),
+						ProblemEditor: util.IsProblemEditor(util.User(r), util.Problem(r)),
+
+						Problem: util.Problem(r),
+						Author:  author,
+
+						Markdown:  template.HTML(buf),
+						Languages: config.Languages,
+					})
 				})
 				r.Route("/edit", func(r chi.Router) {
 					r.Use(rt.mustBeEditor)
 					r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-						problem := util.Problem(r)
-						templ := rt.hydrateTemplate(r, fmt.Sprintf("EDIT | Problema #%d: %s", problem.ID, problem.Name))
-						templ.Vue = true
-						rt.build(w, r, "edit/index", templ)
+						editIndex.Execute(w, &ProblemEditParams{util.User(r), util.Problem(r)})
 					})
 					r.Get("/desc", func(w http.ResponseWriter, r *http.Request) {
-						problem := util.Problem(r)
-						templ := rt.hydrateTemplate(r, fmt.Sprintf("EDITARE ENUNȚ | Problema #%d: %s", problem.ID, problem.Name))
-						templ.Codemirror = true
-						rt.build(w, r, "edit/desc", templ)
+						editDesc.Execute(w, &ProblemEditParams{util.User(r), util.Problem(r)})
 					})
 					r.Get("/checker", func(w http.ResponseWriter, r *http.Request) {
-						problem := util.Problem(r)
-						templ := rt.hydrateTemplate(r, fmt.Sprintf("EDITARE CHECKER | Problema #%d: %s", problem.ID, problem.Name))
-						templ.Codemirror = true
-						rt.build(w, r, "edit/checker", templ)
+						editChecker.Execute(w, &ProblemEditParams{util.User(r), util.Problem(r)})
 					})
 					r.Route("/test", func(r chi.Router) {
 						r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-							problem := util.Problem(r)
-							templ := rt.hydrateTemplate(r, fmt.Sprintf("CREARE TEST | Problema #%d: %s", problem.ID, problem.Name))
-							templ.Sidebar = true
-							templ.Codemirror = true
-							rt.build(w, r, "edit/testAdd", templ)
+							testScores.Execute(w, &TestEditParams{util.User(r), util.Problem(r), &kilonova.Test{VisibleID: -2}, rt.tserv, rt.dm})
+						})
+						r.Get("/add", func(w http.ResponseWriter, r *http.Request) {
+							testAdd.Execute(w, &TestEditParams{util.User(r), util.Problem(r), &kilonova.Test{VisibleID: -1}, rt.tserv, rt.dm})
 						})
 						r.With(rt.ValidateTestID).Get("/{tid}", func(w http.ResponseWriter, r *http.Request) {
-							test := util.Test(r)
-							problem := util.Problem(r)
-							templ := rt.hydrateTemplate(r, fmt.Sprintf("EDITARE TESTUL %d | Problema #%d: %s", test.VisibleID, problem.ID, problem.Name))
-							templ.Sidebar = true
-							templ.Codemirror = true
-							rt.build(w, r, "edit/testEdit", templ)
+							testEdit.Execute(w, &TestEditParams{util.User(r), util.Problem(r), util.Test(r), rt.tserv, rt.dm})
+						})
+					})
+					r.Route("/subtasks", func(r chi.Router) {
+						r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+							subtaskIndex.Execute(w, &SubTaskEditParams{util.User(r), util.Problem(r), &kilonova.SubTask{VisibleID: -2}, r.Context(), rt.tserv, rt.stkserv})
+						})
+						r.Get("/add", func(w http.ResponseWriter, r *http.Request) {
+							subtaskAdd.Execute(w, &SubTaskEditParams{util.User(r), util.Problem(r), &kilonova.SubTask{VisibleID: -1}, r.Context(), rt.tserv, rt.stkserv})
+						})
+						r.With(rt.ValidateSubTaskID).Get("/{stid}", func(w http.ResponseWriter, r *http.Request) {
+							subtaskEdit.Execute(w, &SubTaskEditParams{util.User(r), util.Problem(r), util.SubTask(r), r.Context(), rt.tserv, rt.stkserv})
 						})
 					})
 				})
@@ -349,21 +210,126 @@ func (rt *Web) Handler() http.Handler {
 
 		r.Route("/submissions", func(r chi.Router) {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				templ := rt.hydrateTemplate(r, "Submisii")
-				templ.Vue = true
-				rt.build(w, r, "submissions", templ)
+				subs.Execute(w, &SimpleParams{util.User(r)})
 			})
 			r.With(rt.ValidateSubmissionID).Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
-				templ := rt.hydrateTemplate(r, fmt.Sprintf("Submisia %d", util.Submission(r).ID))
-				rt.build(w, r, "submission", templ)
+				sub.Execute(w, &SubParams{
+					User:       util.User(r),
+					Submission: util.Submission(r),
+				})
 			})
 		})
 
-		r.With(rt.mustBeAdmin).Get("/admin", rt.simpleTempl("Panoul de administrare", "admin/admin"))
-		r.With(rt.mustBeAdmin).Get("/uitest", rt.simpleTempl("Testare UI", "test-ui"))
+		r.Route("/problem_lists", func(r chi.Router) {
+			r.With(rt.mustBeProposer).Get("/", func(w http.ResponseWriter, r *http.Request) {
+				log.Println(pbListIndex.Execute(w, &ProblemListParams{util.User(r), nil, r.Context(), rt.plserv, rt.pserv, rt.sserv, rt.rd}))
+			})
+			r.With(rt.mustBeProposer).Get("/create", func(w http.ResponseWriter, r *http.Request) {
+				pbListCreate.Execute(w, &SimpleParams{util.User(r)})
+			})
+			r.With(rt.ValidateListID).Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
+				log.Println(pbListView.Execute(w, &ProblemListParams{util.User(r), util.ProblemList(r), r.Context(), rt.plserv, rt.pserv, rt.sserv, rt.rd}))
+			})
+		})
 
-		r.With(rt.mustBeVisitor).Get("/login", rt.simpleTempl("Log In", "auth/login"))
-		r.With(rt.mustBeVisitor).Get("/signup", rt.simpleTempl("Înregistrare", "auth/signup"))
+		r.Mount("/docs", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			p := strings.TrimPrefix(r.URL.Path, "/")
+			stat, err := fs.Stat(kilonova.Docs, p)
+			_, err1 := fs.Stat(kilonova.Docs, p+".md")
+			if err != nil && err1 != nil {
+				if errors.Is(err, fs.ErrNotExist) && errors.Is(err1, fs.ErrNotExist) {
+					Status(w, &StatusParams{util.User(r), 404, "Ce încerci să accesezi nu există"})
+					return
+				}
+				log.Println("CAN'T STAT DOCS", err, err1)
+				Status(w, &StatusParams{util.User(r), 500, "N-am putut da stat la path, contactați administratorul"})
+				return
+			} else if err1 == nil {
+				file, err := kilonova.Docs.ReadFile(p + ".md")
+				if err != nil {
+					if errors.Is(err, fs.ErrNotExist) {
+						Status(w, &StatusParams{util.User(r), 404, "Pagina nu există"})
+						return
+					}
+					log.Println("CAN'T OPEN DOCS", err)
+					Status(w, &StatusParams{util.User(r), 500, "N-am putut încărca pagina"})
+					return
+				}
+
+				t, err := rt.rd.Render(file)
+				if err != nil {
+					log.Println("CAN'T RENDER DOCS")
+					Status(w, &StatusParams{util.User(r), 500, "N-am putut randa pagina"})
+					return
+				}
+
+				markdown.Execute(w, &MarkdownParams{util.User(r), template.HTML(t), "Docs"}) // TODO: Proper title
+				return
+			}
+
+			if stat.IsDir() {
+				file, err := kilonova.Docs.ReadFile(path.Join(p, "index.md"))
+				if err != nil {
+					entries, err := fs.ReadDir(kilonova.Docs, p)
+					if err != nil {
+						log.Println("Can't stat dir")
+						Status(w, &StatusParams{util.User(r), 404, "Nu-i nimic aici"})
+						return
+					}
+					var data strings.Builder
+					for _, entry := range entries {
+						data.WriteString("* [")
+						data.WriteString(entry.Name())
+						if entry.IsDir() {
+							data.WriteRune('/')
+						}
+						data.WriteString("](/")
+						data.WriteString(path.Join(p, strings.TrimSuffix(entry.Name(), ".md")))
+						data.WriteString(")\n")
+					}
+
+					file = []byte(data.String())
+				}
+				t, err := rt.rd.Render(file)
+				if err != nil {
+					log.Println("CAN'T RENDER DOCS")
+					Status(w, &StatusParams{util.User(r), 500, "N-am putut randa pagina"})
+					return
+				}
+
+				markdown.Execute(w, &MarkdownParams{util.User(r), template.HTML(t), "Docs"}) // TODO: Proper title
+			} else {
+				file, err := kilonova.Docs.ReadFile(p)
+				if err != nil {
+					if errors.Is(err, fs.ErrNotExist) {
+						http.Error(w, "Pagina nu există", 404)
+						return
+					}
+					http.Error(w, "N-am putut încărca pagina", 500)
+					return
+				}
+				http.ServeContent(w, r, path.Base(p), time.Now(), bytes.NewReader(file))
+			}
+		}))
+
+		r.With(rt.mustBeAdmin).Route("/admin", func(r chi.Router) {
+			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+				AdminPanel(w, util.User(r))
+			})
+			r.Get("/kna", func(w http.ResponseWriter, r *http.Request) {
+				knaPanel.Execute(w, &SimpleParams{util.User(r)})
+			})
+		})
+		r.With(rt.mustBeAdmin).Get("/uitest", func(w http.ResponseWriter, r *http.Request) {
+			testUI.Execute(w, &SimpleParams{util.User(r)})
+		})
+
+		r.With(rt.mustBeVisitor).Get("/login", func(w http.ResponseWriter, r *http.Request) {
+			login.Execute(w, &SimpleParams{util.User(r)})
+		})
+		r.With(rt.mustBeVisitor).Get("/signup", func(w http.ResponseWriter, r *http.Request) {
+			signup.Execute(w, &SimpleParams{util.User(r)})
+		})
 
 		r.With(rt.mustBeAuthed).Get("/logout", func(w http.ResponseWriter, r *http.Request) {
 			// i could redirect to /api/auth/logout, but it's easier to do it like this
@@ -375,9 +341,7 @@ func (rt *Web) Handler() http.Handler {
 		r.Route("/proposer", func(r chi.Router) {
 			r.Use(rt.mustBeProposer)
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				templ := rt.hydrateTemplate(r, "Panoul propunătorului")
-				templ.Vue = true
-				rt.build(w, r, "proposer/index", templ)
+				proposerPanel.Execute(w, &SimpleParams{util.User(r)})
 			})
 			r.Route("/get", func(r chi.Router) {
 				r.Get("/subtest_output/{st_id}", func(w http.ResponseWriter, r *http.Request) {
@@ -429,18 +393,18 @@ func (rt *Web) Handler() http.Handler {
 			r.With(rt.mustBeAuthed).Get("/resend", func(w http.ResponseWriter, r *http.Request) {
 				u := util.User(r)
 				if u.VerifiedEmail {
-					rt.status(w, r, http.StatusForbidden, "Deja ai verificat email-ul!")
+					Status(w, &StatusParams{util.User(r), 403, "Deja ai verificat email-ul!"})
 					return
 				}
 				t := time.Now().Sub(u.EmailVerifSentAt.Time)
 				if t < 5*time.Minute {
 					text := fmt.Sprintf("Trebuie să mai aștepți %s până poți retrimite email de verificare", (5*time.Minute - t).Truncate(time.Millisecond))
-					rt.status(w, r, http.StatusForbidden, text)
+					Status(w, &StatusParams{util.User(r), 403, text})
 					return
 				}
 				if err := rt.kn.SendVerificationEmail(u.Email, u.Name, u.ID); err != nil {
 					log.Println(err)
-					rt.status(w, r, 500, "N-am putut retrimite email-ul de verificare")
+					Status(w, &StatusParams{util.User(r), 500, "N-am putut retrimite email-ul de verificare"})
 					return
 				}
 
@@ -448,26 +412,26 @@ func (rt *Web) Handler() http.Handler {
 				if err := rt.userv.UpdateUser(r.Context(), u.ID, kilonova.UserUpdate{EmailVerifSentAt: &now}); err != nil {
 					log.Println("Couldn't update verification email timestamp:", err)
 				}
-				rt.simpleTempl("Email retrimis", "util/sent")(w, r)
+				sentEmail.Execute(w, &SimpleParams{util.User(r)})
 			})
 			r.Get("/{vid}", func(w http.ResponseWriter, r *http.Request) {
 				vid := chi.URLParam(r, "vid")
 				if !rt.kn.CheckVerificationEmail(vid) {
-					rt.notFound(w, r)
+					Status(w, &StatusParams{util.User(r), 404, ""})
 					return
 				}
 
 				uid, err := rt.kn.Verif.GetVerification(r.Context(), vid)
 				if err != nil {
 					log.Println(err)
-					rt.notFound(w, r)
+					Status(w, &StatusParams{util.User(r), 404, ""})
 					return
 				}
 
 				user, err := rt.userv.UserByID(r.Context(), uid)
 				if err != nil {
 					log.Println(err)
-					rt.notFound(w, r)
+					Status(w, &StatusParams{util.User(r), 404, ""})
 					return
 				}
 
@@ -478,28 +442,30 @@ func (rt *Web) Handler() http.Handler {
 
 				if err := rt.kn.ConfirmVerificationEmail(vid, user); err != nil {
 					log.Println(err)
-					rt.notFound(w, r)
+					Status(w, &StatusParams{util.User(r), 404, ""})
 					return
 				}
 
-				templ := rt.hydrateTemplate(r, "E-mail verificat")
-				templ.ContentUser = user
-				rt.build(w, r, "verified-email", templ)
+				VerifiedEmail(w, &VerifiedEmailParams{util.User(r), user})
 			})
 		})
 
 	})
 
-	r.NotFound(rt.notFound)
+	r.Get("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
+		file, err := embedded.Open("static/robots.txt")
+		if err != nil {
+			log.Println("Could not open robots.txt")
+			return
+		}
+		http.ServeContent(w, r, "robots.txt", time.Now(), file.(io.ReadSeeker))
+	})
+
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		Status(w, &StatusParams{util.User(r), 404, ""})
+	})
 
 	return r
-}
-
-func (rt *Web) simpleTempl(title, templName string) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		templ := rt.hydrateTemplate(r, title)
-		rt.build(w, r, templName, templ)
-	}
 }
 
 // NewWeb returns a new web instance
@@ -507,5 +473,5 @@ func NewWeb(kn *logic.Kilonova, ts kilonova.TypeServicer) *Web {
 	rd := mdrenderer.NewLocalRenderer()
 	//rd := mdrenderer.NewExternalRenderer("http://0.0.0.0:8040")
 	return &Web{kn, kn.DM, rd, kn.Debug,
-		ts.UserService(), ts.SubmissionService(), ts.ProblemService(), ts.TestService(), ts.SubTestService()}
+		ts.UserService(), ts.SubmissionService(), ts.ProblemService(), ts.TestService(), ts.SubTaskService(), ts.SubTestService(), ts.ProblemListService()}
 }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 )
 
@@ -14,6 +15,33 @@ func (s *API) resetWaitingSubs(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, 500)
 		return
 	}
+	returnData(w, "Reset waiting subs")
+}
+
+func (s *API) reevaluateSubmission(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		ID int `json:"id"`
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, http.StatusBadRequest)
+		return
+	}
+
+	err := s.sserv.UpdateSubmission(r.Context(), args.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting})
+	if err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	var f = false
+	var zero = 0
+	err = s.stserv.UpdateSubmissionSubTests(r.Context(), args.ID, kilonova.SubTestUpdate{Done: &f, Score: &zero})
+	if err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
 	returnData(w, "Reset waiting subs")
 }
 
@@ -108,4 +136,27 @@ func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 	} else {
 		returnData(w, "Succesfully removed proposer")
 	}
+}
+
+func (s *API) updateIndex(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		Description string `json:"desc"`
+		List        string `json:"pbList"`
+		ListAll     bool   `json:"listAll"`
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 400)
+		return
+	}
+	actualList, ok := DecodeIntString(args.List)
+	if !ok {
+		errorData(w, "Invalid list string", 400)
+		return
+	}
+	config.Index.Description = args.Description
+	config.Index.ShowProblems = args.ListAll
+	config.Index.Lists = actualList
+	config.Save()
+	returnData(w, "Updated index")
 }

@@ -1,0 +1,95 @@
+{{ define "navbar" }}
+<header class="text-2xl bg-gray-100 dark:bg-gray-800 md:flex md:justify-between md:px-5 md:py-3 md:items-center">
+	<div class="flex items-center justify-between px-4 py-3 md:p-0">
+		<div class="inline-block">
+			<a class="roboto h-8 black-anchor" href="/">Kilonova</a>
+		</div>
+		<div class="md:hidden">
+			<button id="nav-toggler" type="button" onclick="setNavbar(!isNavbarOpen)" class="fas fa-bars text-gray-500 dark:text-gray-300 hover:text-black focus:text-black dark:hover:text-white dark:focus:text-white focus:outline-none h-6 w-6"></button>
+		</div>
+	</div>
+	<nav id="nav-dropdown" class="px-2 pt-1 pb-3 md:flex md:p-0">
+		<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/submissions">Listă submisii</a>
+		{{if not .User }}
+			<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/signup">Sign up</a>
+			<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/login">Log in</a>
+		{{else}}
+			<div id="pr-dropdown" class="relative">
+				<button onclick="setDropdown(!isDropdownOpen)" id="profile-dropdown-button" class="relative z-10 block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable">{{.User.Name}}<i id="dropdown-caret" class="ml-1 fas fa-caret-down"></i></button>
+				<div id="profile-dropdown" class="dropdown-list">
+					<a class="dropdown-list-item" href="/profile">
+						<i class="ml-n2 fas fa-user fa-fw"></i> Profil
+					</a>	
+					<a class="dropdown-list-item" href="/settings">
+						<i class="ml-n2 fas fa-user-cog fa-fw"></i> Setări
+					</a>
+					{{if (or .User.Proposer .User.Admin)}}
+						<div class="dropdown-divider"></div>
+						<a class="dropdown-list-item" href="/proposer">
+							<i class="ml-n2 fas fa-chalkboard-teacher fa-fw"></i> Panou Propunător
+						</a>
+						<a class="dropdown-list-item" href="/problem_lists">
+							<i class="ml-n2 fas fa-list-ul fa-fw"></i> Liste de Probleme
+						</a>
+					{{end}}
+					{{if .User.Admin}}
+						<a class="dropdown-list-item" href="/admin">
+							<i class="ml-n2 fas fa-sliders-h fa-fw"></i> Panou Admin
+						</a>
+					{{end}}
+					<div class="dropdown-divider"></div>
+					<a class="dropdown-list-item" href="/logout">
+						<i class="ml-n2 fas fa-sign-out-alt fa-fw"></i> Log Out
+					</a>
+				</div>
+			</div>
+		{{end}}
+	</nav>
+</header>
+
+
+<script>
+var isNavbarOpen = false;
+
+function setNavbar(open) {
+	isNavbarOpen = open;
+	document.getElementById("nav-toggler").classList.toggle("fa-times", isNavbarOpen);
+	document.getElementById("nav-toggler").classList.toggle("fa-bars", !isNavbarOpen);
+	document.getElementById("nav-dropdown").classList.toggle("block", isNavbarOpen);
+	document.getElementById("nav-dropdown").classList.toggle("hidden", !isNavbarOpen);
+}
+
+var isDropdownOpen = false;
+function setDropdown(open) {
+	isDropdownOpen = open;
+	document.getElementById("profile-dropdown")?.classList.toggle("hidden", !isDropdownOpen);
+	document.getElementById("dropdown-caret")?.classList.toggle("fa-caret-down", !isDropdownOpen);
+	document.getElementById("dropdown-caret")?.classList.toggle("fa-caret-up", isDropdownOpen);
+}
+
+setNavbar(false);
+setDropdown(false);
+
+document.addEventListener('keydown', (e) => {
+	if(e.key === "Esc" || e.key === "Escape") {
+		setDropdown(false);
+	}
+})
+
+function hasParentWithID(element, id) {
+	for(let p = element && element.parentElement; p; p = p.parentElement) {
+		if(p.id == id) {
+			return true
+		}
+	}
+	return false
+}
+
+document.addEventListener('click', (e) => {
+	if(isDropdownOpen && !(e.target.id === "profile-dropdown-button" || hasParentWithID(e.target, "pr-dropdown"))) {
+		setDropdown(false);
+	}
+})
+
+</script>
+{{end}}

@@ -26,7 +26,9 @@ type Sandbox interface {
 type Checker interface {
 	Prepare(context.Context) (string, error)
 	Cleanup(context.Context) error
-	RunChecker(ctx context.Context, programOut, correctOut io.Reader, maxScore int) (string, int)
+
+	// RunChecker returns a comment and a number [0, 100] signifying the percentage of correctness of the subtest
+	RunChecker(ctx context.Context, programOut, correctInput, correctOut io.Reader) (string, int)
 }
 
 type Runner interface {
