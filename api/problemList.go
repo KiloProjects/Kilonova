@@ -7,7 +7,6 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/davecgh/go-spew/spew"
 )
 
 func (s *API) getProblemList(w http.ResponseWriter, r *http.Request) {
@@ -62,8 +61,6 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, 500)
 		return
 	}
-
-	spew.Dump(inputIDs, pbs)
 
 	actualIDs := make([]int, 0, len(pbs))
 	for _, pb := range pbs {
