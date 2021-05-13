@@ -73,7 +73,7 @@ func (rt *Web) Handler() http.Handler {
 		r.Use(rt.getUser)
 
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			log.Println(index.Execute(w, &IndexParams{
+			index.Execute(w, &IndexParams{
 				User:    util.User(r),
 				Version: kilonova.Version,
 				Config:  config.Index,
@@ -82,7 +82,7 @@ func (rt *Web) Handler() http.Handler {
 				plserv:  rt.plserv,
 				pserv:   rt.pserv,
 				r:       rt.rd,
-			}))
+			})
 		})
 
 		r.Route("/profile", func(r chi.Router) {
@@ -223,13 +223,13 @@ func (rt *Web) Handler() http.Handler {
 
 		r.Route("/problem_lists", func(r chi.Router) {
 			r.With(rt.mustBeProposer).Get("/", func(w http.ResponseWriter, r *http.Request) {
-				log.Println(pbListIndex.Execute(w, &ProblemListParams{util.User(r), nil, r.Context(), rt.plserv, rt.pserv, rt.sserv, rt.rd}))
+				pbListIndex.Execute(w, &ProblemListParams{util.User(r), nil, r.Context(), rt.plserv, rt.pserv, rt.sserv, rt.rd})
 			})
 			r.With(rt.mustBeProposer).Get("/create", func(w http.ResponseWriter, r *http.Request) {
 				pbListCreate.Execute(w, &SimpleParams{util.User(r)})
 			})
 			r.With(rt.ValidateListID).Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
-				log.Println(pbListView.Execute(w, &ProblemListParams{util.User(r), util.ProblemList(r), r.Context(), rt.plserv, rt.pserv, rt.sserv, rt.rd}))
+				pbListView.Execute(w, &ProblemListParams{util.User(r), util.ProblemList(r), r.Context(), rt.plserv, rt.pserv, rt.sserv, rt.rd})
 			})
 		})
 
