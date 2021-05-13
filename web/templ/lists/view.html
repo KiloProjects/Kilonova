@@ -25,6 +25,9 @@
 		{{ end }}
 	</div>
 	{{ if $user }}
+	{{ if $user.Admin }}
+	<a class="my-2" href="/admin/makeKNA?pbs={{intList .List}}">[Descărcare arhivă cu probleme]</a>
+	{{ end }}
 	{{ if or (eq $user.ID .AuthorID) $user.Admin }}
 	<form id="pblist-update" class="segment-container" autocomplete="off">
 		<h1> Actualizare Listă </h1>

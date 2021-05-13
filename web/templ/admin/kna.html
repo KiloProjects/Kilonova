@@ -32,6 +32,8 @@
 async function createArchive(e) {
 	e.preventDefault();
 	let problems = document.getElementById("kna-problems").value
+	window.location.assign("/admin/makeKNA?pbs="+problems);
+	/*
 	let res = await bundled.getCall("/kna/createArchive", {problems})
 	if(res.status === "success"){
 		let blob = base64toBlob(res.data)
@@ -39,6 +41,7 @@ async function createArchive(e) {
 		return
 	}
 	bundled.apiToast(res)
+	*/
 }
 
 async function loadArchive(e) {

@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/api"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/logic"
 	"github.com/KiloProjects/kilonova/internal/util"
@@ -318,6 +319,37 @@ func (rt *Web) Handler() http.Handler {
 			})
 			r.Get("/kna", func(w http.ResponseWriter, r *http.Request) {
 				knaPanel.Execute(w, &SimpleParams{util.User(r)})
+			})
+			r.Get("/makeKNA", func(w http.ResponseWriter, r *http.Request) {
+				problems := r.FormValue("pbs")
+				if problems == "" {
+					http.Error(w, "No problems specified", 400)
+					return
+				}
+				pbIDs, ok := api.DecodeIntString(problems)
+				if !ok {
+					http.Error(w, "Invalid problem string", 400)
+					return
+				}
+				pbs := make([]*kilonova.Problem, 0, len(pbIDs))
+				for _, id := range pbIDs {
+					pb, err := rt.pserv.ProblemByID(r.Context(), id)
+					if err != nil {
+						log.Println(err)
+						http.Error(w, "One of the problem IDs is invalid", 400)
+						return
+					}
+					pbs = append(pbs, pb)
+				}
+				rd, err := kilonova.GenKNA(pbs, rt.tserv, rt.stkserv, rt.dm)
+				if err != nil {
+					http.Error(w, err.Error(), 500)
+					return
+				}
+				defer rd.Close()
+				w.Header().Add("Content-Type", "application/vnd.sqlite3")
+				w.Header().Add("Content-Disposition", `attachment; filename="archive.kna"`)
+				http.ServeContent(w, r, "archive.kna", time.Now(), rd)
 			})
 		})
 		r.With(rt.mustBeAdmin).Get("/uitest", func(w http.ResponseWriter, r *http.Request) {

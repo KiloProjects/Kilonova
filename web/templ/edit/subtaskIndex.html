@@ -1,4 +1,4 @@
-{{ define "title" }}SubTask-uri{{ end }}
+{{ define "title" }}SubTasks{{ end }}
 {{ define "content" }}
 {{ template "subtaskTopbar.html" . }}
 
@@ -37,8 +37,8 @@
 				</tr>
 			</tbody>
 		</table>
-		<button class="btn btn-red mr-2" onclick="deleteSubTasks()">Șterge SubTask-uri selectate</button>
-		<button class="btn btn-blue" onclick="updateSubTasks()">Actualizează scorurile SubTask-urilor</button>
+		<button class="btn btn-red mr-2" onclick="deleteSubTasks()">Șterge SubTaskuri selectate</button>
+		<button class="btn btn-blue" onclick="updateSubTasks()">Actualizează scorurile SubTaskurilor</button>
 	{{ else }}
 		<h3> Nu există niciun subtask, se vor evalua toate testele individual </h3>
 	{{ end }}
@@ -147,7 +147,7 @@ async function updateSubTasks() {
 					ID
 				</th>
 				<th scope="col" class="w-1/2">
-					SubTask-uri
+					SubTasks
 				</th>
 			</thead>
 			<tbody>
