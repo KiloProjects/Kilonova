@@ -7,12 +7,14 @@
 		<div class="ml-3">
 			<h1>{{.ContentUser.Name}}</h1>
 			<span>{{.ContentUser.Bio}}
-			{{ if eq .ContentUser.ID .User.ID }}
-				{{if .ContentUser.Bio}}
-				<a href="/settings#bio"><i class="fas fa-edit"></i> Editare bio</a>
-				{{else}}
-				<a href="/settings#bio"><i class="fas fa-edit"></i> Create bio</a>
-				{{end}}
+			{[ if .User }}
+				{{ if eq .ContentUser.ID .User.ID }}
+					{{if .ContentUser.Bio}}
+					<a href="/settings#bio"><i class="fas fa-edit"></i> Editare bio</a>
+					{{else}}
+					<a href="/settings#bio"><i class="fas fa-edit"></i> Create bio</a>
+					{{end}}
+				{{ end }}
 			{{ end }}</span>
 			<p><a href="/submissions/?user_id={{.ContentUser.ID}}">Listă submisii</a></p>
 			{{- if .User -}} {{if (or .User.Admin (eq .User.ID .ContentUser.ID)) -}}
