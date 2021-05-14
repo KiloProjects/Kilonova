@@ -7,7 +7,7 @@
 		<div class="ml-3">
 			<h1>{{.ContentUser.Name}}</h1>
 			<span>{{.ContentUser.Bio}}
-			{[ if .User }}
+			{{ if .User }}
 				{{ if eq .ContentUser.ID .User.ID }}
 					{{if .ContentUser.Bio}}
 					<a href="/settings#bio"><i class="fas fa-edit"></i> Editare bio</a>
@@ -36,8 +36,7 @@
 	</p>
 	
 {{if .User}}
-{{if .User.Admin}}
-{{if not .ContentUser.Admin}}
+{{if and (.User.Admin (not .ContentUser.Admin))}}
 <button class="mt-6 block btn btn-red" onclick="deleteAccount()">Ștergere Cont</button>
 
 <script>
@@ -55,7 +54,6 @@ async function deleteAccount() {
 }
 </script>
 
-{{end}}
 {{end}}
 {{end}}
 </div>
