@@ -116,7 +116,7 @@ export class SubmissionManager {
 			<p>Data încărcării: ${bundled.parseTime(this.sub.created_at)}</p>
 			<p>Status: ${this.sub.status}</p>`;
 		if(this.sub.quality) {
-			html += `<p><i class="fas fa-star text-yellow-300"></i> Submisie de calitate</p>`
+			html += `<p><i class="fas fa-star text-yellow-300"></i> Submisie evidențiată</p>`
 		}
 		if(this.sub.code) {
 			html += `<p>Dimensiune: ${bundled.sizeFormatter(this.sub.code.length)}</p>`
@@ -268,7 +268,7 @@ export class SubmissionManager {
 		if(this.problemEditor) {
 			let btn = document.createElement('button');
 			btn.classList.add('btn', 'btn-blue', 'block', 'my-2', 'text-semibold', 'text-lg');
-			btn.innerHTML = `<i class="fas fa-star mr-2"></i>${this.sub.quality ? "nu e de calitate" : "e de calitate"}</button>`;
+			btn.innerHTML = `<i class="fas fa-star mr-2"></i>${this.sub.quality ? "nu e evidențiată" : "trebuie evidențiată"}</button>`;
 			btn.onclick = () => this.toggleQuality();
 			rez.appendChild(btn);
 		}
