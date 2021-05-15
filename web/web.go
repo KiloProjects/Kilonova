@@ -52,6 +52,7 @@ type Web struct {
 	stkserv kilonova.SubTaskService
 	stserv  kilonova.SubTestService
 	plserv  kilonova.ProblemListService
+	aserv   kilonova.AttachmentService
 }
 
 func (rt *Web) status(w http.ResponseWriter, r *http.Request, statusCode int, err string) {
@@ -352,6 +353,23 @@ func (rt *Web) Handler() http.Handler {
 				http.ServeContent(w, r, "archive.kna", time.Now(), rd)
 			})
 		})
+
+		r.With(rt.ValidateAttachmentID).Get("/attachments/{aid}", func(w http.ResponseWriter, r *http.Request) {
+			pb, err := rt.pserv.ProblemByID(r.Context(), util.Attachment(r).ProblemID)
+			if err != nil {
+				http.Error(w, "Couldn't get problem", 500)
+				return
+			}
+			// TODO: Private attachments that can't be downloaded (for grader or something else)
+			if !util.IsProblemVisible(util.User(r), pb) {
+				http.Error(w, "403 Forbidden", 403)
+				return
+			}
+
+			w.Header().Add("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, util.Attachment(r).Name))
+			http.ServeContent(w, r, util.Attachment(r).Name, time.Now(), bytes.NewReader(util.Attachment(r).Data))
+		})
+
 		r.With(rt.mustBeAdmin).Get("/uitest", func(w http.ResponseWriter, r *http.Request) {
 			testUI.Execute(w, &SimpleParams{util.User(r)})
 		})
@@ -505,5 +523,5 @@ func NewWeb(kn *logic.Kilonova, ts kilonova.TypeServicer) *Web {
 	rd := mdrenderer.NewLocalRenderer()
 	//rd := mdrenderer.NewExternalRenderer("http://0.0.0.0:8040")
 	return &Web{kn, kn.DM, rd, kn.Debug,
-		ts.UserService(), ts.SubmissionService(), ts.ProblemService(), ts.TestService(), ts.SubTaskService(), ts.SubTestService(), ts.ProblemListService()}
+		ts.UserService(), ts.SubmissionService(), ts.ProblemService(), ts.TestService(), ts.SubTaskService(), ts.SubTestService(), ts.ProblemListService(), ts.AttachmentService()}
 }

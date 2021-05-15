@@ -58,6 +58,10 @@ func (d *DB) SessionService() kilonova.Sessioner {
 	return NewSessionService(d.conn)
 }
 
+func (d *DB) AttachmentService() kilonova.AttachmentService {
+	return NewAttachmentService(d.conn)
+}
+
 func (d *DB) Close() error {
 	return d.conn.Close()
 }
@@ -85,7 +89,7 @@ func (d *SQLiteDB) initDB(ctx context.Context, dir fs.FS) error {
 }
 
 func NewSQLite(ctx context.Context, filename string) (*SQLiteDB, error) {
-	conn, err := sqlx.Connect("sqlite3", "file:"+filename+"?_fk=on")
+	conn, err := sqlx.Connect("sqlite3", "file:"+filename+"?_fk=on&cache=shared")
 	if err != nil {
 		return nil, err
 	}

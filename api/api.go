@@ -23,6 +23,7 @@ type API struct {
 	tserv   kilonova.TestService
 	stserv  kilonova.SubTestService
 	stkserv kilonova.SubTaskService
+	aserv   kilonova.AttachmentService
 
 	manager kilonova.DataStore
 
@@ -31,7 +32,7 @@ type API struct {
 
 // New declares a new API instance
 func New(kn *logic.Kilonova, db kilonova.TypeServicer) *API {
-	return &API{kn, db.UserService(), db.SubmissionService(), db.ProblemService(), db.ProblemListService(), db.TestService(), db.SubTestService(), db.SubTaskService(), kn.DM, &sync.Mutex{}}
+	return &API{kn, db.UserService(), db.SubmissionService(), db.ProblemService(), db.ProblemListService(), db.TestService(), db.SubTestService(), db.SubTaskService(), db.AttachmentService(), kn.DM, &sync.Mutex{}}
 }
 
 // Handler is the magic behind the API
@@ -80,6 +81,11 @@ func (s *API) Handler() http.Handler {
 					r.Post("/score", s.updateTestScore)
 					r.Post("/orphan", s.orphanTest)
 				})
+
+				r.Post("/addAttachment", s.createAttachment)
+				r.With(s.validateAttachmentID).Post("/attachment/{aID}/", s.updateAttachmentMetadata)
+				r.Post("/bulkDeleteAttachments", s.bulkDeleteAttachments)
+
 				r.Post("/bulkDeleteTests", s.bulkDeleteTests)
 				r.Post("/bulkUpdateTestScores", s.bulkUpdateTestScores)
 				r.Post("/orphanTests", s.purgeTests)
@@ -92,6 +98,8 @@ func (s *API) Handler() http.Handler {
 
 			})
 			r.Route("/get", func(r chi.Router) {
+				r.Get("/attachments", s.getAttachments)
+
 				r.Get("/tests", s.getTests)
 				r.Get("/test", s.getTest)
 
@@ -100,6 +108,8 @@ func (s *API) Handler() http.Handler {
 			r.Post("/delete", s.deleteProblem)
 		})
 	})
+	// The one from /web/web.go is good enough
+	//r.Get("/getAttachment", s.getAttachment)
 	r.Route("/submissions", func(r chi.Router) {
 		r.Get("/get", s.filterSubs())
 		r.Get("/getByID", s.getSubmissionByID())

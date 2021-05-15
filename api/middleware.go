@@ -109,6 +109,22 @@ func (s *API) validateTestID(next http.Handler) http.Handler {
 	})
 }
 
+func (s *API) validateAttachmentID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attID, err := strconv.Atoi(chi.URLParam(r, "aID"))
+		if err != nil {
+			errorData(w, "invalid attachment ID", http.StatusBadRequest)
+			return
+		}
+		att, err := s.aserv.Attachment(r.Context(), attID)
+		if err != nil {
+			errorData(w, "attachment does not exist", http.StatusBadRequest)
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AttachmentKey, att)))
+	})
+}
+
 // validateProblemID pre-emptively returns if there isnt a valid problem ID in the URL params
 // Also, it fetches the problem from the DB and makes sure it exists
 func (s *API) validateProblemID(next http.Handler) http.Handler {

@@ -142,6 +142,7 @@ export class SubmissionManager {
 	}
 
 	subTasksNode() {
+		let rezz = document.createElement('div');
 		let rez = document.createElement('div')
 		rez.classList.add('list-group', 'my-2')
 		for(let subtask of this.subTasks) {
@@ -173,8 +174,18 @@ export class SubmissionManager {
 			row.appendChild(subtests)
 			rez.appendChild(row)
 		}
+		rezz.appendChild(rez)
 
-		return rez
+		if(this.subEditor) {
+			let tmp = document.createElement('details');
+			let tmp1 = document.createElement('summary');
+			tmp1.innerText = "(temporar) Vizualizare teste";
+			tmp.appendChild(tmp1);
+			tmp.appendChild(this.tableNode());
+			rezz.appendChild(tmp);
+		}
+
+		return rezz
 	}
 
 	tableNode() {

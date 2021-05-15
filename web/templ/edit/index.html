@@ -93,8 +93,7 @@
 </div>
 
 <script>
-let problemEnc = bundled.Base64.decode({{encodeJSON .Problem}});
-let problem = JSON.parse(problemEnc);
+let problem = {{.Problem}};
 
 Vue.createApp({
 	el: "",

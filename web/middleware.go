@@ -60,8 +60,31 @@ func (rt *Web) ValidateListID(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemListKey, list)))
 	})
-
 }
+
+// ValidateAttachmentID makes sure the attachment ID is a valid uint
+func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attid, err := strconv.Atoi(chi.URLParam(r, "aid"))
+		if err != nil {
+			http.Error(w, "ID invalid", 400)
+			return
+		}
+		att, err := rt.aserv.Attachment(r.Context(), attid)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				http.Error(w, "Atașamentul nu a fost găsit", 404)
+				return
+			}
+			log.Println("ValidateAttachmentID:", err)
+			http.Error(w, http.StatusText(500), 500)
+			rt.status(w, r, 500, "")
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AttachmentKey, att)))
+	})
+}
+
 func (rt *Web) ValidateSubTaskID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		subtaskID, err := strconv.Atoi(chi.URLParam(r, "stid"))

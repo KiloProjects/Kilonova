@@ -92,3 +92,38 @@ type ProblemService interface {
 	BulkUpdateProblems(ctx context.Context, filter ProblemFilter, upd ProblemUpdate) error
 	DeleteProblem(ctx context.Context, id int) error
 }
+
+type Attachment struct {
+	ID        int       `json:"id"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	ProblemID int       `json:"problem_id" db:"problem_id"`
+	Visible   bool      `json:"visible"`
+
+	Name string `json:"name"`
+	Data []byte `json:"data"`
+}
+
+type AttachmentFilter struct {
+	ID        *int    `json:"id"`
+	ProblemID *int    `json:"problem_id"`
+	Visible   *bool   `json:"visible"`
+	Name      *string `json:"name"`
+
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+}
+
+type AttachmentUpdate struct {
+	Visible *bool   `json:"visible"`
+	Data    []byte  `json:"data"`
+	Name    *string `json:"name"`
+}
+
+type AttachmentService interface {
+	CreateAttachment(context.Context, *Attachment) error
+	Attachment(ctx context.Context, id int) (*Attachment, error)
+	Attachments(ctx context.Context, getData bool, filter AttachmentFilter) ([]*Attachment, error)
+	UpdateAttachment(ctx context.Context, id int, upd AttachmentUpdate) error
+	DeleteAttachment(ctx context.Context, attid int) error
+	DeleteAttachments(ctx context.Context, pbid int) error
+}

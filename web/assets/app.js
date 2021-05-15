@@ -5,9 +5,7 @@ import cookie from 'js-cookie';
 
 import { Notyf } from 'notyf';
 
-import qs from 'qs';
-
-export {Base64} from 'js-base64';
+import qs from 'query-string';
 
 dayjs.locale('ro')
 

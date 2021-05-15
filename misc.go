@@ -50,6 +50,7 @@ type TypeServicer interface {
 	SubTaskService() SubTaskService
 	SessionService() Sessioner
 	VerificationService() Verificationer
+	AttachmentService() AttachmentService
 	io.Closer
 }
 

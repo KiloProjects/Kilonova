@@ -22,6 +22,8 @@ const (
 	SubTaskKey = KNContextType("test")
 	// ProblemListKey is the key to be used for adding problem lists to context
 	ProblemListKey = KNContextType("problemList")
+	// AttachmentKey is the key to be used for adding attachments to context
+	AttachmentKey = KNContextType("attachment")
 )
 
 // User returns the user from request context
@@ -70,7 +72,17 @@ func SubTask(r *http.Request) *kilonova.SubTask {
 	}
 }
 
-// Submission returns the submission from request context
+func Attachment(r *http.Request) *kilonova.Attachment {
+	switch v := r.Context().Value(AttachmentKey).(type) {
+	case kilonova.Attachment:
+		return &v
+	case *kilonova.Attachment:
+		return v
+	default:
+		return nil
+	}
+}
+
 func Submission(r *http.Request) *kilonova.Submission {
 	switch v := r.Context().Value(SubKey).(type) {
 	case kilonova.Submission:
