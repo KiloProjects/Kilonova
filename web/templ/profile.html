@@ -36,7 +36,7 @@
 	</p>
 	
 {{if .User}}
-{{if and (.User.Admin (not .ContentUser.Admin))}}
+{{if and .User.Admin (not .ContentUser.Admin)}}
 <button class="mt-6 block btn btn-red" onclick="deleteAccount()">Ștergere Cont</button>
 
 <script>
