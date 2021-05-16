@@ -148,6 +148,10 @@
 		@apply dark:text-gray-300 dark:hover:text-white dark:focus:text-white dark:active:text-white;
 	}
 
+	.topbar-selected {
+		@apply p-1 rounded bg-gray-200 dark:bg-gray-700;
+	}
+
 	.hoverable {
 		@apply hover:bg-gray-200 focus:bg-gray-200;
 		@apply dark:hover:bg-gray-700 dark:focus:bg-gray-700;

@@ -59,9 +59,9 @@ func (s *SubTaskService) SubTasks(ctx context.Context, pbid int) ([]*kilonova.Su
 	return sts, nil
 }
 
-func (s *SubTaskService) SubTasksByTest(ctx context.Context, pbid int) ([]*kilonova.SubTask, error) {
+func (s *SubTaskService) SubTasksByTest(ctx context.Context, pbid, tid int) ([]*kilonova.SubTask, error) {
 	var st []*subtask
-	err := s.db.SelectContext(ctx, &st, s.db.Rebind("SELECT * FROM subtasks WHERE tests LIKE ? ORDER BY visible_id"), fmt.Sprintf("%%%d%%", pbid))
+	err := s.db.SelectContext(ctx, &st, s.db.Rebind("SELECT * FROM subtasks WHERE tests LIKE ? AND problem_id = ? ORDER BY visible_id"), fmt.Sprintf("%%%d%%", tid), pbid)
 	if err != nil {
 		return nil, err
 	}

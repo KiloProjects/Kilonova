@@ -57,7 +57,7 @@ type SubTaskService interface {
 
 	SubTask(ctx context.Context, pbid, stvid int) (*SubTask, error)
 	SubTaskByID(ctx context.Context, stid int) (*SubTask, error)
-	SubTasksByTest(ctx context.Context, testid int) ([]*SubTask, error)
+	SubTasksByTest(ctx context.Context, problemid, testid int) ([]*SubTask, error)
 	SubTasks(ctx context.Context, pbid int) ([]*SubTask, error)
 
 	UpdateSubTask(ctx context.Context, id int, upd SubTaskUpdate) error

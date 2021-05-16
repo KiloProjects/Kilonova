@@ -1,7 +1,6 @@
 {{ define "title" }} Editare Test #{{.Test.VisibleID}} | Problema #{{.Problem.ID}}: {{.Problem.Name}} {{ end }}
 {{ define "content" }}
-
-{{ template "testTopbar.html" . }}
+{{ template "topbar.html" . }}
 <br/>
 <div class="border-2 border-gr p-2">
 	<h2> Editare test {{ .Test.VisibleID }} </h2>	

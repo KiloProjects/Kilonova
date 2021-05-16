@@ -34,17 +34,18 @@ var (
 	login  = parse("auth/login.html")
 	signup = parse("auth/signup.html")
 
-	editIndex   = parse("edit/index.html")
-	editDesc    = parse("edit/desc.html")
-	editChecker = parse("edit/checker.html")
+	editIndex       = parse("edit/index.html", "edit/topbar.html")
+	editDesc        = parse("edit/desc.html", "edit/topbar.html")
+	editChecker     = parse("edit/checker.html", "edit/topbar.html")
+	editAttachments = parse("edit/attachments.html", "edit/topbar.html")
 
-	testAdd    = parse("edit/testAdd.html", "edit/testTopbar.html")
-	testEdit   = parse("edit/testEdit.html", "edit/testTopbar.html")
-	testScores = parse("edit/testScores.html", "edit/testTopbar.html")
+	testAdd    = parse("edit/testAdd.html", "edit/topbar.html")
+	testEdit   = parse("edit/testEdit.html", "edit/topbar.html")
+	testScores = parse("edit/testScores.html", "edit/topbar.html")
 
-	subtaskAdd   = parse("edit/subtaskAdd.html", "edit/subtaskTopbar.html")
-	subtaskEdit  = parse("edit/subtaskEdit.html", "edit/subtaskTopbar.html")
-	subtaskIndex = parse("edit/subtaskIndex.html", "edit/subtaskTopbar.html")
+	subtaskAdd   = parse("edit/subtaskAdd.html", "edit/topbar.html")
+	subtaskEdit  = parse("edit/subtaskEdit.html", "edit/topbar.html")
+	subtaskIndex = parse("edit/subtaskIndex.html", "edit/topbar.html")
 
 	pbListIndex  = parse("lists/index.html")
 	pbListCreate = parse("lists/create.html")
@@ -67,6 +68,19 @@ var (
 	listCreate = parse("lists/create.html")
 )
 
+type EditTopbar struct {
+	Page   string
+	PageID int
+}
+
+func (t *EditTopbar) IsOnTest(test *kilonova.Test) bool {
+	return t.Page == "tests" && test.VisibleID == t.PageID
+}
+
+func (t *EditTopbar) IsOnSubtask(stk *kilonova.SubTask) bool {
+	return t.Page == "subtasks" && stk.VisibleID == t.PageID
+}
+
 type ProblemParams struct {
 	User          *kilonova.User
 	ProblemEditor bool
@@ -81,6 +95,8 @@ type ProblemParams struct {
 type ProblemEditParams struct {
 	User    *kilonova.User
 	Problem *kilonova.Problem
+
+	Topbar *EditTopbar
 }
 
 type ProblemListParams struct {
@@ -137,6 +153,7 @@ type SubTaskEditParams struct {
 	User    *kilonova.User
 	Problem *kilonova.Problem
 	SubTask *kilonova.SubTask
+	Topbar  *EditTopbar
 
 	ctx    context.Context
 	tserv  kilonova.TestService
@@ -160,7 +177,7 @@ func (s *SubTaskEditParams) ProblemSubTasks() []*kilonova.SubTask {
 }
 
 func (s *SubTaskEditParams) TestSubTasks(id int) string {
-	sts, err := s.stserv.SubTasksByTest(s.ctx, id)
+	sts, err := s.stserv.SubTasksByTest(s.ctx, s.Problem.ID, id)
 	if err != nil || sts == nil || len(sts) == 0 {
 		return "-"
 	}
@@ -186,6 +203,7 @@ type TestEditParams struct {
 	User    *kilonova.User
 	Problem *kilonova.Problem
 	Test    *kilonova.Test
+	Topbar  *EditTopbar
 
 	tserv kilonova.TestService
 	dm    kilonova.DataStore

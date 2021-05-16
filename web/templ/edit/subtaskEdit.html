@@ -1,11 +1,11 @@
 {{ define "title" }}Editare SubTask {{.SubTask.ID}}{{ end }}
 {{ define "content" }}
-{{ template "subtaskTopbar.html" . }}
+{{ template "topbar.html" . }}
 
 {{ $root := . }}
 
 <form class="segment-container" id="subtask-update">
-	<h2> Editare SubTask #{{.SubTask.ID}} </h2>
+	<h2> Editare SubTask #{{.SubTask.VisibleID}} </h2>
 	{{ if not (len .SubTask.Tests) }} WARNING: SubTask gol, va afișa mereu 0 puncte {{ end }}
 
 	{{ with .ProblemTests }}

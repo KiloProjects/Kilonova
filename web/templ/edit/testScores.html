@@ -1,15 +1,6 @@
 {{ define "title" }} Teste {{ end }}
 {{ define "content" }}
-{{ template "testTopbar.html" . }}
-
-<form id="test_add_form" class="segment-container">
-	<h2> Încărcare arhivă .zip cu teste (maxim 100MB) </h2>
-	<label class="block my-2">
-		<span class="mr-2 text-xl"> Arhivă:</span>
-		<input id="tests" type="file" class="form-input" accept=".zip" required />
-	</label>
-	<button class="btn btn-blue mb-2">Încărcare teste</button>
-</form>
+{{ template "topbar.html" . }}
 
 <div class="segment-container">
 	<h2>Actualizare teste</h1>
@@ -17,7 +8,7 @@
 		<table class="kn-table my-2" style="table-layout: fixed">
 			<thead>
 				<th scope="col" class="w-1/4">
-					<input class="form-checkbox" type="checkbox" id="selectAllBox" />
+					<input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
 				</th>
 				<th scope="col" class="w-1/4 text-center px-4 py-2">
 					ID
@@ -139,6 +130,16 @@ async function updateTests() {
 
 </script>
 </div>
+
+<form id="test_add_form" class="segment-container">
+	<h2> Încărcare arhivă .zip cu teste (maxim 100MB) </h2>
+	<label class="block my-2">
+		<span class="mr-2 text-xl"> Arhivă:</span>
+		<input id="tests" type="file" class="form-input" accept=".zip" required />
+	</label>
+	<button class="btn btn-blue mb-2">Încărcare teste</button>
+</form>
+
 
 <script>
 async function uploadTests(e) {

@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-const Version = "v0.8.0"
+const Version = "v0.8.1"
 
 //go:embed docs
 var Docs embed.FS

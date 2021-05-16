@@ -1,9 +1,9 @@
 {{ define "title" }}SubTasks{{ end }}
 {{ define "content" }}
-{{ template "subtaskTopbar.html" . }}
+{{ template "topbar.html" . }}
 
 <div class="segment-container">
-	<h2>Overview SubTasks</h2>
+	<h2>Actualizare SubTasks</h2>
 	{{ with .ProblemSubTasks }}
 		<table class="kn-table my-2" style="table-layout: fixed">
 			<thead>
@@ -13,7 +13,7 @@
 				<th scope="col" class="w-1/4 text-center px-4 py-2">
 					ID
 				</th>
-				<th scope="col" class="w-1/4">
+				<th scope="col" class="w-1/2">
 					Scor
 				</th>
 			</thead>

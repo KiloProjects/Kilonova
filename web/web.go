@@ -176,34 +176,37 @@ func (rt *Web) Handler() http.Handler {
 				r.Route("/edit", func(r chi.Router) {
 					r.Use(rt.mustBeEditor)
 					r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-						editIndex.Execute(w, &ProblemEditParams{util.User(r), util.Problem(r)})
+						editIndex.Execute(w, &ProblemEditParams{util.User(r), util.Problem(r), &EditTopbar{"general", -1}})
 					})
 					r.Get("/desc", func(w http.ResponseWriter, r *http.Request) {
-						editDesc.Execute(w, &ProblemEditParams{util.User(r), util.Problem(r)})
+						editDesc.Execute(w, &ProblemEditParams{util.User(r), util.Problem(r), &EditTopbar{"desc", -1}})
 					})
 					r.Get("/checker", func(w http.ResponseWriter, r *http.Request) {
-						editChecker.Execute(w, &ProblemEditParams{util.User(r), util.Problem(r)})
+						editChecker.Execute(w, &ProblemEditParams{util.User(r), util.Problem(r), &EditTopbar{"checker", -1}})
+					})
+					r.Get("/attachments", func(w http.ResponseWriter, r *http.Request) {
+						editAttachments.Execute(w, &ProblemEditParams{util.User(r), util.Problem(r), &EditTopbar{"attachments", -1}})
 					})
 					r.Route("/test", func(r chi.Router) {
 						r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-							testScores.Execute(w, &TestEditParams{util.User(r), util.Problem(r), &kilonova.Test{VisibleID: -2}, rt.tserv, rt.dm})
+							testScores.Execute(w, &TestEditParams{util.User(r), util.Problem(r), nil, &EditTopbar{"tests", -2}, rt.tserv, rt.dm})
 						})
 						r.Get("/add", func(w http.ResponseWriter, r *http.Request) {
-							testAdd.Execute(w, &TestEditParams{util.User(r), util.Problem(r), &kilonova.Test{VisibleID: -1}, rt.tserv, rt.dm})
+							testAdd.Execute(w, &TestEditParams{util.User(r), util.Problem(r), nil, &EditTopbar{"tests", -1}, rt.tserv, rt.dm})
 						})
 						r.With(rt.ValidateTestID).Get("/{tid}", func(w http.ResponseWriter, r *http.Request) {
-							testEdit.Execute(w, &TestEditParams{util.User(r), util.Problem(r), util.Test(r), rt.tserv, rt.dm})
+							testEdit.Execute(w, &TestEditParams{util.User(r), util.Problem(r), util.Test(r), &EditTopbar{"tests", util.Test(r).VisibleID}, rt.tserv, rt.dm})
 						})
 					})
 					r.Route("/subtasks", func(r chi.Router) {
 						r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-							subtaskIndex.Execute(w, &SubTaskEditParams{util.User(r), util.Problem(r), &kilonova.SubTask{VisibleID: -2}, r.Context(), rt.tserv, rt.stkserv})
+							subtaskIndex.Execute(w, &SubTaskEditParams{util.User(r), util.Problem(r), nil, &EditTopbar{"subtasks", -2}, r.Context(), rt.tserv, rt.stkserv})
 						})
 						r.Get("/add", func(w http.ResponseWriter, r *http.Request) {
-							subtaskAdd.Execute(w, &SubTaskEditParams{util.User(r), util.Problem(r), &kilonova.SubTask{VisibleID: -1}, r.Context(), rt.tserv, rt.stkserv})
+							subtaskAdd.Execute(w, &SubTaskEditParams{util.User(r), util.Problem(r), nil, &EditTopbar{"subtasks", -1}, r.Context(), rt.tserv, rt.stkserv})
 						})
 						r.With(rt.ValidateSubTaskID).Get("/{stid}", func(w http.ResponseWriter, r *http.Request) {
-							subtaskEdit.Execute(w, &SubTaskEditParams{util.User(r), util.Problem(r), util.SubTask(r), r.Context(), rt.tserv, rt.stkserv})
+							subtaskEdit.Execute(w, &SubTaskEditParams{util.User(r), util.Problem(r), util.SubTask(r), &EditTopbar{"subtasks", util.SubTask(r).VisibleID}, r.Context(), rt.tserv, rt.stkserv})
 						})
 					})
 				})
