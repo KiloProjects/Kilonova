@@ -96,7 +96,7 @@ func ReadKNA(data io.Reader) ([]*FullProblem, error) {
 	return problems, db.Close()
 }
 
-func GenKNA(problems []*Problem, testServer TestService, subTaskServer SubTaskService, dm GraderStore) (io.ReadSeekCloser, error) {
+func GenKNA(problems []*Problem, outDB DB, dm GraderStore) (io.ReadSeekCloser, error) {
 	// Creating the file
 	file, err := os.CreateTemp("", "kna_w-*.db")
 	if err != nil {
@@ -173,7 +173,7 @@ func GenKNA(problems []*Problem, testServer TestService, subTaskServer SubTaskSe
 			log.Println(pb.ID, err)
 			continue
 		}
-		tests, err := testServer.Tests(context.Background(), pb.ID)
+		tests, err := outDB.Tests(context.Background(), pb.ID)
 		if err != nil {
 			log.Println(err)
 			continue
@@ -213,7 +213,7 @@ func GenKNA(problems []*Problem, testServer TestService, subTaskServer SubTaskSe
 			}
 		}
 
-		stks, err := subTaskServer.SubTasks(context.Background(), pb.ID)
+		stks, err := outDB.SubTasks(context.Background(), pb.ID)
 		if err != nil {
 			log.Println(err)
 			continue

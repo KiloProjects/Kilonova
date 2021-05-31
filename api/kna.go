@@ -30,7 +30,7 @@ func (s *API) createKNA(w http.ResponseWriter, r *http.Request) {
 	}
 	pbs := make([]*kilonova.Problem, 0, len(pbIDs))
 	for _, id := range pbIDs {
-		pb, err := s.pserv.ProblemByID(r.Context(), id)
+		pb, err := s.db.Problem(r.Context(), id)
 		if err != nil {
 			log.Println(err)
 			errorData(w, "One of the problem IDs is invalid", 400)
@@ -38,7 +38,7 @@ func (s *API) createKNA(w http.ResponseWriter, r *http.Request) {
 		}
 		pbs = append(pbs, pb)
 	}
-	rd, err := kilonova.GenKNA(pbs, s.tserv, s.stkserv, s.kn.DM)
+	rd, err := kilonova.GenKNA(pbs, s.db, s.kn.DM)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -77,7 +77,7 @@ func (s *API) loadKNA(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if _, err := s.userv.UserByID(r.Context(), id); err != nil {
+	if _, err := s.db.User(r.Context(), id); err != nil {
 		errorData(w, "Invalid author", 400)
 		return
 	}
@@ -92,7 +92,7 @@ func (s *API) loadKNA(w http.ResponseWriter, r *http.Request) {
 	for _, pb := range pbs {
 		pb.Name = s.nextProblemName(r.Context(), pb.Name)
 		pb.AuthorID = id
-		if err := s.pserv.CreateProblem(r.Context(), &pb.Problem); err != nil {
+		if err := s.db.CreateProblem(r.Context(), &pb.Problem); err != nil {
 			errorsHappened = true
 			log.Println(err)
 			continue
@@ -103,7 +103,7 @@ func (s *API) loadKNA(w http.ResponseWriter, r *http.Request) {
 		for _, test := range pb.Tests {
 			test.ProblemID = pb.ID
 			oldID := test.ID
-			if err := s.tserv.CreateTest(r.Context(), &test.Test); err != nil {
+			if err := s.db.CreateTest(r.Context(), &test.Test); err != nil {
 				errorsHappened = true
 				log.Printf("Problem %d, test creation: %s\n", pb.ID, err)
 				continue
@@ -130,7 +130,7 @@ func (s *API) loadKNA(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			stk.Tests = newTestIDs
-			if err := s.stkserv.CreateSubTask(r.Context(), stk); err != nil {
+			if err := s.db.CreateSubTask(r.Context(), stk); err != nil {
 				errorsHappened = true
 				log.Printf("Problem %d, subtask creation: %s\n", pb.ID, err)
 				continue
@@ -145,14 +145,14 @@ func (s *API) loadKNA(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) nextProblemName(ctx context.Context, name string) string {
-	pbs, err := s.pserv.Problems(ctx, kilonova.ProblemFilter{Name: &name})
+	pbs, err := s.db.Problems(ctx, kilonova.ProblemFilter{Name: &name})
 	if err == nil && len(pbs) == 0 {
 		return name
 	}
 
 	for i := 1; i <= 10; i++ {
 		newName := fmt.Sprintf("%s (%d)", name, i)
-		pbs, err := s.pserv.Problems(ctx, kilonova.ProblemFilter{Name: &newName})
+		pbs, err := s.db.Problems(ctx, kilonova.ProblemFilter{Name: &newName})
 		if err == nil && len(pbs) == 0 {
 			return newName
 		}

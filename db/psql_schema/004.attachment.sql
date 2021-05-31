@@ -5,5 +5,6 @@ CREATE TABLE IF NOT EXISTS attachments (
 	visible 	boolean 	NOT NULL DEFAULT false,
 
 	name 		text 		NOT NULL,
-	data 		bytea 		NOT NULL
+	data 		bytea 		NOT NULL,
+	data_size 	INTEGER 	GENERATED ALWAYS AS (length(data)) STORED
 );

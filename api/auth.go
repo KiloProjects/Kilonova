@@ -52,7 +52,7 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if exists, err := s.userv.UserExists(r.Context(), auth.Username, auth.Email); err != nil || exists {
+	if exists, err := s.db.UserExists(r.Context(), auth.Username, auth.Email); err != nil || exists {
 		errorData(w, "User matching email or username already exists", http.StatusBadRequest)
 		return
 	}
@@ -104,7 +104,7 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := s.userv.Users(r.Context(), kilonova.UserFilter{Name: &auth.Username, Limit: 1})
+	users, err := s.db.Users(r.Context(), kilonova.UserFilter{Name: &auth.Username, Limit: 1})
 	if err != nil || len(users) == 0 {
 		errorData(w, "User not found", http.StatusBadRequest)
 		return

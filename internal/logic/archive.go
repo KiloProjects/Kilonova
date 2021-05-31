@@ -140,7 +140,7 @@ func (kn *Kilonova) ProcessZipTestArchive(pb *kilonova.Problem, ar *zip.Reader) 
 
 	// If we are loading an archive, the user might want to remove all tests first
 	// So let's do it for them
-	if err := kn.tserv.OrphanProblemTests(context.Background(), pb.ID); err != nil {
+	if err := kn.DB.OrphanProblemTests(context.Background(), pb.ID); err != nil {
 		log.Println(err)
 		return err
 	}
@@ -150,7 +150,7 @@ func (kn *Kilonova) ProcessZipTestArchive(pb *kilonova.Problem, ar *zip.Reader) 
 		test.ProblemID = pb.ID
 		test.VisibleID = testID
 		test.Score = v.Score
-		if err := kn.tserv.CreateTest(context.Background(), &test); err != nil {
+		if err := kn.DB.CreateTest(context.Background(), &test); err != nil {
 			log.Println(err)
 			return err
 		}

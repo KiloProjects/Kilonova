@@ -9,24 +9,19 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/gosimple/slug"
-	"github.com/jmoiron/sqlx"
 )
 
-var _ kilonova.ProblemService = &ProblemService{}
-
-type ProblemService struct {
-	db *sqlx.DB
+func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
+	var pb kilonova.Problem
+	err := s.conn.GetContext(ctx, &pb, s.conn.Rebind("SELECT * FROM problems WHERE id = ? LIMIT 1"), id)
+	return &pb, err
 }
 
-func (s *ProblemService) ProblemByID(ctx context.Context, id int) (*kilonova.Problem, error) {
-	return s.problemByID(ctx, id)
-}
-
-func (s *ProblemService) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*kilonova.Problem, error) {
+func (s *DB) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*kilonova.Problem, error) {
 	var pbs []*kilonova.Problem
-	where, args := s.filterQueryMaker(&filter)
-	query := s.db.Rebind("SELECT * FROM problems WHERE " + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
-	err := s.db.SelectContext(ctx, &pbs, query, args...)
+	where, args := problemFilterQuery(&filter)
+	query := s.conn.Rebind("SELECT * FROM problems WHERE " + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
+	err := s.conn.SelectContext(ctx, &pbs, query, args...)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		err = nil
 		pbs = []*kilonova.Problem{}
@@ -40,7 +35,7 @@ const problemCreateQuery = `INSERT INTO problems (
 	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 ) RETURNING id;`
 
-func (s *ProblemService) CreateProblem(ctx context.Context, p *kilonova.Problem) error {
+func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem) error {
 	if p.Name == "" || p.AuthorID == 0 {
 		return kilonova.ErrMissingRequired
 	}
@@ -63,52 +58,46 @@ func (s *ProblemService) CreateProblem(ctx context.Context, p *kilonova.Problem)
 		p.Type = kilonova.ProblemTypeClassic
 	}
 	var id int
-	err := s.db.GetContext(ctx, &id, s.db.Rebind(problemCreateQuery), p.Name, p.Description, p.AuthorID, p.ConsoleInput, p.TestName, p.MemoryLimit, p.StackLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.AuthorCredits, p.ShortDesc, p.DefaultPoints, p.Type, p.HelperCode, p.HelperCodeLang)
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(problemCreateQuery), p.Name, p.Description, p.AuthorID, p.ConsoleInput, p.TestName, p.MemoryLimit, p.StackLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.AuthorCredits, p.ShortDesc, p.DefaultPoints, p.Type, p.HelperCode, p.HelperCodeLang)
 	if err == nil {
 		p.ID = id
 	}
 	return err
 }
 
-const problemUpdateQuery = `UPDATE problems SET %s WHERE id = ?`
+const problemUpdateStatement = `UPDATE problems SET %s WHERE id = ?`
 
-func (s *ProblemService) UpdateProblem(ctx context.Context, id int, upd kilonova.ProblemUpdate) error {
-	toUpd, args := s.updateQueryMaker(&upd)
+func (s *DB) UpdateProblem(ctx context.Context, id int, upd kilonova.ProblemUpdate) error {
+	toUpd, args := problemUpdateQuery(&upd)
 	if len(toUpd) == 0 {
 		return kilonova.ErrNoUpdates
 	}
 	args = append(args, id)
-	query := s.db.Rebind(fmt.Sprintf(problemUpdateQuery, strings.Join(toUpd, ", ")))
-	_, err := s.db.ExecContext(ctx, query, args...)
+	query := s.conn.Rebind(fmt.Sprintf(problemUpdateStatement, strings.Join(toUpd, ", ")))
+	_, err := s.conn.ExecContext(ctx, query, args...)
 	return err
 }
 
-const bulkProblemUpdateQuery = `UPDATE problems SET %s WHERE %s`
+const bulkProblemUpdateStatement = `UPDATE problems SET %s WHERE %s`
 
-func (s *ProblemService) BulkUpdateProblems(ctx context.Context, filter kilonova.ProblemFilter, upd kilonova.ProblemUpdate) error {
-	toUpd, args := s.updateQueryMaker(&upd)
+func (s *DB) BulkUpdateProblems(ctx context.Context, filter kilonova.ProblemFilter, upd kilonova.ProblemUpdate) error {
+	toUpd, args := problemUpdateQuery(&upd)
 	if len(toUpd) == 0 {
 		return kilonova.ErrNoUpdates
 	}
-	where, args1 := s.filterQueryMaker(&filter)
+	where, args1 := problemFilterQuery(&filter)
 	args = append(args, args1...)
-	query := s.db.Rebind(fmt.Sprintf(bulkProblemUpdateQuery, strings.Join(toUpd, ", "), strings.Join(where, ", ")))
-	_, err := s.db.ExecContext(ctx, query, args...)
+	query := s.conn.Rebind(fmt.Sprintf(bulkProblemUpdateStatement, strings.Join(toUpd, ", "), strings.Join(where, ", ")))
+	_, err := s.conn.ExecContext(ctx, query, args...)
 	return err
 }
 
-func (s *ProblemService) DeleteProblem(ctx context.Context, id int) error {
-	_, err := s.db.ExecContext(ctx, s.db.Rebind("DELETE FROM problems WHERE id = ?"), id)
+func (s *DB) DeleteProblem(ctx context.Context, id int) error {
+	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("DELETE FROM problems WHERE id = ?"), id)
 	return err
 }
 
-func (s *ProblemService) problemByID(ctx context.Context, id int) (*kilonova.Problem, error) {
-	var pb kilonova.Problem
-	err := s.db.GetContext(ctx, &pb, s.db.Rebind("SELECT * FROM problems WHERE id = ? LIMIT 1"), id)
-	return &pb, err
-}
-
-func (s *ProblemService) filterQueryMaker(filter *kilonova.ProblemFilter) ([]string, []interface{}) {
+func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []interface{}) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := filter.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, v)
@@ -137,7 +126,7 @@ func (s *ProblemService) filterQueryMaker(filter *kilonova.ProblemFilter) ([]str
 	return where, args
 }
 
-func (s *ProblemService) updateQueryMaker(upd *kilonova.ProblemUpdate) ([]string, []interface{}) {
+func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []interface{}) {
 	toUpd, args := []string{}, []interface{}{}
 	if v := upd.Name; v != nil {
 		toUpd, args = append(toUpd, "name = ?"), append(args, v)
@@ -198,8 +187,4 @@ func (s *ProblemService) updateQueryMaker(upd *kilonova.ProblemUpdate) ([]string
 	}
 
 	return toUpd, args
-}
-
-func NewProblemService(db *sqlx.DB) kilonova.ProblemService {
-	return &ProblemService{db}
 }

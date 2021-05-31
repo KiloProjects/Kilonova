@@ -25,7 +25,7 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 			rt.status(w, r, http.StatusBadRequest, "ID invalid")
 			return
 		}
-		problem, err := rt.pserv.ProblemByID(r.Context(), problemID)
+		problem, err := rt.db.Problem(r.Context(), problemID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				rt.status(w, r, 404, "Problema nu a fost găsită")
@@ -48,7 +48,7 @@ func (rt *Web) ValidateListID(next http.Handler) http.Handler {
 			rt.status(w, r, http.StatusBadRequest, "ID invalid")
 			return
 		}
-		list, err := rt.plserv.ProblemList(r.Context(), listID)
+		list, err := rt.db.ProblemList(r.Context(), listID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				rt.status(w, r, 404, "Lista nu a fost găsită")
@@ -70,7 +70,7 @@ func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
 			http.Error(w, "ID invalid", 400)
 			return
 		}
-		att, err := rt.aserv.Attachment(r.Context(), attid)
+		att, err := rt.db.Attachment(r.Context(), attid)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "Atașamentul nu a fost găsit", 404)
@@ -92,7 +92,7 @@ func (rt *Web) ValidateSubTaskID(next http.Handler) http.Handler {
 			rt.status(w, r, http.StatusBadRequest, "ID invalid")
 			return
 		}
-		subtask, err := rt.stkserv.SubTask(r.Context(), util.Problem(r).ID, subtaskID)
+		subtask, err := rt.db.SubTask(r.Context(), util.Problem(r).ID, subtaskID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				rt.status(w, r, 404, "SubTask-ul nu există")
@@ -125,7 +125,7 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 			rt.status(w, r, 400, "ID submisie invalid")
 			return
 		}
-		sub, err := rt.sserv.SubmissionByID(r.Context(), subID)
+		sub, err := rt.db.Submission(r.Context(), subID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				rt.status(w, r, 400, "Submisia nu există")
@@ -136,7 +136,18 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 			return
 		}
 
-		if !util.IsSubmissionVisible(sub, util.User(r), rt.sserv) {
+		pb, err := rt.db.Problem(r.Context(), sub.ProblemID)
+		if err != nil {
+			log.Println(err)
+			rt.status(w, r, 500, "")
+			return
+		}
+		if !util.IsProblemVisible(util.User(r), pb) {
+			rt.status(w, r, 403, "Nu poți accesa această submisie!")
+			return
+		}
+
+		if !util.IsSubmissionVisible(sub, util.User(r), rt.db) {
 			sub.Code = ""
 		}
 
@@ -152,7 +163,7 @@ func (rt *Web) ValidateTestID(next http.Handler) http.Handler {
 			rt.status(w, r, 400, "Test invalid")
 			return
 		}
-		test, err := rt.tserv.Test(r.Context(), util.Problem(r).ID, testID)
+		test, err := rt.db.Test(r.Context(), util.Problem(r).ID, testID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				rt.status(w, r, 404, "Testul nu există")
@@ -231,7 +242,7 @@ func (rt *Web) getUser(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		user, err := rt.userv.UserByID(r.Context(), sess)
+		user, err := rt.db.User(r.Context(), sess)
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return

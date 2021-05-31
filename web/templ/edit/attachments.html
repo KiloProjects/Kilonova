@@ -2,10 +2,118 @@
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
-<div class="segment-container" id="">
+{{ $pbid := .Problem.ID }}
+
+<div class="segment-container">
+	{{ with .Attachments }}
+		<table class="kn-table my-2" style="table-layout: fixed">
+			<thead>
+				<th scope="col" class="w-1/8">
+					<input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
+				</th>
+				<th scope="col" class="w-1/2">
+					Nume
+				</th>
+				<th scope="col" class="w-1/4">
+					Dimensiune
+				</th>
+				<th scope="col" class="w-1/8">
+					Vizibil
+				</th>
+			</thead>
+			<tbody id="att-body">
+			{{ range . }}
+				<tr id="row-att-{{.ID}}" class="kn-table-row">
+					<td class="kn-table-cell">
+						<input class="form-checkbox" type="checkbox" id="pb-att-{{.ID}}" autocomplete="off" />
+					</td>
+					<td class="kn-table-cell" id="name-att-{{.ID}}">
+						<a href="/problems/{{$pbid}}/attachments/{{.Name}}">{{.Name}}</a>
+					</td>
+					<td class="kn-table-cell" id="size-att-{{.ID}}">
+						{{.Size}}
+					</td>
+					<td class="kn-table-cell">
+						<input class="form-checkbox" type="checkbox" id="visible-att-{{.ID}}" {{if .Visible}}checked{{end}} disabled>
+					</td>
+				</tr>
+			{{ end }}
+			</tbody>
+		</table>
+		<button class="btn btn-red mr-2" onclick="deleteAttachments()">Șterge atașamentele selectate</button>
+	{{ else }}
+	Nu există vreun atașament asociat problemei.
+	{{ end }}
 </div>
 
 <script>
+var pbid = {{.Problem.ID}}, rowreg = /row-att-([0-9]+)/;
+
+const mgr = new bundled.CheckboxManager(document.getElementById("selectAllBox"), document.querySelectorAll("[id^='pb-att-']"))
+
+async function deleteAttachments() {
+	var attachments = [];
+	for(let e of document.querySelectorAll("[id^='row-att-']")) {
+		let id = rowreg.exec(e.id)[1];
+		let checked = document.getElementById(`pb-att-${id}`).checked;
+		if(checked) {
+			attachments.push(id);
+		}
+	}
+	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/bulkDeleteAttachments", {atts: attachments.join(',')})
+	if(res.status === "success") {
+		window.location.reload();
+		return;
+	}
+	bundled.apiToast(res)
+}
+
+function prettifyAttachments() {
+	for(let el of document.querySelectorAll("[id^='name-att-']")) {
+		el.innerHtml = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerText}`	
+	}
+	for(let el of document.querySelectorAll("[id^='size-att-']")) {
+		console.log(el.innerText)
+		el.innerText = bundled.sizeFormatter(Number(el.innerText))
+	}
+}
+prettifyAttachments()
+
+</script>
+
+<form id="attCreate" class="segment-container">
+	<label class="block my-2">
+		<span class="mr-2 text-xl">Fișier: </span>
+		<input class="form-file" id="attFile" type="file" required/>
+	</label>
+	<label class="block my-2">
+		<input class="form-checkbox" id="attVisible" type="checkbox"/>
+		<span class="ml-2 text-xl">Vizibil</span>
+	</label>
+	<button type="submit" class="btn btn-blue">Încărcare</button>
+</div>
+
+<script>
+async function createAttachment(e) {
+	e.preventDefault()
+	let files = document.getElementById("attFile").files;
+	if(files === null || files.length == 0) {
+		bundled.createToast({status: "error", title: "No files selected"});
+		return
+	}
+	let form = new FormData();
+	form.append("data", files[0]);
+	form.append("visible", document.getElementById("attVisible").checked);
+
+	let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/addAttachment", form)
+	if(res.status !== "success") {
+		bundled.apiToast(res);
+		return
+	}
+	window.location.reload();
+}
+
+document.getElementById("attCreate").addEventListener("submit", createAttachment)
 </script>
 
 {{ end }}

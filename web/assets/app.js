@@ -15,6 +15,9 @@ dayjs.locale('ro')
 export function sizeFormatter(size, max_step, floor) {
 	var units = size
 	var suffix = "B"
+	if(max_step === null || max_step === undefined) {
+		max_step = 0
+	}
 	if(size > 1024*1024 && max_step == 0) {
 		units = (size/1024/1024).toFixed(2) 
 		suffix = "MB"
@@ -237,5 +240,9 @@ export {
 	resendEmail
 };
 
+import _ from 'underscore';
+export { _ };
+
 export { SubmissionManager } from './sub_mgr.js';
+export { CheckboxManager } from './checkbox_mgr.js';
 export { getFileIcon, extensionIcons, CDNManager } from './cdn_mgr.js';

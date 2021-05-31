@@ -38,7 +38,7 @@ func (job *ExecuteTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	}
 	consoleInput := job.Req.Filename == "stdin"
 
-	lang := config.Languages[job.Req.Lang]
+	lang := eval.Langs[job.Req.Lang]
 	if err := eval.CopyInBox(box, path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", job.Req.SubID)), lang.CompiledName); err != nil {
 		job.Resp.Comments = "Couldn't copy executable in box"
 		return err
@@ -49,7 +49,7 @@ func (job *ExecuteTask) Execute(ctx context.Context, box eval.Sandbox) error {
 		StackLimit:  job.Req.StackLimit,
 		TimeLimit:   job.Req.TimeLimit,
 	}
-	meta, err := eval.RunSubmission(ctx, box, config.Languages[job.Req.Lang], lim, consoleInput)
+	meta, err := eval.RunSubmission(ctx, box, eval.Langs[job.Req.Lang], lim, consoleInput)
 	if err != nil {
 		job.Resp.Comments = fmt.Sprintf("Error running submission: %v", err)
 		return nil

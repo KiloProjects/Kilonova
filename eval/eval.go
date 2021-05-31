@@ -4,8 +4,6 @@ import (
 	"context"
 	"io"
 	"io/fs"
-
-	"github.com/KiloProjects/kilonova/internal/config"
 )
 
 type Sandbox interface {
@@ -90,7 +88,7 @@ type RunConfig struct {
 	EnvToInherit []string
 	EnvToSet     map[string]string
 
-	Directories []config.Directory
+	Directories []Directory
 }
 
 type RunStats struct {

@@ -12,6 +12,8 @@
 		<a class="p-1 {{if (eq $topbar.Page "checker")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/checker">Checker</a>
 		|
 		{{ end }}
+		<a class="p-1 {{if (eq $topbar.Page "attachments")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/attachments">Atașamente</a>
+		|
 		<a class="p-1 {{if and (eq $topbar.Page "tests") (eq $topbar.PageID -2)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test">Teste</a>
 		|
 		<a class="p-1 {{if and (eq $topbar.Page "subtasks") (eq $topbar.PageID -2)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks">SubTasks</a>

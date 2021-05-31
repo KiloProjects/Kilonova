@@ -33,12 +33,12 @@ func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	returnData(w, s.sserv.MaxScore(r.Context(), args.UserID, args.ProblemID))
+	returnData(w, s.db.MaxScore(r.Context(), args.UserID, args.ProblemID))
 }
 
 func (s *API) deleteProblem(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	if err := s.pserv.DeleteProblem(r.Context(), util.Problem(r).ID); err != nil {
+	if err := s.db.DeleteProblem(r.Context(), util.Problem(r).ID); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -65,7 +65,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 		consoleInput = ci
 	}
 
-	pb, err := s.pserv.Problems(r.Context(), kilonova.ProblemFilter{Name: &title})
+	pb, err := s.db.Problems(r.Context(), kilonova.ProblemFilter{Name: &title})
 	if len(pb) > 0 || err != nil {
 		errorData(w, "Problem with specified title already exists in DB", http.StatusBadRequest)
 		return
@@ -75,7 +75,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 	problem.Name = title
 	problem.AuthorID = util.User(r).ID
 	problem.ConsoleInput = consoleInput
-	if err := s.pserv.CreateProblem(r.Context(), &problem); err != nil {
+	if err := s.db.CreateProblem(r.Context(), &problem); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -101,7 +101,7 @@ func (s *API) getProblems(w http.ResponseWriter, r *http.Request) {
 	}
 	args.LookingUserID = &id
 
-	problems, err := s.pserv.Problems(r.Context(), args)
+	problems, err := s.db.Problems(r.Context(), args)
 	if err != nil {
 		errorData(w, http.StatusText(500), 500)
 		return
@@ -127,7 +127,7 @@ func (s *API) getTestData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := s.tserv.Test(r.Context(), util.Problem(r).ID, id); err != nil {
+	if _, err := s.db.Test(r.Context(), util.Problem(r).ID, id); err != nil {
 		errorData(w, "Test doesn't exist", 400)
 		return
 	}
@@ -208,7 +208,7 @@ func (s *API) updateProblem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.pserv.UpdateProblem(r.Context(), util.Problem(r).ID, kilonova.ProblemUpdate{
+	if err := s.db.UpdateProblem(r.Context(), util.Problem(r).ID, kilonova.ProblemUpdate{
 		Name:         args.Title,
 		Description:  args.Description,
 		ConsoleInput: args.ConsoleInput,

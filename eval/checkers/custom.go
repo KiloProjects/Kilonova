@@ -58,7 +58,7 @@ type customCheckerTask struct {
 var customTaskErr = kilonova.Error{Code: kilonova.EINTERNAL, Message: ErrOut}
 
 func (job *customCheckerTask) Execute(ctx context.Context, box eval.Sandbox) error {
-	lang, ok := config.Languages[job.c.pb.HelperCodeLang]
+	lang, ok := eval.Langs[job.c.pb.HelperCodeLang]
 	if !ok {
 		job.output = ErrOut
 		return nil

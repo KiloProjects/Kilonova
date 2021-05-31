@@ -1,3 +1,7 @@
+- v0.8.1:
+	- Bug fixes
+	- Small UI fixes
+	- UI revamp for the problem editor
 - v0.8.0:
 	- Bug fixes and many possible bug creations
 	- Proposers can delete problems

@@ -15,7 +15,6 @@
 	<!-- OpenGraph stuff -->
 	<meta property="og:title" content='{{template "title" .}}' />
 	<meta property="og:type" content="website" />
-	{{/* TODO: <meta property="og:url" content="https://kilonova.ro{{- .OGUrl -}}" /> */}}
 	<meta property="og:description" content='{{block "description" .}}Programming platform for learning and exercising{{end}}' />
 	<meta name="description" content='{{template "description" .}}' />
 	<meta property="og:locale" content="ro_RO" />
@@ -87,7 +86,7 @@ if(window.matchMedia('(prefers-color-scheme: dark)').matches) { // Dark Mode
 	<!-- production version, optimized for size and speed -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.0.4/vue.global.prod.js"></script>
 
-	{{ define "scripts" }} {{ end }}
+	{{ block "head" . }} {{ end }}
 
 	<link rel="stylesheet" href="/{{$style}}" />
 </head>
@@ -106,7 +105,7 @@ if(window.matchMedia('(prefers-color-scheme: dark)').matches) { // Dark Mode
 	<div class="c-container mb-2">
 		{{ block "content" . }}
 			<h1> Well... this is awkward... There's no content </h1>
-		{{end}}
+		{{ end }}
 	</div>
 
 	<footer class="w-full bg-gray-200 dark:bg-gray-700 py-2">

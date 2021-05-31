@@ -69,6 +69,19 @@
 					</a>
 				</div>
 			{{ end }}
+			{{ $pbid := .Problem.ID }}
+			{{ with .Attachments }}
+				<div class="h-0 w-full border-t border-gray-200"></div>
+				<div class="mt lg:pl-2 lg:pb-2"> <!-- Attachments -->
+					<div class="px-2">
+						<p class="text-lg">Atașamente</p>
+						<p>Știu că trb înfrumusețat</p>
+						{{ range . }}
+							<p class="segment-container"><a style="word-wrap: break-word;" href="/problems/{{$pbid}}/attachments/{{.Name}}">{{.Name}}</a></p>
+						{{ end }}
+					</div>
+				</div>
+			{{ end }}
 		</div>
 
 	</div>

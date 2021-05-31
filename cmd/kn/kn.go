@@ -28,17 +28,17 @@ import (
 	"github.com/go-chi/cors"
 )
 
-func executeExperiment(dm kilonova.DataStore, db kilonova.TypeServicer) error {
-	pb, err := db.ProblemService().ProblemByID(context.Background(), 1)
+func executeExperiment(dm kilonova.DataStore, db kilonova.DB) error {
+	pb, err := db.Problem(context.Background(), 1)
 	if err != nil {
 		return err
 	}
-	pb1, err := db.ProblemService().ProblemByID(context.Background(), 2)
+	pb1, err := db.Problem(context.Background(), 2)
 	if err != nil {
 		return err
 	}
 
-	rd, err := kilonova.GenKNA([]*kilonova.Problem{pb, pb1}, db.TestService(), db.SubTaskService(), dm)
+	rd, err := kilonova.GenKNA([]*kilonova.Problem{pb, pb1}, db, dm)
 	if err != nil {
 		return err
 	}

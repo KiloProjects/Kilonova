@@ -5,53 +5,46 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/jmoiron/sqlx"
 )
 
-var _ kilonova.UserService = &UserService{}
-
-type UserService struct {
-	db *sqlx.DB
-}
-
-// UserByID looks up a user by ID. Returns ENOTFOUND if the ID doesn't exist
-func (s *UserService) UserByID(ctx context.Context, id int) (*kilonova.User, error) {
+// User looks up a user by ID. Returns ENOTFOUND if the ID doesn't exist
+func (s *DB) User(ctx context.Context, id int) (*kilonova.User, error) {
 	var user kilonova.User
-	err := s.db.GetContext(ctx, &user, s.db.Rebind("SELECT * FROM users WHERE id = ? LIMIT 1"), id)
+	err := s.conn.GetContext(ctx, &user, s.conn.Rebind("SELECT * FROM users WHERE id = ? LIMIT 1"), id)
 	return &user, err
 }
 
 // Users retrieves users based on a filter.
-func (s *UserService) Users(ctx context.Context, filter kilonova.UserFilter) ([]*kilonova.User, error) {
+func (s *DB) Users(ctx context.Context, filter kilonova.UserFilter) ([]*kilonova.User, error) {
 	// TODO: Wrap error in a kilonova error
 	var users []*kilonova.User
-	where, args := s.filterQueryMaker(&filter)
-	query := s.db.Rebind("SELECT * from users WHERE " + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
-	err := s.db.SelectContext(ctx, &users, query, args...)
+	where, args := userFilterQuery(&filter)
+	query := s.conn.Rebind("SELECT * from users WHERE " + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
+	err := s.conn.SelectContext(ctx, &users, query, args...)
 	return users, err
 }
 
 // CountUsers retrieves the number of users matching a filter. It ignores the limit fields in `filter`.
-func (s *UserService) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, error) {
+func (s *DB) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, error) {
 	// TODO: Wrap error in a kilonova error
 	var count int
-	where, args := s.filterQueryMaker(&filter)
-	query := s.db.Rebind("SELECT COUNT(*) FROM users WHERE " + strings.Join(where, " AND "))
-	err := s.db.GetContext(ctx, &count, query, args...)
+	where, args := userFilterQuery(&filter)
+	query := s.conn.Rebind("SELECT COUNT(*) FROM users WHERE " + strings.Join(where, " AND "))
+	err := s.conn.GetContext(ctx, &count, query, args...)
 	return count, err
 }
 
 // UserExists says wether or not a user matches either a specific username (case-insensitive), either a specific email address.
-func (s *UserService) UserExists(ctx context.Context, username string, email string) (bool, error) {
+func (s *DB) UserExists(ctx context.Context, username string, email string) (bool, error) {
 	// TODO: Wrap error in a kilonova error
 	var count int
-	err := s.db.GetContext(ctx, &count, s.db.Rebind("SELECT COUNT(*) FROM users WHERE lower(name) = lower(?) OR lower(email) = lower(?)"), username, email)
+	err := s.conn.GetContext(ctx, &count, s.conn.Rebind("SELECT COUNT(*) FROM users WHERE lower(name) = lower(?) OR lower(email) = lower(?)"), username, email)
 	return count > 0, err
 }
 
 // UpdateUser updates a user.
 // Returns ENOTFOUND if the user does not exist
-func (s *UserService) UpdateUser(ctx context.Context, id int, upd kilonova.UserUpdate) error {
+func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserUpdate) error {
 	toUpd, args := []string{}, []interface{}{}
 
 	/*if v := upd.Name; v != nil {
@@ -93,34 +86,34 @@ func (s *UserService) UpdateUser(ctx context.Context, id int, upd kilonova.UserU
 	}
 	args = append(args, id)
 
-	query := s.db.Rebind("UPDATE users SET " + strings.Join(toUpd, ", ") + " WHERE id = ?;")
-	_, err := s.db.ExecContext(ctx, query, args...)
+	query := s.conn.Rebind("UPDATE users SET " + strings.Join(toUpd, ", ") + " WHERE id = ?;")
+	_, err := s.conn.ExecContext(ctx, query, args...)
 	return err
 }
 
 // DeleteUser permanently deletes a user from the system.
-func (s *UserService) DeleteUser(ctx context.Context, id int) error {
+func (s *DB) DeleteUser(ctx context.Context, id int) error {
 	// TODO: Wrap error in a kilonova error
-	_, err := s.db.ExecContext(ctx, s.db.Rebind("DELETE FROM users WHERE id = ?"), id)
+	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("DELETE FROM users WHERE id = ?"), id)
 	return err
 }
 
 // CreateUser creates a new user with the info specified in the object.
 // On success, user.ID is set to the new user ID.
-func (s *UserService) CreateUser(ctx context.Context, user *kilonova.User) error {
+func (s *DB) CreateUser(ctx context.Context, user *kilonova.User) error {
 	if user.Name == "" || user.Password == "" || user.Email == "" {
 		return kilonova.ErrMissingRequired
 	}
 
 	var id int
-	err := s.db.GetContext(ctx, &id, s.db.Rebind("INSERT INTO users (name, email, password, bio, default_visible, verified_email, admin, proposer) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id"), user.Name, user.Email, user.Password, user.Bio, user.DefaultVisible, user.VerifiedEmail, user.Admin, user.Proposer)
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind("INSERT INTO users (name, email, password, bio, default_visible, verified_email, admin, proposer) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id"), user.Name, user.Email, user.Password, user.Bio, user.DefaultVisible, user.VerifiedEmail, user.Admin, user.Proposer)
 	if err == nil {
 		user.ID = id
 	}
 	return err
 }
 
-func (s *UserService) filterQueryMaker(filter *kilonova.UserFilter) ([]string, []interface{}) {
+func userFilterQuery(filter *kilonova.UserFilter) ([]string, []interface{}) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := filter.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, v)
@@ -147,8 +140,4 @@ func (s *UserService) filterQueryMaker(filter *kilonova.UserFilter) ([]string, [
 		where, args = append(where, "disabled = ?"), append(args, v)
 	}
 	return where, args
-}
-
-func NewUserService(db *sqlx.DB) kilonova.UserService {
-	return &UserService{db}
 }

@@ -1,8 +1,11 @@
 {{ define "title" }} Error {{.Code}} | Kilonvoa {{ end }}
+{{ define "head" }}
+<meta name="robots" content="none">
+{{ end }}
 {{ define "content" }}
 
 <div class="text-center">
-	<h2>{{.Code}}</h2>
+	<h2>{{.Code}}: {{httpstatus .Code}}</h2>
 	{{ with .Message }}
 		<h1>{{.}}</h1>
 	{{ else }}

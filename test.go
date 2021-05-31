@@ -1,7 +1,6 @@
 package kilonova
 
 import (
-	"context"
 	"time"
 )
 
@@ -33,35 +32,4 @@ type SubTaskUpdate struct {
 	VisibleID *int  `json:"visible_id"`
 	Score     *int  `json:"score"`
 	Tests     []int `json:"tests"`
-}
-
-type TestService interface {
-	CreateTest(ctx context.Context, test *Test) error
-
-	Test(ctx context.Context, problemID, testVID int) (*Test, error)
-	TestByID(ctx context.Context, id int) (*Test, error)
-	Tests(ctx context.Context, problemID int) ([]*Test, error)
-
-	UpdateTest(ctx context.Context, id int, upd TestUpdate) error
-
-	// We don't delete tests, we orphan them
-	// DeleteTest(ctx context.Context, id int) error
-
-	OrphanProblemTests(ctx context.Context, problemID int) error
-	OrphanProblemTest(ctx context.Context, problemID int, testVID int) error
-	BiggestVID(ctx context.Context, problemID int) (int, error)
-}
-
-type SubTaskService interface {
-	CreateSubTask(ctx context.Context, stask *SubTask) error
-
-	SubTask(ctx context.Context, pbid, stvid int) (*SubTask, error)
-	SubTaskByID(ctx context.Context, stid int) (*SubTask, error)
-	SubTasksByTest(ctx context.Context, problemid, testid int) ([]*SubTask, error)
-	SubTasks(ctx context.Context, pbid int) ([]*SubTask, error)
-
-	UpdateSubTask(ctx context.Context, id int, upd SubTaskUpdate) error
-
-	DeleteSubTask(ctx context.Context, stid int) error
-	DeleteSubTasks(ctx context.Context, pbid int) error
 }

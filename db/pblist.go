@@ -7,27 +7,20 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/jmoiron/sqlx"
 )
 
-var _ kilonova.ProblemListService = &ProblemListService{}
-
-type ProblemListService struct {
-	db *sqlx.DB
-}
-
-func (p *ProblemListService) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, error) {
+func (s *DB) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, error) {
 	var pblist pblist
-	err := p.db.GetContext(ctx, &pblist, p.db.Rebind("SELECT * FROM problem_lists WHERE id = ? LIMIT 1"), id)
+	err := s.conn.GetContext(ctx, &pblist, s.conn.Rebind("SELECT * FROM problem_lists WHERE id = ? LIMIT 1"), id)
 	return internalToPbList(&pblist), err
 }
 
-func (p *ProblemListService) ProblemLists(ctx context.Context, filter kilonova.ProblemListFilter) ([]*kilonova.ProblemList, error) {
+func (s *DB) ProblemLists(ctx context.Context, filter kilonova.ProblemListFilter) ([]*kilonova.ProblemList, error) {
 	var lists []*pblist
-	where, args := p.filterQueryMaker(&filter)
+	where, args := pblistFilterQuery(&filter)
 	query := "SELECT * FROM problem_lists WHERE " + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset)
-	query = p.db.Rebind(query)
-	err := p.db.SelectContext(ctx, &lists, query, args...)
+	query = s.conn.Rebind(query)
+	err := s.conn.SelectContext(ctx, &lists, query, args...)
 
 	outLists := make([]*kilonova.ProblemList, 0, len(lists))
 	for _, el := range lists {
@@ -38,35 +31,35 @@ func (p *ProblemListService) ProblemLists(ctx context.Context, filter kilonova.P
 
 const createProblemListQuery = "INSERT INTO problem_lists (author_id, title, description, list) VALUES (?, ?, ?, ?) RETURNING id;"
 
-func (p *ProblemListService) CreateProblemList(ctx context.Context, list *kilonova.ProblemList) error {
+func (s *DB) CreateProblemList(ctx context.Context, list *kilonova.ProblemList) error {
 	if list.AuthorID == 0 {
 		return kilonova.ErrMissingRequired
 	}
 	var id int
-	err := p.db.GetContext(ctx, &id, p.db.Rebind(createProblemListQuery), list.AuthorID, list.Title, list.Description, kilonova.SerializeIntList(list.List))
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(createProblemListQuery), list.AuthorID, list.Title, list.Description, kilonova.SerializeIntList(list.List))
 	if err == nil {
 		list.ID = id
 	}
 	return err
 }
 
-func (p *ProblemListService) UpdateProblemList(ctx context.Context, id int, upd kilonova.ProblemListUpdate) error {
-	toUpd, args := p.updateQueryMaker(&upd)
+func (s *DB) UpdateProblemList(ctx context.Context, id int, upd kilonova.ProblemListUpdate) error {
+	toUpd, args := pblistUpdateQuery(&upd)
 	if len(toUpd) == 0 {
 		return kilonova.ErrNoUpdates
 	}
 	args = append(args, id)
-	query := p.db.Rebind(fmt.Sprintf(`UPDATE problem_lists SET %s WHERE id = ?;`, strings.Join(toUpd, ", ")))
-	_, err := p.db.ExecContext(ctx, query, args...)
+	query := s.conn.Rebind(fmt.Sprintf(`UPDATE problem_lists SET %s WHERE id = ?;`, strings.Join(toUpd, ", ")))
+	_, err := s.conn.ExecContext(ctx, query, args...)
 	return err
 }
 
-func (p *ProblemListService) DeleteProblemList(ctx context.Context, id int) error {
-	_, err := p.db.ExecContext(ctx, p.db.Rebind("DELETE FROM problem_lists WHERE id = ?"), id)
+func (s *DB) DeleteProblemList(ctx context.Context, id int) error {
+	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("DELETE FROM problem_lists WHERE id = ?"), id)
 	return err
 }
 
-func (p *ProblemListService) filterQueryMaker(filter *kilonova.ProblemListFilter) ([]string, []interface{}) {
+func pblistFilterQuery(filter *kilonova.ProblemListFilter) ([]string, []interface{}) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := filter.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, v)
@@ -78,7 +71,7 @@ func (p *ProblemListService) filterQueryMaker(filter *kilonova.ProblemListFilter
 	return where, args
 }
 
-func (p *ProblemListService) updateQueryMaker(upd *kilonova.ProblemListUpdate) ([]string, []interface{}) {
+func pblistUpdateQuery(upd *kilonova.ProblemListUpdate) ([]string, []interface{}) {
 	toUpd, args := []string{}, []interface{}{}
 	if v := upd.AuthorID; v != nil {
 		toUpd, args = append(toUpd, "author_id = ?"), append(args, v)
@@ -112,8 +105,4 @@ func internalToPbList(list *pblist) *kilonova.ProblemList {
 		Description: list.Description,
 		List:        kilonova.DeserializeIntList(list.List),
 	}
-}
-
-func NewProblemListService(db *sqlx.DB) kilonova.ProblemListService {
-	return &ProblemListService{db}
 }

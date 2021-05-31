@@ -16,7 +16,7 @@ func (s *API) getProblemList(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, 400)
 		return
 	}
-	list, err := s.plserv.ProblemList(r.Context(), args.ID)
+	list, err := s.db.ProblemList(r.Context(), args.ID)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -32,7 +32,7 @@ func (s *API) filterProblemList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lists, err := s.plserv.ProblemLists(r.Context(), args)
+	lists, err := s.db.ProblemLists(r.Context(), args)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -53,9 +53,9 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 	var pbs []*kilonova.Problem
 	var err error
 	if util.User(r).Admin {
-		pbs, err = s.pserv.Problems(r.Context(), kilonova.ProblemFilter{IDs: inputIDs})
+		pbs, err = s.db.Problems(r.Context(), kilonova.ProblemFilter{IDs: inputIDs})
 	} else {
-		pbs, err = s.pserv.Problems(r.Context(), kilonova.ProblemFilter{IDs: inputIDs, LookingUserID: &util.User(r).ID})
+		pbs, err = s.db.Problems(r.Context(), kilonova.ProblemFilter{IDs: inputIDs, LookingUserID: &util.User(r).ID})
 	}
 	if err != nil {
 		errorData(w, err, 500)
@@ -76,7 +76,7 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 	list.Description = description
 	list.AuthorID = util.User(r).ID
 	list.List = actualIDs
-	if err := s.plserv.CreateProblemList(r.Context(), &list); err != nil {
+	if err := s.db.CreateProblemList(r.Context(), &list); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -96,7 +96,7 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, 400)
 		return
 	}
-	list, err := s.plserv.ProblemList(r.Context(), args.ID)
+	list, err := s.db.ProblemList(r.Context(), args.ID)
 	if err != nil {
 		errorData(w, "Couldn't find problem list", 400)
 		return
@@ -126,7 +126,7 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 		upd.List = l
 	}
 
-	if err := s.plserv.UpdateProblemList(r.Context(), args.ID, upd); err != nil {
+	if err := s.db.UpdateProblemList(r.Context(), args.ID, upd); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -141,7 +141,7 @@ func (s *API) deleteProblemList(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, 400)
 		return
 	}
-	list, err := s.plserv.ProblemList(r.Context(), args.ID)
+	list, err := s.db.ProblemList(r.Context(), args.ID)
 	if err != nil {
 		errorData(w, "Couldn't find problem list", 400)
 		return
@@ -152,7 +152,7 @@ func (s *API) deleteProblemList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.plserv.DeleteProblemList(r.Context(), args.ID); err != nil {
+	if err := s.db.DeleteProblemList(r.Context(), args.ID); err != nil {
 		errorData(w, err, 500)
 		return
 	}

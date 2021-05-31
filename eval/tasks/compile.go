@@ -25,7 +25,7 @@ func (job *CompileTask) Execute(ctx context.Context, box eval.Sandbox) error {
 		log.Printf("Compiling file using box %d\n", box.GetID())
 	}
 
-	lang, ok := config.Languages[job.Req.Lang]
+	lang, ok := eval.Langs[job.Req.Lang]
 	if !ok {
 		log.Printf("Language for submission %d could not be found\n", job.Req.ID)
 		return &kilonova.Error{Code: kilonova.EINTERNAL, Message: "No language found"}
@@ -34,7 +34,7 @@ func (job *CompileTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	outName := path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", job.Req.ID))
 	job.Resp.Success = true
 
-	if lang.IsCompiled {
+	if lang.Compiled {
 		out, err := eval.CompileFile(ctx, box, job.Req.Code, lang)
 		job.Resp.Output = out
 

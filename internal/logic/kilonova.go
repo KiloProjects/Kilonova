@@ -9,18 +9,14 @@ type Kilonova struct {
 	Debug  bool
 	mailer kilonova.Mailer
 
-	userv kilonova.UserService
-	tserv kilonova.TestService
-
-	Sess  kilonova.Sessioner
-	Verif kilonova.Verificationer
+	DB kilonova.DB
 }
 
-func New(db kilonova.TypeServicer, dm kilonova.DataStore, debug bool) (*Kilonova, error) {
+func New(db kilonova.DB, dm kilonova.DataStore, debug bool) (*Kilonova, error) {
 	mailer, err := NewMailer()
 	if err != nil {
 		return nil, err
 	}
 
-	return &Kilonova{dm, debug, mailer, db.UserService(), db.TestService(), db.SessionService(), db.VerificationService()}, nil
+	return &Kilonova{dm, debug, mailer, db}, nil
 }

@@ -6,23 +6,18 @@ Additional reading I should do for a better platform:
 
 ## TODO LIST KILONOVA:
 - [ ] Pre-Middle beta (v0.6.0b-?):
-	- [ ] Email stuff 
+	- [x] Email stuff 
 		- [x] Verificare user
-		- [ ] Mail updates
-		- [ ] Other stuff
-		- [ ] ? Broadcast din admin panel
 	- [x] Permite schimbarea tipului de intrare din interfața problemei
 	- [ ] Moderation tools
 		- [x] Nuke accounts
-		- [ ] Ștergere submisie
-		- [ ] More info in admin panel 
-	- [~] Use a single bundle for all javascript/css
+		- [x] Ștergere submisie
+	- [x] Use a single bundle for all javascript/css
 	- [ ] Security Improvements:
-		- [ ] Anti-CSRF protection 
+		- [~] Anti-CSRF protection 
 			- [x] API
 			- [?] Web
 		- [ ] Sanitize all user inputs
-	- [ ] Caching
 	- [ ] Restructurare web: 
 		- [x] Get rid of jquery
 		- [ ] Re-adăugare forms pentru \<input\>-uri, ca să poți da enter pentru submit
@@ -32,17 +27,13 @@ Additional reading I should do for a better platform:
 		- [x] Permite toate limbajele în UI
 		- [ ] Paignă de login când nu ai voie fiindcă ești unauthed
 	- [ ] Restructurare backend:
-		- [ ] ? Serivice-ificare:
-			- [ ] Împarte în mai multe services (Core/API/Web/Eval/Eval Worker)
-			- [ ] Separare main core de inputs (API/Web)
-			- Eval-ul se conectează la core (și eval worker la eval), nu invers
 		- [x] Multi-eval support
 		- [x] Phase out sqlc în favoarea sqlx (să nu mai depindem așa mult de code generation)
 		- [ ] Better telemetry
 			- [ ] Prometheus integration
 			- [ ] ? Sentry
 	- [ ] New features:
-		- [ ] ".kna"
+		- [x] ".kna"
 		- [x] Scor din oficiu
 		- [x] Abilitate să ștergi unul sau toate testele direct
 		- [ ] Admin tools diverse
@@ -55,7 +46,7 @@ Additional reading I should do for a better platform:
 				- [x] Adăugare field skipped
 				- [x] Actual support
 			- [ ] ? Folder upload pentru teste
-		- [ ] ? Submisii de calitate (apar sus când filtrezi după submissions cu sursa publică)
+		- [x] Submisii de calitate
 		- [x] Dark theme
 		- [ ] ? Etichete probleme
 		- [ ] Versiune engleză
@@ -64,31 +55,28 @@ Additional reading I should do for a better platform:
 				- [ ] Propunători traducători
 				- [ ] Enunțuri multi-language
 		- [ ] Rate limits
+		- [x] https://discord.com/channels/@me/775486536358559764/827623285885763594
 		- [ ] https://discord.com/channels/@me/775486536358559764/827623755806146570
-		- [ ] https://discord.com/channels/@me/775486536358559764/827623285885763594
 			- [ ] Timp/Memorie maxima
 			- [ ] ? Sortare dupa timp/memorie
 			- [x] Liste de probleme
 		- [ ] Improve shoddy implementation of problem lists
 	- [~] CDN
 		- [x] Backbone
-		- [ ] Mutare CSS pe CDN
-		- [ ] Mutare js bundle pe CDN
-		- [ ] ? Pune toate imaginile găsite pe CDN și redirecționează-le acolo
-		- [ ] ? Adaugă redirect în stil steam 
-			- monitorizează pe ce dai click 
-			- ? avertizează dacă un domeniu nu e pe whitelist
 	- [ ] Late edition maintenance:
 		- [ ] Reduce nr de TODOs din nou
 		- [ ] Check that all CDN stuff is safe, I might have missed something and I don't want it to backfire and get bad actors to do nasty stuff
 		- [ ] Termeni și Condiții
-			- Nu au voie să facă site-uri (sau rubrici ale unor site-uri) cu scopul de a publica surse de 100p pentru probleme
+			- Nu au voie să facă site-uri (sau rubrici ale unor site-uri) cu scopul de a publica surse pentru probleme
 			- Comportament civilizat pe platformă etc etc
 			- Nu abuzați platforma
 			- Pedeapsa este la discreția administratorilor
-			- Fără reclamă la platformele altora. Reclama la concursuri e ok, la discreția moderatorilor.
+			- Reclama este acceptată numai la discreția administratorilor
 			- ???
+	- [ ] Atașamente
 - [ ] pre-late beta:
+	- [ ] Improvements la CDN, e cam basic și nu are multe uses, ar fi înlocuit de atașamente
+		- [ ] ? Ștergere
 	- [ ] ? "Custom input" ca pe hackerrank/leetcode
 	- [ ] Mai multe tipuri de probleme:
 		- [ ] interactive

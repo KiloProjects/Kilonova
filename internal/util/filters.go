@@ -62,18 +62,18 @@ func IsSubmissionEditor(sub *kilonova.Submission, user *kilonova.User) bool {
 	return IsAdmin(user) || user.ID == sub.UserID
 }
 
-func IsSubmissionVisible(sub *kilonova.Submission, user *kilonova.User, sserv kilonova.SubmissionService) bool {
+func IsSubmissionVisible(sub *kilonova.Submission, user *kilonova.User, db kilonova.DB) bool {
 	if sub == nil {
 		return false
 	}
-	if sub.Visible || IsSubmissionEditor(sub, user) {
+	if sub.Visible || sub.Quality || IsSubmissionEditor(sub, user) {
 		return true
 	}
 
 	if !IsAuthed(user) {
 		return false
 	}
-	score := sserv.MaxScore(context.Background(), user.ID, sub.ProblemID)
+	score := db.MaxScore(context.Background(), user.ID, sub.ProblemID)
 	if score == 100 {
 		return true
 	}
@@ -105,6 +105,16 @@ func IsRSubmissionEditor(r *http.Request) bool {
 	return IsSubmissionEditor(Submission(r), User(r))
 }
 
-func IsRSubmissionVisible(r *http.Request, sserv kilonova.SubmissionService) bool {
-	return IsSubmissionVisible(Submission(r), User(r), sserv)
+func IsRSubmissionVisible(r *http.Request, db kilonova.DB) bool {
+	return IsSubmissionVisible(Submission(r), User(r), db)
+}
+
+func FilterVisible(user *kilonova.User, pbs []*kilonova.Problem) []*kilonova.Problem {
+	vpbs := make([]*kilonova.Problem, 0, len(pbs))
+	for _, pb := range pbs {
+		if IsProblemVisible(user, pb) {
+			vpbs = append(vpbs, pb)
+		}
+	}
+	return vpbs
 }

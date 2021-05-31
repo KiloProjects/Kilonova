@@ -51,14 +51,14 @@ func CopyInBox(b Sandbox, p1 string, p2 string) error {
 
 // RunSubmission runs a program, following the language conventions
 // filenames contains the names for input and output, used if consoleInput is true
-func RunSubmission(ctx context.Context, box Sandbox, language config.Language, constraints Limits, consoleInput bool) (*RunStats, error) {
+func RunSubmission(ctx context.Context, box Sandbox, language Language, constraints Limits, consoleInput bool) (*RunStats, error) {
 
 	var runConf RunConfig
 	runConf.EnvToSet = make(map[string]string)
 
 	// if our specified language is not compiled, then it means that
 	// the mounts specified should be added at runtime
-	if !language.IsCompiled {
+	if !language.Compiled {
 		runConf.Directories = append(runConf.Directories, language.Mounts...)
 	}
 
@@ -92,7 +92,7 @@ func RunSubmission(ctx context.Context, box Sandbox, language config.Language, c
 }
 
 // CompileFile compiles a file that has the corresponding language
-func CompileFile(ctx context.Context, box Sandbox, SourceCode []byte, language config.Language) (string, error) {
+func CompileFile(ctx context.Context, box Sandbox, SourceCode []byte, language Language) (string, error) {
 	if err := box.WriteFile(language.SourceName, bytes.NewReader(SourceCode), 0644); err != nil {
 		return "", err
 	}
@@ -160,17 +160,17 @@ func CleanCompilation(subid int) error {
 }
 
 func disableLang(key string) {
-	lang := config.Languages[key]
+	lang := Langs[key]
 	lang.Disabled = true
-	config.Languages[key] = lang
+	Langs[key] = lang
 }
 
 // checkLanguages disables all languages that are *not* detected by the system in the current configuration
 // It should be run at the start of the execution (and implemented more nicely tbh)
 func checkLanguages() {
-	for k, v := range config.Languages {
+	for k, v := range Langs {
 		var toSearch []string
-		if v.IsCompiled {
+		if v.Compiled {
 			toSearch = v.CompileCommand
 		} else {
 			toSearch = v.RunCommand

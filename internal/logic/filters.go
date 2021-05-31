@@ -5,8 +5,8 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 )
 
-func (kn *Kilonova) FilterCode(s *kilonova.Submission, user *kilonova.User, sserv kilonova.SubmissionService) {
-	if !util.IsSubmissionVisible(s, user, sserv) {
+func (kn *Kilonova) FilterCode(s *kilonova.Submission, user *kilonova.User, db kilonova.DB) {
+	if !util.IsSubmissionVisible(s, user, db) {
 		s.Code = ""
 	}
 }

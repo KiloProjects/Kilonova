@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"io/fs"
 
@@ -16,50 +17,10 @@ import (
 //go:embed sqlite_schema
 var sqliteSchema embed.FS
 
-var _ kilonova.TypeServicer = &DB{}
+var _ kilonova.DB = &DB{}
 
 type DB struct {
 	conn *sqlx.DB
-}
-
-func (d *DB) UserService() kilonova.UserService {
-	return NewUserService(d.conn)
-}
-
-func (d *DB) ProblemService() kilonova.ProblemService {
-	return NewProblemService(d.conn)
-}
-
-func (d *DB) TestService() kilonova.TestService {
-	return NewTestService(d.conn)
-}
-
-func (d *DB) SubmissionService() kilonova.SubmissionService {
-	return NewSubmissionService(d.conn)
-}
-
-func (d *DB) SubTestService() kilonova.SubTestService {
-	return NewSubTestService(d.conn)
-}
-
-func (d *DB) ProblemListService() kilonova.ProblemListService {
-	return NewProblemListService(d.conn)
-}
-
-func (d *DB) SubTaskService() kilonova.SubTaskService {
-	return NewSubTaskService(d.conn)
-}
-
-func (d *DB) VerificationService() kilonova.Verificationer {
-	return NewVerificationService(d.conn)
-}
-
-func (d *DB) SessionService() kilonova.Sessioner {
-	return NewSessionService(d.conn)
-}
-
-func (d *DB) AttachmentService() kilonova.AttachmentService {
-	return NewAttachmentService(d.conn)
 }
 
 func (d *DB) Close() error {
@@ -76,16 +37,21 @@ func (d *SQLiteDB) initDB(ctx context.Context, dir fs.FS) error {
 	if err != nil {
 		return err
 	}
+	tx, err := d.conn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 	for _, elem := range elems {
 		data, err := fs.ReadFile(dir, elem.Name())
 		if err != nil {
 			return err
 		}
-		if _, err := d.conn.ExecContext(ctx, string(data)); err != nil {
+		if _, err := tx.ExecContext(ctx, string(data)); err != nil {
 			return fmt.Errorf("%s: %w", elem.Name(), err)
 		}
 	}
-	return nil
+	return tx.Commit()
 }
 
 func NewSQLite(ctx context.Context, filename string) (*SQLiteDB, error) {
@@ -112,11 +78,13 @@ func NewPSQL(dsn string) (*DB, error) {
 	return &DB{conn}, nil
 }
 
-func AppropriateDB(ctx context.Context, conf config.DBConf) (kilonova.TypeServicer, error) {
+func AppropriateDB(ctx context.Context, conf config.DBConf) (kilonova.DB, error) {
 	if conf.Type == "postgres" {
 		return NewPSQL(config.Database.DSN)
-	} else {
+	} else if conf.Type == "sqlite" {
 		return NewSQLite(ctx, config.Database.DSN)
+	} else {
+		return nil, errors.New("invalid DB type")
 	}
 }
 

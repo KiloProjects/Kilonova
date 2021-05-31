@@ -6,71 +6,68 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/jmoiron/sqlx"
 )
-
-var _ kilonova.AttachmentService = &AttachmentService{}
-
-type AttachmentService struct {
-	db *sqlx.DB
-}
 
 const createAttachmentQuery = "INSERT INTO attachments (problem_id, visible, name, data) VALUES (?, ?, ?, ?) RETURNING id;"
 
-func (a *AttachmentService) CreateAttachment(ctx context.Context, att *kilonova.Attachment) error {
+func (a *DB) CreateAttachment(ctx context.Context, att *kilonova.Attachment) error {
 	if att.ProblemID == 0 || att.Data == nil {
 		return kilonova.ErrMissingRequired
 	}
+	if _, err := a.Attachments(ctx, false, kilonova.AttachmentFilter{ProblemID: &att.ProblemID, Name: &att.Name}); err != nil {
+		return kilonova.ErrAttachmentExists
+	}
+
 	var id int
-	err := a.db.GetContext(ctx, &id, a.db.Rebind(createAttachmentQuery), att.ProblemID, att.Visible, att.Name, att.Data)
+	err := a.conn.GetContext(ctx, &id, a.conn.Rebind(createAttachmentQuery), att.ProblemID, att.Visible, att.Name, att.Data)
 	if err == nil {
 		att.ID = id
 	}
 	return err
 }
 
-func (a *AttachmentService) Attachment(ctx context.Context, id int) (*kilonova.Attachment, error) {
+func (a *DB) Attachment(ctx context.Context, id int) (*kilonova.Attachment, error) {
 	var attachment kilonova.Attachment
-	err := a.db.GetContext(ctx, &attachment, a.db.Rebind("SELECT * FROM attachments WHERE id = ? LIMIT 1"), id)
+	err := a.conn.GetContext(ctx, &attachment, a.conn.Rebind("SELECT * FROM attachments WHERE id = ? LIMIT 1"), id)
 	return &attachment, err
 }
 
-func (a *AttachmentService) Attachments(ctx context.Context, getData bool, filter kilonova.AttachmentFilter) ([]*kilonova.Attachment, error) {
+func (a *DB) Attachments(ctx context.Context, getData bool, filter kilonova.AttachmentFilter) ([]*kilonova.Attachment, error) {
 	var attachments []*kilonova.Attachment
-	where, args := a.filterQueryMaker(&filter)
+	where, args := attachmentFilterQuery(&filter)
 	toSelect := "*"
 	if !getData {
-		toSelect = "id, created_at, problem_id, visible, name" // Make sure to keep this in sync
+		toSelect = "id, created_at, problem_id, visible, name, data_size" // Make sure to keep this in sync
 	}
-	query := a.db.Rebind("SELECT " + toSelect + " FROM attachments WHERE " + strings.Join(where, " AND ") + " ORDER BY name ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
-	err := a.db.SelectContext(ctx, &attachments, query, args...)
+	query := a.conn.Rebind("SELECT " + toSelect + " FROM attachments WHERE " + strings.Join(where, " AND ") + " ORDER BY name ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
+	err := a.conn.SelectContext(ctx, &attachments, query, args...)
 	return attachments, err
 }
 
-const attachmentUpdateQuery = "UPDATE attachments SET %s WHERE id = ?"
+const attachmentUpdateStatement = "UPDATE attachments SET %s WHERE id = ?"
 
-func (a *AttachmentService) UpdateAttachment(ctx context.Context, id int, upd kilonova.AttachmentUpdate) error {
-	toUpd, args := a.updateQueryMaker(&upd)
+func (a *DB) UpdateAttachment(ctx context.Context, id int, upd kilonova.AttachmentUpdate) error {
+	toUpd, args := attachmentUpdateQuery(&upd)
 	if len(toUpd) == 0 {
 		return kilonova.ErrNoUpdates
 	}
 	args = append(args, id)
-	query := a.db.Rebind(fmt.Sprintf(attachmentUpdateQuery, strings.Join(toUpd, ", ")))
-	_, err := a.db.ExecContext(ctx, query, args...)
+	query := a.conn.Rebind(fmt.Sprintf(attachmentUpdateStatement, strings.Join(toUpd, ", ")))
+	_, err := a.conn.ExecContext(ctx, query, args...)
 	return err
 }
 
-func (a *AttachmentService) DeleteAttachment(ctx context.Context, attid int) error {
-	_, err := a.db.ExecContext(ctx, "DELETE FROM attachments WHERE id = ?", attid)
+func (a *DB) DeleteAttachment(ctx context.Context, attid int) error {
+	_, err := a.conn.ExecContext(ctx, a.conn.Rebind("DELETE FROM attachments WHERE id = ?"), attid)
 	return err
 }
 
-func (a *AttachmentService) DeleteAttachments(ctx context.Context, pbid int) error {
-	_, err := a.db.ExecContext(ctx, "DELETE FROM attachments WHERE problem_id = ?", pbid)
+func (a *DB) DeleteAttachments(ctx context.Context, pbid int) error {
+	_, err := a.conn.ExecContext(ctx, a.conn.Rebind("DELETE FROM attachments WHERE problem_id = ?"), pbid)
 	return err
 }
 
-func (a *AttachmentService) filterQueryMaker(filter *kilonova.AttachmentFilter) ([]string, []interface{}) {
+func attachmentFilterQuery(filter *kilonova.AttachmentFilter) ([]string, []interface{}) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := filter.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, v)
@@ -87,7 +84,7 @@ func (a *AttachmentService) filterQueryMaker(filter *kilonova.AttachmentFilter) 
 	return where, args
 }
 
-func (a *AttachmentService) updateQueryMaker(upd *kilonova.AttachmentUpdate) ([]string, []interface{}) {
+func attachmentUpdateQuery(upd *kilonova.AttachmentUpdate) ([]string, []interface{}) {
 	toUpd, args := []string{}, []interface{}{}
 	if v := upd.Data; v != nil {
 		toUpd, args = append(toUpd, "data = ?"), append(args, v)
@@ -99,8 +96,4 @@ func (a *AttachmentService) updateQueryMaker(upd *kilonova.AttachmentUpdate) ([]
 		toUpd, args = append(toUpd, "visible = ?"), append(args, v)
 	}
 	return toUpd, args
-}
-
-func NewAttachmentService(db *sqlx.DB) kilonova.AttachmentService {
-	return &AttachmentService{db}
 }

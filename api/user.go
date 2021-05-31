@@ -79,7 +79,7 @@ func (s *API) getGravatar(w http.ResponseWriter, r *http.Request) {
 	if err != nil || size == 0 {
 		size = 128
 	}
-	users, err := s.userv.Users(r.Context(), kilonova.UserFilter{Name: &name, Limit: 1})
+	users, err := s.db.Users(r.Context(), kilonova.UserFilter{Name: &name, Limit: 1})
 	if err != nil || len(users) == 0 {
 		errorData(w, err, http.StatusNotFound)
 		return
@@ -94,7 +94,7 @@ func (s *API) setSubVisibility(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, 400)
 		return
 	}
-	if err := s.userv.UpdateUser(
+	if err := s.db.UpdateUser(
 		r.Context(),
 		util.User(r).ID,
 		kilonova.UserUpdate{DefaultVisible: &args.Visibility},
@@ -121,7 +121,7 @@ func (s *API) setBio() func(w http.ResponseWriter, r *http.Request) {
 
 		safe := strings.TrimSpace(bluemonday.StrictPolicy().Sanitize(args.Bio))
 
-		if err := s.userv.UpdateUser(
+		if err := s.db.UpdateUser(
 			r.Context(),
 			util.User(r).ID,
 			kilonova.UserUpdate{Bio: &safe},
@@ -145,7 +145,7 @@ func (s *API) purgeBio(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.userv.UpdateUser(
+	if err := s.db.UpdateUser(
 		r.Context(),
 		args.ID,
 		kilonova.UserUpdate{Bio: &args.Bio},
@@ -166,7 +166,7 @@ func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.userv.UserByID(r.Context(), args.ID)
+	user, err := s.db.User(r.Context(), args.ID)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -177,7 +177,7 @@ func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.userv.DeleteUser(r.Context(), args.ID); err != nil {
+	if err := s.db.DeleteUser(r.Context(), args.ID); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -191,7 +191,7 @@ func (s *API) getUserByName(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Name not specified", http.StatusBadRequest)
 		return
 	}
-	users, err := s.userv.Users(r.Context(), kilonova.UserFilter{Name: &name, Limit: 1})
+	users, err := s.db.Users(r.Context(), kilonova.UserFilter{Name: &name, Limit: 1})
 	if err != nil || len(users) == 0 {
 		errorData(w, "User not found", http.StatusNotFound)
 		return
@@ -205,7 +205,7 @@ func (s *API) getSelf(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getSelfSolvedProblems(w http.ResponseWriter, r *http.Request) {
-	pbs, err := kilonova.SolvedProblems(r.Context(), util.User(r).ID, s.sserv, s.pserv)
+	pbs, err := kilonova.SolvedProblems(r.Context(), util.User(r).ID, s.db)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -220,17 +220,17 @@ func (s *API) getSolvedProblems(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Name not specified", http.StatusBadRequest)
 		return
 	}
-	users, err := s.userv.Users(r.Context(), kilonova.UserFilter{Name: &name, Limit: 1})
+	users, err := s.db.Users(r.Context(), kilonova.UserFilter{Name: &name, Limit: 1})
 	if err != nil || len(users) == 0 {
 		errorData(w, "User not found", http.StatusNotFound)
 		return
 	}
-	pbs, err := kilonova.SolvedProblems(r.Context(), util.User(r).ID, s.sserv, s.pserv)
+	pbs, err := kilonova.SolvedProblems(r.Context(), util.User(r).ID, s.db)
 	if err != nil {
 		errorData(w, err, 500)
 		return
 	}
-	returnData(w, pbs)
+	returnData(w, util.FilterVisible(util.User(r), pbs))
 }
 
 // ChangeEmail changes the password of the saved user
@@ -248,7 +248,7 @@ func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.userv.UpdateUser(
+	if err := s.db.UpdateUser(
 		r.Context(),
 		util.User(r).ID,
 		kilonova.UserUpdate{PwdHash: &hash},
@@ -271,7 +271,7 @@ func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 	if err := validation.Validate(&email, is.Email); err != nil {
 		errorData(w, "Invalid email", 400)
 	}
-	if err := s.userv.UpdateUser(
+	if err := s.db.UpdateUser(
 		r.Context(),
 		util.User(r).ID,
 		kilonova.UserUpdate{Email: &email},
@@ -301,7 +301,7 @@ func (s *API) resendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	now := time.Now()
-	if err := s.userv.UpdateUser(
+	if err := s.db.UpdateUser(
 		r.Context(),
 		util.User(r).ID,
 		kilonova.UserUpdate{EmailVerifSentAt: &now},

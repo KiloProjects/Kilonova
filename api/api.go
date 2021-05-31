@@ -14,25 +14,16 @@ var decoder *schema.Decoder
 
 // API is the base struct for the project's API
 type API struct {
-	kn *logic.Kilonova
-
-	userv   kilonova.UserService
-	sserv   kilonova.SubmissionService
-	pserv   kilonova.ProblemService
-	plserv  kilonova.ProblemListService
-	tserv   kilonova.TestService
-	stserv  kilonova.SubTestService
-	stkserv kilonova.SubTaskService
-	aserv   kilonova.AttachmentService
-
+	kn      *logic.Kilonova
+	db      kilonova.DB
 	manager kilonova.DataStore
 
 	testArchiveLock *sync.Mutex
 }
 
 // New declares a new API instance
-func New(kn *logic.Kilonova, db kilonova.TypeServicer) *API {
-	return &API{kn, db.UserService(), db.SubmissionService(), db.ProblemService(), db.ProblemListService(), db.TestService(), db.SubTestService(), db.SubTaskService(), db.AttachmentService(), kn.DM, &sync.Mutex{}}
+func New(kn *logic.Kilonova, db kilonova.DB) *API {
+	return &API{kn, db, kn.DM, &sync.Mutex{}}
 }
 
 // Handler is the magic behind the API
@@ -83,7 +74,7 @@ func (s *API) Handler() http.Handler {
 				})
 
 				r.Post("/addAttachment", s.createAttachment)
-				r.With(s.validateAttachmentID).Post("/attachment/{aID}/", s.updateAttachmentMetadata)
+				//r.With(s.validateAttachmentID).Post("/attachment/{aID}/", s.updateAttachmentMetadata)
 				r.Post("/bulkDeleteAttachments", s.bulkDeleteAttachments)
 
 				r.Post("/bulkDeleteTests", s.bulkDeleteTests)

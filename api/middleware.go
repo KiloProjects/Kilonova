@@ -64,7 +64,7 @@ func (s *API) SetupSession(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		user, err := s.userv.UserByID(r.Context(), session)
+		user, err := s.db.User(r.Context(), session)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				next.ServeHTTP(w, r)
@@ -100,7 +100,7 @@ func (s *API) validateTestID(next http.Handler) http.Handler {
 			errorData(w, "invalid test ID", http.StatusBadRequest)
 			return
 		}
-		test, err := s.tserv.Test(r.Context(), util.Problem(r).ID, testID)
+		test, err := s.db.Test(r.Context(), util.Problem(r).ID, testID)
 		if err != nil {
 			errorData(w, "test does not exist", http.StatusBadRequest)
 			return
@@ -116,7 +116,7 @@ func (s *API) validateAttachmentID(next http.Handler) http.Handler {
 			errorData(w, "invalid attachment ID", http.StatusBadRequest)
 			return
 		}
-		att, err := s.aserv.Attachment(r.Context(), attID)
+		att, err := s.db.Attachment(r.Context(), attID)
 		if err != nil {
 			errorData(w, "attachment does not exist", http.StatusBadRequest)
 			return
@@ -134,7 +134,7 @@ func (s *API) validateProblemID(next http.Handler) http.Handler {
 			errorData(w, "invalid problem ID", http.StatusBadRequest)
 			return
 		}
-		problem, err := s.pserv.ProblemByID(r.Context(), problemID)
+		problem, err := s.db.Problem(r.Context(), problemID)
 		if err != nil {
 			errorData(w, "problem does not exist", http.StatusBadRequest)
 			return

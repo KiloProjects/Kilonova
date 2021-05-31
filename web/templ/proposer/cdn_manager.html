@@ -158,13 +158,7 @@ let app = Vue.createApp({
 		},
 		printModTime: bundled.parseTime,
 		printSize: bundled.sizeFormatter,
-		getFileIcon: function(name) {
-			let extension = name.split('.').pop();
-			if(bundled.extensionIcons[extension] != null) {
-				return bundled.extensionIcons[extension]
-			}
-			return "fa-file"
-		},
+		getFileIcon: bundled.getFileIcon,
 		getFilePath: function() {
 			let p = [...this.paths]
 			let ret = ""

@@ -22,11 +22,11 @@ func (kn *Kilonova) GetRSession(r *http.Request) int {
 }
 
 func (kn *Kilonova) CreateSession(id int) (string, error) {
-	return kn.Sess.CreateSession(context.Background(), id)
+	return kn.DB.CreateSession(context.Background(), id)
 }
 
 func (kn *Kilonova) GetSession(id string) (int, error) {
-	return kn.Sess.GetSession(context.Background(), id)
+	return kn.DB.GetSession(context.Background(), id)
 }
 
 // RemoveSessionCookie clears the session cookie
@@ -43,7 +43,7 @@ func (kn *Kilonova) RemoveSessionCookie(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		return
 	}
-	kn.Sess.RemoveSession(context.Background(), c.Value)
+	kn.DB.RemoveSession(context.Background(), c.Value)
 }
 
 func (kn *Kilonova) GenHash(password string) (string, error) {
@@ -61,7 +61,7 @@ func (kn *Kilonova) AddUser(ctx context.Context, username, email, password strin
 	user.Email = email
 	user.Password = hash
 
-	err = kn.userv.CreateUser(ctx, &user)
+	err = kn.DB.CreateUser(ctx, &user)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -69,7 +69,7 @@ func (kn *Kilonova) AddUser(ctx context.Context, username, email, password strin
 
 	if user.ID == 1 {
 		var True = true
-		if err := kn.userv.UpdateUser(ctx, user.ID, kilonova.UserUpdate{Admin: &True, Proposer: &True}); err != nil {
+		if err := kn.DB.UpdateUser(ctx, user.ID, kilonova.UserUpdate{Admin: &True, Proposer: &True}); err != nil {
 			log.Println(err)
 			return &user, err
 		}

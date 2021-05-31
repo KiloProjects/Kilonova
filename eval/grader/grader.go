@@ -32,18 +32,13 @@ type Handler struct {
 	kn    *logic.Kilonova
 	dm    kilonova.GraderStore
 
-	debug   bool
-	sserv   kilonova.SubmissionService
-	pserv   kilonova.ProblemService
-	stserv  kilonova.SubTestService
-	tserv   kilonova.TestService
-	stkserv kilonova.SubTaskService
+	debug bool
+	db    kilonova.DB
 }
 
-func NewHandler(ctx context.Context, kn *logic.Kilonova, db kilonova.TypeServicer) *Handler {
+func NewHandler(ctx context.Context, kn *logic.Kilonova, db kilonova.DB) *Handler {
 	ch := make(chan *kilonova.Submission, 5)
-	return &Handler{ctx, ch, kn, kn.DM, kn.Debug,
-		db.SubmissionService(), db.ProblemService(), db.SubTestService(), db.TestService(), db.SubTaskService()}
+	return &Handler{ctx, ch, kn, kn.DM, kn.Debug, db}
 }
 
 // chFeeder "feeds" tChan with relevant data
@@ -52,7 +47,7 @@ func (h *Handler) chFeeder(d time.Duration) {
 	for {
 		select {
 		case <-ticker.C:
-			subs, err := h.sserv.Submissions(h.ctx, waitingSubs)
+			subs, err := h.db.Submissions(h.ctx, waitingSubs)
 			if err != nil {
 				log.Println("Error fetching submissions:", err)
 				continue
@@ -64,7 +59,7 @@ func (h *Handler) chFeeder(d time.Duration) {
 
 				for _, sub := range subs {
 					//if err := sub.SetStatus(kilonova.StatusWorking, 0); err != nil {
-					if err := h.sserv.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
+					if err := h.db.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
 						log.Println(err)
 						continue
 					}
@@ -107,12 +102,12 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 			}
 
 			compileError := !resp.Success
-			if err := h.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{CompileError: &compileError, CompileMessage: &resp.Output}); err != nil {
+			if err := h.db.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{CompileError: &compileError, CompileMessage: &resp.Output}); err != nil {
 				log.Println("Error during update of compile information:", err)
 				continue
 			}
 
-			problem, err := h.pserv.ProblemByID(ctx, sub.ProblemID)
+			problem, err := h.db.Problem(ctx, sub.ProblemID)
 			if err != nil {
 				log.Println("Error during submission problem getting:", err)
 				continue
@@ -127,15 +122,15 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 			if info, err := checker.Prepare(ctx); err != nil {
 				log.Println("Checker prepare error:", err)
 				t := true
-				if err := h.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints, CompileError: &t, CompileMessage: &info}); err != nil {
+				if err := h.db.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints, CompileError: &t, CompileMessage: &info}); err != nil {
 					log.Println("Error during update of compile information:", err)
 				}
 				continue
 			}
 
-			subTests, err := h.stserv.SubTestsBySubID(ctx, sub.ID)
+			subTests, err := h.db.SubTestsBySubID(ctx, sub.ID)
 			if resp.Success == false || err != nil {
-				if err := h.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints}); err != nil {
+				if err := h.db.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints}); err != nil {
 					log.Println(err)
 				}
 				continue
@@ -149,7 +144,8 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 
 				go func() {
 					defer wg.Done()
-					if err := h.HandleSubTest(ctx, runner, checker, sub, problem, subTest); err != nil {
+					err := h.HandleSubTest(ctx, runner, checker, sub, problem, subTest)
+					if err != nil {
 						log.Println("Error handling subTest:", err)
 					}
 				}()
@@ -173,7 +169,7 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 }
 
 func (h *Handler) HandleSubTest(ctx context.Context, runner eval.Runner, checker eval.Checker, sub *kilonova.Submission, problem *kilonova.Problem, subTest *kilonova.SubTest) error {
-	pbTest, err := h.tserv.TestByID(ctx, subTest.TestID)
+	pbTest, err := h.db.TestByID(ctx, subTest.TestID)
 	if err != nil {
 		return fmt.Errorf("Error during test getting (0.5): %w", err)
 	}
@@ -209,6 +205,7 @@ func (h *Handler) HandleSubTest(ctx context.Context, runner eval.Runner, checker
 
 	// Make sure TLEs are fully handled
 	if resp.Time > problem.TimeLimit {
+		resp.Time = problem.TimeLimit
 		resp.Comments = "TLE"
 	}
 
@@ -238,19 +235,19 @@ func (h *Handler) HandleSubTest(ctx context.Context, runner eval.Runner, checker
 		}
 	}
 
-	if err := h.stserv.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{Memory: &resp.Memory, Score: &testScore, Time: &resp.Time, Verdict: &resp.Comments, Done: &True}); err != nil {
+	if err := h.db.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{Memory: &resp.Memory, Score: &testScore, Time: &resp.Time, Verdict: &resp.Comments, Done: &True}); err != nil {
 		return fmt.Errorf("Error during evaltest updating: %w", err)
 	}
 	return nil
 }
 
 func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, problem *kilonova.Problem) error {
-	subtests, err := h.stserv.SubTestsBySubID(ctx, sub.ID)
+	subtests, err := h.db.SubTestsBySubID(ctx, sub.ID)
 	if err != nil {
 		return err
 	}
 
-	subTasks, err := h.stkserv.SubTasks(ctx, problem.ID)
+	subTasks, err := h.db.SubTasks(ctx, problem.ID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
@@ -284,7 +281,7 @@ func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, prob
 			log.Println("Evaluating by addition")
 		}
 		for _, subtest := range subtests {
-			pbTest, err := h.tserv.TestByID(ctx, subtest.TestID)
+			pbTest, err := h.db.TestByID(ctx, subtest.TestID)
 			if err != nil {
 				log.Println("Couldn't get test (0xasdf):", err)
 				continue
@@ -293,7 +290,18 @@ func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, prob
 		}
 	}
 
-	return h.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score})
+	var memory int
+	var time float64
+	for _, subtest := range subtests {
+		if subtest.Memory > memory {
+			memory = subtest.Memory
+		}
+		if subtest.Time > time {
+			time = subtest.Time
+		}
+	}
+
+	return h.db.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score, MaxTime: &time, MaxMemory: &memory})
 }
 
 func (h *Handler) Start() error {

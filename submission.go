@@ -1,7 +1,6 @@
 package kilonova
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"time"
@@ -29,6 +28,9 @@ type Submission struct {
 	CompileError   sql.NullBool   `db:"compile_error" json:"compile_error"`
 	CompileMessage sql.NullString `json:"compile_message,omitempty" db:"compile_message"`
 
+	MaxTime   float64 `json:"max_time" db:"max_time"`
+	MaxMemory int     `json:"max_memory" db:"max_memory"`
+
 	Score   int  `json:"score"`
 	Visible bool `json:"visible"`
 	Quality bool `json:"quality"`
@@ -40,6 +42,9 @@ type SubmissionUpdate struct {
 
 	CompileError   *bool
 	CompileMessage *string
+
+	MaxTime   *float64
+	MaxMemory *int
 
 	Visible *bool
 	Quality *bool
@@ -59,6 +64,9 @@ type SubmissionFilter struct {
 
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
+
+	Ordering  string `json:"ordering"`
+	Ascending bool   `json:"ascending"`
 }
 
 type SubTest struct {
@@ -80,32 +88,6 @@ type SubTestUpdate struct {
 	Score   *int
 	Verdict *string
 	Done    *bool
-}
-
-type SubmissionService interface {
-	SubmissionByID(ctx context.Context, id int) (*Submission, error)
-
-	Submissions(ctx context.Context, filter SubmissionFilter) ([]*Submission, error)
-	CountSubmissions(ctx context.Context, filter SubmissionFilter) (int, error)
-
-	CreateSubmission(ctx context.Context, sub *Submission) error
-	UpdateSubmission(ctx context.Context, id int, upd SubmissionUpdate) error
-
-	BulkUpdateSubmissions(ctx context.Context, filter SubmissionFilter, upd SubmissionUpdate) error
-	DeleteSubmission(ctx context.Context, id int) error
-
-	MaxScore(ctx context.Context, userid, problemid int) int
-	MaxScores(ctx context.Context, userid int, problemids []int) map[int]int
-	SolvedProblems(ctx context.Context, userid int) ([]int, error)
-}
-
-type SubTestService interface {
-	SubTestsBySubID(ctx context.Context, subid int) ([]*SubTest, error)
-	SubTest(ctx context.Context, id int) (*SubTest, error)
-
-	CreateSubTest(ctx context.Context, subtest *SubTest) error
-	UpdateSubTest(ctx context.Context, id int, upd SubTestUpdate) error
-	UpdateSubmissionSubTests(ctx context.Context, subID int, upd SubTestUpdate) error
 }
 
 // Utils for backends (I know, not so agnostic, but it makes life easier)

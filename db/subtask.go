@@ -7,48 +7,41 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/jmoiron/sqlx"
 )
 
-var _ kilonova.SubTaskService = &SubTaskService{}
-
-type SubTaskService struct {
-	db *sqlx.DB
-}
-
-func (s *SubTaskService) CreateSubTask(ctx context.Context, subtask *kilonova.SubTask) error {
+func (s *DB) CreateSubTask(ctx context.Context, subtask *kilonova.SubTask) error {
 	if subtask.ProblemID == 0 || subtask.Tests == nil {
 		return kilonova.ErrMissingRequired
 	}
 	var id int
-	err := s.db.GetContext(ctx, &id, s.db.Rebind("INSERT INTO subtasks (problem_id, visible_id, score, tests) VALUES (?, ?, ?, ?) RETURNING id"), subtask.ProblemID, subtask.VisibleID, subtask.Score, kilonova.SerializeIntList(subtask.Tests))
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind("INSERT INTO subtasks (problem_id, visible_id, score, tests) VALUES (?, ?, ?, ?) RETURNING id"), subtask.ProblemID, subtask.VisibleID, subtask.Score, kilonova.SerializeIntList(subtask.Tests))
 	if err == nil {
 		subtask.ID = id
 	}
 	return err
 }
 
-func (s *SubTaskService) SubTask(ctx context.Context, pbid, stvid int) (*kilonova.SubTask, error) {
+func (s *DB) SubTask(ctx context.Context, pbid, stvid int) (*kilonova.SubTask, error) {
 	var st subtask
-	err := s.db.GetContext(ctx, &st, s.db.Rebind("SELECT * FROM subtasks WHERE problem_id = ? AND visible_id = ?"), pbid, stvid)
+	err := s.conn.GetContext(ctx, &st, s.conn.Rebind("SELECT * FROM subtasks WHERE problem_id = ? AND visible_id = ?"), pbid, stvid)
 	if err != nil {
 		return nil, err
 	}
 	return InternalToSubTask(&st), nil
 }
 
-func (s *SubTaskService) SubTaskByID(ctx context.Context, stid int) (*kilonova.SubTask, error) {
+func (s *DB) SubTaskByID(ctx context.Context, stid int) (*kilonova.SubTask, error) {
 	var st subtask
-	err := s.db.GetContext(ctx, &st, s.db.Rebind("SELECT * FROM subtasks WHERE id = ?"), stid)
+	err := s.conn.GetContext(ctx, &st, s.conn.Rebind("SELECT * FROM subtasks WHERE id = ?"), stid)
 	if err != nil {
 		return nil, err
 	}
 	return InternalToSubTask(&st), nil
 }
 
-func (s *SubTaskService) SubTasks(ctx context.Context, pbid int) ([]*kilonova.SubTask, error) {
+func (s *DB) SubTasks(ctx context.Context, pbid int) ([]*kilonova.SubTask, error) {
 	var st []*subtask
-	err := s.db.SelectContext(ctx, &st, s.db.Rebind("SELECT * FROM subtasks WHERE problem_id = ? ORDER BY visible_id"), pbid)
+	err := s.conn.SelectContext(ctx, &st, s.conn.Rebind("SELECT * FROM subtasks WHERE problem_id = ? ORDER BY visible_id"), pbid)
 	if err != nil {
 		return nil, err
 	}
@@ -59,9 +52,9 @@ func (s *SubTaskService) SubTasks(ctx context.Context, pbid int) ([]*kilonova.Su
 	return sts, nil
 }
 
-func (s *SubTaskService) SubTasksByTest(ctx context.Context, pbid, tid int) ([]*kilonova.SubTask, error) {
+func (s *DB) SubTasksByTest(ctx context.Context, pbid, tid int) ([]*kilonova.SubTask, error) {
 	var st []*subtask
-	err := s.db.SelectContext(ctx, &st, s.db.Rebind("SELECT * FROM subtasks WHERE tests LIKE ? AND problem_id = ? ORDER BY visible_id"), fmt.Sprintf("%%%d%%", tid), pbid)
+	err := s.conn.SelectContext(ctx, &st, s.conn.Rebind("SELECT * FROM subtasks WHERE tests LIKE ? AND problem_id = ? ORDER BY visible_id"), fmt.Sprintf("%%%d%%", tid), pbid)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +65,7 @@ func (s *SubTaskService) SubTasksByTest(ctx context.Context, pbid, tid int) ([]*
 	return sts, nil
 }
 
-func (s *SubTaskService) UpdateSubTask(ctx context.Context, id int, upd kilonova.SubTaskUpdate) error {
+func (s *DB) UpdateSubTask(ctx context.Context, id int, upd kilonova.SubTaskUpdate) error {
 	toUpd, args := []string{}, []interface{}{}
 	if v := upd.VisibleID; v != nil {
 		toUpd, args = append(toUpd, "visible_id = ?"), append(args, v)
@@ -89,22 +82,18 @@ func (s *SubTaskService) UpdateSubTask(ctx context.Context, id int, upd kilonova
 	}
 	args = append(args, id)
 
-	_, err := s.db.ExecContext(ctx, s.db.Rebind(fmt.Sprintf("UPDATE subtasks SET %s WHERE id = ?", strings.Join(toUpd, ", "))), args...)
+	_, err := s.conn.ExecContext(ctx, s.conn.Rebind(fmt.Sprintf("UPDATE subtasks SET %s WHERE id = ?", strings.Join(toUpd, ", "))), args...)
 	return err
 }
 
-func (s *SubTaskService) DeleteSubTask(ctx context.Context, stid int) error {
-	_, err := s.db.ExecContext(ctx, s.db.Rebind("DELETE FROM subtasks WHERE id = ?"), stid)
+func (s *DB) DeleteSubTask(ctx context.Context, stid int) error {
+	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("DELETE FROM subtasks WHERE id = ?"), stid)
 	return err
 }
 
-func (s *SubTaskService) DeleteSubTasks(ctx context.Context, pbid int) error {
-	_, err := s.db.ExecContext(ctx, s.db.Rebind("DELETE FROM subtasks WHERE problem_id = ?"), pbid)
+func (s *DB) DeleteSubTasks(ctx context.Context, pbid int) error {
+	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("DELETE FROM subtasks WHERE problem_id = ?"), pbid)
 	return err
-}
-
-func NewSubTaskService(db *sqlx.DB) kilonova.SubTaskService {
-	return &SubTaskService{db}
 }
 
 type subtask struct {

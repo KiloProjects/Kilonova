@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS test_inputs (
+	tid 	INTEGER 	NOT NULL UNIQUE REFERENCES tests(id),
+	data 	BLOB 		NOT NULL
+);

@@ -10,7 +10,7 @@ import (
 )
 
 func (s *API) resetWaitingSubs(w http.ResponseWriter, r *http.Request) {
-	err := s.sserv.BulkUpdateSubmissions(r.Context(), kilonova.SubmissionFilter{Status: kilonova.StatusWorking}, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting})
+	err := s.db.BulkUpdateSubmissions(r.Context(), kilonova.SubmissionFilter{Status: kilonova.StatusWorking}, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting})
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -28,7 +28,7 @@ func (s *API) reevaluateSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.sserv.UpdateSubmission(r.Context(), args.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting})
+	err := s.db.UpdateSubmission(r.Context(), args.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting})
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -36,7 +36,7 @@ func (s *API) reevaluateSubmission(w http.ResponseWriter, r *http.Request) {
 
 	var f = false
 	var zero = 0
-	err = s.stserv.UpdateSubmissionSubTests(r.Context(), args.ID, kilonova.SubTestUpdate{Done: &f, Score: &zero})
+	err = s.db.UpdateSubmissionSubTests(r.Context(), args.ID, kilonova.SubTestUpdate{Done: &f, Score: &zero})
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -53,7 +53,7 @@ func (s *API) getUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := s.userv.Users(r.Context(), args)
+	users, err := s.db.Users(r.Context(), args)
 	if err != nil {
 		log.Println(err)
 		errorData(w, "Could not read from DB", 500)
@@ -88,7 +88,7 @@ func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := s.userv.UpdateUser(r.Context(), args.ID, kilonova.UserUpdate{Admin: &args.Set}); err != nil {
+	if err := s.db.UpdateUser(r.Context(), args.ID, kilonova.UserUpdate{Admin: &args.Set}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -126,7 +126,7 @@ func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := s.userv.UpdateUser(r.Context(), args.ID, kilonova.UserUpdate{Proposer: &args.Set}); err != nil {
+	if err := s.db.UpdateUser(r.Context(), args.ID, kilonova.UserUpdate{Proposer: &args.Set}); err != nil {
 		errorData(w, err, 500)
 		return
 	}

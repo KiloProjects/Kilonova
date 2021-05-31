@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/util"
 )
 
@@ -19,14 +19,14 @@ type subTestLine struct {
 }
 
 func (s *API) fetchSubTests(ctx context.Context, sub *kilonova.Submission) ([]subTestLine, error) {
-	stests, err := s.stserv.SubTestsBySubID(ctx, sub.ID)
+	stests, err := s.db.SubTestsBySubID(ctx, sub.ID)
 	if err != nil {
 		return nil, err
 	}
 	var lines = make([]subTestLine, 0, len(stests))
 	for _, stest := range stests {
 		stest := stest
-		test, err := s.tserv.TestByID(ctx, stest.TestID)
+		test, err := s.db.TestByID(ctx, stest.TestID)
 		if err != nil {
 			return nil, err
 		}
@@ -52,20 +52,25 @@ func (s *API) getSubmissionByID() func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		sub, err := s.sserv.SubmissionByID(r.Context(), subID)
+		sub, err := s.db.Submission(r.Context(), subID)
 		if err != nil {
 			errorData(w, "Could not find submission", http.StatusBadRequest)
 			return
 		}
 
-		pb, err := s.pserv.ProblemByID(r.Context(), sub.ProblemID)
+		pb, err := s.db.Problem(r.Context(), sub.ProblemID)
 		if err != nil {
 			log.Println("Couldn't get some stuff:", err)
 			errorData(w, err, 500)
 			return
 		}
 
-		stks, err := s.stkserv.SubTasks(r.Context(), pb.ID)
+		if !util.IsProblemVisible(util.User(r), pb) {
+			errorData(w, "You can't access this submission because the problem isn't visible!", 403)
+			return
+		}
+
+		stks, err := s.db.SubTasks(r.Context(), pb.ID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			errorData(w, err, 500)
 			return
@@ -82,7 +87,7 @@ func (s *API) getSubmissionByID() func(w http.ResponseWriter, r *http.Request) {
 		l.SubTests = st
 
 		if r.FormValue("expanded") != "" {
-			user, err := s.userv.UserByID(r.Context(), sub.UserID)
+			user, err := s.db.User(r.Context(), sub.UserID)
 			if err != nil {
 				log.Println("Couldn't get some stuff:", err)
 				errorData(w, err, 500)
@@ -92,7 +97,7 @@ func (s *API) getSubmissionByID() func(w http.ResponseWriter, r *http.Request) {
 			l.Problem = pb
 		}
 
-		s.kn.FilterCode(sub, util.User(r), s.sserv)
+		s.kn.FilterCode(sub, util.User(r), s.db)
 
 		returnData(w, l)
 	}
@@ -110,28 +115,36 @@ func (s *API) filterSubs() http.HandlerFunc {
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
-		var args struct {
-			LoadUser    bool `json:"loadUser"`
-			LoadProblem bool `json:"loadProblem"`
-			kilonova.SubmissionFilter
-		}
+		var args kilonova.SubmissionFilter
 		if err := decoder.Decode(&args, r.Form); err != nil {
 			errorData(w, err, http.StatusBadRequest)
 			return
 		}
 
+		userCache := make(map[int]*kilonova.User)
+		problemCache := make(map[int]*kilonova.Problem)
+
 		if args.Limit == 0 || args.Limit > 50 {
 			args.Limit = 50
 		}
 
-		count, err := s.sserv.CountSubmissions(r.Context(), args.SubmissionFilter)
+		if args.Ordering == "" {
+			args.Ordering = "id"
+		}
+
+		if !(args.Ordering == "id" || args.Ordering == "max_time" || args.Ordering == "max_mem" || args.Ordering == "score") {
+			errorData(w, "Invalid ordering type", 400)
+			return
+		}
+
+		count, err := s.db.CountSubmissions(r.Context(), args)
 		if err != nil {
 			log.Println(err)
 			errorData(w, http.StatusText(500), 500)
 			return
 		}
 
-		subs, err := s.sserv.Submissions(r.Context(), args.SubmissionFilter)
+		subs, err := s.db.Submissions(r.Context(), args)
 		if err != nil {
 			log.Println(err)
 			errorData(w, http.StatusText(500), 500)
@@ -142,26 +155,39 @@ func (s *API) filterSubs() http.HandlerFunc {
 
 		user := util.User(r)
 		for _, sub := range subs {
-			s.kn.FilterCode(sub, user, s.sserv)
+			s.kn.FilterCode(sub, user, s.db)
 			l := line{Sub: sub}
 
-			if args.LoadUser {
-				user, err := s.userv.UserByID(r.Context(), sub.UserID)
-				if err != nil {
-					log.Println("Couldn't get some stuff:", err)
-					errorData(w, err, 500)
-					return
-				}
-				l.User = user
-			}
-			if args.LoadProblem {
-				pb, err := s.pserv.ProblemByID(r.Context(), sub.ProblemID)
+			subProblem, ok := problemCache[sub.ProblemID]
+			if ok {
+				l.Problem = subProblem
+			} else {
+				pb, err := s.db.Problem(r.Context(), sub.ProblemID)
 				if err != nil {
 					log.Println("Couldn't get some stuff:", err)
 					errorData(w, err, 500)
 					return
 				}
 				l.Problem = pb
+				problemCache[sub.ProblemID] = pb
+			}
+
+			if !util.IsProblemVisible(util.User(r), l.Problem) {
+				continue
+			}
+
+			subUser, ok := userCache[sub.UserID]
+			if ok {
+				l.User = subUser
+			} else {
+				user, err := s.db.User(r.Context(), sub.UserID)
+				if err != nil {
+					log.Println("Couldn't get some stuff:", err)
+					errorData(w, err, 500)
+					return
+				}
+				l.User = user
+				userCache[sub.UserID] = user
 			}
 
 			ret = append(ret, l)
@@ -182,7 +208,7 @@ func (s *API) setSubmissionQuality(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sub, err := s.sserv.SubmissionByID(r.Context(), args.ID)
+	sub, err := s.db.Submission(r.Context(), args.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			errorData(w, "Submission not found", http.StatusNotFound)
@@ -198,7 +224,15 @@ func (s *API) setSubmissionQuality(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.sserv.UpdateSubmission(r.Context(), sub.ID, kilonova.SubmissionUpdate{Quality: &args.Quality}); err != nil {
+	upd := kilonova.SubmissionUpdate{
+		Quality: &args.Quality,
+	}
+	if args.Quality {
+		t := true
+		upd.Visible = &t
+	}
+
+	if err := s.db.UpdateSubmission(r.Context(), sub.ID, upd); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -217,7 +251,7 @@ func (s *API) setSubmissionVisible(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sub, err := s.sserv.SubmissionByID(r.Context(), args.ID)
+	sub, err := s.db.Submission(r.Context(), args.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			errorData(w, "Submission not found", http.StatusNotFound)
@@ -233,7 +267,7 @@ func (s *API) setSubmissionVisible(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.sserv.UpdateSubmission(r.Context(), sub.ID, kilonova.SubmissionUpdate{Visible: &args.Visible}); err != nil {
+	if err := s.db.UpdateSubmission(r.Context(), sub.ID, kilonova.SubmissionUpdate{Visible: &args.Visible}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -262,7 +296,7 @@ func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
 
 	var user = util.User(r)
 
-	problem, err := s.pserv.ProblemByID(r.Context(), args.ProblemID)
+	problem, err := s.db.Problem(r.Context(), args.ProblemID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			errorData(w, "Problem not found", http.StatusBadRequest)
@@ -271,7 +305,7 @@ func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := config.Languages[args.Lang]; ok == false {
+	if _, ok := eval.Langs[args.Lang]; ok == false {
 		errorData(w, "Invalid language", http.StatusBadRequest)
 		return
 	}
@@ -324,7 +358,7 @@ func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
 // addSubmission adds the submission to the DB, but also creates the subtests
 // was split away from the function above because it got too big
 func (s *API) addSubmission(ctx context.Context, userID int, problemID int, code string, lang string, visible bool) (*kilonova.Submission, error) {
-	tests, err := s.tserv.Tests(ctx, problemID)
+	tests, err := s.db.Tests(ctx, problemID)
 	if err != nil {
 		return nil, err
 	}
@@ -336,18 +370,18 @@ func (s *API) addSubmission(ctx context.Context, userID int, problemID int, code
 	sub.Code = code
 	sub.Language = lang
 	sub.Visible = visible
-	if err := s.sserv.CreateSubmission(ctx, &sub); err != nil {
+	if err := s.db.CreateSubmission(ctx, &sub); err != nil {
 		return nil, err
 	}
 
 	// Add subtests
 	for _, test := range tests {
-		if err := s.stserv.CreateSubTest(ctx, &kilonova.SubTest{UserID: userID, TestID: test.ID, SubmissionID: sub.ID}); err != nil {
+		if err := s.db.CreateSubTest(ctx, &kilonova.SubTest{UserID: userID, TestID: test.ID, SubmissionID: sub.ID}); err != nil {
 			return nil, err
 		}
 	}
 
-	if err := s.sserv.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting}); err != nil {
+	if err := s.db.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting}); err != nil {
 		return nil, err
 	}
 
@@ -364,7 +398,7 @@ func (s *API) deleteSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.sserv.DeleteSubmission(r.Context(), args.ID); err != nil {
+	if err := s.db.DeleteSubmission(r.Context(), args.ID); err != nil {
 		errorData(w, err, 500)
 		return
 	}

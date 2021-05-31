@@ -1,7 +1,6 @@
 package kilonova
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"log"
@@ -65,32 +64,6 @@ type UserUpdate struct {
 
 	Banned   *bool `json:"banned"`
 	Disabled *bool `json:"disabled"`
-}
-
-// UserService represents a service for managing users
-type UserService interface {
-	// UserByID looks up a user by ID. Returns ENOTFOUND if the ID doesn't exist
-	UserByID(ctx context.Context, id int) (*User, error)
-
-	// Users retrieves users based on a filter.
-	Users(ctx context.Context, filter UserFilter) ([]*User, error)
-
-	// CountUsers retrieves the number of users matching a filter. It ignores the limit fields in `filter`.
-	CountUsers(ctx context.Context, filter UserFilter) (int, error)
-
-	// UserExists says wether or not a user matches either a specific username (case-insensitive), either a specific email address.
-	UserExists(ctx context.Context, username, email string) (bool, error)
-
-	// CreateUser creates a new user with the info specified in the object.
-	// On success, user.ID is set to the new user ID.
-	CreateUser(ctx context.Context, user *User) error
-
-	// UpdateUser updates a user.
-	// Returns ENOTFOUND if the user does not exist
-	UpdateUser(ctx context.Context, id int, upd UserUpdate) error
-
-	// DeleteUser permanently deletes a user from the system.
-	DeleteUser(ctx context.Context, id int) error
 }
 
 func HashPassword(password string) (string, error) {

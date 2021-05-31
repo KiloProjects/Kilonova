@@ -46,34 +46,8 @@
 
 <script>
 var pbid = {{.Problem.ID}}, rowreg = /row-test-([0-9]+)/;
-var overall = document.getElementById("selectAllBox");
-var checks = document.querySelectorAll("[id^='pb-test-']");
-overall.addEventListener('input', e => {
-	for(let ee of checks) {
-		ee.checked = e.target.checked;
-	}
-})
-for(let e of checks) {
-	e.addEventListener('input', updateAllChecked);
-}
 
-function updateAllChecked() {
-	var numChecked = 0;
-	for(let e of checks) {
-		numChecked += e.checked;
-	}
-	if(numChecked == checks.length) {
-		overall.indeterminate = false;
-		overall.checked = true;
-	} else if(numChecked == 0) {
-		overall.indeterminate = false;
-		overall.checked = false;
-	} else {
-		overall.checked = false;
-		overall.indeterminate = true;
-	}
-}
-updateAllChecked();
+const mgr = new bundled.CheckboxManager(document.getElementById("selectAllBox"), document.querySelectorAll("[id^='pb-test-']"))
 
 async function createSubTask(e) {
 	e.preventDefault();

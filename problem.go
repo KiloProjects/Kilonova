@@ -1,7 +1,6 @@
 package kilonova
 
 import (
-	"context"
 	"time"
 )
 
@@ -13,6 +12,10 @@ const (
 	ProblemTypeCustomChecker ProblemType = "custom_checker"
 	// TODO
 	ProblemTypeInteractive ProblemType = "interactive"
+)
+
+var (
+	ErrAttachmentExists = &Error{Code: EINVALID, Message: "Attachment with that name already exists!"}
 )
 
 type Problem struct {
@@ -83,16 +86,6 @@ type ProblemUpdate struct {
 	Visible        *bool       `json:"visible"`
 }
 
-type ProblemService interface {
-	ProblemByID(ctx context.Context, id int) (*Problem, error)
-	Problems(ctx context.Context, filter ProblemFilter) ([]*Problem, error)
-
-	CreateProblem(ctx context.Context, problem *Problem) error
-	UpdateProblem(ctx context.Context, id int, upd ProblemUpdate) error
-	BulkUpdateProblems(ctx context.Context, filter ProblemFilter, upd ProblemUpdate) error
-	DeleteProblem(ctx context.Context, id int) error
-}
-
 type Attachment struct {
 	ID        int       `json:"id"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
@@ -100,7 +93,8 @@ type Attachment struct {
 	Visible   bool      `json:"visible"`
 
 	Name string `json:"name"`
-	Data []byte `json:"data"`
+	Data []byte `json:"data,omitempty"`
+	Size int    `json:"data_size" db:"data_size"`
 }
 
 type AttachmentFilter struct {
@@ -117,13 +111,4 @@ type AttachmentUpdate struct {
 	Visible *bool   `json:"visible"`
 	Data    []byte  `json:"data"`
 	Name    *string `json:"name"`
-}
-
-type AttachmentService interface {
-	CreateAttachment(context.Context, *Attachment) error
-	Attachment(ctx context.Context, id int) (*Attachment, error)
-	Attachments(ctx context.Context, getData bool, filter AttachmentFilter) ([]*Attachment, error)
-	UpdateAttachment(ctx context.Context, id int, upd AttachmentUpdate) error
-	DeleteAttachment(ctx context.Context, attid int) error
-	DeleteAttachments(ctx context.Context, pbid int) error
 }

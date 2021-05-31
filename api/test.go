@@ -43,11 +43,11 @@ func (s *API) updateTestID(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	if _, err := s.tserv.Test(r.Context(), util.Problem(r).ID, args.ID); err == nil {
+	if _, err := s.db.Test(r.Context(), util.Problem(r).ID, args.ID); err == nil {
 		errorData(w, "Test with that visible id already exists!", 400)
 		return
 	}
-	if err := s.tserv.UpdateTest(r.Context(), util.Test(r).ID, kilonova.TestUpdate{VisibleID: &args.ID}); err != nil {
+	if err := s.db.UpdateTest(r.Context(), util.Test(r).ID, kilonova.TestUpdate{VisibleID: &args.ID}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -69,7 +69,7 @@ func (s *API) updateTestScore(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	if err := s.tserv.UpdateTest(r.Context(), util.Test(r).ID, kilonova.TestUpdate{Score: &args.Score}); err != nil {
+	if err := s.db.UpdateTest(r.Context(), util.Test(r).ID, kilonova.TestUpdate{Score: &args.Score}); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -77,7 +77,7 @@ func (s *API) updateTestScore(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getTests(w http.ResponseWriter, r *http.Request) {
-	tests, err := s.tserv.Tests(r.Context(), util.Problem(r).ID)
+	tests, err := s.db.Tests(r.Context(), util.Problem(r).ID)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -93,7 +93,7 @@ func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	test, err := s.tserv.Test(r.Context(), util.Problem(r).ID, args.ID)
+	test, err := s.db.Test(r.Context(), util.Problem(r).ID, args.ID)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -103,12 +103,12 @@ func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
-	if err := s.tserv.OrphanProblemTests(r.Context(), util.Problem(r).ID); err != nil {
+	if err := s.db.OrphanProblemTests(r.Context(), util.Problem(r).ID); err != nil {
 		errorData(w, err, 500)
 		return
 	}
 
-	if err := s.stkserv.DeleteSubTasks(r.Context(), util.Problem(r).ID); err != nil {
+	if err := s.db.DeleteSubTasks(r.Context(), util.Problem(r).ID); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -133,7 +133,7 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// set it to be the largest visible id of a test + 1
-		max, err := s.tserv.BiggestVID(r.Context(), util.Problem(r).ID)
+		max, err := s.db.BiggestVID(r.Context(), util.Problem(r).ID)
 		if err != nil {
 			max = 0
 		}
@@ -148,7 +148,7 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 	test.ProblemID = util.Problem(r).ID
 	test.VisibleID = visibleID
 	test.Score = score
-	if err := s.tserv.CreateTest(r.Context(), &test); err != nil {
+	if err := s.db.CreateTest(r.Context(), &test); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -218,16 +218,16 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 
 // deleteTest ensures that a test is deleted while also removing it from a subtask
 func (s *API) deleteTest(ctx context.Context, pbid, testvid int) error {
-	test, err := s.tserv.Test(ctx, pbid, testvid)
+	test, err := s.db.Test(ctx, pbid, testvid)
 	if err != nil {
 		return err
 	}
 
-	if err := s.tserv.OrphanProblemTest(ctx, pbid, testvid); err != nil {
+	if err := s.db.OrphanProblemTest(ctx, pbid, testvid); err != nil {
 		return err
 	}
 
-	stks, err := s.stkserv.SubTasks(ctx, pbid)
+	stks, err := s.db.SubTasks(ctx, pbid)
 	if err != nil {
 		return err
 	}
@@ -241,10 +241,10 @@ func (s *API) deleteTest(ctx context.Context, pbid, testvid int) error {
 		}
 		if len(newIDs) != len(st.Tests) {
 			if len(newIDs) == 0 {
-				if err := s.stkserv.DeleteSubTask(ctx, st.ID); err != nil {
+				if err := s.db.DeleteSubTask(ctx, st.ID); err != nil {
 					return err
 				}
-			} else if err := s.stkserv.UpdateSubTask(ctx, st.ID, kilonova.SubTaskUpdate{Tests: newIDs}); err != nil {
+			} else if err := s.db.UpdateSubTask(ctx, st.ID, kilonova.SubTaskUpdate{Tests: newIDs}); err != nil {
 				return err
 			}
 		}
@@ -284,8 +284,8 @@ func (s *API) bulkUpdateTestScores(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for k, v := range data {
-		if t, err := s.tserv.Test(r.Context(), util.Problem(r).ID, k); err == nil {
-			if err := s.tserv.UpdateTest(r.Context(), t.ID, kilonova.TestUpdate{Score: &v}); err == nil {
+		if t, err := s.db.Test(r.Context(), util.Problem(r).ID, k); err == nil {
+			if err := s.db.UpdateTest(r.Context(), t.ID, kilonova.TestUpdate{Score: &v}); err == nil {
 				updatedTests++
 			}
 		}

@@ -24,7 +24,7 @@ func (s *API) createSubTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if stk1, _ := s.stkserv.SubTask(r.Context(), util.Problem(r).ID, args.VisibleID); stk1 != nil && stk1.ID != 0 {
+	if stk1, _ := s.db.SubTask(r.Context(), util.Problem(r).ID, args.VisibleID); stk1 != nil && stk1.ID != 0 {
 		errorData(w, "SubTask with that ID already exists!", 400)
 		return
 	}
@@ -41,7 +41,7 @@ func (s *API) createSubTask(w http.ResponseWriter, r *http.Request) {
 
 	realIDs := []int{}
 	for _, id := range ids {
-		test, err := s.tserv.Test(r.Context(), util.Problem(r).ID, id)
+		test, err := s.db.Test(r.Context(), util.Problem(r).ID, id)
 		if err != nil {
 			continue
 		}
@@ -55,7 +55,7 @@ func (s *API) createSubTask(w http.ResponseWriter, r *http.Request) {
 		Tests:     realIDs,
 	}
 
-	if err := s.stkserv.CreateSubTask(r.Context(), &stk); err != nil {
+	if err := s.db.CreateSubTask(r.Context(), &stk); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -80,7 +80,7 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stk, err := s.stkserv.SubTask(r.Context(), util.Problem(r).ID, args.SubTaskID)
+	stk, err := s.db.SubTask(r.Context(), util.Problem(r).ID, args.SubTaskID)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -98,7 +98,7 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 		}
 		newIDs := make([]int, 0, len(ids))
 		for _, id := range ids {
-			test, err := s.tserv.Test(r.Context(), util.Problem(r).ID, id)
+			test, err := s.db.Test(r.Context(), util.Problem(r).ID, id)
 			if err != nil {
 				errorData(w, "One of the tests does not exist", 400)
 				return
@@ -108,7 +108,7 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 		upd.Tests = newIDs
 	}
 
-	if err := s.stkserv.UpdateSubTask(r.Context(), stk.ID, upd); err != nil {
+	if err := s.db.UpdateSubTask(r.Context(), stk.ID, upd); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -124,8 +124,8 @@ func (s *API) bulkDeleteSubTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, id := range ids {
-		if stk, err := s.stkserv.SubTask(r.Context(), util.Problem(r).ID, id); err == nil {
-			if err := s.stkserv.DeleteSubTask(r.Context(), stk.ID); err == nil {
+		if stk, err := s.db.SubTask(r.Context(), util.Problem(r).ID, id); err == nil {
+			if err := s.db.DeleteSubTask(r.Context(), stk.ID); err == nil {
 				removedSubTasks++
 			}
 		}
@@ -149,8 +149,8 @@ func (s *API) bulkUpdateSubTaskScores(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for k, v := range data {
-		if stk, err := s.stkserv.SubTask(r.Context(), util.Problem(r).ID, k); err == nil {
-			if err := s.stkserv.UpdateSubTask(r.Context(), stk.ID, kilonova.SubTaskUpdate{Score: &v}); err == nil {
+		if stk, err := s.db.SubTask(r.Context(), util.Problem(r).ID, k); err == nil {
+			if err := s.db.UpdateSubTask(r.Context(), stk.ID, kilonova.SubTaskUpdate{Score: &v}); err == nil {
 				updatedSubTasks++
 			} else {
 				spew.Dump(err)

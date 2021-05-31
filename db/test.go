@@ -5,47 +5,40 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/jmoiron/sqlx"
 )
 
-var _ kilonova.TestService = &TestService{}
-
-type TestService struct {
-	db *sqlx.DB
-}
-
-func (s *TestService) CreateTest(ctx context.Context, test *kilonova.Test) error {
+func (s *DB) CreateTest(ctx context.Context, test *kilonova.Test) error {
 	if test.ProblemID == 0 || test.Score == 0 {
 		return kilonova.ErrMissingRequired
 	}
 
 	var id int
-	err := s.db.GetContext(ctx, &id, s.db.Rebind("INSERT INTO tests (score, problem_id, visible_id, orphaned) VALUES (?, ?, ?, ?) RETURNING id"), test.Score, test.ProblemID, test.VisibleID, test.Orphaned)
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind("INSERT INTO tests (score, problem_id, visible_id, orphaned) VALUES (?, ?, ?, ?) RETURNING id"), test.Score, test.ProblemID, test.VisibleID, test.Orphaned)
 	if err == nil {
 		test.ID = id
 	}
 	return err
 }
 
-func (s *TestService) Test(ctx context.Context, pbID, testVID int) (*kilonova.Test, error) {
+func (s *DB) Test(ctx context.Context, pbID, testVID int) (*kilonova.Test, error) {
 	var test kilonova.Test
-	err := s.db.GetContext(ctx, &test, s.db.Rebind("SELECT * FROM tests WHERE problem_id = ? AND visible_id = ? AND orphaned = false ORDER BY visible_id LIMIT 1"), pbID, testVID)
+	err := s.conn.GetContext(ctx, &test, s.conn.Rebind("SELECT * FROM tests WHERE problem_id = ? AND visible_id = ? AND orphaned = false ORDER BY visible_id LIMIT 1"), pbID, testVID)
 	return &test, err
 }
 
-func (s *TestService) TestByID(ctx context.Context, id int) (*kilonova.Test, error) {
+func (s *DB) TestByID(ctx context.Context, id int) (*kilonova.Test, error) {
 	var test kilonova.Test
-	err := s.db.GetContext(ctx, &test, s.db.Rebind("SELECT * FROM tests WHERE id = ? LIMIT 1"), id)
+	err := s.conn.GetContext(ctx, &test, s.conn.Rebind("SELECT * FROM tests WHERE id = ? LIMIT 1"), id)
 	return &test, err
 }
 
-func (s *TestService) Tests(ctx context.Context, pbID int) ([]*kilonova.Test, error) {
+func (s *DB) Tests(ctx context.Context, pbID int) ([]*kilonova.Test, error) {
 	var tests []*kilonova.Test
-	err := s.db.SelectContext(ctx, &tests, s.db.Rebind("SELECT * FROM tests WHERE problem_id = ? AND orphaned = false ORDER BY visible_id"), pbID)
+	err := s.conn.SelectContext(ctx, &tests, s.conn.Rebind("SELECT * FROM tests WHERE problem_id = ? AND orphaned = false ORDER BY visible_id"), pbID)
 	return tests, err
 }
 
-func (s *TestService) UpdateTest(ctx context.Context, id int, upd kilonova.TestUpdate) error {
+func (s *DB) UpdateTest(ctx context.Context, id int, upd kilonova.TestUpdate) error {
 	toUpd, args := []string{}, []interface{}{}
 	if v := upd.Score; v != nil {
 		toUpd, args = append(toUpd, "score = ?"), append(args, v)
@@ -61,27 +54,23 @@ func (s *TestService) UpdateTest(ctx context.Context, id int, upd kilonova.TestU
 	}
 	args = append(args, id)
 
-	query := s.db.Rebind("UPDATE tests SET " + strings.Join(toUpd, ", ") + " WHERE id = ?")
-	_, err := s.db.ExecContext(ctx, query, args...)
+	query := s.conn.Rebind("UPDATE tests SET " + strings.Join(toUpd, ", ") + " WHERE id = ?")
+	_, err := s.conn.ExecContext(ctx, query, args...)
 	return err
 }
 
-func (s *TestService) OrphanProblemTests(ctx context.Context, problemID int) error {
-	_, err := s.db.ExecContext(ctx, s.db.Rebind("UPDATE tests SET orphaned = true WHERE problem_id = ?"), problemID)
+func (s *DB) OrphanProblemTests(ctx context.Context, problemID int) error {
+	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("UPDATE tests SET orphaned = true WHERE problem_id = ?"), problemID)
 	return err
 }
 
-func (s *TestService) OrphanProblemTest(ctx context.Context, problemID int, testVID int) error {
-	_, err := s.db.ExecContext(ctx, s.db.Rebind("UPDATE tests SET orphaned = true WHERE problem_id = ? AND visible_id = ?"), problemID, testVID)
+func (s *DB) OrphanProblemTest(ctx context.Context, problemID int, testVID int) error {
+	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("UPDATE tests SET orphaned = true WHERE problem_id = ? AND visible_id = ?"), problemID, testVID)
 	return err
 }
 
-func (s *TestService) BiggestVID(ctx context.Context, problemID int) (int, error) {
+func (s *DB) BiggestVID(ctx context.Context, problemID int) (int, error) {
 	var id int
-	err := s.db.GetContext(ctx, &id, s.db.Rebind("SELECT visible_id FROM tests WHERE problem_id = ? AND orphaned = false ORDER BY visible_id DESC LIMIT 1;"), problemID)
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind("SELECT visible_id FROM tests WHERE problem_id = ? AND orphaned = false ORDER BY visible_id DESC LIMIT 1;"), problemID)
 	return id, err
-}
-
-func NewTestService(db *sqlx.DB) kilonova.TestService {
-	return &TestService{db}
 }
