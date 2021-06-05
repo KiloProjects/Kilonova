@@ -214,7 +214,6 @@ func (s *API) getSelfSolvedProblems(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getSolvedProblems(w http.ResponseWriter, r *http.Request) {
-	// TODO: Test
 	name := strings.TrimSpace(r.FormValue("name"))
 	if name == "" {
 		errorData(w, "Name not specified", http.StatusBadRequest)
@@ -242,7 +241,7 @@ func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hash, err := s.kn.GenHash(password)
+	hash, err := kilonova.HashPassword(password)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -294,7 +293,7 @@ func (s *API) resendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.kn.SendVerificationEmail(u.Email, u.Name, u.ID); err != nil {
+	if err := kilonova.SendVerificationEmail(u.Email, u.Name, u.ID, s.db, s.mailer); err != nil {
 		log.Println(err)
 		errorData(w, "Couldn't send verification email", 500)
 		return

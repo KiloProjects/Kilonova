@@ -1,4 +1,4 @@
-package logic
+package kilonova
 
 import (
 	"bytes"
@@ -6,7 +6,6 @@ import (
 	"log"
 	"text/template"
 
-	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 )
 
@@ -21,19 +20,14 @@ Echipa Kilonova
 https://kilonova.ro/`
 var emailT = template.Must(template.New("emailTempl").Parse(emailTempl))
 
-// CreateVerification creates a new verification request
-func (kn *Kilonova) CreateVerification(userid int) (string, error) {
-	return kn.DB.CreateVerification(context.Background(), userid)
-}
-
-func (kn *Kilonova) SendVerificationEmail(email, name string, uid int) error {
+func SendVerificationEmail(email, name string, uid int, db DB, mailer Mailer) error {
 	type emTp struct {
 		Name       string
 		Email      string
 		VID        string
 		HostPrefix string
 	}
-	vid, err := kn.CreateVerification(uid)
+	vid, err := db.CreateVerification(context.Background(), uid)
 	if err != nil {
 		return err
 	}
@@ -42,11 +36,11 @@ func (kn *Kilonova) SendVerificationEmail(email, name string, uid int) error {
 	if err := emailT.Execute(&b, emTp{Name: name, Email: email, VID: vid, HostPrefix: config.Common.HostPrefix}); err != nil {
 		log.Fatal("Error rendering verification email:", err)
 	}
-	return kn.mailer.SendEmail(&kilonova.MailerMessage{Subject: "Verify your email address", PlainContent: b.String(), To: email})
+	return mailer.SendEmail(&MailerMessage{Subject: "Verify your email address", PlainContent: b.String(), To: email})
 }
 
-func (kn *Kilonova) CheckVerificationEmail(vid string) bool {
-	val, err := kn.DB.GetVerification(context.Background(), vid)
+func CheckVerificationEmail(db DB, vid string) bool {
+	val, err := db.GetVerification(context.Background(), vid)
 	if err != nil || val == 0 {
 		return false
 	}
@@ -55,10 +49,10 @@ func (kn *Kilonova) CheckVerificationEmail(vid string) bool {
 
 var True = true
 
-func (kn *Kilonova) ConfirmVerificationEmail(vid string, user *kilonova.User) error {
-	if err := kn.DB.RemoveVerification(context.Background(), vid); err != nil {
+func ConfirmVerificationEmail(db DB, vid string, user *User) error {
+	if err := db.RemoveVerification(context.Background(), vid); err != nil {
 		return err
 	}
 
-	return kn.DB.UpdateUser(context.Background(), user.ID, kilonova.UserUpdate{VerifiedEmail: &True})
+	return db.UpdateUser(context.Background(), user.ID, UserUpdate{VerifiedEmail: &True})
 }

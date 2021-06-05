@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -57,19 +58,19 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.kn.AddUser(r.Context(), auth.Username, auth.Email, auth.Password)
+	user, err := s.addUser(r.Context(), auth.Username, auth.Email, auth.Password)
 	if err != nil {
 		fmt.Println(err)
 		errorData(w, "Couldn't create user", 500)
 		return
 	}
 
-	if err := s.kn.SendVerificationEmail(auth.Email, auth.Username, user.ID); err != nil {
+	if err := kilonova.SendVerificationEmail(auth.Email, auth.Username, user.ID, s.db, s.mailer); err != nil {
 		log.Println("Couldn't send user verification email:", err)
 		return
 	}
 
-	sid, err := s.kn.CreateSession(user.ID)
+	sid, err := s.db.CreateSession(r.Context(), user.ID)
 	if err != nil {
 		log.Println(err)
 		errorData(w, "Could not set session", 500)
@@ -133,7 +134,7 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 			}
 	*/
 
-	sid, err := s.kn.CreateSession(user.ID)
+	sid, err := s.db.CreateSession(r.Context(), user.ID)
 	if err != nil {
 		log.Println(err)
 		errorData(w, err, 500)
@@ -143,5 +144,38 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) logout(w http.ResponseWriter, r *http.Request) {
-	s.kn.RemoveSessionCookie(w, r)
+	h := getAuthHeader(r)
+	if h == "" {
+		errorData(w, "You are already logged out!", 400)
+		return
+	}
+	s.db.RemoveSession(r.Context(), h)
+}
+
+func (s *API) addUser(ctx context.Context, username, email, password string) (*kilonova.User, error) {
+	hash, err := kilonova.HashPassword(password)
+	if err != nil {
+		return nil, err
+	}
+
+	var user kilonova.User
+	user.Name = username
+	user.Email = email
+	user.Password = hash
+
+	err = s.db.CreateUser(ctx, &user)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	if user.ID == 1 {
+		var True = true
+		if err := s.db.UpdateUser(ctx, user.ID, kilonova.UserUpdate{Admin: &True, Proposer: &True}); err != nil {
+			log.Println(err)
+			return &user, err
+		}
+	}
+
+	return &user, nil
 }

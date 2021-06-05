@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/logic"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/schema"
 )
@@ -14,16 +13,16 @@ var decoder *schema.Decoder
 
 // API is the base struct for the project's API
 type API struct {
-	kn      *logic.Kilonova
 	db      kilonova.DB
 	manager kilonova.DataStore
+	mailer  kilonova.Mailer
 
 	testArchiveLock *sync.Mutex
 }
 
 // New declares a new API instance
-func New(kn *logic.Kilonova, db kilonova.DB) *API {
-	return &API{kn, db, kn.DM, &sync.Mutex{}}
+func New(db kilonova.DB, dm kilonova.DataStore, mailer kilonova.Mailer) *API {
+	return &API{db, dm, mailer, &sync.Mutex{}}
 }
 
 // Handler is the magic behind the API

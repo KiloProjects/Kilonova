@@ -16,7 +16,6 @@ func (s *DB) User(ctx context.Context, id int) (*kilonova.User, error) {
 
 // Users retrieves users based on a filter.
 func (s *DB) Users(ctx context.Context, filter kilonova.UserFilter) ([]*kilonova.User, error) {
-	// TODO: Wrap error in a kilonova error
 	var users []*kilonova.User
 	where, args := userFilterQuery(&filter)
 	query := s.conn.Rebind("SELECT * from users WHERE " + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
@@ -26,7 +25,6 @@ func (s *DB) Users(ctx context.Context, filter kilonova.UserFilter) ([]*kilonova
 
 // CountUsers retrieves the number of users matching a filter. It ignores the limit fields in `filter`.
 func (s *DB) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, error) {
-	// TODO: Wrap error in a kilonova error
 	var count int
 	where, args := userFilterQuery(&filter)
 	query := s.conn.Rebind("SELECT COUNT(*) FROM users WHERE " + strings.Join(where, " AND "))
@@ -36,7 +34,6 @@ func (s *DB) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, e
 
 // UserExists says wether or not a user matches either a specific username (case-insensitive), either a specific email address.
 func (s *DB) UserExists(ctx context.Context, username string, email string) (bool, error) {
-	// TODO: Wrap error in a kilonova error
 	var count int
 	err := s.conn.GetContext(ctx, &count, s.conn.Rebind("SELECT COUNT(*) FROM users WHERE lower(name) = lower(?) OR lower(email) = lower(?)"), username, email)
 	return count > 0, err
@@ -93,7 +90,6 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserUpdate) er
 
 // DeleteUser permanently deletes a user from the system.
 func (s *DB) DeleteUser(ctx context.Context, id int) error {
-	// TODO: Wrap error in a kilonova error
 	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("DELETE FROM users WHERE id = ?"), id)
 	return err
 }

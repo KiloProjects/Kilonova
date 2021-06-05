@@ -97,7 +97,9 @@ func (s *API) getSubmissionByID() func(w http.ResponseWriter, r *http.Request) {
 			l.Problem = pb
 		}
 
-		s.kn.FilterCode(sub, util.User(r), s.db)
+		if !util.IsSubmissionVisible(sub, util.User(r), s.db) {
+			sub.Code = ""
+		}
 
 		returnData(w, l)
 	}
@@ -155,7 +157,9 @@ func (s *API) filterSubs() http.HandlerFunc {
 
 		user := util.User(r)
 		for _, sub := range subs {
-			s.kn.FilterCode(sub, user, s.db)
+			if !util.IsSubmissionVisible(sub, user, s.db) {
+				sub.Code = ""
+			}
 			l := line{Sub: sub}
 
 			subProblem, ok := problemCache[sub.ProblemID]

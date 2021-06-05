@@ -95,15 +95,6 @@ type ProblemParams struct {
 	Languages map[string]eval.Language
 }
 
-type ProblemEditParams struct {
-	User    *kilonova.User
-	Problem *kilonova.Problem
-
-	Topbar *EditTopbar
-
-	Attachments []*kilonova.Attachment
-}
-
 type ProblemListParams struct {
 	User        *kilonova.User
 	ProblemList *kilonova.ProblemList

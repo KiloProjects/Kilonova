@@ -11,7 +11,7 @@ import (
 	"strconv"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/logic"
+	"github.com/KiloProjects/kilonova/archive/test"
 	"github.com/KiloProjects/kilonova/internal/util"
 )
 
@@ -204,11 +204,11 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 
 	ar, err := zip.NewReader(file, fh.Size)
 	if err != nil {
-		errorData(w, logic.ErrBadArchive, 400)
+		errorData(w, test.ErrBadArchive, 400)
 		return
 	}
 
-	if err := s.kn.ProcessZipTestArchive(util.Problem(r), ar); err != nil {
+	if err := test.ProcessZipTestArchive(util.Problem(r), ar, s.db, s.manager); err != nil {
 		errorData(w, err, 400)
 		return
 	}

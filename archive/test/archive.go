@@ -1,4 +1,4 @@
-package logic
+package test
 
 import (
 	"archive/zip"
@@ -104,7 +104,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, name string, file io.Reader) error {
 	return nil
 }
 
-func (kn *Kilonova) ProcessZipTestArchive(pb *kilonova.Problem, ar *zip.Reader) error {
+func ProcessZipTestArchive(pb *kilonova.Problem, ar *zip.Reader, db kilonova.DB, dm kilonova.DataStore) error {
 	ctx := NewArchiveCtx()
 
 	for _, file := range ar.File {
@@ -140,7 +140,7 @@ func (kn *Kilonova) ProcessZipTestArchive(pb *kilonova.Problem, ar *zip.Reader) 
 
 	// If we are loading an archive, the user might want to remove all tests first
 	// So let's do it for them
-	if err := kn.DB.OrphanProblemTests(context.Background(), pb.ID); err != nil {
+	if err := db.OrphanProblemTests(context.Background(), pb.ID); err != nil {
 		log.Println(err)
 		return err
 	}
@@ -150,16 +150,16 @@ func (kn *Kilonova) ProcessZipTestArchive(pb *kilonova.Problem, ar *zip.Reader) 
 		test.ProblemID = pb.ID
 		test.VisibleID = testID
 		test.Score = v.Score
-		if err := kn.DB.CreateTest(context.Background(), &test); err != nil {
+		if err := db.CreateTest(context.Background(), &test); err != nil {
 			log.Println(err)
 			return err
 		}
 
-		if err := kn.DM.SaveTestInput(test.ID, v.InFile); err != nil {
+		if err := dm.SaveTestInput(test.ID, v.InFile); err != nil {
 			log.Println("Couldn't create test input", err)
 			return fmt.Errorf("Couldn't create test input: %w", err)
 		}
-		if err := kn.DM.SaveTestOutput(test.ID, v.OutFile); err != nil {
+		if err := dm.SaveTestOutput(test.ID, v.OutFile); err != nil {
 			log.Println("Couldn't create test output", err)
 			return fmt.Errorf("Couldn't create test output: %w", err)
 		}

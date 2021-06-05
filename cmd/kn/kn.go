@@ -16,11 +16,12 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/api"
+	"github.com/KiloProjects/kilonova/archive/kna"
 	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/db"
+	"github.com/KiloProjects/kilonova/email"
 	"github.com/KiloProjects/kilonova/eval/grader"
 	"github.com/KiloProjects/kilonova/internal/config"
-	"github.com/KiloProjects/kilonova/internal/logic"
 	"github.com/KiloProjects/kilonova/web"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi"
@@ -38,7 +39,7 @@ func executeExperiment(dm kilonova.DataStore, db kilonova.DB) error {
 		return err
 	}
 
-	rd, err := kilonova.GenKNA([]*kilonova.Problem{pb, pb1}, db, dm)
+	rd, err := kna.Generate([]*kilonova.Problem{pb, pb1}, db, dm)
 	if err != nil {
 		return err
 	}
@@ -53,7 +54,7 @@ func executeExperiment(dm kilonova.DataStore, db kilonova.DB) error {
 	}
 
 	d, err := os.ReadFile("./plm.db")
-	spew.Dump(kilonova.ReadKNA(bytes.NewReader(d)))
+	spew.Dump(kna.Parse(bytes.NewReader(d)))
 	return nil
 }
 
@@ -97,7 +98,8 @@ func Kilonova() error {
 
 	//return executeExperiment(manager, db)
 
-	kn, err := logic.New(db, manager, debug)
+	// Setup mailer
+	mailer, err := email.NewMailer()
 	if err != nil {
 		return err
 	}
@@ -136,11 +138,11 @@ func Kilonova() error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Initialize components
-	grader := grader.NewHandler(ctx, kn, db)
+	grader := grader.NewHandler(ctx, db, manager, config.Common.Debug)
 
-	r.Mount("/api", api.New(kn, db).Handler())
+	r.Mount("/api", api.New(db, manager, mailer).Handler())
 	r.Mount("/cdn", http.StripPrefix("/cdn/", &web.CDN{CDN: manager}))
-	r.Mount("/", web.NewWeb(kn, db).Handler())
+	r.Mount("/", web.NewWeb(config.Common.Debug, db, manager, mailer).Handler())
 
 	go func() {
 		err := grader.Start()

@@ -9,7 +9,7 @@ Additional reading I should do for a better platform:
 	- [x] Email stuff 
 		- [x] Verificare user
 	- [x] Permite schimbarea tipului de intrare din interfața problemei
-	- [ ] Moderation tools
+	- [x] Moderation tools
 		- [x] Nuke accounts
 		- [x] Ștergere submisie
 	- [x] Use a single bundle for all javascript/css
@@ -39,13 +39,12 @@ Additional reading I should do for a better platform:
 		- [ ] Admin tools diverse
 			- [ ] Mai multe informații în admin panel
 		- [ ] Code share ca pe cses
-		- [ ] Enhancements evaluare:
+		- [x] Enhancements evaluare:
 			- [x] Rezolvare edge case în care evaluarea găsește o submisie la care încă n-au fost inserate toate subtests;
 			- [x] Verificator custom la probleme;
 			- [x] Subtasks;
 				- [x] Adăugare field skipped
 				- [x] Actual support
-			- [ ] ? Folder upload pentru teste
 		- [x] Submisii de calitate
 		- [x] Dark theme
 		- [ ] ? Etichete probleme
@@ -56,9 +55,9 @@ Additional reading I should do for a better platform:
 				- [ ] Enunțuri multi-language
 		- [ ] Rate limits
 		- [x] https://discord.com/channels/@me/775486536358559764/827623285885763594
-		- [ ] https://discord.com/channels/@me/775486536358559764/827623755806146570
-			- [ ] Timp/Memorie maxima
-			- [ ] ? Sortare dupa timp/memorie
+		- [x] https://discord.com/channels/@me/775486536358559764/827623755806146570
+			- [x] Timp/Memorie maxima
+			- [x] Sortare dupa timp/memorie
 			- [x] Liste de probleme
 		- [ ] Improve shoddy implementation of problem lists
 	- [~] CDN
@@ -73,7 +72,7 @@ Additional reading I should do for a better platform:
 			- Pedeapsa este la discreția administratorilor
 			- Reclama este acceptată numai la discreția administratorilor
 			- ???
-	- [ ] Atașamente
+	- [~] Atașamente
 - [ ] pre-late beta:
 	- [ ] Improvements la CDN, e cam basic și nu are multe uses, ar fi înlocuit de atașamente
 		- [ ] ? Ștergere

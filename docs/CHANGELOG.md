@@ -31,7 +31,6 @@
 	- Removed "Top 100" meme page;
 	- Other small details;
 	- Other stuff I think I forgot to write down.
-	- TODO: Test everything, make sure rewrite is ok
 - v0.6.1b:
 	- Show links to submission filters
 	- Fix bug with timezones

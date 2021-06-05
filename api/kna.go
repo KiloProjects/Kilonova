@@ -3,14 +3,14 @@ package api
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/archive/kna"
 	"github.com/KiloProjects/kilonova/internal/util"
 )
 
@@ -38,22 +38,14 @@ func (s *API) createKNA(w http.ResponseWriter, r *http.Request) {
 		}
 		pbs = append(pbs, pb)
 	}
-	rd, err := kilonova.GenKNA(pbs, s.db, s.kn.DM)
+	rd, err := kna.Generate(pbs, s.db, s.manager)
 	if err != nil {
 		errorData(w, err, 500)
 		return
 	}
 	defer rd.Close()
 
-	var b bytes.Buffer
-	enc := base64.NewEncoder(base64.StdEncoding, &b)
-	defer enc.Close()
-
-	if _, err := io.Copy(enc, rd); err != nil {
-		errorData(w, err, 500)
-		return
-	}
-	returnData(w, b.String())
+	http.ServeContent(w, r, "archive.kna", time.Now(), rd)
 }
 
 func (s *API) loadKNA(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +74,7 @@ func (s *API) loadKNA(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pbs, err := kilonova.ReadKNA(file)
+	pbs, err := kna.Parse(file)
 	if err != nil {
 		errorData(w, err, 500)
 		return

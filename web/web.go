@@ -20,9 +20,9 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/api"
+	"github.com/KiloProjects/kilonova/archive/kna"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
-	"github.com/KiloProjects/kilonova/internal/logic"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/web/mdrenderer"
 	"github.com/benbjohnson/hashfs"
@@ -41,15 +41,15 @@ var fsys = hashfs.NewFS(embedded)
 
 // Web is the struct representing this whole package
 type Web struct {
-	kn    *logic.Kilonova
 	dm    kilonova.DataStore
 	rd    kilonova.MarkdownRenderer
 	debug bool
 
-	db kilonova.DB
+	db     kilonova.DB
+	mailer kilonova.Mailer
 }
 
-func (rt *Web) status(w http.ResponseWriter, r *http.Request, statusCode int, err string) {
+func statusPage(w http.ResponseWriter, r *http.Request, statusCode int, err string) {
 	Status(w, &StatusParams{
 		User:    util.User(r),
 		Code:    statusCode,
@@ -79,7 +79,7 @@ func (rt *Web) Handler() http.Handler {
 		})
 
 		r.Route("/profile", func(r chi.Router) {
-			r.With(rt.mustBeAuthed).Get("/", func(w http.ResponseWriter, r *http.Request) {
+			r.With(mustBeAuthed).Get("/", func(w http.ResponseWriter, r *http.Request) {
 
 				pbs, err := kilonova.SolvedProblems(r.Context(), util.User(r).ID, rt.db)
 				if err != nil {
@@ -149,7 +149,7 @@ func (rt *Web) Handler() http.Handler {
 					author, err := rt.db.User(r.Context(), problem.AuthorID)
 					if err != nil {
 						log.Println("Getting author:", err)
-						rt.status(w, r, 500, "Couldn't get author")
+						statusPage(w, r, 500, "Couldn't get author")
 						return
 					}
 
@@ -193,50 +193,7 @@ func (rt *Web) Handler() http.Handler {
 					}
 					http.ServeContent(w, r, att[0].Name, time.Now(), bytes.NewReader(att[0].Data))
 				})
-				r.Route("/edit", func(r chi.Router) {
-					r.Use(rt.mustBeEditor)
-					r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-						editIndex.Execute(w, &ProblemEditParams{util.User(r), util.Problem(r), &EditTopbar{"general", -1}, nil})
-					})
-					r.Get("/desc", func(w http.ResponseWriter, r *http.Request) {
-						editDesc.Execute(w, &ProblemEditParams{util.User(r), util.Problem(r), &EditTopbar{"desc", -1}, nil})
-					})
-					r.Get("/checker", func(w http.ResponseWriter, r *http.Request) {
-						editChecker.Execute(w, &ProblemEditParams{util.User(r), util.Problem(r), &EditTopbar{"checker", -1}, nil})
-					})
-					r.Get("/attachments", func(w http.ResponseWriter, r *http.Request) {
-						atts, err := rt.db.Attachments(r.Context(), false, kilonova.AttachmentFilter{ProblemID: &util.Problem(r).ID})
-						if err != nil {
-							if !errors.Is(err, sql.ErrNoRows) {
-								log.Println(err)
-							}
-							atts = nil
-						}
-						editAttachments.Execute(w, &ProblemEditParams{util.User(r), util.Problem(r), &EditTopbar{"attachments", -1}, atts})
-					})
-					r.Route("/test", func(r chi.Router) {
-						r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-							testScores.Execute(w, &TestEditParams{util.User(r), util.Problem(r), nil, &EditTopbar{"tests", -2}, rt.db, rt.dm})
-						})
-						r.Get("/add", func(w http.ResponseWriter, r *http.Request) {
-							testAdd.Execute(w, &TestEditParams{util.User(r), util.Problem(r), nil, &EditTopbar{"tests", -1}, rt.db, rt.dm})
-						})
-						r.With(rt.ValidateTestID).Get("/{tid}", func(w http.ResponseWriter, r *http.Request) {
-							testEdit.Execute(w, &TestEditParams{util.User(r), util.Problem(r), util.Test(r), &EditTopbar{"tests", util.Test(r).VisibleID}, rt.db, rt.dm})
-						})
-					})
-					r.Route("/subtasks", func(r chi.Router) {
-						r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-							subtaskIndex.Execute(w, &SubTaskEditParams{util.User(r), util.Problem(r), nil, &EditTopbar{"subtasks", -2}, r.Context(), rt.db})
-						})
-						r.Get("/add", func(w http.ResponseWriter, r *http.Request) {
-							subtaskAdd.Execute(w, &SubTaskEditParams{util.User(r), util.Problem(r), nil, &EditTopbar{"subtasks", -1}, r.Context(), rt.db})
-						})
-						r.With(rt.ValidateSubTaskID).Get("/{stid}", func(w http.ResponseWriter, r *http.Request) {
-							subtaskEdit.Execute(w, &SubTaskEditParams{util.User(r), util.Problem(r), util.SubTask(r), &EditTopbar{"subtasks", util.SubTask(r).VisibleID}, r.Context(), rt.db})
-						})
-					})
-				})
+				r.With(mustBeEditor).Mount("/edit", (&ProblemEditPart{rt.db, rt.dm}).Handler())
 			})
 		})
 
@@ -253,10 +210,10 @@ func (rt *Web) Handler() http.Handler {
 		})
 
 		r.Route("/problem_lists", func(r chi.Router) {
-			r.With(rt.mustBeProposer).Get("/", func(w http.ResponseWriter, r *http.Request) {
+			r.With(mustBeProposer).Get("/", func(w http.ResponseWriter, r *http.Request) {
 				pbListIndex.Execute(w, &ProblemListParams{util.User(r), nil, r.Context(), rt.db, rt.rd})
 			})
-			r.With(rt.mustBeProposer).Get("/create", func(w http.ResponseWriter, r *http.Request) {
+			r.With(mustBeProposer).Get("/create", func(w http.ResponseWriter, r *http.Request) {
 				pbListCreate.Execute(w, &SimpleParams{util.User(r)})
 			})
 			r.With(rt.ValidateListID).Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
@@ -344,7 +301,7 @@ func (rt *Web) Handler() http.Handler {
 			}
 		}))
 
-		r.With(rt.mustBeAdmin).Route("/admin", func(r chi.Router) {
+		r.With(mustBeAdmin).Route("/admin", func(r chi.Router) {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 				AdminPanel(w, util.User(r))
 			})
@@ -372,7 +329,7 @@ func (rt *Web) Handler() http.Handler {
 					}
 					pbs = append(pbs, pb)
 				}
-				rd, err := kilonova.GenKNA(pbs, rt.db, rt.dm)
+				rd, err := kna.Generate(pbs, rt.db, rt.dm)
 				if err != nil {
 					http.Error(w, err.Error(), 500)
 					return
@@ -400,26 +357,37 @@ func (rt *Web) Handler() http.Handler {
 			http.ServeContent(w, r, util.Attachment(r).Name, time.Now(), bytes.NewReader(util.Attachment(r).Data))
 		})
 
-		r.With(rt.mustBeAdmin).Get("/uitest", func(w http.ResponseWriter, r *http.Request) {
+		r.With(mustBeAdmin).Get("/uitest", func(w http.ResponseWriter, r *http.Request) {
 			testUI.Execute(w, &SimpleParams{util.User(r)})
 		})
 
-		r.With(rt.mustBeVisitor).Get("/login", func(w http.ResponseWriter, r *http.Request) {
+		r.With(mustBeVisitor).Get("/login", func(w http.ResponseWriter, r *http.Request) {
 			login.Execute(w, &SimpleParams{util.User(r)})
 		})
-		r.With(rt.mustBeVisitor).Get("/signup", func(w http.ResponseWriter, r *http.Request) {
+		r.With(mustBeVisitor).Get("/signup", func(w http.ResponseWriter, r *http.Request) {
 			signup.Execute(w, &SimpleParams{util.User(r)})
 		})
 
-		r.With(rt.mustBeAuthed).Get("/logout", func(w http.ResponseWriter, r *http.Request) {
-			// i could redirect to /api/auth/logout, but it's easier to do it like this
-			rt.kn.RemoveSessionCookie(w, r)
+		r.With(mustBeAuthed).Get("/logout", func(w http.ResponseWriter, r *http.Request) {
+			emptyCookie := &http.Cookie{
+				Name:    "kn-sessionid",
+				Value:   "",
+				Path:    "/",
+				Expires: time.Unix(0, 0),
+			}
+			http.SetCookie(w, emptyCookie)
+
+			c, err := r.Cookie("kn-sessionid")
+			if err != nil {
+				return
+			}
+			rt.db.RemoveSession(r.Context(), c.Value)
 			http.Redirect(w, r, "/", http.StatusFound)
 		})
 
 		// Proposer panel
 		r.Route("/proposer", func(r chi.Router) {
-			r.Use(rt.mustBeProposer)
+			r.Use(mustBeProposer)
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 				proposerPanel.Execute(w, &SimpleParams{util.User(r)})
 			})
@@ -451,7 +419,7 @@ func (rt *Web) Handler() http.Handler {
 						http.Error(w, "You aren't allowed to do that!", 401)
 						return
 					}
-					rc, err := rt.kn.DM.SubtestReader(subtest.ID)
+					rc, err := rt.dm.SubtestReader(subtest.ID)
 					if err != nil {
 						http.Error(w, "The subtest may have been purged as a routine data-saving process", 404)
 						return
@@ -470,7 +438,7 @@ func (rt *Web) Handler() http.Handler {
 
 		// Email verification
 		r.Route("/verify", func(r chi.Router) {
-			r.With(rt.mustBeAuthed).Get("/resend", func(w http.ResponseWriter, r *http.Request) {
+			r.With(mustBeAuthed).Get("/resend", func(w http.ResponseWriter, r *http.Request) {
 				u := util.User(r)
 				if u.VerifiedEmail {
 					Status(w, &StatusParams{util.User(r), 403, "Deja ai verificat email-ul!"})
@@ -482,7 +450,7 @@ func (rt *Web) Handler() http.Handler {
 					Status(w, &StatusParams{util.User(r), 403, text})
 					return
 				}
-				if err := rt.kn.SendVerificationEmail(u.Email, u.Name, u.ID); err != nil {
+				if err := kilonova.SendVerificationEmail(u.Email, u.Name, u.ID, rt.db, rt.mailer); err != nil {
 					log.Println(err)
 					Status(w, &StatusParams{util.User(r), 500, "N-am putut retrimite email-ul de verificare"})
 					return
@@ -496,7 +464,7 @@ func (rt *Web) Handler() http.Handler {
 			})
 			r.Get("/{vid}", func(w http.ResponseWriter, r *http.Request) {
 				vid := chi.URLParam(r, "vid")
-				if !rt.kn.CheckVerificationEmail(vid) {
+				if !kilonova.CheckVerificationEmail(rt.db, vid) {
 					Status(w, &StatusParams{util.User(r), 404, ""})
 					return
 				}
@@ -520,7 +488,7 @@ func (rt *Web) Handler() http.Handler {
 					util.User(r).VerifiedEmail = true
 				}
 
-				if err := rt.kn.ConfirmVerificationEmail(vid, user); err != nil {
+				if err := kilonova.ConfirmVerificationEmail(rt.db, vid, user); err != nil {
 					log.Println(err)
 					Status(w, &StatusParams{util.User(r), 404, ""})
 					return
@@ -549,8 +517,8 @@ func (rt *Web) Handler() http.Handler {
 }
 
 // NewWeb returns a new web instance
-func NewWeb(kn *logic.Kilonova, db kilonova.DB) *Web {
+func NewWeb(debug bool, db kilonova.DB, dm kilonova.DataStore, mailer kilonova.Mailer) *Web {
 	rd := mdrenderer.NewLocalRenderer()
 	//rd := mdrenderer.NewExternalRenderer("http://0.0.0.0:8040")
-	return &Web{kn, kn.DM, rd, kn.Debug, db}
+	return &Web{dm, rd, debug, db, mailer}
 }

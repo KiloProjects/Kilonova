@@ -16,7 +16,6 @@ import (
 	"github.com/KiloProjects/kilonova/eval/checkers"
 	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/KiloProjects/kilonova/internal/config"
-	"github.com/KiloProjects/kilonova/internal/logic"
 	"github.com/davecgh/go-spew/spew"
 )
 
@@ -29,16 +28,15 @@ var (
 type Handler struct {
 	ctx   context.Context
 	sChan chan *kilonova.Submission
-	kn    *logic.Kilonova
 	dm    kilonova.GraderStore
 
 	debug bool
 	db    kilonova.DB
 }
 
-func NewHandler(ctx context.Context, kn *logic.Kilonova, db kilonova.DB) *Handler {
+func NewHandler(ctx context.Context, db kilonova.DB, dm kilonova.DataStore, debug bool) *Handler {
 	ch := make(chan *kilonova.Submission, 5)
-	return &Handler{ctx, ch, kn, kn.DM, kn.Debug, db}
+	return &Handler{ctx, ch, dm, debug, db}
 }
 
 // chFeeder "feeds" tChan with relevant data
