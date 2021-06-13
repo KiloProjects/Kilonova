@@ -31,7 +31,7 @@ func (job *CompileTask) Execute(ctx context.Context, box eval.Sandbox) error {
 		return &kilonova.Error{Code: kilonova.EINTERNAL, Message: "No language found"}
 	}
 
-	outName := path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", job.Req.ID))
+	outName := getIDExec(job.Req.ID)
 	job.Resp.Success = true
 
 	if lang.Compiled {
@@ -66,4 +66,8 @@ func (job *CompileTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	}
 
 	return nil
+}
+
+func getIDExec(id int) string {
+	return path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", id))
 }

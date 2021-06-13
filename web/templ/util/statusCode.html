@@ -9,8 +9,16 @@
 	{{ with .Message }}
 		<h1>{{.}}</h1>
 	{{ else }}
-		<p>That's an error</p>
+		<p> That's an error </p>
 	{{ end }}
 </div>
+{{ if .ShouldLogin }}
+	{{ if not .User }}
+		<h1>Probabil vei putea să accesezi dacă te loghezi:</h1>
+		{{ block "login_modal" . }}
+			Whoops, nu prea știu cum să te loghezi
+		{{ end }} 
+	{{ end }}
+{{ end }}
 
 {{ end }}

@@ -2,8 +2,6 @@ package kilonova
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"log"
 	"strconv"
 	"strings"
@@ -54,9 +52,6 @@ func VisibleProblems(ctx context.Context, user *User, db DB) (pbs []*Problem, er
 			uid = user.ID
 		}
 		pbs, err = db.Problems(ctx, ProblemFilter{LookingUserID: &uid})
-	}
-	if errors.Is(err, sql.ErrNoRows) {
-		return []*Problem{}, nil
 	}
 	return
 }

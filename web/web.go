@@ -4,7 +4,6 @@ package web
 
 import (
 	"bytes"
-	"database/sql"
 	"embed"
 	"errors"
 	"fmt"
@@ -49,11 +48,12 @@ type Web struct {
 	mailer kilonova.Mailer
 }
 
-func statusPage(w http.ResponseWriter, r *http.Request, statusCode int, err string) {
+func statusPage(w http.ResponseWriter, r *http.Request, statusCode int, err string, shouldLogin bool) {
 	Status(w, &StatusParams{
-		User:    util.User(r),
-		Code:    statusCode,
-		Message: err,
+		User:        util.User(r),
+		Code:        statusCode,
+		Message:     err,
+		ShouldLogin: shouldLogin,
 	})
 }
 
@@ -83,7 +83,7 @@ func (rt *Web) Handler() http.Handler {
 
 				pbs, err := kilonova.SolvedProblems(r.Context(), util.User(r).ID, rt.db)
 				if err != nil {
-					Status(w, &StatusParams{util.User(r), 500, ""})
+					Status(w, &StatusParams{util.User(r), 500, "", false})
 					return
 				}
 
@@ -97,19 +97,19 @@ func (rt *Web) Handler() http.Handler {
 				r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 					name := strings.TrimSpace(chi.URLParam(r, "user"))
 					users, err := rt.db.Users(r.Context(), kilonova.UserFilter{Name: &name})
-					if err != nil || len(users) == 0 {
-						if errors.Is(err, sql.ErrNoRows) || len(users) == 0 {
-							Status(w, &StatusParams{util.User(r), 404, ""})
-							return
-						}
+					if err != nil {
 						fmt.Println(err)
-						Status(w, &StatusParams{util.User(r), 500, ""})
+						Status(w, &StatusParams{util.User(r), 500, "", false})
+						return
+					}
+					if len(users) == 0 {
+						Status(w, &StatusParams{util.User(r), 404, "", false})
 						return
 					}
 
 					pbs, err := kilonova.SolvedProblems(r.Context(), users[0].ID, rt.db)
 					if err != nil {
-						Status(w, &StatusParams{util.User(r), 500, ""})
+						Status(w, &StatusParams{util.User(r), 500, "", false})
 						return
 					}
 
@@ -149,15 +149,12 @@ func (rt *Web) Handler() http.Handler {
 					author, err := rt.db.User(r.Context(), problem.AuthorID)
 					if err != nil {
 						log.Println("Getting author:", err)
-						statusPage(w, r, 500, "Couldn't get author")
+						statusPage(w, r, 500, "Couldn't get author", false)
 						return
 					}
 
 					atts, err := rt.db.Attachments(r.Context(), false, kilonova.AttachmentFilter{ProblemID: &util.Problem(r).ID})
-					if err != nil {
-						if !errors.Is(err, sql.ErrNoRows) {
-							log.Println(err)
-						}
+					if err != nil || len(atts) == 0 {
 						atts = nil
 					}
 
@@ -172,7 +169,7 @@ func (rt *Web) Handler() http.Handler {
 						atts = newAtts
 					}
 
-					pb.Execute(w, &ProblemParams{
+					err = pb.Execute(w, &ProblemParams{
 						User:          util.User(r),
 						ProblemEditor: util.IsProblemEditor(util.User(r), util.Problem(r)),
 
@@ -183,12 +180,17 @@ func (rt *Web) Handler() http.Handler {
 						Markdown:  template.HTML(buf),
 						Languages: eval.Langs,
 					})
+					log.Println(err)
 				})
 				r.Get("/attachments/{aid}", func(w http.ResponseWriter, r *http.Request) {
 					name := chi.URLParam(r, "aid")
 					att, err := rt.db.Attachments(r.Context(), true, kilonova.AttachmentFilter{ProblemID: &util.Problem(r).ID, Name: &name})
 					if err != nil || att == nil || len(att) == 0 {
 						http.Error(w, "Atașamentul dorit nu există", 400)
+						return
+					}
+					if att[0].Private && !util.IsProblemEditor(util.User(r), util.Problem(r)) {
+						http.Error(w, "Nu aveți dreptul să accesați atașamentul!", 400)
 						return
 					}
 					http.ServeContent(w, r, att[0].Name, time.Now(), bytes.NewReader(att[0].Data))
@@ -227,28 +229,28 @@ func (rt *Web) Handler() http.Handler {
 			_, err1 := fs.Stat(kilonova.Docs, p+".md")
 			if err != nil && err1 != nil {
 				if errors.Is(err, fs.ErrNotExist) && errors.Is(err1, fs.ErrNotExist) {
-					Status(w, &StatusParams{util.User(r), 404, "Ce încerci să accesezi nu există"})
+					Status(w, &StatusParams{util.User(r), 404, "Ce încerci să accesezi nu există", false})
 					return
 				}
 				log.Println("CAN'T STAT DOCS", err, err1)
-				Status(w, &StatusParams{util.User(r), 500, "N-am putut da stat la path, contactați administratorul"})
+				Status(w, &StatusParams{util.User(r), 500, "N-am putut da stat la path, contactați administratorul", false})
 				return
 			} else if err1 == nil {
 				file, err := kilonova.Docs.ReadFile(p + ".md")
 				if err != nil {
 					if errors.Is(err, fs.ErrNotExist) {
-						Status(w, &StatusParams{util.User(r), 404, "Pagina nu există"})
+						Status(w, &StatusParams{util.User(r), 404, "Pagina nu există", false})
 						return
 					}
 					log.Println("CAN'T OPEN DOCS", err)
-					Status(w, &StatusParams{util.User(r), 500, "N-am putut încărca pagina"})
+					Status(w, &StatusParams{util.User(r), 500, "N-am putut încărca pagina", false})
 					return
 				}
 
 				t, err := rt.rd.Render(file)
 				if err != nil {
 					log.Println("CAN'T RENDER DOCS")
-					Status(w, &StatusParams{util.User(r), 500, "N-am putut randa pagina"})
+					Status(w, &StatusParams{util.User(r), 500, "N-am putut randa pagina", false})
 					return
 				}
 
@@ -262,7 +264,7 @@ func (rt *Web) Handler() http.Handler {
 					entries, err := fs.ReadDir(kilonova.Docs, p)
 					if err != nil {
 						log.Println("Can't stat dir")
-						Status(w, &StatusParams{util.User(r), 404, "Nu-i nimic aici"})
+						Status(w, &StatusParams{util.User(r), 404, "Nu-i nimic aici", false})
 						return
 					}
 					var data strings.Builder
@@ -282,7 +284,7 @@ func (rt *Web) Handler() http.Handler {
 				t, err := rt.rd.Render(file)
 				if err != nil {
 					log.Println("CAN'T RENDER DOCS")
-					Status(w, &StatusParams{util.User(r), 500, "N-am putut randa pagina"})
+					Status(w, &StatusParams{util.User(r), 500, "N-am putut randa pagina", false})
 					return
 				}
 
@@ -441,18 +443,18 @@ func (rt *Web) Handler() http.Handler {
 			r.With(mustBeAuthed).Get("/resend", func(w http.ResponseWriter, r *http.Request) {
 				u := util.User(r)
 				if u.VerifiedEmail {
-					Status(w, &StatusParams{util.User(r), 403, "Deja ai verificat email-ul!"})
+					Status(w, &StatusParams{util.User(r), 403, "Deja ai verificat email-ul!", false})
 					return
 				}
 				t := time.Now().Sub(u.EmailVerifSentAt.Time)
 				if t < 5*time.Minute {
 					text := fmt.Sprintf("Trebuie să mai aștepți %s până poți retrimite email de verificare", (5*time.Minute - t).Truncate(time.Millisecond))
-					Status(w, &StatusParams{util.User(r), 403, text})
+					Status(w, &StatusParams{util.User(r), 403, text, false})
 					return
 				}
 				if err := kilonova.SendVerificationEmail(u.Email, u.Name, u.ID, rt.db, rt.mailer); err != nil {
 					log.Println(err)
-					Status(w, &StatusParams{util.User(r), 500, "N-am putut retrimite email-ul de verificare"})
+					Status(w, &StatusParams{util.User(r), 500, "N-am putut retrimite email-ul de verificare", false})
 					return
 				}
 
@@ -465,21 +467,21 @@ func (rt *Web) Handler() http.Handler {
 			r.Get("/{vid}", func(w http.ResponseWriter, r *http.Request) {
 				vid := chi.URLParam(r, "vid")
 				if !kilonova.CheckVerificationEmail(rt.db, vid) {
-					Status(w, &StatusParams{util.User(r), 404, ""})
+					Status(w, &StatusParams{util.User(r), 404, "", false})
 					return
 				}
 
 				uid, err := rt.db.GetVerification(r.Context(), vid)
 				if err != nil {
 					log.Println(err)
-					Status(w, &StatusParams{util.User(r), 404, ""})
+					Status(w, &StatusParams{util.User(r), 404, "", false})
 					return
 				}
 
 				user, err := rt.db.User(r.Context(), uid)
 				if err != nil {
 					log.Println(err)
-					Status(w, &StatusParams{util.User(r), 404, ""})
+					Status(w, &StatusParams{util.User(r), 404, "", false})
 					return
 				}
 
@@ -490,7 +492,7 @@ func (rt *Web) Handler() http.Handler {
 
 				if err := kilonova.ConfirmVerificationEmail(rt.db, vid, user); err != nil {
 					log.Println(err)
-					Status(w, &StatusParams{util.User(r), 404, ""})
+					Status(w, &StatusParams{util.User(r), 404, "", false})
 					return
 				}
 
@@ -510,7 +512,7 @@ func (rt *Web) Handler() http.Handler {
 	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		Status(w, &StatusParams{util.User(r), 404, ""})
+		Status(w, &StatusParams{util.User(r), 404, "", false})
 	})
 
 	return r
@@ -519,6 +521,5 @@ func (rt *Web) Handler() http.Handler {
 // NewWeb returns a new web instance
 func NewWeb(debug bool, db kilonova.DB, dm kilonova.DataStore, mailer kilonova.Mailer) *Web {
 	rd := mdrenderer.NewLocalRenderer()
-	//rd := mdrenderer.NewExternalRenderer("http://0.0.0.0:8040")
 	return &Web{dm, rd, debug, db, mailer}
 }

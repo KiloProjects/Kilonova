@@ -10,7 +10,7 @@ import (
 	"github.com/yuin/goldmark/renderer/html"
 )
 
-// Renderer is a local markdown renderer. It does not depend on any external services but it does not support mathjax rendering or any extensions to the markdown standard I intend to make.
+// LocalRenderer is a local markdown renderer. It does not depend on any external services but it does not support mathjax rendering or any extensions to the markdown standard I intend to make.
 type LocalRenderer struct {
 	md goldmark.Markdown
 }

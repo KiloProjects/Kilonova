@@ -2,6 +2,8 @@ package db
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -12,6 +14,9 @@ import (
 func (s *DB) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, error) {
 	var pblist pblist
 	err := s.conn.GetContext(ctx, &pblist, s.conn.Rebind("SELECT * FROM problem_lists WHERE id = ? LIMIT 1"), id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
 	return internalToPbList(&pblist), err
 }
 
@@ -21,6 +26,10 @@ func (s *DB) ProblemLists(ctx context.Context, filter kilonova.ProblemListFilter
 	query := "SELECT * FROM problem_lists WHERE " + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset)
 	query = s.conn.Rebind(query)
 	err := s.conn.SelectContext(ctx, &lists, query, args...)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.ProblemList{}, nil
+	}
 
 	outLists := make([]*kilonova.ProblemList, 0, len(lists))
 	for _, el := range lists {

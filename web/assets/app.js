@@ -49,14 +49,6 @@ export function parseTime(str) {
 	return dayjs(str).format('DD/MM/YYYY HH:mm')
 }
 
-// Waiting for halfmoon 1.2.0 to release 
-// import halfmoon from 'halfmoon';
-// window.addEventListener('DOMContentLoaded', () => {
-//	halfmoon.onDOMContentLoaded()
-//})
-// export {halfmoon};
-
-
 // util functions
 
 let notyfConf = {
@@ -240,9 +232,8 @@ export {
 	resendEmail
 };
 
-import _ from 'underscore';
-export { _ };
-
+export { SubmissionsApp } from './subs_view.js';
+export { NavBarManager } from './navbar.js';
 export { SubmissionManager } from './sub_mgr.js';
 export { CheckboxManager } from './checkbox_mgr.js';
 export { getFileIcon, extensionIcons, CDNManager } from './cdn_mgr.js';

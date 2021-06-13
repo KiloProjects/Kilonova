@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -67,12 +65,12 @@ func (s *API) SetupSession(next http.Handler) http.Handler {
 		}
 		user, err := s.db.User(r.Context(), session)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				next.ServeHTTP(w, r)
-				return
-			}
 			fmt.Println(err)
 			errorData(w, http.StatusText(500), 500)
+			return
+		}
+		if user == nil {
+			next.ServeHTTP(w, r)
 			return
 		}
 		user.Password = ""

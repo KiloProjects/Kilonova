@@ -194,6 +194,18 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 	return parseMetaFile(f), nil
 }
 
+func (b *Box) Reset() error {
+	if err := b.Close(); err != nil {
+		return err
+	}
+	box, err := newBox(b.boxID)
+	if err != nil {
+		return err
+	}
+	b = box
+	return nil
+}
+
 // newBox returns a new box instance from the specified ID
 func newBox(id int) (*Box, error) {
 	ret, err := exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--init").CombinedOutput()

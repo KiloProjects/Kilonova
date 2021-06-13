@@ -1,6 +1,9 @@
 
 export class CheckboxManager {
 	constructor(setAllCheckbox, checkboxes) {
+		if(setAllCheckbox === null || setAllCheckbox === undefined) {
+			return
+		}
 		this.overall = setAllCheckbox
 		this.checks = checkboxes
 

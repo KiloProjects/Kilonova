@@ -2,6 +2,8 @@ package db
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
@@ -23,18 +25,27 @@ func (s *DB) CreateTest(ctx context.Context, test *kilonova.Test) error {
 func (s *DB) Test(ctx context.Context, pbID, testVID int) (*kilonova.Test, error) {
 	var test kilonova.Test
 	err := s.conn.GetContext(ctx, &test, s.conn.Rebind("SELECT * FROM tests WHERE problem_id = ? AND visible_id = ? AND orphaned = false ORDER BY visible_id LIMIT 1"), pbID, testVID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
 	return &test, err
 }
 
 func (s *DB) TestByID(ctx context.Context, id int) (*kilonova.Test, error) {
 	var test kilonova.Test
 	err := s.conn.GetContext(ctx, &test, s.conn.Rebind("SELECT * FROM tests WHERE id = ? LIMIT 1"), id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
 	return &test, err
 }
 
 func (s *DB) Tests(ctx context.Context, pbID int) ([]*kilonova.Test, error) {
 	var tests []*kilonova.Test
 	err := s.conn.SelectContext(ctx, &tests, s.conn.Rebind("SELECT * FROM tests WHERE problem_id = ? AND orphaned = false ORDER BY visible_id"), pbID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.Test{}, nil
+	}
 	return tests, err
 }
 

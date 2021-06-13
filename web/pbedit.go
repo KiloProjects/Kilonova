@@ -2,8 +2,6 @@ package web
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -63,10 +61,7 @@ func (p *ProblemEditPart) EditAttachments() func(w http.ResponseWriter, r *http.
 	tmpl := parse(nil, "edit/attachments.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		atts, err := p.db.Attachments(r.Context(), false, kilonova.AttachmentFilter{ProblemID: &util.Problem(r).ID})
-		if err != nil {
-			if !errors.Is(err, sql.ErrNoRows) {
-				log.Println(err)
-			}
+		if err != nil || len(atts) == 0 {
 			atts = nil
 		}
 		tmpl.Execute(w, &ProblemEditParams{
@@ -145,17 +140,17 @@ func TestIDValidator(db kilonova.DB) func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			testID, err := strconv.Atoi(chi.URLParam(r, "tid"))
 			if err != nil {
-				statusPage(w, r, 400, "Test invalid")
+				statusPage(w, r, 400, "Test invalid", false)
 				return
 			}
 			test, err := db.Test(r.Context(), util.Problem(r).ID, testID)
 			if err != nil {
-				if errors.Is(err, sql.ErrNoRows) {
-					statusPage(w, r, 404, "Testul nu există")
-					return
-				}
 				log.Println(err)
-				statusPage(w, r, 500, "")
+				statusPage(w, r, 500, "", false)
+				return
+			}
+			if test == nil {
+				statusPage(w, r, 404, "Testul nu există", false)
 				return
 			}
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.TestKey, test)))
@@ -168,17 +163,17 @@ func SubTaskValidator(db kilonova.DB) func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			subtaskID, err := strconv.Atoi(chi.URLParam(r, "stid"))
 			if err != nil {
-				statusPage(w, r, http.StatusBadRequest, "ID invalid")
+				statusPage(w, r, http.StatusBadRequest, "ID invalid", false)
 				return
 			}
 			subtask, err := db.SubTask(r.Context(), util.Problem(r).ID, subtaskID)
 			if err != nil {
-				if errors.Is(err, sql.ErrNoRows) {
-					statusPage(w, r, 404, "SubTask-ul nu există")
-					return
-				}
 				log.Println("ValidateSubTaskID:", err)
-				statusPage(w, r, 500, "")
+				statusPage(w, r, 500, "", false)
+				return
+			}
+			if subtask == nil {
+				statusPage(w, r, 404, "SubTask-ul nu există", false)
 				return
 			}
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.SubTaskKey, subtask)))

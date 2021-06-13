@@ -2,8 +2,6 @@ package grader
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -56,7 +54,6 @@ func (h *Handler) chFeeder(d time.Duration) {
 				}
 
 				for _, sub := range subs {
-					//if err := sub.SetStatus(kilonova.StatusWorking, 0); err != nil {
 					if err := h.db.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
 						log.Println(err)
 						continue
@@ -80,90 +77,97 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 			if !more {
 				return nil
 			}
-
-			task := &tasks.CompileTask{
-				Req:   &eval.CompileRequest{ID: sub.ID, Code: []byte(sub.Code), Lang: sub.Language},
-				Debug: h.debug,
-			}
-			err := runner.RunTask(ctx, task)
-			if err != nil {
-				log.Println("Error from eval:", err)
-				continue
-			}
-
-			resp := task.Resp
-			if h.debug {
-				old := resp.Output
-				resp.Output = "<output stripped>"
-				spew.Dump(resp)
-				resp.Output = old
-			}
-
-			compileError := !resp.Success
-			if err := h.db.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{CompileError: &compileError, CompileMessage: &resp.Output}); err != nil {
-				log.Println("Error during update of compile information:", err)
-				continue
-			}
-
-			problem, err := h.db.Problem(ctx, sub.ProblemID)
-			if err != nil {
-				log.Println("Error during submission problem getting:", err)
-				continue
-			}
-
-			checker, err := getAppropriateChecker(runner, sub, problem)
-			if err != nil {
-				log.Println("Could not get checker:", err)
-				continue
-			}
-
-			if info, err := checker.Prepare(ctx); err != nil {
-				log.Println("Checker prepare error:", err)
-				t := true
-				if err := h.db.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints, CompileError: &t, CompileMessage: &info}); err != nil {
-					log.Println("Error during update of compile information:", err)
-				}
-				continue
-			}
-
-			subTests, err := h.db.SubTestsBySubID(ctx, sub.ID)
-			if resp.Success == false || err != nil {
-				if err := h.db.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints}); err != nil {
-					log.Println(err)
-				}
-				continue
-			}
-
-			var wg sync.WaitGroup
-
-			for _, subTest := range subTests {
-				subTest := subTest
-				wg.Add(1)
-
-				go func() {
-					defer wg.Done()
-					err := h.HandleSubTest(ctx, runner, checker, sub, problem, subTest)
-					if err != nil {
-						log.Println("Error handling subTest:", err)
-					}
-				}()
-			}
-
-			wg.Wait()
-
-			if err := h.ScoreTests(ctx, sub, problem); err != nil {
-				log.Printf("Couldn't score test: %s\n", err)
-			}
-
-			if err := eval.CleanCompilation(sub.ID); err != nil {
-				log.Printf("Couldn't clean task: %s\n", err)
-			}
-
-			if err := checker.Cleanup(ctx); err != nil {
-				log.Printf("Couldn't clean checker: %s\n", err)
+			if err := h.ExecuteSubmission(ctx, runner, sub); err != nil {
+				log.Println("Couldn't run submission:", err)
 			}
 		}
 	}
+}
+
+func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, sub *kilonova.Submission) error {
+	defer func() {
+		err := h.MarkSubtestsDone(ctx, sub)
+		if err != nil {
+			log.Println("Couldn't clean up subtests:", err)
+		}
+	}()
+	task := &tasks.CompileTask{
+		Req:   &eval.CompileRequest{ID: sub.ID, Code: []byte(sub.Code), Lang: sub.Language},
+		Debug: h.debug,
+	}
+	err := runner.RunTask(ctx, task)
+	if err != nil {
+		return kilonova.WrapError(kilonova.EINTERNAL, "Error from eval", err)
+	}
+
+	resp := task.Resp
+	if h.debug {
+		old := resp.Output
+		resp.Output = "<output stripped>"
+		spew.Dump(resp)
+		resp.Output = old
+	}
+
+	compileError := !resp.Success
+	if err := h.db.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{CompileError: &compileError, CompileMessage: &resp.Output}); err != nil {
+		return kilonova.WrapInternal(err)
+	}
+
+	problem, err := h.db.Problem(ctx, sub.ProblemID)
+	if err != nil {
+		return kilonova.WrapError(kilonova.EINTERNAL, "Couldn't get submission problem", err)
+	}
+
+	checker, err := getAppropriateChecker(runner, sub, problem)
+	if err != nil {
+		return kilonova.WrapError(kilonova.EINTERNAL, "Couldn't get checker:", err)
+	}
+
+	if info, err := checker.Prepare(ctx); err != nil {
+		t := true
+		if err := h.db.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints, CompileError: &t, CompileMessage: &info}); err != nil {
+			return kilonova.WrapError(kilonova.EINTERNAL, "Error during update of compile information:", err)
+		}
+		return kilonova.WrapError(kilonova.EINTERNAL, "Could not prepare checker", err)
+	}
+
+	subTests, err := h.db.SubTestsBySubID(ctx, sub.ID)
+	if resp.Success == false || err != nil {
+		if err := h.db.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints}); err != nil {
+			return err
+		}
+		return err
+	}
+
+	var wg sync.WaitGroup
+
+	for _, subTest := range subTests {
+		subTest := subTest
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			err := h.HandleSubTest(ctx, runner, checker, sub, problem, subTest)
+			if err != nil {
+				log.Println("Error handling subTest:", err)
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	if err := h.ScoreTests(ctx, sub, problem); err != nil {
+		log.Printf("Couldn't score test: %s\n", err)
+	}
+
+	if err := eval.CleanCompilation(sub.ID); err != nil {
+		log.Printf("Couldn't clean task: %s\n", err)
+	}
+
+	if err := checker.Cleanup(ctx); err != nil {
+		log.Printf("Couldn't clean checker: %s\n", err)
+	}
+	return nil
 }
 
 func (h *Handler) HandleSubTest(ctx context.Context, runner eval.Runner, checker eval.Checker, sub *kilonova.Submission, problem *kilonova.Problem, subTest *kilonova.SubTest) error {
@@ -239,6 +243,22 @@ func (h *Handler) HandleSubTest(ctx context.Context, runner eval.Runner, checker
 	return nil
 }
 
+func (h *Handler) MarkSubtestsDone(ctx context.Context, sub *kilonova.Submission) error {
+	sts, err := h.db.SubTestsBySubID(ctx, sub.ID)
+	if err != nil {
+		return fmt.Errorf("Error during subtest getting: %w", err)
+	}
+	for _, st := range sts {
+		if st.Done {
+			continue
+		}
+		if err := h.db.UpdateSubTest(ctx, st.ID, kilonova.SubTestUpdate{Done: &True}); err != nil {
+			log.Printf("Couldn't mark subtest %d done: %s\n", st.ID, err)
+		}
+	}
+	return nil
+}
+
 func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, problem *kilonova.Problem) error {
 	subtests, err := h.db.SubTestsBySubID(ctx, sub.ID)
 	if err != nil {
@@ -246,8 +266,11 @@ func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, prob
 	}
 
 	subTasks, err := h.db.SubTasks(ctx, problem.ID)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	if err != nil {
 		return err
+	}
+	if len(subTasks) == 0 {
+		subTasks = nil
 	}
 
 	var score = problem.DefaultPoints

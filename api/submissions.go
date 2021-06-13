@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -71,7 +69,7 @@ func (s *API) getSubmissionByID() func(w http.ResponseWriter, r *http.Request) {
 		}
 
 		stks, err := s.db.SubTasks(r.Context(), pb.ID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		if err != nil {
 			errorData(w, err, 500)
 			return
 		}
@@ -214,12 +212,12 @@ func (s *API) setSubmissionQuality(w http.ResponseWriter, r *http.Request) {
 
 	sub, err := s.db.Submission(r.Context(), args.ID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			errorData(w, "Submission not found", http.StatusNotFound)
-			return
-		}
 		log.Println(err)
 		errorData(w, err, http.StatusNotFound)
+		return
+	}
+	if sub == nil {
+		errorData(w, "Submission not found", http.StatusNotFound)
 		return
 	}
 
@@ -257,12 +255,12 @@ func (s *API) setSubmissionVisible(w http.ResponseWriter, r *http.Request) {
 
 	sub, err := s.db.Submission(r.Context(), args.ID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			errorData(w, "Submission not found", http.StatusNotFound)
-			return
-		}
 		log.Println(err)
 		errorData(w, err, http.StatusNotFound)
+		return
+	}
+	if sub == nil {
+		errorData(w, "Submission not found", http.StatusNotFound)
 		return
 	}
 
@@ -302,10 +300,11 @@ func (s *API) submissionSend(w http.ResponseWriter, r *http.Request) {
 
 	problem, err := s.db.Problem(r.Context(), args.ProblemID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			errorData(w, "Problem not found", http.StatusBadRequest)
-			return
-		}
+		log.Println(err)
+		return
+	}
+	if problem == nil {
+		errorData(w, "Problem not found", http.StatusBadRequest)
 		return
 	}
 

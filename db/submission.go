@@ -14,6 +14,9 @@ import (
 func (s *DB) Submission(ctx context.Context, id int) (*kilonova.Submission, error) {
 	var sub kilonova.Submission
 	err := s.conn.GetContext(ctx, &sub, s.conn.Rebind("SELECT * FROM submissions WHERE id = ? LIMIT 1"), id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
 	return &sub, err
 }
 
@@ -25,6 +28,9 @@ func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) 
 	query := fmt.Sprintf(subSelectQuery, strings.Join(where, " AND "), getSubmissionOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset))
 	query = s.conn.Rebind(query)
 	err := s.conn.SelectContext(ctx, &subs, query, args...)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.Submission{}, nil
+	}
 	return subs, err
 }
 

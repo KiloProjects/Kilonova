@@ -118,6 +118,10 @@
 	.list-group-rounded > .list-group-item:last-child {
 		@apply rounded-b-lg;
 	}
+	
+	.list-group-mini > .list-group-item {
+		@apply py-2;
+	}
 
 	.border-gr {
 		@apply border-gray-300 dark:border-gray-700;

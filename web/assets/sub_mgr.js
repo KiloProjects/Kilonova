@@ -111,17 +111,18 @@ export class SubmissionManager {
 	summaryNode() {
 		let rez = document.createElement('div')
 		let html = ""
-		html += `<h2>Submission ${this.sub.id}</h2>
-			<p>Autor: <a href="/profile/${this.subAuthor.name}">${this.subAuthor.name}</a></p>
-			<p>Data încărcării: ${bundled.parseTime(this.sub.created_at)}</p>
-			<p>Status: ${this.sub.status}</p>`;
+		html += `<h2>Submission ${this.sub.id}</h2>` +
+			`<p>Autor: <a href="/profile/${this.subAuthor.name}">${this.subAuthor.name}</a></p>` +
+			`<p>Problemă: <a href="/problems/${this.subProblem.id}">${this.subProblem.name}</a></p>` +
+			`<p>Data încărcării: ${bundled.parseTime(this.sub.created_at)}</p>` +
+			`<p>Status: ${this.sub.status}</p>` +
+			`<p>Limbaj: ${this.sub.language}</p>` 
 		if(this.sub.quality) {
 			html += `<p><i class="fas fa-star text-yellow-300"></i> Submisie evidențiată</p>`
 		}
 		if(this.sub.code) {
 			html += `<p>Dimensiune: ${bundled.sizeFormatter(this.sub.code.length)}</p>`
 		}
-		html += `<p>Limbaj: ${this.sub.language}</p><p>Problemă: <a href="/problems/${this.subProblem.id}">${this.subProblem.name}</a></p>`
 		if(this.subProblem.default_points > 0) {
 			html += `<p>Puncte din oficiu: ${this.subProblem.default_points}</p>`
 		}
@@ -143,8 +144,9 @@ export class SubmissionManager {
 
 	subTasksNode() {
 		let rezz = document.createElement('div');
+		rezz.classList.add('my-2');
 		let rez = document.createElement('div')
-		rez.classList.add('list-group', 'my-2')
+		rez.classList.add('list-group', 'my-1', 'list-group-mini')
 		for(let subtask of this.subTasks) {
 			let row = document.createElement('details')
 			row.classList.add('list-group-item')
@@ -154,7 +156,7 @@ export class SubmissionManager {
 			
 			let stk_score = 100;
 			let subtests = document.createElement('div')
-			subtests.classList.add('list-group', 'm-1')
+			subtests.classList.add('list-group', 'm-1', 'list-group-mini')
 			for(let testID of subtask.tests) {
 				let roww = document.createElement('div')
 				roww.classList.add('list-group-item', 'flex', 'justify-between')
@@ -176,14 +178,12 @@ export class SubmissionManager {
 		}
 		rezz.appendChild(rez)
 
-		if(this.subEditor) {
-			let tmp = document.createElement('details');
-			let tmp1 = document.createElement('summary');
-			tmp1.innerText = "(temporar) Vizualizare teste";
-			tmp.appendChild(tmp1);
-			tmp.appendChild(this.tableNode());
-			rezz.appendChild(tmp);
-		}
+		let tmp = document.createElement('details');
+		let tmp1 = document.createElement('summary');
+		tmp1.innerText = "Vizualizare teste individuale";
+		tmp.appendChild(tmp1);
+		tmp.appendChild(this.tableNode());
+		rezz.appendChild(tmp);
 
 		return rezz
 	}
@@ -192,7 +192,7 @@ export class SubmissionManager {
 		let rez = document.createElement('table')
 		rez.classList.add('kn-table')
 		let head = document.createElement('thead')
-		head.innerHTML = `<tr><th class="py-2" scope="col">ID</th><th scope="col">Timp</th><th scope="col">Memorie</th><th scope="col">Verdict</th><th scope="col">Scor</th>${this.problemEditor ? "<th scope='col'>Output</th>" : ""}</tr>`
+		head.innerHTML = `<tr><th class="py-1" scope="col">ID</th><th scope="col">Timp</th><th scope="col">Memorie</th><th scope="col">Verdict</th><th scope="col">Scor</th>${this.problemEditor ? "<th scope='col'>Output</th>" : ""}${this.subTasks.length > 0 ? "<th scope='col'>SubTasks</th>" : ""}</tr>`
 		let body = document.createElement('tbody')
 		for(let test of this.subTests) {
 			let row = document.createElement('tr')
@@ -200,7 +200,7 @@ export class SubmissionManager {
 			
 			let vid = document.createElement('th')
 			vid.innerText = test.pb_test.visible_id
-			vid.classList.add('py-3')
+			vid.classList.add('py-2')
 			vid.scope = "row"
 			row.appendChild(vid)
 			
@@ -208,6 +208,9 @@ export class SubmissionManager {
 			let mem = this.tableColGen("")
 			let verdict = this.tableColGen("<div class='fas fa-spinner animate-spin' role='status'></div> În așteptare...")
 			let score = this.tableColGen(`${Math.round(test.pb_test.score * test.subtest.score / 100.0)} / ${test.pb_test.score}`)
+			if(this.subTasks.length > 0) {
+				score.innerHTML = `${test.subtest.score}% corect`
+			}
 			if(test.subtest.done) {
 				verdict.innerHTML = test.subtest.verdict
 				
@@ -216,6 +219,8 @@ export class SubmissionManager {
 
 				score.classList.add("text-black")
 				score.style = "background-color:" + bundled.getGradient(test.subtest.score, 100) + ";"
+			} else {
+				score.innerHTML = "-"
 			}
 
 			row.appendChild(time)
@@ -229,12 +234,26 @@ export class SubmissionManager {
 				}
 				row.appendChild(out)
 			}
+			if(this.subTasks.length > 0) {
+				let out = this.tableColGen(this.testSubTasks(test.pb_test.id).join(', '))
+				row.appendChild(out)
+			}
 
 			body.appendChild(row);
 		}
 		rez.appendChild(head)
 		rez.appendChild(body)
 		return rez;
+	}
+
+	testSubTasks(test_id) {
+		let stks = [];
+		for(let st of this.subTasks) {
+			if(st.tests.includes(test_id)) {
+				stks.push(st.visible_id);
+			}
+		}
+		return stks;
 	}
 
 	codeNode() {
@@ -290,7 +309,7 @@ export class SubmissionManager {
 	viewNode() {
 		let rez = document.createElement('div')
 		rez.appendChild(this.summaryNode())
-		if(this.subTests.length > 0 && !this.sub.compile_error.bool) {
+		if(this.subTests.length > 0 && !this.sub.compile_error.Bool) {
 			if(this.subTasks.length > 0) {
 				rez.appendChild(this.subTasksNode())
 			} else {

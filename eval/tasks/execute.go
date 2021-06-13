@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"path"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/internal/config"
 )
 
 var _ eval.Task = &ExecuteTask{}
@@ -39,7 +37,7 @@ func (job *ExecuteTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	consoleInput := job.Req.Filename == "stdin"
 
 	lang := eval.Langs[job.Req.Lang]
-	if err := eval.CopyInBox(box, path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", job.Req.SubID)), lang.CompiledName); err != nil {
+	if err := eval.CopyInBox(box, getIDExec(job.Req.SubID), lang.CompiledName); err != nil {
 		job.Resp.Comments = "Couldn't copy executable in box"
 		return err
 	}

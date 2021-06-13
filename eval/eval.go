@@ -17,7 +17,10 @@ type Sandbox interface {
 	// if stdout == stderr, then it will act like exec.CombinedOutput()
 	RunCommand(ctx context.Context, cmd []string, conf *RunConfig) (*RunStats, error)
 
-	Close() error
+	// Reset clears everything in the sandbox.
+	Reset() error
+
+	io.Closer
 }
 
 // Checker is an interface for a function that statelessly tries to evaluate a subtest from a submission

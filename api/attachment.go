@@ -12,6 +12,7 @@ func (s *API) createAttachment(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(50 * 1024 * 1024) // 50MB
 	var args struct {
 		Visible bool `json:"visible"`
+		Private bool `json:"private"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 400)
@@ -32,9 +33,13 @@ func (s *API) createAttachment(w http.ResponseWriter, r *http.Request) {
 	if name == "" {
 		name = "untitled.txt"
 	}
+	if args.Private {
+		args.Visible = false
+	}
 	att := kilonova.Attachment{
 		ProblemID: util.Problem(r).ID,
 		Visible:   args.Visible,
+		Private:   args.Private,
 		Name:      name,
 		Data:      data,
 	}

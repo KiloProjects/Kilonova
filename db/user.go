@@ -2,6 +2,8 @@ package db
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
@@ -11,6 +13,9 @@ import (
 func (s *DB) User(ctx context.Context, id int) (*kilonova.User, error) {
 	var user kilonova.User
 	err := s.conn.GetContext(ctx, &user, s.conn.Rebind("SELECT * FROM users WHERE id = ? LIMIT 1"), id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
 	return &user, err
 }
 
@@ -20,6 +25,9 @@ func (s *DB) Users(ctx context.Context, filter kilonova.UserFilter) ([]*kilonova
 	where, args := userFilterQuery(&filter)
 	query := s.conn.Rebind("SELECT * from users WHERE " + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
 	err := s.conn.SelectContext(ctx, &users, query, args...)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.User{}, nil
+	}
 	return users, err
 }
 

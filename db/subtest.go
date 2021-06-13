@@ -2,6 +2,8 @@ package db
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -11,12 +13,18 @@ import (
 func (s *DB) SubTestsBySubID(ctx context.Context, subid int) ([]*kilonova.SubTest, error) {
 	var subtests []*kilonova.SubTest
 	err := s.conn.SelectContext(ctx, &subtests, s.conn.Rebind("SELECT * FROM submission_tests WHERE submission_id = ? ORDER BY id ASC"), subid)
-	return subtests, err
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.SubTest{}, nil
+	}
+	return subtests, nil
 }
 
 func (s *DB) SubTest(ctx context.Context, id int) (*kilonova.SubTest, error) {
 	var subtest kilonova.SubTest
 	err := s.conn.GetContext(ctx, &subtest, s.conn.Rebind("SELECT * FROM submission_tests WHERE id = ?"), id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
 	return &subtest, err
 }
 

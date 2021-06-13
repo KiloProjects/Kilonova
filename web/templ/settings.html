@@ -2,19 +2,23 @@
 {{ define "content" }}
 
 <h1> Preferințele Profilului </h1>
-<h2> Actualizare Bio </h2>
-<form id="bio_form">
-	<textarea id="newBio" class="form-textarea w-full mb-2" autocapitalize="sentences" autocomplete="off" maxlength="120" placeholder="Bio...">{{.User.Bio}}</textarea>
-	<button class="btn btn-blue" onclick="updateBio()">Actualizare</button>
-</form>
+<div class="segment-container">
+	<h2> Actualizare Bio </h2>
+	<form id="bio_form">
+		<textarea id="newBio" class="form-textarea w-full mb-2" autocapitalize="sentences" autocomplete="off" maxlength="120" placeholder="Bio...">{{.User.Bio}}</textarea>
+		<button class="btn btn-blue" onclick="updateBio()">Actualizare</button>
+	</form>
+</div>
 
-<h2 class="mt-4"> Vizibilitate </h2>
-<button id="vButton" class="btn btn-blue mb-2 text-semibold text-lg" onclick="toggleVisibility()"><i class="fas fa-share-square mr-2"></i> Fă submisiile implicit {{if .User.DefaultVisible}}invizibile{{else}}vizibile{{end}}</button>
+<div class="segment-container">
+	<h2 > Vizibilitate </h2>
+	<button id="vButton" class="btn btn-blue mb-2 text-semibold text-lg" onclick="toggleVisibility()"><i class="fas fa-share-square mr-2"></i> Fă submisiile implicit {{if .User.DefaultVisible}}invizibile{{else}}vizibile{{end}}</button>
+</div>
 
-<form id="pwd_change_form">
+<form class="segment-container" id="pwd_change_form">
 	<div>TODO: password change form</div>
 </form>
-<form id="email_change_form">
+<form class="segment-container" id="email_change_form">
 	<div>TODO: email change form</div>
 	<label class="block mb-2">
 		<span class="form-label">Parolă</span>

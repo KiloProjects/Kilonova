@@ -14,6 +14,9 @@ import (
 func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
 	var pb kilonova.Problem
 	err := s.conn.GetContext(ctx, &pb, s.conn.Rebind("SELECT * FROM problems WHERE id = ? LIMIT 1"), id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
 	return &pb, err
 }
 
@@ -22,9 +25,8 @@ func (s *DB) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*ki
 	where, args := problemFilterQuery(&filter)
 	query := s.conn.Rebind("SELECT * FROM problems WHERE " + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
 	err := s.conn.SelectContext(ctx, &pbs, query, args...)
-	if err != nil && errors.Is(err, sql.ErrNoRows) {
-		err = nil
-		pbs = []*kilonova.Problem{}
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.Problem{}, nil
 	}
 	return pbs, err
 }

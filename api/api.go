@@ -89,6 +89,8 @@ func (s *API) Handler() http.Handler {
 			})
 			r.Route("/get", func(r chi.Router) {
 				r.Get("/attachments", s.getAttachments)
+				// The one from /web/web.go is good enough
+				// r.Get("/attachmentData", s.getAttachment)
 
 				r.Get("/tests", s.getTests)
 				r.Get("/test", s.getTest)
@@ -98,8 +100,6 @@ func (s *API) Handler() http.Handler {
 			r.Post("/delete", s.deleteProblem)
 		})
 	})
-	// The one from /web/web.go is good enough
-	//r.Get("/getAttachment", s.getAttachment)
 	r.Route("/submissions", func(r chi.Router) {
 		r.Get("/get", s.filterSubs())
 		r.Get("/getByID", s.getSubmissionByID())

@@ -2,13 +2,15 @@ package db
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
 )
 
-const createAttachmentQuery = "INSERT INTO attachments (problem_id, visible, name, data) VALUES (?, ?, ?, ?) RETURNING id;"
+const createAttachmentQuery = "INSERT INTO attachments (problem_id, visible, private, name, data) VALUES (?, ?, ?, ?, ?) RETURNING id;"
 
 func (a *DB) CreateAttachment(ctx context.Context, att *kilonova.Attachment) error {
 	if att.ProblemID == 0 || att.Data == nil {
@@ -19,7 +21,7 @@ func (a *DB) CreateAttachment(ctx context.Context, att *kilonova.Attachment) err
 	}
 
 	var id int
-	err := a.conn.GetContext(ctx, &id, a.conn.Rebind(createAttachmentQuery), att.ProblemID, att.Visible, att.Name, att.Data)
+	err := a.conn.GetContext(ctx, &id, a.conn.Rebind(createAttachmentQuery), att.ProblemID, att.Visible, att.Private, att.Name, att.Data)
 	if err == nil {
 		att.ID = id
 	}
@@ -29,6 +31,9 @@ func (a *DB) CreateAttachment(ctx context.Context, att *kilonova.Attachment) err
 func (a *DB) Attachment(ctx context.Context, id int) (*kilonova.Attachment, error) {
 	var attachment kilonova.Attachment
 	err := a.conn.GetContext(ctx, &attachment, a.conn.Rebind("SELECT * FROM attachments WHERE id = ? LIMIT 1"), id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
 	return &attachment, err
 }
 
@@ -37,10 +42,13 @@ func (a *DB) Attachments(ctx context.Context, getData bool, filter kilonova.Atta
 	where, args := attachmentFilterQuery(&filter)
 	toSelect := "*"
 	if !getData {
-		toSelect = "id, created_at, problem_id, visible, name, data_size" // Make sure to keep this in sync
+		toSelect = "id, created_at, problem_id, visible, private, name, data_size" // Make sure to keep this in sync
 	}
 	query := a.conn.Rebind("SELECT " + toSelect + " FROM attachments WHERE " + strings.Join(where, " AND ") + " ORDER BY name ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
 	err := a.conn.SelectContext(ctx, &attachments, query, args...)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.Attachment{}, nil
+	}
 	return attachments, err
 }
 
@@ -81,19 +89,22 @@ func attachmentFilterQuery(filter *kilonova.AttachmentFilter) ([]string, []inter
 	if v := filter.Visible; v != nil {
 		where, args = append(where, "visible = ?"), append(args, v)
 	}
+	if v := filter.Private; v != nil {
+		where, args = append(where, "private = ?"), append(args, v)
+	}
 	return where, args
 }
 
 func attachmentUpdateQuery(upd *kilonova.AttachmentUpdate) ([]string, []interface{}) {
 	toUpd, args := []string{}, []interface{}{}
-	if v := upd.Data; v != nil {
-		toUpd, args = append(toUpd, "data = ?"), append(args, v)
-	}
 	if v := upd.Name; v != nil {
 		toUpd, args = append(toUpd, "name = ?"), append(args, v)
 	}
 	if v := upd.Visible; v != nil {
 		toUpd, args = append(toUpd, "visible = ?"), append(args, v)
+	}
+	if v := upd.Private; v != nil {
+		toUpd, args = append(toUpd, "private = ?"), append(args, v)
 	}
 	return toUpd, args
 }

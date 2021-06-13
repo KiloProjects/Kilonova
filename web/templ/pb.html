@@ -184,7 +184,7 @@ app.mount("#problemSidebar");
 			<select id="sub_language" class="form-select">
 				{{ range $name, $lang := .Languages }}
 					{{ if not $lang.Disabled }}
-					<option value="{{$name}}" {{if eq $name "cpp"}}selected{{end}}>{{$lang.Printable}}</option>
+					<option value="{{$name}}" {{if eq $name "cpp"}}selected{{end}}>{{$lang.PrintableName}}</option>
 					{{ end }}
 				{{ end }}
 			</select>

@@ -14,11 +14,14 @@
 				<th scope="col" class="w-1/2">
 					Nume
 				</th>
-				<th scope="col" class="w-1/4">
+				<th scope="col" class="w-3/8">
 					Dimensiune
 				</th>
 				<th scope="col" class="w-1/8">
 					Vizibil
+				</th>
+				<th scope="col" class="w-1/8">
+					Privat
 				</th>
 			</thead>
 			<tbody id="att-body">
@@ -35,6 +38,9 @@
 					</td>
 					<td class="kn-table-cell">
 						<input class="form-checkbox" type="checkbox" id="visible-att-{{.ID}}" {{if .Visible}}checked{{end}} disabled>
+					</td>
+					<td class="kn-table-cell">
+						<input class="form-checkbox" type="checkbox" id="private-att-{{.ID}}" {{if .Private}}checked{{end}} disabled>
 					</td>
 				</tr>
 			{{ end }}
@@ -87,6 +93,10 @@ prettifyAttachments()
 		<input class="form-file" id="attFile" type="file" required/>
 	</label>
 	<label class="block my-2">
+		<input class="form-checkbox" id="attPrivate" type="checkbox"/>
+		<span class="ml-2 text-xl">Privat</span>
+	</label>
+	<label id="visibleLabel" class="block my-2">
 		<input class="form-checkbox" id="attVisible" type="checkbox"/>
 		<span class="ml-2 text-xl">Vizibil</span>
 	</label>
@@ -94,6 +104,19 @@ prettifyAttachments()
 </div>
 
 <script>
+let visibleLabel = document.getElementById("visibleLabel")
+let visibleNode = document.getElementById("attVisible")
+let privateNode = document.getElementById("attPrivate")
+privateNode.addEventListener("change", (e) => { 
+	if(e.target.checked === true) {
+		console.log("hiding")
+		visibleLabel.style.display = "none"
+	} else {
+		console.log("showing")
+		visibleLabel.style.display = null 
+	}
+})
+
 async function createAttachment(e) {
 	e.preventDefault()
 	let files = document.getElementById("attFile").files;
@@ -103,7 +126,8 @@ async function createAttachment(e) {
 	}
 	let form = new FormData();
 	form.append("data", files[0]);
-	form.append("visible", document.getElementById("attVisible").checked);
+	form.append("visible", visibleNode.checked);
+	form.append("private", privateNode.checked);
 
 	let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/addAttachment", form)
 	if(res.status !== "success") {

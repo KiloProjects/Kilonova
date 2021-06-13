@@ -24,7 +24,7 @@ import (
 var (
 	settings = parse(nil, "settings.html")
 	profile  = parse(nil, "profile.html")
-	status   = parse(nil, "util/statusCode.html")
+	status   = parse(nil, "util/statusCode.html", "auth/modal/login.html")
 	index    = parse(nil, "index.html")
 
 	pbs = parse(nil, "pbs.html")
@@ -33,7 +33,7 @@ var (
 	subs = parse(nil, "submissions.html")
 	sub  = parse(nil, "submission.html")
 
-	login  = parse(nil, "auth/login.html")
+	login  = parse(nil, "auth/login.html", "auth/modal/login.html")
 	signup = parse(nil, "auth/signup.html")
 
 	editIndex       = parse(nil, "edit/index.html", "edit/topbar.html")
@@ -328,17 +328,17 @@ func Profile(w io.Writer, params *ProfileParams) error {
 type StatusParams struct {
 	User *kilonova.User
 
-	Code    int
-	Message string
+	Code        int
+	Message     string
+	ShouldLogin bool
 }
 
-func Status(w io.Writer, params *StatusParams) error {
-	err := status.Execute(w, params)
+func Status(w io.Writer, params *StatusParams) (err error) {
+	err = status.Execute(w, params)
 	if err != nil {
 		log.Println(err)
 	}
-
-	return err
+	return
 }
 
 type MarkdownParams struct {

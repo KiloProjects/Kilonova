@@ -2,8 +2,6 @@ package web
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -17,17 +15,17 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		problemID, err := strconv.Atoi(chi.URLParam(r, "pbid"))
 		if err != nil {
-			statusPage(w, r, http.StatusBadRequest, "ID invalid")
+			statusPage(w, r, http.StatusBadRequest, "ID invalid", false)
 			return
 		}
 		problem, err := rt.db.Problem(r.Context(), problemID)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				statusPage(w, r, 404, "Problema nu a fost găsită")
-				return
-			}
 			log.Println("ValidateProblemID:", err)
-			statusPage(w, r, 500, "")
+			statusPage(w, r, 500, "", false)
+			return
+		}
+		if problem == nil {
+			statusPage(w, r, 404, "Problema nu a fost găsită", false)
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemKey, problem)))
@@ -40,17 +38,17 @@ func (rt *Web) ValidateListID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		listID, err := strconv.Atoi(chi.URLParam(r, "id"))
 		if err != nil {
-			statusPage(w, r, http.StatusBadRequest, "ID invalid")
+			statusPage(w, r, http.StatusBadRequest, "ID invalid", false)
 			return
 		}
 		list, err := rt.db.ProblemList(r.Context(), listID)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				statusPage(w, r, 404, "Lista nu a fost găsită")
-				return
-			}
 			log.Println("ValidateListID:", err)
-			statusPage(w, r, 500, "")
+			statusPage(w, r, 500, "", false)
+			return
+		}
+		if list == nil {
+			statusPage(w, r, 404, "Lista nu a fost găsită", false)
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemListKey, list)))
@@ -67,14 +65,16 @@ func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
 		}
 		att, err := rt.db.Attachment(r.Context(), attid)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				http.Error(w, "Atașamentul nu a fost găsit", 404)
-				return
-			}
 			log.Println("ValidateAttachmentID:", err)
-			http.Error(w, http.StatusText(500), 500)
-			statusPage(w, r, 500, "")
+			statusPage(w, r, 500, "", false)
 			return
+		}
+		if att == nil {
+			http.Error(w, "Atașamentul nu a fost găsit", 404)
+			return
+		}
+		if att.Private && !util.IsRProblemEditor(r) {
+			statusPage(w, r, 403, "Nu ai voie să accesezi acest atașament", true)
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AttachmentKey, att)))
 	})
@@ -84,7 +84,7 @@ func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
 func (rt *Web) ValidateVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRProblemVisible(r) {
-			statusPage(w, r, 404, "Problema nu a fost găsită")
+			statusPage(w, r, 403, "Nu ai voie să accesezi problema!", true)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -96,28 +96,28 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		subID, err := strconv.Atoi(chi.URLParam(r, "id"))
 		if err != nil {
-			statusPage(w, r, 400, "ID submisie invalid")
+			statusPage(w, r, 400, "ID submisie invalid", false)
 			return
 		}
 		sub, err := rt.db.Submission(r.Context(), subID)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				statusPage(w, r, 400, "Submisia nu există")
-				return
-			}
 			log.Println(err)
-			statusPage(w, r, 500, "")
+			statusPage(w, r, 500, "", false)
+			return
+		}
+		if sub == nil {
+			statusPage(w, r, 400, "Submisia nu există", false)
 			return
 		}
 
 		pb, err := rt.db.Problem(r.Context(), sub.ProblemID)
 		if err != nil {
 			log.Println(err)
-			statusPage(w, r, 500, "")
+			statusPage(w, r, 500, "", false)
 			return
 		}
 		if !util.IsProblemVisible(util.User(r), pb) {
-			statusPage(w, r, 403, "Nu poți accesa această submisie!")
+			statusPage(w, r, 403, "Nu poți accesa această submisie!", true)
 			return
 		}
 
@@ -132,7 +132,7 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 func mustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRAuthed(r) {
-			statusPage(w, r, 401, "Trebuie să fii logat")
+			statusPage(w, r, 401, "Trebuie să fii logat", true)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -142,7 +142,7 @@ func mustBeAuthed(next http.Handler) http.Handler {
 func mustBeProposer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRProposer(r) {
-			statusPage(w, r, 401, "Trebuie să fii propunător")
+			statusPage(w, r, 401, "Trebuie să fii propunător", true)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -152,7 +152,7 @@ func mustBeProposer(next http.Handler) http.Handler {
 func mustBeAdmin(next http.Handler) http.Handler {
 	return mustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRAdmin(r) {
-			statusPage(w, r, 401, "Trebuie să fii admin")
+			statusPage(w, r, 401, "Trebuie să fii admin", true)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -162,7 +162,7 @@ func mustBeAdmin(next http.Handler) http.Handler {
 func mustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if util.IsRAuthed(r) {
-			statusPage(w, r, 401, "Trebuie să fii delogat")
+			statusPage(w, r, 401, "Trebuie să fii delogat", false)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -172,7 +172,7 @@ func mustBeVisitor(next http.Handler) http.Handler {
 func mustBeEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRProblemEditor(r) {
-			statusPage(w, r, 401, "Trebuie să fii autorul problemei")
+			statusPage(w, r, 401, "Trebuie să fii autorul problemei", true)
 			return
 		}
 		next.ServeHTTP(w, r)

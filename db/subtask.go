@@ -2,6 +2,8 @@ package db
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -24,45 +26,45 @@ func (s *DB) CreateSubTask(ctx context.Context, subtask *kilonova.SubTask) error
 func (s *DB) SubTask(ctx context.Context, pbid, stvid int) (*kilonova.SubTask, error) {
 	var st subtask
 	err := s.conn.GetContext(ctx, &st, s.conn.Rebind("SELECT * FROM subtasks WHERE problem_id = ? AND visible_id = ?"), pbid, stvid)
-	if err != nil {
-		return nil, err
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
 	}
-	return InternalToSubTask(&st), nil
+	return InternalToSubTask(&st), err
 }
 
 func (s *DB) SubTaskByID(ctx context.Context, stid int) (*kilonova.SubTask, error) {
 	var st subtask
 	err := s.conn.GetContext(ctx, &st, s.conn.Rebind("SELECT * FROM subtasks WHERE id = ?"), stid)
-	if err != nil {
-		return nil, err
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
 	}
-	return InternalToSubTask(&st), nil
+	return InternalToSubTask(&st), err
 }
 
 func (s *DB) SubTasks(ctx context.Context, pbid int) ([]*kilonova.SubTask, error) {
 	var st []*subtask
 	err := s.conn.SelectContext(ctx, &st, s.conn.Rebind("SELECT * FROM subtasks WHERE problem_id = ? ORDER BY visible_id"), pbid)
-	if err != nil {
-		return nil, err
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.SubTask{}, nil
 	}
 	sts := []*kilonova.SubTask{}
 	for _, s := range st {
 		sts = append(sts, InternalToSubTask(s))
 	}
-	return sts, nil
+	return sts, err
 }
 
 func (s *DB) SubTasksByTest(ctx context.Context, pbid, tid int) ([]*kilonova.SubTask, error) {
 	var st []*subtask
 	err := s.conn.SelectContext(ctx, &st, s.conn.Rebind("SELECT * FROM subtasks WHERE tests LIKE ? AND problem_id = ? ORDER BY visible_id"), fmt.Sprintf("%%%d%%", tid), pbid)
-	if err != nil {
-		return nil, err
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.SubTask{}, nil
 	}
 	sts := []*kilonova.SubTask{}
 	for _, s := range st {
 		sts = append(sts, InternalToSubTask(s))
 	}
-	return sts, nil
+	return sts, err
 }
 
 func (s *DB) UpdateSubTask(ctx context.Context, id int, upd kilonova.SubTaskUpdate) error {
@@ -106,6 +108,9 @@ type subtask struct {
 }
 
 func InternalToSubTask(st *subtask) *kilonova.SubTask {
+	if st == nil {
+		return nil
+	}
 	return &kilonova.SubTask{
 		ID:        st.ID,
 		CreatedAt: st.CreatedAt,
