@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/http/pprof"
@@ -16,47 +14,16 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/api"
-	"github.com/KiloProjects/kilonova/archive/kna"
 	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/email"
 	"github.com/KiloProjects/kilonova/eval/grader"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/web"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
 )
-
-func executeExperiment(dm kilonova.DataStore, db kilonova.DB) error {
-	pb, err := db.Problem(context.Background(), 1)
-	if err != nil {
-		return err
-	}
-	pb1, err := db.Problem(context.Background(), 2)
-	if err != nil {
-		return err
-	}
-
-	rd, err := kna.Generate([]*kilonova.Problem{pb, pb1}, db, dm)
-	if err != nil {
-		return err
-	}
-
-	b, err := io.ReadAll(rd)
-	if err != nil {
-		return err
-	}
-
-	if err := os.WriteFile("./plm.db", b, 0777); err != nil {
-		return err
-	}
-
-	d, err := os.ReadFile("./plm.db")
-	spew.Dump(kna.Parse(bytes.NewReader(d)))
-	return nil
-}
 
 func Kilonova() error {
 	// Print welcome message
@@ -95,8 +62,6 @@ func Kilonova() error {
 	if err != nil {
 		return err
 	}
-
-	//return executeExperiment(manager, db)
 
 	// Setup mailer
 	mailer, err := email.NewMailer()
@@ -141,8 +106,20 @@ func Kilonova() error {
 	grader := grader.NewHandler(ctx, db, manager, config.Common.Debug)
 
 	r.Mount("/api", api.New(db, manager, mailer).Handler())
-	r.Mount("/cdn", http.StripPrefix("/cdn/", &web.CDN{CDN: manager}))
+
+	/*
+		if config.Common.NewWeb {
+			rev, err := url.Parse("http://localhost:3000/")
+			if err != nil {
+				panic(err)
+			}
+			r.Mount("/", httputil.NewSingleHostReverseProxy(rev))
+			//r.Mount("/old", web.NewWeb(config.Common.Debug, db, manager, mailer).Handler())
+			//r.Mount("/", liteweb.NewWeb(config.Common.Debug, db, manager, mailer).Handler())
+		} else {
+	*/
 	r.Mount("/", web.NewWeb(config.Common.Debug, db, manager, mailer).Handler())
+	//}
 
 	go func() {
 		err := grader.Start()

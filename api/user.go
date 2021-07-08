@@ -19,6 +19,7 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/microcosm-cc/bluemonday"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -110,6 +111,34 @@ func (s *API) setSubVisibility(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *API) setPreferredLanguage() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+		var args struct{ Language string }
+		if err := decoder.Decode(&args, r.Form); err != nil {
+			errorData(w, err, 400)
+			return
+		}
+
+		safe := strings.TrimSpace(bluemonday.StrictPolicy().Sanitize(args.Language))
+		if !(safe == "en" || safe == "ro") {
+			errorData(w, "Invalid language", 400)
+			return
+		}
+
+		if err := s.db.UpdateUser(
+			r.Context(),
+			util.User(r).ID,
+			kilonova.UserUpdate{PreferredLanguage: safe},
+		); err != nil {
+			errorData(w, err, 500)
+			return
+		}
+
+		returnData(w, "Updated bio")
+	}
+}
+
 func (s *API) setBio() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
@@ -185,6 +214,25 @@ func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Deleted user")
 }
 
+func (s *API) getUser(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		ID int
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	user, err := s.db.User(r.Context(), args.ID)
+	if err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	user.Password = ""
+	returnData(w, user)
+}
+
 func (s *API) getUserByName(w http.ResponseWriter, r *http.Request) {
 	name := strings.TrimSpace(r.FormValue("name"))
 	if name == "" {
@@ -196,8 +244,8 @@ func (s *API) getUserByName(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "User not found", http.StatusNotFound)
 		return
 	}
+	users[0].Password = ""
 	returnData(w, users[0])
-
 }
 
 func (s *API) getSelf(w http.ResponseWriter, r *http.Request) {
@@ -260,22 +308,52 @@ func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
 }
 
 // ChangeEmail changes the e-mail of the saved user
-// TODO: Check this is not a scam and the user actually wants to change email
 func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(r.FormValue("email"))
+	password := r.FormValue("password")
 	if email == "" {
-		errorData(w, "You must provide a new email to change to", 400)
+		errorData(w, "You must provide the password and a new email to change to", 400)
 		return
 	}
 	if err := validation.Validate(&email, is.Email); err != nil {
 		errorData(w, "Invalid email", 400)
+		return
 	}
+
+	if email == util.User(r).Email {
+		errorData(w, "You already have this email set!", 400)
+		return
+	}
+
+	// Get the user back, since we trimmed the password
+	user, err := s.db.User(r.Context(), util.User(r).ID)
+	if err != nil {
+		log.Println("Something went very wrong:", err)
+		errorData(w, "Couldn't get you, this should never happen", 500)
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		errorData(w, "Wrong password", 400)
+		return
+	}
+
+	False := false
+	now := time.Now()
 	if err := s.db.UpdateUser(
 		r.Context(),
 		util.User(r).ID,
-		kilonova.UserUpdate{Email: &email},
+		kilonova.UserUpdate{Email: &email, VerifiedEmail: &False, EmailVerifSentAt: &now},
 	); err != nil {
 		errorData(w, err, 500)
+		return
+	}
+
+	util.User(r).Email = email
+
+	if err := kilonova.SendVerificationEmail(util.User(r), s.db, s.mailer); err != nil {
+		log.Println(err)
+		errorData(w, "Couldn't send verification email", 500)
 		return
 	}
 	returnData(w, "Successfully changed email")
@@ -293,7 +371,7 @@ func (s *API) resendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := kilonova.SendVerificationEmail(u.Email, u.Name, u.ID, s.db, s.mailer); err != nil {
+	if err := kilonova.SendVerificationEmail(u, s.db, s.mailer); err != nil {
 		log.Println(err)
 		errorData(w, "Couldn't send verification email", 500)
 		return

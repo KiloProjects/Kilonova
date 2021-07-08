@@ -1,3 +1,8 @@
+- v0.9.0:
+	- Barebones attachments
+	- English version
+	- Working password and email change forms (in settings)
+	- Pretty big internal restructuring 
 - v0.8.1:
 	- Bug fixes
 	- Small UI fixes

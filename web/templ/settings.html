@@ -1,52 +1,89 @@
-{{ define "title" }}Setări{{ end }}
+{{ define "title" }}{{getText .Ctx.Language "settings"}}{{ end }}
 {{ define "content" }}
 
-<h1> Preferințele Profilului </h1>
+{{ $user := .Ctx.User }}
+
+<h1> {{getText .Ctx.Language "settingsHeader"}} </h1>
 <div class="segment-container">
-	<h2> Actualizare Bio </h2>
+	<h2> {{getText .Ctx.Language "updateBio"}} </h2>
 	<form id="bio_form">
-		<textarea id="newBio" class="form-textarea w-full mb-2" autocapitalize="sentences" autocomplete="off" maxlength="120" placeholder="Bio...">{{.User.Bio}}</textarea>
-		<button class="btn btn-blue" onclick="updateBio()">Actualizare</button>
+		<textarea id="newBio" class="form-textarea w-full mb-2" autocapitalize="sentences" autocomplete="off" maxlength="120" placeholder="Bio...">{{$user.Bio}}</textarea>
+		<button class="btn btn-blue" onclick="updateBio()">{{getText .Ctx.Language "update"}}</button>
 	</form>
 </div>
 
 <div class="segment-container">
-	<h2 > Vizibilitate </h2>
-	<button id="vButton" class="btn btn-blue mb-2 text-semibold text-lg" onclick="toggleVisibility()"><i class="fas fa-share-square mr-2"></i> Fă submisiile implicit {{if .User.DefaultVisible}}invizibile{{else}}vizibile{{end}}</button>
+	<h2> {{getText .Ctx.Language "visibility"}} </h2>
+	<button id="vButton" class="btn btn-blue mb-2 text-semibold text-lg" onclick="toggleVisibility()"><i class="fas fa-share-square mr-2"></i> {{getText .Ctx.Language "makeSubs"}} {{if $user.DefaultVisible}}{{getText .Ctx.Language "invisible"}}{{else}}{{getText .Ctx.Language "visible"}}{{end}}</button>
 </div>
 
 <form class="segment-container" id="pwd_change_form">
-	<div>TODO: password change form</div>
+	<h2> {{getText .Ctx.Language "updatePwd"}} </h2>
+	<label class="block mb-2">
+		<span class="form-label">{{getText .Ctx.Language "newPwd"}}: </span>
+		<input class="form-input" type="password" id="pwd_change_pwd" autocomplete="off">
+	</label>
+	<label class="block mb-2">
+		<span class="form-label">{{getText .Ctx.Language "newPwdConfirm"}}: </span>
+		<input class="form-input" type="password" id="pwd_change_pwd1" autocomplete="off">
+	</label>
+	<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "update"}}</button>
 </form>
 <form class="segment-container" id="email_change_form">
-	<div>TODO: email change form</div>
+	<h2> {{getText .Ctx.Language "updateEmail"}} </h2>
 	<label class="block mb-2">
-		<span class="form-label">Parolă</span>
+		<span class="form-label">{{getText .Ctx.Language "password"}}: </span>
 		<input class="form-input" type="password" id="em_change_pwd">
 	</label>
+	<label class="block mb-2">
+		<span class="form-label">{{getText .Ctx.Language "newEmail"}}: </span>
+		<input class="form-input" type="email" id="em_change_email" autocomplete="off">
+	</label>
+	<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "update"}}</button>
 </form>
 
 <script>
-let visible = {{.User.DefaultVisible}};
+let visible = {{$user.DefaultVisible}};
 async function updateBio(e) {
 	e.preventDefault()
 	var bio = document.getElementById("newBio").value;
 
 	let res = await bundled.postCall("/user/setBio", {bio})
-	bundled.apiToast(res, {onclick: () => window.location.assign("/profile")}) 
+	bundled.apiToast(res) 
 }
 async function toggleVisibility() {
 	visible = !visible;
 	let res = await bundled.postCall("/user/setSubVisibility", {visibility: visible});
 	bundled.apiToast(res);
-	document.getElementById("vButton").innerHTML = `<i class="fas fa-share-square mr-2"></i> Fă submisiile implicit ${visible ? "invizibile" : "vizibile"}`
+	document.getElementById("vButton").innerHTML = `<i class="fas fa-share-square mr-2"></i> {{getText .Ctx.Language "makeSubs"}} ${visible ? '{{getText .Ctx.Language "invisible"}}' : '{{getText .Ctx.Language "visible"}}'}`
 }
-async function updatePassword() {
+async function updatePassword(e) {
+	e.preventDefault()
+	let pwd = document.getElementById("pwd_change_pwd").value,
+		pwd1= document.getElementById("pwd_change_pwd1").value;
+	if(pwd != pwd1) {
+		bundled.createToast({title: '{{getText .Ctx.Language "differentPwds"}}', status: 'error'});
+		return
+	}
+	let res = await bundled.postCall("/user/changePassword", {password:pwd})
+	bundled.apiToast(res)
 }
-async function updateEmail() {
-	let pwd = document.getElementById("");
+async function updateEmail(e) {
+	e.preventDefault()
+	let req = {
+		password: document.getElementById("em_change_pwd").value,
+		email: document.getElementById("em_change_email").value,
+	};
+	let res = await bundled.postCall("/user/changeEmail", req)
+	if(res.status === "error") {
+		bundled.apiToast(res)
+		return
+	}
+	window.location.reload();
 }
 document.getElementById("bio_form").addEventListener("submit", updateBio)
+document.getElementById("pwd_change_form").addEventListener("submit", updatePassword)
+document.getElementById("email_change_form").addEventListener("submit", updateEmail)
 </script>
 
 {{end}}

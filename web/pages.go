@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -18,56 +17,12 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/davecgh/go-spew/spew"
 )
 
 var (
-	settings = parse(nil, "settings.html")
-	profile  = parse(nil, "profile.html")
-	status   = parse(nil, "util/statusCode.html", "auth/modal/login.html")
-	index    = parse(nil, "index.html")
-
-	pbs = parse(nil, "pbs.html")
-	pb  = parse(nil, "pb.html")
-
-	subs = parse(nil, "submissions.html")
-	sub  = parse(nil, "submission.html")
-
-	login  = parse(nil, "auth/login.html", "auth/modal/login.html")
-	signup = parse(nil, "auth/signup.html")
-
-	editIndex       = parse(nil, "edit/index.html", "edit/topbar.html")
-	editDesc        = parse(nil, "edit/desc.html", "edit/topbar.html")
-	editChecker     = parse(nil, "edit/checker.html", "edit/topbar.html")
-	editAttachments = parse(nil, "edit/attachments.html", "edit/topbar.html")
-
-	testAdd    = parse(nil, "edit/testAdd.html", "edit/topbar.html")
-	testEdit   = parse(nil, "edit/testEdit.html", "edit/topbar.html")
-	testScores = parse(nil, "edit/testScores.html", "edit/topbar.html")
-
-	subtaskAdd   = parse(nil, "edit/subtaskAdd.html", "edit/topbar.html")
-	subtaskEdit  = parse(nil, "edit/subtaskEdit.html", "edit/topbar.html")
-	subtaskIndex = parse(nil, "edit/subtaskIndex.html", "edit/topbar.html")
-
-	pbListIndex  = parse(nil, "lists/index.html")
-	pbListCreate = parse(nil, "lists/create.html")
-	pbListView   = parse(nil, "lists/view.html")
-
-	adminPanel = parse(nil, "admin/admin.html")
-	knaPanel   = parse(nil, "admin/kna.html")
-	testUI     = parse(nil, "admin/test-ui.html")
-
-	adminUserPanel = parse(nil, "admin/users.html")
-
-	markdown = parse(nil, "util/mdrender.html")
-
-	proposerPanel = parse(nil, "proposer/index.html", "proposer/createpb.html", "proposer/cdn_manager.html")
-
-	verifiedEmail = parse(nil, "verified-email.html")
-	sentEmail     = parse(nil, "util/sent.html")
-
-	listIndex  = parse(nil, "lists/index.html")
-	listCreate = parse(nil, "lists/create.html")
+	status = parse(nil, "util/statusCode.html", "modals/login.html")
 )
 
 type EditTopbar struct {
@@ -83,8 +38,14 @@ func (t *EditTopbar) IsOnSubtask(stk *kilonova.SubTask) bool {
 	return t.Page == "subtasks" && stk.VisibleID == t.PageID
 }
 
+type ReqContext struct {
+	User     *kilonova.User
+	Language string
+}
+
 type ProblemParams struct {
-	User          *kilonova.User
+	Ctx *ReqContext
+	// User          *kilonova.User
 	ProblemEditor bool
 
 	Problem     *kilonova.Problem
@@ -96,55 +57,14 @@ type ProblemParams struct {
 }
 
 type ProblemListParams struct {
-	User        *kilonova.User
+	Ctx *ReqContext
+	// User          *kilonova.User
 	ProblemList *kilonova.ProblemList
-
-	ctx context.Context
-	db  kilonova.DB
-	r   kilonova.MarkdownRenderer
-}
-
-func (p *ProblemListParams) RenderMarkdown(body string) template.HTML {
-	val, err := p.r.Render([]byte(body))
-	if err != nil {
-		return ""
-	}
-	return template.HTML(val)
-}
-
-func (p *ProblemListParams) ProblemLists() []*kilonova.ProblemList {
-	list, err := p.db.ProblemLists(p.ctx, kilonova.ProblemListFilter{})
-	if err != nil {
-		return nil
-	}
-	return list
-}
-
-func (p *ProblemListParams) ListProblems(list *kilonova.ProblemList) []*kilonova.Problem {
-	var id int
-	if p.User != nil {
-		id = p.User.ID
-		if p.User.Admin {
-			id = -1
-		}
-	}
-	pbs, err := p.db.Problems(p.ctx, kilonova.ProblemFilter{IDs: list.List, LookingUserID: &id})
-	if err != nil {
-		return nil
-	}
-	return pbs
-}
-
-func (p *ProblemListParams) SubScore(pb *kilonova.Problem) string {
-	score := p.db.MaxScore(p.ctx, p.User.ID, pb.ID)
-	if score < 0 {
-		return "-"
-	}
-	return strconv.Itoa(score)
 }
 
 type SubTaskEditParams struct {
-	User    *kilonova.User
+	Ctx *ReqContext
+	// User          *kilonova.User
 	Problem *kilonova.Problem
 	SubTask *kilonova.SubTask
 	Topbar  *EditTopbar
@@ -193,7 +113,8 @@ func (s *SubTaskEditParams) TestInSubTask(test *kilonova.Test) bool {
 }
 
 type TestEditParams struct {
-	User    *kilonova.User
+	Ctx *ReqContext
+	// User          *kilonova.User
 	Problem *kilonova.Problem
 	Test    *kilonova.Test
 	Topbar  *EditTopbar
@@ -241,92 +162,29 @@ func (t *TestEditParams) ProblemTests() []*kilonova.Test {
 }
 
 type IndexParams struct {
-	User *kilonova.User
+	Ctx *ReqContext
 
 	Version string
 	Config  config.IndexConf
-
-	ctx context.Context
-	db  kilonova.DB
-	r   kilonova.MarkdownRenderer
 }
 
-func (p *IndexParams) RenderMarkdown(body string) template.HTML {
-	val, err := p.r.Render([]byte(body))
-	if err != nil {
-		return ""
-	}
-	return template.HTML(val)
-}
-
-func (p *IndexParams) NumSolved(ids []int) int {
-	scores := p.db.MaxScores(p.ctx, p.User.ID, ids)
-	var rez int
-	for _, v := range scores {
-		if v == 100 {
-			rez++
-		}
-	}
-	return rez
-}
-
-func (p *IndexParams) ProblemList(id int) *kilonova.ProblemList {
-	list, err := p.db.ProblemList(p.ctx, id)
-	if err != nil {
-		return nil
-	}
-	return list
-}
-
-func (p *IndexParams) ListProblems(list *kilonova.ProblemList) []*kilonova.Problem {
-	var id int
-	if p.User != nil {
-		id = p.User.ID
-		if p.User.Admin {
-			id = -1
-		}
-	}
-	pbs, err := p.db.Problems(p.ctx, kilonova.ProblemFilter{IDs: list.List, LookingUserID: &id})
-	if err != nil {
-		return nil
-	}
-	return pbs
-}
-
-func (p *IndexParams) VisibleProblems() []*kilonova.Problem {
-	problems, err := kilonova.VisibleProblems(p.ctx, p.User, p.db)
-	if err != nil {
-		return nil
-	}
-	return problems
-}
-
-func (p *IndexParams) SubScore(problem *kilonova.Problem, user *kilonova.User) string {
-	score := p.db.MaxScore(p.ctx, user.ID, problem.ID)
-	if score < 0 {
-		return "-"
-	}
-	return strconv.Itoa(score)
+type ProblemListingParams struct {
+	User     *kilonova.User
+	Language string
+	Problems []*kilonova.Problem
 }
 
 type ProfileParams struct {
-	User *kilonova.User
+	Ctx *ReqContext
+	// User          *kilonova.User
 
 	ContentUser  *kilonova.User
 	UserProblems []*kilonova.Problem
 }
 
-func Profile(w io.Writer, params *ProfileParams) error {
-	err := profile.Execute(w, params)
-	if err != nil {
-		log.Println(err)
-	}
-
-	return err
-}
-
 type StatusParams struct {
-	User *kilonova.User
+	Ctx *ReqContext
+	// User          *kilonova.User
 
 	Code        int
 	Message     string
@@ -342,82 +200,42 @@ func Status(w io.Writer, params *StatusParams) (err error) {
 }
 
 type MarkdownParams struct {
-	User     *kilonova.User
+	Ctx *ReqContext
+	// User          *kilonova.User
 	Markdown template.HTML
 	Title    string
 }
 
 type SimpleParams struct {
-	User *kilonova.User
+	Ctx *ReqContext
+	// User          *kilonova.User
 }
 
 type AdminParams struct {
-	User         *kilonova.User
+	Ctx *ReqContext
+	// User          *kilonova.User
 	IndexDesc    string
 	IndexListAll bool
 	IndexLists   string
 }
 
-func AdminPanel(w io.Writer, user *kilonova.User) error {
-	err := adminPanel.Execute(w, &AdminParams{user, config.Index.Description, config.Index.ShowProblems, kilonova.SerializeIntList(config.Index.Lists)})
-	if err != nil {
-		log.Println(err)
+func GenContext(r *http.Request) *ReqContext {
+	return &ReqContext{
+		User:     util.User(r),
+		Language: util.Language(r),
 	}
-	return err
-}
-
-func TestUI(w io.Writer, user *kilonova.User) error {
-	err := testUI.Execute(w, &SimpleParams{user})
-	if err != nil {
-		log.Println(err)
-	}
-	return err
 }
 
 type VerifiedEmailParams struct {
-	User *kilonova.User
+	Ctx *ReqContext
+	// User          *kilonova.User
 
 	ContentUser *kilonova.User
 }
 
-func VerifiedEmail(w io.Writer, params *VerifiedEmailParams) error {
-	err := verifiedEmail.Execute(w, params)
-	if err != nil {
-		log.Println(err)
-	}
-
-	return err
-}
-
 type SubParams struct {
-	User       *kilonova.User
+	Ctx        *ReqContext
 	Submission *kilonova.Submission
-}
-
-var _ http.Handler = &CDN{}
-
-type CDN struct {
-	CDN kilonova.CDNStore
-}
-
-func (s *CDN) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fpath := r.URL.Path
-	if r.Method != "GET" {
-		http.Error(w, http.StatusText(405), 405)
-		return
-	}
-	file, mod, err := s.CDN.GetFile(fpath)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			http.Error(w, http.StatusText(404), 404)
-			return
-		}
-		log.Println("Could not get file in CDN:", err)
-		http.Error(w, http.StatusText(500), 500)
-		return
-	}
-	w.Header().Add("cache-control", "public, max-age=86400, immutable")
-	http.ServeContent(w, r, path.Base(fpath), mod, file)
 }
 
 var funcs = template.FuncMap{
@@ -433,12 +251,22 @@ var funcs = template.FuncMap{
 		return base64.StdEncoding.EncodeToString(d), err
 	},
 	"KBtoMB":     func(kb int) float64 { return float64(kb) / 1024.0 },
-	"hashedName": func(name string) string { return fsys.HashName(name) },
+	"hashedName": fsys.HashName,
 	"version":    func() string { return kilonova.Version },
 	"debug":      func() bool { return config.Common.Debug },
 	"intList":    kilonova.SerializeIntList,
 	"httpstatus": http.StatusText,
 	"dump":       spew.Sdump,
+	"getText": func(lang, line string, args ...interface{}) template.HTML {
+		if _, ok := translations[line]; !ok {
+			log.Printf("Invalid translation key %q\n", line)
+			return "ERR"
+		}
+		if _, ok := translations[line][lang]; !ok {
+			return template.HTML(translations[line][defaultLang])
+		}
+		return template.HTML(fmt.Sprintf(translations[line][lang], args...))
+	},
 }
 
 func parse(optFuncs template.FuncMap, files ...string) *template.Template {
@@ -450,5 +278,6 @@ func parse(optFuncs template.FuncMap, files ...string) *template.Template {
 	if optFuncs != nil {
 		t = t.Funcs(optFuncs)
 	}
-	return template.Must(t.ParseFS(templs, append([]string{"layout.html", "util/navbar.html"}, files...)...))
+	files = append(files, "util/navbar.html", "util/footer.html")
+	return template.Must(t.ParseFS(templs, append([]string{"layout.html"}, files...)...))
 }

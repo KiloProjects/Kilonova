@@ -1,7 +1,8 @@
-{{ define "title" }} Teste {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "tests"}} {{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
+{{ $lang := .Ctx.Language }}
 <div class="segment-container">
 	<h2>Actualizare teste</h1>
 	{{ with .ProblemTests }}
@@ -14,7 +15,7 @@
 					ID
 				</th>
 				<th scope="col" class="w-1/2">
-					Scor
+					{{getText $lang "score"}}	
 				</th>
 			</thead>
 			<tbody>
@@ -37,8 +38,8 @@
 				</tr>
 			</tbody>
 		</table>
-		<button class="btn btn-red mr-2" onclick="deleteTests()">Șterge testele selectate</button>
-		<button class="btn btn-blue" onclick="updateTests()">Actualizează scorurile testelor</button>
+		<button class="btn btn-red mr-2" onclick="deleteTests()">{{getText $lang "deleteTests"}}</button>
+		<button class="btn btn-blue" onclick="updateTests()">{{getText $lang "updateTestScores"}}</button>
 	{{ else }} 
 		<h3> Nu există niciun test, ar fi bine să creezi unul :) </h3>
 	{{ end }}
@@ -60,7 +61,7 @@ function updateFinalScore() {
 	}
 	let suffix = "";
 	if(defaultPoints > 0) {
-		suffix = ` (${defaultPoints} by default)`;
+		suffix = ` (${defaultPoints} {{getText .Ctx.Language "byDefault"}})`;
 	}
 	console.log(score)
 	if(score != 100) {
@@ -105,12 +106,12 @@ async function updateTests() {
 </div>
 
 <form id="test_add_form" class="segment-container">
-	<h2> Încărcare arhivă .zip cu teste (maxim 100MB) </h2>
+	<h2> {{getText .Ctx.Language "testArchive"}} (100MB max) </h2>
 	<label class="block my-2">
-		<span class="mr-2 text-xl"> Arhivă:</span>
+		<span class="mr-2 text-xl"> {{getText .Ctx.Language "archive"}}:</span>
 		<input id="tests" type="file" class="form-input" accept=".zip" required />
 	</label>
-	<button class="btn btn-blue mb-2">Încărcare teste</button>
+	<button class="btn btn-blue mb-2">{{getText .Ctx.Language "upload"}}</button>
 </form>
 
 
@@ -120,7 +121,7 @@ async function uploadTests(e) {
 	var form = new FormData();
 	var files = document.getElementById("tests").files;
 	if(files === null || files.length === 0) {
-		bundled.createToast({status: "error", title: "Niciun fișier specificat"})
+		bundled.createToast({status: "error", title: '{{getText .Ctx.Language "noFiles"}}'})
 		return
 	}
 	form.append("testArchive", files[0]);

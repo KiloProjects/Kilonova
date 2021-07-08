@@ -1,7 +1,7 @@
-{{ define "title" }} Email retrimis {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "resentEmail"}} {{ end }}
 {{ define "content" }}
 
-<h1> Email retrimis </h1>
-<a href="/">Pagina principală</a>
+<h1> {{getText .Ctx.Language "resentEmail"}} </h1>
+<a href="/">{{getText .Ctx.Language "frontPage"}}</a>
 
 {{ end }}

@@ -1,7 +1,7 @@
-{{ define "title" }} Email verificat {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "emailConfirm"}} {{ end }}
 {{ define "content" }}
 
-<h1>E-mail confirmat pentru {{.ContentUser.Name}}</h1>
-<h3>Puteți să închideți tab-ul</h3>
+<h1>{{getText .Ctx.Language "confirmedEmail" .ContentUser.Name}}</h1>
+<h3>{{getText .Ctx.Language "closeTab"}}</h3>
 
 {{ end }}

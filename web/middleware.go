@@ -8,7 +8,15 @@ import (
 
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi"
+	"golang.org/x/text/language"
 )
+
+// Language stuff
+var serverLangs = []language.Tag{
+	language.English,
+	language.Romanian,
+}
+var langMatcher = language.NewMatcher(serverLangs)
 
 // ValidateProblemID makes sure the problem ID is a valid uint
 func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
@@ -187,7 +195,7 @@ func getSessCookie(r *http.Request) string {
 	return cookie.Value
 }
 
-func (rt *Web) getUser(next http.Handler) http.Handler {
+func (rt *Web) initSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sess, err := rt.db.GetSession(r.Context(), getSessCookie(r))
 		if err != nil {
@@ -201,5 +209,21 @@ func (rt *Web) getUser(next http.Handler) http.Handler {
 		}
 		user.Password = ""
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.UserKey, user)))
+	})
+}
+
+func (rt *Web) initLanguage(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userLang := ""
+		if util.User(r) != nil {
+			userLang = util.User(r).PreferredLanguage
+		}
+		// get language
+		lang, _ := r.Cookie("lang")
+		accept := r.Header.Get("Accept-Language")
+		tag, _ := language.MatchStrings(langMatcher, lang.String(), userLang, accept)
+		language, _ := tag.Base()
+
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.LangKey, language.String())))
 	})
 }

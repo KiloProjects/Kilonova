@@ -1,26 +1,26 @@
-{{ define "title" }} Creare Listă {{ end }}
+{{ define "title" }} {{ getText .Ctx.Language "listCreate" }} {{ end }}
 {{ define "content" }}
 
 <form id="list-form">
 	<div class="block my-2">
 		<label>
-			<span class="form-label">Nume</span>
+			<span class="form-label">{{ getText .Ctx.Language "name" }}</span>
 			<input id="list-title" type="text" class="form-input" required>
 		</label>
 	</div>
 	<div class="block my-2">
 		<label>
-			<span class="form-label">Descriere</span>
+			<span class="form-label">{{ getText .Ctx.Language "desc" }}</span>
 			<input id="list-desc" type="text" class="form-input">
 		</label>
 	</div>
 	<div class="block my-2">
 		<label>
-			<span class="form-label">Probleme (ID-uri separate prin virgulă)</span>
+			<span class="form-label">{{ getText .Ctx.Language "pbs" }}</span>
 			<input id="list-pbs" type="text" class="form-input" pattern="([0-9]+,?)+" required>
 		</label>
 	</div>
-	<button type="submit" class="btn btn-blue">Creare</button>
+	<button type="submit" class="btn btn-blue">{{ getText .Ctx.Language "createButton" }}</button>
 </form>
 
 <script>

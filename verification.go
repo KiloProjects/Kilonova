@@ -20,23 +20,24 @@ Echipa Kilonova
 https://kilonova.ro/`
 var emailT = template.Must(template.New("emailTempl").Parse(emailTempl))
 
-func SendVerificationEmail(email, name string, uid int, db DB, mailer Mailer) error {
+// user is used for the email, name and id fields
+func SendVerificationEmail(user *User, db DB, mailer Mailer) error {
 	type emTp struct {
 		Name       string
 		Email      string
 		VID        string
 		HostPrefix string
 	}
-	vid, err := db.CreateVerification(context.Background(), uid)
+	vid, err := db.CreateVerification(context.Background(), user.ID)
 	if err != nil {
 		return err
 	}
 
 	var b bytes.Buffer
-	if err := emailT.Execute(&b, emTp{Name: name, Email: email, VID: vid, HostPrefix: config.Common.HostPrefix}); err != nil {
+	if err := emailT.Execute(&b, emTp{Name: user.Name, Email: user.Email, VID: vid, HostPrefix: config.Common.HostPrefix}); err != nil {
 		log.Fatal("Error rendering verification email:", err)
 	}
-	return mailer.SendEmail(&MailerMessage{Subject: "Verify your email address", PlainContent: b.String(), To: email})
+	return mailer.SendEmail(&MailerMessage{Subject: "Verify your email address", PlainContent: b.String(), To: user.Email})
 }
 
 func CheckVerificationEmail(db DB, vid string) bool {

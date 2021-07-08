@@ -1,8 +1,9 @@
-{{ define "title" }} Editare Atașamente | Problema #{{.Problem.ID}}: {{.Problem.Name}} {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "editAttachments" .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
 {{ $pbid := .Problem.ID }}
+{{ $lang := .Ctx.Language }}
 
 <div class="segment-container">
 	{{ with .Attachments }}
@@ -12,16 +13,16 @@
 					<input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
 				</th>
 				<th scope="col" class="w-1/2">
-					Nume
+					{{getText $lang "name"}}
 				</th>
 				<th scope="col" class="w-3/8">
-					Dimensiune
+					{{getText $lang "size"}}	
 				</th>
 				<th scope="col" class="w-1/8">
-					Vizibil
+					{{getText $lang "visible"}}
 				</th>
 				<th scope="col" class="w-1/8">
-					Privat
+					{{getText $lang "private"}}
 				</th>
 			</thead>
 			<tbody id="att-body">
@@ -46,9 +47,9 @@
 			{{ end }}
 			</tbody>
 		</table>
-		<button class="btn btn-red mr-2" onclick="deleteAttachments()">Șterge atașamentele selectate</button>
+		<button class="btn btn-red mr-2" onclick="deleteAttachments()">{{getText $lang "deleteAttachments"}}</button>
 	{{ else }}
-	Nu există vreun atașament asociat problemei.
+		{{getText .Ctx.Language "noAttachments"}}	
 	{{ end }}
 </div>
 
@@ -89,18 +90,18 @@ prettifyAttachments()
 
 <form id="attCreate" class="segment-container">
 	<label class="block my-2">
-		<span class="mr-2 text-xl">Fișier: </span>
+		<span class="mr-2 text-xl">{{getText .Ctx.Language "file"}}: </span>
 		<input class="form-file" id="attFile" type="file" required/>
 	</label>
 	<label class="block my-2">
 		<input class="form-checkbox" id="attPrivate" type="checkbox"/>
-		<span class="ml-2 text-xl">Privat</span>
+		<span class="ml-2 text-xl">{{getText .Ctx.Language "private"}}</span>
 	</label>
 	<label id="visibleLabel" class="block my-2">
 		<input class="form-checkbox" id="attVisible" type="checkbox"/>
-		<span class="ml-2 text-xl">Vizibil</span>
+		<span class="ml-2 text-xl">{{getText .Ctx.Language "visible"}}</span>
 	</label>
-	<button type="submit" class="btn btn-blue">Încărcare</button>
+	<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "upload"}}</button>
 </div>
 
 <script>
@@ -121,7 +122,7 @@ async function createAttachment(e) {
 	e.preventDefault()
 	let files = document.getElementById("attFile").files;
 	if(files === null || files.length == 0) {
-		bundled.createToast({status: "error", title: "No files selected"});
+		bundled.createToast({status: "error", title: '{{getText .Ctx.Language "noFiles"}}'});
 		return
 	}
 	let form = new FormData();

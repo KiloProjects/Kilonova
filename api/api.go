@@ -112,11 +112,13 @@ func (s *API) Handler() http.Handler {
 	r.Route("/user", func(r chi.Router) {
 		r.With(s.MustBeAuthed).Post("/setSubVisibility", s.setSubVisibility)
 		r.With(s.MustBeAuthed).Post("/setBio", s.setBio())
+		r.With(s.MustBeAuthed).Post("/setPreferredLanguage", s.setPreferredLanguage())
 
 		r.With(s.MustBeAuthed).Post("/resendEmail", s.resendVerificationEmail)
 
+		r.Get("/get", s.getUser)
 		r.Get("/getByName", s.getUserByName)
-		r.With(s.MustBeAuthed).Get("/getSelf", s.getSelf)
+		r.Get("/getSelf", s.getSelf)
 		r.With(s.MustBeAuthed).Get("/getSelfSolvedProblems", s.getSelfSolvedProblems)
 		r.With(s.MustBeAuthed).Get("/getSolvedProblems", s.getSolvedProblems)
 
@@ -134,14 +136,6 @@ func (s *API) Handler() http.Handler {
 		// TODO: Make this secure and maybe with email stuff
 		r.With(s.MustBeAuthed).Post("/changeEmail", s.changeEmail)
 		r.With(s.MustBeAuthed).Post("/changePassword", s.changePassword)
-	})
-	r.Route("/cdn", func(r chi.Router) {
-		r.Use(s.MustBeProposer)
-
-		r.Post("/saveFile", s.saveCDNFile)
-		r.Post("/createDir", s.createCDNDir)
-		r.Post("/deleteObject", s.deleteCDNObject)
-		r.Get("/readDir", s.readCDNDirectory)
 	})
 	r.Route("/problemList", func(r chi.Router) {
 		r.Get("/get", s.getProblemList)

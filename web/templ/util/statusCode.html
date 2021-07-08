@@ -9,14 +9,14 @@
 	{{ with .Message }}
 		<h1>{{.}}</h1>
 	{{ else }}
-		<p> That's an error </p>
+		<p> {{getText .Ctx.Language "errorMessage"}} </p>
 	{{ end }}
 </div>
 {{ if .ShouldLogin }}
-	{{ if not .User }}
-		<h1>Probabil vei putea să accesezi dacă te loghezi:</h1>
+	{{ if not .Ctx.User }}
+		<h1>{{getText .Ctx.Language "errorLogin"}}:</h1>
 		{{ block "login_modal" . }}
-			Whoops, nu prea știu cum să te loghezi
+			{{getText .Ctx.Language "errorLoginError"}}
 		{{ end }} 
 	{{ end }}
 {{ end }}

@@ -1,48 +1,47 @@
-{{ define "title" }} Profil {{.ContentUser.Name}} {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "profile"}} {{.ContentUser.Name}} {{ end }}
 {{ define "content" }}
 
-<div>
-	<div class="flex">
-		<img class="rounded-lg my-auto" width="128" height="128" src="/api/user/getGravatar?name={{.ContentUser.Name}}&s=128" alt="Poză profil {{.ContentUser.Name}}"/>
-		<div class="ml-3">
-			<h1>{{.ContentUser.Name}}</h1>
-			<span>{{.ContentUser.Bio}}
-			{{ if .User }}
-				{{ if eq .ContentUser.ID .User.ID }}
-					{{if .ContentUser.Bio}}
-					<a href="/settings#bio"><i class="fas fa-edit"></i> Editare bio</a>
-					{{else}}
-					<a href="/settings#bio"><i class="fas fa-edit"></i> Create bio</a>
-					{{end}}
-				{{ end }}
-			{{ end }}</span>
-			<p><a href="/submissions/?user_id={{.ContentUser.ID}}">Listă submisii</a></p>
-			{{- if .User -}} {{if (or .User.Admin (eq .User.ID .ContentUser.ID)) -}}
-			<p>E-mail: {{.ContentUser.Email}}</p>
-			<p>E-mail verificat? 
-				{{ if .ContentUser.VerifiedEmail -}}
-					Da
-				{{- else -}}
-					Nu | <button class="btn btn-blue" onclick="bundled.resendEmail()">Retrimite</button>
-				{{- end -}}</p>
-			{{- end -}} {{- end -}}
-		</div>
+<div class="flex">
+	<img class="rounded-lg my-auto" width="128" height="128" src="/api/user/getGravatar?name={{.ContentUser.Name}}&s=128" alt='{{getText .Ctx.Language "profilePic"}} {{.ContentUser.Name}}'/>
+	<div class="ml-3">
+		<h1>{{.ContentUser.Name}}</h1>
+		<span>{{.ContentUser.Bio}}
+		{{ if .Ctx.User }}
+			{{ if eq .ContentUser.ID .Ctx.User.ID }}
+				{{if .ContentUser.Bio}}
+				<a href="/settings#bio"><i class="fas fa-edit"></i> {{getText .Ctx.Language "editBio"}}</a>
+				{{else}}
+				<a href="/settings#bio"><i class="fas fa-edit"></i> {{getText .Ctx.Language "createBio"}}</a>
+				{{end}}
+			{{ end }}
+		{{ end }}</span>
+		<p><a href="/submissions/?user_id={{.ContentUser.ID}}">{{getText .Ctx.Language "subList"}}</a></p>
+		{{- if .Ctx.User -}} {{if (or .Ctx.User.Admin (eq .Ctx.User.ID .ContentUser.ID)) -}}
+		<p>{{getText .Ctx.Language "email"}}: {{.ContentUser.Email}}</p>
+		<p>{{getText .Ctx.Language "verifiedEmail"}}? 
+			{{ if .ContentUser.VerifiedEmail -}}
+				{{getText .Ctx.Language "yes"}}	
+			{{- else -}}
+				{{getText .Ctx.Language "no"}} | <button class="btn btn-blue" onclick="bundled.resendEmail()">{{getText .Ctx.Language "resend"}}</button>
+			{{- end -}}</p>
+		{{- end -}} {{- end -}}
 	</div>
-	{{ if len .UserProblems }}
-	<p>{{if eq 1 (len .UserProblems)}}O problemă rezolvată:{{else}}{{len .UserProblems}} probleme rezolvate:{{end}} {{ range .UserProblems -}}
-	<a href="/problems/{{.ID}}">{{.Name}}</a>
-	{{ end -}}
-	{{ end }}
-	</p>
+</div>
+{{ if len .UserProblems }}
+<p>{{if eq 1 (len .UserProblems)}}{{getText .Ctx.Language "oneSolvedProblem"}}{{else}}{{getText .Ctx.Language "solvedProblems" (len .UserProblems)}}{{end}} {{ range .UserProblems -}}
+<a href="/problems/{{.ID}}">{{.Name}}</a>
+{{ end -}}
+{{ end }}
+</p>
 	
-{{if .User}}
-{{if and .User.Admin (not .ContentUser.Admin)}}
-<button class="mt-6 block btn btn-red" onclick="deleteAccount()">Ștergere Cont</button>
+{{if .Ctx.User}}
+{{if and .Ctx.User.Admin (not .ContentUser.Admin)}}
+<button class="mt-6 block btn btn-red" onclick="deleteAccount()">{{getText .Ctx.Language "deleteAccount"}}</button>
 
 <script>
 async function deleteAccount() {
 	
-	if(!confirm("Sunteți siguri că vreți să ștergeți utilizatorul?")) {
+	if(!confirm('{{getText .Ctx.Language "delAccConfirmation"}}')) {
 		return
 	}
 
@@ -56,6 +55,5 @@ async function deleteAccount() {
 
 {{end}}
 {{end}}
-</div>
 
 {{ end }}

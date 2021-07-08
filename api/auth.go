@@ -65,7 +65,7 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := kilonova.SendVerificationEmail(auth.Email, auth.Username, user.ID, s.db, s.mailer); err != nil {
+	if err := kilonova.SendVerificationEmail(user, s.db, s.mailer); err != nil {
 		log.Println("Couldn't send user verification email:", err)
 		return
 	}
@@ -150,6 +150,7 @@ func (s *API) logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.db.RemoveSession(r.Context(), h)
+	returnData(w, "Logged out")
 }
 
 func (s *API) addUser(ctx context.Context, username, email, password string) (*kilonova.User, error) {

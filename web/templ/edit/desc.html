@@ -1,4 +1,4 @@
-{{ define "title" }} Editare Descriere | Problema #{{.Problem.ID}}: {{.Problem.Name}} {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "editDesc" .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
@@ -7,33 +7,24 @@
 		<textarea id="description" class="hidden">{{- .Problem.Description -}}</textarea>
 	</div>
 	<div class="mb-2">
-		<button class="btn btn-blue" onclick="setDescription()">Editare</button>
+		<button class="btn btn-blue" onclick="setDescription()">{{getText .Ctx.Language "update"}}</button>
 	</div>
 </div>
 <script>
-	var cm = CodeMirror.fromTextArea(document.getElementById("description"), {
-		mode: {
-			name: "gfm",
-			gitHubSpice: false,
-			emoji: false,
-		},
-	});
-	cm.setSize(null, "100%");
+var cm = CodeMirror.fromTextArea(document.getElementById("description"), {
+	mode: {
+		name: "gfm",
+		gitHubSpice: false,
+		emoji: false,
+	},
+});
+cm.setSize(null, "100%");
 
-	async function setDescription() {
-		let desc = cm.getValue();
-		console.log(desc);
-		let res = await bundled.postCall("/problem/{{.Problem.ID}}/update", {description: desc})
-		if(res.status == "error") {
-			bundled.createToast({
-				status: "error",
-				title: "Could not update description",
-				description: res.data
-			})
-			return
-		}
-		bundled.createToast({description: "Updated description", onclick: () => window.location.assign("/problems/{{.Problem.ID}}")})
-	};
+async function setDescription() {
+	let desc = cm.getValue();
+	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update", {description: desc})
+	bundled.apiToast(res)
+};
 </script>
 
 {{ end }}

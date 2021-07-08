@@ -2,7 +2,6 @@ package kilonova
 
 import (
 	"io"
-	"time"
 )
 
 var (
@@ -22,29 +21,7 @@ type GraderStore interface {
 
 	SubtestWriter(subtest int) (io.WriteCloser, error)
 	SubtestReader(subtest int) (io.ReadCloser, error)
-
-	RemoveSubtestData(subtest int) error
-}
-
-// For CDN
-type CDNStore interface {
-	SaveFile(path string, r io.Reader) error
-	CreateDir(path string) error
-	// GetFile returns a ReadSeeker that must be Closed, the modtime and an error if anything occurs
-	GetFile(path string) (io.ReadSeekCloser, time.Time, error)
-	DeleteObject(path string) error
-	ReadDir(path string) ([]CDNDirEntry, error)
 }
 
 // DataStore represents an interface for the Data Storage Manager
-type DataStore interface {
-	GraderStore
-	CDNStore
-}
-
-type CDNDirEntry struct {
-	Type    string    `json:"type"`
-	Name    string    `json:"name"`
-	ModTime time.Time `json:"mod_time"`
-	Size    int       `json:"size"`
-}
+type DataStore = GraderStore

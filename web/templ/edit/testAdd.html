@@ -1,4 +1,4 @@
-{{ define "title" }} Adăugare Test | Problema #{{.Problem.ID}}: {{.Problem.Name}} {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "editTestAdd" .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 
 {{ template "topbar.html" . }}
@@ -6,11 +6,11 @@
 <form id="test_create_form" class="segment-container">	
 	<h2> Creare test </h2>
 	<label class="block my-2">
-		<span class="mr-2 text-xl">ID: </span>
+		<span class="mr-2 text-xl">{{getText .Ctx.Language "id"}}: </span>
 		<input id="vID" type="number" class="form-input" required />
 	</label>
 	<label class="block my-2">
-		<span class="mr-2 text-xl">Scor: </span>
+		<span class="mr-2 text-xl">{{getText .Ctx.Language "score"}}: </span>
 		<input id="score" type="number" class="form-input" required />
 	</label>
 	<div class="mb-3">
@@ -21,7 +21,7 @@
 		<h3> Output: </h3>
 		<textarea class="form-textarea" id="output" rows="15" style="width: 80%;"></textarea>
 	</div>
-	<button class="btn btn-blue mb-2">Adăugare</button>
+	<button class="btn btn-blue mb-2">{{getText .Ctx.Language "add"}}</button>
 </form>
 
 <script>

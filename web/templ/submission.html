@@ -1,14 +1,14 @@
-{{ define "title" }} Submisia {{.Submission.ID}} {{ end }} 
+{{ define "title" }} {{getText .Ctx.Language "sub"}} {{.Submission.ID}} {{ end }} 
 {{ define "content" }}
 
 <div id="submission_view">
 	<div id="sub_placeholder" class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center">
-		<div><i class="fas fa-spinner animate-spin"></i> Se încarcă...</div>
+		<div><i class="fas fa-spinner animate-spin"></i> {{getText .Ctx.Language "loading"}}</div>
 	</div>
-	{{if .User }}
-	{{if .User.Admin}}
-	<button onclick="deleteSubmission()" class="btn btn-red mb-2">Ștergere submisie</button>
-	<button onclick="reevaluateSubmission()" class="btn btn-blue mb-2">Reevaluare submisie</button>
+	{{if .Ctx.User }}
+	{{if .Ctx.User.Admin}}
+	<button onclick="deleteSubmission()" class="btn btn-red mb-2">{{getText .Ctx.Language "removeSub"}}</button>
+	<button onclick="reevaluateSubmission()" class="btn btn-blue mb-2">{{getText .Ctx.Language "reevaluate"}}</button>
 	<script>
 async function deleteSubmission() {
 	const args = {id: {{.Submission.ID}}};

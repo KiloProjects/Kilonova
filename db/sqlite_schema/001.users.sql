@@ -14,5 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
 	email_verif_sent_at TIMESTAMP,
 
 	banned 		INTEGER 	NOT NULL DEFAULT FALSE,
-	disabled 	INTEGER 	NOT NULL DEFAULT FALSE
+	disabled 	INTEGER 	NOT NULL DEFAULT FALSE,
+
+	preferred_language TEXT NOT NULL DEFAULT 'en'
 );

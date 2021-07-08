@@ -1,4 +1,4 @@
-{{ define "title" }} Editare Test #{{.Test.VisibleID}} | Problema #{{.Problem.ID}}: {{.Problem.Name}} {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "editTestEdit" .Test.VisibleID .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 <br/>
@@ -10,9 +10,9 @@
 			<span class="mr-2 text-xl">ID: </span>
 			<input id="vID" type="number" class="form-input" value="{{ .Test.VisibleID }}" required />
 		</label>
-		<button class="btn btn-blue mb-2">Actualizare ID</button>
+		<button class="btn btn-blue mb-2">{{getText .Ctx.Language "update"}}</button>
 	</form>
-	<button id="orphan_button" class="btn btn-red block my-2"> Ștergere test </button>
+	<button id="orphan_button" class="btn btn-red block my-2"> {{getText .Ctx.Language "delete"}} </button>
 
 	<form id="test_edit_form">
 		{{ $test := .GetFullTests }}
@@ -24,7 +24,7 @@
 			<h3> Output: </h3>
 			<textarea class="form-textarea" style="width:80%;" rows="15" id="output">{{$test.Out}}</textarea>
 		</div>
-		<button class="btn btn-blue mb-2" >Actualizare date</button>
+		<button class="btn btn-blue mb-2" >{{getText .Ctx.Language "update"}}</button>
 	</form>
 </div>
 
@@ -54,7 +54,7 @@ async function updateData(e) {
 async function removeTest(e) {
 	e.preventDefault()
 
-	if(!confirm("Sunteți siguri că vreți să ștergeți testul?")) {
+	if(!confirm('{{getText .Ctx.Language "confirmTestDelete"}}')) {
 		return
 	}
 	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/orphan", {})

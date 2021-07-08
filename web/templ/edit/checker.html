@@ -1,10 +1,10 @@
-{{ define "title" }} Editare Checker | Problema #{{.Problem.ID}}: {{.Problem.Name}} {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "editChecker" .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
 <div class="segment-container">
 	{{ if not (eq .Problem.Type "custom_checker") }}
-		<h1> WARNING: Problema nu utilizează checker, deci nu va fi utilizat </h1>
+		<h1> {{getText .Ctx.Language "checkerWarning"}} </h1>
 	{{ end }}
 	<!--
 	<form id="checker_lang_form">
@@ -21,7 +21,7 @@
 		<textarea id="checker" class="hidden">{{- .Problem.HelperCode -}}</textarea>
 	</div>
 	<div class="mb-2">
-		<button class="btn btn-blue" onclick="setChecker()">Actualizare</button>
+		<button class="btn btn-blue" onclick="setChecker()">{{getText .Ctx.Language "update"}}</button>
 	</div>
 </div>
 

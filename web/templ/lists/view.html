@@ -1,55 +1,48 @@
-{{ define "title" }} Lista #{{.ProblemList.ID}} {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "list" .ProblemList.ID}} {{ end }}
 {{ define "content" }}
 
-{{ $user := .User }}
+{{ $user := .Ctx.User }}
 {{ $root := . }}
+{{ $ctx := .Ctx }}
 {{ with .ProblemList }}
 	<div class="segment-container">
-		<h1>{{.Title}}</h1>
-		{{ if .Description }}<h3>{{$.RenderMarkdown .Description}}</h3>{{end}}
-		{{ with ($root.ListProblems .) }}
-			<div class="list-group list-group-updated">
-				{{ range . }}
-					<a href="/problems/{{.ID}}" class="list-group-item flex justify-between">
-						<span>#{{.ID}}: {{.Name}}</span>
-						{{ if $user }}
-							<div>
-								<span class="rounded-full py-2 px-2 text-base bg-teal-700 text-white font-semibold">{{ $root.SubScore . }}</span>
-							</div>
-						{{ end }}
-					</a>
-				{{ end }}
-			</div>
+		<span class="flex justify-between">
+			<h1 class="inline"><a href="/problem_lists/{{.ID}}">#{{.ID}}</a> {{.Title}}</h1>
+			<span>{{if $user}} {{ getText $ctx.Language "num_solved" (numSolved $user .List) (len .List) }}{{end}}</span>
+		</span>
+		{{ if .Description }}<h2>{{renderMarkdown .Description}}</h2>{{end}}
+		{{ with (listProblems $user .) }}
+			{{ template "pb_list_group" (genPbListParams $user $root.Ctx.Language .) }}
 		{{ else }}
-			<p> This is awkward... Nu există nicio problemă în lista de probleme </p>
+			<p> {{ getText $ctx.Language "noListProblems" }} </p>
 		{{ end }}
 	</div>
 	{{ if $user }}
 	{{ if $user.Admin }}
-	<a class="my-2" href="/admin/makeKNA?pbs={{intList .List}}">[Descărcare arhivă cu probleme]</a>
+	<a class="my-2" href="/admin/makeKNA?pbs={{intList .List}}">{{getText $root.Ctx.Language "listKNA"}}</a>
 	{{ end }}
 	{{ if or (eq $user.ID .AuthorID) $user.Admin }}
 	<form id="pblist-update" class="segment-container" autocomplete="off">
-		<h1> Actualizare Listă </h1>
+		<h1> {{getText $root.Ctx.Language "listUpdate"}} </h1>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">Titlu: </span>
+				<span class="form-label">{{getText $root.Ctx.Language "title"}}: </span>
 				<input type="text" id="pblist-title" class="form-input" value="{{.Title}}">
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">Descriere: </span>
+				<span class="form-label">{{getText $root.Ctx.Language "desc"}}: </span>
 				<input type="text" id="pblist-desc" class="form-input" value="{{.Description}}">
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">Listă:</span>
+				<span class="form-label">{{getText $root.Ctx.Language "pbs"}}:</span>
 				<input type="text" id="pblist-list" class="form-input" pattern="([0-9]+,?)+" value="{{intList .List}}">
 			</label>
 		</div>
-		<button class="btn btn-blue" type="submit">Actualizare</button>
+		<button class="btn btn-blue" type="submit">{{getText $root.Ctx.Language "update"}}</button>
 	</form>
 <script>
 async function updateProblemList(e) {

@@ -1,9 +1,7 @@
-{{ define "title" }} Panou propunător {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "proposerPanel"}} {{ end }}
 {{ define "content" }}
 
-<h1>Panou propunător</h1>
+<h1>{{getText .Ctx.Language "proposerPanel"}}</h1>
 
 {{ template "createpb.html" . }}
-{{ template "cdn_manager.html" . }}
-
 {{ end }}

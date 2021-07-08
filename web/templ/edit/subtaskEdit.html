@@ -1,23 +1,24 @@
-{{ define "title" }}Editare SubTask {{.SubTask.ID}}{{ end }}
+{{ define "title" }}{{getText .Ctx.Language "editSubtaskEdit" .SubTask.VisibleID}}{{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
 {{ $root := . }}
+{{ $lang := .Ctx.Language }}
 
 <form class="segment-container" id="subtask-update">
-	<h2> Editare SubTask #{{.SubTask.VisibleID}} </h2>
-	{{ if not (len .SubTask.Tests) }} WARNING: SubTask gol, va afișa mereu 0 puncte {{ end }}
+	<h2> {{getText .Ctx.Language "editSubtaskEdit" .SubTask.VisibleID}} </h2>
+	{{ if not (len .SubTask.Tests) }} {{getText $lang "emptySubTask"}} {{ end }}
 
 	{{ with .ProblemTests }}
 		<div class="block my-2">
 			<label>
-				<span class="form-label">ID: </span>
+				<span class="form-label">{{getText $lang "id"}}: </span>
 				<input class="form-input" id="subtask-id" type="number" min="0" value="{{$root.SubTask.VisibleID}}" autocomplete="off">
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">Scor: </span>
+				<span class="form-label">{{getText $lang "score"}}: </span>
 				<input class="form-input" id="subtask-score" type="number" min="0" max="100" value="{{$root.SubTask.Score}}" autocomplete="off">
 			</label>
 		</div>
@@ -27,7 +28,7 @@
 					<input class="form-checkbox" type="checkbox" id="selectAllBox" />
 				</th>
 				<td scope="col" class="w-1/2 text-center px-4 py-2">
-					ID Test
+					{{getText $lang "testID"}}
 				</td>
 			</thead>
 			<tbody>
@@ -43,9 +44,9 @@
 			{{ end }}
 			</tbody>
 		</table>
-		<button class="btn btn-blue block my-2" type="submit">Actualizare</button>
+		<button class="btn btn-blue block my-2" type="submit">{{getText $lang "update"}}</button>
 	{{ else }}
-		<h3> Nu există niciun test, așa ceva n-ar trebui să se întâmple!</h3>
+		<h3> {{getText .Ctx.Language "noTestsError"}} </h3>
 	{{ end }}
 </form>
 

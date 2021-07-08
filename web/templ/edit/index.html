@@ -1,4 +1,4 @@
-{{ define "title" }} Editare Problemă | Problema #{{.Problem.ID}}: {{.Problem.Name}} {{end}}
+{{ define "title" }} {{getText .Ctx.Language "editIndex" .Problem.ID .Problem.Name}} {{end}}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
@@ -6,81 +6,81 @@
 	<form @submit="updateProblem">
 		<div class="block my-2">
 			<label>
-				<span class="form-label">Titlu:</span>
+				<span class="form-label">{{getText .Ctx.Language "title"}}:</span>
 				<input class="form-input" type="text" v-model="problem.name" />
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">Autor:</span>
+				<span class="form-label">{{getText .Ctx.Language "author"}}:</span>
 				<input class="form-input" type="text" size="50" v-model="problem.author_credits" />
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">Sursă:</span>
+				<span class="form-label">{{getText .Ctx.Language "source"}}:</span>
 				<input class="form-input" type="text" size="50" v-model="problem.source_credits" />
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">Tip Problemă:</span>
+				<span class="form-label">{{getText .Ctx.Language "pbType"}}:</span>
 				<select class="form-select" v-model="problem.type">
-					<option value="classic">Clasic</option>
-					<option value="custom_checker">Checker</option>
+					<option value="classic">{{getText .Ctx.Language "classic"}}</option>
+					<option value="custom_checker">{{getText .Ctx.Language "checker"}}</option>
 				</select>
 			</label>
 		</div>
 		<div class="block my-2" v-if="admin">
 			<label>
 				<input class="form-checkbox" type="checkbox" v-model="problem.visible">
-				<span class="form-label ml-2">Problemă vizibilă</span>
+				<span class="form-label ml-2">{{getText .Ctx.Language "visiblePb"}}</span>
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
 				<input class="form-checkbox" type="checkbox" v-model="problem.console_input">
-				<span class="form-label ml-2">Intrare din consolă</span>
+				<span class="form-label ml-2">{{getText .Ctx.Language "consoleInput"}}</span>
 			</label>
 		</div>
 		<div class="block my-2" v-if="!problem.console_input">
 			<label>
-				<span class="mr-2 text-xl">Nume test:</span>
+				<span class="mr-2 text-xl">{{getText .Ctx.Language "testName"}}:</span>
 				<input class="form-input" type="text" v-model="problem.test_name" />
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">Limită de memorie:</span>
+				<span class="form-label">{{getText .Ctx.Language "memoryLimit"}}:</span>
 				<input type="number" class="form-input" id="memoryTotal" placeholder="Limită de memorie (total)" min="0" step="128" max="131072" v-model="problem.memory_limit">
 				<span class="ml-1 text-xl">KB</span>
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">Limită de stack:</span>
+				<span class="form-label">{{getText .Ctx.Language "stackLimit"}}:</span>
 				<input type="number" class="form-input" id="memoryStack" placeholder="Limită de memorie (stack)" min="0" step="128" max="131072" v-model="problem.stack_limit">
 				<span class="ml-1 text-xl">KB</span>
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">Limită de timp:</span>
+				<span class="form-label">{{getText .Ctx.Language "timeLimit"}}:</span>
 				<input type="number" class="form-input" id="timeLimit" placeholder="Limită de timp..." min="0" step="0.01" v-model="problem.time_limit">
-				<span class="ml-1 text-xl">secunde</span>
+				<span class="ml-1 text-xl">{{getText .Ctx.Language "seconds"}}</span>
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">Puncte din oficiu:</span>
+				<span class="form-label">{{getText .Ctx.Language "defaultPoints"}}:</span>
 				<input class="form-input" type="number" min="0" max="100" step="1" pattern="\d*" v-model="problem.default_points" />
 			</label>
 		</div>
-		<button type="submit" class="btn btn-blue">Actualizare date problemă</button>
+		<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "updateProblem"}}</button>
 	</form>
 	<div class="block my-2">
 		<form class="inline" @submit="deleteProblem">
-			<button class="btn btn-red mr-2">Șterge problema</button>
+			<button class="btn btn-red mr-2">{{getText .Ctx.Language "deleteProblem"}}</button>
 		</form>
 	</div>
 </div>
@@ -94,7 +94,7 @@ Vue.createApp({
 	data: () => {
 		return {
 			problem: problem,
-			admin: {{.User.Admin}},
+			admin: {{.Ctx.User.Admin}},
 			org_type: problem.type,
 		}
 	},
@@ -102,7 +102,7 @@ Vue.createApp({
 		updateProblem: async function(e){
 			e.preventDefault();
 			if(this.problem.name === "") {
-				bundled.createToast({status: "error", description: "Titlu gol"});
+				bundled.createToast({status: "error", description: '{{getText .Ctx.Language "emptyTitle"}}'});
 				return
 			}
 			let data = {
@@ -133,7 +133,7 @@ Vue.createApp({
 		},
 		deleteProblem: async function(e) {
 			e.preventDefault();
-			if(!confirm("Sigur vreți să ștergeți problema?")) {
+			if(!confirm('{{getText .Ctx.Language "confirmProblemDelete"}}')) {
 				return
 			}
 			let res = await bundled.postCall(`/problem/${this.problem.id}/delete`, {})

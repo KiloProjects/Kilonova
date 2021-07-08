@@ -43,17 +43,15 @@ func SolvedProblems(ctx context.Context, uid int, db DB) ([]*Problem, error) {
 	return pbs, nil
 }
 
-func VisibleProblems(ctx context.Context, user *User, db DB) (pbs []*Problem, err error) {
-	if user != nil && user.Admin {
-		pbs, err = db.Problems(ctx, ProblemFilter{})
-	} else {
-		var uid int
-		if user != nil {
-			uid = user.ID
+func VisibleProblems(ctx context.Context, user *User, db DB) ([]*Problem, error) {
+	var uid int
+	if user != nil {
+		uid = user.ID
+		if user.Admin {
+			uid = -1
 		}
-		pbs, err = db.Problems(ctx, ProblemFilter{LookingUserID: &uid})
 	}
-	return
+	return db.Problems(ctx, ProblemFilter{LookingUserID: &uid})
 }
 
 func SerializeIntList(ids []int) string {

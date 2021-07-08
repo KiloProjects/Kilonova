@@ -94,9 +94,10 @@ func (s *API) getProblems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var id int
-	if util.User(r) == nil || !util.User(r).Admin {
-		if util.User(r) != nil {
-			id = util.User(r).ID
+	if util.User(r) != nil {
+		id = util.User(r).ID
+		if util.User(r).Admin {
+			id = -1
 		}
 	}
 	args.LookingUserID = &id

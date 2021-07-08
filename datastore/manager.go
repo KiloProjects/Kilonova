@@ -30,10 +30,6 @@ func NewManager(p string) (kilonova.DataStore, error) {
 		return nil, err
 	}
 
-	if err := os.MkdirAll(path.Join(p, "cdn"), 0777); err != nil {
-		return nil, err
-	}
-
 	return &StorageManager{RootPath: p}, nil
 }
 

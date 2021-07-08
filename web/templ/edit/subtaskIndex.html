@@ -1,9 +1,10 @@
-{{ define "title" }}SubTasks{{ end }}
+{{ define "title" }}{{getText .Ctx.Language "editSubtask"}}{{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
+{{ $lang := .Ctx.Language }}
 <div class="segment-container">
-	<h2>Actualizare SubTasks</h2>
+	<h2>{{getText .Ctx.Language "editSubtask"}}</h2>
 	{{ with .ProblemSubTasks }}
 		<table class="kn-table my-2" style="table-layout: fixed">
 			<thead>
@@ -11,10 +12,10 @@
 					<input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
 				</th>
 				<th scope="col" class="w-1/4 text-center px-4 py-2">
-					ID
+					{{getText $lang "id"}}	
 				</th>
 				<th scope="col" class="w-1/2">
-					Scor
+					{{getText $lang "score"}}
 				</th>
 			</thead>
 			<tbody>
@@ -37,10 +38,10 @@
 				</tr>
 			</tbody>
 		</table>
-		<button class="btn btn-red mr-2" onclick="deleteSubTasks()">Șterge SubTaskuri selectate</button>
-		<button class="btn btn-blue" onclick="updateSubTasks()">Actualizează scorurile SubTaskurilor</button>
+		<button class="btn btn-red mr-2" onclick="deleteSubTasks()">{{getText $lang "deleteSubTasks"}}</button>
+		<button class="btn btn-blue" onclick="updateSubTasks()">{{getText $lang "updateSubTasks"}}</button>
 	{{ else }}
-		<h3> Nu există niciun subtask, se vor evalua toate testele individual </h3>
+		<h3> {{getText .Ctx.Language "noSubTasks"}} </h3>
 	{{ end }}
 	
 <script>
@@ -59,7 +60,7 @@ function updateFinalScore() {
 	}
 	let suffix = "";
 	if(defaultPoints > 0) {
-		suffix = ` (${defaultPoints} by default)`;
+		suffix = ` (${defaultPoints} {{getText .Ctx.Language "byDefault"}})`;
 	}
 	console.log(score)
 	if(score != 100) {
@@ -112,15 +113,15 @@ async function updateSubTasks() {
 {{ $root := . }}
 
 <div class="segment-container">
-	<h3> Asocieri teste </h3>
+	<h3> {{getText .Ctx.Language "testAssociations"}} </h3>
 	{{ with .ProblemTests }}
 		<table class="kn-table my-2" style="table-layout: fixed">
 			<thead>
 				<th scope="col" class="w-1/2 text-center px-4 py-2">
-					ID
+					{{getText $lang "id"}}	
 				</th>
 				<th scope="col" class="w-1/2">
-					SubTasks
+					{{getText $lang "subTasks"}}	
 				</th>
 			</thead>
 			<tbody>
@@ -137,7 +138,7 @@ async function updateSubTasks() {
 			</tbody>
 		</table>
 	{{ else }} 
-		<h3> Nu există niciun test, ar fi bine să creezi unul :) </h3>
+		<h3> {{getText .Ctx.Language "noTests"}} </h3>
 	{{ end }}
 </div>
 

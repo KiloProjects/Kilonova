@@ -1,33 +1,32 @@
-{{ define "title" }} Panou Administrare {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "adminPanel"}} {{ end }}
 {{ define "content" }}
 
 <h1>
-	Butoanele administratorilor	(TODO: Fancy stats data)
+	{{getText .Ctx.Language "adminPanel"}} (TODO: Fancy stats data)
 </h1>
-<a href="/admin/kna">Generare Kilonova Archive (.kna)</a>
-<button class="btn-blue font-bold py-2 px-4 rounded-lg mt-3 mb-5" onclick="resetSubs()">Resetare Submisii în Așteptare</button>
+<button class="btn-blue font-bold py-2 px-4 rounded-lg mt-3 mb-5" onclick="resetSubs()">{{getText .Ctx.Language "resetSubs"}}</button>
 
 <div class="segment-container">
-	<h2>Schimbă rolurile:</h2>
+	<h2>{{getText .Ctx.Language "changeRoles"}}:</h2>
 	<label class="block">
-		<span class="form-label">User:</span>
+		<span class="form-label">{{getText .Ctx.Language "username"}}:</span>
 		<input class="form-input my-1 block" type="text" id="userToChange" placeholder="AlexVasiluta">
 	</label>
 	<div class="mt-2 mb-2 inline-flex">
-		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-l" onclick="setFormAdmin(true)">Fă Administrator</button>
-		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-r" onclick="setFormProposer(true)">Fă Propunător</button>
+		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-l" onclick="setFormAdmin(true)">{{getText .Ctx.Language "makeAdmin"}}</button>
+		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-r" onclick="setFormProposer(true)">{{getText .Ctx.Language "makeProposer"}}</button>
 	</div>
 </div>
 
 <div class="segment-container">
-	<h3 class="text-2xl">Administratori:</h3>
+	<h3 class="text-2xl">{{getText .Ctx.Language "admins"}}:</h3>
 	<div id="admin-group" class="list-group list-group-rounded mb-2">
-		Loading...
+		{{getText .Ctx.Language "loading"}}	
 	</div>
 	<br/>
-	<h3 class="text-2xl">Propunători:</h3>
+	<h3 class="text-2xl">{{getText .Ctx.Language "proposers"}}:</h3>
 	<div id="proposer-group" class="list-group list-group-rounded mb-2">
-		Loading...
+		{{getText .Ctx.Language "loading"}}	
 	</div>
 </div>
 
@@ -83,7 +82,7 @@
 		let outhtml = ""
 		for(let user of res.data) {
 			outhtml += `<div class="list-group-item flex justify-between items-center"><a href="/profile/${user.name}"><img class="rounded inline-block mr-2" src="/api/user/getGravatar?name=${user.name}&s=32" width="32" height="32" alt="Avatar"/>${user.name}</a>`
-			if(user.id != 1 && {{.User.ID}} == 1) {
+			if(user.id != 1 && {{.Ctx.User.ID}} == 1) {
 				outhtml += `<span style="cursor: pointer;" onclick="${cb}(${user.id}, false)">X</span>`
 			}
 			outhtml += `</div>`
@@ -95,26 +94,26 @@
 </script>
 
 <form id="index-form" class="segment-container">
-	<h1> Administrare Pagină Principală </h1>
+	<h1> {{getText .Ctx.Language "mainPageAdmin"}} </h1>
 	<div class="block my-2">
 		<label>
-			<span class="form-label">Listă de probleme (listă de ID-urile listelor, separate prin o virgulă):</span>
+			<span class="form-label">{{getText .Ctx.Language "mainPagePbList"}}</span>
 			<input class="form-input" id="index-pblist" type="text" pattern="([0-9]+,?)+" value="{{.IndexLists}}">
 		</label>
 	</div>
 	<div class="block my-2">
 		<label>
 			<input class="form-checkbox" id="index-listall" type="checkbox" {{if .IndexListAll}} checked {{end}}>
-			<span class="form-label">Afișare toate problemele</span>
+			<span class="form-label">{{getText .Ctx.Language "mainPageAllPbs"}}</span>
 		</label>
 	</div>
 	<div class="block my-2">
 		<label>
-			<span class="form-label">Descriere:</span>
+			<span class="form-label">{{getText .Ctx.Language "description"}}:</span>
 			<input class="form-input" id="index-desc" type="text" value="{{.IndexDesc}}">
 		</label>
 	</div>
-	<button class="btn btn-blue" type="submit">Actualizare</button>
+	<button class="btn btn-blue" type="submit">{{getText .Ctx.Language "update"}}</button>
 </form>
 
 <script>
@@ -130,6 +129,93 @@ async function updateIndex(e) {
 }
 
 document.getElementById("index-form").addEventListener("submit", updateIndex);
+</script>
+
+<h1> {{getText .Ctx.Language "knaAdmin"}} </h1>
+
+<form id="archive-create" class="segment-container">
+	<h1> Creare Arhivă </h1>
+	<div class="block my-2">
+		<label>
+			<span class="form-label">{{getText .Ctx.Language "problems"}}:</span>
+			<input id="kna-problems" class="form-input" type="text" name="problems" pattern="([0-9]+,?)+" required>
+		</label>
+	</div>
+	<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "create"}}</button>
+</form>
+
+<form id="archive-load" class="segment-container">
+	<div class="block my-2">
+		<label>
+			<span class="form-label">{{getText .Ctx.Language "archive"}}:</span>
+			<input id="kna-archive" class="form-file" type="file" accept=".kna" name="archive" required>
+		</label>
+	</div>
+	<div class="block my-2">
+		<label>
+			<span class="form-label">{{getText .Ctx.Language "authorID"}}:</span>
+			<input id="kna-authorid" class="form-text" type="number" name="author_id" required value="{{.Ctx.User.ID}}">
+		</label>
+	</div>
+	<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "upload"}}</button>
+</form>
+
+<script>
+async function createArchive(e) {
+	e.preventDefault();
+	let problems = document.getElementById("kna-problems").value
+	window.location.assign("/admin/makeKNA?pbs="+problems);
+	/*
+	let res = await bundled.getCall("/kna/createArchive", {problems})
+	if(res.status === "success"){
+		let blob = base64toBlob(res.data)
+		bundled.downloadBlob(blob, "archive.kna")
+		return
+	}
+	bundled.apiToast(res)
+	*/
+}
+
+async function loadArchive(e) {
+	e.preventDefault();
+	let form = new FormData();
+	let files = document.getElementById("kna-archive").files;
+	if(files === null || files.length === 0){
+		bundled.createToast({status: "error", title: "Niciun fișier specificat"})
+		return
+	}
+	form.append("archive", files[0])
+	let author_id = document.getElementById("kna-authorid").value
+	form.append("author_id", author_id)
+
+	let res = await bundled.multipartCall("/kna/loadArchive", form)
+	bundled.apiToast(res)
+}
+
+document.getElementById("archive-create").addEventListener("submit", createArchive)
+document.getElementById("archive-load").addEventListener("submit", loadArchive)
+
+function base64toBlob(base64Data, contentType) {
+    contentType = contentType || '';
+    var sliceSize = 1024;
+    var byteCharacters = atob(base64Data);
+    var bytesLength = byteCharacters.length;
+    var slicesCount = Math.ceil(bytesLength / sliceSize);
+    var byteArrays = new Array(slicesCount);
+
+    for (var sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
+        var begin = sliceIndex * sliceSize;
+        var end = Math.min(begin + sliceSize, bytesLength);
+
+        var bytes = new Array(end - begin);
+        for (var offset = begin, i = 0; offset < end; ++i, ++offset) {
+            bytes[i] = byteCharacters[offset].charCodeAt(0);
+        }
+        byteArrays[sliceIndex] = new Uint8Array(bytes);
+    }
+    return new Blob(byteArrays, { type: contentType });
+}
+
 </script>
 
 {{ end }}

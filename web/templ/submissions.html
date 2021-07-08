@@ -1,114 +1,114 @@
-{{ define "title" }} Submisii {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "submissions"}} {{ end }}
 
 {{ define "content" }}
 
-<h1>Stare submisii</h1>
+<h1>{{getText .Ctx.Language "subStatus"}}</h1>
 
 <div id="subs" v-cloak>
 	<div class="flex flex-wrap lg:border-t lg:border-gray-200">
 		<div class="w-full lg:w-3/12 lg:pr-2 lg:border-r lg:border-gray-200" v-if="!hiddenBar">
 			<div class="mt-6"></div>
 			<label class="block mb-2">
-				<span class="form-label">Pagină:</span>
+				<span class="form-label">{{getText .Ctx.Language "page"}}:</span>
 				<input class="form-input" type="number" min="1" v-model="page">
 			</label>
 			<label class="block mb-2">
-				<span class="form-label">ID User (0 = ignore):</span>
+				<span class="form-label">{{getText .Ctx.Language "userID"}} (0 = ignore):</span>
 				<input class="form-input" type="number" min="0" v-model="filters.user_id">
 			</label>
 			<label class="block mb-2">
-				<span class="form-label">ID Problemă (0 = ignore):</span>
+				<span class="form-label">{{getText .Ctx.Language "problemID"}} (0 = ignore):</span>
 				<input class="form-input" type="number" min="0" v-model="filters.problem_id">
 			</label>
 			<label class="block mb-2">
-				<span class="form-label">Status:</span>
+				<span class="form-label">{{getText .Ctx.Language "status"}}:</span>
 				<select class="form-select" v-model="filters.status">
 					<option value="">-</option>
-					<option value="finished">Finalizat</option>
-					<option value="working">În lucru</option>
-					<option value="waiting">În așteptare</option>
+					<option value="finished">{{getText .Ctx.Language "finished"}}</option>
+					<option value="working">{{getText .Ctx.Language "working"}}</option>
+					<option value="waiting">{{getText .Ctx.Language "waiting"}}</option>
 				</select>
 			</label>
 			<label class="block mb-2">
-				<span class="form-label">Limbaj:</span>
+				<span class="form-label">{{getText .Ctx.Language "language"}}:</span>
 				<select class="form-select" v-model="filters.lang">
 					<option value="">-</option>
 					<option value="cpp">C++</option>
 				</select>
 			</label>
 			<label class="block mb-2">
-				<span class="form-label">Scor (-1 = ignore):</span>
+				<span class="form-label">{{getText .Ctx.Language "score"}} (-1 = ignore):</span>
 				<input class="form-input" type="number" min="-1" max="100" v-model="filters.score">
 			</label>
 			<label class="block mb-2">
-				<span class="form-label">Vizibilă:</span>
+				<span class="form-label">{{getText .Ctx.Language "visible"}}:</span>
 				<select class="form-select" v-model="filters.visible">
 					<option value="">-</option>
-					<option value="true">Da</option>
-					<option value="false">Nu</option>
+					<option value="true">{{getText .Ctx.Language "yes"}}</option>
+					<option value="false">{{getText .Ctx.Language "no"}}</option>
 				</select>
 			</label>
 			<label class="block mb-2">
-				<span class="form-label">Evidențiată:</span>
+				<span class="form-label">{{getText .Ctx.Language "special"}}:</span>
 				<select class="form-select" v-model="filters.quality">
 					<option value="">-</option>
-					<option value="true">Da</option>
-					<option value="false">Nu</option>
+					<option value="true">{{getText .Ctx.Language "yes"}}</option>
+					<option value="false">{{getText .Ctx.Language "no"}}</option>
 				</select>
 			</label>
 			<label class="block mb-2">
-				<span class="form-label">Eroare de Compilare:</span>
+				<span class="form-label">{{getText .Ctx.Language "compileErr"}}:</span>
 				<select class="form-select" v-model="filters.compile_error">
 					<option value="">-</option>
-					<option value="true">Da</option>
-					<option value="false">Nu</option>
+					<option value="true">{{getText .Ctx.Language "yes"}}</option>
+					<option value="false">{{getText .Ctx.Language "no"}}</option>
 				</select>
 			</label>
 			<label class="block mb-2">
-				<span class="form-label">Criteriu de ordonare:</span>
+				<span class="form-label">{{getText .Ctx.Language "sorting"}}:</span>
 				<select class="form-select" v-model="filters.ordering">
-					<option value="id" default>ID</option>
-					<option value="score">Scor</option>
-					<option value="max_time">Timp Maxim</option>
-					<option value="max_mem">Memorie Maximă</option>
+					<option value="id" default>{{getText .Ctx.Language "id"}}</option>
+					<option value="score">{{getText .Ctx.Language "scor"}}</option>
+					<option value="max_time">{{getText .Ctx.Language "maxTime"}}</option>
+					<option value="max_mem">{{getText .Ctx.Language "maxMem"}}</option>
 				</select>
 			</label>
 			<label class="block mb-2">
 				<input type="checkbox" class="form-checkbox mr-2" v-model="filters.ascending">
-				<span class="form-label">Criteriu crescător</span>
+				<span class="form-label">{{getText .Ctx.Language "ascending"}}</span>
 			</label>
-			<button class="btn btn-blue mb-4 mr-2" @click="poll()">Încărcare</button>
+			<button class="btn btn-blue mb-4 mr-2" @click="poll()">{{getText .Ctx.Language "fetch"}}</button>
 		</div>
 		<div class="mw-full mt-2 lg:flex-1 lg:px-2 lg:py-2">
 			<div class="text-4xl mx-auto my-auto w-full my-10 text-center" v-if="loading">
-				<div><i class="fas fa-spinner animate-spin"></i> Se încarcă...</div>
+				<div><i class="fas fa-spinner animate-spin"></i> {{getText .Ctx.Language "loading"}}</div>
 			</div>
 			<div v-else-if="submissions.length > 0">
 				<h1>${getRezStr()}</h1>
-				<p v-if="Number(filters.problem_id) > 0">Problema <a :href="'/problems/'+submissions[0].problem.id">${submissions[0].problem.name}</a></p>
+				<p v-if="Number(filters.problem_id) > 0">{{getText .Ctx.Language "problemSingle"}} <a :href="'/problems/'+submissions[0].problem.id">${submissions[0].problem.name}</a></p>
 				<table class="kn-table">
 					<thead>
 						<tr>
 							<th scope="col" class="w-12 text-center px-4 py-2">
-								ID
+								{{getText .Ctx.Language "id"}}	
 							</th>
 							<th scope="col">
-								Autor
+								{{getText .Ctx.Language "author"}}	
 							</th>
 							<th scope="col">
-								Dată încărcare
+								{{getText .Ctx.Language "uploadDate"}}	
 							</th>
 							<th scope="col" v-if="Number(filters.problem_id) == 0">
-								Problemă
+								{{getText .Ctx.Language "problemSingle"}}	
 							</th>
 							<th scope="col">
-								Timp	
+								{{getText .Ctx.Language "time"}}	
 							</th>
 							<th scope="col">
-								Memorie
+								{{getText .Ctx.Language "memory"}}	
 							</th>
 							<th scope="col" class="w-1/6">
-								Status	
+								{{getText .Ctx.Language "status"}}	
 							</th>
 						</tr>
 					</thead>
@@ -142,10 +142,10 @@
 			</div>
 
 			<div class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center" v-else>
-				Nicio submisie găsită.
+				{{getText .Ctx.Language "noSubFound"}}	
 			</div>
-			<button class="btn btn-left mr-2" @click="hiddenBar = !hiddenBar">${hiddenBar ? "Afișare" : "Ascunde"} bara de filtrare</button>
-			<button class="btn mb-4" @click="getQuery()">Copiere link filtre</button>
+			<button class="btn btn-left mr-2" @click="hiddenBar = !hiddenBar">${hiddenBar ? '{{getText .Ctx.Language "show"}}' : '{{getText .Ctx.Language "hide"}}'} {{getText .Ctx.Language "filterBar"}}</button>
+			<button class="btn mb-4" @click="getQuery()">{{getText .Ctx.Language "filterLink"}}</button>
 		</div>
 	</div>
 </div>

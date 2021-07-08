@@ -9,37 +9,37 @@
 		</div>
 	</div>
 	<nav id="nav-dropdown" class="px-2 pt-1 pb-3 md:flex md:p-0">
-		<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/submissions">Listă submisii</a>
-		{{if not .User }}
-			<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/signup">Sign up</a>
-			<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/login">Log in</a>
+		<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/submissions">{{getText .Ctx.Language "subList"}}</a>
+		{{if not .Ctx.User }}
+			<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/signup">{{getText .Ctx.Language "signUp"}}</a>
+			<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/login">{{getText .Ctx.Language "logIn"}}</a>
 		{{else}}
 			<div id="pr-dropdown" class="relative">
-				<button onclick="navbar_mgr.toggleDropdown()" id="profile-dropdown-button" class="relative z-10 block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable">{{.User.Name}}<i id="dropdown-caret" class="ml-1 fas fa-caret-down"></i></button>
+				<button onclick="navbar_mgr.toggleDropdown()" id="profile-dropdown-button" class="relative z-10 block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable">{{.Ctx.User.Name}}<i id="dropdown-caret" class="ml-1 fas fa-caret-down"></i></button>
 				<div id="profile-dropdown" class="dropdown-list hidden">
 					<a class="dropdown-list-item" href="/profile">
-						<i class="ml-n2 fas fa-user fa-fw"></i> Profil
+						<i class="ml-n2 fas fa-user fa-fw"></i> {{getText .Ctx.Language "profileLink"}} 
 					</a>	
 					<a class="dropdown-list-item" href="/settings">
-						<i class="ml-n2 fas fa-user-cog fa-fw"></i> Setări
+						<i class="ml-n2 fas fa-user-cog fa-fw"></i> {{getText .Ctx.Language "settings"}}
 					</a>
-					{{if (or .User.Proposer .User.Admin)}}
+					{{if (or .Ctx.User.Proposer .Ctx.User.Admin)}}
 						<div class="dropdown-divider"></div>
 						<a class="dropdown-list-item" href="/proposer">
-							<i class="ml-n2 fas fa-chalkboard-teacher fa-fw"></i> Panou Propunător
+							<i class="ml-n2 fas fa-chalkboard-teacher fa-fw"></i> {{getText .Ctx.Language "proposerPanel"}}
 						</a>
 						<a class="dropdown-list-item" href="/problem_lists">
-							<i class="ml-n2 fas fa-list-ul fa-fw"></i> Liste de Probleme
+							<i class="ml-n2 fas fa-list-ul fa-fw"></i> {{getText .Ctx.Language "problemLists"}}
 						</a>
 					{{end}}
-					{{if .User.Admin}}
+					{{if .Ctx.User.Admin}}
 						<a class="dropdown-list-item" href="/admin">
-							<i class="ml-n2 fas fa-sliders-h fa-fw"></i> Panou Admin
+							<i class="ml-n2 fas fa-sliders-h fa-fw"></i> {{getText .Ctx.Language "adminPanel"}}
 						</a>
 					{{end}}
 					<div class="dropdown-divider"></div>
 					<a class="dropdown-list-item" href="/logout">
-						<i class="ml-n2 fas fa-sign-out-alt fa-fw"></i> Log Out
+						<i class="ml-n2 fas fa-sign-out-alt fa-fw"></i> {{getText .Ctx.Language "logOut"}}
 					</a>
 				</div>
 			</div>

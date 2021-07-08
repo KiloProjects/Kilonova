@@ -1,18 +1,18 @@
-{{ define "title" }}Creare SubTask{{ end }}
+{{ define "title" }}{{getText .Ctx.Language "editSubtaskAdd"}}{{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
-
+{{ $lang := .Ctx.Language }}
 <form class="segment-container" id="subtask-create">
 	{{ with .ProblemTests }}
 		<div class="block my-2">
 			<label>
-				<span class="form-label">ID: </span>
+				<span class="form-label">{{getText $lang "id"}}: </span>
 				<input class="form-input" id="subtask-id" type="number" min="0">
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">Scor: </span>
+				<span class="form-label">{{getText $lang "score"}}: </span>
 				<input class="form-input" id="subtask-score" type="number" min="0" max="100">
 			</label>
 		</div>
@@ -21,9 +21,9 @@
 				<th scope="col" class="w-1/2">
 					<input class="form-checkbox" type="checkbox" id="selectAllBox" />
 				</th>
-				<td scope="col" class="w-1/2 text-center px-4 py-2">
-					ID Test
-				</td>
+				<th scope="col" class="w-1/2 text-center px-4 py-2">
+					{{getText $lang "testID"}}	
+				</th>
 			</thead>
 			<tbody>
 			{{ range . }}
@@ -38,9 +38,9 @@
 			{{ end }}
 			</tbody>
 		</table>
-		<button class="btn btn-blue block my-2" class="submit">Creare</button>
+		<button class="btn btn-blue block my-2" class="submit">{{getText $lang "create"}}</button>
 	{{ else }}
-		<h3> Nu există niciun test, adaugă unul întâi!</h3>
+		<h3> {{getText .Ctx.Language "noTests"}}</h3>
 	{{ end }}
 </form>
 

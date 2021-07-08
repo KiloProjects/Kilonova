@@ -80,6 +80,9 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserUpdate) er
 	if v := upd.EmailVerifSentAt; v != nil {
 		toUpd, args = append(toUpd, "email_verif_sent_at = ?"), append(args, v)
 	}
+	if v := upd.PreferredLanguage; v != "" {
+		toUpd, args = append(toUpd, "preferred_language = ?"), append(args, v)
+	}
 	if v := upd.Banned; v != nil {
 		toUpd, args = append(toUpd, "banned = ?"), append(args, v)
 	}

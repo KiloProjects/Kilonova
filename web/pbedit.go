@@ -12,60 +12,55 @@ import (
 )
 
 type ProblemEditParams struct {
-	User    *kilonova.User
+	Ctx     *ReqContext
 	Problem *kilonova.Problem
 	Topbar  *EditTopbar
 
 	Attachments []*kilonova.Attachment
 }
 
-type ProblemEditPart struct {
-	db kilonova.DB
-	dm kilonova.DataStore
-}
-
-func (p *ProblemEditPart) EditIndex() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := parse(nil, "edit/index.html", "edit/topbar.html")
+func (rt *Web) editIndex() func(w http.ResponseWriter, r *http.Request) {
+	tmpl := rt.parse(nil, "edit/index.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		tmpl.Execute(w, &ProblemEditParams{
-			User:    util.User(r),
+		runTempl(w, r, tmpl, &ProblemEditParams{
+			Ctx:     GenContext(r),
 			Problem: util.Problem(r),
 			Topbar:  &EditTopbar{"general", -1},
 		})
 	}
 }
 
-func (p *ProblemEditPart) EditDesc() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := parse(nil, "edit/desc.html", "edit/topbar.html")
+func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
+	tmpl := rt.parse(nil, "edit/desc.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		tmpl.Execute(w, &ProblemEditParams{
-			User:    util.User(r),
+		runTempl(w, r, tmpl, &ProblemEditParams{
+			Ctx:     GenContext(r),
 			Problem: util.Problem(r),
 			Topbar:  &EditTopbar{"desc", -1},
 		})
 	}
 }
 
-func (p *ProblemEditPart) EditChecker() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := parse(nil, "edit/checker.html", "edit/topbar.html")
+func (rt *Web) editChecker() func(w http.ResponseWriter, r *http.Request) {
+	tmpl := rt.parse(nil, "edit/checker.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		tmpl.Execute(w, &ProblemEditParams{
-			User:    util.User(r),
+		runTempl(w, r, tmpl, &ProblemEditParams{
+			Ctx:     GenContext(r),
 			Problem: util.Problem(r),
 			Topbar:  &EditTopbar{"checker", -1},
 		})
 	}
 }
 
-func (p *ProblemEditPart) EditAttachments() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := parse(nil, "edit/attachments.html", "edit/topbar.html")
+func (rt *Web) editAttachments() func(w http.ResponseWriter, r *http.Request) {
+	tmpl := rt.parse(nil, "edit/attachments.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		atts, err := p.db.Attachments(r.Context(), false, kilonova.AttachmentFilter{ProblemID: &util.Problem(r).ID})
+		atts, err := rt.db.Attachments(r.Context(), false, kilonova.AttachmentFilter{ProblemID: &util.Problem(r).ID})
 		if err != nil || len(atts) == 0 {
 			atts = nil
 		}
-		tmpl.Execute(w, &ProblemEditParams{
-			User:    util.User(r),
+		runTempl(w, r, tmpl, &ProblemEditParams{
+			Ctx:     GenContext(r),
 			Problem: util.Problem(r),
 			Topbar:  &EditTopbar{"attachments", -1},
 
@@ -74,65 +69,63 @@ func (p *ProblemEditPart) EditAttachments() func(w http.ResponseWriter, r *http.
 	}
 }
 
-func (p *ProblemEditPart) TestIndex() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := parse(nil, "edit/testScores.html", "edit/topbar.html")
+func (rt *Web) testIndex() func(w http.ResponseWriter, r *http.Request) {
+	tmpl := rt.parse(nil, "edit/testScores.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		tmpl.Execute(w, &TestEditParams{util.User(r), util.Problem(r), nil, &EditTopbar{"tests", -2}, p.db, p.dm})
+		runTempl(w, r, tmpl, &TestEditParams{GenContext(r), util.Problem(r), nil, &EditTopbar{"tests", -2}, rt.db, rt.dm})
 	}
 }
 
-func (p *ProblemEditPart) TestAdd() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := parse(nil, "edit/testAdd.html", "edit/topbar.html")
+func (rt *Web) testAdd() func(w http.ResponseWriter, r *http.Request) {
+	tmpl := rt.parse(nil, "edit/testAdd.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		tmpl.Execute(w, &TestEditParams{util.User(r), util.Problem(r), nil, &EditTopbar{"tests", -1}, p.db, p.dm})
+		runTempl(w, r, tmpl, &TestEditParams{GenContext(r), util.Problem(r), nil, &EditTopbar{"tests", -1}, rt.db, rt.dm})
 	}
 }
 
-func (p *ProblemEditPart) TestEdit() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := parse(nil, "edit/testEdit.html", "edit/topbar.html")
+func (rt *Web) testEdit() func(w http.ResponseWriter, r *http.Request) {
+	tmpl := rt.parse(nil, "edit/testEdit.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		tmpl.Execute(w, &TestEditParams{util.User(r), util.Problem(r), util.Test(r), &EditTopbar{"tests", util.Test(r).VisibleID}, p.db, p.dm})
+		runTempl(w, r, tmpl, &TestEditParams{GenContext(r), util.Problem(r), util.Test(r), &EditTopbar{"tests", util.Test(r).VisibleID}, rt.db, rt.dm})
 	}
 }
 
-func (p *ProblemEditPart) SubtaskIndex() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := parse(nil, "edit/subtaskIndex.html", "edit/topbar.html")
+func (rt *Web) subtaskIndex() func(w http.ResponseWriter, r *http.Request) {
+	tmpl := rt.parse(nil, "edit/subtaskIndex.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		tmpl.Execute(w, &SubTaskEditParams{util.User(r), util.Problem(r), nil, &EditTopbar{"subtasks", -2}, r.Context(), p.db})
+		runTempl(w, r, tmpl, &SubTaskEditParams{GenContext(r), util.Problem(r), nil, &EditTopbar{"subtasks", -2}, r.Context(), rt.db})
 	}
 }
 
-func (p *ProblemEditPart) SubtaskAdd() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := parse(nil, "edit/subtaskAdd.html", "edit/topbar.html")
+func (rt *Web) subtaskAdd() func(w http.ResponseWriter, r *http.Request) {
+	tmpl := rt.parse(nil, "edit/subtaskAdd.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		tmpl.Execute(w, &SubTaskEditParams{util.User(r), util.Problem(r), nil, &EditTopbar{"subtasks", -1}, r.Context(), p.db})
+		runTempl(w, r, tmpl, &SubTaskEditParams{GenContext(r), util.Problem(r), nil, &EditTopbar{"subtasks", -1}, r.Context(), rt.db})
 	}
 }
 
-func (p *ProblemEditPart) SubtaskEdit() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := parse(nil, "edit/subtaskEdit.html", "edit/topbar.html")
+func (rt *Web) subtaskEdit() func(w http.ResponseWriter, r *http.Request) {
+	tmpl := rt.parse(nil, "edit/subtaskEdit.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		tmpl.Execute(w, &SubTaskEditParams{util.User(r), util.Problem(r), util.SubTask(r), &EditTopbar{"subtasks", util.SubTask(r).VisibleID}, r.Context(), p.db})
+		tmpl.Execute(w, &SubTaskEditParams{GenContext(r), util.Problem(r), util.SubTask(r), &EditTopbar{"subtasks", util.SubTask(r).VisibleID}, r.Context(), rt.db})
 	}
 }
 
 // Handler is the http handler to be attached
 // The caller should ensure a User and a Problem are attached to the context
-func (p *ProblemEditPart) Handler() http.Handler {
-	r := chi.NewRouter()
-	r.Get("/", p.EditIndex())
-	r.Get("/desc", p.EditDesc())
-	r.Get("/checker", p.EditChecker())
-	r.Get("/attachments", p.EditAttachments())
+func (rt *Web) ProblemEditRouter(r chi.Router) {
+	r.Get("/", rt.editIndex())
+	r.Get("/desc", rt.editDesc())
+	r.Get("/checker", rt.editChecker())
+	r.Get("/attachments", rt.editAttachments())
 
-	r.Get("/test", p.TestIndex())
-	r.Get("/test/add", p.TestAdd())
-	r.With(TestIDValidator(p.db)).Get("/test/{tid}", p.TestEdit())
+	r.Get("/test", rt.testIndex())
+	r.Get("/test/add", rt.testAdd())
+	r.With(TestIDValidator(rt.db)).Get("/test/{tid}", rt.testEdit())
 
-	r.Get("/subtasks", p.SubtaskIndex())
-	r.Get("/subtasks/add", p.SubtaskAdd())
-	r.With(SubTaskValidator(p.db)).Get("/subtasks/{stid}", p.SubtaskEdit())
-	return r
+	r.Get("/subtasks", rt.subtaskIndex())
+	r.Get("/subtasks/add", rt.subtaskAdd())
+	r.With(SubTaskValidator(rt.db)).Get("/subtasks/{stid}", rt.subtaskEdit())
 }
 
 func TestIDValidator(db kilonova.DB) func(next http.Handler) http.Handler {

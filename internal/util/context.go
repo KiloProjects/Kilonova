@@ -24,6 +24,8 @@ const (
 	ProblemListKey = KNContextType("problemList")
 	// AttachmentKey is the key to be used for adding attachments to context
 	AttachmentKey = KNContextType("attachment")
+	// LangKey is the key to be used for adding the user language to context
+	LangKey = KNContextType("language")
 )
 
 // User returns the user from request context
@@ -94,7 +96,17 @@ func Submission(r *http.Request) *kilonova.Submission {
 	}
 }
 
-// Test returns the test from request context
+func Language(r *http.Request) string {
+	switch v := r.Context().Value(LangKey).(type) {
+	case string:
+		return v
+	case *string:
+		return *v
+	default:
+		return "en"
+	}
+}
+
 func Test(r *http.Request) *kilonova.Test {
 	switch v := r.Context().Value(TestKey).(type) {
 	case kilonova.Test:

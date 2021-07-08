@@ -96,7 +96,6 @@ window.addEventListener('load', () => {
 	title: the toast title
 	description: the toast description
 	status: the toast status (default "info", can be ["success", "error", "info"])
-	onclick: onClick handler
 */
 let createToast = options => {
 	if(notyf === undefined) {
@@ -120,10 +119,6 @@ let createToast = options => {
 		type: options.status,
 		message: msg
 	})
-
-	if(options.onclick !== null) {
-		notification.on('click', options.onclick)
-	}
 }
 
 let apiToast = (res, overwrite) => {
@@ -236,4 +231,4 @@ export { SubmissionsApp } from './subs_view.js';
 export { NavBarManager } from './navbar.js';
 export { SubmissionManager } from './sub_mgr.js';
 export { CheckboxManager } from './checkbox_mgr.js';
-export { getFileIcon, extensionIcons, CDNManager } from './cdn_mgr.js';
+export { getFileIcon, extensionIcons } from './cdn_mgr.js';

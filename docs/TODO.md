@@ -60,11 +60,8 @@ Additional reading I should do for a better platform:
 			- [x] Sortare dupa timp/memorie
 			- [x] Liste de probleme
 		- [ ] Improve shoddy implementation of problem lists
-	- [~] CDN
-		- [x] Backbone
 	- [ ] Late edition maintenance:
 		- [ ] Reduce nr de TODOs din nou
-		- [ ] Check that all CDN stuff is safe, I might have missed something and I don't want it to backfire and get bad actors to do nasty stuff
 		- [ ] Termeni și Condiții
 			- Nu au voie să facă site-uri (sau rubrici ale unor site-uri) cu scopul de a publica surse pentru probleme
 			- Comportament civilizat pe platformă etc etc
@@ -73,9 +70,8 @@ Additional reading I should do for a better platform:
 			- Reclama este acceptată numai la discreția administratorilor
 			- ???
 	- [~] Atașamente
+		- [ ] https://discord.com/channels/@me/775486536358559764/843416789047443506
 - [ ] pre-late beta:
-	- [ ] Improvements la CDN, e cam basic și nu are multe uses, ar fi înlocuit de atașamente
-		- [ ] ? Ștergere
 	- [ ] ? "Custom input" ca pe hackerrank/leetcode
 	- [ ] Mai multe tipuri de probleme:
 		- [ ] interactive

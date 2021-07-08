@@ -1,9 +1,9 @@
-{{ define "title" }} Logare {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "logIn"}} {{ end }}
 {{ define "content" }}
 
-<h1 class="mb-2">Autentificare</h1>
+<h1 class="mb-2">{{getText .Ctx.Language "authenticate"}}</h1>
 {{ block "login_modal" . }}
-	Uhhh... nu știu cum să te loghez
+	Uhhh... I don't know how to log you in. Report to an admin
 {{ end }}
 
 {{ end }}

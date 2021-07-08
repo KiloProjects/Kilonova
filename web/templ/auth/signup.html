@@ -1,25 +1,25 @@
-{{ define "title" }} Înregistrare {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "signUp"}} {{ end }}
 {{ define "content" }}
-<h1 class="mb-2">Înregistrare</h1>
+<h1 class="mb-2">{{getText .Ctx.Language "signUp"}}</h1>
 <form class="segment-container" id="signup_form">
 	<label class="block mb-2">
-		<span>E-mail</span>
+		<span>{{getText .Ctx.Language "email"}}</span>
 		<input class="form-input w-full" type="email" id="email" name="email" autocomplete="email" required />
 	</label>
 	<label class="block mb-2">
-		<span>Username</span>
+		<span>{{getText .Ctx.Language "username"}}</span>
 		<input class="form-input w-full" type="text" id="name" name="username" autocomplete="username" required />
 	</label>
 	<label class="block mb-2">
-		<span>Parolă</span>
+		<span>{{getText .Ctx.Language "password"}}</span>
 		<input class="form-input w-full" type="password" id="pwd" name="password" autocomplete="new-password" required />
 	</label>
 	<label class="block mb-2">
-		<span>Verificare Parolă</span>
+		<span>{{getText .Ctx.Language "passwordCheck"}}</span>
 		<input class="form-input w-full" type="password" id="pwd_check" name="pwd_check" autocomplete="new-password" required />
 	</label>
-	<button type="submit" class="block btn btn-blue">Înregistrare</button>
-	<p class="text-gray-500 dark:text-gray-300"> Ai deja cont? <a href="/login">Loghează-te</a></p>
+	<button type="submit" class="block btn btn-blue">{{getText .Ctx.Language "signUp"}}</button>
+	<p class="text-gray-500 dark:text-gray-300"> {{getText .Ctx.Language "loginReminder"}}</p>
 </form>
 
 <script>
@@ -42,7 +42,8 @@ function updateCheck() {
 pwd.addEventListener("focusout", updateCheck)
 pwd_check.addEventListener("keyup", updateCheck)
 
-async function signup() {
+async function signup(e) {
+	e.preventDefault()
 	let em = email.value;
 	let name = username.value;
 	let password = pwd.value;
@@ -51,26 +52,19 @@ async function signup() {
 	if(password !== pwdVerify) {
 		bundled.createToast({
 			status: "error",
-			title: "Cele două câmpuri pentru parolă nu sunt identice"
+			title: `{{getText .Ctx.Language "differentPwds"}}`
 		})
 		return
 	}
 
 	let res = await bundled.postCall("/auth/signup", {email: em, username: name, password})
 	if(res.status == "error") {
-		bundled.createToast({
-			status: "error",
-			title: "Could not sign up",
-			description: res.data
-		})
+		bundled.apiToast(res)
 		return
 	}
 	bundled.cookie.set("kn-sessionid", res.data, {expires: 29, sameSite: 'strict'})
 	window.location.assign("/");
 }
-document.getElementById("signup_form").addEventListener("submit", e => {
-	e.preventDefault()
-	signup()
-})
+document.getElementById("signup_form").addEventListener("submit", signup)
 </script>
 {{ end }}

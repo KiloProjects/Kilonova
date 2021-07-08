@@ -20,8 +20,9 @@ type User struct {
 	Bio            string    `json:"bio"`
 	DefaultVisible bool      `json:"default_visible" db:"default_visible"`
 
-	VerifiedEmail    bool         `json:"verified_email" db:"verified_email"`
-	EmailVerifSentAt sql.NullTime `json:"-" db:"email_verif_sent_at"`
+	VerifiedEmail     bool         `json:"verified_email" db:"verified_email"`
+	EmailVerifSentAt  sql.NullTime `json:"-" db:"email_verif_sent_at"`
+	PreferredLanguage string       `json:"-" db:"preferred_language"`
 
 	Banned   bool `json:"banned,omitempty"`
 	Disabled bool `json:"disabled,omitempty"`
@@ -59,8 +60,9 @@ type UserUpdate struct {
 	Bio            *string `json:"bio"`
 	DefaultVisible *bool   `json:"default_visible"`
 
-	VerifiedEmail    *bool      `json:"verified_email"`
-	EmailVerifSentAt *time.Time `json:"-"`
+	VerifiedEmail     *bool      `json:"verified_email"`
+	EmailVerifSentAt  *time.Time `json:"-"`
+	PreferredLanguage string     `json:"-"`
 
 	Banned   *bool `json:"banned"`
 	Disabled *bool `json:"disabled"`

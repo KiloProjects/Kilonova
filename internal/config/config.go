@@ -56,6 +56,9 @@ type CommonConf struct {
 	DataDir    string `toml:"data_dir"`
 	Debug      bool   `toml:"debug"`
 	HostPrefix string `toml:"host_prefix"`
+
+	// NewWeb is a temporary switch while working on the new website architecture
+	NewWeb bool `toml:"new_web"`
 }
 
 // DBConf is the data required to establish a PostgreSQL connection

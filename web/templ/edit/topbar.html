@@ -1,40 +1,41 @@
 {{ $id := .Problem.ID }}
 {{ $topbar := .Topbar }}
 {{ $checker := (eq .Problem.Type "custom_checker") }}
+{{ $lang := .Ctx.Language }}
 <div class="segment-container">
-	<h1>Editare Problema <a href="/problems/{{$id}}">{{.Problem.Name}}</a></h1>
+	<h1>{{getText .Ctx.Language "problemEdit"}} <a href="/problems/{{$id}}">{{.Problem.Name}}</a></h1>
 	<div class="mb-2">
-		<a class="p-1 {{if (eq $topbar.Page "general")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit">General</a>
+		<a class="p-1 {{if (eq $topbar.Page "general")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit">{{getText .Ctx.Language "general"}}</a>
 		|
-		<a class="p-1 {{if (eq $topbar.Page "desc")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/desc">Descriere</a>
+		<a class="p-1 {{if (eq $topbar.Page "desc")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/desc">{{getText .Ctx.Language "desc"}}</a>
 		|
 		{{ if $checker }}
-		<a class="p-1 {{if (eq $topbar.Page "checker")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/checker">Checker</a>
+		<a class="p-1 {{if (eq $topbar.Page "checker")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/checker">{{getText .Ctx.Language "checker"}}</a>
 		|
 		{{ end }}
-		<a class="p-1 {{if (eq $topbar.Page "attachments")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/attachments">Atașamente</a>
+		<a class="p-1 {{if (eq $topbar.Page "attachments")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/attachments">{{getText .Ctx.Language "attachments"}}</a>
 		|
-		<a class="p-1 {{if and (eq $topbar.Page "tests") (eq $topbar.PageID -2)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test">Teste</a>
+		<a class="p-1 {{if and (eq $topbar.Page "tests") (eq $topbar.PageID -2)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test">{{getText .Ctx.Language "tests"}}</a>
 		|
-		<a class="p-1 {{if and (eq $topbar.Page "subtasks") (eq $topbar.PageID -2)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks">SubTasks</a>
+		<a class="p-1 {{if and (eq $topbar.Page "subtasks") (eq $topbar.PageID -2)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks">{{getText .Ctx.Language "subTasks"}}</a>
 	</div>
 
 	{{ if (eq $topbar.Page "tests") }}
 		<div class="mb-2">
-			<a class="p-1 {{if (eq $topbar.PageID -1)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test/add">Creare Test</a>
+			<a class="p-1 {{if (eq $topbar.PageID -1)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test/add">{{getText $lang "createTest"}}</a>
 			{{ range .ProblemTests }}
 				|
-				<a class="p-1 {{if (eq $topbar.PageID .VisibleID)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test/{{.VisibleID}}">Testul #{{.VisibleID}}</a>
+				<a class="p-1 {{if (eq $topbar.PageID .VisibleID)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test/{{.VisibleID}}">{{getText $lang "nthTest" .VisibleID}}</a>
 			{{ end }}
 		</div>
 	{{ end }}
 
 	{{ if (eq $topbar.Page "subtasks") }}
 		<div class="mb-2">
-			<a class="p-1 {{if (eq $topbar.PageID -1)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks/add">Creare SubTask</a>
+			<a class="p-1 {{if (eq $topbar.PageID -1)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks/add">{{getText $lang "createSubTask"}}</a>
 			{{ range .ProblemSubTasks }}
 				|
-				<a class="p-1 {{if (eq $topbar.PageID .VisibleID)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks/{{.VisibleID}}">SubTaskul #{{.VisibleID}}</a>
+				<a class="p-1 {{if (eq $topbar.PageID .VisibleID)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks/{{.VisibleID}}">{{getText $lang "nthSubTask" .VisibleID}}</a>
 			{{ end }}
 		</div>
 	{{ end }}

@@ -1,4 +1,4 @@
-import slugify from 'slugify';
+const slugify = str => str.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
 
 export class SubmissionManager {
 	constructor(id, replace_id) {

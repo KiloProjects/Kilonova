@@ -6,7 +6,8 @@ module.exports = {
   purge: [
 	'../templ/**/*.html',
 	'../templ/*.html',
-	'./*.js'
+	'./*.js',
+	'../*.go',
   ],
   theme: {
     extend: {},
