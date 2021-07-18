@@ -1,4 +1,5 @@
 import _ from 'underscore';
+import {getText} from './translation.js';
 
 var SubmissionsApp = {
 	data: () => {
@@ -8,6 +9,7 @@ var SubmissionsApp = {
 			page: 1,
 			loading: true,
 			hiddenBar: false,
+			lang: window.platform_info.language,
 		}
 	},
 	methods: {
@@ -29,21 +31,14 @@ var SubmissionsApp = {
 		},
 		formatStatus: function(sub) {
 			if(sub.status === "finished") {
-				return "Evaluat: " + sub.score + " puncte"
+				return `${this.getText("evaluated")}: ${sub.score} ${this.getText("points")}`
 			} else if(sub.status === "working") {
-				return "În evaluare..."
+				return this.getText("evaluating")
 			}
-			return "În așteptare..."
+			return this.getText("waiting")
 		},
 		getRezStr: function() {
-			let l = this.subCount;
-			if(l == 1) {
-				return "Un rezultat."
-			}
-			if(l < 20) {
-				return l + " rezultate."
-			}
-			return l + " de rezultate."
+			return this.getText("nResults")(this.subCount)
 		},
 		getFilters: function(old) {
 			var res = {};
@@ -121,13 +116,16 @@ var SubmissionsApp = {
 			let url = window.location.origin + window.location.pathname + "?" + p.toString();
 			try {
 				await navigator.clipboard.writeText(url)
-				bundled.createToast({status: "success", title: "Copied URL to clipboard"});
+				bundled.createToast({status: "success", title: this.getText("copied")});
 			} catch(e) {
 				console.error(e);
-				bundled.createToast({status: "error", title: "Couldn't copy to clipboard"})
+				bundled.createToast({status: "error", title: this.getText("copyErr")})
 			}
 		},
 		sizeFormatter: (sz) => bundled.sizeFormatter(sz),
+		getText: function(key) {
+			return getText(this.lang, key)
+		},
 	},
 	watch: {
 		filters: {

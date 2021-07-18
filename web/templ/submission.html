@@ -33,7 +33,7 @@ async function reevaluateSubmission() {
 	{{end}}
 </div>
 <script>
-var mgr = new bundled.SubmissionManager({{.Submission.ID}}, 'sub_placeholder');
+var mgr = new bundled.SubmissionManager({{.Submission.ID}}, 'sub_placeholder', platform_info.language);
 mgr.startPoller()
 
 </script>

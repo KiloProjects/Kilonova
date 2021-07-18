@@ -239,7 +239,11 @@ func (s *API) setSubmissionQuality(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	returnData(w, "Updated quality status")
+	if args.Quality {
+		returnData(w, "Submission is now quality")
+	} else {
+		returnData(w, "Submission is no longer quality")
+	}
 }
 
 func (s *API) setSubmissionVisible(w http.ResponseWriter, r *http.Request) {
@@ -274,7 +278,11 @@ func (s *API) setSubmissionVisible(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	returnData(w, "Updated visibility status")
+	if args.Visible {
+		returnData(w, "Made visible")
+	} else {
+		returnData(w, "Made invisible")
+	}
 }
 
 // submissionSend registers a submission to be sent to the Eval handler

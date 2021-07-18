@@ -6,7 +6,7 @@ type Translations map[string]Translation
 var defaultLang = "en"
 
 var translations = Translations{
-	"announcement": genTranslation("Pssst! If you want something more from this website, send me a message on %s.", "Pssst! Anunță-mă ce mai vrei de la site, trimite-mi mesaj pe %s."),
+	"announcement": genTranslation("Pssst! If you have any suggestions for the website, send me a message on %s.", "Pssst! Dacă ai vreo sugestie pentru site, trimite-mi mesaj pe %s."),
 	"num_solved":   genTranslation("(%d / %d solved)", "(%d / %d rezolvate)"),
 
 	"problems":        genTranslation("Problems", "Probleme"),

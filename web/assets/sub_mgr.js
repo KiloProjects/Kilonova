@@ -1,9 +1,13 @@
+import {getText} from './translation.js';
 const slugify = str => str.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
 
+// TODO: Show max time and memory too in summary
+
 export class SubmissionManager {
-	constructor(id, replace_id) {
+	constructor(id, replace_id, lang) {
 		this.id = id
 		this.replace_id = replace_id
+		this.lang = lang || "en"
 		this.poll_mu = false
 		this.subAuthor = {}
 		this.subProblem = {}
@@ -42,7 +46,7 @@ export class SubmissionManager {
 
 	async copyCode() {
 		await navigator.clipboard.writeText(this.sub.code)
-		bundled.createToast({status: "success", description: "Cod copiat"})
+		bundled.createToast({status: "success", description: this.getText("copied")})
 	}
 
 	async poll() {
@@ -88,11 +92,7 @@ export class SubmissionManager {
 
 	async toggleVisible() {
 		let res = await bundled.postCall("/submissions/setVisible", {visible: !this.sub.visible, id: this.id});
-		bundled.createToast({
-			status: res.status,
-			title: (res.status == "success" ? (this.sub.visible ? "Made visible" : "Made invisible") : "Error changing visibility"),
-			description: res.data
-		});
+		bundled.apiToast(res)
 		this.sub.visible = !this.sub.visible
 		this.render();
 	}
@@ -100,37 +100,33 @@ export class SubmissionManager {
 	async toggleQuality() {
 		let res = await bundled.postCall("/submissions/setQuality", {quality: !this.sub.quality, id: this.id});
 		this.sub.quality = !this.sub.quality
-		bundled.createToast({
-			status: res.status,
-			title: (res.status == "success" ? (this.sub.quality ? "Made quality" : "Stopped being quality") : "Error changing visibility"),
-			description: res.data
-		});
+		bundled.apiToast(res)
 		this.render();
 	}
 
 	summaryNode() {
 		let rez = document.createElement('div')
 		let html = ""
-		html += `<h2>Submission ${this.sub.id}</h2>` +
-			`<p>Autor: <a href="/profile/${this.subAuthor.name}">${this.subAuthor.name}</a></p>` +
-			`<p>Problemă: <a href="/problems/${this.subProblem.id}">${this.subProblem.name}</a></p>` +
-			`<p>Data încărcării: ${bundled.parseTime(this.sub.created_at)}</p>` +
-			`<p>Status: ${this.sub.status}</p>` +
-			`<p>Limbaj: ${this.sub.language}</p>` 
+		html += `<h2>${this.getText("sub")} ${this.sub.id}</h2>` +
+			`<p>${this.getText("author")}: <a href="/profile/${this.subAuthor.name}">${this.subAuthor.name}</a></p>` +
+			`<p>${this.getText("problem")}: <a href="/problems/${this.subProblem.id}">${this.subProblem.name}</a></p>` +
+			`<p>${this.getText("uploadDate")}: ${bundled.parseTime(this.sub.created_at)}</p>` +
+			`<p>${this.getText("status")}: ${this.sub.status}</p>` +
+			`<p>${this.getText("lang")}: ${this.sub.language}</p>` 
 		if(this.sub.quality) {
-			html += `<p><i class="fas fa-star text-yellow-300"></i> Submisie evidențiată</p>`
+			html += `<p><i class="fas fa-star text-yellow-300"></i> ${this.getText("qualitySub")}</p>`
 		}
 		if(this.sub.code) {
-			html += `<p>Dimensiune: ${bundled.sizeFormatter(this.sub.code.length)}</p>`
+			html += `<p>${this.getText("size")}: ${bundled.sizeFormatter(this.sub.code.length)}</p>`
 		}
 		if(this.subProblem.default_points > 0) {
-			html += `<p>Puncte din oficiu: ${this.subProblem.default_points}</p>`
+			html += `<p>${this.getText("defaultPoints")}: ${this.subProblem.default_points}</p>`
 		}
 		if(this.sub.status === 'finished') {
-			html += `<p>Scor: ${this.sub.score}</p>`
+			html += `<p>${this.getText("score")}: ${this.sub.score}</p>`
 		}
 		if(this.sub.compile_error.Bool) {
-			html += `<h4>Eroare de compilare</h4><h5>Mesaj Evaluare:</h5><pre>${this.sub.compile_message.String}</pre>`
+			html += `<h4>${this.getText("compileErr")}</h4><h5>${this.getText("compileMsg")}:</h5><pre>${this.sub.compile_message.String}</pre>`
 		}
 		rez.innerHTML = html
 		return rez;
@@ -165,12 +161,12 @@ export class SubmissionManager {
 				if(actualTest.subtest.score < stk_score) {
 					stk_score = actualTest.subtest.score;
 				}
-				roww.innerHTML = `<span>Testul #${actualTest.pb_test.visible_id}</span><span class="rounded-full py-1 px-2 text-base text-white font-semibold" style="background-color: ${bundled.getGradient(actualTest.subtest.score, 100)}">${Math.round(subtask.score * actualTest.subtest.score / 100.0)} / ${subtask.score}</span>`
+				roww.innerHTML = `<span>${this.getText("test")} #${actualTest.pb_test.visible_id}</span><span class="rounded-full py-1 px-2 text-base text-white font-semibold" style="background-color: ${bundled.getGradient(actualTest.subtest.score, 100)}">${Math.round(subtask.score * actualTest.subtest.score / 100.0)} / ${subtask.score}</span>`
 				
 				subtests.appendChild(roww)
 			}
 
-			sum.innerHTML = `<span>SubTask-ul #${subtask.visible_id}</span><span class="rounded-full py-1 px-2 text-base text-white font-semibold" style="background-color: ${bundled.getGradient(stk_score, 100)}">${Math.round(subtask.score * stk_score / 100.0)} / ${subtask.score}</span>`
+			sum.innerHTML = `<span>${this.getText("subTask")} #${subtask.visible_id}</span><span class="rounded-full py-1 px-2 text-base text-white font-semibold" style="background-color: ${bundled.getGradient(stk_score, 100)}">${Math.round(subtask.score * stk_score / 100.0)} / ${subtask.score}</span>`
 			
 			row.appendChild(sum)
 			row.appendChild(subtests)
@@ -180,7 +176,7 @@ export class SubmissionManager {
 
 		let tmp = document.createElement('details');
 		let tmp1 = document.createElement('summary');
-		tmp1.innerText = "Vizualizare teste individuale";
+		tmp1.innerText = this.getText("seeTests");
 		tmp.appendChild(tmp1);
 		tmp.appendChild(this.tableNode());
 		rezz.appendChild(tmp);
@@ -192,7 +188,7 @@ export class SubmissionManager {
 		let rez = document.createElement('table')
 		rez.classList.add('kn-table')
 		let head = document.createElement('thead')
-		head.innerHTML = `<tr><th class="py-1" scope="col">ID</th><th scope="col">Timp</th><th scope="col">Memorie</th><th scope="col">Verdict</th><th scope="col">Scor</th>${this.problemEditor ? "<th scope='col'>Output</th>" : ""}${this.subTasks.length > 0 ? "<th scope='col'>SubTasks</th>" : ""}</tr>`
+		head.innerHTML = `<tr><th class="py-1" scope="col">${this.getText("id")}</th><th scope="col">${this.getText("time")}</th><th scope="col">${this.getText("memory")}</th><th scope="col">${this.getText("verdict")}</th><th scope="col">${this.getText("score")}</th>${this.problemEditor ? `<th scope='col'>${this.getText("output")}</th>` : ""}${this.subTasks.length > 0 ? `<th scope='col'>${this.getText("subTasks")}</th>` : ""}</tr>`
 		let body = document.createElement('tbody')
 		for(let test of this.subTests) {
 			let row = document.createElement('tr')
@@ -206,10 +202,10 @@ export class SubmissionManager {
 			
 			let time = this.tableColGen("")
 			let mem = this.tableColGen("")
-			let verdict = this.tableColGen("<div class='fas fa-spinner animate-spin' role='status'></div> În așteptare...")
+			let verdict = this.tableColGen(`<div class='fas fa-spinner animate-spin' role='status'></div> ${this.getText("waiting")}`)
 			let score = this.tableColGen(`${Math.round(test.pb_test.score * test.subtest.score / 100.0)} / ${test.pb_test.score}`)
 			if(this.subTasks.length > 0) {
-				score.innerHTML = `${test.subtest.score}% corect`
+				score.innerHTML = `${test.subtest.score}% ${this.getText("correct")}`
 			}
 			if(test.subtest.done) {
 				verdict.innerHTML = test.subtest.verdict
@@ -230,7 +226,7 @@ export class SubmissionManager {
 			if(this.problemEditor) {
 				let out = this.tableColGen("")
 				if(test.subtest.done) {
-					out.innerHTML = `<a href="/proposer/get/subtest_output/${test.subtest.id}">Output</a>`
+					out.innerHTML = `<a href="/proposer/get/subtest_output/${test.subtest.id}">${this.getText("output")}</a>`
 				}
 				row.appendChild(out)
 			}
@@ -261,7 +257,7 @@ export class SubmissionManager {
 		
 		// header
 		let header = document.createElement('h3')
-		header.innerText = "Codul Sursă:"
+		header.innerText = this.getText("source")
 		rez.appendChild(header)
 
 		// code
@@ -277,13 +273,13 @@ export class SubmissionManager {
 
 		let btn = document.createElement('button')
 		btn.classList.add('btn', 'btn-blue', 'mr-2', 'text-semibold', 'text-lg')
-		btn.innerText = "Copiere"
+		btn.innerText = this.getText("copy")
 		btn.onclick = async () => await this.copyCode()
 		dv.appendChild(btn)
 
 		let btn1 = document.createElement('button')
 		btn1.classList.add('btn', 'btn-blue', 'text-semibold', 'text-lg')
-		btn1.innerText = "Descărcare"
+		btn1.innerText = this.getText("download")
 		btn1.onclick = () => this.downloadCode()
 		dv.appendChild(btn1)
 		rez.appendChild(dv)
@@ -291,14 +287,14 @@ export class SubmissionManager {
 		if(this.subEditor) {
 			let btn = document.createElement('button');
 			btn.classList.add('btn', 'btn-blue', 'block', 'my-2', 'text-semibold', 'text-lg');
-			btn.innerHTML = `<i class="fas fa-share-square mr-2"></i>Fă codul ${this.sub.visible ? "invizibil" : "vizibil"}</button>`;
+			btn.innerHTML = `<i class="fas fa-share-square mr-2"></i>${this.getText("makeCode")} ${this.sub.visible ? this.getText("invisible") : this.getText("visible")}</button>`;
 			btn.onclick = () => this.toggleVisible();
 			rez.appendChild(btn);
 		}
 		if(this.problemEditor) {
 			let btn = document.createElement('button');
 			btn.classList.add('btn', 'btn-blue', 'block', 'my-2', 'text-semibold', 'text-lg');
-			btn.innerHTML = `<i class="fas fa-star mr-2"></i>${this.sub.quality ? "nu e evidențiată" : "trebuie evidențiată"}</button>`;
+			btn.innerHTML = `<i class="fas fa-star mr-2"></i>${this.sub.quality ? this.getText("makeQuality") : this.getText("dropQuality")}</button>`;
 			btn.onclick = () => this.toggleQuality();
 			rez.appendChild(btn);
 		}
@@ -328,5 +324,9 @@ export class SubmissionManager {
 
 		let target = document.getElementById(this.replace_id);
 		target.parentNode.replaceChild(node, target);
+	}
+
+	getText(key) {
+		return getText(this.lang, key)
 	}
 }

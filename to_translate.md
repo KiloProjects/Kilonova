@@ -1,2 +1,0 @@
-- settings.html (and also finish email/password change)
-- everything else

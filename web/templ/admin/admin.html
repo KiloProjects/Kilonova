@@ -134,7 +134,7 @@ document.getElementById("index-form").addEventListener("submit", updateIndex);
 <h1> {{getText .Ctx.Language "knaAdmin"}} </h1>
 
 <form id="archive-create" class="segment-container">
-	<h1> Creare Arhivă </h1>
+	<h1> {{getText .Ctx.Language "createArchve"}} </h1>
 	<div class="block my-2">
 		<label>
 			<span class="form-label">{{getText .Ctx.Language "problems"}}:</span>
@@ -181,7 +181,7 @@ async function loadArchive(e) {
 	let form = new FormData();
 	let files = document.getElementById("kna-archive").files;
 	if(files === null || files.length === 0){
-		bundled.createToast({status: "error", title: "Niciun fișier specificat"})
+		bundled.createToast({status: "error", title: `{{getText .Ctx.Language "noFiles"}}`})
 		return
 	}
 	form.append("archive", files[0])

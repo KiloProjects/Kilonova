@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"os/signal"
 	"path"
+	"strconv"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -107,19 +109,7 @@ func Kilonova() error {
 
 	r.Mount("/api", api.New(db, manager, mailer).Handler())
 
-	/*
-		if config.Common.NewWeb {
-			rev, err := url.Parse("http://localhost:3000/")
-			if err != nil {
-				panic(err)
-			}
-			r.Mount("/", httputil.NewSingleHostReverseProxy(rev))
-			//r.Mount("/old", web.NewWeb(config.Common.Debug, db, manager, mailer).Handler())
-			//r.Mount("/", liteweb.NewWeb(config.Common.Debug, db, manager, mailer).Handler())
-		} else {
-	*/
 	r.Mount("/", web.NewWeb(config.Common.Debug, db, manager, mailer).Handler())
-	//}
 
 	go func() {
 		err := grader.Start()
@@ -130,7 +120,7 @@ func Kilonova() error {
 
 	// for graceful setup and shutdown
 	server := &http.Server{
-		Addr:    "localhost:8070",
+		Addr:    net.JoinHostPort("localhost", strconv.Itoa(config.Common.Port)),
 		Handler: r,
 	}
 
