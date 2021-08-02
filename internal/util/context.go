@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/config"
 )
 
 // KNContextType is the string type for all context values
@@ -103,7 +104,7 @@ func Language(r *http.Request) string {
 	case *string:
 		return *v
 	default:
-		return "en"
+		return config.Common.DefaultLang
 	}
 }
 

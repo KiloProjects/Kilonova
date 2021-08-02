@@ -16,5 +16,5 @@ CREATE TABLE IF NOT EXISTS users (
 	banned 		INTEGER 	NOT NULL DEFAULT FALSE,
 	disabled 	INTEGER 	NOT NULL DEFAULT FALSE,
 
-	preferred_language TEXT NOT NULL DEFAULT 'en'
+	preferred_language TEXT NOT NULL DEFAULT 'ro'
 );

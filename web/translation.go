@@ -3,8 +3,6 @@ package web
 type Translation map[string]string
 type Translations map[string]Translation
 
-var defaultLang = "en"
-
 var translations = Translations{
 	"announcement": genTranslation("Pssst! If you have any suggestions for the website, send me a message on %s.", "Pssst! Dacă ai vreo sugestie pentru site, trimite-mi mesaj pe %s."),
 	"num_solved":   genTranslation("(%d / %d solved)", "(%d / %d rezolvate)"),
@@ -227,6 +225,7 @@ var translations = Translations{
 	// settings
 	"settingsHeader": genTranslation("Profile settings", "Setările profilului"),
 	"updateBio":      genTranslation("Update Bio", "Actualizare Bio"),
+	"updateLang":     genTranslation("Update Display Language", "Actualizare Limbă Afișaj"),
 	"makeSubs":       genTranslation("Make submissions implicitly", "Fă submisiile implicit"),
 
 	"password":      genTranslation("Password", "Parolă"),

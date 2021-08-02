@@ -259,7 +259,7 @@ func (rt *Web) genKNA(w http.ResponseWriter, r *http.Request) {
 	pbs := make([]*kilonova.Problem, 0, len(pbIDs))
 	for _, id := range pbIDs {
 		pb, err := rt.db.Problem(r.Context(), id)
-		if err != nil {
+		if err != nil || pb == nil {
 			log.Println(err)
 			http.Error(w, "One of the problem IDs is invalid", 400)
 			return

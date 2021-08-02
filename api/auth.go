@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/config"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"golang.org/x/crypto/bcrypt"
@@ -15,11 +16,13 @@ import (
 
 var unameValidation = []validation.Rule{validation.Required, validation.Length(3, 32), is.PrintableASCII}
 var pwdValidation = []validation.Rule{validation.Required, validation.Length(6, 64)}
+var langValidation = []validation.Rule{validation.In("", "en", "ro")}
 
 type signupForm struct {
 	Username string
 	Email    string
 	Password string
+	Language string
 }
 
 func (s signupForm) Validate() error {
@@ -27,6 +30,7 @@ func (s signupForm) Validate() error {
 		validation.Field(&s.Username, unameValidation...),
 		validation.Field(&s.Email, validation.Required, is.Email),
 		validation.Field(&s.Password, pwdValidation...),
+		validation.Field(&s.Language, validation.In("", "en", "ro")),
 	)
 }
 
@@ -58,7 +62,12 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.addUser(r.Context(), auth.Username, auth.Email, auth.Password)
+	lang := auth.Language
+	if lang == "" {
+		lang = config.Common.DefaultLang
+	}
+
+	user, err := s.addUser(r.Context(), auth.Username, auth.Email, auth.Password, lang)
 	if err != nil {
 		fmt.Println(err)
 		errorData(w, "Couldn't create user", 500)
@@ -153,7 +162,7 @@ func (s *API) logout(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Logged out")
 }
 
-func (s *API) addUser(ctx context.Context, username, email, password string) (*kilonova.User, error) {
+func (s *API) addUser(ctx context.Context, username, email, password, lang string) (*kilonova.User, error) {
 	hash, err := kilonova.HashPassword(password)
 	if err != nil {
 		return nil, err
@@ -163,6 +172,7 @@ func (s *API) addUser(ctx context.Context, username, email, password string) (*k
 	user.Name = username
 	user.Email = email
 	user.Password = hash
+	user.PreferredLanguage = lang
 
 	err = s.db.CreateUser(ctx, &user)
 	if err != nil {

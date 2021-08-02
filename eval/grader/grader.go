@@ -15,6 +15,7 @@ import (
 	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/davecgh/go-spew/spew"
+	"go.uber.org/zap"
 )
 
 var (
@@ -336,11 +337,11 @@ func (h *Handler) Start() error {
 	eCh := make(chan error, 1)
 	go func() {
 		defer runner.Close(h.ctx)
-		log.Println("Connected to eval")
+		zap.S().Info("Connected to eval")
 
 		err := h.handle(h.ctx, runner)
 		if err != nil {
-			log.Println("Handling error:", err)
+			zap.S().Error("Handling error:", zap.Error(err))
 		}
 		eCh <- err
 	}()
@@ -349,12 +350,12 @@ func (h *Handler) Start() error {
 }
 
 func (h *Handler) getLocalRunner() (eval.Runner, error) {
-	log.Println("Trying to spin up local grader")
+	zap.S().Info("Trying to spin up local grader")
 	bm, err := boxmanager.New(config.Eval.NumConcurrent, h.dm)
 	if err != nil {
 		return nil, err
 	}
-	log.Println("Running local grader")
+	zap.S().Info("Running local grader")
 	return bm, nil
 }
 
@@ -365,7 +366,7 @@ func (h *Handler) getAppropriateRunner() (eval.Runner, error) {
 			return runner, nil
 		}
 	}
-	log.Fatalln("Remote grader has been disabled because it can't run problems with custom checker")
+	zap.S().Fatal("Remote grader has been disabled because it can't run problems with custom checker")
 	return nil, nil
 	/*
 		Disabled until it fully works
@@ -382,7 +383,7 @@ func getAppropriateChecker(runner eval.Runner, sub *kilonova.Submission, pb *kil
 	case kilonova.ProblemTypeCustomChecker:
 		return checkers.NewCustomChecker(runner, pb, sub)
 	default:
-		log.Println("Unknown problem type", pb.Type)
+		zap.S().Warn("Unknown problem type", pb.Type)
 		return nil, &kilonova.Error{Code: kilonova.EINTERNAL, Message: "Unknown problem type"}
 	}
 }

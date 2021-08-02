@@ -13,6 +13,17 @@
 </div>
 
 <div class="segment-container">
+	<h2> {{getText .Ctx.Language "updateLang"}} </h2>
+	<form id="lang_form">
+		<select id="langSelect" class="form-select block my-2">
+			<option value="ro" {{if eq $user.PreferredLanguage "ro"}}selected{{end}}>🇷🇴 Română</option>
+			<option value="en" {{if eq $user.PreferredLanguage "en"}}selected{{end}}>🇬🇧 English</option>
+		</select>
+		<button class="btn btn-blue" type="submit">{{getText .Ctx.Language "update"}}</textarea>
+	</form>
+</div>
+
+<div class="segment-container">
 	<h2> {{getText .Ctx.Language "visibility"}} </h2>
 	<button id="vButton" class="btn btn-blue mb-2 text-semibold text-lg" onclick="toggleVisibility()"><i class="fas fa-share-square mr-2"></i> {{getText .Ctx.Language "makeSubs"}} {{if $user.DefaultVisible}}{{getText .Ctx.Language "invisible"}}{{else}}{{getText .Ctx.Language "visible"}}{{end}}</button>
 </div>
@@ -51,6 +62,17 @@ async function updateBio(e) {
 	let res = await bundled.postCall("/user/setBio", {bio})
 	bundled.apiToast(res) 
 }
+async function updateLanguage(e) {
+	e.preventDefault()
+	var language = document.getElementById("langSelect").value;
+
+	let res = await bundled.postCall("/user/setPreferredLanguage", {language})
+	if(res.status === "success") {
+		window.location.reload();
+		return
+	}
+	bundled.apiToast(res)
+}
 async function toggleVisibility() {
 	visible = !visible;
 	let res = await bundled.postCall("/user/setSubVisibility", {visibility: visible});
@@ -82,6 +104,7 @@ async function updateEmail(e) {
 	window.location.reload();
 }
 document.getElementById("bio_form").addEventListener("submit", updateBio)
+document.getElementById("lang_form").addEventListener("submit", updateLanguage)
 document.getElementById("pwd_change_form").addEventListener("submit", updatePassword)
 document.getElementById("email_change_form").addEventListener("submit", updateEmail)
 </script>

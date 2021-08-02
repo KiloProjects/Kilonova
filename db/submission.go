@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"go.uber.org/zap"
 )
 
 func (s *DB) Submission(ctx context.Context, id int) (*kilonova.Submission, error) {
@@ -97,7 +97,7 @@ ORDER BY score DESC
 LIMIT 1;`), userid, problemid)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
-			log.Println(userid, problemid, err)
+			zap.S().Errorw("Couldn't get max score for ", zap.Int("userid", userid), zap.Int("problemid", problemid), zap.Error(err))
 		}
 		return -1
 	}
@@ -129,7 +129,7 @@ func (s *DB) MaxScores(ctx context.Context, userid int, pbids []int) map[int]int
 	rez := make(map[int]int)
 	err := s.conn.SelectContext(ctx, &cols, s.conn.Rebind("SELECT problem_id, MAX(score) AS score FROM submissions WHERE problem_id IN "+inClause+" AND user_id = ? GROUP BY problem_id"), args...)
 	if err != nil {
-		log.Println("MaxScores:", err)
+		zap.S().Error(zap.Error(err))
 		return nil
 	}
 

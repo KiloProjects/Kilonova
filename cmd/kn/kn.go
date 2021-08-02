@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -25,30 +24,28 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func Kilonova() error {
+
 	// Print welcome message
-	fmt.Printf("Starting Kilonova %s\n", kilonova.Version)
+	zap.S().Infof("Starting Kilonova %s", kilonova.Version)
 
 	dataDir := config.Common.DataDir
-	logDir := config.Common.LogDir
 	debug := config.Common.Debug
 
 	if debug {
-		log.Println("WARNING: debug mode activated, expect worse performance")
+		zap.S().Warn("Debug mode activated, expect worse performance")
 	}
 
 	// Data directory setup
 	if !path.IsAbs(dataDir) {
-		return &kilonova.Error{Code: kilonova.EINVALID, Message: "logDir not absolute"}
+		return &kilonova.Error{Code: kilonova.EINVALID, Message: "dataDir not absolute"}
 	}
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
-		return fmt.Errorf("Could not create log dir: %w", err)
-	}
-
-	if err := os.MkdirAll(logDir, 0755); err != nil {
-		return err
+		return fmt.Errorf("Could not create data dir: %w", err)
 	}
 
 	// DB Setup
@@ -57,7 +54,7 @@ func Kilonova() error {
 		return err
 	}
 	defer db.Close()
-	log.Println("Connected to DB")
+	zap.S().Info("Connected to DB")
 
 	// Data Store setup
 	manager, err := datastore.NewManager(dataDir)
@@ -91,14 +88,6 @@ func Kilonova() error {
 	/*
 		r.Use(middleware.Compress(flate.DefaultCompression))
 		r.Use(middleware.RequestID)
-		logg := log.New(&lumberjack.Logger{
-			Filename: path.Join(logDir, "access.log"),
-		}, "", 0)
-
-		r.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{
-			Logger:  logg,
-			NoColor: true,
-		}))
 	*/
 
 	// Setup context
@@ -114,7 +103,7 @@ func Kilonova() error {
 	go func() {
 		err := grader.Start()
 		if err != nil {
-			log.Println(err)
+			zap.S().Error(err)
 		}
 	}()
 
@@ -132,19 +121,48 @@ func Kilonova() error {
 		}
 	}()
 
-	log.Println("Successfully started")
+	zap.S().Info("Successfully started")
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, os.Kill)
 
 	defer func() {
-		fmt.Println("Shutting Down")
+		zap.S().Info("Shutting Down")
 		if err := server.Shutdown(ctx); err != nil && !errors.Is(err, context.Canceled) {
-			fmt.Println(err)
+			zap.S().Error(err)
 		}
 	}()
 
 	select {
 	case <-ctx.Done():
 	}
+
+	return nil
+}
+
+func initLogger(logDir string, debug bool) error {
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		return err
+	}
+
+	var encConf zapcore.EncoderConfig
+	if debug {
+		encConf = zap.NewDevelopmentEncoderConfig()
+	} else {
+		encConf = zap.NewProductionEncoderConfig()
+	}
+	encConf.EncodeTime = zapcore.TimeEncoder(func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+		enc.AppendString(t.UTC().Format(time.RFC3339))
+	})
+	encConf.EncodeLevel = zapcore.CapitalColorLevelEncoder
+
+	level := zapcore.InfoLevel
+	if debug {
+		level = zapcore.DebugLevel
+	}
+
+	core := zapcore.NewCore(zapcore.NewConsoleEncoder(encConf), zapcore.AddSync(os.Stdout), level)
+	logg := zap.New(core, zap.AddCaller())
+
+	zap.ReplaceGlobals(logg)
 
 	return nil
 }

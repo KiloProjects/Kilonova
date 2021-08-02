@@ -1,12 +1,14 @@
 package kna
 
 import (
+	"database/sql"
+	"errors"
 	"io"
-	"log"
 	"os"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
 )
 
 func Parse(data io.Reader) ([]*FullProblem, error) {
@@ -39,7 +41,7 @@ func Parse(data io.Reader) ([]*FullProblem, error) {
 	for pbrows.Next() {
 		var problem FullProblem
 		if err := pbrows.StructScan(&problem.Problem); err != nil {
-			log.Println(err)
+			zap.S().Warn("Couldn't StructScan problem", err)
 			continue
 		}
 
@@ -52,7 +54,7 @@ func Parse(data io.Reader) ([]*FullProblem, error) {
 		for testrows.Next() {
 			var test FullTest
 			if err := testrows.StructScan(&test.Test); err != nil {
-				log.Println(err)
+				zap.S().Warn("Couldn't StructScan test", err)
 				continue
 			}
 
@@ -74,8 +76,8 @@ func Parse(data io.Reader) ([]*FullProblem, error) {
 		}
 
 		stks := []*knasubtask{}
-		if err := db.Select(&stks, "SELECT * FROM subtasks WHERE problem_id = ?", problem.ID); err != nil {
-			log.Println(err)
+		if err := db.Select(&stks, "SELECT * FROM subtasks WHERE problem_id = ?", problem.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
+			zap.S().Warn("Couldn't get subtasks", err)
 			continue
 		}
 		actualStks := []*kilonova.SubTask{}

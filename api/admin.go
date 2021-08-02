@@ -1,12 +1,12 @@
 package api
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"go.uber.org/zap"
 )
 
 func (s *API) resetWaitingSubs(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +55,7 @@ func (s *API) getUsers(w http.ResponseWriter, r *http.Request) {
 
 	users, err := s.db.Users(r.Context(), args)
 	if err != nil {
-		log.Println(err)
+		zap.S().Warn("Couldn't get users", err)
 		errorData(w, "Could not read from DB", 500)
 		return
 	}

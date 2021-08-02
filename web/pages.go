@@ -263,7 +263,7 @@ var funcs = template.FuncMap{
 			return "ERR"
 		}
 		if _, ok := translations[line][lang]; !ok {
-			return template.HTML(translations[line][defaultLang])
+			return template.HTML(translations[line][config.Common.DefaultLang])
 		}
 		return template.HTML(fmt.Sprintf(translations[line][lang], args...))
 	},

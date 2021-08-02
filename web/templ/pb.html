@@ -71,12 +71,13 @@
 				</div>
 			{{ end }}
 			{{ $pbid := .Problem.ID }}
+			{{ $ctx := .Ctx }}
 			{{ with .Attachments }}
 				<div class="h-0 w-full border-t border-gray-200"></div>
 				<div class="mt lg:pl-2 lg:pb-2"> <!-- Attachments -->
 					<div class="px-2">
-						<p class="text-lg">{{getText .Ctx.Language "attachments"}}</p>
-						<p>{{getText .Ctx.Language "attachmentPretty"}}</p>
+						<p class="text-lg">{{getText $ctx.Language "attachments"}}</p>
+						<p>{{getText $ctx.Language "attachmentPretty"}}</p>
 						{{ range . }}
 							<p class="segment-container"><a style="word-wrap: break-word;" href="/problems/{{$pbid}}/attachments/{{.Name}}">{{.Name}}</a></p>
 						{{ end }}

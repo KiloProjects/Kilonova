@@ -166,6 +166,7 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 
 	params := append(b.buildRunFlags(conf), command...)
 	cmd := exec.CommandContext(ctx, config.Eval.IsolatePath, params...)
+	log.Println(params)
 
 	b.metaFile = ""
 

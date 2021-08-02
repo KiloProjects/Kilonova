@@ -108,12 +108,12 @@ func (s *DB) DeleteUser(ctx context.Context, id int) error {
 // CreateUser creates a new user with the info specified in the object.
 // On success, user.ID is set to the new user ID.
 func (s *DB) CreateUser(ctx context.Context, user *kilonova.User) error {
-	if user.Name == "" || user.Password == "" || user.Email == "" {
+	if user.Name == "" || user.Password == "" || user.Email == "" || user.PreferredLanguage == "" {
 		return kilonova.ErrMissingRequired
 	}
 
 	var id int
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind("INSERT INTO users (name, email, password, bio, default_visible, verified_email, admin, proposer) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id"), user.Name, user.Email, user.Password, user.Bio, user.DefaultVisible, user.VerifiedEmail, user.Admin, user.Proposer)
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind("INSERT INTO users (name, email, password, bio, default_visible, verified_email, admin, proposer, preferred_language) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id"), user.Name, user.Email, user.Password, user.Bio, user.DefaultVisible, user.VerifiedEmail, user.Admin, user.Proposer, user.PreferredLanguage)
 	if err == nil {
 		user.ID = id
 	}

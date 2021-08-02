@@ -21,6 +21,8 @@ type GraderStore interface {
 
 	SubtestWriter(subtest int) (io.WriteCloser, error)
 	SubtestReader(subtest int) (io.ReadCloser, error)
+
+	//GetDB(name string) (*sqlx.DB, error)
 }
 
 // DataStore represents an interface for the Data Storage Manager

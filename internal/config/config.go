@@ -52,11 +52,12 @@ type EvalConf struct {
 
 // CommonConf is the data required for all services
 type CommonConf struct {
-	LogDir     string `toml:"log_dir"`
-	DataDir    string `toml:"data_dir"`
-	Debug      bool   `toml:"debug"`
-	HostPrefix string `toml:"host_prefix"`
-	Port       int    `toml:"port"`
+	LogDir      string `toml:"log_dir"`
+	DataDir     string `toml:"data_dir"`
+	Debug       bool   `toml:"debug"`
+	HostPrefix  string `toml:"host_prefix"`
+	Port        int    `toml:"port"`
+	DefaultLang string `toml:"default_language"`
 }
 
 // DBConf is the data required to establish a PostgreSQL connection
@@ -124,6 +125,13 @@ func Load() error {
 		spew.Dump(md.Undecoded())
 	}
 	if err == nil {
+		if c.Common.DefaultLang == "" {
+			log.Println("No default language set, defaulting to English")
+			c.Common.DefaultLang = "en"
+		}
+		if !(c.Common.DefaultLang == "en" || c.Common.DefaultLang == "ro") {
+			log.Fatalf("Invalid language %q\n", c.Common.DefaultLang)
+		}
 		spread()
 	}
 	return err

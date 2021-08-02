@@ -30,8 +30,18 @@ func NewManager(p string) (kilonova.DataStore, error) {
 		return nil, err
 	}
 
+	if err := os.MkdirAll(path.Join(p, "dbs"), 0777); err != nil {
+		return nil, err
+	}
+
 	return &StorageManager{RootPath: p}, nil
 }
+
+/*
+func (m *StorageManager) GetDB(name string) (*sqlx.DB, error) {
+	return sqlx.Connect("sqlite3", "file:"+path.Join(m.RootPath, "dbs", name+".db")+"?_fk=on&cache=shared")
+}
+*/
 
 func writeFile(path string, r io.Reader, perms fs.FileMode) error {
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perms)

@@ -4,6 +4,7 @@
  debug = false 
  host_prefix = "https://kilonova.ro/"
  port = 8070
+ default_language = "en"
 
 [database]
  dbtype = "sqlite"
@@ -23,4 +24,4 @@
 [index]
  lists_to_show = []
  show_problems = true
- description = "I haven't yet configured KiloNova, the next-gen programming platform that I am using behind this website"
+ description = "I haven't yet configured Kilonova, the next-gen programming platform that I am using right now."

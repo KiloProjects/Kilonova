@@ -25,12 +25,13 @@ Additional reading I should do for a better platform:
 			- [x] auth/*
 			- [ ] restul
 		- [x] Permite toate limbajele în UI
-		- [ ] Paignă de login când nu ai voie fiindcă ești unauthed
+		- [x] Paignă de login când nu ai voie fiindcă ești unauthed
 	- [ ] Restructurare backend:
 		- [x] Multi-eval support
 		- [x] Phase out sqlc în favoarea sqlx (să nu mai depindem așa mult de code generation)
 		- [ ] Better telemetry
-			- [ ] Prometheus integration
+			- [ ] Zap
+			- [ ] ? Prometheus integration
 			- [ ] ? Sentry
 	- [ ] New features:
 		- [x] ".kna"
@@ -48,8 +49,8 @@ Additional reading I should do for a better platform:
 		- [x] Submisii de calitate
 		- [x] Dark theme
 		- [ ] ? Etichete probleme
-		- [ ] Versiune engleză
-			- [ ] Cumva facem asta
+		- [x] Versiune engleză
+			- [x] Cumva facem asta
 			- [ ] Instrumente de translation:
 				- [ ] Propunători traducători
 				- [ ] Enunțuri multi-language
@@ -80,7 +81,7 @@ Additional reading I should do for a better platform:
 	- [ ] Sistem de contests
 		- [ ] Stil Codeforces
 		- [ ] Stil CMS
-	- [ ] "Kilonova PRO"
+	- [ ] ? "Kilonova PRO"
 		- [ ] Sistem de plată/donații
 		- [ ] ? cosmetice
 		- [ ] Sistem de priority queue 
