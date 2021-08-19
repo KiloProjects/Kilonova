@@ -88,7 +88,7 @@ func (job *customCheckerTask) Execute(ctx context.Context, box eval.Sandbox) err
 	}
 	// TODO: Make sure all supported languages can have this
 	// Add the program output, correct output and max score parameters
-	goodCmd = append(goodCmd, "/box/program.out", "/box/correct.out", "/box/program.in")
+	goodCmd = append(goodCmd, "/box/program.out", "/box/correct.out", "/box/correct.in")
 
 	var out bytes.Buffer
 
