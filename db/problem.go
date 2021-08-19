@@ -59,6 +59,9 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem) error {
 	if p.Type == kilonova.ProblemTypeNone {
 		p.Type = kilonova.ProblemTypeClassic
 	}
+	if p.HelperCodeLang == "" {
+		p.HelperCodeLang = "cpp"
+	}
 	var id int
 	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(problemCreateQuery), p.Name, p.Description, p.AuthorID, p.ConsoleInput, p.TestName, p.MemoryLimit, p.StackLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.AuthorCredits, p.ShortDesc, p.DefaultPoints, p.Type, p.HelperCode, p.HelperCodeLang)
 	if err == nil {

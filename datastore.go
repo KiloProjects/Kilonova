@@ -2,6 +2,7 @@ package kilonova
 
 import (
 	"io"
+	"io/fs"
 )
 
 var (
@@ -21,6 +22,7 @@ type GraderStore interface {
 
 	SubtestWriter(subtest int) (io.WriteCloser, error)
 	SubtestReader(subtest int) (io.ReadCloser, error)
+	CDNfs() fs.FS
 
 	//GetDB(name string) (*sqlx.DB, error)
 }

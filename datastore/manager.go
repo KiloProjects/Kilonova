@@ -37,6 +37,10 @@ func NewManager(p string) (kilonova.DataStore, error) {
 	return &StorageManager{RootPath: p}, nil
 }
 
+func (m *StorageManager) CDNfs() fs.FS {
+	return os.DirFS(path.Join(m.RootPath, "cdn"))
+}
+
 /*
 func (m *StorageManager) GetDB(name string) (*sqlx.DB, error) {
 	return sqlx.Connect("sqlite3", "file:"+path.Join(m.RootPath, "dbs", name+".db")+"?_fk=on&cache=shared")
