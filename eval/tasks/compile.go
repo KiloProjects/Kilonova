@@ -27,7 +27,7 @@ func (job *CompileTask) Execute(ctx context.Context, box eval.Sandbox) error {
 
 	lang, ok := eval.Langs[job.Req.Lang]
 	if !ok {
-		log.Printf("Language for submission %d could not be found\n", job.Req.ID)
+		log.Printf("Language for submission %d could not be found: %q\n", job.Req.ID, job.Req.Lang)
 		return &kilonova.Error{Code: kilonova.EINTERNAL, Message: "No language found"}
 	}
 

@@ -72,7 +72,7 @@ func RunSubmission(ctx context.Context, box Sandbox, language Language, constrai
 	runConf.MemoryLimit = constraints.MemoryLimit
 	runConf.StackLimit = constraints.StackLimit
 	runConf.TimeLimit = constraints.TimeLimit
-	runConf.WallTimeLimit = constraints.TimeLimit + 1
+	runConf.WallTimeLimit = constraints.TimeLimit + 4
 	if constraints.TimeLimit == 0 {
 		runConf.WallTimeLimit = 15
 	}
