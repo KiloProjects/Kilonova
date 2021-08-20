@@ -19,6 +19,4 @@ CREATE TABLE IF NOT EXISTS problems (
 	default_points INTEGER 	NOT NULL DEFAULT 0,
 
 	pb_type 	TEXT CHECK(pb_type IN ('classic', 'interactive', 'custom_checker')) NOT NULL DEFAULT 'classic',
-	helper_code TEXT 		NOT NULL DEFAULT '',
-	helper_code_lang TEXT 	NOT NULL DEFAULT 'cpp'
 );

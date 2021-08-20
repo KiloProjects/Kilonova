@@ -32,9 +32,9 @@ func (s *DB) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*ki
 }
 
 const problemCreateQuery = `INSERT INTO problems (
-	name, description, author_id, console_input, test_name, memory_limit, stack_limit, source_size, time_limit, visible, source_credits, author_credits, short_description, default_points, pb_type, helper_code, helper_code_lang
+	name, description, author_id, console_input, test_name, memory_limit, stack_limit, source_size, time_limit, visible, source_credits, author_credits, short_description, default_points, pb_type
 ) VALUES (
-	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 ) RETURNING id;`
 
 func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem) error {
@@ -59,11 +59,8 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem) error {
 	if p.Type == kilonova.ProblemTypeNone {
 		p.Type = kilonova.ProblemTypeClassic
 	}
-	if p.HelperCodeLang == "" {
-		p.HelperCodeLang = "cpp"
-	}
 	var id int
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(problemCreateQuery), p.Name, p.Description, p.AuthorID, p.ConsoleInput, p.TestName, p.MemoryLimit, p.StackLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.AuthorCredits, p.ShortDesc, p.DefaultPoints, p.Type, p.HelperCode, p.HelperCodeLang)
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(problemCreateQuery), p.Name, p.Description, p.AuthorID, p.ConsoleInput, p.TestName, p.MemoryLimit, p.StackLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.AuthorCredits, p.ShortDesc, p.DefaultPoints, p.Type)
 	if err == nil {
 		p.ID = id
 	}
@@ -173,12 +170,6 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []interface{}) {
 
 	if v := upd.Type; v != kilonova.ProblemTypeNone {
 		toUpd, args = append(toUpd, "pb_type = ?"), append(args, v)
-	}
-	if v := upd.HelperCode; v != nil {
-		toUpd, args = append(toUpd, "helper_code = ?"), append(args, v)
-	}
-	if v := upd.HelperCodeLang; v != nil {
-		toUpd, args = append(toUpd, "helper_code_lang = ?"), append(args, v)
 	}
 	if v := upd.SubtaskString; v != nil {
 		toUpd, args = append(toUpd, "subtasks = ?"), append(args, v)

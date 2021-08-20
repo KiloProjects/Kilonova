@@ -1,6 +1,5 @@
 {{ $id := .Problem.ID }}
 {{ $topbar := .Topbar }}
-{{ $checker := (eq .Problem.Type "custom_checker") }}
 {{ $lang := .Ctx.Language }}
 <div class="segment-container">
 	<h1>{{getText .Ctx.Language "problemEdit"}} <a href="/problems/{{$id}}">{{.Problem.Name}}</a></h1>
@@ -9,10 +8,6 @@
 		|
 		<a class="p-1 {{if (eq $topbar.Page "desc")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/desc">{{getText .Ctx.Language "desc"}}</a>
 		|
-		{{ if $checker }}
-		<a class="p-1 {{if (eq $topbar.Page "checker")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/checker">{{getText .Ctx.Language "checker"}}</a>
-		|
-		{{ end }}
 		<a class="p-1 {{if (eq $topbar.Page "attachments")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/attachments">{{getText .Ctx.Language "attachments"}}</a>
 		|
 		<a class="p-1 {{if and (eq $topbar.Page "tests") (eq $topbar.PageID -2)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test">{{getText .Ctx.Language "tests"}}</a>

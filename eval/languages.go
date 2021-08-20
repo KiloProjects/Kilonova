@@ -1,7 +1,24 @@
 package eval
 
+import "path"
+
+func GetLangByFilename(filename string) string {
+	fileExt := path.Ext(filename)
+	if fileExt == "" {
+		return ""
+	}
+	for k, v := range Langs {
+		for _, ext := range v.Extensions {
+			if ext == fileExt {
+				return k
+			}
+		}
+	}
+	return ""
+}
+
 var Langs = map[string]Language{
-	"c": Language{
+	"c": {
 		Extensions:    []string{".c"},
 		Compiled:      true,
 		PrintableName: "C",
@@ -13,7 +30,7 @@ var Langs = map[string]Language{
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
-	"cpp": Language{
+	"cpp": {
 		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx"},
 		Compiled:      true,
 		PrintableName: "C++",
@@ -25,7 +42,7 @@ var Langs = map[string]Language{
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
-	"golang": Language{
+	"golang": {
 		Extensions:    []string{".go"},
 		Compiled:      true,
 		PrintableName: "Go",
@@ -38,7 +55,7 @@ var Langs = map[string]Language{
 		BuildEnv:  map[string]string{"GOCACHE": "/go/cache", "GOPATH": "/go"},
 		CommonEnv: map[string]string{"GOMAXPROCS": "1"},
 	},
-	"haskell": Language{
+	"haskell": {
 		Disabled:      true, // For now
 		Extensions:    []string{".hs", ".lhs"},
 		Compiled:      true,
@@ -49,7 +66,7 @@ var Langs = map[string]Language{
 		SourceName:     "/box/main.hs",
 		CompiledName:   "/box/output",
 	},
-	"java": Language{
+	"java": {
 		Disabled:      true, // For now
 		Extensions:    []string{".java"},
 		Compiled:      true,
@@ -62,7 +79,7 @@ var Langs = map[string]Language{
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
-	"python3": Language{
+	"python3": {
 		Extensions:    []string{".py", ".py3"},
 		Compiled:      false,
 		PrintableName: "Python 3",

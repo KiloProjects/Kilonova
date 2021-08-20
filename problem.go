@@ -39,10 +39,8 @@ type Problem struct {
 	AuthorCredits string `json:"author_credits" db:"author_credits"`
 
 	// Eval stuff
-	Type           ProblemType `json:"type" db:"pb_type"`
-	HelperCode     string      `json:"-" db:"helper_code"`
-	HelperCodeLang string      `json:"-" db:"helper_code_lang"`
-	ConsoleInput   bool        `json:"console_input" db:"console_input"`
+	Type         ProblemType `json:"type" db:"pb_type"`
+	ConsoleInput bool        `json:"console_input" db:"console_input"`
 }
 
 // ProblemFilter is the struct with all filterable fields on the problem
@@ -78,12 +76,10 @@ type ProblemUpdate struct {
 	SourceCredits *string `json:"source_credits"`
 	AuthorCredits *string `json:"author_credits"`
 
-	Type           ProblemType `json:"type"`
-	HelperCode     *string     `json:"helper_code"`
-	HelperCodeLang *string     `json:"helper_code_lang"`
-	SubtaskString  *string     `json:"subtask_string"`
-	ConsoleInput   *bool       `json:"console_input"`
-	Visible        *bool       `json:"visible"`
+	Type          ProblemType `json:"type"`
+	SubtaskString *string     `json:"subtask_string"`
+	ConsoleInput  *bool       `json:"console_input"`
+	Visible       *bool       `json:"visible"`
 }
 
 type Attachment struct {

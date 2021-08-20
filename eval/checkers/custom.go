@@ -17,9 +17,10 @@ var _ eval.Checker = &CustomChecker{}
 var _ eval.Task = &customCheckerTask{}
 
 type CustomChecker struct {
-	mgr eval.Runner
-	pb  *kilonova.Problem
-	sub *kilonova.Submission
+	mgr     eval.Runner
+	pb      *kilonova.Problem
+	sub     *kilonova.Submission
+	checker *kilonova.Attachment
 }
 
 // Prepare compiles the grader
@@ -27,8 +28,8 @@ func (c *CustomChecker) Prepare(ctx context.Context) (string, error) {
 	job := &tasks.CompileTask{
 		Req: &eval.CompileRequest{
 			ID:   -c.sub.ID,
-			Code: []byte(c.pb.HelperCode),
-			Lang: c.pb.HelperCodeLang,
+			Code: c.checker.Data,
+			Lang: eval.GetLangByFilename(c.checker.Name),
 		},
 	}
 
@@ -58,7 +59,7 @@ type customCheckerTask struct {
 var customTaskErr = kilonova.Error{Code: kilonova.EINTERNAL, Message: ErrOut}
 
 func (job *customCheckerTask) Execute(ctx context.Context, box eval.Sandbox) error {
-	lang, ok := eval.Langs[job.c.pb.HelperCodeLang]
+	lang, ok := eval.Langs[eval.GetLangByFilename(job.c.checker.Name)]
 	if !ok {
 		job.output = ErrOut
 		return nil
@@ -134,6 +135,6 @@ func (c *CustomChecker) Cleanup(_ context.Context) error {
 	return eval.CleanCompilation(-c.sub.ID)
 }
 
-func NewCustomChecker(mgr eval.Runner, pb *kilonova.Problem, sub *kilonova.Submission) (*CustomChecker, error) {
-	return &CustomChecker{mgr, pb, sub}, nil
+func NewCustomChecker(mgr eval.Runner, pb *kilonova.Problem, sub *kilonova.Submission, checker *kilonova.Attachment) (*CustomChecker, error) {
+	return &CustomChecker{mgr, pb, sub, checker}, nil
 }

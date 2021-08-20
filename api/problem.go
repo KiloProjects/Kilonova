@@ -180,8 +180,7 @@ func (s *API) updateProblem(w http.ResponseWriter, r *http.Request) {
 		ConsoleInput *bool   `json:"console_input"`
 		TestName     *string `json:"test_name"`
 
-		Type       kilonova.ProblemType `json:"type"`
-		HelperCode *string              `json:"helper_code"`
+		Type kilonova.ProblemType `json:"type"`
 
 		SourceCredits *string `json:"source_credits"`
 		AuthorCredits *string `json:"author_credits"`
@@ -215,8 +214,7 @@ func (s *API) updateProblem(w http.ResponseWriter, r *http.Request) {
 		ConsoleInput: args.ConsoleInput,
 		TestName:     args.TestName,
 
-		Type:       args.Type,
-		HelperCode: args.HelperCode,
+		Type: args.Type,
 
 		SourceCredits: args.SourceCredits,
 		AuthorCredits: args.AuthorCredits,

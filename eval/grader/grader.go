@@ -2,9 +2,11 @@ package grader
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math"
+	"path"
 	"sync"
 	"time"
 
@@ -119,7 +121,7 @@ func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, sub
 		return kilonova.WrapError(kilonova.EINTERNAL, "Couldn't get submission problem", err)
 	}
 
-	checker, err := getAppropriateChecker(runner, sub, problem)
+	checker, err := h.getAppropriateChecker(ctx, runner, sub, problem)
 	if err != nil {
 		return kilonova.WrapError(kilonova.EINTERNAL, "Couldn't get checker:", err)
 	}
@@ -376,12 +378,30 @@ func (h *Handler) getAppropriateRunner() (eval.Runner, error) {
 	*/
 }
 
-func getAppropriateChecker(runner eval.Runner, sub *kilonova.Submission, pb *kilonova.Problem) (eval.Checker, error) {
+func (h *Handler) getProblemChecker(ctx context.Context, pb *kilonova.Problem) (*kilonova.Attachment, error) {
+	atts, err := h.db.Attachments(ctx, false, kilonova.AttachmentFilter{ProblemID: &pb.ID})
+	if err != nil || len(atts) == 0 {
+		return nil, errors.New("No attachments found")
+	}
+	for _, att := range atts {
+		if path.Base(att.Name) == "checker" && eval.GetLangByFilename(att.Name) != "" {
+			return att, nil
+		}
+	}
+
+	return nil, errors.New("No checker found")
+}
+
+func (h *Handler) getAppropriateChecker(ctx context.Context, runner eval.Runner, sub *kilonova.Submission, pb *kilonova.Problem) (eval.Checker, error) {
 	switch pb.Type {
 	case kilonova.ProblemTypeClassic:
 		return &checkers.DiffChecker{}, nil
 	case kilonova.ProblemTypeCustomChecker:
-		return checkers.NewCustomChecker(runner, pb, sub)
+		att, err := h.getProblemChecker(ctx, pb)
+		if err != nil {
+			return nil, kilonova.WrapError(kilonova.EINVALID, "Couldn't get problem checker", err)
+		}
+		return checkers.NewCustomChecker(runner, pb, sub, att)
 	default:
 		zap.S().Warn("Unknown problem type", pb.Type)
 		return nil, &kilonova.Error{Code: kilonova.EINTERNAL, Message: "Unknown problem type"}

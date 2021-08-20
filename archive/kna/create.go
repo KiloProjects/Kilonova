@@ -44,8 +44,6 @@ func Generate(problems []*kilonova.Problem, outDB kilonova.DB, dm kilonova.Grade
 	default_points INTEGER 	NOT NULL DEFAULT 0,
 
 	pb_type 	TEXT CHECK(pb_type IN ('classic', 'interactive', 'custom_checker')) NOT NULL DEFAULT 'classic',
-	helper_code TEXT 		NOT NULL DEFAULT '',
-	helper_code_lang TEXT 	NOT NULL DEFAULT 'cpp'
 );`); err != nil {
 		return nil, err
 	}
@@ -84,7 +82,7 @@ func Generate(problems []*kilonova.Problem, outDB kilonova.DB, dm kilonova.Grade
 
 	for _, pb := range problems {
 		var pbid int
-		if err := db.Get(&pbid, `INSERT INTO problems (name, description, test_name, time_limit, memory_limit, stack_limit, source_size, console_input, source_credits, author_credits, short_description, default_points, pb_type, helper_code, helper_code_lang) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`, pb.Name, pb.Description, pb.TestName, pb.TimeLimit, pb.MemoryLimit, pb.StackLimit, pb.SourceSize, pb.ConsoleInput, pb.SourceCredits, pb.AuthorCredits, pb.ShortDesc, pb.DefaultPoints, pb.Type, pb.HelperCode, pb.HelperCodeLang); err != nil {
+		if err := db.Get(&pbid, `INSERT INTO problems (name, description, test_name, time_limit, memory_limit, stack_limit, source_size, console_input, source_credits, author_credits, short_description, default_points, pb_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`, pb.Name, pb.Description, pb.TestName, pb.TimeLimit, pb.MemoryLimit, pb.StackLimit, pb.SourceSize, pb.ConsoleInput, pb.SourceCredits, pb.AuthorCredits, pb.ShortDesc, pb.DefaultPoints, pb.Type); err != nil {
 			log.Println(pb.ID, err)
 			continue
 		}
