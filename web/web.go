@@ -163,8 +163,6 @@ func (rt *Web) Handler() http.Handler {
 		http.ServeContent(w, r, "robots.txt", time.Now(), file.(io.ReadSeeker))
 	})
 
-	r.Mount("/cdn", http.StripPrefix("/cdn", http.FileServer(http.FS(rt.dm.CDNfs()))))
-
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		Status(w, &StatusParams{GenContext(r), 404, "", false})
 	})
