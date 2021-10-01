@@ -10,11 +10,7 @@ import (
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
-
-	_ "github.com/lib/pq"
 )
-
-//go:generate pkger
 
 var (
 	confPath = flag.String("config", "./config.toml", "Config path")

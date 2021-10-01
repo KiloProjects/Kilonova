@@ -41,17 +41,6 @@ func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (rt *Web) editChecker() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := rt.parse(nil, "edit/checker.html", "edit/topbar.html")
-	return func(w http.ResponseWriter, r *http.Request) {
-		runTempl(w, r, tmpl, &ProblemEditParams{
-			Ctx:     GenContext(r),
-			Problem: util.Problem(r),
-			Topbar:  &EditTopbar{"checker", -1},
-		})
-	}
-}
-
 func (rt *Web) editAttachments() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "edit/attachments.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -116,7 +105,6 @@ func (rt *Web) subtaskEdit() func(w http.ResponseWriter, r *http.Request) {
 func (rt *Web) ProblemEditRouter(r chi.Router) {
 	r.Get("/", rt.editIndex())
 	r.Get("/desc", rt.editDesc())
-	r.Get("/checker", rt.editChecker())
 	r.Get("/attachments", rt.editAttachments())
 
 	r.Get("/test", rt.testIndex())

@@ -6,8 +6,8 @@ import (
 
 type ProblemList struct {
 	ID          int       `json:"id"`
-	CreatedAt   time.Time `json:"created_at"`
-	AuthorID    int       `json:"author_id"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	AuthorID    int       `json:"author_id" db:"author_id"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	List        []int     `json:"list"`

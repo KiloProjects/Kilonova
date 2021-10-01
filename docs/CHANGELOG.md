@@ -1,3 +1,6 @@
+- v0.9.1:
+	- Moved checker to attachments
+	- Changed internal structure of problem list and subtask integer lists
 - v0.9.0:
 	- Barebones attachments
 	- English version

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/jackc/pgtype"
 )
 
 func (s *DB) CreateSubTask(ctx context.Context, subtask *kilonova.SubTask) error {
@@ -29,7 +30,7 @@ func (s *DB) SubTask(ctx context.Context, pbid, stvid int) (*kilonova.SubTask, e
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
-	return InternalToSubTask(&st), err
+	return internalToSubTask(&st), err
 }
 
 func (s *DB) SubTaskByID(ctx context.Context, stid int) (*kilonova.SubTask, error) {
@@ -38,7 +39,7 @@ func (s *DB) SubTaskByID(ctx context.Context, stid int) (*kilonova.SubTask, erro
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
-	return InternalToSubTask(&st), err
+	return internalToSubTask(&st), err
 }
 
 func (s *DB) SubTasks(ctx context.Context, pbid int) ([]*kilonova.SubTask, error) {
@@ -49,7 +50,7 @@ func (s *DB) SubTasks(ctx context.Context, pbid int) ([]*kilonova.SubTask, error
 	}
 	sts := []*kilonova.SubTask{}
 	for _, s := range st {
-		sts = append(sts, InternalToSubTask(s))
+		sts = append(sts, internalToSubTask(s))
 	}
 	return sts, err
 }
@@ -62,7 +63,7 @@ func (s *DB) SubTasksByTest(ctx context.Context, pbid, tid int) ([]*kilonova.Sub
 	}
 	sts := []*kilonova.SubTask{}
 	for _, s := range st {
-		sts = append(sts, InternalToSubTask(s))
+		sts = append(sts, internalToSubTask(s))
 	}
 	return sts, err
 }
@@ -104,12 +105,16 @@ type subtask struct {
 	ProblemID int       `db:"problem_id"`
 	VisibleID int       `db:"visible_id"`
 	Score     int
-	Tests     string
+	Tests     pgtype.Int8Array
 }
 
-func InternalToSubTask(st *subtask) *kilonova.SubTask {
+func internalToSubTask(st *subtask) *kilonova.SubTask {
 	if st == nil {
 		return nil
+	}
+	tests := make([]int, 0, len(st.Tests.Elements))
+	for _, test := range st.Tests.Elements {
+		tests = append(tests, int(test.Int))
 	}
 	return &kilonova.SubTask{
 		ID:        st.ID,
@@ -117,6 +122,6 @@ func InternalToSubTask(st *subtask) *kilonova.SubTask {
 		ProblemID: st.ProblemID,
 		VisibleID: st.VisibleID,
 		Score:     st.Score,
-		Tests:     kilonova.DeserializeIntList(st.Tests),
+		Tests:     tests,
 	}
 }

@@ -16,7 +16,8 @@ CREATE TABLE users (
 	email_verif_sent_at timestamptz,
 
 	banned 				boolean 	NOT NULL DEFAULT false,
-	disabled 			boolean 	NOT NULL DEFAULT false
+	disabled 			boolean 	NOT NULL DEFAULT false,
+	preferred_language text NOT NULL DEFAULT 'ro'
 );
 
 -- problem stuff
@@ -50,8 +51,6 @@ CREATE TABLE problems (
 	pb_type 		problem_type 		NOT NULL DEFAULT 'classic',
 	helper_code 	text 				NOT NULL DEFAULT '',
 	helper_code_lang text 				NOT NULL DEFAULT 'cpp',
-
-	subtasks 		text 				NOT NULL DEFAULT ''
 );
 
 CREATE TABLE tests (
@@ -80,10 +79,13 @@ CREATE TABLE submissions (
 	language		text 			NOT NULL,
 	code 			text 			NOT NULL,
 	status 			status 			NOT NULL DEFAULT 'creating',
+	quality 		BOOLEAN 		NOT NULL DEFAULT false
 	compile_error 	boolean,
 	compile_message text,
 	score 			integer			NOT NULL DEFAULT 0,
-	visible 		boolean			NOT NULL DEFAULT false
+	visible 		boolean			NOT NULL DEFAULT false,
+	max_time 		DOUBLE PRECISION NOT NULL DEFAULT -1,
+	max_memory 		INTEGER 		NOT NULL DEFAULT -1
 );
 
 CREATE TABLE submission_tests (
@@ -97,6 +99,64 @@ CREATE TABLE submission_tests (
 	test_id			bigint  			NOT NULL REFERENCES tests(id) ON DELETE CASCADE,
 	user_id 		bigint  			NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 	submission_id 	bigint  			NOT NULL REFERENCES submissions(id) ON DELETE CASCADE
-
-	skipped 		boolean 			NOT NULL DEFAULT false,
 );
+
+CREATE TABLE problem_lists (
+	id 			bigserial 	PRIMARY KEY,
+	created_at 	timestamptz NOT NULL DEFAULT NOW(),
+	author_id 	bigint 		NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	title 		text 		NOT NULL DEFAULT '',
+	description text 		NOT NULL DEFAULT '',
+	list 		text 		NOT NULL DEFAULT ''
+);
+
+CREATE TABLE subtasks (
+	id 			bigserial  	PRIMARY KEY,
+	created_at  timestamptz NOT NULL DEFAULT NOW(),
+	problem_id 	bigint 		NOT NULL REFERENCES problems(id) ON DELETE CASCADE,
+	visible_id 	integer 	NOT NULL,
+	score 		integer 	NOT NULL,
+	tests 		text 		NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+	id 			text 		PRIMARY KEY,
+	created_at 	timestamptz NOT NULL DEFAULT NOW(),
+	user_id 	integer 	NOT NULL REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS verifications (
+	id 			text 		PRIMARY KEY,
+	created_at 	timestamptz NOT NULL DEFAULT NOW(),
+	user_id 	integer 	NOT NULL REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS attachments (
+	id 			bigserial 	PRIMARY KEY,
+	created_at 	timestamptz NOT NULL DEFAULT NOW(),
+	problem_id 	bigint 		NOT NULL REFERENCES problems(id) ON DELETE CASCADE,
+	visible 	boolean 	NOT NULL DEFAULT true,
+	private 	boolean 	NOT NULL DEFAULT false,
+
+	name 		text 		NOT NULL,
+	data 		bytea 		NOT NULL,
+	data_size 	INTEGER 	GENERATED ALWAYS AS (length(data)) STORED
+);
+
+--
+--CREATE TABLE IF NOT EXISTS test_inputs (
+--	tid 	bigint 	NOT NULL UNIQUE REFERENCES tests(id),
+--	data 	bytea 	NOT NULL
+--);
+
+--CREATE TABLE IF NOT EXISTS test_outputs (
+--	tid 	bigint 	NOT NULL UNIQUE REFERENCES tests(id),
+--	data 	bytea 	NOT NULL
+--);
+
+--CREATE TABLE IF NOT EXISTS subtest_outputs (
+--	stid 	bigint 	NOT NULL UNIQUE REFERENCES submission_tests(id),
+--	data 	bytea 	NOT NULL
+--);
+
+

@@ -23,9 +23,9 @@ func (r *LocalRenderer) Render(src []byte) ([]byte, error) {
 
 func NewLocalRenderer() *LocalRenderer {
 	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM, extension.Footnote, mathjax.MathJax),
+		goldmark.WithExtensions(extension.GFM, extension.Footnote, mathjax.MathJax, &attNode{}),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID(), parser.WithAttribute()),
 		goldmark.WithRendererOptions(html.WithHardWraps(), html.WithXHTML()),
 	)
-	return &LocalRenderer{md: md}
+	return &LocalRenderer{md}
 }

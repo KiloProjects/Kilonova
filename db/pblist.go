@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/jackc/pgtype"
 )
 
 func (s *DB) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, error) {
@@ -103,15 +104,19 @@ type pblist struct {
 	AuthorID    int       `db:"author_id"`
 	Title       string
 	Description string
-	List        string
+	List        pgtype.Int8Array
 }
 
 func internalToPbList(list *pblist) *kilonova.ProblemList {
+	ids := make([]int, 0, len(list.List.Elements))
+	for _, id := range list.List.Elements {
+		ids = append(ids, int(id.Int))
+	}
 	return &kilonova.ProblemList{
 		ID:          list.ID,
 		CreatedAt:   list.CreatedAt,
 		Title:       list.Title,
 		Description: list.Description,
-		List:        kilonova.DeserializeIntList(list.List),
+		List:        ids,
 	}
 }
