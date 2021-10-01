@@ -106,7 +106,7 @@ function makeSubWaiter(id) {
 			document.dispatchEvent(new Event("kn-poll"))
 		}
 		if(res.data.sub.status == "finished") {
-			bundled.createToast({title: '{{getText .Ctx.Language "finishedEval"}}', description: `{{getText .Ctx.Language "finalScore"}}: ${res.data.sub.score}`, status: "success"})
+			bundled.createToast({title: {{getText .Ctx.Language "finishedEval"}}, description: `{{getText .Ctx.Language "finalScore"}}: ${res.data.sub.score}`, status: "success"})
 			clearInterval(interv);
 		}
 		loadingIDs.set(id, res.data.sub.status)

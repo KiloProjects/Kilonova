@@ -124,6 +124,10 @@ export class SubmissionManager {
 		}
 		if(this.sub.status === 'finished') {
 			html += `<p>${this.getText("score")}: ${this.sub.score}</p>`
+			let maxTime = Math.floor(this.sub.max_time * 1000) + " ms"
+			let maxMemory = bundled.sizeFormatter(this.sub.max_memory*1024, 1, true)
+			html += `<p>${this.getText("maxTime")}: ${maxTime}</p>`
+			html += `<p>${this.getText("maxMemory")}: ${maxMemory}</p>`
 		}
 		if(this.sub.compile_error.Bool) {
 			html += `<h4>${this.getText("compileErr")}</h4><h5>${this.getText("compileMsg")}:</h5><pre>${this.sub.compile_message.String}</pre>`

@@ -43,6 +43,9 @@ const languageStrings = {
 	"source": genTranslation("Source Code:", "Codul Sursă:"),
 	"copy": genTranslation("Copy", "Copiere"),
 	"download": genTranslation("Download", "Descărcare"),
+
+	"maxTime": genTranslation("Max Time", "Timp maxim"),
+	"maxMemory": genTranslation("Max Memory", "Memorie maximă"),
 	
 	"makeCode": genTranslation("Make code", "Fă codul"),
 	"visible": genTranslation("visible", "vizibil"),
