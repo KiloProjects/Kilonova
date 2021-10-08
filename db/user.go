@@ -113,7 +113,7 @@ func (s *DB) CreateUser(ctx context.Context, user *kilonova.User) error {
 	}
 
 	var id int
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind("INSERT INTO users (name, email, password, bio, default_visible, verified_email, admin, proposer, preferred_language) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id"), user.Name, user.Email, user.Password, user.Bio, user.DefaultVisible, user.VerifiedEmail, user.Admin, user.Proposer, user.PreferredLanguage)
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind("INSERT INTO users (name, email, password, bio, default_visible, verified_email, admin, proposer, preferred_language) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id"), user.Name, user.Email, user.Password, user.Bio, user.DefaultVisible, user.VerifiedEmail, user.Admin, user.Proposer, user.PreferredLanguage)
 	if err == nil {
 		user.ID = id
 	}

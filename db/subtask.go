@@ -10,6 +10,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/jackc/pgtype"
+	"go.uber.org/zap"
 )
 
 func (s *DB) CreateSubTask(ctx context.Context, subtask *kilonova.SubTask) error {
@@ -57,7 +58,7 @@ func (s *DB) SubTasks(ctx context.Context, pbid int) ([]*kilonova.SubTask, error
 
 func (s *DB) SubTasksByTest(ctx context.Context, pbid, tid int) ([]*kilonova.SubTask, error) {
 	var st []*subtask
-	err := s.conn.SelectContext(ctx, &st, s.conn.Rebind("SELECT * FROM subtasks WHERE tests LIKE ? AND problem_id = ? ORDER BY visible_id"), fmt.Sprintf("%%%d%%", tid), pbid)
+	err := s.conn.SelectContext(ctx, &st, s.conn.Rebind("SELECT * FROM subtasks WHERE ? = ANY(tests) AND problem_id = ? ORDER BY visible_id"), tid, pbid)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.SubTask{}, nil
 	}
@@ -77,7 +78,12 @@ func (s *DB) UpdateSubTask(ctx context.Context, id int, upd kilonova.SubTaskUpda
 		toUpd, args = append(toUpd, "score = ?"), append(args, v)
 	}
 	if v := upd.Tests; v != nil {
-		toUpd, args = append(toUpd, "tests = ?"), append(args, kilonova.SerializeIntList(v))
+		arr := pgtype.Int4Array{}
+		if err := arr.Set(v); err != nil {
+			zap.S().Warn("Wtf", err)
+			return err
+		}
+		toUpd, args = append(toUpd, "tests = ?"), append(args, arr)
 	}
 
 	if len(toUpd) == 0 {
@@ -86,6 +92,9 @@ func (s *DB) UpdateSubTask(ctx context.Context, id int, upd kilonova.SubTaskUpda
 	args = append(args, id)
 
 	_, err := s.conn.ExecContext(ctx, s.conn.Rebind(fmt.Sprintf("UPDATE subtasks SET %s WHERE id = ?", strings.Join(toUpd, ", "))), args...)
+	if err != nil {
+		zap.S().Warn(err)
+	}
 	return err
 }
 
@@ -105,7 +114,7 @@ type subtask struct {
 	ProblemID int       `db:"problem_id"`
 	VisibleID int       `db:"visible_id"`
 	Score     int
-	Tests     pgtype.Int8Array
+	Tests     pgtype.Int4Array
 }
 
 func internalToSubTask(st *subtask) *kilonova.SubTask {

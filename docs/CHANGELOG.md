@@ -1,3 +1,5 @@
+- v0.9.2:
+	- Pretty stupid bug fixes
 - v0.9.1:
 	- Moved checker to attachments
 	- Changed internal structure of problem list and subtask integer lists

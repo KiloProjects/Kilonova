@@ -51,7 +51,7 @@ func (s *API) getSubmissionByID() func(w http.ResponseWriter, r *http.Request) {
 		}
 
 		sub, err := s.db.Submission(r.Context(), subID)
-		if err != nil {
+		if err != nil || sub == nil {
 			errorData(w, "Could not find submission", http.StatusBadRequest)
 			return
 		}

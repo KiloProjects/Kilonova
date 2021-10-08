@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"path"
+	"strings"
 	"sync"
 	"time"
 
@@ -379,12 +380,15 @@ func (h *Handler) getAppropriateRunner() (eval.Runner, error) {
 }
 
 func (h *Handler) getProblemChecker(ctx context.Context, pb *kilonova.Problem) (*kilonova.Attachment, error) {
-	atts, err := h.db.Attachments(ctx, false, kilonova.AttachmentFilter{ProblemID: &pb.ID})
+	// TODO: Do not get all attachments data
+	atts, err := h.db.Attachments(ctx, true, kilonova.AttachmentFilter{ProblemID: &pb.ID})
 	if err != nil || len(atts) == 0 {
 		return nil, errors.New("No attachments found")
 	}
 	for _, att := range atts {
-		if path.Base(att.Name) == "checker" && eval.GetLangByFilename(att.Name) != "" {
+		filename := path.Base(att.Name)
+		filename = strings.TrimSuffix(filename, path.Ext(filename))
+		if filename == "checker" && eval.GetLangByFilename(att.Name) != "" {
 			return att, nil
 		}
 	}
