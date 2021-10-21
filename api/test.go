@@ -180,13 +180,13 @@ type archiveCtx struct {
 
 // TODO: Move most stuff to business logic
 func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
-	// Since this operation can take at most 100MB, I am putting this lock as a precaution.
+	// Since this operation can take at most 200MB, I am putting this lock as a precaution.
 	// This might create a problem with timeouts, and this should be handled asynchronously.
 	// (ie not in a request), but eh, I cant be bothered right now to do it the right way.
 	// TODO: Do this the right way (low priority)
 	s.testArchiveLock.Lock()
 	defer s.testArchiveLock.Unlock()
-	r.ParseMultipartForm(100 * 1024 * 1024)
+	r.ParseMultipartForm(200 * 1024 * 1024)
 
 	if r.MultipartForm == nil || r.MultipartForm.File == nil {
 		errorData(w, "Missing archive", 400)

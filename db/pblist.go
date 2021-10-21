@@ -10,6 +10,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/jackc/pgtype"
+	"go.uber.org/zap"
 )
 
 func (s *DB) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, error) {
@@ -45,8 +46,15 @@ func (s *DB) CreateProblemList(ctx context.Context, list *kilonova.ProblemList) 
 	if list.AuthorID == 0 {
 		return kilonova.ErrMissingRequired
 	}
+	// Convert subtask list to array
+	arr := pgtype.Int4Array{}
+	if err := arr.Set(list.List); err != nil {
+		zap.S().Warn("Wtf", err)
+		return err
+	}
+	// Do insertion
 	var id int
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(createProblemListQuery), list.AuthorID, list.Title, list.Description, kilonova.SerializeIntList(list.List))
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(createProblemListQuery), list.AuthorID, list.Title, list.Description, arr)
 	if err == nil {
 		list.ID = id
 	}

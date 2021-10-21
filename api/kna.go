@@ -49,7 +49,7 @@ func (s *API) createKNA(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) loadKNA(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(100 * 1024 * 1024); err != nil { // 100MB
+	if err := r.ParseMultipartForm(200 * 1024 * 1024); err != nil { // 200MB
 		errorData(w, err, 500)
 		return
 	}

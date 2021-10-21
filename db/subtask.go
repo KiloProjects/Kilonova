@@ -18,7 +18,14 @@ func (s *DB) CreateSubTask(ctx context.Context, subtask *kilonova.SubTask) error
 		return kilonova.ErrMissingRequired
 	}
 	var id int
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind("INSERT INTO subtasks (problem_id, visible_id, score, tests) VALUES (?, ?, ?, ?) RETURNING id"), subtask.ProblemID, subtask.VisibleID, subtask.Score, kilonova.SerializeIntList(subtask.Tests))
+	// Convert subtask list to array
+	arr := pgtype.Int4Array{}
+	if err := arr.Set(subtask.Tests); err != nil {
+		zap.S().Warn("Wtf", err)
+		return err
+	}
+	// Do insertion
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind("INSERT INTO subtasks (problem_id, visible_id, score, tests) VALUES (?, ?, ?, ?) RETURNING id"), subtask.ProblemID, subtask.VisibleID, subtask.Score, arr)
 	if err == nil {
 		subtask.ID = id
 	}
