@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/boxmanager"
 	"github.com/KiloProjects/kilonova/eval/checkers"
@@ -29,15 +30,15 @@ var (
 
 type Handler struct {
 	ctx   context.Context
-	sChan chan *kilonova.Submission
+	sChan chan eval.GraderSubmission
 	dm    kilonova.GraderStore
 
 	debug bool
-	db    kilonova.DB
+	db    *db.DB
 }
 
-func NewHandler(ctx context.Context, db kilonova.DB, dm kilonova.DataStore, debug bool) *Handler {
-	ch := make(chan *kilonova.Submission, 5)
+func NewHandler(ctx context.Context, db *db.DB, dm kilonova.DataStore, debug bool) *Handler {
+	ch := make(chan eval.GraderSubmission, 5)
 	return &Handler{ctx, ch, dm, debug, db}
 }
 
@@ -47,24 +48,45 @@ func (h *Handler) chFeeder(d time.Duration) {
 	for {
 		select {
 		case <-ticker.C:
-			subs, err := h.db.Submissions(h.ctx, waitingSubs)
+			sub, err := h.db.FetchGraderSubmission(h.ctx)
 			if err != nil {
-				log.Println("Error fetching submissions:", err)
+				zap.S().Warnf("Error fetching submission: %s", err)
 				continue
 			}
-			if subs != nil {
-				if config.Common.Debug {
-					log.Printf("Found %d submissions\n", len(subs))
-				}
-
-				for _, sub := range subs {
-					if err := h.db.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
-						log.Println(err)
-						continue
-					}
-					h.sChan <- sub
-				}
+			if sub == nil {
+				continue
 			}
+
+			if config.Common.Debug {
+				zap.S().Info("Found submission")
+			}
+			if err := sub.Update(workingUpdate); err != nil {
+				sub.Close()
+				zap.S().Warn(err)
+				continue
+			}
+			h.sChan <- sub
+
+			/*
+				subs, err := h.db.Submissions(h.ctx, waitingSubs)
+				if err != nil {
+					log.Println("Error fetching submissions:", err)
+					continue
+				}
+				if subs != nil {
+					if config.Common.Debug {
+						log.Printf("Found %d submissions\n", len(subs))
+					}
+
+					for _, sub := range subs {
+						if err := h.db.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
+							log.Println(err)
+							continue
+						}
+						h.sChan <- sub
+					}
+				}
+			*/
 		case <-h.ctx.Done():
 			ticker.Stop()
 			return
@@ -81,6 +103,7 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 			if !more {
 				return nil
 			}
+			defer sub.Close()
 			if err := h.ExecuteSubmission(ctx, runner, sub); err != nil {
 				log.Println("Couldn't run submission:", err)
 			}
@@ -88,7 +111,14 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 	}
 }
 
-func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, sub *kilonova.Submission) error {
+func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, gsub eval.GraderSubmission) error {
+	sub := gsub.Submission()
+	defer func() {
+		if err := gsub.Close(); err != nil {
+			log.Printf("Could not finish submission: %s\n", err)
+		}
+	}()
+
 	defer func() {
 		err := h.MarkSubtestsDone(ctx, sub)
 		if err != nil {
@@ -113,9 +143,15 @@ func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, sub
 	}
 
 	compileError := !resp.Success
-	if err := h.db.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{CompileError: &compileError, CompileMessage: &resp.Output}); err != nil {
+	if err := gsub.Update(kilonova.SubmissionUpdate{CompileError: &compileError, CompileMessage: &resp.Output}); err != nil {
 		return kilonova.WrapInternal(err)
 	}
+	// Cleanup compilation at the end
+	defer func() {
+		if err := eval.CleanCompilation(sub.ID); err != nil {
+			log.Printf("Couldn't clean task: %s\n", err)
+		}
+	}()
 
 	problem, err := h.db.Problem(ctx, sub.ProblemID)
 	if err != nil {
@@ -126,10 +162,16 @@ func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, sub
 	if err != nil {
 		return kilonova.WrapError(kilonova.EINTERNAL, "Couldn't get checker:", err)
 	}
+	// Defer checker cleanup
+	defer func() {
+		if err := checker.Cleanup(ctx); err != nil {
+			log.Printf("Couldn't clean checker: %s\n", err)
+		}
+	}()
 
 	if info, err := checker.Prepare(ctx); err != nil {
 		t := true
-		if err := h.db.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints, CompileError: &t, CompileMessage: &info}); err != nil {
+		if err := gsub.Update(kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints, CompileError: &t, CompileMessage: &info}); err != nil {
 			return kilonova.WrapError(kilonova.EINTERNAL, "Error during update of compile information:", err)
 		}
 		return kilonova.WrapError(kilonova.EINTERNAL, "Could not prepare checker", err)
@@ -137,7 +179,7 @@ func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, sub
 
 	subTests, err := h.db.SubTestsBySubID(ctx, sub.ID)
 	if resp.Success == false || err != nil {
-		if err := h.db.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints}); err != nil {
+		if err := gsub.Update(kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints}); err != nil {
 			return err
 		}
 		return err
@@ -160,17 +202,10 @@ func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, sub
 
 	wg.Wait()
 
-	if err := h.ScoreTests(ctx, sub, problem); err != nil {
+	if err := h.ScoreTests(ctx, gsub, problem); err != nil {
 		log.Printf("Couldn't score test: %s\n", err)
 	}
 
-	if err := eval.CleanCompilation(sub.ID); err != nil {
-		log.Printf("Couldn't clean task: %s\n", err)
-	}
-
-	if err := checker.Cleanup(ctx); err != nil {
-		log.Printf("Couldn't clean checker: %s\n", err)
-	}
 	return nil
 }
 
@@ -263,7 +298,8 @@ func (h *Handler) MarkSubtestsDone(ctx context.Context, sub *kilonova.Submission
 	return nil
 }
 
-func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, problem *kilonova.Problem) error {
+func (h *Handler) ScoreTests(ctx context.Context, gsub eval.GraderSubmission, problem *kilonova.Problem) error {
+	sub := gsub.Submission()
 	subtests, err := h.db.SubTestsBySubID(ctx, sub.ID)
 	if err != nil {
 		return err
@@ -326,7 +362,7 @@ func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, prob
 		}
 	}
 
-	return h.db.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score, MaxTime: &time, MaxMemory: &memory})
+	return gsub.Update(kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score, MaxTime: &time, MaxMemory: &memory})
 }
 
 func (h *Handler) Start() error {

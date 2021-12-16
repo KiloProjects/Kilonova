@@ -1,0 +1,56 @@
+import dayjs from 'dayjs';
+import 'dayjs/locale/ro';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime)
+
+// TODO: Make platform info-dependent
+dayjs.locale('ro')
+
+// if max_step is 0, it will format until the MB region
+// else if max_step is 1, it will only format until the KB region
+// else if max_step >= 2, it will append a " B" to the end of the number
+export function sizeFormatter(size: number, max_step?: number, floor?: boolean) {
+	var units: number = size, suffix: string = "B";
+	if(max_step === null || max_step === undefined) {
+		max_step = 0;
+	}
+	if(size > 1024*1024 && max_step == 0) {
+		units = Math.round(size/1024/1024 * 1e2) / 1e2; 
+		suffix = "MB";
+	} else if(size > 1024 && max_step <= 1) {
+		units = Math.round(size/1024 * 1e2) / 1e2;
+		suffix = "KB";
+	}
+	if(floor) {
+		units = Math.floor(units);
+	}
+	return units + " " + suffix;
+}
+
+export function downloadBlob(blob: Blob, filename: string) {
+	var a = document.createElement('a');
+	a.href = URL.createObjectURL(blob);
+	a.download = filename;
+	a.click();
+}
+
+export function parseTime(str?: string) {
+	if(!str) {
+		return "";
+	}
+	return dayjs(str).format('DD/MM/YYYY HH:mm');
+}
+
+export function getGradient(score: number, maxscore: number) {
+	let col = "#e3dd71", rap = 0.0;
+	if(maxscore != 0 && score != 0) { rap = score / maxscore; }	
+	if(rap == 1.0) { col = "#7fff00"; }
+	if(rap < 1.0) { col = "#67cf39"; }
+	if(rap <= 0.8) { col = "#9fdd2e"; }
+	if(rap <= 0.6) { col = "#d2eb19"; }
+	if(rap <= 0.4) { col = "#f1d011"; }
+	if(rap <= 0.2) { col = "#f6881e"; }
+	if(rap == 0) { col = "#f11722"; }
+	return col
+}

@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/db"
 )
 
 var (
@@ -104,7 +105,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, name string, file io.Reader) error {
 	return nil
 }
 
-func ProcessZipTestArchive(pb *kilonova.Problem, ar *zip.Reader, db kilonova.DB, dm kilonova.DataStore) error {
+func ProcessZipTestArchive(pb *kilonova.Problem, ar *zip.Reader, db *db.DB, dm kilonova.DataStore) error {
 	ctx := NewArchiveCtx()
 
 	for _, file := range ar.File {

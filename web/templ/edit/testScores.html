@@ -4,7 +4,7 @@
 
 {{ $lang := .Ctx.Language }}
 <div class="segment-container">
-	<h2>Actualizare teste</h1>
+	<h2>{{getText $lang "testUpdate"}}</h1>
 	{{ with .ProblemTests }}
 		<table class="kn-table my-2" style="table-layout: fixed">
 			<thead>
@@ -41,7 +41,7 @@
 		<button class="btn btn-red mr-2" onclick="deleteTests()">{{getText $lang "deleteTests"}}</button>
 		<button class="btn btn-blue" onclick="updateTests()">{{getText $lang "updateTestScores"}}</button>
 	{{ else }} 
-		<h3> Nu există niciun test, ar fi bine să creezi unul :) </h3>
+	<h3> {{getText $lang "noTests"}} </h3>
 	{{ end }}
 <script>
 var pbid = {{.Problem.ID}}, rowreg = /row-test-([0-9]+)/;

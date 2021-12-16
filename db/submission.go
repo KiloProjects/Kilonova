@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval"
+	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
 
@@ -61,13 +63,17 @@ func (s *DB) CreateSubmission(ctx context.Context, sub *kilonova.Submission) err
 }
 
 func (s *DB) UpdateSubmission(ctx context.Context, id int, upd kilonova.SubmissionUpdate) error {
+	return updateSubmission(s.conn, ctx, id, upd)
+}
+
+func updateSubmission(tx sqlx.ExecerContext, ctx context.Context, id int, upd kilonova.SubmissionUpdate) error {
 	toUpd, args := subUpdateQuery(&upd)
 	if len(toUpd) == 0 {
 		return kilonova.ErrNoUpdates
 	}
 	args = append(args, id)
-	query := s.conn.Rebind(fmt.Sprintf(`UPDATE submissions SET %s WHERE id = ?;`, strings.Join(toUpd, ", ")))
-	_, err := s.conn.ExecContext(ctx, query, args...)
+	query := sqlx.Rebind(sqlx.BindType("pgx"), fmt.Sprintf(`UPDATE submissions SET %s WHERE id = ?;`, strings.Join(toUpd, ", ")))
+	_, err := tx.ExecContext(ctx, query, args...)
 	return err
 }
 
@@ -231,4 +237,37 @@ func getSubmissionOrdering(ordering string, ascending bool) string {
 	default:
 		return "ORDER BY id" + ord
 	}
+}
+
+// FetchGraderSubmission returns a waiting submission that is not locked. Note that it must be closed
+func (s *DB) FetchGraderSubmission(ctx context.Context) (eval.GraderSubmission, error) {
+	tx, err := s.conn.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	var sub kilonova.Submission
+	err = tx.GetContext(ctx, &sub, "SELECT * FROM submissions WHERE status = 'waiting' ORDER BY id DESC LIMIT 1 FOR UPDATE SKIP LOCKED")
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, tx.Rollback()
+	}
+	return &graderSub{ctx, &sub, tx}, nil
+}
+
+type graderSub struct {
+	ctx context.Context
+	sub *kilonova.Submission
+	tx  *sqlx.Tx
+}
+
+func (g *graderSub) Submission() *kilonova.Submission {
+	return g.sub
+}
+
+func (g *graderSub) Update(sub kilonova.SubmissionUpdate) error {
+	return updateSubmission(g.tx, g.ctx, g.sub.ID, sub)
+}
+
+func (g *graderSub) Close() error {
+	defer g.tx.Rollback()
+	return g.tx.Commit()
 }

@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/db"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/schema"
 )
@@ -13,7 +14,7 @@ var decoder *schema.Decoder
 
 // API is the base struct for the project's API
 type API struct {
-	db      kilonova.DB
+	db      *db.DB
 	manager kilonova.DataStore
 	mailer  kilonova.Mailer
 
@@ -21,7 +22,7 @@ type API struct {
 }
 
 // New declares a new API instance
-func New(db kilonova.DB, dm kilonova.DataStore, mailer kilonova.Mailer) *API {
+func New(db *db.DB, dm kilonova.DataStore, mailer kilonova.Mailer) *API {
 	return &API{db, dm, mailer, &sync.Mutex{}}
 }
 

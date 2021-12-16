@@ -16,6 +16,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/internal/verification"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/microcosm-cc/bluemonday"
@@ -253,7 +254,7 @@ func (s *API) getSelf(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getSelfSolvedProblems(w http.ResponseWriter, r *http.Request) {
-	pbs, err := kilonova.SolvedProblems(r.Context(), util.User(r).ID, s.db)
+	pbs, err := s.db.FullSolvedProblems(r.Context(), util.User(r).ID)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -272,7 +273,7 @@ func (s *API) getSolvedProblems(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "User not found", http.StatusNotFound)
 		return
 	}
-	pbs, err := kilonova.SolvedProblems(r.Context(), util.User(r).ID, s.db)
+	pbs, err := s.db.FullSolvedProblems(r.Context(), util.User(r).ID)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -351,7 +352,7 @@ func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 
 	util.User(r).Email = email
 
-	if err := kilonova.SendVerificationEmail(util.User(r), s.db, s.mailer); err != nil {
+	if err := verification.SendVerificationEmail(util.User(r), s.db, s.mailer); err != nil {
 		log.Println(err)
 		errorData(w, "Couldn't send verification email", 500)
 		return
@@ -371,7 +372,7 @@ func (s *API) resendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := kilonova.SendVerificationEmail(u, s.db, s.mailer); err != nil {
+	if err := verification.SendVerificationEmail(u, s.db, s.mailer); err != nil {
 		log.Println(err)
 		errorData(w, "Couldn't send verification email", 500)
 		return

@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi"
 )
@@ -116,7 +117,7 @@ func (rt *Web) ProblemEditRouter(r chi.Router) {
 	r.With(SubTaskValidator(rt.db)).Get("/subtasks/{stid}", rt.subtaskEdit())
 }
 
-func TestIDValidator(db kilonova.DB) func(next http.Handler) http.Handler {
+func TestIDValidator(db *db.DB) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			testID, err := strconv.Atoi(chi.URLParam(r, "tid"))
@@ -139,7 +140,7 @@ func TestIDValidator(db kilonova.DB) func(next http.Handler) http.Handler {
 	}
 }
 
-func SubTaskValidator(db kilonova.DB) func(next http.Handler) http.Handler {
+func SubTaskValidator(db *db.DB) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			subtaskID, err := strconv.Atoi(chi.URLParam(r, "stid"))

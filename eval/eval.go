@@ -4,6 +4,8 @@ import (
 	"context"
 	"io"
 	"io/fs"
+
+	"github.com/KiloProjects/kilonova"
 )
 
 type Sandbox interface {
@@ -115,4 +117,11 @@ type Limits struct {
 	// kilobytes
 	StackLimit  int
 	MemoryLimit int
+}
+
+// GraderSubmission is an interface that provides a locked submission
+type GraderSubmission interface {
+	Submission() *kilonova.Submission
+	Update(kilonova.SubmissionUpdate) error
+	io.Closer
 }

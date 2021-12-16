@@ -15,6 +15,7 @@ import (
 	"strconv"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
@@ -44,33 +45,32 @@ type ReqContext struct {
 }
 
 type ProblemParams struct {
-	Ctx *ReqContext
-	// User          *kilonova.User
+	Ctx           *ReqContext
 	ProblemEditor bool
 
 	Problem     *kilonova.Problem
 	Author      *kilonova.User
 	Attachments []*kilonova.Attachment
 
+	Contest *kilonova.Contest
+
 	Markdown  template.HTML
 	Languages map[string]eval.Language
 }
 
 type ProblemListParams struct {
-	Ctx *ReqContext
-	// User          *kilonova.User
+	Ctx         *ReqContext
 	ProblemList *kilonova.ProblemList
 }
 
 type SubTaskEditParams struct {
-	Ctx *ReqContext
-	// User          *kilonova.User
+	Ctx     *ReqContext
 	Problem *kilonova.Problem
 	SubTask *kilonova.SubTask
 	Topbar  *EditTopbar
 
 	ctx context.Context
-	db  kilonova.DB
+	db  *db.DB
 }
 
 func (s *SubTaskEditParams) ProblemTests() []*kilonova.Test {
@@ -113,13 +113,12 @@ func (s *SubTaskEditParams) TestInSubTask(test *kilonova.Test) bool {
 }
 
 type TestEditParams struct {
-	Ctx *ReqContext
-	// User          *kilonova.User
+	Ctx     *ReqContext
 	Problem *kilonova.Problem
 	Test    *kilonova.Test
 	Topbar  *EditTopbar
 
-	db kilonova.DB
+	db *db.DB
 	dm kilonova.DataStore
 }
 
@@ -176,7 +175,6 @@ type ProblemListingParams struct {
 
 type ProfileParams struct {
 	Ctx *ReqContext
-	// User          *kilonova.User
 
 	ContentUser  *kilonova.User
 	UserProblems []*kilonova.Problem
@@ -184,7 +182,6 @@ type ProfileParams struct {
 
 type StatusParams struct {
 	Ctx *ReqContext
-	// User          *kilonova.User
 
 	Code        int
 	Message     string
@@ -200,20 +197,17 @@ func Status(w io.Writer, params *StatusParams) (err error) {
 }
 
 type MarkdownParams struct {
-	Ctx *ReqContext
-	// User          *kilonova.User
+	Ctx      *ReqContext
 	Markdown template.HTML
 	Title    string
 }
 
 type SimpleParams struct {
 	Ctx *ReqContext
-	// User          *kilonova.User
 }
 
 type AdminParams struct {
-	Ctx *ReqContext
-	// User          *kilonova.User
+	Ctx          *ReqContext
 	IndexDesc    string
 	IndexListAll bool
 	IndexLists   string
@@ -228,7 +222,6 @@ func GenContext(r *http.Request) *ReqContext {
 
 type VerifiedEmailParams struct {
 	Ctx *ReqContext
-	// User          *kilonova.User
 
 	ContentUser *kilonova.User
 }
@@ -251,7 +244,6 @@ var funcs = template.FuncMap{
 		return base64.StdEncoding.EncodeToString(d), err
 	},
 	"KBtoMB":     func(kb int) float64 { return float64(kb) / 1024.0 },
-	"hashedName": fsys.HashName,
 	"version":    func() string { return kilonova.Version },
 	"debug":      func() bool { return config.Common.Debug },
 	"intList":    kilonova.SerializeIntList,

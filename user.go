@@ -2,8 +2,6 @@ package kilonova
 
 import (
 	"database/sql"
-	"errors"
-	"log"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -74,16 +72,4 @@ func HashPassword(password string) (string, error) {
 		return "", err
 	}
 	return string(hash), err
-}
-
-func CheckPwdHash(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-		return false
-	}
-	if err != nil {
-		log.Println(err)
-		return false
-	}
-	return true
 }

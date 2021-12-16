@@ -37,6 +37,7 @@ require (
 )
 
 require (
+	github.com/pelletier/go-toml v1.9.4 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 )

@@ -95,6 +95,13 @@
 		}
 	}
 
+	.quality-highlight {
+		@apply kn-table-simple;
+		@apply bg-amber-300 dark:bg-amber-500;
+		@apply hover:bg-amber-400 dark:hover:bg-amber-600;
+		@apply focus:bg-amber-400 dark:focus:bg-amber-600;
+	}
+
 	.kn-border {
 		@apply border-gray-700 dark:border-gray-200;
 	}
@@ -254,7 +261,7 @@
 
 	pre {
 		tab-size: 4;
-		@apply bg-hljs rounded-lg px-2 mt-1 mb-1;
+		@apply bg-hljs rounded-lg mt-1 mb-1;
 	}
 
 	body {

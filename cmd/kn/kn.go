@@ -49,7 +49,7 @@ func Kilonova() error {
 	}
 
 	// DB Setup
-	db, err := db.AppropriateDB(context.Background(), config.Database)
+	db, err := db.NewPSQL(context.Background(), config.Common.DBDSN)
 	if err != nil {
 		return err
 	}

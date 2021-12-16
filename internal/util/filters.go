@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/db"
 )
 
 // this file stores stuff to both the server and web parts
@@ -62,7 +63,7 @@ func IsSubmissionEditor(sub *kilonova.Submission, user *kilonova.User) bool {
 	return IsAdmin(user) || user.ID == sub.UserID
 }
 
-func IsSubmissionVisible(sub *kilonova.Submission, user *kilonova.User, db kilonova.DB) bool {
+func IsSubmissionVisible(sub *kilonova.Submission, user *kilonova.User, db *db.DB) bool {
 	if sub == nil {
 		return false
 	}
@@ -105,7 +106,7 @@ func IsRSubmissionEditor(r *http.Request) bool {
 	return IsSubmissionEditor(Submission(r), User(r))
 }
 
-func IsRSubmissionVisible(r *http.Request, db kilonova.DB) bool {
+func IsRSubmissionVisible(r *http.Request, db *db.DB) bool {
 	return IsSubmissionVisible(Submission(r), User(r), db)
 }
 

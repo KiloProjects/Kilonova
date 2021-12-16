@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi"
 )
@@ -58,7 +57,7 @@ func (s *API) MustBeProposer(next http.Handler) http.Handler {
 // SetupSession adds the user with the specified user ID to context
 func (s *API) SetupSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session := GetRSession(r, s.db)
+		session := s.GetRSession(r)
 		if session == -1 {
 			next.ServeHTTP(w, r)
 			return
@@ -141,10 +140,10 @@ func (s *API) validateProblemID(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemKey, problem)))
 	})
 }
-func GetRSession(r *http.Request, db kilonova.DB) int {
+func (s *API) GetRSession(r *http.Request) int {
 	authToken := getAuthHeader(r)
 	if authToken != "" { // use Auth tokens by default
-		id, err := db.GetSession(r.Context(), authToken)
+		id, err := s.db.GetSession(r.Context(), authToken)
 		if err == nil {
 			return id
 		}

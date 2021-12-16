@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -26,4 +27,29 @@ func (m *StorageManager) SaveTestInput(testID int, input io.Reader) error {
 
 func (m *StorageManager) SaveTestOutput(testID int, output io.Reader) error {
 	return writeFile(path.Join(m.RootPath, "tests", fmt.Sprintf("%d.out", testID)), output, 0777)
+}
+
+func (m *DBStorageManager) TestInput(ctx context.Context, testID int) (io.ReadCloser, error) {
+
+	panic("not implemented") // TODO: Implement
+}
+
+func (m *DBStorageManager) TestOutput(testID int) (io.ReadCloser, error) {
+	panic("not implemented") // TODO: Implement
+}
+
+func (m *DBStorageManager) SaveTestInput(testID int, input io.Reader) error {
+	panic("not implemented") // TODO: Implement
+}
+
+func (m *DBStorageManager) SaveTestOutput(testID int, output io.Reader) error {
+	panic("not implemented") // TODO: Implement
+}
+
+func (m *DBStorageManager) SubtestWriter(subtest int) (io.WriteCloser, error) {
+	panic("not implemented") // TODO: Implement
+}
+
+func (m *DBStorageManager) SubtestReader(subtest int) (io.ReadCloser, error) {
+	panic("not implemented") // TODO: Implement
 }

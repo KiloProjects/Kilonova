@@ -9,6 +9,8 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/internal/verification"
+	"github.com/davecgh/go-spew/spew"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"golang.org/x/crypto/bcrypt"
@@ -74,7 +76,7 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := kilonova.SendVerificationEmail(user, s.db, s.mailer); err != nil {
+	if err := verification.SendVerificationEmail(user, s.db, s.mailer); err != nil {
 		log.Println("Couldn't send user verification email:", err)
 		return
 	}
@@ -122,6 +124,7 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 	user := users[0]
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(auth.Password))
+	spew.Dump(err, user.Password)
 	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 		errorData(w, "Invalid username or password", http.StatusUnauthorized)
 		return

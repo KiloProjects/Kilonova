@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
@@ -183,4 +184,32 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []interface{}) {
 	}
 
 	return toUpd, args
+}
+
+func (db *DB) FullSolvedProblems(ctx context.Context, uid int) ([]*kilonova.Problem, error) {
+	ids, err := db.SolvedProblems(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	var pbs = make([]*kilonova.Problem, 0, len(ids))
+	for _, id := range ids {
+		pb, err := db.Problem(ctx, id)
+		if err != nil {
+			log.Printf("Couldn't get solved problem %d: %s\n", id, err)
+		} else {
+			pbs = append(pbs, pb)
+		}
+	}
+	return pbs, nil
+}
+
+func (db *DB) VisibleProblems(ctx context.Context, user *kilonova.User) ([]*kilonova.Problem, error) {
+	var uid int
+	if user != nil {
+		uid = user.ID
+		if user.Admin {
+			uid = -1
+		}
+	}
+	return db.Problems(ctx, kilonova.ProblemFilter{LookingUserID: &uid})
 }

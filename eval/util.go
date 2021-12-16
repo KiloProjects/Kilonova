@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova/internal/config"
+	"go.uber.org/zap"
 )
 
 const (
@@ -72,7 +73,7 @@ func RunSubmission(ctx context.Context, box Sandbox, language Language, constrai
 	runConf.MemoryLimit = constraints.MemoryLimit
 	runConf.StackLimit = constraints.StackLimit
 	runConf.TimeLimit = constraints.TimeLimit
-	runConf.WallTimeLimit = constraints.TimeLimit + 4
+	runConf.WallTimeLimit = 2*constraints.TimeLimit + 1
 	if constraints.TimeLimit == 0 {
 		runConf.WallTimeLimit = 15
 	}
@@ -212,21 +213,26 @@ func Initialize() error {
 
 	// Test right now if they exist
 	if _, err := os.Stat(config.Eval.IsolatePath); os.IsNotExist(err) {
-		// download isolate
-		fmt.Println("Downloading isolate binary")
-		if err := downloadFile(isolateURL, config.Eval.IsolatePath, 0744); err != nil {
-			return err
-		}
-		fmt.Println("Isolate binary downloaded")
+		zap.S().Fatal("Sandbox binary not found. Run scripts/init_isolate.sh to properly install it.")
+		/*
+			// download isolate
+			fmt.Println("Downloading isolate binary")
+			if err := downloadFile(isolateURL, config.Eval.IsolatePath, 0744); err != nil {
+				return err
+			}
+			fmt.Println("Isolate binary downloaded")
+		*/
 	}
-	if _, err := os.Stat(config.Eval.IsolatePath); os.IsNotExist(err) {
-		// download the config file
-		fmt.Println("Downloading isolate config")
-		if err := downloadFile(configURL, config.Eval.IsolatePath, 0644); err != nil {
-			return err
+	/*
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			// download the config file
+			fmt.Println("Downloading isolate config")
+			if err := downloadFile(configURL, configPath, 0644); err != nil {
+				return err
+			}
+			fmt.Println("Isolate config downloaded")
 		}
-		fmt.Println("Isolate config downloaded")
-	}
+	*/
 
 	if err := os.MkdirAll(config.Eval.CompilePath, 0777); err != nil {
 		return err

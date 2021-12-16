@@ -7,17 +7,19 @@ import (
 	"os"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/db"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func Generate(problems []*kilonova.Problem, outDB kilonova.DB, dm kilonova.GraderStore) (io.ReadSeekCloser, error) {
+func Generate(problems []*kilonova.Problem, outDB *db.DB, dm kilonova.GraderStore) (io.ReadSeekCloser, error) {
 	// Creating the file
 	file, err := os.CreateTemp("", "kna_w-*.db")
 	if err != nil {
 		return nil, err
 	}
 	path := file.Name()
+	defer os.Remove(path)
 	file.Close()
 
 	// Opening the file

@@ -18,6 +18,7 @@ func Parse(data io.Reader) ([]*FullProblem, error) {
 		return nil, err
 	}
 	path := file.Name()
+	defer os.Remove(path)
 	_, err = io.Copy(file, data)
 	err1 := file.Close()
 	if err == nil && err1 != nil {

@@ -50,25 +50,7 @@
 				<p><a href="/submissions/?problem_id={{.Problem.ID}}&quality=true">{{getText .Ctx.Language "qualitySubs"}}</a></p>
 			</div>
 			{{ if .Ctx.User }}
-				<div class="h-0 w-full border-t border-gray-200"></div>
-				<div class="mt-2 lg:pl-2 lg:pb-2" id="problemSidebar" v-cloak>
-					<p class="text-lg px-2">{{getText .Ctx.Language "oldSubs"}}</p>
-					<div class="mx-auto w-full text-center" v-if="loading">
-						<i class="fas fa-spinner animate-spin"></i> {{getText .Ctx.Language "loading"}}	
-					</div>
-					<div v-else-if="subs.length > 0">
-						<a class="black-anchor flex justify-between items-center rounded py-1 px-2 hoverable" v-for="sub in subs" :key="sub.sub.id" :href="'/submissions/' + sub.sub.id">
-							<span>${timeStr(sub.sub.created_at)}</span>
-							<span class="rounded-md px-2 py-1 bg-teal-700 text-white text-sm" v-if="sub.sub.status == 'finished'">${sub.sub.score}</span>
-							<span class="rounded-md px-2 py-1 bg-teal-700 text-white text-sm" v-else-if="sub.sub.status == 'working'"><i class="fas fa-cog animate-spin"></i></span>
-							<span class="rounded-md px-2 py-1 bg-teal-700 text-white text-sm" v-else><i class="fas fa-clock"></i></span>
-						</a>
-					</div>
-					<p class="px-2" v-else>{{getText .Ctx.Language "noSub"}}</p>
-					<a v-if="limited && hidden > 0" :href="'/submissions/?problem_id='+problemid+'&user_id='+userid">
-						{{getText .Ctx.Language "seeMore"}}	
-					</a>
-				</div>
+				<kn-pb-sidebar pbid="{{.Problem.ID}}"></kn-pb-sidebar>
 			{{ end }}
 			{{ $pbid := .Problem.ID }}
 			{{ $ctx := .Ctx }}
@@ -106,75 +88,13 @@ function makeSubWaiter(id) {
 			document.dispatchEvent(new Event("kn-poll"))
 		}
 		if(res.data.sub.status == "finished") {
-			bundled.createToast({title: {{getText .Ctx.Language "finishedEval"}}, description: `{{getText .Ctx.Language "finalScore"}}: ${res.data.sub.score}`, status: "success"})
+			bundled.createToast({title: bundled.getText("finishedEval"), description: bundled.getText("finalScore", id, res.data.sub.score), status: "success"})
 			clearInterval(interv);
 		}
 		loadingIDs.set(id, res.data.sub.status)
 	}, 2000)
 	return `Watching ${id}...`
 }
-
-let app = Vue.createApp({
-	delimiters: ['${', '}'],
-	data: () => {
-		return {
-			user_id: {{if .Ctx.User}}{{.Ctx.User.ID}}{{else}}0{{end}},
-			problemid: {{.Problem.ID}},
-			subs: [],
-			limit: 5,
-			limited: false,
-			loading: true,
-			total: -1,
-			hidden: -1,
-			polling: false
-		}
-	},
-	methods: {
-		poll: async function() {
-			if(this.polling === true) {
-				return;
-			}
-			this.polling = true;
-			console.info("Polling...");
-			let res = await bundled.getCall("/submissions/get", {user_id: this.user_id, problem_id: this.problemid, limit: this.limit})
-			if(res.status !== "success") {
-				console.error(res);
-				this.polling = false;
-				return
-			}
-			if(res.data != null) {
-				this.subs = res.data.subs
-				this.total = res.data.count
-				this.limited = false
-				if(this.total != this.subs.length) { // it was sliced
-					this.limited = true
-					this.hidden = this.total - this.subs.length
-				}
-				for(let sub of this.subs) {
-					let s = sub.sub;
-					if(s.status !== "finished") {
-						result = makeSubWaiter(s.id)
-						console.info(result)
-					}
-				}
-			}
-			this.polling = false;
-		},
-		timeStr: function(s) {
-			//console.log(s, bundled.dayjs(s).format('DD/MM/YYYY HH:mm'))
-			return bundled.dayjs(s).format('DD/MM/YYYY HH:mm')
-		}
-	},
-	created: async function() {
-		await this.poll()
-		this.loading = false
-		document.addEventListener("kn-poll", async e => {
-			e.preventDefault();
-			await this.poll();
-		})
-	}
-});
-app.mount("#problemSidebar");
 </script>
 
 	{{ if .Ctx.User }}
@@ -217,7 +137,7 @@ async function sendSub() {
 		bundled.apiToast(res)
 		return
 	}
-	bundled.createToast({title: '{{getText .Ctx.Language "uploaded"}}', description: `<a href="/submissions/${res.data}">{{getText .Ctx.Language "view"}}</btn>`})
+	bundled.createToast({title: bundled.getText("uploaded"), description: `<a href="/submissions/${res.data}">${bundled.getText("view")}</a>`})
 	console.log(res.data, makeSubWaiter(res.data));
 	document.dispatchEvent(new Event("kn-poll"));
 }

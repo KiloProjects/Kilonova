@@ -1,4 +1,4 @@
-package kilonova
+package verification
 
 import (
 	"bytes"
@@ -6,6 +6,8 @@ import (
 	"log"
 	"text/template"
 
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/internal/config"
 )
 
@@ -21,7 +23,7 @@ https://kilonova.ro/`
 var emailT = template.Must(template.New("emailTempl").Parse(emailTempl))
 
 // user is used for the email, name and id fields
-func SendVerificationEmail(user *User, db DB, mailer Mailer) error {
+func SendVerificationEmail(user *kilonova.User, db *db.DB, mailer kilonova.Mailer) error {
 	type emTp struct {
 		Name       string
 		Email      string
@@ -37,10 +39,10 @@ func SendVerificationEmail(user *User, db DB, mailer Mailer) error {
 	if err := emailT.Execute(&b, emTp{Name: user.Name, Email: user.Email, VID: vid, HostPrefix: config.Common.HostPrefix}); err != nil {
 		log.Fatal("Error rendering verification email:", err)
 	}
-	return mailer.SendEmail(&MailerMessage{Subject: "Verify your email address", PlainContent: b.String(), To: user.Email})
+	return mailer.SendEmail(&kilonova.MailerMessage{Subject: "Verify your email address", PlainContent: b.String(), To: user.Email})
 }
 
-func CheckVerificationEmail(db DB, vid string) bool {
+func CheckVerificationEmail(db *db.DB, vid string) bool {
 	val, err := db.GetVerification(context.Background(), vid)
 	if err != nil || val == 0 {
 		return false
@@ -50,10 +52,10 @@ func CheckVerificationEmail(db DB, vid string) bool {
 
 var True = true
 
-func ConfirmVerificationEmail(db DB, vid string, user *User) error {
+func ConfirmVerificationEmail(db *db.DB, vid string, user *kilonova.User) error {
 	if err := db.RemoveVerification(context.Background(), vid); err != nil {
 		return err
 	}
 
-	return db.UpdateUser(context.Background(), user.ID, UserUpdate{VerifiedEmail: &True})
+	return db.UpdateUser(context.Background(), user.ID, kilonova.UserUpdate{VerifiedEmail: &True})
 }

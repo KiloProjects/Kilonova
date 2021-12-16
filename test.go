@@ -2,6 +2,8 @@ package kilonova
 
 import (
 	"time"
+
+	"github.com/jackc/pgtype"
 )
 
 type Test struct {
@@ -11,6 +13,9 @@ type Test struct {
 	ProblemID int       `db:"problem_id" json:"problem_id"`
 	VisibleID int       `db:"visible_id" json:"visible_id"`
 	Orphaned  bool      `json:"orphaned"`
+
+	InputOID  pgtype.OID `json:"-" db:"input_oid"`
+	OutputOID pgtype.OID `json:"-" db:"output_oid"`
 }
 
 type TestUpdate struct {

@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"github.com/jackc/pgtype"
 )
 
 type Status string
@@ -23,6 +25,7 @@ type Submission struct {
 	ProblemID int       `db:"problem_id" json:"problem_id"`
 	Language  string    `json:"language"`
 	Code      string    `json:"code,omitempty"`
+	CodeSize  int       `json:"source_size" db:"code_size"`
 	Status    Status    `json:"status"`
 
 	CompileError   sql.NullBool   `db:"compile_error" json:"compile_error"`
@@ -80,6 +83,8 @@ type SubTest struct {
 	TestID       int       `db:"test_id" json:"test_id"`
 	UserID       int       `db:"user_id" json:"user_id"`
 	SubmissionID int       `db:"submission_id" json:"submission_id"`
+
+	OutputOID pgtype.OID `json:"-" db:"output_oid"`
 }
 
 type SubTestUpdate struct {

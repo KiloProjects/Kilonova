@@ -2,40 +2,45 @@ package db
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"log"
 
-	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/stdlib"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
 )
 
-var _ kilonova.DB = &DB{}
-
 type DB struct {
-	conn *sqlx.DB
+	conn    *sqlx.DB
+	pgxConf *pgx.ConnConfig
+
+	listener *NotifyListener
 }
 
 func (d *DB) Close() error {
 	return d.conn.Close()
 }
 
-func NewPSQL(dsn string) (*DB, error) {
-	conn, err := sqlx.Connect("pgx", dsn)
+func NewPSQL(ctx context.Context, dsn string) (*DB, error) {
+	config, err := pgx.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
 	}
-	return &DB{conn}, nil
-}
+	//config.Logger = &logger{}
+	dsn = stdlib.RegisterConnConfig(config)
 
-func AppropriateDB(ctx context.Context, conf config.DBConf) (kilonova.DB, error) {
-	if conf.Type == "postgres" {
-		return NewPSQL(config.Database.DSN)
-	} else {
-		return nil, errors.New("invalid DB type")
+	conn, err := sqlx.ConnectContext(ctx, "pgx", dsn)
+	if err != nil {
+		return nil, err
 	}
+
+	listener, err := NewListener(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DB{conn, config, listener}, nil
 }
 
 func FormatLimitOffset(limit int, offset int) string {
@@ -52,4 +57,13 @@ func FormatLimitOffset(limit int, offset int) string {
 	}
 
 	return ""
+}
+
+type logger struct{}
+
+// Log a message at the given level with data key/value pairs. data may be nil.
+func (l *logger) Log(ctx context.Context, level pgx.LogLevel, msg string, data map[string]interface{}) {
+	log.Println(level, msg, data)
+
+	//panic("not implemented") // TODO: Implement
 }

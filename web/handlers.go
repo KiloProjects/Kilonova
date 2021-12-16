@@ -19,6 +19,7 @@ import (
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/internal/verification"
 	"github.com/go-chi/chi"
 )
 
@@ -114,7 +115,7 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 func (rt *Web) selfProfile() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "profile.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		pbs, err := kilonova.SolvedProblems(r.Context(), util.User(r).ID, rt.db)
+		pbs, err := rt.db.FullSolvedProblems(r.Context(), util.User(r).ID)
 		if err != nil {
 			Status(w, &StatusParams{GenContext(r), 500, "", false})
 			return
@@ -138,7 +139,7 @@ func (rt *Web) profile() func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		pbs, err := kilonova.SolvedProblems(r.Context(), users[0].ID, rt.db)
+		pbs, err := rt.db.FullSolvedProblems(r.Context(), users[0].ID)
 		if err != nil {
 			Status(w, &StatusParams{GenContext(r), 500, "", false})
 			return
@@ -162,7 +163,7 @@ func (rt *Web) resendEmail() func(http.ResponseWriter, *http.Request) {
 			Status(w, &StatusParams{GenContext(r), 403, text, false})
 			return
 		}
-		if err := kilonova.SendVerificationEmail(u, rt.db, rt.mailer); err != nil {
+		if err := verification.SendVerificationEmail(u, rt.db, rt.mailer); err != nil {
 			log.Println(err)
 			Status(w, &StatusParams{GenContext(r), 500, "N-am putut retrimite email-ul de verificare", false})
 			return
@@ -180,7 +181,7 @@ func (rt *Web) verifyEmail() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "verified-email.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		vid := chi.URLParam(r, "vid")
-		if !kilonova.CheckVerificationEmail(rt.db, vid) {
+		if !verification.CheckVerificationEmail(rt.db, vid) {
 			Status(w, &StatusParams{GenContext(r), 404, "", false})
 			return
 		}
@@ -204,7 +205,7 @@ func (rt *Web) verifyEmail() func(http.ResponseWriter, *http.Request) {
 			util.User(r).VerifiedEmail = true
 		}
 
-		if err := kilonova.ConfirmVerificationEmail(rt.db, vid, user); err != nil {
+		if err := verification.ConfirmVerificationEmail(rt.db, vid, user); err != nil {
 			log.Println(err)
 			Status(w, &StatusParams{GenContext(r), 404, "", false})
 			return

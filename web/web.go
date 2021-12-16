@@ -6,29 +6,33 @@ import (
 	"bytes"
 	"context"
 	"embed"
+	"errors"
 	"html/template"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
+	"os"
+	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/web/mdrenderer"
-	"github.com/benbjohnson/hashfs"
 	"github.com/go-chi/chi"
+	"go.uber.org/zap"
 )
 
 var templates *template.Template
 
 //go:embed static
-var embedded embed.FS
+var assets embed.FS
 
 //go:embed templ
 var templateDir embed.FS
-
-var fsys = hashfs.NewFS(embedded)
 
 // Web is the struct representing this whole package
 type Web struct {
@@ -36,7 +40,9 @@ type Web struct {
 	rd    kilonova.MarkdownRenderer
 	debug bool
 
-	db     kilonova.DB
+	static fs.FS
+
+	db     *db.DB
 	mailer kilonova.Mailer
 
 	funcs template.FuncMap
@@ -58,7 +64,8 @@ func (rt *Web) Handler() http.Handler {
 	r.Use(rt.initSession)
 	r.Use(rt.initLanguage)
 
-	r.Mount("/static", hashfs.FileServer(fsys))
+	r.Mount("/static", http.HandlerFunc(rt.staticHandler))
+	//r.Mount("/static", hashfs.FileServer(fsys))
 
 	r.Get("/", rt.index())
 	r.With(mustBeAuthed).Get("/profile", rt.selfProfile())
@@ -155,7 +162,7 @@ func (rt *Web) Handler() http.Handler {
 	})
 
 	r.Get("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
-		file, err := embedded.Open("static/robots.txt")
+		file, err := assets.Open("static/robots.txt")
 		if err != nil {
 			log.Println("Could not open robots.txt")
 			return
@@ -181,7 +188,7 @@ func (rt *Web) parse(optFuncs template.FuncMap, files ...string) *template.Templ
 }
 
 // NewWeb returns a new web instance
-func NewWeb(debug bool, db kilonova.DB, dm kilonova.DataStore, mailer kilonova.Mailer) *Web {
+func NewWeb(debug bool, db *db.DB, dm kilonova.DataStore, mailer kilonova.Mailer) *Web {
 	rd := mdrenderer.NewLocalRenderer()
 	funcs := template.FuncMap{
 		"problemList": func(id int) *kilonova.ProblemList {
@@ -192,7 +199,7 @@ func NewWeb(debug bool, db kilonova.DB, dm kilonova.DataStore, mailer kilonova.M
 			return list
 		},
 		"visibleProblems": func(user *kilonova.User) []*kilonova.Problem {
-			problems, err := kilonova.VisibleProblems(context.Background(), user, db)
+			problems, err := db.VisibleProblems(context.Background(), user)
 			if err != nil {
 				return nil
 			}
@@ -247,5 +254,49 @@ func NewWeb(debug bool, db kilonova.DB, dm kilonova.DataStore, mailer kilonova.M
 			return list
 		},
 	}
-	return &Web{dm, rd, debug, db, mailer, funcs}
+
+	var static fs.FS = assets
+	if debug {
+		static = os.DirFS("web")
+	}
+
+	return &Web{dm, rd, debug, static, db, mailer, funcs}
+}
+
+func (rt *Web) staticHandler(w http.ResponseWriter, r *http.Request) {
+	filename := r.URL.Path
+	if filename == "/" {
+		filename = "."
+	} else {
+		filename = strings.TrimPrefix(filename, "/")
+	}
+	filename = path.Clean(filename)
+	f, err := rt.static.Open(filename)
+	if errors.Is(err, fs.ErrNotExist) {
+		http.Error(w, http.StatusText(404), 404)
+		return
+	} else if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+	defer f.Close()
+
+	ff, ok := f.(io.ReadSeeker)
+	if !ok {
+		zap.S().Warn("Static file is not io.ReadSeeker")
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	st, err := f.Stat()
+	if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+	if st.IsDir() {
+		http.Error(w, http.StatusText(403), 403)
+		return
+	}
+	w.Header().Set("Cache-Control", `public, max-age=3600`)
+	http.ServeContent(w, r, st.Name(), st.ModTime(), ff)
 }
