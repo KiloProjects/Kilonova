@@ -77,12 +77,9 @@ export function createToast(options: ToastOptions) {
 	})
 }
 
-interface Result {
-	status: "success" | "error",
-	data: any,
-}
+import {APIResponse} from './v2/requests';
 
-export function apiToast (res: Result, overwrite?: ToastOptions) {
+export function apiToast (res: APIResponse, overwrite?: ToastOptions) {
 	if(overwrite === null || overwrite === undefined) {
 		overwrite = {}
 	}

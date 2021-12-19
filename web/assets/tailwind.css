@@ -206,6 +206,11 @@
 	.btn {
 		@apply inline-flex justify-center px-4 py-2 leading-5 rounded-md font-medium ring-1 ring-opacity-50;
 		@apply transition ease-in-out duration-150;
+		@apply btn-gray;
+		font-family: inherit;
+	}
+
+	.btn-gray {
 		@apply bg-gray-200 text-gray-800 ring-gray-100;
 		@apply hover:bg-gray-700 hover:text-white;
 		@apply active:bg-gray-700 active:text-white;
@@ -227,6 +232,8 @@
 		@apply dark:hover:ring-blue-500 dark:focus:ring-blue-500;
 		@apply dark:hover:bg-blue-800 dark:active:bg-blue-800 dark:focus:bg-blue-800;
 		@apply dark:hover:text-white dark:active:text-white dark:focus:text-white;
+		font-family: inherit;
+		@apply btn-gray;
 	}
 
 	.btn-red {
@@ -237,6 +244,7 @@
 		@apply dark:hover:ring-red-500 dark:focus:ring-red-500;
 		@apply dark:hover:bg-red-800 dark:active:bg-red-800 dark:focus:bg-red-800;
 		@apply dark:hover:text-white dark:active:text-white dark:focus:text-white;
+		font-family: inherit;
 	}
 
 	.is-invalid {

@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
-
-	"github.com/jackc/pgtype"
 )
 
 type Status string
@@ -84,7 +82,7 @@ type SubTest struct {
 	UserID       int       `db:"user_id" json:"user_id"`
 	SubmissionID int       `db:"submission_id" json:"submission_id"`
 
-	OutputOID pgtype.OID `json:"-" db:"output_oid"`
+	//OutputOID pgtype.OID `json:"-" db:"output_oid"`
 }
 
 type SubTestUpdate struct {

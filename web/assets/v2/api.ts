@@ -16,7 +16,7 @@ class API {
 
 	async getUser(id: number): Promise<User> {
 		let res = await this.client.getRequest("/user/get", {id})
-		return new User({})
+		return new User(res.data)
 	}
 
 }

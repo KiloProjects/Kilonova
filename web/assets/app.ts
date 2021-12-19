@@ -14,14 +14,15 @@ const languages = {
 
 export { languages };
 
-export * as cookie from 'js-cookie';
+import cookie from 'js-cookie';
+export {cookie};
 
 export * from './net';
 export * from './util';
 export * from './toast';
 export * from './components';
 
-export { getText } from './translation.ts';
+export { getText } from './translation';
 
 export { NavBarManager } from './navbar.js';
 export { CheckboxManager } from './checkbox_mgr.js';

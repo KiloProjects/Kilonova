@@ -1,6 +1,29 @@
 import qs from 'query-string';
 import cookie from 'js-cookie';
 
+import {Client, APIResponse} from './v2/requests';
+
+const cl = new Client()
+
+export async function getCall(call: string, params?: Record<string, any>): Promise<APIResponse> {
+	return await cl.getRequest(call, params)
+}
+
+export async function postCall(call: string, data?: Record<string, any>): Promise<APIResponse> {
+	return await cl.postRequest(call, data)
+}
+
+export async function bodyCall(call: string, body: any): Promise<APIResponse> {
+	return await cl.bodyRequest(call, body)
+	
+}
+
+export async function multipartCall(call: string, formdata: FormData): Promise<APIResponse> {
+	return await cl.multipartRequest(call, formdata)
+}
+
+
+/*
 export async function getCall(call: string, params: any) {
 	if(call.startsWith('/')) {
 		call = call.substr(1)
@@ -60,3 +83,4 @@ export async function multipartCall(call: string, formdata: FormData) {
 		return {status: "error", data: e.toString()}
 	}
 }
+*/
