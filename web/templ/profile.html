@@ -15,14 +15,14 @@
 				{{end}}
 			{{ end }}
 		{{ end }}</span>
-		<p><a href="/submissions/?user_id={{.ContentUser.ID}}">{{getText .Ctx.Language "subList"}}</a></p>
+		<p><a href="/submissions/?user_id={{.ContentUser.ID}}">{{getText .Ctx.Language "submission.list"}}</a></p>
 		{{- if .Ctx.User -}} {{if (or .Ctx.User.Admin (eq .Ctx.User.ID .ContentUser.ID)) -}}
 		<p>{{getText .Ctx.Language "email"}}: {{.ContentUser.Email}}</p>
-		<p>{{getText .Ctx.Language "verifiedEmail"}}? 
+		<p>{{getText .Ctx.Language "email.verified"}}? 
 			{{ if .ContentUser.VerifiedEmail -}}
 				{{getText .Ctx.Language "yes"}}	
 			{{- else -}}
-				{{getText .Ctx.Language "no"}} | <button class="btn btn-blue" onclick="bundled.resendEmail()">{{getText .Ctx.Language "resend"}}</button>
+				{{getText .Ctx.Language "no"}} | <button class="btn btn-blue" onclick="resendEmail()">{{getText .Ctx.Language "resend"}}</button>
 			{{- end -}}</p>
 		{{- end -}} {{- end -}}
 	</div>
@@ -39,6 +39,11 @@
 <button class="mt-6 block btn btn-red" onclick="deleteAccount()">{{getText .Ctx.Language "deleteAccount"}}</button>
 
 <script>
+async function resendEmail() {
+    let res = await postCall('/user/resendEmail')
+    apiToast(res)
+    return res
+}
 async function deleteAccount() {
 	
 	if(!confirm('{{getText .Ctx.Language "delAccConfirmation"}}')) {

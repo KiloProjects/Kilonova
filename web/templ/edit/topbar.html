@@ -2,7 +2,7 @@
 {{ $topbar := .Topbar }}
 {{ $lang := .Ctx.Language }}
 <div class="segment-container">
-	<h1>{{getText .Ctx.Language "problemEdit"}} <a href="/problems/{{$id}}">{{.Problem.Name}}</a></h1>
+	<h1>{{getText .Ctx.Language "title.edit.problem"}} <a href="/problems/{{$id}}">{{.Problem.Name}}</a></h1>
 	<div class="mb-2">
 		<a class="p-1 {{if (eq $topbar.Page "general")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit">{{getText .Ctx.Language "general"}}</a>
 		|

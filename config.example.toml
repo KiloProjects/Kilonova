@@ -5,10 +5,7 @@
  host_prefix = "https://kilonova.ro/"
  port = 8070
  default_language = "en"
-
-[database]
- dbtype = "sqlite"
- dsn = "database.db"
+ db_dsn = "postgresql://<fill here>"
 
 [eval]
  isolatePath = "/tmp/isolate"
@@ -20,8 +17,3 @@
  host = "HOST"
  username = "USERNAME"
  password = "PASSWORD"
-
-[index]
- lists_to_show = []
- show_problems = true
- description = "I haven't yet configured Kilonova, the next-gen programming platform that I am using right now."

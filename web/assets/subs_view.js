@@ -1,11 +1,11 @@
 import _ from 'underscore';
-import {getText} from './translation.js';
+import getText from './translation.js';
 
 var SubmissionsApp = {
 	data: () => {
 		return {
 			submissions: [],
-			filters: {user_id: null, problem_id: null, status: "", lang: "", visible: "", quality: "", compile_error: "", offset: 0, ordering: "id", ascending: false},
+			filters: {user_id: null, problem_id: null, status: "", lang: "", compile_error: "", offset: 0, ordering: "id", ascending: false},
 			page: 1,
 			loading: true,
 			hiddenBar: false,
@@ -38,7 +38,13 @@ var SubmissionsApp = {
 			return this.getText("waiting")
 		},
 		getRezStr: function() {
-			return this.getText("nResults")(this.subCount)
+            if(this.subCount == 1) {
+                return this.getText("oneResult")
+            }
+            if(this.subCount < 20) {
+                return `${this.subCount} ${this.getText('u20Results')}`
+            }
+            return `${this.subCount} ${this.getText('manyResults')}`
 		},
 		getFilters: function(old) {
 			var res = {};
@@ -58,12 +64,6 @@ var SubmissionsApp = {
 			}
 			if(old.lang !== "" ) {
 				res.lang = old.lang
-			}
-			if(old.visible == "true" || old.visible == "false") {
-				res.visible = old.visible == "true";
-			}
-			if(old.quality == "true" || old.quality == "false") {
-				res.quality = old.quality == "true";
 			}
 			if(old.compile_error == "true" || old.compile_error == "false") {
 				res.compile_error = old.compile_error == "true";
@@ -94,12 +94,6 @@ var SubmissionsApp = {
 			if(this.filters.lang !== "") {
 				p.append("lang", this.filters.lang);
 			}
-			if(this.filters.visible !== "") {
-				p.append("visible", this.filters.visible);
-			}
-			if(this.filters.quality !== "") {
-				p.append("quality", this.filters.quality);
-			}
 			if(this.filters.compile_error !== "") {
 				p.append("compile_error", this.filters.compile_error);
 			}
@@ -119,12 +113,12 @@ var SubmissionsApp = {
 				bundled.createToast({status: "success", title: this.getText("copied")});
 			} catch(e) {
 				console.error(e);
-				bundled.createToast({status: "error", title: this.getText("copyErr")})
+				bundled.createToast({status: "error", title: this.getText("notCopied")})
 			}
 		},
 		sizeFormatter: (sz) => bundled.sizeFormatter(sz),
 		getText: function(key) {
-			return getText(this.lang, key)
+			return getText(key)
 		},
 	},
 	watch: {
@@ -156,8 +150,6 @@ var SubmissionsApp = {
 		const status = params.get("status");
 		const score = params.get("score");
 		const lang = params.get("lang");
-		const visible = params.get("visible");
-		const quality = params.get("quality");
 		const compile_error = params.get("compile_error");
 	
 		const ordering = params.get("ordering");
@@ -195,14 +187,6 @@ var SubmissionsApp = {
 
 		if(lang !== null) {
 			this.filters.lang = lang;
-		}
-
-		if(visible == "true" || visible == "false") {
-			this.filters.visible = (visible == "true").toString();
-		}
-
-		if(quality == "true" || quality == "false") {
-			this.filters.quality = (quality == "true").toString();
 		}
 
 		if(compile_error == "true" || compile_error == "false") {

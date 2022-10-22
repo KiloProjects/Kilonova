@@ -1,4 +1,4 @@
-{{ define "title" }} {{getText .Ctx.Language "editTestEdit" .Test.VisibleID .Problem.ID .Problem.Name}} {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "title.edit.test_edit" .Test.VisibleID .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 <br/>
@@ -10,9 +10,18 @@
 			<span class="mr-2 text-xl">ID: </span>
 			<input id="vID" type="number" class="form-input" value="{{ .Test.VisibleID }}" required />
 		</label>
-		<button class="btn btn-blue mb-2">{{getText .Ctx.Language "update"}}</button>
+		<label class="block my-2">
+			<span class="mr-2 text-xl">{{getText .Ctx.Language "score"}}: </span>
+			<input id="score" type="number" class="form-input" value="{{ .Test.Score }}" required />
+		</label>
+		<button class="btn btn-blue mb-2">{{getText .Ctx.Language "button.update"}}</button>
 	</form>
-	<button id="orphan_button" class="btn btn-red block my-2"> {{getText .Ctx.Language "delete"}} </button>
+	<button id="orphan_button" class="btn btn-red block my-2"> {{getText .Ctx.Language "button.delete"}} </button>
+
+	<div class="mb-2">
+		<a class="btn btn-blue" href="{{.Test.VisibleID}}/input" download>Download input</a>
+		<a class="btn btn-blue" href="{{.Test.VisibleID}}/output" download>Download output</a>
+	</div>
 
 	<form id="test_edit_form">
 		{{ $test := .GetFullTests }}
@@ -24,7 +33,7 @@
 			<h3> Output: </h3>
 			<textarea class="form-textarea" style="width:80%;" rows="15" id="output">{{$test.Out}}</textarea>
 		</div>
-		<button class="btn btn-blue mb-2" >{{getText .Ctx.Language "update"}}</button>
+		<button class="btn btn-blue mb-2" >{{getText .Ctx.Language "button.update"}}</button>
 	</form>
 </div>
 
@@ -32,12 +41,15 @@
 async function updateID(e) {
 	e.preventDefault()
 	let q = {
-		id: document.getElementById("vID").value
+		id: document.getElementById("vID").value,
+        score: document.getElementById("score").value
 	}
-	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/id", q);
+	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/info", q);
 	if(res.status === "success") {
-		window.location.replace("/problems/{{.Problem.ID}}/edit/test/"+q.id)
-		return
+        if(q.id != {{.Test.VisibleID}}) {
+            window.location.replace("/problems/{{.Problem.ID}}/edit/test/"+q.id)
+            return
+        }
 	}
 	bundled.apiToast(res)
 }
@@ -65,7 +77,6 @@ async function removeTest(e) {
 	bundled.apiToast(res);
 }
 document.getElementById("test_edit_form").addEventListener("submit", updateData)
-document.getElementById("test_score_edit_form").addEventListener("submit", updateScore)
 document.getElementById("test_id_edit_form").addEventListener("submit", updateID)
 document.getElementById("orphan_button").addEventListener("click", removeTest)
 </script>

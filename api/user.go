@@ -2,14 +2,11 @@ package api
 
 import (
 	"bytes"
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
 	"mime"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -19,26 +16,18 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/microcosm-cc/bluemonday"
-	"golang.org/x/crypto/bcrypt"
+	"go.uber.org/zap"
 )
 
-var (
-	errUserNotFound = &kilonova.Error{Code: kilonova.ENOTFOUND, Message: "User not found"}
-)
-
-func (s *API) serveGravatar(w http.ResponseWriter, r *http.Request, user *kilonova.User, size int) {
-	v := url.Values{}
-	v.Add("s", strconv.Itoa(size))
-	v.Add("d", "identicon")
-
-	bSum := md5.Sum([]byte(user.Email))
-	url := "https://www.gravatar.com/avatar/" + hex.EncodeToString(bSum[:]) + "?" + v.Encode()
+func (s *API) serveGravatar(w http.ResponseWriter, r *http.Request, user *kilonova.UserFull, size int) {
+	url := s.base.GetGravatarLink(user, size)
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Println(err)
 		errorData(w, err, 500)
 		return
 	}
+
 	// get the name
 	_, params, _ := mime.ParseMediaType(resp.Header.Get("content-disposition"))
 	name := params["filename"]
@@ -67,7 +56,7 @@ func (s *API) getSelfGravatar(w http.ResponseWriter, r *http.Request) {
 	if err != nil || size == 0 {
 		size = 128
 	}
-	s.serveGravatar(w, r, util.User(r), size)
+	s.serveGravatar(w, r, util.UserFull(r), size)
 }
 
 func (s *API) getGravatar(w http.ResponseWriter, r *http.Request) {
@@ -80,35 +69,12 @@ func (s *API) getGravatar(w http.ResponseWriter, r *http.Request) {
 	if err != nil || size == 0 {
 		size = 128
 	}
-	users, err := s.db.Users(r.Context(), kilonova.UserFilter{Name: &name, Limit: 1})
-	if err != nil || len(users) == 0 {
+	user, err1 := s.base.UserFullByName(r.Context(), name)
+	if err1 != nil {
 		errorData(w, err, http.StatusNotFound)
 		return
 	}
-	s.serveGravatar(w, r, users[0], size)
-}
-
-func (s *API) setSubVisibility(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	var args struct{ Visibility bool }
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 400)
-		return
-	}
-	if err := s.db.UpdateUser(
-		r.Context(),
-		util.User(r).ID,
-		kilonova.UserUpdate{DefaultVisible: &args.Visibility},
-	); err != nil {
-		errorData(w, err, 500)
-		return
-	}
-
-	if args.Visibility {
-		returnData(w, "Made visible")
-	} else {
-		returnData(w, "Made invisible")
-	}
+	s.serveGravatar(w, r, user, size)
 }
 
 func (s *API) setPreferredLanguage() func(w http.ResponseWriter, r *http.Request) {
@@ -126,9 +92,9 @@ func (s *API) setPreferredLanguage() func(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		if err := s.db.UpdateUser(
+		if err := s.base.UpdateUser(
 			r.Context(),
-			util.User(r).ID,
+			util.UserBrief(r).ID,
 			kilonova.UserUpdate{PreferredLanguage: safe},
 		); err != nil {
 			errorData(w, err, 500)
@@ -150,9 +116,9 @@ func (s *API) setBio() func(w http.ResponseWriter, r *http.Request) {
 
 		safe := strings.TrimSpace(bluemonday.StrictPolicy().Sanitize(args.Bio))
 
-		if err := s.db.UpdateUser(
+		if err := s.base.UpdateUser(
 			r.Context(),
-			util.User(r).ID,
+			util.UserBrief(r).ID,
 			kilonova.UserUpdate{Bio: &safe},
 		); err != nil {
 			errorData(w, err, 500)
@@ -174,7 +140,7 @@ func (s *API) purgeBio(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.db.UpdateUser(
+	if err := s.base.UpdateUser(
 		r.Context(),
 		args.ID,
 		kilonova.UserUpdate{Bio: &args.Bio},
@@ -195,18 +161,18 @@ func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.db.User(r.Context(), args.ID)
+	user, err := s.base.UserBrief(r.Context(), args.ID)
 	if err != nil {
 		errorData(w, err, 500)
 		return
 	}
 
 	if user.Admin {
-		errorData(w, "You can't erase a fellow admin! Unmod him first", 400)
+		errorData(w, "You can't delete an admin account!", 400)
 		return
 	}
 
-	if err := s.db.DeleteUser(r.Context(), args.ID); err != nil {
+	if err := s.base.DeleteUser(r.Context(), args.ID); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -214,46 +180,8 @@ func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Deleted user")
 }
 
-func (s *API) getUser(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	var args struct {
-		ID int
-	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 500)
-		return
-	}
-
-	user, err := s.db.User(r.Context(), args.ID)
-	if err != nil {
-		errorData(w, err, 500)
-		return
-	}
-	user.Password = ""
-	returnData(w, user)
-}
-
-func (s *API) getUserByName(w http.ResponseWriter, r *http.Request) {
-	name := strings.TrimSpace(r.FormValue("name"))
-	if name == "" {
-		errorData(w, "Name not specified", http.StatusBadRequest)
-		return
-	}
-	users, err := s.db.Users(r.Context(), kilonova.UserFilter{Name: &name, Limit: 1})
-	if err != nil || len(users) == 0 {
-		errorData(w, "User not found", http.StatusNotFound)
-		return
-	}
-	users[0].Password = ""
-	returnData(w, users[0])
-}
-
-func (s *API) getSelf(w http.ResponseWriter, r *http.Request) {
-	returnData(w, util.User(r))
-}
-
 func (s *API) getSelfSolvedProblems(w http.ResponseWriter, r *http.Request) {
-	pbs, err := kilonova.SolvedProblems(r.Context(), util.User(r).ID, s.db)
+	pbs, err := s.base.SolvedProblems(r.Context(), util.UserBrief(r).ID)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -262,22 +190,17 @@ func (s *API) getSelfSolvedProblems(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getSolvedProblems(w http.ResponseWriter, r *http.Request) {
-	name := strings.TrimSpace(r.FormValue("name"))
-	if name == "" {
-		errorData(w, "Name not specified", http.StatusBadRequest)
-		return
-	}
-	users, err := s.db.Users(r.Context(), kilonova.UserFilter{Name: &name, Limit: 1})
-	if err != nil || len(users) == 0 {
+	user, err := s.base.UserBriefByName(r.Context(), r.FormValue("name"))
+	if err != nil {
 		errorData(w, "User not found", http.StatusNotFound)
 		return
 	}
-	pbs, err := kilonova.SolvedProblems(r.Context(), util.User(r).ID, s.db)
-	if err != nil {
-		errorData(w, err, 500)
+	pbs, err1 := s.base.SolvedProblems(r.Context(), user.ID)
+	if err1 != nil {
+		errorData(w, err1, 500)
 		return
 	}
-	returnData(w, util.FilterVisible(util.User(r), pbs))
+	returnData(w, util.FilterVisible(util.UserBrief(r), pbs))
 }
 
 // ChangeEmail changes the password of the saved user
@@ -289,16 +212,10 @@ func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hash, err := kilonova.HashPassword(password)
-	if err != nil {
-		errorData(w, err, 500)
-		return
-	}
-
-	if err := s.db.UpdateUser(
+	if err := s.base.UpdateUserPassword(
 		r.Context(),
-		util.User(r).ID,
-		kilonova.UserUpdate{PwdHash: &hash},
+		util.UserBrief(r).ID,
+		password,
 	); err != nil {
 		errorData(w, err, 500)
 		return
@@ -320,70 +237,34 @@ func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if email == util.User(r).Email {
-		errorData(w, "You already have this email set!", 400)
+	if err := s.base.VerifyUserPassword(r.Context(), util.UserBrief(r).ID, password); err != nil {
+		err.WriteError(w)
 		return
 	}
 
-	// Get the user back, since we trimmed the password
-	user, err := s.db.User(r.Context(), util.User(r).ID)
-	if err != nil {
-		log.Println("Something went very wrong:", err)
-		errorData(w, "Couldn't get you, this should never happen", 500)
-		return
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		errorData(w, "Wrong password", 400)
-		return
-	}
-
-	False := false
-	now := time.Now()
-	if err := s.db.UpdateUser(
-		r.Context(),
-		util.User(r).ID,
-		kilonova.UserUpdate{Email: &email, VerifiedEmail: &False, EmailVerifSentAt: &now},
-	); err != nil {
-		errorData(w, err, 500)
-		return
-	}
-
-	util.User(r).Email = email
-
-	if err := kilonova.SendVerificationEmail(util.User(r), s.db, s.mailer); err != nil {
-		log.Println(err)
-		errorData(w, "Couldn't send verification email", 500)
+	if err := s.base.SendVerificationEmail(r.Context(), util.UserBrief(r).ID, util.UserBrief(r).Name, email); err != nil {
+		zap.S().Warn(err)
+		err.WriteError(w)
 		return
 	}
 	returnData(w, "Successfully changed email")
 }
 
 func (s *API) resendVerificationEmail(w http.ResponseWriter, r *http.Request) {
-	u := util.User(r)
+	u := util.UserFull(r)
 	if u.VerifiedEmail {
 		errorData(w, "You already have a verified email!", 400)
 		return
 	}
 
-	if time.Now().Sub(u.EmailVerifSentAt.Time) < 5*time.Minute {
+	if time.Since(u.EmailVerifResent) < 5*time.Minute {
 		errorData(w, "You must wait 5 minutes before sending another verification email!", 400)
 		return
 	}
 
-	if err := kilonova.SendVerificationEmail(u, s.db, s.mailer); err != nil {
-		log.Println(err)
-		errorData(w, "Couldn't send verification email", 500)
+	if err := s.base.SendVerificationEmail(r.Context(), u.ID, u.Name, u.Email); err != nil {
+		err.WriteError(w)
 		return
-	}
-
-	now := time.Now()
-	if err := s.db.UpdateUser(
-		r.Context(),
-		util.User(r).ID,
-		kilonova.UserUpdate{EmailVerifSentAt: &now},
-	); err != nil {
-		log.Println("Couldn't update verification email timestamp:", err)
 	}
 	returnData(w, "Verification email resent")
 }

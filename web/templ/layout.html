@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ro">
+<html lang="{{.Ctx.Language}}">
 
 <head>
 	<meta charset="utf-8" />
@@ -15,7 +15,7 @@
 	<!-- OpenGraph stuff -->
 	<meta property="og:title" content='{{template "title" .}}' />
 	<meta property="og:type" content="website" />
-	<meta property="og:description" content='{{block "description" .}}Programming platform for learning and exercising{{end}}' />
+	<meta property="og:description" content='{{block "description" .}}Programming platform for learning and practising{{end}}' />
 	<meta name="description" content='{{template "description" .}}' />
 	<meta property="og:locale" content="ro_RO" />
 	<meta property="og:site_name" content="Kilonova" />
@@ -29,9 +29,16 @@
 	<script src="/{{$bundle}}"></script>
 
 	<!--highlight.js-->
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css" />
-	<style>@import url("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/monokai.min.css") (prefers-color-scheme: dark);</style>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/default.min.css" />
+	<!--<style>@import url("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/nnfx-dark.min.css") (prefers-color-scheme: dark);</style>-->
+	<style>@import url("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/monokai.min.css") (prefers-color-scheme: dark);</style>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/highlight.min.js"></script>
+
+	<script src="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.js"></script>
+	<link
+  rel="stylesheet"
+  href="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.css"
+/>
 
 	<!--use KaTeX instead of MathJax-->
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.12.0/katex.min.css" />
@@ -49,8 +56,13 @@
 			});
 		}
 		document.addEventListener('DOMContentLoaded', loadKaTeX);
-		hljs.configure({languages:['c', 'cpp', 'py', 'go', 'haskell']}) // TODO
-		hljs.initHighlightingOnLoad();
+		hljs.configure({languages:['c', 'cpp', 'py', 'go', 'haskell', 'python3']}) // TODO
+		hljs.highlightAll();
+		hljs.addPlugin(
+			new CopyButtonPlugin({
+				callback: (text, el) => bundled.apiToast({status: "success", data: bundled.getText("copied") }),
+		  	})
+		);
 		var platform_info = {
 			debug: {{debug}},
 			admin: {{if .Ctx.User}}{{.Ctx.User.Admin}}{{else}}false{{end}},

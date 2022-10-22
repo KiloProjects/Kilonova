@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/jackc/pgtype"
 	"go.uber.org/zap"
 )
 
@@ -18,18 +17,14 @@ func (s *DB) CreateSubTask(ctx context.Context, subtask *kilonova.SubTask) error
 		return kilonova.ErrMissingRequired
 	}
 	var id int
-	// Convert subtask list to array
-	arr := pgtype.Int4Array{}
-	if err := arr.Set(subtask.Tests); err != nil {
-		zap.S().Warn("Wtf", err)
+	// Do insertion
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind("INSERT INTO subtasks (problem_id, visible_id, score) VALUES (?, ?, ?) RETURNING id"), subtask.ProblemID, subtask.VisibleID, subtask.Score)
+	if err != nil {
 		return err
 	}
-	// Do insertion
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind("INSERT INTO subtasks (problem_id, visible_id, score, tests) VALUES (?, ?, ?, ?) RETURNING id"), subtask.ProblemID, subtask.VisibleID, subtask.Score, arr)
-	if err == nil {
-		subtask.ID = id
-	}
-	return err
+	subtask.ID = id
+	// Add subtask's tests
+	return s.UpdateSubTaskTests(ctx, subtask.ID, subtask.Tests)
 }
 
 func (s *DB) SubTask(ctx context.Context, pbid, stvid int) (*kilonova.SubTask, error) {
@@ -38,7 +33,11 @@ func (s *DB) SubTask(ctx context.Context, pbid, stvid int) (*kilonova.SubTask, e
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
-	return internalToSubTask(&st), err
+	if err != nil {
+		return nil, err
+	}
+
+	return s.internalToSubTask(ctx, &st)
 }
 
 func (s *DB) SubTaskByID(ctx context.Context, stid int) (*kilonova.SubTask, error) {
@@ -47,7 +46,11 @@ func (s *DB) SubTaskByID(ctx context.Context, stid int) (*kilonova.SubTask, erro
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
-	return internalToSubTask(&st), err
+	if err != nil {
+		return nil, err
+	}
+
+	return s.internalToSubTask(ctx, &st)
 }
 
 func (s *DB) SubTasks(ctx context.Context, pbid int) ([]*kilonova.SubTask, error) {
@@ -57,21 +60,32 @@ func (s *DB) SubTasks(ctx context.Context, pbid int) ([]*kilonova.SubTask, error
 		return []*kilonova.SubTask{}, nil
 	}
 	sts := []*kilonova.SubTask{}
-	for _, s := range st {
-		sts = append(sts, internalToSubTask(s))
+	for _, ss := range st {
+		stk, err := s.internalToSubTask(ctx, ss)
+		if err != nil {
+			zap.S().Warn(err)
+			continue
+		}
+		sts = append(sts, stk)
 	}
 	return sts, err
 }
 
+// TODO: Test
 func (s *DB) SubTasksByTest(ctx context.Context, pbid, tid int) ([]*kilonova.SubTask, error) {
 	var st []*subtask
-	err := s.conn.SelectContext(ctx, &st, s.conn.Rebind("SELECT * FROM subtasks WHERE ? = ANY(tests) AND problem_id = ? ORDER BY visible_id"), tid, pbid)
+	err := s.conn.SelectContext(ctx, &st, s.conn.Rebind("SELECT stks.* FROM subtasks stks LEFT JOIN subtask_tests stt ON stks.id = stt.subtask_id WHERE stt.test_id = ? AND stks.problem_id = ? ORDER BY visible_id"), tid, pbid)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.SubTask{}, nil
 	}
 	sts := []*kilonova.SubTask{}
-	for _, s := range st {
-		sts = append(sts, internalToSubTask(s))
+	for _, ss := range st {
+		stk, err := s.internalToSubTask(ctx, ss)
+		if err != nil {
+			zap.S().Warn(err)
+			continue
+		}
+		sts = append(sts, stk)
 	}
 	return sts, err
 }
@@ -83,14 +97,6 @@ func (s *DB) UpdateSubTask(ctx context.Context, id int, upd kilonova.SubTaskUpda
 	}
 	if v := upd.Score; v != nil {
 		toUpd, args = append(toUpd, "score = ?"), append(args, v)
-	}
-	if v := upd.Tests; v != nil {
-		arr := pgtype.Int4Array{}
-		if err := arr.Set(v); err != nil {
-			zap.S().Warn("Wtf", err)
-			return err
-		}
-		toUpd, args = append(toUpd, "tests = ?"), append(args, arr)
 	}
 
 	if len(toUpd) == 0 {
@@ -105,6 +111,28 @@ func (s *DB) UpdateSubTask(ctx context.Context, id int, upd kilonova.SubTaskUpda
 	return err
 }
 
+func (s *DB) UpdateSubTaskTests(ctx context.Context, id int, testIDs []int) error {
+	tx, err := s.conn.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Naively delete all associations, then add them back
+	if _, err := tx.ExecContext(ctx, s.conn.Rebind("DELETE FROM subtask_tests WHERE subtask_id = ?"), id); err != nil {
+		return err
+	}
+
+	for _, testID := range testIDs {
+		if _, err := tx.ExecContext(ctx, s.conn.Rebind("INSERT INTO subtask_tests (subtask_id, test_id) VALUES (?, ?) ON CONFLICT DO NOTHING"), id, testID); err != nil {
+			zap.S().Warn(err)
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
 func (s *DB) DeleteSubTask(ctx context.Context, stid int) error {
 	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("DELETE FROM subtasks WHERE id = ?"), stid)
 	return err
@@ -115,29 +143,52 @@ func (s *DB) DeleteSubTasks(ctx context.Context, pbid int) error {
 	return err
 }
 
+func (s *DB) CleanupSubTasks(ctx context.Context, pbid int) error {
+	_, err := s.conn.ExecContext(ctx, s.conn.Rebind(`
+DELETE FROM subtasks 
+WHERE 
+	problem_id = ? AND 
+	id IN (
+		WITH stk_count AS (
+			SELECT subtask_id, COUNT(*) as cnt FROM subtask_tests GROUP BY subtask_id
+		) 
+		SELECT subtask_id FROM stk_count WHERE cnt = 0
+	);
+`))
+	return err
+}
+
 type subtask struct {
 	ID        int
 	CreatedAt time.Time `db:"created_at"`
 	ProblemID int       `db:"problem_id"`
 	VisibleID int       `db:"visible_id"`
 	Score     int
-	Tests     pgtype.Int4Array
 }
 
-func internalToSubTask(st *subtask) *kilonova.SubTask {
+func (s *DB) internalToSubTask(ctx context.Context, st *subtask) (*kilonova.SubTask, error) {
 	if st == nil {
-		return nil
+		return nil, nil
 	}
-	tests := make([]int, 0, len(st.Tests.Elements))
-	for _, test := range st.Tests.Elements {
-		tests = append(tests, int(test.Int))
+
+	var ids []int
+	// TODO: Test
+	err := s.conn.SelectContext(ctx, &ids, s.conn.Rebind("SELECT subtask_tests.test_id FROM subtask_tests INNER JOIN tests ON tests.id = subtask_tests.test_id WHERE subtask_tests.subtask_id = ? AND tests.orphaned = false ORDER BY tests.visible_id ASC"), st.ID)
+	if errors.Is(err, sql.ErrNoRows) {
+		ids = []int{}
+	} else if err != nil {
+		return nil, err
 	}
+	if len(ids) == 0 {
+		ids = []int{}
+	}
+
 	return &kilonova.SubTask{
 		ID:        st.ID,
 		CreatedAt: st.CreatedAt,
 		ProblemID: st.ProblemID,
 		VisibleID: st.VisibleID,
 		Score:     st.Score,
-		Tests:     tests,
-	}
+		Tests:     ids,
+	}, nil
 }

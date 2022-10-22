@@ -2,6 +2,7 @@ package mdrenderer
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -58,7 +59,7 @@ func (att *attachmentRenderer) renderYoutube(writer util.BufWriter, source []byt
 		return ast.WalkContinue, nil
 	}
 	node := n.(*AttachmentNode)
-	fmt.Fprintf(writer, `<img src="./attachments/%s"/>`, node.Filename)
+	fmt.Fprintf(writer, `<problem-attachment attname="%s"></problem-attachment>`, url.PathEscape(node.Filename))
 	return ast.WalkContinue, nil
 }
 

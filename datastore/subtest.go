@@ -17,7 +17,7 @@ func (m *StorageManager) SubtestWriter(subtest int) (io.WriteCloser, error) {
 }
 
 // SubtestReader should be used by the grader
-func (m *StorageManager) SubtestReader(subtest int) (io.ReadCloser, error) {
+func (m *StorageManager) SubtestReader(subtest int) (io.ReadSeekCloser, error) {
 	return os.Open(m.SubtestPath(subtest))
 }
 

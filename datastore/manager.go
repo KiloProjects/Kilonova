@@ -48,7 +48,7 @@ func writeFile(path string, r io.Reader, perms fs.FileMode) error {
 	if err != nil {
 		return err
 	}
-	_, err = f.ReadFrom(r)
+	_, err = io.Copy(f, r)
 	if err1 := f.Close(); err1 != nil && err == nil {
 		err = err1
 	}

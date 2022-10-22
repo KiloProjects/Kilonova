@@ -8,11 +8,11 @@ import (
 	"strconv"
 )
 
-func (m *StorageManager) TestInput(testID int) (io.ReadCloser, error) {
+func (m *StorageManager) TestInput(testID int) (io.ReadSeekCloser, error) {
 	return os.Open(path.Join(m.RootPath, "tests", strconv.Itoa(testID)+".in"))
 }
 
-func (m *StorageManager) TestOutput(testID int) (io.ReadCloser, error) {
+func (m *StorageManager) TestOutput(testID int) (io.ReadSeekCloser, error) {
 	return os.Open(m.TestOutputPath(testID))
 }
 

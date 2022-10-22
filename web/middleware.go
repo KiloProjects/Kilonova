@@ -2,12 +2,12 @@ package web
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 	"golang.org/x/text/language"
 )
 
@@ -26,19 +26,13 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 			statusPage(w, r, http.StatusBadRequest, "ID invalid", false)
 			return
 		}
-		problem, err := rt.db.Problem(r.Context(), problemID)
-		if err != nil {
-			log.Println("ValidateProblemID:", err)
-			statusPage(w, r, 500, "", false)
-			return
-		}
-		if problem == nil {
+		problem, err1 := rt.base.Problem(r.Context(), problemID)
+		if err1 != nil {
 			statusPage(w, r, 404, "Problema nu a fost găsită", false)
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemKey, problem)))
 	})
-
 }
 
 // ValidateListID makes sure the list ID is a valid uint
@@ -49,13 +43,9 @@ func (rt *Web) ValidateListID(next http.Handler) http.Handler {
 			statusPage(w, r, http.StatusBadRequest, "ID invalid", false)
 			return
 		}
-		list, err := rt.db.ProblemList(r.Context(), listID)
-		if err != nil {
-			log.Println("ValidateListID:", err)
-			statusPage(w, r, 500, "", false)
-			return
-		}
-		if list == nil {
+		list, err1 := rt.base.ProblemList(r.Context(), listID)
+		if err1 != nil {
+			zap.S().Warn(err1)
 			statusPage(w, r, 404, "Lista nu a fost găsită", false)
 			return
 		}
@@ -71,13 +61,8 @@ func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
 			http.Error(w, "ID invalid", 400)
 			return
 		}
-		att, err := rt.db.Attachment(r.Context(), attid)
-		if err != nil {
-			log.Println("ValidateAttachmentID:", err)
-			statusPage(w, r, 500, "", false)
-			return
-		}
-		if att == nil {
+		att, err1 := rt.base.Attachment(r.Context(), attid)
+		if err1 != nil {
 			http.Error(w, "Atașamentul nu a fost găsit", 404)
 			return
 		}
@@ -88,8 +73,8 @@ func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
 	})
 }
 
-// ValidateVisible checks if the problem from context is visible from the logged in user
-func (rt *Web) ValidateVisible(next http.Handler) http.Handler {
+// ValidateProblemVisible checks if the problem from context is visible from the logged in user
+func (rt *Web) ValidateProblemVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRProblemVisible(r) {
 			statusPage(w, r, 403, "Nu ai voie să accesezi problema!", true)
@@ -107,33 +92,13 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 			statusPage(w, r, 400, "ID submisie invalid", false)
 			return
 		}
-		sub, err := rt.db.Submission(r.Context(), subID)
-		if err != nil {
-			log.Println(err)
-			statusPage(w, r, 500, "", false)
-			return
-		}
-		if sub == nil {
+		sub, err1 := rt.base.Submission(r.Context(), subID, util.UserBrief(r))
+		if err1 != nil {
 			statusPage(w, r, 400, "Submisia nu există", false)
 			return
 		}
 
-		pb, err := rt.db.Problem(r.Context(), sub.ProblemID)
-		if err != nil {
-			log.Println(err)
-			statusPage(w, r, 500, "", false)
-			return
-		}
-		if !util.IsProblemVisible(util.User(r), pb) {
-			statusPage(w, r, 403, "Nu poți accesa această submisie!", true)
-			return
-		}
-
-		if !util.IsSubmissionVisible(sub, util.User(r), rt.db) {
-			sub.Code = ""
-		}
-
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.SubKey, sub)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.SubKey, &sub.Submission)))
 	})
 }
 
@@ -177,7 +142,7 @@ func mustBeVisitor(next http.Handler) http.Handler {
 	})
 }
 
-func mustBeEditor(next http.Handler) http.Handler {
+func mustBeProblemEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRProblemEditor(r) {
 			statusPage(w, r, 401, "Trebuie să fii autorul problemei", true)
@@ -197,17 +162,16 @@ func getSessCookie(r *http.Request) string {
 
 func (rt *Web) initSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sess, err := rt.db.GetSession(r.Context(), getSessCookie(r))
+		sess, err := rt.base.GetSession(r.Context(), getSessCookie(r))
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
 		}
-		user, err := rt.db.User(r.Context(), sess)
-		if err != nil {
+		user, _ := rt.base.UserFull(r.Context(), sess)
+		if user == nil {
 			next.ServeHTTP(w, r)
 			return
 		}
-		user.Password = ""
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.UserKey, user)))
 	})
 }
@@ -215,8 +179,8 @@ func (rt *Web) initSession(next http.Handler) http.Handler {
 func (rt *Web) initLanguage(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userLang := ""
-		if util.User(r) != nil {
-			userLang = util.User(r).PreferredLanguage
+		if util.UserFull(r) != nil {
+			userLang = util.UserFull(r).PreferredLanguage
 		}
 		// get language
 		lang, _ := r.Cookie("lang")

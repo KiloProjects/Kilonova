@@ -24,7 +24,7 @@ func (s *DB) GetVerification(ctx context.Context, id string) (int, error) {
 	if err != nil {
 		return -1, err
 	}
-	if time.Now().Sub(verif.CreatedAt) > time.Hour*24*30 {
+	if time.Since(verif.CreatedAt) > time.Hour*24*30 {
 		return -1, err
 	}
 	return verif.UserID, err
@@ -54,7 +54,7 @@ func (s *DB) GetSession(ctx context.Context, sess string) (int, error) {
 	if err != nil {
 		return -1, errors.New("Unauthed")
 	}
-	if time.Now().Sub(session.CreatedAt) > time.Hour*24*30 {
+	if time.Since(session.CreatedAt) > time.Hour*24*30 {
 		return -1, errors.New("Unauthed")
 	}
 	return session.UserID, nil

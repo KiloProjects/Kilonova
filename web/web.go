@@ -3,7 +3,6 @@
 package web
 
 import (
-	"bytes"
 	"context"
 	"embed"
 	"html/template"
@@ -14,10 +13,12 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/web/mdrenderer"
 	"github.com/benbjohnson/hashfs"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 var templates *template.Template
@@ -32,14 +33,14 @@ var fsys = hashfs.NewFS(embedded)
 
 // Web is the struct representing this whole package
 type Web struct {
-	dm    kilonova.DataStore
 	rd    kilonova.MarkdownRenderer
 	debug bool
 
-	db     kilonova.DB
-	mailer kilonova.Mailer
+	// db *db.DB
 
 	funcs template.FuncMap
+
+	base *sudoapi.BaseAPI
 }
 
 func statusPage(w http.ResponseWriter, r *http.Request, statusCode int, err string, shouldLogin bool) {
@@ -69,10 +70,10 @@ func (rt *Web) Handler() http.Handler {
 		r.Get("/", rt.problems())
 		r.Route("/{pbid}", func(r chi.Router) {
 			r.Use(rt.ValidateProblemID)
-			r.Use(rt.ValidateVisible)
+			r.Use(rt.ValidateProblemVisible)
 			r.Get("/", rt.problem())
 			r.Get("/attachments/{aid}", rt.problemAttachment)
-			r.With(mustBeEditor).Route("/edit", rt.ProblemEditRouter)
+			r.With(mustBeProblemEditor).Route("/edit", rt.ProblemEditRouter)
 		})
 	})
 
@@ -91,7 +92,7 @@ func (rt *Web) Handler() http.Handler {
 
 	r.With(mustBeAdmin).Route("/admin", func(r chi.Router) {
 		r.Get("/", rt.admin())
-		r.Get("/makeKNA", rt.genKNA)
+		r.Get("/users", rt.justRender("admin/users.html"))
 	})
 
 	r.With(mustBeVisitor).Get("/login", rt.justRender("auth/login.html", "modals/login.html"))
@@ -103,49 +104,7 @@ func (rt *Web) Handler() http.Handler {
 	r.Route("/proposer", func(r chi.Router) {
 		r.Use(mustBeProposer)
 		r.Get("/", rt.justRender("proposer/index.html", "proposer/createpb.html"))
-		r.Route("/get", func(r chi.Router) {
-			r.Get("/subtest_output/{st_id}", func(w http.ResponseWriter, r *http.Request) {
-				id, err := strconv.Atoi(chi.URLParam(r, "st_id"))
-				if err != nil {
-					http.Error(w, "Bad ID", 400)
-					return
-				}
-				subtest, err := rt.db.SubTest(r.Context(), id)
-				if err != nil {
-					http.Error(w, "Inexistent subtest", 400)
-					return
-				}
-				sub, err := rt.db.Submission(r.Context(), subtest.SubmissionID)
-				if err != nil {
-					log.Println(err)
-					http.Error(w, "Internal server error", 500)
-					return
-				}
-				pb, err := rt.db.Problem(r.Context(), sub.ProblemID)
-				if err != nil {
-					log.Println(err)
-					http.Error(w, "Internal server error", 500)
-					return
-				}
-				if !util.IsProblemEditor(util.User(r), pb) {
-					http.Error(w, "You aren't allowed to do that!", 401)
-					return
-				}
-				rc, err := rt.dm.SubtestReader(subtest.ID)
-				if err != nil {
-					http.Error(w, "The subtest may have been purged as a routine data-saving process", 404)
-					return
-				}
-				defer rc.Close()
-				data, err := io.ReadAll(rc)
-				if err != nil {
-					http.Error(w, "Internal server error", 500)
-					return
-				}
-				buf := bytes.NewReader(data)
-				http.ServeContent(w, r, "subtest.out", time.Now(), buf)
-			})
-		})
+		r.Get("/get/subtest_output/{st_id}", rt.subtestOutput)
 	})
 
 	// Email verification
@@ -170,7 +129,7 @@ func (rt *Web) Handler() http.Handler {
 	return r
 }
 
-func (rt *Web) parse(optFuncs template.FuncMap, files ...string) *template.Template {
+func (rt *Web) parse(optFuncs template.FuncMap, files ...string) executor {
 	if optFuncs == nil {
 		return parse(rt.funcs, files...)
 	}
@@ -181,39 +140,43 @@ func (rt *Web) parse(optFuncs template.FuncMap, files ...string) *template.Templ
 }
 
 // NewWeb returns a new web instance
-func NewWeb(debug bool, db kilonova.DB, dm kilonova.DataStore, mailer kilonova.Mailer) *Web {
+func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 	rd := mdrenderer.NewLocalRenderer()
 	funcs := template.FuncMap{
+		"pLanguages": func() map[string]eval.Language {
+			return eval.Langs
+		},
+		"problemSettings": func(problemID int) *kilonova.ProblemEvalSettings {
+			settings, err := base.ProblemSettings(context.Background(), problemID)
+			if err != nil {
+				zap.S().Warn(err)
+				return nil
+			}
+			return settings
+		},
 		"problemList": func(id int) *kilonova.ProblemList {
-			list, err := db.ProblemList(context.Background(), id)
+			list, err := base.ProblemList(context.Background(), id)
 			if err != nil {
 				return nil
 			}
 			return list
 		},
-		"visibleProblems": func(user *kilonova.User) []*kilonova.Problem {
-			problems, err := kilonova.VisibleProblems(context.Background(), user, db)
+		"visibleProblems": func(user *kilonova.UserBrief) []*kilonova.Problem {
+			problems, err := base.Problems(context.Background(), kilonova.ProblemFilter{LookingUser: user, Look: true})
 			if err != nil {
 				return nil
 			}
 			return problems
 		},
-		"subScore": func(pb *kilonova.Problem, user *kilonova.User) string {
-			score := db.MaxScore(context.Background(), user.ID, pb.ID)
+		"subScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) string {
+			score := base.MaxScore(context.Background(), user.ID, pb.ID)
 			if score < 0 {
 				return "-"
 			}
 			return strconv.Itoa(score)
 		},
-		"listProblems": func(user *kilonova.User, list *kilonova.ProblemList) []*kilonova.Problem {
-			var id int
-			if user != nil {
-				id = user.ID
-				if user.Admin {
-					id = -1
-				}
-			}
-			pbs, err := db.Problems(context.Background(), kilonova.ProblemFilter{IDs: list.List, LookingUserID: &id})
+		"listProblems": func(user *kilonova.UserBrief, list *kilonova.ProblemList) []*kilonova.Problem {
+			pbs, err := base.Problems(context.Background(), kilonova.ProblemFilter{IDs: list.List, LookingUser: user, Look: true})
 			if err != nil {
 				return nil
 			}
@@ -222,15 +185,16 @@ func NewWeb(debug bool, db kilonova.DB, dm kilonova.DataStore, mailer kilonova.M
 		"renderMarkdown": func(body string) template.HTML {
 			val, err := rd.Render([]byte(body))
 			if err != nil {
-				return ""
+				zap.S().Warn(err)
+				return "[Error rendering markdown]"
 			}
 			return template.HTML(val)
 		},
-		"genPbListParams": func(user *kilonova.User, lang string, pbs []*kilonova.Problem) *ProblemListingParams {
+		"genPbListParams": func(user *kilonova.UserBrief, lang string, pbs []*kilonova.Problem) *ProblemListingParams {
 			return &ProblemListingParams{user, lang, pbs}
 		},
-		"numSolved": func(user *kilonova.User, ids []int) int {
-			scores := db.MaxScores(context.Background(), user.ID, ids)
+		"numSolved": func(user *kilonova.UserBrief, ids []int) int {
+			scores := base.MaxScores(context.Background(), user.ID, ids)
 			var rez int
 			for _, v := range scores {
 				if v == 100 {
@@ -240,12 +204,12 @@ func NewWeb(debug bool, db kilonova.DB, dm kilonova.DataStore, mailer kilonova.M
 			return rez
 		},
 		"problemLists": func() []*kilonova.ProblemList {
-			list, err := db.ProblemLists(context.Background(), kilonova.ProblemListFilter{})
+			list, err := base.ProblemLists(context.Background(), kilonova.ProblemListFilter{})
 			if err != nil {
 				return nil
 			}
 			return list
 		},
 	}
-	return &Web{dm, rd, debug, db, mailer, funcs}
+	return &Web{rd, debug, funcs, base}
 }

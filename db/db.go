@@ -2,17 +2,12 @@ package db
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
-	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
 )
-
-var _ kilonova.DB = &DB{}
 
 type DB struct {
 	conn *sqlx.DB
@@ -22,20 +17,21 @@ func (d *DB) Close() error {
 	return d.conn.Close()
 }
 
-func NewPSQL(dsn string) (*DB, error) {
-	conn, err := sqlx.Connect("pgx", dsn)
+func NewPSQL(ctx context.Context, dsn string) (*DB, error) {
+	config, err := pgx.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
 	}
-	return &DB{conn}, nil
-}
+	//config.Logger = &logger{}
+	dsn = stdlib.RegisterConnConfig(config)
 
-func AppropriateDB(ctx context.Context, conf config.DBConf) (kilonova.DB, error) {
-	if conf.Type == "postgres" {
-		return NewPSQL(config.Database.DSN)
-	} else {
-		return nil, errors.New("invalid DB type")
+	conn, err := sqlx.ConnectContext(ctx, "pgx", dsn)
+	if err != nil {
+		return nil, err
 	}
+	conn.SetMaxOpenConns(20)
+
+	return &DB{conn}, nil
 }
 
 func FormatLimitOffset(limit int, offset int) string {
@@ -52,4 +48,15 @@ func FormatLimitOffset(limit int, offset int) string {
 	}
 
 	return ""
+}
+
+func mapper[T1 any, T2 any](lst []*T1, f func(*T1) *T2) []*T2 {
+	if len(lst) == 0 {
+		return []*T2{}
+	}
+	rez := make([]*T2, len(lst))
+	for i := range rez {
+		rez[i] = f(lst[i])
+	}
+	return rez
 }

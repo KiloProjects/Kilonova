@@ -31,9 +31,11 @@ type Submission struct {
 	MaxTime   float64 `json:"max_time" db:"max_time"`
 	MaxMemory int     `json:"max_memory" db:"max_memory"`
 
-	Score   int  `json:"score"`
-	Visible bool `json:"visible"`
-	Quality bool `json:"quality"`
+	Score int `json:"score"`
+
+	// TODO: Remove after restarting
+	// Visible bool `json:"visible"`
+	// Quality bool `json:"quality"`
 }
 
 type SubmissionUpdate struct {
@@ -45,9 +47,6 @@ type SubmissionUpdate struct {
 
 	MaxTime   *float64
 	MaxMemory *int
-
-	Visible *bool
-	Quality *bool
 }
 
 type SubmissionFilter struct {
@@ -57,10 +56,8 @@ type SubmissionFilter struct {
 
 	Status       Status  `json:"status"`
 	Lang         *string `json:"lang"`
-	Visible      *bool   `json:"visible"`
 	Score        *int    `json:"score"`
 	CompileError *bool   `json:"compile_error"`
-	Quality      *bool   `json:"quality"`
 
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`

@@ -1,0 +1,1 @@
+ALTER TABLE problems DROP COLUMN stack_limit;

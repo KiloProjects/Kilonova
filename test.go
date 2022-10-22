@@ -29,7 +29,6 @@ type SubTask struct {
 }
 
 type SubTaskUpdate struct {
-	VisibleID *int  `json:"visible_id"`
-	Score     *int  `json:"score"`
-	Tests     []int `json:"tests"`
+	VisibleID *int `json:"visible_id"`
+	Score     *int `json:"score"`
 }

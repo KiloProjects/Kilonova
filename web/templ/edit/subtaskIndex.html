@@ -1,10 +1,10 @@
-{{ define "title" }}{{getText .Ctx.Language "editSubtask"}}{{ end }}
+{{ define "title" }}{{getText .Ctx.Language "title.edit.subtask"}}{{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
 {{ $lang := .Ctx.Language }}
 <div class="segment-container">
-	<h2>{{getText .Ctx.Language "editSubtask"}}</h2>
+	<h2>{{getText .Ctx.Language "title.edit.subtask"}}</h2>
 	{{ with .ProblemSubTasks }}
 		<table class="kn-table my-2" style="table-layout: fixed">
 			<thead>
@@ -60,7 +60,7 @@ function updateFinalScore() {
 	}
 	let suffix = "";
 	if(defaultPoints > 0) {
-		suffix = ` (${defaultPoints} {{getText .Ctx.Language "byDefault"}})`;
+		suffix = ` (${defaultPoints} ${bundled.getText('byDefault')})`;
 	}
 	console.log(score)
 	if(score != 100) {
@@ -82,7 +82,7 @@ async function deleteSubTasks() {
 			subTasks.push(id);
 		}
 	}
-	let res = await bundled.postCall(`/problem/${pbid}/update/bulkDeleteSubTasks`, {subTasks: subTasks.join(',')});
+	let res = await bundled.bodyCall(`/problem/${pbid}/update/bulkDeleteSubTasks`, subTasks);
 	if(res.status === "success") {
 		window.location.reload();
 		return;
@@ -138,7 +138,7 @@ async function updateSubTasks() {
 			</tbody>
 		</table>
 	{{ else }} 
-		<h3> {{getText .Ctx.Language "noTests"}} </h3>
+		<h3> {{getText .Ctx.Language "noTestsError"}} </h3>
 	{{ end }}
 </div>
 

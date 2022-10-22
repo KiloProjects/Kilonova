@@ -1,4 +1,4 @@
-{{ define "title" }} {{getText .Ctx.Language "editIndex" .Problem.ID .Problem.Name}} {{end}}
+{{ define "title" }} {{getText .Ctx.Language "title.edit.index" .Problem.ID .Problem.Name}} {{end}}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
@@ -22,6 +22,7 @@
 				<input class="form-input" type="text" size="50" v-model="problem.source_credits" />
 			</label>
 		</div>
+		<!--
 		<div class="block my-2">
 			<label>
 				<span class="form-label">{{getText .Ctx.Language "pbType"}}:</span>
@@ -31,6 +32,7 @@
 				</select>
 			</label>
 		</div>
+		-->
 		<div class="block my-2" v-if="admin">
 			<label>
 				<input class="form-checkbox" type="checkbox" v-model="problem.visible">
@@ -52,15 +54,8 @@
 		<div class="block my-2">
 			<label>
 				<span class="form-label">{{getText .Ctx.Language "memoryLimit"}}:</span>
-				<input type="number" class="form-input" id="memoryTotal" placeholder="Limită de memorie (total)" min="0" step="128" max="131072" v-model="problem.memory_limit">
-				<span class="ml-1 text-xl">KB</span>
-			</label>
-		</div>
-		<div class="block my-2">
-			<label>
-				<span class="form-label">{{getText .Ctx.Language "stackLimit"}}:</span>
-				<input type="number" class="form-input" id="memoryStack" placeholder="Limită de memorie (stack)" min="0" step="128" max="131072" v-model="problem.stack_limit">
-				<span class="ml-1 text-xl">KB</span>
+				<input type="number" class="form-input" id="memoryTotal" placeholder="Limită de memorie (total)" min="0" step="0.1" max="512" :value="problem.memory_limit / 1024" @input="event => problem.memory_limit = event.target.value * 1024">
+				<span class="ml-1 text-xl">MB</span>
 			</label>
 		</div>
 		<div class="block my-2">
@@ -85,6 +80,18 @@
 	</div>
 </div>
 
+<div class="segment-container reset-list">
+	{{with problemSettings .Problem.ID}}
+	<h2>Pe baza atașamentelor, aceste informații vor fi transmise evaluatorului:</h2>
+	<ul>
+		<li>Se acceptă numai soluții C++: {{.OnlyCPP}}</li>
+		<li>Checker: {{if (ne (len .CheckerName) 0)}}Custom (este executat checker.cpp){{else}}Clasic/Default (verifică conținutul fișierului de ieșire){{end}}</li>
+		<li>Fișiere extra incluse: {{range $i, $name := .HeaderFiles}}{{$name}}{{else}}N/A{{end}}</li>
+		<li>Fișiere grader incluse: {{range $i, $name := .GraderFiles}}{{$name}}{{else}}N/A{{end}}</li>
+	</ul>
+	{{end}}
+</div>
+
 <script>
 let problem = {{.Problem}};
 
@@ -95,7 +102,6 @@ Vue.createApp({
 		return {
 			problem: problem,
 			admin: {{.Ctx.User.Admin}},
-			org_type: problem.type,
 		}
 	},
 	methods: {
@@ -106,18 +112,16 @@ Vue.createApp({
 				return
 			}
 			let data = {
-				title: this.problem.name,
+				name: this.problem.name,
 				default_points: this.problem.default_points,
 
 				source_credits: this.problem.source_credits,
 				author_credits: this.problem.author_credits,
 				
-				type: this.problem.type,
 				console_input: this.problem.console_input,
 				test_name: this.problem.test_name,
 		
-				memory_limit: this.problem.memory_limit,
-				stack_limit: this.problem.stack_limit,
+				memory_limit: this.problem.memory_limit, 
 				time_limit: this.problem.time_limit,
 
 			};
@@ -125,10 +129,6 @@ Vue.createApp({
 				data.visible = this.problem.visible;
 			}
 			let res = await bundled.postCall(`/problem/${this.problem.id}/update/`, data)
-			if(res.status === "success" && this.org_type != this.problem.type) {
-				window.location.reload();
-				return;
-			}
 			bundled.apiToast(res);
 		},
 		deleteProblem: async function(e) {

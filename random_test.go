@@ -6,7 +6,7 @@ import (
 )
 
 func TestRandomString(t *testing.T) {
-	var sizes = []int{5, 7, 8, 32, 64} // idk test for a few random sizes
+	var sizes = []int{5, 7, 8, 32, 64} // test for a few random sizes
 
 	for _, size := range sizes {
 		str := RandomString(size)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
+	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -33,10 +34,10 @@ func (b *BoxManager) ToggleDebug() {
 func (b *BoxManager) RunTask(ctx context.Context, task eval.Task) error {
 	box, err := b.getSandbox(ctx)
 	if err != nil {
-		log.Println(err)
+		zap.S().Info(err)
 		return err
 	}
-	defer b.ReleaseSandbox(box)
+	defer b.releaseSandbox(box)
 	return task.Execute(ctx, box)
 }
 
@@ -56,12 +57,12 @@ func (b *BoxManager) getSandbox(ctx context.Context) (eval.Sandbox, error) {
 	return b.newSandbox()
 }
 
-func (b *BoxManager) ReleaseSandbox(sb eval.Sandbox) {
-	b.sem.Release(1)
+func (b *BoxManager) releaseSandbox(sb eval.Sandbox) {
 	if err := sb.Close(); err != nil {
 		log.Printf("Could not release sandbox %d: %v\n", sb.GetID(), err)
 	}
 	b.availableIDs <- sb.GetID()
+	b.sem.Release(1)
 }
 
 // Close waits for all boxes to finish running

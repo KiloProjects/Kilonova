@@ -1,19 +1,16 @@
-const allcolors = require('tailwindcss/colors');
+const colors = require('tailwindcss/colors');
 
 module.exports = {
-//  mode: 'jit',
-  darkMode: 'media',
-  purge: [
+  content: [
 	'../templ/**/*.html',
 	'../templ/*.html',
-	'./*.js',
+	'./*.{js,ts,jsx,tsx}',
+    './components/*.{js,ts,jsx,tsx}',
 	'../*.go',
+    '../*.toml',
   ],
   theme: {
-    extend: {},
-	  colors: {
-		  ...allcolors
-	  },
+    extend: {colors: {gray: colors.zinc}},
 	fontSize: {
       xs: '0.75rem',
       sm: '0.875rem',
@@ -26,15 +23,6 @@ module.exports = {
       '5xl': '3rem',
       '6xl': '4rem',
     },
-  },
-  variants: {
-	extend: {
-		textColor: ['active'],
-		backgroundColor: ['active'],
-		borderColor: ['active'],
-		ringWidth: ['hover', 'active'],
-		ringColor: ['hover', 'active']
-	}
   },
   plugins: [
 	require('@tailwindcss/forms'),

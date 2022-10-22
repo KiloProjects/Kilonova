@@ -1,11 +1,7 @@
 package api
 
 import (
-	"encoding/json"
-	"log"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
@@ -13,35 +9,29 @@ import (
 )
 
 func (s *API) createSubTask(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
-		VisibleID int    `json:"visible_id"`
-		Score     int    `json:"score"`
-		Tests     string `json:"tests"`
+		VisibleID int   `json:"visible_id"`
+		Score     int   `json:"score"`
+		Tests     []int `json:"tests"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 400)
+	if err := parseJsonBody(r, &args); err != nil {
+		err.WriteError(w)
 		return
 	}
 
-	if stk1, _ := s.db.SubTask(r.Context(), util.Problem(r).ID, args.VisibleID); stk1 != nil && stk1.ID != 0 {
+	if stk1, _ := s.base.SubTask(r.Context(), util.Problem(r).ID, args.VisibleID); stk1 != nil && stk1.ID != 0 {
 		errorData(w, "SubTask with that ID already exists!", 400)
 		return
 	}
 
-	ids, ok := DecodeIntString(args.Tests)
-	if !ok {
-		errorData(w, "Invalid test string", 400)
-		return
-	}
-	if len(ids) == 0 {
+	if len(args.Tests) == 0 {
 		errorData(w, "No tests specified", 400)
 		return
 	}
 
 	realIDs := []int{}
-	for _, id := range ids {
-		test, err := s.db.Test(r.Context(), util.Problem(r).ID, id)
+	for _, id := range args.Tests {
+		test, err := s.base.Test(r.Context(), util.Problem(r).ID, id)
 		if err != nil {
 			continue
 		}
@@ -55,7 +45,7 @@ func (s *API) createSubTask(w http.ResponseWriter, r *http.Request) {
 		Tests:     realIDs,
 	}
 
-	if err := s.db.CreateSubTask(r.Context(), &stk); err != nil {
+	if err := s.base.CreateSubTask(r.Context(), &stk); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -65,13 +55,13 @@ func (s *API) createSubTask(w http.ResponseWriter, r *http.Request) {
 func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		SubTaskID int     `json:"subtask_id"`
-		NewID     *int    `json:"new_id"`
-		Score     *int    `json:"score"`
-		Tests     *string `json:"tests"`
+		SubTaskID int   `json:"subtask_id"`
+		NewID     *int  `json:"new_id"`
+		Score     *int  `json:"score"`
+		Tests     []int `json:"tests"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 400)
+	if err := parseJsonBody(r, &args); err != nil {
+		err.WriteError(w)
 		return
 	}
 
@@ -80,57 +70,56 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stk, err := s.db.SubTask(r.Context(), util.Problem(r).ID, args.SubTaskID)
+	stk, err := s.base.SubTask(r.Context(), util.Problem(r).ID, args.SubTaskID)
 	if err != nil {
 		errorData(w, err, 500)
 		return
 	}
-	upd := kilonova.SubTaskUpdate{
+
+	if err := s.base.UpdateSubTask(r.Context(), stk.ID, kilonova.SubTaskUpdate{
 		VisibleID: args.NewID,
 		Score:     args.Score,
+	}); err != nil {
+		errorData(w, err, 500)
+		return
 	}
 
-	if args.Tests != nil {
-		ids, ok := DecodeIntString(*args.Tests)
-		if !ok {
-			errorData(w, "One of the test IDs is not an int", 400)
-			return
-		}
-		newIDs := make([]int, 0, len(ids))
-		for _, id := range ids {
-			test, err := s.db.Test(r.Context(), util.Problem(r).ID, id)
+	if len(args.Tests) > 0 {
+		newIDs := make([]int, 0, len(args.Tests))
+		for _, id := range args.Tests {
+			test, err := s.base.Test(r.Context(), util.Problem(r).ID, id)
 			if err != nil {
 				errorData(w, "One of the tests does not exist", 400)
 				return
 			}
 			newIDs = append(newIDs, test.ID)
 		}
-		upd.Tests = newIDs
+
+		if err := s.base.UpdateSubTaskTests(r.Context(), stk.ID, newIDs); err != nil {
+			errorData(w, err, 500)
+			return
+		}
 	}
 
-	if err := s.db.UpdateSubTask(r.Context(), stk.ID, upd); err != nil {
-		errorData(w, err, 500)
-		return
-	}
-
-	returnData(w, "Updates SubTask")
+	returnData(w, "Updated SubTask")
 }
 
 func (s *API) bulkDeleteSubTasks(w http.ResponseWriter, r *http.Request) {
 	var removedSubTasks int
-	ids, ok := DecodeIntString(r.FormValue("subTasks"))
-	if !ok || len(ids) == 0 {
-		errorData(w, "Invalid input string", 400)
+	var subtaskIDs []int
+	if err := parseJsonBody(r, &subtaskIDs); err != nil {
+		err.WriteError(w)
 		return
 	}
-	for _, id := range ids {
-		if stk, err := s.db.SubTask(r.Context(), util.Problem(r).ID, id); err == nil {
-			if err := s.db.DeleteSubTask(r.Context(), stk.ID); err == nil {
+
+	for _, id := range subtaskIDs {
+		if stk, err := s.base.SubTask(r.Context(), util.Problem(r).ID, id); err == nil {
+			if err := s.base.DeleteSubTask(r.Context(), stk.ID); err == nil {
 				removedSubTasks++
 			}
 		}
 	}
-	if removedSubTasks != len(ids) {
+	if removedSubTasks != len(subtaskIDs) {
 		errorData(w, "Some SubTasks could not be deleted", 500)
 		return
 	}
@@ -141,16 +130,13 @@ func (s *API) bulkUpdateSubTaskScores(w http.ResponseWriter, r *http.Request) {
 	var data map[int]int
 	var updatedSubTasks int
 
-	dec := json.NewDecoder(r.Body)
-	dec.DisallowUnknownFields()
-	if err := dec.Decode(&data); err != nil {
-		log.Println(err)
-		errorData(w, "Could not decode body", 400)
+	if err := parseJsonBody(r, &data); err != nil {
+		err.WriteError(w)
 		return
 	}
 	for k, v := range data {
-		if stk, err := s.db.SubTask(r.Context(), util.Problem(r).ID, k); err == nil {
-			if err := s.db.UpdateSubTask(r.Context(), stk.ID, kilonova.SubTaskUpdate{Score: &v}); err == nil {
+		if stk, err := s.base.SubTask(r.Context(), util.Problem(r).ID, k); err == nil {
+			if err := s.base.UpdateSubTask(r.Context(), stk.ID, kilonova.SubTaskUpdate{Score: &v}); err == nil {
 				updatedSubTasks++
 			} else {
 				spew.Dump(err)
@@ -165,20 +151,4 @@ func (s *API) bulkUpdateSubTaskScores(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	returnData(w, "Updated all subTasks")
-}
-
-func DecodeIntString(str string) ([]int, bool) {
-	ids := []int{}
-	strTestIDs := strings.Split(str, ",")
-	for _, ss := range strTestIDs {
-		if ss == "" {
-			continue
-		}
-		val, err := strconv.Atoi(ss)
-		if err != nil {
-			return nil, false
-		}
-		ids = append(ids, val)
-	}
-	return ids, true
 }

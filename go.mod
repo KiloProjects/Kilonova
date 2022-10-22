@@ -4,11 +4,10 @@ go 1.18
 
 require (
 	github.com/BurntSushi/toml v0.4.1
-	github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496 // indirect
+	github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/benbjohnson/hashfs v0.1.0
 	github.com/davecgh/go-spew v1.1.1
-	github.com/go-chi/chi v1.5.2
 	github.com/go-chi/cors v1.1.1
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/gorilla/css v1.0.0 // indirect
@@ -25,7 +24,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/litao91/goldmark-mathjax v0.0.0-20200921072530-4c5dae64834a
-	github.com/mattn/go-sqlite3 v1.14.7
+	github.com/mattn/go-sqlite3 v1.14.7 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.8
 	github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be // indirect
 	github.com/yuin/goldmark v1.3.2
@@ -35,6 +34,8 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.6
 )
+
+require github.com/go-chi/chi/v5 v5.0.7
 
 require (
 	go.uber.org/atomic v1.9.0 // indirect

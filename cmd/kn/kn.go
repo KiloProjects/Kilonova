@@ -3,26 +3,22 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"os/signal"
-	"path"
 	"strconv"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/api"
-	"github.com/KiloProjects/kilonova/datastore"
-	"github.com/KiloProjects/kilonova/db"
-	"github.com/KiloProjects/kilonova/email"
 	"github.com/KiloProjects/kilonova/eval/grader"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/web"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -33,72 +29,21 @@ func Kilonova() error {
 	// Print welcome message
 	zap.S().Infof("Starting Kilonova %s", kilonova.Version)
 
-	dataDir := config.Common.DataDir
-	debug := config.Common.Debug
-
-	if debug {
+	if config.Common.Debug {
 		zap.S().Warn("Debug mode activated, expect worse performance")
 	}
 
-	// Data directory setup
-	if !path.IsAbs(dataDir) {
-		return &kilonova.Error{Code: kilonova.EINVALID, Message: "dataDir not absolute"}
-	}
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
-		return fmt.Errorf("Could not create data dir: %w", err)
-	}
-
-	// DB Setup
-	db, err := db.AppropriateDB(context.Background(), config.Database)
+	base, err := sudoapi.InitializeBaseAPI(context.Background())
 	if err != nil {
-		return err
+		zap.S().Fatal(err)
 	}
-	defer db.Close()
-	zap.S().Info("Connected to DB")
-
-	// Data Store setup
-	manager, err := datastore.NewManager(dataDir)
-	if err != nil {
-		return err
-	}
-
-	// Setup mailer
-	mailer, err := email.NewMailer()
-	if err != nil {
-		return err
-	}
-
-	// Initialize router
-	r := chi.NewRouter()
-
-	corsConfig := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: true,
-		MaxAge:           300,
-	})
-	r.Use(corsConfig.Handler)
-
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.StripSlashes)
-	r.Use(middleware.Timeout(20 * time.Second))
-	/*
-		r.Use(middleware.Compress(flate.DefaultCompression))
-		r.Use(middleware.RequestID)
-	*/
+	defer base.Close()
 
 	// Setup context
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Initialize components
-	grader := grader.NewHandler(ctx, db, manager, config.Common.Debug)
-
-	r.Mount("/api", api.New(db, manager, mailer).Handler())
-
-	r.Mount("/", web.NewWeb(config.Common.Debug, db, manager, mailer).Handler())
+	grader := grader.NewHandler(ctx, base)
 
 	go func() {
 		err := grader.Start()
@@ -108,15 +53,12 @@ func Kilonova() error {
 	}()
 
 	// for graceful setup and shutdown
-	server := &http.Server{
-		Addr:    net.JoinHostPort("localhost", strconv.Itoa(config.Common.Port)),
-		Handler: r,
-	}
+	server := webV1(true, base)
 
 	go launchProfiler()
 	go func() {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			fmt.Println(err)
+			zap.S().Error(err)
 			cancel()
 		}
 	}()
@@ -131,9 +73,7 @@ func Kilonova() error {
 		}
 	}()
 
-	select {
-	case <-ctx.Done():
-	}
+	<-ctx.Done()
 
 	return nil
 }
@@ -175,4 +115,41 @@ func launchProfiler() error {
 	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	return http.ListenAndServe(":6080", mux)
+}
+
+// initialize webserver for public api+web
+func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
+
+	// Initialize router
+	r := chi.NewRouter()
+
+	corsConfig := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	})
+	r.Use(corsConfig.Handler)
+
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.StripSlashes)
+	r.Use(middleware.Timeout(20 * time.Second))
+	/*
+		r.Use(middleware.Compress(flate.DefaultCompression))
+		r.Use(middleware.RequestID)
+	*/
+
+	r.Mount("/api", api.New(base).Handler())
+
+	if templWeb {
+		r.Mount("/", web.NewWeb(config.Common.Debug, base).Handler())
+	}
+
+	return &http.Server{
+		Addr:    net.JoinHostPort("localhost", strconv.Itoa(config.Common.Port)),
+		Handler: r,
+	}
 }

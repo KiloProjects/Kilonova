@@ -3,18 +3,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+.hljs-copy-button {
+	@apply top-2;
+}
 
 @layer base {
 	[v-cloak] {
 		display: none;
-	}
-	.bg-hljs {
-		background: #f0f0f0;
-	}
-	@media (prefers-color-scheme: dark) {
-		.bg-hljs {
-			@apply bg-gray-700;
-		}
 	}
 
 	table {
@@ -41,21 +36,52 @@
 		@apply text-blue-500 hover:text-blue-600 active:text-blue-600 focus:text-blue-600;
 	}
 
-/* purgecss start ignore */
-	
+	/* purgecss start ignore */
+	.bg-hljs,
+	.hljs {
+		background: #f0f0f0;
+	}
+	@media (prefers-color-scheme: dark) {
+		.bg-hljs,
+		.hljs {
+			@apply bg-[#333];
+			/*@apply bg-gray-700;*/
+		}
+
+		.cm-s-monokai.CodeMirror {
+			@apply bg-[#333];
+		}
+		.cm-s-monokai .CodeMirror-gutters {
+			@apply bg-[#333];
+		}
+	}
+
 	/*
 	.katex {
 		@apply text-base;
 	}*/
-	
+
 	.notyf__message a {
 		@apply text-gray-300 hover:text-gray-400 active:text-blue-500 focus:text-blue-500;
 	}
 
-/* purgecss end ignore */
+	/* purgecss end ignore */
 
 	.CodeMirror {
 		@apply text-lg leading-normal rounded-lg;
+	}
+
+	.reset-list {
+		@apply leading-normal;
+	}
+
+	.reset-list h1,
+	h2 {
+		@apply mb-2 mt-1;
+	}
+
+	.reset-list p {
+		@apply my-1;
 	}
 
 	.reset-list ul {
@@ -66,11 +92,11 @@
 		@apply list-decimal list-inside;
 	}
 	.reset-list ol > li {
-		@apply pl-8;
+		@apply pl-4;
 	}
 
 	.reset-list ul > li {
-		@apply pl-8;
+		@apply pl-4;
 	}
 }
 
@@ -100,12 +126,18 @@
 	}
 
 	.roboto .navbar-brand h1 h2 h3 h4 h5 h6 {
-		font-family: 'Roboto';
+		font-family: "Roboto";
 	}
 
 	.list-group {
 		@apply border border-gray-300 w-full bg-white;
 		@apply dark:border-gray-700 dark:bg-gray-800;
+	}
+	.list-group > *:first-child {
+		@apply border-t-0 border-gray-300 dark:border-gray-700;
+	}
+	.list-group-head {
+		@apply block border-t border-gray-300 dark:border-gray-700 w-full px-4 py-3 text-lg leading-normal;
 	}
 	.list-group-item {
 		@apply block border-t border-gray-300 dark:border-gray-700 w-full px-4 py-3 black-anchor text-lg leading-normal;
@@ -125,7 +157,7 @@
 	.list-group-rounded > .list-group-item:last-child {
 		@apply rounded-b-lg;
 	}
-	
+
 	.list-group-mini > .list-group-item {
 		@apply py-2;
 	}
@@ -168,20 +200,46 @@
 		@apply dark:hover:bg-gray-700 dark:focus:bg-gray-700;
 	}
 
+	.paginator {
+		@apply my-2 inline-flex;
+	}
+	.paginator > *:first-child {
+		@apply rounded-l;
+	}
+	.paginator > *:last-child {
+		@apply rounded-r;
+	}
+
+	.paginator-item {
+		@apply btn-blue py-1 px-2;
+	}
+
+	.paginator-item-active {
+		@apply border-2;
+	}
+
 	.kn-table {
 		@apply border-2 border-collapse table-auto w-full mb-2 kn-border;
 	}
 
+	.kn-table-simple-border {
+		@apply border-t kn-border;
+	}
+
 	.kn-table-simple {
-		@apply text-center border-t kn-border;
+		@apply text-center kn-table-simple-border;
 	}
 
 	.kn-table-row {
 		@apply kn-table-simple hoverable;
 	}
-	
+
+	.kn-table-cell-notext {
+		@apply border-r px-4 py-2 kn-border;
+	}
+
 	.kn-table-cell {
-		@apply text-center border-r px-4 py-2 kn-border;
+		@apply text-center kn-table-cell-notext;
 	}
 
 	.alert {
@@ -192,10 +250,29 @@
 		@apply bg-green-200;
 	}
 
+	details > summary {
+		@apply list-none;
+	}
+	summary::-webkit-details-marker {
+		@apply hidden;
+	}
+	summary::after {
+		font-family: "Font Awesome 5 Free";
+		font-weight: 900;
+		@apply text-gray-600 dark:text-gray-200 ml-2;
+		content: "\f0d8";
+	}
+	details[open] > summary::after {
+		content: "\f0d7";
+	}
+	summary {
+		@apply cursor-pointer;
+	}
+
 	.segment-container {
 		@apply border-2 border-gr p-2 mb-2;
 	}
-	
+
 	.btn {
 		@apply inline-flex justify-center px-4 py-2 leading-5 rounded-md font-medium ring-1 ring-opacity-50;
 		@apply transition ease-in-out duration-150;
@@ -242,6 +319,26 @@
 		@apply transition ease-out duration-500;
 	}
 
+	.form-input,
+	.form-textarea,
+	.form-select,
+	.form-multiselect {
+		@apply rounded-lg dark:bg-gray-600 dark:text-white border-gray-300 dark:border-gray-700 !important;
+	}
+
+	.form-input {
+		@apply inline-block px-2 py-2 border bg-white text-black;
+	}
+
+	select.form-select {
+		@apply pr-8;
+	}
+
+	.form-input::placeholder,
+	.form-select::placeholder,
+	.form-textarea::placeholder {
+		@apply text-gray-500 dark:text-gray-300 !important;
+	}
 }
 
 @layer utilities {
@@ -251,9 +348,13 @@
 	pre code {
 		@apply px-0;
 	}
+	pre code.hljs {
+		@apply px-2 py-1;
+	}
 
 	pre {
 		tab-size: 4;
+		@apply break-normal;
 		@apply bg-hljs rounded-lg px-2 mt-1 mb-1;
 	}
 
@@ -268,21 +369,10 @@
 		@apply dark:bg-gray-900 dark:text-white;
 	}
 
-	.form-input, .form-textarea, .form-select, .form-multiselect {
-		@apply dark:bg-gray-600 dark:text-white;
-	}
-	
-	.form-input {
-		@apply rounded-lg inline-block px-2 py-2 border border-gray-300 bg-white text-black;
-		@apply dark:border-gray-700;
-	}
-
-	select.form-select {
-		@apply pr-8;
-	}
-
-	.form-input::placeholder, .form-select::placeholder, .form-textarea::placeholder {
-		@apply text-gray-800 dark:text-gray-500;
+	@media (prefers-color-scheme: dark) {
+		html {
+			color-scheme: dark;
+		}
 	}
 
 	.form-label {
@@ -290,6 +380,3 @@
 		@apply dark:text-white;
 	}
 }
-
-
-

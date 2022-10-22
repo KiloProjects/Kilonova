@@ -5,36 +5,55 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/gosimple/slug"
 )
 
 func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
-	var pb kilonova.Problem
+	var pb dbProblem
 	err := s.conn.GetContext(ctx, &pb, s.conn.Rebind("SELECT * FROM problems WHERE id = ? LIMIT 1"), id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
-	return &pb, err
+	return internalToProblem(&pb), err
+}
+
+func (s *DB) ProblemByName(ctx context.Context, name string) (*kilonova.Problem, error) {
+	var pb dbProblem
+	err := s.conn.GetContext(ctx, &pb, s.conn.Rebind("SELECT * FROM problems WHERE lower(name) = lower(?) LIMIT 1"), name)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	return internalToProblem(&pb), err
+}
+
+func (s *DB) VisibleProblem(ctx context.Context, id int, user *kilonova.UserBrief) (*kilonova.Problem, error) {
+	pbs, err := s.Problems(ctx, kilonova.ProblemFilter{ID: &id, LookingUser: user, Look: true})
+	if err != nil || len(pbs) == 0 {
+		return nil, nil
+	}
+	return pbs[0], nil
 }
 
 func (s *DB) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*kilonova.Problem, error) {
-	var pbs []*kilonova.Problem
+	var pbs []*dbProblem
 	where, args := problemFilterQuery(&filter)
 	query := s.conn.Rebind("SELECT * FROM problems WHERE " + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
 	err := s.conn.SelectContext(ctx, &pbs, query, args...)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.Problem{}, nil
 	}
-	return pbs, err
+	return internalToProblems(pbs), err
 }
 
 const problemCreateQuery = `INSERT INTO problems (
-	name, description, author_id, console_input, test_name, memory_limit, stack_limit, source_size, time_limit, visible, source_credits, author_credits, short_description, default_points, pb_type
+	name, description, author_id, console_input, test_name, memory_limit, source_size, time_limit, visible, source_credits, author_credits, short_description, default_points
 ) VALUES (
-	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 ) RETURNING id;`
 
 func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem) error {
@@ -47,20 +66,14 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem) error {
 	if p.MemoryLimit == 0 {
 		p.MemoryLimit = 65536 // 64MB
 	}
-	if p.StackLimit == 0 {
-		p.StackLimit = 16384 // 16MB
-	}
 	if p.TimeLimit == 0 {
 		p.TimeLimit = 1 // 1s
 	}
 	if p.SourceSize == 0 {
 		p.SourceSize = 10000
 	}
-	if p.Type == kilonova.ProblemTypeNone {
-		p.Type = kilonova.ProblemTypeClassic
-	}
 	var id int
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(problemCreateQuery), p.Name, p.Description, p.AuthorID, p.ConsoleInput, p.TestName, p.MemoryLimit, p.StackLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.AuthorCredits, p.ShortDesc, p.DefaultPoints, p.Type)
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(problemCreateQuery), p.Name, p.Description, p.AuthorID, p.ConsoleInput, p.TestName, p.MemoryLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.AuthorCredits, p.ShortDesc, p.DefaultPoints)
 	if err == nil {
 		p.ID = id
 	}
@@ -104,7 +117,10 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []interface{}
 	if v := filter.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, v)
 	}
-	if v := filter.IDs; v != nil && len(v) > 0 {
+	if v := filter.IDs; v != nil && len(v) == 0 {
+		where = append(where, "id = -1")
+	}
+	if v := filter.IDs; len(v) > 0 {
 		where = append(where, "id IN (?"+strings.Repeat(",?", len(v)-1)+")")
 		for _, el := range v {
 			args = append(args, el)
@@ -122,8 +138,17 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []interface{}
 	if v := filter.Visible; v != nil {
 		where, args = append(where, "visible = ?"), append(args, v)
 	}
-	if v := filter.LookingUserID; v != nil && *v >= 0 {
-		where, args = append(where, "(visible = true OR author_id = ?)"), append(args, v)
+	if filter.Look {
+		var id int
+		if filter.LookingUser != nil {
+			id = filter.LookingUser.ID
+			if filter.LookingUser.Admin {
+				id = -1
+			}
+		}
+		if id >= 0 {
+			where, args = append(where, "(visible = true OR author_id = ?)"), append(args, id)
+		}
 	}
 	return where, args
 }
@@ -153,9 +178,6 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []interface{}) {
 	if v := upd.MemoryLimit; v != nil {
 		toUpd, args = append(toUpd, "memory_limit = ?"), append(args, v)
 	}
-	if v := upd.StackLimit; v != nil {
-		toUpd, args = append(toUpd, "stack_limit = ?"), append(args, v)
-	}
 
 	if v := upd.DefaultPoints; v != nil {
 		toUpd, args = append(toUpd, "default_points = ?"), append(args, v)
@@ -168,13 +190,6 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []interface{}) {
 		toUpd, args = append(toUpd, "author_credits = ?"), append(args, v)
 	}
 
-	if v := upd.Type; v != kilonova.ProblemTypeNone {
-		toUpd, args = append(toUpd, "pb_type = ?"), append(args, v)
-	}
-	if v := upd.SubtaskString; v != nil {
-		toUpd, args = append(toUpd, "subtasks = ?"), append(args, v)
-	}
-
 	if v := upd.ConsoleInput; v != nil {
 		toUpd, args = append(toUpd, "console_input = ?"), append(args, v)
 	}
@@ -183,4 +198,76 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []interface{}) {
 	}
 
 	return toUpd, args
+}
+
+// TODO: Move to BaseAPI
+func (db *DB) SolvedProblems(ctx context.Context, uid int) ([]*kilonova.Problem, error) {
+	ids, err := db.solvedProblems(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	var pbs = make([]*kilonova.Problem, 0, len(ids))
+	for _, id := range ids {
+		pb, err := db.Problem(ctx, id)
+		if err != nil {
+			log.Printf("Couldn't get solved problem %d: %s\n", id, err)
+		} else {
+			pbs = append(pbs, pb)
+		}
+	}
+	return pbs, nil
+}
+
+type dbProblem struct {
+	ID            int       `db:"id"`
+	CreatedAt     time.Time `db:"created_at"`
+	Name          string    `db:"name"`
+	Description   string    `db:"description"`
+	ShortDesc     string    `db:"short_description"`
+	TestName      string    `db:"test_name"`
+	AuthorID      int       `db:"author_id"`
+	Visible       bool      `db:"visible"`
+	DefaultPoints int       `db:"default_points"`
+
+	// Limit stuff
+	TimeLimit   float64 `db:"time_limit"`
+	MemoryLimit int     `db:"memory_limit"`
+	SourceSize  int     `db:"source_size"`
+
+	SourceCredits string `db:"source_credits"`
+	AuthorCredits string `db:"author_credits"`
+
+	// Eval stuff
+	ConsoleInput bool `db:"console_input"`
+}
+
+func internalToProblems(pbs []*dbProblem) []*kilonova.Problem {
+	return mapper(pbs, internalToProblem)
+}
+
+func internalToProblem(pb *dbProblem) *kilonova.Problem {
+	if pb == nil {
+		return nil
+	}
+	return &kilonova.Problem{
+		ID:          pb.ID,
+		CreatedAt:   pb.CreatedAt,
+		Name:        pb.Name,
+		Description: pb.Description,
+		ShortDesc:   pb.ShortDesc,
+		TestName:    pb.TestName,
+
+		AuthorID:      pb.AuthorID,
+		Visible:       pb.Visible,
+		DefaultPoints: pb.DefaultPoints,
+
+		TimeLimit:   pb.TimeLimit,
+		MemoryLimit: pb.MemoryLimit,
+		SourceSize:  pb.SourceSize,
+
+		SourceCredits: pb.SourceCredits,
+		AuthorCredits: pb.AuthorCredits,
+
+		ConsoleInput: pb.ConsoleInput,
+	}
 }

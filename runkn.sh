@@ -1,7 +1,15 @@
 #!/bin/bash
 
-go build -v ./cmd/kn || exit 2
+go build -race -v ./cmd/kn || exit 2
 
 mv kn knnnn # fix gitignore issue
 
-sudo ./knnnn main
+# If it keeps crashing, restart
+while true
+do
+	echo "Starting server..."
+	sudo ./knnnn main
+	echo "Server stopped..."
+	sleep 2
+done
+

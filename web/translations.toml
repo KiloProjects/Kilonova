@@ -1,0 +1,888 @@
+[announcement]
+en = "Pssst! If you have any suggestions for the website, send me a message on %s."
+ro = "Pssst! Dacă ai vreo sugestie pentru site, trimite-mi mesaj pe %s."
+
+[num_solved]
+en = "(%d / %d solved)"
+ro = "(%d / %d rezolvate)"
+
+[problems]
+en = "Problems"
+ro = "Probleme"
+
+[problem]
+en = "Problem %d: %s"
+ro = "Problema %d: %s"
+
+[problemSingle]
+en = "Problem"
+ro = "Problema"
+
+[published]
+en = "Published"
+ro = "Publicată"
+
+[unpublished]
+en = "Unpublished"
+ro = "Nepublicată"
+
+[unverifiedEmail]
+en = "It looks like you haven't verified your email yet. Click <a class=\"underline text-black dark:text-white\" href=\"/verify/resend\">here</a> if you need to have your verification resent."
+ro = "Se pare că încă nu ți-ai verificat e-mailul. Apasă <a class=\"underline text-black dark:text-white\" href=\"/verify/resend\">aici</a> dacă trebuie să reprimești verificarea."
+
+[problem_list.none]
+en = "There are no problem lists"
+ro = "Nu există nicio listă de probleme"
+
+[problem.none_in_list]
+en = "There are no visible problems in the list"
+ro = "Nu există nicio problemă vizibilă în lista de probleme"
+
+[create]
+en = "[create]"
+ro = "[creare]"
+
+[title]
+en = "Title"
+ro = "Titlu"
+
+[name]
+en = "Name"
+ro = "Nume"
+
+[desc]
+en = "Description"
+ro = "Descriere"
+
+[pbs]
+en = "Problems (IDs separated by a comma)"
+ro = "Probleme (ID-uri separate prin virgulă)"
+
+[button.create]
+en = "Create"
+ro = "Creare"
+
+[button.update]
+en = "Update"
+ro = "Actualizare"
+
+[button.add]
+en = "Add"
+ro = "Adăugare"
+
+[button.delete]
+en = "Delete"
+ro = "Ștergere"
+
+[button.upload]
+en = "Upload"
+ro = "Încărcare"
+
+[noTests]
+en = "There aren't any tests, it would be nice to create one :)"
+ro = "Nu există niciun test, ar fi bine să creezi unul :)"
+
+[create_list]
+en = "Create List"
+ro = "Creare Listă"
+
+[lists]
+en = "Lists"
+ro = "Liste"
+
+[title.list]
+en = "List #%d"
+ro = "Lista #%d"
+
+[list.update]
+en = "Update List"
+ro = "Actualizare Listă"
+
+[test.update]
+en = "Update tests"
+ro = "Actualizare teste"
+
+[profile]
+en = "Profile of"
+ro = "Profilul lui"
+
+[emailConfirm]
+en = "Verified Email"
+ro = "Email Verificat"
+
+[title.edit.index]
+en = "Edit Problem | Problem #%d: %s"
+ro = "Editare Problemă | Problema #%d: %s"
+
+[title.edit.description]
+en = "Edit Description | Problem #%d: %s"
+ro = "Editare Descriere | Problema #%d: %s"
+
+[title.edit.test_add]
+en = "Add Test | Problem #%d: %s"
+ro = "Adăugare Test | Problema #%d: %s"
+
+[title.edit.test_edit]
+en = "Edit Test #%d | Problem #%d: %s"
+ro = "Editare Test #%d | Problema #%d: %s"
+
+[title.edit.attachments]
+en = "Edit Attachments | Problem #%d: %s"
+ro = "Editare Atașamente | Problema #%d: %s"
+
+[title.edit.subtask_add]
+en = "Create Subtask"
+ro = "Creare Subtask"
+
+[title.edit.subtask_edit]
+en = "Edit Subtask #%d"
+ro = "Editare Subtask #%d"
+
+[title.edit.subtask]
+en = "Update Subtasks"
+ro = "Actualizare Subtasks"
+
+[email.verified]
+en = "Verified Email"
+ro = "Email Verificat"
+
+[profilePic]
+en = "Profile picture for"
+ro = "Poză profil pentru"
+
+[email]
+en = "Email"
+ro = "Email"
+
+[yes]
+en = "Yes"
+ro = "Da"
+
+[no]
+en = "No"
+ro = "Nu"
+
+[resend]
+en = "Resend"
+ro = "Retrimite"
+
+[send]
+en = "Send"
+ro = "Trimite"
+
+[editBio]
+en = "Edit Bio"
+ro = "Editare Bio"
+
+[createBio]
+en = "Create Bio"
+ro = "Creare Bio"
+
+[oneSolvedProblem]
+en = "One solved problem:"
+ro = "O problemă rezolvată:"
+
+[solvedProblems]
+en = "%d solved problems"
+ro = "%d probleme rezolvate"
+
+[deleteAccount]
+en = "Prune User"
+ro = "Ștergere Profil"
+
+[delAccConfirmation]
+en = "Are you sure you want to prune the user?"
+ro = "Sunteți siguri că vreți să ștergeți utilizatorul?"
+
+[confirmedEmail]
+en = "Email confirmed for %s"
+ro = "Email confirmat pentru %s"
+
+[closeTab]
+en = "You may close the tab"
+ro = "Puteți să închideți tabul"
+
+[email.resent]
+en = "Resent email"
+ro = "Email retrimis"
+
+[usefulInfo]
+en = "Useful Links"
+ro = "Link-uri utile"
+
+[otherInfo]
+en = "Other information"
+ro = "Alte informații"
+
+[frontPage]
+en = "Front page"
+ro = "Pagina principală"
+
+[problem.list]
+en = "List of Problems"
+ro = "Listă Probleme"
+
+[submission.list]
+en = "Submission List"
+ro = "Listă submisii"
+
+[profile.url]
+en = "Profile"
+ro = "Profil"
+
+[settings]
+en = "Settings"
+ro = "Setări"
+
+[panel.proposer]
+en = "Proposer Panel"
+ro = "Panou Propunător"
+
+[panel.admin]
+en = "Admin Panel"
+ro = "Panou Admin"
+
+[problem_lists]
+en = "Problem Lists"
+ro = "Liste de Probleme"
+
+[auth.signup]
+en = "Sign Up"
+ro = "Înregistrare"
+
+[auth.login]
+en = "Log In"
+ro = "Logare"
+
+[auth.logout]
+en = "Log Out"
+ro = "Log Out"
+
+[title.edit.problem]
+en = "Editing Problem"
+ro = "Editare Problemă"
+
+[general]
+en = "General"
+ro = "General"
+
+[attachments]
+en = "Attachments"
+ro = "Atașamente"
+
+[tests]
+en = "Tests"
+ro = "Teste"
+
+[subTasks]
+en = "Subtasks"
+ro = "Subtaskuri"
+
+[createTest]
+en = "Create Test"
+ro = "Creare Test"
+
+[createSubTask]
+en = "Create Subtask"
+ro = "Creare Subtask"
+
+[nthTest]
+en = "Test #%d"
+ro = "Testul #%d"
+
+[nthSubTask]
+en = "Subtask #%d"
+ro = "Subtaskul #%d"
+
+[author]
+en = "Author"
+ro = "Autor"
+
+[source]
+en = "Source"
+ro = "Sursă"
+
+[pbType]
+en = "Problem Type"
+ro = "Tip Problemă"
+
+[classic]
+en = "Classic"
+ro = "Clasic"
+
+[checker]
+en = "Checker"
+ro = "Verificator"
+
+[visiblePb]
+en = "Visible problem"
+ro = "Problemă vizibilă"
+
+[consoleInput]
+en = "Console input"
+ro = "Intrare din consolă"
+
+[testName]
+en = "Test name"
+ro = "Nume test"
+
+[memoryLimit]
+en = "Memory limit"
+ro = "Limită de memorie"
+
+[timeLimit]
+en = "Time limit"
+ro = "Limită de timp"
+
+[seconds]
+en = "seconds"
+ro = "secunde"
+
+[defaultPoints]
+en = "Points by default"
+ro = "Puncte din oficiu"
+
+[id]
+en = "ID"
+ro = "ID"
+
+[score]
+en = "Score"
+ro = "Scor"
+
+[updateProblem]
+en = "Update problem info"
+ro = "Actualizare date problemă"
+
+[deleteProblem]
+en = "Delete problem"
+ro = "Șterge problema"
+
+[deleteTests]
+en = "Delete selected tests"
+ro = "Șterge testele selectate"
+
+[updateTestScores]
+en = "Update test scores"
+ro = "Actualizează scorurile testelor"
+
+[byDefault]
+en = "by default"
+ro = "din oficiu"
+
+[testArchive]
+en = "Upload .zip archive with tests"
+ro = "Încărcare arhivă .zip cu teste"
+
+[archive]
+en = "Archive"
+ro = "Arhivă"
+
+[noFiles]
+en = "No files selected"
+ro = "Niciun fișier specificat"
+
+[testID]
+en = "Test ID"
+ro = "ID Test"
+
+[noTestsError]
+en = "There's no tests, this should not happen!"
+ro = "Nu există niciun tests, așa ceva n-ar trebui să se întâmple!"
+
+[warning.emptySubTask]
+en = "WARNING: Empty Subtask, will always show 0 points"
+ro = "WARNING: Subtask gol, va afișa mereu 0 puncte"
+
+[deleteSubTasks]
+en = "Delete selected Subtasks"
+ro = "Șterge Subtaskuri selectate"
+
+[updateSubTasks]
+en = "Update Subtask scores"
+ro = "Actualizare scoruri Subtasks"
+
+[noSubTasks]
+en = "There are no Subtasks, tests will be scored individually"
+ro = "Nu există niciun Subtask, testele se vor evalua individual"
+
+[testAssociations]
+en = "Test Associations"
+ro = "Asocieri teste"
+
+[file]
+en = "File"
+ro = "Fișier"
+
+[size]
+en = "Size"
+ro = "Dimensiune"
+
+[visible]
+en = "Visible"
+ro = "Vizibil"
+
+[invisible]
+en = "Invisible"
+ro = "Invizibil"
+
+[private]
+en = "Private"
+ro = "Privat"
+
+[deleteAttachments]
+en = "Delete selected attachments"
+ro = "Șterge atașamentele selectate"
+
+[noAttachments]
+en = "There are no attachments for the problem"
+ro = "Nu există niciun atașament asociat problemei"
+
+[emptyTitle]
+en = "Empty title"
+ro = "Titlu gol"
+
+[confirmProblemDelete]
+en = "Are you sure you want to delete the problem?"
+ro = "Sigur vreți să ștergeți problema?"
+
+[confirmTestDelete]
+en = "Are you sure you want to delete the test?"
+ro = "Sunteți sigur că vreți să ștergeți testul?"
+
+[error.message]
+en = "That's an error"
+ro = "Asta-i o eroare!"
+
+[error.loginSuggest]
+en = "Maybe you can log in to view this"
+ro = "Probabil vei putea să accesezi dacă te loghezi"
+
+[error.login]
+en = "Can't get login modal"
+ro = "N-am putut afișa modalul de autentificare"
+
+[edit]
+en = "[edit]"
+ro = "[editare]"
+
+[generalInfo]
+en = "General info"
+ro = "Informații generale"
+
+[uploader]
+en = "Uploader"
+ro = "Uploader"
+
+[input]
+en = "Input"
+ro = "Intrare"
+
+[output]
+en = "Output"
+ro = "Ieșire"
+
+[console]
+en = "Console Input"
+ro = "Consolă"
+
+[visibility]
+en = "Visibility"
+ro = "Vizibilitate"
+
+[submissions]
+en = "Submissions"
+ro = "Submisii"
+
+[oldSubs]
+en = "Your submissions"
+ro = "Submisiile tale"
+
+[loading]
+en = "Loading..."
+ro = "Se încarcă..."
+
+[noSub]
+en = "No submissions"
+ro = "Nicio submisie"
+
+[language]
+en = "Language"
+ro = "Limbaj"
+
+[uploadSub]
+en = "Upload submission"
+ro = "Încărcare submisie"
+
+[finishedEval]
+en = "Submission evaluated"
+ro = "Evaluare finalizată"
+
+[finalScore]
+en = "Score for submission #%d: %d"
+ro = "Scor submisie #%d: %d"
+
+[view]
+en = "View"
+ro = "Vizualizare"
+
+[uploaded]
+en = "Submission uploaded"
+ro = "Submisie încărcată"
+
+[removeSub]
+en = "Remove submission"
+ro = "Ștergere submisie"
+
+[reevaluate]
+en = "Reevaluate submission"
+ro = "Reevaluare submisie"
+
+[sub]
+en = "Submission"
+ro = "Submisia"
+
+[subStatus]
+en = "Status of submissions"
+ro = "Stare submisii"
+
+[page]
+en = "Page"
+ro = "Pagină"
+
+[userID]
+en = "User ID"
+ro = "ID User"
+
+[problemID]
+en = "Problem ID"
+ro = "ID Problemă"
+
+[status]
+en = "Status"
+ro = "Status"
+
+[finished]
+en = "Finished"
+ro = "Finalizat"
+
+[working]
+en = "Working"
+ro = "În lucru"
+
+[waiting]
+en = "Waiting..."
+ro = "În așteptare..."
+
+[special]
+en = "Special"
+ro = "Evidențiată"
+
+[compileErr]
+en = "Compile error"
+ro = "Eroare de compilare"
+
+[sorting]
+en = "Sorting criteria"
+ro = "Criteriu de sortare"
+
+[maxTime]
+en = "Max Time"
+ro = "Timp Maxim"
+
+[maxMemory]
+en = "Max Memory"
+ro = "Memorie Maximă"
+
+[ascending]
+en = "Ascending Sort"
+ro = "Criteriu Crescător"
+
+[fetch]
+en = "Fetch data"
+ro = "Filtrare"
+
+[time]
+en = "Time"
+ro = "Timp"
+
+[memory]
+en = "Memory"
+ro = "Memorie"
+
+[uploadDate]
+en = "Upload date"
+ro = "Data încărcării"
+
+[noSubFound]
+en = "No submission found"
+ro = "Nicio submisie găsită"
+
+[show]
+en = "Show"
+ro = "Afișare"
+
+[hide]
+en = "Hide"
+ro = "Ascunde"
+
+[filterBar]
+en = "filter bar"
+ro = "bara de filtrare"
+
+[filterLink]
+en = "Copy filter link"
+ro = "Copiere link filtre"
+
+[filters]
+en = "Filters"
+ro = "Filtre"
+
+[advancedOptions]
+en = "Advanced filters"
+ro = "Filtre avansate"
+
+[submitLogin]
+en = "<a href='/login'>Log in</a> or <a href='/signup'>sign up</a> to be able to send submissions!"
+ro = "<a href='/login'>Autentifică-te</a> sau <a href='/signup'>înregistrează-te</a> pentru a putea trimite submisii!"
+
+[settingsHeader]
+en = "Profile settings"
+ro = "Setările profilului"
+
+[updateBio]
+en = "Update Bio"
+ro = "Actualizare Bio"
+
+[updateLang]
+en = "Update Display Language"
+ro = "Actualizare Limbă Afișaj"
+
+[makeSubs]
+en = "Make submissions implicitly"
+ro = "Fă submisiile implicit"
+
+[password]
+en = "Password"
+ro = "Parolă"
+
+[passwordCheck]
+en = "Check Password"
+ro = "Verificare Parolă"
+
+[newEmail]
+en = "New email"
+ro = "Email nou"
+
+[newPwd]
+en = "New password"
+ro = "Parolă nouă"
+
+[newPwdConfirm]
+en = "Confirm new password"
+ro = "Confirmare parolă nouă"
+
+[differentPwds]
+en = "Passwords do not match"
+ro = "Parolele nu se potrivesc"
+
+[updatePwd]
+en = "Update password"
+ro = "Actualizare parolă"
+
+[updateEmail]
+en = "Update email"
+ro = "Actualizare email"
+
+[createPb]
+en = "Create problem"
+ro = "Creare problemă"
+
+[problemName]
+en = "Problem name"
+ro = "Nume problemă"
+
+[username]
+en = "Username"
+ro = "Username"
+
+[signupReminder]
+en = "Don't have an account? <a href='/signup'>Sign Up</a>"
+ro = "N-ai cont? <a href='/signup'>Înregistrează-te</a>"
+
+[loginReminder]
+en = "Already have an account? <a href='/login'>Log In</a>"
+ro = "Ai deja cont? <a href='/login'>Loghează-te</a>"
+
+[authenticate]
+en = "Authenticate"
+ro = "Autentificare"
+
+[resetSubs]
+en = "Reset waiting submissions"
+ro = "Resetare submisii în așteptare"
+
+[changeRoles]
+en = "Change roles"
+ro = "Schimbă rolurile"
+
+[makeAdmin]
+en = "Make Admin"
+ro = "Fă Administrator"
+
+[makeProposer]
+en = "Make Proposer"
+ro = "Fă Propunător"
+
+[admins]
+en = "Admins"
+ro = "Administratori"
+
+[proposers]
+en = "Proposers"
+ro = "Propunători"
+
+[mainPageAdmin]
+en = "Manage main page"
+ro = "Administrare pagina principală"
+
+[mainPagePbList]
+en = "Problem list (IDs, comma-separated)"
+ro = "Listă de probleme (IDuri, separate prin o virgulă)"
+
+[mainPageAllPbs]
+en = "Show all problems"
+ro = "Afișare toate problemele"
+
+[description]
+en = "Description"
+ro = "Descriere"
+
+[authorID]
+en = "Author ID"
+ro = "ID Autor"
+
+[copied]
+en = "Copied to clipboard"
+ro = "Copiat în clipboard"
+
+[notCopied]
+en = "Couldn't copy to clipboard."
+ro = "Nu s-a putut copia în clipboard."
+
+[evaluated]
+en = "Evaluated"
+ro = "Evaluat"
+
+[evaluating]
+en = "Evaluating..."
+ro = "În evaluare..."
+
+[points]
+en = "points"
+ro = "puncte"
+
+[makeCode]
+en = "Make code"
+ro = "Fă codul"
+
+[download]
+en = "Download"
+ro = "Descărcare"
+
+[copy]
+en = "Copy"
+ro = "Copiere"
+
+[sourceCode]
+en = "Source Code:"
+ro = "Codul Sursă:"
+
+[compileMsg]
+en = "Compilation Message"
+ro = "Mesaj Compilare"
+
+[test]
+en = "Test"
+ro = "Testul"
+
+[subTask]
+en = "SubTask"
+ro = "SubTask-ul"
+
+[seeTests]
+en = "See individual tests"
+ro = "Vizualizare teste individuale"
+
+[verdict]
+en = "Verdict"
+ro = "Verdict"
+
+[correct]
+en = "correct"
+ro = "corect"
+
+[users]
+en = "Users"
+ro = "Utilizatori"
+
+# Contest stuff
+
+[contest]
+en = "Contest"
+ro = "Concurs"
+
+[title.contest.create]
+en = "Create contest"
+ro = "Creare concurs"
+
+
+# Multilingual error
+
+[errors.problem.hidden]
+en = "You are not allowed to view this problem!"
+ro = "Nu aveți dreptul să accesați problema!"
+
+[errors.problem.notfound]
+en = "Problem does not exist"
+ro = "Problema nu există"
+
+[errors.user.authed]
+en = "You must be logged in to view this!"
+ro = "Trebuie să fii autentificat pentru a putea accesa asta!"
+
+
+
+# subs_view compat
+
+[oneResult]
+en = "One result"
+ro = "Un rezultat"
+
+[u20Results]
+en = "results"
+ro = "rezultate"
+
+[manyResults]
+en = "results"
+ro = "de rezultate"
+
+[seeOne]
+en = "See one more submission"
+ro = "Vezi încă o submisie"
+
+[seeU20]
+en = "See %d more submissions"
+ro = "Vezi încă %d submisii"
+
+[seeMany]
+en = "See %d more submissions"
+ro = "Vezi încă %d de submisii"
+
+[info]
+en = "Summary"
+ro = "Informații"
+
+[individualTests]
+en = "Individual tests"
+ro = "Teste individuale"

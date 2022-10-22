@@ -8,17 +8,17 @@
 			<button id="nav-toggler" type="button" onclick="navbar_mgr.toggleNavbar()" class="fas fa-bars text-gray-500 dark:text-gray-300 hover:text-black focus:text-black dark:hover:text-white dark:focus:text-white focus:outline-none h-6 w-6"></button>
 		</div>
 	</div>
-	<nav id="nav-dropdown" class="px-2 pt-1 pb-3 md:flex md:p-0">
-		<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/submissions">{{getText .Ctx.Language "subList"}}</a>
+	<nav id="nav-dropdown" class="px-2 pt-1 pb-3 md:flex md:p-0 z-50">
+		<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/submissions">{{getText .Ctx.Language "submission.list"}}</a>
 		{{if not .Ctx.User }}
-			<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/signup">{{getText .Ctx.Language "signUp"}}</a>
-			<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/login">{{getText .Ctx.Language "logIn"}}</a>
+			<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/signup">{{getText .Ctx.Language "auth.signup"}}</a>
+			<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/login">{{getText .Ctx.Language "auth.login"}}</a>
 		{{else}}
 			<div id="pr-dropdown" class="relative">
 				<button onclick="navbar_mgr.toggleDropdown()" id="profile-dropdown-button" class="relative z-10 block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable">{{.Ctx.User.Name}}<i id="dropdown-caret" class="ml-1 fas fa-caret-down"></i></button>
 				<div id="profile-dropdown" class="dropdown-list hidden">
 					<a class="dropdown-list-item" href="/profile">
-						<i class="ml-n2 fas fa-user fa-fw"></i> {{getText .Ctx.Language "profileLink"}} 
+						<i class="ml-n2 fas fa-user fa-fw"></i> {{getText .Ctx.Language "profile.url"}} 
 					</a>	
 					<a class="dropdown-list-item" href="/settings">
 						<i class="ml-n2 fas fa-user-cog fa-fw"></i> {{getText .Ctx.Language "settings"}}
@@ -26,20 +26,23 @@
 					{{if (or .Ctx.User.Proposer .Ctx.User.Admin)}}
 						<div class="dropdown-divider"></div>
 						<a class="dropdown-list-item" href="/proposer">
-							<i class="ml-n2 fas fa-chalkboard-teacher fa-fw"></i> {{getText .Ctx.Language "proposerPanel"}}
+							<i class="ml-n2 fas fa-chalkboard-teacher fa-fw"></i> {{getText .Ctx.Language "panel.proposer"}}
 						</a>
 						<a class="dropdown-list-item" href="/problem_lists">
-							<i class="ml-n2 fas fa-list-ul fa-fw"></i> {{getText .Ctx.Language "problemLists"}}
+							<i class="ml-n2 fas fa-list-ul fa-fw"></i> {{getText .Ctx.Language "problem_lists"}}
 						</a>
 					{{end}}
 					{{if .Ctx.User.Admin}}
-						<a class="dropdown-list-item" href="/admin">
-							<i class="ml-n2 fas fa-sliders-h fa-fw"></i> {{getText .Ctx.Language "adminPanel"}}
-						</a>
+                        <a class="dropdown-list-item" href="/admin">
+                            <i class="ml-n2 fas fa-sliders-h fa-fw"></i> {{getText .Ctx.Language "panel.admin"}}
+                        </a>
+                        <a class="dropdown-list-item" href="/admin/users">
+                            <i class="ml-n2 fas fa-users fa-fw"></i> {{getText .Ctx.Language "users"}}
+                        </a>
 					{{end}}
 					<div class="dropdown-divider"></div>
 					<a class="dropdown-list-item" href="/logout">
-						<i class="ml-n2 fas fa-sign-out-alt fa-fw"></i> {{getText .Ctx.Language "logOut"}}
+						<i class="ml-n2 fas fa-sign-out-alt fa-fw"></i> {{getText .Ctx.Language "auth.logout"}}
 					</a>
 				</div>
 			</div>

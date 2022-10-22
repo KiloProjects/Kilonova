@@ -1,0 +1,8 @@
+{{define "title"}}{{getText .Ctx.Language "users"}}{{end}}
+{{define "content"}}
+<h1>{{getText .Ctx.Language "users"}}</h1>
+<hr/>
+<div>
+	<kn-user-list/>
+</div>
+{{end}}

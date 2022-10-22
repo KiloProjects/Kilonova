@@ -19,11 +19,11 @@
 		{{ with (listProblems $user .) }}
 			{{ template "pb_list_group" (genPbListParams $user $root.Ctx.Language .) }}
 		{{ else }}
-			<p> {{ getText $ctx.Language "noListProblems" }} </p>
+			<p> {{ getText $ctx.Language "problem.none_in_list" }} </p>
 		{{ end }}
 	</div>
 {{ else }}
-	<p> {{getText $root.Ctx.Language "noProblemLists"}} </p>
+	<p> {{getText $root.Ctx.Language "problem_list.none"}} </p>
 {{ end }}
 
 {{ end }}

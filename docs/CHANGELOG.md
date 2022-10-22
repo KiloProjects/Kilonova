@@ -1,3 +1,10 @@
+- v0.9.4:
+    - Better consistency in design;
+    - Revamped submission page;
+- v0.9.3:
+	- Added better line spacing for text;
+	- Added copyright notice (CC BY-NC-SA 4.0);
+	- SUPPORT FOR INTERACTIVE PROBLEMS;
 - v0.9.2:
 	- Pretty stupid bug fixes
 - v0.9.1:

@@ -5,22 +5,22 @@ import (
 )
 
 var (
-	ErrDirectory    = &Error{Code: EINVALID, Message: "File is actually directory"}
-	ErrNotDirectory = &Error{Code: EINVALID, Message: "Not a directory"}
-	ErrNotEmpty     = &Error{Code: EINVALID, Message: "Directory you are trying to delete is not empty"}
-	ErrNoDirInPath  = &Error{Code: EINVALID, Message: "Trying to save in a directory which is actually a file"}
-	ErrNotExist     = &Error{Code: ENOTFOUND, Message: "Error doesn't exist"}
+	ErrDirectory    = Statusf(400, "File is actually directory")
+	ErrNotDirectory = Statusf(400, "Not a directory")
+	ErrNotEmpty     = Statusf(400, "Directory you are trying to delete is not empty")
+	ErrNoDirInPath  = Statusf(400, "Trying to save in a directory which is actually a file")
+	ErrNotExist     = Statusf(404, "Error doesn't exist")
 )
 
 type GraderStore interface {
-	TestInput(testID int) (io.ReadCloser, error)
-	TestOutput(testID int) (io.ReadCloser, error)
+	TestInput(testID int) (io.ReadSeekCloser, error)
+	TestOutput(testID int) (io.ReadSeekCloser, error)
 
 	SaveTestInput(testID int, input io.Reader) error
 	SaveTestOutput(testID int, output io.Reader) error
 
 	SubtestWriter(subtest int) (io.WriteCloser, error)
-	SubtestReader(subtest int) (io.ReadCloser, error)
+	SubtestReader(subtest int) (io.ReadSeekCloser, error)
 	//GetDB(name string) (*sqlx.DB, error)
 }
 

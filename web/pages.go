@@ -1,9 +1,11 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -12,13 +14,17 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"reflect"
 	"strconv"
+	tparse "text/template/parse"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/davecgh/go-spew/spew"
+	"go.uber.org/zap"
 )
 
 var (
@@ -39,7 +45,7 @@ func (t *EditTopbar) IsOnSubtask(stk *kilonova.SubTask) bool {
 }
 
 type ReqContext struct {
-	User     *kilonova.User
+	User     *kilonova.UserFull
 	Language string
 }
 
@@ -49,7 +55,7 @@ type ProblemParams struct {
 	ProblemEditor bool
 
 	Problem     *kilonova.Problem
-	Author      *kilonova.User
+	Author      *kilonova.UserBrief
 	Attachments []*kilonova.Attachment
 
 	Markdown  template.HTML
@@ -69,12 +75,12 @@ type SubTaskEditParams struct {
 	SubTask *kilonova.SubTask
 	Topbar  *EditTopbar
 
-	ctx context.Context
-	db  kilonova.DB
+	ctx  context.Context
+	base *sudoapi.BaseAPI
 }
 
 func (s *SubTaskEditParams) ProblemTests() []*kilonova.Test {
-	tests, err := s.db.Tests(s.ctx, s.Problem.ID)
+	tests, err := s.base.Tests(s.ctx, s.Problem.ID)
 	if err != nil {
 		return nil
 	}
@@ -82,7 +88,7 @@ func (s *SubTaskEditParams) ProblemTests() []*kilonova.Test {
 }
 
 func (s *SubTaskEditParams) ProblemSubTasks() []*kilonova.SubTask {
-	sts, err := s.db.SubTasks(s.ctx, s.Problem.ID)
+	sts, err := s.base.SubTasks(s.ctx, s.Problem.ID)
 	if err != nil {
 		return nil
 	}
@@ -90,7 +96,7 @@ func (s *SubTaskEditParams) ProblemSubTasks() []*kilonova.SubTask {
 }
 
 func (s *SubTaskEditParams) TestSubTasks(id int) string {
-	sts, err := s.db.SubTasksByTest(s.ctx, s.Problem.ID, id)
+	sts, err := s.base.SubTasksByTest(s.ctx, s.Problem.ID, id)
 	if err != nil || sts == nil || len(sts) == 0 {
 		return "-"
 	}
@@ -119,8 +125,7 @@ type TestEditParams struct {
 	Test    *kilonova.Test
 	Topbar  *EditTopbar
 
-	db kilonova.DB
-	dm kilonova.DataStore
+	base *sudoapi.BaseAPI
 }
 
 type testDataType struct {
@@ -128,33 +133,42 @@ type testDataType struct {
 	Out string
 }
 
+const readLimit = 1024 * 1024 // 1MB
+
+func ReadOrTruncate(r io.Reader) []byte {
+	var buf bytes.Buffer
+	if _, err := io.CopyN(&buf, r, readLimit); err != nil {
+		if errors.Is(err, io.EOF) {
+			return buf.Bytes()
+		}
+		zap.S().Warn(err)
+		return []byte("err")
+	}
+
+	return []byte("Files larger than 1MB cannot be displayed")
+}
+
 func (t *TestEditParams) GetFullTests() testDataType {
-	in, err := t.dm.TestInput(t.Test.ID)
+	in, err := t.base.TestInput(t.Test.ID)
 	if err != nil {
 		return testDataType{In: "err", Out: "err"}
 	}
 	defer in.Close()
 
-	out, err := t.dm.TestOutput(t.Test.ID)
+	out, err := t.base.TestOutput(t.Test.ID)
 	if err != nil {
 		return testDataType{In: "err", Out: "err"}
 	}
 	defer out.Close()
 
-	inData, err := io.ReadAll(in)
-	if err != nil {
-		inData = []byte("err")
-	}
-	outData, err := io.ReadAll(out)
-	if err != nil {
-		outData = []byte("err")
-	}
+	inData := ReadOrTruncate(in)
+	outData := ReadOrTruncate(out)
 
 	return testDataType{In: string(inData), Out: string(outData)}
 }
 
 func (t *TestEditParams) ProblemTests() []*kilonova.Test {
-	tests, err := t.db.Tests(context.Background(), t.Problem.ID)
+	tests, err := t.base.Tests(context.Background(), t.Problem.ID)
 	if err != nil {
 		return nil
 	}
@@ -164,12 +178,12 @@ func (t *TestEditParams) ProblemTests() []*kilonova.Test {
 type IndexParams struct {
 	Ctx *ReqContext
 
-	Version string
-	Config  config.IndexConf
+	Version     string
+	Description string
 }
 
 type ProblemListingParams struct {
-	User     *kilonova.User
+	User     *kilonova.UserBrief
 	Language string
 	Problems []*kilonova.Problem
 }
@@ -178,7 +192,7 @@ type ProfileParams struct {
 	Ctx *ReqContext
 	// User          *kilonova.User
 
-	ContentUser  *kilonova.User
+	ContentUser  *kilonova.UserFull
 	UserProblems []*kilonova.Problem
 }
 
@@ -211,17 +225,9 @@ type SimpleParams struct {
 	// User          *kilonova.User
 }
 
-type AdminParams struct {
-	Ctx *ReqContext
-	// User          *kilonova.User
-	IndexDesc    string
-	IndexListAll bool
-	IndexLists   string
-}
-
 func GenContext(r *http.Request) *ReqContext {
 	return &ReqContext{
-		User:     util.User(r),
+		User:     util.UserFull(r),
 		Language: util.Language(r),
 	}
 }
@@ -230,7 +236,7 @@ type VerifiedEmailParams struct {
 	Ctx *ReqContext
 	// User          *kilonova.User
 
-	ContentUser *kilonova.User
+	ContentUser *kilonova.UserBrief
 }
 
 type SubParams struct {
@@ -257,19 +263,56 @@ var funcs = template.FuncMap{
 	"intList":    kilonova.SerializeIntList,
 	"httpstatus": http.StatusText,
 	"dump":       spew.Sdump,
-	"getText": func(lang, line string, args ...interface{}) template.HTML {
-		if _, ok := translations[line]; !ok {
-			log.Printf("Invalid translation key %q\n", line)
-			return "ERR"
-		}
-		if _, ok := translations[line][lang]; !ok {
-			return template.HTML(translations[line][config.Common.DefaultLang])
-		}
-		return template.HTML(fmt.Sprintf(translations[line][lang], args...))
+	"getText": func(lang, line string, args ...any) template.HTML {
+		return template.HTML(getText(lang, line, args...))
 	},
 }
 
-func parse(optFuncs template.FuncMap, files ...string) *template.Template {
+type executor interface {
+	Execute(io.Writer, any) error
+}
+
+func doWalk(nodes ...tparse.Node) {
+	for _, node := range nodes {
+		tp := reflect.Indirect(reflect.ValueOf(node))
+		if val := tp.FieldByName("List"); val.IsValid() {
+			if val.Kind() == reflect.Pointer {
+				val = reflect.Indirect(val)
+			}
+			if nodes := val.FieldByName("Nodes"); nodes.IsValid() {
+				if nodes.Kind() != reflect.Slice {
+					panic("Wtf")
+				}
+				doWalk(nodes.Interface().([]tparse.Node)...)
+			}
+		}
+		if nodes := tp.FieldByName("Nodes"); nodes.IsValid() {
+			if nodes.Kind() != reflect.Slice {
+				panic("Wtf")
+			}
+			doWalk(nodes.Interface().([]tparse.Node)...)
+		}
+		//spew.Dump(node.Type(), node.Position(), node.String())
+		if rnode, ok := node.(*tparse.ActionNode); ok {
+			for _, cmd := range rnode.Pipe.Cmds {
+				if len(cmd.Args) == 0 {
+					continue
+				}
+				val, ok := cmd.Args[0].(*tparse.IdentifierNode)
+				if !ok || val.Ident != "getText" || len(cmd.Args) < 3 {
+					continue
+				}
+				key := cmd.Args[2].(*tparse.StringNode).Text
+				if !hasTranslationKey(key) {
+					log.Fatalf("Template static analysis failed: Unknown translation key %q\n", key)
+				}
+			}
+			//spew.Dump(rnode)
+		}
+	}
+}
+
+func parse(optFuncs template.FuncMap, files ...string) executor { //*template.Template {
 	templs, err := fs.Sub(templateDir, "templ")
 	if err != nil {
 		log.Fatal(err)
@@ -279,5 +322,26 @@ func parse(optFuncs template.FuncMap, files ...string) *template.Template {
 		t = t.Funcs(optFuncs)
 	}
 	files = append(files, "util/navbar.html", "util/footer.html")
+	if config.Common.Debug && false {
+		f, err := fs.ReadFile(templs, files[0])
+		if err != nil {
+			log.Fatal(err)
+		}
+		ptrees, err := tparse.Parse("nume_template", string(f), "{{", "}}", funcs, optFuncs, builtinTemporaryTemplate())
+		if err != nil {
+			log.Fatal(err)
+		}
+		tree := ptrees["content"]
+		doWalk(tree.Root)
+	}
 	return template.Must(t.ParseFS(templs, append([]string{"layout.html"}, files...)...))
+}
+
+func builtinTemporaryTemplate() template.FuncMap {
+	names := []string{"and", "call", "html", "index", "slice", "js", "len", "not", "or", "print", "printf", "println", "urlquery", "eq", "ge", "gt", "le", "lt", "ne"}
+	rez := make(template.FuncMap)
+	for _, name := range names {
+		rez[name] = func() {}
+	}
+	return rez
 }

@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
@@ -29,72 +30,44 @@ const (
 	LangKey = KNContextType("language")
 )
 
-// User returns the user from request context
-func User(r *http.Request) *kilonova.User {
-	switch v := r.Context().Value(UserKey).(type) {
-	case kilonova.User:
-		return &v
-	case *kilonova.User:
-		return v
-	default:
-		return nil
-	}
+func UserBriefContext(ctx context.Context) *kilonova.UserBrief {
+	return getValueContext[kilonova.UserFull](ctx, UserKey).Brief()
 }
 
-// Problem returns the problem from request context
+func UserBrief(r *http.Request) *kilonova.UserBrief {
+	return UserBriefContext(r.Context())
+}
+
+func UserFull(r *http.Request) *kilonova.UserFull {
+	return getValueContext[kilonova.UserFull](r.Context(), UserKey)
+}
+
+func ProblemContext(ctx context.Context) *kilonova.Problem {
+	return getValueContext[kilonova.Problem](ctx, ProblemKey)
+}
+
 func Problem(r *http.Request) *kilonova.Problem {
-	switch v := r.Context().Value(ProblemKey).(type) {
-	case kilonova.Problem:
-		return &v
-	case *kilonova.Problem:
-		return v
-	default:
-		return nil
-	}
-}
-
-func ProblemList(r *http.Request) *kilonova.ProblemList {
-	switch v := r.Context().Value(ProblemListKey).(type) {
-	case kilonova.ProblemList:
-		return &v
-	case *kilonova.ProblemList:
-		return v
-	default:
-		return nil
-	}
-}
-
-func SubTask(r *http.Request) *kilonova.SubTask {
-	switch v := r.Context().Value(SubTaskKey).(type) {
-	case kilonova.SubTask:
-		return &v
-	case *kilonova.SubTask:
-		return v
-	default:
-		return nil
-	}
-}
-
-func Attachment(r *http.Request) *kilonova.Attachment {
-	switch v := r.Context().Value(AttachmentKey).(type) {
-	case kilonova.Attachment:
-		return &v
-	case *kilonova.Attachment:
-		return v
-	default:
-		return nil
-	}
+	return ProblemContext(r.Context())
 }
 
 func Submission(r *http.Request) *kilonova.Submission {
-	switch v := r.Context().Value(SubKey).(type) {
-	case kilonova.Submission:
-		return &v
-	case *kilonova.Submission:
-		return v
-	default:
-		return nil
-	}
+	return getValueContext[kilonova.Submission](r.Context(), SubKey)
+}
+
+func Test(r *http.Request) *kilonova.Test {
+	return getValueContext[kilonova.Test](r.Context(), TestKey)
+}
+
+func SubTask(r *http.Request) *kilonova.SubTask {
+	return getValueContext[kilonova.SubTask](r.Context(), SubTaskKey)
+}
+
+func ProblemList(r *http.Request) *kilonova.ProblemList {
+	return getValueContext[kilonova.ProblemList](r.Context(), ProblemListKey)
+}
+
+func Attachment(r *http.Request) *kilonova.Attachment {
+	return getValueContext[kilonova.Attachment](r.Context(), AttachmentKey)
 }
 
 func Language(r *http.Request) string {
@@ -108,11 +81,11 @@ func Language(r *http.Request) string {
 	}
 }
 
-func Test(r *http.Request) *kilonova.Test {
-	switch v := r.Context().Value(TestKey).(type) {
-	case kilonova.Test:
+func getValueContext[T any](ctx context.Context, key KNContextType) *T {
+	switch v := ctx.Value(key).(type) {
+	case T:
 		return &v
-	case *kilonova.Test:
+	case *T:
 		return v
 	default:
 		return nil

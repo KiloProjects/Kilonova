@@ -1,8 +1,8 @@
 package api
 
 import (
-	"io"
 	"net/http"
+	"path"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
@@ -24,52 +24,36 @@ func (s *API) createAttachment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-	data, err := io.ReadAll(file)
-	if err != nil {
-		errorData(w, err, 500)
-		return
-	}
-	name := fh.Filename
-	if name == "" {
+
+	name := path.Base(path.Clean(fh.Filename))
+	if name == "" || name == "/" || name == "." {
 		name = "untitled.txt"
 	}
-	if args.Private {
-		args.Visible = false
-	}
+
 	att := kilonova.Attachment{
-		ProblemID: util.Problem(r).ID,
-		Visible:   args.Visible,
-		Private:   args.Private,
-		Name:      name,
-		Data:      data,
+		Visible: args.Visible,
+		Private: args.Private,
+		Name:    name,
 	}
 
-	if err := s.db.CreateAttachment(r.Context(), &att); err != nil {
-		errorData(w, err, 500)
+	if err := s.base.CreateAttachment(r.Context(), &att, util.Problem(r).ID, file); err != nil {
+		errorData(w, err, 50)
 		return
 	}
 	returnData(w, att.ID)
 }
 
 func (s *API) bulkDeleteAttachments(w http.ResponseWriter, r *http.Request) {
-	var removedAtts int
-	atts, ok := DecodeIntString(r.FormValue("atts"))
-	if !ok || len(atts) == 0 {
-		errorData(w, "Invalid int string", 400)
+	var atts []int
+	if err := parseJsonBody(r, &atts); err != nil {
+		err.WriteError(w)
 		return
 	}
 
-	for _, attid := range atts {
-		att, err := s.db.Attachment(r.Context(), attid)
-		if err != nil {
-			continue
-		}
-		if att.ProblemID != util.Problem(r).ID {
-			continue
-		}
-		if err := s.db.DeleteAttachment(r.Context(), attid); err == nil {
-			removedAtts++
-		}
+	removedAtts, err1 := s.base.DeleteAttachments(r.Context(), util.Problem(r).ID, atts)
+	if err1 != nil {
+		errorData(w, "Error deleting attachments", 500)
+		return
 	}
 
 	if removedAtts != len(atts) {
@@ -77,13 +61,4 @@ func (s *API) bulkDeleteAttachments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	returnData(w, "Deleted selected attachments")
-}
-
-func (s *API) getAttachments(w http.ResponseWriter, r *http.Request) {
-	att, err := s.db.Attachments(r.Context(), false, kilonova.AttachmentFilter{ProblemID: &util.Problem(r).ID})
-	if err != nil {
-		errorData(w, err, 500)
-		return
-	}
-	returnData(w, att)
 }

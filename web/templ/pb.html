@@ -1,33 +1,47 @@
 {{ define "title" }} {{getText .Ctx.Language "problem" .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 
+<!--
 <h1 class="mt-4">{{getText .Ctx.Language "problemSingle"}} <code>{{.Problem.Name}}</code>
 {{- if .ProblemEditor -}}
 	<a href="/problems/{{- .Problem.ID -}}/edit"> {{getText .Ctx.Language "edit"}}</a>	
 {{- end -}}
 </h1>
 <hr/>
+-->
 
 <div class="mb-12">
-	
-	<div class="flex flex-wrap lg:border-b lg:border-gray-200">
-		<div class="reset-list w-full my-6 lg:flex-1 lg:pr-2">
+	<h1 class="mb-2">{{getText .Ctx.Language "problemSingle"}} #{{.Problem.ID}}</h1>
+	<div class="border-t-2 lg:border-b-2 grid grid-cols-1 lg:grid-cols-4">
+		<div class="reset-list col-span-1 lg:pt-2 lg:col-span-3 lg:border-r lg:pr-4 lg:pb-4">
+			<div class="w-full mb-6 text-center">
+				<h1>{{.Problem.Name}}</h1>
+				<h5>{{getText .Ctx.Language "timeLimit"}}: {{.Problem.TimeLimit}}s</h5>
+				<h5>{{getText .Ctx.Language "memoryLimit"}}: {{KBtoMB .Problem.MemoryLimit}}MB</h5>
+				<h5>{{getText .Ctx.Language "input"}}: {{if .Problem.ConsoleInput}}stdin{{else}}{{.Problem.TestName}}.in{{end}}</h5>
+				<h5>{{getText .Ctx.Language "output"}}: {{if .Problem.ConsoleInput}}stdout{{else}}{{.Problem.TestName}}.out{{end}}</h5>
+			</div>
+
 			{{if ispdflink .Problem.Description}}
-				<p><a target='_blank' href='{{.Problem.Description}}'>{{.Problem.Description}}</a></p> <embed class='mx-2 my-2' type='application/pdf' src='{{.Problem.Description}}' width='95%' height='500px'>
+				<p><a target='_blank' href='{{.Problem.Description}}'>{{.Problem.Description}}</a></p> 
+				<embed class='mx-2 my-2' type='application/pdf' src='{{.Problem.Description}}' style="width:95%; height: 90vh;"></embed>
 			{{else}}
-				{{.Markdown}}
+				<div class="text-justify">
+					{{.Markdown}}
+				</div>
 			{{end}}
 		</div>
 
 		</script>
-		<div class="w-full lg:w-3/12 lg:border-l lg:border-gray-200">
-			<div class="lg:mt-6 lg:pl-4 pl-2 pb-3 font-semibold">
-				<h2 class="text-xl">{{getText .Ctx.Language "generalInfo"}}</h2>
-				<p>{{getText .Ctx.Language "id"}}: {{.Problem.ID}}</p>
-				<p>{{getText .Ctx.Language "upload"}}: {{.Author.Name}}</p>
-				<p>{{getText .Ctx.Language "input"}}: {{if .Problem.ConsoleInput}}{{getText .Ctx.Language "console"}}{{else}}{{.Problem.TestName}}.in/{{.Problem.TestName}}.out{{end}}</p>
-				<p>{{getText .Ctx.Language "memoryLimit"}}: {{KBtoMB .Problem.MemoryLimit}}MB/{{KBtoMB .Problem.StackLimit}}MB</p>
-				<p>{{getText .Ctx.Language "timeLimit"}}: {{.Problem.TimeLimit}}s</p>
+		<div class="col-span-1 lg:pt-2 lg:border-l lg:pb-4">
+			<div class="lg:pl-4 pl-2 pb-3 font-semibold">
+				<h2 class="font-normal">
+					{{getText .Ctx.Language "generalInfo"}}
+					{{- if .ProblemEditor -}}
+						<a href="/problems/{{- .Problem.ID -}}/edit"> {{getText .Ctx.Language "edit"}}</a>	
+					{{- end -}}
+				</h2>
+				<p>{{getText .Ctx.Language "uploader"}}: {{.Author.Name}}</p>
 				{{ if .ProblemEditor }}
 				<p>{{getText .Ctx.Language "visibility"}}: 
 				{{if .Problem.Visible}}
@@ -47,46 +61,52 @@
 					<p>{{getText .Ctx.Language "defaultPoints"}}: {{.Problem.DefaultPoints}}p</p>
 				{{- end -}}
 				<p><a href="/submissions/?problem_id={{.Problem.ID}}">{{getText .Ctx.Language "submissions"}}</a></p>
-				<p><a href="/submissions/?problem_id={{.Problem.ID}}&quality=true">{{getText .Ctx.Language "qualitySubs"}}</a></p>
 			</div>
 			{{ if .Ctx.User }}
-				<div class="h-0 w-full border-t border-gray-200"></div>
-				<div class="mt-2 lg:pl-2 lg:pb-2" id="problemSidebar" v-cloak>
-					<p class="text-lg px-2">{{getText .Ctx.Language "oldSubs"}}</p>
-					<div class="mx-auto w-full text-center" v-if="loading">
-						<i class="fas fa-spinner animate-spin"></i> {{getText .Ctx.Language "loading"}}	
-					</div>
-					<div v-else-if="subs.length > 0">
-						<a class="black-anchor flex justify-between items-center rounded py-1 px-2 hoverable" v-for="sub in subs" :key="sub.sub.id" :href="'/submissions/' + sub.sub.id">
-							<span>${timeStr(sub.sub.created_at)}</span>
-							<span class="rounded-md px-2 py-1 bg-teal-700 text-white text-sm" v-if="sub.sub.status == 'finished'">${sub.sub.score}</span>
-							<span class="rounded-md px-2 py-1 bg-teal-700 text-white text-sm" v-else-if="sub.sub.status == 'working'"><i class="fas fa-cog animate-spin"></i></span>
-							<span class="rounded-md px-2 py-1 bg-teal-700 text-white text-sm" v-else><i class="fas fa-clock"></i></span>
-						</a>
-					</div>
-					<p class="px-2" v-else>{{getText .Ctx.Language "noSub"}}</p>
-					<a v-if="limited && hidden > 0" :href="'/submissions/?problem_id='+problemid+'&user_id='+userid">
-						{{getText .Ctx.Language "seeMore"}}	
-					</a>
-				</div>
+				<div class="h-0 w-full border-t-2 border-gray-200"></div>
+				<div class="mt-2 lg:pl-2 lg:pb-2">
+                    <older-subs problemid="{{.Problem.ID}}" userid="{{.Ctx.User.ID}}"></older-subs>
+                </div>
 			{{ end }}
 			{{ $pbid := .Problem.ID }}
 			{{ $ctx := .Ctx }}
 			{{ with .Attachments }}
-				<div class="h-0 w-full border-t border-gray-200"></div>
-				<div class="mt lg:pl-2 lg:pb-2"> <!-- Attachments -->
+				<div class="h-0 w-full border-t-2 border-gray-200"></div>
+				<div class="mt-2 lg:pl-2 lg:pb-2"> <!-- Attachments -->
 					<div class="px-2">
-						<p class="text-lg">{{getText $ctx.Language "attachments"}}</p>
-						<p>{{getText $ctx.Language "attachmentPretty"}}</p>
-						{{ range . }}
-							<p class="segment-container"><a style="word-wrap: break-word;" href="/problems/{{$pbid}}/attachments/{{.Name}}">{{.Name}}</a></p>
-						{{ end }}
+						<h2>{{getText $ctx.Language "attachments"}}</h2>
+                        <div class="list-group list-group-mini">
+                            {{ range . }}
+                                <a style="word-wrap: break-word;" href="/problems/{{$pbid}}/attachments/{{.Name}}" class="list-group-item flex justify-between">
+                                    <span id="att-name-{{.ID}}">{{.Name}}</span>
+                                    <span 
+                                        class="rounded-full py-1 px-2 text-sm bg-teal-700 text-white font-semibold" 
+                                        id="att-size-{{.ID}}">
+                                        {{.Size}}
+                                    </span>
+                                </a>
+                                <!-- <p class="segment-container"><a style="word-wrap: break-word;" href="/problems/{{$pbid}}/attachments/{{.Name}}">{{.Name}}</a></p> -->
+                            {{ end }}
+                        </div>
 					</div>
 				</div>
 			{{ end }}
 		</div>
 
 	</div>
+
+<script>
+function prettifyAttachments() {
+    for(let el of document.querySelectorAll("[id^='att-name-']")) {
+        el.innerHTML = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerText}`
+    }
+    for(let el of document.querySelectorAll("[id^='att-size-']")) {
+        el.innerText = bundled.sizeFormatter(Number(el.innerText))
+    }
+}
+
+prettifyAttachments();
+</script>
 
 <script>
 let loadingIDs = new Map();
@@ -106,75 +126,13 @@ function makeSubWaiter(id) {
 			document.dispatchEvent(new Event("kn-poll"))
 		}
 		if(res.data.sub.status == "finished") {
-			bundled.createToast({title: {{getText .Ctx.Language "finishedEval"}}, description: `{{getText .Ctx.Language "finalScore"}}: ${res.data.sub.score}`, status: "success"})
+			bundled.createToast({title: bundled.getText("finishedEval"), description: bundled.getText("finalScore", id, res.data.sub.score), status: "success"})
 			clearInterval(interv);
 		}
 		loadingIDs.set(id, res.data.sub.status)
-	}, 2000)
+	}, 500)
 	return `Watching ${id}...`
 }
-
-let app = Vue.createApp({
-	delimiters: ['${', '}'],
-	data: () => {
-		return {
-			user_id: {{if .Ctx.User}}{{.Ctx.User.ID}}{{else}}0{{end}},
-			problemid: {{.Problem.ID}},
-			subs: [],
-			limit: 5,
-			limited: false,
-			loading: true,
-			total: -1,
-			hidden: -1,
-			polling: false
-		}
-	},
-	methods: {
-		poll: async function() {
-			if(this.polling === true) {
-				return;
-			}
-			this.polling = true;
-			console.info("Polling...");
-			let res = await bundled.getCall("/submissions/get", {user_id: this.user_id, problem_id: this.problemid, limit: this.limit})
-			if(res.status !== "success") {
-				console.error(res);
-				this.polling = false;
-				return
-			}
-			if(res.data != null) {
-				this.subs = res.data.subs
-				this.total = res.data.count
-				this.limited = false
-				if(this.total != this.subs.length) { // it was sliced
-					this.limited = true
-					this.hidden = this.total - this.subs.length
-				}
-				for(let sub of this.subs) {
-					let s = sub.sub;
-					if(s.status !== "finished") {
-						result = makeSubWaiter(s.id)
-						console.info(result)
-					}
-				}
-			}
-			this.polling = false;
-		},
-		timeStr: function(s) {
-			//console.log(s, bundled.dayjs(s).format('DD/MM/YYYY HH:mm'))
-			return bundled.dayjs(s).format('DD/MM/YYYY HH:mm')
-		}
-	},
-	created: async function() {
-		await this.poll()
-		this.loading = false
-		document.addEventListener("kn-poll", async e => {
-			e.preventDefault();
-			await this.poll();
-		})
-	}
-});
-app.mount("#problemSidebar");
 </script>
 
 	{{ if .Ctx.User }}
@@ -185,7 +143,7 @@ app.mount("#problemSidebar");
 			<select id="sub_language" class="form-select">
 				{{ range $name, $lang := .Languages }}
 					{{ if not $lang.Disabled }}
-					<option value="{{$name}}" {{if eq $name "cpp"}}selected{{end}}>{{$lang.PrintableName}}</option>
+					<option value="{{$name}}" {{if eq $name "cpp14"}}selected{{end}}>{{$lang.PrintableName}}</option>
 					{{ end }}
 				{{ end }}
 			</select>
@@ -195,7 +153,7 @@ app.mount("#problemSidebar");
 		<button class="btn btn-blue mt-2" onclick="sendSub()">{{getText .Ctx.Language "send"}}</button>
 		<script>
 var cm = CodeMirror.fromTextArea(document.getElementById("SubArea"), {
-	mode: bundled.languages["cpp"],
+	mode: bundled.languages["cpp14"],
 });
 
 document.getElementById("sub_language").addEventListener("change", (e) => {
@@ -208,7 +166,7 @@ document.getElementById("sub_language").addEventListener("change", (e) => {
 async function sendSub() {
 	let sendData = {
 		problemID: "{{ .Problem.ID }}",
-		lang: document.getElementById("sub_language").value,
+		language: document.getElementById("sub_language").value,
 		code: cm.getValue(),
 	};
 	
@@ -217,11 +175,15 @@ async function sendSub() {
 		bundled.apiToast(res)
 		return
 	}
-	bundled.createToast({title: '{{getText .Ctx.Language "uploaded"}}', description: `<a href="/submissions/${res.data}">{{getText .Ctx.Language "view"}}</btn>`})
+	bundled.createToast({title: bundled.getText("uploaded"), description: `<a href="/submissions/${res.data}">${ bundled.getText("view") }</btn>`})
 	console.log(res.data, makeSubWaiter(res.data));
 	document.dispatchEvent(new Event("kn-poll"));
 }
 		</script>
+	{{ else }}
+
+	<h2 class="mt-3 mb-5">{{getText .Ctx.Language "submitLogin"}}</h2>
+
 	{{ end }}
 
 </div>

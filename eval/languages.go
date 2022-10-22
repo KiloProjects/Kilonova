@@ -2,6 +2,8 @@ package eval
 
 import "path"
 
+const MAGIC_REPLACE = "<REPLACE>"
+
 func GetLangByFilename(filename string) string {
 	fileExt := path.Ext(filename)
 	if fileExt == "" {
@@ -22,8 +24,9 @@ var Langs = map[string]Language{
 		Extensions:    []string{".c"},
 		Compiled:      true,
 		PrintableName: "C",
+		InternalName:  "c",
 
-		CompileCommand: []string{"gcc", "-std=c11", "-O2", "-s", "-static", "/box/main.c", "-o", "/box/output"},
+		CompileCommand: []string{"gcc", "-std=c11", "-O2", "-s", "-static", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.c",
 		CompiledName:   "/box/output",
@@ -33,9 +36,49 @@ var Langs = map[string]Language{
 	"cpp": {
 		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx"},
 		Compiled:      true,
-		PrintableName: "C++",
+		PrintableName: "C++11",
+		InternalName:  "cpp",
 
-		CompileCommand: []string{"g++", "-std=c++11", "-O2", "-s", "-static", "/box/main.cpp", "-o", "/box/output"},
+		CompileCommand: []string{"g++", "-std=c++11", "-O2", "-s", "-static", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
+		RunCommand:     []string{"/box/output"},
+		SourceName:     "/box/main.cpp",
+		CompiledName:   "/box/output",
+
+		Mounts: []Directory{{In: "/etc"}},
+	},
+	"cpp14": {
+		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx"},
+		Compiled:      true,
+		PrintableName: "C++14",
+		InternalName:  "cpp14",
+
+		CompileCommand: []string{"g++", "-std=c++14", "-O2", "-s", "-static", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
+		RunCommand:     []string{"/box/output"},
+		SourceName:     "/box/main.cpp",
+		CompiledName:   "/box/output",
+
+		Mounts: []Directory{{In: "/etc"}},
+	},
+	"cpp17": {
+		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx"},
+		Compiled:      true,
+		PrintableName: "C++17",
+		InternalName:  "cpp17",
+
+		CompileCommand: []string{"g++", "-std=c++17", "-O2", "-s", "-static", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
+		RunCommand:     []string{"/box/output"},
+		SourceName:     "/box/main.cpp",
+		CompiledName:   "/box/output",
+
+		Mounts: []Directory{{In: "/etc"}},
+	},
+	"cpp20": {
+		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx"},
+		Compiled:      true,
+		PrintableName: "C++20",
+		InternalName:  "cpp20",
+
+		CompileCommand: []string{"g++", "-std=c++20", "-O2", "-s", "-static", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.cpp",
 		CompiledName:   "/box/output",
@@ -46,8 +89,9 @@ var Langs = map[string]Language{
 		Extensions:    []string{".go"},
 		Compiled:      true,
 		PrintableName: "Go",
+		InternalName:  "golang",
 
-		CompileCommand: []string{"go", "build", "/main.go"},
+		CompileCommand: []string{"go", "build", "MAGIC_REPLACE"},
 		RunCommand:     []string{"/main"},
 		SourceName:     "/main.go",
 		CompiledName:   "/main",
@@ -60,8 +104,9 @@ var Langs = map[string]Language{
 		Extensions:    []string{".hs", ".lhs"},
 		Compiled:      true,
 		PrintableName: "Haskell",
+		InternalName:  "haskell",
 
-		CompileCommand: []string{"ghc", "-o", "/box/output", "/box/main.hs"},
+		CompileCommand: []string{"ghc", "-o", "/box/output", MAGIC_REPLACE},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.hs",
 		CompiledName:   "/box/output",
@@ -71,8 +116,9 @@ var Langs = map[string]Language{
 		Extensions:    []string{".java"},
 		Compiled:      true,
 		PrintableName: "Java",
+		InternalName:  "java",
 
-		CompileCommand: []string{"javac", "/Main.java"},
+		CompileCommand: []string{"javac", MAGIC_REPLACE},
 		RunCommand:     []string{"java", "Main"},
 		SourceName:     "/Main.java",
 		CompiledName:   "/Main.class",
@@ -83,10 +129,21 @@ var Langs = map[string]Language{
 		Extensions:    []string{".py", ".py3"},
 		Compiled:      false,
 		PrintableName: "Python 3",
+		InternalName:  "python3",
 
 		RunCommand:   []string{"python3", "/box/main.py"},
 		SourceName:   "/box/main.py",
 		CompiledName: "/box/main.py",
+	},
+	"outputOnly": {
+		Extensions:    []string{".txt"},
+		Compiled:      false,
+		PrintableName: "Output Only",
+		InternalName:  "outputOnly",
+
+		RunCommand:   []string{"cat", "/box/output"},
+		SourceName:   "/box/output_src",
+		CompiledName: "/box/output",
 	},
 }
 
@@ -99,6 +156,7 @@ type Language struct {
 	Compiled   bool
 
 	PrintableName string
+	InternalName  string
 
 	CompileCommand []string `toml:"compile_command"`
 	RunCommand     []string `toml:"run_command"`
@@ -109,9 +167,8 @@ type Language struct {
 	CommonEnv map[string]string `toml:"common_env"`
 
 	// Mounts represents all directories to be mounted
-	Mounts []Directory `toml:"mounts"`
-	// SourceName
-	SourceName string `toml:"source_name"`
+	Mounts     []Directory `toml:"mounts"`
+	SourceName string      `toml:"source_name"`
 
 	CompiledName string `toml:"compiled_name"`
 }

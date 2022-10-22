@@ -90,9 +90,6 @@ func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
 	if c.MemoryLimit != 0 {
 		res = append(res, "--mem="+strconv.Itoa(c.MemoryLimit))
 	}
-	if c.StackLimit != 0 {
-		res = append(res, "--stack="+strconv.Itoa(c.StackLimit))
-	}
 
 	if c.MaxProcs == 0 {
 		res = append(res, "--processes")
@@ -191,6 +188,7 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 		return nil, nil
 	}
 	defer f.Close()
+	defer os.Remove(metaFile)
 	return parseMetaFile(f), nil
 }
 
@@ -247,7 +245,7 @@ func writeReader(path string, r io.Reader, perms fs.FileMode) error {
 	if err != nil {
 		return err
 	}
-	_, err = f.ReadFrom(r)
+	_, err = io.Copy(f, r)
 	if err1 := f.Close(); err1 != nil && err == nil {
 		err = err1
 	}

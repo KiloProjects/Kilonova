@@ -1,4 +1,4 @@
-{{ define "title" }} {{getText .Ctx.Language "editAttachments" .Problem.ID .Problem.Name}} {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "title.edit.attachments" .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
@@ -76,8 +76,8 @@ async function deleteAttachments() {
 }
 
 function prettifyAttachments() {
-	for(let el of document.querySelectorAll("[id^='name-att-']")) {
-		el.innerHtml = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerText}`	
+	for(let el of document.querySelectorAll("[id^='name-att-'] > a")) {
+		el.innerHTML = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerText}`	
 	}
 	for(let el of document.querySelectorAll("[id^='size-att-']")) {
 		console.log(el.innerText)
@@ -101,7 +101,7 @@ prettifyAttachments()
 		<input class="form-checkbox" id="attVisible" type="checkbox"/>
 		<span class="ml-2 text-xl">{{getText .Ctx.Language "visible"}}</span>
 	</label>
-	<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "upload"}}</button>
+	<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "button.upload"}}</button>
 </div>
 
 <script>

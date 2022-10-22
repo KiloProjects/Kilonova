@@ -5,14 +5,71 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 )
 
-// User looks up a user by ID. Returns ENOTFOUND if the ID doesn't exist
-func (s *DB) User(ctx context.Context, id int) (*kilonova.User, error) {
-	var user kilonova.User
-	err := s.conn.GetContext(ctx, &user, s.conn.Rebind("SELECT * FROM users WHERE id = ? LIMIT 1"), id)
+type User struct {
+	ID             int       `json:"id"`
+	CreatedAt      time.Time `json:"created_at" db:"created_at"`
+	Name           string    `json:"name"`
+	Admin          bool      `json:"admin"`
+	Proposer       bool      `json:"proposer"`
+	Email          string    `json:"email"`
+	Password       string    `json:"-"`
+	Bio            string    `json:"bio"`
+	DefaultVisible bool      `json:"default_visible" db:"default_visible"`
+
+	VerifiedEmail     bool         `json:"verified_email" db:"verified_email"`
+	EmailVerifSentAt  sql.NullTime `json:"-" db:"email_verif_sent_at"`
+	PreferredLanguage string       `json:"-" db:"preferred_language"`
+}
+
+func (user *User) ToBrief() *kilonova.UserBrief {
+	if user == nil {
+		return nil
+	}
+	return &kilonova.UserBrief{
+		ID:       user.ID,
+		Name:     user.Name,
+		Admin:    user.Admin,
+		Proposer: user.Proposer,
+		Bio:      user.Bio,
+	}
+}
+
+func (user *User) ToFull() *kilonova.UserFull {
+	if user == nil {
+		return nil
+	}
+	t := time.Unix(0, 0)
+	if user.EmailVerifSentAt.Valid {
+		t = user.EmailVerifSentAt.Time
+	}
+	return &kilonova.UserFull{
+		UserBrief:         *user.ToBrief(),
+		Email:             user.Email,
+		VerifiedEmail:     user.VerifiedEmail,
+		PreferredLanguage: user.PreferredLanguage,
+		EmailVerifResent:  t,
+	}
+}
+
+// User looks up a user by ID.
+func (s *DB) User(ctx context.Context, id int) (*User, error) {
+	var user User
+	err := s.conn.GetContext(ctx, &user, "SELECT * FROM users WHERE id = $1 LIMIT 1", id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	return &user, err
+}
+
+// User looks up a user by name.
+func (s *DB) UserByName(ctx context.Context, name string) (*User, error) {
+	var user User
+	err := s.conn.GetContext(ctx, &user, "SELECT * FROM users WHERE lower(name) = lower($1) LIMIT 1", name)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -20,13 +77,13 @@ func (s *DB) User(ctx context.Context, id int) (*kilonova.User, error) {
 }
 
 // Users retrieves users based on a filter.
-func (s *DB) Users(ctx context.Context, filter kilonova.UserFilter) ([]*kilonova.User, error) {
-	var users []*kilonova.User
+func (s *DB) Users(ctx context.Context, filter kilonova.UserFilter) ([]*User, error) {
+	var users []*User
 	where, args := userFilterQuery(&filter)
 	query := s.conn.Rebind("SELECT * from users WHERE " + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
 	err := s.conn.SelectContext(ctx, &users, query, args...)
 	if errors.Is(err, sql.ErrNoRows) {
-		return []*kilonova.User{}, nil
+		return []*User{}, nil
 	}
 	return users, err
 }
@@ -49,17 +106,14 @@ func (s *DB) UserExists(ctx context.Context, username string, email string) (boo
 
 // UpdateUser updates a user.
 // Returns ENOTFOUND if the user does not exist
-func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserUpdate) error {
-	toUpd, args := []string{}, []interface{}{}
+func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate) error {
+	toUpd, args := []string{}, []any{}
 
 	/*if v := upd.Name; v != nil {
 		toUpd, args = append(toUpd, "name = ?"), append(args, v)
 	}*/
 	if v := upd.Email; v != nil {
 		toUpd, args = append(toUpd, "email = ?"), append(args, v)
-	}
-	if v := upd.PwdHash; v != nil {
-		toUpd, args = append(toUpd, "password = ?"), append(args, v)
 	}
 
 	if v := upd.Admin; v != nil {
@@ -71,9 +125,6 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserUpdate) er
 	if v := upd.Bio; v != nil {
 		toUpd, args = append(toUpd, "bio = ?"), append(args, v)
 	}
-	if v := upd.DefaultVisible; v != nil {
-		toUpd, args = append(toUpd, "default_visible = ?"), append(args, v)
-	}
 	if v := upd.VerifiedEmail; v != nil {
 		toUpd, args = append(toUpd, "verified_email = ?"), append(args, v)
 	}
@@ -82,12 +133,6 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserUpdate) er
 	}
 	if v := upd.PreferredLanguage; v != "" {
 		toUpd, args = append(toUpd, "preferred_language = ?"), append(args, v)
-	}
-	if v := upd.Banned; v != nil {
-		toUpd, args = append(toUpd, "banned = ?"), append(args, v)
-	}
-	if v := upd.Disabled; v != nil {
-		toUpd, args = append(toUpd, "disabled = ?"), append(args, v)
 	}
 	if len(toUpd) == 0 {
 		return kilonova.ErrNoUpdates
@@ -99,25 +144,26 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserUpdate) er
 	return err
 }
 
+func (s *DB) UpdateUserPasswordHash(ctx context.Context, userID int, hash string) error {
+	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("UPDATE users SET password = ? WHERE id = ?"), hash, userID)
+	return err
+}
+
 // DeleteUser permanently deletes a user from the system.
 func (s *DB) DeleteUser(ctx context.Context, id int) error {
 	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("DELETE FROM users WHERE id = ?"), id)
 	return err
 }
 
-// CreateUser creates a new user with the info specified in the object.
-// On success, user.ID is set to the new user ID.
-func (s *DB) CreateUser(ctx context.Context, user *kilonova.User) error {
-	if user.Name == "" || user.Password == "" || user.Email == "" || user.PreferredLanguage == "" {
-		return kilonova.ErrMissingRequired
+// CreateUser creates a new user with the specified data.
+func (s *DB) CreateUser(ctx context.Context, name, passwordHash, email, preferredLanguage string) (int, error) {
+	if name == "" || passwordHash == "" || email == "" || preferredLanguage == "" {
+		return -1, kilonova.ErrMissingRequired
 	}
 
-	var id int
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind("INSERT INTO users (name, email, password, bio, default_visible, verified_email, admin, proposer, preferred_language) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id"), user.Name, user.Email, user.Password, user.Bio, user.DefaultVisible, user.VerifiedEmail, user.Admin, user.Proposer, user.PreferredLanguage)
-	if err == nil {
-		user.ID = id
-	}
-	return err
+	var id = -1
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind("INSERT INTO users (name, email, password, preferred_language) VALUES (?, ?, ?, ?) RETURNING id"), name, email, passwordHash, preferredLanguage)
+	return id, err
 }
 
 func userFilterQuery(filter *kilonova.UserFilter) ([]string, []interface{}) {
@@ -136,15 +182,6 @@ func userFilterQuery(filter *kilonova.UserFilter) ([]string, []interface{}) {
 	}
 	if v := filter.Proposer; v != nil {
 		where, args = append(where, "proposer = ?"), append(args, v)
-	}
-	if v := filter.Verified; v != nil {
-		where, args = append(where, "verified_email = ?"), append(args, v)
-	}
-	if v := filter.Banned; v != nil {
-		where, args = append(where, "banned = ?"), append(args, v)
-	}
-	if v := filter.Disabled; v != nil {
-		where, args = append(where, "disabled = ?"), append(args, v)
 	}
 	return where, args
 }

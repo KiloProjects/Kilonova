@@ -1,4 +1,4 @@
-{{ define "title" }} {{getText .Ctx.Language "list" .ProblemList.ID}} {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "title.list" .ProblemList.ID}} {{ end }}
 {{ define "content" }}
 
 {{ $user := .Ctx.User }}
@@ -18,12 +18,9 @@
 		{{ end }}
 	</div>
 	{{ if $user }}
-	{{ if $user.Admin }}
-	<a class="my-2" href="/admin/makeKNA?pbs={{intList .List}}">{{getText $root.Ctx.Language "listKNA"}}</a>
-	{{ end }}
 	{{ if or (eq $user.ID .AuthorID) $user.Admin }}
 	<form id="pblist-update" class="segment-container" autocomplete="off">
-		<h1> {{getText $root.Ctx.Language "listUpdate"}} </h1>
+		<h1> {{getText $root.Ctx.Language "list.update"}} </h1>
 		<div class="block my-2">
 			<label>
 				<span class="form-label">{{getText $root.Ctx.Language "title"}}: </span>
@@ -42,7 +39,8 @@
 				<input type="text" id="pblist-list" class="form-input" pattern="([0-9]+,?)+" value="{{intList .List}}">
 			</label>
 		</div>
-		<button class="btn btn-blue" type="submit">{{getText $root.Ctx.Language "update"}}</button>
+		<button class="btn btn-blue mr-2" type="submit">{{getText $root.Ctx.Language "button.update"}}</button>
+        <button id="delButton" class="btn btn-red">{{getText $root.Ctx.Language "button.delete"}}</button>
 	</form>
 <script>
 async function updateProblemList(e) {
@@ -60,7 +58,20 @@ async function updateProblemList(e) {
 	}
 	bundled.apiToast(res)
 }
+async function deleteProblemList(e) {
+    e.preventDefault();
+    let data = {
+        id: {{.ID}}
+    }
+    let res = await bundled.postCall("/problemList/delete", data)
+    if(res.status === "success") {
+        window.location.assign("/problem_lists");
+        return
+    }
+    bundled.apiToast(res);
+}
 document.getElementById("pblist-update").addEventListener("submit", updateProblemList)
+document.getElementById("delButton").addEventListener("click", deleteProblemList);
 </script>
 	{{ end }}
 	{{ end }}
