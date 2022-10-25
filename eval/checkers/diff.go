@@ -29,15 +29,19 @@ func (d *DiffChecker) RunChecker(ctx context.Context, pOut, cIn, cOut io.Reader)
 		return ErrOut, 0
 	}
 	defer tf.Close()
+	defer os.Remove(tf.Name())
+
 	cf, err := os.CreateTemp("", "correct-out-*")
 	if err != nil {
 		return ErrOut, 0
 	}
 	defer cf.Close()
+	defer os.Remove(cf.Name())
 
 	if _, err := io.Copy(tf, pOut); err != nil {
 		return ErrOut, 0
 	}
+
 	if _, err := io.Copy(cf, cOut); err != nil {
 		return ErrOut, 0
 	}

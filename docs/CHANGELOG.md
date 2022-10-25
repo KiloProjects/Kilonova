@@ -1,3 +1,13 @@
+- v0.10.0:
+	- Use preact instead of vue;
+	- Start transition from js everywhere to typescript library;
+	- Make translations nicer;
+	- NOT DONE: Statements are now attachments of the form statement-[lang].[ext]. More explanations are given [here](/docs/attachments.md);
+	- NOT DONE: PDF statements can now be more easily downloaded;
+	- NOT DONE: Interactive problems:
+		- ? Two-program (operate via standard IO)
+		- CMS-style (problem-provided header+main.cpp and user-provided code that implements a function);
+	- NOT DONE: Contests. More information can be found [here](/docs/contests.md).
 - v0.9.2:
 	- Pretty stupid bug fixes
 - v0.9.1:

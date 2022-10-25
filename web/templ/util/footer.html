@@ -1,7 +1,7 @@
 {{ define "footer" }}
 <footer class="w-full bg-gray-200 dark:bg-gray-700 py-2 mt-6">
 	<div class="c-container min-h-0 mx-auto">
-		<div class="md:flex mb-2 justify-between">
+		<div class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mb-2 justify-between">
 			<div class="h-auto mb-2">
 				<div class="text-lg">{{getText .Ctx.Language "usefulInfo"}}</div>
 				<ul>
@@ -21,8 +21,23 @@
 					<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="mailto:admin@kilonova.ro?subject=Contact"><i class="fas fa-fw fa-envelope"></i> Contact</a></li>
 				</ul>
 			</div>
+
+			<div class="h-auto mb-2">
+				<div class="text-lg">Copyright policy</div>
+				<ul>
+					<li>
+						<div class="block">
+							Cu excepția cazurilor unde este specificat diferit, conținutul platformei este publicat sub licența <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>. Vedeți <a href="/docs/CREATIVE-COMMONS">Aici</a> mai multe detalii.
+						</div>
+						<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">
+							<img alt="Creative Commons Licence" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" />
+						</a>
+					</li>
+				</ul>
+			</div>
+
 		</div>
-		<p>&copy; KiloProjects 2021</p>
+		<!--<p>&copy; KiloProjects 2022</p>-->
 	</div>
 </footer>
 {{ end }}

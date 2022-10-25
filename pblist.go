@@ -26,5 +26,4 @@ type ProblemListUpdate struct {
 	AuthorID    *int    `json:"author_id"`
 	Title       *string `json:"title"`
 	Description *string `json:"description"`
-	List        []int   `json:"list"`
 }

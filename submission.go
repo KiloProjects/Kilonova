@@ -23,17 +23,18 @@ type Submission struct {
 	ProblemID int       `db:"problem_id" json:"problem_id"`
 	Language  string    `json:"language"`
 	Code      string    `json:"code,omitempty"`
+	CodeSize  int       `json:"source_size" db:"code_size"`
 	Status    Status    `json:"status"`
 
 	CompileError   sql.NullBool   `db:"compile_error" json:"compile_error"`
 	CompileMessage sql.NullString `json:"compile_message,omitempty" db:"compile_message"`
 
+	ContestID int `db:"contest_id" json:"contest_id"`
+
 	MaxTime   float64 `json:"max_time" db:"max_time"`
 	MaxMemory int     `json:"max_memory" db:"max_memory"`
 
-	Score   int  `json:"score"`
-	Visible bool `json:"visible"`
-	Quality bool `json:"quality"`
+	Score int `json:"score"`
 }
 
 type SubmissionUpdate struct {
@@ -45,9 +46,6 @@ type SubmissionUpdate struct {
 
 	MaxTime   *float64
 	MaxMemory *int
-
-	Visible *bool
-	Quality *bool
 }
 
 type SubmissionFilter struct {
@@ -55,12 +53,12 @@ type SubmissionFilter struct {
 	UserID    *int `json:"user_id"`
 	ProblemID *int `json:"problem_id"`
 
+	ContestID *int `json:"contest_id"`
+
 	Status       Status  `json:"status"`
 	Lang         *string `json:"lang"`
-	Visible      *bool   `json:"visible"`
 	Score        *int    `json:"score"`
 	CompileError *bool   `json:"compile_error"`
-	Quality      *bool   `json:"quality"`
 
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
@@ -80,6 +78,8 @@ type SubTest struct {
 	TestID       int       `db:"test_id" json:"test_id"`
 	UserID       int       `db:"user_id" json:"user_id"`
 	SubmissionID int       `db:"submission_id" json:"submission_id"`
+
+	//OutputOID pgtype.OID `json:"-" db:"output_oid"`
 }
 
 type SubTestUpdate struct {
@@ -93,7 +93,7 @@ type SubTestUpdate struct {
 // Utils for backends (I know, not so agnostic, but it makes life easier)
 
 // Scan implements the sql.Scanner interface
-func (e *Status) Scan(src interface{}) error {
+func (e *Status) Scan(src any) error {
 	switch s := src.(type) {
 	case []byte:
 		*e = Status(s)

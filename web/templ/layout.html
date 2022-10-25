@@ -1,42 +1,43 @@
 <!DOCTYPE html>
-<html lang="ro">
+<html lang="{{.Ctx.Language}}">
 
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>{{block "title" .}}Kilonova{{end}}</title>
-	{{$fav := hashedName "static/favicon.ico"}}
-	{{$bundle := hashedName "static/bundle.js"}}
-	{{$style := hashedName "static/styles.css"}}
 
-	<link rel="icon" type="image/x-icon" href="/{{$fav}}"/>
-	<link rel="shortcut icon" type="image/x-icon" href="/{{$fav}}"/>
+	<link rel="icon" type="image/x-icon" href="/static/favicon.ico"/>
+	<link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico"/>
 	
 	<!-- OpenGraph stuff -->
 	<meta property="og:title" content='{{template "title" .}}' />
 	<meta property="og:type" content="website" />
 	<meta property="og:description" content='{{block "description" .}}Programming platform for learning and exercising{{end}}' />
 	<meta name="description" content='{{template "description" .}}' />
+	{{if (eq .Ctx.Language "ro")}}
 	<meta property="og:locale" content="ro_RO" />
+	{{else}}
+	<meta property="og:locale" content="en_UK" />
+	{{end}}
 	<meta property="og:site_name" content="Kilonova" />
 
 	<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com/">
 
 	<!-- pretty icons (fontawesome) -->
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css"/>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
 
 	<!--Dependency bundle-->
-	<script src="/{{$bundle}}"></script>
+	<script src="/static/bundle.js"></script>
 
 	<!--highlight.js-->
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css" />
-	<style>@import url("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/monokai.min.css") (prefers-color-scheme: dark);</style>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/default.min.css" />
+	<style>@import url("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/monokai.min.css") (prefers-color-scheme: dark);</style>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
 
 	<!--use KaTeX instead of MathJax-->
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.12.0/katex.min.css" />
-	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.12.0/katex.min.js"></script>
-	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.12.0/contrib/auto-render.min.js"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.15.1/katex.min.css" />
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.15.1/katex.min.js"></script>
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.15.1/contrib/auto-render.min.js"></script>
 	<script>
 		function loadKaTeX() {
 			renderMathInElement(document.body, {
@@ -50,7 +51,7 @@
 		}
 		document.addEventListener('DOMContentLoaded', loadKaTeX);
 		hljs.configure({languages:['c', 'cpp', 'py', 'go', 'haskell']}) // TODO
-		hljs.initHighlightingOnLoad();
+		hljs.highlightAll();
 		var platform_info = {
 			debug: {{debug}},
 			admin: {{if .Ctx.User}}{{.Ctx.User.Admin}}{{else}}false{{end}},
@@ -61,18 +62,18 @@
 
 	<!--Codemirror-->
 		<!--CSS-->
-		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/codemirror.min.css" />
-		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/theme/monokai.css" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.64.0/codemirror.min.css" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.64.0/theme/monokai.css" />
 		<!--JS-->
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/codemirror.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/addon/mode/overlay.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/meta.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/markdown/markdown.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/gfm/gfm.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/clike/clike.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/go/go.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/python/python.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.58.3/mode/haskell/haskell.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.64.0/codemirror.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.64.0/addon/mode/overlay.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.64.0/mode/meta.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.64.0/mode/markdown/markdown.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.64.0/mode/gfm/gfm.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.64.0/mode/clike/clike.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.64.0/mode/go/go.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.64.0/mode/python/python.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.64.0/mode/haskell/haskell.min.js"></script>
 	<script>
 CodeMirror.defaults.lineNumbers = true;
 CodeMirror.defaults.indentUnit = 4;
@@ -84,12 +85,10 @@ if(window.matchMedia('(prefers-color-scheme: dark)').matches) { // Dark Mode
 	CodeMirror.defaults.theme = "monokai";
 }
 	</script>
-	<!-- production version, optimized for size and speed -->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.0.4/vue.global.prod.js"></script>
 
 	{{ block "head" . }} {{ end }}
 
-	<link rel="stylesheet" href="/{{$style}}" />
+	<link rel="stylesheet" href="/static/styles.css" />
 </head>
 
 <body>

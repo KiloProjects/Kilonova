@@ -1,4 +1,4 @@
-{{ define "title" }}{{getText .Ctx.Language "editSubtaskAdd"}}{{ end }}
+{{ define "title" }}{{getText .Ctx.Language "title.edit.subtask_add"}}{{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 {{ $lang := .Ctx.Language }}
@@ -54,21 +54,19 @@ async function createSubTask(e) {
 	let data = {
 		visible_id: document.getElementById('subtask-id').value,
 		score: document.getElementById('subtask-score').value,
-		tests: ""
+		tests: []
 	};
 
-	let tests = [];
 	for(let e of document.querySelectorAll("[id^='row-test-']")) {
 		let id = rowreg.exec(e.id)[1];
 		let checked = document.getElementById(`pb-test-${id}`).checked;
 		if(checked) {
-			tests.push(id);
+			data.tests.push(id);
 		}
 	}
 
-	data.tests = tests.join(',');
 	console.log(data);
-	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/addSubTask", data)
+	let res = await bundled.bodyCall("/problem/{{.Problem.ID}}/update/addSubTask", data)
 	if(res.status === "success") {
 		window.location.reload();
 		return;

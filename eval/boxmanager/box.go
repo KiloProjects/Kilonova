@@ -3,6 +3,7 @@ package boxmanager
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -18,6 +19,7 @@ import (
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/davecgh/go-spew/spew"
+	"go.uber.org/zap"
 )
 
 var _ eval.Sandbox = &Box{}
@@ -90,9 +92,6 @@ func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
 	if c.MemoryLimit != 0 {
 		res = append(res, "--mem="+strconv.Itoa(c.MemoryLimit))
 	}
-	if c.StackLimit != 0 {
-		res = append(res, "--stack="+strconv.Itoa(c.StackLimit))
-	}
 
 	if c.MaxProcs == 0 {
 		res = append(res, "--processes")
@@ -132,7 +131,9 @@ func (b *Box) GetID() int {
 func (b *Box) FileExists(fpath string) bool {
 	_, err := os.Stat(b.getFilePath(fpath))
 	if err != nil {
-		// TODO: Only fs.ErrNotExist should happen, make sure it is that way
+		if !errors.Is(err, fs.ErrNotExist) {
+			zap.S().Warnf("Expected fs.ErrNotExist, found %T: %s", err, err)
+		}
 		return false
 	}
 	return true
@@ -166,12 +167,14 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 
 	params := append(b.buildRunFlags(conf), command...)
 	cmd := exec.CommandContext(ctx, config.Eval.IsolatePath, params...)
+	// Clean up residual meta file
+	defer os.Remove(metaFile)
 
 	b.metaFile = ""
 
-	if b.Debug {
-		// fmt.Println("DEBUG:", cmd.String())
-	}
+	// if b.Debug {
+	// 	fmt.Println("DEBUG:", cmd.String())
+	// }
 
 	if conf != nil {
 		cmd.Stdin = conf.Stdin
@@ -194,6 +197,7 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 	return parseMetaFile(f), nil
 }
 
+/*
 func (b *Box) Reset() error {
 	if err := b.Close(); err != nil {
 		return err
@@ -205,12 +209,18 @@ func (b *Box) Reset() error {
 	b = box
 	return nil
 }
+*/
 
 // newBox returns a new box instance from the specified ID
+// Please note that this operation is greedy: if a box with that ID already exists, it will stop it and create another one!
 func newBox(id int) (*Box, error) {
-	ret, err := exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--init").CombinedOutput()
+	params := []string{"--cg", fmt.Sprintf("--box-id=%d", id), "--init"}
+
+	ret, err := exec.Command(config.Eval.IsolatePath, params...).CombinedOutput()
 	if strings.HasPrefix(string(ret), "Box already exists") {
-		exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--cleanup").Run()
+		params = []string{"--cg", fmt.Sprintf("--box-id=%d", id), "--cleanup"}
+
+		exec.Command(config.Eval.IsolatePath, params...).Run()
 		return newBox(id)
 	}
 
@@ -219,6 +229,7 @@ func newBox(id int) (*Box, error) {
 			fmt.Println("Couldn't chown root the isolate binary:", err)
 			return nil, err
 		}
+		log.Println("Attempt #2")
 		return newBox(id)
 	}
 

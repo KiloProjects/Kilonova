@@ -2,13 +2,11 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strconv"
 
-	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 )
 
 // MustBeVisitor is middleware to make sure the user creating the request is not authenticated
@@ -58,22 +56,16 @@ func (s *API) MustBeProposer(next http.Handler) http.Handler {
 // SetupSession adds the user with the specified user ID to context
 func (s *API) SetupSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session := GetRSession(r, s.db)
+		session := s.GetRSession(r)
 		if session == -1 {
 			next.ServeHTTP(w, r)
 			return
 		}
-		user, err := s.db.User(r.Context(), session)
-		if err != nil {
-			fmt.Println(err)
-			errorData(w, http.StatusText(500), 500)
-			return
-		}
+		user, _ := s.base.UserFull(r.Context(), session)
 		if user == nil {
 			next.ServeHTTP(w, r)
 			return
 		}
-		user.Password = ""
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.UserKey, user)))
 	})
 }
@@ -99,8 +91,8 @@ func (s *API) validateTestID(next http.Handler) http.Handler {
 			errorData(w, "invalid test ID", http.StatusBadRequest)
 			return
 		}
-		test, err := s.db.Test(r.Context(), util.Problem(r).ID, testID)
-		if err != nil {
+		test, err1 := s.base.Test(r.Context(), util.Problem(r).ID, testID)
+		if err1 != nil {
 			errorData(w, "test does not exist", http.StatusBadRequest)
 			return
 		}
@@ -108,43 +100,28 @@ func (s *API) validateTestID(next http.Handler) http.Handler {
 	})
 }
 
-func (s *API) validateAttachmentID(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		attID, err := strconv.Atoi(chi.URLParam(r, "aID"))
-		if err != nil {
-			errorData(w, "invalid attachment ID", http.StatusBadRequest)
-			return
-		}
-		att, err := s.db.Attachment(r.Context(), attID)
-		if err != nil {
-			errorData(w, "attachment does not exist", http.StatusBadRequest)
-			return
-		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AttachmentKey, att)))
-	})
-}
-
 // validateProblemID pre-emptively returns if there isnt a valid problem ID in the URL params
 // Also, it fetches the problem from the DB and makes sure it exists
 func (s *API) validateProblemID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		problemID, err := strconv.Atoi(chi.URLParam(r, "id"))
+		problemID, err := strconv.Atoi(chi.URLParam(r, "problemID"))
 		if err != nil {
 			errorData(w, "invalid problem ID", http.StatusBadRequest)
 			return
 		}
-		problem, err := s.db.Problem(r.Context(), problemID)
-		if err != nil {
+		problem, err1 := s.base.Problem(r.Context(), problemID)
+		if err1 != nil {
 			errorData(w, "problem does not exist", http.StatusBadRequest)
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemKey, problem)))
 	})
 }
-func GetRSession(r *http.Request, db kilonova.DB) int {
+
+func (s *API) GetRSession(r *http.Request) int {
 	authToken := getAuthHeader(r)
 	if authToken != "" { // use Auth tokens by default
-		id, err := db.GetSession(r.Context(), authToken)
+		id, err := s.base.GetSession(r.Context(), authToken)
 		if err == nil {
 			return id
 		}

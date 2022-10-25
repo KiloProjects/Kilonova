@@ -8,19 +8,16 @@
 	<div class="segment-container">
 		<span class="flex justify-between">
 			<h1 class="inline"><a href="/problem_lists/{{.ID}}">#{{.ID}}</a> {{.Title}}</h1>
-			<span>{{if $user}} {{ getText $ctx.Language "num_solved" (numSolved $user .List) (len .List) }}{{end}}</span>
+			<span>{{if $user}} {{ getText $ctx.Language "num_solved" (numSolved $user.Brief .List) (len .List) }}{{end}}</span>
 		</span>
-		{{ if .Description }}<h2>{{renderMarkdown .Description}}</h2>{{end}}
-		{{ with (listProblems $user .) }}
-			{{ template "pb_list_group" (genPbListParams $user $root.Ctx.Language .) }}
+		{{ if .Description }}<div>{{renderMarkdown .Description}}</div>{{end}}
+		{{ with (listProblems $user.Brief .) }}
+			{{ template "pb_list_group" (genPbListParams $user.Brief $root.Ctx.Language .) }}
 		{{ else }}
 			<p> {{ getText $ctx.Language "noListProblems" }} </p>
 		{{ end }}
 	</div>
-	{{ if $user }}
-	{{ if $user.Admin }}
-	<a class="my-2" href="/admin/makeKNA?pbs={{intList .List}}">{{getText $root.Ctx.Language "listKNA"}}</a>
-	{{ end }}
+	{{ if $user.Brief }}
 	{{ if or (eq $user.ID .AuthorID) $user.Admin }}
 	<form id="pblist-update" class="segment-container" autocomplete="off">
 		<h1> {{getText $root.Ctx.Language "listUpdate"}} </h1>
@@ -32,25 +29,35 @@
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">{{getText $root.Ctx.Language "desc"}}: </span>
-				<input type="text" id="pblist-desc" class="form-input" value="{{.Description}}">
+				<span class="form-label">{{getText $root.Ctx.Language "pbs"}}:</span>
+				<input type="text" id="pblist-list" class="form-input" pattern="([0-9]+,?)+" value="{{intList .List}}">
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">{{getText $root.Ctx.Language "pbs"}}:</span>
-				<input type="text" id="pblist-list" class="form-input" pattern="([0-9]+,?)+" value="{{intList .List}}">
+				<span class="form-label">{{getText $root.Ctx.Language "desc"}}: </span>
+				<textarea id="desc_tarea" class="hidden">{{- .Description -}}</textarea>
+				{{/* <input type="text" id="pblist-desc" class="form-input" value="{{.Description}}"> */}}
 			</label>
 		</div>
 		<button class="btn btn-blue" type="submit">{{getText $root.Ctx.Language "update"}}</button>
 	</form>
 <script>
+var cm = CodeMirror.fromTextArea(document.getElementById("desc_tarea"), {
+	mode: {
+		name: "gfm",
+		gitHubSpice: false,
+		emoji: false,
+	}
+});
+cm.setSize(null, "100%");
+
 async function updateProblemList(e) {
 	e.preventDefault();
 	let data = {
 		id: {{.ID}},
 		title: document.getElementById("pblist-title").value,
-		description: document.getElementById("pblist-desc").value,
+		description: cm.getValue(), // document.getElementById("pblist-desc").value,
 		list: document.getElementById("pblist-list").value,
 	};
 	let res = await bundled.postCall("/problemList/update", data)

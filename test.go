@@ -2,6 +2,7 @@ package kilonova
 
 import (
 	"time"
+	//"github.com/jackc/pgtype"
 )
 
 type Test struct {
@@ -11,12 +12,14 @@ type Test struct {
 	ProblemID int       `db:"problem_id" json:"problem_id"`
 	VisibleID int       `db:"visible_id" json:"visible_id"`
 	Orphaned  bool      `json:"orphaned"`
+
+	//InputOID  pgtype.OID `json:"-" db:"input_oid"`
+	//OutputOID pgtype.OID `json:"-" db:"output_oid"`
 }
 
 type TestUpdate struct {
-	Score     *int  `json:"score"`
-	VisibleID *int  `json:"visible_id"`
-	Orphaned  *bool `json:"orphaned"`
+	Score     *int `json:"score"`
+	VisibleID *int `json:"visible_id"`
 }
 
 type SubTask struct {
@@ -29,7 +32,6 @@ type SubTask struct {
 }
 
 type SubTaskUpdate struct {
-	VisibleID *int  `json:"visible_id"`
-	Score     *int  `json:"score"`
-	Tests     []int `json:"tests"`
+	VisibleID *int `json:"visible_id"`
+	Score     *int `json:"score"`
 }

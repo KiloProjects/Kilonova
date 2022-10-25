@@ -62,8 +62,8 @@ func (s *DB) UpdateSubmissionSubTests(ctx context.Context, subID int, upd kilono
 	return err
 }
 
-func subtestUpdateQuery(upd *kilonova.SubTestUpdate) ([]string, []interface{}) {
-	toUpd, args := []string{}, []interface{}{}
+func subtestUpdateQuery(upd *kilonova.SubTestUpdate) ([]string, []any) {
+	toUpd, args := []string{}, []any{}
 	if v := upd.Memory; v != nil {
 		toUpd, args = append(toUpd, "memory = ?"), append(args, v)
 	}

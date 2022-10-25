@@ -1,28 +1,30 @@
 package api
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
-	"sync"
+	"strconv"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/go-chi/chi"
+	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/schema"
 )
 
 var decoder *schema.Decoder
 
-// API is the base struct for the project's API
+// API is the base struct for the project's client-faciing API v1 (deprecated)
 type API struct {
-	db      kilonova.DB
-	manager kilonova.DataStore
-	mailer  kilonova.Mailer
+	base *sudoapi.BaseAPI
 
-	testArchiveLock *sync.Mutex
+	sudoHandlers *sudoapi.WebHandler
 }
 
 // New declares a new API instance
-func New(db kilonova.DB, dm kilonova.DataStore, mailer kilonova.Mailer) *API {
-	return &API{db, dm, mailer, &sync.Mutex{}}
+func New(base *sudoapi.BaseAPI) *API {
+	return &API{base, sudoapi.NewWebHandler(base)}
 }
 
 // Handler is the magic behind the API
@@ -34,14 +36,19 @@ func (s *API) Handler() http.Handler {
 
 		r.Post("/setAdmin", s.setAdmin)
 		r.Post("/setProposer", s.setProposer)
-		r.Post("/updateIndex", s.updateIndex)
 
 		r.Route("/maintenance", func(r chi.Router) {
-			r.Post("/resetWaitingSubs", s.resetWaitingSubs)
-			r.Post("/reevaluateSubmission", s.reevaluateSubmission)
+			r.Post("/resetWaitingSubs", webMessageWrapper("Reset waiting subs", func(ctx context.Context, args struct{}) *kilonova.StatusError {
+				return s.base.ResetWaitingSubmissions(ctx)
+			}))
+			r.Post("/reevaluateSubmission", webMessageWrapper("Reset submission", func(ctx context.Context, args struct {
+				ID int `json:"id"`
+			}) *kilonova.StatusError {
+				return s.base.ResetSubmission(ctx, args.ID)
+			}))
 		})
 
-		r.Get("/getAllUsers", s.getUsers)
+		r.Get("/getAllUsers", webWrapper(s.base.UsersBrief))
 	})
 
 	r.Route("/auth", func(r chi.Router) {
@@ -55,7 +62,7 @@ func (s *API) Handler() http.Handler {
 		r.With(s.MustBeProposer).Post("/create", s.initProblem)
 		r.Get("/maxScore", s.maxScore)
 
-		r.Route("/{id}", func(r chi.Router) {
+		r.With(s.validateProblemID).Route("/{problemID}", func(r chi.Router) {
 			r.Use(s.validateProblemID)
 			r.Use(s.MustBeProposer)
 			r.Use(s.validateProblemEditor)
@@ -73,7 +80,7 @@ func (s *API) Handler() http.Handler {
 				})
 
 				r.Post("/addAttachment", s.createAttachment)
-				//r.With(s.validateAttachmentID).Post("/attachment/{aID}/", s.updateAttachmentMetadata)
+				// r.With(s.validateAttachmentID).Post("/attachment/{aID}/", s.updateAttachmentMetadata)
 				r.Post("/bulkDeleteAttachments", s.bulkDeleteAttachments)
 
 				r.Post("/bulkDeleteTests", s.bulkDeleteTests)
@@ -88,14 +95,14 @@ func (s *API) Handler() http.Handler {
 
 			})
 			r.Route("/get", func(r chi.Router) {
-				r.Get("/attachments", s.getAttachments)
+				r.Get("/attachments", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
+					return s.base.ProblemAttachments(ctx, util.ProblemContext(ctx).ID)
+				}))
 				// The one from /web/web.go is good enough
 				// r.Get("/attachmentData", s.getAttachment)
 
 				r.Get("/tests", s.getTests)
 				r.Get("/test", s.getTest)
-
-				r.Get("/testData", s.getTestData)
 			})
 			r.Post("/delete", s.deleteProblem)
 		})
@@ -104,21 +111,28 @@ func (s *API) Handler() http.Handler {
 		r.Get("/get", s.filterSubs())
 		r.Get("/getByID", s.getSubmissionByID())
 
-		r.With(s.MustBeAuthed).Post("/setVisible", s.setSubmissionVisible)
-		r.With(s.MustBeAuthed).Post("/setQuality", s.setSubmissionQuality)
-		r.With(s.MustBeAuthed).Post("/submit", s.submissionSend)
-		r.With(s.MustBeAdmin).Post("/delete", s.deleteSubmission)
+		r.With(s.MustBeAuthed).With(s.withProblem("problemID", true)).Post("/submit", webWrapper(s.sudoHandlers.CreateSubmission))
+		r.With(s.MustBeAdmin).Post("/delete", webWrapper(s.sudoHandlers.DeleteSubmission))
 	})
 	r.Route("/user", func(r chi.Router) {
-		r.With(s.MustBeAuthed).Post("/setSubVisibility", s.setSubVisibility)
 		r.With(s.MustBeAuthed).Post("/setBio", s.setBio())
 		r.With(s.MustBeAuthed).Post("/setPreferredLanguage", s.setPreferredLanguage())
 
 		r.With(s.MustBeAuthed).Post("/resendEmail", s.resendVerificationEmail)
 
-		r.Get("/get", s.getUser)
-		r.Get("/getByName", s.getUserByName)
-		r.Get("/getSelf", s.getSelf)
+		// r.Get("/get", webWrapper(func(ctx context.Context, args struct {
+		// 	ID int `json:"id"`
+		// }) (*kilonova.UserBrief, *sudoapi.StatusError) {
+		// 	return s.base.UserBrief(ctx, args.ID)
+		// }))
+		// r.Get("/getByName", webWrapper(func(ctx context.Context, args struct {
+		// 	Name string `json:"name"`
+		// }) (*kilonova.UserBrief, *sudoapi.StatusError) {
+		// 	return s.base.UserBriefByName(ctx, args.Name)
+		// }))
+
+		r.Get("/getSelf", func(w http.ResponseWriter, r *http.Request) { returnData(w, util.UserFull(r)) })
+
 		r.With(s.MustBeAuthed).Get("/getSelfSolvedProblems", s.getSelfSolvedProblems)
 		r.With(s.MustBeAuthed).Get("/getSolvedProblems", s.getSolvedProblems)
 
@@ -139,28 +153,102 @@ func (s *API) Handler() http.Handler {
 	})
 	r.Route("/problemList", func(r chi.Router) {
 		r.Get("/get", s.getProblemList)
-		r.Get("/filter", s.filterProblemList)
+		r.Get("/filter", s.problemLists)
 		r.With(s.MustBeProposer).Post("/create", s.initProblemList)
 		r.With(s.MustBeAuthed).Post("/update", s.updateProblemList)
 		r.With(s.MustBeAuthed).Post("/delete", s.deleteProblemList)
 	})
-	r.With(s.MustBeAdmin).Route("/kna", func(r chi.Router) {
-		r.Get("/createArchive", s.createKNA)
-		r.Post("/loadArchive", s.loadKNA)
-	})
+	// TODO
+	// r.Route("/contest", func(r chi.Router) {
+	// 	r.With(s.MustBeProposer).Post("/create", s.createContest())
+	// 	r.With(s.validateContestID).Route("/{contestID}", func(r chi.Router) {
+	// 		r.With(s.MustBeProposer).Get("/get", s.getContest())
+	// 		r.With(s.MustBeProposer).Post("/delete", s.deleteContest())
+	// 		r.With(s.MustBeProposer).Post("/update", s.updateContest())
+	// 		r.With(s.MustBeProposer).Post("/end", s.endContest())
+	// 		r.With(s.MustBeAuthed).Post("/register", s.joinContest())
+	// 		r.Post("/leaderboard", s.contestLeaderboards())
+	// 	})
+	// })
 
-	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		errorData(w, "Endpoint not found", 404)
-	})
-
-	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
-		errorData(w, "Method not allowed", 405)
-	})
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) { errorData(w, "Endpoint not found", 404) })
+	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) { errorData(w, "Method not allowed", 405) })
 
 	return r
+}
+
+func (s *API) withProblem(fieldName string, required bool) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			problem_id, err := strconv.Atoi(r.FormValue(fieldName))
+			if err != nil || problem_id <= 0 {
+				if required {
+					errorData(w, "Invalid problem ID", 400)
+					return
+				}
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			problem, err1 := s.base.Problem(r.Context(), problem_id)
+			if err1 != nil {
+				if required {
+					err1.WriteError(w)
+					return
+				}
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemKey, problem)))
+		})
+	}
+}
+
+func webWrapper[T1, T2 any](handler func(context.Context, T1) (T2, *sudoapi.StatusError)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+		var query T1
+		if err := decoder.Decode(&query, r.Form); err != nil {
+			errorData(w, "Invalid request parameters", 400)
+			return
+		}
+		rez, err := handler(r.Context(), query)
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+		returnData(w, rez)
+	}
+}
+
+func webMessageWrapper[T1 any](successString string, handler func(context.Context, T1) *sudoapi.StatusError) http.HandlerFunc {
+	return webWrapper(func(ctx context.Context, args T1) (string, *kilonova.StatusError) {
+		if err := handler(ctx, args); err != nil {
+			return "", err
+		}
+		return successString, nil
+	})
 }
 
 func init() {
 	decoder = schema.NewDecoder()
 	decoder.SetAliasTag("json")
+}
+
+func returnData(w http.ResponseWriter, retData any) {
+	kilonova.StatusData(w, "success", retData, 200)
+}
+
+func errorData(w http.ResponseWriter, retData any, errCode int) {
+	kilonova.StatusData(w, "error", retData, errCode)
+}
+
+func parseJsonBody[T any](r *http.Request, output *T) *kilonova.StatusError {
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(output); err != nil {
+		return kilonova.Statusf(400, "Invalid JSON input.")
+	}
+	return nil
 }

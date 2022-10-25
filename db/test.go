@@ -50,15 +50,12 @@ func (s *DB) Tests(ctx context.Context, pbID int) ([]*kilonova.Test, error) {
 }
 
 func (s *DB) UpdateTest(ctx context.Context, id int, upd kilonova.TestUpdate) error {
-	toUpd, args := []string{}, []interface{}{}
+	toUpd, args := []string{}, []any{}
 	if v := upd.Score; v != nil {
 		toUpd, args = append(toUpd, "score = ?"), append(args, v)
 	}
 	if v := upd.VisibleID; v != nil {
 		toUpd, args = append(toUpd, "visible_id = ?"), append(args, v)
-	}
-	if v := upd.Orphaned; v != nil {
-		toUpd, args = append(toUpd, "orphaned = ?"), append(args, v)
 	}
 	if len(toUpd) == 0 {
 		return kilonova.ErrNoUpdates
@@ -70,13 +67,23 @@ func (s *DB) UpdateTest(ctx context.Context, id int, upd kilonova.TestUpdate) er
 	return err
 }
 
+// TODO: Test subtask stuff actually works
 func (s *DB) OrphanProblemTests(ctx context.Context, problemID int) error {
 	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("UPDATE tests SET orphaned = true WHERE problem_id = ?"), problemID)
+	if err != nil {
+		return err
+	}
+	_, err = s.conn.ExecContext(ctx, s.conn.Rebind("DELETE FROM subtask_tests WHERE test_id IN (SELECT id FROM tests WHERE problem_id = ?);"), problemID)
 	return err
 }
 
-func (s *DB) OrphanProblemTest(ctx context.Context, problemID int, testVID int) error {
-	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("UPDATE tests SET orphaned = true WHERE problem_id = ? AND visible_id = ?"), problemID, testVID)
+// TODO: Test subtask stuff actually works
+func (s *DB) OrphanTest(ctx context.Context, id int) error {
+	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("UPDATE tests SET orphaned = true WHERE id = ?"), id)
+	if err != nil {
+		return err
+	}
+	_, err = s.conn.ExecContext(ctx, s.conn.Rebind("DELETE FROM subtask_tests WHERE test_id = ?;"), id)
 	return err
 }
 

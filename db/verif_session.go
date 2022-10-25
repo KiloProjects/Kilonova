@@ -8,6 +8,8 @@ import (
 	"github.com/KiloProjects/kilonova"
 )
 
+//// START EMAIL VERIFICATION
+
 func (s *DB) CreateVerification(ctx context.Context, id int) (string, error) {
 	vid := kilonova.RandomString(16)
 	_, err := s.conn.ExecContext(ctx, s.conn.Rebind(`INSERT INTO verifications (id, user_id) VALUES (?, ?)`), vid, id)
@@ -24,7 +26,7 @@ func (s *DB) GetVerification(ctx context.Context, id string) (int, error) {
 	if err != nil {
 		return -1, err
 	}
-	if time.Now().Sub(verif.CreatedAt) > time.Hour*24*30 {
+	if time.Since(verif.CreatedAt) > time.Hour*24*30 {
 		return -1, err
 	}
 	return verif.UserID, err
@@ -34,6 +36,10 @@ func (s *DB) RemoveVerification(ctx context.Context, verif string) error {
 	_, err := s.conn.ExecContext(ctx, s.conn.Rebind(`DELETE FROM verifications WHERE id = ?`), verif)
 	return err
 }
+
+//// END EMAIL VERIFICATION
+
+//// START SESSION ID
 
 func (s *DB) CreateSession(ctx context.Context, uid int) (string, error) {
 	vid := kilonova.RandomString(16)
@@ -54,7 +60,7 @@ func (s *DB) GetSession(ctx context.Context, sess string) (int, error) {
 	if err != nil {
 		return -1, errors.New("Unauthed")
 	}
-	if time.Now().Sub(session.CreatedAt) > time.Hour*24*30 {
+	if time.Since(session.CreatedAt) > time.Hour*24*30 {
 		return -1, errors.New("Unauthed")
 	}
 	return session.UserID, nil
@@ -64,3 +70,39 @@ func (s *DB) RemoveSession(ctx context.Context, sess string) error {
 	_, err := s.conn.ExecContext(ctx, s.conn.Rebind(`DELETE FROM sessions WHERE id = ?`), sess)
 	return err
 }
+
+//// END SESSION ID
+
+//// START PASSWORD RECOVERY
+
+func (s *DB) CreatePwdRecovery(ctx context.Context, uid int) (string, error) {
+	vid := kilonova.RandomString(16)
+	_, err := s.conn.ExecContext(ctx, "INSERT INTO pwd_restorations (id, user_id) VALUES ($1, $2)", vid, uid)
+	if err != nil {
+		return "", err
+	}
+	return vid, nil
+}
+
+func (s *DB) GetPwdRecovery(ctx context.Context, sess string) (int, error) {
+	var pwdRecovery struct {
+		ID        string    `db:"id"`
+		CreatedAt time.Time `db:"created_at"`
+		UserID    int       `db:"user_id"`
+	}
+	err := s.conn.GetContext(ctx, &sess, "SELECT id, created_at, user_id FROM pwd_restorations WHERE id = $1", sess)
+	if err != nil {
+		return -1, kilonova.ErrNotExist
+	}
+	if time.Since(pwdRecovery.CreatedAt) > time.Minute*30 {
+		return -1, kilonova.ErrNotExist
+	}
+	return pwdRecovery.UserID, nil
+}
+
+func (s *DB) RemovePwdRecovery(ctx context.Context, sess string) error {
+	_, err := s.conn.ExecContext(ctx, "DELETE FROM pwd_restorations WHERE id = $1", sess)
+	return err
+}
+
+//// END PASSWORD RECOVERY

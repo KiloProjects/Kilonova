@@ -8,7 +8,7 @@
 	<h2> {{getText .Ctx.Language "updateBio"}} </h2>
 	<form id="bio_form">
 		<textarea id="newBio" class="form-textarea w-full mb-2" autocapitalize="sentences" autocomplete="off" maxlength="120" placeholder="Bio...">{{$user.Bio}}</textarea>
-		<button class="btn btn-blue" onclick="updateBio()">{{getText .Ctx.Language "update"}}</button>
+		<button class="btn btn-blue" onclick="updateBio()">{{getText .Ctx.Language "button.update"}}</button>
 	</form>
 </div>
 
@@ -19,42 +19,36 @@
 			<option value="ro" {{if eq $user.PreferredLanguage "ro"}}selected{{end}}>🇷🇴 Română</option>
 			<option value="en" {{if eq $user.PreferredLanguage "en"}}selected{{end}}>🇬🇧 English</option>
 		</select>
-		<button class="btn btn-blue" type="submit">{{getText .Ctx.Language "update"}}</textarea>
+		<button class="btn btn-blue" type="submit">{{getText .Ctx.Language "button.update"}}</textarea>
 	</form>
-</div>
-
-<div class="segment-container">
-	<h2> {{getText .Ctx.Language "visibility"}} </h2>
-	<button id="vButton" class="btn btn-blue mb-2 text-semibold text-lg" onclick="toggleVisibility()"><i class="fas fa-share-square mr-2"></i> {{getText .Ctx.Language "makeSubs"}} {{if $user.DefaultVisible}}{{getText .Ctx.Language "invisible"}}{{else}}{{getText .Ctx.Language "visible"}}{{end}}</button>
 </div>
 
 <form class="segment-container" id="pwd_change_form">
 	<h2> {{getText .Ctx.Language "updatePwd"}} </h2>
 	<label class="block mb-2">
 		<span class="form-label">{{getText .Ctx.Language "newPwd"}}: </span>
-		<input class="form-input" type="password" id="pwd_change_pwd" autocomplete="off">
+		<input class="form-input" type="password" id="pwd_change_pwd" autocomplete="off" required>
 	</label>
 	<label class="block mb-2">
 		<span class="form-label">{{getText .Ctx.Language "newPwdConfirm"}}: </span>
-		<input class="form-input" type="password" id="pwd_change_pwd1" autocomplete="off">
+		<input class="form-input" type="password" id="pwd_change_pwd1" autocomplete="off" required>
 	</label>
-	<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "update"}}</button>
+	<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "button.update"}}</button>
 </form>
 <form class="segment-container" id="email_change_form">
 	<h2> {{getText .Ctx.Language "updateEmail"}} </h2>
 	<label class="block mb-2">
 		<span class="form-label">{{getText .Ctx.Language "password"}}: </span>
-		<input class="form-input" type="password" id="em_change_pwd">
+		<input class="form-input" type="password" id="em_change_pwd" required>
 	</label>
 	<label class="block mb-2">
 		<span class="form-label">{{getText .Ctx.Language "newEmail"}}: </span>
-		<input class="form-input" type="email" id="em_change_email" autocomplete="off">
+		<input class="form-input" type="email" id="em_change_email" autocomplete="off" required>
 	</label>
-	<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "update"}}</button>
+	<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "button.update"}}</button>
 </form>
 
 <script>
-let visible = {{$user.DefaultVisible}};
 async function updateBio(e) {
 	e.preventDefault()
 	var bio = document.getElementById("newBio").value;
@@ -72,12 +66,6 @@ async function updateLanguage(e) {
 		return
 	}
 	bundled.apiToast(res)
-}
-async function toggleVisibility() {
-	visible = !visible;
-	let res = await bundled.postCall("/user/setSubVisibility", {visibility: visible});
-	bundled.apiToast(res);
-	document.getElementById("vButton").innerHTML = `<i class="fas fa-share-square mr-2"></i> {{getText .Ctx.Language "makeSubs"}} ${visible ? '{{getText .Ctx.Language "invisible"}}' : '{{getText .Ctx.Language "visible"}}'}`
 }
 async function updatePassword(e) {
 	e.preventDefault()

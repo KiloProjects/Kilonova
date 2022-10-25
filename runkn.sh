@@ -1,7 +1,10 @@
 #!/bin/bash
 
-go build -v ./cmd/kn || exit 2
+#while true
+#do
+	go build -race -v ./cmd/kn || exit 2
 
-mv kn knnnn # fix gitignore issue
+	mv kn knnnn # fix gitignore issue
 
-sudo ./knnnn main
+	./knnnn main
+#done

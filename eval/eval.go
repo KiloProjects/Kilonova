@@ -4,6 +4,8 @@ import (
 	"context"
 	"io"
 	"io/fs"
+
+	"github.com/KiloProjects/kilonova"
 )
 
 type Sandbox interface {
@@ -17,8 +19,10 @@ type Sandbox interface {
 	// if stdout == stderr, then it will act like exec.CombinedOutput()
 	RunCommand(ctx context.Context, cmd []string, conf *RunConfig) (*RunStats, error)
 
-	// Reset clears everything in the sandbox.
-	Reset() error
+	/*
+		// Reset clears everything in the sandbox.
+		Reset() error
+	*/
 
 	io.Closer
 }
@@ -42,9 +46,10 @@ type Task interface {
 }
 
 type CompileRequest struct {
-	ID   int
-	Code []byte
-	Lang string
+	ID          int
+	CodeFiles   map[string][]byte
+	HeaderFiles map[string][]byte
+	Lang        string
 }
 
 type CompileResponse struct {
@@ -58,7 +63,6 @@ type ExecRequest struct {
 	SubtestID   int
 	TestID      int
 	Filename    string
-	StackLimit  int
 	MemoryLimit int
 	TimeLimit   float64
 	Lang        string
@@ -80,7 +84,6 @@ type RunConfig struct {
 	OutputPath string
 
 	MemoryLimit int
-	StackLimit  int
 
 	TimeLimit     float64
 	WallTimeLimit float64
@@ -113,6 +116,12 @@ type Limits struct {
 	// seconds
 	TimeLimit float64
 	// kilobytes
-	StackLimit  int
 	MemoryLimit int
+}
+
+// GraderSubmission is an interface that provides a locked submission
+type GraderSubmission interface {
+	Submission() *kilonova.Submission
+	Update(kilonova.SubmissionUpdate) error
+	Close() error
 }

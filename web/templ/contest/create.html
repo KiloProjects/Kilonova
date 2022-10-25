@@ -1,0 +1,27 @@
+{{define "title"}}{{getText .Ctx.Language "title.contest.create"}}{{end}}
+{{define "content"}}
+<form id="contestCreate" class="segment-container" autocomplete="off">
+	<h1>{{getText .Ctx.Language "createContest"}}</h1>
+	<label class="block mb-2">
+		<span class="form-label">{{getText .Ctx.Language "title"}}</span>
+		<input class="form-input" name="title" autocomplete="off" required/>
+	</label>
+	<label class="block mb-2">
+		<span class="form-label">{{getText .Ctx.Language "description"}}</span>
+		<textarea class="form-textarea" name="description" autocomplete="off" required/>
+	</label>
+	<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "button.create"}}</button>
+</form>
+<script>
+	async function createContest(e) {
+		let res = await bundled.postForm("/contest/create", e)
+		if(res.status == "error") {
+			bundled.apiToast(res);
+			return;
+		}
+		window.location.assign(`/contest/${res.data.id}`);
+		console.log("Redirecting...");
+	}
+	document.getElementById("contestCreate").addEventListener("submit", createContest)
+</script>
+{{end}}

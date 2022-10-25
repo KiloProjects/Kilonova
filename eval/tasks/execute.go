@@ -44,7 +44,6 @@ func (job *ExecuteTask) Execute(ctx context.Context, box eval.Sandbox) error {
 
 	lim := eval.Limits{
 		MemoryLimit: job.Req.MemoryLimit,
-		StackLimit:  job.Req.StackLimit,
 		TimeLimit:   job.Req.TimeLimit,
 	}
 	meta, err := eval.RunSubmission(ctx, box, eval.Langs[job.Req.Lang], lim, consoleInput)

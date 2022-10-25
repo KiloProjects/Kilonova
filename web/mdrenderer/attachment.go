@@ -2,6 +2,7 @@ package mdrenderer
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -11,7 +12,7 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
-// YouTube's embeds are of the form ~[https://youtube.com/watch?v=xyz] or ~[https://youtu.be/xyz]
+// Attachment quick image embeds are of the form ~[att.jpg]
 
 var _ goldmark.Extender = &attNode{}
 var _ renderer.NodeRenderer = &attachmentRenderer{}
@@ -50,15 +51,15 @@ func (_ attachmentParser) Parse(parent ast.Node, block text.Reader, pc parser.Co
 type attachmentRenderer struct{}
 
 func (att *attachmentRenderer) RegisterFuncs(rd renderer.NodeRendererFuncRegisterer) {
-	rd.Register(attNodeKind, att.renderYoutube)
+	rd.Register(attNodeKind, att.renderAttachment)
 }
 
-func (att *attachmentRenderer) renderYoutube(writer util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
+func (att *attachmentRenderer) renderAttachment(writer util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
 	if !entering {
 		return ast.WalkContinue, nil
 	}
 	node := n.(*AttachmentNode)
-	fmt.Fprintf(writer, `<img src="./attachments/%s"/>`, node.Filename)
+	fmt.Fprintf(writer, `<problem-attachment attname="%s"></problem-attachment>`, url.PathEscape(node.Filename))
 	return ast.WalkContinue, nil
 }
 
@@ -75,10 +76,10 @@ type AttachmentNode struct {
 	Filename string
 }
 
-func (yt *AttachmentNode) Dump(source []byte, level int) {
-	ast.DumpHelper(yt, source, level, map[string]string{"filename": yt.Filename}, nil)
+func (att *AttachmentNode) Dump(source []byte, level int) {
+	ast.DumpHelper(att, source, level, map[string]string{"filename": att.Filename}, nil)
 }
 
-func (yt *AttachmentNode) Kind() ast.NodeKind {
+func (_ AttachmentNode) Kind() ast.NodeKind {
 	return attNodeKind
 }

@@ -95,6 +95,13 @@
 		}
 	}
 
+	.quality-highlight {
+		@apply kn-table-simple;
+		@apply bg-amber-300 dark:bg-amber-500;
+		@apply hover:bg-amber-400 dark:hover:bg-amber-600;
+		@apply focus:bg-amber-400 dark:focus:bg-amber-600;
+	}
+
 	.kn-border {
 		@apply border-gray-700 dark:border-gray-200;
 	}
@@ -107,22 +114,25 @@
 		@apply border border-gray-300 w-full bg-white;
 		@apply dark:border-gray-700 dark:bg-gray-800;
 	}
+	.list-group > *:first-child {
+		@apply border-t-0 border-gray-300 dark:border-gray-700;
+	}
+	.list-group-head {
+		@apply block border-t border-gray-300 dark:border-gray-700 w-full px-4 py-3 text-lg leading-normal;
+	}
 	.list-group-item {
-		@apply block border-t border-gray-300 dark:border-gray-700 w-full px-4 py-3 black-anchor text-lg leading-normal;
+		@apply list-group-head black-anchor;
 		@apply hover:bg-gray-100;
 		@apply dark:hover:bg-gray-600;
-	}
-	.list-group-item:first-child {
-		@apply border-t-0 border-gray-300 dark:border-gray-700;
 	}
 
 	.list-group-rounded {
 		@apply rounded-lg;
 	}
-	.list-group-rounded > .list-group-item:first-child {
+	.list-group-rounded > *:first-child {
 		@apply rounded-t-lg;
 	}
-	.list-group-rounded > .list-group-item:last-child {
+	.list-group-rounded > *:last-child {
 		@apply rounded-b-lg;
 	}
 	
@@ -136,22 +146,23 @@
 
 	.dropdown-divider {
 		@apply h-0 my-1 border-t border-gray-200;
-		@apply dark:border-black;
+		@apply dark:border-gray-700;
 	}
 	.dropdown-list {
 		@apply absolute right-0 w-full md:w-64;
 		@apply py-1 mt-1 text-xl bg-white rounded-lg shadow-lg;
 		@apply dark:bg-gray-800;
 	}
+	.dropdown-list > *:first-child {
+		@apply rounded-t-lg -mt-1;
+	}
+	.dropdown-list > *:last-child {
+		@apply rounded-b-lg -mb-1;
+	}
+
 	.dropdown-list-item {
 		@apply block px-4 py-1 text-gray-800 focus:text-gray-800 hover:text-gray-800 hoverable;
 		@apply dark:text-gray-200 dark:focus:text-gray-100 dark:hover:text-gray-100;
-	}
-	.dropdown-list-item:first-child {
-		@apply rounded-t-lg -mt-1;
-	}
-	.dropdown-list-item:last-child {
-		@apply rounded-b-lg -mb-1;
 	}
 
 	.black-anchor {
@@ -166,6 +177,24 @@
 	.hoverable {
 		@apply hover:bg-gray-200 focus:bg-gray-200;
 		@apply dark:hover:bg-gray-700 dark:focus:bg-gray-700;
+	}
+
+	.paginator {
+		@apply my-2 inline-flex;
+	}
+	.paginator > *:first-child {
+		@apply rounded-l;
+	}
+	.paginator > *:last-child {
+		@apply rounded-r;
+	}
+
+	.paginator-item {
+		@apply btn-blue py-1 px-2;
+	}
+
+	.paginator-item-active {
+		@apply border-2;
 	}
 
 	.kn-table {
@@ -199,6 +228,11 @@
 	.btn {
 		@apply inline-flex justify-center px-4 py-2 leading-5 rounded-md font-medium ring-1 ring-opacity-50;
 		@apply transition ease-in-out duration-150;
+		@apply btn-gray;
+		font-family: inherit;
+	}
+
+	.btn-gray {
 		@apply bg-gray-200 text-gray-800 ring-gray-100;
 		@apply hover:bg-gray-700 hover:text-white;
 		@apply active:bg-gray-700 active:text-white;
@@ -220,6 +254,7 @@
 		@apply dark:hover:ring-blue-500 dark:focus:ring-blue-500;
 		@apply dark:hover:bg-blue-800 dark:active:bg-blue-800 dark:focus:bg-blue-800;
 		@apply dark:hover:text-white dark:active:text-white dark:focus:text-white;
+		font-family: inherit;
 	}
 
 	.btn-red {
@@ -230,6 +265,7 @@
 		@apply dark:hover:ring-red-500 dark:focus:ring-red-500;
 		@apply dark:hover:bg-red-800 dark:active:bg-red-800 dark:focus:bg-red-800;
 		@apply dark:hover:text-white dark:active:text-white dark:focus:text-white;
+		font-family: inherit;
 	}
 
 	.is-invalid {
@@ -241,6 +277,32 @@
 		@apply ring-green-500 ring-1;
 		@apply transition ease-out duration-500;
 	}
+
+	.btn-group {
+		@apply mt-2 inline-flex;
+	}
+
+	.btn-group-item {
+		@apply btn-blue font-bold py-2 px-4;
+	}
+
+	.btn-group > *:first-child {
+		@apply rounded-l;
+	}
+
+	.btn-group > *:last-child {
+		@apply rounded-r;
+	}
+
+
+	.badge-md {
+		@apply rounded-md px-2 py-1 text-sm text-white;
+	}
+
+	.badge-lg {
+		@apply rounded-full px-2 py-1 text-base text-white font-semibold;
+	}
+
 
 }
 
@@ -254,7 +316,7 @@
 
 	pre {
 		tab-size: 4;
-		@apply bg-hljs rounded-lg px-2 mt-1 mb-1;
+		@apply bg-hljs rounded-lg mt-1 mb-1;
 	}
 
 	body {

@@ -20,7 +20,7 @@
 			<input id="list-pbs" type="text" class="form-input" pattern="([0-9]+,?)+" required>
 		</label>
 	</div>
-	<button type="submit" class="btn btn-blue">{{ getText .Ctx.Language "createButton" }}</button>
+	<button type="submit" class="btn btn-blue">{{ getText .Ctx.Language "button.create" }}</button>
 </form>
 
 <script>
@@ -30,10 +30,10 @@ async function createList(e) {
 	let data = {
 		title: document.getElementById("list-title").value,
 		description: document.getElementById("list-desc").value,
-		ids: document.getElementById("list-pbs").value,
+		ids: document.getElementById("list-pbs").value.split(','),
 	};
 
-	let res = await bundled.postCall("/problemList/create", data)
+	let res = await bundled.bodyCall("/problemList/create", data)
 	if(res.status === "success") {
 		window.location.reload();
 		return

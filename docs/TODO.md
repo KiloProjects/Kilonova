@@ -26,15 +26,10 @@ Additional reading I should do for a better platform:
 			- [ ] restul
 		- [x] Permite toate limbajele în UI
 		- [x] Paignă de login când nu ai voie fiindcă ești unauthed
-	- [ ] Restructurare backend:
+	- [x] Restructurare backend:
 		- [x] Multi-eval support
 		- [x] Phase out sqlc în favoarea sqlx (să nu mai depindem așa mult de code generation)
-		- [ ] Better telemetry
-			- [ ] Zap
-			- [ ] ? Prometheus integration
-			- [ ] ? Sentry
 	- [ ] New features:
-		- [x] ".kna"
 		- [x] Scor din oficiu
 		- [x] Abilitate să ștergi unul sau toate testele direct
 		- [ ] Admin tools diverse
@@ -87,7 +82,6 @@ Additional reading I should do for a better platform:
 		- [ ] Sistem de priority queue 
 	- [ ] Pagină profil (cont.):
 		- [ ] Mai customizabil
-	- [ ] Etichete probleme
 	- [ ] Social:
 		- [ ] Friendships
 		- [ ] Blog
@@ -102,7 +96,6 @@ Additional reading I should do for a better platform:
 		- [ ] ? Sistem NOVA
 			- sub-instanțe de kilonova
 			- [ ] Restructurare sistem de webserver
-			- [ ] Control asupra subdomeniilor (e nevoie de modificări mari la webserver-ul meu privat dpdv al routing-ului și al certificatelor)
 
 
 ## Faze complete

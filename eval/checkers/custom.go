@@ -17,19 +17,22 @@ var _ eval.Checker = &CustomChecker{}
 var _ eval.Task = &customCheckerTask{}
 
 type CustomChecker struct {
-	mgr     eval.Runner
-	pb      *kilonova.Problem
-	sub     *kilonova.Submission
-	checker *kilonova.Attachment
+	mgr      eval.Runner
+	pb       *kilonova.Problem
+	sub      *kilonova.Submission
+	filename string
+	code     []byte
 }
 
 // Prepare compiles the grader
 func (c *CustomChecker) Prepare(ctx context.Context) (string, error) {
 	job := &tasks.CompileTask{
 		Req: &eval.CompileRequest{
-			ID:   -c.sub.ID,
-			Code: c.checker.Data,
-			Lang: eval.GetLangByFilename(c.checker.Name),
+			ID: -c.sub.ID,
+			CodeFiles: map[string][]byte{
+				eval.Langs[eval.GetLangByFilename(c.filename)].SourceName: c.code,
+			},
+			Lang: eval.GetLangByFilename(c.filename),
 		},
 	}
 
@@ -39,7 +42,7 @@ func (c *CustomChecker) Prepare(ctx context.Context) (string, error) {
 	}
 
 	if !job.Resp.Success {
-		return fmt.Sprintf("Output:\n%s\nOther:\n%s", job.Resp.Output, job.Resp.Other), &kilonova.Error{Code: kilonova.EINVALID, Message: "Invalid helper code"}
+		return fmt.Sprintf("Output:\n%s\nOther:\n%s", job.Resp.Output, job.Resp.Other), kilonova.Statusf(500, "Invalid helper code")
 	}
 
 	return "", nil
@@ -56,10 +59,8 @@ type customCheckerTask struct {
 	output string
 }
 
-var customTaskErr = kilonova.Error{Code: kilonova.EINTERNAL, Message: ErrOut}
-
 func (job *customCheckerTask) Execute(ctx context.Context, box eval.Sandbox) error {
-	lang, ok := eval.Langs[eval.GetLangByFilename(job.c.checker.Name)]
+	lang, ok := eval.Langs[eval.GetLangByFilename(job.c.filename)]
 	if !ok {
 		job.output = ErrOut
 		return nil
@@ -96,8 +97,9 @@ func (job *customCheckerTask) Execute(ctx context.Context, box eval.Sandbox) err
 	conf := &eval.RunConfig{
 		Stdout: &out,
 
-		MemoryLimit: 64 * 1024,
-		StackLimit:  32 * 1024,
+		MemoryLimit: 512 * 1024,
+
+		WallTimeLimit: 20,
 
 		MaxProcs: 2,
 	}
@@ -135,6 +137,6 @@ func (c *CustomChecker) Cleanup(_ context.Context) error {
 	return eval.CleanCompilation(-c.sub.ID)
 }
 
-func NewCustomChecker(mgr eval.Runner, pb *kilonova.Problem, sub *kilonova.Submission, checker *kilonova.Attachment) (*CustomChecker, error) {
-	return &CustomChecker{mgr, pb, sub, checker}, nil
+func NewCustomChecker(mgr eval.Runner, pb *kilonova.Problem, sub *kilonova.Submission, filename string, code []byte) (*CustomChecker, error) {
+	return &CustomChecker{mgr, pb, sub, filename, code}, nil
 }

@@ -1,6 +1,6 @@
 -- user stuff
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
 	id 					bigserial 	PRIMARY KEY,
 	created_at			timestamptz	NOT NULL DEFAULT NOW(),
 	name 				text 	  	NOT NULL UNIQUE,
@@ -22,13 +22,13 @@ CREATE TABLE users (
 
 -- problem stuff
 
-CREATE TYPE problem_type AS ENUM (
+CREATE TYPE IF NOT EXISTS problem_type AS ENUM (
 	'classic',
 	'interactive',
 	'custom_checker'
 );
 
-CREATE TABLE problems (
+CREATE TABLE IF NOT EXISTS problems (
 	id 			  	bigserial 			PRIMARY KEY,
 	created_at 	  	timestamptz 		NOT NULL DEFAULT NOW(),
 	name 		  	text 	    		NOT NULL UNIQUE,
@@ -49,11 +49,9 @@ CREATE TABLE problems (
 	default_points 	integer 			NOT NULL DEFAULT 0,
 
 	pb_type 		problem_type 		NOT NULL DEFAULT 'classic',
-	helper_code 	text 				NOT NULL DEFAULT '',
-	helper_code_lang text 				NOT NULL DEFAULT 'cpp',
 );
 
-CREATE TABLE tests (
+CREATE TABLE IF NOT EXISTS tests (
 	id 			bigserial  		PRIMARY KEY,
 	created_at 	timestamptz		NOT NULL DEFAULT NOW(),
 	score 		integer 		NOT NULL,
@@ -64,14 +62,14 @@ CREATE TABLE tests (
 
 -- submissions stuff
 
-CREATE TYPE status AS ENUM (
+CREATE TYPE IF NOT EXISTS status AS ENUM (
 	'creating',
 	'waiting',
 	'working',
 	'finished'
 );
 
-CREATE TABLE submissions (
+CREATE TABLE IF NOT EXISTS submissions (
 	id 				bigserial 		PRIMARY KEY,
 	created_at 		timestamptz		NOT NULL DEFAULT NOW(),
 	user_id 		bigint			NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -88,7 +86,7 @@ CREATE TABLE submissions (
 	max_memory 		INTEGER 		NOT NULL DEFAULT -1
 );
 
-CREATE TABLE submission_tests (
+CREATE TABLE IF NOT EXISTS submission_tests (
 	id 				bigserial			PRIMARY KEY,
 	created_at 		timestamptz			NOT NULL DEFAULT NOW(),
 	done			boolean 			NOT NULL DEFAULT false,
@@ -101,34 +99,34 @@ CREATE TABLE submission_tests (
 	submission_id 	bigint  			NOT NULL REFERENCES submissions(id) ON DELETE CASCADE
 );
 
-CREATE TABLE problem_lists (
+CREATE TABLE IF NOT EXISTS problem_lists (
 	id 			bigserial 	PRIMARY KEY,
 	created_at 	timestamptz NOT NULL DEFAULT NOW(),
 	author_id 	bigint 		NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 	title 		text 		NOT NULL DEFAULT '',
 	description text 		NOT NULL DEFAULT '',
-	list 		text 		NOT NULL DEFAULT ''
+	list 		integer[]	NOT NULL DEFAULT '{}'
 );
 
-CREATE TABLE subtasks (
+CREATE TABLE IF NOT EXISTS subtasks (
 	id 			bigserial  	PRIMARY KEY,
 	created_at  timestamptz NOT NULL DEFAULT NOW(),
 	problem_id 	bigint 		NOT NULL REFERENCES problems(id) ON DELETE CASCADE,
 	visible_id 	integer 	NOT NULL,
 	score 		integer 	NOT NULL,
-	tests 		text 		NOT NULL
+	tests 		integer[]	NOT NULL DEFAULT '{}'
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
 	id 			text 		PRIMARY KEY,
 	created_at 	timestamptz NOT NULL DEFAULT NOW(),
-	user_id 	integer 	NOT NULL REFERENCES users(id)
+	user_id 	integer 	NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS verifications (
 	id 			text 		PRIMARY KEY,
 	created_at 	timestamptz NOT NULL DEFAULT NOW(),
-	user_id 	integer 	NOT NULL REFERENCES users(id)
+	user_id 	integer 	NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS attachments (
@@ -145,17 +143,17 @@ CREATE TABLE IF NOT EXISTS attachments (
 
 --
 --CREATE TABLE IF NOT EXISTS test_inputs (
---	tid 	bigint 	NOT NULL UNIQUE REFERENCES tests(id),
+--	tid 	bigint 	NOT NULL UNIQUE REFERENCES tests(id) ON DELETE CASCADE,
 --	data 	bytea 	NOT NULL
 --);
 
 --CREATE TABLE IF NOT EXISTS test_outputs (
---	tid 	bigint 	NOT NULL UNIQUE REFERENCES tests(id),
+--	tid 	bigint 	NOT NULL UNIQUE REFERENCES tests(id) ON DELETE CASCADE,
 --	data 	bytea 	NOT NULL
 --);
 
 --CREATE TABLE IF NOT EXISTS subtest_outputs (
---	stid 	bigint 	NOT NULL UNIQUE REFERENCES submission_tests(id),
+--	stid 	bigint 	NOT NULL UNIQUE REFERENCES submission_tests(id) ON DELETE CASCADE,
 --	data 	bytea 	NOT NULL
 --);
 

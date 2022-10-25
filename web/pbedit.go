@@ -2,13 +2,17 @@ package web
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 type ProblemEditParams struct {
@@ -44,7 +48,7 @@ func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
 func (rt *Web) editAttachments() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "edit/attachments.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		atts, err := rt.db.Attachments(r.Context(), false, kilonova.AttachmentFilter{ProblemID: &util.Problem(r).ID})
+		atts, err := rt.base.ProblemAttachments(r.Context(), util.Problem(r).ID)
 		if err != nil || len(atts) == 0 {
 			atts = nil
 		}
@@ -61,42 +65,73 @@ func (rt *Web) editAttachments() func(w http.ResponseWriter, r *http.Request) {
 func (rt *Web) testIndex() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "edit/testScores.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		runTempl(w, r, tmpl, &TestEditParams{GenContext(r), util.Problem(r), nil, &EditTopbar{"tests", -2}, rt.db, rt.dm})
+		runTempl(w, r, tmpl, &TestEditParams{GenContext(r), util.Problem(r), nil, &EditTopbar{"tests", -2}, rt.base})
 	}
 }
 
 func (rt *Web) testAdd() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "edit/testAdd.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		runTempl(w, r, tmpl, &TestEditParams{GenContext(r), util.Problem(r), nil, &EditTopbar{"tests", -1}, rt.db, rt.dm})
+		runTempl(w, r, tmpl, &TestEditParams{GenContext(r), util.Problem(r), nil, &EditTopbar{"tests", -1}, rt.base})
 	}
 }
 
 func (rt *Web) testEdit() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "edit/testEdit.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		runTempl(w, r, tmpl, &TestEditParams{GenContext(r), util.Problem(r), util.Test(r), &EditTopbar{"tests", util.Test(r).VisibleID}, rt.db, rt.dm})
+		runTempl(w, r, tmpl, &TestEditParams{GenContext(r), util.Problem(r), util.Test(r), &EditTopbar{"tests", util.Test(r).VisibleID}, rt.base})
+	}
+}
+
+func (rt *Web) testInput() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		rr, err := rt.base.TestInput(util.Test(r).ID)
+		if err != nil {
+			zap.S().Warn(err)
+			http.Error(w, "Couldn't get test input", 500)
+			return
+		}
+		defer rr.Close()
+
+		tname := fmt.Sprintf("%d-%s.in", util.Test(r).ID, util.Problem(r).TestName)
+
+		http.ServeContent(w, r, tname, time.Unix(0, 0), rr.(io.ReadSeeker))
+	}
+}
+func (rt *Web) testOutput() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		rr, err := rt.base.TestOutput(util.Test(r).ID)
+		if err != nil {
+			zap.S().Warn(err)
+			http.Error(w, "Couldn't get test output", 500)
+			return
+		}
+		defer rr.Close()
+
+		tname := fmt.Sprintf("%d-%s.out", util.Test(r).ID, util.Problem(r).TestName)
+
+		http.ServeContent(w, r, tname, time.Unix(0, 0), rr.(io.ReadSeeker))
 	}
 }
 
 func (rt *Web) subtaskIndex() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "edit/subtaskIndex.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		runTempl(w, r, tmpl, &SubTaskEditParams{GenContext(r), util.Problem(r), nil, &EditTopbar{"subtasks", -2}, r.Context(), rt.db})
+		runTempl(w, r, tmpl, &SubTaskEditParams{GenContext(r), util.Problem(r), nil, &EditTopbar{"subtasks", -2}, r.Context(), rt.base})
 	}
 }
 
 func (rt *Web) subtaskAdd() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "edit/subtaskAdd.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		runTempl(w, r, tmpl, &SubTaskEditParams{GenContext(r), util.Problem(r), nil, &EditTopbar{"subtasks", -1}, r.Context(), rt.db})
+		runTempl(w, r, tmpl, &SubTaskEditParams{GenContext(r), util.Problem(r), nil, &EditTopbar{"subtasks", -1}, r.Context(), rt.base})
 	}
 }
 
 func (rt *Web) subtaskEdit() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "edit/subtaskEdit.html", "edit/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		tmpl.Execute(w, &SubTaskEditParams{GenContext(r), util.Problem(r), util.SubTask(r), &EditTopbar{"subtasks", util.SubTask(r).VisibleID}, r.Context(), rt.db})
+		tmpl.Execute(w, &SubTaskEditParams{GenContext(r), util.Problem(r), util.SubTask(r), &EditTopbar{"subtasks", util.SubTask(r).VisibleID}, r.Context(), rt.base})
 	}
 }
 
@@ -109,14 +144,16 @@ func (rt *Web) ProblemEditRouter(r chi.Router) {
 
 	r.Get("/test", rt.testIndex())
 	r.Get("/test/add", rt.testAdd())
-	r.With(TestIDValidator(rt.db)).Get("/test/{tid}", rt.testEdit())
+	r.With(rt.TestIDValidator()).Get("/test/{tid}", rt.testEdit())
+	r.With(rt.TestIDValidator()).Get("/test/{tid}/input", rt.testInput())
+	r.With(rt.TestIDValidator()).Get("/test/{tid}/output", rt.testOutput())
 
 	r.Get("/subtasks", rt.subtaskIndex())
 	r.Get("/subtasks/add", rt.subtaskAdd())
-	r.With(SubTaskValidator(rt.db)).Get("/subtasks/{stid}", rt.subtaskEdit())
+	r.With(rt.SubTaskValidator()).Get("/subtasks/{stid}", rt.subtaskEdit())
 }
 
-func TestIDValidator(db kilonova.DB) func(next http.Handler) http.Handler {
+func (rt *Web) TestIDValidator() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			testID, err := strconv.Atoi(chi.URLParam(r, "tid"))
@@ -124,8 +161,8 @@ func TestIDValidator(db kilonova.DB) func(next http.Handler) http.Handler {
 				statusPage(w, r, 400, "Test invalid", false)
 				return
 			}
-			test, err := db.Test(r.Context(), util.Problem(r).ID, testID)
-			if err != nil {
+			test, err1 := rt.base.Test(r.Context(), util.Problem(r).ID, testID)
+			if err1 != nil {
 				log.Println(err)
 				statusPage(w, r, 500, "", false)
 				return
@@ -139,7 +176,7 @@ func TestIDValidator(db kilonova.DB) func(next http.Handler) http.Handler {
 	}
 }
 
-func SubTaskValidator(db kilonova.DB) func(next http.Handler) http.Handler {
+func (rt *Web) SubTaskValidator() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			subtaskID, err := strconv.Atoi(chi.URLParam(r, "stid"))
@@ -147,8 +184,8 @@ func SubTaskValidator(db kilonova.DB) func(next http.Handler) http.Handler {
 				statusPage(w, r, http.StatusBadRequest, "ID invalid", false)
 				return
 			}
-			subtask, err := db.SubTask(r.Context(), util.Problem(r).ID, subtaskID)
-			if err != nil {
+			subtask, err1 := rt.base.SubTask(r.Context(), util.Problem(r).ID, subtaskID)
+			if err1 != nil {
 				log.Println("ValidateSubTaskID:", err)
 				statusPage(w, r, 500, "", false)
 				return

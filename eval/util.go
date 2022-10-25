@@ -1,12 +1,8 @@
 package eval
 
 import (
-	"bytes"
-	"context"
 	"fmt"
 	"io"
-	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -14,13 +10,7 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova/internal/config"
-)
-
-const (
-	releasePrefix = "https://github.com/KiloProjects/isolate/releases/latest/download/"
-	configURL     = releasePrefix + "default.cf"
-	configPath    = "/usr/local/etc/isolate"
-	isolateURL    = releasePrefix + "isolate"
+	"go.uber.org/zap"
 )
 
 func CopyFromBox(b Sandbox, p string, w io.Writer) error {
@@ -47,88 +37,6 @@ func CopyInBox(b Sandbox, p1 string, p2 string) error {
 	}
 
 	return b.WriteFile(p2, file, stat.Mode())
-}
-
-// RunSubmission runs a program, following the language conventions
-// filenames contains the names for input and output, used if consoleInput is true
-func RunSubmission(ctx context.Context, box Sandbox, language Language, constraints Limits, consoleInput bool) (*RunStats, error) {
-
-	var runConf RunConfig
-	runConf.EnvToSet = make(map[string]string)
-
-	// if our specified language is not compiled, then it means that
-	// the mounts specified should be added at runtime
-	if !language.Compiled {
-		runConf.Directories = append(runConf.Directories, language.Mounts...)
-	}
-
-	for key, val := range language.CommonEnv {
-		runConf.EnvToSet[key] = val
-	}
-	for key, val := range language.RunEnv {
-		runConf.EnvToSet[key] = val
-	}
-
-	runConf.MemoryLimit = constraints.MemoryLimit
-	runConf.StackLimit = constraints.StackLimit
-	runConf.TimeLimit = constraints.TimeLimit
-	runConf.WallTimeLimit = constraints.TimeLimit + 4
-	if constraints.TimeLimit == 0 {
-		runConf.WallTimeLimit = 15
-	}
-
-	if consoleInput {
-		runConf.InputPath = "/box/stdin.in"
-		runConf.OutputPath = "/box/stdin.out"
-	}
-
-	goodCmd, err := MakeGoodCommand(language.RunCommand)
-	if err != nil {
-		log.Printf("WARNING: function makeGoodCommand returned an error: %q. This is not good, so we'll use the command from the config file. The supplied command was %#v", err, language.RunCommand)
-		goodCmd = language.RunCommand
-	}
-
-	return box.RunCommand(ctx, goodCmd, &runConf)
-}
-
-// CompileFile compiles a file that has the corresponding language
-func CompileFile(ctx context.Context, box Sandbox, SourceCode []byte, language Language) (string, error) {
-	if err := box.WriteFile(language.SourceName, bytes.NewReader(SourceCode), 0644); err != nil {
-		return "", err
-	}
-
-	var conf RunConfig
-	conf.EnvToSet = make(map[string]string)
-
-	conf.InheritEnv = true
-	conf.Directories = append(conf.Directories, language.Mounts...)
-
-	for key, val := range language.CommonEnv {
-		conf.EnvToSet[key] = val
-	}
-
-	for key, val := range language.BuildEnv {
-		conf.EnvToSet[key] = val
-	}
-
-	goodCmd, err := MakeGoodCommand(language.CompileCommand)
-	if err != nil {
-		log.Printf("WARNING: function makeGoodCommand returned an error: %q. This is not good, so we'll use the command from the config file. The supplied command was %#v", err, language.CompileCommand)
-		goodCmd = language.CompileCommand
-	}
-
-	var out bytes.Buffer
-	conf.Stdout = &out
-	conf.Stderr = &out
-
-	_, err = box.RunCommand(ctx, goodCmd, &conf)
-	combinedOut := out.String()
-
-	if err != nil {
-		return combinedOut, err
-	}
-
-	return combinedOut, box.RemoveFile(language.SourceName)
 }
 
 // makeGoodCommand makes sure it's a full path (with no symlinks) for the command.
@@ -177,31 +85,31 @@ func checkLanguages() {
 		}
 		if len(toSearch) == 0 {
 			disableLang(k)
-			log.Printf("Language %q was disabled because of empty line\n", k)
+			zap.S().Infof("Language %q was disabled because of empty line", k)
 			continue
 		}
 		cmd, err := exec.LookPath(toSearch[0])
 		if err != nil {
 			disableLang(k)
-			log.Printf("Language %q was disabled because the compiler/interpreter was not found in PATH\n", k)
+			zap.S().Infof("Language %q was disabled because the compiler/interpreter was not found in PATH", k)
 			continue
 		}
 		cmd, err = filepath.EvalSymlinks(cmd)
 		if err != nil {
 			disableLang(k)
-			log.Printf("Language %q was disabled because the compiler/interpreter had a bad symlink\n", k)
+			zap.S().Infof("Language %q was disabled because the compiler/interpreter had a bad symlink", k)
 			continue
 		}
 		stat, err := os.Stat(cmd)
 		if err != nil {
 			disableLang(k)
-			log.Printf("Language %q was disabled because the compiler/interpreter binary was not found\n", k)
+			zap.S().Infof("Language %q was disabled because the compiler/interpreter binary was not found", k)
 			continue
 		}
 
 		if stat.Mode()&0111 == 0 {
 			disableLang(k)
-			log.Printf("Language %q was disabled because the compiler/interpreter binary is not executable\n", k)
+			zap.S().Infof("Language %q was disabled because the compiler/interpreter binary is not executable", k)
 		}
 
 	}
@@ -212,20 +120,7 @@ func Initialize() error {
 
 	// Test right now if they exist
 	if _, err := os.Stat(config.Eval.IsolatePath); os.IsNotExist(err) {
-		// download isolate
-		fmt.Println("Downloading isolate binary")
-		if err := downloadFile(isolateURL, config.Eval.IsolatePath, 0744); err != nil {
-			return err
-		}
-		fmt.Println("Isolate binary downloaded")
-	}
-	if _, err := os.Stat(config.Eval.IsolatePath); os.IsNotExist(err) {
-		// download the config file
-		fmt.Println("Downloading isolate config")
-		if err := downloadFile(configURL, config.Eval.IsolatePath, 0644); err != nil {
-			return err
-		}
-		fmt.Println("Isolate config downloaded")
+		zap.S().Fatal("Sandbox binary not found. Run scripts/init_isolate.sh to properly install it.")
 	}
 
 	if err := os.MkdirAll(config.Eval.CompilePath, 0777); err != nil {
@@ -235,24 +130,4 @@ func Initialize() error {
 	checkLanguages()
 
 	return nil
-}
-
-func downloadFile(url, path string, perm os.FileMode) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = io.Copy(file, resp.Body)
-	if err != nil {
-		return err
-	}
-
-	return file.Chmod(perm)
 }

@@ -2,6 +2,7 @@ package web
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"html/template"
@@ -10,29 +11,28 @@ import (
 	"log"
 	"net/http"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/api"
-	"github.com/KiloProjects/kilonova/archive/kna"
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
-func (rt *Web) index() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) index() http.HandlerFunc {
 	templ := rt.parse(nil, "index.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		runTempl(w, r, templ, &IndexParams{GenContext(r), kilonova.Version, config.Index})
+		runTempl(w, r, templ, &IndexParams{GenContext(r), kilonova.Version})
 	}
 }
 
-func (rt *Web) problems() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) problems() http.HandlerFunc {
 	templ := rt.parse(nil, "pbs.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		runTempl(w, r, templ, &IndexParams{GenContext(r), kilonova.Version, config.Index})
+		runTempl(w, r, templ, &IndexParams{GenContext(r), kilonova.Version})
 	}
 }
 
@@ -43,28 +43,28 @@ func (rt *Web) justRender(files ...string) http.HandlerFunc {
 	}
 }
 
-func (rt *Web) pbListView() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) pbListView() http.HandlerFunc {
 	templ := rt.parse(nil, "lists/view.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		runTempl(w, r, templ, &ProblemListParams{GenContext(r), util.ProblemList(r)})
 	}
 }
 
-func (rt *Web) admin() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) admin() http.HandlerFunc {
 	templ := rt.parse(nil, "admin/admin.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		runTempl(w, r, templ, &AdminParams{GenContext(r), config.Index.Description, config.Index.ShowProblems, kilonova.SerializeIntList(config.Index.Lists)})
+		runTempl(w, r, templ, &SimpleParams{GenContext(r)})
 	}
 }
 
-func (rt *Web) submission() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) submission() http.HandlerFunc {
 	templ := rt.parse(nil, "submission.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		runTempl(w, r, templ, &SubParams{GenContext(r), util.Submission(r)})
 	}
 }
 
-func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) problem() http.HandlerFunc {
 	templ := rt.parse(nil, "pb.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		problem := util.Problem(r)
@@ -72,24 +72,25 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 		buf, err := rt.rd.Render([]byte(problem.Description))
 		if err != nil {
 			log.Println("Rendering markdown:", err)
+			return
 		}
 
-		author, err := rt.db.User(r.Context(), problem.AuthorID)
-		if err != nil {
-			log.Println("Getting author:", err)
+		author, err1 := rt.base.UserBrief(r.Context(), problem.AuthorID)
+		if err1 != nil {
+			log.Println("Getting author:", err1)
 			statusPage(w, r, 500, "Couldn't get author", false)
 			return
 		}
 
-		atts, err := rt.db.Attachments(r.Context(), false, kilonova.AttachmentFilter{ProblemID: &util.Problem(r).ID})
-		if err != nil || len(atts) == 0 {
+		atts, err1 := rt.base.ProblemAttachments(r.Context(), util.Problem(r).ID)
+		if err1 != nil || len(atts) == 0 {
 			atts = nil
 		}
 
 		if atts != nil {
 			newAtts := make([]*kilonova.Attachment, 0, len(atts))
 			for _, att := range atts {
-				if att.Visible || util.IsProblemEditor(util.User(r), problem) {
+				if att.Visible || util.IsProblemEditor(util.UserBrief(r), problem) {
 					newAtts = append(newAtts, att)
 				}
 			}
@@ -97,120 +98,128 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 			atts = newAtts
 		}
 
+		langs := eval.Langs
+		if evalSettings, err := rt.base.GetProblemSettings(r.Context(), util.Problem(r).ID); err != nil {
+			log.Println("Getting problem settings:", err, util.Problem(r).ID)
+			statusPage(w, r, 500, "Couldn't get problem settings", false)
+		} else if evalSettings.OnlyCPP {
+			newLangs := make(map[string]eval.Language)
+			for name, lang := range langs {
+				if strings.HasPrefix(name, "cpp") {
+					newLangs[name] = lang
+				}
+			}
+			langs = newLangs
+		}
+
 		runTempl(w, r, templ, &ProblemParams{
 			Ctx:           GenContext(r),
-			ProblemEditor: util.IsProblemEditor(util.User(r), util.Problem(r)),
+			ProblemEditor: util.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
 
 			Problem:     util.Problem(r),
 			Author:      author,
 			Attachments: atts,
 
 			Markdown:  template.HTML(buf),
-			Languages: eval.Langs,
+			Languages: langs,
 		})
 	}
 }
 
-func (rt *Web) selfProfile() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) selfProfile() http.HandlerFunc {
 	templ := rt.parse(nil, "profile.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		pbs, err := kilonova.SolvedProblems(r.Context(), util.User(r).ID, rt.db)
+		pbs, err := rt.base.SolvedProblems(r.Context(), util.UserBrief(r).ID)
 		if err != nil {
 			Status(w, &StatusParams{GenContext(r), 500, "", false})
 			return
 		}
-		runTempl(w, r, templ, &ProfileParams{GenContext(r), util.User(r), pbs})
+		runTempl(w, r, templ, &ProfileParams{GenContext(r), util.UserFull(r), pbs})
 	}
 }
 
-func (rt *Web) profile() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) profile() http.HandlerFunc {
 	templ := rt.parse(nil, "profile.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		name := strings.TrimSpace(chi.URLParam(r, "user"))
-		users, err := rt.db.Users(r.Context(), kilonova.UserFilter{Name: &name})
+		user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "user")))
 		if err != nil {
 			fmt.Println(err)
 			Status(w, &StatusParams{GenContext(r), 500, "", false})
 			return
 		}
-		if len(users) == 0 {
+		if user == nil {
 			Status(w, &StatusParams{GenContext(r), 404, "", false})
 			return
 		}
 
-		pbs, err := kilonova.SolvedProblems(r.Context(), users[0].ID, rt.db)
-		if err != nil {
+		pbs, err1 := rt.base.SolvedProblems(r.Context(), user.ID)
+		if err1 != nil {
 			Status(w, &StatusParams{GenContext(r), 500, "", false})
 			return
 		}
 
-		runTempl(w, r, templ, &ProfileParams{GenContext(r), users[0], util.FilterVisible(util.User(r), pbs)})
+		runTempl(w, r, templ, &ProfileParams{GenContext(r), user, util.FilterVisible(util.UserBrief(r), pbs)})
 	}
 }
 
-func (rt *Web) resendEmail() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) resendEmail() http.HandlerFunc {
 	templ := rt.parse(nil, "util/sent.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		u := util.User(r)
+		u := util.UserFull(r)
 		if u.VerifiedEmail {
 			Status(w, &StatusParams{GenContext(r), 403, "Deja ai verificat email-ul!", false})
 			return
 		}
-		t := time.Now().Sub(u.EmailVerifSentAt.Time)
+		t := time.Since(u.EmailVerifResent)
 		if t < 5*time.Minute {
 			text := fmt.Sprintf("Trebuie să mai aștepți %s până poți retrimite email de verificare", (5*time.Minute - t).Truncate(time.Millisecond))
 			Status(w, &StatusParams{GenContext(r), 403, text, false})
 			return
 		}
-		if err := kilonova.SendVerificationEmail(u, rt.db, rt.mailer); err != nil {
-			log.Println(err)
+		if err := rt.base.SendVerificationEmail(context.Background(), u.ID, u.Name, u.Email); err != nil {
+			zap.S().Warn(err)
 			Status(w, &StatusParams{GenContext(r), 500, "N-am putut retrimite email-ul de verificare", false})
 			return
 		}
 
-		now := time.Now()
-		if err := rt.db.UpdateUser(r.Context(), u.ID, kilonova.UserUpdate{EmailVerifSentAt: &now}); err != nil {
-			log.Println("Couldn't update verification email timestamp:", err)
-		}
 		runTempl(w, r, templ, &SimpleParams{GenContext(r)})
 	}
 }
 
-func (rt *Web) verifyEmail() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) verifyEmail() http.HandlerFunc {
 	templ := rt.parse(nil, "verified-email.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		vid := chi.URLParam(r, "vid")
-		if !kilonova.CheckVerificationEmail(rt.db, vid) {
+		if !rt.base.CheckVerificationEmail(r.Context(), vid) {
 			Status(w, &StatusParams{GenContext(r), 404, "", false})
 			return
 		}
 
-		uid, err := rt.db.GetVerification(r.Context(), vid)
+		uid, err := rt.base.GetVerificationUser(r.Context(), vid)
 		if err != nil {
 			log.Println(err)
 			Status(w, &StatusParams{GenContext(r), 404, "", false})
 			return
 		}
 
-		user, err := rt.db.User(r.Context(), uid)
-		if err != nil {
+		user, err1 := rt.base.UserBrief(r.Context(), uid)
+		if err1 != nil {
+			log.Println(err1)
+			Status(w, &StatusParams{GenContext(r), 404, "", false})
+			return
+		}
+
+		if err := rt.base.ConfirmVerificationEmail(vid, user); err != nil {
 			log.Println(err)
 			Status(w, &StatusParams{GenContext(r), 404, "", false})
 			return
 		}
 
-		// Do this to disable the popup
-		if util.User(r) != nil && user.ID == util.User(r).ID {
-			util.User(r).VerifiedEmail = true
-		}
+		// rebuild session for user to disable popup
+		rt.initSession(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			runTempl(w, r, templ, &VerifiedEmailParams{GenContext(r), user})
+		}))
 
-		if err := kilonova.ConfirmVerificationEmail(rt.db, vid, user); err != nil {
-			log.Println(err)
-			Status(w, &StatusParams{GenContext(r), 404, "", false})
-			return
-		}
-
-		runTempl(w, r, templ, &VerifiedEmailParams{GenContext(r), user})
 	}
 }
 
@@ -227,54 +236,41 @@ func (rt *Web) logout(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	rt.db.RemoveSession(r.Context(), c.Value)
+	rt.base.RemoveSession(r.Context(), c.Value)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func (rt *Web) problemAttachment(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "aid")
-	att, err := rt.db.Attachments(r.Context(), true, kilonova.AttachmentFilter{ProblemID: &util.Problem(r).ID, Name: &name})
-	if err != nil || att == nil || len(att) == 0 {
+	att, err := rt.base.AttachmentByName(r.Context(), util.Problem(r).ID, name)
+	if err != nil || att == nil {
 		http.Error(w, "The attachment doesn't exist", 400)
 		return
 	}
-	if att[0].Private && !util.IsProblemEditor(util.User(r), util.Problem(r)) {
+	if att.Private && !util.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
 		http.Error(w, "You aren't allowed to download the attachment!", 400)
 		return
 	}
-	http.ServeContent(w, r, att[0].Name, time.Now(), bytes.NewReader(att[0].Data))
-}
+	attData, err := rt.base.AttachmentData(r.Context(), att.ID)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Couldn't get attachment data", 500)
+		return
+	}
 
-func (rt *Web) genKNA(w http.ResponseWriter, r *http.Request) {
-	problems := r.FormValue("pbs")
-	if problems == "" {
-		http.Error(w, "No problems specified", 400)
-		return
-	}
-	pbIDs, ok := api.DecodeIntString(problems)
-	if !ok {
-		http.Error(w, "Invalid problem string", 400)
-		return
-	}
-	pbs := make([]*kilonova.Problem, 0, len(pbIDs))
-	for _, id := range pbIDs {
-		pb, err := rt.db.Problem(r.Context(), id)
-		if err != nil || pb == nil {
-			log.Println(err)
-			http.Error(w, "One of the problem IDs is invalid", 400)
+	// If markdown file and client asks for HTML format, render the markdown
+	if path.Ext(name) == ".md" && r.FormValue("format") == "html" {
+		data, err := rt.rd.Render(attData)
+		if err != nil {
+			zap.S().Warn(err)
+			http.Error(w, "Could not render file", 500)
 			return
 		}
-		pbs = append(pbs, pb)
-	}
-	rd, err := kna.Generate(pbs, rt.db, rt.dm)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
+		http.ServeContent(w, r, att.Name+".html", time.Now(), bytes.NewReader(data))
 		return
 	}
-	defer rd.Close()
-	w.Header().Add("Content-Type", "application/vnd.sqlite3")
-	w.Header().Add("Content-Disposition", `attachment; filename="archive.kna"`)
-	http.ServeContent(w, r, "archive.kna", time.Now(), rd)
+
+	http.ServeContent(w, r, att.Name, time.Now(), bytes.NewReader(attData))
 }
 
 func (rt *Web) docs() http.HandlerFunc {
@@ -360,7 +356,33 @@ func (rt *Web) docs() http.HandlerFunc {
 	}
 }
 
-func runTempl(w io.Writer, r *http.Request, templ *template.Template, data interface{}) {
+func (rt *Web) subtestOutput(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "st_id"))
+	if err != nil {
+		http.Error(w, "Bad ID", 400)
+		return
+	}
+	subtest, err1 := rt.base.SubTest(r.Context(), id)
+	if err1 != nil {
+		http.Error(w, "Invalid subtest", 400)
+		return
+	}
+	if _, err := rt.base.Submission(r.Context(), subtest.SubmissionID, util.UserBrief(r)); err != nil {
+		log.Println(err)
+		http.Error(w, "You aren't allowed to do that", 500)
+		return
+	}
+	rc, err := rt.base.SubtestReader(subtest.ID)
+	if err != nil {
+		http.Error(w, "The subtest may have been purged as a routine data-saving process", 404)
+		return
+	}
+	defer rc.Close()
+	http.ServeContent(w, r, "subtest.out", time.Now(), rc)
+}
+
+// func runTempl(w io.Writer, r *http.Request, templ *template.Template, data any) {
+func runTempl(w io.Writer, r *http.Request, templ executor, data any) {
 	if err := templ.Execute(w, data); err != nil {
 		fmt.Fprintf(w, "Error executing template, report to admin: %s", err)
 	}

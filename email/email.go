@@ -20,7 +20,7 @@ type emailer struct {
 func (e *emailer) SendEmail(msg *kilonova.MailerMessage) error {
 	em := email.NewEmail()
 
-	em.From = e.from
+	em.From = "noreply@kilonova.ro" // TODO: Do not make constant
 	em.To = []string{msg.To}
 	if msg.ReplyTo != "" {
 		em.ReplyTo = []string{msg.ReplyTo}
@@ -38,5 +38,5 @@ func NewMailer() (kilonova.Mailer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &emailer{config.Email.Host, smtp.PlainAuth("", config.Email.Username, config.Email.Password, host), config.Email.Username}, nil
+	return &emailer{config.Email.Host, smtp.PlainAuth("", config.Email.Username, config.Email.Password, host), config.Email.SendAs}, nil
 }

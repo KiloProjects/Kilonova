@@ -20,8 +20,4 @@
  host = "HOST"
  username = "USERNAME"
  password = "PASSWORD"
-
-[index]
- lists_to_show = []
- show_problems = true
- description = "I haven't yet configured Kilonova, the next-gen programming platform that I am using right now."
+ sendAs = "noreply@kilonova.ro"

@@ -2,38 +2,16 @@
 {{ define "content" }}
 <h1>Kilonova {{.Version}}</h1>
 
-<p class="text-gray-600 dark:text-gray-300 text-sm">{{ getText .Ctx.Language "announcement" `<a target="_blank" rel="noopener noreferrer" href="https://discord.gg/Qa6Ytgh">Discord</a>` }} </p>
-<div class="alert alert-red">
-	{{ .Config.Description }}
-</div>
+<p class="text-gray-600 dark:text-gray-300 text-sm">{{ getText .Ctx.Language "announcement"}} <a target="_blank" rel="noopener noreferrer" href="https://discord.gg/Qa6Ytgh">Discord</a> </p>
 <br />
 {{ $user := .Ctx.User }}
 {{ $root := . }}
 {{ $ctx := .Ctx }}
 
-{{ range .Config.Lists }}
-	{{ with problemList . }}
-		<div class="segment-container">
-			<span class="flex justify-between">
-				<h1 class="inline">{{.Title}}</h1>
-				<span>{{if $user}} {{ getText $ctx.Language "num_solved" (numSolved $user .List) (len .List) }}{{end}}</span>
-			</span>
-			{{ if .Description }}<h2>{{renderMarkdown .Description}}</h2>{{end}}
-			{{ with (listProblems $user .) }}
-				{{ template "pb_list_group" (genPbListParams $user $ctx.Language .) }}
-			{{ else }}
-				<p> {{ getText $ctx.Language "noListProblems" }} </p>
-			{{ end }}
-		</div>
-	{{ end }}
-{{ end }}
-
-{{ if .Config.ShowProblems }}
-	{{ with visibleProblems $user }}
-		<h2 class="text-2xl mb-2"> {{ getText $ctx.Language "problems" }} </h2>
-		{{ template "pb_list_group" (genPbListParams $user $ctx.Language .) }}
-		<div class="mb-6"></div>
-	{{ end }} 
-{{ end }}
+{{ with visibleProblems $user.Brief }}
+	<h2 class="text-2xl mb-2"> {{ getText $ctx.Language "problems" }} </h2>
+	{{ template "pb_list_group" (genPbListParams $user.Brief $ctx.Language .) }}
+	<div class="mb-6"></div>
+{{ end }} 
 <br />
 {{end}}

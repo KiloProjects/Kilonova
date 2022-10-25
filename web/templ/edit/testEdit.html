@@ -1,4 +1,4 @@
-{{ define "title" }} {{getText .Ctx.Language "editTestEdit" .Test.VisibleID .Problem.ID .Problem.Name}} {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "title.edit.test_edit" .Test.VisibleID .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 <br/>
@@ -65,7 +65,6 @@ async function removeTest(e) {
 	bundled.apiToast(res);
 }
 document.getElementById("test_edit_form").addEventListener("submit", updateData)
-document.getElementById("test_score_edit_form").addEventListener("submit", updateScore)
 document.getElementById("test_id_edit_form").addEventListener("submit", updateID)
 document.getElementById("orphan_button").addEventListener("click", removeTest)
 </script>

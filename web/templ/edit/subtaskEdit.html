@@ -1,4 +1,4 @@
-{{ define "title" }}{{getText .Ctx.Language "editSubtaskEdit" .SubTask.VisibleID}}{{ end }}
+{{ define "title" }}{{getText .Ctx.Language "title.edit.subtask_edit" .SubTask.VisibleID}}{{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
@@ -6,7 +6,7 @@
 {{ $lang := .Ctx.Language }}
 
 <form class="segment-container" id="subtask-update">
-	<h2> {{getText .Ctx.Language "editSubtaskEdit" .SubTask.VisibleID}} </h2>
+	<h2> {{getText .Ctx.Language "title.edit.subtask_edit" .SubTask.VisibleID}} </h2>
 	{{ if not (len .SubTask.Tests) }} {{getText $lang "emptySubTask"}} {{ end }}
 
 	{{ with .ProblemTests }}
@@ -61,21 +61,19 @@ async function updateSubTask(e) {
 		subtask_id: {{.SubTask.VisibleID}},
 		new_id: document.getElementById('subtask-id').value,
 		score: document.getElementById('subtask-score').value,
-		tests: ""
+		tests: []
 	};
 	
-	let tests = [];
 	for(let e of document.querySelectorAll("[id^='row-test-']")) {
 		let id = rowreg.exec(e.id)[1];
 		let checked = document.getElementById(`pb-test-${id}`).checked;
 		if(checked) {
-			tests.push(id);
+			data.tests.push(id);
 		}
 	}
 
-	data.tests = tests.join(',');
 	console.log(data);
-	let res = await bundled.postCall(`/problem/${pbid}/update/updateSubTask`, data)
+	let res = await bundled.bodyCall(`/problem/${pbid}/update/updateSubTask`, data)
 	if(res.status === "success") {
 		window.location.assign(`/problems/${pbid}/edit/subtasks/${data.new_id}`);
 		return;

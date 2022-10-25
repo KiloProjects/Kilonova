@@ -1,31 +1,30 @@
 package kilonova
 
 import (
-	"database/sql"
-	"errors"
-	"log"
 	"time"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
-type User struct {
-	ID             int       `json:"id"`
-	CreatedAt      time.Time `json:"created_at" db:"created_at"`
-	Name           string    `json:"name"`
-	Admin          bool      `json:"admin"`
-	Proposer       bool      `json:"proposer"`
-	Email          string    `json:"email"`
-	Password       string    `json:"-"`
-	Bio            string    `json:"bio"`
-	DefaultVisible bool      `json:"default_visible" db:"default_visible"`
+type UserBrief struct {
+	ID       int    `json:"id"`
+	Name     string `json:"name"`
+	Admin    bool   `json:"admin"`
+	Proposer bool   `json:"proposer"`
+	Bio      string `json:"bio,omitempty"`
+}
 
-	VerifiedEmail     bool         `json:"verified_email" db:"verified_email"`
-	EmailVerifSentAt  sql.NullTime `json:"-" db:"email_verif_sent_at"`
-	PreferredLanguage string       `json:"-" db:"preferred_language"`
+type UserFull struct {
+	UserBrief
+	Email             string    `json:"email,omitempty"`
+	VerifiedEmail     bool      `json:"verified_email"`
+	PreferredLanguage string    `json:"preferred_language"`
+	EmailVerifResent  time.Time `json:"-"`
+}
 
-	Banned   bool `json:"banned,omitempty"`
-	Disabled bool `json:"disabled,omitempty"`
+func (uf *UserFull) Brief() *UserBrief {
+	if uf == nil {
+		return nil
+	}
+	return &uf.UserBrief
 }
 
 // UserFilter is the struct with all filterable fields on the user
@@ -40,50 +39,30 @@ type UserFilter struct {
 	Admin    *bool `json:"admin"`
 	Proposer *bool `json:"proposer"`
 
-	Verified *bool `json:"verified"`
-	Banned   *bool `json:"banned"`
-	Disabled *bool `json:"disabled"`
-
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
 }
 
-// UserUpdate is the struct with all updatable fields on the user
+// UserUpdate is the struct with updatable fields that can be easily changed.
+// Stuff like admin and proposer should be updated through their dedicated
+// SudoAPI methods
 type UserUpdate struct {
 	//Name    *string `json:"name"`
-	Email   *string `json:"email"`
-	PwdHash *string `json:"pwd_hash"`
+
+	Bio *string `json:"bio"`
+
+	PreferredLanguage string `json:"-"`
+}
+
+// UserFullUpdate is the struct with all updatable fields on the user
+type UserFullUpdate struct {
+	UserUpdate
+
+	Email *string `json:"email"`
 
 	Admin    *bool `json:"admin"`
 	Proposer *bool `json:"proposer"`
 
-	Bio            *string `json:"bio"`
-	DefaultVisible *bool   `json:"default_visible"`
-
-	VerifiedEmail     *bool      `json:"verified_email"`
-	EmailVerifSentAt  *time.Time `json:"-"`
-	PreferredLanguage string     `json:"-"`
-
-	Banned   *bool `json:"banned"`
-	Disabled *bool `json:"disabled"`
-}
-
-func HashPassword(password string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hash), err
-}
-
-func CheckPwdHash(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-		return false
-	}
-	if err != nil {
-		log.Println(err)
-		return false
-	}
-	return true
+	VerifiedEmail    *bool      `json:"verified_email"`
+	EmailVerifSentAt *time.Time `json:"-"`
 }
