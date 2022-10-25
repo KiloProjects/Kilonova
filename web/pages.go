@@ -272,7 +272,8 @@ type executor interface {
 	Execute(io.Writer, any) error
 }
 
-func doWalk(nodes ...tparse.Node) {
+func doWalk(filename string, nodes ...tparse.Node) bool {
+	ok := true
 	for _, node := range nodes {
 		tp := reflect.Indirect(reflect.ValueOf(node))
 		if val := tp.FieldByName("List"); val.IsValid() {
@@ -283,14 +284,14 @@ func doWalk(nodes ...tparse.Node) {
 				if nodes.Kind() != reflect.Slice {
 					panic("Wtf")
 				}
-				doWalk(nodes.Interface().([]tparse.Node)...)
+				ok = ok && doWalk(filename, nodes.Interface().([]tparse.Node)...)
 			}
 		}
 		if nodes := tp.FieldByName("Nodes"); nodes.IsValid() {
 			if nodes.Kind() != reflect.Slice {
 				panic("Wtf")
 			}
-			doWalk(nodes.Interface().([]tparse.Node)...)
+			ok = ok && doWalk(filename, nodes.Interface().([]tparse.Node)...)
 		}
 		//spew.Dump(node.Type(), node.Position(), node.String())
 		if rnode, ok := node.(*tparse.ActionNode); ok {
@@ -304,12 +305,14 @@ func doWalk(nodes ...tparse.Node) {
 				}
 				key := cmd.Args[2].(*tparse.StringNode).Text
 				if !hasTranslationKey(key) {
-					log.Fatalf("Template static analysis failed: Unknown translation key %q\n", key)
+					zap.S().Infof("Template static analysis failed: Unknown translation key %q in file %s", key, filename)
+					ok = false
 				}
 			}
 			//spew.Dump(rnode)
 		}
 	}
+	return ok
 }
 
 func parse(optFuncs template.FuncMap, files ...string) executor { //*template.Template {
@@ -322,7 +325,7 @@ func parse(optFuncs template.FuncMap, files ...string) executor { //*template.Te
 		t = t.Funcs(optFuncs)
 	}
 	files = append(files, "util/navbar.html", "util/footer.html")
-	if config.Common.Debug && false {
+	if true { //config.Common.Debug { // && false {
 		f, err := fs.ReadFile(templs, files[0])
 		if err != nil {
 			log.Fatal(err)
@@ -332,7 +335,7 @@ func parse(optFuncs template.FuncMap, files ...string) executor { //*template.Te
 			log.Fatal(err)
 		}
 		tree := ptrees["content"]
-		doWalk(tree.Root)
+		doWalk(files[0], tree.Root)
 	}
 	return template.Must(t.ParseFS(templs, append([]string{"layout.html"}, files...)...))
 }

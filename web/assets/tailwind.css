@@ -260,10 +260,10 @@
 		font-family: "Font Awesome 5 Free";
 		font-weight: 900;
 		@apply text-gray-600 dark:text-gray-200 ml-2;
-		content: "\f0d8";
+		content: "\f0d7";
 	}
 	details[open] > summary::after {
-		content: "\f0d7";
+		content: "\f0d8";
 	}
 	summary {
 		@apply cursor-pointer;
@@ -353,6 +353,11 @@
 	}
 
 	pre {
+		white-space: pre-wrap;       /* Since CSS 2.1 */
+		white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+		white-space: -pre-wrap;      /* Opera 4-6 */
+		white-space: -o-pre-wrap;    /* Opera 7 */
+		word-wrap: break-word;       /* Internet Explorer 5.5+ */
 		tab-size: 4;
 		@apply break-normal;
 		@apply bg-hljs rounded-lg px-2 mt-1 mb-1;

@@ -1,7 +1,7 @@
 {{ define "title" }} {{ getText .Ctx.Language "problems" }}{{ end }}
 {{ define "content" }}
 
-{{ $user := .Ctx.User }}
+{{ $user := .Ctx.User.Brief }}
 {{ $root := . }}
 {{ with visibleProblems $user }}
 	<h2 class="text-2xl mb-2"> {{ getText $root.Ctx.Language "problems" }} </h2>	

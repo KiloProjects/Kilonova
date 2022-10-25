@@ -1,6 +1,6 @@
-{{ define "title" }} {{getText .Ctx.Language "signUp"}} {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "auth.signup"}} {{ end }}
 {{ define "content" }}
-<h1 class="mb-2">{{getText .Ctx.Language "signUp"}}</h1>
+<h1 class="mb-2">{{getText .Ctx.Language "auth.signup"}}</h1>
 <form class="segment-container" id="signup_form">
 	<label class="block mb-2">
 		<span>{{getText .Ctx.Language "email"}}</span>
@@ -18,7 +18,7 @@
 		<span>{{getText .Ctx.Language "passwordCheck"}}</span>
 		<input class="form-input w-full" type="password" id="pwd_check" name="pwd_check" autocomplete="new-password" required />
 	</label>
-	<button type="submit" class="block btn btn-blue">{{getText .Ctx.Language "signUp"}}</button>
+	<button type="submit" class="block btn btn-blue">{{getText .Ctx.Language "auth.signup"}}</button>
 	<p class="text-gray-500 dark:text-gray-300"> {{getText .Ctx.Language "loginReminder"}}</p>
 </form>
 

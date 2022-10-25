@@ -2,7 +2,7 @@
 {{ define "content" }}
 
 {{ $root := . }}
-{{ $user := .Ctx.User }}
+{{ $user := .Ctx.User.Brief }}
 {{ $ctx := .Ctx }}
 
 {{ if $user }}
@@ -15,12 +15,14 @@
 			<h1 class="inline"><a href="/problem_lists/{{.ID}}">#{{.ID}}</a> {{.Title}}</h1>
 			<span>{{if $user}} {{ getText $ctx.Language "num_solved" (numSolved $user .List) (len .List) }}{{end}}</span>
 		</span>
-		{{ if .Description }}<h2>{{renderMarkdown .Description}}</h2>{{end}}
-		{{ with (listProblems $user .) }}
-			{{ template "pb_list_group" (genPbListParams $user $root.Ctx.Language .) }}
-		{{ else }}
-			<p> {{ getText $ctx.Language "problem.none_in_list" }} </p>
-		{{ end }}
+		{{ if .Description }}<div class="my-1">{{renderMarkdown .Description}}</div>{{end}}
+		<div class="mt-2">
+			{{ with (listProblems $user .) }}
+				{{ template "pb_list_group" (genPbListParams $user $root.Ctx.Language .) }}
+			{{ else }}
+				<p> {{ getText $ctx.Language "problem.none_in_list" }} </p>
+			{{ end }}
+		</div>
 	</div>
 {{ else }}
 	<p> {{getText $root.Ctx.Language "problem_list.none"}} </p>

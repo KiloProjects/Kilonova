@@ -1,7 +1,7 @@
 {{ define "title" }} {{getText .Ctx.Language "title.list" .ProblemList.ID}} {{ end }}
 {{ define "content" }}
 
-{{ $user := .Ctx.User }}
+{{ $user := .Ctx.User.Brief }}
 {{ $root := . }}
 {{ $ctx := .Ctx }}
 {{ with .ProblemList }}
@@ -10,12 +10,14 @@
 			<h1 class="inline"><a href="/problem_lists/{{.ID}}">#{{.ID}}</a> {{.Title}}</h1>
 			<span>{{if $user}} {{ getText $ctx.Language "num_solved" (numSolved $user .List) (len .List) }}{{end}}</span>
 		</span>
-		{{ if .Description }}<h2>{{renderMarkdown .Description}}</h2>{{end}}
-		{{ with (listProblems $user .) }}
-			{{ template "pb_list_group" (genPbListParams $user $root.Ctx.Language .) }}
-		{{ else }}
-			<p> {{ getText $ctx.Language "noListProblems" }} </p>
-		{{ end }}
+		{{ if .Description }}<div class="my-1">{{renderMarkdown .Description}}</div>{{end}}
+		<div class="mt-2">
+			{{ with (listProblems $user .) }}
+				{{ template "pb_list_group" (genPbListParams $user $root.Ctx.Language .) }}
+			{{ else }}
+				<p> {{ getText $ctx.Language "noListProblems" }} </p>
+			{{ end }}
+		</div>
 	</div>
 	{{ if $user }}
 	{{ if or (eq $user.ID .AuthorID) $user.Admin }}
@@ -29,29 +31,50 @@
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">{{getText $root.Ctx.Language "desc"}}: </span>
-				<input type="text" id="pblist-desc" class="form-input" value="{{.Description}}">
-			</label>
-		</div>
-		<div class="block my-2">
-			<label>
 				<span class="form-label">{{getText $root.Ctx.Language "pbs"}}:</span>
 				<input type="text" id="pblist-list" class="form-input" pattern="([0-9]+,?)+" value="{{intList .List}}">
+			</label>
+		</div>
+		<div class="block mt-2 mb-4">
+			<label>
+				<span class="form-label">{{getText $root.Ctx.Language "desc"}}: </span>
+				<textarea id="desc_tarea" class="hidden">{{- .Description -}}</textarea>
+				{{/* <input type="text" id="pblist-desc" class="form-input" value="{{.Description}}"> */}}
 			</label>
 		</div>
 		<button class="btn btn-blue mr-2" type="submit">{{getText $root.Ctx.Language "button.update"}}</button>
         <button id="delButton" class="btn btn-red">{{getText $root.Ctx.Language "button.delete"}}</button>
 	</form>
 <script>
+let problemListID = {{.ID}};
+var cm = CodeMirror.fromTextArea(document.getElementById("desc_tarea"), {
+	mode: {
+		name: "gfm",
+		gitHubSpice: false,
+		emoji: false,
+	}
+});
+cm.setSize(null, "100%");
+
+
 async function updateProblemList(e) {
 	e.preventDefault();
 	let data = {
-		id: {{.ID}},
+		id: problemListID,
 		title: document.getElementById("pblist-title").value,
-		description: document.getElementById("pblist-desc").value,
-		list: document.getElementById("pblist-list").value,
+		description: cm.getValue(), //document.getElementById("pblist-desc").value,
+		list: []
 	};
-	let res = await bundled.postCall("/problemList/update", data)
+    for(let id of document.getElementById("pblist-list").value.split(',').map((val) => parseInt(val))) {
+        if(!isNaN(id)) {
+            console.log(id)
+            data.list.push(id)
+        }
+    }
+
+    console.log(JSON.stringify(data))
+
+	let res = await bundled.bodyCall("/problemList/update", data)
 	if(res.status === "success") {
 		window.location.reload();
 		return
@@ -61,7 +84,7 @@ async function updateProblemList(e) {
 async function deleteProblemList(e) {
     e.preventDefault();
     let data = {
-        id: {{.ID}}
+        id: problemListID
     }
     let res = await bundled.postCall("/problemList/delete", data)
     if(res.status === "success") {

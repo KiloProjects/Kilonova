@@ -119,7 +119,7 @@ function Summary({ sub }) {
 									{getText("maxTime")}
 								</td>
 								<td class="kn-table-cell">
-									{Math.floor(sub.max_time * 1000)} ms
+									{sub.max_time == -1 ? '-' : `${Math.floor(sub.max_time * 1000)} ms`}
 								</td>
 							</tr>
 							<tr class="kn-table-simple-border">
@@ -127,7 +127,7 @@ function Summary({ sub }) {
 									{getText("maxMemory")}
 								</td>
 								<td class="kn-table-cell">
-									{sizeFormatter(
+									{sub.max_memory == -1 ? '-' : sizeFormatter(
 										sub.max_memory * 1024,
 										1,
 										true
@@ -148,9 +148,9 @@ function CompileErrorInfo({ sub }) {
 			return (
 				<details>
 					<summary>
-						<h3 class="inline-block">{getText("compileMsg")}:</h3>
+						<h2 class="inline-block">{getText("compileMsg")}</h2>
 					</summary>
-					<pre>{sub.compile_message.String}</pre>
+					<pre class="mb-2">{sub.compile_message.String}</pre>
 				</details>
 			);
 		}
@@ -162,9 +162,9 @@ function CompileErrorInfo({ sub }) {
 			<h2>{getText("compileErr")}</h2>
 			<details open={true}>
 				<summary>
-					<h2 class="inline-block">{getText("compileMsg")}:</h2>
+					<h2 class="inline-block">{getText("compileMsg")}</h2>
 				</summary>
-				<pre>{sub.compile_message.String}</pre>
+				<pre class="mb-2">{sub.compile_message.String.length > 0 ? sub.compile_message.String : "No compilation message provided" }</pre>
 			</details>
 		</>
 	);
@@ -218,7 +218,7 @@ function TestTable({ sub }) {
 	}
 
 	return (
-		<table class="kn-table">
+		<table class="kn-table mb-2">
 			<thead>
 				<tr>
 					<th class="py-2" scope="col">
@@ -420,24 +420,29 @@ function SubTasks({ sub }) {
 	let ref = createRef();
 
 	return (
-		<div class="my-2">
-			<div class="list-group my-1 list-group-mini">
-				{sub.subTasks.map((subtask) => (
-					<SubTask
-						sub={sub}
-						subtask={subtask}
-						detRef={ref}
-						key={"stk_" + subtask.id}
-					/>
-				))}
-			</div>
+		<>
+			<details open={true}>
+				<summary>
+					<h2 class="inline-block">{getText("subTasks")}</h2>
+				</summary>
+				<div class="list-group mb-2 list-group-mini">
+					{sub.subTasks.map((subtask) => (
+						<SubTask
+							sub={sub}
+							subtask={subtask}
+							detRef={ref}
+							key={"stk_" + subtask.id}
+						/>
+					))}
+				</div>
+			</details>
 			<details ref={ref}>
 				<summary>
 					<h2 class="inline-block">{getText("individualTests")}</h2>
 				</summary>
 				<TestTable sub={sub} />
 			</details>
-		</div>
+		</>
 	);
 }
 
@@ -565,11 +570,11 @@ export class SubmissionManager extends Component<{ id: number }, SubMgrState> {
 							)}
 					</div>
 					<div class="col-span-1 lg:pt-2 lg:col-span-3 lg:border-r lg:pr-4 lg:pb-4">
+						<CompileErrorInfo sub={sub} />
 						{sub.subTests.length > 0 &&
 							!sub.compile_error.Bool &&
 							(sub.subTasks.length > 0 ? (
 								<>
-									<h2 class="mb-2">{getText("subTasks")}</h2>
 									<SubTasks sub={sub} />
 								</>
 							) : (
@@ -578,7 +583,6 @@ export class SubmissionManager extends Component<{ id: number }, SubMgrState> {
 									<TestTable sub={sub} />
 								</>
 							))}
-						<CompileErrorInfo sub={sub} />
 					</div>
 				</div>
 				{sub.code != null && <SubCode sub={sub} />}

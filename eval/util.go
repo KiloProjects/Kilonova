@@ -92,31 +92,31 @@ func checkLanguages() {
 		}
 		if len(toSearch) == 0 {
 			disableLang(k)
-			zap.S().Infof("Language %q was disabled because of empty line\n", k)
+			zap.S().Infof("Language %q was disabled because of empty line", k)
 			continue
 		}
 		cmd, err := exec.LookPath(toSearch[0])
 		if err != nil {
 			disableLang(k)
-			zap.S().Infof("Language %q was disabled because the compiler/interpreter was not found in PATH\n", k)
+			zap.S().Infof("Language %q was disabled because the compiler/interpreter was not found in PATH", k)
 			continue
 		}
 		cmd, err = filepath.EvalSymlinks(cmd)
 		if err != nil {
 			disableLang(k)
-			zap.S().Infof("Language %q was disabled because the compiler/interpreter had a bad symlink\n", k)
+			zap.S().Infof("Language %q was disabled because the compiler/interpreter had a bad symlink", k)
 			continue
 		}
 		stat, err := os.Stat(cmd)
 		if err != nil {
 			disableLang(k)
-			zap.S().Infof("Language %q was disabled because the compiler/interpreter binary was not found\n", k)
+			zap.S().Infof("Language %q was disabled because the compiler/interpreter binary was not found", k)
 			continue
 		}
 
 		if stat.Mode()&0111 == 0 {
 			disableLang(k)
-			zap.S().Infof("Language %q was disabled because the compiler/interpreter binary is not executable\n", k)
+			zap.S().Infof("Language %q was disabled because the compiler/interpreter binary is not executable", k)
 		}
 
 	}

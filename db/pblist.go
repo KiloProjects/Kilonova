@@ -163,5 +163,6 @@ func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.Prob
 		Title:       list.Title,
 		Description: list.Description,
 		List:        ids,
+		AuthorID:    list.AuthorID,
 	}, nil
 }

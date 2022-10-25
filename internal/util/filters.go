@@ -1,6 +1,7 @@
 package util
 
 import (
+	"database/sql"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
@@ -86,6 +87,7 @@ func IsSubmissionVisible(sub *kilonova.Submission, user *kilonova.UserBrief) boo
 func FilterSubmission(sub *kilonova.Submission, user *kilonova.UserBrief) {
 	if sub != nil && !IsSubmissionVisible(sub, user) {
 		sub.Code = ""
+		sub.CompileMessage = sql.NullString{}
 	}
 }
 
