@@ -1,0 +1,67 @@
+{{ define "title" }} {{getText .Ctx.Language "panel.audit_log"}} {{ end }}
+{{ define "content" }}
+
+<h1>
+	{{getText .Ctx.Language "panel.audit_log"}}
+</h1>
+
+<div class="segment-container">
+    <table class="kn-table">
+        <thead>
+            <tr>
+                <th scope="col" class="w-12 text-center px-4 py-2">
+                    {{getText .Ctx.Language "id"}}
+                </th>
+                <th scope="col">
+					{{getText .Ctx.Language "author"}}	
+                </th>
+                <th scope="col">
+					{{getText .Ctx.Language "text"}}	
+                </th>
+                <th scope="col">
+					{{getText .Ctx.Language "logDate"}}	
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Logs}}
+                <tr class="kn-table-row">
+                    <th scope="row" class="text-center px-2 py-1">
+                        {{.ID}}
+                    </th>
+                    <th class="text-center px-2 py-1">
+                        {{if .Author}}
+                            <i class="fas fa-user fa-fw"></i> {{.Author.Name}} (#{{.Author.ID}})
+                        {{else}}
+                            {{if .SystemLog}}
+                                <i class="fas fa-cog fa-fw"></i> {{getText .Ctx.Language "system"}}	
+                            {{else}}
+                                <i class="fas fa-question-square fa-fw"></i> {{getText .Ctx.Language "unknownUser"}}	
+                            {{end}}
+                        {{end}}
+                    </th>
+                    <th class="text-center px-2 py-1">
+                        {{.Message}}
+                    </th>
+                    <th class="text-center px-2 py-1" id="timestamp-{{.ID}}">
+                        {{.LogTime.UnixMilli}}
+                    </th>
+                </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+	    for(let e of document.querySelectorAll("[id^='timestamp-']")) {
+            if(isNaN(parseInt(e.innerText))) {
+                console.error("Time is NaN...?")
+                continue
+            }
+            e.innerText = bundled.parseTime(parseInt(e.innerText), true)
+        }
+    })
+</script>
+
+{{ end }}

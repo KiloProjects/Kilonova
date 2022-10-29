@@ -45,6 +45,15 @@ func (s *BaseAPI) UpdateProblem(ctx context.Context, id int, args kilonova.Probl
 		return WrapError(err, "Couldn't update problem")
 	}
 
+	pb, err := s.Problem(ctx, id)
+	if err != nil {
+		zap.S().Warn(err)
+		return WrapError(err, "Couldn't fetch problem for logging")
+	}
+	if pb.Visible && args.Description != nil && !updater.Admin {
+		s.LogUserAction(context.WithValue(ctx, util.UserKey, updater), "Updated problem #%d (%s) description while visible", pb.ID, pb.Name)
+	}
+
 	return nil
 }
 
@@ -53,6 +62,7 @@ func (s *BaseAPI) DeleteProblem(ctx context.Context, id int) *StatusError {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't delete problem")
 	}
+	s.LogUserAction(ctx, "Removed problem %d", id)
 	return nil
 }
 

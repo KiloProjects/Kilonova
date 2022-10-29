@@ -2,8 +2,10 @@ package sudoapi
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/util"
 	"go.uber.org/zap"
 )
 
@@ -48,6 +50,12 @@ func (s *BaseAPI) SetAdmin(ctx context.Context, userID int, toSet bool) *StatusE
 	// TODO: Once admin/proposer toggle time are added,
 	// Make sure user keeps proposer rights on admin remove (if valid)
 
+	if toSet {
+		s.LogUserAction(ctx, "Promoted user #%d to admin status", userID)
+	} else {
+		s.LogUserAction(ctx, "Demoted user #%d from admin status", userID)
+	}
+
 	return s.updateUser(ctx, userID, kilonova.UserFullUpdate{Admin: &toSet, Proposer: &toSet})
 }
 
@@ -62,6 +70,48 @@ func (s *BaseAPI) SetProposer(ctx context.Context, userID int, toSet bool) *Stat
 	}
 
 	// TODO: Disallow removing own proposer rank once callee is added to context
+	if toSet {
+		s.LogUserAction(ctx, "Promoted user #%d to proposer status", userID)
+	} else {
+		s.LogUserAction(ctx, "Demoted user #%d from proposer status", userID)
+	}
 
 	return s.updateUser(ctx, userID, kilonova.UserFullUpdate{Proposer: &toSet})
+}
+
+func (s *BaseAPI) LogSytemAction(ctx context.Context, msg string) {
+	if _, err := s.db.CreateAuditLog(ctx, msg, nil, true); err != nil {
+		zap.S().Warn(WrapError(err, "Couldn't register systm action to audit log"))
+		zap.S().Info("Action: %q", msg)
+	}
+}
+
+func (s *BaseAPI) LogUserAction(ctx context.Context, msg string, args ...any) {
+	if util.UserBriefContext(ctx) == nil {
+		zap.S().Warn("Empty user provided")
+		zap.S().Infof("Action: %q", msg)
+		return
+	}
+
+	msg = fmt.Sprintf(msg, args...)
+	if _, err := s.db.CreateAuditLog(ctx, msg, &util.UserBriefContext(ctx).ID, false); err != nil {
+		zap.S().Warn(WrapError(err, "Couldn't register user action to audit log"))
+		zap.S().Infof("Action (by user #%d): %q", util.UserBriefContext(ctx).ID, msg)
+	}
+}
+
+func (s *BaseAPI) GetAuditLogs(ctx context.Context, count int, offset int) ([]*kilonova.AuditLog, *StatusError) {
+	logs, err := s.db.AuditLogs(ctx, count, offset)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't fetch audit logs")
+	}
+	return logs, nil
+}
+
+func (s *BaseAPI) GetLogCount(ctx context.Context) (int, *StatusError) {
+	cnt, err := s.db.AuditLogCount(ctx)
+	if err != nil {
+		return -1, WrapError(err, "Couldn't get audit log count")
+	}
+	return cnt, nil
 }

@@ -91,8 +91,9 @@ func (rt *Web) Handler() http.Handler {
 	r.Mount("/docs", rt.docs())
 
 	r.With(mustBeAdmin).Route("/admin", func(r chi.Router) {
-		r.Get("/", rt.admin())
+		r.Get("/", rt.justRender("admin/admin.html"))
 		r.Get("/users", rt.justRender("admin/users.html"))
+		r.Get("/auditLog", rt.auditLog())
 	})
 
 	r.With(mustBeVisitor).Get("/login", rt.justRender("auth/login.html", "modals/login.html"))

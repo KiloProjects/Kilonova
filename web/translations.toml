@@ -242,6 +242,10 @@ ro = "Panou Propunător"
 en = "Admin Panel"
 ro = "Panou Admin"
 
+[panel.audit_log]
+en = "Audit Logs"
+ro = "Registru acțiuni"
+
 [problem_lists]
 en = "Problem Lists"
 ro = "Liste de Probleme"
@@ -886,3 +890,23 @@ ro = "Informații"
 [individualTests]
 en = "Individual tests"
 ro = "Teste individuale"
+
+[confirmSubReevaluate]
+en = "Are you sure you want to reevaluate all submissions? It may take a while..."
+ro = "Sigur dorești să reevaluezi toate submisiile? Poate dura o vreme..."
+
+[system]
+en = "System"
+ro = "Sistem"
+
+[text]
+en = "Text"
+ro = "Text"
+
+[logDate]
+en = "Log time"
+ro = "Ora acțiunii"
+
+[unknownUser]
+en = "Unknown user"
+ro = "Utilizator necunoscut"

@@ -31,7 +31,11 @@ const (
 )
 
 func UserBriefContext(ctx context.Context) *kilonova.UserBrief {
-	return getValueContext[kilonova.UserFull](ctx, UserKey).Brief()
+	b := getValueContext[kilonova.UserFull](ctx, UserKey).Brief()
+	if b == nil {
+		b = getValueContext[kilonova.UserBrief](ctx, UserKey)
+	}
+	return b
 }
 
 func UserBrief(r *http.Request) *kilonova.UserBrief {

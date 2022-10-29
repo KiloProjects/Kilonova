@@ -39,6 +39,9 @@
                         <a class="dropdown-list-item" href="/admin/users">
                             <i class="ml-n2 fas fa-users fa-fw"></i> {{getText .Ctx.Language "users"}}
                         </a>
+                        <a class="dropdown-list-item" href="/admin/auditLog">
+                            <i class="ml-n2 fas fa-file-medical-alt fa-fw"></i> {{getText .Ctx.Language "panel.audit_log"}}
+                        </a>
 					{{end}}
 					<div class="dropdown-divider"></div>
 					<a class="dropdown-list-item" href="/logout">

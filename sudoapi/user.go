@@ -100,6 +100,7 @@ func (s *BaseAPI) DeleteUser(ctx context.Context, uid int) *StatusError {
 	if err := s.db.DeleteUser(ctx, uid); err != nil {
 		return WrapError(err, "Couldn't delete user")
 	}
+	s.LogUserAction(ctx, "Deleted user %d", uid)
 	return nil
 }
 

@@ -97,6 +97,11 @@ func (s *API) Handler() http.Handler {
 				r.Post("/bulkDeleteSubTasks", s.bulkDeleteSubTasks)
 
 			})
+
+			r.Post("/reevaluateSubs", webMessageWrapper("Reevaluating submissions", func(ctx context.Context, args struct{}) *kilonova.StatusError {
+				return s.base.ResetProblemSubmissions(ctx, util.ProblemContext(ctx).ID)
+			}))
+
 			r.Route("/get", func(r chi.Router) {
 				r.Get("/attachments", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
 					return s.base.ProblemAttachments(ctx, util.ProblemContext(ctx).ID)

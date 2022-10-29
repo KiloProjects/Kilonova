@@ -90,10 +90,19 @@
 		<li>Fișiere grader incluse: {{range $i, $name := .GraderFiles}}{{$name}}{{else}}N/A{{end}}</li>
 	</ul>
 	{{end}}
+    <button class="btn btn-red mt-2" onclick="reevaluateSubs()">Reevaluare submisii</button>
 </div>
 
 <script>
 let problem = {{.Problem}};
+
+async function reevaluateSubs() {
+    if(!confirm(bundled.getText("confirmSubReevaluate"))) {
+        return
+    }
+    let res = await bundled.postCall(`/problem/${problem.id}/reevaluateSubs`, {})
+    bundled.apiToast(res)
+}
 
 Vue.createApp({
 	el: "",

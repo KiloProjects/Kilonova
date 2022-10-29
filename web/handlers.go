@@ -50,10 +50,33 @@ func (rt *Web) pbListView() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) admin() func(http.ResponseWriter, *http.Request) {
-	templ := rt.parse(nil, "admin/admin.html")
+func (rt *Web) auditLog() func(http.ResponseWriter, *http.Request) {
+	templ := rt.parse(nil, "admin/audit_log.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		runTempl(w, r, templ, &SimpleParams{GenContext(r)})
+		pageStr := r.FormValue("page")
+		page, err := strconv.Atoi(pageStr)
+		if err != nil {
+			page = 0
+		}
+
+		logs, err1 := rt.base.GetAuditLogs(r.Context(), 50, (page-1)*50)
+		if err1 != nil {
+			statusPage(w, r, 500, "Couldn't fetch logs", false)
+			return
+		}
+
+		numLogs, err1 := rt.base.GetLogCount(r.Context())
+		if err1 != nil {
+			statusPage(w, r, 500, "Couldn't fetch log count", false)
+			return
+		}
+
+		numPages := numLogs / 50
+		if numLogs%50 > 0 {
+			numPages++
+		}
+
+		runTempl(w, r, templ, &AuditLogParams{GenContext(r), logs, numPages})
 	}
 }
 

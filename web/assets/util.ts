@@ -42,11 +42,11 @@ export function downloadBlob(blob: Blob, filename: string) {
 	a.click();
 }
 
-export function parseTime(str?: string) {
+export function parseTime(str?: string, extended?: boolean) {
 	if (!str) {
 		return "";
 	}
-	return dayjs(str).format("DD/MM/YYYY HH:mm");
+	return dayjs(str).format("DD/MM/YYYY HH:mm" + (extended ? ":ss" : ""));
 }
 
 export function getGradient(score: number, maxscore: number) {
@@ -79,14 +79,12 @@ export function getGradient(score: number, maxscore: number) {
 	return col;
 }
 
-
 export function stringIntToNumber(ints: string[]): number[] {
 	let result: number[] = [];
-	for(let val of ints.map(val => parseInt(val))) {
-		if(!isNaN(val)) {
-			result.push(val)
+	for (let val of ints.map((val) => parseInt(val))) {
+		if (!isNaN(val)) {
+			result.push(val);
 		}
 	}
 	return result;
 }
-

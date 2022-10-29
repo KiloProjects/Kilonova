@@ -205,6 +205,13 @@ type ProfileParams struct {
 	UserProblems []*kilonova.Problem
 }
 
+type AuditLogParams struct {
+	Ctx *ReqContext
+
+	Logs     []*kilonova.AuditLog
+	NumPages int
+}
+
 type StatusParams struct {
 	Ctx *ReqContext
 	// User          *kilonova.User
