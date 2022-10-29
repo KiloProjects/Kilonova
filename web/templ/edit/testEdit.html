@@ -47,18 +47,34 @@ async function updateID(e) {
 	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/info", q);
 	if(res.status === "success") {
         if(q.id != {{.Test.VisibleID}}) {
-            window.location.replace("/problems/{{.Problem.ID}}/edit/test/"+q.id)
+            window.location.assign("/problems/{{.Problem.ID}}/edit/test/"+q.id)
             return
         }
 	}
 	bundled.apiToast(res)
 }
+
 async function updateData(e) {
 	e.preventDefault()
-	let q = {
-		input: document.getElementById("input").value,
-		output: document.getElementById("output").value
-	};
+    let q = {}
+    {{if $test.OkIn}}
+    q.input = document.getElementById("input").value
+    {{else}}
+    const inputVal = document.getElementById("input").value
+    if(inputVal !== {{$test.In}}) {
+        q.input = val
+    }
+    {{end}}
+
+    {{if $test.OkOut}}
+    q.output = document.getElementById("output").value
+    {{else}}
+    const outputVal = document.getElementById("output").value
+    if(outputVal !== {{$test.Out}}) {
+        q.output = val
+    }
+    {{end}}
+
 	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/data", q)
 	bundled.apiToast(res);
 }
@@ -71,7 +87,7 @@ async function removeTest(e) {
 	}
 	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/orphan", {})
 	if(res.status === "success") {
-		window.location.replace("/problems/{{.Problem.ID}}/edit/test")
+		window.location.assign("/problems/{{.Problem.ID}}/edit/test")
 		return
 	}
 	bundled.apiToast(res);

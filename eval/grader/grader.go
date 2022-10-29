@@ -3,8 +3,6 @@ package grader
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
 	"math"
 	"path"
 	"sync"
@@ -53,12 +51,12 @@ func (h *Handler) chFeeder(d time.Duration) {
 			}
 			if len(subs) > 0 {
 				if config.Common.Debug {
-					log.Printf("Found %d submissions\n", len(subs))
+					zap.S().Infof("Found %d submissions", len(subs))
 				}
 
 				for _, sub := range subs {
 					if err := h.base.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
-						log.Println(err)
+						zap.S().Warn(err)
 						continue
 					}
 					gsub := h.makeGraderSub(sub)
@@ -100,7 +98,7 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 				return nil
 			}
 			if err := h.ExecuteSubmission(ctx, runner, sub); err != nil {
-				log.Println("Couldn't run submission:", err)
+				zap.S().Warn("Couldn't run submission", err)
 			}
 		}
 	}
@@ -149,14 +147,14 @@ func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, gsu
 	sub := gsub.Submission()
 	defer func() {
 		if err := gsub.Close(); err != nil {
-			log.Printf("Could not finish submission: %s\n", err)
+			zap.S().Warn("Couldn't finish submission:", err)
 		}
 	}()
 
 	defer func() {
 		err := h.MarkSubtestsDone(ctx, sub)
 		if err != nil {
-			log.Println("Couldn't clean up subtests:", err)
+			zap.S().Warn("Couldn't clean up subtests:", err)
 		}
 	}()
 
@@ -195,31 +193,37 @@ func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, gsu
 	compileError := !resp.Success
 	if err := gsub.Update(kilonova.SubmissionUpdate{CompileError: &compileError, CompileMessage: &resp.Output}); err != nil {
 		spew.Dump(err)
-		return kilonova.WrapError(err, "Couldn't update submission: ")
+		return kilonova.WrapError(err, "Couldn't update submission")
+	}
+
+	if resp.Success == false {
+		if err := gsub.Update(kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints}); err != nil {
+			return kilonova.WrapError(err, "Couldn't finalize submission with compiler error")
+		}
+		return nil
 	}
 
 	checker, err := h.getAppropriateChecker(ctx, runner, sub, problem, problemSettings)
 	if err != nil {
-		return kilonova.WrapError(err, "Couldn't get checker:")
+		return kilonova.WrapError(err, "Couldn't get checker")
 	}
 
 	if info, err := checker.Prepare(ctx); err != nil {
 		t := true
 		info = "Checker compile error:\n" + info
 		if err := gsub.Update(kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints, CompileError: &t, CompileMessage: &info}); err != nil {
-			return kilonova.WrapError(err, "Error during update of compile information:")
+			return kilonova.WrapError(err, "Error during update of compile information")
 		}
 		zap.S().Warn("Couldn't prepare checker:", info, err)
 		return kilonova.WrapError(err, "Could not prepare checker")
 	}
 
 	subTests, err1 := h.base.SubTests(ctx, sub.ID)
-	if resp.Success == false || err1 != nil {
-		zap.S().Warn(err1)
+	if err1 != nil {
 		if err := gsub.Update(kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints}); err != nil {
-			return err
+			return kilonova.WrapError(err, "Could not update submission after subtest fetch fail")
 		}
-		return err
+		return kilonova.WrapError(err1, "Could not fetch subtests")
 	}
 
 	var wg sync.WaitGroup
@@ -232,7 +236,7 @@ func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, gsu
 			defer wg.Done()
 			err := h.HandleSubTest(ctx, runner, checker, sub, problem, subTest)
 			if err != nil {
-				log.Println("Error handling subTest:", err)
+				zap.S().Warn("Error handling subTest:", err)
 			}
 		}()
 	}
@@ -240,15 +244,15 @@ func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, gsu
 	wg.Wait()
 
 	if err := h.ScoreTests(ctx, gsub, problem); err != nil {
-		log.Printf("Couldn't score test: %s\n", err)
+		zap.S().Warn("Couldn't score test", err)
 	}
 
 	if err := eval.CleanCompilation(sub.ID); err != nil {
-		log.Printf("Couldn't clean task: %s\n", err)
+		zap.S().Warn("Couldn't remove compilation artifact", err)
 	}
 
 	if err := checker.Cleanup(ctx); err != nil {
-		log.Printf("Couldn't clean checker: %s\n", err)
+		zap.S().Warn("Couldn't remove checker artifact", err)
 	}
 	return nil
 }
@@ -256,7 +260,7 @@ func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, gsu
 func (h *Handler) HandleSubTest(ctx context.Context, runner eval.Runner, checker eval.Checker, sub *kilonova.Submission, problem *kilonova.Problem, subTest *kilonova.SubTest) error {
 	pbTest, err1 := h.base.TestByID(ctx, subTest.TestID)
 	if err1 != nil {
-		return fmt.Errorf("Error during test getting (0.5): %w", err1)
+		return kilonova.WrapError(err1, "Couldn't get test")
 	}
 
 	execRequest := &eval.ExecRequest{
@@ -280,7 +284,7 @@ func (h *Handler) HandleSubTest(ctx context.Context, runner eval.Runner, checker
 	}
 
 	if err := runner.RunTask(ctx, task); err != nil {
-		return fmt.Errorf("Error executing test: %w", err)
+		return kilonova.WrapError(err, "Couldn't execute test")
 	}
 
 	resp := task.Resp
@@ -334,7 +338,7 @@ func (h *Handler) MarkSubtestsDone(ctx context.Context, sub *kilonova.Submission
 			continue
 		}
 		if err := h.base.UpdateSubTest(ctx, st.ID, kilonova.SubTestUpdate{Done: &True}); err != nil {
-			log.Printf("Couldn't mark subtest %d done: %s\n", st.ID, err)
+			zap.S().Warnf("Couldn't mark subtest %d done: %s", st.ID, err)
 		}
 	}
 	return nil
@@ -359,7 +363,7 @@ func (h *Handler) ScoreTests(ctx context.Context, gsub eval.GraderSubmission, pr
 
 	if subTasks != nil && len(subTasks) > 0 {
 		if h.debug {
-			log.Println("Evaluating by subtasks")
+			zap.S().Info("Evaluating by subtasks")
 		}
 		subMap := make(map[int]*kilonova.SubTest)
 		for _, st := range subtests {
@@ -381,7 +385,7 @@ func (h *Handler) ScoreTests(ctx context.Context, gsub eval.GraderSubmission, pr
 		}
 	} else {
 		if h.debug {
-			log.Println("Evaluating by addition")
+			zap.S().Info("Evaluating by addition")
 		}
 		for _, subtest := range subtests {
 			pbTest, err1 := h.base.TestByID(ctx, subtest.TestID)
@@ -413,7 +417,7 @@ func (h *Handler) Start() error {
 		return err
 	}
 
-	go h.chFeeder(4 * time.Second)
+	go h.chFeeder(2 * time.Second)
 
 	eCh := make(chan error, 1)
 	go func() {

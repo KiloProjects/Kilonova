@@ -131,21 +131,24 @@ type TestEditParams struct {
 type testDataType struct {
 	In  string
 	Out string
+
+	OkIn  bool
+	OkOut bool
 }
 
 const readLimit = 1024 * 1024 // 1MB
 
-func ReadOrTruncate(r io.Reader) []byte {
+func ReadOrTruncate(r io.Reader) ([]byte, bool) {
 	var buf bytes.Buffer
 	if _, err := io.CopyN(&buf, r, readLimit); err != nil {
 		if errors.Is(err, io.EOF) {
-			return buf.Bytes()
+			return buf.Bytes(), true
 		}
 		zap.S().Warn(err)
-		return []byte("err")
+		return []byte("err"), false
 	}
 
-	return []byte("Files larger than 1MB cannot be displayed")
+	return []byte("Files larger than 1MB cannot be displayed"), false
 }
 
 func (t *TestEditParams) GetFullTests() testDataType {
@@ -161,10 +164,16 @@ func (t *TestEditParams) GetFullTests() testDataType {
 	}
 	defer out.Close()
 
-	inData := ReadOrTruncate(in)
-	outData := ReadOrTruncate(out)
+	inData, okIn := ReadOrTruncate(in)
+	outData, okOut := ReadOrTruncate(out)
 
-	return testDataType{In: string(inData), Out: string(outData)}
+	return testDataType{
+		In:   string(inData),
+		OkIn: okIn,
+
+		Out:   string(outData),
+		OkOut: okOut,
+	}
 }
 
 func (t *TestEditParams) ProblemTests() []*kilonova.Test {

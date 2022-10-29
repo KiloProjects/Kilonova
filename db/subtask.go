@@ -154,7 +154,7 @@ WHERE
 		) 
 		SELECT subtask_id FROM stk_count WHERE cnt = 0
 	);
-`))
+`), pbid)
 	return err
 }
 

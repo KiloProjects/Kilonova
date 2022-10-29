@@ -78,3 +78,15 @@ export function getGradient(score: number, maxscore: number) {
 	}
 	return col;
 }
+
+
+export function stringIntToNumber(ints: string[]): number[] {
+	let result: number[] = [];
+	for(let val of ints.map(val => parseInt(val))) {
+		if(!isNaN(val)) {
+			result.push(val)
+		}
+	}
+	return result;
+}
+

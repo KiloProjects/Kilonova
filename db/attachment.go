@@ -78,7 +78,7 @@ func (a *DB) AttachmentData(ctx context.Context, id int) ([]byte, error) {
 
 func (a *DB) AttachmentDataByName(ctx context.Context, problemID int, name string) ([]byte, error) {
 	var data []byte
-	err := a.conn.GetContext(ctx, &data, "SELECT data FROM attachments WHERE problem_id = $1 AND name = $1", problemID, name)
+	err := a.conn.GetContext(ctx, &data, "SELECT data FROM attachments WHERE problem_id = $1 AND name = $2", problemID, name)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []byte{}, nil
 	}

@@ -212,6 +212,8 @@ func (s *BaseAPI) DeleteSubmission(ctx context.Context, subID int) *StatusError 
 	return nil
 }
 
+/*
+
 // GraderSubmission returns a waiting submission that is not locked. Note that it must be closed
 // TODO: Revamp this, it's not good
 func (s *BaseAPI) GraderSubmission(ctx context.Context) (eval.GraderSubmission, *StatusError) {
@@ -222,3 +224,5 @@ func (s *BaseAPI) GraderSubmission(ctx context.Context) (eval.GraderSubmission, 
 	}
 	return sub, nil
 }
+
+*/

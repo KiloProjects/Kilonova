@@ -30,13 +30,8 @@ async function createList(e) {
 	let data = {
 		title: document.getElementById("list-title").value,
 		description: document.getElementById("list-desc").value,
-		ids: [],
+		ids: bundled.stringIntToNumber(document.getElementById("list-pbs").value.split(',')),
 	};
-    for(let id of document.getElementById("list-pbs").value.split(',').map((val) => parseInt(val))) {
-        if(!isNaN(id)) {
-            data.ids.push(id)
-        }
-    }
 
 	let res = await bundled.bodyCall("/problemList/create", data)
 	if(res.status === "success") {

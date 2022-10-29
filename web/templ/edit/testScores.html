@@ -93,9 +93,17 @@ async function deleteTests() {
 async function updateTests() {
 	var tests = {};
 	for(let e of document.querySelectorAll("[id^='row-test-']")) {
-		let id = rowreg.exec(e.id)[1];
-		let score = document.getElementById(`score-test-${id}`).value;
-		tests[id] = Number(score);
+        let id = parseInt(rowreg.exec(e.id)[1]);
+		if(isNaN(id)) {
+			console.error("id is somehow NaN", e.id)
+			continue
+		}
+		let score = parseInt(document.getElementById(`score-test-${id}`).value);
+		if(isNaN(score)) {
+			console.error("Score is somehow NaN", document.getElementById(`score-test-${id}`))
+			continue
+		}
+		tests[id] = score;
 	}
 	console.log(tests);
 	let res = await bundled.bodyCall(`/problem/${pbid}/update/bulkUpdateTestScores`, tests);

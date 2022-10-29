@@ -59,13 +59,22 @@ async function updateSubTask(e) {
 	e.preventDefault();
 	let data = {
 		subtask_id: {{.SubTask.VisibleID}},
-		new_id: document.getElementById('subtask-id').value,
-		score: document.getElementById('subtask-score').value,
+		new_id: parseInt(document.getElementById('subtask-id').value),
+		score: parseInt(document.getElementById('subtask-score').value),
 		tests: []
 	};
 	
+	if(isNaN(data.new_id) || isNaN(data.score)) {
+		bundled.apiToast({status: "error", data: "Invalid score/id. Please contact administrator"})
+		return
+	}
+	
 	for(let e of document.querySelectorAll("[id^='row-test-']")) {
-		let id = rowreg.exec(e.id)[1];
+		let id = parseInt(rowreg.exec(e.id)[1]);
+		if(isNaN(id)) {
+			console.error("id is somehow NaN", e.id)
+			continue
+		}
 		let checked = document.getElementById(`pb-test-${id}`).checked;
 		if(checked) {
 			data.tests.push(id);
@@ -74,7 +83,7 @@ async function updateSubTask(e) {
 
 	console.log(data);
 	let res = await bundled.bodyCall(`/problem/${pbid}/update/updateSubTask`, data)
-	if(res.status === "success") {
+	if(res.status === "success" && data.new_id !== data.subtask_id) {
 		window.location.assign(`/problems/${pbid}/edit/subtasks/${data.new_id}`);
 		return;
 	}

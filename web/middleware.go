@@ -167,7 +167,7 @@ func (rt *Web) initSession(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		user, _ := rt.base.UserFull(r.Context(), sess)
+		user, err := rt.base.UserFull(r.Context(), sess)
 		if user == nil {
 			next.ServeHTTP(w, r)
 			return

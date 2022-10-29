@@ -76,7 +76,11 @@ updateFinalScore();
 async function deleteSubTasks() {
 	var subTasks = [];
 	for(let e of document.querySelectorAll("[id^='row-subtask-']")) {
-		let id = rowreg.exec(e.id)[1];
+		let id = parseInt(rowreg.exec(e.id)[1]);
+		if(isNaN(id)) {
+			console.error("id is somehow NaN", e.id)
+			continue
+		}
 		let checked = document.getElementById(`pb-subtask-${id}`).checked;
 		if(checked) {
 			subTasks.push(id);
@@ -93,7 +97,11 @@ async function deleteSubTasks() {
 async function updateSubTasks() {
 	var subTasks = {};
 	for(let e of document.querySelectorAll("[id^='row-subtask-']")) {
-		let id = rowreg.exec(e.id)[1];
+		let id = parseInt(rowreg.exec(e.id)[1]);
+		if(isNaN(id)) {
+			console.error("id is somehow NaN", e.id)
+			continue
+		}
 		let score = document.getElementById(`score-subtask-${id}`).value;
 		subTasks[id] = Number(score);
 	}

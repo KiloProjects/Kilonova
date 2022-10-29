@@ -52,13 +52,22 @@ const mgr = new bundled.CheckboxManager(document.getElementById("selectAllBox"),
 async function createSubTask(e) {
 	e.preventDefault();
 	let data = {
-		visible_id: document.getElementById('subtask-id').value,
-		score: document.getElementById('subtask-score').value,
+		visible_id: parseInt(document.getElementById('subtask-id').value),
+		score: parseInt(document.getElementById('subtask-score').value),
 		tests: []
 	};
+	
+	if(isNaN(data.visible_id) || isNaN(data.score)) {
+		bundled.apiToast({status: "error", data: "Invalid score/id. Please contact administrator"})
+		return
+	}
 
 	for(let e of document.querySelectorAll("[id^='row-test-']")) {
-		let id = rowreg.exec(e.id)[1];
+		let id = parseInt(rowreg.exec(e.id)[1]);
+		if(isNaN(id)) {
+			console.error("id is somehow NaN", e.id)
+			continue
+		}
 		let checked = document.getElementById(`pb-test-${id}`).checked;
 		if(checked) {
 			data.tests.push(id);

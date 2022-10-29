@@ -62,18 +62,9 @@ async function updateProblemList(e) {
 	let data = {
 		id: problemListID,
 		title: document.getElementById("pblist-title").value,
-		description: cm.getValue(), //document.getElementById("pblist-desc").value,
-		list: []
+		description: cm.getValue(),
+		list: bundled.stringIntToNumber(document.getElementById("pblist-list").value.split(',')),
 	};
-    for(let id of document.getElementById("pblist-list").value.split(',').map((val) => parseInt(val))) {
-        if(!isNaN(id)) {
-            console.log(id)
-            data.list.push(id)
-        }
-    }
-
-    console.log(JSON.stringify(data))
-
 	let res = await bundled.bodyCall("/problemList/update", data)
 	if(res.status === "success") {
 		window.location.reload();

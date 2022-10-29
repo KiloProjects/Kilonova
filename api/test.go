@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/archive/test"
@@ -16,20 +17,24 @@ import (
 func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		Input  string
-		Output string
+		Input  *string
+		Output *string
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	if err := s.base.SaveTestInput(util.Test(r).ID, bytes.NewReader([]byte(args.Input))); err != nil {
-		errorData(w, err, 500)
-		return
+	if args.Input != nil {
+		if err := s.base.SaveTestInput(util.Test(r).ID, strings.NewReader(*args.Input)); err != nil {
+			errorData(w, err, 500)
+			return
+		}
 	}
-	if err := s.base.SaveTestOutput(util.Test(r).ID, bytes.NewReader([]byte(args.Output))); err != nil {
-		errorData(w, err, 500)
-		return
+	if args.Output != nil {
+		if err := s.base.SaveTestOutput(util.Test(r).ID, strings.NewReader(*args.Output)); err != nil {
+			errorData(w, err, 500)
+			return
+		}
 	}
 	returnData(w, "Updated test data")
 }
