@@ -119,7 +119,11 @@ function Summary({ sub }) {
 									{getText("maxTime")}
 								</td>
 								<td class="kn-table-cell">
-									{sub.max_time == -1 ? '-' : `${Math.floor(sub.max_time * 1000)} ms`}
+									{sub.max_time == -1
+										? "-"
+										: `${Math.floor(
+												sub.max_time * 1000
+										  )} ms`}
 								</td>
 							</tr>
 							<tr class="kn-table-simple-border">
@@ -127,11 +131,13 @@ function Summary({ sub }) {
 									{getText("maxMemory")}
 								</td>
 								<td class="kn-table-cell">
-									{sub.max_memory == -1 ? '-' : sizeFormatter(
-										sub.max_memory * 1024,
-										1,
-										true
-									)}
+									{sub.max_memory == -1
+										? "-"
+										: sizeFormatter(
+												sub.max_memory * 1024,
+												1,
+												true
+										  )}
 								</td>
 							</tr>
 						</>
@@ -164,7 +170,11 @@ function CompileErrorInfo({ sub }) {
 				<summary>
 					<h2 class="inline-block">{getText("compileMsg")}</h2>
 				</summary>
-				<pre class="mb-2">{sub.compile_message.String.length > 0 ? sub.compile_message.String : "No compilation message provided" }</pre>
+				<pre class="mb-2">
+					{sub.compile_message.String.length > 0
+						? sub.compile_message.String
+						: "No compilation message provided"}
+				</pre>
 			</details>
 		</>
 	);
@@ -322,7 +332,10 @@ function SubTask({ sub, subtask, detRef }) {
 		let stk_score = 100;
 		for (let testID of subtask.tests) {
 			let actualSubtest = sub.subTestIDs[testID];
-			if (actualSubtest.score < stk_score) {
+			if (
+				actualSubtest !== undefined &&
+				actualSubtest.score < stk_score
+			) {
 				stk_score = actualSubtest.score;
 			}
 		}

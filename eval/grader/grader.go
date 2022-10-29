@@ -2,7 +2,6 @@ package grader
 
 import (
 	"context"
-	"errors"
 	"math"
 	"path"
 	"sync"
@@ -244,15 +243,15 @@ func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, gsu
 	wg.Wait()
 
 	if err := h.ScoreTests(ctx, gsub, problem); err != nil {
-		zap.S().Warn("Couldn't score test", err)
+		zap.S().Warn("Couldn't score test: ", err)
 	}
 
 	if err := eval.CleanCompilation(sub.ID); err != nil {
-		zap.S().Warn("Couldn't remove compilation artifact", err)
+		zap.S().Warn("Couldn't remove compilation artifact: ", err)
 	}
 
 	if err := checker.Cleanup(ctx); err != nil {
-		zap.S().Warn("Couldn't remove checker artifact", err)
+		zap.S().Warn("Couldn't remove checker artifact: ", err)
 	}
 	return nil
 }
@@ -369,13 +368,19 @@ func (h *Handler) ScoreTests(ctx context.Context, gsub eval.GraderSubmission, pr
 		for _, st := range subtests {
 			subMap[st.TestID] = st
 		}
+		shownError := false
 		for _, stk := range subTasks {
 			percentage := 100
 			for _, id := range stk.Tests {
 				st, ok := subMap[id]
 				if !ok {
-					zap.S().Warnf("couldn't find a subtest for subtask %d\n", stk.VisibleID)
-					return errors.New("Subtasks may have been updated since this submission was uploaded")
+					if !shownError { // plz no spam
+						zap.S().Warnf("couldn't find a subtest for subtask %d in submission %d", stk.VisibleID, gsub.Submission().ID)
+						percentage = 0
+						shownError = true
+					}
+					// return errors.New("Subtasks may have been updated since this submission was uploaded")
+					continue
 				}
 				if st.Score < percentage {
 					percentage = st.Score
