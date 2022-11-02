@@ -10,8 +10,9 @@
 	</div>
 	<div class="block my-2">
 		<label>
-			<span class="form-label">{{ getText .Ctx.Language "desc" }}</span>
-			<input id="list-desc" type="text" class="form-input">
+			<span class="form-label">{{getText .Ctx.Language "desc"}}: </span>
+			<textarea id="desc_tarea" class="hidden"></textarea>
+			{{/* <input id="list-desc" type="text" class="form-input"> */}}
 		</label>
 	</div>
 	<div class="block my-2">
@@ -24,12 +25,21 @@
 </form>
 
 <script>
+var cm = CodeMirror.fromTextArea(document.getElementById("desc_tarea"), {
+	mode: {
+		name: "gfm",
+		gitHubSpice: false,
+		emoji: false,
+	}
+});
+cm.setSize(null, "100%");
+
 async function createList(e) {
 	e.preventDefault()
 
 	let data = {
 		title: document.getElementById("list-title").value,
-		description: document.getElementById("list-desc").value,
+		description: cm.getValue(),
 		ids: bundled.stringIntToNumber(document.getElementById("list-pbs").value.split(',')),
 	};
 

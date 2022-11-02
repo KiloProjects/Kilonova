@@ -1,24 +1,29 @@
-{{ define "title" }} {{getText .Ctx.Language "title.list" .ProblemList.ID}} {{ end }}
+{{ define "title" }} #{{.ProblemList.ID}}: {{.ProblemList.Title}} {{ end }}
 {{ define "content" }}
 
 {{ $user := .Ctx.User.Brief }}
 {{ $root := . }}
 {{ $ctx := .Ctx }}
 {{ with .ProblemList }}
-	<div class="segment-container">
-		<span class="flex justify-between">
-			<h1 class="inline"><a href="/problem_lists/{{.ID}}">#{{.ID}}</a> {{.Title}}</h1>
-			<span>{{if $user}} {{ getText $ctx.Language "num_solved" (numSolved $user .List) (len .List) }}{{end}}</span>
-		</span>
-		{{ if .Description }}<div class="my-1">{{renderMarkdown .Description}}</div>{{end}}
-		<div class="mt-2">
-			{{ with (listProblems $user .) }}
-				{{ template "pb_list_group" (genPbListParams $user $root.Ctx.Language .) }}
-			{{ else }}
-				<p> {{ getText $ctx.Language "noListProblems" }} </p>
-			{{ end }}
-		</div>
-	</div>
+    {{ $pbs := (listProblems $user .) }}
+    <div class="list-group list-group-mini mb-4">
+        <details class="list-group-head" open>
+            <summary class="pb-1 mt-1">
+                <span class="float-left"><a href="/problem_lists/{{.ID}}">#{{.ID}}</a> {{.Title}}</span>
+                {{if $user}}
+                    <span class="float-right rounded-full py-1 px-2 text-base bg-teal-700 text-white font-semibold">
+                        {{ getText $ctx.Language "num_solved_v2" (numSolved $user .List) (len $pbs) }}
+                    </span>
+                {{end}}
+            </summary>
+            {{ if .Description }}<div class="list-group m-1 my-1"><div class="list-group-head">{{renderMarkdown .Description}}</div></div>{{end}}
+            {{ with $pbs }}
+                {{ template "pb_list_group" (genPbListParams $user $root.Ctx.Language .) }}
+            {{ else }}
+                <p> {{ getText $ctx.Language "problem.none_in_list" }} </p>
+            {{ end }}
+        </details>
+    </div>
 	{{ if $user }}
 	{{ if or (eq $user.ID .AuthorID) $user.Admin }}
 	<form id="pblist-update" class="segment-container" autocomplete="off">
@@ -55,7 +60,6 @@ var cm = CodeMirror.fromTextArea(document.getElementById("desc_tarea"), {
 	}
 });
 cm.setSize(null, "100%");
-
 
 async function updateProblemList(e) {
 	e.preventDefault();

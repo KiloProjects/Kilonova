@@ -11,25 +11,6 @@
 {{ $root := . }}
 {{ $ctx := .Ctx }}
 
-{{/* 
-{{ range .Config.Lists }}
-	{{ with problemList . }}
-		<div class="segment-container">
-			<span class="flex justify-between">
-				<h1 class="inline">{{.Title}}</h1>
-				<span>{{if $user}} {{ getText $ctx.Language "num_solved" (numSolved $user .List) (len .List) }}{{end}}</span>
-			</span>
-			{{ if .Description }}<h2>{{renderMarkdown .Description}}</h2>{{end}}
-			{{ with (listProblems $user .) }}
-				{{ template "pb_list_group" (genPbListParams $user $ctx.Language .) }}
-			{{ else }}
-				<p> {{ getText $ctx.Language "noListProblems" }} </p>
-			{{ end }}
-		</div>
-	{{ end }}
-{{ end }}
-*/}}
-
 {{ with visibleProblems $user }}
 	<h2 class="text-2xl mb-2"> {{ getText $ctx.Language "problems" }} </h2>
 	{{ template "pb_list_group" (genPbListParams $user $ctx.Language .) }}

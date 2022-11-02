@@ -6,6 +6,14 @@ ro = "Pssst! Dacă ai vreo sugestie pentru site, trimite-mi mesaj pe %s."
 en = "(%d / %d solved)"
 ro = "(%d / %d rezolvate)"
 
+[num_solved_v2]
+en = "%d / %d solved"
+ro = "%d / %d rezolvate"
+
+[the_rest]
+en = "Other problems"
+ro = "Alte probleme"
+
 [problems]
 en = "Problems"
 ro = "Probleme"
@@ -39,8 +47,8 @@ en = "There are no visible problems in the list"
 ro = "Nu există nicio problemă vizibilă în lista de probleme"
 
 [create]
-en = "[create]"
-ro = "[creare]"
+en = "Create"
+ro = "Creare"
 
 [title]
 en = "Title"

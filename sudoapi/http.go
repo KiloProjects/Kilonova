@@ -84,11 +84,6 @@ func (s *WebHandler) GetHandler() http.Handler {
 	}) (*kilonova.Problem, *StatusError) {
 		return s.base.Problem(ctx, args.ID)
 	}))
-	r.Get("/problem/byName", webWrapper(func(ctx context.Context, args struct {
-		Name string `json:"name"`
-	}) (*kilonova.Problem, *StatusError) {
-		return s.base.ProblemByName(ctx, args.Name)
-	}))
 
 	r.With(s.withUser("user_id", true)).Post("/problem", webWrapper(func(ctx context.Context, args struct {
 		Title        string `json:"title"`

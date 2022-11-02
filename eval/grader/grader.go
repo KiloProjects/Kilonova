@@ -20,7 +20,7 @@ import (
 
 var (
 	True          = true
-	waitingSubs   = kilonova.SubmissionFilter{Status: kilonova.StatusWaiting}
+	waitingSubs   = kilonova.SubmissionFilter{Status: kilonova.StatusWaiting, Ascending: true}
 	workingUpdate = kilonova.SubmissionUpdate{Status: kilonova.StatusWorking}
 )
 
@@ -54,10 +54,6 @@ func (h *Handler) chFeeder(d time.Duration) {
 				}
 
 				for _, sub := range subs {
-					if err := h.base.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
-						zap.S().Warn(err)
-						continue
-					}
 					gsub := h.makeGraderSub(sub)
 					h.sChan <- gsub
 				}
@@ -96,8 +92,12 @@ func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
 			if !more {
 				return nil
 			}
+			if err := h.base.UpdateSubmission(h.ctx, sub.Submission().ID, workingUpdate); err != nil {
+				zap.S().Warn(err)
+				continue
+			}
 			if err := h.ExecuteSubmission(ctx, runner, sub); err != nil {
-				zap.S().Warn("Couldn't run submission", err)
+				zap.S().Warn("Couldn't run submission: ", err)
 			}
 		}
 	}

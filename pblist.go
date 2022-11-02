@@ -13,6 +13,13 @@ type ProblemList struct {
 	List        []int     `json:"list"`
 }
 
+func (p *ProblemList) ProblemIDs() []int {
+	if p == nil {
+		return nil
+	}
+	return p.List
+}
+
 type ProblemListFilter struct {
 	ID       *int `json:"id"`
 	AuthorID *int `json:"author_id"`

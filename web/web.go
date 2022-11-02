@@ -83,7 +83,7 @@ func (rt *Web) Handler() http.Handler {
 	})
 
 	r.Route("/problem_lists", func(r chi.Router) {
-		r.With(mustBeProposer).Get("/", rt.justRender("lists/index.html", "modals/pbs.html"))
+		r.Get("/", rt.justRender("lists/index.html", "modals/pbs.html"))
 		r.With(mustBeProposer).Get("/create", rt.justRender("lists/create.html"))
 		r.With(rt.ValidateListID).Get("/{id}", rt.pbListView())
 	})
@@ -169,6 +169,13 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return problems
 		},
+		"unassociatedProblems": func(user *kilonova.UserBrief) []*kilonova.Problem {
+			problems, err := base.Problems(context.Background(), kilonova.ProblemFilter{LookingUser: user, Look: true, Unassociated: true})
+			if err != nil {
+				return nil
+			}
+			return problems
+		},
 		"subScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) string {
 			score := base.MaxScore(context.Background(), user.ID, pb.ID)
 			if score < 0 {
@@ -177,7 +184,7 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			return strconv.Itoa(score)
 		},
 		"listProblems": func(user *kilonova.UserBrief, list *kilonova.ProblemList) []*kilonova.Problem {
-			pbs, err := base.Problems(context.Background(), kilonova.ProblemFilter{IDs: list.List, LookingUser: user, Look: true})
+			pbs, err := base.ProblemListProblems(context.Background(), list.List, user)
 			if err != nil {
 				return nil
 			}
@@ -195,6 +202,20 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			return &ProblemListingParams{user, lang, pbs}
 		},
 		"numSolved": func(user *kilonova.UserBrief, ids []int) int {
+			scores := base.MaxScores(context.Background(), user.ID, ids)
+			var rez int
+			for _, v := range scores {
+				if v == 100 {
+					rez++
+				}
+			}
+			return rez
+		},
+		"numSolvedPbs": func(user *kilonova.UserBrief, pbs []*kilonova.Problem) int {
+			ids := []int{}
+			for _, pb := range pbs {
+				ids = append(ids, pb.ID)
+			}
 			scores := base.MaxScores(context.Background(), user.ID, ids)
 			var rez int
 			for _, v := range scores {

@@ -45,6 +45,9 @@ type ProblemFilter struct {
 	Look        bool       `json:""`
 	LookingUser *UserBrief `json:"-"`
 
+	// Unassociated filter ensures that all returned problems are not "bound" to a problem list
+	Unassociated bool `json:"-"`
+
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
 }

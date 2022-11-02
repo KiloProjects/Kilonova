@@ -93,8 +93,8 @@ func (s *DB) UpdateProblemListProblems(ctx context.Context, id int, problemIDs [
 		return err
 	}
 
-	for _, pbid := range problemIDs {
-		if _, err := tx.ExecContext(ctx, s.conn.Rebind("INSERT INTO problem_list_problems (pblist_id, problem_id) VALUES (?, ?)"), id, pbid); err != nil {
+	for i, pbid := range problemIDs {
+		if _, err := tx.ExecContext(ctx, s.conn.Rebind("INSERT INTO problem_list_problems (pblist_id, problem_id, position) VALUES (?, ?, ?)"), id, pbid, i); err != nil {
 			zap.S().Warn(err)
 			return err
 		}
@@ -126,16 +126,6 @@ func pblistUpdateQuery(upd *kilonova.ProblemListUpdate) ([]string, []interface{}
 	if v := upd.Description; v != nil {
 		toUpd, args = append(toUpd, "description = ?"), append(args, v)
 	}
-	/*
-		if v := upd.List; v != nil {
-			arr := pgtype.Int4Array{}
-			if err := arr.Set(v); err != nil {
-				zap.S().Warn("Wtf", err)
-			} else {
-				toUpd, args = append(toUpd, "list = ?"), append(args, arr)
-			}
-		}
-	*/
 	return toUpd, args
 }
 
@@ -149,10 +139,11 @@ type pblist struct {
 
 func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.ProblemList, error) {
 
-	var ids []int
-	err := s.conn.SelectContext(ctx, &ids, s.conn.Rebind("SELECT problem_id FROM problem_list_problems WHERE pblist_id = ? ORDER BY problem_id ASC"), list.ID)
-	if errors.Is(err, sql.ErrNoRows) || len(ids) == 0 {
-		ids = []int{}
+	var items []int
+
+	err := s.conn.SelectContext(ctx, &items, s.conn.Rebind("SELECT problem_id FROM problem_list_problems WHERE pblist_id = ? ORDER BY position ASC, problem_id ASC"), list.ID)
+	if errors.Is(err, sql.ErrNoRows) || len(items) == 0 {
+		items = []int{}
 	} else if err != nil {
 		return nil, err
 	}
@@ -162,7 +153,7 @@ func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.Prob
 		CreatedAt:   list.CreatedAt,
 		Title:       list.Title,
 		Description: list.Description,
-		List:        ids,
 		AuthorID:    list.AuthorID,
+		List:        items,
 	}, nil
 }

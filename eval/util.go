@@ -126,6 +126,7 @@ func checkLanguages() {
 func Initialize() error {
 
 	// Test right now if they exist
+	zap.S().Info("Isolate path: ", config.Eval.IsolatePath)
 	if _, err := os.Stat(config.Eval.IsolatePath); os.IsNotExist(err) {
 		zap.S().Fatal("Sandbox binary not found. Run scripts/init_isolate.sh to properly install it.")
 	}

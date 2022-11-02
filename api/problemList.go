@@ -158,9 +158,19 @@ func (s *API) filterProblems(ctx context.Context, problemIDs []int, user *kilono
 	if err != nil {
 		return nil, err
 	}
-	actualIDs := make([]int, 0, len(pbs))
+
+	// Do this in order to maintain problemIDs order.
+	// Necessary for problem list ordering
+	available := make(map[int]bool)
 	for _, pb := range pbs {
-		actualIDs = append(actualIDs, pb.ID)
+		available[pb.ID] = true
+	}
+
+	actualIDs := make([]int, 0, len(problemIDs))
+	for _, pb := range problemIDs {
+		if _, ok := available[pb]; ok {
+			actualIDs = append(actualIDs, pb)
+		}
 	}
 	return actualIDs, nil
 }

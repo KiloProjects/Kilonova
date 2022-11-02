@@ -22,15 +22,6 @@ func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
 	return internalToProblem(&pb), err
 }
 
-func (s *DB) ProblemByName(ctx context.Context, name string) (*kilonova.Problem, error) {
-	var pb dbProblem
-	err := s.conn.GetContext(ctx, &pb, s.conn.Rebind("SELECT * FROM problems WHERE lower(name) = lower(?) LIMIT 1"), name)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
-	}
-	return internalToProblem(&pb), err
-}
-
 func (s *DB) VisibleProblem(ctx context.Context, id int, user *kilonova.UserBrief) (*kilonova.Problem, error) {
 	pbs, err := s.Problems(ctx, kilonova.ProblemFilter{ID: &id, LookingUser: user, Look: true})
 	if err != nil || len(pbs) == 0 {
@@ -149,6 +140,9 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []interface{}
 		if id >= 0 {
 			where, args = append(where, "(visible = true OR author_id = ?)"), append(args, id)
 		}
+	}
+	if filter.Unassociated {
+		where = append(where, "id NOT IN (SELECT DISTINCT problem_id FROM problem_list_problems)")
 	}
 	return where, args
 }

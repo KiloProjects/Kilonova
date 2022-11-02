@@ -1,7 +1,7 @@
 {{ define "pb_list_group" }}
 {{ $user := .User }}
 {{ $lang := .Language }}
-<div class="list-group list-group-mini">
+<div class="list-group list-group-mini m-1">
 	{{ range .Problems }}
 		<a href="/problems/{{.ID}}" class="list-group-item flex justify-between">
 			<span>#{{.ID}}: {{.Name}}</span>

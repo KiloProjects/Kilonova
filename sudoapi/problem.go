@@ -2,11 +2,8 @@ package sudoapi
 
 import (
 	"context"
-	"path"
-	"strings"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"go.uber.org/zap"
 )
@@ -15,14 +12,6 @@ import (
 
 func (s *BaseAPI) Problem(ctx context.Context, id int) (*kilonova.Problem, *StatusError) {
 	problem, err := s.db.Problem(ctx, id)
-	if err != nil || problem == nil {
-		return nil, WrapError(err, "Problem not found")
-	}
-	return problem, nil
-}
-
-func (s *BaseAPI) ProblemByName(ctx context.Context, name string) (*kilonova.Problem, *StatusError) {
-	problem, err := s.db.ProblemByName(ctx, name)
 	if err != nil || problem == nil {
 		return nil, WrapError(err, "Problem not found")
 	}
@@ -85,10 +74,6 @@ func (s *BaseAPI) SolvedProblems(ctx context.Context, uid int) ([]*kilonova.Prob
 }
 
 func (s *BaseAPI) InsertProblem(ctx context.Context, problem *kilonova.Problem) (int, *StatusError) {
-	if _, err := s.ProblemByName(ctx, problem.Name); err == nil {
-		return -1, Statusf(400, "Problem with title already exists")
-	}
-
 	err := s.db.CreateProblem(ctx, problem)
 	if err != nil {
 		return -1, WrapError(err, "Couldn't create problem")
@@ -106,39 +91,4 @@ func (s *BaseAPI) CreateProblem(ctx context.Context, title string, author *UserB
 	}
 
 	return s.InsertProblem(ctx, problem)
-}
-
-func (s *BaseAPI) GetProblemSettings(ctx context.Context, problemID int) (*kilonova.ProblemEvalSettings, error) {
-	var settings = &kilonova.ProblemEvalSettings{}
-
-	atts, err := s.ProblemAttachments(ctx, problemID)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, att := range atts {
-		filename := path.Base(att.Name)
-		filename = strings.TrimSuffix(filename, path.Ext(filename))
-		if filename == "checker" && eval.GetLangByFilename(att.Name) != "" {
-			settings.CheckerName = att.Name
-			continue
-		}
-
-		if att.Name[0] == '_' {
-			continue
-		}
-		// If not checker and not skipped, continue searching
-
-		if path.Ext(att.Name) == ".h" || path.Ext(att.Name) == ".hpp" {
-			settings.OnlyCPP = true
-			settings.HeaderFiles = append(settings.HeaderFiles, att.Name)
-		}
-
-		if eval.GetLangByFilename(att.Name) != "" {
-			settings.OnlyCPP = true
-			settings.GraderFiles = append(settings.GraderFiles, att.Name)
-		}
-	}
-
-	return settings, nil
 }

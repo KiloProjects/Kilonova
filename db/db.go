@@ -50,11 +50,11 @@ func FormatLimitOffset(limit int, offset int) string {
 	return ""
 }
 
-func mapper[T1 any, T2 any](lst []*T1, f func(*T1) *T2) []*T2 {
+func mapper[T1 any, T2 any](lst []T1, f func(T1) T2) []T2 {
 	if len(lst) == 0 {
-		return []*T2{}
+		return []T2{}
 	}
-	rez := make([]*T2, len(lst))
+	rez := make([]T2, len(lst))
 	for i := range rez {
 		rez[i] = f(lst[i])
 	}
