@@ -483,7 +483,7 @@ export class SubmissionManager extends Component<{ id: number }, SubMgrState> {
 		if (!this.finished) {
 			console.info("Started poller");
 			this.poller = setInterval(async () => {
-				document.dispatchEvent(new Event("kn-poll"));
+				document.dispatchEvent(new CustomEvent("kn-poll"));
 				await this.poll();
 			}, 2000);
 		}

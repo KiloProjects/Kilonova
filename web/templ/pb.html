@@ -123,7 +123,7 @@ function makeSubWaiter(id) {
 		}
 		var lastStatus = loadingIDs.get(id);
 		if(res.data.sub.status !== lastStatus) {
-			document.dispatchEvent(new Event("kn-poll"))
+			document.dispatchEvent(new CustomEvent("kn-poll"))
 		}
 		if(res.data.sub.status == "finished") {
 			bundled.createToast({title: bundled.getText("finishedEval"), description: bundled.getText("finalScore", id, res.data.sub.score), status: "success"})
@@ -177,7 +177,7 @@ async function sendSub() {
 	}
 	bundled.createToast({title: bundled.getText("uploaded"), description: `<a href="/submissions/${res.data}">${ bundled.getText("view") }</btn>`})
 	console.log(res.data, makeSubWaiter(res.data));
-	document.dispatchEvent(new Event("kn-poll"));
+	document.dispatchEvent(new CustomEvent("kn-poll"));
 }
 		</script>
 	{{ else }}

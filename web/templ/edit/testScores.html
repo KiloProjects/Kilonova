@@ -76,13 +76,17 @@ updateFinalScore();
 async function deleteTests() {
 	var tests = [];
 	for(let e of document.querySelectorAll("[id^='row-test-']")) {
-		let id = rowreg.exec(e.id)[1];
+		let id = parseInt(rowreg.exec(e.id)[1]);
+		if(isNaN(id)) {
+			console.error("id is somehow NaN", e.id)
+			continue
+		}
 		let checked = document.getElementById(`pb-test-${id}`).checked;
 		if(checked) {
 			tests.push(id);
 		}
 	}
-	let res = await bundled.postCall(`/problem/${pbid}/update/bulkDeleteTests`, {tests: tests.join(',')});
+	let res = await bundled.bodyCall(`/problem/${pbid}/update/bulkDeleteTests`, tests);
 	if(res.status === "success") {
 		window.location.reload();
 		return;
@@ -134,7 +138,7 @@ async function uploadTests(e) {
 	}
 	form.append("testArchive", files[0]);
 
-	let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/processTestArchive", form)
+	let res = await bundled.multipartProgressCall("/problem/{{.Problem.ID}}/update/processTestArchive", form)
 	if(res.status === "success") {
 		window.location.reload();
 		return

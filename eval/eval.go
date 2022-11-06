@@ -14,6 +14,9 @@ type Sandbox interface {
 	RemoveFile(path string) error
 	FileExists(path string) bool
 
+	// For debugging that god forsaken no output file found bug
+	ReadDir(path string) ([]string, error)
+
 	GetID() int
 
 	// if stdout == stderr, then it will act like exec.CombinedOutput()

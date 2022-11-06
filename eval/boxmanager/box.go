@@ -121,6 +121,19 @@ func (b *Box) ReadFile(fpath string) (io.ReadSeekCloser, error) {
 	return os.Open(b.getFilePath(fpath))
 }
 
+func (b *Box) ReadDir(fpath string) ([]string, error) {
+	p := b.getFilePath(fpath)
+	d, err := os.ReadDir(p)
+	if err != nil {
+		return nil, err
+	}
+	out := []string{}
+	for _, file := range d {
+		out = append(out, file.Name())
+	}
+	return out, nil
+}
+
 func (b *Box) GetID() int {
 	return b.boxID
 }

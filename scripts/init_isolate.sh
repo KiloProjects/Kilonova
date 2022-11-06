@@ -20,4 +20,4 @@ chmod +s "$ISOLATE_PATH"
 echo "Downloading isolate config"
 curl -sSL 'https://github.com/KiloProjects/isolate/releases/latest/download/default.cf' -o "$ISOLATE_CONF_PATH"
 
-echo "Done. Don't forget to add your user account to the `kn_sandbox` group"
+echo "Done. Don't forget to add your user account to the 'kn_sandbox' group"

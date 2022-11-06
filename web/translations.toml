@@ -918,3 +918,7 @@ ro = "Ora acțiunii"
 [unknownUser]
 en = "Unknown user"
 ro = "Utilizator necunoscut"
+
+[uploading]
+en = "Uploading..."
+ro = "Se încarcă..."

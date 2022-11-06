@@ -1,4 +1,4 @@
-import { Notyf, INotyfOptions } from "notyf";
+import { Notyf, INotyfOptions, NotyfNotification } from "notyf";
 
 let notyfConf: INotyfOptions = {
 	position: { x: "right", y: "bottom" },
@@ -33,6 +33,13 @@ let notyfConf: INotyfOptions = {
 				color: "white",
 			},
 		},
+		{
+			type: "progress",
+			background: "blue",
+			icon: false,
+			dismissible: false,
+			duration: 10000000,
+		},
 	],
 };
 
@@ -45,7 +52,7 @@ window.addEventListener("load", () => {
 interface ToastOptions {
 	title?: string;
 	description?: string;
-	status?: "success" | "error" | "info";
+	status?: "success" | "error" | "info" | "progress";
 }
 
 /* createToast options
@@ -53,10 +60,9 @@ interface ToastOptions {
 	description: the toast description
 	status: the toast status (default "info", can be ["success", "error", "info"])
 */
-export function createToast(options: ToastOptions) {
+export function createToast(options: ToastOptions): NotyfNotification {
 	if (notyf === null) {
-		console.warn("createToast called before window load");
-		return;
+		throw new Error("createToast called before window load");
 	}
 
 	if (options.status == null) {
@@ -90,11 +96,18 @@ export interface APIResponse {
 	data: any;
 }
 
-export function apiToast(res: APIResponse, overwrite?: ToastOptions) {
+export function apiToast(
+	res: APIResponse,
+	overwrite?: ToastOptions
+): NotyfNotification {
 	if (overwrite === null || overwrite === undefined) {
 		overwrite = {};
 	}
 	overwrite["status"] = res.status;
 	overwrite["description"] = res.data;
-	createToast(overwrite);
+	return createToast(overwrite);
+}
+
+export function dismissToast(toast: NotyfNotification) {
+	notyf?.dismiss(toast);
 }

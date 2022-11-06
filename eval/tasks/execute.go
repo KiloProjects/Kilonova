@@ -7,6 +7,8 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/davecgh/go-spew/spew"
+	"go.uber.org/zap"
 )
 
 var _ eval.Task = &ExecuteTask{}
@@ -23,7 +25,7 @@ func (job *ExecuteTask) Execute(ctx context.Context, box eval.Sandbox) error {
 		log.Printf("Executing test %d using box %d\n", job.Req.SubtestID, box.GetID())
 	}
 
-	in, err := job.DM.TestInput(int(job.Req.TestID))
+	in, err := job.DM.TestInput(job.Req.TestID)
 	if err != nil {
 		return err
 	}
@@ -68,6 +70,8 @@ func (job *ExecuteTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	boxOut := fmt.Sprintf("/box/%s.out", job.Req.Filename)
 	if !box.FileExists(boxOut) {
 		job.Resp.Comments = "No output file found"
+		zap.S().Warn("No output file found", zap.Int("subtest_id", job.Req.SubtestID), zap.Int("box_id", box.GetID()), zap.Int("sub_id", job.Req.SubID))
+		zap.S().Info("This may be a bug: ", spew.Sdump(box.ReadDir("/box/")))
 		return nil
 	}
 

@@ -61,13 +61,17 @@ const mgr = new bundled.CheckboxManager(document.getElementById("selectAllBox"),
 async function deleteAttachments() {
 	var attachments = [];
 	for(let e of document.querySelectorAll("[id^='row-att-']")) {
-		let id = rowreg.exec(e.id)[1];
+		let id = parseInt(rowreg.exec(e.id)[1]);
+		if(isNaN(id)) {
+			console.error("id is somehow NaN", e.id)
+			continue
+		}
 		let checked = document.getElementById(`pb-att-${id}`).checked;
 		if(checked) {
 			attachments.push(id);
 		}
 	}
-	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/bulkDeleteAttachments", {atts: attachments.join(',')})
+	let res = await bundled.bodyCall("/problem/{{.Problem.ID}}/update/bulkDeleteAttachments", attachments)
 	if(res.status === "success") {
 		window.location.reload();
 		return;
@@ -130,7 +134,7 @@ async function createAttachment(e) {
 	form.append("visible", visibleNode.checked);
 	form.append("private", privateNode.checked);
 
-	let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/addAttachment", form)
+	let res = await bundled.multipartProgressCall("/problem/{{.Problem.ID}}/update/addAttachment", form)
 	if(res.status !== "success") {
 		bundled.apiToast(res);
 		return

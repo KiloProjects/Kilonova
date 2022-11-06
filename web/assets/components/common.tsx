@@ -303,3 +303,35 @@ export function OlderSubmissions({ userid, problemid }: OlderSubsParams) {
 
 register(OlderSubmissions, "older-subs", ["userid", "problemid"]);
 register(ProblemAttachment, "problem-attachment", ["attname"]);
+
+function ProgressChecker({ id }: { id: number }) {
+	var [computable, setComputable] = useState<boolean>(false);
+	var [loaded, setLoaded] = useState<number>(0);
+	var [total, setTotal] = useState<number>(0);
+
+	useEffect(() => {
+		const upd = (e: CustomEvent<ProgressEventData>) => {
+			if (e.detail.id == id) {
+				setLoaded(e.detail.cntLoaded);
+				setTotal(e.detail.cntTotal);
+				setComputable(e.detail.computable);
+			}
+		};
+		document.addEventListener("kn-upload-update", upd);
+		return () => {
+			document.removeEventListener("kn-upload-update", upd);
+		};
+	}, []);
+
+	return (
+		<>
+			<div class="block">
+				<progress value={computable ? loaded / total : undefined} />
+			</div>
+
+			{computable && <span>{Math.floor((loaded / total) * 100)}%</span>}
+		</>
+	);
+}
+
+register(ProgressChecker, "upload-progress", ["id"]);
