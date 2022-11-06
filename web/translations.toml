@@ -446,6 +446,10 @@ ro = "Privat"
 en = "Delete selected attachments"
 ro = "Șterge atașamentele selectate"
 
+[updateAttachments]
+en = "Update attachment info"
+ro = "Actualizare informații atașamente"
+
 [noAttachments]
 en = "There are no attachments for the problem"
 ro = "Nu există niciun atașament asociat problemei"

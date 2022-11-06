@@ -62,3 +62,41 @@ func (s *API) bulkDeleteAttachments(w http.ResponseWriter, r *http.Request) {
 	}
 	returnData(w, "Deleted selected attachments")
 }
+
+func (s *API) bulkUpdateAttachmentData(w http.ResponseWriter, r *http.Request) {
+	var data map[int]struct {
+		Name    *string `json:"name"`
+		Visible *bool   `json:"visible"`
+		Private *bool   `json:"private"`
+	}
+	var updatedAttachments int
+
+	if err := parseJsonBody(r, &data); err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	// Ensure only the selected problem's attachments are updated
+	atts, err := s.base.ProblemAttachments(r.Context(), util.Problem(r).ID)
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+	for _, att := range atts {
+		if val, ok := data[att.ID]; ok {
+			if err := s.base.UpdateAttachment(r.Context(), att.ID, &kilonova.AttachmentUpdate{
+				Visible: val.Visible,
+				Private: val.Private,
+				Name:    val.Name,
+			}); err == nil {
+				updatedAttachments++
+			}
+		}
+	}
+
+	if updatedAttachments != len(data) {
+		errorData(w, "Some attachments could not be updated", 500)
+		return
+	}
+	returnData(w, "Updated all attachments")
+}

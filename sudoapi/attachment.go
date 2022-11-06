@@ -3,8 +3,11 @@ package sudoapi
 import (
 	"context"
 	"io"
+	"path"
+	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval"
 	"go.uber.org/zap"
 )
 
@@ -43,6 +46,13 @@ func (s *BaseAPI) CreateAttachment(ctx context.Context, att *kilonova.Attachment
 	if err := s.db.CreateAttachment(ctx, att, problemID, data); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't create attachment")
+	}
+	return nil
+}
+
+func (s *BaseAPI) UpdateAttachment(ctx context.Context, aid int, upd *kilonova.AttachmentUpdate) *StatusError {
+	if err := s.db.UpdateAttachment(ctx, aid, upd); err != nil {
+		return WrapError(err, "Couldn't update attachment")
 	}
 	return nil
 }
@@ -92,10 +102,41 @@ func (s *BaseAPI) AttachmentDataByName(ctx context.Context, problemID int, name 
 }
 
 func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova.ProblemEvalSettings, *StatusError) {
-	config, err := s.db.GetProblemSettings(ctx, problemID)
+	var settings = &kilonova.ProblemEvalSettings{}
+	atts, err := s.ProblemAttachments(ctx, problemID)
 	if err != nil {
 		zap.S().Warn(err)
 		return nil, WrapError(err, "Couldn't get problem settings")
 	}
-	return config, nil
+
+	for _, att := range atts {
+		filename := path.Base(att.Name)
+		filename = strings.TrimSuffix(filename, path.Ext(filename))
+		if filename == "checker" && eval.GetLangByFilename(att.Name) != "" {
+			settings.CheckerName = att.Name
+			continue
+		}
+
+		if att.Name[0] == '_' {
+			continue
+		}
+
+		if att.Name == ".output_only" {
+			settings.OutputOnly = true
+			continue
+		}
+		// If not checker and not skipped, continue searching
+
+		if path.Ext(att.Name) == ".h" || path.Ext(att.Name) == ".hpp" {
+			settings.OnlyCPP = true
+			settings.HeaderFiles = append(settings.HeaderFiles, att.Name)
+		}
+
+		if eval.GetLangByFilename(att.Name) != "" {
+			settings.OnlyCPP = true
+			settings.GraderFiles = append(settings.GraderFiles, att.Name)
+		}
+	}
+
+	return settings, nil
 }

@@ -85,6 +85,7 @@ func (s *API) Handler() http.Handler {
 				r.Post("/addAttachment", s.createAttachment)
 				//r.With(s.validateAttachmentID).Post("/attachment/{aID}/", s.updateAttachmentMetadata)
 				r.Post("/bulkDeleteAttachments", s.bulkDeleteAttachments)
+				r.Post("/bulkUpdateAttachmentData", s.bulkUpdateAttachmentData)
 
 				r.Post("/bulkDeleteTests", s.bulkDeleteTests)
 				r.Post("/bulkUpdateTestScores", s.bulkUpdateTestScores)

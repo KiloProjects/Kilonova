@@ -5,12 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"path"
 	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -87,8 +85,8 @@ func (a *DB) AttachmentDataByName(ctx context.Context, problemID int, name strin
 
 const attachmentUpdateStatement = "UPDATE attachments SET %s WHERE id = ?"
 
-func (a *DB) UpdateAttachment(ctx context.Context, id int, upd kilonova.AttachmentUpdate) error {
-	toUpd, args := attachmentUpdateQuery(&upd)
+func (a *DB) UpdateAttachment(ctx context.Context, id int, upd *kilonova.AttachmentUpdate) error {
+	toUpd, args := attachmentUpdateQuery(upd)
 	if len(toUpd) == 0 {
 		return kilonova.ErrNoUpdates
 	}
@@ -153,45 +151,6 @@ func attachmentUpdateQuery(upd *kilonova.AttachmentUpdate) ([]string, []any) {
 		toUpd, args = append(toUpd, "private = ?"), append(args, v)
 	}
 	return toUpd, args
-}
-
-func (s *DB) GetProblemSettings(ctx context.Context, problemID int) (*kilonova.ProblemEvalSettings, error) {
-	var settings = &kilonova.ProblemEvalSettings{}
-	atts, err := s.ProblemAttachments(ctx, problemID, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, att := range atts {
-		filename := path.Base(att.Name)
-		filename = strings.TrimSuffix(filename, path.Ext(filename))
-		if filename == "checker" && eval.GetLangByFilename(att.Name) != "" {
-			settings.CheckerName = att.Name
-			continue
-		}
-
-		if att.Name[0] == '_' {
-			continue
-		}
-
-		if att.Name == ".output_only" {
-			settings.OutputOnly = true
-			continue
-		}
-		// If not checker and not skipped, continue searching
-
-		if path.Ext(att.Name) == ".h" || path.Ext(att.Name) == ".hpp" {
-			settings.OnlyCPP = true
-			settings.HeaderFiles = append(settings.HeaderFiles, att.Name)
-		}
-
-		if eval.GetLangByFilename(att.Name) != "" {
-			settings.OnlyCPP = true
-			settings.GraderFiles = append(settings.GraderFiles, att.Name)
-		}
-	}
-
-	return settings, nil
 }
 
 type dbAttachment struct {

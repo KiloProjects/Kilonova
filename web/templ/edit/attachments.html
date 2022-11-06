@@ -38,16 +38,17 @@
 						{{.Size}}
 					</td>
 					<td class="kn-table-cell">
-						<input class="form-checkbox" type="checkbox" id="visible-att-{{.ID}}" {{if .Visible}}checked{{end}} disabled>
+						<input class="form-checkbox" type="checkbox" id="visible-att-{{.ID}}" {{if .Visible}}checked{{end}}>
 					</td>
 					<td class="kn-table-cell">
-						<input class="form-checkbox" type="checkbox" id="private-att-{{.ID}}" {{if .Private}}checked{{end}} disabled>
+						<input class="form-checkbox" type="checkbox" id="private-att-{{.ID}}" {{if .Private}}checked{{end}}>
 					</td>
 				</tr>
 			{{ end }}
 			</tbody>
 		</table>
 		<button class="btn btn-red mr-2" onclick="deleteAttachments()">{{getText $lang "deleteAttachments"}}</button>
+		<button class="btn btn-blue mr-2" onclick="updateAttachments()">{{getText $lang "updateAttachments"}}</button>
 	{{ else }}
 		{{getText .Ctx.Language "noAttachments"}}	
 	{{ end }}
@@ -76,6 +77,22 @@ async function deleteAttachments() {
 		window.location.reload();
 		return;
 	}
+	bundled.apiToast(res)
+}
+
+async function updateAttachments() {
+    var atts = {};
+	for(let e of document.querySelectorAll("[id^='row-att-']")) {
+		let id = parseInt(rowreg.exec(e.id)[1]);
+		if(isNaN(id)) {
+			console.error("id is somehow NaN", e.id)
+			continue
+		}
+        let visible = document.getElementById(`visible-att-${id}`).checked;
+        let private = document.getElementById(`private-att-${id}`).checked;
+        atts[id] = {visible, private}
+    }
+    let res = await bundled.bodyCall("/problem/{{.Problem.ID}}/update/bulkUpdateAttachmentData", atts)
 	bundled.apiToast(res)
 }
 
