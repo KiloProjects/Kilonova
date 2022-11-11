@@ -12,14 +12,10 @@ export { dayjs };
 // if max_step is 0, it will format until the MB region
 // else if max_step is 1, it will only format until the KB region
 // else if max_step >= 2, it will append a " B" to the end of the number
-export function sizeFormatter(
-	size: number,
-	max_step?: number,
-	floor?: boolean
-) {
+export function sizeFormatter(size: number, max_step?: number, floor?: boolean) {
 	var units: number = size,
 		suffix: string = "B";
-	if (max_step === null || max_step === undefined) {
+	if (max_step === undefined) {
 		max_step = 0;
 	}
 	if (size > 1024 * 1024 && max_step == 0) {

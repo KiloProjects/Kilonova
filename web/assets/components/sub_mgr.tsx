@@ -1,11 +1,4 @@
-import {
-	h,
-	Fragment,
-	render,
-	Component,
-	AnyComponent,
-	createRef,
-} from "preact";
+import { h, Fragment, render, Component, AnyComponent, createRef } from "preact";
 import { useMemo } from "preact/hooks";
 import register from "preact-custom-element";
 import { prettyLanguages } from "../langs";
@@ -30,9 +23,7 @@ import { getCall, postCall } from "../net";
 
 function downloadCode(sub) {
 	var file = new Blob([sub.code], { type: "text/plain" });
-	var filename = `${slugify(sub.problem.name)}-${sub.id}.${sub.language
-		.replace(/[0-9]+$/g, "")
-		.replace("outputOnly", "txt")}`;
+	var filename = `${slugify(sub.problem.name)}-${sub.id}.${sub.language.replace(/[0-9]+$/g, "").replace("outputOnly", "txt")}`;
 	downloadBlob(file, filename);
 }
 
@@ -50,33 +41,25 @@ async function copyCode(sub) {
 
 function Summary({ sub }) {
 	return (
-		<div class="lg:pl-4 lg:pb-2 lg:pr-2">
+		<div class="page-sidebar-box">
 			<h2>{getText("info")}</h2>
-			<table class="kn-table">
+			<table class="kn-table mx-2">
 				<tbody>
 					<tr class="kn-table-simple-border">
 						<td class="kn-table-cell">{getText("author")}</td>
 						<td class="kn-table-cell">
-							<a href={`/profile/${sub.author.name}`}>
-								{sub.author.name}
-							</a>
+							<a href={`/profile/${sub.author.name}`}>{sub.author.name}</a>
 						</td>
 					</tr>
 					<tr class="kn-table-simple-border">
+						<td class="kn-table-cell">{getText("problemSingle")}</td>
 						<td class="kn-table-cell">
-							{getText("problemSingle")}
-						</td>
-						<td class="kn-table-cell">
-							<a href={`/problems/${sub.problem.id}`}>
-								{sub.problem.name}
-							</a>
+							<a href={`/problems/${sub.problem.id}`}>{sub.problem.name}</a>
 						</td>
 					</tr>
 					<tr class="kn-table-simple-border">
 						<td class="kn-table-cell">{getText("uploadDate")}</td>
-						<td class="kn-table-cell">
-							{parseTime(sub.created_at)}
-						</td>
+						<td class="kn-table-cell">{parseTime(sub.created_at)}</td>
 					</tr>
 					<tr class="kn-table-simple-border">
 						<td class="kn-table-cell">{getText("status")}</td>
@@ -84,61 +67,33 @@ function Summary({ sub }) {
 					</tr>
 					<tr class="kn-table-simple-border">
 						<td class="kn-table-cell">{getText("language")}</td>
-						<td class="kn-table-cell">
-							{prettyLanguages[sub.language]}
-						</td>
+						<td class="kn-table-cell">{prettyLanguages[sub.language]}</td>
 					</tr>
 					{sub.code && (
 						<tr class="kn-table-simple-border">
 							<td class="kn-table-cell">{getText("size")}</td>
-							<td class="kn-table-cell">
-								{sizeFormatter(sub.code.length)}
-							</td>
+							<td class="kn-table-cell">{sizeFormatter(sub.code.length)}</td>
 						</tr>
 					)}
 					{sub.problem.default_points > 0 && (
 						<tr class="kn-table-simple-border">
-							<td class="kn-table-cell">
-								{getText("defaultPoints")}
-							</td>
-							<td class="kn-table-cell">
-								{sub.problem.default_points}
-							</td>
+							<td class="kn-table-cell">{getText("defaultPoints")}</td>
+							<td class="kn-table-cell">{sub.problem.default_points}</td>
 						</tr>
 					)}
 					{sub.status === "finished" && (
 						<>
 							<tr class="kn-table-simple-border">
-								<td class="kn-table-cell">
-									{getText("score")}
-								</td>
+								<td class="kn-table-cell">{getText("score")}</td>
 								<td class="kn-table-cell">{sub.score}</td>
 							</tr>
 							<tr class="kn-table-simple-border">
-								<td class="kn-table-cell">
-									{getText("maxTime")}
-								</td>
-								<td class="kn-table-cell">
-									{sub.max_time == -1
-										? "-"
-										: `${Math.floor(
-												sub.max_time * 1000
-										  )} ms`}
-								</td>
+								<td class="kn-table-cell">{getText("maxTime")}</td>
+								<td class="kn-table-cell">{sub.max_time == -1 ? "-" : `${Math.floor(sub.max_time * 1000)} ms`}</td>
 							</tr>
 							<tr class="kn-table-simple-border">
-								<td class="kn-table-cell">
-									{getText("maxMemory")}
-								</td>
-								<td class="kn-table-cell">
-									{sub.max_memory == -1
-										? "-"
-										: sizeFormatter(
-												sub.max_memory * 1024,
-												1,
-												true
-										  )}
-								</td>
+								<td class="kn-table-cell">{getText("maxMemory")}</td>
+								<td class="kn-table-cell">{sub.max_memory == -1 ? "-" : sizeFormatter(sub.max_memory * 1024, undefined)}</td>
 							</tr>
 						</>
 					)}
@@ -170,11 +125,7 @@ function CompileErrorInfo({ sub }) {
 				<summary>
 					<h2 class="inline-block">{getText("compileMsg")}</h2>
 				</summary>
-				<pre class="mb-2">
-					{sub.compile_message.String.length > 0
-						? sub.compile_message.String
-						: "No compilation message provided"}
-				</pre>
+				<pre class="mb-2">{sub.compile_message.String.length > 0 ? sub.compile_message.String : "No compilation message provided"}</pre>
 			</details>
 		</>
 	);
@@ -189,9 +140,7 @@ function SubCode({ sub }) {
 					class="hljs"
 					dangerouslySetInnerHTML={{
 						__html: window.hljs.highlight(sub.code, {
-							language: sub.language
-								.replace(/[0-9]+$/g, "")
-								.replace("outputOnly", "text"),
+							language: sub.language.replace(/[0-9]+$/g, "").replace("outputOnly", "text"),
 						}).value,
 					}}
 				>
@@ -199,16 +148,10 @@ function SubCode({ sub }) {
 				</code>
 			</pre>
 			<div class="block my-2">
-				<button
-					class="btn btn-blue mr-2 text-semibold text-lg"
-					onClick={() => copyCode(sub)}
-				>
+				<button class="btn btn-blue mr-2 text-semibold text-lg" onClick={() => copyCode(sub)}>
 					{getText("copy")}
 				</button>
-				<button
-					class="btn btn-blue text-semibold text-lg"
-					onClick={() => downloadCode(sub)}
-				>
+				<button class="btn btn-blue text-semibold text-lg" onClick={() => downloadCode(sub)}>
 					{getText("download")}
 				</button>
 			</div>
@@ -238,55 +181,29 @@ function TestTable({ sub }) {
 					<th scope="col">{getText("memory")}</th>
 					<th scope="col">{getText("verdict")}</th>
 					<th scope="col">{getText("score")}</th>
-					{sub.subTasks.length > 0 && (
-						<th scope="col">{getText("subTasks")}</th>
-					)}
-					{sub.problemEditor && (
-						<th scope="col">{getText("output")}</th>
-					)}
+					{sub.subTasks.length > 0 && <th scope="col">{getText("subTasks")}</th>}
+					{sub.problemEditor && <th scope="col">{getText("output")}</th>}
 				</tr>
 			</thead>
 			<tbody>
 				{sub.subTests.map((subtest) => (
 					<tr class="kn-table-row" key={"kn_test" + subtest.test.id}>
-						<th
-							class="py-1"
-							scope="row"
-							id={`test-${subtest.test.visible_id}`}
-						>
+						<th class="py-1" scope="row" id={`test-${subtest.test.visible_id}`}>
 							{subtest.test.visible_id}
 						</th>
 						{subtest.done ? (
 							<>
 								<td>{Math.floor(subtest.time * 1000)} ms</td>
-								<td>
-									{sizeFormatter(
-										subtest.memory * 1024,
-										1,
-										true
-									)}
-								</td>
+								<td>{sizeFormatter(subtest.memory * 1024, 1, true)}</td>
 								<td>{subtest.verdict}</td>
-								<td
-									class="text-black"
-									style={
-										"background-color: " +
-										getGradient(subtest.score, 100)
-									}
-								>
+								<td class="text-black" style={"background-color: " + getGradient(subtest.score, 100)}>
 									{sub.subTasks.length > 0 ? (
 										<>
-											{subtest.score}%{" "}
-											{getText("correct")}
+											{subtest.score}% {getText("correct")}
 										</>
 									) : (
 										<>
-											{Math.round(
-												(subtest.test.score *
-													subtest.score) /
-													100.0
-											)}{" "}
-											/ {subtest.test.score}
+											{Math.round((subtest.test.score * subtest.score) / 100.0)} / {subtest.test.score}
 										</>
 									)}
 								</td>
@@ -296,28 +213,15 @@ function TestTable({ sub }) {
 								<td></td>
 								<td></td>
 								<td>
-									<div
-										class="fas fa-spinner animate-spin"
-										role="status"
-									></div>{" "}
-									{getText("waiting")}
+									<div class="fas fa-spinner animate-spin" role="status"></div> {getText("waiting")}
 								</td>
 								<td>-</td>
 							</>
 						)}
-						{sub.subTasks.length > 0 && (
-							<td>{testSubTasks(subtest.test.id).join(", ")}</td>
-						)}
+						{sub.subTasks.length > 0 && <td>{testSubTasks(subtest.test.id).join(", ")}</td>}
 						{sub.problemEditor && (
 							<td>
-								<a
-									href={
-										"/proposer/get/subtest_output/" +
-										subtest.id
-									}
-								>
-									{getText("output")}
-								</a>
+								<a href={"/proposer/get/subtest_output/" + subtest.id}>{getText("output")}</a>
 							</td>
 						)}
 					</tr>
@@ -332,10 +236,7 @@ function SubTask({ sub, subtask, detRef }) {
 		let stk_score = 100;
 		for (let testID of subtask.tests) {
 			let actualSubtest = sub.subTestIDs[testID];
-			if (
-				actualSubtest !== undefined &&
-				actualSubtest.score < stk_score
-			) {
+			if (actualSubtest !== undefined && actualSubtest.score < stk_score) {
 				stk_score = actualSubtest.score;
 			}
 		}
@@ -356,19 +257,13 @@ function SubTask({ sub, subtask, detRef }) {
 		<details id={`stk-det-${subtask.visible_id}`} class="list-group-item">
 			<summary class="pb-1 mt-1">
 				{/* <span class="flex justify-between"> */}
-				<span class="float-left">
-					{getText("nthSubTask", subtask.visible_id)}
-				</span>
+				<span class="float-left">{getText("nthSubTask", subtask.visible_id)}</span>
 				{allSubtestsDone ? (
 					<span
 						class="float-right rounded-full py-1 px-2 text-base text-white font-semibold"
-						style={`background-color: ${getGradient(
-							stkScore,
-							100
-						)}`}
+						style={`background-color: ${getGradient(stkScore, 100)}`}
 					>
-						{Math.round((subtask.score * stkScore) / 100.0)} /{" "}
-						{subtask.score}
+						{Math.round((subtask.score * stkScore) / 100.0)} / {subtask.score}
 					</span>
 				) : (
 					<span class="float-right rounded-full py-1 px-2 text-base text-white font-semibold bg-teal-700">
@@ -382,10 +277,7 @@ function SubTask({ sub, subtask, detRef }) {
 					if (!(testID in sub.subTestIDs)) {
 						return (
 							<div class="list-group-item flex justify-between">
-								<span>
-									This subtask's test didn't exist when this
-									submission was created.
-								</span>
+								<span>This subtask's test didn't exist when this submission was created.</span>
 							</div>
 						);
 					}
@@ -396,25 +288,13 @@ function SubTask({ sub, subtask, detRef }) {
 							class="list-group-item flex justify-between"
 							onClick={() => (detRef.current.open = true)}
 						>
-							<span>
-								{getText(
-									"nthTest",
-									actualSubtest.test.visible_id
-								)}
-							</span>
+							<span>{getText("nthTest", actualSubtest.test.visible_id)}</span>
 							{actualSubtest.done ? (
 								<span
 									class="rounded-full py-1 px-2 text-base text-white font-semibold"
-									style={`background-color: ${getGradient(
-										actualSubtest.score,
-										100
-									)}`}
+									style={`background-color: ${getGradient(actualSubtest.score, 100)}`}
 								>
-									{Math.round(
-										(subtask.score * actualSubtest.score) /
-											100.0
-									)}{" "}
-									/ {subtask.score}
+									{Math.round((subtask.score * actualSubtest.score) / 100.0)} / {subtask.score}
 								</span>
 							) : (
 								<span class="rounded-full py-1 px-2 text-base text-white font-semibold bg-teal-700">
@@ -440,12 +320,7 @@ function SubTasks({ sub }) {
 				</summary>
 				<div class="list-group mb-2 list-group-mini">
 					{sub.subTasks.map((subtask) => (
-						<SubTask
-							sub={sub}
-							subtask={subtask}
-							detRef={ref}
-							key={"stk_" + subtask.id}
-						/>
+						<SubTask sub={sub} subtask={subtask} detRef={ref} key={"stk_" + subtask.id} />
 					))}
 				</div>
 			</details>
@@ -502,17 +377,17 @@ export class SubmissionManager extends Component<{ id: number }, SubMgrState> {
 		if (this.poll_mu === false) this.poll_mu = true;
 		else return;
 		console.log("Poll submission #", this.props.id);
-		let res = await getCall("/submissions/getByID", {
+		let resp = await getCall("/submissions/getByID", {
 			id: this.props.id,
 		});
-		if (res.status !== "success") {
-			apiToast(res);
-			console.error(res);
+		if (resp.status === "error") {
+			apiToast(resp);
+			console.error(resp);
 			this.poll_mu = false;
 			return;
 		}
 
-		res = res.data;
+		const res = resp.data;
 		let newState: SubMgrState = { sub: {} };
 
 		newState.sub = res.sub;
@@ -563,26 +438,20 @@ export class SubmissionManager extends Component<{ id: number }, SubMgrState> {
 				<h1 class="mb-2">
 					{getText("sub")} {`#${sub.id}`}
 				</h1>
-				<div class="border-t-2 lg:border-b-2 grid grid-cols-1 lg:grid-cols-4">
-					<div class="col-span-1 lg:pt-2 lg:order-last lg:border-l lg:pb-4">
+				<div class="page-holder">
+					<div class="page-sidebar lg:order-last">
 						<Summary sub={sub} />
-						{window.platform_info?.user_id !== undefined &&
-							window.platform_info?.user_id > 0 && (
-								<>
-									<div class="h-0 w-full border-t border-gray-200"></div>
-									<div class="my-2 lg:pl-2 lg:pb-4">
-										<OlderSubmissions
-											problemid={sub.problem.id}
-											userid={
-												window.platform_info?.user_id
-											}
-										/>
-									</div>
-									{/* <div class="h-0 w-full border-t border-gray-200 lg:pb-4"></div> */}
-								</>
-							)}
+						{window.platform_info.user_id !== undefined && window.platform_info.user_id > 0 && (
+							<>
+								<div class="page-sidebar-divider"></div>
+								<div class="page-sidebar-box">
+									<OlderSubmissions problemid={sub.problem.id} userid={window.platform_info.user_id} />
+								</div>
+								{/* <div class="page-sidebar-divider lg:pb-4"></div> */}
+							</>
+						)}
 					</div>
-					<div class="col-span-1 lg:pt-2 lg:col-span-3 lg:border-r lg:pr-4 lg:pb-4">
+					<div class="page-content">
 						<CompileErrorInfo sub={sub} />
 						{sub.subTests.length > 0 &&
 							!sub.compile_error.Bool &&

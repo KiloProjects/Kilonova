@@ -2,7 +2,10 @@ import qs from "query-string";
 import cookie from "js-cookie";
 import { createToast, dismissToast } from "./toast";
 import getText from "./translation";
-export async function getCall(call: string, params: any) {
+
+type Response<T> = { status: "error"; data: string } | { status: "success"; data: T };
+
+export async function getCall<T = any>(call: string, params: any): Promise<Response<T>> {
 	if (call.startsWith("/")) {
 		call = call.substring(1);
 	}
@@ -13,13 +16,13 @@ export async function getCall(call: string, params: any) {
 				Authorization: cookie.get("kn-sessionid") || "guest",
 			},
 		});
-		return await resp.json();
+		return (await resp.json()) as Response<T>;
 	} catch (e: any) {
 		return { status: "error", data: e.toString() };
 	}
 }
 
-export async function postCall(call: string, params: any) {
+export async function postCall<T = any>(call: string, params: any): Promise<Response<T>> {
 	if (call.startsWith("/")) {
 		call = call.substring(1);
 	}
@@ -33,13 +36,13 @@ export async function postCall(call: string, params: any) {
 			},
 			body: qs.stringify(params),
 		});
-		return await resp.json();
+		return (await resp.json()) as Response<T>;
 	} catch (e: any) {
 		return { status: "error", data: e.toString() };
 	}
 }
 
-export async function bodyCall(call: string, body: any) {
+export async function bodyCall<T = any>(call: string, body: any): Promise<Response<T>> {
 	if (call.startsWith("/")) {
 		call = call.substring(1);
 	}
@@ -53,13 +56,13 @@ export async function bodyCall(call: string, body: any) {
 			},
 			body: JSON.stringify(body),
 		});
-		return await resp.json();
+		return (await resp.json()) as Response<T>;
 	} catch (e: any) {
 		return { status: "error", data: e.toString() };
 	}
 }
 
-export async function multipartCall(call: string, formdata: FormData) {
+export async function multipartCall<T = any>(call: string, formdata: FormData): Promise<Response<T>> {
 	if (call.startsWith("/")) {
 		call = call.substring(1);
 	}
@@ -72,13 +75,13 @@ export async function multipartCall(call: string, formdata: FormData) {
 			},
 			body: formdata,
 		});
-		return await resp.json();
+		return (await resp.json()) as Response<T>;
 	} catch (e: any) {
 		return { status: "error", data: e.toString() };
 	}
 }
 
-export async function multipartProgressCall(call: string, formdata: FormData) {
+export async function multipartProgressCall<T = any>(call: string, formdata: FormData): Promise<Response<T>> {
 	if (call.startsWith("/")) {
 		call = call.substring(1);
 	}
@@ -90,7 +93,7 @@ export async function multipartProgressCall(call: string, formdata: FormData) {
 			description: `<upload-progress id="${id}">`,
 		});
 		const xhr = new XMLHttpRequest();
-		const resp = await new Promise((resolve, reject) => {
+		const resp = await new Promise<Response<T>>((resolve) => {
 			xhr.open("POST", `/api/${call}`, true);
 			xhr.responseType = "json";
 			xhr.upload.addEventListener("progress", (e) => {
@@ -109,23 +112,20 @@ export async function multipartProgressCall(call: string, formdata: FormData) {
 				if (xhr.status >= 200 && xhr.status < 300) {
 					resolve(xhr.response);
 				} else {
-					reject({
-						status: xhr.status,
-						statusText: xhr.statusText,
+					resolve({
+						status: "error",
+						data: xhr.statusText,
 					});
 				}
 			};
 			xhr.onerror = () => {
-				reject({
-					status: xhr.status,
-					statusText: xhr.statusText,
+				resolve({
+					status: "error",
+					data: xhr.statusText,
 				});
 			};
 			xhr.setRequestHeader("Accept", "application/json");
-			xhr.setRequestHeader(
-				"Authorization",
-				cookie.get("kn-sessionid") || "guest"
-			);
+			xhr.setRequestHeader("Authorization", cookie.get("kn-sessionid") || "guest");
 			xhr.send(formdata);
 		});
 		document.dispatchEvent(

@@ -27,10 +27,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	status = parse(nil, "util/statusCode.html", "modals/login.html")
-)
-
 type EditTopbar struct {
 	Page   string
 	PageID int
@@ -221,7 +217,8 @@ type StatusParams struct {
 	ShouldLogin bool
 }
 
-func Status(w io.Writer, params *StatusParams) (err error) {
+func (rt *Web) Status(w io.Writer, params *StatusParams) (err error) {
+	status := rt.parse(nil, "util/statusCode.html", "modals/login.html")
 	err = status.Execute(w, params)
 	if err != nil {
 		log.Println(err)

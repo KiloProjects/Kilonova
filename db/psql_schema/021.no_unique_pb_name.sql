@@ -1,1 +1,0 @@
-ALTER TABLE problems DROP CONSTRAINT problems_name_key;

@@ -1,4 +1,3 @@
-
 export const languages = {
 	c: "text/x-csrc",
 	cpp: "text/x-c++src",
@@ -23,5 +22,4 @@ export const prettyLanguages = {
 	java: "Java",
 	python3: "Python 3",
 	outputOnly: "Output Only",
-}
-
+};

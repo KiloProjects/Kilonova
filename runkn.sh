@@ -1,5 +1,8 @@
 #!/bin/bash
 
+echo "Building js bundle"
+yarn --cwd ./web/assets prodJS
+
 go build -race -v ./cmd/kn || exit 2
 
 mv kn knnnn # fix gitignore issue

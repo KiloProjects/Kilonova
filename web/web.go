@@ -43,8 +43,8 @@ type Web struct {
 	base *sudoapi.BaseAPI
 }
 
-func statusPage(w http.ResponseWriter, r *http.Request, statusCode int, err string, shouldLogin bool) {
-	Status(w, &StatusParams{
+func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int, err string, shouldLogin bool) {
+	rt.Status(w, &StatusParams{
 		Ctx:         GenContext(r),
 		Code:        statusCode,
 		Message:     err,
@@ -62,7 +62,7 @@ func (rt *Web) Handler() http.Handler {
 	r.Mount("/static", hashfs.FileServer(fsys))
 
 	r.Get("/", rt.index())
-	r.With(mustBeAuthed).Get("/profile", rt.selfProfile())
+	r.With(rt.mustBeAuthed).Get("/profile", rt.selfProfile())
 	r.Get("/profile/{user}", rt.profile())
 	r.Get("/settings", rt.justRender("settings.html"))
 
@@ -73,7 +73,7 @@ func (rt *Web) Handler() http.Handler {
 			r.Use(rt.ValidateProblemVisible)
 			r.Get("/", rt.problem())
 			r.Get("/attachments/{aid}", rt.problemAttachment)
-			r.With(mustBeProblemEditor).Route("/edit", rt.ProblemEditRouter)
+			r.With(rt.mustBeProblemEditor).Route("/edit", rt.ProblemEditRouter)
 		})
 	})
 
@@ -84,33 +84,33 @@ func (rt *Web) Handler() http.Handler {
 
 	r.Route("/problem_lists", func(r chi.Router) {
 		r.Get("/", rt.justRender("lists/index.html", "modals/pbs.html"))
-		r.With(mustBeProposer).Get("/create", rt.justRender("lists/create.html"))
+		r.With(rt.mustBeProposer).Get("/create", rt.justRender("lists/create.html"))
 		r.With(rt.ValidateListID).Get("/{id}", rt.pbListView())
 	})
 
 	r.Mount("/docs", rt.docs())
 
-	r.With(mustBeAdmin).Route("/admin", func(r chi.Router) {
+	r.With(rt.mustBeAdmin).Route("/admin", func(r chi.Router) {
 		r.Get("/", rt.justRender("admin/admin.html"))
 		r.Get("/users", rt.justRender("admin/users.html"))
 		r.Get("/auditLog", rt.auditLog())
 	})
 
-	r.With(mustBeVisitor).Get("/login", rt.justRender("auth/login.html", "modals/login.html"))
-	r.With(mustBeVisitor).Get("/signup", rt.justRender("auth/signup.html"))
+	r.With(rt.mustBeVisitor).Get("/login", rt.justRender("auth/login.html", "modals/login.html"))
+	r.With(rt.mustBeVisitor).Get("/signup", rt.justRender("auth/signup.html"))
 
-	r.With(mustBeAuthed).Get("/logout", rt.logout)
+	r.With(rt.mustBeAuthed).Get("/logout", rt.logout)
 
 	// Proposer panel
 	r.Route("/proposer", func(r chi.Router) {
-		r.Use(mustBeProposer)
+		r.Use(rt.mustBeProposer)
 		r.Get("/", rt.justRender("proposer/index.html", "proposer/createpb.html"))
 		r.Get("/get/subtest_output/{st_id}", rt.subtestOutput)
 	})
 
 	// Email verification
 	r.Route("/verify", func(r chi.Router) {
-		r.With(mustBeAuthed).Get("/resend", rt.resendEmail())
+		r.With(rt.mustBeAuthed).Get("/resend", rt.resendEmail())
 		r.Get("/{vid}", rt.verifyEmail())
 	})
 
@@ -124,7 +124,7 @@ func (rt *Web) Handler() http.Handler {
 	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		Status(w, &StatusParams{GenContext(r), 404, "", false})
+		rt.Status(w, &StatusParams{GenContext(r), 404, "", false})
 	})
 
 	return r
@@ -144,8 +144,8 @@ func (rt *Web) parse(optFuncs template.FuncMap, files ...string) executor {
 func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 	rd := mdrenderer.NewLocalRenderer()
 	funcs := template.FuncMap{
-		"pLanguages": func() map[string]eval.Language {
-			return eval.Langs
+		"pLanguages": func() map[string]*WebLanguage {
+			return webLanguages
 		},
 		"problemSettings": func(problemID int) *kilonova.ProblemEvalSettings {
 			settings, err := base.ProblemSettings(context.Background(), problemID)
@@ -234,4 +234,23 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		},
 	}
 	return &Web{rd, debug, funcs, base}
+}
+
+var webLanguages map[string]*WebLanguage
+
+type WebLanguage struct {
+	Disabled bool   `json:"disabled"`
+	Name     string `json:"name"`
+	// Extensions []string `json:"extensions"`
+}
+
+func init() {
+	webLanguages = make(map[string]*WebLanguage)
+	for name, lang := range eval.Langs {
+		webLanguages[name] = &WebLanguage{
+			Disabled: lang.Disabled,
+			Name:     lang.PrintableName,
+			// Extensions: lang.Extensions,
+		}
+	}
 }

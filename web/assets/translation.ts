@@ -23,7 +23,7 @@ function getVal(key: string): translation | null {
 }
 
 export default function getText(key: string, ...args: any): string {
-	const lang = window.platform_info?.language || "en";
+	const lang = window.platform_info.language;
 	const translation = getVal(key);
 	if (translation === null) {
 		console.error("Unknown key", JSON.stringify(key));

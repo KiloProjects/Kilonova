@@ -10,34 +10,23 @@ CREATE TABLE IF NOT EXISTS users (
 	password 			text 	  	NOT NULL,
 	bio 				text 		NOT NULL DEFAULT '',
 	
-	default_visible 	boolean		NOT NULL DEFAULT false,
-
 	verified_email 		boolean		NOT NULL DEFAULT false,
 	email_verif_sent_at timestamptz,
 
-	banned 				boolean 	NOT NULL DEFAULT false,
-	disabled 			boolean 	NOT NULL DEFAULT false,
 	preferred_language text NOT NULL DEFAULT 'ro'
 );
 
 -- problem stuff
 
-CREATE TYPE IF NOT EXISTS problem_type AS ENUM (
-	'classic',
-	'interactive',
-	'custom_checker'
-);
-
 CREATE TABLE IF NOT EXISTS problems (
 	id 			  	bigserial 			PRIMARY KEY,
 	created_at 	  	timestamptz 		NOT NULL DEFAULT NOW(),
-	name 		  	text 	    		NOT NULL UNIQUE,
+	name 		  	text 	    		NOT NULL,
 	description   	text				NOT NULL DEFAULT '',
 	test_name 	  	text      			NOT NULL,
 	author_id 	  	bigint 				NOT NULL DEFAULT 1 REFERENCES users(id) ON DELETE SET DEFAULT,
 	time_limit 	  	double precision 	NOT NULL DEFAULT 0.1,
 	memory_limit  	integer   			NOT NULL DEFAULT 65536,
-	stack_limit   	integer   			NOT NULL DEFAULT 16384,
 
 	source_size   	integer   			NOT NULL DEFAULT 10000,
 	console_input 	boolean 			NOT NULL DEFAULT false,
@@ -47,8 +36,6 @@ CREATE TABLE IF NOT EXISTS problems (
 	author_credits 	text				NOT NULL DEFAULT '',
 	short_description text				NOT NULL DEFAULT '',
 	default_points 	integer 			NOT NULL DEFAULT 0,
-
-	pb_type 		problem_type 		NOT NULL DEFAULT 'classic',
 );
 
 CREATE TABLE IF NOT EXISTS tests (
@@ -77,11 +64,9 @@ CREATE TABLE IF NOT EXISTS submissions (
 	language		text 			NOT NULL,
 	code 			text 			NOT NULL,
 	status 			status 			NOT NULL DEFAULT 'creating',
-	quality 		BOOLEAN 		NOT NULL DEFAULT false
 	compile_error 	boolean,
 	compile_message text,
 	score 			integer			NOT NULL DEFAULT 0,
-	visible 		boolean			NOT NULL DEFAULT false,
 	max_time 		DOUBLE PRECISION NOT NULL DEFAULT -1,
 	max_memory 		INTEGER 		NOT NULL DEFAULT -1
 );
@@ -105,7 +90,13 @@ CREATE TABLE IF NOT EXISTS problem_lists (
 	author_id 	bigint 		NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 	title 		text 		NOT NULL DEFAULT '',
 	description text 		NOT NULL DEFAULT '',
-	list 		integer[]	NOT NULL DEFAULT '{}'
+);
+
+CREATE TABLE problem_list_problems (
+    pblist_id bigint NOT NULL REFERENCES problem_lists(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    problem_id bigint NOT NULL REFERENCES problems(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    position bigint NOT NULL DEFAULT 0;
+    UNIQUE (pblist_id, problem_id)
 );
 
 CREATE TABLE IF NOT EXISTS subtasks (
@@ -114,7 +105,12 @@ CREATE TABLE IF NOT EXISTS subtasks (
 	problem_id 	bigint 		NOT NULL REFERENCES problems(id) ON DELETE CASCADE,
 	visible_id 	integer 	NOT NULL,
 	score 		integer 	NOT NULL,
-	tests 		integer[]	NOT NULL DEFAULT '{}'
+);
+
+CREATE TABLE subtask_tests (
+    subtask_id bigint NOT NULL REFERENCES subtasks(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    test_id bigint NOT NULL REFERENCES tests(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    UNIQUE (subtask_id, test_id)
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -141,20 +137,10 @@ CREATE TABLE IF NOT EXISTS attachments (
 	data_size 	INTEGER 	GENERATED ALWAYS AS (length(data)) STORED
 );
 
---
---CREATE TABLE IF NOT EXISTS test_inputs (
---	tid 	bigint 	NOT NULL UNIQUE REFERENCES tests(id) ON DELETE CASCADE,
---	data 	bytea 	NOT NULL
---);
-
---CREATE TABLE IF NOT EXISTS test_outputs (
---	tid 	bigint 	NOT NULL UNIQUE REFERENCES tests(id) ON DELETE CASCADE,
---	data 	bytea 	NOT NULL
---);
-
---CREATE TABLE IF NOT EXISTS subtest_outputs (
---	stid 	bigint 	NOT NULL UNIQUE REFERENCES submission_tests(id) ON DELETE CASCADE,
---	data 	bytea 	NOT NULL
---);
-
-
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id          bigserial 	    PRIMARY KEY,
+    logged_at   timestamptz     NOT NULL DEFAULT NOW(),
+    system_log  boolean         NOT NULL DEFAULT false,
+    msg         text            NOT NULL DEFAULT '',
+    author_id   bigint          DEFAULT null REFERENCES users(id) ON DELETE SET NULL
+);

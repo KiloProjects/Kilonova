@@ -6,86 +6,96 @@ import { dayjs } from "../util";
 
 interface PaginatorParams {
 	page: number;
-	numPages: number;
+	numpages: number;
 	setPage: (num: number) => void;
+	ctxSize: number;
 }
 
-import { apiToast } from "../toast";
-export function Paginator({ page, numPages, setPage }: PaginatorParams) {
-	// props format: {page: number, setPage(): handler for updating, numPages: number}
-	if (page < 1 || page > numPages) {
-		console.warn("Invalid page number");
-		apiToast({ status: "error", data: "Invalid page number" });
+export function Paginator({ page, numpages, setPage, ctxSize }: PaginatorParams) {
+	if (page < 1) {
+		page = 1;
 	}
+	if (numpages < 1) {
+		numpages = 1;
+	}
+	if (page > numpages) {
+		page = numpages;
+	}
+	console.log(page, numpages);
 	let elements: preact.JSX.Element[] = [];
 	const old_sp = setPage;
 	setPage = (pg) => {
+		console.log(pg);
 		if (pg < 1) {
 			pg = 1;
 		}
-		if (pg > numPages) {
-			pg = numPages;
+		if (pg > numpages) {
+			pg = numpages;
 		}
-		old_sp(pg);
+		if (typeof old_sp == "function") {
+			old_sp(pg);
+		}
 	};
 
 	//elements.push(<button class="paginator-item" onClick={() => setPage(1)}><i class="fas fa-angle-double-left"></i></button>);
 	//elements.push(<button class="paginator-item" onClick={() => setPage(page-1)}><i class="fas fa-angle-left"></i></button>);
-	if (page > 3) {
-		for (let i = 1; i <= 3 && page - i >= 3; i++) {
+	if (page > ctxSize + 1) {
+		for (let i = 1; i <= 1 + ctxSize && page - i >= 1 + ctxSize; i++) {
 			elements.push(
-				<button class="paginator-item" onClick={() => setPage(i)}>
+				<button class="paginator-item" onClick={() => setPage(i)} key={`inactive_${i}`}>
 					{i}
 				</button>
 			);
 		}
-		if (page > 6) {
-			elements.push(<button class="paginator-item">...</button>);
+		if (page > 2 * (ctxSize + 1)) {
+			elements.push(
+				<span class="paginator-item" key="first_greater">
+					...
+				</span>
+			);
 		}
 	}
 
-	if (page - 2 > 0) {
+	for (let i = page - ctxSize; i < page; i++) {
+		if (i < 1) {
+			continue;
+		}
 		elements.push(
-			<button class="paginator-item" onClick={() => setPage(page - 2)}>
-				{page - 2}
-			</button>
-		);
-	}
-	if (page - 1 > 0) {
-		elements.push(
-			<button class="paginator-item" onClick={() => setPage(page - 1)}>
-				{page - 1}
+			<button class="paginator-item" onClick={() => setPage(i)} key={`inactive_${i}`}>
+				{i}
 			</button>
 		);
 	}
 	elements.push(
-		<button class="paginator-item paginator-item-active">{page}</button>
+		<button class="paginator-item paginator-item-active" key={`active_${page}`}>
+			{page}
+		</button>
 	);
-	if (page + 1 <= numPages) {
+	for (let i = page + 1; i <= page + ctxSize; i++) {
+		if (i > numpages) {
+			continue;
+		}
 		elements.push(
-			<button class="paginator-item" onClick={() => setPage(page + 1)}>
-				{page + 1}
-			</button>
-		);
-	}
-	if (page + 2 <= numPages) {
-		elements.push(
-			<button class="paginator-item" onClick={() => setPage(page + 2)}>
-				{page + 2}
+			<button class="paginator-item" onClick={() => setPage(i)} key={`inactive_${i}`}>
+				{i}
 			</button>
 		);
 	}
 
-	if (numPages - page >= 3) {
-		if (numPages - page > 5) {
-			elements.push(<button class="paginator-item">...</button>);
+	if (numpages - page >= ctxSize + 1) {
+		if (numpages - page > 2 * ctxSize + 1) {
+			elements.push(
+				<span class="paginator-item" key="last_greater">
+					...
+				</span>
+			);
 		}
-		for (let i = numPages - 2; i <= numPages; i++) {
-			if (i - page <= 2) {
+		for (let i = numpages - ctxSize; i <= numpages; i++) {
+			if (i - page <= ctxSize) {
 				continue;
 			}
 			elements.push(
-				<button class="paginator-item" onClick={() => setPage(i)}>
+				<button class="paginator-item" onClick={() => setPage(i)} key={`inactive_${i}`}>
 					{i}
 				</button>
 			);
@@ -97,7 +107,8 @@ export function Paginator({ page, numPages, setPage }: PaginatorParams) {
 	return <div class="paginator">{elements}</div>;
 }
 
-import { useCallback, useEffect, useState } from "preact/hooks";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import { min } from "underscore";
 
 export function PaginateTester() {
 	let [pg, setPg] = useState(1);
@@ -109,9 +120,7 @@ export function PaginateTester() {
 				class="form-input"
 				value={pg}
 				onChange={(e) => {
-					setPg(
-						Number.parseInt((e.target as HTMLInputElement).value)
-					);
+					setPg(Number.parseInt((e.target as HTMLInputElement).value));
 				}}
 			/>
 			<br />
@@ -120,14 +129,12 @@ export function PaginateTester() {
 				class="form-input"
 				value={maxPg}
 				onChange={(e) => {
-					setMaxPg(
-						Number.parseInt((e.target as HTMLInputElement).value)
-					);
+					setMaxPg(Number.parseInt((e.target as HTMLInputElement).value));
 				}}
 			/>
 			<br />
 			<br />
-			<Paginator page={pg} numPages={maxPg} setPage={(pg) => setPg(pg)} />
+			<Paginator page={pg} numpages={maxPg} ctxSize={2} setPage={(pg) => setPg(pg)} />
 		</div>
 	);
 }
@@ -202,11 +209,7 @@ type getSubsResult = {
 	subs: shortSub[];
 };
 
-async function getSubmissions(
-	user_id: number,
-	problem_id: number,
-	limit: number
-): Promise<getSubsResult> {
+async function getSubmissions(user_id: number, problem_id: number, limit: number): Promise<getSubsResult> {
 	const result = await getCall("/submissions/get", {
 		limit,
 		problem_id,
@@ -246,7 +249,7 @@ export function OlderSubmissions({ userid, problemid }: OlderSubsParams) {
 
 	return (
 		<>
-			<h2 class=" mb-2 px-2">{getText("oldSubs")}</h2>
+			<h2 class="mb-2">{getText("oldSubs")}</h2>
 			{loading ? (
 				<InlineSpinner />
 			) : (
@@ -259,20 +262,12 @@ export function OlderSubmissions({ userid, problemid }: OlderSubsParams) {
 									class="black-anchor flex justify-between items-center rounded py-1 px-2 hoverable"
 									key={sub.sub.id}
 								>
-									<span>
-										{`#${sub.sub.id}: ${dayjs(
-											sub.sub.created_at
-										).format("DD/MM/YYYY HH:mm")}`}
-									</span>
+									<span>{`#${sub.sub.id}: ${dayjs(sub.sub.created_at).format("DD/MM/YYYY HH:mm")}`}</span>
 									<span class="rounded-md px-2 py-1 bg-teal-700 text-white text-sm">
 										{{
 											finished: <>{sub.sub.score}</>,
-											working: (
-												<i class="fas fa-cog animate-spin"></i>
-											),
-										}[sub.sub.status] || (
-											<i class="fas fa-clock"></i>
-										)}
+											working: <i class="fas fa-cog animate-spin"></i>,
+										}[sub.sub.status] || <i class="fas fa-clock"></i>}
 									</span>
 								</a>
 							))}
@@ -281,18 +276,8 @@ export function OlderSubmissions({ userid, problemid }: OlderSubsParams) {
 						<p class="px-2">{getText("noSub")}</p>
 					)}
 					{numHidden > 0 && (
-						<a
-							class="px-2"
-							href={`/submissions/?problem_id=${problemid}&user_id=${userid}`}
-						>
-							{getText(
-								numHidden == 1
-									? "seeOne"
-									: numHidden < 20
-									? "seeU20"
-									: "seeMany",
-								numHidden
-							)}
+						<a class="px-2" href={`/submissions/?problem_id=${problemid}&user_id=${userid}`}>
+							{getText(numHidden == 1 ? "seeOne" : numHidden < 20 ? "seeU20" : "seeMany", numHidden)}
 						</a>
 					)}
 				</>

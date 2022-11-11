@@ -60,9 +60,10 @@ interface ToastOptions {
 	description: the toast description
 	status: the toast status (default "info", can be ["success", "error", "info"])
 */
-export function createToast(options: ToastOptions): NotyfNotification {
+export function createToast(options: ToastOptions): NotyfNotification | undefined {
 	if (notyf === null) {
-		throw new Error("createToast called before window load");
+		console.error("createToast() called before window load");
+		return;
 	}
 
 	if (options.status == null) {
@@ -70,18 +71,10 @@ export function createToast(options: ToastOptions): NotyfNotification {
 	}
 
 	let msg = "";
-	if (
-		options.title !== undefined &&
-		options.title !== null &&
-		options.title !== ""
-	) {
+	if (options.title !== undefined && options.title !== null && options.title !== "") {
 		msg += `<h3>${options.title}</h3>`;
 	}
-	if (
-		options.description !== undefined &&
-		options.description !== null &&
-		options.description !== ""
-	) {
+	if (options.description !== undefined && options.description !== null && options.description !== "") {
 		msg += options.description;
 	}
 
@@ -96,10 +89,7 @@ export interface APIResponse {
 	data: any;
 }
 
-export function apiToast(
-	res: APIResponse,
-	overwrite?: ToastOptions
-): NotyfNotification {
+export function apiToast(res: APIResponse, overwrite?: ToastOptions): NotyfNotification | undefined {
 	if (overwrite === null || overwrite === undefined) {
 		overwrite = {};
 	}
@@ -108,6 +98,9 @@ export function apiToast(
 	return createToast(overwrite);
 }
 
-export function dismissToast(toast: NotyfNotification) {
+export function dismissToast(toast: NotyfNotification | undefined) {
+	if (toast === undefined) {
+		return;
+	}
 	notyf?.dismiss(toast);
 }

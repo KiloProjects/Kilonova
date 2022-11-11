@@ -213,7 +213,7 @@ func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, gsu
 		if err := gsub.Update(kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints, CompileError: &t, CompileMessage: &info}); err != nil {
 			return kilonova.WrapError(err, "Error during update of compile information")
 		}
-		zap.S().Warn("Couldn't prepare checker:", info, err)
+		//zap.S().Warn("Couldn't prepare checker:", info, err)
 		return kilonova.WrapError(err, "Could not prepare checker")
 	}
 

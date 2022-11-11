@@ -67,7 +67,8 @@
 			debug: {{debug}},
 			admin: {{if .Ctx.User}}{{.Ctx.User.Admin}}{{else}}false{{end}},
 			user_id: {{if .Ctx.User}}{{.Ctx.User.ID}}{{else}}0{{end}},
-			language: {{.Ctx.Language}}
+			language: {{.Ctx.Language}},
+            langs: {{pLanguages}},
 		};
 	</script>
 
