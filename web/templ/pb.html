@@ -165,7 +165,7 @@ document.getElementById("sub_language").addEventListener("change", (e) => {
 	}
 })
 
-async function sendSub() {
+const sendSub = bundled.debounce(async () => {
 	let sendData = {
 		problemID: "{{ .Problem.ID }}",
 		language: document.getElementById("sub_language").value,
@@ -180,7 +180,7 @@ async function sendSub() {
 	bundled.createToast({title: bundled.getText("uploaded"), description: `<a href="/submissions/${res.data}">${ bundled.getText("view") }</btn>`})
 	console.log(res.data, makeSubWaiter(res.data));
 	document.dispatchEvent(new CustomEvent("kn-poll"));
-}
+}, 200)
 		</script>
 	{{ else }}
 
