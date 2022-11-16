@@ -17,13 +17,26 @@ import (
 
 func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (int, *StatusError) {
 	user, err := s.db.UserByName(ctx, uname)
-	if err != nil || user == nil {
-		return -1, Statusf(400, "Invalid username or password")
+	if err != nil {
+		zap.S().Warn(err)
+		return -1, Statusf(400, "Invalid login details")
+	}
+	// Maybe the user is trying to log in by email
+	if user == nil {
+		user, err = s.db.UserByEmail(ctx, uname)
+		if err != nil {
+			zap.S().Warn(err)
+			return -1, Statusf(400, "Invalid login details")
+		}
+	}
+
+	if user == nil {
+		return -1, Statusf(400, "Invalid login details")
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(pwd))
 	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-		return -1, Statusf(400, "Invalid username or password")
+		return -1, Statusf(400, "Invalid login details")
 	} else if err != nil {
 		// This should never happen. It means that bcrypt suffered something
 		zap.S().Warn(err)

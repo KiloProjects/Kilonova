@@ -36,7 +36,7 @@ ro = "Nepublicată"
 
 [unverifiedEmail]
 en = "It looks like you haven't verified your email yet. Click <a class=\"underline text-black dark:text-white\" href=\"/verify/resend\">here</a> if you need to have your verification resent."
-ro = "Se pare că încă nu ți-ai verificat e-mailul. Apasă <a class=\"underline text-black dark:text-white\" href=\"/verify/resend\">aici</a> dacă trebuie să reprimești verificarea."
+ro = "Se pare că încă nu ți-ai verificat emailul. Apasă <a class=\"underline text-black dark:text-white\" href=\"/verify/resend\">aici</a> dacă trebuie să reprimești verificarea."
 
 [problem_list.none]
 en = "There are no problem lists"
@@ -721,6 +721,10 @@ ro = "Nume problemă"
 [username]
 en = "Username"
 ro = "Username"
+
+[username_email]
+en = "Username/Email"
+ro = "Username/Email"
 
 [signupReminder]
 en = "Don't have an account? <a href='/signup'>Sign Up</a>"

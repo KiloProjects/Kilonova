@@ -76,6 +76,16 @@ func (s *DB) UserByName(ctx context.Context, name string) (*User, error) {
 	return &user, err
 }
 
+// User looks up a user by email.
+func (s *DB) UserByEmail(ctx context.Context, email string) (*User, error) {
+	var user User
+	err := s.conn.GetContext(ctx, &user, "SELECT * FROM users WHERE lower(email) = lower($1) LIMIT 1", email)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	return &user, err
+}
+
 // Users retrieves users based on a filter.
 func (s *DB) Users(ctx context.Context, filter kilonova.UserFilter) ([]*User, error) {
 	var users []*User
