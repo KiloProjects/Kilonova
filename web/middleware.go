@@ -7,7 +7,6 @@ import (
 
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi/v5"
-	"go.uber.org/zap"
 	"golang.org/x/text/language"
 )
 
@@ -45,7 +44,6 @@ func (rt *Web) ValidateListID(next http.Handler) http.Handler {
 		}
 		list, err1 := rt.base.ProblemList(r.Context(), listID)
 		if err1 != nil {
-			zap.S().Warn(err1)
 			rt.statusPage(w, r, 404, "Lista nu a fost găsită", false)
 			return
 		}

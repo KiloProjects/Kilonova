@@ -1,7 +1,6 @@
 package util
 
 import (
-	"database/sql"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
@@ -62,35 +61,6 @@ func IsSubmissionEditor(sub *kilonova.Submission, user *kilonova.UserBrief) bool
 	return IsAdmin(user) || user.ID == sub.UserID
 }
 
-func IsSubmissionVisible(sub *kilonova.Submission, user *kilonova.UserBrief) bool {
-	if sub == nil {
-		return false
-	}
-	if IsSubmissionEditor(sub, user) {
-		return true
-	}
-
-	if !IsAuthed(user) {
-		return false
-	}
-
-	// TODO: Reintroduce
-	// score := db.MaxScore(context.Background(), user.ID, sub.ProblemID)
-	// if score == 100 {
-	// 	return true
-	// }
-
-	return false
-}
-
-// FilterSubmission controls what happens to a submission when it is viewed by a user
-func FilterSubmission(sub *kilonova.Submission, user *kilonova.UserBrief) {
-	if sub != nil && !IsSubmissionVisible(sub, user) {
-		sub.Code = ""
-		sub.CompileMessage = sql.NullString{}
-	}
-}
-
 func IsRAuthed(r *http.Request) bool {
 	return IsAuthed(UserBrief(r))
 }
@@ -113,10 +83,6 @@ func IsRProblemVisible(r *http.Request) bool {
 
 func IsRSubmissionEditor(r *http.Request) bool {
 	return IsSubmissionEditor(Submission(r), UserBrief(r))
-}
-
-func IsRSubmissionVisible(r *http.Request) bool {
-	return IsSubmissionVisible(Submission(r), UserBrief(r))
 }
 
 func FilterVisible(user *kilonova.UserBrief, pbs []*kilonova.Problem) []*kilonova.Problem {

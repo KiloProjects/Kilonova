@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
@@ -63,7 +64,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 			}
 		}
 
-		util.FilterSubmission(subs[i], lookingUser)
+		s.filterSubmission(ctx, subs[i], lookingUser)
 	}
 
 	return &Submissions{
@@ -112,7 +113,7 @@ func (s *BaseAPI) Submission(ctx context.Context, subid int, lookingUser *UserBr
 	if err != nil || sub == nil {
 		return nil, Statusf(404, "Submission not found")
 	}
-	util.FilterSubmission(sub, lookingUser)
+	s.filterSubmission(ctx, sub, lookingUser)
 
 	rez := &FullSubmission{Submission: *sub}
 	author, err1 := s.UserBrief(ctx, sub.UserID)
@@ -220,6 +221,37 @@ func (s *BaseAPI) ResetProblemSubmissions(ctx context.Context, pbid int) *Status
 	}
 	s.LogUserAction(ctx, "Reset submissions for problem %d", pbid)
 	return nil
+}
+
+func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) bool {
+	if sub == nil {
+		return false
+	}
+	if util.IsSubmissionEditor(sub, user) {
+		return true
+	}
+
+	if pb, err := s.Problem(ctx, sub.ProblemID); err == nil && pb != nil && util.IsProblemEditor(user, pb) {
+		return true
+	}
+
+	if !util.IsAuthed(user) {
+		return false
+	}
+
+	score := s.db.MaxScore(context.Background(), user.ID, sub.ProblemID)
+	if score == 100 {
+		return true
+	}
+
+	return false
+}
+
+func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) {
+	if sub != nil && !s.isSubmissionVisible(ctx, sub, user) {
+		sub.Code = ""
+		sub.CompileMessage = sql.NullString{}
+	}
 }
 
 /*

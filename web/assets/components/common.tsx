@@ -8,12 +8,19 @@ interface PaginatorParams {
 	page: number;
 	numpages: number;
 	setPage: (num: number) => void;
-	ctxSize: number;
+	ctxSize?: number;
+	className?: string;
 }
 
-export function Paginator({ page, numpages, setPage, ctxSize }: PaginatorParams) {
+export function Paginator({ page, numpages, setPage, ctxSize, className }: PaginatorParams) {
 	if (page < 1) {
 		page = 1;
+	}
+	if (ctxSize === undefined) {
+		ctxSize = 2;
+	}
+	if (className === undefined) {
+		className = "";
 	}
 	if (numpages < 1) {
 		numpages = 1;
@@ -104,7 +111,7 @@ export function Paginator({ page, numpages, setPage, ctxSize }: PaginatorParams)
 
 	//elements.push(<button class="paginator-item" onClick={() => setPage(page+1)}><i class="fas fa-angle-right"></i></button>);
 	//elements.push(<button class="paginator-item" onClick={() => setPage(numPages)}><i class="fas fa-angle-double-right"></i></button>);
-	return <div class="paginator">{elements}</div>;
+	return <div class={"paginator " + className}>{elements}</div>;
 }
 
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";

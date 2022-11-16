@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS problem_lists (
 CREATE TABLE problem_list_problems (
     pblist_id bigint NOT NULL REFERENCES problem_lists(id) ON DELETE CASCADE ON UPDATE CASCADE,
     problem_id bigint NOT NULL REFERENCES problems(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    position bigint NOT NULL DEFAULT 0;
+    position bigint NOT NULL DEFAULT 0,
     UNIQUE (pblist_id, problem_id)
 );
 

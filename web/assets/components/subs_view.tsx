@@ -122,7 +122,6 @@ function serializeQuery(q: Query): object {
 
 function SubsView() {
 	let [loading, setLoading] = useState(true);
-	let [hiddenBar, setHiddenBar] = useState(false);
 	let [query, setQuery] = useState<Query>(getInitialData());
 	let [subs, setSubs] = useState<ResultSubmission[]>([]);
 	let [count, setCount] = useState<number>(-1);
@@ -131,6 +130,9 @@ function SubsView() {
 
 	const poll = _.throttle(async () => {
 		setLoading(true);
+		if (query.page === 1) {
+			setCount(0);
+		}
 
 		let res = await getCall<{
 			count: number;
@@ -194,17 +196,6 @@ function SubsView() {
 			<div class="page-sidebar lg:order-last">
 				<div class="page-sidebar-box">
 					<h2>{getText("filters")}</h2>
-					<div class="block mb-2">
-						<span class="form-label">{getText("page")}:</span>
-						<Paginator
-							page={query.page}
-							numpages={numPages}
-							setPage={(num) => {
-								setQuery({ ...query, page: num });
-							}}
-							ctxSize={1}
-						/>
-					</div>
 					<label class="block mb-2">
 						<span class="form-label">{getText("status")}:</span>
 						<select
@@ -381,11 +372,25 @@ function SubsView() {
 				</div>
 			</div>
 			<div class="page-content">
+				{count > 0 && (
+					<>
+						<h2 class="inline-block">{rezStr(count)}</h2>
+						<div class="flex justify-center">
+							<Paginator
+								page={query.page}
+								numpages={numPages}
+								setPage={(num) => {
+									setQuery({ ...query, page: num });
+								}}
+								ctxSize={2}
+							/>
+						</div>
+					</>
+				)}
 				{loading ? (
 					<BigSpinner />
 				) : subs.length > 0 ? (
 					<div>
-						<h2>{rezStr(count)}</h2>
 						{query.problem_id != null && query.problem_id > 0 && (
 							<p>
 								{getText("problemSingle")} <a href={"/problems/" + subs[0].problem.id}>{subs[0].problem.name}</a>

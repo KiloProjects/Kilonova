@@ -168,7 +168,7 @@ func (rt *Web) profile() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "profile.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "user")))
-		if err != nil {
+		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
 			zap.S().Warn(err)
 			rt.Status(w, &StatusParams{GenContext(r), 500, "", false})
 			return

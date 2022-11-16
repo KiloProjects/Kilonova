@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -34,10 +35,12 @@ func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (int, *StatusErr
 
 // Signup
 
+var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+
 func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string) (int, *StatusError) {
 	uname = strings.TrimSpace(uname)
-	if !(len(uname) >= 3 && len(uname) <= 32 && govalidator.IsPrintableASCII(uname)) {
-		return -1, Statusf(400, "Invalid username.")
+	if !(len(uname) >= 3 && len(uname) <= 32 && usernameRegex.MatchString(uname)) {
+		return -1, Statusf(400, "Username must be between 3 and 32 characters long and must contain only letters, digits, underlines and dashes.")
 	}
 	if len(pwd) < 6 || len(pwd) > 128 {
 		return -1, Statusf(400, "Invalid password length.")
