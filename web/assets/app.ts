@@ -14,3 +14,5 @@ export { cookie };
 export { NavBarManager } from "./navbar.js";
 export { CheckboxManager } from "./checkbox_mgr.js";
 export { getFileIcon } from "./cdn_mgr";
+
+export { debounce } from "underscore";
