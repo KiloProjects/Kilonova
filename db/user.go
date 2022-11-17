@@ -52,6 +52,7 @@ func (user *User) ToFull() *kilonova.UserFull {
 		Email:             user.Email,
 		VerifiedEmail:     user.VerifiedEmail,
 		PreferredLanguage: user.PreferredLanguage,
+		CreatedAt:         user.CreatedAt,
 		EmailVerifResent:  t,
 	}
 }

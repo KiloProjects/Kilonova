@@ -62,7 +62,7 @@ function updateFinalScore() {
 	if(defaultPoints > 0) {
 		suffix = ` (${defaultPoints} ${bundled.getText('byDefault')})`;
 	}
-	console.log(score)
+    
 	if(score != 100) {
 		document.getElementById("scoreOutput").innerHTML = `<span class='text-red-600 dark:text-red-400'>${score}</span>` + suffix;	
 	} else {

@@ -1,4 +1,4 @@
-package web
+package kilonova
 
 import (
 	"encoding/json"
@@ -15,17 +15,17 @@ type Translations map[string]Translation
 
 var translations Translations
 
-//go:generate /bin/sh -c "echo $PWD && cd .. && /usr/bin/python scripts/toml_gen.py"
+//go:generate /bin/sh -c "echo $PWD && /usr/bin/python scripts/toml_gen.py"
 
 //go:embed _translations.json
 var keys []byte
 
-func hasTranslationKey(line string) bool {
+func TranslationKeyExists(line string) bool {
 	_, ok := translations[line]
 	return ok
 }
 
-func getText(lang, line string, args ...any) string {
+func GetText(lang, line string, args ...any) string {
 	if _, ok := translations[line]; !ok {
 		log.Printf("Invalid translation key %q\n", line)
 		return "ERR"

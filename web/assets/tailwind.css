@@ -1,4 +1,5 @@
 @import "notyf/notyf.min.css";
+@import "highlightjs-copy/dist/highlightjs-copy.min.css";
 
 @tailwind base;
 @tailwind components;

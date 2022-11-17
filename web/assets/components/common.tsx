@@ -191,7 +191,6 @@ export function RedButton(props) {
 export function ProblemAttachment({ attname = "" }) {
 	let pname = window.location.pathname;
 	if (pname.endsWith("/")) {
-		console.log("cf");
 		pname = pname.substr(0, pname.lastIndexOf("/"));
 	}
 	return <img src={`${pname}/attachments/${attname}`} />;

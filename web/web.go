@@ -198,8 +198,8 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return template.HTML(val)
 		},
-		"genPbListParams": func(user *kilonova.UserBrief, lang string, pbs []*kilonova.Problem) *ProblemListingParams {
-			return &ProblemListingParams{user, lang, pbs}
+		"genPbListParams": func(user *kilonova.UserBrief, lang string, pbs []*kilonova.Problem, showSolved bool) *ProblemListingParams {
+			return &ProblemListingParams{user, lang, pbs, showSolved}
 		},
 		"numSolved": func(user *kilonova.UserBrief, ids []int) int {
 			scores := base.MaxScores(context.Background(), user.ID, ids)

@@ -5,9 +5,9 @@
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>{{block "title" .}}Kilonova{{end}}</title>
-	{{$fav := hashedName "static/favicon.ico"}}
+	{{- $fav := hashedName "static/favicon.ico"}}
 	{{$bundle := hashedName "static/bundle.js"}}
-	{{$style := hashedName "static/styles.css"}}
+	{{$style := hashedName "static/styles.css" -}}
 
 	<link rel="icon" type="image/x-icon" href="/{{$fav}}"/>
 	<link rel="shortcut icon" type="image/x-icon" href="/{{$fav}}"/>
@@ -34,12 +34,6 @@
 	<style>@import url("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/monokai.min.css") (prefers-color-scheme: dark);</style>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/highlight.min.js"></script>
 
-	<script src="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.js"></script>
-	<link
-  rel="stylesheet"
-  href="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.css"
-/>
-
 	<!--use KaTeX instead of MathJax-->
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.2/katex.min.css" />
 	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.2/katex.min.js"></script>
@@ -59,7 +53,7 @@
 		hljs.configure({languages:['c', 'cpp', 'py', 'go', 'haskell', 'python3']}) // TODO
 		hljs.highlightAll();
 		hljs.addPlugin(
-			new CopyButtonPlugin({
+			new bundled.CopyButtonPlugin({
 				callback: (text, el) => bundled.apiToast({status: "success", data: bundled.getText("copied") }),
 		  	})
 		);
@@ -108,11 +102,11 @@ if(window.matchMedia('(prefers-color-scheme: dark)').matches) { // Dark Mode
 <body>
 	{{ template "navbar" . }}
 
-	{{ if .Ctx.User }}
+	{{- if .Ctx.User }}
 		{{ if not .Ctx.User.VerifiedEmail }}
 			<div class="w-full py-1 px-2 bg-green-200 dark:bg-green-700 text-black dark:text-white text-center">{{ getText .Ctx.Language "unverifiedEmail" }}</div>
 		{{ end }}
-	{{ end }}
+	{{ end -}}
 	
 	<div class="c-container mb-2">
 		{{ block "content" . }}

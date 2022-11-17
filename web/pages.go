@@ -188,9 +188,10 @@ type IndexParams struct {
 }
 
 type ProblemListingParams struct {
-	User     *kilonova.UserBrief
-	Language string
-	Problems []*kilonova.Problem
+	User      *kilonova.UserBrief
+	Language  string
+	Problems  []*kilonova.Problem
+	ShowScore bool
 }
 
 type ProfileParams struct {
@@ -277,7 +278,7 @@ var funcs = template.FuncMap{
 	"httpstatus": http.StatusText,
 	"dump":       spew.Sdump,
 	"getText": func(lang, line string, args ...any) template.HTML {
-		return template.HTML(getText(lang, line, args...))
+		return template.HTML(kilonova.GetText(lang, line, args...))
 	},
 }
 
@@ -317,7 +318,7 @@ func doWalk(filename string, nodes ...tparse.Node) bool {
 					continue
 				}
 				key := cmd.Args[2].(*tparse.StringNode).Text
-				if !hasTranslationKey(key) {
+				if !kilonova.TranslationKeyExists(key) {
 					zap.S().Infof("Template static analysis failed: Unknown translation key %q in file %s", key, filename)
 					ok = false
 				}

@@ -101,7 +101,6 @@ function prettifyAttachments() {
 		el.innerHTML = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerText}`	
 	}
 	for(let el of document.querySelectorAll("[id^='size-att-']")) {
-		console.log(el.innerText)
 		el.innerText = bundled.sizeFormatter(Number(el.innerText))
 	}
 }
@@ -131,10 +130,8 @@ let visibleNode = document.getElementById("attVisible")
 let privateNode = document.getElementById("attPrivate")
 privateNode.addEventListener("change", (e) => { 
 	if(e.target.checked === true) {
-		console.log("hiding")
 		visibleLabel.style.display = "none"
 	} else {
-		console.log("showing")
 		visibleLabel.style.display = null 
 	}
 })

@@ -11,20 +11,12 @@ type User = {
 };
 
 function UserTable({ users }: { users: User[] }) {
-	console.log(users);
 	return (
 		<div class="list-group list-group-mini">
 			<div class="list-group-head font-bold">User</div>
 			{users.map((user) => (
-				<a
-					href={`/profile/${user.name}`}
-					class="list-group-item inline-flex align-middle items-center"
-				>
-					<img
-						class="flex-none mr-2 rounded"
-						src={`/api/user/getGravatar?name=${user.name}&s=32`}
-					/>{" "}
-					#{user.id}: {user.name}
+				<a href={`/profile/${user.name}`} class="list-group-item inline-flex align-middle items-center">
+					<img class="flex-none mr-2 rounded" src={`/api/user/getGravatar?name=${user.name}&s=32`} /> #{user.id}: {user.name}
 				</a>
 			))}
 		</div>

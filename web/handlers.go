@@ -153,7 +153,7 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 }
 
 func (rt *Web) selfProfile() func(http.ResponseWriter, *http.Request) {
-	templ := rt.parse(nil, "profile.html")
+	templ := rt.parse(nil, "profile.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		pbs, err := rt.base.SolvedProblems(r.Context(), util.UserBrief(r).ID)
 		if err != nil {
@@ -165,7 +165,7 @@ func (rt *Web) selfProfile() func(http.ResponseWriter, *http.Request) {
 }
 
 func (rt *Web) profile() func(http.ResponseWriter, *http.Request) {
-	templ := rt.parse(nil, "profile.html")
+	templ := rt.parse(nil, "profile.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "user")))
 		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {

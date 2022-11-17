@@ -111,8 +111,8 @@ en = "Update tests"
 ro = "Actualizare teste"
 
 [profile]
-en = "Profile of"
-ro = "Profilul lui"
+en = "Profile:"
+ro = "Profil:"
 
 [emailConfirm]
 en = "Verified Email"
@@ -930,3 +930,7 @@ ro = "Utilizator necunoscut"
 [uploading]
 en = "Uploading..."
 ro = "Se încarcă..."
+
+[created_at]
+en = "Created at"
+ro = "Creat în data de"

@@ -81,7 +81,6 @@ async function updateSubTask(e) {
 		}
 	}
 
-	console.log(data);
 	let res = await bundled.bodyCall(`/problem/${pbid}/update/updateSubTask`, data)
 	if(res.status === "success" && data.new_id !== data.subtask_id) {
 		window.location.assign(`/problems/${pbid}/edit/subtasks/${data.new_id}`);

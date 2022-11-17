@@ -1,38 +1,42 @@
 {{ define "title" }} {{getText .Ctx.Language "profile"}} {{.ContentUser.Name}} {{ end }}
 {{ define "content" }}
 
-<div class="flex">
-	<img class="rounded-lg my-auto" width="128" height="128" src="/api/user/getGravatar?name={{.ContentUser.Name}}&s=128" alt='{{getText .Ctx.Language "profilePic"}} {{.ContentUser.Name}}'/>
-	<div class="ml-3">
+<div class="segment-container">
+	<img class="rounded-lg float-right" width="128" height="128" src="/api/user/getGravatar?name={{.ContentUser.Name}}&s=128" alt='{{getText .Ctx.Language "profilePic"}} {{.ContentUser.Name}}'/>
+	<div>
 		<h1>{{.ContentUser.Name}}</h1>
 		<span>{{.ContentUser.Bio}}
-		{{ if .Ctx.User }}
-			{{ if eq .ContentUser.ID .Ctx.User.ID }}
-				{{if .ContentUser.Bio}}
-				<a href="/settings#bio"><i class="fas fa-edit"></i> {{getText .Ctx.Language "editBio"}}</a>
-				{{else}}
-				<a href="/settings#bio"><i class="fas fa-edit"></i> {{getText .Ctx.Language "createBio"}}</a>
-				{{end}}
-			{{ end }}
-		{{ end }}</span>
+            {{ if .Ctx.User }}
+            {{ if eq .ContentUser.ID .Ctx.User.ID }}
+            {{if .ContentUser.Bio}}
+            <a class="block" href="/settings#bio"><i class="fas fa-edit"></i> {{getText .Ctx.Language "editBio"}}</a>
+            {{else}}
+            <a class="block" href="/settings#bio"><i class="fas fa-edit"></i> {{getText .Ctx.Language "createBio"}}</a>
+            {{end}}
+            {{ end }}
+            {{ end }}
+        </span>
+        <p>{{getText .Ctx.Language "created_at"}}: <span id="created_at">{{.ContentUser.CreatedAt.UnixMilli}}</span></p>
 		<p><a href="/submissions/?user_id={{.ContentUser.ID}}">{{getText .Ctx.Language "submission.list"}}</a></p>
 		{{- if .Ctx.User -}} {{if (or .Ctx.User.Admin (eq .Ctx.User.ID .ContentUser.ID)) -}}
-		<p>{{getText .Ctx.Language "email"}}: {{.ContentUser.Email}}</p>
-		<p>{{getText .Ctx.Language "email.verified"}}? 
+		<p>{{getText .Ctx.Language "email"}}: {{.ContentUser.Email}}
+            ({{getText .Ctx.Language "email.verified"}}? 
 			{{ if .ContentUser.VerifiedEmail -}}
 				{{getText .Ctx.Language "yes"}}	
 			{{- else -}}
 				{{getText .Ctx.Language "no"}} | <button class="btn btn-blue" onclick="resendEmail()">{{getText .Ctx.Language "resend"}}</button>
-			{{- end -}}</p>
+			{{- end -}})
+        </p>
 		{{- end -}} {{- end -}}
 	</div>
 </div>
-{{ if len .UserProblems }}
-<p>{{if eq 1 (len .UserProblems)}}{{getText .Ctx.Language "oneSolvedProblem"}}{{else}}{{getText .Ctx.Language "solvedProblems" (len .UserProblems)}}{{end}} {{ range .UserProblems -}}
-<a href="/problems/{{.ID}}">{{.Name}}</a>
-{{ end -}}
-{{ end }}
-</p>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        let elem = document.getElementById("created_at")
+        elem.innerText = bundled.parseTime(parseInt(elem.innerText))
+    })
+</script>
 	
 {{if .Ctx.User}}
 {{if and .Ctx.User.Admin (not .ContentUser.Admin)}}
@@ -58,7 +62,16 @@ async function deleteAccount() {
 }
 </script>
 
+
 {{end}}
 {{end}}
+
+<div class="segment-container">
+    {{$pbs := .UserProblems }}
+    {{ if len $pbs }}
+    <h2>{{if eq 1 (len $pbs)}}{{getText .Ctx.Language "oneSolvedProblem"}}{{else}}{{getText .Ctx.Language "solvedProblems" (len $pbs)}}{{end}}</h2>
+    {{ template "pb_list_group" (genPbListParams .Ctx.User.Brief .Ctx.Language $pbs false) }}
+    {{ end }}
+</div>
 
 {{ end }}

@@ -10,7 +10,7 @@ function getVal(key: string): translation | null {
 	let current: any = languageStrings;
 	let vals = key.split(".");
 	if (current[vals[0]] === undefined) {
-		console.log(`key "${key}" does not exist`);
+		console.warn(`key "${key}" does not exist`);
 		return null;
 	}
 	for (const sub of vals) {

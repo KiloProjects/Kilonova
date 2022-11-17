@@ -18,7 +18,7 @@
             </summary>
             {{ if .Description }}<div class="list-group m-1 my-1"><div class="list-group-head">{{renderMarkdown .Description}}</div></div>{{end}}
             {{ with $pbs }}
-                {{ template "pb_list_group" (genPbListParams $user $root.Ctx.Language .) }}
+                {{ template "pb_list_group" (genPbListParams $user $root.Ctx.Language . true) }}
             {{ else }}
                 <p> {{ getText $ctx.Language "problem.none_in_list" }} </p>
             {{ end }}

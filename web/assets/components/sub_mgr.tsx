@@ -376,7 +376,7 @@ export class SubmissionManager extends Component<{ id: number }, SubMgrState> {
 	async poll() {
 		if (this.poll_mu === false) this.poll_mu = true;
 		else return;
-		console.log("Poll submission #", this.props.id);
+		console.info("Poll submission #", this.props.id);
 		let resp = await getCall("/submissions/getByID", {
 			id: this.props.id,
 		});
