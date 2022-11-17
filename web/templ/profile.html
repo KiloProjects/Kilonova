@@ -17,17 +17,29 @@
             {{ end }}
         </span>
         <p>{{getText .Ctx.Language "created_at"}}: <span id="created_at">{{.ContentUser.CreatedAt.UnixMilli}}</span></p>
-		<p><a href="/submissions/?user_id={{.ContentUser.ID}}">{{getText .Ctx.Language "submission.list"}}</a></p>
 		{{- if .Ctx.User -}} {{if (or .Ctx.User.Admin (eq .Ctx.User.ID .ContentUser.ID)) -}}
 		<p>{{getText .Ctx.Language "email"}}: {{.ContentUser.Email}}
             ({{getText .Ctx.Language "email.verified"}}? 
 			{{ if .ContentUser.VerifiedEmail -}}
-				{{getText .Ctx.Language "yes"}}	
+            {{getText .Ctx.Language "yes"}}	
 			{{- else -}}
-				{{getText .Ctx.Language "no"}} | <button class="btn btn-blue" onclick="resendEmail()">{{getText .Ctx.Language "resend"}}</button>
+            {{getText .Ctx.Language "no"}} | <a href="#" onclick="resendEmail()">{{getText .Ctx.Language "resend"}}</a>
 			{{- end -}})
         </p>
 		{{- end -}} {{- end -}}
+        <div class="block my-2">
+            <a class="btn btn-blue" href="/submissions/?user_id={{.ContentUser.ID}}">{{getText .Ctx.Language "submission.list"}}</a>
+            {{if .Ctx.User}}
+                {{if eq .ContentUser.ID .Ctx.User.ID}}
+                    <a class="btn btn-blue" href="/settings">{{getText .Ctx.Language "profile.settings"}}</a>
+                {{end}}
+
+                {{if and .Ctx.User.Admin (not .ContentUser.Admin)}}
+                <button class="btn btn-red" onclick="deleteAccount()">{{getText .Ctx.Language "deleteAccount"}}</button>
+                {{end}}
+                
+            {{end}}
+        </div>
 	</div>
 </div>
 
@@ -38,19 +50,13 @@
     })
 </script>
 	
-{{if .Ctx.User}}
-{{if and .Ctx.User.Admin (not .ContentUser.Admin)}}
-<button class="mt-6 block btn btn-red" onclick="deleteAccount()">{{getText .Ctx.Language "deleteAccount"}}</button>
-
 <script>
 async function resendEmail() {
-    let res = await postCall('/user/resendEmail')
-    apiToast(res)
-    return res
+    bundled.apiToast(await bundled.postCall('/user/resendEmail'))
 }
 async function deleteAccount() {
 	
-	if(!confirm('{{getText .Ctx.Language "delAccConfirmation"}}')) {
+	if(!confirm(bundled.getText("delAccConfirmation"))) {
 		return
 	}
 
@@ -63,8 +69,6 @@ async function deleteAccount() {
 </script>
 
 
-{{end}}
-{{end}}
 
 <div class="segment-container">
     {{$pbs := .UserProblems }}

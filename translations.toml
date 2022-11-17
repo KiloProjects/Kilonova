@@ -238,6 +238,10 @@ ro = "Listă submisii"
 en = "Profile"
 ro = "Profil"
 
+[profile.settings]
+en = "Profile settings"
+ro = "Setări profil"
+
 [settings]
 en = "Settings"
 ro = "Setări"
