@@ -260,6 +260,13 @@ type VerifiedEmailParams struct {
 	ContentUser *kilonova.UserBrief
 }
 
+type PasswordResetParams struct {
+	Ctx *ReqContext
+
+	User      *kilonova.UserFull
+	RequestID string
+}
+
 type SubParams struct {
 	Ctx        *ReqContext
 	Submission *kilonova.Submission
@@ -358,7 +365,7 @@ func parse(optFuncs template.FuncMap, files ...string) executor { //*template.Te
 		if err != nil {
 			log.Fatal(err)
 		}
-		ptrees, err := tparse.Parse("nume_template", string(f), "{{", "}}", funcs, optFuncs, builtinTemporaryTemplate())
+		ptrees, err := tparse.Parse(files[0], string(f), "{{", "}}", funcs, optFuncs, builtinTemporaryTemplate())
 		if err != nil {
 			log.Fatal(err)
 		}

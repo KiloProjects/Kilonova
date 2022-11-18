@@ -59,6 +59,9 @@ func (s *API) Handler() http.Handler {
 		r.With(s.MustBeAuthed).Post("/logout", s.logout)
 		r.With(s.MustBeVisitor).Post("/signup", s.signup)
 		r.With(s.MustBeVisitor).Post("/login", s.login)
+
+		r.With(s.MustBeVisitor).Post("/forgotPassword", s.sendForgotPwdMail)
+		r.Post("/resetPassword", s.resetPassword)
 	})
 	r.Route("/problem", func(r chi.Router) {
 		r.Get("/get", s.getProblems)

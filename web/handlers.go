@@ -248,6 +248,33 @@ func (rt *Web) verifyEmail() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
+func (rt *Web) resetPassword() func(http.ResponseWriter, *http.Request) {
+	templ := rt.parse(nil, "auth/forgot_pwd_reset.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		reqid := chi.URLParam(r, "reqid")
+		if !rt.base.CheckPasswordResetRequest(r.Context(), reqid) {
+			rt.Status(w, &StatusParams{GenContext(r), 404, "", false})
+			return
+		}
+
+		uid, err := rt.base.GetPwdResetRequestUser(r.Context(), reqid)
+		if err != nil {
+			log.Println(err)
+			rt.Status(w, &StatusParams{GenContext(r), 404, "", false})
+			return
+		}
+
+		user, err1 := rt.base.UserFull(r.Context(), uid)
+		if err1 != nil {
+			log.Println(err1)
+			rt.Status(w, &StatusParams{GenContext(r), 404, "", false})
+			return
+		}
+
+		runTempl(w, r, templ, &PasswordResetParams{GenContext(r), user, reqid})
+	}
+}
+
 func (rt *Web) logout(w http.ResponseWriter, r *http.Request) {
 	emptyCookie := &http.Cookie{
 		Name:    "kn-sessionid",

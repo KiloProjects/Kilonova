@@ -1,0 +1,26 @@
+{{ define "title" }} {{getText .Ctx.Language "auth.forgot_pwd"}} {{ end }}
+{{ define "content" }}
+<h1 class="mb-2">{{getText .Ctx.Language "auth.forgot_pwd"}}</h1>
+
+<form class="segment-container" id="pwd_forgot_form">
+    <label class="block mb-2">
+        <span class="form-label">{{getText .Ctx.Language "email"}}</span>
+		<input class="form-input w-full" type="email" id="pwd_email" name="email" required/>
+    </label>
+    <button type="submit" class="block btn btn-blue">{{getText .Ctx.Language "recover"}}</button>
+</form>
+
+<script>
+
+document.getElementById("pwd_forgot_form").addEventListener("submit", sendRequest)
+
+async function sendRequest(e) {
+    e.preventDefault();
+    let email = document.getElementById("pwd_email").value;
+    let res = await bundled.postCall("/auth/forgotPassword", {email})
+    bundled.apiToast(res)
+}
+
+</script>
+
+{{ end }}

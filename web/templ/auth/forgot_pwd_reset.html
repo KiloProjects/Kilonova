@@ -1,0 +1,37 @@
+{{define "title"}} {{getText .Ctx.Language "reset_pwd"}} {{end}}
+{{ define "content" }}
+
+<form class="segment-container" id="pwd_reset_form" autocomplete="off">
+    <h1>{{getText .Ctx.Language "resetTitle" .User.Name}}</h1>
+    <input type="hidden" id="pwd_reset_reqid" name="req_id" value="{{.RequestID}}" />
+    <input type="email" class="hidden" value="{{.User.Email}}"/>
+    <label class="block mb-2">
+        <span class="form-label">{{getText .Ctx.Language "newPwd"}}</span>
+		<input class="form-input w-full" type="password" id="pwd_reset_pwd" autocomplete="off" name="password" required/>
+    </label>
+    <label class="block mb-2">
+        <span class="form-label">{{getText .Ctx.Language "newPwdConfirm"}}</span>
+		<input class="form-input w-full" type="password" id="pwd_reset_pwd1" autocomplete="off" name="password" required/>
+    </label>
+    <button type="submit" class="block btn btn-blue">{{getText .Ctx.Language "reset"}}</button>
+</form>
+
+<script>
+
+async function resetPassword(e) {
+    e.preventDefault()
+    let request_id = document.getElementById("pwd_reset_reqid").value;
+	let pwd = document.getElementById("pwd_reset_pwd").value,
+		pwd1= document.getElementById("pwd_reset_pwd1").value;
+    if(pwd != pwd1) {
+		bundled.createToast({title: bundled.getText("differentPwds"), status: 'error'});
+		return
+	}
+    let res = await bundled.postCall("/auth/resetPassword", {req_id: request_id, password: pwd})
+    bundled.apiToast(res)
+}
+
+document.getElementById("pwd_reset_form").addEventListener("submit", resetPassword)
+</script>
+
+{{end}}

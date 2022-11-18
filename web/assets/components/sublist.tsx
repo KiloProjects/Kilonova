@@ -103,7 +103,7 @@ export function Sublist({ list }: { list: Sublist }) {
 				</span>
 				{list.list.length > 0 &&
 					((numSolved >= 0 && <span class="float-right badge">{getText("num_solved", numSolved, list.list.length)}</span>) || (
-						<span class="float-right badge">{getText("num_problems", list.list.length)}</span>
+						<span class="float-right badge">{list.list.length == 1 ? getText("single_problem") : getText("num_problems", list.list.length)}</span>
 					))}
 			</summary>
 			{loading && <BigSpinner />}

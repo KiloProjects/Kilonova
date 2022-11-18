@@ -11,11 +11,11 @@ import (
 	"go.uber.org/zap"
 )
 
-var emailTemplate = template.Must(template.New("emailTempl").Parse(`Hey, {{.Name}}!
+var verificationEmailTempl = template.Must(template.New("emailTempl").Parse(`Hey, {{.Name}}!
 
-Încă nu ți-ai verificat e-mail-ul. Vă rugăm să intrați pe acest link  a fi siguri că ești tu: {{.HostPrefix}}/verify/{{.VID}}
+Încă nu ți-ai verificat emailul. Vă rugăm să intrați pe acest link a fi siguri că ești tu: {{.HostPrefix}}/verify/{{.VID}}
 
-Dacă acest cont nu este al tău, poți ignora acest e-mail.
+Dacă acest cont nu este al tău, poți ignora acest email.
 
 ------
 Echipa Kilonova
@@ -49,7 +49,7 @@ func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, e
 	}
 
 	var b bytes.Buffer
-	if err := emailTemplate.Execute(&b, struct {
+	if err := verificationEmailTempl.Execute(&b, struct {
 		Name       string
 		VID        string
 		HostPrefix string
@@ -61,7 +61,7 @@ func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, e
 		zap.S().Error("Error rendering verification email:", err)
 		return Statusf(500, "Error rendering email")
 	}
-	if err := s.mailer.SendEmail(&kilonova.MailerMessage{Subject: "Verify your email address", PlainContent: b.String(), To: email}); err != nil {
+	if err := s.mailer.SendEmail(&kilonova.MailerMessage{Subject: "Verifică-ți adresa de mail", PlainContent: b.String(), To: email}); err != nil {
 		zap.S().Warn(err)
 		return Statusf(500, "Error sending email")
 	}

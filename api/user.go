@@ -2,6 +2,8 @@ package api
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/davecgh/go-spew/spew"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/microcosm-cc/bluemonday"
@@ -224,7 +227,60 @@ func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Successfully changed password")
 }
 
-// ChangeEmail changes the e-mail of the saved user
+const pwdRequestResponse = "If the provided email address is correct, an email should arrive shortly."
+
+func (s *API) sendForgotPwdMail(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		Email string `json:"email"`
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	if args.Email == "" {
+		errorData(w, "No email address specified", 400)
+		return
+	}
+	user, err := s.base.UserFullByEmail(r.Context(), args.Email)
+	if err != nil {
+		spew.Dump(user, err)
+		if errors.Is(err, kilonova.ErrNotFound) {
+			returnData(w, pwdRequestResponse)
+			return
+		}
+		errorData(w, err, 500)
+		return
+	}
+	go func(user *kilonova.UserFull) {
+		if err := s.base.SendPasswordResetEmail(context.Background(), user.ID, user.Name, user.Email); err != nil {
+			zap.S().Info(err)
+		}
+	}(user)
+
+	returnData(w, pwdRequestResponse)
+}
+
+func (s *API) resetPassword(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		RequestID   string `json:"req_id"`
+		NewPassword string `json:"password"`
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	if err := s.base.FinalizePasswordReset(r.Context(), args.RequestID, args.NewPassword); err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	returnData(w, "Password reset. You may now log in with the updated credentials")
+}
+
+// ChangeEmail changes the email of the saved user
 func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(r.FormValue("email"))
 	password := r.FormValue("password")

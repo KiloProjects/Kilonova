@@ -14,7 +14,11 @@
                 </span>
                 {{else}}
                 <span class="float-right badge">
-                    {{ getText $ctx.Language "num_problems" (len $pbs) }}
+                    {{ if eq 1 (len $pbs)}}
+                        {{ getText $ctx.Language "single_problem" }}
+                    {{ else }}
+                        {{ getText $ctx.Language "num_problems" (len $pbs) }}
+                    {{ end }}
                 </span>
                 {{end}}
             {{end}}

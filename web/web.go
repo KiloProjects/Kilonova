@@ -96,6 +96,7 @@ func (rt *Web) Handler() http.Handler {
 
 	r.With(rt.mustBeVisitor).Get("/login", rt.justRender("auth/login.html", "modals/login.html"))
 	r.With(rt.mustBeVisitor).Get("/signup", rt.justRender("auth/signup.html"))
+	r.With(rt.mustBeVisitor).Get("/forgot_pwd", rt.justRender("auth/forgot_pwd_send.html"))
 
 	r.With(rt.mustBeAuthed).Get("/logout", rt.logout)
 
@@ -111,6 +112,9 @@ func (rt *Web) Handler() http.Handler {
 		r.With(rt.mustBeAuthed).Get("/resend", rt.resendEmail())
 		r.Get("/{vid}", rt.verifyEmail())
 	})
+
+	// Password reset
+	r.With(rt.mustBeVisitor).Get("/resetPassword/{reqid}", rt.resetPassword())
 
 	r.Get("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		file, err := embedded.Open("static/robots.txt")

@@ -55,8 +55,8 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string) (i
 	if !(len(uname) >= 3 && len(uname) <= 32 && usernameRegex.MatchString(uname)) {
 		return -1, Statusf(400, "Username must be between 3 and 32 characters long and must contain only letters, digits, underlines and dashes.")
 	}
-	if len(pwd) < 6 || len(pwd) > 128 {
-		return -1, Statusf(400, "Invalid password length.")
+	if err := s.CheckValidPassword(pwd); err != nil {
+		return -1, err
 	}
 	if !(lang == "" || lang == "en" || lang == "ro") {
 		return -1, Statusf(400, "Invalid language.")
@@ -90,4 +90,11 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string) (i
 	}
 
 	return id, nil
+}
+
+func (s *BaseAPI) CheckValidPassword(pwd string) *StatusError {
+	if len(pwd) < 6 || len(pwd) > 128 {
+		return Statusf(400, "Invalid password length.")
+	}
+	return nil
 }

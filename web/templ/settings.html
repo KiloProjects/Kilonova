@@ -72,7 +72,7 @@ async function updatePassword(e) {
 	let pwd = document.getElementById("pwd_change_pwd").value,
 		pwd1= document.getElementById("pwd_change_pwd1").value;
 	if(pwd != pwd1) {
-		bundled.createToast({title: '{{getText .Ctx.Language "differentPwds"}}', status: 'error'});
+		bundled.createToast({title: bundled.getText("differentPwds"), status: 'error'});
 		return
 	}
 	let res = await bundled.postCall("/user/changePassword", {password:pwd})

@@ -14,6 +14,10 @@ ro = "%d / %d rezolvate"
 en = "%d problems"
 ro = "%d probleme"
 
+[single_problem]
+en = "1 problem"
+ro = "o problemă"
+
 [the_rest]
 en = "Other problems"
 ro = "Alte probleme"
@@ -735,12 +739,12 @@ en = "Username/Email"
 ro = "Username/Email"
 
 [signupReminder]
-en = "Don't have an account? <a href='/signup'>Sign Up</a>"
-ro = "N-ai cont? <a href='/signup'>Înregistrează-te</a>"
+en = "Don't have an account? <a href='/signup'>Sign up</a>!"
+ro = "N-ai cont? <a href='/signup'>Înregistrează-te</a>!"
 
 [loginReminder]
-en = "Already have an account? <a href='/login'>Log In</a>"
-ro = "Ai deja cont? <a href='/login'>Loghează-te</a>"
+en = "Already have an account? <a href='/login'>Log in</a>!"
+ro = "Ai deja cont? <a href='/login'>Loghează-te</a>!"
 
 [authenticate]
 en = "Authenticate"
@@ -941,3 +945,29 @@ ro = "Se încarcă..."
 [created_at]
 en = "Created at"
 ro = "Creat în data de"
+
+# Forgot password stuff
+
+[auth.forgot_pwd]
+en = "Forgot password"
+ro = "Parolă uitată"
+
+[recover]
+en = "Recover"
+ro = "Recuperare"
+
+[forgot_pwd_announcement]
+en = "Forgot password? Go <a href='/forgot_pwd'>here</a> to recover it."
+ro = "Parolă uitată? Mergi <a href='/forgot_pwd'>aici</a> pentru a o recupera."
+
+[reset_pwd]
+en = "Reset password"
+ro = "Resetare parolă"
+
+[reset]
+en = "Reset"
+ro = "Resetare"
+
+[resetTitle]
+en = "Reset password for user %s"
+ro = "Resetare parolă pentru utilizatorul %s"

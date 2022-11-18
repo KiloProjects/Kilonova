@@ -60,7 +60,7 @@ func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*UserFull,
 	if email == "" {
 		return nil, Statusf(400, "Email not specified")
 	}
-	user, err := s.db.UserByName(ctx, email)
+	user, err := s.db.UserByEmail(ctx, email)
 	if err != nil || user == nil {
 		return nil, WrapError(ErrNotFound, "User not found")
 	}
@@ -117,6 +117,10 @@ func (s *BaseAPI) DeleteUser(ctx context.Context, uid int) *StatusError {
 }
 
 func (s *BaseAPI) UpdateUserPassword(ctx context.Context, uid int, password string) *StatusError {
+	if err := s.CheckValidPassword(password); err != nil {
+		return err
+	}
+
 	hash, err := hashPassword(password)
 	if err != nil {
 		return WrapError(err, "Couldn't generate hash")
