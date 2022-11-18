@@ -49,7 +49,7 @@ func (s *DB) ProblemLists(ctx context.Context, filter kilonova.ProblemListFilter
 
 func (s *DB) shallowProblemLists(ctx context.Context, parentID int) ([]*kilonova.ShallowProblemList, error) {
 	var lists []*pblist
-	query := s.conn.Rebind("SELECT * FROM problem_lists WHERE id IN (SELECT child_id FROM problem_list_pblists WHERE parent_id = ?) ORDER BY id ASC")
+	query := s.conn.Rebind("SELECT pls.* FROM problem_lists pls INNER JOIN problem_list_pblists plpb ON plpb.parent_id = ? AND pls.id = plpb.child_id ORDER BY plpb.position ASC, id ASC")
 	err := s.conn.SelectContext(ctx, &lists, query, parentID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.ShallowProblemList{}, nil

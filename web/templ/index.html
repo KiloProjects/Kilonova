@@ -14,7 +14,11 @@
 
 <div class="list-group list-group-mini mb-4">
     {{ range problemLists }}
-        {{template "problemlist_show" (genPblistParams $user $ctx . false)}}
+        {{ range .SubLists }}
+            {{ with problemList .ID }}
+                {{template "problemlist_show" (genPblistParams $user $ctx . false)}}
+            {{ end }}
+        {{ end }}
     {{ end }}
     {{ with (unassociatedProblems $user) }}
         <details class="list-group-head">
