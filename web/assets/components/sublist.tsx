@@ -99,7 +99,7 @@ export function Sublist({ list }: { list: Sublist }) {
 		<details class="list-group-head" onToggle={(e) => setExpanded(e.currentTarget.open)}>
 			<summary class="pb-1 mt-1">
 				<span class="float-left">
-					<a href={`/problem_lists/${list.id}`}>#{list.id}</a> {list.title}
+					{list.title}{" "}<a href={`/problem_lists/${list.id}`}>(#{list.id})</a>
 				</span>
 				{list.list.length > 0 &&
 					((numSolved >= 0 && <span class="float-right badge">{getText("num_solved", numSolved, list.list.length)}</span>) || (
