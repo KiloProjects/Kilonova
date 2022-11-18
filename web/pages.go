@@ -51,7 +51,6 @@ type ProblemParams struct {
 	ProblemEditor bool
 
 	Problem     *kilonova.Problem
-	Author      *kilonova.UserBrief
 	Attachments []*kilonova.Attachment
 
 	Markdown  template.HTML

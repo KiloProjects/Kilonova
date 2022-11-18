@@ -146,6 +146,10 @@ ro = "Editare Test #%d | Problema #%d: %s"
 en = "Edit Attachments | Problem #%d: %s"
 ro = "Editare Atașamente | Problema #%d: %s"
 
+[title.edit.access_control]
+en = "Access control | Problem #%d: %s"
+ro = "Control acces | Problema #%d: %s"
+
 [title.edit.subtask_add]
 en = "Create Subtask"
 ro = "Creare Subtask"
@@ -971,3 +975,39 @@ ro = "Resetare"
 [resetTitle]
 en = "Reset password for user %s"
 ro = "Resetare parolă pentru utilizatorul %s"
+
+[access_control_short]
+en = "Access"
+ro = "Acces"
+
+[access_control_title]
+en = "Access control"
+ro = "Control acces"
+
+[editors]
+en = "Editors"
+ro = "Editori"
+
+[viewers]
+en = "Viewers"
+ro = "Vizualizatori"
+
+[add_user]
+en = "Add user"
+ro = "Adăugare utilizator"
+
+[add_editor]
+en = "Add editor"
+ro = "Adăugare editor"
+
+[add_viewer]
+en = "Add vizualizator"
+ro = "Adăugare vizualizator"
+
+[toggle_visibility]
+en = "Toggle visibility"
+ro = "Schimbare vizibilitate"
+
+[visibility_admin]
+en = "Only admins can change problem visibility"
+ro = "Numai adminii pot să schimbe vizibilitatea unei probleme"

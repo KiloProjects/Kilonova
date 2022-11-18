@@ -11,6 +11,14 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/gosimple/slug"
+	"go.uber.org/zap"
+)
+
+type pbAccessType string
+
+const (
+	pbAccessEditor pbAccessType = "editor"
+	pbAccessViewer pbAccessType = "viewer"
 )
 
 func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
@@ -19,7 +27,10 @@ func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
-	return internalToProblem(&pb), err
+	if err != nil {
+		return nil, err
+	}
+	return s.internalToProblem(ctx, &pb)
 }
 
 func (s *DB) VisibleProblem(ctx context.Context, id int, user *kilonova.UserBrief) (*kilonova.Problem, error) {
@@ -38,17 +49,17 @@ func (s *DB) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*ki
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.Problem{}, nil
 	}
-	return internalToProblems(pbs), err
+	return s.internalToProblems(ctx, pbs), err
 }
 
 const problemCreateQuery = `INSERT INTO problems (
-	name, description, author_id, console_input, test_name, memory_limit, source_size, time_limit, visible, source_credits, author_credits, short_description, default_points
+	name, description, console_input, test_name, memory_limit, source_size, time_limit, visible, source_credits, author_credits, short_description, default_points
 ) VALUES (
-	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 ) RETURNING id;`
 
-func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem) error {
-	if p.Name == "" || p.AuthorID == 0 {
+func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID int) error {
+	if p.Name == "" || authorID == 0 {
 		return kilonova.ErrMissingRequired
 	}
 	if p.TestName == "" {
@@ -64,11 +75,14 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem) error {
 		p.SourceSize = 10000
 	}
 	var id int
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(problemCreateQuery), p.Name, p.Description, p.AuthorID, p.ConsoleInput, p.TestName, p.MemoryLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.AuthorCredits, p.ShortDesc, p.DefaultPoints)
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(problemCreateQuery), p.Name, p.Description, p.ConsoleInput, p.TestName, p.MemoryLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.AuthorCredits, p.ShortDesc, p.DefaultPoints)
 	if err == nil {
 		p.ID = id
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	return s.AddProblemEditor(ctx, id, authorID)
 }
 
 const problemUpdateStatement = `UPDATE problems SET %s WHERE id = ?`
@@ -120,9 +134,6 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []interface{}
 	if v := filter.Name; v != nil {
 		where, args = append(where, "lower(name) = lower(?)"), append(args, v)
 	}
-	if v := filter.AuthorID; v != nil {
-		where, args = append(where, "author_id = ?"), append(args, v)
-	}
 	if v := filter.ConsoleInput; v != nil {
 		where, args = append(where, "console_input = ?"), append(args, v)
 	}
@@ -138,7 +149,7 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []interface{}
 			}
 		}
 		if id >= 0 {
-			where, args = append(where, "(visible = true OR author_id = ?)"), append(args, id)
+			where, args = append(where, "(visible = true OR id IN (SELECT DISTINCT problem_id FROM problem_user_access WHERE user_id = ?))"), append(args, id, id)
 		}
 	}
 	if filter.Unassociated {
@@ -161,9 +172,6 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []interface{}) {
 
 	if v := upd.TestName; v != nil {
 		toUpd, args = append(toUpd, "test_name = ?"), append(args, v)
-	}
-	if v := upd.AuthorID; v != nil {
-		toUpd, args = append(toUpd, "author_id = ?"), append(args, v)
 	}
 
 	if v := upd.TimeLimit; v != nil {
@@ -212,6 +220,39 @@ func (db *DB) SolvedProblems(ctx context.Context, uid int) ([]*kilonova.Problem,
 	return pbs, nil
 }
 
+type problemAccess struct {
+	ProblemID int          `db:"problem_id"`
+	UserID    int          `db:"user_id"`
+	Access    pbAccessType `db:"access"`
+}
+
+func (s *DB) problemAccessRights(ctx context.Context, pbid int) ([]*problemAccess, error) {
+	var rights []*problemAccess
+	err := s.conn.SelectContext(ctx, &rights, "SELECT * FROM problem_user_access WHERE problem_id = $1", pbid)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*problemAccess{}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return rights, nil
+}
+
+func (s *DB) AddProblemEditor(ctx context.Context, pbid int, uid int) error {
+	_, err := s.conn.ExecContext(ctx, "INSERT INTO problem_user_access (problem_id, user_id, access) VALUES ($1, $2, 'editor')", pbid, uid)
+	return err
+}
+
+func (s *DB) AddProblemViewer(ctx context.Context, pbid int, uid int) error {
+	_, err := s.conn.ExecContext(ctx, "INSERT INTO problem_user_access (problem_id, user_id, access) VALUES ($1, $2, 'viewer')", pbid, uid)
+	return err
+}
+
+func (s *DB) StripProblemAccess(ctx context.Context, pbid int, uid int) error {
+	_, err := s.conn.ExecContext(ctx, "DELETE FROM problem_user_access WHERE problem_id = $1 AND user_id = $2", pbid, uid)
+	return err
+}
+
 type dbProblem struct {
 	ID            int       `db:"id"`
 	CreatedAt     time.Time `db:"created_at"`
@@ -219,7 +260,6 @@ type dbProblem struct {
 	Description   string    `db:"description"`
 	ShortDesc     string    `db:"short_description"`
 	TestName      string    `db:"test_name"`
-	AuthorID      int       `db:"author_id"`
 	Visible       bool      `db:"visible"`
 	DefaultPoints int       `db:"default_points"`
 
@@ -235,14 +275,44 @@ type dbProblem struct {
 	ConsoleInput bool `db:"console_input"`
 }
 
-func internalToProblems(pbs []*dbProblem) []*kilonova.Problem {
-	return mapper(pbs, internalToProblem)
+func (s *DB) internalToProblems(ctx context.Context, pbs []*dbProblem) []*kilonova.Problem {
+	return mapper(pbs, func(pb *dbProblem) *kilonova.Problem {
+		pbb, err := s.internalToProblem(ctx, pb)
+		if err != nil {
+			zap.S().Warn(err)
+		}
+		return pbb
+	})
 }
 
-func internalToProblem(pb *dbProblem) *kilonova.Problem {
+func (s *DB) internalToProblem(ctx context.Context, pb *dbProblem) (*kilonova.Problem, error) {
 	if pb == nil {
-		return nil
+		return nil, nil
 	}
+
+	rights, err := s.problemAccessRights(ctx, pb.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	var editors, viewers []int
+	for _, right := range rights {
+		switch right.Access {
+		case pbAccessEditor:
+			editors = append(editors, right.UserID)
+		case pbAccessViewer:
+			viewers = append(viewers, right.UserID)
+		default:
+			zap.S().Warn("Unknown access rank", zap.String("right", string(right.Access)))
+		}
+	}
+	if editors == nil {
+		editors = []int{}
+	}
+	if viewers == nil {
+		viewers = []int{}
+	}
+
 	return &kilonova.Problem{
 		ID:          pb.ID,
 		CreatedAt:   pb.CreatedAt,
@@ -251,8 +321,10 @@ func internalToProblem(pb *dbProblem) *kilonova.Problem {
 		ShortDesc:   pb.ShortDesc,
 		TestName:    pb.TestName,
 
-		AuthorID:      pb.AuthorID,
-		Visible:       pb.Visible,
+		Visible: pb.Visible,
+		Editors: editors,
+		Viewers: viewers,
+
 		DefaultPoints: pb.DefaultPoints,
 
 		TimeLimit:   pb.TimeLimit,
@@ -263,5 +335,5 @@ func internalToProblem(pb *dbProblem) *kilonova.Problem {
 		AuthorCredits: pb.AuthorCredits,
 
 		ConsoleInput: pb.ConsoleInput,
-	}
+	}, nil
 }

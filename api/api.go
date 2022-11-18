@@ -85,6 +85,10 @@ func (s *API) Handler() http.Handler {
 					r.Post("/orphan", s.orphanTest)
 				})
 
+				r.Post("/addEditor", s.addProblemEditor)
+				r.Post("/addViewer", s.addProblemViewer)
+				r.Post("/stripAccess", s.stripProblemAccess)
+
 				r.Post("/addAttachment", s.createAttachment)
 				//r.With(s.validateAttachmentID).Post("/attachment/{aID}/", s.updateAttachmentMetadata)
 				r.Post("/bulkDeleteAttachments", s.bulkDeleteAttachments)
@@ -112,6 +116,8 @@ func (s *API) Handler() http.Handler {
 				}))
 				// The one from /web/web.go is good enough
 				// r.Get("/attachmentData", s.getAttachment)
+
+				r.Get("/accessControl", s.getProblemAccessControl)
 
 				r.Get("/tests", s.getTests)
 				r.Get("/test", s.getTest)

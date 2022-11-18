@@ -77,6 +77,9 @@ func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([
 	for _, user := range users {
 		usersBrief = append(usersBrief, user.ToBrief())
 	}
+	if len(usersBrief) == 0 {
+		return []*UserBrief{}, nil
+	}
 	return usersBrief, nil
 }
 

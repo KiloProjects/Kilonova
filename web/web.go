@@ -14,6 +14,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/benbjohnson/hashfs"
 	"github.com/go-chi/chi/v5"
@@ -209,6 +210,12 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 				return "[Error rendering markdown]"
 			}
 			return template.HTML(val)
+		},
+		"problemEditor": func(user *kilonova.UserBrief, pb *kilonova.Problem) bool {
+			return util.IsProblemEditor(user, pb)
+		},
+		"problemVisible": func(user *kilonova.UserBrief, pb *kilonova.Problem) bool {
+			return util.IsProblemVisible(user, pb)
 		},
 		"genProblemsParams": func(user *kilonova.UserBrief, lang string, pbs []*kilonova.Problem, showSolved bool) *ProblemListingParams {
 			return &ProblemListingParams{user, lang, pbs, showSolved}

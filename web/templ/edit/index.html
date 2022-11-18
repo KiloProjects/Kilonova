@@ -33,12 +33,6 @@
 			</label>
 		</div>
 		-->
-		<div class="block my-2" v-if="admin">
-			<label>
-				<input class="form-checkbox" type="checkbox" v-model="problem.visible">
-				<span class="form-label ml-2">{{getText .Ctx.Language "visiblePb"}}</span>
-			</label>
-		</div>
 		<div class="block my-2">
 			<label>
 				<input class="form-checkbox" type="checkbox" v-model="problem.console_input">
@@ -110,14 +104,13 @@ Vue.createApp({
 	data: () => {
 		return {
 			problem: problem,
-			admin: {{.Ctx.User.Admin}},
 		}
 	},
 	methods: {
 		updateProblem: async function(e){
 			e.preventDefault();
 			if(this.problem.name === "") {
-				bundled.createToast({status: "error", description: '{{getText .Ctx.Language "emptyTitle"}}'});
+				bundled.createToast({status: "error", description: bundled.getText("emptyTitle")});
 				return
 			}
 			let data = {
@@ -134,15 +127,12 @@ Vue.createApp({
 				time_limit: this.problem.time_limit,
 
 			};
-			if(this.admin) {
-				data.visible = this.problem.visible;
-			}
 			let res = await bundled.postCall(`/problem/${this.problem.id}/update/`, data)
 			bundled.apiToast(res);
 		},
 		deleteProblem: async function(e) {
 			e.preventDefault();
-			if(!confirm('{{getText .Ctx.Language "confirmProblemDelete"}}')) {
+			if(!confirm(bundled.getText("confirmProblemDelete"))) {
 				return
 			}
 			let res = await bundled.postCall(`/problem/${this.problem.id}/delete`, {})

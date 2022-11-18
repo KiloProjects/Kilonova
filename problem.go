@@ -15,9 +15,11 @@ type Problem struct {
 	Description   string    `json:"description"`
 	ShortDesc     string    `json:"short_description"`
 	TestName      string    `json:"test_name"`
-	AuthorID      int       `json:"author_id"`
-	Visible       bool      `json:"visible"`
 	DefaultPoints int       `json:"default_points"`
+
+	Visible bool  `json:"visible"`
+	Editors []int `json:"editors"`
+	Viewers []int `json:"viewers"`
 
 	// Limit stuff
 	TimeLimit   float64 `json:"time_limit"`
@@ -37,7 +39,6 @@ type Problem struct {
 type ProblemFilter struct {
 	ID           *int    `json:"id"`
 	IDs          []int   `json:"ids"`
-	AuthorID     *int    `json:"author_id"`
 	ConsoleInput *bool   `json:"console_input"`
 	Visible      *bool   `json:"visible"`
 	Name         *string `json:"name"`
@@ -57,7 +58,6 @@ type ProblemUpdate struct {
 	Description   *string `json:"description"`
 	ShortDesc     *string `json:"short_desc"`
 	TestName      *string `json:"test_name"`
-	AuthorID      *int    `json:"author_id"`
 	DefaultPoints *int    `json:"default_points"`
 
 	TimeLimit   *float64 `json:"time_limit"`

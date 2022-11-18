@@ -182,6 +182,15 @@ func userFilterQuery(filter *kilonova.UserFilter) ([]string, []interface{}) {
 	if v := filter.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, v)
 	}
+	if v := filter.IDs; v != nil && len(v) == 0 {
+		where = append(where, "id = -1")
+	}
+	if v := filter.IDs; len(v) > 0 {
+		where = append(where, "id IN (?"+strings.Repeat(",?", len(v)-1)+")")
+		for _, el := range v {
+			args = append(args, el)
+		}
+	}
 	if v := filter.Name; v != nil {
 		where, args = append(where, "lower(name) = lower(?)"), append(args, v)
 	}

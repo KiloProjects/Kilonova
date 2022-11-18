@@ -26,9 +26,21 @@ type FullList = {
 type Problem = {
 	id: number;
 	name: string;
-	author_id: number;
 	visible: boolean;
+	editors: number[];
 };
+
+function isProblemEditor(pb: Problem): boolean {
+	if (window.platform_info.admin) {
+		return true;
+	}
+	for (let uid of pb.editors) {
+		if (uid == window.platform_info.user_id) {
+			return true;
+		}
+	}
+	return false;
+}
 
 type ProblemScore = { [problem: number]: number };
 
@@ -42,7 +54,7 @@ export function Problems({ pbs, scores }: { pbs: Problem[]; scores: ProblemScore
 					</span>
 					{window.platform_info.user_id > 0 && (
 						<div>
-							{(window.platform_info.admin || window.platform_info.user_id == pb.author_id) &&
+							{isProblemEditor(pb) &&
 								(pb.visible ? (
 									<span class="badge badge-green">{getText("published")}</span>
 								) : (
@@ -99,7 +111,7 @@ export function Sublist({ list }: { list: Sublist }) {
 		<details class="list-group-head" onToggle={(e) => setExpanded(e.currentTarget.open)}>
 			<summary class="pb-1 mt-1">
 				<span class="float-left">
-					{list.title}{" "}<a href={`/problem_lists/${list.id}`}>(#{list.id})</a>
+					{list.title} <a href={`/problem_lists/${list.id}`}>(#{list.id})</a>
 				</span>
 				{list.list.length > 0 &&
 					((numSolved >= 0 && <span class="float-right badge">{getText("num_solved", numSolved, list.list.length)}</span>) || (

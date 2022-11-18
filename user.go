@@ -35,7 +35,8 @@ func (uf *UserFull) Brief() *UserBrief {
 // UserFilter is the struct with all filterable fields on the user
 // It also provides a Limit and Offset field, for pagination
 type UserFilter struct {
-	ID *int `json:"id"`
+	ID  *int  `json:"id"`
+	IDs []int `json:"ids"`
 
 	// Name is case insensitive
 	Name  *string `json:"name"`

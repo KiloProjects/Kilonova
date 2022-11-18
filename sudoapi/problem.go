@@ -73,8 +73,8 @@ func (s *BaseAPI) SolvedProblems(ctx context.Context, uid int) ([]*kilonova.Prob
 	return pbs, nil
 }
 
-func (s *BaseAPI) InsertProblem(ctx context.Context, problem *kilonova.Problem) (int, *StatusError) {
-	err := s.db.CreateProblem(ctx, problem)
+func (s *BaseAPI) InsertProblem(ctx context.Context, problem *kilonova.Problem, authorID int) (int, *StatusError) {
+	err := s.db.CreateProblem(ctx, problem, authorID)
 	if err != nil {
 		return -1, WrapError(err, "Couldn't create problem")
 	}
@@ -86,9 +86,35 @@ func (s *BaseAPI) InsertProblem(ctx context.Context, problem *kilonova.Problem) 
 func (s *BaseAPI) CreateProblem(ctx context.Context, title string, author *UserBrief, consoleInput bool) (int, *StatusError) {
 	problem := &kilonova.Problem{
 		Name:         title,
-		AuthorID:     author.ID,
 		ConsoleInput: consoleInput,
 	}
 
-	return s.InsertProblem(ctx, problem)
+	return s.InsertProblem(ctx, problem, author.ID)
+}
+
+func (s *BaseAPI) AddProblemEditor(ctx context.Context, pbid int, uid int) *StatusError {
+	if err := s.db.StripProblemAccess(ctx, pbid, uid); err != nil {
+		return WrapError(err, "Couldn't add problem editor: sanity strip failed")
+	}
+	if err := s.db.AddProblemEditor(ctx, pbid, uid); err != nil {
+		return WrapError(err, "Couldn't add problem editor")
+	}
+	return nil
+}
+
+func (s *BaseAPI) AddProblemViewer(ctx context.Context, pbid int, uid int) *StatusError {
+	if err := s.db.StripProblemAccess(ctx, pbid, uid); err != nil {
+		return WrapError(err, "Couldn't add problem viewer: sanity strip failed")
+	}
+	if err := s.db.AddProblemViewer(ctx, pbid, uid); err != nil {
+		return WrapError(err, "Couldn't add problem viewer")
+	}
+	return nil
+}
+
+func (s *BaseAPI) StripProblemAccess(ctx context.Context, pbid int, uid int) *StatusError {
+	if err := s.db.StripProblemAccess(ctx, pbid, uid); err != nil {
+		return WrapError(err, "Couldn't strip problem access")
+	}
+	return nil
 }

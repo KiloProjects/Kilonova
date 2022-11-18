@@ -97,13 +97,6 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 			log.Println("Rendering markdown:", err)
 		}
 
-		author, err1 := rt.base.UserBrief(r.Context(), problem.AuthorID)
-		if err1 != nil || author == nil {
-			log.Println("Getting author:", err, author, problem.AuthorID)
-			rt.statusPage(w, r, 500, "Couldn't get author", false)
-			return
-		}
-
 		atts, err1 := rt.base.ProblemAttachments(r.Context(), util.Problem(r).ID)
 		if err1 != nil || len(atts) == 0 {
 			atts = nil
@@ -143,7 +136,6 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 			ProblemEditor: util.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
 
 			Problem:     util.Problem(r),
-			Author:      author,
 			Attachments: atts,
 
 			Markdown:  template.HTML(buf),

@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS tests (
 
 -- submissions stuff
 
-CREATE TYPE IF NOT EXISTS status AS ENUM (
+CREATE TYPE status AS ENUM (
 	'creating',
 	'waiting',
 	'working',

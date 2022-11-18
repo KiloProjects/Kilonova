@@ -42,7 +42,6 @@
 					{{- end -}}
 				</h2>
                 <div class="px-2">
-                    <p>{{getText .Ctx.Language "uploader"}}: {{.Author.Name}}</p>
                     {{ if .ProblemEditor }}
                     <p>{{getText .Ctx.Language "visibility"}}: 
                     {{if .Problem.Visible}}

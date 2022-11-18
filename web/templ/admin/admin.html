@@ -21,12 +21,16 @@
 <div class="segment-container">
 	<h3 class="text-2xl">{{getText .Ctx.Language "admins"}}:</h3>
 	<div id="admin-group" class="list-group list-group-rounded mb-2">
-		{{getText .Ctx.Language "loading"}}	
+		<div class="list-group-head">
+            {{getText .Ctx.Language "loading"}}
+        </div>
 	</div>
 	<br/>
 	<h3 class="text-2xl">{{getText .Ctx.Language "proposers"}}:</h3>
 	<div id="proposer-group" class="list-group list-group-rounded mb-2">
-		{{getText .Ctx.Language "loading"}}	
+		<div class="list-group-head">
+            {{getText .Ctx.Language "loading"}}
+        </div>
 	</div>
 </div>
 
@@ -73,7 +77,7 @@
 	}
 
 	async function loadUsers(q, id = "admin-group", cb) {
-		document.getElementById(id).innerHTML = "Loading..."
+		document.getElementById(id).innerHTML = `<div class="list-group-head">${bundled.getText("loading")}</div>`
 		let res = await bundled.getCall("/admin/getAllUsers", q)
 		if(res.status == "error") {
 			bundled.apiToast(res)

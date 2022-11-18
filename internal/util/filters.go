@@ -38,7 +38,12 @@ func IsProblemEditor(user *kilonova.UserBrief, problem *kilonova.Problem) bool {
 	if problem == nil {
 		return false
 	}
-	return user.ID == problem.AuthorID
+	for _, uid := range problem.Editors {
+		if uid == user.ID {
+			return true
+		}
+	}
+	return false
 }
 
 func IsProblemVisible(user *kilonova.UserBrief, problem *kilonova.Problem) bool {
@@ -47,6 +52,11 @@ func IsProblemVisible(user *kilonova.UserBrief, problem *kilonova.Problem) bool 
 	}
 	if problem.Visible {
 		return true
+	}
+	for _, uid := range problem.Viewers {
+		if uid == user.ID {
+			return true
+		}
 	}
 	return IsProblemEditor(user, problem)
 }
