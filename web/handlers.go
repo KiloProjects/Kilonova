@@ -23,7 +23,7 @@ import (
 )
 
 func (rt *Web) index() func(http.ResponseWriter, *http.Request) {
-	templ := rt.parse(nil, "index.html", "modals/pbs.html")
+	templ := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		runTempl(w, r, templ, &IndexParams{GenContext(r), kilonova.Version, kilonova.IndexDescription})
 	}
@@ -44,7 +44,7 @@ func (rt *Web) justRender(files ...string) http.HandlerFunc {
 }
 
 func (rt *Web) pbListView() func(http.ResponseWriter, *http.Request) {
-	templ := rt.parse(nil, "lists/view.html", "modals/pbs.html")
+	templ := rt.parse(nil, "lists/view.html", "modals/pblist.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		runTempl(w, r, templ, &ProblemListParams{GenContext(r), util.ProblemList(r)})
 	}
@@ -92,7 +92,7 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		problem := util.Problem(r)
 
-		buf, err := rt.rd.Render([]byte(problem.Description))
+		buf, err := rt.base.RenderMarkdown([]byte(problem.Description))
 		if err != nil {
 			log.Println("Rendering markdown:", err)
 		}
@@ -204,7 +204,7 @@ func (rt *Web) resendEmail() func(http.ResponseWriter, *http.Request) {
 		}
 		if err := rt.base.SendVerificationEmail(context.Background(), u.ID, u.Name, u.Email); err != nil {
 			log.Println(err)
-			rt.Status(w, &StatusParams{GenContext(r), 500, "N-am putut retrimite email-ul de verificare", false})
+			rt.Status(w, &StatusParams{GenContext(r), 500, "N-am putut retrimite emailul de verificare", false})
 			return
 		}
 
@@ -286,7 +286,7 @@ func (rt *Web) problemAttachment(w http.ResponseWriter, r *http.Request) {
 
 	// If markdown file and client asks for HTML format, render the markdown
 	if path.Ext(name) == ".md" && r.FormValue("format") == "html" {
-		data, err := rt.rd.Render(attData)
+		data, err := rt.base.RenderMarkdown(attData)
 		if err != nil {
 			zap.S().Warn(err)
 			http.Error(w, "Could not render file", 500)
@@ -325,7 +325,7 @@ func (rt *Web) docs() http.HandlerFunc {
 				return
 			}
 
-			t, err := rt.rd.Render(file)
+			t, err := rt.base.RenderMarkdown(file)
 			if err != nil {
 				log.Println("CAN'T RENDER DOCS")
 				rt.Status(w, &StatusParams{GenContext(r), 500, "N-am putut randa pagina", false})
@@ -359,7 +359,7 @@ func (rt *Web) docs() http.HandlerFunc {
 
 				file = []byte(data.String())
 			}
-			t, err := rt.rd.Render(file)
+			t, err := rt.base.RenderMarkdown(file)
 			if err != nil {
 				log.Println("CAN'T RENDER DOCS")
 				rt.Status(w, &StatusParams{GenContext(r), 500, "N-am putut randa pagina", false})

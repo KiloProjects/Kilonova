@@ -36,7 +36,7 @@ func (s *BaseAPI) UserBriefByName(ctx context.Context, name string) (*UserBrief,
 	if name == "" {
 		return nil, Statusf(400, "Username not specified")
 	}
-	user, err := s.db.UserByName(ctx, strings.TrimSpace(name))
+	user, err := s.db.UserByName(ctx, name)
 	if err != nil || user == nil {
 		return nil, WrapError(ErrNotFound, "User not found")
 	}
@@ -48,7 +48,19 @@ func (s *BaseAPI) UserFullByName(ctx context.Context, name string) (*UserFull, *
 	if name == "" {
 		return nil, Statusf(400, "Username not specified")
 	}
-	user, err := s.db.UserByName(ctx, strings.TrimSpace(name))
+	user, err := s.db.UserByName(ctx, name)
+	if err != nil || user == nil {
+		return nil, WrapError(ErrNotFound, "User not found")
+	}
+	return user.ToFull(), nil
+}
+
+func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*UserFull, *StatusError) {
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return nil, Statusf(400, "Email not specified")
+	}
+	user, err := s.db.UserByName(ctx, email)
 	if err != nil || user == nil {
 		return nil, WrapError(ErrNotFound, "User not found")
 	}

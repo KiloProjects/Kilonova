@@ -5,7 +5,7 @@
 {{ $root := . }}
 {{ with visibleProblems $user }}
 	<h2 class="text-2xl mb-2"> {{ getText $root.Ctx.Language "problems" }} </h2>	
-	{{ template "pb_list_group" (genPbListParams $user $root.Ctx.Language . true) }}
+	{{ template "pb_list_group" (genProblemsParams $user $root.Ctx.Language . true) }}
 {{ end }} 
 
 {{ end }}

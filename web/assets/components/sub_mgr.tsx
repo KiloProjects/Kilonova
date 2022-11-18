@@ -259,14 +259,11 @@ function SubTask({ sub, subtask, detRef }) {
 				{/* <span class="flex justify-between"> */}
 				<span class="float-left">{getText("nthSubTask", subtask.visible_id)}</span>
 				{allSubtestsDone ? (
-					<span
-						class="float-right rounded-full py-1 px-2 text-base text-white font-semibold"
-						style={`background-color: ${getGradient(stkScore, 100)}`}
-					>
+					<span class="float-right badge" style={`background-color: ${getGradient(stkScore, 100)}`}>
 						{Math.round((subtask.score * stkScore) / 100.0)} / {subtask.score}
 					</span>
 				) : (
-					<span class="float-right rounded-full py-1 px-2 text-base text-white font-semibold bg-teal-700">
+					<span class="float-right badge">
 						<i class="fas fa-cog animate-spin"></i>
 					</span>
 				)}
@@ -290,14 +287,11 @@ function SubTask({ sub, subtask, detRef }) {
 						>
 							<span>{getText("nthTest", actualSubtest.test.visible_id)}</span>
 							{actualSubtest.done ? (
-								<span
-									class="rounded-full py-1 px-2 text-base text-white font-semibold"
-									style={`background-color: ${getGradient(actualSubtest.score, 100)}`}
-								>
+								<span class="badge" style={`background-color: ${getGradient(actualSubtest.score, 100)}`}>
 									{Math.round((subtask.score * actualSubtest.score) / 100.0)} / {subtask.score}
 								</span>
 							) : (
-								<span class="rounded-full py-1 px-2 text-base text-white font-semibold bg-teal-700">
+								<span class="badge">
 									<i class="fas fa-cog animate-spin"></i>
 								</span>
 							)}

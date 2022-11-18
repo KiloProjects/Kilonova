@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS problem_lists (
 	description text 		NOT NULL DEFAULT '',
 );
 
-CREATE TABLE problem_list_problems (
+CREATE TABLE IF NOT EXISTS problem_list_problems (
     pblist_id bigint NOT NULL REFERENCES problem_lists(id) ON DELETE CASCADE ON UPDATE CASCADE,
     problem_id bigint NOT NULL REFERENCES problems(id) ON DELETE CASCADE ON UPDATE CASCADE,
     position bigint NOT NULL DEFAULT 0,
@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS subtasks (
 	score 		integer 	NOT NULL,
 );
 
-CREATE TABLE subtask_tests (
+CREATE TABLE IF NOT EXISTS subtask_tests (
     subtask_id bigint NOT NULL REFERENCES subtasks(id) ON DELETE CASCADE ON UPDATE CASCADE,
     test_id bigint NOT NULL REFERENCES tests(id) ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (subtask_id, test_id)

@@ -10,6 +10,7 @@ import (
 	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/email"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer"
 	"go.uber.org/zap"
 )
 
@@ -27,6 +28,7 @@ type BaseAPI struct {
 	db      *db.DB
 	manager kilonova.DataStore
 	mailer  kilonova.Mailer
+	rd      kilonova.MarkdownRenderer
 }
 
 func (s *BaseAPI) Close() *StatusError {
@@ -38,7 +40,7 @@ func (s *BaseAPI) Close() *StatusError {
 }
 
 func GetBaseAPI(db *db.DB, manager kilonova.DataStore, mailer kilonova.Mailer) *BaseAPI {
-	return &BaseAPI{db, manager, mailer}
+	return &BaseAPI{db, manager, mailer, mdrenderer.NewLocalRenderer()}
 }
 
 func InitializeBaseAPI(ctx context.Context) (*BaseAPI, *StatusError) {
@@ -67,5 +69,5 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, *StatusError) {
 	}
 	zap.S().Info("Connected to DB")
 
-	return &BaseAPI{db, manager, mailer}, nil
+	return &BaseAPI{db, manager, mailer, mdrenderer.NewLocalRenderer()}, nil
 }

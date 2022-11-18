@@ -13,39 +13,22 @@
 
 <div class="list-group list-group-mini">
 {{ range problemLists }}
-    {{ $pbs := (listProblems $user .) }}
-    <details class="list-group-item">
-        <summary class="pb-1 mt-1">
-            <span class="float-left"><a href="/problem_lists/{{.ID}}">#{{.ID}}</a> {{.Title}}</span>
-            {{if $user}}
-                <span class="float-right rounded-full py-1 px-2 text-base bg-teal-700 text-white font-semibold">
-                    {{ getText $ctx.Language "num_solved_v2" (numSolved $user .List) (len $pbs) }}
-                </span>
-            {{end}}
-        </summary>
-        {{ if .Description }}<div class="list-group m-1 my-1"><div class="list-group-head">{{renderMarkdown .Description}}</div></div>{{end}}
-        {{ with $pbs }}
-            {{ template "pb_list_group" (genPbListParams $user $root.Ctx.Language . true) }}
-        {{ else }}
-            <p> {{ getText $ctx.Language "problem.none_in_list" }} </p>
-        {{ end }}
-    </details>
+    {{template "problemlist_show" (genPblistParams $user $ctx . false)}}
 {{ end }}
 {{ with (unassociatedProblems $user) }}
-    <details class="list-group-item">
+    <details class="list-group-head">
         <summary class="pb-1 mt-1">
             <span class="float-left">{{getText $ctx.Language "the_rest"}}</span>
             {{if $user}}
-                <span class="float-right rounded-full py-1 px-2 text-base bg-teal-700 text-white font-semibold">
-                    {{ getText $ctx.Language "num_solved_v2" (numSolvedPbs $user .) (len .) }}
+                <span class="float-right badge">
+                    {{ getText $ctx.Language "num_solved" (numSolvedPbs $user .) (len .) }}
                 </span>
             {{end}}
         </summary>
-        {{/* {{ if .Description }}<div class="list-group m-1 my-1"><div class="list-group-head">{{renderMarkdown .Description}}</div></div>{{end}} */}}
         {{ with . }}
-            {{ template "pb_list_group" (genPbListParams $user $root.Ctx.Language . true) }}
-        {{ else }}
-            <p> {{ getText $ctx.Language "problem.none_in_list" }} </p>
+            <div class="mt-2">
+                {{ template "pb_list_group" (genProblemsParams $user $root.Ctx.Language . true) }}
+            </div>
         {{ end }}
     </details>
 {{ end }}

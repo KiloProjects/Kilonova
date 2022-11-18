@@ -9,7 +9,7 @@ import (
 
 func StatusData(w http.ResponseWriter, status string, retData any, statusCode int) {
 	if err, ok := retData.(*StatusError); ok {
-		zap.S().Warn("*StatusError passed to sudoapi.statusData. This might not be intended")
+		// zap.S().Warn("*StatusError passed to sudoapi.statusData. This might not be intended")
 		err.WriteError(w)
 		return
 	}

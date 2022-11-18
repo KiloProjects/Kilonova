@@ -15,7 +15,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"github.com/KiloProjects/kilonova/web/mdrenderer"
 	"github.com/benbjohnson/hashfs"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -33,7 +32,6 @@ var fsys = hashfs.NewFS(embedded)
 
 // Web is the struct representing this whole package
 type Web struct {
-	rd    kilonova.MarkdownRenderer
 	debug bool
 
 	// db *db.DB
@@ -83,7 +81,7 @@ func (rt *Web) Handler() http.Handler {
 	})
 
 	r.Route("/problem_lists", func(r chi.Router) {
-		r.Get("/", rt.justRender("lists/index.html", "modals/pbs.html"))
+		r.Get("/", rt.justRender("lists/index.html", "modals/pblist.html", "modals/pbs.html"))
 		r.With(rt.mustBeProposer).Get("/create", rt.justRender("lists/create.html"))
 		r.With(rt.ValidateListID).Get("/{id}", rt.pbListView())
 	})
@@ -142,7 +140,6 @@ func (rt *Web) parse(optFuncs template.FuncMap, files ...string) executor {
 
 // NewWeb returns a new web instance
 func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
-	rd := mdrenderer.NewLocalRenderer()
 	funcs := template.FuncMap{
 		"pLanguages": func() map[string]*WebLanguage {
 			return webLanguages
@@ -190,50 +187,50 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return pbs
 		},
-		"renderMarkdown": func(body string) template.HTML {
-			val, err := rd.Render([]byte(body))
+		"renderMarkdown": func(body interface{}) template.HTML {
+			var bd []byte
+			switch body.(type) {
+			case string:
+				bd = []byte(body.(string))
+			case []byte:
+				bd = body.([]byte)
+			case template.HTML:
+				bd = []byte(body.(template.HTML))
+			default:
+				panic("Unknown renderMarkdown type")
+			}
+			val, err := base.RenderMarkdown(bd)
 			if err != nil {
 				zap.S().Warn(err)
 				return "[Error rendering markdown]"
 			}
 			return template.HTML(val)
 		},
-		"genPbListParams": func(user *kilonova.UserBrief, lang string, pbs []*kilonova.Problem, showSolved bool) *ProblemListingParams {
+		"genProblemsParams": func(user *kilonova.UserBrief, lang string, pbs []*kilonova.Problem, showSolved bool) *ProblemListingParams {
 			return &ProblemListingParams{user, lang, pbs, showSolved}
 		},
+		"genPblistParams": func(user *kilonova.UserBrief, ctx *ReqContext, pblist *kilonova.ProblemList, open bool) *PblistParams {
+			return &PblistParams{user, ctx, pblist, open}
+		},
 		"numSolved": func(user *kilonova.UserBrief, ids []int) int {
-			scores := base.MaxScores(context.Background(), user.ID, ids)
-			var rez int
-			for _, v := range scores {
-				if v == 100 {
-					rez++
-				}
-			}
-			return rez
+			return base.NumSolved(context.Background(), user.ID, ids)
 		},
 		"numSolvedPbs": func(user *kilonova.UserBrief, pbs []*kilonova.Problem) int {
 			ids := []int{}
 			for _, pb := range pbs {
 				ids = append(ids, pb.ID)
 			}
-			scores := base.MaxScores(context.Background(), user.ID, ids)
-			var rez int
-			for _, v := range scores {
-				if v == 100 {
-					rez++
-				}
-			}
-			return rez
+			return base.NumSolved(context.Background(), user.ID, ids)
 		},
 		"problemLists": func() []*kilonova.ProblemList {
-			list, err := base.ProblemLists(context.Background(), kilonova.ProblemListFilter{})
+			list, err := base.ProblemLists(context.Background(), kilonova.ProblemListFilter{Root: true})
 			if err != nil {
 				return nil
 			}
 			return list
 		},
 	}
-	return &Web{rd, debug, funcs, base}
+	return &Web{debug, funcs, base}
 }
 
 var webLanguages map[string]*WebLanguage

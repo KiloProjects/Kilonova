@@ -23,6 +23,55 @@ func (s *API) getProblemList(w http.ResponseWriter, r *http.Request) {
 	returnData(w, list)
 }
 
+func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct{ ID int }
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 400)
+		return
+	}
+
+	list, err := s.base.ProblemList(r.Context(), args.ID)
+	if err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	pbs, err := s.base.ProblemListProblems(r.Context(), list.List, util.UserBrief(r))
+	if err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	scores := map[int]int{}
+	numSolved := -1
+	if util.IsRAuthed(r) {
+		numSolved = s.base.NumSolved(r.Context(), util.UserBrief(r).ID, list.List)
+		scores = s.base.MaxScores(r.Context(), util.UserBrief(r).ID, list.List)
+	}
+
+	desc, err1 := s.base.RenderMarkdown([]byte(list.Description))
+	if err1 != nil {
+		errorData(w, err1, 500)
+		return
+	}
+
+	returnData(w, struct {
+		List          *kilonova.ProblemList `json:"list"`
+		NumSolved     int                   `json:"numSolved"`
+		Problems      []*kilonova.Problem   `json:"problems"`
+		ProblemScores map[int]int           `json:"problemScores"`
+		RenderedDesc  string                `json:"description"`
+	}{
+		List:          list,
+		NumSolved:     numSolved,
+		Problems:      pbs,
+		ProblemScores: scores,
+		RenderedDesc:  string(desc),
+	})
+	// returnData(w, list)
+}
+
 func (s *API) problemLists(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args kilonova.ProblemListFilter
@@ -85,6 +134,7 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 		Title       *string `json:"title"`
 		Description *string `json:"description"`
 		List        []int   `json:"list"`
+		Sublists    []int   `json:"sublists"`
 	}
 	if err := parseJsonBody(r, &args); err != nil {
 		err.WriteError(w)
@@ -109,7 +159,7 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(args.List) > 0 {
+	if args.List != nil {
 		list, err := s.filterProblems(r.Context(), args.List, util.UserBrief(r))
 		if err != nil {
 			errorData(w, err, 500)
@@ -117,6 +167,13 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := s.base.UpdateProblemListProblems(r.Context(), args.ID, list); err != nil {
+			errorData(w, err, 500)
+			return
+		}
+	}
+
+	if args.Sublists != nil {
+		if err := s.base.UpdateProblemListSublists(r.Context(), args.ID, args.Sublists); err != nil {
 			errorData(w, err, 500)
 			return
 		}

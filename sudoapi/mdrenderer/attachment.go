@@ -12,7 +12,7 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
-// YouTube's embeds are of the form ~[https://youtube.com/watch?v=xyz] or ~[https://youtu.be/xyz]
+// Attachments are of the form ~[name.xyz]
 
 var _ goldmark.Extender = &attNode{}
 var _ renderer.NodeRenderer = &attachmentRenderer{}
@@ -51,10 +51,10 @@ func (_ attachmentParser) Parse(parent ast.Node, block text.Reader, pc parser.Co
 type attachmentRenderer struct{}
 
 func (att *attachmentRenderer) RegisterFuncs(rd renderer.NodeRendererFuncRegisterer) {
-	rd.Register(attNodeKind, att.renderYoutube)
+	rd.Register(attNodeKind, att.renderAttachment)
 }
 
-func (att *attachmentRenderer) renderYoutube(writer util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
+func (att *attachmentRenderer) renderAttachment(writer util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
 	if !entering {
 		return ast.WalkContinue, nil
 	}

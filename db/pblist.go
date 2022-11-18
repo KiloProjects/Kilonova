@@ -47,6 +47,26 @@ func (s *DB) ProblemLists(ctx context.Context, filter kilonova.ProblemListFilter
 	return outLists, err
 }
 
+func (s *DB) shallowProblemLists(ctx context.Context, parentID int) ([]*kilonova.ShallowProblemList, error) {
+	var lists []*pblist
+	query := s.conn.Rebind("SELECT * FROM problem_lists WHERE id IN (SELECT child_id FROM problem_list_pblists WHERE parent_id = ?) ORDER BY id ASC")
+	err := s.conn.SelectContext(ctx, &lists, query, parentID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.ShallowProblemList{}, nil
+	}
+
+	outLists := make([]*kilonova.ShallowProblemList, 0, len(lists))
+	for _, el := range lists {
+		pblist, err := s.internalToShallowProblemList(ctx, el)
+		if err != nil {
+			zap.S().Warn(err)
+			continue
+		}
+		outLists = append(outLists, pblist)
+	}
+	return outLists, err
+}
+
 const createProblemListQuery = "INSERT INTO problem_lists (author_id, title, description) VALUES (?, ?, ?) RETURNING id;"
 
 func (s *DB) CreateProblemList(ctx context.Context, list *kilonova.ProblemList) error {
@@ -103,6 +123,35 @@ func (s *DB) UpdateProblemListProblems(ctx context.Context, id int, problemIDs [
 	return tx.Commit()
 }
 
+func (s *DB) UpdateProblemListSublists(ctx context.Context, id int, listIDs []int) error {
+	tx, err := s.conn.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Quick sanity check first
+	for _, listID := range listIDs {
+		if id == listID {
+			return kilonova.Statusf(400, "List %d cannot nest itself!", id)
+		}
+	}
+
+	// Naively delete all associations, then add them back
+	if _, err := tx.ExecContext(ctx, s.conn.Rebind("DELETE FROM problem_list_pblists WHERE parent_id = ?"), id); err != nil {
+		return err
+	}
+
+	for i, listID := range listIDs {
+		if _, err := tx.ExecContext(ctx, s.conn.Rebind("INSERT INTO problem_list_pblists (parent_id, child_id, position) VALUES (?, ?, ?)"), id, listID, i); err != nil {
+			zap.S().Warn(err)
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
 func pblistFilterQuery(filter *kilonova.ProblemListFilter) ([]string, []interface{}) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := filter.ID; v != nil {
@@ -110,6 +159,9 @@ func pblistFilterQuery(filter *kilonova.ProblemListFilter) ([]string, []interfac
 	}
 	if v := filter.AuthorID; v != nil {
 		where, args = append(where, "author_id = ?"), append(args, v)
+	}
+	if v := filter.Root; v {
+		where = append(where, "id NOT IN (SELECT child_id FROM problem_list_pblists)")
 	}
 
 	return where, args
@@ -138,22 +190,44 @@ type pblist struct {
 }
 
 func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.ProblemList, error) {
-
-	var items []int
-
-	err := s.conn.SelectContext(ctx, &items, s.conn.Rebind("SELECT problem_id FROM problem_list_problems WHERE pblist_id = ? ORDER BY position ASC, problem_id ASC"), list.ID)
-	if errors.Is(err, sql.ErrNoRows) || len(items) == 0 {
-		items = []int{}
-	} else if err != nil {
-		return nil, err
-	}
-
-	return &kilonova.ProblemList{
+	pblist := &kilonova.ProblemList{
 		ID:          list.ID,
 		CreatedAt:   list.CreatedAt,
 		Title:       list.Title,
 		Description: list.Description,
 		AuthorID:    list.AuthorID,
-		List:        items,
+	}
+
+	err := s.conn.SelectContext(ctx, &pblist.List, s.conn.Rebind("SELECT problem_id FROM problem_list_problems WHERE pblist_id = ? ORDER BY position ASC, problem_id ASC"), list.ID)
+	if errors.Is(err, sql.ErrNoRows) || len(pblist.List) == 0 {
+		pblist.List = []int{}
+	} else if err != nil {
+		return nil, err
+	}
+
+	pblist.SubLists, err = s.shallowProblemLists(ctx, list.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return pblist, nil
+}
+
+func (s *DB) internalToShallowProblemList(ctx context.Context, list *pblist) (*kilonova.ShallowProblemList, error) {
+
+	var problems []int
+	err := s.conn.SelectContext(ctx, &problems, s.conn.Rebind("SELECT problem_id FROM problem_list_problems WHERE pblist_id = ? ORDER BY position ASC, problem_id ASC"), list.ID)
+	if errors.Is(err, sql.ErrNoRows) || len(problems) == 0 {
+		problems = []int{}
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &kilonova.ShallowProblemList{
+		ID:       list.ID,
+		Title:    list.Title,
+		AuthorID: list.AuthorID,
+
+		List: problems,
 	}, nil
 }

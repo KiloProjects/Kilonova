@@ -1,0 +1,41 @@
+{{define "problemlist_show"}}
+{{ $user := .User }}
+{{ $ctx := .Ctx }}
+{{ $pbs := (listProblems $user .Pblist) }}
+{{ $open := .Open }}
+{{ with .Pblist }}
+    <details class="list-group-head" {{if $open}}open{{end}}>
+        <summary class="pb-1 mt-1">
+            <span class="float-left"><a href="/problem_lists/{{.ID}}">#{{.ID}}</a> {{.Title}}</span>
+            {{if gt (len $pbs) 0}}
+                {{if $user}}
+                <span class="float-right badge">
+                    {{ getText $ctx.Language "num_solved" (numSolved $user .List) (len $pbs) }}
+                </span>
+                {{else}}
+                <span class="float-right badge">
+                    {{ getText $ctx.Language "num_problems" (len $pbs) }}
+                </span>
+                {{end}}
+            {{end}}
+        </summary>
+        {{ if .Description }}
+            <div class="list-group list-group-mini mt-2">
+                <div class="list-group-head">{{renderMarkdown .Description}}</div>
+            </div>
+        {{end}}
+        {{ with .SubLists }}
+            <div class="list-group list-group-mini mt-2">
+                {{ range . }}
+                    <kn-dom-sublist encoded="{{encodeJSON .}}"></kn-dom-sublist>
+                {{ end }}
+            </div>
+        {{ end }}
+        {{ with $pbs }}
+            <div class="mt-2">
+                {{ template "pb_list_group" (genProblemsParams $user $ctx.Language . true) }}
+            </div>
+        {{ end }}
+    </details>
+{{end}}
+{{end}}

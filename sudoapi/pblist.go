@@ -70,6 +70,14 @@ func (s *BaseAPI) UpdateProblemListProblems(ctx context.Context, id int, list []
 	return nil
 }
 
+func (s *BaseAPI) UpdateProblemListSublists(ctx context.Context, id int, listIDs []int) *StatusError {
+	if err := s.db.UpdateProblemListSublists(ctx, id, listIDs); err != nil {
+		zap.S().Warn(err)
+		return WrapError(err, "Couldn't update problem list nested lists")
+	}
+	return nil
+}
+
 func (s *BaseAPI) DeleteProblemList(ctx context.Context, id int) *StatusError {
 	if err := s.db.DeleteProblemList(ctx, id); err != nil {
 		zap.S().Warn(err)

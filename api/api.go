@@ -170,6 +170,7 @@ func (s *API) Handler() http.Handler {
 	})
 	r.Route("/problemList", func(r chi.Router) {
 		r.Get("/get", s.getProblemList)
+		r.Get("/getComplex", s.getComplexProblemList)
 		r.Get("/filter", s.problemLists)
 		r.With(s.MustBeProposer).Post("/create", s.initProblemList)
 		r.With(s.MustBeAuthed).Post("/update", s.updateProblemList)

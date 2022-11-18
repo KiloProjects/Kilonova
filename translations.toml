@@ -2,13 +2,17 @@
 en = "Pssst! If you have any suggestions for the website, send me a message on %s."
 ro = "Pssst! Dacă ai vreo sugestie pentru site, trimite-mi mesaj pe %s."
 
-[num_solved]
-en = "(%d / %d solved)"
-ro = "(%d / %d rezolvate)"
+[all_problems_announcement]
+en = "You can also view all problems ordered by ID [here](/problems)."
+ro = "Poți, de asemenea, să vezi toate problemele ordonate după ID [aici](/problems)."
 
-[num_solved_v2]
+[num_solved]
 en = "%d / %d solved"
 ro = "%d / %d rezolvate"
+
+[num_problems]
+en = "%d problems"
+ro = "%d probleme"
 
 [the_rest]
 en = "Other problems"
@@ -42,10 +46,6 @@ ro = "Se pare că încă nu ți-ai verificat emailul. Apasă <a class=\"underlin
 en = "There are no problem lists"
 ro = "Nu există nicio listă de probleme"
 
-[problem.none_in_list]
-en = "There are no visible problems in the list"
-ro = "Nu există nicio problemă vizibilă în lista de probleme"
-
 [create]
 en = "Create"
 ro = "Creare"
@@ -65,6 +65,10 @@ ro = "Descriere"
 [pbs]
 en = "Problems (IDs separated by a comma)"
 ro = "Probleme (ID-uri separate prin virgulă)"
+
+[sublist_label]
+en = "Nested lists (IDs separated by a comma)"
+ro = "Liste imbricate (ID-uri separate prin virgulă)"
 
 [button.create]
 en = "Create"
@@ -874,7 +878,6 @@ ro = "Problema nu există"
 [errors.user.authed]
 en = "You must be logged in to view this!"
 ro = "Trebuie să fii autentificat pentru a putea accesa asta!"
-
 
 
 # subs_view compat

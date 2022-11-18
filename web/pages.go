@@ -194,6 +194,13 @@ type ProblemListingParams struct {
 	ShowScore bool
 }
 
+type PblistParams struct {
+	User   *kilonova.UserBrief
+	Ctx    *ReqContext
+	Pblist *kilonova.ProblemList
+	Open   bool
+}
+
 type ProfileParams struct {
 	Ctx *ReqContext
 	// User          *kilonova.User
@@ -275,6 +282,13 @@ var funcs = template.FuncMap{
 	"version":    func() string { return kilonova.Version },
 	"debug":      func() bool { return config.Common.Debug },
 	"intList":    kilonova.SerializeIntList,
+	"shallowPblistIDs": func(lists []*kilonova.ShallowProblemList) []int {
+		rez := []int{}
+		for _, l := range lists {
+			rez = append(rez, l.ID)
+		}
+		return rez
+	},
 	"httpstatus": http.StatusText,
 	"dump":       spew.Sdump,
 	"getText": func(lang, line string, args ...any) template.HTML {

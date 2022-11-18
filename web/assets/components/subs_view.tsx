@@ -205,7 +205,7 @@ function SubsView() {
 								setQuery({
 									...query,
 									page: 1,
-									status: (e.target as HTMLSelectElement).value,
+									status: e.currentTarget.value,
 								});
 							}}
 						>
@@ -224,7 +224,7 @@ function SubsView() {
 								setQuery({
 									...query,
 									page: 1,
-									lang: (e.target as HTMLSelectElement).value,
+									lang: e.currentTarget.value,
 								});
 							}}
 						>
@@ -248,7 +248,7 @@ function SubsView() {
 								setQuery({
 									...query,
 									page: 1,
-									ordering: (e.target as HTMLSelectElement).value,
+									ordering: e.currentTarget.value,
 								});
 							}}
 						>
@@ -265,7 +265,7 @@ function SubsView() {
 							type="checkbox"
 							class="form-checkbox mr-2"
 							checked={query.ascending}
-							onInput={(e) => setQuery({ ...query, page: 1, ascending: (e.target as HTMLInputElement).checked })}
+							onInput={(e) => setQuery({ ...query, page: 1, ascending: e.currentTarget.checked })}
 						/>
 						<span class="form-label">{getText("ascending")}</span>
 					</label>
@@ -279,7 +279,7 @@ function SubsView() {
 								min="0"
 								value={query.user_id ?? "a"}
 								onInput={(e) => {
-									let val: number | null = parseInt((e.target as HTMLInputElement).value);
+									let val: number | null = parseInt(e.currentTarget.value);
 									if (isNaN(val) || val <= 0) {
 										val = null;
 									}
@@ -299,7 +299,7 @@ function SubsView() {
 								min="0"
 								value={query.problem_id ?? "a"}
 								onInput={(e) => {
-									let val: number | null = parseInt((e.target as HTMLInputElement).value);
+									let val: number | null = parseInt(e.currentTarget.value);
 									if (isNaN(val) || val <= 0) {
 										val = null;
 									}
@@ -320,7 +320,7 @@ function SubsView() {
 								max="100"
 								value={query.score ?? "a"}
 								onInput={(e) => {
-									let val: number | null = parseInt((e.target as HTMLInputElement).value);
+									let val: number | null = parseInt(e.currentTarget.value);
 									if (isNaN(val)) {
 										val = null;
 									} else {
@@ -345,7 +345,7 @@ function SubsView() {
 								class="form-select"
 								value={query.compile_error === undefined ? "" : String(query.compile_error)}
 								onChange={(e) => {
-									let val = (e.target as HTMLSelectElement).value;
+									let val = e.currentTarget.value;
 									let cerr: boolean | undefined;
 									if (val == "true" || val == "false") {
 										cerr = val === "true";

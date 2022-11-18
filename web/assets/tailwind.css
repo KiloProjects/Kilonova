@@ -134,9 +134,11 @@
 		@apply border border-gray-300 w-full bg-white;
 		@apply dark:border-gray-700 dark:bg-gray-800;
 	}
+	.list-group > kn-dom-sublist:first-child > *:first-child, /* kn-dom-sublist bugs this one since it's an additional element */ 
 	.list-group > *:first-child {
 		@apply border-t-0 border-gray-300 dark:border-gray-700;
 	}
+
 	.list-group-head {
 		@apply block border-t border-gray-300 dark:border-gray-700 w-full px-4 py-3 text-lg leading-normal;
 	}
@@ -145,21 +147,26 @@
 		@apply hover:bg-gray-100;
 		@apply dark:hover:bg-gray-600;
 	}
+	/* 
+    .list-group-head:first-child,
 	.list-group-item:first-child {
 		@apply border-t-0 border-gray-300 dark:border-gray-700;
-	}
+	} 
+    */
 
 	.list-group-rounded {
 		@apply rounded-lg;
 	}
-	.list-group-rounded > .list-group-item:first-child {
+	.list-group-rounded > *:first-child {
 		@apply rounded-t-lg;
 	}
-	.list-group-rounded > .list-group-item:last-child {
+	.list-group-rounded > *:last-child {
 		@apply rounded-b-lg;
 	}
 
-	.list-group-mini > .list-group-item {
+	.list-group-mini > .list-group-item,
+	.list-group-mini > .list-group-head,
+	.list-group-mini > kn-dom-sublist > .list-group-head {
 		@apply py-2;
 	}
 
@@ -339,6 +346,18 @@
 	.form-select::placeholder,
 	.form-textarea::placeholder {
 		@apply text-gray-500 dark:text-gray-300 !important;
+	}
+
+	.badge {
+		@apply rounded-full py-1 px-2 text-base bg-teal-700 text-white font-semibold;
+	}
+
+	.badge-red {
+		@apply bg-red-700;
+	}
+
+	.badge-green {
+		@apply bg-green-700;
 	}
 
 	/* 

@@ -84,7 +84,7 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(args.Tests) > 0 {
+	if args.Tests != nil {
 		newIDs := make([]int, 0, len(args.Tests))
 		for _, id := range args.Tests {
 			test, err := s.base.Test(r.Context(), util.Problem(r).ID, id)

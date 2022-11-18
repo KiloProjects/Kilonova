@@ -20,6 +20,17 @@ func (s *BaseAPI) MaxScores(ctx context.Context, uid int, pbIDs []int) map[int]i
 	return s.db.MaxScores(ctx, uid, pbIDs)
 }
 
+func (s *BaseAPI) NumSolved(ctx context.Context, uid int, pbIDs []int) int {
+	scores := s.MaxScores(context.Background(), uid, pbIDs)
+	var rez int
+	for _, v := range scores {
+		if v == 100 {
+			rez++
+		}
+	}
+	return rez
+}
+
 func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFilter, lookingUser *UserBrief) (*Submissions, *StatusError) {
 	if filter.Limit == 0 || filter.Limit > 50 {
 		filter.Limit = 50

@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-const Version = "v0.10.2"
+const Version = "v0.10.3"
 
 //go:embed docs
 var Docs embed.FS
