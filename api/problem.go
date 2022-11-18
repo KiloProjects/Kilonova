@@ -66,7 +66,6 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 }
 
 // getProblems returns all the problems from the DB matching a filter
-// TODO: Pagination
 func (s *API) getProblems(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args kilonova.ProblemFilter
@@ -79,7 +78,7 @@ func (s *API) getProblems(w http.ResponseWriter, r *http.Request) {
 
 	problems, err := s.base.Problems(r.Context(), args)
 	if err != nil {
-		errorData(w, http.StatusText(500), 500)
+		err.WriteError(w)
 		return
 	}
 	returnData(w, problems)
@@ -94,7 +93,7 @@ func (s *API) updateProblem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.UpdateProblem(r.Context(), util.Problem(r).ID, args, util.UserBrief(r)); err != nil {
-		errorData(w, err, 500)
+		err.WriteError(w)
 		return
 	}
 

@@ -38,7 +38,7 @@ export function Problems({ pbs, scores }: { pbs: Problem[]; scores: ProblemScore
 			{pbs.map((pb) => (
 				<a href={`/problems/${pb.id}`} class="list-group-item flex justify-between" key={pb.id}>
 					<span>
-						#{pb.id}: {pb.name}
+						{pb.name} (#{pb.id})
 					</span>
 					{window.platform_info.user_id > 0 && (
 						<div>

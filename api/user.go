@@ -15,7 +15,6 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/davecgh/go-spew/spew"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/microcosm-cc/bluemonday"
@@ -100,7 +99,7 @@ func (s *API) setPreferredLanguage() func(w http.ResponseWriter, r *http.Request
 			util.UserBrief(r).ID,
 			kilonova.UserUpdate{PreferredLanguage: safe},
 		); err != nil {
-			errorData(w, err, 500)
+			err.WriteError(w)
 			return
 		}
 
@@ -124,7 +123,7 @@ func (s *API) setBio() func(w http.ResponseWriter, r *http.Request) {
 			util.UserBrief(r).ID,
 			kilonova.UserUpdate{Bio: &safe},
 		); err != nil {
-			errorData(w, err, 500)
+			err.WriteError(w)
 			return
 		}
 
@@ -148,7 +147,7 @@ func (s *API) purgeBio(w http.ResponseWriter, r *http.Request) {
 		args.ID,
 		kilonova.UserUpdate{Bio: &args.Bio},
 	); err != nil {
-		errorData(w, err, 500)
+		err.WriteError(w)
 		return
 	}
 
@@ -166,7 +165,7 @@ func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.base.UserBrief(r.Context(), args.ID)
 	if err != nil {
-		errorData(w, err, 500)
+		err.WriteError(w)
 		return
 	}
 
@@ -176,7 +175,7 @@ func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.DeleteUser(r.Context(), args.ID); err != nil {
-		errorData(w, err, 500)
+		err.WriteError(w)
 		return
 	}
 
@@ -186,7 +185,7 @@ func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 func (s *API) getSelfSolvedProblems(w http.ResponseWriter, r *http.Request) {
 	pbs, err := s.base.SolvedProblems(r.Context(), util.UserBrief(r).ID)
 	if err != nil {
-		errorData(w, err, 500)
+		err.WriteError(w)
 		return
 	}
 	returnData(w, pbs)
@@ -198,9 +197,9 @@ func (s *API) getSolvedProblems(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "User not found", http.StatusNotFound)
 		return
 	}
-	pbs, err1 := s.base.SolvedProblems(r.Context(), user.ID)
-	if err1 != nil {
-		errorData(w, err1, 500)
+	pbs, err := s.base.SolvedProblems(r.Context(), user.ID)
+	if err != nil {
+		err.WriteError(w)
 		return
 	}
 	returnData(w, util.FilterVisible(util.UserBrief(r), pbs))
@@ -220,7 +219,7 @@ func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
 		util.UserBrief(r).ID,
 		password,
 	); err != nil {
-		errorData(w, err, 500)
+		err.WriteError(w)
 		return
 	}
 
@@ -244,12 +243,11 @@ func (s *API) sendForgotPwdMail(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := s.base.UserFullByEmail(r.Context(), args.Email)
 	if err != nil {
-		spew.Dump(user, err)
 		if errors.Is(err, kilonova.ErrNotFound) {
 			returnData(w, pwdRequestResponse)
 			return
 		}
-		errorData(w, err, 500)
+		err.WriteError(w)
 		return
 	}
 	go func(user *kilonova.UserFull) {

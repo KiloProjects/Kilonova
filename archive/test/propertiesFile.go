@@ -3,13 +3,13 @@ package test
 import (
 	"archive/zip"
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/KiloProjects/kilonova"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/schema"
 	"go.uber.org/zap"
@@ -54,18 +54,18 @@ func ParsePropertiesFile(r io.Reader) (*PropertiesRaw, bool, error) {
 	return &rawProps, true, nil
 }
 
-func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) error {
+func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	f, err := file.Open()
 	if err != nil {
-		return err
+		return kilonova.WrapError(err, "Couldn't open file")
 	}
 	defer f.Close()
 	rawProps, ok, err := ParsePropertiesFile(f)
 	if err != nil {
-		return err
+		return kilonova.WrapError(err, "Couldn't parse properties file")
 	}
 	if ok == false {
-		return errors.New("Invalid properties file")
+		return kilonova.Statusf(400, "Invalid properties file")
 	}
 
 	props := &Properties{
@@ -86,7 +86,7 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) error {
 			start, end := -1, -1
 			if _, err := fmt.Sscanf(g, "%d-%d", &start, &end); err != nil {
 				zap.S().Info(err)
-				return errors.New("Invalid `group` string in properties")
+				return kilonova.Statusf(400, "Invalid `group` string in properties")
 			}
 			groups[i+1] = group{start, end}
 		}
@@ -94,12 +94,12 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) error {
 		weights := map[int]int{}
 		weightStrings := strings.Split(rawProps.Weights, ",")
 		if len(groupStrings) != len(weightStrings) {
-			return errors.New("Number of weights must match number of groups")
+			return kilonova.Statusf(400, "Number of weights must match number of groups")
 		}
 		for i, w := range weightStrings {
 			val, err := strconv.Atoi(w)
 			if err != nil {
-				return errors.New("Invalid `weight` string in properties")
+				return kilonova.Statusf(400, "Invalid `weight` string in properties")
 			}
 			weights[i+1] = val
 		}
@@ -107,7 +107,7 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) error {
 		if rawProps.Dependencies != "" {
 			depStrings := strings.Split(rawProps.Dependencies, ",")
 			if len(depStrings) != len(weightStrings) {
-				return errors.New("Number of dependencies must match number of groups")
+				return kilonova.Statusf(400, "Number of dependencies must match number of groups")
 			}
 
 			for i, d := range depStrings {
@@ -119,10 +119,10 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) error {
 				for _, dg := range depGroups {
 					val, err := strconv.Atoi(dg)
 					if err != nil {
-						return fmt.Errorf("Invalid `dependencies` string in properties: %q is not a number", dg)
+						return kilonova.Statusf(400, "Invalid `dependencies` string in properties: %q is not a number", dg)
 					}
 					if val <= 0 || val > len(groupStrings) {
-						return errors.New("Dependency number out of range")
+						return kilonova.Statusf(400, "Dependency number out of range")
 					}
 					subTaskGroups[i+1] = append(subTaskGroups[i+1], groups[val])
 				}

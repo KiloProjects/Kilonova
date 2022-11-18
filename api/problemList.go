@@ -93,6 +93,7 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 		ProblemIDs  []int  `json:"ids"`
+		SublistIDs  []int  `json:"sublists"`
 	}
 	if err := parseJsonBody(r, &listData); err != nil {
 		err.WriteError(w)
@@ -119,9 +120,16 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 	list.Description = listData.Description
 	list.AuthorID = util.UserBrief(r).ID
 	list.List = actualIDs
-	if err1 := s.base.CreateProblemList(r.Context(), &list); err1 != nil {
-		errorData(w, err1, 500)
+	if err := s.base.CreateProblemList(r.Context(), &list); err != nil {
+		err.WriteError(w)
 		return
+	}
+
+	if len(listData.SublistIDs) > 0 {
+		if err := s.base.UpdateProblemListSublists(r.Context(), list.ID, listData.SublistIDs); err != nil {
+			err.WriteError(w)
+			return
+		}
 	}
 
 	returnData(w, list.ID)
@@ -162,19 +170,19 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 	if args.List != nil {
 		list, err := s.filterProblems(r.Context(), args.List, util.UserBrief(r))
 		if err != nil {
-			errorData(w, err, 500)
+			err.WriteError(w)
 			return
 		}
 
 		if err := s.base.UpdateProblemListProblems(r.Context(), args.ID, list); err != nil {
-			errorData(w, err, 500)
+			err.WriteError(w)
 			return
 		}
 	}
 
 	if args.Sublists != nil {
 		if err := s.base.UpdateProblemListSublists(r.Context(), args.ID, args.Sublists); err != nil {
-			errorData(w, err, 500)
+			err.WriteError(w)
 			return
 		}
 	}
@@ -201,7 +209,7 @@ func (s *API) deleteProblemList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.DeleteProblemList(r.Context(), args.ID); err != nil {
-		errorData(w, err, 500)
+		err.WriteError(w)
 		return
 	}
 	returnData(w, "Removed problem list")

@@ -5,7 +5,7 @@
 <div class="list-group list-group-mini">
 	{{ range .Problems }}
 		<a href="/problems/{{.ID}}" class="list-group-item flex justify-between">
-			<span>#{{.ID}}: {{.Name}}</span>
+			<span>{{.Name}} (#{{.ID}})</span>
 			{{ if $user }}
 				<div>
 					{{ if (or $user.Admin (eq $user.ID .AuthorID)) }}

@@ -46,7 +46,7 @@ func (s *API) createSubTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.CreateSubTask(r.Context(), &stk); err != nil {
-		errorData(w, err, 500)
+		err.WriteError(w)
 		return
 	}
 	returnData(w, stk.ID)
@@ -72,7 +72,7 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 
 	stk, err := s.base.SubTask(r.Context(), util.Problem(r).ID, args.SubTaskID)
 	if err != nil {
-		errorData(w, err, 500)
+		err.WriteError(w)
 		return
 	}
 
@@ -80,7 +80,7 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 		VisibleID: args.NewID,
 		Score:     args.Score,
 	}); err != nil {
-		errorData(w, err, 500)
+		err.WriteError(w)
 		return
 	}
 
@@ -96,7 +96,7 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := s.base.UpdateSubTaskTests(r.Context(), stk.ID, newIDs); err != nil {
-			errorData(w, err, 500)
+			err.WriteError(w)
 			return
 		}
 	}

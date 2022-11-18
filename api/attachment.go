@@ -37,7 +37,7 @@ func (s *API) createAttachment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.CreateAttachment(r.Context(), &att, util.Problem(r).ID, file); err != nil {
-		errorData(w, err, 50)
+		err.WriteError(w)
 		return
 	}
 	returnData(w, att.ID)

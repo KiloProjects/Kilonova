@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"path"
 	"sort"
@@ -53,10 +52,10 @@ func NewArchiveCtx() *ArchiveCtx {
 	return &ArchiveCtx{tests: make(map[int]archiveTest), scoredTests: make([]int, 0, 10), hasScoreFile: false}
 }
 
-func ProcessScoreFile(ctx *ArchiveCtx, file *zip.File) error {
+func ProcessScoreFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	f, err := file.Open()
 	if err != nil {
-		return errors.New("Unknown error")
+		return kilonova.Statusf(500, "Unknown error")
 	}
 	defer f.Close()
 
@@ -95,11 +94,12 @@ func ProcessScoreFile(ctx *ArchiveCtx, file *zip.File) error {
 	}
 	if br.Err() != nil {
 		zap.S().Info(br.Err())
+		return kilonova.WrapError(err, "Score file read error")
 	}
-	return br.Err()
+	return nil
 }
 
-func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) error {
+func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	name := path.Base(file.Name)
 	if strings.HasSuffix(name, ".txt") { // test score file
 		return ProcessScoreFile(ctx, file)
@@ -130,7 +130,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) error {
 	if strings.HasSuffix(name, ".in") { // test input file
 		tf := ctx.tests[tid]
 		if tf.InFile != nil { // in file already exists
-			return fmt.Errorf("Multiple input files for test %d", tid)
+			return kilonova.Statusf(400, "Multiple input files for test %d", tid)
 		}
 
 		tf.InFile = file
@@ -139,7 +139,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) error {
 	if strings.HasSuffix(name, ".out") || strings.HasSuffix(name, ".ok") || strings.HasSuffix(name, ".sol") { // test output file
 		tf := ctx.tests[tid]
 		if tf.OutFile != nil { // out file already exists
-			return fmt.Errorf("Multiple output files for test %d", tid)
+			return kilonova.Statusf(400, "Multiple output files for test %d", tid)
 		}
 
 		tf.OutFile = file
@@ -148,7 +148,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) error {
 	return nil
 }
 
-func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Reader, base *sudoapi.BaseAPI) error {
+func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Reader, base *sudoapi.BaseAPI) *kilonova.StatusError {
 	aCtx := NewArchiveCtx()
 
 	for _, file := range ar.File {
@@ -163,17 +163,17 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 
 	if aCtx.hasScoreFile && len(aCtx.scoredTests) != len(aCtx.tests) {
 		zap.S().Info(len(aCtx.scoredTests), len(aCtx.tests))
-		return errors.New("Mismatched number of tests in archive and scored tests")
+		return kilonova.Statusf(400, "Mismatched number of tests in archive and scored tests")
 	}
 
 	if aCtx.props != nil && aCtx.props.Subtasks != nil && len(aCtx.props.SubtaskedTests) != len(aCtx.tests) {
 		zap.S().Info(len(aCtx.props.SubtaskedTests), len(aCtx.tests))
-		return errors.New("Mismatched number of tests in archive and tests that correspond to at least one subtask")
+		return kilonova.Statusf(400, "Mismatched number of tests in archive and tests that correspond to at least one subtask")
 	}
 
 	for k, v := range aCtx.tests {
 		if v.InFile == nil || v.OutFile == nil {
-			return fmt.Errorf("Missing input or output file for test %d", k)
+			return kilonova.Statusf(400, "Missing input or output file for test %d", k)
 		}
 	}
 
@@ -217,22 +217,22 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 
 		f, err := v.InFile.Open()
 		if err != nil {
-			return fmt.Errorf("Couldn't open() input file: %w", err)
+			return kilonova.WrapError(err, "Couldn't open() input file")
 		}
 		if err := base.SaveTestInput(test.ID, f); err != nil {
 			zap.S().Warn("Couldn't create test input", err)
 			f.Close()
-			return fmt.Errorf("Couldn't create test input: %w", err)
+			return kilonova.WrapError(err, "Couldn't create test input")
 		}
 		f.Close()
 		f, err = v.OutFile.Open()
 		if err != nil {
-			return fmt.Errorf("Couldn't open() output file: %w", err)
+			return kilonova.WrapError(err, "Couldn't open() output file")
 		}
 		if err := base.SaveTestOutput(test.ID, f); err != nil {
 			zap.S().Warn("Couldn't create test output", err)
 			f.Close()
-			return fmt.Errorf("Couldn't create test output: %w", err)
+			return kilonova.WrapError(err, "Couldn't create test output")
 		}
 		f.Close()
 	}
@@ -252,14 +252,14 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 		if shouldUpd {
 			if err := base.UpdateProblem(ctx, pb.ID, upd, nil); err != nil {
 				zap.S().Warn(err)
-				return fmt.Errorf("Couldn't update problem medatada: %w", err)
+				return kilonova.WrapError(err, "Couldn't update problem medatada")
 			}
 		}
 
 		if aCtx.props.Subtasks != nil {
 			if err := base.DeleteSubTasks(ctx, pb.ID); err != nil {
 				zap.S().Warn(err)
-				return fmt.Errorf("Couldn't delete existing subtasks: %w", err)
+				return kilonova.WrapError(err, "Couldn't delete existing subtasks")
 			}
 			for stkId, stk := range aCtx.props.Subtasks {
 				outStk := kilonova.SubTask{
@@ -270,7 +270,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 				}
 				for _, test := range stk.Tests {
 					if tt, exists := createdTests[test]; !exists {
-						return fmt.Errorf("Test %d not found in added tests. Aborting subtask creation", test)
+						return kilonova.Statusf(400, "Test %d not found in added tests. Aborting subtask creation", test)
 					} else {
 						outStk.Tests = append(outStk.Tests, tt.ID)
 					}
@@ -278,7 +278,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 
 				if err := base.CreateSubTask(ctx, &outStk); err != nil {
 					zap.S().Warn(err)
-					return fmt.Errorf("Couldn't create subtask: %w", err)
+					return kilonova.WrapError(err, "Couldn't create subtask")
 				}
 			}
 		}
