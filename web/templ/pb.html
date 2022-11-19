@@ -10,6 +10,9 @@
 <hr/>
 -->
 
+{{ $pbid := .Problem.ID }}
+{{ $ctx := .Ctx }}
+
 <div class="mb-12">
 	<h1 class="mb-2">{{getText .Ctx.Language "problemSingle"}} #{{.Problem.ID}}</h1>
 	<div class="page-holder">
@@ -42,7 +45,29 @@
 					{{- end -}}
 				</h2>
                 <div class="px-2">
+                    <details class="reset-list" open>
+                        <summary>{{getText .Ctx.Language "editors"}}</summary>
+                        <ul>
+                            {{ range .Problem.Editors }}
+                                {{ with user .}}
+                                <li><a href="/profile/{{.Name}}">{{.Name}}</a></li>
+                                {{ end }}
+                            {{ end }}
+                        </ul>
+                    </details>
                     {{ if .ProblemEditor }}
+                    {{ with .Problem.Viewers }}
+                        <details class="reset-list">
+                            <summary>{{getText $ctx.Language "viewers"}}</summary>
+                            <ul>
+                                {{ range . }}
+                                    {{ with user .}}
+                                    <li><a href="/profile/{{.Name}}">{{.Name}}</a></li>
+                                    {{ end }}
+                                {{ end }}
+                            </ul>
+                        </details>
+                    {{ end }}
                     <p>{{getText .Ctx.Language "visibility"}}: 
                     {{if .Problem.Visible}}
                         <span class="rounded-md px-2 py-1 bg-green-700 text-white text-sm">{{getText .Ctx.Language "published"}}</span>
@@ -69,8 +94,6 @@
                     <older-subs problemid="{{.Problem.ID}}" userid="{{.Ctx.User.ID}}"></older-subs>
                 </div>
 			{{ end }}
-			{{ $pbid := .Problem.ID }}
-			{{ $ctx := .Ctx }}
 			{{ with .Attachments }}
 				<div class="page-sidebar-divider"></div>
 				<div class="page-sidebar-box"> <!-- Attachments -->

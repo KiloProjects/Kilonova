@@ -149,7 +149,7 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []interface{}
 			}
 		}
 		if id >= 0 {
-			where, args = append(where, "(visible = true OR id IN (SELECT DISTINCT problem_id FROM problem_user_access WHERE user_id = ?))"), append(args, id, id)
+			where, args = append(where, "(visible = true OR id IN (SELECT DISTINCT problem_id FROM problem_user_access WHERE user_id = ?))"), append(args, id)
 		}
 	}
 	if filter.Unassociated {
