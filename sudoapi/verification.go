@@ -13,7 +13,7 @@ import (
 
 var verificationEmailTempl = template.Must(template.New("emailTempl").Parse(`Hey, {{.Name}}!
 
-Încă nu ți-ai verificat emailul. Vă rugăm să intrați pe acest link a fi siguri că ești tu: {{.HostPrefix}}/verify/{{.VID}}
+Încă nu ți-ai verificat emailul. Te rog să intri pe acest link ca să fim siguri că ești tu: {{.HostPrefix}}/verify/{{.VID}}
 
 Dacă acest cont nu este al tău, poți ignora acest email.
 

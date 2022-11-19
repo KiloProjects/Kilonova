@@ -13,7 +13,7 @@ import (
 var forgotPwdTempl = template.Must(template.New("emailTempl").Parse(`Hey, {{.Name}}!
 
 Cineva a solicitat o cerere de resetare a parolei pentru contul tău. 
-Dacă tu ai fost cel care a trimis-o, accesează linkul următor pentru a schimba parola: {{.HostPrefix}}/resetPassword/{{.VID}} 
+Dacă tu ai fost cel care a trimis-o, accesează link-ul următor pentru a schimba parola: {{.HostPrefix}}/resetPassword/{{.VID}} 
 
 Dacă solicitarea nu a fost trimisă de tine, poți ignora acest email.
 
