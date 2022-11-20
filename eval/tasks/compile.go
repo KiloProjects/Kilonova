@@ -3,7 +3,6 @@ package tasks
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path"
 
@@ -23,12 +22,12 @@ type CompileTask struct {
 
 func (job *CompileTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	if job.Debug {
-		log.Printf("Compiling file using box %d\n", box.GetID())
+		zap.S().Debug("Compiling file using box %d\n", box.GetID())
 	}
 
 	lang, ok := eval.Langs[job.Req.Lang]
 	if !ok {
-		log.Printf("Language for submission %d could not be found: %q\n", job.Req.ID, job.Req.Lang)
+		zap.S().Warn("Language for submission %d could not be found: %q\n", job.Req.ID, job.Req.Lang)
 		return kilonova.Statusf(500, "No language found")
 	}
 

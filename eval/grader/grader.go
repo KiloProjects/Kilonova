@@ -464,7 +464,7 @@ func (h *Handler) getAppropriateRunner() (eval.Runner, error) {
 	/*
 		Disabled until it fully works
 		return nil, nil
-		log.Println("Could not spin up local grader, trying to contact remote")
+		zap.S().Info("Could not spin up local grader, trying to contact remote")
 		return newGrpcRunner(config.Eval.Address)
 	*/
 }

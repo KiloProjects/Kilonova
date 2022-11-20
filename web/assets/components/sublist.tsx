@@ -110,7 +110,7 @@ export function Sublist({ list }: { list: Sublist }) {
 	return (
 		<details class="list-group-head" onToggle={(e) => setExpanded(e.currentTarget.open)}>
 			<summary class="pb-1 mt-1">
-				<span class="float-left">
+				<span>
 					{list.title} <a href={`/problem_lists/${list.id}`}>(#{list.id})</a>
 				</span>
 				{list.list.length > 0 &&

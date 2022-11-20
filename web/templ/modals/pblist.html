@@ -6,7 +6,7 @@
 {{ with .Pblist }}
     <details class="list-group-head" {{if $open}}open{{end}}>
         <summary class="pb-1 mt-1">
-			<span class="float-left">{{.Title}} <a href="/problem_lists/{{.ID}}">(#{{.ID}})</a></span>
+			<span>{{.Title}} <a href="/problem_lists/{{.ID}}">(#{{.ID}})</a></span>
             {{if gt (len $pbs) 0}}
                 {{if $user}}
                 <span class="float-right badge">

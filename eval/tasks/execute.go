@@ -3,7 +3,6 @@ package tasks
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
@@ -22,7 +21,7 @@ type ExecuteTask struct {
 
 func (job *ExecuteTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	if job.Debug {
-		log.Printf("Executing test %d using box %d\n", job.Req.SubtestID, box.GetID())
+		zap.S().Debug("Executing test %d using box %d\n", job.Req.SubtestID, box.GetID())
 	}
 
 	in, err := job.DM.TestInput(job.Req.TestID)

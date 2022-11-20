@@ -2,7 +2,6 @@ package boxmanager
 
 import (
 	"context"
-	"log"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
@@ -59,7 +58,7 @@ func (b *BoxManager) getSandbox(ctx context.Context) (eval.Sandbox, error) {
 
 func (b *BoxManager) releaseSandbox(sb eval.Sandbox) {
 	if err := sb.Close(); err != nil {
-		log.Printf("Could not release sandbox %d: %v\n", sb.GetID(), err)
+		zap.S().Warn("Could not release sandbox %d: %v\n", sb.GetID(), err)
 	}
 	b.availableIDs <- sb.GetID()
 	b.sem.Release(1)

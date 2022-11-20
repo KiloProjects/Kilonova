@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -18,6 +17,7 @@ import (
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/davecgh/go-spew/spew"
+	"go.uber.org/zap"
 )
 
 var _ eval.Sandbox = &Box{}
@@ -46,9 +46,6 @@ func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
 	res = append(res, "--box-id="+strconv.Itoa(b.boxID))
 
 	res = append(res, "--cg", "--cg-timing")
-	/*if c.MemoryLimit != 0 {
-		res = append(res, "--cg-mem="+strconv.Itoa(c.MemoryLimit))
-	}*/
 	for _, dir := range c.Directories {
 		if dir.Removes {
 			res = append(res, "--dir="+dir.In+"=")
@@ -87,8 +84,11 @@ func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
 		res = append(res, "--wall-time="+strconv.FormatFloat(c.WallTimeLimit, 'f', -1, 64))
 	}
 
+	//if c.MemoryLimit != 0 {
+	//	res = append(res, "--mem="+strconv.Itoa(c.MemoryLimit))
+	//}
 	if c.MemoryLimit != 0 {
-		res = append(res, "--mem="+strconv.Itoa(c.MemoryLimit))
+		res = append(res, "--cg-mem="+strconv.Itoa(c.MemoryLimit))
 	}
 
 	if c.MaxProcs == 0 {
@@ -243,11 +243,11 @@ func newBox(id int) (*Box, error) {
 func CheckCanRun() bool {
 	box, err := newBox(0)
 	if err != nil {
-		log.Println(err)
+		zap.S().Warn(err)
 		return false
 	}
 	if err := box.Close(); err != nil {
-		log.Println(err)
+		zap.S().Warn(err)
 		return false
 	}
 	return true

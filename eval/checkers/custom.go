@@ -5,13 +5,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"path"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"go.uber.org/zap"
 )
 
 var _ eval.Checker = &CustomChecker{}
@@ -112,7 +112,7 @@ func (job *customCheckerTask) Execute(ctx context.Context, box eval.Sandbox) err
 
 	val := out.String()
 	if _, err := fmt.Fscanf(&out, "%d ", &job.score); err != nil {
-		log.Println("Wrong checker output", val)
+		zap.S().Info("Wrong checker output", val)
 		job.output = "Wrong checker output"
 		return nil
 	}
