@@ -22,12 +22,12 @@ type CompileTask struct {
 
 func (job *CompileTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	if job.Debug {
-		zap.S().Debug("Compiling file using box %d\n", box.GetID())
+		zap.S().Debugf("Compiling file using box %d", box.GetID())
 	}
 
 	lang, ok := eval.Langs[job.Req.Lang]
 	if !ok {
-		zap.S().Warn("Language for submission %d could not be found: %q\n", job.Req.ID, job.Req.Lang)
+		zap.S().Warnf("Language for submission %d could not be found: %q", job.Req.ID, job.Req.Lang)
 		return kilonova.Statusf(500, "No language found")
 	}
 

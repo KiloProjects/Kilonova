@@ -1,8 +1,6 @@
 package kilonova
 
 import (
-	"database/sql"
-	"fmt"
 	"time"
 )
 
@@ -18,24 +16,20 @@ const (
 
 type Submission struct {
 	ID        int       `json:"id"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UserID    int       `db:"user_id" json:"user_id"`
-	ProblemID int       `db:"problem_id" json:"problem_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UserID    int       `json:"user_id"`
+	ProblemID int       `json:"problem_id"`
 	Language  string    `json:"language"`
 	Code      string    `json:"code,omitempty"`
 	Status    Status    `json:"status"`
 
-	CompileError   sql.NullBool   `db:"compile_error" json:"compile_error"`
-	CompileMessage sql.NullString `json:"compile_message,omitempty" db:"compile_message"`
+	CompileError   *bool   `json:"compile_error"`
+	CompileMessage *string `json:"compile_message,omitempty"`
 
-	MaxTime   float64 `json:"max_time" db:"max_time"`
-	MaxMemory int     `json:"max_memory" db:"max_memory"`
+	MaxTime   float64 `json:"max_time"`
+	MaxMemory int     `json:"max_memory"`
 
 	Score int `json:"score"`
-
-	// TODO: Remove after restarting
-	// Visible bool `json:"visible"`
-	// Quality bool `json:"quality"`
 }
 
 type SubmissionUpdate struct {
@@ -85,19 +79,4 @@ type SubTestUpdate struct {
 	Score   *int
 	Verdict *string
 	Done    *bool
-}
-
-// Utils for backends (I know, not so agnostic, but it makes life easier)
-
-// Scan implements the sql.Scanner interface
-func (e *Status) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = Status(s)
-	case string:
-		*e = Status(s)
-	default:
-		return fmt.Errorf("unsupported scan type for Status: %T", src)
-	}
-	return nil
 }

@@ -21,7 +21,7 @@ type ExecuteTask struct {
 
 func (job *ExecuteTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	if job.Debug {
-		zap.S().Debug("Executing test %d using box %d\n", job.Req.SubtestID, box.GetID())
+		zap.S().Debugf("Executing test %d using box %d", job.Req.SubtestID, box.GetID())
 	}
 
 	in, err := job.DM.TestInput(job.Req.TestID)
@@ -31,7 +31,7 @@ func (job *ExecuteTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	defer in.Close()
 
 	if err := box.WriteFile("/box/"+job.Req.Filename+".in", in, 0644); err != nil {
-		fmt.Println("Can't write input file:", err)
+		zap.S().Info("Can't write input file:", err)
 		job.Resp.Comments = "Sandbox error: Couldn't write input file"
 		return err
 	}

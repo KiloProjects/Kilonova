@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
@@ -13,19 +14,37 @@ import (
 	"go.uber.org/zap"
 )
 
+type dbSubmission struct {
+	ID        int       `db:"id"`
+	CreatedAt time.Time `db:"created_at"`
+	UserID    int       `db:"user_id"`
+	ProblemID int       `db:"problem_id"`
+	Language  string    `db:"language"`
+	Code      string    `db:"code"`
+	Status    string    `db:"status"`
+
+	CompileError   sql.NullBool   `db:"compile_error"`
+	CompileMessage sql.NullString `db:"compile_message"`
+
+	MaxTime   float64 `db:"max_time"`
+	MaxMemory int     `db:"max_memory"`
+
+	Score int `db:"score"`
+}
+
 func (s *DB) Submission(ctx context.Context, id int) (*kilonova.Submission, error) {
-	var sub kilonova.Submission
+	var sub dbSubmission
 	err := s.conn.GetContext(ctx, &sub, s.conn.Rebind("SELECT * FROM submissions WHERE id = ? LIMIT 1"), id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
-	return &sub, err
+	return s.internalToSubmission(&sub), err
 }
 
 const subSelectQuery = "SELECT * FROM submissions WHERE %s %s %s;"
 
 func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) ([]*kilonova.Submission, error) {
-	var subs []*kilonova.Submission
+	var subs []*dbSubmission
 	where, args := subFilterQuery(&filter)
 	query := fmt.Sprintf(subSelectQuery, strings.Join(where, " AND "), getSubmissionOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset))
 	query = s.conn.Rebind(query)
@@ -36,7 +55,7 @@ func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) 
 		zap.S().Warn(err)
 		return []*kilonova.Submission{}, err
 	}
-	return subs, nil
+	return mapper(subs, s.internalToSubmission), nil
 }
 
 func (s *DB) CountSubmissions(ctx context.Context, filter kilonova.SubmissionFilter) (int, error) {
@@ -219,35 +238,31 @@ func getSubmissionOrdering(ordering string, ascending bool) string {
 	}
 }
 
-// FetchGraderSubmission returns a waiting submission that is not locked. Note that it must be closed
-func (s *DB) FetchGraderSubmission(ctx context.Context) (eval.GraderSubmission, error) {
-	tx, err := s.conn.BeginTxx(ctx, nil)
-	if err != nil {
-		return nil, err
+func (s *DB) internalToSubmission(sub *dbSubmission) *kilonova.Submission {
+	if sub == nil {
+		return nil
 	}
-	var sub kilonova.Submission
-	err = tx.GetContext(ctx, &sub, "SELECT * FROM submissions WHERE status = 'waiting' ORDER BY id DESC LIMIT 1 FOR UPDATE SKIP LOCKED")
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, tx.Rollback()
+	var cErr *bool = nil
+	if sub.CompileError.Valid {
+		cErr = &sub.CompileError.Bool
 	}
-	return &graderSub{ctx, &sub, tx}, nil
-}
+	var cMsg *string = nil
+	if sub.CompileMessage.Valid {
+		cMsg = &sub.CompileMessage.String
+	}
 
-type graderSub struct {
-	ctx context.Context
-	sub *kilonova.Submission
-	tx  *sqlx.Tx
-}
-
-func (g *graderSub) Submission() *kilonova.Submission {
-	return g.sub
-}
-
-func (g *graderSub) Update(sub kilonova.SubmissionUpdate) error {
-	return updateSubmission(g.tx, g.ctx, g.sub.ID, sub)
-}
-
-func (g *graderSub) Close() error {
-	defer g.tx.Rollback()
-	return g.tx.Commit()
+	return &kilonova.Submission{
+		ID:             sub.ID,
+		CreatedAt:      sub.CreatedAt,
+		UserID:         sub.UserID,
+		ProblemID:      sub.ProblemID,
+		Language:       sub.Language,
+		Code:           sub.Code,
+		Status:         kilonova.Status(sub.Status),
+		CompileError:   cErr,
+		CompileMessage: cMsg,
+		MaxTime:        sub.MaxTime,
+		MaxMemory:      sub.MaxMemory,
+		Score:          sub.Score,
+	}
 }

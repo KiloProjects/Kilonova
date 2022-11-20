@@ -104,14 +104,14 @@ function Summary({ sub }) {
 }
 
 function CompileErrorInfo({ sub }) {
-	if (!sub.compile_error.Bool) {
-		if (sub.compile_message.String.length > 0) {
+	if (sub.compile_error !== true) {
+		if (sub.compile_message?.length > 0) {
 			return (
 				<details>
 					<summary>
 						<h2 class="inline-block">{getText("compileMsg")}</h2>
 					</summary>
-					<pre class="mb-2">{sub.compile_message.String}</pre>
+					<pre class="mb-2">{sub.compile_message}</pre>
 				</details>
 			);
 		}
@@ -125,7 +125,7 @@ function CompileErrorInfo({ sub }) {
 				<summary>
 					<h2 class="inline-block">{getText("compileMsg")}</h2>
 				</summary>
-				<pre class="mb-2">{sub.compile_message.String.length > 0 ? sub.compile_message.String : "No compilation message provided"}</pre>
+				<pre class="mb-2">{sub.compile_message?.length > 0 ? sub.compile_message : "No compilation message available"}</pre>
 			</details>
 		</>
 	);
@@ -332,7 +332,7 @@ type SubMgrState = {
 	sub: any;
 };
 
-export class SubmissionManager extends Component<{ id: number }, SubMgrState> {
+export class SubmissionManager extends Component<{ id: number; bigCode?: boolean }, SubMgrState> {
 	poll_mu: boolean;
 	finished: boolean;
 	poller: number | null;
@@ -427,6 +427,34 @@ export class SubmissionManager extends Component<{ id: number }, SubMgrState> {
 				</>
 			);
 		}
+
+		let content = (
+			<>
+				<CompileErrorInfo sub={sub} />
+				{sub.subTests.length > 0 &&
+					sub.compile_error !== true &&
+					(sub.subTasks.length > 0 ? (
+						<>
+							<SubTasks sub={sub} />
+						</>
+					) : (
+						<>
+							<h2 class="mb-2">{getText("tests")}</h2>
+							<TestTable sub={sub} />
+						</>
+					))}
+			</>
+		);
+
+		let under = <></>;
+		if (sub.code != null) {
+			under = <SubCode sub={sub} />;
+		}
+
+		if (this.props.bigCode === true) {
+			[content, under] = [under, content];
+		}
+
 		return (
 			<>
 				<h1 class="mb-2">
@@ -441,27 +469,12 @@ export class SubmissionManager extends Component<{ id: number }, SubMgrState> {
 								<div class="page-sidebar-box">
 									<OlderSubmissions problemid={sub.problem.id} userid={window.platform_info.user_id} />
 								</div>
-								{/* <div class="page-sidebar-divider lg:pb-4"></div> */}
 							</>
 						)}
 					</div>
-					<div class="page-content">
-						<CompileErrorInfo sub={sub} />
-						{sub.subTests.length > 0 &&
-							!sub.compile_error.Bool &&
-							(sub.subTasks.length > 0 ? (
-								<>
-									<SubTasks sub={sub} />
-								</>
-							) : (
-								<>
-									<h2 class="mb-2">{getText("tests")}</h2>
-									<TestTable sub={sub} />
-								</>
-							))}
-					</div>
+					<div class="page-content">{content}</div>
 				</div>
-				{sub.code != null && <SubCode sub={sub} />}
+				{under}
 			</>
 		);
 	}

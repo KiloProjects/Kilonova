@@ -58,7 +58,7 @@ func (b *BoxManager) getSandbox(ctx context.Context) (eval.Sandbox, error) {
 
 func (b *BoxManager) releaseSandbox(sb eval.Sandbox) {
 	if err := sb.Close(); err != nil {
-		zap.S().Warn("Could not release sandbox %d: %v\n", sb.GetID(), err)
+		zap.S().Warnf("Could not release sandbox %d: %v", sb.GetID(), err)
 	}
 	b.availableIDs <- sb.GetID()
 	b.sem.Release(1)

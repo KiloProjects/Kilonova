@@ -2,7 +2,6 @@ package sudoapi
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
@@ -58,7 +57,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		if _, ok := users[sub.UserID]; !ok {
 			user, err := s.UserBrief(ctx, sub.UserID)
 			if err != nil {
-				zap.S().Infof("Error getting user %d: %v\n", sub.UserID, err)
+				zap.S().Infof("Error getting user %d: %v", sub.UserID, err)
 				continue
 			}
 			users[sub.UserID] = user
@@ -67,7 +66,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		if _, ok := problems[sub.ProblemID]; !ok {
 			problem, err := s.Problem(ctx, sub.ProblemID)
 			if err != nil || problem == nil {
-				zap.S().Infof("Error getting problem %d: %v\n", sub.ProblemID, err)
+				zap.S().Infof("Error getting problem %d: %v", sub.ProblemID, err)
 				continue
 			}
 			if util.IsProblemVisible(lookingUser, problem) {
@@ -261,7 +260,7 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) {
 	if sub != nil && !s.isSubmissionVisible(ctx, sub, user) {
 		sub.Code = ""
-		sub.CompileMessage = sql.NullString{}
+		sub.CompileMessage = nil
 	}
 }
 
