@@ -1,6 +1,6 @@
 import { h, Fragment, Component } from "preact";
 import register from "preact-custom-element";
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { getCall } from "../net";
 import { apiToast } from "../toast";
 import { Paginator } from "./common";
@@ -25,22 +25,26 @@ function UserTable({ users }: { users: User[] }) {
 
 function UserList() {
 	let [users, setUsers] = useState<User[]>([]);
+	let [page, setPage] = useState<number>(1);
+	let [numPages, setNumPages] = useState<number>(1);
 
-	let poll = useCallback(async () => {
-		let res = await getCall("/admin/getAllUsers", {});
+	async function poll() {
+		let res = await getCall("/admin/getAllUsers", { offset: 50 * (page - 1), limit: 50 });
 		if (res.status !== "success") {
 			apiToast(res);
 			throw new Error("Couldn't fetch users");
 		}
-		setUsers(res.data);
-	}, []);
+		setUsers(res.data.users);
+		setNumPages(Math.floor(res.data.total_count / 50) + (res.data.total_count % 50 != 0 ? 1 : 0));
+	}
 
 	useEffect(() => {
 		poll().catch(console.error);
-	}, []);
+	}, [page]);
 
 	return (
 		<div class="my-4">
+			<Paginator numpages={numPages} page={page} setPage={setPage} />
 			<UserTable users={users} />
 		</div>
 	);

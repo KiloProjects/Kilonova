@@ -100,6 +100,19 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 	})
 }
 
+// ValidatePasteID puts the ID and the Paste in the router context
+func (rt *Web) ValidatePasteID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paste, err1 := rt.base.SubmissionPaste(r.Context(), chi.URLParam(r, "id"))
+		if err1 != nil {
+			rt.statusPage(w, r, 400, "Paste-ul nu există", false)
+			return
+		}
+
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.PasteKey, paste)))
+	})
+}
+
 func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRAuthed(r) {

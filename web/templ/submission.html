@@ -1,43 +1,56 @@
 {{ define "title" }} {{getText .Ctx.Language "sub"}} {{.Submission.ID}} {{ end }} 
 {{ define "content" }}
 
-<div id="submission_view">
+<kn-sub-mgr id="{{.Submission.ID}}"/>
 
-	<kn-sub-mgr id="{{.Submission.ID}}"/>
-	<!-- <div id="sub_placeholder" class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center">
-		<div><i class="fas fa-spinner animate-spin"></i> {{getText .Ctx.Language "loading"}}</div>
-	</div> -->
-	{{if .Ctx.User }}
-	{{if .Ctx.User.Admin}}
-	<button onclick="deleteSubmission()" class="btn btn-red mb-2">{{getText .Ctx.Language "removeSub"}}</button>
-	<button onclick="reevaluateSubmission()" class="btn btn-blue mb-2">{{getText .Ctx.Language "reevaluate"}}</button>
-	<script>
-async function deleteSubmission() {
-	const args = {submission_id: {{.Submission.ID}}};
-	let res = await bundled.postCall("/submissions/delete", args)
-	if(res.status === "success") {
-		window.location.assign("/submissions")
-		return
+<div class="mb-2"></div>
+
+{{ if .Ctx.User }}
+    {{ if .Ctx.User.Admin }}
+    <button onclick="deleteSubmission()" class="btn btn-red mb-2">{{getText .Ctx.Language "removeSub"}}</button>
+    <button onclick="reevaluateSubmission()" class="btn btn-blue mb-2">{{getText .Ctx.Language "reevaluate"}}</button>
+    {{ end }}
+    {{ if submissionEditor .Ctx.User.Brief .Submission }}
+        <button onclick="createPaste()" class="btn btn-blue mb-2">{{getText .Ctx.Language "create_paste"}}</button>
+    {{ end }}
+{{ end }}
+
+<script>
+const sub_id = {{.Submission.ID}};
+async function createPaste() {
+	const res = await bundled.postCall("/submissions/createPaste", { id: sub_id });
+	if (res.status === "error") {
+		apiToast(res);
 	}
-	bundled.apiToast(res)
+	const url = `${window.location.origin}/pastes/${res.data}`;
+    await navigator.clipboard.writeText(url).then(
+		() => {
+			bundled.createToast({ status: "success", description: `${bundled.getText("paste_url_copied")} <a href="${url}">${bundled.getText("go_to_paste")}</a>` });
+		},
+		(err) => {
+			bundled.createToast({ status: "error", description: bundled.getText("notCopied") });
+			console.error(err);
+		}
+	);
+}
+async function deleteSubmission() {
+    const args = {submission_id: sub_id};
+    let res = await bundled.postCall("/submissions/delete", args)
+    if(res.status === "success") {
+        window.location.assign("/submissions")
+        return
+    }
+    bundled.apiToast(res)
 }
 async function reevaluateSubmission() {
-	const args = {id: {{.Submission.ID}}};
-	let res = await bundled.postCall("/admin/maintenance/reevaluateSubmission", args);
-	if(res.status === "success") {
-		window.location.reload();
-		return
-	}
-	bundled.apiToast(res);
+    const args = {id: sub_id};
+    let res = await bundled.postCall("/admin/maintenance/reevaluateSubmission", args);
+    if(res.status === "success") {
+        window.location.reload();
+        return
+    }
+    bundled.apiToast(res);
 }
-	</script>
-	{{end}}
-	{{end}}
-</div>
-<!-- <script>
-var mgr = new bundled.SubmissionManager({{.Submission.ID}}, 'sub_placeholder', platform_info.language);
-mgr.startPoller()
-
-</script> -->
+</script>
 
 {{ end }}

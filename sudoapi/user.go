@@ -83,6 +83,14 @@ func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([
 	return usersBrief, nil
 }
 
+func (s *BaseAPI) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, *StatusError) {
+	cnt, err := s.db.CountUsers(ctx, filter)
+	if err != nil {
+		return -1, WrapError(err, "Couldn't get user count")
+	}
+	return cnt, nil
+}
+
 func (s *BaseAPI) UpdateUser(ctx context.Context, userID int, upd kilonova.UserUpdate) *StatusError {
 	return s.updateUser(ctx, userID, kilonova.UserFullUpdate{UserUpdate: upd})
 }

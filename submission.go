@@ -80,3 +80,9 @@ type SubTestUpdate struct {
 	Verdict *string
 	Done    *bool
 }
+
+type SubmissionPaste struct {
+	ID         string      `json:"id"`
+	Submission *Submission `json:"sub"`
+	Author     *UserBrief  `json:"author"`
+}

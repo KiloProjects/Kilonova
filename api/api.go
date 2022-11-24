@@ -52,7 +52,7 @@ func (s *API) Handler() http.Handler {
 			}))
 		})
 
-		r.Get("/getAllUsers", webWrapper(s.base.UsersBrief))
+		r.Get("/getAllUsers", s.getAllUsers)
 	})
 
 	r.Route("/auth", func(r chi.Router) {
@@ -129,6 +129,8 @@ func (s *API) Handler() http.Handler {
 		r.Get("/get", s.filterSubs())
 		r.Get("/getByID", s.getSubmissionByID())
 
+		r.With(s.MustBeAuthed).Post("/createPaste", s.createPaste)
+
 		r.With(s.MustBeAuthed).With(s.withProblem("problemID", true)).Post("/submit", webWrapper(func(ctx context.Context, args struct {
 			Code      string `json:"code"`
 			Lang      string `json:"language"`
@@ -141,6 +143,10 @@ func (s *API) Handler() http.Handler {
 			return s.base.CreateSubmission(ctx, util.UserBriefContext(ctx), util.ProblemContext(ctx), args.Code, lang)
 		}))
 		r.With(s.MustBeAdmin).Post("/delete", webWrapper(s.sudoHandlers.DeleteSubmission))
+	})
+	r.Route("/paste/{pasteID}", func(r chi.Router) {
+		r.Get("/", s.getPaste)
+		r.With(s.MustBeAuthed).Post("/delete", s.deletePaste)
 	})
 	r.Route("/user", func(r chi.Router) {
 		r.With(s.MustBeAuthed).Post("/setBio", s.setBio())

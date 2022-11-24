@@ -326,6 +326,11 @@ ro = "Subtaskul #%d"
 en = "Author"
 ro = "Autor"
 
+
+[sub_author]
+en = "Submission author"
+ro = "Autor submisie"
+
 [source]
 en = "Source"
 ro = "Sursă"
@@ -373,6 +378,10 @@ ro = "Puncte din oficiu"
 [id]
 en = "ID"
 ro = "ID"
+
+[sub_id]
+en = "Submission ID"
+ro = "ID Submisie"
 
 [score]
 en = "Score"
@@ -1011,3 +1020,27 @@ ro = "Schimbare vizibilitate"
 [visibility_admin]
 en = "Only admins can change problem visibility"
 ro = "Numai adminii pot să schimbe vizibilitatea unei probleme"
+
+[paste_title]
+en = "Paste"
+ro = "Paste-ul"
+
+[create_paste]
+en = "Create paste"
+ro = "Creare paste"
+
+[del_paste]
+en = "Remove paste"
+ro = "Ștergere paste"
+
+[paste_url_copied]
+en = "Paste URL copied to clipboard."
+ro = "URL-ul paste-ului a fost copiat în clipboard."
+
+[go_to_paste]
+en = "Go to paste"
+ro = "Accesați-l"
+
+[shared_by]
+en = "Shared by"
+ro = "Distribuit de"

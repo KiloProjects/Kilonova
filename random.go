@@ -5,9 +5,9 @@ import (
 	"strings"
 )
 
-const randomCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-"
+const randomCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-// RandomString returns a new string of a specified size containing only [a-zA-Z0-9_-] characters
+// RandomString returns a new string of a specified size containing only [a-zA-Z0-9] characters
 func RandomString(size int) string {
 	sb := strings.Builder{}
 	sb.Grow(size)

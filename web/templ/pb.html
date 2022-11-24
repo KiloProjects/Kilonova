@@ -14,7 +14,7 @@
 {{ $ctx := .Ctx }}
 
 <div class="mb-12">
-	<h1 class="mb-2">{{getText .Ctx.Language "problemSingle"}} #{{.Problem.ID}}</h1>
+	<h1 class="mb-2">{{getText .Ctx.Language "problemSingle"}}</h1>
 	<div class="page-holder">
 		<div class="page-content reset-list">
 			<div class="w-full mb-6 text-center">
@@ -45,6 +45,7 @@
 					{{- end -}}
 				</h2>
                 <div class="px-2">
+                    <p>{{getText .Ctx.Language "id"}}: {{.Problem.ID}}</p>
                     <details class="reset-list" open>
                         <summary>{{getText .Ctx.Language "editors"}}</summary>
                         <ul>

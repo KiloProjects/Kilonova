@@ -1,7 +1,7 @@
 import { h, Fragment, Component } from "preact";
 import getText from "../translation";
 import register from "preact-custom-element";
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useState } from "preact/hooks";
 import { getCall } from "../net";
 import { apiToast, createToast } from "../toast";
 import { BigSpinner, Paginator } from "./common";

@@ -87,6 +87,13 @@ func (rt *Web) submission() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
+func (rt *Web) paste() func(http.ResponseWriter, *http.Request) {
+	templ := rt.parse(nil, "paste.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		runTempl(w, r, templ, &PasteParams{GenContext(r), util.Paste(r)})
+	}
+}
+
 func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "pb.html")
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -149,7 +156,7 @@ func (rt *Web) selfProfile() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pbs, err := rt.base.SolvedProblems(r.Context(), util.UserBrief(r).ID)
 		if err != nil {
-			rt.Status(w, &StatusParams{GenContext(r), 500, "", false})
+			rt.statusPage(w, r, 500, "", false)
 			return
 		}
 		runTempl(w, r, templ, &ProfileParams{GenContext(r), util.UserFull(r), pbs})
@@ -162,17 +169,17 @@ func (rt *Web) profile() func(http.ResponseWriter, *http.Request) {
 		user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "user")))
 		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
 			zap.S().Warn(err)
-			rt.Status(w, &StatusParams{GenContext(r), 500, "", false})
+			rt.statusPage(w, r, 500, "", false)
 			return
 		}
 		if user == nil {
-			rt.Status(w, &StatusParams{GenContext(r), 404, "", false})
+			rt.statusPage(w, r, 404, "", false)
 			return
 		}
 
 		pbs, err1 := rt.base.SolvedProblems(r.Context(), user.ID)
 		if err1 != nil {
-			rt.Status(w, &StatusParams{GenContext(r), 500, "", false})
+			rt.statusPage(w, r, 500, "", false)
 			return
 		}
 
@@ -185,18 +192,18 @@ func (rt *Web) resendEmail() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		u := util.UserFull(r)
 		if u.VerifiedEmail {
-			rt.Status(w, &StatusParams{GenContext(r), 403, "Deja ai verificat emailul!", false})
+			rt.statusPage(w, r, 403, "Deja ai verificat emailul!", false)
 			return
 		}
 		t := time.Since(u.EmailVerifResent)
 		if t < 5*time.Minute {
 			text := fmt.Sprintf("Trebuie să mai aștepți %s până poți retrimite email de verificare", (5*time.Minute - t).Truncate(time.Millisecond))
-			rt.Status(w, &StatusParams{GenContext(r), 403, text, false})
+			rt.statusPage(w, r, 403, text, false)
 			return
 		}
 		if err := rt.base.SendVerificationEmail(context.Background(), u.ID, u.Name, u.Email); err != nil {
-			log.Println(err)
-			rt.Status(w, &StatusParams{GenContext(r), 500, "N-am putut retrimite emailul de verificare", false})
+			zap.S().Warn(err)
+			rt.statusPage(w, r, 500, "N-am putut retrimite emailul de verificare", false)
 			return
 		}
 
@@ -209,27 +216,27 @@ func (rt *Web) verifyEmail() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vid := chi.URLParam(r, "vid")
 		if !rt.base.CheckVerificationEmail(r.Context(), vid) {
-			rt.Status(w, &StatusParams{GenContext(r), 404, "", false})
+			rt.statusPage(w, r, 404, "", false)
 			return
 		}
 
 		uid, err := rt.base.GetVerificationUser(r.Context(), vid)
 		if err != nil {
 			log.Println(err)
-			rt.Status(w, &StatusParams{GenContext(r), 404, "", false})
+			rt.statusPage(w, r, 404, "", false)
 			return
 		}
 
 		user, err1 := rt.base.UserBrief(r.Context(), uid)
 		if err1 != nil {
 			log.Println(err1)
-			rt.Status(w, &StatusParams{GenContext(r), 404, "", false})
+			rt.statusPage(w, r, 404, "", false)
 			return
 		}
 
 		if err := rt.base.ConfirmVerificationEmail(vid, user); err != nil {
 			log.Println(err)
-			rt.Status(w, &StatusParams{GenContext(r), 404, "", false})
+			rt.statusPage(w, r, 404, "", false)
 			return
 		}
 
@@ -245,21 +252,21 @@ func (rt *Web) resetPassword() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqid := chi.URLParam(r, "reqid")
 		if !rt.base.CheckPasswordResetRequest(r.Context(), reqid) {
-			rt.Status(w, &StatusParams{GenContext(r), 404, "", false})
+			rt.statusPage(w, r, 404, "", false)
 			return
 		}
 
 		uid, err := rt.base.GetPwdResetRequestUser(r.Context(), reqid)
 		if err != nil {
 			log.Println(err)
-			rt.Status(w, &StatusParams{GenContext(r), 404, "", false})
+			rt.statusPage(w, r, 404, "", false)
 			return
 		}
 
 		user, err1 := rt.base.UserFull(r.Context(), uid)
 		if err1 != nil {
 			log.Println(err1)
-			rt.Status(w, &StatusParams{GenContext(r), 404, "", false})
+			rt.statusPage(w, r, 404, "", false)
 			return
 		}
 
@@ -326,28 +333,28 @@ func (rt *Web) docs() http.HandlerFunc {
 		_, err1 := fs.Stat(kilonova.Docs, p+".md")
 		if err != nil && err1 != nil {
 			if errors.Is(err, fs.ErrNotExist) && errors.Is(err1, fs.ErrNotExist) {
-				rt.Status(w, &StatusParams{GenContext(r), 404, "Ce încerci să accesezi nu există", false})
+				rt.statusPage(w, r, 404, "Ce încerci să accesezi nu există", false)
 				return
 			}
 			log.Println("CAN'T STAT DOCS", err, err1)
-			rt.Status(w, &StatusParams{GenContext(r), 500, "N-am putut da stat la path, contactați administratorul", false})
+			rt.statusPage(w, r, 500, "Couldn't stat path. Contact an admin", false)
 			return
 		} else if err1 == nil {
 			file, err := kilonova.Docs.ReadFile(p + ".md")
 			if err != nil {
 				if errors.Is(err, fs.ErrNotExist) {
-					rt.Status(w, &StatusParams{GenContext(r), 404, "Pagina nu există", false})
+					rt.statusPage(w, r, 404, "Pagina nu există", false)
 					return
 				}
 				log.Println("CAN'T OPEN DOCS", err)
-				rt.Status(w, &StatusParams{GenContext(r), 500, "N-am putut încărca pagina", false})
+				rt.statusPage(w, r, 500, "N-am putut încărca pagina", false)
 				return
 			}
 
 			t, err := rt.base.RenderMarkdown(file)
 			if err != nil {
 				log.Println("CAN'T RENDER DOCS")
-				rt.Status(w, &StatusParams{GenContext(r), 500, "N-am putut randa pagina", false})
+				rt.statusPage(w, r, 500, "N-am putut randa pagina", false)
 				return
 			}
 
@@ -361,7 +368,7 @@ func (rt *Web) docs() http.HandlerFunc {
 				entries, err := fs.ReadDir(kilonova.Docs, p)
 				if err != nil {
 					log.Println("Can't stat dir")
-					rt.Status(w, &StatusParams{GenContext(r), 404, "Nu-i nimic aici", false})
+					rt.statusPage(w, r, 404, "Nu-i nimic aici", false)
 					return
 				}
 				var data strings.Builder
@@ -381,7 +388,7 @@ func (rt *Web) docs() http.HandlerFunc {
 			t, err := rt.base.RenderMarkdown(file)
 			if err != nil {
 				log.Println("CAN'T RENDER DOCS")
-				rt.Status(w, &StatusParams{GenContext(r), 500, "N-am putut randa pagina", false})
+				rt.statusPage(w, r, 500, "N-am putut randa pagina", false)
 				return
 			}
 

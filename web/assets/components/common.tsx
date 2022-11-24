@@ -232,23 +232,21 @@ export function OlderSubmissions({ userid, problemid }: OlderSubsParams) {
 	let [loading, setLoading] = useState(true);
 	let [numHidden, setNumHidden] = useState(0);
 
-	const loader = useCallback(async () => {
+	async function load() {
 		const data = await getSubmissions(userid, problemid, SUB_VIEW_LIMIT);
 		setSubs(data.subs);
 		setNumHidden(Math.max(data.count - SUB_VIEW_LIMIT, 0));
 		setLoading(false);
-	}, []);
+	}
 
 	useEffect(() => {
-		loader().catch(console.error);
+		load().catch(console.error);
 	}, [userid, problemid]);
 
 	useEffect(() => {
-		const poll = async (e) => loader();
+		const poll = async (e) => load();
 		document.addEventListener("kn-poll", poll);
-		return () => {
-			document.removeEventListener("kn-poll", poll);
-		};
+		return () => document.removeEventListener("kn-poll", poll);
 	}, []);
 
 	return (

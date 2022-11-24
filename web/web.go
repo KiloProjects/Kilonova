@@ -81,6 +81,8 @@ func (rt *Web) Handler() http.Handler {
 		r.With(rt.ValidateSubmissionID).Get("/{id}", rt.submission())
 	})
 
+	r.With(rt.ValidatePasteID).Get("/pastes/{id}", rt.paste())
+
 	r.Route("/problem_lists", func(r chi.Router) {
 		r.Get("/", rt.justRender("lists/index.html", "modals/pblist.html", "modals/pbs.html"))
 		r.With(rt.mustBeProposer).Get("/create", rt.justRender("lists/create.html"))
@@ -127,7 +129,7 @@ func (rt *Web) Handler() http.Handler {
 	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		rt.Status(w, &StatusParams{GenContext(r), 404, "", false})
+		rt.statusPage(w, r, 404, "", false)
 	})
 
 	return r
@@ -213,6 +215,12 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		},
 		"problemEditor": func(user *kilonova.UserBrief, pb *kilonova.Problem) bool {
 			return util.IsProblemEditor(user, pb)
+		},
+		"submissionEditor": func(user *kilonova.UserBrief, sub *kilonova.Submission) bool {
+			return util.IsSubmissionEditor(sub, user)
+		},
+		"pasteEditor": func(user *kilonova.UserBrief, paste *kilonova.SubmissionPaste) bool {
+			return util.IsPasteEditor(paste, user)
 		},
 		"problemVisible": func(user *kilonova.UserBrief, pb *kilonova.Problem) bool {
 			return util.IsProblemVisible(user, pb)

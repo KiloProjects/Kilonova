@@ -85,6 +85,18 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 	}, nil
 }
 
+func (s *BaseAPI) RawSubmission(ctx context.Context, id int) (*kilonova.Submission, *StatusError) {
+	sub, err := s.db.Submission(ctx, id)
+	if err != nil {
+		zap.S().Warn(err)
+		return nil, ErrUnknownError
+	}
+	if sub == nil {
+		return nil, Statusf(404, "Couldn't find submission")
+	}
+	return sub, nil
+}
+
 func (s *BaseAPI) RawSubmissions(ctx context.Context, filter kilonova.SubmissionFilter) ([]*kilonova.Submission, *StatusError) {
 	subs, err := s.db.Submissions(ctx, filter)
 	if err != nil {
@@ -264,17 +276,28 @@ func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission
 	}
 }
 
-/*
-
-// GraderSubmission returns a waiting submission that is not locked. Note that it must be closed
-// TODO: Revamp this, it's not good
-func (s *BaseAPI) GraderSubmission(ctx context.Context) (eval.GraderSubmission, *StatusError) {
-	sub, err := s.db.FetchGraderSubmission(ctx)
-	if err != nil {
-		zap.S().Warn(err)
-		return nil, ErrUnknownError
+func (s *BaseAPI) CreatePaste(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) (string, *StatusError) {
+	paste := &kilonova.SubmissionPaste{Submission: sub, Author: user}
+	if err := s.db.CreatePaste(ctx, paste); err != nil {
+		return "", WrapError(err, "Couldn't create paste")
 	}
-	return sub, nil
+	return paste.ID, nil
 }
 
-*/
+func (s *BaseAPI) SubmissionPaste(ctx context.Context, id string) (*kilonova.SubmissionPaste, *StatusError) {
+	paste, err := s.db.SubmissionPaste(ctx, id)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't get paste")
+	}
+	if paste == nil {
+		return nil, Statusf(404, "Couldn't find paste")
+	}
+	return paste, nil
+}
+
+func (s *BaseAPI) DeletePaste(ctx context.Context, id string) *StatusError {
+	if err := s.db.DeleteSubPaste(ctx, id); err != nil {
+		return WrapError(err, "Couldn't delete paste")
+	}
+	return nil
+}

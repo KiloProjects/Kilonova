@@ -18,7 +18,7 @@
 {{ with (unassociatedProblems $user) }}
     <details class="list-group-head">
         <summary class="pb-1 mt-1">
-            <span class="float-left">{{getText $ctx.Language "the_rest"}}</span>
+            <span>{{getText $ctx.Language "the_rest"}}</span>
             {{if $user}}
                 <span class="float-right badge">
                     {{ getText $ctx.Language "num_solved" (numSolvedPbs $user .) (len .) }}

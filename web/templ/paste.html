@@ -1,0 +1,22 @@
+{{ define "title" }} {{getText .Ctx.Language "paste_title"}} #{{.Paste.ID}} {{ end }} 
+{{ define "content" }}
+
+<kn-paste-viewer paste_id="{{.Paste.ID}}"/>
+
+{{ if pasteEditor .Ctx.User.Brief .Paste }}
+    <button onclick="deletePaste()" class="btn btn-blue my-2">{{getText .Ctx.Language "del_paste"}}</button>
+{{ end }}
+
+<script>
+    const paste_id = {{.Paste.ID}};
+    async function deletePaste() {
+        const res = await bundled.postCall(`/paste/${paste_id}/delete`, {})
+        if(res.status === "error") {
+            bundled.apiToast(res)
+            return
+        }
+        window.location.assign("/") // TODO: Maybe a better redirect?
+    }
+</script>
+
+{{ end }}

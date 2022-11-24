@@ -18,10 +18,12 @@ const (
 	ProblemKey = KNContextType("problem")
 	// SubKey is the key to be used for adding submissions to context
 	SubKey = KNContextType("submission")
+	// PasteKey is the key to be used for adding pastes to context
+	PasteKey = KNContextType("paste")
 	// TestKey is the key to be used for adding tests to context
 	TestKey = KNContextType("test")
 	// SubTaskKey is the key to be used for adding subtasks to context
-	SubTaskKey = KNContextType("test")
+	SubTaskKey = KNContextType("subtask")
 	// ProblemListKey is the key to be used for adding problem lists to context
 	ProblemListKey = KNContextType("problemList")
 	// AttachmentKey is the key to be used for adding attachments to context
@@ -56,6 +58,10 @@ func Problem(r *http.Request) *kilonova.Problem {
 
 func Submission(r *http.Request) *kilonova.Submission {
 	return getValueContext[kilonova.Submission](r.Context(), SubKey)
+}
+
+func Paste(r *http.Request) *kilonova.SubmissionPaste {
+	return getValueContext[kilonova.SubmissionPaste](r.Context(), PasteKey)
 }
 
 func Test(r *http.Request) *kilonova.Test {

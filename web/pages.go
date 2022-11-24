@@ -271,6 +271,11 @@ type SubParams struct {
 	Submission *kilonova.Submission
 }
 
+type PasteParams struct {
+	Ctx   *ReqContext
+	Paste *kilonova.SubmissionPaste
+}
+
 var funcs = template.FuncMap{
 	"ispdflink": func(link string) bool {
 		u, err := url.Parse(link)

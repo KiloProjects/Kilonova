@@ -2,5 +2,9 @@ User-agent: *
 Disallow: /api/
 Disallow: /submissions/
 Disallow: /submissions?
+Disallow: /pastes/
+Disallow: /pastes?
+Disallow: /docs/
+Disallow: /docs
 Allow: /submissions/$
 

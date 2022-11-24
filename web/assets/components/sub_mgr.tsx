@@ -1,5 +1,5 @@
-import { h, Fragment, render, Component, AnyComponent, createRef } from "preact";
-import { useMemo } from "preact/hooks";
+import { h, Fragment, render, Component, createRef } from "preact";
+import { useEffect, useMemo, useState } from "preact/hooks";
 import register from "preact-custom-element";
 import { prettyLanguages } from "../langs";
 
@@ -13,13 +13,11 @@ const slugify = (str) =>
 		.replace(/[\s_-]+/g, "-")
 		.replace(/^-+|-+$/g, "");
 
-import { BigSpinner, OlderSubmissions } from "./common";
+import { BigSpinner, Button, OlderSubmissions } from "./common";
 
 import { downloadBlob, parseTime, sizeFormatter, getGradient } from "../util";
 
 import { getCall, postCall } from "../net";
-
-// TODO: Test all buttons
 
 function downloadCode(sub) {
 	var file = new Blob([sub.code], { type: "text/plain" });
@@ -39,14 +37,30 @@ async function copyCode(sub) {
 	);
 }
 
-function Summary({ sub }) {
+function Summary({ sub, pasteAuthor }) {
 	return (
 		<div class="page-sidebar-box">
 			<h2>{getText("info")}</h2>
 			<table class="kn-table mx-2">
 				<tbody>
+					{pasteAuthor && (
+						<>
+							<tr class="kn-table-simple-border">
+								<td class="kn-table-cell">{getText("shared_by")}</td>
+								<td class="kn-table-cell">
+									<a href={`/profile/${pasteAuthor.name}`}>{pasteAuthor.name}</a>
+								</td>
+							</tr>
+							<tr class="kn-table-simple-border">
+								<td class="kn-table-cell">{getText("sub_id")}</td>
+								<td class="kn-table-cell">
+									<a href={`/submissions/${sub.id}`}>#{sub.id}</a>
+								</td>
+							</tr>
+						</>
+					)}
 					<tr class="kn-table-simple-border">
-						<td class="kn-table-cell">{getText("author")}</td>
+						<td class="kn-table-cell">{getText("sub_author")}</td>
 						<td class="kn-table-cell">
 							<a href={`/profile/${sub.author.name}`}>{sub.author.name}</a>
 						</td>
@@ -257,7 +271,7 @@ function SubTask({ sub, subtask, detRef }) {
 		<details id={`stk-det-${subtask.visible_id}`} class="list-group-item">
 			<summary class="pb-1 mt-1">
 				{/* <span class="flex justify-between"> */}
-				<span class="float-left">{getText("nthSubTask", subtask.visible_id)}</span>
+				<span>{getText("nthSubTask", subtask.visible_id)}</span>
 				{allSubtestsDone ? (
 					<span class="float-right badge" style={`background-color: ${getGradient(stkScore, 100)}`}>
 						{Math.round((subtask.score * stkScore) / 100.0)} / {subtask.score}
@@ -303,7 +317,7 @@ function SubTask({ sub, subtask, detRef }) {
 	);
 }
 
-function SubTasks({ sub }) {
+function SubTasks({ sub, expandedTests }) {
 	let ref = createRef();
 
 	return (
@@ -318,7 +332,7 @@ function SubTasks({ sub }) {
 					))}
 				</div>
 			</details>
-			<details ref={ref}>
+			<details ref={ref} open={expandedTests}>
 				<summary>
 					<h2 class="inline-block">{getText("individualTests")}</h2>
 				</summary>
@@ -328,9 +342,87 @@ function SubTasks({ sub }) {
 	);
 }
 
+function SubmissionView({ sub, bigCode, pasteAuthor }: { sub: any; bigCode: boolean; pasteAuthor?: any }) {
+	if (typeof sub === "undefined" || sub === null || (sub && Object.keys(sub).length == 0)) {
+		return (
+			<div class="page-holder grid-cols-1">
+				<BigSpinner />
+			</div>
+		);
+	}
+
+	let content = (
+		<>
+			<CompileErrorInfo sub={sub} />
+			{sub.subTests.length > 0 &&
+				sub.compile_error !== true &&
+				(sub.subTasks.length > 0 ? (
+					<SubTasks sub={sub} expandedTests={typeof pasteAuthor !== "undefined"} />
+				) : (
+					<>
+						<h2 class="mb-2">{getText("tests")}</h2>
+						<TestTable sub={sub} />
+					</>
+				))}
+		</>
+	);
+
+	let under = <></>;
+	if (sub.code != null) {
+		under = <SubCode sub={sub} />;
+	}
+
+	if (bigCode) {
+		[content, under] = [under, content];
+	}
+
+	return (
+		<>
+			<div class="page-holder">
+				<div class="page-sidebar lg:order-last">
+					<Summary sub={sub} pasteAuthor={pasteAuthor} />
+					{window.platform_info.user_id !== undefined && window.platform_info.user_id > 0 && (
+						<>
+							<div class="page-sidebar-divider"></div>
+							<div class="page-sidebar-box">
+								<OlderSubmissions problemid={sub.problem.id} userid={window.platform_info.user_id} />
+							</div>
+						</>
+					)}
+				</div>
+				<div class="page-content">{content}</div>
+			</div>
+			{under}
+		</>
+	);
+}
+
 type SubMgrState = {
 	sub: any;
 };
+
+function transformSubmissionResponse(res: any): any {
+	let sub: any = {};
+
+	sub = res.sub;
+	sub.problemEditor = res.problem_editor;
+	sub.author = res.author;
+	sub.problem = res.problem;
+	if (res.subtasks) {
+		sub.subTasks = res.subtasks;
+	} else {
+		sub.subTasks = [];
+	}
+
+	if (res.subtests) {
+		sub.subTests = res.subtests;
+		sub.subTestIDs = {};
+		for (let subtest of res.subtests) {
+			sub.subTestIDs[subtest.test.id] = subtest;
+		}
+	}
+	return sub;
+}
 
 export class SubmissionManager extends Component<{ id: number; bigCode?: boolean }, SubMgrState> {
 	poll_mu: boolean;
@@ -381,30 +473,32 @@ export class SubmissionManager extends Component<{ id: number; bigCode?: boolean
 			return;
 		}
 
-		const res = resp.data;
-		let newState: SubMgrState = { sub: {} };
+		this.setState(() => ({ sub: transformSubmissionResponse(resp.data) }));
 
-		newState.sub = res.sub;
-		newState.sub.problemEditor = res.problem_editor;
-		newState.sub.author = res.author;
-		newState.sub.problem = res.problem;
-		if (res.subtasks) {
-			newState.sub.subTasks = res.subtasks;
-		} else {
-			newState.sub.subTasks = [];
-		}
+		// const res = resp.data;
+		// let newState: SubMgrState = { sub: {} };
 
-		if (res.subtests) {
-			newState.sub.subTests = res.subtests;
-			newState.sub.subTestIDs = {};
-			for (let subtest of res.subtests) {
-				newState.sub.subTestIDs[subtest.test.id] = subtest;
-			}
-		}
+		// newState.sub = res.sub;
+		// newState.sub.problemEditor = res.problem_editor;
+		// newState.sub.author = res.author;
+		// newState.sub.problem = res.problem;
+		// if (res.subtasks) {
+		// 	newState.sub.subTasks = res.subtasks;
+		// } else {
+		// 	newState.sub.subTasks = [];
+		// }
 
-		this.setState(() => newState);
+		// if (res.subtests) {
+		// 	newState.sub.subTests = res.subtests;
+		// 	newState.sub.subTestIDs = {};
+		// 	for (let subtest of res.subtests) {
+		// 		newState.sub.subTestIDs[subtest.test.id] = subtest;
+		// 	}
+		// }
 
-		if (res.sub.status === "finished") {
+		// this.setState(() => newState);
+
+		if (resp.data.sub.status === "finished") {
 			this.stopPoller();
 			this.finished = true;
 			this.forceUpdate();
@@ -414,70 +508,51 @@ export class SubmissionManager extends Component<{ id: number; bigCode?: boolean
 	}
 
 	render() {
-		let { sub } = this.state;
-		if (sub && Object.keys(sub).length == 0) {
-			return (
-				<>
-					<h1 class="mb-2">
-						{getText("sub")} {`#${this.props.id}`}
-					</h1>
-					<div class="border-t-2 min-h-screen">
-						<BigSpinner />
-					</div>
-				</>
-			);
-		}
-
-		let content = (
-			<>
-				<CompileErrorInfo sub={sub} />
-				{sub.subTests.length > 0 &&
-					sub.compile_error !== true &&
-					(sub.subTasks.length > 0 ? (
-						<>
-							<SubTasks sub={sub} />
-						</>
-					) : (
-						<>
-							<h2 class="mb-2">{getText("tests")}</h2>
-							<TestTable sub={sub} />
-						</>
-					))}
-			</>
-		);
-
-		let under = <></>;
-		if (sub.code != null) {
-			under = <SubCode sub={sub} />;
-		}
-
-		if (this.props.bigCode === true) {
-			[content, under] = [under, content];
-		}
-
 		return (
 			<>
 				<h1 class="mb-2">
-					{getText("sub")} {`#${sub.id}`}
+					{getText("sub")} {`#${this.props.id}`}
 				</h1>
-				<div class="page-holder">
-					<div class="page-sidebar lg:order-last">
-						<Summary sub={sub} />
-						{window.platform_info.user_id !== undefined && window.platform_info.user_id > 0 && (
-							<>
-								<div class="page-sidebar-divider"></div>
-								<div class="page-sidebar-box">
-									<OlderSubmissions problemid={sub.problem.id} userid={window.platform_info.user_id} />
-								</div>
-							</>
-						)}
-					</div>
-					<div class="page-content">{content}</div>
-				</div>
-				{under}
+				<SubmissionView bigCode={false} sub={this.state.sub} />
 			</>
 		);
 	}
 }
 
+export function PasteViewer({ paste_id }: { paste_id: string }) {
+	let [sub, setSub] = useState({});
+	let [author, setAuthor] = useState({});
+
+	async function load() {
+		const res = await getCall(`/paste/${paste_id}`, {});
+		if (res.status === "error") {
+			apiToast(res);
+			return;
+		}
+		let subRes = await getCall("/submissions/getByID", {
+			id: res.data.sub.id,
+		});
+		if (subRes.status === "error") {
+			apiToast(res);
+			return;
+		}
+		setSub(transformSubmissionResponse(subRes.data));
+		setAuthor(res.data.author);
+	}
+
+	useEffect(() => {
+		load().catch(console.error);
+	}, [paste_id]);
+
+	return (
+		<>
+			<h1 class="mb-2">
+				{getText("paste_title")} #{paste_id}
+			</h1>
+			<SubmissionView bigCode={true} sub={sub} pasteAuthor={author} />
+		</>
+	);
+}
+
 register(SubmissionManager, "kn-sub-mgr", ["id"]);
+register(PasteViewer, "kn-paste-viewer", ["paste_id"]);

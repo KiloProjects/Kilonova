@@ -73,6 +73,16 @@ func IsSubmissionEditor(sub *kilonova.Submission, user *kilonova.UserBrief) bool
 	return IsAdmin(user) || user.ID == sub.UserID
 }
 
+func IsPasteEditor(paste *kilonova.SubmissionPaste, user *kilonova.UserBrief) bool {
+	if !IsAuthed(user) {
+		return false
+	}
+	if paste == nil {
+		return false
+	}
+	return IsSubmissionEditor(paste.Submission, user) || user.ID == paste.Author.ID
+}
+
 func IsRAuthed(r *http.Request) bool {
 	return IsAuthed(UserBrief(r))
 }
