@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi/v5"
 )
@@ -44,7 +45,21 @@ func (s *API) getPaste(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	returnData(w, paste)
+	sub, err := s.fullSubmission(r.Context(), paste.Submission.ID, nil, false)
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	returnData(w, struct {
+		ID         string              `json:"id"`
+		Submission *subLine            `json:"sub"`
+		Author     *kilonova.UserBrief `json:"author"`
+	}{
+		ID:         paste.ID,
+		Submission: sub,
+		Author:     paste.Author,
+	})
 }
 
 func (s *API) deletePaste(w http.ResponseWriter, r *http.Request) {

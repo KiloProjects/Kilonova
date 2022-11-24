@@ -131,11 +131,22 @@ type FullSubmission struct {
 }
 
 func (s *BaseAPI) Submission(ctx context.Context, subid int, lookingUser *UserBrief) (*FullSubmission, *StatusError) {
+	return s.getSubmission(ctx, subid, lookingUser, true)
+}
+
+// FullSubmission gets the submission regardless of if there is a user watching or not
+func (s *BaseAPI) FullSubmission(ctx context.Context, subid int) (*FullSubmission, *StatusError) {
+	return s.getSubmission(ctx, subid, nil, false)
+}
+
+func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *UserBrief, isLooking bool) (*FullSubmission, *StatusError) {
 	sub, err := s.db.Submission(ctx, subid)
 	if err != nil || sub == nil {
 		return nil, Statusf(404, "Submission not found")
 	}
-	s.filterSubmission(ctx, sub, lookingUser)
+	if isLooking {
+		s.filterSubmission(ctx, sub, lookingUser)
+	}
 
 	rez := &FullSubmission{Submission: *sub}
 	author, err1 := s.UserBrief(ctx, sub.UserID)
@@ -148,7 +159,7 @@ func (s *BaseAPI) Submission(ctx context.Context, subid int, lookingUser *UserBr
 	if err1 != nil {
 		return nil, err1
 	}
-	if !util.IsProblemVisible(lookingUser, rez.Problem) {
+	if isLooking && !util.IsProblemVisible(lookingUser, rez.Problem) {
 		return nil, Statusf(403, "Submission hidden because problem is not visible.")
 	}
 

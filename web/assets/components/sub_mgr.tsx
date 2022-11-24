@@ -529,16 +529,10 @@ export function PasteViewer({ paste_id }: { paste_id: string }) {
 			apiToast(res);
 			return;
 		}
-		let subRes = await getCall("/submissions/getByID", {
-			id: res.data.sub.id,
-		});
-		if (subRes.status === "error") {
-			apiToast(res);
-			return;
-		}
-		setSub(transformSubmissionResponse(subRes.data));
+		setSub(transformSubmissionResponse(res.data.sub));
 		setAuthor(res.data.author);
 	}
+	console.log("here");
 
 	useEffect(() => {
 		load().catch(console.error);
