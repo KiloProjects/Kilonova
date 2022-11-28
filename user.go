@@ -2,9 +2,9 @@ package kilonova
 
 import (
 	"errors"
-	"log"
 	"time"
 
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -87,7 +87,7 @@ func CheckPwdHash(password, hash string) bool {
 		return false
 	}
 	if err != nil {
-		log.Println(err)
+		zap.S().Warn(err)
 		return false
 	}
 	return true

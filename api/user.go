@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"mime"
 	"net/http"
 	"strconv"
@@ -25,7 +24,7 @@ func (s *API) serveGravatar(w http.ResponseWriter, r *http.Request, user *kilono
 	url := s.base.GetGravatarLink(user, size)
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Println(err)
+		zap.S().Warn(err)
 		errorData(w, err, 500)
 		return
 	}
@@ -40,7 +39,7 @@ func (s *API) serveGravatar(w http.ResponseWriter, r *http.Request, user *kilono
 	// get the image
 	buf, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Println(err)
+		zap.S().Warn(err)
 		return
 	}
 	reader := bytes.NewReader(buf)

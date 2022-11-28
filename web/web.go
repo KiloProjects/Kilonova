@@ -7,7 +7,6 @@ import (
 	"embed"
 	"html/template"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -42,12 +41,12 @@ type Web struct {
 	base *sudoapi.BaseAPI
 }
 
-func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int, err string, shouldLogin bool) {
-	rt.Status(w, &StatusParams{
-		Ctx:         GenContext(r),
-		Code:        statusCode,
-		Message:     err,
-		ShouldLogin: shouldLogin,
+func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int, errMessage string) {
+	status := rt.parse(nil, "util/statusCode.html", "modals/login.html")
+	runTempl(w, r, status, &StatusParams{
+		Ctx:     GenContext(r),
+		Code:    statusCode,
+		Message: errMessage,
 	})
 }
 
@@ -122,20 +121,20 @@ func (rt *Web) Handler() http.Handler {
 	r.Get("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		file, err := embedded.Open("static/robots.txt")
 		if err != nil {
-			log.Println("Could not open robots.txt")
+			zap.S().Warn("Could not open robots.txt")
 			return
 		}
 		http.ServeContent(w, r, "robots.txt", time.Now(), file.(io.ReadSeeker))
 	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		rt.statusPage(w, r, 404, "", false)
+		rt.statusPage(w, r, 404, "")
 	})
 
 	return r
 }
 
-func (rt *Web) parse(optFuncs template.FuncMap, files ...string) executor {
+func (rt *Web) parse(optFuncs template.FuncMap, files ...string) *template.Template {
 	if optFuncs == nil {
 		return parse(rt.funcs, files...)
 	}

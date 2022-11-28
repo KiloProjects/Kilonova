@@ -8,7 +8,6 @@ import (
 	"html/template"
 	"io"
 	"io/fs"
-	"log"
 	"net/http"
 	"path"
 	"strconv"
@@ -61,13 +60,13 @@ func (rt *Web) auditLog() func(http.ResponseWriter, *http.Request) {
 
 		logs, err1 := rt.base.GetAuditLogs(r.Context(), 50, (page-1)*50)
 		if err1 != nil {
-			rt.statusPage(w, r, 500, "Couldn't fetch logs", false)
+			rt.statusPage(w, r, 500, "Couldn't fetch logs")
 			return
 		}
 
 		numLogs, err1 := rt.base.GetLogCount(r.Context())
 		if err1 != nil {
-			rt.statusPage(w, r, 500, "Couldn't fetch log count", false)
+			rt.statusPage(w, r, 500, "Couldn't fetch log count")
 			return
 		}
 
@@ -101,7 +100,7 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 
 		buf, err := rt.base.RenderMarkdown([]byte(problem.Description))
 		if err != nil {
-			log.Println("Rendering markdown:", err)
+			zap.S().Warn("Error rendering markdown:", err)
 		}
 
 		atts, err1 := rt.base.ProblemAttachments(r.Context(), util.Problem(r).ID)
@@ -122,8 +121,8 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 
 		langs := eval.Langs
 		if evalSettings, err := rt.base.ProblemSettings(r.Context(), util.Problem(r).ID); err != nil {
-			log.Println("Getting problem settings:", err, util.Problem(r).ID)
-			rt.statusPage(w, r, 500, "Couldn't get problem settings", false)
+			zap.S().Warn("Error getting problem settings:", err, util.Problem(r).ID)
+			rt.statusPage(w, r, 500, "Couldn't get problem settings")
 		} else if evalSettings.OnlyCPP {
 			newLangs := make(map[string]eval.Language)
 			for name, lang := range langs {
@@ -156,7 +155,7 @@ func (rt *Web) selfProfile() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pbs, err := rt.base.SolvedProblems(r.Context(), util.UserBrief(r).ID)
 		if err != nil {
-			rt.statusPage(w, r, 500, "", false)
+			rt.statusPage(w, r, 500, "")
 			return
 		}
 		runTempl(w, r, templ, &ProfileParams{GenContext(r), util.UserFull(r), pbs})
@@ -169,17 +168,17 @@ func (rt *Web) profile() func(http.ResponseWriter, *http.Request) {
 		user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "user")))
 		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
 			zap.S().Warn(err)
-			rt.statusPage(w, r, 500, "", false)
+			rt.statusPage(w, r, 500, "")
 			return
 		}
 		if user == nil {
-			rt.statusPage(w, r, 404, "", false)
+			rt.statusPage(w, r, 404, "")
 			return
 		}
 
 		pbs, err1 := rt.base.SolvedProblems(r.Context(), user.ID)
 		if err1 != nil {
-			rt.statusPage(w, r, 500, "", false)
+			rt.statusPage(w, r, 500, "")
 			return
 		}
 
@@ -192,18 +191,18 @@ func (rt *Web) resendEmail() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		u := util.UserFull(r)
 		if u.VerifiedEmail {
-			rt.statusPage(w, r, 403, "Deja ai verificat emailul!", false)
+			rt.statusPage(w, r, 403, "Deja ai verificat emailul!")
 			return
 		}
 		t := time.Since(u.EmailVerifResent)
 		if t < 5*time.Minute {
 			text := fmt.Sprintf("Trebuie să mai aștepți %s până poți retrimite email de verificare", (5*time.Minute - t).Truncate(time.Millisecond))
-			rt.statusPage(w, r, 403, text, false)
+			rt.statusPage(w, r, 403, text)
 			return
 		}
 		if err := rt.base.SendVerificationEmail(context.Background(), u.ID, u.Name, u.Email); err != nil {
 			zap.S().Warn(err)
-			rt.statusPage(w, r, 500, "N-am putut retrimite emailul de verificare", false)
+			rt.statusPage(w, r, 500, "N-am putut retrimite emailul de verificare")
 			return
 		}
 
@@ -216,27 +215,27 @@ func (rt *Web) verifyEmail() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vid := chi.URLParam(r, "vid")
 		if !rt.base.CheckVerificationEmail(r.Context(), vid) {
-			rt.statusPage(w, r, 404, "", false)
+			rt.statusPage(w, r, 404, "")
 			return
 		}
 
 		uid, err := rt.base.GetVerificationUser(r.Context(), vid)
 		if err != nil {
-			log.Println(err)
-			rt.statusPage(w, r, 404, "", false)
+			zap.S().Warn(err)
+			rt.statusPage(w, r, 404, "")
 			return
 		}
 
 		user, err1 := rt.base.UserBrief(r.Context(), uid)
 		if err1 != nil {
-			log.Println(err1)
-			rt.statusPage(w, r, 404, "", false)
+			zap.S().Warn(err1)
+			rt.statusPage(w, r, 404, "")
 			return
 		}
 
 		if err := rt.base.ConfirmVerificationEmail(vid, user); err != nil {
-			log.Println(err)
-			rt.statusPage(w, r, 404, "", false)
+			zap.S().Warn(err)
+			rt.statusPage(w, r, 404, "")
 			return
 		}
 
@@ -252,21 +251,21 @@ func (rt *Web) resetPassword() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqid := chi.URLParam(r, "reqid")
 		if !rt.base.CheckPasswordResetRequest(r.Context(), reqid) {
-			rt.statusPage(w, r, 404, "", false)
+			rt.statusPage(w, r, 404, "")
 			return
 		}
 
 		uid, err := rt.base.GetPwdResetRequestUser(r.Context(), reqid)
 		if err != nil {
-			log.Println(err)
-			rt.statusPage(w, r, 404, "", false)
+			zap.S().Warn(err)
+			rt.statusPage(w, r, 404, "")
 			return
 		}
 
 		user, err1 := rt.base.UserFull(r.Context(), uid)
 		if err1 != nil {
-			log.Println(err1)
-			rt.statusPage(w, r, 404, "", false)
+			zap.S().Warn(err1)
+			rt.statusPage(w, r, 404, "")
 			return
 		}
 
@@ -305,7 +304,7 @@ func (rt *Web) problemAttachment(w http.ResponseWriter, r *http.Request) {
 
 	attData, err := rt.base.AttachmentData(r.Context(), att.ID)
 	if err != nil {
-		log.Println(err)
+		zap.S().Warn(err)
 		http.Error(w, "Couldn't get attachment data", 500)
 		return
 	}
@@ -332,29 +331,24 @@ func (rt *Web) docs() http.HandlerFunc {
 		stat, err := fs.Stat(kilonova.Docs, p)
 		_, err1 := fs.Stat(kilonova.Docs, p+".md")
 		if err != nil && err1 != nil {
-			if errors.Is(err, fs.ErrNotExist) && errors.Is(err1, fs.ErrNotExist) {
-				rt.statusPage(w, r, 404, "Ce încerci să accesezi nu există", false)
-				return
-			}
-			log.Println("CAN'T STAT DOCS", err, err1)
-			rt.statusPage(w, r, 500, "Couldn't stat path. Contact an admin", false)
+			rt.statusPage(w, r, 404, "Ce încerci să accesezi nu există")
 			return
 		} else if err1 == nil {
 			file, err := kilonova.Docs.ReadFile(p + ".md")
 			if err != nil {
 				if errors.Is(err, fs.ErrNotExist) {
-					rt.statusPage(w, r, 404, "Pagina nu există", false)
+					rt.statusPage(w, r, 404, "Pagina nu există")
 					return
 				}
-				log.Println("CAN'T OPEN DOCS", err)
-				rt.statusPage(w, r, 500, "N-am putut încărca pagina", false)
+				zap.S().Warn("Can't open docs", err)
+				rt.statusPage(w, r, 500, "N-am putut încărca pagina")
 				return
 			}
 
 			t, err := rt.base.RenderMarkdown(file)
 			if err != nil {
-				log.Println("CAN'T RENDER DOCS")
-				rt.statusPage(w, r, 500, "N-am putut randa pagina", false)
+				zap.S().Warn("Can't render docs", err)
+				rt.statusPage(w, r, 500, "N-am putut randa pagina")
 				return
 			}
 
@@ -363,36 +357,7 @@ func (rt *Web) docs() http.HandlerFunc {
 		}
 
 		if stat.IsDir() {
-			file, err := kilonova.Docs.ReadFile(path.Join(p, "index.md"))
-			if err != nil {
-				entries, err := fs.ReadDir(kilonova.Docs, p)
-				if err != nil {
-					log.Println("Can't stat dir")
-					rt.statusPage(w, r, 404, "Nu-i nimic aici", false)
-					return
-				}
-				var data strings.Builder
-				for _, entry := range entries {
-					data.WriteString("* [")
-					data.WriteString(entry.Name())
-					if entry.IsDir() {
-						data.WriteRune('/')
-					}
-					data.WriteString("](/")
-					data.WriteString(path.Join(p, strings.TrimSuffix(entry.Name(), ".md")))
-					data.WriteString(")\n")
-				}
-
-				file = []byte(data.String())
-			}
-			t, err := rt.base.RenderMarkdown(file)
-			if err != nil {
-				log.Println("CAN'T RENDER DOCS")
-				rt.statusPage(w, r, 500, "N-am putut randa pagina", false)
-				return
-			}
-
-			runTempl(w, r, templ, &MarkdownParams{GenContext(r), template.HTML(t), p}) // TODO: Proper title
+			rt.statusPage(w, r, 400, "Can't read dir")
 		} else {
 			file, err := kilonova.Docs.ReadFile(p)
 			if err != nil {
@@ -421,13 +386,12 @@ func (rt *Web) subtestOutput(w http.ResponseWriter, r *http.Request) {
 	}
 	sub, err1 := rt.base.Submission(r.Context(), subtest.SubmissionID, util.UserBrief(r))
 	if err1 != nil {
-		log.Println(err1)
+		zap.S().Warn(err1)
 		http.Error(w, "You aren't allowed to do that", 500)
 		return
 	}
 
 	if !util.IsProblemEditor(util.UserBrief(r), sub.Problem) {
-		log.Println(err)
 		http.Error(w, "You aren't allowed to do that!", 401)
 		return
 	}
@@ -441,8 +405,9 @@ func (rt *Web) subtestOutput(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, "subtest.out", time.Now(), rc)
 }
 
-func runTempl(w io.Writer, r *http.Request, templ executor, data interface{}) {
+func runTempl(w io.Writer, r *http.Request, templ *template.Template, data interface{}) {
 	if err := templ.Execute(w, data); err != nil {
 		fmt.Fprintf(w, "Error executing template, report to admin: %s", err)
+		zap.S().Warnf("Erorr executing template: %q %q %#v", err, templ.Name(), util.UserBrief(r))
 	}
 }

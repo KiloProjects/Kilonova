@@ -495,14 +495,6 @@ ro = "Sunteți sigur că vreți să ștergeți testul?"
 en = "That's an error"
 ro = "Asta-i o eroare!"
 
-[error.loginSuggest]
-en = "Maybe you can log in to view this"
-ro = "Probabil vei putea să accesezi dacă te loghezi"
-
-[error.login]
-en = "Can't get login modal"
-ro = "N-am putut afișa modalul de autentificare"
-
 [edit]
 en = "[edit]"
 ro = "[editare]"

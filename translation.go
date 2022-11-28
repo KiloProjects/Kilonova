@@ -3,11 +3,11 @@ package kilonova
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	_ "embed"
 
 	"github.com/KiloProjects/kilonova/internal/config"
+	"go.uber.org/zap"
 )
 
 type Translation map[string]string
@@ -27,7 +27,7 @@ func TranslationKeyExists(line string) bool {
 
 func GetText(lang, line string, args ...any) string {
 	if _, ok := translations[line]; !ok {
-		log.Printf("Invalid translation key %q\n", line)
+		zap.S().Warn("Invalid translation key %q\n", line)
 		return "ERR"
 	}
 	if _, ok := translations[line][lang]; !ok {

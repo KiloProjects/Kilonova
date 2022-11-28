@@ -22,12 +22,12 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		problemID, err := strconv.Atoi(chi.URLParam(r, "pbid"))
 		if err != nil {
-			rt.statusPage(w, r, http.StatusBadRequest, "ID invalid", false)
+			rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
 			return
 		}
 		problem, err1 := rt.base.Problem(r.Context(), problemID)
 		if err1 != nil {
-			rt.statusPage(w, r, 404, "Problema nu a fost găsită", false)
+			rt.statusPage(w, r, 404, "Problema nu a fost găsită")
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemKey, problem)))
@@ -39,12 +39,12 @@ func (rt *Web) ValidateListID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		listID, err := strconv.Atoi(chi.URLParam(r, "id"))
 		if err != nil {
-			rt.statusPage(w, r, http.StatusBadRequest, "ID invalid", false)
+			rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
 			return
 		}
 		list, err1 := rt.base.ProblemList(r.Context(), listID)
 		if err1 != nil {
-			rt.statusPage(w, r, 404, "Lista nu a fost găsită", false)
+			rt.statusPage(w, r, 404, "Lista nu a fost găsită")
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemListKey, list)))
@@ -65,7 +65,7 @@ func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
 			return
 		}
 		if att.Private && !util.IsRProblemEditor(r) {
-			rt.statusPage(w, r, 403, "Nu ai voie să accesezi acest atașament", true)
+			rt.statusPage(w, r, 403, "Nu ai voie să accesezi acest atașament")
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AttachmentKey, att)))
 	})
@@ -75,7 +75,7 @@ func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
 func (rt *Web) ValidateProblemVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRProblemVisible(r) {
-			rt.statusPage(w, r, 403, "Nu ai voie să accesezi problema!", true)
+			rt.statusPage(w, r, 403, "Nu ai voie să accesezi problema!")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -87,12 +87,12 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		subID, err := strconv.Atoi(chi.URLParam(r, "id"))
 		if err != nil {
-			rt.statusPage(w, r, 400, "ID submisie invalid", false)
+			rt.statusPage(w, r, 400, "ID submisie invalid")
 			return
 		}
 		sub, err1 := rt.base.Submission(r.Context(), subID, util.UserBrief(r))
 		if err1 != nil {
-			rt.statusPage(w, r, 400, "Submisia nu există", false)
+			rt.statusPage(w, r, 400, "Submisia nu există")
 			return
 		}
 
@@ -105,7 +105,7 @@ func (rt *Web) ValidatePasteID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		paste, err1 := rt.base.SubmissionPaste(r.Context(), chi.URLParam(r, "id"))
 		if err1 != nil {
-			rt.statusPage(w, r, 400, "Paste-ul nu există", false)
+			rt.statusPage(w, r, 400, "Paste-ul nu există")
 			return
 		}
 
@@ -116,7 +116,7 @@ func (rt *Web) ValidatePasteID(next http.Handler) http.Handler {
 func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRAuthed(r) {
-			rt.statusPage(w, r, 401, "Trebuie să fii logat", true)
+			rt.statusPage(w, r, 401, "Trebuie să fii logat")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -126,7 +126,7 @@ func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 func (rt *Web) mustBeProposer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRProposer(r) {
-			rt.statusPage(w, r, 401, "Trebuie să fii propunător", true)
+			rt.statusPage(w, r, 401, "Trebuie să fii propunător")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -136,7 +136,7 @@ func (rt *Web) mustBeProposer(next http.Handler) http.Handler {
 func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 	return rt.mustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRAdmin(r) {
-			rt.statusPage(w, r, 401, "Trebuie să fii admin", true)
+			rt.statusPage(w, r, 401, "Trebuie să fii admin")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -146,7 +146,7 @@ func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if util.IsRAuthed(r) {
-			rt.statusPage(w, r, 401, "Trebuie să fii delogat", false)
+			rt.statusPage(w, r, 401, "Trebuie să fii delogat")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -156,7 +156,7 @@ func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 func (rt *Web) mustBeProblemEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !util.IsRProblemEditor(r) {
-			rt.statusPage(w, r, 401, "Trebuie să fii autorul problemei", true)
+			rt.statusPage(w, r, 401, "Trebuie să fii autorul problemei")
 			return
 		}
 		next.ServeHTTP(w, r)

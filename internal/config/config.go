@@ -2,12 +2,12 @@ package config
 
 import (
 	"errors"
-	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
 	"github.com/davecgh/go-spew/spew"
+	"go.uber.org/zap"
 )
 
 var (
@@ -103,16 +103,16 @@ func Load() error {
 	}
 	md, err := toml.DecodeFile(configPath, &c)
 	if len(md.Undecoded()) > 0 {
-		log.Println("NOTE: There were a few undecoded keys")
+		zap.S().Warn("NOTE: There were a few undecoded keys")
 		spew.Dump(md.Undecoded())
 	}
 	if err == nil {
 		if c.Common.DefaultLang == "" {
-			log.Println("No default language set, defaulting to English")
+			zap.S().Warn("No default language set, defaulting to English")
 			c.Common.DefaultLang = "en"
 		}
 		if !(c.Common.DefaultLang == "en" || c.Common.DefaultLang == "ro") {
-			log.Fatalf("Invalid language %q\n", c.Common.DefaultLang)
+			zap.S().Warn("Invalid language %q\n", c.Common.DefaultLang)
 		}
 		spread()
 	}

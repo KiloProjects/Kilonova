@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/archive/test"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"go.uber.org/zap"
 )
 
 func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
@@ -138,12 +138,12 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.SaveTestInput(test.ID, bytes.NewBufferString(r.FormValue("input"))); err != nil {
-		log.Println("Couldn't create test input", err)
+		zap.S().Warn("Couldn't create test input", err)
 		errorData(w, "Couldn't create test input", 500)
 		return
 	}
 	if err := s.base.SaveTestOutput(test.ID, bytes.NewBufferString(r.FormValue("output"))); err != nil {
-		log.Println("Couldn't create test output", err)
+		zap.S().Warn("Couldn't create test output", err)
 		errorData(w, "Couldn't create test output", 500)
 		return
 	}
@@ -168,7 +168,7 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 	// Process zip file
 	file, fh, err := r.FormFile("testArchive")
 	if err != nil {
-		log.Println(err)
+		zap.S().Warn(err)
 		errorData(w, err.Error(), 400)
 		return
 	}

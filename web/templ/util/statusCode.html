@@ -12,13 +12,5 @@
 		<p> {{getText .Ctx.Language "error.message"}} </p>
 	{{ end }}
 </div>
-{{ if .ShouldLogin }}
-	{{ if not .Ctx.User }}
-		<h1>{{getText .Ctx.Language "error.loginSuggest"}}:</h1>
-		{{ block "login_modal" . }}
-			{{getText .Ctx.Language "error.login"}}
-		{{ end }} 
-	{{ end }}
-{{ end }}
 
 {{ end }}

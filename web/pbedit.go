@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -170,17 +169,17 @@ func (rt *Web) TestIDValidator() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			testID, err := strconv.Atoi(chi.URLParam(r, "tid"))
 			if err != nil {
-				rt.statusPage(w, r, 400, "Test invalid", false)
+				rt.statusPage(w, r, 400, "Test invalid")
 				return
 			}
 			test, err1 := rt.base.Test(r.Context(), util.Problem(r).ID, testID)
 			if err1 != nil {
-				log.Println(err)
-				rt.statusPage(w, r, 500, "", false)
+				zap.S().Warn(err)
+				rt.statusPage(w, r, 500, "")
 				return
 			}
 			if test == nil {
-				rt.statusPage(w, r, 404, "Testul nu există", false)
+				rt.statusPage(w, r, 404, "Testul nu există")
 				return
 			}
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.TestKey, test)))
@@ -193,17 +192,17 @@ func (rt *Web) SubTaskValidator() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			subtaskID, err := strconv.Atoi(chi.URLParam(r, "stid"))
 			if err != nil {
-				rt.statusPage(w, r, http.StatusBadRequest, "ID invalid", false)
+				rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
 				return
 			}
 			subtask, err1 := rt.base.SubTask(r.Context(), util.Problem(r).ID, subtaskID)
 			if err1 != nil {
-				log.Println("ValidateSubTaskID:", err)
-				rt.statusPage(w, r, 500, "", false)
+				zap.S().Warn("SubTaskValidator: ", err)
+				rt.statusPage(w, r, 500, "")
 				return
 			}
 			if subtask == nil {
-				rt.statusPage(w, r, 404, "SubTask-ul nu există", false)
+				rt.statusPage(w, r, 404, "SubTask-ul nu există")
 				return
 			}
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.SubTaskKey, subtask)))

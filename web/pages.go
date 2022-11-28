@@ -10,12 +10,12 @@ import (
 	"html/template"
 	"io"
 	"io/fs"
-	"log"
 	"net/http"
 	"net/url"
 	"path"
 	"reflect"
 	"strconv"
+	"strings"
 	tparse "text/template/parse"
 
 	"github.com/KiloProjects/kilonova"
@@ -224,15 +224,6 @@ type StatusParams struct {
 	ShouldLogin bool
 }
 
-func (rt *Web) Status(w io.Writer, params *StatusParams) (err error) {
-	status := rt.parse(nil, "util/statusCode.html", "modals/login.html")
-	err = status.Execute(w, params)
-	if err != nil {
-		log.Println(err)
-	}
-	return
-}
-
 type MarkdownParams struct {
 	Ctx *ReqContext
 	// User          *kilonova.User
@@ -292,7 +283,19 @@ var funcs = template.FuncMap{
 	"hashedName": fsys.HashName,
 	"version":    func() string { return kilonova.Version },
 	"debug":      func() bool { return config.Common.Debug },
-	"intList":    kilonova.SerializeIntList,
+	"intList": func(ids []int) string {
+		if ids == nil {
+			return ""
+		}
+		var b strings.Builder
+		for i, id := range ids {
+			b.WriteString(strconv.Itoa(id))
+			if i != len(ids)-1 {
+				b.WriteRune(',')
+			}
+		}
+		return b.String()
+	},
 	"shallowPblistIDs": func(lists []*kilonova.ShallowProblemList) []int {
 		rez := []int{}
 		for _, l := range lists {
@@ -354,10 +357,10 @@ func doWalk(filename string, nodes ...tparse.Node) bool {
 	return ok
 }
 
-func parse(optFuncs template.FuncMap, files ...string) executor { //*template.Template {
+func parse(optFuncs template.FuncMap, files ...string) *template.Template {
 	templs, err := fs.Sub(templateDir, "templ")
 	if err != nil {
-		log.Fatal(err)
+		zap.S().Fatal(err)
 	}
 	t := template.New("layout.html").Funcs(funcs)
 	if optFuncs != nil {
@@ -367,11 +370,11 @@ func parse(optFuncs template.FuncMap, files ...string) executor { //*template.Te
 	if true { //config.Common.Debug { // && false {
 		f, err := fs.ReadFile(templs, files[0])
 		if err != nil {
-			log.Fatal(err)
+			zap.S().Fatal(err)
 		}
 		ptrees, err := tparse.Parse(files[0], string(f), "{{", "}}", funcs, optFuncs, builtinTemporaryTemplate())
 		if err != nil {
-			log.Fatal(err)
+			zap.S().Fatal(err)
 		}
 		tree := ptrees["content"]
 		doWalk(files[0], tree.Root)
