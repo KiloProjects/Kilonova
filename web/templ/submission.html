@@ -1,4 +1,4 @@
-{{ define "title" }} {{getText .Ctx.Language "sub"}} {{.Submission.ID}} {{ end }} 
+{{ define "title" }} {{getText "sub"}} {{.Submission.ID}} {{ end }} 
 {{ define "content" }}
 
 <kn-sub-mgr id="{{.Submission.ID}}"/>
@@ -7,11 +7,11 @@
 
 {{ if .Ctx.User }}
     {{ if .Ctx.User.Admin }}
-    <button onclick="deleteSubmission()" class="btn btn-red mb-2">{{getText .Ctx.Language "removeSub"}}</button>
-    <button onclick="reevaluateSubmission()" class="btn btn-blue mb-2">{{getText .Ctx.Language "reevaluate"}}</button>
+    <button onclick="deleteSubmission()" class="btn btn-red mb-2">{{getText "removeSub"}}</button>
+    <button onclick="reevaluateSubmission()" class="btn btn-blue mb-2">{{getText "reevaluate"}}</button>
     {{ end }}
     {{ if submissionEditor .Ctx.User.Brief .Submission }}
-        <button onclick="createPaste()" class="btn btn-blue mb-2">{{getText .Ctx.Language "create_paste"}}</button>
+        <button onclick="createPaste()" class="btn btn-blue mb-2">{{getText "create_paste"}}</button>
     {{ end }}
 {{ end }}
 

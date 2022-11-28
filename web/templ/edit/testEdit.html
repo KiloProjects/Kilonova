@@ -1,4 +1,4 @@
-{{ define "title" }} {{getText .Ctx.Language "title.edit.test_edit" .Test.VisibleID .Problem.ID .Problem.Name}} {{ end }}
+{{ define "title" }} {{getText "title.edit.test_edit" .Test.VisibleID .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
@@ -13,12 +13,12 @@
                 <input id="vID" type="number" class="form-input" value="{{ .Test.VisibleID }}" required />
             </label>
             <label class="block my-2">
-                <span class="mr-2 text-xl">{{getText .Ctx.Language "score"}}: </span>
+                <span class="mr-2 text-xl">{{getText "score"}}: </span>
                 <input id="score" type="number" class="form-input" value="{{ .Test.Score }}" required />
             </label>
-            <button class="btn btn-blue mb-2">{{getText .Ctx.Language "button.update"}}</button>
+            <button class="btn btn-blue mb-2">{{getText "button.update"}}</button>
         </form>
-        <button id="orphan_button" class="btn btn-red block my-2"> {{getText .Ctx.Language "button.delete"}} </button>
+        <button id="orphan_button" class="btn btn-red block my-2"> {{getText "button.delete"}} </button>
     
         <div class="mb-2">
             <a class="btn btn-blue" href="{{.Test.VisibleID}}/input" download>Download input</a>
@@ -35,7 +35,7 @@
                 <h3> Output: </h3>
                 <textarea class="form-textarea" style="width:80%;" rows="15" id="output">{{$test.Out}}</textarea>
             </div>
-            <button class="btn btn-blue mb-2" >{{getText .Ctx.Language "button.update"}}</button>
+            <button class="btn btn-blue mb-2" >{{getText "button.update"}}</button>
         </form>
     </div>
 </div>
@@ -85,7 +85,7 @@ async function updateData(e) {
 async function removeTest(e) {
 	e.preventDefault()
 
-	if(!confirm('{{getText .Ctx.Language "confirmTestDelete"}}')) {
+	if(!confirm('{{getText "confirmTestDelete"}}')) {
 		return
 	}
 	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/orphan", {})

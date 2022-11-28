@@ -9,7 +9,7 @@
 	{{ with .Message }}
 		<h1>{{.}}</h1>
 	{{ else }}
-		<p> {{getText .Ctx.Language "error.message"}} </p>
+		<p> {{getText "error.message"}} </p>
 	{{ end }}
 </div>
 

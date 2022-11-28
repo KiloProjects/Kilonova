@@ -1,13 +1,13 @@
-{{ define "title" }} {{getText .Ctx.Language "auth.forgot_pwd"}} {{ end }}
+{{ define "title" }} {{getText "auth.forgot_pwd"}} {{ end }}
 {{ define "content" }}
-<h1 class="mb-2">{{getText .Ctx.Language "auth.forgot_pwd"}}</h1>
+<h1 class="mb-2">{{getText "auth.forgot_pwd"}}</h1>
 
 <form class="segment-container" id="pwd_forgot_form">
     <label class="block mb-2">
-        <span class="form-label">{{getText .Ctx.Language "email"}}</span>
+        <span class="form-label">{{getText "email"}}</span>
 		<input class="form-input w-full" type="email" id="pwd_email" name="email" required/>
     </label>
-    <button type="submit" class="block btn btn-blue">{{getText .Ctx.Language "recover"}}</button>
+    <button type="submit" class="block btn btn-blue">{{getText "recover"}}</button>
 </form>
 
 <script>

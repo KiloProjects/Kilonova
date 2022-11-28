@@ -1,25 +1,24 @@
-{{ define "title" }}{{getText .Ctx.Language "title.edit.subtask_add" .Problem.ID .Problem.Name}}{{ end }}
+{{ define "title" }}{{getText "title.edit.subtask_add" .Problem.ID .Problem.Name}}{{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
-{{ $lang := .Ctx.Language }}
 
 <div class="page-holder no-bottom-border">
     {{ template "subtaskSidebar.html" . }}
     <div class="page-content">
         <h2>
-            {{getText .Ctx.Language "header.edit.subtask_add"}}
+            {{getText "header.edit.subtask_add"}}
         </h2>
         <form id="subtask-create">
             {{ with problemTests .Problem }}
                 <div class="block my-2">
                     <label>
-                        <span class="form-label">{{getText $lang "id"}}: </span>
+                        <span class="form-label">{{getText "id"}}: </span>
                         <input class="form-input" id="subtask-id" type="number" min="0">
                     </label>
                 </div>
                 <div class="block my-2">
                     <label>
-                        <span class="form-label">{{getText $lang "score"}}: </span>
+                        <span class="form-label">{{getText "score"}}: </span>
                         <input class="form-input" id="subtask-score" type="number" min="0" max="100">
                     </label>
                 </div>
@@ -29,7 +28,7 @@
                             <input class="form-checkbox" type="checkbox" id="selectAllBox" />
                         </th>
                         <th scope="col" class="w-1/2 text-center px-4 py-2">
-                            {{getText $lang "testID"}}	
+                            {{getText "testID"}}	
                         </th>
                     </thead>
                     <tbody>
@@ -45,9 +44,9 @@
                     {{ end }}
                     </tbody>
                 </table>
-                <button class="btn btn-blue block my-2" class="submit">{{getText $lang "create"}}</button>
+                <button class="btn btn-blue block my-2" class="submit">{{getText "create"}}</button>
             {{ else }}
-                <h3> {{getText .Ctx.Language "noTestsError"}}</h3>
+                <h3> {{getText "noTestsError"}}</h3>
             {{ end }}
         </form>
     </div>

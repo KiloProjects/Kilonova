@@ -1,7 +1,7 @@
-{{ define "title" }} {{getText .Ctx.Language "emailConfirm"}} {{ end }}
+{{ define "title" }} {{getText "emailConfirm"}} {{ end }}
 {{ define "content" }}
 
-<h1>{{getText .Ctx.Language "confirmedEmail" .ContentUser.Name}}</h1>
-<h3>{{getText .Ctx.Language "closeTab"}}</h3>
+<h1>{{getText "confirmedEmail" .ContentUser.Name}}</h1>
+<h3>{{getText "closeTab"}}</h3>
 
 {{ end }}

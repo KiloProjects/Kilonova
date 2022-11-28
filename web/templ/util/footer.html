@@ -3,16 +3,16 @@
 	<div class="c-container min-h-0 mx-auto">
 		<div class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mb-2 justify-between">
 			<div class="h-auto mb-2">
-				<div class="text-lg">{{getText .Ctx.Language "usefulInfo"}}</div>
+				<div class="text-lg">{{getText "usefulInfo"}}</div>
 				<ul>
-					<li><a class="black-anchor" href="/">{{getText .Ctx.Language "frontPage"}}</a></li>
-					<li><a class="black-anchor" href="/problems">{{getText .Ctx.Language "problem.list"}}</a></li>
-					<li><a class="black-anchor" href="/submissions">{{getText .Ctx.Language "submission.list"}}</a></li>
+					<li><a class="black-anchor" href="/">{{getText "frontPage"}}</a></li>
+					<li><a class="black-anchor" href="/problems">{{getText "problem.list"}}</a></li>
+					<li><a class="black-anchor" href="/submissions">{{getText "submission.list"}}</a></li>
 				</ul>
 			</div>
 			
 			<div class="h-auto mb-2">
-				<div class="text-lg">{{getText .Ctx.Language "otherInfo"}}</div>
+				<div class="text-lg">{{getText "otherInfo"}}</div>
 				<ul>
 					<li><a class="black-anchor" href="https://kilonova.ro/docs/CHANGELOG"><i class="fas fa-fw fa-code-branch"></i> Kilonova {{version}}</a></li>
 					{{if debug}}<li><span class="black-anchor"><i class="text-red-600 fas fa-fw fa-exclamation-triangle"></i> Debug Mode active</span></li>{{end}}

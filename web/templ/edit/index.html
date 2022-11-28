@@ -1,4 +1,4 @@
-{{ define "title" }} {{getText .Ctx.Language "title.edit.index" .Problem.ID .Problem.Name}} {{end}}
+{{ define "title" }} {{getText "title.edit.index" .Problem.ID .Problem.Name}} {{end}}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
@@ -6,29 +6,29 @@
 	<form @submit="updateProblem">
 		<div class="block my-2">
 			<label>
-				<span class="form-label">{{getText .Ctx.Language "title"}}:</span>
+				<span class="form-label">{{getText "title"}}:</span>
 				<input class="form-input" type="text" v-model="problem.name" />
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">{{getText .Ctx.Language "author"}}:</span>
+				<span class="form-label">{{getText "author"}}:</span>
 				<input class="form-input" type="text" size="50" v-model="problem.author_credits" />
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">{{getText .Ctx.Language "source"}}:</span>
+				<span class="form-label">{{getText "source"}}:</span>
 				<input class="form-input" type="text" size="50" v-model="problem.source_credits" />
 			</label>
 		</div>
 		<!--
 		<div class="block my-2">
 			<label>
-				<span class="form-label">{{getText .Ctx.Language "pbType"}}:</span>
+				<span class="form-label">{{getText "pbType"}}:</span>
 				<select class="form-select" v-model="problem.type">
-					<option value="classic">{{getText .Ctx.Language "classic"}}</option>
-					<option value="custom_checker">{{getText .Ctx.Language "checker"}}</option>
+					<option value="classic">{{getText "classic"}}</option>
+					<option value="custom_checker">{{getText "checker"}}</option>
 				</select>
 			</label>
 		</div>
@@ -36,40 +36,40 @@
 		<div class="block my-2">
 			<label>
 				<input class="form-checkbox" type="checkbox" v-model="problem.console_input">
-				<span class="form-label ml-2">{{getText .Ctx.Language "consoleInput"}}</span>
+				<span class="form-label ml-2">{{getText "consoleInput"}}</span>
 			</label>
 		</div>
 		<div class="block my-2" v-if="!problem.console_input">
 			<label>
-				<span class="mr-2 text-xl">{{getText .Ctx.Language "testName"}}:</span>
+				<span class="mr-2 text-xl">{{getText "testName"}}:</span>
 				<input class="form-input" type="text" v-model="problem.test_name" />
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">{{getText .Ctx.Language "memoryLimit"}}:</span>
+				<span class="form-label">{{getText "memoryLimit"}}:</span>
 				<input type="number" class="form-input" id="memoryTotal" placeholder="Limită de memorie (total)" min="0" step="0.1" max="512" :value="problem.memory_limit / 1024" @input="event => problem.memory_limit = event.target.value * 1024">
 				<span class="ml-1 text-xl">MB</span>
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">{{getText .Ctx.Language "timeLimit"}}:</span>
+				<span class="form-label">{{getText "timeLimit"}}:</span>
 				<input type="number" class="form-input" id="timeLimit" placeholder="Limită de timp..." min="0" step="0.01" v-model="problem.time_limit">
-				<span class="ml-1 text-xl">{{getText .Ctx.Language "seconds"}}</span>
+				<span class="ml-1 text-xl">{{getText "seconds"}}</span>
 			</label>
 		</div>
 		<div class="block my-2">
 			<label>
-				<span class="form-label">{{getText .Ctx.Language "defaultPoints"}}:</span>
+				<span class="form-label">{{getText "defaultPoints"}}:</span>
 				<input class="form-input" type="number" min="0" max="100" step="1" pattern="\d*" v-model="problem.default_points" />
 			</label>
 		</div>
-		<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "updateProblem"}}</button>
+		<button type="submit" class="btn btn-blue">{{getText "updateProblem"}}</button>
 	</form>
 	<div class="block my-2">
 		<form class="inline" @submit="deleteProblem">
-			<button class="btn btn-red mr-2">{{getText .Ctx.Language "deleteProblem"}}</button>
+			<button class="btn btn-red mr-2">{{getText "deleteProblem"}}</button>
 		</form>
 	</div>
 </div>

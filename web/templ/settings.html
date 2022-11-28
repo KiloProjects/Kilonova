@@ -1,51 +1,51 @@
-{{ define "title" }}{{getText .Ctx.Language "settings"}}{{ end }}
+{{ define "title" }}{{getText "settings"}}{{ end }}
 {{ define "content" }}
 
 {{ $user := .Ctx.User }}
 
-<h1> {{getText .Ctx.Language "settingsHeader"}} </h1>
+<h1> {{getText "settingsHeader"}} </h1>
 <div class="segment-container">
-	<h2> {{getText .Ctx.Language "updateBio"}} </h2>
+	<h2> {{getText "updateBio"}} </h2>
 	<form id="bio_form">
 		<textarea id="newBio" class="form-textarea w-full mb-2" autocapitalize="sentences" autocomplete="off" maxlength="120" placeholder="Bio...">{{$user.Bio}}</textarea>
-		<button class="btn btn-blue" onclick="updateBio()">{{getText .Ctx.Language "button.update"}}</button>
+		<button class="btn btn-blue" onclick="updateBio()">{{getText "button.update"}}</button>
 	</form>
 </div>
 
 <div class="segment-container">
-	<h2> {{getText .Ctx.Language "updateLang"}} </h2>
+	<h2> {{getText "updateLang"}} </h2>
 	<form id="lang_form">
 		<select id="langSelect" class="form-select block my-2">
 			<option value="ro" {{if eq $user.PreferredLanguage "ro"}}selected{{end}}>🇷🇴 Română</option>
 			<option value="en" {{if eq $user.PreferredLanguage "en"}}selected{{end}}>🇬🇧 English</option>
 		</select>
-		<button class="btn btn-blue" type="submit">{{getText .Ctx.Language "button.update"}}</textarea>
+		<button class="btn btn-blue" type="submit">{{getText "button.update"}}</textarea>
 	</form>
 </div>
 
 <form class="segment-container" id="pwd_change_form">
-	<h2> {{getText .Ctx.Language "updatePwd"}} </h2>
+	<h2> {{getText "updatePwd"}} </h2>
 	<label class="block mb-2">
-		<span class="form-label">{{getText .Ctx.Language "newPwd"}}: </span>
+		<span class="form-label">{{getText "newPwd"}}: </span>
 		<input class="form-input" type="password" id="pwd_change_pwd" autocomplete="off">
 	</label>
 	<label class="block mb-2">
-		<span class="form-label">{{getText .Ctx.Language "newPwdConfirm"}}: </span>
+		<span class="form-label">{{getText "newPwdConfirm"}}: </span>
 		<input class="form-input" type="password" id="pwd_change_pwd1" autocomplete="off">
 	</label>
-	<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "button.update"}}</button>
+	<button type="submit" class="btn btn-blue">{{getText "button.update"}}</button>
 </form>
 <form class="segment-container" id="email_change_form">
-	<h2> {{getText .Ctx.Language "updateEmail"}} </h2>
+	<h2> {{getText "updateEmail"}} </h2>
 	<label class="block mb-2">
-		<span class="form-label">{{getText .Ctx.Language "password"}}: </span>
+		<span class="form-label">{{getText "password"}}: </span>
 		<input class="form-input" type="password" id="em_change_pwd">
 	</label>
 	<label class="block mb-2">
-		<span class="form-label">{{getText .Ctx.Language "newEmail"}}: </span>
+		<span class="form-label">{{getText "newEmail"}}: </span>
 		<input class="form-input" type="email" id="em_change_email" autocomplete="off">
 	</label>
-	<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "button.update"}}</button>
+	<button type="submit" class="btn btn-blue">{{getText "button.update"}}</button>
 </form>
 
 <script>

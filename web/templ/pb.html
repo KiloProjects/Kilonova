@@ -1,10 +1,10 @@
-{{ define "title" }} {{getText .Ctx.Language "problem" .Problem.ID .Problem.Name}} {{ end }}
+{{ define "title" }} {{getText "problem" .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 
 <!--
-<h1 class="mt-4">{{getText .Ctx.Language "problemSingle"}} <code>{{.Problem.Name}}</code>
+<h1 class="mt-4">{{getText "problemSingle"}} <code>{{.Problem.Name}}</code>
 {{- if .ProblemEditor -}}
-	<a href="/problems/{{- .Problem.ID -}}/edit"> {{getText .Ctx.Language "edit"}}</a>	
+	<a href="/problems/{{- .Problem.ID -}}/edit"> {{getText "edit"}}</a>	
 {{- end -}}
 </h1>
 <hr/>
@@ -14,15 +14,15 @@
 {{ $ctx := .Ctx }}
 
 <div class="mb-12">
-	<h1 class="mb-2">{{getText .Ctx.Language "problemSingle"}}</h1>
+	<h1 class="mb-2">{{getText "problemSingle"}}</h1>
 	<div class="page-holder">
 		<div class="page-content reset-list">
 			<div class="w-full mb-6 text-center">
 				<h1>{{.Problem.Name}}</h1>
-				<h5>{{getText .Ctx.Language "timeLimit"}}: {{.Problem.TimeLimit}}s</h5>
-				<h5>{{getText .Ctx.Language "memoryLimit"}}: {{KBtoMB .Problem.MemoryLimit}}MB</h5>
-				<h5>{{getText .Ctx.Language "input"}}: {{if .Problem.ConsoleInput}}stdin{{else}}{{.Problem.TestName}}.in{{end}}</h5>
-				<h5>{{getText .Ctx.Language "output"}}: {{if .Problem.ConsoleInput}}stdout{{else}}{{.Problem.TestName}}.out{{end}}</h5>
+				<h5>{{getText "timeLimit"}}: {{.Problem.TimeLimit}}s</h5>
+				<h5>{{getText "memoryLimit"}}: {{KBtoMB .Problem.MemoryLimit}}MB</h5>
+				<h5>{{getText "input"}}: {{if .Problem.ConsoleInput}}stdin{{else}}{{.Problem.TestName}}.in{{end}}</h5>
+				<h5>{{getText "output"}}: {{if .Problem.ConsoleInput}}stdout{{else}}{{.Problem.TestName}}.out{{end}}</h5>
 			</div>
 
 			{{if ispdflink .Problem.Description}}
@@ -39,16 +39,16 @@
 		<div class="page-sidebar">
 			<div class="page-sidebar-box font-semibold">
 				<h2 class="font-normal">
-					{{getText .Ctx.Language "generalInfo"}}
+					{{getText "generalInfo"}}
 					{{- if .ProblemEditor -}}
-						<a href="/problems/{{- .Problem.ID -}}/edit"> {{getText .Ctx.Language "edit"}}</a>	
+						<a href="/problems/{{- .Problem.ID -}}/edit"> {{getText "edit"}}</a>	
 					{{- end -}}
 				</h2>
                 <div class="px-2">
-                    <p>{{getText .Ctx.Language "id"}}: {{.Problem.ID}}</p>
+                    <p>{{getText "id"}}: {{.Problem.ID}}</p>
                     {{ if (eq (len .Problem.Editors) 1) }}
                         <p>
-                            {{getText .Ctx.Language "editor"}}: 
+                            {{getText "editor"}}: 
                             {{ range .Problem.Editors }}
                             {{ with user . }}
                                 <a href="/profile/{{.Name}}">{{.Name}}</a>
@@ -57,7 +57,7 @@
                         </p>
                     {{ else }}
                         <details class="reset-list" open>
-                            <summary>{{getText .Ctx.Language "editors"}}</summary>
+                            <summary>{{getText "editors"}}</summary>
                             <ul>
                                 {{ range .Problem.Editors }}
                                     {{ with user .}}
@@ -70,7 +70,7 @@
                     {{ if .ProblemEditor }}
                     {{ with .Problem.Viewers }}
                         <details class="reset-list">
-                            <summary>{{getText $ctx.Language "viewers"}}</summary>
+                            <summary>{{getText "viewers"}}</summary>
                             <ul>
                                 {{ range . }}
                                     {{ with user .}}
@@ -80,24 +80,24 @@
                             </ul>
                         </details>
                     {{ end }}
-                    <p>{{getText .Ctx.Language "visibility"}}: 
+                    <p>{{getText "visibility"}}: 
                     {{if .Problem.Visible}}
-                        <span class="rounded-md px-2 py-1 bg-green-700 text-white text-sm">{{getText .Ctx.Language "published"}}</span>
+                        <span class="rounded-md px-2 py-1 bg-green-700 text-white text-sm">{{getText "published"}}</span>
                     {{else}}
-                        <span class="rounded-md px-2 py-1 bg-red-700 text-white text-sm">{{getText .Ctx.Language "unpublished"}}</span>
+                        <span class="rounded-md px-2 py-1 bg-red-700 text-white text-sm">{{getText "unpublished"}}</span>
                     {{end}}
                     </p>
                     {{end}}
                     {{- if .Problem.AuthorCredits -}}
-                        <p>{{getText .Ctx.Language "author"}}: {{.Problem.AuthorCredits}}</p>
+                        <p>{{getText "author"}}: {{.Problem.AuthorCredits}}</p>
                     {{- end -}}
                     {{- if .Problem.SourceCredits -}}
-                        <p>{{getText .Ctx.Language "source"}}: {{.Problem.SourceCredits}}</p>
+                        <p>{{getText "source"}}: {{.Problem.SourceCredits}}</p>
                     {{- end -}}
                     {{- if gt .Problem.DefaultPoints 0 -}}
-                        <p>{{getText .Ctx.Language "defaultPoints"}}: {{.Problem.DefaultPoints}}p</p>
+                        <p>{{getText "defaultPoints"}}: {{.Problem.DefaultPoints}}p</p>
                     {{- end -}}
-                    <p><a href="/submissions/?problem_id={{.Problem.ID}}">{{getText .Ctx.Language "submissions"}}</a></p>
+                    <p><a href="/submissions/?problem_id={{.Problem.ID}}">{{getText "submissions"}}</a></p>
                 </div>
 			</div>
 			{{ if .Ctx.User }}
@@ -109,7 +109,7 @@
 			{{ with .Attachments }}
 				<div class="page-sidebar-divider"></div>
 				<div class="page-sidebar-box"> <!-- Attachments -->
-                    <h2>{{getText $ctx.Language "attachments"}}</h2>
+                    <h2>{{getText "attachments"}}</h2>
 					<div class="px-2">
                         <div class="list-group list-group-mini">
                             {{ range . }}
@@ -173,9 +173,9 @@ function makeSubWaiter(id) {
 
 	{{ if .Ctx.User }}
 
-	<h1 class="mt-4">{{getText .Ctx.Language "uploadSub"}}</h1>
+	<h1 class="mt-4">{{getText "uploadSub"}}</h1>
 		<label class="block mb-2">
-			<span class="form-label">{{getText .Ctx.Language "language"}}:</span>
+			<span class="form-label">{{getText "language"}}:</span>
 			<select id="sub_language" class="form-select">
 				{{ range $name, $lang := .Languages }}
 					{{ if not $lang.Disabled }}
@@ -186,7 +186,7 @@ function makeSubWaiter(id) {
 		</label>
 
 		<textarea id="SubArea" style="display: none;"></textarea>
-		<button class="btn btn-blue mt-2" onclick="sendSub()">{{getText .Ctx.Language "send"}}</button>
+		<button class="btn btn-blue mt-2" onclick="sendSub()">{{getText "send"}}</button>
 		<script>
 var cm = CodeMirror.fromTextArea(document.getElementById("SubArea"), {
 	mode: bundled.languages["cpp14"],
@@ -218,7 +218,7 @@ const sendSub = bundled.debounce(async () => {
 		</script>
 	{{ else }}
 
-	<h2 class="mt-3 mb-5">{{getText .Ctx.Language "submitLogin"}}</h2>
+	<h2 class="mt-3 mb-5">{{getText "submitLogin"}}</h2>
 
 	{{ end }}
 

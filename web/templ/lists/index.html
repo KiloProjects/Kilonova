@@ -1,4 +1,4 @@
-{{ define "title" }} {{getText .Ctx.Language "lists"}} {{ end }}
+{{ define "title" }} {{getText "lists"}} {{ end }}
 {{ define "content" }}
 
 {{ $root := . }}
@@ -7,7 +7,7 @@
 
 {{ if $user }}
 {{ if $user.Proposer }}
-<a class="mb-2" href="/problem_lists/create">{{getText $root.Ctx.Language "create"}}</a>
+<a class="mb-2" href="/problem_lists/create">{{getText "create"}}</a>
 {{ end }}
 {{ end }}
 
@@ -18,16 +18,16 @@
 {{ with (unassociatedProblems $user) }}
     <details class="list-group-head">
         <summary class="pb-1 mt-1">
-            <span>{{getText $ctx.Language "the_rest"}}</span>
+            <span>{{getText "the_rest"}}</span>
             {{if $user}}
                 <span class="float-right badge">
-                    {{ getText $ctx.Language "num_solved" (numSolvedPbs $user .) (len .) }}
+                    {{ getText "num_solved" (numSolvedPbs $user .) (len .) }}
                 </span>
             {{end}}
         </summary>
         {{ with . }}
             <div class="mt-2">
-                {{ template "pb_list_group" (genProblemsParams $user $root.Ctx.Language . true) }}
+                {{ template "pb_list_group" (genProblemsParams $user . true) }}
             </div>
         {{ end }}
     </details>

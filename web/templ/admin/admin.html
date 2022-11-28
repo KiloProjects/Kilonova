@@ -1,34 +1,34 @@
-{{ define "title" }} {{getText .Ctx.Language "panel.admin"}} {{ end }}
+{{ define "title" }} {{getText "panel.admin"}} {{ end }}
 {{ define "content" }}
 
 <h1>
-	{{getText .Ctx.Language "panel.admin"}}
+	{{getText "panel.admin"}}
 </h1>
-<button class="btn-blue font-bold py-2 px-4 rounded-lg mt-3 mb-5" onclick="resetSubs()">{{getText .Ctx.Language "resetSubs"}}</button>
+<button class="btn-blue font-bold py-2 px-4 rounded-lg mt-3 mb-5" onclick="resetSubs()">{{getText "resetSubs"}}</button>
 
 <div class="segment-container">
-	<h2>{{getText .Ctx.Language "changeRoles"}}:</h2>
+	<h2>{{getText "changeRoles"}}:</h2>
 	<label class="block">
-		<span class="form-label">{{getText .Ctx.Language "username"}}:</span>
+		<span class="form-label">{{getText "username"}}:</span>
 		<input class="form-input my-1 block" type="text" id="userToChange" placeholder="AlexVasiluta">
 	</label>
 	<div class="mt-2 mb-2 inline-flex">
-		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-l" onclick="setFormAdmin(true)">{{getText .Ctx.Language "makeAdmin"}}</button>
-		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-r" onclick="setFormProposer(true)">{{getText .Ctx.Language "makeProposer"}}</button>
+		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-l" onclick="setFormAdmin(true)">{{getText "makeAdmin"}}</button>
+		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-r" onclick="setFormProposer(true)">{{getText "makeProposer"}}</button>
 	</div>
 </div>
 
 <div class="segment-container">
-	<h3 class="text-2xl">{{getText .Ctx.Language "admins"}}:</h3>
+	<h3 class="text-2xl">{{getText "admins"}}:</h3>
 	<div id="admin-group" class="block list-group list-group-rounded mb-2">
 		<div class="list-group-head">
-            {{getText .Ctx.Language "loading"}}
+            {{getText "loading"}}
         </div>
 	</div>
-	<h3 class="text-2xl">{{getText .Ctx.Language "proposers"}}:</h3>
+	<h3 class="text-2xl">{{getText "proposers"}}:</h3>
 	<div id="proposer-group" class="block list-group list-group-rounded mb-2">
 		<div class="list-group-head">
-            {{getText .Ctx.Language "loading"}}
+            {{getText "loading"}}
         </div>
 	</div>
 </div>

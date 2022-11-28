@@ -1,19 +1,19 @@
-{{define "title"}} {{getText .Ctx.Language "reset_pwd"}} {{end}}
+{{define "title"}} {{getText "reset_pwd"}} {{end}}
 {{ define "content" }}
 
 <form class="segment-container" id="pwd_reset_form" autocomplete="off">
-    <h1>{{getText .Ctx.Language "resetTitle" .User.Name}}</h1>
+    <h1>{{getText "resetTitle" .User.Name}}</h1>
     <input type="hidden" id="pwd_reset_reqid" name="req_id" value="{{.RequestID}}" />
     <input type="email" class="hidden" value="{{.User.Email}}"/>
     <label class="block mb-2">
-        <span class="form-label">{{getText .Ctx.Language "newPwd"}}</span>
+        <span class="form-label">{{getText "newPwd"}}</span>
 		<input class="form-input w-full" type="password" id="pwd_reset_pwd" autocomplete="off" name="password" required/>
     </label>
     <label class="block mb-2">
-        <span class="form-label">{{getText .Ctx.Language "newPwdConfirm"}}</span>
+        <span class="form-label">{{getText "newPwdConfirm"}}</span>
 		<input class="form-input w-full" type="password" id="pwd_reset_pwd1" autocomplete="off" name="password" required/>
     </label>
-    <button type="submit" class="block btn btn-blue">{{getText .Ctx.Language "reset"}}</button>
+    <button type="submit" class="block btn btn-blue">{{getText "reset"}}</button>
 </form>
 
 <script>

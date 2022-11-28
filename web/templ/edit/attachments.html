@@ -1,9 +1,8 @@
-{{ define "title" }} {{getText .Ctx.Language "title.edit.attachments" .Problem.ID .Problem.Name}} {{ end }}
+{{ define "title" }} {{getText "title.edit.attachments" .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
 {{ $pbid := .Problem.ID }}
-{{ $lang := .Ctx.Language }}
 
 <div class="segment-container">
 	{{ with .Attachments }}
@@ -13,16 +12,16 @@
 					<input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
 				</th>
 				<th scope="col" class="w-1/2">
-					{{getText $lang "name"}}
+					{{getText "name"}}
 				</th>
 				<th scope="col" class="w-3/8">
-					{{getText $lang "size"}}	
+					{{getText "size"}}	
 				</th>
 				<th scope="col" class="w-1/8">
-					{{getText $lang "visible"}}
+					{{getText "visible"}}
 				</th>
 				<th scope="col" class="w-1/8">
-					{{getText $lang "private"}}
+					{{getText "private"}}
 				</th>
 			</thead>
 			<tbody id="att-body">
@@ -47,10 +46,10 @@
 			{{ end }}
 			</tbody>
 		</table>
-		<button class="btn btn-red mr-2" onclick="deleteAttachments()">{{getText $lang "deleteAttachments"}}</button>
-		<button class="btn btn-blue mr-2" onclick="updateAttachments()">{{getText $lang "updateAttachments"}}</button>
+		<button class="btn btn-red mr-2" onclick="deleteAttachments()">{{getText "deleteAttachments"}}</button>
+		<button class="btn btn-blue mr-2" onclick="updateAttachments()">{{getText "updateAttachments"}}</button>
 	{{ else }}
-		{{getText .Ctx.Language "noAttachments"}}	
+		{{getText "noAttachments"}}	
 	{{ end }}
 </div>
 
@@ -110,18 +109,18 @@ prettifyAttachments()
 
 <form id="attCreate" class="segment-container">
 	<label class="block my-2">
-		<span class="mr-2 text-xl">{{getText .Ctx.Language "file"}}: </span>
+		<span class="mr-2 text-xl">{{getText "file"}}: </span>
 		<input class="form-file" id="attFile" type="file" required/>
 	</label>
 	<label class="block my-2">
 		<input class="form-checkbox" id="attPrivate" type="checkbox"/>
-		<span class="ml-2 text-xl">{{getText .Ctx.Language "private"}}</span>
+		<span class="ml-2 text-xl">{{getText "private"}}</span>
 	</label>
 	<label id="visibleLabel" class="block my-2">
 		<input class="form-checkbox" id="attVisible" type="checkbox"/>
-		<span class="ml-2 text-xl">{{getText .Ctx.Language "visible"}}</span>
+		<span class="ml-2 text-xl">{{getText "visible"}}</span>
 	</label>
-	<button type="submit" class="btn btn-blue">{{getText .Ctx.Language "button.upload"}}</button>
+	<button type="submit" class="btn btn-blue">{{getText "button.upload"}}</button>
 </div>
 
 <script>
@@ -140,7 +139,7 @@ async function createAttachment(e) {
 	e.preventDefault()
 	let files = document.getElementById("attFile").files;
 	if(files === null || files.length == 0) {
-		bundled.createToast({status: "error", title: '{{getText .Ctx.Language "noFiles"}}'});
+		bundled.createToast({status: "error", title: '{{getText "noFiles"}}'});
 		return
 	}
 	let form = new FormData();

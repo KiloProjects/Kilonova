@@ -1,17 +1,17 @@
 <div id="problem_create" class="segment-container">
-<h2>{{getText .Ctx.Language "createPb"}}</h2>
+<h2>{{getText "createPb"}}</h2>
 <form id="problem_create_form">
 	<label class="block mb-2">
-		<span class="form-label">{{getText .Ctx.Language "problemName"}}</span>
+		<span class="form-label">{{getText "problemName"}}</span>
 		<input type="text" class="form-input w-full" placeholder="Nume..." id="pbname" name="pbname" required>
 	</label>
 	<div class="block mb-3">
 		<label class="inline-flex items-center text-lg">
 			<input class="form-checkbox" type="checkbox" id="cInputSwitch">
-			<span class="ml-2">{{getText .Ctx.Language "consoleInput"}}</span>
+			<span class="ml-2">{{getText "consoleInput"}}</span>
 		</label>
 	</div>
-	<button class="btn btn-blue">{{getText .Ctx.Language "button.create"}}</button>
+	<button class="btn btn-blue">{{getText "button.create"}}</button>
 </form>
 
 <script>

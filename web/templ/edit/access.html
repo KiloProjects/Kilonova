@@ -1,34 +1,33 @@
-{{ define "title" }} {{getText .Ctx.Language "title.edit.access_control" .Problem.ID .Problem.Name}} {{ end }}
+{{ define "title" }} {{getText "title.edit.access_control" .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
 {{ $pbid := .Problem.ID }}
-{{ $lang := .Ctx.Language }}
 
 <div class="segment-container">
-    <h2>{{getText .Ctx.Language "editors"}}:</h2>
+    <h2>{{getText "editors"}}:</h2>
     <div id="editors_list" class="list-group list-group-rounded mb-2">
         <div class="list-group-head">
-            {{getText .Ctx.Language "loading"}}
+            {{getText "loading"}}
         </div>
     </div>
-    <h2>{{getText .Ctx.Language "viewers"}}:</h2>
+    <h2>{{getText "viewers"}}:</h2>
     <div id="viewers_list" class="list-group list-group-rounded mb-2">
         <div class="list-group-head">
-            {{getText .Ctx.Language "loading"}}
+            {{getText "loading"}}
         </div>
     </div>
 </div>
 
 <div class="segment-container">
-    <h2>{{getText .Ctx.Language "add_user"}}</h2>
+    <h2>{{getText "add_user"}}</h2>
 	<label class="block">
-		<span class="form-label">{{getText .Ctx.Language "username"}}:</span>
+		<span class="form-label">{{getText "username"}}:</span>
 		<input class="form-input my-1 block" type="text" id="userToAdd" placeholder="AlexVasiluta">
 	</label>
     <div class="mt-2 mb-2 inline-flex">
-		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-l" onclick="addEditor()">{{getText .Ctx.Language "add_editor"}}</button>
-		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-r" onclick="addViewer()">{{getText .Ctx.Language "add_viewer"}}</button>
+		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-l" onclick="addEditor()">{{getText "add_editor"}}</button>
+		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-r" onclick="addViewer()">{{getText "add_viewer"}}</button>
 	</div>
 </div>
 
@@ -95,17 +94,17 @@
 </script>
 
 <form class="segment-container" id="visibility_form">
-    <h2>{{getText .Ctx.Language "toggle_visibility"}}</h2>
+    <h2>{{getText "toggle_visibility"}}</h2>
     {{ if not (.Ctx.User.Admin) }}
-        <h3>{{getText .Ctx.Language "visibility_admin"}}</h3>
+        <h3>{{getText "visibility_admin"}}</h3>
     {{ end }}
     <div class="block my-2">
         <label class="inline-flex items-center text-lg">
             <input class="form-checkbox" type="checkbox" id="visibility_check" {{if not (.Ctx.User.Admin)}}disabled{{end}} {{if .Problem.Visible}}checked{{end}}>
-            <span class="ml-2">{{getText .Ctx.Language "visible"}}</span>
+            <span class="ml-2">{{getText "visible"}}</span>
         </label>
     </div>
-    <button type="submit" class="btn btn-blue" {{if not .Ctx.User.Admin}} disabled {{ end }}>{{getText .Ctx.Language "button.update"}}</button>
+    <button type="submit" class="btn btn-blue" {{if not .Ctx.User.Admin}} disabled {{ end }}>{{getText "button.update"}}</button>
 </form>
 
 <script>

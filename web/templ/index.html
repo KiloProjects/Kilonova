@@ -2,7 +2,7 @@
 {{ define "content" }}
 <h1>Kilonova {{.Version}}</h1>
 
-<p class="text-gray-600 dark:text-gray-300 text-sm">{{ getText .Ctx.Language "announcement" `<a target="_blank" rel="noopener noreferrer" href="https://discord.gg/Qa6Ytgh">Discord</a>` }} </p>
+<p class="text-gray-600 dark:text-gray-300 text-sm">{{ getText "announcement" `<a target="_blank" rel="noopener noreferrer" href="https://discord.gg/Qa6Ytgh">Discord</a>` }} </p>
 <div class="alert mb-2">
 	{{ renderMarkdown .Description }}
 </div>
@@ -22,16 +22,16 @@
     {{ with (unassociatedProblems $user) }}
         <details class="list-group-head">
             <summary class="pb-1 mt-1">
-                <span>{{getText $ctx.Language "the_rest"}}</span>
+                <span>{{getText "the_rest"}}</span>
                 {{if $user}}
                     <span class="float-right badge">
-                        {{ getText $ctx.Language "num_solved" (numSolvedPbs $user .) (len .) }}
+                        {{ getText "num_solved" (numSolvedPbs $user .) (len .) }}
                     </span>
                 {{end}}
             </summary>
             {{ with . }}
                 <div class="mt-2">
-                    {{ template "pb_list_group" (genProblemsParams $user $root.Ctx.Language . true) }}
+                    {{ template "pb_list_group" (genProblemsParams $user . true) }}
                 </div>
             {{ end }}
         </details>
@@ -40,14 +40,14 @@
 
 {{/* 
     {{ with visibleProblems $user }}
-        <h2 class="text-2xl mb-2"> {{ getText $ctx.Language "problems" }} </h2>
-        {{ template "pb_list_group" (genProblemsParams $user $ctx.Language . true) }}
+        <h2 class="text-2xl mb-2"> {{ getText "problems" }} </h2>
+        {{ template "pb_list_group" (genProblemsParams $user . true) }}
         <div class="mb-6"></div>
     {{ end }} 
 */}}
 
 <div class="mb-4">
-    {{ renderMarkdown (getText $ctx.Language "all_problems_announcement") }}
+    {{ renderMarkdown (getText "all_problems_announcement") }}
 </div>
 
 

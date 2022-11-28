@@ -157,7 +157,6 @@ type IndexParams struct {
 
 type ProblemListingParams struct {
 	User      *kilonova.UserBrief
-	Language  string
 	Problems  []*kilonova.Problem
 	ShowScore bool
 }
@@ -268,10 +267,10 @@ func doWalk(filename string, nodes ...tparse.Node) bool {
 					continue
 				}
 				val, ok := cmd.Args[0].(*tparse.IdentifierNode)
-				if !ok || val.Ident != "getText" || len(cmd.Args) < 3 {
+				if !ok || val.Ident != "getText" || len(cmd.Args) < 2 {
 					continue
 				}
-				key := cmd.Args[2].(*tparse.StringNode).Text
+				key := cmd.Args[1].(*tparse.StringNode).Text
 				if !kilonova.TranslationKeyExists(key) {
 					zap.S().Infof("Template static analysis failed: Unknown translation key %q in file %s", key, filename)
 					ok = false

@@ -1,25 +1,25 @@
-{{ define "title" }} {{getText .Ctx.Language "auth.signup"}} {{ end }}
+{{ define "title" }} {{getText "auth.signup"}} {{ end }}
 {{ define "content" }}
-<h1 class="mb-2">{{getText .Ctx.Language "auth.signup"}}</h1>
+<h1 class="mb-2">{{getText "auth.signup"}}</h1>
 <form class="segment-container" id="signup_form">
 	<label class="block mb-2">
-		<span>{{getText .Ctx.Language "email"}}</span>
+		<span>{{getText "email"}}</span>
 		<input class="form-input w-full" type="email" id="email" name="email" autocomplete="email" required />
 	</label>
 	<label class="block mb-2">
-		<span>{{getText .Ctx.Language "username"}}</span>
+		<span>{{getText "username"}}</span>
 		<input class="form-input w-full" type="text" id="name" name="username" autocomplete="username" required />
 	</label>
 	<label class="block mb-2">
-		<span>{{getText .Ctx.Language "password"}}</span>
+		<span>{{getText "password"}}</span>
 		<input class="form-input w-full" type="password" id="pwd" name="password" autocomplete="new-password" required />
 	</label>
 	<label class="block mb-2">
-		<span>{{getText .Ctx.Language "passwordCheck"}}</span>
+		<span>{{getText "passwordCheck"}}</span>
 		<input class="form-input w-full" type="password" id="pwd_check" name="pwd_check" autocomplete="new-password" required />
 	</label>
-	<button type="submit" class="block btn btn-blue">{{getText .Ctx.Language "auth.signup"}}</button>
-	<p class="text-gray-500 dark:text-gray-300"> {{getText .Ctx.Language "loginReminder"}}</p>
+	<button type="submit" class="block btn btn-blue">{{getText "auth.signup"}}</button>
+	<p class="text-gray-500 dark:text-gray-300"> {{getText "loginReminder"}}</p>
 </form>
 
 <script>
@@ -52,7 +52,7 @@ async function signup(e) {
 	if(password !== pwdVerify) {
 		bundled.createToast({
 			status: "error",
-			title: `{{getText .Ctx.Language "differentPwds"}}`
+			title: `{{getText "differentPwds"}}`
 		})
 		return
 	}

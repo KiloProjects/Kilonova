@@ -1,6 +1,5 @@
 {{ define "pb_list_group" }}
 {{ $user := .User }}
-{{ $lang := .Language }}
 {{ $showScore := .ShowScore }}
 <div class="list-group list-group-mini">
 	{{ range .Problems }}
@@ -10,9 +9,9 @@
 				<div>
 					{{ if (problemEditor $user .) }}
 						{{ if .Visible }}
-							<span class="badge badge-green">{{ getText $lang "published" }}</span>
+							<span class="badge badge-green">{{ getText "published" }}</span>
 						{{ else }}
-							<span class="badge badge-red">{{ getText $lang "unpublished" }}</span>
+							<span class="badge badge-red">{{ getText "unpublished" }}</span>
 						{{ end }}
 					{{ end }}
                     {{ if $showScore }}

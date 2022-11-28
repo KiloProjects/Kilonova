@@ -1,8 +1,8 @@
-{{ define "title" }} {{getText .Ctx.Language "panel.audit_log"}} {{ end }}
+{{ define "title" }} {{getText "panel.audit_log"}} {{ end }}
 {{ define "content" }}
 
 <h1>
-	{{getText .Ctx.Language "panel.audit_log"}}
+	{{getText "panel.audit_log"}}
 </h1>
 
 <div class="segment-container">
@@ -10,16 +10,16 @@
         <thead>
             <tr>
                 <th scope="col" class="w-12 text-center px-4 py-2">
-                    {{getText .Ctx.Language "id"}}
+                    {{getText "id"}}
                 </th>
                 <th scope="col">
-					{{getText .Ctx.Language "author"}}	
+					{{getText "author"}}	
                 </th>
                 <th scope="col">
-					{{getText .Ctx.Language "text"}}	
+					{{getText "text"}}	
                 </th>
                 <th scope="col">
-					{{getText .Ctx.Language "logDate"}}	
+					{{getText "logDate"}}	
                 </th>
             </tr>
         </thead>
@@ -34,9 +34,9 @@
                             <i class="fas fa-user fa-fw"></i> {{.Author.Name}} (#{{.Author.ID}})
                         {{else}}
                             {{if .SystemLog}}
-                                <i class="fas fa-cog fa-fw"></i> {{getText .Ctx.Language "system"}}	
+                                <i class="fas fa-cog fa-fw"></i> {{getText "system"}}	
                             {{else}}
-                                <i class="fas fa-question-square fa-fw"></i> {{getText .Ctx.Language "unknownUser"}}	
+                                <i class="fas fa-question-square fa-fw"></i> {{getText "unknownUser"}}	
                             {{end}}
                         {{end}}
                     </th>

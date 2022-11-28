@@ -1,14 +1,13 @@
-{{ define "title" }}{{getText .Ctx.Language "title.edit.subtask" .Problem.ID .Problem.Name}}{{ end }}
+{{ define "title" }}{{getText "title.edit.subtask" .Problem.ID .Problem.Name}}{{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
-{{ $lang := .Ctx.Language }}
 {{ $root := . }}
 
 <div class="page-holder no-bottom-border">
     {{ template "subtaskSidebar.html" . }}
     <div class="page-content">
-        <h2>{{getText .Ctx.Language "header.edit.subtask"}}</h2>
+        <h2>{{getText "header.edit.subtask"}}</h2>
         {{ with problemSubtasks .Problem }}
             <table class="kn-table my-2" style="table-layout: fixed">
                 <thead>
@@ -16,10 +15,10 @@
                         <input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
                     </th>
                     <th scope="col" class="w-1/4 text-center px-4 py-2">
-                        {{getText $lang "id"}}	
+                        {{getText "id"}}	
                     </th>
                     <th scope="col" class="w-1/2">
-                        {{getText $lang "score"}}
+                        {{getText "score"}}
                     </th>
                 </thead>
                 <tbody>
@@ -42,23 +41,23 @@
                     </tr>
                 </tbody>
             </table>
-            <button class="btn btn-red mr-2" onclick="deleteSubTasks()">{{getText $lang "deleteSubTasks"}}</button>
-            <button class="btn btn-blue" onclick="updateSubTasks()">{{getText $lang "updateSubTasks"}}</button>
+            <button class="btn btn-red mr-2" onclick="deleteSubTasks()">{{getText "deleteSubTasks"}}</button>
+            <button class="btn btn-blue" onclick="updateSubTasks()">{{getText "updateSubTasks"}}</button>
         {{ else }}
-            <h3> {{getText .Ctx.Language "noSubTasks"}} </h3>
+            <h3> {{getText "noSubTasks"}} </h3>
         {{ end }}
         
         <div class="my-4 page-sidebar-divider"></div>
 
-        <h2> {{getText .Ctx.Language "testAssociations"}} </h2>
+        <h2> {{getText "testAssociations"}} </h2>
         {{ with problemTests .Problem }}
             <table class="kn-table my-2" style="table-layout: fixed">
                 <thead>
                     <th scope="col" class="w-1/2 text-center px-4 py-2">
-                        {{getText $lang "id"}}	
+                        {{getText "id"}}	
                     </th>
                     <th scope="col" class="w-1/2">
-                        {{getText $lang "subTasks"}}	
+                        {{getText "subTasks"}}	
                     </th>
                 </thead>
                 <tbody>
@@ -75,7 +74,7 @@
                 </tbody>
             </table>
         {{ else }} 
-            <h3> {{getText .Ctx.Language "noTestsError"}} </h3>
+            <h3> {{getText "noTestsError"}} </h3>
         {{ end }}
     </div>
 </div>

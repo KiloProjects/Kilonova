@@ -1,19 +1,18 @@
 
 {{ $topbar := .Topbar }}
 {{ $id := .Problem.ID}}
-{{ $lang := .Ctx.Language }}
 <div class="page-sidebar lg:order-last">
     <div class="page-sidebar-box reset-list">
         <h2>
-            <a class="p-1 {{if and (eq $topbar.Page "tests") (eq $topbar.PageID -2)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test">{{getText .Ctx.Language "tests"}}</a>
+            <a class="p-1 {{if and (eq $topbar.Page "tests") (eq $topbar.PageID -2)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test">{{getText "tests"}}</a>
         </h2>
         <ul>
             <li class="mb-2">
-                <a class="p-1 {{if (eq $topbar.PageID -1)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test/add">{{getText $lang "createTest"}}</a>
+                <a class="p-1 {{if (eq $topbar.PageID -1)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test/add">{{getText "createTest"}}</a>
             </li>
             {{ range problemTests .Problem }}
                 <li>
-                    <a class="p-1 {{if (eq $topbar.PageID .VisibleID)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test/{{.VisibleID}}">{{getText $lang "nthTest" .VisibleID}}</a>
+                    <a class="p-1 {{if (eq $topbar.PageID .VisibleID)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test/{{.VisibleID}}">{{getText "nthTest" .VisibleID}}</a>
                 </li>
             {{ end }}
         </ul>

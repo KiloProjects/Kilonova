@@ -406,6 +406,19 @@ func (rt *Web) subtestOutput(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, data interface{}) {
+	templ, err := templ.Clone()
+	if err != nil {
+		fmt.Fprintf(w, "Error cloning template, report to admin: %s", err)
+		return
+	}
+
+	// Add request-specific functions
+	templ.Funcs(template.FuncMap{
+		"getText": func(line string, args ...any) template.HTML {
+			return template.HTML(kilonova.GetText(util.Language(r), line, args...))
+		},
+	})
+
 	if err := templ.Execute(w, data); err != nil {
 		fmt.Fprintf(w, "Error executing template, report to admin: %s", err)
 		zap.S().Warnf("Erorr executing template: %q %q %#v", err, templ.Name(), util.UserBrief(r))

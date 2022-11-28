@@ -231,8 +231,8 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"problemVisible": func(user *kilonova.UserBrief, pb *kilonova.Problem) bool {
 			return util.IsProblemVisible(user, pb)
 		},
-		"genProblemsParams": func(user *kilonova.UserBrief, lang string, pbs []*kilonova.Problem, showSolved bool) *ProblemListingParams {
-			return &ProblemListingParams{user, lang, pbs, showSolved}
+		"genProblemsParams": func(user *kilonova.UserBrief, pbs []*kilonova.Problem, showSolved bool) *ProblemListingParams {
+			return &ProblemListingParams{user, pbs, showSolved}
 		},
 		"genPblistParams": func(user *kilonova.UserBrief, ctx *ReqContext, pblist *kilonova.ProblemList, open bool) *PblistParams {
 			return &PblistParams{user, ctx, pblist, open}
@@ -314,8 +314,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		},
 		"httpstatus": http.StatusText,
 		"dump":       spew.Sdump,
-		"getText": func(lang, line string, args ...any) template.HTML {
-			return template.HTML(kilonova.GetText(lang, line, args...))
+
+		"getText": func(key string, vals ...any) string {
+			zap.S().Error("Uninitialized getText")
+			return "FATAL ERR"
 		},
 	}
 	return &Web{debug, funcs, base}

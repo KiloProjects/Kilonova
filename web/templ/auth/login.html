@@ -1,7 +1,7 @@
-{{ define "title" }} {{getText .Ctx.Language "auth.login"}} {{ end }}
+{{ define "title" }} {{getText "auth.login"}} {{ end }}
 {{ define "content" }}
 
-<h1 class="mb-2">{{getText .Ctx.Language "authenticate"}}</h1>
+<h1 class="mb-2">{{getText "authenticate"}}</h1>
 {{ block "login_modal" . }}
 	Uhhh... I don't know how to log you in. Report to an admin
 {{ end }}

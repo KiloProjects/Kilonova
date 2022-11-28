@@ -10,14 +10,14 @@
             {{if gt (len $pbs) 0}}
                 {{if $user}}
                 <span class="float-right badge">
-                    {{ getText $ctx.Language "num_solved" (numSolved $user .List) (len $pbs) }}
+                    {{ getText "num_solved" (numSolved $user .List) (len $pbs) }}
                 </span>
                 {{else}}
                 <span class="float-right badge">
                     {{ if eq 1 (len $pbs)}}
-                        {{ getText $ctx.Language "single_problem" }}
+                        {{ getText "single_problem" }}
                     {{ else }}
-                        {{ getText $ctx.Language "num_problems" (len $pbs) }}
+                        {{ getText "num_problems" (len $pbs) }}
                     {{ end }}
                 </span>
                 {{end}}
@@ -37,7 +37,7 @@
         {{ end }}
         {{ with $pbs }}
             <div class="mt-2">
-                {{ template "pb_list_group" (genProblemsParams $user $ctx.Language . true) }}
+                {{ template "pb_list_group" (genProblemsParams $user . true) }}
             </div>
         {{ end }}
     </details>

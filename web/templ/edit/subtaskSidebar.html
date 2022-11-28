@@ -1,18 +1,17 @@
 {{ $topbar := .Topbar }}
 {{ $id := .Problem.ID}}
-{{ $lang := .Ctx.Language }}
 <div class="page-sidebar lg:order-last">
     <div class="page-sidebar-box reset-list">
         <h2>
-            <a class="p-1 {{if and (eq $topbar.Page "subtasks") (eq $topbar.PageID -2)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks">{{getText .Ctx.Language "subTasks"}}</a>
+            <a class="p-1 {{if and (eq $topbar.Page "subtasks") (eq $topbar.PageID -2)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks">{{getText "subTasks"}}</a>
         </h2>
         <ul>
             <li class="mb-2">
-                <a class="p-1 {{if (eq $topbar.PageID -1)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks/add">{{getText $lang "createSubTask"}}</a>
+                <a class="p-1 {{if (eq $topbar.PageID -1)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks/add">{{getText "createSubTask"}}</a>
             </li>
             {{ range problemSubtasks .Problem }}
                 <li>
-                    <a class="p-1 {{if (eq $topbar.PageID .VisibleID)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks/{{.VisibleID}}">{{getText $lang "nthSubTask" .VisibleID}}</a>
+                    <a class="p-1 {{if (eq $topbar.PageID .VisibleID)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks/{{.VisibleID}}">{{getText "nthSubTask" .VisibleID}}</a>
 			    </li>
             {{ end }}
         </ul>

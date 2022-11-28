@@ -1,19 +1,18 @@
 {{ $id := .Problem.ID }}
 {{ $topbar := .Topbar }}
-{{ $lang := .Ctx.Language }}
 <div class="segment-container">
-	<h1>{{getText .Ctx.Language "title.edit.problem"}} <a href="/problems/{{$id}}">{{.Problem.Name}}</a></h1>
+	<h1>{{getText "title.edit.problem"}} <a href="/problems/{{$id}}">{{.Problem.Name}}</a></h1>
 	<div class="mb-2">
-		<a class="p-1 {{if (eq $topbar.Page "general")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit">{{getText .Ctx.Language "general"}}</a>
+		<a class="p-1 {{if (eq $topbar.Page "general")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit">{{getText "general"}}</a>
 		|
-		<a class="p-1 {{if (eq $topbar.Page "desc")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/desc">{{getText .Ctx.Language "desc"}}</a>
+		<a class="p-1 {{if (eq $topbar.Page "desc")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/desc">{{getText "desc"}}</a>
 		|
-		<a class="p-1 {{if (eq $topbar.Page "access")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/access">{{getText .Ctx.Language "access_control_short"}}</a>
+		<a class="p-1 {{if (eq $topbar.Page "access")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/access">{{getText "access_control_short"}}</a>
         |
-		<a class="p-1 {{if (eq $topbar.Page "attachments")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/attachments">{{getText .Ctx.Language "attachments"}}</a>
+		<a class="p-1 {{if (eq $topbar.Page "attachments")}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/attachments">{{getText "attachments"}}</a>
 		|
-		<a class="p-1 {{if and (eq $topbar.Page "tests") (eq $topbar.PageID -2)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test">{{getText .Ctx.Language "tests"}}</a>
+		<a class="p-1 {{if and (eq $topbar.Page "tests") (eq $topbar.PageID -2)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test">{{getText "tests"}}</a>
 		|
-		<a class="p-1 {{if and (eq $topbar.Page "subtasks") (eq $topbar.PageID -2)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks">{{getText .Ctx.Language "subTasks"}}</a>
+		<a class="p-1 {{if and (eq $topbar.Page "subtasks") (eq $topbar.PageID -2)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks">{{getText "subTasks"}}</a>
 	</div>
 </div>
