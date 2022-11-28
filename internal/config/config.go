@@ -112,7 +112,7 @@ func Load() error {
 			c.Common.DefaultLang = "en"
 		}
 		if !(c.Common.DefaultLang == "en" || c.Common.DefaultLang == "ro") {
-			zap.S().Warn("Invalid language %q\n", c.Common.DefaultLang)
+			zap.S().Warnf("Invalid language %q\n", c.Common.DefaultLang)
 		}
 		spread()
 	}

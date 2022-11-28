@@ -1,48 +1,65 @@
-{{ define "title" }} {{getText .Ctx.Language "tests"}} {{ end }}
+{{ define "title" }} {{getText .Ctx.Language "title.edit.tests" .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
 {{ $lang := .Ctx.Language }}
-<div class="segment-container">
-	<h2>Actualizare teste</h1>
-	{{ with .ProblemTests }}
-		<table class="kn-table my-2" style="table-layout: fixed">
-			<thead>
-				<th scope="col" class="w-1/4">
-					<input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
-				</th>
-				<th scope="col" class="w-1/4 text-center px-4 py-2">
-					ID
-				</th>
-				<th scope="col" class="w-1/2">
-					{{getText $lang "score"}}	
-				</th>
-			</thead>
-			<tbody>
-			{{ range . }} 
-				<tr id="row-test-{{.VisibleID}}" class="kn-table-row">
-					<td class="kn-table-cell">
-						<input class="form-checkbox" type="checkbox" id="pb-test-{{.VisibleID}}" autocomplete="off" />
-					</td>
-					<td class="kn-table-cell">
-						{{.VisibleID}}
-					</td>
-					<td class="kn-table-cell">
-						<input class="form-input" type="number" id="score-test-{{.VisibleID}}" value="{{.Score}}" min="0" max="100" autocomplete="off" />
-					</td>
-				</tr>
-			{{ end }}
-				<tr class="kn-table-simple">
-					<td colspan="2" class="kn-table-cell"></td>
-					<td id="scoreOutput" class="kn-table-cell"></td>
-				</tr>
-			</tbody>
-		</table>
-		<button class="btn btn-red mr-2" onclick="deleteTests()">{{getText $lang "deleteTests"}}</button>
-		<button class="btn btn-blue" onclick="updateTests()">{{getText $lang "updateTestScores"}}</button>
-	{{ else }} 
-		<h3> Nu există niciun test, ar fi bine să creezi unul :) </h3>
-	{{ end }}
+
+<div class="page-holder no-bottom-border">
+    {{ template "testSidebar.html" . }}
+    <div class="page-content">
+        {{ with problemTests .Problem }}
+            <h2>Actualizare teste</h1>
+            <table class="kn-table my-2" style="table-layout: fixed">
+                <thead>
+                    <th scope="col" class="w-1/4">
+                        <input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
+                    </th>
+                    <th scope="col" class="w-1/4 text-center px-4 py-2">
+                        ID
+                    </th>
+                    <th scope="col" class="w-1/2">
+                        {{getText $lang "score"}}	
+                    </th>
+                </thead>
+                <tbody>
+                {{ range . }} 
+                    <tr id="row-test-{{.VisibleID}}" class="kn-table-row">
+                        <td class="kn-table-cell">
+                            <input class="form-checkbox" type="checkbox" id="pb-test-{{.VisibleID}}" autocomplete="off" />
+                        </td>
+                        <td class="kn-table-cell">
+                            {{.VisibleID}}
+                        </td>
+                        <td class="kn-table-cell">
+                            <input class="form-input" type="number" id="score-test-{{.VisibleID}}" value="{{.Score}}" min="0" max="100" autocomplete="off" />
+                        </td>
+                    </tr>
+                {{ end }}
+                    <tr class="kn-table-simple">
+                        <td colspan="2" class="kn-table-cell"></td>
+                        <td id="scoreOutput" class="kn-table-cell"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn btn-red mr-2" onclick="deleteTests()">{{getText $lang "deleteTests"}}</button>
+            <button class="btn btn-blue" onclick="updateTests()">{{getText $lang "updateTestScores"}}</button>
+        {{ end }}
+
+        <div class="my-2 page-sidebar-divider"></div>
+        
+        <form id="test_add_form">
+            <h2> {{getText .Ctx.Language "testArchive"}} (200MB max) </h2>
+            <label class="block my-2">
+                <span class="mr-2 text-xl"> {{getText .Ctx.Language "archive"}}:</span>
+                <input id="tests" type="file" class="form-input" accept=".zip" required />
+            </label>
+            <button class="btn btn-blue mb-2">{{getText .Ctx.Language "button.upload"}}</button>
+        </form>
+    </div>
+</div>
+
+
+
 <script>
 var pbid = {{.Problem.ID}}, rowreg = /row-test-([0-9]+)/;
 var scores = document.querySelectorAll("[id^='score-test-']");
@@ -114,20 +131,6 @@ async function updateTests() {
 	bundled.apiToast(res);
 }
 
-</script>
-</div>
-
-<form id="test_add_form" class="segment-container">
-	<h2> {{getText .Ctx.Language "testArchive"}} (200MB max) </h2>
-	<label class="block my-2">
-		<span class="mr-2 text-xl"> {{getText .Ctx.Language "archive"}}:</span>
-		<input id="tests" type="file" class="form-input" accept=".zip" required />
-	</label>
-	<button class="btn btn-blue mb-2">{{getText .Ctx.Language "button.upload"}}</button>
-</form>
-
-
-<script>
 async function uploadTests(e) {
 	e.preventDefault()
 	var form = new FormData();

@@ -115,35 +115,6 @@ export function Paginator({ page, numpages, setPage, ctxSize, className }: Pagin
 	return <div class={"paginator " + className}>{elements}</div>;
 }
 
-export function PaginateTester() {
-	let [pg, setPg] = useState(1);
-	let [maxPg, setMaxPg] = useState(5);
-	return (
-		<div>
-			<input
-				type="number"
-				class="form-input"
-				value={pg}
-				onChange={(e) => {
-					setPg(Number.parseInt(e.currentTarget.value));
-				}}
-			/>
-			<br />
-			<input
-				type="number"
-				class="form-input"
-				value={maxPg}
-				onChange={(e) => {
-					setMaxPg(Number.parseInt(e.currentTarget.value));
-				}}
-			/>
-			<br />
-			<br />
-			<Paginator page={pg} numpages={maxPg} ctxSize={2} setPage={(pg) => setPg(pg)} />
-		</div>
-	);
-}
-
 export function BigSpinner() {
 	return (
 		<div class="text-4xl mx-auto w-full my-10 text-center">

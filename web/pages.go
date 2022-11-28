@@ -3,27 +3,20 @@ package web
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
 	"net/http"
-	"net/url"
-	"path"
 	"reflect"
 	"strconv"
-	"strings"
 	tparse "text/template/parse"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"github.com/davecgh/go-spew/spew"
 	"go.uber.org/zap"
 )
 
@@ -72,22 +65,6 @@ type SubTaskEditParams struct {
 
 	ctx  context.Context
 	base *sudoapi.BaseAPI
-}
-
-func (s *SubTaskEditParams) ProblemTests() []*kilonova.Test {
-	tests, err := s.base.Tests(s.ctx, s.Problem.ID)
-	if err != nil {
-		return nil
-	}
-	return tests
-}
-
-func (s *SubTaskEditParams) ProblemSubTasks() []*kilonova.SubTask {
-	sts, err := s.base.SubTasks(s.ctx, s.Problem.ID)
-	if err != nil {
-		return nil
-	}
-	return sts
 }
 
 func (s *SubTaskEditParams) TestSubTasks(id int) string {
@@ -169,14 +146,6 @@ func (t *TestEditParams) GetFullTests() testDataType {
 		Out:   string(outData),
 		OkOut: okOut,
 	}
-}
-
-func (t *TestEditParams) ProblemTests() []*kilonova.Test {
-	tests, err := t.base.Tests(context.Background(), t.Problem.ID)
-	if err != nil {
-		return nil
-	}
-	return tests
 }
 
 type IndexParams struct {
@@ -267,49 +236,6 @@ type PasteParams struct {
 	Paste *kilonova.SubmissionPaste
 }
 
-var funcs = template.FuncMap{
-	"ispdflink": func(link string) bool {
-		u, err := url.Parse(link)
-		if err != nil {
-			return false
-		}
-		return path.Ext(u.Path) == ".pdf"
-	},
-	"encodeJSON": func(data interface{}) (string, error) {
-		d, err := json.Marshal(data)
-		return base64.StdEncoding.EncodeToString(d), err
-	},
-	"KBtoMB":     func(kb int) float64 { return float64(kb) / 1024.0 },
-	"hashedName": fsys.HashName,
-	"version":    func() string { return kilonova.Version },
-	"debug":      func() bool { return config.Common.Debug },
-	"intList": func(ids []int) string {
-		if ids == nil {
-			return ""
-		}
-		var b strings.Builder
-		for i, id := range ids {
-			b.WriteString(strconv.Itoa(id))
-			if i != len(ids)-1 {
-				b.WriteRune(',')
-			}
-		}
-		return b.String()
-	},
-	"shallowPblistIDs": func(lists []*kilonova.ShallowProblemList) []int {
-		rez := []int{}
-		for _, l := range lists {
-			rez = append(rez, l.ID)
-		}
-		return rez
-	},
-	"httpstatus": http.StatusText,
-	"dump":       spew.Sdump,
-	"getText": func(lang, line string, args ...any) template.HTML {
-		return template.HTML(kilonova.GetText(lang, line, args...))
-	},
-}
-
 type executor interface {
 	Execute(io.Writer, any) error
 }
@@ -362,7 +288,7 @@ func parse(optFuncs template.FuncMap, files ...string) *template.Template {
 	if err != nil {
 		zap.S().Fatal(err)
 	}
-	t := template.New("layout.html").Funcs(funcs)
+	t := template.New("layout.html")
 	if optFuncs != nil {
 		t = t.Funcs(optFuncs)
 	}
@@ -372,7 +298,7 @@ func parse(optFuncs template.FuncMap, files ...string) *template.Template {
 		if err != nil {
 			zap.S().Fatal(err)
 		}
-		ptrees, err := tparse.Parse(files[0], string(f), "{{", "}}", funcs, optFuncs, builtinTemporaryTemplate())
+		ptrees, err := tparse.Parse(files[0], string(f), "{{", "}}", optFuncs, builtinTemporaryTemplate())
 		if err != nil {
 			zap.S().Fatal(err)
 		}

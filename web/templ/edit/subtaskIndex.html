@@ -1,49 +1,86 @@
-{{ define "title" }}{{getText .Ctx.Language "title.edit.subtask"}}{{ end }}
+{{ define "title" }}{{getText .Ctx.Language "title.edit.subtask" .Problem.ID .Problem.Name}}{{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
 {{ $lang := .Ctx.Language }}
-<div class="segment-container">
-	<h2>{{getText .Ctx.Language "title.edit.subtask"}}</h2>
-	{{ with .ProblemSubTasks }}
-		<table class="kn-table my-2" style="table-layout: fixed">
-			<thead>
-				<th scope="col" class="w-1/4">
-					<input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
-				</th>
-				<th scope="col" class="w-1/4 text-center px-4 py-2">
-					{{getText $lang "id"}}	
-				</th>
-				<th scope="col" class="w-1/2">
-					{{getText $lang "score"}}
-				</th>
-			</thead>
-			<tbody>
-			{{ range . }} 
-				<tr id="row-subtask-{{.VisibleID}}" class="kn-table-row">
-					<td class="kn-table-cell">
-						<input class="form-checkbox" type="checkbox" id="pb-subtask-{{.VisibleID}}" autocomplete="off" />
-					</td>
-					<td class="kn-table-cell">
-						{{.VisibleID}}
-					</td>
-					<td class="kn-table-cell">
-						<input class="form-input" type="number" id="score-subtask-{{.VisibleID}}" value="{{.Score}}" min="0" max="100" autocomplete="off" />
-					</td>
-				</tr>
-			{{ end }}
-				<tr class="kn-table-simple">
-					<td colspan="2" class="kn-table-cell"></td>
-					<td id="scoreOutput" class="kn-table-cell"></td>
-				</tr>
-			</tbody>
-		</table>
-		<button class="btn btn-red mr-2" onclick="deleteSubTasks()">{{getText $lang "deleteSubTasks"}}</button>
-		<button class="btn btn-blue" onclick="updateSubTasks()">{{getText $lang "updateSubTasks"}}</button>
-	{{ else }}
-		<h3> {{getText .Ctx.Language "noSubTasks"}} </h3>
-	{{ end }}
-	
+{{ $root := . }}
+
+<div class="page-holder no-bottom-border">
+    {{ template "subtaskSidebar.html" . }}
+    <div class="page-content">
+        <h2>{{getText .Ctx.Language "header.edit.subtask"}}</h2>
+        {{ with problemSubtasks .Problem }}
+            <table class="kn-table my-2" style="table-layout: fixed">
+                <thead>
+                    <th scope="col" class="w-1/4">
+                        <input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
+                    </th>
+                    <th scope="col" class="w-1/4 text-center px-4 py-2">
+                        {{getText $lang "id"}}	
+                    </th>
+                    <th scope="col" class="w-1/2">
+                        {{getText $lang "score"}}
+                    </th>
+                </thead>
+                <tbody>
+                {{ range . }} 
+                    <tr id="row-subtask-{{.VisibleID}}" class="kn-table-row">
+                        <td class="kn-table-cell">
+                            <input class="form-checkbox" type="checkbox" id="pb-subtask-{{.VisibleID}}" autocomplete="off" />
+                        </td>
+                        <td class="kn-table-cell">
+                            {{.VisibleID}}
+                        </td>
+                        <td class="kn-table-cell">
+                            <input class="form-input" type="number" id="score-subtask-{{.VisibleID}}" value="{{.Score}}" min="0" max="100" autocomplete="off" />
+                        </td>
+                    </tr>
+                {{ end }}
+                    <tr class="kn-table-simple">
+                        <td colspan="2" class="kn-table-cell"></td>
+                        <td id="scoreOutput" class="kn-table-cell"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn btn-red mr-2" onclick="deleteSubTasks()">{{getText $lang "deleteSubTasks"}}</button>
+            <button class="btn btn-blue" onclick="updateSubTasks()">{{getText $lang "updateSubTasks"}}</button>
+        {{ else }}
+            <h3> {{getText .Ctx.Language "noSubTasks"}} </h3>
+        {{ end }}
+        
+        <div class="my-4 page-sidebar-divider"></div>
+
+        <h2> {{getText .Ctx.Language "testAssociations"}} </h2>
+        {{ with problemTests .Problem }}
+            <table class="kn-table my-2" style="table-layout: fixed">
+                <thead>
+                    <th scope="col" class="w-1/2 text-center px-4 py-2">
+                        {{getText $lang "id"}}	
+                    </th>
+                    <th scope="col" class="w-1/2">
+                        {{getText $lang "subTasks"}}	
+                    </th>
+                </thead>
+                <tbody>
+                {{ range . }} 
+                    <tr class="kn-table-row">
+                        <td class="kn-table-cell">
+                            {{.VisibleID}}
+                        </td>
+                        <td class="kn-table-cell">
+                            {{$root.TestSubTasks .ID}}
+                        </td>
+                    </tr>
+                {{ end }}
+                </tbody>
+            </table>
+        {{ else }} 
+            <h3> {{getText .Ctx.Language "noTestsError"}} </h3>
+        {{ end }}
+    </div>
+</div>
+
+
 <script>
 var pbid = {{.Problem.ID}}, rowreg = /row-subtask-([0-9]+)/;
 var scores = document.querySelectorAll("[id^='score-subtask-']");
@@ -114,40 +151,6 @@ async function updateSubTasks() {
 	bundled.apiToast(res);
 }
 
-
 </script>
-</div>
-
-{{ $root := . }}
-
-<div class="segment-container">
-	<h3> {{getText .Ctx.Language "testAssociations"}} </h3>
-	{{ with .ProblemTests }}
-		<table class="kn-table my-2" style="table-layout: fixed">
-			<thead>
-				<th scope="col" class="w-1/2 text-center px-4 py-2">
-					{{getText $lang "id"}}	
-				</th>
-				<th scope="col" class="w-1/2">
-					{{getText $lang "subTasks"}}	
-				</th>
-			</thead>
-			<tbody>
-			{{ range . }} 
-				<tr class="kn-table-row">
-					<td class="kn-table-cell">
-						{{.VisibleID}}
-					</td>
-					<td class="kn-table-cell">
-						{{$root.TestSubTasks .ID}}
-					</td>
-				</tr>
-			{{ end }}
-			</tbody>
-		</table>
-	{{ else }} 
-		<h3> {{getText .Ctx.Language "noTestsError"}} </h3>
-	{{ end }}
-</div>
 
 {{ end }}

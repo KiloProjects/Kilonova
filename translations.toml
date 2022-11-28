@@ -151,14 +151,30 @@ en = "Access control | Problem #%d: %s"
 ro = "Control acces | Problema #%d: %s"
 
 [title.edit.subtask_add]
+en = "Create Subtask | Problem #%d: %s"
+ro = "Creare Subtask | Problema #%d: %s"
+
+[title.edit.subtask_edit]
+en = "Edit Subtask #%d | Problem #%d: %s"
+ro = "Editare Subtask #%d | Problema #%d: %s"
+
+[title.edit.subtask]
+en = "Update Subtasks | Problem #%d: %s"
+ro = "Actualizare Subtasks | Problema #%d: %s"
+
+[title.edit.tests]
+en = "Update Tests | Problem #%d: %s"
+ro = "Actualizare Teste | Problema #%d: %s"
+
+[header.edit.subtask_add]
 en = "Create Subtask"
 ro = "Creare Subtask"
 
-[title.edit.subtask_edit]
+[header.edit.subtask_edit]
 en = "Edit Subtask #%d"
 ro = "Editare Subtask #%d"
 
-[title.edit.subtask]
+[header.edit.subtask]
 en = "Update Subtasks"
 ro = "Actualizare Subtasks"
 
@@ -988,6 +1004,12 @@ ro = "Control acces"
 [editors]
 en = "Editors"
 ro = "Editori"
+
+
+[editor]
+en = "Editor"
+ro = "Editor"
+
 
 [viewers]
 en = "Viewers"

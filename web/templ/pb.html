@@ -46,16 +46,27 @@
 				</h2>
                 <div class="px-2">
                     <p>{{getText .Ctx.Language "id"}}: {{.Problem.ID}}</p>
-                    <details class="reset-list" open>
-                        <summary>{{getText .Ctx.Language "editors"}}</summary>
-                        <ul>
+                    {{ if (eq (len .Problem.Editors) 1) }}
+                        <p>
+                            {{getText .Ctx.Language "editor"}}: 
                             {{ range .Problem.Editors }}
-                                {{ with user .}}
-                                <li><a href="/profile/{{.Name}}">{{.Name}}</a></li>
-                                {{ end }}
+                            {{ with user . }}
+                                <a href="/profile/{{.Name}}">{{.Name}}</a>
+                            {{ end }} 
                             {{ end }}
-                        </ul>
-                    </details>
+                        </p>
+                    {{ else }}
+                        <details class="reset-list" open>
+                            <summary>{{getText .Ctx.Language "editors"}}</summary>
+                            <ul>
+                                {{ range .Problem.Editors }}
+                                    {{ with user .}}
+                                    <li><a href="/profile/{{.Name}}">{{.Name}}</a></li>
+                                    {{ end }}
+                                {{ end }}
+                            </ul>
+                        </details>
+                    {{ end }}
                     {{ if .ProblemEditor }}
                     {{ with .Problem.Viewers }}
                         <details class="reset-list">

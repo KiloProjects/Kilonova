@@ -24,28 +24,28 @@ import (
 func (rt *Web) index() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		runTempl(w, r, templ, &IndexParams{GenContext(r), kilonova.Version, kilonova.IndexDescription})
+		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), kilonova.Version, kilonova.IndexDescription})
 	}
 }
 
 func (rt *Web) problems() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "pbs.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		runTempl(w, r, templ, &IndexParams{GenContext(r), kilonova.Version, kilonova.IndexDescription})
+		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), kilonova.Version, kilonova.IndexDescription})
 	}
 }
 
 func (rt *Web) justRender(files ...string) http.HandlerFunc {
 	templ := rt.parse(nil, files...)
 	return func(w http.ResponseWriter, r *http.Request) {
-		runTempl(w, r, templ, &SimpleParams{GenContext(r)})
+		rt.runTempl(w, r, templ, &SimpleParams{GenContext(r)})
 	}
 }
 
 func (rt *Web) pbListView() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "lists/view.html", "modals/pblist.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		runTempl(w, r, templ, &ProblemListParams{GenContext(r), util.ProblemList(r)})
+		rt.runTempl(w, r, templ, &ProblemListParams{GenContext(r), util.ProblemList(r)})
 	}
 }
 
@@ -75,21 +75,21 @@ func (rt *Web) auditLog() func(http.ResponseWriter, *http.Request) {
 			numPages++
 		}
 
-		runTempl(w, r, templ, &AuditLogParams{GenContext(r), logs, numPages})
+		rt.runTempl(w, r, templ, &AuditLogParams{GenContext(r), logs, numPages})
 	}
 }
 
 func (rt *Web) submission() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "submission.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		runTempl(w, r, templ, &SubParams{GenContext(r), util.Submission(r)})
+		rt.runTempl(w, r, templ, &SubParams{GenContext(r), util.Submission(r)})
 	}
 }
 
 func (rt *Web) paste() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "paste.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		runTempl(w, r, templ, &PasteParams{GenContext(r), util.Paste(r)})
+		rt.runTempl(w, r, templ, &PasteParams{GenContext(r), util.Paste(r)})
 	}
 }
 
@@ -137,7 +137,7 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 			langs = newLangs
 		}
 
-		runTempl(w, r, templ, &ProblemParams{
+		rt.runTempl(w, r, templ, &ProblemParams{
 			Ctx:           GenContext(r),
 			ProblemEditor: util.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
 
@@ -158,7 +158,7 @@ func (rt *Web) selfProfile() func(http.ResponseWriter, *http.Request) {
 			rt.statusPage(w, r, 500, "")
 			return
 		}
-		runTempl(w, r, templ, &ProfileParams{GenContext(r), util.UserFull(r), pbs})
+		rt.runTempl(w, r, templ, &ProfileParams{GenContext(r), util.UserFull(r), pbs})
 	}
 }
 
@@ -182,7 +182,7 @@ func (rt *Web) profile() func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		runTempl(w, r, templ, &ProfileParams{GenContext(r), user, util.FilterVisible(util.UserBrief(r), pbs)})
+		rt.runTempl(w, r, templ, &ProfileParams{GenContext(r), user, util.FilterVisible(util.UserBrief(r), pbs)})
 	}
 }
 
@@ -206,7 +206,7 @@ func (rt *Web) resendEmail() func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		runTempl(w, r, templ, &SimpleParams{GenContext(r)})
+		rt.runTempl(w, r, templ, &SimpleParams{GenContext(r)})
 	}
 }
 
@@ -241,7 +241,7 @@ func (rt *Web) verifyEmail() func(http.ResponseWriter, *http.Request) {
 
 		// rebuild session for user to disable popup
 		rt.initSession(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			runTempl(w, r, templ, &VerifiedEmailParams{GenContext(r), user})
+			rt.runTempl(w, r, templ, &VerifiedEmailParams{GenContext(r), user})
 		}))
 	}
 }
@@ -269,7 +269,7 @@ func (rt *Web) resetPassword() func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		runTempl(w, r, templ, &PasswordResetParams{GenContext(r), user, reqid})
+		rt.runTempl(w, r, templ, &PasswordResetParams{GenContext(r), user, reqid})
 	}
 }
 
@@ -352,7 +352,7 @@ func (rt *Web) docs() http.HandlerFunc {
 				return
 			}
 
-			runTempl(w, r, templ, &MarkdownParams{GenContext(r), template.HTML(t), p}) // TODO: Proper title
+			rt.runTempl(w, r, templ, &MarkdownParams{GenContext(r), template.HTML(t), p}) // TODO: Proper title
 			return
 		}
 
@@ -405,7 +405,7 @@ func (rt *Web) subtestOutput(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, "subtest.out", time.Now(), rc)
 }
 
-func runTempl(w io.Writer, r *http.Request, templ *template.Template, data interface{}) {
+func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, data interface{}) {
 	if err := templ.Execute(w, data); err != nil {
 		fmt.Fprintf(w, "Error executing template, report to admin: %s", err)
 		zap.S().Warnf("Erorr executing template: %q %q %#v", err, templ.Name(), util.UserBrief(r))

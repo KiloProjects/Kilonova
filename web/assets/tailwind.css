@@ -126,6 +126,14 @@
 		@apply border-gray-700 dark:border-gray-200;
 	}
 
+	.border-wh {
+		@apply border-gray-600 dark:border-gray-200;
+	}
+
+	.border-gr {
+		@apply border-gray-300 dark:border-gray-700;
+	}
+
 	.roboto .navbar-brand h1 h2 h3 h4 h5 h6 {
 		font-family: "Roboto";
 	}
@@ -168,10 +176,6 @@
 	.list-group-mini > .list-group-head,
 	.list-group-mini > kn-dom-sublist > .list-group-head {
 		@apply py-2;
-	}
-
-	.border-gr {
-		@apply border-gray-300 dark:border-gray-700;
 	}
 
 	.dropdown-divider {
@@ -223,7 +227,7 @@
 	}
 
 	.paginator-item-active {
-		@apply border-2;
+		@apply border-2 border-black dark:border-wh;
 	}
 
 	.kn-table {
@@ -331,7 +335,7 @@
 	.form-textarea,
 	.form-select,
 	.form-multiselect {
-		@apply rounded-lg dark:bg-gray-600 dark:text-white border-gray-300 dark:border-gray-700 !important;
+		@apply rounded-lg dark:bg-gray-600 dark:text-white border-gr !important;
 	}
 
 	.form-input {
@@ -366,15 +370,22 @@
     */
 
 	.page-holder {
-		@apply border-t-2 lg:border-b-2 grid grid-cols-1 lg:grid-cols-4;
+		@apply border-t-2 lg:border-b-2 grid grid-cols-1 lg:grid-cols-4 border-wh;
+	}
+
+	.no-bottom-border {
+		@apply border-b-0 lg:border-b-0;
 	}
 
 	.page-content {
-		@apply col-span-1 lg:pt-2 lg:col-span-3 lg:border-r lg:pr-4 lg:pb-4;
+		@apply col-span-1 lg:pt-2 lg:min-h-screen lg:col-span-3 lg:border-r lg:pr-4 lg:pb-4 lg:pl-1 border-wh;
+	}
+
+	.page-content-segment {
 	}
 
 	.page-sidebar {
-		@apply col-span-1 lg:pt-2 lg:border-l lg:pb-4;
+		@apply col-span-1 lg:pt-2 lg:min-h-screen lg:border-l lg:pb-4 border-wh;
 	}
 
 	.page-sidebar-box {
@@ -382,7 +393,7 @@
 	}
 
 	.page-sidebar-divider {
-		@apply h-0 w-full border-t-2 border-gray-200;
+		@apply h-0 w-full border-t-2 border-wh;
 	}
 }
 

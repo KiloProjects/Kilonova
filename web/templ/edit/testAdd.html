@@ -3,26 +3,32 @@
 
 {{ template "topbar.html" . }}
 
-<form id="test_create_form" class="segment-container">	
-	<h2> {{getText .Ctx.Language "createTest"}} </h2>
-	<label class="block my-2">
-		<span class="mr-2 text-xl">{{getText .Ctx.Language "id"}}: </span>
-		<input id="vID" type="number" class="form-input" required />
-	</label>
-	<label class="block my-2">
-		<span class="mr-2 text-xl">{{getText .Ctx.Language "score"}}: </span>
-		<input id="score" type="number" class="form-input" required />
-	</label>
-	<div class="mb-3">
-		<h3> {{getText .Ctx.Language "input"}}: </h3>
-		<textarea class="form-textarea" id="input" rows="15" style="width: 80%;"></textarea>
-	</div>
-	<div class="mb-3">
-		<h3> {{getText .Ctx.Language "output"}}: </h3>
-		<textarea class="form-textarea" id="output" rows="15" style="width: 80%;"></textarea>
-	</div>
-	<button class="btn btn-blue mb-2">{{getText .Ctx.Language "button.add"}}</button>
-</form>
+<div class="page-holder no-bottom-border">
+    {{ template "testSidebar.html" . }}
+    <div class="page-content">
+        <form id="test_create_form">	
+            <h2> {{getText .Ctx.Language "createTest"}} </h2>
+            <label class="block my-2">
+                <span class="mr-2 text-xl">{{getText .Ctx.Language "id"}}: </span>
+                <input id="vID" type="number" class="form-input" required />
+            </label>
+            <label class="block my-2">
+                <span class="mr-2 text-xl">{{getText .Ctx.Language "score"}}: </span>
+                <input id="score" type="number" class="form-input" required />
+            </label>
+            <div class="mb-3">
+                <h3> {{getText .Ctx.Language "input"}}: </h3>
+                <textarea class="form-textarea" id="input" rows="15" style="width: 80%;"></textarea>
+            </div>
+            <div class="mb-3">
+                <h3> {{getText .Ctx.Language "output"}}: </h3>
+                <textarea class="form-textarea" id="output" rows="15" style="width: 80%;"></textarea>
+            </div>
+            <button class="btn btn-blue mb-2">{{getText .Ctx.Language "button.add"}}</button>
+        </form>
+    </div>
+</div>
+
 
 <script>
 async function addTest(e) {

@@ -5,17 +5,24 @@ package web
 import (
 	"context"
 	"embed"
+	"encoding/base64"
+	"encoding/json"
 	"html/template"
 	"io"
 	"net/http"
+	"net/url"
+	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/benbjohnson/hashfs"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
@@ -43,7 +50,7 @@ type Web struct {
 
 func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int, errMessage string) {
 	status := rt.parse(nil, "util/statusCode.html", "modals/login.html")
-	runTempl(w, r, status, &StatusParams{
+	rt.runTempl(w, r, status, &StatusParams{
 		Ctx:     GenContext(r),
 		Code:    statusCode,
 		Message: errMessage,
@@ -253,6 +260,62 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 				return nil
 			}
 			return list
+		},
+
+		"problemTests": func(problem *kilonova.Problem) []*kilonova.Test {
+			tests, err := base.Tests(context.Background(), problem.ID)
+			if err != nil {
+				return nil
+			}
+			return tests
+		},
+		"problemSubtasks": func(problem *kilonova.Problem) []*kilonova.SubTask {
+			sts, err := base.SubTasks(context.Background(), problem.ID)
+			if err != nil {
+				return nil
+			}
+			return sts
+		},
+
+		"ispdflink": func(link string) bool {
+			u, err := url.Parse(link)
+			if err != nil {
+				return false
+			}
+			return path.Ext(u.Path) == ".pdf"
+		},
+		"encodeJSON": func(data interface{}) (string, error) {
+			d, err := json.Marshal(data)
+			return base64.StdEncoding.EncodeToString(d), err
+		},
+		"KBtoMB":     func(kb int) float64 { return float64(kb) / 1024.0 },
+		"hashedName": fsys.HashName,
+		"version":    func() string { return kilonova.Version },
+		"debug":      func() bool { return config.Common.Debug },
+		"intList": func(ids []int) string {
+			if ids == nil {
+				return ""
+			}
+			var b strings.Builder
+			for i, id := range ids {
+				b.WriteString(strconv.Itoa(id))
+				if i != len(ids)-1 {
+					b.WriteRune(',')
+				}
+			}
+			return b.String()
+		},
+		"shallowPblistIDs": func(lists []*kilonova.ShallowProblemList) []int {
+			rez := []int{}
+			for _, l := range lists {
+				rez = append(rez, l.ID)
+			}
+			return rez
+		},
+		"httpstatus": http.StatusText,
+		"dump":       spew.Sdump,
+		"getText": func(lang, line string, args ...any) template.HTML {
+			return template.HTML(kilonova.GetText(lang, line, args...))
 		},
 	}
 	return &Web{debug, funcs, base}

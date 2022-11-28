@@ -16,24 +16,4 @@
 		|
 		<a class="p-1 {{if and (eq $topbar.Page "subtasks") (eq $topbar.PageID -2)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks">{{getText .Ctx.Language "subTasks"}}</a>
 	</div>
-
-	{{ if (eq $topbar.Page "tests") }}
-		<div class="mb-2">
-			<a class="p-1 {{if (eq $topbar.PageID -1)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test/add">{{getText $lang "createTest"}}</a>
-			{{ range .ProblemTests }}
-				|
-				<a class="p-1 {{if (eq $topbar.PageID .VisibleID)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/test/{{.VisibleID}}">{{getText $lang "nthTest" .VisibleID}}</a>
-			{{ end }}
-		</div>
-	{{ end }}
-
-	{{ if (eq $topbar.Page "subtasks") }}
-		<div class="mb-2">
-			<a class="p-1 {{if (eq $topbar.PageID -1)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks/add">{{getText $lang "createSubTask"}}</a>
-			{{ range .ProblemSubTasks }}
-				|
-				<a class="p-1 {{if (eq $topbar.PageID .VisibleID)}} topbar-selected {{end}}" href="/problems/{{$id}}/edit/subtasks/{{.VisibleID}}">{{getText $lang "nthSubTask" .VisibleID}}</a>
-			{{ end }}
-		</div>
-	{{ end }}
 </div>

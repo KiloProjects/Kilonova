@@ -1,40 +1,43 @@
 {{ define "title" }} {{getText .Ctx.Language "title.edit.test_edit" .Test.VisibleID .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
-<br/>
-<div class="border-2 border-gr p-2">
-	<h2> Editare test {{ .Test.VisibleID }} </h2>	
 
-	<form id="test_id_edit_form">
-		<label class="block my-2">
-			<span class="mr-2 text-xl">ID: </span>
-			<input id="vID" type="number" class="form-input" value="{{ .Test.VisibleID }}" required />
-		</label>
-		<label class="block my-2">
-			<span class="mr-2 text-xl">{{getText .Ctx.Language "score"}}: </span>
-			<input id="score" type="number" class="form-input" value="{{ .Test.Score }}" required />
-		</label>
-		<button class="btn btn-blue mb-2">{{getText .Ctx.Language "button.update"}}</button>
-	</form>
-	<button id="orphan_button" class="btn btn-red block my-2"> {{getText .Ctx.Language "button.delete"}} </button>
+<div class="page-holder no-bottom-border">
+    {{ template "testSidebar.html" .}}
+    <div class="page-content">
+        <h2> Editare test {{ .Test.VisibleID }} </h2>	
 
-	<div class="mb-2">
-		<a class="btn btn-blue" href="{{.Test.VisibleID}}/input" download>Download input</a>
-		<a class="btn btn-blue" href="{{.Test.VisibleID}}/output" download>Download output</a>
-	</div>
-
-	<form id="test_edit_form">
-		{{ $test := .GetFullTests }}
-		<div class="mb-3">
-			<h3> Input: </h3>
-			<textarea class="form-textarea" style="width:80%;" rows="15" id="input">{{$test.In}}</textarea>
-		</div>
-		<div class="mb-3">
-			<h3> Output: </h3>
-			<textarea class="form-textarea" style="width:80%;" rows="15" id="output">{{$test.Out}}</textarea>
-		</div>
-		<button class="btn btn-blue mb-2" >{{getText .Ctx.Language "button.update"}}</button>
-	</form>
+        <form id="test_id_edit_form">
+            <label class="block my-2">
+                <span class="mr-2 text-xl">ID: </span>
+                <input id="vID" type="number" class="form-input" value="{{ .Test.VisibleID }}" required />
+            </label>
+            <label class="block my-2">
+                <span class="mr-2 text-xl">{{getText .Ctx.Language "score"}}: </span>
+                <input id="score" type="number" class="form-input" value="{{ .Test.Score }}" required />
+            </label>
+            <button class="btn btn-blue mb-2">{{getText .Ctx.Language "button.update"}}</button>
+        </form>
+        <button id="orphan_button" class="btn btn-red block my-2"> {{getText .Ctx.Language "button.delete"}} </button>
+    
+        <div class="mb-2">
+            <a class="btn btn-blue" href="{{.Test.VisibleID}}/input" download>Download input</a>
+            <a class="btn btn-blue" href="{{.Test.VisibleID}}/output" download>Download output</a>
+        </div>
+    
+        <form id="test_edit_form">
+            {{ $test := .GetFullTests }}
+            <div class="mb-3">
+                <h3> Input: </h3>
+                <textarea class="form-textarea" style="width:80%;" rows="15" id="input">{{$test.In}}</textarea>
+            </div>
+            <div class="mb-3">
+                <h3> Output: </h3>
+                <textarea class="form-textarea" style="width:80%;" rows="15" id="output">{{$test.Out}}</textarea>
+            </div>
+            <button class="btn btn-blue mb-2" >{{getText .Ctx.Language "button.update"}}</button>
+        </form>
+    </div>
 </div>
 
 <script>

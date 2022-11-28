@@ -3,10 +3,9 @@
 <h1>Kilonova {{.Version}}</h1>
 
 <p class="text-gray-600 dark:text-gray-300 text-sm">{{ getText .Ctx.Language "announcement" `<a target="_blank" rel="noopener noreferrer" href="https://discord.gg/Qa6Ytgh">Discord</a>` }} </p>
-<div class="alert alert-red">
+<div class="alert mb-2">
 	{{ renderMarkdown .Description }}
 </div>
-<br />
 {{ $user := .Ctx.User.Brief }}
 {{ $root := . }}
 {{ $ctx := .Ctx }}
@@ -47,7 +46,10 @@
     {{ end }} 
 */}}
 
-{{ renderMarkdown (getText $ctx.Language "all_problems_announcement") }}
+<div class="mb-4">
+    {{ renderMarkdown (getText $ctx.Language "all_problems_announcement") }}
+</div>
 
-<br />
+
+
 {{end}}

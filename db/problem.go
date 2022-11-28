@@ -211,7 +211,7 @@ func (db *DB) SolvedProblems(ctx context.Context, uid int) ([]*kilonova.Problem,
 	for _, id := range ids {
 		pb, err := db.Problem(ctx, id)
 		if err != nil {
-			zap.S().Warn("Couldn't get solved problem %d: %s\n", id, err)
+			zap.S().Warnf("Couldn't get solved problem %d: %s\n", id, err)
 		} else {
 			pbs = append(pbs, pb)
 		}
