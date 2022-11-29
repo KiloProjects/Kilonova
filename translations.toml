@@ -1058,3 +1058,7 @@ ro = "Accesați-l"
 [shared_by]
 en = "Shared by"
 ro = "Distribuit de"
+
+[disabled_signup]
+en = "Manual signup has been disabled by the administrator"
+ro = "Înregistrearea manuală a fost dezactivată de către administrator"

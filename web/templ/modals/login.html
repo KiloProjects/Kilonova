@@ -10,7 +10,9 @@
 		<input class="form-input w-full" type="password" id="login_upwd" name="password" />
 	</label>
 	<button class="block btn btn-blue">{{getText "auth.login"}}</button>
-	<p class="text-gray-600 dark:text-gray-300">{{getText "signupReminder"}}</p>
+    {{ if signupEnabled }}
+	    <p class="text-gray-600 dark:text-gray-300">{{getText "signupReminder"}}</p>
+    {{ end }}
 	<p class="text-gray-600 dark:text-gray-300">{{getText "forgot_pwd_announcement"}}</p>
 </form>
 

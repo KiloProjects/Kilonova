@@ -1,3 +1,23 @@
+- v0.11.0:
+    - Simply mark new version since so many changes were made with 0.10
+    - Start slowly working on support for proper contests, starting with the option to disable signup
+- v0.10.x:
+    - Many frontend changes;
+    - Backend cleanups;
+    - Better problem access control;
+    - Better submission memory handling;
+    - Better profile page;
+    - Broader test archive support;
+    - Simply better in all ways;
+    - Submission Pastes;
+    - Forgot password forms;
+    - Nested problem lists (also used them on the main page);
+    - More restrictive usernames;
+    - Button for reevaluating all submissions;
+    - Simple barebones audit log;
+    - Removed stack limit;
+    - Removed sqlite db option;
+    - Removed .kna support.
 - v0.9.4:
     - Better consistency in design;
     - Revamped submission page;

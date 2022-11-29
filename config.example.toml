@@ -2,10 +2,11 @@
  log_dir = "<LOGPATH>/logs"
  data_dir = "<LOGPATH>/data"
  debug = false 
- host_prefix = "https://kilonova.ro/"
+ host_prefix = "https://kilonova.ro"
  port = 8070
  default_language = "en"
  db_dsn = "postgresql://<fill here>"
+ signup_enabled = true
 
 [eval]
  isolatePath = "/tmp/isolate"

@@ -219,18 +219,14 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return template.HTML(val)
 		},
-		"problemEditor": func(user *kilonova.UserBrief, pb *kilonova.Problem) bool {
-			return util.IsProblemEditor(user, pb)
-		},
+		"problemEditor": util.IsProblemEditor,
 		"submissionEditor": func(user *kilonova.UserBrief, sub *kilonova.Submission) bool {
 			return util.IsSubmissionEditor(sub, user)
 		},
 		"pasteEditor": func(user *kilonova.UserBrief, paste *kilonova.SubmissionPaste) bool {
 			return util.IsPasteEditor(paste, user)
 		},
-		"problemVisible": func(user *kilonova.UserBrief, pb *kilonova.Problem) bool {
-			return util.IsProblemVisible(user, pb)
-		},
+		"problemVisible": util.IsProblemVisible,
 		"genProblemsParams": func(user *kilonova.UserBrief, pbs []*kilonova.Problem, showSolved bool) *ProblemListingParams {
 			return &ProblemListingParams{user, pbs, showSolved}
 		},
@@ -292,6 +288,8 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"hashedName": fsys.HashName,
 		"version":    func() string { return kilonova.Version },
 		"debug":      func() bool { return config.Common.Debug },
+
+		"signupEnabled": func() bool { return config.Common.SignupEnabled },
 		"intList": func(ids []int) string {
 			if ids == nil {
 				return ""

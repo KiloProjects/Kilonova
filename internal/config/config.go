@@ -50,6 +50,8 @@ type CommonConf struct {
 	DefaultLang string `toml:"default_language"`
 
 	DBDSN string `toml:"db_dsn"`
+
+	SignupEnabled bool `toml:"signup_enabled"`
 }
 
 // c represents the loaded config

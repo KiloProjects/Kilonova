@@ -25,22 +25,13 @@ type EditTopbar struct {
 	PageID int
 }
 
-func (t *EditTopbar) IsOnTest(test *kilonova.Test) bool {
-	return t.Page == "tests" && test.VisibleID == t.PageID
-}
-
-func (t *EditTopbar) IsOnSubtask(stk *kilonova.SubTask) bool {
-	return t.Page == "subtasks" && stk.VisibleID == t.PageID
-}
-
 type ReqContext struct {
 	User     *kilonova.UserFull
 	Language string
 }
 
 type ProblemParams struct {
-	Ctx *ReqContext
-	// User          *kilonova.User
+	Ctx           *ReqContext
 	ProblemEditor bool
 
 	Problem     *kilonova.Problem
@@ -51,14 +42,12 @@ type ProblemParams struct {
 }
 
 type ProblemListParams struct {
-	Ctx *ReqContext
-	// User          *kilonova.User
+	Ctx         *ReqContext
 	ProblemList *kilonova.ProblemList
 }
 
 type SubTaskEditParams struct {
-	Ctx *ReqContext
-	// User          *kilonova.User
+	Ctx     *ReqContext
 	Problem *kilonova.Problem
 	SubTask *kilonova.SubTask
 	Topbar  *EditTopbar
@@ -91,8 +80,7 @@ func (s *SubTaskEditParams) TestInSubTask(test *kilonova.Test) bool {
 }
 
 type TestEditParams struct {
-	Ctx *ReqContext
-	// User          *kilonova.User
+	Ctx     *ReqContext
 	Problem *kilonova.Problem
 	Test    *kilonova.Test
 	Topbar  *EditTopbar
@@ -170,7 +158,6 @@ type PblistParams struct {
 
 type ProfileParams struct {
 	Ctx *ReqContext
-	// User          *kilonova.User
 
 	ContentUser  *kilonova.UserFull
 	UserProblems []*kilonova.Problem
@@ -185,23 +172,19 @@ type AuditLogParams struct {
 
 type StatusParams struct {
 	Ctx *ReqContext
-	// User          *kilonova.User
 
-	Code        int
-	Message     string
-	ShouldLogin bool
+	Code    int
+	Message string
 }
 
 type MarkdownParams struct {
-	Ctx *ReqContext
-	// User          *kilonova.User
+	Ctx      *ReqContext
 	Markdown template.HTML
 	Title    string
 }
 
 type SimpleParams struct {
 	Ctx *ReqContext
-	// User          *kilonova.User
 }
 
 func GenContext(r *http.Request) *ReqContext {
@@ -213,7 +196,6 @@ func GenContext(r *http.Request) *ReqContext {
 
 type VerifiedEmailParams struct {
 	Ctx *ReqContext
-	// User          *kilonova.User
 
 	ContentUser *kilonova.UserBrief
 }
@@ -233,10 +215,6 @@ type SubParams struct {
 type PasteParams struct {
 	Ctx   *ReqContext
 	Paste *kilonova.SubmissionPaste
-}
-
-type executor interface {
-	Execute(io.Writer, any) error
 }
 
 func doWalk(filename string, nodes ...tparse.Node) bool {

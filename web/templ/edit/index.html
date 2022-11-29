@@ -78,7 +78,7 @@
 	{{with problemSettings .Problem.ID}}
 	<h2>Pe baza atașamentelor, aceste informații vor fi transmise evaluatorului:</h2>
 	<ul>
-		<li>Se acceptă numai soluții C++: {{.OnlyCPP}}</li>
+		<li>Se acceptă numai submisii C++: {{.OnlyCPP}}</li>
 		<li>Checker: {{if (ne (len .CheckerName) 0)}}Custom (este executat checker.cpp){{else}}Clasic/Default (verifică conținutul fișierului de ieșire){{end}}</li>
 		<li>Fișiere extra incluse: {{range $i, $name := .HeaderFiles}}{{$name}}{{else}}N/A{{end}}</li>
 		<li>Fișiere grader incluse: {{range $i, $name := .GraderFiles}}{{$name}}{{else}}N/A{{end}}</li>

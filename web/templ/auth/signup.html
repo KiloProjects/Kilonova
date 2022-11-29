@@ -1,5 +1,10 @@
 {{ define "title" }} {{getText "auth.signup"}} {{ end }}
-{{ define "content" }}
+
+{{ define "content_signup_disabled" }}
+<h1>{{getText "disabled_signup"}}</h1>
+{{ end }}
+
+{{ define "content_signup_enabled" }}
 <h1 class="mb-2">{{getText "auth.signup"}}</h1>
 <form class="segment-container" id="signup_form">
 	<label class="block mb-2">
@@ -67,4 +72,15 @@ async function signup(e) {
 }
 document.getElementById("signup_form").addEventListener("submit", signup)
 </script>
+{{ end }}
+
+
+
+
+{{ define "content" }}
+    {{ if not signupEnabled }}
+        {{ template "content_signup_disabled" .}}    
+    {{ else }}
+        {{ template "content_signup_enabled" .}}    
+    {{ end }}
 {{ end }}

@@ -51,6 +51,10 @@ func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (int, *StatusErr
 var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string) (int, *StatusError) {
+	if !config.Common.SignupEnabled {
+		return -1, Statusf(400, "Manual signup has been disabled by the administrator.")
+	}
+
 	uname = strings.TrimSpace(uname)
 	if !(len(uname) >= 3 && len(uname) <= 32 && usernameRegex.MatchString(uname)) {
 		return -1, Statusf(400, "Username must be between 3 and 32 characters long and must contain only letters, digits, underlines and dashes.")
