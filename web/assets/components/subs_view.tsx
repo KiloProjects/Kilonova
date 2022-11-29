@@ -358,7 +358,9 @@ function SubsView() {
 									</th>
 									<th scope="col">{getText("author")}</th>
 									<th scope="col">{getText("uploadDate")}</th>
-									{(query.problem_id == 0 || query.problem_id == null) && <th scope="col">{getText("problemSingle")}</th>}
+									{((query.problem_id == 0 || query.problem_id == null) && <th scope="col">{getText("problemSingle")}</th>) || (
+										<th scope="col">{getText("codeSize")}</th>
+									)}
 									<th scope="col">{getText("time")}</th>
 									<th scope="col">{getText("memory")}</th>
 									<th scope="col" class="w-1/6">
@@ -376,9 +378,13 @@ function SubsView() {
 											<a href={"/profile/" + sub.author.name}>{sub.author.name}</a>
 										</td>
 										<td class="text-center px-2 py-1">{dayjs(sub.sub.created_at).format("DD/MM/YYYY HH:mm")}</td>
-										{(query.problem_id == 0 || query.problem_id == null) && (
+										{((query.problem_id == 0 || query.problem_id == null) && (
 											<td class="text-center px-2 py-1">
 												{sub.hidden ? <span>---</span> : <a href={"/problems/" + sub.problem.id}>{sub.problem.name}</a>}
+											</td>
+										)) || (
+											<td class="text-center px-2 py-1">
+												<span>{sizeFormatter(sub.sub.code_size)}</span>
 											</td>
 										)}
 										<td class="text-center px-2 py-1">{sub.sub.max_time == -1 ? "-" : Math.floor(sub.sub.max_time * 1000) + "ms"}</td>

@@ -7,6 +7,7 @@ export type Submission = {
 	max_memory: number;
 	score: number;
 	status: string;
+	code_size: number;
 };
 
 export type UserBrief = {
