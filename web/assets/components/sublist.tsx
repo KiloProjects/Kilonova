@@ -60,7 +60,7 @@ export function Problems({ pbs, scores }: { pbs: Problem[]; scores: ProblemScore
 								) : (
 									<span class="badge badge-red">{getText("unpublished")}</span>
 								))}{" "}
-							{Object.keys(scores).includes(pb.id.toString()) && <span class="badge">{scores[pb.id]}</span>}
+							{(Object.keys(scores).includes(pb.id.toString()) && <span class="badge">{scores[pb.id]}</span>) || <span class="badge">-</span>}
 						</div>
 					)}
 				</a>

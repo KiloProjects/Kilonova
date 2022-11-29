@@ -6,7 +6,7 @@
 	<div>
 		<h1>{{.ContentUser.Name}}</h1>
 		<span>{{.ContentUser.Bio}}
-            {{ if .Ctx.User }}
+            {{ if authed }}
             {{ if eq .ContentUser.ID .Ctx.User.ID }}
             {{if .ContentUser.Bio}}
             <a class="block" href="/settings#bio"><i class="fas fa-edit"></i> {{getText "editBio"}}</a>
@@ -17,7 +17,7 @@
             {{ end }}
         </span>
         <p>{{getText "created_at"}}: <span id="created_at">{{.ContentUser.CreatedAt.UnixMilli}}</span></p>
-		{{- if .Ctx.User -}} {{if (or .Ctx.User.Admin (eq .Ctx.User.ID .ContentUser.ID)) -}}
+		{{- if authed -}} {{if (or .Ctx.User.Admin (eq .Ctx.User.ID .ContentUser.ID)) -}}
 		<p>{{getText "email"}}: {{.ContentUser.Email}}
             ({{getText "email.verified"}}? 
 			{{ if .ContentUser.VerifiedEmail -}}
@@ -29,7 +29,7 @@
 		{{- end -}} {{- end -}}
         <div class="block my-2">
             <a class="btn btn-blue" href="/submissions/?user_id={{.ContentUser.ID}}">{{getText "submission.list"}}</a>
-            {{if .Ctx.User}}
+            {{if authed}}
                 {{if eq .ContentUser.ID .Ctx.User.ID}}
                     <a class="btn btn-blue" href="/settings">{{getText "profile.settings"}}</a>
                 {{end}}

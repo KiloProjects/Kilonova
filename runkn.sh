@@ -3,6 +3,9 @@
 echo "Building js bundle"
 yarn --cwd ./web/assets prodJS
 
+echo "Regenerating translation strings"
+go generate
+
 go build -race -v ./cmd/kn || exit 2
 
 mv kn knnnn # fix gitignore issue

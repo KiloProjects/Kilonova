@@ -5,7 +5,7 @@
 
 <div class="mb-2"></div>
 
-{{ if .Ctx.User }}
+{{ if authed }}
     {{ if .Ctx.User.Admin }}
     <button onclick="deleteSubmission()" class="btn btn-red mb-2">{{getText "removeSub"}}</button>
     <button onclick="reevaluateSubmission()" class="btn btn-blue mb-2">{{getText "reevaluate"}}</button>

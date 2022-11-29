@@ -417,6 +417,9 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		"getText": func(line string, args ...any) template.HTML {
 			return template.HTML(kilonova.GetText(util.Language(r), line, args...))
 		},
+		"authed": func() bool {
+			return util.UserBrief(r) != nil
+		},
 	})
 
 	if err := templ.Execute(w, data); err != nil {

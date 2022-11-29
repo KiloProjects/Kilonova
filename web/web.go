@@ -314,8 +314,12 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"dump":       spew.Sdump,
 
 		"getText": func(key string, vals ...any) string {
-			zap.S().Error("Uninitialized getText")
+			zap.S().Error("Uninitialized `getText`")
 			return "FATAL ERR"
+		},
+		"authed": func() bool {
+			zap.S().Error("Uninitialized `authed`")
+			return false
 		},
 	}
 	return &Web{debug, funcs, base}

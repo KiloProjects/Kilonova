@@ -94,13 +94,16 @@
                     {{- if .Problem.SourceCredits -}}
                         <p>{{getText "source"}}: {{.Problem.SourceCredits}}</p>
                     {{- end -}}
+                    {{ if authed }}
+                        <p>{{getText "score"}}: {{subScore .Problem .Ctx.User.Brief}}</p>
+                    {{ end }}
                     {{- if gt .Problem.DefaultPoints 0 -}}
                         <p>{{getText "defaultPoints"}}: {{.Problem.DefaultPoints}}p</p>
                     {{- end -}}
                     <p><a href="/submissions/?problem_id={{.Problem.ID}}">{{getText "submissions"}}</a></p>
                 </div>
 			</div>
-			{{ if .Ctx.User }}
+			{{ if authed }}
 				<div class="page-sidebar-divider"></div>
 				<div class="page-sidebar-box">
                     <older-subs problemid="{{.Problem.ID}}" userid="{{.Ctx.User.ID}}"></older-subs>
@@ -113,7 +116,7 @@
 					<div class="px-2">
                         <div class="list-group list-group-mini">
                             {{ range . }}
-                                <a style="word-wrap: break-word;" href="/problems/{{$pbid}}/attachments/{{.Name}}" class="list-group-item flex justify-between">
+                                <a style="word-wrap: anywhere;" href="/problems/{{$pbid}}/attachments/{{.Name}}" class="list-group-item flex justify-between">
                                     <span id="att-name-{{.ID}}">{{.Name}}</span>
                                     <span 
                                         class="badge text-sm" 
@@ -121,7 +124,6 @@
                                         {{.Size}}
                                     </span>
                                 </a>
-                                <!-- <p class="segment-container"><a style="word-wrap: break-word;" href="/problems/{{$pbid}}/attachments/{{.Name}}">{{.Name}}</a></p> -->
                             {{ end }}
                         </div>
 					</div>
@@ -171,7 +173,7 @@ function makeSubWaiter(id) {
 }
 </script>
 
-	{{ if .Ctx.User }}
+	{{ if authed }}
 
 	<h1 class="mt-4">{{getText "uploadSub"}}</h1>
 		<label class="block mb-2">
