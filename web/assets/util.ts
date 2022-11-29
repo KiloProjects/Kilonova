@@ -4,8 +4,11 @@ import relativeTime from "dayjs/plugin/relativeTime";
 
 dayjs.extend(relativeTime);
 
-// TODO: Make platform info-dependent
 dayjs.locale("ro");
+
+document.addEventListener("DOMContentLoaded", () => {
+	dayjs.locale(window.platform_info.language);
+});
 
 export { dayjs };
 

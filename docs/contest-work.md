@@ -6,6 +6,8 @@ High priority:
 	- [ ] Questions (Yes/No/No comment/etc);
 	- [ ] General announcements;
 	- [ ] Leaderboard;
+    - [ ] Disable pastes for contest problems during contest;
+    - [ ] Hide problem editors during contest if not admin;
 - [ ] Allow to disable contestant access to others' submissions;
 - [ ] Endpoint for account generation;
 - [ ] Websockets for live updates.
@@ -14,16 +16,12 @@ Medium priority:
 - [x] Allow to disable manual signup;
 - [ ] Real-time leaderboard for admins;
 - [x] Show max score on problem page;
-- [ ] Hide problem editors during contest if not admin;
-- [ ] Disable pastes for contest problems during contest;
-
 - [ ] See which other features should be disabled during contests;
-- [ ] Disable forgot password things for generated accounts.
+- [ ] Disable forgot password things for generated accounts;
 
 Nice-to-have:
 - [ ] UI for generating accounts from a csv;
 	- Might just have a quick python script do it.
-- [ ] A separate system for evaluating tasks;
 - [ ] Better notifications;
 - [ ] Statistics page for after the contest and for organizers;
 - [ ] Better telemetry and stats;

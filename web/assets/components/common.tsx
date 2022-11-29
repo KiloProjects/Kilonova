@@ -4,6 +4,7 @@ import getText from "../translation.js";
 import { getCall } from "../net";
 import { dayjs } from "../util";
 import { useCallback, useEffect, useState } from "preact/hooks";
+import { getSubmissions, ResultSubmission } from "../api/submissions.js";
 
 interface PaginatorParams {
 	page: number;
@@ -11,9 +12,10 @@ interface PaginatorParams {
 	setPage: (num: number) => void;
 	ctxSize?: number;
 	className?: string;
+	showArrows?: boolean;
 }
 
-export function Paginator({ page, numpages, setPage, ctxSize, className }: PaginatorParams) {
+export function Paginator({ page, numpages, setPage, ctxSize, className, showArrows }: PaginatorParams) {
 	if (page < 1) {
 		page = 1;
 	}
@@ -29,11 +31,9 @@ export function Paginator({ page, numpages, setPage, ctxSize, className }: Pagin
 	if (page > numpages) {
 		page = numpages;
 	}
-	console.log(page, numpages);
 	let elements: preact.JSX.Element[] = [];
 	const old_sp = setPage;
 	setPage = (pg) => {
-		console.log(pg);
 		if (pg < 1) {
 			pg = 1;
 		}
@@ -45,8 +45,18 @@ export function Paginator({ page, numpages, setPage, ctxSize, className }: Pagin
 		}
 	};
 
-	//elements.push(<button class="paginator-item" onClick={() => setPage(1)}><i class="fas fa-angle-double-left"></i></button>);
-	//elements.push(<button class="paginator-item" onClick={() => setPage(page-1)}><i class="fas fa-angle-left"></i></button>);
+	if (showArrows) {
+		elements.push(
+			<button class="paginator-item" onClick={() => setPage(1)} key={`jump_first`}>
+				<i class="fas fa-angle-double-left"></i>
+			</button>
+		);
+		elements.push(
+			<button class="paginator-item" onClick={() => setPage(page - 1)} key={`jump_before`}>
+				<i class="fas fa-angle-left"></i>
+			</button>
+		);
+	}
 	if (page > ctxSize + 1) {
 		for (let i = 1; i <= 1 + ctxSize && page - i >= 1 + ctxSize; i++) {
 			elements.push(
@@ -110,8 +120,18 @@ export function Paginator({ page, numpages, setPage, ctxSize, className }: Pagin
 		}
 	}
 
-	//elements.push(<button class="paginator-item" onClick={() => setPage(page+1)}><i class="fas fa-angle-right"></i></button>);
-	//elements.push(<button class="paginator-item" onClick={() => setPage(numPages)}><i class="fas fa-angle-double-right"></i></button>);
+	if (showArrows) {
+		elements.push(
+			<button class="paginator-item" onClick={() => setPage(page + 1)} key={`jump_after`}>
+				<i class="fas fa-angle-right"></i>
+			</button>
+		);
+		elements.push(
+			<button class="paginator-item" onClick={() => setPage(numpages)} key={`jump_last`}>
+				<i class="fas fa-angle-double-right"></i>
+			</button>
+		);
+	}
 	return <div class={"paginator " + className}>{elements}</div>;
 }
 
@@ -184,8 +204,8 @@ type getSubsResult = {
 	subs: shortSub[];
 };
 
-async function getSubmissions(user_id: number, problem_id: number, limit: number): Promise<getSubsResult> {
-	const result = await getCall("/submissions/get", {
+async function getSubmissssions(user_id: number, problem_id: number, limit: number): Promise<getSubsResult> {
+	const result = await getCall<getSubsResult>("/submissions/get", {
 		limit,
 		problem_id,
 		user_id,
@@ -193,18 +213,19 @@ async function getSubmissions(user_id: number, problem_id: number, limit: number
 	if (result.status !== "success") {
 		throw new Error(result.data);
 	}
-	return result.data as Promise<getSubsResult>;
+	return result.data;
 }
 
 const SUB_VIEW_LIMIT = 5;
 
 export function OlderSubmissions({ userid, problemid }: OlderSubsParams) {
-	let [subs, setSubs] = useState<shortSub[]>([]);
+	let [subs, setSubs] = useState<ResultSubmission[]>([]);
 	let [loading, setLoading] = useState(true);
 	let [numHidden, setNumHidden] = useState(0);
 
 	async function load() {
-		const data = await getSubmissions(userid, problemid, SUB_VIEW_LIMIT);
+		var data = await getSubmissions({ user_id: userid, problem_id: problemid, limit: SUB_VIEW_LIMIT, page: 1 });
+		// const data = await getSubmissions(userid, problemid, SUB_VIEW_LIMIT);
 		setSubs(data.subs);
 		setNumHidden(Math.max(data.count - SUB_VIEW_LIMIT, 0));
 		setLoading(false);

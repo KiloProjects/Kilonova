@@ -7,49 +7,8 @@ import { apiToast, createToast } from "../toast";
 import { BigSpinner, Paginator } from "./common";
 import { dayjs, getGradient, sizeFormatter } from "../util";
 import _ from "underscore";
-
-type Submission = {
-	id: number;
-	created_at: string;
-	max_time: number;
-	max_memory: number;
-	score: number;
-	status: string;
-};
-
-type UserBrief = {
-	id: number;
-	name: string;
-	admin: boolean;
-	proposer: boolean;
-	bio: string;
-};
-
-type Problem = {
-	id: number;
-	name: string;
-};
-
-type ResultSubmission = {
-	sub: Submission;
-	author: UserBrief;
-	problem: Problem;
-	hidden: boolean;
-};
-
-type Query = {
-	user_id: number | null;
-	problem_id: number | null;
-	score: number | null;
-	status?: string;
-	lang: string; // TODO: allow undefined?
-
-	page: number;
-
-	compile_error?: boolean;
-	ordering: string;
-	ascending: boolean;
-};
+import { getSubmissions } from "../api/submissions";
+import type { Submission, SubmissionQuery, ResultSubmission } from "../api/submissions";
 
 const rezStr = (subCount: number): string => {
 	if (subCount == 1) {
@@ -70,7 +29,7 @@ const status = (sub: Submission): string => {
 	return getText("waiting");
 };
 
-function getInitialData(): Query {
+function getInitialData(): SubmissionQuery {
 	const params = new URLSearchParams(window.location.search);
 
 	const user_id = parseInt(params.get("user_id") ?? "");
@@ -92,9 +51,9 @@ function getInitialData(): Query {
 	const page = parseInt(params.get("page") ?? "");
 
 	return {
-		user_id: !isNaN(user_id) ? user_id : null,
-		problem_id: !isNaN(problem_id) ? problem_id : null,
-		score: !isNaN(score) ? score : null,
+		user_id: !isNaN(user_id) ? user_id : undefined,
+		problem_id: !isNaN(problem_id) ? problem_id : undefined,
+		score: !isNaN(score) ? score : undefined,
 		status: status,
 		lang: params.get("lang") ?? "",
 
@@ -106,47 +65,37 @@ function getInitialData(): Query {
 	};
 }
 
-function serializeQuery(q: Query): object {
-	return {
-		ordering: q.ordering,
-		ascending: q.ascending,
-		user_id: q.user_id !== null && q.user_id > 0 ? q.user_id : undefined,
-		problem_id: q.problem_id !== null && q.problem_id > 0 ? q.problem_id : undefined,
-		status: q.status !== "" ? q.status : undefined,
-		score: q.score !== null && q.score >= 0 ? q.score : undefined,
-		lang: q.lang !== "" ? q.lang : undefined,
-		compile_error: q.compile_error,
-		offset: (q.page - 1) * 50,
-	};
-}
-
 function SubsView() {
 	let [loading, setLoading] = useState(true);
-	let [query, setQuery] = useState<Query>(getInitialData());
+	let [query, updQuery] = useState<SubmissionQuery>(getInitialData());
 	let [subs, setSubs] = useState<ResultSubmission[]>([]);
 	let [count, setCount] = useState<number>(-1);
+
+	const setQuery = (q: SubmissionQuery, ignoreReset?: boolean) => {
+		updQuery(q);
+		if (!ignoreReset) {
+			setCount(-1);
+		}
+	};
 
 	const numPages = useMemo(() => Math.floor(count / 50) + (count % 50 != 0 ? 1 : 0), [count]);
 
 	const poll = _.throttle(async () => {
 		setLoading(true);
-		if (query.page === 1) {
-			setCount(0);
-		}
+		// if (query.page === 1) {
+		// 	setCount(0);
+		// }
 
-		let res = await getCall<{
-			count: number;
-			subs: ResultSubmission[];
-		}>("/submissions/get", serializeQuery(query));
-
-		if (res.status === "error") {
-			apiToast(res);
+		try {
+			var res = await getSubmissions(query);
+		} catch (e) {
+			apiToast({ data: (e as Error).message, status: "error" });
 			setLoading(false);
 			return;
 		}
 
-		setSubs(res.data.subs);
-		setCount(res.data.count);
+		setSubs(res.subs);
+		setCount(res.count);
 		setLoading(false);
 	}, 200);
 
@@ -156,25 +105,25 @@ function SubsView() {
 
 	async function copyQuery() {
 		var p = new URLSearchParams();
-		if (query.user_id !== null && query.user_id > 0) {
+		if (typeof query.user_id !== "undefined" && query.user_id > 0) {
 			p.append("user_id", query.user_id.toString());
 		}
-		if (query.problem_id !== null && query.problem_id > 0) {
+		if (typeof query.problem_id !== "undefined" && query.problem_id > 0) {
 			p.append("problem_id", query.problem_id.toString());
 		}
 		if (query.status !== undefined && query.status !== "") {
 			p.append("status", query.status);
 		}
-		if (query.score !== null && query.score >= 0) {
+		if (typeof query.score !== "undefined" && query.score >= 0) {
 			p.append("score", query.score?.toString());
 		}
-		if (query.lang !== "") {
+		if (typeof query.lang !== "undefined" && query.lang !== "") {
 			p.append("lang", query.lang);
 		}
 		if (query.compile_error !== undefined) {
 			p.append("compile_error", String(query.compile_error));
 		}
-		if (query.ordering !== "id") {
+		if (typeof query.ordering !== "undefined" && query.ordering !== "id") {
 			p.append("ordering", query.ordering);
 		}
 		if (query.ascending == true) {
@@ -219,12 +168,12 @@ function SubsView() {
 						<span class="form-label">{getText("language")}:</span>
 						<select
 							class="form-select"
-							value={query.lang}
+							value={query.lang === undefined ? "" : query.lang}
 							onChange={(e) => {
 								setQuery({
 									...query,
 									page: 1,
-									lang: e.currentTarget.value,
+									lang: e.currentTarget.value == "" ? undefined : e.currentTarget.value,
 								});
 							}}
 						>
@@ -277,7 +226,7 @@ function SubsView() {
 								class="form-input"
 								type="number"
 								min="0"
-								value={query.user_id ?? "a"}
+								value={typeof query.user_id == "undefined" ? "a" : query.user_id}
 								onInput={(e) => {
 									let val: number | null = parseInt(e.currentTarget.value);
 									if (isNaN(val) || val <= 0) {
@@ -286,7 +235,7 @@ function SubsView() {
 									setQuery({
 										...query,
 										page: 1,
-										user_id: val,
+										user_id: val == null ? undefined : val,
 									});
 								}}
 							/>
@@ -297,7 +246,7 @@ function SubsView() {
 								class="form-input"
 								type="number"
 								min="0"
-								value={query.problem_id ?? "a"}
+								value={typeof query.problem_id == "undefined" ? "a" : query.problem_id}
 								onInput={(e) => {
 									let val: number | null = parseInt(e.currentTarget.value);
 									if (isNaN(val) || val <= 0) {
@@ -306,7 +255,7 @@ function SubsView() {
 									setQuery({
 										...query,
 										page: 1,
-										problem_id: val,
+										problem_id: val == null ? undefined : val,
 									});
 								}}
 							/>
@@ -318,7 +267,7 @@ function SubsView() {
 								type="number"
 								min="-1"
 								max="100"
-								value={query.score ?? "a"}
+								value={typeof query.score == "undefined" ? "a" : query.score}
 								onInput={(e) => {
 									let val: number | null = parseInt(e.currentTarget.value);
 									if (isNaN(val)) {
@@ -334,7 +283,7 @@ function SubsView() {
 									setQuery({
 										...query,
 										page: 1,
-										score: val,
+										score: val == null ? undefined : val,
 									});
 								}}
 							/>
@@ -380,15 +329,19 @@ function SubsView() {
 								page={query.page}
 								numpages={numPages}
 								setPage={(num) => {
-									setQuery({ ...query, page: num });
+									setQuery({ ...query, page: num }, true);
 								}}
 								ctxSize={2}
+								showArrows={true}
 							/>
 						</div>
 					</>
 				)}
 				{loading ? (
-					<BigSpinner />
+					<>
+						<div class="lg:mt-6" />
+						<BigSpinner />
+					</>
 				) : subs.length > 0 ? (
 					<div>
 						{query.problem_id != null && query.problem_id > 0 && (
@@ -419,7 +372,6 @@ function SubsView() {
 											{sub.sub.id}
 										</th>
 										<td class="px-2 py-1">
-											{/* <a class="inline-flex align-middle items-center" href={'/profile/'+sub.author.name}><img class="flex-none mr-2 rounded" src={'/api/user/getGravatar?s=32&name='+sub.author.name} width="32" height="32" alt="Avatar" /><span class="flex-1">{sub.author.name}</span></a>--> */}
 											<a href={"/profile/" + sub.author.name}>{sub.author.name}</a>
 										</td>
 										<td class="text-center px-2 py-1">{dayjs(sub.sub.created_at).format("DD/MM/YYYY HH:mm")}</td>
