@@ -109,14 +109,7 @@ export async function multipartProgressCall<T = any>(call: string, formdata: For
 				);
 			});
 			xhr.onload = () => {
-				if (xhr.status >= 200 && xhr.status < 300) {
-					resolve(xhr.response);
-				} else {
-					resolve({
-						status: "error",
-						data: xhr.statusText,
-					});
-				}
+				resolve(xhr.response);
 			};
 			xhr.onerror = () => {
 				resolve({

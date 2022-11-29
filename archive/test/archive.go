@@ -27,10 +27,9 @@ type archiveTest struct {
 }
 
 type ArchiveCtx struct {
-	hasScoreFile bool
-	tests        map[int]archiveTest
-	scoredTests  []int
-	props        *Properties
+	tests       map[int]archiveTest
+	scoredTests []int
+	props       *Properties
 }
 
 type Subtask struct {
@@ -49,7 +48,7 @@ type Properties struct {
 }
 
 func NewArchiveCtx() *ArchiveCtx {
-	return &ArchiveCtx{tests: make(map[int]archiveTest), scoredTests: make([]int, 0, 10), hasScoreFile: false}
+	return &ArchiveCtx{tests: make(map[int]archiveTest), scoredTests: make([]int, 0, 10)}
 }
 
 func ProcessScoreFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
@@ -58,12 +57,6 @@ func ProcessScoreFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 		return kilonova.Statusf(500, "Unknown error")
 	}
 	defer f.Close()
-
-	// If there's multiple score files, quit
-	if ctx.hasScoreFile {
-		return ErrBadArchive
-	}
-	ctx.hasScoreFile = true
 
 	br := bufio.NewScanner(f)
 
@@ -77,8 +70,8 @@ func ProcessScoreFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 		var testID int
 		var score int
 		if _, err := fmt.Sscanf(line, "%d %d\n", &testID, &score); err != nil {
-			zap.S().Info(err)
-			return ErrBadTestFile
+			// Might just be a bad line
+			continue
 		}
 
 		test := ctx.tests[testID]
@@ -116,13 +109,11 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 		// maybe it's problem_name.%d.{in,sol,out} format
 		nm := strings.Split(strings.TrimSuffix(name, path.Ext(name)), ".")
 		if len(nm) == 0 {
-			zap.S().Info("Bad name:", name)
-			return ErrBadArchive
+			return nil
 		}
 		val, err := strconv.Atoi(nm[len(nm)-1])
 		if err != nil {
-			zap.S().Info("Not number:", name)
-			return ErrBadArchive
+			return nil
 		}
 		tid = val
 	}
@@ -161,11 +152,6 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 		}
 	}
 
-	if aCtx.hasScoreFile && len(aCtx.scoredTests) != len(aCtx.tests) {
-		zap.S().Info(len(aCtx.scoredTests), len(aCtx.tests))
-		return kilonova.Statusf(400, "Mismatched number of tests in archive and scored tests")
-	}
-
 	if aCtx.props != nil && aCtx.props.Subtasks != nil && len(aCtx.props.SubtaskedTests) != len(aCtx.tests) {
 		zap.S().Info(len(aCtx.props.SubtaskedTests), len(aCtx.tests))
 		return kilonova.Statusf(400, "Mismatched number of tests in archive and tests that correspond to at least one subtask")
@@ -177,13 +163,21 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 		}
 	}
 
-	if !aCtx.hasScoreFile {
+	if len(aCtx.scoredTests) != len(aCtx.tests) {
+		// Try to deduce scoring remaining tests
 		zap.S().Info("Automatically inserting scores...")
+		totalScore := 100
+		for _, test := range aCtx.scoredTests {
+			totalScore -= aCtx.tests[test].Score
+		}
 		n := len(aCtx.tests)
-		perTest := 100/n + 1
-		toSub := n - 100%n
+		perTest := totalScore/n + 1
+		toSub := n - totalScore%n
 		k := 0
 		for i := range aCtx.tests {
+			if aCtx.tests[i].Score > 0 {
+				continue
+			}
 			tst := aCtx.tests[i]
 			tst.Score = perTest
 			if k < toSub {
