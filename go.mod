@@ -13,14 +13,8 @@ require (
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/gorilla/schema v1.2.0
 	github.com/gosimple/slug v1.13.1
-	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.13.0 // indirect
-	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.3.1 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
-	github.com/jackc/pgtype v1.12.0 // indirect
-	github.com/jackc/pgx/v4 v4.17.2
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/litao91/goldmark-mathjax v0.0.0-20210217064022-a43cf739a50f
@@ -34,10 +28,14 @@ require (
 	golang.org/x/text v0.4.0
 )
 
-require github.com/go-chi/chi/v5 v5.0.7
+require (
+	github.com/go-chi/chi/v5 v5.0.7
+	github.com/jackc/pgx/v5 v5.1.1
+)
 
 require (
 	github.com/gosimple/unidecode v1.0.1 // indirect
+	github.com/lib/pq v1.10.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 )
