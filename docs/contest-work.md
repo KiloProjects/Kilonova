@@ -13,6 +13,7 @@ High priority:
 - [ ] Websockets for live updates.
 
 Medium priority:
+- [ ] Max number of submissions during contest;
 - [x] Allow to disable manual signup;
 - [ ] Real-time leaderboard for admins;
 - [x] Show max score on problem page;

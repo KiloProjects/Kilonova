@@ -207,6 +207,7 @@ function SubsView() {
 							<option value="score">{getText("score")}</option>
 							<option value="max_time">{getText("maxTime")}</option>
 							<option value="max_mem">{getText("maxMemory")}</option>
+							<option value="code_size">{getText("codeSize")}</option>
 						</select>
 					</label>
 					<label class="block mb-2">

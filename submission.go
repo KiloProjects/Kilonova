@@ -21,6 +21,7 @@ type Submission struct {
 	ProblemID int       `json:"problem_id"`
 	Language  string    `json:"language"`
 	Code      string    `json:"code,omitempty"`
+	CodeSize  int       `json:"code_size"`
 	Status    Status    `json:"status"`
 
 	CompileError   *bool   `json:"compile_error"`

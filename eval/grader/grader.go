@@ -20,7 +20,7 @@ import (
 
 var (
 	True          = true
-	waitingSubs   = kilonova.SubmissionFilter{Status: kilonova.StatusWaiting, Ascending: true}
+	waitingSubs   = kilonova.SubmissionFilter{Status: kilonova.StatusWaiting, Ascending: true, Limit: 20}
 	workingUpdate = kilonova.SubmissionUpdate{Status: kilonova.StatusWorking}
 )
 

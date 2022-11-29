@@ -26,7 +26,7 @@ var Langs = map[string]Language{
 		PrintableName: "C",
 		InternalName:  "c",
 
-		CompileCommand: []string{"gcc", "-std=c11", "-O2", "-s", "-static", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
+		CompileCommand: []string{"gcc", "-fuse-ld=mold", "-std=c11", "-O2", "-s", "-static", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.c",
 		CompiledName:   "/box/output",
@@ -39,7 +39,7 @@ var Langs = map[string]Language{
 		PrintableName: "C++11",
 		InternalName:  "cpp",
 
-		CompileCommand: []string{"g++", "-std=c++11", "-O2", "-s", "-static", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
+		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++11", "-O2", "-s", "-static", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.cpp",
 		CompiledName:   "/box/output",
@@ -52,7 +52,7 @@ var Langs = map[string]Language{
 		PrintableName: "C++14",
 		InternalName:  "cpp14",
 
-		CompileCommand: []string{"g++", "-std=c++14", "-O2", "-s", "-static", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
+		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++14", "-O2", "-s", "-static", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.cpp",
 		CompiledName:   "/box/output",
@@ -65,7 +65,7 @@ var Langs = map[string]Language{
 		PrintableName: "C++17",
 		InternalName:  "cpp17",
 
-		CompileCommand: []string{"g++", "-std=c++17", "-O2", "-s", "-static", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
+		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++17", "-O2", "-s", "-static", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.cpp",
 		CompiledName:   "/box/output",
@@ -78,7 +78,7 @@ var Langs = map[string]Language{
 		PrintableName: "C++20",
 		InternalName:  "cpp20",
 
-		CompileCommand: []string{"g++", "-std=c++20", "-O2", "-s", "-static", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
+		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++20", "-O2", "-s", "-static", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.cpp",
 		CompiledName:   "/box/output",

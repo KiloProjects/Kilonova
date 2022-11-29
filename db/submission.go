@@ -21,6 +21,7 @@ type dbSubmission struct {
 	ProblemID int       `db:"problem_id"`
 	Language  string    `db:"language"`
 	Code      string    `db:"code"`
+	CodeSize  int       `db:"code_size"`
 	Status    string    `db:"status"`
 
 	CompileError   sql.NullBool   `db:"compile_error"`
@@ -233,6 +234,8 @@ func getSubmissionOrdering(ordering string, ascending bool) string {
 		return "ORDER BY max_memory" + ord + ", id DESC"
 	case "score":
 		return "ORDER BY score" + ord + ", id DESC"
+	case "code_size":
+		return "ORDER BY code_size" + ord + ", id DESC"
 	default:
 		return "ORDER BY id" + ord
 	}
@@ -258,6 +261,7 @@ func (s *DB) internalToSubmission(sub *dbSubmission) *kilonova.Submission {
 		ProblemID:      sub.ProblemID,
 		Language:       sub.Language,
 		Code:           sub.Code,
+		CodeSize:       sub.CodeSize,
 		Status:         kilonova.Status(sub.Status),
 		CompileError:   cErr,
 		CompileMessage: cMsg,

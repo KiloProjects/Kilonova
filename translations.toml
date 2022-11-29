@@ -643,6 +643,10 @@ ro = "Timp Maxim"
 en = "Max Memory"
 ro = "Memorie Maximă"
 
+[codeSize]
+en = "Code size"
+ro = "Dimensiunea codului"
+
 [ascending]
 en = "Ascending Sort"
 ro = "Criteriu Crescător"
