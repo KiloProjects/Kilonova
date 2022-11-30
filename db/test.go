@@ -10,7 +10,7 @@ import (
 )
 
 func (s *DB) CreateTest(ctx context.Context, test *kilonova.Test) error {
-	if test.ProblemID == 0 || test.Score == 0 {
+	if test.ProblemID == 0 {
 		return kilonova.ErrMissingRequired
 	}
 
@@ -70,7 +70,6 @@ func (s *DB) UpdateTest(ctx context.Context, id int, upd kilonova.TestUpdate) er
 	return err
 }
 
-// TODO: Test subtask stuff actually works
 func (s *DB) OrphanProblemTests(ctx context.Context, problemID int) error {
 	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("UPDATE tests SET orphaned = true WHERE problem_id = ?"), problemID)
 	if err != nil {
@@ -80,7 +79,6 @@ func (s *DB) OrphanProblemTests(ctx context.Context, problemID int) error {
 	return err
 }
 
-// TODO: Test subtask stuff actually works
 func (s *DB) OrphanTest(ctx context.Context, id int) error {
 	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("UPDATE tests SET orphaned = true WHERE id = ?"), id)
 	if err != nil {
