@@ -165,6 +165,7 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *Use
 
 	rez.ProblemEditor = util.IsProblemEditor(lookingUser, rez.Problem)
 
+	rez.SubTests = []*SubTest{}
 	rawSubtests, err := s.db.SubTestsBySubID(ctx, subid)
 	if err != nil {
 		return nil, Statusf(500, "Couldn't fetch subtests")

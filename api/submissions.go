@@ -15,7 +15,7 @@ type subLine struct {
 	Sub           *kilonova.Submission `json:"sub"`
 	User          *kilonova.UserBrief  `json:"author,omitempty"`
 	Problem       *kilonova.Problem    `json:"problem,omitempty"`
-	SubTests      []*sudoapi.SubTest   `json:"subtests,omitempty"`
+	SubTests      []*sudoapi.SubTest   `json:"subtests"`
 	SubTasks      []*kilonova.SubTask  `json:"subtasks,omitempty"`
 }
 

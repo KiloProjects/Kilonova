@@ -6,7 +6,7 @@
 		"buildCSS": "TAILWIND_MODE=build postcss tailwind.css -o ../static/styles.css",
 		"prodCSS": "NODE_ENV=production yarn buildCSS",
 		"buildJS": "esbuild app.ts --jsx-factory=h --jsx-fragment=Fragment --bundle --target=es2015 --outfile=../static/bundle.js --global-name=bundled --sourcemap=inline ",
-		"prodJS": "esbuild app.ts  --jsx-factory=h --jsx-fragment=Fragment --bundle --target=es2015 --outfile=../static/bundle.js --global-name=bundled --minify ",
+		"prodJS": "esbuild app.ts  --jsx-factory=h --jsx-fragment=Fragment --bundle --target=es2015 --outfile=../static/bundle.js --global-name=bundled --sourcemap --minify ",
 		"prod": "yarn prodJS && yarn prodCSS",
 		"build": "yarn buildJS && yarn buildCSS",
 		"esv": "esbuild --version"
