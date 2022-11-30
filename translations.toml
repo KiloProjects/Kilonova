@@ -1066,3 +1066,7 @@ ro = "Distribuit de"
 [disabled_signup]
 en = "Manual signup has been disabled by the administrator"
 ro = "Înregistrearea manuală a fost dezactivată de către administrator"
+
+[acceptedSubs]
+en = "Accepted Solutions"
+ro = "Soluții Acceptate"

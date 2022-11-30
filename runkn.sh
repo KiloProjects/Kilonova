@@ -1,10 +1,11 @@
 #!/bin/bash
 
+echo "Regenerating translation strings"
+go generate
+
 echo "Building js bundle"
 yarn --cwd ./web/assets prodJS
 
-echo "Regenerating translation strings"
-go generate
 
 go build -race -v ./cmd/kn || exit 2
 

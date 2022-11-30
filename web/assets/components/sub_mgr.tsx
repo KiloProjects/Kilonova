@@ -75,16 +75,16 @@ function Summary({ sub, pasteAuthor }) {
 						<td class="kn-table-cell">{getText("uploadDate")}</td>
 						<td class="kn-table-cell">{parseTime(sub.created_at)}</td>
 					</tr>
-					<tr class="kn-table-simple-border">
-						<td class="kn-table-cell">{getText("language")}</td>
-						<td class="kn-table-cell">{prettyLanguages[sub.language]}</td>
-					</tr>
-					<tr class="kn-table-simple-border">
-						<td class="kn-table-cell">{getText("codeSize")}</td>
-						<td class="kn-table-cell">{sizeFormatter(sub.code_size)}</td>
-					</tr>
 					{sub.status === "finished" && (
 						<>
+							<tr class="kn-table-simple-border">
+								<td class="kn-table-cell">{getText("score")}</td>
+								<td class="kn-table-cell">
+									<span class="badge-lite font-bold" style={{ backgroundColor: getGradient(sub.score, 100) }}>
+										{sub.score}
+									</span>
+								</td>
+							</tr>
 							<tr class="kn-table-simple-border">
 								<td class="kn-table-cell">{getText("time")}</td>
 								<td class="kn-table-cell">{sub.max_time == -1 ? "-" : `${Math.floor(sub.max_time * 1000)} ms`}</td>
@@ -95,22 +95,24 @@ function Summary({ sub, pasteAuthor }) {
 							</tr>
 						</>
 					)}
-					<tr class="kn-table-simple-border">
-						<td class="kn-table-cell">{getText("status")}</td>
-						<td class="kn-table-cell">{sub.status}</td>
-					</tr>
 					{sub.problem.default_points > 0 && (
 						<tr class="kn-table-simple-border">
 							<td class="kn-table-cell">{getText("defaultPoints")}</td>
 							<td class="kn-table-cell">{sub.problem.default_points}</td>
 						</tr>
 					)}
-					{sub.status === "finished" && (
-						<tr class="kn-table-simple-border">
-							<td class="kn-table-cell">{getText("score")}</td>
-							<td class="kn-table-cell">{sub.score}</td>
-						</tr>
-					)}
+					<tr class="kn-table-simple-border">
+						<td class="kn-table-cell">{getText("language")}</td>
+						<td class="kn-table-cell">{prettyLanguages[sub.language]}</td>
+					</tr>
+					<tr class="kn-table-simple-border">
+						<td class="kn-table-cell">{getText("codeSize")}</td>
+						<td class="kn-table-cell">{sizeFormatter(sub.code_size)}</td>
+					</tr>
+					<tr class="kn-table-simple-border">
+						<td class="kn-table-cell">{getText("status")}</td>
+						<td class="kn-table-cell">{sub.status}</td>
+					</tr>
 				</tbody>
 			</table>
 		</div>
@@ -210,7 +212,7 @@ function TestTable({ sub }) {
 								<td>{Math.floor(subtest.time * 1000)} ms</td>
 								<td>{sizeFormatter(subtest.memory * 1024, 1, true)}</td>
 								<td>{subtest.verdict}</td>
-								<td class="text-black" style={"background-color: " + getGradient(subtest.score, 100)}>
+								<td class="text-black" style={{ backgroundColor: getGradient(subtest.score, 100) }}>
 									{sub.subTasks.length > 0 ? (
 										<>
 											{subtest.score}% {getText("correct")}
@@ -273,7 +275,7 @@ function SubTask({ sub, subtask, detRef }) {
 				{/* <span class="flex justify-between"> */}
 				<span>{getText("nthSubTask", subtask.visible_id)}</span>
 				{allSubtestsDone ? (
-					<span class="float-right badge" style={`background-color: ${getGradient(stkScore, 100)}`}>
+					<span class="float-right badge" style={{ backgroundColor: getGradient(stkScore, 100) }}>
 						{Math.round((subtask.score * stkScore) / 100.0)} / {subtask.score}
 					</span>
 				) : (
@@ -301,7 +303,7 @@ function SubTask({ sub, subtask, detRef }) {
 						>
 							<span>{getText("nthTest", actualSubtest.test.visible_id)}</span>
 							{actualSubtest.done ? (
-								<span class="badge" style={`background-color: ${getGradient(actualSubtest.score, 100)}`}>
+								<span class="badge" style={{ backgroundColor: getGradient(actualSubtest.score, 100) }}>
 									{Math.round((subtask.score * actualSubtest.score) / 100.0)} / {subtask.score}
 								</span>
 							) : (

@@ -185,47 +185,15 @@ export function ProblemAttachment({ attname = "" }) {
 	return <img src={`${pname}/attachments/${attname}`} />;
 }
 
-interface OlderSubsParams {
-	userid: number;
-	problemid: number;
-}
-
-type shortSub = {
-	sub: {
-		id: number;
-		created_at: string;
-		status: string;
-		score: number;
-	};
-};
-
-type getSubsResult = {
-	count: number;
-	subs: shortSub[];
-};
-
-async function getSubmissssions(user_id: number, problem_id: number, limit: number): Promise<getSubsResult> {
-	const result = await getCall<getSubsResult>("/submissions/get", {
-		limit,
-		problem_id,
-		user_id,
-	});
-	if (result.status !== "success") {
-		throw new Error(result.data);
-	}
-	return result.data;
-}
-
 const SUB_VIEW_LIMIT = 5;
 
-export function OlderSubmissions({ userid, problemid }: OlderSubsParams) {
+export function OlderSubmissions({ userid, problemid }: { userid: number; problemid: number }) {
 	let [subs, setSubs] = useState<ResultSubmission[]>([]);
 	let [loading, setLoading] = useState(true);
 	let [numHidden, setNumHidden] = useState(0);
 
 	async function load() {
 		var data = await getSubmissions({ user_id: userid, problem_id: problemid, limit: SUB_VIEW_LIMIT, page: 1 });
-		// const data = await getSubmissions(userid, problemid, SUB_VIEW_LIMIT);
 		setSubs(data.subs);
 		setNumHidden(Math.max(data.count - SUB_VIEW_LIMIT, 0));
 		setLoading(false);
@@ -242,8 +210,10 @@ export function OlderSubmissions({ userid, problemid }: OlderSubsParams) {
 	}, []);
 
 	return (
-		<>
-			<h2 class="mb-2">{getText("oldSubs")}</h2>
+		<details open>
+			<summary>
+				<h2 class="inline-block mb-2">{getText("oldSubs")}</h2>
+			</summary>
 			{loading ? (
 				<InlineSpinner />
 			) : (
@@ -257,7 +227,7 @@ export function OlderSubmissions({ userid, problemid }: OlderSubsParams) {
 									key={sub.sub.id}
 								>
 									<span>{`#${sub.sub.id}: ${dayjs(sub.sub.created_at).format("DD/MM/YYYY HH:mm")}`}</span>
-									<span class="rounded-md px-2 py-1 bg-teal-700 text-white text-sm">
+									<span class="badge-lite text-sm">
 										{{
 											finished: <>{sub.sub.score}</>,
 											working: <i class="fas fa-cog animate-spin"></i>,
@@ -276,7 +246,7 @@ export function OlderSubmissions({ userid, problemid }: OlderSubsParams) {
 					)}
 				</>
 			)}
-		</>
+		</details>
 	);
 }
 

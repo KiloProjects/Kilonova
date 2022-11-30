@@ -352,8 +352,12 @@
 		@apply text-gray-500 dark:text-gray-300 !important;
 	}
 
+	.badge-lite {
+		@apply rounded-md py-1 px-2 text-base bg-teal-700 text-white h-fit;
+	}
+
 	.badge {
-		@apply rounded-full py-1 px-2 text-base bg-teal-700 text-white font-semibold h-fit;
+		@apply badge-lite rounded-full font-semibold;
 	}
 
 	.badge-red {

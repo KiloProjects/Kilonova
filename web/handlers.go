@@ -424,6 +424,6 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 
 	if err := templ.Execute(w, data); err != nil {
 		fmt.Fprintf(w, "Error executing template, report to admin: %s", err)
-		zap.S().Warnf("Erorr executing template: %q %q %#v", err, templ.Name(), util.UserBrief(r))
+		zap.S().Warnf("Erorr executing template: %q %q %#v", err, r.URL.Path, util.UserBrief(r))
 	}
 }

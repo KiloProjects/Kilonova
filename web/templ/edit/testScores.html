@@ -86,7 +86,10 @@ function updateFinalScore() {
 	}
 }
 
-updateFinalScore();
+
+if(document.getElementById("scoreOutput") !== null) {
+    updateFinalScore();
+}
 
 async function deleteTests() {
 	var tests = [];

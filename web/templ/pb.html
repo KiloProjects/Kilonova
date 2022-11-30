@@ -82,9 +82,9 @@
                     {{ end }}
                     <p>{{getText "visibility"}}: 
                     {{if .Problem.Visible}}
-                        <span class="rounded-md px-2 py-1 bg-green-700 text-white text-sm">{{getText "published"}}</span>
+                        <span class="badge-lite bg-green-700 text-sm">{{getText "published"}}</span>
                     {{else}}
-                        <span class="rounded-md px-2 py-1 bg-red-700 text-white text-sm">{{getText "unpublished"}}</span>
+                        <span class="badge-lite bg-red-700 text-sm">{{getText "unpublished"}}</span>
                     {{end}}
                     </p>
                     {{end}}
@@ -111,15 +111,17 @@
 			{{ end }}
 			{{ with .Attachments }}
 				<div class="page-sidebar-divider"></div>
-				<div class="page-sidebar-box"> <!-- Attachments -->
-                    <h2>{{getText "attachments"}}</h2>
+				<details class="page-sidebar-box" open> <!-- Attachments -->
+                    <summary>
+                        <h2 class="inline-block">{{getText "attachments"}}</h2>
+                    </summary>
 					<div class="px-2">
                         <div class="list-group list-group-mini">
                             {{ range . }}
                                 <a style="word-wrap: anywhere;" href="/problems/{{$pbid}}/attachments/{{.Name}}" class="list-group-item flex justify-between">
                                     <span id="att-name-{{.ID}}">{{.Name}}</span>
                                     <span 
-                                        class="badge text-sm" 
+                                        class="badge-lite text-sm" 
                                         id="att-size-{{.ID}}">
                                         {{.Size}}
                                     </span>

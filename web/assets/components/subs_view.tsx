@@ -146,25 +146,6 @@ function SubsView() {
 				<div class="page-sidebar-box">
 					<h2>{getText("filters")}</h2>
 					<label class="block mb-2">
-						<span class="form-label">{getText("status")}:</span>
-						<select
-							class="form-select"
-							value={query.status}
-							onChange={(e) => {
-								setQuery({
-									...query,
-									page: 1,
-									status: e.currentTarget.value,
-								});
-							}}
-						>
-							<option value="">-</option>
-							<option value="finished">{getText("finished")}</option>
-							<option value="working">{getText("working")}</option>
-							<option value="waiting">{getText("waiting")}</option>
-						</select>
-					</label>
-					<label class="block mb-2">
 						<span class="form-label">{getText("language")}:</span>
 						<select
 							class="form-select"
@@ -219,9 +200,43 @@ function SubsView() {
 						/>
 						<span class="form-label">{getText("ascending")}</span>
 					</label>
+					<label class="block mb-2">
+						<input
+							type="checkbox"
+							class="form-checkbox mr-2"
+							checked={query.status === "finished" && query.score === 100}
+							onInput={(e) => {
+								if (e.currentTarget.checked) {
+									setQuery({ ...query, page: 1, status: "finished", score: 100 });
+								} else {
+									setQuery({ ...query, page: 1, status: undefined, score: undefined });
+								}
+							}}
+						/>
+						<span class="form-label">{getText("acceptedSubs")}</span>
+					</label>
 					<details class="block mb-2">
 						<summary class="form-label">{getText("advancedOptions")}</summary>
 						<label class="block mb-2">
+							<label class="block mb-2">
+								<span class="form-label">{getText("status")}:</span>
+								<select
+									class="form-select"
+									value={typeof query.status === "undefined" ? "" : query.status}
+									onChange={(e) => {
+										setQuery({
+											...query,
+											page: 1,
+											status: e.currentTarget.value,
+										});
+									}}
+								>
+									<option value="">-</option>
+									<option value="finished">{getText("finished")}</option>
+									<option value="working">{getText("working")}</option>
+									<option value="waiting">{getText("waiting")}</option>
+								</select>
+							</label>
 							<span class="form-label">{getText("userID")}:</span>
 							<input
 								class="form-input"
