@@ -76,19 +76,29 @@ function Summary({ sub, pasteAuthor }) {
 						<td class="kn-table-cell">{parseTime(sub.created_at)}</td>
 					</tr>
 					<tr class="kn-table-simple-border">
-						<td class="kn-table-cell">{getText("status")}</td>
-						<td class="kn-table-cell">{sub.status}</td>
-					</tr>
-					<tr class="kn-table-simple-border">
 						<td class="kn-table-cell">{getText("language")}</td>
 						<td class="kn-table-cell">{prettyLanguages[sub.language]}</td>
 					</tr>
-					{sub.code && (
-						<tr class="kn-table-simple-border">
-							<td class="kn-table-cell">{getText("size")}</td>
-							<td class="kn-table-cell">{sizeFormatter(sub.code.length)}</td>
-						</tr>
+					<tr class="kn-table-simple-border">
+						<td class="kn-table-cell">{getText("codeSize")}</td>
+						<td class="kn-table-cell">{sizeFormatter(sub.code_size)}</td>
+					</tr>
+					{sub.status === "finished" && (
+						<>
+							<tr class="kn-table-simple-border">
+								<td class="kn-table-cell">{getText("time")}</td>
+								<td class="kn-table-cell">{sub.max_time == -1 ? "-" : `${Math.floor(sub.max_time * 1000)} ms`}</td>
+							</tr>
+							<tr class="kn-table-simple-border">
+								<td class="kn-table-cell">{getText("memory")}</td>
+								<td class="kn-table-cell">{sub.max_memory == -1 ? "-" : sizeFormatter(sub.max_memory * 1024)}</td>
+							</tr>
+						</>
 					)}
+					<tr class="kn-table-simple-border">
+						<td class="kn-table-cell">{getText("status")}</td>
+						<td class="kn-table-cell">{sub.status}</td>
+					</tr>
 					{sub.problem.default_points > 0 && (
 						<tr class="kn-table-simple-border">
 							<td class="kn-table-cell">{getText("defaultPoints")}</td>
@@ -96,20 +106,10 @@ function Summary({ sub, pasteAuthor }) {
 						</tr>
 					)}
 					{sub.status === "finished" && (
-						<>
-							<tr class="kn-table-simple-border">
-								<td class="kn-table-cell">{getText("score")}</td>
-								<td class="kn-table-cell">{sub.score}</td>
-							</tr>
-							<tr class="kn-table-simple-border">
-								<td class="kn-table-cell">{getText("maxTime")}</td>
-								<td class="kn-table-cell">{sub.max_time == -1 ? "-" : `${Math.floor(sub.max_time * 1000)} ms`}</td>
-							</tr>
-							<tr class="kn-table-simple-border">
-								<td class="kn-table-cell">{getText("maxMemory")}</td>
-								<td class="kn-table-cell">{sub.max_memory == -1 ? "-" : sizeFormatter(sub.max_memory * 1024, undefined)}</td>
-							</tr>
-						</>
+						<tr class="kn-table-simple-border">
+							<td class="kn-table-cell">{getText("score")}</td>
+							<td class="kn-table-cell">{sub.score}</td>
+						</tr>
 					)}
 				</tbody>
 			</table>
