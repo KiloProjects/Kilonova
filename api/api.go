@@ -71,7 +71,6 @@ func (s *API) Handler() http.Handler {
 
 		r.Route("/{problemID}", func(r chi.Router) {
 			r.Use(s.validateProblemID)
-			r.Use(s.MustBeProposer)
 			r.Use(s.validateProblemEditor)
 
 			r.Route("/update", func(r chi.Router) {
