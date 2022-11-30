@@ -11,6 +11,12 @@ import { getSubmissions } from "../api/submissions";
 import type { Submission, SubmissionQuery, ResultSubmission } from "../api/submissions";
 
 const rezStr = (subCount: number): string => {
+	if (subCount < 0) {
+		return `- ${getText("u20Results")}`;
+	}
+	if (subCount == 0) {
+		return `0 ${getText("u20Results")}`;
+	}
 	if (subCount == 1) {
 		return getText("oneResult");
 	}
@@ -70,6 +76,7 @@ function SubsView() {
 	let [query, updQuery] = useState<SubmissionQuery>(getInitialData());
 	let [subs, setSubs] = useState<ResultSubmission[]>([]);
 	let [count, setCount] = useState<number>(-1);
+	let [initialLoad, setInitialLoad] = useState(true);
 
 	const setQuery = (q: SubmissionQuery, ignoreReset?: boolean) => {
 		updQuery(q);
@@ -97,6 +104,7 @@ function SubsView() {
 		setSubs(res.subs);
 		setCount(res.count);
 		setLoading(false);
+		setInitialLoad(false);
 	}, 200);
 
 	useEffect(() => {
@@ -140,6 +148,32 @@ function SubsView() {
 		}
 	}
 
+	function doSort(type: string) {
+		let ordering = typeof query.ordering === "undefined" ? "id" : query.ordering;
+		let ascending = typeof query.ascending === "undefined" ? false : query.ascending;
+
+		if (type === ordering) {
+			ascending = !ascending;
+		} else {
+			ordering = type;
+			ascending = false;
+		}
+
+		setQuery({ ...query, ascending, ordering });
+	}
+
+	function sortIndicator(type: string) {
+		let ordering = typeof query.ordering === "undefined" ? "id" : query.ordering;
+		let ascending = typeof query.ascending === "undefined" ? false : query.ascending;
+		if (ordering !== type) {
+			return <i class="fas fa-sort"></i>;
+		}
+		if (ascending) {
+			return <i class="fas fa-sort-up"></i>;
+		}
+		return <i class="fas fa-sort-down"></i>;
+	}
+
 	return (
 		<div class="page-holder">
 			<div class="page-sidebar lg:order-last">
@@ -169,7 +203,7 @@ function SubsView() {
 							)}
 						</select>
 					</label>
-					<label class="block mb-2">
+					{/* <label class="block mb-2">
 						<span class="form-label">{getText("sorting")}:</span>
 						<select
 							class="form-select"
@@ -199,7 +233,7 @@ function SubsView() {
 							onInput={(e) => setQuery({ ...query, page: 1, ascending: e.currentTarget.checked })}
 						/>
 						<span class="form-label">{getText("ascending")}</span>
-					</label>
+					</label> */}
 					<label class="block mb-2">
 						<input
 							type="checkbox"
@@ -337,82 +371,106 @@ function SubsView() {
 				</div>
 			</div>
 			<div class="page-content">
-				{count > 0 && (
+				{!initialLoad && (
 					<>
 						<h2 class="inline-block">{rezStr(count)}</h2>
 						<div class="flex justify-center">
-							<Paginator
-								page={query.page}
-								numpages={numPages}
-								setPage={(num) => {
-									setQuery({ ...query, page: num }, true);
-								}}
-								ctxSize={2}
-								showArrows={true}
-							/>
+							{count > 0 ? (
+								<Paginator
+									page={query.page}
+									numpages={numPages}
+									setPage={(num) => {
+										setQuery({ ...query, page: num }, true);
+									}}
+									ctxSize={2}
+									showArrows={true}
+								/>
+							) : (
+								<Paginator page={1} numpages={1} setPage={() => {}} ctxSize={2} showArrows={true} />
+							)}
 						</div>
 					</>
 				)}
-				{loading ? (
+				{!loading && query.problem_id != null && query.problem_id > 0 && subs.length > 0 && (
+					<p>
+						{getText("problemSingle")} <a href={"/problems/" + subs[0].problem.id}>{subs[0].problem.name}</a>
+					</p>
+				)}
+				{initialLoad ? (
 					<>
 						<div class="lg:mt-6" />
 						<BigSpinner />
 					</>
 				) : subs.length > 0 ? (
 					<div>
-						{query.problem_id != null && query.problem_id > 0 && (
-							<p>
-								{getText("problemSingle")} <a href={"/problems/" + subs[0].problem.id}>{subs[0].problem.name}</a>
-							</p>
-						)}
 						<table class="kn-table">
 							<thead>
 								<tr>
-									<th scope="col" class="w-12 text-center px-4 py-2">
+									<th scope="col" class="w-20 text-center px-4 py-2">
 										{getText("id")}
 									</th>
 									<th scope="col">{getText("author")}</th>
-									<th scope="col">{getText("uploadDate")}</th>
+									<th scope="col" class="cursor-pointer" onClick={() => doSort("id")}>
+										{getText("uploadDate")} {sortIndicator("id")}
+									</th>
 									{((query.problem_id == 0 || query.problem_id == null) && <th scope="col">{getText("problemSingle")}</th>) || (
-										<th scope="col">{getText("codeSize")}</th>
+										<th scope="col" class="cursor-pointer" onClick={() => doSort("code_size")}>
+											{getText("codeSize")} {sortIndicator("code_size")}
+										</th>
 									)}
-									<th scope="col">{getText("time")}</th>
-									<th scope="col">{getText("memory")}</th>
-									<th scope="col" class="w-1/6">
-										{getText("status")}
+									<th scope="col" class="cursor-pointer" onClick={() => doSort("max_time")}>
+										{getText("time")} {sortIndicator("max_time")}
+									</th>
+									<th scope="col" class="cursor-pointer" onClick={() => doSort("max_mem")}>
+										{getText("memory")} {sortIndicator("max_mem")}
+									</th>
+									<th scope="col" class="w-1/6 cursor-pointer" onClick={() => doSort("score")}>
+										{getText("status")} {sortIndicator("score")}
 									</th>
 								</tr>
 							</thead>
-							<tbody>
-								{subs.map((sub) => (
-									<tr class="kn-table-row" key={sub.sub.id}>
-										<th scope="row" class="text-center px-2 py-1">
-											{sub.sub.id}
-										</th>
-										<td class="px-2 py-1">
-											<a href={"/profile/" + sub.author.name}>{sub.author.name}</a>
-										</td>
-										<td class="text-center px-2 py-1">{dayjs(sub.sub.created_at).format("DD/MM/YYYY HH:mm")}</td>
-										{((query.problem_id == 0 || query.problem_id == null) && (
-											<td class="text-center px-2 py-1">
-												{sub.hidden ? <span>---</span> : <a href={"/problems/" + sub.problem.id}>{sub.problem.name}</a>}
-											</td>
-										)) || (
-											<td class="text-center px-2 py-1">
-												<span>{sizeFormatter(sub.sub.code_size)}</span>
-											</td>
-										)}
-										<td class="text-center px-2 py-1">{sub.sub.max_time == -1 ? "-" : Math.floor(sub.sub.max_time * 1000) + "ms"}</td>
-										<td class="text-center px-2 py-1">{sub.sub.max_memory == -1 ? "-" : sizeFormatter(sub.sub.max_memory * 1024)}</td>
-										<td
-											class={(sub.sub.status === "finished" && !sub.hidden ? "text-black" : "") + " text-center"}
-											style={sub.sub.status == "finished" && !sub.hidden ? "background-color: " + getGradient(sub.sub.score, 100) : ""}
-										>
-											{sub.hidden ? <span>---</span> : <a href={"/submissions/" + sub.sub.id}>{status(sub.sub)}</a>}
+							{loading ? (
+								<tbody>
+									<tr class="my-6">
+										<td colSpan={20}>
+											<BigSpinner />
 										</td>
 									</tr>
-								))}
-							</tbody>
+								</tbody>
+							) : (
+								<tbody>
+									{subs.map((sub) => (
+										<tr class="kn-table-row" key={sub.sub.id}>
+											<th scope="row" class="text-center px-2 py-1">
+												{sub.sub.id}
+											</th>
+											<td class="px-2 py-1">
+												<a href={"/profile/" + sub.author.name}>{sub.author.name}</a>
+											</td>
+											<td class="text-center px-2 py-1">{dayjs(sub.sub.created_at).format("DD/MM/YYYY HH:mm")}</td>
+											{((query.problem_id == 0 || query.problem_id == null) && (
+												<td class="text-center px-2 py-1">
+													{sub.hidden ? <span>---</span> : <a href={"/problems/" + sub.problem.id}>{sub.problem.name}</a>}
+												</td>
+											)) || (
+												<td class="text-center px-2 py-1">
+													<span>{sizeFormatter(sub.sub.code_size)}</span>
+												</td>
+											)}
+											<td class="text-center px-2 py-1">{sub.sub.max_time == -1 ? "-" : Math.floor(sub.sub.max_time * 1000) + "ms"}</td>
+											<td class="text-center px-2 py-1">{sub.sub.max_memory == -1 ? "-" : sizeFormatter(sub.sub.max_memory * 1024)}</td>
+											<td
+												class={(sub.sub.status === "finished" && !sub.hidden ? "text-black" : "") + " text-center"}
+												style={
+													sub.sub.status == "finished" && !sub.hidden ? "background-color: " + getGradient(sub.sub.score, 100) : ""
+												}
+											>
+												{sub.hidden ? <span>---</span> : <a href={"/submissions/" + sub.sub.id}>{status(sub.sub)}</a>}
+											</td>
+										</tr>
+									))}
+								</tbody>
+							)}
 						</table>
 					</div>
 				) : (
