@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/asaskevich/govalidator"
 	"go.uber.org/zap"
@@ -51,8 +52,8 @@ func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (int, *StatusErr
 var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string) (int, *StatusError) {
-	if !config.Common.SignupEnabled {
-		return -1, Statusf(400, "Manual signup has been disabled by the administrator.")
+	if !config.Features.Signup {
+		return -1, kilonova.ErrFeatureDisabled
 	}
 
 	uname = strings.TrimSpace(uname)

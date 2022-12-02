@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/text/language"
@@ -103,6 +104,10 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 // ValidatePasteID puts the ID and the Paste in the router context
 func (rt *Web) ValidatePasteID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !config.Features.Pastes {
+			rt.statusPage(w, r, 404, "Feature has been disabled by administrator.")
+			return
+		}
 		paste, err1 := rt.base.SubmissionPaste(r.Context(), chi.URLParam(r, "id"))
 		if err1 != nil {
 			rt.statusPage(w, r, 400, "Paste-ul nu există")

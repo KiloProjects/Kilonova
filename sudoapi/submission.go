@@ -5,6 +5,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"go.uber.org/zap"
 )
@@ -289,6 +290,9 @@ func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission
 }
 
 func (s *BaseAPI) CreatePaste(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) (string, *StatusError) {
+	if !config.Features.Pastes {
+		return "", kilonova.ErrFeatureDisabled
+	}
 	paste := &kilonova.SubmissionPaste{Submission: sub, Author: user}
 	if err := s.db.CreatePaste(ctx, paste); err != nil {
 		return "", WrapError(err, "Couldn't create paste")
@@ -297,6 +301,9 @@ func (s *BaseAPI) CreatePaste(ctx context.Context, sub *kilonova.Submission, use
 }
 
 func (s *BaseAPI) SubmissionPaste(ctx context.Context, id string) (*kilonova.SubmissionPaste, *StatusError) {
+	if !config.Features.Pastes {
+		return nil, kilonova.ErrFeatureDisabled
+	}
 	paste, err := s.db.SubmissionPaste(ctx, id)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get paste")
@@ -308,6 +315,9 @@ func (s *BaseAPI) SubmissionPaste(ctx context.Context, id string) (*kilonova.Sub
 }
 
 func (s *BaseAPI) DeletePaste(ctx context.Context, id string) *StatusError {
+	if !config.Features.Pastes {
+		return kilonova.ErrFeatureDisabled
+	}
 	if err := s.db.DeleteSubPaste(ctx, id); err != nil {
 		return WrapError(err, "Couldn't delete paste")
 	}
