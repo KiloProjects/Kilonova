@@ -1070,3 +1070,27 @@ ro = "Înregistrearea manuală a fost dezactivată de către administrator"
 [acceptedSubs]
 en = "Accepted Solutions"
 ro = "Soluții Acceptate"
+
+[config.title]
+en = "Site configuration"
+ro = "Configurație site"
+
+[config.defaultLang]
+en = "Default language"
+ro = "Limbaj implicit"
+
+[featureSet]
+en = "Feature set"
+ro = "Funcționalități"
+
+[featureSet.grader]
+en = "Grader"
+ro = "Evaluator"
+
+[featureSet.signup]
+en = "Manual signup"
+ro = "Signup manual"
+
+[featureSet.pastes]
+en = "Pastes"
+ro = "Paste-uri"

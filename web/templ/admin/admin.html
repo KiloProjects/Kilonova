@@ -33,6 +33,42 @@
 	</div>
 </div>
 
+<form id="configForm" class="segment-container" autocomplete="off">
+    <h3 class="text-2xl">{{getText "config.title"}}</h3>
+
+    <label class="block">
+		<span class="form-label">{{getText "config.defaultLang"}}:</span>
+        <select name="default_lang" id="default_lang" class="form-select my-2">
+            <option value="ro" {{if eq defaultLang "ro"}}selected{{end}}>🇷🇴 Română</option>
+            <option value="en" {{if eq defaultLang "en"}}selected{{end}}>🇬🇧 English</option>
+        </select>
+    </label>
+
+    <div class="segment-container">
+        <h4>{{getText "featureSet"}}</h4>
+        <div class="block">
+            <label class="inline-flex items-center text-lg">
+                <input class="form-checkbox" name="grader" id="grader_feature" type="checkbox" {{if graderEnabled}}checked{{end}}>
+                <span class="ml-2">{{getText "featureSet.grader"}}</span>
+            </label>
+        </div>
+        <div class="block">
+            <label class="inline-flex items-center text-lg">
+                <input class="form-checkbox" name="signup" id="signup_feature" type="checkbox" {{if signupEnabled}}checked{{end}}>
+                <span class="ml-2">{{getText "featureSet.signup"}}</span>
+            </label>
+        </div>
+        <div class="block">
+            <label class="inline-flex items-center text-lg">
+                <input class="form-checkbox" name="pastes" id="pastes_feature" type="checkbox" {{if pastesEnabled}}checked{{end}}>
+                <span class="ml-2">{{getText "featureSet.pastes"}}</span>
+            </label>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-blue">{{getText "button.update"}}</button>
+</form>
+
 <script>
 	async function resetSubs() {
 		let res = await bundled.postCall("/admin/maintenance/resetWaitingSubs", {});
@@ -94,6 +130,16 @@
 	}
 	loadUsers({admin: true}, "admin-group", "setAdmin");
 	loadUsers({proposer: true}, "proposer-group", "setProposer");
+    document.getElementById("configForm").addEventListener("submit",async (e) => {
+        e.preventDefault()
+        const data = {
+            default_lang: document.getElementById("default_lang").value,
+            grader: document.getElementById("grader_feature").checked,
+            signup: document.getElementById("signup_feature").checked,
+            pastes: document.getElementById("pastes_feature").checked,
+        };
+        bundled.apiToast(await bundled.postCall("/admin/updateConfig", data))
+    })
 </script>
 
 {{ end }}

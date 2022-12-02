@@ -19,5 +19,6 @@
  password = "PASSWORD"
 
 [features]
+ grader = true
  manual_signup = true
  pastes = true

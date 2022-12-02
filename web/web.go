@@ -153,7 +153,6 @@ func (rt *Web) parse(optFuncs template.FuncMap, files ...string) *template.Templ
 
 // NewWeb returns a new web instance
 func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
-	spew.Dump(config.Features)
 	funcs := template.FuncMap{
 		"pLanguages": func() map[string]*WebLanguage {
 			return webLanguages
@@ -292,6 +291,9 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 
 		"signupEnabled": func() bool { return config.Features.Signup },
 		"pastesEnabled": func() bool { return config.Features.Pastes },
+		"graderEnabled": func() bool { return config.Features.Grader },
+		"defaultLang":   func() string { return config.Common.DefaultLang },
+
 		"intList": func(ids []int) string {
 			if ids == nil {
 				return ""
