@@ -136,7 +136,7 @@ var Langs = map[string]Language{
 		CompiledName: "/box/main.py",
 	},
 	"outputOnly": {
-		Extensions:    []string{".txt"},
+		Extensions:    []string{".output_only"},
 		Compiled:      false,
 		PrintableName: "Output Only",
 		InternalName:  "outputOnly",
