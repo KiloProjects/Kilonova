@@ -10,8 +10,10 @@
     <button onclick="deleteSubmission()" class="btn btn-red mb-2">{{getText "removeSub"}}</button>
     <button onclick="reevaluateSubmission()" class="btn btn-blue mb-2">{{getText "reevaluate"}}</button>
     {{ end }}
-    {{ if submissionEditor .Ctx.User.Brief .Submission }}
-        <button onclick="createPaste()" class="btn btn-blue mb-2">{{getText "create_paste"}}</button>
+    {{ if pastesEnabled }}
+        {{ if submissionEditor .Ctx.User.Brief .Submission }}
+            <button onclick="createPaste()" class="btn btn-blue mb-2">{{getText "create_paste"}}</button>
+        {{ end }}
     {{ end }}
 {{ end }}
 

@@ -13,6 +13,8 @@ var (
 
 	ErrNotFound     = Statusf(404, "Not found")
 	ErrUnknownError = Statusf(500, "Unknown error occured")
+
+	ErrFeatureDisabled = Statusf(400, "Feature disabled by administrator")
 )
 
 var _ error = &StatusError{}

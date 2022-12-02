@@ -153,6 +153,7 @@ func (rt *Web) parse(optFuncs template.FuncMap, files ...string) *template.Templ
 
 // NewWeb returns a new web instance
 func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
+	spew.Dump(config.Features)
 	funcs := template.FuncMap{
 		"pLanguages": func() map[string]*WebLanguage {
 			return webLanguages
@@ -289,7 +290,8 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"version":    func() string { return kilonova.Version },
 		"debug":      func() bool { return config.Common.Debug },
 
-		"signupEnabled": func() bool { return config.Common.SignupEnabled },
+		"signupEnabled": func() bool { return config.Features.Signup },
+		"pastesEnabled": func() bool { return config.Features.Pastes },
 		"intList": func(ids []int) string {
 			if ids == nil {
 				return ""

@@ -6,7 +6,6 @@
  port = 8070
  default_language = "en"
  db_dsn = "postgresql://<fill here>"
- signup_enabled = true
 
 [eval]
  isolatePath = "/tmp/isolate"
@@ -18,3 +17,7 @@
  host = "HOST"
  username = "USERNAME"
  password = "PASSWORD"
+
+[features]
+ manual_signup = true
+ pastes = true
