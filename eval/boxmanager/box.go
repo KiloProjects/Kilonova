@@ -3,6 +3,7 @@ package boxmanager
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -142,7 +143,10 @@ func (b *Box) GetID() int {
 func (b *Box) FileExists(fpath string) bool {
 	_, err := os.Stat(b.getFilePath(fpath))
 	if err != nil {
-		// TODO: Only fs.ErrNotExist should happen, make sure it is that way
+		if errors.Is(err, fs.ErrNotExist) {
+			return false
+		}
+		zap.S().Warnf("File stat (%q) returned weird error: %s", fpath, err)
 		return false
 	}
 	return true

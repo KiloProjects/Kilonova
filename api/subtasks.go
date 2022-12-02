@@ -55,7 +55,7 @@ func (s *API) createSubTask(w http.ResponseWriter, r *http.Request) {
 func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		SubTaskID int   `json:"subtask_id"`
+		SubTaskID *int  `json:"subtask_id"`
 		NewID     *int  `json:"new_id"`
 		Score     *int  `json:"score"`
 		Tests     []int `json:"tests"`
@@ -65,12 +65,12 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if args.SubTaskID == 0 {
+	if args.SubTaskID == nil {
 		errorData(w, "SubTask ID must not be empty", 400)
 		return
 	}
 
-	stk, err := s.base.SubTask(r.Context(), util.Problem(r).ID, args.SubTaskID)
+	stk, err := s.base.SubTask(r.Context(), util.Problem(r).ID, *args.SubTaskID)
 	if err != nil {
 		err.WriteError(w)
 		return
