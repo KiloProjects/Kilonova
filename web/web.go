@@ -227,8 +227,8 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			return util.IsPasteEditor(paste, user)
 		},
 		"problemVisible": util.IsProblemVisible,
-		"genProblemsParams": func(user *kilonova.UserBrief, pbs []*kilonova.Problem, showSolved, multiCols bool) *ProblemListingParams {
-			return &ProblemListingParams{user, pbs, showSolved, multiCols}
+		"genProblemsParams": func(scoreUser *kilonova.UserBrief, pbs []*kilonova.Problem, showSolved, multiCols bool) *ProblemListingParams {
+			return &ProblemListingParams{pbs, showSolved, multiCols, scoreUser}
 		},
 		"genPblistParams": func(user *kilonova.UserBrief, ctx *ReqContext, pblist *kilonova.ProblemList, open bool) *PblistParams {
 			return &PblistParams{user, ctx, pblist, open}
@@ -324,6 +324,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"authed": func() bool {
 			zap.S().Error("Uninitialized `authed`")
 			return false
+		},
+		"authedUser": func() *kilonova.UserBrief {
+			zap.S().Error("Uninitialized `authedUser`")
+			return nil
 		},
 	}
 	return &Web{debug, funcs, base}

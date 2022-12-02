@@ -65,12 +65,32 @@ func (s *BaseAPI) Problems(ctx context.Context, filter kilonova.ProblemFilter) (
 }
 
 func (s *BaseAPI) SolvedProblems(ctx context.Context, uid int) ([]*kilonova.Problem, *StatusError) {
-	pbs, err := s.db.SolvedProblems(ctx, uid)
+	ids, err := s.db.SolvedProblemIDs(ctx, uid)
 	if err != nil {
-		zap.S().Warn(err)
-		return nil, WrapError(err, "Couldn't get solved problems")
+		return nil, WrapError(err, "Couldn't get solved problem IDs")
 	}
-	return pbs, nil
+	return s.hydrateProblemIDs(ctx, ids), nil
+}
+
+func (s *BaseAPI) AttemptedProblems(ctx context.Context, uid int) ([]*kilonova.Problem, *StatusError) {
+	ids, err := s.db.AttemptedProblemsIDs(ctx, uid)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't get attempted problem IDs")
+	}
+	return s.hydrateProblemIDs(ctx, ids), nil
+}
+
+func (s *BaseAPI) hydrateProblemIDs(ctx context.Context, ids []int) []*kilonova.Problem {
+	var pbs = make([]*kilonova.Problem, 0, len(ids))
+	for _, id := range ids {
+		pb, err := s.Problem(ctx, id)
+		if err != nil {
+			zap.S().Warnf("Couldn't get solved problem %d: %s\n", id, err)
+		} else {
+			pbs = append(pbs, pb)
+		}
+	}
+	return pbs
 }
 
 func (s *BaseAPI) InsertProblem(ctx context.Context, problem *kilonova.Problem, authorID int) (int, *StatusError) {

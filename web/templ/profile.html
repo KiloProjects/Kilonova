@@ -69,13 +69,23 @@ async function deleteAccount() {
 </script>
 
 
-
-<div class="segment-container">
-    {{$pbs := .UserProblems }}
-    {{ if len $pbs }}
-    <h2>{{if eq 1 (len $pbs)}}{{getText "oneSolvedProblem"}}{{else}}{{getText "solvedProblems" (len $pbs)}}{{end}}</h2>
-    {{ template "pb_list_group" (genProblemsParams .Ctx.User.Brief $pbs false true) }}
-    {{ end }}
-</div>
+{{ if .SolvedProblems }}
+    <div class="segment-container">
+        {{$pbs := .SolvedProblems }}
+        {{ if len $pbs }}
+        <h2>{{if eq 1 (len $pbs)}}{{getText "oneSolvedProblem"}}{{else}}{{getText "solvedProblems" (len $pbs)}}{{end}}</h2>
+        {{ template "pb_list_group" (genProblemsParams .Ctx.User.Brief $pbs false true) }}
+        {{ end }}
+    </div>
+{{ end }}
+{{ if .AttemptedProblems }}
+    <div class="segment-container">
+        {{$pbs := .AttemptedProblems }}
+        {{ if len $pbs }}
+        <h2>{{if eq 1 (len $pbs)}}{{getText "oneAttemptedProblem"}}{{else}}{{getText "attemptedProblems" (len $pbs)}}{{end}}</h2>
+        {{ template "pb_list_group" (genProblemsParams .ContentUser.Brief $pbs true true) }}
+        {{ end }}
+    </div>
+{{ end }}
 
 {{ end }}

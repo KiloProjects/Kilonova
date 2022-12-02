@@ -144,10 +144,10 @@ type IndexParams struct {
 }
 
 type ProblemListingParams struct {
-	User      *kilonova.UserBrief
 	Problems  []*kilonova.Problem
 	ShowScore bool
 	MultiCols bool
+	ScoreUser *kilonova.UserBrief
 }
 
 type PblistParams struct {
@@ -160,8 +160,9 @@ type PblistParams struct {
 type ProfileParams struct {
 	Ctx *ReqContext
 
-	ContentUser  *kilonova.UserFull
-	UserProblems []*kilonova.Problem
+	ContentUser       *kilonova.UserFull
+	SolvedProblems    []*kilonova.Problem
+	AttemptedProblems []*kilonova.Problem
 }
 
 type AuditLogParams struct {

@@ -201,24 +201,6 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []interface{}) {
 	return toUpd, args
 }
 
-// TODO: Move to BaseAPI
-func (db *DB) SolvedProblems(ctx context.Context, uid int) ([]*kilonova.Problem, error) {
-	ids, err := db.solvedProblems(ctx, uid)
-	if err != nil {
-		return nil, err
-	}
-	var pbs = make([]*kilonova.Problem, 0, len(ids))
-	for _, id := range ids {
-		pb, err := db.Problem(ctx, id)
-		if err != nil {
-			zap.S().Warnf("Couldn't get solved problem %d: %s\n", id, err)
-		} else {
-			pbs = append(pbs, pb)
-		}
-	}
-	return pbs, nil
-}
-
 type problemAccess struct {
 	ProblemID int          `db:"problem_id"`
 	UserID    int          `db:"user_id"`

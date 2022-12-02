@@ -222,6 +222,15 @@ ro = "O problemă rezolvată:"
 en = "%d solved problems"
 ro = "%d probleme rezolvate"
 
+
+[oneAttemptedProblem]
+en = "One attempted problem:"
+ro = "O problemă încercată:"
+
+[attemptedProblems]
+en = "%d attempted problems"
+ro = "%d probleme încercate"
+
 [deleteAccount]
 en = "Prune User"
 ro = "Ștergere Profil"

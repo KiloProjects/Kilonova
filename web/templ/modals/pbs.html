@@ -1,12 +1,13 @@
 {{ define "pb_list_group" }}
-{{ $user := .User }}
+{{ $user := authedUser }}
 {{ $showScore := .ShowScore }}
+{{ $scoreUser := .ScoreUser }}
 <div class="list-group grid grid-cols-1 {{if .MultiCols }} md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 {{end}}">
 	{{ range .Problems }}
 		<a href="/problems/{{.ID}}" class="list-group-item flex justify-between">
 			<span>{{.Name}} (#{{.ID}})</span>
-			{{ if $user }}
-				<div>
+            <div>
+			    {{ if $user }}
 					{{ if (problemEditor $user .) }}
 						{{ if .Visible }}
 							<span class="badge badge-green">{{ getText "published" }}</span>
@@ -14,11 +15,13 @@
 							<span class="badge badge-red">{{ getText "unpublished" }}</span>
 						{{ end }}
 					{{ end }}
-                    {{ if $showScore }}
-					    <span class="badge">{{ subScore . $user }}</span>
                     {{ end }}
-                </div>
-			{{ end }}
+                {{ if $scoreUser }}
+                    {{ if $showScore }}
+					    <span class="badge">{{ subScore . $scoreUser }}</span>
+                    {{ end }}
+                {{ end }}
+            </div>
 		</a>
 	{{ end }}
 </div>

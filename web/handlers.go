@@ -153,12 +153,21 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 func (rt *Web) selfProfile() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "profile.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		pbs, err := rt.base.SolvedProblems(r.Context(), util.UserBrief(r).ID)
+		solvedPbs, err := rt.base.SolvedProblems(r.Context(), util.UserBrief(r).ID)
 		if err != nil {
-			rt.statusPage(w, r, 500, "")
+			solvedPbs = []*kilonova.Problem{}
 			return
 		}
-		rt.runTempl(w, r, templ, &ProfileParams{GenContext(r), util.UserFull(r), pbs})
+		attemptedPbs, err := rt.base.AttemptedProblems(r.Context(), util.UserBrief(r).ID)
+		if err != nil {
+			attemptedPbs = []*kilonova.Problem{}
+		}
+		rt.runTempl(w, r, templ, &ProfileParams{
+			GenContext(r),
+			util.UserFull(r),
+			solvedPbs,
+			attemptedPbs,
+		})
 	}
 }
 
@@ -176,13 +185,21 @@ func (rt *Web) profile() func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		pbs, err1 := rt.base.SolvedProblems(r.Context(), user.ID)
-		if err1 != nil {
-			rt.statusPage(w, r, 500, "")
+		solvedPbs, err := rt.base.SolvedProblems(r.Context(), user.ID)
+		if err != nil {
+			solvedPbs = []*kilonova.Problem{}
 			return
 		}
-
-		rt.runTempl(w, r, templ, &ProfileParams{GenContext(r), user, util.FilterVisible(util.UserBrief(r), pbs)})
+		attemptedPbs, err := rt.base.AttemptedProblems(r.Context(), user.ID)
+		if err != nil {
+			attemptedPbs = []*kilonova.Problem{}
+		}
+		rt.runTempl(w, r, templ, &ProfileParams{
+			GenContext(r),
+			user,
+			util.FilterVisible(util.UserBrief(r), solvedPbs),
+			util.FilterVisible(util.UserBrief(r), attemptedPbs),
+		})
 	}
 }
 
@@ -420,10 +437,13 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		"authed": func() bool {
 			return util.UserBrief(r) != nil
 		},
+		"authedUser": func() *kilonova.UserBrief {
+			return util.UserBrief(r)
+		},
 	})
 
 	if err := templ.Execute(w, data); err != nil {
 		fmt.Fprintf(w, "Error executing template, report to admin: %s", err)
-		zap.S().Warnf("Erorr executing template: %q %q %#v", err, r.URL.Path, util.UserBrief(r))
+		zap.S().WithOptions(zap.AddCallerSkip(1)).Warnf("Erorr executing template: %q %q %#v", err, r.URL.Path, util.UserBrief(r))
 	}
 }
