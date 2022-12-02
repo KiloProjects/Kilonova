@@ -11,7 +11,7 @@
 {{ end }}
 {{ end }}
 
-<div class="list-group list-group-mini">
+<div class="list-group">
 {{ range problemLists }}
     {{template "problemlist_show" (genPblistParams $user $ctx . false)}}
 {{ end }}
@@ -27,7 +27,7 @@
         </summary>
         {{ with . }}
             <div class="mt-2">
-                {{ template "pb_list_group" (genProblemsParams $user . true) }}
+                {{ template "pb_list_group" (genProblemsParams $user . true false) }}
             </div>
         {{ end }}
     </details>

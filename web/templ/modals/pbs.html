@@ -1,7 +1,7 @@
 {{ define "pb_list_group" }}
 {{ $user := .User }}
 {{ $showScore := .ShowScore }}
-<div class="list-group list-group-mini">
+<div class="list-group grid grid-cols-1 {{if .MultiCols }} md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 {{end}}">
 	{{ range .Problems }}
 		<a href="/problems/{{.ID}}" class="list-group-item flex justify-between">
 			<span>{{.Name}} (#{{.ID}})</span>

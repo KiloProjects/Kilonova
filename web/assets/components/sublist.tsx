@@ -46,7 +46,7 @@ type ProblemScore = { [problem: number]: number };
 
 export function Problems({ pbs, scores }: { pbs: Problem[]; scores: ProblemScore }) {
 	return (
-		<div class="list-group list-group-mini">
+		<div class="list-group">
 			{pbs.map((pb) => (
 				<a href={`/problems/${pb.id}`} class="list-group-item flex justify-between" key={pb.id}>
 					<span>
@@ -122,12 +122,12 @@ export function Sublist({ list }: { list: Sublist }) {
 			{fullData && (
 				<>
 					{descHTML && (
-						<div class="list-group list-group-mini mt-2">
+						<div class="list-group mt-2">
 							<div class="list-group-head" dangerouslySetInnerHTML={{ __html: descHTML }}></div>
 						</div>
 					)}
 					{fullData.sublists.length > 0 && (
-						<div class="list-group list-group-mini mt-2">
+						<div class="list-group mt-2">
 							{fullData.sublists.map((val) => (
 								<Sublist list={val} key={val.id.toString() + "_" + list.id.toString()} />
 							))}

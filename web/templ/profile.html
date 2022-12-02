@@ -74,7 +74,7 @@ async function deleteAccount() {
     {{$pbs := .UserProblems }}
     {{ if len $pbs }}
     <h2>{{if eq 1 (len $pbs)}}{{getText "oneSolvedProblem"}}{{else}}{{getText "solvedProblems" (len $pbs)}}{{end}}</h2>
-    {{ template "pb_list_group" (genProblemsParams .Ctx.User.Brief $pbs false) }}
+    {{ template "pb_list_group" (genProblemsParams .Ctx.User.Brief $pbs false true) }}
     {{ end }}
 </div>
 

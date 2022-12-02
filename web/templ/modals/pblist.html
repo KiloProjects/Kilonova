@@ -24,12 +24,12 @@
             {{end}}
         </summary>
         {{ if .Description }}
-            <div class="list-group list-group-mini mt-2">
+            <div class="list-group mt-2">
                 <div class="list-group-head">{{renderMarkdown .Description}}</div>
             </div>
         {{end}}
         {{ with .SubLists }}
-            <div class="list-group list-group-mini mt-2">
+            <div class="list-group mt-2">
                 {{ range . }}
                     <kn-dom-sublist encoded="{{encodeJSON .}}"></kn-dom-sublist>
                 {{ end }}
@@ -37,7 +37,7 @@
         {{ end }}
         {{ with $pbs }}
             <div class="mt-2">
-                {{ template "pb_list_group" (genProblemsParams $user . true) }}
+                {{ template "pb_list_group" (genProblemsParams $user . true false) }}
             </div>
         {{ end }}
     </details>

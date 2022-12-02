@@ -3,6 +3,7 @@
 	"version": "1.0.0",
 	"description": "Asset 'pipeline' for Kilonova",
 	"scripts": {
+		"watchCSS": "tailwindcss --postcss ./postcss.config.js -i tailwind.css --watch -o ../static/styles.css",
 		"buildCSS": "TAILWIND_MODE=build postcss tailwind.css -o ../static/styles.css",
 		"prodCSS": "NODE_ENV=production yarn buildCSS",
 		"buildJS": "esbuild app.ts --jsx-factory=h --jsx-fragment=Fragment --bundle --target=es2015 --outfile=../static/bundle.js --global-name=bundled --sourcemap=inline ",

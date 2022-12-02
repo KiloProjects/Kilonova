@@ -116,7 +116,7 @@
                         <h2 class="inline-block">{{getText "attachments"}}</h2>
                     </summary>
 					<div class="px-2">
-                        <div class="list-group list-group-mini">
+                        <div class="list-group">
                             {{ range . }}
                                 <a style="word-wrap: anywhere;" href="/problems/{{$pbid}}/attachments/{{.Name}}" class="list-group-item flex justify-between">
                                     <span id="att-name-{{.ID}}">{{.Name}}</span>

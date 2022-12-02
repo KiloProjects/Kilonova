@@ -11,7 +11,7 @@
 {{ $ctx := .Ctx }}
 
 
-<div class="list-group list-group-mini mb-4">
+<div class="list-group mb-4">
     {{ range problemLists }}
         {{ range .SubLists }}
             {{ with problemList .ID }}
@@ -31,20 +31,12 @@
             </summary>
             {{ with . }}
                 <div class="mt-2">
-                    {{ template "pb_list_group" (genProblemsParams $user . true) }}
+                    {{ template "pb_list_group" (genProblemsParams $user . true false) }}
                 </div>
             {{ end }}
         </details>
     {{ end }}
 </div>
-
-{{/* 
-    {{ with visibleProblems $user }}
-        <h2 class="text-2xl mb-2"> {{ getText "problems" }} </h2>
-        {{ template "pb_list_group" (genProblemsParams $user . true) }}
-        <div class="mb-6"></div>
-    {{ end }} 
-*/}}
 
 <div class="mb-4">
     {{ renderMarkdown (getText "all_problems_announcement") }}

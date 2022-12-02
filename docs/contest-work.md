@@ -6,16 +6,20 @@ High priority:
 	- [ ] Questions (Yes/No/No comment/etc);
 	- [ ] General announcements;
 	- [ ] Leaderboard;
-    - [ ] Disable pastes for contest problems during contest;
+        - [ ] Real-time leaderboard for admins;
+    - [x] Disable pastes for contest problems during contest;
+        - Can disable pastes in general now.
+        - [ ] More explicit filtering for main platform contests
     - [ ] Hide problem editors during contest if not admin;
 - [ ] Allow to disable contestant access to others' submissions;
 - [ ] Endpoint for account generation;
 - [ ] Websockets for live updates.
+    - Or maybe polling
 
 Medium priority:
+- [ ] Make problem score be sum of best subtasks if they exist
 - [ ] Max number of submissions during contest;
 - [x] Allow to disable manual signup;
-- [ ] Real-time leaderboard for admins;
 - [x] Show max score on problem page;
 - [ ] See which other features should be disabled during contests;
 - [ ] Disable forgot password things for generated accounts;

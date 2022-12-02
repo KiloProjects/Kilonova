@@ -12,7 +12,7 @@ type User = {
 
 function UserTable({ users }: { users: User[] }) {
 	return (
-		<div class="list-group list-group-mini">
+		<div class="list-group">
 			<div class="list-group-head font-bold">User</div>
 			{users.map((user) => (
 				<a href={`/profile/${user.name}`} class="list-group-item inline-flex align-middle items-center">

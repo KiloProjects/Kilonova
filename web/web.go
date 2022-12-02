@@ -227,8 +227,8 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			return util.IsPasteEditor(paste, user)
 		},
 		"problemVisible": util.IsProblemVisible,
-		"genProblemsParams": func(user *kilonova.UserBrief, pbs []*kilonova.Problem, showSolved bool) *ProblemListingParams {
-			return &ProblemListingParams{user, pbs, showSolved}
+		"genProblemsParams": func(user *kilonova.UserBrief, pbs []*kilonova.Problem, showSolved, multiCols bool) *ProblemListingParams {
+			return &ProblemListingParams{user, pbs, showSolved, multiCols}
 		},
 		"genPblistParams": func(user *kilonova.UserBrief, ctx *ReqContext, pblist *kilonova.ProblemList, open bool) *PblistParams {
 			return &PblistParams{user, ctx, pblist, open}

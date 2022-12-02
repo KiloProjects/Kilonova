@@ -285,7 +285,7 @@ function SubTask({ sub, subtask, detRef }) {
 				)}
 				{/* </span> */}
 			</summary>
-			<div class="list-group m-1 list-group-mini">
+			<div class="list-group m-1">
 				{subtask.tests.map((testID) => {
 					if (!(testID in sub.subTestIDs)) {
 						return (
@@ -328,7 +328,7 @@ function SubTasks({ sub, expandedTests }) {
 				<summary>
 					<h2 class="inline-block">{getText("subTasks")}</h2>
 				</summary>
-				<div class="list-group mb-2 list-group-mini">
+				<div class="list-group mb-2">
 					{sub.subTasks.map((subtask) => (
 						<SubTask sub={sub} subtask={subtask} detRef={ref} key={"stk_" + subtask.id} />
 					))}

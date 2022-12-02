@@ -139,28 +139,20 @@
 	}
 
 	.list-group {
-		@apply border border-gray-300 w-full bg-white;
-		@apply dark:border-gray-700 dark:bg-gray-800;
-	}
-	.list-group > kn-dom-sublist:first-child > *:first-child, /* kn-dom-sublist bugs this one since it's an additional element */ 
-	.list-group > *:first-child {
-		@apply border-t-0 border-gray-300 dark:border-gray-700;
+		@apply border-gray-300 w-full bg-white;
+		@apply dark:border-gray-700 dark:bg-gray-900;
 	}
 
 	.list-group-head {
-		@apply block border-t border-gray-300 dark:border-gray-700 w-full px-4 py-3 text-lg leading-normal;
+		@apply block border-b border-t border-x border-gray-300 dark:border-gray-700 w-full px-4 text-lg leading-normal py-2;
+		@apply bg-white dark:bg-gray-800;
+	}
+	.list-group-selected {
+		@apply bg-gray-100 dark:bg-gray-600 text-white !important;
 	}
 	.list-group-item {
-		@apply block border-t border-gray-300 dark:border-gray-700 w-full px-4 py-3 black-anchor text-lg leading-normal;
-		@apply hover:bg-gray-100;
-		@apply dark:hover:bg-gray-600;
+		@apply black-anchor list-group-head hover:list-group-selected;
 	}
-	/* 
-    .list-group-head:first-child,
-	.list-group-item:first-child {
-		@apply border-t-0 border-gray-300 dark:border-gray-700;
-	} 
-    */
 
 	.list-group-rounded {
 		@apply rounded-lg;
@@ -170,12 +162,6 @@
 	}
 	.list-group-rounded > *:last-child {
 		@apply rounded-b-lg;
-	}
-
-	.list-group-mini > .list-group-item,
-	.list-group-mini > .list-group-head,
-	.list-group-mini > kn-dom-sublist > .list-group-head {
-		@apply py-2;
 	}
 
 	.dropdown-divider {

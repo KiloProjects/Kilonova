@@ -147,6 +147,7 @@ type ProblemListingParams struct {
 	User      *kilonova.UserBrief
 	Problems  []*kilonova.Problem
 	ShowScore bool
+	MultiCols bool
 }
 
 type PblistParams struct {
