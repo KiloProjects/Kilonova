@@ -112,7 +112,7 @@ func (job *customCheckerTask) Execute(ctx context.Context, box eval.Sandbox) err
 
 	val := out.String()
 	if _, err := fmt.Fscanf(&out, "%d ", &job.score); err != nil {
-		zap.S().Info("Wrong checker output", val)
+		zap.S().Infof("Wrong checker output: %q", val)
 		job.output = "Wrong checker output"
 		return nil
 	}

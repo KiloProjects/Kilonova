@@ -31,14 +31,14 @@ type Env struct {
 
 // Box is the struct for the current box
 type Box struct {
+	// the mutex makes sure we don't do anything stupid while we do other stuff
+	mu    sync.Mutex
 	path  string
 	boxID int
 
 	// Debug prints additional info if set
 	Debug bool
 
-	// the mutex makes sure we don't do anything stupid while we do other stuff
-	mu       sync.Mutex
 	metaFile string
 }
 
@@ -115,14 +115,20 @@ func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
 
 // WriteFile writes a file to the specified path inside the box
 func (b *Box) WriteFile(fpath string, r io.Reader, mode fs.FileMode) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	return writeReader(b.getFilePath(fpath), r, mode)
 }
 
 func (b *Box) ReadFile(fpath string) (io.ReadSeekCloser, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	return os.Open(b.getFilePath(fpath))
 }
 
 func (b *Box) ReadDir(fpath string) ([]string, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	p := b.getFilePath(fpath)
 	d, err := os.ReadDir(p)
 	if err != nil {
@@ -141,6 +147,8 @@ func (b *Box) GetID() int {
 
 // FileExists returns if a file exists or not
 func (b *Box) FileExists(fpath string) bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	_, err := os.Stat(b.getFilePath(fpath))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -154,6 +162,8 @@ func (b *Box) FileExists(fpath string) bool {
 
 // RemoveFile tries to remove a created file from inside the sandbox
 func (b *Box) RemoveFile(fpath string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	return os.Remove(b.getFilePath(fpath))
 }
 
@@ -201,7 +211,7 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 	// read Meta File
 	f, err := os.Open(metaFile)
 	if err != nil {
-		fmt.Println("Couldn't open meta file, wtf", err)
+		zap.S().Warn("Couldn't open meta file, wtf: ", err)
 		return nil, nil
 	}
 	defer f.Close()
