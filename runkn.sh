@@ -15,7 +15,7 @@ mv kn knnnn # fix gitignore issue
 while true
 do
 	echo "Starting server..."
-	sudo ./knnnn main
+	./knnnn main
 	echo "Server stopped..."
 	sleep 2
 done
