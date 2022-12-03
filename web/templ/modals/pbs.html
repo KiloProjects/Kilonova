@@ -7,20 +7,20 @@
 		<a href="/problems/{{.ID}}" class="list-group-item flex justify-between">
 			<span>{{.Name}} (#{{.ID}})</span>
             <div>
-			    {{ if $user }}
+			    {{- if $user -}}
 					{{ if (problemEditor $user .) }}
-						{{ if .Visible }}
+						{{- if .Visible }}
 							<span class="badge badge-green">{{ getText "published" }}</span>
-						{{ else }}
+						{{- else -}}
 							<span class="badge badge-red">{{ getText "unpublished" }}</span>
-						{{ end }}
+						{{- end -}}
 					{{ end }}
-                    {{ end }}
-                {{ if $scoreUser }}
+                {{- end -}}
+                {{- if $scoreUser -}}
                     {{ if $showScore }}
 					    <span class="badge">{{ subScore . $scoreUser }}</span>
                     {{ end }}
-                {{ end }}
+                {{- end }}
             </div>
 		</a>
 	{{ end }}
