@@ -21,7 +21,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 func Kilonova() error {
@@ -46,7 +45,11 @@ func Kilonova() error {
 
 	// Initialize components
 	if config.Features.Grader {
-		grader := grader.NewHandler(ctx, base)
+		grader, err := grader.NewHandler(ctx, base)
+		if err != nil {
+			zap.S().Fatal(err)
+		}
+		defer grader.Close()
 
 		go func() {
 			err := grader.Start()
@@ -87,23 +90,7 @@ func initLogger(logDir string, debug bool) error {
 		return err
 	}
 
-	var encConf zapcore.EncoderConfig
-	if debug {
-		encConf = zap.NewDevelopmentEncoderConfig()
-	} else {
-		encConf = zap.NewProductionEncoderConfig()
-	}
-	encConf.EncodeTime = zapcore.TimeEncoder(func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-		enc.AppendString(t.UTC().Format(time.RFC3339))
-	})
-	encConf.EncodeLevel = zapcore.CapitalColorLevelEncoder
-
-	level := zapcore.InfoLevel
-	if debug {
-		level = zapcore.DebugLevel
-	}
-
-	core := zapcore.NewCore(zapcore.NewConsoleEncoder(encConf), zapcore.AddSync(os.Stdout), level)
+	core := kilonova.GetZapCore(debug, true, os.Stdout)
 	logg := zap.New(core, zap.AddCaller())
 
 	zap.ReplaceGlobals(logg)

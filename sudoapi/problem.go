@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"errors"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
@@ -85,7 +86,9 @@ func (s *BaseAPI) hydrateProblemIDs(ctx context.Context, ids []int) []*kilonova.
 	for _, id := range ids {
 		pb, err := s.Problem(ctx, id)
 		if err != nil {
-			zap.S().Warnf("Couldn't get solved problem %d: %s\n", id, err)
+			if !errors.Is(err, context.Canceled) {
+				zap.S().Warnf("Couldn't get solved problem %d: %s\n", id, err)
+			}
 		} else {
 			pbs = append(pbs, pb)
 		}

@@ -12,16 +12,14 @@ import (
 var _ eval.Task = &ExecuteTask{}
 
 type ExecuteTask struct {
-	Req   *eval.ExecRequest
-	Resp  *eval.ExecResponse
-	DM    kilonova.GraderStore
-	Debug bool
+	Req    *eval.ExecRequest
+	Resp   *eval.ExecResponse
+	DM     kilonova.GraderStore
+	Logger *zap.SugaredLogger
 }
 
 func (job *ExecuteTask) Execute(ctx context.Context, box eval.Sandbox) error {
-	if job.Debug {
-		zap.S().Debugf("Executing test %d using box %d", job.Req.SubtestID, box.GetID())
-	}
+	job.Logger.Infof("Executing test %d (for submission #%d) using box %d", job.Req.SubtestID, job.Req.SubID, box.GetID())
 
 	in, err := job.DM.TestInput(job.Req.TestID)
 	if err != nil {

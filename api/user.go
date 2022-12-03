@@ -115,7 +115,7 @@ func (s *API) setBio() func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		safe := strings.TrimSpace(bluemonday.StrictPolicy().Sanitize(args.Bio))
+		safe := strings.TrimSpace(args.Bio)
 
 		if err := s.base.UpdateUser(
 			r.Context(),

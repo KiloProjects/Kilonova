@@ -3,6 +3,7 @@ package grader
 import (
 	"context"
 	"math"
+	"os"
 	"path"
 	"sync"
 	"time"
@@ -29,12 +30,20 @@ type Handler struct {
 	sChan chan *kilonova.Submission
 	base  *sudoapi.BaseAPI
 
-	debug bool
+	logFile     *os.File
+	localLogger *zap.SugaredLogger
 }
 
-func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) *Handler {
-	ch := make(chan *kilonova.Submission, 5)
-	return &Handler{ctx, ch, base, config.Common.Debug}
+func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, *kilonova.StatusError) {
+	ch := make(chan *kilonova.Submission, 1)
+
+	logFile, err := os.OpenFile(path.Join(config.Common.LogDir, "grader.log"), os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+	if err != nil {
+		return nil, kilonova.WrapError(err, "Could not open log file")
+	}
+	localLogger := zap.New(kilonova.GetZapCore(config.Common.Debug, false, logFile), zap.AddCaller())
+
+	return &Handler{ctx, ch, base, logFile, localLogger.Sugar()}, nil
 }
 
 // chFeeder "feeds" tChan with relevant data
@@ -49,9 +58,7 @@ func (h *Handler) chFeeder(d time.Duration) {
 				continue
 			}
 			if len(subs) > 0 {
-				if config.Common.Debug {
-					zap.S().Infof("Found %d submissions", len(subs))
-				}
+				h.localLogger.Infof("Found %d submissions", len(subs))
 
 				for _, sub := range subs {
 					sub := sub
@@ -126,6 +133,7 @@ func (h *Handler) genSubCompileRequest(ctx context.Context, sub *kilonova.Submis
 }
 
 func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, sub *kilonova.Submission) error {
+	h.localLogger.Infof("Executing submission %d with status %q", sub.ID, sub.Status)
 	defer func() {
 		// In case anything ever happens, make sure it is at least marked as finished
 		if err := h.base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished}); err != nil {
@@ -215,8 +223,8 @@ func (h *Handler) CompileSubmission(ctx context.Context, runner eval.Runner, sub
 	}
 
 	task := &tasks.CompileTask{
-		Req:   req,
-		Debug: h.debug,
+		Req:    req,
+		Logger: h.localLogger,
 	}
 	if err := runner.RunTask(ctx, task); err != nil {
 		return kilonova.WrapError(err, "Error from eval")
@@ -262,10 +270,10 @@ func (h *Handler) HandleSubTest(ctx context.Context, runner eval.Runner, checker
 	}
 
 	task := &tasks.ExecuteTask{
-		Req:   execRequest,
-		Resp:  &eval.ExecResponse{},
-		Debug: h.debug,
-		DM:    h.base,
+		Req:    execRequest,
+		Resp:   &eval.ExecResponse{},
+		Logger: h.localLogger,
+		DM:     h.base,
 	}
 
 	if err := runner.RunTask(ctx, task); err != nil {
@@ -346,9 +354,7 @@ func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, prob
 	var score = problem.DefaultPoints
 
 	if subTasks != nil && len(subTasks) > 0 {
-		if h.debug {
-			zap.S().Info("Evaluating by subtasks")
-		}
+		h.localLogger.Info("Evaluating by subtasks")
 		subMap := make(map[int]*kilonova.SubTest)
 		for _, st := range subtests {
 			subMap[st.TestID] = st
@@ -360,7 +366,7 @@ func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, prob
 				st, ok := subMap[id]
 				if !ok {
 					if !shownError { // plz no spam
-						zap.S().Warnf("couldn't find a subtest for subtask %d in submission %d", stk.VisibleID, sub.ID)
+						h.localLogger.Warnf("couldn't find a subtest for subtask %d in submission %d", stk.VisibleID, sub.ID)
 						percentage = 0
 						shownError = true
 					}
@@ -374,9 +380,7 @@ func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, prob
 			score += int(math.Round(float64(stk.Score) * float64(percentage) / 100.0))
 		}
 	} else {
-		if h.debug {
-			zap.S().Info("Evaluating by addition")
-		}
+		h.localLogger.Info("Evaluating by addition")
 		for _, subtest := range subtests {
 			pbTest, err1 := h.base.TestByID(ctx, subtest.TestID)
 			if err1 != nil {
@@ -399,6 +403,10 @@ func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, prob
 	}
 
 	return h.base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score, MaxTime: &time, MaxMemory: &memory})
+}
+
+func (h *Handler) Close() error {
+	return h.logFile.Close()
 }
 
 func (h *Handler) Start() error {

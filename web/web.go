@@ -7,6 +7,7 @@ import (
 	"embed"
 	"encoding/base64"
 	"encoding/json"
+	"html"
 	"html/template"
 	"io"
 	"net/http"
@@ -218,6 +219,12 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 				return "[Error rendering markdown]"
 			}
 			return template.HTML(val)
+		},
+		"safeHTML": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+		"unescapeHTML": func(s string) string {
+			return html.UnescapeString(s)
 		},
 		"problemEditor": util.IsProblemEditor,
 		"submissionEditor": func(user *kilonova.UserBrief, sub *kilonova.Submission) bool {

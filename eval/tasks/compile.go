@@ -15,15 +15,13 @@ import (
 var _ eval.Task = &CompileTask{}
 
 type CompileTask struct {
-	Req   *eval.CompileRequest
-	Resp  eval.CompileResponse
-	Debug bool
+	Req    *eval.CompileRequest
+	Resp   eval.CompileResponse
+	Logger *zap.SugaredLogger
 }
 
 func (job *CompileTask) Execute(ctx context.Context, box eval.Sandbox) error {
-	if job.Debug {
-		zap.S().Debugf("Compiling file using box %d", box.GetID())
-	}
+	job.Logger.Infof("Compiling file using box %d", box.GetID())
 
 	lang, ok := eval.Langs[job.Req.Lang]
 	if !ok {

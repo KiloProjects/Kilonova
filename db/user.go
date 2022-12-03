@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 type User struct {
@@ -134,7 +135,7 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate
 		toUpd, args = append(toUpd, "proposer = ?"), append(args, v)
 	}
 	if v := upd.Bio; v != nil {
-		toUpd, args = append(toUpd, "bio = ?"), append(args, v)
+		toUpd, args = append(toUpd, "bio = ?"), append(args, strings.TrimSpace(bluemonday.StrictPolicy().Sanitize(*v)))
 	}
 	if v := upd.VerifiedEmail; v != nil {
 		toUpd, args = append(toUpd, "verified_email = ?"), append(args, v)
