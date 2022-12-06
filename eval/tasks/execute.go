@@ -89,3 +89,7 @@ func (job *ExecuteTask) Execute(ctx context.Context, box eval.Sandbox) error {
 
 	return nil
 }
+
+func NewExecuteTask(req *eval.ExecRequest, dm kilonova.GraderStore, logger *zap.SugaredLogger) *ExecuteTask {
+	return &ExecuteTask{req, &eval.ExecResponse{}, dm, logger}
+}

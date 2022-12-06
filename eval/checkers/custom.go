@@ -23,19 +23,20 @@ type CustomChecker struct {
 	sub      *kilonova.Submission
 	filename string
 	code     []byte
+	Logger   *zap.SugaredLogger
 }
 
 // Prepare compiles the grader
 func (c *CustomChecker) Prepare(ctx context.Context) (string, error) {
-	job := &tasks.CompileTask{
-		Req: &eval.CompileRequest{
-			ID: -c.sub.ID,
-			CodeFiles: map[string][]byte{
-				eval.Langs[eval.GetLangByFilename(c.filename)].SourceName: c.code,
-			},
-			Lang: eval.GetLangByFilename(c.filename),
+	job := tasks.NewCompileTask(&eval.CompileRequest{
+		ID: -c.sub.ID,
+		CodeFiles: map[string][]byte{
+			eval.Langs[eval.GetLangByFilename(c.filename)].SourceName: c.code,
 		},
-	}
+		Lang: eval.GetLangByFilename(c.filename),
+	},
+		c.Logger,
+	)
 
 	err := c.mgr.RunTask(ctx, job)
 	if err != nil {
@@ -140,6 +141,6 @@ func (c *CustomChecker) Cleanup(_ context.Context) error {
 	return eval.CleanCompilation(-c.sub.ID)
 }
 
-func NewCustomChecker(mgr eval.Runner, pb *kilonova.Problem, sub *kilonova.Submission, filename string, code []byte) (*CustomChecker, error) {
-	return &CustomChecker{mgr, pb, sub, filename, code}, nil
+func NewCustomChecker(mgr eval.Runner, logger *zap.SugaredLogger, pb *kilonova.Problem, sub *kilonova.Submission, filename string, code []byte) (*CustomChecker, error) {
+	return &CustomChecker{mgr, pb, sub, filename, code, logger}, nil
 }

@@ -222,10 +222,7 @@ func (h *Handler) CompileSubmission(ctx context.Context, runner eval.Runner, sub
 		return kilonova.WrapError(err, "Couldn't generate compilation request")
 	}
 
-	task := &tasks.CompileTask{
-		Req:    req,
-		Logger: h.localLogger,
-	}
+	task := tasks.NewCompileTask(req, h.localLogger)
 	if err := runner.RunTask(ctx, task); err != nil {
 		return kilonova.WrapError(err, "Error from eval")
 	}
@@ -269,12 +266,7 @@ func (h *Handler) HandleSubTest(ctx context.Context, runner eval.Runner, checker
 		execRequest.Filename = "stdin"
 	}
 
-	task := &tasks.ExecuteTask{
-		Req:    execRequest,
-		Resp:   &eval.ExecResponse{},
-		Logger: h.localLogger,
-		DM:     h.base,
-	}
+	task := tasks.NewExecuteTask(execRequest, h.base, h.localLogger)
 
 	if err := runner.RunTask(ctx, task); err != nil {
 		return kilonova.WrapError(err, "Couldn't execute test")
@@ -470,6 +462,6 @@ func (h *Handler) getAppropriateChecker(ctx context.Context, runner eval.Runner,
 		if err != nil {
 			return nil, kilonova.WrapError(err, "Couldn't get problem checker")
 		}
-		return checkers.NewCustomChecker(runner, pb, sub, settings.CheckerName, data)
+		return checkers.NewCustomChecker(runner, h.localLogger, pb, sub, settings.CheckerName, data)
 	}
 }

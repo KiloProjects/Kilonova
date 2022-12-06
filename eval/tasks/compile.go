@@ -82,6 +82,10 @@ func (job *CompileTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	return nil
 }
 
+func NewCompileTask(req *eval.CompileRequest, logger *zap.SugaredLogger) *CompileTask {
+	return &CompileTask{Req: req, Logger: logger}
+}
+
 func getIDExec(id int) string {
 	return path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", id))
 }
