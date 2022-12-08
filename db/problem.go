@@ -13,13 +13,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type pbAccessType string
-
-const (
-	pbAccessEditor pbAccessType = "editor"
-	pbAccessViewer pbAccessType = "viewer"
-)
-
 func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
 	var pb dbProblem
 	err := s.conn.GetContext(ctx, &pb, s.conn.Rebind("SELECT * FROM problems WHERE id = ? LIMIT 1"), id)
@@ -201,37 +194,22 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []interface{}) {
 	return toUpd, args
 }
 
-type problemAccess struct {
-	ProblemID int          `db:"problem_id"`
-	UserID    int          `db:"user_id"`
-	Access    pbAccessType `db:"access"`
-}
+// Access rights
 
-func (s *DB) problemAccessRights(ctx context.Context, pbid int) ([]*problemAccess, error) {
-	var rights []*problemAccess
-	err := s.conn.SelectContext(ctx, &rights, "SELECT * FROM problem_user_access WHERE problem_id = $1", pbid)
-	if errors.Is(err, sql.ErrNoRows) {
-		return []*problemAccess{}, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return rights, nil
+func (s *DB) problemAccessRights(ctx context.Context, pbid int) ([]*userAccess, error) {
+	return s.getAccess(ctx, "problem_user_access", "problem_id", pbid)
 }
 
 func (s *DB) AddProblemEditor(ctx context.Context, pbid int, uid int) error {
-	_, err := s.conn.ExecContext(ctx, "INSERT INTO problem_user_access (problem_id, user_id, access) VALUES ($1, $2, 'editor')", pbid, uid)
-	return err
+	return s.addAccess(ctx, "problem_user_access", "problem_id", pbid, uid, "editor")
 }
 
 func (s *DB) AddProblemViewer(ctx context.Context, pbid int, uid int) error {
-	_, err := s.conn.ExecContext(ctx, "INSERT INTO problem_user_access (problem_id, user_id, access) VALUES ($1, $2, 'viewer')", pbid, uid)
-	return err
+	return s.addAccess(ctx, "problem_user_access", "problem_id", pbid, uid, "viewer")
 }
 
 func (s *DB) StripProblemAccess(ctx context.Context, pbid int, uid int) error {
-	_, err := s.conn.ExecContext(ctx, "DELETE FROM problem_user_access WHERE problem_id = $1 AND user_id = $2", pbid, uid)
-	return err
+	return s.removeAccess(ctx, "problem_user_access", "problem_id", pbid, uid)
 }
 
 type dbProblem struct {
@@ -279,9 +257,9 @@ func (s *DB) internalToProblem(ctx context.Context, pb *dbProblem) (*kilonova.Pr
 	var editors, viewers []int
 	for _, right := range rights {
 		switch right.Access {
-		case pbAccessEditor:
+		case accessEditor:
 			editors = append(editors, right.UserID)
-		case pbAccessViewer:
+		case accessViewer:
 			viewers = append(viewers, right.UserID)
 		default:
 			zap.S().Warn("Unknown access rank", zap.String("right", string(right.Access)))

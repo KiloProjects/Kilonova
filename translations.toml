@@ -1037,7 +1037,7 @@ en = "Add editor"
 ro = "Adăugare editor"
 
 [add_viewer]
-en = "Add vizualizator"
+en = "Add viewer"
 ro = "Adăugare vizualizator"
 
 [toggle_visibility]

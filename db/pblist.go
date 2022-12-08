@@ -102,34 +102,10 @@ func (s *DB) DeleteProblemList(ctx context.Context, id int) error {
 }
 
 func (s *DB) UpdateProblemListProblems(ctx context.Context, id int, problemIDs []int) error {
-	tx, err := s.conn.BeginTxx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	// Naively delete all associations, then add them back
-	if _, err := tx.ExecContext(ctx, s.conn.Rebind("DELETE FROM problem_list_problems WHERE pblist_id = ?"), id); err != nil {
-		return err
-	}
-
-	for i, pbid := range problemIDs {
-		if _, err := tx.ExecContext(ctx, s.conn.Rebind("INSERT INTO problem_list_problems (pblist_id, problem_id, position) VALUES (?, ?, ?)"), id, pbid, i); err != nil {
-			zap.S().Warn(err)
-			return err
-		}
-	}
-
-	return tx.Commit()
+	return s.updateManyToMany(ctx, "problem_list_problems", "pblist_id", "problem_id", id, problemIDs, true)
 }
 
 func (s *DB) UpdateProblemListSublists(ctx context.Context, id int, listIDs []int) error {
-	tx, err := s.conn.BeginTxx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
 	// Quick sanity check first
 	for _, listID := range listIDs {
 		if id == listID {
@@ -137,19 +113,7 @@ func (s *DB) UpdateProblemListSublists(ctx context.Context, id int, listIDs []in
 		}
 	}
 
-	// Naively delete all associations, then add them back
-	if _, err := tx.ExecContext(ctx, s.conn.Rebind("DELETE FROM problem_list_pblists WHERE parent_id = ?"), id); err != nil {
-		return err
-	}
-
-	for i, listID := range listIDs {
-		if _, err := tx.ExecContext(ctx, s.conn.Rebind("INSERT INTO problem_list_pblists (parent_id, child_id, position) VALUES (?, ?, ?)"), id, listID, i); err != nil {
-			zap.S().Warn(err)
-			return err
-		}
-	}
-
-	return tx.Commit()
+	return s.updateManyToMany(ctx, "problem_list_pblists", "parent_id", "child_id", id, listIDs, true)
 }
 
 func pblistFilterQuery(filter *kilonova.ProblemListFilter) ([]string, []interface{}) {
