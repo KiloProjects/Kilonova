@@ -44,11 +44,7 @@ func (s *BaseAPI) SetAdmin(ctx context.Context, userID int, toSet bool) *StatusE
 		if userID == 1 {
 			return Statusf(406, "First user must have admin rights.")
 		}
-		// TODO: Disallow removing own admin once callee is added to context
 	}
-
-	// TODO: Once admin/proposer toggle time are added,
-	// Make sure user keeps proposer rights on admin remove (if valid)
 
 	if toSet {
 		s.LogUserAction(ctx, "Promoted user #%d to admin status", userID)
@@ -69,7 +65,6 @@ func (s *BaseAPI) SetProposer(ctx context.Context, userID int, toSet bool) *Stat
 		return Statusf(400, "Cannot update proposer status of an admin.")
 	}
 
-	// TODO: Disallow removing own proposer rank once callee is added to context
 	if toSet {
 		s.LogUserAction(ctx, "Promoted user #%d to proposer status", userID)
 	} else {

@@ -166,6 +166,26 @@ ro = "Actualizare Subtasks | Problema #%d: %s"
 en = "Update Tests | Problem #%d: %s"
 ro = "Actualizare Teste | Problema #%d: %s"
 
+[header.edit.index]
+en = "Edit Problem Info"
+ro = "Editare Informații Problemă"
+
+[header.edit.description]
+en = "Edit Description"
+ro = "Editare Descriere"
+
+[header.edit.attachments]
+en = "Edit Attachments"
+ro = "Editare Atașamente"
+
+[header.edit.attachment_create]
+en = "Add Attachment"
+ro = "Adăugare Atașament"
+
+[header.edit.access_control]
+en = "Access control"
+ro = "Control acces"
+
 [header.edit.subtask_add]
 en = "Create Subtask"
 ro = "Creare Subtask"

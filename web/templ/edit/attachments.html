@@ -4,158 +4,170 @@
 
 {{ $pbid := .Problem.ID }}
 
-<div class="segment-container">
-	{{ with .Attachments }}
-		<table class="kn-table my-2" style="table-layout: fixed">
-			<thead>
-				<th scope="col" class="w-1/8">
-					<input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
-				</th>
-				<th scope="col" class="w-1/2">
-					{{getText "name"}}
-				</th>
-				<th scope="col" class="w-3/8">
-					{{getText "size"}}	
-				</th>
-				<th scope="col" class="w-1/8">
-					{{getText "visible"}}
-				</th>
-				<th scope="col" class="w-1/8">
-					{{getText "private"}}
-				</th>
-			</thead>
-			<tbody id="att-body">
-			{{ range . }}
-				<tr id="row-att-{{.ID}}" class="kn-table-row">
-					<td class="kn-table-cell">
-						<input class="form-checkbox" type="checkbox" id="pb-att-{{.ID}}" autocomplete="off" />
-					</td>
-					<td class="kn-table-cell" id="name-att-{{.ID}}">
-						<a href="/problems/{{$pbid}}/attachments/{{.Name}}">{{.Name}}</a>
-					</td>
-					<td class="kn-table-cell" id="size-att-{{.ID}}">
-						{{.Size}}
-					</td>
-					<td class="kn-table-cell">
-						<input class="form-checkbox" type="checkbox" id="visible-att-{{.ID}}" {{if .Visible}}checked{{end}}>
-					</td>
-					<td class="kn-table-cell">
-						<input class="form-checkbox" type="checkbox" id="private-att-{{.ID}}" {{if .Private}}checked{{end}}>
-					</td>
-				</tr>
-			{{ end }}
-			</tbody>
-		</table>
-		<button class="btn btn-red mr-2" onclick="deleteAttachments()">{{getText "deleteAttachments"}}</button>
-		<button class="btn btn-blue mr-2" onclick="updateAttachments()">{{getText "updateAttachments"}}</button>
-	{{ else }}
-		{{getText "noAttachments"}}	
-	{{ end }}
+<div class="page-holder">
+    <div class="page-content-full">
+        <h2>{{getText "header.edit.attachments"}}</h2>
+        {{ with .Attachments }}
+        <table class="kn-table my-2" style="table-layout: fixed">
+            <thead>
+                <th scope="col" class="w-1/8">
+                    <input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
+                </th>
+                <th scope="col" class="w-1/2">
+                    {{getText "name"}}
+                </th>
+                <th scope="col" class="w-3/8">
+                    {{getText "size"}}
+                </th>
+                <th scope="col" class="w-1/8">
+                    {{getText "visible"}}
+                </th>
+                <th scope="col" class="w-1/8">
+                    {{getText "private"}}
+                </th>
+            </thead>
+            <tbody id="att-body">
+                {{ range . }}
+                <tr id="row-att-{{.ID}}" class="kn-table-row">
+                    <td class="kn-table-cell">
+                        <input class="form-checkbox" type="checkbox" id="pb-att-{{.ID}}" autocomplete="off" />
+                    </td>
+                    <td class="kn-table-cell" id="name-att-{{.ID}}">
+                        <a href="/problems/{{$pbid}}/attachments/{{.Name}}">{{.Name}}</a>
+                    </td>
+                    <td class="kn-table-cell" id="size-att-{{.ID}}">
+                        {{.Size}}
+                    </td>
+                    <td class="kn-table-cell">
+                        <input class="form-checkbox" type="checkbox" id="visible-att-{{.ID}}" {{if
+                            .Visible}}checked{{end}}>
+                    </td>
+                    <td class="kn-table-cell">
+                        <input class="form-checkbox" type="checkbox" id="private-att-{{.ID}}" {{if
+                            .Private}}checked{{end}}>
+                    </td>
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+        <div class="my-2">
+            <button class="btn btn-red mr-2" onclick="deleteAttachments()">{{getText "deleteAttachments"}}</button>
+            <button class="btn btn-blue mr-2" onclick="updateAttachments()">{{getText "updateAttachments"}}</button>
+        </div>
+        {{ else }}
+        {{getText "noAttachments"}}
+        {{ end }}
+
+        <div class="page-sidebar-divider"></div>
+
+        <form id="attCreate">
+            <h2>{{getText "header.edit.attachment_create"}}</h2>
+            <label class="block my-2">
+                <span class="mr-2 text-xl">{{getText "file"}}: </span>
+                <input class="form-file" id="attFile" type="file" required />
+            </label>
+            <label class="block my-2">
+                <input class="form-checkbox" id="attPrivate" type="checkbox" />
+                <span class="ml-2 text-xl">{{getText "private"}}</span>
+            </label>
+            <label id="visibleLabel" class="block my-2">
+                <input class="form-checkbox" id="attVisible" type="checkbox" />
+                <span class="ml-2 text-xl">{{getText "visible"}}</span>
+            </label>
+            <button type="submit" class="btn btn-blue">{{getText "button.upload"}}</button>
+        </form>
+
+    </div>
 </div>
 
+
 <script>
-var pbid = {{.Problem.ID}}, rowreg = /row-att-([0-9]+)/;
+    var pbid = {{ .Problem.ID }}, rowreg = /row-att-([0-9]+)/;
 
-const mgr = new bundled.CheckboxManager(document.getElementById("selectAllBox"), document.querySelectorAll("[id^='pb-att-']"))
+    const mgr = new bundled.CheckboxManager(document.getElementById("selectAllBox"), document.querySelectorAll("[id^='pb-att-']"))
 
-async function deleteAttachments() {
-	var attachments = [];
-	for(let e of document.querySelectorAll("[id^='row-att-']")) {
-		let id = parseInt(rowreg.exec(e.id)[1]);
-		if(isNaN(id)) {
-			console.error("id is somehow NaN", e.id)
-			continue
-		}
-		let checked = document.getElementById(`pb-att-${id}`).checked;
-		if(checked) {
-			attachments.push(id);
-		}
-	}
-	let res = await bundled.bodyCall("/problem/{{.Problem.ID}}/update/bulkDeleteAttachments", attachments)
-	if(res.status === "success") {
-		window.location.reload();
-		return;
-	}
-	bundled.apiToast(res)
-}
-
-async function updateAttachments() {
-    var atts = {};
-	for(let e of document.querySelectorAll("[id^='row-att-']")) {
-		let id = parseInt(rowreg.exec(e.id)[1]);
-		if(isNaN(id)) {
-			console.error("id is somehow NaN", e.id)
-			continue
-		}
-        let visible = document.getElementById(`visible-att-${id}`).checked;
-        let private = document.getElementById(`private-att-${id}`).checked;
-        atts[id] = {visible, private}
+    async function deleteAttachments() {
+        var attachments = [];
+        for (let e of document.querySelectorAll("[id^='row-att-']")) {
+            let id = parseInt(rowreg.exec(e.id)[1]);
+            if (isNaN(id)) {
+                console.error("id is somehow NaN", e.id)
+                continue
+            }
+            let checked = document.getElementById(`pb-att-${id}`).checked;
+            if (checked) {
+                attachments.push(id);
+            }
+        }
+        let res = await bundled.bodyCall("/problem/{{.Problem.ID}}/update/bulkDeleteAttachments", attachments)
+        if (res.status === "success") {
+            window.location.reload();
+            return;
+        }
+        bundled.apiToast(res)
     }
-    let res = await bundled.bodyCall("/problem/{{.Problem.ID}}/update/bulkUpdateAttachmentData", atts)
-	bundled.apiToast(res)
-}
 
-function prettifyAttachments() {
-	for(let el of document.querySelectorAll("[id^='name-att-'] > a")) {
-		el.innerHTML = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerText}`	
-	}
-	for(let el of document.querySelectorAll("[id^='size-att-']")) {
-		el.innerText = bundled.sizeFormatter(Number(el.innerText))
-	}
-}
-prettifyAttachments()
+    async function updateAttachments() {
+        var atts = {};
+        for (let e of document.querySelectorAll("[id^='row-att-']")) {
+            let id = parseInt(rowreg.exec(e.id)[1]);
+            if (isNaN(id)) {
+                console.error("id is somehow NaN", e.id)
+                continue
+            }
+            let visible = document.getElementById(`visible-att-${id}`).checked;
+            let private = document.getElementById(`private-att-${id}`).checked;
+            atts[id] = { visible, private }
+        }
+        let res = await bundled.bodyCall("/problem/{{.Problem.ID}}/update/bulkUpdateAttachmentData", atts)
+        bundled.apiToast(res)
+    }
+
+    function prettifyAttachments() {
+        for (let el of document.querySelectorAll("[id^='name-att-'] > a")) {
+            el.innerHTML = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerText}`
+        }
+        for (let el of document.querySelectorAll("[id^='size-att-']")) {
+            el.innerText = bundled.sizeFormatter(Number(el.innerText))
+        }
+    }
+    prettifyAttachments()
 
 </script>
 
-<form id="attCreate" class="segment-container">
-	<label class="block my-2">
-		<span class="mr-2 text-xl">{{getText "file"}}: </span>
-		<input class="form-file" id="attFile" type="file" required/>
-	</label>
-	<label class="block my-2">
-		<input class="form-checkbox" id="attPrivate" type="checkbox"/>
-		<span class="ml-2 text-xl">{{getText "private"}}</span>
-	</label>
-	<label id="visibleLabel" class="block my-2">
-		<input class="form-checkbox" id="attVisible" type="checkbox"/>
-		<span class="ml-2 text-xl">{{getText "visible"}}</span>
-	</label>
-	<button type="submit" class="btn btn-blue">{{getText "button.upload"}}</button>
-</div>
-
 <script>
-let visibleLabel = document.getElementById("visibleLabel")
-let visibleNode = document.getElementById("attVisible")
-let privateNode = document.getElementById("attPrivate")
-privateNode.addEventListener("change", (e) => { 
-	if(e.target.checked === true) {
-		visibleLabel.style.display = "none"
-	} else {
-		visibleLabel.style.display = null 
-	}
-})
+    let visibleLabel = document.getElementById("visibleLabel")
+    let visibleNode = document.getElementById("attVisible")
+    let privateNode = document.getElementById("attPrivate")
+    privateNode.addEventListener("change", (e) => {
+        if (e.target.checked === true) {
+            visibleLabel.style.display = "none"
+        } else {
+            visibleLabel.style.display = null
+        }
+    })
 
-async function createAttachment(e) {
-	e.preventDefault()
-	let files = document.getElementById("attFile").files;
-	if(files === null || files.length == 0) {
-		bundled.createToast({status: "error", title: '{{getText "noFiles"}}'});
-		return
-	}
-	let form = new FormData();
-	form.append("data", files[0]);
-	form.append("visible", visibleNode.checked);
-	form.append("private", privateNode.checked);
+    async function createAttachment(e) {
+        e.preventDefault()
+        let files = document.getElementById("attFile").files;
+        if (files === null || files.length == 0) {
+            bundled.createToast({ status: "error", title: '{{getText "noFiles"}}' });
+            return
+        }
+        let form = new FormData();
+        form.append("data", files[0]);
+        form.append("visible", visibleNode.checked);
+        form.append("private", privateNode.checked);
 
-	let res = await bundled.multipartProgressCall("/problem/{{.Problem.ID}}/update/addAttachment", form)
-	if(res.status !== "success") {
-		bundled.apiToast(res);
-		return
-	}
-	window.location.reload();
-}
+        let res = await bundled.multipartProgressCall("/problem/{{.Problem.ID}}/update/addAttachment", form)
+        if (res.status !== "success") {
+            bundled.apiToast(res);
+            return
+        }
+        window.location.reload();
+    }
 
-document.getElementById("attCreate").addEventListener("submit", createAttachment)
+    document.getElementById("attCreate").addEventListener("submit", createAttachment)
 </script>
 
 {{ end }}

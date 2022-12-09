@@ -159,7 +159,11 @@ func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, sub
 	}
 
 	if err := h.CompileSubmission(ctx, runner, sub, problem, problemSettings); err != nil {
-		return err
+		if err.Code != 204 { // Skip
+			return err
+		} else {
+			return nil
+		}
 	}
 
 	checker, err := h.getAppropriateChecker(ctx, runner, sub, problem, problemSettings)
@@ -228,10 +232,10 @@ func (h *Handler) CompileSubmission(ctx context.Context, runner eval.Runner, sub
 	}
 
 	resp := task.Resp
-	if !resp.Success && resp.Other != "" {
-		zap.S().Warnf("Internal grader error during compilation (#%d): %s", sub.ID, resp.Other)
-		// resp.Output += "\nGrader notes: " + resp.Other
-	}
+	// if !resp.Success && resp.Other != "" {
+	// 	// zap.S().Warnf("Internal grader error during compilation (#%d): %s", sub.ID, resp.Other)
+	// 	// resp.Output += "\nGrader notes: " + resp.Other
+	// }
 
 	compileError := !resp.Success
 	if err := h.base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{CompileError: &compileError, CompileMessage: &resp.Output}); err != nil {
@@ -243,6 +247,7 @@ func (h *Handler) CompileSubmission(ctx context.Context, runner eval.Runner, sub
 		if err := h.base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints}); err != nil {
 			return kilonova.WrapError(err, "Couldn't finalize submission with compiler error")
 		}
+		return kilonova.Statusf(204, "Compile failed")
 	}
 	return nil
 }

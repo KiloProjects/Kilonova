@@ -9,9 +9,6 @@ Additional reading I should do for a better platform:
 	- [x] Email stuff 
 		- [x] Verificare user
 	- [x] Permite schimbarea tipului de intrare din interfața problemei
-	- [x] Moderation tools
-		- [x] Nuke accounts
-		- [x] Ștergere submisie
 	- [x] Use a single bundle for all javascript/css
 	- [ ] Security Improvements:
 		- [~] Anti-CSRF protection 
@@ -34,7 +31,6 @@ Additional reading I should do for a better platform:
 			- [ ] ? Prometheus integration
 			- [ ] ? Sentry
 	- [ ] New features:
-		- [x] ".kna"
 		- [x] Scor din oficiu
 		- [x] Abilitate să ștergi unul sau toate testele direct
 		- [ ] Admin tools diverse
@@ -55,12 +51,7 @@ Additional reading I should do for a better platform:
 				- [ ] Propunători traducători
 				- [ ] Enunțuri multi-language
 		- [ ] Rate limits
-		- [x] https://discord.com/channels/@me/775486536358559764/827623285885763594
-		- [x] https://discord.com/channels/@me/775486536358559764/827623755806146570
-			- [x] Timp/Memorie maxima
-			- [x] Sortare dupa timp/memorie
-			- [x] Liste de probleme
-		- [ ] Improve shoddy implementation of problem lists
+		- [x] Improve shoddy implementation of problem lists
 	- [ ] Late edition maintenance:
 		- [ ] Reduce nr de TODOs din nou
 		- [ ] Termeni și Condiții
@@ -70,12 +61,10 @@ Additional reading I should do for a better platform:
 			- Pedeapsa este la discreția administratorilor
 			- Reclama este acceptată numai la discreția administratorilor
 			- ???
-	- [~] Atașamente
-		- [ ] https://discord.com/channels/@me/775486536358559764/843416789047443506
 - [ ] pre-late beta:
 	- [ ] ? "Custom input" ca pe hackerrank/leetcode
-	- [ ] Mai multe tipuri de probleme:
-		- [ ] interactive
+	- [~] Mai multe tipuri de probleme:
+		- [x] interactive
 		- [ ] ? ACM
 	- [ ] ? PbInfo problem import (înseamnă că e nevoie să termin PbAPI)
 	- [ ] Sistem de contests
@@ -99,10 +88,6 @@ Additional reading I should do for a better platform:
 		- [ ] ? Circles (ca google circles, explicat aici: https://discord.com/channels/287285563118190592/295942451041140746/786857659584348181 )
 	- [ ] "Kilonova PRO" cont.
 		- [ ] Pro-ii pot crea custom contests, ca "summer challange" pe hackerrank
-		- [ ] ? Sistem NOVA
-			- sub-instanțe de kilonova
-			- [ ] Restructurare sistem de webserver
-			- [ ] Control asupra subdomeniilor (e nevoie de modificări mari la webserver-ul meu privat dpdv al routing-ului și al certificatelor)
 
 
 ## Faze complete

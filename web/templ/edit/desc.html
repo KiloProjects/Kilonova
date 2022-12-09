@@ -2,29 +2,33 @@
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
-<div class="segment-container">
-	<div class="mb-2">
-		<textarea id="description" class="hidden">{{- .Problem.Description -}}</textarea>
-	</div>
-	<div class="mb-2">
-		<button class="btn btn-blue" onclick="setDescription()">{{getText "button.update"}}</button>
-	</div>
+<div class="page-holder">
+    <div class="page-content-full">
+        <h2>{{ getText "header.edit.description" }}</h2>
+        <div class="mb-2">
+            <textarea id="description" class="hidden">{{- .Problem.Description -}}</textarea>
+        </div>
+        <div class="mb-2">
+            <button class="btn btn-blue" onclick="setDescription()">{{getText "button.update"}}</button>
+        </div>
+    </div>
 </div>
-<script>
-var cm = CodeMirror.fromTextArea(document.getElementById("description"), {
-	mode: {
-		name: "gfm",
-		gitHubSpice: false,
-		emoji: false,
-	},
-});
-cm.setSize(null, "100%");
 
-async function setDescription() {
-	let desc = cm.getValue();
-	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update", {description: desc})
-	bundled.apiToast(res)
-};
+<script>
+    var cm = CodeMirror.fromTextArea(document.getElementById("description"), {
+        mode: {
+            name: "gfm",
+            gitHubSpice: false,
+            emoji: false,
+        },
+    });
+    cm.setSize(null, "100%");
+
+    async function setDescription() {
+        let desc = cm.getValue();
+        let res = await bundled.postCall("/problem/{{.Problem.ID}}/update", { description: desc })
+        bundled.apiToast(res)
+    };
 </script>
 
 {{ end }}

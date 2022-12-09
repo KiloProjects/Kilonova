@@ -71,7 +71,6 @@ func (s *DB) SubTasks(ctx context.Context, pbid int) ([]*kilonova.SubTask, error
 	return sts, err
 }
 
-// TODO: Test
 func (s *DB) SubTasksByTest(ctx context.Context, pbid, tid int) ([]*kilonova.SubTask, error) {
 	var st []*subtask
 	err := s.conn.SelectContext(ctx, &st, s.conn.Rebind("SELECT stks.* FROM subtasks stks LEFT JOIN subtask_tests stt ON stks.id = stt.subtask_id WHERE stt.test_id = ? AND stks.problem_id = ? ORDER BY visible_id"), tid, pbid)
@@ -154,7 +153,6 @@ func (s *DB) internalToSubTask(ctx context.Context, st *subtask) (*kilonova.SubT
 	}
 
 	var ids []int
-	// TODO: Test
 	err := s.conn.SelectContext(ctx, &ids, s.conn.Rebind("SELECT subtask_tests.test_id FROM subtask_tests INNER JOIN tests ON tests.id = subtask_tests.test_id WHERE subtask_tests.subtask_id = ? AND tests.orphaned = false ORDER BY tests.visible_id ASC"), st.ID)
 	if errors.Is(err, sql.ErrNoRows) {
 		ids = []int{}

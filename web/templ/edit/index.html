@@ -2,147 +2,123 @@
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
-<div class="segment-container" id="editApp" v-cloak>
-	<form @submit="updateProblem">
-		<div class="block my-2">
-			<label>
-				<span class="form-label">{{getText "title"}}:</span>
-				<input class="form-input" type="text" v-model="problem.name" />
-			</label>
-		</div>
-		<div class="block my-2">
-			<label>
-				<span class="form-label">{{getText "author"}}:</span>
-				<input class="form-input" type="text" size="50" v-model="problem.author_credits" />
-			</label>
-		</div>
-		<div class="block my-2">
-			<label>
-				<span class="form-label">{{getText "source"}}:</span>
-				<input class="form-input" type="text" size="50" v-model="problem.source_credits" />
-			</label>
-		</div>
-		<!--
-		<div class="block my-2">
-			<label>
-				<span class="form-label">{{getText "pbType"}}:</span>
-				<select class="form-select" v-model="problem.type">
-					<option value="classic">{{getText "classic"}}</option>
-					<option value="custom_checker">{{getText "checker"}}</option>
-				</select>
-			</label>
-		</div>
-		-->
-		<div class="block my-2">
-			<label>
-				<input class="form-checkbox" type="checkbox" v-model="problem.console_input">
-				<span class="form-label ml-2">{{getText "consoleInput"}}</span>
-			</label>
-		</div>
-		<div class="block my-2" v-if="!problem.console_input">
-			<label>
-				<span class="mr-2 text-xl">{{getText "testName"}}:</span>
-				<input class="form-input" type="text" v-model="problem.test_name" />
-			</label>
-		</div>
-		<div class="block my-2">
-			<label>
-				<span class="form-label">{{getText "memoryLimit"}}:</span>
-				<input type="number" class="form-input" id="memoryTotal" placeholder="Limită de memorie (total)" min="0" step="0.1" max="512" :value="problem.memory_limit / 1024" @input="event => problem.memory_limit = event.target.value * 1024">
-				<span class="ml-1 text-xl">MB</span>
-			</label>
-		</div>
-		<div class="block my-2">
-			<label>
-				<span class="form-label">{{getText "timeLimit"}}:</span>
-				<input type="number" class="form-input" id="timeLimit" placeholder="Limită de timp..." min="0" step="0.01" v-model="problem.time_limit">
-				<span class="ml-1 text-xl">{{getText "seconds"}}</span>
-			</label>
-		</div>
-		<div class="block my-2">
-			<label>
-				<span class="form-label">{{getText "defaultPoints"}}:</span>
-				<input class="form-input" type="number" min="0" max="100" step="1" pattern="\d*" v-model="problem.default_points" />
-			</label>
-		</div>
-		<button type="submit" class="btn btn-blue">{{getText "updateProblem"}}</button>
-	</form>
-	<div class="block my-2">
-		<form class="inline" @submit="deleteProblem">
-			<button class="btn btn-red mr-2">{{getText "deleteProblem"}}</button>
-		</form>
-	</div>
+<div class="page-holder">
+    <div class="page-content-full">
+        <h2>{{ getText "header.edit.index" }}</h2>
+        <form id="updateProblemForm" autocomplete="off">
+            <label class="block my-2">
+                <span class="form-label">{{getText "title"}}:</span>
+                <input id="problemName" class="form-input" type="text" value="{{.Problem.Name}}" />
+            </label>
+            <label class="block my-2">
+                <span class="form-label">{{getText "author"}}:</span>
+                <input id="authorCredits" class="form-input" type="text" size="50" value="{{.Problem.AuthorCredits}}" />
+            </label>
+            <label class="block my-2">
+                <span class="form-label">{{getText "source"}}:</span>
+                <input id="sourceCredits" class="form-input" type="text" size="50" value="{{.Problem.SourceCredits}}" />
+            </label>
+            <label class="block my-2">
+                <input id="consoleInput" class="form-checkbox" type="checkbox" {{if .Problem.ConsoleInput}} checked {{
+                    end }}>
+                <span class="form-label ml-2">{{getText "consoleInput"}}</span>
+            </label>
+            <label class="block my-2">
+                <span class="mr-2 text-xl">{{getText "testName"}}:</span>
+                <input id="testName" class="form-input" type="text" value="{{.Problem.TestName}}" />
+            </label>
+            <label class="block my-2">
+                <span class="form-label">{{getText "memoryLimit"}}:</span>
+                <input id="memoryLimit" type="number" class="form-input" placeholder="Limită de memorie (total)" min="0"
+                    step="0.1" max="512" pattern="[\d]*" value="{{KBtoMB .Problem.MemoryLimit}}">
+                <span class="ml-1 text-xl">MB</span>
+            </label>
+            <label class="block my-2">
+                <span class="form-label">{{getText "timeLimit"}}:</span>
+                <input id="timeLimit" type="number" class="form-input" placeholder="Limită de timp..." min="0"
+                    step="0.01" pattern="[\d]*" value="{{.Problem.TimeLimit}}">
+                <span class="ml-1 text-xl">{{getText "seconds"}}</span>
+            </label>
+            <label class="block my-2">
+                <span class="form-label">{{getText "defaultPoints"}}:</span>
+                <input id="defaultPoints" class="form-input" type="number" min="0" max="100" step="1" pattern="[\d]*"
+                    value="{{.Problem.DefaultPoints}}" />
+            </label>
+            <button type="submit" class="btn btn-blue">{{getText "updateProblem"}}</button>
+        </form>
+        <div class="block my-2">
+            <button type="button" id="deleteProblemButton" class="btn btn-red mr-2">{{getText "deleteProblem"}}</button>
+        </div>
+
+        <div class="page-sidebar-divider"></div>
+
+        <div class="reset-list">
+            {{with problemSettings .Problem.ID}}
+            <h2>Pe baza atașamentelor, aceste informații vor fi transmise evaluatorului:</h2>
+            <ul>
+                <li>Se acceptă numai submisii C++: {{.OnlyCPP}}</li>
+                <li>Checker: {{if (ne (len .CheckerName) 0)}}Custom (este executat checker.cpp){{else}}Clasic/Default
+                    (verifică conținutul fișierului de ieșire){{end}}</li>
+                <li>Fișiere extra incluse: {{range $i, $name := .HeaderFiles}}{{$name}}{{else}}N/A{{end}}</li>
+                <li>Fișiere grader incluse: {{range $i, $name := .GraderFiles}}{{$name}}{{else}}N/A{{end}}</li>
+            </ul>
+            {{end}}
+            <button class="btn btn-red mt-2" onclick="reevaluateSubs()">Reevaluare submisii</button>
+        </div>
+    </div>
 </div>
 
-<div class="segment-container reset-list">
-	{{with problemSettings .Problem.ID}}
-	<h2>Pe baza atașamentelor, aceste informații vor fi transmise evaluatorului:</h2>
-	<ul>
-		<li>Se acceptă numai submisii C++: {{.OnlyCPP}}</li>
-		<li>Checker: {{if (ne (len .CheckerName) 0)}}Custom (este executat checker.cpp){{else}}Clasic/Default (verifică conținutul fișierului de ieșire){{end}}</li>
-		<li>Fișiere extra incluse: {{range $i, $name := .HeaderFiles}}{{$name}}{{else}}N/A{{end}}</li>
-		<li>Fișiere grader incluse: {{range $i, $name := .GraderFiles}}{{$name}}{{else}}N/A{{end}}</li>
-	</ul>
-	{{end}}
-    <button class="btn btn-red mt-2" onclick="reevaluateSubs()">Reevaluare submisii</button>
-</div>
 
 <script>
-let problem = {{.Problem}};
+    let problem = {{.Problem }};
 
-async function reevaluateSubs() {
-    if(!confirm(bundled.getText("confirmSubReevaluate"))) {
-        return
+    async function reevaluateSubs() {
+        if (!confirm(bundled.getText("confirmSubReevaluate"))) {
+            return
+        }
+        let res = await bundled.postCall(`/problem/${problem.id}/reevaluateSubs`, {})
+        bundled.apiToast(res)
     }
-    let res = await bundled.postCall(`/problem/${problem.id}/reevaluateSubs`, {})
-    bundled.apiToast(res)
-}
 
-Vue.createApp({
-	el: "",
-	delimiters: ['${', '}'],
-	data: () => {
-		return {
-			problem: problem,
-		}
-	},
-	methods: {
-		updateProblem: async function(e){
-			e.preventDefault();
-			if(this.problem.name === "") {
-				bundled.createToast({status: "error", description: bundled.getText("emptyTitle")});
-				return
-			}
-			let data = {
-				name: this.problem.name,
-				default_points: this.problem.default_points,
+    async function updateProblem(e) {
+        e.preventDefault();
+        const data = {
+            name: document.getElementById("problemName").value,
+            author_credits: document.getElementById("authorCredits").value,
+            source_credits: document.getElementById("sourceCredits").value,
+            console_input: document.getElementById("consoleInput").checked,
+            test_name: document.getElementById("testName").value,
+            memory_limit: parseInt(document.getElementById("memoryLimit").value) * 1024,
+            time_limit: parseFloat(document.getElementById("timeLimit").value),
+            default_points: parseInt(document.getElementById("defaultPoints").value),
+        }
 
-				source_credits: this.problem.source_credits,
-				author_credits: this.problem.author_credits,
-				
-				console_input: this.problem.console_input,
-				test_name: this.problem.test_name,
-		
-				memory_limit: Math.round(this.problem.memory_limit), 
-				time_limit: this.problem.time_limit,
+        if (data.name === "") {
+            bundled.createToast({ status: "error", description: bundled.getText("emptyTitle") });
+            return
+        }
+        bundled.apiToast(await bundled.postCall(`/problem/${problem.id}/update/`, data));
+    }
 
-			};
-			let res = await bundled.postCall(`/problem/${this.problem.id}/update/`, data)
-			bundled.apiToast(res);
-		},
-		deleteProblem: async function(e) {
-			e.preventDefault();
-			if(!confirm(bundled.getText("confirmProblemDelete"))) {
-				return
-			}
-			let res = await bundled.postCall(`/problem/${this.problem.id}/delete`, {})
-			if(res.status === "success") {
-				window.location.assign("/");
-				return
-			}
-			bundled.apiToast(res)
-		}
-	},
-}).mount("#editApp");
+    async function deleteProblem(e) {
+        e.preventDefault();
+        if (!confirm(bundled.getText("confirmProblemDelete"))) {
+            return
+        }
+        let res = await bundled.postCall(`/problem/${problem.id}/delete`, {})
+        if (res.status === "success") {
+            window.location.assign("/");
+            return
+        }
+        bundled.apiToast(res)
+    }
+
+    document.getElementById("updateProblemForm").addEventListener("submit", updateProblem);
+    document.getElementById("deleteProblemButton").addEventListener("click", deleteProblem);
+
+    document.getElementById("testName").disabled = document.getElementById("consoleInput").checked;
+    document.getElementById("consoleInput").addEventListener("change", (e) => {
+        document.getElementById("testName").disabled = document.getElementById("consoleInput").checked;
+    });
 </script>
 {{ end }}

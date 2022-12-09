@@ -171,9 +171,6 @@ func (s *API) Handler() http.Handler {
 
 		r.With(s.MustBeAdmin).Route("/moderation", func(r chi.Router) {
 			r.Post("/purgeBio", s.purgeBio)
-			// TODO
-			// r.Post("/nukeUser", s.nukeUser)
-			// r.Post("/banUser", s.banUser)
 			r.Post("/deleteUser", s.deleteUser)
 		})
 

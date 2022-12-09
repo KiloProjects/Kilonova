@@ -4,4 +4,4 @@
 
 Kilonova is a (work-in-progress) platform for competitive programming.
 
-You can see the Changelog [here](./docs/CHANGELOG.md) and the roadmap [here](./docs/TODO.md)
+You can see the Changelog [here](./docs/CHANGELOG.md).

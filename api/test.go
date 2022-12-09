@@ -150,7 +150,6 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Created test")
 }
 
-// TODO: Move most stuff to business logic
 func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 	// Since this operation can take a lot of space, I am putting this lock as a precaution.
 	// This might create a problem with timeouts, and this should be handled asynchronously.
