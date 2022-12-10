@@ -5,7 +5,7 @@
 {{ $pbid := .Problem.ID }}
 
 <div class="page-holder">
-    <div class="page-content-full">
+    <div class="page-content">
         <h2>{{getText "header.edit.attachments"}}</h2>
         {{ with .Attachments }}
         <table class="kn-table my-2" style="table-layout: fixed">
@@ -57,10 +57,9 @@
         {{ else }}
         {{getText "noAttachments"}}
         {{ end }}
-
-        <div class="page-sidebar-divider"></div>
-
-        <form id="attCreate">
+    </div>
+    <div class="page-sidebar">
+        <form class="page-sidebar-box" id="attCreate">
             <h2>{{getText "header.edit.attachment_create"}}</h2>
             <label class="block my-2">
                 <span class="mr-2 text-xl">{{getText "file"}}: </span>
@@ -76,7 +75,6 @@
             </label>
             <button type="submit" class="btn btn-blue">{{getText "button.upload"}}</button>
         </form>
-
     </div>
 </div>
 

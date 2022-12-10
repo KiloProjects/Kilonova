@@ -62,6 +62,14 @@ ro = "Titlu"
 en = "Name"
 ro = "Nume"
 
+[statement]
+en = "Statement"
+ro = "Enunț"
+
+[submit]
+en = "Upload code"
+ro = "Încărcare cod"
+
 [desc]
 en = "Description"
 ro = "Descriere"
@@ -125,6 +133,22 @@ ro = "Profil:"
 [emailConfirm]
 en = "Verified Email"
 ro = "Email Verificat"
+
+[title.problem_statement]
+en = "Problem statement"
+ro = "Enunț problemă"
+
+[title.problem_submissions]
+en = "Submissions for"
+ro = "Submisii pentru"
+
+[title.problem_submit]
+en = "Upload code for"
+ro = "Încărcare cod pentru"
+
+[title.past_submissions]
+en = "Past submissions"
+ro = "Submisii anterioare"
 
 [title.edit.index]
 en = "Edit Problem | Problem #%d: %s"
@@ -539,10 +563,6 @@ ro = "Sunteți sigur că vreți să ștergeți testul?"
 [error.message]
 en = "That's an error"
 ro = "Asta-i o eroare!"
-
-[edit]
-en = "[edit]"
-ro = "[editare]"
 
 [generalInfo]
 en = "General info"

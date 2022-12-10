@@ -1,0 +1,79 @@
+{{ define "content" }}
+
+
+{{ template "topbar.html" . }}
+
+<!-- This page will (hopefully) get more meaning when contest support is introduced -->
+
+
+<div class="page-holder no-bottom-border">
+    <div class="page-content-full">
+        <h1 class="mt-4">{{getText "uploadSub"}}</h1>
+        <form id="sendSubForm">
+            <label class="block mb-2">
+                <span class="form-label">{{getText "language"}}:</span>
+                <select id="sub_language" class="form-select">
+                    {{ range $name, $lang := .Languages }}
+                    {{ if not $lang.Disabled }}
+                    <option value="{{$name}}" {{if eq $name "cpp14" }}selected{{end}}>{{$lang.PrintableName}}</option>
+                    {{ end }}
+                    {{ end }}
+                </select>
+            </label>
+            <textarea id="SubArea" style="display: none;" autocomplete="off"></textarea>
+            <button type="submit" class="btn btn-blue mt-2">{{getText "send"}}</button>
+        </form>
+
+        <kn-sub-viewer problemID="{{.Problem.ID}}" userID="{{.Ctx.User.ID}}"
+            title='{{getText "title.past_submissions"}}' />
+    </div>
+</div>
+
+<style>
+    .CodeMirror {
+        min-height: 250px;
+    }
+</style>
+
+<script>
+    var cm = CodeMirror.fromTextArea(document.getElementById("SubArea"), {
+        mode: bundled.languages["cpp14"],
+    });
+    cm.setSize(null, "100%");
+    cm.focus();
+    cm.execCommand("goDocEnd");
+
+    document.getElementById("sub_language").addEventListener("change", (e) => {
+        let lang = bundled.languages[e.target.value]
+        if (lang !== null) {
+            cm.setOption("mode", lang)
+        }
+    })
+
+    async function sendSub() {
+        let sendData = {
+            problemID: "{{ .Problem.ID }}",
+            language: document.getElementById("sub_language").value,
+            code: cm.getValue(),
+        };
+
+        let res = await bundled.postCall("/submissions/submit", sendData)
+        if (res.status == "error") {
+            bundled.apiToast(res)
+            return
+        }
+        bundled.createToast({ title: bundled.getText("uploaded"), description: `<a href="/submissions/${res.data}">${bundled.getText("view")}</btn>` })
+        console.log(res.data, bundled.makeSubWaiter(res.data));
+        document.dispatchEvent(new CustomEvent("kn-poll"));
+    }
+
+    const debounced = bundled.debounce(() => sendSub().catch(console.error), 200)
+
+    document.getElementById("sendSubForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        debounced()
+    })
+
+</script>
+
+{{ end }}

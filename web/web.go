@@ -78,8 +78,10 @@ func (rt *Web) Handler() http.Handler {
 			r.Use(rt.ValidateProblemID)
 			r.Use(rt.ValidateProblemVisible)
 			r.Get("/", rt.problem())
-			r.Get("/attachments/{aid}", rt.problemAttachment)
+			r.Get("/submissions", rt.problemSubmissions())
+			r.Get("/submit", rt.problemSubmit())
 			r.With(rt.mustBeProblemEditor).Route("/edit", rt.ProblemEditRouter)
+			r.Get("/attachments/{aid}", rt.problemAttachment)
 		})
 	})
 

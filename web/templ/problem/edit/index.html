@@ -3,7 +3,7 @@
 {{ template "topbar.html" . }}
 
 <div class="page-holder">
-    <div class="page-content-full">
+    <div class="page-content">
         <h2>{{ getText "header.edit.index" }}</h2>
         <form id="updateProblemForm" autocomplete="off">
             <label class="block my-2">
@@ -49,12 +49,11 @@
         <div class="block my-2">
             <button type="button" id="deleteProblemButton" class="btn btn-red mr-2">{{getText "deleteProblem"}}</button>
         </div>
-
-        <div class="page-sidebar-divider"></div>
-
-        <div class="reset-list">
+    </div>
+    <div class="page-sidebar">
+        <div class="page-sidebar-box reset-list">
             {{with problemSettings .Problem.ID}}
-            <h2>Pe baza atașamentelor, aceste informații vor fi transmise evaluatorului:</h2>
+            <h3>Pe baza atașamentelor, aceste informații vor fi transmise evaluatorului:</h3>
             <ul>
                 <li>Se acceptă numai submisii C++: {{.OnlyCPP}}</li>
                 <li>Checker: {{if (ne (len .CheckerName) 0)}}Custom (este executat checker.cpp){{else}}Clasic/Default

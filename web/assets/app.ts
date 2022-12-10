@@ -18,3 +18,5 @@ export { CheckboxManager } from "./checkbox_mgr.js";
 export { getFileIcon } from "./cdn_mgr";
 
 export { debounce } from "underscore";
+
+export { makeSubWaiter } from "./sub_waiter";

@@ -35,11 +35,16 @@ const status = (sub: Submission): string => {
 	return getText("waiting");
 };
 
-function getInitialData(): SubmissionQuery {
+type Overwrites = {
+	problemID?: number;
+	userID?: number;
+};
+
+function getInitialData(overwrites: Overwrites): SubmissionQuery {
 	const params = new URLSearchParams(window.location.search);
 
-	const user_id = parseInt(params.get("user_id") ?? "");
-	const problem_id = parseInt(params.get("problem_id") ?? "");
+	const userIDParam = parseInt(params.get("user_id") ?? "");
+	const problemIDParam = parseInt(params.get("problem_id") ?? "");
 	const score = parseInt(params.get("score") ?? "");
 
 	let compile_error_str = params.get("compile_error");
@@ -56,9 +61,19 @@ function getInitialData(): SubmissionQuery {
 	const ordering = params.get("ordering");
 	const page = parseInt(params.get("page") ?? "");
 
+	let problemID = !isNaN(problemIDParam) ? problemIDParam : undefined;
+	if (typeof overwrites.problemID !== "undefined") {
+		problemID = overwrites.problemID;
+	}
+
+	let userID = !isNaN(userIDParam) ? userIDParam : undefined;
+	if (typeof overwrites.userID !== "undefined") {
+		userID = overwrites.userID;
+	}
+
 	return {
-		user_id: !isNaN(user_id) ? user_id : undefined,
-		problem_id: !isNaN(problem_id) ? problem_id : undefined,
+		user_id: userID,
+		problem_id: problemID,
 		score: !isNaN(score) ? score : undefined,
 		status: status,
 		lang: params.get("lang") ?? "",
@@ -71,9 +86,17 @@ function getInitialData(): SubmissionQuery {
 	};
 }
 
-function SubsView() {
+export type SubsViewProps = {
+	problemid?: number;
+	userid?: number;
+	title?: string;
+};
+
+function SubsView(props: SubsViewProps) {
+	console.log(props);
+	let overwrites: Overwrites = { problemID: props.problemid, userID: props.userid };
 	let [loading, setLoading] = useState(true);
-	let [query, updQuery] = useState<SubmissionQuery>(getInitialData());
+	let [query, updQuery] = useState<SubmissionQuery>(getInitialData(overwrites));
 	let [subs, setSubs] = useState<ResultSubmission[]>([]);
 	let [count, setCount] = useState<number>(-1);
 	let [initialLoad, setInitialLoad] = useState(true);
@@ -87,11 +110,10 @@ function SubsView() {
 
 	const numPages = useMemo(() => Math.floor(count / 50) + (count % 50 != 0 ? 1 : 0), [count]);
 
-	const poll = _.throttle(async () => {
-		setLoading(true);
-		// if (query.page === 1) {
-		// 	setCount(0);
-		// }
+	const poll = _.throttle(async (noLoad?: boolean) => {
+		if (typeof noLoad === "undefined" || !noLoad) {
+			setLoading(true);
+		}
 
 		try {
 			var res = await getSubmissions(query);
@@ -108,17 +130,25 @@ function SubsView() {
 	}, 200);
 
 	useEffect(() => {
-		poll();
+		poll().catch(console.error);
 	}, [query]);
+
+	useEffect(() => {
+		const eventPoll = async (e) => poll(true);
+		document.addEventListener("kn-poll", eventPoll);
+		return () => document.removeEventListener("kn-poll", eventPoll);
+	}, []);
 
 	async function copyQuery() {
 		var p = new URLSearchParams();
-		if (typeof query.user_id !== "undefined" && query.user_id > 0) {
+		// add to query only if they were not supplied by default
+		if (typeof overwrites.userID === "undefined" && typeof query.user_id !== "undefined" && query.user_id > 0) {
 			p.append("user_id", query.user_id.toString());
 		}
-		if (typeof query.problem_id !== "undefined" && query.problem_id > 0) {
+		if (typeof overwrites.problemID === "undefined" && typeof query.problem_id !== "undefined" && query.problem_id > 0) {
 			p.append("problem_id", query.problem_id.toString());
 		}
+
 		if (query.status !== undefined && query.status !== "") {
 			p.append("status", query.status);
 		}
@@ -203,37 +233,6 @@ function SubsView() {
 							)}
 						</select>
 					</label>
-					{/* <label class="block mb-2">
-						<span class="form-label">{getText("sorting")}:</span>
-						<select
-							class="form-select"
-							value={query.ordering}
-							onChange={(e) => {
-								setQuery({
-									...query,
-									page: 1,
-									ordering: e.currentTarget.value,
-								});
-							}}
-						>
-							<option value="id" default>
-								{getText("id")}
-							</option>
-							<option value="score">{getText("score")}</option>
-							<option value="max_time">{getText("maxTime")}</option>
-							<option value="max_mem">{getText("maxMemory")}</option>
-							<option value="code_size">{getText("codeSize")}</option>
-						</select>
-					</label>
-					<label class="block mb-2">
-						<input
-							type="checkbox"
-							class="form-checkbox mr-2"
-							checked={query.ascending}
-							onInput={(e) => setQuery({ ...query, page: 1, ascending: e.currentTarget.checked })}
-						/>
-						<span class="form-label">{getText("ascending")}</span>
-					</label> */}
 					<label class="block mb-2">
 						<input
 							type="checkbox"
@@ -252,64 +251,68 @@ function SubsView() {
 					<details class="block mb-2">
 						<summary class="form-label">{getText("advancedOptions")}</summary>
 						<label class="block mb-2">
+							<span class="form-label">{getText("status")}:</span>
+							<select
+								class="form-select"
+								value={typeof query.status === "undefined" ? "" : query.status}
+								onChange={(e) => {
+									setQuery({
+										...query,
+										page: 1,
+										status: e.currentTarget.value,
+									});
+								}}
+							>
+								<option value="">-</option>
+								<option value="finished">{getText("finished")}</option>
+								<option value="working">{getText("working")}</option>
+								<option value="waiting">{getText("waiting")}</option>
+							</select>
+						</label>
+						{typeof overwrites.userID === "undefined" && (
 							<label class="block mb-2">
-								<span class="form-label">{getText("status")}:</span>
-								<select
-									class="form-select"
-									value={typeof query.status === "undefined" ? "" : query.status}
-									onChange={(e) => {
+								<span class="form-label">{getText("userID")}:</span>
+								<input
+									class="form-input"
+									type="number"
+									min="0"
+									value={typeof query.user_id == "undefined" ? "a" : query.user_id}
+									onInput={(e) => {
+										let val: number | null = parseInt(e.currentTarget.value);
+										if (isNaN(val) || val <= 0) {
+											val = null;
+										}
 										setQuery({
 											...query,
 											page: 1,
-											status: e.currentTarget.value,
+											user_id: val == null ? undefined : val,
 										});
 									}}
-								>
-									<option value="">-</option>
-									<option value="finished">{getText("finished")}</option>
-									<option value="working">{getText("working")}</option>
-									<option value="waiting">{getText("waiting")}</option>
-								</select>
+								/>
 							</label>
-							<span class="form-label">{getText("userID")}:</span>
-							<input
-								class="form-input"
-								type="number"
-								min="0"
-								value={typeof query.user_id == "undefined" ? "a" : query.user_id}
-								onInput={(e) => {
-									let val: number | null = parseInt(e.currentTarget.value);
-									if (isNaN(val) || val <= 0) {
-										val = null;
-									}
-									setQuery({
-										...query,
-										page: 1,
-										user_id: val == null ? undefined : val,
-									});
-								}}
-							/>
-						</label>
-						<label class="block mb-2">
-							<span class="form-label">{getText("problemID")}:</span>
-							<input
-								class="form-input"
-								type="number"
-								min="0"
-								value={typeof query.problem_id == "undefined" ? "a" : query.problem_id}
-								onInput={(e) => {
-									let val: number | null = parseInt(e.currentTarget.value);
-									if (isNaN(val) || val <= 0) {
-										val = null;
-									}
-									setQuery({
-										...query,
-										page: 1,
-										problem_id: val == null ? undefined : val,
-									});
-								}}
-							/>
-						</label>
+						)}
+						{typeof overwrites.problemID === "undefined" && (
+							<label class="block mb-2">
+								<span class="form-label">{getText("problemID")}:</span>
+								<input
+									class="form-input"
+									type="number"
+									min="0"
+									value={typeof query.problem_id == "undefined" ? "a" : query.problem_id}
+									onInput={(e) => {
+										let val: number | null = parseInt(e.currentTarget.value);
+										if (isNaN(val) || val <= 0) {
+											val = null;
+										}
+										setQuery({
+											...query,
+											page: 1,
+											problem_id: val == null ? undefined : val,
+										});
+									}}
+								/>
+							</label>
+						)}
 						<label class="block mb-2">
 							<span class="form-label">{getText("score")}:</span>
 							<input
@@ -371,6 +374,7 @@ function SubsView() {
 				</div>
 			</div>
 			<div class="page-content">
+				{typeof props.title !== "undefined" && <h1>{props.title}</h1>}
 				{!initialLoad && (
 					<>
 						<h2 class="inline-block">{rezStr(count)}</h2>
@@ -391,7 +395,7 @@ function SubsView() {
 						</div>
 					</>
 				)}
-				{!loading && query.problem_id != null && query.problem_id > 0 && subs.length > 0 && (
+				{!loading && typeof overwrites.problemID === "undefined" && query.problem_id != null && query.problem_id > 0 && subs.length > 0 && (
 					<p>
 						{getText("problemSingle")} <a href={"/problems/" + subs[0].problem.id}>{subs[0].problem.name}</a>
 					</p>
@@ -481,6 +485,6 @@ function SubsView() {
 	);
 }
 
-register(SubsView, "kn-sub-viewer", []);
+register(SubsView, "kn-sub-viewer", ["problemid", "userid", "title"]);
 
 export { SubsView };

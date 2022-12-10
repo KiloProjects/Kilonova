@@ -6,7 +6,7 @@
     <div class="page-content-full">
         <h2>{{ getText "header.edit.description" }}</h2>
         <div class="mb-2">
-            <textarea id="description" class="hidden">{{- .Problem.Description -}}</textarea>
+            <textarea id="description" class="hidden" autofocus>{{- .Problem.Description -}}</textarea>
         </div>
         <div class="mb-2">
             <button class="btn btn-blue" onclick="setDescription()">{{getText "button.update"}}</button>
@@ -29,6 +29,8 @@
         },
     });
     cm.setSize(null, "100%");
+    cm.focus();
+    cm.execCommand("goDocEnd");
 
     async function setDescription() {
         let desc = cm.getValue();

@@ -1,0 +1,198 @@
+{{ define "title" }} {{getText "problem" .Problem.ID .Problem.Name}} {{ end }}
+{{ define "content" }}
+
+
+{{ $pbid := .Problem.ID }}
+{{ $ctx := .Ctx }}
+
+{{ template "topbar.html" . }}
+
+<div class="page-holder">
+    <div class="page-content reset-list">
+        <div class="w-full mb-6 text-center">
+            <h1>{{.Problem.Name}}</h1>
+            <h5>{{getText "timeLimit"}}: {{.Problem.TimeLimit}}s</h5>
+            <h5>{{getText "memoryLimit"}}: {{KBtoMB .Problem.MemoryLimit}}MB</h5>
+            <h5>{{getText "input"}}: {{if .Problem.ConsoleInput}}stdin{{else}}{{.Problem.TestName}}.in{{end}}</h5>
+            <h5>{{getText "output"}}: {{if .Problem.ConsoleInput}}stdout{{else}}{{.Problem.TestName}}.out{{end}}
+            </h5>
+        </div>
+
+        {{if ispdflink .Problem.Description}}
+        <p><a target='_blank' href='{{.Problem.Description}}'>{{.Problem.Description}}</a></p>
+        <embed class='mx-2 my-2' type='application/pdf' src='{{.Problem.Description}}'
+            style="width:95%; height: 90vh;"></embed>
+        {{else}}
+        <div class="text-justify">
+            {{.Markdown}}
+        </div>
+        {{end}}
+    </div>
+
+    </script>
+    <div class="page-sidebar">
+        <div class="page-sidebar-box font-semibold">
+            <h2 class="font-normal">
+                {{getText "generalInfo"}}
+            </h2>
+            <div class="px-2">
+                <p>{{getText "id"}}: {{.Problem.ID}}</p>
+                {{ if (eq (len .Problem.Editors) 1) }}
+                <p>
+                    {{getText "editor"}}:
+                    {{ range .Problem.Editors }}
+                    {{ with user . }}
+                    <a href="/profile/{{.Name}}">{{.Name}}</a>
+                    {{ end }}
+                    {{ end }}
+                </p>
+                {{ else }}
+                <details class="reset-list" open>
+                    <summary>{{getText "editors"}}</summary>
+                    <ul>
+                        {{ range .Problem.Editors }}
+                        {{ with user .}}
+                        <li><a href="/profile/{{.Name}}">{{.Name}}</a></li>
+                        {{ end }}
+                        {{ end }}
+                    </ul>
+                </details>
+                {{ end }}
+                {{ if .ProblemEditor }}
+                {{ with .Problem.Viewers }}
+                <details class="reset-list">
+                    <summary>{{getText "viewers"}}</summary>
+                    <ul>
+                        {{ range . }}
+                        {{ with user .}}
+                        <li><a href="/profile/{{.Name}}">{{.Name}}</a></li>
+                        {{ end }}
+                        {{ end }}
+                    </ul>
+                </details>
+                {{ end }}
+                <p>{{getText "visibility"}}:
+                    {{if .Problem.Visible}}
+                    <span class="badge-lite bg-green-700 text-sm">{{getText "published"}}</span>
+                    {{else}}
+                    <span class="badge-lite bg-red-700 text-sm">{{getText "unpublished"}}</span>
+                    {{end}}
+                </p>
+                {{end}}
+                {{- if .Problem.AuthorCredits -}}
+                <p>{{getText "author"}}: {{.Problem.AuthorCredits}}</p>
+                {{- end -}}
+                {{- if .Problem.SourceCredits -}}
+                <p>{{getText "source"}}: {{.Problem.SourceCredits}}</p>
+                {{- end -}}
+                {{ if authed }}
+                <p>{{getText "score"}}: {{subScore .Problem .Ctx.User.Brief}}</p>
+                {{ end }}
+                {{- if gt .Problem.DefaultPoints 0 -}}
+                <p>{{getText "defaultPoints"}}: {{.Problem.DefaultPoints}}p</p>
+                {{- end -}}
+            </div>
+        </div>
+        {{ if authed }}
+        <div class="page-sidebar-divider"></div>
+        <div class="page-sidebar-box">
+            <older-subs problemid="{{.Problem.ID}}" userid="{{.Ctx.User.ID}}"></older-subs>
+        </div>
+        {{ end }}
+        {{ with .Attachments }}
+        <div class="page-sidebar-divider"></div>
+        <details class="page-sidebar-box" open> <!-- Attachments -->
+            <summary>
+                <h2 class="inline-block">{{getText "attachments"}}</h2>
+            </summary>
+            <div class="px-2">
+                <div class="list-group">
+                    {{ range . }}
+                    <a style="word-wrap: anywhere;" href="/problems/{{$pbid}}/attachments/{{.Name}}"
+                        class="list-group-item flex justify-between">
+                        <span id="att-name-{{.ID}}">{{.Name}}</span>
+                        <span class="badge-lite text-sm" id="att-size-{{.ID}}">
+                            {{.Size}}
+                        </span>
+                    </a>
+                    {{ end }}
+                </div>
+            </div>
+    </div>
+    {{ end }}
+</div>
+
+<script>
+    (() => {
+        for (let el of document.querySelectorAll("[id^='att-name-']")) {
+            el.innerHTML = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerText}`
+        }
+        for (let el of document.querySelectorAll("[id^='att-size-']")) {
+            el.innerText = bundled.sizeFormatter(Number(el.innerText))
+        }
+    })()
+</script>
+
+{{ if authed }}
+
+<h1 class="mt-4">{{getText "uploadSub"}}</h1>
+<form id="sendSubForm">
+    <label class="block mb-2">
+        <span class="form-label">{{getText "language"}}:</span>
+        <select id="sub_language" class="form-select">
+            {{ range $name, $lang := .Languages }}
+            {{ if not $lang.Disabled }}
+            <option value="{{$name}}" {{if eq $name "cpp14" }}selected{{end}}>{{$lang.PrintableName}}</option>
+            {{ end }}
+            {{ end }}
+        </select>
+    </label>
+
+    <textarea id="SubArea" style="display: none;" autocomplete="off"></textarea>
+    <button type="submit" class="btn btn-blue mt-2">{{getText "send"}}</button>
+</form>
+<script>
+    var cm = CodeMirror.fromTextArea(document.getElementById("SubArea"), {
+        mode: bundled.languages["cpp14"],
+    });
+
+    document.getElementById("sub_language").addEventListener("change", (e) => {
+        let lang = bundled.languages[e.target.value]
+        if (lang !== null) {
+            cm.setOption("mode", lang)
+        }
+    })
+
+    async function sendSub() {
+        let sendData = {
+            problemID: "{{ .Problem.ID }}",
+            language: document.getElementById("sub_language").value,
+            code: cm.getValue(),
+        };
+
+        let res = await bundled.postCall("/submissions/submit", sendData)
+        if (res.status == "error") {
+            bundled.apiToast(res)
+            return
+        }
+        bundled.createToast({ title: bundled.getText("uploaded"), description: `<a href="/submissions/${res.data}">${bundled.getText("view")}</btn>` })
+        console.log(res.data, bundled.makeSubWaiter(res.data));
+        document.dispatchEvent(new CustomEvent("kn-poll"));
+    }
+
+    const debounced = bundled.debounce(() => sendSub().catch(console.error), 200)
+
+    document.getElementById("sendSubForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        debounced()
+    })
+
+</script>
+{{ else }}
+
+<h2 class="mt-3 mb-5">{{getText "submitLogin"}}</h2>
+
+{{ end }}
+
+</div>
+{{ end }}

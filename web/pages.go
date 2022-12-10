@@ -21,6 +21,8 @@ import (
 )
 
 type EditTopbar struct {
+	IsEditor bool
+
 	Page   string
 	PageID int
 }
@@ -32,6 +34,7 @@ type ReqContext struct {
 
 type ProblemParams struct {
 	Ctx           *ReqContext
+	Topbar        *EditTopbar
 	ProblemEditor bool
 
 	Problem     *kilonova.Problem
@@ -39,6 +42,14 @@ type ProblemParams struct {
 
 	Markdown  template.HTML
 	Languages map[string]eval.Language
+}
+
+type ProblemTopbarParams struct {
+	Ctx    *ReqContext
+	Topbar *EditTopbar
+
+	Languages map[string]eval.Language
+	Problem   *kilonova.Problem
 }
 
 type ProblemListParams struct {

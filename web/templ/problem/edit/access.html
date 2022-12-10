@@ -6,7 +6,7 @@
 {{ template "topbar.html" . }}
 
 <div class="page-holder">
-    <div class="page-content-full">
+    <div class="page-content">
 
         <h2>{{getText "header.edit.access_control"}}</h2>
 
@@ -25,9 +25,9 @@
             </div>
         </div>
 
-        <div class="page-sidebar-divider"></div>
-
-        <div class="my-2">
+    </div>
+    <div class="page-sidebar">
+        <div class="page-sidebar-box">
             <h2>{{getText "add_user"}}</h2>
             <label class="block">
                 <span class="form-label">{{getText "username"}}:</span>
@@ -43,7 +43,7 @@
 
         <div class="page-sidebar-divider"></div>
 
-        <form class="my-2" id="visibility_form">
+        <form class="page-sidebar-box" id="visibility_form">
             <h2>{{getText "toggle_visibility"}}</h2>
             {{ if not (.Ctx.User.Admin) }}
             <h3>{{getText "visibility_admin"}}</h3>

@@ -94,7 +94,7 @@ func (rt *Web) paste() func(http.ResponseWriter, *http.Request) {
 }
 
 func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
-	templ := rt.parse(nil, "pb.html")
+	templ := rt.parse(nil, "problem/summary.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		problem := util.Problem(r)
 
@@ -139,13 +139,58 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 
 		rt.runTempl(w, r, templ, &ProblemParams{
 			Ctx:           GenContext(r),
-			ProblemEditor: util.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
+			ProblemEditor: util.IsRProblemEditor(r),
+			Topbar:        &EditTopbar{util.IsRProblemEditor(r), "pb_statement", -1},
 
 			Problem:     util.Problem(r),
 			Attachments: atts,
 
 			Markdown:  template.HTML(buf),
 			Languages: langs,
+		})
+	}
+}
+
+func (rt *Web) problemSubmissions() func(http.ResponseWriter, *http.Request) {
+	templ := rt.parse(nil, "problem/pb_submissions.html", "problem/topbar.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		rt.runTempl(w, r, templ, &ProblemTopbarParams{
+			Ctx:    GenContext(r),
+			Topbar: &EditTopbar{util.IsRProblemEditor(r), "pb_submissions", -1},
+
+			Problem: util.Problem(r),
+		})
+	}
+}
+
+func (rt *Web) problemSubmit() func(http.ResponseWriter, *http.Request) {
+	templ := rt.parse(nil, "problem/pb_submit.html", "problem/topbar.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		langs := eval.Langs
+		if evalSettings, err := rt.base.ProblemSettings(r.Context(), util.Problem(r).ID); err != nil {
+			zap.S().Warn("Error getting problem settings:", err, util.Problem(r).ID)
+			rt.statusPage(w, r, 500, "Couldn't get problem settings")
+		} else if evalSettings.OnlyCPP {
+			newLangs := make(map[string]eval.Language)
+			for name, lang := range langs {
+				if strings.HasPrefix(name, "cpp") {
+					newLangs[name] = lang
+				}
+			}
+			langs = newLangs
+		} else if evalSettings.OutputOnly {
+			newLangs := make(map[string]eval.Language)
+			newLangs["outputOnly"] = langs["outputOnly"]
+			langs = newLangs
+		}
+
+		rt.runTempl(w, r, templ, &ProblemTopbarParams{
+			Ctx:    GenContext(r),
+			Topbar: &EditTopbar{util.IsRProblemEditor(r), "pb_submit", -1},
+
+			Languages: langs,
+			Problem:   util.Problem(r),
 		})
 	}
 }

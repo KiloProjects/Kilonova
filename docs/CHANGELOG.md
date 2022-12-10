@@ -1,3 +1,8 @@
+- v0.11.2:
+    - Overhauled problem UI/UX;
+    - UI/UX overhaul for lists of problems (such as the new attempted problems list on a profile page);
+    - Better logging for grader;
+    - Other small things such as more granular feature enabling/disabling from config.
 - v0.11.0:
     - Simply mark new version since so many changes were made with 0.10
     - Start slowly working on support for proper contests, starting with the option to disable signup
