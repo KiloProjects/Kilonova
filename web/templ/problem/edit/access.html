@@ -27,21 +27,6 @@
 
     </div>
     <div class="page-sidebar">
-        <div class="page-sidebar-box">
-            <h2>{{getText "add_user"}}</h2>
-            <label class="block">
-                <span class="form-label">{{getText "username"}}:</span>
-                <input class="form-input my-1 block" type="text" id="userToAdd" placeholder="AlexVasiluta">
-            </label>
-            <div class="mt-2 mb-2 inline-flex">
-                <button type="button" class="btn-blue font-bold py-2 px-4 rounded-l" onclick="addEditor()">{{getText
-                    "add_editor"}}</button>
-                <button type="button" class="btn-blue font-bold py-2 px-4 rounded-r" onclick="addViewer()">{{getText
-                    "add_viewer"}}</button>
-            </div>
-        </div>
-
-        <div class="page-sidebar-divider"></div>
 
         <form class="page-sidebar-box" id="visibility_form">
             <h2>{{getText "toggle_visibility"}}</h2>
@@ -58,6 +43,22 @@
             <button type="submit" class="btn btn-blue" {{if not .Ctx.User.Admin}} disabled {{ end }}>{{getText
                 "button.update"}}</button>
         </form>
+
+        <div class="page-sidebar-divider"></div>
+
+        <div class="page-sidebar-box">
+            <h2>{{getText "add_user"}}</h2>
+            <label class="block">
+                <span class="form-label">{{getText "username"}}:</span>
+                <input class="form-input my-1 block" type="text" id="userToAdd" placeholder="AlexVasiluta">
+            </label>
+            <div class="mt-2 mb-2 inline-flex">
+                <button type="button" class="btn-blue font-bold py-2 px-4 rounded-l" onclick="addEditor()">{{getText
+                    "add_editor"}}</button>
+                <button type="button" class="btn-blue font-bold py-2 px-4 rounded-r" onclick="addViewer()">{{getText
+                    "add_viewer"}}</button>
+            </div>
+        </div>
 
     </div>
 </div>
