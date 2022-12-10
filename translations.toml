@@ -356,8 +356,8 @@ en = "Log Out"
 ro = "Log Out"
 
 [title.edit.problem]
-en = "Editing Problem"
-ro = "Editare Problemă"
+en = "Editing problem"
+ro = "Editare problemă"
 
 [general]
 en = "General"

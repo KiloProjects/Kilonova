@@ -202,7 +202,7 @@
 	}
 
 	.topbar-separator-lg::after {
-		@apply text-2xl;
+		@apply text-xl;
 	}
 
 	.hoverable {
