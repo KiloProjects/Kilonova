@@ -70,6 +70,10 @@ ro = "Enunț"
 en = "Upload code"
 ro = "Încărcare cod"
 
+[topbar.edit]
+en = "Edit problem"
+ro = "Editare problemă"
+
 [desc]
 en = "Description"
 ro = "Descriere"
