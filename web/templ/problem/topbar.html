@@ -1,14 +1,26 @@
 {{ $id := .Problem.ID }}
 {{ $topbar := .Topbar }}
+{{ $editPage := true }}
 <h1>
     {{ if (eq $topbar.Page "pb_statement")}}
+
+    {{ $editPage = false }}
     {{ getText "title.problem_statement" }}
+
     {{ else if (eq $topbar.Page "pb_submissions") }}
+
+    {{ $editPage = false }}
     {{ getText "title.problem_submissions" }} <a href="/problems/{{$id}}">{{.Problem.Name}}</a>
+
     {{ else if (eq $topbar.Page "pb_submit") }}
+
+    {{ $editPage = false }}
     {{ getText "title.problem_submit" }} <a href="/problems/{{$id}}">{{.Problem.Name}}</a>
+
     {{ else }}
-    {{getText "title.edit.problem"}} <a href="/problems/{{$id}}">{{.Problem.Name}}</a>
+
+    {{ getText "title.edit.problem" }} <a href="/problems/{{$id}}">{{.Problem.Name}}</a>
+
     {{ end }}
 </h1>
 <div class="mt-1 mb-2">
@@ -28,7 +40,7 @@
     </a>
     {{ if $topbar.IsEditor }}
     <div class="topbar-separator topbar-separator-lg"></div>
-    <!-- Edit: -->
+    {{ if $editPage }}
     <a class='p-1 {{if (eq $topbar.Page "general")}} topbar-selected {{end}}' href="/problems/{{$id}}/edit">
         {{getText "general"}}
     </a>
@@ -55,5 +67,11 @@
         href="/problems/{{$id}}/edit/subtasks">
         {{getText "subTasks"}}
     </a>
+    {{ else }}
+    <a class='p-1 {{if (eq $topbar.Page "general")}} topbar-selected {{end}}' href="/problems/{{$id}}/edit">
+        {{getText "topbar.edit"}}
+    </a>
+    {{ end }}
+
     {{ end }}
 </div>
