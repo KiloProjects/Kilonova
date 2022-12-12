@@ -10,6 +10,7 @@ import (
 	"html"
 	"html/template"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"path"
@@ -293,7 +294,9 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			d, err := json.Marshal(data)
 			return base64.StdEncoding.EncodeToString(d), err
 		},
-		"KBtoMB":     func(kb int) float64 { return float64(kb) / 1024.0 },
+		"KBtoMB": func(kb int) float64 {
+			return math.Round(float64(kb)/1024.0*100) / 100.0
+		},
 		"hashedName": fsys.HashName,
 		"version":    func() string { return kilonova.Version },
 		"debug":      func() bool { return config.Common.Debug },

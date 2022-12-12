@@ -5,21 +5,21 @@
     {{ if (eq $topbar.Page "pb_statement")}}
 
     {{ $editPage = false }}
-    {{ getText "title.problem_statement" }}
+	<b>{{.Problem.Name}}</b>
 
     {{ else if (eq $topbar.Page "pb_submissions") }}
 
     {{ $editPage = false }}
-    {{ getText "title.problem_submissions" }} <a href="/problems/{{$id}}">{{.Problem.Name}}</a>
+	<b>{{.Problem.Name}}</b>
 
     {{ else if (eq $topbar.Page "pb_submit") }}
 
     {{ $editPage = false }}
-    {{ getText "title.problem_submit" }} <a href="/problems/{{$id}}">{{.Problem.Name}}</a>
+	<b>{{.Problem.Name}}</b>
 
     {{ else }}
 
-    {{ getText "title.edit.problem" }} <a href="/problems/{{$id}}">{{.Problem.Name}}</a>
+	{{ getText "title.edit.problem" }} <b>{{.Problem.Name}}</b>
 
     {{ end }}
 </h1>

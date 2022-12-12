@@ -87,7 +87,7 @@
             source_credits: document.getElementById("sourceCredits").value,
             console_input: document.getElementById("consoleInput").checked,
             test_name: document.getElementById("testName").value,
-            memory_limit: parseInt(document.getElementById("memoryLimit").value) * 1024,
+            memory_limit: Math.trunc(parseFloat(document.getElementById("memoryLimit").value) * 1024),
             time_limit: parseFloat(document.getElementById("timeLimit").value),
             default_points: parseInt(document.getElementById("defaultPoints").value),
         }
