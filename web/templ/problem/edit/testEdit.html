@@ -85,7 +85,7 @@ async function updateData(e) {
 async function removeTest(e) {
 	e.preventDefault()
 
-	if(!confirm('{{getText "confirmTestDelete"}}')) {
+	if(!confirm(bundled.getText("confirmTestDelete"))) {
 		return
 	}
 	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/orphan", {})

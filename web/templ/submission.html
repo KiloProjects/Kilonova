@@ -36,6 +36,9 @@ async function createPaste() {
 	);
 }
 async function deleteSubmission() {
+    if(!confirm(bundled.getText("subDeleteConfirm"))) {
+        return;
+    }
     const args = {submission_id: sub_id};
     let res = await bundled.postCall("/submissions/delete", args)
     if(res.status === "success") {

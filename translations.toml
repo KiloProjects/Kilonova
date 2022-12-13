@@ -1147,3 +1147,40 @@ ro = "Signup manual"
 [featureSet.pastes]
 en = "Pastes"
 ro = "Paste-uri"
+
+[pasteDeleteConfirm]
+en = "Are you sure you want to delete this paste?"
+ro = "Ești sigur că vrei să ștergi acest paste?"
+
+[subDeleteConfirm]
+en = "Are you sure you want to delete this submission?"
+ro = "Ești sigur că vrei să ștergi această submisie?"
+
+[pblistDeleteConfirm]
+en = "Are you sure you want to delete this list?"
+ro = "Ești sigur că vrei să ștergi această listă?"
+
+
+[oneAttachmentDeleteConfirm]
+en = "Are you sure you want to delete the attachment?"
+ro = "Ești sigur că vrei să ștergi atașamentul?"
+
+[attachmentDeleteConfirm]
+en = "Are you sure you want to delete %d attachments?"
+ro = "Ești sigur că vrei să ștergi %d atașamente?"
+
+[oneTestDeleteConfirm]
+en = "Are you sure you want to delete the test?"
+ro = "Ești sigur că vrei să ștergi testul?"
+
+[testDeleteConfirm]
+en = "Are you sure you want to delete %d tests?"
+ro = "Ești sigur că vrei să ștergi %d teste?"
+
+[oneSubtaskDeleteConfirm]
+en = "Are you sure you want to delete the subtask?"
+ro = "Ești sigur că vrei să ștergi subtaskul?"
+
+[subtaskDeleteConfirm]
+en = "Are you sure you want to delete %d subtasks?"
+ro = "Ești sigur că vrei să ștergi %d subtaskuri?"

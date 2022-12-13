@@ -122,6 +122,16 @@ async function deleteSubTasks() {
 			subTasks.push(id);
 		}
 	}
+    if(subTasks.length == 0) {
+        return;
+    }
+    if(subTasks.length == 1) {
+        if(!confirm(bundled.getText("oneSubtaskDeleteConfirm"))) {
+            return
+        }
+    } else if(!confirm(bundled.getText("subtaskDeleteConfirm", subTasks.length))) {
+        return
+    }
 	let res = await bundled.bodyCall(`/problem/${pbid}/update/bulkDeleteSubTasks`, subTasks);
 	if(res.status === "success") {
 		window.location.reload();

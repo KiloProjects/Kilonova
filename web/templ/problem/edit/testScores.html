@@ -104,6 +104,16 @@ async function deleteTests() {
 			tests.push(id);
 		}
 	}
+    if(tests.length == 0) {
+        return;
+    }
+    if(tests.length == 1) {
+        if(!confirm(bundled.getText("oneTestDeleteConfirm"))) {
+            return
+        }
+    } else if(!confirm(bundled.getText("testDeleteConfirm", tests.length))) {
+        return
+    }
 	let res = await bundled.bodyCall(`/problem/${pbid}/update/bulkDeleteTests`, tests);
 	if(res.status === "success") {
 		window.location.reload();
