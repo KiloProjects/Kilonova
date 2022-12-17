@@ -362,13 +362,36 @@ func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, prob
 			for _, id := range stk.Tests {
 				st, ok := subMap[id]
 				if !ok {
-					if !shownError { // plz no spam
-						h.localLogger.Warnf("couldn't find a subtest for subtask %d in submission %d", stk.VisibleID, sub.ID)
-						percentage = 0
-						shownError = true
+					// Try to find analagous test
+					test, err := h.base.TestByID(ctx, id)
+					if err != nil {
+						zap.S().Warn(err)
+						continue
 					}
-					// return errors.New("Subtasks may have been updated since this submission was uploaded")
-					continue
+					var foundSubtest *kilonova.SubTest
+					for _, st := range subtests {
+						st := st
+						tt, err := h.base.TestByID(ctx, st.TestID)
+						if err != nil {
+							zap.S().Warn(err)
+							continue
+						}
+						if tt.VisibleID == test.VisibleID {
+							foundSubtest = st
+							break
+						}
+					}
+
+					if foundSubtest != nil {
+						if !shownError { // plz no spam
+							h.localLogger.Warnf("couldn't find a subtest for subtask %d in submission %d", stk.VisibleID, sub.ID)
+							percentage = 0
+							shownError = true
+						}
+						// return errors.New("Subtasks may have been updated since this submission was uploaded")
+						continue
+					}
+					st = foundSubtest
 				}
 				if st.Score < percentage {
 					percentage = st.Score
