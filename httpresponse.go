@@ -3,6 +3,7 @@ package kilonova
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"go.uber.org/zap"
 )
@@ -26,6 +27,9 @@ func StatusData(w http.ResponseWriter, status string, retData any, statusCode in
 		Data:   retData,
 	})
 	if err != nil {
-		zap.S().Errorf("Couldn't send return data: %v", err)
+		if strings.Contains(err.Error(), "broken pipe") {
+			return
+		}
+		zap.S().WithOptions(zap.AddCallerSkip(1)).Errorf("Couldn't send return data: %v", err)
 	}
 }

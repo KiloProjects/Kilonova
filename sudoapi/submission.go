@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"errors"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
@@ -42,6 +43,9 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 
 	subs, err := s.db.Submissions(ctx, filter)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, ErrUnknownError
+		}
 		zap.S().Warn(err)
 		return nil, ErrUnknownError
 	}

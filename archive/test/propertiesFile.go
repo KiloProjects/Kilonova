@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/schema"
 	"go.uber.org/zap"
 )
@@ -48,8 +47,6 @@ func ParsePropertiesFile(r io.Reader) (*PropertiesRaw, bool, error) {
 	if err := dec.Decode(&rawProps, vals); err != nil {
 		return nil, false, err
 	}
-
-	spew.Dump(rawProps)
 
 	return &rawProps, true, nil
 }

@@ -63,7 +63,9 @@ func (s *DB) SubTasks(ctx context.Context, pbid int) ([]*kilonova.SubTask, error
 	for _, ss := range st {
 		stk, err := s.internalToSubTask(ctx, ss)
 		if err != nil {
-			zap.S().Warn(err)
+			if !errors.Is(err, context.Canceled) {
+				zap.S().Warn(err)
+			}
 			continue
 		}
 		sts = append(sts, stk)
