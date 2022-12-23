@@ -382,7 +382,7 @@ func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, prob
 						}
 					}
 
-					if foundSubtest != nil {
+					if foundSubtest == nil {
 						if !shownError { // plz no spam
 							h.localLogger.Warnf("couldn't find a subtest for subtask %d in submission %d", stk.VisibleID, sub.ID)
 							percentage = 0

@@ -154,6 +154,38 @@ func (b *Box) FileExists(fpath string) bool {
 		if errors.Is(err, fs.ErrNotExist) {
 			return false
 		}
+		if strings.Contains(err.Error(), "permission denied") { // Try to diagnose the race condition if it happens
+			zap.S().Warnf("File stat (%q) returned the race condition error: %s", fpath, err)
+			zap.S().Info("Printing stat results of parents...")
+			x := strings.Split(b.getFilePath(fpath), "/")
+			x[0] = "/" + x[0]
+			for i := range x {
+				pp := path.Join(x[:i]...)
+				if pp == "" {
+					continue
+				}
+				if _, err := os.Stat(pp); err == nil {
+					zap.S().Infof("%q is ok", pp)
+				} else {
+					zap.S().Infof("%q churns out error: %s", pp, err)
+				}
+				if strings.HasPrefix(pp, "/var/local/lib/isolate/") {
+					zap.S().Infof("Running ls on %q...", pp)
+					out, err := exec.Command("/usr/bin/ls", "-la", "--author", pp).CombinedOutput()
+					fmt.Println(string(out))
+					spew.Dump(err)
+				}
+			}
+			zap.S().Info("Checking again")
+			_, err = os.Stat(b.getFilePath(fpath))
+			if err != nil {
+				zap.S().Infof("Still errors: %s", err)
+			} else {
+				zap.S().Info("It... works?")
+				return true
+			}
+			return false
+		}
 		zap.S().Warnf("File stat (%q) returned weird error: %s", fpath, err)
 		return false
 	}

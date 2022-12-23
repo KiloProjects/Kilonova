@@ -13,11 +13,13 @@ groupadd -f kn_sandbox
 echo "Downloading isolate binary"
 curl -sSL 'https://github.com/KiloProjects/isolate/releases/latest/download/isolate' -o "$ISOLATE_PATH"
 
-chmod ug+x "$ISOLATE_PATH"
 chgrp kn_sandbox "$ISOLATE_PATH"
-chmod +s "$ISOLATE_PATH"
+chmod 6774 "$ISOLATE_PATH"
 
 echo "Downloading isolate config"
 curl -sSL 'https://github.com/KiloProjects/isolate/releases/latest/download/default.cf' -o "$ISOLATE_CONF_PATH"
 
-echo "Done. Don't forget to add your user account to the 'kn_sandbox' group"
+echo "Adding current user to kn_sandbox group"
+usermod -a -G kn_sandbox "$USER"
+
+echo "Done. You might need to restart your shell for group changes to occur."
