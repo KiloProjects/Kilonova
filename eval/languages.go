@@ -34,7 +34,7 @@ var Langs = map[string]Language{
 		Mounts: []Directory{{In: "/etc"}},
 	},
 	"cpp": {
-		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx"},
+		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx", ".cpp11"},
 		Compiled:      true,
 		PrintableName: "C++11",
 		InternalName:  "cpp",
@@ -47,7 +47,7 @@ var Langs = map[string]Language{
 		Mounts: []Directory{{In: "/etc"}},
 	},
 	"cpp14": {
-		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx"},
+		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx", ".cpp14"},
 		Compiled:      true,
 		PrintableName: "C++14",
 		InternalName:  "cpp14",
@@ -60,7 +60,7 @@ var Langs = map[string]Language{
 		Mounts: []Directory{{In: "/etc"}},
 	},
 	"cpp17": {
-		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx"},
+		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx", ".cpp17"},
 		Compiled:      true,
 		PrintableName: "C++17",
 		InternalName:  "cpp17",
@@ -73,7 +73,7 @@ var Langs = map[string]Language{
 		Mounts: []Directory{{In: "/etc"}},
 	},
 	"cpp20": {
-		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx"},
+		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx", ".cpp20"},
 		Compiled:      true,
 		PrintableName: "C++20",
 		InternalName:  "cpp20",
@@ -91,7 +91,7 @@ var Langs = map[string]Language{
 		PrintableName: "Go",
 		InternalName:  "golang",
 
-		CompileCommand: []string{"go", "build", "MAGIC_REPLACE"},
+		CompileCommand: []string{"go", "build", MAGIC_REPLACE},
 		RunCommand:     []string{"/main"},
 		SourceName:     "/main.go",
 		CompiledName:   "/main",
