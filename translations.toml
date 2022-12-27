@@ -312,11 +312,11 @@ en = "Front page"
 ro = "Pagina principală"
 
 [problem.list]
-en = "List of Problems"
-ro = "Listă Probleme"
+en = "All problems"
+ro = "Toate problemele"
 
 [submission.list]
-en = "Submission List"
+en = "Submission list"
 ro = "Listă submisii"
 
 [profile.url]
@@ -659,6 +659,11 @@ ro = "ID User"
 [problemID]
 en = "Problem ID"
 ro = "ID Problemă"
+
+
+[contestID]
+en = "Contest ID"
+ro = "ID Concurs"
 
 [status]
 en = "Status"

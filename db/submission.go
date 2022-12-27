@@ -30,6 +30,8 @@ type dbSubmission struct {
 	MaxTime   float64 `db:"max_time"`
 	MaxMemory int     `db:"max_memory"`
 
+	ContestID *int `db:"contest_id"`
+
 	Score int `db:"score"`
 }
 
@@ -68,14 +70,18 @@ func (s *DB) CountSubmissions(ctx context.Context, filter kilonova.SubmissionFil
 	return cnt, err
 }
 
-const createSubQuery = "INSERT INTO submissions (user_id, problem_id, language, code) VALUES (?, ?, ?, ?) RETURNING id;"
+const createSubQuery = "INSERT INTO submissions (user_id, problem_id, contest_id, language, code) VALUES (?, ?, ?, ?, ?) RETURNING id;"
 
-func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, language eval.Language, code string) (int, error) {
+func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, language eval.Language, code string, contest *kilonova.Contest) (int, error) {
 	if authorID <= 0 || problem == nil || language.InternalName == "" || code == "" {
 		return -1, kilonova.ErrMissingRequired
 	}
+	var contestID *int
+	if contest != nil {
+		contestID = &contest.ID
+	}
 	var id int
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(createSubQuery), authorID, problem.ID, language.InternalName, code)
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(createSubQuery), authorID, problem.ID, contestID, language.InternalName, code)
 	return id, err
 }
 
@@ -184,6 +190,13 @@ func subFilterQuery(filter *kilonova.SubmissionFilter) ([]string, []interface{})
 	if v := filter.ProblemID; v != nil {
 		where, args = append(where, "problem_id = ?"), append(args, v)
 	}
+	if v := filter.ContestID; v != nil {
+		if *v == 0 { // Allow filtering for submissions from no contest
+			where, args = append(where, "contest_id = NULL"), append(args, v)
+		} else {
+			where, args = append(where, "contest_id = ?"), append(args, v)
+		}
+	}
 
 	if v := filter.Status; v != kilonova.StatusNone {
 		where, args = append(where, "status = ?"), append(args, v)
@@ -273,6 +286,7 @@ func (s *DB) internalToSubmission(sub *dbSubmission) *kilonova.Submission {
 		CompileMessage: cMsg,
 		MaxTime:        sub.MaxTime,
 		MaxMemory:      sub.MaxMemory,
+		ContestID:      sub.ContestID,
 		Score:          sub.Score,
 	}
 }

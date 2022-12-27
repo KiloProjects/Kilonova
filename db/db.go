@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
 )
 
 type DB struct {
@@ -57,6 +58,21 @@ func mapper[T1 any, T2 any](lst []T1, f func(T1) T2) []T2 {
 	rez := make([]T2, len(lst))
 	for i := range rez {
 		rez[i] = f(lst[i])
+	}
+	return rez
+}
+
+func mapperCtx[T1 any, T2 any](ctx context.Context, lst []T1, f func(context.Context, T1) (T2, error)) []T2 {
+	if len(lst) == 0 {
+		return []T2{}
+	}
+	rez := make([]T2, len(lst))
+	for i := range rez {
+		var err error
+		rez[i], err = f(ctx, lst[i])
+		if err != nil {
+			zap.S().WithOptions(zap.AddCallerSkip(1)).Warn(err)
+		}
 	}
 	return rez
 }

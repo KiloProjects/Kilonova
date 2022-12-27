@@ -36,6 +36,7 @@ const status = (sub: Submission): string => {
 };
 
 type Overwrites = {
+	contestID?: number;
 	problemID?: number;
 	userID?: number;
 };
@@ -45,6 +46,7 @@ function getInitialData(overwrites: Overwrites): SubmissionQuery {
 
 	const userIDParam = parseInt(params.get("user_id") ?? "");
 	const problemIDParam = parseInt(params.get("problem_id") ?? "");
+	const contestIDParam = parseInt(params.get("contest_id") ?? "");
 	const score = parseInt(params.get("score") ?? "");
 
 	let compile_error_str = params.get("compile_error");
@@ -71,9 +73,15 @@ function getInitialData(overwrites: Overwrites): SubmissionQuery {
 		userID = overwrites.userID;
 	}
 
+	let contestID = !isNaN(contestIDParam) ? contestIDParam : undefined;
+	if (typeof overwrites.contestID !== "undefined") {
+		contestID = overwrites.contestID;
+	}
+
 	return {
 		user_id: userID,
 		problem_id: problemID,
+		contest_id: contestID,
 		score: !isNaN(score) ? score : undefined,
 		status: status,
 		lang: params.get("lang") ?? "",
@@ -147,6 +155,9 @@ function SubsView(props: SubsViewProps) {
 		}
 		if (typeof overwrites.problemID === "undefined" && typeof query.problem_id !== "undefined" && query.problem_id > 0) {
 			p.append("problem_id", query.problem_id.toString());
+		}
+		if (typeof overwrites.contestID === "undefined" && typeof query.contest_id !== "undefined" && query.contest_id >= 0) {
+			p.append("problem_id", query.contest_id.toString());
 		}
 
 		if (query.status !== undefined && query.status !== "") {
@@ -313,6 +324,28 @@ function SubsView(props: SubsViewProps) {
 								/>
 							</label>
 						)}
+						{typeof overwrites.contestID === "undefined" && (
+							<label class="block mb-2">
+								<span class="form-label">{getText("contestID")}:</span>
+								<input
+									class="form-input"
+									type="number"
+									min="0"
+									value={typeof query.contest_id == "undefined" ? "a" : query.contest_id}
+									onInput={(e) => {
+										let val: number | null = parseInt(e.currentTarget.value);
+										if (isNaN(val) || val <= 0) {
+											val = null;
+										}
+										setQuery({
+											...query,
+											page: 1,
+											contest_id: val == null ? undefined : val,
+										});
+									}}
+								/>
+							</label>
+						)}
 						<label class="block mb-2">
 							<span class="form-label">{getText("score")}:</span>
 							<input
@@ -389,8 +422,10 @@ function SubsView(props: SubsViewProps) {
 									ctxSize={2}
 									showArrows={true}
 								/>
-							) : (
+							) : subs.length > 0 ? (
 								<Paginator page={1} numpages={1} setPage={() => {}} ctxSize={2} showArrows={true} />
+							) : (
+								<></>
 							)}
 						</div>
 					</>
@@ -458,7 +493,7 @@ function SubsView(props: SubsViewProps) {
 												</td>
 											)) || (
 												<td class="text-center px-2 py-1">
-													<span>{sizeFormatter(sub.sub.code_size)}</span>
+													<span>{sub.sub.code_size > 0 ? sizeFormatter(sub.sub.code_size) : "-"}</span>
 												</td>
 											)}
 											<td class="text-center px-2 py-1">{sub.sub.max_time == -1 ? "-" : Math.floor(sub.sub.max_time * 1000) + "ms"}</td>

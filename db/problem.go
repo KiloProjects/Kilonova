@@ -41,7 +41,7 @@ func (s *DB) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*ki
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.Problem{}, nil
 	}
-	return s.internalToProblems(ctx, pbs), err
+	return mapperCtx(ctx, pbs, s.internalToProblem), err
 }
 
 const problemCreateQuery = `INSERT INTO problems (
@@ -232,16 +232,6 @@ type dbProblem struct {
 
 	// Eval stuff
 	ConsoleInput bool `db:"console_input"`
-}
-
-func (s *DB) internalToProblems(ctx context.Context, pbs []*dbProblem) []*kilonova.Problem {
-	return mapper(pbs, func(pb *dbProblem) *kilonova.Problem {
-		pbb, err := s.internalToProblem(ctx, pb)
-		if err != nil {
-			zap.S().Warn(err)
-		}
-		return pbb
-	})
 }
 
 func (s *DB) internalToProblem(ctx context.Context, pb *dbProblem) (*kilonova.Problem, error) {

@@ -27,6 +27,8 @@ type Submission struct {
 	CompileError   *bool   `json:"compile_error"`
 	CompileMessage *string `json:"compile_message,omitempty"`
 
+	ContestID *int `json:"contest_id"`
+
 	MaxTime   float64 `json:"max_time"`
 	MaxMemory int     `json:"max_memory"`
 
@@ -48,6 +50,7 @@ type SubmissionFilter struct {
 	ID        *int `json:"id"`
 	UserID    *int `json:"user_id"`
 	ProblemID *int `json:"problem_id"`
+	ContestID *int `json:"contest_id"`
 
 	Status       Status  `json:"status"`
 	Lang         *string `json:"lang"`
@@ -72,6 +75,9 @@ type SubTest struct {
 	TestID       int       `db:"test_id" json:"test_id"`
 	UserID       int       `db:"user_id" json:"user_id"`
 	SubmissionID int       `db:"submission_id" json:"submission_id"`
+
+	VisibleID int `db:"visible_id" json:"visible_id"`
+	MaxScore  int `db:"max_score" json:"max_score"`
 }
 
 type SubTestUpdate struct {
@@ -80,6 +86,21 @@ type SubTestUpdate struct {
 	Score   *int
 	Verdict *string
 	Done    *bool
+}
+
+type SubmissionSubTask struct {
+	ID        int       `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+
+	SubmissionID int  `json:"submission_id"`
+	UserID       int  `json:"user_id"`
+	SubtaskID    *int `json:"subtasK_id"`
+
+	ProblemID int `json:"problem_id"`
+	VisibleID int `json:"visible_id"`
+	Score     int `json:"score"`
+
+	Subtests []int `json:"subtests"`
 }
 
 type SubmissionPaste struct {

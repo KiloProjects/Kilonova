@@ -240,7 +240,7 @@ export function OlderSubmissions({ userid, problemid }: { userid: number; proble
 						<p class="px-2">{getText("noSub")}</p>
 					)}
 					{numHidden > 0 && (
-						<a class="px-2" href={`/submissions/?problem_id=${problemid}&user_id=${userid}`}>
+						<a class="px-2" href={`/problems/${problemid}/submissions/?user_id=${userid}`}>
 							{getText(numHidden == 1 ? "seeOne" : numHidden < 20 ? "seeU20" : "seeMany", numHidden)}
 						</a>
 					)}

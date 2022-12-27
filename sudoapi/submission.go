@@ -119,17 +119,13 @@ func (s *BaseAPI) CountSubmissions(ctx context.Context, filter kilonova.Submissi
 	return count, nil
 }
 
-type SubTest struct {
-	kilonova.SubTest
-	Test *kilonova.Test `json:"test"`
-}
-
 type FullSubmission struct {
 	kilonova.Submission
 	Author   *UserBrief          `json:"author"`
 	Problem  *kilonova.Problem   `json:"problem"`
-	SubTests []*SubTest          `json:"subtests"`
-	SubTasks []*kilonova.SubTask `json:"subtasks"`
+	SubTests []*kilonova.SubTest `json:"subtests"`
+
+	SubTasks []*kilonova.SubmissionSubTask `json:"subtasks"`
 
 	// ProblemEditor returns wether the looking user is a problem editor
 	ProblemEditor bool `json:"problem_editor"`
@@ -170,22 +166,15 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *Use
 
 	rez.ProblemEditor = util.IsProblemEditor(lookingUser, rez.Problem)
 
-	rez.SubTests = []*SubTest{}
-	rawSubtests, err := s.db.SubTestsBySubID(ctx, subid)
+	rez.SubTests, err1 = s.SubTests(ctx, subid)
 	if err != nil {
+		zap.S().Warn(err)
 		return nil, Statusf(500, "Couldn't fetch subtests")
 	}
-	for _, test := range rawSubtests {
-		t, err := s.db.TestByID(ctx, test.TestID)
-		if err != nil {
-			// TODO: Maybe don't be so pedantic?
-			return nil, Statusf(500, "Couldn't fetch subtests' tests")
-		}
-		rez.SubTests = append(rez.SubTests, &SubTest{SubTest: *test, Test: t})
-	}
 
-	rez.SubTasks, err = s.db.SubTasks(ctx, sub.ProblemID)
+	rez.SubTasks, err1 = s.SubmissionSubTasks(ctx, subid)
 	if err != nil {
+		zap.S().Warn(err)
 		return nil, Statusf(500, "Couldn't fetch subtasks")
 	}
 
@@ -216,25 +205,23 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 		return -1, Statusf(400, "Empty code")
 	}
 
-	tests, err := s.db.Tests(ctx, problem.ID)
-	if err != nil {
-		zap.S().Warn("Couldn't get problem tests for submission:", err)
-		return -1, Statusf(500, "Couldn't fetch problem tests")
-	}
-
 	// Add submission
-	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang, code)
+	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang, code, nil)
 	if err != nil {
 		zap.S().Warn("Couldn't create submission:", err)
 		return -1, Statusf(500, "Couldn't create submission")
 	}
 
-	// Add subtests
-	for _, test := range tests {
-		if err := s.db.CreateSubTest(ctx, &kilonova.SubTest{UserID: author.ID, TestID: test.ID, SubmissionID: id}); err != nil {
-			zap.S().Warn("Couldn't create submission test:", err)
-			return -1, Statusf(500, "Couldn't create submission test")
-		}
+	// Initialize subtests
+	if err := s.db.InitSubTests(ctx, author.ID, id, problem.ID); err != nil {
+		zap.S().Warn("Couldn't create submission tests:", err)
+		return -1, Statusf(500, "Couldn't create submission tests")
+	}
+
+	// After subtests, initialize subtasks
+	if err := s.db.InitSubmissionSubtasks(ctx, author.ID, id, problem.ID); err != nil {
+		zap.S().Warn("Couldn't create submission subtasks:", err)
+		return -1, Statusf(500, "Couldn't create submission subtasks")
 	}
 
 	if err := s.db.UpdateSubmission(ctx, id, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting}); err != nil {
@@ -290,6 +277,7 @@ func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission
 	if sub != nil && !s.isSubmissionVisible(ctx, sub, user) {
 		sub.Code = ""
 		sub.CompileMessage = nil
+		sub.CodeSize = 0
 	}
 }
 
@@ -326,4 +314,12 @@ func (s *BaseAPI) DeletePaste(ctx context.Context, id string) *StatusError {
 		return WrapError(err, "Couldn't delete paste")
 	}
 	return nil
+}
+
+func (s *BaseAPI) SubmissionSubTasks(ctx context.Context, subID int) ([]*kilonova.SubmissionSubTask, *StatusError) {
+	subs, err := s.db.SubmissionSubTasksBySubID(ctx, subID)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't get submission subtasks")
+	}
+	return subs, nil
 }

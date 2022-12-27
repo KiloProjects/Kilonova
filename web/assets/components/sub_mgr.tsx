@@ -176,10 +176,10 @@ function SubCode({ sub }) {
 }
 
 function TestTable({ sub }) {
-	function testSubTasks(test_id) {
+	function testSubTasks(subtestID) {
 		let stks: number[] = [];
 		for (let st of sub.subTasks) {
-			if (st.tests.includes(test_id)) {
+			if (st.subtests.includes(subtestID)) {
 				stks.push(st.visible_id as number);
 			}
 		}
@@ -203,9 +203,9 @@ function TestTable({ sub }) {
 			</thead>
 			<tbody>
 				{sub.subTests.map((subtest) => (
-					<tr class="kn-table-row" key={"kn_test" + subtest.test.id}>
-						<th class="py-1" scope="row" id={`test-${subtest.test.visible_id}`}>
-							{subtest.test.visible_id}
+					<tr class="kn-table-row" key={"kn_test" + subtest.id}>
+						<th class="py-1" scope="row" id={`test-${subtest.visible_id}`}>
+							{subtest.visible_id}
 						</th>
 						{subtest.done ? (
 							<>
@@ -219,7 +219,7 @@ function TestTable({ sub }) {
 										</>
 									) : (
 										<>
-											{Math.round((subtest.test.score * subtest.score) / 100.0)} / {subtest.test.score}
+											{Math.round((subtest.max_score * subtest.score) / 100.0)} / {subtest.max_score}
 										</>
 									)}
 								</td>
@@ -234,7 +234,7 @@ function TestTable({ sub }) {
 								<td>-</td>
 							</>
 						)}
-						{sub.subTasks.length > 0 && <td>{testSubTasks(subtest.test.id).join(", ")}</td>}
+						{sub.subTasks.length > 0 && <td>{testSubTasks(subtest.id).join(", ")}</td>}
 						{sub.problemEditor && (
 							<td>
 								<a href={"/proposer/get/subtest_output/" + subtest.id}>{getText("output")}</a>
@@ -250,8 +250,8 @@ function TestTable({ sub }) {
 function SubTask({ sub, subtask, detRef }) {
 	var stkScore = useMemo(() => {
 		let stk_score = 100;
-		for (let testID of subtask.tests) {
-			let actualSubtest = sub.subTestIDs[testID];
+		for (let subtestID of subtask.subtests) {
+			let actualSubtest = sub.subTestIDs[subtestID];
 			if (actualSubtest !== undefined && actualSubtest.score < stk_score) {
 				stk_score = actualSubtest.score;
 			}
@@ -261,8 +261,8 @@ function SubTask({ sub, subtask, detRef }) {
 
 	let allSubtestsDone = useMemo(() => {
 		let done = true;
-		for (let testID of subtask.tests) {
-			if (testID in sub.subTestIDs && !sub.subTestIDs[testID].done) {
+		for (let subtestID of subtask.subtests) {
+			if (subtestID in sub.subTestIDs && !sub.subTestIDs[subtestID].done) {
 				done = false;
 			}
 		}
@@ -286,22 +286,18 @@ function SubTask({ sub, subtask, detRef }) {
 				{/* </span> */}
 			</summary>
 			<div class="list-group m-1">
-				{subtask.tests.map((testID) => {
-					if (!(testID in sub.subTestIDs)) {
+				{subtask.subtests.map((subtestID) => {
+					if (!(subtestID in sub.subTestIDs)) {
 						return (
 							<div class="list-group-item flex justify-between">
 								<span>This subtask's test didn't exist when this submission was created.</span>
 							</div>
 						);
 					}
-					let actualSubtest = sub.subTestIDs[testID];
+					let actualSubtest = sub.subTestIDs[subtestID];
 					return (
-						<a
-							href={`#test-${actualSubtest.test.visible_id}`}
-							class="list-group-item flex justify-between"
-							onClick={() => (detRef.current.open = true)}
-						>
-							<span>{getText("nthTest", actualSubtest.test.visible_id)}</span>
+						<a href={`#test-${actualSubtest.visible_id}`} class="list-group-item flex justify-between" onClick={() => (detRef.current.open = true)}>
+							<span>{getText("nthTest", actualSubtest.visible_id)}</span>
 							{actualSubtest.done ? (
 								<span class="badge" style={{ backgroundColor: getGradient(actualSubtest.score, 100) }}>
 									{Math.round((subtask.score * actualSubtest.score) / 100.0)} / {subtask.score}
@@ -352,7 +348,7 @@ function SubmissionView({ sub, bigCode, pasteAuthor }: { sub: any; bigCode: bool
 			</div>
 		);
 	}
-
+	console.log(sub.subTests);
 	let content = (
 		<>
 			<CompileErrorInfo sub={sub} />
@@ -420,7 +416,7 @@ function transformSubmissionResponse(res: any): any {
 		sub.subTests = res.subtests;
 		sub.subTestIDs = {};
 		for (let subtest of res.subtests) {
-			sub.subTestIDs[subtest.test.id] = subtest;
+			sub.subTestIDs[subtest.id] = subtest;
 		}
 	}
 	return sub;
@@ -476,29 +472,6 @@ export class SubmissionManager extends Component<{ id: number; bigCode?: boolean
 		}
 
 		this.setState(() => ({ sub: transformSubmissionResponse(resp.data) }));
-
-		// const res = resp.data;
-		// let newState: SubMgrState = { sub: {} };
-
-		// newState.sub = res.sub;
-		// newState.sub.problemEditor = res.problem_editor;
-		// newState.sub.author = res.author;
-		// newState.sub.problem = res.problem;
-		// if (res.subtasks) {
-		// 	newState.sub.subTasks = res.subtasks;
-		// } else {
-		// 	newState.sub.subTasks = [];
-		// }
-
-		// if (res.subtests) {
-		// 	newState.sub.subTests = res.subtests;
-		// 	newState.sub.subTestIDs = {};
-		// 	for (let subtest of res.subtests) {
-		// 		newState.sub.subTestIDs[subtest.test.id] = subtest;
-		// 	}
-		// }
-
-		// this.setState(() => newState);
 
 		if (resp.data.sub.status === "finished") {
 			this.stopPoller();

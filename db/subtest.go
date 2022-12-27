@@ -12,11 +12,11 @@ import (
 
 func (s *DB) SubTestsBySubID(ctx context.Context, subid int) ([]*kilonova.SubTest, error) {
 	var subtests []*kilonova.SubTest
-	err := s.conn.SelectContext(ctx, &subtests, s.conn.Rebind("SELECT * FROM submission_tests WHERE submission_id = ? ORDER BY id ASC"), subid)
+	err := s.conn.SelectContext(ctx, &subtests, s.conn.Rebind("SELECT * FROM submission_tests WHERE submission_id = ? ORDER BY visible_id ASC"), subid)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.SubTest{}, nil
 	}
-	return subtests, nil
+	return subtests, err
 }
 
 func (s *DB) SubTest(ctx context.Context, id int) (*kilonova.SubTest, error) {
@@ -28,15 +28,13 @@ func (s *DB) SubTest(ctx context.Context, id int) (*kilonova.SubTest, error) {
 	return &subtest, err
 }
 
-func (s *DB) CreateSubTest(ctx context.Context, subtest *kilonova.SubTest) error {
-	if subtest.UserID == 0 || subtest.TestID == 0 || subtest.SubmissionID == 0 {
+func (s *DB) InitSubTests(ctx context.Context, userID int, submissionID int, problemID int) error {
+	if userID == 0 || problemID == 0 || submissionID == 0 {
 		return kilonova.ErrMissingRequired
 	}
-	var id int
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(`INSERT INTO submission_tests (user_id, test_id, submission_id) VALUES (?, ?, ?) RETURNING id;`), subtest.UserID, subtest.TestID, subtest.SubmissionID)
-	if err == nil {
-		subtest.ID = id
-	}
+	_, err := s.conn.ExecContext(ctx, s.conn.Rebind(`
+INSERT INTO submission_tests (user_id, submission_id, test_id, visible_id, max_score) SELECT ?, ?, id, visible_id, score FROM tests WHERE problem_id = ? AND orphaned = false
+`), userID, submissionID, problemID)
 	return err
 }
 

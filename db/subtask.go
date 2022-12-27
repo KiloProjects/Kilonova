@@ -155,7 +155,15 @@ func (s *DB) internalToSubTask(ctx context.Context, st *subtask) (*kilonova.SubT
 	}
 
 	var ids []int
-	err := s.conn.SelectContext(ctx, &ids, s.conn.Rebind("SELECT subtask_tests.test_id FROM subtask_tests INNER JOIN tests ON tests.id = subtask_tests.test_id WHERE subtask_tests.subtask_id = ? AND tests.orphaned = false ORDER BY tests.visible_id ASC"), st.ID)
+	err := s.conn.SelectContext(ctx, &ids, s.conn.Rebind(`
+SELECT subtask_tests.test_id 
+FROM subtask_tests 
+INNER JOIN tests 
+	ON tests.id = subtask_tests.test_id 
+WHERE 
+	subtask_tests.subtask_id = ? AND tests.orphaned = false 
+ORDER BY tests.visible_id ASC
+`), st.ID)
 	if errors.Is(err, sql.ErrNoRows) {
 		ids = []int{}
 	} else if err != nil {

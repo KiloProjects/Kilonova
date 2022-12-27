@@ -15,8 +15,9 @@ type subLine struct {
 	Sub           *kilonova.Submission `json:"sub"`
 	User          *kilonova.UserBrief  `json:"author,omitempty"`
 	Problem       *kilonova.Problem    `json:"problem,omitempty"`
-	SubTests      []*sudoapi.SubTest   `json:"subtests"`
-	SubTasks      []*kilonova.SubTask  `json:"subtasks,omitempty"`
+	SubTests      []*kilonova.SubTest  `json:"subtests"`
+
+	SubTasks []*kilonova.SubmissionSubTask `json:"subtasks,omitempty"`
 }
 
 func (s *API) fullSubmission(ctx context.Context, id int, lookingUser *kilonova.UserBrief, looking bool) (*subLine, *kilonova.StatusError) {
