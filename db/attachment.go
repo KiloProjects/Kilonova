@@ -164,7 +164,6 @@ type dbAttachment struct {
 	//Data []byte `db:"data"`
 }
 
-// TODO: Test
 func internalToAttachments(att []*dbAttachment) []*kilonova.Attachment {
 	return mapper(att, internalToAttachment)
 }

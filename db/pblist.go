@@ -116,8 +116,8 @@ func (s *DB) UpdateProblemListSublists(ctx context.Context, id int, listIDs []in
 	return s.updateManyToMany(ctx, "problem_list_pblists", "parent_id", "child_id", id, listIDs, true)
 }
 
-func pblistFilterQuery(filter *kilonova.ProblemListFilter) ([]string, []interface{}) {
-	where, args := []string{"1 = 1"}, []interface{}{}
+func pblistFilterQuery(filter *kilonova.ProblemListFilter) ([]string, []any) {
+	where, args := []string{"1 = 1"}, []any{}
 	if v := filter.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, v)
 	}
@@ -131,8 +131,8 @@ func pblistFilterQuery(filter *kilonova.ProblemListFilter) ([]string, []interfac
 	return where, args
 }
 
-func pblistUpdateQuery(upd *kilonova.ProblemListUpdate) ([]string, []interface{}) {
-	toUpd, args := []string{}, []interface{}{}
+func pblistUpdateQuery(upd *kilonova.ProblemListUpdate) ([]string, []any) {
+	toUpd, args := []string{}, []any{}
 	if v := upd.AuthorID; v != nil {
 		toUpd, args = append(toUpd, "author_id = ?"), append(args, v)
 	}

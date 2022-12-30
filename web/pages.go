@@ -27,6 +27,14 @@ type EditTopbar struct {
 	PageID int
 }
 
+func (rt *Web) topbar(r *http.Request, page string, pageID int) *EditTopbar {
+	return &EditTopbar{
+		IsEditor: rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
+		Page:     page,
+		PageID:   pageID,
+	}
+}
+
 type ReqContext struct {
 	User     *kilonova.UserFull
 	Language string

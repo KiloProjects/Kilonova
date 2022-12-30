@@ -7,7 +7,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
-	"github.com/KiloProjects/kilonova/internal/util"
 	"go.uber.org/zap"
 )
 
@@ -74,7 +73,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 				zap.S().Infof("Error getting problem %d: %v", sub.ProblemID, err)
 				continue
 			}
-			if util.IsProblemVisible(lookingUser, problem) {
+			if s.IsProblemVisible(lookingUser, problem) {
 				problems[sub.ProblemID] = problem
 			}
 		}
@@ -160,11 +159,11 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *Use
 	if err1 != nil {
 		return nil, err1
 	}
-	if isLooking && !util.IsProblemVisible(lookingUser, rez.Problem) {
+	if isLooking && !s.IsProblemVisible(lookingUser, rez.Problem) {
 		return nil, Statusf(403, "Submission hidden because problem is not visible.")
 	}
 
-	rez.ProblemEditor = util.IsProblemEditor(lookingUser, rez.Problem)
+	rez.ProblemEditor = s.IsProblemEditor(lookingUser, rez.Problem)
 
 	rez.SubTests, err1 = s.SubTests(ctx, subid)
 	if err != nil {
@@ -197,7 +196,7 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 	if problem == nil {
 		return -1, Statusf(400, "Invalid submission problem")
 	}
-	if !util.IsProblemVisible(author, problem) {
+	if !s.IsProblemVisible(author, problem) {
 		return -1, Statusf(400, "User can't see the problem!")
 	}
 
@@ -253,15 +252,15 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 	if sub == nil {
 		return false
 	}
-	if util.IsSubmissionEditor(sub, user) {
+	if s.IsSubmissionEditor(sub, user) {
 		return true
 	}
 
-	if pb, err := s.Problem(ctx, sub.ProblemID); err == nil && pb != nil && util.IsProblemEditor(user, pb) {
+	if pb, err := s.Problem(ctx, sub.ProblemID); err == nil && pb != nil && s.IsProblemEditor(user, pb) {
 		return true
 	}
 
-	if !util.IsAuthed(user) {
+	if !s.IsAuthed(user) {
 		return false
 	}
 

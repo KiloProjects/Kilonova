@@ -105,10 +105,12 @@ function Summary({ sub, pasteAuthor }) {
 						<td class="kn-table-cell">{getText("language")}</td>
 						<td class="kn-table-cell">{prettyLanguages[sub.language]}</td>
 					</tr>
-					<tr class="kn-table-simple-border">
-						<td class="kn-table-cell">{getText("codeSize")}</td>
-						<td class="kn-table-cell">{sizeFormatter(sub.code_size)}</td>
-					</tr>
+					{sub.code_size > 0 && (
+						<tr class="kn-table-simple-border">
+							<td class="kn-table-cell">{getText("codeSize")}</td>
+							<td class="kn-table-cell">{sizeFormatter(sub.code_size)}</td>
+						</tr>
+					)}
 					<tr class="kn-table-simple-border">
 						<td class="kn-table-cell">{getText("status")}</td>
 						<td class="kn-table-cell">{sub.status}</td>

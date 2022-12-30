@@ -36,7 +36,7 @@ export type SubmissionQuery = {
 	contest_id?: number;
 	score?: number;
 	status?: string;
-	lang?: string; // TODO: allow undefined?
+	lang?: string;
 
 	page: number;
 

@@ -148,7 +148,7 @@ func (s *DB) MaxScores(ctx context.Context, userid int, pbids []int) map[int]int
 	}
 	inClause += ")"
 
-	args := make([]interface{}, 0, len(pbids))
+	args := make([]any, 0, len(pbids))
 	for _, id := range pbids {
 		args = append(args, id)
 	}
@@ -179,8 +179,8 @@ func (s *DB) AttemptedProblemsIDs(ctx context.Context, userid int) ([]int, error
 	return pbs, err
 }
 
-func subFilterQuery(filter *kilonova.SubmissionFilter) ([]string, []interface{}) {
-	where, args := []string{"1 = 1"}, []interface{}{}
+func subFilterQuery(filter *kilonova.SubmissionFilter) ([]string, []any) {
+	where, args := []string{"1 = 1"}, []any{}
 	if v := filter.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, v)
 	}
@@ -215,8 +215,8 @@ func subFilterQuery(filter *kilonova.SubmissionFilter) ([]string, []interface{})
 	return where, args
 }
 
-func subUpdateQuery(upd *kilonova.SubmissionUpdate) ([]string, []interface{}) {
-	toUpd, args := []string{}, []interface{}{}
+func subUpdateQuery(upd *kilonova.SubmissionUpdate) ([]string, []any) {
+	toUpd, args := []string{}, []any{}
 	if v := upd.Status; v != kilonova.StatusNone {
 		toUpd, args = append(toUpd, "status = ?"), append(args, v)
 	}

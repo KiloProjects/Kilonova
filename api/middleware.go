@@ -12,7 +12,7 @@ import (
 // MustBeVisitor is middleware to make sure the user creating the request is not authenticated
 func (s *API) MustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if util.IsRAuthed(r) {
+		if s.base.IsAuthed(util.UserBrief(r)) {
 			errorData(w, "You must not be logged in to do this", http.StatusUnauthorized)
 			return
 		}
@@ -23,7 +23,7 @@ func (s *API) MustBeVisitor(next http.Handler) http.Handler {
 // MustBeAdmin is middleware to make sure the user creating the request is an admin
 func (s *API) MustBeAdmin(next http.Handler) http.Handler {
 	return s.MustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !util.IsRAdmin(r) {
+		if !s.base.IsAdmin(util.UserBrief(r)) {
 			errorData(w, "You must be an admin to do this", http.StatusUnauthorized)
 			return
 		}
@@ -34,7 +34,7 @@ func (s *API) MustBeAdmin(next http.Handler) http.Handler {
 // MustBeAuthed is middleware to make sure the user creating the request is authenticated
 func (s *API) MustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !util.IsRAuthed(r) {
+		if !s.base.IsAuthed(util.UserBrief(r)) {
 			errorData(w, "You must be authenticated to do this", http.StatusUnauthorized)
 			return
 		}
@@ -45,7 +45,7 @@ func (s *API) MustBeAuthed(next http.Handler) http.Handler {
 // MustBeProposer is middleware to make sure the user creating the request is a proposer
 func (s *API) MustBeProposer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !util.IsRProposer(r) {
+		if !s.base.IsProposer(util.UserBrief(r)) {
 			errorData(w, "You must be a proposer to do this", http.StatusUnauthorized)
 			return
 		}
@@ -72,8 +72,29 @@ func (s *API) SetupSession(next http.Handler) http.Handler {
 
 func (s *API) validateProblemEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !util.IsRProblemEditor(r) {
-			errorData(w, "You must be authorized to edit the problem", http.StatusUnauthorized)
+		if !s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
+			errorData(w, "You must be authorized to update the problem", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *API) validateContestEditor(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !s.base.IsContestEditor(util.UserBrief(r), util.Contest(r)) {
+			errorData(w, "You must be authorized to update the contest", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+func (s *API) validateContestVisible(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !s.base.IsContestVisible(util.UserBrief(r), util.Contest(r)) {
+			errorData(w, "You are not allowed to access this contest", http.StatusUnauthorized)
 			return
 		}
 
@@ -149,6 +170,23 @@ func (s *API) validateProblemID(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemKey, problem)))
 	})
 }
+
+func (s *API) validateContestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contestID, err := strconv.Atoi(chi.URLParam(r, "contestID"))
+		if err != nil {
+			errorData(w, "invalid contest ID", http.StatusBadRequest)
+			return
+		}
+		contest, err1 := s.base.Contest(r.Context(), contestID)
+		if err1 != nil {
+			errorData(w, "contest does not exist", http.StatusBadRequest)
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ContestKey, contest)))
+	})
+}
+
 func (s *API) GetRSession(r *http.Request) int {
 	authToken := getAuthHeader(r)
 	if authToken != "" { // use Auth tokens by default

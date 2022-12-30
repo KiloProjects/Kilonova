@@ -28,6 +28,8 @@ const (
 	ProblemListKey = KNContextType("problemList")
 	// AttachmentKey is the key to be used for adding attachments to context
 	AttachmentKey = KNContextType("attachment")
+	// ContestKey is the key to be used for adding contests to context
+	ContestKey = KNContextType("contest")
 	// LangKey is the key to be used for adding the user language to context
 	LangKey = KNContextType("language")
 )
@@ -58,6 +60,10 @@ func Problem(r *http.Request) *kilonova.Problem {
 
 func Submission(r *http.Request) *kilonova.Submission {
 	return getValueContext[kilonova.Submission](r.Context(), SubKey)
+}
+
+func Contest(r *http.Request) *kilonova.Contest {
+	return getValueContext[kilonova.Contest](r.Context(), ContestKey)
 }
 
 func Paste(r *http.Request) *kilonova.SubmissionPaste {

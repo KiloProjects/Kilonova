@@ -26,7 +26,7 @@ func (s *BaseAPI) UpdateProblem(ctx context.Context, id int, args kilonova.Probl
 	if args.Name != nil && *args.Name == "" {
 		return Statusf(400, "Title can't be empty!")
 	}
-	if updater != nil && args.Visible != nil && !util.IsAdmin(updater) {
+	if updater != nil && args.Visible != nil && !s.IsAdmin(updater) {
 		return Statusf(403, "User can't update visibility!")
 	}
 
@@ -35,14 +35,16 @@ func (s *BaseAPI) UpdateProblem(ctx context.Context, id int, args kilonova.Probl
 		return WrapError(err, "Couldn't update problem")
 	}
 
-	pb, err := s.Problem(ctx, id)
-	if err != nil {
-		zap.S().Warn(err)
-		return WrapError(err, "Couldn't fetch problem for logging")
-	}
-	if pb.Visible && args.Description != nil && !updater.Admin {
-		s.LogUserAction(context.WithValue(ctx, util.UserKey, updater), "Updated problem #%d (%s) description while visible", pb.ID, pb.Name)
-	}
+	// Log in background, do not lockinterface{}
+	go func(id int, args kilonova.ProblemUpdate) {
+		pb, err := s.Problem(context.Background(), id)
+		if err != nil {
+			zap.S().Warn(err)
+		}
+		if pb.Visible && args.Description != nil && !updater.Admin {
+			s.LogUserAction(context.WithValue(ctx, util.UserKey, updater), "Updated problem #%d (%s) description while visible", pb.ID, pb.Name)
+		}
+	}(id, args)
 
 	return nil
 }
@@ -96,7 +98,7 @@ func (s *BaseAPI) hydrateProblemIDs(ctx context.Context, ids []int) []*kilonova.
 	return pbs
 }
 
-func (s *BaseAPI) InsertProblem(ctx context.Context, problem *kilonova.Problem, authorID int) (int, *StatusError) {
+func (s *BaseAPI) insertProblem(ctx context.Context, problem *kilonova.Problem, authorID int) (int, *StatusError) {
 	err := s.db.CreateProblem(ctx, problem, authorID)
 	if err != nil {
 		return -1, WrapError(err, "Couldn't create problem")
@@ -112,7 +114,7 @@ func (s *BaseAPI) CreateProblem(ctx context.Context, title string, author *UserB
 		ConsoleInput: consoleInput,
 	}
 
-	return s.InsertProblem(ctx, problem, author.ID)
+	return s.insertProblem(ctx, problem, author.ID)
 }
 
 func (s *BaseAPI) AddProblemEditor(ctx context.Context, pbid int, uid int) *StatusError {

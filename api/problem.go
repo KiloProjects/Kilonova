@@ -43,8 +43,6 @@ func (s *API) deleteProblem(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Deleted problem")
 }
 
-// initProblem assigns an ID for the problem
-// TODO: Move most stuff to logic
 func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
@@ -65,7 +63,6 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 	returnData(w, id)
 }
 
-// getProblems returns all the problems from the DB matching a filter
 func (s *API) getProblems(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args kilonova.ProblemFilter

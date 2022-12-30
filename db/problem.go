@@ -109,8 +109,8 @@ func (s *DB) DeleteProblem(ctx context.Context, id int) error {
 	return err
 }
 
-func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []interface{}) {
-	where, args := []string{"1 = 1"}, []interface{}{}
+func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []any) {
+	where, args := []string{"1 = 1"}, []any{}
 	if v := filter.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, v)
 	}
@@ -141,6 +141,7 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []interface{}
 			}
 		}
 		if id >= 0 {
+			// TODO: Also add contest stuff
 			where, args = append(where, "(visible = true OR id IN (SELECT DISTINCT problem_id FROM problem_user_access WHERE user_id = ?))"), append(args, id)
 		}
 	}
@@ -150,8 +151,8 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []interface{}
 	return where, args
 }
 
-func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []interface{}) {
-	toUpd, args := []string{}, []interface{}{}
+func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []any) {
+	toUpd, args := []string{}, []any{}
 	if v := upd.Name; v != nil {
 		toUpd, args = append(toUpd, "name = ?"), append(args, v)
 	}

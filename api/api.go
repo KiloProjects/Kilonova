@@ -21,14 +21,12 @@ var decoder *schema.Decoder
 type API struct {
 	base *sudoapi.BaseAPI
 
-	sudoHandlers *sudoapi.WebHandler
-
 	testArchiveLock *sync.Mutex
 }
 
 // New declares a new API instance
 func New(base *sudoapi.BaseAPI) *API {
-	return &API{base, sudoapi.NewWebHandler(base), &sync.Mutex{}}
+	return &API{base, &sync.Mutex{}}
 }
 
 // Handler is the magic behind the API
@@ -143,7 +141,14 @@ func (s *API) Handler() http.Handler {
 			}
 			return s.base.CreateSubmission(ctx, util.UserBriefContext(ctx), util.ProblemContext(ctx), args.Code, lang)
 		}))
-		r.With(s.MustBeAdmin).Post("/delete", webWrapper(s.sudoHandlers.DeleteSubmission))
+		r.With(s.MustBeAdmin).Post("/delete", webWrapper(func(ctx context.Context, args struct {
+			SubmissionID int `json:"submission_id"`
+		}) (string, *kilonova.StatusError) {
+			if err := s.base.DeleteSubmission(ctx, args.SubmissionID); err != nil {
+				return "", err
+			}
+			return "Deleted submission", nil
+		}))
 	})
 	r.Route("/paste/{pasteID}", func(r chi.Router) {
 		r.Get("/", s.getPaste)
@@ -189,6 +194,22 @@ func (s *API) Handler() http.Handler {
 		r.With(s.MustBeAuthed).Post("/update", s.updateProblemList)
 		r.With(s.MustBeAuthed).Post("/delete", s.deleteProblemList)
 	})
+
+	// r.Route("/contest", func(r chi.Router) {
+	// 	r.With(s.MustBeProposer).Post("/create", s.createContest)
+	// 	r.Route("/{contestID}", func(r chi.Router) {
+	// 		r.Use(s.validateContestID)
+	// 		r.Use(s.validateContestVisible)
+
+	// 		r.Get("/", s.getContest)
+
+	// 		r.Route("/edit", func(r chi.Router) {
+	// 			r.Use(s.validateContestEditor)
+
+	// 			// TODO
+	// 		})
+	// 	})
+	// })
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Endpoint not found", 404)
@@ -260,11 +281,11 @@ func init() {
 	decoder.SetAliasTag("json")
 }
 
-func returnData(w http.ResponseWriter, retData interface{}) {
+func returnData(w http.ResponseWriter, retData any) {
 	kilonova.StatusData(w, "success", retData, 200)
 }
 
-func errorData(w http.ResponseWriter, retData interface{}, errCode int) {
+func errorData(w http.ResponseWriter, retData any, errCode int) {
 	kilonova.StatusData(w, "error", retData, errCode)
 }
 

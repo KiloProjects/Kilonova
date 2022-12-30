@@ -201,7 +201,7 @@ func (s *API) getSolvedProblems(w http.ResponseWriter, r *http.Request) {
 		err.WriteError(w)
 		return
 	}
-	returnData(w, util.FilterVisible(util.UserBrief(r), pbs))
+	returnData(w, s.base.FilterVisibleProblems(util.UserBrief(r), pbs))
 }
 
 // ChangeEmail changes the password of the saved user

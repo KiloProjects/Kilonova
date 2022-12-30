@@ -8,7 +8,7 @@
 			<span>{{.Name}} (#{{.ID}})</span>
             <div>
 			    {{- if $user -}}
-					{{ if (problemEditor $user .) }}
+					{{ if (problemEditor .) }}
 						{{- if .Visible }}
 							<span class="badge badge-green">{{ getText "published" }}</span>
 						{{- else -}}

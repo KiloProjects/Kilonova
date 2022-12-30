@@ -28,7 +28,7 @@ func (rt *Web) editIndex() func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &ProblemEditParams{
 			Ctx:     GenContext(r),
 			Problem: util.Problem(r),
-			Topbar:  &EditTopbar{util.IsRProblemEditor(r), "general", -1},
+			Topbar:  rt.topbar(r, "general", -1),
 		})
 	}
 }
@@ -39,7 +39,7 @@ func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &ProblemEditParams{
 			Ctx:     GenContext(r),
 			Problem: util.Problem(r),
-			Topbar:  &EditTopbar{util.IsRProblemEditor(r), "desc", -1},
+			Topbar:  rt.topbar(r, "desc", -1),
 		})
 	}
 }
@@ -54,7 +54,7 @@ func (rt *Web) editAttachments() func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &ProblemEditParams{
 			Ctx:     GenContext(r),
 			Problem: util.Problem(r),
-			Topbar:  &EditTopbar{util.IsRProblemEditor(r), "attachments", -1},
+			Topbar:  rt.topbar(r, "attachments", -1),
 
 			Attachments: atts,
 		})
@@ -67,7 +67,7 @@ func (rt *Web) editAccessControl() func(w http.ResponseWriter, r *http.Request) 
 		rt.runTempl(w, r, tmpl, &ProblemEditParams{
 			Ctx:     GenContext(r),
 			Problem: util.Problem(r),
-			Topbar:  &EditTopbar{util.IsRProblemEditor(r), "access", -1},
+			Topbar:  rt.topbar(r, "access", -1),
 		})
 	}
 }
@@ -76,7 +76,7 @@ func (rt *Web) testIndex() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/testScores.html", "problem/topbar.html", "problem/edit/testSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &TestEditParams{
-			GenContext(r), util.Problem(r), nil, &EditTopbar{util.IsRProblemEditor(r), "tests", -2}, rt.base,
+			GenContext(r), util.Problem(r), nil, rt.topbar(r, "tests", -2), rt.base,
 		})
 	}
 }
@@ -85,7 +85,7 @@ func (rt *Web) testAdd() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/testAdd.html", "problem/topbar.html", "problem/edit/testSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &TestEditParams{
-			GenContext(r), util.Problem(r), nil, &EditTopbar{util.IsRProblemEditor(r), "tests", -1}, rt.base,
+			GenContext(r), util.Problem(r), nil, rt.topbar(r, "tests", -1), rt.base,
 		})
 	}
 }
@@ -94,7 +94,7 @@ func (rt *Web) testEdit() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/testEdit.html", "problem/topbar.html", "problem/edit/testSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &TestEditParams{
-			GenContext(r), util.Problem(r), util.Test(r), &EditTopbar{util.IsRProblemEditor(r), "tests", util.Test(r).VisibleID}, rt.base,
+			GenContext(r), util.Problem(r), util.Test(r), rt.topbar(r, "tests", util.Test(r).VisibleID), rt.base,
 		})
 	}
 }
@@ -134,7 +134,7 @@ func (rt *Web) subtaskIndex() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/subtaskIndex.html", "problem/topbar.html", "problem/edit/subtaskSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &SubTaskEditParams{
-			GenContext(r), util.Problem(r), nil, &EditTopbar{util.IsRProblemEditor(r), "subtasks", -2}, r.Context(), rt.base},
+			GenContext(r), util.Problem(r), nil, rt.topbar(r, "subtasks", -2), r.Context(), rt.base},
 		)
 	}
 }
@@ -143,7 +143,7 @@ func (rt *Web) subtaskAdd() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/subtaskAdd.html", "problem/topbar.html", "problem/edit/subtaskSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &SubTaskEditParams{
-			GenContext(r), util.Problem(r), nil, &EditTopbar{util.IsRProblemEditor(r), "subtasks", -1}, r.Context(), rt.base},
+			GenContext(r), util.Problem(r), nil, rt.topbar(r, "subtasks", -1), r.Context(), rt.base},
 		)
 	}
 }
@@ -152,7 +152,7 @@ func (rt *Web) subtaskEdit() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/subtaskEdit.html", "problem/topbar.html", "problem/edit/subtaskSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &SubTaskEditParams{
-			GenContext(r), util.Problem(r), util.SubTask(r), &EditTopbar{util.IsRProblemEditor(r), "subtasks", util.SubTask(r).VisibleID}, r.Context(), rt.base},
+			GenContext(r), util.Problem(r), util.SubTask(r), rt.topbar(r, "subtasks", util.SubTask(r).VisibleID), r.Context(), rt.base},
 		)
 	}
 }

@@ -50,7 +50,7 @@ func (s *DB) Tests(ctx context.Context, pbID int) ([]*kilonova.Test, error) {
 }
 
 func (s *DB) UpdateTest(ctx context.Context, id int, upd kilonova.TestUpdate) error {
-	toUpd, args := []string{}, []interface{}{}
+	toUpd, args := []string{}, []any{}
 	if v := upd.Score; v != nil {
 		toUpd, args = append(toUpd, "score = ?"), append(args, v)
 	}

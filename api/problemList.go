@@ -45,7 +45,7 @@ func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
 
 	scores := map[int]int{}
 	numSolved := -1
-	if util.IsRAuthed(r) {
+	if s.base.IsAuthed(util.UserBrief(r)) {
 		numSolved = s.base.NumSolved(r.Context(), util.UserBrief(r).ID, list.List)
 		scores = s.base.MaxScores(r.Context(), util.UserBrief(r).ID, list.List)
 	}

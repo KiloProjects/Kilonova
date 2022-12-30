@@ -111,7 +111,7 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 		if atts != nil {
 			newAtts := make([]*kilonova.Attachment, 0, len(atts))
 			for _, att := range atts {
-				if att.Visible || util.IsProblemEditor(util.UserBrief(r), problem) {
+				if att.Visible || rt.base.IsProblemEditor(util.UserBrief(r), problem) {
 					newAtts = append(newAtts, att)
 				}
 			}
@@ -139,8 +139,8 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 
 		rt.runTempl(w, r, templ, &ProblemParams{
 			Ctx:           GenContext(r),
-			ProblemEditor: util.IsRProblemEditor(r),
-			Topbar:        &EditTopbar{util.IsRProblemEditor(r), "pb_statement", -1},
+			ProblemEditor: rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
+			Topbar:        rt.topbar(r, "pb_statement", -1),
 
 			Problem:     util.Problem(r),
 			Attachments: atts,
@@ -156,7 +156,7 @@ func (rt *Web) problemSubmissions() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ProblemTopbarParams{
 			Ctx:    GenContext(r),
-			Topbar: &EditTopbar{util.IsRProblemEditor(r), "pb_submissions", -1},
+			Topbar: rt.topbar(r, "pb_submissions", -1),
 
 			Problem: util.Problem(r),
 		})
@@ -187,7 +187,7 @@ func (rt *Web) problemSubmit() func(http.ResponseWriter, *http.Request) {
 
 		rt.runTempl(w, r, templ, &ProblemTopbarParams{
 			Ctx:    GenContext(r),
-			Topbar: &EditTopbar{util.IsRProblemEditor(r), "pb_submit", -1},
+			Topbar: rt.topbar(r, "pb_submit", -1),
 
 			Languages: langs,
 			Problem:   util.Problem(r),
@@ -242,8 +242,8 @@ func (rt *Web) profile() func(http.ResponseWriter, *http.Request) {
 		rt.runTempl(w, r, templ, &ProfileParams{
 			GenContext(r),
 			user,
-			util.FilterVisible(util.UserBrief(r), solvedPbs),
-			util.FilterVisible(util.UserBrief(r), attemptedPbs),
+			rt.base.FilterVisibleProblems(util.UserBrief(r), solvedPbs),
+			rt.base.FilterVisibleProblems(util.UserBrief(r), attemptedPbs),
 		})
 	}
 }
@@ -359,7 +359,7 @@ func (rt *Web) problemAttachment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "The attachment doesn't exist", 400)
 		return
 	}
-	if att.Private && !util.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
+	if att.Private && !rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
 		http.Error(w, "You aren't allowed to download the attachment!", 400)
 		return
 	}
@@ -414,7 +414,7 @@ func (rt *Web) docs() http.HandlerFunc {
 				return
 			}
 
-			rt.runTempl(w, r, templ, &MarkdownParams{GenContext(r), template.HTML(t), p}) // TODO: Proper title
+			rt.runTempl(w, r, templ, &MarkdownParams{GenContext(r), template.HTML(t), p})
 			return
 		}
 
@@ -453,7 +453,7 @@ func (rt *Web) subtestOutput(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !util.IsProblemEditor(util.UserBrief(r), sub.Problem) {
+	if !rt.base.IsProblemEditor(util.UserBrief(r), sub.Problem) {
 		http.Error(w, "You aren't allowed to do that!", 401)
 		return
 	}
@@ -467,7 +467,7 @@ func (rt *Web) subtestOutput(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, "subtest.out", time.Now(), rc)
 }
 
-func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, data interface{}) {
+func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, data any) {
 	templ, err := templ.Clone()
 	if err != nil {
 		fmt.Fprintf(w, "Error cloning template, report to admin: %s", err)
@@ -484,6 +484,9 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		},
 		"authedUser": func() *kilonova.UserBrief {
 			return util.UserBrief(r)
+		},
+		"problemEditor": func(problem *kilonova.Problem) bool {
+			return rt.base.IsProblemEditor(util.UserBrief(r), problem)
 		},
 	})
 

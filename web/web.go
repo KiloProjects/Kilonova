@@ -21,7 +21,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
-	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/benbjohnson/hashfs"
 	"github.com/davecgh/go-spew/spew"
@@ -60,7 +59,6 @@ func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int
 }
 
 // Handler returns a http.Handler
-// TODO: Split routes in functions
 func (rt *Web) Handler() http.Handler {
 	r := chi.NewRouter()
 	r.Use(rt.initSession)
@@ -204,7 +202,7 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return pbs
 		},
-		"renderMarkdown": func(body interface{}) template.HTML {
+		"renderMarkdown": func(body any) template.HTML {
 			var bd []byte
 			switch body.(type) {
 			case string:
@@ -214,7 +212,7 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			case template.HTML:
 				bd = []byte(body.(template.HTML))
 			default:
-				panic("Unknown renderMarkdown type")
+				zap.S().Fatal("Unknown renderMarkdown type")
 			}
 			val, err := base.RenderMarkdown(bd)
 			if err != nil {
@@ -229,14 +227,12 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"unescapeHTML": func(s string) string {
 			return html.UnescapeString(s)
 		},
-		"problemEditor": util.IsProblemEditor,
 		"submissionEditor": func(user *kilonova.UserBrief, sub *kilonova.Submission) bool {
-			return util.IsSubmissionEditor(sub, user)
+			return base.IsSubmissionEditor(sub, user)
 		},
 		"pasteEditor": func(user *kilonova.UserBrief, paste *kilonova.SubmissionPaste) bool {
-			return util.IsPasteEditor(paste, user)
+			return base.IsPasteEditor(paste, user)
 		},
-		"problemVisible": util.IsProblemVisible,
 		"genProblemsParams": func(scoreUser *kilonova.UserBrief, pbs []*kilonova.Problem, showSolved, multiCols bool) *ProblemListingParams {
 			return &ProblemListingParams{pbs, showSolved, multiCols, scoreUser}
 		},
@@ -290,7 +286,7 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return path.Ext(u.Path) == ".pdf"
 		},
-		"encodeJSON": func(data interface{}) (string, error) {
+		"encodeJSON": func(data any) (string, error) {
 			d, err := json.Marshal(data)
 			return base64.StdEncoding.EncodeToString(d), err
 		},
@@ -340,6 +336,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"authedUser": func() *kilonova.UserBrief {
 			zap.S().Error("Uninitialized `authedUser`")
 			return nil
+		},
+		"problemEditor": func(user *kilonova.UserBrief, problem *kilonova.Problem) bool {
+			zap.S().Error("Uninitalized `problemEditor`")
+			return false
 		},
 	}
 	return &Web{debug, funcs, base}

@@ -178,8 +178,8 @@ func (s *DB) CreateUser(ctx context.Context, name, passwordHash, email, preferre
 	return id, err
 }
 
-func userFilterQuery(filter *kilonova.UserFilter) ([]string, []interface{}) {
-	where, args := []string{"1 = 1"}, []interface{}{}
+func userFilterQuery(filter *kilonova.UserFilter) ([]string, []any) {
+	where, args := []string{"1 = 1"}, []any{}
 	if v := filter.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, v)
 	}

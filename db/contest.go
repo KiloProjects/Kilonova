@@ -2,6 +2,8 @@ package db
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -42,6 +44,39 @@ func (s *DB) CreateContest(ctx context.Context, name string, publicJoin, hidden 
 	)
 	return id, err
 }
+
+func (s *DB) Contest(ctx context.Context, id int) (*kilonova.Contest, error) {
+	var contest dbContest
+	err := s.conn.GetContext(ctx, &contest, "SELECT * FROM contests WHERE id = $1", id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	} else if err != nil {
+		return nil, nil
+	}
+	return s.internalToContest(ctx, &contest)
+}
+
+// TODO: Test
+func (s *DB) ContestsByProblem(ctx context.Context, problemID int) ([]*kilonova.Contest, error) {
+	var contests []*dbContest
+	query := s.conn.Rebind("SELECT contests.* FROM contests INNER JOIN contest_problems cp ON contests.id = cp.contest_id AND cp.problem_id = $1 ORDER BY id ASC")
+	err := s.conn.SelectContext(ctx, &contests, query, problemID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.Contest{}, nil
+	}
+	return mapperCtx(ctx, contests, s.internalToContest), err
+}
+
+// func (s *DB) Contests(ctx context.Context, filter kilonova.ContestFilter) ([]*kilonova.Contest, error) {
+// 	var contests []*dbContest
+// 	where, args := contestFilterQuery(&filter)
+// 	query := s.conn.Rebind("SELECT * FROM contests WHERE " + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
+// 	err := s.conn.SelectContext(ctx, &contests, query, args...)
+// 	if errors.Is(err, sql.ErrNoRows) {
+// 		return []*kilonova.Contest{}, nil
+// 	}
+// 	return mapperCtx(ctx, contests, s.internalToContest), err
+// }
 
 func (s *DB) UpdateContest(ctx context.Context, id int, upd kilonova.ContestUpdate) error {
 	toUpd, args := contestUpdateQuery(&upd)

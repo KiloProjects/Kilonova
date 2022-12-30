@@ -92,7 +92,7 @@ func (s *DB) SubTasksByTest(ctx context.Context, pbid, tid int) ([]*kilonova.Sub
 }
 
 func (s *DB) UpdateSubTask(ctx context.Context, id int, upd kilonova.SubTaskUpdate) error {
-	toUpd, args := []string{}, []interface{}{}
+	toUpd, args := []string{}, []any{}
 	if v := upd.VisibleID; v != nil {
 		toUpd, args = append(toUpd, "visible_id = ?"), append(args, v)
 	}
