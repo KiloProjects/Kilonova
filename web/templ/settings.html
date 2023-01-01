@@ -27,7 +27,7 @@
 	<h2> {{getText "updatePwd"}} </h2>
 	<label class="block mb-2">
 		<span class="form-label">{{getText "password"}}: </span>
-		<input class="form-input" type="password" id="em_change_pwd">
+		<input class="form-input" type="password" id="pwd_change_org">
 	</label>
 	<label class="block mb-2">
 		<span class="form-label">{{getText "newPwd"}}: </span>
@@ -73,7 +73,7 @@ async function updateLanguage(e) {
 }
 async function updatePassword(e) {
 	e.preventDefault()
-	let oldpwd = document.getElementById("em_change_pwd").value,
+	let oldpwd = document.getElementById("pwd_change_org").value,
 		pwd = document.getElementById("pwd_change_pwd").value,
 		pwd1 = document.getElementById("pwd_change_pwd1").value;
 	if(pwd != pwd1) {
