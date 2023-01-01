@@ -26,6 +26,10 @@
 <form class="segment-container" id="pwd_change_form">
 	<h2> {{getText "updatePwd"}} </h2>
 	<label class="block mb-2">
+		<span class="form-label">{{getText "password"}}: </span>
+		<input class="form-input" type="password" id="em_change_pwd">
+	</label>
+	<label class="block mb-2">
 		<span class="form-label">{{getText "newPwd"}}: </span>
 		<input class="form-input" type="password" id="pwd_change_pwd" autocomplete="off">
 	</label>
@@ -69,13 +73,14 @@ async function updateLanguage(e) {
 }
 async function updatePassword(e) {
 	e.preventDefault()
-	let pwd = document.getElementById("pwd_change_pwd").value,
-		pwd1= document.getElementById("pwd_change_pwd1").value;
+	let oldpwd = document.getElementById("em_change_pwd").value,
+		pwd = document.getElementById("pwd_change_pwd").value,
+		pwd1 = document.getElementById("pwd_change_pwd1").value;
 	if(pwd != pwd1) {
 		bundled.createToast({title: bundled.getText("differentPwds"), status: 'error'});
 		return
 	}
-	let res = await bundled.postCall("/user/changePassword", {password:pwd})
+	let res = await bundled.postCall("/user/changePassword", {password:pwd, oldpassword:oldpwd})
 	bundled.apiToast(res)
 }
 async function updateEmail(e) {
