@@ -208,11 +208,16 @@ func (s *API) getSolvedProblems(w http.ResponseWriter, r *http.Request) {
 // TODO: Check this is not a scam and the user actually wants to change password
 func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
+	oldpassword := r.FormValue("oldpassword")
+
 	if password == "" {
 		errorData(w, "You must provide a new password", http.StatusBadRequest)
 		return
 	}
-
+	if err := s.base.VerifyUserPassword(r.Context(), util.UserBrief(r).ID, oldpassword); err != nil {
+		err.WriteError(w)
+		return
+	}
 	if err := s.base.UpdateUserPassword(
 		r.Context(),
 		util.UserBrief(r).ID,
