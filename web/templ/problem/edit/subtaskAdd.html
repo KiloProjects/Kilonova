@@ -10,18 +10,14 @@
         </h2>
         <form id="subtask-create">
             {{ with problemTests .Problem }}
-                <div class="block my-2">
-                    <label>
-                        <span class="form-label">{{getText "id"}}: </span>
-                        <input class="form-input" id="subtask-id" type="number" min="0">
-                    </label>
-                </div>
-                <div class="block my-2">
-                    <label>
-                        <span class="form-label">{{getText "score"}}: </span>
-                        <input class="form-input" id="subtask-score" type="number" min="0" max="100">
-                    </label>
-                </div>
+                <label class="block my-2">
+                    <span class="form-label">{{getText "id"}}: </span>
+                    <input class="form-input" id="subtask-id" type="number" min="0">
+                </label>
+                <label class="block my-2">
+                    <span class="form-label">{{getText "score"}}: </span>
+                    <input class="form-input" id="subtask-score" type="number" min="0" max="100">
+                </label>
                 <table class="kn-table my-2" style="table-layout: fixed">
                     <thead>
                         <th scope="col" class="w-1/2">

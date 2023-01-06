@@ -125,7 +125,7 @@ func pblistFilterQuery(filter *kilonova.ProblemListFilter) ([]string, []any) {
 		where, args = append(where, "author_id = ?"), append(args, v)
 	}
 	if v := filter.Root; v {
-		where = append(where, "id NOT IN (SELECT child_id FROM problem_list_pblists)")
+		where = append(where, "NOT EXISTS (SELECT 1 FROM problem_list_pblists WHERE child_id = problem_lists.id)")
 	}
 
 	return where, args

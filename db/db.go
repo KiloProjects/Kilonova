@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -70,7 +71,7 @@ func mapperCtx[T1 any, T2 any](ctx context.Context, lst []T1, f func(context.Con
 	for i := range rez {
 		var err error
 		rez[i], err = f(ctx, lst[i])
-		if err != nil {
+		if err != nil && !errors.Is(err, context.Canceled) {
 			zap.S().WithOptions(zap.AddCallerSkip(1)).Warn(err)
 		}
 	}

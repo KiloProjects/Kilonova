@@ -12,18 +12,14 @@
             {{ if not (len .SubTask.Tests) }} {{getText "warning.emptySubTask"}} {{ end }}
         
             {{ with problemTests .Problem }}
-                <div class="block my-2">
-                    <label>
-                        <span class="form-label">{{getText "id"}}: </span>
-                        <input class="form-input" id="subtask-id" type="number" min="0" value="{{$root.SubTask.VisibleID}}" autocomplete="off">
-                    </label>
-                </div>
-                <div class="block my-2">
-                    <label>
-                        <span class="form-label">{{getText "score"}}: </span>
-                        <input class="form-input" id="subtask-score" type="number" min="0" max="100" value="{{$root.SubTask.Score}}" autocomplete="off">
-                    </label>
-                </div>
+                <label class="block my-2">
+                    <span class="form-label">{{getText "id"}}: </span>
+                    <input class="form-input" id="subtask-id" type="number" min="0" value="{{$root.SubTask.VisibleID}}" autocomplete="off">
+                </label>
+                <label class="block my-2">
+                    <span class="form-label">{{getText "score"}}: </span>
+                    <input class="form-input" id="subtask-score" type="number" min="0" max="100" value="{{$root.SubTask.Score}}" autocomplete="off">
+                </label>
                 <table class="kn-table my-2" style="table-layout: fixed">
                     <thead>
                         <th scope="col" class="w-1/2">

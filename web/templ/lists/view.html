@@ -12,31 +12,22 @@
 	{{ if or (eq $user.ID .AuthorID) $user.Admin }}
 	<form id="pblist-update" class="segment-container" autocomplete="off">
 		<h1> {{getText "list.update"}} </h1>
-		<div class="block my-2">
-			<label>
-				<span class="form-label">{{getText "title"}}: </span>
-				<input type="text" id="pblist-title" class="form-input" value="{{.Title}}">
-			</label>
-		</div>
-		<div class="block my-2">
-			<label>
-				<span class="form-label">{{getText "sublist_label"}}:</span>
-				<input type="text" id="pblist-sublists" class="form-input" pattern="([0-9]+,?)+" value="{{intList (shallowPblistIDs .SubLists)}}">
-			</label>
-		</div>
-		<div class="block my-2">
-			<label>
-				<span class="form-label">{{getText "pbs"}}:</span>
-				<input type="text" id="pblist-list" class="form-input" pattern="([0-9]+,?)+" value="{{intList .List}}">
-			</label>
-		</div>
-		<div class="block mt-2 mb-4">
-			<label>
-				<span class="form-label">{{getText "desc"}}: </span>
-				<textarea id="desc_tarea" class="hidden">{{- .Description -}}</textarea>
-				{{/* <input type="text" id="pblist-desc" class="form-input" value="{{.Description}}"> */}}
-			</label>
-		</div>
+        <label class="block my-2">
+            <span class="form-label">{{getText "title"}}: </span>
+            <input type="text" id="pblist-title" class="form-input" value="{{.Title}}">
+        </label>
+        <label class="block my-2">
+            <span class="form-label">{{getText "sublist_label"}}:</span>
+            <input type="text" id="pblist-sublists" class="form-input" pattern="([0-9]+,?)+" value="{{intList (shallowPblistIDs .SubLists)}}">
+        </label>
+        <label class="block my-2">
+            <span class="form-label">{{getText "pbs"}}:</span>
+            <input type="text" id="pblist-list" class="form-input" pattern="([0-9]+,?)+" value="{{intList .List}}">
+        </label>
+        <label class="block my-2 mb-4">
+            <span class="form-label">{{getText "desc"}}: </span>
+            <textarea id="desc_tarea" class="hidden">{{- .Description -}}</textarea>
+        </label>
 		<button class="btn btn-blue mr-2" type="submit">{{getText "button.update"}}</button>
         <button id="delButton" class="btn btn-red">{{getText "button.delete"}}</button>
 	</form>

@@ -146,7 +146,7 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []any) {
 		}
 	}
 	if filter.Unassociated {
-		where = append(where, "id NOT IN (SELECT DISTINCT problem_id FROM problem_list_problems)")
+		where = append(where, "NOT EXISTS (SELECT 1 FROM problem_list_problems WHERE problem_id = problems.id)")
 	}
 	return where, args
 }

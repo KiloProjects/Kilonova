@@ -1,30 +1,22 @@
 <div id="pblist_create" class="segment-container">
     <h2>{{getText "createPbList"}}</h2>
     <form id="pblist_form">
-        <div class="block my-2">
-            <label>
-                <span class="form-label">{{ getText "name" }}</span>
-                <input id="pblist_title" type="text" class="form-input" required>
-            </label>
-        </div>
-        <div class="block my-2">
-            <label>
-                <span class="form-label">{{getText "desc"}}: </span>
-                <textarea id="pblist_desc_tarea" class="hidden"></textarea>
-            </label>
-        </div>
-		<div class="block my-2">
-			<label>
-				<span class="form-label">{{getText "sublist_label"}}:</span>
-				<input type="text" id="pblist_sublists" class="form-input" pattern="([0-9]+,?)+">
-			</label>
-		</div>
-        <div class="block my-2">
-            <label>
-                <span class="form-label">{{ getText "pbs" }}</span>
-                <input id="pblist_pbs" type="text" class="form-input" pattern="([0-9]+,?)+">
-            </label>
-        </div>
+        <label class="block my-2">
+            <span class="form-label">{{ getText "name" }}</span>
+            <input id="pblist_title" type="text" class="form-input" required>
+        </label>
+        <label class="block my-2">
+            <span class="form-label">{{getText "desc"}}: </span>
+            <textarea id="pblist_desc_tarea" class="hidden"></textarea>
+        </label>
+        <label class="block my-2">
+            <span class="form-label">{{getText "sublist_label"}}:</span>
+            <input type="text" id="pblist_sublists" class="form-input" pattern="([0-9]+,?)+">
+        </label>
+        <label class="block my-2">
+            <span class="form-label">{{ getText "pbs" }}</span>
+            <input id="pblist_pbs" type="text" class="form-input" pattern="([0-9]+,?)+">
+        </label>
         <button type="submit" class="btn btn-blue">{{ getText "button.create" }}</button>
     </form>
 </div>

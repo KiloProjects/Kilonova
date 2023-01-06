@@ -497,8 +497,8 @@ en = "Test ID"
 ro = "ID Test"
 
 [noTestsError]
-en = "There's no tests, this should not happen!"
-ro = "Nu există niciun tests, așa ceva n-ar trebui să se întâmple!"
+en = "The problem doesn't have any tests."
+ro = "Problema nu are niciun test."
 
 [warning.emptySubTask]
 en = "WARNING: Empty Subtask, will always show 0 points"
