@@ -7,17 +7,17 @@
     <details class="list-group-head" {{if $open}}open{{end}}>
         <summary class="pb-1 mt-1">
 			<span>{{.Title}} <a href="/problem_lists/{{.ID}}">(#{{.ID}})</a></span>
-            {{if gt (len $pbs) 0}}
+            {{if gt (.NumProblems) 0}}
                 {{if $user}}
                 <span class="float-right badge">
-                    {{ getText "num_solved" (numSolved $user .List) (len $pbs) }}
+                    {{ getText "num_solved" (numSolvedPblist $user .ID) (.NumProblems) }}
                 </span>
                 {{else}}
                 <span class="float-right badge">
-                    {{ if eq 1 (len $pbs)}}
+                    {{ if eq 1 (.NumProblems)}}
                         {{ getText "single_problem" }}
                     {{ else }}
-                        {{ getText "num_problems" (len $pbs) }}
+                        {{ getText "num_problems" (.NumProblems) }}
                     {{ end }}
                 </span>
                 {{end}}
@@ -31,7 +31,7 @@
         {{ with .SubLists }}
             <div class="list-group mt-2">
                 {{ range . }}
-                    <kn-dom-sublist encoded="{{encodeJSON .}}"></kn-dom-sublist>
+                    <kn-dom-sublist encoded="{{encodeJSON .}}" {{if $user}}numsolved="{{numSolvedPblist $user .ID}}"{{end}}></kn-dom-sublist>
                 {{ end }}
             </div>
         {{ end }}

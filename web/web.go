@@ -245,8 +245,16 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"genPblistParams": func(user *kilonova.UserBrief, ctx *ReqContext, pblist *kilonova.ProblemList, open bool) *PblistParams {
 			return &PblistParams{user, ctx, pblist, open}
 		},
-		"numSolved": func(user *kilonova.UserBrief, ids []int) int {
-			return base.NumSolved(context.Background(), user.ID, ids)
+		// "numSolved": func(user *kilonova.UserBrief, ids []int) int {
+		// 	return base.NumSolved(context.Background(), user.ID, ids)
+		// },
+		"numSolvedPblist": func(user *kilonova.UserBrief, listID int) int {
+			cnt, err := base.NumSolvedFromPblist(context.Background(), listID, user.ID)
+			if err != nil {
+				zap.S().Warn(err)
+				return -1
+			}
+			return cnt
 		},
 		"numSolvedPbs": func(user *kilonova.UserBrief, pbs []*kilonova.Problem) int {
 			ids := []int{}

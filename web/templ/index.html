@@ -27,6 +27,14 @@
                     <span class="float-right badge">
                         {{ getText "num_solved" (numSolvedPbs $user .) (len .) }}
                     </span>
+                {{else}}
+                <span class="float-right badge">
+                    {{ if eq 1 (len .)}}
+                        {{ getText "single_problem" }}
+                    {{ else }}
+                        {{ getText "num_problems" (len .) }}
+                    {{ end }}
+                </span>
                 {{end}}
             </summary>
             {{ with . }}

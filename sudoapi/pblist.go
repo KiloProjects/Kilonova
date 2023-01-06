@@ -85,3 +85,11 @@ func (s *BaseAPI) DeleteProblemList(ctx context.Context, id int) *StatusError {
 	}
 	return nil
 }
+
+func (s *BaseAPI) NumSolvedFromPblist(ctx context.Context, listID int, userID int) (int, *StatusError) {
+	num, err := s.db.NumSolvedPblistProblems(ctx, listID, userID)
+	if err != nil {
+		return -1, WrapError(err, "Couldn't get number of solved problems")
+	}
+	return num, nil
+}

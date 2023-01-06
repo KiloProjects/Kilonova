@@ -6,6 +6,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"go.uber.org/zap"
 )
 
 func (s *API) getProblemList(w http.ResponseWriter, r *http.Request) {
@@ -45,8 +46,19 @@ func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
 
 	scores := map[int]int{}
 	numSolved := -1
+	numSubSolved := map[int]int{}
 	if s.base.IsAuthed(util.UserBrief(r)) {
-		numSolved = s.base.NumSolved(r.Context(), util.UserBrief(r).ID, list.List)
+		numSolved, err = s.base.NumSolvedFromPblist(r.Context(), list.ID, util.UserBrief(r).ID)
+		if err != nil {
+			zap.S().Warn(err)
+		}
+		for _, sublist := range list.SubLists {
+			numSolved, err := s.base.NumSolvedFromPblist(r.Context(), sublist.ID, util.UserBrief(r).ID)
+			if err != nil {
+				zap.S().Warn(err)
+			}
+			numSubSolved[sublist.ID] = numSolved
+		}
 		scores = s.base.MaxScores(r.Context(), util.UserBrief(r).ID, list.List)
 	}
 
@@ -62,12 +74,14 @@ func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
 		Problems      []*kilonova.Problem   `json:"problems"`
 		ProblemScores map[int]int           `json:"problemScores"`
 		RenderedDesc  string                `json:"description"`
+		NumSubSolved  map[int]int           `json:"numSubSolved"`
 	}{
 		List:          list,
 		NumSolved:     numSolved,
 		Problems:      pbs,
 		ProblemScores: scores,
 		RenderedDesc:  string(desc),
+		NumSubSolved:  numSubSolved,
 	})
 	// returnData(w, list)
 }

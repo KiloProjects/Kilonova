@@ -67,6 +67,48 @@ func (s *DB) shallowProblemLists(ctx context.Context, parentID int) ([]*kilonova
 	return outLists, err
 }
 
+func (s *DB) numPblistProblems(ctx context.Context, listID int) (int, error) {
+	var cnt int
+	err := s.conn.GetContext(ctx, &cnt, `
+WITH RECURSIVE nested_lists AS (
+	SELECT id FROM problem_lists WHERE id = $1
+	UNION
+	SELECT plp.child_id FROM problem_list_pblists plp, nested_lists WHERE nested_lists.id = plp.parent_id
+), problem_ids AS (
+	SELECT DISTINCT pbs.id FROM problems pbs, problem_list_problems plp, nested_lists lists 
+		WHERE pbs.id = plp.problem_id AND lists.id = plp.pblist_id
+) SELECT COUNT(*) FROM problem_ids;
+`, listID)
+	if err != nil {
+		zap.S().Warn(err)
+		return -1, err
+	}
+	return cnt, nil
+}
+
+func (s *DB) NumSolvedPblistProblems(ctx context.Context, listID, userID int) (int, error) {
+	var cnt int
+	err := s.conn.GetContext(ctx, &cnt, `
+	WITH RECURSIVE nested_lists AS (
+		SELECT id FROM problem_lists WHERE id = $1
+		UNION
+		SELECT plp.child_id FROM problem_list_pblists plp, nested_lists 
+			WHERE nested_lists.id = plp.parent_id
+	), problem_ids AS (
+		SELECT DISTINCT pbs.id FROM problems pbs, problem_list_problems plp, nested_lists lists 
+			WHERE pbs.id = plp.problem_id AND lists.id = plp.pblist_id
+	), solved_pbs AS (
+		SELECT DISTINCT subs.problem_id FROM submissions subs, problem_ids pbids 
+			WHERE subs.problem_id = pbids.id AND subs.score = 100 AND subs.user_id = $2
+	) SELECT COUNT(*) FROM solved_pbs;
+	`, listID, userID)
+	if err != nil {
+		zap.S().Warn(err)
+		return -1, err
+	}
+	return cnt, nil
+}
+
 const createProblemListQuery = "INSERT INTO problem_lists (author_id, title, description) VALUES (?, ?, ?) RETURNING id;"
 
 func (s *DB) CreateProblemList(ctx context.Context, list *kilonova.ProblemList) error {
@@ -174,16 +216,18 @@ func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.Prob
 		return nil, err
 	}
 
+	pblist.NumProblems, err = s.numPblistProblems(ctx, list.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	return pblist, nil
 }
 
 func (s *DB) internalToShallowProblemList(ctx context.Context, list *pblist) (*kilonova.ShallowProblemList, error) {
 
-	var problems []int
-	err := s.conn.SelectContext(ctx, &problems, s.conn.Rebind("SELECT problem_id FROM problem_list_problems WHERE pblist_id = ? ORDER BY position ASC, problem_id ASC"), list.ID)
-	if errors.Is(err, sql.ErrNoRows) || len(problems) == 0 {
-		problems = []int{}
-	} else if err != nil {
+	numProblems, err := s.numPblistProblems(ctx, list.ID)
+	if err != nil {
 		return nil, err
 	}
 
@@ -192,6 +236,6 @@ func (s *DB) internalToShallowProblemList(ctx context.Context, list *pblist) (*k
 		Title:    list.Title,
 		AuthorID: list.AuthorID,
 
-		List: problems,
+		NumProblems: numProblems,
 	}, nil
 }

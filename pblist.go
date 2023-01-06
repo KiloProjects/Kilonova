@@ -12,6 +12,9 @@ type ProblemList struct {
 	Description string    `json:"description"`
 	List        []int     `json:"list"`
 
+	// NumProblems holds the number of problems including sublists
+	NumProblems int `json:"num_problems"`
+
 	// This is a separate type and not a ProblemList because it might
 	// not necessairly be a tree-like structure (ie. it might have cycles)
 	SubLists []*ShallowProblemList `json:"sublists"`
@@ -29,8 +32,11 @@ type ShallowProblemList struct {
 	Title    string `json:"title"`
 	AuthorID int    `json:"author_id"`
 
+	// NumProblems holds the number of problems including sublists
+	NumProblems int `json:"num_problems"`
+
 	// Should only be used to precompute the number of solved problems, might be deleted sometime else
-	List []int `json:"list"`
+	// List []int `json:"list"`
 }
 
 type ProblemListFilter struct {

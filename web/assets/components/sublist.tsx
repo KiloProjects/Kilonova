@@ -11,7 +11,7 @@ type Sublist = {
 	id: number;
 	title: string;
 	author_id: number;
-	list: number[];
+	num_problems: number;
 };
 
 type FullList = {
@@ -19,6 +19,7 @@ type FullList = {
 	title: string;
 	description: string;
 	author_id: number;
+	num_problems: number;
 	list: number[];
 	sublists: Sublist[];
 };
@@ -43,6 +44,7 @@ function isProblemEditor(pb: Problem): boolean {
 }
 
 type ProblemScore = { [problem: number]: number };
+type SublistSolved = { [num_solved: number]: number };
 
 export function Problems({ pbs, scores }: { pbs: Problem[]; scores: ProblemScore }) {
 	return (
@@ -75,16 +77,18 @@ type QueryResult = {
 	description: string;
 	problems: Problem[];
 	problemScores: ProblemScore;
+	numSubSolved: SublistSolved;
 };
 
-export function Sublist({ list }: { list: Sublist }) {
+export function Sublist({ list, numsolved }: { list: Sublist; numsolved?: number }) {
 	let [loading, setLoading] = useState(false);
 	let [expanded, setExpanded] = useState(false);
 	let [fullData, setFullData] = useState<FullList | undefined>(undefined);
-	let [numSolved, setNumSolved] = useState(-1);
+	let [numSolved, setNumSolved] = useState<number>(numsolved ?? -1);
 	let [descHTML, setDescHTML] = useState("");
 	let [problems, setProblems] = useState<Problem[]>([]);
 	let [problemScores, setProblemScores] = useState<ProblemScore>({});
+	let [sublistSolved, setSublistSolved] = useState<SublistSolved>({});
 
 	async function load() {
 		setLoading(true);
@@ -98,8 +102,11 @@ export function Sublist({ list }: { list: Sublist }) {
 		setDescHTML(res.data.description);
 		setProblems(res.data.problems);
 		setProblemScores(res.data.problemScores);
+		setSublistSolved(res.data.numSubSolved);
 		setLoading(false);
 	}
+
+	console.log(numSolved, numsolved);
 
 	useEffect(() => {
 		if (expanded && fullData == undefined && !loading) {
@@ -113,9 +120,9 @@ export function Sublist({ list }: { list: Sublist }) {
 				<span>
 					{list.title} <a href={`/problem_lists/${list.id}`}>(#{list.id})</a>
 				</span>
-				{list.list.length > 0 &&
-					((numSolved >= 0 && <span class="float-right badge">{getText("num_solved", numSolved, list.list.length)}</span>) || (
-						<span class="float-right badge">{list.list.length == 1 ? getText("single_problem") : getText("num_problems", list.list.length)}</span>
+				{list.num_problems > 0 &&
+					((numSolved >= 0 && <span class="float-right badge">{getText("num_solved", numSolved, list.num_problems)}</span>) || (
+						<span class="float-right badge">{list.num_problems == 1 ? getText("single_problem") : getText("num_problems", list.num_problems)}</span>
 					))}
 			</summary>
 			{loading && <BigSpinner />}
@@ -129,7 +136,11 @@ export function Sublist({ list }: { list: Sublist }) {
 					{fullData.sublists.length > 0 && (
 						<div class="list-group mt-2">
 							{fullData.sublists.map((val) => (
-								<Sublist list={val} key={val.id.toString() + "_" + list.id.toString()} />
+								<Sublist
+									list={val}
+									numsolved={Object.keys(sublistSolved).includes(val.id.toString()) ? sublistSolved[val.id] : undefined}
+									key={val.id.toString() + "_" + list.id.toString()}
+								/>
 							))}
 						</div>
 					)}
@@ -144,10 +155,15 @@ export function Sublist({ list }: { list: Sublist }) {
 	);
 }
 
-export function DOMSublist({ encoded }: { encoded: string }) {
+export function DOMSublist({ encoded, numsolved }: { encoded: string; numsolved: string }) {
 	console.log(fromBase64(encoded));
 
-	return <Sublist list={JSON.parse(fromBase64(encoded))}></Sublist>;
+	let numSolved: number | undefined = parseInt(numsolved);
+	if (isNaN(numSolved)) {
+		numSolved = undefined;
+	}
+
+	return <Sublist list={JSON.parse(fromBase64(encoded))} numsolved={numSolved}></Sublist>;
 }
 
-register(DOMSublist, "kn-dom-sublist", ["encoded"]);
+register(DOMSublist, "kn-dom-sublist", ["encoded", "numsolved"]);
