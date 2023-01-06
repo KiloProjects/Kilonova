@@ -17,6 +17,10 @@ High priority:
     - Or maybe polling
 
 Medium priority:
+- [ ] Move default custom grading to cms format
+    - Also have legacy grader
+    - Rename all current grader attachments to grader-legacy
+- [ ] Third checkbox for attachments to include whether they should count towards grading or not;
 - [ ] Make problem score be sum of best subtasks if they exist
 - [ ] Max number of submissions during contest;
 - [x] Allow to disable manual signup;
