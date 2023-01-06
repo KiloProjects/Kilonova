@@ -158,8 +158,7 @@ func (t *TestEditParams) GetFullTests() testDataType {
 type IndexParams struct {
 	Ctx *ReqContext
 
-	Version     string
-	Description string
+	Version string
 }
 
 type ProblemListingParams struct {

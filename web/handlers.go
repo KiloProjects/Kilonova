@@ -24,14 +24,14 @@ import (
 func (rt *Web) index() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), kilonova.Version, kilonova.IndexDescription})
+		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), kilonova.Version})
 	}
 }
 
 func (rt *Web) problems() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "pbs.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), kilonova.Version, kilonova.IndexDescription})
+		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), kilonova.Version})
 	}
 }
 

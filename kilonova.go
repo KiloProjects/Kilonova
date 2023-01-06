@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-const Version = "v0.11.3"
+const Version = "v0.11.4"
 
 //go:embed docs
 var Docs embed.FS
@@ -17,10 +17,6 @@ var Docs embed.FS
 // [Probleme ONI 2001-2022 XI-XII pe ani](https://kilonova.ro/docs/ONI)
 // [Probleme Baraje/Loturi Seniori 2021-2022](https://kilonova.ro/docs/BARAJ)
 // `
-
-const IndexDescription = `
-Disclaimer: Această platformă este în continuă dezvoltare. Versiunea finală s-ar putea să arate semnificativ diferit față de ce vedeți acum.
-`
 
 type AuditLog struct {
 	ID        int        `json:"id"`
