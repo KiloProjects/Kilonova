@@ -84,6 +84,10 @@ func (rt *Web) Handler() http.Handler {
 		})
 	})
 
+	// r.Route("/contests/", func(r chi.Router) {
+	// 	r.Get("/", rt.contests())
+	// })
+
 	r.Route("/submissions", func(r chi.Router) {
 		r.Get("/", rt.justRender("submissions.html"))
 		r.With(rt.ValidateSubmissionID).Get("/{id}", rt.submission())
@@ -93,7 +97,6 @@ func (rt *Web) Handler() http.Handler {
 
 	r.Route("/problem_lists", func(r chi.Router) {
 		r.Get("/", rt.justRender("lists/index.html", "modals/pblist.html", "modals/pbs.html"))
-		r.With(rt.mustBeProposer).Get("/create", rt.justRender("lists/create.html"))
 		r.With(rt.ValidateListID).Get("/{id}", rt.pbListView())
 	})
 
@@ -114,7 +117,10 @@ func (rt *Web) Handler() http.Handler {
 	// Proposer panel
 	r.Route("/proposer", func(r chi.Router) {
 		r.Use(rt.mustBeProposer)
-		r.Get("/", rt.justRender("proposer/index.html", "proposer/createpb.html"))
+		r.Get("/", rt.justRender(
+			"proposer/index.html",
+			"proposer/createproblem.html", "proposer/createpblist.html", "proposer/createcontest.html",
+		))
 		r.Get("/get/subtest_output/{st_id}", rt.subtestOutput)
 	})
 

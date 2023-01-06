@@ -809,6 +809,10 @@ ro = "Actualizare email"
 en = "Create problem"
 ro = "Creare problemă"
 
+[createPbList]
+en = "Create problem list"
+ro = "Creare listă probleme"
+
 [problemName]
 en = "Problem name"
 ro = "Nume problemă"

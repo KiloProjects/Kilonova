@@ -5,11 +5,7 @@
 {{ $user := .Ctx.User.Brief }}
 {{ $ctx := .Ctx }}
 
-{{ if $user }}
-{{ if $user.Proposer }}
-<a class="mb-2" href="/problem_lists/create">{{getText "create"}}</a>
-{{ end }}
-{{ end }}
+<h2 class="mb-2">{{getText "problem_lists"}}</h2>
 
 <div class="list-group">
 {{ range problemLists }}

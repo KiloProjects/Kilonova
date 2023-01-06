@@ -1,0 +1,63 @@
+<div id="pblist_create" class="segment-container">
+    <h2>{{getText "createPbList"}}</h2>
+    <form id="pblist_form">
+        <div class="block my-2">
+            <label>
+                <span class="form-label">{{ getText "name" }}</span>
+                <input id="pblist_title" type="text" class="form-input" required>
+            </label>
+        </div>
+        <div class="block my-2">
+            <label>
+                <span class="form-label">{{getText "desc"}}: </span>
+                <textarea id="pblist_desc_tarea" class="hidden"></textarea>
+            </label>
+        </div>
+		<div class="block my-2">
+			<label>
+				<span class="form-label">{{getText "sublist_label"}}:</span>
+				<input type="text" id="pblist_sublists" class="form-input" pattern="([0-9]+,?)+">
+			</label>
+		</div>
+        <div class="block my-2">
+            <label>
+                <span class="form-label">{{ getText "pbs" }}</span>
+                <input id="pblist_pbs" type="text" class="form-input" pattern="([0-9]+,?)+">
+            </label>
+        </div>
+        <button type="submit" class="btn btn-blue">{{ getText "button.create" }}</button>
+    </form>
+</div>
+
+
+
+<script>
+var pblist_cm = CodeMirror.fromTextArea(document.getElementById("pblist_desc_tarea"), {
+	mode: {
+		name: "gfm",
+		gitHubSpice: false,
+		emoji: false,
+	}
+});
+pblist_cm.setSize(null, "100%");
+
+async function createProblemList(e) {
+	e.preventDefault()
+
+	let data = {
+		title: document.getElementById("pblist_title").value,
+		description: pblist_cm.getValue(),
+		ids: bundled.stringIntToNumber(document.getElementById("pblist_pbs").value.split(',')),
+        sublists: bundled.stringIntToNumber(document.getElementById("pblist_sublists").value.split(',')),
+    };
+
+	let res = await bundled.bodyCall("/problemList/create", data)
+	if(res.status === "success") {
+		window.location.assign(`/problem_lists/${res.data}`);
+		return
+	}
+	bundled.apiToast(res)
+}
+
+document.getElementById("pblist_form").addEventListener("submit", createProblemList)
+</script>
