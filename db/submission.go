@@ -119,10 +119,7 @@ func (s *DB) DeleteSubmission(ctx context.Context, id int) error {
 func (s *DB) MaxScore(ctx context.Context, userid, problemid int) int {
 	var score int
 
-	err := s.conn.GetContext(ctx, &score, s.conn.Rebind(`SELECT score FROM submissions
-WHERE user_id = ? AND problem_id = ?
-ORDER BY score DESC 
-LIMIT 1;`), userid, problemid)
+	err := s.conn.GetContext(ctx, &score, "SELECT coalesce(MAX(score), -1) FROM submissions WHERE user_id = $1 AND problem_id = $2", userid, problemid)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			zap.S().Errorw("Couldn't get max score for ", zap.Int("userid", userid), zap.Int("problemid", problemid), zap.Error(err))

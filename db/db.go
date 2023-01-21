@@ -7,8 +7,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/tracelog"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type DB struct {
@@ -24,14 +26,14 @@ func NewPSQL(ctx context.Context, dsn string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	//config.Logger = &logger{}
+	//config.Tracer = &tracelog.TraceLog{Logger: tracelog.LoggerFunc(log), LogLevel: tracelog.LogLevelDebug}
 	dsn = stdlib.RegisterConnConfig(config)
 
 	conn, err := sqlx.ConnectContext(ctx, "pgx", dsn)
 	if err != nil {
 		return nil, err
 	}
-	conn.SetMaxOpenConns(20)
+	conn.SetMaxOpenConns(40)
 
 	return &DB{conn}, nil
 }
@@ -76,4 +78,29 @@ func mapperCtx[T1 any, T2 any](ctx context.Context, lst []T1, f func(context.Con
 		}
 	}
 	return rez
+}
+
+func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]interface{}) {
+	logger := zap.L()
+	fields := make([]zapcore.Field, len(data))
+	i := 0
+	for k, v := range data {
+		fields[i] = zap.Any(k, v)
+		i++
+	}
+
+	switch level {
+	case tracelog.LogLevelTrace:
+		logger.Debug(msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
+	case tracelog.LogLevelDebug:
+		logger.Debug(msg, fields...)
+	case tracelog.LogLevelInfo:
+		logger.Info(msg, fields...)
+	case tracelog.LogLevelWarn:
+		logger.Warn(msg, fields...)
+	case tracelog.LogLevelError:
+		logger.Error(msg, fields...)
+	default:
+		logger.Error(msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
+	}
 }
