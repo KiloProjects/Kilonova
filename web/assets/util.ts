@@ -1,8 +1,10 @@
 import dayjs from "dayjs";
 import "dayjs/locale/ro";
 import relativeTime from "dayjs/plugin/relativeTime";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 
 dayjs.extend(relativeTime);
+dayjs.extend(customParseFormat);
 
 dayjs.locale("ro");
 
@@ -41,7 +43,7 @@ export function downloadBlob(blob: Blob, filename: string) {
 	a.click();
 }
 
-export function parseTime(str?: string, extended?: boolean) {
+export function parseTime(str?: string | number, extended?: boolean) {
 	if (!str) {
 		return "";
 	}
@@ -87,3 +89,15 @@ export function stringIntToNumber(ints: string[]): number[] {
 	}
 	return result;
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+	document.querySelectorAll(".server_timestamp").forEach((val) => {
+		let timestamp = parseInt(val.innerHTML);
+		if (isNaN(timestamp)) {
+			console.warn("NaN timestamp");
+			return;
+		}
+		val.innerHTML = parseTime(timestamp);
+		val.classList.remove("server_timestamp");
+	});
+});

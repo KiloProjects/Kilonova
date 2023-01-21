@@ -2,7 +2,7 @@ Kilonova will soon be used for organizing an official contest. In order to achie
 
 High priority:
 - [ ] Contest system:
-	- [ ] Problem visibility;
+	- [x] Problem visibility;
 	- [ ] Questions (Yes/No/No comment/etc);
 	- [ ] General announcements;
 	- [ ] Leaderboard;
@@ -10,16 +10,17 @@ High priority:
     - [x] Disable pastes for contest problems during contest;
         - Can disable pastes in general now.
         - [ ] More explicit filtering for main platform contests
-    - [ ] Hide problem editors during contest if not admin;
 - [ ] Allow to disable contestant access to others' submissions;
 - [ ] Endpoint for account generation;
-- [ ] Websockets for live updates.
-    - Or maybe polling
+- [ ] Vendor all dependencies
 
 Medium priority:
 - [ ] Move default custom grading to cms format
     - Also have legacy grader
     - Rename all current grader attachments to grader-legacy
+- [ ] Websockets for live updates.
+    - [ ] Also remember to put the time there, since contest end/start may change
+    - [ ] Or maybe polling
 - [ ] Third checkbox for attachments to include whether they should count towards grading or not;
 - [ ] Make problem score be sum of best subtasks if they exist
 - [ ] Max number of submissions during contest;

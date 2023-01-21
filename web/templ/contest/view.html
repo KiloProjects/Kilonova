@@ -1,0 +1,83 @@
+{{ define "title" }} {{.Contest.Name}} {{ end }}
+{{ define "content" }}
+
+{{ template "topbar.html" . }}
+
+{{ $user := .Ctx.User }}
+{{ $contest := .Contest }}
+
+<div class="page-holder">
+    <div class="page-content">
+        {{ with contestProblems .Ctx.User.Brief .Contest }}
+            <h2> {{ getText "problems" }} </h2>
+            {{ template "pb_list_group" (genContestProblemsParams $user.Brief . $contest) }}
+        {{ else }}
+            <p>{{getText "contest_no_problems"}}</p>
+        {{ end }}
+    </div>
+    <div class="page-sidebar">
+        <div class="page-sidebar-box">
+            <h2 class="font-normal">
+                {{getText "generalInfo"}}
+            </h2>
+
+            {{ with .Contest }}
+            <div class="px-2">
+                <p>{{getText "startTime"}}: <span class="server_timestamp">{{.StartTime.UnixMilli}}</span></p>
+                <p>{{getText "duration"}}: {{contestDuration .}}</p>
+                {{ with .Editors }}
+                    <details class="reset-list" open>
+                        <summary>{{getText "organisedBy"}}:</summary>
+                        <ul>
+                            {{ range . }}
+                            <li><a href="/profile/{{.Name}}">{{.Name}}</a></li>
+                            {{ end }}
+                        </ul>
+                    </details>
+                {{ end }}
+                <p>{{getText "status"}}: 
+                    {{if .Ended}}
+                        {{getText "contest_ended"}}
+                    {{else if .Running}}
+                        {{getText "contest_running"}}
+                    {{else}}
+                        {{getText "contest_before_start"}}
+                    {{end}}
+                </p>
+                {{ if .Running }}
+                <p>
+                    {{getText "remaining_time"}}:
+                    <kn-contest-countdown target_time='{{.EndTime.UnixMilli}}' type="running" />
+                </p>
+                {{ else if not .Started }}
+                <p>
+                    {{getText "starts_in"}}:
+                    <kn-contest-countdown target_time='{{.EndTime.UnixMilli}}' type="before_start" />
+                </p>
+                {{ end }}
+                {{ if isContestEditor . }}
+                <p class="my-1">{{getText "visibility"}}:
+                    {{if .Visible}}
+                    <span class="badge-lite bg-green-700 text-sm font-semibold">{{getText "visible"}}</span>
+                    {{else}}
+                    <span class="badge-lite bg-red-700 text-sm font-semibold">{{getText "invisible"}}</span>
+                    {{end}}
+                </p>
+                <p class="my-1">{{getText "registration_status"}}:
+                    {{if .PublicJoin}}
+                    <span class="badge-lite bg-green-700 text-sm font-semibold">{{getText "registration_open"}}</span>
+                    {{else}}
+                    <span class="badge-lite bg-red-700 text-sm font-semibold">{{getText "registration_closed"}}</span>
+                    {{end}}
+                </p>
+                {{ end }}
+                {{ if (and authed (canJoinContest .)) }}
+                <button class="btn btn-blue my-2" onclick="alert('not done')">Register</button>
+                {{ end }}
+            </div>
+            {{ end }}
+        </div>
+    </div>
+</div>
+
+{{ end }}

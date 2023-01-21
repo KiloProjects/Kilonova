@@ -1,3 +1,4 @@
+{{ define "title" }} {{getText "title.problem_submit" .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 
 
@@ -25,7 +26,7 @@
         </form>
 
         <kn-sub-viewer problemID="{{.Problem.ID}}" userID="{{.Ctx.User.ID}}"
-            title='{{getText "title.past_submissions"}}' />
+            title='{{getText "header.past_submissions"}}' />
     </div>
 </div>
 

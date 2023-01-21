@@ -1,43 +1,45 @@
-
-function hasParentWithID(element, id) {
-	for(let p = element && element.parentElement; p; p = p.parentElement) {
-		if(p.id == id) {
-			return true
+function hasParentWithID(element: Element, id: string): boolean {
+	for (let p = element && element.parentElement; p; p = p.parentElement) {
+		if (p.id == id) {
+			return true;
 		}
 	}
-	return false
+	return false;
 }
 
 export class NavBarManager {
+	isNavbarOpen: boolean = false;
+	isDropdownOpen: boolean = false;
+
 	constructor() {
 		this.isNavbarOpen = false;
 		this.isDropdownOpen = false;
-		
-		this.setNavbar(false)
-		this.setDropdown(false)
 
-		document.addEventListener('keydown', (e) => this.checkKey(e))
-		document.addEventListener('click', (e) => this.checkClick(e))
+		this.setNavbar(false);
+		this.setDropdown(false);
+
+		document.addEventListener("keydown", (e) => this.checkKey(e));
+		document.addEventListener("click", (e) => this.checkClick(e));
 	}
 
-	checkKey(e) {
-		if(e.key === "Esc" || e.key === "Escape") {
+	checkKey(e: KeyboardEvent) {
+		if (e.key === "Esc" || e.key === "Escape") {
 			this.setDropdown(false);
 		}
 	}
 
-	checkClick(e) {
-		if(this.isDropdownOpen && !(e.target.id === "profile-dropdown-button" || hasParentWithID(e.target, "pr-dropdown"))) {
+	checkClick(e: MouseEvent) {
+		if (this.isDropdownOpen && e.target instanceof Element && !(e.target.id === "profile-dropdown-button" || hasParentWithID(e.target, "pr-dropdown"))) {
 			this.setDropdown(false);
 		}
 	}
 
 	toggleNavbar() {
-		this.setNavbar(!this.isNavbarOpen)
+		this.setNavbar(!this.isNavbarOpen);
 	}
-	
+
 	toggleDropdown() {
-		this.setDropdown(!this.isDropdownOpen)
+		this.setDropdown(!this.isDropdownOpen);
 	}
 
 	setNavbar(open) {

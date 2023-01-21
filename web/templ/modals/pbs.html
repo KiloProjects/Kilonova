@@ -2,6 +2,7 @@
 {{ $user := authedUser }}
 {{ $showScore := .ShowScore }}
 {{ $scoreUser := .ScoreUser }}
+{{ $contestIDScore := .ContestIDScore }}
 <div class="list-group grid grid-cols-1 {{if .MultiCols }} md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 {{end}}">
 	{{ range .Problems }}
 		<a href="/problems/{{.ID}}" class="list-group-item flex justify-between">
@@ -18,7 +19,11 @@
                 {{- end -}}
                 {{- if $scoreUser -}}
                     {{ if $showScore }}
-					    <span class="badge">{{ subScore . $scoreUser }}</span>
+                        {{ if (eq $contestIDScore -1) }}
+					        <span class="badge">{{ subScore . $scoreUser }}</span>
+                        {{ else }}
+                            <span class="badge">{{ contestSubScore . $scoreUser $contestIDScore }}</span>
+                        {{ end }}
                     {{ end }}
                 {{- end }}
             </div>

@@ -58,7 +58,7 @@
                     </ul>
                 </details>
                 {{ end }}
-                {{ if .ProblemEditor }}
+                {{ if .Topbar.IsProblemEditor }}
                 {{ with .Problem.Viewers }}
                 <details class="reset-list">
                     <summary>{{getText "viewers"}}</summary>

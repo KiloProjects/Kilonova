@@ -28,6 +28,11 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	TimeFormat         = "02/01/2006 15:04"
+	TimeFormatExtended = "02/01/2006 15:04:05"
+)
+
 var templates *template.Template
 
 //go:embed static
@@ -58,6 +63,16 @@ func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int
 	})
 }
 
+func (rt *Web) problemRouter(r chi.Router) {
+	r.Use(rt.ValidateProblemID)
+	r.Use(rt.ValidateProblemVisible)
+	r.Get("/", rt.problem())
+	r.Get("/submissions", rt.problemSubmissions())
+	r.Get("/submit", rt.problemSubmit())
+	r.With(rt.mustBeProblemEditor).Route("/edit", rt.ProblemEditRouter)
+	r.Get("/attachments/{aid}", rt.problemAttachment)
+}
+
 // Handler returns a http.Handler
 func (rt *Web) Handler() http.Handler {
 	r := chi.NewRouter()
@@ -73,20 +88,26 @@ func (rt *Web) Handler() http.Handler {
 
 	r.Route("/problems", func(r chi.Router) {
 		r.Get("/", rt.problems())
-		r.Route("/{pbid}", func(r chi.Router) {
-			r.Use(rt.ValidateProblemID)
-			r.Use(rt.ValidateProblemVisible)
-			r.Get("/", rt.problem())
-			r.Get("/submissions", rt.problemSubmissions())
-			r.Get("/submit", rt.problemSubmit())
-			r.With(rt.mustBeProblemEditor).Route("/edit", rt.ProblemEditRouter)
-			r.Get("/attachments/{aid}", rt.problemAttachment)
-		})
+		r.Route("/{pbid}", rt.problemRouter)
 	})
 
-	// r.Route("/contests/", func(r chi.Router) {
-	// 	r.Get("/", rt.contests())
-	// })
+	r.Route("/contests", func(r chi.Router) {
+		r.Get("/", rt.contests())
+		r.Route("/{contestID}", func(r chi.Router) {
+			r.Use(rt.ValidateContestID)
+			r.Use(rt.ValidateContestVisible)
+			r.Get("/", rt.contest())
+			// Communication holds both questions and annonucements
+			// r.Get("/communication", rt.contestCommunication())
+			// r.Get("/leaderboard", rt.contestLeaderboard())
+			// r.Get("/registrations", rt.contestRegistrations())
+			r.Route("/manage", func(r chi.Router) {
+				r.Use(rt.mustBeContestEditor)
+				r.Get("/edit", rt.contestEdit())
+			})
+			r.Route("/problems/{pbid}", rt.problemRouter)
+		})
+	})
 
 	r.Route("/submissions", func(r chi.Router) {
 		r.Get("/", rt.justRender("submissions.html"))
@@ -181,21 +202,42 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			return list
 		},
 		"visibleProblems": func(user *kilonova.UserBrief) []*kilonova.Problem {
-			problems, err := base.Problems(context.Background(), kilonova.ProblemFilter{LookingUser: user, Look: true})
+			pbs, err := base.Problems(context.Background(), kilonova.ProblemFilter{
+				LookingUser: user, Look: true,
+			})
 			if err != nil {
 				return nil
 			}
-			return problems
+			return pbs
 		},
 		"unassociatedProblems": func(user *kilonova.UserBrief) []*kilonova.Problem {
-			problems, err := base.Problems(context.Background(), kilonova.ProblemFilter{LookingUser: user, Look: true, Unassociated: true})
+			pbs, err := base.Problems(context.Background(), kilonova.ProblemFilter{
+				LookingUser: user, Look: true, Unassociated: true,
+			})
 			if err != nil {
 				return nil
 			}
-			return problems
+			return pbs
+		},
+		"contestProblems": func(user *kilonova.UserBrief, c *kilonova.Contest) []*kilonova.Problem {
+			pbs, err := base.Problems(context.Background(), kilonova.ProblemFilter{
+				LookingUser: user, Look: true, ContestID: &c.ID,
+			})
+			if err != nil {
+				zap.S().Warn(err)
+				return nil
+			}
+			return pbs
 		},
 		"subScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) string {
 			score := base.MaxScore(context.Background(), user.ID, pb.ID)
+			if score < 0 {
+				return "-"
+			}
+			return strconv.Itoa(score)
+		},
+		"contestSubScore": func(pb *kilonova.Problem, user *kilonova.UserBrief, contestID int) string {
+			score := base.MaxContestScore(context.Background(), user.ID, pb.ID, contestID)
 			if score < 0 {
 				return "-"
 			}
@@ -239,8 +281,11 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"pasteEditor": func(user *kilonova.UserBrief, paste *kilonova.SubmissionPaste) bool {
 			return base.IsPasteEditor(paste, user)
 		},
-		"genProblemsParams": func(scoreUser *kilonova.UserBrief, pbs []*kilonova.Problem, showSolved, multiCols bool) *ProblemListingParams {
-			return &ProblemListingParams{pbs, showSolved, multiCols, scoreUser}
+		"genProblemsParams": func(scoreUser *kilonova.UserBrief, pbs []*kilonova.Problem, showScore, multiCols bool) *ProblemListingParams {
+			return &ProblemListingParams{pbs, showScore, multiCols, scoreUser, -1}
+		},
+		"genContestProblemsParams": func(scoreUser *kilonova.UserBrief, pbs []*kilonova.Problem, contest *kilonova.Contest) *ProblemListingParams {
+			return &ProblemListingParams{pbs, true, false, scoreUser, contest.ID}
 		},
 		"genPblistParams": func(user *kilonova.UserBrief, ctx *ReqContext, pblist *kilonova.ProblemList, open bool) *PblistParams {
 			return &PblistParams{user, ctx, pblist, open}
@@ -329,6 +374,13 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return b.String()
 		},
+		"problemIDs": func(pbs []*kilonova.Problem) []int {
+			ids := make([]int, 0, len(pbs))
+			for _, pb := range pbs {
+				ids = append(ids, pb.ID)
+			}
+			return ids
+		},
 		"shallowPblistIDs": func(lists []*kilonova.ShallowProblemList) []int {
 			rez := []int{}
 			for _, l := range lists {
@@ -336,9 +388,13 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return rez
 		},
-		"httpstatus": http.StatusText,
-		"dump":       spew.Sdump,
-
+		"httpstatus":     http.StatusText,
+		"dump":           spew.Sdump,
+		"canJoinContest": base.CanJoinContest,
+		"contestDuration": func(c *kilonova.Contest) string {
+			d := c.EndTime.Sub(c.StartTime).Round(time.Minute)
+			return d.String()
+		},
 		"getText": func(key string, vals ...any) string {
 			zap.S().Error("Uninitialized `getText`")
 			return "FATAL ERR"
@@ -353,6 +409,14 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		},
 		"problemEditor": func(user *kilonova.UserBrief, problem *kilonova.Problem) bool {
 			zap.S().Error("Uninitalized `problemEditor`")
+			return false
+		},
+		"isContestEditor": func(c *kilonova.Contest) bool {
+			zap.S().Error("Uninitialized `isContestEditor`")
+			return false
+		},
+		"contestProblemsVisible": func(c *kilonova.Contest) bool {
+			zap.S().Error("Uninitialized `contestProblemsVisible`")
 			return false
 		},
 	}

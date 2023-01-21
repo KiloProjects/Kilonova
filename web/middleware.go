@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi/v5"
@@ -26,12 +27,25 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 			rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
 			return
 		}
-		problem, err1 := rt.base.Problem(r.Context(), problemID)
-		if err1 != nil {
-			rt.statusPage(w, r, 404, "Problema nu a fost găsită")
-			return
+		var pb *kilonova.Problem
+		if util.Contest(r) == nil {
+			problem, err1 := rt.base.Problem(r.Context(), problemID)
+			if err1 != nil {
+				rt.statusPage(w, r, 404, "Problema nu a fost găsită")
+				return
+			}
+			pb = problem
+		} else {
+			pbs, err1 := rt.base.Problems(r.Context(), kilonova.ProblemFilter{
+				ID: &problemID, ContestID: &util.Contest(r).ID,
+			})
+			if err1 != nil || len(pbs) == 0 {
+				rt.statusPage(w, r, 404, "Problema nu a fost găsită sau nu aparține concursului")
+				return
+			}
+			pb = pbs[0]
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemKey, problem)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemKey, pb)))
 	})
 }
 
@@ -52,31 +66,39 @@ func (rt *Web) ValidateListID(next http.Handler) http.Handler {
 	})
 }
 
-// ValidateAttachmentID makes sure the attachment ID is a valid uint
-func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		attid, err := strconv.Atoi(chi.URLParam(r, "aid"))
-		if err != nil {
-			http.Error(w, "ID invalid", 400)
-			return
-		}
-		att, err1 := rt.base.Attachment(r.Context(), attid)
-		if err1 != nil {
-			http.Error(w, "Atașamentul nu a fost găsit", 404)
-			return
-		}
-		if att.Private && !rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
-			rt.statusPage(w, r, 403, "Nu ai voie să accesezi acest atașament")
-		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AttachmentKey, att)))
-	})
-}
-
 // ValidateProblemVisible checks if the problem from context is visible from the logged in user
 func (rt *Web) ValidateProblemVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !rt.base.IsProblemVisible(util.UserBrief(r), util.Problem(r)) {
 			rt.statusPage(w, r, 403, "Nu ai voie să accesezi problema!")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// ValidateContestID makes sure the contest ID is a valid uint
+func (rt *Web) ValidateContestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contestID, err := strconv.Atoi(chi.URLParam(r, "contestID"))
+		if err != nil {
+			rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
+			return
+		}
+		contest, err1 := rt.base.Contest(r.Context(), contestID)
+		if err1 != nil {
+			rt.statusPage(w, r, 404, "Concursul nu a fost găsit")
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ContestKey, contest)))
+	})
+}
+
+// ValidateContestVisible checks if the problem from context is visible from the logged in user
+func (rt *Web) ValidateContestVisible(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !rt.base.IsContestVisible(util.UserBrief(r), util.Contest(r)) {
+			rt.statusPage(w, r, 403, "Nu ai voie să accesezi concursul!")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -115,6 +137,26 @@ func (rt *Web) ValidatePasteID(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.PasteKey, paste)))
+	})
+}
+
+// ValidateAttachmentID makes sure the attachment ID is a valid uint
+func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attid, err := strconv.Atoi(chi.URLParam(r, "aid"))
+		if err != nil {
+			http.Error(w, "ID invalid", 400)
+			return
+		}
+		att, err1 := rt.base.Attachment(r.Context(), attid)
+		if err1 != nil {
+			http.Error(w, "Atașamentul nu a fost găsit", 404)
+			return
+		}
+		if att.Private && !rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
+			rt.statusPage(w, r, 403, "Nu ai voie să accesezi acest atașament")
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AttachmentKey, att)))
 	})
 }
 
@@ -161,7 +203,17 @@ func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 func (rt *Web) mustBeProblemEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
-			rt.statusPage(w, r, 401, "Trebuie să fii autorul problemei")
+			rt.statusPage(w, r, 401, "Trebuie să fii un editor al problemei")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (rt *Web) mustBeContestEditor(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !rt.base.IsContestEditor(util.UserBrief(r), util.Contest(r)) {
+			rt.statusPage(w, r, 401, "Trebuie să fii un administrator al concursului")
 			return
 		}
 		next.ServeHTTP(w, r)

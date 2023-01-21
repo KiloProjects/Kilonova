@@ -134,12 +134,13 @@ func (s *API) Handler() http.Handler {
 			Code      string `json:"code"`
 			Lang      string `json:"language"`
 			ProblemID int    `json:"problemID"`
+			ContestID *int   `json:"contestID"`
 		}) (int, *kilonova.StatusError) {
 			lang, ok := eval.Langs[args.Lang]
 			if !ok {
 				return -1, kilonova.Statusf(400, "Invalid language")
 			}
-			return s.base.CreateSubmission(ctx, util.UserBriefContext(ctx), util.ProblemContext(ctx), args.Code, lang)
+			return s.base.CreateSubmission(ctx, util.UserBriefContext(ctx), util.ProblemContext(ctx), args.Code, lang, args.ContestID)
 		}))
 		r.With(s.MustBeAdmin).Post("/delete", webWrapper(func(ctx context.Context, args struct {
 			SubmissionID int `json:"submission_id"`
@@ -195,21 +196,22 @@ func (s *API) Handler() http.Handler {
 		r.With(s.MustBeAuthed).Post("/delete", s.deleteProblemList)
 	})
 
-	// r.Route("/contest", func(r chi.Router) {
-	// 	r.With(s.MustBeProposer).Post("/create", s.createContest)
-	// 	r.Route("/{contestID}", func(r chi.Router) {
-	// 		r.Use(s.validateContestID)
-	// 		r.Use(s.validateContestVisible)
+	r.Route("/contest", func(r chi.Router) {
+		r.With(s.MustBeProposer).Post("/create", s.createContest)
+		r.Route("/{contestID}", func(r chi.Router) {
+			r.Use(s.validateContestID)
+			r.Use(s.validateContestVisible)
 
-	// 		r.Get("/", s.getContest)
+			r.Get("/", s.getContest)
 
-	// 		r.Route("/edit", func(r chi.Router) {
-	// 			r.Use(s.validateContestEditor)
+			r.Route("/update", func(r chi.Router) {
+				r.Use(s.validateContestEditor)
 
-	// 			// TODO
-	// 		})
-	// 	})
-	// })
+				r.Post("/", s.updateContest)
+				r.Post("/problems", s.updateContestProblems)
+			})
+		})
+	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Endpoint not found", 404)

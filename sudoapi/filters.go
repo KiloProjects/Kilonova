@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/KiloProjects/kilonova"
+	"go.uber.org/zap"
 )
 
 func (s *BaseAPI) IsAuthed(user *kilonova.UserBrief) bool {
@@ -34,23 +35,12 @@ func (s *BaseAPI) IsProblemEditor(user *kilonova.UserBrief, problem *kilonova.Pr
 	if problem == nil {
 		return false
 	}
-	for _, uid := range problem.Editors {
-		if uid == user.ID {
-			return true
-		}
+	ok, err := s.db.IsProblemEditor(context.Background(), problem.ID, user.ID)
+	if err != nil {
+		zap.S().Warn(err)
+		return false
 	}
-
-	// May be contest editor though
-	// TODO: Maybe require valid context?
-	contests, err := s.ProblemContests(context.Background(), problem.ID)
-	if err == nil {
-		for _, contest := range contests {
-			if s.IsContestEditor(user, contest) {
-				return true
-			}
-		}
-	}
-	return false
+	return ok
 }
 
 func (s *BaseAPI) IsProblemVisible(user *kilonova.UserBrief, problem *kilonova.Problem) bool {
@@ -60,26 +50,17 @@ func (s *BaseAPI) IsProblemVisible(user *kilonova.UserBrief, problem *kilonova.P
 	if problem.Visible {
 		return true
 	}
+	userID := 0
 	if user != nil {
-		for _, uid := range problem.Viewers {
-			if uid == user.ID {
-				return true
-			}
-		}
+		userID = user.ID
 	}
 
-	// May be contest editor though
-	// TODO: Maybe require valid context?
-	contests, err := s.ProblemContests(context.Background(), problem.ID)
-	if err == nil {
-		for _, contest := range contests {
-			if s.IsContestVisible(user, contest) {
-				return true
-			}
-		}
+	ok, err := s.db.IsProblemViewer(context.Background(), problem.ID, userID)
+	if err != nil {
+		zap.S().Warn(err)
+		return false
 	}
-
-	return s.IsProblemEditor(user, problem)
+	return ok
 }
 
 func (s *BaseAPI) IsContestEditor(user *kilonova.UserBrief, contest *kilonova.Contest) bool {
@@ -104,28 +85,23 @@ func (s *BaseAPI) IsContestEditor(user *kilonova.UserBrief, contest *kilonova.Co
 // TODO: This only accounts for editors/testers
 // This should also account for those that are registered and the contest is running
 func (s *BaseAPI) IsContestVisible(user *kilonova.UserBrief, contest *kilonova.Contest) bool {
-	if !s.IsAuthed(user) {
-		return false
-	}
 	if s.IsAdmin(user) {
 		return true
 	}
 	if contest == nil {
 		return false
 	}
-
-	for _, editor := range contest.Editors {
-		if editor.ID == user.ID {
-			return true
-		}
+	userID := 0
+	if user != nil {
+		userID = user.ID
 	}
 
-	for _, tester := range contest.Testers {
-		if tester.ID == user.ID {
-			return true
-		}
+	ok, err := s.db.IsContestViewer(context.Background(), contest.ID, userID)
+	if err != nil {
+		zap.S().Warn(err)
+		return false
 	}
-	return false
+	return ok
 }
 
 func (s *BaseAPI) FilterVisibleProblems(user *kilonova.UserBrief, pbs []*kilonova.Problem) []*kilonova.Problem {

@@ -43,7 +43,7 @@
                     <th class="text-center px-2 py-1">
                         {{.Message}}
                     </th>
-                    <th class="text-center px-2 py-1" id="timestamp-{{.ID}}">
+                    <th class="text-center px-2 py-1 server_timestamp">
                         {{.LogTime.UnixMilli}}
                     </th>
                 </tr>
@@ -51,17 +51,5 @@
         </tbody>
     </table>
 </div>
-
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-	    for(let e of document.querySelectorAll("[id^='timestamp-']")) {
-            if(isNaN(parseInt(e.innerText))) {
-                console.error("Time is NaN...?")
-                continue
-            }
-            e.innerText = bundled.parseTime(parseInt(e.innerText), true)
-        }
-    })
-</script>
 
 {{ end }}

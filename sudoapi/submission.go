@@ -12,8 +12,12 @@ import (
 
 // Submission stuff
 
-func (s *BaseAPI) MaxScore(ctx context.Context, uid, pbid int) int {
-	return s.db.MaxScore(ctx, uid, pbid)
+func (s *BaseAPI) MaxScore(ctx context.Context, uid, pbID int) int {
+	return s.db.MaxScore(ctx, uid, pbID)
+}
+
+func (s *BaseAPI) MaxContestScore(ctx context.Context, uid, pbID, contestID int) int {
+	return s.db.ContestMaxScore(ctx, uid, pbID, contestID)
 }
 
 func (s *BaseAPI) MaxScores(ctx context.Context, uid int, pbIDs []int) map[int]int {
@@ -189,7 +193,7 @@ func (s *BaseAPI) UpdateSubmission(ctx context.Context, id int, status kilonova.
 }
 
 // CreateSubmission produces a new submission and also creates the necessary subtests
-func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, problem *kilonova.Problem, code string, lang eval.Language) (int, *StatusError) {
+func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, problem *kilonova.Problem, code string, lang eval.Language, contestID *int) (int, *StatusError) {
 	if author == nil {
 		return -1, Statusf(400, "Invalid submission author")
 	}
@@ -197,7 +201,20 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 		return -1, Statusf(400, "Invalid submission problem")
 	}
 	if !s.IsProblemVisible(author, problem) {
-		return -1, Statusf(400, "User can't see the problem!")
+		return -1, Statusf(400, "Submitter can't see the problem!")
+	}
+
+	if contestID != nil {
+		contest, err := s.Contest(ctx, author.ID)
+		if err != nil || !s.IsContestVisible(author, contest) {
+			return -1, Statusf(400, "Couldn't find contest")
+		}
+		// CanSubmitInContest checks if the user is either a contestant and the contest is running, or a tester/editor/admin
+		// if !s.CanSubmitInContest(author, contest) {
+		// 	return -1, Statusf(400, "Submitter cannot subimt to contest")
+		// }
+		// TODO: Finish checks
+		// That problem is in contest
 	}
 
 	if code == "" {
@@ -205,7 +222,7 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 	}
 
 	// Add submission
-	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang, code, nil)
+	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang, code, contestID)
 	if err != nil {
 		zap.S().Warn("Couldn't create submission:", err)
 		return -1, Statusf(500, "Couldn't create submission")

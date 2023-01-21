@@ -72,13 +72,9 @@ func (s *DB) CountSubmissions(ctx context.Context, filter kilonova.SubmissionFil
 
 const createSubQuery = "INSERT INTO submissions (user_id, problem_id, contest_id, language, code) VALUES (?, ?, ?, ?, ?) RETURNING id;"
 
-func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, language eval.Language, code string, contest *kilonova.Contest) (int, error) {
+func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, language eval.Language, code string, contestID *int) (int, error) {
 	if authorID <= 0 || problem == nil || language.InternalName == "" || code == "" {
 		return -1, kilonova.ErrMissingRequired
-	}
-	var contestID *int
-	if contest != nil {
-		contestID = &contest.ID
 	}
 	var id int
 	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(createSubQuery), authorID, problem.ID, contestID, language.InternalName, code)
@@ -123,6 +119,23 @@ func (s *DB) MaxScore(ctx context.Context, userid, problemid int) int {
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			zap.S().Errorw("Couldn't get max score for ", zap.Int("userid", userid), zap.Int("problemid", problemid), zap.Error(err))
+		}
+		return -1
+	}
+	return score
+}
+
+func (s *DB) ContestMaxScore(ctx context.Context, userID, problemID, contestID int) int {
+	var score int
+
+	err := s.conn.GetContext(ctx, &score, s.conn.Rebind(`SELECT coalesce(MAX(score), -1) 
+FROM submissions WHERE user_id = ? AND problem_id = ? AND contest_id = ?`), userID, problemID, contestID)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			zap.S().Errorw("Couldn't get max score for ",
+				zap.Int("userid", userID), zap.Int("problemid", problemID), zap.Int("contestid", contestID),
+				zap.Error(err),
+			)
 		}
 		return -1
 	}

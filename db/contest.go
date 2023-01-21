@@ -18,19 +18,21 @@ type dbContest struct {
 	Name      string    `db:"name"`
 
 	PublicJoin  bool      `db:"public_join"`
-	Hidden      bool      `db:"hidden"`
+	Visible     bool      `db:"visible"`
 	StartTime   time.Time `db:"start_time"`
 	EndTime     time.Time `db:"end_time"`
 	MaxSubCount int       `db:"max_sub_count"`
+
+	Virtual bool `db:"virtual"`
 }
 
-const createContestQuery = `INSERT INTO contest (
-		name, public_join, hidden, start_time, end_time
+const createContestQuery = `INSERT INTO contests (
+		name, start_time, end_time
 	) VALUES (
-		?, ?, ?, ?, ?
+		?, ?, ?
 	) RETURNING id`
 
-func (s *DB) CreateContest(ctx context.Context, name string, publicJoin, hidden bool) (int, error) {
+func (s *DB) CreateContest(ctx context.Context, name string) (int, error) {
 	if name == "" {
 		return -1, kilonova.ErrMissingRequired
 	}
@@ -39,7 +41,7 @@ func (s *DB) CreateContest(ctx context.Context, name string, publicJoin, hidden 
 	defaultStart := time.Now().AddDate(0, 0, 7).Truncate(time.Hour)
 	err := s.conn.GetContext(
 		ctx, &id, s.conn.Rebind(createContestQuery),
-		name, publicJoin, hidden,
+		name,
 		defaultStart, defaultStart.Add(2*time.Hour),
 	)
 	return id, err
@@ -59,8 +61,26 @@ func (s *DB) Contest(ctx context.Context, id int) (*kilonova.Contest, error) {
 // TODO: Test
 func (s *DB) ContestsByProblem(ctx context.Context, problemID int) ([]*kilonova.Contest, error) {
 	var contests []*dbContest
-	query := s.conn.Rebind("SELECT contests.* FROM contests INNER JOIN contest_problems cp ON contests.id = cp.contest_id AND cp.problem_id = $1 ORDER BY id ASC")
-	err := s.conn.SelectContext(ctx, &contests, query, problemID)
+	err := s.conn.SelectContext(
+		ctx,
+		&contests,
+		"SELECT contests.* FROM contests, contest_problems pbs WHERE contests.id = pbs.contest_id AND pbs.problem_id = $1 ORDER BY contests.start_time DESC",
+		problemID,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.Contest{}, nil
+	}
+	return mapperCtx(ctx, contests, s.internalToContest), err
+}
+
+func (s *DB) VisibleContests(ctx context.Context, userID int) ([]*kilonova.Contest, error) {
+	var contests []*dbContest
+	err := s.conn.SelectContext(
+		ctx,
+		&contests,
+		"SELECT contests.* FROM contests, contest_visibility viz WHERE contests.id = viz.contest_id AND viz.user_id = $1 ORDER BY contests.start_time DESC",
+		userID,
+	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.Contest{}, nil
 	}
@@ -84,7 +104,7 @@ func (s *DB) UpdateContest(ctx context.Context, id int, upd kilonova.ContestUpda
 		return kilonova.ErrNoUpdates
 	}
 	args = append(args, id)
-	query := s.conn.Rebind(fmt.Sprintf("UPDATE submissions SET %s WHERE id = ?", strings.Join(toUpd, ", ")))
+	query := s.conn.Rebind(fmt.Sprintf("UPDATE contests SET %s WHERE id = ?", strings.Join(toUpd, ", ")))
 	_, err := s.conn.ExecContext(ctx, query, args...)
 	return err
 }
@@ -126,8 +146,8 @@ func contestUpdateQuery(upd *kilonova.ContestUpdate) ([]string, []any) {
 	if v := upd.PublicJoin; v != nil {
 		toUpd, args = append(toUpd, "public_join = ?"), append(args, v)
 	}
-	if v := upd.Hidden; v != nil {
-		toUpd, args = append(toUpd, "hidden = ?"), append(args, v)
+	if v := upd.Visible; v != nil {
+		toUpd, args = append(toUpd, "visible = ?"), append(args, v)
 	}
 	if v := upd.StartTime; v != nil {
 		toUpd, args = append(toUpd, "start_time = ?"), append(args, v)
@@ -178,9 +198,10 @@ func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilono
 		Editors:    editors,
 		Testers:    viewers,
 		PublicJoin: contest.PublicJoin,
-		Hidden:     contest.Hidden,
 		StartTime:  contest.StartTime,
 		EndTime:    contest.EndTime,
 		MaxSubs:    contest.MaxSubCount,
+
+		Visible: contest.Visible,
 	}, nil
 }

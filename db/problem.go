@@ -141,10 +141,14 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []any) {
 			}
 		}
 		if id >= 0 {
-			// TODO: Also add contest stuff
-			where, args = append(where, "(visible = true OR id IN (SELECT DISTINCT problem_id FROM problem_user_access WHERE user_id = ?))"), append(args, id)
+			where, args = append(where, "EXISTS (SELECT 1 FROM problem_viewers WHERE user_id = ? AND problem_id = problems.id)"), append(args, id)
 		}
 	}
+
+	if v := filter.ContestID; v != nil {
+		where, args = append(where, "EXISTS (SELECT 1 FROM contest_problems WHERE contest_id = ? AND problem_id = problems.id)"), append(args, v)
+	}
+
 	if filter.Unassociated {
 		where = append(where, "NOT EXISTS (SELECT 1 FROM problem_list_problems WHERE problem_id = problems.id)")
 	}

@@ -3,8 +3,8 @@ en = "Feel free to join our %s and reach out if you have any suggestions, wish t
 ro = "Nu ezitați să vă alăturați %s-ului nostru și să ne contactați dacă aveți sugestii, doriți să deveniți un contribuitor sau doriți să colaborați cu noi."
 
 [all_problems_announcement]
-en = "You can also view all problems ordered by ID [here](/problems)."
-ro = "Poți, de asemenea, să vezi toate problemele ordonate după ID [aici](/problems)."
+en = "You can also view all problems ordered by ID [on this page](/problems)."
+ro = "Poți, de asemenea, să vezi toate problemele ordonate după ID [pe pagina aceasta](/problems)."
 
 [num_solved]
 en = "%d / %d solved"
@@ -63,8 +63,8 @@ en = "Name"
 ro = "Nume"
 
 [statement]
-en = "Statement"
-ro = "Enunț"
+en = "Problem Statement"
+ro = "Enunț Problemă"
 
 [submit]
 en = "Upload code"
@@ -147,12 +147,12 @@ en = "Submissions for"
 ro = "Submisii pentru"
 
 [title.problem_submit]
-en = "Upload code for"
-ro = "Încărcare cod pentru"
+en = "Upload code | Problem #%d: %s"
+ro = "Încărcare cod | Problam #%d: %s"
 
 [title.past_submissions]
-en = "Past submissions"
-ro = "Submisii anterioare"
+en = "Past submissions | Problem #%d: %s"
+ro = "Submisii anterioare | Problam #%d: %s"
 
 [title.edit.index]
 en = "Edit Problem | Problem #%d: %s"
@@ -194,8 +194,12 @@ ro = "Actualizare Subtasks | Problema #%d: %s"
 en = "Update Tests | Problem #%d: %s"
 ro = "Actualizare Teste | Problema #%d: %s"
 
+[header.past_submissions]
+en = "Past submissions"
+ro = "Submisii anterioare"
+
 [header.edit.index]
-en = "Edit Problem Info"
+en = "Edit Problem Information"
 ro = "Editare Informații Problemă"
 
 [header.edit.description]
@@ -701,6 +705,10 @@ ro = "Timp Maxim"
 en = "Max Memory"
 ro = "Memorie Maximă"
 
+[maxSubs]
+en = "Maximum submission count"
+ro = "Număr limită submisii"
+
 [codeSize]
 en = "Code size"
 ro = "Dimensiunea codului"
@@ -812,6 +820,10 @@ ro = "Creare problemă"
 [createPbList]
 en = "Create problem list"
 ro = "Creare listă probleme"
+
+[createContest]
+en = "Create contest"
+ro = "Creare concurs"
 
 [problemName]
 en = "Problem name"
@@ -1044,8 +1056,8 @@ en = "Recover"
 ro = "Recuperare"
 
 [forgot_pwd_announcement]
-en = "Forgot password? Go <a href='/forgot_pwd'>here</a> to recover it."
-ro = "Parolă uitată? Mergi <a href='/forgot_pwd'>aici</a> pentru a o recupera."
+en = "Forgot password? Go <a href='/forgot_pwd'>on this page</a> to recover it."
+ro = "Parolă uitată? Mergi <a href='/forgot_pwd'>pe pagina aceasta</a> pentru a o recupera."
 
 [reset_pwd]
 en = "Reset password"
@@ -1193,3 +1205,91 @@ ro = "Ești sigur că vrei să ștergi subtaskul?"
 [subtaskDeleteConfirm]
 en = "Are you sure you want to delete %d subtasks?"
 ro = "Ești sigur că vrei să ștergi %d subtaskuri?"
+
+[contests]
+en = "Contests"
+ro = "Concursuri"
+
+[startTime]
+en = "Start time"
+ro = "Oră de început"
+
+[endTime]
+en = "End time"
+ro = "Oră de finalizare"
+
+[duration]
+en = "Duration"
+ro = "Durată"
+
+[organisedBy]
+en = "Organised by"
+ro = "Organizat de"
+
+[noContests]
+en = "No contests are available at this time"
+ro = "Niciun concurs nu este disponibil momentan"
+
+[registration_status]
+en = "Registration status"
+ro = "Status înregistrări"
+
+[registration_open]
+en = "Open"
+ro = "Deschis"
+
+[registration_closed]
+en = "Closed"
+ro = "Închis"
+
+[contest_info]
+en = "Contest Info"
+ro = "Detalii Concurs"
+
+[contest_edit]
+en = "Contest Edit"
+ro = "Editare Concurs"
+
+[contest_no_problems]
+en = "Problems will be available soon."
+ro = "Problemele vor fi disponibile în curând."
+
+[contest_running]
+en = "Running..."
+ro = "În desfășurare..."
+
+[contest_ended]
+en = "Ended"
+ro = "Finalizat"
+
+[contest_before_start]
+en = "Before start"
+ro = "Înainte de început"
+
+[header.contest.general]
+en = "Edit Contest Information"
+ro = "Editare Informații Concurs"
+
+[header.contest.edit_problems]
+en = "Edit Contest Problems"
+ro = "Editare Probleme Concurs"
+
+[header.contest.access_control]
+en = "Contest access control"
+ro = "Control acces concurs"
+
+[publicJoin]
+en = "Open registration"
+ro = "Înregistrare liberă"
+
+[days]
+en = "%d days"
+ro = "%d zile"
+
+[remaining_time]
+en = "Remaining time"
+ro = "Timp rămas"
+
+[starts_in]
+en = "Starts in"
+ro = "Începe în"

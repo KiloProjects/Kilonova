@@ -1,0 +1,124 @@
+{{ define "title" }} {{ getText "contest_edit" }} {{ end }}
+{{ define "content" }}
+{{ template "topbar.html" . }}
+
+
+<div class="page-holder">
+    <div class="page-content-full">
+        
+        <h2>{{getText "header.contest.general"}}</h2>
+
+        <form class="mb-4" id="contest_update_form" autocomplete="off">
+            <label class="block mb-2">
+                <span class="form-label">{{getText "name"}}: </span>
+                <input class="form-input" name="name" type="text" value="{{.Contest.Name}}" required>
+            </label>
+            <label class="block mb-2">
+                <span class="form-label">{{getText "maxSubs"}}: </span>
+                <input class="form-input" name="max_subs" type="number" value="{{.Contest.MaxSubs}}" required>
+            </label>
+            <label class="block mb-2">
+                <span class="form-label">{{getText "startTime"}}: </span>
+                <input class="form-input" name="start_time" type="text" 
+                    pattern="[\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2} [+-][\d]{4}"
+                    placeholder="2020-03-18 15:00" value='{{.Contest.StartTime.Format "2006-01-02 15:04 -0700"}}' required>
+            </label>
+            <label class="block mb-2">
+                <span class="form-label">{{getText "endTime"}}: </span>
+                <input class="form-input" name="end_time" type="text" 
+                    pattern="[\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2} [+-][\d]{4}"
+                    placeholder="2020-03-18 18:00" value='{{.Contest.EndTime.Format "2006-01-02 15:04 -0700"}}' required>
+            </label>
+            <div class="block mb-2">
+                <label class="inline-flex items-center text-lg">
+                    <input class="form-checkbox" id="c_public_join" name="public_join" type="checkbox" {{if .Contest.PublicJoin}}checked{{end}}>
+                    <span class="ml-2">{{getText "publicJoin"}}</span>
+                </label>
+            </div>
+            <div class="block mb-2">
+                <label class="inline-flex items-center text-lg">
+                    <input class="form-checkbox" id="c_visible" name="visible" type="checkbox" {{if .Contest.Visible}}checked{{end}}>
+                    <span class="ml-2">{{getText "visible"}}</span>
+                </label>
+            </div>
+
+            <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
+        </form>
+
+        <div class="page-sidebar-divider"></div>
+
+        <h2>{{getText "header.contest.edit_problems"}}</h2>
+
+        {{$pbs := contestProblems .Ctx.User.Brief .Contest}}
+
+        <form class="mb-4" id="contest_problems_form" autocomplete="off">
+            <label class="block my-2">
+                <span class="form-label">{{getText "pbs"}}:</span>
+                <input type="text" id="contest_list" class="form-input" pattern="([0-9]+,?)+" value="{{$pbs | problemIDs | intList}}">
+            </label>
+            <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
+        </form>
+
+
+        <div class="page-sidebar-divider"></div>
+
+        <h2>{{getText "header.contest.access_control"}}</h2>
+
+        <form class="mb-4" id="contest_access_form" autocomplete="off">
+            TODO
+            <label class="block my-2">
+                <span class="form-label">{{getText "pbs"}}:</span>
+                <input type="text" id="contest_list" class="form-input" pattern="([0-9]+,?)+" value="{{$pbs | problemIDs | intList}}">
+            </label>
+            <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
+        </form>
+
+    </div>
+</div>
+
+<script>
+const contestID = {{.Contest.ID}};
+async function updateContest(e) {
+    e.preventDefault();
+    try {
+        var fd = new FormData(e.currentTarget)
+        var data = {
+            name: fd.get("name"),
+            max_subs: fd.get("max_subs"),
+            public_join: document.getElementById("c_public_join").checked,
+            visible: document.getElementById("c_visible").checked,
+            start_time: bundled.contestToNetworkDate(fd.get("start_time")),
+            end_time: bundled.contestToNetworkDate(fd.get("end_time")),
+        }
+        console.log(fd, data)
+    } catch(e) {
+        bundled.apiToast({status: "error", data: e.toString()});
+        return
+    }
+
+    const res = await bundled.postCall(`/contest/${contestID}/update`, data)
+    if(res.status === "success") {
+        window.location.reload();
+        return
+    }
+    bundled.apiToast(res)
+}
+
+async function updateContestProblems(e) {
+    e.preventDefault();
+    let data = {
+        list: bundled.stringIntToNumber(document.getElementById("contest_list").value.split(',')),
+    }
+	let res = await bundled.bodyCall(`/contest/${contestID}/update/problems`, data)
+	if(res.status === "success") {
+		window.location.reload();
+		return
+	}
+	bundled.apiToast(res)
+}
+
+document.getElementById("contest_update_form").addEventListener("submit", updateContest)
+document.getElementById("contest_problems_form").addEventListener("submit", updateContestProblems)
+</script>
+
+{{ end }}

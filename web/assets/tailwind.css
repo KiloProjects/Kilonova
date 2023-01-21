@@ -415,6 +415,14 @@
 		@apply px-2 py-1;
 	}
 
+	.server_timestamp {
+		visibility: hidden;
+	}
+	.server_timestamp::before {
+		visibility: visible;
+		content: "...";
+	}
+
 	pre {
 		white-space: pre-wrap; /* Since CSS 2.1 */
 		white-space: -moz-pre-wrap; /* Mozilla, since 1999 */

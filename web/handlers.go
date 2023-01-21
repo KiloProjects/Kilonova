@@ -138,9 +138,8 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 		}
 
 		rt.runTempl(w, r, templ, &ProblemParams{
-			Ctx:           GenContext(r),
-			ProblemEditor: rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
-			Topbar:        rt.topbar(r, "pb_statement", -1),
+			Ctx:    GenContext(r),
+			Topbar: rt.topbar(r, "pb_statement", -1),
 
 			Problem:     util.Problem(r),
 			Attachments: atts,
@@ -191,6 +190,49 @@ func (rt *Web) problemSubmit() func(http.ResponseWriter, *http.Request) {
 
 			Languages: langs,
 			Problem:   util.Problem(r),
+		})
+	}
+}
+
+func (rt *Web) contests() func(http.ResponseWriter, *http.Request) {
+	templ := rt.parse(nil, "contest/index.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := 0
+		if util.UserBrief(r) != nil {
+			userID = util.UserBrief(r).ID
+		}
+		contests, err := rt.base.VisibleContests(r.Context(), userID)
+		if err != nil {
+			rt.statusPage(w, r, 400, "")
+			return
+		}
+		rt.runTempl(w, r, templ, &ContestsIndexParams{
+			Ctx:      GenContext(r),
+			Contests: contests,
+		})
+	}
+}
+
+func (rt *Web) contest() func(http.ResponseWriter, *http.Request) {
+	templ := rt.parse(nil, "contest/view.html", "problem/topbar.html", "modals/pbs.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		rt.runTempl(w, r, templ, &ContestParams{
+			Ctx:    GenContext(r),
+			Topbar: rt.topbar(r, "contest_general", -1),
+
+			Contest: util.Contest(r),
+		})
+	}
+}
+
+func (rt *Web) contestEdit() func(http.ResponseWriter, *http.Request) {
+	templ := rt.parse(nil, "contest/edit.html", "problem/topbar.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		rt.runTempl(w, r, templ, &ContestParams{
+			Ctx:    GenContext(r),
+			Topbar: rt.topbar(r, "contest_edit", -1),
+
+			Contest: util.Contest(r),
 		})
 	}
 }
@@ -487,6 +529,9 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		},
 		"problemEditor": func(problem *kilonova.Problem) bool {
 			return rt.base.IsProblemEditor(util.UserBrief(r), problem)
+		},
+		"isContestEditor": func(c *kilonova.Contest) bool {
+			return rt.base.IsContestEditor(util.UserBrief(r), c)
 		},
 	})
 

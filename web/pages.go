@@ -21,17 +21,34 @@ import (
 )
 
 type EditTopbar struct {
-	IsEditor bool
+	IsProblemEditor bool
+	IsContestEditor bool
+
+	Contest *kilonova.Contest
+	Problem *kilonova.Problem
+
+	URLPrefix string
 
 	Page   string
 	PageID int
 }
 
 func (rt *Web) topbar(r *http.Request, page string, pageID int) *EditTopbar {
+	prefix := ""
+	if util.Contest(r) != nil {
+		prefix = fmt.Sprintf("/contests/%d", util.Contest(r).ID)
+	}
 	return &EditTopbar{
-		IsEditor: rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
-		Page:     page,
-		PageID:   pageID,
+		IsProblemEditor: rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
+		IsContestEditor: rt.base.IsContestEditor(util.UserBrief(r), util.Contest(r)),
+
+		Contest: util.Contest(r),
+		Problem: util.Problem(r),
+
+		URLPrefix: prefix,
+
+		Page:   page,
+		PageID: pageID,
 	}
 }
 
@@ -40,10 +57,22 @@ type ReqContext struct {
 	Language string
 }
 
+type ContestsIndexParams struct {
+	Ctx *ReqContext
+
+	Contests []*kilonova.Contest
+}
+
+type ContestParams struct {
+	Ctx    *ReqContext
+	Topbar *EditTopbar
+
+	Contest *kilonova.Contest
+}
+
 type ProblemParams struct {
-	Ctx           *ReqContext
-	Topbar        *EditTopbar
-	ProblemEditor bool
+	Ctx    *ReqContext
+	Topbar *EditTopbar
 
 	Problem     *kilonova.Problem
 	Attachments []*kilonova.Attachment
@@ -166,6 +195,8 @@ type ProblemListingParams struct {
 	ShowScore bool
 	MultiCols bool
 	ScoreUser *kilonova.UserBrief
+
+	ContestIDScore int
 }
 
 type PblistParams struct {
@@ -299,6 +330,13 @@ func parse(optFuncs template.FuncMap, files ...string) *template.Template {
 		if err != nil {
 			zap.S().Fatal(err)
 		}
+
+		// Check title
+		if _, ok := ptrees["title"]; !ok {
+			zap.S().Warnf("Page %s lacks a title", files[0])
+		}
+
+		// Check content
 		tree := ptrees["content"]
 		doWalk(files[0], tree.Root)
 	}

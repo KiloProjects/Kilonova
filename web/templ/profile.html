@@ -16,7 +16,7 @@
             {{ end }}
             {{ end }}
         </span>
-        <p>{{getText "created_at"}}: <span id="created_at">{{.ContentUser.CreatedAt.UnixMilli}}</span></p>
+        <p>{{getText "created_at"}}: <span class="server_timestamp">{{.ContentUser.CreatedAt.UnixMilli}}</span></p>
 		{{- if authed -}} {{if (or .Ctx.User.Admin (eq .Ctx.User.ID .ContentUser.ID)) -}}
 		<p>{{getText "email"}}: {{.ContentUser.Email}}
             ({{getText "email.verified"}}? 
@@ -42,13 +42,6 @@
         </div>
 	</div>
 </div>
-
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        let elem = document.getElementById("created_at")
-        elem.innerText = bundled.parseTime(parseInt(elem.innerText))
-    })
-</script>
 	
 <script>
 async function resendEmail() {

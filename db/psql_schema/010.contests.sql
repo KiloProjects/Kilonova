@@ -4,8 +4,8 @@ CREATE TABLE IF NOT EXISTS contests (
 	created_at			timestamptz	NOT NULL DEFAULT NOW(),
 	name 				text 	  	NOT NULL UNIQUE,
 
-    public_join         boolean     NOT NULL DEFAULT TRUE,
-    hidden              boolean     NOT NULL DEFAULT TRUE,
+    public_join         boolean     NOT NULL DEFAULT true,
+    hidden              boolean     NOT NULL DEFAULT true,
     start_time          timestamptz NOT NULL,
     end_time            timestamptz NOT NULL,
     max_sub_count       integer     NOT NULL DEFAULT 30,
