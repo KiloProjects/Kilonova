@@ -53,7 +53,7 @@ func (s *DB) Contest(ctx context.Context, id int) (*kilonova.Contest, error) {
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	} else if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	return s.internalToContest(ctx, &contest)
 }
@@ -69,6 +69,8 @@ func (s *DB) ContestsByProblem(ctx context.Context, problemID int) ([]*kilonova.
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.Contest{}, nil
+	} else if err != nil {
+		return []*kilonova.Contest{}, err
 	}
 	return mapperCtx(ctx, contests, s.internalToContest), err
 }

@@ -39,10 +39,12 @@
         <a class='p-1 {{if (eq $topbar.Page "contest_general")}} topbar-selected {{end}}' href="{{$topbar.URLPrefix}}/">
             {{getText "contest_info"}}
         </a>
+        {{ if isContestEditor $topbar.Contest }}
         <div class="topbar-separator"></div>
         <a class='p-1 {{if (eq $topbar.Page "contest_edit")}} topbar-selected {{end}}' href="{{$topbar.URLPrefix}}/manage/edit">
             {{getText "contest_edit"}}
         </a>
+        {{ end }}
         {{ if $problemPage }}
         <div class="topbar-separator topbar-separator-lg"></div>
         {{ end }}

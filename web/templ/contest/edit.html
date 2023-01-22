@@ -3,12 +3,11 @@
 {{ template "topbar.html" . }}
 
 
-<div class="page-holder">
+<div class="page-holder no-bottom-border">
     <div class="page-content-full">
-        
-        <h2>{{getText "header.contest.general"}}</h2>
-
-        <form class="mb-4" id="contest_update_form" autocomplete="off">
+        <form class="segment-container mb-4" id="contest_update_form" autocomplete="off">
+            <h2>{{getText "header.contest.general"}}</h2>
+            
             <label class="block mb-2">
                 <span class="form-label">{{getText "name"}}: </span>
                 <input class="form-input" name="name" type="text" value="{{.Contest.Name}}" required>
@@ -45,39 +44,56 @@
             <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
         </form>
 
-        <div class="page-sidebar-divider"></div>
+        <div class="segment-container">
+            <h2>{{getText "header.contest.edit_problems"}}</h2>
+    
+            {{$pbs := contestProblems .Ctx.User.Brief .Contest}}
+    
+            <form class="mb-4" id="contest_problems_form" autocomplete="off">
+                <label class="block my-2">
+                    <span class="form-label">{{getText "pbs"}}:</span>
+                    <input type="text" id="contest_list" class="form-input" pattern="([0-9]+,?)+" value="{{$pbs | problemIDs | intList}}">
+                </label>
+                <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
+            </form>
+        </div>
 
-        <h2>{{getText "header.contest.edit_problems"}}</h2>
+        <div class="segment-container my-2">
+            <h2>{{getText "header.contest.access_control"}}</h2>
 
-        {{$pbs := contestProblems .Ctx.User.Brief .Contest}}
+            <h3>{{getText "editors"}}:</h3>
+            <div id="editors_list" class="list-group list-group-rounded mb-2">
+                <div class="list-group-head">
+                    {{getText "loading"}}
+                </div>
+            </div>
+            <h3>{{getText "testers"}}:</h3>
+            <div id="testers_list" class="list-group list-group-rounded mb-2">
+                <div class="list-group-head">
+                    {{getText "loading"}}
+                </div>
+            </div>
 
-        <form class="mb-4" id="contest_problems_form" autocomplete="off">
-            <label class="block my-2">
-                <span class="form-label">{{getText "pbs"}}:</span>
-                <input type="text" id="contest_list" class="form-input" pattern="([0-9]+,?)+" value="{{$pbs | problemIDs | intList}}">
-            </label>
-            <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
-        </form>
+            <div class="segment-container">
+                <h2>{{getText "add_user"}}</h2>
+                <label class="block">
+                    <span class="form-label">{{getText "username"}}:</span>
+                    <input class="form-input my-1 block" type="text" id="userToAdd" placeholder="AlexVasiluta" autocomplete="off">
+                </label>
+                <div class="mt-2 mb-2 inline-flex">
+                    <button type="button" class="btn-blue font-bold py-2 px-4 rounded-l" onclick="addEditor()">{{getText "add_editor"}}</button>
+                    <button type="button" class="btn-blue font-bold py-2 px-4 rounded-r" onclick="addTester()">{{getText "add_tester"}}</button>
+                </div>
+            </div>
+        </div>
 
-
-        <div class="page-sidebar-divider"></div>
-
-        <h2>{{getText "header.contest.access_control"}}</h2>
-
-        <form class="mb-4" id="contest_access_form" autocomplete="off">
-            TODO
-            <label class="block my-2">
-                <span class="form-label">{{getText "pbs"}}:</span>
-                <input type="text" id="contest_list" class="form-input" pattern="([0-9]+,?)+" value="{{$pbs | problemIDs | intList}}">
-            </label>
-            <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
-        </form>
 
     </div>
 </div>
 
 <script>
-const contestID = {{.Contest.ID}};
+// Contest update-specific stuff
+const contest_id = {{.Contest.ID}};
 async function updateContest(e) {
     e.preventDefault();
     try {
@@ -96,7 +112,7 @@ async function updateContest(e) {
         return
     }
 
-    const res = await bundled.postCall(`/contest/${contestID}/update`, data)
+    const res = await bundled.postCall(`/contest/${contest_id}/update`, data)
     if(res.status === "success") {
         window.location.reload();
         return
@@ -104,21 +120,84 @@ async function updateContest(e) {
     bundled.apiToast(res)
 }
 
+document.getElementById("contest_update_form").addEventListener("submit", updateContest)
+</script>
+
+<script>
+// Contest problems-specific stuff
 async function updateContestProblems(e) {
     e.preventDefault();
     let data = {
         list: bundled.stringIntToNumber(document.getElementById("contest_list").value.split(',')),
     }
-	let res = await bundled.bodyCall(`/contest/${contestID}/update/problems`, data)
-	if(res.status === "success") {
-		window.location.reload();
-		return
-	}
-	bundled.apiToast(res)
+    let res = await bundled.bodyCall(`/contest/${contest_id}/update/problems`, data)
+    if(res.status === "success") {
+        window.location.reload();
+        return
+    }
+    bundled.apiToast(res)
 }
-
-document.getElementById("contest_update_form").addEventListener("submit", updateContest)
 document.getElementById("contest_problems_form").addEventListener("submit", updateContestProblems)
+</script>
+
+<script>
+// Contest access-specific stuff
+async function addEditor() {
+        const username = document.getElementById('userToAdd').value;
+        let res = await bundled.postCall(`/contest/${contest_id}/update/addEditor`, { username: username })
+        bundled.apiToast(res)
+        await loadView();
+    }
+
+    async function addTester() {
+        const username = document.getElementById('userToAdd').value;
+        let res = await bundled.postCall(`/contest/${contest_id}/update/addTester`, { username: username })
+        bundled.apiToast(res)
+        await loadView();
+    }
+
+    async function stripAccess(id) {
+        let res = await bundled.postCall(`/contest/${contest_id}/update/stripAccess`, { user_id: id })
+        bundled.apiToast(res)
+        await loadView();
+    }
+
+    async function loadContest() {
+        const res = await bundled.getCall(`/contest/${contest_id}/`, {});
+        if (res.status === "error") {
+            bundled.apiToast(res)
+            return
+        }
+        return res.data
+    }
+
+    async function loadUsers(users, id) {
+        console.log(id, document.getElementById(id))
+        //document.getElementById(id).innerHTML = `<div class="list-group-head">${bundled.getText("loading")}</div>`
+        let outhtml = ""
+        if (users.length == 0) {
+            outhtml += `<div class="list-group-head">No users</div>`
+        }
+        for (let user of users) {
+            outhtml += `
+            <div class="list-group-item flex justify-between items-center">
+                <a href="/profile/${user.name}">
+                    <img class="rounded inline-block mr-2" src="/api/user/getGravatar?name=${user.name}&s=32" width="32" height="32" alt="Avatar"/>
+                    ${user.name}
+                </a>
+                ${user.id != window.platform_info.user_id ? `<span style='cursor: pointer;' onclick='stripAccess(${user.id})'>X</span>` : ''}
+            </div>`
+        }
+        document.getElementById(id).innerHTML = outhtml
+    }
+
+    async function loadView() {
+        const data = await loadContest();
+        loadUsers(data.editors, 'editors_list')
+        loadUsers(data.testers, 'testers_list')
+    }
+
+    document.addEventListener("DOMContentLoaded", () => loadView());
 </script>
 
 {{ end }}

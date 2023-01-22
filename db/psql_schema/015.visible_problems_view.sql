@@ -13,6 +13,11 @@ CREATE OR REPLACE VIEW problem_viewers AS
         FROM contest_problems pbs, contest_user_access users 
         WHERE pbs.contest_id = users.contest_id) -- Contest editors/viewers
     UNION
+    (SELECT pbs.problem_id as problem_id, 0 as user_id
+        FROM contest_problems pbs, users, contests
+        WHERE pbs.contest_id = contests.id AND contests.visible = true
+        AND contests.start_time <= NOW() AND NOW() <= contests.end_time) -- Visible running contests for anons. TODO: Find alternative
+    UNION
     (SELECT pbs.problem_id as problem_id, users.id as user_id
         FROM contest_problems pbs, users, contests
         WHERE pbs.contest_id = contests.id AND contests.visible = true
@@ -43,4 +48,4 @@ CREATE OR REPLACE VIEW problem_editors AS
     UNION
     (SELECT pbs.problem_id as problem_id, users.user_id as user_id 
         FROM contest_problems pbs, contest_user_access users 
-        WHERE pbs.contest_id = users.contest_id AND users.access = 'editor') -- Contest editors
+        WHERE pbs.contest_id = users.contest_id AND users.access = 'editor'); -- Contest editors

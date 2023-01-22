@@ -70,6 +70,10 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 		MemoryLimit: int(rawProps.Memory * 1024.0),
 	}
 
+	if props.MemoryLimit > 512*1024 {
+		return kilonova.Statusf(400, "Maximum memory must not exceed 512MB")
+	}
+
 	// handle subtasks
 	if rawProps.Groups != "" {
 		subtaskedTests := map[int]bool{}

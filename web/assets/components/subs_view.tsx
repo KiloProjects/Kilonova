@@ -97,12 +97,12 @@ function getInitialData(overwrites: Overwrites): SubmissionQuery {
 export type SubsViewProps = {
 	problemid?: number;
 	userid?: number;
+	contestid?: number;
 	title?: string;
 };
 
 function SubsView(props: SubsViewProps) {
-	console.log(props);
-	let overwrites: Overwrites = { problemID: props.problemid, userID: props.userid };
+	let overwrites: Overwrites = { problemID: props.problemid, userID: props.userid, contestID: props.contestid };
 	let [loading, setLoading] = useState(true);
 	let [query, updQuery] = useState<SubmissionQuery>(getInitialData(overwrites));
 	let [subs, setSubs] = useState<ResultSubmission[]>([]);
@@ -520,6 +520,6 @@ function SubsView(props: SubsViewProps) {
 	);
 }
 
-register(SubsView, "kn-sub-viewer", ["problemid", "userid", "title"]);
+register(SubsView, "kn-sub-viewer", ["problemid", "userid", "contestid", "title"]);
 
 export { SubsView };

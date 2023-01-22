@@ -25,9 +25,9 @@
 					<a class="dropdown-list-item" href="/settings">
 						<i class="ml-n2 fas fa-user-cog fa-fw"></i> {{getText "settings"}}
 					</a>
-                    <!-- <a class="dropdown-list-item" href="/contests/" onclick="alert('Work in progress, nothing will work correctly!')">
+                    <a class="dropdown-list-item" href="/contests/">
                         <i class="ml-n2 fas fa-medal fa-fw"></i> {{getText "contests"}}
-                    </a> -->
+                    </a>
 					{{if (or .Ctx.User.Proposer .Ctx.User.Admin)}}
 						<div class="dropdown-divider"></div>
 						<a class="dropdown-list-item" href="/proposer">

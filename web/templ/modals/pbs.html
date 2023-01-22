@@ -5,7 +5,7 @@
 {{ $contestIDScore := .ContestIDScore }}
 <div class="list-group grid grid-cols-1 {{if .MultiCols }} md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 {{end}}">
 	{{ range .Problems }}
-		<a href="/problems/{{.ID}}" class="list-group-item flex justify-between">
+		<a href="/{{if not (eq $contestIDScore -1)}}contests/{{$contestIDScore}}/{{end}}problems/{{.ID}}" class="list-group-item flex justify-between">
 			<span>{{.Name}} (#{{.ID}})</span>
             <div>
 			    {{- if $user -}}

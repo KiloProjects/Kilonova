@@ -81,6 +81,16 @@ func (s *API) validateProblemEditor(next http.Handler) http.Handler {
 	})
 }
 
+func (s *API) validateContestParticipant(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !s.base.CanSubmitInContest(util.UserBrief(r), util.Contest(r)) {
+			errorData(w, "You must be registered and during a contest to do this", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
 func (s *API) validateContestEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !s.base.IsContestEditor(util.UserBrief(r), util.Contest(r)) {

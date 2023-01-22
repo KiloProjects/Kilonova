@@ -205,16 +205,19 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 	}
 
 	if contestID != nil {
-		contest, err := s.Contest(ctx, author.ID)
+		contest, err := s.Contest(ctx, *contestID)
 		if err != nil || !s.IsContestVisible(author, contest) {
 			return -1, Statusf(400, "Couldn't find contest")
 		}
-		// CanSubmitInContest checks if the user is either a contestant and the contest is running, or a tester/editor/admin
-		// if !s.CanSubmitInContest(author, contest) {
-		// 	return -1, Statusf(400, "Submitter cannot subimt to contest")
-		// }
-		// TODO: Finish checks
-		// That problem is in contest
+		if !s.CanSubmitInContest(author, contest) {
+			return -1, Statusf(400, "Submitter cannot submit to contest")
+		}
+		pbs, err := s.Problems(ctx, kilonova.ProblemFilter{
+			ID: &problem.ID, Look: true, LookingUser: author, ContestID: contestID,
+		})
+		if err != nil || len(pbs) == 0 {
+			return -1, Statusf(400, "Problem is not in contest")
+		}
 	}
 
 	if code == "" {

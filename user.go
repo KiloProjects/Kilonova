@@ -45,6 +45,9 @@ type UserFilter struct {
 	Admin    *bool `json:"admin"`
 	Proposer *bool `json:"proposer"`
 
+	// For registrations
+	ContestID *int `json:"contest_id"`
+
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
 }

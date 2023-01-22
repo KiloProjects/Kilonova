@@ -51,7 +51,7 @@ func (s *BaseAPI) DeleteContest(ctx context.Context, id int) *StatusError {
 func (s *BaseAPI) Contest(ctx context.Context, id int) (*kilonova.Contest, *StatusError) {
 	contest, err := s.db.Contest(ctx, id)
 	if err != nil || contest == nil {
-		return nil, Statusf(400, "Contest not found")
+		return nil, WrapError(ErrNotFound, "Contest not found")
 	}
 	return contest, nil
 }
@@ -74,4 +74,54 @@ func (s *BaseAPI) ProblemContests(ctx context.Context, problemID int) ([]*kilono
 
 func (s *BaseAPI) CanJoinContest(c *kilonova.Contest) bool {
 	return c.PublicJoin && time.Now().Before(c.StartTime)
+}
+
+// CanSubmitInContest checks if the user is either a contestant and the contest is running, or a tester/editor/admin.
+// Ended contests cannot have submissions created by anyone
+func (s *BaseAPI) CanSubmitInContest(user *kilonova.UserBrief, c *kilonova.Contest) bool {
+	if c.Ended() {
+		return false
+	}
+	if s.IsContestTester(user, c) {
+		return true
+	}
+	if user == nil || c == nil {
+		return false
+	}
+	if !c.Running() {
+		return false
+	}
+	reg, err := s.db.ContestRegistration(context.Background(), c.ID, user.ID)
+	if err != nil {
+		zap.S().Warn(err)
+		return false
+	}
+	return reg != nil
+}
+
+func (s *BaseAPI) AddContestEditor(ctx context.Context, pbid int, uid int) *StatusError {
+	if err := s.db.StripContestAccess(ctx, pbid, uid); err != nil {
+		return WrapError(err, "Couldn't add contest editor: sanity strip failed")
+	}
+	if err := s.db.AddContestEditor(ctx, pbid, uid); err != nil {
+		return WrapError(err, "Couldn't add contest editor")
+	}
+	return nil
+}
+
+func (s *BaseAPI) AddContestTester(ctx context.Context, pbid int, uid int) *StatusError {
+	if err := s.db.StripContestAccess(ctx, pbid, uid); err != nil {
+		return WrapError(err, "Couldn't add contest tester: sanity strip failed")
+	}
+	if err := s.db.AddContestTester(ctx, pbid, uid); err != nil {
+		return WrapError(err, "Couldn't add contest tester")
+	}
+	return nil
+}
+
+func (s *BaseAPI) StripContestAccess(ctx context.Context, pbid int, uid int) *StatusError {
+	if err := s.db.StripContestAccess(ctx, pbid, uid); err != nil {
+		return WrapError(err, "Couldn't strip contest access")
+	}
+	return nil
 }

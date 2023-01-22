@@ -82,6 +82,31 @@ func (s *BaseAPI) IsContestEditor(user *kilonova.UserBrief, contest *kilonova.Co
 	return false
 }
 
+// Tester = Testers + Editors + Admins
+func (s *BaseAPI) IsContestTester(user *kilonova.UserBrief, contest *kilonova.Contest) bool {
+	if !s.IsAuthed(user) {
+		return false
+	}
+	if s.IsAdmin(user) {
+		return true
+	}
+	if contest == nil {
+		return false
+	}
+
+	for _, editor := range contest.Editors {
+		if editor.ID == user.ID {
+			return true
+		}
+	}
+	for _, tester := range contest.Testers {
+		if tester.ID == user.ID {
+			return true
+		}
+	}
+	return false
+}
+
 // TODO: This only accounts for editors/testers
 // This should also account for those that are registered and the contest is running
 func (s *BaseAPI) IsContestVisible(user *kilonova.UserBrief, contest *kilonova.Contest) bool {

@@ -35,7 +35,7 @@ func (s *BaseAPI) UpdateProblem(ctx context.Context, id int, args kilonova.Probl
 		return WrapError(err, "Couldn't update problem")
 	}
 
-	// Log in background, do not lockinterface{}
+	// Log in background, do not lock
 	go func(id int, args kilonova.ProblemUpdate) {
 		pb, err := s.Problem(context.Background(), id)
 		if err != nil {

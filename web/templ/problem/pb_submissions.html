@@ -4,7 +4,7 @@
 
 {{ template "topbar.html" . }}
 
-<kn-sub-viewer problemID="{{.Problem.ID}}" />
+<kn-sub-viewer problemID="{{.Problem.ID}}" {{if .Topbar.Contest}}contestID="{{.Topbar.Contest.ID}}"{{end}}/>
 
 
 {{ end }}

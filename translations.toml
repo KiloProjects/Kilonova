@@ -1083,15 +1083,17 @@ ro = "Control acces"
 en = "Editors"
 ro = "Editori"
 
-
 [editor]
 en = "Editor"
 ro = "Editor"
 
-
 [viewers]
 en = "Viewers"
 ro = "Vizualizatori"
+
+[testers]
+en = "Testers"
+ro = "Testeri"
 
 [add_user]
 en = "Add user"
@@ -1104,6 +1106,10 @@ ro = "Adăugare editor"
 [add_viewer]
 en = "Add viewer"
 ro = "Adăugare vizualizator"
+
+[add_tester]
+en = "Add tester"
+ro = "Adăugare tester"
 
 [toggle_visibility]
 en = "Toggle visibility"

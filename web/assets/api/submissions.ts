@@ -53,6 +53,7 @@ function serializeQuery(q: SubmissionQuery): object {
 		ascending: (typeof q.ordering !== "undefined" && q.ascending) || false,
 		user_id: typeof q.user_id !== "undefined" && q.user_id > 0 ? q.user_id : undefined,
 		problem_id: typeof q.problem_id !== "undefined" && q.problem_id > 0 ? q.problem_id : undefined,
+		contest_id: typeof q.contest_id !== "undefined" && q.contest_id > 0 ? q.contest_id : undefined,
 		status: q.status !== "" ? q.status : undefined,
 		score: typeof q.score !== "undefined" && q.score >= 0 ? q.score : undefined,
 		lang: typeof q.lang !== "undefined" && q.lang !== "" ? q.lang : undefined,

@@ -97,7 +97,7 @@ func (rt *Web) Handler() http.Handler {
 			r.Use(rt.ValidateContestID)
 			r.Use(rt.ValidateContestVisible)
 			r.Get("/", rt.contest())
-			// Communication holds both questions and annonucements
+			// Communication holds both questions and announcements
 			// r.Get("/communication", rt.contestCommunication())
 			// r.Get("/leaderboard", rt.contestLeaderboard())
 			// r.Get("/registrations", rt.contestRegistrations())
@@ -229,6 +229,22 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return pbs
 		},
+		"problemContests": func(user *kilonova.UserBrief, pb *kilonova.Problem) []*kilonova.Contest {
+			// TODO: Once there will be more contests, this will need to be optimized out to exclude ended ones
+			// At the moment, however, this is not a priority
+			contests, err := base.ProblemContests(context.Background(), pb.ID)
+			if err != nil {
+				zap.S().Warn(err)
+				return nil
+			}
+			actualContests := make([]*kilonova.Contest, 0, len(contests))
+			for _, contest := range contests {
+				if base.CanSubmitInContest(user, contest) {
+					actualContests = append(actualContests, contest)
+				}
+			}
+			return actualContests
+		},
 		"subScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) string {
 			score := base.MaxScore(context.Background(), user.ID, pb.ID)
 			if score < 0 {
@@ -337,7 +353,6 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return sts
 		},
-
 		"ispdflink": func(link string) bool {
 			u, err := url.Parse(link)
 			if err != nil {
@@ -388,9 +403,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return rez
 		},
-		"httpstatus":     http.StatusText,
-		"dump":           spew.Sdump,
-		"canJoinContest": base.CanJoinContest,
+		"httpstatus":         http.StatusText,
+		"dump":               spew.Sdump,
+		"canJoinContest":     base.CanJoinContest,
+		"canSubmitInContest": base.CanSubmitInContest,
 		"contestDuration": func(c *kilonova.Contest) string {
 			d := c.EndTime.Sub(c.StartTime).Round(time.Minute)
 			return d.String()

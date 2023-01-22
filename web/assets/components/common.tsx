@@ -187,13 +187,21 @@ export function ProblemAttachment({ attname = "" }) {
 
 const SUB_VIEW_LIMIT = 5;
 
-export function OlderSubmissions({ userid, problemid }: { userid: number; problemid: number }) {
+export function OlderSubmissions({ userid, problemid, contestid }: { userid: number; problemid: number; contestid: string }) {
 	let [subs, setSubs] = useState<ResultSubmission[]>([]);
 	let [loading, setLoading] = useState(true);
 	let [numHidden, setNumHidden] = useState(0);
 
 	async function load() {
-		var data = await getSubmissions({ user_id: userid, problem_id: problemid, limit: SUB_VIEW_LIMIT, page: 1 });
+		let contestID: number | undefined = undefined;
+		if (contestid !== "") {
+			contestID = parseInt(contestid);
+			if (isNaN(contestID)) {
+				console.warn("Contest ID is NaN");
+				contestID = undefined;
+			}
+		}
+		var data = await getSubmissions({ user_id: userid, problem_id: problemid, contest_id: contestID, limit: SUB_VIEW_LIMIT, page: 1 });
 		setSubs(data.subs);
 		setNumHidden(Math.max(data.count - SUB_VIEW_LIMIT, 0));
 		setLoading(false);
@@ -250,7 +258,7 @@ export function OlderSubmissions({ userid, problemid }: { userid: number; proble
 	);
 }
 
-register(OlderSubmissions, "older-subs", ["userid", "problemid"]);
+register(OlderSubmissions, "older-subs", ["userid", "problemid", "contestid"]);
 register(ProblemAttachment, "problem-attachment", ["attname"]);
 
 function ProgressChecker({ id }: { id: number }) {

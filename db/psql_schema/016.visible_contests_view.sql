@@ -3,9 +3,12 @@
 --   - Admins
 --   - Testers/Editors
 --   - It's not visible but it's running and user is registered
-CREATE VIEW contest_visibility AS (
+CREATE OR REPLACE VIEW contest_visibility AS (
     (SELECT contests.id AS contest_id, 0 AS user_id FROM contests 
-        WHERE contests.visible = true) -- visible
+        WHERE contests.visible = true) -- visible to anonymous users
+    UNION
+    (SELECT contests.id AS contest_id, users.id AS user_id FROM contests, users 
+        WHERE contests.visible = true) -- visible to logged in users
     UNION
     (SELECT contests.id AS contest_id, users.id AS user_id FROM contests, users 
         WHERE users.admin = true) -- admin

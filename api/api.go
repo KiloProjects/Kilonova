@@ -204,11 +204,29 @@ func (s *API) Handler() http.Handler {
 
 			r.Get("/", s.getContest)
 
+			r.With(s.validateContestParticipant).Get("/questions", s.contestUserQuestions)
+			r.With(s.validateContestEditor).Get("/allQuestions", s.contestAllQuestions)
+			r.With(s.validateContestParticipant).Post("/askQuestion", s.askContestQuestion)
+			r.With(s.validateContestEditor).Post("/answerQuestion", s.answerContestQuestion)
+
+			r.Get("/announcements", s.contestAnnouncements)
+			r.With(s.validateContestEditor).Post("/createAnnouncement", s.createContestAnnouncement)
+			r.With(s.validateContestEditor).Post("/updateAnnouncement", s.updateContestAnnouncement)
+			r.With(s.validateContestEditor).Post("/deleteAnnouncement", s.deleteContestAnnouncement)
+
+			r.Post("/register", s.registerForContest)
+			r.With(s.MustBeAuthed).Get("/checkRegistration", s.checkRegistration)
+			r.With(s.validateContestEditor).Get("/registrations", s.contestRegistrations)
+
 			r.Route("/update", func(r chi.Router) {
 				r.Use(s.validateContestEditor)
 
 				r.Post("/", s.updateContest)
 				r.Post("/problems", s.updateContestProblems)
+
+				r.Post("/addEditor", s.addContestEditor)
+				r.Post("/addTester", s.addContestTester)
+				r.Post("/stripAccess", s.stripContestAccess)
 			})
 		})
 	})

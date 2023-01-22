@@ -204,5 +204,10 @@ func userFilterQuery(filter *kilonova.UserFilter) ([]string, []any) {
 	if v := filter.Proposer; v != nil {
 		where, args = append(where, "proposer = ?"), append(args, v)
 	}
+
+	if v := filter.ContestID; v != nil {
+		where, args = append(where, "EXISTS (SELECT 1 FROM contest_registrations WHERE user_id = users.id AND contest_id = ?)"), append(args, v)
+	}
+
 	return where, args
 }
