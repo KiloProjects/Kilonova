@@ -5,7 +5,7 @@ CREATE OR REPLACE VIEW problem_viewers AS
     UNION
     (SELECT pbs.id as problem_id, users.id as user_id 
         FROM problems pbs, users 
-        WHERE pbs.visible = true OR users.admin = true) -- User is admin
+        WHERE pbs.visible = true OR users.admin = true) -- Problem is visible or user is admin
     UNION
     (SELECT problem_id, user_id FROM problem_user_access) -- Problem editors/viewers
     UNION
@@ -42,7 +42,7 @@ CREATE OR REPLACE VIEW problem_viewers AS
 CREATE OR REPLACE VIEW problem_editors AS
     (SELECT pbs.id as problem_id, users.id as user_id 
         FROM problems pbs, users 
-        WHERE pbs.visible = true OR users.admin = true) -- User is admin
+        WHERE users.admin = true) -- User is admin
     UNION
     (SELECT problem_id, user_id FROM problem_user_access WHERE access = 'editor') -- Problem editors
     UNION
