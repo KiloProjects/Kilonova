@@ -100,10 +100,10 @@ func (rt *Web) Handler() http.Handler {
 			// Communication holds both questions and announcements
 			// r.Get("/communication", rt.contestCommunication())
 			// r.Get("/leaderboard", rt.contestLeaderboard())
-			// r.Get("/registrations", rt.contestRegistrations())
 			r.Route("/manage", func(r chi.Router) {
 				r.Use(rt.mustBeContestEditor)
 				r.Get("/edit", rt.contestEdit())
+				r.Get("/registrations", rt.contestRegistrations())
 			})
 			r.Route("/problems/{pbid}", rt.problemRouter)
 		})
@@ -433,6 +433,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		},
 		"contestProblemsVisible": func(c *kilonova.Contest) bool {
 			zap.S().Error("Uninitialized `contestProblemsVisible`")
+			return false
+		},
+		"contestRegistered": func(c *kilonova.Contest) bool {
+			zap.S().Error("Uninitialized `contestRegistered`")
 			return false
 		},
 	}

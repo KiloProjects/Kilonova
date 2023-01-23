@@ -11,6 +11,10 @@
     <b>{{.Contest.Name}}</b>
     {{ $problemPage = false }}
 
+    {{ else if (eq $topbar.Page "contest_registrations") }}
+    <b>{{getText "contest_registrations"}} {{.Contest.Name}}</b>
+    {{ $problemPage = false }}
+
     {{ else if (eq $topbar.Page "pb_statement") }}
 
     {{ $editProblemPage = false }}
@@ -43,6 +47,10 @@
         <div class="topbar-separator"></div>
         <a class='p-1 {{if (eq $topbar.Page "contest_edit")}} topbar-selected {{end}}' href="{{$topbar.URLPrefix}}/manage/edit">
             {{getText "contest_edit"}}
+        </a>
+        <div class="topbar-separator"></div>
+        <a class='p-1 {{if (eq $topbar.Page "contest_registrations")}} topbar-selected {{end}}' href="{{$topbar.URLPrefix}}/manage/registrations">
+            {{getText "contest_registrations"}}
         </a>
         {{ end }}
         {{ if $problemPage }}

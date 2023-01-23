@@ -27,6 +27,14 @@ func (s *BaseAPI) ContestRegistrations(ctx context.Context, contestID, limit, of
 	return regs, nil
 }
 
+func (s *BaseAPI) ContestRegistrationCount(ctx context.Context, contestID int) (int, *StatusError) {
+	cnt, err := s.db.ContestRegistrationCount(ctx, contestID)
+	if err != nil {
+		return -1, WrapError(err, "Couldn't get registration count")
+	}
+	return cnt, nil
+}
+
 func (s *BaseAPI) ContestRegistration(ctx context.Context, contestID, userID int) (*kilonova.ContestRegistration, *StatusError) {
 	reg, err := s.db.ContestRegistration(ctx, contestID, userID)
 	if err != nil {

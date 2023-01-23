@@ -20,6 +20,18 @@ func (s *DB) ContestRegistrations(ctx context.Context, contestID, limit, offset 
 	return reg, nil
 }
 
+func (s *DB) ContestRegistrationCount(ctx context.Context, contestID int) (int, error) {
+	var cnt int
+	err := s.conn.GetContext(ctx, &cnt, "SELECT COUNT(*) FROM contest_registrations WHERE contest_id = $1", contestID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return -1, nil
+		}
+		return -1, err
+	}
+	return cnt, nil
+}
+
 func (s *DB) ContestRegistration(ctx context.Context, contestID, userID int) (*kilonova.ContestRegistration, error) {
 	var reg kilonova.ContestRegistration
 	err := s.conn.GetContext(ctx, &reg, "SELECT * FROM contest_registrations WHERE contest_id = $1 AND user_id = $2 LIMIT 1", contestID, userID)

@@ -957,6 +957,10 @@ ro = "corect"
 en = "Users"
 ro = "Utilizatori"
 
+[no_users]
+en = "No users"
+ro = "Niciun utilizator"
+
 # Contest stuff
 
 [contest]
@@ -1271,6 +1275,22 @@ ro = "Finalizat"
 [contest_before_start]
 en = "Before start"
 ro = "Înainte de început"
+
+[contest_registrations]
+en = "Contest registrations"
+ro = "Înregistrări concurs"
+
+[register_btn]
+en = "Register"
+ro = "Înregistrare"
+
+[login_register]
+en = "Log in to register"
+ro = "Autentifică-te pentru înregistrare"
+
+[registered]
+en = "Registered"
+ro = "Înregistrat"
 
 [header.contest.general]
 en = "Edit Contest Information"

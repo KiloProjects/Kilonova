@@ -43,7 +43,11 @@
     </p>
     {{ end }}
     {{ if (and authed (canJoinContest .)) }}
-    <button class="btn btn-blue my-2" onclick="alert('not done')">Register</button>
+        {{ if (contestRegistered .) }}
+        <span class="my-2">{{getText "registered"}}</span>
+        {{ else }}
+        <button class="btn btn-blue my-2" onclick="bundled.registerForContest({{.ID}})">{{getText "register_btn"}}</button>
+        {{ end }}
     {{ end }}
 </div>
 {{ else }}

@@ -286,24 +286,31 @@
 	.btn {
 		@apply inline-flex justify-center px-4 py-2 leading-5 rounded-md font-medium ring-1 ring-opacity-50;
 		@apply transition ease-in-out duration-150;
+
 		@apply bg-gray-200 text-gray-800 ring-gray-100;
+		@apply dark:bg-gray-700 dark:text-white dark:ring-gray-600;
+		font-family: inherit;
+	}
+
+	.btn:not([disabled]) {
 		@apply hover:bg-gray-700 hover:text-white;
 		@apply active:bg-gray-700 active:text-white;
 		@apply focus:bg-gray-700 focus:text-white focus:outline-none;
 		@apply focus:ring-4 focus:ring-gray-600 hover:ring-2 hover:ring-gray-600;
-		@apply dark:bg-gray-700 dark:text-white dark:ring-gray-600;
 		@apply dark:hover:bg-gray-600 dark:hover:text-white;
 		@apply dark:active:bg-gray-600 dark:active:text-white;
 		@apply dark:focus:bg-gray-600 dark:focus:text-white;
 		@apply dark:focus:ring-gray-400 dark:hover:ring-gray-400;
-		font-family: inherit;
 	}
 
 	.btn-blue {
 		@apply bg-blue-500 text-white ring-blue-400;
+		@apply dark:bg-blue-600 dark:ring-blue-500;
+	}
+
+	.btn-blue:not([disabled]) {
 		@apply hover:bg-blue-700 active:bg-blue-700;
 		@apply focus:bg-blue-700 focus:outline-none hover:ring-blue-600 focus:ring-blue-600;
-		@apply dark:bg-blue-600 dark:ring-blue-500;
 		@apply dark:hover:ring-blue-500 dark:focus:ring-blue-500;
 		@apply dark:hover:bg-blue-800 dark:active:bg-blue-800 dark:focus:bg-blue-800;
 		@apply dark:hover:text-white dark:active:text-white dark:focus:text-white;
@@ -311,9 +318,12 @@
 
 	.btn-red {
 		@apply bg-red-500 text-white ring-red-400;
+		@apply dark:bg-red-600 dark:ring-red-500;
+	}
+
+	.btn-red:not([disabled]) {
 		@apply hover:bg-red-700 active:bg-red-700;
 		@apply focus:bg-red-700 focus:outline-none hover:ring-red-600 focus:ring-red-600;
-		@apply dark:bg-red-600 dark:ring-red-500;
 		@apply dark:hover:ring-red-500 dark:focus:ring-red-500;
 		@apply dark:hover:bg-red-800 dark:active:bg-red-800 dark:focus:bg-red-800;
 		@apply dark:hover:text-white dark:active:text-white dark:focus:text-white;
@@ -368,6 +378,11 @@
 
 	.badge-green {
 		@apply bg-green-700;
+	}
+
+	.badge-blue {
+		@apply bg-blue-500 text-white ring-blue-400;
+		@apply dark:bg-blue-600 dark:ring-blue-500;
 	}
 
 	/* 

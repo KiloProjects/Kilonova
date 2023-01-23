@@ -369,8 +369,8 @@ func (s *API) checkRegistration(w http.ResponseWriter, r *http.Request) {
 func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		Limit  int `json:"offset"`
-		Offset int `json:"limit"`
+		Limit  int `json:"limit"`
+		Offset int `json:"offset"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 400)
@@ -386,5 +386,30 @@ func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 		err.WriteError(w)
 		return
 	}
-	returnData(w, regs)
+
+	cnt, err := s.base.ContestRegistrationCount(r.Context(), util.Contest(r).ID)
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	ids := []int{}
+
+	for _, reg := range regs {
+		ids = append(ids, reg.UserID)
+	}
+
+	users, err := s.base.UsersBrief(r.Context(), kilonova.UserFilter{
+		IDs: ids,
+	})
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	returnData(w, struct {
+		Users []*kilonova.UserBrief `json:"users"`
+
+		Count int `json:"total_count"`
+	}{Users: users, Count: cnt})
 }

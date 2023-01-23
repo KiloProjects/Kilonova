@@ -1,0 +1,14 @@
+{{ define "title" }} {{getText "contest_registrations"}} {{ end }}
+{{ define "content" }}
+
+{{ template "topbar.html" .}}
+
+<div class="page-holder no-bottom-border">
+    <div class="page-content-full">
+        <h1>{{getText "contest_registrations"}}</h1>
+
+        <kn-contest-registrations contestid="{{.Contest.ID}}"/>
+    </div>
+</div>
+
+{{ end }}

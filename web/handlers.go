@@ -237,6 +237,18 @@ func (rt *Web) contestEdit() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
+func (rt *Web) contestRegistrations() func(http.ResponseWriter, *http.Request) {
+	templ := rt.parse(nil, "contest/registrations.html", "problem/topbar.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		rt.runTempl(w, r, templ, &ContestParams{
+			Ctx:    GenContext(r),
+			Topbar: rt.topbar(r, "contest_registrations", -1),
+
+			Contest: util.Contest(r),
+		})
+	}
+}
+
 func (rt *Web) selfProfile() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "profile.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -532,6 +544,19 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		},
 		"isContestEditor": func(c *kilonova.Contest) bool {
 			return rt.base.IsContestEditor(util.UserBrief(r), c)
+		},
+		"contestRegistered": func(c *kilonova.Contest) bool {
+			if util.UserBrief(r) == nil {
+				return false
+			}
+			_, err := rt.base.ContestRegistration(context.Background(), c.ID, util.UserBrief(r).ID)
+			if err != nil {
+				if !errors.Is(err, kilonova.ErrNotFound) {
+					zap.S().Warn(err)
+				}
+				return false
+			}
+			return true
 		},
 	})
 
