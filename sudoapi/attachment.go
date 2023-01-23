@@ -112,8 +112,14 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 	for _, att := range atts {
 		filename := path.Base(att.Name)
 		filename = strings.TrimSuffix(filename, path.Ext(filename))
+		if filename == "checker_legacy" && eval.GetLangByFilename(att.Name) != "" {
+			settings.CheckerName = att.Name
+			settings.LegacyChecker = true
+			continue
+		}
 		if filename == "checker" && eval.GetLangByFilename(att.Name) != "" {
 			settings.CheckerName = att.Name
+			settings.LegacyChecker = false
 			continue
 		}
 

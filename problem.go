@@ -110,6 +110,8 @@ type ProblemEvalSettings struct {
 	GraderFiles []string `json:"grader_files"`
 	// If problem has custom checker, this is non-empty
 	CheckerName string `json:"has_checker"`
+	// If problem has custom checker that is marked as legacy
+	LegacyChecker bool `json:"legacy_checker"`
 	// If problem has ".output_only" attachment, show only outputOnly language as option
 	OutputOnly bool `bool:"output_only"`
 }

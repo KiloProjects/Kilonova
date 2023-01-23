@@ -6,15 +6,14 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 )
 
-var _ eval.Task = &legacyCustomCheckerTask{}
-
-type legacyCustomCheckerTask struct {
+type standardCustomCheckerTask struct {
 	c    *CustomChecker
 	pOut io.Reader
 	cIn  io.Reader
@@ -25,7 +24,7 @@ type legacyCustomCheckerTask struct {
 	output string
 }
 
-func (job *legacyCustomCheckerTask) Execute(ctx context.Context, box eval.Sandbox) error {
+func (job *standardCustomCheckerTask) Execute(ctx context.Context, box eval.Sandbox) error {
 	lang, ok := eval.Langs[eval.GetLangByFilename(job.c.filename)]
 	if !ok {
 		job.output = ErrOut
@@ -54,12 +53,13 @@ func (job *legacyCustomCheckerTask) Execute(ctx context.Context, box eval.Sandbo
 		job.output = ErrOut
 		return nil
 	}
-	goodCmd = append(goodCmd, "/box/program.out", "/box/correct.out", "/box/correct.in")
+	goodCmd = append(goodCmd, "/box/correct.in", "/box/correct.out", "/box/program.out")
 
-	var out bytes.Buffer
+	var stdout, stderr bytes.Buffer
 
 	conf := &eval.RunConfig{
-		Stdout: &out,
+		Stdout: &stdout,
+		Stderr: &stderr,
 
 		MemoryLimit: 512 * 1024,
 
@@ -73,11 +73,16 @@ func (job *legacyCustomCheckerTask) Execute(ctx context.Context, box eval.Sandbo
 		return nil
 	}
 
-	if _, err := fmt.Fscanf(&out, "%d ", &job.score); err != nil {
-		job.output = "Wrong checker output"
+	floatScore, err := strconv.ParseFloat(strings.TrimSpace(stdout.String()), 64)
+	if err != nil {
+		job.output = "Invalid checker score"
 		return nil
 	}
+	job.score = int(floatScore * 100)
 
-	job.output = strings.TrimSpace(out.String())
+	job.output = strings.TrimSpace(stderr.String())
+	if job.output == "" {
+		job.output = "No checker message"
+	}
 	return nil
 }

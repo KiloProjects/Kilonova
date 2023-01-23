@@ -461,6 +461,9 @@ func (h *Handler) getAppropriateChecker(ctx context.Context, runner eval.Runner,
 		if err != nil {
 			return nil, kilonova.WrapError(err, "Couldn't get problem checker")
 		}
-		return checkers.NewCustomChecker(runner, h.localLogger, pb, sub, settings.CheckerName, data)
+		if settings.LegacyChecker {
+			return checkers.NewLegacyCustomChecker(runner, h.localLogger, pb, sub, settings.CheckerName, data)
+		}
+		return checkers.NewStandardCustomChecker(runner, h.localLogger, pb, sub, settings.CheckerName, data)
 	}
 }
