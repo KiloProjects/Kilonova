@@ -5,6 +5,7 @@ High priority:
 	- [x] Problem visibility;
 	- [x] Questions (Yes/No/No comment/etc);
 	- [x] General announcements;
+    - [ ] Auto reload questions/announcements and notify from any page;
 	- [ ] Leaderboard;
         - [ ] Real-time leaderboard for admins;
     - [x] Disable pastes for contest problems during contest;

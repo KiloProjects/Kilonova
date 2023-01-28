@@ -10,7 +10,25 @@
 <div class="page-holder no-bottom-border">
     <div class="page-content-full">
         <h1 class="mt-4">{{getText "uploadSub"}}</h1>
-        <form id="sendSubForm">
+        <form id="sendSubForm">    
+            {{ if .Topbar.Contest }}
+                <input type="hidden" id="sub_contestid" value="{{.Topbar.Contest.ID}}">
+            {{ else }}
+                {{ with problemContests .Ctx.User.Brief .Problem }}
+                <label class="block mb-2">
+                    <span class="form-label">{{getText "contest"}}: </span>
+                    <select id="sub_contestid" class="form-select">
+                        <option value="-1" selected>-</option>
+                        {{ range . }}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                        {{ end }}
+                    </select>
+                </label>
+                {{ else }}
+                    <input type="hidden" id="sub_contestid" value="-1">
+                {{ end }}
+            {{ end }}
+
             <label class="block mb-2">
                 <span class="form-label">{{getText "language"}}:</span>
                 <select id="sub_language" class="form-select">
@@ -26,6 +44,7 @@
         </form>
 
         <kn-sub-viewer problemID="{{.Problem.ID}}" userID="{{.Ctx.User.ID}}"
+            {{if .Topbar.Contest}}contestID="{{.Topbar.Contest.ID}}"{{end}}
             title='{{getText "header.past_submissions"}}' />
     </div>
 </div>
@@ -57,6 +76,15 @@
             language: document.getElementById("sub_language").value,
             code: cm.getValue(),
         };
+
+        if(document.getElementById("sub_contestid").value !== "-1") {
+            const val = parseInt(document.getElementById("sub_contestid").value);
+            if(isNaN(val)) {
+                console.warn("Submission form's contest ID is not a number")
+            } else {
+                sendData.contestID = val
+            }
+        }
 
         let res = await bundled.postCall("/submissions/submit", sendData)
         if (res.status == "error") {
