@@ -60,6 +60,8 @@ func (s *API) Handler() http.Handler {
 		r.With(s.MustBeVisitor).Post("/signup", s.signup)
 		r.With(s.MustBeVisitor).Post("/login", s.login)
 
+		r.With(s.MustBeAuthed).Post("/extendSession", s.extendSession)
+
 		r.With(s.MustBeVisitor).Post("/forgotPassword", s.sendForgotPwdMail)
 		r.Post("/resetPassword", s.resetPassword)
 	})

@@ -1,7 +1,7 @@
 import { h, Fragment, Component } from "preact";
 import register from "preact-custom-element";
 import { StateUpdater, useEffect, useMemo, useState } from "preact/hooks";
-import { dayjs } from "../util";
+import { JSONTimestamp, dayjs } from "../util";
 import getText from "../translation";
 import { sprintf } from "sprintf-js";
 import { fromBase64 } from "js-base64";
@@ -10,7 +10,6 @@ import type { Question, Announcement } from "../contest";
 import { UserBrief, getUser } from "../api/submissions";
 
 export const RFC1123Z = "ddd, DD MMM YYYY HH:mm:ss ZZ";
-export const JSONTimestamp = "YYYY-MM-DDTHH:mm:ss.SSSSSSZ";
 
 export function contestToNetworkDate(timestamp: string): string {
 	const djs = dayjs(timestamp, "YYYY-MM-DD HH:mm ZZ", true);

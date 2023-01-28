@@ -67,7 +67,7 @@ async function signup(e) {
 		bundled.apiToast(res)
 		return
 	}
-	bundled.cookie.set("kn-sessionid", res.data, {expires: 29, sameSite: 'strict'})
+    bundled.setSession(res.data)
 	window.location.assign("/");
 }
 document.getElementById("signup_form").addEventListener("submit", signup)

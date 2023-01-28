@@ -2,7 +2,9 @@ package sudoapi
 
 import (
 	"context"
+	"time"
 
+	"github.com/KiloProjects/kilonova"
 	"go.uber.org/zap"
 )
 
@@ -36,4 +38,15 @@ func (s *BaseAPI) RemoveSession(ctx context.Context, sid string) *StatusError {
 		return WrapError(err, "Failed to remove session")
 	}
 	return nil
+}
+
+func (s *BaseAPI) ExtendSession(ctx context.Context, sid string) (time.Time, *StatusError) {
+	newExpiration, err := s.db.ExtendSession(ctx, sid)
+	if err != nil {
+		if err.Error() == "Unauthed" {
+			return time.Now(), Statusf(400, "Session already expired")
+		}
+		return time.Now(), kilonova.WrapError(err, "Couldn't extend session")
+	}
+	return newExpiration, nil
 }

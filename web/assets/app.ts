@@ -11,9 +11,7 @@ export * from "./langs";
 import getText from "./translation";
 export { getText };
 
-import cookie from "js-cookie";
-export { cookie };
-
+export * from "./session";
 export { NavBarManager } from "./navbar";
 export { CheckboxManager } from "./checkbox_mgr";
 export { getFileIcon } from "./cdn_mgr";

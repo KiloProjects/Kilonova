@@ -1,7 +1,7 @@
 import qs from "query-string";
-import cookie from "js-cookie";
 import { createToast, dismissToast } from "./toast";
 import getText from "./translation";
+import { getSession } from "./session";
 
 type Response<T> = { status: "error"; data: string } | { status: "success"; data: T };
 
@@ -13,7 +13,7 @@ export async function getCall<T = any>(call: string, params: any): Promise<Respo
 		let resp = await fetch(`/api/${call}?${qs.stringify(params)}`, {
 			headers: {
 				Accept: "application/json",
-				Authorization: cookie.get("kn-sessionid") || "guest",
+				Authorization: getSession(),
 			},
 		});
 		return (await resp.json()) as Response<T>;
@@ -32,7 +32,7 @@ export async function postCall<T = any>(call: string, params: any): Promise<Resp
 			headers: {
 				"Content-Type": "application/x-www-form-urlencoded",
 				Accept: "application/json",
-				Authorization: cookie.get("kn-sessionid") || "guest",
+				Authorization: getSession(),
 			},
 			body: qs.stringify(params),
 		});
@@ -52,7 +52,7 @@ export async function bodyCall<T = any>(call: string, body: any): Promise<Respon
 			headers: {
 				"Content-Type": "application/json",
 				Accept: "application/json",
-				Authorization: cookie.get("kn-sessionid") || "guest",
+				Authorization: getSession(),
 			},
 			body: JSON.stringify(body),
 		});
@@ -71,7 +71,7 @@ export async function multipartCall<T = any>(call: string, formdata: FormData): 
 			method: "POST",
 			headers: {
 				Accept: "application/json",
-				Authorization: cookie.get("kn-sessionid") || "guest",
+				Authorization: getSession(),
 			},
 			body: formdata,
 		});
@@ -118,7 +118,7 @@ export async function multipartProgressCall<T = any>(call: string, formdata: For
 				});
 			};
 			xhr.setRequestHeader("Accept", "application/json");
-			xhr.setRequestHeader("Authorization", cookie.get("kn-sessionid") || "guest");
+			xhr.setRequestHeader("Authorization", getSession());
 			xhr.send(formdata);
 		});
 		document.dispatchEvent(

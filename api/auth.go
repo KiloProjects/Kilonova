@@ -2,6 +2,8 @@ package api
 
 import (
 	"net/http"
+
+	"go.uber.org/zap"
 )
 
 /*
@@ -12,7 +14,6 @@ import (
 		Value:    sid,
 		Path:     "/",
 		HttpOnly: false,
-		SameSite: http.SameSiteDefaultMode,
 		Expires:  time.Now().Add(time.Hour * 24 * 30),
 	}
 */
@@ -79,4 +80,18 @@ func (s *API) logout(w http.ResponseWriter, r *http.Request) {
 	}
 	s.base.RemoveSession(r.Context(), h)
 	returnData(w, "Logged out")
+}
+
+func (s *API) extendSession(w http.ResponseWriter, r *http.Request) {
+	h := getAuthHeader(r)
+	if h == "" {
+		zap.S().Warn("Empty session on endpoint that must be authed")
+		return
+	}
+	exp, err := s.base.ExtendSession(r.Context(), h)
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+	returnData(w, exp)
 }

@@ -114,7 +114,7 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if listData.Title == "" || len(listData.ProblemIDs) == 0 {
+	if listData.Title == "" {
 		errorData(w, "Invalid problem list", 400)
 		return
 	}

@@ -28,7 +28,7 @@ async function login(e) {
 		bundled.apiToast(res)
 		return
 	}
-	bundled.cookie.set("kn-sessionid", res.data, {expires: 29, sameSite: 'strict'})
+    bundled.setSession(res.data)
 	console.log(window.location.pathname)
 	if(window.location.pathname.startsWith("/login")) {
 		window.location.assign("/")
