@@ -59,12 +59,12 @@ func (s *DB) Contest(ctx context.Context, id int) (*kilonova.Contest, error) {
 }
 
 // TODO: Test
-func (s *DB) ContestsByProblem(ctx context.Context, problemID int) ([]*kilonova.Contest, error) {
+func (s *DB) RunningContestsByProblem(ctx context.Context, problemID int) ([]*kilonova.Contest, error) {
 	var contests []*dbContest
 	err := s.conn.SelectContext(
 		ctx,
 		&contests,
-		"SELECT contests.* FROM contests, contest_problems pbs WHERE contests.id = pbs.contest_id AND pbs.problem_id = $1 ORDER BY contests.start_time DESC",
+		"SELECT contests.* FROM running_contests contests, contest_problems pbs WHERE contests.id = pbs.contest_id AND pbs.problem_id = $1 ORDER BY contests.start_time DESC",
 		problemID,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -88,17 +88,6 @@ func (s *DB) VisibleContests(ctx context.Context, userID int) ([]*kilonova.Conte
 	}
 	return mapperCtx(ctx, contests, s.internalToContest), err
 }
-
-// func (s *DB) Contests(ctx context.Context, filter kilonova.ContestFilter) ([]*kilonova.Contest, error) {
-// 	var contests []*dbContest
-// 	where, args := contestFilterQuery(&filter)
-// 	query := s.conn.Rebind("SELECT * FROM contests WHERE " + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
-// 	err := s.conn.SelectContext(ctx, &contests, query, args...)
-// 	if errors.Is(err, sql.ErrNoRows) {
-// 		return []*kilonova.Contest{}, nil
-// 	}
-// 	return mapperCtx(ctx, contests, s.internalToContest), err
-// }
 
 func (s *DB) UpdateContest(ctx context.Context, id int, upd kilonova.ContestUpdate) error {
 	toUpd, args := contestUpdateQuery(&upd)

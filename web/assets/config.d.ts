@@ -1,6 +1,8 @@
 interface CustomEventMap {
 	"kn-poll": CustomEvent;
 	"kn-upload-update": CustomEvent;
+	"kn-contest-question-reload": CustomEvent;
+	"kn-contest-announcement-reload": CustomEvent;
 }
 
 export declare global {

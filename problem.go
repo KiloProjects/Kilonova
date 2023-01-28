@@ -46,8 +46,6 @@ type ProblemFilter struct {
 	Look        bool       `json:""`
 	LookingUser *UserBrief `json:"-"`
 
-	ContestID *int `json:"contest_id"`
-
 	// Unassociated filter ensures that all returned problems are not "bound" to a problem list
 	Unassociated bool `json:"-"`
 

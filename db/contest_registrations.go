@@ -10,7 +10,7 @@ import (
 
 func (s *DB) ContestRegistrations(ctx context.Context, contestID, limit, offset int) ([]*kilonova.ContestRegistration, error) {
 	var reg []*kilonova.ContestRegistration
-	err := s.conn.SelectContext(ctx, &reg, "SELECT * FROM contest_registrations WHERE contest_id = $1 "+FormatLimitOffset(limit, offset), contestID)
+	err := s.conn.SelectContext(ctx, &reg, "SELECT * FROM contest_registrations WHERE contest_id = $1 ORDER BY created_at ASC "+FormatLimitOffset(limit, offset), contestID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return []*kilonova.ContestRegistration{}, nil

@@ -55,7 +55,7 @@ async function deleteAccount() {
 
 	let res = await bundled.postCall("/user/moderation/deleteUser", {id: {{.ContentUser.ID}} });
 	if(res.status === "success") {
-		window.location.assign("/");
+		window.history.back();
 	}
 	bundled.apiToast(res);
 }

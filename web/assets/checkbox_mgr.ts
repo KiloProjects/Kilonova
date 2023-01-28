@@ -1,10 +1,11 @@
 export class CheckboxManager {
-	overall: HTMLInputElement;
-	checks: NodeListOf<HTMLInputElement>;
+	overall?: HTMLInputElement;
+	checks?: NodeListOf<HTMLInputElement>;
 
 	constructor(setAllCheckbox: HTMLInputElement, checkboxes: NodeListOf<HTMLInputElement>) {
 		if (setAllCheckbox === null || typeof setAllCheckbox === "undefined") {
-			throw Error("Invalid checkbox manager parameters");
+			// throw Error("Invalid checkbox manager parameters");
+			return;
 		}
 		this.overall = setAllCheckbox;
 		this.checks = checkboxes;
@@ -18,6 +19,9 @@ export class CheckboxManager {
 	}
 
 	updateAllChecked() {
+		if (typeof this.checks === "undefined" || typeof this.overall === "undefined") {
+			return;
+		}
 		var numChecked = 0;
 		for (let e of this.checks) {
 			numChecked += e.checked ? 1 : 0;
@@ -35,6 +39,9 @@ export class CheckboxManager {
 	}
 
 	setAllChecked(e) {
+		if (typeof this.checks === "undefined") {
+			return;
+		}
 		for (let ee of this.checks) {
 			ee.checked = e.target.checked;
 		}

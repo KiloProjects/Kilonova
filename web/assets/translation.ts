@@ -30,7 +30,7 @@ export default function getText(key: string, ...args: any): string {
 		return "ERR";
 	}
 	if (lang in translation) {
-		return vsprintf(languageStrings[key][lang], args);
+		return vsprintf(translation[lang], args);
 	}
 	console.error("Language", lang, "not found in key", key);
 	return "ERR";

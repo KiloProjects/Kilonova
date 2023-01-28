@@ -31,7 +31,7 @@ type dbContestAnnouncement struct {
 
 func (s *DB) CreateContestQuestion(ctx context.Context, contestID, authorID int, text string) (int, error) {
 	var id int
-	err := s.conn.GetContext(ctx, &id, `INSERT INTO contest_questions (author_id, contest_id, text) VALUES ($1, $2, $3) RETURNING id`, authorID, contestID, text)
+	err := s.conn.GetContext(ctx, &id, `INSERT INTO contest_questions (author_id, contest_id, question) VALUES ($1, $2, $3) RETURNING id`, authorID, contestID, text)
 	if err != nil {
 		return -1, err
 	}
@@ -40,7 +40,7 @@ func (s *DB) CreateContestQuestion(ctx context.Context, contestID, authorID int,
 
 func (s *DB) ContestQuestions(ctx context.Context, contestID int) ([]*kilonova.ContestQuestion, error) {
 	var qs []*dbContestQuestion
-	err := s.conn.SelectContext(ctx, &qs, "SELECT * FROM contest_questions WHERE contest_id = $1", contestID)
+	err := s.conn.SelectContext(ctx, &qs, "SELECT * FROM contest_questions WHERE contest_id = $1 ORDER BY created_at DESC", contestID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.ContestQuestion{}, nil
 	} else if err != nil {
@@ -60,7 +60,7 @@ func (s *DB) ContestQuestion(ctx context.Context, id int) (*kilonova.ContestQues
 
 func (s *DB) ContestQuestionsByUser(ctx context.Context, contestID, userID int) ([]*kilonova.ContestQuestion, error) {
 	var qs []*dbContestQuestion
-	err := s.conn.SelectContext(ctx, &qs, "SELECT * FROM contest_questions WHERE contest_id = $1 AND author_id = $2", contestID, userID)
+	err := s.conn.SelectContext(ctx, &qs, "SELECT * FROM contest_questions WHERE contest_id = $1 AND author_id = $2 ORDER BY created_at DESC", contestID, userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.ContestQuestion{}, nil
 	} else if err != nil {
@@ -85,7 +85,7 @@ func (s *DB) CreateContestAnnouncement(ctx context.Context, contestID int, text 
 
 func (s *DB) ContestAnnouncements(ctx context.Context, contestID int) ([]*kilonova.ContestAnnouncement, error) {
 	var answers []*dbContestAnnouncement
-	err := s.conn.SelectContext(ctx, &answers, `SELECT * FROM contest_questions WHERE contest_id = $1`, contestID)
+	err := s.conn.SelectContext(ctx, &answers, `SELECT * FROM contest_announcements WHERE contest_id = $1 ORDER BY created_at DESC`, contestID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.ContestAnnouncement{}, nil
 	} else if err != nil {
@@ -96,7 +96,7 @@ func (s *DB) ContestAnnouncements(ctx context.Context, contestID int) ([]*kilono
 
 func (s *DB) ContestAnnouncement(ctx context.Context, id int) (*kilonova.ContestAnnouncement, error) {
 	var answer dbContestAnnouncement
-	err := s.conn.GetContext(ctx, &answer, `SELECT * FROM contest_questions WHERE id = $1`, id)
+	err := s.conn.GetContext(ctx, &answer, `SELECT * FROM contest_announcements WHERE id = $1`, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}

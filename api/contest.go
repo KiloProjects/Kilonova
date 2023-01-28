@@ -215,6 +215,11 @@ func (s *API) createContestAnnouncement(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if args.Text == "" {
+		errorData(w, "No announcement text supplied", 400)
+		return
+	}
+
 	_, err := s.base.CreateContestAnnouncement(r.Context(), util.Contest(r).ID, args.Text)
 	if err != nil {
 		err.WriteError(w)
@@ -227,7 +232,7 @@ func (s *API) createContestAnnouncement(w http.ResponseWriter, r *http.Request) 
 func (s *API) updateContestAnnouncement(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		ID   int    `json:"announcementID"`
+		ID   int    `json:"id"`
 		Text string `json:"text"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
@@ -275,7 +280,7 @@ func (s *API) deleteContestAnnouncement(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := s.base.DeleteContestAnnouncement(r.Context(), util.Contest(r).ID); err != nil {
+	if err := s.base.DeleteContestAnnouncement(r.Context(), announcement.ID); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -311,6 +316,11 @@ func (s *API) askContestQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if args.Text == "" {
+		errorData(w, "No question text supplied", 400)
+		return
+	}
+
 	if _, err := s.base.CreateContestQuestion(r.Context(), util.Contest(r).ID, util.UserBrief(r).ID, args.Text); err != nil {
 		err.WriteError(w)
 		return
@@ -327,6 +337,11 @@ func (s *API) answerContestQuestion(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 400)
+		return
+	}
+
+	if args.Text == "" {
+		errorData(w, "No question response text supplied", 400)
 		return
 	}
 

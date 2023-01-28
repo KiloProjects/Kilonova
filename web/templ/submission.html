@@ -42,7 +42,7 @@ async function deleteSubmission() {
     const args = {submission_id: sub_id};
     let res = await bundled.postCall("/submissions/delete", args)
     if(res.status === "success") {
-        window.location.assign("/submissions")
+        window.history.back();
         return
     }
     bundled.apiToast(res)

@@ -153,6 +153,10 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 func (rt *Web) problemSubmissions() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "problem/pb_submissions.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
+		if !(util.Contest(r) == nil || rt.base.IsContestEditor(util.UserBrief(r), util.Contest(r))) {
+			rt.statusPage(w, r, http.StatusUnauthorized, "You can't view this!")
+			return
+		}
 		rt.runTempl(w, r, templ, &ProblemTopbarParams{
 			Ctx:    GenContext(r),
 			Topbar: rt.topbar(r, "pb_submissions", -1),
@@ -231,6 +235,23 @@ func (rt *Web) contestEdit() func(http.ResponseWriter, *http.Request) {
 		rt.runTempl(w, r, templ, &ContestParams{
 			Ctx:    GenContext(r),
 			Topbar: rt.topbar(r, "contest_edit", -1),
+
+			Contest: util.Contest(r),
+		})
+	}
+}
+
+func (rt *Web) contestCommunication() func(http.ResponseWriter, *http.Request) {
+	templ := rt.parse(nil, "contest/communication.html", "problem/topbar.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		// If is not submitter and it hasn't started, do not allow access
+		if !rt.base.CanSubmitInContest(util.UserBrief(r), util.Contest(r)) && !util.Contest(r).Started() {
+
+		}
+
+		rt.runTempl(w, r, templ, &ContestParams{
+			Ctx:    GenContext(r),
+			Topbar: rt.topbar(r, "contest_communication", -1),
 
 			Contest: util.Contest(r),
 		})
@@ -557,6 +578,13 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 				return false
 			}
 			return true
+		},
+		"contestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {
+			questions, err := rt.base.ContestUserQuestions(context.Background(), c.ID, util.UserBrief(r).ID)
+			if err != nil {
+				return []*kilonova.ContestQuestion{}
+			}
+			return questions
 		},
 	})
 

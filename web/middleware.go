@@ -30,20 +30,18 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 		var pb *kilonova.Problem
 		if util.Contest(r) == nil {
 			problem, err1 := rt.base.Problem(r.Context(), problemID)
-			if err1 != nil {
+			if err1 != nil || problem == nil {
 				rt.statusPage(w, r, 404, "Problema nu a fost găsită")
 				return
 			}
 			pb = problem
 		} else {
-			pbs, err1 := rt.base.Problems(r.Context(), kilonova.ProblemFilter{
-				ID: &problemID, ContestID: &util.Contest(r).ID,
-			})
-			if err1 != nil || len(pbs) == 0 {
+			problem, err1 := rt.base.ContestProblem(r.Context(), util.Contest(r), util.UserBrief(r), problemID)
+			if err1 != nil || problem == nil {
 				rt.statusPage(w, r, 404, "Problema nu a fost găsită sau nu aparține concursului")
 				return
 			}
-			pb = pbs[0]
+			pb = problem
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemKey, pb)))
 	})

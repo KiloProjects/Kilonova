@@ -73,3 +73,11 @@ export async function getSubmissions(q: SubmissionQuery) {
 	}
 	return res.data;
 }
+
+export async function getUser(uid: number) {
+	let res = await getCall<UserBrief>("/user/get", { id: uid });
+	if (res.status === "error") {
+		throw new Error(res.data);
+	}
+	return res.data;
+}

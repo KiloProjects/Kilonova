@@ -67,6 +67,30 @@ func (s *BaseAPI) Problems(ctx context.Context, filter kilonova.ProblemFilter) (
 	return problems, nil
 }
 
+func (s *BaseAPI) ContestProblems(ctx context.Context, contest *kilonova.Contest, lookingUser *kilonova.UserBrief) ([]*kilonova.Problem, *StatusError) {
+	if !s.CanViewContestProblems(ctx, lookingUser, contest) {
+		return nil, Statusf(403, "User can't view contest problems")
+	}
+	problems, err := s.db.ContestProblems(ctx, contest.ID)
+	if err != nil {
+		zap.S().Warn(err)
+		return nil, WrapError(err, "Couldn't get problems")
+	}
+	return problems, nil
+}
+
+func (s *BaseAPI) ContestProblem(ctx context.Context, contest *kilonova.Contest, lookingUser *kilonova.UserBrief, problemID int) (*kilonova.Problem, *StatusError) {
+	if !s.CanViewContestProblems(ctx, lookingUser, contest) {
+		return nil, Statusf(403, "User can't view contest problem")
+	}
+	problem, err := s.db.Problem(ctx, problemID)
+	if err != nil || problem == nil {
+		zap.S().Warn(err)
+		return nil, WrapError(err, "Couldn't get problems")
+	}
+	return problem, nil
+}
+
 func (s *BaseAPI) SolvedProblems(ctx context.Context, uid int) ([]*kilonova.Problem, *StatusError) {
 	ids, err := s.db.SolvedProblemIDs(ctx, uid)
 	if err != nil {

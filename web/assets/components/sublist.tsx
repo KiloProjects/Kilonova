@@ -106,8 +106,6 @@ export function Sublist({ list, numsolved }: { list: Sublist; numsolved?: number
 		setLoading(false);
 	}
 
-	console.log(numSolved, numsolved);
-
 	useEffect(() => {
 		if (expanded && fullData == undefined && !loading) {
 			load();
@@ -156,8 +154,6 @@ export function Sublist({ list, numsolved }: { list: Sublist; numsolved?: number
 }
 
 export function DOMSublist({ encoded, numsolved }: { encoded: string; numsolved: string }) {
-	console.log(fromBase64(encoded));
-
 	let numSolved: number | undefined = parseInt(numsolved);
 	if (isNaN(numSolved)) {
 		numSolved = undefined;

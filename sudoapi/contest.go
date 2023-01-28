@@ -64,8 +64,8 @@ func (s *BaseAPI) VisibleContests(ctx context.Context, userID int) ([]*kilonova.
 	return contests, nil
 }
 
-func (s *BaseAPI) ProblemContests(ctx context.Context, problemID int) ([]*kilonova.Contest, *StatusError) {
-	contests, err := s.db.ContestsByProblem(ctx, problemID)
+func (s *BaseAPI) ProblemRunningContests(ctx context.Context, problemID int) ([]*kilonova.Contest, *StatusError) {
+	contests, err := s.db.RunningContestsByProblem(ctx, problemID)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't fetch contests")
 	}
@@ -97,6 +97,21 @@ func (s *BaseAPI) CanSubmitInContest(user *kilonova.UserBrief, c *kilonova.Conte
 		return false
 	}
 	return reg != nil
+}
+
+// CanViewContestProblems checks if the user can see a contest's problems.
+// Note that this does not neccesairly mean that he can submit in them!
+// A problem may be viewable because the contest is running and visible, but only registered people should submit
+// It's a bit frustrating but it's an important distinction
+// If you think about it, all submitters can view problems, but not all problem viewers can submit
+func (s *BaseAPI) CanViewContestProblems(ctx context.Context, user *kilonova.UserBrief, contest *kilonova.Contest) bool {
+	if !contest.Started() {
+		return s.IsContestTester(user, contest) // Tester + Editor + Admin
+	}
+	if contest.Visible {
+		return true
+	}
+	return s.CanSubmitInContest(user, contest)
 }
 
 func (s *BaseAPI) AddContestEditor(ctx context.Context, pbid int, uid int) *StatusError {

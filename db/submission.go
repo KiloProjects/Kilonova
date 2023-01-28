@@ -70,6 +70,18 @@ func (s *DB) CountSubmissions(ctx context.Context, filter kilonova.SubmissionFil
 	return cnt, err
 }
 
+func (s *DB) RemainingSubmissionCount(ctx context.Context, contest *kilonova.Contest, problemID, userID int) (int, error) {
+	var cnt int
+	err := s.conn.GetContext(ctx, &cnt, "SELECT COUNT(*) FROM submissions WHERE contest_id = $1 AND problem_id = $2 AND user_id = $3", contest.ID, problemID, userID)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return -1, err
+		}
+		cnt = 0
+	}
+	return contest.MaxSubs - cnt, nil
+}
+
 const createSubQuery = "INSERT INTO submissions (user_id, problem_id, contest_id, language, code) VALUES (?, ?, ?, ?, ?) RETURNING id;"
 
 func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, language eval.Language, code string, contestID *int) (int, error) {

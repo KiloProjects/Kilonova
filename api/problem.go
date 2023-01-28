@@ -71,6 +71,7 @@ func (s *API) getProblems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	args.Look = true
 	args.LookingUser = util.UserBrief(r)
 
 	problems, err := s.base.Problems(r.Context(), args)

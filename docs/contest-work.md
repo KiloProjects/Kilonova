@@ -3,13 +3,12 @@ Kilonova will soon be used for organizing an official contest. In order to achie
 High priority:
 - [ ] Contest system:
 	- [x] Problem visibility;
-	- [ ] Questions (Yes/No/No comment/etc);
-	- [ ] General announcements;
+	- [x] Questions (Yes/No/No comment/etc);
+	- [x] General announcements;
 	- [ ] Leaderboard;
         - [ ] Real-time leaderboard for admins;
     - [x] Disable pastes for contest problems during contest;
         - Can disable pastes in general now.
-        - [ ] More explicit filtering for main platform contests
 - [ ] Allow to disable contestant access to others' submissions;
 - [ ] Endpoint for account generation;
 - [ ] Vendor all dependencies

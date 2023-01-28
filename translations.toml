@@ -1240,6 +1240,14 @@ ro = "Organizat de"
 en = "No contests are available at this time"
 ro = "Niciun concurs nu este disponibil momentan"
 
+[noQuestions]
+en = "No questions asked"
+ro = "Nicio întrebare pusă"
+
+[noAnnouncements]
+en = "No announcements posted"
+ro = "Niciun anunț făcut"
+
 [registration_status]
 en = "Registration status"
 ro = "Status înregistrări"
@@ -1277,8 +1285,8 @@ en = "Before start"
 ro = "Înainte de început"
 
 [contest_registrations]
-en = "Contest registrations"
-ro = "Înregistrări concurs"
+en = "Contest Registrations"
+ro = "Înregistrări Concurs"
 
 [register_btn]
 en = "Register"
@@ -1295,6 +1303,102 @@ ro = "Înregistrat"
 [header.contest.general]
 en = "Edit Contest Information"
 ro = "Editare Informații Concurs"
+
+[unanswered_questions]
+en = "Unanswered questions"
+ro = "Întrebări fără răspuns"
+
+[answered_questions]
+en = "Answered questions"
+ro = "Întrebări cu răspuns"
+
+[contest_timestamp_asked_format]
+en = "[Asked on] DD/MM/YYYY [at] HH:mm:ss"
+ro = "[Întrebat pe] DD/MM/YYYY [la] HH:mm:ss"
+
+[contest_timestamp_responded_format]
+en = "[Responded on] DD/MM/YYYY [at] HH:mm:ss"
+ro = "[Răspuns pe] DD/MM/YYYY [la] HH:mm:ss"
+
+[contest_timestamp_posted_format]
+en = "[Posted on] DD/MM/YYYY [at] HH:mm:ss"
+ro = "[Creat pe] DD/MM/YYYY [la] HH:mm:ss"
+
+[respond_to_answer]
+en = "Create response"
+ro = "Creare răspuns"
+
+[button.respond]
+en = "Respond"
+ro = "Răspunde"
+
+[communication]
+en = "Communication"
+ro = "Comunicare"
+
+[contestAnnouncement]
+en = "Announcement"
+ro = "Anunț"
+
+[announcements]
+en = "Announcements"
+ro = "Anunțuri"
+
+[create_announcement]
+en = "Create announcement"
+ro = "Creare anunț"
+
+[button.answer]
+en = "Answer"
+ro = "Răspunde"
+
+[button.cancel]
+en = "Cancel"
+ro = "Anulare"
+
+[edit_announcement]
+en = "Edit announcement"
+ro = "Editare anunț"
+
+[delete_announcement]
+en = "Remove announcement"
+ro = "Ștergere anunț"
+
+[questions]
+en = "Questions"
+ro = "Întrebări"
+
+[question_text]
+en = "Question details"
+ro = "Detalii întrebare"
+
+[question_response]
+en = "Response"
+ro = "Răspuns"
+
+[not_answered]
+en = "Not answered"
+ro = "Fără răspuns"
+
+[ask_question]
+en = "Ask question"
+ro = "Pune întrebare"
+
+[received_questions]
+en = "Received questions"
+ro = "Întrebări primite"
+
+[answer_question]
+en = "Answer question"
+ro = "Răspunde la întrebare"
+
+[edit_answer]
+en = "Edit answer"
+ro = "Editare răspuns"
+
+[all_questions]
+en = "All questions"
+ro = "Toate întrebările"
 
 [header.contest.edit_problems]
 en = "Edit Contest Problems"

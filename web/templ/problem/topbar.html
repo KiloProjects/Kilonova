@@ -12,7 +12,11 @@
     {{ $problemPage = false }}
 
     {{ else if (eq $topbar.Page "contest_registrations") }}
-    <b>{{getText "contest_registrations"}} {{.Contest.Name}}</b>
+    <b>{{getText "contest_registrations"}} | {{.Contest.Name}}</b>
+    {{ $problemPage = false }}
+
+    {{ else if (eq $topbar.Page "contest_communication") }}
+    <b>{{getText "communication"}} | {{.Contest.Name}}</b>
     {{ $problemPage = false }}
 
     {{ else if (eq $topbar.Page "pb_statement") }}
@@ -43,6 +47,10 @@
         <a class='p-1 {{if (eq $topbar.Page "contest_general")}} topbar-selected {{end}}' href="{{$topbar.URLPrefix}}/">
             {{getText "contest_info"}}
         </a>
+        <div class="topbar-separator"></div>
+        <a class='p-1 {{if (eq $topbar.Page "contest_communication")}} topbar-selected {{end}}' href="{{$topbar.URLPrefix}}/communication">
+            {{getText "communication"}}
+        </a>
         {{ if isContestEditor $topbar.Contest }}
         <div class="topbar-separator"></div>
         <a class='p-1 {{if (eq $topbar.Page "contest_edit")}} topbar-selected {{end}}' href="{{$topbar.URLPrefix}}/manage/edit">
@@ -67,11 +75,13 @@
             {{getText "submit"}}
         </a>
     {{ end }}
-    <div class="topbar-separator"></div>
-    <a class='p-1 {{if (eq $topbar.Page "pb_submissions")}} topbar-selected {{end}}'
-        href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/submissions">
-        {{getText "submissions"}}
-    </a>
+    {{ if or (not $topbar.Contest) (isContestEditor $topbar.Contest)}}
+        <div class="topbar-separator"></div>
+        <a class='p-1 {{if (eq $topbar.Page "pb_submissions")}} topbar-selected {{end}}'
+            href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/submissions">
+            {{getText "submissions"}}
+        </a>
+    {{ end }}
     {{ if $topbar.IsProblemEditor }}
         <div class="topbar-separator topbar-separator-lg"></div>
         {{ if $editProblemPage }}

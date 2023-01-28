@@ -52,10 +52,10 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		zap.S().Warn(err)
 		return nil, ErrUnknownError
 	}
-	cnt, err := s.db.CountSubmissions(ctx, filter)
-	if err != nil {
-		zap.S().Warn(err)
-		return nil, ErrUnknownError
+	cnt, err1 := s.CountSubmissions(ctx, filter)
+	if err1 != nil {
+		zap.S().Warn(err1)
+		return nil, err1
 	}
 
 	users := make(map[int]*UserBrief)
@@ -192,6 +192,14 @@ func (s *BaseAPI) UpdateSubmission(ctx context.Context, id int, status kilonova.
 	return nil
 }
 
+func (s *BaseAPI) RemainingSubmissionCount(ctx context.Context, contest *kilonova.Contest, problem *kilonova.Problem, user *kilonova.UserBrief) (int, *StatusError) {
+	cnt, err := s.db.RemainingSubmissionCount(ctx, contest, problem.ID, user.ID)
+	if err != nil {
+		return -1, WrapError(err, "Couldn't get submission count")
+	}
+	return cnt, nil
+}
+
 // CreateSubmission produces a new submission and also creates the necessary subtests
 func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, problem *kilonova.Problem, code string, lang eval.Language, contestID *int) (int, *StatusError) {
 	if author == nil {
@@ -207,16 +215,21 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 	if contestID != nil {
 		contest, err := s.Contest(ctx, *contestID)
 		if err != nil || !s.IsContestVisible(author, contest) {
-			return -1, Statusf(400, "Couldn't find contest")
+			return -1, Statusf(404, "Couldn't find contest")
 		}
 		if !s.CanSubmitInContest(author, contest) {
 			return -1, Statusf(400, "Submitter cannot submit to contest")
 		}
-		pbs, err := s.Problems(ctx, kilonova.ProblemFilter{
-			ID: &problem.ID, Look: true, LookingUser: author, ContestID: contestID,
-		})
-		if err != nil || len(pbs) == 0 {
+		pb, err := s.ContestProblem(ctx, contest, author, problem.ID)
+		if err != nil || pb == nil {
 			return -1, Statusf(400, "Problem is not in contest")
+		}
+		cnt, err := s.RemainingSubmissionCount(ctx, contest, pb, author)
+		if err != nil {
+			return -1, err
+		}
+		if cnt <= 0 {
+			return -1, Statusf(400, "Max submission count for problem reached")
 		}
 	}
 

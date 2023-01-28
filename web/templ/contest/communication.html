@@ -1,0 +1,80 @@
+{{ define "title" }} {{ getText "communication" }} {{ end }}
+{{ define "content" }}
+{{ template "topbar.html" .}}
+
+{{$contest := .Contest}}
+
+<div class="page-holder no-bottom-border">
+    <div class="page-content-full">
+        <div class="segment-container">
+            <kn-announcements contestid="{{.Contest.ID}}" encoded="{{contestAnnouncements .Contest | encodeJSON}}" canedit="{{isContestEditor .Contest}}"/>
+        </div>
+
+        {{ if isContestEditor .Contest }}
+        <form id="announcement_create_form" class="segment-container" autocomplete="off">
+            <h2>{{getText "create_announcement"}}</h2>
+            <label>
+                <span class="form-label text-base">{{getText "contestAnnouncement"}}:</span>
+                <textarea id="announcement_area" class="form-textarea w-full my-2"></textarea>
+            </label>
+            <button class="btn btn-blue" type="submit">{{getText "create"}}</button>
+        </form>
+
+        <div class="page-sidebar-divider mb-2"></div>
+
+        <div class="segment-container">
+            <h2>{{getText "received_questions"}}</h2>
+            <kn-question-mgr contestid="{{.Contest.ID}}" encoded="{{allContestQuestions .Contest | encodeJSON}}"/>
+        </div>
+        {{ end }}
+
+        {{ if canSubmitInContest .Ctx.User.Brief .Contest }}
+            <div class="page-sidebar-divider mb-2"></div>
+
+            <form id="question_submit_form" class="segment-container" autocomplete="off">
+                <h2>{{getText "ask_question"}}</h2>
+                <label>
+                    <span class="form-label text-base">{{getText "question_text"}}:</span>
+                    <textarea id="question_area" class="form-textarea w-full my-2"></textarea>
+                </label>
+                <button class="btn btn-blue" type="submit">{{getText "button.add"}}</button>
+            </form>
+
+            {{ with contestQuestions .Contest }}
+                <div class="segment-container">
+                    <h2>{{getText "questions"}}</h2>
+                    <kn-questions contestid="{{$contest.ID}}" encoded="{{ . | encodeJSON}}"/>
+                </div>
+            {{ end }}
+        {{ end }}
+    </div>
+</div>
+
+<script>
+    async function createAnnouncement(e) {
+        e.preventDefault()
+        const data = {text: document.getElementById("announcement_area").value};
+        let res = await bundled.postCall("/contest/{{.Contest.ID}}/createAnnouncement", data)
+        bundled.apiToast(res);
+        if(res.status === "success") {
+            bundled.reloadAnnouncements();
+            return
+        }
+    }
+
+    async function askQuestion(e) {
+        e.preventDefault()
+        const data = {text: document.getElementById("question_area").value};
+        let res = await bundled.postCall("/contest/{{.Contest.ID}}/askQuestion", data)
+        bundled.apiToast(res);
+        if(res.status === "success") {
+            bundled.reloadQuestions();
+            return
+        }
+    }
+
+    document.getElementById("announcement_create_form")?.addEventListener("submit", createAnnouncement)
+    document.getElementById("question_submit_form")?.addEventListener("submit", askQuestion)
+</script>
+
+{{ end }}

@@ -44,6 +44,15 @@ func (s *DB) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*ki
 	return mapperCtx(ctx, pbs, s.internalToProblem), err
 }
 
+func (s *DB) ContestProblems(ctx context.Context, contestID int) ([]*kilonova.Problem, error) {
+	var pbs []*dbProblem
+	err := s.conn.SelectContext(ctx, &pbs, "SELECT pbs.* FROM problems pbs, contest_problems cpbs WHERE cpbs.problem_id = pbs.id AND cpbs.contest_id = $1 ORDER BY cpbs.position ASC", contestID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.Problem{}, nil
+	}
+	return mapperCtx(ctx, pbs, s.internalToProblem), err
+}
+
 const problemCreateQuery = `INSERT INTO problems (
 	name, description, console_input, test_name, memory_limit, source_size, time_limit, visible, source_credits, author_credits, short_description, default_points
 ) VALUES (
@@ -133,21 +142,30 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []any) {
 		where, args = append(where, "visible = ?"), append(args, v)
 	}
 	if filter.Look {
-		var id int
+		var id int = 0
 		if filter.LookingUser != nil {
 			id = filter.LookingUser.ID
-			if filter.LookingUser.Admin {
-				id = -1
-			}
 		}
-		if id >= 0 {
-			where, args = append(where, "EXISTS (SELECT 1 FROM problem_viewers WHERE user_id = ? AND problem_id = problems.id)"), append(args, id)
-		}
+		where, args = append(where, "EXISTS (SELECT 1 FROM problem_viewers WHERE user_id = ? AND problem_id = problems.id)"), append(args, id)
 	}
 
-	if v := filter.ContestID; v != nil {
-		where, args = append(where, "EXISTS (SELECT 1 FROM contest_problems WHERE contest_id = ? AND problem_id = problems.id)"), append(args, v)
-	}
+	// TODO: If it's looking, it's performing an additional slower subquery that may not be needed
+	// if v := filter.ContestID; v != nil {
+	// 	if filter.Look {
+	// 		var userID int = 0
+	// 		if filter.LookingUser != nil {
+	// 			userID = filter.LookingUser.ID
+	// 		}
+	// 		// Do additional filtering just in case the problem is already visible, so we don't spoil the problem set
+	// 		where, args = append(where, `EXISTS (
+	// 				SELECT 1 FROM contest_problems pbs, contest_visibility viz
+	// 				WHERE viz.contest_id = pbs.contest_id AND viz.user_id = ?
+	// 					AND pbs.contest_id = ? AND pbs.problem_id = problems.id
+	// 			)`), append(args, userID, v)
+	// 	} else {
+	// 		where, args = append(where, "EXISTS (SELECT 1 FROM contest_problems WHERE contest_id = ? AND problem_id = problems.id)"), append(args, v)
+	// 	}
+	// }
 
 	if filter.Unassociated {
 		where = append(where, "NOT EXISTS (SELECT 1 FROM problem_list_problems WHERE problem_id = problems.id)")

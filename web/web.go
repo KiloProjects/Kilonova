@@ -97,9 +97,12 @@ func (rt *Web) Handler() http.Handler {
 			r.Use(rt.ValidateContestID)
 			r.Use(rt.ValidateContestVisible)
 			r.Get("/", rt.contest())
+
 			// Communication holds both questions and announcements
-			// r.Get("/communication", rt.contestCommunication())
+			r.Get("/communication", rt.contestCommunication())
+
 			// r.Get("/leaderboard", rt.contestLeaderboard())
+
 			r.Route("/manage", func(r chi.Router) {
 				r.Use(rt.mustBeContestEditor)
 				r.Get("/edit", rt.contestEdit())
@@ -220,19 +223,16 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			return pbs
 		},
 		"contestProblems": func(user *kilonova.UserBrief, c *kilonova.Contest) []*kilonova.Problem {
-			pbs, err := base.Problems(context.Background(), kilonova.ProblemFilter{
-				LookingUser: user, Look: true, ContestID: &c.ID,
-			})
+			pbs, err := base.ContestProblems(context.Background(), c, user)
 			if err != nil {
-				zap.S().Warn(err)
-				return nil
+				return []*kilonova.Problem{}
 			}
 			return pbs
 		},
 		"problemContests": func(user *kilonova.UserBrief, pb *kilonova.Problem) []*kilonova.Contest {
 			// TODO: Once there will be more contests, this will need to be optimized out to exclude ended ones
 			// At the moment, however, this is not a priority
-			contests, err := base.ProblemContests(context.Background(), pb.ID)
+			contests, err := base.ProblemRunningContests(context.Background(), pb.ID)
 			if err != nil {
 				zap.S().Warn(err)
 				return nil
@@ -258,6 +258,20 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 				return "-"
 			}
 			return strconv.Itoa(score)
+		},
+		"contestAnnouncements": func(c *kilonova.Contest) []*kilonova.ContestAnnouncement {
+			announcements, err := base.ContestAnnouncements(context.Background(), c.ID)
+			if err != nil {
+				return []*kilonova.ContestAnnouncement{}
+			}
+			return announcements
+		},
+		"allContestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {
+			questions, err := base.ContestQuestions(context.Background(), c.ID)
+			if err != nil {
+				return []*kilonova.ContestQuestion{}
+			}
+			return questions
 		},
 		"listProblems": func(user *kilonova.UserBrief, list *kilonova.ProblemList) []*kilonova.Problem {
 			pbs, err := base.ProblemListProblems(context.Background(), list.List, user)
@@ -306,9 +320,6 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"genPblistParams": func(user *kilonova.UserBrief, ctx *ReqContext, pblist *kilonova.ProblemList, open bool) *PblistParams {
 			return &PblistParams{user, ctx, pblist, open}
 		},
-		// "numSolved": func(user *kilonova.UserBrief, ids []int) int {
-		// 	return base.NumSolved(context.Background(), user.ID, ids)
-		// },
 		"numSolvedPblist": func(user *kilonova.UserBrief, listID int) int {
 			cnt, err := base.NumSolvedFromPblist(context.Background(), listID, user.ID)
 			if err != nil {
@@ -438,6 +449,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"contestRegistered": func(c *kilonova.Contest) bool {
 			zap.S().Error("Uninitialized `contestRegistered`")
 			return false
+		},
+		"contestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {
+			zap.S().Error("Uninitialized `contestQuestions`")
+			return nil
 		},
 	}
 	return &Web{debug, funcs, base}
