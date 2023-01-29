@@ -1292,6 +1292,14 @@ ro = "În desfășurare..."
 en = "Ended"
 ro = "Finalizat"
 
+[contest_starting_in]
+en = "Starts in"
+ro = "Începe în"
+
+[contest_remaining]
+en = "remaining"
+ro = "rămas"
+
 [contest_before_start]
 en = "Before start"
 ro = "Înainte de început"

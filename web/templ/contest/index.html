@@ -10,22 +10,13 @@
         {{if .Ended}}
             {{getText "contest_ended"}}
         {{else if .Running}}
-            {{getText "contest_running"}}
+            <kn-contest-countdown target_time='{{.EndTime.UnixMilli}}' type="running" /> 
+            {{getText "contest_remaining"}}
         {{else}}
-            {{getText "contest_before_start"}}
+            {{getText "contest_starting_in"}}
+            <kn-contest-countdown target_time='{{.EndTime.UnixMilli}}' type="before_start" />
         {{end}}
     </p>
-    {{ if .Running }}
-    <p>
-        {{getText "remaining_time"}}:
-        <kn-contest-countdown target_time='{{.EndTime.UnixMilli}}' type="running" />
-    </p>
-    {{ else if not .Started }}
-    <p>
-        {{getText "starts_in"}}:
-        <kn-contest-countdown target_time='{{.EndTime.UnixMilli}}' type="before_start" />
-    </p>
-    {{ end }}
     {{ if isContestEditor . }}
     <p class="my-1">{{getText "visibility"}}:
         {{if .Visible}}

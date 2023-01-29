@@ -7,6 +7,7 @@
 	<title>{{block "title" .}}Kilonova{{end}}</title>
 	{{- $fav := hashedName "static/favicon.ico"}}
 	{{$bundle := hashedName "static/bundle.js"}}
+	{{$vendored := hashedName "static/vendored.js"}}
 	{{$style := hashedName "static/styles.css" -}}
 
 	<link rel="icon" type="image/x-icon" href="/{{$fav}}"/>
@@ -20,43 +21,14 @@
 	<meta property="og:locale" content="ro_RO" />
 	<meta property="og:site_name" content="Kilonova" />
 
-	<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com/">
-
-	<!-- pretty icons (fontawesome) -->
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css"/>
-
 	<!--Dependency bundle-->
 	<script src="/{{$bundle}}"></script>
+	<script src="/{{$vendored}}"></script>
 
-	<!--highlight.js-->
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/default.min.css" />
-	<!--<style>@import url("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/nnfx-dark.min.css") (prefers-color-scheme: dark);</style>-->
-	<style>@import url("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/monokai.min.css") (prefers-color-scheme: dark);</style>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/highlight.min.js"></script>
-
-	<!--use KaTeX instead of MathJax-->
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.2/katex.min.css" />
-	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.2/katex.min.js"></script>
-	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.2/contrib/auto-render.min.js"></script>
 	<script>
-		function loadKaTeX() {
-			renderMathInElement(document.body, {
-				delimiters:	[
-					{left: "$$", right: "$$", display: true},
-					{left: "$", right: "$", display: false},
-					{left: "\\(", right: "\\)", display: false},
-					{left: "\\[", right: "\\]", display: true}
-				]
-			});
-		}
-		document.addEventListener('DOMContentLoaded', loadKaTeX);
 		hljs.configure({languages:['c', 'cpp', 'py', 'go', 'haskell', 'python3']}) // TODO
 		hljs.highlightAll();
-		hljs.addPlugin(
-			new bundled.CopyButtonPlugin({
-				callback: (text, el) => bundled.apiToast({status: "success", data: bundled.getText("copied") }),
-		  	})
-		);
+
 		var platform_info = {
 			debug: {{debug}},
 			admin: {{if .Ctx.User}}{{.Ctx.User.Admin}}{{else}}false{{end}},
@@ -66,20 +38,6 @@
 		};
 	</script>
 
-	<!--Codemirror-->
-	<!--CSS-->
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.9/codemirror.min.css" />
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.9/theme/monokai.css" />
-	<!--JS-->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.9/codemirror.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.9/addon/mode/overlay.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.9/mode/meta.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.9/mode/markdown/markdown.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.9/mode/gfm/gfm.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.9/mode/clike/clike.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.9/mode/go/go.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.9/mode/python/python.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.9/mode/haskell/haskell.min.js"></script>
 	<script>
 CodeMirror.defaults.lineNumbers = true;
 CodeMirror.defaults.indentUnit = 4;

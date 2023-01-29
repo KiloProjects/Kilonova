@@ -1,8 +1,6 @@
 export * from "./toast";
 export * from "./contest";
 
-export { CopyButtonPlugin } from "./highlightjs-copy.js"; // It is only available on unpkg, but we use cdnjs for everything
-
 export * from "./util";
 export * from "./net";
 export * from "./components";

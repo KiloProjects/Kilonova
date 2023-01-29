@@ -1,3 +1,7 @@
-bundle.js
-bundle.js.map
+*.js
+*.js.map
 styles.css
+*.ttf
+*.woff2
+*.woff
+misc

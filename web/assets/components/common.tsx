@@ -187,14 +187,14 @@ export function ProblemAttachment({ attname = "" }) {
 
 const SUB_VIEW_LIMIT = 5;
 
-export function OlderSubmissions({ userid, problemid, contestid }: { userid: number; problemid: number; contestid: string }) {
+export function OlderSubmissions({ userid, problemid, contestid }: { userid: number; problemid: number; contestid?: string }) {
 	let [subs, setSubs] = useState<ResultSubmission[]>([]);
 	let [loading, setLoading] = useState(true);
 	let [numHidden, setNumHidden] = useState(0);
 
 	async function load() {
 		let contestID: number | undefined = undefined;
-		if (contestid !== "") {
+		if (contestid !== "" && typeof contestid !== "undefined") {
 			contestID = parseInt(contestid);
 			if (isNaN(contestID)) {
 				console.warn("Contest ID is NaN");

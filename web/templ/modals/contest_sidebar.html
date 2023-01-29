@@ -22,22 +22,13 @@
             {{if .Ended}}
                 {{getText "contest_ended"}}
             {{else if .Running}}
-                {{getText "contest_running"}}
+                <kn-contest-countdown target_time='{{.EndTime.UnixMilli}}' type="running" /> 
+                {{getText "contest_remaining"}}
             {{else}}
-                {{getText "contest_before_start"}}
+                {{getText "contest_starting_in"}}
+                <kn-contest-countdown target_time='{{.EndTime.UnixMilli}}' type="before_start" />
             {{end}}
         </p>
-        {{ if .Running }}
-        <p>
-            {{getText "remaining_time"}}:
-            <kn-contest-countdown target_time='{{.EndTime.UnixMilli}}' type="running" />
-        </p>
-        {{ else if not .Started }}
-        <p>
-            {{getText "starts_in"}}:
-            <kn-contest-countdown target_time='{{.EndTime.UnixMilli}}' type="before_start" />
-        </p>
-        {{ end }}
         {{ if isContestEditor . }}
         <p class="my-1">{{getText "visibility"}}:
             {{if .Visible}}
@@ -55,24 +46,6 @@
         </p>
         {{ end }}
 
-        {{ $contest := . }}
-        {{ with contestProblems (authedUser) . }}
-            <p class="text-xl">{{getText "problems"}}:</p>
-            <div class="reset-list text-lg">
-                <ul>
-                    {{ range . }}
-                    {{ $score := contestSubScore . (authedUser) $contest.ID}}
-                    <li>
-                        <a {{ if currentProblem }} {{ if eq (currentProblem).ID .ID }} class="topbar-selected p-0" {{end}} {{ end }}
-                            href="/contests/{{$contest.ID}}/problems/{{.ID}}"> 
-                            {{.Name}} 
-                        </a> {{ if not (eq $score "")}} ({{$score}} {{- if not (eq $score "-") -}}p{{end}}) {{ end }}
-                    </li>
-                    {{ end }}
-                </ul>
-            </div>
-        {{ end }}
-
         {{ if (and authed (canJoinContest .)) }}
             {{ if (contestRegistered .) }}
             <button class="btn btn-blue my-2" disabled>{{getText "registered"}}</span>
@@ -82,3 +55,23 @@
         {{ end }}
     </div>
 </div>
+{{ $contest := . }}
+{{ with contestProblems (authedUser) . }}
+    <div class="page-sidebar-divider"></div>
+    <div class="page-sidebar-box">
+        <h2>{{getText "problems"}}</h2>
+        <div class="reset-list text-lg">
+            <ul>
+                {{ range . }}
+                {{ $score := contestSubScore . (authedUser) $contest.ID}}
+                <li>
+                    <a {{ if currentProblem }} {{ if eq (currentProblem).ID .ID }} class="topbar-selected p-0" {{end}} {{ end }}
+                        href="/contests/{{$contest.ID}}/problems/{{.ID}}"> 
+                        {{.Name}} 
+                    </a> {{ if not (eq $score "")}} ({{$score}} {{- if not (eq $score "-") -}}p{{end}}) {{ end }}
+                </li>
+                {{ end }}
+            </ul>
+        </div>
+    </div>
+{{ end }}

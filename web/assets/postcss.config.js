@@ -7,6 +7,11 @@ module.exports = {
 	require("postcss-import"),
   	require("tailwindcss"),
 	require("autoprefixer"),
+    require("postcss-url")({
+        url: "copy",
+        useHash: true,
+        assetsPath: "misc"
+    }),
 	process.env.NODE_ENV === 'production' ? cssnano({preset: "default"}) : null,
   ]
 }

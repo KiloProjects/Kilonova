@@ -6,6 +6,9 @@ go generate
 echo "Building js bundle"
 yarn --cwd ./web/assets prodJS
 
+echo "Vendoring js dependencies"
+yarn --cwd ./web/assets vendor
+
 
 go build -race -v ./cmd/kn || exit 2
 
