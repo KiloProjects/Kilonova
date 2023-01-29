@@ -74,7 +74,7 @@ export function ContestCountdown({ target_time, type }: { target_time: string; t
 }
 
 function formatJSONTime(t: string, format_key: string): string {
-	return dayjs(t, JSONTimestamp).format(getText(format_key));
+	return dayjs(t).format(getText(format_key));
 }
 
 export function AnnouncementView({ ann, canEditAnnouncement }: { ann: Announcement; canEditAnnouncement: boolean }) {
