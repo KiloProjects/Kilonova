@@ -215,8 +215,9 @@ function SubsView(props: SubsViewProps) {
 		return <i class="fas fa-sort-down"></i>;
 	}
 
+	// Page-holder has mt-0 so it looks neat on the problem submit page
 	return (
-		<div class="page-holder">
+		<div class="page-holder mt-0">
 			<div class="page-sidebar lg:order-last">
 				<div class="page-sidebar-box">
 					<h2>{getText("filters")}</h2>

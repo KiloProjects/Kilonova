@@ -94,7 +94,7 @@ func (rt *Web) paste() func(http.ResponseWriter, *http.Request) {
 }
 
 func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
-	templ := rt.parse(nil, "problem/summary.html", "problem/topbar.html")
+	templ := rt.parse(nil, "problem/summary.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		problem := util.Problem(r)
 
@@ -167,13 +167,19 @@ func (rt *Web) problemSubmissions() func(http.ResponseWriter, *http.Request) {
 }
 
 func (rt *Web) problemSubmit() func(http.ResponseWriter, *http.Request) {
-	templ := rt.parse(nil, "problem/pb_submit.html", "problem/topbar.html")
+	templ := rt.parse(nil, "problem/pb_submit.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		if util.Contest(r) != nil && !rt.base.CanSubmitInContest(util.UserBrief(r), util.Contest(r)) {
+			rt.statusPage(w, r, 400, "You cannot submit in this contest")
+			return
+		}
 
 		langs := eval.Langs
 		if evalSettings, err := rt.base.ProblemSettings(r.Context(), util.Problem(r).ID); err != nil {
 			zap.S().Warn("Error getting problem settings:", err, util.Problem(r).ID)
 			rt.statusPage(w, r, 500, "Couldn't get problem settings")
+			return
 		} else if evalSettings.OnlyCPP {
 			newLangs := make(map[string]eval.Language)
 			for name, lang := range langs {
@@ -218,7 +224,7 @@ func (rt *Web) contests() func(http.ResponseWriter, *http.Request) {
 }
 
 func (rt *Web) contest() func(http.ResponseWriter, *http.Request) {
-	templ := rt.parse(nil, "contest/view.html", "problem/topbar.html", "modals/pbs.html")
+	templ := rt.parse(nil, "contest/view.html", "problem/topbar.html", "modals/pbs.html", "modals/contest_sidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ContestParams{
 			Ctx:    GenContext(r),
@@ -559,6 +565,9 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		},
 		"authedUser": func() *kilonova.UserBrief {
 			return util.UserBrief(r)
+		},
+		"currentProblem": func() *kilonova.Problem {
+			return util.Problem(r)
 		},
 		"problemEditor": func(problem *kilonova.Problem) bool {
 			return rt.base.IsProblemEditor(util.UserBrief(r), problem)

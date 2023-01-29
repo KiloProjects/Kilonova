@@ -572,9 +572,13 @@ ro = "Sunteți sigur că vreți să ștergeți testul?"
 en = "That's an error"
 ro = "Asta-i o eroare!"
 
-[generalInfo]
-en = "General info"
-ro = "Informații generale"
+[contestInfo]
+en = "Contest info"
+ro = "Detalii concurs"
+
+[problemInfo]
+en = "Problem info"
+ro = "Detalii problemă"
 
 [uploader]
 en = "Uploader"
@@ -619,6 +623,14 @@ ro = "Limbaj"
 [uploadSub]
 en = "Upload submission"
 ro = "Încărcare submisie"
+
+[uploadContestSub]
+en = "Send contest submission"
+ro = "Trimitere submisie de concurs"
+
+[upsolveSub]
+en = "Upload unofficial submission"
+ro = "Încărcare submisie neoficială"
 
 [finishedEval]
 en = "Submission evaluated"

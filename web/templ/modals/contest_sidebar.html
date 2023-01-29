@@ -1,0 +1,84 @@
+<div class="page-sidebar-box">
+    <h2 class="font-normal">
+        {{getText "contestInfo"}}
+    </h2>
+
+    <div class="px-2">
+        <p>{{getText "startTime"}}: <span class="server_timestamp">{{.StartTime.UnixMilli}}</span></p>
+        <p>{{getText "duration"}}: {{contestDuration .}}</p>
+        {{ if not currentProblem}}
+            {{ with .Editors }}
+                <details class="reset-list" open>
+                    <summary>{{getText "organisedBy"}}:</summary>
+                    <ul>
+                        {{ range . }}
+                        <li><a href="/profile/{{.Name}}">{{.Name}}</a></li>
+                        {{ end }}
+                    </ul>
+                </details>
+            {{ end }}
+        {{ end }}
+        <p>{{getText "status"}}: 
+            {{if .Ended}}
+                {{getText "contest_ended"}}
+            {{else if .Running}}
+                {{getText "contest_running"}}
+            {{else}}
+                {{getText "contest_before_start"}}
+            {{end}}
+        </p>
+        {{ if .Running }}
+        <p>
+            {{getText "remaining_time"}}:
+            <kn-contest-countdown target_time='{{.EndTime.UnixMilli}}' type="running" />
+        </p>
+        {{ else if not .Started }}
+        <p>
+            {{getText "starts_in"}}:
+            <kn-contest-countdown target_time='{{.EndTime.UnixMilli}}' type="before_start" />
+        </p>
+        {{ end }}
+        {{ if isContestEditor . }}
+        <p class="my-1">{{getText "visibility"}}:
+            {{if .Visible}}
+            <span class="badge-lite bg-green-700 text-sm font-semibold">{{getText "visible"}}</span>
+            {{else}}
+            <span class="badge-lite bg-red-700 text-sm font-semibold">{{getText "invisible"}}</span>
+            {{end}}
+        </p>
+        <p class="my-1">{{getText "registration_status"}}:
+            {{if .PublicJoin}}
+            <span class="badge-lite bg-green-700 text-sm font-semibold">{{getText "registration_open"}}</span>
+            {{else}}
+            <span class="badge-lite bg-red-700 text-sm font-semibold">{{getText "registration_closed"}}</span>
+            {{end}}
+        </p>
+        {{ end }}
+
+        {{ $contest := . }}
+        {{ with contestProblems (authedUser) . }}
+            <p class="text-xl">{{getText "problems"}}:</p>
+            <div class="reset-list text-lg">
+                <ul>
+                    {{ range . }}
+                    {{ $score := contestSubScore . (authedUser) $contest.ID}}
+                    <li>
+                        <a {{ if currentProblem }} {{ if eq (currentProblem).ID .ID }} class="topbar-selected p-0" {{end}} {{ end }}
+                            href="/contests/{{$contest.ID}}/problems/{{.ID}}"> 
+                            {{.Name}} 
+                        </a> {{ if not (eq $score "")}} ({{$score}} {{- if not (eq $score "-") -}}p{{end}}) {{ end }}
+                    </li>
+                    {{ end }}
+                </ul>
+            </div>
+        {{ end }}
+
+        {{ if (and authed (canJoinContest .)) }}
+            {{ if (contestRegistered .) }}
+            <button class="btn btn-blue my-2" disabled>{{getText "registered"}}</span>
+            {{ else }}
+            <button class="btn btn-blue my-2" onclick="bundled.registerForContest({{.ID}})">{{getText "register_btn"}}</button>
+            {{ end }}
+        {{ end }}
+    </div>
+</div>

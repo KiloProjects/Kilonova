@@ -68,7 +68,7 @@ func (rt *Web) problemRouter(r chi.Router) {
 	r.Use(rt.ValidateProblemVisible)
 	r.Get("/", rt.problem())
 	r.Get("/submissions", rt.problemSubmissions())
-	r.Get("/submit", rt.problemSubmit())
+	r.With(rt.mustBeAuthed).Get("/submit", rt.problemSubmit())
 	r.With(rt.mustBeProblemEditor).Route("/edit", rt.ProblemEditRouter)
 	r.Get("/attachments/{aid}", rt.problemAttachment)
 }
@@ -246,6 +246,9 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			return actualContests
 		},
 		"subScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) string {
+			if user == nil {
+				return ""
+			}
 			score := base.MaxScore(context.Background(), user.ID, pb.ID)
 			if score < 0 {
 				return "-"
@@ -253,6 +256,9 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			return strconv.Itoa(score)
 		},
 		"contestSubScore": func(pb *kilonova.Problem, user *kilonova.UserBrief, contestID int) string {
+			if user == nil {
+				return ""
+			}
 			score := base.MaxContestScore(context.Background(), user.ID, pb.ID, contestID)
 			if score < 0 {
 				return "-"
@@ -452,6 +458,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		},
 		"contestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {
 			zap.S().Error("Uninitialized `contestQuestions`")
+			return nil
+		},
+		"currentProblem": func() *kilonova.Problem {
+			zap.S().Error("Uninitialized `currentProblem`")
 			return nil
 		},
 	}
