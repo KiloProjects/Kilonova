@@ -1,16 +1,18 @@
 import dayjs from "dayjs";
-import "dayjs/locale/ro";
+// import "dayjs/locale/ro";
 import relativeTime from "dayjs/plugin/relativeTime";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 
 dayjs.extend(relativeTime);
 dayjs.extend(customParseFormat);
 
+/*
 dayjs.locale("ro");
 
 document.addEventListener("DOMContentLoaded", () => {
 	dayjs.locale(window.platform_info.language);
 });
+*/
 
 export { dayjs };
 
