@@ -9,7 +9,9 @@
 		</div>
 	</div>
 	<nav id="nav-dropdown" class="px-2 pt-1 pb-3 md:flex md:p-0 z-50">
-		<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/submissions">{{getText "submission.list"}}</a>
+        {{ if canViewAllSubs }}
+		    <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/submissions">{{getText "submission.list"}}</a>
+        {{ end }}
 		{{if not .Ctx.User }}
             {{ if signupEnabled }}
 			    <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/signup">{{getText "auth.signup"}}</a>

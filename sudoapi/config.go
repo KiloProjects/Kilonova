@@ -10,9 +10,10 @@ import (
 type ConfigUpdate struct {
 	DefaultLanguage *string `json:"default_lang"`
 
-	Grader *bool `json:"grader"`
-	Signup *bool `json:"signup"`
-	Pastes *bool `json:"pastes"`
+	Grader  *bool `json:"grader"`
+	Signup  *bool `json:"signup"`
+	Pastes  *bool `json:"pastes"`
+	AllSubs *bool `json:"all_subs"`
 }
 
 func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) *StatusError {
@@ -27,6 +28,9 @@ func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) *StatusErr
 	}
 	if upd.Pastes != nil {
 		config.Features.Pastes = *upd.Pastes
+	}
+	if upd.AllSubs != nil {
+		config.Features.AllSubs = *upd.AllSubs
 	}
 	if err := config.Save(); err != nil {
 		zap.S().Error(err)

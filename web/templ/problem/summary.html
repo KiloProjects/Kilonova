@@ -103,6 +103,7 @@
             <older-subs problemid="{{.Problem.ID}}" {{if (and .Topbar.Contest (not .Topbar.Contest.Ended))}}contestid="{{.Topbar.Contest.ID}}"{{end}} userid="{{.Ctx.User.ID}}"></older-subs>
         </div>
         {{ end }}
+        {{ $topbar := .Topbar}}
         {{ with .Attachments }}
         <div class="page-sidebar-divider"></div>
         <details class="page-sidebar-box" open> <!-- Attachments -->
@@ -112,7 +113,7 @@
             <div class="px-2">
                 <div class="list-group">
                     {{ range . }}
-                    <a style="word-wrap: anywhere;" href="/problems/{{$pbid}}/attachments/{{.Name}}"
+                    <a style="word-wrap: anywhere;" href="{{$topbar.URLPrefix}}/problems/{{$pbid}}/attachments/{{.Name}}"
                         class="list-group-item flex justify-between">
                         <span id="att-name-{{.ID}}">{{.Name}}</span>
                         <span class="badge-lite text-sm" id="att-size-{{.ID}}">

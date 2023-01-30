@@ -58,6 +58,8 @@ type FeaturesConf struct {
 	Grader bool `toml:"grader"`
 	Signup bool `toml:"manual_signup"`
 	Pastes bool `toml:"pastes"`
+
+	AllSubs bool `toml:"all_subs"`
 }
 
 // c represents the loaded config

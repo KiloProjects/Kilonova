@@ -25,6 +25,8 @@ type User struct {
 	VerifiedEmail     bool         `json:"verified_email" db:"verified_email"`
 	EmailVerifSentAt  sql.NullTime `json:"-" db:"email_verif_sent_at"`
 	PreferredLanguage string       `json:"-" db:"preferred_language"`
+
+	Generated bool `json:"generated" db:"generated"`
 }
 
 func (user *User) ToBrief() *kilonova.UserBrief {
@@ -55,6 +57,7 @@ func (user *User) ToFull() *kilonova.UserFull {
 		PreferredLanguage: user.PreferredLanguage,
 		CreatedAt:         user.CreatedAt,
 		EmailVerifResent:  t,
+		Generated:         user.Generated,
 	}
 }
 

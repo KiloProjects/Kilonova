@@ -51,9 +51,11 @@
         <a class='p-1 {{if (eq $topbar.Page "contest_communication")}} topbar-selected {{end}}' href="{{$topbar.URLPrefix}}/communication">
             <span>
                 {{getText "communication"}}
+                {{ if not $topbar.Contest.Ended }}
                     {{- if not (eq $topbar.Page "contest_communication") -}}
                         <kn-comm-announcer class="inline-block" contestID="{{$topbar.Contest.ID}}" contestEditor="{{isContestEditor $topbar.Contest}}"></kn-comm-announcer> 
                     {{ end }}
+                {{ end }}
             </span>
         </a>
         {{ if isContestEditor $topbar.Contest }}
@@ -69,9 +71,11 @@
         {{ if $problemPage }}
         <div class="topbar-separator topbar-separator-lg"></div>
         {{ end }}
-        <script>
-            bundled.startReloadingQnA(5000); // Trigger reload every 5 or so seconds
-        </script>
+        {{ if not $topbar.Contest.Ended }}
+            <script>
+                bundled.startReloadingQnA(5000); // Trigger reload every 5 or so seconds
+            </script>
+        {{ end }}
     {{ end }}
 {{ if $problemPage }}
     <a class='p-1 {{if (eq $topbar.Page "pb_statement")}} topbar-selected {{end}}' href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/">

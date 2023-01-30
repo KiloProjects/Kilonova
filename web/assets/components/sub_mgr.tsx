@@ -68,7 +68,9 @@ function Summary({ sub, pasteAuthor }) {
 					<tr class="kn-table-simple-border">
 						<td class="kn-table-cell">{getText("problemSingle")}</td>
 						<td class="kn-table-cell">
-							<a href={`/problems/${sub.problem.id}`}>{sub.problem.name}</a>
+							<a href={`${typeof sub.contest_id === "number" ? `/contests/${sub.contest_id}` : ""}/problems/${sub.problem.id}`}>
+								{sub.problem.name}
+							</a>
 						</td>
 					</tr>
 					<tr class="kn-table-simple-border">

@@ -22,3 +22,4 @@
  grader = true
  manual_signup = true
  pastes = true
+ all_subs = true

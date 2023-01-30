@@ -110,6 +110,18 @@ func (s *API) getContest(w http.ResponseWriter, r *http.Request) {
 	returnData(w, util.Contest(r))
 }
 
+func (s *API) getContestProblems(w http.ResponseWriter, r *http.Request) {
+	pbs, err := s.base.ContestProblems(r.Context(), util.Contest(r), util.UserBrief(r))
+	if err != nil {
+		err.WriteError(w)
+	}
+	returnData(w, pbs)
+}
+
+func (s *API) contestLeaderboard(w http.ResponseWriter, r *http.Request) {
+	panic("TODO")
+}
+
 func (s *API) addContestEditor(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {

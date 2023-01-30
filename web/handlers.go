@@ -16,6 +16,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -84,6 +85,25 @@ func (rt *Web) submission() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &SubParams{GenContext(r), util.Submission(r)})
 	}
+}
+
+func (rt *Web) submissions() http.HandlerFunc {
+	templ := rt.parse(nil, "submissions.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !rt.canViewAllSubs(util.UserBrief(r)) {
+			rt.statusPage(w, r, 401, "Cannot view all submissions")
+			return
+		}
+		rt.runTempl(w, r, templ, &SimpleParams{GenContext(r)})
+	}
+}
+
+// canViewAllSubs is just for the text in the navbar and the submissions page
+func (rt *Web) canViewAllSubs(user *kilonova.UserBrief) bool {
+	if config.Features.AllSubs {
+		return true
+	}
+	return rt.base.IsProposer(user)
 }
 
 func (rt *Web) paste() func(http.ResponseWriter, *http.Request) {
@@ -588,6 +608,9 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 				return []*kilonova.ContestQuestion{}
 			}
 			return questions
+		},
+		"canViewAllSubs": func() bool {
+			return rt.canViewAllSubs(util.UserBrief(r))
 		},
 	})
 

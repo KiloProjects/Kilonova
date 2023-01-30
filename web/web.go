@@ -113,7 +113,7 @@ func (rt *Web) Handler() http.Handler {
 	})
 
 	r.Route("/submissions", func(r chi.Router) {
-		r.Get("/", rt.justRender("submissions.html"))
+		r.Get("/", rt.submissions())
 		r.With(rt.ValidateSubmissionID).Get("/{id}", rt.submission())
 	})
 
@@ -391,6 +391,7 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"signupEnabled": func() bool { return config.Features.Signup },
 		"pastesEnabled": func() bool { return config.Features.Pastes },
 		"graderEnabled": func() bool { return config.Features.Grader },
+		"allSubsView":   func() bool { return config.Features.AllSubs },
 		"defaultLang":   func() string { return config.Common.DefaultLang },
 
 		"intList": func(ids []int) string {
@@ -463,6 +464,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"currentProblem": func() *kilonova.Problem {
 			zap.S().Error("Uninitialized `currentProblem`")
 			return nil
+		},
+		"canViewAllSubs": func() bool {
+			zap.S().Error("Uninitialized `canViewAllSubs`")
+			return false
 		},
 	}
 	return &Web{debug, funcs, base}

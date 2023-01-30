@@ -3,12 +3,12 @@
 <div class="page-sidebar lg:order-last">
     <div class="page-sidebar-box reset-list">
         <div class="list-group grid grid-cols-2 xl:grid-cols-3">
-            <a class="list-group-head col-span-full {{if and (eq $topbar.Page "subtasks") (eq $topbar.PageID -2)}} list-group-selected {{end}}" href="/problems/{{$id}}/edit/subtasks">
+            <a class="list-group-head col-span-full {{if and (eq $topbar.Page "subtasks") (eq $topbar.PageID -2)}} list-group-selected {{end}}" href="{{$topbar.URLPrefix}}/problems/{{$id}}/edit/subtasks">
                 <h2>{{getText "subTasks"}}</h2>
             </a>
-            <a class="list-group-item col-span-full {{if (eq $topbar.PageID -1)}} list-group-selected {{end}}" href="/problems/{{$id}}/edit/subtasks/add">{{getText "createSubTask"}}</a>
+            <a class="list-group-item col-span-full {{if (eq $topbar.PageID -1)}} list-group-selected {{end}}" href="{{$topbar.URLPrefix}}/problems/{{$id}}/edit/subtasks/add">{{getText "createSubTask"}}</a>
             {{ range problemSubtasks .Problem }}
-                <a class="list-group-item {{if (eq $topbar.PageID .VisibleID)}} list-group-selected {{end}}" href="/problems/{{$id}}/edit/subtasks/{{.VisibleID}}">{{getText "nthSubTask" .VisibleID}}</a>
+                <a class="list-group-item {{if (eq $topbar.PageID .VisibleID)}} list-group-selected {{end}}" href="{{$topbar.URLPrefix}}/problems/{{$id}}/edit/subtasks/{{.VisibleID}}">{{getText "nthSubTask" .VisibleID}}</a>
             {{ end }}
             </ul>
         </div>

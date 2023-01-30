@@ -130,7 +130,7 @@ type FullSubmission struct {
 
 	SubTasks []*kilonova.SubmissionSubTask `json:"subtasks"`
 
-	// ProblemEditor returns wether the looking user is a problem editor
+	// ProblemEditor returns whether the looking user is a problem editor
 	ProblemEditor bool `json:"problem_editor"`
 }
 

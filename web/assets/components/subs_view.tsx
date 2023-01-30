@@ -490,7 +490,18 @@ function SubsView(props: SubsViewProps) {
 											<td class="text-center px-2 py-1">{dayjs(sub.sub.created_at).format("DD/MM/YYYY HH:mm")}</td>
 											{((query.problem_id == 0 || query.problem_id == null) && (
 												<td class="text-center px-2 py-1">
-													{sub.hidden ? <span>---</span> : <a href={"/problems/" + sub.problem.id}>{sub.problem.name}</a>}
+													{sub.hidden ? (
+														<span>---</span>
+													) : (
+														<a
+															href={
+																(typeof sub.sub.contest_id === "number" ? `/contests/${sub.sub.contest_id}` : "") +
+																`/problems/${sub.problem.id}`
+															}
+														>
+															{sub.problem.name}
+														</a>
+													)}
 												</td>
 											)) || (
 												<td class="text-center px-2 py-1">

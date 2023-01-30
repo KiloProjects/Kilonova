@@ -17,6 +17,9 @@
             {{ end }}
         </span>
         <p>{{getText "created_at"}}: <span class="server_timestamp">{{.ContentUser.CreatedAt.UnixMilli}}</span></p>
+        {{ if .ContentUser.Generated }}
+            <p>!!!{{getText "generated_acc"}}</p>
+        {{ end }}
 		{{- if authed -}} {{if (or .Ctx.User.Admin (eq .Ctx.User.ID .ContentUser.ID)) -}}
 		<p>{{getText "email"}}: {{.ContentUser.Email}}
             ({{getText "email.verified"}}? 

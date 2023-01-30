@@ -23,6 +23,7 @@ type UserFull struct {
 	PreferredLanguage string    `json:"preferred_language"`
 	EmailVerifResent  time.Time `json:"-"`
 	CreatedAt         time.Time `json:"created_at"`
+	Generated         bool      `json:"generated"`
 }
 
 func (uf *UserFull) Brief() *UserBrief {

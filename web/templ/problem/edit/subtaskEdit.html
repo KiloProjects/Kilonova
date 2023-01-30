@@ -84,7 +84,7 @@ async function updateSubTask(e) {
 
 	let res = await bundled.bodyCall(`/problem/${pbid}/update/updateSubTask`, data)
 	if(res.status === "success" && data.new_id !== data.subtask_id) {
-		window.location.assign(`/problems/${pbid}/edit/subtasks/${data.new_id}`);
+		window.location.assign(`{{.Topbar.URLPrefix}}/problems/${pbid}/edit/subtasks/${data.new_id}`);
 		return;
 	}
 	bundled.apiToast(res);

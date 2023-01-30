@@ -1191,6 +1191,10 @@ ro = "Signup manual"
 en = "Pastes"
 ro = "Paste-uri"
 
+[featureSet.all_subs]
+en = "Anyone can view all submissions"
+ro = "Oricine poate vedea toate submisiile"
+
 [pasteDeleteConfirm]
 en = "Are you sure you want to delete this paste?"
 ro = "Ești sigur că vrei să ștergi acest paste?"
@@ -1463,3 +1467,7 @@ ro = "Întrebare nouă pusă"
 [go_to_communication]
 en = "Go to communication panel"
 ro = "Mergi la panoul de comunicare"
+
+[generated_acc]
+en = "Generated account"
+ro = "Cont generat"

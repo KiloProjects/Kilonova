@@ -8,6 +8,7 @@ export type Submission = {
 	score: number;
 	status: string;
 	code_size: number;
+	contest_id?: number;
 };
 
 export type UserBrief = {
