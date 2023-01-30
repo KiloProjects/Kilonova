@@ -1443,3 +1443,23 @@ ro = "Timp rămas"
 [starts_in]
 en = "Starts in"
 ro = "Începe în"
+
+[new]
+en = "New!"
+ro = "Nou!"
+
+[new_response]
+en = "New question response"
+ro = "Nou răspuns la întrebare"
+
+[new_announcement]
+en = "New announcement posted"
+ro = "Anunț nou postat"
+
+[new_question]
+en = "New question asked"
+ro = "Întrebare nouă pusă"
+
+[go_to_communication]
+en = "Go to communication panel"
+ro = "Mergi la panoul de comunicare"

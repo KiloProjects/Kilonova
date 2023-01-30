@@ -146,26 +146,14 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []any) {
 		if filter.LookingUser != nil {
 			id = filter.LookingUser.ID
 		}
-		where, args = append(where, "EXISTS (SELECT 1 FROM problem_viewers WHERE user_id = ? AND problem_id = problems.id)"), append(args, id)
-	}
 
-	// TODO: If it's looking, it's performing an additional slower subquery that may not be needed
-	// if v := filter.ContestID; v != nil {
-	// 	if filter.Look {
-	// 		var userID int = 0
-	// 		if filter.LookingUser != nil {
-	// 			userID = filter.LookingUser.ID
-	// 		}
-	// 		// Do additional filtering just in case the problem is already visible, so we don't spoil the problem set
-	// 		where, args = append(where, `EXISTS (
-	// 				SELECT 1 FROM contest_problems pbs, contest_visibility viz
-	// 				WHERE viz.contest_id = pbs.contest_id AND viz.user_id = ?
-	// 					AND pbs.contest_id = ? AND pbs.problem_id = problems.id
-	// 			)`), append(args, userID, v)
-	// 	} else {
-	// 		where, args = append(where, "EXISTS (SELECT 1 FROM contest_problems WHERE contest_id = ? AND problem_id = problems.id)"), append(args, v)
-	// 	}
-	// }
+		args = append(args, id)
+		if filter.LookEditor {
+			where = append(where, "EXISTS (SELECT 1 FROM problem_editors WHERE user_id = ? AND problem_id = problems.id)")
+		} else {
+			where = append(where, "EXISTS (SELECT 1 FROM problem_viewers WHERE user_id = ? AND problem_id = problems.id)")
+		}
+	}
 
 	if filter.Unassociated {
 		where = append(where, "NOT EXISTS (SELECT 1 FROM problem_list_problems WHERE problem_id = problems.id)")

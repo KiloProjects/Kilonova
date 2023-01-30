@@ -44,6 +44,7 @@ type ProblemFilter struct {
 	Name         *string `json:"name"`
 
 	Look        bool       `json:""`
+	LookEditor  bool       `json:"-"`
 	LookingUser *UserBrief `json:"-"`
 
 	// Unassociated filter ensures that all returned problems are not "bound" to a problem list

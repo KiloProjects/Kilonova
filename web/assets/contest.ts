@@ -87,3 +87,16 @@ export function reloadQuestions() {
 export function reloadAnnouncements() {
 	document.dispatchEvent(new CustomEvent("kn-contest-announcement-reload"));
 }
+
+var x: number | undefined;
+
+export function startReloadingQnA(interval_ms: number) {
+	x = setInterval(() => {
+		reloadQuestions();
+		reloadAnnouncements();
+	}, interval_ms);
+}
+
+export function stopReloadingQnA() {
+	clearInterval(x);
+}

@@ -92,7 +92,7 @@ func (s *API) updateContestProblems(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "You must specify a list of problems", 400)
 	}
 
-	list, err := s.filterProblems(r.Context(), args.List, util.UserBrief(r))
+	list, err := s.filterProblems(r.Context(), args.List, util.UserBrief(r), true)
 	if err != nil {
 		err.WriteError(w)
 		return
@@ -370,6 +370,29 @@ func (s *API) registerForContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	returnData(w, "Registered for contest")
+}
+
+func (s *API) forceRegisterForContest(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		Username string `json:"name"`
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 400)
+		return
+	}
+
+	user, err := s.base.UserBriefByName(r.Context(), args.Username)
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	if err := s.base.RegisterContestUser(r.Context(), util.Contest(r).ID, user.ID); err != nil {
+		err.WriteError(w)
+		return
+	}
+	returnData(w, "Force registered user for contest")
 }
 
 func (s *API) checkRegistration(w http.ResponseWriter, r *http.Request) {

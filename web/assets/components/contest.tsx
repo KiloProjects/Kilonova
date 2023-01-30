@@ -1,13 +1,15 @@
 import { h, Fragment, Component } from "preact";
 import register from "preact-custom-element";
-import { StateUpdater, useEffect, useMemo, useState } from "preact/hooks";
-import { JSONTimestamp, dayjs } from "../util";
+import { Reducer, useEffect, useMemo, useReducer, useState } from "preact/hooks";
+import { dayjs } from "../util";
 import getText from "../translation";
 import { sprintf } from "sprintf-js";
 import { fromBase64 } from "js-base64";
 import { answerQuestion, getAllQuestions, getUserQuestions, getAnnouncements, updateAnnouncement, deleteAnnouncement } from "../contest";
 import type { Question, Announcement } from "../contest";
 import { UserBrief, getUser } from "../api/submissions";
+import { createToast } from "../toast";
+import { isEqual } from "underscore";
 
 export const RFC1123Z = "ddd, DD MMM YYYY HH:mm:ss ZZ";
 
@@ -94,7 +96,7 @@ export function AnnouncementView({ ann, canEditAnnouncement }: { ann: Announceme
 				</a>
 				<label class="block my-2">
 					<span class="form-label">{getText("text")}:</span>
-					<textarea class="block form-textarea" value={text} onChange={(e) => setText(e.currentTarget.value)} />
+					<textarea class="block form-textarea" value={text} onInput={(e) => setText(e.currentTarget.value)} />
 				</label>
 				<button class="btn btn-blue" onClick={editAnnouncement}>
 					{getText("button.update")}
@@ -162,7 +164,7 @@ export function QuestionView({ q, canEditAnswer, userLoadable }: { q: Question; 
 						</a>
 					</h3>
 					<label class="block my-2">
-						<textarea class="form-textarea" value={response} onChange={(e) => setResponse(e.currentTarget.value)} />
+						<textarea class="form-textarea" value={response} onInput={(e) => setResponse(e.currentTarget.value)} />
 					</label>
 					<button class="btn btn-blue" onClick={doAnswer}>
 						{getText("button.answer")}
@@ -198,7 +200,7 @@ export function QuestionView({ q, canEditAnswer, userLoadable }: { q: Question; 
 							</a>
 						</h3>
 						<label class="block my-2">
-							<textarea class="form-textarea" value={response} onChange={(e) => setResponse(e.currentTarget.value)} />
+							<textarea class="form-textarea" value={response} onInput={(e) => setResponse(e.currentTarget.value)} />
 						</label>
 						<button class="btn btn-blue" onClick={doAnswer}>
 							{getText("button.update")}
@@ -339,6 +341,63 @@ function AnnouncementList({ initialAnnouncements, contestID, canEdit }: { initia
 	);
 }
 
+function createUpdateToast(contestID: number, title: string) {
+	createToast({
+		status: "info",
+		title: title,
+		description: `<a href="/contests/${contestID}/communication">${getText("go_to_communication")}</a>`,
+	});
+}
+
+function genReducer(contestID: number, toast_text: string, setSthNew: (_: boolean) => void): Reducer<number, number> {
+	return (val, newVal) => {
+		if (newVal > val && val != -1) {
+			createUpdateToast(contestID, getText(toast_text));
+			setSthNew(true);
+		}
+		return newVal;
+	};
+}
+
+function CommunicationAnnouncer({ contestID, contestEditor }: { contestID: number; contestEditor: boolean }) {
+	let [sthNew, setSthNew] = useState<boolean>(false);
+	let [numEditorQuestions, dispatchNumEditorQs] = useReducer(genReducer(contestID, "new_question", setSthNew), -1);
+	let [numAnnouncements, dispatchNumAnns] = useReducer(genReducer(contestID, "new_announcement", setSthNew), -1);
+	let [numAnswers, dispatchNumAnswers] = useReducer(genReducer(contestID, "new_response", setSthNew), -1);
+
+	async function onQuestionReload() {
+		const userQs = (await getUserQuestions(contestID)).filter((val) => typeof val.response === "string");
+		dispatchNumAnswers(userQs.length);
+
+		if (contestEditor) {
+			const allQs = await getAllQuestions(contestID);
+			dispatchNumEditorQs(allQs.length);
+		}
+	}
+
+	async function onAnnouncementReload() {
+		const anns = await getAnnouncements(contestID);
+		dispatchNumAnns(anns.length);
+	}
+
+	useEffect(() => {
+		onQuestionReload().catch(console.error);
+		onAnnouncementReload().catch(console.error);
+		document.addEventListener("kn-contest-question-reload", onQuestionReload);
+		document.addEventListener("kn-contest-announcement-reload", onAnnouncementReload);
+		return () => {
+			document.removeEventListener("kn-contest-question-reload", onQuestionReload);
+			document.removeEventListener("kn-contest-announcement-reload", onAnnouncementReload);
+		};
+	}, []);
+
+	if (sthNew) {
+		return <div class="badge-lite text-sm">{getText("new")}</div>;
+	}
+
+	return <></>;
+}
+
 function AnnouncementListDOM({ encoded, contestid, canedit }: { encoded: string; contestid: string; canedit: string }) {
 	const q: Announcement[] = JSON.parse(fromBase64(encoded));
 	const contestID = parseInt(contestid);
@@ -366,7 +425,16 @@ function QuestionManagerDOM({ encoded, contestid }: { encoded: string; contestid
 	return <QuestionManager initialQuestions={q} contestID={contestID} />;
 }
 
+function CommunicationAnnouncerDOM({ contestid, contesteditor }: { contestid: string; contesteditor: string }) {
+	const contestID = parseInt(contestid);
+	if (isNaN(contestID)) {
+		throw new Error("Invalid contest ID");
+	}
+	return <CommunicationAnnouncer contestID={contestID} contestEditor={contesteditor == "true"} />;
+}
+
 register(QuestionManagerDOM, "kn-question-mgr", ["encoded", "contestid"]);
 register(QuestionListDOM, "kn-questions", ["encoded", "contestid"]);
 register(AnnouncementListDOM, "kn-announcements", ["encoded", "contestid", "canedit"]);
 register(ContestCountdown, "kn-contest-countdown", ["target_time", "type"]);
+register(CommunicationAnnouncerDOM, "kn-comm-announcer", ["contestid", "contesteditor"]);
