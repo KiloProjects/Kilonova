@@ -19,6 +19,9 @@ import (
 func (s *BaseAPI) UserBrief(ctx context.Context, id int) (*UserBrief, *StatusError) {
 	user, err := s.db.User(ctx, id)
 	if err != nil || user == nil {
+		if err != nil {
+			zap.S().Warn(err)
+		}
 		return nil, WrapError(ErrNotFound, "User not found")
 	}
 	return user.ToBrief(), nil
