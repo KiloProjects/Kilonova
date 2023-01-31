@@ -56,8 +56,39 @@ func (s *BaseAPI) Contest(ctx context.Context, id int) (*kilonova.Contest, *Stat
 	return contest, nil
 }
 
-func (s *BaseAPI) VisibleContests(ctx context.Context, userID int) ([]*kilonova.Contest, *StatusError) {
+func (s *BaseAPI) VisibleContests(ctx context.Context, user *kilonova.UserBrief) ([]*kilonova.Contest, *StatusError) {
+	userID := 0
+	if user != nil {
+		userID = user.ID
+	}
+
 	contests, err := s.db.VisibleContests(ctx, userID)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't fetch contests")
+	}
+	return contests, nil
+}
+
+func (s *BaseAPI) VisibleFutureContests(ctx context.Context, user *kilonova.UserBrief) ([]*kilonova.Contest, *StatusError) {
+	userID := 0
+	if user != nil {
+		userID = user.ID
+	}
+
+	contests, err := s.db.VisibleFutureContests(ctx, userID)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't fetch contests")
+	}
+	return contests, nil
+}
+
+func (s *BaseAPI) VisibleRunningContests(ctx context.Context, user *kilonova.UserBrief) ([]*kilonova.Contest, *StatusError) {
+	userID := 0
+	if user != nil {
+		userID = user.ID
+	}
+
+	contests, err := s.db.VisibleRunningContests(ctx, userID)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't fetch contests")
 	}

@@ -23,16 +23,25 @@ import (
 )
 
 func (rt *Web) index() func(http.ResponseWriter, *http.Request) {
-	templ := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html")
+	templ := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html", "modals/contest_list.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), kilonova.Version})
+		runningContests, err := rt.base.VisibleRunningContests(r.Context(), util.UserBrief(r))
+		if err != nil {
+			runningContests = []*kilonova.Contest{}
+		}
+		futureContests, err := rt.base.VisibleFutureContests(r.Context(), util.UserBrief(r))
+		if err != nil {
+			futureContests = []*kilonova.Contest{}
+		}
+
+		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), futureContests, runningContests})
 	}
 }
 
 func (rt *Web) problems() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "pbs.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), kilonova.Version})
+		rt.runTempl(w, r, templ, &SimpleParams{GenContext(r)})
 	}
 }
 
@@ -219,13 +228,9 @@ func (rt *Web) problemSubmit() func(http.ResponseWriter, *http.Request) {
 }
 
 func (rt *Web) contests() func(http.ResponseWriter, *http.Request) {
-	templ := rt.parse(nil, "contest/index.html")
+	templ := rt.parse(nil, "contest/index.html", "modals/contest_list.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := 0
-		if util.UserBrief(r) != nil {
-			userID = util.UserBrief(r).ID
-		}
-		contests, err := rt.base.VisibleContests(r.Context(), userID)
+		contests, err := rt.base.VisibleContests(r.Context(), util.UserBrief(r))
 		if err != nil {
 			rt.statusPage(w, r, 400, "")
 			return

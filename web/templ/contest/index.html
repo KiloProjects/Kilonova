@@ -1,48 +1,10 @@
 {{ define "title" }} {{getText "contests"}} {{ end }}
 {{ define "content" }}
 
-{{ range .Contests }}
-<div class="segment-container">
-    <h2><a href="/contests/{{.ID}}">{{.Name}}</a></h2>
-    <p>{{getText "startTime"}}: <span class="server_timestamp">{{.StartTime.UnixMilli}}</span></p>
-    <p>{{getText "duration"}}: {{contestDuration .}}</p>
-    <p>{{getText "status"}}: 
-        {{if .Ended}}
-            {{getText "contest_ended"}}
-        {{else if .Running}}
-            <kn-contest-countdown target_time='{{.EndTime.UnixMilli}}' type="running" /> 
-            {{getText "contest_remaining"}}
-        {{else}}
-            {{getText "contest_starting_in"}}
-            <kn-contest-countdown target_time='{{.EndTime.UnixMilli}}' type="before_start" />
-        {{end}}
-    </p>
-    {{ if isContestEditor . }}
-    <p class="my-1">{{getText "visibility"}}:
-        {{if .Visible}}
-        <span class="badge-lite bg-green-700 text-sm font-semibold">{{getText "visible"}}</span>
-        {{else}}
-        <span class="badge-lite bg-red-700 text-sm font-semibold">{{getText "invisible"}}</span>
-        {{end}}
-    </p>
-    <p class="my-1">{{getText "registration_status"}}:
-        {{if .PublicJoin}}
-        <span class="badge-lite bg-green-700 text-sm font-semibold">{{getText "registration_open"}}</span>
-        {{else}}
-        <span class="badge-lite bg-red-700 text-sm font-semibold">{{getText "registration_closed"}}</span>
-        {{end}}
-    </p>
-    {{ end }}
-    {{ if (and authed (canJoinContest .)) }}
-        {{ if (contestRegistered .) }}
-        <span class="my-2">{{getText "registered"}}</span>
-        {{ else }}
-        <button class="btn btn-blue my-2" onclick="bundled.registerForContest({{.ID}})">{{getText "register_btn"}}</button>
-        {{ end }}
-    {{ end }}
-</div>
-{{ else }}
-    <p>{{getText "noContests"}}</p>
-{{ end }}
+<h1 class="mb-2">
+    {{getText "contests"}}
+</h1>
+
+{{ template "contest_list.html" .Contests }}
 
 {{ end }}

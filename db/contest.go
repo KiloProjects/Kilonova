@@ -89,6 +89,38 @@ func (s *DB) VisibleContests(ctx context.Context, userID int) ([]*kilonova.Conte
 	return mapperCtx(ctx, contests, s.internalToContest), err
 }
 
+func (s *DB) VisibleFutureContests(ctx context.Context, userID int) ([]*kilonova.Contest, error) {
+	var contests []*dbContest
+	err := s.conn.SelectContext(
+		ctx,
+		&contests,
+		`SELECT contests.* FROM contests, contest_visibility viz WHERE contests.id = viz.contest_id 
+		AND NOW() < contests.start_time 
+		AND viz.user_id = $1 ORDER BY contests.start_time DESC`,
+		userID,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.Contest{}, nil
+	}
+	return mapperCtx(ctx, contests, s.internalToContest), err
+}
+
+func (s *DB) VisibleRunningContests(ctx context.Context, userID int) ([]*kilonova.Contest, error) {
+	var contests []*dbContest
+	err := s.conn.SelectContext(
+		ctx,
+		&contests,
+		`SELECT contests.* FROM contests, contest_visibility viz WHERE contests.id = viz.contest_id 
+		AND contests.start_time <= NOW() AND NOW() < contests.end_time
+		AND viz.user_id = $1 ORDER BY contests.start_time DESC`,
+		userID,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.Contest{}, nil
+	}
+	return mapperCtx(ctx, contests, s.internalToContest), err
+}
+
 func (s *DB) UpdateContest(ctx context.Context, id int, upd kilonova.ContestUpdate) error {
 	toUpd, args := contestUpdateQuery(&upd)
 	if len(toUpd) == 0 {

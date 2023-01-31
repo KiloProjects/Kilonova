@@ -171,13 +171,16 @@ func (s *DB) DeleteUser(ctx context.Context, id int) error {
 }
 
 // CreateUser creates a new user with the specified data.
-func (s *DB) CreateUser(ctx context.Context, name, passwordHash, email, preferredLanguage string) (int, error) {
+func (s *DB) CreateUser(ctx context.Context, name, passwordHash, email, preferredLanguage string, generated bool) (int, error) {
 	if name == "" || passwordHash == "" || email == "" || preferredLanguage == "" {
 		return -1, kilonova.ErrMissingRequired
 	}
 
 	var id = -1
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind("INSERT INTO users (name, email, password, preferred_language) VALUES (?, ?, ?, ?) RETURNING id"), name, email, passwordHash, preferredLanguage)
+	err := s.conn.GetContext(ctx, &id,
+		s.conn.Rebind("INSERT INTO users (name, email, password, preferred_language, generated, verified_email) VALUES (?, ?, ?, ?, ?, ?) RETURNING id"),
+		name, email, passwordHash, preferredLanguage, generated, generated, // generated is for both generated and verified_email!
+	)
 	return id, err
 }
 

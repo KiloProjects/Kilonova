@@ -1,12 +1,39 @@
 {{ define "title" }} Kilonova {{ end }}
 {{ define "content" }}
-<h1>Kilonova {{.Version}}</h1>
+<h1>Kilonova {{version}}</h1>
 
 <p class="text-gray-600 dark:text-gray-300 mb-2">{{ getText "announcement" `<a target="_blank" rel="noopener noreferrer" href="https://discord.gg/Qa6Ytgh">Discord</a>` }} </p>
+
+
+<div class="page-sidebar-divider"></div>
 {{ $user := .Ctx.User.Brief }}
 {{ $root := . }}
 {{ $ctx := .Ctx }}
 
+{{ $showAllContests := false }}
+
+{{ with .RunningContests }}
+    {{ $showAllContests = true }}
+    <h2>{{getText "running_contests"}}</h2>
+    {{ template "contest_list.html" . }}
+{{ end }}
+    
+{{ with .FutureContests }}
+    {{ $showAllContests = true }}
+    <h2>{{getText "future_contests"}}</h2>
+    {{ template "contest_list.html" . }}
+{{ end }}
+
+
+{{ if $showAllContests }}
+<div class="mb-4">
+    {{ renderMarkdown (getText "all_contests_announcement") }}
+</div>
+
+<div class="page-sidebar-divider"></div>
+{{ end }}
+
+<h2>{{getText "problems"}}</h2>
 
 <div class="list-group mb-4">
     {{ range problemLists }}

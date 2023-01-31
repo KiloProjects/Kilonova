@@ -6,6 +6,10 @@ ro = "Nu ezitați să vă alăturați %s-ului nostru și să ne contactați dac�
 en = "You can also view all problems ordered by ID [on this page](/problems)."
 ro = "Poți, de asemenea, să vezi toate problemele ordonate după ID [pe pagina aceasta](/problems)."
 
+[all_contests_announcement]
+en = "You can also view all available contests [on this page](/contests)."
+ro = "Poți, de asemenea, să vezi toate concursurile disponibile [pe pagina aceasta](/contests)."
+
 [num_solved]
 en = "%d / %d solved"
 ro = "%d / %d rezolvate"
@@ -1471,3 +1475,15 @@ ro = "Mergi la panoul de comunicare"
 [generated_acc]
 en = "Generated account"
 ro = "Cont generat"
+
+[future_contests]
+en = "Future contests"
+ro = "Concursuri viitoare"
+
+[running_contests]
+en = "Running contests"
+ro = "Concursuri în desfășurare"
+
+[past_contests]
+en = "Past contests"
+ro = "Concursuri anterioare"

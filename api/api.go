@@ -177,10 +177,13 @@ func (s *API) Handler() http.Handler {
 		r.With(s.MustBeAuthed).Get("/getSelfSolvedProblems", s.getSelfSolvedProblems)
 		r.With(s.MustBeAuthed).Get("/getSolvedProblems", s.getSolvedProblems)
 
-		r.With(s.MustBeAdmin).Route("/moderation", func(r chi.Router) {
+		r.Route("/moderation", func(r chi.Router) {
+			r.Use(s.MustBeAdmin)
 			r.Post("/purgeBio", s.purgeBio)
 			r.Post("/deleteUser", s.deleteUser)
 		})
+
+		r.With(s.MustBeAdmin).Post("/generateUser", s.generateUser)
 
 		r.Get("/getGravatar", s.getGravatar)
 		r.With(s.MustBeAuthed).Get("/getSelfGravatar", s.getSelfGravatar)

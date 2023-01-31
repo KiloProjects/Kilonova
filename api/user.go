@@ -326,3 +326,28 @@ func (s *API) resendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	returnData(w, "Verification email resent")
 }
+
+func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		Name     string `json:"username"`
+		Password string `json:"password"`
+		Lang     string `json:"language"`
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	if args.Password == "" {
+		args.Password = kilonova.RandomString(7)
+	}
+
+	user, err := s.base.GenerateUser(r.Context(), args.Name, args.Password, args.Lang)
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	returnData(w, user)
+}

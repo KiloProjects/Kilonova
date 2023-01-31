@@ -3,7 +3,6 @@ package sudoapi
 import (
 	"context"
 	"errors"
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -78,15 +77,15 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string) (i
 		lang = config.Common.DefaultLang
 	}
 
-	id, err := s.createUser(ctx, uname, email, pwd, lang)
+	id, err := s.createUser(ctx, uname, email, pwd, lang, false)
 	if err != nil {
-		fmt.Println(err)
+		zap.S().Warn(err)
 		return -1, Statusf(500, "Couldn't create user")
 	}
 
 	user, err1 := s.UserFull(ctx, id)
 	if err1 != nil {
-		fmt.Println(err1)
+		zap.S().Warn(err1)
 		return -1, err1
 	}
 

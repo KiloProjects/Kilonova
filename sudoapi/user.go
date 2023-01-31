@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -143,6 +144,43 @@ func (s *BaseAPI) UpdateUserPassword(ctx context.Context, uid int, password stri
 	return nil
 }
 
+func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string) (*kilonova.UserFull, *StatusError) {
+	uname = strings.TrimSpace(uname)
+	if !(len(uname) >= 3 && len(uname) <= 32 && usernameRegex.MatchString(uname)) {
+		return nil, Statusf(400, "Username must be between 3 and 32 characters long and must contain only letters, digits, underlines and dashes.")
+	}
+	if err := s.CheckValidPassword(pwd); err != nil {
+		return nil, err
+	}
+	if !(lang == "" || lang == "en" || lang == "ro") {
+		return nil, Statusf(400, "Invalid language.")
+	}
+
+	if exists, err := s.db.UserExists(ctx, uname, "INVALID_EMAIL"); err != nil || exists {
+		return nil, Statusf(400, "User matching username already exists!")
+	}
+
+	if lang == "" {
+		lang = config.Common.DefaultLang
+	}
+
+	// Dummy email
+	email := fmt.Sprintf("email_%s@kilonova.ro", uname)
+
+	id, err := s.createUser(ctx, uname, email, pwd, lang, true)
+	if err != nil {
+		zap.S().Warn(err)
+		return nil, Statusf(500, "Couldn't create user")
+	}
+
+	user, err1 := s.UserFull(ctx, id)
+	if err1 != nil {
+		zap.S().Warn(err1)
+	}
+
+	return user, err1
+}
+
 func (s *BaseAPI) GetGravatarLink(user *kilonova.UserFull, size int) string {
 	v := url.Values{}
 	v.Add("s", strconv.Itoa(size))
@@ -152,13 +190,13 @@ func (s *BaseAPI) GetGravatarLink(user *kilonova.UserFull, size int) string {
 	return fmt.Sprintf("https://www.gravatar.com/avatar/%s?%s", hex.EncodeToString(bSum[:]), v.Encode())
 }
 
-func (s *BaseAPI) createUser(ctx context.Context, username, email, password, lang string) (int, error) {
+func (s *BaseAPI) createUser(ctx context.Context, username, email, password, lang string, generated bool) (int, error) {
 	hash, err := hashPassword(password)
 	if err != nil {
 		return -1, err
 	}
 
-	id, err := s.db.CreateUser(ctx, username, hash, email, lang)
+	id, err := s.db.CreateUser(ctx, username, hash, email, lang, generated)
 	if err != nil {
 		zap.S().Warn(err)
 		return -1, err

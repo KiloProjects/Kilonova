@@ -187,7 +187,8 @@ func (t *TestEditParams) GetFullTests() testDataType {
 type IndexParams struct {
 	Ctx *ReqContext
 
-	Version string
+	FutureContests  []*kilonova.Contest
+	RunningContests []*kilonova.Contest
 }
 
 type ProblemListingParams struct {
