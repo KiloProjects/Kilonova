@@ -84,7 +84,7 @@ func (rt *Web) Handler() http.Handler {
 	r.Get("/", rt.index())
 	r.With(rt.mustBeAuthed).Get("/profile", rt.selfProfile())
 	r.Get("/profile/{user}", rt.profile())
-	r.Get("/settings", rt.justRender("settings.html"))
+	r.With(rt.mustBeAuthed).Get("/settings", rt.justRender("settings.html"))
 
 	r.Route("/problems", func(r chi.Router) {
 		r.Get("/", rt.problems())
