@@ -3,6 +3,7 @@ package web
 import (
 	"bytes"
 	"context"
+	"encoding/csv"
 	"errors"
 	"fmt"
 	"html/template"
@@ -293,6 +294,73 @@ func (rt *Web) contestRegistrations() func(http.ResponseWriter, *http.Request) {
 			Contest: util.Contest(r),
 		})
 	}
+}
+
+func (rt *Web) contestLeaderboard() func(http.ResponseWriter, *http.Request) {
+	templ := rt.parse(nil, "contest/leaderboard.html", "problem/topbar.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		rt.runTempl(w, r, templ, &ContestParams{
+			Ctx:    GenContext(r),
+			Topbar: rt.topbar(r, "contest_leaderboard", -1),
+
+			Contest: util.Contest(r),
+		})
+	}
+}
+
+func (rt *Web) contestLeaderboardCSV(w http.ResponseWriter, r *http.Request) {
+	ld, err := rt.base.ContestLeaderboard(r.Context(), util.Contest(r).ID)
+	if err != nil {
+		http.Error(w, err.Error(), err.Code)
+		return
+	}
+	var buf bytes.Buffer
+	wr := csv.NewWriter(&buf)
+
+	// Header
+	header := []string{"username"}
+	for _, pb := range ld.ProblemOrder {
+		name, ok := ld.ProblemNames[pb]
+		if !ok {
+			zap.S().Warn("Invalid rt.base.ContestLeaderboard output")
+			http.Error(w, "Invalid internal data", 500)
+			continue
+		}
+		header = append(header, name)
+	}
+	header = append(header, "total")
+	if err := wr.Write(header); err != nil {
+		zap.S().Warn(err)
+		http.Error(w, "Couldn't write CSV", 500)
+		return
+	}
+	for _, entry := range ld.Entries {
+		line := []string{entry.User.Name}
+		for _, pb := range ld.ProblemOrder {
+			score, ok := entry.ProblemScores[pb]
+			if !ok {
+				line = append(line, "-")
+			} else {
+				line = append(line, strconv.Itoa(score))
+			}
+		}
+
+		line = append(line, strconv.Itoa(entry.TotalScore))
+		if err := wr.Write(line); err != nil {
+			zap.S().Warn(err)
+			http.Error(w, "Couldn't write CSV", 500)
+			return
+		}
+	}
+
+	wr.Flush()
+	if err := wr.Error(); err != nil {
+		zap.S().Warn(err)
+		http.Error(w, "Couldn't write CSV", 500)
+		return
+	}
+
+	http.ServeContent(w, r, "leaderboard.csv", time.Now(), bytes.NewReader(buf.Bytes()))
 }
 
 func (rt *Web) selfProfile() func(http.ResponseWriter, *http.Request) {

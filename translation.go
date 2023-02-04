@@ -46,7 +46,7 @@ func recurse(prefix string, val map[string]any) {
 		} else if deeper, ok := val.(map[string]any); ok {
 			recurse(prefix+"."+name, deeper)
 		} else {
-			panic("Wtf")
+			zap.S().Fatal("Invalid translation JSON type")
 		}
 	}
 }
@@ -56,7 +56,7 @@ func init() {
 	var elems = make(map[string]map[string]any)
 	err := json.Unmarshal(keys, &elems)
 	if err != nil {
-		panic(err)
+		zap.S().Fatalf("Error unmarshaling translation keys: %#v", err)
 	}
 	for name, children := range elems {
 		recurse(name, children)

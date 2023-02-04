@@ -1,0 +1,14 @@
+{{ define "title" }} {{ getText "leaderboard" }} {{ end }}
+{{ define "content" }}
+{{ template "topbar.html" .}}
+
+<div class="page-holder no-bottom-bar">
+    <div class="page-content-full">
+        <h2>{{getText "leaderboard"}}</h2>
+        <kn-leaderboard contestid="{{.Contest.ID}}"/>
+
+        <a href="/contests/{{.Contest.ID}}/leaderboard.csv">Download CSV</a>
+    </div>
+</div>
+
+{{ end }}

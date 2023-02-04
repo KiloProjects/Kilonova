@@ -137,6 +137,66 @@ func (s *DB) DeleteContest(ctx context.Context, id int) error {
 	return err
 }
 
+// Contest leaderboard
+
+type databaseTopEntry struct {
+	UserID    int `db:"user_id"`
+	ContestID int `db:"contest_id"`
+	Total     int `db:"total_score"`
+}
+
+func (s *DB) internalToLeaderboardEntry(ctx context.Context, entry *databaseTopEntry) (*kilonova.LeaderboardEntry, error) {
+	user, err := s.User(ctx, entry.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	var pbs = []struct {
+		ProblemID int `db:"problem_id"`
+		Score     int `db:"score"`
+	}{}
+	if err := s.conn.SelectContext(ctx, &pbs, "SELECT problem_id, score FROM max_score_contest_view WHERE user_id = $1 AND contest_id = $2", entry.UserID, entry.ContestID); err != nil {
+		return nil, err
+	}
+
+	scores := make(map[int]int)
+	for _, pb := range pbs {
+		scores[pb.ProblemID] = pb.Score
+	}
+
+	return &kilonova.LeaderboardEntry{
+		User:          user.ToBrief(),
+		TotalScore:    entry.Total,
+		ProblemScores: scores,
+	}, nil
+}
+
+func (s *DB) ContestLeaderboard(ctx context.Context, contestID int) (*kilonova.ContestLeaderboard, error) {
+	pbs, err := s.ContestProblems(ctx, contestID)
+	if err != nil {
+		return nil, err
+	}
+
+	leaderboard := &kilonova.ContestLeaderboard{
+		ProblemOrder: mapper(pbs, func(pb *kilonova.Problem) int { return pb.ID }),
+		ProblemNames: make(map[int]string),
+	}
+	for _, pb := range pbs {
+		leaderboard.ProblemNames[pb.ID] = pb.Name
+	}
+
+	var topList []*databaseTopEntry
+
+	err = s.conn.SelectContext(ctx, &topList, "SELECT * FROM contest_top_view WHERE contest_id = $1", contestID)
+	if err != nil {
+		return nil, err
+	}
+
+	leaderboard.Entries = mapperCtx(ctx, topList, s.internalToLeaderboardEntry)
+
+	return leaderboard, nil
+}
+
 // Contest problems
 
 func (s *DB) UpdateContestProblems(ctx context.Context, contestID int, problems []int) error {

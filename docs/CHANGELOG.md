@@ -1,3 +1,10 @@
+- v0.12.1:
+    - Generated account support;
+    - Functional leaderboard;
+- v0.12.0:
+    - Most of the contest functionality is done;
+    - Future contests on main page;
+    - New CMS-style default checker while maintaining legacy checker support;
 - v0.11.2:
     - Overhauled problem UI/UX;
     - UI/UX overhaul for lists of problems (such as the new attempted problems list on a profile page);

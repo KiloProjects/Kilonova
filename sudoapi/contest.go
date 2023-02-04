@@ -103,6 +103,14 @@ func (s *BaseAPI) ProblemRunningContests(ctx context.Context, problemID int) ([]
 	return contests, nil
 }
 
+func (s *BaseAPI) ContestLeaderboard(ctx context.Context, contestID int) (*kilonova.ContestLeaderboard, *StatusError) {
+	leaderboard, err := s.db.ContestLeaderboard(ctx, contestID)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't generate leaderboard")
+	}
+	return leaderboard, nil
+}
+
 func (s *BaseAPI) CanJoinContest(c *kilonova.Contest) bool {
 	return c.PublicJoin && time.Now().Before(c.StartTime)
 }

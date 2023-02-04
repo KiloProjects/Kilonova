@@ -19,8 +19,8 @@ require (
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/litao91/goldmark-mathjax v0.0.0-20210217064022-a43cf739a50f
 	github.com/mattn/go-sqlite3 v1.14.16 // indirect
-	github.com/microcosm-cc/bluemonday v1.0.21
-	github.com/yuin/goldmark v1.5.3
+	github.com/microcosm-cc/bluemonday v1.0.22
+	github.com/yuin/goldmark v1.5.4
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.5.0
 	golang.org/x/net v0.5.0 // indirect

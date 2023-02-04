@@ -1487,3 +1487,15 @@ ro = "Concursuri în desfășurare"
 [past_contests]
 en = "Past contests"
 ro = "Concursuri anterioare"
+
+[total]
+en = "Total"
+ro = "Total"
+
+[leaderboard]
+en = "Leaderboard"
+ro = "Clasament"
+
+[reload]
+en = "Reload"
+ro = "Reîncărcare"

@@ -19,6 +19,11 @@
     <b>{{getText "communication"}} | {{.Contest.Name}}</b>
     {{ $problemPage = false }}
 
+    {{ else if (eq $topbar.Page "contest_leaderboard") }}
+    <b>{{getText "leaderboard"}} | {{.Contest.Name}}</b>
+    {{ $problemPage = false }}
+
+
     {{ else if (eq $topbar.Page "pb_statement") }}
 
     {{ $editProblemPage = false }}
@@ -66,6 +71,10 @@
         <div class="topbar-separator"></div>
         <a class='p-1 {{if (eq $topbar.Page "contest_registrations")}} topbar-selected {{end}}' href="{{$topbar.URLPrefix}}/manage/registrations">
             {{getText "contest_registrations"}}
+        </a>
+        <div class="topbar-separator"></div>
+        <a class='p-1 {{if (eq $topbar.Page "contest_leaderboard")}} topbar-selected {{end}}' href="{{$topbar.URLPrefix}}/leaderboard">
+            {{getText "leaderboard"}}
         </a>
         {{ end }}
         {{ if $problemPage }}

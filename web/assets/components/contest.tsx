@@ -8,8 +8,10 @@ import { fromBase64 } from "js-base64";
 import { answerQuestion, getAllQuestions, getUserQuestions, getAnnouncements, updateAnnouncement, deleteAnnouncement } from "../contest";
 import type { Question, Announcement } from "../contest";
 import { UserBrief, getUser } from "../api/submissions";
-import { createToast } from "../toast";
+import { apiToast, createToast } from "../toast";
 import { isEqual } from "underscore";
+import { BigSpinner } from "./common";
+import { getCall } from "../net";
 
 export const RFC1123Z = "ddd, DD MMM YYYY HH:mm:ss ZZ";
 
@@ -71,6 +73,89 @@ export function ContestCountdown({ target_time, type }: { target_time: string; t
 			) : (
 				<ContestRemainingTime target_time={endTime} />
 			)}
+		</>
+	);
+}
+
+type LeaderboardResponse = {
+	problem_ordering: number[];
+	problem_names: Record<number, string>;
+	entries: {
+		user: UserBrief;
+		scores: Record<number, number>;
+		total: number;
+	}[];
+};
+
+export function ContestLeaderboard({ contestID }: { contestID: number }) {
+	let [loading, setLoading] = useState(true);
+	let [problems, setProblems] = useState<{ id: number; name: string }[]>([]);
+	let [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
+
+	async function loadLeaderboard() {
+		setLoading(true);
+		const res = await getCall<LeaderboardResponse>(`/contest/${contestID}/leaderboard`, {});
+		if (res.status === "error") {
+			apiToast(res);
+			return;
+		}
+		setLeaderboard(res.data);
+		setProblems(res.data.problem_ordering.map((val) => ({ id: val, name: res.data.problem_names[val] })));
+		setLoading(false);
+	}
+
+	useEffect(() => {
+		loadLeaderboard().catch(console.error);
+	}, [contestID]);
+
+	if (loading || leaderboard == null) {
+		return (
+			<>
+				<button class="btn btn-blue mb-2" onClick={() => loadLeaderboard()}>
+					{getText("reload")}
+				</button>
+				<BigSpinner />;
+			</>
+		);
+	}
+	return (
+		<>
+			<button class="btn btn-blue mb-2" onClick={() => loadLeaderboard()}>
+				{getText("reload")}
+			</button>
+			<table class="kn-table">
+				<thead>
+					<tr>
+						<th class="kn-table-cell" scope="col">
+							{getText("name")}
+						</th>
+						{problems.map((pb) => (
+							<th class="kn-table-cell" scope="col" key={pb.id}>
+								{pb.name}
+							</th>
+						))}
+						<th class="kn-table-cell" scope="col">
+							{getText("total")}
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					{leaderboard.entries.map((entry) => (
+						<tr class="kn-table-row" key={entry.user.id}>
+							<td class="kn-table-cell">
+								<a href={`/profile/${entry.user.name}`}>{entry.user.name}</a>
+							</td>
+							{problems.map((pb) => (
+								<td class="kn-table-cell" scope="col" key={entry.user.name + pb.id}>
+									{entry.scores[pb.id] ?? "-"}
+								</td>
+							))}
+
+							<td class="kn-table-cell">{entry.total}</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
 		</>
 	);
 }
@@ -433,8 +518,17 @@ function CommunicationAnnouncerDOM({ contestid, contesteditor }: { contestid: st
 	return <CommunicationAnnouncer contestID={contestID} contestEditor={contesteditor == "true"} />;
 }
 
+function ContestLeaderboardDOM({ contestid }: { contestid: string }) {
+	const contestID = parseInt(contestid);
+	if (isNaN(contestID)) {
+		throw new Error("Invalid contest ID");
+	}
+	return <ContestLeaderboard contestID={contestID} />;
+}
+
 register(QuestionManagerDOM, "kn-question-mgr", ["encoded", "contestid"]);
 register(QuestionListDOM, "kn-questions", ["encoded", "contestid"]);
 register(AnnouncementListDOM, "kn-announcements", ["encoded", "contestid", "canedit"]);
 register(ContestCountdown, "kn-contest-countdown", ["target_time", "type"]);
 register(CommunicationAnnouncerDOM, "kn-comm-announcer", ["contestid", "contesteditor"]);
+register(ContestLeaderboardDOM, "kn-leaderboard", ["contestid"]);

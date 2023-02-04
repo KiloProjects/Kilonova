@@ -279,14 +279,14 @@ func doWalk(filename string, nodes ...tparse.Node) bool {
 			}
 			if nodes := val.FieldByName("Nodes"); nodes.IsValid() {
 				if nodes.Kind() != reflect.Slice {
-					panic("Wtf")
+					zap.S().Fatalf("Invalid template static analysis tree")
 				}
 				ok = ok && doWalk(filename, nodes.Interface().([]tparse.Node)...)
 			}
 		}
 		if nodes := tp.FieldByName("Nodes"); nodes.IsValid() {
 			if nodes.Kind() != reflect.Slice {
-				panic("Wtf")
+				zap.S().Fatalf("Invalid template static analysis tree")
 			}
 			ok = ok && doWalk(filename, nodes.Interface().([]tparse.Node)...)
 		}

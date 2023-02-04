@@ -10,21 +10,23 @@
         {{ with .Attachments }}
         <table class="kn-table my-2" style="table-layout: fixed">
             <thead>
-                <th scope="col" class="w-1/8">
-                    <input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
-                </th>
-                <th scope="col" class="w-1/2">
-                    {{getText "name"}}
-                </th>
-                <th scope="col" class="w-3/8">
-                    {{getText "size"}}
-                </th>
-                <th scope="col" class="w-1/8">
-                    {{getText "visible"}}
-                </th>
-                <th scope="col" class="w-1/8">
-                    {{getText "private"}}
-                </th>
+                <tr>
+                    <th scope="col" class="w-1/8">
+                        <input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
+                    </th>
+                    <th scope="col" class="w-1/2">
+                        {{getText "name"}}
+                    </th>
+                    <th scope="col" class="w-3/8">
+                        {{getText "size"}}
+                    </th>
+                    <th scope="col" class="w-1/8">
+                        {{getText "visible"}}
+                    </th>
+                    <th scope="col" class="w-1/8">
+                        {{getText "private"}}
+                    </th>
+                </tr>
             </thead>
             <tbody id="att-body">
                 {{ range . }}

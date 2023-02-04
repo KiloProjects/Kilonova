@@ -210,7 +210,7 @@ func (s *API) Handler() http.Handler {
 			r.Get("/", s.getContest)
 			r.Get("/problems", s.getContestProblems)
 
-			r.Get("/leaderboard", s.contestLeaderboard)
+			r.With(s.validateContestEditor).Get("/leaderboard", s.contestLeaderboard)
 
 			r.With(s.MustBeAuthed).Get("/questions", s.contestUserQuestions)
 			r.With(s.validateContestEditor).Get("/allQuestions", s.contestAllQuestions)

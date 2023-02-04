@@ -98,3 +98,15 @@ type ContestRegistration struct {
 	ContestID int       `json:"contest_id" db:"contest_id"`
 	UserID    int       `json:"user_id" db:"user_id"`
 }
+
+type LeaderboardEntry struct {
+	User          *UserBrief  `json:"user"`
+	ProblemScores map[int]int `json:"scores"`
+	TotalScore    int         `json:"total"`
+}
+
+type ContestLeaderboard struct {
+	ProblemOrder []int               `json:"problem_ordering"`
+	ProblemNames map[int]string      `json:"problem_names"`
+	Entries      []*LeaderboardEntry `json:"entries"`
+}

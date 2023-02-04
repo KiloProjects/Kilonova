@@ -114,12 +114,18 @@ func (s *API) getContestProblems(w http.ResponseWriter, r *http.Request) {
 	pbs, err := s.base.ContestProblems(r.Context(), util.Contest(r), util.UserBrief(r))
 	if err != nil {
 		err.WriteError(w)
+		return
 	}
 	returnData(w, pbs)
 }
 
 func (s *API) contestLeaderboard(w http.ResponseWriter, r *http.Request) {
-	panic("TODO")
+	ld, err := s.base.ContestLeaderboard(r.Context(), util.Contest(r).ID)
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+	returnData(w, ld)
 }
 
 func (s *API) addContestEditor(w http.ResponseWriter, r *http.Request) {

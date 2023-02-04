@@ -101,7 +101,8 @@ func (rt *Web) Handler() http.Handler {
 			// Communication holds both questions and announcements
 			r.Get("/communication", rt.contestCommunication())
 
-			// r.Get("/leaderboard", rt.contestLeaderboard())
+			r.With(rt.mustBeContestEditor).Get("/leaderboard", rt.contestLeaderboard())
+			r.With(rt.mustBeContestEditor).Get("/leaderboard.csv", rt.contestLeaderboardCSV)
 
 			r.Route("/manage", func(r chi.Router) {
 				r.Use(rt.mustBeContestEditor)
