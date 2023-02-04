@@ -154,6 +154,13 @@ export function ContestLeaderboard({ contestID }: { contestID: number }) {
 							<td class="kn-table-cell">{entry.total}</td>
 						</tr>
 					))}
+					{leaderboard.entries.length == 0 && (
+						<tr class="kn-table-row">
+							<td class="kn-table-cell" colSpan={99}>
+								<h1>{getText("no_users")}</h1>
+							</td>
+						</tr>
+					)}
 				</tbody>
 			</table>
 		</>
