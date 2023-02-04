@@ -114,7 +114,7 @@ export function ContestLeaderboard({ contestID }: { contestID: number }) {
 				<button class="btn btn-blue mb-2" onClick={() => loadLeaderboard()}>
 					{getText("reload")}
 				</button>
-				<BigSpinner />;
+				<BigSpinner />
 			</>
 		);
 	}
