@@ -393,6 +393,7 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"pastesEnabled": func() bool { return config.Features.Pastes },
 		"graderEnabled": func() bool { return config.Features.Grader },
 		"allSubsView":   func() bool { return config.Features.AllSubs },
+		"ccDisclaimer":  func() bool { return config.Features.CCDisclaimer },
 		"defaultLang":   func() string { return config.Common.DefaultLang },
 
 		"intList": func(ids []int) string {

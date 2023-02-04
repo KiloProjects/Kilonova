@@ -60,6 +60,8 @@ type FeaturesConf struct {
 	Pastes bool `toml:"pastes"`
 
 	AllSubs bool `toml:"all_subs"`
+
+	CCDisclaimer bool `toml:"cc_disclaimer"`
 }
 
 // c represents the loaded config

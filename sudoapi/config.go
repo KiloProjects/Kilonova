@@ -14,6 +14,8 @@ type ConfigUpdate struct {
 	Signup  *bool `json:"signup"`
 	Pastes  *bool `json:"pastes"`
 	AllSubs *bool `json:"all_subs"`
+
+	CCDisclaimer *bool `json:"ccDisclaimer"`
 }
 
 func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) *StatusError {
@@ -31,6 +33,9 @@ func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) *StatusErr
 	}
 	if upd.AllSubs != nil {
 		config.Features.AllSubs = *upd.AllSubs
+	}
+	if upd.CCDisclaimer != nil {
+		config.Features.CCDisclaimer = *upd.CCDisclaimer
 	}
 	if err := config.Save(); err != nil {
 		zap.S().Error(err)

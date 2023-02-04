@@ -70,6 +70,12 @@
                 <span class="ml-2">{{getText "featureSet.all_subs"}}</span>
             </label>
         </div>
+        <div class="block">
+            <label class="inline-flex items-center text-lg">
+                <input class="form-checkbox" name="ccDisclaimer" id="cc_disclaimer_feature" type="checkbox" {{if ccDisclaimer}}checked{{end}}>
+                <span class="ml-2">{{getText "featureSet.ccDisclaimer"}}</span>
+            </label>
+        </div>
     </div>
 
     <button type="submit" class="btn btn-blue">{{getText "button.update"}}</button>
@@ -144,6 +150,7 @@
             signup: document.getElementById("signup_feature").checked,
             pastes: document.getElementById("pastes_feature").checked,
             all_subs: document.getElementById("all_subs_feature").checked,
+            ccDisclaimer: document.getElementById("cc_disclaimer_feature").checked,
         };
         bundled.apiToast(await bundled.postCall("/admin/updateConfig", data))
     })

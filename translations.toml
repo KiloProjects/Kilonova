@@ -1195,6 +1195,11 @@ ro = "Signup manual"
 en = "Pastes"
 ro = "Paste-uri"
 
+[featureSet.ccDisclaimer]
+en = "Creative Commons disclaimer in footer"
+ro = "Disclaimer pt Creative Commons în footer"
+
+
 [featureSet.all_subs]
 en = "Anyone can view all submissions"
 ro = "Oricine poate vedea toate submisiile"

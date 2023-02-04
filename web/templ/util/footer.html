@@ -7,6 +7,7 @@
 				<ul>
 					<li><a class="black-anchor" href="/">{{getText "frontPage"}}</a></li>
 					<li><a class="black-anchor" href="/problems">{{getText "problem.list"}}</a></li>
+					<li><a class="black-anchor" href="/contests">{{getText "contests"}}</a></li>
 					<li><a class="black-anchor" href="/submissions">{{getText "submission.list"}}</a></li>
 				</ul>
 			</div>
@@ -22,22 +23,22 @@
 				</ul>
 			</div>
 
-			<div class="h-auto mb-2">
-				<div class="text-lg">Copyright policy</div>
-				<ul>
-					<li>
-						<div class="block">
-							Cu excepția cazurilor unde este specificat diferit, conținutul platformei este publicat sub licența <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>. Vedeți <a href="/docs/CREATIVE-COMMONS">Aici</a> mai multe detalii.
-						</div>
-						<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">
-							<img alt="Creative Commons Licence" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" />
-						</a>
-					</li>
-				</ul>
-			</div>
-
+            {{ if ccDisclaimer }}
+                <div class="h-auto mb-2">
+                    <div class="text-lg">Copyright policy</div>
+                    <ul>
+                        <li>
+                            <div class="block">
+                                Cu excepția cazurilor unde este specificat diferit, conținutul platformei este publicat sub licența <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>. Vedeți <a href="/docs/CREATIVE-COMMONS">Aici</a> mai multe detalii.
+                            </div>
+                            <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">
+                                <img alt="Creative Commons Licence" style="border-width:0" width="88" height="31" src="/static/by-nc-sa.eu.png" />
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            {{ end }}
 		</div>
-		<!--<p>&copy; KiloProjects 2022</p>-->
 	</div>
 </footer>
 {{ end }}
