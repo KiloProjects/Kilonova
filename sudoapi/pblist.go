@@ -38,8 +38,8 @@ func (s *BaseAPI) ProblemListProblems(ctx context.Context, ids []int, lookingUse
 	return rez, nil
 }
 
-func (s *BaseAPI) ProblemLists(ctx context.Context, filter kilonova.ProblemListFilter) ([]*kilonova.ProblemList, *StatusError) {
-	pblists, err := s.db.ProblemLists(ctx, filter)
+func (s *BaseAPI) ProblemLists(ctx context.Context, root bool) ([]*kilonova.ProblemList, *StatusError) {
+	pblists, err := s.db.ProblemLists(ctx, root)
 	if err != nil {
 		return nil, ErrUnknownError
 	}

@@ -115,7 +115,7 @@ func (s *DB) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, e
 // UserExists says wether or not a user matches either a specific username (case-insensitive), either a specific email address.
 func (s *DB) UserExists(ctx context.Context, username string, email string) (bool, error) {
 	var count int
-	err := s.conn.GetContext(ctx, &count, s.conn.Rebind("SELECT COUNT(*) FROM users WHERE lower(name) = lower(?) OR lower(email) = lower(?)"), username, email)
+	err := s.conn.GetContext(ctx, &count, "SELECT COUNT(*) FROM users WHERE lower(name) = lower($1) OR lower(email) = lower($2)", username, email)
 	return count > 0, err
 }
 
@@ -160,13 +160,13 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate
 }
 
 func (s *DB) UpdateUserPasswordHash(ctx context.Context, userID int, hash string) error {
-	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("UPDATE users SET password = ? WHERE id = ?"), hash, userID)
+	_, err := s.conn.ExecContext(ctx, "UPDATE users SET password = $1 WHERE id = $2", hash, userID)
 	return err
 }
 
 // DeleteUser permanently deletes a user from the system.
 func (s *DB) DeleteUser(ctx context.Context, id int) error {
-	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("DELETE FROM users WHERE id = ?"), id)
+	_, err := s.conn.ExecContext(ctx, "DELETE FROM users WHERE id = $1", id)
 	return err
 }
 

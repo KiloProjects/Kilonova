@@ -15,7 +15,7 @@ import (
 
 func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
 	var pb dbProblem
-	err := s.conn.GetContext(ctx, &pb, s.conn.Rebind("SELECT * FROM problems WHERE id = ? LIMIT 1"), id)
+	err := s.conn.GetContext(ctx, &pb, "SELECT * FROM problems WHERE id = $1 LIMIT 1", id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -114,7 +114,7 @@ func (s *DB) BulkUpdateProblems(ctx context.Context, filter kilonova.ProblemFilt
 }
 
 func (s *DB) DeleteProblem(ctx context.Context, id int) error {
-	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("DELETE FROM problems WHERE id = ?"), id)
+	_, err := s.conn.ExecContext(ctx, "DELETE FROM problems WHERE id = $1", id)
 	return err
 }
 

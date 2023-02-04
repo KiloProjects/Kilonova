@@ -18,7 +18,7 @@ func (s *DB) CreateSubTask(ctx context.Context, subtask *kilonova.SubTask) error
 	}
 	var id int
 	// Do insertion
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind("INSERT INTO subtasks (problem_id, visible_id, score) VALUES (?, ?, ?) RETURNING id"), subtask.ProblemID, subtask.VisibleID, subtask.Score)
+	err := s.conn.GetContext(ctx, &id, "INSERT INTO subtasks (problem_id, visible_id, score) VALUES ($1, $2, $3) RETURNING id", subtask.ProblemID, subtask.VisibleID, subtask.Score)
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func (s *DB) CreateSubTask(ctx context.Context, subtask *kilonova.SubTask) error
 
 func (s *DB) SubTask(ctx context.Context, pbid, stvid int) (*kilonova.SubTask, error) {
 	var st subtask
-	err := s.conn.GetContext(ctx, &st, s.conn.Rebind("SELECT * FROM subtasks WHERE problem_id = ? AND visible_id = ?"), pbid, stvid)
+	err := s.conn.GetContext(ctx, &st, "SELECT * FROM subtasks WHERE problem_id = $1 AND visible_id = $2", pbid, stvid)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -42,7 +42,7 @@ func (s *DB) SubTask(ctx context.Context, pbid, stvid int) (*kilonova.SubTask, e
 
 func (s *DB) SubTaskByID(ctx context.Context, stid int) (*kilonova.SubTask, error) {
 	var st subtask
-	err := s.conn.GetContext(ctx, &st, s.conn.Rebind("SELECT * FROM subtasks WHERE id = ?"), stid)
+	err := s.conn.GetContext(ctx, &st, "SELECT * FROM subtasks WHERE id = $1", stid)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -55,7 +55,7 @@ func (s *DB) SubTaskByID(ctx context.Context, stid int) (*kilonova.SubTask, erro
 
 func (s *DB) SubTasks(ctx context.Context, pbid int) ([]*kilonova.SubTask, error) {
 	var st []*subtask
-	err := s.conn.SelectContext(ctx, &st, s.conn.Rebind("SELECT * FROM subtasks WHERE problem_id = ? ORDER BY visible_id"), pbid)
+	err := s.conn.SelectContext(ctx, &st, "SELECT * FROM subtasks WHERE problem_id = $1 ORDER BY visible_id", pbid)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.SubTask{}, nil
 	}
@@ -75,7 +75,7 @@ func (s *DB) SubTasks(ctx context.Context, pbid int) ([]*kilonova.SubTask, error
 
 func (s *DB) SubTasksByTest(ctx context.Context, pbid, tid int) ([]*kilonova.SubTask, error) {
 	var st []*subtask
-	err := s.conn.SelectContext(ctx, &st, s.conn.Rebind("SELECT stks.* FROM subtasks stks LEFT JOIN subtask_tests stt ON stks.id = stt.subtask_id WHERE stt.test_id = ? AND stks.problem_id = ? ORDER BY visible_id"), tid, pbid)
+	err := s.conn.SelectContext(ctx, &st, "SELECT stks.* FROM subtasks stks LEFT JOIN subtask_tests stt ON stks.id = stt.subtask_id WHERE stt.test_id = $1 AND stks.problem_id = $2 ORDER BY visible_id", tid, pbid)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.SubTask{}, nil
 	}
@@ -117,27 +117,27 @@ func (s *DB) UpdateSubTaskTests(ctx context.Context, id int, testIDs []int) erro
 }
 
 func (s *DB) DeleteSubTask(ctx context.Context, stid int) error {
-	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("DELETE FROM subtasks WHERE id = ?"), stid)
+	_, err := s.conn.ExecContext(ctx, "DELETE FROM subtasks WHERE id = $1", stid)
 	return err
 }
 
 func (s *DB) DeleteSubTasks(ctx context.Context, pbid int) error {
-	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("DELETE FROM subtasks WHERE problem_id = ?"), pbid)
+	_, err := s.conn.ExecContext(ctx, "DELETE FROM subtasks WHERE problem_id = $1", pbid)
 	return err
 }
 
 func (s *DB) CleanupSubTasks(ctx context.Context, pbid int) error {
-	_, err := s.conn.ExecContext(ctx, s.conn.Rebind(`
+	_, err := s.conn.ExecContext(ctx, `
 DELETE FROM subtasks 
 WHERE 
-	problem_id = ? AND 
+	problem_id = $1 AND 
 	id IN (
 		WITH stk_count AS (
 			SELECT subtask_id, COUNT(*) as cnt FROM subtask_tests GROUP BY subtask_id
 		) 
 		SELECT subtask_id FROM stk_count WHERE cnt = 0
 	);
-`), pbid)
+`, pbid)
 	return err
 }
 
@@ -155,15 +155,15 @@ func (s *DB) internalToSubTask(ctx context.Context, st *subtask) (*kilonova.SubT
 	}
 
 	var ids []int
-	err := s.conn.SelectContext(ctx, &ids, s.conn.Rebind(`
+	err := s.conn.SelectContext(ctx, &ids, `
 SELECT subtask_tests.test_id 
 FROM subtask_tests 
 INNER JOIN tests 
 	ON tests.id = subtask_tests.test_id 
 WHERE 
-	subtask_tests.subtask_id = ? AND tests.orphaned = false 
+	subtask_tests.subtask_id = $1 AND tests.orphaned = false 
 ORDER BY tests.visible_id ASC
-`), st.ID)
+`, st.ID)
 	if errors.Is(err, sql.ErrNoRows) {
 		ids = []int{}
 	} else if err != nil {

@@ -349,7 +349,7 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			return user
 		},
 		"problemLists": func() []*kilonova.ProblemList {
-			list, err := base.ProblemLists(context.Background(), kilonova.ProblemListFilter{Root: true})
+			list, err := base.ProblemLists(context.Background(), true)
 			if err != nil {
 				return nil
 			}

@@ -37,7 +37,7 @@ type dbSubmission struct {
 
 func (s *DB) Submission(ctx context.Context, id int) (*kilonova.Submission, error) {
 	var sub dbSubmission
-	err := s.conn.GetContext(ctx, &sub, s.conn.Rebind("SELECT * FROM submissions WHERE id = ? LIMIT 1"), id)
+	err := s.conn.GetContext(ctx, &sub, "SELECT * FROM submissions WHERE id = $1 LIMIT 1", id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -120,7 +120,7 @@ func (s *DB) BulkUpdateSubmissions(ctx context.Context, filter kilonova.Submissi
 }
 
 func (s *DB) DeleteSubmission(ctx context.Context, id int) error {
-	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("DELETE FROM submissions WHERE id = ?"), id)
+	_, err := s.conn.ExecContext(ctx, "DELETE FROM submissions WHERE id = $1", id)
 	return err
 }
 
@@ -140,8 +140,8 @@ func (s *DB) MaxScore(ctx context.Context, userid, problemid int) int {
 func (s *DB) ContestMaxScore(ctx context.Context, userID, problemID, contestID int) int {
 	var score int
 
-	err := s.conn.GetContext(ctx, &score, s.conn.Rebind(`SELECT coalesce(MAX(score), -1) 
-FROM submissions WHERE user_id = ? AND problem_id = ? AND contest_id = ?`), userID, problemID, contestID)
+	err := s.conn.GetContext(ctx, &score, `SELECT coalesce(MAX(score), -1) 
+FROM submissions WHERE user_id = $1 AND problem_id = $2 AND contest_id = $3`, userID, problemID, contestID)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			zap.S().Errorw("Couldn't get max score for ",
@@ -154,6 +154,7 @@ FROM submissions WHERE user_id = ? AND problem_id = ? AND contest_id = ?`), user
 	return score
 }
 
+// TODO: Rewrite with sqlx.In
 func (s *DB) MaxScores(ctx context.Context, userid int, pbids []int) map[int]int {
 	if pbids == nil || len(pbids) == 0 {
 		return nil

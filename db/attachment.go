@@ -97,7 +97,7 @@ func (a *DB) UpdateAttachment(ctx context.Context, id int, upd *kilonova.Attachm
 }
 
 func (a *DB) DeleteAttachment(ctx context.Context, attid int) error {
-	_, err := a.conn.ExecContext(ctx, a.conn.Rebind("DELETE FROM attachments WHERE id = ?"), attid)
+	_, err := a.conn.ExecContext(ctx, "DELETE FROM attachments WHERE id = $1", attid)
 	return err
 }
 

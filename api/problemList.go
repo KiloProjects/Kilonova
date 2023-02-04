@@ -88,13 +88,15 @@ func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) problemLists(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var args kilonova.ProblemListFilter
+	var args struct {
+		Root bool `json:"root"`
+	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 400)
 		return
 	}
 
-	lists, err := s.base.ProblemLists(r.Context(), args)
+	lists, err := s.base.ProblemLists(r.Context(), args.Root)
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -122,10 +124,6 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 	actualIDs, err := s.filterProblems(r.Context(), listData.ProblemIDs, util.UserBrief(r), false)
 	if err != nil {
 		err.WriteError(w)
-		return
-	}
-	if len(actualIDs) == 0 {
-		errorData(w, "Invalid problems", 400)
 		return
 	}
 

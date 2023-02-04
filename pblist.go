@@ -34,24 +34,10 @@ type ShallowProblemList struct {
 
 	// NumProblems holds the number of problems including sublists
 	NumProblems int `json:"num_problems"`
-
-	// Should only be used to precompute the number of solved problems, might be deleted sometime else
-	// List []int `json:"list"`
-}
-
-type ProblemListFilter struct {
-	ID       *int `json:"id"`
-	AuthorID *int `json:"author_id"`
-	// List     []int `json:"list"`
-	Root bool `json:"root"`
-
-	Limit  int `json:"limit"`
-	Offset int `json:"offset"`
 }
 
 type ProblemListUpdate struct {
 	AuthorID    *int    `json:"author_id"`
 	Title       *string `json:"title"`
 	Description *string `json:"description"`
-	//List        []int   `json:"list"`
 }

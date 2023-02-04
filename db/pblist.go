@@ -14,7 +14,7 @@ import (
 
 func (s *DB) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, error) {
 	var pblist pblist
-	err := s.conn.GetContext(ctx, &pblist, s.conn.Rebind("SELECT * FROM problem_lists WHERE id = ? LIMIT 1"), id)
+	err := s.conn.GetContext(ctx, &pblist, "SELECT * FROM problem_lists WHERE id = $1 LIMIT 1", id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -24,32 +24,27 @@ func (s *DB) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, er
 	return s.internalToPbList(ctx, &pblist)
 }
 
-func (s *DB) ProblemLists(ctx context.Context, filter kilonova.ProblemListFilter) ([]*kilonova.ProblemList, error) {
+func (s *DB) ProblemLists(ctx context.Context, root bool) ([]*kilonova.ProblemList, error) {
 	var lists []*pblist
-	where, args := pblistFilterQuery(&filter)
-	query := "SELECT * FROM problem_lists WHERE " + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset)
-	query = s.conn.Rebind(query)
-	err := s.conn.SelectContext(ctx, &lists, query, args...)
+
+	q := "SELECT * FROM problem_lists ORDER BY id ASC"
+	if root {
+		q = "SELECT * FROM problem_lists WHERE NOT EXISTS (SELECT 1 FROM problem_list_pblists WHERE child_id = problem_lists.id) ORDER BY id ASC"
+	}
+	err := s.conn.SelectContext(ctx, &lists, q)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.ProblemList{}, nil
+	} else if err != nil {
+		return []*kilonova.ProblemList{}, nil
 	}
 
-	outLists := make([]*kilonova.ProblemList, 0, len(lists))
-	for _, el := range lists {
-		pblist, err := s.internalToPbList(ctx, el)
-		if err != nil {
-			zap.S().Warn(err)
-			continue
-		}
-		outLists = append(outLists, pblist)
-	}
-	return outLists, err
+	return mapperCtx(ctx, lists, s.internalToPbList), nil
 }
 
 func (s *DB) shallowProblemLists(ctx context.Context, parentID int) ([]*kilonova.ShallowProblemList, error) {
 	var lists []*pblist
-	query := s.conn.Rebind("SELECT pls.* FROM problem_lists pls INNER JOIN problem_list_pblists plpb ON plpb.parent_id = ? AND pls.id = plpb.child_id ORDER BY plpb.position ASC, id ASC")
+	query := "SELECT pls.* FROM problem_lists pls INNER JOIN problem_list_pblists plpb ON plpb.parent_id = $1 AND pls.id = plpb.child_id ORDER BY plpb.position ASC, id ASC"
 	err := s.conn.SelectContext(ctx, &lists, query, parentID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.ShallowProblemList{}, nil
@@ -158,21 +153,6 @@ func (s *DB) UpdateProblemListSublists(ctx context.Context, id int, listIDs []in
 	return s.updateManyToMany(ctx, "problem_list_pblists", "parent_id", "child_id", id, listIDs, true)
 }
 
-func pblistFilterQuery(filter *kilonova.ProblemListFilter) ([]string, []any) {
-	where, args := []string{"1 = 1"}, []any{}
-	if v := filter.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, v)
-	}
-	if v := filter.AuthorID; v != nil {
-		where, args = append(where, "author_id = ?"), append(args, v)
-	}
-	if v := filter.Root; v {
-		where = append(where, "NOT EXISTS (SELECT 1 FROM problem_list_pblists WHERE child_id = problem_lists.id)")
-	}
-
-	return where, args
-}
-
 func pblistUpdateQuery(upd *kilonova.ProblemListUpdate) ([]string, []any) {
 	toUpd, args := []string{}, []any{}
 	if v := upd.AuthorID; v != nil {
@@ -204,7 +184,7 @@ func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.Prob
 		AuthorID:    list.AuthorID,
 	}
 
-	err := s.conn.SelectContext(ctx, &pblist.List, s.conn.Rebind("SELECT problem_id FROM problem_list_problems WHERE pblist_id = ? ORDER BY position ASC, problem_id ASC"), list.ID)
+	err := s.conn.SelectContext(ctx, &pblist.List, "SELECT problem_id FROM problem_list_problems WHERE pblist_id = $1 ORDER BY position ASC, problem_id ASC", list.ID)
 	if errors.Is(err, sql.ErrNoRows) || len(pblist.List) == 0 {
 		pblist.List = []int{}
 	} else if err != nil {
