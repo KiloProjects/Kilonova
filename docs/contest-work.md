@@ -6,12 +6,12 @@ High priority:
 	- [x] Questions (Yes/No/No comment/etc);
 	- [x] General announcements;
     - [x] Auto reload questions/announcements and notify from any page;
-	- [ ] Leaderboard;
-        - [ ] Real-time leaderboard for admins;
+	- [x] Leaderboard;
+        - [x] Real-time leaderboard for admins;
     - [x] Disable pastes for contest problems during contest;
         - Can disable pastes in general now.
 - [ ] Allow to disable contestant access to others' submissions;
-- [ ] Endpoint for account generation;
+- [x] Endpoint for account generation;
 - [x] Vendor all dependencies
 
 Medium priority:
