@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS problems (
 	source_credits 	text				NOT NULL DEFAULT '',
 	author_credits 	text				NOT NULL DEFAULT '',
 	short_description text				NOT NULL DEFAULT '',
-	default_points 	integer 			NOT NULL DEFAULT 0,
+	default_points 	integer 			NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS tests (
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS problem_lists (
 	created_at 	timestamptz NOT NULL DEFAULT NOW(),
 	author_id 	bigint 		NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 	title 		text 		NOT NULL DEFAULT '',
-	description text 		NOT NULL DEFAULT '',
+	description text 		NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS problem_list_problems (
@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS subtasks (
 	created_at  timestamptz NOT NULL DEFAULT NOW(),
 	problem_id 	bigint 		NOT NULL REFERENCES problems(id) ON DELETE CASCADE,
 	visible_id 	integer 	NOT NULL,
-	score 		integer 	NOT NULL,
+	score 		integer 	NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS subtask_tests (
