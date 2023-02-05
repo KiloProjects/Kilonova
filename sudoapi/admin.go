@@ -90,7 +90,7 @@ func (s *BaseAPI) LogUserAction(ctx context.Context, msg string, args ...any) {
 
 	msg = fmt.Sprintf(msg, args...)
 	if _, err := s.db.CreateAuditLog(ctx, msg, &util.UserBriefContext(ctx).ID, false); err != nil {
-		zap.S().Warn(WrapError(err, "Couldn't register user action to audit log"))
+		zap.S().WithOptions(zap.AddCallerSkip(1)).Warn(WrapError(err, "Couldn't register user action to audit log"))
 		zap.S().Infof("Action (by user #%d): %q", util.UserBriefContext(ctx).ID, msg)
 	}
 }

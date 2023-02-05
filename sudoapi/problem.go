@@ -42,7 +42,7 @@ func (s *BaseAPI) UpdateProblem(ctx context.Context, id int, args kilonova.Probl
 			zap.S().Warn(err)
 		}
 		if pb.Visible && args.Description != nil && !updater.Admin {
-			s.LogUserAction(context.WithValue(ctx, util.UserKey, updater), "Updated problem #%d (%s) description while visible", pb.ID, pb.Name)
+			s.LogUserAction(context.WithValue(context.Background(), util.UserKey, updater), "Updated problem #%d (%s) description while visible", pb.ID, pb.Name)
 		}
 	}(id, args)
 

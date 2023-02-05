@@ -165,16 +165,35 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 
 	if len(aCtx.scoredTests) != len(aCtx.tests) {
 		// Try to deduce scoring remaining tests
-		zap.S().Info("Automatically inserting scores...")
+		// zap.S().Info("Automatically inserting scores...")
 		totalScore := 100
 		for _, test := range aCtx.scoredTests {
 			totalScore -= aCtx.tests[test].Score
 		}
-		n := len(aCtx.tests)
+
+		// Since map order is ambiguous, get an ordered list of test IDs.
+		// Regrettably, there is not easy way to do the set difference of the keys of the map and the scoredTests
+		// so we'll do an O(N^2) operation for clarity's sake.
+		testIDs := []int{}
+		for id := range aCtx.tests {
+			ok := true
+			for _, scID := range aCtx.scoredTests {
+				if id == scID {
+					ok = false
+					break
+				}
+			}
+			if ok {
+				testIDs = append(testIDs, id)
+			}
+		}
+		sort.Ints(testIDs)
+
+		n := len(aCtx.tests) - len(aCtx.scoredTests)
 		perTest := totalScore/n + 1
 		toSub := n - totalScore%n
 		k := 0
-		for i := range aCtx.tests {
+		for _, i := range testIDs {
 			if aCtx.tests[i].Score > 0 {
 				continue
 			}
