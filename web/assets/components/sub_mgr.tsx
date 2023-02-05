@@ -352,11 +352,10 @@ function SubmissionView({ sub, bigCode, pasteAuthor }: { sub: any; bigCode: bool
 			</div>
 		);
 	}
-	console.log(sub.subTests);
 	let content = (
 		<>
 			<CompileErrorInfo sub={sub} />
-			{sub.subTests.length > 0 &&
+			{sub.subTests?.length > 0 &&
 				sub.compile_error !== true &&
 				(sub.subTasks.length > 0 ? (
 					<SubTasks sub={sub} expandedTests={typeof pasteAuthor !== "undefined"} />

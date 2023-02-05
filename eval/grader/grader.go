@@ -373,12 +373,7 @@ func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, prob
 	} else {
 		h.localLogger.Info("Evaluating by addition")
 		for _, subtest := range subtests {
-			pbTest, err1 := h.base.TestByID(ctx, subtest.TestID)
-			if err1 != nil {
-				zap.S().Warn("Couldn't get test:", err1)
-				continue
-			}
-			score += int(math.Round(float64(pbTest.Score) * float64(subtest.Score) / 100.0))
+			score += int(math.Round(float64(subtest.MaxScore) * float64(subtest.Score) / 100.0))
 		}
 	}
 
