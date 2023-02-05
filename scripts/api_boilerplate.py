@@ -1,15 +1,18 @@
-import argparse
-import requests
-from dataclasses import dataclass
 from typing import Any, Literal, Optional
+import dataclasses
 from urllib.parse import urljoin
+import pandas as pd
+import requests
+import argparse
+import io
+import json
 
-@dataclass
+@dataclasses.dataclass
 class APIResponse:
     status: Literal['success', 'error']
     data: Any
 
-@dataclass
+@dataclasses.dataclass
 class UserBrief:
     id: int
     name: str
@@ -17,7 +20,7 @@ class UserBrief:
     proposer: bool
     bio: Optional[str] = None
 
-@dataclass(kw_only=True)
+@dataclasses.dataclass(kw_only=True)
 class UserFull(UserBrief):
     email: str
     verified_email: str
@@ -25,13 +28,20 @@ class UserFull(UserBrief):
     created_at: str
     generated: str
 
+@dataclasses.dataclass
+class UserBundle:
+    contest_id: int
+    anon_prefix: str
+    to_generate: Optional[list[str]] = None
+    created_users: Optional[dict[str,tuple[str,str]]] = None
+
 class Client():
     def __init__(self, base: str):
         self.token = "guest"
         self.base = base
     
     def get(self, path: str, params: Optional[dict]=None) -> APIResponse:
-        res = requests.get(urljoin(self.base, path), params=params, headers={"Authorization": self.token}).json()
+        res = requests.get(urljoin(self.base, path), params=params, headers={"Authorization": self.token})
         val = res.json()
         return APIResponse(val['status'], val['data'])
 
@@ -45,6 +55,11 @@ class Client():
         if res.status == "error":
             raise Exception(res.data)
         self.token = res.data
+        return None
+
+    def check_username_exists(self, uname: str) -> bool:
+        res = self.get("/api/user/getByName", {'name': uname})
+        return res.status == "success"
 
     def generate_user(self, uname: str) -> tuple[str, UserFull]:
         res = self.post("/api/user/generateUser", {"username": uname})
@@ -56,19 +71,74 @@ class Client():
         res = self.post(f"/api/contest/{contest_id}/forceRegister", {'name': uname})
         if res.status == "error":
             raise Exception(res.data)
+        return None
     
-    # TODO: Leaderboard stuffs, JSON object for anonymization/deanonymization, do not try to create existing users
+    def leaderboard_csv(self, contest_id: int) -> pd.DataFrame:
+        res = requests.get(urljoin(self.base, f"/contests/{contest_id}/leaderboard.csv"), cookies={"kn-sessionid": self.token})
+        content = res.content.decode('utf-8')
+        if res.status_code != 200:
+            raise Exception(content)
+        return pd.read_csv(io.StringIO(content))
 
+    def deanonymized_leaderboard(self, bundle: UserBundle) -> pd.DataFrame:
+        df = self.leaderboard_csv(bundle.contest_id)
+        df["username"] = df["username"].map(lambda x: bundle.created_users.get(x, [x, "no_pwd"])[0] if bundle.created_users is not None else x)
+        return df
+
+    def generate_users(self, bundle: UserBundle) -> UserBundle:
+        id = 100
+        if not bundle.created_users:
+            bundle.created_users = {}
+        for person in bundle.to_generate:
+            while self.check_username_exists(f"{bundle.anon_prefix}{id}"):
+                id += 1
+            pwd, user = self.generate_user(f"{bundle.anon_prefix}{id}")
+            self.register_user_in_contest(user.name, bundle.contest_id)
+            bundle.created_users[user.name] = (person, pwd)
+        bundle.to_generate = []
+        return bundle
+
+
+    def load_bundle(self, path: str) -> UserBundle:
+        with open(path, "r") as f:
+            b = UserBundle(**json.load(f))
+        b = self.generate_users(b)
+        self.save_bundle(path, b)
+        return b
+
+    def format_user_info(self, bundle: UserBundle) -> str:
+        out = ""
+        for anon, user in bundle.created_users.items():
+            out += f"""
+Concurent: {user[0]}
+Username: {anon}
+Parolă: {user[1]}
+-----------------------
+""" 
+        return out
+
+    def save_bundle(self, path: str, bundle: UserBundle) -> None:
+        with open(path, "w") as f:
+            json.dump(dataclasses.asdict(bundle), f)
+        return None
+    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog="kn_scripter", description="Scripting for Kilonova")
     parser.add_argument('-u', '--username', required="true")
     parser.add_argument('-p', '--password', required="true")
+    parser.add_argument('-bp', '--bundle_path')
     args = parser.parse_args()
     
     cl = Client("http://localhost:8070/")
     cl.login(args.username, args.password)
     
-    print(cl.generate_user("sufar_de_palpitatii"))
+    # val = cl.leaderboard_csv(1)
+    b = cl.load_bundle(args.bundle_path)
+    # print(b)
+    info = cl.format_user_info(b)
+    print(info)
+
+    # print(cl.deanonymized_leaderboard(b))
     
     # TODO

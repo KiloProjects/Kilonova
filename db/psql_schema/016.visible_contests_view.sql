@@ -20,6 +20,6 @@ CREATE OR REPLACE VIEW contest_visibility AS (
     UNION
     (SELECT contest_id, user_id FROM contest_user_access) -- Testers/Editors
     UNION
-    (SELECT contests.id AS contest_id, users.user_id AS user_id FROM running_contests contests, contest_registrations users 
-        WHERE contests.id = users.contest_id AND contests.visible = false) -- not visible but registered and running
+    (SELECT contests.id AS contest_id, users.user_id AS user_id FROM contests, contest_registrations users 
+        WHERE contests.id = users.contest_id AND contests.visible = false) -- not visible but registered
 );
