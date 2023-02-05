@@ -349,5 +349,11 @@ func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	returnData(w, user)
+	returnData(w, struct {
+		Password string             `json:"password"`
+		User     *kilonova.UserFull `json:"user"`
+	}{
+		Password: args.Password,
+		User:     user,
+	})
 }
