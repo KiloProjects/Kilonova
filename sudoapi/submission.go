@@ -170,14 +170,14 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *Use
 	rez.ProblemEditor = s.IsProblemEditor(lookingUser, rez.Problem)
 
 	rez.SubTests, err1 = s.SubTests(ctx, subid)
-	if err != nil {
-		zap.S().Warn(err)
+	if err1 != nil {
+		zap.S().Warn(err1)
 		return nil, Statusf(500, "Couldn't fetch subtests")
 	}
 
 	rez.SubTasks, err1 = s.SubmissionSubTasks(ctx, subid)
-	if err != nil {
-		zap.S().Warn(err)
+	if err1 != nil {
+		zap.S().Warn(err1)
 		return nil, Statusf(500, "Couldn't fetch subtasks")
 	}
 
@@ -298,11 +298,7 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 	}
 
 	score := s.db.MaxScore(context.Background(), user.ID, sub.ProblemID)
-	if score == 100 {
-		return true
-	}
-
-	return false
+	return score == 100
 }
 
 func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) {

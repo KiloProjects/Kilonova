@@ -394,6 +394,7 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"graderEnabled": func() bool { return config.Features.Grader },
 		"allSubsView":   func() bool { return config.Features.AllSubs },
 		"ccDisclaimer":  func() bool { return config.Features.CCDisclaimer },
+		"frontPagePbs":  func() bool { return config.Features.FrontPagePbs },
 		"defaultLang":   func() string { return config.Common.DefaultLang },
 
 		"intList": func(ids []int) string {

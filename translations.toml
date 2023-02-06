@@ -1199,10 +1199,13 @@ ro = "Paste-uri"
 en = "Creative Commons disclaimer in footer"
 ro = "Disclaimer pt Creative Commons în footer"
 
-
 [featureSet.all_subs]
 en = "Anyone can view all submissions"
 ro = "Oricine poate vedea toate submisiile"
+
+[featureSet.frontPagePbs]
+en = "Show problems on front page"
+ro = "Arată listele de probleme pe pagina principală"
 
 [pasteDeleteConfirm]
 en = "Are you sure you want to delete this paste?"

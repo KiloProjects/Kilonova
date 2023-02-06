@@ -62,6 +62,7 @@ type FeaturesConf struct {
 	AllSubs bool `toml:"all_subs"`
 
 	CCDisclaimer bool `toml:"cc_disclaimer"`
+	FrontPagePbs bool `toml:"front_page_problems"`
 }
 
 // c represents the loaded config
@@ -88,7 +89,7 @@ func SetConfigPath(path string) {
 func Save() error {
 	compactify()
 	if configPath == "" {
-		return errors.New("Invalid config path")
+		return errors.New("invalid config path")
 	}
 
 	// Make the directories just in case they don't exist
@@ -113,7 +114,7 @@ func Save() error {
 
 func Load() error {
 	if configPath == "" {
-		return errors.New("Invalid config path")
+		return errors.New("invalid config path")
 	}
 	md, err := toml.DecodeFile(configPath, &c)
 	if len(md.Undecoded()) > 0 {
