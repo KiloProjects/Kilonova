@@ -144,8 +144,11 @@ func (s *BaseAPI) CanSubmitInContest(user *kilonova.UserBrief, c *kilonova.Conte
 // It's a bit frustrating but it's an important distinction
 // If you think about it, all submitters can view problems, but not all problem viewers can submit
 func (s *BaseAPI) CanViewContestProblems(ctx context.Context, user *kilonova.UserBrief, contest *kilonova.Contest) bool {
+	if s.IsContestTester(user, contest) { // Tester + Editor + Admin
+		return true
+	}
 	if !contest.Started() {
-		return s.IsContestTester(user, contest) // Tester + Editor + Admin
+		return false
 	}
 	if contest.Visible {
 		return true
