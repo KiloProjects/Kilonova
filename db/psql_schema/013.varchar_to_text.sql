@@ -1,1 +1,0 @@
-ALTER TABLE submission_tests ALTER COLUMN verdict TYPE text;
