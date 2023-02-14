@@ -63,6 +63,7 @@ async function updateBio(e) {
 async function updateLanguage(e) {
 	e.preventDefault()
 	var language = document.getElementById("langSelect").value;
+    bundled.clearLanguageCookie()
 
 	let res = await bundled.postCall("/user/setPreferredLanguage", {language})
 	if(res.status === "success") {

@@ -10,6 +10,13 @@
 					<li><a class="black-anchor" href="/contests">{{getText "contests"}}</a></li>
 					<li><a class="black-anchor" href="/submissions">{{getText "submission.list"}}</a></li>
 				</ul>
+                <label class="block my-2">
+                    <select id="sessionLang" class="form-select">
+                        <option value="ro" {{if eq language "ro" }}selected{{end}}>🇷🇴 Română</option>
+                        <option value="en" {{if eq language "en" }}selected{{end}}>🇬🇧 English</option>
+                    </select>
+                    <span>{{getText "displayLang"}}</span>
+                </label>
 			</div>
 			
 			<div class="h-auto mb-2">
@@ -41,4 +48,10 @@
 		</div>
 	</div>
 </footer>
+<script>
+    document.getElementById("sessionLang").addEventListener("change", (e)=>{
+        e.preventDefault();
+        bundled.setLanguage(e.currentTarget.value)
+    })
+</script>
 {{ end }}

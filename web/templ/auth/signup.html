@@ -23,6 +23,13 @@
 		<span>{{getText "passwordCheck"}}</span>
 		<input class="form-input w-full" type="password" id="pwd_check" name="pwd_check" autocomplete="new-password" required />
 	</label>
+    <label class="block mb-2">
+		<span>{{getText "displayLang"}}</span>
+        <select id="langSelect" name="langSelect" class="form-select w-full">
+			<option value="ro" {{if eq language "ro" }}selected{{end}}>🇷🇴 Română</option>
+			<option value="en" {{if eq language "en" }}selected{{end}}>🇬🇧 English</option>
+		</select>
+    </label>
 	<button type="submit" class="block btn btn-blue">{{getText "auth.signup"}}</button>
 	<p class="text-gray-500 dark:text-gray-300"> {{getText "loginReminder"}}</p>
 </form>
@@ -32,6 +39,7 @@ let email = document.querySelector("#signup_form #email")
 let username = document.querySelector("#signup_form #name")
 let pwd = document.querySelector("#signup_form #pwd")
 let pwd_check = document.querySelector("#signup_form #pwd_check")
+let langSelect = document.querySelector("#signup_form #langSelect")
 function updateCheck() {
 	let pval = pwd.value;
 	let cval = pwd_check.value;
@@ -52,6 +60,7 @@ async function signup(e) {
 	let em = email.value;
 	let name = username.value;
 	let password = pwd.value;
+    let lang = langSelect.value;
 	
 	let pwdVerify = pwd_check.value;
 	if(password !== pwdVerify) {
@@ -62,11 +71,12 @@ async function signup(e) {
 		return
 	}
 
-	let res = await bundled.postCall("/auth/signup", {email: em, username: name, password})
+	let res = await bundled.postCall("/auth/signup", {email: em, username: name, password, language: lang})
 	if(res.status == "error") {
 		bundled.apiToast(res)
 		return
 	}
+    bundled.clearLanguageCookie()
     bundled.setSession(res.data)
 	window.location.assign("/");
 }

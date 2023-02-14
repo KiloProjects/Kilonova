@@ -23,6 +23,15 @@ async function extendSession() {
 	cookie.set("kn-session-check-date", checkTimestamp.toString(), { expires: 29, sameSite: "lax" });
 }
 
+export function setLanguage(lang: "en" | "ro") {
+	cookie.set("lang", lang, { expires: 1000, sameSite: "lax" });
+	window.location.reload();
+}
+
+export function clearLanguageCookie() {
+	cookie.remove("lang");
+}
+
 document.addEventListener("DOMContentLoaded", () => {
 	const checkCookie = cookie.get("kn-session-check-date");
 	if (typeof checkCookie == "undefined" || checkCookie === "") {

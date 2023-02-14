@@ -234,7 +234,7 @@ func (rt *Web) initSession(next http.Handler) http.Handler {
 			return
 		}
 		user, err := rt.base.UserFull(r.Context(), sess)
-		if user == nil {
+		if err != nil || user == nil {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -250,8 +250,13 @@ func (rt *Web) initLanguage(next http.Handler) http.Handler {
 		}
 		// get language
 		lang, _ := r.Cookie("lang")
+		cookieLang := ""
+		if lang != nil {
+			cookieLang = lang.Value
+		}
+
 		accept := r.Header.Get("Accept-Language")
-		tag, _ := language.MatchStrings(langMatcher, lang.String(), userLang, accept)
+		tag, _ := language.MatchStrings(langMatcher, cookieLang, userLang, accept)
 		language, _ := tag.Base()
 
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.LangKey, language.String())))

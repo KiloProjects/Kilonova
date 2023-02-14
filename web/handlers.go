@@ -270,11 +270,6 @@ func (rt *Web) contestEdit() func(http.ResponseWriter, *http.Request) {
 func (rt *Web) contestCommunication() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "contest/communication.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		// If is not submitter and it hasn't started, do not allow access
-		if !rt.base.CanSubmitInContest(util.UserBrief(r), util.Contest(r)) && !util.Contest(r).Started() {
-
-		}
-
 		rt.runTempl(w, r, templ, &ContestParams{
 			Ctx:    GenContext(r),
 			Topbar: rt.topbar(r, "contest_communication", -1),
@@ -369,7 +364,6 @@ func (rt *Web) selfProfile() func(http.ResponseWriter, *http.Request) {
 		solvedPbs, err := rt.base.SolvedProblems(r.Context(), util.UserBrief(r).ID)
 		if err != nil {
 			solvedPbs = []*kilonova.Problem{}
-			return
 		}
 		attemptedPbs, err := rt.base.AttemptedProblems(r.Context(), util.UserBrief(r).ID)
 		if err != nil {
@@ -401,7 +395,6 @@ func (rt *Web) profile() func(http.ResponseWriter, *http.Request) {
 		solvedPbs, err := rt.base.SolvedProblems(r.Context(), user.ID)
 		if err != nil {
 			solvedPbs = []*kilonova.Problem{}
-			return
 		}
 		attemptedPbs, err := rt.base.AttemptedProblems(r.Context(), user.ID)
 		if err != nil {
@@ -472,7 +465,7 @@ func (rt *Web) verifyEmail() func(http.ResponseWriter, *http.Request) {
 		// rebuild session for user to disable popup
 		rt.initSession(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			rt.runTempl(w, r, templ, &VerifiedEmailParams{GenContext(r), user})
-		}))
+		})).ServeHTTP(w, r)
 	}
 }
 
@@ -622,7 +615,7 @@ func (rt *Web) subtestOutput(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !rt.base.IsProblemEditor(util.UserBrief(r), sub.Problem) {
-		http.Error(w, "You aren't allowed to do that!", 401)
+		http.Error(w, "You aren't allowed to do that!", http.StatusUnauthorized)
 		return
 	}
 
@@ -646,6 +639,9 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 	templ.Funcs(template.FuncMap{
 		"getText": func(line string, args ...any) template.HTML {
 			return template.HTML(kilonova.GetText(util.Language(r), line, args...))
+		},
+		"language": func() string {
+			return util.Language(r)
 		},
 		"authed": func() bool {
 			return util.UserBrief(r) != nil

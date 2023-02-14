@@ -296,8 +296,8 @@ en = "Are you sure you want to prune the user?"
 ro = "Sunteți siguri că vreți să ștergeți utilizatorul?"
 
 [confirmedEmail]
-en = "Email confirmed for %s"
-ro = "Email confirmat pentru %s"
+en = "Email confirmed for user %s"
+ro = "Email confirmat pentru utilizatorul %s"
 
 [closeTab]
 en = "You may close the tab"
@@ -790,8 +790,8 @@ en = "Update Bio"
 ro = "Actualizare Bio"
 
 [updateLang]
-en = "Update Display Language"
-ro = "Actualizare Limbă Afișaj"
+en = "Update default display language"
+ro = "Actualizare limbă implicită pentru afișaj"
 
 [makeSubs]
 en = "Make submissions implicitly"
@@ -1507,3 +1507,7 @@ ro = "Clasament"
 [reload]
 en = "Reload"
 ro = "Reîncărcare"
+
+[displayLang]
+en = "Display language"
+ro = "Limbă afișaj"

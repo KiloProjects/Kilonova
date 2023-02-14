@@ -33,8 +33,6 @@ const (
 	TimeFormatExtended = "02/01/2006 15:04:05"
 )
 
-var templates *template.Template
-
 //go:embed static
 var embedded embed.FS
 
@@ -289,13 +287,13 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		},
 		"renderMarkdown": func(body any) template.HTML {
 			var bd []byte
-			switch body.(type) {
+			switch body := body.(type) {
 			case string:
-				bd = []byte(body.(string))
+				bd = []byte(body)
 			case []byte:
-				bd = body.([]byte)
+				bd = body
 			case template.HTML:
-				bd = []byte(body.(template.HTML))
+				bd = []byte(body)
 			default:
 				zap.S().Fatal("Unknown renderMarkdown type")
 			}
@@ -435,6 +433,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"getText": func(key string, vals ...any) string {
 			zap.S().Error("Uninitialized `getText`")
 			return "FATAL ERR"
+		},
+		"language": func() string {
+			zap.S().Error("Uninitialized `language`")
+			return "en"
 		},
 		"authed": func() bool {
 			zap.S().Error("Uninitialized `authed`")
