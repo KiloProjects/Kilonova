@@ -100,6 +100,11 @@ type AttachmentUpdate struct {
 	Name    *string `json:"name"`
 }
 
+type Tag struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
 type ProblemEvalSettings struct {
 	// If header/grader files are found, this is turned on to True
 	OnlyCPP bool `json:"only_cpp"`

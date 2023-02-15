@@ -156,7 +156,7 @@ FROM submissions WHERE user_id = $1 AND problem_id = $2 AND contest_id = $3`, us
 
 // TODO: Rewrite with sqlx.In
 func (s *DB) MaxScores(ctx context.Context, userid int, pbids []int) map[int]int {
-	if pbids == nil || len(pbids) == 0 {
+	if len(pbids) == 0 {
 		return nil
 	}
 
