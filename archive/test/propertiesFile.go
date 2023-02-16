@@ -34,7 +34,7 @@ func ParsePropertiesFile(r io.Reader) (*PropertiesRaw, bool, error) {
 		if len(kv) != 2 {
 			return nil, false, nil
 		}
-		vals[kv[0]] = kv[1:]
+		vals[strings.TrimSpace(kv[0])] = []string{strings.TrimSpace(kv[1])}
 	}
 	if buf.Err() != nil {
 		return nil, false, buf.Err()
@@ -61,7 +61,7 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 	if err != nil {
 		return kilonova.WrapError(err, "Couldn't parse properties file")
 	}
-	if ok == false {
+	if !ok {
 		return kilonova.Statusf(400, "Invalid properties file")
 	}
 

@@ -299,17 +299,3 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 
 	return nil
 }
-
-func eq(a, b []int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	sort.Ints(a)
-	sort.Ints(b)
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
