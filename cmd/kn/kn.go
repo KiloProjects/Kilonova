@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/api"
@@ -114,20 +113,19 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 	// Initialize router
 	r := chi.NewRouter()
 
-	corsConfig := cors.New(cors.Options{
+	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300,
-	})
-	r.Use(corsConfig.Handler)
+	}))
 
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.StripSlashes)
-	r.Use(middleware.Timeout(20 * time.Second))
+	//r.Use(middleware.Timeout(1 * time.Minute))
 	/*
 		r.Use(middleware.Compress(flate.DefaultCompression))
 		r.Use(middleware.RequestID)

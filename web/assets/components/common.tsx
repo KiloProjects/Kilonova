@@ -270,6 +270,7 @@ function ProgressChecker({ id }: { id: number }) {
 	var [computable, setComputable] = useState<boolean>(false);
 	var [loaded, setLoaded] = useState<number>(0);
 	var [total, setTotal] = useState<number>(0);
+	var [processing, setProcessing] = useState<boolean>(false);
 
 	useEffect(() => {
 		const upd = (e: CustomEvent<ProgressEventData>) => {
@@ -277,13 +278,22 @@ function ProgressChecker({ id }: { id: number }) {
 				setLoaded(e.detail.cntLoaded);
 				setTotal(e.detail.cntTotal);
 				setComputable(e.detail.computable);
+				setProcessing(e.detail.processing);
 			}
 		};
 		document.addEventListener("kn-upload-update", upd);
 		return () => {
 			document.removeEventListener("kn-upload-update", upd);
 		};
-	}, []);
+	}, [id]);
+
+	if(processing) {
+		return (
+			<span>
+				{getText("upload_processing")}
+			</span>
+		)
+	}
 
 	return (
 		<>

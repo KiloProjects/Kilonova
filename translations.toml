@@ -1511,3 +1511,8 @@ ro = "Reîncărcare"
 [displayLang]
 en = "Display language"
 ro = "Limbă afișaj"
+
+[upload_processing]
+en = "Upload complete, processing request"
+ro = "Încărcare finalizată, se procesează request-ul"
+

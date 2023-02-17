@@ -13,6 +13,28 @@
 .hljs-copy-button {
 	@apply top-2;
 }
+.bg-hljs,
+.hljs {
+	background: #f0f0f0;
+}
+@media (prefers-color-scheme: dark) {
+	.bg-hljs,
+	.hljs {
+		@apply bg-[#333];
+		/*@apply bg-gray-700;*/
+	}
+
+	.cm-s-monokai.CodeMirror {
+		@apply bg-[#333];
+	}
+	.cm-s-monokai .CodeMirror-gutters {
+		@apply bg-[#333];
+	}
+}
+
+.notyf__message a {
+	@apply text-gray-300 hover:text-gray-400 active:text-blue-500 focus:text-blue-500;
+}
 
 @layer base {
 	[v-cloak] {
@@ -42,37 +64,6 @@
 	a {
 		@apply text-blue-500 hover:text-blue-600 active:text-blue-600 focus:text-blue-600;
 	}
-
-	/* purgecss start ignore */
-	.bg-hljs,
-	.hljs {
-		background: #f0f0f0;
-	}
-	@media (prefers-color-scheme: dark) {
-		.bg-hljs,
-		.hljs {
-			@apply bg-[#333];
-			/*@apply bg-gray-700;*/
-		}
-
-		.cm-s-monokai.CodeMirror {
-			@apply bg-[#333];
-		}
-		.cm-s-monokai .CodeMirror-gutters {
-			@apply bg-[#333];
-		}
-	}
-
-	/*
-	.katex {
-		@apply text-base;
-	}*/
-
-	.notyf__message a {
-		@apply text-gray-300 hover:text-gray-400 active:text-blue-500 focus:text-blue-500;
-	}
-
-	/* purgecss end ignore */
 
 	.CodeMirror {
 		@apply text-lg leading-normal rounded-lg;

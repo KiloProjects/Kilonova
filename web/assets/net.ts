@@ -104,19 +104,41 @@ export async function multipartProgressCall<T = any>(call: string, formdata: For
 							cntLoaded: e.loaded,
 							cntTotal: e.total,
 							computable: e.lengthComputable,
+							processing: false,
 						},
 					})
 				);
 			});
-			xhr.onload = () => {
+			xhr.upload.addEventListener("load", (e) => {
+				document.dispatchEvent(
+					new CustomEvent<ProgressEventData>("kn-upload-update", {
+						detail: {
+							id: id,
+							cntLoaded: e.loaded,
+							cntTotal: e.total,
+							computable: e.lengthComputable,
+							processing: true,
+						},
+					})
+				);
+			})
+			xhr.upload.addEventListener("error", (e) => {
+				console.error(e, xhr.statusText)
+				resolve({
+					status: "error",
+					data: "Upload error"
+				})
+			})
+			xhr.addEventListener("load", () => {
 				resolve(xhr.response);
-			};
-			xhr.onerror = () => {
+			});
+			xhr.addEventListener("error", (e) => {
+				console.error(e)
 				resolve({
 					status: "error",
 					data: xhr.statusText,
 				});
-			};
+			});
 			xhr.setRequestHeader("Accept", "application/json");
 			xhr.setRequestHeader("Authorization", getSession());
 			xhr.send(formdata);
@@ -128,6 +150,7 @@ export async function multipartProgressCall<T = any>(call: string, formdata: For
 					cntLoaded: 1,
 					cntTotal: 1,
 					computable: true,
+					processing: false,
 				},
 			})
 		);

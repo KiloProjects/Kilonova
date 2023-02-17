@@ -11,6 +11,7 @@ export declare global {
 		cntLoaded: number;
 		cntTotal: number;
 		id: number; // To distinguish in case there are multiple uploads
+		processing: boolean; // When request is uploaded and is awaiting results
 	}
 
 	interface PlatformInfo {
