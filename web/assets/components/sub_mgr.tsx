@@ -154,7 +154,7 @@ function CompileErrorInfo({ sub }) {
 function SubCode({ sub }) {
 	return (
 		<>
-			<h2>{getText("sourceCode")}</h2>
+			<h2>{getText("sourceCode")}:</h2>
 			<pre>
 				<code
 					class="hljs"

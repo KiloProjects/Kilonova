@@ -32,9 +32,9 @@
 	}
 }
 
-.notyf__message a {
+/* .notyf__message a {
 	@apply text-gray-300 hover:text-gray-400 active:text-blue-500 focus:text-blue-500;
-}
+} */
 
 @layer base {
 	[v-cloak] {

@@ -942,8 +942,8 @@ en = "Copy"
 ro = "Copiere"
 
 [sourceCode]
-en = "Source Code:"
-ro = "Codul Sursă:"
+en = "Source Code"
+ro = "Codul Sursă"
 
 [compileMsg]
 en = "Compilation Message"
@@ -1516,3 +1516,26 @@ ro = "Limbă afișaj"
 en = "Upload complete, processing request"
 ro = "Încărcare finalizată, se procesează request-ul"
 
+[no_code]
+en = "No code provided"
+ro = "Nu ai specificat niciun cod"
+
+[invalid_file]
+en = "Invalid file"
+ro = "Fișier invalid"
+
+[submit_style]
+en = "Submit style"
+ro = "Stil submisie"
+
+[code_insert]
+en = "Insert code"
+ro = "Inserare cod"
+
+[code]
+en = "Code"
+ro = "Cod"
+
+[upload_file]
+en = "Upload file"
+ro = "Încărcare fișier"

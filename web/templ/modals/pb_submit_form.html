@@ -34,7 +34,24 @@
             {{ end }}
         </select>
     </label>
-    <textarea id="SubArea" style="display: none;" autocomplete="off"></textarea>
+
+    <label class="block mb-2">
+        <span class="form-label">{{getText "submit_style"}}:</span>
+        <select id="submit_style" class="form-select" autocomplete="off">
+            <option value="code">{{getText "code_insert"}}</option>
+            <option value="file">{{getText "file"}}</option>
+        </select>
+    </label>
+
+    <label id="cm_label" class="block mb-2">
+        <textarea id="SubArea" style="display: none;" autocomplete="off"></textarea>
+    </label>
+
+    <label id="file_label" class="block mb-2 hidden">
+        <span class="form-label">{{getText "upload_file"}}:</span>
+        <input class="form-input" id="submit_file" type="file" autocomplete="off">
+    </label>
+
     <button type="submit" class="btn btn-blue mt-2">{{getText "send"}}</button>
 </form>
 
@@ -43,6 +60,20 @@
     var cm = CodeMirror.fromTextArea(document.getElementById("SubArea"), {
         mode: bundled.languages["cpp14"],
     });
+
+    document.getElementById("submit_style").addEventListener("change", (e) => {
+        const val = e.currentTarget.value;
+        bundled.setSubmitStyle(val);
+        document.getElementById("file_label")?.classList.toggle("hidden", val === "code");
+        document.getElementById("cm_label")?.classList.toggle("hidden", val !== "code");
+    })
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const val = bundled.getSubmitStyle();
+        document.getElementById("submit_style").value = val;
+        document.getElementById("file_label")?.classList.toggle("hidden", val === "code");
+        document.getElementById("cm_label")?.classList.toggle("hidden", val !== "code");
+    })
 
     document.getElementById("sub_language").addEventListener("change", (e) => {
         let lang = bundled.languages[e.target.value]
@@ -55,8 +86,24 @@
         let sendData = {
             problemID: "{{ .Problem.ID }}",
             language: document.getElementById("sub_language").value,
-            code: cm.getValue(),
+            code: "",
         };
+        
+        if(bundled.getSubmitStyle() == "code") {
+            sendData.code = cm.getValue();
+        } else {
+            const fInput = document.getElementById("submit_file");
+            if(fInput.files.length !== 1) {
+                bundled.apiToast({status: "error", data: bundled.getText("invalid_file")})
+                return
+            }
+            sendData.code = await fInput.files[0].text();
+        }
+
+        if(sendData.code === "") {
+            bundled.apiToast({status: "error", data: bundled.getText("no_code")})
+            return
+        }
 
         if(document.getElementById("sub_contestid").value !== "-1") {
             const val = parseInt(document.getElementById("sub_contestid").value);

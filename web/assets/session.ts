@@ -24,12 +24,25 @@ async function extendSession() {
 }
 
 export function setLanguage(lang: "en" | "ro") {
-	cookie.set("lang", lang, { expires: 1000, sameSite: "lax" });
+	cookie.set("kn-lang", lang, { expires: 1000, sameSite: "lax" });
 	window.location.reload();
 }
 
 export function clearLanguageCookie() {
-	cookie.remove("lang");
+	cookie.remove("kn-lang");
+}
+
+export function setSubmitStyle(style: "code" | "file") {
+	cookie.set("kn-sub-style", style, { expires: 1000, sameSite: "lax" });
+}
+
+export function getSubmitStyle(): "code" | "file" {
+	let val = cookie.get("kn-sub-style");
+	if (val == "" || typeof val === "undefined" || (val !== "code" && val !== "file")) {
+		setSubmitStyle("code");
+		return "code";
+	}
+	return val;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
