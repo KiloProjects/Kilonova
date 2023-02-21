@@ -285,7 +285,7 @@ CREATE OR REPLACE VIEW max_score_view (user_id, problem_id, score)
 
 CREATE OR REPLACE VIEW problem_viewers AS
     (SELECT pbs.id as problem_id, 0 as user_id
-        FROM problems pbs, users
+        FROM problems pbs
         WHERE pbs.visible = true) -- Base case, problem is visible
     UNION ALL
     (SELECT pbs.id as problem_id, users.id as user_id 
@@ -299,7 +299,7 @@ CREATE OR REPLACE VIEW problem_viewers AS
         WHERE pbs.contest_id = users.contest_id) -- Contest editors/viewers
     UNION ALL
     (SELECT pbs.problem_id as problem_id, 0 as user_id
-        FROM contest_problems pbs, users, contests
+        FROM contest_problems pbs, contests
         WHERE pbs.contest_id = contests.id AND contests.visible = true
         AND contests.start_time <= NOW() AND NOW() <= contests.end_time) -- Visible running contests for anons. TODO: Find alternative
     UNION ALL
@@ -309,7 +309,7 @@ CREATE OR REPLACE VIEW problem_viewers AS
         AND contests.start_time <= NOW() AND NOW() <= contests.end_time) -- Visible running contests
     UNION ALL
     (SELECT pbs.problem_id as problem_id, 0 as user_id
-        FROM contest_problems pbs, users, contests
+        FROM contest_problems pbs, contests
         WHERE pbs.contest_id = contests.id AND contests.visible = true
         AND contests.end_time <= NOW()) -- Visible contests after they ended for anons. TODO: Find alternative
     UNION ALL
