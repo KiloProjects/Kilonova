@@ -490,18 +490,14 @@ function SubsView(props: SubsViewProps) {
 											<td class="text-center px-2 py-1">{dayjs(sub.sub.created_at).format("DD/MM/YYYY HH:mm")}</td>
 											{((query.problem_id == 0 || query.problem_id == null) && (
 												<td class="text-center px-2 py-1">
-													{sub.hidden ? (
-														<span>---</span>
-													) : (
-														<a
-															href={
-																(typeof sub.sub.contest_id === "number" ? `/contests/${sub.sub.contest_id}` : "") +
-																`/problems/${sub.problem.id}`
-															}
-														>
-															{sub.problem.name}
-														</a>
-													)}
+													<a
+														href={
+															(typeof sub.sub.contest_id === "number" ? `/contests/${sub.sub.contest_id}` : "") +
+															`/problems/${sub.problem.id}`
+														}
+													>
+														{sub.problem.name}
+													</a>
 												</td>
 											)) || (
 												<td class="text-center px-2 py-1">
@@ -511,12 +507,10 @@ function SubsView(props: SubsViewProps) {
 											<td class="text-center px-2 py-1">{sub.sub.max_time == -1 ? "-" : Math.floor(sub.sub.max_time * 1000) + "ms"}</td>
 											<td class="text-center px-2 py-1">{sub.sub.max_memory == -1 ? "-" : sizeFormatter(sub.sub.max_memory * 1024)}</td>
 											<td
-												class={(sub.sub.status === "finished" && !sub.hidden ? "text-black" : "") + " text-center"}
-												style={
-													sub.sub.status == "finished" && !sub.hidden ? "background-color: " + getGradient(sub.sub.score, 100) : ""
-												}
+												class={(sub.sub.status === "finished" ? "text-black" : "") + " text-center"}
+												style={sub.sub.status == "finished" ? "background-color: " + getGradient(sub.sub.score, 100) : ""}
 											>
-												{sub.hidden ? <span>---</span> : <a href={"/submissions/" + sub.sub.id}>{status(sub.sub)}</a>}
+												<a href={"/submissions/" + sub.sub.id}>{status(sub.sub)}</a>
 											</td>
 										</tr>
 									))}

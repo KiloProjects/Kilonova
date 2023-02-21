@@ -7,6 +7,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
+	"go.uber.org/zap"
 )
 
 type subLine struct {
@@ -69,11 +70,6 @@ func (s *API) filterSubs() http.HandlerFunc {
 		Sub     *kilonova.Submission `json:"sub"`
 		User    *kilonova.UserBrief  `json:"author,omitempty"`
 		Problem *kilonova.Problem    `json:"problem,omitempty"`
-		Hidden  bool                 `json:"hidden"`
-	}
-	type toRet struct {
-		TotalCount int    `json:"count"`
-		Subs       []line `json:"subs"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
@@ -93,14 +89,13 @@ func (s *API) filterSubs() http.HandlerFunc {
 
 		for _, sub := range subs.Submissions {
 			ln := line{
-				Sub:    sub,
-				User:   subs.Users[sub.UserID],
-				Hidden: false,
+				Sub:  sub,
+				User: subs.Users[sub.UserID],
 			}
 			if val, ok := subs.Problems[sub.ProblemID]; ok {
 				ln.Problem = val
 			} else {
-				ln.Hidden = true
+				zap.S().Warn("Didn't find problem, this should not happen.")
 			}
 			ret = append(ret, ln)
 		}

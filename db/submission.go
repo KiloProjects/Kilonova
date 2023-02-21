@@ -44,6 +44,15 @@ func (s *DB) Submission(ctx context.Context, id int) (*kilonova.Submission, erro
 	return s.internalToSubmission(&sub), err
 }
 
+func (s *DB) SubmissionLookingUser(ctx context.Context, id int, userID int) (*kilonova.Submission, error) {
+	var sub dbSubmission
+	err := s.conn.GetContext(ctx, &sub, "SELECT subs.* FROM submissions subs, submission_viewers users WHERE subs.id = $1 AND users.sub_id = subs.id AND users.user_id = $2 LIMIT 1", id, userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	return s.internalToSubmission(&sub), err
+}
+
 const subSelectQuery = "SELECT * FROM submissions WHERE %s %s %s;"
 
 func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) ([]*kilonova.Submission, error) {
@@ -215,10 +224,19 @@ func subFilterQuery(filter *kilonova.SubmissionFilter) ([]string, []any) {
 	}
 	if v := filter.ContestID; v != nil {
 		if *v == 0 { // Allow filtering for submissions from no contest
-			where, args = append(where, "contest_id = NULL"), append(args, v)
+			where, args = append(where, "contest_id IS NULL"), append(args, v)
 		} else {
 			where, args = append(where, "contest_id = ?"), append(args, v)
 		}
+	}
+
+	if filter.Look {
+		var id int = 0
+		if filter.LookingUser != nil {
+			id = filter.LookingUser.ID
+		}
+
+		where, args = append(where, "EXISTS (SELECT 1 FROM submission_viewers WHERE user_id = ? AND sub_id = submissions.id)"), append(args, id)
 	}
 
 	if v := filter.Status; v != kilonova.StatusNone {

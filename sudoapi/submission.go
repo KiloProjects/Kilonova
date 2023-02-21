@@ -44,6 +44,9 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		filter.Ordering = "id"
 	}
 
+	filter.Look = true
+	filter.LookingUser = lookingUser
+
 	subs, err := s.db.Submissions(ctx, filter)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
@@ -52,7 +55,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		zap.S().Warn(err)
 		return nil, ErrUnknownError
 	}
-	cnt, err1 := s.CountSubmissions(ctx, filter)
+	cnt, err1 := s.countSubmissions(ctx, filter)
 	if err1 != nil {
 		zap.S().Warn(err1)
 		return nil, err1
@@ -77,8 +80,14 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 				zap.S().Infof("Error getting problem %d: %v", sub.ProblemID, err)
 				continue
 			}
-			if s.IsProblemVisible(lookingUser, problem) {
-				problems[sub.ProblemID] = problem
+			problems[sub.ProblemID] = problem
+			if !s.IsProblemVisible(lookingUser, problem) {
+				// sanity check, should not happen
+				userID := 0
+				if lookingUser != nil {
+					userID = lookingUser.ID
+				}
+				zap.S().Warnf("Showing problem %d that is not visible to user %d, this should never happen. Please fix your SQL view ASAP", problem.ID, userID)
 			}
 		}
 
@@ -93,6 +102,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 	}, nil
 }
 
+// Remember to do proper authorization when using this
 func (s *BaseAPI) RawSubmission(ctx context.Context, id int) (*kilonova.Submission, *StatusError) {
 	sub, err := s.db.Submission(ctx, id)
 	if err != nil {
@@ -105,6 +115,7 @@ func (s *BaseAPI) RawSubmission(ctx context.Context, id int) (*kilonova.Submissi
 	return sub, nil
 }
 
+// Should only ever be used for grader stuff
 func (s *BaseAPI) RawSubmissions(ctx context.Context, filter kilonova.SubmissionFilter) ([]*kilonova.Submission, *StatusError) {
 	subs, err := s.db.Submissions(ctx, filter)
 	if err != nil {
@@ -114,7 +125,7 @@ func (s *BaseAPI) RawSubmissions(ctx context.Context, filter kilonova.Submission
 	return subs, nil
 }
 
-func (s *BaseAPI) CountSubmissions(ctx context.Context, filter kilonova.SubmissionFilter) (int, *StatusError) {
+func (s *BaseAPI) countSubmissions(ctx context.Context, filter kilonova.SubmissionFilter) (int, *StatusError) {
 	count, err := s.db.CountSubmissions(ctx, filter)
 	if err != nil {
 		return -1, WrapError(err, "Couldn't count submissions")
@@ -144,12 +155,25 @@ func (s *BaseAPI) FullSubmission(ctx context.Context, subid int) (*FullSubmissio
 }
 
 func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *UserBrief, isLooking bool) (*FullSubmission, *StatusError) {
-	sub, err := s.db.Submission(ctx, subid)
-	if err != nil || sub == nil {
-		return nil, Statusf(404, "Submission not found")
-	}
+	var sub *kilonova.Submission
 	if isLooking {
-		s.filterSubmission(ctx, sub, lookingUser)
+		var userID int = 0
+		if lookingUser != nil {
+			userID = lookingUser.ID
+		}
+		sub2, err := s.db.SubmissionLookingUser(ctx, subid, userID)
+		if err != nil || sub2 == nil {
+			return nil, Statusf(404, "Submission not found or user may not have access")
+		}
+
+		s.filterSubmission(ctx, sub2, lookingUser)
+		sub = sub2
+	} else {
+		sub2, err := s.db.Submission(ctx, subid)
+		if err != nil || sub2 == nil {
+			return nil, Statusf(404, "Submission not found")
+		}
+		sub = sub2
 	}
 
 	rez := &FullSubmission{Submission: *sub}

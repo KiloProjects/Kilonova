@@ -28,7 +28,6 @@ export type ResultSubmission = {
 	sub: Submission;
 	author: UserBrief;
 	problem: Problem;
-	hidden: boolean;
 };
 
 export type SubmissionQuery = {
