@@ -1,5 +1,9 @@
 {{ define "title" }} {{getText "submissions"}} {{ end }}
 
+{{ define "head" }}
+<link rel="canonical" href='{{formatCanonical "/submissions"}}' />
+{{ end }}
+
 {{ define "content" }}
 
 <h1 class="mb-2">{{getText "subStatus"}}</h1>

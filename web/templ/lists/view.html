@@ -1,4 +1,9 @@
 {{ define "title" }} {{.ProblemList.Title}} {{ end }}
+
+{{ define "head" }}
+<link rel="canonical" href='{{printf "/problem_lists/%d" .ProblemList.ID | formatCanonical}}' />
+{{ end }}
+
 {{ define "content" }}
 
 {{ $user := .Ctx.User.Brief }}

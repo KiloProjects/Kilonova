@@ -1,4 +1,10 @@
 {{ define "title" }} {{getText "problem" .Problem.ID .Problem.Name}} {{ end }}
+
+
+{{ define "head" }}
+<link rel="canonical" href='{{printf "/problems/%d" .Problem.ID | formatCanonical}}' />
+{{ end }}
+
 {{ define "content" }}
 
 

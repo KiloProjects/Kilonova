@@ -525,6 +525,8 @@ func (rt *Web) problemAttachment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Add("X-Robots-Tag", "noindex, nofollow, noarchive")
+
 	attData, err := rt.base.AttachmentData(r.Context(), att.ID)
 	if err != nil {
 		zap.S().Warn(err)

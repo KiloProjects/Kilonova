@@ -1,5 +1,6 @@
 User-agent: *
 Disallow: /api/
+Disallow: /profile/
 Disallow: /submissions/
 Disallow: /submissions?
 Disallow: /pastes/

@@ -1,4 +1,7 @@
 {{ define "title" }} {{getText "sub"}} {{.Submission.ID}} {{ end }} 
+{{ define "head" }}
+<meta name="robots" content="none">
+{{ end }}
 {{ define "content" }}
 
 <kn-sub-mgr id="{{.Submission.ID}}"/>

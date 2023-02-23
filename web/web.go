@@ -387,6 +387,15 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"version":    func() string { return kilonova.Version },
 		"debug":      func() bool { return config.Common.Debug },
 
+		"formatCanonical": func(path string) string {
+			rez, err := url.JoinPath(config.Common.HostPrefix, path)
+			if err != nil {
+				zap.S().Warn("Malformed host prefix")
+				return path
+			}
+			return rez
+		},
+
 		"signupEnabled": func() bool { return config.Features.Signup },
 		"pastesEnabled": func() bool { return config.Features.Pastes },
 		"graderEnabled": func() bool { return config.Features.Grader },
