@@ -63,6 +63,7 @@ function ContestRegistrations({ contestid }: { contestid: string }) {
 	let [users, setUsers] = useState<User[]>([]);
 	let [page, setPage] = useState<number>(1);
 	let [numPages, setNumPages] = useState<number>(1);
+	let [cnt, setCnt] = useState<number>(-1);
 
 	async function poll() {
 		let res = await getCall(`/contest/${contestid}/registrations`, { offset: 50 * (page - 1), limit: 50 });
@@ -70,6 +71,7 @@ function ContestRegistrations({ contestid }: { contestid: string }) {
 			apiToast(res);
 			throw new Error("Couldn't fetch users");
 		}
+		setCnt(res.data.total_count);
 		setUsers(res.data.users);
 		setNumPages(Math.floor(res.data.total_count / 50) + (res.data.total_count % 50 != 0 ? 1 : 0));
 	}
@@ -80,6 +82,7 @@ function ContestRegistrations({ contestid }: { contestid: string }) {
 
 	return (
 		<div class="my-4">
+			{cnt >= 0 && getText("num_registrations", cnt)}
 			<Paginator numpages={numPages} page={page} setPage={setPage} showArrows={true} />
 			<UserTable users={users} />
 		</div>

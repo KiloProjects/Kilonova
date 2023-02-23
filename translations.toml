@@ -1539,3 +1539,8 @@ ro = "Cod"
 [upload_file]
 en = "Upload file"
 ro = "Încărcare fișier"
+
+[num_registrations]
+en = "%d registrations"
+ro = "%d înregistrări"
+
