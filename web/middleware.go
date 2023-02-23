@@ -253,7 +253,7 @@ func (rt *Web) initLanguage(next http.Handler) http.Handler {
 			userLang = util.UserFull(r).PreferredLanguage
 		}
 		// get language
-		lang, _ := r.Cookie("lang")
+		lang, _ := r.Cookie("kn-lang")
 		cookieLang := ""
 		if lang != nil {
 			cookieLang = lang.Value
