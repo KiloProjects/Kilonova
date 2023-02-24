@@ -435,6 +435,11 @@
 		content: "...";
 	}
 
+	blockquote {
+		@apply rounded-md p-3 my-2 border-l-4 border-gray-300 bg-gray-100 dark:border-gray-500 dark:bg-gray-800;
+		@apply italic leading-relaxed;
+	}
+
 	pre {
 		white-space: pre-wrap; /* Since CSS 2.1 */
 		white-space: -moz-pre-wrap; /* Mozilla, since 1999 */
