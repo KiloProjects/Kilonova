@@ -31,6 +31,8 @@
 			</div>
 
             {{ if ccDisclaimer }}
+
+	            {{$disclaimerImg := hashedName "static/by-nc-sa.eu.png" -}}
                 <div class="h-auto mb-2">
                     <div class="text-lg">Copyright policy</div>
                     <ul>
@@ -39,7 +41,7 @@
                                 Cu excepția cazurilor unde este specificat diferit, conținutul platformei este publicat sub licența <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>. Vedeți <a href="/docs/CREATIVE-COMMONS">Aici</a> mai multe detalii.
                             </div>
                             <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">
-                                <img alt="Creative Commons Licence" style="border-width:0" width="88" height="31" src="/static/by-nc-sa.eu.png" />
+                                <img alt="Creative Commons Licence" style="border-width:0" width="88" height="31" src="/{{$disclaimerImg}}" />
                             </a>
                         </li>
                     </ul>

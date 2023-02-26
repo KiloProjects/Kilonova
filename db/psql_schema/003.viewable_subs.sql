@@ -9,6 +9,10 @@ CREATE OR REPLACE VIEW submission_viewers AS (
             WHERE problem_id = submissions.problem_id AND user_id = submissions.user_id
         )) -- base case, users should see their own submissions if problem is still visible
     UNION ALL
+    (SELECT subs.id as sub_id, users.id as user_id
+        FROM submissions subs, users
+        WHERE users.admin = true) -- user admins
+    UNION ALL
     (SELECT subs.id as sub_id, pb_viewers.user_id as user_id
         FROM submissions subs, problem_viewers pb_viewers
         WHERE pb_viewers.problem_id = subs.problem_id AND subs.contest_id IS null) -- contest is null, so judge if problem is visible
