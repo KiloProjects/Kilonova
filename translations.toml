@@ -90,6 +90,10 @@ ro = "Probleme (ID-uri separate prin virgulă)"
 en = "Nested lists (IDs separated by a comma)"
 ro = "Liste imbricate (ID-uri separate prin virgulă)"
 
+[list_parent_id]
+en = "Parent List ID (for automatic nesting, optional)"
+ro = "ID listă părinte (pentru imbricare automată, opțional)"
+
 [button.create]
 en = "Create"
 ro = "Creare"
@@ -1543,4 +1547,3 @@ ro = "Încărcare fișier"
 [num_registrations]
 en = "%d registrations"
 ro = "%d înregistrări"
-

@@ -2,7 +2,7 @@
     <h2>{{getText "createPbList"}}</h2>
     <form id="pblist_form">
         <label class="block my-2">
-            <span class="form-label">{{ getText "name" }}</span>
+            <span class="form-label">{{ getText "name" }}:</span>
             <input id="pblist_title" type="text" class="form-input" required>
         </label>
         <label class="block my-2">
@@ -14,8 +14,12 @@
             <input type="text" id="pblist_sublists" class="form-input" pattern="([0-9]+,?)+">
         </label>
         <label class="block my-2">
-            <span class="form-label">{{ getText "pbs" }}</span>
+            <span class="form-label">{{ getText "pbs" }}:</span>
             <input id="pblist_pbs" type="text" class="form-input" pattern="([0-9]+,?)+">
+        </label>
+        <label class="block my-2">
+            <span class="form-label">{{ getText "list_parent_id" }}:</span>
+            <input id="pblist_parent_id" type="number" class="form-input">
         </label>
         <button type="submit" class="btn btn-blue">{{ getText "button.create" }}</button>
     </form>
@@ -36,6 +40,8 @@ pblist_cm.setSize(null, "100%");
 async function createProblemList(e) {
 	e.preventDefault()
 
+    const parentID = parseInt(document.getElementById("pblist_parent_id").value);
+
 	let data = {
 		title: document.getElementById("pblist_title").value,
 		description: pblist_cm.getValue(),
@@ -43,9 +49,18 @@ async function createProblemList(e) {
         sublists: bundled.stringIntToNumber(document.getElementById("pblist_sublists").value.split(',')),
     };
 
+    if(!isNaN(parentID)) {
+        data.parent_id = parentID
+    }
+
 	let res = await bundled.bodyCall("/problemList/create", data)
 	if(res.status === "success") {
-		window.location.assign(`/problem_lists/${res.data}`);
+        if(res.data.nested) {
+            // go to parent instead
+            window.location.assign(`/problem_lists/${parentID}`);
+            return
+        }
+		window.location.assign(`/problem_lists/${res.data.id}`);
 		return
 	}
 	bundled.apiToast(res)

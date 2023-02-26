@@ -104,12 +104,18 @@ func (s *API) problemLists(w http.ResponseWriter, r *http.Request) {
 	returnData(w, lists)
 }
 
+type pblistInitReturn struct {
+	ID     int  `json:"id"`
+	Nested bool `json:"nested"`
+}
+
 func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 	var listData struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 		ProblemIDs  []int  `json:"ids"`
 		SublistIDs  []int  `json:"sublists"`
+		ParentID    *int   `json:"parent_id"`
 	}
 	if err := parseJsonBody(r, &listData); err != nil {
 		err.WriteError(w)
@@ -144,7 +150,41 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	returnData(w, list.ID)
+	// This is a totally optional step that, if it fails, will just not nest the list automatically
+	if listData.ParentID != nil {
+		parent, err := s.base.ProblemList(r.Context(), *listData.ParentID)
+		if err != nil {
+			returnData(w, pblistInitReturn{
+				ID:     list.ID,
+				Nested: false,
+			})
+			return
+		}
+		var ids []int
+		for _, sublist := range parent.SubLists {
+			ids = append(ids, sublist.ID)
+		}
+		ids = append(ids, list.ID)
+		if err := s.base.UpdateProblemListSublists(r.Context(), *listData.ParentID, ids); err != nil {
+			zap.S().Warn(err)
+			returnData(w, pblistInitReturn{
+				ID:     list.ID,
+				Nested: false,
+			})
+			return
+		}
+
+		returnData(w, pblistInitReturn{
+			ID:     list.ID,
+			Nested: true,
+		})
+		return
+	}
+
+	returnData(w, pblistInitReturn{
+		ID:     list.ID,
+		Nested: false,
+	})
 }
 
 func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
