@@ -664,19 +664,6 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		"isContestEditor": func(c *kilonova.Contest) bool {
 			return rt.base.IsContestEditor(authedUser, c)
 		},
-		"contestRegistered": func(c *kilonova.Contest) bool {
-			if authedUser == nil {
-				return false
-			}
-			_, err := rt.base.ContestRegistration(context.Background(), c.ID, authedUser.ID)
-			if err != nil {
-				if !errors.Is(err, kilonova.ErrNotFound) {
-					zap.S().Warn(err)
-				}
-				return false
-			}
-			return true
-		},
 		"contestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {
 			questions, err := rt.base.ContestUserQuestions(context.Background(), c.ID, authedUser.ID)
 			if err != nil {
@@ -686,6 +673,19 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		},
 		"canViewAllSubs": func() bool {
 			return rt.canViewAllSubs(authedUser)
+		},
+		"contestRegistration": func(c *kilonova.Contest) *kilonova.ContestRegistration {
+			if authedUser == nil || c == nil {
+				return nil
+			}
+			reg, err := rt.base.ContestRegistration(context.Background(), c.ID, authedUser.ID)
+			if err != nil {
+				if !errors.Is(err, kilonova.ErrNotFound) {
+					zap.S().Warn(err)
+				}
+				return nil
+			}
+			return reg
 		},
 	})
 

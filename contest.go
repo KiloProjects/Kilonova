@@ -40,7 +40,7 @@ type Contest struct {
 
 	// PerUserTime records the number of seconds a user has in an USACO-style participation
 	// Setting it to 0 will make contests behave "normally"
-	PerUserTime time.Duration `json:"per_user_time"`
+	PerUserTime int `json:"per_user_time"`
 
 	// MaxSubs is the maximum number of submissions
 	// that someone is allowed to send to a problem during a contest

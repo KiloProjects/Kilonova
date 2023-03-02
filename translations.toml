@@ -1547,3 +1547,31 @@ ro = "Încărcare fișier"
 [num_registrations]
 en = "%d registrations"
 ro = "%d înregistrări"
+
+[register_during_contest]
+en = "Registering during contest is allowed"
+ro = "Înregistrarea utilizatorilor în timpul concursului este permisă"
+
+[register_during_contest_warning]
+en = "this has no effect if open registration is disabled"
+ro = "nu are niciun efect dacă înregistrarea liberă este dezactivată"
+
+[per_user_time]
+en = "Individual user time (USACO-style)"
+ro = "Timp individual (stil USACO)"
+
+[per_user_time_warning]
+en = "Warning: setting the individual user time parameter to a nonzero value will turn the contest into an USACO-style contest."
+ro = "Warning: setarea parametrului pentru timp individual la o valoare nenulă va transforma concursul în unul tip USACO."
+
+[start_contest]
+en = "Start contest"
+ro = "Începe concursul"
+
+[started]
+en = "Started"
+ro = "Început"
+
+[time_expired]
+en = "Time expired"
+ro = "Timp expirat"

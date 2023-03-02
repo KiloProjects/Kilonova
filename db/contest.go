@@ -24,6 +24,9 @@ type dbContest struct {
 	MaxSubCount int       `db:"max_sub_count"`
 
 	Virtual bool `db:"virtual"`
+
+	PerUserTime           int  `db:"per_user_time"`
+	RegisterDuringContest bool `db:"register_during_contest"`
 }
 
 const createContestQuery = `INSERT INTO contests (
@@ -291,6 +294,10 @@ func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilono
 		StartTime:  contest.StartTime,
 		EndTime:    contest.EndTime,
 		MaxSubs:    contest.MaxSubCount,
+
+		PerUserTime: contest.PerUserTime,
+
+		RegisterDuringContest: contest.RegisterDuringContest,
 
 		Visible: contest.Visible,
 	}, nil

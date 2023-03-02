@@ -1,3 +1,4 @@
+@import "@fontsource/noto-sans";
 @import "notyf/notyf.min.css";
 @import "highlight.js/styles/default.css";
 @import "highlight.js/styles/monokai.css" (prefers-color-scheme: dark);
@@ -129,10 +130,6 @@
 
 	.border-gr {
 		@apply border-gray-300 dark:border-gray-700;
-	}
-
-	.roboto .navbar-brand h1 h2 h3 h4 h5 h6 {
-		font-family: "Roboto";
 	}
 
 	.list-group {
@@ -453,12 +450,13 @@
 
 	body {
 		font-size: 16px;
-		@apply font-sans;
-		/*font-family: 'Open Sans',Inter var,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;*/
+		font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Roboto, "Helvetica Neue", Arial, "Noto Sans",
+			sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 	}
 
 	html {
 		tab-size: 4;
+		@apply font-sans;
 		@apply dark:bg-gray-900 dark:text-white;
 	}
 

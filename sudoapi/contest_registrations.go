@@ -37,7 +37,7 @@ func (s *BaseAPI) StartContestRegistration(ctx context.Context, contest *kilonov
 	}
 
 	startTime := time.Now()
-	endTime := startTime.Add(contest.PerUserTime * time.Second)
+	endTime := startTime.Add(time.Duration(contest.PerUserTime) * time.Second)
 	if err := s.db.StartContestRegistration(ctx, contest.ID, userID, startTime, endTime); err != nil {
 		return WrapError(err, "Couldn't start USACO-style contest participation")
 	}

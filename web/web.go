@@ -271,6 +271,30 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return announcements
 		},
+		"isUSACOstyle": func(c *kilonova.Contest) bool {
+			return c.PerUserTime > 0
+		},
+		"startedUSACO": func(c *kilonova.Contest, reg *kilonova.ContestRegistration) bool {
+			if c.PerUserTime == 0 {
+				return false
+			}
+			return reg.IndividualStartTime != nil
+		},
+		"endedUSACO": func(c *kilonova.Contest, reg *kilonova.ContestRegistration) bool {
+			if c.PerUserTime == 0 {
+				return false
+			}
+			return reg.IndividualStartTime != nil && reg.IndividualEndTime.Before(time.Now())
+		},
+		"remainingContestTime": func(c *kilonova.Contest, reg *kilonova.ContestRegistration) time.Time {
+			if c.PerUserTime == 0 || reg == nil || reg.IndividualStartTime == nil {
+				return c.EndTime
+			}
+			if time.Now().Before(*reg.IndividualEndTime) {
+				return *reg.IndividualEndTime
+			}
+			return c.EndTime
+		},
 		"allContestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {
 			questions, err := base.ContestQuestions(context.Background(), c.ID)
 			if err != nil {
@@ -467,10 +491,6 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			zap.S().Error("Uninitialized `contestProblemsVisible`")
 			return false
 		},
-		"contestRegistered": func(c *kilonova.Contest) bool {
-			zap.S().Error("Uninitialized `contestRegistered`")
-			return false
-		},
 		"contestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {
 			zap.S().Error("Uninitialized `contestQuestions`")
 			return nil
@@ -482,6 +502,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"canViewAllSubs": func() bool {
 			zap.S().Error("Uninitialized `canViewAllSubs`")
 			return false
+		},
+		"contestRegistration": func(c *kilonova.Contest) *kilonova.ContestRegistration {
+			zap.S().Error("Uninitialized `contestRegistration`")
+			return nil
 		},
 	}
 	return &Web{debug, funcs, base}

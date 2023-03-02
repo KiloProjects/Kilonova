@@ -16,6 +16,7 @@
 	"license": "",
 	"private": true,
 	"dependencies": {
+		"@fontsource/noto-sans": "^4.5.11",
 		"@fortawesome/fontawesome-free": "^6.2.1",
 		"@fullhuman/postcss-purgecss": "^5.0.0",
 		"@tailwindcss/forms": "^0.5.3",

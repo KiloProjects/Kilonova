@@ -36,10 +36,24 @@
             </div>
             <div class="block mb-2">
                 <label class="inline-flex items-center text-lg">
+                    <input class="form-checkbox" id="c_reg" name="register_during_contest" type="checkbox" {{if .Contest.RegisterDuringContest}}checked{{end}}>
+                    <span class="ml-2">{{getText "register_during_contest"}} 
+                        <span class="text-sm text-gray-500 dark:text-gray-300"> ({{getText "register_during_contest_warning"}})</span>
+                    </span>
+                </label>
+            </div>
+            <div class="block mb-2">
+                <label class="inline-flex items-center text-lg">
                     <input class="form-checkbox" id="c_visible" name="visible" type="checkbox" {{if .Contest.Visible}}checked{{end}}>
                     <span class="ml-2">{{getText "visible"}}</span>
                 </label>
             </div>
+            <label class="block mb-2">
+                <span class="form-label">{{getText "per_user_time"}}: </span>
+                <input class="form-input" name="per_user_time" type="number" value="{{.Contest.PerUserTime}}" required>
+                <span class="form-label">{{getText "seconds"}}</span>
+                <p class="text-sm text-gray-500 dark:text-gray-300">{{getText "per_user_time_warning"}}</p>
+            </label>
 
             <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
         </form>
@@ -105,6 +119,9 @@ async function updateContest(e) {
             visible: document.getElementById("c_visible").checked,
             start_time: bundled.contestToNetworkDate(fd.get("start_time")),
             end_time: bundled.contestToNetworkDate(fd.get("end_time")),
+            
+            per_user_time: fd.get("per_user_time"),
+            register_during_contest: document.getElementById("c_reg").checked,
         }
         console.log(fd, data)
     } catch(e) {

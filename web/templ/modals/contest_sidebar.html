@@ -22,7 +22,7 @@
             {{if .Ended}}
                 {{getText "contest_ended"}}
             {{else if .Running}}
-                <kn-contest-countdown target_time="{{.EndTime.UnixMilli}}" type="running" /> 
+                <kn-contest-countdown target_time="{{(remainingContestTime . (contestRegistration .)).UnixMilli}}" type="running" /> 
                 {{getText "contest_remaining"}}
             {{else}}
                 {{getText "contest_starting_in"}}
@@ -47,8 +47,21 @@
         {{ end }}
 
         {{ if (and authed (canJoinContest .)) }}
-            {{ if (contestRegistered .) }}
-            <button class="btn btn-blue my-2" disabled>{{getText "registered"}}</span>
+            {{ $reg := (contestRegistration .) }}
+            {{ if $reg }}
+                <div class="my-2">
+                {{ if (and .Running (isUSACOstyle .)) }}
+                    {{ if not (startedUSACO . $reg) }}
+                        <button class="btn btn-blue" onclick="bundled.startContestRegistration({{.ID}})">{{getText "start_contest"}}</button>
+                    {{ else if (endedUSACO . $reg) }}
+                        <span class="badge-lite">{{getText "time_expired"}}</span>
+                    {{ else }}
+                        <span class="badge-lite">{{getText "started"}}</span>
+                    {{ end }}
+                {{ else }}
+                    <span class="badge-lite">{{getText "registered"}}</span>
+                {{ end }}
+                </div>
             {{ else }}
             <button class="btn btn-blue my-2" onclick="bundled.registerForContest({{.ID}})">{{getText "register_btn"}}</button>
             {{ end }}

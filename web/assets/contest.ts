@@ -29,6 +29,15 @@ export async function registerForContest(contestID: number) {
 	window.location.reload();
 }
 
+export async function startContestRegistration(contestID: number) {
+	const res = await postCall(`/contest/${contestID}/startRegistration`, {});
+	if (res.status === "error") {
+		apiToast(res);
+		return;
+	}
+	window.location.reload();
+}
+
 export async function answerQuestion(q: Question, text: string) {
 	let res = await postCall(`/contest/${q.contest_id}/answerQuestion`, { questionID: q.id, text });
 	apiToast(res);
