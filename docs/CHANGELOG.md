@@ -1,6 +1,11 @@
+- v0.12.2:
+    - USACO-style contests;
+    - Add formatting for blockquotes in markdown;
+    - Better submission hiding;
+    - Bug fixes;
 - v0.12.1:
     - Generated account support;
-    - Functional leaderboard;
+    - Functioning contest leaderboard;
 - v0.12.0:
     - Most of the contest functionality is done;
     - Future contests on main page;
