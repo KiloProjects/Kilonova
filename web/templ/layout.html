@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{.Ctx.Language}}">
+<html lang="{{language}}">
 
 <head>
 	<meta charset="utf-8" />
@@ -14,10 +14,10 @@
 	<link rel="shortcut icon" type="image/x-icon" href="/{{$fav}}"/>
 	
 	<!-- OpenGraph stuff -->
-	<meta property="og:title" content='{{template "title" .}}' />
+	<meta property="og:title" content="{{template `title` .}}" />
 	<meta property="og:type" content="website" />
-	<meta property="og:description" content='{{block "description" .}}Programming platform for learning and practising{{end}}' />
-	<meta name="description" content='{{template "description" .}}' />
+	<meta property="og:description" content="{{block `description` .}}Programming platform for learning and practising{{end}}" />
+	<meta name="description" content="{{template `description` .}}" />
 	<meta property="og:locale" content="ro_RO" />
 	<meta property="og:site_name" content="Kilonova" />
 
@@ -33,7 +33,7 @@
 			debug: {{debug}},
 			admin: {{if .Ctx.User}}{{.Ctx.User.Admin}}{{else}}false{{end}},
 			user_id: {{if .Ctx.User}}{{.Ctx.User.ID}}{{else}}0{{end}},
-			language: {{.Ctx.Language}},
+			language: {{language}},
             langs: {{pLanguages}},
 		};
 	</script>

@@ -1,34 +1,30 @@
 {{ define "title" }} {{getText "lists"}} {{ end }}
 
 {{ define "head" }}
-<link rel="canonical" href='{{formatCanonical "/problem_lists"}}' />
+<link rel="canonical" href="{{formatCanonical `/problem_lists`}}" />
 {{ end }}
 
 {{ define "content" }}
-
-{{ $root := . }}
-{{ $user := .Ctx.User.Brief }}
-{{ $ctx := .Ctx }}
 
 <h2 class="mb-2">{{getText "problem_lists"}}</h2>
 
 <div class="list-group">
 {{ range problemLists }}
-    {{template "problemlist_show" (genPblistParams $user $ctx . false)}}
+    {{template "problemlist_show" (genPblistParams authedUser . false)}}
 {{ end }}
-{{ with (unassociatedProblems $user) }}
+{{ with (unassociatedProblems authedUser) }}
     <details class="list-group-head">
         <summary class="pb-1 mt-1">
             <span>{{getText "the_rest"}}</span>
-            {{if $user}}
+            {{if authedUser}}
                 <span class="float-right badge">
-                    {{ getText "num_solved" (numSolvedPbs $user .) (len .) }}
+                    {{ getText "num_solved" (numSolvedPbs authedUser .) (len .) }}
                 </span>
             {{end}}
         </summary>
         {{ with . }}
             <div class="mt-2">
-                {{ template "pb_list_group" (genProblemsParams $user . true false) }}
+                {{ template "pb_list_group" (genProblemsParams authedUser . true false) }}
             </div>
         {{ end }}
     </details>

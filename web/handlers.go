@@ -637,34 +637,38 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		return
 	}
 
+	// "cache" most util.* calls
+	lang := util.Language(r)
+	authedUser := util.UserBrief(r)
+
 	// Add request-specific functions
 	templ.Funcs(template.FuncMap{
 		"getText": func(line string, args ...any) template.HTML {
-			return template.HTML(kilonova.GetText(util.Language(r), line, args...))
+			return template.HTML(kilonova.GetText(lang, line, args...))
 		},
 		"language": func() string {
-			return util.Language(r)
+			return lang
 		},
 		"authed": func() bool {
-			return util.UserBrief(r) != nil
+			return authedUser != nil
 		},
 		"authedUser": func() *kilonova.UserBrief {
-			return util.UserBrief(r)
+			return authedUser
 		},
 		"currentProblem": func() *kilonova.Problem {
 			return util.Problem(r)
 		},
 		"problemEditor": func(problem *kilonova.Problem) bool {
-			return rt.base.IsProblemEditor(util.UserBrief(r), problem)
+			return rt.base.IsProblemEditor(authedUser, problem)
 		},
 		"isContestEditor": func(c *kilonova.Contest) bool {
-			return rt.base.IsContestEditor(util.UserBrief(r), c)
+			return rt.base.IsContestEditor(authedUser, c)
 		},
 		"contestRegistered": func(c *kilonova.Contest) bool {
-			if util.UserBrief(r) == nil {
+			if authedUser == nil {
 				return false
 			}
-			_, err := rt.base.ContestRegistration(context.Background(), c.ID, util.UserBrief(r).ID)
+			_, err := rt.base.ContestRegistration(context.Background(), c.ID, authedUser.ID)
 			if err != nil {
 				if !errors.Is(err, kilonova.ErrNotFound) {
 					zap.S().Warn(err)
@@ -674,14 +678,14 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 			return true
 		},
 		"contestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {
-			questions, err := rt.base.ContestUserQuestions(context.Background(), c.ID, util.UserBrief(r).ID)
+			questions, err := rt.base.ContestUserQuestions(context.Background(), c.ID, authedUser.ID)
 			if err != nil {
 				return []*kilonova.ContestQuestion{}
 			}
 			return questions
 		},
 		"canViewAllSubs": func() bool {
-			return rt.canViewAllSubs(util.UserBrief(r))
+			return rt.canViewAllSubs(authedUser)
 		},
 	})
 

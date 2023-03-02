@@ -20,13 +20,13 @@
                 <span class="form-label">{{getText "startTime"}}: </span>
                 <input class="form-input" name="start_time" type="text" 
                     pattern="[\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2} [+-][\d]{4}"
-                    placeholder="2020-03-18 15:00" value='{{.Contest.StartTime.Format "2006-01-02 15:04 -0700"}}' required>
+                    placeholder="2020-03-18 15:00" value="{{.Contest.StartTime.Format `2006-01-02 15:04 -0700`}}" required>
             </label>
             <label class="block mb-2">
                 <span class="form-label">{{getText "endTime"}}: </span>
                 <input class="form-input" name="end_time" type="text" 
                     pattern="[\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2} [+-][\d]{4}"
-                    placeholder="2020-03-18 18:00" value='{{.Contest.EndTime.Format "2006-01-02 15:04 -0700"}}' required>
+                    placeholder="2020-03-18 18:00" value="{{.Contest.EndTime.Format `2006-01-02 15:04 -0700`}}" required>
             </label>
             <div class="block mb-2">
                 <label class="inline-flex items-center text-lg">

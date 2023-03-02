@@ -7,8 +7,6 @@
 
 <div class="page-sidebar-divider"></div>
 {{ $user := .Ctx.User.Brief }}
-{{ $root := . }}
-{{ $ctx := .Ctx }}
 
 {{ $showAllContests := false }}
 
@@ -41,17 +39,17 @@
     {{ range problemLists }}
         {{ range .SubLists }}
             {{ with problemList .ID }}
-                {{template "problemlist_show" (genPblistParams $user $ctx . false)}}
+                {{template "problemlist_show" (genPblistParams authedUser . false)}}
             {{ end }}
         {{ end }}
     {{ end }}
-    {{ with (unassociatedProblems $user) }}
+    {{ with (unassociatedProblems authedUser) }}
         <details class="list-group-head">
             <summary class="pb-1 mt-1">
                 <span>{{getText "the_rest"}}</span>
                 {{if $user}}
                     <span class="float-right badge">
-                        {{ getText "num_solved" (numSolvedPbs $user .) (len .) }}
+                        {{ getText "num_solved" (numSolvedPbs authedUser .) (len .) }}
                     </span>
                 {{else}}
                 <span class="float-right badge">

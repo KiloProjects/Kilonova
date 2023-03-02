@@ -202,7 +202,6 @@ type ProblemListingParams struct {
 
 type PblistParams struct {
 	User   *kilonova.UserBrief
-	Ctx    *ReqContext
 	Pblist *kilonova.ProblemList
 	Open   bool
 }

@@ -782,8 +782,8 @@ en = "Advanced filters"
 ro = "Filtre avansate"
 
 [submitLogin]
-en = "<a href='/login'>Log in</a> or <a href='/signup'>sign up</a> to be able to send submissions!"
-ro = "<a href='/login'>Autentifică-te</a> sau <a href='/signup'>înregistrează-te</a> pentru a putea trimite submisii!"
+en = '<a href="/login">Log in</a> or <a href="/signup">sign up</a> to be able to send submissions!'
+ro = '<a href="/login">Autentifică-te</a> sau <a href="/signup">înregistrează-te</a> pentru a putea trimite submisii!'
 
 [settingsHeader]
 en = "Profile settings"
@@ -858,12 +858,12 @@ en = "Username/Email"
 ro = "Username/Email"
 
 [signupReminder]
-en = "Don't have an account? <a href='/signup'>Sign up</a>!"
-ro = "N-ai cont? <a href='/signup'>Înregistrează-te</a>!"
+en = 'Do not have an account? <a href="/signup">Sign up</a>!'
+ro = 'N-ai cont? <a href="/signup">Înregistrează-te</a>!'
 
 [loginReminder]
-en = "Already have an account? <a href='/login'>Log in</a>!"
-ro = "Ai deja cont? <a href='/login'>Loghează-te</a>!"
+en = 'Already have an account? <a href="/login">Log in</a>!'
+ro = 'Ai deja cont? <a href="/login">Loghează-te</a>!'
 
 [authenticate]
 en = "Authenticate"
@@ -1080,8 +1080,8 @@ en = "Recover"
 ro = "Recuperare"
 
 [forgot_pwd_announcement]
-en = "Forgot password? Go <a href='/forgot_pwd'>on this page</a> to recover it."
-ro = "Parolă uitată? Mergi <a href='/forgot_pwd'>pe pagina aceasta</a> pentru a o recupera."
+en = 'Forgot password? Go <a href="/forgot_pwd">on this page</a> to recover it.'
+ro = 'Parolă uitată? Mergi <a href="/forgot_pwd">pe pagina aceasta</a> pentru a o recupera.'
 
 [reset_pwd]
 en = "Reset password"

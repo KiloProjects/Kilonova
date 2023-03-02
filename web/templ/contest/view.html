@@ -1,19 +1,18 @@
 {{ define "title" }} {{.Contest.Name}} {{ end }}
 {{ define "head" }}
-<link rel="canonical" href='{{printf "/contests/%d" .Contest.ID | formatCanonical}}' />
+<link rel="canonical" href="{{printf `/contests/%d` .Contest.ID | formatCanonical}}" />
 {{ end }}
 {{ define "content" }}
 
 {{ template "topbar.html" . }}
 
-{{ $user := .Ctx.User }}
 {{ $contest := .Contest }}
 
 <div class="page-holder">
     <div class="page-content">
-        {{ with contestProblems .Ctx.User.Brief .Contest }}
+        {{ with contestProblems authedUser .Contest }}
             <h2> {{ getText "problems" }} </h2>
-            {{ template "pb_list_group" (genContestProblemsParams $user.Brief . $contest) }}
+            {{ template "pb_list_group" (genContestProblemsParams authedUser . $contest) }}
         {{ else }}
             <p>{{getText "contest_no_problems"}}</p>
         {{ end }}

@@ -2,7 +2,7 @@
 {{ define "content" }}
 
 <div class="segment-container">
-	<img class="rounded-lg float-right" width="128" height="128" src="/api/user/getGravatar?name={{.ContentUser.Name}}&s=128" alt='{{getText "profilePic"}} {{.ContentUser.Name}}'/>
+	<img class="rounded-lg float-right" width="128" height="128" src="/api/user/getGravatar?name={{.ContentUser.Name}}&s=128" alt="{{getText `profilePic`}} {{.ContentUser.Name}}"/>
 	<div>
 		<h1>{{.ContentUser.Name}}</h1>
 		<span>{{safeHTML .ContentUser.Bio}} {{/* Bio was ensured safe on update by bluemonday */}}

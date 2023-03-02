@@ -9,11 +9,11 @@
             {{if .Ended}}
                 {{getText "contest_ended"}}
             {{else if .Running}}
-                <kn-contest-countdown target_time='{{.EndTime.UnixMilli}}' type="running" /> 
+                <kn-contest-countdown target_time="{{.EndTime.UnixMilli}}" type="running" /> 
                 {{getText "contest_remaining"}}
             {{else}}
                 {{getText "contest_starting_in"}}
-                <kn-contest-countdown target_time='{{.StartTime.UnixMilli}}' type="before_start" />
+                <kn-contest-countdown target_time="{{.StartTime.UnixMilli}}" type="before_start" />
             {{end}}
         </p>
         {{ if isContestEditor . }}

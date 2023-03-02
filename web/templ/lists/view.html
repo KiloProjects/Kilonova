@@ -1,17 +1,15 @@
 {{ define "title" }} {{.ProblemList.Title}} {{ end }}
 
 {{ define "head" }}
-<link rel="canonical" href='{{printf "/problem_lists/%d" .ProblemList.ID | formatCanonical}}' />
+<link rel="canonical" href="{{printf `/problem_lists/%d` .ProblemList.ID | formatCanonical}}" />
 {{ end }}
 
 {{ define "content" }}
 
 {{ $user := .Ctx.User.Brief }}
-{{ $root := . }}
-{{ $ctx := .Ctx }}
 {{ with .ProblemList }}
     <div class="list-group mb-4">
-        {{ template "problemlist_show" (genPblistParams $user $ctx . true)}}
+        {{ template "problemlist_show" (genPblistParams authedUser . true)}}
     </div>
 	{{ if $user }}
 	{{ if or (eq $user.ID .AuthorID) $user.Admin }}

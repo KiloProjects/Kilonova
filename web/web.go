@@ -322,8 +322,8 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"genContestProblemsParams": func(scoreUser *kilonova.UserBrief, pbs []*kilonova.Problem, contest *kilonova.Contest) *ProblemListingParams {
 			return &ProblemListingParams{pbs, true, false, scoreUser, contest.ID}
 		},
-		"genPblistParams": func(user *kilonova.UserBrief, ctx *ReqContext, pblist *kilonova.ProblemList, open bool) *PblistParams {
-			return &PblistParams{user, ctx, pblist, open}
+		"genPblistParams": func(user *kilonova.UserBrief, pblist *kilonova.ProblemList, open bool) *PblistParams {
+			return &PblistParams{user, pblist, open}
 		},
 		"numSolvedPblist": func(user *kilonova.UserBrief, listID int) int {
 			cnt, err := base.NumSolvedFromPblist(context.Background(), listID, user.ID)
