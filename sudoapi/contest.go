@@ -112,11 +112,18 @@ func (s *BaseAPI) ContestLeaderboard(ctx context.Context, contestID int) (*kilon
 }
 
 func (s *BaseAPI) CanJoinContest(c *kilonova.Contest) bool {
-	return c.PublicJoin && time.Now().Before(c.StartTime)
+	if !c.PublicJoin {
+		return false
+	}
+	if c.RegisterDuringContest && time.Now().Before(c.EndTime) { // Registration during contest is enabled
+		return true
+	}
+	return time.Now().Before(c.StartTime)
 }
 
 // CanSubmitInContest checks if the user is either a contestant and the contest is running, or a tester/editor/admin.
 // Ended contests cannot have submissions created by anyone
+// Also, USACO-style contests are fun to handle...
 func (s *BaseAPI) CanSubmitInContest(user *kilonova.UserBrief, c *kilonova.Contest) bool {
 	if c.Ended() {
 		return false
@@ -135,7 +142,20 @@ func (s *BaseAPI) CanSubmitInContest(user *kilonova.UserBrief, c *kilonova.Conte
 		zap.S().Warn(err)
 		return false
 	}
-	return reg != nil
+
+	if reg == nil {
+		return false
+	}
+
+	if c.PerUserTime == 0 { // Normal, non-USACO contest, only registration matters
+		return true
+	}
+
+	// USACO contests are a bit more finnicky
+	if reg.IndividualStartTime == nil || reg.IndividualEndTime == nil { // Hasn't pressed start yet
+		return false
+	}
+	return time.Now().After(*reg.IndividualStartTime) && time.Now().Before(*reg.IndividualEndTime) // During window of visibility
 }
 
 // CanViewContestProblems checks if the user can see a contest's problems.
@@ -150,7 +170,11 @@ func (s *BaseAPI) CanViewContestProblems(ctx context.Context, user *kilonova.Use
 	if !contest.Started() {
 		return false
 	}
-	if contest.Visible {
+	if contest.Ended() && contest.Visible { // Once ended and visible, it's free for all
+		return true
+	}
+	if contest.PerUserTime == 0 && contest.Visible && !contest.RegisterDuringContest {
+		// Problems can be seen by anyone only on visible, non-USACO contests that disallow registering during contest
 		return true
 	}
 	return s.CanSubmitInContest(user, contest)

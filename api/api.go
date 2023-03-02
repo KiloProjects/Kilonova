@@ -223,6 +223,7 @@ func (s *API) Handler() http.Handler {
 			r.With(s.validateContestEditor).Post("/deleteAnnouncement", s.deleteContestAnnouncement)
 
 			r.Post("/register", s.registerForContest)
+			r.Post("/startRegistration", s.startContestRegistration)
 			r.With(s.MustBeAuthed).Get("/checkRegistration", s.checkRegistration)
 			r.With(s.validateContestEditor).Get("/registrations", s.contestRegistrations)
 			r.With(s.MustBeAdmin).Post("/forceRegister", s.forceRegisterForContest)

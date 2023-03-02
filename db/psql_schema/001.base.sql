@@ -352,10 +352,7 @@ CREATE OR REPLACE VIEW contest_visibility AS (
         WHERE contests.visible = true) -- visible to anonymous users
     UNION
     (SELECT contests.id AS contest_id, users.id AS user_id FROM contests, users 
-        WHERE contests.visible = true) -- visible to logged in users
-    UNION
-    (SELECT contests.id AS contest_id, users.id AS user_id FROM contests, users 
-        WHERE users.admin = true) -- admin
+        WHERE contests.visible = true OR users.admin = true) -- visible to logged in users and admins
     UNION
     (SELECT contest_id, user_id FROM contest_user_access) -- Testers/Editors
     UNION

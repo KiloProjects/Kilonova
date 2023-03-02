@@ -39,6 +39,10 @@ func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
 		EndTime   *string `json:"end_time"`
 
 		MaxSubs *int `json:"max_subs"`
+
+		RegisterDuringContest *bool `json:"register_during_contest"`
+
+		PerUserTime *int `json:"per_user_time"` // Seconds
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 500)
@@ -70,6 +74,10 @@ func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
 		StartTime:  startTime,
 		EndTime:    endTime,
 		MaxSubs:    args.MaxSubs,
+
+		RegisterDuringContest: args.RegisterDuringContest,
+
+		PerUserTime: args.PerUserTime,
 	}); err != nil {
 		errorData(w, err, 500)
 		return
@@ -202,16 +210,6 @@ func (s *API) stripContestAccess(w http.ResponseWriter, r *http.Request) {
 	}
 
 	returnData(w, "Stripped contest access")
-}
-
-func (s *API) getContestAccessControl(w http.ResponseWriter, r *http.Request) {
-	returnData(w, struct {
-		Editors []*kilonova.UserBrief `json:"editors"`
-		Testers []*kilonova.UserBrief `json:"testers"`
-	}{
-		Editors: util.Contest(r).Editors,
-		Testers: util.Contest(r).Testers,
-	})
 }
 
 func (s *API) contestAnnouncements(w http.ResponseWriter, r *http.Request) {
@@ -383,11 +381,19 @@ func (s *API) answerContestQuestion(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) registerForContest(w http.ResponseWriter, r *http.Request) {
-	if err := s.base.RegisterContestUser(r.Context(), util.Contest(r).ID, util.UserBrief(r).ID); err != nil {
+	if err := s.base.RegisterContestUser(r.Context(), util.Contest(r), util.UserBrief(r).ID); err != nil {
 		err.WriteError(w)
 		return
 	}
 	returnData(w, "Registered for contest")
+}
+
+func (s *API) startContestRegistration(w http.ResponseWriter, r *http.Request) {
+	if err := s.base.StartContestRegistration(r.Context(), util.Contest(r), util.UserBrief(r).ID); err != nil {
+		err.WriteError(w)
+		return
+	}
+	returnData(w, "Started contest registration.")
 }
 
 func (s *API) forceRegisterForContest(w http.ResponseWriter, r *http.Request) {
@@ -406,7 +412,7 @@ func (s *API) forceRegisterForContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.base.RegisterContestUser(r.Context(), util.Contest(r).ID, user.ID); err != nil {
+	if err := s.base.RegisterContestUser(r.Context(), util.Contest(r), user.ID); err != nil {
 		err.WriteError(w)
 		return
 	}

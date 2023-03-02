@@ -23,6 +23,10 @@ type Contest struct {
 	// or he needs to be manually added
 	PublicJoin bool `json:"public_join"`
 
+	// RegisterDuringContest indicates whether a user can join a contest while it's running
+	// It is useless without PublicJoin set to true
+	RegisterDuringContest bool `json:"register_during_contest"`
+
 	// Visible indicates whether a contest can be seen by others
 	// Contestants may be able to see the contest
 	Visible bool `json:"hidden"`
@@ -33,6 +37,10 @@ type Contest struct {
 
 	StartTime time.Time `json:"start_time"`
 	EndTime   time.Time `json:"end_time"`
+
+	// PerUserTime records the number of seconds a user has in an USACO-style participation
+	// Setting it to 0 will make contests behave "normally"
+	PerUserTime time.Duration `json:"per_user_time"`
 
 	// MaxSubs is the maximum number of submissions
 	// that someone is allowed to send to a problem during a contest
@@ -71,6 +79,10 @@ type ContestUpdate struct {
 	EndTime   *time.Time `json:"end_time"`
 
 	MaxSubs *int `json:"max_subs"`
+
+	RegisterDuringContest *bool `json:"register_during_contest"`
+
+	PerUserTime *int `json:"per_user_time"` // In seconds
 }
 
 type ContestQuestion struct {
@@ -91,12 +103,13 @@ type ContestAnnouncement struct {
 	Text      string    `json:"text"`
 }
 
-// Maybe? Not sure if to actually make it
-// But define it nevertheless
 type ContestRegistration struct {
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	ContestID int       `json:"contest_id" db:"contest_id"`
 	UserID    int       `json:"user_id" db:"user_id"`
+
+	IndividualStartTime *time.Time `json:"individual_start" db:"individual_start_at"`
+	IndividualEndTime   *time.Time `json:"individual_end" db:"individual_end_at"`
 }
 
 type LeaderboardEntry struct {

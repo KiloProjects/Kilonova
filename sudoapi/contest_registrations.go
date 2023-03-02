@@ -3,18 +3,43 @@ package sudoapi
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 )
 
-func (s *BaseAPI) RegisterContestUser(ctx context.Context, contestID, userID int) *StatusError {
-	_, err := s.ContestRegistration(ctx, contestID, userID)
+func (s *BaseAPI) RegisterContestUser(ctx context.Context, contest *kilonova.Contest, userID int) *StatusError {
+	_, err := s.ContestRegistration(ctx, contest.ID, userID)
 	if err != nil && !errors.Is(err, ErrNotFound) {
-		return WrapError(err, "Couldn't sanity check registration")
+		return WrapError(err, "User already registered")
 	}
 
-	if err := s.db.InsertContestRegistration(ctx, contestID, userID); err != nil {
+	if err := s.db.InsertContestRegistration(ctx, contest.ID, userID); err != nil {
 		return WrapError(err, "Couldn't register user for contest")
+	}
+	return nil
+}
+
+func (s *BaseAPI) StartContestRegistration(ctx context.Context, contest *kilonova.Contest, userID int) *StatusError {
+	if contest.PerUserTime == 0 {
+		return Statusf(400, "Contest is not USACO-style")
+	}
+
+	reg, err := s.ContestRegistration(ctx, contest.ID, userID)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		if err := s.RegisterContestUser(ctx, contest, userID); err != nil {
+			return err
+		}
+	}
+
+	if reg.IndividualStartTime != nil {
+		return Statusf(400, "User already started participation")
+	}
+
+	startTime := time.Now()
+	endTime := startTime.Add(contest.PerUserTime * time.Second)
+	if err := s.db.StartContestRegistration(ctx, contest.ID, userID, startTime, endTime); err != nil {
+		return WrapError(err, "Couldn't start USACO-style contest participation")
 	}
 	return nil
 }

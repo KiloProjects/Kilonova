@@ -241,6 +241,13 @@ func contestUpdateQuery(upd *kilonova.ContestUpdate) ([]string, []any) {
 	if v := upd.MaxSubs; v != nil {
 		toUpd, args = append(toUpd, "max_sub_count = ?"), append(args, v)
 	}
+	if v := upd.PerUserTime; v != nil {
+		toUpd, args = append(toUpd, "per_user_time = ?"), append(args, v)
+	}
+	if v := upd.RegisterDuringContest; v != nil {
+		toUpd, args = append(toUpd, "register_during_contest = ?"), append(args, v)
+	}
+
 	return toUpd, args
 }
 
