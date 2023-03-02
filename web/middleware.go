@@ -232,12 +232,7 @@ func getSessCookie(r *http.Request) string {
 
 func (rt *Web) initSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sess, err := rt.base.GetSession(r.Context(), getSessCookie(r))
-		if err != nil {
-			next.ServeHTTP(w, r)
-			return
-		}
-		user, err := rt.base.UserFull(r.Context(), sess)
+		user, err := rt.base.SessionUser(r.Context(), getSessCookie(r))
 		if err != nil || user == nil {
 			next.ServeHTTP(w, r)
 			return

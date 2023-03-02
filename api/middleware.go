@@ -7,6 +7,7 @@ import (
 
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 // MustBeVisitor is middleware to make sure the user creating the request is not authenticated
@@ -56,12 +57,12 @@ func (s *API) MustBeProposer(next http.Handler) http.Handler {
 // SetupSession adds the user with the specified user ID to context
 func (s *API) SetupSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session := s.GetRSession(r)
-		if session == -1 {
+		user, err := s.base.SessionUser(r.Context(), getAuthHeader(r))
+		if err != nil {
+			zap.S().Warn(err)
 			next.ServeHTTP(w, r)
 			return
 		}
-		user, _ := s.base.UserFull(r.Context(), session)
 		if user == nil {
 			next.ServeHTTP(w, r)
 			return
@@ -195,17 +196,6 @@ func (s *API) validateContestID(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ContestKey, contest)))
 	})
-}
-
-func (s *API) GetRSession(r *http.Request) int {
-	authToken := getAuthHeader(r)
-	if authToken != "" { // use Auth tokens by default
-		id, err := s.base.GetSession(r.Context(), authToken)
-		if err == nil {
-			return id
-		}
-	}
-	return -1
 }
 
 func getAuthHeader(r *http.Request) string {

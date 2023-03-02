@@ -71,7 +71,7 @@ func (s *DB) User(ctx context.Context, id int) (*User, error) {
 	return &user, err
 }
 
-// User looks up a user by name.
+// UserByName looks up a user by name.
 func (s *DB) UserByName(ctx context.Context, name string) (*User, error) {
 	var user User
 	err := s.conn.GetContext(ctx, &user, "SELECT * FROM users WHERE lower(name) = lower($1) LIMIT 1", name)
@@ -81,10 +81,20 @@ func (s *DB) UserByName(ctx context.Context, name string) (*User, error) {
 	return &user, err
 }
 
-// User looks up a user by email.
+// UserByEmail looks up a user by email.
 func (s *DB) UserByEmail(ctx context.Context, email string) (*User, error) {
 	var user User
 	err := s.conn.GetContext(ctx, &user, "SELECT * FROM users WHERE lower(email) = lower($1) LIMIT 1", email)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	return &user, err
+}
+
+// UserBySessionID looks up a user by an active session ID.
+func (s *DB) UserBySessionID(ctx context.Context, sessionID string) (*User, error) {
+	var user User
+	err := s.conn.GetContext(ctx, &user, "SELECT users.* FROM users, active_sessions WHERE users.id = active_sessions.user_id AND active_sessions.id = $1 LIMIT 1", sessionID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}

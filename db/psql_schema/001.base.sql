@@ -1,3 +1,5 @@
+BEGIN; -- submissions references contests which is defined later
+
 -- user stuff
 
 CREATE TABLE IF NOT EXISTS users (
@@ -406,3 +408,4 @@ CREATE INDEX IF NOT EXISTS contest_registrations_index ON contest_registrations 
 CREATE INDEX IF NOT EXISTS contest_questions_index ON contest_questions (contest_id);
 CREATE INDEX IF NOT EXISTS contest_announcements_index ON contest_announcements (contest_id);
 
+COMMIT;

@@ -63,7 +63,7 @@ func (s *DB) GetSession(ctx context.Context, sess string) (int, error) {
 
 func (s *DB) getSession(ctx context.Context, sess string) (*dbSession, error) {
 	var session dbSession
-	err := s.conn.GetContext(ctx, &session, `SELECT * FROM sessions WHERE id = $1 AND NOW() < expires_at`, sess)
+	err := s.conn.GetContext(ctx, &session, `SELECT * FROM active_sessions WHERE id = $1`, sess)
 	if err != nil {
 		return nil, errors.New("Unauthed")
 	}
