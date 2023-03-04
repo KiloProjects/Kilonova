@@ -1,3 +1,6 @@
+- v0.13.0:
+    - Major: Grader rework to support high-memory problems;
+    - Better UX for USACO contests. 
 - v0.12.2:
     - USACO-style contests;
     - Add formatting for blockquotes in markdown;
