@@ -9,72 +9,54 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var _ eval.Runner = &BoxManager{}
+var _ eval.BoxScheduler = &BoxManager{}
 
 // BoxManager manages a box with eval-based submissions
 type BoxManager struct {
 	dm kilonova.GraderStore
 
 	numConcurrent int
-	sem           *semaphore.Weighted
+	concSem       *semaphore.Weighted
+	memSem        *semaphore.Weighted
 
 	availableIDs chan int
-
-	// If debug mode is enabled, the manager should print more stuff to the command line
-	debug bool
 }
 
-// ToggleDebug is a convenience function to setting up debug mode in the box manager and all future boxes
-// It should print additional output
-func (b *BoxManager) ToggleDebug() {
-	b.debug = !b.debug
-}
-
-func (b *BoxManager) RunTask(ctx context.Context, task eval.Task) error {
-	box, err := b.getSandbox(ctx)
-	if err != nil {
-		zap.S().Info(err)
-		return err
+func (b *BoxManager) GetBox(ctx context.Context, memQuota int64) (eval.Sandbox, error) {
+	if err := b.concSem.Acquire(ctx, 1); err != nil {
+		return nil, err
 	}
-	defer b.releaseSandbox(box)
-	return task.Execute(ctx, box)
-}
-
-func (b *BoxManager) newSandbox() (*Box, error) {
-	box, err := newBox(<-b.availableIDs)
+	if memQuota > 0 {
+		if err := b.memSem.Acquire(ctx, memQuota); err != nil {
+			return nil, err
+		}
+	}
+	box, err := newBox(<-b.availableIDs, memQuota)
 	if err != nil {
 		return nil, err
 	}
-	box.Debug = b.debug
 	return box, nil
 }
 
-func (b *BoxManager) getSandbox(ctx context.Context) (eval.Sandbox, error) {
-	if err := b.sem.Acquire(ctx, 1); err != nil {
-		return nil, err
-	}
-	return b.newSandbox()
-}
-
-func (b *BoxManager) releaseSandbox(sb eval.Sandbox) {
+func (b *BoxManager) ReleaseBox(sb eval.Sandbox) {
+	q := sb.MemoryQuota()
 	if err := sb.Close(); err != nil {
 		zap.S().Warnf("Could not release sandbox %d: %v", sb.GetID(), err)
 	}
 	b.availableIDs <- sb.GetID()
-	b.sem.Release(1)
+	b.concSem.Release(1)
+	b.memSem.Release(q)
 }
 
 // Close waits for all boxes to finish running
 func (b *BoxManager) Close(ctx context.Context) error {
-	b.sem.Acquire(ctx, int64(b.numConcurrent))
+	b.concSem.Acquire(ctx, int64(b.numConcurrent))
 	close(b.availableIDs)
 	return nil
 }
 
 // New creates a new box manager
-func New(count int, dm kilonova.GraderStore) (*BoxManager, error) {
-
-	sem := semaphore.NewWeighted(int64(count))
+func New(count int, maxMemory int64, dm kilonova.GraderStore) (*BoxManager, error) {
 
 	availableIDs := make(chan int, 3*count)
 	for i := 1; i <= 2*count; i++ {
@@ -83,7 +65,8 @@ func New(count int, dm kilonova.GraderStore) (*BoxManager, error) {
 
 	bm := &BoxManager{
 		dm:            dm,
-		sem:           sem,
+		concSem:       semaphore.NewWeighted(int64(count)),
+		memSem:        semaphore.NewWeighted(maxMemory),
 		availableIDs:  availableIDs,
 		numConcurrent: count,
 	}

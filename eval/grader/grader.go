@@ -73,7 +73,7 @@ func (h *Handler) chFeeder(d time.Duration) {
 	}
 }
 
-func (h *Handler) handle(ctx context.Context, runner eval.Runner) error {
+func (h *Handler) handle(ctx context.Context, runner eval.BoxScheduler) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -132,7 +132,7 @@ func (h *Handler) genSubCompileRequest(ctx context.Context, sub *kilonova.Submis
 	return req, nil
 }
 
-func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, sub *kilonova.Submission) error {
+func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.BoxScheduler, sub *kilonova.Submission) error {
 	h.localLogger.Infof("Executing submission %d with status %q", sub.ID, sub.Status)
 	defer func() {
 		// In case anything ever happens, make sure it is at least marked as finished
@@ -219,19 +219,17 @@ func (h *Handler) ExecuteSubmission(ctx context.Context, runner eval.Runner, sub
 	return nil
 }
 
-func (h *Handler) CompileSubmission(ctx context.Context, runner eval.Runner, sub *kilonova.Submission, problem *kilonova.Problem, problemSettings *kilonova.ProblemEvalSettings) *kilonova.StatusError {
+func (h *Handler) CompileSubmission(ctx context.Context, runner eval.BoxScheduler, sub *kilonova.Submission, problem *kilonova.Problem, problemSettings *kilonova.ProblemEvalSettings) *kilonova.StatusError {
 	req, err := h.genSubCompileRequest(ctx, sub, problem, problemSettings)
 	if err != nil {
 		zap.S().Warn(err)
 		return kilonova.WrapError(err, "Couldn't generate compilation request")
 	}
 
-	task := tasks.NewCompileTask(req, h.localLogger)
-	if err := runner.RunTask(ctx, task); err != nil {
-		return kilonova.WrapError(err, "Error from eval")
+	resp, err1 := eval.RunTask(ctx, runner, 0, req, tasks.GetCompileTask(h.localLogger))
+	if err1 != nil {
+		return kilonova.WrapError(err1, "Error from eval")
 	}
-
-	resp := task.Resp
 	// if !resp.Success && resp.Other != "" {
 	// 	// zap.S().Warnf("Internal grader error during compilation (#%d): %s", sub.ID, resp.Other)
 	// 	// resp.Output += "\nGrader notes: " + resp.Other
@@ -243,7 +241,7 @@ func (h *Handler) CompileSubmission(ctx context.Context, runner eval.Runner, sub
 		return kilonova.WrapError(err, "Couldn't update submission")
 	}
 
-	if resp.Success == false {
+	if !resp.Success {
 		if err := h.base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints}); err != nil {
 			return kilonova.WrapError(err, "Couldn't finalize submission with compiler error")
 		}
@@ -252,7 +250,7 @@ func (h *Handler) CompileSubmission(ctx context.Context, runner eval.Runner, sub
 	return nil
 }
 
-func (h *Handler) HandleSubTest(ctx context.Context, runner eval.Runner, checker eval.Checker, sub *kilonova.Submission, problem *kilonova.Problem, subTest *kilonova.SubTest) error {
+func (h *Handler) HandleSubTest(ctx context.Context, runner eval.BoxScheduler, checker eval.Checker, sub *kilonova.Submission, problem *kilonova.Problem, subTest *kilonova.SubTest) error {
 	pbTest, err1 := h.base.TestByID(ctx, subTest.TestID)
 	if err1 != nil {
 		return kilonova.WrapError(err1, "Couldn't get test")
@@ -271,13 +269,10 @@ func (h *Handler) HandleSubTest(ctx context.Context, runner eval.Runner, checker
 		execRequest.Filename = "stdin"
 	}
 
-	task := tasks.NewExecuteTask(execRequest, h.base, h.localLogger)
-
-	if err := runner.RunTask(ctx, task); err != nil {
+	resp, err := eval.RunTask(ctx, runner, int64(problem.MemoryLimit), execRequest, tasks.GetExecuteTask(h.localLogger, h.base))
+	if err != nil {
 		return kilonova.WrapError(err, "Couldn't execute test")
 	}
-
-	resp := task.Resp
 	var testScore int
 
 	// Make sure TLEs are fully handled
@@ -418,9 +413,9 @@ func (h *Handler) Start() error {
 	return <-eCh
 }
 
-func (h *Handler) getLocalRunner() (eval.Runner, error) {
+func (h *Handler) getLocalRunner() (eval.BoxScheduler, error) {
 	zap.S().Info("Trying to spin up local grader")
-	bm, err := boxmanager.New(config.Eval.NumConcurrent, h.base)
+	bm, err := boxmanager.New(config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, h.base)
 	if err != nil {
 		return nil, err
 	}
@@ -428,7 +423,7 @@ func (h *Handler) getLocalRunner() (eval.Runner, error) {
 	return bm, nil
 }
 
-func (h *Handler) getAppropriateRunner() (eval.Runner, error) {
+func (h *Handler) getAppropriateRunner() (eval.BoxScheduler, error) {
 	if boxmanager.CheckCanRun() {
 		runner, err := h.getLocalRunner()
 		if err == nil {
@@ -448,7 +443,7 @@ func (h *Handler) getAppropriateRunner() (eval.Runner, error) {
 	*/
 }
 
-func (h *Handler) getAppropriateChecker(ctx context.Context, runner eval.Runner, sub *kilonova.Submission, pb *kilonova.Problem, settings *kilonova.ProblemEvalSettings) (eval.Checker, error) {
+func (h *Handler) getAppropriateChecker(ctx context.Context, runner eval.BoxScheduler, sub *kilonova.Submission, pb *kilonova.Problem, settings *kilonova.ProblemEvalSettings) (eval.Checker, error) {
 	if settings.CheckerName == "" {
 		return &checkers.DiffChecker{}, nil
 	} else {

@@ -39,7 +39,8 @@ type EvalConf struct {
 	IsolatePath string `toml:"isolatePath"`
 	CompilePath string `toml:"compilePath"`
 	// Address       string `toml:"address"`
-	NumConcurrent int `toml:"num_concurrent"`
+	NumConcurrent int   `toml:"num_concurrent"`
+	GlobalMaxMem  int64 `toml:"global_max_mem_kb"`
 }
 
 // CommonConf is the data required for all services
@@ -53,7 +54,7 @@ type CommonConf struct {
 
 	DBDSN string `toml:"db_dsn"`
 
-	MaxMemKB int `toml:"max_mem_kb"`
+	TestMaxMemKB int `toml:"test_max_mem_kb"`
 }
 
 type FeaturesConf struct {

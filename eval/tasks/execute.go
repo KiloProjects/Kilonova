@@ -9,87 +9,77 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ eval.Task = &ExecuteTask{}
+func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Task[eval.ExecRequest, eval.ExecResponse] {
+	return func(ctx context.Context, box eval.Sandbox, req *eval.ExecRequest) (*eval.ExecResponse, error) {
+		resp := &eval.ExecResponse{}
+		logger.Infof("Executing test %d (for submission #%d) using box %d", req.SubtestID, req.SubID, box.GetID())
 
-type ExecuteTask struct {
-	Req    *eval.ExecRequest
-	Resp   *eval.ExecResponse
-	DM     kilonova.GraderStore
-	Logger *zap.SugaredLogger
-}
+		in, err := dm.TestInput(req.TestID)
+		if err != nil {
+			return resp, err
+		}
+		defer in.Close()
 
-func (job *ExecuteTask) Execute(ctx context.Context, box eval.Sandbox) error {
-	job.Logger.Infof("Executing test %d (for submission #%d) using box %d", job.Req.SubtestID, job.Req.SubID, box.GetID())
+		if err := box.WriteFile("/box/"+req.Filename+".in", in, 0644); err != nil {
+			zap.S().Info("Can't write input file:", err)
+			resp.Comments = "Sandbox error: Couldn't write input file"
+			return resp, err
+		}
+		consoleInput := req.Filename == "stdin"
 
-	in, err := job.DM.TestInput(job.Req.TestID)
-	if err != nil {
-		return err
+		lang := eval.Langs[req.Lang]
+		if err := eval.CopyInBox(box, getIDExec(req.SubID), lang.CompiledName); err != nil {
+			resp.Comments = "Couldn't copy executable in box"
+			return resp, err
+		}
+
+		lim := eval.Limits{
+			MemoryLimit: req.MemoryLimit,
+			TimeLimit:   req.TimeLimit,
+		}
+		meta, err := eval.RunSubmission(ctx, box, eval.Langs[req.Lang], lim, consoleInput)
+		if err != nil {
+			resp.Comments = fmt.Sprintf("Error running submission: %v", err)
+			return resp, nil
+		}
+		resp.Time = meta.Time
+		resp.Memory = meta.Memory
+
+		switch meta.Status {
+		case "TO":
+			resp.Comments = "TLE: " + meta.Message
+		case "RE":
+			resp.Comments = "Runtime Error: " + meta.Message
+		case "SG":
+			resp.Comments = meta.Message
+		case "XX":
+			resp.Comments = "Sandbox Error: " + meta.Message
+		}
+
+		boxOut := fmt.Sprintf("/box/%s.out", req.Filename)
+		if !box.FileExists(boxOut) {
+			resp.Comments = "No output file found"
+			//zap.S().Warn("No output file found", zap.Int("subtest_id", req.SubtestID), zap.Int("box_id", box.GetID()), zap.Int("sub_id", req.SubID))
+			//zap.S().Info("This may be a bug: ", spew.Sdump(box.ReadDir("/box/")))
+			return resp, nil
+		}
+
+		w, err := dm.SubtestWriter(req.SubtestID)
+		if err != nil {
+			resp.Comments = "Could not open problem output"
+			return resp, nil
+		}
+
+		if err := eval.CopyFromBox(box, boxOut, w); err != nil {
+			resp.Comments = "Could not write output file"
+			return resp, nil
+		}
+
+		if err := w.Close(); err != nil {
+			resp.Comments = "Could not close output file"
+			return resp, nil
+		}
+
+		return resp, nil
 	}
-	defer in.Close()
-
-	if err := box.WriteFile("/box/"+job.Req.Filename+".in", in, 0644); err != nil {
-		zap.S().Info("Can't write input file:", err)
-		job.Resp.Comments = "Sandbox error: Couldn't write input file"
-		return err
-	}
-	consoleInput := job.Req.Filename == "stdin"
-
-	lang := eval.Langs[job.Req.Lang]
-	if err := eval.CopyInBox(box, getIDExec(job.Req.SubID), lang.CompiledName); err != nil {
-		job.Resp.Comments = "Couldn't copy executable in box"
-		return err
-	}
-
-	lim := eval.Limits{
-		MemoryLimit: job.Req.MemoryLimit,
-		TimeLimit:   job.Req.TimeLimit,
-	}
-	meta, err := eval.RunSubmission(ctx, box, eval.Langs[job.Req.Lang], lim, consoleInput)
-	if err != nil {
-		job.Resp.Comments = fmt.Sprintf("Error running submission: %v", err)
-		return nil
-	}
-	job.Resp.Time = meta.Time
-	job.Resp.Memory = meta.Memory
-
-	switch meta.Status {
-	case "TO":
-		job.Resp.Comments = "TLE: " + meta.Message
-	case "RE":
-		job.Resp.Comments = "Runtime Error: " + meta.Message
-	case "SG":
-		job.Resp.Comments = meta.Message
-	case "XX":
-		job.Resp.Comments = "Sandbox Error: " + meta.Message
-	}
-
-	boxOut := fmt.Sprintf("/box/%s.out", job.Req.Filename)
-	if !box.FileExists(boxOut) {
-		job.Resp.Comments = "No output file found"
-		//zap.S().Warn("No output file found", zap.Int("subtest_id", job.Req.SubtestID), zap.Int("box_id", box.GetID()), zap.Int("sub_id", job.Req.SubID))
-		//zap.S().Info("This may be a bug: ", spew.Sdump(box.ReadDir("/box/")))
-		return nil
-	}
-
-	w, err := job.DM.SubtestWriter(job.Req.SubtestID)
-	if err != nil {
-		job.Resp.Comments = "Could not open problem output"
-		return nil
-	}
-
-	if err := eval.CopyFromBox(box, boxOut, w); err != nil {
-		job.Resp.Comments = "Could not write output file"
-		return nil
-	}
-
-	if err := w.Close(); err != nil {
-		job.Resp.Comments = "Could not close output file"
-		return nil
-	}
-
-	return nil
-}
-
-func NewExecuteTask(req *eval.ExecRequest, dm kilonova.GraderStore, logger *zap.SugaredLogger) *ExecuteTask {
-	return &ExecuteTask{req, &eval.ExecResponse{}, dm, logger}
 }

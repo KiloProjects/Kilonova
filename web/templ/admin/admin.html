@@ -45,9 +45,15 @@
     </label>
 
     <label class="block my-2">
-		<span class="form-label">{{getText "config.maxMemKB"}}:</span>
-        <input type="number" id="max_mem" name="max_mem" class="form-input" value="{{maxMemKB}}" /> 
-        <span class="form-label">KB</span>
+		<span class="form-label">{{getText "config.testMaxMemKB"}}:</span>
+        <input type="number" id="test_max_mem" name="test_max_mem" class="form-input" value="{{testMaxMemMB}}" /> 
+        <span class="form-label">MB</span>
+    </label>
+
+    <label class="block my-2">
+		<span class="form-label">{{getText "config.globalMaxMemKB"}}:</span>
+        <input type="number" id="global_max_mem" name="global_max_mem" class="form-input" value="{{globalMaxMem}}" /> 
+        <span class="form-label">MB</span>
     </label>
 
     <label class="block my-2">
@@ -170,7 +176,8 @@
             ccDisclaimer: document.getElementById("cc_disclaimer_feature").checked,
             frontPagePbs: document.getElementById("frontPagePbs_feature").checked,
             num_workers: document.getElementById("num_workers").value,
-            max_mem: document.getElementById("max_mem").value,
+            test_max_mem: document.getElementById("test_max_mem").value * 1024,
+            global_max_mem: document.getElementById("global_max_mem").value * 1024,
         };
         bundled.apiToast(await bundled.postCall("/admin/updateConfig", data))
     })

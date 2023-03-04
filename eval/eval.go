@@ -16,6 +16,7 @@ type Sandbox interface {
 	ReadDir(path string) ([]string, error)
 
 	GetID() int
+	MemoryQuota() int64
 
 	// if stdout == stderr, then it will act like exec.CombinedOutput()
 	RunCommand(ctx context.Context, cmd []string, conf *RunConfig) (*RunStats, error)
@@ -32,14 +33,13 @@ type Checker interface {
 	RunChecker(ctx context.Context, programOut, correctInput, correctOut io.Reader) (string, int)
 }
 
-type Runner interface {
-	RunTask(context.Context, Task) error
+type BoxScheduler interface {
+	GetBox(ctx context.Context, memQuota int64) (Sandbox, error)
+	ReleaseBox(Sandbox)
 	Close(context.Context) error
 }
 
-type Task interface {
-	Execute(context.Context, Sandbox) error
-}
+type Task[Req, Resp any] func(context.Context, Sandbox, *Req) (*Resp, error)
 
 type CompileRequest struct {
 	ID          int

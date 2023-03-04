@@ -71,8 +71,8 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 		MemoryLimit: int(rawProps.Memory * 1024.0),
 	}
 
-	if props.MemoryLimit > config.Common.MaxMemKB {
-		return kilonova.Statusf(400, "Maximum memory must not exceed %f MB", float64(config.Common.MaxMemKB)/1024.0)
+	if props.MemoryLimit > config.Common.TestMaxMemKB {
+		return kilonova.Statusf(400, "Maximum memory must not exceed %f MB", float64(config.Common.TestMaxMemKB)/1024.0)
 	}
 
 	// handle subtasks

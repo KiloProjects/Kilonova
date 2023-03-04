@@ -428,11 +428,12 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"ccDisclaimer":  func() bool { return config.Features.CCDisclaimer },
 		"frontPagePbs":  func() bool { return config.Features.FrontPagePbs },
 		"defaultLang":   func() string { return config.Common.DefaultLang },
-		"maxMemKB":      func() int { return config.Common.MaxMemKB },
+		"testMaxMemMB":  func() int { return config.Common.TestMaxMemKB / 1024 },
+		"globalMaxMem":  func() int64 { return config.Eval.GlobalMaxMem / 1024 },
 		"numWorkers":    func() int { return config.Eval.NumConcurrent },
 
 		// for problem edit page
-		"maxMemMB": func() float64 { return float64(config.Common.MaxMemKB) / 1024.0 },
+		"maxMemMB": func() float64 { return float64(config.Common.TestMaxMemKB) / 1024.0 },
 
 		"intList": func(ids []int) string {
 			if ids == nil {

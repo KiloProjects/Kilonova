@@ -1183,9 +1183,14 @@ ro = "Configurație site"
 en = "Default language"
 ro = "Limbaj implicit"
 
-[config.maxMemKB]
+[config.testMaxMemKB]
 en = "Max memory per test"
 ro = "Memorie maximă per test"
+
+[config.globalMaxMemKB]
+en = "Global max memory (worker sum usage)"
+ro = "Memorie maximă globală (worker sum usage)"
+
 
 [config.numWorkers]
 en = "Number of workers"

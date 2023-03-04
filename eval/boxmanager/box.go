@@ -36,8 +36,7 @@ type Box struct {
 	path  string
 	boxID int
 
-	// Debug prints additional info if set
-	Debug bool
+	memoryQuota int64
 
 	metaFile string
 }
@@ -89,6 +88,10 @@ func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
 	//	res = append(res, "--mem="+strconv.Itoa(c.MemoryLimit))
 	//}
 	if c.MemoryLimit != 0 {
+		if int64(c.MemoryLimit) > b.memoryQuota {
+			zap.S().Info("Memory limit supplied exceeds quota")
+			c.MemoryLimit = int(b.memoryQuota)
+		}
 		res = append(res, "--cg-mem="+strconv.Itoa(c.MemoryLimit))
 	}
 
@@ -143,6 +146,10 @@ func (b *Box) ReadDir(fpath string) ([]string, error) {
 
 func (b *Box) GetID() int {
 	return b.boxID
+}
+
+func (b *Box) MemoryQuota() int64 {
+	return b.memoryQuota
 }
 
 // FileExists returns if a file exists or not
@@ -225,9 +232,7 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 
 	b.metaFile = ""
 
-	if b.Debug {
-		// fmt.Println("DEBUG:", cmd.String())
-	}
+	//zap.S().Debug(cmd.String())
 
 	if conf != nil {
 		cmd.Stdin = conf.Stdin
@@ -252,11 +257,11 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 }
 
 // newBox returns a new box instance from the specified ID
-func newBox(id int) (*Box, error) {
+func newBox(id int, memQuota int64) (*Box, error) {
 	ret, err := exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--init").CombinedOutput()
 	if strings.HasPrefix(string(ret), "Box already exists") {
 		exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--cleanup").Run()
-		return newBox(id)
+		return newBox(id, memQuota)
 	}
 
 	if strings.HasPrefix(string(ret), "Must be started as root") {
@@ -264,18 +269,18 @@ func newBox(id int) (*Box, error) {
 			fmt.Println("Couldn't chown root the isolate binary:", err)
 			return nil, err
 		}
-		return newBox(id)
+		return newBox(id, memQuota)
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &Box{path: strings.TrimSpace(string(ret)), boxID: id}, nil
+	return &Box{path: strings.TrimSpace(string(ret)), boxID: id, memoryQuota: memQuota}, nil
 }
 
 func CheckCanRun() bool {
-	box, err := newBox(0)
+	box, err := newBox(0, 0)
 	if err != nil {
 		zap.S().Warn(err)
 		return false

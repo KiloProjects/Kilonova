@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -59,7 +60,9 @@ func (s *API) SetupSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, err := s.base.SessionUser(r.Context(), getAuthHeader(r))
 		if err != nil {
-			zap.S().Warn(err)
+			if !errors.Is(err, context.Canceled) {
+				zap.S().Warn(err)
+			}
 			next.ServeHTTP(w, r)
 			return
 		}

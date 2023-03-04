@@ -6,13 +6,14 @@
  port = 8070
  default_language = "en"
  db_dsn = "postgresql://<fill here>"
- max_mem_kb = 655360
+ test_max_mem_kb = 655360 # 640 MB
 
 [eval]
  isolatePath = "/tmp/isolate"
  compilePath = "/tmp/kncompiles"
  address = "localhost:8001"
  num_concurrent = 3
+ global_max_mem_kb = 2097152 # 2 GB
 
 [email]
  host = "HOST"

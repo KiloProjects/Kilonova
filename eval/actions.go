@@ -118,3 +118,14 @@ func MakeGoodCompileCommand(command []string, files []string) ([]string, error) 
 	zap.S().Warnf("Didn't replace any fields in %#v", command)
 	return cmd, nil
 }
+
+// TODO: Can this be done any nicer? Unfortunately it can't be a member of a struct/interface since Go type parameters are very restrictive regarding this
+func RunTask[req, resp any](ctx context.Context, mgr BoxScheduler, memQuota int64, r *req, t Task[req, resp]) (*resp, error) {
+	box, err := mgr.GetBox(ctx, memQuota)
+	if err != nil {
+		zap.S().Info(err)
+		return nil, err
+	}
+	defer mgr.ReleaseBox(box)
+	return t(ctx, box, r)
+}
