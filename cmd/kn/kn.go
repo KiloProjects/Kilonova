@@ -84,17 +84,11 @@ func Kilonova() error {
 	return nil
 }
 
-func initLogger(logDir string, debug bool) error {
-	if err := os.MkdirAll(logDir, 0755); err != nil {
-		return err
-	}
-
+func initLogger(debug bool) {
 	core := kilonova.GetZapCore(debug, true, os.Stdout)
 	logg := zap.New(core, zap.AddCaller())
 
 	zap.ReplaceGlobals(logg)
-
-	return nil
 }
 
 func launchProfiler() error {

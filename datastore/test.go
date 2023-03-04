@@ -4,8 +4,16 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path"
 	"strconv"
+
+	"go.uber.org/zap"
+)
+
+var (
+	dos2unixPath  string
+	dos2unixFound bool
 )
 
 func (m *StorageManager) TestInput(testID int) (io.ReadSeekCloser, error) {
@@ -21,9 +29,40 @@ func (m *StorageManager) TestOutputPath(testID int) string {
 }
 
 func (m *StorageManager) SaveTestInput(testID int, input io.Reader) error {
-	return writeFile(path.Join(m.RootPath, "tests", fmt.Sprintf("%d.in", testID)), input, 0777)
+	testPath := path.Join(m.RootPath, "tests", fmt.Sprintf("%d.in", testID))
+	defer func() {
+		go m.dos2unixify(testPath)
+	}()
+	return writeFile(testPath, input, 0777)
 }
 
 func (m *StorageManager) SaveTestOutput(testID int, output io.Reader) error {
-	return writeFile(path.Join(m.RootPath, "tests", fmt.Sprintf("%d.out", testID)), output, 0777)
+	testPath := path.Join(m.RootPath, "tests", fmt.Sprintf("%d.out", testID))
+	defer func() {
+		go m.dos2unixify(testPath)
+	}()
+	return writeFile(testPath, output, 0777)
+}
+
+func (m *StorageManager) dos2unixify(path string) {
+	if !dos2unixFound {
+		return
+	}
+	zap.S().Debugf("Running dos2unix on %q", path)
+
+	cmd := exec.Command(dos2unixPath, path)
+	if val, err := cmd.CombinedOutput(); err != nil {
+		zap.S().Warn("dos2unix exited with nonzero status code: ", err)
+		zap.S().Infof("dos2unix output: %q", string(val))
+	}
+}
+
+func (m *StorageManager) initDos2Unix() {
+	path, err := exec.LookPath("dos2unix")
+	if err != nil {
+		zap.S().Warn("dos2unix was not found. Added tests will not be automatically converted.")
+		return
+	}
+	dos2unixFound = true
+	dos2unixPath = path
 }

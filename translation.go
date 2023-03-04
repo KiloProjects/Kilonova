@@ -3,6 +3,7 @@ package kilonova
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	_ "embed"
 
@@ -56,7 +57,8 @@ func init() {
 	var elems = make(map[string]map[string]any)
 	err := json.Unmarshal(keys, &elems)
 	if err != nil {
-		zap.S().Fatalf("Error unmarshaling translation keys: %#v", err)
+		// zap is, unfortunately, not really available in init()
+		log.Fatalf("Error unmarshaling translation keys: %#v", err)
 	}
 	for name, children := range elems {
 		recurse(name, children)

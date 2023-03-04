@@ -3,9 +3,7 @@ package main
 import (
 	"flag"
 	"log"
-	"math/rand"
 	"os"
-	"time"
 
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -17,14 +15,15 @@ var (
 )
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
 	flag.Parse()
 	config.SetConfigPath(*confPath)
 	if err := config.Load(); err != nil {
 		log.Fatal(err)
 	}
 
-	if err := initLogger(config.Common.LogDir, config.Common.Debug); err != nil {
+	initLogger(config.Common.Debug)
+
+	if err := os.MkdirAll(config.Common.LogDir, 0755); err != nil {
 		log.Fatal(err)
 	}
 

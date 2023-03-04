@@ -34,7 +34,10 @@ func NewManager(p string) (kilonova.DataStore, error) {
 		return nil, err
 	}
 
-	return &StorageManager{RootPath: p}, nil
+	mgr := &StorageManager{RootPath: p}
+	mgr.initDos2Unix()
+
+	return mgr, nil
 }
 
 /*
