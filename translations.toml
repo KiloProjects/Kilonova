@@ -1183,6 +1183,14 @@ ro = "Configurație site"
 en = "Default language"
 ro = "Limbaj implicit"
 
+[config.maxMemKB]
+en = "Max memory per test"
+ro = "Memorie maximă per test"
+
+[config.numWorkers]
+en = "Number of workers"
+ro = "Numărul de workeri"
+
 [featureSet]
 en = "Feature set"
 ro = "Funcționalități"

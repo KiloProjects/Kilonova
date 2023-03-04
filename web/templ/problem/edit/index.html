@@ -30,7 +30,7 @@
             <label class="block my-2">
                 <span class="form-label">{{getText "memoryLimit"}}:</span>
                 <input id="memoryLimit" type="number" class="form-input" placeholder="Limită de memorie (total)" min="0"
-                    step="0.1" max="512" pattern="[\d]*" value="{{KBtoMB .Problem.MemoryLimit}}">
+                    step="0.1" max="{{maxMemMB}}" pattern="[\d]*" value="{{KBtoMB .Problem.MemoryLimit}}">
                 <span class="ml-1 text-xl">MB</span>
             </label>
             <label class="block my-2">

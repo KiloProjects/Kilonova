@@ -62,21 +62,22 @@ func (job *CompileTask) Execute(ctx context.Context, box eval.Sandbox) error {
 
 	if err != nil {
 		job.Resp.Success = false
-	} else {
-		f, err := os.OpenFile(outName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
-		if err != nil {
-			job.Resp.Other = err.Error()
-			job.Resp.Success = false
-			return nil
-		}
-		if err := eval.CopyFromBox(box, lang.CompiledName, f); err != nil {
-			job.Resp.Other = err.Error()
-			job.Resp.Success = false
-		}
-		if err := f.Close(); err != nil {
-			job.Resp.Other = err.Error()
-			job.Resp.Success = false
-		}
+		return nil
+	}
+
+	f, err := os.OpenFile(outName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
+	if err != nil {
+		job.Resp.Other = err.Error()
+		job.Resp.Success = false
+		return nil
+	}
+	if err := eval.CopyFromBox(box, lang.CompiledName, f); err != nil {
+		job.Resp.Other = err.Error()
+		job.Resp.Success = false
+	}
+	if err := f.Close(); err != nil {
+		job.Resp.Other = err.Error()
+		job.Resp.Success = false
 	}
 
 	return nil

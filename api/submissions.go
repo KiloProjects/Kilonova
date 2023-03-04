@@ -95,7 +95,7 @@ func (s *API) filterSubs() http.HandlerFunc {
 			if val, ok := subs.Problems[sub.ProblemID]; ok {
 				ln.Problem = val
 			} else {
-				zap.S().Warn("Didn't find problem, this should not happen.")
+				zap.S().Warn("Didn't find problem, this should not happen.", sub.ProblemID, sub.ID, util.UserBrief(r))
 			}
 			ret = append(ret, ln)
 		}

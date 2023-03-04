@@ -6,6 +6,7 @@
  port = 8070
  default_language = "en"
  db_dsn = "postgresql://<fill here>"
+ max_mem_kb = 655360
 
 [eval]
  isolatePath = "/tmp/isolate"

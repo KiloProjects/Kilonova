@@ -57,6 +57,9 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 	}
 	cnt, err1 := s.countSubmissions(ctx, filter)
 	if err1 != nil {
+		if errors.Is(err1, context.Canceled) {
+			return nil, err1
+		}
 		zap.S().Warn(err1)
 		return nil, err1
 	}

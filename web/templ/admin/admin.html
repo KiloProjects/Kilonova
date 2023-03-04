@@ -36,12 +36,23 @@
 <form id="configForm" class="segment-container" autocomplete="off">
     <h3 class="text-2xl">{{getText "config.title"}}</h3>
 
-    <label class="block">
+    <label class="block my-2">
 		<span class="form-label">{{getText "config.defaultLang"}}:</span>
-        <select name="default_lang" id="default_lang" class="form-select my-2">
+        <select name="default_lang" id="default_lang" class="form-select">
             <option value="ro" {{if eq defaultLang "ro"}}selected{{end}}>🇷🇴 Română</option>
             <option value="en" {{if eq defaultLang "en"}}selected{{end}}>🇬🇧 English</option>
         </select>
+    </label>
+
+    <label class="block my-2">
+		<span class="form-label">{{getText "config.maxMemKB"}}:</span>
+        <input type="number" id="max_mem" name="max_mem" class="form-input" value="{{maxMemKB}}" /> 
+        <span class="form-label">KB</span>
+    </label>
+
+    <label class="block my-2">
+		<span class="form-label">{{getText "config.numWorkers"}}:</span>
+        <input type="number" id="num_workers" name="num_workers" class="form-input" value="{{numWorkers}}" /> 
     </label>
 
     <div class="segment-container">
@@ -157,7 +168,9 @@
             pastes: document.getElementById("pastes_feature").checked,
             all_subs: document.getElementById("all_subs_feature").checked,
             ccDisclaimer: document.getElementById("cc_disclaimer_feature").checked,
-            frontPagePbs: document.getElementById("frontPagePbs_feature").checked
+            frontPagePbs: document.getElementById("frontPagePbs_feature").checked,
+            num_workers: document.getElementById("num_workers").value,
+            max_mem: document.getElementById("max_mem").value,
         };
         bundled.apiToast(await bundled.postCall("/admin/updateConfig", data))
     })

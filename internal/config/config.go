@@ -36,10 +36,10 @@ type EmailConf struct {
 
 // EvalConf is the data required for the eval service
 type EvalConf struct {
-	IsolatePath   string `toml:"isolatePath"`
-	CompilePath   string `toml:"compilePath"`
-	Address       string `toml:"address"`
-	NumConcurrent int    `toml:"num_concurrent"`
+	IsolatePath string `toml:"isolatePath"`
+	CompilePath string `toml:"compilePath"`
+	// Address       string `toml:"address"`
+	NumConcurrent int `toml:"num_concurrent"`
 }
 
 // CommonConf is the data required for all services
@@ -52,6 +52,8 @@ type CommonConf struct {
 	DefaultLang string `toml:"default_language"`
 
 	DBDSN string `toml:"db_dsn"`
+
+	MaxMemKB int `toml:"max_mem_kb"`
 }
 
 type FeaturesConf struct {

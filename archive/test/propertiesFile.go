@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/gorilla/schema"
 	"go.uber.org/zap"
 )
@@ -70,8 +71,8 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 		MemoryLimit: int(rawProps.Memory * 1024.0),
 	}
 
-	if props.MemoryLimit > 512*1024 {
-		return kilonova.Statusf(400, "Maximum memory must not exceed 512MB")
+	if props.MemoryLimit > config.Common.MaxMemKB {
+		return kilonova.Statusf(400, "Maximum memory must not exceed %f MB", float64(config.Common.MaxMemKB)/1024.0)
 	}
 
 	// handle subtasks

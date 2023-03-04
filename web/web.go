@@ -420,6 +420,7 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			return rez
 		},
 
+		// for admin configuration
 		"signupEnabled": func() bool { return config.Features.Signup },
 		"pastesEnabled": func() bool { return config.Features.Pastes },
 		"graderEnabled": func() bool { return config.Features.Grader },
@@ -427,6 +428,11 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"ccDisclaimer":  func() bool { return config.Features.CCDisclaimer },
 		"frontPagePbs":  func() bool { return config.Features.FrontPagePbs },
 		"defaultLang":   func() string { return config.Common.DefaultLang },
+		"maxMemKB":      func() int { return config.Common.MaxMemKB },
+		"numWorkers":    func() int { return config.Eval.NumConcurrent },
+
+		// for problem edit page
+		"maxMemMB": func() float64 { return float64(config.Common.MaxMemKB) / 1024.0 },
 
 		"intList": func(ids []int) string {
 			if ids == nil {

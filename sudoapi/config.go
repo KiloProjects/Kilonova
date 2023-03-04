@@ -17,6 +17,9 @@ type ConfigUpdate struct {
 
 	CCDisclaimer *bool `json:"ccDisclaimer"`
 	FrontPagePbs *bool `json:"frontPagePbs"`
+
+	MaxMem     *int `json:"max_mem"`
+	NumWorkers *int `json:"num_workers"`
 }
 
 func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) *StatusError {
@@ -41,9 +44,15 @@ func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) *StatusErr
 	if upd.FrontPagePbs != nil {
 		config.Features.FrontPagePbs = *upd.FrontPagePbs
 	}
+	if upd.MaxMem != nil {
+		config.Common.MaxMemKB = *upd.MaxMem
+	}
+	if upd.NumWorkers != nil {
+		config.Eval.NumConcurrent = *upd.NumWorkers
+	}
 	if err := config.Save(); err != nil {
 		zap.S().Error(err)
-		return WrapError(err, "Couldn't update config")
+		return WrapError(err, "Couldn't update config. This is *very* bad")
 	}
 	return nil
 }
