@@ -16,6 +16,9 @@
                 <kn-contest-countdown target_time="{{.StartTime.UnixMilli}}" type="before_start" />
             {{end}}
         </p>
+        {{ if isUSACOstyle . }}
+            <p>{{getText "contest_user_time"}}: {{usacoDuration .}}</p>
+        {{ end }}
         {{ if isContestEditor . }}
         <p class="my-1">{{getText "visibility"}}:
             {{if .Visible}}

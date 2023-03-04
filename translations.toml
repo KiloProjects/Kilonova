@@ -1269,8 +1269,8 @@ en = "End time"
 ro = "Oră de finalizare"
 
 [duration]
-en = "Duration"
-ro = "Durată"
+en = "Total duration"
+ro = "Durată totală"
 
 [organisedBy]
 en = "Organised by"
@@ -1308,10 +1308,6 @@ ro = "Detalii Concurs"
 en = "Contest Edit"
 ro = "Editare Concurs"
 
-[contest_no_problems]
-en = "Problems will be available soon."
-ro = "Problemele vor fi disponibile în curând."
-
 [contest_running]
 en = "Running..."
 ro = "În desfășurare..."
@@ -1335,6 +1331,34 @@ ro = "Înainte de început"
 [contest_registrations]
 en = "Contest Registrations"
 ro = "Înregistrări Concurs"
+
+[contest_user_time]
+en = "Individual duration"
+ro = "Durată individuală"
+
+[usaco_helper_text]
+en = "This is an USACO-style contest. Problems will be available once you press the start button in the sidebar. You will be given %s to finish the problems."
+ro = "Acesta este un concurs stil USACO. Problemele vor fi disponibile odată ce apeși butonul de start. Vei avea %s să termini problemele."
+
+[usaco_expired_helper]
+en = "Time expired. Problems will be available again after the contest ends."
+ro = "Timp expirat. Problemele vor fi disponibile din nou după ce se încheie concursul."
+
+[contest_problems_soon]
+en = "Problems will be available soon."
+ro = "Problemele vor fi disponibile în curând."
+
+[contest_problems_participants]
+en = "Problems are available only for participants while contest is running."
+ro = "Problemele sunt disponibile doar pentru participanți cât timp se desfășoară concursul."
+
+[contest_problems_register]
+en = "Problems will be available once you register."
+ro = "Problemele vor fi disponibile atunci când te înregistrezi în concurs."
+
+[contest_no_problems]
+en = "Contest currently has no associated problems."
+ro = "Concursul nu are, în prezent, probleme aferente."
 
 [register_btn]
 en = "Register"

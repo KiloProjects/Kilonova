@@ -469,6 +469,9 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			d := c.EndTime.Sub(c.StartTime).Round(time.Minute)
 			return d.String()
 		},
+		"usacoDuration": func(c *kilonova.Contest) string {
+			return (time.Duration(c.PerUserTime) * time.Second).String()
+		},
 		"getText": func(key string, vals ...any) string {
 			zap.S().Error("Uninitialized `getText`")
 			return "FATAL ERR"
