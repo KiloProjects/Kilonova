@@ -41,6 +41,7 @@
 </div>
 
 <script>
+const pref = {{.Topbar.URLPrefix}};
 async function updateID(e) {
 	e.preventDefault()
 	let q = {
@@ -50,7 +51,7 @@ async function updateID(e) {
 	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/info", q);
 	if(res.status === "success") {
         if(q.id != {{.Test.VisibleID}}) {
-            window.location.assign("{{.Topbar.URLPrefix}}/problems/{{.Problem.ID}}/edit/test/"+q.id)
+            window.location.assign(pref + "/problems/{{.Problem.ID}}/edit/test/"+q.id)
             return
         }
 	}
@@ -90,7 +91,7 @@ async function removeTest(e) {
 	}
 	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/orphan", {})
 	if(res.status === "success") {
-		window.location.assign("{{.Topbar.URLPrefix}}/problems/{{.Problem.ID}}/edit/test")
+		window.location.assign(pref + "/problems/{{.Problem.ID}}/edit/test")
 		return
 	}
 	bundled.apiToast(res);
