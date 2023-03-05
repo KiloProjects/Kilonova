@@ -15,7 +15,7 @@ import (
 func (s *DB) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, error) {
 	var pblist pblist
 	err := s.conn.GetContext(ctx, &pblist, "SELECT * FROM problem_lists WHERE id = $1 LIMIT 1", id)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return nil, nil
 	}
 	if err != nil {
@@ -33,10 +33,40 @@ func (s *DB) ProblemLists(ctx context.Context, root bool) ([]*kilonova.ProblemLi
 	}
 	err := s.conn.SelectContext(ctx, &lists, q)
 
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return []*kilonova.ProblemList{}, nil
 	} else if err != nil {
+		return []*kilonova.ProblemList{}, err
+	}
+
+	return mapperCtx(ctx, lists, s.internalToPbList), nil
+}
+
+func (s *DB) ProblemListsByProblemID(ctx context.Context, problemID int) ([]*kilonova.ProblemList, error) {
+	var lists []*pblist
+
+	q := "SELECT * FROM problem_lists WHERE EXISTS (SELECT 1 FROM problem_list_problems WHERE pblist_id = problem_lists.id AND problem_id = $1) ORDER BY id ASC"
+	err := s.conn.SelectContext(ctx, &lists, q, problemID)
+
+	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return []*kilonova.ProblemList{}, nil
+	} else if err != nil {
+		return []*kilonova.ProblemList{}, err
+	}
+
+	return mapperCtx(ctx, lists, s.internalToPbList), nil
+}
+
+func (s *DB) ProblemListsByPblistID(ctx context.Context, pblistID int) ([]*kilonova.ProblemList, error) {
+	var lists []*pblist
+
+	q := "SELECT * FROM problem_lists WHERE EXISTS (SELECT 1 FROM problem_list_pblists WHERE parent_id = problem_lists.id AND child_id = $1) ORDER BY id ASC"
+	err := s.conn.SelectContext(ctx, &lists, q, pblistID)
+
+	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
+		return []*kilonova.ProblemList{}, nil
+	} else if err != nil {
+		return []*kilonova.ProblemList{}, err
 	}
 
 	return mapperCtx(ctx, lists, s.internalToPbList), nil

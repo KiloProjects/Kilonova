@@ -42,8 +42,7 @@
     <div class="page-sidebar">
         {{ if .Topbar.Contest }}
         {{ template "contest_sidebar.html" .Topbar.Contest }}
-        {{ end }}
-        {{ if not .Topbar.Contest}}
+        {{ else }}
         <div class="page-sidebar-box font-semibold">
             <h2 class="font-normal">
                 {{getText "problemInfo"}}
@@ -103,6 +102,29 @@
                 {{ end }}
             </div>
         </div>
+        {{ with pbParentPblist .Problem }}
+        <div class="page-sidebar-divider"></div>
+        <div class="page-sidebar-box">
+            <h2 class="font-normal">
+                <a href="/problem_lists/{{.ID}}">{{.Title}}</a>
+            </h2>
+            <div class="reset-list text-lg">
+                {{ with listProblems authedUser . }}
+                <ul>
+                    {{ range . }}
+                    {{ $score := subScore . authedUser }}    
+                    <li>
+                        <a {{ if eq $pbid .ID }} class="topbar-selected p-0" {{end}}
+                            href="/problems/{{.ID}}">
+                            {{.Name}}
+                        </a> {{ if not (eq $score "")}} ({{$score}} {{- if not (eq $score "-") -}}p{{end}}) {{ end }}
+                    </li>
+                    {{ end }}
+                </ul>
+                {{ end }}
+            </div>
+        </div>
+        {{ end }}
         {{ end }}
         {{ if authed }}
         <div class="page-sidebar-divider"></div>

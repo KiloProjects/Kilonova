@@ -7,6 +7,13 @@
 {{ define "content" }}
 
 {{ $user := .Ctx.User.Brief }}
+
+{{ with pblistParent .ProblemList }}
+
+    <a class="block mb-2" href="/problem_lists/{{.ID}}">{{getText "parent_list"}}</a>
+
+{{ end }}
+
 {{ with .ProblemList }}
     <div class="list-group mb-4">
         {{ template "problemlist_show" (genPblistParams authedUser . true)}}

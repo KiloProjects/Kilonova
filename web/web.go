@@ -317,6 +317,20 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return pbs
 		},
+		"pbParentPblist": func(problem *kilonova.Problem) *kilonova.ProblemList {
+			lists, err := base.ProblemParentLists(context.Background(), problem.ID)
+			if err != nil || len(lists) != 1 {
+				return nil
+			}
+			return lists[0]
+		},
+		"pblistParent": func(pblist *kilonova.ProblemList) *kilonova.ProblemList {
+			lists, err := base.PblistParentLists(context.Background(), pblist.ID)
+			if err != nil || len(lists) != 1 {
+				return nil
+			}
+			return lists[0]
+		},
 		"renderMarkdown": func(body any) template.HTML {
 			var bd []byte
 			switch body := body.(type) {

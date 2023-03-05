@@ -1616,3 +1616,7 @@ ro = "Timp expirat"
 [not_started]
 en = "Not started"
 ro = "N-a început"
+
+[parent_list]
+en = "[Parent List]"
+ro = "[Listă părinte]"
