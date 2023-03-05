@@ -61,7 +61,7 @@ func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) 
 	query := fmt.Sprintf(subSelectQuery, strings.Join(where, " AND "), getSubmissionOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset))
 	query = s.conn.Rebind(query)
 	err := s.conn.SelectContext(ctx, &subs, query, args...)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return []*kilonova.Submission{}, nil
 	} else if err != nil {
 		zap.S().Warn(err)

@@ -71,7 +71,9 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		if _, ok := users[sub.UserID]; !ok {
 			user, err := s.UserBrief(ctx, sub.UserID)
 			if err != nil {
-				zap.S().Infof("Error getting user %d: %v", sub.UserID, err)
+				if !errors.Is(err, context.Canceled) {
+					zap.S().Infof("Error getting user %d: %v", sub.UserID, err)
+				}
 				continue
 			}
 			users[sub.UserID] = user
@@ -80,7 +82,9 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		if _, ok := problems[sub.ProblemID]; !ok {
 			problem, err := s.Problem(ctx, sub.ProblemID)
 			if err != nil || problem == nil {
-				zap.S().Infof("Error getting problem %d: %v", sub.ProblemID, err)
+				if !errors.Is(err, context.Canceled) {
+					zap.S().Infof("Error getting problem %d: %v", sub.ProblemID, err)
+				}
 				continue
 			}
 			problems[sub.ProblemID] = problem
