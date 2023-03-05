@@ -202,7 +202,7 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 				zap.S().Warn(err)
 				return false
 			}
-			return len(settings.CheckerName) > 0
+			return len(settings.GraderFiles) > 0
 		},
 		"problemList": func(id int) *kilonova.ProblemList {
 			list, err := base.ProblemList(context.Background(), id)
