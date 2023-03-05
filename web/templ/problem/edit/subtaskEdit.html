@@ -53,6 +53,7 @@
 
 <script>
 var pbid = {{.Problem.ID}}, rowreg = /row-test-([0-9]+)/;
+const pref = {{.Topbar.URLPrefix}};
 
 const mgr = new bundled.CheckboxManager(document.getElementById("selectAllBox"), document.querySelectorAll("[id^='pb-test-']"))
 
@@ -84,7 +85,7 @@ async function updateSubTask(e) {
 
 	let res = await bundled.bodyCall(`/problem/${pbid}/update/updateSubTask`, data)
 	if(res.status === "success" && data.new_id !== data.subtask_id) {
-		window.location.assign(`{{.Topbar.URLPrefix}}/problems/${pbid}/edit/subtasks/${data.new_id}`);
+		window.location.assign( `${pref}/problems/${pbid}/edit/subtasks/${data.new_id}`);
 		return;
 	}
 	bundled.apiToast(res);
