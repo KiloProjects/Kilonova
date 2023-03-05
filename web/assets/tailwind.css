@@ -97,6 +97,22 @@
 	.reset-list ul > li {
 		@apply pl-4;
 	}
+
+	.enhance-tables table {
+		@apply kn-table;
+	}
+
+	.enhance-tables table tr {
+		@apply kn-table-simple;
+	}
+
+	.enhance-tables table td {
+		@apply kn-table-cell;
+	}
+
+	.enhance-tables table th {
+		@apply kn-table-cell;
+	}
 }
 
 @layer components {
