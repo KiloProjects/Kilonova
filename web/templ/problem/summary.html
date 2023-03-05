@@ -105,9 +105,10 @@
         {{ with pbParentPblist .Problem }}
         <div class="page-sidebar-divider"></div>
         <div class="page-sidebar-box">
-            <h2 class="font-normal">
+            <h2 class="font-normal mb-0">
                 <a href="/problem_lists/{{.ID}}">{{.Title}}</a>
             </h2>
+            <hr class="mb-2"/>
             <div class="reset-list text-lg">
                 {{ with listProblems authedUser . }}
                 <ul>
