@@ -559,6 +559,17 @@ function ContestRegistrations({ contestid, usacomode }: { contestid: string; usa
 
 	return (
 		<div class="my-4">
+			<button
+				class={"btn btn-blue block mb-2"}
+				onClick={() => {
+					setUsers([]);
+					setPage(1);
+					setCnt(-1);
+					poll();
+				}}
+			>
+				{getText("reload")}
+			</button>
 			{cnt >= 0 && getText("num_registrations", cnt)}
 			<Paginator numpages={numPages} page={page} setPage={setPage} showArrows={true} />
 			<RegistrationTable users={users} usacoMode={usacomode == "true"} />
