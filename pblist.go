@@ -15,6 +15,8 @@ type ProblemList struct {
 	// NumProblems holds the number of problems including sublists
 	NumProblems int `json:"num_problems"`
 
+	SidebarHidable bool `json:"sidebar_hidable"`
+
 	// This is a separate type and not a ProblemList because it might
 	// not necessairly be a tree-like structure (ie. it might have cycles)
 	SubLists []*ShallowProblemList `json:"sublists"`
@@ -32,6 +34,8 @@ type ShallowProblemList struct {
 	Title    string `json:"title"`
 	AuthorID int    `json:"author_id"`
 
+	SidebarHidable bool `json:"sidebar_hidable"`
+
 	// NumProblems holds the number of problems including sublists
 	NumProblems int `json:"num_problems"`
 }
@@ -40,4 +44,6 @@ type ProblemListUpdate struct {
 	AuthorID    *int    `json:"author_id"`
 	Title       *string `json:"title"`
 	Description *string `json:"description"`
+
+	SidebarHidable *bool `json:"sidebar_hidable"`
 }

@@ -42,10 +42,13 @@ func (s *DB) ProblemLists(ctx context.Context, root bool) ([]*kilonova.ProblemLi
 	return mapperCtx(ctx, lists, s.internalToPbList), nil
 }
 
-func (s *DB) ProblemListsByProblemID(ctx context.Context, problemID int) ([]*kilonova.ProblemList, error) {
+func (s *DB) ProblemListsByProblemID(ctx context.Context, problemID int, showHidable bool) ([]*kilonova.ProblemList, error) {
 	var lists []*pblist
 
 	q := "SELECT * FROM problem_lists WHERE EXISTS (SELECT 1 FROM problem_list_problems WHERE pblist_id = problem_lists.id AND problem_id = $1) ORDER BY id ASC"
+	if !showHidable {
+		q = "SELECT * FROM problem_lists WHERE EXISTS (SELECT 1 FROM problem_list_problems WHERE pblist_id = problem_lists.id AND problem_id = $1) AND sidebar_hidable = false ORDER BY id ASC"
+	}
 	err := s.conn.SelectContext(ctx, &lists, q, problemID)
 
 	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
@@ -134,7 +137,7 @@ func (s *DB) NumSolvedPblistProblems(ctx context.Context, listID, userID int) (i
 	return cnt, nil
 }
 
-const createProblemListQuery = "INSERT INTO problem_lists (author_id, title, description) VALUES (?, ?, ?) RETURNING id;"
+const createProblemListQuery = "INSERT INTO problem_lists (author_id, title, description, sidebar_hidable) VALUES (?, ?, ?, ?) RETURNING id;"
 
 func (s *DB) CreateProblemList(ctx context.Context, list *kilonova.ProblemList) error {
 	if list.AuthorID == 0 {
@@ -142,7 +145,7 @@ func (s *DB) CreateProblemList(ctx context.Context, list *kilonova.ProblemList) 
 	}
 	// Do insertion
 	var id int
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(createProblemListQuery), list.AuthorID, list.Title, list.Description)
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(createProblemListQuery), list.AuthorID, list.Title, list.Description, list.SidebarHidable)
 	if err != nil {
 		return err
 	}
@@ -194,6 +197,9 @@ func pblistUpdateQuery(upd *kilonova.ProblemListUpdate) ([]string, []any) {
 	if v := upd.Description; v != nil {
 		toUpd, args = append(toUpd, "description = ?"), append(args, v)
 	}
+	if v := upd.SidebarHidable; v != nil {
+		toUpd, args = append(toUpd, "sidebar_hidable = ?"), append(args, v)
+	}
 	return toUpd, args
 }
 
@@ -203,6 +209,8 @@ type pblist struct {
 	AuthorID    int       `db:"author_id"`
 	Title       string
 	Description string
+
+	SidebarHidable bool `db:"sidebar_hidable"`
 }
 
 func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.ProblemList, error) {
@@ -212,6 +220,8 @@ func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.Prob
 		Title:       list.Title,
 		Description: list.Description,
 		AuthorID:    list.AuthorID,
+
+		SidebarHidable: list.SidebarHidable,
 	}
 
 	err := s.conn.SelectContext(ctx, &pblist.List, "SELECT problem_id FROM problem_list_problems WHERE pblist_id = $1 ORDER BY position ASC, problem_id ASC", list.ID)
@@ -245,6 +255,8 @@ func (s *DB) internalToShallowProblemList(ctx context.Context, list *pblist) (*k
 		ID:       list.ID,
 		Title:    list.Title,
 		AuthorID: list.AuthorID,
+
+		SidebarHidable: list.SidebarHidable,
 
 		NumProblems: numProblems,
 	}, nil

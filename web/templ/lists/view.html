@@ -34,6 +34,12 @@
             <span class="form-label">{{getText "pbs"}}:</span>
             <input type="text" id="pblist-list" class="form-input" pattern="([0-9]+,?)+" value="{{intList .List}}">
         </label>
+        <div class="block my-2">
+            <label class="inline-flex items-center text-lg">
+                <input class="form-checkbox" name="sidebar_hidable" id="sidebar_hidable" type="checkbox" {{if .SidebarHidable}}checked{{end}}>
+                <span class="ml-2">{{getText "sidebar_hidable"}}</span>
+            </label>
+        </div>
         <label class="block my-2 mb-4">
             <span class="form-label">{{getText "desc"}}: </span>
             <textarea id="desc_tarea" class="hidden">{{- .Description -}}</textarea>
@@ -60,7 +66,8 @@ async function updateProblemList(e) {
 		description: cm.getValue(),
 		list: bundled.stringIntToNumber(document.getElementById("pblist-list").value.split(',')),
         sublists: bundled.stringIntToNumber(document.getElementById("pblist-sublists").value.split(',')),
-	};
+        sidebar_hidable: document.getElementById("sidebar_hidable").checked,
+    };
 	let res = await bundled.bodyCall("/problemList/update", data)
 	if(res.status === "success") {
 		window.location.reload();

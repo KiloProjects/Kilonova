@@ -116,6 +116,8 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 		ProblemIDs  []int  `json:"ids"`
 		SublistIDs  []int  `json:"sublists"`
 		ParentID    *int   `json:"parent_id"`
+
+		SidebarHidable *bool `json:"sidebar_hidable"`
 	}
 	if err := parseJsonBody(r, &listData); err != nil {
 		err.WriteError(w)
@@ -138,6 +140,9 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 	list.Description = listData.Description
 	list.AuthorID = util.UserBrief(r).ID
 	list.List = actualIDs
+	if listData.SidebarHidable != nil {
+		list.SidebarHidable = *listData.SidebarHidable
+	}
 	if err := s.base.CreateProblemList(r.Context(), &list); err != nil {
 		err.WriteError(w)
 		return
@@ -195,6 +200,8 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 		Description *string `json:"description"`
 		List        []int   `json:"list"`
 		Sublists    []int   `json:"sublists"`
+
+		SidebarHidable *bool `json:"sidebar_hidable"`
 	}
 	if err := parseJsonBody(r, &args); err != nil {
 		err.WriteError(w)
@@ -214,6 +221,8 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 	if err := s.base.UpdateProblemList(r.Context(), args.ID, kilonova.ProblemListUpdate{
 		Title:       args.Title,
 		Description: args.Description,
+
+		SidebarHidable: args.SidebarHidable,
 	}); err != nil {
 		errorData(w, err, 500)
 		return

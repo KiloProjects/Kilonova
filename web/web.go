@@ -318,7 +318,7 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			return pbs
 		},
 		"pbParentPblist": func(problem *kilonova.Problem) *kilonova.ProblemList {
-			lists, err := base.ProblemParentLists(context.Background(), problem.ID)
+			lists, err := base.ProblemParentLists(context.Background(), problem.ID, false)
 			if err != nil || len(lists) != 1 {
 				return nil
 			}

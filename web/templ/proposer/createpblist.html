@@ -21,6 +21,12 @@
             <span class="form-label">{{ getText "list_parent_id" }}:</span>
             <input id="pblist_parent_id" type="number" class="form-input">
         </label>
+        <div class="block my-2">
+            <label class="inline-flex items-center text-lg">
+                <input class="form-checkbox" name="sidebar_hidable" id="sidebar_hidable" type="checkbox">
+                <span class="ml-2">{{getText "sidebar_hidable"}}</span>
+            </label>
+        </div>
         <button type="submit" class="btn btn-blue">{{ getText "button.create" }}</button>
     </form>
 </div>
@@ -47,6 +53,7 @@ async function createProblemList(e) {
 		description: pblist_cm.getValue(),
 		ids: bundled.stringIntToNumber(document.getElementById("pblist_pbs").value.split(',')),
         sublists: bundled.stringIntToNumber(document.getElementById("pblist_sublists").value.split(',')),
+        sidebar_hidable: document.getElementById("sidebar_hidable").checked,
     };
 
     if(!isNaN(parentID)) {
