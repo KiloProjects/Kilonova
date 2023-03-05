@@ -6,6 +6,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"go.uber.org/zap"
 )
 
 func (s *API) createContest(w http.ResponseWriter, r *http.Request) {
@@ -428,6 +429,11 @@ func (s *API) checkRegistration(w http.ResponseWriter, r *http.Request) {
 	returnData(w, reg)
 }
 
+type regRez struct {
+	User *kilonova.UserBrief           `json:"user"`
+	Reg  *kilonova.ContestRegistration `json:"registration"`
+}
+
 func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
@@ -455,6 +461,11 @@ func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	regMap := make(map[int]*kilonova.ContestRegistration)
+	for _, reg := range regs {
+		regMap[reg.UserID] = reg
+	}
+
 	ids := []int{}
 
 	for _, reg := range regs {
@@ -469,9 +480,23 @@ func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var rez = make([]regRez, 0, len(users))
+	if len(users) != len(regs) {
+		zap.S().Warn("mismatched user and reg length")
+	}
+
+	for _, user := range users {
+		user := user
+		val, ok := regMap[user.ID]
+		if !ok {
+			zap.S().Warnf("Couldn't find user %d in registrations", user.ID)
+		}
+		rez = append(rez, regRez{User: user, Reg: val})
+	}
+
 	returnData(w, struct {
-		Users []*kilonova.UserBrief `json:"users"`
+		Registrations []regRez `json:"registrations"`
 
 		Count int `json:"total_count"`
-	}{Users: users, Count: cnt})
+	}{Registrations: rez, Count: cnt})
 }

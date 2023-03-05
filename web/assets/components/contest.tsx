@@ -10,7 +10,7 @@ import type { Question, Announcement } from "../contest";
 import { UserBrief, getUser } from "../api/submissions";
 import { apiToast, createToast } from "../toast";
 import { isEqual } from "underscore";
-import { BigSpinner } from "./common";
+import { BigSpinner, Paginator } from "./common";
 import { getCall } from "../net";
 
 export const RFC1123Z = "ddd, DD MMM YYYY HH:mm:ss ZZ";
@@ -23,14 +23,17 @@ export function contestToNetworkDate(timestamp: string): string {
 	return djs.format(RFC1123Z);
 }
 
-export function ContestRemainingTime({ target_time }: { target_time: dayjs.Dayjs }) {
+export function ContestRemainingTime({ target_time, reload }: { target_time: dayjs.Dayjs; reload: boolean }) {
 	let [text, setText] = useState<string>("");
 
 	function updateTime() {
 		let diff = target_time.diff(dayjs(), "s");
 		if (diff < 0) {
-			console.log("Reloading webpage...");
-			window.location.reload();
+			if (reload) {
+				console.log("Reloading webpage...");
+				window.location.reload();
+			}
+			setText(getText("time_expired"));
 			return;
 		}
 		const seconds = diff % 60;
@@ -71,7 +74,7 @@ export function ContestCountdown({ target_time, type }: { target_time: string; t
 			{endTime.diff(dayjs()) <= 0 ? (
 				<span>{{ running: getText("contest_ended"), before_start: getText("contest_running") }[type]}</span>
 			) : (
-				<ContestRemainingTime target_time={endTime} />
+				<ContestRemainingTime target_time={endTime} reload={true} />
 			)}
 		</>
 	);
@@ -490,6 +493,79 @@ function CommunicationAnnouncer({ contestID, contestEditor }: { contestID: numbe
 	return <></>;
 }
 
+type ContestRegistration = {
+	created_at: string;
+	contest_id: number;
+	user_id: number;
+	individual_start?: string;
+	individual_end?: string;
+};
+
+type ContestRegRez = {
+	user: UserBrief;
+	registration: ContestRegistration;
+};
+
+function RegistrationTable({ users, usacoMode }: { users: ContestRegRez[]; usacoMode: boolean }) {
+	if (users.length == 0) {
+		return (
+			<div class="list-group">
+				<div class="list-group-head font-bold">User</div>
+				<div class="list-group-item">{getText("no_users")}</div>
+			</div>
+		);
+	}
+	return (
+		<div class="list-group">
+			<div class="list-group-head font-bold">User</div>
+			{users.map((user) => (
+				<a href={`/profile/${user.user.name}`} class="list-group-item inline-flex align-middle items-center" key={user.user.id}>
+					<img class="flex-none mr-2 rounded" src={`/api/user/getGravatar?name=${user.user.name}&s=32`} /> {user.user.name} (#{user.user.id}){" "}
+					{usacoMode && (
+						<span class="badge badge-lite ml-2">
+							{user.registration.individual_start === null ? (
+								<>{getText("not_started")}</>
+							) : (
+								<ContestRemainingTime target_time={dayjs(user.registration.individual_end)} reload={false} />
+							)}
+						</span>
+					)}
+				</a>
+			))}
+		</div>
+	);
+}
+
+function ContestRegistrations({ contestid, usacomode }: { contestid: string; usacomode: string }) {
+	let [users, setUsers] = useState<ContestRegRez[]>([]);
+	let [page, setPage] = useState<number>(1);
+	let [numPages, setNumPages] = useState<number>(1);
+	let [cnt, setCnt] = useState<number>(-1);
+
+	async function poll() {
+		let res = await getCall(`/contest/${contestid}/registrations`, { offset: 50 * (page - 1), limit: 50 });
+		if (res.status !== "success") {
+			apiToast(res);
+			throw new Error("Couldn't fetch users");
+		}
+		setCnt(res.data.total_count);
+		setUsers(res.data.registrations);
+		setNumPages(Math.floor(res.data.total_count / 50) + (res.data.total_count % 50 != 0 ? 1 : 0));
+	}
+
+	useEffect(() => {
+		poll().catch(console.error);
+	}, [page]);
+
+	return (
+		<div class="my-4">
+			{cnt >= 0 && getText("num_registrations", cnt)}
+			<Paginator numpages={numPages} page={page} setPage={setPage} showArrows={true} />
+			<RegistrationTable users={users} usacoMode={usacomode == "true"} />
+		</div>
+	);
+}
+
 function AnnouncementListDOM({ encoded, contestid, canedit }: { encoded: string; contestid: string; canedit: string }) {
 	const q: Announcement[] = JSON.parse(fromBase64(encoded));
 	const contestID = parseInt(contestid);
@@ -539,3 +615,4 @@ register(AnnouncementListDOM, "kn-announcements", ["encoded", "contestid", "cane
 register(ContestCountdown, "kn-contest-countdown", ["target_time", "type"]);
 register(CommunicationAnnouncerDOM, "kn-comm-announcer", ["contestid", "contesteditor"]);
 register(ContestLeaderboardDOM, "kn-leaderboard", ["contestid"]);
+register(ContestRegistrations, "kn-contest-registrations", ["contestid", "usacomode"]);

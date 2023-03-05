@@ -5,13 +5,9 @@ import { getCall } from "../net";
 import { apiToast } from "../toast";
 import { Paginator } from "./common";
 import getText from "../translation";
+import { UserBrief } from "../api/submissions";
 
-type User = {
-	name: string;
-	id: number;
-};
-
-function UserTable({ users }: { users: User[] }) {
+function UserTable({ users }: { users: UserBrief[] }) {
 	if (users.length == 0) {
 		return (
 			<div class="list-group">
@@ -33,7 +29,7 @@ function UserTable({ users }: { users: User[] }) {
 }
 
 function UserList() {
-	let [users, setUsers] = useState<User[]>([]);
+	let [users, setUsers] = useState<UserBrief[]>([]);
 	let [page, setPage] = useState<number>(1);
 	let [numPages, setNumPages] = useState<number>(1);
 
@@ -59,35 +55,4 @@ function UserList() {
 	);
 }
 
-function ContestRegistrations({ contestid }: { contestid: string }) {
-	let [users, setUsers] = useState<User[]>([]);
-	let [page, setPage] = useState<number>(1);
-	let [numPages, setNumPages] = useState<number>(1);
-	let [cnt, setCnt] = useState<number>(-1);
-
-	async function poll() {
-		let res = await getCall(`/contest/${contestid}/registrations`, { offset: 50 * (page - 1), limit: 50 });
-		if (res.status !== "success") {
-			apiToast(res);
-			throw new Error("Couldn't fetch users");
-		}
-		setCnt(res.data.total_count);
-		setUsers(res.data.users);
-		setNumPages(Math.floor(res.data.total_count / 50) + (res.data.total_count % 50 != 0 ? 1 : 0));
-	}
-
-	useEffect(() => {
-		poll().catch(console.error);
-	}, [page]);
-
-	return (
-		<div class="my-4">
-			{cnt >= 0 && getText("num_registrations", cnt)}
-			<Paginator numpages={numPages} page={page} setPage={setPage} showArrows={true} />
-			<UserTable users={users} />
-		</div>
-	);
-}
-
 register(UserList, "kn-user-list", []);
-register(ContestRegistrations, "kn-contest-registrations", ["contestid"]);
