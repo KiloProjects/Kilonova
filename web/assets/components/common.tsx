@@ -182,7 +182,8 @@ export function ProblemAttachment({ attname = "" }) {
 	if (pname.endsWith("/")) {
 		pname = pname.substr(0, pname.lastIndexOf("/"));
 	}
-	let attrList = {};
+	let attrList = {},
+		classes = "";
 	if (decodeURI(attname).split("|").length > 1) {
 		let attrs: string[] = [];
 		[attname, ...attrs] = decodeURI(attname).split("|");
@@ -190,13 +191,15 @@ export function ProblemAttachment({ attname = "" }) {
 		for (let val of attrs) {
 			const kv = val.split("=");
 			if (kv.length == 2) {
-				attrList[kv[0]] = kv[1];
+				if (kv[0] == "class") {
+					classes = kv[1];
+				} else {
+					attrList[kv[0]] = kv[1];
+				}
 			}
 		}
-		console.log(attrs);
-		console.log(attname, attrList, attname.split("|").length == 2);
 	}
-	return <img src={`${pname}/attachments/${attname}`} style={attrList} />;
+	return <img src={`${pname}/attachments/${attname}`} class={classes} style={attrList} />;
 }
 
 const SUB_VIEW_LIMIT = 5;
