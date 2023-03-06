@@ -182,7 +182,21 @@ export function ProblemAttachment({ attname = "" }) {
 	if (pname.endsWith("/")) {
 		pname = pname.substr(0, pname.lastIndexOf("/"));
 	}
-	return <img src={`${pname}/attachments/${attname}`} />;
+	let attrList = {};
+	if (decodeURI(attname).split("|").length > 1) {
+		let attrs: string[] = [];
+		[attname, ...attrs] = decodeURI(attname).split("|");
+
+		for (let val of attrs) {
+			const kv = val.split("=");
+			if (kv.length == 2) {
+				attrList[kv[0]] = kv[1];
+			}
+		}
+		console.log(attrs);
+		console.log(attname, attrList, attname.split("|").length == 2);
+	}
+	return <img src={`${pname}/attachments/${attname}`} style={attrList} />;
 }
 
 const SUB_VIEW_LIMIT = 5;
@@ -287,12 +301,8 @@ function ProgressChecker({ id }: { id: number }) {
 		};
 	}, [id]);
 
-	if(processing) {
-		return (
-			<span>
-				{getText("upload_processing")}
-			</span>
-		)
+	if (processing) {
+		return <span>{getText("upload_processing")}</span>;
 	}
 
 	return (
