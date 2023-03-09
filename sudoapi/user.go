@@ -19,6 +19,9 @@ import (
 func (s *BaseAPI) UserBrief(ctx context.Context, id int) (*UserBrief, *StatusError) {
 	user, err := s.db.User(ctx, id)
 	if err != nil || user == nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, WrapError(err, "Context canceled")
+		}
 		if err != nil {
 			zap.S().Warn(err)
 		}
