@@ -26,6 +26,9 @@
                     <th scope="col" class="w-1/8">
                         {{getText "private"}}
                     </th>
+                    <th scope="col" class="w-1/8">
+                        {{getText "exec"}}
+                    </th>
                 </tr>
             </thead>
             <tbody id="att-body">
@@ -48,6 +51,10 @@
                         <input class="form-checkbox" type="checkbox" id="private-att-{{.ID}}" {{if
                             .Private}}checked{{end}}>
                     </td>
+                    <td class="kn-table-cell">
+                        <input class="form-checkbox" type="checkbox" id="exec-att-{{.ID}}" {{if
+                            .Exec}}checked{{end}}>
+                    </td>
                 </tr>
                 {{ end }}
             </tbody>
@@ -65,7 +72,7 @@
             <h2>{{getText "header.edit.attachment_create"}}</h2>
             <label class="block my-2">
                 <span class="mr-2 text-xl">{{getText "file"}}: </span>
-                <input class="form-input" id="attFile" type="file" required />
+                <input class="form-input" id="attFile" type="file" required multiple/>
             </label>
             <label class="block my-2">
                 <input class="form-checkbox" id="attPrivate" type="checkbox" />
@@ -74,6 +81,10 @@
             <label id="visibleLabel" class="block my-2">
                 <input class="form-checkbox" id="attVisible" type="checkbox" />
                 <span class="ml-2 text-xl">{{getText "visible"}}</span>
+            </label>
+            <label class="block my-2">
+                <input class="form-checkbox" id="attExec" type="checkbox" />
+                <span class="ml-2 text-xl">{{getText "exec"}}</span>
             </label>
             <button type="submit" class="btn btn-blue">{{getText "button.upload"}}</button>
         </form>
@@ -127,9 +138,10 @@
             }
             let visible = document.getElementById(`visible-att-${id}`).checked;
             let private = document.getElementById(`private-att-${id}`).checked;
-            atts[id] = { visible, private }
+            let exec = document.getElementById(`exec-att-${id}`).checked;
+            atts[id] = { visible, private, exec }
         }
-        let res = await bundled.bodyCall("/problem/{{.Problem.ID}}/update/bulkUpdateAttachmentData", atts)
+        let res = await bundled.bodyCall("/problem/{{.Problem.ID}}/update/bulkUpdateAttachmentInfo", atts)
         bundled.apiToast(res)
     }
 
@@ -149,6 +161,7 @@
     let visibleLabel = document.getElementById("visibleLabel")
     let visibleNode = document.getElementById("attVisible")
     let privateNode = document.getElementById("attPrivate")
+    let execNode = document.getElementById("attExec")
     privateNode.addEventListener("change", (e) => {
         if (e.target.checked === true) {
             visibleLabel.style.display = "none"
@@ -164,15 +177,20 @@
             bundled.createToast({ status: "error", title: '{{getText "noFiles"}}' });
             return
         }
-        let form = new FormData();
-        form.append("data", files[0]);
-        form.append("visible", visibleNode.checked);
-        form.append("private", privateNode.checked);
+        for(let file of files) {
+            bundled.apiToast({status: "info", data: `Uploading ${file.name}`});
+            let form = new FormData();
+            form.append("data", file);
 
-        let res = await bundled.multipartProgressCall("/problem/{{.Problem.ID}}/update/addAttachment", form)
-        if (res.status !== "success") {
-            bundled.apiToast(res);
-            return
+            form.append("visible", visibleNode.checked);
+            form.append("private", privateNode.checked);
+            form.append("exec", execNode.checked);
+    
+            let res = await bundled.multipartProgressCall("/problem/{{.Problem.ID}}/update/addAttachment", form)
+            if (res.status !== "success") {
+                bundled.apiToast(res);
+                return
+            }
         }
         window.location.reload();
     }

@@ -77,6 +77,7 @@ type Attachment struct {
 	CreatedAt time.Time `json:"created_at"`
 	Visible   bool      `json:"visible"`
 	Private   bool      `json:"private"`
+	Exec      bool      `json:"exec"`
 
 	Name string `json:"name"`
 	// Data []byte `json:"data,omitempty"`
@@ -88,6 +89,7 @@ type AttachmentFilter struct {
 	// ProblemID *int    `json:"problem_id"`
 	Visible *bool   `json:"visible"`
 	Private *bool   `json:"private"`
+	Exec    *bool   `json:"exec"`
 	Name    *string `json:"name"`
 
 	Limit  int `json:"limit"`
@@ -97,6 +99,7 @@ type AttachmentFilter struct {
 type AttachmentUpdate struct {
 	Visible *bool   `json:"visible"`
 	Private *bool   `json:"private"`
+	Exec    *bool   `json:"exec"`
 	Name    *string `json:"name"`
 }
 

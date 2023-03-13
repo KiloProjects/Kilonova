@@ -28,7 +28,7 @@ memory = 512
 
 # Checker
 
-* Must be named `checker_legacy.cpp` or `checker.cpp` and added as a private attachement.
+* Must be named `checker_legacy.cpp` or `checker.cpp` and added as a private attachement (NOTE: since 2023-03-13) with the `exec` toggle checked.
 
 ## Legacy Format
 
@@ -150,10 +150,10 @@ int main(int argc, char* argv[]) {
 
 # Grader
 
-* Must be named `grader.cpp` and added as a private attachment.
+* Must be named `grader.cpp` and added as a private attachment (NOTE: since 2023-03-13) with the `exec` toggle checked.
 * It must contain the main function.
-* It can include other header files included as public (if they contain functions the user must implement/use) attachments.
-* Optionally, a sample grader can be added as a public attachment to make local testing easier. Keep in mind it must be prefixed with an underscore.
+* It can include other header files included as public (if they contain functions the user must implement/use) attachments (NOTE: since 2023-03-13) with the `exec` toggle checked.
+* Optionally, a sample grader can be added as a public attachment to make local testing easier. **Keep in mind it must not have the `exec` toggle**. In the past it had to be prefixed with an underscore.
 * Custom graders are usually used alongside custom checkers.
 * **If the input the grader reads must remain a secret, it is recommended you read it from a file and overwrite it before you call any of the user's functions.**
 * **In some situations to preserve the integrity of the function calls, you might want to print a secret message (random string or hash of input) using the grader and check it before reading anything else using the custom checker.**
@@ -188,3 +188,9 @@ int sum(int a, int b) {
     return a + b;
 }
 ```
+
+# Output only problems
+
+Problems that require only the output supplied by the user can add the `.output_only` attachment (With the `exec` toggle checked) to limit the range of languages that can be submitted to only the `Output Only` type. Please note that a checker would most likely be required for this type of problem.
+
+In the future you will be able to change the scoring strategy for a problem to the maximum of each subtask across all submissions, allowing multiple `Output Only` solutions, one for each subtask.

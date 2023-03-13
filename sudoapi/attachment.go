@@ -57,6 +57,13 @@ func (s *BaseAPI) UpdateAttachment(ctx context.Context, aid int, upd *kilonova.A
 	return nil
 }
 
+func (s *BaseAPI) UpdateAttachmentData(ctx context.Context, aid int, data []byte) *StatusError {
+	if err := s.db.UpdateAttachmentData(ctx, aid, data); err != nil {
+		return WrapError(err, "Couldn't update attachment contents")
+	}
+	return nil
+}
+
 func (s *BaseAPI) DeleteAttachment(ctx context.Context, attachmentID int) *StatusError {
 	if err := s.db.DeleteAttachment(ctx, attachmentID); err != nil {
 		zap.S().Warn(err)
@@ -110,6 +117,9 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 	}
 
 	for _, att := range atts {
+		if !att.Exec {
+			continue
+		}
 		filename := path.Base(att.Name)
 		filename = strings.TrimSuffix(filename, path.Ext(filename))
 		if filename == "checker_legacy" && eval.GetLangByFilename(att.Name) != "" {

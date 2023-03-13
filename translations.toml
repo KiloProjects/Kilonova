@@ -552,6 +552,10 @@ ro = "Invizibil"
 en = "Private"
 ro = "Privat"
 
+[exec]
+en = "Exec"
+ro = "Exec"
+
 [deleteAttachments]
 en = "Delete selected attachments"
 ro = "Șterge atașamentele selectate"

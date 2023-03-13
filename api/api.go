@@ -91,9 +91,10 @@ func (s *API) Handler() http.Handler {
 				r.Post("/stripAccess", s.stripProblemAccess)
 
 				r.Post("/addAttachment", s.createAttachment)
+				r.Post("/updateAttachmentData", s.updateAttachmentData)
 				//r.With(s.validateAttachmentID).Post("/attachment/{aID}/", s.updateAttachmentMetadata)
 				r.Post("/bulkDeleteAttachments", s.bulkDeleteAttachments)
-				r.Post("/bulkUpdateAttachmentData", s.bulkUpdateAttachmentData)
+				r.Post("/bulkUpdateAttachmentInfo", s.bulkUpdateAttachmentInfo)
 
 				r.Post("/bulkDeleteTests", s.bulkDeleteTests)
 				r.Post("/bulkUpdateTestScores", s.bulkUpdateTestScores)

@@ -13,6 +13,15 @@
 	</div>
 	<button class="btn btn-blue mb-2">{{getText "button.create"}}</button>
     <div class="reset-list segment-container">
+        
+        <h3>
+            NOTE (2023-03-13): Attachments that will be counted towards grading/checking only if they have the "exec" checkbox toggled. 
+        </h3>
+        <p>Valid attachments have been automatically assigned the exec checkbox on migration to this new system.</p>
+        <p>Attachments prefixed with <code>_</code> will still be ignored for now regardless of checkboxes (and haven't had the checkbox toggled automatically). This may be removed in a future change, however, so please don't rely only on this.</p>
+        <p>Liviu's guide below has been updated to reflect these changes.</p>
+
+        <hr class="my-2"/>
         <h3>NEW: More information regarding graders, checkers and test archives is available <a href="/docs/test-guide">on this page</a>.</h3>
         <p>Please keep in mind that the legacy format checkers need to be of the form <code>checker_legacy.cpp</code>. Standard (CMS-style) format checkers are now the default when a <code>checker.cpp</code> is encountered.</p>
         <p>(it is recommended even veteran proposers read this guide, contributed by Liviu)</p>

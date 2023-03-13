@@ -12,7 +12,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-const createAttachmentQuery = "INSERT INTO attachments (problem_id, visible, private, name, data) VALUES (?, ?, ?, ?, ?) RETURNING id;"
+const createAttachmentQuery = "INSERT INTO attachments (problem_id, visible, private, execable, name, data) VALUES (?, ?, ?, ?, ?, ?) RETURNING id;"
 
 func (a *DB) CreateAttachment(ctx context.Context, att *kilonova.Attachment, problemID int, data []byte) error {
 	if problemID == 0 || data == nil {
@@ -23,14 +23,14 @@ func (a *DB) CreateAttachment(ctx context.Context, att *kilonova.Attachment, pro
 	}
 
 	var id int
-	err := a.conn.GetContext(ctx, &id, a.conn.Rebind(createAttachmentQuery), problemID, att.Visible, att.Private, att.Name, data)
+	err := a.conn.GetContext(ctx, &id, a.conn.Rebind(createAttachmentQuery), problemID, att.Visible, att.Private, att.Exec, att.Name, data)
 	if err == nil {
 		att.ID = id
 	}
 	return err
 }
 
-const selectedAttFields = "id, created_at, visible, private, name, data_size" // Make sure to keep this in sync
+const selectedAttFields = "id, created_at, visible, private, execable, name, data_size" // Make sure to keep this in sync
 
 func (a *DB) Attachment(ctx context.Context, id int) (*kilonova.Attachment, error) {
 	var att dbAttachment
@@ -62,7 +62,7 @@ func (a *DB) ProblemAttachments(ctx context.Context, pbid int, filter *kilonova.
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.Attachment{}, nil
 	}
-	return internalToAttachments(attachments), err
+	return mapper(attachments, internalToAttachment), err
 }
 
 func (a *DB) AttachmentData(ctx context.Context, id int) ([]byte, error) {
@@ -96,6 +96,11 @@ func (a *DB) UpdateAttachment(ctx context.Context, id int, upd *kilonova.Attachm
 	return err
 }
 
+func (a *DB) UpdateAttachmentData(ctx context.Context, id int, data []byte) error {
+	_, err := a.conn.ExecContext(ctx, "UPDATE attachments SET data = $1 WHERE id = $2", data, id)
+	return err
+}
+
 func (a *DB) DeleteAttachment(ctx context.Context, attid int) error {
 	_, err := a.conn.ExecContext(ctx, "DELETE FROM attachments WHERE id = $1", attid)
 	return err
@@ -125,16 +130,14 @@ func attachmentFilterQuery(filter *kilonova.AttachmentFilter) ([]string, []any) 
 	if v := filter.Name; v != nil {
 		where, args = append(where, "name = ?"), append(args, v)
 	}
-	/*
-		if v := filter.ProblemID; v != nil {
-			where, args = append(where, "problem_id = ?"), append(args, v)
-		}
-	*/
 	if v := filter.Visible; v != nil {
 		where, args = append(where, "visible = ?"), append(args, v)
 	}
 	if v := filter.Private; v != nil {
 		where, args = append(where, "private = ?"), append(args, v)
+	}
+	if v := filter.Exec; v != nil {
+		where, args = append(where, "execable = ?"), append(args, v)
 	}
 	return where, args
 }
@@ -150,6 +153,9 @@ func attachmentUpdateQuery(upd *kilonova.AttachmentUpdate) ([]string, []any) {
 	if v := upd.Private; v != nil {
 		toUpd, args = append(toUpd, "private = ?"), append(args, v)
 	}
+	if v := upd.Exec; v != nil {
+		toUpd, args = append(toUpd, "execable = ?"), append(args, v)
+	}
 	return toUpd, args
 }
 
@@ -158,14 +164,11 @@ type dbAttachment struct {
 	CreatedAt time.Time `db:"created_at"`
 	Visible   bool      `db:"visible"`
 	Private   bool      `db:"private"`
+	Exec      bool      `db:"execable"`
 
 	Name string `db:"name"`
 	Size int    `db:"data_size"`
 	//Data []byte `db:"data"`
-}
-
-func internalToAttachments(att []*dbAttachment) []*kilonova.Attachment {
-	return mapper(att, internalToAttachment)
 }
 
 func internalToAttachment(att *dbAttachment) *kilonova.Attachment {
@@ -177,6 +180,7 @@ func internalToAttachment(att *dbAttachment) *kilonova.Attachment {
 		CreatedAt: att.CreatedAt,
 		Visible:   att.Visible,
 		Private:   att.Private,
+		Exec:      att.Exec,
 
 		Name: att.Name,
 		Size: att.Size,
