@@ -3,7 +3,7 @@ import register from "preact-custom-element";
 import getText from "../translation.js";
 import { getCall } from "../net";
 import { dayjs } from "../util";
-import { useCallback, useEffect, useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { getSubmissions, ResultSubmission } from "../api/submissions.js";
 
 interface PaginatorParams {

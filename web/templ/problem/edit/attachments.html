@@ -38,7 +38,9 @@
                         <input class="form-checkbox" type="checkbox" id="pb-att-{{.ID}}" autocomplete="off" />
                     </td>
                     <td class="kn-table-cell" id="name-att-{{.ID}}">
-                        <a href="/problems/{{$pbid}}/attachments/{{.Name}}">{{.Name}}</a>
+                        <kn-att-name pbid="{{$pbid}}" attid="{{.ID}}" orgname="{{.Name}}">
+                            <!-- <a href="/problems/{{$pbid}}/attachments/{{.Name}}">{{.Name}}</a> -->
+                        </kn-att-name>
                     </td>
                     <td class="kn-table-cell" id="size-att-{{.ID}}">
                         {{.Size}}

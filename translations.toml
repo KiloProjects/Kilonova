@@ -1632,3 +1632,7 @@ ro = "Ascuns din sidebar"
 [downloadTestArchive]
 en = "Download test archive"
 ro = "Descărcare arhivă cu teste"
+
+[edit]
+en = "Edit"
+ro = "Editare"
