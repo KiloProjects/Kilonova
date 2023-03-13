@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/archive/test"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi/v5"
+	"github.com/gosimple/slug"
 	"go.uber.org/zap"
 )
 
@@ -78,6 +80,18 @@ func (rt *Web) testIndex() func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &TestEditParams{
 			GenContext(r), util.Problem(r), nil, rt.topbar(r, "tests", -2), rt.base,
 		})
+	}
+}
+
+func (rt *Web) testArchive() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", "application/zip")
+		w.Header().Add("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.zip"`, slug.Make(util.Problem(r).Name)))
+		w.WriteHeader(200)
+		if err := test.GenerateArchive(r.Context(), util.Problem(r), w, rt.base); err != nil {
+			zap.S().Warn(err)
+			fmt.Fprint(w, err)
+		}
 	}
 }
 
@@ -166,6 +180,7 @@ func (rt *Web) ProblemEditRouter(r chi.Router) {
 	r.Get("/access", rt.editAccessControl())
 
 	r.Get("/test", rt.testIndex())
+	r.Get("/test/archive", rt.testArchive())
 	r.Get("/test/add", rt.testAdd())
 	r.With(rt.TestIDValidator()).Get("/test/{tid}", rt.testEdit())
 	r.With(rt.TestIDValidator()).Get("/test/{tid}/input", rt.testInput())

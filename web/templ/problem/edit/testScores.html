@@ -2,6 +2,8 @@
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
+{{$pb := .Problem }}
+
 <div class="page-holder no-bottom-border">
     {{ template "testSidebar.html" . }}
     <div class="page-content">
@@ -40,7 +42,8 @@
                 </tbody>
             </table>
             <button class="btn btn-red mr-2" onclick="deleteTests()">{{getText "deleteTests"}}</button>
-            <button class="btn btn-blue" onclick="updateTests()">{{getText "updateTestScores"}}</button>
+            <button class="btn btn-blue mr-2" onclick="updateTests()">{{getText "updateTestScores"}}</button>
+            <a class="btn btn-blue" href="/problems/{{$pb.ID}}/edit/test/archive">{{getText "downloadTestArchive"}}</a>
         {{ end }}
 
         <div class="my-2 page-sidebar-divider"></div>
@@ -53,6 +56,8 @@
             </label>
             <button class="btn btn-blue mb-2">{{getText "button.upload"}}</button>
         </form>
+
+
     </div>
 </div>
 

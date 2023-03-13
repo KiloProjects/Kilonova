@@ -3,7 +3,6 @@ package test
 import (
 	"archive/zip"
 	"bufio"
-	"fmt"
 	"io"
 	"sort"
 	"strconv"
@@ -16,11 +15,16 @@ import (
 )
 
 type PropertiesRaw struct {
-	Groups       string  `props:"groups"`
-	Weights      string  `props:"weights"`
-	Dependencies string  `props:"dependencies"`
-	Time         float64 `props:"time"`
-	Memory       float64 `props:"memory"`
+	Groups       string   `props:"groups"`
+	Weights      string   `props:"weights"`
+	Dependencies string   `props:"dependencies"`
+	Time         *float64 `props:"time"`
+	Memory       *float64 `props:"memory"`
+	DefaultScore *int     `props:"default_score"`
+	Author       *string  `props:"author"`
+	Source       *string  `props:"source"`
+	ConsoleInput *string  `props:"console_input"`
+	TestName     *string  `props:"test_name"`
 }
 
 func ParsePropertiesFile(r io.Reader) (*PropertiesRaw, bool, error) {
@@ -31,7 +35,7 @@ func ParsePropertiesFile(r io.Reader) (*PropertiesRaw, bool, error) {
 		if len(line) == 0 || line[0] == '#' {
 			continue
 		}
-		kv := strings.Split(line, "=")
+		kv := strings.SplitN(line, "=", 2)
 		if len(kv) != 2 {
 			return nil, false, nil
 		}
@@ -67,30 +71,64 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 	}
 
 	props := &Properties{
-		TimeLimit:   rawProps.Time,
-		MemoryLimit: int(rawProps.Memory * 1024.0),
+		TimeLimit:     rawProps.Time,
+		DefaultPoints: rawProps.DefaultScore,
+		Author:        rawProps.Author,
+		Source:        rawProps.Source,
+		TestName:      rawProps.TestName,
 	}
-
-	if props.MemoryLimit > config.Common.TestMaxMemKB {
-		return kilonova.Statusf(400, "Maximum memory must not exceed %f MB", float64(config.Common.TestMaxMemKB)/1024.0)
+	if rawProps.Memory != nil {
+		mem := int((*rawProps.Memory) * 1024.0)
+		props.MemoryLimit = &mem
+		if *props.MemoryLimit > config.Common.TestMaxMemKB {
+			return kilonova.Statusf(400, "Maximum memory must not exceed %f MB", float64(config.Common.TestMaxMemKB)/1024.0)
+		}
+	}
+	if rawProps.ConsoleInput != nil && (*rawProps.ConsoleInput == "true" || *rawProps.ConsoleInput == "false") {
+		val := *rawProps.ConsoleInput == "true"
+		props.ConsoleInput = &val
 	}
 
 	// handle subtasks
 	if rawProps.Groups != "" {
 		subtaskedTests := map[int]bool{}
 
-		type group struct{ start, end int }
-		groups := map[int]group{}
-		subTaskGroups := map[int][]group{}
+		groups := map[int][]int{}
+		subTaskGroups := map[int][][]int{}
 
 		groupStrings := strings.Split(rawProps.Groups, ",")
-		for i, g := range groupStrings {
-			start, end := -1, -1
-			if _, err := fmt.Sscanf(g, "%d-%d", &start, &end); err != nil {
-				zap.S().Info(err)
-				return kilonova.Statusf(400, "Invalid `group` string in properties")
+		for i, grp := range groupStrings {
+			glist := []int{}
+			gg := strings.Split(grp, ";")
+			for _, g := range gg {
+				// start, end := -1, -1
+				vals := strings.Split(g, "-")
+				if len(vals) > 2 {
+					return kilonova.Statusf(400, "Invalid `group` string in properties, too many dashes")
+				} else if len(vals) == 2 {
+					start, err := strconv.Atoi(vals[0])
+					if err != nil {
+						zap.S().Warn(err)
+						return kilonova.Statusf(400, "Invalid `group` string in properties, expected int")
+					}
+					end, err := strconv.Atoi(vals[1])
+					if err != nil {
+						zap.S().Warn(err)
+						return kilonova.Statusf(400, "Invalid `group` string in properties, expected int")
+					}
+					for i := start; i <= end; i++ {
+						glist = append(glist, i)
+					}
+				} else if len(vals) == 1 && len(vals[0]) > 0 {
+					val, err := strconv.Atoi(vals[0])
+					if err != nil {
+						zap.S().Warn(err)
+						return kilonova.Statusf(400, "Invalid `group` string in properties, expected int")
+					}
+					glist = append(glist, val)
+				}
 			}
-			groups[i+1] = group{start, end}
+			groups[i+1] = glist
 		}
 
 		weights := map[int]int{}
@@ -113,7 +151,7 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 			}
 
 			for i, d := range depStrings {
-				subTaskGroups[i+1] = []group{groups[i+1]}
+				subTaskGroups[i+1] = [][]int{groups[i+1]}
 				if d == "" {
 					continue
 				}
@@ -131,7 +169,7 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 			}
 		} else {
 			for i := range groupStrings {
-				subTaskGroups[i+1] = []group{groups[i+1]}
+				subTaskGroups[i+1] = [][]int{groups[i+1]}
 			}
 		}
 
@@ -142,10 +180,10 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 			stk := Subtask{}
 			stk.Score = weights[id]
 
-			for _, group := range groups {
-				for i := group.start; i <= group.end; i++ {
-					subtaskedTests[i] = true
-					stk.Tests = append(stk.Tests, i)
+			for _, groupList := range groups {
+				for _, test := range groupList {
+					subtaskedTests[test] = true
+					stk.Tests = append(stk.Tests, test)
 				}
 			}
 			sort.Ints(stk.Tests)

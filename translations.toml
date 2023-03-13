@@ -1628,3 +1628,7 @@ ro = "[Listă părinte]"
 [sidebar_hidable]
 en = "Hide in sidebar"
 ro = "Ascuns din sidebar"
+
+[downloadTestArchive]
+en = "Download test archive"
+ro = "Descărcare arhivă cu teste"
