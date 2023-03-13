@@ -8,6 +8,7 @@ import { apiToast } from "../toast.js";
 export function AttachmentRenamer({ pbid, attid, orgname }: { pbid: string; attid: string; orgname: string }) {
 	let [editing, setEditing] = useState<boolean>(false);
 	let [name, setName] = useState<string>(orgname);
+	let [preEditName, setPreEditName] = useState<string>(orgname);
 
 	console.log("asdf");
 	async function updateName() {
@@ -24,7 +25,12 @@ export function AttachmentRenamer({ pbid, attid, orgname }: { pbid: string; atti
 		return (
 			<>
 				<a href={`/problems/${pbid}/attachments/${name}`}>{name}</a>{" "}
-				<span onClick={() => setEditing(true)}>
+				<span
+					onClick={() => {
+						setEditing(true);
+						setPreEditName(name);
+					}}
+				>
 					<i class="fas fa-pencil"></i> {getText("edit")}
 				</span>
 			</>
@@ -33,7 +39,16 @@ export function AttachmentRenamer({ pbid, attid, orgname }: { pbid: string; atti
 
 	return (
 		<>
-			<input class="form-input mr-2" type="text" value={name} onChange={(e) => setName(e.currentTarget.value)} />
+			<button
+				class="btn btn-blue"
+				onClick={() => {
+					setName(preEditName);
+					setEditing(false);
+				}}
+			>
+				X
+			</button>
+			<input class="form-input mx-2" type="text" value={name} onChange={(e) => setName(e.currentTarget.value)} />
 			<button class="btn btn-blue" onClick={() => updateName().catch(console.error)}>
 				{getText("button.update")}
 			</button>
