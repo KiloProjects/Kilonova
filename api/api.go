@@ -91,8 +91,9 @@ func (s *API) Handler() http.Handler {
 				r.Post("/stripAccess", s.stripProblemAccess)
 
 				r.Post("/addAttachment", s.createAttachment)
-				r.Post("/updateAttachmentData", s.updateAttachmentData)
-				//r.With(s.validateAttachmentID).Post("/attachment/{aID}/", s.updateAttachmentMetadata)
+				r.Post("/attachmentData", s.updateAttachmentData)
+				r.With(s.validateAttachmentID).Get("/attachment/{aid}/", s.getFullAttachment)
+				// r.With(s.validateAttachmentID).Post("/attachment/{aID}/", s.updateAttachmentMetadata)
 				r.Post("/bulkDeleteAttachments", s.bulkDeleteAttachments)
 				r.Post("/bulkUpdateAttachmentInfo", s.bulkUpdateAttachmentInfo)
 
@@ -118,6 +119,7 @@ func (s *API) Handler() http.Handler {
 				}))
 				// The one from /web/web.go is good enough
 				// r.Get("/attachmentData", s.getAttachment)
+				r.With(s.validateAttachmentID).Get("/attachment/{aID}", s.getFullAttachment)
 
 				r.Get("/accessControl", s.getProblemAccessControl)
 

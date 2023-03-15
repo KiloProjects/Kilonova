@@ -730,8 +730,8 @@ en = "Max Memory"
 ro = "Memorie Maximă"
 
 [maxSubs]
-en = "Maximum submission count"
-ro = "Număr limită submisii"
+en = "Maximum submission count (per problem)"
+ro = "Număr limită submisii (pe problemă)"
 
 [codeSize]
 en = "Code size"
@@ -1636,3 +1636,15 @@ ro = "Descărcare arhivă cu teste"
 [edit]
 en = "Edit"
 ro = "Editare"
+
+[create_attachment]
+en = "Create attachment"
+ro = "Creare atașament"
+
+[edit_attachment]
+en = "Edit attachment"
+ro = "Editare atașament"
+
+[contents]
+en = "Contents"
+ro = "Conținut"

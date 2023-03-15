@@ -41,6 +41,15 @@ func (a *DB) Attachment(ctx context.Context, id int) (*kilonova.Attachment, erro
 	return internalToAttachment(&att), err
 }
 
+func (a *DB) ProblemAttachment(ctx context.Context, problemID, attachmentID int) (*kilonova.Attachment, error) {
+	var att dbAttachment
+	err := a.conn.GetContext(ctx, &att, "SELECT "+selectedAttFields+" FROM attachments WHERE problem_id = $1 AND id = $2 LIMIT 1", problemID, attachmentID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	return internalToAttachment(&att), err
+}
+
 func (a *DB) AttachmentByName(ctx context.Context, problemID int, filename string) (*kilonova.Attachment, error) {
 	var att dbAttachment
 	err := a.conn.GetContext(ctx, &att, "SELECT "+selectedAttFields+" FROM attachments WHERE problem_id = $1 AND name = $2 LIMIT 1", problemID, filename)

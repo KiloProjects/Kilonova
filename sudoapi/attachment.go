@@ -22,6 +22,14 @@ func (s *BaseAPI) Attachment(ctx context.Context, id int) (*kilonova.Attachment,
 	return attachment, nil
 }
 
+func (s *BaseAPI) ProblemAttachment(ctx context.Context, problemID, attachmentID int) (*kilonova.Attachment, *StatusError) {
+	attachment, err := s.db.ProblemAttachment(ctx, problemID, attachmentID)
+	if err != nil || attachment == nil {
+		return nil, WrapError(ErrNotFound, "Attachment not found")
+	}
+	return attachment, nil
+}
+
 func (s *BaseAPI) AttachmentByName(ctx context.Context, problemID int, name string) (*kilonova.Attachment, *StatusError) {
 	attachment, err := s.db.AttachmentByName(ctx, problemID, name)
 	if err != nil || attachment == nil {

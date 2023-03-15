@@ -10,7 +10,6 @@ export function AttachmentRenamer({ pbid, attid, orgname }: { pbid: string; atti
 	let [name, setName] = useState<string>(orgname);
 	let [preEditName, setPreEditName] = useState<string>(orgname);
 
-	console.log("asdf");
 	async function updateName() {
 		const rez = await bodyCall<string>(`/problem/${pbid}/update/bulkUpdateAttachmentInfo`, {
 			[attid]: { name },

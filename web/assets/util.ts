@@ -16,6 +16,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 export { dayjs };
 
+export { fromBase64 } from "js-base64";
+
 export const JSONTimestamp = "YYYY-MM-DDTHH:mm:ss.SSSSSSZ";
 
 // if max_step is 0, it will format until the MB region

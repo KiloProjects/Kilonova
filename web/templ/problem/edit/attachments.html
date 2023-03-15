@@ -4,6 +4,11 @@
 
 {{ $pbid := .Problem.ID }}
 
+<style>
+    #addDetails .CodeMirror {
+        min-height: 250px;
+    }
+</style>
 <div class="page-holder">
     <div class="page-content">
         <h2>{{getText "header.edit.attachments"}}</h2>
@@ -28,6 +33,9 @@
                     </th>
                     <th scope="col" class="w-1/8">
                         {{getText "exec"}}
+                    </th>
+                    <th scope="col" class="w-1/12">
+                        
                     </th>
                 </tr>
             </thead>
@@ -57,6 +65,9 @@
                         <input class="form-checkbox" type="checkbox" id="exec-att-{{.ID}}" {{if
                             .Exec}}checked{{end}}>
                     </td>
+                    <td class="kn-table-cell">
+                        <button class="btn btn-blue" onclick="toggleEdit({{.ID}})"><i class="fas fa-edit"></i></button>
+                    </td>
                 </tr>
                 {{ end }}
             </tbody>
@@ -68,6 +79,52 @@
         {{ else }}
         {{getText "noAttachments"}}
         {{ end }}
+
+        <div class="hidden" id="editAttView">
+            <div class="my-2 page-sidebar-divider"></div>
+            <h2 class="inline-block mb-2">{{getText "edit_attachment"}} <code id="ediAttNameView"></code></h2>
+            <form id="editAttForm" autocomplete="off">
+                <input type="hidden" id="editAttID" />
+                <input type="hidden" id="editAttName" />
+                <label class="block my-2">
+                    <span class="mr-2 text-xl">{{getText "contents"}}: </span>
+                    <textarea id="attEditContent" class="hidden"></textarea>
+                </label>
+                <button type="submit" class="btn btn-blue">{{getText "button.update"}}</button>
+            </form>
+        </div>
+
+        <div class="my-2 page-sidebar-divider"></div>
+
+        <details id="addDetails">
+            <summary>
+                <h2 class="inline-block mb-2">{{getText "create_attachment"}}</h2>
+            </summary>
+            <form id="addAttForm" autocomplete="off">
+                <label class="mb-2">
+                    <span class="mr-2 text-xl">{{getText "name"}}: </span>
+                    <input type="text" class="form-input w-full" placeholder="{{getText  `name`}}..." id="attCreateName" required>
+                </label>
+                <label class="block my-2">
+                    <span class="mr-2 text-xl">{{getText "contents"}}: </span>
+                    <textarea id="attCreateContent" class="hidden"></textarea>
+                </label>
+                <label class="block my-2">
+                    <input class="form-checkbox" id="attCreatePrivate" type="checkbox" />
+                    <span class="ml-2 text-xl">{{getText "private"}}</span>
+                </label>
+                <label id="visibleCreateLabel" class="block my-2">
+                    <input class="form-checkbox" id="attCreateVisible" type="checkbox" />
+                    <span class="ml-2 text-xl">{{getText "visible"}}</span>
+                </label>
+                <label class="block my-2">
+                    <input class="form-checkbox" id="attCreateExec" type="checkbox" />
+                    <span class="ml-2 text-xl">{{getText "exec"}}</span>
+                </label>
+                <button type="submit" class="btn btn-blue">{{getText "button.add"}}</button>
+            </form>
+        </details>
+
     </div>
     <div class="page-sidebar">
         <form class="page-sidebar-box" id="attCreate">
@@ -77,15 +134,15 @@
                 <input class="form-input" id="attFile" type="file" required multiple/>
             </label>
             <label class="block my-2">
-                <input class="form-checkbox" id="attPrivate" type="checkbox" />
+                <input class="form-checkbox" id="attUploadPrivate" type="checkbox" />
                 <span class="ml-2 text-xl">{{getText "private"}}</span>
             </label>
-            <label id="visibleLabel" class="block my-2">
-                <input class="form-checkbox" id="attVisible" type="checkbox" />
+            <label id="visibleUploadLabel" class="block my-2">
+                <input class="form-checkbox" id="attUploadVisible" type="checkbox" />
                 <span class="ml-2 text-xl">{{getText "visible"}}</span>
             </label>
             <label class="block my-2">
-                <input class="form-checkbox" id="attExec" type="checkbox" />
+                <input class="form-checkbox" id="attUploadExec" type="checkbox" />
                 <span class="ml-2 text-xl">{{getText "exec"}}</span>
             </label>
             <button type="submit" class="btn btn-blue">{{getText "button.upload"}}</button>
@@ -93,6 +150,114 @@
     </div>
 </div>
 
+<script>
+    var editCM = CodeMirror.fromTextArea(document.getElementById("attEditContent"), {
+        mode: {
+            name: "text/plain",
+            // gitHubSpice: false,
+            // emoji: false,
+        },
+    });
+    // editCM.setSize(null, "100%");
+    document.getElementById("addDetails").addEventListener("toggle", () => {
+        editCM.refresh()
+    })
+    
+    async function editAttachment(e) {
+        e.preventDefault();
+        let content = editCM.getValue();
+        let filename = document.getElementById("editAttName").value;
+
+        let form = new FormData();
+        form.append("data", new File([content], filename, {type: "text/plain"}));
+        form.append("id", document.getElementById("editAttID").value)
+
+        let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/attachmentData", form)
+        bundled.apiToast(res);
+    };
+
+    async function initAttEdit(id) {
+        const rez = await bundled.getCall("/problem/{{.Problem.ID}}/get/attachment/"+id)
+        if(rez.status !== "success") {
+            bundled.apiToast(rez)
+            return
+        }
+
+        const mimetype = rez.data.mime_type
+        if(mimetype.includes("image")) {
+            bundled.apiToast({status: "error", data: "Cannot edit images using editor!"})
+            return
+        }
+        if(mimetype.includes("archvie")) {
+            bundled.apiToast({status: "error", data: "Cannot edit archives using editor!"})
+            return
+        }
+
+        document.getElementById("addDetails").open = false
+        document.getElementById("editAttID").value = id
+        document.getElementById("editAttName").value = rez.data.metadata.name
+        document.getElementById("ediAttNameView").innerText = rez.data.metadata.name
+        editCM.setValue(bundled.fromBase64(rez.data.data))
+
+        document.getElementById("editAttView").classList.toggle("hidden", false);
+        editCM.refresh();
+    }
+
+    function toggleEdit(id) {
+        if(document.getElementById("editAttID").value == id) {
+            closeAttEdit();
+        } else {
+            initAttEdit(id)
+        }
+    }
+
+    async function closeAttEdit() {
+        document.getElementById("editAttView").classList.toggle("hidden", true);
+        document.getElementById("editAttID").value = ""
+        document.getElementById("editAttName").value = ""
+        editCM.setValue("")
+    }
+
+    document.getElementById("editAttForm").addEventListener("submit", editAttachment)
+</script>
+
+<script>
+    var addCM = CodeMirror.fromTextArea(document.getElementById("attCreateContent"), {
+        mode: {
+            name: "gfm",
+            gitHubSpice: false,
+            emoji: false,
+        },
+    });
+    addCM.setSize(null, "100%");
+    document.getElementById("addDetails").addEventListener("toggle", () => {
+        addCM.refresh()
+    })
+    
+    async function createNewAttachment(e) {
+        e.preventDefault();
+        let content = addCM.getValue();
+        let filename = document.getElementById("attCreateName").value;
+
+        let form = new FormData();
+        form.append("data", new File([content], filename, {type: "text/plain"}));
+
+
+        form.append("visible", document.getElementById("attCreateVisible").checked);
+        form.append("private", document.getElementById("attCreatePrivate").checked);
+        form.append("exec", document.getElementById("attCreateExec").checked);
+
+        let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/addAttachment", form)
+        if (res.status !== "success") {
+            bundled.apiToast(res);
+            return
+        }
+        window.location.reload();
+    };
+
+
+    document.getElementById("addAttForm").addEventListener("submit", createNewAttachment)
+</script>
 
 <script>
     var pbid = {{ .Problem.ID }}, rowreg = /row-att-([0-9]+)/;
@@ -160,19 +325,22 @@
 </script>
 
 <script>
-    let visibleLabel = document.getElementById("visibleLabel")
-    let visibleNode = document.getElementById("attVisible")
-    let privateNode = document.getElementById("attPrivate")
-    let execNode = document.getElementById("attExec")
-    privateNode.addEventListener("change", (e) => {
+    document.getElementById("attUploadPrivate").addEventListener("change", (e) => {
         if (e.target.checked === true) {
-            visibleLabel.style.display = "none"
+            document.getElementById("visibleUploadLabel").style.display = "none"
         } else {
-            visibleLabel.style.display = null
+            document.getElementById("visibleUploadLabel").style.display = null
+        }
+    })
+    document.getElementById("attCreatePrivate").addEventListener("change", (e) => {
+        if (e.target.checked === true) {
+            document.getElementById("visibleCreateLabel").style.display = "none"
+        } else {
+            document.getElementById("visibleCreateLabel").style.display = null
         }
     })
 
-    async function createAttachment(e) {
+    async function uploadAttachment(e) {
         e.preventDefault()
         let files = document.getElementById("attFile").files;
         if (files === null || files.length == 0) {
@@ -184,9 +352,9 @@
             let form = new FormData();
             form.append("data", file);
 
-            form.append("visible", visibleNode.checked);
-            form.append("private", privateNode.checked);
-            form.append("exec", execNode.checked);
+            form.append("visible", document.getElementById("attUploadVisible").checked);
+            form.append("private", document.getElementById("attUploadPrivate").checked);
+            form.append("exec", document.getElementById("attUploadExec").checked);
     
             let res = await bundled.multipartProgressCall("/problem/{{.Problem.ID}}/update/addAttachment", form)
             if (res.status !== "success") {
@@ -197,7 +365,7 @@
         window.location.reload();
     }
 
-    document.getElementById("attCreate").addEventListener("submit", createAttachment)
+    document.getElementById("attCreate").addEventListener("submit", uploadAttachment)
 </script>
 
 {{ end }}

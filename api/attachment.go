@@ -67,19 +67,20 @@ func (s *API) bulkDeleteAttachments(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) updateAttachmentData(w http.ResponseWriter, r *http.Request) {
+	r.ParseMultipartForm(20 * 1024 * 1024)
 	var args struct {
-		Name string `json:"name"`
+		ID int `json:"id"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 400)
 		return
 	}
-	if args.Name == "" {
-		errorData(w, "You must provide a name", 400)
+	if args.ID <= 0 {
+		errorData(w, "You must provide an id", 400)
 		return
 	}
 
-	att, err1 := s.base.AttachmentByName(r.Context(), util.Problem(r).ID, args.Name)
+	att, err1 := s.base.ProblemAttachment(r.Context(), util.Problem(r).ID, args.ID)
 	if err1 != nil {
 		err1.WriteError(w)
 		return
@@ -104,6 +105,23 @@ func (s *API) updateAttachmentData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	returnData(w, "Updated attachment data")
+}
+
+func (s *API) getFullAttachment(w http.ResponseWriter, r *http.Request) {
+	data, err := s.base.AttachmentData(r.Context(), util.Attachment(r).ID)
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+	returnData(w, struct {
+		Metadata *kilonova.Attachment `json:"metadata"`
+		MimeType string               `json:"mime_type"`
+		Data     []byte               `json:"data"`
+	}{
+		Metadata: util.Attachment(r),
+		MimeType: http.DetectContentType(data),
+		Data:     data,
+	})
 }
 
 func (s *API) bulkUpdateAttachmentInfo(w http.ResponseWriter, r *http.Request) {

@@ -142,7 +142,11 @@ func (s *API) validateAttachmentID(next http.Handler) http.Handler {
 			errorData(w, "invalid attachment ID", http.StatusBadRequest)
 			return
 		}
-		att, err1 := s.base.Attachment(r.Context(), attID)
+		if util.Problem(r) == nil {
+			zap.S().Fatal("Problem is not available")
+			return
+		}
+		att, err1 := s.base.ProblemAttachment(r.Context(), util.Problem(r).ID, attID)
 		if err1 != nil {
 			errorData(w, "attachment does not exist", http.StatusBadRequest)
 			return
