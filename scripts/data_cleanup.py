@@ -1,14 +1,11 @@
-import toml
 import os
 import subprocess
 import re
+import sys
 
 # Written using ChatGPT...
 
 max_size = 1024 * 1024 * 1024 # 1024 MB = 1 GB
-
-with open("./config.toml", "r") as f:
-    path: str = toml.load(f)["common"]["data_dir"] + "/subtests" # Remove only subtests
 
 def get_directory_size(path):
     """Returns the size of a directory in bytes."""
@@ -46,7 +43,13 @@ def delete_files(path):
                 if get_directory_size(path) <= max_size:
                     return
 
-
+if len(sys.argv) < 2:
+    print("You must provide a path.")
+    exit(1)
+path = sys.argv[1]
+if not os.path.isdir(path):
+    print("Invalid path.")
+    exit(1)
 print(f"Disk usage for {path} before: {format_size(get_directory_size(path))}")
 delete_files(path)
 print(f"Disk usage for {path} after: {format_size(get_directory_size(path))}")
