@@ -392,47 +392,44 @@ func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, bas
 	}
 	{
 		// Lastly, grader.properties
-		subtasks, err1 := base.SubTasks(ctx, pb.ID)
-		if err1 != nil {
-			return err1
-		}
-
-		if len(subtasks) == 0 {
-			// Just leave early if there are no subtasks
-			return nil
-		}
-
 		gr, err := ar.Create("grader.properties")
 		if err != nil {
 			return kilonova.WrapError(err, "Couldn't create archive grader.properties file")
 		}
 
-		tmap := map[int]*kilonova.Test{}
-		for _, test := range tests {
-			tmap[test.ID] = test
+		subtasks, err1 := base.SubTasks(ctx, pb.ID)
+		if err1 != nil {
+			return err1
 		}
-
-		groups := []string{}
-		weights := []string{}
-
-		for _, st := range subtasks {
-			group := ""
-			for i, t := range st.Tests {
-				if i > 0 {
-					group += ";"
-				}
-				tt, ok := tmap[t]
-				if !ok {
-					zap.S().Warn("Couldn't find test in test map")
-				} else {
-					group += strconv.Itoa(tt.VisibleID)
-				}
+		if len(subtasks) != 0 {
+			tmap := map[int]*kilonova.Test{}
+			for _, test := range tests {
+				tmap[test.ID] = test
 			}
-			groups = append(groups, group)
-			weights = append(weights, strconv.Itoa(st.Score))
+
+			groups := []string{}
+			weights := []string{}
+
+			for _, st := range subtasks {
+				group := ""
+				for i, t := range st.Tests {
+					if i > 0 {
+						group += ";"
+					}
+					tt, ok := tmap[t]
+					if !ok {
+						zap.S().Warn("Couldn't find test in test map")
+					} else {
+						group += strconv.Itoa(tt.VisibleID)
+					}
+				}
+				groups = append(groups, group)
+				weights = append(weights, strconv.Itoa(st.Score))
+			}
+			fmt.Fprintf(gr, "groups=%s\n", strings.Join(groups, ","))
+			fmt.Fprintf(gr, "weights=%s\n", strings.Join(weights, ","))
 		}
-		fmt.Fprintf(gr, "groups=%s\n", strings.Join(groups, ","))
-		fmt.Fprintf(gr, "weights=%s\n", strings.Join(weights, ","))
+
 		fmt.Fprintf(gr, "time=%f\n", pb.TimeLimit)
 		fmt.Fprintf(gr, "memory=%f\n", float64(pb.MemoryLimit)/1024.0)
 		if pb.DefaultPoints != 0 {
