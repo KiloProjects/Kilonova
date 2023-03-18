@@ -10,7 +10,7 @@
 
 {{ with pblistParent .ProblemList }}
 
-    <a class="block mb-2" href="/problem_lists/{{.ID}}">{{getText "parent_list"}}</a>
+<a class="block mb-2" href="/problem_lists/{{.ID}}"><i class="fas fa-arrow-left"></i> {{.Title}}</a>
 
 {{ end }}
 
