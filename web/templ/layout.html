@@ -45,9 +45,7 @@ CodeMirror.defaults.tabSize = 4;
 CodeMirror.defaults.indentWithTabs = true;
 CodeMirror.defaults.lineWrapping = true;
 CodeMirror.defaults.viewportMargin = Infinity;
-if(window.matchMedia('(prefers-color-scheme: dark)').matches) { // Dark Mode
-	CodeMirror.defaults.theme = "monokai";
-}
+CodeMirror.defaults.theme = "monokai";
 	</script>
 
 	{{ block "head" . }} {{ end }}
@@ -60,7 +58,7 @@ if(window.matchMedia('(prefers-color-scheme: dark)').matches) { // Dark Mode
 
 	{{- if .Ctx.User }}
 		{{ if not .Ctx.User.VerifiedEmail }}
-			<div class="w-full py-1 px-2 bg-green-200 dark:bg-green-700 text-black dark:text-white text-center">{{ getText "unverifiedEmail" }}</div>
+			<div class="w-full py-1 px-2 bg-green-700 text-white text-center">{{ getText "unverifiedEmail" }}</div>
 		{{ end }}
 	{{ end -}}
 	
