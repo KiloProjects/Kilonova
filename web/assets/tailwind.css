@@ -1,6 +1,7 @@
 @import "@fontsource/noto-sans";
 @import "notyf/notyf.min.css";
-@import "highlight.js/styles/monokai.css";
+@import "highlight.js/styles/default.css";
+@import "highlight.js/styles/monokai.css" (prefers-color-scheme: dark);
 @import "@fortawesome/fontawesome-free/css/all.min.css";
 @import "highlightjs-copy/dist/highlightjs-copy.min.css";
 @import "codemirror/lib/codemirror.css";
@@ -15,15 +16,21 @@
 }
 .bg-hljs,
 .hljs {
-	@apply bg-[#333];
-	/*@apply bg-gray-700;*/
+	background: #f0f0f0;
 }
+@media (prefers-color-scheme: dark) {
+	.bg-hljs,
+	.hljs {
+		@apply bg-[#333];
+		/*@apply bg-gray-700;*/
+	}
 
-.cm-s-monokai.CodeMirror {
-	@apply bg-[#333];
-}
-.cm-s-monokai .CodeMirror-gutters {
-	@apply bg-[#333];
+	.cm-s-monokai.CodeMirror {
+		@apply bg-[#333];
+	}
+	.cm-s-monokai .CodeMirror-gutters {
+		@apply bg-[#333];
+	}
 }
 
 /* .notyf__message a {
@@ -130,27 +137,28 @@
 	}
 
 	.kn-border {
-		@apply border-gray-200;
+		@apply border-gray-700 dark:border-gray-200;
 	}
 
 	.border-wh {
-		@apply border-gray-200;
+		@apply border-gray-600 dark:border-gray-200;
 	}
 
 	.border-gr {
-		@apply border-gray-700;
+		@apply border-gray-300 dark:border-gray-700;
 	}
 
 	.list-group {
-		@apply w-full border-gr bg-gray-900;
+		@apply border-gray-300 w-full bg-white;
+		@apply dark:border-gray-700 dark:bg-gray-900;
 	}
 
 	.list-group-head {
-		@apply block border-b border-t border-x border-gray-700 w-full px-4 text-lg leading-normal py-2;
-		@apply bg-gray-800;
+		@apply block border-b border-t border-x border-gray-300 dark:border-gray-700 w-full px-4 text-lg leading-normal py-2;
+		@apply bg-white dark:bg-gray-800;
 	}
 	.list-group-selected {
-		@apply bg-gray-600 text-white !important;
+		@apply bg-gray-100 dark:bg-gray-600 text-white !important;
 	}
 	.list-group-item {
 		@apply black-anchor list-group-head hover:list-group-selected;
@@ -167,15 +175,17 @@
 	}
 
 	.dropdown-divider {
-		@apply h-0 my-1 border-t border-black;
+		@apply h-0 my-1 border-t border-gray-200;
+		@apply dark:border-black;
 	}
 	.dropdown-list {
 		@apply absolute right-0 w-full md:w-64;
-		@apply py-1 mt-1 text-xl bg-gray-800 rounded-lg shadow-lg;
+		@apply py-1 mt-1 text-xl bg-white rounded-lg shadow-lg;
+		@apply dark:bg-gray-800;
 	}
 	.dropdown-list-item {
-		@apply block px-4 py-1 hoverable;
-		@apply text-gray-200 focus:text-gray-100 hover:text-gray-100;
+		@apply block px-4 py-1 text-gray-800 focus:text-gray-800 hover:text-gray-800 hoverable;
+		@apply dark:text-gray-200 dark:focus:text-gray-100 dark:hover:text-gray-100;
 	}
 	.dropdown-list-item:first-child {
 		@apply rounded-t-lg -mt-1;
@@ -185,11 +195,12 @@
 	}
 
 	.black-anchor {
-		@apply outline-none text-gray-300 hover:text-white focus:text-white active:text-white;
+		@apply text-gray-600 hover:text-black focus:text-black active:text-black outline-none;
+		@apply dark:text-gray-300 dark:hover:text-white dark:focus:text-white dark:active:text-white;
 	}
 
 	.topbar-selected {
-		@apply inline-block p-1 rounded bg-gray-700;
+		@apply inline-block p-1 rounded bg-gray-200 dark:bg-gray-700;
 	}
 
 	.topbar-separator {
@@ -205,7 +216,8 @@
 	}
 
 	.hoverable {
-		@apply hover:bg-gray-700 focus:bg-gray-700;
+		@apply hover:bg-gray-200 focus:bg-gray-200;
+		@apply dark:hover:bg-gray-700 dark:focus:bg-gray-700;
 	}
 
 	.paginator {
@@ -223,7 +235,7 @@
 	}
 
 	.paginator-item-active {
-		@apply border-2 border-wh;
+		@apply border-2 border-black dark:border-wh;
 	}
 
 	.kn-table {
@@ -267,7 +279,7 @@
 	summary::after {
 		font-family: "Font Awesome 5 Free";
 		font-weight: 900;
-		@apply text-gray-200 ml-2;
+		@apply text-gray-600 dark:text-gray-200 ml-2;
 		content: "\f0d7";
 	}
 	details[open] > summary::after {
@@ -285,37 +297,46 @@
 		@apply inline-flex justify-center px-4 py-2 leading-5 rounded-md font-medium ring-1 ring-opacity-50;
 		@apply transition ease-in-out duration-150;
 
-		@apply bg-gray-700 text-white ring-gray-600;
+		@apply bg-gray-200 text-gray-800 ring-gray-100;
+		@apply dark:bg-gray-700 dark:text-white dark:ring-gray-600;
 		font-family: inherit;
 	}
 
 	.btn:not([disabled]) {
-		@apply focus:ring-4 focus:ring-gray-400 hover:ring-2 hover:hover:ring-gray-400;
-		@apply hover:bg-gray-600 hover:text-white;
-		@apply active:bg-gray-600 active:text-white;
-		@apply focus:bg-gray-600 focus:text-white focus:outline-none;
+		@apply hover:bg-gray-700 hover:text-white;
+		@apply active:bg-gray-700 active:text-white;
+		@apply focus:bg-gray-700 focus:text-white focus:outline-none;
+		@apply focus:ring-4 focus:ring-gray-600 hover:ring-2 hover:ring-gray-600;
+		@apply dark:hover:bg-gray-600 dark:hover:text-white;
+		@apply dark:active:bg-gray-600 dark:active:text-white;
+		@apply dark:focus:bg-gray-600 dark:focus:text-white;
+		@apply dark:focus:ring-gray-400 dark:hover:ring-gray-400;
 	}
 
 	.btn-blue {
-		@apply bg-blue-600 text-white ring-blue-500;
+		@apply bg-blue-500 text-white ring-blue-400;
+		@apply dark:bg-blue-600 dark:ring-blue-500;
 	}
 
 	.btn-blue:not([disabled]) {
-		@apply hover:bg-blue-800 active:bg-blue-800;
-		@apply focus:focus:bg-blue-800 focus:outline-none;
-		@apply hover:ring-blue-500 focus:ring-blue-500;
-		@apply hover:text-white active:text-white focus:text-white;
+		@apply hover:bg-blue-700 active:bg-blue-700;
+		@apply focus:bg-blue-700 focus:outline-none hover:ring-blue-600 focus:ring-blue-600;
+		@apply dark:hover:ring-blue-500 dark:focus:ring-blue-500;
+		@apply dark:hover:bg-blue-800 dark:active:bg-blue-800 dark:focus:bg-blue-800;
+		@apply dark:hover:text-white dark:active:text-white dark:focus:text-white;
 	}
 
 	.btn-red {
-		@apply bg-red-600 text-white ring-red-500;
+		@apply bg-red-500 text-white ring-red-400;
+		@apply dark:bg-red-600 dark:ring-red-500;
 	}
 
 	.btn-red:not([disabled]) {
-		@apply hover:ring-red-500 active:bg-red-700;
-		@apply focus:bg-red-700 focus:outline-none hover:ring-red-600 focus:ring-red-500;
-		@apply hover:bg-red-800 active:bg-red-800 focus:bg-red-800;
-		@apply hover:text-white active:text-white focus:text-white;
+		@apply hover:bg-red-700 active:bg-red-700;
+		@apply focus:bg-red-700 focus:outline-none hover:ring-red-600 focus:ring-red-600;
+		@apply dark:hover:ring-red-500 dark:focus:ring-red-500;
+		@apply dark:hover:bg-red-800 dark:active:bg-red-800 dark:focus:bg-red-800;
+		@apply dark:hover:text-white dark:active:text-white dark:focus:text-white;
 	}
 
 	.is-invalid {
@@ -332,11 +353,11 @@
 	.form-textarea,
 	.form-select,
 	.form-multiselect {
-		@apply rounded-lg bg-gray-600 text-white border-gr !important;
+		@apply rounded-lg dark:bg-gray-600 dark:text-white border-gr !important;
 	}
 
 	.form-input:disabled {
-		@apply bg-gray-700 text-gray-200 !important;
+		@apply dark:bg-gray-700 text-gray-600 dark:text-gray-200 !important;
 	}
 
 	.form-input {
@@ -350,7 +371,7 @@
 	.form-input::placeholder,
 	.form-select::placeholder,
 	.form-textarea::placeholder {
-		@apply text-gray-300 !important;
+		@apply text-gray-500 dark:text-gray-300 !important;
 	}
 
 	.badge-lite {
@@ -370,7 +391,8 @@
 	}
 
 	.badge-blue {
-		@apply bg-blue-600 text-white ring-blue-500;
+		@apply bg-blue-500 text-white ring-blue-400;
+		@apply dark:bg-blue-600 dark:ring-blue-500;
 	}
 
 	/* 
@@ -427,7 +449,7 @@
 	}
 
 	blockquote {
-		@apply rounded-md p-3 my-2 border-l-4 border-gray-500 bg-gray-800;
+		@apply rounded-md p-3 my-2 border-l-4 border-gray-300 bg-gray-100 dark:border-gray-500 dark:bg-gray-800;
 		@apply italic leading-relaxed;
 	}
 
@@ -451,14 +473,17 @@
 	html {
 		tab-size: 4;
 		@apply font-sans;
-		@apply bg-gray-900 text-white;
+		@apply dark:bg-gray-900 dark:text-white;
 	}
 
-	html {
-		color-scheme: dark;
+	@media (prefers-color-scheme: dark) {
+		html {
+			color-scheme: dark;
+		}
 	}
 
 	.form-label {
-		@apply text-xl text-white mr-2;
+		@apply text-xl text-gray-700 mr-2;
+		@apply dark:text-white;
 	}
 }
