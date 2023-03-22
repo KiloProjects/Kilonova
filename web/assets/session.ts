@@ -1,7 +1,7 @@
 import cookie from "js-cookie";
 import { postCall } from "./net";
 import dayjs from "dayjs";
-import { JSONTimestamp } from "./util";
+import type { Editor } from "codemirror";
 
 export function setSession(sessionID: string) {
 	const checkTimestamp = dayjs().add(10, "day").unix() * 1000;
@@ -45,6 +45,45 @@ export function getSubmitStyle(): "code" | "file" {
 	return val;
 }
 
+export function getTheme(): "light" | "dark" {
+	let val = cookie.get("kn-theme");
+	if (val == "" || typeof val === "undefined" || (val !== "light" && val !== "dark")) {
+		setTheme("dark");
+		return "dark";
+	}
+	return val;
+}
+
+export function isDarkMode() {
+	return getTheme() == "dark";
+}
+
+var editors: Editor[] = [];
+
+export function CodeMirrorThemeHook(cm: Editor) {
+	editors.push(cm);
+}
+
+export function setTheme(theme: "light" | "dark") {
+	cookie.set("kn-theme", theme, { expires: 1000, sameSite: "lax" });
+	document.documentElement.classList.toggle("dark", theme === "dark");
+
+	// if user is logged in, update default preference
+	if (window.platform_info.user_id > 0) {
+		postCall<string>("/user/setPreferredTheme", { theme })
+			.then((res) => {
+				if (res.status == "error") {
+					console.error(res.data);
+				}
+				console.info("Updated user preference.");
+			})
+			.catch(console.error);
+	}
+	for (let cm of editors) {
+		cm.setOption("theme", theme === "dark" ? "monokai" : "default");
+	}
+}
+
 document.addEventListener("DOMContentLoaded", () => {
 	const checkCookie = cookie.get("kn-session-check-date");
 	if (typeof checkCookie == "undefined" || checkCookie === "") {
@@ -62,3 +101,16 @@ document.addEventListener("DOMContentLoaded", () => {
 		extendSession();
 	}
 });
+
+// should be used by the navbar toggle
+export function toggleTheme(e?: Event) {
+	e?.preventDefault();
+	const curr = getTheme();
+	if (curr == "light") {
+		setTheme("dark");
+		document.getElementById("theme_button")!.innerHTML = `<i class="fas fa-fw fa-sun"></i>`;
+	} else {
+		setTheme("light");
+		document.getElementById("theme_button")!.innerHTML = `<i class="fas fa-fw fa-moon"></i>`;
+	}
+}

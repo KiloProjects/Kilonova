@@ -1,12 +1,18 @@
 @import "@fontsource/noto-sans";
 @import "notyf/notyf.min.css";
 @import "highlight.js/styles/default.css";
-@import "highlight.js/styles/monokai.css" (prefers-color-scheme: dark);
 @import "@fortawesome/fontawesome-free/css/all.min.css";
 @import "highlightjs-copy/dist/highlightjs-copy.min.css";
 @import "codemirror/lib/codemirror.css";
 @import "codemirror/theme/monokai.css";
 @import "katex/dist/katex.css";
+
+/* prettier-ignore */
+.dark {
+	/* Copy highlight.js monokai theme for dark mode class strategy */
+    /*@import "highlight.js/styles/monokai.css" (prefers-color-scheme: dark);*/
+    pre code.hljs{display:block;overflow-x:auto;padding:1em}code.hljs{padding:3px 5px}.hljs{background:#272822;color:#ddd}.hljs-keyword,.hljs-literal,.hljs-name,.hljs-selector-tag,.hljs-strong,.hljs-tag{color:#f92672}.hljs-code{color:#66d9ef}.hljs-attribute,.hljs-link,.hljs-regexp,.hljs-symbol{color:#bf79db}.hljs-addition,.hljs-built_in,.hljs-bullet,.hljs-emphasis,.hljs-section,.hljs-selector-attr,.hljs-selector-pseudo,.hljs-string,.hljs-subst,.hljs-template-tag,.hljs-template-variable,.hljs-title,.hljs-type,.hljs-variable{color:#a6e22e}.hljs-class .hljs-title,.hljs-title.class_{color:#fff}.hljs-comment,.hljs-deletion,.hljs-meta,.hljs-quote{color:#75715e}.hljs-doctag,.hljs-keyword,.hljs-literal,.hljs-section,.hljs-selector-id,.hljs-selector-tag,.hljs-title,.hljs-type{font-weight:700}
+}
 
 @tailwind base;
 @tailwind components;
@@ -17,20 +23,13 @@
 .bg-hljs,
 .hljs {
 	background: #f0f0f0;
+	@apply dark:bg-[#333];
 }
-@media (prefers-color-scheme: dark) {
-	.bg-hljs,
-	.hljs {
-		@apply bg-[#333];
-		/*@apply bg-gray-700;*/
-	}
-
-	.cm-s-monokai.CodeMirror {
-		@apply bg-[#333];
-	}
-	.cm-s-monokai .CodeMirror-gutters {
-		@apply bg-[#333];
-	}
+.cm-s-monokai.CodeMirror {
+	@apply dark:bg-[#333];
+}
+.cm-s-monokai .CodeMirror-gutters {
+	@apply dark:bg-[#333];
 }
 
 /* .notyf__message a {
@@ -235,7 +234,7 @@
 	}
 
 	.paginator-item-active {
-		@apply border-2 border-black dark:border-wh;
+		@apply border-2 border-black dark:border-gray-200;
 	}
 
 	.kn-table {
@@ -439,6 +438,10 @@
 	pre code.hljs {
 		@apply px-2 py-1;
 	}
+	.dark pre code.hljs {
+		/* we also need this specificity for dark mode */
+		@apply px-2 py-1;
+	}
 
 	.server_timestamp {
 		visibility: hidden;
@@ -473,13 +476,18 @@
 	html {
 		tab-size: 4;
 		@apply font-sans;
-		@apply dark:bg-gray-900 dark:text-white;
+		/* @apply dark:bg-gray-900 dark:text-white; */
 	}
 
-	@media (prefers-color-scheme: dark) {
+	/* @media (prefers-color-scheme: dark) {
 		html {
 			color-scheme: dark;
 		}
+	} */
+	html.dark {
+		/* We'll soon probably use the class strategy instead of browser preference */
+		color-scheme: dark;
+		@apply bg-gray-900 text-white;
 	}
 
 	.form-label {

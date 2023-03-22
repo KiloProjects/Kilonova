@@ -9,14 +9,21 @@
 		</div>
 	</div>
 	<nav id="nav-dropdown" class="px-2 pt-1 pb-3 md:flex md:p-0 z-50">
+        <a id="theme_button" class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="#">
+            {{ if isDarkMode }}
+                <i class="fas fa-fw fa-sun"></i>
+            {{ else }}
+                <i class="fas fa-fw fa-moon"></i>
+            {{ end }}
+        </a>
         {{ if canViewAllSubs }}
 		    <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/submissions">{{getText "submission.list"}}</a>
         {{ end }}
 		{{if not .Ctx.User }}
             {{ if signupEnabled }}
 			    <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/signup">{{getText "auth.signup"}}</a>
+                <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/login">{{getText "auth.login"}}</a>
             {{ end }}
-            <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/login">{{getText "auth.login"}}</a>
 		{{else}}
 			<div id="pr-dropdown" class="relative">
 				<button onclick="navbar_mgr.toggleDropdown()" id="profile-dropdown-button" class="relative z-10 block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable">{{.Ctx.User.Name}}<i id="dropdown-caret" class="ml-1 fas fa-caret-down"></i></button>
@@ -64,5 +71,6 @@
 
 <script>
 var navbar_mgr = new bundled.NavBarManager()
+document.getElementById("theme_button").addEventListener("click", bundled.toggleTheme)
 </script>
 {{end}}

@@ -39,13 +39,14 @@
 	</script>
 
 	<script>
+CodeMirror.defineInitHook(bundled.CodeMirrorThemeHook)
 CodeMirror.defaults.lineNumbers = true;
 CodeMirror.defaults.indentUnit = 4;
 CodeMirror.defaults.tabSize = 4;
 CodeMirror.defaults.indentWithTabs = true;
 CodeMirror.defaults.lineWrapping = true;
 CodeMirror.defaults.viewportMargin = Infinity;
-if(window.matchMedia('(prefers-color-scheme: dark)').matches) { // Dark Mode
+if(bundled.isDarkMode()) {  // Dark Mode
 	CodeMirror.defaults.theme = "monokai";
 }
 	</script>
