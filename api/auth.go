@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/KiloProjects/kilonova"
 	"go.uber.org/zap"
 )
 
@@ -25,6 +26,7 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		Email    string
 		Password string
 		Language string
+		Theme    string
 	}
 
 	if err := decoder.Decode(&auth, r.Form); err != nil {
@@ -32,7 +34,7 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uid, status := s.base.Signup(r.Context(), auth.Email, auth.Username, auth.Password, auth.Language)
+	uid, status := s.base.Signup(r.Context(), auth.Email, auth.Username, auth.Password, auth.Language, kilonova.PreferredTheme(auth.Theme))
 	if status != nil {
 		status.WriteError(w)
 		return

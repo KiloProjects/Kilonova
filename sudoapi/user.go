@@ -150,7 +150,7 @@ func (s *BaseAPI) UpdateUserPassword(ctx context.Context, uid int, password stri
 	return nil
 }
 
-func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string) (*kilonova.UserFull, *StatusError) {
+func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, theme kilonova.PreferredTheme) (*kilonova.UserFull, *StatusError) {
 	uname = strings.TrimSpace(uname)
 	if !(len(uname) >= 3 && len(uname) <= 32 && usernameRegex.MatchString(uname)) {
 		return nil, Statusf(400, "Username must be between 3 and 32 characters long and must contain only letters, digits, underlines and dashes.")
@@ -161,6 +161,9 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string) (*k
 	if !(lang == "" || lang == "en" || lang == "ro") {
 		return nil, Statusf(400, "Invalid language.")
 	}
+	if !(theme == kilonova.PreferredThemeNone || theme == kilonova.PreferredThemeLight || theme == kilonova.PreferredThemeDark) {
+		return nil, Statusf(400, "Invalid theme.")
+	}
 
 	if exists, err := s.db.UserExists(ctx, uname, "INVALID_EMAIL"); err != nil || exists {
 		return nil, Statusf(400, "User matching username already exists!")
@@ -169,11 +172,14 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string) (*k
 	if lang == "" {
 		lang = config.Common.DefaultLang
 	}
+	if theme == kilonova.PreferredThemeNone {
+		theme = kilonova.PreferredThemeDark
+	}
 
 	// Dummy email
 	email := fmt.Sprintf("email_%s@kilonova.ro", uname)
 
-	id, err := s.createUser(ctx, uname, email, pwd, lang, true)
+	id, err := s.createUser(ctx, uname, email, pwd, lang, theme, true)
 	if err != nil {
 		zap.S().Warn(err)
 		return nil, Statusf(500, "Couldn't create user")
@@ -196,13 +202,13 @@ func (s *BaseAPI) GetGravatarLink(user *kilonova.UserFull, size int) string {
 	return fmt.Sprintf("https://www.gravatar.com/avatar/%s?%s", hex.EncodeToString(bSum[:]), v.Encode())
 }
 
-func (s *BaseAPI) createUser(ctx context.Context, username, email, password, lang string, generated bool) (int, error) {
+func (s *BaseAPI) createUser(ctx context.Context, username, email, password, lang string, theme kilonova.PreferredTheme, generated bool) (int, error) {
 	hash, err := hashPassword(password)
 	if err != nil {
 		return -1, err
 	}
 
-	id, err := s.db.CreateUser(ctx, username, hash, email, lang, generated)
+	id, err := s.db.CreateUser(ctx, username, hash, email, lang, theme, generated)
 	if err != nil {
 		zap.S().Warn(err)
 		return -1, err

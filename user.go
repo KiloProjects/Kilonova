@@ -8,6 +8,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type PreferredTheme string
+
+const (
+	PreferredThemeNone  = ""
+	PreferredThemeLight = "light"
+	PreferredThemeDark  = "dark"
+)
+
 type UserBrief struct {
 	ID       int    `json:"id"`
 	Name     string `json:"name"`
@@ -18,12 +26,13 @@ type UserBrief struct {
 
 type UserFull struct {
 	UserBrief
-	Email             string    `json:"email,omitempty"`
-	VerifiedEmail     bool      `json:"verified_email"`
-	PreferredLanguage string    `json:"preferred_language"`
-	EmailVerifResent  time.Time `json:"-"`
-	CreatedAt         time.Time `json:"created_at"`
-	Generated         bool      `json:"generated"`
+	Email             string         `json:"email,omitempty"`
+	VerifiedEmail     bool           `json:"verified_email"`
+	PreferredLanguage string         `json:"preferred_language"`
+	PreferredTheme    PreferredTheme `json:"preferred_theme"`
+	EmailVerifResent  time.Time      `json:"-"`
+	CreatedAt         time.Time      `json:"created_at"`
+	Generated         bool           `json:"generated"`
 }
 
 func (uf *UserFull) Brief() *UserBrief {
@@ -61,10 +70,11 @@ type UserUpdate struct {
 
 	Bio *string `json:"bio"`
 
-	PreferredLanguage string `json:"-"`
+	PreferredLanguage string         `json:"-"`
+	PreferredTheme    PreferredTheme `json:"-"`
 }
 
-// UserFullUpdate is the struct with all updatable fields on the user
+// UserFullUpdate is the struct with all updatable fields on the user. Internal use only
 type UserFullUpdate struct {
 	UserUpdate
 

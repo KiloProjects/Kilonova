@@ -50,7 +50,7 @@ func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (int, *StatusErr
 
 var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
-func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string) (int, *StatusError) {
+func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, theme kilonova.PreferredTheme) (int, *StatusError) {
 	if !config.Features.Signup {
 		return -1, kilonova.ErrFeatureDisabled
 	}
@@ -65,6 +65,9 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string) (i
 	if !(lang == "" || lang == "en" || lang == "ro") {
 		return -1, Statusf(400, "Invalid language.")
 	}
+	if !(theme == kilonova.PreferredThemeNone || theme == kilonova.PreferredThemeLight || theme == kilonova.PreferredThemeDark) {
+		return -1, Statusf(400, "Invalid theme.")
+	}
 	if !govalidator.IsExistingEmail(email) {
 		return -1, Statusf(400, "Invalid email.")
 	}
@@ -76,8 +79,11 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string) (i
 	if lang == "" {
 		lang = config.Common.DefaultLang
 	}
+	if theme == kilonova.PreferredThemeNone {
+		theme = kilonova.PreferredThemeDark
+	}
 
-	id, err := s.createUser(ctx, uname, email, pwd, lang, false)
+	id, err := s.createUser(ctx, uname, email, pwd, lang, theme, false)
 	if err != nil {
 		zap.S().Warn(err)
 		return -1, Statusf(500, "Couldn't create user")

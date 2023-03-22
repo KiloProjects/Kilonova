@@ -76,6 +76,7 @@ func (rt *Web) Handler() http.Handler {
 	r := chi.NewRouter()
 	r.Use(rt.initSession)
 	r.Use(rt.initLanguage)
+	r.Use(rt.initTheme)
 
 	r.Mount("/static", hashfs.FileServer(fsys))
 
@@ -502,6 +503,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"language": func() string {
 			zap.S().Error("Uninitialized `language`")
 			return "en"
+		},
+		"isDarkMode": func() bool {
+			zap.S().Error("Uninitialized `isDarkMode`")
+			return true
 		},
 		"authed": func() bool {
 			zap.S().Error("Uninitialized `authed`")

@@ -261,3 +261,26 @@ func (rt *Web) initLanguage(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.LangKey, language.String())))
 	})
 }
+
+func (rt *Web) initTheme(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var userTheme kilonova.PreferredTheme = kilonova.PreferredThemeNone
+		if util.UserFull(r) != nil {
+			userTheme = util.UserFull(r).PreferredTheme
+		}
+
+		// get cookie that overrides
+		cTheme, _ := r.Cookie("kn-theme")
+		if cTheme != nil {
+			if cTheme.Value == "light" || cTheme.Value == "dark" {
+				userTheme = kilonova.PreferredTheme(cTheme.Value)
+			}
+		}
+
+		if userTheme == kilonova.PreferredThemeNone { // Default to dark mode
+			userTheme = kilonova.PreferredThemeDark
+		}
+
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ThemeKey, userTheme)))
+	})
+}

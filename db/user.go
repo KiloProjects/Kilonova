@@ -22,9 +22,11 @@ type User struct {
 	Bio            string    `json:"bio"`
 	DefaultVisible bool      `json:"default_visible" db:"default_visible"`
 
-	VerifiedEmail     bool         `json:"verified_email" db:"verified_email"`
-	EmailVerifSentAt  sql.NullTime `json:"-" db:"email_verif_sent_at"`
-	PreferredLanguage string       `json:"-" db:"preferred_language"`
+	VerifiedEmail    bool         `json:"verified_email" db:"verified_email"`
+	EmailVerifSentAt sql.NullTime `json:"-" db:"email_verif_sent_at"`
+
+	PreferredLanguage string                  `json:"-" db:"preferred_language"`
+	PreferredTheme    kilonova.PreferredTheme `json:"-" db:"preferred_theme"`
 
 	Generated bool `json:"generated" db:"generated"`
 }
@@ -159,6 +161,9 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate
 	if v := upd.PreferredLanguage; v != "" {
 		toUpd, args = append(toUpd, "preferred_language = ?"), append(args, v)
 	}
+	if v := upd.PreferredTheme; v != kilonova.PreferredThemeNone {
+		toUpd, args = append(toUpd, "preferred_theme = ?"), append(args, v)
+	}
 	if len(toUpd) == 0 {
 		return kilonova.ErrNoUpdates
 	}
@@ -181,15 +186,15 @@ func (s *DB) DeleteUser(ctx context.Context, id int) error {
 }
 
 // CreateUser creates a new user with the specified data.
-func (s *DB) CreateUser(ctx context.Context, name, passwordHash, email, preferredLanguage string, generated bool) (int, error) {
+func (s *DB) CreateUser(ctx context.Context, name, passwordHash, email, preferredLanguage string, theme kilonova.PreferredTheme, generated bool) (int, error) {
 	if name == "" || passwordHash == "" || email == "" || preferredLanguage == "" {
 		return -1, kilonova.ErrMissingRequired
 	}
 
 	var id = -1
 	err := s.conn.GetContext(ctx, &id,
-		s.conn.Rebind("INSERT INTO users (name, email, password, preferred_language, generated, verified_email) VALUES (?, ?, ?, ?, ?, ?) RETURNING id"),
-		name, email, passwordHash, preferredLanguage, generated, generated, // generated is for both generated and verified_email!
+		s.conn.Rebind("INSERT INTO users (name, email, password, preferred_language, preferred_theme, generated, verified_email) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id"),
+		name, email, passwordHash, preferredLanguage, theme, generated, generated, // generated is for both generated and verified_email!
 	)
 	return id, err
 }

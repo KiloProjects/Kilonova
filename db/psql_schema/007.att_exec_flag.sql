@@ -14,3 +14,4 @@ UPDATE attachments SET execable = true WHERE
         lower(name) NOT LIKE '%.md' AND 
         lower(name) NOT LIKE '%.txt'
     );
+    

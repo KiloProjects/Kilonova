@@ -649,6 +649,9 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		"language": func() string {
 			return lang
 		},
+		"isDarkMode": func() bool {
+			return util.Theme(r) == kilonova.PreferredThemeDark
+		},
 		"authed": func() bool {
 			return authedUser != nil
 		},

@@ -163,6 +163,7 @@ func (s *API) Handler() http.Handler {
 	r.Route("/user", func(r chi.Router) {
 		r.With(s.MustBeAuthed).Post("/setBio", s.setBio())
 		r.With(s.MustBeAuthed).Post("/setPreferredLanguage", s.setPreferredLanguage())
+		r.With(s.MustBeAuthed).Post("/setPreferredTheme", s.setPreferredTheme())
 
 		r.With(s.MustBeAuthed).Post("/resendEmail", s.resendVerificationEmail)
 

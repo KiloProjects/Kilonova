@@ -32,6 +32,8 @@ const (
 	ContestKey = KNContextType("contest")
 	// LangKey is the key to be used for adding the user language to context
 	LangKey = KNContextType("language")
+	// ThemeKey is the key to be used for adding the user's preferred theme to context
+	ThemeKey = KNContextType("theme")
 )
 
 func UserBriefContext(ctx context.Context) *kilonova.UserBrief {
@@ -94,6 +96,21 @@ func Language(r *http.Request) string {
 		return *v
 	default:
 		return config.Common.DefaultLang
+	}
+}
+
+func Theme(r *http.Request) kilonova.PreferredTheme {
+	switch v := r.Context().Value(ThemeKey).(type) {
+	case string:
+		return kilonova.PreferredTheme(v)
+	case *string:
+		return kilonova.PreferredTheme(*v)
+	case kilonova.PreferredTheme:
+		return v
+	case *kilonova.PreferredTheme:
+		return *v
+	default:
+		return kilonova.PreferredThemeDark
 	}
 }
 

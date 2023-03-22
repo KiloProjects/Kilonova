@@ -102,7 +102,35 @@ func (s *API) setPreferredLanguage() func(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		returnData(w, "Updated bio")
+		returnData(w, "Updated preferred default language")
+	}
+}
+
+func (s *API) setPreferredTheme() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+		var args struct{ Theme string }
+		if err := decoder.Decode(&args, r.Form); err != nil {
+			errorData(w, err, 400)
+			return
+		}
+
+		safe := strings.TrimSpace(bluemonday.StrictPolicy().Sanitize(args.Theme))
+		if !(safe == "light" || safe == "dark") {
+			errorData(w, "Invalid language", 400)
+			return
+		}
+
+		if err := s.base.UpdateUser(
+			r.Context(),
+			util.UserBrief(r).ID,
+			kilonova.UserUpdate{PreferredTheme: kilonova.PreferredTheme(safe)},
+		); err != nil {
+			err.WriteError(w)
+			return
+		}
+
+		returnData(w, "Updated preferred default theme")
 	}
 }
 
@@ -150,7 +178,7 @@ func (s *API) purgeBio(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	returnData(w, "Updated bio")
+	returnData(w, "Purged bio")
 }
 func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
@@ -343,7 +371,7 @@ func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 		args.Password = kilonova.RandomString(7)
 	}
 
-	user, err := s.base.GenerateUser(r.Context(), args.Name, args.Password, args.Lang)
+	user, err := s.base.GenerateUser(r.Context(), args.Name, args.Password, args.Lang, kilonova.PreferredThemeDark)
 	if err != nil {
 		err.WriteError(w)
 		return
