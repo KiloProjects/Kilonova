@@ -1,5 +1,5 @@
 
-CREATE TYPE IF NOT EXISTS theme_type AS enum (
+CREATE TYPE theme_type AS enum (
     'light',
     'dark'
 );

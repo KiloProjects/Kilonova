@@ -157,7 +157,7 @@
 		@apply bg-white dark:bg-gray-800;
 	}
 	.list-group-selected {
-		@apply bg-gray-100 dark:bg-gray-600 text-white !important;
+		@apply bg-gray-100 dark:bg-gray-600 text-black dark:text-white !important;
 	}
 	.list-group-item {
 		@apply black-anchor list-group-head hover:list-group-selected;
