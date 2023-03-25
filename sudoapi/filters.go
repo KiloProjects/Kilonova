@@ -129,10 +129,10 @@ func (s *BaseAPI) IsContestVisible(user *kilonova.UserBrief, contest *kilonova.C
 	return ok
 }
 
-func (s *BaseAPI) FilterVisibleProblems(user *kilonova.UserBrief, pbs []*kilonova.Problem) []*kilonova.Problem {
-	vpbs := make([]*kilonova.Problem, 0, len(pbs))
+func (s *BaseAPI) FilterVisibleProblems(user *kilonova.UserBrief, pbs []*kilonova.ScoredProblem) []*kilonova.ScoredProblem {
+	vpbs := make([]*kilonova.ScoredProblem, 0, len(pbs))
 	for _, pb := range pbs {
-		if s.IsProblemVisible(user, pb) {
+		if s.IsProblemVisible(user, &pb.Problem) {
 			vpbs = append(vpbs, pb)
 		}
 	}

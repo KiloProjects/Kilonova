@@ -209,8 +209,8 @@ type ProfileParams struct {
 	Ctx *ReqContext
 
 	ContentUser       *kilonova.UserFull
-	SolvedProblems    []*kilonova.Problem
-	AttemptedProblems []*kilonova.Problem
+	SolvedProblems    []*kilonova.ScoredProblem
+	AttemptedProblems []*kilonova.ScoredProblem
 }
 
 type AuditLogParams struct {

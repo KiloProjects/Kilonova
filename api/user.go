@@ -210,7 +210,7 @@ func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getSelfSolvedProblems(w http.ResponseWriter, r *http.Request) {
-	pbs, err := s.base.SolvedProblems(r.Context(), util.UserBrief(r).ID)
+	pbs, err := s.base.SolvedProblems(r.Context(), util.UserBrief(r))
 	if err != nil {
 		err.WriteError(w)
 		return
@@ -224,7 +224,7 @@ func (s *API) getSolvedProblems(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "User not found", http.StatusNotFound)
 		return
 	}
-	pbs, err := s.base.SolvedProblems(r.Context(), user.ID)
+	pbs, err := s.base.SolvedProblems(r.Context(), user)
 	if err != nil {
 		err.WriteError(w)
 		return

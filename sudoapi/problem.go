@@ -119,26 +119,32 @@ func (s *BaseAPI) ContestProblem(ctx context.Context, contest *kilonova.Contest,
 	return problem, nil
 }
 
-func (s *BaseAPI) SolvedProblems(ctx context.Context, uid int) ([]*kilonova.Problem, *StatusError) {
-	ids, err := s.db.SolvedProblemIDs(ctx, uid)
+func (s *BaseAPI) SolvedProblems(ctx context.Context, user *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
+	if user == nil {
+		return []*kilonova.ScoredProblem{}, nil
+	}
+	ids, err := s.db.SolvedProblemIDs(ctx, user.ID)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get solved problem IDs")
 	}
-	return s.hydrateProblemIDs(ctx, ids), nil
+	return s.hydrateProblemIDs(ctx, ids, user), nil
 }
 
-func (s *BaseAPI) AttemptedProblems(ctx context.Context, uid int) ([]*kilonova.Problem, *StatusError) {
-	ids, err := s.db.AttemptedProblemsIDs(ctx, uid)
+func (s *BaseAPI) AttemptedProblems(ctx context.Context, user *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
+	if user == nil {
+		return []*kilonova.ScoredProblem{}, nil
+	}
+	ids, err := s.db.AttemptedProblemsIDs(ctx, user.ID)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get attempted problem IDs")
 	}
-	return s.hydrateProblemIDs(ctx, ids), nil
+	return s.hydrateProblemIDs(ctx, ids, user), nil
 }
 
-func (s *BaseAPI) hydrateProblemIDs(ctx context.Context, ids []int) []*kilonova.Problem {
-	var pbs = make([]*kilonova.Problem, 0, len(ids))
+func (s *BaseAPI) hydrateProblemIDs(ctx context.Context, ids []int, user *kilonova.UserBrief) []*kilonova.ScoredProblem {
+	var pbs = make([]*kilonova.ScoredProblem, 0, len(ids))
 	for _, id := range ids {
-		pb, err := s.Problem(ctx, id)
+		pb, err := s.ScoredProblem(ctx, id, user.ID)
 		if err != nil {
 			if !errors.Is(err, context.Canceled) {
 				zap.S().Warnf("Couldn't get solved problem %d: %s\n", id, err)

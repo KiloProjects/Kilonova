@@ -70,9 +70,9 @@ export function Problems({ pbs }: { pbs: ScoredProblem[] }) {
 								) : (
 									<span class="badge badge-red">{getText("unpublished")}</span>
 								))}{" "}
-							{(typeof pb.max_score !== "undefined" && pb.max_score !== null && <span class="badge">{pb.max_score}</span>) || (
-								<span class="badge">-</span>
-							)}
+							{(typeof pb.max_score !== "undefined" && pb.max_score !== null && pb.max_score >= 0 && (
+								<span class="badge">{pb.max_score}</span>
+							)) || <span class="badge">-</span>}
 						</div>
 					)}
 				</a>

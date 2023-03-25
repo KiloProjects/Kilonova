@@ -361,13 +361,13 @@ func (rt *Web) contestLeaderboardCSV(w http.ResponseWriter, r *http.Request) {
 func (rt *Web) selfProfile() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "profile.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		solvedPbs, err := rt.base.SolvedProblems(r.Context(), util.UserBrief(r).ID)
+		solvedPbs, err := rt.base.SolvedProblems(r.Context(), util.UserBrief(r))
 		if err != nil {
-			solvedPbs = []*kilonova.Problem{}
+			solvedPbs = []*kilonova.ScoredProblem{}
 		}
-		attemptedPbs, err := rt.base.AttemptedProblems(r.Context(), util.UserBrief(r).ID)
+		attemptedPbs, err := rt.base.AttemptedProblems(r.Context(), util.UserBrief(r))
 		if err != nil {
-			attemptedPbs = []*kilonova.Problem{}
+			attemptedPbs = []*kilonova.ScoredProblem{}
 		}
 		rt.runTempl(w, r, templ, &ProfileParams{
 			GenContext(r),
@@ -392,13 +392,13 @@ func (rt *Web) profile() func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		solvedPbs, err := rt.base.SolvedProblems(r.Context(), user.ID)
+		solvedPbs, err := rt.base.SolvedProblems(r.Context(), user.Brief())
 		if err != nil {
-			solvedPbs = []*kilonova.Problem{}
+			solvedPbs = []*kilonova.ScoredProblem{}
 		}
-		attemptedPbs, err := rt.base.AttemptedProblems(r.Context(), user.ID)
+		attemptedPbs, err := rt.base.AttemptedProblems(r.Context(), user.Brief())
 		if err != nil {
-			attemptedPbs = []*kilonova.Problem{}
+			attemptedPbs = []*kilonova.ScoredProblem{}
 		}
 		rt.runTempl(w, r, templ, &ProfileParams{
 			GenContext(r),
