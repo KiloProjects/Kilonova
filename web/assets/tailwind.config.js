@@ -9,6 +9,7 @@ module.exports = {
     './components/*.{js,ts,jsx,tsx}',
 	'../*.go',
     '../*.toml',
+    '../../translations.toml'
   ],
   theme: {
     extend: {colors: {gray: colors.zinc}},
