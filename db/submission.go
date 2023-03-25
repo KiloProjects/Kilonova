@@ -154,7 +154,7 @@ func (s *DB) SolvedProblemIDs(ctx context.Context, userid int) ([]int, error) {
 
 func (s *DB) AttemptedProblemsIDs(ctx context.Context, userid int) ([]int, error) {
 	var pbs []int
-	err := s.conn.SelectContext(ctx, &pbs, `SELECT problem_id FROM max_score_view WHERE score != 100 AND user_id = $1 ORDER BY problem_id;`, userid)
+	err := s.conn.SelectContext(ctx, &pbs, `SELECT problem_id FROM max_score_view WHERE score != 100 AND score >= 0 AND user_id = $1 ORDER BY problem_id;`, userid)
 	return pbs, err
 }
 
