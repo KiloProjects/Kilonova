@@ -44,7 +44,6 @@ func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	scores := map[int]int{}
 	numSolved := -1
 	numSubSolved := map[int]int{}
 	if s.base.IsAuthed(util.UserBrief(r)) {
@@ -59,7 +58,6 @@ func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
 			}
 			numSubSolved[sublist.ID] = numSolved
 		}
-		scores = s.base.MaxScores(r.Context(), util.UserBrief(r).ID, list.List)
 	}
 
 	desc, err1 := s.base.RenderMarkdown([]byte(list.Description))
@@ -69,19 +67,17 @@ func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	returnData(w, struct {
-		List          *kilonova.ProblemList `json:"list"`
-		NumSolved     int                   `json:"numSolved"`
-		Problems      []*kilonova.Problem   `json:"problems"`
-		ProblemScores map[int]int           `json:"problemScores"`
-		RenderedDesc  string                `json:"description"`
-		NumSubSolved  map[int]int           `json:"numSubSolved"`
+		List         *kilonova.ProblemList     `json:"list"`
+		NumSolved    int                       `json:"numSolved"`
+		Problems     []*kilonova.ScoredProblem `json:"problems"`
+		RenderedDesc string                    `json:"description"`
+		NumSubSolved map[int]int               `json:"numSubSolved"`
 	}{
-		List:          list,
-		NumSolved:     numSolved,
-		Problems:      pbs,
-		ProblemScores: scores,
-		RenderedDesc:  string(desc),
-		NumSubSolved:  numSubSolved,
+		List:         list,
+		NumSolved:    numSolved,
+		Problems:     pbs,
+		RenderedDesc: string(desc),
+		NumSubSolved: numSubSolved,
 	})
 	// returnData(w, list)
 }

@@ -24,14 +24,22 @@ type FullList = {
 	sublists: Sublist[];
 };
 
-type Problem = {
+// type Problem = {
+// 	id: number;
+// 	name: string;
+// 	visible: boolean;
+// 	editors: number[];
+// };
+
+type ScoredProblem = {
 	id: number;
 	name: string;
 	visible: boolean;
 	editors: number[];
+	max_score?: number;
 };
 
-function isProblemEditor(pb: Problem): boolean {
+function isProblemEditor(pb: ScoredProblem): boolean {
 	if (window.platform_info.admin) {
 		return true;
 	}
@@ -46,7 +54,7 @@ function isProblemEditor(pb: Problem): boolean {
 type ProblemScore = { [problem: number]: number };
 type SublistSolved = { [num_solved: number]: number };
 
-export function Problems({ pbs, scores }: { pbs: Problem[]; scores: ProblemScore }) {
+export function Problems({ pbs }: { pbs: ScoredProblem[] }) {
 	return (
 		<div class="list-group">
 			{pbs.map((pb) => (
@@ -62,7 +70,9 @@ export function Problems({ pbs, scores }: { pbs: Problem[]; scores: ProblemScore
 								) : (
 									<span class="badge badge-red">{getText("unpublished")}</span>
 								))}{" "}
-							{(Object.keys(scores).includes(pb.id.toString()) && <span class="badge">{scores[pb.id]}</span>) || <span class="badge">-</span>}
+							{(typeof pb.max_score !== "undefined" && pb.max_score !== null && <span class="badge">{pb.max_score}</span>) || (
+								<span class="badge">-</span>
+							)}
 						</div>
 					)}
 				</a>
@@ -75,7 +85,7 @@ type QueryResult = {
 	list: FullList;
 	numSolved: number;
 	description: string;
-	problems: Problem[];
+	problems: ScoredProblem[];
 	problemScores: ProblemScore;
 	numSubSolved: SublistSolved;
 };
@@ -86,8 +96,7 @@ export function Sublist({ list, numsolved }: { list: Sublist; numsolved?: number
 	let [fullData, setFullData] = useState<FullList | undefined>(undefined);
 	let [numSolved, setNumSolved] = useState<number>(numsolved ?? -1);
 	let [descHTML, setDescHTML] = useState("");
-	let [problems, setProblems] = useState<Problem[]>([]);
-	let [problemScores, setProblemScores] = useState<ProblemScore>({});
+	let [problems, setProblems] = useState<ScoredProblem[]>([]);
 	let [sublistSolved, setSublistSolved] = useState<SublistSolved>({});
 
 	async function load() {
@@ -101,7 +110,6 @@ export function Sublist({ list, numsolved }: { list: Sublist; numsolved?: number
 		setNumSolved(res.data.numSolved);
 		setDescHTML(res.data.description);
 		setProblems(res.data.problems);
-		setProblemScores(res.data.problemScores);
 		setSublistSolved(res.data.numSubSolved);
 		setLoading(false);
 	}
@@ -144,7 +152,7 @@ export function Sublist({ list, numsolved }: { list: Sublist; numsolved?: number
 					)}
 					{problems.length > 0 && (
 						<div class="mt-2">
-							<Problems pbs={problems} scores={problemScores} />
+							<Problems pbs={problems} />
 						</div>
 					)}
 				</>

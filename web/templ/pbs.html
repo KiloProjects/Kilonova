@@ -4,7 +4,7 @@
 {{ $user := .Ctx.User.Brief }}
 {{ with visibleProblems $user }}
 	<h2 class="text-2xl mb-2"> {{ getText "problems" }} </h2>	
-	{{ template "pb_list_group" (genProblemsParams $user . true true) }}
+	{{ template "pb_list_group" (genProblemsParams . true true) }}
 {{ end }} 
 
 {{ end }}

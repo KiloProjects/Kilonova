@@ -33,6 +33,12 @@ type Problem struct {
 	ConsoleInput bool `json:"console_input"`
 }
 
+type ScoredProblem struct {
+	Problem
+	ScoreUserID *int `json:"score_user_id"`
+	MaxScore    *int `json:"max_score"`
+}
+
 // ProblemFilter is the struct with all filterable fields on the problem
 // It also provides a Limit and Offset field, for pagination
 // This list might be expanded as time goes on

@@ -1,7 +1,6 @@
 {{ define "pb_list_group" }}
 {{ $user := authedUser }}
 {{ $showScore := .ShowScore }}
-{{ $scoreUser := .ScoreUser }}
 {{ $contestIDScore := .ContestIDScore }}
 <div class="list-group grid grid-cols-1 {{if .MultiCols }} md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 {{end}}">
 	{{ range .Problems }}
@@ -9,7 +8,7 @@
 			<span>{{.Name}} (#{{.ID}})</span>
             <div>
 			    {{- if $user -}}
-					{{ if (problemEditor .) }}
+					{{ if (problemEditor .Problem) }}
 						{{- if .Visible }}
 							<span class="badge badge-green">{{ getText "published" }}</span>
 						{{- else -}}
@@ -17,13 +16,9 @@
 						{{- end -}}
 					{{ end }}
                 {{- end -}}
-                {{- if $scoreUser -}}
-                    {{ if $showScore }}
-                        {{ if (eq $contestIDScore -1) }}
-					        <span class="badge">{{ subScore . $scoreUser }}</span>
-                        {{ else }}
-                            <span class="badge">{{ contestSubScore . $scoreUser $contestIDScore }}</span>
-                        {{ end }}
+                {{ if $showScore }}
+                    {{ with spbMaxScore . }}
+                        <span class="badge">{{.}}</span>
                     {{ end }}
                 {{- end }}
             </div>

@@ -136,7 +136,7 @@ func (s *DB) DeleteSubmission(ctx context.Context, id int) error {
 func (s *DB) MaxScore(ctx context.Context, userid, problemid int) int {
 	var score int
 
-	err := s.conn.GetContext(ctx, &score, "SELECT coalesce(MAX(score), -1) FROM submissions WHERE user_id = $1 AND problem_id = $2", userid, problemid)
+	err := s.conn.GetContext(ctx, &score, "SELECT ms.score FROM max_score_view ms WHERE ms.user_id = $1 AND ms.problem_id = $2", userid, problemid)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			zap.S().Errorw("Couldn't get max score for ", zap.Int("userid", userid), zap.Int("problemid", problemid), zap.Error(err))
@@ -144,59 +144,6 @@ func (s *DB) MaxScore(ctx context.Context, userid, problemid int) int {
 		return -1
 	}
 	return score
-}
-
-func (s *DB) ContestMaxScore(ctx context.Context, userID, problemID, contestID int) int {
-	var score int
-
-	err := s.conn.GetContext(ctx, &score, `SELECT coalesce(MAX(score), -1) 
-FROM submissions WHERE user_id = $1 AND problem_id = $2 AND contest_id = $3`, userID, problemID, contestID)
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			zap.S().Errorw("Couldn't get max score for ",
-				zap.Int("userid", userID), zap.Int("problemid", problemID), zap.Int("contestid", contestID),
-				zap.Error(err),
-			)
-		}
-		return -1
-	}
-	return score
-}
-
-// TODO: Rewrite with sqlx.In
-func (s *DB) MaxScores(ctx context.Context, userid int, pbids []int) map[int]int {
-	if len(pbids) == 0 {
-		return nil
-	}
-
-	cols := []struct {
-		ProblemID int `db:"problem_id"`
-		MaxScore  int `db:"score"`
-	}{}
-
-	inClause := "(?"
-	for i := 1; i < len(pbids); i++ {
-		inClause += ", ?"
-	}
-	inClause += ")"
-
-	args := make([]any, 0, len(pbids))
-	for _, id := range pbids {
-		args = append(args, id)
-	}
-	args = append(args, userid)
-
-	rez := make(map[int]int)
-	err := s.conn.SelectContext(ctx, &cols, s.conn.Rebind("SELECT problem_id, MAX(score) AS score FROM submissions WHERE problem_id IN "+inClause+" AND user_id = ? GROUP BY problem_id"), args...)
-	if err != nil {
-		zap.S().Error(zap.Error(err))
-		return nil
-	}
-
-	for _, col := range cols {
-		rez[col.ProblemID] = col.MaxScore
-	}
-	return rez
 }
 
 func (s *DB) SolvedProblemIDs(ctx context.Context, userid int) ([]int, error) {

@@ -12,7 +12,7 @@
     <div class="page-content">
         {{ with contestProblems authedUser .Contest }}
             <h2> {{ getText "problems" }} </h2>
-            {{ template "pb_list_group" (genContestProblemsParams authedUser . $contest) }}
+            {{ template "pb_list_group" (genContestProblemsParams . $contest) }}
         {{ else }}
             {{ if not (.Contest.Started) }}
                 <p>{{getText "contest_problems_soon"}}</p>

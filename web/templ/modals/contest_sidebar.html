@@ -79,7 +79,7 @@
         <div class="reset-list text-lg">
             <ul>
                 {{ range . }}
-                {{ $score := contestSubScore . (authedUser) $contest.ID}}
+                {{ $score := spbMaxScore .}}
                 <li>
                     <a {{ if currentProblem }} {{ if eq (currentProblem).ID .ID }} class="topbar-selected p-0" {{end}} {{ end }}
                         href="/contests/{{$contest.ID}}/problems/{{.ID}}"> 

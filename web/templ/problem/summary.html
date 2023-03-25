@@ -110,7 +110,7 @@
                 {{ with listProblems authedUser . }}
                 <ul>
                     {{ range . }}
-                    {{ $score := subScore . authedUser }}    
+                    {{ $score := spbMaxScore . }}    
                     <li>
                         <a {{ if eq $pbid .ID }} class="topbar-selected p-0" {{end}}
                             href="/problems/{{.ID}}">

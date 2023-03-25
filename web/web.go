@@ -212,28 +212,28 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return list
 		},
-		"visibleProblems": func(user *kilonova.UserBrief) []*kilonova.Problem {
-			pbs, err := base.Problems(context.Background(), kilonova.ProblemFilter{
+		"visibleProblems": func(user *kilonova.UserBrief) []*kilonova.ScoredProblem {
+			pbs, err := base.ScoredProblems(context.Background(), kilonova.ProblemFilter{
 				LookingUser: user, Look: true,
-			})
+			}, user)
 			if err != nil {
 				return nil
 			}
 			return pbs
 		},
-		"unassociatedProblems": func(user *kilonova.UserBrief) []*kilonova.Problem {
-			pbs, err := base.Problems(context.Background(), kilonova.ProblemFilter{
+		"unassociatedProblems": func(user *kilonova.UserBrief) []*kilonova.ScoredProblem {
+			pbs, err := base.ScoredProblems(context.Background(), kilonova.ProblemFilter{
 				LookingUser: user, Look: true, Unassociated: true,
-			})
+			}, user)
 			if err != nil {
 				return nil
 			}
 			return pbs
 		},
-		"contestProblems": func(user *kilonova.UserBrief, c *kilonova.Contest) []*kilonova.Problem {
+		"contestProblems": func(user *kilonova.UserBrief, c *kilonova.Contest) []*kilonova.ScoredProblem {
 			pbs, err := base.ContestProblems(context.Background(), c, user)
 			if err != nil {
-				return []*kilonova.Problem{}
+				return []*kilonova.ScoredProblem{}
 			}
 			return pbs
 		},
@@ -263,15 +263,14 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return strconv.Itoa(score)
 		},
-		"contestSubScore": func(pb *kilonova.Problem, user *kilonova.UserBrief, contestID int) string {
-			if user == nil {
+		"spbMaxScore": func(pb *kilonova.ScoredProblem) string {
+			if pb.ScoreUserID == nil {
 				return ""
 			}
-			score := base.MaxContestScore(context.Background(), user.ID, pb.ID, contestID)
-			if score < 0 {
+			if pb.MaxScore == nil || *pb.MaxScore < 0 {
 				return "-"
 			}
-			return strconv.Itoa(score)
+			return strconv.Itoa(*pb.MaxScore)
 		},
 		"contestAnnouncements": func(c *kilonova.Contest) []*kilonova.ContestAnnouncement {
 			announcements, err := base.ContestAnnouncements(context.Background(), c.ID)
@@ -311,7 +310,7 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return questions
 		},
-		"listProblems": func(user *kilonova.UserBrief, list *kilonova.ProblemList) []*kilonova.Problem {
+		"listProblems": func(user *kilonova.UserBrief, list *kilonova.ProblemList) []*kilonova.ScoredProblem {
 			pbs, err := base.ProblemListProblems(context.Background(), list.List, user)
 			if err != nil {
 				return nil
@@ -363,11 +362,11 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"pasteEditor": func(user *kilonova.UserBrief, paste *kilonova.SubmissionPaste) bool {
 			return base.IsPasteEditor(paste, user)
 		},
-		"genProblemsParams": func(scoreUser *kilonova.UserBrief, pbs []*kilonova.Problem, showScore, multiCols bool) *ProblemListingParams {
-			return &ProblemListingParams{pbs, showScore, multiCols, scoreUser, -1}
+		"genProblemsParams": func(pbs []*kilonova.ScoredProblem, showScore, multiCols bool) *ProblemListingParams {
+			return &ProblemListingParams{pbs, showScore, multiCols, -1}
 		},
-		"genContestProblemsParams": func(scoreUser *kilonova.UserBrief, pbs []*kilonova.Problem, contest *kilonova.Contest) *ProblemListingParams {
-			return &ProblemListingParams{pbs, true, false, scoreUser, contest.ID}
+		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *ProblemListingParams {
+			return &ProblemListingParams{pbs, true, false, contest.ID}
 		},
 		"genPblistParams": func(user *kilonova.UserBrief, pblist *kilonova.ProblemList, open bool) *PblistParams {
 			return &PblistParams{user, pblist, open}
@@ -380,12 +379,14 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return cnt
 		},
-		"numSolvedPbs": func(user *kilonova.UserBrief, pbs []*kilonova.Problem) int {
-			ids := []int{}
+		"numSolvedPbs": func(pbs []*kilonova.ScoredProblem) int {
+			var cnt int
 			for _, pb := range pbs {
-				ids = append(ids, pb.ID)
+				if pb.MaxScore != nil && *pb.MaxScore == 100 {
+					cnt++
+				}
 			}
-			return base.NumSolved(context.Background(), user.ID, ids)
+			return cnt
 		},
 		"user": func(uid int) *kilonova.UserBrief {
 			user, err := base.UserBrief(context.Background(), uid)
@@ -471,7 +472,7 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return b.String()
 		},
-		"problemIDs": func(pbs []*kilonova.Problem) []int {
+		"problemIDs": func(pbs []*kilonova.ScoredProblem) []int {
 			ids := make([]int, 0, len(pbs))
 			for _, pb := range pbs {
 				ids = append(ids, pb.ID)

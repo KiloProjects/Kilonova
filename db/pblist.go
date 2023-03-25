@@ -114,6 +114,7 @@ WITH RECURSIVE nested_lists AS (
 	return cnt, nil
 }
 
+// TODO: Make use of max_score view, since it may already have precached information
 func (s *DB) NumSolvedPblistProblems(ctx context.Context, listID, userID int) (int, error) {
 	var cnt int
 	err := s.conn.GetContext(ctx, &cnt, `

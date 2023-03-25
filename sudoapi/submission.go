@@ -16,25 +16,6 @@ func (s *BaseAPI) MaxScore(ctx context.Context, uid, pbID int) int {
 	return s.db.MaxScore(ctx, uid, pbID)
 }
 
-func (s *BaseAPI) MaxContestScore(ctx context.Context, uid, pbID, contestID int) int {
-	return s.db.ContestMaxScore(ctx, uid, pbID, contestID)
-}
-
-func (s *BaseAPI) MaxScores(ctx context.Context, uid int, pbIDs []int) map[int]int {
-	return s.db.MaxScores(ctx, uid, pbIDs)
-}
-
-func (s *BaseAPI) NumSolved(ctx context.Context, uid int, pbIDs []int) int {
-	scores := s.MaxScores(context.Background(), uid, pbIDs)
-	var rez int
-	for _, v := range scores {
-		if v == 100 {
-			rez++
-		}
-	}
-	return rez
-}
-
 func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFilter, lookingUser *UserBrief) (*Submissions, *StatusError) {
 	if filter.Limit == 0 || filter.Limit > 50 {
 		filter.Limit = 50
@@ -238,6 +219,9 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 	}
 	if problem == nil {
 		return -1, Statusf(400, "Invalid submission problem")
+	}
+	if len(code) > 10000 { // 10k characters
+		return -1, Statusf(400, "Code exceeds 10 000 characters")
 	}
 	if !s.IsProblemVisible(author, problem) {
 		return -1, Statusf(400, "Submitter can't see the problem!")

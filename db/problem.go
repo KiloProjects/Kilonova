@@ -13,6 +13,34 @@ import (
 	"go.uber.org/zap"
 )
 
+type dbProblem struct {
+	ID            int       `db:"id"`
+	CreatedAt     time.Time `db:"created_at"`
+	Name          string    `db:"name"`
+	Description   string    `db:"description"`
+	ShortDesc     string    `db:"short_description"`
+	TestName      string    `db:"test_name"`
+	Visible       bool      `db:"visible"`
+	DefaultPoints int       `db:"default_points"`
+
+	// Limit stuff
+	TimeLimit   float64 `db:"time_limit"`
+	MemoryLimit int     `db:"memory_limit"`
+	SourceSize  int     `db:"source_size"`
+
+	SourceCredits string `db:"source_credits"`
+	AuthorCredits string `db:"author_credits"`
+
+	// Eval stuff
+	ConsoleInput bool `db:"console_input"`
+}
+
+type dbScoredProblem struct {
+	dbProblem
+	ScoreUserID *int `db:"user_id"`
+	MaxScore    *int `db:"score"`
+}
+
 func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
 	var pb dbProblem
 	err := s.conn.GetContext(ctx, &pb, "SELECT * FROM problems WHERE id = $1 LIMIT 1", id)
@@ -23,6 +51,20 @@ func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
 		return nil, err
 	}
 	return s.internalToProblem(ctx, &pb)
+}
+
+func (s *DB) ScoredProblem(ctx context.Context, problemID int, userID int) (*kilonova.ScoredProblem, error) {
+	var pb dbScoredProblem
+	err := s.conn.GetContext(ctx, &pb, `SELECT pbs.*, ms.user_id, ms.score 
+FROM problems pbs LEFT JOIN max_score_view ms ON (pbs.id = ms.problem_id AND ms.user_id = $2) 
+WHERE pbs.id = $1 LIMIT 1`, problemID, userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return s.internalToScoredProblem(ctx, &pb, userID)
 }
 
 func (s *DB) VisibleProblem(ctx context.Context, id int, user *kilonova.UserBrief) (*kilonova.Problem, error) {
@@ -44,6 +86,19 @@ func (s *DB) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*ki
 	return mapperCtx(ctx, pbs, s.internalToProblem), err
 }
 
+func (s *DB) ScoredProblems(ctx context.Context, filter kilonova.ProblemFilter, userID int) ([]*kilonova.ScoredProblem, error) {
+	var pbs []*dbScoredProblem
+	where, args := problemFilterQuery(&filter)
+	query := s.conn.Rebind(`SELECT problems.*, ms.user_id, ms.score 
+FROM problems LEFT JOIN max_score_view ms ON (problems.id = ms.problem_id AND ms.user_id = ?) 
+WHERE ` + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
+	err := s.conn.SelectContext(ctx, &pbs, query, append([]any{userID}, args...)...)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.ScoredProblem{}, nil
+	}
+	return s.internalToScoredProblems(ctx, pbs, userID), err
+}
+
 func (s *DB) ContestProblems(ctx context.Context, contestID int) ([]*kilonova.Problem, error) {
 	var pbs []*dbProblem
 	err := s.conn.SelectContext(ctx, &pbs, "SELECT pbs.* FROM problems pbs, contest_problems cpbs WHERE cpbs.problem_id = pbs.id AND cpbs.contest_id = $1 ORDER BY cpbs.position ASC", contestID)
@@ -51,6 +106,18 @@ func (s *DB) ContestProblems(ctx context.Context, contestID int) ([]*kilonova.Pr
 		return []*kilonova.Problem{}, nil
 	}
 	return mapperCtx(ctx, pbs, s.internalToProblem), err
+}
+
+func (s *DB) ScoredContestProblems(ctx context.Context, contestID int, userID int) ([]*kilonova.ScoredProblem, error) {
+	var pbs []*dbScoredProblem
+	err := s.conn.SelectContext(ctx, &pbs, `SELECT pbs.*, ms.user_id, ms.score 
+FROM (problems pbs INNER JOIN contest_problems cpbs ON cpbs.problem_id = pbs.id) LEFT JOIN max_score_contest_view ms ON (pbs.id = ms.problem_id AND cpbs.contest_id = ms.contest_id AND ms.user_id = $2)
+WHERE cpbs.contest_id = $1 
+ORDER BY cpbs.position ASC`, contestID, userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.ScoredProblem{}, nil
+	}
+	return s.internalToScoredProblems(ctx, pbs, userID), err
 }
 
 const problemCreateQuery = `INSERT INTO problems (
@@ -223,28 +290,6 @@ func (s *DB) StripProblemAccess(ctx context.Context, pbid int, uid int) error {
 	return s.removeAccess(ctx, "problem_user_access", "problem_id", pbid, uid)
 }
 
-type dbProblem struct {
-	ID            int       `db:"id"`
-	CreatedAt     time.Time `db:"created_at"`
-	Name          string    `db:"name"`
-	Description   string    `db:"description"`
-	ShortDesc     string    `db:"short_description"`
-	TestName      string    `db:"test_name"`
-	Visible       bool      `db:"visible"`
-	DefaultPoints int       `db:"default_points"`
-
-	// Limit stuff
-	TimeLimit   float64 `db:"time_limit"`
-	MemoryLimit int     `db:"memory_limit"`
-	SourceSize  int     `db:"source_size"`
-
-	SourceCredits string `db:"source_credits"`
-	AuthorCredits string `db:"author_credits"`
-
-	// Eval stuff
-	ConsoleInput bool `db:"console_input"`
-}
-
 func (s *DB) internalToProblem(ctx context.Context, pb *dbProblem) (*kilonova.Problem, error) {
 	if pb == nil {
 		return nil, nil
@@ -296,4 +341,36 @@ func (s *DB) internalToProblem(ctx context.Context, pb *dbProblem) (*kilonova.Pr
 
 		ConsoleInput: pb.ConsoleInput,
 	}, nil
+}
+
+func (s *DB) internalToScoredProblem(ctx context.Context, spb *dbScoredProblem, userID int) (*kilonova.ScoredProblem, error) {
+	pb, err := s.internalToProblem(ctx, &spb.dbProblem)
+	if err != nil {
+		return nil, err
+	}
+	var uid *int
+	if userID > 0 {
+		uid = &userID
+	}
+	return &kilonova.ScoredProblem{
+		Problem: *pb,
+
+		ScoreUserID: uid,
+		MaxScore:    spb.MaxScore,
+	}, nil
+}
+
+func (s *DB) internalToScoredProblems(ctx context.Context, spbs []*dbScoredProblem, userID int) []*kilonova.ScoredProblem {
+	if len(spbs) == 0 {
+		return []*kilonova.ScoredProblem{}
+	}
+	rez := make([]*kilonova.ScoredProblem, len(spbs))
+	for i := range rez {
+		var err error
+		rez[i], err = s.internalToScoredProblem(ctx, spbs[i], userID)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			zap.S().WithOptions(zap.AddCallerSkip(1)).Warn(err)
+		}
+	}
+	return rez
 }

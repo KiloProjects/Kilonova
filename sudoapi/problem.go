@@ -11,8 +11,17 @@ import (
 
 // Problem stuff
 
+// When editing Problem, please edit ScoredProblem as well
 func (s *BaseAPI) Problem(ctx context.Context, id int) (*kilonova.Problem, *StatusError) {
 	problem, err := s.db.Problem(ctx, id)
+	if err != nil || problem == nil {
+		return nil, WrapError(err, "Problem not found")
+	}
+	return problem, nil
+}
+
+func (s *BaseAPI) ScoredProblem(ctx context.Context, problemID int, userID int) (*kilonova.ScoredProblem, *StatusError) {
+	problem, err := s.db.ScoredProblem(ctx, problemID, userID)
 	if err != nil || problem == nil {
 		return nil, WrapError(err, "Problem not found")
 	}
@@ -58,6 +67,7 @@ func (s *BaseAPI) DeleteProblem(ctx context.Context, id int) *StatusError {
 	return nil
 }
 
+// When editing Problems, please edit ScoredProblems as well
 func (s *BaseAPI) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*kilonova.Problem, *StatusError) {
 	problems, err := s.db.Problems(ctx, filter)
 	if err != nil {
@@ -67,11 +77,29 @@ func (s *BaseAPI) Problems(ctx context.Context, filter kilonova.ProblemFilter) (
 	return problems, nil
 }
 
-func (s *BaseAPI) ContestProblems(ctx context.Context, contest *kilonova.Contest, lookingUser *kilonova.UserBrief) ([]*kilonova.Problem, *StatusError) {
+func (s *BaseAPI) ScoredProblems(ctx context.Context, filter kilonova.ProblemFilter, user *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
+	uid := -1
+	if user != nil {
+		uid = user.ID
+	}
+	problems, err := s.db.ScoredProblems(ctx, filter, uid)
+	if err != nil {
+		zap.S().Warn(err)
+		return nil, WrapError(err, "Couldn't get problems")
+	}
+	return problems, nil
+}
+
+// When editing ContestProblems, please edit ScoredContestProblems as well
+func (s *BaseAPI) ContestProblems(ctx context.Context, contest *kilonova.Contest, lookingUser *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
 	if !s.CanViewContestProblems(ctx, lookingUser, contest) {
 		return nil, Statusf(403, "User can't view contest problems")
 	}
-	problems, err := s.db.ContestProblems(ctx, contest.ID)
+	userID := -1
+	if lookingUser != nil {
+		userID = lookingUser.ID
+	}
+	problems, err := s.db.ScoredContestProblems(ctx, contest.ID, userID)
 	if err != nil {
 		zap.S().Warn(err)
 		return nil, WrapError(err, "Couldn't get problems")

@@ -16,20 +16,20 @@ func (s *BaseAPI) ProblemList(ctx context.Context, id int) (*kilonova.ProblemLis
 }
 
 // Returns a list of problems in the slice's order
-func (s *BaseAPI) ProblemListProblems(ctx context.Context, ids []int, lookingUser *kilonova.UserBrief) ([]*kilonova.Problem, *StatusError) {
-	pbs, err := s.Problems(ctx, kilonova.ProblemFilter{IDs: ids, LookingUser: lookingUser, Look: true})
+func (s *BaseAPI) ProblemListProblems(ctx context.Context, ids []int, lookingUser *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
+	pbs, err := s.ScoredProblems(ctx, kilonova.ProblemFilter{IDs: ids, LookingUser: lookingUser, Look: true}, lookingUser)
 	if err != nil {
 		return nil, err
 	}
 
 	// Do this in order to maintain problemIDs order.
 	// Necessary for problem list ordering
-	available := make(map[int]*kilonova.Problem)
+	available := make(map[int]*kilonova.ScoredProblem)
 	for _, pb := range pbs {
 		available[pb.ID] = pb
 	}
 
-	rez := []*kilonova.Problem{}
+	rez := []*kilonova.ScoredProblem{}
 	for _, pb := range ids {
 		if val, ok := available[pb]; ok {
 			rez = append(rez, val)

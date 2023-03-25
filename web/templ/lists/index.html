@@ -18,13 +18,13 @@
             <span>{{getText "the_rest"}}</span>
             {{if authedUser}}
                 <span class="float-right badge">
-                    {{ getText "num_solved" (numSolvedPbs authedUser .) (len .) }}
+                    {{ getText "num_solved" (numSolvedPbs .) (len .) }}
                 </span>
             {{end}}
         </summary>
         {{ with . }}
             <div class="mt-2">
-                {{ template "pb_list_group" (genProblemsParams authedUser . true false) }}
+                {{ template "pb_list_group" (genProblemsParams . true false) }}
             </div>
         {{ end }}
     </details>

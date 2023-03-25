@@ -49,7 +49,7 @@
                 <span>{{getText "the_rest"}}</span>
                 {{if $user}}
                     <span class="float-right badge">
-                        {{ getText "num_solved" (numSolvedPbs authedUser .) (len .) }}
+                        {{ getText "num_solved" (numSolvedPbs .) (len .) }}
                     </span>
                 {{else}}
                 <span class="float-right badge">
@@ -63,7 +63,7 @@
             </summary>
             {{ with . }}
                 <div class="mt-2">
-                    {{ template "pb_list_group" (genProblemsParams $user . true false) }}
+                    {{ template "pb_list_group" (genProblemsParams . true false) }}
                 </div>
             {{ end }}
         </details>
