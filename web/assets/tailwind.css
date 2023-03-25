@@ -65,6 +65,10 @@
 		@apply text-blue-500 hover:text-blue-600 active:text-blue-600 focus:text-blue-600;
 	}
 
+	.default-background {
+		@apply bg-white dark:bg-gray-900;
+	}
+
 	.CodeMirror {
 		@apply text-lg leading-normal rounded-lg;
 	}

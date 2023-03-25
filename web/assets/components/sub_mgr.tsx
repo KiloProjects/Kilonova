@@ -168,9 +168,12 @@ function SubCode({ sub }) {
 				</code>
 			</pre>
 			<div class="block my-2">
-				<button class="btn btn-blue mr-2 text-semibold text-lg" onClick={() => copyCode(sub)}>
-					{getText("copy")}
-				</button>
+				{window.isSecureContext && (
+					/* It only works with https OR localhost */
+					<button class="btn btn-blue mr-2 text-semibold text-lg" onClick={() => copyCode(sub)}>
+						{getText("copy")}
+					</button>
+				)}
 				<button class="btn btn-blue text-semibold text-lg" onClick={() => downloadCode(sub)}>
 					{getText("download")}
 				</button>
@@ -272,7 +275,7 @@ function SubTask({ sub, subtask, detRef }) {
 		}
 		return done;
 	}, [sub, subtask]);
-
+	console.log(sub.subTests);
 	return (
 		<details id={`stk-det-${subtask.visible_id}`} class="list-group-item">
 			<summary class="pb-1 mt-1">
@@ -289,32 +292,55 @@ function SubTask({ sub, subtask, detRef }) {
 				)}
 				{/* </span> */}
 			</summary>
-			<div class="list-group m-1">
-				{subtask.subtests.map((subtestID) => {
-					if (!(subtestID in sub.subTestIDs)) {
-						return (
-							<div class="list-group-item flex justify-between">
-								<span>This subtask's test didn't exist when this submission was created.</span>
-							</div>
-						);
-					}
-					let actualSubtest = sub.subTestIDs[subtestID];
-					return (
-						<a href={`#test-${actualSubtest.visible_id}`} class="list-group-item flex justify-between" onClick={() => (detRef.current.open = true)}>
-							<span>{getText("nthTest", actualSubtest.visible_id)}</span>
-							{actualSubtest.done ? (
-								<span class="badge" style={{ backgroundColor: getGradient(actualSubtest.score, 100) }}>
-									{Math.round((subtask.score * actualSubtest.score) / 100.0)} / {subtask.score}
-								</span>
-							) : (
-								<span class="badge">
-									<i class="fas fa-cog animate-spin"></i>
-								</span>
-							)}
-						</a>
-					);
-				})}
-			</div>
+			<table class="kn-table default-background my-2">
+				<thead>
+					<tr>
+						<th class="py-2" scope="col">
+							{getText("id")}
+						</th>
+						<th scope="col">{getText("time")}</th>
+						<th scope="col">{getText("memory")}</th>
+						<th scope="col">{getText("verdict")}</th>
+						<th scope="col">{getText("score")}</th>
+						{sub.problemEditor && <th scope="col">{getText("output")}</th>}
+					</tr>
+				</thead>
+				<tbody>
+					{sub.subTests
+						.filter((subtest) => subtask.subtests.includes(subtest.id))
+						.map((subtest) => (
+							<tr class="kn-table-row" key={"kn_test" + subtest.id}>
+								<th class="py-1" scope="row" id={`test-${subtest.visible_id}`}>
+									{subtest.visible_id}
+								</th>
+								{subtest.done ? (
+									<>
+										<td>{Math.floor(subtest.time * 1000)} ms</td>
+										<td>{sizeFormatter(subtest.memory * 1024, 1, true)}</td>
+										<td>{subtest.verdict}</td>
+										<td class="text-black" style={{ backgroundColor: getGradient(subtest.score, 100) }}>
+											{Math.round((subtask.score * subtest.score) / 100.0)} / {subtask.score}
+										</td>
+									</>
+								) : (
+									<>
+										<td></td>
+										<td></td>
+										<td>
+											<div class="fas fa-spinner animate-spin" role="status"></div> {getText("waiting")}
+										</td>
+										<td>-</td>
+									</>
+								)}
+								{sub.problemEditor && (
+									<td>
+										<a href={"/proposer/get/subtest_output/" + subtest.id}>{getText("output")}</a>
+									</td>
+								)}
+							</tr>
+						))}
+				</tbody>
+			</table>
 		</details>
 	);
 }
