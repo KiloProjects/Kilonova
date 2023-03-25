@@ -2,6 +2,7 @@ import cookie from "js-cookie";
 import { postCall } from "./net";
 import dayjs from "dayjs";
 import type { Editor } from "codemirror";
+import { languages } from "./langs";
 
 export function setSession(sessionID: string) {
 	const checkTimestamp = dayjs().add(10, "day").unix() * 1000;
@@ -113,4 +114,23 @@ export function toggleTheme(e?: Event) {
 		setTheme("light");
 		document.getElementById("theme_button")!.innerHTML = `<i class="fas fa-fw fa-moon"></i>`;
 	}
+}
+
+// For saving submission language preference
+
+export function getCodeLangPreference(): string {
+	let val = cookie.get("kn-lang-pref");
+	if (val == "" || typeof val === "undefined" || !Object.keys(languages).includes(val)) {
+		setCodeLangPreference("cpp14");
+		return "cpp14";
+	}
+	return val;
+}
+
+export function setCodeLangPreference(lang: string) {
+	if (!Object.keys(languages).includes(lang)) {
+		console.warn("Skipping invalid lang preference", lang);
+		return;
+	}
+	cookie.set("kn-lang-pref", lang, { expires: 1000, sameSite: "lax" });
 }

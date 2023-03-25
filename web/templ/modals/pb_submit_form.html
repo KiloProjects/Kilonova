@@ -73,9 +73,15 @@
         document.getElementById("submit_style").value = val;
         document.getElementById("file_label")?.classList.toggle("hidden", val === "code");
         document.getElementById("cm_label")?.classList.toggle("hidden", val !== "code");
+        
+        var pref = bundled.getCodeLangPreference();
+        if(Object.values(document.getElementById("sub_language").options).map(x => x.value).includes(pref)) {
+            document.getElementById("sub_language").value = pref
+        }
     })
 
     document.getElementById("sub_language").addEventListener("change", (e) => {
+        bundled.setCodeLangPreference(e.target.value)
         let lang = bundled.languages[e.target.value]
         if (lang !== null) {
             cm.setOption("mode", lang)
