@@ -14,6 +14,7 @@ import "codemirror/mode/clike/clike";
 import "codemirror/mode/go/go";
 import "codemirror/mode/python/python";
 import "codemirror/mode/haskell/haskell";
+// import "codemirror/mode/stex/stex";
 
 import katex from "katex";
 import renderMathInElement from "katex/contrib/auto-render";

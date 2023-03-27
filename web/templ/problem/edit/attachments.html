@@ -152,11 +152,7 @@
 
 <script>
     var editCM = CodeMirror.fromTextArea(document.getElementById("attEditContent"), {
-        mode: {
-            name: "text/plain",
-            // gitHubSpice: false,
-            // emoji: false,
-        },
+        mode: "text/plain",
     });
     // editCM.setSize(null, "100%");
     document.getElementById("addDetails").addEventListener("toggle", () => {
@@ -188,7 +184,7 @@
             bundled.apiToast({status: "error", data: "Cannot edit images using editor!"})
             return
         }
-        if(mimetype.includes("archvie")) {
+        if(mimetype.includes("archive")) {
             bundled.apiToast({status: "error", data: "Cannot edit archives using editor!"})
             return
         }
@@ -198,6 +194,7 @@
         document.getElementById("editAttName").value = rez.data.metadata.name
         document.getElementById("ediAttNameView").innerText = rez.data.metadata.name
         editCM.setValue(bundled.fromBase64(rez.data.data))
+        editCM.setOption("mode", bundled.get_cm_mode(rez.data.metadata.name));
 
         document.getElementById("editAttView").classList.toggle("hidden", false);
         editCM.refresh();
@@ -223,15 +220,18 @@
 
 <script>
     var addCM = CodeMirror.fromTextArea(document.getElementById("attCreateContent"), {
-        mode: {
-            name: "gfm",
-            gitHubSpice: false,
-            emoji: false,
-        },
+        mode: "text/plain",
     });
     addCM.setSize(null, "100%");
     document.getElementById("addDetails").addEventListener("toggle", () => {
         addCM.refresh()
+    })
+    document.getElementById("attCreateName").addEventListener("input", e => {
+        let newMode = bundled.get_cm_mode(e.target.value);
+        console.log(newMode)
+        if(addCM.getOption("mode") !== newMode) {
+            addCM.setOption("mode", newMode)
+        }
     })
     
     async function createNewAttachment(e) {
