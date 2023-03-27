@@ -100,12 +100,14 @@
                 {{ end }}
             </div>
         </div>
-        {{ with pbParentPblist .Problem }}
+        {{ range pbParentPblists .Problem }}
         <div class="page-sidebar-divider"></div>
-        <div class="page-sidebar-box">
-            <h2 class="font-normal">
-                <a href="/problem_lists/{{.ID}}">{{.Title}}</a>
-            </h2>
+        <details class="page-sidebar-box" open>
+            <summary>
+                <h2 class="font-normal inline-block">
+                    <a href="/problem_lists/{{.ID}}">{{.Title}}</a>
+                </h2>
+            </summary>
             <div class="reset-list text-lg">
                 {{ with listProblems authedUser . }}
                 <ul>
@@ -121,7 +123,7 @@
                 </ul>
                 {{ end }}
             </div>
-        </div>
+        </details>
         {{ end }}
         {{ end }}
         {{ if authed }}
