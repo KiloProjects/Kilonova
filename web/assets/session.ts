@@ -110,9 +110,11 @@ export function toggleTheme(e?: Event) {
 	if (curr == "light") {
 		setTheme("dark");
 		document.getElementById("theme_button")!.innerHTML = `<i class="fas fa-fw fa-sun"></i>`;
+		document.getElementById("theme_button_mobile")!.innerHTML = `<i class="fas fa-fw fa-sun"></i>`;
 	} else {
 		setTheme("light");
 		document.getElementById("theme_button")!.innerHTML = `<i class="fas fa-fw fa-moon"></i>`;
+		document.getElementById("theme_button_mobile")!.innerHTML = `<i class="fas fa-fw fa-moon"></i>`;
 	}
 }
 

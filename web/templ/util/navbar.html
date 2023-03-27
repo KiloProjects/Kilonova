@@ -4,12 +4,19 @@
 		<div class="inline-block">
 			<a class="roboto h-8 black-anchor" href="/">Kilonova</a>
 		</div>
-		<div class="md:hidden">
-			<button id="nav-toggler" type="button" onclick="navbar_mgr.toggleNavbar()" class="fas fa-bars text-gray-500 dark:text-gray-300 hover:text-black focus:text-black dark:hover:text-white dark:focus:text-white focus:outline-none h-6 w-6"></button>
+		<div class="md:hidden inline-block">
+            <a id="theme_button_mobile" class="text-gray-500 dark:text-gray-300 hover:text-black focus:text-black dark:hover:text-white dark:focus:text-white focus:outline-none h-6 w-6 mx-2" href="#">
+                {{ if isDarkMode }}
+                    <i class="fas fa-fw fa-sun"></i>
+                {{ else }}
+                    <i class="fas fa-fw fa-moon"></i>
+                {{ end }}
+            </a>
+			<button id="nav-toggler" type="button" onclick="navbar_mgr.toggleNavbar()" class="fas fa-bars text-gray-500 dark:text-gray-300 hover:text-black focus:text-black dark:hover:text-white dark:focus:text-white focus:outline-none h-6 w-6 mx-2"></button>
 		</div>
 	</div>
 	<nav id="nav-dropdown" class="px-2 pt-1 pb-3 md:flex md:p-0 z-50">
-        <a id="theme_button" class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="#">
+        <a id="theme_button" class="hidden md:block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="#">
             {{ if isDarkMode }}
                 <i class="fas fa-fw fa-sun"></i>
             {{ else }}
@@ -72,5 +79,6 @@
 <script>
 var navbar_mgr = new bundled.NavBarManager()
 document.getElementById("theme_button").addEventListener("click", bundled.toggleTheme)
+document.getElementById("theme_button_mobile").addEventListener("click", bundled.toggleTheme)
 </script>
 {{end}}
