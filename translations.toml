@@ -71,12 +71,12 @@ en = "Problem Statement"
 ro = "Enunț Problemă"
 
 [submit]
-en = "Upload code"
-ro = "Încărcare cod"
+en = "Upload Code"
+ro = "Încărcare Cod"
 
 [topbar.edit]
-en = "Edit problem"
-ro = "Editare problemă"
+en = "Edit Problem"
+ro = "Editare Problemă"
 
 [desc]
 en = "Description"
