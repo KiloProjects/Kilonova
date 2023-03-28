@@ -12,7 +12,7 @@ import (
 const (
 	ErrOut     = "Internal checker error"
 	CorrectOut = "Correct"
-	WrongOut   = "Wrong Answer"
+	WrongOut   = "Wrong answer"
 )
 
 var _ eval.Checker = &DiffChecker{}
