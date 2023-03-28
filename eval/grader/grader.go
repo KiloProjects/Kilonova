@@ -278,7 +278,7 @@ func (h *Handler) HandleSubTest(ctx context.Context, runner eval.BoxScheduler, c
 	// Make sure TLEs are fully handled
 	if resp.Time > problem.TimeLimit {
 		resp.Time = problem.TimeLimit
-		resp.Comments = "TLE"
+		resp.Comments = "Time limit exceeded"
 	}
 
 	if resp.Comments == "" {
