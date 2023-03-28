@@ -1,7 +1,8 @@
 # Tests and configuration
 
-* The tests (including the score/setting files) must be uploaded in `.zip` file not exceeding 200MB
+* The tests (including the score/setting files) must be uploaded in `.zip` file not exceeding 512MB
 * For every test id there must be an input(.in) and output(.out/ok/sol) file
+* Please visit [the attachment guide](/docs/attachments) for more information about setting up attachments (useful to keep in mind while reading about checkers/graders below).
 
 ## Naming format
 * `{test_id}-{suffix}.{in|out|ok|sol}`
