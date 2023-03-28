@@ -14,14 +14,13 @@ import (
 )
 
 type dbProblem struct {
-	ID            int       `db:"id"`
-	CreatedAt     time.Time `db:"created_at"`
-	Name          string    `db:"name"`
-	Description   string    `db:"description"`
-	ShortDesc     string    `db:"short_description"`
-	TestName      string    `db:"test_name"`
-	Visible       bool      `db:"visible"`
-	DefaultPoints int       `db:"default_points"`
+	ID        int       `db:"id"`
+	CreatedAt time.Time `db:"created_at"`
+	Name      string    `db:"name"`
+
+	TestName      string `db:"test_name"`
+	Visible       bool   `db:"visible"`
+	DefaultPoints int    `db:"default_points"`
 
 	// Limit stuff
 	TimeLimit   float64 `db:"time_limit"`
@@ -121,9 +120,9 @@ ORDER BY cpbs.position ASC`, contestID, userID)
 }
 
 const problemCreateQuery = `INSERT INTO problems (
-	name, description, console_input, test_name, memory_limit, source_size, time_limit, visible, source_credits, author_credits, short_description, default_points
+	name, console_input, test_name, memory_limit, source_size, time_limit, visible, source_credits, author_credits, default_points
 ) VALUES (
-	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+	?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 ) RETURNING id;`
 
 func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID int) error {
@@ -143,7 +142,7 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID in
 		p.SourceSize = 10000
 	}
 	var id int
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(problemCreateQuery), p.Name, p.Description, p.ConsoleInput, p.TestName, p.MemoryLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.AuthorCredits, p.ShortDesc, p.DefaultPoints)
+	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(problemCreateQuery), p.Name, p.ConsoleInput, p.TestName, p.MemoryLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.AuthorCredits, p.DefaultPoints)
 	if err == nil {
 		p.ID = id
 	}
@@ -233,12 +232,6 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []any) {
 	if v := upd.Name; v != nil {
 		toUpd, args = append(toUpd, "name = ?"), append(args, v)
 	}
-	if v := upd.Description; v != nil {
-		toUpd, args = append(toUpd, "description = ?"), append(args, v)
-	}
-	if v := upd.ShortDesc; v != nil {
-		toUpd, args = append(toUpd, "short_description = ?"), append(args, v)
-	}
 
 	if v := upd.TestName; v != nil {
 		toUpd, args = append(toUpd, "test_name = ?"), append(args, v)
@@ -319,12 +312,10 @@ func (s *DB) internalToProblem(ctx context.Context, pb *dbProblem) (*kilonova.Pr
 	}
 
 	return &kilonova.Problem{
-		ID:          pb.ID,
-		CreatedAt:   pb.CreatedAt,
-		Name:        pb.Name,
-		Description: pb.Description,
-		ShortDesc:   pb.ShortDesc,
-		TestName:    pb.TestName,
+		ID:        pb.ID,
+		CreatedAt: pb.CreatedAt,
+		Name:      pb.Name,
+		TestName:  pb.TestName,
 
 		Visible: pb.Visible,
 		Editors: editors,

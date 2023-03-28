@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"path"
@@ -70,6 +71,11 @@ func (s *API) updateAttachmentData(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(20 * 1024 * 1024)
 	var args struct {
 		ID int `json:"id"`
+
+		Name    *string `json:"name"`
+		Visible *bool   `json:"visible"`
+		Private *bool   `json:"private"`
+		Exec    *bool   `json:"exec"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 400)
@@ -83,6 +89,16 @@ func (s *API) updateAttachmentData(w http.ResponseWriter, r *http.Request) {
 	att, err1 := s.base.ProblemAttachment(r.Context(), util.Problem(r).ID, args.ID)
 	if err1 != nil {
 		err1.WriteError(w)
+		return
+	}
+
+	if err := s.base.UpdateAttachment(r.Context(), att.ID, &kilonova.AttachmentUpdate{
+		Visible: args.Visible,
+		Private: args.Private,
+		Exec:    args.Exec,
+		Name:    args.Name,
+	}); err != nil && !errors.Is(err, kilonova.ErrNoUpdates) {
+		err.WriteError(w)
 		return
 	}
 
@@ -104,9 +120,10 @@ func (s *API) updateAttachmentData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	returnData(w, "Updated attachment data")
+	returnData(w, "Updated attachment.")
 }
 
+// NOTE: This depends on the middleware. The middleware actually resolves the attachment, either by name or by id.
 func (s *API) getFullAttachment(w http.ResponseWriter, r *http.Request) {
 	data, err := s.base.AttachmentData(r.Context(), util.Attachment(r).ID)
 	if err != nil {

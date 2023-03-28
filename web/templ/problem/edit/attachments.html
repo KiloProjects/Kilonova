@@ -188,6 +188,10 @@
             bundled.apiToast({status: "error", data: "Cannot edit archives using editor!"})
             return
         }
+        if(mimetype.includes("pdf")) {
+            bundled.apiToast({status: "error", data: "Cannot edit PDF files using editor!"})
+            return
+        }
 
         document.getElementById("addDetails").open = false
         document.getElementById("editAttID").value = id

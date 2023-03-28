@@ -123,18 +123,87 @@ func (rt *Web) paste() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
+func (rt *Web) appropriateDescriptionVariant(pb *kilonova.Problem, user *kilonova.UserBrief, variants []*kilonova.StatementVariant, prefLang string, prefFormat string) (string, string) {
+	if len(variants) == 0 {
+		return "", ""
+	}
+	// Search for the ideal scenario
+	for _, v := range variants {
+		if v.Language == prefLang && v.Format == prefFormat {
+			return v.Language, v.Format
+		}
+	}
+	// Then search if anything matches the language
+	for _, v := range variants {
+		if v.Language == prefLang {
+			return v.Language, v.Format
+		}
+	}
+	// Then search if anything matches the format
+	for _, v := range variants {
+		if v.Language == prefLang {
+			return v.Language, v.Format
+		}
+	}
+	// If nothing was found, then just return the first available variant
+	return variants[0].Language, variants[0].Format
+}
+
 func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "problem/summary.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		problem := util.Problem(r)
 
-		buf, err := rt.base.RenderMarkdown([]byte(problem.Description))
-		if err != nil {
-			zap.S().Warn("Error rendering markdown:", err)
+		var statement = []byte("This problem doesn't have a statement.")
+
+		lang := r.FormValue("pref_lang")
+		if lang == "" {
+			lang = util.Language(r)
+		}
+		format := r.FormValue("pref_format")
+		if format == "" {
+			format = "md"
 		}
 
-		atts, err1 := rt.base.ProblemAttachments(r.Context(), util.Problem(r).ID)
-		if err1 != nil || len(atts) == 0 {
+		variants, err := rt.base.ProblemDescVariants(r.Context(), problem.ID, rt.base.IsProblemEditor(util.UserBrief(r), problem))
+		if err != nil {
+			zap.S().Warn("Couldn't get problem desc variants", err)
+		}
+
+		foundLang, foundFmt := rt.appropriateDescriptionVariant(problem, util.UserBrief(r), variants, lang, format)
+
+		switch foundFmt {
+		case "md":
+			data, _, err := rt.base.ProblemRawDesc(r.Context(), problem.ID, foundLang, foundFmt)
+			if err != nil {
+				zap.S().Warn("Error getting markdown data")
+				data = []byte("Error fetching markdown.")
+			}
+			buf, err := rt.base.RenderMarkdown(data)
+			if err != nil {
+				zap.S().Warn("Error rendering markdown:", err)
+			} else {
+				statement = buf
+			}
+		case "pdf":
+			url := fmt.Sprintf("/problems/%d/attachments/statement-%s.%s", problem.ID, foundLang, foundFmt)
+			statement = []byte(fmt.Sprintf(
+				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>
+					<embed class="mx-2 my-2" type="application/pdf" src="%s"
+					style="width:95%%; height: 90vh;"></embed>`,
+				url, kilonova.GetText(util.Language(r), "desc_link"), url,
+			))
+		case "":
+		default:
+			statement = []byte(fmt.Sprintf(
+				`<a class="btn btn-blue" target="_blank" href="/problems/%d/attachments/statement-%s.%s">%s</a>`,
+				problem.ID, foundLang, foundFmt,
+				kilonova.GetText(util.Language(r), "desc_link"),
+			))
+		}
+
+		atts, err := rt.base.ProblemAttachments(r.Context(), util.Problem(r).ID)
+		if err != nil || len(atts) == 0 {
 			atts = nil
 		}
 
@@ -174,8 +243,12 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 			Problem:     util.Problem(r),
 			Attachments: atts,
 
-			Markdown:  template.HTML(buf),
+			Statement: template.HTML(statement),
 			Languages: langs,
+			Variants:  variants,
+
+			SelectedLang:   foundLang,
+			SelectedFormat: foundFmt,
 		})
 	}
 }
@@ -570,9 +643,9 @@ func (rt *Web) docs() http.HandlerFunc {
 				return
 			}
 
-			t, err := rt.base.RenderMarkdown(file)
-			if err != nil {
-				zap.S().Warn("Can't render docs", err)
+			t, err1 := rt.base.RenderMarkdown(file)
+			if err1 != nil {
+				zap.S().Warn("Can't render docs", err1)
 				rt.statusPage(w, r, 500, "N-am putut randa pagina")
 				return
 			}
@@ -695,7 +768,7 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 	if err := templ.Execute(w, data); err != nil {
 		fmt.Fprintf(w, "Error executing template, report to admin: %s", err)
 		if !strings.Contains(err.Error(), "broken pipe") {
-			zap.S().WithOptions(zap.AddCallerSkip(1)).Warnf("Erorr executing template: %q %q %#v", err, r.URL.Path, util.UserBrief(r))
+			zap.S().WithOptions(zap.AddCallerSkip(1)).Warnf("Error executing template: %q %q %#v", err, r.URL.Path, util.UserBrief(r))
 		}
 	}
 }

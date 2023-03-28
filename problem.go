@@ -12,8 +12,6 @@ type Problem struct {
 	ID            int       `json:"id"`
 	CreatedAt     time.Time `json:"created_at"`
 	Name          string    `json:"name"`
-	Description   string    `json:"description"`
-	ShortDesc     string    `json:"short_description"`
 	TestName      string    `json:"test_name"`
 	DefaultPoints int       `json:"default_points"`
 
@@ -31,6 +29,16 @@ type Problem struct {
 
 	// Eval stuff
 	ConsoleInput bool `json:"console_input"`
+}
+
+type StatementVariant struct {
+	// Language, ie. ro/en
+	Language string `json:"lang"`
+	// Format, ie. pdf/md/etc.
+	Format string `json:"format"`
+	// Private is true if the attachment for this statement variant is private.
+	// it may be private if it's currently being worked on.
+	Private bool `json:"public"`
 }
 
 type ScoredProblem struct {
@@ -62,8 +70,6 @@ type ProblemFilter struct {
 
 type ProblemUpdate struct {
 	Name          *string `json:"name"`
-	Description   *string `json:"description"`
-	ShortDesc     *string `json:"short_desc"`
 	TestName      *string `json:"test_name"`
 	DefaultPoints *int    `json:"default_points"`
 

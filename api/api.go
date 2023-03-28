@@ -92,8 +92,6 @@ func (s *API) Handler() http.Handler {
 
 				r.Post("/addAttachment", s.createAttachment)
 				r.Post("/attachmentData", s.updateAttachmentData)
-				r.With(s.validateAttachmentID).Get("/attachment/{aid}/", s.getFullAttachment)
-				// r.With(s.validateAttachmentID).Post("/attachment/{aID}/", s.updateAttachmentMetadata)
 				r.Post("/bulkDeleteAttachments", s.bulkDeleteAttachments)
 				r.Post("/bulkUpdateAttachmentInfo", s.bulkUpdateAttachmentInfo)
 
@@ -117,9 +115,8 @@ func (s *API) Handler() http.Handler {
 				r.Get("/attachments", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
 					return s.base.ProblemAttachments(ctx, util.ProblemContext(ctx).ID)
 				}))
-				// The one from /web/web.go is good enough
-				// r.Get("/attachmentData", s.getAttachment)
 				r.With(s.validateAttachmentID).Get("/attachment/{aID}", s.getFullAttachment)
+				r.With(s.validateAttachmentName).Get("/attachmentByName/{aName}", s.getFullAttachment)
 
 				r.Get("/accessControl", s.getProblemAccessControl)
 

@@ -77,8 +77,12 @@ type ProblemParams struct {
 	Problem     *kilonova.Problem
 	Attachments []*kilonova.Attachment
 
-	Markdown  template.HTML
+	Statement template.HTML
 	Languages map[string]eval.Language
+	Variants  []*kilonova.StatementVariant
+
+	SelectedLang   string
+	SelectedFormat string
 }
 
 type ProblemTopbarParams struct {

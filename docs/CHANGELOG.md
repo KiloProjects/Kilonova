@@ -1,3 +1,23 @@
+- v0.14.0:
+    - Dark mode toggle (instead of relying on browser preference);
+    - Support for multiple languages in statements;
+    - Show subtask tests in a better way on submission page; 
+    - Allow multiple parent problem lists to be showed on problem page (capped to 5);
+    - More customizable preferences in cookies;
+    - Fixed a few firefox autocomplete bugs;
+    - CSS fixes.
+- v0.13.2:
+    - Attachment improvements:
+        - Editing/creating in UI;
+        - Renaming attachments in UI;
+        - `Exec` flag for attachments.
+    - `grader.properties` improvements:
+        - Allow more information regarding problem (limits, authors, test name).
+- v0.13.1:
+    - More USACO contest work;
+    - Proper tables in problem summaries;
+    - Show sibling problems (from same problem list) in sidebar.
+    - Allow styling CSS images.
 - v0.13.0:
     - Major: Grader rework to support high-memory problems;
     - Better UX for USACO contests. 

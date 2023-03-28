@@ -2,8 +2,10 @@ package sudoapi
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
@@ -114,6 +116,48 @@ func (s *BaseAPI) AttachmentDataByName(ctx context.Context, problemID int, name 
 		return nil, WrapError(err, "Couldn't read attachment data")
 	}
 	return data, nil
+}
+
+var statementRegex = regexp.MustCompile("statement-([a-z]+).([a-z]+)")
+
+func (s *BaseAPI) ProblemDescVariants(ctx context.Context, problemID int, getPrivate bool) ([]*kilonova.StatementVariant, *StatusError) {
+	variants := []*kilonova.StatementVariant{}
+	atts, err := s.ProblemAttachments(ctx, problemID)
+	if err != nil {
+		zap.S().Warn(err)
+		return nil, WrapError(err, "Couldn't get problem statement variants")
+	}
+
+	for _, att := range atts {
+		matches := statementRegex.FindStringSubmatch(att.Name)
+		if len(matches) == 0 {
+			continue
+		}
+		if att.Private && !getPrivate {
+			continue
+		}
+		variants = append(variants, &kilonova.StatementVariant{
+			Language: matches[1],
+			Format:   matches[2],
+			Private:  att.Private,
+		})
+	}
+
+	return variants, nil
+}
+
+// ProblemRawDesc returns the raw data of the problem description,
+// along with a bool meaning if the description is private or not
+func (s *BaseAPI) ProblemRawDesc(ctx context.Context, problemID int, lang string, format string) ([]byte, bool, *StatusError) {
+	if len(lang) > 10 || len(format) > 10 {
+		return nil, true, Statusf(400, "Not even trying to search for this description variant")
+	}
+	name := fmt.Sprintf("statement-%s.%s", lang, format)
+	data, private, err := s.db.ProblemRawDesc(ctx, problemID, name)
+	if err != nil {
+		return nil, true, WrapError(err, "Couldn't get problem description")
+	}
+	return data, private, nil
 }
 
 func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova.ProblemEvalSettings, *StatusError) {

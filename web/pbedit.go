@@ -10,6 +10,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/archive/test"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/gosimple/slug"
@@ -22,6 +23,10 @@ type ProblemEditParams struct {
 	Topbar  *EditTopbar
 
 	Attachments []*kilonova.Attachment
+
+	StatementLang string
+	StatementData string
+	StatementAtt  *kilonova.Attachment
 }
 
 func (rt *Web) editIndex() func(w http.ResponseWriter, r *http.Request) {
@@ -38,10 +43,58 @@ func (rt *Web) editIndex() func(w http.ResponseWriter, r *http.Request) {
 func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/desc.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
+		variants, err := rt.base.ProblemDescVariants(r.Context(), util.Problem(r).ID, true)
+		if err != nil {
+			zap.S().Warn(err)
+			http.Error(w, "Couldn't get statement variants", 500)
+			return
+		}
+
+		finalLang := ""
+		prefLang := r.FormValue("pref_lang")
+
+		for _, vr := range variants {
+			if vr.Format == "md" && vr.Language == prefLang {
+				finalLang = vr.Language
+			}
+		}
+
+		if finalLang == "" {
+			for _, vr := range variants {
+				if vr.Format == "md" {
+					finalLang = vr.Language
+				}
+			}
+		}
+
+		var statementData string
+		var att *kilonova.Attachment
+		if finalLang == "" {
+			finalLang = config.Common.DefaultLang
+		} else {
+			att, err = rt.base.AttachmentByName(r.Context(), util.Problem(r).ID, fmt.Sprintf("statement-%s.md", finalLang))
+			if err != nil {
+				zap.S().Warn(err)
+				http.Error(w, "Couldn't get problem statement attachment", 500)
+				return
+			}
+			val, _, err := rt.base.ProblemRawDesc(r.Context(), util.Problem(r).ID, finalLang, "md")
+			if err != nil {
+				zap.S().Warn(err)
+				http.Error(w, "Couldn't get problem statement", 500)
+				return
+			}
+			statementData = string(val)
+		}
+
 		rt.runTempl(w, r, tmpl, &ProblemEditParams{
 			Ctx:     GenContext(r),
 			Problem: util.Problem(r),
 			Topbar:  rt.topbar(r, "desc", -1),
+
+			StatementLang: finalLang,
+			StatementData: statementData,
+			StatementAtt:  att,
 		})
 	}
 }

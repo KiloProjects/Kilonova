@@ -14,7 +14,7 @@
 
 <div class="segment-container">
 	<h2> {{getText "updateLang"}} </h2>
-	<form id="lang_form">
+	<form id="lang_form" autocomplete="off">
 		<select id="langSelect" class="form-select block my-2">
 			<option value="ro" {{if eq $user.PreferredLanguage "ro"}}selected{{end}}>🇷🇴 Română</option>
 			<option value="en" {{if eq $user.PreferredLanguage "en"}}selected{{end}}>🇬🇧 English</option>

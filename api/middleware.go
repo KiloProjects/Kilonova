@@ -151,6 +151,30 @@ func (s *API) validateAttachmentID(next http.Handler) http.Handler {
 			errorData(w, "attachment does not exist", http.StatusBadRequest)
 			return
 		}
+		if att.Private && !s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
+			errorData(w, "you cannot access attachment data!", http.StatusBadRequest)
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AttachmentKey, att)))
+	})
+}
+
+func (s *API) validateAttachmentName(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attName := chi.URLParam(r, "aName")
+		if util.Problem(r) == nil {
+			zap.S().Fatal("Problem is not available")
+			return
+		}
+		att, err1 := s.base.AttachmentByName(r.Context(), util.Problem(r).ID, attName)
+		if err1 != nil {
+			errorData(w, "attachment does not exist", http.StatusBadRequest)
+			return
+		}
+		if att.Private && !s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
+			errorData(w, "you cannot access attachment data!", http.StatusBadRequest)
+			return
+		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AttachmentKey, att)))
 	})
 }

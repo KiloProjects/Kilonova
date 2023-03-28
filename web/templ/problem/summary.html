@@ -12,8 +12,21 @@
 
 {{ template "topbar.html" . }}
 
+{{$stmtLang := .SelectedLang}}
+{{$stmtFmt := .SelectedFormat}}
+
 <div class="page-holder">
     <div class="page-content reset-list enhance-tables">
+        {{ if gt (len .Variants) 1 }}
+            <label class="block mb-2">
+                <span class="form-label">{{getText "statementFormat"}}:</span> 
+                <select id="variant-select" class="form-select" autocomplete="off">
+                    {{ range .Variants }}
+                        <option value="{{.Language}};{{.Format}}" {{if and (eq .Language $stmtLang) (eq .Format $stmtFmt)}}selected{{end}}>{{formatStmtLang .Language}} - {{formatStmtFmt .Format}}</option>
+                    {{ end }}
+                </select>
+            </label>    
+        {{ end }}
         <div class="w-full mb-6 mt-2 text-center">
 			<!--<h1>{{.Problem.Name}}</h1>-->
             <h5>{{getText "timeLimit"}}: {{.Problem.TimeLimit}}s</h5>
@@ -24,16 +37,9 @@
             <h5>{{getText "defaultPoints"}}: {{.Problem.DefaultPoints}}p</h5>
             {{- end -}}
         </div>
-
-        {{if ispdflink .Problem.Description}}
-        <p><a target='_blank' href='{{.Problem.Description}}'>{{.Problem.Description}}</a></p>
-        <embed class='mx-2 my-2' type='application/pdf' src='{{.Problem.Description}}'
-            style="width:95%; height: 90vh;"></embed>
-        {{else}}
         <div class="text-justify">
-            {{.Markdown}}
+            {{.Statement}}
         </div>
-        {{end}}
     </div>
 
     </script>
@@ -166,6 +172,16 @@
             el.innerText = bundled.sizeFormatter(Number(el.innerText))
         }
     })()
+</script>
+
+<script>
+    document.getElementById("variant-select")?.addEventListener("change", e => {
+        const [lang, fmt] = e.target.value.split(";")
+        var params = new URLSearchParams(window.location.search);
+        params.set("pref_lang", lang)
+        params.set("pref_format", fmt)
+        window.location.search = params.toString()
+    })
 </script>
 
 {{ if authed }}

@@ -489,6 +489,28 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return rez
 		},
+		"formatStmtLang": func(lang string) string {
+			switch lang {
+			case "en":
+				return "🇬🇧 English"
+			case "ro":
+				return "🇷🇴 Română"
+			default:
+				return lang
+			}
+		},
+		"formatStmtFmt": func(fmt string) string {
+			switch fmt {
+			case "pdf":
+				return "PDF"
+			case "md":
+				return "Markdown"
+			case "tex":
+				return "LaTeX"
+			default:
+				return fmt
+			}
+		},
 		"httpstatus":         http.StatusText,
 		"dump":               spew.Sdump,
 		"canJoinContest":     base.CanJoinContest,

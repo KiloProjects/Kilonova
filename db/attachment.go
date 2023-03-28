@@ -92,6 +92,18 @@ func (a *DB) AttachmentDataByName(ctx context.Context, problemID int, name strin
 	return data, err
 }
 
+func (a *DB) ProblemRawDesc(ctx context.Context, problemID int, name string) ([]byte, bool, error) {
+	var rez struct {
+		Data    []byte `db:"data"`
+		Private bool   `db:"private"`
+	}
+	err := a.conn.GetContext(ctx, &rez, "SELECT data, private FROM attachments WHERE problem_id = $1 AND name = $2", problemID, name)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []byte{}, true, nil
+	}
+	return rez.Data, rez.Private, err
+}
+
 const attachmentUpdateStatement = "UPDATE attachments SET %s WHERE id = ?"
 
 func (a *DB) UpdateAttachment(ctx context.Context, id int, upd *kilonova.AttachmentUpdate) error {

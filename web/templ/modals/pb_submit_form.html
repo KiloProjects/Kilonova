@@ -1,4 +1,4 @@
-<form id="sendSubForm">    
+<form id="sendSubForm" autocomplete="off">    
     {{ if .Topbar.Contest }}
         {{ if canSubmitInContest .Ctx.User.Brief .Topbar.Contest}}
             <h1 class="mt-4">{{getText "uploadContestSub"}}</h1>

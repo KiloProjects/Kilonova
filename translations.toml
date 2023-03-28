@@ -211,8 +211,8 @@ en = "Edit Problem Information"
 ro = "Editare Informații Problemă"
 
 [header.edit.description]
-en = "Edit Description"
-ro = "Editare Descriere"
+en = "Edit Description (Markdown)"
+ro = "Editare Descriere (Markdown)"
 
 [header.edit.attachments]
 en = "Edit Attachments"
@@ -444,6 +444,10 @@ ro = "Intrare din consolă"
 en = "Test name"
 ro = "Nume test"
 
+[statementFormat]
+en = "Statement format"
+ro = "Format enunț"
+
 [memoryLimit]
 en = "Memory limit"
 ro = "Limită de memorie"
@@ -631,6 +635,10 @@ ro = "Nicio submisie"
 [language]
 en = "Language"
 ro = "Limbaj"
+
+[spokenLanguage]
+en = "Language"
+ro = "Limbă"
 
 [uploadSub]
 en = "Upload submission"
@@ -1648,3 +1656,7 @@ ro = "Editare atașament"
 [contents]
 en = "Contents"
 ro = "Conținut"
+
+[desc_link]
+en = "Statement can be downloaded here."
+ro = "Enunțul poate fi descărcat aici."
