@@ -1184,8 +1184,8 @@ en = "Manual signup has been disabled by the administrator"
 ro = "Înregistrearea manuală a fost dezactivată de către administrator"
 
 [acceptedSubs]
-en = "Accepted Solutions"
-ro = "Soluții Acceptate"
+en = "Accepted solutions"
+ro = "Soluții acceptate"
 
 [config.title]
 en = "Site configuration"
