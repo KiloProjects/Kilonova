@@ -4,9 +4,11 @@ import (
 	"archive/zip"
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -28,8 +30,23 @@ type archiveTest struct {
 	Score   int
 }
 
+type archiveAttachment struct {
+	File    *zip.File
+	Name    string
+	Visible bool
+	Private bool
+	Exec    bool
+}
+
+type attachmentProps struct {
+	Visible bool `json:"visible"`
+	Private bool `json:"private"`
+	Exec    bool `json:"exec"`
+}
+
 type ArchiveCtx struct {
 	tests       map[int]archiveTest
+	attachments map[string]archiveAttachment
 	scoredTests []int
 	props       *Properties
 }
@@ -57,7 +74,11 @@ type Properties struct {
 }
 
 func NewArchiveCtx() *ArchiveCtx {
-	return &ArchiveCtx{tests: make(map[int]archiveTest), scoredTests: make([]int, 0, 10)}
+	return &ArchiveCtx{
+		tests:       make(map[int]archiveTest),
+		attachments: make(map[string]archiveAttachment),
+		scoredTests: make([]int, 0, 10),
+	}
 }
 
 func ProcessScoreFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
@@ -103,6 +124,58 @@ func ProcessScoreFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 
 func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	name := path.Base(file.Name)
+	for _, dir := range filepath.SplitList(path.Dir(file.Name)) {
+		if dir == "attachments" { // Is attachment
+			if strings.HasSuffix(name, ".att_props") {
+				var props attachmentProps
+
+				name = strings.TrimSuffix(name, ".att_props")
+
+				f, err := file.Open()
+				if err != nil {
+					return kilonova.WrapError(err, "Couldn't open props file")
+				}
+				if err := json.NewDecoder(f).Decode(&props); err != nil {
+					f.Close()
+					return kilonova.WrapError(err, "Invalid props file")
+				}
+				f.Close()
+
+				_, ok := ctx.attachments[name]
+				if ok {
+					val := ctx.attachments[name]
+					val.Visible = props.Visible
+					val.Private = props.Private
+					val.Exec = props.Exec
+					ctx.attachments[name] = val
+				} else {
+					ctx.attachments[name] = archiveAttachment{
+						Name:    name,
+						Visible: props.Visible,
+						Private: props.Private,
+						Exec:    props.Exec,
+					}
+				}
+			} else {
+				_, ok := ctx.attachments[name]
+				if ok {
+					val := ctx.attachments[name]
+					val.File = file
+					ctx.attachments[name] = val
+				} else {
+					ctx.attachments[name] = archiveAttachment{
+						File:    file,
+						Name:    name,
+						Visible: false,
+						Private: false,
+						Exec:    false,
+					}
+				}
+			}
+			return nil
+		}
+	}
+
 	if strings.HasSuffix(name, ".txt") { // test score file
 		return ProcessScoreFile(ctx, file)
 	}
@@ -259,6 +332,49 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 		f.Close()
 	}
 
+	if len(aCtx.attachments) > 0 {
+		atts, err := base.ProblemAttachments(ctx, pb.ID)
+		if err != nil {
+			zap.S().Warn("Couldn't get problem attachments")
+			return kilonova.WrapError(err, "Couldn't get attachments")
+		}
+		attIDs := []int{}
+		for _, att := range atts {
+			attIDs = append(attIDs, att.ID)
+		}
+		// TODO: In the future maybe opt in to a "merging" strategy instead of delete and add?
+		if len(attIDs) > 0 {
+			if _, err := base.DeleteAttachments(ctx, pb.ID, attIDs); err != nil {
+				zap.S().Warn("Couldn't remove attachments")
+				return kilonova.WrapError(err, "Couldn't delete attachments")
+			}
+		}
+		for _, att := range aCtx.attachments {
+			if att.File == nil {
+				zap.S().Infof("Skipping attachment %s since it only has props", att.Name)
+				continue
+			}
+
+			f, err := att.File.Open()
+			if err != nil {
+				zap.S().Warn("Couldn't open attachment zip file", err)
+				continue
+			}
+
+			if err := base.CreateAttachment(ctx, &kilonova.Attachment{
+				Name:    att.Name,
+				Private: att.Private,
+				Visible: att.Visible,
+				Exec:    att.Exec,
+			}, pb.ID, f); err != nil {
+				zap.S().Warn("Couldn't create attachment", err)
+				f.Close()
+				continue
+			}
+			f.Close()
+		}
+	}
+
 	if aCtx.props != nil {
 		shouldUpd := false
 		upd := kilonova.ProblemUpdate{}
@@ -329,8 +445,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 	return nil
 }
 
-// TODO: Add attachments when support for importing is added above.
-func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, base *sudoapi.BaseAPI) *kilonova.StatusError {
+func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, base *sudoapi.BaseAPI, brief bool) *kilonova.StatusError {
 	ar := zip.NewWriter(w)
 	tests, err := base.Tests(ctx, pb.ID)
 	defer ar.Close()
@@ -378,6 +493,37 @@ func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, bas
 				return kilonova.WrapError(err, "Couldn't save test output file")
 			}
 			r.Close()
+		}
+	}
+	if !brief {
+		// Then, attachments, if not brief
+		atts, err := base.ProblemAttachments(ctx, pb.ID)
+		if err != nil {
+			return kilonova.WrapError(err, "Couldn't get attachments")
+		}
+		for _, att := range atts {
+			pFile, err := ar.Create("attachments/" + att.Name + ".att_props")
+			if err != nil {
+				return kilonova.WrapError(err, "Couldn't create archive attachment props file")
+			}
+			if err := json.NewEncoder(pFile).Encode(attachmentProps{
+				Visible: att.Visible,
+				Private: att.Private,
+				Exec:    att.Exec,
+			}); err != nil {
+				return kilonova.WrapError(err, "Couldn't encode attachment props")
+			}
+			attFile, err := ar.Create("attachments/" + att.Name)
+			if err != nil {
+				return kilonova.WrapError(err, "Couldn't create attachment file")
+			}
+			data, err1 := base.AttachmentData(ctx, att.ID)
+			if err1 != nil {
+				return kilonova.WrapError(err, "Couldn't get attachment data")
+			}
+			if _, err := attFile.Write(data); err != nil {
+				return kilonova.WrapError(err, "Couldn't save attachment file")
+			}
 		}
 	}
 	{
@@ -435,14 +581,18 @@ func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, bas
 		if pb.DefaultPoints != 0 {
 			fmt.Fprintf(gr, "default_score=%d\n", pb.DefaultPoints)
 		}
-		if pb.AuthorCredits != "" {
-			fmt.Fprintf(gr, "author=%s\n", pb.AuthorCredits)
-		}
-		if pb.SourceCredits != "" {
-			fmt.Fprintf(gr, "source=%s\n", pb.SourceCredits)
-		}
 		fmt.Fprintf(gr, "console_input=%t\n", pb.ConsoleInput)
 		fmt.Fprintf(gr, "test_name=%s\n", testName)
+
+		if !brief {
+			if pb.AuthorCredits != "" {
+				fmt.Fprintf(gr, "author=%s\n", pb.AuthorCredits)
+			}
+			if pb.SourceCredits != "" {
+				fmt.Fprintf(gr, "source=%s\n", pb.SourceCredits)
+			}
+		}
+
 	}
 	return nil
 }

@@ -1,3 +1,5 @@
+- v0.14.1:
+    - Added support for attachments inside test arhives.
 - v0.14.0:
     - Dark mode toggle (instead of relying on browser preference);
     - Support for multiple languages in statements;

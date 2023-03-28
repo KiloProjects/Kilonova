@@ -138,10 +138,15 @@ func (rt *Web) testIndex() func(w http.ResponseWriter, r *http.Request) {
 
 func (rt *Web) testArchive() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		briefStr := r.FormValue("brief")
+		var brief bool
+		if briefStr == "true" || briefStr == "on" {
+			brief = true
+		}
 		w.Header().Add("Content-Type", "application/zip")
 		w.Header().Add("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.zip"`, slug.Make(util.Problem(r).Name)))
 		w.WriteHeader(200)
-		if err := test.GenerateArchive(r.Context(), util.Problem(r), w, rt.base); err != nil {
+		if err := test.GenerateArchive(r.Context(), util.Problem(r), w, rt.base, brief); err != nil {
 			zap.S().Warn(err)
 			fmt.Fprint(w, err)
 		}

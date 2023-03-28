@@ -41,9 +41,12 @@
                     </tr>
                 </tbody>
             </table>
-            <button class="btn btn-red mr-2" onclick="deleteTests()">{{getText "deleteTests"}}</button>
-            <button class="btn btn-blue mr-2" onclick="updateTests()">{{getText "updateTestScores"}}</button>
-            <a class="btn btn-blue" href="/problems/{{$pb.ID}}/edit/test/archive">{{getText "downloadTestArchive"}}</a>
+            <div class="block mb-2">
+                <button class="btn btn-red mr-2" onclick="deleteTests()">{{getText "deleteTests"}}</button>
+                <button class="btn btn-blue" onclick="updateTests()">{{getText "updateTestScores"}}</button>
+            </div>
+            <a class="inline-block btn btn-blue mr-2" href="/problems/{{$pb.ID}}/edit/test/archive?brief=true">{{getText "downloadTestArchive"}}</a>
+            <a class="inline-block btn btn-blue" href="/problems/{{$pb.ID}}/edit/test/archive">{{getText "downloadProblemArchive"}}</a>
         {{ end }}
 
         <div class="my-2 page-sidebar-divider"></div>
