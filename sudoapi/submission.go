@@ -28,21 +28,13 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 	filter.Look = true
 	filter.LookingUser = lookingUser
 
-	subs, err := s.db.Submissions(ctx, filter)
+	subs, cnt, err := s.db.Submissions(ctx, filter)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return nil, ErrUnknownError
 		}
 		zap.S().Warn(err)
 		return nil, ErrUnknownError
-	}
-	cnt, err1 := s.countSubmissions(ctx, filter)
-	if err1 != nil {
-		if errors.Is(err1, context.Canceled) {
-			return nil, err1
-		}
-		zap.S().Warn(err1)
-		return nil, err1
 	}
 
 	users := make(map[int]*UserBrief)
@@ -105,20 +97,12 @@ func (s *BaseAPI) RawSubmission(ctx context.Context, id int) (*kilonova.Submissi
 
 // Should only ever be used for grader stuff
 func (s *BaseAPI) RawSubmissions(ctx context.Context, filter kilonova.SubmissionFilter) ([]*kilonova.Submission, *StatusError) {
-	subs, err := s.db.Submissions(ctx, filter)
+	subs, _, err := s.db.Submissions(ctx, filter)
 	if err != nil {
 		zap.S().Warn(err)
 		return nil, ErrUnknownError
 	}
 	return subs, nil
-}
-
-func (s *BaseAPI) countSubmissions(ctx context.Context, filter kilonova.SubmissionFilter) (int, *StatusError) {
-	count, err := s.db.CountSubmissions(ctx, filter)
-	if err != nil {
-		return -1, WrapError(err, "Couldn't count submissions")
-	}
-	return count, nil
 }
 
 type FullSubmission struct {
