@@ -220,7 +220,9 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 
 		langs := eval.Langs
 		if evalSettings, err := rt.base.ProblemSettings(r.Context(), util.Problem(r).ID); err != nil {
-			zap.S().Warn("Error getting problem settings:", err, util.Problem(r).ID)
+			if !errors.Is(err, context.Canceled) {
+				zap.S().Warn("Error getting problem settings:", err, util.Problem(r).ID)
+			}
 			rt.statusPage(w, r, 500, "Couldn't get problem settings")
 		} else if evalSettings.OnlyCPP {
 			newLangs := make(map[string]eval.Language)

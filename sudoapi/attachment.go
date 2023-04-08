@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -164,7 +165,9 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 	var settings = &kilonova.ProblemEvalSettings{}
 	atts, err := s.ProblemAttachments(ctx, problemID)
 	if err != nil {
-		zap.S().Warn(err)
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
 		return nil, WrapError(err, "Couldn't get problem settings")
 	}
 

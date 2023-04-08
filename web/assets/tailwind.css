@@ -116,6 +116,10 @@
 	.enhance-tables table th {
 		@apply kn-table-cell;
 	}
+
+	.statement-images img {
+		@apply p-1;
+	}
 }
 
 @layer components {
