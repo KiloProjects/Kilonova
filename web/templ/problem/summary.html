@@ -64,7 +64,7 @@
                 </p>
                 {{ else }}
                 <details class="reset-list" {{ if .Topbar.IsProblemEditor }}open{{end}}>
-                    <summary>{{getText "editors"}}</summary>
+                    <summary>{{getText "editors"}}:</summary>
                     <ul>
                         {{ range .Problem.Editors }}
                         {{ with user .}}
@@ -77,7 +77,7 @@
                 {{ if .Topbar.IsProblemEditor }}
                 {{ with .Problem.Viewers }}
                 <details class="reset-list">
-                    <summary>{{getText "viewers"}}</summary>
+                    <summary>{{getText "viewers"}}:</summary>
                     <ul>
                         {{ range . }}
                         {{ with user .}}

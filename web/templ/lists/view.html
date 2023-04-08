@@ -47,6 +47,64 @@
 		<button class="btn btn-blue mr-2" type="submit">{{getText "button.update"}}</button>
         <button id="delButton" class="btn btn-red">{{getText "button.delete"}}</button>
 	</form>
+
+{{if authedUser.Admin}}
+    <div class="my-2">
+        <button id="visibleButton" class="btn btn-blue mr-2">{{getText "makeProblemsVisible"}}</button>
+        <button id="invisibleButton" class="btn btn-blue mr-2">{{getText "makeProblemsHidden"}}</button>
+    </div>
+<script>
+let problemIDs = {{.List}};
+
+// TODO: Maybe make a popup with a progress bar?
+async function makeProblemsVisible(e) {
+    e.preventDefault();
+    let promises = [];
+    for(let pb of problemIDs) {
+        promises.push((async (pbID) => {
+            let res = await bundled.postCall(`/problem/${pbID}/update/`, {visible: true})
+            if(res.status === "error") {
+                bundled.apiToast(res)
+                throw Error(res.data)
+            }
+        })(pb))
+    }
+    let rez = await Promise.allSettled(promises);
+    for(let p of rez) {
+        if(p.status === "rejected") {
+            bundled.apiToast({status: "error", data: "Failed to make all problems visible"});
+            return
+        }
+    }
+    window.location.reload();
+}
+
+async function makeProblemsHidden(e) {
+    e.preventDefault();
+    let promises = [];
+    for(let pb of problemIDs) {
+        promises.push((async (pbID) => {
+            let res = await bundled.postCall(`/problem/${pbID}/update/`, {visible: false})
+            if(res.status === "error") {
+                bundled.apiToast(res)
+                throw Error(res.data)
+            }
+        })(pb))
+    }
+    let rez = await Promise.allSettled(promises);
+    for(let p of rez) {
+        if(p.status === "rejected") {
+            bundled.apiToast({status: "error", data: "Failed to make all problems hidden"});
+            return
+        }
+    }
+    window.location.reload();
+}
+
+document.getElementById("visibleButton").addEventListener("click", makeProblemsVisible);
+document.getElementById("invisibleButton").addEventListener("click", makeProblemsHidden);
+</script>
+{{ end }}
 <script>
 let problemListID = {{.ID}};
 var cm = CodeMirror.fromTextArea(document.getElementById("desc_tarea"), {

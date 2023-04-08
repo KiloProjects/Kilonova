@@ -949,6 +949,14 @@ ro = "puncte"
 en = "Make code"
 ro = "Fă codul"
 
+[makeProblemsVisible]
+en = "Make all problems vizible"
+ro = "Fă toate problemele vizibile"
+
+[makeProblemsHidden]
+en = "Make all problems hidden"
+ro = "Fă toate problemele ascunse"
+
 [download]
 en = "Download"
 ro = "Descărcare"
