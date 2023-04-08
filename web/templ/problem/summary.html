@@ -63,7 +63,7 @@
                     {{ end }}
                 </p>
                 {{ else }}
-                <details class="reset-list" open>
+                <details class="reset-list" {{ if .Topbar.IsProblemEditor }}open{{end}}>
                     <summary>{{getText "editors"}}</summary>
                     <ul>
                         {{ range .Problem.Editors }}
