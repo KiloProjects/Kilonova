@@ -29,7 +29,7 @@
         <select id="sub_language" class="form-select">
             {{ range $name, $lang := .Languages }}
             {{ if not $lang.Disabled }}
-            <option value="{{$name}}" {{if eq $name "cpp14" }}selected{{end}}>{{$lang.PrintableName}}</option>
+            <option value="{{$name}}" {{if eq $name "cpp17" }}selected{{end}}>{{$lang.PrintableName}}</option>
             {{ end }}
             {{ end }}
         </select>
@@ -58,7 +58,7 @@
 <script>
     // cm name should remain, or be updated in pb_submit.html as well
     var cm = CodeMirror.fromTextArea(document.getElementById("SubArea"), {
-        mode: bundled.languages["cpp14"],
+        mode: bundled.languages["cpp17"],
     });
 
     document.getElementById("submit_style").addEventListener("change", (e) => {

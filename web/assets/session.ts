@@ -123,8 +123,8 @@ export function toggleTheme(e?: Event) {
 export function getCodeLangPreference(): string {
 	let val = cookie.get("kn-lang-pref");
 	if (val == "" || typeof val === "undefined" || !Object.keys(window.platform_info.langs).includes(val)) {
-		setCodeLangPreference("cpp14");
-		return "cpp14";
+		setCodeLangPreference("cpp17");
+		return "cpp17";
 	}
 	return val;
 }
