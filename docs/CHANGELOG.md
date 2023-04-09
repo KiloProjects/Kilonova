@@ -1,5 +1,12 @@
+- v0.14.2:
+    - Show problem edit options on hover directly (on mobile, tap the "Edit Problem" link);
+    - Make C++17 default preference for submitting;
+    - Conditional automatic opening of editors list on problem statement page;
+    - Some more paddings and margins for images and tables;
+    - Add buttons for quick toggling problem visibility on problem lists (only shallow visibility toggle, it doesn't recurse).
 - v0.14.1:
-    - Added support for attachments inside test arhives.
+    - Added support for attachments inside test arhives;
+    - Fix text casing.
 - v0.14.0:
     - Dark mode toggle (instead of relying on browser preference);
     - Support for multiple languages in statements;
