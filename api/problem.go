@@ -10,15 +10,14 @@ import (
 func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		UserID    int
-		ProblemID int
+		UserID int
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 400)
 		return
 	}
 
-	if args.UserID == 0 {
+	if args.UserID <= 0 {
 		if util.UserBrief(r) == nil {
 			errorData(w, "No user specified", 400)
 			return
@@ -26,12 +25,7 @@ func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
 		args.UserID = util.UserBrief(r).ID
 	}
 
-	if args.ProblemID == 0 {
-		errorData(w, "No problem specified", 400)
-		return
-	}
-
-	returnData(w, s.base.MaxScore(r.Context(), args.UserID, args.ProblemID))
+	returnData(w, s.base.MaxScore(r.Context(), args.UserID, util.Problem(r).ID))
 }
 
 func (s *API) deleteProblem(w http.ResponseWriter, r *http.Request) {

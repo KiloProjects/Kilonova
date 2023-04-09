@@ -101,7 +101,7 @@
                 <p>{{getText "source"}}: {{.Problem.SourceCredits}}</p>
                 {{- end -}}
                 {{ if authed }}
-                <p>{{getText "score"}}: {{subScore .Problem .Ctx.User.Brief}}</p>
+                <p>{{getText "score"}}: <span id="max_score_counter">{{subScore .Problem .Ctx.User.Brief}}</span></p>
                 {{ end }}
             </div>
         </div>
@@ -181,6 +181,18 @@
         params.set("pref_format", fmt)
         window.location.search = params.toString()
     })
+    const maxScoreElem = document.getElementById("max_score_counter");
+    if(maxScoreElem !== null) {
+        document.addEventListener("kn-poll", async () => {
+            // Update max score on poll
+            const res = await bundled.getCall("/problem/{{.Problem.ID}}/get/maxScore", {})
+            if(res.status === "error") {
+                console.error(res.data)
+                return
+            }
+            maxScoreElem.innerText = res.data
+        }) 
+    }
 </script>
 
 {{ if authed }}

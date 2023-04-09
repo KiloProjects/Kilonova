@@ -69,7 +69,6 @@ func (s *API) Handler() http.Handler {
 		r.Get("/get", s.getProblems)
 
 		r.With(s.MustBeProposer).Post("/create", s.initProblem)
-		r.Get("/maxScore", s.maxScore)
 
 		r.Route("/{problemID}", func(r chi.Router) {
 			r.Use(s.validateProblemID)
@@ -112,6 +111,7 @@ func (s *API) Handler() http.Handler {
 			}))
 
 			r.Route("/get", func(r chi.Router) {
+				r.Get("/maxScore", s.maxScore)
 				r.Get("/attachments", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
 					return s.base.ProblemAttachments(ctx, util.ProblemContext(ctx).ID)
 				}))
