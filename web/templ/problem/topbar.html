@@ -47,7 +47,7 @@
 
     {{ end }}
 </h1>
-<div class="mt-1 mb-2">
+<div id="topbar_wrapper" class="mt-1 mb-2">
     {{ if $topbar.Contest }}
         <a class="p-1 {{if (eq $topbar.Page `contest_general`)}} topbar-selected {{end}}" href="{{$topbar.URLPrefix}}/">
             {{getText "contest_info"}}
@@ -105,38 +105,60 @@
     {{ end }}
     {{ if $topbar.IsProblemEditor }}
         <div class="topbar-separator topbar-separator-lg"></div>
-        {{ if $editProblemPage }}
-            <a class="p-1 {{if (eq $topbar.Page `general`)}} topbar-selected {{end}}" href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/edit">
-                {{getText "general"}}
-            </a>
-            <div class="topbar-separator"></div>
-            <a class="p-1 {{if (eq $topbar.Page `desc`)}} topbar-selected {{end}}" href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/edit/desc">
-                {{getText "desc"}}
-            </a>
-            <div class="topbar-separator"></div>
-            <a class="p-1 {{if (eq $topbar.Page `access`)}} topbar-selected {{end}}" href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/edit/access">
-                {{getText "access_control_short"}}
-            </a>
-            <div class="topbar-separator"></div>
-            <a class="p-1 {{if (eq $topbar.Page `attachments`)}} topbar-selected {{end}}"
-                href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/edit/attachments">
-                {{getText "attachments"}}
-            </a>
-            <div class="topbar-separator"></div>
-            <a class="p-1 {{if and (eq $topbar.Page `tests`) (eq $topbar.PageID -2)}} topbar-selected {{end}}"
-                href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/edit/test">
-                {{getText "tests"}}
-            </a>
-            <div class="topbar-separator"></div>
-            <a class="p-1 {{if and (eq $topbar.Page `subtasks`) (eq $topbar.PageID -2)}} topbar-selected {{end}}"
-                href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/edit/subtasks">
-                {{getText "subTasks"}}
-            </a>
-        {{ else }}
-            <a class="p-1 {{if (eq $topbar.Page `general`)}} topbar-selected {{end}}" href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/edit">
+        <span id="problem_topbar_wrapper">
+            <a id="topbar_edit_toggle" class="p-1 {{if $editProblemPage}}hidden{{end}}" href="#">
                 {{getText "topbar.edit"}}
             </a>
-        {{ end }}
+            <span id="pb_edit_context" class="{{if not $editProblemPage}}hidden{{end}}">
+                <a class="p-1 {{if (eq $topbar.Page `general`)}} topbar-selected {{end}}" href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/edit">
+                    {{getText "general"}}
+                </a>
+                <div class="topbar-separator"></div>
+                <a class="p-1 {{if (eq $topbar.Page `desc`)}} topbar-selected {{end}}" href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/edit/desc">
+                    {{getText "desc"}}
+                </a>
+                <div class="topbar-separator"></div>
+                <a class="p-1 {{if (eq $topbar.Page `access`)}} topbar-selected {{end}}" href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/edit/access">
+                    {{getText "access_control_short"}}
+                </a>
+                <div class="topbar-separator"></div>
+                <a class="p-1 {{if (eq $topbar.Page `attachments`)}} topbar-selected {{end}}"
+                    href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/edit/attachments">
+                    {{getText "attachments"}}
+                </a>
+                <div class="topbar-separator"></div>
+                <a class="p-1 {{if and (eq $topbar.Page `tests`) (eq $topbar.PageID -2)}} topbar-selected {{end}}"
+                    href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/edit/test">
+                    {{getText "tests"}}
+                </a>
+                <div class="topbar-separator"></div>
+                <a class="p-1 {{if and (eq $topbar.Page `subtasks`) (eq $topbar.PageID -2)}} topbar-selected {{end}}"
+                    href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/edit/subtasks">
+                    {{getText "subTasks"}}
+                </a>
+            </span>    
+        </span>
+        <script>
+            let force_open = {{$editProblemPage}};
+            console.log(force_open)
+
+            if(force_open === false) {
+                document.getElementById("topbar_edit_toggle")?.addEventListener("click", (e) => {
+                    force_open = true;
+                    e.preventDefault();
+                    document.getElementById("topbar_edit_toggle").classList.toggle("hidden", force_open)
+                    document.getElementById("pb_edit_context").classList.toggle("hidden", !force_open)
+                });
+                document.getElementById("problem_topbar_wrapper").addEventListener("mouseenter", (e) => {
+                    document.getElementById("topbar_edit_toggle").classList.toggle("hidden", true)
+                    document.getElementById("pb_edit_context").classList.toggle("hidden", false)    
+                })
+                document.getElementById("topbar_wrapper").addEventListener("mouseleave", (e) => {
+                    document.getElementById("topbar_edit_toggle").classList.toggle("hidden", force_open)
+                    document.getElementById("pb_edit_context").classList.toggle("hidden", !force_open)    
+                })
+            }
+        </script>
     {{ end }}
 {{ end }}
 </div>

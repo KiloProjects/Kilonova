@@ -102,7 +102,7 @@
 	}
 
 	.enhance-tables table {
-		@apply kn-table;
+		@apply kn-table my-2;
 	}
 
 	.enhance-tables table tr {

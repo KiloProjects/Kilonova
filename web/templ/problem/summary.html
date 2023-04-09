@@ -18,7 +18,7 @@
 <div class="page-holder">
     <div class="page-content reset-list enhance-tables statement-images">
         {{ if gt (len .Variants) 1 }}
-            <label class="block mb-2">
+            <label class="block my-2">
                 <span class="form-label">{{getText "statementFormat"}}:</span> 
                 <select id="variant-select" class="form-select" autocomplete="off">
                     {{ range .Variants }}
@@ -42,7 +42,6 @@
         </div>
     </div>
 
-    </script>
     <div class="page-sidebar">
         {{ if .Topbar.Contest }}
         {{ template "contest_sidebar.html" .Topbar.Contest }}
