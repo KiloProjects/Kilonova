@@ -24,7 +24,14 @@
                 <span class="form-label ml-2">{{getText "consoleInput"}}</span>
             </label>
             <label class="block my-2">
-                <span class="mr-2 text-xl">{{getText "testName"}}:</span>
+                <span class="form-label">{{getText "scoring_strategy"}}:</span>
+                <select id="scoring_strategy" class="form-select">
+                    <option value="max_submission" {{if eq .Problem.ScoringStrategy `max_submission`}}selected{{end}}>{{getText "max_submission_strat"}}</option>
+                    <option value="sum_subtasks" {{if eq .Problem.ScoringStrategy `sum_subtasks`}}selected{{end}}>{{getText "sum_subtasks_strat"}}</option>
+                </select>
+            </label>
+            <label class="block my-2">
+                <span class="form-label">{{getText "testName"}}:</span>
                 <input id="testName" class="form-input" type="text" value="{{.Problem.TestName}}" />
             </label>
             <label class="block my-2">
@@ -86,6 +93,7 @@
             author_credits: document.getElementById("authorCredits").value,
             source_credits: document.getElementById("sourceCredits").value,
             console_input: document.getElementById("consoleInput").checked,
+            scoring_strategy: document.getElementById("scoring_strategy").value,
             test_name: document.getElementById("testName").value,
             memory_limit: Math.trunc(parseFloat(document.getElementById("memoryLimit").value) * 1024),
             time_limit: parseFloat(document.getElementById("timeLimit").value),

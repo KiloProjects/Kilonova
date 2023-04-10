@@ -8,6 +8,14 @@ var (
 	ErrAttachmentExists = Statusf(400, "Attachment with that name already exists!")
 )
 
+type ScoringType string
+
+const (
+	ScoringTypeNone        ScoringType = ""
+	ScoringTypeMaxSub      ScoringType = "max_submission"
+	ScoringTypeSumSubtasks ScoringType = "sum_subtasks"
+)
+
 type Problem struct {
 	ID            int       `json:"id"`
 	CreatedAt     time.Time `json:"created_at"`
@@ -29,6 +37,8 @@ type Problem struct {
 
 	// Eval stuff
 	ConsoleInput bool `json:"console_input"`
+
+	ScoringStrategy ScoringType `json:"scoring_strategy"`
 }
 
 type StatementVariant struct {
@@ -82,6 +92,8 @@ type ProblemUpdate struct {
 
 	ConsoleInput *bool `json:"console_input"`
 	Visible      *bool `json:"visible"`
+
+	ScoringStrategy ScoringType `json:"scoring_strategy"`
 }
 
 type Attachment struct {

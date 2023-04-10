@@ -25,6 +25,8 @@ type PropertiesRaw struct {
 	Source       *string  `props:"source"`
 	ConsoleInput *string  `props:"console_input"`
 	TestName     *string  `props:"test_name"`
+
+	ScoringStrategy *string `props:"scoring_strategy"`
 }
 
 func ParsePropertiesFile(r io.Reader) (*PropertiesRaw, bool, error) {
@@ -83,6 +85,9 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 		if *props.MemoryLimit > config.Common.TestMaxMemKB {
 			return kilonova.Statusf(400, "Maximum memory must not exceed %f MB", float64(config.Common.TestMaxMemKB)/1024.0)
 		}
+	}
+	if rawProps.ScoringStrategy != nil && (*rawProps.ScoringStrategy == string(kilonova.ScoringTypeMaxSub) || *rawProps.ScoringStrategy == string(kilonova.ScoringTypeSumSubtasks)) {
+		props.ScoringStrategy = kilonova.ScoringType(*rawProps.ScoringStrategy)
 	}
 	if rawProps.ConsoleInput != nil && (*rawProps.ConsoleInput == "true" || *rawProps.ConsoleInput == "false") {
 		val := *rawProps.ConsoleInput == "true"

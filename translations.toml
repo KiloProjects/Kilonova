@@ -424,6 +424,18 @@ ro = "Sursă"
 en = "Problem Type"
 ro = "Tip Problemă"
 
+[scoring_strategy]
+en = "Scoring strategy"
+ro = "Strategie punctare"
+
+[max_submission_strat]
+en = "Maximum score submission (default)"
+ro = "Submisia de scor maxim (implicit)"
+
+[sum_subtasks_strat]
+en = "Sum of maximum subtasks"
+ro = "Suma maximelor subtaskurilor"
+
 [classic]
 en = "Classic"
 ro = "Clasic"

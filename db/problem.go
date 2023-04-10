@@ -32,6 +32,8 @@ type dbProblem struct {
 
 	// Eval stuff
 	ConsoleInput bool `db:"console_input"`
+
+	ScoringStrategy kilonova.ScoringType `db:"scoring_strategy"`
 }
 
 type dbScoredProblem struct {
@@ -261,6 +263,9 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []any) {
 	if v := upd.Visible; v != nil {
 		toUpd, args = append(toUpd, "visible = ?"), append(args, v)
 	}
+	if v := upd.ScoringStrategy; v != kilonova.ScoringTypeNone {
+		toUpd, args = append(toUpd, "scoring_strategy = ?"), append(args, v)
+	}
 
 	return toUpd, args
 }
@@ -330,7 +335,8 @@ func (s *DB) internalToProblem(ctx context.Context, pb *dbProblem) (*kilonova.Pr
 		SourceCredits: pb.SourceCredits,
 		AuthorCredits: pb.AuthorCredits,
 
-		ConsoleInput: pb.ConsoleInput,
+		ConsoleInput:    pb.ConsoleInput,
+		ScoringStrategy: pb.ScoringStrategy,
 	}, nil
 }
 

@@ -37,6 +37,9 @@ func (s *BaseAPI) UpdateProblem(ctx context.Context, id int, args kilonova.Probl
 	if updater != nil && args.Visible != nil && !s.IsAdmin(updater) {
 		return Statusf(403, "User can't update visibility!")
 	}
+	if args.ScoringStrategy != kilonova.ScoringTypeNone && args.ScoringStrategy != kilonova.ScoringTypeMaxSub && args.ScoringStrategy != kilonova.ScoringTypeSumSubtasks {
+		return Statusf(400, "Invalid scoring strategy!")
+	}
 
 	if err := s.db.UpdateProblem(ctx, id, args); err != nil {
 		zap.S().Warn(err)

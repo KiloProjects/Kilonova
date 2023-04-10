@@ -71,6 +71,8 @@ type Properties struct {
 	DefaultPoints *int
 
 	SubtaskedTests []int
+
+	ScoringStrategy kilonova.ScoringType
 }
 
 func NewArchiveCtx() *ArchiveCtx {
@@ -402,6 +404,10 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 			shouldUpd = true
 			upd.ConsoleInput = aCtx.props.ConsoleInput
 		}
+		if aCtx.props.ScoringStrategy != kilonova.ScoringTypeNone {
+			shouldUpd = true
+			upd.ScoringStrategy = aCtx.props.ScoringStrategy
+		}
 		if aCtx.props.TestName != nil {
 			shouldUpd = true
 			upd.TestName = aCtx.props.TestName
@@ -583,6 +589,7 @@ func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, bas
 		}
 		fmt.Fprintf(gr, "console_input=%t\n", pb.ConsoleInput)
 		fmt.Fprintf(gr, "test_name=%s\n", testName)
+		fmt.Fprintf(gr, "scoring_strategy=%s\n", pb.ScoringStrategy)
 
 		if !brief {
 			if pb.AuthorCredits != "" {
