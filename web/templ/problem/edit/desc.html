@@ -50,8 +50,10 @@
         const rez = await bundled.getCall("/problem/{{.Problem.ID}}/get/attachmentByName/"+`statement-${newLang}.md`)
         if(rez.status !== "success") {
             document.getElementById("private_checkbox").checked = false
+            if (document.getElementById("attID").value != -1) {
+                cm.setValue("")
+            }
             document.getElementById("attID").value = -1
-            cm.setValue("")
             return
         }
 
