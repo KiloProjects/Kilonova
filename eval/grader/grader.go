@@ -345,7 +345,7 @@ func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, prob
 
 	var score = problem.DefaultPoints
 
-	if subTasks != nil && len(subTasks) > 0 {
+	if len(subTasks) > 0 {
 		h.localLogger.Info("Evaluating by subtasks")
 		subMap := make(map[int]*kilonova.SubTest)
 		for _, st := range subtests {
@@ -364,6 +364,9 @@ func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, prob
 				}
 			}
 			score += int(math.Round(float64(stk.Score) * float64(percentage) / 100.0))
+			if err := h.base.UpdateSubmissionSubtaskPercentage(ctx, stk.ID, percentage); err != nil {
+				zap.S().Warn(err)
+			}
 		}
 	} else {
 		h.localLogger.Info("Evaluating by addition")

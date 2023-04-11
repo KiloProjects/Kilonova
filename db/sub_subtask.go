@@ -19,6 +19,8 @@ type subSubtask struct {
 	ProblemID    int       `db:"problem_id"`
 	VisibleID    int       `db:"visible_id"`
 	Score        int       `db:"score"`
+
+	FinalPercentage *int `db:"final_percentage"`
 }
 
 func (s *DB) InitSubmissionSubtasks(ctx context.Context, userID int, submissionID int, problemID int) (err error) {
@@ -44,6 +46,11 @@ INSERT INTO submission_subtask_subtests
 		return
 	}
 
+	return
+}
+
+func (s *DB) UpdateSubmissionSubtaskPercentage(ctx context.Context, id int, percentage int) (err error) {
+	_, err = s.conn.ExecContext(ctx, `UPDATE submission_subtasks SET final_percentage = $1 WHERE id = $2`, percentage, id)
 	return
 }
 
@@ -93,5 +100,7 @@ ORDER BY subtests.visible_id ASC
 		VisibleID:    st.VisibleID,
 		Score:        st.Score,
 		Subtests:     ids,
+
+		FinalPercentage: st.FinalPercentage,
 	}, nil
 }

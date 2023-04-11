@@ -350,3 +350,10 @@ func (s *BaseAPI) SubmissionSubTasks(ctx context.Context, subID int) ([]*kilonov
 	}
 	return subs, nil
 }
+
+func (s *BaseAPI) UpdateSubmissionSubtaskPercentage(ctx context.Context, id int, score int) *kilonova.StatusError {
+	if err := s.db.UpdateSubmissionSubtaskPercentage(ctx, id, score); err != nil {
+		return WrapError(err, "Couldn't update subtask score")
+	}
+	return nil
+}
