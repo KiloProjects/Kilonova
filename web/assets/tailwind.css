@@ -402,6 +402,33 @@
 		@apply dark:bg-blue-600 dark:ring-blue-500;
 	}
 
+	.modal-container[open] {
+		@apply z-50 p-4 md:inset-0 dark:bg-gray-800 rounded-lg shadow-lg min-h-[max(30vh,250px)] min-w-[max(25vw,300px)] max-w-[90vw] lg:max-w-[50vw];
+		@apply flex flex-col items-stretch;
+		@apply border-2 border-gr;
+		@apply max-h-[95vh] !important;
+	}
+
+	.modal-container::backdrop {
+		@apply opacity-60 bg-black;
+	}
+
+	.modal-header {
+		@apply flex border-b-2 border-gr justify-between items-center pb-1;
+	}
+
+	.modal-close {
+		@apply fas fa-xmark text-2xl mr-2 rounded-lg border border-gr px-2 py-1 shadow-sm;
+	}
+
+	.modal-content {
+		@apply w-full h-full my-2 grow;
+	}
+
+	.modal-footer {
+		@apply flex border-t-2 border-gr justify-end items-center pt-2;
+	}
+
 	/* 
         this looks like it's going to be a sort of "standard" design between pages
         so let's standardize it
