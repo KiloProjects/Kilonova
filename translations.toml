@@ -1573,6 +1573,10 @@ ro = "Concursuri anterioare"
 en = "Total"
 ro = "Total"
 
+[position]
+en = "Position"
+ro = "Poziție"
+
 [leaderboard]
 en = "Leaderboard"
 ro = "Clasament"

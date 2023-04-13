@@ -129,12 +129,15 @@ export function ContestLeaderboard({ contestID }: { contestID: number }) {
 			<table class="kn-table">
 				<thead>
 					<tr>
+						<th class="kn-table-cell w-1/12" scope="col">
+							{getText("position")}
+						</th>
 						<th class="kn-table-cell" scope="col">
 							{getText("name")}
 						</th>
 						{problems.map((pb) => (
 							<th class="kn-table-cell" scope="col" key={pb.id}>
-								{pb.name}
+								<a href={`/contests/${contestID}/problems/${pb.id}`}>{pb.name}</a>
 							</th>
 						))}
 						<th class="kn-table-cell" scope="col">
@@ -143,17 +146,17 @@ export function ContestLeaderboard({ contestID }: { contestID: number }) {
 					</tr>
 				</thead>
 				<tbody>
-					{leaderboard.entries.map((entry) => (
+					{leaderboard.entries.map((entry, idx) => (
 						<tr class="kn-table-row" key={entry.user.id}>
+							<td class="kn-table-cell">{idx + 1}.</td>
 							<td class="kn-table-cell">
 								<a href={`/profile/${entry.user.name}`}>{entry.user.name}</a>
 							</td>
 							{problems.map((pb) => (
 								<td class="kn-table-cell" scope="col" key={entry.user.name + pb.id}>
-									{entry.scores[pb.id] ?? "-"}
+									{pb.id in entry.scores && entry.scores[pb.id] >= 0 ? entry.scores[pb.id] : "-"}
 								</td>
 							))}
-
 							<td class="kn-table-cell">{entry.total}</td>
 						</tr>
 					))}
