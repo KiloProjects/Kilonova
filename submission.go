@@ -79,6 +79,8 @@ type SubTest struct {
 	UserID       int       `db:"user_id" json:"user_id"`
 	SubmissionID int       `db:"submission_id" json:"submission_id"`
 
+	ContestID *int `db:"contest_id" json:"contest_id"`
+
 	VisibleID int `db:"visible_id" json:"visible_id"`
 	MaxScore  int `db:"max_score" json:"max_score"`
 }
@@ -99,9 +101,10 @@ type SubmissionSubTask struct {
 	UserID       int  `json:"user_id"`
 	SubtaskID    *int `json:"subtask_id"`
 
-	ProblemID int `json:"problem_id"`
-	VisibleID int `json:"visible_id"`
-	Score     int `json:"score"`
+	ProblemID int  `json:"problem_id"`
+	ContestID *int `json:"contest_id"`
+	VisibleID int  `json:"visible_id"`
+	Score     int  `json:"score"`
 
 	FinalPercentage *int `json:"final_percentage"`
 

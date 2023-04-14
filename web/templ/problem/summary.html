@@ -101,7 +101,7 @@
                 <p>{{getText "source"}}: {{.Problem.SourceCredits}}</p>
                 {{- end -}}
                 {{ if authed }}
-                <p>{{getText "score"}}: <span id="max_score_counter">{{subScore .Problem .Ctx.User.Brief}}</span></p>
+                <p>{{getText "score"}}: {{if eq .Problem.ScoringStrategy `sum_subtasks`}}<a class="max_score_breakdown" href="#" data-problemid="{{.Problem.ID}}">{{end}}<span id="max_score_counter">{{subScore .Problem .Ctx.User.Brief}}</span> {{if eq .Problem.ScoringStrategy `sum_subtasks`}}</a>{{end}}</p>
                 {{ end }}
             </div>
         </div>
@@ -122,7 +122,18 @@
                         <a {{ if eq $pbid .ID }} class="topbar-selected p-0" {{end}}
                             href="/problems/{{.ID}}">
                             {{.Name}}
-                        </a> {{ if not (eq $score "")}} ({{$score}} {{- if not (eq $score "-") -}}p{{end}}) {{ end }}
+                        </a> 
+                        {{ if not (eq $score "")}} 
+                            (
+                                {{- if eq .ScoringStrategy `sum_subtasks` -}}
+                                    <a class="max_score_breakdown" href="#" data-problemid="{{.ID}}">
+                                {{- end -}}
+                                {{$score}} {{- if not (eq $score "-") -}}p{{end}}
+                                {{- if eq .ScoringStrategy `sum_subtasks` -}}
+                                    </a>
+                                {{- end -}}
+                            ) 
+                        {{ end }}
                     </li>
                     {{ end }}
                 </ul>

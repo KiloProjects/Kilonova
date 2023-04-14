@@ -144,6 +144,19 @@ func (s *DB) MaxScore(ctx context.Context, userid, problemid int) int {
 	return score
 }
 
+func (s *DB) ContestMaxScore(ctx context.Context, userid, problemid, contestid int) int {
+	var score int
+
+	err := s.conn.GetContext(ctx, &score, "SELECT ms.score FROM max_score_contest_view ms WHERE ms.user_id = $1 AND ms.problem_id = $2 AND ms.contest_id = $3", userid, problemid, contestid)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			zap.S().Errorw("Couldn't get contest max score for ", zap.Int("userid", userid), zap.Int("problemid", problemid), zap.Int("contestid", contestid), zap.Error(err))
+		}
+		return -1
+	}
+	return score
+}
+
 func (s *DB) SolvedProblemIDs(ctx context.Context, userid int) ([]int, error) {
 	var pbs []int
 	err := s.conn.SelectContext(ctx, &pbs, `SELECT problem_id FROM max_score_view WHERE score = 100 AND user_id = $1 ORDER BY problem_id;`, userid)

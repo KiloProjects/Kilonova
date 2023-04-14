@@ -103,7 +103,6 @@ func (s *API) Handler() http.Handler {
 				r.Post("/updateSubTask", s.updateSubTask)
 				r.Post("/bulkUpdateSubTaskScores", s.bulkUpdateSubTaskScores)
 				r.Post("/bulkDeleteSubTasks", s.bulkDeleteSubTasks)
-
 			})
 
 			r.Post("/reevaluateSubs", webMessageWrapper("Reevaluating submissions", func(ctx context.Context, args struct{}) *kilonova.StatusError {
@@ -112,6 +111,7 @@ func (s *API) Handler() http.Handler {
 
 			r.Route("/get", func(r chi.Router) {
 				r.Get("/maxScore", s.maxScore)
+				r.Get("/maxScoreBreakdown", s.maxScoreBreakdown)
 				r.Get("/attachments", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
 					return s.base.ProblemAttachments(ctx, util.ProblemContext(ctx).ID)
 				}))

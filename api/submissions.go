@@ -11,18 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type subLine struct {
-	SubEditor     bool                 `json:"sub_editor"`
-	ProblemEditor bool                 `json:"problem_editor"`
-	Sub           *kilonova.Submission `json:"sub"`
-	User          *kilonova.UserBrief  `json:"author,omitempty"`
-	Problem       *kilonova.Problem    `json:"problem,omitempty"`
-	SubTests      []*kilonova.SubTest  `json:"subtests"`
-
-	SubTasks []*kilonova.SubmissionSubTask `json:"subtasks,omitempty"`
-}
-
-func (s *API) fullSubmission(ctx context.Context, id int, lookingUser *kilonova.UserBrief, looking bool) (*subLine, *kilonova.StatusError) {
+func (s *API) fullSubmission(ctx context.Context, id int, lookingUser *kilonova.UserBrief, looking bool) (*sudoapi.FullSubmission, *kilonova.StatusError) {
 	var sub *sudoapi.FullSubmission
 	var err *kilonova.StatusError
 	if looking {
@@ -34,14 +23,7 @@ func (s *API) fullSubmission(ctx context.Context, id int, lookingUser *kilonova.
 		return nil, err
 	}
 
-	return &subLine{
-		ProblemEditor: sub.ProblemEditor,
-		Sub:           &sub.Submission,
-		User:          sub.Author,
-		Problem:       sub.Problem,
-		SubTests:      sub.SubTests,
-		SubTasks:      sub.SubTasks,
-	}, nil
+	return sub, nil
 }
 
 // getSubmissionByID returns a submission based on an ID

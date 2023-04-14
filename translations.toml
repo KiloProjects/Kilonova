@@ -1688,3 +1688,15 @@ ro = "Conținut"
 [desc_link]
 en = "Statement can be downloaded here."
 ro = "Enunțul poate fi descărcat aici."
+
+[score_breakdown_title]
+en = "Score breakdown"
+ro = "Analiza scorului"
+
+[score_breakdown_unattempted]
+en = "It looks like the problem hasn't been attempted yet."
+ro = "Se pare că încă n-a fost încercată problema."
+
+[from_sub]
+en = "from"
+ro = "din"

@@ -1,5 +1,5 @@
 import { h, Fragment, render, Component, createRef } from "preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import register from "preact-custom-element";
 import { prettyLanguages } from "../langs";
 
@@ -13,19 +13,28 @@ const slugify = (str) =>
 		.replace(/[\s_-]+/g, "-")
 		.replace(/^-+|-+$/g, "");
 
-import { BigSpinner, Button, OlderSubmissions } from "./common";
+import { BigSpinner, OlderSubmissions } from "./common";
 
 import { downloadBlob, parseTime, sizeFormatter, getGradient } from "../util";
 
 import { getCall, postCall } from "../net";
+import { FullSubmission, SubTest, Submission, SubmissionSubTask, UserBrief, getSubmission } from "../api/submissions";
 
-function downloadCode(sub) {
+function downloadCode(sub: FullSubmission) {
+	if (typeof sub.code === "undefined") {
+		console.error("Trying to download code when it isn't available");
+		return;
+	}
 	var file = new Blob([sub.code], { type: "text/plain" });
 	var filename = `${slugify(sub.problem.name)}-${sub.id}.${sub.language.replace(/[0-9]+$/g, "").replace("outputOnly", "txt")}`;
 	downloadBlob(file, filename);
 }
 
-async function copyCode(sub) {
+async function copyCode(sub: Submission) {
+	if (typeof sub.code === "undefined") {
+		console.error("Trying to copy code when it isn't available");
+		return;
+	}
 	await navigator.clipboard.writeText(sub.code).then(
 		() => {
 			createToast({ status: "success", description: getText("copied") });
@@ -37,7 +46,7 @@ async function copyCode(sub) {
 	);
 }
 
-function Summary({ sub, pasteAuthor }) {
+function Summary({ sub, pasteAuthor }: { sub: FullSubmission; pasteAuthor?: UserBrief }) {
 	return (
 		<div class="page-sidebar-box">
 			<h2>{getText("info")}</h2>
@@ -123,9 +132,9 @@ function Summary({ sub, pasteAuthor }) {
 	);
 }
 
-function CompileErrorInfo({ sub }) {
+function CompileErrorInfo({ sub }: { sub: FullSubmission }) {
 	if (sub.compile_error !== true) {
-		if (sub.compile_message?.length > 0) {
+		if (typeof sub.compile_message !== "undefined" && sub.compile_message.length > 0) {
 			return (
 				<details>
 					<summary>
@@ -145,13 +154,15 @@ function CompileErrorInfo({ sub }) {
 				<summary>
 					<h2 class="inline-block">{getText("compileMsg")}</h2>
 				</summary>
-				<pre class="mb-2">{sub.compile_message?.length > 0 ? sub.compile_message : "No compilation message available"}</pre>
+				<pre class="mb-2">
+					{typeof sub.compile_message !== "undefined" && sub.compile_message.length > 0 ? sub.compile_message : "No compilation message available"}
+				</pre>
 			</details>
 		</>
 	);
 }
 
-function SubCode({ sub }) {
+function SubCode({ sub }: { sub: FullSubmission }) {
 	return (
 		<>
 			<h2>{getText("sourceCode")}:</h2>
@@ -182,10 +193,10 @@ function SubCode({ sub }) {
 	);
 }
 
-function TestTable({ sub }) {
+function TestTable({ sub }: { sub: FullSubmission }) {
 	function testSubTasks(subtestID) {
 		let stks: number[] = [];
-		for (let st of sub.subTasks) {
+		for (let st of sub.subtasks) {
 			if (st.subtests.includes(subtestID)) {
 				stks.push(st.visible_id as number);
 			}
@@ -204,12 +215,12 @@ function TestTable({ sub }) {
 					<th scope="col">{getText("memory")}</th>
 					<th scope="col">{getText("verdict")}</th>
 					<th scope="col">{getText("score")}</th>
-					{sub.subTasks.length > 0 && <th scope="col">{getText("subTasks")}</th>}
-					{sub.problemEditor && <th scope="col">{getText("output")}</th>}
+					{sub.subtasks.length > 0 && <th scope="col">{getText("subTasks")}</th>}
+					{sub.problem_editor && <th scope="col">{getText("output")}</th>}
 				</tr>
 			</thead>
 			<tbody>
-				{sub.subTests.map((subtest) => (
+				{sub.subtests.map((subtest) => (
 					<tr class="kn-table-row" key={"kn_test" + subtest.id}>
 						<th class="py-1" scope="row" id={`test-${subtest.visible_id}`}>
 							{subtest.visible_id}
@@ -220,7 +231,7 @@ function TestTable({ sub }) {
 								<td>{sizeFormatter(subtest.memory * 1024, 1, true)}</td>
 								<td>{subtest.verdict}</td>
 								<td class="text-black" style={{ backgroundColor: getGradient(subtest.score, 100) }}>
-									{sub.subTasks.length > 0 ? (
+									{sub.subtasks.length > 0 ? (
 										<>
 											{subtest.score}% {getText("correct")}
 										</>
@@ -241,8 +252,8 @@ function TestTable({ sub }) {
 								<td>-</td>
 							</>
 						)}
-						{sub.subTasks.length > 0 && <td>{testSubTasks(subtest.id).join(", ")}</td>}
-						{sub.problemEditor && (
+						{sub.subtasks.length > 0 && <td>{testSubTasks(subtest.id).join(", ")}</td>}
+						{sub.problem_editor && (
 							<td>
 								<a href={"/proposer/get/subtest_output/" + subtest.id}>{getText("output")}</a>
 							</td>
@@ -254,36 +265,32 @@ function TestTable({ sub }) {
 	);
 }
 
-function SubTask({ sub, subtask, detRef }) {
-	var stkScore = useMemo(() => {
-		let stk_score = 100;
-		for (let subtestID of subtask.subtests) {
-			let actualSubtest = sub.subTestIDs[subtestID];
-			if (actualSubtest !== undefined && actualSubtest.score < stk_score) {
-				stk_score = actualSubtest.score;
-			}
-		}
-		return stk_score;
-	}, [sub, subtask]);
-
-	let allSubtestsDone = useMemo(() => {
-		let done = true;
-		for (let subtestID of subtask.subtests) {
-			if (subtestID in sub.subTestIDs && !sub.subTestIDs[subtestID].done) {
-				done = false;
-			}
-		}
-		return done;
-	}, [sub, subtask]);
-	console.log(sub.subTests);
+export function SubTask({
+	subtests,
+	subtask,
+	problem_editor,
+	breakdown_mode,
+}: {
+	subtests: SubTest[];
+	subtask: SubmissionSubTask;
+	problem_editor: boolean;
+	breakdown_mode: boolean;
+}) {
 	return (
 		<details id={`stk-det-${subtask.visible_id}`} class="list-group-item">
 			<summary class="pb-1 mt-1">
 				{/* <span class="flex justify-between"> */}
-				<span>{getText("nthSubTask", subtask.visible_id)}</span>
-				{allSubtestsDone ? (
-					<span class="float-right badge" style={{ backgroundColor: getGradient(stkScore, 100) }}>
-						{Math.round((subtask.score * stkScore) / 100.0)} / {subtask.score}
+				<span>
+					{getText("nthSubTask", subtask.visible_id)}{" "}
+					{breakdown_mode && (
+						<>
+							({getText("from_sub")} <a href={`/submissions/${subtask.submission_id}`}>#{subtask.submission_id}</a>)
+						</>
+					)}
+				</span>
+				{typeof subtask.final_percentage !== "undefined" ? (
+					<span class="float-right badge" style={{ backgroundColor: getGradient(subtask.final_percentage, 100) }}>
+						{Math.round((subtask.score * subtask.final_percentage) / 100.0)} / {subtask.score}
 					</span>
 				) : (
 					<span class="float-right badge">
@@ -302,11 +309,11 @@ function SubTask({ sub, subtask, detRef }) {
 						<th scope="col">{getText("memory")}</th>
 						<th scope="col">{getText("verdict")}</th>
 						<th scope="col">{getText("score")}</th>
-						{sub.problemEditor && <th scope="col">{getText("output")}</th>}
+						{problem_editor && <th scope="col">{getText("output")}</th>}
 					</tr>
 				</thead>
 				<tbody>
-					{sub.subTests
+					{subtests
 						.filter((subtest) => subtask.subtests.includes(subtest.id))
 						.map((subtest) => (
 							<tr class="kn-table-row" key={"kn_test" + subtest.id}>
@@ -332,7 +339,7 @@ function SubTask({ sub, subtask, detRef }) {
 										<td>-</td>
 									</>
 								)}
-								{sub.problemEditor && (
+								{problem_editor && (
 									<td>
 										<a href={"/proposer/get/subtest_output/" + subtest.id}>{getText("output")}</a>
 									</td>
@@ -345,9 +352,7 @@ function SubTask({ sub, subtask, detRef }) {
 	);
 }
 
-function SubTasks({ sub, expandedTests }) {
-	let ref = createRef();
-
+function SubTasks({ sub, expandedTests }: { sub: FullSubmission; expandedTests: boolean }) {
 	return (
 		<>
 			<details open={true}>
@@ -355,12 +360,18 @@ function SubTasks({ sub, expandedTests }) {
 					<h2 class="inline-block">{getText("subTasks")}</h2>
 				</summary>
 				<div class="list-group mb-2">
-					{sub.subTasks.map((subtask) => (
-						<SubTask sub={sub} subtask={subtask} detRef={ref} key={"stk_" + subtask.id} />
+					{sub.subtasks.map((subtask) => (
+						<SubTask
+							subtests={sub.subtests}
+							problem_editor={sub.problem_editor}
+							subtask={subtask}
+							breakdown_mode={false}
+							key={"stk_" + subtask.id}
+						/>
 					))}
 				</div>
 			</details>
-			<details ref={ref} open={expandedTests}>
+			<details open={expandedTests}>
 				<summary>
 					<h2 class="inline-block">{getText("individualTests")}</h2>
 				</summary>
@@ -370,8 +381,8 @@ function SubTasks({ sub, expandedTests }) {
 	);
 }
 
-function SubmissionView({ sub, bigCode, pasteAuthor }: { sub: any; bigCode: boolean; pasteAuthor?: any }) {
-	if (typeof sub === "undefined" || sub === null || (sub && Object.keys(sub).length == 0)) {
+function SubmissionView({ sub, bigCode, pasteAuthor }: { sub: FullSubmission | null; bigCode: boolean; pasteAuthor?: any }) {
+	if (sub === null) {
 		return (
 			<div class="page-holder grid-cols-1">
 				<BigSpinner />
@@ -381,9 +392,8 @@ function SubmissionView({ sub, bigCode, pasteAuthor }: { sub: any; bigCode: bool
 	let content = (
 		<>
 			<CompileErrorInfo sub={sub} />
-			{sub.subTests?.length > 0 &&
-				sub.compile_error !== true &&
-				(sub.subTasks.length > 0 ? (
+			{sub.compile_error !== true &&
+				(sub.subtasks.length > 0 ? (
 					<SubTasks sub={sub} expandedTests={typeof pasteAuthor !== "undefined"} />
 				) : (
 					<>
@@ -425,32 +435,10 @@ function SubmissionView({ sub, bigCode, pasteAuthor }: { sub: any; bigCode: bool
 }
 
 type SubMgrState = {
-	sub: any;
+	sub: FullSubmission | null;
 };
 
-function transformSubmissionResponse(res: any): any {
-	let sub: any = {};
-
-	sub = res.sub;
-	sub.problemEditor = res.problem_editor;
-	sub.author = res.author;
-	sub.problem = res.problem;
-	if (res.subtasks) {
-		sub.subTasks = res.subtasks;
-	} else {
-		sub.subTasks = [];
-	}
-
-	if (res.subtests) {
-		sub.subTests = res.subtests;
-		sub.subTestIDs = {};
-		for (let subtest of res.subtests) {
-			sub.subTestIDs[subtest.id] = subtest;
-		}
-	}
-	return sub;
-}
-
+// TODO: Refactor into function
 export class SubmissionManager extends Component<{ id: number; bigCode?: boolean }, SubMgrState> {
 	poll_mu: boolean;
 	finished: boolean;
@@ -460,7 +448,7 @@ export class SubmissionManager extends Component<{ id: number; bigCode?: boolean
 		this.poll_mu = false;
 		this.finished = false;
 		this.setState(() => ({
-			sub: {},
+			sub: null,
 		}));
 
 		this.poller = null;
@@ -490,19 +478,18 @@ export class SubmissionManager extends Component<{ id: number; bigCode?: boolean
 		if (this.poll_mu === false) this.poll_mu = true;
 		else return;
 		console.info("Poll submission #", this.props.id);
-		let resp = await getCall("/submissions/getByID", {
-			id: this.props.id,
-		});
-		if (resp.status === "error") {
-			apiToast(resp);
-			console.error(resp);
+		try {
+			var resp = await getSubmission(this.props.id);
+		} catch (e) {
+			apiToast({ data: (e as Error).message, status: "error" });
+			console.error(e);
 			this.poll_mu = false;
 			return;
 		}
 
-		this.setState(() => ({ sub: transformSubmissionResponse(resp.data) }));
+		this.setState(() => ({ sub: resp }));
 
-		if (resp.data.sub.status === "finished") {
+		if (resp.status === "finished") {
 			this.stopPoller();
 			this.finished = true;
 			this.forceUpdate();
@@ -524,19 +511,22 @@ export class SubmissionManager extends Component<{ id: number; bigCode?: boolean
 }
 
 export function PasteViewer({ paste_id }: { paste_id: string }) {
-	let [sub, setSub] = useState({});
-	let [author, setAuthor] = useState({});
+	let [sub, setSub] = useState<FullSubmission | null>(null);
+	let [author, setAuthor] = useState<UserBrief | null>(null);
 
 	async function load() {
-		const res = await getCall(`/paste/${paste_id}`, {});
+		const res = await getCall<{
+			id: string;
+			sub: FullSubmission;
+			author: UserBrief;
+		}>(`/paste/${paste_id}`, {});
 		if (res.status === "error") {
 			apiToast(res);
 			return;
 		}
-		setSub(transformSubmissionResponse(res.data.sub));
+		setSub(res.data.sub);
 		setAuthor(res.data.author);
 	}
-	console.log("here");
 
 	useEffect(() => {
 		load().catch(console.error);

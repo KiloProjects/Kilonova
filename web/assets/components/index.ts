@@ -7,3 +7,4 @@ export * from "./subs_view";
 export * from "./sublist";
 export * from "./contest";
 export * from "./att_renamer";
+export * from "./maxscore_breakdown";

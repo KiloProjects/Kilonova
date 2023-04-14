@@ -1,3 +1,8 @@
+- v0.15.0:
+    - BIG: added another scoring type: maximum of subtasks accross submissions;
+    - Added new `<modal>` design for pop ups that will be slowly used in more and more places;
+    - Added position in contest leaderboards (along with links to problems);
+    - Fixed annoying bug in statement page that reset content without warning.
 - v0.14.2:
     - Show problem edit options on hover directly (on mobile, tap the "Edit Problem" link);
     - Make C++17 default preference for submitting;

@@ -3,12 +3,18 @@ import { getCall } from "../net";
 export type Submission = {
 	id: number;
 	created_at: string;
+	user_id: number;
+	problem_id: number;
+	language: string;
+	code?: string;
+	code_size: number;
+	compile_error: boolean;
+	compile_message?: string;
+	contest_id: number | null;
 	max_time: number;
 	max_memory: number;
 	score: number;
 	status: string;
-	code_size: number;
-	contest_id?: number;
 };
 
 export type UserBrief = {
@@ -16,12 +22,24 @@ export type UserBrief = {
 	name: string;
 	admin: boolean;
 	proposer: boolean;
-	bio: string;
+	bio?: string;
 };
 
 export type Problem = {
 	id: number;
+	created_at: string;
 	name: string;
+	test_name: string;
+	default_points: number;
+	visible: boolean;
+	editors: number[];
+	viewers: number[];
+	time_limit: number;
+	memory_limit: number;
+	source_credits: string;
+	author_credits: string;
+	console_input: boolean;
+	scoring_strategy: "sum_subtasks" | "max_submission";
 };
 
 export type ResultSubmission = {
@@ -76,6 +94,55 @@ export async function getSubmissions(q: SubmissionQuery) {
 
 export async function getUser(uid: number) {
 	let res = await getCall<UserBrief>("/user/get", { id: uid });
+	if (res.status === "error") {
+		throw new Error(res.data);
+	}
+	return res.data;
+}
+
+export type SubTest = {
+	id: number;
+	created_at: string;
+	done: boolean;
+	verdict: string;
+	time: number;
+	memory: number;
+	score: number;
+	test_id: number;
+	user_id: number;
+	submission_id: number;
+
+	visible_id: number;
+	max_score: number;
+};
+
+export type SubmissionSubTask = {
+	id: number;
+	created_at: string;
+
+	submission_id: number;
+	user_id: number;
+	subtask_id?: number;
+
+	problem_id: number;
+	visible_id: number;
+	score: number;
+	final_percentage?: number;
+
+	subtests: number[];
+};
+
+export type FullSubmission = Submission & {
+	author: UserBrief;
+	problem: Problem;
+	subtests: SubTest[];
+	subtasks: SubmissionSubTask[];
+
+	problem_editor: boolean;
+};
+
+export async function getSubmission(subID: number) {
+	let res = await getCall<FullSubmission>("/submissions/getByID", { id: subID });
 	if (res.status === "error") {
 		throw new Error(res.data);
 	}

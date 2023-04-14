@@ -34,3 +34,11 @@ func (s *BaseAPI) UpdateSubTest(ctx context.Context, id int, upd kilonova.SubTes
 	}
 	return nil
 }
+
+func (s *BaseAPI) MaximumScoreSubTaskTests(ctx context.Context, problemID, userID int, contestID *int) ([]*kilonova.SubTest, *StatusError) {
+	subs, err := s.db.MaximumScoreSubTaskTests(ctx, problemID, userID, contestID)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't get subtests for maximum subtasks")
+	}
+	return subs, nil
+}

@@ -1,6 +1,6 @@
 
 
-ALTER TABLE submission_subtasks ADD COLUMN final_percentage integer DEFAULT NULL;
+ALTER TABLE submission_subtasks ADD COLUMN final_percentage bigint DEFAULT NULL;
 
 WITH min_percentage AS (
     SELECT ssst.submission_subtask_id AS sub_subtask_id, MIN(sts.score) AS pcg FROM submission_subtask_subtests ssst, submission_tests sts 
@@ -32,7 +32,7 @@ CREATE OR REPLACE VIEW max_score_view (user_id, problem_id, score) AS
     ) SELECT users.id user_id, 
             pbs.id problem_id, 
             CASE WHEN pbs.scoring_strategy = 'max_submission' THEN COALESCE(ms_sub.max_score, -1)
-                 WHEN pbs.scoring_strategy = 'sum_subtasks'   THEN COALESCE(ms_subtask.max_score::integer, -1)
+                 WHEN pbs.scoring_strategy = 'sum_subtasks'   THEN COALESCE(ms_subtask.max_score, -1)
                  ELSE -1
             END score
     FROM (problems pbs CROSS JOIN users) 
@@ -54,7 +54,7 @@ CREATE OR REPLACE VIEW max_score_contest_view (user_id, problem_id, contest_id, 
             pbs.problem_id problem_id,
             users.contest_id contest_id, 
             CASE WHEN problems.scoring_strategy = 'max_submission' THEN COALESCE(ms_sub.max_score, -1)
-                 WHEN problems.scoring_strategy = 'sum_subtasks'   THEN COALESCE(ms_subtask.max_score::integer, -1)
+                 WHEN problems.scoring_strategy = 'sum_subtasks'   THEN COALESCE(ms_subtask.max_score, -1)
                  ELSE -1
             END score
     FROM ((contest_problems pbs INNER JOIN contest_registrations users ON users.contest_id = pbs.contest_id) INNER JOIN problems ON pbs.problem_id = problems.id) 

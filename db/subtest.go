@@ -15,6 +15,35 @@ func (s *DB) SubTestsBySubID(ctx context.Context, subid int) ([]*kilonova.SubTes
 	err := s.conn.SelectContext(ctx, &subtests, "SELECT * FROM submission_tests WHERE submission_id = $1 ORDER BY visible_id ASC", subid)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.SubTest{}, nil
+	} else if err != nil {
+		return []*kilonova.SubTest{}, err
+	} else if len(subtests) == 0 {
+		return []*kilonova.SubTest{}, nil
+	}
+	return subtests, err
+}
+
+func (s *DB) MaximumScoreSubTaskTests(ctx context.Context, problemID int, userID int, contestID *int) ([]*kilonova.SubTest, error) {
+	var subtests []*kilonova.SubTest
+	args := []any{problemID, userID}
+	if contestID != nil {
+		args = append(args, contestID)
+	}
+	err := s.conn.SelectContext(ctx, &subtests, fmt.Sprintf(`
+WITH subtask_ids AS (
+	%s
+) SELECT sts.* 
+	FROM submission_tests sts, submission_subtask_subtests ssst, subtask_ids 
+	WHERE sts.id = ssst.submission_test_id 
+	  AND ssst.submission_subtask_id = subtask_ids.id 
+	ORDER BY id ASC
+`, getSubmissionSubtaskQuery(contestID != nil)), args...)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []*kilonova.SubTest{}, nil
+	} else if err != nil {
+		return []*kilonova.SubTest{}, err
+	} else if len(subtests) == 0 {
+		return []*kilonova.SubTest{}, nil
 	}
 	return subtests, err
 }
@@ -28,13 +57,13 @@ func (s *DB) SubTest(ctx context.Context, id int) (*kilonova.SubTest, error) {
 	return &subtest, err
 }
 
-func (s *DB) InitSubTests(ctx context.Context, userID int, submissionID int, problemID int) error {
+func (s *DB) InitSubTests(ctx context.Context, userID int, submissionID int, problemID int, contestID *int) error {
 	if userID == 0 || problemID == 0 || submissionID == 0 {
 		return kilonova.ErrMissingRequired
 	}
 	_, err := s.conn.ExecContext(ctx, `
-INSERT INTO submission_tests (user_id, submission_id, test_id, visible_id, max_score) SELECT $1, $2, id, visible_id, score FROM tests WHERE problem_id = $3 AND orphaned = false
-`, userID, submissionID, problemID)
+INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, max_score) SELECT $1, $2, $3, id, visible_id, score FROM tests WHERE problem_id = $4 AND orphaned = false
+`, userID, submissionID, contestID, problemID)
 	return err
 }
 

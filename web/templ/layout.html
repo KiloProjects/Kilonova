@@ -71,6 +71,59 @@ if(bundled.isDarkMode()) {  // Dark Mode
 		{{ end }}
 	</div>
 
+
+<!-- TODO: Maybe move this somewhere more appropriate? -->
+<dialog class="modal-container" id="max_score_dialog">
+    <div class="modal-header">
+        <h1>{{getText "score_breakdown_title"}}</h1>
+        <form method="dialog">
+            <button type="submit"><i class="modal-close"></i></button>
+        </form>
+    </div>
+    <div class="modal-content" id="max_score_content">
+        <!-- <kn-score-breakdown problemid="1" /> -->
+    </div>
+</dialog>
+<script>
+    const dialogRoot = document.getElementById("max_score_dialog")
+    const dialogContent = document.getElementById("max_score_content")
+    
+    function buildModal(problemID, contestID) {
+        const val = document.getElementById("max_score_preact")
+        if(val != null) {
+            dialogContent.removeChild(val)
+        }
+        const newVal = document.createElement("kn-score-breakdown")
+        newVal.id = "max_score_preact"
+        newVal.setAttribute("problemid", problemID)
+        if(typeof contestID !== "undefined") {
+            newVal.setAttribute("contestid", contestID)
+        }
+
+        dialogContent.appendChild(newVal)
+    }
+    
+    Array.from(document.getElementsByClassName("max_score_breakdown")).forEach(val => {
+        val.addEventListener("click", e => {
+            e.preventDefault();
+            dialogRoot.close()
+
+            let problemID = parseInt(e.currentTarget.dataset.problemid);
+            if(isNaN(problemID)) {
+                bundled.apiToast({status: "error", data: "Invalid problem id for max score modal"})
+                return
+            }
+            let contestID = parseInt(e.currentTarget.dataset.contestid);
+            if(isNaN(contestID)) {
+                contestID = undefined;
+            }
+            buildModal(problemID, contestID)
+
+            dialogRoot.showModal()
+        })
+    })
+</script>
+
 	{{ template "footer" . }}
 </body>
 

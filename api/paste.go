@@ -5,6 +5,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -52,9 +53,9 @@ func (s *API) getPaste(w http.ResponseWriter, r *http.Request) {
 	}
 
 	returnData(w, struct {
-		ID         string              `json:"id"`
-		Submission *subLine            `json:"sub"`
-		Author     *kilonova.UserBrief `json:"author"`
+		ID         string                  `json:"id"`
+		Submission *sudoapi.FullSubmission `json:"sub"`
+		Author     *kilonova.UserBrief     `json:"author"`
 	}{
 		ID:         paste.ID,
 		Submission: sub,

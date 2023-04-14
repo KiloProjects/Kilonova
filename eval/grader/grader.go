@@ -245,6 +245,15 @@ func (h *Handler) CompileSubmission(ctx context.Context, runner eval.BoxSchedule
 		if err := h.base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints}); err != nil {
 			return kilonova.WrapError(err, "Couldn't finalize submission with compiler error")
 		}
+		stks, err := h.base.SubmissionSubTasks(ctx, sub.ID)
+		if err != nil {
+			return kilonova.WrapError(err, "Couldn't get submission subtasks")
+		}
+		for _, stk := range stks {
+			if err := h.base.UpdateSubmissionSubtaskPercentage(ctx, stk.ID, 0); err != nil {
+				return kilonova.WrapError(err, "Couldn't finish subtasks")
+			}
+		}
 		return kilonova.Statusf(204, "Compile failed")
 	}
 	return nil
@@ -353,6 +362,9 @@ func (h *Handler) ScoreTests(ctx context.Context, sub *kilonova.Submission, prob
 		}
 		for _, stk := range subTasks {
 			percentage := 100
+			if len(stk.Subtests) == 0 { // Empty subtasks should be invalidated
+				percentage = 0
+			}
 			for _, id := range stk.Subtests {
 				st, ok := subMap[id]
 				if !ok {

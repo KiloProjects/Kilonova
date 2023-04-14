@@ -84,7 +84,18 @@
                     <a {{ if currentProblem }} {{ if eq (currentProblem).ID .ID }} class="topbar-selected p-0" {{end}} {{ end }}
                         href="/contests/{{$contest.ID}}/problems/{{.ID}}"> 
                         {{.Name}} 
-                    </a> {{ if not (eq $score "")}} ({{$score}} {{- if not (eq $score "-") -}}p{{end}}) {{ end }}
+                    </a>                         
+                    {{ if not (eq $score "")}} 
+                    (
+                        {{- if eq .ScoringStrategy `sum_subtasks` -}}
+                            <a class="max_score_breakdown" href="#" data-problemid="{{.ID}}" data-contestid="{{$contest.ID}}">
+                        {{- end -}}
+                        {{$score}} {{- if not (eq $score "-") -}}p{{end}}
+                        {{- if eq .ScoringStrategy `sum_subtasks` -}}
+                            </a>
+                        {{- end -}}
+                    ) 
+                    {{ end }}
                 </li>
                 {{ end }}
             </ul>

@@ -16,6 +16,10 @@ func (s *BaseAPI) MaxScore(ctx context.Context, uid, pbID int) int {
 	return s.db.MaxScore(ctx, uid, pbID)
 }
 
+func (s *BaseAPI) ContestMaxScore(ctx context.Context, uid, pbID, contestID int) int {
+	return s.db.ContestMaxScore(ctx, uid, pbID, contestID)
+}
+
 func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFilter, lookingUser *UserBrief) (*Submissions, *StatusError) {
 	if filter.Limit == 0 || filter.Limit > 50 {
 		filter.Limit = 50
@@ -244,13 +248,13 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 	}
 
 	// Initialize subtests
-	if err := s.db.InitSubTests(ctx, author.ID, id, problem.ID); err != nil {
+	if err := s.db.InitSubTests(ctx, author.ID, id, problem.ID, contestID); err != nil {
 		zap.S().Warn("Couldn't create submission tests:", err)
 		return -1, Statusf(500, "Couldn't create submission tests")
 	}
 
 	// After subtests, initialize subtasks
-	if err := s.db.InitSubmissionSubtasks(ctx, author.ID, id, problem.ID); err != nil {
+	if err := s.db.InitSubmissionSubtasks(ctx, author.ID, id, problem.ID, contestID); err != nil {
 		zap.S().Warn("Couldn't create submission subtasks:", err)
 		return -1, Statusf(500, "Couldn't create submission subtasks")
 	}
@@ -347,6 +351,14 @@ func (s *BaseAPI) SubmissionSubTasks(ctx context.Context, subID int) ([]*kilonov
 	subs, err := s.db.SubmissionSubTasksBySubID(ctx, subID)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get submission subtasks")
+	}
+	return subs, nil
+}
+
+func (s *BaseAPI) MaximumScoreSubTasks(ctx context.Context, problemID, userID int, contestID *int) ([]*kilonova.SubmissionSubTask, *StatusError) {
+	subs, err := s.db.MaximumScoreSubTasks(ctx, problemID, userID, contestID)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't get maximum subtasks")
 	}
 	return subs, nil
 }
