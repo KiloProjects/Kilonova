@@ -1,5 +1,5 @@
 import { h, Fragment, render } from "preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import register from "preact-custom-element";
 import getText from "../translation";
 import { createToast, apiToast } from "../toast";
@@ -74,6 +74,44 @@ export function MaxScoreBreakdown({ problemID, userID, contestID }: { problemID:
 	);
 }
 
+function KNModal({ open, title, children }: { open: boolean; title: string; children: preact.ComponentChildren }) {
+	let [lastState, setLastState] = useState<boolean | null>(null);
+	let ref = useRef<HTMLDialogElement>(null);
+
+	useEffect(() => {
+		if (open == lastState) {
+			return;
+		}
+
+		if (open) {
+			ref.current?.showModal();
+		} else {
+			ref.current?.close();
+		}
+
+		setLastState(open);
+		return () => {
+			ref.current?.close();
+		};
+	}, [open]);
+
+	return (
+		<dialog ref={ref} class="modal-container" id="max_score_dialog">
+			<div class="modal-header">
+				<h1>{title}</h1>
+				<form method="dialog">
+					<button type="submit">
+						<i class="modal-close"></i>
+					</button>
+				</form>
+			</div>
+			<div class="modal-content" id="max_score_content">
+				{children}
+			</div>
+		</dialog>
+	);
+}
+
 function MaxScoreBreakdownDOM({ problemid, userid, contestid }: { problemid: string; userid?: string; contestid?: string }) {
 	const problemID = parseInt(problemid);
 	if (isNaN(problemID)) {
@@ -82,12 +120,53 @@ function MaxScoreBreakdownDOM({ problemid, userid, contestid }: { problemid: str
 	const userID = parseInt(userid ?? "asdf");
 	const contestID = parseInt(contestid ?? "asdf");
 	return (
-		<MaxScoreBreakdown
-			problemID={problemID}
-			contestID={!isNaN(contestID) ? contestID : undefined}
-			userID={!isNaN(userID) ? userID : undefined}
-		></MaxScoreBreakdown>
+		<KNModal open={true} title={getText("score_breakdown_title")}>
+			<MaxScoreBreakdown
+				problemID={problemID}
+				contestID={!isNaN(contestID) ? contestID : undefined}
+				userID={!isNaN(userID) ? userID : undefined}
+			></MaxScoreBreakdown>
+		</KNModal>
 	);
 }
 
 register(MaxScoreBreakdownDOM, "kn-score-breakdown", ["problemid", "userid", "contestid"]);
+
+document.addEventListener("DOMContentLoaded", () => {
+	const modals = document.getElementById("modals")!;
+
+	function buildModal(problemID, contestID) {
+		const val = document.getElementById("max_score_preact");
+		if (val != null) {
+			modals.removeChild(val);
+		}
+		const newVal = document.createElement("kn-score-breakdown");
+		newVal.id = "max_score_preact";
+		newVal.setAttribute("problemid", problemID);
+		if (typeof contestID !== "undefined") {
+			newVal.setAttribute("contestid", contestID);
+		}
+
+		modals.appendChild(newVal);
+	}
+
+	Array.from(document.getElementsByClassName("max_score_breakdown")).forEach((val) => {
+		val.addEventListener("click", (e) => {
+			e.preventDefault();
+			if (e.currentTarget == null) {
+				return;
+			}
+
+			let problemID = parseInt((e.currentTarget as HTMLElement).dataset.problemid ?? "asd");
+			if (isNaN(problemID)) {
+				apiToast({ status: "error", data: "Invalid problem id for max score modal" });
+				return;
+			}
+			let contestID: number | undefined = parseInt((e.currentTarget as HTMLElement).dataset.contestid ?? "asd");
+			if (isNaN(contestID)) {
+				contestID = undefined;
+			}
+			buildModal(problemID, contestID);
+		});
+	});
+});
