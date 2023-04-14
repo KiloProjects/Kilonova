@@ -1,5 +1,6 @@
 {{ define "title" }} {{getText "problem" .Problem.ID .Problem.Name}} {{ end }}
 
+{{ define "description" }} {{- .Problem.Name}} {{- if .Problem.SourceCredits}} - propusă la {{.Problem.SourceCredits}} {{- end}}{{if .Problem.AuthorCredits}} - de către {{.Problem.AuthorCredits}}{{end -}} {{ end }}
 
 {{ define "head" }}
 <link rel="canonical" href='{{printf "/problems/%d" .Problem.ID | formatCanonical}}' />
