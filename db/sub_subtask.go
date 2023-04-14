@@ -69,9 +69,17 @@ func (s *DB) SubmissionSubTasksBySubID(ctx context.Context, subid int) ([]*kilon
 
 func getSubmissionSubtaskQuery(inContest bool) string {
 	if inContest {
-		return "SELECT DISTINCT ON (subtask_id) * FROM submission_subtasks WHERE subtask_id IS NOT NULL AND problem_id = $1 AND user_id = $2 AND contest_id = $3 ORDER BY subtask_id ASC, final_percentage DESC NULLS LAST, submission_id ASC"
+		return `
+WITH org AS (
+	SELECT DISTINCT ON (subtask_id) * FROM submission_subtasks WHERE subtask_id IS NOT NULL AND problem_id = $1 AND user_id = $2 AND contest_id = $3 ORDER BY subtask_id ASC, final_percentage DESC NULLS LAST, submission_id ASC
+) SELECT * FROM org ORDER BY visible_id ASC
+`
 	} else {
-		return "SELECT DISTINCT ON (subtask_id) * FROM submission_subtasks WHERE subtask_id IS NOT NULL AND problem_id = $1 AND user_id = $2 ORDER BY subtask_id ASC, final_percentage DESC NULLS LAST, submission_id ASC"
+		return `
+WITH org AS (
+	SELECT DISTINCT ON (subtask_id) * FROM submission_subtasks WHERE subtask_id IS NOT NULL AND problem_id = $1 AND user_id = $2 ORDER BY subtask_id ASC, final_percentage DESC NULLS LAST, submission_id ASC
+) SELECT * FROM org ORDER BY visible_id ASC
+`
 	}
 }
 
