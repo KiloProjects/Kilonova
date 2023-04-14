@@ -114,7 +114,6 @@ WITH RECURSIVE nested_lists AS (
 	return cnt, nil
 }
 
-// TODO: Make use of max_score view, since it may already have precached information
 func (s *DB) NumSolvedPblistProblems(ctx context.Context, listID, userID int) (int, error) {
 	var cnt int
 	err := s.conn.GetContext(ctx, &cnt, `
@@ -127,8 +126,8 @@ func (s *DB) NumSolvedPblistProblems(ctx context.Context, listID, userID int) (i
 		SELECT DISTINCT pbs.id FROM problems pbs, problem_list_problems plp, nested_lists lists 
 			WHERE pbs.id = plp.problem_id AND lists.id = plp.pblist_id
 	), solved_pbs AS (
-		SELECT DISTINCT subs.problem_id FROM submissions subs, problem_ids pbids 
-			WHERE subs.problem_id = pbids.id AND subs.score = 100 AND subs.user_id = $2
+		SELECT DISTINCT msv.problem_id FROM max_score_view msv, problem_ids pbids 
+			WHERE msv.problem_id = pbids.id AND msv.score = 100 AND msv.user_id = $2
 	) SELECT COUNT(*) FROM solved_pbs;
 	`, listID, userID)
 	if err != nil {
