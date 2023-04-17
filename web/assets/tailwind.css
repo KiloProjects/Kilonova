@@ -118,7 +118,7 @@
 	}
 
 	.statement-images img {
-		@apply p-1 pl-2;
+		@apply py-1 pl-2 lg:pl-4;
 	}
 }
 
@@ -298,6 +298,14 @@
 
 	.segment-container {
 		@apply border-2 border-gr p-2 mb-2;
+	}
+
+	.segment-panel {
+		@apply bg-gray-50 dark:bg-gray-800;
+		@apply border-gray-100 dark:border-gray-700;
+		@apply dark:shadow-gray-700 dark:hover:shadow-gray-700;
+		@apply border-2 rounded-lg p-2 m-2 shadow;
+		@apply hover:shadow-md transition-shadow;
 	}
 
 	.btn {

@@ -84,7 +84,7 @@ function updateFinalScore() {
 	}
 	let suffix = "";
 	if(defaultPoints > 0) {
-		suffix = ` (${defaultPoints} {{getText "byDefault"}})`;
+		suffix = ` (${defaultPoints} ${bundled.getText("byDefault")})`;
 	}
 	console.log(score)
 	if(score != 100) {
