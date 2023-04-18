@@ -13,15 +13,21 @@
 
 {{ if (or .RunningContests .FutureContests)}}
 <div class="segment-panel">
-    {{ with .RunningContests }}
-        <h2>{{getText "running_contests"}}</h2>
-        {{ template "contest_list.html" . }}
-    {{ end }}
-    
-    {{ with .FutureContests }}
-        <h2>{{getText "future_contests"}}</h2>
-        {{ template "contest_list.html" . }}
-    {{ end }}
+    {{ $bothContests := and .RunningContests .FutureContests }}
+    <div class="grid grid-cols-1 md:grid-cols-2">
+        {{ with .RunningContests }}
+        <div class="col-span-1 {{ if not $bothContests }} col-span-full {{ else }} contest-small-grid {{ end }}">
+            <h2>{{getText "running_contests"}}</h2>
+            {{ template "contest_list.html" . }}
+        </div>
+        {{ end }}
+        {{ with .FutureContests }}
+        <div class="col-span-1 {{ if not $bothContests }} col-span-full {{ else }} contest-small-grid {{ end }}">
+            <h2>{{getText "future_contests"}}</h2>
+            {{ template "contest_list.html" . }}
+        </div>
+        {{ end }}
+    </div>
     <div class="mt-3">
         {{ renderMarkdown (getText "all_contests_announcement") }}
     </div>

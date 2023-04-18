@@ -451,6 +451,18 @@
 		@apply flex border-t-2 border-gr justify-end items-center pt-2;
 	}
 
+	/*
+        This is a huge hack because contest_list.html has no way of actually knowing what its ancestors are.
+    */
+
+	.contest-grid {
+		@apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2;
+	}
+
+	.contest-small-grid > .contest-grid {
+		@apply md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-2;
+	}
+
 	/* 
         this looks like it's going to be a sort of "standard" design between pages
         so let's standardize it
