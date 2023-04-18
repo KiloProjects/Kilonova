@@ -6,11 +6,10 @@
 {{ template "topbar.html" . }}
 
 <div class="page-holder">
-    <div class="page-content">
-
-        <h2>{{getText "header.edit.access_control"}}</h2>
-
-        <div class="segment-container my-2">
+    <div class="page-content-wrapper">
+        <div class="segment-panel">
+            <h2>{{getText "header.edit.access_control"}}</h2>
+            
             <h3>{{getText "editors"}}:</h3>
             <div id="editors_list" class="list-group list-group-rounded mb-2">
                 <div class="list-group-head">
@@ -24,11 +23,10 @@
                 </div>
             </div>
         </div>
-
     </div>
     <div class="page-sidebar">
 
-        <form class="page-sidebar-box" id="visibility_form">
+        <form class="segment-panel" id="visibility_form">
             <h2>{{getText "toggle_visibility"}}</h2>
             {{ if not (.Ctx.User.Admin) }}
             <h3>{{getText "visibility_admin"}}</h3>
@@ -44,9 +42,7 @@
                 "button.update"}}</button>
         </form>
 
-        <div class="page-sidebar-divider"></div>
-
-        <div class="page-sidebar-box">
+        <div class="segment-panel">
             <h2>{{getText "add_user"}}</h2>
             <label class="block">
                 <span class="form-label">{{getText "username"}}:</span>

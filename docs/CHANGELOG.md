@@ -1,6 +1,15 @@
+- v0.16.0:
+    - Big UI redesign;
+    - SEO optimizations;
+    - All parent lists for a list will be shown when there are multiple parents;
+    - Fix crash on go 1.21 nightly;
+    - Update JS libraries;
+    - Bug fixes;
+    - Some small refactoring for the grader.
 - v0.15.0:
     - BIG: added another scoring type: maximum of subtasks accross submissions;
-    - Added new `<modal>` design for pop ups that will be slowly used in more and more places;
+    - Added new `<modal>` design for pop ups that will be slowly used in more and more places;\
+    - Score breakdown for maximum subtasks scoring strategy;
     - Added position in contest leaderboards (along with links to problems);
     - Fixed annoying bug in statement page that reset content without warning.
 - v0.14.2:

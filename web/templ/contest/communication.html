@@ -7,14 +7,14 @@
 
 {{$contest := .Contest}}
 
-<div class="page-holder no-bottom-border">
-    <div class="page-content-full">
-        <div class="segment-container">
+<div class="page-holder">
+    <div class="page-content-full-wrapper">
+        <div class="segment-panel">
             <kn-announcements contestid="{{.Contest.ID}}" encoded="{{contestAnnouncements .Contest | encodeJSON}}" canedit="{{isContestEditor .Contest}}"/>
         </div>
 
         {{ if isContestEditor .Contest }}
-        <form id="announcement_create_form" class="segment-container" autocomplete="off">
+        <form id="announcement_create_form" class="segment-panel" autocomplete="off">
             <h2>{{getText "create_announcement"}}</h2>
             <label>
                 <span class="form-label text-base">{{getText "contestAnnouncement"}}:</span>
@@ -23,18 +23,15 @@
             <button class="btn btn-blue" type="submit">{{getText "create"}}</button>
         </form>
 
-        <div class="page-sidebar-divider mb-2"></div>
-
-        <div class="segment-container">
+        <div class="segment-panel">
             <h2>{{getText "received_questions"}}</h2>
             <kn-question-mgr contestid="{{.Contest.ID}}" encoded="{{allContestQuestions .Contest | encodeJSON}}"/>
         </div>
         {{ end }}
 
         {{ if canSubmitInContest .Ctx.User.Brief .Contest }}
-            <div class="page-sidebar-divider mb-2"></div>
 
-            <form id="question_submit_form" class="segment-container" autocomplete="off">
+            <form id="question_submit_form" class="segment-panel" autocomplete="off">
                 <h2>{{getText "ask_question"}}</h2>
                 <label>
                     <span class="form-label text-base">{{getText "question_text"}}:</span>
@@ -43,12 +40,7 @@
                 <button class="btn btn-blue" type="submit">{{getText "button.add"}}</button>
             </form>
 
-            {{ with contestQuestions .Contest }}
-                <div class="segment-container">
-                    <h2>{{getText "questions"}}</h2>
-                    <kn-questions contestid="{{$contest.ID}}" encoded="{{ . | encodeJSON}}"/>
-                </div>
-            {{ end }}
+            <kn-questions contestid="{{$contest.ID}}" encoded="{{ contestQuestions .Contest | encodeJSON}}"/>
         {{ end }}
     </div>
 </div>

@@ -4,9 +4,10 @@
 
 {{ $root := . }}
 
-<div class="page-holder no-bottom-border">
+<div class="page-holder">
     {{ template "subtaskSidebar.html" . }}
-    <div class="page-content">
+    <div class="page-content-wrapper">
+        <div class="segment-panel">
         <h2>{{getText "header.edit.subtask"}}</h2>
         {{ with problemSubtasks .Problem }}
             <table class="kn-table my-2" style="table-layout: fixed">
@@ -46,36 +47,37 @@
         {{ else }}
             <h3> {{getText "noSubTasks"}} </h3>
         {{ end }}
+        </div>
         
-        <div class="my-4 page-sidebar-divider"></div>
-
-        <h2> {{getText "testAssociations"}} </h2>
-        {{ with problemTests .Problem }}
-            <table class="kn-table my-2" style="table-layout: fixed">
-                <thead>
-                    <th scope="col" class="w-1/2 text-center px-4 py-2">
-                        {{getText "id"}}	
-                    </th>
-                    <th scope="col" class="w-1/2">
-                        {{getText "subTasks"}}	
-                    </th>
-                </thead>
-                <tbody>
-                {{ range . }} 
-                    <tr class="kn-table-row">
-                        <td class="kn-table-cell">
-                            {{.VisibleID}}
-                        </td>
-                        <td class="kn-table-cell">
-                            {{$root.TestSubTasks .ID}}
-                        </td>
-                    </tr>
-                {{ end }}
-                </tbody>
-            </table>
-        {{ else }} 
-            <h3> {{getText "noTestsError"}} </h3>
-        {{ end }}
+        <div class="segment-panel">
+            <h2> {{getText "testAssociations"}} </h2>
+            {{ with problemTests .Problem }}
+                <table class="kn-table my-2" style="table-layout: fixed">
+                    <thead>
+                        <th scope="col" class="w-1/2 text-center px-4 py-2">
+                            {{getText "id"}}	
+                        </th>
+                        <th scope="col" class="w-1/2">
+                            {{getText "subTasks"}}	
+                        </th>
+                    </thead>
+                    <tbody>
+                    {{ range . }} 
+                        <tr class="kn-table-row">
+                            <td class="kn-table-cell">
+                                {{.VisibleID}}
+                            </td>
+                            <td class="kn-table-cell">
+                                {{$root.TestSubTasks .ID}}
+                            </td>
+                        </tr>
+                    {{ end }}
+                    </tbody>
+                </table>
+            {{ else }} 
+                <h3> {{getText "noTestsError"}} </h3>
+            {{ end }}
+        </div>
     </div>
 </div>
 

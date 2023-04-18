@@ -4,10 +4,11 @@
 
 {{$pb := .Problem }}
 
-<div class="page-holder no-bottom-border">
+<div class="page-holder">
     {{ template "testSidebar.html" . }}
-    <div class="page-content">
+    <div class="page-content-wrapper">
         {{ with problemTests .Problem }}
+        <div class="segment-panel">
             <h2>Actualizare teste</h2>
             <table class="kn-table my-2" style="table-layout: fixed">
                 <thead>
@@ -47,11 +48,10 @@
             </div>
             <a class="inline-block btn btn-blue mr-2" href="/problems/{{$pb.ID}}/edit/test/archive?brief=true">{{getText "downloadTestArchive"}}</a>
             <a class="inline-block btn btn-blue" href="/problems/{{$pb.ID}}/edit/test/archive">{{getText "downloadProblemArchive"}}</a>
+        </div>
         {{ end }}
 
-        <div class="my-2 page-sidebar-divider"></div>
-        
-        <form id="test_add_form">
+        <form class="segment-panel" id="test_add_form">
             <h2> {{getText "testArchive"}} (200MB max) </h2>
             <label class="block my-2">
                 <span class="mr-2 text-xl"> {{getText "archive"}}:</span>

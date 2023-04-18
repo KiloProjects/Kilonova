@@ -1,78 +1,80 @@
 {{ define "title" }} Kilonova {{ end }}
 {{ define "content" }}
-<h1>Kilonova {{version}}</h1>
 
-<p class="text-gray-600 dark:text-gray-300 mb-2">{{ getText "announcement" `<a target="_blank" rel="noopener noreferrer" href="https://discord.gg/Qa6Ytgh">Discord</a>` }} </p>
+<div class="segment-panel">
+    <h1>Kilonova {{version}}</h1>
+    
+    <p class="text-gray-600 dark:text-gray-300 mb-2">{{ getText "announcement" `<a target="_blank" rel="noopener noreferrer" href="https://discord.gg/Qa6Ytgh">Discord</a>` }} </p>
+</div>
 
-
-<div class="page-sidebar-divider"></div>
 {{ $user := .Ctx.User.Brief }}
 
 {{ $showAllContests := false }}
 
-{{ with .RunningContests }}
-    {{ $showAllContests = true }}
-    <h2>{{getText "running_contests"}}</h2>
-    {{ template "contest_list.html" . }}
-{{ end }}
+{{ if (or .RunningContests .FutureContests)}}
+<div class="segment-panel">
+    {{ with .RunningContests }}
+        <h2>{{getText "running_contests"}}</h2>
+        {{ template "contest_list.html" . }}
+    {{ end }}
     
-{{ with .FutureContests }}
-    {{ $showAllContests = true }}
-    <h2>{{getText "future_contests"}}</h2>
-    {{ template "contest_list.html" . }}
-{{ end }}
-
-
-{{ if $showAllContests }}
-<div class="mb-4">
-    {{ renderMarkdown (getText "all_contests_announcement") }}
+    {{ with .FutureContests }}
+        <h2>{{getText "future_contests"}}</h2>
+        {{ template "contest_list.html" . }}
+    {{ end }}
+    <div class="mt-3">
+        {{ renderMarkdown (getText "all_contests_announcement") }}
+    </div>
 </div>
-
-<div class="page-sidebar-divider"></div>
 {{ end }}
+
+
 
 {{ if frontPagePbs }}
 
-<h2>{{getText "problems"}}</h2>
-
-<div class="list-group mb-4">
-    {{ range problemLists }}
-        {{ range .SubLists }}
-            {{ with problemList .ID }}
-                {{template "problemlist_show" (genPblistParams authedUser . false)}}
+<div class="segment-panel">
+    <h2>{{getText "problems"}}</h2>
+    
+    <div class="list-group mb-4">
+        {{ range problemLists }}
+            {{ range .SubLists }}
+                {{ with problemList .ID }}
+                    {{template "problemlist_show" (genPblistParams authedUser . false)}}
+                {{ end }}
             {{ end }}
         {{ end }}
-    {{ end }}
-    {{ with (unassociatedProblems authedUser) }}
-        <details class="list-group-head">
-            <summary class="pb-1 mt-1">
-                <span>{{getText "the_rest"}}</span>
-                {{if $user}}
+        {{ with (unassociatedProblems authedUser) }}
+            <details class="list-group-head">
+                <summary class="pb-1 mt-1">
+                    <span>{{getText "the_rest"}}</span>
+                    {{if $user}}
+                        <span class="float-right badge">
+                            {{ getText "num_solved" (numSolvedPbs .) (len .) }}
+                        </span>
+                    {{else}}
                     <span class="float-right badge">
-                        {{ getText "num_solved" (numSolvedPbs .) (len .) }}
+                        {{ if eq 1 (len .)}}
+                            {{ getText "single_problem" }}
+                        {{ else }}
+                            {{ getText "num_problems" (len .) }}
+                        {{ end }}
                     </span>
-                {{else}}
-                <span class="float-right badge">
-                    {{ if eq 1 (len .)}}
-                        {{ getText "single_problem" }}
-                    {{ else }}
-                        {{ getText "num_problems" (len .) }}
-                    {{ end }}
-                </span>
-                {{end}}
-            </summary>
-            {{ with . }}
-                <div class="mt-2">
-                    {{ template "pb_list_group" (genProblemsParams . true false) }}
-                </div>
-            {{ end }}
-        </details>
-    {{ end }}
+                    {{end}}
+                </summary>
+                {{ with . }}
+                    <div class="mt-2">
+                        {{ template "pb_list_group" (genProblemsParams . true false) }}
+                    </div>
+                {{ end }}
+            </details>
+        {{ end }}
+    </div>
+    
+    <div class="mb-4">
+        {{ renderMarkdown (getText "all_problems_announcement") }}
+    </div>
 </div>
 
-<div class="mb-4">
-    {{ renderMarkdown (getText "all_problems_announcement") }}
-</div>
 
 {{ end }}
 

@@ -156,8 +156,8 @@
 	}
 
 	.list-group {
-		@apply border-gray-300 w-full bg-white;
-		@apply dark:border-gray-700 dark:bg-gray-900;
+		@apply border-gray-300 w-full;
+		@apply dark:border-gray-700;
 	}
 
 	.list-group-head {
@@ -296,16 +296,28 @@
 		@apply cursor-pointer;
 	}
 
-	.segment-container {
-		@apply border-2 border-gr p-2 mb-2;
+	.segment-colors {
+		@apply bg-gray-50 dark:bg-gray-900;
+		@apply border-gray-100 dark:border-gray-800;
+		@apply shadow-gray-200/50 hover:shadow-gray-200/50;
+		@apply dark:shadow-gray-800/50 dark:hover:shadow-gray-800/50;
+	}
+
+	.segment-colors-2 {
+		@apply bg-gray-100 dark:bg-gray-800;
+		@apply border-gray-200 dark:border-gray-700;
+		@apply shadow-gray-300/50 hover:shadow-gray-300/50;
+		@apply dark:shadow-gray-700/50 dark:hover:shadow-gray-700/50;
 	}
 
 	.segment-panel {
-		@apply bg-gray-50 dark:bg-gray-800;
-		@apply border-gray-100 dark:border-gray-700;
-		@apply dark:shadow-gray-700 dark:hover:shadow-gray-700;
-		@apply border-2 rounded-lg p-2 m-2 shadow;
+		@apply segment-colors;
+		@apply border-2 rounded-lg p-2 lg:px-4 lg:py-3 mx-1 my-2 lg:my-3 shadow;
 		@apply hover:shadow-md transition-shadow;
+	}
+
+	.segment-panel .segment-panel {
+		@apply segment-colors-2;
 	}
 
 	.btn {
@@ -445,31 +457,31 @@
     */
 
 	.page-holder {
-		@apply border-t-2 lg:border-b-2 mt-2 grid grid-cols-1 lg:grid-cols-4 border-wh;
-	}
-
-	.no-bottom-border {
-		@apply border-b-0 lg:border-b-0;
+		@apply grid grid-cols-1 lg:grid-cols-4;
 	}
 
 	.page-content {
-		@apply page-content-full col-span-1 lg:col-span-3 lg:border-r lg:pr-4;
+		@apply page-content-wrapper segment-panel;
+	}
+
+	.page-content-wrapper {
+		@apply col-span-1 lg:col-span-3;
 	}
 
 	.page-content-full {
-		@apply col-span-full lg:min-h-screen lg:pt-2 lg:pl-1 lg:pb-4 border-wh;
+		@apply col-span-full segment-panel;
+	}
+
+	.page-content-full-wrapper {
+		@apply col-span-full;
 	}
 
 	.page-sidebar {
-		@apply col-span-1 lg:pt-2 lg:min-h-screen lg:border-l lg:pb-4 border-wh;
+		@apply col-span-1;
 	}
 
 	.page-sidebar-box {
-		@apply mt-2 mb-3 px-2 lg:pl-4;
-	}
-
-	.page-sidebar-divider {
-		@apply h-0 w-full border-t-2 border-wh;
+		@apply segment-panel;
 	}
 }
 
@@ -532,7 +544,7 @@
 	html.dark {
 		/* We'll soon probably use the class strategy instead of browser preference */
 		color-scheme: dark;
-		@apply bg-gray-900 text-white;
+		@apply bg-gray-950 text-white;
 	}
 
 	.form-label {

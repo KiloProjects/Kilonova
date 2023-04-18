@@ -47,7 +47,7 @@
         {{ if .Topbar.Contest }}
         {{ template "contest_sidebar.html" .Topbar.Contest }}
         {{ else }}
-        <div class="page-sidebar-box font-semibold">
+        <div class="segment-panel font-semibold">
             <h2 class="font-normal">
                 {{getText "problemInfo"}}
             </h2>
@@ -107,8 +107,7 @@
             </div>
         </div>
         {{ range pbParentPblists .Problem }}
-        <div class="page-sidebar-divider"></div>
-        <details class="page-sidebar-box" open>
+        <details class="segment-panel" open>
             <summary>
                 <h2 class="font-normal inline-block">
                     <a href="/problem_lists/{{.ID}}">{{.Title}}</a>
@@ -144,15 +143,13 @@
         {{ end }}
         {{ end }}
         {{ if authed }}
-        <div class="page-sidebar-divider"></div>
-        <div class="page-sidebar-box">
+        <div class="segment-panel">
             <older-subs problemid="{{.Problem.ID}}" {{if (and .Topbar.Contest (not .Topbar.Contest.Ended))}}contestid="{{.Topbar.Contest.ID}}"{{end}} userid="{{.Ctx.User.ID}}"></older-subs>
         </div>
         {{ end }}
         {{ $topbar := .Topbar}}
         {{ with .Attachments }}
-        <div class="page-sidebar-divider"></div>
-        <details class="page-sidebar-box" open> <!-- Attachments -->
+        <details class="segment-panel" open> <!-- Attachments -->
             <summary>
                 <h2 class="inline-block">{{getText "attachments"}}</h2>
             </summary>

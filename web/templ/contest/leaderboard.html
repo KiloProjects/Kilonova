@@ -2,7 +2,7 @@
 {{ define "content" }}
 {{ template "topbar.html" .}}
 
-<div class="page-holder no-bottom-bar">
+<div class="page-holder">
     <div class="page-content-full">
         <h2>{{getText "leaderboard"}}</h2>
         <kn-leaderboard contestid="{{.Contest.ID}}"/>

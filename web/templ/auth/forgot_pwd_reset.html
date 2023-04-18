@@ -1,8 +1,9 @@
 {{define "title"}} {{getText "reset_pwd"}} {{end}}
 {{ define "content" }}
 
-<form class="segment-container" id="pwd_reset_form" autocomplete="off">
-    <h1>{{getText "resetTitle" .User.Name}}</h1>
+<h1>{{getText "resetTitle" .User.Name}}</h1>
+
+<form class="segment-panel" id="pwd_reset_form" autocomplete="off">
     <input type="hidden" id="pwd_reset_reqid" name="req_id" value="{{.RequestID}}" />
     <input type="email" class="hidden" value="{{.User.Email}}"/>
     <label class="block mb-2">

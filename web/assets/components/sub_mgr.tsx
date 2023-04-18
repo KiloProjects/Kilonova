@@ -1,4 +1,4 @@
-import { h, Fragment, render, Component, createRef } from "preact";
+import { h, Fragment, render, Component } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import register from "preact-custom-element";
 import { prettyLanguages } from "../langs";
@@ -48,9 +48,9 @@ async function copyCode(sub: Submission) {
 
 function Summary({ sub, pasteAuthor }: { sub: FullSubmission; pasteAuthor?: UserBrief }) {
 	return (
-		<div class="page-sidebar-box">
+		<div class="segment-panel">
 			<h2>{getText("info")}</h2>
-			<table class="kn-table mx-2">
+			<table class="kn-table">
 				<tbody>
 					{pasteAuthor && (
 						<>
@@ -419,17 +419,14 @@ function SubmissionView({ sub, bigCode, pasteAuthor }: { sub: FullSubmission | n
 				<div class="page-sidebar lg:order-last">
 					<Summary sub={sub} pasteAuthor={pasteAuthor} />
 					{window.platform_info.user_id !== undefined && window.platform_info.user_id > 0 && (
-						<>
-							<div class="page-sidebar-divider"></div>
-							<div class="page-sidebar-box">
-								<OlderSubmissions problemid={sub.problem.id} userid={window.platform_info.user_id} />
-							</div>
-						</>
+						<div class="segment-panel">
+							<OlderSubmissions problemid={sub.problem.id} userid={window.platform_info.user_id} />
+						</div>
 					)}
 				</div>
 				<div class="page-content">{content}</div>
 			</div>
-			{under}
+			<div class="segment-panel">{under}</div>
 		</>
 	);
 }
@@ -501,7 +498,7 @@ export class SubmissionManager extends Component<{ id: number; bigCode?: boolean
 	render() {
 		return (
 			<>
-				<h1 class="mb-2">
+				<h1>
 					{getText("sub")} {`#${this.props.id}`}
 				</h1>
 				<SubmissionView bigCode={false} sub={this.state.sub} />
@@ -534,7 +531,7 @@ export function PasteViewer({ paste_id }: { paste_id: string }) {
 
 	return (
 		<>
-			<h1 class="mb-2">
+			<h1>
 				{getText("paste_title")} #{paste_id}
 			</h1>
 			<SubmissionView bigCode={true} sub={sub} pasteAuthor={author} />

@@ -2,7 +2,7 @@
 {{ $topbar := .Topbar }}
 {{ $id := .Problem.ID}}
 <div class="page-sidebar lg:order-last">
-    <div class="page-sidebar-box">
+    <div class="segment-panel">
         <div class="list-group grid grid-cols-2 xl:grid-cols-3">
             <a class="list-group-head col-span-full {{if and (eq $topbar.Page "tests") (eq $topbar.PageID -2)}} list-group-selected {{end}}" href="{{$topbar.URLPrefix}}/problems/{{$id}}/edit/test">
                 <h2>{{getText "tests"}}</h2>

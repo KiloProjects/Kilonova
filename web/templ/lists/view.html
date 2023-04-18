@@ -8,7 +8,7 @@
 
 {{ $user := .Ctx.User.Brief }}
 
-{{ with pblistParent .ProblemList }}
+{{ range pblistParent .ProblemList }}
 
 <a class="block mb-2" href="/problem_lists/{{.ID}}"><i class="fas fa-arrow-left"></i> {{.Title}}</a>
 
@@ -20,7 +20,7 @@
     </div>
 	{{ if $user }}
 	{{ if or (eq $user.ID .AuthorID) $user.Admin }}
-	<form id="pblist-update" class="segment-container" autocomplete="off">
+	<form id="pblist-update" class="segment-panel" autocomplete="off">
 		<h1> {{getText "list.update"}} </h1>
         <label class="block my-2">
             <span class="form-label">{{getText "title"}}: </span>

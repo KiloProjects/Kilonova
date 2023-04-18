@@ -327,12 +327,15 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return lists
 		},
-		"pblistParent": func(pblist *kilonova.ProblemList) *kilonova.ProblemList {
+		"pblistParent": func(pblist *kilonova.ProblemList) []*kilonova.ProblemList {
 			lists, err := base.PblistParentLists(context.Background(), pblist.ID)
-			if err != nil || len(lists) != 1 {
+			if err != nil {
 				return nil
 			}
-			return lists[0]
+			if len(lists) > 5 {
+				lists = lists[:5]
+			}
+			return lists
 		},
 		"renderMarkdown": func(body any) template.HTML {
 			var bd []byte

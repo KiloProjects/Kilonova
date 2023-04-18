@@ -4,9 +4,9 @@
 <h1>
 	{{getText "panel.admin"}}
 </h1>
-<button class="btn-blue font-bold py-2 px-4 rounded-lg mt-3 mb-5" onclick="resetSubs()">{{getText "resetSubs"}}</button>
+<button class="btn-blue font-bold py-2 px-4 rounded-lg mt-3 mb-2" onclick="resetSubs()">{{getText "resetSubs"}}</button>
 
-<div class="segment-container">
+<div class="segment-panel">
 	<h2>{{getText "changeRoles"}}:</h2>
 	<label class="block">
 		<span class="form-label">{{getText "username"}}:</span>
@@ -18,14 +18,14 @@
 	</div>
 </div>
 
-<div class="segment-container">
-	<h3 class="text-2xl">{{getText "admins"}}:</h3>
+<div class="segment-panel">
+	<h2 class="text-2xl">{{getText "admins"}}:</h2>
 	<div id="admin-group" class="block list-group list-group-rounded mb-2">
 		<div class="list-group-head">
             {{getText "loading"}}
         </div>
 	</div>
-	<h3 class="text-2xl">{{getText "proposers"}}:</h3>
+	<h2 class="text-2xl">{{getText "proposers"}}:</h2>
 	<div id="proposer-group" class="block list-group list-group-rounded mb-2">
 		<div class="list-group-head">
             {{getText "loading"}}
@@ -33,8 +33,8 @@
 	</div>
 </div>
 
-<form id="configForm" class="segment-container" autocomplete="off">
-    <h3 class="text-2xl">{{getText "config.title"}}</h3>
+<form id="configForm" class="segment-panel" autocomplete="off">
+    <h2 class="text-2xl">{{getText "config.title"}}</h2>
 
     <label class="block my-2">
 		<span class="form-label">{{getText "config.defaultLang"}}:</span>
@@ -61,8 +61,8 @@
         <input type="number" id="num_workers" name="num_workers" class="form-input" value="{{numWorkers}}" /> 
     </label>
 
-    <div class="segment-container">
-        <h4>{{getText "featureSet"}}</h4>
+    <div class="segment-panel">
+        <h3>{{getText "featureSet"}}</h3>
         <div class="block">
             <label class="inline-flex items-center text-lg">
                 <input class="form-checkbox" name="grader" id="grader_feature" type="checkbox" {{if graderEnabled}}checked{{end}}>

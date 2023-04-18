@@ -188,7 +188,7 @@ export function AnnouncementView({ ann, canEditAnnouncement }: { ann: Announceme
 
 	if (expandAnnouncement) {
 		return (
-			<div class="segment-container">
+			<div class="segment-panel">
 				<a href="#" onClick={(e) => (e.preventDefault(), setExpandAnnouncement(!expandAnnouncement))}>
 					[{getText("button.cancel")}]
 				</a>
@@ -204,7 +204,7 @@ export function AnnouncementView({ ann, canEditAnnouncement }: { ann: Announceme
 	}
 
 	return (
-		<div class="segment-container">
+		<div class="segment-panel">
 			<pre class="mt-2 mb-1">{text}</pre>
 			<p class="text-sm">{formatJSONTime(ann.created_at, "contest_timestamp_posted_format")}</p>
 			{canEditAnnouncement && (
@@ -313,7 +313,7 @@ export function QuestionView({ q, canEditAnswer, userLoadable }: { q: Question; 
 	}
 
 	return (
-		<div class="segment-container">
+		<div class="segment-panel">
 			<pre class="mt-2 mb-1">{q.text}</pre>
 			<p class="text-sm">{formatJSONTime(q.asked_at, "contest_timestamp_asked_format")}</p>
 			{userLoadable && (
@@ -402,16 +402,30 @@ export function QuestionList({ initialQuestions, contestID }: { initialQuestions
 	}, []);
 
 	return (
-		<div>
-			{questions.length == 0 && <p>{getText("noQuestions")}</p>}
-			{unansweredQuestions.map((q) => (
-				<QuestionView q={q} canEditAnswer={false} userLoadable={false} key={q.id} />
-			))}
-			{unansweredQuestions.length > 0 && answeredQuestions.length > 0 && <div class="page-sidebar-divider mb-2" />}
-			{answeredQuestions.map((q) => (
-				<QuestionView q={q} canEditAnswer={false} userLoadable={false} key={q.id} />
-			))}
-		</div>
+		<>
+			{questions.length == 0 && (
+				<div class="segment-panel">
+					<h2>{getText("questions")}</h2>
+					<p>{getText("noQuestions")}</p>
+				</div>
+			)}
+			{unansweredQuestions.length > 0 && (
+				<div class="segment-panel">
+					<h2>{getText("unanswered_questions")}</h2>
+					{unansweredQuestions.map((q) => (
+						<QuestionView q={q} canEditAnswer={false} userLoadable={false} key={q.id} />
+					))}
+				</div>
+			)}
+			{answeredQuestions.length > 0 && (
+				<div class="segment-panel">
+					<h2>{getText("answered_questions")}</h2>
+					{answeredQuestions.map((q) => (
+						<QuestionView q={q} canEditAnswer={false} userLoadable={false} key={q.id} />
+					))}
+				</div>
+			)}
+		</>
 	);
 }
 

@@ -165,18 +165,6 @@ export function InlineSpinner() {
 	);
 }
 
-export function Segment(props) {
-	return <div className="segment-container">{props.children}</div>;
-}
-
-export function Button(props) {
-	return <button className="btn btn-blue">{props.children}</button>;
-}
-
-export function RedButton(props) {
-	return <button className="btn btn-red">{props.children}</button>;
-}
-
 export function ProblemAttachment({ attname = "" }) {
 	let pname = window.location.pathname;
 	if (pname.endsWith("/")) {

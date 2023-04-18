@@ -1,7 +1,7 @@
 {{ $topbar := .Topbar }}
 {{ $id := .Problem.ID}}
 <div class="page-sidebar lg:order-last">
-    <div class="page-sidebar-box reset-list">
+    <div class="segment-panel reset-list">
         <div class="list-group grid grid-cols-2 xl:grid-cols-3">
             <a class="list-group-head col-span-full {{if and (eq $topbar.Page "subtasks") (eq $topbar.PageID -2)}} list-group-selected {{end}}" href="{{$topbar.URLPrefix}}/problems/{{$id}}/edit/subtasks">
                 <h2>{{getText "subTasks"}}</h2>

@@ -4,7 +4,7 @@
 {{ $user := .Ctx.User }}
 
 <h1> {{getText "settingsHeader"}} </h1>
-<div class="segment-container">
+<div class="segment-panel">
 	<h2> {{getText "updateBio"}} </h2>
 	<form id="bio_form">
 		<textarea id="newBio" class="form-textarea w-full mb-2" autocapitalize="sentences" autocomplete="off" maxlength="120" placeholder="Bio...">{{unescapeHTML $user.Bio}}</textarea>
@@ -12,7 +12,7 @@
 	</form>
 </div>
 
-<div class="segment-container">
+<div class="segment-panel">
 	<h2> {{getText "updateLang"}} </h2>
 	<form id="lang_form" autocomplete="off">
 		<select id="langSelect" class="form-select block my-2">
@@ -23,7 +23,7 @@
 	</form>
 </div>
 
-<form class="segment-container" id="pwd_change_form">
+<form class="segment-panel" id="pwd_change_form">
 	<h2> {{getText "updatePwd"}} </h2>
 	<label class="block mb-2">
 		<span class="form-label">{{getText "password"}}: </span>
@@ -39,7 +39,7 @@
 	</label>
 	<button type="submit" class="btn btn-blue">{{getText "button.update"}}</button>
 </form>
-<form class="segment-container" id="email_change_form">
+<form class="segment-panel" id="email_change_form">
 	<h2> {{getText "updateEmail"}} </h2>
 	<label class="block mb-2">
 		<span class="form-label">{{getText "password"}}: </span>

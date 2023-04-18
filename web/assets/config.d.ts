@@ -1,3 +1,5 @@
+import type { katex } from "katex";
+
 interface CustomEventMap {
 	"kn-poll": CustomEvent;
 	"kn-upload-update": CustomEvent;
@@ -30,6 +32,7 @@ export declare global {
 	interface Window {
 		platform_info: PlatformInfo;
 		hljs: any;
+		katex: katex;
 	}
 	interface Document {
 		//adds definition to Document, but you can do the same with HTMLElement

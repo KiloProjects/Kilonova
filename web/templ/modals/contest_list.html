@@ -1,7 +1,7 @@
 
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
     {{ range . }}
-    <div class="segment-container">
+    <div class="segment-panel my-1">
         <h2><a href="/contests/{{.ID}}">{{.Name}}</a></h2>
         <p>{{getText "startTime"}}: <span class="server_timestamp">{{.StartTime.UnixMilli}}</span></p>
         <p>{{getText "duration"}}: {{contestDuration .}}</p>
@@ -51,7 +51,7 @@
         {{ end }}
     </div>
     {{ else }}
-        <div class="segment-container col-span-full">
+        <div class="segment-panel col-span-full">
             <p>{{getText "noContests"}}</p>
         </div>
     {{ end }}

@@ -1414,12 +1414,12 @@ en = "Edit Contest Information"
 ro = "Editare Informații Concurs"
 
 [unanswered_questions]
-en = "Unanswered questions"
-ro = "Întrebări fără răspuns"
+en = "Asked questions"
+ro = "Întrebări puse"
 
 [answered_questions]
 en = "Answered questions"
-ro = "Întrebări cu răspuns"
+ro = "Întrebări răspunse"
 
 [contest_timestamp_asked_format]
 en = "[Asked on] DD/MM/YYYY [at] HH:mm:ss"
@@ -1490,8 +1490,8 @@ en = "Not answered"
 ro = "Fără răspuns"
 
 [ask_question]
-en = "Ask question"
-ro = "Pune întrebare"
+en = "Ask a question"
+ro = "Pune o întrebare"
 
 [received_questions]
 en = "Received questions"

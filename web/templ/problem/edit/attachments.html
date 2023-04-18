@@ -10,78 +10,79 @@
     }
 </style>
 <div class="page-holder">
-    <div class="page-content">
-        <h2>{{getText "header.edit.attachments"}}</h2>
-        {{ with .Attachments }}
-        <table class="kn-table my-2" style="table-layout: fixed">
-            <thead>
-                <tr>
-                    <th scope="col" class="w-1/12">
-                        <input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
-                    </th>
-                    <th scope="col" class="w-1/2">
-                        {{getText "name"}}
-                    </th>
-                    <th scope="col" class="w-1/12">
-                        {{getText "size"}}
-                    </th>
-                    <th scope="col" class="w-1/12">
-                        {{getText "visible"}}
-                    </th>
-                    <th scope="col" class="w-1/12">
-                        {{getText "private"}}
-                    </th>
-                    <th scope="col" class="w-1/12">
-                        {{getText "exec"}}
-                    </th>
-                    <th scope="col" class="w-1/12">
-                        
-                    </th>
-                </tr>
-            </thead>
-            <tbody id="att-body">
-                {{ range . }}
-                <tr id="row-att-{{.ID}}" class="kn-table-row">
-                    <td class="kn-table-cell">
-                        <input class="form-checkbox" type="checkbox" id="pb-att-{{.ID}}" autocomplete="off" />
-                    </td>
-                    <td class="kn-table-cell" id="name-att-{{.ID}}">
-                        <kn-att-name pbid="{{$pbid}}" attid="{{.ID}}" orgname="{{.Name}}">
-                            <!-- <a href="/problems/{{$pbid}}/attachments/{{.Name}}">{{.Name}}</a> -->
-                        </kn-att-name>
-                    </td>
-                    <td class="kn-table-cell" id="size-att-{{.ID}}">
-                        {{.Size}}
-                    </td>
-                    <td class="kn-table-cell">
-                        <input class="form-checkbox" type="checkbox" id="visible-att-{{.ID}}" {{if
-                            .Visible}}checked{{end}}>
-                    </td>
-                    <td class="kn-table-cell">
-                        <input class="form-checkbox" type="checkbox" id="private-att-{{.ID}}" {{if
-                            .Private}}checked{{end}}>
-                    </td>
-                    <td class="kn-table-cell">
-                        <input class="form-checkbox" type="checkbox" id="exec-att-{{.ID}}" {{if
-                            .Exec}}checked{{end}}>
-                    </td>
-                    <td class="kn-table-cell">
-                        <button class="btn btn-blue" onclick="toggleEdit({{.ID}})"><i class="fas fa-edit"></i></button>
-                    </td>
-                </tr>
-                {{ end }}
-            </tbody>
-        </table>
-        <div class="my-2">
-            <button class="btn btn-red mr-2" onclick="deleteAttachments()">{{getText "deleteAttachments"}}</button>
-            <button class="btn btn-blue mr-2" onclick="updateAttachments()">{{getText "updateAttachments"}}</button>
+    <div class="page-content-wrapper">
+        <div class="segment-panel">
+            <h2>{{getText "header.edit.attachments"}}</h2>
+            {{ with .Attachments }}
+            <table class="kn-table my-2" style="table-layout: fixed">
+                <thead>
+                    <tr>
+                        <th scope="col" class="w-1/12">
+                            <input class="form-checkbox" type="checkbox" id="selectAllBox" autocomplete="off" />
+                        </th>
+                        <th scope="col" class="w-1/2">
+                            {{getText "name"}}
+                        </th>
+                        <th scope="col" class="w-1/12">
+                            {{getText "size"}}
+                        </th>
+                        <th scope="col" class="w-1/12">
+                            {{getText "visible"}}
+                        </th>
+                        <th scope="col" class="w-1/12">
+                            {{getText "private"}}
+                        </th>
+                        <th scope="col" class="w-1/12">
+                            {{getText "exec"}}
+                        </th>
+                        <th scope="col" class="w-1/12">
+                            
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="att-body">
+                    {{ range . }}
+                    <tr id="row-att-{{.ID}}" class="kn-table-row">
+                        <td class="kn-table-cell">
+                            <input class="form-checkbox" type="checkbox" id="pb-att-{{.ID}}" autocomplete="off" />
+                        </td>
+                        <td class="kn-table-cell" id="name-att-{{.ID}}">
+                            <kn-att-name pbid="{{$pbid}}" attid="{{.ID}}" orgname="{{.Name}}">
+                                <!-- <a href="/problems/{{$pbid}}/attachments/{{.Name}}">{{.Name}}</a> -->
+                            </kn-att-name>
+                        </td>
+                        <td class="kn-table-cell" id="size-att-{{.ID}}">
+                            {{.Size}}
+                        </td>
+                        <td class="kn-table-cell">
+                            <input class="form-checkbox" type="checkbox" id="visible-att-{{.ID}}" {{if
+                                .Visible}}checked{{end}}>
+                        </td>
+                        <td class="kn-table-cell">
+                            <input class="form-checkbox" type="checkbox" id="private-att-{{.ID}}" {{if
+                                .Private}}checked{{end}}>
+                        </td>
+                        <td class="kn-table-cell">
+                            <input class="form-checkbox" type="checkbox" id="exec-att-{{.ID}}" {{if
+                                .Exec}}checked{{end}}>
+                        </td>
+                        <td class="kn-table-cell">
+                            <button class="btn btn-blue" onclick="toggleEdit({{.ID}})"><i class="fas fa-edit"></i></button>
+                        </td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+            <div class="my-2">
+                <button class="btn btn-red mr-2" onclick="deleteAttachments()">{{getText "deleteAttachments"}}</button>
+                <button class="btn btn-blue mr-2" onclick="updateAttachments()">{{getText "updateAttachments"}}</button>
+            </div>
+            {{ else }}
+            {{getText "noAttachments"}}
+            {{ end }}
         </div>
-        {{ else }}
-        {{getText "noAttachments"}}
-        {{ end }}
 
-        <div class="hidden" id="editAttView">
-            <div class="my-2 page-sidebar-divider"></div>
+        <div class="segment-panel hidden" id="editAttView">
             <h2 class="inline-block mb-2">{{getText "edit_attachment"}} <code id="ediAttNameView"></code></h2>
             <form id="editAttForm" autocomplete="off">
                 <input type="hidden" id="editAttID" />
@@ -94,9 +95,7 @@
             </form>
         </div>
 
-        <div class="my-2 page-sidebar-divider"></div>
-
-        <details id="addDetails">
+        <details class="segment-panel" id="addDetails">
             <summary>
                 <h2 class="inline-block mb-2">{{getText "create_attachment"}}</h2>
             </summary>
@@ -127,7 +126,7 @@
 
     </div>
     <div class="page-sidebar">
-        <form class="page-sidebar-box" id="attCreate">
+        <form class="segment-panel" id="attCreate">
             <h2>{{getText "header.edit.attachment_create"}}</h2>
             <label class="block my-2">
                 <span class="mr-2 text-xl">{{getText "file"}}: </span>

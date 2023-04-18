@@ -219,7 +219,7 @@ function SubsView(props: SubsViewProps) {
 	return (
 		<div class="page-holder mt-0">
 			<div class="page-sidebar lg:order-last">
-				<div class="page-sidebar-box">
+				<div class="segment-panel">
 					<h2>{getText("filters")}</h2>
 					<label class="block mb-2">
 						<span class="form-label">{getText("language")}:</span>

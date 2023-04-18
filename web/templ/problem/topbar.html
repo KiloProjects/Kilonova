@@ -1,6 +1,7 @@
 {{ $topbar := .Topbar }}
 {{ $problemPage := true }}
 {{ $editProblemPage := true }}
+<div class="segment-panel">
 <h1>
     {{ if (eq $topbar.Page `contest_general`) }}
     <b>{{.Contest.Name}}</b>
@@ -47,7 +48,7 @@
 
     {{ end }}
 </h1>
-<div id="topbar_wrapper" class="mt-1 mb-2">
+<div id="topbar_wrapper" class="mt-1">
     {{ if $topbar.Contest }}
         <a class="p-1 {{if (eq $topbar.Page `contest_general`)}} topbar-selected {{end}}" href="{{$topbar.URLPrefix}}/">
             {{getText "contest_info"}}
@@ -160,4 +161,5 @@
         </script>
     {{ end }}
 {{ end }}
+</div>
 </div>

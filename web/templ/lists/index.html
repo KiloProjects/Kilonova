@@ -6,29 +6,31 @@
 
 {{ define "content" }}
 
-<h2 class="mb-2">{{getText "problem_lists"}}</h2>
-
-<div class="list-group">
-{{ range problemLists }}
-    {{template "problemlist_show" (genPblistParams authedUser . false)}}
-{{ end }}
-{{ with (unassociatedProblems authedUser) }}
-    <details class="list-group-head">
-        <summary class="pb-1 mt-1">
-            <span>{{getText "the_rest"}}</span>
-            {{if authedUser}}
-                <span class="float-right badge">
-                    {{ getText "num_solved" (numSolvedPbs .) (len .) }}
-                </span>
-            {{end}}
-        </summary>
-        {{ with . }}
-            <div class="mt-2">
-                {{ template "pb_list_group" (genProblemsParams . true false) }}
-            </div>
-        {{ end }}
-    </details>
-{{ end }}
+<div class="segment-panel">
+    <h2 class="mb-2">{{getText "problem_lists"}}</h2>
+    
+    <div class="list-group">
+    {{ range problemLists }}
+        {{template "problemlist_show" (genPblistParams authedUser . false)}}
+    {{ end }}
+    {{ with (unassociatedProblems authedUser) }}
+        <details class="list-group-head">
+            <summary class="pb-1 mt-1">
+                <span>{{getText "the_rest"}}</span>
+                {{if authedUser}}
+                    <span class="float-right badge">
+                        {{ getText "num_solved" (numSolvedPbs .) (len .) }}
+                    </span>
+                {{end}}
+            </summary>
+            {{ with . }}
+                <div class="mt-2">
+                    {{ template "pb_list_group" (genProblemsParams . true false) }}
+                </div>
+            {{ end }}
+        </details>
+    {{ end }}
+    </div>
 </div>
 
 

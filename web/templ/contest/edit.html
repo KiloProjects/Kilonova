@@ -3,9 +3,9 @@
 {{ template "topbar.html" . }}
 
 
-<div class="page-holder no-bottom-border">
-    <div class="page-content-full">
-        <form class="segment-container mb-4" id="contest_update_form" autocomplete="off">
+<div class="page-holder">
+    <div class="page-content-full-wrapper">
+        <form class="segment-panel mb-4" id="contest_update_form" autocomplete="off">
             <h2>{{getText "header.contest.general"}}</h2>
             
             <label class="block mb-2">
@@ -58,7 +58,7 @@
             <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
         </form>
 
-        <div class="segment-container">
+        <div class="segment-panel">
             <h2>{{getText "header.contest.edit_problems"}}</h2>
     
             {{$pbs := contestProblems .Ctx.User.Brief .Contest}}
@@ -72,7 +72,7 @@
             </form>
         </div>
 
-        <div class="segment-container my-2">
+        <div class="segment-panel my-2">
             <h2>{{getText "header.contest.access_control"}}</h2>
 
             <h3>{{getText "editors"}}:</h3>
@@ -88,7 +88,7 @@
                 </div>
             </div>
 
-            <div class="segment-container">
+            <div class="segment-panel">
                 <h2>{{getText "add_user"}}</h2>
                 <label class="block">
                     <span class="form-label">{{getText "username"}}:</span>

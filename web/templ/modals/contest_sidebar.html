@@ -1,4 +1,4 @@
-<div class="page-sidebar-box">
+<div class="segment-panel">
     <h2 class="font-normal">
         {{getText "contestInfo"}}
     </h2>
@@ -73,8 +73,7 @@
 </div>
 {{ $contest := . }}
 {{ with contestProblems (authedUser) . }}
-    <div class="page-sidebar-divider"></div>
-    <div class="page-sidebar-box">
+    <div class="segment-panel">
         <h2>{{getText "problems"}}</h2>
         <div class="reset-list text-lg">
             <ul>
