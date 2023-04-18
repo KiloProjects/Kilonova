@@ -12,11 +12,11 @@
             </label>
             <label class="block my-2">
                 <span class="form-label">{{getText "author"}}:</span>
-                <input id="authorCredits" class="form-input" type="text" size="50" value="{{.Problem.AuthorCredits}}" />
+                <input id="authorCredits" class="form-input" type="text" value="{{.Problem.AuthorCredits}}" />
             </label>
             <label class="block my-2">
                 <span class="form-label">{{getText "source"}}:</span>
-                <input id="sourceCredits" class="form-input" type="text" size="50" value="{{.Problem.SourceCredits}}" />
+                <input id="sourceCredits" class="form-input" type="text" value="{{.Problem.SourceCredits}}" />
             </label>
             <label class="block my-2">
                 <input id="consoleInput" class="form-checkbox" type="checkbox" {{if .Problem.ConsoleInput}} checked {{
