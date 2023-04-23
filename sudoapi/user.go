@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
@@ -80,14 +81,18 @@ func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([
 		zap.S().Warn(err)
 		return nil, ErrUnknownError
 	}
+	return mapUsersBrief(users), nil
+}
+
+func mapUsersBrief(users []*db.User) []*UserBrief {
 	var usersBrief []*UserBrief
 	for _, user := range users {
 		usersBrief = append(usersBrief, user.ToBrief())
 	}
 	if len(usersBrief) == 0 {
-		return []*UserBrief{}, nil
+		return []*UserBrief{}
 	}
-	return usersBrief, nil
+	return usersBrief
 }
 
 func (s *BaseAPI) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, *StatusError) {

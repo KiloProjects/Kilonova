@@ -408,7 +408,20 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return list
 		},
-
+		"problemEditors": func(problem *kilonova.Problem) []*kilonova.UserBrief {
+			users, err := base.ProblemEditors(context.Background(), problem.ID)
+			if err != nil {
+				return nil
+			}
+			return users
+		},
+		"problemViewers": func(problem *kilonova.Problem) []*kilonova.UserBrief {
+			users, err := base.ProblemViewers(context.Background(), problem.ID)
+			if err != nil {
+				return nil
+			}
+			return users
+		},
 		"problemTests": func(problem *kilonova.Problem) []*kilonova.Test {
 			tests, err := base.Tests(context.Background(), problem.ID)
 			if err != nil {
@@ -544,10 +557,6 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"authedUser": func() *kilonova.UserBrief {
 			zap.S().Error("Uninitialized `authedUser`")
 			return nil
-		},
-		"problemEditor": func(user *kilonova.UserBrief, problem *kilonova.Problem) bool {
-			zap.S().Error("Uninitalized `problemEditor`")
-			return false
 		},
 		"isContestEditor": func(c *kilonova.Contest) bool {
 			zap.S().Error("Uninitialized `isContestEditor`")

@@ -736,9 +736,6 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		"currentProblem": func() *kilonova.Problem {
 			return util.Problem(r)
 		},
-		"problemEditor": func(problem *kilonova.Problem) bool {
-			return rt.base.IsProblemEditor(authedUser, problem)
-		},
 		"isContestEditor": func(c *kilonova.Contest) bool {
 			return rt.base.IsContestEditor(authedUser, c)
 		},

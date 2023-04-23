@@ -23,9 +23,7 @@ type Problem struct {
 	TestName      string    `json:"test_name"`
 	DefaultPoints int       `json:"default_points"`
 
-	Visible bool  `json:"visible"`
-	Editors []int `json:"editors"`
-	Viewers []int `json:"viewers"`
+	Visible bool `json:"visible"`
 
 	// Limit stuff
 	TimeLimit   float64 `json:"time_limit"`
@@ -55,6 +53,8 @@ type ScoredProblem struct {
 	Problem
 	ScoreUserID *int `json:"score_user_id"`
 	MaxScore    *int `json:"max_score"`
+	// For showing the published/unpublished label on front page
+	IsEditor bool `json:"is_editor"`
 }
 
 // ProblemFilter is the struct with all filterable fields on the problem

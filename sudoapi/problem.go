@@ -204,3 +204,19 @@ func (s *BaseAPI) StripProblemAccess(ctx context.Context, pbid int, uid int) *St
 	}
 	return nil
 }
+
+func (s *BaseAPI) ProblemEditors(ctx context.Context, pbid int) ([]*kilonova.UserBrief, *StatusError) {
+	users, err := s.db.ProblemEditors(ctx, pbid)
+	if err != nil {
+		return []*kilonova.UserBrief{}, WrapError(err, "Couldn't get problem editors")
+	}
+	return mapUsersBrief(users), nil
+}
+
+func (s *BaseAPI) ProblemViewers(ctx context.Context, pbid int) ([]*kilonova.UserBrief, *StatusError) {
+	users, err := s.db.ProblemViewers(ctx, pbid)
+	if err != nil {
+		return []*kilonova.UserBrief{}, WrapError(err, "Couldn't get problem viewers")
+	}
+	return mapUsersBrief(users), nil
+}

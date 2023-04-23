@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"go.uber.org/zap"
 )
 
 type dbContest struct {
@@ -208,10 +207,6 @@ func (s *DB) UpdateContestProblems(ctx context.Context, contestID int, problems 
 
 // Access rights
 
-func (s *DB) contestAccessRights(ctx context.Context, contestID int) ([]*userAccess, error) {
-	return s.getAccess(ctx, "contest_user_access", "contest_id", contestID)
-}
-
 func (s *DB) AddContestEditor(ctx context.Context, contestID int, uid int) error {
 	return s.addAccess(ctx, "contest_user_access", "contest_id", contestID, uid, "editor")
 }
@@ -222,6 +217,14 @@ func (s *DB) AddContestTester(ctx context.Context, contestID int, uid int) error
 
 func (s *DB) StripContestAccess(ctx context.Context, contestID int, uid int) error {
 	return s.removeAccess(ctx, "contest_user_access", "contest_id", contestID, uid)
+}
+
+func (s *DB) contestEditors(ctx context.Context, contestID int) ([]*User, error) {
+	return s.getAccessUsers(ctx, "contest_user_access", "contest_id", contestID, accessEditor)
+}
+
+func (s *DB) contestViewers(ctx context.Context, contestID int) ([]*User, error) {
+	return s.getAccessUsers(ctx, "contest_user_access", "contest_id", contestID, accessViewer)
 }
 
 func contestUpdateQuery(upd *kilonova.ContestUpdate) ([]string, []any) {
@@ -256,40 +259,22 @@ func contestUpdateQuery(upd *kilonova.ContestUpdate) ([]string, []any) {
 
 func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilonova.Contest, error) {
 
-	rights, err := s.contestAccessRights(ctx, contest.ID)
+	editors, err := s.contestEditors(ctx, contest.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	editors := []*kilonova.UserBrief{}
-	viewers := []*kilonova.UserBrief{}
-	for _, right := range rights {
-		switch right.Access {
-		case accessEditor:
-			editor, err := s.User(ctx, right.UserID)
-			if err != nil {
-				zap.S().Warn(err)
-				continue
-			}
-			editors = append(editors, editor.ToBrief())
-		case accessViewer:
-			viewer, err := s.User(ctx, right.UserID)
-			if err != nil {
-				zap.S().Warn(right.UserID, contest.ID, err)
-				continue
-			}
-			viewers = append(viewers, viewer.ToBrief())
-		default:
-			zap.S().Warn("Unknown access rank", zap.String("right", string(right.Access)))
-		}
+	viewers, err := s.contestViewers(ctx, contest.ID)
+	if err != nil {
+		return nil, err
 	}
 
 	return &kilonova.Contest{
 		ID:         contest.ID,
 		CreatedAt:  contest.CreatedAt,
 		Name:       contest.Name,
-		Editors:    editors,
-		Testers:    viewers,
+		Editors:    mapper(editors, toUserBrief),
+		Testers:    mapper(viewers, toUserBrief),
 		PublicJoin: contest.PublicJoin,
 		StartTime:  contest.StartTime,
 		EndTime:    contest.EndTime,

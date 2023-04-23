@@ -40,6 +40,7 @@ type dbScoredProblem struct {
 	dbProblem
 	ScoreUserID *int `db:"user_id"`
 	MaxScore    *int `db:"score"`
+	IsEditor    bool `db:"pb_editor"`
 }
 
 func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
@@ -51,21 +52,23 @@ func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
 	if err != nil {
 		return nil, err
 	}
-	return s.internalToProblem(ctx, &pb)
+	return s.internalToProblem(&pb), nil
 }
 
 func (s *DB) ScoredProblem(ctx context.Context, problemID int, userID int) (*kilonova.ScoredProblem, error) {
 	var pb dbScoredProblem
-	err := s.conn.GetContext(ctx, &pb, `SELECT pbs.*, ms.user_id, ms.score 
-FROM problems pbs LEFT JOIN max_score_view ms ON (pbs.id = ms.problem_id AND ms.user_id = $2) 
-WHERE pbs.id = $1 LIMIT 1`, problemID, userID)
+	err := s.conn.GetContext(ctx, &pb, `SELECT DISTINCT pbs.*, ms.user_id, ms.score, CASE WHEN editors.user_id IS NOT NULL THEN TRUE ELSE FALSE END AS pb_editor
+FROM problems pbs 
+	LEFT JOIN max_score_view ms ON (pbs.id = ms.problem_id AND ms.user_id = $2) 
+	LEFT JOIN problem_editors editors ON (pbs.id = editors.problem_id AND editors.user_id = $3)
+WHERE pbs.id = $1 LIMIT 1`, problemID, userID, userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	return s.internalToScoredProblem(ctx, &pb, userID)
+	return s.internalToScoredProblem(&pb, userID)
 }
 
 func (s *DB) VisibleProblem(ctx context.Context, id int, user *kilonova.UserBrief) (*kilonova.Problem, error) {
@@ -84,20 +87,22 @@ func (s *DB) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*ki
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.Problem{}, nil
 	}
-	return mapperCtx(ctx, pbs, s.internalToProblem), err
+	return mapper(pbs, s.internalToProblem), err
 }
 
 func (s *DB) ScoredProblems(ctx context.Context, filter kilonova.ProblemFilter, userID int) ([]*kilonova.ScoredProblem, error) {
 	var pbs []*dbScoredProblem
 	where, args := problemFilterQuery(&filter)
-	query := s.conn.Rebind(`SELECT problems.*, ms.user_id, ms.score 
-FROM problems LEFT JOIN max_score_view ms ON (problems.id = ms.problem_id AND ms.user_id = ?) 
+	query := s.conn.Rebind(`SELECT DISTINCT problems.*, ms.user_id, ms.score, CASE WHEN editors.user_id IS NOT NULL THEN TRUE ELSE FALSE END AS pb_editor
+FROM problems 
+	LEFT JOIN max_score_view ms ON (problems.id = ms.problem_id AND ms.user_id = ?)
+	LEFT JOIN problem_editors editors ON (problems.id = editors.problem_id AND editors.user_id = ?) 
 WHERE ` + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
-	err := s.conn.SelectContext(ctx, &pbs, query, append([]any{userID}, args...)...)
+	err := s.conn.SelectContext(ctx, &pbs, query, append([]any{userID, userID}, args...)...)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.ScoredProblem{}, nil
 	}
-	return s.internalToScoredProblems(ctx, pbs, userID), err
+	return s.internalToScoredProblems(pbs, userID), err
 }
 
 func (s *DB) ContestProblems(ctx context.Context, contestID int) ([]*kilonova.Problem, error) {
@@ -106,19 +111,21 @@ func (s *DB) ContestProblems(ctx context.Context, contestID int) ([]*kilonova.Pr
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.Problem{}, nil
 	}
-	return mapperCtx(ctx, pbs, s.internalToProblem), err
+	return mapper(pbs, s.internalToProblem), err
 }
 
 func (s *DB) ScoredContestProblems(ctx context.Context, contestID int, userID int) ([]*kilonova.ScoredProblem, error) {
 	var pbs []*dbScoredProblem
-	err := s.conn.SelectContext(ctx, &pbs, `SELECT pbs.*, ms.user_id, ms.score 
-FROM (problems pbs INNER JOIN contest_problems cpbs ON cpbs.problem_id = pbs.id) LEFT JOIN max_score_contest_view ms ON (pbs.id = ms.problem_id AND cpbs.contest_id = ms.contest_id AND ms.user_id = $2)
+	err := s.conn.SelectContext(ctx, &pbs, `SELECT DISTINCT pbs.*, ms.user_id, ms.score, CASE WHEN editors.user_id IS NOT NULL THEN TRUE ELSE FALSE END AS pb_editor
+FROM (problems pbs INNER JOIN contest_problems cpbs ON cpbs.problem_id = pbs.id) 
+	LEFT JOIN max_score_contest_view ms ON (pbs.id = ms.problem_id AND cpbs.contest_id = ms.contest_id AND ms.user_id = $2)
+	LEFT JOIN problem_editors editors ON (pbs.id = editors.problem_id AND editors.user_id = $3) 
 WHERE cpbs.contest_id = $1 
-ORDER BY cpbs.position ASC`, contestID, userID)
+ORDER BY cpbs.position ASC`, contestID, userID, userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.ScoredProblem{}, nil
 	}
-	return s.internalToScoredProblems(ctx, pbs, userID), err
+	return s.internalToScoredProblems(pbs, userID), err
 }
 
 const problemCreateQuery = `INSERT INTO problems (
@@ -272,10 +279,6 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []any) {
 
 // Access rights
 
-func (s *DB) problemAccessRights(ctx context.Context, pbid int) ([]*userAccess, error) {
-	return s.getAccess(ctx, "problem_user_access", "problem_id", pbid)
-}
-
 func (s *DB) AddProblemEditor(ctx context.Context, pbid int, uid int) error {
 	return s.addAccess(ctx, "problem_user_access", "problem_id", pbid, uid, "editor")
 }
@@ -288,32 +291,17 @@ func (s *DB) StripProblemAccess(ctx context.Context, pbid int, uid int) error {
 	return s.removeAccess(ctx, "problem_user_access", "problem_id", pbid, uid)
 }
 
-func (s *DB) internalToProblem(ctx context.Context, pb *dbProblem) (*kilonova.Problem, error) {
+func (s *DB) ProblemEditors(ctx context.Context, pbid int) ([]*User, error) {
+	return s.getAccessUsers(ctx, "problem_user_access", "problem_id", pbid, accessEditor)
+}
+
+func (s *DB) ProblemViewers(ctx context.Context, pbid int) ([]*User, error) {
+	return s.getAccessUsers(ctx, "problem_user_access", "problem_id", pbid, accessViewer)
+}
+
+func (s *DB) internalToProblem(pb *dbProblem) *kilonova.Problem {
 	if pb == nil {
-		return nil, nil
-	}
-
-	rights, err := s.problemAccessRights(ctx, pb.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	var editors, viewers []int
-	for _, right := range rights {
-		switch right.Access {
-		case accessEditor:
-			editors = append(editors, right.UserID)
-		case accessViewer:
-			viewers = append(viewers, right.UserID)
-		default:
-			zap.S().Warn("Unknown access rank", zap.String("right", string(right.Access)))
-		}
-	}
-	if editors == nil {
-		editors = []int{}
-	}
-	if viewers == nil {
-		viewers = []int{}
+		return nil
 	}
 
 	return &kilonova.Problem{
@@ -323,8 +311,6 @@ func (s *DB) internalToProblem(ctx context.Context, pb *dbProblem) (*kilonova.Pr
 		TestName:  pb.TestName,
 
 		Visible: pb.Visible,
-		Editors: editors,
-		Viewers: viewers,
 
 		DefaultPoints: pb.DefaultPoints,
 
@@ -337,14 +323,11 @@ func (s *DB) internalToProblem(ctx context.Context, pb *dbProblem) (*kilonova.Pr
 
 		ConsoleInput:    pb.ConsoleInput,
 		ScoringStrategy: pb.ScoringStrategy,
-	}, nil
+	}
 }
 
-func (s *DB) internalToScoredProblem(ctx context.Context, spb *dbScoredProblem, userID int) (*kilonova.ScoredProblem, error) {
-	pb, err := s.internalToProblem(ctx, &spb.dbProblem)
-	if err != nil {
-		return nil, err
-	}
+func (s *DB) internalToScoredProblem(spb *dbScoredProblem, userID int) (*kilonova.ScoredProblem, error) {
+	pb := s.internalToProblem(&spb.dbProblem)
 	var uid *int
 	if userID > 0 {
 		uid = &userID
@@ -354,17 +337,18 @@ func (s *DB) internalToScoredProblem(ctx context.Context, spb *dbScoredProblem, 
 
 		ScoreUserID: uid,
 		MaxScore:    spb.MaxScore,
+		IsEditor:    spb.IsEditor,
 	}, nil
 }
 
-func (s *DB) internalToScoredProblems(ctx context.Context, spbs []*dbScoredProblem, userID int) []*kilonova.ScoredProblem {
+func (s *DB) internalToScoredProblems(spbs []*dbScoredProblem, userID int) []*kilonova.ScoredProblem {
 	if len(spbs) == 0 {
 		return []*kilonova.ScoredProblem{}
 	}
 	rez := make([]*kilonova.ScoredProblem, len(spbs))
 	for i := range rez {
 		var err error
-		rez[i], err = s.internalToScoredProblem(ctx, spbs[i], userID)
+		rez[i], err = s.internalToScoredProblem(spbs[i], userID)
 		if err != nil && !errors.Is(err, context.Canceled) {
 			zap.S().WithOptions(zap.AddCallerSkip(1)).Warn(err)
 		}

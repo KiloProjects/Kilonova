@@ -32,8 +32,6 @@ export type Problem = {
 	test_name: string;
 	default_points: number;
 	visible: boolean;
-	editors: number[];
-	viewers: number[];
 	time_limit: number;
 	memory_limit: number;
 	source_credits: string;

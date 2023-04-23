@@ -240,12 +240,13 @@ func (s *API) stripProblemAccess(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getProblemAccessControl(w http.ResponseWriter, r *http.Request) {
-	editors, err := s.base.UsersBrief(r.Context(), kilonova.UserFilter{IDs: util.Problem(r).Editors})
+	editors, err := s.base.ProblemEditors(r.Context(), util.Problem(r).ID)
 	if err != nil {
 		err.WriteError(w)
 		return
 	}
-	viewers, err := s.base.UsersBrief(r.Context(), kilonova.UserFilter{IDs: util.Problem(r).Viewers})
+
+	viewers, err := s.base.ProblemViewers(r.Context(), util.Problem(r).ID)
 	if err != nil {
 		err.WriteError(w)
 		return

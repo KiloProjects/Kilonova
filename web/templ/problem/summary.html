@@ -53,36 +53,31 @@
             </h2>
             <div class="px-2">
                 <p>{{getText "id"}}: {{.Problem.ID}}</p>
-                {{ if (eq (len .Problem.Editors) 1) }}
+                {{ $pbEditors := problemEditors .Problem }}
+                {{ if (eq (len $pbEditors) 1) }}
                 <p>
                     {{getText "editor"}}:
-                    {{ range .Problem.Editors }}
-                    {{ with user . }}
+                    {{ range $pbEditors }}
                     <a href="/profile/{{.Name}}">{{.Name}}</a>
-                    {{ end }}
                     {{ end }}
                 </p>
                 {{ else }}
                 <details class="reset-list" {{ if .Topbar.IsProblemEditor }}open{{end}}>
                     <summary>{{getText "editors"}}:</summary>
                     <ul>
-                        {{ range .Problem.Editors }}
-                        {{ with user .}}
+                        {{ range $pbEditors }}
                         <li><a href="/profile/{{.Name}}">{{.Name}}</a></li>
-                        {{ end }}
                         {{ end }}
                     </ul>
                 </details>
                 {{ end }}
                 {{ if .Topbar.IsProblemEditor }}
-                {{ with .Problem.Viewers }}
+                {{ with (problemViewers .Problem) }}
                 <details class="reset-list">
                     <summary>{{getText "viewers"}}:</summary>
                     <ul>
                         {{ range . }}
-                        {{ with user .}}
                         <li><a href="/profile/{{.Name}}">{{.Name}}</a></li>
-                        {{ end }}
                         {{ end }}
                     </ul>
                 </details>

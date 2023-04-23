@@ -35,7 +35,7 @@ type ScoredProblem = {
 	id: number;
 	name: string;
 	visible: boolean;
-	editors: number[];
+	is_editor: boolean;
 	max_score?: number;
 };
 
@@ -43,12 +43,7 @@ function isProblemEditor(pb: ScoredProblem): boolean {
 	if (window.platform_info.admin) {
 		return true;
 	}
-	for (let uid of pb.editors) {
-		if (uid == window.platform_info.user_id) {
-			return true;
-		}
-	}
-	return false;
+	return pb.is_editor;
 }
 
 type ProblemScore = { [problem: number]: number };

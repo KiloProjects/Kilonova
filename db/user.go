@@ -31,7 +31,7 @@ type User struct {
 	Generated bool `json:"generated" db:"generated"`
 }
 
-func (user *User) ToBrief() *kilonova.UserBrief {
+func toUserBrief(user *User) *kilonova.UserBrief {
 	if user == nil {
 		return nil
 	}
@@ -42,6 +42,10 @@ func (user *User) ToBrief() *kilonova.UserBrief {
 		Proposer: user.Proposer,
 		Bio:      user.Bio,
 	}
+}
+
+func (user *User) ToBrief() *kilonova.UserBrief {
+	return toUserBrief(user)
 }
 
 func (user *User) ToFull() *kilonova.UserFull {
