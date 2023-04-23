@@ -41,6 +41,8 @@ type dbScoredProblem struct {
 	ScoreUserID *int `db:"user_id"`
 	MaxScore    *int `db:"score"`
 	IsEditor    bool `db:"pb_editor"`
+
+	UNUSEDPOZ int `db:"unused_position"`
 }
 
 func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
@@ -116,7 +118,7 @@ func (s *DB) ContestProblems(ctx context.Context, contestID int) ([]*kilonova.Pr
 
 func (s *DB) ScoredContestProblems(ctx context.Context, contestID int, userID int) ([]*kilonova.ScoredProblem, error) {
 	var pbs []*dbScoredProblem
-	err := s.conn.SelectContext(ctx, &pbs, `SELECT DISTINCT pbs.*, ms.user_id, ms.score, CASE WHEN editors.user_id IS NOT NULL THEN TRUE ELSE FALSE END AS pb_editor
+	err := s.conn.SelectContext(ctx, &pbs, `SELECT DISTINCT pbs.*, cpbs.position AS unused_position, ms.user_id, ms.score, CASE WHEN editors.user_id IS NOT NULL THEN TRUE ELSE FALSE END AS pb_editor
 FROM (problems pbs INNER JOIN contest_problems cpbs ON cpbs.problem_id = pbs.id) 
 	LEFT JOIN max_score_contest_view ms ON (pbs.id = ms.problem_id AND cpbs.contest_id = ms.contest_id AND ms.user_id = $2)
 	LEFT JOIN problem_editors editors ON (pbs.id = editors.problem_id AND editors.user_id = $3) 
