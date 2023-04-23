@@ -164,7 +164,7 @@ function CompileErrorInfo({ sub }: { sub: FullSubmission }) {
 
 function SubCode({ sub }: { sub: FullSubmission }) {
 	return (
-		<>
+		<div class="segment-panel">
 			<h2>{getText("sourceCode")}:</h2>
 			<pre>
 				<code
@@ -189,7 +189,7 @@ function SubCode({ sub }: { sub: FullSubmission }) {
 					{getText("download")}
 				</button>
 			</div>
-		</>
+		</div>
 	);
 }
 
@@ -390,7 +390,7 @@ function SubmissionView({ sub, bigCode, pasteAuthor }: { sub: FullSubmission | n
 		);
 	}
 	let content = (
-		<>
+		<div class="segment-panel">
 			<CompileErrorInfo sub={sub} />
 			{sub.compile_error !== true &&
 				(sub.subtasks.length > 0 ? (
@@ -401,7 +401,7 @@ function SubmissionView({ sub, bigCode, pasteAuthor }: { sub: FullSubmission | n
 						<TestTable sub={sub} />
 					</>
 				))}
-		</>
+		</div>
 	);
 
 	let under = <></>;
@@ -424,9 +424,9 @@ function SubmissionView({ sub, bigCode, pasteAuthor }: { sub: FullSubmission | n
 						</div>
 					)}
 				</div>
-				<div class="page-content">{content}</div>
+				<div class="page-content-wrapper">{content}</div>
 			</div>
-			<div class="segment-panel">{under}</div>
+			{under}
 		</>
 	);
 }
