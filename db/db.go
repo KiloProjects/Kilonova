@@ -4,13 +4,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path"
+	"sync"
 
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/jackc/pgx/v5/tracelog"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+)
+
+var (
+	loggerOnce sync.Once
+	loggerFile *os.File
+	dbLogger   *zap.Logger
 )
 
 type DB struct {
@@ -26,7 +37,7 @@ func NewPSQL(ctx context.Context, dsn string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	//config.Tracer = &tracelog.TraceLog{Logger: tracelog.LoggerFunc(log), LogLevel: tracelog.LogLevelDebug}
+	config.Tracer = &tracelog.TraceLog{Logger: tracelog.LoggerFunc(log), LogLevel: tracelog.LogLevelDebug}
 	dsn = stdlib.RegisterConnConfig(config)
 
 	conn, err := sqlx.ConnectContext(ctx, "pgx", dsn)
@@ -81,7 +92,15 @@ func mapperCtx[T1 any, T2 any](ctx context.Context, lst []T1, f func(context.Con
 }
 
 func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]interface{}) {
-	logger := zap.L()
+	loggerOnce.Do(func() {
+		var err error
+		loggerFile, err = os.OpenFile(path.Join(config.Common.LogDir, "db.log"), os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+		if err != nil {
+			zap.S().Fatal("Could not open db.log for writing")
+		}
+		dbLogger = zap.New(kilonova.GetZapCore(config.Common.Debug, false, loggerFile), zap.AddCaller())
+	})
+
 	fields := make([]zapcore.Field, len(data))
 	i := 0
 	for k, v := range data {
@@ -91,16 +110,16 @@ func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[stri
 
 	switch level {
 	case tracelog.LogLevelTrace:
-		logger.Debug(msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
+		dbLogger.Debug(msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
 	case tracelog.LogLevelDebug:
-		logger.Debug(msg, fields...)
+		dbLogger.Debug(msg, fields...)
 	case tracelog.LogLevelInfo:
-		logger.Info(msg, fields...)
+		dbLogger.Info(msg, fields...)
 	case tracelog.LogLevelWarn:
-		logger.Warn(msg, fields...)
+		dbLogger.Warn(msg, fields...)
 	case tracelog.LogLevelError:
-		logger.Error(msg, fields...)
+		dbLogger.Error(msg, fields...)
 	default:
-		logger.Error(msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
+		dbLogger.Error(msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
 	}
 }
