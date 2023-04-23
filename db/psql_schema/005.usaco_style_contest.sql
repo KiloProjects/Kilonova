@@ -18,8 +18,12 @@ CREATE OR REPLACE VIEW problem_viewers AS
         WHERE pbs.visible = true) -- Base case, problem is visible
     UNION ALL
     (SELECT pbs.id as problem_id, users.id as user_id 
-        FROM problems pbs, users 
-        WHERE pbs.visible = true OR users.admin = true) -- Problem is visible or user is admin
+        FROM problems pbs CROSS JOIN users 
+        WHERE pbs.visible = true) -- Problem is visible
+    UNION ALL
+    (SELECT pbs.id as problem_id, users.id as user_id 
+        FROM problems pbs CROSS JOIN users 
+        WHERE users.admin = true) -- User is admin
     UNION ALL
     (SELECT problem_id, user_id FROM problem_user_access) -- Problem editors/viewers
     UNION ALL
