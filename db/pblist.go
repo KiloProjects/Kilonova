@@ -53,8 +53,8 @@ func (s *DB) ProblemListsByProblemID(ctx context.Context, problemID int, showHid
 	var lists []*pblist
 
 	hidableQ := ""
-	if showHidable {
-		hidableQ = " AND sidebar_hidable = false "
+	if !showHidable {
+		hidableQ = " AND lists.sidebar_hidable = false "
 	}
 
 	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
