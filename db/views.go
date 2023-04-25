@@ -2,11 +2,11 @@ package db
 
 import "context"
 
-// Functions that interact with views
+// Functions that interact with views and functions
 
 func (s *DB) IsProblemViewer(ctx context.Context, problemID, userID int) (bool, error) {
 	var cnt int
-	err := s.conn.GetContext(ctx, &cnt, "SELECT COUNT(*) FROM problem_viewers WHERE problem_id = $1 AND user_id = $2", problemID, userID)
+	err := s.conn.GetContext(ctx, &cnt, "SELECT COUNT(*) FROM visible_pbs($2) WHERE problem_id = $1 AND user_id = $2", problemID, userID)
 	if err != nil {
 		return false, err
 	}

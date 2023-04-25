@@ -384,7 +384,7 @@ CREATE INDEX IF NOT EXISTS pblist_pblists_index ON problem_list_pblists (parent_
 
 CREATE INDEX IF NOT EXISTS problem_user_submissions_index ON submissions (user_id, problem_id);
 CREATE INDEX IF NOT EXISTS problem_submissions_index ON submissions (problem_id);
-CREATE INDEX IF NOT EXISTS contest_submissions_index ON submissions (contest_id);
+CREATE INDEX IF NOT EXISTS contest_submissions_index ON submissions (contest_id) WHERE contest_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS submission_subtests_index ON submission_tests (submission_id);
 CREATE INDEX IF NOT EXISTS submission_subtasks_index ON submission_subtasks (submission_id);
