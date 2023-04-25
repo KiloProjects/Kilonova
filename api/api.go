@@ -72,58 +72,61 @@ func (s *API) Handler() http.Handler {
 
 		r.Route("/{problemID}", func(r chi.Router) {
 			r.Use(s.validateProblemID)
-			r.Use(s.validateProblemEditor)
 
-			r.Route("/update", func(r chi.Router) {
-				r.Post("/", s.updateProblem)
+			r.Get("/maxScore", s.maxScore)
+			r.Get("/maxScoreBreakdown", s.maxScoreBreakdown)
 
-				r.Post("/addTest", s.createTest)
-				r.Route("/test/{tID}", func(r chi.Router) {
-					r.Use(s.validateTestID)
-					r.Post("/data", s.saveTestData)
-					r.Post("/info", s.updateTestInfo)
-					r.Post("/orphan", s.orphanTest)
+			r.Group(func(r chi.Router) {
+				r.Use(s.validateProblemEditor)
+				r.Route("/update", func(r chi.Router) {
+					r.Post("/", s.updateProblem)
+
+					r.Post("/addTest", s.createTest)
+					r.Route("/test/{tID}", func(r chi.Router) {
+						r.Use(s.validateTestID)
+						r.Post("/data", s.saveTestData)
+						r.Post("/info", s.updateTestInfo)
+						r.Post("/orphan", s.orphanTest)
+					})
+
+					r.Post("/addEditor", s.addProblemEditor)
+					r.Post("/addViewer", s.addProblemViewer)
+					r.Post("/stripAccess", s.stripProblemAccess)
+
+					r.Post("/addAttachment", s.createAttachment)
+					r.Post("/attachmentData", s.updateAttachmentData)
+					r.Post("/bulkDeleteAttachments", s.bulkDeleteAttachments)
+					r.Post("/bulkUpdateAttachmentInfo", s.bulkUpdateAttachmentInfo)
+
+					r.Post("/bulkDeleteTests", s.bulkDeleteTests)
+					r.Post("/bulkUpdateTestScores", s.bulkUpdateTestScores)
+					r.Post("/orphanTests", s.purgeTests)
+					r.Post("/processTestArchive", s.processTestArchive)
+
+					r.Post("/addSubTask", s.createSubTask)
+					r.Post("/updateSubTask", s.updateSubTask)
+					r.Post("/bulkUpdateSubTaskScores", s.bulkUpdateSubTaskScores)
+					r.Post("/bulkDeleteSubTasks", s.bulkDeleteSubTasks)
 				})
 
-				r.Post("/addEditor", s.addProblemEditor)
-				r.Post("/addViewer", s.addProblemViewer)
-				r.Post("/stripAccess", s.stripProblemAccess)
-
-				r.Post("/addAttachment", s.createAttachment)
-				r.Post("/attachmentData", s.updateAttachmentData)
-				r.Post("/bulkDeleteAttachments", s.bulkDeleteAttachments)
-				r.Post("/bulkUpdateAttachmentInfo", s.bulkUpdateAttachmentInfo)
-
-				r.Post("/bulkDeleteTests", s.bulkDeleteTests)
-				r.Post("/bulkUpdateTestScores", s.bulkUpdateTestScores)
-				r.Post("/orphanTests", s.purgeTests)
-				r.Post("/processTestArchive", s.processTestArchive)
-
-				r.Post("/addSubTask", s.createSubTask)
-				r.Post("/updateSubTask", s.updateSubTask)
-				r.Post("/bulkUpdateSubTaskScores", s.bulkUpdateSubTaskScores)
-				r.Post("/bulkDeleteSubTasks", s.bulkDeleteSubTasks)
-			})
-
-			r.Post("/reevaluateSubs", webMessageWrapper("Reevaluating submissions", func(ctx context.Context, args struct{}) *kilonova.StatusError {
-				return s.base.ResetProblemSubmissions(ctx, util.ProblemContext(ctx).ID)
-			}))
-
-			r.Route("/get", func(r chi.Router) {
-				r.Get("/maxScore", s.maxScore)
-				r.Get("/maxScoreBreakdown", s.maxScoreBreakdown)
-				r.Get("/attachments", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
-					return s.base.ProblemAttachments(ctx, util.ProblemContext(ctx).ID)
+				r.Post("/reevaluateSubs", webMessageWrapper("Reevaluating submissions", func(ctx context.Context, args struct{}) *kilonova.StatusError {
+					return s.base.ResetProblemSubmissions(ctx, util.ProblemContext(ctx).ID)
 				}))
-				r.With(s.validateAttachmentID).Get("/attachment/{aID}", s.getFullAttachment)
-				r.With(s.validateAttachmentName).Get("/attachmentByName/{aName}", s.getFullAttachment)
 
-				r.Get("/accessControl", s.getProblemAccessControl)
+				r.Route("/get", func(r chi.Router) {
+					r.Get("/attachments", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
+						return s.base.ProblemAttachments(ctx, util.ProblemContext(ctx).ID)
+					}))
+					r.With(s.validateAttachmentID).Get("/attachment/{aID}", s.getFullAttachment)
+					r.With(s.validateAttachmentName).Get("/attachmentByName/{aName}", s.getFullAttachment)
 
-				r.Get("/tests", s.getTests)
-				r.Get("/test", s.getTest)
+					r.Get("/accessControl", s.getProblemAccessControl)
+
+					r.Get("/tests", s.getTests)
+					r.Get("/test", s.getTest)
+				})
+				r.Post("/delete", s.deleteProblem)
 			})
-			r.Post("/delete", s.deleteProblem)
 		})
 	})
 	r.Route("/submissions", func(r chi.Router) {

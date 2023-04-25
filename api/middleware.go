@@ -77,7 +77,7 @@ func (s *API) SetupSession(next http.Handler) http.Handler {
 func (s *API) validateProblemEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
-			errorData(w, "You must be authorized to update the problem", http.StatusUnauthorized)
+			errorData(w, "You must be authorized to access internal problem data", http.StatusUnauthorized)
 			return
 		}
 

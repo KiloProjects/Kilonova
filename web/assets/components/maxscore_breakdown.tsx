@@ -25,7 +25,7 @@ export function MaxScoreBreakdown({ problemID, userID, contestID }: { problemID:
 	let [problemEditor, setProblemEditor] = useState(false);
 
 	async function loadBreakdown() {
-		const rez = await getCall<BreakdownResult>(`/problem/${problemID}/get/maxScoreBreakdown`, { userID, contestID });
+		const rez = await getCall<BreakdownResult>(`/problem/${problemID}/maxScoreBreakdown`, { userID, contestID });
 		if (rez.status === "error") {
 			apiToast(rez);
 			return;

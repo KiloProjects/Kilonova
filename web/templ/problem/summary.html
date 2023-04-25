@@ -189,7 +189,7 @@
     if(maxScoreElem !== null) {
         document.addEventListener("kn-poll", async () => {
             // Update max score on poll
-            const res = await bundled.getCall("/problem/{{.Problem.ID}}/get/maxScore", {})
+            const res = await bundled.getCall("/problem/{{.Problem.ID}}/maxScore", {})
             if(res.status === "error") {
                 console.error(res.data)
                 return
