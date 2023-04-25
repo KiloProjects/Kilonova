@@ -115,7 +115,7 @@ func (s *DB) NumSolvedPblistProblems(ctx context.Context, listID, userID int) (i
 	var cnt int
 	err := s.conn.GetContext(ctx, &cnt, `
 	WITH solved_pbs AS (
-		SELECT DISTINCT msv.problem_id FROM max_score_view msv, problem_list_deep_problems pbids 
+		SELECT msv.problem_id FROM max_score_view msv, problem_list_deep_problems pbids 
 			WHERE msv.problem_id = pbids.problem_id AND pbids.list_id = $1 AND msv.score = 100 AND msv.user_id = $2
 	) SELECT COUNT(*) FROM solved_pbs;
 	`, listID, userID)
