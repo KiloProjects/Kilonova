@@ -13,15 +13,15 @@
     {{ $problemPage = false }}
 
     {{ else if (eq $topbar.Page `contest_registrations`) }}
-    <b>{{getText "contest_registrations"}} | {{.Contest.Name}}</b>
+    <b>{{.Contest.Name}} | {{getText "contest_registrations"}}</b>
     {{ $problemPage = false }}
 
     {{ else if (eq $topbar.Page `contest_communication`) }}
-    <b>{{getText "communication"}} | {{.Contest.Name}}</b>
+    <b>{{.Contest.Name}} | {{getText "communication"}}</b>
     {{ $problemPage = false }}
 
     {{ else if (eq $topbar.Page `contest_leaderboard`) }}
-    <b>{{getText "leaderboard"}} | {{.Contest.Name}}</b>
+    <b>{{.Contest.Name}} | {{getText "leaderboard"}}</b>
     {{ $problemPage = false }}
 
 
