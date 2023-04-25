@@ -49,7 +49,7 @@ func (s *DB) Submission(ctx context.Context, id int) (*kilonova.Submission, erro
 
 func (s *DB) SubmissionLookingUser(ctx context.Context, id int, userID int) (*kilonova.Submission, error) {
 	var sub dbSubmission
-	err := s.conn.GetContext(ctx, &sub, "SELECT subs.* FROM submissions subs, visible_submissions($2) users WHERE subs.id = $1 AND users.sub_id = subs.id AND users.user_id = $2 LIMIT 1", id, userID)
+	err := s.conn.GetContext(ctx, &sub, "SELECT subs.* FROM submissions subs, visible_submissions($2) users WHERE subs.id = $1 AND users.sub_id = subs.id LIMIT 1", id, userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -194,7 +194,7 @@ func subFilterQuery(filter *kilonova.SubmissionFilter) ([]string, []any) {
 			id = filter.LookingUser.ID
 		}
 
-		where, args = append(where, "EXISTS (SELECT 1 FROM visible_submissions(?) WHERE user_id = ? AND sub_id = submissions.id)"), append(args, id, id)
+		where, args = append(where, "EXISTS (SELECT 1 FROM visible_submissions(?) WHERE sub_id = submissions.id)"), append(args, id)
 	}
 
 	if v := filter.Status; v != kilonova.StatusNone {

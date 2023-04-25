@@ -228,8 +228,7 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []any) {
 		if filter.LookEditor {
 			where = append(where, "EXISTS (SELECT 1 FROM problem_editors WHERE user_id = ? AND problem_id = problems.id)")
 		} else {
-			args = append(args, id)
-			where = append(where, "EXISTS (SELECT 1 FROM visible_pbs(?) WHERE user_id = ? AND problem_id = problems.id)")
+			where = append(where, "EXISTS (SELECT 1 FROM visible_pbs(?) WHERE problem_id = problems.id)")
 		}
 	}
 
