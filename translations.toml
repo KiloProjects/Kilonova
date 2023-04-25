@@ -962,7 +962,7 @@ en = "Make code"
 ro = "Fă codul"
 
 [makeProblemsVisible]
-en = "Make all problems vizible"
+en = "Make all problems visible"
 ro = "Fă toate problemele vizibile"
 
 [makeProblemsHidden]

@@ -14,7 +14,10 @@ import (
 
 func (s *DB) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, error) {
 	var pblist pblist
-	err := s.conn.GetContext(ctx, &pblist, "SELECT * FROM problem_lists WHERE id = $1 LIMIT 1", id)
+	err := s.conn.GetContext(ctx, &pblist, `
+	SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
+		FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
+		WHERE id = $1 LIMIT 1`, id)
 	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return nil, nil
 	}
@@ -27,9 +30,13 @@ func (s *DB) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, er
 func (s *DB) ProblemLists(ctx context.Context, root bool) ([]*kilonova.ProblemList, error) {
 	var lists []*pblist
 
-	q := "SELECT * FROM problem_lists ORDER BY id ASC"
+	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
+	FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
+	ORDER BY lists.id ASC`
 	if root {
-		q = "SELECT * FROM problem_lists WHERE NOT EXISTS (SELECT 1 FROM problem_list_pblists WHERE child_id = problem_lists.id) ORDER BY id ASC"
+		q = `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
+		FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
+		WHERE NOT EXISTS (SELECT 1 FROM problem_list_pblists WHERE child_id = lists.id) ORDER BY lists.id ASC`
 	}
 	err := s.conn.SelectContext(ctx, &lists, q)
 
@@ -45,10 +52,14 @@ func (s *DB) ProblemLists(ctx context.Context, root bool) ([]*kilonova.ProblemLi
 func (s *DB) ProblemListsByProblemID(ctx context.Context, problemID int, showHidable bool) ([]*kilonova.ProblemList, error) {
 	var lists []*pblist
 
-	q := "SELECT * FROM problem_lists WHERE EXISTS (SELECT 1 FROM problem_list_problems WHERE pblist_id = problem_lists.id AND problem_id = $1) ORDER BY id ASC"
-	if !showHidable {
-		q = "SELECT * FROM problem_lists WHERE EXISTS (SELECT 1 FROM problem_list_problems WHERE pblist_id = problem_lists.id AND problem_id = $1) AND sidebar_hidable = false ORDER BY id ASC"
+	hidableQ := ""
+	if showHidable {
+		hidableQ = " AND sidebar_hidable = false "
 	}
+
+	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
+	FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
+	WHERE EXISTS (SELECT 1 FROM problem_list_problems WHERE pblist_id = lists.id AND problem_id = $1)` + hidableQ + ` ORDER BY lists.id ASC`
 	err := s.conn.SelectContext(ctx, &lists, q, problemID)
 
 	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
@@ -63,7 +74,9 @@ func (s *DB) ProblemListsByProblemID(ctx context.Context, problemID int, showHid
 func (s *DB) ProblemListsByPblistID(ctx context.Context, pblistID int) ([]*kilonova.ProblemList, error) {
 	var lists []*pblist
 
-	q := "SELECT * FROM problem_lists WHERE EXISTS (SELECT 1 FROM problem_list_pblists WHERE parent_id = problem_lists.id AND child_id = $1) ORDER BY id ASC"
+	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
+	FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
+	WHERE EXISTS (SELECT 1 FROM problem_list_pblists WHERE parent_id = lists.id AND child_id = $1) ORDER BY lists.id ASC`
 	err := s.conn.SelectContext(ctx, &lists, q, pblistID)
 
 	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
@@ -77,7 +90,10 @@ func (s *DB) ProblemListsByPblistID(ctx context.Context, pblistID int) ([]*kilon
 
 func (s *DB) shallowProblemLists(ctx context.Context, parentID int) ([]*kilonova.ShallowProblemList, error) {
 	var lists []*pblist
-	query := "SELECT pls.* FROM problem_lists pls INNER JOIN problem_list_pblists plpb ON plpb.parent_id = $1 AND pls.id = plpb.child_id ORDER BY plpb.position ASC, id ASC"
+	query := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
+	FROM (problem_lists lists INNER JOIN problem_list_pblists plpb ON plpb.parent_id = $1 AND lists.id = plpb.child_id)
+		LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id
+	ORDER BY plpb.position ASC, lists.id ASC`
 	err := s.conn.SelectContext(ctx, &lists, query, parentID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.ShallowProblemList{}, nil
@@ -95,39 +111,12 @@ func (s *DB) shallowProblemLists(ctx context.Context, parentID int) ([]*kilonova
 	return outLists, err
 }
 
-func (s *DB) numPblistProblems(ctx context.Context, listID int) (int, error) {
-	var cnt int
-	err := s.conn.GetContext(ctx, &cnt, `
-WITH RECURSIVE nested_lists AS (
-	SELECT id FROM problem_lists WHERE id = $1
-	UNION
-	SELECT plp.child_id FROM problem_list_pblists plp, nested_lists WHERE nested_lists.id = plp.parent_id
-), problem_ids AS (
-	SELECT DISTINCT pbs.id FROM problems pbs, problem_list_problems plp, nested_lists lists 
-		WHERE pbs.id = plp.problem_id AND lists.id = plp.pblist_id
-) SELECT COUNT(*) FROM problem_ids;
-`, listID)
-	if err != nil {
-		zap.S().Warn(err)
-		return -1, err
-	}
-	return cnt, nil
-}
-
 func (s *DB) NumSolvedPblistProblems(ctx context.Context, listID, userID int) (int, error) {
 	var cnt int
 	err := s.conn.GetContext(ctx, &cnt, `
-	WITH RECURSIVE nested_lists AS (
-		SELECT id FROM problem_lists WHERE id = $1
-		UNION
-		SELECT plp.child_id FROM problem_list_pblists plp, nested_lists 
-			WHERE nested_lists.id = plp.parent_id
-	), problem_ids AS (
-		SELECT DISTINCT pbs.id FROM problems pbs, problem_list_problems plp, nested_lists lists 
-			WHERE pbs.id = plp.problem_id AND lists.id = plp.pblist_id
-	), solved_pbs AS (
-		SELECT DISTINCT msv.problem_id FROM max_score_view msv, problem_ids pbids 
-			WHERE msv.problem_id = pbids.id AND msv.score = 100 AND msv.user_id = $2
+	WITH solved_pbs AS (
+		SELECT DISTINCT msv.problem_id FROM max_score_view msv, problem_list_deep_problems pbids 
+			WHERE msv.problem_id = pbids.problem_id AND pbids.list_id = $1 AND msv.score = 100 AND msv.user_id = $2
 	) SELECT COUNT(*) FROM solved_pbs;
 	`, listID, userID)
 	if err != nil {
@@ -211,6 +200,8 @@ type pblist struct {
 	Description string
 
 	SidebarHidable bool `db:"sidebar_hidable"`
+
+	NumProblems int `db:"num_problems"`
 }
 
 func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.ProblemList, error) {
@@ -220,6 +211,7 @@ func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.Prob
 		Title:       list.Title,
 		Description: list.Description,
 		AuthorID:    list.AuthorID,
+		NumProblems: list.NumProblems,
 
 		SidebarHidable: list.SidebarHidable,
 	}
@@ -236,21 +228,10 @@ func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.Prob
 		return nil, err
 	}
 
-	pblist.NumProblems, err = s.numPblistProblems(ctx, list.ID)
-	if err != nil {
-		return nil, err
-	}
-
 	return pblist, nil
 }
 
 func (s *DB) internalToShallowProblemList(ctx context.Context, list *pblist) (*kilonova.ShallowProblemList, error) {
-
-	numProblems, err := s.numPblistProblems(ctx, list.ID)
-	if err != nil {
-		return nil, err
-	}
-
 	return &kilonova.ShallowProblemList{
 		ID:       list.ID,
 		Title:    list.Title,
@@ -258,6 +239,6 @@ func (s *DB) internalToShallowProblemList(ctx context.Context, list *pblist) (*k
 
 		SidebarHidable: list.SidebarHidable,
 
-		NumProblems: numProblems,
+		NumProblems: list.NumProblems,
 	}, nil
 }
