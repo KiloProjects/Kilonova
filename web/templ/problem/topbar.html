@@ -162,4 +162,16 @@
     {{ end }}
 {{ end }}
 </div>
+{{ if and $problemPage .Topbar.Contest }}
+{{ if .Topbar.Contest.Ended }}
+    <div>
+        {{getText "problem_contest_page_warning"}}
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("pb_link_rewrite_a").setAttribute("href", window.location.href.replace(/contests\/[0-9]+\//, ''))
+        })
+    </script>
+{{ end }}
+{{ end }}
 </div>

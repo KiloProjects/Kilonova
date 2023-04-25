@@ -9,38 +9,45 @@
 {{ $contest := .Contest }}
 
 <div class="page-holder">
-    <div class="page-content">
-        {{ with contestProblems authedUser .Contest }}
-            <h2> {{ getText "problems" }} </h2>
-            {{ template "pb_list_group" (genContestProblemsParams . $contest) }}
-        {{ else }}
-            {{ if not (.Contest.Started) }}
-                <p>{{getText "contest_problems_soon"}}</p>
-            {{ else if (.Contest.Ended) }}
-                <p>{{getText "contest_no_problems"}}</p>
-            {{ else }} {{/* Contest is running */}}
-                {{ $reg := (contestRegistration .Contest) }}
-                {{ if $reg }}
-                    {{ if (isUSACOstyle .Contest)}}
-                        {{ if not (startedUSACO .Contest $reg)}}
-                            <p>{{getText "usaco_helper_text" (usacoDuration .Contest)}}</p>
-                        {{ else if (endedUSACO .Contest $reg)}}
-                            <p>{{getText "usaco_expired_helper"}}</p>
+    <div class="page-content-wrapper">
+        {{ if .Contest.Description }}
+        <div class="segment-panel reset-list enhance-tables statement-images">
+            {{ renderMarkdown .Contest.Description }}
+        </div>
+        {{ end }}
+        <div class="segment-panel">
+            {{ with contestProblems authedUser .Contest }}
+                <h2> {{ getText "problems" }} </h2>
+                {{ template "pb_list_group" (genContestProblemsParams . $contest) }}
+            {{ else }}
+                {{ if not (.Contest.Started) }}
+                    <p>{{getText "contest_problems_soon"}}</p>
+                {{ else if (.Contest.Ended) }}
+                    <p>{{getText "contest_no_problems"}}</p>
+                {{ else }} {{/* Contest is running */}}
+                    {{ $reg := (contestRegistration .Contest) }}
+                    {{ if $reg }}
+                        {{ if (isUSACOstyle .Contest)}}
+                            {{ if not (startedUSACO .Contest $reg)}}
+                                <p>{{getText "usaco_helper_text" (usacoDuration .Contest)}}</p>
+                            {{ else if (endedUSACO .Contest $reg)}}
+                                <p>{{getText "usaco_expired_helper"}}</p>
+                            {{ else }}
+                                <p>{{getText "contest_no_problems"}}</p>
+                            {{ end }}
                         {{ else }}
+                            {{ if .Contest.RegisterDuringContest}}
+                            <p>{{getText "contest_problems_register"}}</p>
+                            {{ else }}
                             <p>{{getText "contest_no_problems"}}</p>
+                            {{ end }}
                         {{ end }}
                     {{ else }}
-                        {{ if .Contest.RegisterDuringContest}}
-                        <p>{{getText "contest_problems_register"}}</p>
-                        {{ else }}
-                        <p>{{getText "contest_no_problems"}}</p>
-                        {{ end }}
+                        <p>{{getText "contest_problems_participants"}}</p>
                     {{ end }}
-                {{ else }}
-                    <p>{{getText "contest_problems_participants"}}</p>
                 {{ end }}
             {{ end }}
-        {{ end }}
+        </div>
     </div>
     <div class="page-sidebar">
         {{ template "contest_sidebar.html" .Contest }}

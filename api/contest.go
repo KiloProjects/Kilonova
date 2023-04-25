@@ -32,6 +32,7 @@ func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
 		Name *string `json:"name"`
+		Desc *string `json:"description"`
 
 		PublicJoin *bool `json:"public_join"`
 		Visible    *bool `json:"visible"`
@@ -75,6 +76,8 @@ func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
 		StartTime:  startTime,
 		EndTime:    endTime,
 		MaxSubs:    args.MaxSubs,
+
+		Description: args.Desc,
 
 		RegisterDuringContest: args.RegisterDuringContest,
 

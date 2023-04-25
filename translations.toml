@@ -1700,3 +1700,7 @@ ro = "Se pare că încă n-a fost încercată problema."
 [from_sub]
 en = "from"
 ro = "din"
+
+[problem_contest_page_warning]
+en = 'This was the problem page during the contest. <a id="pb_link_rewrite_a" href="#">Access the current page here</a>.'
+ro = 'Aceasta a fost pagina problemei în timpul concursului. <a id="pb_link_rewrite_a" href="#">Accesează pagina curentă aici</a>.'

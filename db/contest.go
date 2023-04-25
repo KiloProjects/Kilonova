@@ -15,6 +15,7 @@ type dbContest struct {
 	ID        int       `db:"id"`
 	CreatedAt time.Time `db:"created_at"`
 	Name      string    `db:"name"`
+	Desc      string    `db:"description"`
 
 	PublicJoin  bool      `db:"public_join"`
 	Visible     bool      `db:"visible"`
@@ -232,6 +233,9 @@ func contestUpdateQuery(upd *kilonova.ContestUpdate) ([]string, []any) {
 	if v := upd.Name; v != nil {
 		toUpd, args = append(toUpd, "name = ?"), append(args, v)
 	}
+	if v := upd.Description; v != nil {
+		toUpd, args = append(toUpd, "description = ?"), append(args, v)
+	}
 	if v := upd.PublicJoin; v != nil {
 		toUpd, args = append(toUpd, "public_join = ?"), append(args, v)
 	}
@@ -279,6 +283,8 @@ func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilono
 		StartTime:  contest.StartTime,
 		EndTime:    contest.EndTime,
 		MaxSubs:    contest.MaxSubCount,
+
+		Description: contest.Desc,
 
 		PerUserTime: contest.PerUserTime,
 

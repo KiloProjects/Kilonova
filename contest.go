@@ -19,6 +19,8 @@ type Contest struct {
 	Editors   []*UserBrief `json:"editors"`
 	Testers   []*UserBrief `json:"testers"`
 
+	Description string `json:"description"`
+
 	// PublicJoin indicates whether a user can freely join a contest
 	// or he needs to be manually added
 	PublicJoin bool `json:"public_join"`
@@ -74,6 +76,8 @@ type ContestUpdate struct {
 
 	PublicJoin *bool `json:"public_join"`
 	Visible    *bool `json:"visible"`
+
+	Description *string `json:"description"`
 
 	StartTime *time.Time `json:"start_time"`
 	EndTime   *time.Time `json:"end_time"`

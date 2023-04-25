@@ -1,3 +1,8 @@
+- v0.16.1:
+    - Contest descriptions;
+    - Warnings for contest problems once contest ended;
+    - Various SQL improvements;
+    - Bug fixes;
 - v0.16.0:
     - Big UI redesign;
     - SEO optimizations;

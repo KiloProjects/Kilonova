@@ -5,7 +5,7 @@
 
 <div class="page-holder">
     <div class="page-content-full-wrapper">
-        <form class="segment-panel mb-4" id="contest_update_form" autocomplete="off">
+        <form class="segment-panel" id="contest_update_form" autocomplete="off">
             <h2>{{getText "header.contest.general"}}</h2>
             
             <label class="block mb-2">
@@ -20,13 +20,13 @@
                 <span class="form-label">{{getText "startTime"}}: </span>
                 <input class="form-input" name="start_time" type="text" 
                     pattern="[\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2} [+-][\d]{4}"
-                    placeholder="2020-03-18 15:00" value="{{.Contest.StartTime.Format `2006-01-02 15:04 -0700`}}" required>
+                    placeholder="2020-03-18 15:00 +0300" value="{{.Contest.StartTime.Format `2006-01-02 15:04 -0700`}}" required>
             </label>
             <label class="block mb-2">
                 <span class="form-label">{{getText "endTime"}}: </span>
                 <input class="form-input" name="end_time" type="text" 
                     pattern="[\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2} [+-][\d]{4}"
-                    placeholder="2020-03-18 18:00" value="{{.Contest.EndTime.Format `2006-01-02 15:04 -0700`}}" required>
+                    placeholder="2020-03-18 18:00 +0300" value="{{.Contest.EndTime.Format `2006-01-02 15:04 -0700`}}" required>
             </label>
             <div class="block mb-2">
                 <label class="inline-flex items-center text-lg">
@@ -72,7 +72,7 @@
             </form>
         </div>
 
-        <div class="segment-panel my-2">
+        <div class="segment-panel">
             <h2>{{getText "header.contest.access_control"}}</h2>
 
             <h3>{{getText "editors"}}:</h3>
@@ -101,9 +101,25 @@
             </div>
         </div>
 
+        <form class="segment-panel" id="contest_description_form" autocomplete="off">
+            <h2 class="inline-block mb-2">{{getText "header.edit.description"}}</h2>
+            
+            <div class="mb-2">
+                <textarea id="contestDesc">{{.Contest.Description}}</textarea>
+            </div>
+            <div class="mb-2">
+                <button class="btn btn-blue">{{getText "button.update"}}</button>
+            </div>
+        </form>
 
     </div>
 </div>
+
+<style>
+    .CodeMirror {
+        min-height: 250px;
+    }
+</style>
 
 <script>
 // Contest update-specific stuff
@@ -137,7 +153,24 @@ async function updateContest(e) {
     bundled.apiToast(res)
 }
 
+
+var cm = CodeMirror.fromTextArea(document.getElementById("contestDesc"), {
+    mode: {
+        name: "gfm",
+        gitHubSpice: false,
+        emoji: false,
+    },
+});
+cm.setSize(null, "100%");
+
+async function updateContestDesc(e) {
+    e.preventDefault()
+    const rez = await bundled.postCall(`/contest/${contest_id}/update`, {description: cm.getValue()})
+    bundled.apiToast(rez)
+}
+
 document.getElementById("contest_update_form").addEventListener("submit", updateContest)
+document.getElementById("contest_description_form").addEventListener("submit", updateContestDesc)
 </script>
 
 <script>
