@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/BurntSushi/toml v1.2.1
-	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
+	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/benbjohnson/hashfs v0.2.1
 	github.com/davecgh/go-spew v1.1.1
@@ -19,23 +19,23 @@ require (
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/litao91/goldmark-mathjax v0.0.0-20210217064022-a43cf739a50f
 	github.com/mattn/go-sqlite3 v1.14.16 // indirect
-	github.com/microcosm-cc/bluemonday v1.0.22
+	github.com/microcosm-cc/bluemonday v1.0.23
 	github.com/yuin/goldmark v1.5.4
 	go.uber.org/zap v1.24.0
-	golang.org/x/crypto v0.5.0
-	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/crypto v0.8.0
+	golang.org/x/net v0.9.0 // indirect
 	golang.org/x/sync v0.1.0
-	golang.org/x/text v0.6.0
+	golang.org/x/text v0.9.0
 )
 
 require (
 	github.com/go-chi/chi/v5 v5.0.8
-	github.com/jackc/pgx/v5 v5.2.0
+	github.com/jackc/pgx/v5 v5.3.1
 )
 
 require (
 	github.com/gosimple/unidecode v1.0.1 // indirect
-	github.com/lib/pq v1.10.7 // indirect
+	github.com/lib/pq v1.10.8 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	go.uber.org/multierr v1.9.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 )
