@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
@@ -101,7 +102,7 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) deleteProblem(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	if err := s.base.DeleteProblem(r.Context(), util.Problem(r).ID); err != nil {
+	if err := s.base.DeleteProblem(context.Background(), util.Problem(r).ID); err != nil {
 		errorData(w, err, 500)
 		return
 	}
