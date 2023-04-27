@@ -25,7 +25,7 @@
             </summary>
             {{ with . }}
                 <div class="mt-2">
-                    {{ template "pb_list_group" (genProblemsParams . true false) }}
+                    {{ template "pb_list_group" (genProblemsParams . true false true) }}
                 </div>
             {{ end }}
         </details>

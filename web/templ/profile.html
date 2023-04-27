@@ -70,7 +70,7 @@ async function deleteAccount() {
         {{$pbs := .SolvedProblems }}
         {{ if len $pbs }}
         <h2>{{if eq 1 (len $pbs)}}{{getText "oneSolvedProblem"}}{{else}}{{getText "solvedProblems" (len $pbs)}}{{end}}</h2>
-        {{ template "pb_list_group" (genProblemsParams $pbs false true) }}
+        {{ template "pb_list_group" (genProblemsParams $pbs false true false) }}
         {{ end }}
     </div>
 {{ end }}
@@ -79,7 +79,7 @@ async function deleteAccount() {
         {{$pbs := .AttemptedProblems }}
         {{ if len $pbs }}
         <h2>{{if eq 1 (len $pbs)}}{{getText "oneAttemptedProblem"}}{{else}}{{getText "attemptedProblems" (len $pbs)}}{{end}}</h2>
-        {{ template "pb_list_group" (genProblemsParams $pbs true true) }}
+        {{ template "pb_list_group" (genProblemsParams $pbs true true false) }}
         {{ end }}
     </div>
 {{ end }}

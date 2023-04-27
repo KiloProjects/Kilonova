@@ -200,6 +200,8 @@ type ProblemListingParams struct {
 	ShowScore bool
 	MultiCols bool
 
+	ShowPublished bool
+
 	ContestIDScore int
 }
 

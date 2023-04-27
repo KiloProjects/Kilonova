@@ -2,11 +2,13 @@
 {{ $user := authedUser }}
 {{ $showScore := .ShowScore }}
 {{ $contestIDScore := .ContestIDScore }}
+{{ $showPublished := .ShowPublished }}
 <div class="list-group grid grid-cols-1 {{if .MultiCols }} md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 {{end}}">
 	{{ range .Problems }}
 		<a href="/{{if not (eq $contestIDScore -1)}}contests/{{$contestIDScore}}/{{end}}problems/{{.ID}}" class="list-group-item flex justify-between">
 			<span>{{.Name}} (#{{.ID}})</span>
             <div>
+                {{- if $showPublished -}}
 			    {{- if $user -}}
 					{{ if .IsEditor }}
 						{{- if .Visible }}
@@ -15,6 +17,7 @@
 							<span class="badge badge-red">{{ getText "unpublished" }}</span>
 						{{- end -}}
 					{{ end }}
+                {{- end -}}
                 {{- end -}}
                 {{ if $showScore }}
                     {{ with spbMaxScore . }}

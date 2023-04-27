@@ -368,11 +368,11 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"pasteEditor": func(user *kilonova.UserBrief, paste *kilonova.SubmissionPaste) bool {
 			return base.IsPasteEditor(paste, user)
 		},
-		"genProblemsParams": func(pbs []*kilonova.ScoredProblem, showScore, multiCols bool) *ProblemListingParams {
-			return &ProblemListingParams{pbs, showScore, multiCols, -1}
+		"genProblemsParams": func(pbs []*kilonova.ScoredProblem, showScore, multiCols, showPublished bool) *ProblemListingParams {
+			return &ProblemListingParams{pbs, showScore, multiCols, showPublished, -1}
 		},
 		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *ProblemListingParams {
-			return &ProblemListingParams{pbs, true, false, contest.ID}
+			return &ProblemListingParams{pbs, true, false, true, contest.ID}
 		},
 		"genPblistParams": func(user *kilonova.UserBrief, pblist *kilonova.ProblemList, open bool) *PblistParams {
 			return &PblistParams{user, pblist, open}
