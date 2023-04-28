@@ -101,6 +101,7 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		if err.Code != 204 { // Skip
 			return err
 		} else {
+			zap.S().Warn(err)
 			return nil
 		}
 	}
@@ -431,20 +432,20 @@ func (h *Handler) chFeeder(d time.Duration) {
 	}
 }
 
-func (h *Handler) handle(ctx context.Context, runner eval.BoxScheduler) error {
+func (h *Handler) handle(runner eval.BoxScheduler) error {
 	for {
 		select {
-		case <-ctx.Done():
-			return nil
+		case <-h.ctx.Done():
+			return h.ctx.Err()
 		case sub, more := <-h.sChan:
 			if !more {
 				return nil
 			}
-			if err := h.base.UpdateSubmission(ctx, sub.ID, workingUpdate); err != nil {
+			if err := h.base.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
 				zap.S().Warn(err)
 				continue
 			}
-			if err := executeSubmission(ctx, h.base, runner, sub); err != nil {
+			if err := executeSubmission(h.ctx, h.base, runner, sub); err != nil {
 				zap.S().Warn("Couldn't run submission: ", err)
 			}
 		}
@@ -459,19 +460,14 @@ func (h *Handler) Start() error {
 
 	go h.chFeeder(2 * time.Second)
 
-	eCh := make(chan error, 1)
-	go func() {
-		defer runner.Close(h.ctx)
-		zap.S().Info("Connected to eval")
+	defer runner.Close(h.ctx)
+	zap.S().Info("Connected to eval")
 
-		err := h.handle(h.ctx, runner)
-		if err != nil {
-			zap.S().Error("Handling error:", zap.Error(err))
-		}
-		eCh <- err
-	}()
-
-	return <-eCh
+	if err = h.handle(runner); err != nil {
+		zap.S().Error("Handling error:", zap.Error(err))
+		return err
+	}
+	return nil
 }
 
 func (h *Handler) Close() {

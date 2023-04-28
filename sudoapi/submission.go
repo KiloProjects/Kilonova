@@ -208,8 +208,8 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 	if problem == nil {
 		return -1, Statusf(400, "Invalid submission problem")
 	}
-	if len(code) > 10000 { // 10k characters
-		return -1, Statusf(400, "Code exceeds 10 000 characters")
+	if len(code) > 30000 { // 30k characters
+		return -1, Statusf(400, "Code exceeds 30.000 characters")
 	}
 	if !s.IsProblemVisible(author, problem) {
 		return -1, Statusf(400, "Submitter can't see the problem!")
