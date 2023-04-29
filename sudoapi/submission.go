@@ -215,6 +215,15 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 		return -1, Statusf(400, "Submitter can't see the problem!")
 	}
 
+	cnt, err := s.db.WaitingSubmissionCount(ctx, author.ID)
+	if err != nil {
+		return -1, Statusf(500, "Couldn't get unfinished submission count")
+	}
+
+	if cnt > 5 {
+		return -1, Statusf(400, "You cannot have more than 5 submissions in the evaluation queue at once")
+	}
+
 	if contestID != nil {
 		contest, err := s.Contest(ctx, *contestID)
 		if err != nil || !s.IsContestVisible(author, contest) {

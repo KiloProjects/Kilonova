@@ -89,6 +89,18 @@ func (s *DB) RemainingSubmissionCount(ctx context.Context, contest *kilonova.Con
 	return contest.MaxSubs - cnt, nil
 }
 
+func (s *DB) WaitingSubmissionCount(ctx context.Context, userID int) (int, error) {
+	var cnt int
+	err := s.conn.GetContext(ctx, &cnt, "SELECT COUNT(*) FROM submissions WHERE status <> 'finished' AND user_id = $1", userID)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return -1, err
+		}
+		cnt = 0
+	}
+	return cnt, nil
+}
+
 const createSubQuery = "INSERT INTO submissions (user_id, problem_id, contest_id, language, code) VALUES (?, ?, ?, ?, ?) RETURNING id;"
 
 func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, language eval.Language, code string, contestID *int) (int, error) {
