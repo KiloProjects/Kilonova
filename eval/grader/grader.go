@@ -99,9 +99,9 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 
 	if err := compileSubmission(ctx, base, runner, sub, problem, problemSettings); err != nil {
 		if err.Code != 204 { // Skip
+			zap.S().Warn(err)
 			return err
 		} else {
-			zap.S().Warn(err)
 			return nil
 		}
 	}
