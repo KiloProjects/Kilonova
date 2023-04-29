@@ -35,7 +35,16 @@ func (rt *Web) index() func(http.ResponseWriter, *http.Request) {
 			futureContests = []*kilonova.Contest{}
 		}
 
-		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), futureContests, runningContests})
+		var pblist *kilonova.ProblemList
+		if config.Frontend.RootProblemList > 0 {
+			pblist, err = rt.base.ProblemList(r.Context(), config.Frontend.RootProblemList)
+			if err != nil {
+				zap.S().Warn(err)
+				pblist = nil
+			}
+		}
+
+		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), futureContests, runningContests, pblist})
 	}
 }
 

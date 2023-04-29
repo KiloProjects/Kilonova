@@ -11,7 +11,6 @@
 [eval]
  isolatePath = "/tmp/isolate"
  compilePath = "/tmp/kncompiles"
- address = "localhost:8001"
  num_concurrent = 3
  global_max_mem_kb = 2097152 # 2 GB
 
@@ -27,3 +26,6 @@
  all_subs = true
  cc_disclaimer = true
  front_page_problems = true
+
+[frontend]
+ root_problem_list = 5

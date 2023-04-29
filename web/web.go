@@ -197,14 +197,6 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return settings
 		},
-		"isInteractive": func(problemID int) bool { // TODO: Maybe pre-cache?
-			settings, err := base.ProblemSettings(context.Background(), problemID)
-			if err != nil {
-				zap.S().Warn(err)
-				return false
-			}
-			return len(settings.GraderFiles) > 0
-		},
 		"problemList": func(id int) *kilonova.ProblemList {
 			list, err := base.ProblemList(context.Background(), id)
 			if err != nil {

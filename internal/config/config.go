@@ -16,6 +16,7 @@ var (
 	Eval       EvalConf
 	Email      EmailConf
 	Features   FeaturesConf
+	Frontend   FrontendConf
 )
 
 // configStruct is the glue for all configuration sections when unmarshaling
@@ -25,6 +26,7 @@ type configStruct struct {
 	Eval     EvalConf     `toml:"eval"`
 	Email    EmailConf    `toml:"email"`
 	Features FeaturesConf `toml:"features"`
+	Frontend FrontendConf `toml:"frontend"`
 }
 
 // EmailConf is the data required for the email part
@@ -68,6 +70,10 @@ type FeaturesConf struct {
 	FrontPagePbs bool `toml:"front_page_problems"`
 }
 
+type FrontendConf struct {
+	RootProblemList int `toml:"root_problem_list"`
+}
+
 // c represents the loaded config
 var c configStruct
 
@@ -76,6 +82,7 @@ func spread() {
 	Email = c.Email
 	Eval = c.Eval
 	Features = c.Features
+	Frontend = c.Frontend
 }
 
 func compactify() {
@@ -83,6 +90,7 @@ func compactify() {
 	c.Email = Email
 	c.Eval = Eval
 	c.Features = Features
+	c.Frontend = Frontend
 }
 
 func SetConfigPath(path string) {
