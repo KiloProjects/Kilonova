@@ -11,6 +11,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/jackc/pgx/v5/tracelog"
 	"github.com/jmoiron/sqlx"
@@ -25,7 +26,8 @@ var (
 )
 
 type DB struct {
-	conn *sqlx.DB
+	conn   *sqlx.DB
+	pgconn *pgxpool.Pool
 }
 
 func (d *DB) Close() error {
@@ -38,15 +40,26 @@ func NewPSQL(ctx context.Context, dsn string) (*DB, error) {
 		return nil, err
 	}
 	config.Tracer = &tracelog.TraceLog{Logger: tracelog.LoggerFunc(log), LogLevel: tracelog.LogLevelDebug}
-	dsn = stdlib.RegisterConnConfig(config)
 
-	conn, err := sqlx.ConnectContext(ctx, "pgx", dsn)
+	conn, err := sqlx.ConnectContext(ctx, "pgx", stdlib.RegisterConnConfig(config))
 	if err != nil {
 		return nil, err
 	}
 	conn.SetMaxOpenConns(40)
 
-	return &DB{conn}, nil
+	// New
+	pgconf, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return nil, err
+	}
+	pgconf.MaxConns = 10
+
+	pgconn, err := pgxpool.NewWithConfig(ctx, pgconf)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DB{conn, pgconn}, nil
 }
 
 func FormatLimitOffset(limit int, offset int) string {

@@ -15,10 +15,10 @@ const (
 	checkerMemoryLimit = 512 * 1024
 )
 
-var _ eval.Checker = &CustomChecker{}
+var _ eval.Checker = &customChecker{}
 
 type customCheckerInput struct {
-	c    *CustomChecker
+	c    *customChecker
 	pOut io.Reader
 	cIn  io.Reader
 	cOut io.Reader
@@ -29,7 +29,7 @@ type checkerResult struct {
 	Output string
 }
 
-type CustomChecker struct {
+type customChecker struct {
 	mgr      eval.BoxScheduler
 	pb       *kilonova.Problem
 	sub      *kilonova.Submission
@@ -41,7 +41,7 @@ type CustomChecker struct {
 }
 
 // Prepare compiles the grader
-func (c *CustomChecker) Prepare(ctx context.Context) (string, error) {
+func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	resp, err := eval.RunTask(ctx, c.mgr, 0, &eval.CompileRequest{
 		ID: -c.sub.ID,
 		CodeFiles: map[string][]byte{
@@ -60,46 +60,37 @@ func (c *CustomChecker) Prepare(ctx context.Context) (string, error) {
 	return "", nil
 }
 
-func (c *CustomChecker) RunChecker(ctx context.Context, pOut, cIn, cOut io.Reader) (string, int) {
+func (c *customChecker) RunChecker(ctx context.Context, pOut, cIn, cOut io.Reader) (string, int) {
 	var out checkerResult
 
+	task := standardCheckerTask
 	if c.legacy {
-		resp, err := eval.RunTask(ctx, c.mgr, checkerMemoryLimit, &customCheckerInput{
-			c:    c,
-			pOut: pOut,
-			cIn:  cIn,
-			cOut: cOut,
-		}, legacyCheckerTask)
-		if err != nil || resp == nil {
-			return ErrOut, 0
-		}
-
-		out = *resp
-	} else {
-		resp, err := eval.RunTask(ctx, c.mgr, checkerMemoryLimit, &customCheckerInput{
-			c:    c,
-			pOut: pOut,
-			cIn:  cIn,
-			cOut: cOut,
-		}, standardCheckerTask)
-		if err != nil || resp == nil {
-			return ErrOut, 0
-		}
-
-		out = *resp
+		task = legacyCheckerTask
 	}
+
+	resp, err := eval.RunTask(ctx, c.mgr, checkerMemoryLimit, &customCheckerInput{
+		c:    c,
+		pOut: pOut,
+		cIn:  cIn,
+		cOut: cOut,
+	}, task)
+	if err != nil || resp == nil {
+		return ErrOut, 0
+	}
+
+	out = *resp
 
 	return out.Output, out.Score
 }
 
-func (c *CustomChecker) Cleanup(_ context.Context) error {
+func (c *customChecker) Cleanup(_ context.Context) error {
 	return eval.CleanCompilation(-c.sub.ID)
 }
 
-func NewLegacyCustomChecker(mgr eval.BoxScheduler, logger *zap.SugaredLogger, pb *kilonova.Problem, sub *kilonova.Submission, filename string, code []byte) (*CustomChecker, error) {
-	return &CustomChecker{mgr, pb, sub, filename, code, logger, true}, nil
+func NewLegacyCustomChecker(mgr eval.BoxScheduler, logger *zap.SugaredLogger, pb *kilonova.Problem, sub *kilonova.Submission, filename string, code []byte) eval.Checker {
+	return &customChecker{mgr, pb, sub, filename, code, logger, true}
 }
 
-func NewStandardCustomChecker(mgr eval.BoxScheduler, logger *zap.SugaredLogger, pb *kilonova.Problem, sub *kilonova.Submission, filename string, code []byte) (*CustomChecker, error) {
-	return &CustomChecker{mgr, pb, sub, filename, code, logger, false}, nil
+func NewStandardCustomChecker(mgr eval.BoxScheduler, logger *zap.SugaredLogger, pb *kilonova.Problem, sub *kilonova.Submission, filename string, code []byte) eval.Checker {
+	return &customChecker{mgr, pb, sub, filename, code, logger, false}
 }

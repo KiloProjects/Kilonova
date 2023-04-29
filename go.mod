@@ -35,7 +35,8 @@ require (
 
 require (
 	github.com/gosimple/unidecode v1.0.1 // indirect
-	github.com/lib/pq v1.10.8 // indirect
+	github.com/jackc/puddle/v2 v2.2.0 // indirect
+	github.com/lib/pq v1.10.9 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 )

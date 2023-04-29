@@ -378,9 +378,9 @@ func getAppropriateChecker(ctx context.Context, base *sudoapi.BaseAPI, runner ev
 			return nil, kilonova.WrapError(err, "Couldn't get problem checker")
 		}
 		if settings.LegacyChecker {
-			return checkers.NewLegacyCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data)
+			return checkers.NewLegacyCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data), nil
 		}
-		return checkers.NewStandardCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data)
+		return checkers.NewStandardCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data), nil
 	}
 }
 

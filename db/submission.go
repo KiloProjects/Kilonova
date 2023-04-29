@@ -10,6 +10,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/jackc/pgx/v5"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
@@ -146,9 +147,9 @@ func (s *DB) DeleteSubmission(ctx context.Context, id int) error {
 func (s *DB) MaxScore(ctx context.Context, userid, problemid int) int {
 	var score int
 
-	err := s.conn.GetContext(ctx, &score, "SELECT ms.score FROM max_score_view ms WHERE ms.user_id = $1 AND ms.problem_id = $2", userid, problemid)
+	err := s.pgconn.QueryRow(ctx, "SELECT ms.score FROM max_score_view ms WHERE ms.user_id = $1 AND ms.problem_id = $2", userid, problemid).Scan(&score)
 	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
+		if !errors.Is(err, pgx.ErrNoRows) {
 			zap.S().Errorw("Couldn't get max score for ", zap.Int("userid", userid), zap.Int("problemid", problemid), zap.Error(err))
 		}
 		return -1
@@ -159,9 +160,9 @@ func (s *DB) MaxScore(ctx context.Context, userid, problemid int) int {
 func (s *DB) ContestMaxScore(ctx context.Context, userid, problemid, contestid int) int {
 	var score int
 
-	err := s.conn.GetContext(ctx, &score, "SELECT ms.score FROM max_score_contest_view ms WHERE ms.user_id = $1 AND ms.problem_id = $2 AND ms.contest_id = $3", userid, problemid, contestid)
+	err := s.pgconn.QueryRow(ctx, "SELECT ms.score FROM max_score_contest_view ms WHERE ms.user_id = $1 AND ms.problem_id = $2 AND ms.contest_id = $3", userid, problemid, contestid).Scan(&score)
 	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
+		if !errors.Is(err, pgx.ErrNoRows) {
 			zap.S().Errorw("Couldn't get contest max score for ", zap.Int("userid", userid), zap.Int("problemid", problemid), zap.Int("contestid", contestid), zap.Error(err))
 		}
 		return -1
@@ -170,14 +171,26 @@ func (s *DB) ContestMaxScore(ctx context.Context, userid, problemid, contestid i
 }
 
 func (s *DB) SolvedProblemIDs(ctx context.Context, userid int) ([]int, error) {
-	var pbs []int
-	err := s.conn.SelectContext(ctx, &pbs, `SELECT problem_id FROM max_score_view WHERE score = 100 AND user_id = $1 ORDER BY problem_id;`, userid)
+	rows, err := s.pgconn.Query(ctx, `SELECT problem_id FROM max_score_view WHERE score = 100 AND user_id = $1 ORDER BY problem_id;`, userid)
+	if err != nil {
+		return []int{}, err
+	}
+	pbs, err := pgx.CollectRows(rows, pgx.RowTo[int])
+	if err != nil {
+		return []int{}, err
+	}
 	return pbs, err
 }
 
 func (s *DB) AttemptedProblemsIDs(ctx context.Context, userid int) ([]int, error) {
-	var pbs []int
-	err := s.conn.SelectContext(ctx, &pbs, `SELECT problem_id FROM max_score_view WHERE score != 100 AND score >= 0 AND user_id = $1 ORDER BY problem_id;`, userid)
+	rows, err := s.pgconn.Query(ctx, `SELECT problem_id FROM max_score_view WHERE score != 100 AND score >= 0 AND user_id = $1 ORDER BY problem_id;`, userid)
+	if err != nil {
+		return []int{}, err
+	}
+	pbs, err := pgx.CollectRows(rows, pgx.RowTo[int])
+	if err != nil {
+		return []int{}, err
+	}
 	return pbs, err
 }
 
