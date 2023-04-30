@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/jmoiron/sqlx"
 )
 
 const createAttachmentQuery = "INSERT INTO attachments (problem_id, visible, private, execable, name, data) VALUES (?, ?, ?, ?, ?, ?) RETURNING id;"
@@ -128,11 +127,7 @@ func (a *DB) DeleteAttachment(ctx context.Context, attid int) error {
 }
 
 func (a *DB) DeleteAttachments(ctx context.Context, pbid int, attIDs []int) (int64, error) {
-	query, args, err := sqlx.In("DELETE FROM attachments WHERE problem_id = ? AND id IN (?)", pbid, attIDs)
-	if err != nil {
-		return -1, err
-	}
-	result, err := a.conn.ExecContext(ctx, a.conn.Rebind(query), args...)
+	result, err := a.conn.ExecContext(ctx, "DELETE FROM attachments WHERE problem_id = $1 AND id = ANY($2)", pbid, attIDs)
 	if err != nil {
 		return -1, err
 	}
