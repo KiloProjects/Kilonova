@@ -97,7 +97,7 @@
             {{getText "submit"}}
         </a>
     {{ end }}
-    {{ if or (not $topbar.Contest) (isContestEditor $topbar.Contest)}}
+    {{ if or (not $topbar.Contest) (or ($topbar.Contest.Ended) (canSubmitInContest authedUser $topbar.Contest))}}
         <div class="topbar-separator"></div>
         <a class="p-1 {{if (eq $topbar.Page `pb_submissions`)}} topbar-selected {{end}}"
             href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/submissions">

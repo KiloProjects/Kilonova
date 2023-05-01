@@ -267,10 +267,6 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 func (rt *Web) problemSubmissions() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "problem/pb_submissions.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !(util.Contest(r) == nil || rt.base.IsContestEditor(util.UserBrief(r), util.Contest(r))) {
-			rt.statusPage(w, r, http.StatusUnauthorized, "You can't view this!")
-			return
-		}
 		rt.runTempl(w, r, templ, &ProblemTopbarParams{
 			Ctx:    GenContext(r),
 			Topbar: rt.topbar(r, "pb_submissions", -1),

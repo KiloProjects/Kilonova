@@ -114,12 +114,18 @@ func (s *BaseAPI) ContestProblem(ctx context.Context, contest *kilonova.Contest,
 	if !s.CanViewContestProblems(ctx, lookingUser, contest) {
 		return nil, Statusf(403, "User can't view contest problem")
 	}
-	problem, err := s.db.Problem(ctx, problemID)
-	if err != nil || problem == nil {
+	problems, err := s.db.ContestProblems(ctx, contest.ID)
+	if err != nil {
 		zap.S().Warn(err)
 		return nil, WrapError(err, "Couldn't get problems")
 	}
-	return problem, nil
+	for _, problem := range problems {
+		problem := problem
+		if problem.ID == problemID {
+			return problem, nil
+		}
+	}
+	return nil, WrapError(ErrNotFound, "Problem isn't in contest")
 }
 
 func (s *BaseAPI) SolvedProblems(ctx context.Context, user *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
