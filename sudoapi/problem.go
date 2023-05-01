@@ -237,6 +237,13 @@ type ProblemStatistics struct {
 }
 
 func (s *BaseAPI) ProblemStatistics(ctx context.Context, problem *kilonova.Problem, lookingUser *UserBrief) (*ProblemStatistics, *StatusError) {
+	userID := 0
+	if lookingUser != nil {
+		userID = lookingUser.ID
+	}
+	if ok, err := s.db.IsFullProblemViewer(ctx, problem.ID, userID); err != nil || !ok {
+		return nil, WrapError(err, "Looking user must be full problem viewer")
+	}
 
 	numSolved, err := s.db.ProblemStatisticsNumSolved(ctx, problem.ID)
 	if err != nil {

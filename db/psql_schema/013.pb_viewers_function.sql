@@ -7,29 +7,13 @@ CREATE OR REPLACE FUNCTION visible_pbs(user_id bigint) RETURNS TABLE (problem_id
     UNION ALL
     (SELECT pbs.id as problem_id, users.id as user_id 
         FROM users CROSS JOIN problems pbs
-        WHERE pbs.visible = true AND users.id = $1) -- Problem is visible
-    UNION ALL
-    (SELECT pbs.id as problem_id, users.id as user_id 
-        FROM users CROSS JOIN problems pbs 
-        WHERE users.admin = true AND users.id = $1) -- User is admin
+        WHERE (pbs.visible = true OR users.admin = true) AND users.id = $1) -- Problem is visible or user is admin
     UNION ALL
     (SELECT problem_id, user_id FROM problem_user_access WHERE user_id = $1) -- Problem editors/viewers
     UNION ALL
     (SELECT pbs.problem_id as problem_id, users.user_id as user_id 
         FROM contest_problems pbs, contest_user_access users 
         WHERE pbs.contest_id = users.contest_id AND users.user_id = $1) -- Contest testers/viewers
-    UNION ALL
-    (SELECT pbs.problem_id as problem_id, 0 as user_id
-        FROM contest_problems pbs, running_contests contests
-        WHERE pbs.contest_id = contests.id AND contests.visible = true 
-        AND contests.per_user_time = 0 AND contests.register_during_contest = false
-        AND 0 = $1) -- Visible, running, non-USACO contests with no registering during contest, for anons. TODO: Find alternative
-    UNION ALL
-    (SELECT pbs.problem_id as problem_id, users.id as user_id
-        FROM contest_problems pbs, users, running_contests contests
-        WHERE pbs.contest_id = contests.id AND contests.visible = true 
-        AND contests.per_user_time = 0 AND contests.register_during_contest = false
-        AND users.id = $1) -- Visible, running, non-USACO contests with no registering during contest
     UNION ALL
     (SELECT pbs.problem_id as problem_id, 0 as user_id
         FROM contest_problems pbs, contests
@@ -42,6 +26,18 @@ CREATE OR REPLACE FUNCTION visible_pbs(user_id bigint) RETURNS TABLE (problem_id
         WHERE pbs.contest_id = contests.id AND contests.visible = true
         AND contests.end_time <= NOW()
         AND users.id = $1) -- Visible contests after they ended
+    UNION ALL
+    (SELECT pbs.problem_id as problem_id, 0 as user_id
+        FROM contest_problems pbs, running_contests contests
+        WHERE pbs.contest_id = contests.id AND contests.visible = true 
+        AND contests.per_user_time = 0 AND contests.register_during_contest = false
+        AND 0 = $1) -- Visible, running, non-USACO contests with no registering during contest, for anons. TODO: Find alternative
+    UNION ALL
+    (SELECT pbs.problem_id as problem_id, users.id as user_id
+        FROM contest_problems pbs, users, running_contests contests
+        WHERE pbs.contest_id = contests.id AND contests.visible = true 
+        AND contests.per_user_time = 0 AND contests.register_during_contest = false
+        AND users.id = $1) -- Visible, running, non-USACO contests with no registering during contest
     UNION ALL
     (SELECT pbs.problem_id as problem_id, users.user_id as user_id
         FROM contest_problems pbs, contest_registrations users, running_contests contests 
@@ -57,6 +53,35 @@ CREATE OR REPLACE FUNCTION visible_pbs(user_id bigint) RETURNS TABLE (problem_id
 $$ LANGUAGE SQL STABLE;
 
 
+-- param 1: the user ID for which we want to see the persistently visible problems
+-- persistently visible problems are problems that aren't conditioned on contest participation to be visible
+CREATE OR REPLACE FUNCTION persistently_visible_pbs(user_id bigint) RETURNS TABLE (problem_id bigint, user_id bigint) AS $$
+    (SELECT pbs.id as problem_id, 0 as user_id
+        FROM problems pbs
+        WHERE pbs.visible = true AND 0 = $1) -- Base case, problem is visible
+    UNION ALL
+    (SELECT pbs.id as problem_id, users.id as user_id 
+        FROM users CROSS JOIN problems pbs
+        WHERE (pbs.visible = true OR users.admin = true) AND users.id = $1) -- Problem is visible or user is admin
+    UNION ALL
+    (SELECT problem_id, user_id FROM problem_user_access WHERE user_id = $1) -- Problem editors/viewers
+    UNION ALL
+    (SELECT pbs.problem_id as problem_id, users.user_id as user_id 
+        FROM contest_problems pbs, contest_user_access users 
+        WHERE pbs.contest_id = users.contest_id AND users.user_id = $1) -- Contest testers/viewers
+    UNION ALL
+    (SELECT pbs.problem_id as problem_id, 0 as user_id
+        FROM contest_problems pbs, contests
+        WHERE pbs.contest_id = contests.id AND contests.visible = true
+        AND contests.end_time <= NOW()
+        AND 0 = $1) -- Visible contests after they ended for anons. TODO: Find alternative
+    UNION ALL
+    (SELECT pbs.problem_id as problem_id, users.id as user_id
+        FROM contest_problems pbs, users, contests
+        WHERE pbs.contest_id = contests.id AND contests.visible = true
+        AND contests.end_time <= NOW()
+        AND users.id = $1); -- Visible contests after they ended
+$$ LANGUAGE SQL STABLE;
 
 -- make submission_viewers make use of this by rewriting it in a function as well
 
