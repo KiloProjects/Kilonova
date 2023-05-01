@@ -88,11 +88,12 @@ func CompileFile(ctx context.Context, box Sandbox, files map[string][]byte, comp
 
 	_, err = box.RunCommand(ctx, goodCmd, &conf)
 
-	combinedOut := out.String()
+	combinedOutRunes := []rune(out.String())
 
-	if len(combinedOut) > compileOutputLimit { // Truncate output on error
-		combinedOut = combinedOut[:compileOutputLimit] + "... (compilation output trimmed)"
+	if len(combinedOutRunes) > compileOutputLimit { // Truncate output on error
+		combinedOutRunes = append(combinedOutRunes[:compileOutputLimit], []rune("... (compilation output trimmed)")...)
 	}
+	combinedOut := string(combinedOutRunes)
 
 	if err != nil {
 		return combinedOut, err
