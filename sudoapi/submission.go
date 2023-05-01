@@ -28,27 +28,7 @@ func (s *BaseAPI) ContestMaxScore(ctx context.Context, uid, pbID, contestID int)
 	return s.db.ContestMaxScore(ctx, uid, pbID, contestID)
 }
 
-func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFilter, lookingUser *UserBrief) (*Submissions, *StatusError) {
-	if filter.Limit == 0 || filter.Limit > 50 {
-		filter.Limit = 50
-	}
-
-	if filter.Ordering == "" {
-		filter.Ordering = "id"
-	}
-
-	filter.Look = true
-	filter.LookingUser = lookingUser
-
-	subs, cnt, err := s.db.Submissions(ctx, filter)
-	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return nil, ErrUnknownError
-		}
-		zap.S().Warn(err)
-		return nil, ErrUnknownError
-	}
-
+func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova.Submission, lookingUser *UserBrief) (*Submissions, *StatusError) {
 	users := make(map[int]*UserBrief)
 	problems := make(map[int]*kilonova.Problem)
 
@@ -92,6 +72,30 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		Users:       users,
 		Problems:    problems,
 	}, nil
+}
+
+func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFilter, lookingUser *UserBrief) (*Submissions, *StatusError) {
+	if filter.Limit == 0 || filter.Limit > 50 {
+		filter.Limit = 50
+	}
+
+	if filter.Ordering == "" {
+		filter.Ordering = "id"
+	}
+
+	filter.Look = true
+	filter.LookingUser = lookingUser
+
+	subs, cnt, err := s.db.Submissions(ctx, filter)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, ErrUnknownError
+		}
+		zap.S().Warn(err)
+		return nil, ErrUnknownError
+	}
+
+	return s.fillSubmissions(ctx, cnt, subs, lookingUser)
 }
 
 // Remember to do proper authorization when using this

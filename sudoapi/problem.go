@@ -226,3 +226,61 @@ func (s *BaseAPI) ProblemViewers(ctx context.Context, pbid int) ([]*kilonova.Use
 	}
 	return mapUsersBrief(users), nil
 }
+
+type ProblemStatistics struct {
+	NumSolved    int `json:"num_solved"`
+	NumAttempted int `json:"num_attempted"`
+
+	SizeLeaderboard   *Submissions `json:"size_leaderboard"`
+	MemoryLeaderboard *Submissions `json:"memory_leaderboard"`
+	TimeLeaderboard   *Submissions `json:"time_leaderboard"`
+}
+
+func (s *BaseAPI) ProblemStatistics(ctx context.Context, problem *kilonova.Problem, lookingUser *UserBrief) (*ProblemStatistics, *StatusError) {
+
+	numSolved, err := s.db.ProblemStatisticsNumSolved(ctx, problem.ID)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't get number of users that solved problem")
+	}
+
+	numAttempted, err := s.db.ProblemStatisticsNumAttempted(ctx, problem.ID)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't get number of users that attempted problem")
+	}
+
+	sizeRaw, err := s.db.ProblemStatisticsSize(ctx, problem.ID)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't get statistics by size")
+	}
+	size, err1 := s.fillSubmissions(ctx, -1, sizeRaw, lookingUser)
+	if err1 != nil {
+		return nil, WrapError(err1, "Couldn't get full statistics by size")
+	}
+
+	memoryRaw, err := s.db.ProblemStatisticsMemory(ctx, problem.ID)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't get statistics by memory")
+	}
+	memory, err1 := s.fillSubmissions(ctx, -1, memoryRaw, lookingUser)
+	if err1 != nil {
+		return nil, WrapError(err1, "Couldn't get full statistics by memory")
+	}
+
+	timeRaw, err := s.db.ProblemStatisticsTime(ctx, problem.ID)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't get statistics by time")
+	}
+	time, err1 := s.fillSubmissions(ctx, -1, timeRaw, lookingUser)
+	if err1 != nil {
+		return nil, WrapError(err1, "Couldn't get full statistics by time")
+	}
+
+	return &ProblemStatistics{
+		NumSolved:    numSolved,
+		NumAttempted: numAttempted,
+
+		SizeLeaderboard:   size,
+		MemoryLeaderboard: memory,
+		TimeLeaderboard:   time,
+	}, nil
+}

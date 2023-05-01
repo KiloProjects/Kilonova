@@ -30,6 +30,15 @@ func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
 	returnData(w, s.base.MaxScore(r.Context(), args.UserID, util.Problem(r).ID))
 }
 
+func (s *API) problemStatistics(w http.ResponseWriter, r *http.Request) {
+	stats, err := s.base.ProblemStatistics(r.Context(), util.Problem(r), util.UserBrief(r))
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+	returnData(w, stats)
+}
+
 type scoreBreakdownRet struct {
 	MaxScore int                           `json:"max_score"`
 	Problem  *kilonova.Problem             `json:"problem"`

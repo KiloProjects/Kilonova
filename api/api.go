@@ -75,6 +75,7 @@ func (s *API) Handler() http.Handler {
 
 			r.Get("/maxScore", s.maxScore)
 			r.Get("/maxScoreBreakdown", s.maxScoreBreakdown)
+			r.Get("/statistics", s.problemStatistics)
 
 			r.Group(func(r chi.Router) {
 				r.Use(s.validateProblemEditor)
