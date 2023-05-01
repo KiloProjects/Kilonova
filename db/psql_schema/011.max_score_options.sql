@@ -62,11 +62,12 @@ CREATE OR REPLACE VIEW max_score_contest_view (user_id, problem_id, contest_id, 
         LEFT JOIN sum_subtasks_strat ms_subtask ON (ms_subtask.user_id = users.user_id AND ms_subtask.problem_id = pbs.problem_id AND ms_subtask.contest_id = users.contest_id);
 
 -- Since we now return -1 on no attempt, we must filter it when computing the top view
+-- also, exclude contest editors/testers since they didn't get that score legit
 CREATE OR REPLACE VIEW contest_top_view
     AS WITH contest_scores AS (
         SELECT user_id, contest_id, SUM(score) AS total_score FROM max_score_contest_view WHERE score >= 0 GROUP BY user_id, contest_id
     ) SELECT users.user_id, users.contest_id, COALESCE(scores.total_score, 0) AS total_score 
-    FROM contest_registrations users LEFT OUTER JOIN contest_scores scores ON users.user_id = scores.user_id AND users.contest_id = scores.contest_id ORDER BY contest_id, total_score DESC, user_id;
+    FROM (SELECT regs.* FROM contest_registrations regs LEFT JOIN contest_user_access acc ON regs.user_id = acc.user_id WHERE acc.user_id IS NULL) users LEFT OUTER JOIN contest_scores scores ON users.user_id = scores.user_id AND users.contest_id = scores.contest_id ORDER BY contest_id, total_score DESC, user_id;
 
 
 

@@ -140,7 +140,9 @@ function CompileErrorInfo({ sub }: { sub: FullSubmission }) {
 					<summary>
 						<h2 class="inline-block">{getText("compileMsg")}</h2>
 					</summary>
-					<pre class="mb-2">{sub.compile_message}</pre>
+					<pre class="mb-2" style={{ wordBreak: "break-all" }}>
+						{sub.compile_message}
+					</pre>
 				</details>
 			);
 		}
@@ -154,7 +156,7 @@ function CompileErrorInfo({ sub }: { sub: FullSubmission }) {
 				<summary>
 					<h2 class="inline-block">{getText("compileMsg")}</h2>
 				</summary>
-				<pre class="mb-2">
+				<pre class="mb-2" style={{ wordBreak: "break-all" }}>
 					{typeof sub.compile_message !== "undefined" && sub.compile_message.length > 0 ? sub.compile_message : "No compilation message available"}
 				</pre>
 			</details>
@@ -166,7 +168,7 @@ function SubCode({ sub }: { sub: FullSubmission }) {
 	return (
 		<div class="segment-panel">
 			<h2>{getText("sourceCode")}:</h2>
-			<pre>
+			<pre style={{ wordBreak: "break-all" }}>
 				<code
 					class="hljs"
 					dangerouslySetInnerHTML={{

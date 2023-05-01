@@ -7,6 +7,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const compileOutputLimit = 5000 // kbytes
+
 // RunSubmission runs a program, following the language conventions
 // filenames contains the names for input and output, used if consoleInput is true
 func RunSubmission(ctx context.Context, box Sandbox, language Language, constraints Limits, consoleInput bool) (*RunStats, error) {
@@ -85,6 +87,10 @@ func CompileFile(ctx context.Context, box Sandbox, files map[string][]byte, comp
 	conf.Stderr = &out
 
 	_, err = box.RunCommand(ctx, goodCmd, &conf)
+
+	if out.Len() > compileOutputLimit { // Truncate output on error
+		out.Truncate(compileOutputLimit)
+	}
 	combinedOut := out.String()
 
 	if err != nil {
