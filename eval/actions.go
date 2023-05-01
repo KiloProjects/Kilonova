@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const compileOutputLimit = 5000 // kbytes
+const compileOutputLimit = 4500 // kbytes
 
 // RunSubmission runs a program, following the language conventions
 // filenames contains the names for input and output, used if consoleInput is true
@@ -90,6 +90,7 @@ func CompileFile(ctx context.Context, box Sandbox, files map[string][]byte, comp
 
 	if out.Len() > compileOutputLimit { // Truncate output on error
 		out.Truncate(compileOutputLimit)
+		out.WriteString("... (compilation output trimmed)")
 	}
 	combinedOut := out.String()
 

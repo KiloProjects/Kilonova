@@ -67,7 +67,7 @@ CREATE OR REPLACE VIEW contest_top_view
     AS WITH contest_scores AS (
         SELECT user_id, contest_id, SUM(score) AS total_score FROM max_score_contest_view WHERE score >= 0 GROUP BY user_id, contest_id
     ) SELECT users.user_id, users.contest_id, COALESCE(scores.total_score, 0) AS total_score 
-    FROM (SELECT regs.* FROM contest_registrations regs LEFT JOIN contest_user_access acc ON regs.user_id = acc.user_id WHERE acc.user_id IS NULL) users LEFT OUTER JOIN contest_scores scores ON users.user_id = scores.user_id AND users.contest_id = scores.contest_id ORDER BY contest_id, total_score DESC, user_id;
+    FROM (SELECT regs.* FROM contest_registrations regs LEFT JOIN contest_user_access acc ON regs.user_id = acc.user_id AND regs.contest_id = acc.contest_id WHERE acc.user_id IS NULL) users LEFT OUTER JOIN contest_scores scores ON users.user_id = scores.user_id AND users.contest_id = scores.contest_id ORDER BY contest_id, total_score DESC, user_id;
 
 
 
