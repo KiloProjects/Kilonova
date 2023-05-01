@@ -12,6 +12,7 @@ import { apiToast, createToast } from "../toast";
 import { isEqual } from "underscore";
 import { BigSpinner, Paginator } from "./common";
 import { getCall } from "../net";
+import { buildScoreBreakdownModal } from "./maxscore_breakdown";
 
 export const RFC1123Z = "ddd, DD MMM YYYY HH:mm:ss ZZ";
 
@@ -153,7 +154,12 @@ export function ContestLeaderboard({ contestID }: { contestID: number }) {
 								<a href={`/profile/${entry.user.name}`}>{entry.user.name}</a>
 							</td>
 							{problems.map((pb) => (
-								<td class="kn-table-cell" scope="col" key={entry.user.name + pb.id}>
+								<td
+									class="kn-table-cell cursor-pointer"
+									scope="col"
+									key={entry.user.name + pb.id}
+									onClick={() => buildScoreBreakdownModal(pb.id, contestID, entry.user.id)}
+								>
 									{pb.id in entry.scores && entry.scores[pb.id] >= 0 ? entry.scores[pb.id] : "-"}
 								</td>
 							))}

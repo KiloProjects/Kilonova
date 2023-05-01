@@ -195,10 +195,10 @@ function SubCode({ sub }: { sub: FullSubmission }) {
 	);
 }
 
-function TestTable({ sub }: { sub: FullSubmission }) {
+export function TestTable({ subtests, subtasks, problem_editor }: { subtests: SubTest[]; subtasks: SubmissionSubTask[]; problem_editor: boolean }) {
 	function testSubTasks(subtestID) {
 		let stks: number[] = [];
-		for (let st of sub.subtasks) {
+		for (let st of subtasks) {
 			if (st.subtests.includes(subtestID)) {
 				stks.push(st.visible_id as number);
 			}
@@ -217,12 +217,12 @@ function TestTable({ sub }: { sub: FullSubmission }) {
 					<th scope="col">{getText("memory")}</th>
 					<th scope="col">{getText("verdict")}</th>
 					<th scope="col">{getText("score")}</th>
-					{sub.subtasks.length > 0 && <th scope="col">{getText("subTasks")}</th>}
-					{sub.problem_editor && <th scope="col">{getText("output")}</th>}
+					{subtasks.length > 0 && <th scope="col">{getText("subTasks")}</th>}
+					{problem_editor && <th scope="col">{getText("output")}</th>}
 				</tr>
 			</thead>
 			<tbody>
-				{sub.subtests.map((subtest) => (
+				{subtests.map((subtest) => (
 					<tr class="kn-table-row" key={"kn_test" + subtest.id}>
 						<th class="py-1" scope="row" id={`test-${subtest.visible_id}`}>
 							{subtest.visible_id}
@@ -233,7 +233,7 @@ function TestTable({ sub }: { sub: FullSubmission }) {
 								<td>{sizeFormatter(subtest.memory * 1024, 1, true)}</td>
 								<td>{subtest.verdict}</td>
 								<td class="text-black" style={{ backgroundColor: getGradient(subtest.score, 100) }}>
-									{sub.subtasks.length > 0 ? (
+									{subtasks.length > 0 ? (
 										<>
 											{subtest.score}% {getText("correct")}
 										</>
@@ -254,8 +254,8 @@ function TestTable({ sub }: { sub: FullSubmission }) {
 								<td>-</td>
 							</>
 						)}
-						{sub.subtasks.length > 0 && <td>{testSubTasks(subtest.id).join(", ")}</td>}
-						{sub.problem_editor && (
+						{subtasks.length > 0 && <td>{testSubTasks(subtest.id).join(", ")}</td>}
+						{problem_editor && (
 							<td>
 								<a href={"/proposer/get/subtest_output/" + subtest.id}>{getText("output")}</a>
 							</td>
@@ -377,7 +377,7 @@ function SubTasks({ sub, expandedTests }: { sub: FullSubmission; expandedTests: 
 				<summary>
 					<h2 class="inline-block">{getText("individualTests")}</h2>
 				</summary>
-				<TestTable sub={sub} />
+				<TestTable subtests={sub.subtests} subtasks={sub.subtasks} problem_editor={sub.problem_editor} />
 			</details>
 		</>
 	);
@@ -400,7 +400,7 @@ function SubmissionView({ sub, bigCode, pasteAuthor }: { sub: FullSubmission | n
 				) : (
 					<>
 						<h2 class="mb-2">{getText("tests")}</h2>
-						<TestTable sub={sub} />
+						<TestTable subtests={sub.subtests} subtasks={sub.subtasks} problem_editor={sub.problem_editor} />
 					</>
 				))}
 		</div>

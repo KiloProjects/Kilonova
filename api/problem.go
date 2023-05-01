@@ -6,6 +6,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"go.uber.org/zap"
 )
 
 func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
@@ -66,11 +67,6 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 		args.UserID = util.UserBrief(r).ID
 	}
 
-	if util.Problem(r).ScoringStrategy != kilonova.ScoringTypeSumSubtasks {
-		errorData(w, "Breakdowns are only for problems with a sum of subtasks scoring strategy", 400)
-		return
-	}
-
 	maxScore := -1
 	if args.ContestID == nil {
 		maxScore = s.base.MaxScore(r.Context(), args.UserID, util.Problem(r).ID)
@@ -78,26 +74,64 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 		maxScore = s.base.ContestMaxScore(r.Context(), args.UserID, util.Problem(r).ID, *args.ContestID)
 	}
 
-	stks, err := s.base.MaximumScoreSubTasks(r.Context(), util.Problem(r).ID, args.UserID, args.ContestID)
-	if err != nil {
-		err.WriteError(w)
-		return
+	switch util.Problem(r).ScoringStrategy {
+	case kilonova.ScoringTypeMaxSub:
+		id, err := s.base.MaxScoreSubID(r.Context(), args.UserID, util.Problem(r).ID)
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+		if id <= 0 {
+			returnData(w, scoreBreakdownRet{
+				MaxScore: maxScore,
+				Problem:  util.Problem(r),
+				Subtasks: []*kilonova.SubmissionSubTask{},
+				Subtests: []*kilonova.SubTest{},
+
+				ProblemEditor: s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
+			})
+			return
+		}
+		sub, err := s.base.Submission(r.Context(), id, util.UserBrief(r))
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+
+		returnData(w, scoreBreakdownRet{
+			MaxScore: maxScore,
+			Problem:  util.Problem(r),
+			Subtasks: sub.SubTasks,
+			Subtests: sub.SubTests,
+
+			ProblemEditor: s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
+		})
+	case kilonova.ScoringTypeSumSubtasks:
+		stks, err := s.base.MaximumScoreSubTasks(r.Context(), util.Problem(r).ID, args.UserID, args.ContestID)
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+
+		tests, err := s.base.MaximumScoreSubTaskTests(r.Context(), util.Problem(r).ID, args.UserID, args.ContestID)
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+
+		returnData(w, scoreBreakdownRet{
+			MaxScore: maxScore,
+			Problem:  util.Problem(r),
+			Subtasks: stks,
+			Subtests: tests,
+
+			ProblemEditor: s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
+		})
+	default:
+		zap.S().Warn("Unknown problem scoring type")
+		errorData(w, "Unknown problem scoring type", 500)
 	}
 
-	tests, err := s.base.MaximumScoreSubTaskTests(r.Context(), util.Problem(r).ID, args.UserID, args.ContestID)
-	if err != nil {
-		err.WriteError(w)
-		return
-	}
-
-	returnData(w, scoreBreakdownRet{
-		MaxScore: maxScore,
-		Problem:  util.Problem(r),
-		Subtasks: stks,
-		Subtests: tests,
-
-		ProblemEditor: s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
-	})
 }
 
 func (s *API) deleteProblem(w http.ResponseWriter, r *http.Request) {

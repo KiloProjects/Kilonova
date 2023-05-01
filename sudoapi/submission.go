@@ -12,6 +12,14 @@ import (
 
 // Submission stuff
 
+func (s *BaseAPI) MaxScoreSubID(ctx context.Context, uid, pbID int) (int, *StatusError) {
+	id, err := s.db.MaxScoreSubID(ctx, uid, pbID)
+	if err != nil {
+		return -1, WrapError(err, "Couldn't get max score ID")
+	}
+	return id, nil
+}
+
 func (s *BaseAPI) MaxScore(ctx context.Context, uid, pbID int) int {
 	return s.db.MaxScore(ctx, uid, pbID)
 }

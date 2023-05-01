@@ -6,7 +6,7 @@ import { createToast, apiToast } from "../toast";
 import { BigSpinner } from "./common";
 import { Problem, SubTest, SubmissionSubTask } from "../api/submissions";
 import { getCall } from "../net";
-import { SubTask } from "./sub_mgr";
+import { SubTask, TestTable } from "./sub_mgr";
 
 type BreakdownResult = {
 	max_score: number;
@@ -52,11 +52,23 @@ export function MaxScoreBreakdown({ problemID, userID, contestID }: { problemID:
 	if (maxScore >= 0) {
 		content = (
 			<>
+				{problem.scoring_strategy == "max_submission" && subtests.length > 0 && (
+					<h3>
+						{getText("sub")} <a href={`/submissions/${subtests[0].submission_id}`}>{`#${subtests[0].submission_id}`}</a>
+					</h3>
+				)}
 				<div class="list-group mb-2">
 					{subtasks.map((subtask) => (
-						<SubTask subtests={subtests ?? []} problem_editor={problemEditor} subtask={subtask} breakdown_mode={true} key={"stk_" + subtask.id} />
+						<SubTask
+							subtests={subtests ?? []}
+							problem_editor={problemEditor}
+							subtask={subtask}
+							breakdown_mode={problem?.scoring_strategy == "sum_subtasks"}
+							key={"stk_" + subtask.id}
+						/>
 					))}
 				</div>
+				{problem.scoring_strategy == "max_submission" && <TestTable problem_editor={problemEditor} subtests={subtests} subtasks={subtasks} />}
 			</>
 		);
 	}
@@ -132,24 +144,25 @@ function MaxScoreBreakdownDOM({ problemid, userid, contestid }: { problemid: str
 
 register(MaxScoreBreakdownDOM, "kn-score-breakdown", ["problemid", "userid", "contestid"]);
 
-document.addEventListener("DOMContentLoaded", () => {
-	const modals = document.getElementById("modals")!;
-
-	function buildModal(problemID, contestID) {
-		const val = document.getElementById("max_score_preact");
-		if (val != null) {
-			modals.removeChild(val);
-		}
-		const newVal = document.createElement("kn-score-breakdown");
-		newVal.id = "max_score_preact";
-		newVal.setAttribute("problemid", problemID);
-		if (typeof contestID !== "undefined") {
-			newVal.setAttribute("contestid", contestID);
-		}
-
-		modals.appendChild(newVal);
+export function buildScoreBreakdownModal(problemID: number, contestID: number | undefined = undefined, userID: number | undefined = undefined) {
+	const val = document.getElementById("max_score_preact");
+	if (val != null) {
+		document.getElementById("modals")!.removeChild(val);
+	}
+	const newVal = document.createElement("kn-score-breakdown");
+	newVal.id = "max_score_preact";
+	newVal.setAttribute("problemid", problemID.toString());
+	if (typeof contestID !== "undefined") {
+		newVal.setAttribute("contestid", contestID.toString());
+	}
+	if (typeof userID !== "undefined") {
+		newVal.setAttribute("userid", userID.toString());
 	}
 
+	document.getElementById("modals")!.appendChild(newVal);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
 	Array.from(document.getElementsByClassName("max_score_breakdown")).forEach((val) => {
 		val.addEventListener("click", (e) => {
 			e.preventDefault();
@@ -166,7 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			if (isNaN(contestID)) {
 				contestID = undefined;
 			}
-			buildModal(problemID, contestID);
+			buildScoreBreakdownModal(problemID, contestID);
 		});
 	});
 });

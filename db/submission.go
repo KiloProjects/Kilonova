@@ -144,6 +144,19 @@ func (s *DB) DeleteSubmission(ctx context.Context, id int) error {
 	return err
 }
 
+func (s *DB) MaxScoreSubID(ctx context.Context, userid, problemid int) (int, error) {
+	var score int
+
+	err := s.pgconn.QueryRow(ctx, "SELECT id FROM submissions WHERE user_id = $1 AND problem_id = $2 ORDER BY score DESC, id ASC LIMIT 1", userid, problemid).Scan(&score)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return -1, nil
+		}
+		return -1, err
+	}
+	return score, nil
+}
+
 func (s *DB) MaxScore(ctx context.Context, userid, problemid int) int {
 	var score int
 
@@ -198,6 +211,12 @@ func subFilterQuery(filter *kilonova.SubmissionFilter) ([]string, []any) {
 	where, args := []string{"1 = 1"}, []any{}
 	if v := filter.ID; v != nil {
 		where, args = append(where, "id = ?"), append(args, v)
+	}
+	if v := filter.IDs; v != nil && len(v) == 0 {
+		where = append(where, "id = -1")
+	}
+	if v := filter.IDs; len(v) > 0 {
+		where, args = append(where, "id = ANY(?)"), append(args, v)
 	}
 	if v := filter.UserID; v != nil {
 		where, args = append(where, "user_id = ?"), append(args, v)
