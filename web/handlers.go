@@ -175,7 +175,7 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 		}
 
 		variants, err := rt.base.ProblemDescVariants(r.Context(), problem.ID, rt.base.IsProblemEditor(util.UserBrief(r), problem))
-		if err != nil {
+		if err != nil && !errors.Is(err, context.Canceled) {
 			zap.S().Warn("Couldn't get problem desc variants", err)
 		}
 

@@ -186,7 +186,7 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *Use
 
 func (s *BaseAPI) UpdateSubmission(ctx context.Context, id int, status kilonova.SubmissionUpdate) *StatusError {
 	if err := s.db.UpdateSubmission(ctx, id, status); err != nil {
-		zap.S().Warn(err)
+		zap.S().Warn(err, id)
 		return WrapError(err, "Couldn't update submission")
 	}
 	return nil
