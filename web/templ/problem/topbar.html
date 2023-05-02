@@ -104,6 +104,10 @@
             {{getText "submissions"}}
         </a>
     {{ end }}
+    {{ if problemFullyVisible }}
+        <div class="topbar-separator"></div>
+        <a class="p-1 problem_statistics" href="#" data-problem="{{encodeJSON $topbar.Problem}}">{{getText "problemStats"}}</a>
+    {{ end }}
     {{ if $topbar.IsProblemEditor }}
         <div class="topbar-separator topbar-separator-lg"></div>
         <span id="problem_topbar_wrapper">
