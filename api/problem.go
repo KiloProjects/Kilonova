@@ -173,10 +173,9 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getProblems(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args kilonova.ProblemFilter
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 400)
+	if err := parseJsonBody(r, &args); err != nil {
+		err.WriteError(w)
 		return
 	}
 

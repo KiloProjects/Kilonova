@@ -37,6 +37,12 @@ export function ProblemStatistics({ problem }: { problem: Problem }) {
 		setStats(res.data);
 	}
 
+	function canShowSizeLeaderboard(): boolean {
+		if (stats == null) return false;
+		if (stats.size_leaderboard.submissions.length === 0) return false;
+		return stats.size_leaderboard.submissions[0].code_size > 0;
+	}
+
 	useEffect(() => {
 		load().catch(console.error);
 	}, [problem]);
@@ -124,7 +130,7 @@ export function ProblemStatistics({ problem }: { problem: Problem }) {
 					</table>
 				</>
 			)}
-			{stats.size_leaderboard.submissions.length > 0 && (
+			{canShowSizeLeaderboard() && (
 				<>
 					<h2>{getText("sizeLeaderboard")}</h2>
 					<table class="kn-table">

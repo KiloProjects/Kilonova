@@ -41,7 +41,7 @@ func (s *DB) ProblemStatisticsMemory(ctx context.Context, problemID int) ([]*kil
 	var subs []*dbSubmission
 	err := s.conn.SelectContext(ctx, &subs, `
 	WITH top_by_memory AS (
-		SELECT DISTINCT ON (problem_id, user_id) id, problem_id, user_id, max_time FROM submissions WHERE score = 100 AND problem_id = $1 ORDER BY problem_id, user_id, max_memory ASC
+		SELECT DISTINCT ON (problem_id, user_id) id, problem_id, user_id, max_time FROM submissions WHERE score = 100 AND problem_id = $1 AND max_memory >= 0 ORDER BY problem_id, user_id, max_memory ASC
 	) SELECT submissions.* FROM submissions, top_by_memory WHERE submissions.id = top_by_memory.id ORDER BY submissions.max_memory LIMIT 5;
 `, problemID)
 	if err != nil {
@@ -54,7 +54,7 @@ func (s *DB) ProblemStatisticsTime(ctx context.Context, problemID int) ([]*kilon
 	var subs []*dbSubmission
 	err := s.conn.SelectContext(ctx, &subs, `
 	WITH top_by_time AS (
-		SELECT DISTINCT ON (problem_id, user_id) id, problem_id, user_id, max_time FROM submissions WHERE score = 100 AND problem_id = $1 ORDER BY problem_id, user_id, max_time ASC
+		SELECT DISTINCT ON (problem_id, user_id) id, problem_id, user_id, max_time FROM submissions WHERE score = 100 AND problem_id = $1 AND max_time >= 0 ORDER BY problem_id, user_id, max_time ASC
 	) SELECT submissions.* FROM submissions, top_by_time WHERE submissions.id = top_by_time.id ORDER BY submissions.max_time LIMIT 5;
 `, problemID)
 	if err != nil {
