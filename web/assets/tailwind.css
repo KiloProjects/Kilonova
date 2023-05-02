@@ -103,7 +103,7 @@
 	}
 
 	.enhance-tables table {
-		@apply kn-table my-2;
+		@apply kn-table kn-table-slim my-2;
 	}
 
 	.enhance-tables table tr {
@@ -248,6 +248,10 @@
 
 	.kn-table {
 		@apply border-2 border-collapse table-auto w-full mb-2 kn-border;
+	}
+
+	.kn-table-slim {
+		width: auto;
 	}
 
 	.kn-table-simple-border {

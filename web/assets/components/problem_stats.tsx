@@ -60,11 +60,11 @@ export function ProblemStatistics({ problem }: { problem: Problem }) {
 			<p>{getText("numUsersAttempted", stats.num_attempted)}</p>
 			{stats.time_leaderboard.submissions.length > 0 && (
 				<>
-					<h2>{getText("sizeLeaderboard")}</h2>
-					<table class="kn-table">
+					<h2>{getText("timeLeaderboard")}</h2>
+					<table class="kn-table kn-table-slim">
 						<thead>
 							<tr>
-								<th class="kn-table-cell w-1/12" scope="col">
+								<th class="kn-table-cell" scope="col">
 									{getText("position")}
 								</th>
 								<th class="kn-table-cell" scope="col">
@@ -97,10 +97,10 @@ export function ProblemStatistics({ problem }: { problem: Problem }) {
 			{stats.memory_leaderboard.submissions.length > 0 && (
 				<>
 					<h2>{getText("memoryLeaderboard")}</h2>
-					<table class="kn-table">
+					<table class="kn-table kn-table-slim">
 						<thead>
 							<tr>
-								<th class="kn-table-cell w-1/12" scope="col">
+								<th class="kn-table-cell" scope="col">
 									{getText("position")}
 								</th>
 								<th class="kn-table-cell" scope="col">
@@ -133,10 +133,10 @@ export function ProblemStatistics({ problem }: { problem: Problem }) {
 			{canShowSizeLeaderboard() && (
 				<>
 					<h2>{getText("sizeLeaderboard")}</h2>
-					<table class="kn-table">
+					<table class="kn-table kn-table-slim">
 						<thead>
 							<tr>
-								<th class="kn-table-cell w-1/12" scope="col">
+								<th class="kn-table-cell" scope="col">
 									{getText("position")}
 								</th>
 								<th class="kn-table-cell" scope="col">
