@@ -63,6 +63,27 @@ func (s *BaseAPI) IsProblemVisible(user *kilonova.UserBrief, problem *kilonova.P
 	return ok
 }
 
+// Full visibility is currently used for problem statistics
+func (s *BaseAPI) IsProblemFullyVisible(user *kilonova.UserBrief, problem *kilonova.Problem) bool {
+	if problem == nil {
+		return false
+	}
+	if problem.Visible {
+		return true
+	}
+	userID := 0
+	if user != nil {
+		userID = user.ID
+	}
+
+	ok, err := s.db.IsFullProblemViewer(context.Background(), problem.ID, userID)
+	if err != nil {
+		zap.S().Warn(err)
+		return false
+	}
+	return ok
+}
+
 func (s *BaseAPI) IsContestEditor(user *kilonova.UserBrief, contest *kilonova.Contest) bool {
 	if !s.IsAuthed(user) {
 		return false

@@ -303,6 +303,38 @@ ro = "Sunteți siguri că vreți să ștergeți utilizatorul?"
 en = "Email confirmed for user %s"
 ro = "Email confirmat pentru utilizatorul %s"
 
+[problemStats]
+en = "Statistics"
+ro = "Statistici"
+
+[problemStatsTitle]
+en = "Statistics for <code>%s</code>"
+ro = "Statistici pentru <code>%s</code>"
+
+[generalStats]
+en = "General statistics"
+ro = "Statistici generale"
+
+[numUsersSolved]
+en = "Solved by: %d"
+ro = "Rezolvată de: %d"
+
+[numUsersAttempted]
+en = "Attempted by: %d"
+ro = "Încercată de: %d"
+
+[sizeLeaderboard]
+en = "Smallest submissions leaderboard"
+ro = "Clasament submisii de dimensiune minimă"
+
+[timeLeaderboard]
+en = "Fastest time leaderboard"
+ro = "Clasament submisii de timp minim"
+
+[memoryLeaderboard]
+en = "Lowest memory leaderboard"
+ro = "Clasament submisii de memorie minimă"
+
 [closeTab]
 en = "You may close the tab"
 ro = "Puteți să închideți tabul"

@@ -767,6 +767,9 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 			}
 			return reg
 		},
+		"problemFullyVisible": func() bool {
+			return rt.base.IsProblemFullyVisible(util.UserBrief(r), util.Problem(r))
+		},
 	})
 
 	if err := templ.Execute(w, data); err != nil {

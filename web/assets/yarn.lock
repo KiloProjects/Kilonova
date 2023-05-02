@@ -236,6 +236,13 @@
   resolved "https://registry.npmjs.org/@types/katex/-/katex-0.16.0.tgz#0e640df3647fe237212be863e1f5111eb9754f93"
   integrity sha512-hz+S3nV6Mym5xPbT9fnO8dDhBFQguMYpY0Ipxv06JMi1ORgnEM4M1ymWDUhUNer3ElLmT583opRo4RzxKmh9jw==
 
+"@types/preact-custom-element@^4.0.1":
+  version "4.0.1"
+  resolved "https://registry.npmjs.org/@types/preact-custom-element/-/preact-custom-element-4.0.1.tgz#1fdceb3629d368aa4558e12a110802f4fecba802"
+  integrity sha512-oduUzzxJAZ7qWJ5EsUffxvpRFnzgffilDlfxLR9Q2YkEzSfn3vudIrnDg0AiQgZJ0GkAjLzkxQyAxH6sS/EQdQ==
+  dependencies:
+    preact "^10.0.0"
+
 "@types/sprintf-js@^1.1.2":
   version "1.1.2"
   resolved "https://registry.npmjs.org/@types/sprintf-js/-/sprintf-js-1.1.2.tgz#a4fcb84c7344f39f70dc4eec0e1e7f10a48597a3"
@@ -1454,7 +1461,7 @@ preact-custom-element@^4.2.1:
   resolved "https://registry.npmjs.org/preact-custom-element/-/preact-custom-element-4.2.1.tgz#a18752ef60823ea61199d9cdc1866e51139b3f46"
   integrity sha512-/fiEEAyC+MXRlCBRmv/owoN5BLpO2nF/MF3YBHLtp4C2lNqlhV+a4he74A5DhfDoRmxDHm0sYVgQzWFEyzTDsw==
 
-preact@^10.13.2:
+preact@^10.0.0, preact@^10.13.2:
   version "10.13.2"
   resolved "https://registry.npmjs.org/preact/-/preact-10.13.2.tgz#2c40c73d57248b57234c4ae6cd9ab9d8186ebc0a"
   integrity sha512-q44QFLhOhty2Bd0Y46fnYW0gD/cbVM9dUVtNTDKPcdXSMA7jfY+Jpd6rk3GB0lcQss0z5s/6CmVP0Z/hV+g6pw==

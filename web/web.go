@@ -574,6 +574,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			zap.S().Error("Uninitialized `contestRegistration`")
 			return nil
 		},
+		"problemFullyVisible": func() bool {
+			zap.S().Error("Uninitialized `problemFullyVisible`")
+			return false
+		},
 	}
 	return &Web{debug, funcs, base}
 }

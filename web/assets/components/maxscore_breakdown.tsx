@@ -1,8 +1,8 @@
 import { h, Fragment, render } from "preact";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import register from "preact-custom-element";
 import getText from "../translation";
-import { createToast, apiToast } from "../toast";
+import { apiToast } from "../toast";
 import { BigSpinner } from "./common";
 import { Problem, SubTest, SubmissionSubTask } from "../api/submissions";
 import { getCall } from "../net";
@@ -86,7 +86,7 @@ export function MaxScoreBreakdown({ problemID, userID, contestID }: { problemID:
 	);
 }
 
-function KNModal({ open, title, children }: { open: boolean; title: string; children: preact.ComponentChildren }) {
+export function KNModal({ open, title, children }: { open: boolean; title: any; children: preact.ComponentChildren }) {
 	let [lastState, setLastState] = useState<boolean | null>(null);
 	let ref = useRef<HTMLDialogElement>(null);
 

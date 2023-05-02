@@ -99,6 +99,9 @@
                 {{ if authed }}
                 <p>{{getText "score"}}: {{if eq .Problem.ScoringStrategy `sum_subtasks`}}<a class="max_score_breakdown" href="#" data-problemid="{{.Problem.ID}}">{{end}}<span id="max_score_counter">{{subScore .Problem .Ctx.User.Brief}}</span> {{if eq .Problem.ScoringStrategy `sum_subtasks`}}</a>{{end}}</p>
                 {{ end }}
+                {{ if problemFullyVisible }}
+                <p><a href="#" class="problem_statistics" data-problem="{{encodeJSON .Problem}}">{{getText "problemStats"}}</a></p>
+                {{ end }}
             </div>
         </div>
         {{ range pbParentPblists .Problem }}

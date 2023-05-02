@@ -24,6 +24,7 @@
 		"@types/codemirror": "^5.60.7",
 		"@types/js-cookie": "^3.0.3",
 		"@types/katex": "^0.16.0",
+		"@types/preact-custom-element": "^4.0.1",
 		"@types/sprintf-js": "^1.1.2",
 		"@types/underscore": "^1.11.4",
 		"autoprefixer": "^10.4.14",
