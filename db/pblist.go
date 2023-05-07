@@ -71,12 +71,29 @@ func (s *DB) ProblemListsByProblemID(ctx context.Context, problemID int, showHid
 	return mapperCtx(ctx, lists, s.internalToPbList), nil
 }
 
-func (s *DB) ProblemListsByPblistID(ctx context.Context, pblistID int) ([]*kilonova.ProblemList, error) {
+func (s *DB) ParentProblemListsByPblistID(ctx context.Context, pblistID int) ([]*kilonova.ProblemList, error) {
 	var lists []*pblist
 
 	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
 	FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
 	WHERE EXISTS (SELECT 1 FROM problem_list_pblists WHERE parent_id = lists.id AND child_id = $1) ORDER BY lists.id ASC`
+	err := s.conn.SelectContext(ctx, &lists, q, pblistID)
+
+	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
+		return []*kilonova.ProblemList{}, nil
+	} else if err != nil {
+		return []*kilonova.ProblemList{}, err
+	}
+
+	return mapperCtx(ctx, lists, s.internalToPbList), nil
+}
+
+func (s *DB) ChildrenProblemListsByPblistID(ctx context.Context, pblistID int) ([]*kilonova.ProblemList, error) {
+	var lists []*pblist
+
+	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
+	FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
+	WHERE EXISTS (SELECT 1 FROM problem_list_pblists WHERE parent_id = $1 AND child_id = lists.id) ORDER BY lists.id ASC`
 	err := s.conn.SelectContext(ctx, &lists, q, pblistID)
 
 	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {

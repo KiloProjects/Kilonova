@@ -42,11 +42,9 @@
     <h2>{{getText "problems"}}</h2>
     
     <div class="list-group mb-4">
-        {{ with .RootProblemList }}
-            {{ range .SubLists }}
-                {{ with problemList .ID }}
-                    {{template "problemlist_show" (genPblistParams authedUser . false)}}
-                {{ end }}
+        {{ with .ChildProblemLists }}
+            {{ range . }}
+                {{template "problemlist_show" (genPblistParams authedUser . false)}}
             {{ end }}
         {{ end }}
         {{ with (unassociatedProblems authedUser) }}

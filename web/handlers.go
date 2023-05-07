@@ -35,16 +35,16 @@ func (rt *Web) index() func(http.ResponseWriter, *http.Request) {
 			futureContests = []*kilonova.Contest{}
 		}
 
-		var pblist *kilonova.ProblemList
+		var pblists []*kilonova.ProblemList
 		if config.Frontend.RootProblemList > 0 {
-			pblist, err = rt.base.ProblemList(r.Context(), config.Frontend.RootProblemList)
+			pblists, err = rt.base.PblistChildrenLists(r.Context(), config.Frontend.RootProblemList)
 			if err != nil {
 				zap.S().Warn(err)
-				pblist = nil
+				pblists = []*kilonova.ProblemList{}
 			}
 		}
 
-		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), futureContests, runningContests, pblist})
+		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), futureContests, runningContests, pblists})
 	}
 }
 

@@ -194,7 +194,7 @@ type IndexParams struct {
 	FutureContests  []*kilonova.Contest
 	RunningContests []*kilonova.Contest
 
-	RootProblemList *kilonova.ProblemList
+	ChildProblemLists []*kilonova.ProblemList
 }
 
 type ProblemListingParams struct {

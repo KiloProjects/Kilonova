@@ -55,7 +55,15 @@ func (s *BaseAPI) ProblemParentLists(ctx context.Context, problemID int, showHid
 }
 
 func (s *BaseAPI) PblistParentLists(ctx context.Context, problemListID int) ([]*kilonova.ProblemList, *StatusError) {
-	pblists, err := s.db.ProblemListsByPblistID(ctx, problemListID)
+	pblists, err := s.db.ParentProblemListsByPblistID(ctx, problemListID)
+	if err != nil {
+		return nil, ErrUnknownError
+	}
+	return pblists, nil
+}
+
+func (s *BaseAPI) PblistChildrenLists(ctx context.Context, problemListID int) ([]*kilonova.ProblemList, *StatusError) {
+	pblists, err := s.db.ChildrenProblemListsByPblistID(ctx, problemListID)
 	if err != nil {
 		return nil, ErrUnknownError
 	}
