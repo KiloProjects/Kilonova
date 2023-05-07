@@ -5,13 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/jackc/pgx/v5"
-	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
 
@@ -61,9 +59,8 @@ const subSelectQuery = "SELECT *, COUNT(*) OVER() AS full_count FROM submissions
 
 func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) ([]*kilonova.Submission, int, error) {
 	var subs []*dbSubmission
-	where, args := subFilterQuery(&filter)
-	query := fmt.Sprintf(subSelectQuery, strings.Join(where, " AND "), getSubmissionOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset))
-	query = s.conn.Rebind(query)
+	where, args := subFilterQuery(&filter, []any{})
+	query := fmt.Sprintf(subSelectQuery, where, getSubmissionOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset))
 	err := s.conn.SelectContext(ctx, &subs, query, args...)
 	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return []*kilonova.Submission{}, 0, nil
@@ -102,40 +99,35 @@ func (s *DB) WaitingSubmissionCount(ctx context.Context, userID int) (int, error
 	return cnt, nil
 }
 
-const createSubQuery = "INSERT INTO submissions (user_id, problem_id, contest_id, language, code) VALUES (?, ?, ?, ?, ?) RETURNING id;"
+const createSubQuery = "INSERT INTO submissions (user_id, problem_id, contest_id, language, code) VALUES ($1, $2, $3, $4, $5) RETURNING id;"
 
 func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, language eval.Language, code string, contestID *int) (int, error) {
 	if authorID <= 0 || problem == nil || language.InternalName == "" || code == "" {
 		return -1, kilonova.ErrMissingRequired
 	}
 	var id int
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(createSubQuery), authorID, problem.ID, contestID, language.InternalName, code)
+	err := s.conn.GetContext(ctx, &id, createSubQuery, authorID, problem.ID, contestID, language.InternalName, code)
 	return id, err
 }
 
 func (s *DB) UpdateSubmission(ctx context.Context, id int, upd kilonova.SubmissionUpdate) error {
-	return updateSubmission(s.conn, ctx, id, upd)
-}
-
-func updateSubmission(tx sqlx.ExecerContext, ctx context.Context, id int, upd kilonova.SubmissionUpdate) error {
-	toUpd, args := subUpdateQuery(&upd)
-	if len(toUpd) == 0 {
-		return kilonova.ErrNoUpdates
+	toUpd, args, err := subUpdateQuery(&upd)
+	if err != nil {
+		return err
 	}
 	args = append(args, id)
-	query := sqlx.Rebind(sqlx.BindType("pgx"), fmt.Sprintf(`UPDATE submissions SET %s WHERE id = ?;`, strings.Join(toUpd, ", ")))
-	_, err := tx.ExecContext(ctx, query, args...)
+	query := fmt.Sprintf(`UPDATE submissions SET %s WHERE id = $%d;`, toUpd, len(args))
+	_, err = s.pgconn.Exec(ctx, query, args...)
 	return err
 }
+
 func (s *DB) BulkUpdateSubmissions(ctx context.Context, filter kilonova.SubmissionFilter, upd kilonova.SubmissionUpdate) error {
-	toUpd, args := subUpdateQuery(&upd)
-	if len(toUpd) == 0 {
-		return kilonova.ErrNoUpdates
+	toUpd, args, err := subUpdateQuery(&upd)
+	if err != nil {
+		return err
 	}
-	where, whereArgs := subFilterQuery(&filter)
-	args = append(args, whereArgs...)
-	query := s.conn.Rebind(fmt.Sprintf(`UPDATE submissions SET %s WHERE %s;`, strings.Join(toUpd, ", "), strings.Join(where, " AND ")))
-	_, err := s.conn.ExecContext(ctx, query, args...)
+	where, whereArgs := subFilterQuery(&filter, args)
+	_, err = s.conn.ExecContext(ctx, fmt.Sprintf(`UPDATE submissions SET %s WHERE %s;`, toUpd, where), whereArgs...)
 	return err
 }
 
@@ -207,28 +199,28 @@ func (s *DB) AttemptedProblemsIDs(ctx context.Context, userid int) ([]int, error
 	return pbs, err
 }
 
-func subFilterQuery(filter *kilonova.SubmissionFilter) ([]string, []any) {
-	where, args := []string{"1 = 1"}, []any{}
+func subFilterQuery(filter *kilonova.SubmissionFilter, initialArgs []any) (string, []any) {
+	qb := newFilterBuilderFromPos(initialArgs)
 	if v := filter.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, v)
+		qb.AddConstraint("id = %s", v)
 	}
 	if v := filter.IDs; v != nil && len(v) == 0 {
-		where = append(where, "id = -1")
+		qb.AddConstraint("id = -1")
 	}
 	if v := filter.IDs; len(v) > 0 {
-		where, args = append(where, "id = ANY(?)"), append(args, v)
+		qb.AddConstraint("id = ANY(%s)", v)
 	}
 	if v := filter.UserID; v != nil {
-		where, args = append(where, "user_id = ?"), append(args, v)
+		qb.AddConstraint("user_id = %s", v)
 	}
 	if v := filter.ProblemID; v != nil {
-		where, args = append(where, "problem_id = ?"), append(args, v)
+		qb.AddConstraint("problem_id = %s", v)
 	}
 	if v := filter.ContestID; v != nil {
 		if *v == 0 { // Allow filtering for submissions from no contest
-			where, args = append(where, "contest_id IS NULL"), append(args, v)
+			qb.AddConstraint("contest_id IS NULL")
 		} else {
-			where, args = append(where, "contest_id = ?"), append(args, v)
+			qb.AddConstraint("contest_id = %s", v)
 		}
 	}
 
@@ -238,50 +230,50 @@ func subFilterQuery(filter *kilonova.SubmissionFilter) ([]string, []any) {
 			id = filter.LookingUser.ID
 		}
 
-		where, args = append(where, "EXISTS (SELECT 1 FROM visible_submissions(?) WHERE sub_id = submissions.id)"), append(args, id)
+		qb.AddConstraint("EXISTS (SELECT 1 FROM visible_submissions(%s) WHERE sub_id = submissions.id)", id)
 	}
 
 	if v := filter.Status; v != kilonova.StatusNone {
-		where, args = append(where, "status = ?"), append(args, v)
+		qb.AddConstraint("status = %s", v)
 	}
 	if v := filter.Lang; v != nil {
-		where, args = append(where, "lower(language) = lower(?)"), append(args, v)
+		qb.AddConstraint("lower(language) = lower(%s)", v)
 	}
 	if v := filter.Score; v != nil {
-		where, args = append(where, "score = ?"), append(args, v)
+		qb.AddConstraint("score = %s", v)
 	}
 
 	if v := filter.CompileError; v != nil {
-		where, args = append(where, "compile_error = ?"), append(args, v)
+		qb.AddConstraint("compile_error = %s", v)
 	}
 
-	return where, args
+	return qb.Where(), qb.Args()
 }
 
-func subUpdateQuery(upd *kilonova.SubmissionUpdate) ([]string, []any) {
-	toUpd, args := []string{}, []any{}
+func subUpdateQuery(upd *kilonova.SubmissionUpdate) (string, []any, error) {
+	b := newUpdateBuilder()
 	if v := upd.Status; v != kilonova.StatusNone {
-		toUpd, args = append(toUpd, "status = ?"), append(args, v)
+		b.AddUpdate("status = %s", v)
 	}
 	if v := upd.Score; v != nil {
-		toUpd, args = append(toUpd, "score = ?"), append(args, v)
+		b.AddUpdate("score = %s", v)
 	}
 
 	if v := upd.CompileError; v != nil {
-		toUpd, args = append(toUpd, "compile_error = ?"), append(args, v)
+		b.AddUpdate("compile_error = %s", v)
 	}
 	if v := upd.CompileMessage; v != nil {
-		toUpd, args = append(toUpd, "compile_message = ?"), append(args, v)
+		b.AddUpdate("compile_message = %s", v)
 	}
 
 	if v := upd.MaxTime; v != nil {
-		toUpd, args = append(toUpd, "max_time = ?"), append(args, v)
+		b.AddUpdate("max_time = %s", v)
 	}
 	if v := upd.MaxMemory; v != nil {
-		toUpd, args = append(toUpd, "max_memory = ?"), append(args, v)
+		b.AddUpdate("max_memory = %s", v)
 	}
 
-	return toUpd, args
+	return b.ToUpdate(), b.Args(), b.CheckUpdates()
 }
 
 func getSubmissionOrdering(ordering string, ascending bool) string {
