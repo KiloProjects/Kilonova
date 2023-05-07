@@ -12,18 +12,17 @@ import (
 )
 
 type User struct {
-	ID             int       `json:"id"`
-	CreatedAt      time.Time `json:"created_at" db:"created_at"`
-	Name           string    `json:"name"`
-	Admin          bool      `json:"admin"`
-	Proposer       bool      `json:"proposer"`
-	Email          string    `json:"email"`
-	Password       string    `json:"-"`
-	Bio            string    `json:"bio"`
-	DefaultVisible bool      `json:"default_visible" db:"default_visible"`
+	ID        int       `json:"id"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	Name      string    `json:"name"`
+	Admin     bool      `json:"admin"`
+	Proposer  bool      `json:"proposer"`
+	Email     string    `json:"email"`
+	Password  string    `json:"-"`
+	Bio       string    `json:"bio"`
 
-	VerifiedEmail    bool         `json:"verified_email" db:"verified_email"`
-	EmailVerifSentAt sql.NullTime `json:"-" db:"email_verif_sent_at"`
+	VerifiedEmail    bool       `json:"verified_email" db:"verified_email"`
+	EmailVerifSentAt *time.Time `json:"-" db:"email_verif_sent_at"`
 
 	PreferredLanguage string                  `json:"-" db:"preferred_language"`
 	PreferredTheme    kilonova.PreferredTheme `json:"-" db:"preferred_theme"`
@@ -53,8 +52,8 @@ func (user *User) ToFull() *kilonova.UserFull {
 		return nil
 	}
 	t := time.Unix(0, 0)
-	if user.EmailVerifSentAt.Valid {
-		t = user.EmailVerifSentAt.Time
+	if user.EmailVerifSentAt != nil {
+		t = *user.EmailVerifSentAt
 	}
 	return &kilonova.UserFull{
 		UserBrief:         *user.ToBrief(),

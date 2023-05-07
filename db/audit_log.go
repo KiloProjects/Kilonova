@@ -2,11 +2,11 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
@@ -21,22 +21,25 @@ type auditLog struct {
 const auditLogCreateQuery = `INSERT INTO audit_logs (
 	system_log, msg, author_id
 ) VALUES (
-	?, ?, ?
+	$1, $2, $3
 ) RETURNING id;`
 
 func (s *DB) CreateAuditLog(ctx context.Context, msg string, authorID *int, system bool) (int, error) {
 	var id int
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(auditLogCreateQuery), system, msg, authorID)
+	err := s.pgconn.QueryRow(ctx, auditLogCreateQuery, system, msg, authorID).Scan(&id)
 	return id, err
 }
 
 func (s *DB) AuditLogs(ctx context.Context, limit, offset int) ([]*kilonova.AuditLog, error) {
-	var logs []*auditLog
-	query := s.conn.Rebind("SELECT * FROM audit_logs ORDER BY logged_at DESC " + FormatLimitOffset(limit, offset))
-	err := s.conn.SelectContext(ctx, &logs, query)
-	if errors.Is(err, sql.ErrNoRows) {
+	rows, err := s.pgconn.Query(ctx, "SELECT * FROM audit_logs ORDER BY logged_at DESC, id DESC "+FormatLimitOffset(limit, offset))
+	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.AuditLog{}, nil
 	} else if err != nil {
+		return nil, err
+	}
+
+	logs, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[auditLog])
+	if err != nil {
 		return nil, err
 	}
 
@@ -54,7 +57,7 @@ func (s *DB) AuditLogs(ctx context.Context, limit, offset int) ([]*kilonova.Audi
 
 func (s *DB) AuditLogCount(ctx context.Context) (int, error) {
 	var cnt int
-	err := s.conn.GetContext(ctx, &cnt, "SELECT COUNT(id) FROM audit_logs")
+	err := s.pgconn.QueryRow(ctx, "SELECT COUNT(id) FROM audit_logs").Scan(&cnt)
 	return cnt, err
 }
 
