@@ -92,8 +92,9 @@ func (s *DB) ChildrenProblemListsByPblistID(ctx context.Context, pblistID int) (
 	var lists []*pblist
 
 	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
-	FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
-	WHERE EXISTS (SELECT 1 FROM problem_list_pblists WHERE parent_id = $1 AND child_id = lists.id) ORDER BY lists.id ASC`
+	FROM (problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id)
+		INNER JOIN problem_list_pblists plpp ON (plpp.parent_id = $1 AND plpp.child_id = lists.id)
+	ORDER BY plpp.position ASC, lists.id ASC`
 	err := s.conn.SelectContext(ctx, &lists, q, pblistID)
 
 	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
