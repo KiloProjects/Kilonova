@@ -95,7 +95,7 @@ func (rt *Web) auditLog() func(http.ResponseWriter, *http.Request) {
 			numPages++
 		}
 
-		rt.runTempl(w, r, templ, &AuditLogParams{GenContext(r), logs, numPages})
+		rt.runTempl(w, r, templ, &AuditLogParams{GenContext(r), logs, page, numPages})
 	}
 }
 

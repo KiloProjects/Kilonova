@@ -225,6 +225,7 @@ type AuditLogParams struct {
 	Ctx *ReqContext
 
 	Logs     []*kilonova.AuditLog
+	Page     int
 	NumPages int
 }
 

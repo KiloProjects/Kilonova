@@ -6,6 +6,8 @@
         {{getText "panel.audit_log"}}
     </h1>
 
+    <div id="audit_log_paginator"></div>
+
     <table class="kn-table mt-4">
         <thead>
             <tr>
@@ -50,6 +52,16 @@
             {{end}}
         </tbody>
     </table>
+
+    <script>
+        const page = {{.Page}};
+        const numpages = {{.NumPages}};
+        bundled.preactRender(bundled.Paginator({page, numpages, setPage: (page) => {
+            const params = new URLSearchParams(window.location.search)
+            params.set("page", page)
+            window.location.search = params.toString()
+        }}), document.getElementById("audit_log_paginator"))
+    </script>
 </div>
 
 {{ end }}
