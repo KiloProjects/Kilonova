@@ -156,7 +156,7 @@ func (s *DB) UpdateProblemList(ctx context.Context, id int, upd kilonova.Problem
 }
 
 func (s *DB) DeleteProblemList(ctx context.Context, id int) error {
-	_, err := s.conn.ExecContext(ctx, s.conn.Rebind("DELETE FROM problem_lists WHERE id = ?"), id)
+	_, err := s.pgconn.Exec(ctx, "DELETE FROM problem_lists WHERE id = $1", id)
 	return err
 }
 

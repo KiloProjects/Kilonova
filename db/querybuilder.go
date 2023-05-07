@@ -31,7 +31,7 @@ func (q *filterBuilder) Where() string {
 func (q *filterBuilder) Args() []any {
 	q.mu.Lock()
 	defer q.mu.Unlock()
-	return q.args
+	return slices.Clone(q.args)
 }
 
 // AddConstraint inserts a new constraint with the correct positional parameters
@@ -92,7 +92,7 @@ func (upd *updateBuilder) ToUpdate() string {
 func (upd *updateBuilder) Args() []any {
 	upd.mu.Lock()
 	defer upd.mu.Unlock()
-	return upd.args
+	return slices.Clone(upd.args)
 }
 
 func (upd *updateBuilder) CheckUpdates() error {

@@ -25,7 +25,7 @@ type subSubtask struct {
 }
 
 func (s *DB) InitSubmissionSubtasks(ctx context.Context, userID int, submissionID int, problemID int, contestID *int) (err error) {
-	_, err = s.conn.ExecContext(ctx, `
+	_, err = s.pgconn.Exec(ctx, `
 INSERT INTO submission_subtasks 
 	(user_id, submission_id, contest_id, subtask_id, problem_id, visible_id, score) 
 	SELECT $1, $2, $3, id, problem_id, visible_id, score FROM subtasks WHERE problem_id = $4;
@@ -35,7 +35,7 @@ INSERT INTO submission_subtasks
 		return
 	}
 
-	_, err = s.conn.ExecContext(ctx, `
+	_, err = s.pgconn.Exec(ctx, `
 INSERT INTO submission_subtask_subtests 
 	SELECT sstk.id, st.id
 	FROM subtask_tests stks
@@ -51,7 +51,7 @@ INSERT INTO submission_subtask_subtests
 }
 
 func (s *DB) UpdateSubmissionSubtaskPercentage(ctx context.Context, id int, percentage int) (err error) {
-	_, err = s.conn.ExecContext(ctx, `UPDATE submission_subtasks SET final_percentage = $1 WHERE id = $2`, percentage, id)
+	_, err = s.pgconn.Exec(ctx, `UPDATE submission_subtasks SET final_percentage = $1 WHERE id = $2`, percentage, id)
 	return
 }
 
@@ -106,15 +106,15 @@ func (s *DB) internalToSubmissionSubTask(ctx context.Context, st *subSubtask) (*
 	}
 
 	var ids []int
-	err := s.conn.SelectContext(ctx, &ids, s.conn.Rebind(`
+	err := s.conn.SelectContext(ctx, &ids, `
 SELECT submission_subtask_subtests.submission_test_id
 FROM submission_subtask_subtests
 INNER JOIN submission_tests subtests
 	ON subtests.id = submission_subtask_subtests.submission_test_id 
 WHERE 
-	submission_subtask_subtests.submission_subtask_id = ? 
+	submission_subtask_subtests.submission_subtask_id = $1 
 ORDER BY subtests.visible_id ASC
-`), st.ID)
+`, st.ID)
 	if errors.Is(err, sql.ErrNoRows) {
 		ids = []int{}
 	} else if err != nil {

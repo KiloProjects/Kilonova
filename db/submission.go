@@ -127,12 +127,12 @@ func (s *DB) BulkUpdateSubmissions(ctx context.Context, filter kilonova.Submissi
 		return err
 	}
 	where, whereArgs := subFilterQuery(&filter, args)
-	_, err = s.conn.ExecContext(ctx, fmt.Sprintf(`UPDATE submissions SET %s WHERE %s;`, toUpd, where), whereArgs...)
+	_, err = s.pgconn.Exec(ctx, fmt.Sprintf(`UPDATE submissions SET %s WHERE %s;`, toUpd, where), whereArgs...)
 	return err
 }
 
 func (s *DB) DeleteSubmission(ctx context.Context, id int) error {
-	_, err := s.conn.ExecContext(ctx, "DELETE FROM submissions WHERE id = $1", id)
+	_, err := s.pgconn.Exec(ctx, "DELETE FROM submissions WHERE id = $1", id)
 	return err
 }
 

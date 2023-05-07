@@ -61,7 +61,7 @@ func (s *DB) InitSubTests(ctx context.Context, userID int, submissionID int, pro
 	if userID == 0 || problemID == 0 || submissionID == 0 {
 		return kilonova.ErrMissingRequired
 	}
-	_, err := s.conn.ExecContext(ctx, `
+	_, err := s.pgconn.Exec(ctx, `
 INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, max_score) SELECT $1, $2, $3, id, visible_id, score FROM tests WHERE problem_id = $4 AND orphaned = false
 `, userID, submissionID, contestID, problemID)
 	return err

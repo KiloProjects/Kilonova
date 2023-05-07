@@ -117,22 +117,22 @@ func (a *DB) UpdateAttachment(ctx context.Context, id int, upd *kilonova.Attachm
 }
 
 func (a *DB) UpdateAttachmentData(ctx context.Context, id int, data []byte) error {
-	_, err := a.conn.ExecContext(ctx, "UPDATE attachments SET data = $1 WHERE id = $2", data, id)
+	_, err := a.pgconn.Exec(ctx, "UPDATE attachments SET data = $1 WHERE id = $2", data, id)
 	return err
 }
 
 func (a *DB) DeleteAttachment(ctx context.Context, attid int) error {
-	_, err := a.conn.ExecContext(ctx, "DELETE FROM attachments WHERE id = $1", attid)
+	_, err := a.pgconn.Exec(ctx, "DELETE FROM attachments WHERE id = $1", attid)
 	return err
 }
 
 func (a *DB) DeleteAttachments(ctx context.Context, pbid int, attIDs []int) (int64, error) {
-	result, err := a.conn.ExecContext(ctx, "DELETE FROM attachments WHERE problem_id = $1 AND id = ANY($2)", pbid, attIDs)
+	result, err := a.pgconn.Exec(ctx, "DELETE FROM attachments WHERE problem_id = $1 AND id = ANY($2)", pbid, attIDs)
 	if err != nil {
 		return -1, err
 	}
 
-	return result.RowsAffected()
+	return result.RowsAffected(), nil
 }
 
 func attachmentFilterQuery(filter *kilonova.AttachmentFilter) ([]string, []any) {

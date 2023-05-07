@@ -136,7 +136,7 @@ func (s *DB) UpdateContest(ctx context.Context, id int, upd kilonova.ContestUpda
 }
 
 func (s *DB) DeleteContest(ctx context.Context, id int) error {
-	_, err := s.conn.ExecContext(ctx, "DELETE FROM contests WHERE id = $1", id)
+	_, err := s.pgconn.Exec(ctx, "DELETE FROM contests WHERE id = $1", id)
 	return err
 }
 

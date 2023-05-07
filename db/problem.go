@@ -133,7 +133,7 @@ ORDER BY cpbs.position ASC`, contestID, userID, userID)
 const problemCreateQuery = `INSERT INTO problems (
 	name, console_input, test_name, memory_limit, source_size, time_limit, visible, source_credits, author_credits, default_points
 ) VALUES (
-	?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+	$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 ) RETURNING id;`
 
 func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID int) error {
@@ -153,7 +153,7 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID in
 		p.SourceSize = 10000
 	}
 	var id int
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(problemCreateQuery), p.Name, p.ConsoleInput, p.TestName, p.MemoryLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.AuthorCredits, p.DefaultPoints)
+	err := s.conn.GetContext(ctx, &id, problemCreateQuery, p.Name, p.ConsoleInput, p.TestName, p.MemoryLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.AuthorCredits, p.DefaultPoints)
 	if err == nil {
 		p.ID = id
 	}
@@ -191,7 +191,7 @@ func (s *DB) BulkUpdateProblems(ctx context.Context, filter kilonova.ProblemFilt
 }
 
 func (s *DB) DeleteProblem(ctx context.Context, id int) error {
-	_, err := s.conn.ExecContext(ctx, "DELETE FROM problems WHERE id = $1", id)
+	_, err := s.pgconn.Exec(ctx, "DELETE FROM problems WHERE id = $1", id)
 	return err
 }
 

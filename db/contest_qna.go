@@ -70,7 +70,7 @@ func (s *DB) ContestQuestionsByUser(ctx context.Context, contestID, userID int) 
 }
 
 func (s *DB) AnswerContestQuestion(ctx context.Context, questionID int, response string) error {
-	_, err := s.conn.ExecContext(ctx, "UPDATE contest_questions SET responded_at = NOW(), response = $1 WHERE id = $2", response, questionID)
+	_, err := s.pgconn.Exec(ctx, "UPDATE contest_questions SET responded_at = NOW(), response = $1 WHERE id = $2", response, questionID)
 	return err
 }
 
@@ -104,12 +104,12 @@ func (s *DB) ContestAnnouncement(ctx context.Context, id int) (*kilonova.Contest
 }
 
 func (s *DB) UpdateContestAnnouncement(ctx context.Context, announcementID int, text string) error {
-	_, err := s.conn.ExecContext(ctx, "UPDATE contest_announcements SET announcement = $1 WHERE id = $2", text, announcementID)
+	_, err := s.pgconn.Exec(ctx, "UPDATE contest_announcements SET announcement = $1 WHERE id = $2", text, announcementID)
 	return err
 }
 
 func (s *DB) DeleteContestAnnouncement(ctx context.Context, announcementID int) error {
-	_, err := s.conn.ExecContext(ctx, "DELETE FROM contest_announcements WHERE id = $1", announcementID)
+	_, err := s.pgconn.Exec(ctx, "DELETE FROM contest_announcements WHERE id = $1", announcementID)
 	return err
 }
 

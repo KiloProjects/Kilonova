@@ -9,7 +9,7 @@ import (
 
 func (s *DB) CreatePwdResetRequest(ctx context.Context, id int) (string, error) {
 	vid := kilonova.RandomString(16)
-	_, err := s.conn.ExecContext(ctx, `INSERT INTO pwd_reset_requests (id, user_id) VALUES ($1, $2)`, vid, id)
+	_, err := s.pgconn.Exec(ctx, `INSERT INTO pwd_reset_requests (id, user_id) VALUES ($1, $2)`, vid, id)
 	return vid, err
 }
 
@@ -31,6 +31,6 @@ func (s *DB) GetPwdResetRequest(ctx context.Context, id string) (int, error) {
 }
 
 func (s *DB) RemovePwdResetRequest(ctx context.Context, req string) error {
-	_, err := s.conn.ExecContext(ctx, `DELETE FROM pwd_reset_requests WHERE id = $1`, req)
+	_, err := s.pgconn.Exec(ctx, `DELETE FROM pwd_reset_requests WHERE id = $1`, req)
 	return err
 }

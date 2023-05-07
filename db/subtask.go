@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -92,20 +91,21 @@ func (s *DB) SubTasksByTest(ctx context.Context, pbid, tid int) ([]*kilonova.Sub
 }
 
 func (s *DB) UpdateSubTask(ctx context.Context, id int, upd kilonova.SubTaskUpdate) error {
-	toUpd, args := []string{}, []any{}
+	b := newUpdateBuilder()
 	if v := upd.VisibleID; v != nil {
-		toUpd, args = append(toUpd, "visible_id = ?"), append(args, v)
+		b.AddUpdate("visible_id = %s", v)
 	}
 	if v := upd.Score; v != nil {
-		toUpd, args = append(toUpd, "score = ?"), append(args, v)
+		b.AddUpdate("score = %s", v)
 	}
 
-	if len(toUpd) == 0 {
+	if b.CheckUpdates() != nil {
 		return kilonova.ErrNoUpdates
 	}
+	toUpd, args := b.ToUpdate(), b.Args()
 	args = append(args, id)
 
-	_, err := s.conn.ExecContext(ctx, s.conn.Rebind(fmt.Sprintf("UPDATE subtasks SET %s WHERE id = ?", strings.Join(toUpd, ", "))), args...)
+	_, err := s.pgconn.Exec(ctx, fmt.Sprintf("UPDATE subtasks SET %s WHERE id = $%d", toUpd, len(args)), args...)
 	if err != nil {
 		zap.S().Warn(err)
 	}
@@ -117,17 +117,17 @@ func (s *DB) UpdateSubTaskTests(ctx context.Context, id int, testIDs []int) erro
 }
 
 func (s *DB) DeleteSubTask(ctx context.Context, stid int) error {
-	_, err := s.conn.ExecContext(ctx, "DELETE FROM subtasks WHERE id = $1", stid)
+	_, err := s.pgconn.Exec(ctx, "DELETE FROM subtasks WHERE id = $1", stid)
 	return err
 }
 
 func (s *DB) DeleteSubTasks(ctx context.Context, pbid int) error {
-	_, err := s.conn.ExecContext(ctx, "DELETE FROM subtasks WHERE problem_id = $1", pbid)
+	_, err := s.pgconn.Exec(ctx, "DELETE FROM subtasks WHERE problem_id = $1", pbid)
 	return err
 }
 
 func (s *DB) CleanupSubTasks(ctx context.Context, pbid int) error {
-	_, err := s.conn.ExecContext(ctx, `
+	_, err := s.pgconn.Exec(ctx, `
 DELETE FROM subtasks 
 WHERE 
 	problem_id = $1 AND 

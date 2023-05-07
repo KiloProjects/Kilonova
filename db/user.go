@@ -178,13 +178,13 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate
 }
 
 func (s *DB) UpdateUserPasswordHash(ctx context.Context, userID int, hash string) error {
-	_, err := s.conn.ExecContext(ctx, "UPDATE users SET password = $1 WHERE id = $2", hash, userID)
+	_, err := s.pgconn.Exec(ctx, "UPDATE users SET password = $1 WHERE id = $2", hash, userID)
 	return err
 }
 
 // DeleteUser permanently deletes a user from the system.
 func (s *DB) DeleteUser(ctx context.Context, id int) error {
-	_, err := s.conn.ExecContext(ctx, "DELETE FROM users WHERE id = $1", id)
+	_, err := s.pgconn.Exec(ctx, "DELETE FROM users WHERE id = $1", id)
 	return err
 }
 
@@ -196,7 +196,7 @@ func (s *DB) CreateUser(ctx context.Context, name, passwordHash, email, preferre
 
 	var id = -1
 	err := s.conn.GetContext(ctx, &id,
-		s.conn.Rebind("INSERT INTO users (name, email, password, preferred_language, preferred_theme, generated, verified_email) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id"),
+		"INSERT INTO users (name, email, password, preferred_language, preferred_theme, generated, verified_email) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
 		name, email, passwordHash, preferredLanguage, theme, generated, generated, // generated is for both generated and verified_email!
 	)
 	return id, err

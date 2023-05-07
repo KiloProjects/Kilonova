@@ -46,11 +46,11 @@ func (s *DB) ContestRegistration(ctx context.Context, contestID, userID int) (*k
 }
 
 func (s *DB) InsertContestRegistration(ctx context.Context, contestID, userID int) error {
-	_, err := s.conn.ExecContext(ctx, "INSERT INTO contest_registrations (user_id, contest_id) VALUES ($1, $2)", userID, contestID)
+	_, err := s.pgconn.Exec(ctx, "INSERT INTO contest_registrations (user_id, contest_id) VALUES ($1, $2)", userID, contestID)
 	return err
 }
 
 func (s *DB) StartContestRegistration(ctx context.Context, contestID, userID int, startTime time.Time, endTime time.Time) error {
-	_, err := s.conn.ExecContext(ctx, "UPDATE contest_registrations SET individual_start_at = $1, individual_end_at = $2 WHERE contest_id = $3 AND user_id = $4", startTime, endTime, contestID, userID)
+	_, err := s.pgconn.Exec(ctx, "UPDATE contest_registrations SET individual_start_at = $1, individual_end_at = $2 WHERE contest_id = $3 AND user_id = $4", startTime, endTime, contestID, userID)
 	return err
 }
