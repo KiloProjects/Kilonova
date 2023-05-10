@@ -228,6 +228,15 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []any) {
 			where = append(where, "EXISTS (SELECT 1 FROM visible_pbs(?) WHERE problem_id = problems.id)")
 		}
 	}
+	if v := filter.Tags; len(v) > 0 {
+		for _, group := range v {
+			q := "EXISTS (SELECT 1 FROM problem_tags WHERE problem_id = problems.id AND tag_id = ANY(?))"
+			if group.Negate {
+				q = "NOT " + q
+			}
+			where, args = append(where, q), append(args, group.TagIDs)
+		}
+	}
 
 	if filter.Unassociated {
 		where = append(where, "NOT EXISTS (SELECT 1 FROM problem_list_problems WHERE problem_id = problems.id)")

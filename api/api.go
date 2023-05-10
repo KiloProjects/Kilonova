@@ -76,6 +76,7 @@ func (s *API) Handler() http.Handler {
 			r.Get("/maxScore", s.maxScore)
 			r.Get("/maxScoreBreakdown", s.maxScoreBreakdown)
 			r.Get("/statistics", s.problemStatistics)
+			r.Get("/tags", s.problemTags)
 
 			r.Group(func(r chi.Router) {
 				r.Use(s.validateProblemEditor)
@@ -89,6 +90,8 @@ func (s *API) Handler() http.Handler {
 						r.Post("/info", s.updateTestInfo)
 						r.Post("/orphan", s.orphanTest)
 					})
+
+					r.Post("/tags", s.updateProblemTags)
 
 					r.Post("/addEditor", s.addProblemEditor)
 					r.Post("/addViewer", s.addProblemViewer)
@@ -160,6 +163,34 @@ func (s *API) Handler() http.Handler {
 	r.Route("/paste/{pasteID}", func(r chi.Router) {
 		r.Get("/", s.getPaste)
 		r.With(s.MustBeAuthed).Post("/delete", s.deletePaste)
+	})
+	r.Route("/tags", func(r chi.Router) {
+		r.Get("/", s.getTags)
+
+		r.Get("/getByID", webWrapper(func(ctx context.Context, args struct {
+			ID int `json:"id"`
+		}) (*kilonova.Tag, *kilonova.StatusError) {
+			return s.base.TagByID(ctx, args.ID)
+		}))
+		r.Get("/getByName", webWrapper(func(ctx context.Context, args struct {
+			Name string `json:"name"`
+		}) (*kilonova.Tag, *kilonova.StatusError) {
+			return s.base.TagByName(ctx, args.Name)
+		}))
+		r.With(s.MustBeAdmin).Post("/delete", webMessageWrapper("Deleted tag", func(ctx context.Context, args struct {
+			ID int `json:"id"`
+		}) *sudoapi.StatusError {
+			return s.base.DeleteTag(ctx, args.ID)
+		}))
+
+		r.With(s.MustBeProposer).Post("/create", s.createTag)
+		r.With(s.MustBeProposer).Post("/merge", webMessageWrapper("Merged tags", func(ctx context.Context, args struct {
+			ToKeep    int `json:"to_keep"`
+			ToReplace int `json:"to_replace"`
+		}) *sudoapi.StatusError {
+			return s.base.MergeTags(ctx, args.ToKeep, args.ToReplace)
+		}))
+		r.With(s.MustBeProposer).Post("/update", s.updateTag)
 	})
 	r.Route("/user", func(r chi.Router) {
 		r.With(s.MustBeAuthed).Post("/setBio", s.setBio())

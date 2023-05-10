@@ -67,6 +67,8 @@ type ProblemFilter struct {
 	Visible      *bool   `json:"visible"`
 	Name         *string `json:"name"`
 
+	Tags []*TagGroup `json:"tags"`
+
 	Look        bool       `json:""`
 	LookEditor  bool       `json:"-"`
 	LookingUser *UserBrief `json:"-"`
