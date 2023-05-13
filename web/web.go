@@ -13,6 +13,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -78,7 +79,7 @@ func (rt *Web) Handler() http.Handler {
 	r.Use(rt.initLanguage)
 	r.Use(rt.initTheme)
 
-	r.Mount("/static", hashfs.FileServer(fsys))
+	r.Mount("/static", http.HandlerFunc(staticFileServer))
 
 	r.Get("/", rt.index())
 	r.With(rt.mustBeAuthed).Get("/profile", rt.selfProfile())
@@ -586,6 +587,71 @@ func init() {
 			Disabled: lang.Disabled,
 			Name:     lang.PrintableName,
 			// Extensions: lang.Extensions,
+		}
+	}
+}
+
+// staticFileServer is a modification of the original hashfs
+// This may cause problems if the misc/ directory is updated, but that should be done on rare occasions (since it's mostly fonts)
+func staticFileServer(w http.ResponseWriter, r *http.Request) {
+	// Clean up filename based on URL path.
+	filename := r.URL.Path
+	if filename == "/" {
+		filename = "."
+	} else {
+		filename = strings.TrimPrefix(filename, "/")
+	}
+	filename = path.Clean(filename)
+
+	// Read file from attached file system.
+	f, err := fsys.Open(filename)
+	if os.IsNotExist(err) {
+		http.Error(w, "404 page not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	defer f.Close()
+
+	// Fetch file info. Disallow directories from being displayed.
+	fi, err := f.Stat()
+	if err != nil {
+		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+		return
+	} else if fi.IsDir() {
+		http.Error(w, "403 Forbidden", http.StatusForbidden)
+		return
+	}
+
+	trueName, orgHash := hashfs.ParseName(filename)
+	_, trueHash := hashfs.ParseName(fsys.HashName(trueName))
+
+	// Cache the file aggressively if the file contains a hash.
+	if orgHash != "" {
+		w.Header().Set("Cache-Control", `public, max-age=31536000`)
+		w.Header().Set("ETag", "\""+trueHash+"\"")
+	}
+
+	// Cache the file not-so-aggressively if the file is in the misc directory and has no hash.
+	// 2 hours should be good enough
+	if orgHash == "" && strings.HasPrefix(trueName, "static/misc/") {
+		w.Header().Set("Cache-Control", `public, max-age=7200`)
+		w.Header().Set("ETag", "\""+trueHash+"\"")
+	}
+
+	// Flush header and write content.
+	switch f := f.(type) {
+	case io.ReadSeeker:
+		http.ServeContent(w, r, filename, fi.ModTime(), f.(io.ReadSeeker))
+	default:
+		// Set content length.
+		w.Header().Set("Content-Length", strconv.FormatInt(fi.Size(), 10))
+
+		// Flush header and write content.
+		w.WriteHeader(http.StatusOK)
+		if r.Method != "HEAD" {
+			io.Copy(w, f)
 		}
 	}
 }
