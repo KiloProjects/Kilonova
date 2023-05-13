@@ -5,7 +5,7 @@ import getText from "../translation";
 import { apiToast } from "../toast";
 import { BigSpinner } from "./common";
 import { Problem, SubTest, SubmissionSubTask } from "../api/submissions";
-import { getCall } from "../net";
+import { getCall } from "../api/net";
 import { SubTask, TestTable } from "./sub_mgr";
 
 type BreakdownResult = {

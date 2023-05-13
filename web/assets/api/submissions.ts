@@ -1,4 +1,4 @@
-import { getCall } from "../net";
+import { getCall } from "./net";
 
 export type Submission = {
 	id: number;

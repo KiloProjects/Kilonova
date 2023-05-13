@@ -5,6 +5,12 @@ hljs.addPlugin(new CopyButtonPlugin());
 import CodeMirror from "codemirror";
 window.hljs = hljs;
 window.CodeMirror = CodeMirror;
+window.CodeMirror.defaults.lineNumbers = true;
+window.CodeMirror.defaults.indentUnit = 4;
+window.CodeMirror.defaults.tabSize = 4;
+window.CodeMirror.defaults.indentWithTabs = true;
+window.CodeMirror.defaults.lineWrapping = true;
+window.CodeMirror.defaults.viewportMargin = Infinity;
 
 import "codemirror/addon/mode/overlay";
 import "codemirror/mode/meta";

@@ -5,13 +5,12 @@ import { dayjs } from "../util";
 import getText from "../translation";
 import { sprintf } from "sprintf-js";
 import { fromBase64 } from "js-base64";
-import { answerQuestion, getAllQuestions, getUserQuestions, getAnnouncements, updateAnnouncement, deleteAnnouncement } from "../contest";
-import type { Question, Announcement } from "../contest";
+import { answerQuestion, getAllQuestions, getUserQuestions, getAnnouncements, updateAnnouncement, deleteAnnouncement } from "../api/contest";
+import type { Question, Announcement } from "../api/contest";
 import { UserBrief, getUser } from "../api/submissions";
 import { apiToast, createToast } from "../toast";
-import { isEqual } from "underscore";
 import { BigSpinner, Paginator } from "./common";
-import { getCall } from "../net";
+import { getCall } from "../api/net";
 import { buildScoreBreakdownModal } from "./maxscore_breakdown";
 
 export const RFC1123Z = "ddd, DD MMM YYYY HH:mm:ss ZZ";

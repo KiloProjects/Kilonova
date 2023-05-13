@@ -5,7 +5,7 @@ import getText from "../translation";
 import { apiToast } from "../toast";
 import { BigSpinner } from "./common";
 import type { Problem, UserBrief, Submission } from "../api/submissions";
-import { getCall } from "../net";
+import { getCall } from "../api/net";
 import { fromBase64 } from "js-base64";
 import { KNModal } from "./maxscore_breakdown";
 import { sizeFormatter } from "../util";

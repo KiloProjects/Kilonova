@@ -2,10 +2,10 @@ import { fromBase64 } from "js-base64";
 import { h, Fragment } from "preact";
 import register from "preact-custom-element";
 import { useEffect, useState } from "preact/hooks";
-import { getCall } from "../net.js";
-import { apiToast } from "../toast.js";
-import getText from "../translation.js";
-import { BigSpinner } from "./common.js";
+import { getCall } from "../api/net";
+import { apiToast } from "../toast";
+import getText from "../translation";
+import { BigSpinner } from "./common";
 
 type Sublist = {
 	id: number;

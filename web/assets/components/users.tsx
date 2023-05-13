@@ -1,7 +1,7 @@
 import { h, Fragment, Component } from "preact";
 import register from "preact-custom-element";
 import { useEffect, useState } from "preact/hooks";
-import { getCall } from "../net";
+import { getCall } from "../api/net";
 import { apiToast } from "../toast";
 import { Paginator } from "./common";
 import getText from "../translation";

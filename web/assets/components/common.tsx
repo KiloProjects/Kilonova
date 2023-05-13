@@ -1,10 +1,9 @@
 import { h, Fragment, Component } from "preact";
 import register from "preact-custom-element";
-import getText from "../translation.js";
-import { getCall } from "../net";
+import getText from "../translation";
 import { dayjs } from "../util";
 import { useEffect, useState } from "preact/hooks";
-import { getSubmissions, ResultSubmission } from "../api/submissions.js";
+import { getSubmissions, ResultSubmission } from "../api/submissions";
 
 interface PaginatorParams {
 	page: number;

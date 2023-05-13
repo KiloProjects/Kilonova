@@ -26,7 +26,6 @@
 	<script src="/{{$vendored}}"></script>
 
 	<script>
-		hljs.configure({languages:['c', 'cpp', 'py', 'go', 'haskell', 'python3']}) // TODO
 		hljs.highlightAll();
 
 		var platform_info = {
@@ -40,12 +39,6 @@
 
 	<script>
 CodeMirror.defineInitHook(bundled.CodeMirrorThemeHook)
-CodeMirror.defaults.lineNumbers = true;
-CodeMirror.defaults.indentUnit = 4;
-CodeMirror.defaults.tabSize = 4;
-CodeMirror.defaults.indentWithTabs = true;
-CodeMirror.defaults.lineWrapping = true;
-CodeMirror.defaults.viewportMargin = Infinity;
 if(bundled.isDarkMode()) {  // Dark Mode
 	CodeMirror.defaults.theme = "monokai";
 }

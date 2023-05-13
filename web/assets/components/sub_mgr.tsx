@@ -17,7 +17,7 @@ import { BigSpinner, OlderSubmissions } from "./common";
 
 import { downloadBlob, parseTime, sizeFormatter, getGradient } from "../util";
 
-import { getCall, postCall } from "../net";
+import { getCall } from "../api/net";
 import { FullSubmission, SubTest, Submission, SubmissionSubTask, UserBrief, getSubmission } from "../api/submissions";
 
 function downloadCode(sub: FullSubmission) {

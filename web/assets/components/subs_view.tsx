@@ -2,11 +2,10 @@ import { h, Fragment, Component } from "preact";
 import getText from "../translation";
 import register from "preact-custom-element";
 import { useEffect, useMemo, useState } from "preact/hooks";
-import { getCall } from "../net";
 import { apiToast, createToast } from "../toast";
 import { BigSpinner, Paginator } from "./common";
 import { dayjs, getGradient, sizeFormatter } from "../util";
-import _ from "underscore";
+import throttle from "lodash-es/throttle";
 import { getSubmissions } from "../api/submissions";
 import type { Submission, SubmissionQuery, ResultSubmission } from "../api/submissions";
 
@@ -118,7 +117,7 @@ function SubsView(props: SubsViewProps) {
 
 	const numPages = useMemo(() => Math.floor(count / 50) + (count % 50 != 0 ? 1 : 0), [count]);
 
-	const poll = _.throttle(async (noLoad?: boolean) => {
+	const poll = throttle(async (noLoad?: boolean) => {
 		if (typeof noLoad === "undefined" || !noLoad) {
 			setLoading(true);
 		}

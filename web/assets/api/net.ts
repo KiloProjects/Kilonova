@@ -1,7 +1,7 @@
 import qs from "query-string";
-import { createToast, dismissToast } from "./toast";
-import getText from "./translation";
-import { getSession } from "./session";
+import { createToast, dismissToast } from "../toast";
+import getText from "../translation";
+import { getSession } from "../session";
 
 type Response<T> = { status: "error"; data: string } | { status: "success"; data: T };
 
@@ -121,19 +121,19 @@ export async function multipartProgressCall<T = any>(call: string, formdata: For
 						},
 					})
 				);
-			})
+			});
 			xhr.upload.addEventListener("error", (e) => {
-				console.error(e, xhr.statusText)
+				console.error(e, xhr.statusText);
 				resolve({
 					status: "error",
-					data: "Upload error"
-				})
-			})
+					data: "Upload error",
+				});
+			});
 			xhr.addEventListener("load", () => {
 				resolve(xhr.response);
 			});
 			xhr.addEventListener("error", (e) => {
-				console.error(e)
+				console.error(e);
 				resolve({
 					status: "error",
 					data: xhr.statusText,

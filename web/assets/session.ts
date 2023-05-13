@@ -1,5 +1,5 @@
 import cookie from "js-cookie";
-import { postCall } from "./net";
+import { postCall } from "./api/net";
 import dayjs from "dayjs";
 import type { Editor } from "codemirror";
 import { languages } from "./langs";

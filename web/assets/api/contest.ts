@@ -1,7 +1,7 @@
 // Functions for contest
 
 import { getCall, postCall } from "./net";
-import { apiToast } from "./toast";
+import { apiToast } from "../toast";
 
 export type Question = {
 	id: number;

@@ -1,9 +1,9 @@
 import { h, Fragment, Component } from "preact";
 import register from "preact-custom-element";
-import getText from "../translation.js";
+import getText from "../translation";
 import { useState } from "preact/hooks";
-import { bodyCall } from "../net";
-import { apiToast } from "../toast.js";
+import { bodyCall } from "../api/net";
+import { apiToast } from "../toast";
 
 export function AttachmentRenamer({ pbid, attid, orgname }: { pbid: string; attid: string; orgname: string }) {
 	let [editing, setEditing] = useState<boolean>(false);

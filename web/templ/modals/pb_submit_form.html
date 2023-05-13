@@ -130,7 +130,7 @@
         document.dispatchEvent(new CustomEvent("kn-poll"));
     }
 
-    const debounced = bundled.debounce(() => sendSub().catch(console.error), 400, true)
+    const debounced = bundled.debounce(() => sendSub().catch(console.error), 400, {leading: true, trailing: false})
 
     document.getElementById("sendSubForm").addEventListener("submit", (e) => {
         e.preventDefault();
