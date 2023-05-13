@@ -47,16 +47,17 @@ func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
 	numSolved := -1
 	numSubSolved := map[int]int{}
 	if s.base.IsAuthed(util.UserBrief(r)) {
-		numSolved, err = s.base.NumSolvedFromPblist(r.Context(), list.ID, util.UserBrief(r).ID)
+		listIDs := []int{list.ID}
+		for _, sublists := range list.SubLists {
+			listIDs = append(listIDs, sublists.ID)
+		}
+		numSubSolved, err = s.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r).ID)
 		if err != nil {
 			zap.S().Warn(err)
+			numSubSolved = map[int]int{}
 		}
-		for _, sublist := range list.SubLists {
-			numSolved, err := s.base.NumSolvedFromPblist(r.Context(), sublist.ID, util.UserBrief(r).ID)
-			if err != nil {
-				zap.S().Warn(err)
-			}
-			numSubSolved[sublist.ID] = numSolved
+		if val, ok := numSubSolved[list.ID]; ok {
+			numSolved = val
 		}
 	}
 
