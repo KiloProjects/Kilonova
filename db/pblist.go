@@ -132,7 +132,9 @@ func (s *DB) shallowProblemLists(ctx context.Context, parentID int) ([]*kilonova
 
 func (s *DB) NumSolvedPblistProblems(ctx context.Context, listID, userID int) (int, error) {
 	var cnt int
-	err := s.conn.GetContext(ctx, &cnt, `SELECT COALESCE(count, 0) FROM pblist_user_solved WHERE list_id = $1 AND user_id = $2`, listID, userID)
+	// MAX(count) is a hacky fix for when there's no rows
+	// TODO: proper fix
+	err := s.conn.GetContext(ctx, &cnt, `SELECT COALESCE(MAX(count), 0) FROM pblist_user_solved WHERE list_id = $1 AND user_id = $2`, listID, userID)
 	if err != nil {
 		zap.S().Warn(err)
 		return -1, err
