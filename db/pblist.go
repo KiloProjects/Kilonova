@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -14,12 +13,12 @@ import (
 )
 
 func (s *DB) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, error) {
-	var pblist pblist
-	err := s.conn.GetContext(ctx, &pblist, `
-	SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
+	rows, _ := s.pgconn.Query(ctx, `
+	SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems, array(SELECT problem_id FROM problem_list_problems WHERE pblist_id = lists.id ORDER BY position ASC, problem_id ASC)::int[] AS list_problems
 		FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
 		WHERE id = $1 LIMIT 1`, id)
-	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
+	pblist, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[pblist])
+	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return nil, nil
 	}
 	if err != nil {
@@ -29,19 +28,17 @@ func (s *DB) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, er
 }
 
 func (s *DB) ProblemLists(ctx context.Context, root bool) ([]*kilonova.ProblemList, error) {
-	var lists []*pblist
-
-	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
+	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems, array(SELECT problem_id FROM problem_list_problems WHERE pblist_id = lists.id ORDER BY position ASC, problem_id ASC)::int[] AS list_problems
 	FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
 	ORDER BY lists.id ASC`
 	if root {
-		q = `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
+		q = `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems, array(SELECT problem_id FROM problem_list_problems WHERE pblist_id = lists.id ORDER BY position ASC, problem_id ASC)::int[] AS list_problems
 		FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
 		WHERE NOT EXISTS (SELECT 1 FROM problem_list_pblists WHERE child_id = lists.id) ORDER BY lists.id ASC`
 	}
-	err := s.conn.SelectContext(ctx, &lists, q)
-
-	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
+	rows, _ := s.pgconn.Query(ctx, q)
+	lists, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[pblist])
+	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return []*kilonova.ProblemList{}, nil
 	} else if err != nil {
 		return []*kilonova.ProblemList{}, err
@@ -51,19 +48,18 @@ func (s *DB) ProblemLists(ctx context.Context, root bool) ([]*kilonova.ProblemLi
 }
 
 func (s *DB) ProblemListsByProblemID(ctx context.Context, problemID int, showHidable bool) ([]*kilonova.ProblemList, error) {
-	var lists []*pblist
-
 	hidableQ := ""
 	if !showHidable {
 		hidableQ = " AND lists.sidebar_hidable = false "
 	}
 
-	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
+	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems, array(SELECT problem_id FROM problem_list_problems WHERE pblist_id = lists.id ORDER BY position ASC, problem_id ASC)::int[] AS list_problems
 	FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
 	WHERE EXISTS (SELECT 1 FROM problem_list_problems WHERE pblist_id = lists.id AND problem_id = $1)` + hidableQ + ` ORDER BY lists.id ASC`
-	err := s.conn.SelectContext(ctx, &lists, q, problemID)
+	rows, _ := s.pgconn.Query(ctx, q, problemID)
+	lists, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[pblist])
 
-	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
+	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return []*kilonova.ProblemList{}, nil
 	} else if err != nil {
 		return []*kilonova.ProblemList{}, err
@@ -73,14 +69,13 @@ func (s *DB) ProblemListsByProblemID(ctx context.Context, problemID int, showHid
 }
 
 func (s *DB) ParentProblemListsByPblistID(ctx context.Context, pblistID int) ([]*kilonova.ProblemList, error) {
-	var lists []*pblist
-
-	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
+	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems, array(SELECT problem_id FROM problem_list_problems WHERE pblist_id = lists.id ORDER BY position ASC, problem_id ASC)::int[] AS list_problems
 	FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
 	WHERE EXISTS (SELECT 1 FROM problem_list_pblists WHERE parent_id = lists.id AND child_id = $1) ORDER BY lists.id ASC`
-	err := s.conn.SelectContext(ctx, &lists, q, pblistID)
+	rows, _ := s.pgconn.Query(ctx, q, pblistID)
+	lists, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[pblist])
 
-	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
+	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return []*kilonova.ProblemList{}, nil
 	} else if err != nil {
 		return []*kilonova.ProblemList{}, err
@@ -92,13 +87,14 @@ func (s *DB) ParentProblemListsByPblistID(ctx context.Context, pblistID int) ([]
 func (s *DB) ChildrenProblemListsByPblistID(ctx context.Context, pblistID int) ([]*kilonova.ProblemList, error) {
 	var lists []*pblist
 
-	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
+	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems, array(SELECT problem_id FROM problem_list_problems WHERE pblist_id = lists.id ORDER BY position ASC, problem_id ASC)::int[] AS list_problems
 	FROM (problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id)
 		INNER JOIN problem_list_pblists plpp ON (plpp.parent_id = $1 AND plpp.child_id = lists.id)
 	ORDER BY plpp.position ASC, lists.id ASC`
-	err := s.conn.SelectContext(ctx, &lists, q, pblistID)
+	rows, _ := s.pgconn.Query(ctx, q, pblistID)
+	lists, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[pblist])
 
-	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
+	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return []*kilonova.ProblemList{}, nil
 	} else if err != nil {
 		return []*kilonova.ProblemList{}, err
@@ -108,19 +104,20 @@ func (s *DB) ChildrenProblemListsByPblistID(ctx context.Context, pblistID int) (
 }
 
 func (s *DB) shallowProblemLists(ctx context.Context, parentID int) ([]*kilonova.ShallowProblemList, error) {
-	var lists []*pblist
-	query := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems 
+	query := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems, array(SELECT problem_id FROM problem_list_problems WHERE pblist_id = lists.id ORDER BY position ASC, problem_id ASC)::int[] AS list_problems
 	FROM (problem_lists lists INNER JOIN problem_list_pblists plpb ON plpb.parent_id = $1 AND lists.id = plpb.child_id)
 		LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id
 	ORDER BY plpb.position ASC, lists.id ASC`
-	err := s.conn.SelectContext(ctx, &lists, query, parentID)
-	if errors.Is(err, sql.ErrNoRows) {
+	rows, _ := s.pgconn.Query(ctx, query, parentID)
+	lists, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[pblist])
+
+	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return []*kilonova.ShallowProblemList{}, nil
 	}
 
 	outLists := make([]*kilonova.ShallowProblemList, 0, len(lists))
 	for _, el := range lists {
-		pblist, err := s.internalToShallowProblemList(ctx, el)
+		pblist, err := s.internalToShallowProblemList(el)
 		if err != nil {
 			zap.S().Warn(err)
 			continue
@@ -235,6 +232,8 @@ type pblist struct {
 	SidebarHidable bool `db:"sidebar_hidable"`
 
 	NumProblems int `db:"num_problems"`
+
+	ListProblems []int `db:"list_problems"`
 }
 
 func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.ProblemList, error) {
@@ -248,14 +247,14 @@ func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.Prob
 
 		SidebarHidable: list.SidebarHidable,
 	}
-
-	err := s.conn.SelectContext(ctx, &pblist.List, "SELECT problem_id FROM problem_list_problems WHERE pblist_id = $1 ORDER BY position ASC, problem_id ASC", list.ID)
-	if errors.Is(err, sql.ErrNoRows) || len(pblist.List) == 0 {
+	if list.ListProblems != nil {
+		pblist.List = list.ListProblems
+	} else {
 		pblist.List = []int{}
-	} else if err != nil {
-		return nil, err
+		zap.S().WithOptions(zap.AddCallerSkip(1)).Info("Forgot to query for list problems")
 	}
 
+	var err error
 	pblist.SubLists, err = s.shallowProblemLists(ctx, list.ID)
 	if err != nil {
 		return nil, err
@@ -264,7 +263,7 @@ func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.Prob
 	return pblist, nil
 }
 
-func (s *DB) internalToShallowProblemList(ctx context.Context, list *pblist) (*kilonova.ShallowProblemList, error) {
+func (s *DB) internalToShallowProblemList(list *pblist) (*kilonova.ShallowProblemList, error) {
 	return &kilonova.ShallowProblemList{
 		ID:       list.ID,
 		Title:    list.Title,
