@@ -1,6 +1,5 @@
 {{define "problemlist_show"}}
 {{ $user := .User }}
-{{ $pbs := (listProblems $user .Pblist) }}
 {{ $open := .Open }}
 {{ with .Pblist }}
     <details class="list-group-head" {{if $open}}open{{end}}>
@@ -34,7 +33,7 @@
                 {{ end }}
             </div>
         {{ end }}
-        {{ with $pbs }}
+        {{ with (listProblems $user .Pblist) }}
             <div class="mt-2">
                 {{ template "pb_list_group" (genProblemsParams . true false true) }}
             </div>

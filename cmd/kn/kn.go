@@ -31,8 +31,6 @@ func Kilonova() error {
 		zap.S().Warn("Debug mode activated, expect worse performance")
 	}
 
-	printFeatureSet()
-
 	base, err := sudoapi.InitializeBaseAPI(context.Background())
 	if err != nil {
 		zap.S().Fatal(err)
@@ -135,18 +133,4 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 		Addr:    net.JoinHostPort("localhost", strconv.Itoa(config.Common.Port)),
 		Handler: r,
 	}
-}
-
-func printFeatureSet() {
-	isEnabled := func(x bool) string {
-		if x {
-			return "ENABLED"
-		}
-		return "DISABLED"
-	}
-
-	zap.S().Info("Feature list:")
-	zap.S().Infof("Grader: %s", isEnabled(config.Features.Grader))
-	zap.S().Infof("Signup: %s", isEnabled(config.Features.Signup))
-	zap.S().Infof("Pastes: %s", isEnabled(config.Features.Pastes))
 }
