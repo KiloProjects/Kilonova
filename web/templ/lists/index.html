@@ -10,8 +10,8 @@
     <h2 class="mb-2">{{getText "problem_lists"}}</h2>
     
     <div class="list-group">
-    {{ range problemLists }}
-        {{template "problemlist_show" (genPblistParams authedUser . false)}}
+    {{ range .Lists }}
+        {{template "problemlist_show" (genPblistParams . false)}}
     {{ end }}
     {{ with (unassociatedProblems authedUser) }}
         <details class="list-group-head">

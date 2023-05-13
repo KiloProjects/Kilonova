@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
@@ -131,12 +132,7 @@ func (s *DB) shallowProblemLists(ctx context.Context, parentID int) ([]*kilonova
 
 func (s *DB) NumSolvedPblistProblems(ctx context.Context, listID, userID int) (int, error) {
 	var cnt int
-	err := s.conn.GetContext(ctx, &cnt, `
-	WITH solved_pbs AS (
-		SELECT msv.problem_id FROM max_score_view msv, problem_list_deep_problems pbids 
-			WHERE msv.problem_id = pbids.problem_id AND pbids.list_id = $1 AND msv.score = 100 AND msv.user_id = $2
-	) SELECT COUNT(*) FROM solved_pbs;
-	`, listID, userID)
+	err := s.conn.GetContext(ctx, &cnt, `SELECT COALESCE(count, 0) FROM pblist_user_solved WHERE list_id = $1 AND user_id = $2`, listID, userID)
 	if err != nil {
 		zap.S().Warn(err)
 		return -1, err
@@ -144,7 +140,24 @@ func (s *DB) NumSolvedPblistProblems(ctx context.Context, listID, userID int) (i
 	return cnt, nil
 }
 
-const createProblemListQuery = "INSERT INTO problem_lists (author_id, title, description, sidebar_hidable) VALUES (?, ?, ?, ?) RETURNING id;"
+func (s *DB) NumBulkedSolvedPblistProblems(ctx context.Context, userID int, listIDs []int) (map[int]int, error) {
+	rows, _ := s.pgconn.Query(ctx, "SELECT list_id, count FROM pblist_user_solved WHERE user_id = $1 AND list_id = ANY($2)", userID, listIDs)
+	lists, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[struct {
+		ListID int `db:"list_id"`
+		Count  int `db:"count"`
+	}])
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, err
+	}
+	var rez = make(map[int]int)
+	for _, val := range lists {
+		rez[val.ListID] = val.Count
+	}
+
+	return rez, nil
+}
+
+const createProblemListQuery = "INSERT INTO problem_lists (author_id, title, description, sidebar_hidable) VALUES ($1, $2, $3, $4) RETURNING id;"
 
 func (s *DB) CreateProblemList(ctx context.Context, list *kilonova.ProblemList) error {
 	if list.AuthorID == 0 {
@@ -152,7 +165,7 @@ func (s *DB) CreateProblemList(ctx context.Context, list *kilonova.ProblemList) 
 	}
 	// Do insertion
 	var id int
-	err := s.conn.GetContext(ctx, &id, s.conn.Rebind(createProblemListQuery), list.AuthorID, list.Title, list.Description, list.SidebarHidable)
+	err := s.conn.GetContext(ctx, &id, createProblemListQuery, list.AuthorID, list.Title, list.Description, list.SidebarHidable)
 	if err != nil {
 		return err
 	}

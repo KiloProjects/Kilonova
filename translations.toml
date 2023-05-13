@@ -1718,8 +1718,8 @@ en = "Contents"
 ro = "Conținut"
 
 [desc_link]
-en = "Statement can be downloaded here."
-ro = "Enunțul poate fi descărcat aici."
+en = "Download statement"
+ro = "Descărcare enunț"
 
 [score_breakdown_title]
 en = "Score breakdown"

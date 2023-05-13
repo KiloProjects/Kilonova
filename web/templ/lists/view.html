@@ -16,7 +16,7 @@
 
 {{ with .ProblemList }}
     <div class="list-group mb-4">
-        {{ template "problemlist_show" (genPblistParams authedUser . true)}}
+        {{ template "problemlist_show" (genPblistParams . true)}}
     </div>
 	{{ if $user }}
 	{{ if or (eq $user.ID .AuthorID) $user.Admin }}

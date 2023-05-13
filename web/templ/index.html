@@ -44,7 +44,7 @@
     <div class="list-group mb-4">
         {{ with .ChildProblemLists }}
             {{ range . }}
-                {{template "problemlist_show" (genPblistParams authedUser . false)}}
+                {{template "problemlist_show" (genPblistParams . false)}}
             {{ end }}
         {{ end }}
         {{ with (unassociatedProblems authedUser) }}

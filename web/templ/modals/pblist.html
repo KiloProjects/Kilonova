@@ -1,14 +1,13 @@
 {{define "problemlist_show"}}
-{{ $user := .User }}
 {{ $open := .Open }}
 {{ with .Pblist }}
     <details class="list-group-head" {{if $open}}open{{end}}>
         <summary class="pb-1 mt-1">
 			<span>{{.Title}} <a href="/problem_lists/{{.ID}}">(#{{.ID}})</a></span>
             {{if gt (.NumProblems) 0}}
-                {{if $user}}
+                {{if authed}}
                 <span class="float-right badge">
-                    {{ getText "num_solved" (numSolvedPblist $user .ID) (.NumProblems) }}
+                    {{ getText "num_solved" (numSolvedPblist .ID) (.NumProblems) }}
                 </span>
                 {{else}}
                 <span class="float-right badge">
@@ -29,11 +28,11 @@
         {{ with .SubLists }}
             <div class="list-group mt-2">
                 {{ range . }}
-                    <kn-dom-sublist encoded="{{encodeJSON .}}" {{if $user}}numsolved="{{numSolvedPblist $user .ID}}"{{end}}></kn-dom-sublist>
+                    <kn-dom-sublist encoded="{{encodeJSON .}}" {{if authed}}numsolved="{{numSolvedPblist .ID}}"{{end}}></kn-dom-sublist>
                 {{ end }}
             </div>
         {{ end }}
-        {{ with (listProblems $user .Pblist) }}
+        {{ with (listProblems authedUser .) }}
             <div class="mt-2">
                 {{ template "pb_list_group" (genProblemsParams . true false true) }}
             </div>

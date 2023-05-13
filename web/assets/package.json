@@ -7,8 +7,8 @@
 		"buildCSS": "TAILWIND_MODE=build postcss tailwind.css -o ../static/styles.css",
 		"prodCSS": "NODE_ENV=production yarn buildCSS",
 		"buildJS": "esbuild app.ts --bundle --target=es2015 --outfile=../static/bundle.js --global-name=bundled --sourcemap=inline ",
-		"prodJS": "esbuild app.ts --analyze  --bundle --target=es2015 --outfile=../static/bundle.js --global-name=bundled --sourcemap --minify ",
-		"vendor": "esbuild vendored.ts --analyze --bundle --target=es2015 --outfile=../static/vendored.js --global-name=vendored --sourcemap --minify",
+		"prodJS": "esbuild app.ts  --bundle --target=es2015 --outfile=../static/bundle.js --global-name=bundled --sourcemap --minify ",
+		"vendor": "esbuild vendored.ts --bundle --target=es2015 --outfile=../static/vendored.js --global-name=vendored --sourcemap --minify",
 		"prod": "yarn prodJS && yarn prodCSS",
 		"build": "yarn buildJS && yarn buildCSS",
 		"esv": "esbuild --version"

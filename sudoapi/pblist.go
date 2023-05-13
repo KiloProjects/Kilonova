@@ -117,3 +117,18 @@ func (s *BaseAPI) NumSolvedFromPblist(ctx context.Context, listID int, userID in
 	}
 	return num, nil
 }
+
+func (s *BaseAPI) NumSolvedFromPblists(ctx context.Context, listIDs []int, userID int) (map[int]int, *StatusError) {
+	vals, err := s.db.NumBulkedSolvedPblistProblems(ctx, userID, listIDs)
+	if err != nil || vals == nil {
+		return nil, WrapError(err, "Couldn't get number of solved problems")
+	}
+
+	for _, id := range listIDs {
+		if _, ok := vals[id]; !ok {
+			vals[id] = 0
+		}
+	}
+
+	return vals, nil
+}

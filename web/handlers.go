@@ -23,6 +23,12 @@ import (
 	"go.uber.org/zap"
 )
 
+type WebCtx string
+
+const (
+	PblistCntCacheKey = WebCtx("pblist_cache")
+)
+
 func (rt *Web) index() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html", "modals/contest_list.html")
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -44,6 +50,23 @@ func (rt *Web) index() func(http.ResponseWriter, *http.Request) {
 			}
 		}
 
+		listIDs := []int{}
+		for _, list := range pblists {
+			listIDs = append(listIDs, list.ID)
+			for _, slist := range list.SubLists {
+				listIDs = append(listIDs, slist.ID)
+			}
+		}
+
+		if util.UserBrief(r) != nil {
+			pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r).ID)
+			if err == nil {
+				r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, pblistCache))
+			} else {
+				zap.S().Warn(err)
+			}
+		}
+
 		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), futureContests, runningContests, pblists})
 	}
 }
@@ -62,10 +85,54 @@ func (rt *Web) justRender(files ...string) http.HandlerFunc {
 	}
 }
 
+func (rt *Web) pbListIndex() func(http.ResponseWriter, *http.Request) {
+	templ := rt.parse(nil, "lists/index.html", "modals/pblist.html", "modals/pbs.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		pblists, err := rt.base.ProblemLists(context.Background(), true)
+		if err != nil {
+			rt.statusPage(w, r, 500, "Eroare la obținerea listelor")
+			return
+		}
+
+		listIDs := []int{}
+		for _, list := range pblists {
+			listIDs = append(listIDs, list.ID)
+			for _, slist := range list.SubLists {
+				listIDs = append(listIDs, slist.ID)
+			}
+		}
+
+		if util.UserBrief(r) != nil {
+			pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r).ID)
+			if err == nil {
+				r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, pblistCache))
+			} else {
+				zap.S().Warn(err)
+			}
+		}
+
+		rt.runTempl(w, r, templ, &ProblemListParams{GenContext(r), nil, pblists})
+	}
+}
+
 func (rt *Web) pbListView() func(http.ResponseWriter, *http.Request) {
 	templ := rt.parse(nil, "lists/view.html", "modals/pblist.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, templ, &ProblemListParams{GenContext(r), util.ProblemList(r)})
+		listIDs := []int{util.ProblemList(r).ID}
+		for _, slist := range util.ProblemList(r).SubLists {
+			listIDs = append(listIDs, slist.ID)
+		}
+
+		if util.UserBrief(r) != nil {
+			pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r).ID)
+			if err == nil {
+				r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, pblistCache))
+			} else {
+				zap.S().Warn(err)
+			}
+		}
+
+		rt.runTempl(w, r, templ, &ProblemListParams{GenContext(r), util.ProblemList(r), nil})
 	}
 }
 
@@ -720,6 +787,11 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 	// "cache" most util.* calls
 	lang := util.Language(r)
 	authedUser := util.UserBrief(r)
+	var pblistCache map[int]int
+	switch v := r.Context().Value(PblistCntCacheKey).(type) {
+	case map[int]int:
+		pblistCache = v
+	}
 
 	// Add request-specific functions
 	templ.Funcs(template.FuncMap{
@@ -769,6 +841,20 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		},
 		"problemFullyVisible": func() bool {
 			return rt.base.IsProblemFullyVisible(util.UserBrief(r), util.Problem(r))
+		},
+		"numSolvedPblist": func(listID int) int {
+			if pblistCache != nil {
+				if val, ok := pblistCache[listID]; ok {
+					return val
+				}
+			}
+			zap.S().Warn("Cache miss: ", listID)
+			cnt, err := rt.base.NumSolvedFromPblist(context.Background(), listID, authedUser.ID)
+			if err != nil {
+				zap.S().Warn(err)
+				return -1
+			}
+			return cnt
 		},
 	})
 

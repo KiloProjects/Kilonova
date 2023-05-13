@@ -96,6 +96,7 @@ type ProblemTopbarParams struct {
 type ProblemListParams struct {
 	Ctx         *ReqContext
 	ProblemList *kilonova.ProblemList
+	Lists       []*kilonova.ProblemList
 }
 
 type SubTaskEditParams struct {
@@ -208,7 +209,6 @@ type ProblemListingParams struct {
 }
 
 type PblistParams struct {
-	User   *kilonova.UserBrief
 	Pblist *kilonova.ProblemList
 	Open   bool
 }

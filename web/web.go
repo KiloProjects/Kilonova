@@ -120,7 +120,7 @@ func (rt *Web) Handler() http.Handler {
 	r.With(rt.ValidatePasteID).Get("/pastes/{id}", rt.paste())
 
 	r.Route("/problem_lists", func(r chi.Router) {
-		r.Get("/", rt.justRender("lists/index.html", "modals/pblist.html", "modals/pbs.html"))
+		r.Get("/", rt.pbListIndex())
 		r.With(rt.ValidateListID).Get("/{id}", rt.pbListView())
 	})
 
@@ -366,16 +366,8 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *ProblemListingParams {
 			return &ProblemListingParams{pbs, true, false, true, contest.ID}
 		},
-		"genPblistParams": func(user *kilonova.UserBrief, pblist *kilonova.ProblemList, open bool) *PblistParams {
-			return &PblistParams{user, pblist, open}
-		},
-		"numSolvedPblist": func(user *kilonova.UserBrief, listID int) int {
-			cnt, err := base.NumSolvedFromPblist(context.Background(), listID, user.ID)
-			if err != nil {
-				zap.S().Warn(err)
-				return -1
-			}
-			return cnt
+		"genPblistParams": func(pblist *kilonova.ProblemList, open bool) *PblistParams {
+			return &PblistParams{pblist, open}
 		},
 		"numSolvedPbs": func(pbs []*kilonova.ScoredProblem) int {
 			var cnt int
@@ -392,13 +384,6 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 				return nil
 			}
 			return user
-		},
-		"problemLists": func() []*kilonova.ProblemList {
-			list, err := base.ProblemLists(context.Background(), true)
-			if err != nil {
-				return nil
-			}
-			return list
 		},
 		"problemEditors": func(problem *kilonova.Problem) []*kilonova.UserBrief {
 			users, err := base.ProblemEditors(context.Background(), problem.ID)
@@ -577,6 +562,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"problemFullyVisible": func() bool {
 			zap.S().Error("Uninitialized `problemFullyVisible`")
 			return false
+		},
+		"numSolvedPblist": func(listID int) int {
+			zap.S().Error("Uninitialized `numSolvedPblist`")
+			return -1
 		},
 	}
 	return &Web{debug, funcs, base}
