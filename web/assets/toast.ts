@@ -45,7 +45,7 @@ let notyfConf: INotyfOptions = {
 
 var notyf: Notyf | null = null;
 
-window.addEventListener("load", () => {
+window.addEventListener("DOMContentLoaded", () => {
 	notyf = new Notyf(notyfConf);
 });
 

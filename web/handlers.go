@@ -199,7 +199,7 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 			statement = []byte(fmt.Sprintf(
 				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>
 					<embed class="mx-2 my-2" type="application/pdf" src="%s"
-					style="width:95%%; height: 90vh;"></embed>`,
+					style="width:95%%; height: 90vh; background: white; object-fit: contain;"></embed>`,
 				url, kilonova.GetText(util.Language(r), "desc_link"), url,
 			))
 		case "":
