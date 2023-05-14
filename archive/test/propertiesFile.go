@@ -58,6 +58,40 @@ func ParsePropertiesFile(r io.Reader) (*PropertiesRaw, bool, error) {
 	return &rawProps, true, nil
 }
 
+// item is the item that we wish to split, field is for error reporting purposes
+func parsePropListItem(item string, field string) ([]int, *kilonova.StatusError) {
+	glist := []int{}
+	gg := strings.Split(item, ";")
+	for _, g := range gg {
+		vals := strings.Split(g, "-")
+		if len(vals) > 2 {
+			return nil, kilonova.Statusf(400, "Invalid %q string in properties, too many dashes", field)
+		} else if len(vals) == 2 {
+			start, err := strconv.Atoi(vals[0])
+			if err != nil {
+				zap.S().Warn(err)
+				return nil, kilonova.Statusf(400, "Invalid %q string in properties, expected int", field)
+			}
+			end, err := strconv.Atoi(vals[1])
+			if err != nil {
+				zap.S().Warn(err)
+				return nil, kilonova.Statusf(400, "Invalid %q string in properties, expected int", field)
+			}
+			for i := start; i <= end; i++ {
+				glist = append(glist, i)
+			}
+		} else if len(vals) == 1 && len(vals[0]) > 0 {
+			val, err := strconv.Atoi(vals[0])
+			if err != nil {
+				zap.S().Warn(err)
+				return nil, kilonova.Statusf(400, "Invalid %q string in properties, expected int", field)
+			}
+			glist = append(glist, val)
+		}
+	}
+	return glist, nil
+}
+
 func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	f, err := file.Open()
 	if err != nil {
@@ -103,35 +137,9 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 
 		groupStrings := strings.Split(rawProps.Groups, ",")
 		for i, grp := range groupStrings {
-			glist := []int{}
-			gg := strings.Split(grp, ";")
-			for _, g := range gg {
-				// start, end := -1, -1
-				vals := strings.Split(g, "-")
-				if len(vals) > 2 {
-					return kilonova.Statusf(400, "Invalid `group` string in properties, too many dashes")
-				} else if len(vals) == 2 {
-					start, err := strconv.Atoi(vals[0])
-					if err != nil {
-						zap.S().Warn(err)
-						return kilonova.Statusf(400, "Invalid `group` string in properties, expected int")
-					}
-					end, err := strconv.Atoi(vals[1])
-					if err != nil {
-						zap.S().Warn(err)
-						return kilonova.Statusf(400, "Invalid `group` string in properties, expected int")
-					}
-					for i := start; i <= end; i++ {
-						glist = append(glist, i)
-					}
-				} else if len(vals) == 1 && len(vals[0]) > 0 {
-					val, err := strconv.Atoi(vals[0])
-					if err != nil {
-						zap.S().Warn(err)
-						return kilonova.Statusf(400, "Invalid `group` string in properties, expected int")
-					}
-					glist = append(glist, val)
-				}
+			glist, err := parsePropListItem(grp, "group")
+			if err != nil {
+				return err
 			}
 			groups[i+1] = glist
 		}
@@ -160,16 +168,15 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 				if d == "" {
 					continue
 				}
-				depGroups := strings.Split(d, ";")
-				for _, dg := range depGroups {
-					val, err := strconv.Atoi(dg)
-					if err != nil {
-						return kilonova.Statusf(400, "Invalid `dependencies` string in properties: %q is not a number", dg)
-					}
-					if val <= 0 || val > len(groupStrings) {
+				glist, err := parsePropListItem(d, "dependencies")
+				if err != nil {
+					return err
+				}
+				for _, vid := range glist {
+					if vid <= 0 || vid > len(groupStrings) {
 						return kilonova.Statusf(400, "Dependency number out of range")
 					}
-					subTaskGroups[i+1] = append(subTaskGroups[i+1], groups[val])
+					subTaskGroups[i+1] = append(subTaskGroups[i+1], groups[vid])
 				}
 			}
 		} else {
