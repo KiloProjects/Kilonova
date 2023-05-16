@@ -137,43 +137,45 @@ func (s *DB) UserExists(ctx context.Context, username string, email string) (boo
 // UpdateUser updates a user.
 // Returns ENOTFOUND if the user does not exist
 func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate) error {
-	toUpd, args := []string{}, []any{}
+	ub := newUpdateBuilder()
 
 	/*if v := upd.Name; v != nil {
 		toUpd, args = append(toUpd, "name = ?"), append(args, v)
 	}*/
 	if v := upd.Email; v != nil {
-		toUpd, args = append(toUpd, "email = ?"), append(args, v)
+		ub.AddUpdate("email = %s", v)
 	}
 
 	if v := upd.Admin; v != nil {
-		toUpd, args = append(toUpd, "admin = ?"), append(args, v)
+		ub.AddUpdate("admin = %s", v)
 	}
 	if v := upd.Proposer; v != nil {
-		toUpd, args = append(toUpd, "proposer = ?"), append(args, v)
+		ub.AddUpdate("proposer = %s", v)
 	}
 	if v := upd.Bio; v != nil {
-		toUpd, args = append(toUpd, "bio = ?"), append(args, strings.TrimSpace(bluemonday.StrictPolicy().Sanitize(*v)))
+		ub.AddUpdate("bio = %s", strings.TrimSpace(bluemonday.StrictPolicy().Sanitize(*v)))
 	}
 	if v := upd.VerifiedEmail; v != nil {
-		toUpd, args = append(toUpd, "verified_email = ?"), append(args, v)
+		ub.AddUpdate("verified_email = %s", v)
 	}
 	if v := upd.EmailVerifSentAt; v != nil {
-		toUpd, args = append(toUpd, "email_verif_sent_at = ?"), append(args, v)
+		ub.AddUpdate("email_verif_sent_at = %s", v)
 	}
 	if v := upd.PreferredLanguage; v != "" {
-		toUpd, args = append(toUpd, "preferred_language = ?"), append(args, v)
+		ub.AddUpdate("preferred_language = %s", v)
 	}
 	if v := upd.PreferredTheme; v != kilonova.PreferredThemeNone {
-		toUpd, args = append(toUpd, "preferred_theme = ?"), append(args, v)
+		ub.AddUpdate("preferred_theme = %s", v)
 	}
-	if len(toUpd) == 0 {
-		return kilonova.ErrNoUpdates
+	if ub.CheckUpdates() != nil {
+		return ub.CheckUpdates()
 	}
-	args = append(args, id)
 
-	query := s.conn.Rebind("UPDATE users SET " + strings.Join(toUpd, ", ") + " WHERE id = ?;")
-	_, err := s.conn.ExecContext(ctx, query, args...)
+	fb := ub.MakeFilter()
+	fb.AddConstraint("id = %s", id)
+
+	query := s.conn.Rebind("UPDATE users SET " + fb.WithUpdate())
+	_, err := s.conn.ExecContext(ctx, query, fb.Args()...)
 	return err
 }
 

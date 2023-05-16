@@ -13,9 +13,10 @@ import (
 type filterBuilder struct {
 	mu sync.Mutex
 
-	where []string
-	args  []any
-	pos   int
+	prefix string
+	where  []string
+	args   []any
+	pos    int
 }
 
 func (q *filterBuilder) Where() string {
@@ -26,6 +27,11 @@ func (q *filterBuilder) Where() string {
 	}
 
 	return strings.Join(q.where, " AND ")
+}
+
+// WithUpdate returns the final string with the given prefix, which is usually an update string
+func (q *filterBuilder) WithUpdate() string {
+	return q.prefix + " WHERE " + q.Where()
 }
 
 func (q *filterBuilder) Args() []any {
@@ -63,13 +69,13 @@ func newFilterBuilder() *filterBuilder {
 	}
 }
 
-func newFilterBuilderFromPos(args []any) *filterBuilder {
-	return &filterBuilder{
-		where: []string{},
-		args:  slices.Clone(args),
-		pos:   len(args) + 1,
-	}
-}
+// func newFilterBuilderFromPos(args []any) *filterBuilder {
+// 	return &filterBuilder{
+// 		where: []string{},
+// 		args:  slices.Clone(args),
+// 		pos:   len(args) + 1,
+// 	}
+// }
 
 type updateBuilder struct {
 	mu sync.Mutex
@@ -87,6 +93,15 @@ func (upd *updateBuilder) ToUpdate() string {
 	}
 
 	return strings.Join(upd.toUpd, ", ")
+}
+
+func (upd *updateBuilder) MakeFilter() *filterBuilder {
+	return &filterBuilder{
+		where:  []string{},
+		args:   slices.Clone(upd.args),
+		pos:    upd.pos,
+		prefix: upd.ToUpdate(),
+	}
 }
 
 func (upd *updateBuilder) Args() []any {
@@ -131,10 +146,10 @@ func newUpdateBuilder() *updateBuilder {
 	}
 }
 
-func newUpdateBuilderFromPos(args []any) *updateBuilder {
-	return &updateBuilder{
-		toUpd: []string{},
-		args:  slices.Clone(args),
-		pos:   len(args) + 1,
-	}
-}
+// func newUpdateBuilderFromPos(args []any) *updateBuilder {
+// 	return &updateBuilder{
+// 		toUpd: []string{},
+// 		args:  slices.Clone(args),
+// 		pos:   len(args) + 1,
+// 	}
+// }

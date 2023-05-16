@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -175,13 +174,25 @@ func (s *DB) CreateProblemList(ctx context.Context, list *kilonova.ProblemList) 
 }
 
 func (s *DB) UpdateProblemList(ctx context.Context, id int, upd kilonova.ProblemListUpdate) error {
-	toUpd, args := pblistUpdateQuery(&upd)
-	if len(toUpd) == 0 {
-		return kilonova.ErrNoUpdates
+	ub := newUpdateBuilder()
+	if v := upd.AuthorID; v != nil {
+		ub.AddUpdate("author_id = %s", v)
 	}
-	args = append(args, id)
-	query := s.conn.Rebind(fmt.Sprintf(`UPDATE problem_lists SET %s WHERE id = ?;`, strings.Join(toUpd, ", ")))
-	_, err := s.conn.ExecContext(ctx, query, args...)
+	if v := upd.Title; v != nil {
+		ub.AddUpdate("title = %s", v)
+	}
+	if v := upd.Description; v != nil {
+		ub.AddUpdate("description = %s", v)
+	}
+	if v := upd.SidebarHidable; v != nil {
+		ub.AddUpdate("sidebar_hidable = %s", v)
+	}
+	if ub.CheckUpdates() != nil {
+		return ub.CheckUpdates()
+	}
+	fb := ub.MakeFilter()
+	fb.AddConstraint("id = %s", id)
+	_, err := s.pgconn.Exec(ctx, fmt.Sprintf(`UPDATE problem_lists SET %s`, fb.WithUpdate()), fb.Args()...)
 	return err
 }
 
@@ -203,23 +214,6 @@ func (s *DB) UpdateProblemListSublists(ctx context.Context, id int, listIDs []in
 	}
 
 	return s.updateManyToMany(ctx, "problem_list_pblists", "parent_id", "child_id", id, listIDs, true)
-}
-
-func pblistUpdateQuery(upd *kilonova.ProblemListUpdate) ([]string, []any) {
-	toUpd, args := []string{}, []any{}
-	if v := upd.AuthorID; v != nil {
-		toUpd, args = append(toUpd, "author_id = ?"), append(args, v)
-	}
-	if v := upd.Title; v != nil {
-		toUpd, args = append(toUpd, "title = ?"), append(args, v)
-	}
-	if v := upd.Description; v != nil {
-		toUpd, args = append(toUpd, "description = ?"), append(args, v)
-	}
-	if v := upd.SidebarHidable; v != nil {
-		toUpd, args = append(toUpd, "sidebar_hidable = ?"), append(args, v)
-	}
-	return toUpd, args
 }
 
 type pblist struct {

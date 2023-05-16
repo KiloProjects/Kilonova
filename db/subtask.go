@@ -91,21 +91,21 @@ func (s *DB) SubTasksByTest(ctx context.Context, pbid, tid int) ([]*kilonova.Sub
 }
 
 func (s *DB) UpdateSubTask(ctx context.Context, id int, upd kilonova.SubTaskUpdate) error {
-	b := newUpdateBuilder()
+	ub := newUpdateBuilder()
 	if v := upd.VisibleID; v != nil {
-		b.AddUpdate("visible_id = %s", v)
+		ub.AddUpdate("visible_id = %s", v)
 	}
 	if v := upd.Score; v != nil {
-		b.AddUpdate("score = %s", v)
+		ub.AddUpdate("score = %s", v)
 	}
 
-	if b.CheckUpdates() != nil {
+	if ub.CheckUpdates() != nil {
 		return kilonova.ErrNoUpdates
 	}
-	toUpd, args := b.ToUpdate(), b.Args()
-	args = append(args, id)
+	fb := ub.MakeFilter()
+	fb.AddConstraint("id = %s", id)
 
-	_, err := s.pgconn.Exec(ctx, fmt.Sprintf("UPDATE subtasks SET %s WHERE id = $%d", toUpd, len(args)), args...)
+	_, err := s.pgconn.Exec(ctx, fmt.Sprintf("UPDATE subtasks SET %s", fb.WithUpdate()), fb.Args()...)
 	if err != nil {
 		zap.S().Warn(err)
 	}

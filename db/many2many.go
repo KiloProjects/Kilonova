@@ -15,22 +15,25 @@ func (s *DB) updateManyToMany(ctx context.Context, tableName, parentKey, childKe
 			return err
 		}
 
-		for i, childID := range children {
-			if position {
-				q := fmt.Sprintf("INSERT INTO %s (%s, %s, position) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING", tableName, parentKey, childKey)
-
-				if _, err := tx.Exec(ctx, q, parentID, childID, i); err != nil {
-					zap.S().Warn(err)
-					return err
-				}
-			} else {
-				q := fmt.Sprintf("INSERT INTO %s (%s, %s) VALUES ($1, $2) ON CONFLICT DO NOTHING", tableName, parentKey, childKey)
-				if _, err := tx.Exec(ctx, q, parentID, childID); err != nil {
-					zap.S().Warn(err)
-					return err
-				}
+		rows := [][]any{}
+		colNames := []string{parentKey, childKey}
+		if position {
+			colNames = append(colNames, "position")
+			for i, childID := range children {
+				rows = append(rows, []any{parentID, childID, i})
+			}
+		} else {
+			for _, childID := range children {
+				rows = append(rows, []any{parentID, childID})
 			}
 		}
+
+		_, err := tx.CopyFrom(ctx, pgx.Identifier{tableName}, colNames, pgx.CopyFromRows(rows))
+		if err != nil {
+			zap.S().Warn(err)
+			return err
+		}
+
 		return nil
 	})
 }
