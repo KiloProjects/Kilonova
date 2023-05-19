@@ -17,7 +17,6 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
-	github.com/litao91/goldmark-mathjax v0.0.0-20210217064022-a43cf739a50f
 	github.com/mattn/go-sqlite3 v1.14.16 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.23
 	github.com/yuin/goldmark v1.5.4
@@ -29,14 +28,17 @@ require (
 )
 
 require (
+	github.com/FurqanSoftware/goldmark-katex v0.0.0-20221223060946-0bf781ec55b4
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/jackc/pgx/v5 v5.3.1
 )
 
 require (
+	github.com/bluele/gcache v0.0.2 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/jackc/puddle/v2 v2.2.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
+	github.com/lithdew/quickjs v0.0.0-20200714182134-aaa42285c9d2 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 )

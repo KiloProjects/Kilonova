@@ -22,18 +22,18 @@ import "codemirror/mode/python/python";
 import "codemirror/mode/haskell/haskell";
 // import "codemirror/mode/stex/stex";
 
-import katex from "katex";
-import renderMathInElement from "katex/contrib/auto-render";
+// import katex from "katex";
+// import renderMathInElement from "katex/contrib/auto-render";
 
-window.katex = katex;
+// window.katex = katex;
 
-document.addEventListener("DOMContentLoaded", () => {
-	renderMathInElement(document.body, {
-		delimiters: [
-			{ left: "$$", right: "$$", display: true },
-			{ left: "$", right: "$", display: false },
-			{ left: "\\(", right: "\\)", display: false },
-			{ left: "\\[", right: "\\]", display: true },
-		],
-	});
-});
+// document.addEventListener("DOMContentLoaded", () => {
+// 	renderMathInElement(document.body, {
+// 		delimiters: [
+// 			{ left: "$$", right: "$$", display: true },
+// 			{ left: "$", right: "$", display: false },
+// 			{ left: "\\(", right: "\\)", display: false },
+// 			{ left: "\\[", right: "\\]", display: true },
+// 		],
+// 	});
+// });
