@@ -10,7 +10,7 @@
 <script>
     const paste_id = {{.Paste.ID}};
     async function deletePaste() {
-        if(!confirm(bundled.getText("pasteDeleteConfirm"))) {
+        if(!(await bundled.confirm(bundled.getText("pasteDeleteConfirm")))) {
             return;
         }
         const res = await bundled.postCall(`/paste/${paste_id}/delete`, {})
@@ -18,7 +18,7 @@
             bundled.apiToast(res)
             return
         }
-        window.location.back()
+        window.history.back()
     }
 </script>
 

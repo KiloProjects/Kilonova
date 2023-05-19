@@ -137,7 +137,7 @@ function SubsView(props: SubsViewProps) {
 	}, 200);
 
 	useEffect(() => {
-		poll().catch(console.error);
+		poll()?.catch(console.error);
 	}, [query]);
 
 	useEffect(() => {

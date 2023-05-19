@@ -116,10 +116,10 @@ async function deleteTests() {
         return;
     }
     if(tests.length == 1) {
-        if(!confirm(bundled.getText("oneTestDeleteConfirm"))) {
+        if(!(await bundled.confirm(bundled.getText("oneTestDeleteConfirm")))) {
             return
         }
-    } else if(!confirm(bundled.getText("testDeleteConfirm", tests.length))) {
+    } else if(!(await bundled.confirm(bundled.getText("testDeleteConfirm", tests.length)))) {
         return
     }
 	let res = await bundled.bodyCall(`/problem/${pbid}/update/bulkDeleteTests`, tests);

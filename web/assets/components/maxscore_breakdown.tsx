@@ -7,6 +7,7 @@ import { BigSpinner } from "./common";
 import { Problem, SubTest, SubmissionSubTask } from "../api/submissions";
 import { getCall } from "../api/net";
 import { SubTask, TestTable } from "./sub_mgr";
+import { KNModal } from "./modal";
 
 type BreakdownResult = {
 	max_score: number;
@@ -83,44 +84,6 @@ export function MaxScoreBreakdown({ problemID, userID, contestID }: { problemID:
 
 			{content}
 		</>
-	);
-}
-
-export function KNModal({ open, title, children }: { open: boolean; title: any; children: preact.ComponentChildren }) {
-	let [lastState, setLastState] = useState<boolean | null>(null);
-	let ref = useRef<HTMLDialogElement>(null);
-
-	useEffect(() => {
-		if (open == lastState) {
-			return;
-		}
-
-		if (open) {
-			ref.current?.showModal();
-		} else {
-			ref.current?.close();
-		}
-
-		setLastState(open);
-		return () => {
-			ref.current?.close();
-		};
-	}, [open]);
-
-	return (
-		<dialog ref={ref} class="modal-container" id="max_score_dialog">
-			<div class="modal-header">
-				<h1>{title}</h1>
-				<form method="dialog">
-					<button type="submit">
-						<i class="modal-close"></i>
-					</button>
-				</form>
-			</div>
-			<div class="modal-content" id="max_score_content">
-				{children}
-			</div>
-		</dialog>
 	);
 }
 

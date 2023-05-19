@@ -128,10 +128,10 @@ async function deleteSubTasks() {
         return;
     }
     if(subTasks.length == 1) {
-        if(!confirm(bundled.getText("oneSubtaskDeleteConfirm"))) {
+        if(!(await bundled.confirm(bundled.getText("oneSubtaskDeleteConfirm")))) {
             return
         }
-    } else if(!confirm(bundled.getText("subtaskDeleteConfirm", subTasks.length))) {
+    } else if(!(await bundled.confirm(bundled.getText("subtaskDeleteConfirm", subTasks.length)))) {
         return
     }
 	let res = await bundled.bodyCall(`/problem/${pbid}/update/bulkDeleteSubTasks`, subTasks);

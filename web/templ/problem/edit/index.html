@@ -79,7 +79,7 @@
     let problem = {{.Problem }};
 
     async function reevaluateSubs() {
-        if (!confirm(bundled.getText("confirmSubReevaluate"))) {
+        if (!(await bundled.confirm(bundled.getText("confirmSubReevaluate")))) {
             return
         }
         let res = await bundled.postCall(`/problem/${problem.id}/reevaluateSubs`, {})
@@ -109,7 +109,7 @@
 
     async function deleteProblem(e) {
         e.preventDefault();
-        if (!confirm(bundled.getText("confirmProblemDelete"))) {
+        if (!(await bundled.confirm(bundled.getText("confirmProblemDelete")))) {
             return
         }
         let res = await bundled.postCall(`/problem/${problem.id}/delete`, {})

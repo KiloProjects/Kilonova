@@ -39,7 +39,7 @@ async function createPaste() {
 	);
 }
 async function deleteSubmission() {
-    if(!confirm(bundled.getText("subDeleteConfirm"))) {
+    if(!(await bundled.confirm(bundled.getText("subDeleteConfirm")))) {
         return;
     }
     const args = {submission_id: sub_id};

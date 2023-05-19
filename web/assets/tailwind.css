@@ -51,7 +51,7 @@
 	}
 
 	h2 {
-		@apply text-2xl leading-normal;
+		@apply text-2xl leading-normal mb-2;
 	}
 
 	h3 {
@@ -79,7 +79,7 @@
 	}
 
 	.reset-list h1,
-	h2 {
+	.reset-list h2 {
 		@apply mb-2 mt-1;
 	}
 
@@ -429,11 +429,16 @@
 
 	.modal-container[open] {
 		@apply z-50 p-4 md:inset-0 dark:bg-gray-800 rounded-lg shadow-lg;
-		@apply min-h-[max(30vh,100px)] lg:min-h-[70vh];
-		@apply max-h-[95vh] lg:max-h-[70vh] !important;
-		@apply min-w-[90vw] lg:min-w-[max(50vw,700px)] max-w-[90vw] lg:max-w-[50vw];
 		@apply flex flex-col items-stretch;
 		@apply border-2 border-gr;
+		@apply max-h-[95vh] lg:max-h-[70vh] !important;
+		@apply max-w-[90vw] lg:max-w-[50vw];
+	}
+
+	/* Set min width only on large containers */
+	.modal-container-large[open] {
+		@apply min-h-[max(30vh,100px)] lg:min-h-[70vh];
+		@apply min-w-[90vw] lg:min-w-[max(50vw,700px)];
 	}
 
 	.modal-container::backdrop {
@@ -445,7 +450,7 @@
 	}
 
 	.modal-close {
-		@apply fas fa-xmark text-2xl mr-2 rounded-lg border border-gr px-2 py-1 shadow-sm;
+		@apply fas fa-xmark text-2xl mr-2 rounded-lg border border-gr px-2 py-1 ml-4 shadow-sm;
 	}
 
 	.modal-content {

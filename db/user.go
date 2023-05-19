@@ -11,6 +11,10 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 )
 
+var (
+	bm = bluemonday.StrictPolicy()
+)
+
 type User struct {
 	ID        int       `json:"id"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
@@ -153,7 +157,7 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate
 		ub.AddUpdate("proposer = %s", v)
 	}
 	if v := upd.Bio; v != nil {
-		ub.AddUpdate("bio = %s", strings.TrimSpace(bluemonday.StrictPolicy().Sanitize(*v)))
+		ub.AddUpdate("bio = %s", strings.TrimSpace(bm.Sanitize(*v)))
 	}
 	if v := upd.VerifiedEmail; v != nil {
 		ub.AddUpdate("verified_email = %s", v)

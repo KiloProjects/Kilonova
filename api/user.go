@@ -20,6 +20,10 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	bm = bluemonday.StrictPolicy()
+)
+
 func (s *API) serveGravatar(w http.ResponseWriter, r *http.Request, user *kilonova.UserFull, size int) {
 	url := s.base.GetGravatarLink(user, size)
 	resp, err := http.Get(url)
@@ -87,7 +91,7 @@ func (s *API) setPreferredLanguage() func(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		safe := strings.TrimSpace(bluemonday.StrictPolicy().Sanitize(args.Language))
+		safe := strings.TrimSpace(bm.Sanitize(args.Language))
 		if !(safe == "en" || safe == "ro") {
 			errorData(w, "Invalid language", 400)
 			return
@@ -115,7 +119,7 @@ func (s *API) setPreferredTheme() func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		safe := strings.TrimSpace(bluemonday.StrictPolicy().Sanitize(args.Theme))
+		safe := strings.TrimSpace(bm.Sanitize(args.Theme))
 		if !(safe == "light" || safe == "dark") {
 			errorData(w, "Invalid language", 400)
 			return

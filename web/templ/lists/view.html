@@ -135,7 +135,7 @@ async function updateProblemList(e) {
 }
 async function deleteProblemList(e) {
     e.preventDefault();
-    if(!confirm(bundled.getText("pblistDeleteConfirm"))) {
+    if(!(await bundled.confirm(bundled.getText("pblistDeleteConfirm")))) {
         return
     }
     let data = {

@@ -284,10 +284,10 @@
             return;
         }
         if(attachments.length == 1) {
-            if(!confirm(bundled.getText("oneAttachmentDeleteConfirm"))) {
+            if(!(await bundled.confirm(bundled.getText("oneAttachmentDeleteConfirm")))) {
                 return
             }
-        } else if(!confirm(bundled.getText("attachmentDeleteConfirm", attachments.length))) {
+        } else if(!(await bundled.confirm(bundled.getText("attachmentDeleteConfirm", attachments.length)))) {
             return
         }
         let res = await bundled.bodyCall("/problem/{{.Problem.ID}}/update/bulkDeleteAttachments", attachments)

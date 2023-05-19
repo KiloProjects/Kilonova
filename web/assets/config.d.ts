@@ -16,6 +16,14 @@ export declare global {
 		processing: boolean; // When request is uploaded and is awaiting results
 	}
 
+	namespace JSXInternal {
+		// Until https://github.com/preactjs/preact/issues/4013 is fixed
+		interface DOMAttributes {
+			onClose: GenericEventHandler<Target> | undefined;
+			onCancel: GenericEventHandler<Target> | undefined;
+		}
+	}
+
 	interface PlatformInfo {
 		debug: boolean;
 		admin: boolean;

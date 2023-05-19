@@ -52,7 +52,7 @@ async function resendEmail() {
 }
 async function deleteAccount() {
 	
-	if(!confirm(bundled.getText("delAccConfirmation"))) {
+	if(!(await bundled.confirm(bundled.getText("delAccConfirmation")))) {
 		return
 	}
 
