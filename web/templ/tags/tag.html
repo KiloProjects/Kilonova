@@ -1,0 +1,98 @@
+{{ define "title" }} {{getText "tag_header"}} {{.Tag.Name}} {{ end }}
+{{ define "content" }}
+
+<a class="block mb-1" href="/tags/"><i class="fas fa-arrow-left"></i> {{getText "tags"}}</a>
+
+<div class="segment-panel">
+    <h1>{{getText "tag_header"}} <kn-tag enc="{{.Tag | encodeJSON}}" link="false"></kn-tag></h1>
+</div>
+
+{{ if authed }}
+{{ if authedUser.Proposer}}
+
+<div class="segment-panel">
+    <h2>{{getText "update_tag"}}</h2>
+
+    <form id="tag_update_form" autocomplete="off">
+        <label class="block my-2">
+            <span class="form-label">{{ getText "name" }}:</span>
+            <input id="editTagTitle" type="text" class="form-input" value="{{.Tag.Name}}" required>
+        </label>
+
+        <label class="block mb-2">
+            <span class="form-label">{{getText "tag_type"}}: </span>
+            <select id="editTagType" class="form-select">
+                <option value="author" {{if eq .Tag.Type `author`}}selected{{end}}>{{getText "tag_names.author"}}</option>
+                <option value="contest" {{if eq .Tag.Type `contest`}}selected{{end}}>{{getText "tag_names.contest"}}</option>
+                <option value="method" {{if eq .Tag.Type `method`}}selected{{end}}>{{getText "tag_names.method"}}</option>
+                <option value="other" {{if eq .Tag.Type `other`}}selected{{end}}>{{getText "tag_names.other"}}</option>
+            </select>
+        </label>
+
+        <button type="submit" class="btn btn-blue">{{getText "button.update"}}</button>
+
+        {{ if authedUser.Admin }}
+            <button id="tag_del_btn" type="submit" class="btn btn-red">{{getText "button.delete"}}</button>
+        {{ end }}
+    </form>
+
+    <script>
+        const tag = {{.Tag}};
+        async function updateTag(e) {
+            e.preventDefault()
+            const data = {
+                id: tag.id,
+                name: document.getElementById("editTagTitle").value,
+                type: document.getElementById("editTagType").value,
+            }
+
+            let res = await bundled.postCall("/tags/update", data)
+            if(res.status === "error") {
+                bundled.apiToast(res)
+                return
+            }
+
+            window.location.reload()
+        }
+        async function deleteTag(e) {
+            e.preventDefault()
+            if(!(await bundled.confirm(bundled.getText("tagDeleteConfirm")))) {
+                return
+            }
+            let res = await bundled.postCall("/tags/delete", {id: tag.id})
+            if(res.status === "error") {
+                bundled.apiToast(res)
+                return
+            }
+
+            window.history.back()
+        }
+
+        document.getElementById("tag_update_form").addEventListener("submit", updateTag)
+        document.getElementById("tag_del_btn").addEventListener("click", deleteTag)
+    </script>
+</div>
+
+{{ end }}
+{{ end }}
+
+{{ with .RelevantTags }}
+<div class="segment-panel">
+    <h2>{{getText "relevant_tags"}}</h2>
+    {{ range . }}
+        <kn-tag enc="{{. | encodeJSON}}"></kn-tag>
+    {{ end }}
+</div>
+{{ end }}
+
+<div class="segment-panel">
+    <h2>{{getText "tag_pbs"}}</h2>
+    {{ with .Problems }}
+        {{ template "pb_list_group" (genProblemsParams . true false true) }}
+    {{ else }}
+        <p>{{getText "noPbFound"}}</p>
+    {{ end }}
+</div>
+
+
+{{ end }}

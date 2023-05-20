@@ -401,10 +401,11 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 			shouldUpd = true
 			upd.SourceCredits = aCtx.props.Source
 		}
-		if aCtx.props.Author != nil {
-			shouldUpd = true
-			upd.AuthorCredits = aCtx.props.Author
-		}
+		// TODO: Handle problem tags in problem archive
+		// if aCtx.props.Author != nil {
+		// 	shouldUpd = true
+		// 	upd.AuthorCredits = aCtx.props.Author
+		// }
 		if aCtx.props.ConsoleInput != nil {
 			shouldUpd = true
 			upd.ConsoleInput = aCtx.props.ConsoleInput
@@ -597,9 +598,18 @@ func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, bas
 		fmt.Fprintf(gr, "scoring_strategy=%s\n", pb.ScoringStrategy)
 
 		if !brief {
-			if pb.AuthorCredits != "" {
-				fmt.Fprintf(gr, "author=%s\n", pb.AuthorCredits)
+			tags, err := base.ProblemTags(ctx, pb.ID)
+			if err != nil {
+				return err
 			}
+			if len(tags) > 0 {
+				var tagNames []string
+				for _, tag := range tags {
+					tagNames = append(tagNames, fmt.Sprintf("%q", tag.Name))
+				}
+				fmt.Fprintf(gr, "tags=%s\n", strings.Join(tagNames, ","))
+			}
+
 			if pb.SourceCredits != "" {
 				fmt.Fprintf(gr, "source=%s\n", pb.SourceCredits)
 			}

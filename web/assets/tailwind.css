@@ -407,7 +407,7 @@
 	}
 
 	.badge-lite {
-		@apply rounded-md py-1 px-2 text-base bg-teal-700 text-white h-fit;
+		@apply inline-block rounded-md py-1 px-2 text-base bg-teal-700 text-white h-fit;
 	}
 
 	.badge {
@@ -425,6 +425,31 @@
 	.badge-blue {
 		@apply bg-blue-500 text-white ring-blue-400;
 		@apply dark:bg-blue-600 dark:ring-blue-500;
+	}
+
+	.tag {
+		@apply inline-block rounded-md py-1 px-2 my-1 bg-teal-700 text-white h-fit;
+	}
+	.tag-author {
+		@apply bg-amber-700;
+	}
+	.tag-contest {
+		@apply bg-green-700;
+	}
+	.tag-method {
+		@apply bg-fuchsia-700;
+	}
+	.tag-other {
+		@apply bg-cyan-700;
+	}
+
+	.tag-editable:empty:before {
+		content: attr(data-bf);
+		@apply text-gray-300 italic;
+	}
+
+	.tag-editable {
+		@apply outline-none;
 	}
 
 	.modal-container[open] {

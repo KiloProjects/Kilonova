@@ -76,6 +76,7 @@ type ProblemParams struct {
 
 	Problem     *kilonova.Problem
 	Attachments []*kilonova.Attachment
+	Tags        []*kilonova.Tag
 
 	Statement template.HTML
 	Languages map[string]eval.Language

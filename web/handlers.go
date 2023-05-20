@@ -78,6 +78,45 @@ func (rt *Web) problems() http.HandlerFunc {
 	}
 }
 
+func (rt *Web) tags() http.HandlerFunc {
+	templ := rt.parse(nil, "tags/index.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		rt.runTempl(w, r, templ, &SimpleParams{GenContext(r)})
+	}
+}
+
+type TagPageParams struct {
+	Ctx *ReqContext
+
+	Tag *kilonova.Tag
+
+	RelevantTags []*kilonova.Tag
+	Problems     []*kilonova.ScoredProblem
+}
+
+func (rt *Web) tag() http.HandlerFunc {
+	templ := rt.parse(nil, "tags/tag.html", "modals/pbs.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		pbs, err := rt.base.ScoredProblems(r.Context(), kilonova.ProblemFilter{
+			Look: true,
+
+			LookingUser: util.UserBrief(r),
+			Tags:        []*kilonova.TagGroup{{TagIDs: []int{util.Tag(r).ID}}},
+		}, util.UserBrief(r))
+		if err != nil {
+			zap.S().Warn("Couldn't fetch tag problems: ", err)
+			pbs = nil
+		}
+
+		relevantTags, err := rt.base.RelevantTags(r.Context(), util.Tag(r).ID, 10)
+		if err != nil {
+			zap.S().Warn("Couldn't fetch relevant tags: ", err)
+			relevantTags = nil
+		}
+		rt.runTempl(w, r, templ, &TagPageParams{GenContext(r), util.Tag(r), relevantTags, pbs})
+	}
+}
+
 func (rt *Web) justRender(files ...string) http.HandlerFunc {
 	templ := rt.parse(nil, files...)
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -300,6 +339,7 @@ func (rt *Web) problem() http.HandlerFunc {
 				zap.S().Warn("Error getting problem settings:", err, util.Problem(r).ID)
 			}
 			rt.statusPage(w, r, 500, "Couldn't get problem settings")
+			return
 		} else if evalSettings.OnlyCPP {
 			newLangs := make(map[string]eval.Language)
 			for name, lang := range langs {
@@ -314,12 +354,19 @@ func (rt *Web) problem() http.HandlerFunc {
 			langs = newLangs
 		}
 
+		tags, err := rt.base.ProblemTags(r.Context(), util.Problem(r).ID)
+		if err != nil {
+			zap.S().Warn("Couldn't get tags: ", err)
+			tags = []*kilonova.Tag{}
+		}
+
 		rt.runTempl(w, r, templ, &ProblemParams{
 			Ctx:    GenContext(r),
 			Topbar: rt.topbar(r, "pb_statement", -1),
 
 			Problem:     util.Problem(r),
 			Attachments: atts,
+			Tags:        tags,
 
 			Statement: template.HTML(statement),
 			Languages: langs,

@@ -1,0 +1,73 @@
+{{ define "title" }}{{getText "title.tags"}}{{ end }}
+
+{{ define "tagList" }}
+<details class="segment-panel" open>
+    <summary><h2 class="inline-block mb-2">{{printf "tag_names.%s" . | getText}}</h2></summary>
+    <div class="mt-1 mb-2">
+        {{ range tagsByType . }}
+            <kn-tag enc="{{encodeJSON .}}"></kn-tag>
+        {{ else }}
+            {{getText "no_tags"}}
+        {{ end }}
+    </div>
+</details>
+{{ end }}
+{{ define "content" }}
+
+
+<div class="segment-panel">
+    <h1>{{getText "title.tags"}}</h1>
+    
+    <div class="grid lg:grid-cols-2 xl:grid-cols-4 gap-2">
+        {{ template "tagList" "author"}}
+        {{ template "tagList" "contest"}}
+        {{ template "tagList" "method"}}
+        {{ template "tagList" "other"}}
+    </div>
+</div>
+
+<div class="segment-panel">
+    <h2>{{getText "create_tag"}}</h2>
+
+    <form id="tagCreateForm" autocomplete="off">
+        <label class="block my-2">
+            <span class="form-label">{{ getText "name" }}:</span>
+            <input id="tagTitle" type="text" class="form-input" required>
+        </label>
+        <label class="block my-2">
+            <span class="form-label">{{getText "tag_type"}}: </span>
+            <select id="tagType" class="form-select" required>
+                <option value="" selected>-</option>
+                <option value="author">{{getText "tag_names.author"}}</option>
+                <option value="contest">{{getText "tag_names.contest"}}</option>
+                <option value="method">{{getText "tag_names.method"}}</option>
+                <option value="other">{{getText "tag_names.other"}}</option>
+            </select>
+        </label>
+
+        <button type="submit" class="btn btn-blue mb-2">{{getText "button.create"}}</button>
+    </form>
+
+</div>
+
+<script>
+
+    async function createTag(e) {
+        e.preventDefault()
+
+        const data = {
+            name: document.getElementById("tagTitle").value,
+            type: document.getElementById("tagType").value,
+        }
+        let res = await bundled.postCall("/tags/create", data)
+        if(res.status === "error") {
+            bundled.apiToast(res)
+            return
+        }
+        window.location.reload()
+    }
+
+    document.getElementById("tagCreateForm").addEventListener("submit", createTag)
+</script>
+
+{{ end }}

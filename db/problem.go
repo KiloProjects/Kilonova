@@ -28,7 +28,6 @@ type dbProblem struct {
 	SourceSize  int     `db:"source_size"`
 
 	SourceCredits string `db:"source_credits"`
-	AuthorCredits string `db:"author_credits"`
 
 	// Eval stuff
 	ConsoleInput bool `db:"console_input"`
@@ -131,9 +130,9 @@ ORDER BY cpbs.position ASC`, contestID, userID, userID)
 }
 
 const problemCreateQuery = `INSERT INTO problems (
-	name, console_input, test_name, memory_limit, source_size, time_limit, visible, source_credits, author_credits, default_points
+	name, console_input, test_name, memory_limit, source_size, time_limit, visible, source_credits, default_points
 ) VALUES (
-	$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+	$1, $2, $3, $4, $5, $6, $7, $8, $9
 ) RETURNING id;`
 
 func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID int) error {
@@ -153,7 +152,7 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID in
 		p.SourceSize = 10000
 	}
 	var id int
-	err := s.conn.GetContext(ctx, &id, problemCreateQuery, p.Name, p.ConsoleInput, p.TestName, p.MemoryLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.AuthorCredits, p.DefaultPoints)
+	err := s.conn.GetContext(ctx, &id, problemCreateQuery, p.Name, p.ConsoleInput, p.TestName, p.MemoryLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.DefaultPoints)
 	if err == nil {
 		p.ID = id
 	}
@@ -268,9 +267,6 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []any) {
 	if v := upd.SourceCredits; v != nil {
 		toUpd, args = append(toUpd, "source_credits = ?"), append(args, v)
 	}
-	if v := upd.AuthorCredits; v != nil {
-		toUpd, args = append(toUpd, "author_credits = ?"), append(args, v)
-	}
 
 	if v := upd.ConsoleInput; v != nil {
 		toUpd, args = append(toUpd, "console_input = ?"), append(args, v)
@@ -327,7 +323,6 @@ func (s *DB) internalToProblem(pb *dbProblem) *kilonova.Problem {
 		SourceSize:  pb.SourceSize,
 
 		SourceCredits: pb.SourceCredits,
-		AuthorCredits: pb.AuthorCredits,
 
 		ConsoleInput:    pb.ConsoleInput,
 		ScoringStrategy: pb.ScoringStrategy,

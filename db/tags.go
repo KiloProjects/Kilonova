@@ -12,7 +12,7 @@ import (
 func (s *DB) Tags(ctx context.Context) ([]*kilonova.Tag, error) {
 	var tags []*kilonova.Tag
 	err := s.conn.SelectContext(ctx, &tags, "SELECT * FROM tags ORDER BY name ASC")
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) || (tags == nil && err == nil) {
 		return []*kilonova.Tag{}, nil
 	}
 	if err != nil {
@@ -24,7 +24,7 @@ func (s *DB) Tags(ctx context.Context) ([]*kilonova.Tag, error) {
 func (s *DB) TagsByType(ctx context.Context, tagType kilonova.TagType) ([]*kilonova.Tag, error) {
 	var tags []*kilonova.Tag
 	err := s.conn.SelectContext(ctx, &tags, "SELECT * FROM tags WHERE type = $1 ORDER BY name ASC", tagType)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) || (tags == nil && err == nil) {
 		return []*kilonova.Tag{}, nil
 	}
 	if err != nil {
@@ -48,7 +48,7 @@ func (s *DB) RelevantTags(ctx context.Context, tagID int, max int) ([]*kilonova.
 	)
 	SELECT tags.* FROM tags, rel_tag_ids WHERE tags.id = rel_tag_ids.tag_id ORDER BY rel_tag_ids.stats DESC LIMIT $2 
 	`, tagID, max)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) || (err == nil && tags == nil) {
 		return []*kilonova.Tag{}, nil
 	}
 	if err != nil {

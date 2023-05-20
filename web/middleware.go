@@ -65,6 +65,23 @@ func (rt *Web) ValidateListID(next http.Handler) http.Handler {
 	})
 }
 
+// ValidateTagID makes sure the tag ID is a valid uint
+func (rt *Web) ValidateTagID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tagID, err := strconv.Atoi(chi.URLParam(r, "tagid"))
+		if err != nil {
+			rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
+			return
+		}
+		tag, err1 := rt.base.TagByID(r.Context(), tagID)
+		if err1 != nil {
+			rt.statusPage(w, r, 404, "Eticheta nu a fost găsită")
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.TagKey, tag)))
+	})
+}
+
 // ValidateProblemVisible checks if the problem from context is visible from the logged in user
 func (rt *Web) ValidateProblemVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -11,4 +11,5 @@ export * from "./contest";
 export * from "./att_renamer";
 export * from "./maxscore_breakdown";
 export * from "./problem_stats";
+export * from "./tags";
 export * from "./modal";

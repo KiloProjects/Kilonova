@@ -35,7 +35,6 @@ export type Problem = {
 	time_limit: number;
 	memory_limit: number;
 	source_credits: string;
-	author_credits: string;
 	console_input: boolean;
 	scoring_strategy: "sum_subtasks" | "max_submission";
 };

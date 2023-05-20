@@ -3,58 +3,61 @@
 {{ template "topbar.html" . }}
 
 <div class="page-holder">
-    <div class="page-content">
-        <h2>{{ getText "header.edit.index" }}</h2>
-        <form id="updateProblemForm" autocomplete="off">
-            <label class="block my-2">
-                <span class="form-label">{{getText "title"}}:</span>
-                <input id="problemName" class="form-input" type="text" value="{{.Problem.Name}}" />
-            </label>
-            <label class="block my-2">
-                <span class="form-label">{{getText "author"}}:</span>
-                <input id="authorCredits" class="form-input" type="text" value="{{.Problem.AuthorCredits}}" />
-            </label>
-            <label class="block my-2">
-                <span class="form-label">{{getText "source"}}:</span>
-                <input id="sourceCredits" class="form-input" type="text" value="{{.Problem.SourceCredits}}" />
-            </label>
-            <label class="block my-2">
-                <input id="consoleInput" class="form-checkbox" type="checkbox" {{if .Problem.ConsoleInput}} checked {{
-                    end }}>
-                <span class="form-label ml-2">{{getText "consoleInput"}}</span>
-            </label>
-            <label class="block my-2">
-                <span class="form-label">{{getText "scoring_strategy"}}:</span>
-                <select id="scoring_strategy" class="form-select">
-                    <option value="max_submission" {{if eq .Problem.ScoringStrategy `max_submission`}}selected{{end}}>{{getText "max_submission_strat"}}</option>
-                    <option value="sum_subtasks" {{if eq .Problem.ScoringStrategy `sum_subtasks`}}selected{{end}}>{{getText "sum_subtasks_strat"}}</option>
-                </select>
-            </label>
-            <label class="block my-2">
-                <span class="form-label">{{getText "testName"}}:</span>
-                <input id="testName" class="form-input" type="text" value="{{.Problem.TestName}}" />
-            </label>
-            <label class="block my-2">
-                <span class="form-label">{{getText "memoryLimit"}}:</span>
-                <input id="memoryLimit" type="number" class="form-input" placeholder="Limită de memorie (total)" min="0"
-                    step="0.1" max="{{maxMemMB}}" pattern="[\d]*" value="{{KBtoMB .Problem.MemoryLimit}}">
-                <span class="ml-1 text-xl">MB</span>
-            </label>
-            <label class="block my-2">
-                <span class="form-label">{{getText "timeLimit"}}:</span>
-                <input id="timeLimit" type="number" class="form-input" placeholder="Limită de timp..." min="0"
-                    step="0.01" pattern="[\d]*" value="{{.Problem.TimeLimit}}">
-                <span class="ml-1 text-xl">{{getText "seconds"}}</span>
-            </label>
-            <label class="block my-2">
-                <span class="form-label">{{getText "defaultPoints"}}:</span>
-                <input id="defaultPoints" class="form-input" type="number" min="0" max="100" step="1" pattern="[\d]*"
-                    value="{{.Problem.DefaultPoints}}" />
-            </label>
-            <button type="submit" class="btn btn-blue">{{getText "updateProblem"}}</button>
-        </form>
-        <div class="block my-2">
-            <button type="button" id="deleteProblemButton" class="btn btn-red mr-2">{{getText "deleteProblem"}}</button>
+    <div class="page-content-wrapper">
+        <div class="segment-panel">
+            <h2>{{ getText "header.edit.index" }}</h2>
+            <form id="updateProblemForm" autocomplete="off">
+                <label class="block my-2">
+                    <span class="form-label">{{getText "title"}}:</span>
+                    <input id="problemName" class="form-input" type="text" value="{{.Problem.Name}}" />
+                </label>
+                <label class="block my-2">{{getText "author_moved"}}</label>
+                <label class="block my-2">
+                    <span class="form-label">{{getText "source"}}:</span>
+                    <input id="sourceCredits" class="form-input" type="text" value="{{.Problem.SourceCredits}}" />
+                </label>
+                <label class="block my-2">
+                    <input id="consoleInput" class="form-checkbox" type="checkbox" {{if .Problem.ConsoleInput}} checked {{
+                        end }}>
+                    <span class="form-label ml-2">{{getText "consoleInput"}}</span>
+                </label>
+                <label class="block my-2">
+                    <span class="form-label">{{getText "scoring_strategy"}}:</span>
+                    <select id="scoring_strategy" class="form-select">
+                        <option value="max_submission" {{if eq .Problem.ScoringStrategy `max_submission`}}selected{{end}}>{{getText "max_submission_strat"}}</option>
+                        <option value="sum_subtasks" {{if eq .Problem.ScoringStrategy `sum_subtasks`}}selected{{end}}>{{getText "sum_subtasks_strat"}}</option>
+                    </select>
+                </label>
+                <label class="block my-2">
+                    <span class="form-label">{{getText "testName"}}:</span>
+                    <input id="testName" class="form-input" type="text" value="{{.Problem.TestName}}" />
+                </label>
+                <label class="block my-2">
+                    <span class="form-label">{{getText "memoryLimit"}}:</span>
+                    <input id="memoryLimit" type="number" class="form-input" placeholder="Limită de memorie (total)" min="0"
+                        step="0.1" max="{{maxMemMB}}" pattern="[\d]*" value="{{KBtoMB .Problem.MemoryLimit}}">
+                    <span class="ml-1 text-xl">MB</span>
+                </label>
+                <label class="block my-2">
+                    <span class="form-label">{{getText "timeLimit"}}:</span>
+                    <input id="timeLimit" type="number" class="form-input" placeholder="Limită de timp..." min="0"
+                        step="0.01" pattern="[\d]*" value="{{.Problem.TimeLimit}}">
+                    <span class="ml-1 text-xl">{{getText "seconds"}}</span>
+                </label>
+                <label class="block my-2">
+                    <span class="form-label">{{getText "defaultPoints"}}:</span>
+                    <input id="defaultPoints" class="form-input" type="number" min="0" max="100" step="1" pattern="[\d]*"
+                        value="{{.Problem.DefaultPoints}}" />
+                </label>
+                <button type="submit" class="btn btn-blue">{{getText "updateProblem"}}</button>
+            </form>
+            <div class="block my-2">
+                <button type="button" id="deleteProblemButton" class="btn btn-red mr-2">{{getText "deleteProblem"}}</button>
+            </div>
+        </div>
+        <div class="segment-panel">
+            <h2>{{getText "problem_tags"}}</h2>
+            <kn-pb-tag-edit enc="{{problemTags .Problem | encodeJSON}}" pbid="{{.Problem.ID}}"></kn-pb-tag-edit>
         </div>
     </div>
     <div class="page-sidebar">
@@ -90,7 +93,6 @@
         e.preventDefault();
         const data = {
             name: document.getElementById("problemName").value,
-            author_credits: document.getElementById("authorCredits").value,
             source_credits: document.getElementById("sourceCredits").value,
             console_input: document.getElementById("consoleInput").checked,
             scoring_strategy: document.getElementById("scoring_strategy").value,

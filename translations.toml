@@ -146,6 +146,10 @@ ro = "Profil:"
 en = "Verified Email"
 ro = "Email Verificat"
 
+[title.tags]
+en = "Tags"
+ro = "Etichete"
+
 [title.problem_statement]
 en = "Problem statement"
 ro = "Enunț problemă"
@@ -443,6 +447,9 @@ ro = "Subtaskul #%d"
 en = "Author"
 ro = "Autor"
 
+[author_moved]
+en = "Author credits are now tags."
+ro = "Creditele autorilor sunt acum etichete."
 
 [sub_author]
 en = "Submission author"
@@ -812,6 +819,10 @@ ro = "Data încărcării"
 [noSubFound]
 en = "No submission found"
 ro = "Nicio submisie găsită"
+
+[noPbFound]
+en = "No problem found"
+ro = "Nicio problemă găsită"
 
 [show]
 en = "Show"
@@ -1288,6 +1299,10 @@ ro = "Oricine poate vedea toate submisiile"
 en = "Show problems on front page"
 ro = "Arată listele de probleme pe pagina principală"
 
+[tagDeleteConfirm]
+en = "Are you sure you want to delete this paste?"
+ro = "Ești sigur că vrei să ștergi această etichetă?"
+
 [pasteDeleteConfirm]
 en = "Are you sure you want to delete this paste?"
 ro = "Ești sigur că vrei să ștergi acest paste?"
@@ -1737,6 +1752,73 @@ ro = "din"
 en = 'This was the problem page during the contest. <a id="pb_link_rewrite_a" href="#">Access the current page here</a>.'
 ro = 'Aceasta a fost pagina problemei în timpul concursului. <a id="pb_link_rewrite_a" href="#">Accesează pagina curentă aici</a>.'
 
+[tags]
+en = "Tags"
+ro = "Etichete"
+
+[problem_tags]
+en = "Problem tags"
+ro = "Etichete problemă"
+
+[tag_name]
+en = "Tag name..."
+ro = "Nume etichetă..."
+
+[relevant_tags]
+en = "Relevant tags"
+ro = "Etichete relevante"
+
+[tag_pbs]
+en = "Problems matching tag"
+ro = "Probleme cu această etichetă"
+
+[manage_tags]
+en = "Manage tags"
+ro = "Administrare etichete"
+
+[add_tags]
+en = "Add tags"
+ro = "Adăugare etichete"
+
+[update_tags]
+en = "Update tags"
+ro = "Actualizare etichete"
+
+[create_tag]
+en = "Create tag"
+ro = "Creare etichetă"
+
+[update_tag]
+en = "Update tag"
+ro = "Actualizare etichetă"
+
+[no_tags]
+en = "No tag found"
+ro = "Nicio etichetă găsită"
+
+[tag_header]
+en = "Tag"
+ro = "Eticheta"
+
+[tag_type]
+en = "Type"
+ro = "Tip"
+
+[tag_names.author]
+en = "Author"
+ro = "Autor"
+
+[tag_names.contest]
+en = "Contest"
+ro = "Concurs"
+
+[tag_names.method]
+en = "Method"
+ro = "Metodă"
+
+[tag_names.other]
+en = "Other"
+ro = "Diverse"
 
 [confirm_header]
 en = "Confirm action"

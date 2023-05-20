@@ -1,6 +1,6 @@
 {{ define "title" }} {{getText "problem" .Problem.ID .Problem.Name}} {{ end }}
 
-{{ define "description" }} {{- .Problem.Name}} {{- if .Problem.SourceCredits}} - propusă la {{.Problem.SourceCredits}} {{- end}}{{if .Problem.AuthorCredits}} - de către {{.Problem.AuthorCredits}}{{end -}} {{ end }}
+{{ define "description" }} {{- .Problem.Name}} {{- if .Problem.SourceCredits}} - propusă la {{.Problem.SourceCredits}} {{- end}}{{with authorsFromTags .Tags}} - de către {{.}}{{end -}} {{ end }}
 
 {{ define "head" }}
 <link rel="canonical" href='{{printf "/problems/%d" .Problem.ID | formatCanonical}}' />
@@ -90,11 +90,19 @@
                     {{end}}
                 </p>
                 {{end}}
-                {{- if .Problem.AuthorCredits -}}
-                <p>{{getText "author"}}: {{.Problem.AuthorCredits}}</p>
+                {{- with filterTags .Tags "author" false -}}
+                <p>{{getText "author"}}: {{range .}} <kn-tag enc="{{. | encodeJSON}}" wide="false" cls="text-sm"></kn-tag> {{ end}}</p>
                 {{- end -}}
                 {{- if .Problem.SourceCredits -}}
                 <p>{{getText "source"}}: {{.Problem.SourceCredits}}</p>
+                {{- end -}}
+                {{- $isEditor := .Topbar.IsProblemEditor -}}
+                {{ $maxScore := -1 }}
+                {{- if authed -}}
+                    {{- $maxScore = actualMaxScore .Problem authedUser -}}
+                {{- end -}}
+                {{- with filterTags .Tags "author" true -}}
+                <p>{{getText "tags"}}: <kn-pb-tags enc="{{. | encodeJSON}}" open="{{if authed}}{{or ($isEditor) (eq $maxScore 100)}}{{else}}false{{end}}"></kn-pb-tags> </p>
                 {{- end -}}
                 {{ if authed }}
                 <p>{{getText "score"}}: {{if eq .Problem.ScoringStrategy `sum_subtasks`}}<a class="max_score_breakdown" href="#" data-problemid="{{.Problem.ID}}">{{end}}<span id="max_score_counter">{{subScore .Problem .Ctx.User.Brief}}</span> {{if eq .Problem.ScoringStrategy `sum_subtasks`}}</a>{{end}}</p>

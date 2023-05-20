@@ -31,7 +31,6 @@ type Problem struct {
 	SourceSize  int     `json:"source_size"`
 
 	SourceCredits string `json:"source_credits"`
-	AuthorCredits string `json:"author_credits"`
 
 	// Eval stuff
 	ConsoleInput bool `json:"console_input"`
@@ -90,7 +89,6 @@ type ProblemUpdate struct {
 	SourceSize  *int     `json:"source_size"`
 
 	SourceCredits *string `json:"source_credits"`
-	AuthorCredits *string `json:"author_credits"`
 
 	ConsoleInput *bool `json:"console_input"`
 	Visible      *bool `json:"visible"`

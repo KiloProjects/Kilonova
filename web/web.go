@@ -91,6 +91,11 @@ func (rt *Web) Handler() http.Handler {
 		r.Route("/{pbid}", rt.problemRouter)
 	})
 
+	r.Route("/tags", func(r chi.Router) {
+		r.Get("/", rt.tags())
+		r.With(rt.ValidateTagID).Get("/{tagid}", rt.tag())
+	})
+
 	r.Route("/contests", func(r chi.Router) {
 		r.Get("/", rt.contests())
 		r.Route("/{contestID}", func(r chi.Router) {
@@ -255,6 +260,9 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 				return "-"
 			}
 			return strconv.Itoa(score)
+		},
+		"actualMaxScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) int {
+			return base.MaxScore(context.Background(), user.ID, pb.ID)
 		},
 		"spbMaxScore": func(pb *kilonova.ScoredProblem) string {
 			if pb.ScoreUserID == nil {
@@ -437,6 +445,44 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			if err != nil {
 				zap.S().Warn("Malformed host prefix")
 				return path
+			}
+			return rez
+		},
+
+		"tagsByType": func(g string) []*kilonova.Tag {
+			tags, err := base.TagsByType(context.Background(), kilonova.TagType(g))
+			if err != nil {
+				zap.S().Warnf("Couldn't get tags of type %q", g)
+				return nil
+			}
+			return tags
+		},
+		"problemTags": func(pb *kilonova.Problem) []*kilonova.Tag {
+			if pb == nil {
+				return nil
+			}
+			tags, err := base.ProblemTags(context.Background(), pb.ID)
+			if err != nil {
+				zap.S().Warn("Couldn't get problem tags: ", err)
+				return nil
+			}
+			return tags
+		},
+		"authorsFromTags": func(tags []*kilonova.Tag) string {
+			names := []string{}
+			for _, tag := range tags {
+				if tag.Type == kilonova.TagTypeAuthor {
+					names = append(names, tag.Name)
+				}
+			}
+			return strings.Join(names, ", ")
+		},
+		"filterTags": func(tags []*kilonova.Tag, tp string, negate bool) []*kilonova.Tag {
+			rez := make([]*kilonova.Tag, 0, len(tags))
+			for _, tag := range tags {
+				if (negate && tag.Type != kilonova.TagType(tp)) || (!negate && tag.Type == kilonova.TagType(tp)) {
+					rez = append(rez, tag)
+				}
 			}
 			return rez
 		},
@@ -643,7 +689,7 @@ func staticFileServer(w http.ResponseWriter, r *http.Request) {
 	// Flush header and write content.
 	switch f := f.(type) {
 	case io.ReadSeeker:
-		http.ServeContent(w, r, filename, fi.ModTime(), f.(io.ReadSeeker))
+		http.ServeContent(w, r, filename, fi.ModTime(), f)
 	default:
 		// Set content length.
 		w.Header().Set("Content-Length", strconv.FormatInt(fi.Size(), 10))
