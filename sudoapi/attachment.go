@@ -41,7 +41,7 @@ func (s *BaseAPI) AttachmentByName(ctx context.Context, problemID int, name stri
 	return attachment, nil
 }
 
-func (s *BaseAPI) CreateAttachment(ctx context.Context, att *kilonova.Attachment, problemID int, r io.Reader) *StatusError {
+func (s *BaseAPI) CreateAttachment(ctx context.Context, att *kilonova.Attachment, problemID int, r io.Reader, authorID *int) *StatusError {
 	// since we store the attachment in the database (hopefully, just for now),
 	// we need to read the data into a byte array and send it over.
 	// I cannot emphasize how inefficient this is.
@@ -54,7 +54,7 @@ func (s *BaseAPI) CreateAttachment(ctx context.Context, att *kilonova.Attachment
 	if att.Private {
 		att.Visible = false
 	}
-	if err := s.db.CreateAttachment(ctx, att, problemID, data); err != nil {
+	if err := s.db.CreateAttachment(ctx, att, problemID, data, authorID); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't create attachment")
 	}
@@ -68,8 +68,8 @@ func (s *BaseAPI) UpdateAttachment(ctx context.Context, aid int, upd *kilonova.A
 	return nil
 }
 
-func (s *BaseAPI) UpdateAttachmentData(ctx context.Context, aid int, data []byte) *StatusError {
-	if err := s.db.UpdateAttachmentData(ctx, aid, data); err != nil {
+func (s *BaseAPI) UpdateAttachmentData(ctx context.Context, aid int, data []byte, authorID *int) *StatusError {
+	if err := s.db.UpdateAttachmentData(ctx, aid, data, authorID); err != nil {
 		return WrapError(err, "Couldn't update attachment contents")
 	}
 	return nil

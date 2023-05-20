@@ -309,7 +309,6 @@ CREATE TABLE IF NOT EXISTS problem_user_access (
 CREATE TYPE tag_type AS ENUM (
     'author',
     'contest',
-    'level',
     'method',
     'other'
 ); 

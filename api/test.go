@@ -179,7 +179,7 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := test.ProcessZipTestArchive(context.Background(), util.Problem(r), ar, s.base); err != nil {
+	if err := test.ProcessZipTestArchive(context.Background(), util.Problem(r), ar, s.base, util.UserBrief(r)); err != nil {
 		err.WriteError(w)
 		return
 	}

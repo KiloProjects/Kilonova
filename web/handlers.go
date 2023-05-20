@@ -29,7 +29,7 @@ const (
 	PblistCntCacheKey = WebCtx("pblist_cache")
 )
 
-func (rt *Web) index() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) index() http.HandlerFunc {
 	templ := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html", "modals/contest_list.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		runningContests, err := rt.base.VisibleRunningContests(r.Context(), util.UserBrief(r))
@@ -71,7 +71,7 @@ func (rt *Web) index() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) problems() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) problems() http.HandlerFunc {
 	templ := rt.parse(nil, "pbs.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &SimpleParams{GenContext(r)})
@@ -85,7 +85,7 @@ func (rt *Web) justRender(files ...string) http.HandlerFunc {
 	}
 }
 
-func (rt *Web) pbListIndex() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) pbListIndex() http.HandlerFunc {
 	templ := rt.parse(nil, "lists/index.html", "modals/pblist.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		pblists, err := rt.base.ProblemLists(context.Background(), true)
@@ -115,7 +115,7 @@ func (rt *Web) pbListIndex() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) pbListView() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) pbListView() http.HandlerFunc {
 	templ := rt.parse(nil, "lists/view.html", "modals/pblist.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		listIDs := []int{util.ProblemList(r).ID}
@@ -136,7 +136,7 @@ func (rt *Web) pbListView() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) auditLog() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) auditLog() http.HandlerFunc {
 	templ := rt.parse(nil, "admin/audit_log.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		pageStr := r.FormValue("page")
@@ -166,7 +166,7 @@ func (rt *Web) auditLog() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) submission() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) submission() http.HandlerFunc {
 	templ := rt.parse(nil, "submission.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &SubParams{GenContext(r), util.Submission(r)})
@@ -192,7 +192,7 @@ func (rt *Web) canViewAllSubs(user *kilonova.UserBrief) bool {
 	return rt.base.IsProposer(user)
 }
 
-func (rt *Web) paste() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) paste() http.HandlerFunc {
 	templ := rt.parse(nil, "paste.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &PasteParams{GenContext(r), util.Paste(r)})
@@ -225,7 +225,7 @@ func (rt *Web) appropriateDescriptionVariant(pb *kilonova.Problem, user *kilonov
 	return variants[0].Language, variants[0].Format
 }
 
-func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) problem() http.HandlerFunc {
 	templ := rt.parse(nil, "problem/summary.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		problem := util.Problem(r)
@@ -331,7 +331,7 @@ func (rt *Web) problem() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) problemSubmissions() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) problemSubmissions() http.HandlerFunc {
 	templ := rt.parse(nil, "problem/pb_submissions.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ProblemTopbarParams{
@@ -343,7 +343,7 @@ func (rt *Web) problemSubmissions() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) problemSubmit() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) problemSubmit() http.HandlerFunc {
 	templ := rt.parse(nil, "problem/pb_submit.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		langs := eval.Langs
@@ -375,7 +375,7 @@ func (rt *Web) problemSubmit() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) contests() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) contests() http.HandlerFunc {
 	templ := rt.parse(nil, "contest/index.html", "modals/contest_list.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		contests, err := rt.base.VisibleContests(r.Context(), util.UserBrief(r))
@@ -390,7 +390,7 @@ func (rt *Web) contests() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) contest() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) contest() http.HandlerFunc {
 	templ := rt.parse(nil, "contest/view.html", "problem/topbar.html", "modals/pbs.html", "modals/contest_sidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ContestParams{
@@ -402,7 +402,7 @@ func (rt *Web) contest() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) contestEdit() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) contestEdit() http.HandlerFunc {
 	templ := rt.parse(nil, "contest/edit.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ContestParams{
@@ -414,7 +414,7 @@ func (rt *Web) contestEdit() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) contestCommunication() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) contestCommunication() http.HandlerFunc {
 	templ := rt.parse(nil, "contest/communication.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ContestParams{
@@ -426,7 +426,7 @@ func (rt *Web) contestCommunication() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) contestRegistrations() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) contestRegistrations() http.HandlerFunc {
 	templ := rt.parse(nil, "contest/registrations.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ContestParams{
@@ -438,7 +438,7 @@ func (rt *Web) contestRegistrations() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) contestLeaderboard() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) contestLeaderboard() http.HandlerFunc {
 	templ := rt.parse(nil, "contest/leaderboard.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ContestParams{
@@ -505,7 +505,7 @@ func (rt *Web) contestLeaderboardCSV(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, "leaderboard.csv", time.Now(), bytes.NewReader(buf.Bytes()))
 }
 
-func (rt *Web) selfProfile() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) selfProfile() http.HandlerFunc {
 	templ := rt.parse(nil, "profile.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		solvedPbs, err := rt.base.SolvedProblems(r.Context(), util.UserBrief(r))
@@ -525,7 +525,7 @@ func (rt *Web) selfProfile() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) profile() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) profile() http.HandlerFunc {
 	templ := rt.parse(nil, "profile.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "user")))
@@ -556,7 +556,7 @@ func (rt *Web) profile() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) resendEmail() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) resendEmail() http.HandlerFunc {
 	templ := rt.parse(nil, "util/sent.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		u := util.UserFull(r)
@@ -580,7 +580,7 @@ func (rt *Web) resendEmail() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) verifyEmail() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) verifyEmail() http.HandlerFunc {
 	templ := rt.parse(nil, "verified-email.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		vid := chi.URLParam(r, "vid")
@@ -616,7 +616,7 @@ func (rt *Web) verifyEmail() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (rt *Web) resetPassword() func(http.ResponseWriter, *http.Request) {
+func (rt *Web) resetPassword() http.HandlerFunc {
 	templ := rt.parse(nil, "auth/forgot_pwd_reset.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqid := chi.URLParam(r, "reqid")

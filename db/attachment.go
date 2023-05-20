@@ -11,9 +11,9 @@ import (
 	"github.com/KiloProjects/kilonova"
 )
 
-const createAttachmentQuery = "INSERT INTO attachments (problem_id, visible, private, execable, name, data) VALUES (?, ?, ?, ?, ?, ?) RETURNING id;"
+const createAttachmentQuery = "INSERT INTO attachments (visible, private, execable, name, data, last_updated_by) VALUES (?, ?, ?, ?, ?, ?) RETURNING id;"
 
-func (a *DB) CreateAttachment(ctx context.Context, att *kilonova.Attachment, problemID int, data []byte) error {
+func (a *DB) CreateAttachment(ctx context.Context, att *kilonova.Attachment, problemID int, data []byte, authorID *int) error {
 	if problemID == 0 || data == nil {
 		return kilonova.ErrMissingRequired
 	}
@@ -22,14 +22,19 @@ func (a *DB) CreateAttachment(ctx context.Context, att *kilonova.Attachment, pro
 	}
 
 	var id int
-	err := a.conn.GetContext(ctx, &id, a.conn.Rebind(createAttachmentQuery), problemID, att.Visible, att.Private, att.Exec, att.Name, data)
-	if err == nil {
-		att.ID = id
+	err := a.conn.GetContext(ctx, &id, a.conn.Rebind(createAttachmentQuery), att.Visible, att.Private, att.Exec, att.Name, data, authorID)
+	if err != nil {
+		return err
 	}
+	_, err = a.pgconn.Exec(ctx, "INSERT INTO problem_attachments_m2m (problem_id, attachment_id) VALUES ($1, $2)", problemID, id)
+	if err != nil {
+		return err
+	}
+	att.ID = id
 	return err
 }
 
-const selectedAttFields = "id, created_at, visible, private, execable, name, data_size" // Make sure to keep this in sync
+const selectedAttFields = "id, created_at, last_updated_at, last_updated_by, visible, private, execable, name, data_size" // Make sure to keep this in sync
 
 func (a *DB) Attachment(ctx context.Context, id int) (*kilonova.Attachment, error) {
 	var att dbAttachment
@@ -42,7 +47,7 @@ func (a *DB) Attachment(ctx context.Context, id int) (*kilonova.Attachment, erro
 
 func (a *DB) ProblemAttachment(ctx context.Context, problemID, attachmentID int) (*kilonova.Attachment, error) {
 	var att dbAttachment
-	err := a.conn.GetContext(ctx, &att, "SELECT "+selectedAttFields+" FROM attachments WHERE problem_id = $1 AND id = $2 LIMIT 1", problemID, attachmentID)
+	err := a.conn.GetContext(ctx, &att, "SELECT "+selectedAttFields+" FROM problem_attachments WHERE problem_id = $1 AND id = $2 LIMIT 1", problemID, attachmentID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -51,7 +56,7 @@ func (a *DB) ProblemAttachment(ctx context.Context, problemID, attachmentID int)
 
 func (a *DB) AttachmentByName(ctx context.Context, problemID int, filename string) (*kilonova.Attachment, error) {
 	var att dbAttachment
-	err := a.conn.GetContext(ctx, &att, "SELECT "+selectedAttFields+" FROM attachments WHERE problem_id = $1 AND name = $2 LIMIT 1", problemID, filename)
+	err := a.conn.GetContext(ctx, &att, "SELECT "+selectedAttFields+" FROM problem_attachments WHERE problem_id = $1 AND name = $2 LIMIT 1", problemID, filename)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -65,7 +70,7 @@ func (a *DB) ProblemAttachments(ctx context.Context, pbid int, filter *kilonova.
 	if filter != nil {
 		limit, offset = filter.Limit, filter.Offset
 	}
-	query := a.conn.Rebind("SELECT " + selectedAttFields + " FROM attachments WHERE problem_id = ? AND " + strings.Join(where, " AND ") + " ORDER BY name ASC " + FormatLimitOffset(limit, offset))
+	query := a.conn.Rebind("SELECT " + selectedAttFields + " FROM problem_attachments WHERE problem_id = ? AND " + strings.Join(where, " AND ") + " ORDER BY name ASC " + FormatLimitOffset(limit, offset))
 	err := a.conn.SelectContext(ctx, &attachments, query, append([]any{pbid}, args...)...)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.Attachment{}, nil
@@ -84,7 +89,7 @@ func (a *DB) AttachmentData(ctx context.Context, id int) ([]byte, error) {
 
 func (a *DB) AttachmentDataByName(ctx context.Context, problemID int, name string) ([]byte, error) {
 	var data []byte
-	err := a.conn.GetContext(ctx, &data, "SELECT data FROM attachments WHERE problem_id = $1 AND name = $2", problemID, name)
+	err := a.conn.GetContext(ctx, &data, "SELECT data FROM problem_attachments WHERE problem_id = $1 AND name = $2", problemID, name)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []byte{}, nil
 	}
@@ -96,7 +101,7 @@ func (a *DB) ProblemRawDesc(ctx context.Context, problemID int, name string) ([]
 		Data    []byte `db:"data"`
 		Private bool   `db:"private"`
 	}
-	err := a.conn.GetContext(ctx, &rez, "SELECT data, private FROM attachments WHERE problem_id = $1 AND name = $2", problemID, name)
+	err := a.conn.GetContext(ctx, &rez, "SELECT data, private FROM problem_attachments WHERE problem_id = $1 AND name = $2", problemID, name)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []byte{}, true, nil
 	}
@@ -116,8 +121,8 @@ func (a *DB) UpdateAttachment(ctx context.Context, id int, upd *kilonova.Attachm
 	return err
 }
 
-func (a *DB) UpdateAttachmentData(ctx context.Context, id int, data []byte) error {
-	_, err := a.pgconn.Exec(ctx, "UPDATE attachments SET data = $1 WHERE id = $2", data, id)
+func (a *DB) UpdateAttachmentData(ctx context.Context, id int, data []byte, updatedBy *int) error {
+	_, err := a.pgconn.Exec(ctx, "UPDATE attachments SET data = $1, last_updated_at = NOW(), last_updated_by = COALESCE($3, last_updated_by) WHERE id = $2", data, id, updatedBy)
 	return err
 }
 
@@ -127,7 +132,7 @@ func (a *DB) DeleteAttachment(ctx context.Context, attid int) error {
 }
 
 func (a *DB) DeleteAttachments(ctx context.Context, pbid int, attIDs []int) (int64, error) {
-	result, err := a.pgconn.Exec(ctx, "DELETE FROM attachments WHERE problem_id = $1 AND id = ANY($2)", pbid, attIDs)
+	result, err := a.pgconn.Exec(ctx, "DELETE FROM attachments WHERE id = ANY($2) AND EXISTS (SELECT 1 FROM problem_attachments_m2m WHERE attachment_id = attachments.id AND problem_id = $1)", pbid, attIDs)
 	if err != nil {
 		return -1, err
 	}
@@ -182,6 +187,9 @@ type dbAttachment struct {
 	Private   bool      `db:"private"`
 	Exec      bool      `db:"execable"`
 
+	LastUpdatedAt time.Time `db:"last_updated_at"`
+	LastUpdatedBy *int      `db:"last_updated_by"`
+
 	Name string `db:"name"`
 	Size int    `db:"data_size"`
 	//Data []byte `db:"data"`
@@ -197,6 +205,9 @@ func internalToAttachment(att *dbAttachment) *kilonova.Attachment {
 		Visible:   att.Visible,
 		Private:   att.Private,
 		Exec:      att.Exec,
+
+		LastUpdatedAt: att.LastUpdatedAt,
+		LastUpdatedBy: att.LastUpdatedBy,
 
 		Name: att.Name,
 		Size: att.Size,

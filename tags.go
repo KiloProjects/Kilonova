@@ -8,7 +8,6 @@ const (
 	TagTypeNone    TagType = ""
 	TagTypeAuthor  TagType = "author"
 	TagTypeContest TagType = "contest"
-	TagTypeLevel   TagType = "level"
 	TagTypeMethod  TagType = "method"
 	TagTypeOther   TagType = "other"
 )
@@ -32,6 +31,5 @@ type TagGroup struct {
 
 func ValidTagType(t TagType) bool {
 	return t == TagTypeAuthor || t == TagTypeContest ||
-		t == TagTypeLevel || t == TagTypeMethod ||
-		t == TagTypeOther
+		t == TagTypeMethod || t == TagTypeOther
 }

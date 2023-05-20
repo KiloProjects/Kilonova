@@ -105,6 +105,9 @@ type Attachment struct {
 	Private   bool      `json:"private"`
 	Exec      bool      `json:"exec"`
 
+	LastUpdatedAt time.Time `json:"last_updated_at"`
+	LastUpdatedBy *int      `json:"last_updated_by"`
+
 	Name string `json:"name"`
 	// Data []byte `json:"data,omitempty"`
 	Size int `json:"data_size"`

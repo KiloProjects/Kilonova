@@ -223,7 +223,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	return nil
 }
 
-func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Reader, base *sudoapi.BaseAPI) *kilonova.StatusError {
+func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Reader, base *sudoapi.BaseAPI, requestor *kilonova.UserBrief) *kilonova.StatusError {
 	aCtx := NewArchiveCtx()
 
 	for _, file := range ar.File {
@@ -363,12 +363,17 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 				continue
 			}
 
+			var userID *int
+			if requestor != nil {
+				userID = &requestor.ID
+			}
+
 			if err := base.CreateAttachment(ctx, &kilonova.Attachment{
 				Name:    att.Name,
 				Private: att.Private,
 				Visible: att.Visible,
 				Exec:    att.Exec,
-			}, pb.ID, f); err != nil {
+			}, pb.ID, f, userID); err != nil {
 				zap.S().Warn("Couldn't create attachment", err)
 				f.Close()
 				continue

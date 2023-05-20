@@ -40,7 +40,7 @@ func (s *API) createAttachment(w http.ResponseWriter, r *http.Request) {
 		Name:    name,
 	}
 
-	if err := s.base.CreateAttachment(r.Context(), &att, util.Problem(r).ID, file); err != nil {
+	if err := s.base.CreateAttachment(r.Context(), &att, util.Problem(r).ID, file, &util.UserBrief(r).ID); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -115,7 +115,7 @@ func (s *API) updateAttachmentData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.base.UpdateAttachmentData(r.Context(), att.ID, val); err != nil {
+	if err := s.base.UpdateAttachmentData(r.Context(), att.ID, val, &util.UserBrief(r).ID); err != nil {
 		err.WriteError(w)
 		return
 	}
