@@ -39,6 +39,7 @@ func Kilonova() error {
 
 	// Setup context
 	ctx, cancel := context.WithCancel(context.Background())
+	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, os.Kill)
 
 	// Initialize components
 	if config.Features.Grader {
@@ -68,7 +69,6 @@ func Kilonova() error {
 	}()
 
 	zap.S().Info("Successfully started")
-	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, os.Kill)
 
 	defer func() {
 		zap.S().Info("Shutting Down")

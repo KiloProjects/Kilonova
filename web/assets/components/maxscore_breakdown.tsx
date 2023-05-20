@@ -1,5 +1,5 @@
 import { h, Fragment, render } from "preact";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import register from "preact-custom-element";
 import getText from "../translation";
 import { apiToast } from "../toast";
