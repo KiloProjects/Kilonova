@@ -18,17 +18,17 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/mattn/go-sqlite3 v1.14.16 // indirect
-	github.com/microcosm-cc/bluemonday v1.0.23
+	github.com/microcosm-cc/bluemonday v1.0.24
 	github.com/yuin/goldmark v1.5.4
 	go.uber.org/zap v1.24.0
-	golang.org/x/crypto v0.8.0
+	golang.org/x/crypto v0.9.0
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sync v0.2.0
 	golang.org/x/text v0.9.0
 )
 
 require (
-	github.com/FurqanSoftware/goldmark-katex v0.0.0-20221223060946-0bf781ec55b4
+	github.com/FurqanSoftware/goldmark-katex v0.0.0-20230521165136-6962722a8699
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/jackc/pgx/v5 v5.3.1
 )

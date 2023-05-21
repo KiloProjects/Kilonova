@@ -77,6 +77,12 @@ class Client:
         self.token = res.data
         return None
 
+    def merge_tags(self, into: int, org: list[int]) -> None:
+        for tg in org:
+            res = self.post("/api/tags/merge", {"to_keep": into, "to_replace": tg})
+            if res.status != "success":
+                print(f"Couldn't merge tag {tg} in {into}: {res.data}")
+
     def check_username_exists(self, uname: str) -> bool:
         res = self.get("/api/user/getByName", {"name": uname})
         return res.status == "success"

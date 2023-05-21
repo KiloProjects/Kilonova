@@ -21,7 +21,7 @@ type PropertiesRaw struct {
 	Time         *float64 `props:"time"`
 	Memory       *float64 `props:"memory"`
 	DefaultScore *int     `props:"default_score"`
-	Author       *string  `props:"author"`
+	Tags         *string  `props:"tags"`
 	Source       *string  `props:"source"`
 	ConsoleInput *string  `props:"console_input"`
 	TestName     *string  `props:"test_name"`
@@ -109,7 +109,7 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 	props := &Properties{
 		TimeLimit:     rawProps.Time,
 		DefaultPoints: rawProps.DefaultScore,
-		Author:        rawProps.Author,
+		Tags:          rawProps.Tags,
 		Source:        rawProps.Source,
 		TestName:      rawProps.TestName,
 	}

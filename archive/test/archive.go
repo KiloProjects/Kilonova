@@ -63,7 +63,7 @@ type Properties struct {
 	// kbytes
 	MemoryLimit *int
 
-	Author       *string
+	Tags         *string
 	Source       *string
 	ConsoleInput *bool
 	TestName     *string
