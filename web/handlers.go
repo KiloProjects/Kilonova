@@ -736,11 +736,11 @@ func (rt *Web) problemAttachment(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Could not render file", 500)
 			return
 		}
-		http.ServeContent(w, r, att.Name+".html", time.Now(), bytes.NewReader(data))
+		http.ServeContent(w, r, att.Name+".html", att.LastUpdatedAt, bytes.NewReader(data))
 		return
 	}
 
-	http.ServeContent(w, r, att.Name, time.Now(), bytes.NewReader(attData))
+	http.ServeContent(w, r, att.Name, att.LastUpdatedAt, bytes.NewReader(attData))
 }
 
 func (rt *Web) docs() http.HandlerFunc {
