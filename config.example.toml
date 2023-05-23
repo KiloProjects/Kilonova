@@ -7,9 +7,10 @@
  default_language = "en"
  db_dsn = "postgresql://<fill here>"
  test_max_mem_kb = 655360 # 640 MB
+ updates_webhook = "https://discord.com/api/webhooks/<WEBHOOK_ID>/<WEBHOOK_SECRET>"
 
 [eval]
- isolatePath = "/tmp/isolate"
+ isolatePath = "/usr/local/etc/isolate_bin"
  compilePath = "/tmp/kncompiles"
  num_concurrent = 3
  global_max_mem_kb = 2097152 # 2 GB

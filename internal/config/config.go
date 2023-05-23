@@ -57,6 +57,8 @@ type CommonConf struct {
 	DBDSN string `toml:"db_dsn"`
 
 	TestMaxMemKB int `toml:"test_max_mem_kb"`
+
+	UpdatesWebhook string `toml:"updates_webhook"`
 }
 
 type FeaturesConf struct {

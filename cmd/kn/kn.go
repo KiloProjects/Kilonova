@@ -24,6 +24,10 @@ import (
 
 func Kilonova() error {
 
+	// Setup context
+	ctx, cancel := context.WithCancel(context.Background())
+	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, os.Kill)
+
 	// Print welcome message
 	zap.S().Infof("Starting Kilonova %s", kilonova.Version)
 
@@ -35,11 +39,8 @@ func Kilonova() error {
 	if err != nil {
 		zap.S().Fatal(err)
 	}
+	base.Start(ctx)
 	defer base.Close()
-
-	// Setup context
-	ctx, cancel := context.WithCancel(context.Background())
-	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, os.Kill)
 
 	// Initialize components
 	if config.Features.Grader {

@@ -2,9 +2,14 @@ package sudoapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"go.uber.org/zap"
 )
@@ -74,24 +79,30 @@ func (s *BaseAPI) SetProposer(ctx context.Context, userID int, toSet bool) *Stat
 	return s.updateUser(ctx, userID, kilonova.UserFullUpdate{Proposer: &toSet})
 }
 
-func (s *BaseAPI) LogSytemAction(ctx context.Context, msg string) {
-	if _, err := s.db.CreateAuditLog(ctx, msg, nil, true); err != nil {
-		zap.S().Warn(WrapError(err, "Couldn't register systm action to audit log"))
-		zap.S().Info("Action: %q", msg)
+type logEntry struct {
+	Message  string
+	AuthorID *int
+	System   bool
+}
+
+func (s *BaseAPI) LogSystemAction(ctx context.Context, msg string) {
+	s.logChan <- &logEntry{
+		Message:  msg,
+		AuthorID: nil,
+		System:   true,
 	}
 }
 
 func (s *BaseAPI) LogUserAction(ctx context.Context, msg string, args ...any) {
-	if util.UserBriefContext(ctx) == nil {
-		zap.S().Warn("Empty user provided")
-		zap.S().Infof("Action: %q", msg)
-		return
+	var id *int
+	if util.UserBriefContext(ctx) != nil {
+		id = &util.UserBriefContext(ctx).ID
 	}
 
-	msg = fmt.Sprintf(msg, args...)
-	if _, err := s.db.CreateAuditLog(ctx, msg, &util.UserBriefContext(ctx).ID, false); err != nil {
-		zap.S().WithOptions(zap.AddCallerSkip(1)).Warn(WrapError(err, "Couldn't register user action to audit log"))
-		zap.S().Infof("Action (by user #%d): %q", util.UserBriefContext(ctx).ID, msg)
+	s.logChan <- &logEntry{
+		Message:  fmt.Sprintf(msg, args...),
+		AuthorID: id,
+		System:   false,
 	}
 }
 
@@ -109,4 +120,41 @@ func (s *BaseAPI) GetLogCount(ctx context.Context) (int, *StatusError) {
 		return -1, WrapError(err, "Couldn't get audit log count")
 	}
 	return cnt, nil
+}
+
+func (s *BaseAPI) ingestAuditLogs(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			if !errors.Is(ctx.Err(), context.Canceled) {
+				return ctx.Err()
+			}
+			return nil
+		case val := <-s.logChan:
+			if _, err := s.db.CreateAuditLog(ctx, val.Message, val.AuthorID, val.System); err != nil {
+				zap.S().Warn("Couldn't store audit log entry to database: ", err)
+			}
+
+			var s strings.Builder
+			s.WriteString("Action")
+			if val.AuthorID != nil {
+				s.WriteString(fmt.Sprintf(" (by user %d)", *val.AuthorID))
+			}
+			if val.System {
+				s.WriteString(" (system)")
+			}
+			s.WriteString(": " + val.Message)
+
+			zap.S().Info(s.String())
+			if config.Common.UpdatesWebhook != "" {
+				vals := make(url.Values)
+				vals.Add("content", s.String())
+				vals.Add("username", "Kilonova Audit Log")
+				_, err := http.PostForm(config.Common.UpdatesWebhook, vals)
+				if err != nil {
+					zap.S().Warn(err)
+				}
+			}
+		}
+	}
 }

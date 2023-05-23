@@ -29,6 +29,14 @@ type BaseAPI struct {
 	manager kilonova.DataStore
 	mailer  kilonova.Mailer
 	rd      kilonova.MarkdownRenderer
+
+	logChan chan *logEntry
+}
+
+func (s *BaseAPI) Start(ctx context.Context) *StatusError {
+	go s.ingestAuditLogs(ctx)
+
+	return nil
 }
 
 func (s *BaseAPI) Close() *StatusError {
@@ -40,7 +48,7 @@ func (s *BaseAPI) Close() *StatusError {
 }
 
 func GetBaseAPI(db *db.DB, manager kilonova.DataStore, mailer kilonova.Mailer) *BaseAPI {
-	return &BaseAPI{db, manager, mailer, mdrenderer.NewLocalRenderer()}
+	return &BaseAPI{db, manager, mailer, mdrenderer.NewLocalRenderer(), make(chan *logEntry, 20)}
 }
 
 func InitializeBaseAPI(ctx context.Context) (*BaseAPI, *StatusError) {
@@ -69,5 +77,5 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, *StatusError) {
 	}
 	zap.S().Info("Connected to DB")
 
-	return &BaseAPI{db, manager, mailer, mdrenderer.NewLocalRenderer()}, nil
+	return GetBaseAPI(db, manager, mailer), nil
 }
