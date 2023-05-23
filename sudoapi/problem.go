@@ -61,12 +61,12 @@ func (s *BaseAPI) UpdateProblem(ctx context.Context, id int, args kilonova.Probl
 	return nil
 }
 
-func (s *BaseAPI) DeleteProblem(ctx context.Context, id int) *StatusError {
-	if err := s.db.DeleteProblem(ctx, id); err != nil {
+func (s *BaseAPI) DeleteProblem(ctx context.Context, problem *kilonova.Problem) *StatusError {
+	if err := s.db.DeleteProblem(ctx, problem.ID); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't delete problem")
 	}
-	s.LogUserAction(ctx, "Removed problem %d", id)
+	s.LogUserAction(ctx, "Removed problem #%d: %s", problem.ID, problem.Name)
 	return nil
 }
 

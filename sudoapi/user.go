@@ -131,11 +131,11 @@ func (s *BaseAPI) VerifyUserPassword(ctx context.Context, uid int, password stri
 	return nil
 }
 
-func (s *BaseAPI) DeleteUser(ctx context.Context, uid int) *StatusError {
-	if err := s.db.DeleteUser(ctx, uid); err != nil {
+func (s *BaseAPI) DeleteUser(ctx context.Context, user *kilonova.UserBrief) *StatusError {
+	if err := s.db.DeleteUser(ctx, user.ID); err != nil {
 		return WrapError(err, "Couldn't delete user")
 	}
-	s.LogUserAction(ctx, "Deleted user %d", uid)
+	s.LogUserAction(ctx, "Deleted user #%d: %s", user.ID, user.Name)
 	return nil
 }
 

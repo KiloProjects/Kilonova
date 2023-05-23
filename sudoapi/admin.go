@@ -80,29 +80,24 @@ func (s *BaseAPI) SetProposer(ctx context.Context, userID int, toSet bool) *Stat
 }
 
 type logEntry struct {
-	Message  string
-	AuthorID *int
-	System   bool
+	Message string
+	Author  *kilonova.UserBrief
+	System  bool
 }
 
 func (s *BaseAPI) LogSystemAction(ctx context.Context, msg string) {
 	s.logChan <- &logEntry{
-		Message:  msg,
-		AuthorID: nil,
-		System:   true,
+		Message: msg,
+		Author:  nil,
+		System:  true,
 	}
 }
 
 func (s *BaseAPI) LogUserAction(ctx context.Context, msg string, args ...any) {
-	var id *int
-	if util.UserBriefContext(ctx) != nil {
-		id = &util.UserBriefContext(ctx).ID
-	}
-
 	s.logChan <- &logEntry{
-		Message:  fmt.Sprintf(msg, args...),
-		AuthorID: id,
-		System:   false,
+		Message: fmt.Sprintf(msg, args...),
+		Author:  util.UserBriefContext(ctx),
+		System:  false,
 	}
 }
 
@@ -131,14 +126,18 @@ func (s *BaseAPI) ingestAuditLogs(ctx context.Context) error {
 			}
 			return nil
 		case val := <-s.logChan:
-			if _, err := s.db.CreateAuditLog(ctx, val.Message, val.AuthorID, val.System); err != nil {
+			var id *int
+			if val.Author != nil {
+				id = &val.Author.ID
+			}
+			if _, err := s.db.CreateAuditLog(ctx, val.Message, id, val.System); err != nil {
 				zap.S().Warn("Couldn't store audit log entry to database: ", err)
 			}
 
 			var s strings.Builder
 			s.WriteString("Action")
-			if val.AuthorID != nil {
-				s.WriteString(fmt.Sprintf(" (by user %d)", *val.AuthorID))
+			if val.Author != nil {
+				s.WriteString(fmt.Sprintf(" (by user #%d: %s)", val.Author.ID, val.Author.Name))
 			}
 			if val.System {
 				s.WriteString(" (system)")

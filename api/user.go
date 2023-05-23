@@ -205,7 +205,7 @@ func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.base.DeleteUser(r.Context(), args.ID); err != nil {
+	if err := s.base.DeleteUser(r.Context(), user); err != nil {
 		err.WriteError(w)
 		return
 	}

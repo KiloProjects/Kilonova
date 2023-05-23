@@ -296,12 +296,12 @@ func (s *BaseAPI) DeleteSubmission(ctx context.Context, subID int) *StatusError 
 }
 
 // Feature request by liviu
-func (s *BaseAPI) ResetProblemSubmissions(ctx context.Context, pbid int) *StatusError {
-	if err := s.db.BulkUpdateSubmissions(ctx, kilonova.SubmissionFilter{ProblemID: &pbid}, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting}); err != nil {
+func (s *BaseAPI) ResetProblemSubmissions(ctx context.Context, problem *kilonova.Problem) *StatusError {
+	if err := s.db.BulkUpdateSubmissions(ctx, kilonova.SubmissionFilter{ProblemID: &problem.ID}, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting}); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't reset submissions")
 	}
-	s.LogUserAction(ctx, "Reset submissions for problem %d", pbid)
+	s.LogUserAction(ctx, "Reset submissions for problem #%d: %s", problem.ID, problem.Name)
 	return nil
 }
 

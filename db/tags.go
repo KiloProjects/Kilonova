@@ -107,13 +107,13 @@ func (s *DB) CreateTag(ctx context.Context, name string, tagType kilonova.TagTyp
 
 // original - the OG that will remain after the merge
 // toReplace - the one that will be replaced
-func (s *DB) MergeTags(ctx context.Context, original int, toReplace int) error {
+func (s *DB) MergeTags(ctx context.Context, original int, toReplace []int) error {
 	return pgx.BeginFunc(ctx, s.pgconn, func(tx pgx.Tx) error {
-		if _, err := tx.Exec(ctx, "INSERT INTO problem_tags (tag_id, problem_id, position) SELECT $1, problem_id, position FROM problem_tags WHERE tag_id = $2 ON CONFLICT UPDATE", original, toReplace); err != nil {
+		if _, err := tx.Exec(ctx, "INSERT INTO problem_tags (tag_id, problem_id, position) SELECT $1, problem_id, position FROM problem_tags WHERE tag_id = ANY($2) ON CONFLICT DO NOTHING", original, toReplace); err != nil {
 			return err
 		}
 
-		if _, err := tx.Exec(ctx, "DELETE FROM problem_tags WHERE tag_id = $1", toReplace); err != nil { // Will also cascade to problem tags
+		if _, err := tx.Exec(ctx, "DELETE FROM tags WHERE id = ANY($1)", toReplace); err != nil { // Will also cascade to problem tags
 			return err
 		}
 

@@ -3,6 +3,8 @@ package sudoapi
 import (
 	"context"
 	"errors"
+	"slices"
+	"sort"
 
 	"github.com/KiloProjects/kilonova"
 	"go.uber.org/zap"
@@ -71,10 +73,11 @@ func (s *BaseAPI) UpdateTagType(ctx context.Context, id int, newType kilonova.Ta
 	return nil
 }
 
-func (s *BaseAPI) DeleteTag(ctx context.Context, id int) *StatusError {
-	if err := s.db.DeleteTag(ctx, id); err != nil {
+func (s *BaseAPI) DeleteTag(ctx context.Context, tag *kilonova.Tag) *StatusError {
+	if err := s.db.DeleteTag(ctx, tag.ID); err != nil {
 		return WrapError(err, "Couldn't delete tag")
 	}
+	s.LogUserAction(ctx, "Deleted tag #%d: %s", tag.ID, tag.Name)
 	return nil
 }
 
@@ -89,10 +92,10 @@ func (s *BaseAPI) CreateTag(ctx context.Context, name string, tagType kilonova.T
 	return id, nil
 }
 
-// master - the OG that will remain after the merge
-// clone - the one that will be replaced
-func (s *BaseAPI) MergeTags(ctx context.Context, master int, clone int) *StatusError {
-	if err := s.db.MergeTags(ctx, master, clone); err != nil {
+// original - the OG that will remain after the merge
+// toReplace - the one that will be replaced
+func (s *BaseAPI) MergeTags(ctx context.Context, original int, toReplace []int) *StatusError {
+	if err := s.db.MergeTags(ctx, original, toReplace); err != nil {
 		return WrapError(err, "Couldn't merge tags")
 	}
 	return nil
@@ -107,6 +110,8 @@ func (s *BaseAPI) ProblemTags(ctx context.Context, problemID int) ([]*kilonova.T
 }
 
 func (s *BaseAPI) UpdateProblemTags(ctx context.Context, problemID int, tagIDs []int) *StatusError {
+	sort.Ints(tagIDs)
+	tagIDs = slices.Compact(tagIDs)
 	if err := s.db.UpdateProblemTags(ctx, problemID, tagIDs); err != nil {
 		return WrapError(err, "Couldn't update problem tags")
 	}

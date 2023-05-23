@@ -114,7 +114,7 @@ func (s *API) Handler() http.Handler {
 				})
 
 				r.Post("/reevaluateSubs", webMessageWrapper("Reevaluating submissions", func(ctx context.Context, args struct{}) *kilonova.StatusError {
-					return s.base.ResetProblemSubmissions(ctx, util.ProblemContext(ctx).ID)
+					return s.base.ResetProblemSubmissions(ctx, util.ProblemContext(ctx))
 				}))
 
 				r.Route("/get", func(r chi.Router) {
@@ -180,7 +180,11 @@ func (s *API) Handler() http.Handler {
 		r.With(s.MustBeAdmin).Post("/delete", webMessageWrapper("Deleted tag", func(ctx context.Context, args struct {
 			ID int `json:"id"`
 		}) *sudoapi.StatusError {
-			return s.base.DeleteTag(ctx, args.ID)
+			tag, err := s.base.TagByID(ctx, args.ID)
+			if err != nil {
+				return err
+			}
+			return s.base.DeleteTag(ctx, tag)
 		}))
 
 		r.With(s.MustBeProposer).Post("/create", s.createTag)
@@ -188,7 +192,7 @@ func (s *API) Handler() http.Handler {
 			ToKeep    int `json:"to_keep"`
 			ToReplace int `json:"to_replace"`
 		}) *sudoapi.StatusError {
-			return s.base.MergeTags(ctx, args.ToKeep, args.ToReplace)
+			return s.base.MergeTags(ctx, args.ToKeep, []int{args.ToReplace}) // TODO: Many tags
 		}))
 		r.With(s.MustBeProposer).Post("/update", s.updateTag)
 	})
