@@ -29,16 +29,22 @@ require (
 
 require (
 	github.com/FurqanSoftware/goldmark-katex v0.0.0-20230521165136-6962722a8699
+	github.com/Yiling-J/theine-go v0.2.6
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/jackc/pgx/v5 v5.3.1
+	github.com/litao91/goldmark-mathjax v0.0.0-20210217064022-a43cf739a50f
 )
 
 require (
 	github.com/bluele/gcache v0.0.2 // indirect
+	github.com/gammazero/deque v0.2.1 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/jackc/puddle/v2 v2.2.0 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/lithdew/quickjs v0.0.0-20200714182134-aaa42285c9d2 // indirect
+	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	golang.org/x/sys v0.8.0 // indirect
 )
