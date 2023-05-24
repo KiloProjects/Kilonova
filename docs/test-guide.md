@@ -30,6 +30,7 @@ memory = 512
 # Checker
 
 * Must be named `checker_legacy.cpp` or `checker.cpp` and added as a private attachement (NOTE: since 2023-03-13) with the `exec` toggle checked.
+* NOTE (since 2023-05-24): it is now possible to check the contestant's source code in a special file called `contestant.txt`, created in the checker's directory. You could maybe use it to disallow certain keywords.
 
 ## Legacy Format
 

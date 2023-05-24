@@ -32,6 +32,10 @@ func standardCheckerTask(ctx context.Context, box eval.Sandbox, job *customCheck
 		rez.Output = ErrOut
 		return rez, nil
 	}
+	if err := box.WriteFile("/box/contestant.txt", strings.NewReader(job.c.sub.Code), 0644); err != nil {
+		rez.Output = ErrOut
+		return rez, nil
+	}
 	if err := eval.CopyInBox(box, path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", -job.c.sub.ID)), lang.CompiledName); err != nil {
 		rez.Output = ErrOut
 		return rez, nil
