@@ -5,6 +5,16 @@ hljs.configure({
 });
 hljs.addPlugin(new CopyButtonPlugin());
 
+document.addEventListener("DOMContentLoaded", () => {
+	const x = new CopyButtonPlugin();
+	document.querySelectorAll("pre.chroma code").forEach((val) => {
+		x["after:highlightElement"]({ el: val, text: (val as HTMLPreElement).innerText.replaceAll("\n\n", "\n") });
+	});
+	document.querySelectorAll(".statement-images pre:not(.chroma) code").forEach((val) => {
+		x["after:highlightElement"]({ el: val, text: (val as HTMLPreElement).innerText.replaceAll("\n\n", "\n").trim() });
+	});
+});
+
 import CodeMirror from "codemirror";
 window.hljs = hljs;
 window.CodeMirror = CodeMirror;
