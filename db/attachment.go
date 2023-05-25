@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/jackc/pgx/v5"
 )
 
 const createAttachmentQuery = "INSERT INTO attachments (visible, private, execable, name, data, last_updated_by) VALUES (?, ?, ?, ?, ?, ?) RETURNING id;"
@@ -61,6 +62,15 @@ func (a *DB) AttachmentByName(ctx context.Context, problemID int, filename strin
 		return nil, nil
 	}
 	return internalToAttachment(&att), err
+}
+
+func (a *DB) MarkdownAttachments(ctx context.Context, limit int, offset int) ([][]byte, error) {
+	q, _ := a.pgconn.Query(ctx, "SELECT data FROM attachments WHERE name LIKE '%.md%'")
+	atts, err := pgx.CollectRows(q, pgx.RowTo[[]byte])
+	if err != nil {
+		return [][]byte{}, err
+	}
+	return atts, nil
 }
 
 func (a *DB) ProblemAttachments(ctx context.Context, pbid int, filter *kilonova.AttachmentFilter) ([]*kilonova.Attachment, error) {
