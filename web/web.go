@@ -79,6 +79,7 @@ func (rt *Web) Handler() http.Handler {
 	r.Use(rt.initLanguage)
 	r.Use(rt.initTheme)
 
+	r.Get("/static/chroma.css", rt.chromaCSS())
 	r.Mount("/static", http.HandlerFunc(staticFileServer))
 
 	r.Get("/", rt.index())

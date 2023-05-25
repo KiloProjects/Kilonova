@@ -4,7 +4,9 @@ import (
 	"bytes"
 
 	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer/knkatex"
+	chtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/yuin/goldmark"
+	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
@@ -23,7 +25,14 @@ func (r *LocalRenderer) Render(src []byte) ([]byte, error) {
 
 func NewLocalRenderer() *LocalRenderer {
 	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM, extension.Footnote, &attNode{}, knkatex.Extension),
+		goldmark.WithExtensions(extension.GFM, extension.Footnote, &attNode{}, knkatex.Extension,
+			highlighting.NewHighlighting(
+				highlighting.WithFormatOptions( // TODO: Keep in line with handlers.go:chromaCSS()
+					chtml.TabWidth(4),
+					chtml.WithClasses(true),
+				),
+			),
+		),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID(), parser.WithAttribute()),
 		goldmark.WithRendererOptions(html.WithHardWraps(), html.WithXHTML()),
 	)

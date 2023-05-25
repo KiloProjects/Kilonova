@@ -10,7 +10,7 @@
 /* prettier-ignore */
 .dark {
 	/* Copy highlight.js monokai theme for dark mode class strategy */
-    /*@import "highlight.js/styles/monokai.css" (prefers-color-scheme: dark);*/
+    /* @import "highlight.js/styles/monokai.css"; */
     pre code.hljs{display:block;overflow-x:auto;padding:1em}code.hljs{padding:3px 5px}.hljs{background:#272822;color:#ddd}.hljs-keyword,.hljs-literal,.hljs-name,.hljs-selector-tag,.hljs-strong,.hljs-tag{color:#f92672}.hljs-code{color:#66d9ef}.hljs-attribute,.hljs-link,.hljs-regexp,.hljs-symbol{color:#bf79db}.hljs-addition,.hljs-built_in,.hljs-bullet,.hljs-emphasis,.hljs-section,.hljs-selector-attr,.hljs-selector-pseudo,.hljs-string,.hljs-subst,.hljs-template-tag,.hljs-template-variable,.hljs-title,.hljs-type,.hljs-variable{color:#a6e22e}.hljs-class .hljs-title,.hljs-title.class_{color:#fff}.hljs-comment,.hljs-deletion,.hljs-meta,.hljs-quote{color:#75715e}.hljs-doctag,.hljs-keyword,.hljs-literal,.hljs-section,.hljs-selector-id,.hljs-selector-tag,.hljs-title,.hljs-type{font-weight:700}
 }
 
@@ -31,6 +31,16 @@
 }
 .cm-s-monokai .CodeMirror-gutters {
 	@apply dark:bg-[#333];
+}
+
+.light .chroma,
+.light .bg {
+	background: #f0f0f0;
+}
+
+.dark .chroma,
+.dark .bg {
+	@apply bg-[#333];
 }
 
 /* .notyf__message a {
@@ -536,8 +546,8 @@
 	code {
 		@apply bg-hljs rounded-md mt-2 mb-2 px-1;
 	}
-	pre code {
-		@apply px-0;
+	pre code:not(.hljs) {
+		@apply block px-2 py-1;
 	}
 	pre code.hljs {
 		@apply px-2 py-1;
@@ -568,7 +578,7 @@
 		word-wrap: break-word; /* Internet Explorer 5.5+ */
 		tab-size: 4;
 		@apply break-normal;
-		@apply bg-hljs rounded-lg px-2 mt-1 mb-1;
+		@apply bg-hljs rounded-lg px-2 mt-1 mb-1 overflow-hidden;
 	}
 
 	body {

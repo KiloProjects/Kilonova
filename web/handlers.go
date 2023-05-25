@@ -19,6 +19,9 @@ import (
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
+	chtml "github.com/alecthomas/chroma/v2/formatters/html"
+	"github.com/alecthomas/chroma/v2/styles"
+	"github.com/evanw/esbuild/pkg/api"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
@@ -789,6 +792,34 @@ func (rt *Web) docs() http.HandlerFunc {
 			}
 			http.ServeContent(w, r, path.Base(p), time.Now(), bytes.NewReader(file))
 		}
+	}
+}
+
+func (rt *Web) chromaCSS() http.HandlerFunc {
+	formatter := chtml.New(chtml.WithClasses(true), chtml.TabWidth(4)) // Identical to mdrenderer.go
+	var lightBuf, darkBuf bytes.Buffer
+	formatter.WriteCSS(&lightBuf, styles.Get("pygments"))
+	formatter.WriteCSS(&darkBuf, styles.Get("monokai"))
+	css := fmt.Sprintf(".light {%s} .dark {%s}", lightBuf.String(), darkBuf.String())
+	rez := api.Transform(css, api.TransformOptions{
+		Loader: api.LoaderCSS,
+		// MinifyWhitespace: true,
+		Engines: []api.Engine{
+			{Name: api.EngineChrome, Version: "100"},
+			{Name: api.EngineFirefox, Version: "100"},
+			{Name: api.EngineSafari, Version: "11"},
+		},
+	})
+	// fmt.Println(string(rez.Code))
+	if len(rez.Errors) > 0 {
+		zap.S().Fatalf("Found %d errors in chroma.css: %#v", len(rez.Errors), rez.Errors)
+		return nil
+	}
+
+	createTime := time.Now()
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		http.ServeContent(w, r, "chroma.css", createTime, bytes.NewReader(rez.Code))
 	}
 }
 

@@ -68,6 +68,7 @@ export function CodeMirrorThemeHook(cm: Editor) {
 export function setTheme(theme: "light" | "dark") {
 	cookie.set("kn-theme", theme, { expires: 1000, sameSite: "lax" });
 	document.documentElement.classList.toggle("dark", theme === "dark");
+	document.documentElement.classList.toggle("light", theme !== "dark");
 
 	// if user is logged in, update default preference
 	if (window.platform_info.user_id > 0) {
