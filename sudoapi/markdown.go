@@ -23,10 +23,27 @@ func (s *BaseAPI) warmupMarkdownCache(ctx context.Context) {
 		zap.S().Warn("Couldn't fetch attachments for warmup: ", err)
 		return
 	}
+	zap.S().Info(len(atts))
+	workQueue := make(chan []byte, 5)
+	defer close(workQueue)
+	for i := 0; i < 5; i++ {
+		go func() {
+			for {
+				select {
+				case val, ok := <-workQueue:
+					if !ok {
+						return
+					}
+					if _, err := s.RenderMarkdown(val); err != nil {
+						zap.S().Warn("Couldn't render markdown: ", err)
+					}
+				}
+			}
+		}()
+	}
 	for _, att := range atts {
-		if _, err := s.RenderMarkdown(att); err != nil {
-			zap.S().Warn("Couldn't render markdown: ", err)
-		}
+		att := att
+		workQueue <- att
 	}
 	zap.S().Info("Finished warming up")
 }
