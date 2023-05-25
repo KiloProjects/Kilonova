@@ -42,7 +42,7 @@ export type Problem = {
 export type ResultSubmission = {
 	sub: Submission;
 	author: UserBrief;
-	problem: Problem;
+	problem?: Problem;
 };
 
 export type SubmissionQuery = {
@@ -78,15 +78,33 @@ function serializeQuery(q: SubmissionQuery): object {
 	};
 }
 
-export async function getSubmissions(q: SubmissionQuery) {
-	let res = await getCall<{
-		count: number;
-		subs: ResultSubmission[];
-	}>("/submissions/get", serializeQuery(q));
+type KNSubmissions = {
+	submissions: Submission[];
+	count: number;
+	users: Record<string, UserBrief>;
+	problems: Record<string, Problem>;
+};
+
+export async function getSubmissions(q: SubmissionQuery): Promise<{
+	count: number;
+	subs: ResultSubmission[];
+}> {
+	let res = await getCall<KNSubmissions>("/submissions/get", serializeQuery(q));
 	if (res.status === "error") {
 		throw new Error(res.data);
 	}
-	return res.data;
+	let subs: ResultSubmission[] = [];
+	for (let sub of res.data.submissions) {
+		subs.push({
+			sub,
+			author: res.data.users[sub.user_id.toString()],
+			problem: res.data.problems[sub.problem_id.toString()],
+		});
+	}
+	return {
+		count: res.data.count,
+		subs: subs,
+	};
 }
 
 export async function getUser(uid: number) {

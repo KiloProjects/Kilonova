@@ -432,7 +432,7 @@ function SubsView(props: SubsViewProps) {
 				)}
 				{!loading && typeof overwrites.problemID === "undefined" && query.problem_id != null && query.problem_id > 0 && subs.length > 0 && (
 					<p>
-						{getText("problemSingle")} <a href={"/problems/" + subs[0].problem.id}>{subs[0].problem.name}</a>
+						{getText("problemSingle")} <a href={"/problems/" + subs[0].problem!.id}>{subs[0].problem!.name}</a>
 					</p>
 				)}
 				{initialLoad ? (
@@ -489,14 +489,20 @@ function SubsView(props: SubsViewProps) {
 											<td class="text-center px-2 py-1">{dayjs(sub.sub.created_at).format("DD/MM/YYYY HH:mm")}</td>
 											{((query.problem_id == 0 || query.problem_id == null) && (
 												<td class="text-center px-2 py-1">
-													<a
-														href={
-															(typeof sub.sub.contest_id === "number" ? `/contests/${sub.sub.contest_id}` : "") +
-															`/problems/${sub.problem.id}`
-														}
-													>
-														{sub.problem.name}
-													</a>
+													{sub.problem ? (
+														<>
+															<a
+																href={
+																	(typeof sub.sub.contest_id === "number" ? `/contests/${sub.sub.contest_id}` : "") +
+																	`/problems/${sub.problem.id}`
+																}
+															>
+																{sub.problem.name}
+															</a>
+														</>
+													) : (
+														<>-</>
+													)}
 												</td>
 											)) || (
 												<td class="text-center px-2 py-1">

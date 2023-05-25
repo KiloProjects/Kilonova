@@ -2,13 +2,11 @@ package api
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"go.uber.org/zap"
 )
 
 func (s *API) fullSubmission(ctx context.Context, id int, lookingUser *kilonova.UserBrief, looking bool) (*sudoapi.FullSubmission, *kilonova.StatusError) {
@@ -68,26 +66,7 @@ func (s *API) filterSubs() http.HandlerFunc {
 			return
 		}
 
-		ret := []line{}
+		returnData(w, subs)
 
-		for _, sub := range subs.Submissions {
-			ln := line{
-				Sub:  sub,
-				User: subs.Users[sub.UserID],
-			}
-			if val, ok := subs.Problems[sub.ProblemID]; ok {
-				ln.Problem = val
-			} else {
-				if !errors.Is(r.Context().Err(), context.Canceled) { // Omit context canceled
-					zap.S().Warn("Didn't find problem, this should not happen.", sub.ProblemID, sub.ID, util.UserBrief(r))
-				}
-			}
-			ret = append(ret, ln)
-		}
-
-		returnData(w, struct {
-			TotalCount int    `json:"count"`
-			Subs       []line `json:"subs"`
-		}{Subs: ret, TotalCount: subs.Count})
 	}
 }
