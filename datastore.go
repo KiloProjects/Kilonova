@@ -25,4 +25,13 @@ type GraderStore interface {
 }
 
 // DataStore represents an interface for the Data Storage Manager
-type DataStore = GraderStore
+type DataStore interface {
+	GraderStore
+
+	HasAttachmentRender(attID int) bool
+	GetAttachmentRender(attID int) (io.ReadSeekCloser, error)
+	DelAttachmentRender(attID int) error
+	SaveAttachmentRender(attID int, data []byte) error
+
+	InvalidateAllAttachments() error
+}

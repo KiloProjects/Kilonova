@@ -35,7 +35,7 @@ type BaseAPI struct {
 
 func (s *BaseAPI) Start(ctx context.Context) *StatusError {
 	go s.ingestAuditLogs(ctx)
-	go s.warmupMarkdownCache(ctx)
+
 	return nil
 }
 

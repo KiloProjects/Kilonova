@@ -65,6 +65,7 @@ func (s *BaseAPI) UpdateAttachment(ctx context.Context, aid int, upd *kilonova.A
 	if err := s.db.UpdateAttachment(ctx, aid, upd); err != nil {
 		return WrapError(err, "Couldn't update attachment")
 	}
+	s.manager.DelAttachmentRender(aid)
 	return nil
 }
 
@@ -72,6 +73,7 @@ func (s *BaseAPI) UpdateAttachmentData(ctx context.Context, aid int, data []byte
 	if err := s.db.UpdateAttachmentData(ctx, aid, data, authorID); err != nil {
 		return WrapError(err, "Couldn't update attachment contents")
 	}
+	s.manager.DelAttachmentRender(aid)
 	return nil
 }
 
@@ -80,6 +82,7 @@ func (s *BaseAPI) DeleteAttachment(ctx context.Context, attachmentID int) *Statu
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't delete attachment")
 	}
+	s.manager.DelAttachmentRender(attachmentID)
 	return nil
 }
 
@@ -89,11 +92,14 @@ func (s *BaseAPI) DeleteAttachments(ctx context.Context, problemID int, attIDs [
 		zap.S().Warn(err)
 		return -1, WrapError(err, "Couldn't delete attachments")
 	}
+	for _, att := range attIDs {
+		s.manager.DelAttachmentRender(att)
+	}
 	return int(num), nil
 }
 
-func (s *BaseAPI) ProblemAttachments(ctx context.Context, problemId int) ([]*kilonova.Attachment, *StatusError) {
-	atts, err := s.db.ProblemAttachments(ctx, problemId, nil)
+func (s *BaseAPI) ProblemAttachments(ctx context.Context, problemID int) ([]*kilonova.Attachment, *StatusError) {
+	atts, err := s.db.ProblemAttachments(ctx, problemID, nil)
 	if err != nil {
 		zap.S().Warn(err)
 		return nil, WrapError(err, "Couldn't get attachments")
@@ -149,16 +155,54 @@ func (s *BaseAPI) ProblemDescVariants(ctx context.Context, problemID int, getPri
 
 // ProblemRawDesc returns the raw data of the problem description,
 // along with a bool meaning if the description is private or not
-func (s *BaseAPI) ProblemRawDesc(ctx context.Context, problemID int, lang string, format string) ([]byte, bool, *StatusError) {
+func (s *BaseAPI) ProblemRawDesc(ctx context.Context, problemID int, lang string, format string) ([]byte, *StatusError) {
 	if len(lang) > 10 || len(format) > 10 {
-		return nil, true, Statusf(400, "Not even trying to search for this description variant")
+		return nil, Statusf(400, "Not even trying to search for this description variant")
 	}
 	name := fmt.Sprintf("statement-%s.%s", lang, format)
-	data, private, err := s.db.ProblemRawDesc(ctx, problemID, name)
+	data, _, err := s.db.ProblemRawDesc(ctx, problemID, name)
 	if err != nil {
-		return nil, true, WrapError(err, "Couldn't get problem description")
+		return nil, WrapError(err, "Couldn't get problem description")
 	}
-	return data, private, nil
+	return data, nil
+}
+
+func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problemID int, lang string, format string) ([]byte, *StatusError) {
+	switch format {
+	case "md":
+		name := fmt.Sprintf("statement-%s.%s", lang, format)
+		att, err := s.AttachmentByName(ctx, problemID, name)
+		if err != nil {
+			return nil, err
+		}
+
+		if s.manager.HasAttachmentRender(att.ID) {
+			r, err := s.manager.GetAttachmentRender(att.ID)
+			if err == nil {
+				data, err := io.ReadAll(r)
+				if err == nil {
+					return data, nil
+				} else {
+					zap.S().Warn("Error reading cache: ", err)
+				}
+			}
+		}
+		data, _, err1 := s.db.ProblemRawDesc(ctx, problemID, name)
+		if err1 != nil {
+			return nil, WrapError(err1, "Couldn't get problem description")
+		}
+
+		buf, err := s.RenderMarkdown(data)
+		if err != nil {
+			return data, WrapError(err, "Couldn't render markdown")
+		}
+		if err := s.manager.SaveAttachmentRender(att.ID, buf); err != nil {
+			zap.S().Warn("Couldn't save attachment to cache: ")
+		}
+		return buf, nil
+	default:
+		return s.ProblemRawDesc(ctx, problemID, lang, format)
+	}
 }
 
 func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova.ProblemEvalSettings, *StatusError) {

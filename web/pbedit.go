@@ -78,7 +78,7 @@ func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Couldn't get problem statement attachment", 500)
 				return
 			}
-			val, _, err := rt.base.ProblemRawDesc(r.Context(), util.Problem(r).ID, finalLang, "md")
+			val, err := rt.base.ProblemRawDesc(r.Context(), util.Problem(r).ID, finalLang, "md")
 			if err != nil {
 				zap.S().Warn(err)
 				http.Error(w, "Couldn't get problem statement", 500)

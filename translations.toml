@@ -940,6 +940,10 @@ ro = "Autentificare"
 en = "Reset waiting submissions"
 ro = "Resetare submisii în așteptare"
 
+[invalidateAtts]
+en = "Invalidate statement cache"
+ro = "Invalidare cache enunțuri"
+
 [changeRoles]
 en = "Change roles"
 ro = "Schimbă rolurile"

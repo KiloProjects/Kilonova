@@ -45,6 +45,12 @@ func (s *API) Handler() http.Handler {
 			r.Post("/resetWaitingSubs", webMessageWrapper("Reset waiting subs", func(ctx context.Context, args struct{}) *kilonova.StatusError {
 				return s.base.ResetWaitingSubmissions(ctx)
 			}))
+			r.Post("/invalidateAttachments", webMessageWrapper("Invalidated attachments", func(ctx context.Context, args struct{}) *kilonova.StatusError {
+				if err := s.base.InvalidateAllAttachments(); err != nil {
+					return err.(*kilonova.StatusError)
+				}
+				return nil
+			}))
 			r.Post("/reevaluateSubmission", webMessageWrapper("Reset submission", func(ctx context.Context, args struct {
 				ID int `json:"id"`
 			}) *kilonova.StatusError {

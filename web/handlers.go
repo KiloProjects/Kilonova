@@ -292,16 +292,10 @@ func (rt *Web) problem() http.HandlerFunc {
 
 		switch foundFmt {
 		case "md":
-			data, _, err := rt.base.ProblemRawDesc(r.Context(), problem.ID, foundLang, foundFmt)
+			statement, err = rt.base.RenderedProblemDesc(r.Context(), problem.ID, foundLang, foundFmt)
 			if err != nil {
-				zap.S().Warn("Error getting markdown data")
-				data = []byte("Error fetching markdown.")
-			}
-			buf, err := rt.base.RenderMarkdown(data)
-			if err != nil {
-				zap.S().Warn("Error rendering markdown:", err)
-			} else {
-				statement = buf
+				zap.S().Warn("Error getting problem markdown: ", err)
+				statement = []byte("Error fetching markdown.")
 			}
 		case "pdf":
 			url := fmt.Sprintf("/problems/%d/attachments/statement-%s.%s", problem.ID, foundLang, foundFmt)

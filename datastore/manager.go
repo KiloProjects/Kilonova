@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"sync"
 
 	"github.com/KiloProjects/kilonova"
 )
@@ -12,6 +13,8 @@ import (
 // StorageManager helps open the files in the data directory, this is supposed to be data that should not be stored in the DB
 type StorageManager struct {
 	RootPath string
+
+	attMu sync.RWMutex
 }
 
 var _ kilonova.DataStore = &StorageManager{}
@@ -31,6 +34,10 @@ func NewManager(p string) (kilonova.DataStore, error) {
 	}
 
 	if err := os.MkdirAll(path.Join(p, "dbs"), 0777); err != nil {
+		return nil, err
+	}
+
+	if err := os.MkdirAll(path.Join(p, "attachments"), 0777); err != nil {
 		return nil, err
 	}
 

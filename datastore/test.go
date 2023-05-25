@@ -1,7 +1,6 @@
 package datastore
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -17,11 +16,15 @@ var (
 )
 
 func (m *StorageManager) TestInput(testID int) (io.ReadSeekCloser, error) {
-	return os.Open(path.Join(m.RootPath, "tests", strconv.Itoa(testID)+".in"))
+	return os.Open(m.TestInputPath(testID))
 }
 
 func (m *StorageManager) TestOutput(testID int) (io.ReadSeekCloser, error) {
 	return os.Open(m.TestOutputPath(testID))
+}
+
+func (m *StorageManager) TestInputPath(testID int) string {
+	return path.Join(m.RootPath, "tests", strconv.Itoa(testID)+".in")
 }
 
 func (m *StorageManager) TestOutputPath(testID int) string {
@@ -29,7 +32,7 @@ func (m *StorageManager) TestOutputPath(testID int) string {
 }
 
 func (m *StorageManager) SaveTestInput(testID int, input io.Reader) error {
-	testPath := path.Join(m.RootPath, "tests", fmt.Sprintf("%d.in", testID))
+	testPath := m.TestInputPath(testID)
 	defer func() {
 		go m.dos2unixify(testPath)
 	}()
@@ -37,7 +40,7 @@ func (m *StorageManager) SaveTestInput(testID int, input io.Reader) error {
 }
 
 func (m *StorageManager) SaveTestOutput(testID int, output io.Reader) error {
-	testPath := path.Join(m.RootPath, "tests", fmt.Sprintf("%d.out", testID))
+	testPath := m.TestOutputPath(testID)
 	defer func() {
 		go m.dos2unixify(testPath)
 	}()
