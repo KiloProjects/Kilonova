@@ -19,6 +19,7 @@ import (
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/sudoapi"
 	chtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/evanw/esbuild/pkg/api"
@@ -211,7 +212,12 @@ func (rt *Web) auditLog() http.HandlerFunc {
 func (rt *Web) submission() http.HandlerFunc {
 	templ := rt.parse(nil, "submission.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, templ, &SubParams{GenContext(r), util.Submission(r)})
+		fullSub, err := rt.base.Submission(r.Context(), util.Submission(r).ID, util.UserBrief(r))
+		if err != nil {
+			rt.statusPage(w, r, 500, "N-am putut obține submisia")
+			return
+		}
+		rt.runTempl(w, r, templ, &SubParams{GenContext(r), util.Submission(r), fullSub})
 	}
 }
 
@@ -237,7 +243,12 @@ func (rt *Web) canViewAllSubs(user *kilonova.UserBrief) bool {
 func (rt *Web) paste() http.HandlerFunc {
 	templ := rt.parse(nil, "paste.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, templ, &PasteParams{GenContext(r), util.Paste(r)})
+		fullSub, err := rt.base.FullSubmission(r.Context(), util.Paste(r).Submission.ID)
+		if err != nil {
+			rt.statusPage(w, r, 500, "N-am putut obține submisia aferentă")
+			return
+		}
+		rt.runTempl(w, r, templ, &PasteParams{GenContext(r), util.Paste(r), fullSub})
 	}
 }
 
@@ -357,6 +368,26 @@ func (rt *Web) problem() http.HandlerFunc {
 			tags = []*kilonova.Tag{}
 		}
 
+		var initialSubs *sudoapi.Submissions
+
+		if util.UserBrief(r) != nil {
+			filter := kilonova.SubmissionFilter{
+				ProblemID: &util.Problem(r).ID,
+				UserID:    &util.UserBrief(r).ID,
+
+				Limit: 5,
+			}
+			if util.Contest(r) != nil {
+				filter.ContestID = &util.Contest(r).ID
+			}
+			subs, err := rt.base.Submissions(r.Context(), filter, util.UserBrief(r))
+			if err == nil {
+				initialSubs = subs
+			} else {
+				zap.S().Warn("Couldn't fetch submissions: ", err)
+			}
+		}
+
 		rt.runTempl(w, r, templ, &ProblemParams{
 			Ctx:    GenContext(r),
 			Topbar: rt.topbar(r, "pb_statement", -1),
@@ -364,6 +395,8 @@ func (rt *Web) problem() http.HandlerFunc {
 			Problem:     util.Problem(r),
 			Attachments: atts,
 			Tags:        tags,
+
+			Submissions: initialSubs,
 
 			Statement: template.HTML(statement),
 			Languages: langs,

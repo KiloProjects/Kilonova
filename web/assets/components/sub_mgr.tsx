@@ -15,7 +15,7 @@ const slugify = (str) =>
 
 import { BigSpinner, OlderSubmissions } from "./common";
 
-import { downloadBlob, parseTime, sizeFormatter, getGradient } from "../util";
+import { downloadBlob, parseTime, sizeFormatter, getGradient, fromBase64 } from "../util";
 
 import { getCall } from "../api/net";
 import { FullSubmission, SubTest, Submission, SubmissionSubTask, UserBrief, getSubmission } from "../api/submissions";
@@ -422,7 +422,7 @@ function SubmissionView({ sub, bigCode, pasteAuthor }: { sub: FullSubmission | n
 					<Summary sub={sub} pasteAuthor={pasteAuthor} />
 					{window.platform_info.user_id !== undefined && window.platform_info.user_id > 0 && (
 						<div class="segment-panel">
-							<OlderSubmissions problemid={sub.problem.id} userid={window.platform_info.user_id} />
+							<OlderSubmissions problemID={sub.problem.id} userID={window.platform_info.user_id} />
 						</div>
 					)}
 				</div>
@@ -438,23 +438,25 @@ type SubMgrState = {
 };
 
 // TODO: Refactor into function
-export class SubmissionManager extends Component<{ id: number; bigCode?: boolean }, SubMgrState> {
+export class SubmissionManager extends Component<{ id: number; initialData: FullSubmission | null; bigCode?: boolean }, SubMgrState> {
 	poll_mu: boolean;
 	finished: boolean;
 	poller: number | null;
-	constructor() {
+	constructor(props) {
 		super();
 		this.poll_mu = false;
-		this.finished = false;
-		this.setState(() => ({
-			sub: null,
-		}));
+		this.finished = props.initialData?.status == "finished" ?? false;
+		this.state = {
+			sub: props.initialData,
+		};
 
 		this.poller = null;
 	}
 
 	async componentDidMount() {
-		await this.poll();
+		if (this.props.initialData == null) {
+			await this.poll();
+		}
 		if (!this.finished) {
 			console.info("Started poller");
 			this.poller = setInterval(async () => {
@@ -509,28 +511,7 @@ export class SubmissionManager extends Component<{ id: number; bigCode?: boolean
 	}
 }
 
-export function PasteViewer({ paste_id }: { paste_id: string }) {
-	let [sub, setSub] = useState<FullSubmission | null>(null);
-	let [author, setAuthor] = useState<UserBrief | null>(null);
-
-	async function load() {
-		const res = await getCall<{
-			id: string;
-			sub: FullSubmission;
-			author: UserBrief;
-		}>(`/paste/${paste_id}`, {});
-		if (res.status === "error") {
-			apiToast(res);
-			return;
-		}
-		setSub(res.data.sub);
-		setAuthor(res.data.author);
-	}
-
-	useEffect(() => {
-		load().catch(console.error);
-	}, [paste_id]);
-
+export function PasteViewer({ paste_id, sub, author }: { paste_id: string; sub: FullSubmission; author: UserBrief }) {
 	return (
 		<>
 			<h1>
@@ -541,5 +522,23 @@ export function PasteViewer({ paste_id }: { paste_id: string }) {
 	);
 }
 
-register(SubmissionManager, "kn-sub-mgr", ["id"]);
-register(PasteViewer, "kn-paste-viewer", ["paste_id"]);
+function PasteViewerDOM({ paste_id, authorenc, subenc }: { paste_id: string; authorenc: string; subenc: string }) {
+	const author: UserBrief = JSON.parse(fromBase64(authorenc));
+	const sub: FullSubmission = JSON.parse(fromBase64(subenc));
+	return <PasteViewer paste_id={paste_id} sub={sub} author={author}></PasteViewer>;
+}
+
+function SubMgrDOM({ id, enc }: { id: string; enc: string }) {
+	const subID = parseInt(id);
+	if (isNaN(subID)) {
+		throw new Error("Invalid submission ID");
+	}
+	let sub: FullSubmission | null = null;
+	if (fromBase64(enc) !== "") {
+		sub = JSON.parse(fromBase64(enc));
+	}
+	return <SubmissionManager id={subID} initialData={sub}></SubmissionManager>;
+}
+
+register(SubMgrDOM, "kn-sub-mgr", ["id", "enc"]);
+register(PasteViewerDOM, "kn-paste-viewer", ["paste_id", "authorenc", "subenc"]);

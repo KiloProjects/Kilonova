@@ -78,33 +78,39 @@ function serializeQuery(q: SubmissionQuery): object {
 	};
 }
 
-type KNSubmissions = {
+export type KNSubmissions = {
 	submissions: Submission[];
 	count: number;
 	users: Record<string, UserBrief>;
 	problems: Record<string, Problem>;
 };
 
-export async function getSubmissions(q: SubmissionQuery): Promise<{
+type getSubmissionsResult = {
 	count: number;
 	subs: ResultSubmission[];
-}> {
+};
+
+export function knSubsToGetSubmissionsRez(rez: KNSubmissions): getSubmissionsResult {
+	let subs: ResultSubmission[] = [];
+	for (let sub of rez.submissions) {
+		subs.push({
+			sub,
+			author: rez.users[sub.user_id.toString()],
+			problem: rez.problems[sub.problem_id.toString()],
+		});
+	}
+	return {
+		count: rez.count,
+		subs: subs,
+	};
+}
+
+export async function getSubmissions(q: SubmissionQuery): Promise<getSubmissionsResult> {
 	let res = await getCall<KNSubmissions>("/submissions/get", serializeQuery(q));
 	if (res.status === "error") {
 		throw new Error(res.data);
 	}
-	let subs: ResultSubmission[] = [];
-	for (let sub of res.data.submissions) {
-		subs.push({
-			sub,
-			author: res.data.users[sub.user_id.toString()],
-			problem: res.data.problems[sub.problem_id.toString()],
-		});
-	}
-	return {
-		count: res.data.count,
-		subs: subs,
-	};
+	return knSubsToGetSubmissionsRez(res.data);
 }
 
 export async function getUser(uid: number) {

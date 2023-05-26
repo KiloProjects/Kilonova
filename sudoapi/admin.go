@@ -31,10 +31,14 @@ func (s *BaseAPI) ResetSubmission(ctx context.Context, id int) *StatusError {
 
 	var f = false
 	var zero = 0
-	err = s.db.UpdateSubmissionSubTests(ctx, id, kilonova.SubTestUpdate{Done: &f, Score: &zero})
-	if err != nil {
+	if err := s.db.UpdateSubmissionSubTests(ctx, id, kilonova.SubTestUpdate{Done: &f, Score: &zero}); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't update submission's subtests")
+	}
+
+	if err := s.db.ResetSubmissionSubtasks(ctx, id); err != nil {
+		zap.S().Warn(err)
+		return WrapError(err, "Couldn't update submission's subtasks")
 	}
 
 	return nil

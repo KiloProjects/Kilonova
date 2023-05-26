@@ -107,7 +107,7 @@ type SubmissionSubTask struct {
 	VisibleID int  `json:"visible_id"`
 	Score     int  `json:"score"`
 
-	FinalPercentage *int `json:"final_percentage"`
+	FinalPercentage *int `json:"final_percentage,omitempty"`
 
 	Subtests []int `json:"subtests"`
 }

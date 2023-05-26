@@ -78,6 +78,8 @@ type ProblemParams struct {
 	Attachments []*kilonova.Attachment
 	Tags        []*kilonova.Tag
 
+	Submissions *sudoapi.Submissions
+
 	Statement template.HTML
 	Languages map[string]eval.Language
 	Variants  []*kilonova.StatementVariant
@@ -270,11 +272,15 @@ type PasswordResetParams struct {
 type SubParams struct {
 	Ctx        *ReqContext
 	Submission *kilonova.Submission
+
+	FullSub *sudoapi.FullSubmission
 }
 
 type PasteParams struct {
 	Ctx   *ReqContext
 	Paste *kilonova.SubmissionPaste
+
+	FullSub *sudoapi.FullSubmission
 }
 
 func doWalk(filename string, nodes ...tparse.Node) bool {

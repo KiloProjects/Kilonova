@@ -1,9 +1,9 @@
 import { h, Fragment, Component } from "preact";
 import register from "preact-custom-element";
 import getText from "../translation";
-import { dayjs } from "../util";
+import { dayjs, fromBase64 } from "../util";
 import { useEffect, useState } from "preact/hooks";
-import { getSubmissions, ResultSubmission } from "../api/submissions";
+import { getSubmissions, KNSubmissions, knSubsToGetSubmissionsRez, ResultSubmission } from "../api/submissions";
 
 interface PaginatorParams {
 	page: number;
@@ -189,31 +189,38 @@ export function ProblemAttachment({ attname = "" }) {
 	return <img src={`${pname}/attachments/${attname}`} class={classes} style={attrList} />;
 }
 
-const SUB_VIEW_LIMIT = 5;
-
-export function OlderSubmissions({ userid, problemid, contestid }: { userid: number; problemid: number; contestid?: string }) {
-	let [subs, setSubs] = useState<ResultSubmission[]>([]);
-	let [loading, setLoading] = useState(true);
-	let [numHidden, setNumHidden] = useState(0);
+export function OlderSubmissions({
+	userID,
+	problemID,
+	contestID,
+	limit = 5,
+	initialData,
+	initialCount,
+}: {
+	userID: number;
+	problemID: number;
+	contestID?: number;
+	limit?: number;
+	initialData?: ResultSubmission[];
+	initialCount?: number;
+}) {
+	let [subs, setSubs] = useState<ResultSubmission[]>(initialData ?? []);
+	let [loading, setLoading] = useState(typeof initialData === "undefined");
+	let [numHidden, setNumHidden] = useState(initialCount ? initialCount - limit : 0);
 
 	async function load() {
-		let contestID: number | undefined = undefined;
-		if (contestid !== "" && typeof contestid !== "undefined") {
-			contestID = parseInt(contestid);
-			if (isNaN(contestID)) {
-				console.warn("Contest ID is NaN");
-				contestID = undefined;
-			}
-		}
-		var data = await getSubmissions({ user_id: userid, problem_id: problemid, contest_id: contestID, limit: SUB_VIEW_LIMIT, page: 1 });
+		var data = await getSubmissions({ user_id: userID, problem_id: problemID, contest_id: contestID, limit, page: 1 });
 		setSubs(data.subs);
-		setNumHidden(Math.max(data.count - SUB_VIEW_LIMIT, 0));
+		setNumHidden(Math.max(data.count - limit, 0));
 		setLoading(false);
 	}
 
 	useEffect(() => {
-		load().catch(console.error);
-	}, [userid, problemid]);
+		// TODO: Test
+		if (typeof initialData === "undefined") {
+			load().catch(console.error);
+		}
+	}, [userID, problemID, contestID, limit]);
 
 	useEffect(() => {
 		const poll = async (e) => load();
@@ -252,12 +259,7 @@ export function OlderSubmissions({ userid, problemid, contestid }: { userid: num
 						<p class="px-2">{getText("noSub")}</p>
 					)}
 					{numHidden > 0 && (
-						<a
-							class="px-2"
-							href={`${
-								typeof contestid === "string" && contestid.length > 0 ? `/contests/${contestid}` : ""
-							}/problems/${problemid}/submissions/?user_id=${userid}`}
-						>
+						<a class="px-2" href={`${contestID ? `/contests/${contestID}` : ""}/problems/${problemID}/submissions/?user_id=${userID}`}>
 							{getText(numHidden == 1 ? "seeOne" : numHidden < 20 ? "seeU20" : "seeMany", numHidden)}
 						</a>
 					)}
@@ -267,7 +269,41 @@ export function OlderSubmissions({ userid, problemid, contestid }: { userid: num
 	);
 }
 
-register(OlderSubmissions, "older-subs", ["userid", "problemid", "contestid"]);
+function OlderSubmissionsDOM({ userid, problemid, contestid, enc }: { userid: string; problemid: string; contestid: string; enc: string }) {
+	const userID = parseInt(userid);
+	if (isNaN(userID)) {
+		throw new Error("Invalid user ID");
+	}
+	const problemID = parseInt(problemid);
+	if (isNaN(problemID)) {
+		throw new Error("Invalid problem ID");
+	}
+	let contestID: number | undefined = undefined;
+	if (contestid !== "" && typeof contestid !== "undefined") {
+		contestID = parseInt(contestid);
+		if (isNaN(contestID)) {
+			console.warn("Invalid Contest ID");
+			contestID = undefined;
+		}
+	}
+
+	let initialData: ResultSubmission[] | undefined = undefined;
+	let initialCount: number | undefined = undefined;
+	try {
+		const initialStuff: KNSubmissions | undefined = JSON.parse(fromBase64(enc));
+		if (typeof initialStuff !== "undefined") {
+			const rez = knSubsToGetSubmissionsRez(initialStuff);
+			initialData = rez.subs;
+			initialCount = rez.count;
+		}
+	} catch (e) {}
+
+	return (
+		<OlderSubmissions userID={userID} problemID={problemID} contestID={contestID} initialCount={initialCount} initialData={initialData}></OlderSubmissions>
+	);
+}
+
+register(OlderSubmissionsDOM, "older-subs", ["userid", "problemid", "contestid", "enc"]);
 register(ProblemAttachment, "problem-attachment", ["attname"]);
 
 function ProgressChecker({ id }: { id: number }) {

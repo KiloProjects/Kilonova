@@ -55,6 +55,11 @@ func (s *DB) UpdateSubmissionSubtaskPercentage(ctx context.Context, id int, perc
 	return
 }
 
+func (s *DB) ResetSubmissionSubtasks(ctx context.Context, subID int) (err error) {
+	_, err = s.pgconn.Exec(ctx, `UPDATE submission_subtasks SET final_percentage = NULL WHERE submission_id = $1`, subID)
+	return
+}
+
 func (s *DB) SubmissionSubTasksBySubID(ctx context.Context, subid int) ([]*kilonova.SubmissionSubTask, error) {
 	var subtasks []*subSubtask
 	err := s.conn.SelectContext(ctx, &subtasks, "SELECT * FROM submission_subtasks WHERE submission_id = $1 ORDER BY visible_id ASC", subid)

@@ -147,7 +147,7 @@
         {{ end }}
         {{ if authed }}
         <div class="segment-panel">
-            <older-subs problemid="{{.Problem.ID}}" {{if (and .Topbar.Contest (not .Topbar.Contest.Ended))}}contestid="{{.Topbar.Contest.ID}}"{{end}} userid="{{.Ctx.User.ID}}"></older-subs>
+            <older-subs problemid="{{.Problem.ID}}" {{if (and .Topbar.Contest (not .Topbar.Contest.Ended))}}contestid="{{.Topbar.Contest.ID}}"{{end}} userid="{{.Ctx.User.ID}}" enc="{{.Submissions | encodeJSON}}"></older-subs>
         </div>
         {{ end }}
         {{ $topbar := .Topbar}}

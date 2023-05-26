@@ -1,7 +1,7 @@
 {{ define "title" }} {{getText "paste_title"}} #{{.Paste.ID}} {{ end }} 
 {{ define "content" }}
 
-<kn-paste-viewer paste_id="{{.Paste.ID}}"/>
+<kn-paste-viewer paste_id="{{.Paste.ID}}" authorEnc="{{.Paste.Author | encodeJSON}}" subEnc="{{.FullSub | encodeJSON}}"/>
 
 {{ if pasteEditor .Ctx.User.Brief .Paste }}
     <button onclick="deletePaste()" class="btn btn-red my-2">{{getText "del_paste"}}</button>
