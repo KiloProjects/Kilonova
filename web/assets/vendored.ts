@@ -1,7 +1,7 @@
 import hljs from "highlight.js/lib/common";
 import CopyButtonPlugin from "highlightjs-copy";
 hljs.configure({
-	cssSelector: "pre:not(.chroma) class",
+	cssSelector: "pre:not(.chroma) code",
 });
 hljs.addPlugin(new CopyButtonPlugin());
 

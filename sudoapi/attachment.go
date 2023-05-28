@@ -197,7 +197,7 @@ func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problemID int, lang s
 			return data, WrapError(err, "Couldn't render markdown")
 		}
 		if err := s.manager.SaveAttachmentRender(att.ID, buf); err != nil {
-			zap.S().Warn("Couldn't save attachment to cache: ")
+			zap.S().Warn("Couldn't save attachment to cache: ", err)
 		}
 		return buf, nil
 	default:
