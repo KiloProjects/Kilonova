@@ -135,6 +135,19 @@ function ProblemTagEdit({ tags, problemID }: { tags: Tag[]; problemID: number })
 		setAllTags(res.data);
 	}
 
+	function searchStrFilter(t: Tag): boolean {
+		return t.name
+			.normalize("NFD")
+			.replace(/[\u0300-\u036f]/g, "")
+			.toLowerCase()
+			.includes(
+				searchVal
+					.normalize("NFD")
+					.replace(/[\u0300-\u036f]/g, "")
+					.toLowerCase()
+			);
+	}
+
 	async function updateTags(e: Event) {
 		e.preventDefault();
 		let res = await bodyCall(`/problem/${problemID}/update/tags`, { tags: checkedTags });
@@ -149,6 +162,7 @@ function ProblemTagEdit({ tags, problemID }: { tags: Tag[]; problemID: number })
 
 	useEffect(() => {
 		if (open === true) {
+			setSearchVal("");
 			setCheckedTags(newTags.map((t) => t.id));
 			loadTags().catch(console.error);
 		} else {
@@ -177,25 +191,27 @@ function ProblemTagEdit({ tags, problemID }: { tags: Tag[]; problemID: number })
 					<div>
 						<input
 							type="input"
+							class={"form-input"}
 							placeholder={getText("search_tag")}
 							onInput={(e) => {
 								setSearchVal(e.currentTarget.value);
 							}}
 							value={searchVal}
 						></input>
-						{searchVal}
-						{(["author", "contest", "method", "other"] as TagType[]).map((tp) => (
-							<details key={tp} class="block my-2" open>
-								<summary class="inline-block mb-2">{getText(`tag_names.${tp}`)}</summary>
-								{allTags
-									?.filter((t) => t.type == tp)
-									.map((tag) => (
+						{(["author", "contest", "method", "other"] as TagType[]).map((tp) => {
+							const tags = allTags!.filter((t) => t.type == tp).filter(searchStrFilter);
+							return (
+								<details key={tp} class="block my-2" open>
+									<summary>
+										<h3 class="inline-block mb-2">{getText(`tag_names.${tp}`)}</h3>
+									</summary>
+									{tags.map((tag) => (
 										<label class="mx-1" key={tag.id}>
 											<input
 												type="checkbox"
 												class="form-checkbox"
 												checked={checkedTags.includes(tag.id)}
-												onChange={(e) => {
+												onChange={() => {
 													if (checkedTags.includes(tag.id)) {
 														setCheckedTags(checkedTags.filter((t) => t != tag.id));
 													} else {
@@ -206,17 +222,19 @@ function ProblemTagEdit({ tags, problemID }: { tags: Tag[]; problemID: number })
 											<TagView tag={tag} link={false} onClick={() => console.log(tag)} />
 										</label>
 									))}
-								{open && (
-									<TagQuickAddView
-										type={tp}
-										cb={(val) => {
-											setCheckedTags([...checkedTags, val]);
-											loadTags().catch(console.error);
-										}}
-									/>
-								)}
-							</details>
-						))}
+									{tags.length === 0 && <span>{getText("no_tags")}</span>}
+									{open && searchVal.length == 0 && (
+										<TagQuickAddView
+											type={tp}
+											cb={(val) => {
+												setCheckedTags([...checkedTags, val]);
+												loadTags().catch(console.error);
+											}}
+										/>
+									)}
+								</details>
+							);
+						})}
 						<button class="btn btn-blue my-2" onClick={updateTags}>
 							{getText("button.update")}
 						</button>
