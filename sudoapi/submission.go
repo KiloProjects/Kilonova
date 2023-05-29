@@ -28,53 +28,78 @@ func (s *BaseAPI) ContestMaxScore(ctx context.Context, uid, pbID, contestID int)
 	return s.db.ContestMaxScore(ctx, uid, pbID, contestID)
 }
 
-func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova.Submission, lookingUser *UserBrief) (*Submissions, *StatusError) {
-	users := make(map[int]*UserBrief)
-	problems := make(map[int]*kilonova.Problem)
+func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova.Submission, look bool, lookingUser *UserBrief) (*Submissions, *StatusError) {
+	usersMap := make(map[int]*UserBrief)
+	problemsMap := make(map[int]*kilonova.Problem)
+
+	userIDs := make([]int, 0, len(subs))
+	{
+		userIDsMap := make(map[int]bool)
+		for _, sub := range subs {
+			if _, ok := userIDsMap[sub.UserID]; !ok {
+				userIDsMap[sub.UserID] = true
+				userIDs = append(userIDs, sub.UserID)
+			}
+		}
+	}
+	users, err := s.UsersBrief(ctx, kilonova.UserFilter{
+		IDs: userIDs,
+	})
+	if err != nil {
+		zap.S().Warnf("Error getting users: %v", err)
+		return nil, WrapError(err, "Couldn't get users")
+	}
+	for _, user := range users {
+		usersMap[user.ID] = user
+	}
+
+	problemIDs := make([]int, 0, len(subs))
+	{
+		problemIDsMap := make(map[int]bool)
+		for _, sub := range subs {
+			if _, ok := problemIDsMap[sub.ProblemID]; !ok {
+				problemIDsMap[sub.ProblemID] = true
+				problemIDs = append(problemIDs, sub.ProblemID)
+			}
+		}
+	}
+	problems, err := s.Problems(ctx, kilonova.ProblemFilter{
+		IDs:         problemIDs,
+		Look:        look,
+		LookingUser: lookingUser,
+	})
+	if err != nil {
+		zap.S().Warnf("Error getting problems: %v", err)
+		return nil, WrapError(err, "Couldn't get problems")
+	}
+	for _, problem := range problems {
+		problemsMap[problem.ID] = problem
+	}
 
 	for i, sub := range subs {
-		if _, ok := users[sub.UserID]; !ok {
-			user, err := s.UserBrief(ctx, sub.UserID)
-			if err != nil {
-				if !errors.Is(err, context.Canceled) {
-					zap.S().Infof("Error getting user %d: %v", sub.UserID, err)
-				}
-				continue
-			}
-			users[sub.UserID] = user
+		if _, ok := usersMap[sub.UserID]; !ok {
+			zap.S().Warnf("Couldn't find user %d in map", sub.UserID)
+			continue
 		}
 
-		if _, ok := problems[sub.ProblemID]; !ok {
-			problem, err := s.Problem(ctx, sub.ProblemID)
-			if err != nil || problem == nil {
-				if !errors.Is(err, context.Canceled) {
-					zap.S().Infof("Error getting problem %d: %v", sub.ProblemID, err)
-				}
-				continue
-			}
-			problems[sub.ProblemID] = problem
-			if !s.IsProblemVisible(lookingUser, problem) {
-				// sanity check, should not happen
-				userID := 0
-				if lookingUser != nil {
-					userID = lookingUser.ID
-				}
-				zap.S().Warnf("Showing problem %d that is not visible to user %d, this should never happen. Please fix your SQL view ASAP", problem.ID, userID)
-			}
+		if _, ok := problemsMap[sub.ProblemID]; !ok {
+			zap.S().Warnf("Couldn't find problem %d in map. Something has gone terribly wrong", sub.ProblemID)
 		}
 
-		s.filterSubmission(ctx, subs[i], lookingUser)
+		if look {
+			s.filterSubmission(ctx, subs[i], lookingUser)
+		}
 	}
 
 	return &Submissions{
 		Submissions: subs,
 		Count:       cnt,
-		Users:       users,
-		Problems:    problems,
+		Users:       usersMap,
+		Problems:    problemsMap,
 	}, nil
 }
 
-func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFilter, lookingUser *UserBrief) (*Submissions, *StatusError) {
+func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFilter, look bool, lookingUser *UserBrief) (*Submissions, *StatusError) {
 	if filter.Limit == 0 || filter.Limit > 50 {
 		filter.Limit = 50
 	}
@@ -83,8 +108,10 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		filter.Ordering = "id"
 	}
 
-	filter.Look = true
-	filter.LookingUser = lookingUser
+	if look {
+		filter.Look = true
+		filter.LookingUser = lookingUser
+	}
 
 	subs, cnt, err := s.db.Submissions(ctx, filter)
 	if err != nil {
@@ -95,7 +122,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		return nil, ErrUnknownError
 	}
 
-	return s.fillSubmissions(ctx, cnt, subs, lookingUser)
+	return s.fillSubmissions(ctx, cnt, subs, look, lookingUser)
 }
 
 // Remember to do proper authorization when using this

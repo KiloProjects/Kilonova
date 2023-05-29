@@ -47,11 +47,6 @@ func (s *API) getSubmissionByID() func(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) filterSubs() http.HandlerFunc {
-	type line struct {
-		Sub     *kilonova.Submission `json:"sub"`
-		User    *kilonova.UserBrief  `json:"author,omitempty"`
-		Problem *kilonova.Problem    `json:"problem,omitempty"`
-	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		var args kilonova.SubmissionFilter
@@ -60,13 +55,12 @@ func (s *API) filterSubs() http.HandlerFunc {
 			return
 		}
 
-		subs, err := s.base.Submissions(r.Context(), args, util.UserBrief(r))
+		subs, err := s.base.Submissions(r.Context(), args, true, util.UserBrief(r))
 		if err != nil {
 			err.WriteError(w)
 			return
 		}
 
 		returnData(w, subs)
-
 	}
 }

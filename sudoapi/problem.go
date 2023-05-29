@@ -255,7 +255,7 @@ func (s *BaseAPI) ProblemStatistics(ctx context.Context, problem *kilonova.Probl
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get statistics by size")
 	}
-	size, err1 := s.fillSubmissions(ctx, -1, sizeRaw, lookingUser)
+	size, err1 := s.fillSubmissions(ctx, -1, sizeRaw, true, lookingUser)
 	if err1 != nil {
 		return nil, WrapError(err1, "Couldn't get full statistics by size")
 	}
@@ -264,7 +264,7 @@ func (s *BaseAPI) ProblemStatistics(ctx context.Context, problem *kilonova.Probl
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get statistics by memory")
 	}
-	memory, err1 := s.fillSubmissions(ctx, -1, memoryRaw, lookingUser)
+	memory, err1 := s.fillSubmissions(ctx, -1, memoryRaw, true, lookingUser)
 	if err1 != nil {
 		return nil, WrapError(err1, "Couldn't get full statistics by memory")
 	}
@@ -273,7 +273,7 @@ func (s *BaseAPI) ProblemStatistics(ctx context.Context, problem *kilonova.Probl
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get statistics by time")
 	}
-	time, err1 := s.fillSubmissions(ctx, -1, timeRaw, lookingUser)
+	time, err1 := s.fillSubmissions(ctx, -1, timeRaw, true, lookingUser)
 	if err1 != nil {
 		return nil, WrapError(err1, "Couldn't get full statistics by time")
 	}

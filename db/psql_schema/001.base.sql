@@ -500,11 +500,12 @@ CREATE OR REPLACE VIEW contest_top_view
 
 
 CREATE OR REPLACE FUNCTION visible_submissions(user_id bigint) RETURNS TABLE (sub_id bigint, user_id bigint) AS $$
+    WITH v_pbs AS (SELECT * FROM visible_pbs($1))
     (SELECT id as sub_id, user_id as user_id 
         FROM submissions 
         WHERE user_id = $1 AND EXISTS (
             SELECT 1 
-            FROM visible_pbs($1) 
+            FROM v_pbs 
             WHERE problem_id = submissions.problem_id AND user_id = $1
         )) -- base case, users should see their own submissions if problem is still visible (also, coincidentally, works for contest problems)
     UNION ALL
@@ -513,14 +514,12 @@ CREATE OR REPLACE FUNCTION visible_submissions(user_id bigint) RETURNS TABLE (su
         WHERE users.admin = true AND users.id = $1) -- user admins
     UNION ALL
     (SELECT subs.id as sub_id, pb_viewers.user_id as user_id
-        FROM submissions subs, visible_pbs($1) pb_viewers
-        WHERE pb_viewers.problem_id = subs.problem_id AND subs.contest_id IS null
-        AND pb_viewers.user_id = $1) -- contest is null, so judge if problem is visible
+        FROM submissions subs, v_pbs pb_viewers
+        WHERE pb_viewers.problem_id = subs.problem_id AND subs.contest_id IS null) -- contest is null, so judge if problem is visible
     UNION ALL
     (SELECT subs.id as sub_id, users.user_id as user_id
         FROM submissions subs, contest_user_access users
-        WHERE users.contest_id = subs.contest_id AND users.access = 'editor'
-        AND users.user_id = $1) -- contest editors if contest is not null
+        WHERE users.contest_id = subs.contest_id AND users.user_id = $1) -- contest staff if contest is not null
     UNION ALL
     (SELECT subs.id as sub_id, viz.user_id as user_id
         FROM submissions subs, contests, contest_visibility viz, contest_problems c_pbs
@@ -559,7 +558,7 @@ CREATE INDEX IF NOT EXISTS pblist_pblists_index ON problem_list_pblists (parent_
 
 CREATE INDEX IF NOT EXISTS problem_user_submissions_index ON submissions (user_id, problem_id);
 CREATE INDEX IF NOT EXISTS problem_submissions_index ON submissions (problem_id);
-CREATE INDEX IF NOT EXISTS contest_submissions_index ON submissions (contest_id) WHERE contest_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS contest_submissions_index ON submissions (contest_id);
 
 CREATE INDEX IF NOT EXISTS submission_subtests_index ON submission_tests (submission_id);
 CREATE INDEX IF NOT EXISTS submission_subtasks_index ON submission_subtasks (submission_id);

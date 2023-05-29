@@ -380,7 +380,9 @@ func (rt *Web) problem() http.HandlerFunc {
 			if util.Contest(r) != nil {
 				filter.ContestID = &util.Contest(r).ID
 			}
-			subs, err := rt.base.Submissions(r.Context(), filter, util.UserBrief(r))
+			// subs, err := rt.base.Submissions(r.Context(), filter, true, util.UserBrief(r))
+			// No need to filter, since they can see submissions because they can see problem
+			subs, err := rt.base.Submissions(r.Context(), filter, false, nil)
 			if err == nil {
 				initialSubs = subs
 			} else {
