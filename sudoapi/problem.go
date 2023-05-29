@@ -175,13 +175,19 @@ func (s *BaseAPI) insertProblem(ctx context.Context, problem *kilonova.Problem, 
 
 // CreateProblem is the simple way of creating a new problem. Just provide a title, an author and the type of input.
 // The other stuff will be automatically set for sensible defaults.
-func (s *BaseAPI) CreateProblem(ctx context.Context, title string, author *UserBrief, consoleInput bool) (int, *StatusError) {
+func (s *BaseAPI) CreateProblem(ctx context.Context, title string, author *UserBrief, consoleInput bool) (*kilonova.Problem, *StatusError) {
 	problem := &kilonova.Problem{
 		Name:         title,
 		ConsoleInput: consoleInput,
 	}
 
-	return s.insertProblem(ctx, problem, author.ID)
+	id, err := s.insertProblem(ctx, problem, author.ID)
+	if err != nil {
+		return nil, err
+	}
+	problem.ID = id
+
+	return problem, nil
 }
 
 func (s *BaseAPI) AddProblemEditor(ctx context.Context, pbid int, uid int) *StatusError {

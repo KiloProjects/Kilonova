@@ -916,6 +916,14 @@ ro = "Creare concurs"
 en = "Problem name"
 ro = "Nume problemă"
 
+[createDefaultStatement]
+en = "Add default statement"
+ro = "Adăugare enunț implicit"
+
+[dontCreate]
+en = "Will not create"
+ro = "Nu se va crea"
+
 [username]
 en = "Username"
 ro = "Username"

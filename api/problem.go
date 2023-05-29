@@ -1,8 +1,13 @@
 package api
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"net/http"
+	"text/template"
+
+	_ "embed"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
@@ -152,24 +157,76 @@ func (s *API) deleteProblem(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Deleted problem")
 }
 
+var (
+	//go:embed templData/default_en_statement.md
+	enPbStatementStr string
+	//go:embed templData/default_ro_statement.md
+	roPbStatementStr string
+
+	defaultEnProblemStatement = template.Must(template.New("enStmt").Parse(enPbStatementStr))
+	defaultRoProblemStatement = template.Must(template.New("enStmt").Parse(roPbStatementStr))
+)
+
 func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
 		Title        string `json:"title"`
 		ConsoleInput bool   `json:"consoleInput"`
+
+		StatementLang *string `json:"statementLang"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 400)
 		return
 	}
 
-	id, err := s.base.CreateProblem(r.Context(), args.Title, util.UserBrief(r), args.ConsoleInput)
+	// Do the check before problem creation because it'd be awkward to create the problem and then show the error
+	if args.StatementLang != nil && !(*args.StatementLang == "en" || *args.StatementLang == "ro" || *args.StatementLang == "") {
+		errorData(w, "Invalid initial statement language", 400)
+		return
+	}
+
+	pb, err := s.base.CreateProblem(r.Context(), args.Title, util.UserBrief(r), args.ConsoleInput)
 	if err != nil {
 		err.WriteError(w)
 		return
 	}
 
-	returnData(w, id)
+	if args.StatementLang != nil && *args.StatementLang != "" {
+		var attTempl *template.Template
+		if *args.StatementLang == "en" {
+			attTempl = defaultEnProblemStatement
+		} else if *args.StatementLang == "ro" {
+			attTempl = defaultRoProblemStatement
+		} else {
+			zap.S().Warn("How did we get here? %q", *args.StatementLang)
+			returnData(w, pb.ID)
+			return
+		}
+		inFile := "stdin"
+		outFile := "stdout"
+		if !args.ConsoleInput {
+			inFile = pb.TestName + ".in"
+			outFile = pb.TestName + ".out"
+		}
+		var buf bytes.Buffer
+		if err := attTempl.Execute(&buf, struct {
+			InputFile  string
+			OutputFile string
+		}{InputFile: inFile, OutputFile: outFile}); err != nil {
+			zap.S().Warnf("Template rendering error: %v", err)
+		}
+		if err := s.base.CreateAttachment(r.Context(), &kilonova.Attachment{
+			Visible: false,
+			Private: false,
+			Exec:    false,
+			Name:    fmt.Sprintf("statement-%s.md", *args.StatementLang),
+		}, pb.ID, &buf, &util.UserBrief(r).ID); err != nil {
+			zap.S().Warn(err)
+		}
+	}
+
+	returnData(w, pb.ID)
 }
 
 func (s *API) getProblems(w http.ResponseWriter, r *http.Request) {
