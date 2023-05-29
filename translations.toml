@@ -1776,6 +1776,10 @@ ro = "Etichete relevante"
 en = "Problems matching tag"
 ro = "Probleme cu această etichetă"
 
+[search_tag]
+en = "Search tag"
+ro = "Căutare etichetă"
+
 [manage_tags]
 en = "Manage tags"
 ro = "Administrare etichete"

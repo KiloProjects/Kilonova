@@ -115,6 +115,7 @@ function ProblemTagEdit({ tags, problemID }: { tags: Tag[]; problemID: number })
 	let [newTags, setTags] = useState(tags);
 	let [allTags, setAllTags] = useState<Tag[] | null>(null);
 	let [checkedTags, setCheckedTags] = useState<number[]>(tags.map((t) => t.id));
+	let [searchVal, setSearchVal] = useState<string>("");
 
 	async function loadProblemTags() {
 		let res = await getCall<Tag[]>(`/problem/${problemID}/tags`, {});
@@ -174,9 +175,18 @@ function ProblemTagEdit({ tags, problemID }: { tags: Tag[]; problemID: number })
 					<BigSpinner />
 				) : (
 					<div>
+						<input
+							type="input"
+							placeholder={getText("search_tag")}
+							onInput={(e) => {
+								setSearchVal(e.currentTarget.value);
+							}}
+							value={searchVal}
+						></input>
+						{searchVal}
 						{(["author", "contest", "method", "other"] as TagType[]).map((tp) => (
-							<div class="block my-2">
-								<h3 class="mb-2">{getText(`tag_names.${tp}`)}</h3>
+							<details key={tp} class="block my-2" open>
+								<summary class="inline-block mb-2">{getText(`tag_names.${tp}`)}</summary>
 								{allTags
 									?.filter((t) => t.type == tp)
 									.map((tag) => (
@@ -205,7 +215,7 @@ function ProblemTagEdit({ tags, problemID }: { tags: Tag[]; problemID: number })
 										}}
 									/>
 								)}
-							</div>
+							</details>
 						))}
 						<button class="btn btn-blue my-2" onClick={updateTags}>
 							{getText("button.update")}
