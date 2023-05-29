@@ -5,7 +5,7 @@
     <summary><h2 class="inline-block mb-2">{{printf "tag_names.%s" . | getText}}</h2></summary>
     <div class="mt-1 mb-2">
         {{ range tagsByType . }}
-            <kn-tag enc="{{encodeJSON .}}"></kn-tag>
+            <kn-tag enc="{{encodeJSON .}}" data-name="{{.Name}}"></kn-tag>
         {{ else }}
             {{getText "no_tags"}}
         {{ end }}
@@ -17,6 +17,8 @@
 
 <div class="segment-panel">
     <h1>{{getText "title.tags"}}</h1>
+
+    <input autocomplete="off" autocapitalize="off" id="tag_search_input" type="text" class="form-input" placeholder="{{getText `search_tag`}}" />
     
     <div class="grid lg:grid-cols-2 xl:grid-cols-4 gap-2">
         {{ template "tagList" "author"}}
@@ -25,6 +27,18 @@
         {{ template "tagList" "other"}}
     </div>
 </div>
+
+<script>
+    document.getElementById("tag_search_input").addEventListener("input", e => {
+        const query = bundled.cleanupTagSearchTerm(e.currentTarget.value);
+        document.querySelectorAll("kn-tag").forEach(el => {
+            const name = bundled.cleanupTagSearchTerm(el?.dataset?.name ?? "");
+            if(name !== "") {
+                el.classList.toggle("hidden", !name.includes(query))
+            }
+        })
+    })
+</script>
 
 <div class="segment-panel">
     <h2>{{getText "create_tag"}}</h2>

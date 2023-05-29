@@ -110,6 +110,13 @@ function TagQuickAddView({ type, cb }: { type: TagType; cb: (number) => any }) {
 	);
 }
 
+export function cleanupTagSearchTerm(val: string): string {
+	return val
+		.normalize("NFD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.toLowerCase();
+}
+
 function ProblemTagEdit({ tags, problemID }: { tags: Tag[]; problemID: number }) {
 	let [open, setOpen] = useState(false);
 	let [newTags, setTags] = useState(tags);
@@ -136,16 +143,7 @@ function ProblemTagEdit({ tags, problemID }: { tags: Tag[]; problemID: number })
 	}
 
 	function searchStrFilter(t: Tag): boolean {
-		return t.name
-			.normalize("NFD")
-			.replace(/[\u0300-\u036f]/g, "")
-			.toLowerCase()
-			.includes(
-				searchVal
-					.normalize("NFD")
-					.replace(/[\u0300-\u036f]/g, "")
-					.toLowerCase()
-			);
+		return cleanupTagSearchTerm(t.name).includes(cleanupTagSearchTerm(searchVal));
 	}
 
 	async function updateTags(e: Event) {
