@@ -9,9 +9,9 @@ import { KNModal } from "./modal";
 import { BigSpinner } from "./common";
 import { throttle } from "lodash-es";
 
-type TagType = "author" | "contest" | "method" | "other";
+export type TagType = "author" | "contest" | "method" | "other";
 
-type Tag = {
+export type Tag = {
 	id: number;
 	name: string;
 	type: TagType;

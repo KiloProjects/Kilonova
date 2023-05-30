@@ -22,11 +22,11 @@
             {{if .Ended}}
                 {{getText "contest_ended"}}
             {{else if .Running}}
-                <kn-contest-countdown target_time="{{(remainingContestTime . (contestRegistration .)).UnixMilli}}" type="running" /> 
+                <kn-contest-countdown target_time="{{(remainingContestTime . (contestRegistration .)).UnixMilli}}" type="running"></kn-contest-countdown> 
                 {{getText "contest_remaining"}}
             {{else}}
                 {{getText "contest_starting_in"}}
-                <kn-contest-countdown target_time="{{.StartTime.UnixMilli}}" type="before_start" />
+                <kn-contest-countdown target_time="{{.StartTime.UnixMilli}}" type="before_start"></kn-contest-countdown>
             {{end}}
         </p>
         {{ if isUSACOstyle . }}

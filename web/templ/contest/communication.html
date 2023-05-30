@@ -10,7 +10,7 @@
 <div class="page-holder">
     <div class="page-content-full-wrapper">
         <div class="segment-panel">
-            <kn-announcements contestid="{{.Contest.ID}}" encoded="{{contestAnnouncements .Contest | encodeJSON}}" canedit="{{isContestEditor .Contest}}"/>
+            <kn-announcements contestid="{{.Contest.ID}}" encoded="{{contestAnnouncements .Contest | encodeJSON}}" canedit="{{isContestEditor .Contest}}"></kn-announcements>
         </div>
 
         {{ if isContestEditor .Contest }}
@@ -25,7 +25,7 @@
 
         <div class="segment-panel">
             <h2>{{getText "received_questions"}}</h2>
-            <kn-question-mgr contestid="{{.Contest.ID}}" encoded="{{allContestQuestions .Contest | encodeJSON}}"/>
+            <kn-question-mgr contestid="{{.Contest.ID}}" encoded="{{allContestQuestions .Contest | encodeJSON}}"></kn-question-mgr>
         </div>
         {{ end }}
 
@@ -40,7 +40,7 @@
                 <button class="btn btn-blue" type="submit">{{getText "button.add"}}</button>
             </form>
 
-            <kn-questions contestid="{{$contest.ID}}" encoded="{{ contestQuestions .Contest | encodeJSON}}"/>
+            <kn-questions contestid="{{$contest.ID}}" encoded="{{ contestQuestions .Contest | encodeJSON}}"></kn-questions>
         {{ end }}
     </div>
 </div>

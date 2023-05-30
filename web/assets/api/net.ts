@@ -90,7 +90,7 @@ export async function multipartProgressCall<T = any>(call: string, formdata: For
 		const toast = createToast({
 			status: "progress",
 			title: getText("uploading"),
-			description: `<upload-progress id="${id}">`,
+			description: `<upload-progress id="${id}"></upload-progress>`,
 		});
 		const xhr = new XMLHttpRequest();
 		const resp = await new Promise<Response<T>>((resolve) => {
