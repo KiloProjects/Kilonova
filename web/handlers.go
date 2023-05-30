@@ -827,8 +827,8 @@ func (rt *Web) docs() http.HandlerFunc {
 func (rt *Web) chromaCSS() http.HandlerFunc {
 	formatter := chtml.New(chtml.WithClasses(true), chtml.TabWidth(4)) // Identical to mdrenderer.go
 	var lightBuf, darkBuf bytes.Buffer
-	formatter.WriteCSS(&lightBuf, styles.Get("pygments"))
-	formatter.WriteCSS(&darkBuf, styles.Get("monokai"))
+	formatter.WriteCSS(&lightBuf, styles.Get("github"))
+	formatter.WriteCSS(&darkBuf, styles.Get("github-dark"))
 	css := fmt.Sprintf(".light {%s} .dark {%s}", lightBuf.String(), darkBuf.String())
 	rez := api.Transform(css, api.TransformOptions{
 		Loader: api.LoaderCSS,
