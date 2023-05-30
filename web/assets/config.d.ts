@@ -31,7 +31,6 @@ export declare global {
 
 	interface Window {
 		platform_info: PlatformInfo;
-		hljs: any;
 		katex: katex;
 	}
 	interface Document {

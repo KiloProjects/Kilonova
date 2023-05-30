@@ -3,6 +3,7 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"encoding/base64"
@@ -18,11 +19,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/alecthomas/chroma/v2"
+	chtml "github.com/alecthomas/chroma/v2/formatters/html"
+	"github.com/alecthomas/chroma/v2/lexers"
+	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/benbjohnson/hashfs"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi/v5"
@@ -363,6 +369,23 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		},
 		"unescapeHTML": func(s string) string {
 			return html.UnescapeString(s)
+		},
+		"syntaxHighlight": func(code, lang string) (string, error) {
+			fmt := chtml.New(chtml.WithClasses(true), chtml.TabWidth(4))
+			lm := lexers.Get(strings.TrimFunc(lang, unicode.IsDigit))
+			if lm == nil {
+				lm = lexers.Fallback
+			}
+			lm = chroma.Coalesce(lm)
+			var buf bytes.Buffer
+			it, err := lm.Tokenise(nil, code)
+			if err != nil {
+				return "", err
+			}
+			if err := fmt.Format(&buf, styles.Get("github"), it); err != nil {
+				return "", err
+			}
+			return buf.String(), nil
 		},
 		"submissionEditor": func(user *kilonova.UserBrief, sub *kilonova.Submission) bool {
 			return base.IsSubmissionEditor(sub, user)

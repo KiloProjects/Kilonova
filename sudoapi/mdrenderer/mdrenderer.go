@@ -27,6 +27,7 @@ func NewLocalRenderer() *LocalRenderer {
 	md := goldmark.New(
 		goldmark.WithExtensions(extension.GFM, extension.Footnote, &attNode{}, knkatex.Extension,
 			highlighting.NewHighlighting(
+				highlighting.WithStyle("github"),
 				highlighting.WithFormatOptions( // TODO: Keep in line with handlers.go:chromaCSS()
 					chtml.TabWidth(4),
 					chtml.WithClasses(true),

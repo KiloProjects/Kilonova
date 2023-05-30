@@ -175,7 +175,7 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 
 	ar, err := zip.NewReader(file, fh.Size)
 	if err != nil {
-		errorData(w, test.ErrBadArchive, 400)
+		errorData(w, err, 400)
 		return
 	}
 

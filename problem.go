@@ -66,6 +66,8 @@ type ProblemFilter struct {
 	Visible      *bool   `json:"visible"`
 	Name         *string `json:"name"`
 
+	FuzzyName *string `json:"name_fuzzy"`
+
 	Tags []*TagGroup `json:"tags"`
 
 	Look        bool       `json:""`

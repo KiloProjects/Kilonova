@@ -4,7 +4,10 @@
 {{ end }}
 {{ define "content" }}
 
-<kn-sub-mgr id="{{.Submission.ID}}" enc="{{.FullSub | encodeJSON}}"/>
+<kn-sub-mgr 
+    id="{{.Submission.ID}}" 
+    enc="{{.FullSub | encodeJSON}}" 
+    code="{{if .FullSub.Code}}{{syntaxHighlight .FullSub.Code .FullSub.Language}}{{end}}"></kn-sub-mgr>
 
 <div class="mb-2"></div>
 

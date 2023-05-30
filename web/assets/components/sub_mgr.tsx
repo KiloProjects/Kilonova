@@ -164,22 +164,11 @@ function CompileErrorInfo({ sub }: { sub: FullSubmission }) {
 	);
 }
 
-function SubCode({ sub }: { sub: FullSubmission }) {
+function SubCode({ sub, codeHTML }: { sub: FullSubmission; codeHTML: string }) {
 	return (
 		<div class="segment-panel">
 			<h2>{getText("sourceCode")}:</h2>
-			<pre style={{ wordBreak: "break-all" }}>
-				<code
-					class="hljs"
-					dangerouslySetInnerHTML={{
-						__html: window.hljs.highlight(sub.code, {
-							language: sub.language.replace(/[0-9]+$/g, "").replace("outputOnly", "text"),
-						}).value,
-					}}
-				>
-					Rendering...
-				</code>
-			</pre>
+			<div dangerouslySetInnerHTML={{ __html: codeHTML }}></div>
 			<div class="block my-2">
 				{window.isSecureContext && (
 					/* It only works with https OR localhost */
@@ -383,7 +372,7 @@ function SubTasks({ sub, expandedTests }: { sub: FullSubmission; expandedTests: 
 	);
 }
 
-function SubmissionView({ sub, bigCode, pasteAuthor }: { sub: FullSubmission | null; bigCode: boolean; pasteAuthor?: any }) {
+function SubmissionView({ sub, bigCode, codeHTML, pasteAuthor }: { sub: FullSubmission | null; bigCode: boolean; codeHTML: string; pasteAuthor?: any }) {
 	if (sub === null) {
 		return (
 			<div class="page-holder grid-cols-1">
@@ -408,7 +397,7 @@ function SubmissionView({ sub, bigCode, pasteAuthor }: { sub: FullSubmission | n
 
 	let under = <></>;
 	if (sub.code != null) {
-		under = <SubCode sub={sub} />;
+		under = <SubCode sub={sub} codeHTML={codeHTML} />;
 	}
 
 	if (bigCode) {
@@ -438,7 +427,7 @@ type SubMgrState = {
 };
 
 // TODO: Refactor into function
-export class SubmissionManager extends Component<{ id: number; initialData: FullSubmission | null; bigCode?: boolean }, SubMgrState> {
+export class SubmissionManager extends Component<{ id: number; initialData: FullSubmission | null; codeHTML: string; bigCode?: boolean }, SubMgrState> {
 	poll_mu: boolean;
 	finished: boolean;
 	poller: number | null;
@@ -505,40 +494,40 @@ export class SubmissionManager extends Component<{ id: number; initialData: Full
 				<h1>
 					{getText("sub")} {`#${this.props.id}`}
 				</h1>
-				<SubmissionView bigCode={false} sub={this.state.sub} />
+				<SubmissionView bigCode={false} sub={this.state.sub} codeHTML={this.props.codeHTML} />
 			</>
 		);
 	}
 }
 
-export function PasteViewer({ paste_id, sub, author }: { paste_id: string; sub: FullSubmission; author: UserBrief }) {
+export function PasteViewer({ paste_id, sub, author, codeHTML }: { paste_id: string; sub: FullSubmission; author: UserBrief; codeHTML: string }) {
 	return (
 		<>
 			<h1>
 				{getText("paste_title")} #{paste_id}
 			</h1>
-			<SubmissionView bigCode={true} sub={sub} pasteAuthor={author} />
+			<SubmissionView bigCode={true} sub={sub} pasteAuthor={author} codeHTML={codeHTML} />
 		</>
 	);
 }
 
-function PasteViewerDOM({ paste_id, authorenc, subenc }: { paste_id: string; authorenc: string; subenc: string }) {
+function PasteViewerDOM({ paste_id, authorenc, subenc, code }: { paste_id: string; authorenc: string; subenc: string; code: string }) {
 	const author: UserBrief = JSON.parse(fromBase64(authorenc));
 	const sub: FullSubmission = JSON.parse(fromBase64(subenc));
-	return <PasteViewer paste_id={paste_id} sub={sub} author={author}></PasteViewer>;
+	return <PasteViewer paste_id={paste_id} sub={sub} author={author} codeHTML={code}></PasteViewer>;
 }
 
-function SubMgrDOM({ id, enc }: { id: string; enc: string }) {
+function SubMgrDOM({ id, enc, code }: { id: string; enc: string; code: string }) {
 	const subID = parseInt(id);
 	if (isNaN(subID)) {
 		throw new Error("Invalid submission ID");
 	}
-	let sub: FullSubmission | null = null;
-	if (fromBase64(enc) !== "") {
-		sub = JSON.parse(fromBase64(enc));
+	if (fromBase64(enc) === "") {
+		throw new Error("Invalid submission data");
 	}
-	return <SubmissionManager id={subID} initialData={sub}></SubmissionManager>;
+	let sub: FullSubmission = JSON.parse(fromBase64(enc));
+	return <SubmissionManager id={subID} initialData={sub} codeHTML={code}></SubmissionManager>;
 }
 
-register(SubMgrDOM, "kn-sub-mgr", ["id", "enc"]);
-register(PasteViewerDOM, "kn-paste-viewer", ["paste_id", "authorenc", "subenc"]);
+register(SubMgrDOM, "kn-sub-mgr", ["id", "enc", "code"]);
+register(PasteViewerDOM, "kn-paste-viewer", ["paste_id", "authorenc", "subenc", "code"]);

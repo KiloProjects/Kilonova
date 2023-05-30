@@ -1,9 +1,4 @@
-import hljs from "highlight.js/lib/common";
 import CopyButtonPlugin from "highlightjs-copy";
-hljs.configure({
-	cssSelector: "pre:not(.chroma) code",
-});
-hljs.addPlugin(new CopyButtonPlugin());
 
 document.addEventListener("DOMContentLoaded", () => {
 	const x = new CopyButtonPlugin();
@@ -16,7 +11,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 import CodeMirror from "codemirror";
-window.hljs = hljs;
 window.CodeMirror = CodeMirror;
 window.CodeMirror.defaults.lineNumbers = true;
 window.CodeMirror.defaults.indentUnit = 4;
