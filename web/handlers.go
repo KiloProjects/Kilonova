@@ -78,7 +78,17 @@ func (rt *Web) index() http.HandlerFunc {
 func (rt *Web) problems() http.HandlerFunc {
 	templ := rt.parse(nil, "pbs.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, templ, &SimpleParams{GenContext(r)})
+		pbs, cnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
+			LookingUser: util.UserBrief(r), Look: true,
+			Limit: 20, Offset: 0,
+		}, util.UserBrief(r))
+		if err != nil {
+			zap.S().Warn(err)
+			// TODO: Maybe not fail to load and insted just load on the browser?
+			rt.statusPage(w, r, 500, "N-am putut încărca problemele")
+			return
+		}
+		rt.runTempl(w, r, templ, &ProblemSearchParams{GenContext(r), pbs, cnt})
 	}
 }
 

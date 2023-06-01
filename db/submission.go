@@ -32,9 +32,6 @@ type dbSubmission struct {
 	ContestID *int `db:"contest_id"`
 
 	Score int `db:"score"`
-
-	// Optimization so Submissions() also returns the total count
-	FullCount *int `db:"full_count"`
 }
 
 func (s *DB) Submission(ctx context.Context, id int) (*kilonova.Submission, error) {
@@ -55,26 +52,31 @@ func (s *DB) SubmissionLookingUser(ctx context.Context, id int, userID int) (*ki
 	return s.internalToSubmission(&sub), err
 }
 
-const subSelectQuery = "SELECT *, COUNT(*) OVER() AS full_count FROM submissions WHERE %s %s %s;"
-
-func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) ([]*kilonova.Submission, int, error) {
+func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) ([]*kilonova.Submission, error) {
 	var subs []*dbSubmission
 	fb := newFilterBuilder()
 	subFilterQuery(&filter, fb)
 
-	query := fmt.Sprintf(subSelectQuery, fb.Where(), getSubmissionOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset))
+	query := fmt.Sprintf("SELECT * FROM submissions WHERE %s %s %s", fb.Where(), getSubmissionOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset))
 	err := s.conn.SelectContext(ctx, &subs, query, fb.Args()...)
 	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
-		return []*kilonova.Submission{}, 0, nil
+		return []*kilonova.Submission{}, nil
 	} else if err != nil {
 		zap.S().Warn(err)
-		return []*kilonova.Submission{}, 0, err
+		return []*kilonova.Submission{}, err
 	}
-	cnt := -1
-	if len(subs) > 0 {
-		cnt = *subs[0].FullCount
+	return mapper(subs, s.internalToSubmission), nil
+}
+
+func (s *DB) SubmissionCount(ctx context.Context, filter kilonova.SubmissionFilter) (int, error) {
+	fb := newFilterBuilder()
+	subFilterQuery(&filter, fb)
+	var val int
+	err := s.pgconn.QueryRow(ctx, "SELECT COUNT(*) FROM submissions WHERE "+fb.Where(), fb.Args()...).Scan(&val)
+	if err != nil {
+		return -1, err
 	}
-	return mapper(subs, s.internalToSubmission), cnt, nil
+	return val, nil
 }
 
 func (s *DB) RemainingSubmissionCount(ctx context.Context, contest *kilonova.Contest, problemID, userID int) (int, error) {

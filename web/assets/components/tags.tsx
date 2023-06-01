@@ -28,7 +28,19 @@ function tagClasses(tag: { type: TagType }): string {
 	return `tag ${tagTypes[tag.type] ?? "bg-teal-700"}`;
 }
 
-function TagView({ tag, link = true, onClick, wide = true, extraClasses }: { tag: Tag; link?: boolean; onClick?: any; wide?: boolean; extraClasses?: string }) {
+export function TagView({
+	tag,
+	link = true,
+	onClick,
+	wide = true,
+	extraClasses,
+}: {
+	tag: Tag;
+	link?: boolean;
+	onClick?: any;
+	wide?: boolean;
+	extraClasses?: string;
+}) {
 	if (!link) {
 		return <span class={(wide ? "mx-1 " : "") + tagClasses(tag) + " " + extraClasses}>{tag.name}</span>;
 	}

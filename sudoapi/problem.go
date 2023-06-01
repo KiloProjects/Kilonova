@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/db"
 	"go.uber.org/zap"
 )
 
@@ -93,7 +94,67 @@ func (s *BaseAPI) ScoredProblems(ctx context.Context, filter kilonova.ProblemFil
 	return problems, nil
 }
 
-// When editing ContestProblems, please edit ScoredContestProblems as well
+type FullProblem struct {
+	kilonova.ScoredProblem
+	Tags []*kilonova.Tag `json:"tags"`
+
+	SolvedBy    int `json:"solved_by"`
+	AttemptedBy int `json:"attempted_by"`
+}
+
+// SearchProblems is like the functions above but returns more detailed results for problems
+func (s *BaseAPI) SearchProblems(ctx context.Context, filter kilonova.ProblemFilter, user *kilonova.UserBrief) ([]*FullProblem, int, *StatusError) {
+	uid := -1
+	if user != nil {
+		uid = user.ID
+	}
+	pbs, err := s.db.ScoredProblems(ctx, filter, uid)
+	if err != nil {
+		return nil, -1, WrapError(err, "Couldn't get problems")
+	}
+	cnt, err := s.db.CountProblems(ctx, filter)
+	if err != nil {
+		return nil, -1, WrapError(err, "Couldn't get problem count")
+	}
+	ids := make([]int, 0, len(pbs))
+	for _, pb := range pbs {
+		ids = append(ids, pb.ID)
+	}
+
+	tagMap, err1 := s.db.ManyProblemsTags(ctx, ids)
+	if err1 != nil {
+		return nil, -1, WrapError(err1, "Couldn't get problem tags")
+	}
+
+	stats, err1 := s.db.ProblemsStatistics(ctx, ids)
+	if err1 != nil {
+		return nil, -1, WrapError(err1, "Couldn't get problem statistics")
+	}
+
+	fullPbs := make([]*FullProblem, 0, len(pbs))
+	for _, pb := range pbs {
+		stat, ok := stats[pb.ID]
+		if !ok {
+			zap.S().Warnf("Couldn't find stats for problem %d", pb.ID)
+			// Attempt to get this working even in case of error
+			stat = &db.ProblemStats{NumSolvedBy: -1, NumAttemptedBy: -1}
+		}
+		tags, ok := tagMap[pb.ID]
+		if !ok {
+			zap.S().Warnf("Couldn't find tags for problem %d", pb.ID)
+			tags = []*kilonova.Tag{}
+		}
+		fullPbs = append(fullPbs, &FullProblem{
+			ScoredProblem: *pb,
+			AttemptedBy:   stat.NumAttemptedBy,
+			SolvedBy:      stat.NumSolvedBy,
+			Tags:          tags,
+		})
+	}
+
+	return fullPbs, cnt, nil
+}
+
 func (s *BaseAPI) ContestProblems(ctx context.Context, contest *kilonova.Contest, lookingUser *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
 	if !s.CanViewContestProblems(ctx, lookingUser, contest) {
 		return nil, Statusf(403, "User can't view contest problems")
@@ -247,14 +308,12 @@ func (s *BaseAPI) ProblemStatistics(ctx context.Context, problem *kilonova.Probl
 		return nil, Statusf(401, "Looking user must be full problem viewer")
 	}
 
-	numSolved, err := s.db.ProblemStatisticsNumSolved(ctx, problem.ID)
+	numberStats, err := s.db.ProblemsStatistics(ctx, []int{problem.ID})
 	if err != nil {
-		return nil, WrapError(err, "Couldn't get number of users that solved problem")
+		return nil, WrapError(err, "Couldn't get attempted/solved user count")
 	}
-
-	numAttempted, err := s.db.ProblemStatisticsNumAttempted(ctx, problem.ID)
-	if err != nil {
-		return nil, WrapError(err, "Couldn't get number of users that attempted problem")
+	if _, ok := numberStats[problem.ID]; !ok {
+		return nil, Statusf(500, "Couldn't get attempted/solved user count for problem")
 	}
 
 	sizeRaw, err := s.db.ProblemStatisticsSize(ctx, problem.ID)
@@ -285,8 +344,8 @@ func (s *BaseAPI) ProblemStatistics(ctx context.Context, problem *kilonova.Probl
 	}
 
 	return &ProblemStatistics{
-		NumSolved:    numSolved,
-		NumAttempted: numAttempted,
+		NumSolved:    numberStats[problem.ID].NumSolvedBy,
+		NumAttempted: numberStats[problem.ID].NumAttemptedBy,
 
 		SizeLeaderboard:   size,
 		MemoryLeaderboard: memory,

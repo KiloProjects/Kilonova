@@ -58,11 +58,11 @@ func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
 
 func (s *DB) ScoredProblem(ctx context.Context, problemID int, userID int) (*kilonova.ScoredProblem, error) {
 	var pb dbScoredProblem
-	err := s.conn.GetContext(ctx, &pb, `SELECT DISTINCT pbs.*, ms.user_id, ms.score, CASE WHEN editors.user_id IS NOT NULL THEN TRUE ELSE FALSE END AS pb_editor
+	err := s.conn.GetContext(ctx, &pb, `SELECT pbs.*, ms.user_id, ms.score, (editors.user_id IS NOT NULL) AS pb_editor
 FROM problems pbs 
 	LEFT JOIN max_score_view ms ON (pbs.id = ms.problem_id AND ms.user_id = $2) 
-	LEFT JOIN problem_editors editors ON (pbs.id = editors.problem_id AND editors.user_id = $3)
-WHERE pbs.id = $1 LIMIT 1`, problemID, userID, userID)
+	LEFT JOIN LATERAL (SELECT user_id FROM problem_editors editors WHERE pbs.id = editors.problem_id AND editors.user_id = $2 LIMIT 1) editors ON TRUE
+WHERE pbs.id = $1 LIMIT 1`, problemID, userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -94,16 +94,23 @@ func (s *DB) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*ki
 func (s *DB) ScoredProblems(ctx context.Context, filter kilonova.ProblemFilter, userID int) ([]*kilonova.ScoredProblem, error) {
 	var pbs []*dbScoredProblem
 	where, args := problemFilterQuery(&filter)
-	query := s.conn.Rebind(`SELECT DISTINCT problems.*, ms.user_id, ms.score, CASE WHEN editors.user_id IS NOT NULL THEN TRUE ELSE FALSE END AS pb_editor
+	query := s.conn.Rebind(`SELECT problems.*, ms.user_id, ms.score, (editors.user_id IS NOT NULL) AS pb_editor
 FROM problems 
 	LEFT JOIN max_score_view ms ON (problems.id = ms.problem_id AND ms.user_id = ?)
-	LEFT JOIN problem_editors editors ON (problems.id = editors.problem_id AND editors.user_id = ?) 
+	LEFT JOIN LATERAL (SELECT user_id FROM problem_editors editors WHERE problems.id = editors.problem_id AND editors.user_id = ? LIMIT 1) editors ON TRUE
 WHERE ` + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
 	err := s.conn.SelectContext(ctx, &pbs, query, append([]any{userID, userID}, args...)...)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.ScoredProblem{}, nil
 	}
 	return s.internalToScoredProblems(pbs, userID), err
+}
+
+func (s *DB) CountProblems(ctx context.Context, filter kilonova.ProblemFilter) (int, error) {
+	where, args := problemFilterQuery(&filter)
+	var val int
+	err := s.pgconn.QueryRow(ctx, s.conn.Rebind("SELECT COUNT(*) FROM problems WHERE "+strings.Join(where, " AND ")), args...).Scan(&val)
+	return val, err
 }
 
 func (s *DB) ContestProblems(ctx context.Context, contestID int) ([]*kilonova.Problem, error) {
@@ -117,12 +124,12 @@ func (s *DB) ContestProblems(ctx context.Context, contestID int) ([]*kilonova.Pr
 
 func (s *DB) ScoredContestProblems(ctx context.Context, contestID int, userID int) ([]*kilonova.ScoredProblem, error) {
 	var pbs []*dbScoredProblem
-	err := s.conn.SelectContext(ctx, &pbs, `SELECT DISTINCT pbs.*, cpbs.position AS unused_position, ms.user_id, ms.score, CASE WHEN editors.user_id IS NOT NULL THEN TRUE ELSE FALSE END AS pb_editor
+	err := s.conn.SelectContext(ctx, &pbs, `SELECT pbs.*, cpbs.position AS unused_position, ms.user_id, ms.score, (editors.user_id IS NOT NULL) AS pb_editor
 FROM (problems pbs INNER JOIN contest_problems cpbs ON cpbs.problem_id = pbs.id) 
 	LEFT JOIN max_score_contest_view ms ON (pbs.id = ms.problem_id AND cpbs.contest_id = ms.contest_id AND ms.user_id = $2)
-	LEFT JOIN problem_editors editors ON (pbs.id = editors.problem_id AND editors.user_id = $3) 
+	LEFT JOIN LATERAL (SELECT user_id FROM problem_editors editors WHERE pbs.id = editors.problem_id AND editors.user_id = $2 LIMIT 1) editors ON TRUE
 WHERE cpbs.contest_id = $1 
-ORDER BY cpbs.position ASC`, contestID, userID, userID)
+ORDER BY cpbs.position ASC`, contestID, userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.ScoredProblem{}, nil
 	}

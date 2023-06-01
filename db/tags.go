@@ -138,6 +138,32 @@ func (s *DB) ProblemTags(ctx context.Context, problemID int) ([]*kilonova.Tag, e
 	return tags, err
 }
 
+type ProblemTag struct {
+	kilonova.Tag
+	ProblemID int `db:"problem_id"`
+}
+
+func (s *DB) ManyProblemsTags(ctx context.Context, problemIDs []int) (map[int][]*kilonova.Tag, error) {
+	rezTags := make(map[int][]*kilonova.Tag)
+	for _, id := range problemIDs {
+		rezTags[id] = []*kilonova.Tag{}
+	}
+	var tags []*ProblemTag
+	err := s.conn.SelectContext(ctx, &tags, "SELECT tags.*, problem_tags.problem_id FROM tags, problem_tags WHERE tags.id = problem_tags.tag_id AND problem_tags.problem_id = ANY($1) ORDER BY tags.type ASC, tags.name ASC", problemIDs)
+	if errors.Is(err, sql.ErrNoRows) || (err == nil && tags == nil) {
+		return rezTags, err
+	}
+	if err != nil {
+		return rezTags, err
+	}
+
+	for _, tag := range tags {
+		rezTags[tag.ProblemID] = append(rezTags[tag.ProblemID], &tag.Tag)
+	}
+
+	return rezTags, nil
+}
+
 func (s *DB) UpdateProblemTags(ctx context.Context, problemID int, tagIDs []int) error {
 	return s.updateManyToMany(ctx, "problem_tags", "problem_id", "tag_id", problemID, tagIDs, true)
 }

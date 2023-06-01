@@ -9,21 +9,21 @@ import throttle from "lodash-es/throttle";
 import { getSubmissions } from "../api/submissions";
 import type { Submission, SubmissionQuery, ResultSubmission } from "../api/submissions";
 
-const rezStr = (subCount: number): string => {
-	if (subCount < 0) {
+export function rezStr(count: number): string {
+	if (count < 0) {
 		return `- ${getText("u20Results")}`;
 	}
-	if (subCount == 0) {
+	if (count == 0) {
 		return `0 ${getText("u20Results")}`;
 	}
-	if (subCount == 1) {
+	if (count == 1) {
 		return getText("oneResult");
 	}
-	if (subCount < 20) {
-		return `${subCount} ${getText("u20Results")}`;
+	if (count < 20) {
+		return `${count} ${getText("u20Results")}`;
 	}
-	return `${subCount} ${getText("manyResults")}`;
-};
+	return `${count} ${getText("manyResults")}`;
+}
 
 const status = (sub: Submission): string => {
 	if (sub.status === "finished") {

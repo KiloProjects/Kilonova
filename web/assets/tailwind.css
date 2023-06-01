@@ -80,9 +80,12 @@
 		@apply leading-normal;
 	}
 
-	.reset-list h1,
-	.reset-list h2 {
+	.reset-list h1 {
 		@apply mb-2 mt-1;
+	}
+
+	.reset-list h2 {
+		@apply my-1;
 	}
 
 	.reset-list p {

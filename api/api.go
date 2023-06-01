@@ -72,7 +72,8 @@ func (s *API) Handler() http.Handler {
 		r.Post("/resetPassword", s.resetPassword)
 	})
 	r.Route("/problem", func(r chi.Router) {
-		r.Get("/get", s.getProblems)
+		r.Post("/get", s.getProblems)
+		r.Post("/search", s.searchProblems)
 
 		r.With(s.MustBeProposer).Post("/create", s.initProblem)
 

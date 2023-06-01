@@ -527,6 +527,10 @@ ro = "ID Submisie"
 en = "Score"
 ro = "Scor"
 
+[num_att_solved]
+en = "Num. Solved / Attempted"
+ro = "Nr. Rezolvat / Încercat"
+
 [updateProblem]
 en = "Update problem info"
 ro = "Actualizare date problemă"

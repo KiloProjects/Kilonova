@@ -245,6 +245,13 @@ type MarkdownParams struct {
 	Title    string
 }
 
+type ProblemSearchParams struct {
+	Ctx *ReqContext
+
+	Results []*sudoapi.FullProblem
+	Count   int
+}
+
 type SimpleParams struct {
 	Ctx *ReqContext
 }

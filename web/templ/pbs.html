@@ -1,12 +1,6 @@
 {{ define "title" }} {{ getText "problems" }}{{ end }}
 {{ define "content" }}
 
-{{ $user := .Ctx.User.Brief }}
-{{ with visibleProblems $user }}
-<div class="segment-panel">
-    <h2 class="text-2xl mb-2"> {{ getText "problems" }} </h2>	
-    {{ template "pb_list_group" (genProblemsParams . true true true) }}
-</div>
-{{ end }} 
+<kn-pb-search enc="{{.Results | encodeJSON}}" count="{{.Count}}"></kn-pb-search>
 
 {{ end }}

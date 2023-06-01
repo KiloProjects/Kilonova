@@ -2,26 +2,33 @@ package db
 
 import (
 	"context"
+	"errors"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/jackc/pgx/v5"
 )
 
-func (s *DB) ProblemStatisticsNumSolved(ctx context.Context, problemID int) (int, error) {
-	var cnt int
-	err := s.pgconn.QueryRow(ctx, "SELECT COUNT(*) FROM max_score_view WHERE problem_id = $1 AND score = 100", problemID).Scan(&cnt)
-	if err != nil {
-		return -1, err
-	}
-	return cnt, nil
+type ProblemStats struct {
+	ProblemID      int `db:"problem_id"`
+	NumSolvedBy    int `db:"num_solved"`
+	NumAttemptedBy int `db:"num_attempted"`
 }
 
-func (s *DB) ProblemStatisticsNumAttempted(ctx context.Context, problemID int) (int, error) {
-	var cnt int
-	err := s.pgconn.QueryRow(ctx, "SELECT COUNT(*) FROM max_score_view WHERE problem_id = $1 AND score >= 0", problemID).Scan(&cnt)
-	if err != nil {
-		return -1, err
+func (s *DB) ProblemsStatistics(ctx context.Context, problemIDs []int) (map[int]*ProblemStats, error) {
+	rows, _ := s.pgconn.Query(ctx, "SELECT problem_id, COUNT(*) AS num_attempted, COUNT(*) FILTER (WHERE score = 100) AS num_solved FROM max_score_view WHERE problem_id = ANY($1) AND score != -1 GROUP BY problem_id", problemIDs)
+	stats, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[ProblemStats])
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, err
 	}
-	return cnt, nil
+	mp := make(map[int]*ProblemStats)
+	for _, id := range problemIDs {
+		mp[id] = &ProblemStats{ProblemID: id, NumSolvedBy: 0, NumAttemptedBy: 0}
+	}
+	for _, stat := range stats {
+		stat := stat
+		mp[stat.ProblemID] = stat
+	}
+	return mp, nil
 }
 
 func (s *DB) ProblemStatisticsSize(ctx context.Context, problemID int) ([]*kilonova.Submission, error) {

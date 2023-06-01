@@ -113,7 +113,16 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		filter.LookingUser = lookingUser
 	}
 
-	subs, cnt, err := s.db.Submissions(ctx, filter)
+	subs, err := s.db.Submissions(ctx, filter)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, ErrUnknownError
+		}
+		zap.S().Warn(err)
+		return nil, ErrUnknownError
+	}
+
+	cnt, err := s.db.SubmissionCount(ctx, filter)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return nil, ErrUnknownError
@@ -140,7 +149,7 @@ func (s *BaseAPI) RawSubmission(ctx context.Context, id int) (*kilonova.Submissi
 
 // Should only ever be used for grader stuff
 func (s *BaseAPI) RawSubmissions(ctx context.Context, filter kilonova.SubmissionFilter) ([]*kilonova.Submission, *StatusError) {
-	subs, _, err := s.db.Submissions(ctx, filter)
+	subs, err := s.db.Submissions(ctx, filter)
 	if err != nil {
 		zap.S().Warn(err)
 		return nil, ErrUnknownError

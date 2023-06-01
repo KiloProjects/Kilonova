@@ -11,6 +11,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/sudoapi"
 	"go.uber.org/zap"
 )
 
@@ -245,6 +246,32 @@ func (s *API) getProblems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	returnData(w, problems)
+}
+
+func (s *API) searchProblems(w http.ResponseWriter, r *http.Request) {
+	var args kilonova.ProblemFilter
+	if err := parseJsonBody(r, &args); err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	args.Look = true
+	args.LookingUser = util.UserBrief(r)
+
+	if args.Limit == 0 || args.Limit > 20 {
+		args.Limit = 20
+	}
+
+	problems, cnt, err := s.base.SearchProblems(r.Context(), args, util.UserBrief(r))
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+	returnData(w, struct {
+		Problems []*sudoapi.FullProblem `json:"problems"`
+
+		Count int `json:"count"`
+	}{Problems: problems, Count: cnt})
 }
 
 func (s *API) updateProblem(w http.ResponseWriter, r *http.Request) {
