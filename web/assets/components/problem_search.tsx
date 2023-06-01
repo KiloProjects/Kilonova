@@ -94,7 +94,7 @@ function ProblemView({ problems, showTags }: { problems: FullProblem[]; showTags
 						)}
 						<td>
 							<span class="badge">
-								{pb.solved_by} {" / "} {pb.solved_by}
+								{pb.solved_by} {" / "} {pb.attempted_by}
 							</span>
 						</td>
 					</tr>
