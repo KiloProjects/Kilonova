@@ -2,8 +2,11 @@ package mdrenderer
 
 import (
 	"fmt"
+	"html"
 	"net/url"
+	"strings"
 
+	"github.com/KiloProjects/kilonova"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
@@ -22,11 +25,11 @@ var attNodeKind = ast.NewNodeKind("attachment")
 
 type attachmentParser struct{}
 
-func (_ attachmentParser) Trigger() []byte {
+func (attachmentParser) Trigger() []byte {
 	return []byte{'~'}
 }
 
-func (_ attachmentParser) Parse(parent ast.Node, block text.Reader, pc parser.Context) ast.Node {
+func (attachmentParser) Parse(parent ast.Node, block text.Reader, pc parser.Context) ast.Node {
 	line, _ := block.PeekLine()
 	if len(line) < 2 {
 		return nil
@@ -59,13 +62,47 @@ func (att *attachmentRenderer) renderAttachment(writer util.BufWriter, source []
 		return ast.WalkContinue, nil
 	}
 	node := n.(*AttachmentNode)
-	fmt.Fprintf(writer, `<problem-attachment attname="%s"></problem-attachment>`, url.PathEscape(node.Filename))
+	parts := strings.Split(node.Filename, "|")
+	name := parts[0]
+	classes := ""
+	styles := make([]string, 0, len(parts))
+	if len(parts) > 1 {
+		for _, part := range parts {
+			kv := strings.SplitN(part, "=", 2)
+			if len(kv) == 2 {
+				if kv[0] == "class" {
+					classes = kv[1]
+				} else {
+					styles = append(styles, fmt.Sprintf("%s:%s", kv[0], kv[1]))
+				}
+			}
+		}
+	}
+	ctx, ok := n.OwnerDocument().Meta()["ctx"].(*kilonova.RenderContext)
+	if !ok || ctx == nil || ctx.Problem == nil {
+		fmt.Fprintf(
+			writer,
+			`<img src="%s" class="%s" style="%s"></img>`,
+			url.PathEscape(name),
+			html.EscapeString(classes),
+			html.EscapeString(strings.Join(styles, ",")),
+		)
+		return ast.WalkContinue, nil
+	}
+	fmt.Fprintf(
+		writer,
+		`<img src="/problems/%d/attachments/%s" class="%s" style="%s"></img>`,
+		ctx.Problem.ID,
+		url.PathEscape(name),
+		html.EscapeString(classes),
+		html.EscapeString(strings.Join(styles, ";")),
+	)
 	return ast.WalkContinue, nil
 }
 
 type attNode struct{}
 
-func (_ *attNode) Extend(md goldmark.Markdown) {
+func (*attNode) Extend(md goldmark.Markdown) {
 	md.Renderer().AddOptions(renderer.WithNodeRenderers(util.Prioritized(&attachmentRenderer{}, 900)))
 	md.Parser().AddOptions(parser.WithInlineParsers(util.Prioritized(&attachmentParser{}, 900)))
 }

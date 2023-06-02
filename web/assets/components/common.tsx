@@ -164,31 +164,6 @@ export function InlineSpinner() {
 	);
 }
 
-export function ProblemAttachment({ attname = "" }) {
-	let pname = window.location.pathname;
-	if (pname.endsWith("/")) {
-		pname = pname.substr(0, pname.lastIndexOf("/"));
-	}
-	let attrList = {},
-		classes = "";
-	if (decodeURI(attname).split("|").length > 1) {
-		let attrs: string[] = [];
-		[attname, ...attrs] = decodeURI(attname).split("|");
-
-		for (let val of attrs) {
-			const kv = val.split("=");
-			if (kv.length == 2) {
-				if (kv[0] == "class") {
-					classes = kv[1];
-				} else {
-					attrList[kv[0]] = kv[1];
-				}
-			}
-		}
-	}
-	return <img src={`${pname}/attachments/${attname}`} class={classes} style={attrList} />;
-}
-
 export function OlderSubmissions({
 	userID,
 	problemID,
@@ -304,7 +279,6 @@ function OlderSubmissionsDOM({ userid, problemid, contestid, enc }: { userid: st
 }
 
 register(OlderSubmissionsDOM, "older-subs", ["userid", "problemid", "contestid", "enc"]);
-register(ProblemAttachment, "problem-attachment", ["attname"]);
 
 function ProgressChecker({ id }: { id: number }) {
 	var [computable, setComputable] = useState<boolean>(false);

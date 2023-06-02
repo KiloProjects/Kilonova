@@ -3,6 +3,7 @@ package mdrenderer
 import (
 	"bytes"
 
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer/knkatex"
 	chtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/yuin/goldmark"
@@ -10,6 +11,7 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/text"
 )
 
 // LocalRenderer is a local markdown renderer. It does not depend on any external services but it does not support mathjax rendering or any extensions to the markdown standard I intend to make.
@@ -17,9 +19,11 @@ type LocalRenderer struct {
 	md goldmark.Markdown
 }
 
-func (r *LocalRenderer) Render(src []byte) ([]byte, error) {
+func (r *LocalRenderer) Render(src []byte, ctx *kilonova.RenderContext) ([]byte, error) {
 	var buf bytes.Buffer
-	err := r.md.Convert(src, &buf)
+	doc := r.md.Parser().Parse(text.NewReader(src))
+	doc.OwnerDocument().Meta()["ctx"] = ctx
+	err := r.md.Renderer().Render(&buf, src, doc)
 	return buf.Bytes(), err
 }
 

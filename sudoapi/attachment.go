@@ -167,11 +167,11 @@ func (s *BaseAPI) ProblemRawDesc(ctx context.Context, problemID int, lang string
 	return data, nil
 }
 
-func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problemID int, lang string, format string) ([]byte, *StatusError) {
+func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Problem, lang string, format string) ([]byte, *StatusError) {
 	switch format {
 	case "md":
 		name := fmt.Sprintf("statement-%s.%s", lang, format)
-		att, err := s.AttachmentByName(ctx, problemID, name)
+		att, err := s.AttachmentByName(ctx, problem.ID, name)
 		if err != nil {
 			return nil, err
 		}
@@ -187,12 +187,12 @@ func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problemID int, lang s
 				}
 			}
 		}
-		data, _, err1 := s.db.ProblemRawDesc(ctx, problemID, name)
+		data, _, err1 := s.db.ProblemRawDesc(ctx, problem.ID, name)
 		if err1 != nil {
 			return nil, WrapError(err1, "Couldn't get problem description")
 		}
 
-		buf, err := s.RenderMarkdown(data)
+		buf, err := s.RenderMarkdown(data, &kilonova.RenderContext{Problem: problem})
 		if err != nil {
 			return data, WrapError(err, "Couldn't render markdown")
 		}
@@ -201,7 +201,7 @@ func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problemID int, lang s
 		}
 		return buf, nil
 	default:
-		return s.ProblemRawDesc(ctx, problemID, lang, format)
+		return s.ProblemRawDesc(ctx, problem.ID, lang, format)
 	}
 }
 

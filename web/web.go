@@ -357,7 +357,7 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			default:
 				zap.S().Fatal("Unknown renderMarkdown type")
 			}
-			val, err := base.RenderMarkdown(bd)
+			val, err := base.RenderMarkdown(bd, nil)
 			if err != nil {
 				zap.S().Warn(err)
 				return "[Error rendering markdown]"

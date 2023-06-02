@@ -1,3 +1,4 @@
+// Code in katex.go has been mostly derived from [goldmark-mathjax](https://github.com/litao91/goldmark-mathjax).
 package knkatex
 
 import (
@@ -5,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	katex "github.com/FurqanSoftware/goldmark-katex"
+	"github.com/KiloProjects/kilonova"
 	"github.com/Yiling-J/theine-go"
 	mathjax "github.com/litao91/goldmark-mathjax"
 	"github.com/yuin/goldmark"
@@ -14,6 +15,12 @@ import (
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/util"
 	"go.uber.org/zap"
+)
+
+type mjRenderCtx string
+
+var (
+	mjRenderCtxNode mjRenderCtx = "node"
 )
 
 var Extension goldmark.Extender = katexExtension{}
@@ -41,7 +48,7 @@ func (r *mathjaxRenderer) renderInlineMath(w util.BufWriter, source []byte, n as
 			}
 		}
 
-		val, err := r.inlineCache.Get(context.Background(), buf.String())
+		val, err := r.inlineCache.Get(context.WithValue(context.Background(), mjRenderCtxNode, n), buf.String())
 		if err != nil {
 			w.WriteString(fmt.Sprintf("ERROR rendering latex: %v", err))
 			return ast.WalkSkipChildren, nil
@@ -67,7 +74,7 @@ func (r *mathjaxRenderer) renderBlockMath(w util.BufWriter, source []byte, n ast
 	if entering {
 		var buf bytes.Buffer
 		r.writeLines(&buf, source, node)
-		val, err := r.displayCache.Get(context.Background(), buf.String())
+		val, err := r.displayCache.Get(context.WithValue(context.Background(), mjRenderCtxNode, n), buf.String())
 		if err != nil {
 			w.WriteString(fmt.Sprintf("ERROR rendering latex: %v", err))
 			return ast.WalkContinue, nil
@@ -94,7 +101,18 @@ func (katexExtension) Extend(m goldmark.Markdown) {
 
 	inlineCache, err := theine.NewBuilder[string, []byte](5000).BuildWithLoader(func(ctx context.Context, key string) (theine.Loaded[[]byte], error) {
 		var buf bytes.Buffer
-		katex.Render(&buf, []byte(key), false)
+		if err := Render(&buf, []byte(key), false); err != nil {
+			// TODO: Better checking for ctx and stuff
+			val, ok := ctx.Value(mjRenderCtxNode).(ast.Node)
+			if ok && val.OwnerDocument().Meta()["ctx"] != nil {
+				x := val.OwnerDocument().Meta()["ctx"].(*kilonova.RenderContext)
+				if x.Problem != nil {
+					zap.S().Debugf("In problem #%d, markdown error: %q", x.Problem.ID, err)
+				}
+			} else {
+				zap.S().Debug(err)
+			}
+		}
 		return theine.Loaded[[]byte]{Value: buf.Bytes(), Cost: 1, TTL: 0}, nil
 	})
 	if err != nil {
@@ -103,7 +121,17 @@ func (katexExtension) Extend(m goldmark.Markdown) {
 
 	displayCache, err := theine.NewBuilder[string, []byte](5000).BuildWithLoader(func(ctx context.Context, key string) (theine.Loaded[[]byte], error) {
 		var buf bytes.Buffer
-		katex.Render(&buf, []byte(key), true)
+		if err := Render(&buf, []byte(key), true); err != nil {
+			val, ok := ctx.Value(mjRenderCtxNode).(ast.Node)
+			if ok && val.OwnerDocument().Meta()["ctx"] != nil {
+				x := val.OwnerDocument().Meta()["ctx"].(*kilonova.RenderContext)
+				if x.Problem != nil {
+					zap.S().Debugf("In problem #%d, markdown error: %q", x.Problem.ID, err)
+				}
+			} else {
+				zap.S().Debug(err)
+			}
+		}
 		return theine.Loaded[[]byte]{Value: buf.Bytes(), Cost: 1, TTL: 0}, nil
 	})
 	if err != nil {

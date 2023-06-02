@@ -13,6 +13,10 @@ type MailerMessage struct {
 	HTMLContent  string
 }
 
+type RenderContext struct {
+	Problem *Problem
+}
+
 type MarkdownRenderer interface {
-	Render(src []byte) ([]byte, error)
+	Render(src []byte, ctx *RenderContext) ([]byte, error)
 }

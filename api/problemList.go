@@ -61,7 +61,7 @@ func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	desc, err1 := s.base.RenderMarkdown([]byte(list.Description))
+	desc, err1 := s.base.RenderMarkdown([]byte(list.Description), nil)
 	if err1 != nil {
 		errorData(w, err1, 500)
 		return

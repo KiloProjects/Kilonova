@@ -313,7 +313,7 @@ func (rt *Web) problem() http.HandlerFunc {
 
 		switch foundFmt {
 		case "md":
-			statement, err = rt.base.RenderedProblemDesc(r.Context(), problem.ID, foundLang, foundFmt)
+			statement, err = rt.base.RenderedProblemDesc(r.Context(), problem, foundLang, foundFmt)
 			if err != nil {
 				zap.S().Warn("Error getting problem markdown: ", err)
 				statement = []byte("Error fetching markdown.")
@@ -770,9 +770,11 @@ func (rt *Web) problemAttachment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Cache-Control", `public, max-age=3600`)
+
 	// If markdown file and client asks for HTML format, render the markdown
 	if path.Ext(name) == ".md" && r.FormValue("format") == "html" {
-		data, err := rt.base.RenderMarkdown(attData)
+		data, err := rt.base.RenderMarkdown(attData, &kilonova.RenderContext{Problem: util.Problem(r)})
 		if err != nil {
 			zap.S().Warn(err)
 			http.Error(w, "Could not render file", 500)
@@ -806,7 +808,7 @@ func (rt *Web) docs() http.HandlerFunc {
 				return
 			}
 
-			t, err1 := rt.base.RenderMarkdown(file)
+			t, err1 := rt.base.RenderMarkdown(file, nil)
 			if err1 != nil {
 				zap.S().Warn("Can't render docs", err1)
 				rt.statusPage(w, r, 500, "N-am putut randa pagina")
