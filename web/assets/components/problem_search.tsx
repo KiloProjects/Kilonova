@@ -72,6 +72,13 @@ function ProblemView({ problems, showTags }: { problems: FullProblem[]; showTags
 				</tr>
 			</thead>
 			<tbody>
+				{problems.length == 0 && (
+					<tr class="kn-table-row">
+						<td class="kn-table-cell" colSpan={99}>
+							<h1>{getText("noPbFound")}</h1>
+						</td>
+					</tr>
+				)}
 				{problems.map((pb) => (
 					<tr class="kn-table-row" key={pb.id}>
 						<td class="text-lg py-2">{pb.id}</td>
@@ -116,8 +123,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[] }) {
 	let [page, setPage] = useState<number>(1);
 	let [numPages, setNumPages] = useState<number>(Math.floor(count / MAX_PER_PAGE) + (count % MAX_PER_PAGE != 0 ? 1 : 0));
 
-	const mountedPg = useRef(false);
-	const mountedTQ = useRef(false);
+	const mounted = useRef(false);
 
 	let [showTags, setShowTags] = useState<boolean>(window.platform_info.admin);
 
@@ -137,15 +143,9 @@ function ProblemSearch(params: { count: number; problems: FullProblem[] }) {
 	}
 
 	useEffect(() => {
-		console.log("asdf");
-		if (mountedPg.current) load().catch(console.error);
-		else mountedPg.current = true;
-	}, [page]);
-
-	useEffect(() => {
-		if (mountedTQ.current) load()!.catch(console.error);
-		else mountedTQ.current = true;
-	}, [textQuery]);
+		if (mounted.current) load()!.catch(console.error);
+		else mounted.current = true;
+	}, [page, textQuery]);
 
 	return (
 		<div class="segment-panel">
@@ -155,6 +155,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[] }) {
 				class="form-input"
 				type="text"
 				onInput={(e) => {
+					setPage(1);
 					setTextQuery(e.currentTarget.value);
 				}}
 				value={textQuery}

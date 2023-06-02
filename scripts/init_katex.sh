@@ -1,6 +1,5 @@
-#!/bin/sh
-# Use the currently installed 
-#
+#!/bin/bash
+# Use the currently installed katex from web/assets in the katex extension for markdown
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 yarn --cwd "$SCRIPT_DIR/../web/assets" install
