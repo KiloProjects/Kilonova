@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/datastore"
@@ -35,6 +36,7 @@ type BaseAPI struct {
 
 func (s *BaseAPI) Start(ctx context.Context) *StatusError {
 	go s.ingestAuditLogs(ctx)
+	go s.refreshProblemStatsJob(ctx, 5*time.Minute)
 
 	return nil
 }

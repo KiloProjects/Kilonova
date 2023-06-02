@@ -39,3 +39,8 @@ func (s *DB) IsContestViewer(ctx context.Context, contestID, userID int) (bool, 
 	}
 	return cnt > 0, nil
 }
+
+func (s *DB) RefreshProblemStats(ctx context.Context) error {
+	_, err := s.pgconn.Exec(ctx, "REFRESH MATERIALIZED VIEW problem_statistics")
+	return err
+}

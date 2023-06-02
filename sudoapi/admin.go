@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -158,6 +159,28 @@ func (s *BaseAPI) ingestAuditLogs(ctx context.Context) error {
 					zap.S().Warn(err)
 				}
 			}
+		}
+	}
+}
+
+func (s *BaseAPI) refreshProblemStatsJob(ctx context.Context, interval time.Duration) error {
+	t := time.NewTicker(interval)
+	defer t.Stop()
+	go func() {
+		// Initial refresh
+		zap.S().Debug("Refreshing problem statistics")
+		s.db.RefreshProblemStats(ctx)
+	}()
+	for {
+		select {
+		case <-ctx.Done():
+			if !errors.Is(ctx.Err(), context.Canceled) {
+				return ctx.Err()
+			}
+			return nil
+		case <-t.C:
+			zap.S().Debug("Refreshing problem statistics")
+			s.db.RefreshProblemStats(ctx)
 		}
 	}
 }

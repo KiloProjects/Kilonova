@@ -15,7 +15,7 @@ type ProblemStats struct {
 }
 
 func (s *DB) ProblemsStatistics(ctx context.Context, problemIDs []int) (map[int]*ProblemStats, error) {
-	rows, _ := s.pgconn.Query(ctx, "SELECT problem_id, COUNT(*) AS num_attempted, COUNT(*) FILTER (WHERE score = 100) AS num_solved FROM max_score_view WHERE problem_id = ANY($1) AND score != -1 GROUP BY problem_id", problemIDs)
+	rows, _ := s.pgconn.Query(ctx, "SELECT problem_id, num_attempted, num_solved FROM problem_statistics WHERE problem_id = ANY($1)", problemIDs)
 	stats, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[ProblemStats])
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, err
