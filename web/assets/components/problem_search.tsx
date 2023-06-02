@@ -111,7 +111,7 @@ function ProblemView({ problems, showTags }: { problems: FullProblem[]; showTags
 	);
 }
 
-const MAX_PER_PAGE = 20;
+const MAX_PER_PAGE = 50;
 const initialParams = new URLSearchParams(window.location.search);
 
 function ProblemSearch(params: { count: number; problems: FullProblem[] }) {

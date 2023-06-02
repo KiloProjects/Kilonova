@@ -258,8 +258,8 @@ func (s *API) searchProblems(w http.ResponseWriter, r *http.Request) {
 	args.Look = true
 	args.LookingUser = util.UserBrief(r)
 
-	if args.Limit == 0 || args.Limit > 20 {
-		args.Limit = 20
+	if args.Limit == 0 || args.Limit > 50 {
+		args.Limit = 50
 	}
 
 	problems, cnt, err := s.base.SearchProblems(r.Context(), args, util.UserBrief(r))

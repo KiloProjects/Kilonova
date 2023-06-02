@@ -80,7 +80,7 @@ func (rt *Web) problems() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pbs, cnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
 			LookingUser: util.UserBrief(r), Look: true,
-			Limit: 20, Offset: 0,
+			Limit: 50, Offset: 0,
 		}, util.UserBrief(r))
 		if err != nil {
 			zap.S().Warn(err)
