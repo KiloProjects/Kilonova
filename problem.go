@@ -68,9 +68,13 @@ type ProblemFilter struct {
 
 	FuzzyName *string `json:"name_fuzzy"`
 
+	// EditorUserID filter marks if the user is part of the *editors* of the problem
+	// Note that it excludes factors like admin or contest editor, it's just the editors in the access section.
+	EditorUserID *int `json:"editor_user_id"`
+
 	Tags []*TagGroup `json:"tags"`
 
-	Look        bool       `json:""`
+	Look        bool       `json:"-"`
 	LookEditor  bool       `json:"-"`
 	LookingUser *UserBrief `json:"-"`
 

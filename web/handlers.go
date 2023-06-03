@@ -11,6 +11,8 @@ import (
 	"io/fs"
 	"net/http"
 	"path"
+	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -24,6 +26,7 @@ import (
 	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/schema"
 	"go.uber.org/zap"
 )
 
@@ -77,10 +80,104 @@ func (rt *Web) index() http.HandlerFunc {
 
 func (rt *Web) problems() http.HandlerFunc {
 	templ := rt.parse(nil, "pbs.html", "modals/pbs.html")
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+	decoder.SetAliasTag("json")
+	type filterQuery struct {
+		Query   *string `json:"q"`
+		Editor  *int    `json:"editor_user"`
+		Visible *bool   `json:"published"`
+
+		Tags *string `json:"tags"`
+
+		Page int `json:"page"`
+	}
 	return func(w http.ResponseWriter, r *http.Request) {
+		var q filterQuery
+		r.ParseForm()
+		if err := decoder.Decode(&q, r.Form); err != nil {
+			zap.S().Warn(err)
+		}
+		if q.Page < 1 {
+			q.Page = 1
+		}
+		gr := []*kilonova.TagGroup{}
+		tags := []*kilonova.Tag{}
+
+		if q.Tags != nil {
+			// Parse tag string
+			// format example:
+			// - !1,2_3,4_5_6,9 = (NOT 1) AND (2 OR 3) AND (4) AND (4 OR 5 OR 6) AND (9)
+
+			var allTags []int
+
+			groups := strings.Split(*q.Tags, ",")
+			for _, group := range groups {
+				group := group
+				if len(group) == 0 {
+					continue
+				}
+
+				// Check negate flag
+				negate := false
+				if group[0] == '!' {
+					group = group[1:]
+					negate = true
+				}
+
+				// Parse tags and, if some found, add group
+				tags := strings.Split(group, "_")
+				var tagIDs []int
+				for _, tag := range tags {
+					id, err := strconv.Atoi(tag)
+					if err == nil {
+						allTags = append(allTags, id)
+						tagIDs = append(tagIDs, id)
+					}
+				}
+				if len(tagIDs) > 0 {
+					gr = append(gr, &kilonova.TagGroup{
+						Negate: negate,
+						TagIDs: tagIDs,
+					})
+				}
+			}
+
+			sort.Ints(allTags)
+			allTags = slices.Compact(allTags)
+
+			var err *kilonova.StatusError
+			tags, err = rt.base.TagsByID(r.Context(), allTags)
+			if err != nil {
+				zap.S().Warn(err)
+			}
+
+			var tagMap = make(map[int]*kilonova.Tag)
+			for _, tag := range tags {
+				tagMap[tag.ID] = tag
+			}
+
+			for i := range gr {
+				gr[i].TagIDs = slices.DeleteFunc(gr[i].TagIDs, func(id int) bool {
+					_, ok := tagMap[id]
+					return !ok
+				})
+			}
+
+			gr = slices.DeleteFunc(gr, func(tg *kilonova.TagGroup) bool {
+				return len(tg.TagIDs) == 0
+			})
+
+			_ = tags
+
+		}
+
 		pbs, cnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
 			LookingUser: util.UserBrief(r), Look: true,
-			Limit: 50, Offset: 0,
+			FuzzyName: q.Query, EditorUserID: q.Editor, Visible: q.Visible,
+			Tags: gr,
+
+			Limit: 50, Offset: (q.Page - 1) * 50,
 		}, util.UserBrief(r))
 		if err != nil {
 			zap.S().Warn(err)
@@ -88,7 +185,7 @@ func (rt *Web) problems() http.HandlerFunc {
 			rt.statusPage(w, r, 500, "N-am putut încărca problemele")
 			return
 		}
-		rt.runTempl(w, r, templ, &ProblemSearchParams{GenContext(r), pbs, cnt})
+		rt.runTempl(w, r, templ, &ProblemSearchParams{GenContext(r), pbs, gr, tags, cnt})
 	}
 }
 

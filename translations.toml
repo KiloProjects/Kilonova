@@ -114,6 +114,10 @@ ro = "Ștergere"
 en = "Upload"
 ro = "Încărcare"
 
+[button.filter]
+en = "Filter"
+ro = "Filtrare"
+
 [noTests]
 en = "There aren't any tests, it would be nice to create one :)"
 ro = "Nu există niciun test, ar fi bine să creezi unul :)"
@@ -360,12 +364,12 @@ en = "Front page"
 ro = "Pagina principală"
 
 [problem.list]
-en = "All problems"
-ro = "Toate problemele"
+en = "Problems"
+ro = "Probleme"
 
 [submission.list]
-en = "Submission list"
-ro = "Listă submisii"
+en = "Submissions"
+ro = "Submisii"
 
 [profile.url]
 en = "Profile"
@@ -1772,6 +1776,10 @@ ro = 'Aceasta a fost pagina problemei în timpul concursului. <a id="pb_link_rew
 en = "Tags"
 ro = "Etichete"
 
+[show_tags]
+en = "Show tags"
+ro = "Afișare etichete"
+
 [problem_tags]
 en = "Problem tags"
 ro = "Etichete problemă"
@@ -1787,6 +1795,22 @@ ro = "Etichete relevante"
 [tag_pbs]
 en = "Problems matching tag"
 ro = "Probleme cu această etichetă"
+
+[search_pb]
+en = "Search"
+ro = "Căutare"
+
+[tag_string]
+en = "Tag filter (experimental)"
+ro = "Filtru etichete (experimental)"
+
+[use_in_search]
+en = "Use in search"
+ro = "Folosire în căutare"
+
+[created_problems]
+en = "My problems"
+ro = "Problemele mele"
 
 [search_tag]
 en = "Search tag"

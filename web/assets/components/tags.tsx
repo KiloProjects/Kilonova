@@ -7,7 +7,6 @@ import { bodyCall, getCall, postCall } from "../api/net";
 import { fromBase64 } from "js-base64";
 import { KNModal } from "./modal";
 import { BigSpinner } from "./common";
-import { throttle } from "lodash-es";
 
 export type TagType = "author" | "contest" | "method" | "other";
 

@@ -29,8 +29,11 @@
 
 		var platform_info = {
 			debug: {{debug}},
-			admin: {{if .Ctx.User}}{{.Ctx.User.Admin}}{{else}}false{{end}},
-			user_id: {{if .Ctx.User}}{{.Ctx.User.ID}}{{else}}0{{end}},
+            {{if authed}}
+            user: {{authedUser}},
+            {{end}}
+			admin: {{if authed}}{{.Ctx.User.Admin}}{{else}}false{{end}},
+			user_id: {{if authed}}{{.Ctx.User.ID}}{{else}}0{{end}},
 			language: {{language}},
             langs: {{pLanguages}},
 		};

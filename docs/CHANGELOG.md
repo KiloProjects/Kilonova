@@ -1,3 +1,26 @@
+- v0.18.0:
+    - !! Much better problem search;
+        - Proper tag filtering is still missing for now.
+    - Many improvements to KaTeX math server side rendering (SSR);
+    - Remove highlightjs from application bundle (code blocks are now rendered server-side);
+    - Markdown statements now require no browser javascript for proper rendering (CSS is required, though, for KaTeX expressions);
+    - Audit logs are also sent to a discord webhook (and have more relevant information in them);
+    - Add `contestant.txt` to checker environment, to verify contestant source code;
+    - Add statement caching for increased load speeds;
+    - Performance improvements.
+- v0.17.0:
+    - !! Problem tags;
+    - Problem statistics;
+    - UI changes;
+    - Raise submission size limit to 30kb;
+    - Internal changes (like starting to minimize `sqlx` usage);
+    - Audit log pagination;
+    - More preloading web stuff on the backend;
+    - Big performance boosts for front page;
+    - `grader.properties` improvements;
+    - SSR for KaTeX math expressions;
+    - Nicer confirmation dialogs;
+    - Internal, for now: last updated date for attachments and by whom.
 - v0.16.1:
     - Contest descriptions;
     - Warnings for contest problems once contest ended;

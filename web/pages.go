@@ -248,8 +248,10 @@ type MarkdownParams struct {
 type ProblemSearchParams struct {
 	Ctx *ReqContext
 
-	Results []*sudoapi.FullProblem
-	Count   int
+	Results   []*sudoapi.FullProblem
+	Groups    []*kilonova.TagGroup
+	GroupTags []*kilonova.Tag
+	Count     int
 }
 
 type SimpleParams struct {

@@ -21,6 +21,18 @@ func (s *DB) Tags(ctx context.Context) ([]*kilonova.Tag, error) {
 	return tags, err
 }
 
+func (s *DB) TagsByID(ctx context.Context, tagIDs []int) ([]*kilonova.Tag, error) {
+	var tags []*kilonova.Tag
+	err := s.conn.SelectContext(ctx, &tags, "SELECT * FROM tags WHERE id = ANY($1) ORDER BY name ASC", tagIDs)
+	if errors.Is(err, sql.ErrNoRows) || (tags == nil && err == nil) {
+		return []*kilonova.Tag{}, nil
+	}
+	if err != nil {
+		return []*kilonova.Tag{}, err
+	}
+	return tags, err
+}
+
 func (s *DB) TagsByType(ctx context.Context, tagType kilonova.TagType) ([]*kilonova.Tag, error) {
 	var tags []*kilonova.Tag
 	err := s.conn.SelectContext(ctx, &tags, "SELECT * FROM tags WHERE type = $1 ORDER BY name ASC", tagType)

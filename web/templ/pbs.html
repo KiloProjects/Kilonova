@@ -1,6 +1,17 @@
 {{ define "title" }} {{ getText "problems" }}{{ end }}
+
+{{ define "head" }}
+<link rel="canonical" href="{{formatCanonical `/problems`}}" />
+{{ end }}
+
 {{ define "content" }}
 
-<kn-pb-search enc="{{.Results | encodeJSON}}" count="{{.Count}}"></kn-pb-search>
+<!--TODO: Finish tag filtering-->
+
+<kn-pb-search 
+    enc="{{.Results | encodeJSON}}" 
+    count="{{.Count}}"
+    groupEnc="{{.Groups | encodeJSON}}"
+    tagEnc="{{.GroupTags | encodeJSON}}"></kn-pb-search>
 
 {{ end }}

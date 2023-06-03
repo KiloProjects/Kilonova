@@ -331,7 +331,7 @@
 	}
 
 	.btn {
-		@apply inline-flex justify-center px-4 py-2 leading-5 rounded-md font-medium ring-1 ring-opacity-50;
+		@apply inline-flex justify-center items-center px-4 py-2 leading-5 rounded-md font-medium ring-1 ring-opacity-50;
 		@apply transition ease-in-out duration-150;
 
 		@apply bg-gray-200 text-gray-800 ring-gray-100;

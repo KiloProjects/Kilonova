@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "preact/hooks";
 import { apiToast, createToast } from "../toast";
 import { BigSpinner, Paginator } from "./common";
 import { dayjs, getGradient, sizeFormatter } from "../util";
-import throttle from "lodash-es/throttle";
 import { getSubmissions } from "../api/submissions";
 import type { Submission, SubmissionQuery, ResultSubmission } from "../api/submissions";
 
@@ -117,7 +116,7 @@ function SubsView(props: SubsViewProps) {
 
 	const numPages = useMemo(() => Math.floor(count / 50) + (count % 50 != 0 ? 1 : 0), [count]);
 
-	const poll = throttle(async (noLoad?: boolean) => {
+	async function poll(noLoad?: boolean) {
 		if (typeof noLoad === "undefined" || !noLoad) {
 			setLoading(true);
 		}
@@ -134,7 +133,7 @@ function SubsView(props: SubsViewProps) {
 		setCount(res.count);
 		setLoading(false);
 		setInitialLoad(false);
-	}, 200);
+	}
 
 	useEffect(() => {
 		poll()?.catch(console.error);
@@ -156,7 +155,7 @@ function SubsView(props: SubsViewProps) {
 			p.append("problem_id", query.problem_id.toString());
 		}
 		if (typeof overwrites.contestID === "undefined" && typeof query.contest_id !== "undefined" && query.contest_id >= 0) {
-			p.append("problem_id", query.contest_id.toString());
+			p.append("contest_id", query.contest_id.toString());
 		}
 
 		if (query.status !== undefined && query.status !== "") {
@@ -168,7 +167,7 @@ function SubsView(props: SubsViewProps) {
 		if (typeof query.lang !== "undefined" && query.lang !== "") {
 			p.append("lang", query.lang);
 		}
-		if (query.compile_error !== undefined) {
+		if (typeof query.compile_error !== "undefined") {
 			p.append("compile_error", String(query.compile_error));
 		}
 		if (typeof query.ordering !== "undefined" && query.ordering !== "id") {
@@ -177,7 +176,9 @@ function SubsView(props: SubsViewProps) {
 		if (query.ascending == true) {
 			p.append("ascending", "true");
 		}
-		p.append("page", query.page.toString());
+		if (query.page != 1) {
+			p.append("page", query.page.toString());
+		}
 		let url = window.location.origin + window.location.pathname + "?" + p.toString();
 		try {
 			await navigator.clipboard.writeText(url);

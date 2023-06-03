@@ -1,4 +1,5 @@
 import type { katex } from "katex";
+import type { UserBrief } from "./api/submissions";
 
 interface CustomEventMap {
 	"kn-poll": CustomEvent;
@@ -20,6 +21,7 @@ export declare global {
 		debug: boolean;
 		admin: boolean;
 		user_id: number;
+		user?: UserBrief;
 		language: string;
 		langs: { [name: string]: WebLanguage };
 	}

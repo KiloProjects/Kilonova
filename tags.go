@@ -1,7 +1,5 @@
 package kilonova
 
-import "time"
-
 type TagType string
 
 const (
@@ -13,10 +11,9 @@ const (
 )
 
 type Tag struct {
-	ID        int       `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	Name      string    `json:"name"`
-	Type      TagType   `json:"type"`
+	ID   int     `json:"id"`
+	Name string  `json:"name"`
+	Type TagType `json:"type"`
 }
 
 // Should be used for problem filtering
