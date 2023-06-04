@@ -128,8 +128,6 @@ func (s *BaseAPI) IsContestTester(user *kilonova.UserBrief, contest *kilonova.Co
 	return false
 }
 
-// TODO: This only accounts for editors/testers
-// This should also account for those that are registered and the contest is running
 func (s *BaseAPI) IsContestVisible(user *kilonova.UserBrief, contest *kilonova.Contest) bool {
 	if s.IsAdmin(user) {
 		return true

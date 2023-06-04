@@ -48,6 +48,12 @@
                     <span class="ml-2">{{getText "visible"}}</span>
                 </label>
             </div>
+            <div class="block mb-2">
+                <label class="inline-flex items-center text-lg">
+                    <input class="form-checkbox" id="c_public_leaderboard" name="public_leaderboard" type="checkbox" {{if .Contest.PublicLeaderboard}}checked{{end}}>
+                    <span class="ml-2">{{getText "public_leaderboard"}}</span>
+                </label>
+            </div>
             <label class="block mb-2">
                 <span class="form-label">{{getText "per_user_time"}}: </span>
                 <input class="form-input" name="per_user_time" type="number" value="{{.Contest.PerUserTime}}" required>
@@ -133,6 +139,7 @@ async function updateContest(e) {
             max_subs: fd.get("max_subs"),
             public_join: document.getElementById("c_public_join").checked,
             visible: document.getElementById("c_visible").checked,
+            public_leaderboard: document.getElementById("c_public_leaderboard").checked,
             start_time: bundled.contestToNetworkDate(fd.get("start_time")),
             end_time: bundled.contestToNetworkDate(fd.get("end_time")),
             

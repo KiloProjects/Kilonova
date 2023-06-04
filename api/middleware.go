@@ -98,7 +98,7 @@ func (s *API) validateContestParticipant(next http.Handler) http.Handler {
 func (s *API) validateContestEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !s.base.IsContestEditor(util.UserBrief(r), util.Contest(r)) {
-			errorData(w, "You must be authorized to update the contest", http.StatusUnauthorized)
+			errorData(w, "You must be authorized to access this contest data", http.StatusUnauthorized)
 			return
 		}
 

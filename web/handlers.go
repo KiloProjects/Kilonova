@@ -627,6 +627,12 @@ func (rt *Web) contestRegistrations() http.HandlerFunc {
 func (rt *Web) contestLeaderboard() http.HandlerFunc {
 	templ := rt.parse(nil, "contest/leaderboard.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
+		// This is assumed to be called from a context in which
+		// IsContestVisible is already true
+		if !(util.Contest(r).PublicLeaderboard || rt.base.IsContestEditor(util.UserBrief(r), util.Contest(r))) {
+			rt.statusPage(w, r, 400, "You are not allowed to view the leaderboard")
+			return
+		}
 		rt.runTempl(w, r, templ, &ContestParams{
 			Ctx:    GenContext(r),
 			Topbar: rt.topbar(r, "contest_leaderboard", -1),
@@ -1030,6 +1036,15 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 			return util.Problem(r)
 		},
 		"isContestEditor": func(c *kilonova.Contest) bool {
+			return rt.base.IsContestEditor(authedUser, c)
+		},
+		"contestLeaderboardVisible": func(c *kilonova.Contest) bool {
+			if c.PublicLeaderboard {
+				// This is assumed to be called from a context in which
+				// IsContestVisible is already true
+				// return rt.base.IsContestVisible(authedUser, c)
+				return true
+			}
 			return rt.base.IsContestEditor(authedUser, c)
 		},
 		"contestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {

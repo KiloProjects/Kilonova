@@ -42,6 +42,8 @@ func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
 
 		MaxSubs *int `json:"max_subs"`
 
+		PublicLeaderboard *bool `json:"public_leaderboard"`
+
 		RegisterDuringContest *bool `json:"register_during_contest"`
 
 		PerUserTime *int `json:"per_user_time"` // Seconds
@@ -79,6 +81,7 @@ func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
 
 		Description: args.Desc,
 
+		PublicLeaderboard:     args.PublicLeaderboard,
 		RegisterDuringContest: args.RegisterDuringContest,
 
 		PerUserTime: args.PerUserTime,
@@ -132,6 +135,12 @@ func (s *API) getContestProblems(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) contestLeaderboard(w http.ResponseWriter, r *http.Request) {
+	// This is assumed to be called from a context in which
+	// IsContestVisible is already true
+	if !(util.Contest(r).PublicLeaderboard || s.base.IsContestEditor(util.UserBrief(r), util.Contest(r))) {
+		errorData(w, "You are not allowed to view the leaderboard", 400)
+		return
+	}
 	ld, err := s.base.ContestLeaderboard(r.Context(), util.Contest(r).ID)
 	if err != nil {
 		err.WriteError(w)

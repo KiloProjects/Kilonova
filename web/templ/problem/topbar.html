@@ -73,6 +73,8 @@
         <a class="p-1 {{if (eq $topbar.Page `contest_registrations`)}} topbar-selected {{end}}" href="{{$topbar.URLPrefix}}/manage/registrations">
             {{getText "contest_registrations"}}
         </a>
+        {{ end }}
+        {{ if contestLeaderboardVisible $topbar.Contest }}
         <div class="topbar-separator"></div>
         <a class="p-1 {{if (eq $topbar.Page `contest_leaderboard`)}} topbar-selected {{end}}" href="{{$topbar.URLPrefix}}/leaderboard">
             {{getText "leaderboard"}}

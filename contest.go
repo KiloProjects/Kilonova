@@ -37,6 +37,10 @@ type Contest struct {
 	// TODO: Implement this
 	// Virtual bool `json:"virtual"`
 
+	// PublicLeaderboard controls whether the contest's leaderboard
+	// is viewable by everybody or just admins
+	PublicLeaderboard bool `json:"public_leaderboard"`
+
 	StartTime time.Time `json:"start_time"`
 	EndTime   time.Time `json:"end_time"`
 
@@ -85,6 +89,8 @@ type ContestUpdate struct {
 	MaxSubs *int `json:"max_subs"`
 
 	RegisterDuringContest *bool `json:"register_during_contest"`
+
+	PublicLeaderboard *bool `json:"public_leaderboard"`
 
 	PerUserTime *int `json:"per_user_time"` // In seconds
 }

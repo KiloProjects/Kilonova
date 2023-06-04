@@ -25,6 +25,8 @@ type dbContest struct {
 
 	Virtual bool `db:"virtual"`
 
+	PublicLeaderboard bool `db:"public_leaderboard"`
+
 	PerUserTime           int  `db:"per_user_time"`
 	RegisterDuringContest bool `db:"register_during_contest"`
 }
@@ -251,6 +253,9 @@ func contestUpdateQuery(upd *kilonova.ContestUpdate) ([]string, []any) {
 	if v := upd.MaxSubs; v != nil {
 		toUpd, args = append(toUpd, "max_sub_count = ?"), append(args, v)
 	}
+	if v := upd.PublicLeaderboard; v != nil {
+		toUpd, args = append(toUpd, "public_leaderboard = ?"), append(args, v)
+	}
 	if v := upd.PerUserTime; v != nil {
 		toUpd, args = append(toUpd, "per_user_time = ?"), append(args, v)
 	}
@@ -287,6 +292,8 @@ func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilono
 		Description: contest.Desc,
 
 		PerUserTime: contest.PerUserTime,
+
+		PublicLeaderboard: contest.PublicLeaderboard,
 
 		RegisterDuringContest: contest.RegisterDuringContest,
 

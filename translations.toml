@@ -1696,6 +1696,10 @@ ro = "Înregistrarea utilizatorilor în timpul concursului este permisă"
 en = "this has no effect if open registration is disabled"
 ro = "nu are niciun efect dacă înregistrarea liberă este dezactivată"
 
+[public_leaderboard]
+en = "Public leaderboard"
+ro = "Clasament public"
+
 [per_user_time]
 en = "Individual user time (USACO-style)"
 ro = "Timp individual (stil USACO)"
