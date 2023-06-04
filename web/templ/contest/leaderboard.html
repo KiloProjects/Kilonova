@@ -5,9 +5,10 @@
 <div class="page-holder">
     <div class="page-content-full">
         <h2>{{getText "leaderboard"}}</h2>
-        <kn-leaderboard contestid="{{.Contest.ID}}"></kn-leaderboard>
+        {{ $editor := isContestEditor .Contest }}
+        <kn-leaderboard contestid="{{.Contest.ID}}" editor="{{$editor}}"></kn-leaderboard>
 
-        {{ if isContestEditor .Contest }}
+        {{ if $editor }}
         <a href="/contests/{{.Contest.ID}}/leaderboard.csv">Download CSV</a>
         {{ end }}
     </div>

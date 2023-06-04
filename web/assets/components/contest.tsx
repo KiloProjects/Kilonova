@@ -90,7 +90,7 @@ type LeaderboardResponse = {
 	}[];
 };
 
-export function ContestLeaderboard({ contestID }: { contestID: number }) {
+export function ContestLeaderboard({ contestID, editor }: { contestID: number; editor: boolean }) {
 	let [loading, setLoading] = useState(true);
 	let [problems, setProblems] = useState<{ id: number; name: string }[]>([]);
 	let [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
@@ -154,10 +154,10 @@ export function ContestLeaderboard({ contestID }: { contestID: number }) {
 							</td>
 							{problems.map((pb) => (
 								<td
-									class="kn-table-cell cursor-pointer"
+									class={"kn-table-cell" + (editor ? " cursor-pointer" : "")}
 									scope="col"
-									key={entry.user.name + pb.id}
-									onClick={() => buildScoreBreakdownModal(pb.id, contestID, entry.user.id)}
+									key={entry.user.name + pb.id + (editor ? "-e" : "-ne")}
+									onClick={() => editor && buildScoreBreakdownModal(pb.id, contestID, entry.user.id)}
 								>
 									{pb.id in entry.scores && entry.scores[pb.id] >= 0 ? entry.scores[pb.id] : "-"}
 								</td>
@@ -634,12 +634,12 @@ function CommunicationAnnouncerDOM({ contestid, contesteditor }: { contestid: st
 	return <CommunicationAnnouncer contestID={contestID} contestEditor={contesteditor == "true"} />;
 }
 
-function ContestLeaderboardDOM({ contestid }: { contestid: string }) {
+function ContestLeaderboardDOM({ contestid, editor }: { contestid: string; editor: string }) {
 	const contestID = parseInt(contestid);
 	if (isNaN(contestID)) {
 		throw new Error("Invalid contest ID");
 	}
-	return <ContestLeaderboard contestID={contestID} />;
+	return <ContestLeaderboard contestID={contestID} editor={editor === "true"} />;
 }
 
 register(QuestionManagerDOM, "kn-question-mgr", ["encoded", "contestid"]);
@@ -647,5 +647,5 @@ register(QuestionListDOM, "kn-questions", ["encoded", "contestid"]);
 register(AnnouncementListDOM, "kn-announcements", ["encoded", "contestid", "canedit"]);
 register(ContestCountdown, "kn-contest-countdown", ["target_time", "type"]);
 register(CommunicationAnnouncerDOM, "kn-comm-announcer", ["contestid", "contesteditor"]);
-register(ContestLeaderboardDOM, "kn-leaderboard", ["contestid"]);
+register(ContestLeaderboardDOM, "kn-leaderboard", ["contestid", "editor"]);
 register(ContestRegistrations, "kn-contest-registrations", ["contestid", "usacomode"]);
