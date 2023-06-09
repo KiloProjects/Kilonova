@@ -326,7 +326,8 @@
 		@apply hover:shadow-md transition-shadow;
 	}
 
-	.segment-panel .segment-panel {
+	.segment-panel .segment-panel,
+	.modal-content .segment-panel {
 		@apply segment-colors-2;
 	}
 

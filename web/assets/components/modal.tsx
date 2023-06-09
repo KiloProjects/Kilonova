@@ -68,10 +68,10 @@ export function confirm(message: string): Promise<boolean> {
 		render(
 			<KNModal title={getText("confirm_header")} open={true} closeCallback={() => callback(false)} large={false}>
 				<p class="my-2">{message}</p>
-				<button onClick={() => callback(false)} class="btn btn-blue mr-2">
+				<button onClick={() => callback(false)} class="btn mr-2">
 					{getText("button.cancel")}
 				</button>
-				<button onClick={() => callback(true)} class="btn btn-red">
+				<button onClick={() => callback(true)} class="btn btn-blue">
 					OK
 				</button>
 			</KNModal>,

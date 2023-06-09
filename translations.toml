@@ -102,6 +102,10 @@ ro = "Creare"
 en = "Update"
 ro = "Actualizare"
 
+[button.select]
+en = "Select"
+ro = "Selectare"
+
 [button.add]
 en = "Add"
 ro = "Adăugare"
@@ -1831,6 +1835,18 @@ ro = "Adăugare etichete"
 [update_tags]
 en = "Update tags"
 ro = "Actualizare etichete"
+
+[select_tags]
+en = "Select tags"
+ro = "Selectare etichete"
+
+[selected_tags]
+en = "Selected tags"
+ro = "Etichete selectate"
+
+[no_selected_tags]
+en = "No selected tags."
+ro = "Nicio etichetă selectată."
 
 [create_tag]
 en = "Create tag"

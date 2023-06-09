@@ -16,7 +16,7 @@ export type Tag = {
 	type: TagType;
 };
 
-const tagTypes = {
+const tagTypes: Record<TagType, string> = {
 	author: "tag-author",
 	contest: "tag-contest",
 	method: "tag-method",
@@ -40,12 +40,17 @@ export function TagView({
 	wide?: boolean;
 	extraClasses?: string;
 }) {
+	const classes = `${wide ? "mx-1" : ""} ${typeof onClick !== "undefined" ? "cursor-pointer" : ""} ${tagClasses(tag)} ${extraClasses || ""}`;
 	if (!link) {
-		return <span class={(wide ? "mx-1 " : "") + tagClasses(tag) + " " + extraClasses}>{tag.name}</span>;
+		return (
+			<span class={classes} onClick={onClick}>
+				{tag.name}
+			</span>
+		);
 	}
 	return (
 		<a onClick={onClick} href={`/tags/${tag.id}`}>
-			<span class={(wide ? "mx-1 " : "") + tagClasses(tag) + " " + extraClasses}>{tag.name}</span>
+			<span class={classes}>{tag.name}</span>
 		</a>
 	);
 }
@@ -68,7 +73,10 @@ function TagQuickAddView({ type, cb }: { type: TagType; cb: (number) => any }) {
 	}, []);
 
 	async function createTag() {
-		console.log(text);
+		if (text == "" || text == getText("tag_name")) {
+			apiToast({ status: "error", data: "Name must not be empty" });
+			return;
+		}
 		let res = await postCall<number>("/tags/create", { name: text, type });
 		if (res.status === "error") {
 			apiToast(res);
@@ -76,13 +84,13 @@ function TagQuickAddView({ type, cb }: { type: TagType; cb: (number) => any }) {
 		}
 		cb(res.data);
 		setCreateMode(false);
-		setText("");
 	}
 
 	if (!createMode) {
 		return (
 			<a
 				href="#"
+				class="mx-1"
 				onClick={(e) => {
 					e.preventDefault();
 					setCreateMode(true);
@@ -95,7 +103,7 @@ function TagQuickAddView({ type, cb }: { type: TagType; cb: (number) => any }) {
 		);
 	}
 	return (
-		<span class={tagClasses({ type })}>
+		<span class={"mx-1 " + tagClasses({ type })}>
 			<span
 				ref={ref2}
 				class="tag-editable"
@@ -103,18 +111,18 @@ function TagQuickAddView({ type, cb }: { type: TagType; cb: (number) => any }) {
 				onKeyDown={(e) => {
 					if (e.key === "Enter" || e.keyCode == 13) {
 						e.preventDefault();
-					} else {
-						setText(e.currentTarget.innerText);
 					}
+				}}
+				onInput={(e) => {
+					setText(e.currentTarget.innerText);
 				}}
 				data-bf={getText("tag_name")}
 			></span>
-			{text !== "" && <i class="ml-2 cursor-pointer fas fa-check" onClick={createTag}></i>}
+			{text !== "" && text !== getText("tag_name") && <i class="ml-2 cursor-pointer fas fa-check" onClick={createTag}></i>}
 			<i
 				class="ml-2 cursor-pointer fas fa-xmark"
 				onClick={() => {
 					setCreateMode(false);
-					setText("");
 				}}
 			></i>
 		</span>
@@ -129,11 +137,7 @@ export function cleanupTagSearchTerm(val: string): string {
 }
 
 function ProblemTagEdit({ tags, problemID }: { tags: Tag[]; problemID: number }) {
-	let [open, setOpen] = useState(false);
 	let [newTags, setTags] = useState(tags);
-	let [allTags, setAllTags] = useState<Tag[] | null>(null);
-	let [checkedTags, setCheckedTags] = useState<number[]>(tags.map((t) => t.id));
-	let [searchVal, setSearchVal] = useState<string>("");
 
 	async function loadProblemTags() {
 		let res = await getCall<Tag[]>(`/problem/${problemID}/tags`, {});
@@ -144,40 +148,15 @@ function ProblemTagEdit({ tags, problemID }: { tags: Tag[]; problemID: number })
 		setTags(res.data);
 	}
 
-	async function loadTags() {
-		let res = await getCall<Tag[]>(`/tags/`, "");
-		if (res.status === "error") {
-			apiToast(res);
-			return;
-		}
-		setAllTags(res.data);
-	}
-
-	function searchStrFilter(t: Tag): boolean {
-		return cleanupTagSearchTerm(t.name).includes(cleanupTagSearchTerm(searchVal));
-	}
-
-	async function updateTags(e: Event) {
-		e.preventDefault();
-		let res = await bodyCall(`/problem/${problemID}/update/tags`, { tags: checkedTags });
+	async function updateTags(tags: Tag[]) {
+		let res = await bodyCall(`/problem/${problemID}/update/tags`, { tags: tags.map((t) => t.id) });
 		if (res.status === "error") {
 			apiToast(res);
 			return;
 		}
 		apiToast(res);
 		await loadProblemTags();
-		setOpen(false);
 	}
-
-	useEffect(() => {
-		if (open === true) {
-			setSearchVal("");
-			setCheckedTags(newTags.map((t) => t.id));
-			loadTags().catch(console.error);
-		} else {
-			loadProblemTags().catch(console.error);
-		}
-	}, [open]);
 
 	return (
 		<>
@@ -188,68 +167,14 @@ function ProblemTagEdit({ tags, problemID }: { tags: Tag[]; problemID: number })
 				class="mx-1"
 				href="#"
 				onClickCapture={(e) => {
-					e.preventDefault(), setOpen(true);
+					e.preventDefault();
+					selectTags(newTags, true, "update_tags").then((rez) => {
+						if (rez.updated) updateTags(rez.tags);
+					});
 				}}
 			>
 				<i class="fas fa-pen-to-square"></i> {newTags.length === 0 ? getText("add_tags") : getText("update_tags")}
 			</a>
-			<KNModal title={getText("update_tags")} open={open} closeCallback={() => setOpen(false)}>
-				{allTags == null ? (
-					<BigSpinner />
-				) : (
-					<div>
-						<input
-							type="input"
-							class={"form-input"}
-							placeholder={getText("search_tag")}
-							onInput={(e) => {
-								setSearchVal(e.currentTarget.value);
-							}}
-							value={searchVal}
-						></input>
-						{(["author", "contest", "method", "other"] as TagType[]).map((tp) => {
-							const tags = allTags!.filter((t) => t.type == tp).filter(searchStrFilter);
-							return (
-								<details key={tp} class="block my-2" open>
-									<summary>
-										<h3 class="inline-block mb-2">{getText(`tag_names.${tp}`)}</h3>
-									</summary>
-									{tags.map((tag) => (
-										<label class="mx-1" key={tag.id}>
-											<input
-												type="checkbox"
-												class="form-checkbox"
-												checked={checkedTags.includes(tag.id)}
-												onChange={() => {
-													if (checkedTags.includes(tag.id)) {
-														setCheckedTags(checkedTags.filter((t) => t != tag.id));
-													} else {
-														setCheckedTags([...checkedTags, tag.id]);
-													}
-												}}
-											/>
-											<TagView tag={tag} link={false} onClick={() => console.log(tag)} />
-										</label>
-									))}
-									{tags.length === 0 && <span>{getText("no_tags")}</span>}
-									{open && searchVal.length == 0 && (
-										<TagQuickAddView
-											type={tp}
-											cb={(val) => {
-												setCheckedTags([...checkedTags, val]);
-												loadTags().catch(console.error);
-											}}
-										/>
-									)}
-								</details>
-							);
-						})}
-						<button class="btn btn-blue my-2" onClick={updateTags}>
-							{getText("button.update")}
-						</button>
-					</div>
-				)}
-			</KNModal>
 		</>
 	);
 }
@@ -308,3 +233,140 @@ function ProblemTagsDOM({ enc, open }: { enc: string; open: string }) {
 }
 
 register(ProblemTagsDOM, "kn-pb-tags", ["enc", "open"]);
+
+export function selectTags(initialSelected: Tag[], canCreate: boolean = false, titleKey: string = "select_tags"): Promise<{ tags: Tag[]; updated: boolean }> {
+	return new Promise((resolve) => {
+		const par = document.createElement("div");
+		document.getElementById("modals")!.append(par);
+
+		function callback(val: Tag[], cancel: boolean) {
+			par.parentElement?.removeChild(par);
+			if (cancel) {
+				resolve({ tags: initialSelected, updated: false });
+				return;
+			}
+			resolve({ tags: val, updated: true });
+		}
+
+		function Selector({ initialTags }: { initialTags: Tag[] }) {
+			let [tags, setTags] = useState<Tag[]>(initialTags);
+			let [tagList, updateTagList] = useState<Tag[]>([]);
+			let [loading, setLoading] = useState<boolean>(true);
+			let [searchVal, setSearchVal] = useState<string>("");
+
+			function searchStrFilter(t: Tag): boolean {
+				return cleanupTagSearchTerm(t.name).includes(cleanupTagSearchTerm(searchVal));
+			}
+
+			function updTags(newTags: Tag[]) {
+				newTags.sort((a, b) => {
+					if (a.type > b.type) {
+						return 1;
+					}
+					if (a.type < b.type) {
+						return -1;
+					}
+					if (a.name > b.name) {
+						return 1;
+					}
+					if (a.name < b.name) {
+						return -1;
+					}
+					return 0;
+				});
+				setTags(newTags);
+			}
+
+			async function load(insertFromID?: number) {
+				let res = await getCall<Tag[]>(`/tags/`, {});
+				if (res.status === "error") {
+					apiToast(res);
+					return;
+				}
+				updateTagList(res.data);
+				if (typeof insertFromID !== "undefined") {
+					updTags([...tags, ...res.data.filter((t) => t.id == insertFromID)]);
+				}
+				setLoading(false);
+			}
+
+			useEffect(() => {
+				load().catch(console.error);
+			}, []);
+
+			return (
+				<KNModal title={getText(titleKey)} open={true} closeCallback={() => callback(tags, true)}>
+					{loading ? (
+						<BigSpinner />
+					) : (
+						<>
+							<div class="segment-panel">
+								{tags.length > 0 ? (
+									<span>
+										{getText("selected_tags")}:{" "}
+										{tags.map((tag) => (
+											<TagView
+												tag={tag}
+												key={tag.id}
+												link={false}
+												onClick={() => {
+													updTags(tags.filter((val) => val.id != tag.id));
+												}}
+											/>
+										))}
+									</span>
+								) : (
+									<span>{getText("no_selected_tags")}</span>
+								)}
+							</div>
+							<input
+								type="input"
+								class="form-input block my-2"
+								placeholder={getText("search_tag")}
+								onInput={(e) => {
+									setSearchVal(e.currentTarget.value);
+								}}
+								value={searchVal}
+							></input>
+							{(Object.keys(tagTypes) as TagType[]).map((tp) => {
+								const typeTags = tagList
+									.filter((t) => t.type == tp && typeof tags.find((val) => val.id == t.id) === "undefined")
+									.filter(searchStrFilter);
+								return (
+									<details key={tp} class="block my-2" open>
+										<summary>
+											<h3 class="inline-block mb-2">{getText(`tag_names.${tp}`)}</h3>
+										</summary>
+										{typeTags.map((tag) => (
+											<TagView
+												tag={tag}
+												link={false}
+												onClick={() => {
+													updTags([...tags, tag]);
+													setSearchVal("");
+												}}
+												key={tag.id}
+											/>
+										))}
+										{typeTags.length === 0 && <span>{getText("no_tags")}</span>}
+										{canCreate && searchVal.length == 0 && (
+											<TagQuickAddView type={tp} cb={(val: number) => load(val).catch(console.error)} />
+										)}
+									</details>
+								);
+							})}
+							<button class="btn my-2 mr-2" onClick={() => callback(tags, true)}>
+								{getText("button.cancel")}
+							</button>
+							<button class="btn btn-blue my-2" onClick={() => callback(tags, false)}>
+								{getText("button.select")}
+							</button>
+						</>
+					)}
+				</KNModal>
+			);
+		}
+
+		render(<Selector initialTags={initialSelected}></Selector>, par);
+	});
+}
