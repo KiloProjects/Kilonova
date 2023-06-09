@@ -1808,9 +1808,17 @@ ro = "Probleme cu această etichetă"
 en = "Search"
 ro = "Căutare"
 
-[tag_string]
-en = "Tag filter (experimental)"
-ro = "Filtru etichete (experimental)"
+[filter_tags]
+en = "Filter by tags"
+ro = "Filtrare după etichete"
+
+[tag_filter_simple_mode]
+en = "Simple mode"
+ro = "Modul simplu"
+
+[tag_filter_complex_mode]
+en = "Advanced mode"
+ro = "Modul avansat"
 
 [use_in_search]
 en = "Use in search"

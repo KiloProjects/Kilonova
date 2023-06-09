@@ -270,7 +270,6 @@ export function SubTask({
 	return (
 		<details id={`stk-det-${subtask.visible_id}`} class="list-group-item">
 			<summary class="pb-1 mt-1">
-				{/* <span class="flex justify-between"> */}
 				<span>
 					{getText("nthSubTask", subtask.visible_id)}{" "}
 					{breakdown_mode && (
@@ -288,7 +287,6 @@ export function SubTask({
 						<i class="fas fa-cog animate-spin"></i>
 					</span>
 				)}
-				{/* </span> */}
 			</summary>
 			<table class="kn-table default-background my-2">
 				<thead>

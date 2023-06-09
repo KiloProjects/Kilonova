@@ -8,7 +8,7 @@ import { bodyCall, getCall } from "../api/net";
 import { fromBase64 } from "js-base64";
 import { KNModal } from "./modal";
 import { sizeFormatter } from "../util";
-import { Tag, TagView } from "./tags";
+import { Tag, TagView, selectTags } from "./tags";
 import { Problems } from "./sublist";
 import { Paginator } from "./common";
 import { rezStr } from "./subs_view";
@@ -151,49 +151,23 @@ function initialQuery(params: URLSearchParams, groups: TagGroup[]): ProblemQuery
 	};
 }
 
-function parseTagString(tagString: string | null): TagGroup[] {
-	if (tagString == null) {
-		return [];
-	}
-	let tags: TagGroup[] = [];
-	for (let group of tagString.split(",")) {
-		if (group.length === 0) {
-			continue;
-		}
-		let negate = false;
-		if (group[0] == "!") {
-			negate = true;
-			group = group.replace(/^\!/, "");
-		}
-
-		let tag_ids: number[] = group
-			.split("_")
-			.map((val) => parseInt(val))
-			.filter((val) => !isNaN(val));
-
-		if (tag_ids.length > 0) {
-			tags.push({
-				negate,
-				tag_ids,
-			});
-		}
-	}
-
-	return tags;
-}
-
-function serializeQuery(f: ProblemQuery, tagString: string): any {
+function serializeQuery(f: ProblemQuery): any {
 	return {
 		name_fuzzy: f.textQuery,
 		editor_user_id: f.editor_user > 0 ? f.editor_user : undefined,
 		visible: f.published,
 
-		// tags: f.tags,
-		tags: parseTagString(tagString),
+		tags: f.tags,
 
 		limit: MAX_PER_PAGE,
 		offset: (f.page - 1) * MAX_PER_PAGE,
 	};
+}
+
+type TagFilterMode = "simple" | "complex";
+
+function getModeByGroups(groups: TagGroup[]): TagFilterMode {
+	return groups.some((val) => val.negate || val.tag_ids.length > 1) ? "complex" : "simple";
 }
 
 function ProblemSearch(params: { count: number; problems: FullProblem[]; groups: TagGroup[]; initialTags: Tag[] }) {
@@ -201,10 +175,11 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 	let [problems, setProblems] = useState<FullProblem[]>(params.problems);
 	let [count, setCount] = useState<number>(params.count);
 	let numPages = useMemo(() => Math.floor(count / MAX_PER_PAGE) + (count % MAX_PER_PAGE != 0 ? 1 : 0), [count]);
-	let [tags, setTags] = useState<Tag[]>(params.initialTags);
 
 	// TODO: Remove once proper tag filtering is implemented
-	let [tagString, setTagString] = useState<string>(makeTagString(query.tags));
+	// let [tagString, setTagString] = useState<string>(makeTagString(query.tags));
+	let [tagFilterMode, setTagFilterMode] = useState<TagFilterMode>(getModeByGroups(params.groups));
+	let [tags, setTags] = useState<Tag[]>(params.initialTags);
 
 	const mounted = useRef(false);
 
@@ -213,7 +188,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 	let [advOptions, setAdvOptions] = useState<boolean>(false);
 
 	async function load() {
-		const rez = await bodyCall<{ problems: FullProblem[]; count: number }>("/problem/search", serializeQuery(query, tagString));
+		const rez = await bodyCall<{ problems: FullProblem[]; count: number }>("/problem/search", serializeQuery(query));
 		if (rez.status === "error") {
 			apiToast(rez);
 			return;
@@ -240,9 +215,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 		}
 
 		if (query.tags.length > 0) {
-			// TODO: Uncomment when advanced tag filtering is finished
-			// p.append("tags", makeTagString(query.tags));
-			p.append("tags", tagString);
+			p.append("tags", makeTagString(query.tags));
 		}
 
 		let url = window.location.origin + window.location.pathname + "?" + p.toString();
@@ -252,6 +225,16 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 		} catch (e) {
 			console.error(e);
 			createToast({ status: "error", title: getText("notCopied") });
+		}
+	}
+
+	function updateTagMode(newMode: TagFilterMode) {
+		if (newMode == tagFilterMode) return;
+		if (newMode == "simple") {
+			if (getModeByGroups(query.tags) == "complex") {
+				// It's not possible to turn a complex query into a simple one
+				setQuery({ ...query, tags: [] });
+			}
 		}
 	}
 
@@ -331,18 +314,41 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 							</select>
 						</label>
 					)}
-					<label class="block my-2">
-						<span class="form-label">{getText("tag_string")}: </span>
-						<input
-							type="text"
-							class="form-input"
-							value={tagString}
-							placeholder="!1,2_3,4_5_6,9"
-							onChange={(e) => {
-								setTagString(e.currentTarget.value);
-							}}
-						/>
-					</label>
+					<div class="block my-2">
+						<span class="form-label">{getText("filter_tags")}</span>
+						<select class="form-select" value={tagFilterMode} onChange={(e) => setTagFilterMode(e.currentTarget.value as TagFilterMode)}>
+							<option value={"simple"}>{getText("tag_filter_simple_mode")}</option>
+							<option value={"complex"}>{getText("tag_filter_complex_mode")}</option>
+						</select>
+						{": "}
+						{tagFilterMode == "simple" ? (
+							<>
+								{query.tags.length == 0
+									? getText("no_selected_tags")
+									: query.tags.map((gr) => gr.tag_ids.map((id) => <TagView tag={tags.find((t) => t.id == id)!} link={false} />))}
+								<a
+									class="mx-1"
+									href="#"
+									onClickCapture={(e) => {
+										e.preventDefault();
+										selectTags(tags).then((rez) => {
+											if (rez.updated) {
+												setTags(rez.tags);
+												setQuery({
+													...query,
+													tags: rez.tags.map((t) => ({ negate: false, tag_ids: [t.id] })),
+												});
+											}
+										});
+									}}
+								>
+									<i class="fas fa-pen-to-square"></i> {query.tags.length === 0 ? getText("add_tags") : getText("select_tags")}
+								</a>
+							</>
+						) : (
+							<>Work in progress</>
+						)}
+					</div>
 				</div>
 			)}
 
