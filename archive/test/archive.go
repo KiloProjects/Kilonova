@@ -2,20 +2,14 @@ package test
 
 import (
 	"archive/zip"
-	"bufio"
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
 	"path"
 	"path/filepath"
+	"slices"
 	"sort"
-	"strconv"
-	"strings"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"github.com/gosimple/slug"
 	"go.uber.org/zap"
 )
 
@@ -83,143 +77,35 @@ func NewArchiveCtx() *ArchiveCtx {
 	}
 }
 
-func ProcessScoreFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
-	f, err := file.Open()
-	if err != nil {
-		return kilonova.Statusf(500, "Unknown error")
-	}
-	defer f.Close()
-
-	br := bufio.NewScanner(f)
-
-	for br.Scan() {
-		line := br.Text()
-
-		if line == "" { // empty line, skip
-			continue
-		}
-
-		var testID int
-		var score int
-		if _, err := fmt.Sscanf(line, "%d %d\n", &testID, &score); err != nil {
-			// Might just be a bad line
-			continue
-		}
-
-		test := ctx.tests[testID]
-		test.Score = score
-		ctx.tests[testID] = test
-		for _, ex := range ctx.scoredTests {
-			if ex == testID {
-				return ErrBadTestFile
-			}
-		}
-
-		ctx.scoredTests = append(ctx.scoredTests, testID)
-	}
-	if br.Err() != nil {
-		zap.S().Info(br.Err())
-		return kilonova.WrapError(err, "Score file read error")
-	}
-	return nil
-}
+var (
+	testInputSuffixes  = []string{".in", ".input"}
+	testOutputSuffixes = []string{".out", ".output", ".ok", ".sol"}
+)
 
 func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
-	name := path.Base(file.Name)
-	for _, dir := range filepath.SplitList(path.Dir(file.Name)) {
-		if dir == "attachments" { // Is attachment
-			if strings.HasSuffix(name, ".att_props") {
-				var props attachmentProps
-
-				name = strings.TrimSuffix(name, ".att_props")
-
-				f, err := file.Open()
-				if err != nil {
-					return kilonova.WrapError(err, "Couldn't open props file")
-				}
-				if err := json.NewDecoder(f).Decode(&props); err != nil {
-					f.Close()
-					return kilonova.WrapError(err, "Invalid props file")
-				}
-				f.Close()
-
-				_, ok := ctx.attachments[name]
-				if ok {
-					val := ctx.attachments[name]
-					val.Visible = props.Visible
-					val.Private = props.Private
-					val.Exec = props.Exec
-					ctx.attachments[name] = val
-				} else {
-					ctx.attachments[name] = archiveAttachment{
-						Name:    name,
-						Visible: props.Visible,
-						Private: props.Private,
-						Exec:    props.Exec,
-					}
-				}
-			} else {
-				_, ok := ctx.attachments[name]
-				if ok {
-					val := ctx.attachments[name]
-					val.File = file
-					ctx.attachments[name] = val
-				} else {
-					ctx.attachments[name] = archiveAttachment{
-						File:    file,
-						Name:    name,
-						Visible: false,
-						Private: false,
-						Exec:    false,
-					}
-				}
-			}
-			return nil
-		}
+	ext := path.Ext(file.Name)
+	if slices.Contains(filepath.SplitList(path.Dir(file.Name)), "attachments") { // Is in "attachments" directory
+		return ProcessAttachmentFile(ctx, file)
 	}
 
-	if strings.HasSuffix(name, ".txt") { // test score file
+	if ext == ".txt" { // test score file
 		return ProcessScoreFile(ctx, file)
 	}
 
-	if strings.HasSuffix(name, ".properties") { // test properties file
+	if ext == ".properties" { // test properties file
 		return ProcessPropertiesFile(ctx, file)
 	}
 
 	// if nothing else is detected, it should be a test file
 
-	var tid int
-	if _, err := fmt.Sscanf(name, "%d-", &tid); err != nil {
-		// maybe it's problem_name.%d.{in,sol,out} format
-		nm := strings.Split(strings.TrimSuffix(name, path.Ext(name)), ".")
-		if len(nm) == 0 {
-			return nil
-		}
-		val, err := strconv.Atoi(nm[len(nm)-1])
-		if err != nil {
-			return nil
-		}
-		tid = val
+	if slices.Contains(testInputSuffixes, ext) { // test input file (ex: 01.in)
+		return ProcessTestInputFile(ctx, file)
 	}
 
-	if strings.HasSuffix(name, ".in") { // test input file
-		tf := ctx.tests[tid]
-		if tf.InFile != nil { // in file already exists
-			return kilonova.Statusf(400, "Multiple input files for test %d", tid)
-		}
-
-		tf.InFile = file
-		ctx.tests[tid] = tf
+	if slices.Contains(testOutputSuffixes, ext) { // test output file (ex: 01.out/01.ok)
+		return ProcessTestOutputFile(ctx, file)
 	}
-	if strings.HasSuffix(name, ".out") || strings.HasSuffix(name, ".ok") || strings.HasSuffix(name, ".sol") { // test output file
-		tf := ctx.tests[tid]
-		if tf.OutFile != nil { // out file already exists
-			return kilonova.Statusf(400, "Multiple output files for test %d", tid)
-		}
 
-		tf.OutFile = file
-		ctx.tests[tid] = tf
-	}
 	return nil
 }
 
@@ -454,167 +340,5 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 		}
 	}
 
-	return nil
-}
-
-func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, base *sudoapi.BaseAPI, brief bool) *kilonova.StatusError {
-	ar := zip.NewWriter(w)
-	tests, err := base.Tests(ctx, pb.ID)
-	defer ar.Close()
-	if err != nil {
-		return err
-	}
-
-	testName := strings.TrimSpace(pb.TestName)
-	if testName == "" {
-		testName = slug.Make(testName)
-	}
-
-	// First, save the tests
-	for _, test := range tests {
-		{
-			f, err := ar.Create(fmt.Sprintf("%d-%s.in", test.VisibleID, testName))
-			if err != nil {
-				return kilonova.WrapError(err, "Couldn't create archive file")
-			}
-
-			r, err := base.TestInput(test.ID)
-			if err != nil {
-				return kilonova.WrapError(err, "Couldn't get test input")
-			}
-
-			if _, err := io.Copy(f, r); err != nil {
-				r.Close()
-				return kilonova.WrapError(err, "Couldn't save test input file")
-			}
-			r.Close()
-		}
-		{
-			f, err := ar.Create(fmt.Sprintf("%d-%s.ok", test.VisibleID, testName))
-			if err != nil {
-				return kilonova.WrapError(err, "Couldn't create archive file")
-			}
-
-			r, err := base.TestOutput(test.ID)
-			if err != nil {
-				return kilonova.WrapError(err, "Couldn't get test output")
-			}
-
-			if _, err := io.Copy(f, r); err != nil {
-				r.Close()
-				return kilonova.WrapError(err, "Couldn't save test output file")
-			}
-			r.Close()
-		}
-	}
-	if !brief {
-		// Then, attachments, if not brief
-		atts, err := base.ProblemAttachments(ctx, pb.ID)
-		if err != nil {
-			return kilonova.WrapError(err, "Couldn't get attachments")
-		}
-		for _, att := range atts {
-			pFile, err := ar.Create("attachments/" + att.Name + ".att_props")
-			if err != nil {
-				return kilonova.WrapError(err, "Couldn't create archive attachment props file")
-			}
-			if err := json.NewEncoder(pFile).Encode(attachmentProps{
-				Visible: att.Visible,
-				Private: att.Private,
-				Exec:    att.Exec,
-			}); err != nil {
-				return kilonova.WrapError(err, "Couldn't encode attachment props")
-			}
-			attFile, err := ar.Create("attachments/" + att.Name)
-			if err != nil {
-				return kilonova.WrapError(err, "Couldn't create attachment file")
-			}
-			data, err1 := base.AttachmentData(ctx, att.ID)
-			if err1 != nil {
-				return kilonova.WrapError(err, "Couldn't get attachment data")
-			}
-			if _, err := attFile.Write(data); err != nil {
-				return kilonova.WrapError(err, "Couldn't save attachment file")
-			}
-		}
-	}
-	{
-		// Then, the scores
-		testFile, err := ar.Create("tests.txt")
-		if err != nil {
-			return kilonova.WrapError(err, "Couldn't create archive tests.txt file")
-		}
-		for _, test := range tests {
-			fmt.Fprintf(testFile, "%d %d\n", test.VisibleID, test.Score)
-		}
-	}
-	{
-		// Lastly, grader.properties
-		gr, err := ar.Create("grader.properties")
-		if err != nil {
-			return kilonova.WrapError(err, "Couldn't create archive grader.properties file")
-		}
-
-		subtasks, err1 := base.SubTasks(ctx, pb.ID)
-		if err1 != nil {
-			return err1
-		}
-		if len(subtasks) != 0 {
-			tmap := map[int]*kilonova.Test{}
-			for _, test := range tests {
-				tmap[test.ID] = test
-			}
-
-			groups := []string{}
-			weights := []string{}
-
-			for _, st := range subtasks {
-				group := ""
-				for i, t := range st.Tests {
-					if i > 0 {
-						group += ";"
-					}
-					tt, ok := tmap[t]
-					if !ok {
-						zap.S().Warn("Couldn't find test in test map")
-					} else {
-						group += strconv.Itoa(tt.VisibleID)
-					}
-				}
-				groups = append(groups, group)
-				weights = append(weights, strconv.Itoa(st.Score))
-			}
-			fmt.Fprintf(gr, "groups=%s\n", strings.Join(groups, ","))
-			fmt.Fprintf(gr, "weights=%s\n", strings.Join(weights, ","))
-		}
-
-		fmt.Fprintf(gr, "time=%f\n", pb.TimeLimit)
-		fmt.Fprintf(gr, "memory=%f\n", float64(pb.MemoryLimit)/1024.0)
-		if pb.DefaultPoints != 0 {
-			fmt.Fprintf(gr, "default_score=%d\n", pb.DefaultPoints)
-		}
-		fmt.Fprintf(gr, "console_input=%t\n", pb.ConsoleInput)
-		fmt.Fprintf(gr, "test_name=%s\n", testName)
-		fmt.Fprintf(gr, "scoring_strategy=%s\n", pb.ScoringStrategy)
-
-		if !brief {
-			tags, err := base.ProblemTags(ctx, pb.ID)
-			if err != nil {
-				return err
-			}
-			if len(tags) > 0 {
-				var tagNames []string
-				for _, tag := range tags {
-					tagNames = append(tagNames, fmt.Sprintf("%q", tag.Name))
-				}
-				fmt.Fprintf(gr, "tags=%s\n", strings.Join(tagNames, ","))
-			}
-
-			if pb.SourceCredits != "" {
-				fmt.Fprintf(gr, "source=%s\n", pb.SourceCredits)
-			}
-		}
-
-	}
 	return nil
 }

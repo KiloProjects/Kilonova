@@ -330,9 +330,9 @@ CREATE TABLE IF NOT EXISTS problem_tags (
 -- views
 
 CREATE OR REPLACE VIEW submission_subtask_max_scores (problem_id, user_id, subtask_id, max_score) AS
-    SELECT MAX(problem_id) as problem_id, user_id, subtask_id, MAX(ROUND(COALESCE(final_percentage, 0) * score / 100.0)) max_score
+    SELECT problem_id, user_id, subtask_id, MAX(ROUND(COALESCE(final_percentage, 0) * score / 100.0)) max_score
     FROM submission_subtasks stks
-    WHERE subtask_id IS NOT NULL GROUP BY user_id, subtask_id;
+    WHERE subtask_id IS NOT NULL GROUP BY user_id, problem_id, subtask_id;
 
 CREATE OR REPLACE VIEW max_score_view (user_id, problem_id, score) AS 
     WITH max_submission_strat AS (
@@ -501,13 +501,9 @@ CREATE OR REPLACE VIEW contest_top_view
 
 CREATE OR REPLACE FUNCTION visible_submissions(user_id bigint) RETURNS TABLE (sub_id bigint, user_id bigint) AS $$
     WITH v_pbs AS (SELECT * FROM visible_pbs($1))
-    (SELECT id as sub_id, user_id as user_id 
-        FROM submissions 
-        WHERE user_id = $1 AND EXISTS (
-            SELECT 1 
-            FROM v_pbs 
-            WHERE problem_id = submissions.problem_id AND user_id = $1
-        )) -- base case, users should see their own submissions if problem is still visible (also, coincidentally, works for contest problems)
+    (SELECT id as sub_id, submissions.user_id as user_id 
+        FROM submissions, v_pbs
+        WHERE submissions.user_id = $1 AND submissions.problem_id = v_pbs.problem_id) -- base case, users should see their own submissions if problem is still visible (also, coincidentally, works for contest problems)
     UNION ALL
     (SELECT subs.id as sub_id, users.id as user_id
         FROM submissions subs, users

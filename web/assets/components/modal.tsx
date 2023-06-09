@@ -60,7 +60,7 @@ export function confirm(message: string): Promise<boolean> {
 		const par = document.createElement("div");
 		document.getElementById("modals")!.append(par);
 
-		async function callback(val: boolean) {
+		function callback(val: boolean) {
 			par.parentElement?.removeChild(par);
 			resolve(val);
 		}
@@ -69,7 +69,7 @@ export function confirm(message: string): Promise<boolean> {
 			<KNModal title={getText("confirm_header")} open={true} closeCallback={() => callback(false)} large={false}>
 				<p class="my-2">{message}</p>
 				<button onClick={() => callback(false)} class="btn btn-blue mr-2">
-					Cancel
+					{getText("button.cancel")}
 				</button>
 				<button onClick={() => callback(true)} class="btn btn-red">
 					OK

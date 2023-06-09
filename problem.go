@@ -8,6 +8,10 @@ var (
 	ErrAttachmentExists = Statusf(400, "Attachment with that name already exists!")
 )
 
+const (
+	DefaultSourceSize = 30000
+)
+
 type ScoringType string
 
 const (

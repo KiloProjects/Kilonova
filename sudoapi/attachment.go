@@ -101,7 +101,9 @@ func (s *BaseAPI) DeleteAttachments(ctx context.Context, problemID int, attIDs [
 func (s *BaseAPI) ProblemAttachments(ctx context.Context, problemID int) ([]*kilonova.Attachment, *StatusError) {
 	atts, err := s.db.ProblemAttachments(ctx, problemID, nil)
 	if err != nil {
-		zap.S().Warn(err)
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
 		return nil, WrapError(err, "Couldn't get attachments")
 	}
 	return atts, nil
@@ -131,7 +133,9 @@ func (s *BaseAPI) ProblemDescVariants(ctx context.Context, problemID int, getPri
 	variants := []*kilonova.StatementVariant{}
 	atts, err := s.ProblemAttachments(ctx, problemID)
 	if err != nil {
-		zap.S().Warn(err)
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
 		return nil, WrapError(err, "Couldn't get problem statement variants")
 	}
 

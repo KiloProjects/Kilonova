@@ -6,6 +6,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/davecgh/go-spew/spew"
 	"go.uber.org/zap"
 )
 
@@ -59,8 +60,8 @@ func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Tas
 		boxOut := fmt.Sprintf("/box/%s.out", req.Filename)
 		if !box.FileExists(boxOut) {
 			resp.Comments = "No output file found"
-			//zap.S().Warn("No output file found", zap.Int("subtest_id", req.SubtestID), zap.Int("box_id", box.GetID()), zap.Int("sub_id", req.SubID))
-			//zap.S().Info("This may be a bug: ", spew.Sdump(box.ReadDir("/box/")))
+			zap.S().Warn("No output file found", zap.Int("subtest_id", req.SubtestID), zap.Int("box_id", box.GetID()), zap.Int("sub_id", req.SubID))
+			zap.S().Info("This may be a bug: ", spew.Sdump(box.ReadDir("/box/")))
 			return resp, nil
 		}
 

@@ -156,7 +156,7 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID in
 		p.TimeLimit = 1 // 1s
 	}
 	if p.SourceSize == 0 {
-		p.SourceSize = 10000
+		p.SourceSize = kilonova.DefaultSourceSize
 	}
 	var id int
 	err := s.conn.GetContext(ctx, &id, problemCreateQuery, p.Name, p.ConsoleInput, p.TestName, p.MemoryLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.DefaultPoints)

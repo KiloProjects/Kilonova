@@ -412,7 +412,9 @@ func (rt *Web) problem() http.HandlerFunc {
 		case "md":
 			statement, err = rt.base.RenderedProblemDesc(r.Context(), problem, foundLang, foundFmt)
 			if err != nil {
-				zap.S().Warn("Error getting problem markdown: ", err)
+				if !errors.Is(err, context.Canceled) {
+					zap.S().Warn("Error getting problem markdown: ", err)
+				}
 				statement = []byte("Error fetching markdown.")
 			}
 		case "pdf":
