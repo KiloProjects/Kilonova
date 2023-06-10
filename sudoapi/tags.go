@@ -100,6 +100,7 @@ func (s *BaseAPI) CreateTag(ctx context.Context, name string, tagType kilonova.T
 	if err != nil {
 		return -1, WrapError(err, "Couldn't create tag")
 	}
+	s.LogUserAction(ctx, "Tag %q of type %q created", name, tagType)
 	return id, nil
 }
 

@@ -349,6 +349,11 @@ CREATE OR REPLACE VIEW max_score_view (user_id, problem_id, score) AS
         LEFT JOIN max_submission_strat ms_sub ON (ms_sub.user_id = users.id AND ms_sub.problem_id = pbs.id)
         LEFT JOIN sum_subtasks_strat ms_subtask ON (ms_subtask.user_id = users.id AND ms_subtask.problem_id = pbs.id);
 
+
+CREATE OR REPLACE VIEW running_contests AS (
+    SELECT * from contests WHERE contests.start_time <= NOW() AND NOW() <= contests.end_time
+);
+
 -- param 1: the user ID for which we want to see the visible problems
 CREATE OR REPLACE FUNCTION visible_pbs(user_id bigint) RETURNS TABLE (problem_id bigint, user_id bigint) AS $$
     (SELECT pbs.id as problem_id, 0 as user_id
@@ -449,10 +454,6 @@ CREATE OR REPLACE VIEW problem_editors AS
 --   - Admins
 --   - Testers/Editors
 --   - It's not visible but it's running and user is registered
-
-CREATE OR REPLACE VIEW running_contests AS (
-    SELECT * from contests WHERE contests.start_time <= NOW() AND NOW() <= contests.end_time
-);
 
 CREATE OR REPLACE VIEW contest_visibility AS (
     (SELECT contests.id AS contest_id, 0 AS user_id FROM contests 
