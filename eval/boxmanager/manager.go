@@ -56,7 +56,11 @@ func (b *BoxManager) Close(ctx context.Context) error {
 }
 
 // New creates a new box manager
-func New(count int, maxMemory int64, dm kilonova.GraderStore) (*BoxManager, error) {
+func New(startingNumber int, count int, maxMemory int64, dm kilonova.GraderStore) (*BoxManager, error) {
+
+	if startingNumber < 0 {
+		startingNumber = 0
+	}
 
 	availableIDs := make(chan int, 3*count)
 	for i := 1; i <= 2*count; i++ {

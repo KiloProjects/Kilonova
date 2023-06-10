@@ -43,6 +43,8 @@ type EvalConf struct {
 	// Address       string `toml:"address"`
 	NumConcurrent int   `toml:"num_concurrent"`
 	GlobalMaxMem  int64 `toml:"global_max_mem_kb"`
+
+	StartingBox int `toml:"starting_box"`
 }
 
 // CommonConf is the data required for all services

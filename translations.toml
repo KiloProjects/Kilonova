@@ -1856,6 +1856,18 @@ ro = "Etichete selectate"
 en = "No selected tags."
 ro = "Nicio etichetă selectată."
 
+[tag_complex_explainer]
+en = "Must have, for each group, any of the following tags"
+ro = "Trebuie să conțină, pentru fiecare grupă, oricare din etichetele"
+
+[tag_complex_group]
+en = "Group %d"
+ro = "Grupul %d"
+
+[tag_complex_not]
+en = "NOT"
+ro = "NU"
+
 [create_tag]
 en = "Create tag"
 ro = "Creare etichetă"

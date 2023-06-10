@@ -342,7 +342,7 @@ func scoreTests(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submis
 
 func getLocalRunner(base *sudoapi.BaseAPI) (eval.BoxScheduler, error) {
 	zap.S().Info("Trying to spin up local grader")
-	bm, err := boxmanager.New(config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, base)
+	bm, err := boxmanager.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, base)
 	if err != nil {
 		return nil, err
 	}
@@ -362,12 +362,6 @@ func getAppropriateRunner(base *sudoapi.BaseAPI) (eval.BoxScheduler, error) {
 	return nil, nil
 	// zap.S().Fatal("Remote grader has been disabled because it can't run problems with custom checker")
 	// return nil, nil
-	/*
-		Disabled until it fully works
-		return nil, nil
-		zap.S().Info("Could not spin up local grader, trying to contact remote")
-		return newGrpcRunner(config.Eval.Address)
-	*/
 }
 
 func getAppropriateChecker(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, pb *kilonova.Problem, settings *kilonova.ProblemEvalSettings) (eval.Checker, error) {
