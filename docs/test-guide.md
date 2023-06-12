@@ -30,7 +30,12 @@ memory = 512
 # Checker
 
 * Must be named `checker_legacy.cpp` or `checker.cpp` and added as a private attachement (NOTE: since 2023-03-13) with the `exec` toggle checked.
-* NOTE (since 2023-05-24): it is now possible to check the contestant's source code in a special file called `contestant.txt`, created in the checker's directory. You could maybe use it to disallow certain keywords.
+* NOTE (since 2023-05-24): it is now possible to check the contestant's source code in a special file called `contestant.txt`, created in the checker's directory. You could maybe use it to disallow certain keywords;
+* These are a few common output messages that can be automatically translated for the user. Of course, you can also set your own custom messages:
+    - `translate:success` -> `Correct`;
+    - `translate:partial` -> `Partially correct`;
+    - `translate:wrong` -> `Wrong answer`.
+
 
 ## Legacy Format
 
@@ -67,8 +72,8 @@ int main(int argc, char* argv[]) {
     if(task == 1){
         int ansok, ansout;
         ok >> ansok;
-        Assert(!!(out >> ansout), "Wrong format"); // try to read contestant's answer
-        Assert(ansout == ansok, "Wrong answer"); // check if values match
+        Assert(!!(out >> ansout), "translate:wrong"); // try to read contestant's answer
+        Assert(ansout == ansok, "translate:wrong"); // check if values match
         score += 100;
     }
     else {
@@ -86,7 +91,7 @@ int main(int argc, char* argv[]) {
             message += "Wrong value";
         Success(score, message);
     }
-    Success(score, "Correct answer");
+    Success(score, "translate:success");
 }
 ```
 
@@ -127,8 +132,8 @@ int main(int argc, char* argv[]) {
     if(task == 1){
         int ansok, ansout;
         ok >> ansok;
-        Assert(!!(out >> ansout), "Wrong format"); // try to read contestant's answer
-        Assert(ansout == ansok, "Wrong answer"); // check if values match
+        Assert(!!(out >> ansout), "translate:wrong"); // try to read contestant's answer
+        Assert(ansout == ansok, "translate:wrong"); // check if values match
         score += 0.5;
     }
     else {
@@ -146,7 +151,7 @@ int main(int argc, char* argv[]) {
             message += "Wrong value";
         Success(score, message);
     }
-    Success(score, "Correct answer");
+    Success(score, "translate:success");
 }
 ```
 
