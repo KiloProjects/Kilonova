@@ -64,7 +64,7 @@ func New(startingNumber int, count int, maxMemory int64, dm kilonova.GraderStore
 
 	availableIDs := make(chan int, 3*count)
 	for i := 1; i <= 2*count; i++ {
-		availableIDs <- i
+		availableIDs <- i + startingNumber
 	}
 
 	bm := &BoxManager{

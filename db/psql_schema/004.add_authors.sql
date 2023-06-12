@@ -9,6 +9,6 @@ INSERT INTO tags (name, type) SELECT DISTINCT name, 'author'::tag_type FROM prob
 
 INSERT INTO problem_tags (tag_id, problem_id) SELECT tags.id, problem_authors.id FROM tags, problem_authors WHERE tags.name = problem_authors.name;
 
-ALTER TABLE problems DROP COLUMN author_credits;
+ALTER TABLE problems DROP COLUMN author_credits CASCADE;
 
 COMMIT;
