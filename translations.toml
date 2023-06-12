@@ -1907,3 +1907,27 @@ ro = "Diverse"
 [confirm_header]
 en = "Confirm action"
 ro = "Confirmare acțiune"
+
+[test_verdict.success]
+en = "Correct"
+ro = "Corect"
+
+[test_verdict.partial]
+en = "Partially correct"
+ro = "Parțial corect"
+
+[test_verdict.wrong]
+en = "Wrong answer"
+ro = "Răspuns greșit"
+
+[test_verdict.timeout]
+en = "Time limit exceeded"
+ro = "Limita de timp depășită"
+
+[test_verdict.walltimeout]
+en = "Time limit exceeded (wall clock)"
+ro = "Limita de timp depășită (wall clock)"
+
+[test_verdict.internal_error]
+en = "Internal error"
+ro = "Eroare internă"

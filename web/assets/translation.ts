@@ -6,11 +6,14 @@ type translation = {
 	en: string;
 };
 
-function getVal(key: string): translation | null {
+function getVal(key: string, maybe: boolean = false): translation | null {
 	let current: any = languageStrings;
 	let vals = key.split(".");
 	if (current[vals[0]] === undefined) {
-		console.warn(`key "${key}" does not exist`);
+		if (!maybe) {
+			// If key must be here, return a warning saying that it isn't..
+			console.warn(`key "${key}" does not exist`);
+		}
 		return null;
 	}
 	for (const sub of vals) {
@@ -34,4 +37,16 @@ export default function getText(key: string, ...args: any): string {
 	}
 	console.error("Language", lang, "not found in key", key);
 	return "ERR";
+}
+
+export function maybeGetText(key: string, ...args: any): string {
+	const lang = window.platform_info.language;
+	const translation = getVal(key, true);
+	if (translation === null) {
+		return key;
+	}
+	if (lang in translation) {
+		return vsprintf(translation[lang], args);
+	}
+	return key;
 }

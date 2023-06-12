@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	ErrOut     = "Internal checker error"
-	CorrectOut = "Correct"
-	WrongOut   = "Wrong answer"
+	ErrOut     = "translate:internal_error"
+	CorrectOut = "translate:success"
+	WrongOut   = "translate:wrong"
 )
 
 var _ eval.Checker = &DiffChecker{}

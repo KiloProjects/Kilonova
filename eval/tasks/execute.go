@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
@@ -23,14 +24,15 @@ func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Tas
 
 		if err := box.WriteFile("/box/"+req.Filename+".in", in, 0644); err != nil {
 			zap.S().Info("Can't write input file:", err)
-			resp.Comments = "Sandbox error: Couldn't write input file"
+			resp.Comments = "translate:internal_error"
 			return resp, err
 		}
 		consoleInput := req.Filename == "stdin"
 
 		lang := eval.Langs[req.Lang]
 		if err := eval.CopyInBox(box, getIDExec(req.SubID), lang.CompiledName); err != nil {
-			resp.Comments = "Couldn't copy executable in box"
+			zap.S().Warn("Couldn't copy executable in box: ", err)
+			resp.Comments = "translate:internal_error"
 			return resp, err
 		}
 
@@ -48,7 +50,11 @@ func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Tas
 
 		switch meta.Status {
 		case "TO":
-			resp.Comments = "TLE: " + meta.Message
+			if strings.Contains(meta.Message, "wall") {
+				resp.Comments = "translate:walltimeout"
+			} else {
+				resp.Comments = "translate:timeout"
+			}
 		case "RE":
 			resp.Comments = "Runtime Error: " + meta.Message
 		case "SG":

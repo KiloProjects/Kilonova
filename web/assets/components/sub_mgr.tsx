@@ -3,7 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 import register from "preact-custom-element";
 import { prettyLanguages } from "../langs";
 
-import getText from "../translation";
+import getText, { maybeGetText } from "../translation";
 import { createToast, apiToast } from "../toast";
 const slugify = (str) =>
 	str
@@ -184,6 +184,13 @@ function SubCode({ sub, codeHTML }: { sub: FullSubmission; codeHTML: string }) {
 	);
 }
 
+function verdictString(verdict: string): string {
+	if (verdict.startsWith("translate:")) {
+		return maybeGetText(verdict.replace("translate:", "test_verdict."));
+	}
+	return verdict;
+}
+
 export function TestTable({ subtests, subtasks, problem_editor }: { subtests: SubTest[]; subtasks: SubmissionSubTask[]; problem_editor: boolean }) {
 	function testSubTasks(subtestID) {
 		let stks: number[] = [];
@@ -220,7 +227,7 @@ export function TestTable({ subtests, subtasks, problem_editor }: { subtests: Su
 							<>
 								<td>{Math.floor(subtest.time * 1000)} ms</td>
 								<td>{sizeFormatter(subtest.memory * 1024, 1, true)}</td>
-								<td>{subtest.verdict}</td>
+								<td>{verdictString(subtest.verdict)}</td>
 								<td class="text-black" style={{ backgroundColor: getGradient(subtest.score, 100) }}>
 									{subtasks.length > 0 ? (
 										<>
@@ -313,7 +320,7 @@ export function SubTask({
 									<>
 										<td>{Math.floor(subtest.time * 1000)} ms</td>
 										<td>{sizeFormatter(subtest.memory * 1024, 1, true)}</td>
-										<td>{subtest.verdict}</td>
+										<td>{verdictString(subtest.verdict)}</td>
 										<td class="text-black" style={{ backgroundColor: getGradient(subtest.score, 100) }}>
 											{Math.round((subtask.score * subtest.score) / 100.0)} / {subtask.score}
 										</td>

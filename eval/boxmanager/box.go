@@ -335,7 +335,7 @@ func parseMetaFile(r io.Reader) *eval.RunStats {
 			file.Time, _ = strconv.ParseFloat(l[1], 32)
 		case "time-wall":
 			file.WallTime, _ = strconv.ParseFloat(l[1], 32)
-		case "max-rss", "csw-voluntary", "csw-forced", "cg-enabled":
+		case "max-rss", "csw-voluntary", "csw-forced", "cg-enabled", "cg-oom-killed":
 			continue
 		default:
 			zap.S().Infof("Unknown isolate stat: %q (value: %v)", l[0], l[1])

@@ -228,26 +228,26 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 	// Make sure TLEs are fully handled
 	if resp.Time > problem.TimeLimit {
 		resp.Time = problem.TimeLimit
-		resp.Comments = "Time limit exceeded"
+		resp.Comments = "translate:timeout"
 	}
 
 	if resp.Comments == "" {
 		var skipped bool
 		tin, err := base.TestInput(pbTest.ID)
 		if err != nil {
-			resp.Comments = "Internal grader error"
+			resp.Comments = "translate:internal_error"
 			skipped = true
 		}
 		defer tin.Close()
 		tout, err := base.TestOutput(pbTest.ID)
 		if err != nil {
-			resp.Comments = "Internal grader error"
+			resp.Comments = "translate:internal_error"
 			skipped = true
 		}
 		defer tout.Close()
 		sout, err := base.SubtestReader(subTest.ID)
 		if err != nil {
-			resp.Comments = "Internal grader error"
+			resp.Comments = "translate:internal_error"
 			skipped = true
 		}
 		defer sout.Close()
