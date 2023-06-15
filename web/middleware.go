@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"strings"
+	"unicode"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -20,10 +22,14 @@ var serverLangs = []language.Tag{
 }
 var langMatcher = language.NewMatcher(serverLangs)
 
+func trimNonDigits(s string) string {
+	return strings.TrimRightFunc(s, func(r rune) bool { return !unicode.IsDigit(r) })
+}
+
 // ValidateProblemID makes sure the problem ID is a valid uint
 func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		problemID, err := strconv.Atoi(chi.URLParam(r, "pbid"))
+		problemID, err := strconv.Atoi(trimNonDigits(chi.URLParam(r, "pbid")))
 		if err != nil {
 			rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
 			return
@@ -51,7 +57,7 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 // ValidateListID makes sure the list ID is a valid uint
 func (rt *Web) ValidateListID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		listID, err := strconv.Atoi(chi.URLParam(r, "id"))
+		listID, err := strconv.Atoi(trimNonDigits(chi.URLParam(r, "id")))
 		if err != nil {
 			rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
 			return
@@ -68,9 +74,15 @@ func (rt *Web) ValidateListID(next http.Handler) http.Handler {
 // ValidateTagID makes sure the tag ID is a valid uint
 func (rt *Web) ValidateTagID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tagID, err := strconv.Atoi(chi.URLParam(r, "tagid"))
+		tagID, err := strconv.Atoi(trimNonDigits(chi.URLParam(r, "tagid")))
 		if err != nil {
-			rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
+			// Try to also match names
+			tag, err1 := rt.base.TagByName(r.Context(), chi.URLParam(r, "tagid"))
+			if err1 != nil {
+				rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
+				return
+			}
+			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.TagKey, tag)))
 			return
 		}
 		tag, err1 := rt.base.TagByID(r.Context(), tagID)
@@ -96,7 +108,7 @@ func (rt *Web) ValidateProblemVisible(next http.Handler) http.Handler {
 // ValidateContestID makes sure the contest ID is a valid uint
 func (rt *Web) ValidateContestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		contestID, err := strconv.Atoi(chi.URLParam(r, "contestID"))
+		contestID, err := strconv.Atoi(trimNonDigits(chi.URLParam(r, "contestID")))
 		if err != nil {
 			rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
 			return
@@ -124,7 +136,7 @@ func (rt *Web) ValidateContestVisible(next http.Handler) http.Handler {
 // ValidateSubmissionID puts the ID and the Submission in the router context
 func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		subID, err := strconv.Atoi(chi.URLParam(r, "id"))
+		subID, err := strconv.Atoi(trimNonDigits(chi.URLParam(r, "id")))
 		if err != nil {
 			rt.statusPage(w, r, 400, "ID submisie invalid")
 			return
@@ -162,7 +174,7 @@ func (rt *Web) ValidatePasteID(next http.Handler) http.Handler {
 // ValidateAttachmentID makes sure the attachment ID is a valid uint
 func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		attid, err := strconv.Atoi(chi.URLParam(r, "aid"))
+		attid, err := strconv.Atoi(trimNonDigits(chi.URLParam(r, "aid")))
 		if err != nil {
 			http.Error(w, "ID invalid", 400)
 			return
