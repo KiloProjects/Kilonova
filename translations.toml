@@ -1860,6 +1860,10 @@ ro = "Nicio etichetă selectată."
 en = "Must have, for each group, any of the following tags"
 ro = "Trebuie să conțină, pentru fiecare grupă, oricare din etichetele"
 
+[tag_complex_add_group]
+en = "Add tag group"
+ro = "Adăugare grupă etichete"
+
 [tag_complex_group]
 en = "Group %d"
 ro = "Grupul %d"

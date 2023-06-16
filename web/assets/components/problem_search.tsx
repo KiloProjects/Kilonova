@@ -230,6 +230,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 
 	function updateTagMode(newMode: TagFilterMode) {
 		if (newMode == tagFilterMode) return;
+		setTagFilterMode(newMode);
 		if (newMode == "simple") {
 			if (getModeByGroups(query.tags) == "complex") {
 				// It's not possible to turn a complex query into a simple one
@@ -316,7 +317,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 					)}
 					<div class="block my-2">
 						<span class="form-label">{getText("filter_tags")}</span>
-						<select class="form-select" value={tagFilterMode} onChange={(e) => setTagFilterMode(e.currentTarget.value as TagFilterMode)}>
+						<select class="form-select" value={tagFilterMode} onChange={(e) => updateTagMode(e.currentTarget.value as TagFilterMode)}>
 							<option value={"simple"}>{getText("tag_filter_simple_mode")}</option>
 							<option value={"complex"}>{getText("tag_filter_complex_mode")}</option>
 						</select>
@@ -346,7 +347,69 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 								</a>
 							</>
 						) : (
-							<>Work in progress</>
+							<div class="block my-2 reset-list">
+								<span class="form-label">{getText("tag_complex_explainer")}:</span>
+								<ul>
+									{query.tags.map((val, idx) => (
+										<li>
+											<span
+												onClick={(e) => {
+													e.preventDefault();
+													setQuery({ ...query, tags: query.tags.filter((_, idx1) => idx != idx1) });
+												}}
+												class="light-btn fas fa-xmark text-red-600"
+											></span>{" "}
+											{getText("tag_complex_group", idx + 1)}:{" "}
+											<span
+												onClick={(e) => {
+													e.preventDefault();
+													setQuery({
+														...query,
+														tags: query.tags.map((val, idx1) => {
+															if (idx != idx1) return val;
+															return { negate: !val.negate, tag_ids: val.tag_ids };
+														}),
+													});
+												}}
+												class="light-btn px-2"
+											>
+												!
+											</span>{" "}
+											{val.negate && getText("tag_complex_not")}{" "}
+											{val.tag_ids.map((id) => (
+												<TagView tag={tags.find((t) => t.id == id)!} link={false} />
+											))}
+										</li>
+									))}
+									<li>
+										<a
+											class="mx-1"
+											href="#"
+											onClickCapture={(e) => {
+												e.preventDefault();
+												selectTags([], false).then((rez) => {
+													if (rez.updated && rez.tags.length > 0) {
+														let missingTags: Tag[] = [];
+														rez.tags.forEach((t) => {
+															if (!tags.some((tag) => tag.id == t.id)) missingTags.push(t);
+														});
+														if (missingTags.length > 0) {
+															setTags([...tags, ...missingTags]);
+														}
+														console.log(tags);
+														setQuery({
+															...query,
+															tags: [...query.tags, { negate: false, tag_ids: rez.tags.map((t) => t.id) }],
+														});
+													}
+												});
+											}}
+										>
+											<i class="fas fa-pen-to-square"></i> {getText("tag_complex_add_group")}
+										</a>
+									</li>
+								</ul>
+							</div>
 						)}
 					</div>
 				</div>
