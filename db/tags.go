@@ -49,7 +49,7 @@ func (s *DB) TagsByType(ctx context.Context, tagType kilonova.TagType) ([]*kilon
 func (s *DB) RelevantTags(ctx context.Context, tagID int, max int) ([]*kilonova.Tag, error) {
 	var tags []*kilonova.Tag
 	if max <= 0 {
-		max = 5
+		max = 10
 	}
 	err := s.conn.SelectContext(ctx, &tags, `
 	WITH rel_tag_ids AS (

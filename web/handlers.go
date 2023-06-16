@@ -219,7 +219,7 @@ func (rt *Web) tag() http.HandlerFunc {
 			pbs = nil
 		}
 
-		relevantTags, err := rt.base.RelevantTags(r.Context(), util.Tag(r).ID, 10)
+		relevantTags, err := rt.base.RelevantTags(r.Context(), util.Tag(r).ID, 15)
 		if err != nil {
 			zap.S().Warn("Couldn't fetch relevant tags: ", err)
 			relevantTags = nil
