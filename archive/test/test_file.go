@@ -17,6 +17,11 @@ var (
 func getTestID(name string) (int, *kilonova.StatusError) {
 	var tid int
 	if _, err := fmt.Sscanf(name, "%d-", &tid); err != nil {
+		// check grader_test%d format
+		if _, err = fmt.Sscanf(name, "grader_test%d", &tid); err == nil {
+			return tid, nil
+		}
+
 		// maybe it's problem_name.%d.{in,sol,out} format
 		nm := strings.Split(strings.TrimSuffix(name, path.Ext(name)), ".")
 		if len(nm) == 0 {
