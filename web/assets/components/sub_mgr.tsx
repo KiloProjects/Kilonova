@@ -185,10 +185,10 @@ function SubCode({ sub, codeHTML }: { sub: FullSubmission; codeHTML: string }) {
 }
 
 function verdictString(verdict: string): string {
-	if (verdict.startsWith("translate:")) {
-		return maybeGetText(verdict.replace("translate:", "test_verdict."));
-	}
-	return verdict;
+	return verdict.replace(/translate:([a-z]+)/g, (substr, p1) => {
+		console.log(substr, p1);
+		return maybeGetText("test_verdict." + p1);
+	});
 }
 
 export function TestTable({ subtests, subtasks, problem_editor }: { subtests: SubTest[]; subtasks: SubmissionSubTask[]; problem_editor: boolean }) {
