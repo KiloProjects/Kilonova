@@ -379,6 +379,37 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 											{val.tag_ids.map((id) => (
 												<TagView tag={tags.find((t) => t.id == id)!} link={false} />
 											))}
+											<a
+												class="mx-1"
+												href="#"
+												onClickCapture={(e) => {
+													e.preventDefault();
+													selectTags(
+														val.tag_ids.map((id) => tags.find((t) => t.id == id)!),
+														false
+													).then((rez) => {
+														if (rez.updated && rez.tags.length > 0) {
+															let missingTags: Tag[] = [];
+															rez.tags.forEach((t) => {
+																if (!tags.some((tag) => tag.id == t.id)) missingTags.push(t);
+															});
+															if (missingTags.length > 0) {
+																setTags([...tags, ...missingTags]);
+															}
+															console.log(tags);
+															setQuery({
+																...query,
+																tags: query.tags.map((val, idx1) => {
+																	if (idx != idx1) return val;
+																	return { negate: val.negate, tag_ids: rez.tags.map((t) => t.id) };
+																}),
+															});
+														}
+													});
+												}}
+											>
+												<i class="fas fa-pen-to-square"></i> {getText("update_tags")}
+											</a>
 										</li>
 									))}
 									<li>
