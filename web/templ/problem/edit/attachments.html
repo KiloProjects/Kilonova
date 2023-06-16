@@ -9,6 +9,18 @@
         min-height: 250px;
     }
 </style>
+<script>
+var pbid = {{ .Problem.ID }}, rowreg = /row-att-([0-9]+)/;
+function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
+    if(name.startsWith("checker") || name.startsWith("grader")) {
+        if(cPrivate.checked === false || cExec.checked === false) {
+            bundled.createToast({status: "info", description: bundled.getText("att_suggest_text")})
+        }
+        cPrivate.checked = true
+        cExec.checked = true
+    }
+}
+</script>
 <div class="page-holder">
     <div class="page-content-wrapper">
         <div class="segment-panel">
@@ -82,6 +94,70 @@
             {{ end }}
         </div>
 
+        <script>
+
+            const mgr = new bundled.CheckboxManager(document.getElementById("selectAllBox"), document.querySelectorAll("[id^='pb-att-']"))
+
+            async function deleteAttachments() {
+                var attachments = [];
+                for (let e of document.querySelectorAll("[id^='row-att-']")) {
+                    let id = parseInt(rowreg.exec(e.id)[1]);
+                    if (isNaN(id)) {
+                        console.error("id is somehow NaN", e.id)
+                        continue
+                    }
+                    let checked = document.getElementById(`pb-att-${id}`).checked;
+                    if (checked) {
+                        attachments.push(id);
+                    }
+                }
+                if(attachments.length == 0) {
+                    return;
+                }
+                if(attachments.length == 1) {
+                    if(!(await bundled.confirm(bundled.getText("oneAttachmentDeleteConfirm")))) {
+                        return
+                    }
+                } else if(!(await bundled.confirm(bundled.getText("attachmentDeleteConfirm", attachments.length)))) {
+                    return
+                }
+                let res = await bundled.bodyCall("/problem/{{.Problem.ID}}/update/bulkDeleteAttachments", attachments)
+                if (res.status === "success") {
+                    window.location.reload();
+                    return;
+                }
+                bundled.apiToast(res)
+            }
+
+            async function updateAttachments() {
+                var atts = {};
+                for (let e of document.querySelectorAll("[id^='row-att-']")) {
+                    let id = parseInt(rowreg.exec(e.id)[1]);
+                    if (isNaN(id)) {
+                        console.error("id is somehow NaN", e.id)
+                        continue
+                    }
+                    let visible = document.getElementById(`visible-att-${id}`).checked;
+                    let private = document.getElementById(`private-att-${id}`).checked;
+                    let exec = document.getElementById(`exec-att-${id}`).checked;
+                    atts[id] = { visible, private, exec }
+                }
+                let res = await bundled.bodyCall("/problem/{{.Problem.ID}}/update/bulkUpdateAttachmentInfo", atts)
+                bundled.apiToast(res)
+            }
+
+            function prettifyAttachments() {
+                for (let el of document.querySelectorAll("[id^='name-att-'] > a")) {
+                    el.innerHTML = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerText}`
+                }
+                for (let el of document.querySelectorAll("[id^='size-att-']")) {
+                    el.innerText = bundled.sizeFormatter(Number(el.innerText))
+                }
+            }
+            prettifyAttachments()
+
+        </script>
+
         <div class="segment-panel hidden" id="editAttView">
             <h2 class="inline-block mb-2">{{getText "edit_attachment"}} <code id="ediAttNameView"></code></h2>
             <form id="editAttForm" autocomplete="off">
@@ -94,6 +170,77 @@
                 <button type="submit" class="btn btn-blue">{{getText "button.update"}}</button>
             </form>
         </div>
+        <script>
+            var editCM = CodeMirror.fromTextArea(document.getElementById("attEditContent"), {
+                mode: "text/plain",
+            });
+            // editCM.setSize(null, "100%");
+            document.getElementById("addDetails").addEventListener("toggle", () => {
+                editCM.refresh()
+            })
+            
+            async function editAttachment(e) {
+                e.preventDefault();
+                let content = editCM.getValue();
+                let filename = document.getElementById("editAttName").value;
+        
+                let form = new FormData();
+                form.append("data", new File([content], filename, {type: "text/plain"}));
+                form.append("id", document.getElementById("editAttID").value)
+        
+                let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/attachmentData", form)
+                bundled.apiToast(res);
+            };
+        
+            async function initAttEdit(id) {
+                const rez = await bundled.getCall("/problem/{{.Problem.ID}}/get/attachment/"+id)
+                if(rez.status !== "success") {
+                    bundled.apiToast(rez)
+                    return
+                }
+        
+                const mimetype = rez.data.mime_type
+                if(mimetype.includes("image")) {
+                    bundled.apiToast({status: "error", data: "Cannot edit images using editor!"})
+                    return
+                }
+                if(mimetype.includes("archive")) {
+                    bundled.apiToast({status: "error", data: "Cannot edit archives using editor!"})
+                    return
+                }
+                if(mimetype.includes("pdf")) {
+                    bundled.apiToast({status: "error", data: "Cannot edit PDF files using editor!"})
+                    return
+                }
+        
+                document.getElementById("addDetails").open = false
+                document.getElementById("editAttID").value = id
+                document.getElementById("editAttName").value = rez.data.metadata.name
+                document.getElementById("ediAttNameView").innerText = rez.data.metadata.name
+                editCM.setValue(bundled.fromBase64(rez.data.data))
+                editCM.setOption("mode", bundled.get_cm_mode(rez.data.metadata.name));
+        
+                document.getElementById("editAttView").classList.toggle("hidden", false);
+                editCM.refresh();
+            }
+        
+            function toggleEdit(id) {
+                if(document.getElementById("editAttID").value == id) {
+                    closeAttEdit();
+                } else {
+                    initAttEdit(id)
+                }
+            }
+        
+            async function closeAttEdit() {
+                document.getElementById("editAttView").classList.toggle("hidden", true);
+                document.getElementById("editAttID").value = ""
+                document.getElementById("editAttName").value = ""
+                editCM.setValue("")
+            }
+        
+            document.getElementById("editAttForm").addEventListener("submit", editAttachment)
+        </script>
 
         <details class="segment-panel" id="addDetails">
             <summary>
@@ -123,6 +270,53 @@
                 <button type="submit" class="btn btn-blue">{{getText "button.add"}}</button>
             </form>
         </details>
+        <script>
+            var addCM = CodeMirror.fromTextArea(document.getElementById("attCreateContent"), {
+                mode: "text/plain",
+            });
+            addCM.setSize(null, "100%");
+            document.getElementById("addDetails").addEventListener("toggle", () => {
+                addCM.refresh()
+            })
+            document.getElementById("attCreateName").addEventListener("input", e => {
+                let newMode = bundled.get_cm_mode(e.target.value);
+                console.log(newMode)
+                if(addCM.getOption("mode") !== newMode) {
+                    addCM.setOption("mode", newMode)
+                }
+
+                updateAttFlagsFromName(
+                    e.target.value,
+                    document.getElementById("attCreateVisible"),
+                    document.getElementById("attCreatePrivate"),
+                    document.getElementById("attCreateExec"),
+                )
+            })
+            
+            async function createNewAttachment(e) {
+                e.preventDefault();
+                let content = addCM.getValue();
+                let filename = document.getElementById("attCreateName").value;
+        
+                let form = new FormData();
+                form.append("data", new File([content], filename, {type: "text/plain"}));
+        
+        
+                form.append("visible", document.getElementById("attCreateVisible").checked);
+                form.append("private", document.getElementById("attCreatePrivate").checked);
+                form.append("exec", document.getElementById("attCreateExec").checked);
+        
+                let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/addAttachment", form)
+                if (res.status !== "success") {
+                    bundled.apiToast(res);
+                    return
+                }
+                window.location.reload();
+            };
+        
+        
+            document.getElementById("addAttForm").addEventListener("submit", createNewAttachment)
+        </script>
 
     </div>
     <div class="page-sidebar">
@@ -131,6 +325,10 @@
             <label class="block my-2">
                 <span class="mr-2 text-xl">{{getText "file"}}: </span>
                 <input class="form-input" id="attFile" type="file" required multiple/>
+            </label>
+            <label id="attUploadNameLabel" class="block my-2">
+                <span class="mr-2 text-xl">{{getText "name"}}: </span>
+                <input class="form-input" id="attUploadName" type="text" />
             </label>
             <label class="block my-2">
                 <input class="form-checkbox" id="attUploadPrivate" type="checkbox" />
@@ -146,229 +344,73 @@
             </label>
             <button type="submit" class="btn btn-blue">{{getText "button.upload"}}</button>
         </form>
+        <script>
+            document.getElementById("attUploadPrivate").addEventListener("change", (e) => {
+                if (e.target.checked === true) {
+                    document.getElementById("visibleUploadLabel").style.display = "none"
+                } else {
+                    document.getElementById("visibleUploadLabel").style.display = null
+                }
+            })
+            document.getElementById("attCreatePrivate").addEventListener("change", (e) => {
+                if (e.target.checked === true) {
+                    document.getElementById("visibleCreateLabel").style.display = "none"
+                } else {
+                    document.getElementById("visibleCreateLabel").style.display = null
+                }
+            })
+            document.getElementById("attUploadNameLabel").classList.add("hidden")
+            function updateAttFlags(newName) {
+                updateAttFlagsFromName(
+                    newName,
+                    document.getElementById("attUploadVisible"),
+                    document.getElementById("attUploadPrivate"),
+                    document.getElementById("attUploadExec"),
+                )
+            }
+            document.getElementById("attUploadName").addEventListener("input", e => updateAttFlags(e.target.value))
+            document.getElementById("attFile").addEventListener("input", e => {
+                document.getElementById("attUploadNameLabel").classList.toggle("hidden", e.target.files.length !== 1);
+                if(e.target.files.length !== 1) {
+                    return
+                }
+                document.getElementById("attUploadName").value = e.target.files[0].name
+                updateAttFlags(e.target.files[0].name)
+            })
+
+            async function uploadAttachment(e) {
+                e.preventDefault()
+                let files = document.getElementById("attFile").files;
+                if (files === null || files.length == 0) {
+                    bundled.createToast({ status: "error", title: bundled.getText("noFiles") });
+                    return
+                }
+                const fname = document.getElementById("attUploadName").value;
+                if(files.length === 1 && fname.length === 0) {
+                    bundled.createToast({status: "error", title: "Invalid name"})
+                    return
+                }
+                for(let file of files) {
+                    bundled.apiToast({status: "info", data: `Uploading ${file.name}`});
+                    let form = new FormData();
+                    form.append("data", file, (files.length === 1 ? fname : undefined));
+
+                    form.append("visible", document.getElementById("attUploadVisible").checked);
+                    form.append("private", document.getElementById("attUploadPrivate").checked);
+                    form.append("exec", document.getElementById("attUploadExec").checked);
+            
+                    let res = await bundled.multipartProgressCall("/problem/{{.Problem.ID}}/update/addAttachment", form)
+                    if (res.status !== "success") {
+                        bundled.apiToast(res);
+                        return
+                    }
+                }
+                window.location.reload();
+            }
+
+            document.getElementById("attCreate").addEventListener("submit", uploadAttachment)
+        </script>
     </div>
 </div>
-
-<script>
-    var editCM = CodeMirror.fromTextArea(document.getElementById("attEditContent"), {
-        mode: "text/plain",
-    });
-    // editCM.setSize(null, "100%");
-    document.getElementById("addDetails").addEventListener("toggle", () => {
-        editCM.refresh()
-    })
-    
-    async function editAttachment(e) {
-        e.preventDefault();
-        let content = editCM.getValue();
-        let filename = document.getElementById("editAttName").value;
-
-        let form = new FormData();
-        form.append("data", new File([content], filename, {type: "text/plain"}));
-        form.append("id", document.getElementById("editAttID").value)
-
-        let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/attachmentData", form)
-        bundled.apiToast(res);
-    };
-
-    async function initAttEdit(id) {
-        const rez = await bundled.getCall("/problem/{{.Problem.ID}}/get/attachment/"+id)
-        if(rez.status !== "success") {
-            bundled.apiToast(rez)
-            return
-        }
-
-        const mimetype = rez.data.mime_type
-        if(mimetype.includes("image")) {
-            bundled.apiToast({status: "error", data: "Cannot edit images using editor!"})
-            return
-        }
-        if(mimetype.includes("archive")) {
-            bundled.apiToast({status: "error", data: "Cannot edit archives using editor!"})
-            return
-        }
-        if(mimetype.includes("pdf")) {
-            bundled.apiToast({status: "error", data: "Cannot edit PDF files using editor!"})
-            return
-        }
-
-        document.getElementById("addDetails").open = false
-        document.getElementById("editAttID").value = id
-        document.getElementById("editAttName").value = rez.data.metadata.name
-        document.getElementById("ediAttNameView").innerText = rez.data.metadata.name
-        editCM.setValue(bundled.fromBase64(rez.data.data))
-        editCM.setOption("mode", bundled.get_cm_mode(rez.data.metadata.name));
-
-        document.getElementById("editAttView").classList.toggle("hidden", false);
-        editCM.refresh();
-    }
-
-    function toggleEdit(id) {
-        if(document.getElementById("editAttID").value == id) {
-            closeAttEdit();
-        } else {
-            initAttEdit(id)
-        }
-    }
-
-    async function closeAttEdit() {
-        document.getElementById("editAttView").classList.toggle("hidden", true);
-        document.getElementById("editAttID").value = ""
-        document.getElementById("editAttName").value = ""
-        editCM.setValue("")
-    }
-
-    document.getElementById("editAttForm").addEventListener("submit", editAttachment)
-</script>
-
-<script>
-    var addCM = CodeMirror.fromTextArea(document.getElementById("attCreateContent"), {
-        mode: "text/plain",
-    });
-    addCM.setSize(null, "100%");
-    document.getElementById("addDetails").addEventListener("toggle", () => {
-        addCM.refresh()
-    })
-    document.getElementById("attCreateName").addEventListener("input", e => {
-        let newMode = bundled.get_cm_mode(e.target.value);
-        console.log(newMode)
-        if(addCM.getOption("mode") !== newMode) {
-            addCM.setOption("mode", newMode)
-        }
-    })
-    
-    async function createNewAttachment(e) {
-        e.preventDefault();
-        let content = addCM.getValue();
-        let filename = document.getElementById("attCreateName").value;
-
-        let form = new FormData();
-        form.append("data", new File([content], filename, {type: "text/plain"}));
-
-
-        form.append("visible", document.getElementById("attCreateVisible").checked);
-        form.append("private", document.getElementById("attCreatePrivate").checked);
-        form.append("exec", document.getElementById("attCreateExec").checked);
-
-        let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/addAttachment", form)
-        if (res.status !== "success") {
-            bundled.apiToast(res);
-            return
-        }
-        window.location.reload();
-    };
-
-
-    document.getElementById("addAttForm").addEventListener("submit", createNewAttachment)
-</script>
-
-<script>
-    var pbid = {{ .Problem.ID }}, rowreg = /row-att-([0-9]+)/;
-
-    const mgr = new bundled.CheckboxManager(document.getElementById("selectAllBox"), document.querySelectorAll("[id^='pb-att-']"))
-
-    async function deleteAttachments() {
-        var attachments = [];
-        for (let e of document.querySelectorAll("[id^='row-att-']")) {
-            let id = parseInt(rowreg.exec(e.id)[1]);
-            if (isNaN(id)) {
-                console.error("id is somehow NaN", e.id)
-                continue
-            }
-            let checked = document.getElementById(`pb-att-${id}`).checked;
-            if (checked) {
-                attachments.push(id);
-            }
-        }
-        if(attachments.length == 0) {
-            return;
-        }
-        if(attachments.length == 1) {
-            if(!(await bundled.confirm(bundled.getText("oneAttachmentDeleteConfirm")))) {
-                return
-            }
-        } else if(!(await bundled.confirm(bundled.getText("attachmentDeleteConfirm", attachments.length)))) {
-            return
-        }
-        let res = await bundled.bodyCall("/problem/{{.Problem.ID}}/update/bulkDeleteAttachments", attachments)
-        if (res.status === "success") {
-            window.location.reload();
-            return;
-        }
-        bundled.apiToast(res)
-    }
-
-    async function updateAttachments() {
-        var atts = {};
-        for (let e of document.querySelectorAll("[id^='row-att-']")) {
-            let id = parseInt(rowreg.exec(e.id)[1]);
-            if (isNaN(id)) {
-                console.error("id is somehow NaN", e.id)
-                continue
-            }
-            let visible = document.getElementById(`visible-att-${id}`).checked;
-            let private = document.getElementById(`private-att-${id}`).checked;
-            let exec = document.getElementById(`exec-att-${id}`).checked;
-            atts[id] = { visible, private, exec }
-        }
-        let res = await bundled.bodyCall("/problem/{{.Problem.ID}}/update/bulkUpdateAttachmentInfo", atts)
-        bundled.apiToast(res)
-    }
-
-    function prettifyAttachments() {
-        for (let el of document.querySelectorAll("[id^='name-att-'] > a")) {
-            el.innerHTML = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerText}`
-        }
-        for (let el of document.querySelectorAll("[id^='size-att-']")) {
-            el.innerText = bundled.sizeFormatter(Number(el.innerText))
-        }
-    }
-    prettifyAttachments()
-
-</script>
-
-<script>
-    document.getElementById("attUploadPrivate").addEventListener("change", (e) => {
-        if (e.target.checked === true) {
-            document.getElementById("visibleUploadLabel").style.display = "none"
-        } else {
-            document.getElementById("visibleUploadLabel").style.display = null
-        }
-    })
-    document.getElementById("attCreatePrivate").addEventListener("change", (e) => {
-        if (e.target.checked === true) {
-            document.getElementById("visibleCreateLabel").style.display = "none"
-        } else {
-            document.getElementById("visibleCreateLabel").style.display = null
-        }
-    })
-
-    async function uploadAttachment(e) {
-        e.preventDefault()
-        let files = document.getElementById("attFile").files;
-        if (files === null || files.length == 0) {
-            bundled.createToast({ status: "error", title: '{{getText "noFiles"}}' });
-            return
-        }
-        for(let file of files) {
-            bundled.apiToast({status: "info", data: `Uploading ${file.name}`});
-            let form = new FormData();
-            form.append("data", file);
-
-            form.append("visible", document.getElementById("attUploadVisible").checked);
-            form.append("private", document.getElementById("attUploadPrivate").checked);
-            form.append("exec", document.getElementById("attUploadExec").checked);
-    
-            let res = await bundled.multipartProgressCall("/problem/{{.Problem.ID}}/update/addAttachment", form)
-            if (res.status !== "success") {
-                bundled.apiToast(res);
-                return
-            }
-        }
-        window.location.reload();
-    }
-
-    document.getElementById("attCreate").addEventListener("submit", uploadAttachment)
-</script>
 
 {{ end }}

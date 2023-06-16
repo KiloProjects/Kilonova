@@ -1931,3 +1931,7 @@ ro = "Limita de timp depășită (wall clock)"
 [test_verdict.internal_error]
 en = "Internal error"
 ro = "Eroare internă"
+
+[att_suggest_text]
+en = "Autocompleting attachment flags with suggested values..."
+ro = "Se autocompletează proprietățile cu valori sugerate..."

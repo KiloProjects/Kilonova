@@ -196,7 +196,7 @@ export function TestTable({ subtests, subtasks, problem_editor }: { subtests: Su
 		let stks: number[] = [];
 		for (let st of subtasks) {
 			if (st.subtests.includes(subtestID)) {
-				stks.push(st.visible_id as number);
+				stks.push(st.visible_id);
 			}
 		}
 		return stks;
