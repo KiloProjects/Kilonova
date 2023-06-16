@@ -17,7 +17,10 @@ function getVal(key: string, maybe: boolean = false): translation | null {
 		return null;
 	}
 	for (const sub of vals) {
-		if (current[sub]["ro"] !== undefined) {
+		if(typeof current[sub] === 'undefined') {
+			return null
+		}
+		if (typeof current[sub]["ro"] !== 'undefined') {
 			return current[sub];
 		}
 		current = current[sub];
