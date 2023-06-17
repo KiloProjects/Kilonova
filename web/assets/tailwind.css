@@ -115,8 +115,12 @@
 		@apply kn-table-simple;
 	}
 
-	.enhance-tables table td {
+	.enhance-tables table td:not([align]) {
 		@apply kn-table-cell;
+	}
+
+	.enhance-tables table td[align] {
+		@apply kn-table-cell-notext;
 	}
 
 	.enhance-tables table th {
