@@ -2,19 +2,19 @@ Se dau două numere întregi $a$ și $b$. Să se calculeze suma celor două nume
 
 # Date de intrare
 
-{{if eq .InputFile "stdin"}}
+{{if eq .InputFile "stdin" -}}
 Pe prima linie se găsesc două numere întregi, $a$ și $b$.
-{{else}}
+{{- else -}}
 Pe prima linie a fișierului de intrare `{{.InputFile}}` se găsesc două numere întregi, $a$ și $b$.
-{{end}}
+{{- end}}
 
 # Date de ieșire
 
-{{if eq .OutputFile "stdout"}}
+{{if eq .OutputFile "stdout" -}}
 Pe prima linie se va găsi un singur număr întreg, suma celor două numere.
-{{else}}
+{{- else -}}
 Pe prima linie a fișierului de ieșire `{{.OutputFile}}` se va găsi un singur număr întreg, suma celor două numere.
-{{end}}
+{{- end}}
 
 # Restricții și precizări
 
