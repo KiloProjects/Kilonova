@@ -1780,6 +1780,50 @@ ro = "din"
 en = 'This was the problem page during the contest. <a id="pb_link_rewrite_a" href="#">Access the current page here</a>.'
 ro = 'Aceasta a fost pagina problemei în timpul concursului. <a id="pb_link_rewrite_a" href="#">Accesează pagina curentă aici</a>.'
 
+[problem_checklist]
+en = "Problem checklist"
+ro = "Verificări problemă"
+
+[checklist_required]
+en = "Required items"
+ro = "Elemente necesare"
+
+[checklist_md]
+en = "Markdown statement"
+ro = "Enunț în format markdown"
+
+[checklist_tests]
+en = "Some tests (%d currently)"
+ro = "Câteva teste (%d în acest moment)"
+
+[checklist_author_tags]
+en = "Author tag (even if you are the author)"
+ro = "Etichetă cu autor (chiar dacă tu ești autorul)"
+
+[checklist_other_tags]
+en = "Other tags"
+ro = "Alte etichete"
+
+[checklist_solutions]
+en = "A 100 point solution"
+ro = "O soluție de 100 de puncte"
+
+[checklist_contest_required]
+en = "If problem is/was from a contest, the following are strongly recommended"
+ro = "Dacă problema este/a fost la un concurs, următoarele sunt foarte recomandate:"
+
+[checklist_pdf]
+en = "PDF statement, from contest"
+ro = "Enunț în format PDF, de la concurs"
+
+[checklist_optional]
+en = "Optional, check if it's required in your case"
+ro = "Opționale, verifică dacă este necesar în cazul tău"
+
+[checklist_subtasks]
+en = "Subtasks (%d currently)"
+ro = "Subtaskuri (%d în acest moment)"
+
 [tags]
 en = "Tags"
 ro = "Etichete"

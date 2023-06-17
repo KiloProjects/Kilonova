@@ -1,6 +1,12 @@
 package db
 
-import "context"
+import (
+	"context"
+	"errors"
+
+	"github.com/KiloProjects/kilonova"
+	"github.com/jackc/pgx/v5"
+)
 
 // Functions that interact with views and functions
 
@@ -43,4 +49,13 @@ func (s *DB) IsContestViewer(ctx context.Context, contestID, userID int) (bool, 
 func (s *DB) RefreshProblemStats(ctx context.Context) error {
 	_, err := s.pgconn.Exec(ctx, "REFRESH MATERIALIZED VIEW problem_statistics")
 	return err
+}
+
+func (s *DB) ProblemChecklist(ctx context.Context, problemID int) (*kilonova.ProblemChecklist, error) {
+	rows, _ := s.pgconn.Query(ctx, "SELECT * FROM problem_checklist WHERE problem_id = $1 LIMIT 1", problemID)
+	chk, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[kilonova.ProblemChecklist])
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	return chk, nil
 }

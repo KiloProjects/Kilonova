@@ -294,6 +294,14 @@ func (s *BaseAPI) ProblemViewers(ctx context.Context, pbid int) ([]*kilonova.Use
 	return mapUsersBrief(users), nil
 }
 
+func (s *BaseAPI) ProblemChecklist(ctx context.Context, pbid int) (*kilonova.ProblemChecklist, *StatusError) {
+	chk, err := s.db.ProblemChecklist(ctx, pbid)
+	if err != nil || chk == nil {
+		return nil, WrapError(err, "Couldn't get problem checklist")
+	}
+	return chk, nil
+}
+
 type ProblemStatistics struct {
 	NumSolved    int `json:"num_solved"`
 	NumAttempted int `json:"num_attempted"`

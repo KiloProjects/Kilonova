@@ -154,3 +154,19 @@ type ProblemEvalSettings struct {
 	// If problem has ".output_only" attachment, show only outputOnly language as option
 	OutputOnly bool `bool:"output_only"`
 }
+
+type ProblemChecklist struct {
+	ProblemID        int  `json:"problem_id" db:"problem_id"`
+	HasSourceCredits bool `json:"has_source_credits" db:"has_source"`
+
+	NumPDF      int `json:"num_pdf_files" db:"num_pdf"`
+	NumMarkdown int `json:"num_md_files" db:"num_md"`
+
+	NumTests    int `json:"num_tests" db:"num_tests"`
+	NumSubtasks int `json:"num_subtasks" db:"num_subtasks"`
+
+	NumAuthorTags int `json:"num_author_tags" db:"num_authors"`
+	NumOtherTags  int `json:"num_other_tags" db:"num_other_tags"`
+
+	NumSolutions int `json:"num_sols" db:"num_sols"`
+}

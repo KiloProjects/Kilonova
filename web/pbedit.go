@@ -22,6 +22,8 @@ type ProblemEditParams struct {
 	Problem *kilonova.Problem
 	Topbar  *EditTopbar
 
+	Checklist *kilonova.ProblemChecklist
+
 	Attachments []*kilonova.Attachment
 
 	StatementLang string
@@ -32,10 +34,16 @@ type ProblemEditParams struct {
 func (rt *Web) editIndex() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/index.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
+		chk, err := rt.base.ProblemChecklist(r.Context(), util.Problem(r).ID)
+		if err != nil {
+			chk = nil
+		}
 		rt.runTempl(w, r, tmpl, &ProblemEditParams{
 			Ctx:     GenContext(r),
 			Problem: util.Problem(r),
 			Topbar:  rt.topbar(r, "general", -1),
+
+			Checklist: chk,
 		})
 	}
 }
