@@ -20,6 +20,9 @@ func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) *StatusError {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't reset submissions")
 	}
+
+	// Wake grader to start processing immediately
+	s.WakeGrader()
 	return nil
 }
 
@@ -41,6 +44,9 @@ func (s *BaseAPI) ResetSubmission(ctx context.Context, id int) *StatusError {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't update submission's subtasks")
 	}
+
+	// Wake grader to start processing immediately
+	s.WakeGrader()
 
 	return nil
 }
@@ -183,4 +189,14 @@ func (s *BaseAPI) refreshProblemStatsJob(ctx context.Context, interval time.Dura
 			s.db.RefreshProblemStats(ctx)
 		}
 	}
+}
+
+func (s *BaseAPI) WakeGrader() {
+	if s.grader != nil {
+		s.grader.Wake()
+	}
+}
+
+func (s *BaseAPI) RegisterGrader(gr interface{ Wake() }) {
+	s.grader = gr
 }

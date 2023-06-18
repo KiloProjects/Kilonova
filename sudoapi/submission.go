@@ -321,6 +321,9 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 		return -1, Statusf(500, "Failed to create submission")
 	}
 
+	// Wake immediately to grade submission
+	s.WakeGrader()
+
 	return id, nil
 }
 
@@ -338,6 +341,9 @@ func (s *BaseAPI) ResetProblemSubmissions(ctx context.Context, problem *kilonova
 		return WrapError(err, "Couldn't reset submissions")
 	}
 	s.LogUserAction(ctx, "Reset submissions for problem #%d: %s", problem.ID, problem.Name)
+
+	// Wake grader to start processing immediately
+	s.WakeGrader()
 	return nil
 }
 

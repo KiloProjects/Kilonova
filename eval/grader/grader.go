@@ -2,12 +2,9 @@ package grader
 
 import (
 	"context"
-	"errors"
 	"math"
-	"os"
 	"path"
 	"sync"
-	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
@@ -20,18 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	True          = true
-	waitingSubs   = kilonova.SubmissionFilter{Status: kilonova.StatusWaiting, Ascending: true, Limit: 20}
-	workingUpdate = kilonova.SubmissionUpdate{Status: kilonova.StatusWorking}
-
-	// If future me is running multiple grader handlers
-	// I have only one question: "Why are you doing it?"
-	openAction   sync.Once
-	closeAction  sync.Once
-	logFile      *os.File
-	graderLogger *zap.SugaredLogger
-)
+var True = true
 
 func genSubCompileRequest(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submission, pb *kilonova.Problem, settings *kilonova.ProblemEvalSettings) (*eval.CompileRequest, *kilonova.StatusError) {
 	req := &eval.CompileRequest{
@@ -377,101 +363,4 @@ func getAppropriateChecker(ctx context.Context, base *sudoapi.BaseAPI, runner ev
 		}
 		return checkers.NewStandardCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data), nil
 	}
-}
-
-type Handler struct {
-	ctx   context.Context
-	sChan chan *kilonova.Submission
-	base  *sudoapi.BaseAPI
-}
-
-func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, *kilonova.StatusError) {
-	ch := make(chan *kilonova.Submission, 1)
-
-	openAction.Do(func() {
-		var err error
-		logFile, err = os.OpenFile(path.Join(config.Common.LogDir, "grader.log"), os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-		if err != nil {
-			zap.S().Fatal("Could not open grader.log for writing")
-		}
-		graderLogger = zap.New(kilonova.GetZapCore(config.Common.Debug, false, logFile), zap.AddCaller()).Sugar()
-	})
-
-	return &Handler{ctx, ch, base}, nil
-}
-
-// chFeeder "feeds" tChan with relevant data
-func (h *Handler) chFeeder(d time.Duration) {
-	ticker := time.NewTicker(d)
-	for {
-		select {
-		case <-ticker.C:
-			subs, err := h.base.RawSubmissions(h.ctx, waitingSubs)
-			if err != nil {
-				zap.S().Warn(err)
-				continue
-			}
-			if len(subs) > 0 {
-				graderLogger.Infof("Found %d submissions", len(subs))
-
-				for _, sub := range subs {
-					sub := sub
-					h.sChan <- sub
-				}
-
-			}
-		case <-h.ctx.Done():
-			ticker.Stop()
-			return
-		}
-	}
-}
-
-func (h *Handler) handle(runner eval.BoxScheduler) error {
-	for {
-		select {
-		case <-h.ctx.Done():
-			if !errors.Is(h.ctx.Err(), context.Canceled) {
-				return h.ctx.Err()
-			}
-			return nil
-		case sub, more := <-h.sChan:
-			if !more {
-				return nil
-			}
-			if err := h.base.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
-				zap.S().Warn(err)
-				continue
-			}
-			if err := executeSubmission(h.ctx, h.base, runner, sub); err != nil {
-				zap.S().Warn("Couldn't run submission: ", err)
-			}
-		}
-	}
-}
-
-func (h *Handler) Start() error {
-	runner, err := getAppropriateRunner(h.base)
-	if err != nil {
-		return err
-	}
-
-	go h.chFeeder(2 * time.Second)
-
-	defer runner.Close(h.ctx)
-	zap.S().Info("Connected to eval")
-
-	if err = h.handle(runner); err != nil {
-		zap.S().Error("Handling error:", zap.Error(err))
-		return err
-	}
-	return nil
-}
-
-func (h *Handler) Close() {
-	closeAction.Do(func() {
-		if err := logFile.Close(); err != nil {
-			zap.S().Warn("Error closing grader.log:", err)
-		}
-	})
 }
