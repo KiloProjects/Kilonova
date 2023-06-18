@@ -105,7 +105,7 @@ func CompileFile(ctx context.Context, box Sandbox, files map[string][]byte, comp
 		}
 	}
 
-	return combinedOut, box.RemoveFile(language.SourceName)
+	return combinedOut, nil
 }
 
 func MakeGoodCompileCommand(command []string, files []string) ([]string, error) {

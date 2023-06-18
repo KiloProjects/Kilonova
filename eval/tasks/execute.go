@@ -56,7 +56,7 @@ func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Tas
 				resp.Comments = "translate:timeout"
 			}
 		case "RE":
-			resp.Comments = "Runtime Error: " + meta.Message
+			resp.Comments = meta.Message
 		case "SG":
 			resp.Comments = meta.Message
 		case "XX":

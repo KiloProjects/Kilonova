@@ -9,7 +9,7 @@ import (
 type Sandbox interface {
 	ReadFile(path string) (io.ReadSeekCloser, error)
 	WriteFile(path string, r io.Reader, mode fs.FileMode) error
-	RemoveFile(path string) error
+	// RemoveFile(path string) error
 	FileExists(path string) bool
 
 	// For debugging that god forsaken no output file found bug

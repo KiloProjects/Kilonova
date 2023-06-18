@@ -199,13 +199,6 @@ func (b *Box) FileExists(fpath string) bool {
 	return true
 }
 
-// RemoveFile tries to remove a created file from inside the sandbox
-func (b *Box) RemoveFile(fpath string) error {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	return os.Remove(b.getFilePath(fpath))
-}
-
 // getFilePath returns a path to the file location on disk of a box file
 func (b *Box) getFilePath(boxpath string) string {
 	return path.Join(b.path, boxpath)
@@ -224,7 +217,7 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	metaFile := path.Join(os.TempDir(), "kn-"+kilonova.RandomString(6))
+	metaFile := path.Join(os.TempDir(), "kn-"+kilonova.RandomString(12))
 	b.metaFile = metaFile
 
 	params := append(b.buildRunFlags(conf), command...)
@@ -260,6 +253,7 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 func newBox(id int, memQuota int64) (*Box, error) {
 	ret, err := exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--init").CombinedOutput()
 	if strings.HasPrefix(string(ret), "Box already exists") {
+
 		exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--cleanup").Run()
 		return newBox(id, memQuota)
 	}
