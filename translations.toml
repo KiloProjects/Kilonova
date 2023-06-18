@@ -535,6 +535,10 @@ ro = "ID"
 en = "Submission ID"
 ro = "ID Submisie"
 
+[pblist_id]
+en = "Problem List ID"
+ro = "ID Listă Probleme"
+
 [score]
 en = "Score"
 ro = "Scor"
@@ -924,6 +928,10 @@ ro = "Creare problemă"
 en = "Create problem list"
 ro = "Creare listă probleme"
 
+[createNestedPbList]
+en = "Create problem list nested here"
+ro = "Creare listă probleme imbricată aici"
+
 [createContest]
 en = "Create contest"
 ro = "Creare concurs"
@@ -939,6 +947,10 @@ ro = "Adăugare enunț implicit"
 [dontCreate]
 en = "Will not create"
 ro = "Nu se va crea"
+
+[addToPblist]
+en = "Add to existing problem list (optional)"
+ro = "Adăugare la listă existentă (opțional)"
 
 [username]
 en = "Username"

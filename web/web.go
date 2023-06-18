@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -363,6 +364,16 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 				return "[Error rendering markdown]"
 			}
 			return template.HTML(val)
+		},
+		"hasField": func(v any, name string) bool {
+			rv := reflect.ValueOf(v)
+			if rv.Kind() == reflect.Ptr {
+				rv = rv.Elem()
+			}
+			if rv.Kind() != reflect.Struct {
+				return false
+			}
+			return rv.FieldByName(name).IsValid()
 		},
 		"safeHTML": func(s string) template.HTML {
 			return template.HTML(s)

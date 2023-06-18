@@ -7,6 +7,7 @@
 {{ define "content" }}
 
 {{ $user := .Ctx.User.Brief }}
+{{ $root := .}}
 
 {{ range pblistParent .ProblemList }}
 
@@ -151,6 +152,9 @@ async function deleteProblemList(e) {
 document.getElementById("pblist-update").addEventListener("submit", updateProblemList)
 document.getElementById("delButton").addEventListener("click", deleteProblemList);
 </script>
+
+{{ template "createpblist.html" $root}}
+
 	{{ end }}
 	{{ end }}
 {{ end }}

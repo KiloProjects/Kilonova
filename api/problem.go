@@ -175,6 +175,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 		ConsoleInput bool   `json:"consoleInput"`
 
 		StatementLang *string `json:"statementLang"`
+		ProblemListID *int    `json:"pblistID"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 400)
@@ -191,6 +192,16 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		err.WriteError(w)
 		return
+	}
+
+	if args.ProblemListID != nil {
+		list, err := s.base.ProblemList(r.Context(), *args.ProblemListID)
+		if err == nil {
+			list.List = append(list.List, pb.ID)
+			if err := s.base.UpdateProblemListProblems(r.Context(), list.ID, list.List); err != nil {
+				zap.S().Warn(err)
+			}
+		}
 	}
 
 	if args.StatementLang != nil && *args.StatementLang != "" {

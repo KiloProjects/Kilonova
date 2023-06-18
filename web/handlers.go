@@ -266,7 +266,7 @@ func (rt *Web) pbListIndex() http.HandlerFunc {
 }
 
 func (rt *Web) pbListView() http.HandlerFunc {
-	templ := rt.parse(nil, "lists/view.html", "modals/pblist.html", "modals/pbs.html")
+	templ := rt.parse(nil, "lists/view.html", "modals/pblist.html", "modals/pbs.html", "proposer/createpblist.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		listIDs := []int{util.ProblemList(r).ID}
 		for _, slist := range util.ProblemList(r).SubLists {
