@@ -82,6 +82,10 @@ ro = "Editare Problemă"
 en = "Description"
 ro = "Descriere"
 
+[stmt]
+en = "Statement"
+ro = "Enunț"
+
 [pbs]
 en = "Problems (IDs separated by a comma)"
 ro = "Probleme (ID-uri separate prin virgulă)"

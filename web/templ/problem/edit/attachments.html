@@ -12,12 +12,30 @@
 <script>
 var pbid = {{ .Problem.ID }}, rowreg = /row-att-([0-9]+)/;
 function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
+    let isChanging = false;
     if(name.startsWith("checker") || name.startsWith("grader")) {
         if(cPrivate.checked === false || cExec.checked === false) {
-            bundled.createToast({status: "info", description: bundled.getText("att_suggest_text")})
+            isChanging = true;
         }
         cPrivate.checked = true
         cExec.checked = true
+    }
+    if(name.toLowerCase().startsWith("lgrader")) {
+        if(cVisible.checked === false || cExec.checked === true) {
+            isChanging = true;
+        }
+        cVisible.checked = true
+        cExec.checked = false
+    }
+    if(name.endsWith(".h")) {
+        if(cVisible.checked === false || cExec.checked === false) {
+            isChanging = true;
+        }
+        cVisible.checked = true
+        cExec.checked = true
+    }
+    if(isChanging) {
+        bundled.createToast({status: "info", description: bundled.getText("att_suggest_text")})
     }
 }
 </script>
