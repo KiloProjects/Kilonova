@@ -472,6 +472,7 @@
 		@apply border-2 border-gr;
 		@apply max-h-[95vh] lg:max-h-[70vh] !important;
 		@apply max-w-[90vw] lg:max-w-[50vw];
+		@apply overflow-hidden;
 	}
 
 	/* Set min width only on large containers */
@@ -493,7 +494,7 @@
 	}
 
 	.modal-content {
-		@apply w-full h-full my-2 grow;
+		@apply w-full h-full my-2 grow overflow-y-auto;
 	}
 
 	.modal-footer {

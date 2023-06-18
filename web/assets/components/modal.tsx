@@ -7,12 +7,14 @@ export function KNModal({
 	open,
 	title,
 	children,
+	footer,
 	closeCallback,
 	large = true,
 }: {
 	open: boolean;
 	title: any;
 	children?: preact.ComponentChildren;
+	footer?: preact.ComponentChildren;
 	closeCallback?: () => void;
 	large?: boolean;
 }) {
@@ -48,9 +50,8 @@ export function KNModal({
 					</button>
 				</form>
 			</div>
-			<div class="modal-content" id="max_score_content">
-				{children}
-			</div>
+			<div class="modal-content">{children}</div>
+			{typeof footer !== "undefined" && <div class="modal-footer">{footer}</div>}
 		</dialog>
 	);
 }
@@ -66,14 +67,23 @@ export function confirm(message: string): Promise<boolean> {
 		}
 
 		render(
-			<KNModal title={getText("confirm_header")} open={true} closeCallback={() => callback(false)} large={false}>
+			<KNModal
+				title={getText("confirm_header")}
+				open={true}
+				closeCallback={() => callback(false)}
+				footer={
+					<>
+						<button onClick={() => callback(false)} class="btn mr-2">
+							{getText("button.cancel")}
+						</button>
+						<button onClick={() => callback(true)} class="btn btn-blue">
+							OK
+						</button>
+					</>
+				}
+				large={false}
+			>
 				<p class="my-2">{message}</p>
-				<button onClick={() => callback(false)} class="btn mr-2">
-					{getText("button.cancel")}
-				</button>
-				<button onClick={() => callback(true)} class="btn btn-blue">
-					OK
-				</button>
 			</KNModal>,
 			par
 		);

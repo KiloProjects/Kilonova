@@ -5,6 +5,7 @@ import (
 	"errors"
 	"slices"
 	"sort"
+	"strings"
 
 	"github.com/KiloProjects/kilonova"
 	"go.uber.org/zap"
@@ -71,6 +72,10 @@ func (s *BaseAPI) TagByName(ctx context.Context, name string) (*kilonova.Tag, *S
 }
 
 func (s *BaseAPI) UpdateTagName(ctx context.Context, id int, newName string) *StatusError {
+	newName = strings.TrimSpace(newName)
+	if newName == "" {
+		return ErrMissingRequired
+	}
 	if err := s.db.UpdateTagName(ctx, id, newName); err != nil {
 		return WrapError(err, "Couldn't update tag")
 	}
@@ -93,6 +98,7 @@ func (s *BaseAPI) DeleteTag(ctx context.Context, tag *kilonova.Tag) *StatusError
 }
 
 func (s *BaseAPI) CreateTag(ctx context.Context, name string, tagType kilonova.TagType) (int, *StatusError) {
+	name = strings.TrimSpace(name)
 	if name == "" || tagType == kilonova.TagTypeNone {
 		return -1, ErrMissingRequired
 	}

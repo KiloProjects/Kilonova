@@ -3,13 +3,10 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import register from "preact-custom-element";
 import getText from "../translation";
 import { apiToast, createToast } from "../toast";
-import type { Problem, UserBrief, Submission } from "../api/submissions";
-import { bodyCall, getCall } from "../api/net";
+import type { Problem } from "../api/submissions";
+import { bodyCall } from "../api/net";
 import { fromBase64 } from "js-base64";
-import { KNModal } from "./modal";
-import { sizeFormatter } from "../util";
 import { Tag, TagView, selectTags } from "./tags";
-import { Problems } from "./sublist";
 import { Paginator } from "./common";
 import { rezStr } from "./subs_view";
 

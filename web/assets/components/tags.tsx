@@ -295,11 +295,25 @@ export function selectTags(initialSelected: Tag[], canCreate: boolean = false, t
 			}, []);
 
 			return (
-				<KNModal title={getText(titleKey)} open={true} closeCallback={() => callback(tags, true)}>
+				<KNModal
+					title={getText(titleKey)}
+					open={true}
+					closeCallback={() => callback(tags, true)}
+					footer={
+						<>
+							<button class="btn my-2 mr-2" onClick={() => callback(tags, true)}>
+								{getText("button.cancel")}
+							</button>
+							<button class="btn btn-blue my-2" onClick={() => callback(tags, false)}>
+								{getText("button.select")}
+							</button>
+						</>
+					}
+				>
 					{loading ? (
 						<BigSpinner />
 					) : (
-						<>
+						<div class="overflow-hidden">
 							<div class="segment-panel">
 								{tags.length > 0 ? (
 									<span>
@@ -328,40 +342,36 @@ export function selectTags(initialSelected: Tag[], canCreate: boolean = false, t
 								}}
 								value={searchVal}
 							></input>
-							{(Object.keys(tagTypes) as TagType[]).map((tp) => {
-								const typeTags = tagList
-									.filter((t) => t.type == tp && typeof tags.find((val) => val.id == t.id) === "undefined")
-									.filter(searchStrFilter);
-								return (
-									<details key={tp} class="block my-2" open>
-										<summary>
-											<h3 class="inline-block mb-2">{getText(`tag_names.${tp}`)}</h3>
-										</summary>
-										{typeTags.map((tag) => (
-											<TagView
-												tag={tag}
-												link={false}
-												onClick={() => {
-													updTags([...tags, tag]);
-													setSearchVal("");
-												}}
-												key={tag.id}
-											/>
-										))}
-										{typeTags.length === 0 && <span>{getText("no_tags")}</span>}
-										{canCreate && searchVal.length == 0 && (
-											<TagQuickAddView type={tp} cb={(val: number) => load(val).catch(console.error)} />
-										)}
-									</details>
-								);
-							})}
-							<button class="btn my-2 mr-2" onClick={() => callback(tags, true)}>
-								{getText("button.cancel")}
-							</button>
-							<button class="btn btn-blue my-2" onClick={() => callback(tags, false)}>
-								{getText("button.select")}
-							</button>
-						</>
+							<div class="overflow-y-auto">
+								{(Object.keys(tagTypes) as TagType[]).map((tp) => {
+									const typeTags = tagList
+										.filter((t) => t.type == tp && typeof tags.find((val) => val.id == t.id) === "undefined")
+										.filter(searchStrFilter);
+									return (
+										<details key={tp} class="block my-2" open>
+											<summary>
+												<h3 class="inline-block mb-2">{getText(`tag_names.${tp}`)}</h3>
+											</summary>
+											{typeTags.map((tag) => (
+												<TagView
+													tag={tag}
+													link={false}
+													onClick={() => {
+														updTags([...tags, tag]);
+														setSearchVal("");
+													}}
+													key={tag.id}
+												/>
+											))}
+											{typeTags.length === 0 && <span>{getText("no_tags")}</span>}
+											{canCreate && searchVal.length == 0 && (
+												<TagQuickAddView type={tp} cb={(val: number) => load(val).catch(console.error)} />
+											)}
+										</details>
+									);
+								})}
+							</div>
+						</div>
 					)}
 				</KNModal>
 			);
