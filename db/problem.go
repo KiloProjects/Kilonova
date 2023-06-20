@@ -263,7 +263,7 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []any) {
 	}
 
 	if v := upd.TestName; v != nil {
-		toUpd, args = append(toUpd, "test_name = ?"), append(args, v)
+		toUpd, args = append(toUpd, "test_name = ?"), append(args, strings.TrimSpace(*v))
 	}
 
 	if v := upd.TimeLimit; v != nil {
@@ -278,7 +278,7 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []any) {
 	}
 
 	if v := upd.SourceCredits; v != nil {
-		toUpd, args = append(toUpd, "source_credits = ?"), append(args, v)
+		toUpd, args = append(toUpd, "source_credits = ?"), append(args, strings.TrimSpace(*v))
 	}
 
 	if v := upd.ConsoleInput; v != nil {
