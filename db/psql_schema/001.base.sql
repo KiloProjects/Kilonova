@@ -558,9 +558,13 @@ CREATE INDEX IF NOT EXISTS problem_submissions_index ON submissions (problem_id)
 CREATE INDEX IF NOT EXISTS contest_submissions_index ON submissions (contest_id);
 
 CREATE INDEX IF NOT EXISTS submission_subtests_index ON submission_tests (submission_id);
+CREATE INDEX IF NOT EXISTS submission_subtests_tests_index ON submission_tests (test_id);
 CREATE INDEX IF NOT EXISTS submission_subtasks_index ON submission_subtasks (submission_id);
-CREATE INDEX IF NOT EXISTS submission_subtests_id_index ON submission_tests (id);
 CREATE INDEX IF NOT EXISTS submission_subtasks_score_index ON submission_subtasks (user_id, problem_id);
+
+---- subtask subtests
+CREATE INDEX IF NOT EXISTS stk_stest_m2m_stk_index ON submission_subtask_subtests (submission_subtask_id);
+CREATE INDEX IF NOT EXISTS stk_stest_m2m_stest_index ON submission_subtask_subtests (submission_test_id);
 
 ---- problems
 
