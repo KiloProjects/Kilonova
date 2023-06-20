@@ -48,6 +48,7 @@ func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Tas
 		resp.Time = meta.Time
 		resp.Memory = meta.Memory
 
+		okExit := false
 		switch meta.Status {
 		case "TO":
 			if strings.Contains(meta.Message, "wall") {
@@ -61,6 +62,11 @@ func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Tas
 			resp.Comments = meta.Message
 		case "XX":
 			resp.Comments = "Sandbox Error: " + meta.Message
+		default:
+			okExit = true
+		}
+		if !okExit {
+			return resp, nil
 		}
 
 		boxOut := fmt.Sprintf("/box/%s.out", req.Filename)
