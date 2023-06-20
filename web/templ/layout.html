@@ -10,9 +10,19 @@
 	{{$vendored := hashedName "static/vendored.js"}}
 	{{$style := hashedName "static/styles.css" -}}
 
-	<link rel="icon" type="image/x-icon" href="/{{$fav}}"/>
-	<link rel="shortcut icon" type="image/x-icon" href="/{{$fav}}"/>
-	
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/favicons/apple-touch-icon.png?v=2">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon-32x32.png?v=2">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png?v=2">
+    <link rel="manifest" href="/static/favicons/site.webmanifest?v=2">
+    <link rel="mask-icon" href="/static/favicons/safari-pinned-tab.svg?v=2" color="#5bbad5">
+    <link rel="shortcut icon" href="/static/favicons/favicon.ico?v=2">
+    <meta name="apple-mobile-web-app-title" content="Kilonova">
+    <meta name="application-name" content="Kilonova">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="msapplication-config" content="/static/favicons/browserconfig.xml?v=2">
+    <meta name="theme-color" content="#ffffff">
+        
 	<!-- OpenGraph stuff -->
 	<meta property="og:title" content="{{template `title` .}}" />
 	<meta property="og:type" content="website" />

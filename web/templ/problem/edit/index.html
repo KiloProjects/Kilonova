@@ -75,9 +75,6 @@
                     {{template "boolean_expression" (ne .Checklist.NumAuthorTags 0)}} {{getText "checklist_author_tags"}};
                 </li>
                 <li>
-                    {{template "boolean_expression" (ne .Checklist.NumOtherTags 0)}} {{getText "checklist_other_tags"}};
-                </li>
-                <li>
                     {{template "boolean_expression" (ne .Checklist.NumSolutions 0)}} {{getText "checklist_solutions"}}.
                 </li>
             </ul>
@@ -93,6 +90,9 @@
             <ul>
                 <li>
                     {{template "boolean_expression" (ne .Checklist.NumSubtasks 0)}} {{getText "checklist_subtasks" .Checklist.NumSubtasks}}.
+                </li>
+                <li>
+                    {{template "boolean_expression" (ne .Checklist.NumOtherTags 0)}} {{getText "checklist_other_tags"}};
                 </li>
             </ul>
 
