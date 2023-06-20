@@ -24,14 +24,19 @@ type subSubtask struct {
 	FinalPercentage *int `db:"final_percentage"`
 }
 
-func (s *DB) InitSubmissionSubtasks(ctx context.Context, userID int, submissionID int, problemID int, contestID *int) (err error) {
+func (s *DB) InitSubmissionSubtasks(ctx context.Context, submissionID int) (err error) {
+	if submissionID == 0 {
+		return kilonova.ErrMissingRequired
+	}
 	_, err = s.pgconn.Exec(ctx, `
 INSERT INTO submission_subtasks 
 	(user_id, submission_id, contest_id, subtask_id, problem_id, visible_id, score) 
-	SELECT $1, $2, $3, id, problem_id, visible_id, score FROM subtasks WHERE problem_id = $4;
-`, userID, submissionID, contestID, problemID)
+	SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, stks.id AS subtask_id, stks.problem_id AS problem_id, stks.visible_id, stks.score AS score 
+	FROM submissions subs, subtasks stks 
+	WHERE subs.problem_id = stks.problem_id AND subs.id = $1
+`, submissionID)
 	if err != nil {
-		zap.S().Warn("Couldn't insert submission subtask: ", err)
+		zap.S().Warn("Couldn't insert submission subtasks: ", err)
 		return
 	}
 
@@ -50,13 +55,64 @@ INSERT INTO submission_subtask_subtests
 	return
 }
 
-func (s *DB) UpdateSubmissionSubtaskPercentage(ctx context.Context, id int, percentage int) (err error) {
-	_, err = s.pgconn.Exec(ctx, `UPDATE submission_subtasks SET final_percentage = $1 WHERE id = $2`, percentage, id)
+func (s *DB) InitProblemSubmissionsSubtasks(ctx context.Context, problemID int) (err error) {
+	if problemID == 0 {
+		return kilonova.ErrMissingRequired
+	}
+	_, err = s.pgconn.Exec(ctx, `
+INSERT INTO submission_subtasks 
+	(user_id, submission_id, contest_id, subtask_id, problem_id, visible_id, score) 
+	SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, stks.id AS subtask_id, stks.problem_id AS problem_id, stks.visible_id, stks.score AS score 
+	FROM submissions subs, subtasks stks 
+	WHERE subs.problem_id = stks.problem_id AND subs.problem_id = $1
+`, problemID)
+	if err != nil {
+		zap.S().Warn("Couldn't insert problem submissions subtasks: ", err)
+		return
+	}
+
+	_, err = s.pgconn.Exec(ctx, `
+INSERT INTO submission_subtask_subtests 
+	SELECT sstk.id, st.id
+	FROM subtask_tests stks
+	INNER JOIN submission_subtasks sstk ON stks.subtask_id = sstk.subtask_id
+	INNER JOIN submission_tests st ON stks.test_id = st.test_id AND sstk.submission_id = st.submission_id
+	WHERE EXISTS (SELECT 1 FROM submissions subs WHERE subs.id = st.submission_id AND subs.problem_id = $1)
+`, problemID)
+	if err != nil {
+		zap.S().Warn("Couldn't insert problem submissions subtask's subtests: ", err)
+		return
+	}
+
 	return
 }
 
-func (s *DB) ResetSubmissionSubtasks(ctx context.Context, subID int) (err error) {
-	_, err = s.pgconn.Exec(ctx, `UPDATE submission_subtasks SET final_percentage = NULL WHERE submission_id = $1`, subID)
+func (s *DB) ClearSubmissionSubtasks(ctx context.Context, submissionID int) (err error) {
+	if submissionID == 0 {
+		return kilonova.ErrMissingRequired
+	}
+	_, err = s.pgconn.Exec(ctx, `DELETE FROM submission_subtasks WHERE submission_id = $1`, submissionID)
+	if err != nil {
+		zap.S().Warn("Couldn't remove submission subtasks: ", err)
+		return
+	}
+	return
+}
+
+func (s *DB) ClearProblemSubmissionsSubtasks(ctx context.Context, submissionID int) (err error) {
+	if submissionID == 0 {
+		return kilonova.ErrMissingRequired
+	}
+	_, err = s.pgconn.Exec(ctx, `DELETE FROM submission_subtasks stks USING submissions subs WHERE stks.submission_id = subs.id AND subs.problem_id = $1`, submissionID)
+	if err != nil {
+		zap.S().Warn("Couldn't remove problem submissions subtasks: ", err)
+		return
+	}
+	return
+}
+
+func (s *DB) UpdateSubmissionSubtaskPercentage(ctx context.Context, id int, percentage int) (err error) {
+	_, err = s.pgconn.Exec(ctx, `UPDATE submission_subtasks SET final_percentage = $1 WHERE id = $2`, percentage, id)
 	return
 }
 

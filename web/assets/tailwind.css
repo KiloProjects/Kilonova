@@ -25,6 +25,10 @@
 	@apply dark:bg-[#333];
 }
 
+.chroma > * {
+	word-break: break-all;
+}
+
 .light .chroma,
 .light .bg {
 	background: #f0f0f0;

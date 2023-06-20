@@ -54,7 +54,7 @@ func (s *API) Handler() http.Handler {
 			r.Post("/reevaluateSubmission", webMessageWrapper("Reset submission", func(ctx context.Context, args struct {
 				ID int `json:"id"`
 			}) *kilonova.StatusError {
-				return s.base.ResetSubmission(ctx, args.ID)
+				return s.base.ResetSubmission(context.WithoutCancel(ctx), args.ID)
 			}))
 		})
 
@@ -121,7 +121,7 @@ func (s *API) Handler() http.Handler {
 				})
 
 				r.Post("/reevaluateSubs", webMessageWrapper("Reevaluating submissions", func(ctx context.Context, args struct{}) *kilonova.StatusError {
-					return s.base.ResetProblemSubmissions(ctx, util.ProblemContext(ctx))
+					return s.base.ResetProblemSubmissions(context.WithoutCancel(ctx), util.ProblemContext(ctx))
 				}))
 
 				r.Route("/get", func(r chi.Router) {

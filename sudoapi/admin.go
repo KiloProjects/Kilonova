@@ -27,22 +27,14 @@ func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) *StatusError {
 }
 
 func (s *BaseAPI) ResetSubmission(ctx context.Context, id int) *StatusError {
-	err := s.db.UpdateSubmission(ctx, id, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting})
-	if err != nil {
-		zap.S().Warn(err)
-		return WrapError(err, "Couldn't reset submission")
+	if err := s.clearSubmission(ctx, id); err != nil {
+		zap.S().Warn("Couldn't clear submission: ", err)
+		return err
 	}
 
-	var f = false
-	var zero = 0
-	if err := s.db.UpdateSubmissionSubTests(ctx, id, kilonova.SubTestUpdate{Done: &f, Score: &zero}); err != nil {
-		zap.S().Warn(err)
-		return WrapError(err, "Couldn't update submission's subtests")
-	}
-
-	if err := s.db.ResetSubmissionSubtasks(ctx, id); err != nil {
-		zap.S().Warn(err)
-		return WrapError(err, "Couldn't update submission's subtasks")
+	if err := s.initSubmission(ctx, id); err != nil {
+		zap.S().Warn("Couldn't recreate submission: ", err)
+		return err
 	}
 
 	// Wake grader to start processing immediately

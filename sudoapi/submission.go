@@ -304,21 +304,8 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 		return -1, Statusf(500, "Couldn't create submission")
 	}
 
-	// Initialize subtests
-	if err := s.db.InitSubTests(ctx, author.ID, id, problem.ID, contestID); err != nil {
-		zap.S().Warn("Couldn't create submission tests:", err)
-		return -1, Statusf(500, "Couldn't create submission tests")
-	}
-
-	// After subtests, initialize subtasks
-	if err := s.db.InitSubmissionSubtasks(ctx, author.ID, id, problem.ID, contestID); err != nil {
-		zap.S().Warn("Couldn't create submission subtasks:", err)
-		return -1, Statusf(500, "Couldn't create submission subtasks")
-	}
-
-	if err := s.db.UpdateSubmission(ctx, id, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting}); err != nil {
-		zap.S().Warn("Couldn't update submission status:", err)
-		return -1, Statusf(500, "Failed to create submission")
+	if err := s.initSubmission(ctx, id); err != nil {
+		return -1, err
 	}
 
 	// Wake immediately to grade submission
@@ -327,19 +314,103 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 	return id, nil
 }
 
+func (s *BaseAPI) clearSubmission(ctx context.Context, submissionID int) *StatusError {
+	if err := s.db.ClearSubTests(ctx, submissionID); err != nil {
+		return Statusf(500, "Couldn't remove submission tests")
+	}
+	if err := s.db.ClearSubmissionSubtasks(ctx, submissionID); err != nil {
+		return Statusf(500, "Couldn't remove submission tests")
+	}
+	zs := 0
+	zm := -1
+	zf := -1.0
+	f := false
+	e := ""
+	if err := s.db.UpdateSubmission(ctx, submissionID, kilonova.SubmissionUpdate{
+		Status:         kilonova.StatusCreating,
+		Score:          &zs,
+		MaxTime:        &zf,
+		MaxMemory:      &zm,
+		CompileError:   &f,
+		CompileMessage: &e,
+	}); err != nil {
+		return WrapError(err, "Couldn't fully clear submission")
+	}
+	return nil
+}
+
+func (s *BaseAPI) initSubmission(ctx context.Context, subID int) *StatusError {
+	// Initialize subtests
+	if err := s.db.InitSubTests(ctx, subID); err != nil {
+		zap.S().Warn("Couldn't create submission tests:", err)
+		return Statusf(500, "Couldn't create submission tests")
+	}
+
+	// After subtests, initialize subtasks
+	if err := s.db.InitSubmissionSubtasks(ctx, subID); err != nil {
+		zap.S().Warn("Couldn't create submission subtasks:", err)
+		return Statusf(500, "Couldn't create submission subtasks")
+	}
+
+	if err := s.db.UpdateSubmission(ctx, subID, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting}); err != nil {
+		zap.S().Warn("Couldn't update submission status:", err)
+		return Statusf(500, "Failed to create submission")
+	}
+	return nil
+}
+
 func (s *BaseAPI) DeleteSubmission(ctx context.Context, subID int) *StatusError {
 	if err := s.db.DeleteSubmission(ctx, subID); err != nil {
+		zap.S().Warn("Couldn't delete submission:", err)
 		return Statusf(500, "Failed to delete submission")
 	}
 	return nil
 }
 
-// Feature request by liviu
 func (s *BaseAPI) ResetProblemSubmissions(ctx context.Context, problem *kilonova.Problem) *StatusError {
-	if err := s.db.BulkUpdateSubmissions(ctx, kilonova.SubmissionFilter{ProblemID: &problem.ID}, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting}); err != nil {
+	if err := s.db.ClearProblemSubTests(ctx, problem.ID); err != nil {
+		zap.S().Warn(err)
+		return WrapError(err, "Couldn't clean submissions tests")
+	}
+	if err := s.db.ClearProblemSubmissionsSubtasks(ctx, problem.ID); err != nil {
+		zap.S().Warn(err)
+		return WrapError(err, "Couldn't clean submissions subtasks")
+	}
+
+	zs := 0
+	zm := -1
+	zf := -1.0
+	f := false
+	e := ""
+	if err := s.db.BulkUpdateSubmissions(ctx, kilonova.SubmissionFilter{ProblemID: &problem.ID}, kilonova.SubmissionUpdate{
+		Status:         kilonova.StatusCreating,
+		Score:          &zs,
+		MaxTime:        &zf,
+		MaxMemory:      &zm,
+		CompileError:   &f,
+		CompileMessage: &e,
+	}); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't reset submissions")
 	}
+
+	if err := s.db.InitProblemSubTests(ctx, problem.ID); err != nil {
+		zap.S().Warn(err)
+		return WrapError(err, "Couldn't initialize submissions tests")
+	}
+
+	if err := s.db.InitProblemSubmissionsSubtasks(ctx, problem.ID); err != nil {
+		zap.S().Warn(err)
+		return WrapError(err, "Couldn't initialize submissions subtasks")
+	}
+
+	if err := s.db.BulkUpdateSubmissions(ctx, kilonova.SubmissionFilter{ProblemID: &problem.ID}, kilonova.SubmissionUpdate{
+		Status: kilonova.StatusWaiting,
+	}); err != nil {
+		zap.S().Warn(err)
+		return WrapError(err, "Couldn't reset submissions")
+	}
+
 	s.LogUserAction(ctx, "Reset submissions for problem #%d: %s", problem.ID, problem.Name)
 
 	// Wake grader to start processing immediately

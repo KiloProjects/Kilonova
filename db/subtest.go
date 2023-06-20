@@ -57,13 +57,45 @@ func (s *DB) SubTest(ctx context.Context, id int) (*kilonova.SubTest, error) {
 	return &subtest, err
 }
 
-func (s *DB) InitSubTests(ctx context.Context, userID int, submissionID int, problemID int, contestID *int) error {
-	if userID == 0 || problemID == 0 || submissionID == 0 {
+func (s *DB) InitSubTests(ctx context.Context, submissionID int) error {
+	if submissionID == 0 {
 		return kilonova.ErrMissingRequired
 	}
 	_, err := s.pgconn.Exec(ctx, `
-INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, max_score) SELECT $1, $2, $3, id, visible_id, score FROM tests WHERE problem_id = $4 AND orphaned = false
-`, userID, submissionID, contestID, problemID)
+INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, max_score) 
+	SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, tests.id AS test_id, tests.visible_id, tests.score AS max_score 
+	FROM submissions subs, tests 
+	WHERE subs.problem_id = tests.problem_id AND tests.orphaned = false AND subs.id = $1
+`, submissionID)
+	return err
+}
+
+func (s *DB) InitProblemSubTests(ctx context.Context, problemID int) error {
+	if problemID == 0 {
+		return kilonova.ErrMissingRequired
+	}
+	_, err := s.pgconn.Exec(ctx, `
+INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, max_score) 
+	SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, tests.id AS test_id, tests.visible_id, tests.score AS max_score 
+	FROM submissions subs, tests 
+	WHERE subs.problem_id = tests.problem_id AND tests.orphaned = false AND subs.problem_id = $1
+`, problemID)
+	return err
+}
+
+func (s *DB) ClearSubTests(ctx context.Context, submissionID int) error {
+	if submissionID == 0 {
+		return kilonova.ErrMissingRequired
+	}
+	_, err := s.pgconn.Exec(ctx, `DELETE FROM submission_tests WHERE submission_id = $1`, submissionID)
+	return err
+}
+
+func (s *DB) ClearProblemSubTests(ctx context.Context, problemID int) error {
+	if problemID == 0 {
+		return kilonova.ErrMissingRequired
+	}
+	_, err := s.pgconn.Exec(ctx, `DELETE FROM submission_tests subtests USING submissions subs WHERE subs.problem_id = $1 AND subtests.submission_id = subs.id`, problemID)
 	return err
 }
 
