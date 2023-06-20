@@ -57,48 +57,6 @@ func (s *DB) SubTest(ctx context.Context, id int) (*kilonova.SubTest, error) {
 	return &subtest, err
 }
 
-func (s *DB) InitSubTests(ctx context.Context, submissionID int) error {
-	if submissionID == 0 {
-		return kilonova.ErrMissingRequired
-	}
-	_, err := s.pgconn.Exec(ctx, `
-INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, max_score) 
-	SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, tests.id AS test_id, tests.visible_id, tests.score AS max_score 
-	FROM submissions subs, tests 
-	WHERE subs.problem_id = tests.problem_id AND tests.orphaned = false AND subs.id = $1
-`, submissionID)
-	return err
-}
-
-func (s *DB) InitProblemSubTests(ctx context.Context, problemID int) error {
-	if problemID == 0 {
-		return kilonova.ErrMissingRequired
-	}
-	_, err := s.pgconn.Exec(ctx, `
-INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, max_score) 
-	SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, tests.id AS test_id, tests.visible_id, tests.score AS max_score 
-	FROM submissions subs, tests 
-	WHERE subs.problem_id = tests.problem_id AND tests.orphaned = false AND subs.problem_id = $1
-`, problemID)
-	return err
-}
-
-func (s *DB) ClearSubTests(ctx context.Context, submissionID int) error {
-	if submissionID == 0 {
-		return kilonova.ErrMissingRequired
-	}
-	_, err := s.pgconn.Exec(ctx, `DELETE FROM submission_tests WHERE submission_id = $1`, submissionID)
-	return err
-}
-
-func (s *DB) ClearProblemSubTests(ctx context.Context, problemID int) error {
-	if problemID == 0 {
-		return kilonova.ErrMissingRequired
-	}
-	_, err := s.pgconn.Exec(ctx, `DELETE FROM submission_tests subtests USING submissions subs WHERE subs.problem_id = $1 AND subtests.submission_id = subs.id`, problemID)
-	return err
-}
-
 func (s *DB) UpdateSubTest(ctx context.Context, id int, upd kilonova.SubTestUpdate) error {
 	toUpd, args := subtestUpdateQuery(&upd)
 	if len(toUpd) == 0 {
@@ -106,17 +64,6 @@ func (s *DB) UpdateSubTest(ctx context.Context, id int, upd kilonova.SubTestUpda
 	}
 	args = append(args, id)
 	query := s.conn.Rebind(fmt.Sprintf("UPDATE submission_tests SET %s WHERE id = ?", strings.Join(toUpd, ", ")))
-	_, err := s.conn.ExecContext(ctx, query, args...)
-	return err
-}
-
-func (s *DB) UpdateSubmissionSubTests(ctx context.Context, subID int, upd kilonova.SubTestUpdate) error {
-	toUpd, args := subtestUpdateQuery(&upd)
-	if len(toUpd) == 0 {
-		return kilonova.ErrNoUpdates
-	}
-	args = append(args, subID)
-	query := s.conn.Rebind(fmt.Sprintf("UPDATE submission_tests SET %s WHERE submission_id = ?", strings.Join(toUpd, ", ")))
 	_, err := s.conn.ExecContext(ctx, query, args...)
 	return err
 }

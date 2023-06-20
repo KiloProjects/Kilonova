@@ -27,14 +27,9 @@ func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) *StatusError {
 }
 
 func (s *BaseAPI) ResetSubmission(ctx context.Context, id int) *StatusError {
-	if err := s.clearSubmission(ctx, id); err != nil {
-		zap.S().Warn("Couldn't clear submission: ", err)
-		return err
-	}
-
-	if err := s.initSubmission(ctx, id); err != nil {
-		zap.S().Warn("Couldn't recreate submission: ", err)
-		return err
+	if err := s.db.ResetSubmission(ctx, id); err != nil {
+		zap.S().Warn("Couldn't reset submission: ", err)
+		return Statusf(500, "Couldn't reset submission")
 	}
 
 	// Wake grader to start processing immediately
