@@ -59,8 +59,8 @@ func (s *API) updateTestInfo(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Updated test info")
 }
 
-func (s *API) orphanTest(w http.ResponseWriter, r *http.Request) {
-	if err := s.base.OrphanTest(r.Context(), util.Test(r).ID); err != nil {
+func (s *API) deleteTest(w http.ResponseWriter, r *http.Request) {
+	if err := s.base.DeleteTest(r.Context(), util.Test(r).ID); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -91,21 +91,6 @@ func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	returnData(w, test)
-}
-
-func (s *API) purgeTests(w http.ResponseWriter, r *http.Request) {
-	if err := s.base.OrphanTests(r.Context(), util.Problem(r).ID); err != nil {
-		err.WriteError(w)
-		return
-	}
-
-	// NOTE: This may be redundant? Not fully sure
-	if err := s.base.DeleteSubTasks(r.Context(), util.Problem(r).ID); err != nil {
-		err.WriteError(w)
-		return
-	}
-
-	returnData(w, "Purged all tests")
 }
 
 // createTest inserts a new test to the problem
@@ -196,7 +181,7 @@ func (s *API) bulkDeleteTests(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, id := range testIDs {
 		if t, err := s.base.Test(r.Context(), util.Problem(r).ID, id); err == nil {
-			if err := s.base.OrphanTest(r.Context(), t.ID); err == nil {
+			if err := s.base.DeleteTest(r.Context(), t.ID); err == nil {
 				removedTests++
 			}
 		}

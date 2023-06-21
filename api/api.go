@@ -95,7 +95,7 @@ func (s *API) Handler() http.Handler {
 						r.Use(s.validateTestID)
 						r.Post("/data", s.saveTestData)
 						r.Post("/info", s.updateTestInfo)
-						r.Post("/orphan", s.orphanTest)
+						r.Post("/delete", s.deleteTest)
 					})
 
 					r.Post("/tags", s.updateProblemTags)
@@ -111,7 +111,6 @@ func (s *API) Handler() http.Handler {
 
 					r.Post("/bulkDeleteTests", s.bulkDeleteTests)
 					r.Post("/bulkUpdateTestScores", s.bulkUpdateTestScores)
-					r.Post("/orphanTests", s.purgeTests)
 					r.Post("/processTestArchive", s.processTestArchive)
 
 					r.Post("/addSubTask", s.createSubTask)

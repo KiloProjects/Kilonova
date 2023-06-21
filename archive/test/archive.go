@@ -179,7 +179,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 
 	// If we are loading an archive, the user might want to remove all tests first
 	// So let's do it for them
-	if err := base.OrphanTests(ctx, pb.ID); err != nil {
+	if err := base.DeleteTests(ctx, pb.ID); err != nil {
 		zap.S().Warn(err)
 		return err
 	}

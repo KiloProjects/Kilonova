@@ -16,6 +16,8 @@ type GraderStore interface {
 	TestInput(testID int) (io.ReadSeekCloser, error)
 	TestOutput(testID int) (io.ReadSeekCloser, error)
 
+	PurgeTestData(testID int) error
+
 	SaveTestInput(testID int, input io.Reader) error
 	SaveTestOutput(testID int, output io.Reader) error
 

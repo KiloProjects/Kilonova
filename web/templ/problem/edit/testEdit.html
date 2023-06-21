@@ -18,7 +18,7 @@
             </label>
             <button class="btn btn-blue mb-2">{{getText "button.update"}}</button>
         </form>
-        <button id="orphan_button" class="btn btn-red block my-2"> {{getText "button.delete"}} </button>
+        <button id="test_del_button" class="btn btn-red block my-2"> {{getText "button.delete"}} </button>
     
         <div class="mb-2">
             <a class="btn btn-blue" href="{{.Test.VisibleID}}/input" download>Download input</a>
@@ -89,7 +89,7 @@ async function removeTest(e) {
 	if(!(await bundled.confirm(bundled.getText("confirmTestDelete")))) {
 		return
 	}
-	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/orphan", {})
+	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/delete", {})
 	if(res.status === "success") {
 		window.location.assign(pref + "/problems/{{.Problem.ID}}/edit/test")
 		return
@@ -98,7 +98,7 @@ async function removeTest(e) {
 }
 document.getElementById("test_edit_form").addEventListener("submit", updateData)
 document.getElementById("test_id_edit_form").addEventListener("submit", updateID)
-document.getElementById("orphan_button").addEventListener("click", removeTest)
+document.getElementById("test_del_button").addEventListener("click", removeTest)
 </script>
 
 {{ end }}

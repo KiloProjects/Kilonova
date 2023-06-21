@@ -25,6 +25,14 @@ func (s *BaseAPI) TestOutput(testID int) (io.ReadSeekCloser, error) {
 	return r, nil
 }
 
+func (s *BaseAPI) PurgeTestData(testID int) error {
+	err := s.manager.PurgeTestData(testID)
+	if err != nil {
+		return WrapError(err, "Could not purge test data")
+	}
+	return nil
+}
+
 func (s *BaseAPI) SaveTestInput(testID int, input io.Reader) error {
 	if err := s.manager.SaveTestInput(testID, input); err != nil {
 		return WrapError(err, "Could not save test input")

@@ -1,7 +1,9 @@
 package datastore
 
 import (
+	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path"
@@ -45,6 +47,18 @@ func (m *StorageManager) SaveTestOutput(testID int, output io.Reader) error {
 		go m.dos2unixify(testPath)
 	}()
 	return writeFile(testPath, output, 0777)
+}
+
+func (m *StorageManager) PurgeTestData(testID int) error {
+	err1 := os.Remove(m.TestInputPath(testID))
+	err2 := os.Remove(m.TestOutputPath(testID))
+	if err1 != nil && !errors.Is(err1, fs.ErrNotExist) {
+		return err1
+	}
+	if err2 != nil && !errors.Is(err2, fs.ErrNotExist) {
+		return err2
+	}
+	return nil
 }
 
 func (m *StorageManager) dos2unixify(path string) {

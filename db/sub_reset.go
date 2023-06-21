@@ -66,7 +66,7 @@ func initSub(ctx context.Context, tx pgx.Tx, subID int) error {
 	INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, max_score) 
 		SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, tests.id AS test_id, tests.visible_id, tests.score AS max_score 
 		FROM submissions subs, tests 
-		WHERE subs.problem_id = tests.problem_id AND tests.orphaned = false AND subs.id = $1
+		WHERE subs.problem_id = tests.problem_id AND subs.id = $1
 `, subID); err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func initProblemSubs(ctx context.Context, tx pgx.Tx, problemID int) error {
 INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, max_score) 
 	SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, tests.id AS test_id, tests.visible_id, tests.score AS max_score 
 	FROM submissions subs, tests 
-	WHERE subs.problem_id = tests.problem_id AND tests.orphaned = false AND subs.problem_id = $1
+	WHERE subs.problem_id = tests.problem_id AND subs.problem_id = $1
 `, problemID); err != nil {
 		return err
 	}

@@ -10,13 +10,11 @@ type Test struct {
 	Score     int       `json:"score"`
 	ProblemID int       `db:"problem_id" json:"problem_id"`
 	VisibleID int       `db:"visible_id" json:"visible_id"`
-	Orphaned  bool      `json:"orphaned"`
 }
 
 type TestUpdate struct {
-	Score     *int  `json:"score"`
-	VisibleID *int  `json:"visible_id"`
-	Orphaned  *bool `json:"orphaned"`
+	Score     *int `json:"score"`
+	VisibleID *int `json:"visible_id"`
 }
 
 type SubTask struct {

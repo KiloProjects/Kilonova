@@ -161,7 +161,7 @@ FROM subtask_tests
 INNER JOIN tests 
 	ON tests.id = subtask_tests.test_id 
 WHERE 
-	subtask_tests.subtask_id = $1 AND tests.orphaned = false 
+	subtask_tests.subtask_id = $1
 ORDER BY tests.visible_id ASC
 `, st.ID)
 	if errors.Is(err, sql.ErrNoRows) {
