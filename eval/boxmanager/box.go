@@ -84,11 +84,8 @@ func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
 		res = append(res, "--wall-time="+strconv.FormatFloat(c.WallTimeLimit, 'f', -1, 64))
 	}
 
-	//if c.MemoryLimit != 0 {
-	//	res = append(res, "--mem="+strconv.Itoa(c.MemoryLimit))
-	//}
 	if c.MemoryLimit != 0 {
-		if int64(c.MemoryLimit) > b.memoryQuota {
+		if b.memoryQuota > 0 && int64(c.MemoryLimit) > b.memoryQuota {
 			zap.S().Info("Memory limit supplied exceeds quota")
 			c.MemoryLimit = int(b.memoryQuota)
 		}
@@ -123,10 +120,18 @@ func (b *Box) WriteFile(fpath string, r io.Reader, mode fs.FileMode) error {
 	return writeReader(b.getFilePath(fpath), r, mode)
 }
 
-func (b *Box) ReadFile(fpath string) (io.ReadSeekCloser, error) {
+func (b *Box) ReadFile(fpath string, w io.Writer) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return os.Open(b.getFilePath(fpath))
+
+	f, err := os.Open(b.getFilePath(fpath))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(w, f)
+	return err
 }
 
 func (b *Box) ReadDir(fpath string) ([]string, error) {
@@ -207,10 +212,7 @@ func (b *Box) getFilePath(boxpath string) string {
 func (b *Box) Close() error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	var params []string
-	params = append(params, "--cg")
-	params = append(params, "--box-id="+strconv.Itoa(b.boxID), "--cleanup")
-	return exec.Command(config.Eval.IsolatePath, params...).Run()
+	return exec.Command(config.Eval.IsolatePath, "--cg", "--box-id="+strconv.Itoa(b.boxID), "--cleanup").Run()
 }
 
 func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunConfig) (*eval.RunStats, error) {
@@ -253,8 +255,10 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 func newBox(id int, memQuota int64) (*Box, error) {
 	ret, err := exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--init").CombinedOutput()
 	if strings.HasPrefix(string(ret), "Box already exists") {
-
-		exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--cleanup").Run()
+		zap.S().Info("Box reset: ", id)
+		if out, err := exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--cleanup").CombinedOutput(); err != nil {
+			zap.S().Warn(err, string(out))
+		}
 		return newBox(id, memQuota)
 	}
 

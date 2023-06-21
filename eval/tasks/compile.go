@@ -65,7 +65,7 @@ func GetCompileTask(logger *zap.SugaredLogger) eval.Task[eval.CompileRequest, ev
 			resp.Success = false
 			return resp, nil
 		}
-		if err := eval.CopyFromBox(box, lang.CompiledName, f); err != nil {
+		if err := box.ReadFile(lang.CompiledName, f); err != nil {
 			resp.Other = err.Error()
 			resp.Success = false
 		}

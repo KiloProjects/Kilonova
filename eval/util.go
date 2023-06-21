@@ -2,7 +2,6 @@ package eval
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -12,24 +11,6 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
 )
-
-const (
-	releasePrefix = "https://github.com/KiloProjects/isolate/releases/latest/download/"
-	configURL     = releasePrefix + "default.cf"
-	configPath    = "/usr/local/etc/isolate"
-	isolateURL    = releasePrefix + "isolate"
-)
-
-func CopyFromBox(b Sandbox, p string, w io.Writer) error {
-	f, err := b.ReadFile(p)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = io.Copy(w, f)
-	return err
-}
 
 func CopyInBox(b Sandbox, p1 string, p2 string) error {
 	file, err := os.Open(p1)

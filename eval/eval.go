@@ -7,7 +7,8 @@ import (
 )
 
 type Sandbox interface {
-	ReadFile(path string) (io.ReadSeekCloser, error)
+	// ReadFile reads contents of path from sandbox and pipes them to the given writer
+	ReadFile(path string, w io.Writer) error
 	WriteFile(path string, r io.Reader, mode fs.FileMode) error
 	// RemoveFile(path string) error
 	FileExists(path string) bool

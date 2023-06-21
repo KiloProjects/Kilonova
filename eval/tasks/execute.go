@@ -16,6 +16,17 @@ func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Tas
 		resp := &eval.ExecResponse{}
 		logger.Infof("Executing test %d (for submission #%d) using box %d", req.SubtestID, req.SubID, box.GetID())
 
+		{
+			dir, err := box.ReadDir("/box/")
+			if err != nil {
+				zap.S().Warn("/box/ read error, check grader.log for details")
+				logger.Infof("Can't read /box/: ", err)
+			} else if len(dir) > 0 {
+				zap.S().Warn("/box/ anomaly, check grader.log for details")
+				logger.Warnf("Box %d (test %d, submission %d) directory is not initially empty: %#v", box.GetID(), req.SubtestID, req.SubID, dir)
+			}
+		}
+
 		in, err := dm.TestInput(req.TestID)
 		if err != nil {
 			return resp, err
@@ -62,6 +73,8 @@ func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Tas
 			resp.Comments = meta.Message
 		case "XX":
 			resp.Comments = "Sandbox Error: " + meta.Message
+			zap.S().Warn("Sandbox eror detected, check grader.log for more detials ", zap.Int("subtest_id", req.SubtestID), zap.Int("box_id", box.GetID()), zap.Int("sub_id", req.SubID))
+			logger.Warn("Sandbox error: ", req.SubID, req.SubtestID, box.GetID(), spew.Sdump(meta))
 		default:
 			okExit = true
 		}
@@ -83,7 +96,7 @@ func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Tas
 			return resp, nil
 		}
 
-		if err := eval.CopyFromBox(box, boxOut, w); err != nil {
+		if err := box.ReadFile(boxOut, w); err != nil {
 			resp.Comments = "Could not write output file"
 			return resp, nil
 		}

@@ -44,8 +44,8 @@ func (b *BoxManager) ReleaseBox(sb eval.Sandbox) {
 		zap.S().Warnf("Could not release sandbox %d: %v", sb.GetID(), err)
 	}
 	b.availableIDs <- sb.GetID()
-	b.concSem.Release(1)
 	b.memSem.Release(q)
+	b.concSem.Release(1)
 }
 
 // Close waits for all boxes to finish running

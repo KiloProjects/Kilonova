@@ -69,7 +69,7 @@ func (rt *Web) index() http.HandlerFunc {
 			pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r).ID)
 			if err == nil {
 				r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, pblistCache))
-			} else {
+			} else if !errors.Is(err, context.Canceled) {
 				zap.S().Warn(err)
 			}
 		}
@@ -1084,7 +1084,9 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 			zap.S().Warn("Cache miss: ", listID)
 			cnt, err := rt.base.NumSolvedFromPblist(context.Background(), listID, authedUser.ID)
 			if err != nil {
-				zap.S().Warn(err)
+				if !errors.Is(err, context.Canceled) {
+					zap.S().Warn(err)
+				}
 				return -1
 			}
 			return cnt
