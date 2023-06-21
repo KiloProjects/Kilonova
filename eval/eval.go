@@ -58,11 +58,11 @@ type CompileResponse struct {
 type ExecRequest struct {
 	SubID       int
 	SubtestID   int
-	TestID      int
 	Filename    string
 	MemoryLimit int
 	TimeLimit   float64
 	Lang        string
+	TestInput   io.Reader
 }
 
 type ExecResponse struct {

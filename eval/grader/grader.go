@@ -2,6 +2,7 @@ package grader
 
 import (
 	"context"
+	"io"
 	"math"
 	"path"
 	"sync"
@@ -187,19 +188,25 @@ func compileSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 }
 
 func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, checker eval.Checker, sub *kilonova.Submission, problem *kilonova.Problem, subTest *kilonova.SubTest) error {
-	pbTest, err1 := base.TestByID(ctx, subTest.TestID)
-	if err1 != nil {
-		return kilonova.WrapError(err1, "Couldn't get test")
+	if subTest.TestID == nil {
+		zap.S().Error("A subtest whose test was purged was detected.", spew.Sdump(subTest))
+		return kilonova.Statusf(400, "Trying to handle subtest whose test was purged. This should never happen")
 	}
+
+	tin, err := base.TestInput(*subTest.TestID)
+	if err != nil {
+		return kilonova.Statusf(500, "Couldn't open test input")
+	}
+	defer tin.Close()
 
 	execRequest := &eval.ExecRequest{
 		SubID:       sub.ID,
 		SubtestID:   subTest.ID,
-		TestID:      pbTest.ID,
 		Filename:    problem.TestName,
 		MemoryLimit: problem.MemoryLimit,
 		TimeLimit:   problem.TimeLimit,
 		Lang:        sub.Language,
+		TestInput:   tin,
 	}
 	if problem.ConsoleInput {
 		execRequest.Filename = "stdin"
@@ -211,6 +218,11 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 	}
 	var testScore int
 
+	// Rewind test input for use in checker
+	if _, err := tin.Seek(0, io.SeekStart); err != nil {
+		return kilonova.WrapError(err, "Couldn't rewind test input")
+	}
+
 	// Make sure TLEs are fully handled
 	if resp.Time > problem.TimeLimit {
 		resp.Time = problem.TimeLimit
@@ -219,13 +231,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 
 	if resp.Comments == "" {
 		var skipped bool
-		tin, err := base.TestInput(pbTest.ID)
-		if err != nil {
-			resp.Comments = "translate:internal_error"
-			skipped = true
-		}
-		defer tin.Close()
-		tout, err := base.TestOutput(pbTest.ID)
+		tout, err := base.TestOutput(*subTest.TestID)
 		if err != nil {
 			resp.Comments = "translate:internal_error"
 			skipped = true

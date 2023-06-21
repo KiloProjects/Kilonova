@@ -27,13 +27,7 @@ func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Tas
 			}
 		}
 
-		in, err := dm.TestInput(req.TestID)
-		if err != nil {
-			return resp, err
-		}
-		defer in.Close()
-
-		if err := box.WriteFile("/box/"+req.Filename+".in", in, 0644); err != nil {
+		if err := box.WriteFile("/box/"+req.Filename+".in", req.TestInput, 0644); err != nil {
 			zap.S().Info("Can't write input file:", err)
 			resp.Comments = "translate:internal_error"
 			return resp, err

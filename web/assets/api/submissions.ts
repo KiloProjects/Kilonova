@@ -129,7 +129,7 @@ export type SubTest = {
 	time: number;
 	memory: number;
 	score: number;
-	test_id: number;
+	test_id?: number;
 	user_id: number;
 	submission_id: number;
 

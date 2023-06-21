@@ -76,7 +76,7 @@ type SubTest struct {
 	Time         float64   `json:"time"`
 	Memory       int       `json:"memory"`
 	Score        int       `json:"score"`
-	TestID       int       `db:"test_id" json:"test_id"`
+	TestID       *int      `db:"test_id" json:"test_id"`
 	UserID       int       `db:"user_id" json:"user_id"`
 	SubmissionID int       `db:"submission_id" json:"submission_id"`
 

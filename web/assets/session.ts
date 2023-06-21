@@ -21,6 +21,8 @@ async function extendSession() {
 	}
 
 	const checkTimestamp = dayjs().add(10, "day").unix() * 1000;
+	// Refresh session cookie expiration
+	cookie.set("kn-sessionid", getSession(), { expires: 29, sameSite: "lax" });
 	cookie.set("kn-session-check-date", checkTimestamp.toString(), { expires: 29, sameSite: "lax" });
 }
 
