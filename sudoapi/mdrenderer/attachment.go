@@ -62,7 +62,6 @@ func (att *attachmentRenderer) renderAttachment(writer util.BufWriter, source []
 		return ast.WalkContinue, nil
 	}
 
-	var isNewMode = true
 	align := "left"
 	width := ""
 	var inline bool
@@ -70,27 +69,19 @@ func (att *attachmentRenderer) renderAttachment(writer util.BufWriter, source []
 	node := n.(*AttachmentNode)
 	parts := strings.Split(node.Filename, "|")
 	name := parts[0]
-	classes := ""
-	styles := make([]string, 0, len(parts))
 	if len(parts) > 1 {
 		for _, part := range parts {
 			kv := strings.SplitN(part, "=", 2)
 			if len(kv) == 2 {
-				if kv[0] == "class" {
-					classes = kv[1]
-					isNewMode = false
-				} else {
-					switch kv[0] {
-					case "align":
+				switch kv[0] {
+				case "align":
+					if align == "left" || align == "right" || align == "center" {
 						align = kv[1]
-					case "width":
-						width = kv[1]
-					case "inline":
-						inline = true
-					default:
-						isNewMode = false
 					}
-					styles = append(styles, fmt.Sprintf("%s:%s", kv[0], kv[1]))
+				case "width":
+					width = kv[1]
+				case "inline":
+					inline = true
 				}
 			} else if len(kv) == 1 && kv[0] == "inline" {
 				inline = true
@@ -105,25 +96,14 @@ func (att *attachmentRenderer) renderAttachment(writer util.BufWriter, source []
 		link = fmt.Sprintf("/problems/%d/attachments/%s", ctx.Problem.ID, url.PathEscape(name))
 	}
 
-	if isNewMode {
-		extra := ""
-		if inline {
-			extra += ` data-imginline="true" `
-		}
-		if width != "" {
-			extra += ` style="width:` + html.EscapeString(width) + `" `
-		}
-		fmt.Fprintf(writer, `<img src="%s" data-imgalign="%s" %s></img>`, link, align, extra)
-		return ast.WalkContinue, nil
+	extra := ""
+	if inline {
+		extra += ` data-imginline="true" `
 	}
-
-	fmt.Fprintf(
-		writer,
-		`<img src="%s" class="%s" style="%s"></img>`,
-		link,
-		html.EscapeString(classes),
-		html.EscapeString(strings.Join(styles, ";")),
-	)
+	if width != "" {
+		extra += ` style="width:` + html.EscapeString(width) + `" `
+	}
+	fmt.Fprintf(writer, `<img src="%s" data-imgalign="%s" %s></img>`, link, align, extra)
 	return ast.WalkContinue, nil
 }
 
