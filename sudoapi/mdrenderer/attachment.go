@@ -111,7 +111,7 @@ func (att *attachmentRenderer) renderAttachment(writer util.BufWriter, source []
 			extra += ` data-imginline="true" `
 		}
 		if width != "" {
-			extra += ` style="width:` + width + `" `
+			extra += ` style="width:` + html.EscapeString(width) + `" `
 		}
 		fmt.Fprintf(writer, `<img src="%s" data-imgalign="%s" %s></img>`, link, align, extra)
 		return ast.WalkContinue, nil
