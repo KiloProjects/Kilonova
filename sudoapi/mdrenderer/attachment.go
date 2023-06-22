@@ -61,6 +61,12 @@ func (att *attachmentRenderer) renderAttachment(writer util.BufWriter, source []
 	if !entering {
 		return ast.WalkContinue, nil
 	}
+
+	var isNewMode = true
+	align := "left"
+	width := ""
+	var inline bool
+
 	node := n.(*AttachmentNode)
 	parts := strings.Split(node.Filename, "|")
 	name := parts[0]
@@ -72,28 +78,49 @@ func (att *attachmentRenderer) renderAttachment(writer util.BufWriter, source []
 			if len(kv) == 2 {
 				if kv[0] == "class" {
 					classes = kv[1]
+					isNewMode = false
 				} else {
+					switch kv[0] {
+					case "align":
+						align = kv[1]
+					case "width":
+						width = kv[1]
+					case "inline":
+						inline = true
+					default:
+						isNewMode = false
+					}
 					styles = append(styles, fmt.Sprintf("%s:%s", kv[0], kv[1]))
 				}
+			} else if len(kv) == 1 && kv[0] == "inline" {
+				inline = true
 			}
 		}
 	}
 	ctx, ok := n.OwnerDocument().Meta()["ctx"].(*kilonova.RenderContext)
+	var link string
 	if !ok || ctx == nil || ctx.Problem == nil {
-		fmt.Fprintf(
-			writer,
-			`<img src="%s" class="%s" style="%s"></img>`,
-			url.PathEscape(name),
-			html.EscapeString(classes),
-			html.EscapeString(strings.Join(styles, ",")),
-		)
+		link = url.PathEscape(name)
+	} else {
+		link = fmt.Sprintf("/problems/%d/attachments/%s", ctx.Problem.ID, url.PathEscape(name))
+	}
+
+	if isNewMode {
+		extra := ""
+		if inline {
+			extra += ` data-imginline="true" `
+		}
+		if width != "" {
+			extra += ` style="width:` + width + `" `
+		}
+		fmt.Fprintf(writer, `<img src="%s" data-imgalign="%s" %s></img>`, link, align, extra)
 		return ast.WalkContinue, nil
 	}
+
 	fmt.Fprintf(
 		writer,
-		`<img src="/problems/%d/attachments/%s" class="%s" style="%s"></img>`,
-		ctx.Problem.ID,
-		url.PathEscape(name),
+		`<img src="%s" class="%s" style="%s"></img>`,
+		link,
 		html.EscapeString(classes),
 		html.EscapeString(strings.Join(styles, ";")),
 	)

@@ -63,6 +63,11 @@ func (s *BaseAPI) UpdateProblem(ctx context.Context, id int, args kilonova.Probl
 }
 
 func (s *BaseAPI) DeleteProblem(ctx context.Context, problem *kilonova.Problem) *StatusError {
+	// Try to delete tests first, so the contents also get deleted
+	if err := s.DeleteTests(ctx, problem.ID); err != nil {
+		zap.S().Warn(err)
+	}
+
 	if err := s.db.DeleteProblem(ctx, problem.ID); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't delete problem")
