@@ -334,7 +334,7 @@ func scoreTests(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submis
 
 func getLocalRunner(base *sudoapi.BaseAPI) (eval.BoxScheduler, error) {
 	zap.S().Info("Trying to spin up local grader")
-	bm, err := boxmanager.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, base)
+	bm, err := boxmanager.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, base, graderLogger)
 	if err != nil {
 		return nil, err
 	}

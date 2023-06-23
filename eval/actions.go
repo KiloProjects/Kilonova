@@ -108,12 +108,6 @@ func CompileFile(ctx context.Context, box Sandbox, files map[string][]byte, comp
 		return combinedOut, err
 	}
 
-	for fileName, fileData := range files {
-		if err := box.WriteFile(fileName, bytes.NewReader(fileData), 0644); err != nil {
-			return "", err
-		}
-	}
-
 	return combinedOut, nil
 }
 

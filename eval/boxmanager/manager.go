@@ -19,6 +19,8 @@ type BoxManager struct {
 	concSem       *semaphore.Weighted
 	memSem        *semaphore.Weighted
 
+	logger *zap.SugaredLogger
+
 	availableIDs chan int
 }
 
@@ -31,7 +33,7 @@ func (b *BoxManager) GetBox(ctx context.Context, memQuota int64) (eval.Sandbox, 
 			return nil, err
 		}
 	}
-	box, err := newBox(<-b.availableIDs, memQuota)
+	box, err := newBox(<-b.availableIDs, memQuota, b.logger)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +58,7 @@ func (b *BoxManager) Close(ctx context.Context) error {
 }
 
 // New creates a new box manager
-func New(startingNumber int, count int, maxMemory int64, dm kilonova.GraderStore) (*BoxManager, error) {
+func New(startingNumber int, count int, maxMemory int64, dm kilonova.GraderStore, logger *zap.SugaredLogger) (*BoxManager, error) {
 
 	if startingNumber < 0 {
 		startingNumber = 0
@@ -73,6 +75,8 @@ func New(startingNumber int, count int, maxMemory int64, dm kilonova.GraderStore
 		memSem:        semaphore.NewWeighted(maxMemory),
 		availableIDs:  availableIDs,
 		numConcurrent: count,
+
+		logger: logger,
 	}
 	return bm, nil
 }

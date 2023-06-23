@@ -45,6 +45,8 @@ type Box struct {
 	memoryQuota int64
 
 	metaFile string
+
+	logger *zap.SugaredLogger
 }
 
 // buildRunFlags compiles all flags into an array
@@ -228,19 +230,8 @@ func (b *Box) Close() error {
 	return exec.Command(config.Eval.IsolatePath, "--cg", "--box-id="+strconv.Itoa(b.boxID), "--cleanup").Run()
 }
 
-func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunConfig) (*eval.RunStats, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	metaFile := path.Join(os.TempDir(), "kn-"+kilonova.RandomString(12))
-	b.metaFile = metaFile
-
-	params := append(b.buildRunFlags(conf), command...)
+func (b *Box) runCommand(ctx context.Context, params []string, metaFile string) (*eval.RunStats, error) {
 	cmd := exec.CommandContext(ctx, config.Eval.IsolatePath, params...)
-
-	b.metaFile = ""
-
-	//zap.S().Debug(cmd.String())
 
 	err := cmd.Run()
 	if _, ok := err.(*exec.ExitError); err != nil && !ok {
@@ -259,15 +250,39 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 	return parseMetaFile(f), nil
 }
 
+func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunConfig) (*eval.RunStats, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	var meta *eval.RunStats
+	var err error
+
+	for i := 1; i <= runErrRetries; i++ {
+		metaFile := path.Join(os.TempDir(), "kn-"+kilonova.RandomString(12))
+		b.metaFile = metaFile
+		meta, err = b.runCommand(ctx, append(b.buildRunFlags(conf), command...), metaFile)
+		b.metaFile = ""
+		if err == nil && meta.Status != "XX" {
+			return meta, err
+		}
+
+		zap.S().Warnf("Run error in box %d, retrying (%d/%d). Check grader.log for more details", b.boxID, i, runErrRetries)
+		b.logger.Warnf("Run error in box %d, retrying (%d/%d): '%#v' %s", b.boxID, i, runErrRetries, err, spew.Sdump(meta))
+		time.Sleep(runErrTimeout)
+	}
+
+	return meta, nil
+}
+
 // newBox returns a new box instance from the specified ID
-func newBox(id int, memQuota int64) (*Box, error) {
+func newBox(id int, memQuota int64, logger *zap.SugaredLogger) (*Box, error) {
 	ret, err := exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--init").CombinedOutput()
 	if strings.HasPrefix(string(ret), "Box already exists") {
 		zap.S().Info("Box reset: ", id)
 		if out, err := exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--cleanup").CombinedOutput(); err != nil {
 			zap.S().Warn(err, string(out))
 		}
-		return newBox(id, memQuota)
+		return newBox(id, memQuota, logger)
 	}
 
 	if strings.HasPrefix(string(ret), "Must be started as root") {
@@ -275,18 +290,18 @@ func newBox(id int, memQuota int64) (*Box, error) {
 			fmt.Println("Couldn't chown root the isolate binary:", err)
 			return nil, err
 		}
-		return newBox(id, memQuota)
+		return newBox(id, memQuota, logger)
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &Box{path: strings.TrimSpace(string(ret)), boxID: id, memoryQuota: memQuota}, nil
+	return &Box{path: strings.TrimSpace(string(ret)), boxID: id, memoryQuota: memQuota, logger: logger}, nil
 }
 
 func CheckCanRun() bool {
-	box, err := newBox(0, 0)
+	box, err := newBox(0, 0, zap.S())
 	if err != nil {
 		zap.S().Warn(err)
 		return false

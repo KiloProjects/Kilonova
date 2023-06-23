@@ -47,7 +47,7 @@ func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Tas
 		}
 		meta, err := eval.RunSubmission(ctx, box, eval.Langs[req.Lang], lim, consoleInput)
 		if err != nil {
-			resp.Comments = fmt.Sprintf("Error running submission: %v", err)
+			resp.Comments = fmt.Sprintf("Evaluation error: %v", err)
 			return resp, nil
 		}
 		resp.Time = meta.Time
@@ -67,7 +67,7 @@ func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Tas
 			resp.Comments = meta.Message
 		case "XX":
 			resp.Comments = "Sandbox Error: " + meta.Message
-			zap.S().Warn("Sandbox eror detected, check grader.log for more detials ", zap.Int("subtest_id", req.SubtestID), zap.Int("box_id", box.GetID()), zap.Int("sub_id", req.SubID))
+			zap.S().Warn("Sandbox error detected, check grader.log for more detials ", zap.Int("subtest_id", req.SubtestID), zap.Int("box_id", box.GetID()), zap.Int("sub_id", req.SubID))
 			logger.Warn("Sandbox error: ", req.SubID, req.SubtestID, box.GetID(), spew.Sdump(meta))
 		default:
 			okExit = true
