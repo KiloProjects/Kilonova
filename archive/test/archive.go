@@ -42,7 +42,7 @@ type ArchiveCtx struct {
 	tests       map[int]archiveTest
 	attachments map[string]archiveAttachment
 	scoredTests []int
-	props       *Properties
+	props       *properties
 }
 
 type Subtask struct {
@@ -50,14 +50,19 @@ type Subtask struct {
 	Tests []int
 }
 
-type Properties struct {
+type mockTag struct {
+	Name string
+	Type kilonova.TagType
+}
+
+type properties struct {
 	Subtasks map[int]Subtask
 	// seconds
 	TimeLimit *float64
 	// kbytes
 	MemoryLimit *int
 
-	Tags         *string
+	Tags         []*mockTag
 	Source       *string
 	ConsoleInput *bool
 	TestName     *string
@@ -287,11 +292,6 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 			shouldUpd = true
 			upd.SourceCredits = aCtx.props.Source
 		}
-		// TODO: Handle problem tags in problem archive
-		// if aCtx.props.Author != nil {
-		// 	shouldUpd = true
-		// 	upd.AuthorCredits = aCtx.props.Author
-		// }
 		if aCtx.props.ConsoleInput != nil {
 			shouldUpd = true
 			upd.ConsoleInput = aCtx.props.ConsoleInput
@@ -338,6 +338,28 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 				}
 			}
 		}
+
+		if len(aCtx.props.Tags) > 0 {
+			realTagIDs := []int{}
+			for _, mTag := range aCtx.props.Tags {
+				tag, err := base.TagByLooseName(ctx, mTag.Name)
+				if err != nil || tag == nil {
+					id, err := base.CreateTag(ctx, mTag.Name, mTag.Type)
+					if err != nil {
+						zap.S().Warn("Couldn't create tag: ", err)
+						continue
+					}
+					realTagIDs = append(realTagIDs, id)
+					continue
+				}
+				realTagIDs = append(realTagIDs, tag.ID)
+			}
+			if err := base.UpdateProblemTags(ctx, pb.ID, realTagIDs); err != nil {
+				zap.S().Warn(err)
+				return kilonova.WrapError(err, "Couldn't update tags")
+			}
+		}
+
 	}
 
 	return nil

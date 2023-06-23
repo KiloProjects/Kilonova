@@ -93,6 +93,18 @@ func (s *DB) TagByName(ctx context.Context, name string) (*kilonova.Tag, error) 
 	return &tag, err
 }
 
+func (s *DB) TagByLooseName(ctx context.Context, name string) (*kilonova.Tag, error) {
+	var tag kilonova.Tag
+	err := s.conn.GetContext(ctx, &tag, "SELECT * FROM tags WHERE lower(unaccent(name)) = lower(unaccent($1)) LIMIT 1", name)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &tag, err
+}
+
 func (s *DB) UpdateTagName(ctx context.Context, id int, newName string) error {
 	_, err := s.pgconn.Exec(ctx, "UPDATE tags SET name = $2 WHERE id = $1", id, newName)
 	return err

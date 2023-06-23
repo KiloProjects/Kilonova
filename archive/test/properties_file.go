@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"io"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -92,6 +93,38 @@ func parsePropListItem(item string, field string) ([]int, *kilonova.StatusError)
 	return glist, nil
 }
 
+var (
+	simpleTagRegex  = regexp.MustCompile(`^"(.*)"$`)
+	complexTagRegex = regexp.MustCompile(`^"(.*)":(.*)$`)
+)
+
+func parseTags(t *string) []*mockTag {
+	if t == nil {
+		return nil
+	}
+	tagVals := strings.Split(*t, ",")
+	var rez []*mockTag
+	for _, val := range tagVals {
+		if sm := simpleTagRegex.FindStringSubmatch(val); len(sm) > 0 {
+			if len(sm[1]) > 0 {
+				rez = append(rez, &mockTag{Name: sm[1], Type: kilonova.TagTypeOther})
+				continue
+			}
+		} else if sm := complexTagRegex.FindStringSubmatch(val); len(sm) > 0 {
+			if len(sm[1]) > 0 {
+				mt := &mockTag{Name: sm[1], Type: kilonova.TagTypeOther}
+				if kilonova.ValidTagType(kilonova.TagType(sm[2])) {
+					mt.Type = kilonova.TagType(sm[2])
+				}
+				rez = append(rez, mt)
+				continue
+			}
+		}
+		rez = append(rez, &mockTag{Name: val, Type: kilonova.TagTypeOther})
+	}
+	return rez
+}
+
 func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	f, err := file.Open()
 	if err != nil {
@@ -106,10 +139,10 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 		return kilonova.Statusf(400, "Invalid properties file")
 	}
 
-	props := &Properties{
+	props := &properties{
 		TimeLimit:     rawProps.Time,
 		DefaultPoints: rawProps.DefaultScore,
-		Tags:          rawProps.Tags,
+		Tags:          parseTags(rawProps.Tags),
 		Source:        rawProps.Source,
 		TestName:      rawProps.TestName,
 	}

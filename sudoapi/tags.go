@@ -71,6 +71,14 @@ func (s *BaseAPI) TagByName(ctx context.Context, name string) (*kilonova.Tag, *S
 	return tag, nil
 }
 
+func (s *BaseAPI) TagByLooseName(ctx context.Context, name string) (*kilonova.Tag, *StatusError) {
+	tag, err := s.db.TagByLooseName(ctx, name)
+	if err != nil || tag == nil {
+		return nil, WrapError(err, "Tag not found")
+	}
+	return tag, nil
+}
+
 func (s *BaseAPI) UpdateTagName(ctx context.Context, id int, newName string) *StatusError {
 	newName = strings.TrimSpace(newName)
 	if newName == "" {

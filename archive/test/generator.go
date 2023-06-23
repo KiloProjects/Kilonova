@@ -166,7 +166,7 @@ func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, bas
 			if len(tags) > 0 {
 				var tagNames []string
 				for _, tag := range tags {
-					tagNames = append(tagNames, fmt.Sprintf("%q", tag.Name))
+					tagNames = append(tagNames, fmt.Sprintf("%q:%s", tag.Name, tag.Type))
 				}
 				fmt.Fprintf(gr, "tags=%s\n", strings.Join(tagNames, ","))
 			}
