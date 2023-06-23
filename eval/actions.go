@@ -3,6 +3,8 @@ package eval
 import (
 	"bytes"
 	"context"
+	"errors"
+	"io/fs"
 
 	"go.uber.org/zap"
 )
@@ -76,17 +78,24 @@ func CompileFile(ctx context.Context, box Sandbox, files map[string][]byte, comp
 		conf.EnvToSet[key] = val
 	}
 
+	conf.StderrToStdout = true
+	conf.OutputPath = "/box/compilation.out"
+
 	goodCmd, err := MakeGoodCompileCommand(language.CompileCommand, compiledFiles)
 	if err != nil {
 		zap.S().Warnf("MakeGoodCompileCommand returned an error: %q. This is not good, so we'll use the command from the config file. The supplied command was %#v", err, language.CompileCommand)
 		goodCmd = language.CompileCommand
 	}
 
-	var out bytes.Buffer
-	conf.Stdout = &out
-	conf.Stderr = &out
-
 	_, err = box.RunCommand(ctx, goodCmd, &conf)
+
+	var out bytes.Buffer
+	if err := box.ReadFile("/box/compilation.out", &out); err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			zap.S().Warn("Couldn't read compilation output: ", err)
+			out.Reset()
+		}
+	}
 
 	combinedOutRunes := []rune(out.String())
 

@@ -13,12 +13,18 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/davecgh/go-spew/spew"
 	"go.uber.org/zap"
+)
+
+const (
+	runErrRetries = 3
+	runErrTimeout = 500 * time.Millisecond
 )
 
 var _ eval.Sandbox = &Box{}
@@ -104,6 +110,13 @@ func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
 	if c.OutputPath != "" {
 		res = append(res, "--stdout="+c.OutputPath)
 	}
+
+	if c.StderrPath != "" {
+		res = append(res, "--stderr="+c.StderrPath)
+	} else if c.StderrToStdout {
+		res = append(res, "--stderr-to-stdout")
+	}
+
 	if b.metaFile != "" {
 		res = append(res, "--meta="+b.metaFile)
 	}
@@ -229,11 +242,6 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 
 	//zap.S().Debug(cmd.String())
 
-	if conf != nil {
-		cmd.Stdin = conf.Stdin
-		cmd.Stdout = conf.Stdout
-		cmd.Stderr = conf.Stderr
-	}
 	err := cmd.Run()
 	if _, ok := err.(*exec.ExitError); err != nil && !ok {
 		spew.Dump(err)

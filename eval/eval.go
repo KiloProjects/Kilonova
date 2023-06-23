@@ -73,12 +73,11 @@ type ExecResponse struct {
 }
 
 type RunConfig struct {
-	Stdin  io.Reader
-	Stdout io.Writer
-	Stderr io.Writer
+	StderrToStdout bool
 
 	InputPath  string
 	OutputPath string
+	StderrPath string
 
 	MemoryLimit int
 

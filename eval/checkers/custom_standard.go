@@ -3,13 +3,16 @@ package checkers
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"path"
 	"strconv"
 	"strings"
 
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"go.uber.org/zap"
 )
 
 func standardCheckerTask(ctx context.Context, box eval.Sandbox, job *customCheckerInput) (*checkerResult, error) {
@@ -48,11 +51,9 @@ func standardCheckerTask(ctx context.Context, box eval.Sandbox, job *customCheck
 	}
 	goodCmd = append(goodCmd, "/box/correct.in", "/box/correct.out", "/box/program.out")
 
-	var stdout, stderr bytes.Buffer
-
 	conf := &eval.RunConfig{
-		Stdout: &stdout,
-		Stderr: &stderr,
+		OutputPath: "/box/checker_verdict.out",
+		StderrPath: "/box/checker_verdict.err",
 
 		MemoryLimit: checkerMemoryLimit,
 
@@ -64,6 +65,20 @@ func standardCheckerTask(ctx context.Context, box eval.Sandbox, job *customCheck
 	if _, err := box.RunCommand(ctx, goodCmd, conf); err != nil {
 		rez.Output = ErrOut
 		return rez, nil
+	}
+
+	var stdout, stderr bytes.Buffer
+	if err := box.ReadFile("/box/checker_verdict.out", &stdout); err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			zap.S().Warn("Couldn't read checker stdout: ", err)
+		}
+		stdout.Reset()
+	}
+	if err := box.ReadFile("/box/checker_verdict.err", &stderr); err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			zap.S().Warn("Couldn't read checker stderr: ", err)
+		}
+		stderr.Reset()
 	}
 
 	floatScore, err := strconv.ParseFloat(strings.TrimSpace(stdout.String()), 64)

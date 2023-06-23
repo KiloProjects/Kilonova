@@ -3,12 +3,15 @@ package checkers
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"path"
 	"strings"
 
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"go.uber.org/zap"
 )
 
 func legacyCheckerTask(ctx context.Context, box eval.Sandbox, job *customCheckerInput) (*checkerResult, error) {
@@ -47,10 +50,8 @@ func legacyCheckerTask(ctx context.Context, box eval.Sandbox, job *customChecker
 	}
 	goodCmd = append(goodCmd, "/box/program.out", "/box/correct.out", "/box/correct.in")
 
-	var out bytes.Buffer
-
 	conf := &eval.RunConfig{
-		Stdout: &out,
+		OutputPath: "/box/checker_verdict.out",
 
 		MemoryLimit: checkerMemoryLimit,
 
@@ -62,6 +63,14 @@ func legacyCheckerTask(ctx context.Context, box eval.Sandbox, job *customChecker
 	if _, err := box.RunCommand(ctx, goodCmd, conf); err != nil {
 		rez.Output = ErrOut
 		return rez, nil
+	}
+
+	var out bytes.Buffer
+	if err := box.ReadFile("/box/checker_verdict.out", &out); err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			zap.S().Warn("Couldn't read checker output: ", err)
+		}
+		out.Reset()
 	}
 
 	if _, err := fmt.Fscanf(&out, "%d ", &rez.Score); err != nil {
