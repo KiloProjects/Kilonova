@@ -20,7 +20,7 @@ function UserTable({ users }: { users: UserBrief[] }) {
 		<div class="list-group">
 			<div class="list-group-head font-bold">User</div>
 			{users.map((user) => (
-				<a href={`/profile/${user.name}`} class="list-group-item inline-flex align-middle items-center">
+				<a href={`/profile/${user.name}`} class="list-group-item inline-flex align-middle items-center" key={user.id}>
 					<img class="flex-none mr-2 rounded" src={`/api/user/getGravatar?name=${user.name}&s=32`} /> #{user.id}: {user.name}
 				</a>
 			))}
