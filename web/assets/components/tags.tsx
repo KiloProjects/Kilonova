@@ -168,7 +168,7 @@ function ProblemTagEdit({ tags, problemID }: { tags: Tag[]; problemID: number })
 				href="#"
 				onClickCapture={(e) => {
 					e.preventDefault();
-					selectTags(newTags, true, "update_tags").then((rez) => {
+					selectTags(newTags, window.platform_info.user!.proposer, "update_tags").then((rez) => {
 						if (rez.updated) updateTags(rez.tags);
 					});
 				}}

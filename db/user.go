@@ -8,11 +8,6 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/microcosm-cc/bluemonday"
-)
-
-var (
-	bm = bluemonday.StrictPolicy()
 )
 
 type User struct {
@@ -43,7 +38,6 @@ func toUserBrief(user *User) *kilonova.UserBrief {
 		Name:     user.Name,
 		Admin:    user.Admin,
 		Proposer: user.Proposer,
-		Bio:      user.Bio,
 	}
 }
 
@@ -61,6 +55,7 @@ func (user *User) ToFull() *kilonova.UserFull {
 	}
 	return &kilonova.UserFull{
 		UserBrief:         *user.ToBrief(),
+		Bio:               user.Bio,
 		Email:             user.Email,
 		VerifiedEmail:     user.VerifiedEmail,
 		PreferredLanguage: user.PreferredLanguage,
@@ -157,7 +152,7 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate
 		ub.AddUpdate("proposer = %s", v)
 	}
 	if v := upd.Bio; v != nil {
-		ub.AddUpdate("bio = %s", strings.TrimSpace(bm.Sanitize(*v)))
+		ub.AddUpdate("bio = %s", strings.TrimSpace(*v))
 	}
 	if v := upd.VerifiedEmail; v != nil {
 		ub.AddUpdate("verified_email = %s", v)

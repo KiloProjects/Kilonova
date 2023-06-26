@@ -2,6 +2,7 @@ node_modules
 .vscode
 # .editorconfig
 /config.*
+/flags.json
 !/config.example.toml
 # simulation program
 sim.py

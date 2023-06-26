@@ -21,11 +21,11 @@ type UserBrief struct {
 	Name     string `json:"name"`
 	Admin    bool   `json:"admin"`
 	Proposer bool   `json:"proposer"`
-	Bio      string `json:"bio,omitempty"`
 }
 
 type UserFull struct {
 	UserBrief
+	Bio               string         `json:"bio,omitempty"`
 	Email             string         `json:"email,omitempty"`
 	VerifiedEmail     bool           `json:"verified_email"`
 	PreferredLanguage string         `json:"preferred_language"`

@@ -258,6 +258,10 @@ ro = "Actualizare Subtasks"
 en = "Verified Email"
 ro = "Email Verificat"
 
+[about_me_bio]
+en = "About me"
+ro = "Despre mine"
+
 [profilePic]
 en = "Profile picture for"
 ro = "Poză profil pentru"
