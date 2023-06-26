@@ -52,6 +52,9 @@ type UserFilter struct {
 	Name  *string `json:"name"`
 	Email *string `json:"email"`
 
+	// For user filtering
+	FuzzyName *string `json:"name_fuzzy"`
+
 	Admin    *bool `json:"admin"`
 	Proposer *bool `json:"proposer"`
 

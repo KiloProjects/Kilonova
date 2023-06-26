@@ -10,8 +10,9 @@ import type { Question, Announcement } from "../api/contest";
 import { UserBrief, getUser } from "../api/submissions";
 import { apiToast, createToast } from "../toast";
 import { BigSpinner, Paginator } from "./common";
-import { getCall } from "../api/net";
+import { getCall, postCall } from "../api/net";
 import { buildScoreBreakdownModal } from "./maxscore_breakdown";
+import { confirm } from "./modal";
 
 export const RFC1123Z = "ddd, DD MMM YYYY HH:mm:ss ZZ";
 
@@ -528,44 +529,21 @@ type ContestRegRez = {
 	registration: ContestRegistration;
 };
 
-function RegistrationTable({ users, usacoMode }: { users: ContestRegRez[]; usacoMode: boolean }) {
-	if (users.length == 0) {
-		return (
-			<div class="list-group">
-				<div class="list-group-head font-bold">User</div>
-				<div class="list-group-item">{getText("no_users")}</div>
-			</div>
-		);
+function ContestRegistrations(params: { contestid: string; usacomode: string }) {
+	const contestID = parseInt(params.contestid);
+	if (isNaN(contestID)) {
+		throw new Error("Invalid contest ID");
 	}
-	return (
-		<div class="list-group">
-			<div class="list-group-head font-bold">User</div>
-			{users.map((user) => (
-				<a href={`/profile/${user.user.name}`} class="list-group-item inline-flex align-middle items-center" key={user.user.id}>
-					<img class="flex-none mr-2 rounded" src={`/api/user/getGravatar?name=${user.user.name}&s=32`} /> {user.user.name} (#{user.user.id}){" "}
-					{usacoMode && (
-						<span class="badge badge-lite ml-2">
-							{user.registration.individual_start === null ? (
-								<>{getText("not_started")}</>
-							) : (
-								<ContestRemainingTime target_time={dayjs(user.registration.individual_end)} reload={false} />
-							)}
-						</span>
-					)}
-				</a>
-			))}
-		</div>
-	);
-}
+	const usacoMode = params.usacomode == "true";
 
-function ContestRegistrations({ contestid, usacomode }: { contestid: string; usacomode: string }) {
 	let [users, setUsers] = useState<ContestRegRez[]>([]);
 	let [page, setPage] = useState<number>(1);
 	let [numPages, setNumPages] = useState<number>(1);
 	let [cnt, setCnt] = useState<number>(-1);
+	let [name, setName] = useState<string>("");
 
 	async function poll() {
-		let res = await getCall(`/contest/${contestid}/registrations`, { offset: 50 * (page - 1), limit: 50 });
+		let res = await getCall(`/contest/${contestID}/registrations`, { offset: 50 * (page - 1), limit: 50, name_fuzzy: name.length > 0 ? name : undefined });
 		if (res.status !== "success") {
 			apiToast(res);
 			throw new Error("Couldn't fetch users");
@@ -575,14 +553,31 @@ function ContestRegistrations({ contestid, usacomode }: { contestid: string; usa
 		setNumPages(Math.floor(res.data.total_count / 50) + (res.data.total_count % 50 != 0 ? 1 : 0));
 	}
 
+	function updateName(newName: string) {
+		setPage(1);
+		setName(newName);
+	}
+
 	useEffect(() => {
 		poll().catch(console.error);
-	}, [page]);
+	}, [page, name]);
 
 	return (
 		<div class="my-4">
+			<label class="block my-2">
+				<span class="form-label">{getText("nameFilter")}: </span>
+				<input
+					class="form-input"
+					type="text"
+					onInput={(e) => {
+						updateName(e.currentTarget.value);
+					}}
+					value={name}
+				/>
+			</label>
+			{cnt >= 0 && <span class="block text-lg my-2"> {getText("num_registrations", cnt)}</span>}
 			<button
-				class={"btn btn-blue block mb-2"}
+				class={"btn btn-blue block"}
 				onClick={() => {
 					setUsers([]);
 					setPage(1);
@@ -592,9 +587,66 @@ function ContestRegistrations({ contestid, usacomode }: { contestid: string; usa
 			>
 				{getText("reload")}
 			</button>
-			{cnt >= 0 && getText("num_registrations", cnt)}
 			<Paginator numpages={numPages} page={page} setPage={setPage} showArrows={true} />
-			<RegistrationTable users={users} usacoMode={usacomode == "true"} />
+			{users.length === 0 ? (
+				<div class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center">{getText("noUserFound")}</div>
+			) : (
+				<table class="kn-table">
+					<thead>
+						<tr>
+							<th class="kn-table-cell" scope="col">
+								{getText("username")}
+							</th>
+							{usacoMode && (
+								<th class="kn-table-cell" scope="col">
+									{getText("started_at")}
+								</th>
+							)}
+							<th class="kn-table-cell" scope="col">
+								{getText("action")}
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+						{users.map((user) => (
+							<tr class="kn-table-row" key={user.user.id}>
+								<td class="kn-table-cell">
+									<a href={`/profile/${user.user.name}`}>
+										<img class="inline-block mr-2 rounded align-middle" src={`/api/user/getGravatar?name=${user.user.name}&s=32`} />{" "}
+										<span class="align-middle">{user.user.name}</span>
+									</a>
+								</td>
+								{usacoMode && (
+									<td class="kn-table-cell">
+										{user.registration.individual_start === null ? (
+											<>{getText("not_started")}</>
+										) : (
+											<ContestRemainingTime target_time={dayjs(user.registration.individual_end)} reload={false} />
+										)}
+									</td>
+								)}
+								<td class="kn-table-cell">
+									<button
+										class="btn btn-red"
+										onClick={async () => {
+											if (!(await confirm(getText("confirmUserKick")))) {
+												return;
+											}
+											let res = await postCall(`/contest/${contestID}/kickUser`, { name: user.user.name });
+											apiToast(res);
+											if (res.status === "success") {
+												await poll();
+											}
+										}}
+									>
+										{getText("kick_user")}
+									</button>
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			)}
 		</div>
 	);
 }

@@ -44,8 +44,8 @@ func (s *BaseAPI) StartContestRegistration(ctx context.Context, contest *kilonov
 	return nil
 }
 
-func (s *BaseAPI) ContestRegistrations(ctx context.Context, contestID, limit, offset int) ([]*kilonova.ContestRegistration, *StatusError) {
-	regs, err := s.db.ContestRegistrations(ctx, contestID, limit, offset)
+func (s *BaseAPI) ContestRegistrations(ctx context.Context, contestID int, fuzzyName *string, limit, offset int) ([]*kilonova.ContestRegistration, *StatusError) {
+	regs, err := s.db.ContestRegistrations(ctx, contestID, fuzzyName, limit, offset)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get registrations")
 	}
@@ -70,4 +70,14 @@ func (s *BaseAPI) ContestRegistration(ctx context.Context, contestID, userID int
 	}
 
 	return reg, nil
+}
+
+func (s *BaseAPI) KickUserFromContest(ctx context.Context, contestID, userID int) *StatusError {
+	if err := s.db.DeleteContestRegistration(ctx, contestID, userID); err != nil {
+		return WrapError(err, "Couldn't kick contestant")
+	}
+	if err := s.db.ClearUserContestSubmissions(ctx, contestID, userID); err != nil {
+		return WrapError(err, "Couldn't reset contest submissions")
+	}
+	return nil
 }

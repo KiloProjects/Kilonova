@@ -4,10 +4,12 @@
 {{ template "topbar.html" .}}
 
 <div class="page-holder">
-    <div class="page-content-full">
-        <h2>{{getText "contest_registrations"}}</h2>
-
-        <kn-contest-registrations contestid="{{.Contest.ID}}" usacomode="{{isUSACOstyle .Contest}}"></kn-contest-registrations>
+    <div class="page-content-full-wrapper">
+        <div class="segment-panel">
+            <h2>{{getText "contest_registrations"}}</h2>
+    
+            <kn-contest-registrations contestid="{{.Contest.ID}}" usacomode="{{isUSACOstyle .Contest}}"></kn-contest-registrations>
+        </div>
     </div>
 </div>
 

@@ -272,6 +272,7 @@ func (s *API) Handler() http.Handler {
 			r.Post("/startRegistration", s.startContestRegistration)
 			r.With(s.MustBeAuthed).Get("/checkRegistration", s.checkRegistration)
 			r.With(s.validateContestEditor).Get("/registrations", s.contestRegistrations)
+			r.With(s.validateContestEditor).Post("/kickUser", s.stripContestRegistration)
 			r.With(s.MustBeAdmin).Post("/forceRegister", s.forceRegisterForContest)
 
 			r.Route("/update", func(r chi.Router) {

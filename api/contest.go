@@ -441,6 +441,30 @@ func (s *API) checkRegistration(w http.ResponseWriter, r *http.Request) {
 	returnData(w, reg)
 }
 
+func (s *API) stripContestRegistration(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		Username string `json:"name"`
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 400)
+		return
+	}
+
+	user, err := s.base.UserBriefByName(r.Context(), args.Username)
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	if err := s.base.KickUserFromContest(r.Context(), util.Contest(r).ID, user.ID); err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	returnData(w, "Kicked user")
+}
+
 type regRez struct {
 	User *kilonova.UserBrief           `json:"user"`
 	Reg  *kilonova.ContestRegistration `json:"registration"`
@@ -449,6 +473,8 @@ type regRez struct {
 func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
+		FuzzyName *string `json:"name_fuzzy"`
+
 		Limit  int `json:"limit"`
 		Offset int `json:"offset"`
 	}
@@ -461,7 +487,7 @@ func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 		args.Limit = 50
 	}
 
-	regs, err := s.base.ContestRegistrations(r.Context(), util.Contest(r).ID, args.Limit, args.Offset)
+	regs, err := s.base.ContestRegistrations(r.Context(), util.Contest(r).ID, args.FuzzyName, args.Limit, args.Offset)
 	if err != nil {
 		err.WriteError(w)
 		return

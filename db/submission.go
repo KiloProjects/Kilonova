@@ -138,6 +138,11 @@ func (s *DB) BulkUpdateSubmissions(ctx context.Context, filter kilonova.Submissi
 	return err
 }
 
+func (s *DB) ClearUserContestSubmissions(ctx context.Context, contestID, userID int) error {
+	_, err := s.pgconn.Exec(ctx, "UPDATE submissions SET contest_id = NULL WHERE contest_id = $1 AND user_id = $2", contestID, userID)
+	return err
+}
+
 func (s *DB) DeleteSubmission(ctx context.Context, id int) error {
 	_, err := s.pgconn.Exec(ctx, "DELETE FROM submissions WHERE id = $1", id)
 	return err

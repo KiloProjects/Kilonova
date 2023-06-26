@@ -9,22 +9,41 @@ import { UserBrief } from "../api/submissions";
 
 function UserTable({ users }: { users: UserBrief[] }) {
 	if (users.length == 0) {
-		return (
-			<div class="list-group">
-				<div class="list-group-head font-bold">User</div>
-				<div class="list-group-item">{getText("no_users")}</div>
-			</div>
-		);
+		return <div class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center">{getText("noUserFound")}</div>;
 	}
 	return (
-		<div class="list-group">
-			<div class="list-group-head font-bold">User</div>
-			{users.map((user) => (
-				<a href={`/profile/${user.name}`} class="list-group-item inline-flex align-middle items-center" key={user.id}>
-					<img class="flex-none mr-2 rounded" src={`/api/user/getGravatar?name=${user.name}&s=32`} /> #{user.id}: {user.name}
-				</a>
-			))}
-		</div>
+		<table class="kn-table">
+			<thead>
+				<tr>
+					<th class="kn-table-cell w-1/12" scope="col">
+						{getText("id")}
+					</th>
+					<th class="kn-table-cell" scope="col">
+						User
+					</th>
+					<th class="kn-table-cell" scope="col">
+						{getText("admin")}
+					</th>
+					<th class="kn-table-cell" scope="col">
+						{getText("proposer")}
+					</th>
+				</tr>
+			</thead>
+			<tbody>
+				{users.map((user) => (
+					<tr class="kn-table-row" key={user.id}>
+						<td class="kn-table-cell">{user.id}</td>
+						<td class="kn-table-cell">
+							<a href={`/profile/${user.name}`} class="inline-flex align-middle items-center">
+								<img class="flex-none mr-2 rounded" src={`/api/user/getGravatar?name=${user.name}&s=32`} /> {user.name}
+							</a>
+						</td>
+						<td class="kn-table-cell">{user.admin ? <span class="text-lg">✅</span> : <span class="text-lg">❌</span>}</td>
+						<td class="kn-table-cell">{user.proposer ? <span class="text-lg">✅</span> : <span class="text-lg">❌</span>}</td>
+					</tr>
+				))}
+			</tbody>
+		</table>
 	);
 }
 
@@ -32,9 +51,10 @@ function UserList() {
 	let [users, setUsers] = useState<UserBrief[]>([]);
 	let [page, setPage] = useState<number>(1);
 	let [numPages, setNumPages] = useState<number>(1);
+	let [name, setName] = useState("");
 
 	async function poll() {
-		let res = await getCall("/admin/getAllUsers", { offset: 50 * (page - 1), limit: 50 });
+		let res = await getCall("/admin/getAllUsers", { offset: 50 * (page - 1), limit: 50, name_fuzzy: name.length > 0 ? name : undefined });
 		if (res.status !== "success") {
 			apiToast(res);
 			throw new Error("Couldn't fetch users");
@@ -43,15 +63,32 @@ function UserList() {
 		setNumPages(Math.floor(res.data.total_count / 50) + (res.data.total_count % 50 != 0 ? 1 : 0));
 	}
 
+	function updateName(newName: string) {
+		setName(newName);
+		setPage(1);
+	}
+
 	useEffect(() => {
 		poll().catch(console.error);
-	}, [page]);
+	}, [page, name]);
 
 	return (
-		<div class="my-4">
+		<>
+			<h1>{getText("users")}</h1>
+			<label class="block my-2">
+				<span class="form-label">{getText("name")}: </span>
+				<input
+					class="form-input"
+					type="text"
+					onInput={(e) => {
+						updateName(e.currentTarget.value);
+					}}
+					value={name}
+				/>
+			</label>
 			<Paginator numpages={numPages} page={page} setPage={setPage} showArrows={true} />
 			<UserTable users={users} />
-		</div>
+		</>
 	);
 }
 

@@ -9,9 +9,15 @@ import (
 	"github.com/KiloProjects/kilonova"
 )
 
-func (s *DB) ContestRegistrations(ctx context.Context, contestID, limit, offset int) ([]*kilonova.ContestRegistration, error) {
+func (s *DB) ContestRegistrations(ctx context.Context, contestID int, fuzzyName *string, limit, offset int) ([]*kilonova.ContestRegistration, error) {
 	var reg []*kilonova.ContestRegistration
-	err := s.conn.SelectContext(ctx, &reg, "SELECT * FROM contest_registrations WHERE contest_id = $1 ORDER BY created_at ASC "+FormatLimitOffset(limit, offset), contestID)
+	additionalQ := ""
+	args := []any{contestID}
+	if fuzzyName != nil {
+		additionalQ = " AND EXISTS (SELECT 1 FROM users WHERE id = user_id AND position(lower(unaccent($2)) in format('#%s %s', id, lower(unaccent(name)))) > 0) "
+		args = append(args, fuzzyName)
+	}
+	err := s.conn.SelectContext(ctx, &reg, "SELECT * FROM contest_registrations WHERE contest_id = $1 "+additionalQ+" ORDER BY created_at ASC "+FormatLimitOffset(limit, offset), args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return []*kilonova.ContestRegistration{}, nil
@@ -52,5 +58,10 @@ func (s *DB) InsertContestRegistration(ctx context.Context, contestID, userID in
 
 func (s *DB) StartContestRegistration(ctx context.Context, contestID, userID int, startTime time.Time, endTime time.Time) error {
 	_, err := s.pgconn.Exec(ctx, "UPDATE contest_registrations SET individual_start_at = $1, individual_end_at = $2 WHERE contest_id = $3 AND user_id = $4", startTime, endTime, contestID, userID)
+	return err
+}
+
+func (s *DB) DeleteContestRegistration(ctx context.Context, contestID, userID int) error {
+	_, err := s.pgconn.Exec(ctx, "DELETE FROM contest_registrations WHERE user_id = $1 AND contest_id = $2", userID, contestID)
 	return err
 }

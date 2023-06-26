@@ -317,7 +317,7 @@ ro = "Ștergere Profil"
 
 [delAccConfirmation]
 en = "Are you sure you want to prune the user?"
-ro = "Sunteți siguri că vreți să ștergeți utilizatorul?"
+ro = "Ești sigur că vrei să ștergi utilizatorul?"
 
 [confirmedEmail]
 en = "Email confirmed for user %s"
@@ -653,11 +653,15 @@ ro = "Titlu gol"
 
 [confirmProblemDelete]
 en = "Are you sure you want to delete the problem?"
-ro = "Sigur vreți să ștergeți problema?"
+ro = "Ești sigur că vrei să ștergi problema?"
 
 [confirmTestDelete]
 en = "Are you sure you want to delete the test?"
-ro = "Sunteți sigur că vreți să ștergeți testul?"
+ro = "Ești sigur că vrei să ștergi testul?"
+
+[confirmUserKick]
+en = "Are you sure you want to kick this user from the contest?"
+ro = "Ești sigur că vrei să dai afară concurent din concurs?"
 
 [error.message]
 en = "That's an error"
@@ -848,6 +852,10 @@ ro = "Nicio submisie găsită"
 en = "No problem found"
 ro = "Nicio problemă găsită"
 
+[noUserFound]
+en = "No user found"
+ro = "Niciun utilizator găsit"
+
 [show]
 en = "Show"
 ro = "Afișare"
@@ -996,9 +1004,17 @@ ro = "Fă Administrator"
 en = "Make Proposer"
 ro = "Fă Propunător"
 
+[admin]
+en = "Admin"
+ro = "Administrator"
+
 [admins]
 en = "Admins"
 ro = "Administratori"
+
+[proposer]
+en = "Proposer"
+ro = "Propunător"
 
 [proposers]
 en = "Proposers"
@@ -1359,6 +1375,9 @@ ro = "Ești sigur că vrei să ștergi această submisie?"
 en = "Are you sure you want to delete this list?"
 ro = "Ești sigur că vrei să ștergi această listă?"
 
+[nameFilter]
+en = "Filter by name"
+ro = "Filtrare după nume"
 
 [oneAttachmentDeleteConfirm]
 en = "Are you sure you want to delete the attachment?"
@@ -1711,6 +1730,18 @@ ro = "Încărcare fișier"
 [num_registrations]
 en = "%d registrations"
 ro = "%d înregistrări"
+
+[started_at]
+en = "Participation status"
+ro = "Status participare"
+
+[action]
+en = "Action"
+ro = "Acțiune"
+
+[kick_user]
+en = "Kick"
+ro = "Exclude"
 
 [register_during_contest]
 en = "Registering during contest is allowed"

@@ -22,7 +22,6 @@ export type UserBrief = {
 	name: string;
 	admin: boolean;
 	proposer: boolean;
-	bio?: string;
 };
 
 export type Problem = {
