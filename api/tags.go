@@ -82,15 +82,21 @@ func (s *API) updateTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if args.Type != kilonova.TagTypeNone {
-		if err := s.base.UpdateTagType(r.Context(), args.ID, args.Type); err != nil {
+	tag, err := s.base.TagByID(r.Context(), args.ID)
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	if args.Type != kilonova.TagTypeNone && args.Type != tag.Type {
+		if err := s.base.UpdateTagType(r.Context(), tag, args.Type); err != nil {
 			err.WriteError(w)
 			return
 		}
 	}
 
-	if args.Name != nil {
-		if err := s.base.UpdateTagName(r.Context(), args.ID, *args.Name); err != nil {
+	if args.Name != nil && *args.Name != tag.Name {
+		if err := s.base.UpdateTagName(r.Context(), tag, *args.Name); err != nil {
 			err.WriteError(w)
 			return
 		}

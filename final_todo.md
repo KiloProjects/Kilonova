@@ -1,8 +1,8 @@
 TODO FOR 1.0:
 ---
 
-- Username filtering on /admin/users/ and contest page
-- Allow to kick users from contest
+- [x] Username filtering on /admin/users/ and contest page
+- [x] Allow to kick users from contest
 - Blog support
     - Proposer guide
 - Polygon format

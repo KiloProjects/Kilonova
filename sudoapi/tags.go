@@ -3,6 +3,7 @@ package sudoapi
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"sort"
 	"strings"
@@ -79,21 +80,23 @@ func (s *BaseAPI) TagByLooseName(ctx context.Context, name string) (*kilonova.Ta
 	return tag, nil
 }
 
-func (s *BaseAPI) UpdateTagName(ctx context.Context, id int, newName string) *StatusError {
+func (s *BaseAPI) UpdateTagName(ctx context.Context, tag *kilonova.Tag, newName string) *StatusError {
 	newName = strings.TrimSpace(newName)
 	if newName == "" {
 		return ErrMissingRequired
 	}
-	if err := s.db.UpdateTagName(ctx, id, newName); err != nil {
+	if err := s.db.UpdateTagName(ctx, tag.ID, newName); err != nil {
 		return WrapError(err, "Couldn't update tag")
 	}
+	s.LogUserAction(ctx, fmt.Sprintf("Tag %q name (type %q) changed to to %q", tag.Name, tag.Type, newName))
 	return nil
 }
 
-func (s *BaseAPI) UpdateTagType(ctx context.Context, id int, newType kilonova.TagType) *StatusError {
-	if err := s.db.UpdateTagType(ctx, id, newType); err != nil {
+func (s *BaseAPI) UpdateTagType(ctx context.Context, tag *kilonova.Tag, newType kilonova.TagType) *StatusError {
+	if err := s.db.UpdateTagType(ctx, tag.ID, newType); err != nil {
 		return WrapError(err, "Couldn't update tag")
 	}
+	s.LogUserAction(ctx, fmt.Sprintf("Tag %q changed from %q to %q", tag.Name, tag.Type, newType))
 	return nil
 }
 
