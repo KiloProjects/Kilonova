@@ -65,12 +65,10 @@ type CommonConf struct {
 
 type FeaturesConf struct {
 	Grader bool `toml:"grader"`
-	Signup bool `toml:"manual_signup"`
 	Pastes bool `toml:"pastes"`
 
 	AllSubs bool `toml:"all_subs"`
 
-	CCDisclaimer bool `toml:"cc_disclaimer"`
 	FrontPagePbs bool `toml:"front_page_problems"`
 }
 

@@ -31,7 +31,7 @@ type dbContestAnnouncement struct {
 
 func (s *DB) CreateContestQuestion(ctx context.Context, contestID, authorID int, text string) (int, error) {
 	var id int
-	err := s.conn.GetContext(ctx, &id, `INSERT INTO contest_questions (author_id, contest_id, question) VALUES ($1, $2, $3) RETURNING id`, authorID, contestID, text)
+	err := s.pgconn.QueryRow(ctx, `INSERT INTO contest_questions (author_id, contest_id, question) VALUES ($1, $2, $3) RETURNING id`, authorID, contestID, text).Scan(&id)
 	if err != nil {
 		return -1, err
 	}

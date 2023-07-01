@@ -13,6 +13,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var (
+	SignupEnabled = config.GenFlag("feature.platform.signup", true)
+)
+
 // Login
 
 func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (int, *StatusError) {
@@ -51,7 +55,7 @@ func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (int, *StatusErr
 var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, theme kilonova.PreferredTheme) (int, *StatusError) {
-	if !config.Features.Signup {
+	if !SignupEnabled.Value() {
 		return -1, kilonova.ErrFeatureDisabled
 	}
 

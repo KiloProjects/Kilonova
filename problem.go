@@ -121,16 +121,20 @@ type Attachment struct {
 	Size int `json:"data_size"`
 }
 
+// Should be used only for interacting with db from sudoapi
 type AttachmentFilter struct {
-	ID *int `json:"id"`
-	// ProblemID *int    `json:"problem_id"`
-	Visible *bool   `json:"visible"`
-	Private *bool   `json:"private"`
-	Exec    *bool   `json:"exec"`
-	Name    *string `json:"name"`
+	ID         *int
+	IDs        []int
+	ProblemID  *int
+	BlogPostID *int
 
-	Limit  int `json:"limit"`
-	Offset int `json:"offset"`
+	Visible *bool
+	Private *bool
+	Exec    *bool
+	Name    *string
+
+	Limit  int
+	Offset int
 }
 
 type AttachmentUpdate struct {

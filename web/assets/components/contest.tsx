@@ -24,32 +24,36 @@ export function contestToNetworkDate(timestamp: string): string {
 	return djs.format(RFC1123Z);
 }
 
+function remainingTimeStr(time: dayjs.Dayjs): string {
+	let diff = time.diff(dayjs(), "s");
+	if (diff < 0) {
+		return getText("time_expired");
+	}
+	const seconds = diff % 60;
+	diff = (diff - seconds) / 60;
+	const minutes = diff % 60;
+	diff = (diff - minutes) / 60;
+	const hours = diff;
+	if (hours >= 48) {
+		// >2 days
+		return getText("days", Math.floor(diff / 24));
+	}
+
+	return sprintf("%02d:%02d:%02d", hours, minutes, seconds);
+}
+
 export function ContestRemainingTime({ target_time, reload }: { target_time: dayjs.Dayjs; reload: boolean }) {
-	let [text, setText] = useState<string>("");
+	let [text, setText] = useState<string>(remainingTimeStr(target_time));
 
 	function updateTime() {
-		let diff = target_time.diff(dayjs(), "s");
-		if (diff < 0) {
-			if (reload) {
+		setText(remainingTimeStr(target_time));
+		if (reload) {
+			let diff = target_time.diff(dayjs(), "s");
+			if (diff < 0) {
 				console.log("Reloading webpage...");
 				window.location.reload();
 			}
-			setText(getText("time_expired"));
-			return;
 		}
-		const seconds = diff % 60;
-		diff = (diff - seconds) / 60;
-		const minutes = diff % 60;
-		diff = (diff - minutes) / 60;
-		const hours = diff;
-
-		if (hours >= 48) {
-			// >2 days
-			setText(getText("days", Math.floor(diff / 24)));
-			return;
-		}
-
-		setText(sprintf("%02d:%02d:%02d", hours, minutes, seconds));
 	}
 
 	useEffect(() => {

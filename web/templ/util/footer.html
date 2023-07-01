@@ -30,8 +30,7 @@
 				</ul>
 			</div>
 
-            {{ if ccDisclaimer }}
-
+            {{ if (boolFlag "feature.frontend.cc_disclaimer") }}
 	            {{$disclaimerImg := hashedName "static/by-nc-sa.eu.png" -}}
                 <div class="h-auto mb-2">
                     <div class="text-lg">Copyright policy</div>

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/gosimple/slug"
 	"go.uber.org/zap"
 )
 
@@ -147,7 +146,7 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID in
 		return kilonova.ErrMissingRequired
 	}
 	if p.TestName == "" {
-		p.TestName = slug.Make(p.Name)
+		p.TestName = kilonova.MakeSlug(p.Name)
 	}
 	if p.MemoryLimit == 0 {
 		p.MemoryLimit = 65536 // 64MB

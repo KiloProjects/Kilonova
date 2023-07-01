@@ -31,7 +31,7 @@ func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) *StatusErr
 		config.Features.Grader = *upd.Grader
 	}
 	if upd.Signup != nil {
-		config.Features.Signup = *upd.Signup
+		SignupEnabled.Update(*upd.Signup)
 	}
 	if upd.Pastes != nil {
 		config.Features.Pastes = *upd.Pastes
@@ -40,7 +40,11 @@ func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) *StatusErr
 		config.Features.AllSubs = *upd.AllSubs
 	}
 	if upd.CCDisclaimer != nil {
-		config.Features.CCDisclaimer = *upd.CCDisclaimer
+		flg, ok := config.GetFlag[bool]("feature.frontend.cc_disclaimer")
+		if !ok {
+			zap.S().Warn("CC disclaimer flag not present")
+		}
+		flg.Update(*upd.CCDisclaimer)
 	}
 	if upd.FrontPagePbs != nil {
 		config.Features.FrontPagePbs = *upd.FrontPagePbs

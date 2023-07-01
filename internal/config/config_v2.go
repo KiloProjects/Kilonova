@@ -61,6 +61,47 @@ func GenFlag[T configT](name string, defaultVal T) Flag[T] {
 	return f
 }
 
+func GetFlagVal[T configT](name string) (T, bool) {
+	flagMapMu.RLock()
+	defer flagMapMu.RUnlock()
+	flg, ok := allFlags[name]
+	if !ok {
+		return *new(T), false
+	}
+	switch v := flg.(type) {
+	case *flag[T]:
+		return v.Value(), true
+	}
+	return *new(T), false
+}
+
+func GetFlag[T configT](name string) (Flag[T], bool) {
+	flagMapMu.RLock()
+	defer flagMapMu.RUnlock()
+	flg, ok := allFlags[name]
+	if !ok {
+		return nil, false
+	}
+	switch v := flg.(type) {
+	case *flag[T]:
+		return v, true
+	}
+	return nil, false
+}
+
+func FlagList[T configT](name string) []Flag[T] {
+	flagMapMu.RLock()
+	defer flagMapMu.RUnlock()
+	var flags []Flag[T]
+	for _, val := range allFlags {
+		switch f := val.(type) {
+		case *flag[T]:
+			flags = append(flags, f)
+		}
+	}
+	return flags
+}
+
 func trySneakUpdate[T configT](name string, newVal T) {
 	val, ok := allFlags[name]
 	if !ok {

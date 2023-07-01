@@ -41,6 +41,10 @@ const (
 	TimeFormatExtended = "02/01/2006 15:04:05"
 )
 
+var (
+	CCDisclaimer = config.GenFlag("feature.frontend.cc_disclaimer", true)
+)
+
 //go:embed static
 var embedded embed.FS
 
@@ -522,12 +526,18 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			return rez
 		},
 
+		"boolFlag": func(name string) bool {
+			val, ok := config.GetFlagVal[bool](name)
+			if !ok {
+				zap.S().Warnf("Flag with name %q is not bool", name)
+			}
+			return val
+		},
+
 		// for admin configuration
-		"signupEnabled": func() bool { return config.Features.Signup },
 		"pastesEnabled": func() bool { return config.Features.Pastes },
 		"graderEnabled": func() bool { return config.Features.Grader },
 		"allSubsView":   func() bool { return config.Features.AllSubs },
-		"ccDisclaimer":  func() bool { return config.Features.CCDisclaimer },
 		"frontPagePbs":  func() bool { return config.Features.FrontPagePbs },
 		"defaultLang":   func() string { return config.Common.DefaultLang },
 		"testMaxMemMB":  func() int { return config.Common.TestMaxMemKB / 1024 },

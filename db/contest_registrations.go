@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/jackc/pgx/v5"
 )
 
 func (s *DB) ContestRegistrations(ctx context.Context, contestID int, fuzzyName *string, limit, offset int) ([]*kilonova.ContestRegistration, error) {
@@ -29,9 +30,9 @@ func (s *DB) ContestRegistrations(ctx context.Context, contestID int, fuzzyName 
 
 func (s *DB) ContestRegistrationCount(ctx context.Context, contestID int) (int, error) {
 	var cnt int
-	err := s.conn.GetContext(ctx, &cnt, "SELECT COUNT(*) FROM contest_registrations WHERE contest_id = $1", contestID)
+	err := s.pgconn.QueryRow(ctx, "SELECT COUNT(*) FROM contest_registrations WHERE contest_id = $1", contestID).Scan(&cnt)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return -1, nil
 		}
 		return -1, err

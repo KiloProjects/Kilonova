@@ -72,7 +72,7 @@
         </div>
         <div class="block">
             <label class="inline-flex items-center text-lg">
-                <input class="form-checkbox" name="signup" id="signup_feature" type="checkbox" {{if signupEnabled}}checked{{end}}>
+                <input class="form-checkbox" name="signup" id="signup_feature" type="checkbox" {{if boolFlag `feature.platform.signup`}}checked{{end}}>
                 <span class="ml-2">{{getText "featureSet.signup"}}</span>
             </label>
         </div>
@@ -90,7 +90,7 @@
         </div>
         <div class="block">
             <label class="inline-flex items-center text-lg">
-                <input class="form-checkbox" name="ccDisclaimer" id="cc_disclaimer_feature" type="checkbox" {{if ccDisclaimer}}checked{{end}}>
+                <input class="form-checkbox" name="ccDisclaimer" id="cc_disclaimer_feature" type="checkbox" {{if (boolFlag `feature.frontend.cc_disclaimer`)}}checked{{end}}>
                 <span class="ml-2">{{getText "featureSet.ccDisclaimer"}}</span>
             </label>
         </div>

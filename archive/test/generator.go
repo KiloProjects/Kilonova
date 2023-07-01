@@ -11,7 +11,6 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"github.com/gosimple/slug"
 	"go.uber.org/zap"
 )
 
@@ -25,7 +24,7 @@ func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, bas
 
 	testName := strings.TrimSpace(pb.TestName)
 	if testName == "" {
-		testName = slug.Make(testName)
+		testName = kilonova.MakeSlug(testName)
 	}
 
 	// First, save the tests

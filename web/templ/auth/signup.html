@@ -88,7 +88,7 @@ document.getElementById("signup_form").addEventListener("submit", signup)
 
 
 {{ define "content" }}
-    {{ if not signupEnabled }}
+    {{ if not (boolFlag "feature.platform.signup") }}
         {{ template "content_signup_disabled" .}}    
     {{ else }}
         {{ template "content_signup_enabled" .}}    

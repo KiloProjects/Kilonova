@@ -1,5 +1,7 @@
 package kilonova
 
+import "github.com/gosimple/slug"
+
 type Mailer interface {
 	SendEmail(msg *MailerMessage) error
 }
@@ -19,4 +21,8 @@ type RenderContext struct {
 
 type MarkdownRenderer interface {
 	Render(src []byte, ctx *RenderContext) ([]byte, error)
+}
+
+func MakeSlug(org string) string {
+	return slug.MakeLang(org, "ro")
 }
