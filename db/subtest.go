@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/KiloProjects/kilonova"
 )
@@ -58,33 +57,31 @@ func (s *DB) SubTest(ctx context.Context, id int) (*kilonova.SubTest, error) {
 }
 
 func (s *DB) UpdateSubTest(ctx context.Context, id int, upd kilonova.SubTestUpdate) error {
-	toUpd, args := subtestUpdateQuery(&upd)
-	if len(toUpd) == 0 {
-		return kilonova.ErrNoUpdates
+	ub := newUpdateBuilder()
+	subtestUpdateQuery(&upd, ub)
+	if ub.CheckUpdates() != nil {
+		return ub.CheckUpdates()
 	}
-	args = append(args, id)
-	query := s.conn.Rebind(fmt.Sprintf("UPDATE submission_tests SET %s WHERE id = ?", strings.Join(toUpd, ", ")))
-	_, err := s.conn.ExecContext(ctx, query, args...)
+	fb := ub.MakeFilter()
+	fb.AddConstraint("id = %s", id)
+	_, err := s.conn.ExecContext(ctx, "UPDATE submission_tests SET "+fb.WithUpdate(), fb.Args()...)
 	return err
 }
 
-func subtestUpdateQuery(upd *kilonova.SubTestUpdate) ([]string, []any) {
-	toUpd, args := []string{}, []any{}
+func subtestUpdateQuery(upd *kilonova.SubTestUpdate, ub *updateBuilder) {
 	if v := upd.Memory; v != nil {
-		toUpd, args = append(toUpd, "memory = ?"), append(args, v)
+		ub.AddUpdate("memory = %s", v)
 	}
 	if v := upd.Score; v != nil {
-		toUpd, args = append(toUpd, "score = ?"), append(args, v)
+		ub.AddUpdate("score = %s", v)
 	}
 	if v := upd.Time; v != nil {
-		toUpd, args = append(toUpd, "time = ?"), append(args, v)
+		ub.AddUpdate("time = %s", v)
 	}
 	if v := upd.Verdict; v != nil {
-		toUpd, args = append(toUpd, "verdict = ?"), append(args, v)
+		ub.AddUpdate("verdict = %s", v)
 	}
 	if v := upd.Done; v != nil {
-		toUpd, args = append(toUpd, "done = ?"), append(args, v)
+		ub.AddUpdate("done = %s", v)
 	}
-
-	return toUpd, args
 }

@@ -115,15 +115,7 @@ func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilono
 }
 
 func (s *DB) UpdateSubmission(ctx context.Context, id int, upd kilonova.SubmissionUpdate) error {
-	ub := newUpdateBuilder()
-	subUpdateQuery(&upd, ub)
-	if ub.CheckUpdates() != nil {
-		return ub.CheckUpdates()
-	}
-	fb := ub.MakeFilter()
-	fb.AddConstraint("id = %s", id)
-	_, err := s.pgconn.Exec(ctx, fmt.Sprintf(`UPDATE submissions SET %s`, fb.WithUpdate()), fb.Args()...)
-	return err
+	return s.BulkUpdateSubmissions(ctx, kilonova.SubmissionFilter{ID: &id}, upd)
 }
 
 func (s *DB) BulkUpdateSubmissions(ctx context.Context, filter kilonova.SubmissionFilter, upd kilonova.SubmissionUpdate) error {
@@ -134,7 +126,7 @@ func (s *DB) BulkUpdateSubmissions(ctx context.Context, filter kilonova.Submissi
 	}
 	fb := ub.MakeFilter()
 	subFilterQuery(&filter, fb)
-	_, err := s.pgconn.Exec(ctx, fmt.Sprintf(`UPDATE submissions SET %s`, fb.WithUpdate()), fb.Args()...)
+	_, err := s.pgconn.Exec(ctx, `UPDATE submissions SET `+fb.WithUpdate(), fb.Args()...)
 	return err
 }
 

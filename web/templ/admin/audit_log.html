@@ -33,7 +33,7 @@
                     </th>
                     <th class="text-center px-2 py-1">
                         {{if .Author}}
-                            <i class="fas fa-user fa-fw"></i> {{.Author.Name}} (#{{.Author.ID}})
+                            <i class="fas fa-user fa-fw"></i> <a href="/profile/{{.Author.Name}}">{{.Author.Name}}</a> (#{{.Author.ID}})
                         {{else}}
                             {{if .SystemLog}}
                                 <i class="fas fa-cog fa-fw"></i> {{getText "system"}}	

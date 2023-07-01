@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -17,7 +16,7 @@ func (s *DB) CreateSubTask(ctx context.Context, subtask *kilonova.SubTask) error
 	}
 	var id int
 	// Do insertion
-	err := s.conn.GetContext(ctx, &id, "INSERT INTO subtasks (problem_id, visible_id, score) VALUES ($1, $2, $3) RETURNING id", subtask.ProblemID, subtask.VisibleID, subtask.Score)
+	err := s.pgconn.QueryRow(ctx, "INSERT INTO subtasks (problem_id, visible_id, score) VALUES ($1, $2, $3) RETURNING id", subtask.ProblemID, subtask.VisibleID, subtask.Score).Scan(&id)
 	if err != nil {
 		return err
 	}
@@ -105,7 +104,7 @@ func (s *DB) UpdateSubTask(ctx context.Context, id int, upd kilonova.SubTaskUpda
 	fb := ub.MakeFilter()
 	fb.AddConstraint("id = %s", id)
 
-	_, err := s.pgconn.Exec(ctx, fmt.Sprintf("UPDATE subtasks SET %s", fb.WithUpdate()), fb.Args()...)
+	_, err := s.pgconn.Exec(ctx, "UPDATE subtasks SET "+fb.WithUpdate(), fb.Args()...)
 	if err != nil {
 		zap.S().Warn(err)
 	}

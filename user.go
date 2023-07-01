@@ -61,6 +61,9 @@ type UserFilter struct {
 	// For registrations
 	ContestID *int `json:"contest_id"`
 
+	// For session recognition
+	SessionID *string `json:"session_id"`
+
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
 }

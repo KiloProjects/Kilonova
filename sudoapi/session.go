@@ -33,7 +33,7 @@ func (s *BaseAPI) GetSession(ctx context.Context, sid string) (int, *StatusError
 }
 
 func (s *BaseAPI) SessionUser(ctx context.Context, sid string) (*kilonova.UserFull, *StatusError) {
-	user, err := s.db.UserBySessionID(ctx, sid)
+	user, err := s.db.User(ctx, kilonova.UserFilter{SessionID: &sid})
 	if err != nil {
 		return nil, WrapError(err, "Failed to get session user")
 	}

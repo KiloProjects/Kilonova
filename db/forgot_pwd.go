@@ -19,7 +19,7 @@ func (s *DB) GetPwdResetRequest(ctx context.Context, id string) (int, error) {
 		CreatedAt time.Time `db:"created_at"`
 		UserID    int       `db:"user_id"`
 	}
-	err := s.conn.GetContext(ctx, &request, `SELECT * FROM pwd_reset_requests WHERE id = $1`, id)
+	err := s.pgconn.QueryRow(ctx, `SELECT id, created_at, user_id FROM pwd_reset_requests WHERE id = $1`, id).Scan(&request.ID, &request.CreatedAt, &request.UserID)
 	if err != nil {
 		return -1, err
 	}

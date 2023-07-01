@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"strings"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/jackc/pgx/v5"
@@ -16,7 +15,7 @@ func (s *DB) CreateTest(ctx context.Context, test *kilonova.Test) error {
 	}
 
 	var id int
-	err := s.conn.GetContext(ctx, &id, "INSERT INTO tests (score, problem_id, visible_id) VALUES ($1, $2, $3) RETURNING id", test.Score, test.ProblemID, test.VisibleID)
+	err := s.pgconn.QueryRow(ctx, "INSERT INTO tests (score, problem_id, visible_id) VALUES ($1, $2, $3) RETURNING id", test.Score, test.ProblemID, test.VisibleID).Scan(&id)
 	if err == nil {
 		test.ID = id
 	}
@@ -42,20 +41,20 @@ func (s *DB) Tests(ctx context.Context, pbID int) ([]*kilonova.Test, error) {
 }
 
 func (s *DB) UpdateTest(ctx context.Context, id int, upd kilonova.TestUpdate) error {
-	toUpd, args := []string{}, []any{}
+	ub := newUpdateBuilder()
 	if v := upd.Score; v != nil {
-		toUpd, args = append(toUpd, "score = ?"), append(args, v)
+		ub.AddUpdate("score = %s", v)
 	}
 	if v := upd.VisibleID; v != nil {
-		toUpd, args = append(toUpd, "visible_id = ?"), append(args, v)
+		ub.AddUpdate("visible_id = %s", v)
 	}
-	if len(toUpd) == 0 {
-		return kilonova.ErrNoUpdates
+	if ub.CheckUpdates() != nil {
+		return ub.CheckUpdates()
 	}
-	args = append(args, id)
+	fb := ub.MakeFilter()
+	fb.AddConstraint("id = %s", id)
 
-	query := s.conn.Rebind("UPDATE tests SET " + strings.Join(toUpd, ", ") + " WHERE id = ?")
-	_, err := s.conn.ExecContext(ctx, query, args...)
+	_, err := s.conn.ExecContext(ctx, "UPDATE tests SET "+fb.WithUpdate(), fb.Args()...)
 	return err
 }
 

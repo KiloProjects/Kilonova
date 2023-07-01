@@ -4,8 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -34,7 +32,7 @@ type dbContest struct {
 const createContestQuery = `INSERT INTO contests (
 		name, start_time, end_time
 	) VALUES (
-		?, ?, ?
+		$1, $2, $3
 	) RETURNING id`
 
 func (s *DB) CreateContest(ctx context.Context, name string) (int, error) {
@@ -44,11 +42,11 @@ func (s *DB) CreateContest(ctx context.Context, name string) (int, error) {
 	var id int
 	// Default is one week from now, 2 hours
 	defaultStart := time.Now().AddDate(0, 0, 7).Truncate(time.Hour)
-	err := s.conn.GetContext(
-		ctx, &id, s.conn.Rebind(createContestQuery),
+	err := s.pgconn.QueryRow(
+		ctx, createContestQuery,
 		name,
 		defaultStart, defaultStart.Add(2*time.Hour),
-	)
+	).Scan(&id)
 	return id, err
 }
 
@@ -127,13 +125,14 @@ func (s *DB) VisibleRunningContests(ctx context.Context, userID int) ([]*kilonov
 }
 
 func (s *DB) UpdateContest(ctx context.Context, id int, upd kilonova.ContestUpdate) error {
-	toUpd, args := contestUpdateQuery(&upd)
-	if len(toUpd) == 0 {
-		return kilonova.ErrNoUpdates
+	ub := newUpdateBuilder()
+	contestUpdateQuery(&upd, ub)
+	if ub.CheckUpdates() != nil {
+		return ub.CheckUpdates()
 	}
-	args = append(args, id)
-	query := s.conn.Rebind(fmt.Sprintf("UPDATE contests SET %s WHERE id = ?", strings.Join(toUpd, ", ")))
-	_, err := s.conn.ExecContext(ctx, query, args...)
+	fb := ub.MakeFilter()
+	fb.AddConstraint("id = %s", id)
+	_, err := s.conn.ExecContext(ctx, "UPDATE contests SET "+fb.WithUpdate(), fb.Args()...)
 	return err
 }
 
@@ -151,7 +150,7 @@ type databaseTopEntry struct {
 }
 
 func (s *DB) internalToLeaderboardEntry(ctx context.Context, entry *databaseTopEntry) (*kilonova.LeaderboardEntry, error) {
-	user, err := s.User(ctx, entry.UserID)
+	user, err := s.User(ctx, kilonova.UserFilter{ID: &entry.UserID})
 	if err != nil {
 		return nil, err
 	}
@@ -230,40 +229,37 @@ func (s *DB) contestViewers(ctx context.Context, contestID int) ([]*User, error)
 	return s.getAccessUsers(ctx, "contest_user_access", "contest_id", contestID, accessViewer)
 }
 
-func contestUpdateQuery(upd *kilonova.ContestUpdate) ([]string, []any) {
-	toUpd, args := []string{}, []any{}
+func contestUpdateQuery(upd *kilonova.ContestUpdate, ub *updateBuilder) {
 	if v := upd.Name; v != nil {
-		toUpd, args = append(toUpd, "name = ?"), append(args, v)
+		ub.AddUpdate("name = %s", v)
 	}
 	if v := upd.Description; v != nil {
-		toUpd, args = append(toUpd, "description = ?"), append(args, v)
+		ub.AddUpdate("description = %s", v)
 	}
 	if v := upd.PublicJoin; v != nil {
-		toUpd, args = append(toUpd, "public_join = ?"), append(args, v)
+		ub.AddUpdate("public_join = %s", v)
 	}
 	if v := upd.Visible; v != nil {
-		toUpd, args = append(toUpd, "visible = ?"), append(args, v)
+		ub.AddUpdate("visible = %s", v)
 	}
 	if v := upd.StartTime; v != nil {
-		toUpd, args = append(toUpd, "start_time = ?"), append(args, v)
+		ub.AddUpdate("start_time = %s", v)
 	}
 	if v := upd.EndTime; v != nil {
-		toUpd, args = append(toUpd, "end_time = ?"), append(args, v)
+		ub.AddUpdate("end_time = %s", v)
 	}
 	if v := upd.MaxSubs; v != nil {
-		toUpd, args = append(toUpd, "max_sub_count = ?"), append(args, v)
+		ub.AddUpdate("max_sub_count = %s", v)
 	}
 	if v := upd.PublicLeaderboard; v != nil {
-		toUpd, args = append(toUpd, "public_leaderboard = ?"), append(args, v)
+		ub.AddUpdate("public_leaderboard = %s", v)
 	}
 	if v := upd.PerUserTime; v != nil {
-		toUpd, args = append(toUpd, "per_user_time = ?"), append(args, v)
+		ub.AddUpdate("per_user_time = %s", v)
 	}
 	if v := upd.RegisterDuringContest; v != nil {
-		toUpd, args = append(toUpd, "register_during_contest = ?"), append(args, v)
+		ub.AddUpdate("register_during_contest = %s", v)
 	}
-
-	return toUpd, args
 }
 
 func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilonova.Contest, error) {

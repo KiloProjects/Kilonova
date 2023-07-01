@@ -16,6 +16,8 @@ const (
 	UserKey = KNContextType("user")
 	// ProblemKey is the key to be used for adding problems to context
 	ProblemKey = KNContextType("problem")
+	// ProblemKey is the key to be used for adding blog posts to context
+	BlogPostKey = KNContextType("blogPost")
 	// SubKey is the key to be used for adding submissions to context
 	SubKey = KNContextType("submission")
 	// PasteKey is the key to be used for adding pastes to context
@@ -60,6 +62,10 @@ func ProblemContext(ctx context.Context) *kilonova.Problem {
 
 func Problem(r *http.Request) *kilonova.Problem {
 	return ProblemContext(r.Context())
+}
+
+func BlogPost(r *http.Request) *kilonova.BlogPost {
+	return getValueContext[kilonova.BlogPost](r.Context(), BlogPostKey)
 }
 
 func Submission(r *http.Request) *kilonova.Submission {

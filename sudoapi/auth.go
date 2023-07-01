@@ -20,14 +20,14 @@ var (
 // Login
 
 func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (int, *StatusError) {
-	user, err := s.db.UserByName(ctx, uname)
+	user, err := s.db.User(ctx, kilonova.UserFilter{Name: &uname})
 	if err != nil {
 		zap.S().Warn(err)
 		return -1, Statusf(400, "Invalid login details")
 	}
 	// Maybe the user is trying to log in by email
 	if user == nil {
-		user, err = s.db.UserByEmail(ctx, uname)
+		user, err = s.db.User(ctx, kilonova.UserFilter{Email: &uname})
 		if err != nil {
 			zap.S().Warn(err)
 			return -1, Statusf(400, "Invalid login details")

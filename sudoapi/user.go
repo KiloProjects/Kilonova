@@ -18,7 +18,15 @@ import (
 )
 
 func (s *BaseAPI) UserBrief(ctx context.Context, id int) (*UserBrief, *StatusError) {
-	user, err := s.db.User(ctx, id)
+	user, err := s.UserFull(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &user.UserBrief, nil
+}
+
+func (s *BaseAPI) UserFull(ctx context.Context, id int) (*UserFull, *StatusError) {
+	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &id})
 	if err != nil || user == nil {
 		if errors.Is(err, context.Canceled) {
 			return nil, WrapError(err, "Context canceled")
@@ -28,27 +36,15 @@ func (s *BaseAPI) UserBrief(ctx context.Context, id int) (*UserBrief, *StatusErr
 		}
 		return nil, WrapError(ErrNotFound, "User not found")
 	}
-	return user.ToBrief(), nil
-}
-
-func (s *BaseAPI) UserFull(ctx context.Context, id int) (*UserFull, *StatusError) {
-	user, err := s.db.User(ctx, id)
-	if err != nil || user == nil {
-		return nil, WrapError(ErrNotFound, "User not found")
-	}
 	return user.ToFull(), nil
 }
 
 func (s *BaseAPI) UserBriefByName(ctx context.Context, name string) (*UserBrief, *StatusError) {
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return nil, Statusf(400, "Username not specified")
+	user, err := s.UserFullByName(ctx, name)
+	if err != nil {
+		return nil, err
 	}
-	user, err := s.db.UserByName(ctx, name)
-	if err != nil || user == nil {
-		return nil, WrapError(ErrNotFound, "User not found")
-	}
-	return user.ToBrief(), nil
+	return &user.UserBrief, nil
 }
 
 func (s *BaseAPI) UserFullByName(ctx context.Context, name string) (*UserFull, *StatusError) {
@@ -56,7 +52,7 @@ func (s *BaseAPI) UserFullByName(ctx context.Context, name string) (*UserFull, *
 	if name == "" {
 		return nil, Statusf(400, "Username not specified")
 	}
-	user, err := s.db.UserByName(ctx, name)
+	user, err := s.db.User(ctx, kilonova.UserFilter{Name: &name})
 	if err != nil || user == nil {
 		return nil, WrapError(ErrNotFound, "User not found")
 	}
@@ -68,7 +64,7 @@ func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*UserFull,
 	if email == "" {
 		return nil, Statusf(400, "Email not specified")
 	}
-	user, err := s.db.UserByEmail(ctx, email)
+	user, err := s.db.User(ctx, kilonova.UserFilter{Email: &email})
 	if err != nil || user == nil {
 		return nil, WrapError(ErrNotFound, "User not found")
 	}
@@ -116,7 +112,7 @@ func (s *BaseAPI) updateUser(ctx context.Context, userID int, upd kilonova.UserF
 }
 
 func (s *BaseAPI) VerifyUserPassword(ctx context.Context, uid int, password string) *StatusError {
-	user, err := s.db.User(ctx, uid)
+	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &uid})
 	if err != nil || user == nil {
 		return WrapError(ErrNotFound, "User not found")
 	}

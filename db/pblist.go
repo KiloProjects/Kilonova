@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -192,7 +191,7 @@ func (s *DB) UpdateProblemList(ctx context.Context, id int, upd kilonova.Problem
 	}
 	fb := ub.MakeFilter()
 	fb.AddConstraint("id = %s", id)
-	_, err := s.pgconn.Exec(ctx, fmt.Sprintf(`UPDATE problem_lists SET %s`, fb.WithUpdate()), fb.Args()...)
+	_, err := s.pgconn.Exec(ctx, `UPDATE problem_lists SET `+fb.WithUpdate(), fb.Args()...)
 	return err
 }
 

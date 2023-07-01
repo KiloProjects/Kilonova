@@ -84,6 +84,6 @@ func (s *DB) ExtendSession(ctx context.Context, sid string) (time.Time, error) {
 		return time.Time{}, err
 	}
 	var newExpiration time.Time
-	err = s.conn.GetContext(ctx, &newExpiration, `UPDATE sessions SET expires_at = $2 WHERE id = $1 RETURNING expires_at`, sess.ID, time.Now().Add(sessionDuration))
+	err = s.pgconn.QueryRow(ctx, `UPDATE sessions SET expires_at = $2 WHERE id = $1 RETURNING expires_at`, sess.ID, time.Now().Add(sessionDuration)).Scan(&newExpiration)
 	return newExpiration, err
 }

@@ -44,7 +44,7 @@ func (s *DB) internalToPaste(ctx context.Context, p *dbPaste) (*kilonova.Submiss
 	if p == nil {
 		return nil, nil
 	}
-	user, err := s.User(ctx, p.UserID)
+	user, err := s.User(ctx, kilonova.UserFilter{ID: &p.UserID})
 	if err != nil {
 		return nil, err
 	}
