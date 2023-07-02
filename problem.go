@@ -39,6 +39,7 @@ type Problem struct {
 	// Eval stuff
 	ConsoleInput bool `json:"console_input"`
 
+	PublishedAt     *time.Time  `json:"published_at"`
 	ScoringStrategy ScoringType `json:"scoring_strategy"`
 }
 

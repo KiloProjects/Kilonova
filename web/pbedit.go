@@ -80,13 +80,13 @@ func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
 		if finalLang == "" {
 			finalLang = config.Common.DefaultLang
 		} else {
-			att, err = rt.base.AttachmentByName(r.Context(), util.Problem(r).ID, fmt.Sprintf("statement-%s.md", finalLang))
+			att, err = rt.base.ProblemAttByName(r.Context(), util.Problem(r).ID, fmt.Sprintf("statement-%s.md", finalLang))
 			if err != nil {
 				zap.S().Warn(err)
 				http.Error(w, "Couldn't get problem statement attachment", 500)
 				return
 			}
-			val, err := rt.base.ProblemRawDesc(r.Context(), util.Problem(r).ID, finalLang, "md")
+			val, err := rt.base.AttachmentData(r.Context(), att.ID)
 			if err != nil {
 				zap.S().Warn(err)
 				http.Error(w, "Couldn't get problem statement", 500)

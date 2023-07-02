@@ -13,9 +13,10 @@ import (
 )
 
 type dbProblem struct {
-	ID        int       `db:"id"`
-	CreatedAt time.Time `db:"created_at"`
-	Name      string    `db:"name"`
+	ID          int        `db:"id"`
+	CreatedAt   time.Time  `db:"created_at"`
+	PublishedAt *time.Time `db:"published_at"`
+	Name        string     `db:"name"`
 
 	TestName      string `db:"test_name"`
 	Visible       bool   `db:"visible"`
@@ -285,6 +286,11 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []any) {
 	}
 	if v := upd.Visible; v != nil {
 		toUpd, args = append(toUpd, "visible = ?"), append(args, v)
+		// if is set to visible
+		if *v {
+			// Published at - first time it was set visible
+			toUpd = append(toUpd, "published_at = COALESCE(published_at, NOW())")
+		}
 	}
 	if v := upd.ScoringStrategy; v != kilonova.ScoringTypeNone {
 		toUpd, args = append(toUpd, "scoring_strategy = ?"), append(args, v)
@@ -336,7 +342,9 @@ func (s *DB) internalToProblem(pb *dbProblem) *kilonova.Problem {
 
 		SourceCredits: pb.SourceCredits,
 
-		ConsoleInput:    pb.ConsoleInput,
+		ConsoleInput: pb.ConsoleInput,
+
+		PublishedAt:     pb.PublishedAt,
 		ScoringStrategy: pb.ScoringStrategy,
 	}
 }

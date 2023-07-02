@@ -856,7 +856,7 @@ func (rt *Web) logout(w http.ResponseWriter, r *http.Request) {
 
 func (rt *Web) problemAttachment(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "aid")
-	att, err := rt.base.AttachmentByName(r.Context(), util.Problem(r).ID, name)
+	att, err := rt.base.ProblemAttByName(r.Context(), util.Problem(r).ID, name)
 	if err != nil || att == nil {
 		http.Error(w, "The attachment doesn't exist", 400)
 		return

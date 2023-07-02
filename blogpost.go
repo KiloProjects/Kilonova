@@ -4,15 +4,36 @@ import "time"
 
 // Just a sketch of the concepts behind a blog functionality
 type BlogPost struct {
-	ID        int
-	CreatedAt time.Time
-	AuthorID  int
+	ID        int       `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	AuthorID  int       `json:"author_id"`
 
-	ParentID *int // If it's a reply
+	Title string `json:"title"`
 
-	Slug     string // unique, used in URL
-	Visible  bool   // Valid only if parentID is nil(?)
-	Featured bool   // Featured on a special "list" on the home page
+	Slug    string `json:"slug"` // unique, used in URL
+	Visible bool   `json:"visible"`
+
+	PublishedAt *time.Time `json:"published_at"`
 }
-type BlogPostAttachment struct{}
-type UserFollow struct{}
+
+type BlogPostFilter struct {
+	ID       *int   `json:"id"`
+	IDs      []*int `json:"ids"`
+	AuthorID *int   `json:"author_id"`
+
+	Slug *string `json:"slug"`
+
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+
+	Ordering  string `json:"ordering"`
+	Ascending bool   `json:"ascending"`
+}
+
+type BlogPostUpdate struct {
+	Slug    *string `json:"slug"`
+	Visible *bool   `json:"visible"`
+	Title   *string `json:"title"`
+}
+
+// type UserFollow struct{}

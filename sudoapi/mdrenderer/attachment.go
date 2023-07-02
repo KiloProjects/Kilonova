@@ -13,6 +13,7 @@ import (
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
+	"go.uber.org/zap"
 )
 
 // Attachments are of the form ~[name.xyz]
@@ -90,10 +91,16 @@ func (att *attachmentRenderer) renderAttachment(writer util.BufWriter, source []
 	}
 	ctx, ok := n.OwnerDocument().Meta()["ctx"].(*kilonova.RenderContext)
 	var link string
-	if !ok || ctx == nil || ctx.Problem == nil {
+	if !ok || ctx == nil || (ctx.Problem == nil && ctx.BlogPost == nil) {
 		link = url.PathEscape(name)
 	} else {
-		link = fmt.Sprintf("/problems/%d/attachments/%s", ctx.Problem.ID, url.PathEscape(name))
+		if ctx.Problem != nil {
+			link = fmt.Sprintf("/problems/%d/attachments/%s", ctx.Problem.ID, url.PathEscape(name))
+		} else if ctx.BlogPost != nil {
+			link = fmt.Sprintf("/posts/%s/attachments/%s", ctx.BlogPost.Slug, url.PathEscape(name))
+		} else {
+			zap.S().Warn("WTF")
+		}
 	}
 
 	extra := ""

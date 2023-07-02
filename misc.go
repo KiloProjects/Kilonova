@@ -16,7 +16,8 @@ type MailerMessage struct {
 }
 
 type RenderContext struct {
-	Problem *Problem
+	Problem  *Problem
+	BlogPost *BlogPost
 }
 
 type MarkdownRenderer interface {

@@ -68,6 +68,20 @@ func (s *BaseAPI) DeleteProblem(ctx context.Context, problem *kilonova.Problem) 
 		zap.S().Warn(err)
 	}
 
+	// Then, delete attachments, so they are fully removed from the database
+	atts, err := s.ProblemAttachments(ctx, problem.ID)
+	if err != nil {
+		zap.S().Warn(err)
+	} else {
+		attIDs := []int{}
+		for _, att := range atts {
+			attIDs = append(attIDs, att.ID)
+		}
+		if _, err := s.db.DeleteAttachments(ctx, &kilonova.AttachmentFilter{IDs: attIDs, ProblemID: &problem.ID}); err != nil {
+			zap.S().Warn(err)
+		}
+	}
+
 	if err := s.db.DeleteProblem(ctx, problem.ID); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't delete problem")

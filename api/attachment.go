@@ -8,6 +8,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"go.uber.org/zap"
 )
 
 func (s *API) createAttachment(w http.ResponseWriter, r *http.Request) {
@@ -40,11 +41,21 @@ func (s *API) createAttachment(w http.ResponseWriter, r *http.Request) {
 		Name:    name,
 	}
 
-	if err := s.base.CreateAttachment(r.Context(), &att, util.Problem(r).ID, file, &util.UserBrief(r).ID); err != nil {
-		err.WriteError(w)
-		return
+	if util.Problem(r) != nil {
+		if err := s.base.CreateProblemAttachment(r.Context(), &att, util.Problem(r).ID, file, &util.UserBrief(r).ID); err != nil {
+			err.WriteError(w)
+			return
+		}
+		returnData(w, att.ID)
+	} else if util.BlogPost(r) != nil {
+		if err := s.base.CreateBlogPostAttachment(r.Context(), &att, util.BlogPost(r).ID, file, &util.UserBrief(r).ID); err != nil {
+			err.WriteError(w)
+			return
+		}
+		returnData(w, att.ID)
+	} else {
+		zap.S().Error("Invalid attachment context")
 	}
-	returnData(w, att.ID)
 }
 
 func (s *API) bulkDeleteAttachments(w http.ResponseWriter, r *http.Request) {
@@ -54,8 +65,19 @@ func (s *API) bulkDeleteAttachments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	removedAtts, err1 := s.base.DeleteAttachments(r.Context(), util.Problem(r).ID, atts)
-	if err1 != nil {
+	var removedAtts int
+	var err *kilonova.StatusError
+	if util.Problem(r) != nil {
+		removedAtts, err = s.base.DeleteProblemAtts(r.Context(), util.Problem(r).ID, atts)
+	} else if util.BlogPost(r) != nil {
+		removedAtts, err = s.base.DeleteBlogPostAtts(r.Context(), util.BlogPost(r).ID, atts)
+	} else {
+		zap.S().Error("Invalid attachment context")
+		return
+	}
+
+	if err != nil {
+		zap.S().Warn(err)
 		errorData(w, "Error deleting attachments", 500)
 		return
 	}
@@ -86,9 +108,23 @@ func (s *API) updateAttachmentData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	att, err1 := s.base.ProblemAttachment(r.Context(), util.Problem(r).ID, args.ID)
-	if err1 != nil {
-		err1.WriteError(w)
+	var att *kilonova.Attachment
+	if util.Problem(r) != nil {
+		att1, err := s.base.ProblemAttachment(r.Context(), util.Problem(r).ID, args.ID)
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+		att = att1
+	} else if util.BlogPost(r) != nil {
+		att1, err := s.base.BlogPostAttachment(r.Context(), util.BlogPost(r).ID, args.ID)
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+		att = att1
+	} else {
+		zap.S().Error("Invalid attachment context")
 		return
 	}
 
@@ -120,7 +156,7 @@ func (s *API) updateAttachmentData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	returnData(w, "Updated attachment.")
+	returnData(w, "Updated attachment")
 }
 
 // NOTE: This depends on the middleware. The middleware actually resolves the attachment, either by name or by id.
@@ -155,10 +191,24 @@ func (s *API) bulkUpdateAttachmentInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ensure only the selected problem's attachments are updated
-	atts, err := s.base.ProblemAttachments(r.Context(), util.Problem(r).ID)
-	if err != nil {
-		err.WriteError(w)
+	// Ensure only the selected problem/blogpost attachments are updated
+	var atts []*kilonova.Attachment
+	if util.Problem(r) != nil {
+		atts1, err := s.base.ProblemAttachments(r.Context(), util.Problem(r).ID)
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+		atts = atts1
+	} else if util.BlogPost(r) != nil {
+		atts1, err := s.base.BlogPostAttachments(r.Context(), util.BlogPost(r).ID)
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+		atts = atts1
+	} else {
+		zap.S().Error("Invalid attachment context")
 		return
 	}
 	for _, att := range atts {

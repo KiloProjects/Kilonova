@@ -150,9 +150,8 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) deleteProblem(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	if err := s.base.DeleteProblem(context.WithoutCancel(r.Context()), util.Problem(r)); err != nil {
-		errorData(w, err, 500)
+		err.WriteError(w)
 		return
 	}
 	returnData(w, "Deleted problem")
@@ -183,7 +182,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Do the check before problem creation because it'd be awkward to create the problem and then show the error
-	if args.StatementLang != nil && !(*args.StatementLang == "en" || *args.StatementLang == "ro" || *args.StatementLang == "") {
+	if args.StatementLang != nil && !(*args.StatementLang == "en" || *args.StatementLang == "ro") {
 		errorData(w, "Invalid initial statement language", 400)
 		return
 	}
@@ -204,7 +203,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if args.StatementLang != nil && *args.StatementLang != "" {
+	if args.StatementLang != nil {
 		var attTempl *template.Template
 		if *args.StatementLang == "en" {
 			attTempl = defaultEnProblemStatement
@@ -228,7 +227,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 		}{InputFile: inFile, OutputFile: outFile}); err != nil {
 			zap.S().Warnf("Template rendering error: %v", err)
 		}
-		if err := s.base.CreateAttachment(r.Context(), &kilonova.Attachment{
+		if err := s.base.CreateProblemAttachment(r.Context(), &kilonova.Attachment{
 			Visible: false,
 			Private: false,
 			Exec:    false,

@@ -18,7 +18,7 @@ import (
 //   - Private = true => Visible = false
 
 func (s *BaseAPI) Attachment(ctx context.Context, id int) (*kilonova.Attachment, *StatusError) {
-	attachment, err := s.db.Attachment(ctx, id)
+	attachment, err := s.db.Attachment(ctx, &kilonova.AttachmentFilter{ID: &id})
 	if err != nil || attachment == nil {
 		return nil, WrapError(ErrNotFound, "Attachment not found")
 	}
@@ -26,22 +26,38 @@ func (s *BaseAPI) Attachment(ctx context.Context, id int) (*kilonova.Attachment,
 }
 
 func (s *BaseAPI) ProblemAttachment(ctx context.Context, problemID, attachmentID int) (*kilonova.Attachment, *StatusError) {
-	attachment, err := s.db.ProblemAttachment(ctx, problemID, attachmentID)
+	attachment, err := s.db.Attachment(ctx, &kilonova.AttachmentFilter{ProblemID: &problemID, ID: &attachmentID})
 	if err != nil || attachment == nil {
 		return nil, WrapError(ErrNotFound, "Attachment not found")
 	}
 	return attachment, nil
 }
 
-func (s *BaseAPI) AttachmentByName(ctx context.Context, problemID int, name string) (*kilonova.Attachment, *StatusError) {
-	attachment, err := s.db.AttachmentByName(ctx, problemID, name)
+func (s *BaseAPI) BlogPostAttachment(ctx context.Context, postID, attachmentID int) (*kilonova.Attachment, *StatusError) {
+	attachment, err := s.db.Attachment(ctx, &kilonova.AttachmentFilter{BlogPostID: &postID, ID: &attachmentID})
 	if err != nil || attachment == nil {
 		return nil, WrapError(ErrNotFound, "Attachment not found")
 	}
 	return attachment, nil
 }
 
-func (s *BaseAPI) CreateAttachment(ctx context.Context, att *kilonova.Attachment, problemID int, r io.Reader, authorID *int) *StatusError {
+func (s *BaseAPI) ProblemAttByName(ctx context.Context, problemID int, name string) (*kilonova.Attachment, *StatusError) {
+	attachment, err := s.db.Attachment(ctx, &kilonova.AttachmentFilter{ProblemID: &problemID, Name: &name})
+	if err != nil || attachment == nil {
+		return nil, WrapError(ErrNotFound, "Attachment not found")
+	}
+	return attachment, nil
+}
+
+func (s *BaseAPI) BlogPostAttByName(ctx context.Context, postID int, name string) (*kilonova.Attachment, *StatusError) {
+	attachment, err := s.db.Attachment(ctx, &kilonova.AttachmentFilter{BlogPostID: &postID, Name: &name})
+	if err != nil || attachment == nil {
+		return nil, WrapError(ErrNotFound, "Attachment not found")
+	}
+	return attachment, nil
+}
+
+func (s *BaseAPI) CreateProblemAttachment(ctx context.Context, att *kilonova.Attachment, problemID int, r io.Reader, authorID *int) *StatusError {
 	// since we store the attachment in the database (hopefully, just for now),
 	// we need to read the data into a byte array and send it over.
 	// I cannot emphasize how inefficient this is.
@@ -54,7 +70,27 @@ func (s *BaseAPI) CreateAttachment(ctx context.Context, att *kilonova.Attachment
 	if att.Private {
 		att.Visible = false
 	}
-	if err := s.db.CreateAttachment(ctx, att, problemID, data, authorID); err != nil {
+	if err := s.db.CreateProblemAttachment(ctx, att, problemID, data, authorID); err != nil {
+		zap.S().Warn(err)
+		return WrapError(err, "Couldn't create attachment")
+	}
+	return nil
+}
+
+func (s *BaseAPI) CreateBlogPostAttachment(ctx context.Context, att *kilonova.Attachment, postID int, r io.Reader, authorID *int) *StatusError {
+	// since we store the attachment in the database (hopefully, just for now),
+	// we need to read the data into a byte array and send it over.
+	// I cannot emphasize how inefficient this is.
+	data, err := io.ReadAll(r)
+	if err != nil {
+		zap.S().Warn(err)
+		return WrapError(err, "Couldn't read attachment data")
+	}
+
+	if att.Private {
+		att.Visible = false
+	}
+	if err := s.db.CreateBlogPostAttachment(ctx, att, postID, data, authorID); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't create attachment")
 	}
@@ -77,19 +113,26 @@ func (s *BaseAPI) UpdateAttachmentData(ctx context.Context, aid int, data []byte
 	return nil
 }
 
-func (s *BaseAPI) DeleteAttachment(ctx context.Context, attachmentID int) *StatusError {
-	if err := s.db.DeleteAttachment(ctx, attachmentID); err != nil {
-		zap.S().Warn(err)
-		return WrapError(err, "Couldn't delete attachment")
+func (s *BaseAPI) DeleteProblemAtts(ctx context.Context, problemID int, attIDs []int) (int, *StatusError) {
+	num, err := s.db.DeleteAttachments(ctx, &kilonova.AttachmentFilter{ProblemID: &problemID, IDs: attIDs})
+	if err != nil {
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
+		return -1, WrapError(err, "Couldn't delete attachments")
 	}
-	s.manager.DelAttachmentRender(attachmentID)
-	return nil
+	for _, att := range attIDs {
+		s.manager.DelAttachmentRender(att)
+	}
+	return int(num), nil
 }
 
-func (s *BaseAPI) DeleteAttachments(ctx context.Context, problemID int, attIDs []int) (int, *StatusError) {
-	num, err := s.db.DeleteAttachments(ctx, problemID, attIDs)
+func (s *BaseAPI) DeleteBlogPostAtts(ctx context.Context, postID int, attIDs []int) (int, *StatusError) {
+	num, err := s.db.DeleteAttachments(ctx, &kilonova.AttachmentFilter{BlogPostID: &postID, IDs: attIDs})
 	if err != nil {
-		zap.S().Warn(err)
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
 		return -1, WrapError(err, "Couldn't delete attachments")
 	}
 	for _, att := range attIDs {
@@ -99,7 +142,18 @@ func (s *BaseAPI) DeleteAttachments(ctx context.Context, problemID int, attIDs [
 }
 
 func (s *BaseAPI) ProblemAttachments(ctx context.Context, problemID int) ([]*kilonova.Attachment, *StatusError) {
-	atts, err := s.db.ProblemAttachments(ctx, problemID, nil)
+	atts, err := s.db.Attachments(ctx, &kilonova.AttachmentFilter{ProblemID: &problemID})
+	if err != nil {
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
+		return nil, WrapError(err, "Couldn't get attachments")
+	}
+	return atts, nil
+}
+
+func (s *BaseAPI) BlogPostAttachments(ctx context.Context, postID int) ([]*kilonova.Attachment, *StatusError) {
+	atts, err := s.db.Attachments(ctx, &kilonova.AttachmentFilter{BlogPostID: &postID})
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
 			zap.S().Warn(err)
@@ -110,7 +164,7 @@ func (s *BaseAPI) ProblemAttachments(ctx context.Context, problemID int) ([]*kil
 }
 
 func (s *BaseAPI) AttachmentData(ctx context.Context, id int) ([]byte, *StatusError) {
-	data, err := s.db.AttachmentData(ctx, id)
+	data, err := s.db.AttachmentData(ctx, &kilonova.AttachmentFilter{ID: &id})
 	if err != nil {
 		zap.S().Warn(err)
 		return nil, WrapError(err, "Couldn't read attachment data")
@@ -118,8 +172,8 @@ func (s *BaseAPI) AttachmentData(ctx context.Context, id int) ([]byte, *StatusEr
 	return data, nil
 }
 
-func (s *BaseAPI) AttachmentDataByName(ctx context.Context, problemID int, name string) ([]byte, *StatusError) {
-	data, err := s.db.AttachmentDataByName(ctx, problemID, name)
+func (s *BaseAPI) ProblemAttDataByName(ctx context.Context, problemID int, name string) ([]byte, *StatusError) {
+	data, err := s.db.AttachmentData(ctx, &kilonova.AttachmentFilter{ProblemID: &problemID, Name: &name})
 	if err != nil {
 		zap.S().Warn(err)
 		return nil, WrapError(err, "Couldn't read attachment data")
@@ -157,41 +211,38 @@ func (s *BaseAPI) ProblemDescVariants(ctx context.Context, problemID int, getPri
 	return variants, nil
 }
 
-// ProblemRawDesc returns the raw data of the problem description,
-// along with a bool meaning if the description is private or not
-func (s *BaseAPI) ProblemRawDesc(ctx context.Context, problemID int, lang string, format string) ([]byte, *StatusError) {
+func (s *BaseAPI) getCachedAttachment(attID int) ([]byte, bool) {
+	if s.manager.HasAttachmentRender(attID) {
+		r, err := s.manager.GetAttachmentRender(attID)
+		if err == nil {
+			data, err := io.ReadAll(r)
+			if err == nil {
+				return data, true
+			} else {
+				zap.S().Warn("Error reading cache: ", err)
+			}
+		}
+	}
+	return nil, false
+}
+
+func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Problem, lang string, format string) ([]byte, *StatusError) {
 	if len(lang) > 10 || len(format) > 10 {
 		return nil, Statusf(400, "Not even trying to search for this description variant")
 	}
 	name := fmt.Sprintf("statement-%s.%s", lang, format)
-	data, _, err := s.db.ProblemRawDesc(ctx, problemID, name)
+	att, err := s.ProblemAttByName(ctx, problem.ID, name)
 	if err != nil {
-		return nil, WrapError(err, "Couldn't get problem description")
+		return nil, err
 	}
-	return data, nil
-}
 
-func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Problem, lang string, format string) ([]byte, *StatusError) {
 	switch format {
 	case "md":
-		name := fmt.Sprintf("statement-%s.%s", lang, format)
-		att, err := s.AttachmentByName(ctx, problem.ID, name)
-		if err != nil {
-			return nil, err
+		d, ok := s.getCachedAttachment(att.ID)
+		if ok {
+			return d, nil
 		}
-
-		if s.manager.HasAttachmentRender(att.ID) {
-			r, err := s.manager.GetAttachmentRender(att.ID)
-			if err == nil {
-				data, err := io.ReadAll(r)
-				if err == nil {
-					return data, nil
-				} else {
-					zap.S().Warn("Error reading cache: ", err)
-				}
-			}
-		}
-		data, _, err1 := s.db.ProblemRawDesc(ctx, problem.ID, name)
+		data, err1 := s.db.AttachmentData(ctx, &kilonova.AttachmentFilter{ProblemID: &problem.ID, Name: &name})
 		if err1 != nil {
 			return nil, WrapError(err1, "Couldn't get problem description")
 		}
@@ -205,7 +256,41 @@ func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Pro
 		}
 		return buf, nil
 	default:
-		return s.ProblemRawDesc(ctx, problem.ID, lang, format)
+		return s.AttachmentData(ctx, att.ID)
+	}
+}
+
+func (s *BaseAPI) RenderedBlogPostDesc(ctx context.Context, post *kilonova.BlogPost, lang string, format string) ([]byte, *StatusError) {
+	if len(lang) > 10 || len(format) > 10 {
+		return nil, Statusf(400, "Not even trying to search for this description variant")
+	}
+	name := fmt.Sprintf("statement-%s.%s", lang, format)
+	att, err := s.BlogPostAttByName(ctx, post.ID, name)
+	if err != nil {
+		return nil, err
+	}
+
+	switch format {
+	case "md":
+		d, ok := s.getCachedAttachment(att.ID)
+		if ok {
+			return d, nil
+		}
+		data, err1 := s.db.AttachmentData(ctx, &kilonova.AttachmentFilter{BlogPostID: &post.ID, Name: &name})
+		if err1 != nil {
+			return nil, WrapError(err1, "Couldn't get blog post description")
+		}
+
+		buf, err := s.RenderMarkdown(data, &kilonova.RenderContext{BlogPost: post})
+		if err != nil {
+			return data, WrapError(err, "Couldn't render markdown")
+		}
+		if err := s.manager.SaveAttachmentRender(att.ID, buf); err != nil {
+			zap.S().Warn("Couldn't save attachment to cache: ", err)
+		}
+		return buf, nil
+	default:
+		return s.AttachmentData(ctx, att.ID)
 	}
 }
 

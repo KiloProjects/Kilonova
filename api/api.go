@@ -79,6 +79,7 @@ func (s *API) Handler() http.Handler {
 
 		r.Route("/{problemID}", func(r chi.Router) {
 			r.Use(s.validateProblemID)
+			r.Use(s.validateProblemVisible)
 
 			r.Get("/maxScore", s.maxScore)
 			r.Get("/maxScoreBreakdown", s.maxScoreBreakdown)
@@ -123,20 +124,50 @@ func (s *API) Handler() http.Handler {
 					return s.base.ResetProblemSubmissions(context.WithoutCancel(ctx), util.ProblemContext(ctx))
 				}))
 
-				r.Route("/get", func(r chi.Router) {
-					r.Get("/attachments", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
-						return s.base.ProblemAttachments(ctx, util.ProblemContext(ctx).ID)
-					}))
-					r.With(s.validateAttachmentID).Get("/attachment/{aID}", s.getFullAttachment)
-					r.With(s.validateAttachmentName).Get("/attachmentByName/{aName}", s.getFullAttachment)
-
-					r.Get("/accessControl", s.getProblemAccessControl)
-
-					r.Get("/tests", s.getTests)
-					r.Get("/test", s.getTest)
-				})
 				r.Post("/delete", s.deleteProblem)
 			})
+
+			r.Route("/get", func(r chi.Router) {
+				r.Get("/attachments", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
+					return s.base.ProblemAttachments(ctx, util.ProblemContext(ctx).ID)
+				}))
+				r.With(s.validateAttachmentID).Get("/attachment/{aID}", s.getFullAttachment)
+				r.With(s.validateAttachmentName).Get("/attachmentByName/{aName}", s.getFullAttachment)
+
+				r.Get("/accessControl", s.getProblemAccessControl)
+
+				r.Get("/tests", s.getTests)
+				r.Get("/test", s.getTest)
+			})
+		})
+	})
+	r.Route("/blogPosts", func(r chi.Router) {
+		r.Get("/fromUser", s.userBlogPosts)
+		r.Get("/bySlug", s.blogPostBySlug)
+		r.With(s.MustBeProposer).Post("/create", s.createBlogPost)
+		r.Route("/{bpID}", func(r chi.Router) {
+			r.Use(s.validateBlogPostID)
+			r.Use(s.validateBlogPostVisible)
+			r.Get("/", s.blogPostByID)
+
+			r.Route("/update", func(r chi.Router) {
+				r.Use(s.validateBlogPostEditor)
+				r.Post("/", s.updateBlogPost)
+
+				r.Post("/addAttachment", s.createAttachment)
+				r.Post("/attachmentData", s.updateAttachmentData)
+				r.Post("/bulkDeleteAttachments", s.bulkDeleteAttachments)
+				r.Post("/bulkUpdateAttachmentInfo", s.bulkUpdateAttachmentInfo)
+			})
+
+			r.With(s.validateBlogPostEditor).Post("/delete", s.deleteBlogPost)
+		})
+		r.Route("/get", func(r chi.Router) {
+			r.Get("/attachments", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
+				return s.base.BlogPostAttachments(ctx, util.BlogPostContext(ctx).ID)
+			}))
+			r.With(s.validateAttachmentID).Get("/attachment/{aID}", s.getFullAttachment)
+			r.With(s.validateAttachmentName).Get("/attachmentByName/{aName}", s.getFullAttachment)
 		})
 	})
 	r.Route("/submissions", func(r chi.Router) {
@@ -194,7 +225,7 @@ func (s *API) Handler() http.Handler {
 		}))
 
 		r.With(s.MustBeProposer).Post("/create", s.createTag)
-		r.With(s.MustBeProposer).Post("/merge", webMessageWrapper("Merged tags", func(ctx context.Context, args struct {
+		r.With(s.MustBeAdmin).Post("/merge", webMessageWrapper("Merged tags", func(ctx context.Context, args struct {
 			ToKeep    int `json:"to_keep"`
 			ToReplace int `json:"to_replace"`
 		}) *sudoapi.StatusError {

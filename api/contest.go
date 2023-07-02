@@ -86,7 +86,7 @@ func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
 
 		PerUserTime: args.PerUserTime,
 	}); err != nil {
-		errorData(w, err, 500)
+		err.WriteError(w)
 		return
 	}
 

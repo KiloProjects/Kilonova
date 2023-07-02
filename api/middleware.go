@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -115,6 +116,26 @@ func (s *API) validateContestVisible(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+func (s *API) validateProblemVisible(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !s.base.IsProblemVisible(util.UserBrief(r), util.Problem(r)) {
+			errorData(w, "You are not allowed to access this problem", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+func (s *API) validateBlogPostVisible(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !s.base.IsBlogPostVisible(util.UserBrief(r), util.BlogPost(r)) {
+			errorData(w, "You are not allowed to access this post", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
 
 // validateTestID pre-emptively returns if there isnt a valid test ID in the URL params
 // Also, it fetches the test from the DB and makes sure it exists
@@ -135,6 +156,7 @@ func (s *API) validateTestID(next http.Handler) http.Handler {
 	})
 }
 
+// TODO: restrucutre validateAttachmentID and validateAttachmentName to use *AttachmentFilter (reduce code repetition)
 func (s *API) validateAttachmentID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attID, err := strconv.Atoi(chi.URLParam(r, "aID"))
@@ -142,23 +164,40 @@ func (s *API) validateAttachmentID(next http.Handler) http.Handler {
 			errorData(w, "invalid attachment ID", http.StatusBadRequest)
 			return
 		}
-		if util.Problem(r) == nil {
-			zap.S().Fatal("Problem is not available")
+		if util.Problem(r) == nil && util.BlogPost(r) == nil {
+			zap.S().Fatal("Attachment context is not available")
 			return
 		}
-		att, err1 := s.base.ProblemAttachment(r.Context(), util.Problem(r).ID, attID)
-		if err1 != nil {
-			errorData(w, "attachment does not exist", http.StatusBadRequest)
-			return
+
+		var rezAtt *kilonova.Attachment
+		if util.Problem(r) != nil {
+			att, err1 := s.base.ProblemAttachment(r.Context(), util.Problem(r).ID, attID)
+			if err1 != nil {
+				errorData(w, "attachment does not exist", http.StatusBadRequest)
+				return
+			}
+			if att.Private && !s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
+				errorData(w, "you cannot access attachment data!", http.StatusBadRequest)
+				return
+			}
+			rezAtt = att
+		} else if util.BlogPost(r) != nil {
+			att, err1 := s.base.BlogPostAttachment(r.Context(), util.BlogPost(r).ID, attID)
+			if err1 != nil {
+				errorData(w, "attachment does not exist", http.StatusBadRequest)
+				return
+			}
+			if att.Private && !s.base.IsBlogPostEditor(util.UserBrief(r), util.BlogPost(r)) {
+				errorData(w, "you cannot access attachment data!", http.StatusBadRequest)
+				return
+			}
+			rezAtt = att
 		}
-		if att.Private && !s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
-			errorData(w, "you cannot access attachment data!", http.StatusBadRequest)
-			return
-		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AttachmentKey, att)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AttachmentKey, rezAtt)))
 	})
 }
 
+// TODO: restrucutre validateAttachmentID and validateAttachmentName to use *AttachmentFilter (reduce code repetition)
 func (s *API) validateAttachmentName(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attName := chi.URLParam(r, "aName")
@@ -166,36 +205,56 @@ func (s *API) validateAttachmentName(next http.Handler) http.Handler {
 			zap.S().Fatal("Problem is not available")
 			return
 		}
-		att, err1 := s.base.AttachmentByName(r.Context(), util.Problem(r).ID, attName)
-		if err1 != nil {
-			errorData(w, "attachment does not exist", http.StatusBadRequest)
+		if util.Problem(r) == nil && util.BlogPost(r) == nil {
+			zap.S().Fatal("Attachment context is not available")
 			return
 		}
-		if att.Private && !s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
-			errorData(w, "you cannot access attachment data!", http.StatusBadRequest)
-			return
+
+		var rezAtt *kilonova.Attachment
+		if util.Problem(r) != nil {
+			att, err1 := s.base.ProblemAttByName(r.Context(), util.Problem(r).ID, attName)
+			if err1 != nil {
+				errorData(w, "attachment does not exist", http.StatusBadRequest)
+				return
+			}
+			if att.Private && !s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
+				errorData(w, "you cannot access attachment data!", http.StatusBadRequest)
+				return
+			}
+			rezAtt = att
+		} else if util.BlogPost(r) != nil {
+			att, err1 := s.base.BlogPostAttByName(r.Context(), util.BlogPost(r).ID, attName)
+			if err1 != nil {
+				errorData(w, "attachment does not exist", http.StatusBadRequest)
+				return
+			}
+			if att.Private && !s.base.IsBlogPostEditor(util.UserBrief(r), util.BlogPost(r)) {
+				errorData(w, "you cannot access attachment data!", http.StatusBadRequest)
+				return
+			}
+			rezAtt = att
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AttachmentKey, att)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AttachmentKey, rezAtt)))
 	})
 }
 
-func (s *API) validateSubmissionID(next http.Handler) http.Handler {
+func (s *API) validateBlogPostID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		subID, err := strconv.Atoi(chi.URLParam(r, "submissionID"))
+		bpID, err := strconv.Atoi(chi.URLParam(r, "bpID"))
 		if err != nil {
-			errorData(w, "invalid attachment ID", http.StatusBadRequest)
+			errorData(w, "invalid blog post ID", http.StatusBadRequest)
 			return
 		}
-		att, err1 := s.base.Submission(r.Context(), subID, util.UserBrief(r))
+		post, err1 := s.base.BlogPost(r.Context(), bpID)
 		if err1 != nil {
-			errorData(w, "attachment does not exist", http.StatusBadRequest)
+			errorData(w, "blog post does not exist", http.StatusBadRequest)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.SubKey, att)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.BlogPostKey, post)))
 	})
 }
 
-// validateProblemID pre-emptively returns if there isnt a valid problem ID in the URL params
+// validateProblemID pre-emptively returns if there isn't a valid problem ID in the URL params
 // Also, it fetches the problem from the DB and makes sure it exists
 func (s *API) validateProblemID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

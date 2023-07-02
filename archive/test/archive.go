@@ -237,7 +237,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 		}
 		// TODO: In the future maybe opt in to a "merging" strategy instead of delete and add?
 		if len(attIDs) > 0 {
-			if _, err := base.DeleteAttachments(ctx, pb.ID, attIDs); err != nil {
+			if _, err := base.DeleteProblemAtts(ctx, pb.ID, attIDs); err != nil {
 				zap.S().Warn("Couldn't remove attachments")
 				return kilonova.WrapError(err, "Couldn't delete attachments")
 			}
@@ -259,7 +259,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 				userID = &requestor.ID
 			}
 
-			if err := base.CreateAttachment(ctx, &kilonova.Attachment{
+			if err := base.CreateProblemAttachment(ctx, &kilonova.Attachment{
 				Name:    att.Name,
 				Private: att.Private,
 				Visible: att.Visible,

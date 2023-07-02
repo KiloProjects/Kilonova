@@ -25,6 +25,24 @@ func (s *BaseAPI) IsProposer(user *kilonova.UserBrief) bool {
 	return user.Admin || user.Proposer
 }
 
+func (s *BaseAPI) IsBlogPostVisible(user *kilonova.UserBrief, post *kilonova.BlogPost) bool {
+	if post == nil {
+		return false
+	}
+	if post.Visible {
+		return true
+	}
+	if s.IsAdmin(user) {
+		return true
+	}
+	userID := 0
+	if user != nil {
+		userID = user.ID
+	}
+
+	return userID == post.AuthorID
+}
+
 func (s *BaseAPI) IsBlogPostEditor(user *kilonova.UserBrief, post *kilonova.BlogPost) bool {
 	if !s.IsAuthed(user) {
 		return false

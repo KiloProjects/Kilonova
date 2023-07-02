@@ -360,7 +360,7 @@ func getAppropriateChecker(ctx context.Context, base *sudoapi.BaseAPI, runner ev
 	if settings.CheckerName == "" {
 		return &checkers.DiffChecker{}, nil
 	} else {
-		data, err := base.AttachmentDataByName(ctx, pb.ID, settings.CheckerName)
+		data, err := base.ProblemAttDataByName(ctx, pb.ID, settings.CheckerName)
 		if err != nil {
 			return nil, kilonova.WrapError(err, "Couldn't get problem checker")
 		}

@@ -64,8 +64,12 @@ func Problem(r *http.Request) *kilonova.Problem {
 	return ProblemContext(r.Context())
 }
 
+func BlogPostContext(ctx context.Context) *kilonova.BlogPost {
+	return getValueContext[kilonova.BlogPost](ctx, BlogPostKey)
+}
+
 func BlogPost(r *http.Request) *kilonova.BlogPost {
-	return getValueContext[kilonova.BlogPost](r.Context(), BlogPostKey)
+	return BlogPostContext(r.Context())
 }
 
 func Submission(r *http.Request) *kilonova.Submission {

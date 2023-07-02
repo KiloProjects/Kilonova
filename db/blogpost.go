@@ -1,0 +1,134 @@
+package db
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/KiloProjects/kilonova"
+	"github.com/jackc/pgx/v5"
+)
+
+type dbBlogPost struct {
+	ID          int        `db:"id"`
+	CreatedAt   time.Time  `db:"created_at"`
+	PublishedAt *time.Time `db:"published_at"`
+	AuthorID    int        `db:"author_id"`
+
+	Title string `db:"title"`
+
+	Slug    string `db:"slug"` // unique, used in URL
+	Visible bool   `db:"visible"`
+}
+
+func (s *DB) BlogPost(ctx context.Context, filter kilonova.BlogPostFilter) (*kilonova.BlogPost, error) {
+	filter.Limit = 1
+	posts, err := s.BlogPosts(ctx, filter)
+	if err != nil || len(posts) == 0 {
+		return nil, err
+	}
+	return posts[0], nil
+}
+
+func (s *DB) BlogPosts(ctx context.Context, filter kilonova.BlogPostFilter) ([]*kilonova.BlogPost, error) {
+	fb := newFilterBuilder()
+	if v := filter.ID; v != nil {
+		fb.AddConstraint("id = %s", v)
+	}
+	if v := filter.IDs; v != nil {
+		fb.AddConstraint("id = ANY(%s)", v)
+	}
+	if v := filter.AuthorID; v != nil {
+		fb.AddConstraint("author_id = %s", v)
+	}
+	if v := filter.Slug; v != nil {
+		fb.AddConstraint("slug = %s", v)
+	}
+
+	q := fmt.Sprintf("SELECT * FROM blog_posts WHERE %s %s %s", fb.Where(), getBlogPostOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset))
+	rows, _ := s.pgconn.Query(ctx, q, fb.Args()...)
+	posts, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[dbBlogPost])
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return mapper(posts, s.internalToBlogPost), nil
+}
+
+func (s *DB) CreateBlogPost(ctx context.Context, title string, authorID int) (int, string, error) {
+	if title == "" || authorID == 0 {
+		return -1, "", kilonova.ErrMissingRequired
+	}
+	slug := kilonova.MakeSlug(fmt.Sprintf("%s %d %s", title, authorID, kilonova.RandomString(6)))
+	rows, _ := s.pgconn.Query(ctx, "INSERT INTO blog_posts (title, author_id, slug) VALUES ($1, $2, $3)", title, authorID, slug)
+	id, err := pgx.CollectOneRow(rows, pgx.RowTo[int])
+	if err != nil {
+		return -1, "", err
+	}
+	return id, slug, nil
+}
+
+func (s *DB) UpdateBlogPost(ctx context.Context, id int, upd kilonova.BlogPostUpdate) error {
+	ub := newUpdateBuilder()
+	if v := upd.Slug; v != nil {
+		ub.AddUpdate("slug = %s", v)
+	}
+	if v := upd.Title; v != nil {
+		ub.AddUpdate("title = %s", v)
+	}
+	if v := upd.Visible; v != nil {
+		ub.AddUpdate("visible = %s", v)
+		// if is set to visible
+		if *v {
+			// Published at - first time it was set visible
+			ub.AddUpdate("published_at = COALESCE(published_at, NOW())")
+		}
+	}
+	if ub.CheckUpdates() != nil {
+		return ub.CheckUpdates()
+	}
+	fb := ub.MakeFilter()
+	fb.AddConstraint("id = %s", id)
+	_, err := s.pgconn.Exec(ctx, "UPDATE blog_posts SET "+fb.WithUpdate(), fb.Args()...)
+	return err
+}
+
+func (s *DB) DeleteBlogPost(ctx context.Context, id int) error {
+	_, err := s.pgconn.Exec(ctx, "DELETE FROM blog_posts WHERE id = $1", id)
+	return err
+}
+
+func getBlogPostOrdering(ordering string, ascending bool) string {
+	ord := " DESC"
+	if ascending {
+		ord = "ASC"
+	}
+	switch ordering {
+	case "slug":
+		return "ORDER BY slug" + ord + ", id DESC"
+	case "published_at":
+		return "ORDER BY published_at" + ord + ", id DESC"
+	case "author_id":
+		return "ORDER BY author_id" + ord + ", id DESC"
+	default:
+		return "ORDER BY id" + ord
+	}
+}
+
+func (s *DB) internalToBlogPost(bp *dbBlogPost) *kilonova.BlogPost {
+	return &kilonova.BlogPost{
+		ID:        bp.ID,
+		CreatedAt: bp.CreatedAt,
+		AuthorID:  bp.AuthorID,
+
+		Title: bp.Title,
+
+		Slug:    bp.Slug,
+		Visible: bp.Visible,
+
+		PublishedAt: bp.PublishedAt,
+	}
+}
