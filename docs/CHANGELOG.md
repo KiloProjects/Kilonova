@@ -1,6 +1,25 @@
+- v0.19.0:
+    - !! Basic blog post support;
+    - Proper tag filtering;
+    - New format for the image extension in markdown;
+    - Attachment upload improvements:
+        - Allow changing name before upload;
+        - Autocomplete flags for some file names.
+    - Zip archive improvements:
+        - Hidden option to allow adding all submissions to archive;
+        - Tag support;
+        - Reorganization;
+    - Log tag changes for better monitoring;
+    - Rewrite filter/update queries in db/ in almost all places;
+    - Adopt AGPL v3 license;
+    - Problem checklist;
+    - Various grader improvements and refactorings;
+    - New logos (thanks Secret-chest for favicon);
+    - Remove "orphaned" tests from database, since they are not needed anymore;
+    - Allow public leaderboards on contests.
 - v0.18.0:
     - !! Much better problem search;
-        - Proper tag filtering is still missing for now.
+        - ~~Proper tag filtering is still missing for now~~ Fixed in 0.19.0.
     - Many improvements to KaTeX math server side rendering (SSR);
     - Remove highlightjs from application bundle (code blocks are now rendered server-side);
     - Markdown statements now require no browser javascript for proper rendering (CSS is required, though, for KaTeX expressions);
