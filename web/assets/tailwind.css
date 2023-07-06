@@ -434,6 +434,10 @@
 		@apply pr-8;
 	}
 
+	select.form-select-mini {
+		@apply form-select text-sm py-1 pr-8 pl-2;
+	}
+
 	.form-input::placeholder,
 	.form-select::placeholder,
 	.form-textarea::placeholder {
@@ -461,20 +465,24 @@
 		@apply dark:bg-blue-600 dark:ring-blue-500;
 	}
 
+	.text-muted {
+		@apply text-sm text-gray-500 dark:text-gray-300;
+	}
+
 	.tag {
 		@apply inline-block rounded-md py-1 px-2 my-1 bg-teal-700 text-white h-fit;
 	}
 	.tag-author {
-		@apply bg-amber-700;
+		@apply bg-amber-400 dark:bg-amber-700;
 	}
 	.tag-contest {
-		@apply bg-green-700;
+		@apply bg-green-400 dark:bg-green-700;
 	}
 	.tag-method {
-		@apply bg-fuchsia-700;
+		@apply bg-fuchsia-400 dark:bg-fuchsia-700;
 	}
 	.tag-other {
-		@apply bg-cyan-700;
+		@apply bg-cyan-400 dark:bg-cyan-700;
 	}
 
 	.tag-editable:empty:before {

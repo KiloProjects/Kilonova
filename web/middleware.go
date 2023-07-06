@@ -54,6 +54,21 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 	})
 }
 
+// ValidateBlogPostSlug makes sure the blog post slug is a valid one
+func (rt *Web) ValidateBlogPostSlug(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		postSlug := strings.TrimRightFunc(chi.URLParam(r, "postslug"), func(r rune) bool {
+			return !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-' || r == '_')
+		})
+		post, err1 := rt.base.BlogPostBySlug(r.Context(), postSlug)
+		if err1 != nil {
+			rt.statusPage(w, r, 404, "Articolul nu a fost găsit")
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.BlogPostKey, post)))
+	})
+}
+
 // ValidateListID makes sure the list ID is a valid uint
 func (rt *Web) ValidateListID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -99,6 +114,17 @@ func (rt *Web) ValidateProblemVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !rt.base.IsProblemVisible(util.UserBrief(r), util.Problem(r)) {
 			rt.statusPage(w, r, 403, "Nu ai voie să accesezi problema!")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// ValidateBlogPostVisible checks if the post from context is visible from the logged in user
+func (rt *Web) ValidateBlogPostVisible(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !rt.base.IsBlogPostVisible(util.UserBrief(r), util.BlogPost(r)) {
+			rt.statusPage(w, r, 403, "Nu ai voie să accesezi articolul!")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -235,6 +261,16 @@ func (rt *Web) mustBeProblemEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
 			rt.statusPage(w, r, 401, "Trebuie să fii un editor al problemei")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (rt *Web) mustBePostEditor(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !rt.base.IsBlogPostEditor(util.UserBrief(r), util.BlogPost(r)) {
+			rt.statusPage(w, r, 401, "Trebuie să fii editor al articolului")
 			return
 		}
 		next.ServeHTTP(w, r)

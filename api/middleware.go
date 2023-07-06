@@ -201,10 +201,6 @@ func (s *API) validateAttachmentID(next http.Handler) http.Handler {
 func (s *API) validateAttachmentName(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attName := chi.URLParam(r, "aName")
-		if util.Problem(r) == nil {
-			zap.S().Fatal("Problem is not available")
-			return
-		}
 		if util.Problem(r) == nil && util.BlogPost(r) == nil {
 			zap.S().Fatal("Attachment context is not available")
 			return

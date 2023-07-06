@@ -1,0 +1,51 @@
+{{define "title"}}{{getText "postEditIndex"}}{{end}}
+{{define "content"}}
+{{ template "topbar.html" .Topbar }}
+
+{{$post := .Topbar.Post}}
+
+<div class="segment-panel">
+    <h2>{{ getText "header.edit.index" }}</h2>
+    <form id="updatePostForm" autocomplete="off">
+        <label class="block my-2">
+            <span class="form-label">{{getText "title"}}:</span>
+            <input id="postTitle" class="form-input" type="text" value="{{$post.Title}}" />
+        </label>
+        <label class="block my-2">
+            <span class="form-label">{{getText "post_slug"}}:</span>
+            <input id="postSlug" class="form-input" type="text" value="{{$post.Slug}}" />
+        </label>
+
+        <div class="block my-2">
+            <label class="inline-flex items-center text-lg">
+                <input class="form-checkbox" type="checkbox" id="post_visibility_check" {{if $post.Visible}}checked{{end}}>
+                <span class="ml-2">{{getText "visible"}}</span>
+            </label>
+        </div>
+
+        <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
+    </form>
+</div>
+
+<script>
+    const post = {{$post}};
+    async function updatePost(e) {
+        e.preventDefault();
+        const args = {
+            title: document.getElementById("postTitle").value,
+            slug: document.getElementById("postSlug").value,
+            visible: document.getElementById("post_visibility_check").checked,
+        }
+        const rez = await bundled.postCall(`/blogPosts/${post.id}/update`, args)
+        if(rez.status === "success" && (rez.data.slug != post.slug || args.title != post.title)) {
+            window.location.assign(`/posts/${rez.data.slug}/edit`)
+        }
+        bundled.apiToast({status:rez.status, data: rez.data.message})
+        
+    }
+    document.getElementById("updatePostForm").addEventListener("submit", updatePost)
+</script>
+
+{{template "md_att_editor.html" .StatementEditor }}
+
+{{end}}

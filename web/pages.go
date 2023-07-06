@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type EditTopbar struct {
+type ProblemTopbar struct {
 	IsProblemEditor bool
 	IsContestEditor bool
 
@@ -33,12 +33,12 @@ type EditTopbar struct {
 	PageID int
 }
 
-func (rt *Web) topbar(r *http.Request, page string, pageID int) *EditTopbar {
+func (rt *Web) problemTopbar(r *http.Request, page string, pageID int) *ProblemTopbar {
 	prefix := ""
 	if util.Contest(r) != nil {
 		prefix = fmt.Sprintf("/contests/%d", util.Contest(r).ID)
 	}
-	return &EditTopbar{
+	return &ProblemTopbar{
 		IsProblemEditor: rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
 		IsContestEditor: rt.base.IsContestEditor(util.UserBrief(r), util.Contest(r)),
 
@@ -52,9 +52,55 @@ func (rt *Web) topbar(r *http.Request, page string, pageID int) *EditTopbar {
 	}
 }
 
+type PostTopbar struct {
+	IsPostEditor bool
+
+	Post *kilonova.BlogPost
+
+	Page string
+}
+
+func (rt *Web) postTopbar(r *http.Request, page string) *PostTopbar {
+	return &PostTopbar{
+		IsPostEditor: rt.base.IsBlogPostEditor(util.UserBrief(r), util.BlogPost(r)),
+
+		Post: util.BlogPost(r),
+		Page: page,
+	}
+}
+
 type ReqContext struct {
 	User     *kilonova.UserFull
 	Language string
+}
+
+type BlogPostIndexParams struct {
+	Ctx *ReqContext
+
+	Posts   []*kilonova.BlogPost
+	Authors map[int]*kilonova.UserBrief
+
+	Page     int
+	NumPages int
+}
+
+type BlogPostParams struct {
+	Ctx *ReqContext
+
+	Topbar *PostTopbar
+
+	StatementEditor  *StatementEditorParams
+	AttachmentEditor *AttachmentEditorParams
+
+	Attachments []*kilonova.Attachment
+
+	Statement    template.HTML
+	StatementAtt *kilonova.Attachment
+	Languages    map[string]eval.Language
+	Variants     []*kilonova.StatementVariant
+
+	SelectedLang   string
+	SelectedFormat string
 }
 
 type ContestsIndexParams struct {
@@ -65,14 +111,14 @@ type ContestsIndexParams struct {
 
 type ContestParams struct {
 	Ctx    *ReqContext
-	Topbar *EditTopbar
+	Topbar *ProblemTopbar
 
 	Contest *kilonova.Contest
 }
 
 type ProblemParams struct {
 	Ctx    *ReqContext
-	Topbar *EditTopbar
+	Topbar *ProblemTopbar
 
 	Problem     *kilonova.Problem
 	Attachments []*kilonova.Attachment
@@ -90,7 +136,7 @@ type ProblemParams struct {
 
 type ProblemTopbarParams struct {
 	Ctx    *ReqContext
-	Topbar *EditTopbar
+	Topbar *ProblemTopbar
 
 	Languages map[string]eval.Language
 	Problem   *kilonova.Problem
@@ -106,7 +152,7 @@ type SubTaskEditParams struct {
 	Ctx     *ReqContext
 	Problem *kilonova.Problem
 	SubTask *kilonova.SubTask
-	Topbar  *EditTopbar
+	Topbar  *ProblemTopbar
 
 	ctx  context.Context
 	base *sudoapi.BaseAPI
@@ -139,7 +185,7 @@ type TestEditParams struct {
 	Ctx     *ReqContext
 	Problem *kilonova.Problem
 	Test    *kilonova.Test
-	Topbar  *EditTopbar
+	Topbar  *ProblemTopbar
 
 	base *sudoapi.BaseAPI
 }
@@ -362,7 +408,9 @@ func parse(optFuncs template.FuncMap, files ...string) *template.Template {
 
 		// Check content
 		tree := ptrees["content"]
-		doWalk(files[0], tree.Root)
+		if tree != nil {
+			doWalk(files[0], tree.Root)
+		}
 	}
 	return template.Must(t.ParseFS(templs, append([]string{"layout.html"}, files...)...))
 }

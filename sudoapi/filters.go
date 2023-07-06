@@ -25,6 +25,7 @@ func (s *BaseAPI) IsProposer(user *kilonova.UserBrief) bool {
 	return user.Admin || user.Proposer
 }
 
+// NOTE: This must be in sync with the visible_posts PSQL function
 func (s *BaseAPI) IsBlogPostVisible(user *kilonova.UserBrief, post *kilonova.BlogPost) bool {
 	if post == nil {
 		return false

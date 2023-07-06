@@ -168,7 +168,7 @@ func attachmentFilterQuery(filter *kilonova.AttachmentFilter, fb *filterBuilder)
 		fb.AddConstraint("EXISTS (SELECT 1 FROM problem_attachments_m2m WHERE attachment_id = id AND problem_id = %s)", v)
 	}
 	if v := filter.BlogPostID; v != nil {
-		fb.AddConstraint("EXISTS (SELECT 1 FROM blog_post_attachments_m2m WHERE attachment_id = id AND problem_id = %s)", v)
+		fb.AddConstraint("EXISTS (SELECT 1 FROM blog_post_attachments_m2m WHERE attachment_id = id AND blog_post_id = %s)", v)
 	}
 	if v := filter.Name; v != nil {
 		fb.AddConstraint("name = %s", v)

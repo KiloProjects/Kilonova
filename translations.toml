@@ -158,6 +158,10 @@ ro = "Profil:"
 en = "Verified Email"
 ro = "Email Verificat"
 
+[title.blogPosts]
+en = "Posts"
+ro = "Postări"
+
 [title.tags]
 en = "Tags"
 ro = "Etichete"
@@ -371,6 +375,10 @@ ro = "Link-uri utile"
 en = "Other information"
 ro = "Alte informații"
 
+[credits]
+en = "Credits"
+ro = "Credite"
+
 [frontPage]
 en = "Front page"
 ro = "Pagina principală"
@@ -382,6 +390,10 @@ ro = "Probleme"
 [submission.list]
 en = "Submissions"
 ro = "Submisii"
+
+[blogpost.list]
+en = "Posts"
+ro = "Postări"
 
 [profile.url]
 en = "Profile"
@@ -410,6 +422,14 @@ ro = "Registru acțiuni"
 [problem_lists]
 en = "Problem Lists"
 ro = "Liste de Probleme"
+
+[blog_posts]
+en = "Posts"
+ro = "Postări"
+
+[title.create_post]
+en = "Create post"
+ro = "Creare postare"
 
 [auth.signup]
 en = "Sign Up"
@@ -514,6 +534,11 @@ ro = "Nume test"
 [statementFormat]
 en = "Statement format"
 ro = "Format enunț"
+
+[postFormat]
+en = "Post format"
+ro = "Format postare"
+
 
 [memoryLimit]
 en = "Memory limit"
@@ -856,6 +881,10 @@ ro = "Nicio problemă găsită"
 en = "No user found"
 ro = "Niciun utilizator găsit"
 
+[noPostFound]
+en = "No post found"
+ro = "Nicio postare găsită"
+
 [show]
 en = "Show"
 ro = "Afișare"
@@ -939,6 +968,10 @@ ro = "Creare problemă"
 [createPbList]
 en = "Create problem list"
 ro = "Creare listă probleme"
+
+[createPost]
+en = "Create post"
+ro = "Creare postare"
 
 [createNestedPbList]
 en = "Create problem list nested here"
@@ -1200,9 +1233,25 @@ ro = "Utilizator necunoscut"
 en = "Uploading..."
 ro = "Se încarcă..."
 
+[post_slug]
+en = "Permalink"
+ro = "Permalink"
+
+[posted_by]
+en = 'by <a href="/profile/%[1]s">%[1]s</a>'
+ro = 'de <a href="/profile/%[1]s">%[1]s</a>'
+
+[posted_at]
+en = "Posted at"
+ro = "Postat pe"
+
+[updated_at]
+en = "Updated at"
+ro = "Actualizat pe"
+
 [created_at]
 en = "Created at"
-ro = "Creat în data de"
+ro = "Creat pe"
 
 # Forgot password stuff
 
@@ -1699,6 +1748,27 @@ ro = "Reîncărcare"
 en = "Display language"
 ro = "Limbă afișaj"
 
+[post.nav.view]
+en = "View"
+ro = "Vizualizare"
+
+[post.nav.edit]
+en = "Update"
+ro = "Editare"
+
+[post.nav.attachments]
+en = "Attachments"
+ro = "Atașamente"
+
+[postEditIndex]
+en = "Update content"
+ro = "Editare conținut"
+
+[postEditAttachments]
+en = "Update attachments"
+ro = "Editare atașamente"
+
+
 [upload_processing]
 en = "Upload complete, processing request"
 ro = "Încărcare finalizată, se procesează request-ul"
@@ -1814,6 +1884,10 @@ ro = "Conținut"
 [desc_link]
 en = "Download statement"
 ro = "Descărcare enunț"
+
+[desc_link_post]
+en = "Download contents"
+ro = "Descărcare conținut"
 
 [score_breakdown_title]
 en = "Score breakdown"

@@ -1,0 +1,74 @@
+{{define "title"}} {{.Topbar.Post.Title}} | Kilonova {{end}}
+{{define "content"}}
+
+{{$post := .Topbar.Post}}
+{{$postEditor := .Topbar.IsPostEditor}}
+{{ template "topbar.html" .Topbar }}
+
+{{$stmtLang := .SelectedLang}}
+{{$stmtFmt := .SelectedFormat}}
+
+<div class="segment-panel reset-list enhance-tables statement-images">
+    <div class="text-justify">
+        {{.Statement}}
+    </div>
+
+    <div class="block mt-4">    
+        {{ if gt (len .Variants) 1 }}
+        <label class="block mb-1">
+            <span class="text-base">{{getText "postFormat"}}:</span> 
+            <select id="variant-select" class="form-select-mini" autocomplete="off">
+                {{ range .Variants }}
+                    <option value="{{.Language}};{{.Format}}" {{if and (eq .Language $stmtLang) (eq .Format $stmtFmt)}}selected{{end}}>{{formatStmtLang .Language}} - {{formatStmtFmt .Format}}</option>
+                {{ end }}
+            </select>
+        </label>    
+        {{ end }}
+        {{if .StatementAtt}}
+            <span class="block text-muted italic">{{getText "updated_at"}}: <span class="server_timestamp">{{.StatementAtt.LastUpdatedAt.UnixMilli}}</span></span>
+        {{end}}
+        {{if $post.PublishedAt}}
+            <span class="block text-muted italic">{{getText "posted_at"}}: <span class="server_timestamp">{{$post.PublishedAt.UnixMilli}}</span></span>
+        {{end}}
+        {{if .Topbar.IsPostEditor }}
+        <span class="block text-muted italic">{{getText "created_at"}}: <span class="server_timestamp">{{$post.CreatedAt.UnixMilli}}</span></span>
+        {{end}}
+    </div>
+    <div style="clear: both"></div>
+</div>
+
+{{ with .Attachments }}
+    <div class="segment-panel">
+        <h2>{{getText "attachments"}}</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1">
+            {{range .}}
+            <a style="word-wrap: anywhere;" href="/posts/{{$post.Slug}}/attachments/{{.Name}}"
+                class="segment-panel m-0 flex justify-between black-anchor">
+                <h3 class="inline" id="att-name-{{.ID}}">{{.Name}}</h3>
+                <span class="badge-lite text-sm" id="att-size-{{.ID}}">
+                    {{.Size}}
+                </span>
+            </a>
+            {{end}}
+        </div>
+    </div>
+{{ end }}
+
+<script>
+document.getElementById("variant-select")?.addEventListener("change", e => {
+    const [lang, fmt] = e.target.value.split(";")
+    var params = new URLSearchParams(window.location.search);
+    params.set("pref_lang", lang)
+    params.set("pref_format", fmt)
+    window.location.search = params.toString()
+});
+(() => {
+    for (let el of document.querySelectorAll("[id^='att-name-']")) {
+        el.innerHTML = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerText}`
+    }
+    for (let el of document.querySelectorAll("[id^='att-size-']")) {
+        el.innerText = bundled.sizeFormatter(Number(el.innerText))
+    }
+})()
+</script>
+{{end}}

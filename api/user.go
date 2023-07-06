@@ -239,21 +239,29 @@ func (s *API) getSolvedProblems(w http.ResponseWriter, r *http.Request) {
 // ChangeEmail changes the password of the saved user
 // TODO: Check this is not a scam and the user actually wants to change password
 func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
-	password := r.FormValue("password")
-	oldpassword := r.FormValue("oldpassword")
+	r.ParseForm()
+	var args struct {
+		Password    string `json:"password"`
+		PasswordOld string `json:"old_password"`
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 500)
+		return
+	}
 
-	if password == "" {
+	if args.Password == "" {
 		errorData(w, "You must provide a new password", http.StatusBadRequest)
 		return
 	}
-	if err := s.base.VerifyUserPassword(r.Context(), util.UserBrief(r).ID, oldpassword); err != nil {
+	if err := s.base.VerifyUserPassword(r.Context(), util.UserBrief(r).ID, args.PasswordOld); err != nil {
 		err.WriteError(w)
 		return
 	}
+
 	if err := s.base.UpdateUserPassword(
 		r.Context(),
 		util.UserBrief(r).ID,
-		password,
+		args.Password,
 	); err != nil {
 		err.WriteError(w)
 		return

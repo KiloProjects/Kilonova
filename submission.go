@@ -58,7 +58,7 @@ type SubmissionFilter struct {
 	Score        *int    `json:"score"`
 	CompileError *bool   `json:"compile_error"`
 
-	Look        bool       `json:""`
+	Look        bool       `json:"-"`
 	LookingUser *UserBrief `json:"-"`
 
 	Limit  int `json:"limit"`

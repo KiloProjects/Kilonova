@@ -5,13 +5,38 @@ import { useState } from "preact/hooks";
 import { bodyCall } from "../api/net";
 import { apiToast } from "../toast";
 
-export function AttachmentRenamer({ pbid, attid, orgname }: { pbid: string; attid: string; orgname: string }) {
+export function AttachmentRenamer({
+	pbid,
+	postid,
+	postslug,
+	attid,
+	orgname,
+}: {
+	pbid: string;
+	postid: string;
+	postslug: string;
+	attid: string;
+	orgname: string;
+}) {
 	let [editing, setEditing] = useState<boolean>(false);
 	let [name, setName] = useState<string>(orgname);
 	let [preEditName, setPreEditName] = useState<string>(orgname);
 
+	let apiPrefix = "",
+		urlPrefix = "";
+	if (pbid?.length > 0) {
+		apiPrefix = `/problem/${pbid}`;
+		urlPrefix = `/problems/${pbid}`;
+	} else if (postid?.length > 0) {
+		apiPrefix = `/blogPosts/${postid}`;
+		urlPrefix = `/posts/${postslug}`;
+	} else {
+		throw new Error("problem id or post id not specified");
+	}
+	console.log(pbid, postid, postslug, apiPrefix, urlPrefix);
+
 	async function updateName() {
-		const rez = await bodyCall<string>(`/problem/${pbid}/update/bulkUpdateAttachmentInfo`, {
+		const rez = await bodyCall<string>(apiPrefix + "/update/bulkUpdateAttachmentInfo", {
 			[attid]: { name },
 		});
 		apiToast(rez);
@@ -23,7 +48,7 @@ export function AttachmentRenamer({ pbid, attid, orgname }: { pbid: string; atti
 	if (!editing) {
 		return (
 			<>
-				<a href={`/problems/${pbid}/attachments/${name}`}>{name}</a>{" "}
+				<a href={urlPrefix + `/attachments/${name}`}>{name}</a>{" "}
 				<span
 					onClick={() => {
 						setEditing(true);
@@ -55,4 +80,4 @@ export function AttachmentRenamer({ pbid, attid, orgname }: { pbid: string; atti
 	);
 }
 
-register(AttachmentRenamer, "kn-att-name", ["pbid", "attid", "orgname"]);
+register(AttachmentRenamer, "kn-att-name", ["pbid", "postid", "postslug", "attid", "orgname"]);

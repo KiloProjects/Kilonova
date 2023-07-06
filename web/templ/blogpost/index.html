@@ -1,0 +1,40 @@
+{{ define "title" }} {{getText "title.blogPosts"}} {{ end }}
+{{ define "content" }}
+
+{{$authors:=.Authors}}
+<div class="segment-panel">
+    <h1>{{getText "title.blogPosts"}}</h1>
+    
+    {{ if authed }}
+    {{ if authedUser.Proposer }}
+    <div class="block my-2">
+        <a class="btn btn-blue" href="/createPost">{{getText "createPost"}}</a>
+    </div>
+    {{ end }}
+    {{ end }}
+
+    <div id="blog_post_paginator"></div>
+
+    {{ range .Posts }}
+        <div class="segment-panel">
+            <h2 class="mb-1"><a href="/posts/{{.Slug}}">{{.Title}}</a> {{with index $authors .AuthorID}} {{getText "posted_by" .Name}} {{end}}</h2>
+        </div>
+    {{ else }}
+        {{getText "noPostFound"}}
+    {{ end }}
+</div>
+
+<script>
+const page = {{.Page}};
+const numpages = {{.NumPages}};
+if(numpages > 1) {
+    bundled.preactRender(bundled.Paginator({page, numpages, setPage: (page) => {
+        const params = new URLSearchParams(window.location.search)
+        params.set("page", page)
+        window.location.search = params.toString()
+    }}), document.getElementById("blog_post_paginator"))
+}
+</script>
+
+
+{{ end }}

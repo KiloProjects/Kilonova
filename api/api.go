@@ -160,14 +160,14 @@ func (s *API) Handler() http.Handler {
 				r.Post("/bulkUpdateAttachmentInfo", s.bulkUpdateAttachmentInfo)
 			})
 
+			r.Route("/get", func(r chi.Router) {
+				r.Get("/attachments", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
+					return s.base.BlogPostAttachments(ctx, util.BlogPostContext(ctx).ID)
+				}))
+				r.With(s.validateAttachmentID).Get("/attachment/{aID}", s.getFullAttachment)
+				r.With(s.validateAttachmentName).Get("/attachmentByName/{aName}", s.getFullAttachment)
+			})
 			r.With(s.validateBlogPostEditor).Post("/delete", s.deleteBlogPost)
-		})
-		r.Route("/get", func(r chi.Router) {
-			r.Get("/attachments", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
-				return s.base.BlogPostAttachments(ctx, util.BlogPostContext(ctx).ID)
-			}))
-			r.With(s.validateAttachmentID).Get("/attachment/{aID}", s.getFullAttachment)
-			r.With(s.validateAttachmentName).Get("/attachmentByName/{aName}", s.getFullAttachment)
 		})
 	})
 	r.Route("/submissions", func(r chi.Router) {

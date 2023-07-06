@@ -17,18 +17,31 @@ import (
 	"go.uber.org/zap"
 )
 
+type StatementEditorParams struct {
+	Lang string
+	Data string
+	Att  *kilonova.Attachment
+
+	APIPrefix string
+}
+
+type AttachmentEditorParams struct {
+	Attachments []*kilonova.Attachment
+	Problem     *kilonova.Problem
+	BlogPost    *kilonova.BlogPost
+
+	APIPrefix string
+}
+
 type ProblemEditParams struct {
 	Ctx     *ReqContext
 	Problem *kilonova.Problem
-	Topbar  *EditTopbar
+	Topbar  *ProblemTopbar
 
 	Checklist *kilonova.ProblemChecklist
 
-	Attachments []*kilonova.Attachment
-
-	StatementLang string
-	StatementData string
-	StatementAtt  *kilonova.Attachment
+	AttachmentEditor *AttachmentEditorParams
+	StatementEditor  *StatementEditorParams
 }
 
 func (rt *Web) editIndex() func(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +54,7 @@ func (rt *Web) editIndex() func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &ProblemEditParams{
 			Ctx:     GenContext(r),
 			Problem: util.Problem(r),
-			Topbar:  rt.topbar(r, "general", -1),
+			Topbar:  rt.problemTopbar(r, "general", -1),
 
 			Checklist: chk,
 		})
@@ -49,7 +62,7 @@ func (rt *Web) editIndex() func(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := rt.parse(nil, "problem/edit/desc.html", "problem/topbar.html")
+	tmpl := rt.parse(nil, "problem/edit/desc.html", "modals/md_att_editor.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		variants, err := rt.base.ProblemDescVariants(r.Context(), util.Problem(r).ID, true)
 		if err != nil {
@@ -58,22 +71,7 @@ func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		finalLang := ""
-		prefLang := r.FormValue("pref_lang")
-
-		for _, vr := range variants {
-			if vr.Format == "md" && vr.Language == prefLang {
-				finalLang = vr.Language
-			}
-		}
-
-		if finalLang == "" {
-			for _, vr := range variants {
-				if vr.Format == "md" {
-					finalLang = vr.Language
-				}
-			}
-		}
+		finalLang := rt.getFinalLang(r.FormValue("pref_lang"), variants)
 
 		var statementData string
 		var att *kilonova.Attachment
@@ -98,17 +96,21 @@ func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &ProblemEditParams{
 			Ctx:     GenContext(r),
 			Problem: util.Problem(r),
-			Topbar:  rt.topbar(r, "desc", -1),
+			Topbar:  rt.problemTopbar(r, "desc", -1),
 
-			StatementLang: finalLang,
-			StatementData: statementData,
-			StatementAtt:  att,
+			StatementEditor: &StatementEditorParams{
+				Lang: finalLang,
+				Data: statementData,
+				Att:  att,
+
+				APIPrefix: fmt.Sprintf("/problem/%d", util.Problem(r).ID),
+			},
 		})
 	}
 }
 
 func (rt *Web) editAttachments() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := rt.parse(nil, "problem/edit/attachments.html", "problem/topbar.html")
+	tmpl := rt.parse(nil, "problem/edit/attachments.html", "modals/att_manager.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		atts, err := rt.base.ProblemAttachments(r.Context(), util.Problem(r).ID)
 		if err != nil || len(atts) == 0 {
@@ -117,9 +119,13 @@ func (rt *Web) editAttachments() func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &ProblemEditParams{
 			Ctx:     GenContext(r),
 			Problem: util.Problem(r),
-			Topbar:  rt.topbar(r, "attachments", -1),
+			Topbar:  rt.problemTopbar(r, "attachments", -1),
 
-			Attachments: atts,
+			AttachmentEditor: &AttachmentEditorParams{
+				Attachments: atts,
+				Problem:     util.Problem(r),
+				APIPrefix:   fmt.Sprintf("/problem/%d", util.Problem(r).ID),
+			},
 		})
 	}
 }
@@ -130,7 +136,7 @@ func (rt *Web) editAccessControl() func(w http.ResponseWriter, r *http.Request) 
 		rt.runTempl(w, r, tmpl, &ProblemEditParams{
 			Ctx:     GenContext(r),
 			Problem: util.Problem(r),
-			Topbar:  rt.topbar(r, "access", -1),
+			Topbar:  rt.problemTopbar(r, "access", -1),
 		})
 	}
 }
@@ -139,7 +145,7 @@ func (rt *Web) testIndex() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/testScores.html", "problem/topbar.html", "problem/edit/testSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &TestEditParams{
-			GenContext(r), util.Problem(r), nil, rt.topbar(r, "tests", -2), rt.base,
+			GenContext(r), util.Problem(r), nil, rt.problemTopbar(r, "tests", -2), rt.base,
 		})
 	}
 }
@@ -165,7 +171,7 @@ func (rt *Web) testAdd() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/testAdd.html", "problem/topbar.html", "problem/edit/testSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &TestEditParams{
-			GenContext(r), util.Problem(r), nil, rt.topbar(r, "tests", -1), rt.base,
+			GenContext(r), util.Problem(r), nil, rt.problemTopbar(r, "tests", -1), rt.base,
 		})
 	}
 }
@@ -174,7 +180,7 @@ func (rt *Web) testEdit() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/testEdit.html", "problem/topbar.html", "problem/edit/testSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &TestEditParams{
-			GenContext(r), util.Problem(r), util.Test(r), rt.topbar(r, "tests", util.Test(r).VisibleID), rt.base,
+			GenContext(r), util.Problem(r), util.Test(r), rt.problemTopbar(r, "tests", util.Test(r).VisibleID), rt.base,
 		})
 	}
 }
@@ -214,7 +220,7 @@ func (rt *Web) subtaskIndex() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/subtaskIndex.html", "problem/topbar.html", "problem/edit/subtaskSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &SubTaskEditParams{
-			GenContext(r), util.Problem(r), nil, rt.topbar(r, "subtasks", -2), r.Context(), rt.base},
+			GenContext(r), util.Problem(r), nil, rt.problemTopbar(r, "subtasks", -2), r.Context(), rt.base},
 		)
 	}
 }
@@ -223,7 +229,7 @@ func (rt *Web) subtaskAdd() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/subtaskAdd.html", "problem/topbar.html", "problem/edit/subtaskSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &SubTaskEditParams{
-			GenContext(r), util.Problem(r), nil, rt.topbar(r, "subtasks", -1), r.Context(), rt.base},
+			GenContext(r), util.Problem(r), nil, rt.problemTopbar(r, "subtasks", -1), r.Context(), rt.base},
 		)
 	}
 }
@@ -232,7 +238,7 @@ func (rt *Web) subtaskEdit() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/subtaskEdit.html", "problem/topbar.html", "problem/edit/subtaskSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, tmpl, &SubTaskEditParams{
-			GenContext(r), util.Problem(r), util.SubTask(r), rt.topbar(r, "subtasks", util.SubTask(r).VisibleID), r.Context(), rt.base},
+			GenContext(r), util.Problem(r), util.SubTask(r), rt.problemTopbar(r, "subtasks", util.SubTask(r).VisibleID), r.Context(), rt.base},
 		)
 	}
 }

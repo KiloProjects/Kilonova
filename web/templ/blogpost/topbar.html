@@ -1,0 +1,20 @@
+<div class="segment-panel">
+    <h1>
+        {{if (eq .Page `view`)}}
+        <b>{{.Post.Title}}</b>
+        {{else if (eq .Page `editIndex`)}}
+        <b>{{.Post.Title}} | {{getText "postEditIndex"}}</b>
+        {{else if (eq .Page `editAttachments`)}}
+        <b>{{.Post.Title}} | {{getText "postEditAttachments"}}</b>
+        {{end}}
+    </h1>
+    {{ if .IsPostEditor }}
+    <div class="mt-1">
+        <a class="p-1 {{if (eq .Page `view`)}} topbar-selected {{end}}" href="/posts/{{.Post.Slug}}">{{getText "post.nav.view"}}</a>
+        <div class="topbar-separator"></div>
+        <a class="p-1 {{if (eq .Page `editIndex`)}} topbar-selected {{end}}" href="/posts/{{.Post.Slug}}/edit">{{getText "post.nav.edit"}}</a>
+        <div class="topbar-separator"></div>
+        <a class="p-1 {{if (eq .Page `editAttachments`)}} topbar-selected {{end}}" href="/posts/{{.Post.Slug}}/edit/attachments">{{getText "post.nav.attachments"}}</a>
+    </div>
+    {{ end }}
+</div>

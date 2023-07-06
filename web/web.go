@@ -83,6 +83,18 @@ func (rt *Web) problemRouter(r chi.Router) {
 	r.Get("/attachments/{aid}", rt.problemAttachment)
 }
 
+func (rt *Web) blogPostRouter(r chi.Router) {
+	r.Use(rt.ValidateBlogPostSlug)
+	r.Use(rt.ValidateBlogPostVisible)
+	r.Get("/", rt.blogPost())
+	r.Route("/edit", func(r chi.Router) {
+		r.Use(rt.mustBePostEditor)
+		r.Get("/", rt.editBlogPostIndex())
+		r.Get("/attachments", rt.editBlogPostAtts())
+	})
+	r.Get("/attachments/{aid}", rt.blogPostAttachment)
+}
+
 // Handler returns a http.Handler
 func (rt *Web) Handler() http.Handler {
 	r := chi.NewRouter()
@@ -102,6 +114,12 @@ func (rt *Web) Handler() http.Handler {
 		r.Get("/", rt.problems())
 		r.Route("/{pbid}", rt.problemRouter)
 	})
+
+	r.Route("/posts", func(r chi.Router) {
+		r.Get("/", rt.blogPosts())
+		r.Route("/{postslug}", rt.blogPostRouter)
+	})
+	r.With(rt.mustBeProposer).Get("/createPost", rt.justRender("blogpost/create.html"))
 
 	r.Route("/tags", func(r chi.Router) {
 		r.Get("/", rt.tags())

@@ -183,15 +183,8 @@ func (s *BaseAPI) ProblemAttDataByName(ctx context.Context, problemID int, name 
 
 var statementRegex = regexp.MustCompile("statement-([a-z]+).([a-z]+)")
 
-func (s *BaseAPI) ProblemDescVariants(ctx context.Context, problemID int, getPrivate bool) ([]*kilonova.StatementVariant, *StatusError) {
+func (s *BaseAPI) parseVariants(atts []*kilonova.Attachment, getPrivate bool) []*kilonova.StatementVariant {
 	variants := []*kilonova.StatementVariant{}
-	atts, err := s.ProblemAttachments(ctx, problemID)
-	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
-		}
-		return nil, WrapError(err, "Couldn't get problem statement variants")
-	}
 
 	for _, att := range atts {
 		matches := statementRegex.FindStringSubmatch(att.Name)
@@ -208,7 +201,31 @@ func (s *BaseAPI) ProblemDescVariants(ctx context.Context, problemID int, getPri
 		})
 	}
 
-	return variants, nil
+	return variants
+}
+
+func (s *BaseAPI) ProblemDescVariants(ctx context.Context, problemID int, getPrivate bool) ([]*kilonova.StatementVariant, *StatusError) {
+	atts, err := s.ProblemAttachments(ctx, problemID)
+	if err != nil {
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
+		return nil, WrapError(err, "Couldn't get problem statement variants")
+	}
+
+	return s.parseVariants(atts, getPrivate), nil
+}
+
+func (s *BaseAPI) BlogPostDescVariants(ctx context.Context, problemID int, getPrivate bool) ([]*kilonova.StatementVariant, *StatusError) {
+	atts, err := s.BlogPostAttachments(ctx, problemID)
+	if err != nil {
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
+		return nil, WrapError(err, "Couldn't get problem statement variants")
+	}
+
+	return s.parseVariants(atts, getPrivate), nil
 }
 
 func (s *BaseAPI) getCachedAttachment(attID int) ([]byte, bool) {

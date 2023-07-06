@@ -359,7 +359,16 @@ func (rt *Web) paste() http.HandlerFunc {
 	}
 }
 
-func (rt *Web) appropriateDescriptionVariant(pb *kilonova.Problem, user *kilonova.UserBrief, variants []*kilonova.StatementVariant, prefLang string, prefFormat string) (string, string) {
+func (rt *Web) appropriateDescriptionVariant(r *http.Request, variants []*kilonova.StatementVariant) (string, string) {
+	prefLang := r.FormValue("pref_lang")
+	if prefLang == "" {
+		prefLang = util.Language(r)
+	}
+	prefFormat := r.FormValue("pref_format")
+	if prefFormat == "" {
+		prefFormat = "md"
+	}
+
 	if len(variants) == 0 {
 		return "", ""
 	}
@@ -392,22 +401,14 @@ func (rt *Web) problem() http.HandlerFunc {
 
 		var statement = []byte("This problem doesn't have a statement.")
 
-		lang := r.FormValue("pref_lang")
-		if lang == "" {
-			lang = util.Language(r)
-		}
-		format := r.FormValue("pref_format")
-		if format == "" {
-			format = "md"
-		}
-
 		variants, err := rt.base.ProblemDescVariants(r.Context(), problem.ID, rt.base.IsProblemEditor(util.UserBrief(r), problem))
 		if err != nil && !errors.Is(err, context.Canceled) {
 			zap.S().Warn("Couldn't get problem desc variants", err)
 		}
 
-		foundLang, foundFmt := rt.appropriateDescriptionVariant(problem, util.UserBrief(r), variants, lang, format)
+		foundLang, foundFmt := rt.appropriateDescriptionVariant(r, variants)
 
+		url := fmt.Sprintf("/problems/%d/attachments/statement-%s.%s", problem.ID, foundLang, foundFmt)
 		switch foundFmt {
 		case "md":
 			statement, err = rt.base.RenderedProblemDesc(r.Context(), problem, foundLang, foundFmt)
@@ -415,10 +416,9 @@ func (rt *Web) problem() http.HandlerFunc {
 				if !errors.Is(err, context.Canceled) {
 					zap.S().Warn("Error getting problem markdown: ", err)
 				}
-				statement = []byte("Error fetching markdown.")
+				statement = []byte("Error loading markdown.")
 			}
 		case "pdf":
-			url := fmt.Sprintf("/problems/%d/attachments/statement-%s.%s", problem.ID, foundLang, foundFmt)
 			statement = []byte(fmt.Sprintf(
 				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>
 					<embed class="mx-2 my-2" type="application/pdf" src="%s"
@@ -428,13 +428,12 @@ func (rt *Web) problem() http.HandlerFunc {
 		case "":
 		default:
 			statement = []byte(fmt.Sprintf(
-				`<a class="btn btn-blue" target="_blank" href="/problems/%d/attachments/statement-%s.%s">%s</a>`,
-				problem.ID, foundLang, foundFmt,
-				kilonova.GetText(util.Language(r), "desc_link"),
+				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>`,
+				url, kilonova.GetText(util.Language(r), "desc_link"),
 			))
 		}
 
-		atts, err := rt.base.ProblemAttachments(r.Context(), util.Problem(r).ID)
+		atts, err := rt.base.ProblemAttachments(r.Context(), problem.ID)
 		if err != nil || len(atts) == 0 {
 			atts = nil
 		}
@@ -501,7 +500,7 @@ func (rt *Web) problem() http.HandlerFunc {
 
 		rt.runTempl(w, r, templ, &ProblemParams{
 			Ctx:    GenContext(r),
-			Topbar: rt.topbar(r, "pb_statement", -1),
+			Topbar: rt.problemTopbar(r, "pb_statement", -1),
 
 			Problem:     util.Problem(r),
 			Attachments: atts,
@@ -524,7 +523,7 @@ func (rt *Web) problemSubmissions() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ProblemTopbarParams{
 			Ctx:    GenContext(r),
-			Topbar: rt.topbar(r, "pb_submissions", -1),
+			Topbar: rt.problemTopbar(r, "pb_submissions", -1),
 
 			Problem: util.Problem(r),
 		})
@@ -555,10 +554,244 @@ func (rt *Web) problemSubmit() http.HandlerFunc {
 
 		rt.runTempl(w, r, templ, &ProblemTopbarParams{
 			Ctx:    GenContext(r),
-			Topbar: rt.topbar(r, "pb_submit", -1),
+			Topbar: rt.problemTopbar(r, "pb_submit", -1),
 
 			Languages: langs,
 			Problem:   util.Problem(r),
+		})
+	}
+}
+
+var maxPostsPerPage = 10
+
+func (rt *Web) blogPosts() http.HandlerFunc {
+	templ := rt.parse(nil, "blogpost/index.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		page, err := strconv.Atoi(r.FormValue("page"))
+		if err != nil {
+			page = 1
+		}
+
+		filter := kilonova.BlogPostFilter{
+			Limit:  maxPostsPerPage,
+			Offset: (page - 1) * maxPostsPerPage,
+
+			Look:        true,
+			LookingUser: util.UserBrief(r),
+		}
+
+		posts, err1 := rt.base.BlogPosts(r.Context(), filter)
+		if err1 != nil {
+			zap.S().Warn(err1)
+			rt.statusPage(w, r, 500, "N-am putut încărca postările")
+			return
+		}
+
+		numPosts, err1 := rt.base.CountBlogPosts(r.Context(), filter)
+		if err1 != nil {
+			zap.S().Warn("N-am putut încărca numărul de postări", err1)
+			numPosts = 0
+		}
+
+		numPages := numPosts / maxPostsPerPage
+		if numPosts%maxPostsPerPage > 0 {
+			numPages++
+		}
+
+		authorIDs := []int{}
+		for _, post := range posts {
+			authorIDs = append(authorIDs, post.AuthorID)
+		}
+
+		authors, err1 := rt.base.UsersBrief(r.Context(), kilonova.UserFilter{IDs: authorIDs})
+		if err1 != nil {
+			zap.S().Warn(err1)
+		}
+
+		authorMap := make(map[int]*kilonova.UserBrief)
+		for _, author := range authors {
+			authorMap[author.ID] = author
+		}
+
+		for _, post := range posts {
+			if _, ok := authorMap[post.AuthorID]; !ok {
+				authorMap[post.AuthorID] = nil
+			}
+		}
+
+		rt.runTempl(w, r, templ, &BlogPostIndexParams{
+			Ctx: GenContext(r),
+
+			Posts:   posts,
+			Authors: authorMap,
+
+			Page:     page,
+			NumPages: numPages,
+		})
+	}
+}
+
+func (rt *Web) blogPost() http.HandlerFunc {
+	templ := rt.parse(nil, "blogpost/view.html", "blogpost/topbar.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		post := util.BlogPost(r)
+		var statement = []byte("Post is empty.")
+
+		variants, err := rt.base.BlogPostDescVariants(r.Context(), post.ID, rt.base.IsBlogPostEditor(util.UserBrief(r), post))
+		if err != nil && !errors.Is(err, context.Canceled) {
+			zap.S().Warn("Couldn't get problem desc variants", err)
+		}
+
+		foundLang, foundFmt := rt.appropriateDescriptionVariant(r, variants)
+
+		url := fmt.Sprintf("/posts/%s/attachments/statement-%s.%s", post.Slug, foundLang, foundFmt)
+		switch foundFmt {
+		case "md":
+			statement, err = rt.base.RenderedBlogPostDesc(r.Context(), post, foundLang, foundFmt)
+			if err != nil {
+				if !errors.Is(err, context.Canceled) {
+					zap.S().Warn("Error getting problem markdown: ", err)
+				}
+				statement = []byte("Error loading markdown.")
+			}
+		case "pdf":
+			statement = []byte(fmt.Sprintf(
+				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>
+					<embed class="mx-2 my-2" type="application/pdf" src="%s"
+					style="width:95%%; height: 90vh; background: white; object-fit: contain;"></embed>`,
+				url, kilonova.GetText(util.Language(r), "desc_link_post"), url,
+			))
+		case "":
+		default:
+			statement = []byte(fmt.Sprintf(
+				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>`,
+				url, kilonova.GetText(util.Language(r), "desc_link_post"),
+			))
+		}
+
+		atts, err := rt.base.BlogPostAttachments(r.Context(), post.ID)
+		if err != nil || len(atts) == 0 {
+			atts = nil
+		}
+
+		if atts != nil {
+			newAtts := make([]*kilonova.Attachment, 0, len(atts))
+			for _, att := range atts {
+				if att.Visible || rt.base.IsBlogPostEditor(util.UserBrief(r), post) {
+					newAtts = append(newAtts, att)
+				}
+			}
+
+			atts = newAtts
+		}
+
+		att, err := rt.base.BlogPostAttByName(r.Context(), post.ID, fmt.Sprintf("statement-%s.%s", foundLang, foundFmt))
+		if err != nil {
+			att = nil
+		}
+
+		rt.runTempl(w, r, templ, &BlogPostParams{
+			Ctx: GenContext(r),
+
+			Topbar: rt.postTopbar(r, "view"),
+
+			Attachments:  atts,
+			Statement:    template.HTML(statement),
+			StatementAtt: att,
+			Variants:     variants,
+
+			SelectedLang:   foundLang,
+			SelectedFormat: foundFmt,
+		})
+	}
+}
+
+func (rt *Web) getFinalLang(prefLang string, variants []*kilonova.StatementVariant) string {
+	var finalLang string
+
+	for _, vr := range variants {
+		if vr.Format == "md" && vr.Language == prefLang {
+			finalLang = vr.Language
+		}
+	}
+
+	if finalLang == "" {
+		for _, vr := range variants {
+			if vr.Format == "md" {
+				finalLang = vr.Language
+			}
+		}
+	}
+
+	return finalLang
+}
+
+func (rt *Web) editBlogPostIndex() http.HandlerFunc {
+	templ := rt.parse(nil, "blogpost/editIndex.html", "modals/md_att_editor.html", "blogpost/topbar.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		variants, err := rt.base.BlogPostDescVariants(r.Context(), util.BlogPost(r).ID, true)
+		if err != nil {
+			zap.S().Warn(err)
+			http.Error(w, "Couldn't get statement variants", 500)
+			return
+		}
+
+		finalLang := rt.getFinalLang(r.FormValue("pref_lang"), variants)
+
+		var statementData string
+		var att *kilonova.Attachment
+		if finalLang == "" {
+			finalLang = config.Common.DefaultLang
+		} else {
+			att, err = rt.base.BlogPostAttByName(r.Context(), util.BlogPost(r).ID, fmt.Sprintf("statement-%s.md", finalLang))
+			if err != nil {
+				zap.S().Warn(err)
+				http.Error(w, "Couldn't get post content attachment", 500)
+				return
+			}
+			val, err := rt.base.AttachmentData(r.Context(), att.ID)
+			if err != nil {
+				zap.S().Warn(err)
+				http.Error(w, "Couldn't get post content", 500)
+				return
+			}
+			statementData = string(val)
+		}
+
+		rt.runTempl(w, r, templ, &BlogPostParams{
+			Ctx: GenContext(r),
+
+			Topbar: rt.postTopbar(r, "editIndex"),
+
+			StatementEditor: &StatementEditorParams{
+				Lang: finalLang,
+				Data: statementData,
+				Att:  att,
+
+				APIPrefix: fmt.Sprintf("/blogPosts/%d", util.BlogPost(r).ID),
+			},
+		})
+	}
+}
+
+func (rt *Web) editBlogPostAtts() http.HandlerFunc {
+	templ := rt.parse(nil, "blogpost/editAttachments.html", "modals/att_manager.html", "blogpost/topbar.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		atts, err := rt.base.BlogPostAttachments(r.Context(), util.BlogPost(r).ID)
+		if err != nil || len(atts) == 0 {
+			atts = nil
+		}
+		rt.runTempl(w, r, templ, &BlogPostParams{
+			Ctx: GenContext(r),
+
+			Topbar: rt.postTopbar(r, "editAttachments"),
+
+			AttachmentEditor: &AttachmentEditorParams{
+				Attachments: atts,
+				BlogPost:    util.BlogPost(r),
+				APIPrefix:   fmt.Sprintf("/blogPosts/%d", util.BlogPost(r).ID),
+			},
 		})
 	}
 }
@@ -583,7 +816,7 @@ func (rt *Web) contest() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ContestParams{
 			Ctx:    GenContext(r),
-			Topbar: rt.topbar(r, "contest_general", -1),
+			Topbar: rt.problemTopbar(r, "contest_general", -1),
 
 			Contest: util.Contest(r),
 		})
@@ -595,7 +828,7 @@ func (rt *Web) contestEdit() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ContestParams{
 			Ctx:    GenContext(r),
-			Topbar: rt.topbar(r, "contest_edit", -1),
+			Topbar: rt.problemTopbar(r, "contest_edit", -1),
 
 			Contest: util.Contest(r),
 		})
@@ -607,7 +840,7 @@ func (rt *Web) contestCommunication() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ContestParams{
 			Ctx:    GenContext(r),
-			Topbar: rt.topbar(r, "contest_communication", -1),
+			Topbar: rt.problemTopbar(r, "contest_communication", -1),
 
 			Contest: util.Contest(r),
 		})
@@ -619,7 +852,7 @@ func (rt *Web) contestRegistrations() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ContestParams{
 			Ctx:    GenContext(r),
-			Topbar: rt.topbar(r, "contest_registrations", -1),
+			Topbar: rt.problemTopbar(r, "contest_registrations", -1),
 
 			Contest: util.Contest(r),
 		})
@@ -637,7 +870,7 @@ func (rt *Web) contestLeaderboard() http.HandlerFunc {
 		}
 		rt.runTempl(w, r, templ, &ContestParams{
 			Ctx:    GenContext(r),
-			Topbar: rt.topbar(r, "contest_leaderboard", -1),
+			Topbar: rt.problemTopbar(r, "contest_leaderboard", -1),
 
 			Contest: util.Contest(r),
 		})
@@ -854,18 +1087,7 @@ func (rt *Web) logout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func (rt *Web) problemAttachment(w http.ResponseWriter, r *http.Request) {
-	name := chi.URLParam(r, "aid")
-	att, err := rt.base.ProblemAttByName(r.Context(), util.Problem(r).ID, name)
-	if err != nil || att == nil {
-		http.Error(w, "The attachment doesn't exist", 400)
-		return
-	}
-	if att.Private && !rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
-		http.Error(w, "You aren't allowed to download the attachment!", 400)
-		return
-	}
-
+func (rt *Web) serveAttachment(w http.ResponseWriter, r *http.Request, att *kilonova.Attachment, renderContext *kilonova.RenderContext) {
 	w.Header().Add("X-Robots-Tag", "noindex, nofollow, noarchive")
 
 	attData, err := rt.base.AttachmentData(r.Context(), att.ID)
@@ -878,8 +1100,8 @@ func (rt *Web) problemAttachment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", `public, max-age=3600`)
 
 	// If markdown file and client asks for HTML format, render the markdown
-	if path.Ext(name) == ".md" && r.FormValue("format") == "html" {
-		data, err := rt.base.RenderMarkdown(attData, &kilonova.RenderContext{Problem: util.Problem(r)})
+	if path.Ext(att.Name) == ".md" && r.FormValue("format") == "html" {
+		data, err := rt.base.RenderMarkdown(attData, renderContext)
 		if err != nil {
 			zap.S().Warn(err)
 			http.Error(w, "Could not render file", 500)
@@ -890,6 +1112,36 @@ func (rt *Web) problemAttachment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.ServeContent(w, r, att.Name, att.LastUpdatedAt, bytes.NewReader(attData))
+}
+
+func (rt *Web) problemAttachment(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "aid")
+	att, err := rt.base.ProblemAttByName(r.Context(), util.Problem(r).ID, name)
+	if err != nil || att == nil {
+		http.Error(w, "The attachment doesn't exist", 400)
+		return
+	}
+	if att.Private && !rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
+		http.Error(w, "You aren't allowed to download the attachment!", 400)
+		return
+	}
+
+	rt.serveAttachment(w, r, att, &kilonova.RenderContext{Problem: util.Problem(r)})
+}
+
+func (rt *Web) blogPostAttachment(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "aid")
+	att, err := rt.base.BlogPostAttByName(r.Context(), util.BlogPost(r).ID, name)
+	if err != nil || att == nil {
+		http.Error(w, "The attachment doesn't exist", 400)
+		return
+	}
+	if att.Private && !rt.base.IsBlogPostEditor(util.UserBrief(r), util.BlogPost(r)) {
+		http.Error(w, "You aren't allowed to download the attachment!", 400)
+		return
+	}
+
+	rt.serveAttachment(w, r, att, &kilonova.RenderContext{BlogPost: util.BlogPost(r)})
 }
 
 func (rt *Web) docs() http.HandlerFunc {

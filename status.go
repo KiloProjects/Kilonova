@@ -64,8 +64,11 @@ func WrapError(err error, text string) *StatusError {
 	if err == nil {
 		return &StatusError{Code: 500, Text: text}
 	}
-	if err1, ok := err.(*StatusError); ok {
-		return &StatusError{Code: err1.Code, Text: text + ": " + err1.Text, WrappedError: err1}
+	if text != "" {
+		text += ": "
 	}
-	return &StatusError{Code: 500, Text: text + ": " + err.Error(), WrappedError: err}
+	if err1, ok := err.(*StatusError); ok {
+		return &StatusError{Code: err1.Code, Text: text + err1.Text, WrappedError: err1}
+	}
+	return &StatusError{Code: 500, Text: text + err.Error(), WrappedError: err}
 }

@@ -20,7 +20,7 @@ func (s *API) userBlogPosts(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	posts, err := s.base.UserBlogPosts(r.Context(), args.UserID)
+	posts, err := s.base.UserBlogPosts(r.Context(), args.UserID, util.UserBrief(r))
 	if err != nil {
 		err.WriteError(w)
 		return
@@ -37,6 +37,11 @@ func (s *API) blogPostBySlug(w http.ResponseWriter, r *http.Request) {
 	post, err := s.base.BlogPostBySlug(r.Context(), r.FormValue("slug"))
 	if err != nil {
 		err.WriteError(w)
+		return
+	}
+
+	if !s.base.IsBlogPostVisible(util.UserBrief(r), post) {
+		errorData(w, "can't view this post", http.StatusForbidden)
 		return
 	}
 
@@ -109,7 +114,15 @@ func (s *API) updateBlogPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	returnData(w, "Updated blog post")
+	slug := util.BlogPost(r).Slug
+	if args.Slug != nil {
+		slug = kilonova.MakeSlug(*args.Slug)
+	}
+
+	returnData(w, struct {
+		Slug    string `json:"slug"`
+		Message string `json:"message"`
+	}{slug, "Updated blog post"})
 }
 
 func (s *API) deleteBlogPost(w http.ResponseWriter, r *http.Request) {

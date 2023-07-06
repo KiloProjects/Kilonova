@@ -26,6 +26,9 @@ type BlogPostFilter struct {
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
 
+	Look        bool       `json:"-"`
+	LookingUser *UserBrief `json:"-"`
+
 	Ordering  string `json:"ordering"`
 	Ascending bool   `json:"ascending"`
 }

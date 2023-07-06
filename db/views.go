@@ -10,6 +10,15 @@ import (
 
 // Functions that interact with views and functions
 
+func (s *DB) IsPostViewer(ctx context.Context, postID, userID int) (bool, error) {
+	var cnt int
+	err := s.pgconn.QueryRow(ctx, "SELECT COUNT(*) FROM visible_posts($1) WHERE post_id = $2", userID, postID).Scan(&cnt)
+	if err != nil {
+		return false, err
+	}
+	return cnt > 0, nil
+}
+
 func (s *DB) IsProblemViewer(ctx context.Context, problemID, userID int) (bool, error) {
 	var cnt int
 	err := s.pgconn.QueryRow(ctx, "SELECT COUNT(*) FROM visible_pbs($1) WHERE problem_id = $2", userID, problemID).Scan(&cnt)

@@ -7,12 +7,34 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *BaseAPI) UserBlogPosts(ctx context.Context, userID int) ([]*kilonova.BlogPost, *StatusError) {
-	blogPost, err := s.db.BlogPosts(ctx, kilonova.BlogPostFilter{AuthorID: &userID})
+func (s *BaseAPI) UserBlogPosts(ctx context.Context, userID int, lookingUser *kilonova.UserBrief) ([]*kilonova.BlogPost, *StatusError) {
+	blogPosts, err := s.db.BlogPosts(ctx, kilonova.BlogPostFilter{AuthorID: &userID, Look: true, LookingUser: lookingUser})
 	if err != nil {
 		return nil, WrapError(err, "Couldn't find blog posts")
 	}
-	return blogPost, nil
+	if blogPosts == nil {
+		blogPosts = []*kilonova.BlogPost{}
+	}
+	return blogPosts, nil
+}
+
+func (s *BaseAPI) BlogPosts(ctx context.Context, filter kilonova.BlogPostFilter) ([]*kilonova.BlogPost, *StatusError) {
+	blogPosts, err := s.db.BlogPosts(ctx, filter)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't find posts")
+	}
+	if blogPosts == nil {
+		blogPosts = []*kilonova.BlogPost{}
+	}
+	return blogPosts, nil
+}
+
+func (s *BaseAPI) CountBlogPosts(ctx context.Context, filter kilonova.BlogPostFilter) (int, *StatusError) {
+	cnt, err := s.db.CountBlogPosts(ctx, filter)
+	if err != nil {
+		return -1, WrapError(err, "Couldn't count posts")
+	}
+	return cnt, nil
 }
 
 func (s *BaseAPI) BlogPost(ctx context.Context, id int) (*kilonova.BlogPost, *StatusError) {
@@ -35,8 +57,11 @@ func (s *BaseAPI) UpdateBlogPost(ctx context.Context, id int, upd kilonova.BlogP
 	if upd.Title != nil && *upd.Title == "" {
 		return Statusf(400, "Title can't be empty!")
 	}
-	if upd.Slug != nil && *upd.Slug == "" {
-		return Statusf(400, "Slug can't be empty!")
+	if upd.Slug != nil {
+		*upd.Slug = kilonova.MakeSlug(*upd.Slug)
+		if *upd.Slug == "" {
+			return Statusf(400, "Slug can't be empty!")
+		}
 	}
 	if err := s.db.UpdateBlogPost(ctx, id, upd); err != nil {
 		zap.S().Warn(err)
@@ -58,7 +83,7 @@ func (s *BaseAPI) UpdateBlogPost(ctx context.Context, id int, upd kilonova.BlogP
 func (s *BaseAPI) CreateBlogPost(ctx context.Context, title string, author *kilonova.UserBrief) (int, string, *StatusError) {
 	postID, slug, err := s.db.CreateBlogPost(ctx, title, author.ID)
 	if err != nil {
-		return -1, "", WrapError(err, "")
+		return -1, "", WrapError(err, "Couldn't create blog post")
 	}
 	return postID, slug, nil
 }

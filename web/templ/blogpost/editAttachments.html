@@ -1,0 +1,7 @@
+{{define "title"}}{{getText "postEditAttachments"}}{{end}}
+{{define "content"}}
+{{ template "topbar.html" .Topbar }}
+
+{{template "att_manager.html" .AttachmentEditor}}
+
+{{end}}

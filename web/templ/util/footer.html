@@ -9,6 +9,7 @@
 					<li><a class="black-anchor" href="/problems">{{getText "problem.list"}}</a></li>
 					<li><a class="black-anchor" href="/contests">{{getText "contests"}}</a></li>
 					<li><a class="black-anchor" href="/submissions">{{getText "submission.list"}}</a></li>
+					<li><a class="black-anchor" href="/posts">{{getText "blogpost.list"}}</a></li>
 				</ul>
                 <label class="block my-2">
                     <select id="sessionLang" class="form-select" autocomplete="off">
@@ -30,22 +31,23 @@
 				</ul>
 			</div>
 
-            {{ if (boolFlag "feature.frontend.cc_disclaimer") }}
-	            {{$disclaimerImg := hashedName "static/by-nc-sa.eu.png" -}}
-                <div class="h-auto mb-2">
-                    <div class="text-lg">Copyright policy</div>
-                    <ul>
-                        <li>
-                            <div class="block">
-                                Cu excepția cazurilor unde este specificat diferit, conținutul platformei este publicat sub licența <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>. Vedeți <a href="/docs/CREATIVE-COMMONS">Aici</a> mai multe detalii.
-                            </div>
+            <div class="h-auto mb-2 reset-list">
+                <div class="text-lg">{{getText "credits"}}</div>
+                <ul>
+                    <li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="https://github.com/AlexVasiluta"> Platform made with <i class="fas fa-fw fa-heart"></i> by Alex Vasiluță </a></li>
+                    <li class="black-anchor"> Problems generously uploaded by the Kilonova community</li>
+                    <li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="https://github.com/Secret-chest"> Favicon by Secret-chest </a></li>
+                    {{ if (boolFlag "feature.frontend.cc_disclaimer") }}
+                        {{$disclaimerImg := hashedName "static/by-nc-sa.eu.png" -}}
+                        <li class="black-anchor">
+                            Cu excepția cazurilor unde este specificat diferit, conținutul platformei este publicat sub licența <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>. Vedeți <a href="/docs/CREATIVE-COMMONS">aici</a> mai multe detalii.
                             <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">
                                 <img alt="Creative Commons Licence" style="border-width:0" width="88" height="31" src="/{{$disclaimerImg}}" />
                             </a>
                         </li>
-                    </ul>
-                </div>
-            {{ end }}
+                    {{ end }}
+                </ul>
+            </div>
 		</div>
 	</div>
 </footer>

@@ -1,0 +1,26 @@
+{{define "title"}}{{getText "title.create_post"}}{{end}}
+{{define "content"}}
+<form id="postCreateForm" class="segment-panel" autocomplete="off">
+    <h1>{{getText "title.create_post"}}</h1>
+    <label class="block my-2">
+        <span class="form-label">{{getText "title"}}:</span>
+        <input id="postTitle" type="text" class="form-input" required />
+    </label>
+
+    <button type="submit" class="btn btn-blue">{{getText "button.create"}}</button>
+</form>
+<script>
+async function createPost(e) {
+    e.preventDefault();
+    let title = document.getElementById("postTitle").value;
+    let res = await bundled.postCall("/blogPosts/create", {title});
+    if(res.status === "error") {
+        bundled.apiToast(res)
+        return
+    }
+    window.location.assign(`/posts/${res.data.slug}`)
+}
+
+document.getElementById("postCreateForm").addEventListener("submit", createPost)
+</script>
+{{end}}
