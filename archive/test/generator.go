@@ -10,11 +10,12 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"go.uber.org/zap"
 )
 
-func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, base *sudoapi.BaseAPI, brief bool) *kilonova.StatusError {
+func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, base *sudoapi.BaseAPI, brief bool, submissions bool) *kilonova.StatusError {
 	ar := zip.NewWriter(w)
 	tests, err := base.Tests(ctx, pb.ID)
 	defer ar.Close()
@@ -175,6 +176,27 @@ func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, bas
 			}
 		}
 
+	}
+	// But if submissions are specified, add them too
+	if submissions {
+		subs, err := base.RawSubmissions(ctx, kilonova.SubmissionFilter{ProblemID: &pb.ID})
+		if err != nil {
+			return err
+		}
+		for _, sub := range subs {
+			lang, ok := eval.Langs[sub.Language]
+			if !ok {
+				zap.S().Info("Skipping submission due to unknown language ", sub.ID)
+				continue
+			}
+			f, err := ar.Create(fmt.Sprintf("submissions/%d%s", sub.ID, lang.Extensions[len(lang.Extensions)-1]))
+			if err != nil {
+				return kilonova.WrapError(err, "Couldn't create archive submission file")
+			}
+			if _, err := io.WriteString(f, sub.Code); err != nil {
+				return kilonova.WrapError(err, "Couldn't write submission file")
+			}
+		}
 	}
 	return nil
 }

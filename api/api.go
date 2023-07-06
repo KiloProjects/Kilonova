@@ -186,7 +186,7 @@ func (s *API) Handler() http.Handler {
 			if !ok {
 				return -1, kilonova.Statusf(400, "Invalid language")
 			}
-			return s.base.CreateSubmission(ctx, util.UserBriefContext(ctx), util.ProblemContext(ctx), args.Code, lang, args.ContestID)
+			return s.base.CreateSubmission(ctx, util.UserBriefContext(ctx), util.ProblemContext(ctx), args.Code, lang, args.ContestID, false)
 		}))
 		r.With(s.MustBeAdmin).Post("/delete", webWrapper(func(ctx context.Context, args struct {
 			SubmissionID int `json:"submission_id"`

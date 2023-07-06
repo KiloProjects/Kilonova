@@ -249,7 +249,7 @@ func (s *BaseAPI) RemainingSubmissionCount(ctx context.Context, contest *kilonov
 }
 
 // CreateSubmission produces a new submission and also creates the necessary subtests
-func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, problem *kilonova.Problem, code string, lang eval.Language, contestID *int) (int, *StatusError) {
+func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, problem *kilonova.Problem, code string, lang eval.Language, contestID *int, bypassSubCount bool) (int, *StatusError) {
 	if author == nil {
 		return -1, Statusf(400, "Invalid submission author")
 	}
@@ -263,13 +263,15 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 		return -1, Statusf(400, "Submitter can't see the problem!")
 	}
 
-	cnt, err := s.db.WaitingSubmissionCount(ctx, author.ID)
-	if err != nil {
-		return -1, Statusf(500, "Couldn't get unfinished submission count")
-	}
+	if !bypassSubCount {
+		cnt, err := s.db.WaitingSubmissionCount(ctx, author.ID)
+		if err != nil {
+			return -1, Statusf(500, "Couldn't get unfinished submission count")
+		}
 
-	if cnt > 5 {
-		return -1, Statusf(400, "You cannot have more than 5 submissions in the evaluation queue at once")
+		if cnt > 5 {
+			return -1, Statusf(400, "You cannot have more than 5 submissions in the evaluation queue at once")
+		}
 	}
 
 	if contestID != nil {

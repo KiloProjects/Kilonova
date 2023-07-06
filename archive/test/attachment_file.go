@@ -9,6 +9,20 @@ import (
 	"github.com/KiloProjects/kilonova"
 )
 
+type archiveAttachment struct {
+	File    *zip.File
+	Name    string
+	Visible bool
+	Private bool
+	Exec    bool
+}
+
+type attachmentProps struct {
+	Visible bool `json:"visible"`
+	Private bool `json:"private"`
+	Exec    bool `json:"exec"`
+}
+
 func ProcessAttachmentFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	name := path.Base(file.Name)
 	if strings.HasSuffix(name, ".att_props") {

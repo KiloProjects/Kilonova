@@ -19,6 +19,7 @@ func GetLangByFilename(filename string) string {
 	return ""
 }
 
+// NOTE: Last extension MUST be unique (for proper detection of submissions in problem archives)
 var Langs = map[string]Language{
 	"c": {
 		Extensions:    []string{".c"},

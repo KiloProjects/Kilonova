@@ -15,6 +15,16 @@ import (
 	"go.uber.org/zap"
 )
 
+type Subtask struct {
+	Score int
+	Tests []int
+}
+
+type mockTag struct {
+	Name string
+	Type kilonova.TagType
+}
+
 type PropertiesRaw struct {
 	Groups       string   `props:"groups"`
 	Weights      string   `props:"weights"`

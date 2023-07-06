@@ -9,6 +9,7 @@ import (
 	"sort"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"go.uber.org/zap"
 )
@@ -18,41 +19,13 @@ var (
 	ErrBadArchive  = kilonova.Statusf(400, "Bad archive")
 )
 
-type archiveTest struct {
-	InFile  *zip.File
-	OutFile *zip.File
-	Score   int
-}
-
-type archiveAttachment struct {
-	File    *zip.File
-	Name    string
-	Visible bool
-	Private bool
-	Exec    bool
-}
-
-type attachmentProps struct {
-	Visible bool `json:"visible"`
-	Private bool `json:"private"`
-	Exec    bool `json:"exec"`
-}
-
 type ArchiveCtx struct {
 	tests       map[int]archiveTest
 	attachments map[string]archiveAttachment
 	scoredTests []int
 	props       *properties
-}
 
-type Subtask struct {
-	Score int
-	Tests []int
-}
-
-type mockTag struct {
-	Name string
-	Type kilonova.TagType
+	submissions []*submissionStub
 }
 
 type properties struct {
@@ -91,6 +64,10 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	ext := path.Ext(file.Name)
 	if slices.Contains(filepath.SplitList(path.Dir(file.Name)), "attachments") { // Is in "attachments" directory
 		return ProcessAttachmentFile(ctx, file)
+	}
+
+	if slices.Contains(filepath.SplitList(path.Dir(file.Name)), "submissions") { // Is in "submissions" directory
+		return ProcessSubmissionFile(ctx, file)
 	}
 
 	if ext == ".txt" { // test score file
@@ -360,6 +337,20 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 			}
 		}
 
+	}
+
+	// Do submissions at the end after all changes have been merged
+	if len(aCtx.submissions) > 0 {
+		for _, sub := range aCtx.submissions {
+			lang, ok := eval.Langs[sub.lang]
+			if !ok {
+				zap.S().Warn("Skipping submission")
+				continue
+			}
+			if _, err := base.CreateSubmission(ctx, requestor, pb, sub.code, lang, nil, true); err != nil {
+				zap.S().Warn(err)
+			}
+		}
 	}
 
 	return nil

@@ -14,6 +14,12 @@ var (
 	ErrInvalidTestID = kilonova.Statusf(400, "Invalid test ID")
 )
 
+type archiveTest struct {
+	InFile  *zip.File
+	OutFile *zip.File
+	Score   int
+}
+
 func getTestID(name string) (int, *kilonova.StatusError) {
 	var tid int
 	if _, err := fmt.Sscanf(name, "%d-", &tid); err != nil {
