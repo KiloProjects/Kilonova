@@ -24,6 +24,22 @@ func (s *API) getProblemList(w http.ResponseWriter, r *http.Request) {
 	returnData(w, list)
 }
 
+// if there are multiple, will return the one with the smallest ID
+func (s *API) problemListByName(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct{ Name string }
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 400)
+		return
+	}
+	list, err := s.base.ProblemListByName(r.Context(), args.Name)
+	if err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	returnData(w, list)
+}
+
 func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct{ ID int }

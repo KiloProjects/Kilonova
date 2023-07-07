@@ -25,6 +25,21 @@ func (s *DB) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, er
 	return s.internalToPbList(ctx, &pblist)
 }
 
+func (s *DB) ProblemListByName(ctx context.Context, name string) (*kilonova.ProblemList, error) {
+	rows, _ := s.pgconn.Query(ctx, `
+	SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems, array(SELECT problem_id FROM problem_list_problems WHERE pblist_id = lists.id ORDER BY position ASC, problem_id ASC)::int[] AS list_problems
+		FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
+		WHERE title = $1 ORDER BY id LIMIT 1`, name)
+	pblist, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[pblist])
+	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return s.internalToPbList(ctx, &pblist)
+}
+
 func (s *DB) ProblemLists(ctx context.Context, root bool) ([]*kilonova.ProblemList, error) {
 	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems, array(SELECT problem_id FROM problem_list_problems WHERE pblist_id = lists.id ORDER BY position ASC, problem_id ASC)::int[] AS list_problems
 	FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 

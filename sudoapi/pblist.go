@@ -15,6 +15,14 @@ func (s *BaseAPI) ProblemList(ctx context.Context, id int) (*kilonova.ProblemLis
 	return pblist, nil
 }
 
+func (s *BaseAPI) ProblemListByName(ctx context.Context, name string) (*kilonova.ProblemList, *StatusError) {
+	pblist, err := s.db.ProblemListByName(ctx, name)
+	if err != nil || pblist == nil {
+		return nil, WrapError(ErrNotFound, "Problem list not found")
+	}
+	return pblist, nil
+}
+
 // Returns a list of problems in the slice's order
 func (s *BaseAPI) ProblemListProblems(ctx context.Context, ids []int, lookingUser *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
 	pbs, err := s.ScoredProblems(ctx, kilonova.ProblemFilter{IDs: ids, LookingUser: lookingUser, Look: true}, lookingUser)
