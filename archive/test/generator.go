@@ -15,7 +15,14 @@ import (
 	"go.uber.org/zap"
 )
 
-func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, base *sudoapi.BaseAPI, brief bool, submissions bool) *kilonova.StatusError {
+type ArchiveGenOptions struct {
+	Brief bool
+
+	Submissions bool
+	Editors     bool
+}
+
+func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, base *sudoapi.BaseAPI, opts *ArchiveGenOptions) *kilonova.StatusError {
 	ar := zip.NewWriter(w)
 	tests, err := base.Tests(ctx, pb.ID)
 	defer ar.Close()
@@ -65,7 +72,7 @@ func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, bas
 			r.Close()
 		}
 	}
-	if !brief {
+	if !opts.Brief {
 		// Then, attachments, if not brief
 		atts, err := base.ProblemAttachments(ctx, pb.ID)
 		if err != nil {
@@ -158,7 +165,7 @@ func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, bas
 		fmt.Fprintf(gr, "test_name=%s\n", testName)
 		fmt.Fprintf(gr, "scoring_strategy=%s\n", pb.ScoringStrategy)
 
-		if !brief {
+		if !opts.Brief {
 			tags, err := base.ProblemTags(ctx, pb.ID)
 			if err != nil {
 				return err
@@ -176,9 +183,22 @@ func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, bas
 			}
 		}
 
+		if opts.Editors {
+			editors, err := base.ProblemEditors(ctx, pb.ID)
+			if err != nil {
+				return err
+			}
+			if len(editors) > 0 {
+				var editorNames []string
+				for _, editor := range editors {
+					editorNames = append(editorNames, editor.Name)
+				}
+				fmt.Fprintf(gr, "editors=%s\n", strings.Join(editorNames, ","))
+			}
+		}
 	}
 	// But if submissions are specified, add them too
-	if submissions {
+	if opts.Submissions {
 		subs, err := base.RawSubmissions(ctx, kilonova.SubmissionFilter{ProblemID: &pb.ID})
 		if err != nil {
 			return err

@@ -13,6 +13,7 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/schema"
 	"github.com/gosimple/slug"
 	"go.uber.org/zap"
 )
@@ -151,23 +152,31 @@ func (rt *Web) testIndex() func(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Web) testArchive() func(w http.ResponseWriter, r *http.Request) {
+	decoder := schema.NewDecoder()
+	decoder.SetAliasTag("Json")
 	return func(w http.ResponseWriter, r *http.Request) {
-		briefStr := r.FormValue("brief")
-		var brief bool
-		if briefStr == "true" || briefStr == "on" {
-			brief = true
+		r.ParseForm()
+		var args struct {
+			Brief       bool `json:"brief"`
+			Submissions bool `json:"submissions"`
+			Editors     bool `json:"editors"`
+		}
+		if err := decoder.Decode(&args, r.Form); err != nil {
+			http.Error(w, "Can't decode parameters", 400)
+			return
 		}
 
-		subsStr := r.FormValue("submissions")
-		var submissions bool
-		if (subsStr == "true" || subsStr == "on") && rt.base.IsAdmin(util.UserBrief(r)) {
-			submissions = true
-		}
+		args.Submissions = args.Submissions && rt.base.IsAdmin(util.UserBrief(r))
+		args.Editors = args.Editors && rt.base.IsAdmin(util.UserBrief(r))
 
 		w.Header().Add("Content-Type", "application/zip")
 		w.Header().Add("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.zip"`, slug.Make(util.Problem(r).Name)))
 		w.WriteHeader(200)
-		if err := test.GenerateArchive(r.Context(), util.Problem(r), w, rt.base, brief, submissions); err != nil {
+		if err := test.GenerateArchive(r.Context(), util.Problem(r), w, rt.base, &test.ArchiveGenOptions{
+			Brief:       args.Brief,
+			Submissions: args.Submissions,
+			Editors:     args.Editors,
+		}); err != nil {
 			zap.S().Warn(err)
 			fmt.Fprint(w, err)
 		}

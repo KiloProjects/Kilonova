@@ -44,6 +44,8 @@ type properties struct {
 
 	SubtaskedTests []int
 
+	Editors []string
+
 	ScoringStrategy kilonova.ScoringType
 }
 
@@ -335,6 +337,39 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 				zap.S().Warn(err)
 				return kilonova.WrapError(err, "Couldn't update tags")
 			}
+		}
+
+		if len(aCtx.props.Editors) > 0 && requestor.Admin {
+			var newEditors []*kilonova.UserBrief
+			// First, get the new editors to make sure they are valid
+			for _, editor := range aCtx.props.Editors {
+				user, err := base.UserBriefByName(ctx, editor)
+				if err == nil && user != nil {
+					newEditors = append(newEditors, user)
+				}
+			}
+
+			if len(newEditors) > 0 {
+				// Then, remove existing editors
+				cEditors, err := base.ProblemEditors(ctx, pb.ID)
+				if err != nil {
+					zap.S().Warn(err)
+					return err
+				}
+				for _, ed := range cEditors {
+					if err := base.StripProblemAccess(ctx, pb.ID, ed.ID); err != nil {
+						zap.S().Warn(err)
+					}
+				}
+
+				// Lastly, add the new editors
+				for _, editor := range newEditors {
+					if err := base.AddProblemEditor(ctx, pb.ID, editor.ID); err != nil {
+						zap.S().Warn(err)
+					}
+				}
+			}
+
 		}
 
 	}

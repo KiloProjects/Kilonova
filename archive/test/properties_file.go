@@ -37,6 +37,8 @@ type PropertiesRaw struct {
 	ConsoleInput *string  `props:"console_input"`
 	TestName     *string  `props:"test_name"`
 
+	Editors *string `props:"editors"`
+
 	ScoringStrategy *string `props:"scoring_strategy"`
 }
 
@@ -135,6 +137,13 @@ func parseTags(t *string) []*mockTag {
 	return rez
 }
 
+func parseEditors(editors *string) []string {
+	if editors == nil || *editors == "" {
+		return nil
+	}
+	return strings.Split(*editors, ",")
+}
+
 func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	f, err := file.Open()
 	if err != nil {
@@ -153,6 +162,7 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 		TimeLimit:     rawProps.Time,
 		DefaultPoints: rawProps.DefaultScore,
 		Tags:          parseTags(rawProps.Tags),
+		Editors:       parseEditors(rawProps.Editors),
 		Source:        rawProps.Source,
 		TestName:      rawProps.TestName,
 	}
