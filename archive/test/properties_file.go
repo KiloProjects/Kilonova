@@ -36,6 +36,7 @@ type PropertiesRaw struct {
 	Source       *string  `props:"source"`
 	ConsoleInput *string  `props:"console_input"`
 	TestName     *string  `props:"test_name"`
+	ProblemName  *string  `props:"problem_name"`
 
 	Editors *string `props:"editors"`
 
@@ -165,6 +166,7 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 		Editors:       parseEditors(rawProps.Editors),
 		Source:        rawProps.Source,
 		TestName:      rawProps.TestName,
+		ProblemName:   rawProps.ProblemName,
 	}
 	if rawProps.Memory != nil {
 		mem := int((*rawProps.Memory) * 1024.0)

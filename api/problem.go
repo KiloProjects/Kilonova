@@ -240,6 +240,21 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 	returnData(w, pb.ID)
 }
 
+func (s *API) importProblemArchive(w http.ResponseWriter, r *http.Request) {
+	pb, err := s.base.CreateProblem(r.Context(), "unnamed", util.UserBrief(r), true)
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	if err := s.processArchive(r.WithContext(context.WithValue(r.Context(), util.ProblemKey, pb))); err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	returnData(w, pb.ID)
+}
+
 func (s *API) getProblems(w http.ResponseWriter, r *http.Request) {
 	var args kilonova.ProblemFilter
 	if err := parseJsonBody(r, &args); err != nil {

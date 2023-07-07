@@ -160,6 +160,7 @@ func (rt *Web) testArchive() func(w http.ResponseWriter, r *http.Request) {
 			Brief       bool `json:"brief"`
 			Submissions bool `json:"submissions"`
 			Editors     bool `json:"editors"`
+			Name        bool `json:"name"`
 		}
 		if err := decoder.Decode(&args, r.Form); err != nil {
 			http.Error(w, "Can't decode parameters", 400)
@@ -176,6 +177,7 @@ func (rt *Web) testArchive() func(w http.ResponseWriter, r *http.Request) {
 			Brief:       args.Brief,
 			Submissions: args.Submissions,
 			Editors:     args.Editors,
+			Name:        args.Name,
 		}); err != nil {
 			zap.S().Warn(err)
 			fmt.Fprint(w, err)

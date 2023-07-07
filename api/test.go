@@ -135,7 +135,7 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Created test")
 }
 
-func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
+func (s *API) processArchive(r *http.Request) *kilonova.StatusError {
 	// Since this operation can take a lot of space, I am putting this lock as a precaution.
 	// This might create a problem with timeouts, and this should be handled asynchronously.
 	// (ie not in a request), but eh, I cant be bothered right now to do it the right way.
@@ -145,30 +145,34 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(20 * 1024 * 1024)
 
 	if r.MultipartForm == nil || r.MultipartForm.File == nil {
-		errorData(w, "Missing archive", 400)
-		return
+		return kilonova.Statusf(400, "Missing archive")
 	}
 
 	// Process zip file
 	file, fh, err := r.FormFile("testArchive")
 	if err != nil {
 		zap.S().Warn(err)
-		errorData(w, err.Error(), 400)
-		return
+		return kilonova.WrapError(err, "Couldn't open zip file")
 	}
 	defer file.Close()
 
 	ar, err := zip.NewReader(file, fh.Size)
 	if err != nil {
-		errorData(w, err, 400)
-		return
+		return kilonova.WrapError(err, "Couldn't read zip archive")
 	}
 
 	if err := test.ProcessZipTestArchive(context.Background(), util.Problem(r), ar, s.base, util.UserBrief(r)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
+	if err := s.processArchive(r); err != nil {
 		err.WriteError(w)
 		return
 	}
-
 	returnData(w, "Processed tests")
 }
 

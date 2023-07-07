@@ -17,6 +17,7 @@ import (
 
 type ArchiveGenOptions struct {
 	Brief bool
+	Name  bool
 
 	Submissions bool
 	Editors     bool
@@ -164,6 +165,10 @@ func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, bas
 		fmt.Fprintf(gr, "console_input=%t\n", pb.ConsoleInput)
 		fmt.Fprintf(gr, "test_name=%s\n", testName)
 		fmt.Fprintf(gr, "scoring_strategy=%s\n", pb.ScoringStrategy)
+
+		if opts.Name {
+			fmt.Fprintf(gr, "problem_name=%s\n", pb.Name)
+		}
 
 		if !opts.Brief {
 			tags, err := base.ProblemTags(ctx, pb.ID)

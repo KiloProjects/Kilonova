@@ -77,6 +77,8 @@ func (s *API) Handler() http.Handler {
 
 		r.With(s.MustBeProposer).Post("/create", s.initProblem)
 
+		r.With(s.MustBeProposer).Post("/import", s.importProblemArchive)
+
 		r.Route("/{problemID}", func(r chi.Router) {
 			r.Use(s.validateProblemID)
 			r.Use(s.validateProblemVisible)

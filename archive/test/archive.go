@@ -39,6 +39,7 @@ type properties struct {
 	Source       *string
 	ConsoleInput *bool
 	TestName     *string
+	ProblemName  *string
 
 	DefaultPoints *int
 
@@ -282,6 +283,11 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 		if aCtx.props.TestName != nil {
 			shouldUpd = true
 			upd.TestName = aCtx.props.TestName
+		}
+
+		if aCtx.props.ProblemName != nil && *aCtx.props.ProblemName != "" {
+			shouldUpd = true
+			upd.Name = aCtx.props.ProblemName
 		}
 
 		if shouldUpd {
