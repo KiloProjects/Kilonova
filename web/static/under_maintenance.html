@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="{{language}}" class="dark">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Kilonova - Under Maintenance</title>
+
+	<!--Dependency bundle-->
+	<script src="./bundle.js?v=maintenance"></script>
+	<script src="./vendored.js?v=maintenance"></script>
+
+	<link rel="stylesheet" href="./styles.css?v=maintenance" />
+</head>
+
+<body>
+	<header class="text-2xl bg-gray-100 dark:bg-gray-800 border-b-2 border-gr md:flex md:justify-between md:px-5 md:py-3 md:items-center">
+	<div class="flex items-center justify-between px-4 py-3 md:p-0">
+		<div class="inline-block">
+			<a class="roboto h-8 black-anchor" href="/">Kilonova</a>
+		</div>
+		<div class="md:hidden inline-block">
+            <a id="theme_button_mobile" class="text-gray-500 dark:text-gray-300 hover:text-black focus:text-black dark:hover:text-white dark:focus:text-white focus:outline-none h-6 w-6 mx-2" href="#">
+                <i class="fas fa-fw fa-lightbulb"></i>
+            </a>
+		</div>
+	</div>
+	<nav id="nav-dropdown" class="px-2 pt-1 pb-3 md:flex md:p-0 z-50">
+        <a id="theme_button" class="hidden md:block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="#">
+            <i class="fas fa-fw fa-lightbulb"></i>
+        </a>
+	</nav>
+</header>
+
+
+<script>
+document.getElementById("theme_button").addEventListener("click", bundled.toggleTheme)
+document.getElementById("theme_button_mobile").addEventListener("click", bundled.toggleTheme)
+</script>
+
+	<div class="c-container mb-2">
+		<h1 class="mx-auto">502 - Bad Gateway</h1>
+		<h2 class="mx-auto">The server is probably under maintenance. It should be running again shortly.</h2>
+	</div>
+
+    <div id="modals">
+
+    </div>
+</body>
+
+</html>
+
