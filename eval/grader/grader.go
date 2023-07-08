@@ -236,13 +236,17 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 			resp.Comments = "translate:internal_error"
 			skipped = true
 		}
-		defer tout.Close()
+		if tout != nil {
+			defer tout.Close()
+		}
 		sout, err := base.SubtestReader(subTest.ID)
 		if err != nil {
 			resp.Comments = "translate:internal_error"
 			skipped = true
 		}
-		defer sout.Close()
+		if sout != nil {
+			defer sout.Close()
+		}
 
 		if !skipped {
 			resp.Comments, testScore = checker.RunChecker(ctx, sout, tin, tout)

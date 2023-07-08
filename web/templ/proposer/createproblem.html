@@ -25,29 +25,8 @@
 	</div>
 	<button class="btn btn-blue mb-2">{{getText "button.create"}}</button>
     <div class="reset-list segment-panel">
-        <h3>NEW (2023-03-28): <a href="/docs/attachments">An attachment guide</a> was published. The test guide below has been slightly updated to refer this new guide.</h3>
-        <p>It mostly reflects the new information about problem statements, but could also be considered a refresher for the other attachments.</p>
-
-        <hr class="my-2"/>
-
-        <h3>
-            NOTE (2023-03-13): Attachments that will be counted towards grading/checking only if they have the "exec" checkbox toggled. 
-        </h3>
-        <p>Valid attachments have been automatically assigned the exec checkbox on migration to this new system.</p>
-        <p>Attachments prefixed with <code>_</code> will still be ignored for now regardless of checkboxes (and haven't had the checkbox toggled automatically). This may be removed in a future change, however, so please don't rely only on this.</p>
-        <p>Liviu's guide below has been updated to reflect these changes.</p>
-
-        <hr class="my-2"/>
-        <h3>NEW: More information regarding graders, checkers and test archives is available <a href="/docs/test-guide">on this page</a>.</h3>
-        <p>Please keep in mind that the legacy format checkers need to be of the form <code>checker_legacy.cpp</code>. Standard (CMS-style) format checkers are now the default when a <code>checker.cpp</code> is encountered.</p>
-        <p>(it is recommended even veteran proposers read this guide, contributed by Liviu)</p>
-        <!-- <h2> Modificări recente în urma introducerii problemelor interactive: </h2>
-        <ul>
-            <li>Tipul problemei este dedus automat. Prezența unui fișier care începe cu <code>checker</code> și are o extensie validă va duce la utilizarea lui automată ca și checker-ul problemei, nu mai este necesar să specifici expicit (chiar am șters setarea din panoul de editare fiindcă nu mai este utilă);</li>
-            <li>Alte fișiere cu extensie validă sau cu <code>.h</code> vor fi incluse și compilate atunci când este evaluată o submisie;</li>
-            <li>De menționat că la problemele interactive sunt suportate numai submisii în C++;</li>
-            <li>Dacă vreți să atașați un fișier de cod problemei (alte fișiere precum imagini sunt ignorate oricum), însă nu vreți să îl includeți la compilare, acesta trebuie prefixat cu <code>_</code>.</li>
-        </ul> -->
+		<h3>NEW (2023-07-08): <a href="/pages/problem-guide">The definitive problem guide</a> was published.</h3>
+		<p>It merges all the older guides into a single, comprehensive document, along with new information such as the Kilonova style guide. <b>Everyone</b> should take a look at it (including veteran proposers), most importantly the style guide!</p>
     </div>
 
     <a class="btn btn-blue" href="/problems?editor_user={{authedUser.ID}}">{{getText "created_problems"}}</a>
