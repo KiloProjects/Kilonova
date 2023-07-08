@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"errors"
 
 	"github.com/KiloProjects/kilonova"
 	"go.uber.org/zap"
@@ -18,8 +19,11 @@ func (s *BaseAPI) Test(ctx context.Context, pbID int, testVID int) (*kilonova.Te
 func (s *BaseAPI) Tests(ctx context.Context, pbID int) ([]*kilonova.Test, *StatusError) {
 	tests, err := s.db.Tests(ctx, pbID)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, WrapError(err, "Context canceled")
+		}
 		zap.S().Warn(err)
-		return nil, ErrUnknownError
+		return nil, WrapError(err, "Couldn't get test")
 	}
 	return tests, nil
 }

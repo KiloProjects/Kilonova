@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -179,7 +180,9 @@ func (rt *Web) testArchive() func(w http.ResponseWriter, r *http.Request) {
 			Editors:     args.Editors,
 			Name:        args.Name,
 		}); err != nil {
-			zap.S().Warn(err)
+			if !errors.Is(err, context.Canceled) {
+				zap.S().Warn(err)
+			}
 			fmt.Fprint(w, err)
 		}
 	}
