@@ -24,11 +24,7 @@ type dbBlogPost struct {
 
 func (s *DB) BlogPost(ctx context.Context, filter kilonova.BlogPostFilter) (*kilonova.BlogPost, error) {
 	filter.Limit = 1
-	posts, err := s.BlogPosts(ctx, filter)
-	if err != nil || len(posts) == 0 {
-		return nil, err
-	}
-	return posts[0], nil
+	return toSingular(ctx, filter, s.BlogPosts)
 }
 
 func (s *DB) BlogPosts(ctx context.Context, filter kilonova.BlogPostFilter) ([]*kilonova.BlogPost, error) {
@@ -53,7 +49,7 @@ func (s *DB) CountBlogPosts(ctx context.Context, filter kilonova.BlogPostFilter)
 
 	var cnt int
 	err := s.pgconn.QueryRow(ctx, "SELECT COUNT(*) FROM blog_posts WHERE "+fb.Where(), fb.Args()...).Scan(&cnt)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) { // Should never happen
 		return 0, nil
 	}
 	if err != nil {

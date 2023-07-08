@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/jackc/pgx/v5"
 )
 
 // Contest Questions/Answers and Announcements
@@ -38,35 +39,45 @@ func (s *DB) CreateContestQuestion(ctx context.Context, contestID, authorID int,
 	return id, nil
 }
 
-func (s *DB) ContestQuestions(ctx context.Context, contestID int) ([]*kilonova.ContestQuestion, error) {
-	var qs []*dbContestQuestion
-	err := s.conn.SelectContext(ctx, &qs, "SELECT * FROM contest_questions WHERE contest_id = $1 ORDER BY created_at DESC", contestID)
-	if errors.Is(err, sql.ErrNoRows) {
+type QuestionFilter struct {
+	ID        *int
+	ContestID *int
+	AuthorID  *int
+
+	Limit  int
+	Offset int
+}
+
+func (s *DB) ContestQuestions(ctx context.Context, filter QuestionFilter) ([]*kilonova.ContestQuestion, error) {
+	fb := newFilterBuilder()
+	if v := filter.ID; v != nil {
+		fb.AddConstraint("id = %s", v)
+	}
+	if v := filter.ContestID; v != nil {
+		fb.AddConstraint("contest_id = %s", v)
+	}
+	if v := filter.AuthorID; v != nil {
+		fb.AddConstraint("author_id = %s", v)
+	}
+
+	rows, _ := s.pgconn.Query(
+		ctx,
+		"SELECT * FROM contest_questions WHERE "+fb.Where()+" ORDER BY created_at DESC "+FormatLimitOffset(filter.Limit, filter.Offset),
+		fb.Args()...,
+	)
+	qs, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[dbContestQuestion])
+	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.ContestQuestion{}, nil
-	} else if err != nil {
+	}
+	if err != nil {
 		return nil, err
 	}
 	return mapper(qs, s.internalToContestQuestion), nil
+
 }
 
 func (s *DB) ContestQuestion(ctx context.Context, id int) (*kilonova.ContestQuestion, error) {
-	var q dbContestQuestion
-	err := s.conn.GetContext(ctx, &q, "SELECT * FROM contest_questions WHERE id = $1 LIMIT 1", id)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
-	}
-	return s.internalToContestQuestion(&q), err
-}
-
-func (s *DB) ContestQuestionsByUser(ctx context.Context, contestID, userID int) ([]*kilonova.ContestQuestion, error) {
-	var qs []*dbContestQuestion
-	err := s.conn.SelectContext(ctx, &qs, "SELECT * FROM contest_questions WHERE contest_id = $1 AND author_id = $2 ORDER BY created_at DESC", contestID, userID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return []*kilonova.ContestQuestion{}, nil
-	} else if err != nil {
-		return nil, err
-	}
-	return mapper(qs, s.internalToContestQuestion), nil
+	return toSingular(ctx, QuestionFilter{ID: &id, Limit: 1}, s.ContestQuestions)
 }
 
 func (s *DB) AnswerContestQuestion(ctx context.Context, questionID int, response string) error {

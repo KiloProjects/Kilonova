@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/db"
 )
 
 func (s *BaseAPI) CreateContestQuestion(ctx context.Context, contestID, authorID int, text string) (int, *StatusError) {
@@ -42,7 +43,7 @@ func (s *BaseAPI) ContestAnnouncement(ctx context.Context, id int) (*kilonova.Co
 }
 
 func (s *BaseAPI) ContestQuestions(ctx context.Context, contestID int) ([]*kilonova.ContestQuestion, *StatusError) {
-	questions, err := s.db.ContestQuestions(ctx, contestID)
+	questions, err := s.db.ContestQuestions(ctx, db.QuestionFilter{ContestID: &contestID})
 	if err != nil {
 		return nil, WrapError(err, "Couldn't fetch questions")
 	}
@@ -61,7 +62,7 @@ func (s *BaseAPI) ContestQuestion(ctx context.Context, id int) (*kilonova.Contes
 }
 
 func (s *BaseAPI) ContestUserQuestions(ctx context.Context, contestID, userID int) ([]*kilonova.ContestQuestion, *StatusError) {
-	questions, err := s.db.ContestQuestionsByUser(ctx, contestID, userID)
+	questions, err := s.db.ContestQuestions(ctx, db.QuestionFilter{ContestID: &contestID, AuthorID: &userID})
 	if err != nil {
 		return nil, WrapError(err, "Couldn't fetch questions")
 	}

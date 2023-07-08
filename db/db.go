@@ -104,6 +104,14 @@ func mapperCtx[T1 any, T2 any](ctx context.Context, lst []T1, f func(context.Con
 	return rez
 }
 
+func toSingular[T1, T2 any](ctx context.Context, filter T1, f func(ctx context.Context, filter T1) ([]*T2, error)) (*T2, error) {
+	many, err := f(ctx, filter)
+	if err != nil || len(many) == 0 {
+		return nil, err
+	}
+	return many[0], nil
+}
+
 func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]interface{}) {
 	loggerOnce.Do(func() {
 		var err error

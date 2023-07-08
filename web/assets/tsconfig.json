@@ -51,7 +51,7 @@
       "noEmitOnError": true,
       "noEmit": true,
   
-      //"isolatedModules": true,                          
+      "isolatedModules": true,                          
       "esModuleInterop": true,                             
       "forceConsistentCasingInFileNames": true,            
   

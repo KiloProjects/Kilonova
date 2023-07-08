@@ -76,14 +76,10 @@ func (a *DB) Attachment(ctx context.Context, filter *kilonova.AttachmentFilter) 
 		filter = &kilonova.AttachmentFilter{}
 	}
 	filter.Limit = 1
-	atts, err := a.Attachments(ctx, filter)
-	if err != nil || len(atts) == 0 {
-		return nil, err
-	}
-	return atts[0], nil
+	return toSingular(ctx, filter, a.Attachments)
 }
 
-// TODO: Remove problem_attachments and blog_post_attachments views
+// TODO: Remove problem_attachments and blog_post_attachments views from DB
 func (a *DB) Attachments(ctx context.Context, filter *kilonova.AttachmentFilter) ([]*kilonova.Attachment, error) {
 	fb := newFilterBuilder()
 	attachmentFilterQuery(filter, fb)
