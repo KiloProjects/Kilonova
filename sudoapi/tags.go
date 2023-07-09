@@ -88,7 +88,7 @@ func (s *BaseAPI) UpdateTagName(ctx context.Context, tag *kilonova.Tag, newName 
 	if err := s.db.UpdateTagName(ctx, tag.ID, newName); err != nil {
 		return WrapError(err, "Couldn't update tag")
 	}
-	s.LogUserAction(ctx, fmt.Sprintf("Tag %q name (type %q) changed to to %q", tag.Name, tag.Type, newName))
+	s.LogUserAction(ctx, fmt.Sprintf("Tag %q name (type %q) changed to %q", tag.Name, tag.Type, newName))
 	return nil
 }
 

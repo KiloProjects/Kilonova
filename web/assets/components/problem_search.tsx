@@ -26,20 +26,13 @@ type ProblemFilter = {
 	offset: number;
 };
 
-const widths = {
-	noTagsAuthed: ["w-1/12", "w-6/12", "w-2/12", "w-3/12"],
-	tagsAuthed: ["w-1/12", "w-4/12", /*"w-3/12",*/ "w-2/12", "w-2/12"],
-	noTagsNotAuthed: ["w-1/12", "w-7/12", "", "w-4/12"],
-	tagsNotAuthed: ["w-1/12", "w-5/12", /*"w-4/12",*/ "", "w-2/12"],
-};
-
 function ProblemView({ problems, showTags }: { problems: FullProblem[]; showTags: boolean }) {
 	let authed = window.platform_info.user_id >= 1;
 	let sizes: string[] = [];
 	if (authed) {
-		sizes = widths[showTags ? "tagsAuthed" : "noTagsAuthed"];
+		sizes = ["w-1/12", "w-4/12", /*"w-3/12",*/ "w-2/12", "w-2/12"];
 	} else {
-		sizes = widths[showTags ? "tagsNotAuthed" : "noTagsNotAuthed"];
+		sizes = ["w-1/12", "w-5/12", /*"w-4/12",*/ "", "w-2/12"];
 	}
 
 	return (
@@ -52,9 +45,13 @@ function ProblemView({ problems, showTags }: { problems: FullProblem[]; showTags
 					<th class={sizes[1]} scope="col">
 						{getText("name")}
 					</th>
-					{showTags && (
+					{showTags ? (
 						<th class={authed ? "w-3/12" : "w-4/12"} scope="col">
 							{getText("tags")}
+						</th>
+					) : (
+						<th class={authed ? "w-3/12" : "w-4/12"} scope="col">
+							{getText("source")}
 						</th>
 					)}
 					{authed && (
@@ -89,7 +86,11 @@ function ProblemView({ problems, showTags }: { problems: FullProblem[]; showTags
 									<span class="badge badge-red text-sm ml-2">{getText("unpublished")}</span>
 								))}
 						</td>
-						{showTags && <td>{pb.tags.length == 0 ? "-" : pb.tags.map((tag) => <TagView tag={tag} extraClasses="text-sm"></TagView>)}</td>}
+						{showTags ? (
+							<td>{pb.tags.length == 0 ? "-" : pb.tags.map((tag) => <TagView tag={tag} extraClasses="text-sm"></TagView>)}</td>
+						) : (
+							<td>{pb.source_credits == "" ? "-" : pb.source_credits}</td>
+						)}
 						{authed && (
 							<td>
 								<span class="badge">{pb.max_score < 0 ? "-" : pb.max_score}</span>
