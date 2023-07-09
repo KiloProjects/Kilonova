@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
@@ -236,7 +237,7 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 		Description: args.Description,
 
 		SidebarHidable: args.SidebarHidable,
-	}); err != nil {
+	}); err != nil && !errors.Is(err, kilonova.ErrNoUpdates) {
 		errorData(w, err, 500)
 		return
 	}

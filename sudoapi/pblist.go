@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"errors"
 
 	"github.com/KiloProjects/kilonova"
 	"go.uber.org/zap"
@@ -88,7 +89,9 @@ func (s *BaseAPI) CreateProblemList(ctx context.Context, pblist *kilonova.Proble
 
 func (s *BaseAPI) UpdateProblemList(ctx context.Context, id int, upd kilonova.ProblemListUpdate) *StatusError {
 	if err := s.db.UpdateProblemList(ctx, id, upd); err != nil {
-		zap.S().Warn(err)
+		if !errors.Is(err, kilonova.ErrNoUpdates) {
+			zap.S().Warn(err)
+		}
 		return WrapError(err, "Couldn't update problem list metadata")
 	}
 	return nil
