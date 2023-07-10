@@ -10,6 +10,10 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	SubForEveryoneConfig = config.GenFlag("config.behavior.everyone_subs", true)
+)
+
 // Submission stuff
 
 func (s *BaseAPI) MaxScoreSubID(ctx context.Context, uid, pbID int) (int, *StatusError) {
@@ -342,6 +346,11 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 	if sub == nil {
 		return false
 	}
+	// If enabled that everyone can see code
+	if SubForEveryoneConfig.Value() {
+		return true
+	}
+
 	if s.IsSubmissionEditor(sub, user) {
 		return true
 	}
