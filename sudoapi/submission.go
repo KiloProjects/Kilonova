@@ -351,8 +351,8 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 		return false
 	}
 
-	// If enabled that everyone can see code
-	if SubForEveryoneConfig.Value() {
+	// If enabled that everyone can see code if not from contest
+	if SubForEveryoneConfig.Value() && sub.ContestID == nil {
 		return true
 	}
 
