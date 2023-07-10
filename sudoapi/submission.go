@@ -346,6 +346,11 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 	if sub == nil {
 		return false
 	}
+
+	if !s.IsAuthed(user) {
+		return false
+	}
+
 	// If enabled that everyone can see code
 	if SubForEveryoneConfig.Value() {
 		return true
@@ -357,10 +362,6 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 
 	if pb, err := s.Problem(ctx, sub.ProblemID); err == nil && pb != nil && s.IsProblemEditor(user, pb) {
 		return true
-	}
-
-	if !s.IsAuthed(user) {
-		return false
 	}
 
 	score := s.db.MaxScore(context.Background(), user.ID, sub.ProblemID)
