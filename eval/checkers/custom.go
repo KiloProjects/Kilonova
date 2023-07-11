@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 
+	_ "embed"
+
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/tasks"
@@ -16,6 +18,9 @@ const (
 )
 
 var _ eval.Checker = &customChecker{}
+
+//go:embed checkerdata/testlib.h
+var testlibFile []byte
 
 type customCheckerInput struct {
 	c    *customChecker
@@ -46,6 +51,8 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 		ID: -c.sub.ID,
 		CodeFiles: map[string][]byte{
 			eval.Langs[eval.GetLangByFilename(c.filename)].SourceName: c.code,
+		}, HeaderFiles: map[string][]byte{
+			"/box/testlib.h": testlibFile,
 		},
 		Lang: eval.GetLangByFilename(c.filename),
 	}, tasks.GetCompileTask(c.Logger))

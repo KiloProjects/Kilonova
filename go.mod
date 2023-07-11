@@ -30,6 +30,7 @@ require (
 require (
 	github.com/Yiling-J/theine-go v0.3.1
 	github.com/alecthomas/chroma/v2 v2.8.0
+	github.com/antchfx/xmlquery v1.3.17
 	github.com/evanw/esbuild v0.18.11
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/jackc/pgx/v5 v5.4.1
@@ -39,8 +40,10 @@ require (
 )
 
 require (
+	github.com/antchfx/xpath v1.2.4 // indirect
 	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/jackc/puddle/v2 v2.2.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect

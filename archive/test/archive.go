@@ -3,10 +3,12 @@ package test
 import (
 	"archive/zip"
 	"context"
+	"io/fs"
 	"path"
 	"path/filepath"
 	"slices"
 	"sort"
+	"strings"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
@@ -26,6 +28,8 @@ type ArchiveCtx struct {
 	props       *properties
 
 	submissions []*submissionStub
+
+	params *TestProcessParams
 }
 
 type properties struct {
@@ -50,11 +54,13 @@ type properties struct {
 	ScoringStrategy kilonova.ScoringType
 }
 
-func NewArchiveCtx() *ArchiveCtx {
+func NewArchiveCtx(params *TestProcessParams) *ArchiveCtx {
 	return &ArchiveCtx{
 		tests:       make(map[int]archiveTest),
 		attachments: make(map[string]archiveAttachment),
 		scoredTests: make([]int, 0, 10),
+
+		params: params,
 	}
 }
 
@@ -64,7 +70,7 @@ var (
 )
 
 func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
-	ext := path.Ext(file.Name)
+	ext := strings.ToLower(path.Ext(file.Name))
 	if slices.Contains(filepath.SplitList(path.Dir(file.Name)), "attachments") { // Is in "attachments" directory
 		return ProcessAttachmentFile(ctx, file)
 	}
@@ -81,8 +87,37 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 		return ProcessPropertiesFile(ctx, file)
 	}
 
-	// if nothing else is detected, it should be a test file
+	if strings.ToLower(file.Name) == "problem.xml" { // Polygon archive format
+		r, err := file.Open()
+		if err != nil {
+			return kilonova.WrapError(err, "Could not open problem.xml")
+		}
+		defer r.Close()
+		return ProcessProblemXMLFile(ctx, r)
+	}
 
+	// Polygon-specific handling
+	if ctx.params.Polygon {
+		if strings.HasPrefix(file.Name, "solutions") {
+			return ProcessSubmissionFile(ctx, file)
+		}
+
+		if strings.HasPrefix(file.Name, "tests") {
+			if ext == ".a" {
+				return ProcessTestOutputFile(ctx, file)
+			}
+
+			return ProcessTestInputFile(ctx, file)
+		}
+
+		if file.Name == "check.cpp" {
+			return ProcessPolygonCheckFile(ctx, file)
+		}
+
+		return nil
+	}
+
+	// if nothing else is detected, it should be a test file
 	if slices.Contains(testInputSuffixes, ext) { // test input file (ex: 01.in)
 		return ProcessTestInputFile(ctx, file)
 	}
@@ -94,8 +129,23 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	return nil
 }
 
-func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Reader, base *sudoapi.BaseAPI, requestor *kilonova.UserBrief) *kilonova.StatusError {
-	aCtx := NewArchiveCtx()
+type TestProcessParams struct {
+	Requestor *kilonova.UserBrief
+
+	Polygon bool
+}
+
+func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Reader, base *sudoapi.BaseAPI, params *TestProcessParams) *kilonova.StatusError {
+	aCtx := NewArchiveCtx(params)
+
+	// Try to autodetect polygon archive
+	if _, err := fs.Stat(ar, "problem.xml"); err == nil {
+		aCtx.params.Polygon = true
+	}
+
+	if params.Requestor == nil {
+		return kilonova.Statusf(400, "There must be a requestor")
+	}
 
 	for _, file := range ar.File {
 		if file.FileInfo().IsDir() {
@@ -235,8 +285,8 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 			}
 
 			var userID *int
-			if requestor != nil {
-				userID = &requestor.ID
+			if params.Requestor != nil {
+				userID = &params.Requestor.ID
 			}
 
 			if err := base.CreateProblemAttachment(ctx, &kilonova.Attachment{
@@ -345,7 +395,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 			}
 		}
 
-		if len(aCtx.props.Editors) > 0 && requestor.Admin {
+		if len(aCtx.props.Editors) > 0 && params.Requestor.Admin {
 			var newEditors []*kilonova.UserBrief
 			// First, get the new editors to make sure they are valid
 			for _, editor := range aCtx.props.Editors {
@@ -388,7 +438,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 				zap.S().Warn("Skipping submission")
 				continue
 			}
-			if _, err := base.CreateSubmission(ctx, requestor, pb, sub.code, lang, nil, true); err != nil {
+			if _, err := base.CreateSubmission(ctx, params.Requestor, pb, sub.code, lang, nil, true); err != nil {
 				zap.S().Warn(err)
 			}
 		}

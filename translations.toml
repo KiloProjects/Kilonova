@@ -600,6 +600,10 @@ ro = "din oficiu"
 en = "Upload .zip archive with tests"
 ro = "Încărcare arhivă .zip cu teste"
 
+[polygonArchiveWarn]
+en = "When loading a polygon archive, only the checker, solutions and the <code>tests</code> testset data is taken into consideration."
+ro = "Când se încarcă o arhivă tip poligon, doar checker-ul, sursele oficiale și testset-ul <code>tests</code> este luat în considerare."
+
 [archive]
 en = "Archive"
 ro = "Arhivă"

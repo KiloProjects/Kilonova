@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"io"
 	"path"
+	"strings"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
@@ -27,7 +28,9 @@ func ProcessSubmissionFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 
 	lang := eval.GetLangByFilename(path.Base(file.Name))
 	if lang == "" {
-		zap.S().Warnf("Unrecognized submisison language for file %q", path.Base(file.Name))
+		if !strings.HasSuffix(file.Name, ".desc") { // Don't show for polygon description files
+			zap.S().Warnf("Unrecognized submisison language for file %q", path.Base(file.Name))
+		}
 		return nil
 	}
 

@@ -74,3 +74,14 @@ func ProcessAttachmentFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 	}
 	return nil
 }
+
+func ProcessPolygonCheckFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
+	ctx.attachments["checker.cpp17"] = archiveAttachment{
+		File:    file,
+		Name:    "checker.cpp17",
+		Visible: false,
+		Private: true,
+		Exec:    true,
+	}
+	return nil
+}

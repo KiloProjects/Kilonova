@@ -161,7 +161,9 @@ func (s *API) processArchive(r *http.Request) *kilonova.StatusError {
 		return kilonova.WrapError(err, "Couldn't read zip archive")
 	}
 
-	if err := test.ProcessZipTestArchive(context.Background(), util.Problem(r), ar, s.base, util.UserBrief(r)); err != nil {
+	if err := test.ProcessZipTestArchive(context.Background(), util.Problem(r), ar, s.base, &test.TestProcessParams{
+		Requestor: util.UserBrief(r),
+	}); err != nil {
 		return err
 	}
 
