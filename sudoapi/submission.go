@@ -171,6 +171,8 @@ type FullSubmission struct {
 
 	// ProblemEditor returns whether the looking user is a problem editor
 	ProblemEditor bool `json:"problem_editor"`
+
+	CodeTrulyVisible bool `json:"truly_visible"`
 }
 
 func (s *BaseAPI) Submission(ctx context.Context, subid int, lookingUser *UserBrief) (*FullSubmission, *StatusError) {
@@ -204,7 +206,7 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *Use
 		sub = sub2
 	}
 
-	rez := &FullSubmission{Submission: *sub}
+	rez := &FullSubmission{Submission: *sub, CodeTrulyVisible: s.subVisibleRegardless(ctx, sub, lookingUser)}
 	author, err1 := s.UserBrief(ctx, sub.UserID)
 	if err1 != nil {
 		return nil, err1
@@ -342,18 +344,13 @@ func (s *BaseAPI) ResetProblemSubmissions(ctx context.Context, problem *kilonova
 	return nil
 }
 
-func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) bool {
+func (s *BaseAPI) subVisibleRegardless(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) bool {
 	if sub == nil {
 		return false
 	}
 
 	if !s.IsAuthed(user) {
 		return false
-	}
-
-	// If enabled that everyone can see code if not from contest
-	if SubForEveryoneConfig.Value() && sub.ContestID == nil {
-		return true
 	}
 
 	if s.IsSubmissionEditor(sub, user) {
@@ -366,6 +363,23 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 
 	score := s.db.MaxScore(context.Background(), user.ID, sub.ProblemID)
 	return score == 100
+}
+
+func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) bool {
+	if sub == nil {
+		return false
+	}
+
+	if !s.IsAuthed(user) {
+		return false
+	}
+
+	// If enabled that people see all source code
+	if SubForEveryoneConfig.Value() && sub.ContestID == nil {
+		return true
+	}
+
+	return s.subVisibleRegardless(ctx, sub, user)
 }
 
 func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) {

@@ -165,6 +165,20 @@ function CompileErrorInfo({ sub }: { sub: FullSubmission }) {
 }
 
 function SubCode({ sub, codeHTML }: { sub: FullSubmission; codeHTML: string }) {
+	let [warningDismissed, setWarningDismissed] = useState<boolean>(sub.truly_visible);
+	console.log(sub);
+	if (!warningDismissed) {
+		return (
+			<div class="segment-panel">
+				<h2>{getText("showSourceCodeQ")}</h2>
+				<p class="mb-4">{getText("showSourceCodeExpl")}</p>
+				<button class="inline-block btn btn-blue mx-auto" onClick={() => setWarningDismissed(true)}>
+					{getText("showSourceCodeBtn")}
+				</button>
+			</div>
+		);
+	}
+
 	return (
 		<div class="segment-panel">
 			<h2>{getText("sourceCode")}:</h2>

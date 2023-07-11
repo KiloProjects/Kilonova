@@ -1121,6 +1121,18 @@ ro = "Codul Sursă"
 en = "Compilation Message"
 ro = "Mesaj Compilare"
 
+[showSourceCodeQ]
+en = "Show source code?"
+ro = "Afișare cod sursă?"
+
+[showSourceCodeExpl]
+en = "You haven't solved the problem. Please give it some more thought before looking at someone else's code."
+ro = "Incă n-ai rezolvat problema. Ar fi indicat să te mai gândești la ea înainte să te uiți la codul altei persoane."
+
+[showSourceCodeBtn]
+en = "Show source code"
+ro = "Afișare cod sursă"
+
 [test]
 en = "Test"
 ro = "Testul"

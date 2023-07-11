@@ -159,6 +159,7 @@ export type FullSubmission = Submission & {
 	subtasks: SubmissionSubTask[];
 
 	problem_editor: boolean;
+	truly_visible: boolean;
 };
 
 export async function getSubmission(subID: number) {

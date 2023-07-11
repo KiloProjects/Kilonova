@@ -25,7 +25,7 @@
 
 <script>
 const sub_id = {{.Submission.ID}};
-document.getElementById("pasteCreateBtn").addEventListener("click", async e => {
+document.getElementById("pasteCreateBtn")?.addEventListener("click", async e => {
     const res = await bundled.postCall("/submissions/createPaste", { id: sub_id });
     if (res.status === "error") {
         apiToast(res);
