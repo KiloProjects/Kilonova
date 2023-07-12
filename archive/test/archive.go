@@ -132,7 +132,8 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 type TestProcessParams struct {
 	Requestor *kilonova.UserBrief
 
-	Polygon bool
+	Polygon          bool
+	MergeAttachments bool
 }
 
 func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Reader, base *sudoapi.BaseAPI, params *TestProcessParams) *kilonova.StatusError {
@@ -141,6 +142,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 	// Try to autodetect polygon archive
 	if _, err := fs.Stat(ar, "problem.xml"); err == nil {
 		aCtx.params.Polygon = true
+		aCtx.params.MergeAttachments = true
 	}
 
 	if params.Requestor == nil {
@@ -261,11 +263,22 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 			zap.S().Warn("Couldn't get problem attachments")
 			return kilonova.WrapError(err, "Couldn't get attachments")
 		}
-		attIDs := []int{}
+
+		// attachment IDs to mark for deletion
+		var attIDs []int
 		for _, att := range atts {
-			attIDs = append(attIDs, att.ID)
+			if aCtx.params.MergeAttachments {
+				// TODO: Use map for proper lookup, instead of O(N*M) nested for
+				for _, newAtt := range aCtx.attachments {
+					if newAtt.Name == att.Name {
+						attIDs = append(attIDs, att.ID)
+						break
+					}
+				}
+			} else {
+				attIDs = append(attIDs, att.ID)
+			}
 		}
-		// TODO: In the future maybe opt in to a "merging" strategy instead of delete and add?
 		if len(attIDs) > 0 {
 			if _, err := base.DeleteProblemAtts(ctx, pb.ID, attIDs); err != nil {
 				zap.S().Warn("Couldn't remove attachments")
