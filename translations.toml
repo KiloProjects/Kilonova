@@ -601,8 +601,8 @@ en = "Upload .zip archive with tests"
 ro = "Încărcare arhivă .zip cu teste"
 
 [polygonArchiveWarn]
-en = "When loading a polygon archive, only the checker, solutions and the <code>tests</code> testset data is taken into consideration. IMPORTANT! ONLY Full, Linux packages are supported."
-ro = "Când se încarcă o arhivă tip poligon, doar checker-ul, sursele oficiale și testset-ul <code>tests</code> este luat în considerare. IMPORTANT! DOAR package-urile de tipul Full, Linux sunt suportate."
+en = "Note for Polygon archives: only the checker, solutions and the <code>tests</code> testset data is taken into consideration. IMPORTANT! ONLY Full, Linux packages are supported."
+ro = "Important pentru arhivele Polygon: doar checker-ul, sursele oficiale și testset-ul <code>tests</code> este luat în considerare. IMPORTANT! DOAR package-urile de tipul Full, Linux sunt suportate."
 
 [archive]
 en = "Archive"

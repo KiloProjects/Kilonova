@@ -164,8 +164,8 @@ function CompileErrorInfo({ sub }: { sub: FullSubmission }) {
 	);
 }
 
-function SubCode({ sub, codeHTML }: { sub: FullSubmission; codeHTML: string }) {
-	let [warningDismissed, setWarningDismissed] = useState<boolean>(sub.truly_visible);
+function SubCode({ sub, codeHTML, isPaste }: { sub: FullSubmission; codeHTML: string; isPaste: boolean }) {
+	let [warningDismissed, setWarningDismissed] = useState<boolean>(sub.truly_visible || isPaste);
 	console.log(sub);
 	if (!warningDismissed) {
 		return (
@@ -416,7 +416,7 @@ function SubmissionView({ sub, bigCode, codeHTML, pasteAuthor }: { sub: FullSubm
 
 	let under = <></>;
 	if (sub.code != null) {
-		under = <SubCode sub={sub} codeHTML={codeHTML} />;
+		under = <SubCode sub={sub} codeHTML={codeHTML} isPaste={typeof pasteAuthor !== "undefined"} />;
 	}
 
 	if (bigCode) {
