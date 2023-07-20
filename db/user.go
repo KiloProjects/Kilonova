@@ -99,7 +99,11 @@ func (s *DB) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, e
 
 // UserExists says wether or not a user matches either a specific username (case-insensitive), either a specific email address.
 func (s *DB) UserExists(ctx context.Context, username string, email string) (bool, error) {
-	count, err := s.CountUsers(ctx, kilonova.UserFilter{Name: &username, Email: &email})
+	count, err := s.CountUsers(ctx, kilonova.UserFilter{Name: &username})
+	if err == nil && count > 0 {
+		return true, nil
+	}
+	count, err = s.CountUsers(ctx, kilonova.UserFilter{Email: &email})
 	return count > 0, err
 }
 

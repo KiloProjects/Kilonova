@@ -105,8 +105,8 @@ func (katexExtension) Extend(m goldmark.Markdown) {
 			// TODO: Better checking for ctx and stuff
 			val, ok := ctx.Value(mjRenderCtxNode).(ast.Node)
 			if ok && val.OwnerDocument().Meta()["ctx"] != nil {
-				x := val.OwnerDocument().Meta()["ctx"].(*kilonova.RenderContext)
-				if x.Problem != nil {
+				x, ok := val.OwnerDocument().Meta()["ctx"].(*kilonova.RenderContext)
+				if x != nil && ok && x.Problem != nil {
 					zap.S().Debugf("In problem #%d, markdown error: %q", x.Problem.ID, err)
 				}
 			} else {
