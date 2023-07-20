@@ -11,18 +11,7 @@ import (
 )
 
 func (s *API) getProblemList(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	var args struct{ ID int }
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 400)
-		return
-	}
-	list, err := s.base.ProblemList(r.Context(), args.ID)
-	if err != nil {
-		errorData(w, err, 500)
-		return
-	}
-	returnData(w, list)
+	returnData(w, util.ProblemList(r))
 }
 
 // if there are multiple, will return the one with the smallest ID
@@ -42,18 +31,7 @@ func (s *API) problemListByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	var args struct{ ID int }
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 400)
-		return
-	}
-
-	list, err := s.base.ProblemList(r.Context(), args.ID)
-	if err != nil {
-		errorData(w, err, 500)
-		return
-	}
+	list := util.ProblemList(r)
 
 	pbs, err := s.base.ProblemListProblems(r.Context(), list.List, util.UserBrief(r))
 	if err != nil {
@@ -209,7 +187,6 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		ID          int     `json:"id"`
 		Title       *string `json:"title"`
 		Description *string `json:"description"`
 		List        []int   `json:"list"`
@@ -221,18 +198,14 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 		err.WriteError(w)
 		return
 	}
-	list, err := s.base.ProblemList(r.Context(), args.ID)
-	if err != nil {
-		errorData(w, "Couldn't find problem list", 400)
-		return
-	}
+	orgList := util.ProblemList(r)
 
-	if !(util.UserBrief(r).Admin || util.UserBrief(r).ID == list.AuthorID) {
+	if !(util.UserBrief(r).Admin || util.UserBrief(r).ID == orgList.AuthorID) {
 		errorData(w, "You can't update this problem list!", 403)
 		return
 	}
 
-	if err := s.base.UpdateProblemList(r.Context(), args.ID, kilonova.ProblemListUpdate{
+	if err := s.base.UpdateProblemList(r.Context(), orgList.ID, kilonova.ProblemListUpdate{
 		Title:       args.Title,
 		Description: args.Description,
 
@@ -249,14 +222,14 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := s.base.UpdateProblemListProblems(r.Context(), args.ID, list); err != nil {
+		if err := s.base.UpdateProblemListProblems(r.Context(), orgList.ID, list); err != nil {
 			err.WriteError(w)
 			return
 		}
 	}
 
 	if args.Sublists != nil {
-		if err := s.base.UpdateProblemListSublists(r.Context(), args.ID, args.Sublists); err != nil {
+		if err := s.base.UpdateProblemListSublists(r.Context(), orgList.ID, args.Sublists); err != nil {
 			err.WriteError(w)
 			return
 		}
@@ -266,24 +239,14 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) deleteProblemList(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	var args struct{ ID int }
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 400)
-		return
-	}
-	list, err := s.base.ProblemList(r.Context(), args.ID)
-	if err != nil {
-		errorData(w, "Couldn't find problem list", 400)
-		return
-	}
+	list := util.ProblemList(r)
 
 	if !(util.UserBrief(r).Admin || util.UserBrief(r).ID == list.AuthorID) {
 		errorData(w, "You can't delete this problem list!", 403)
 		return
 	}
 
-	if err := s.base.DeleteProblemList(r.Context(), args.ID); err != nil {
+	if err := s.base.DeleteProblemList(r.Context(), list.ID); err != nil {
 		err.WriteError(w)
 		return
 	}

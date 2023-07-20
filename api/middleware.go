@@ -268,6 +268,24 @@ func (s *API) validateProblemID(next http.Handler) http.Handler {
 	})
 }
 
+// validateProblemListID pre-emptively returns if there isn't a valid problem list ID in the URL params
+// Also, it fetches the problem from the DB and makes sure it exists
+func (s *API) validateProblemListID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pblistID, err := strconv.Atoi(chi.URLParam(r, "pblistID"))
+		if err != nil {
+			errorData(w, "invalid problem list ID", http.StatusBadRequest)
+			return
+		}
+		pblist, err1 := s.base.ProblemList(r.Context(), pblistID)
+		if err1 != nil {
+			errorData(w, "problem list does not exist", http.StatusBadRequest)
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemListKey, pblist)))
+	})
+}
+
 func (s *API) validateContestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		contestID, err := strconv.Atoi(chi.URLParam(r, "contestID"))

@@ -315,6 +315,25 @@ func (s *API) updateProblem(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Updated problem")
 }
 
+func (s *API) togglePblistProblems(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		Deep    bool `json:"deep"`
+		Visible bool `json:"visible"`
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 400)
+		return
+	}
+
+	if err := s.base.ToggleDeepPbListProblems(r.Context(), util.ProblemList(r), args.Deep, args.Visible); err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	returnData(w, "Updated problems")
+}
+
 func (s *API) addProblemEditor(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {

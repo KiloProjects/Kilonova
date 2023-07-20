@@ -50,60 +50,39 @@
 	</form>
 
 {{if authedUser.Admin}}
-    <div class="my-2">
-        <button id="visibleButton" class="btn btn-blue mr-2">{{getText "makeProblemsVisible"}}</button>
-        <button id="invisibleButton" class="btn btn-blue mr-2">{{getText "makeProblemsHidden"}}</button>
-    </div>
+    <form id="problemBulkVizForm" class="segment-panel" autocomplete="off">
+        <span class="text-lg">{{getText "updateProblems1"}}</span>
+        <select class="form-select" name="deep" id="updProblemsDeep" required autocomplete="off">
+            <option value="" selected disabled hidden>-</option>
+            <option value="false">{{getText "updateProblemsShallow"}}</option>
+            <option value="true">{{getText "updateProblemsRecursive"}}</option>
+        </select>
+        <span class="text-lg">{{getText "updateProblems2"}}</span>
+        <select class="form-select" name="visible" id="updProblemsDeep" required autocomplete="off">
+            <option value="" selected disabled hidden>-</option>
+            <option value="false">{{getText "updateProblemsHidden"}}</option>
+            <option value="true">{{getText "updateProblemsVisible"}}</option>
+        </select>
+        <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
+    </form>
 <script>
-let problemIDs = {{.List}};
 
-// TODO: Maybe make a popup with a progress bar?
-async function makeProblemsVisible(e) {
+async function updateProblemVisibilities(e) {
     e.preventDefault();
-    let promises = [];
-    for(let pb of problemIDs) {
-        promises.push((async (pbID) => {
-            let res = await bundled.postCall(`/problem/${pbID}/update/`, {visible: true})
-            if(res.status === "error") {
-                bundled.apiToast(res)
-                throw Error(res.data)
-            }
-        })(pb))
+    let data = new FormData(e.currentTarget)
+    const res = await bundled.postCall("/problemList/{{.ID}}/toggleProblems", {
+        deep: data.get("deep"),
+        visible: data.get("visible")
+    })
+    if(res.status === "error") {
+        bundled.apiToast(res)
+        return
     }
-    let rez = await Promise.allSettled(promises);
-    for(let p of rez) {
-        if(p.status === "rejected") {
-            bundled.apiToast({status: "error", data: "Failed to make all problems visible"});
-            return
-        }
-    }
-    window.location.reload();
+    window.location.reload()
 }
 
-async function makeProblemsHidden(e) {
-    e.preventDefault();
-    let promises = [];
-    for(let pb of problemIDs) {
-        promises.push((async (pbID) => {
-            let res = await bundled.postCall(`/problem/${pbID}/update/`, {visible: false})
-            if(res.status === "error") {
-                bundled.apiToast(res)
-                throw Error(res.data)
-            }
-        })(pb))
-    }
-    let rez = await Promise.allSettled(promises);
-    for(let p of rez) {
-        if(p.status === "rejected") {
-            bundled.apiToast({status: "error", data: "Failed to make all problems hidden"});
-            return
-        }
-    }
-    window.location.reload();
-}
+document.getElementById("problemBulkVizForm").addEventListener("submit", updateProblemVisibilities);
 
-document.getElementById("visibleButton").addEventListener("click", makeProblemsVisible);
-document.getElementById("invisibleButton").addEventListener("click", makeProblemsHidden);
 </script>
 {{ end }}
 <script>
@@ -120,14 +99,13 @@ cm.setSize(null, "100%");
 async function updateProblemList(e) {
 	e.preventDefault();
 	let data = {
-		id: problemListID,
 		title: document.getElementById("pblist-title").value,
 		description: cm.getValue(),
 		list: bundled.stringIntToNumber(document.getElementById("pblist-list").value.split(',')),
         sublists: bundled.stringIntToNumber(document.getElementById("pblist-sublists").value.split(',')),
         sidebar_hidable: document.getElementById("sidebar_hidable").checked,
     };
-	let res = await bundled.bodyCall("/problemList/update", data)
+	let res = await bundled.bodyCall("/problemList/{{.ID}}/update", data)
 	if(res.status === "success") {
 		window.location.reload();
 		return
@@ -139,10 +117,7 @@ async function deleteProblemList(e) {
     if(!(await bundled.confirm(bundled.getText("pblistDeleteConfirm")))) {
         return
     }
-    let data = {
-        id: problemListID
-    }
-    let res = await bundled.postCall("/problemList/delete", data)
+    let res = await bundled.postCall("/problemList/{{.ID}}/delete", {})
     if(res.status === "success") {
         window.location.assign("/problem_lists");
         return

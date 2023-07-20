@@ -1101,13 +1101,29 @@ ro = "puncte"
 en = "Make code"
 ro = "Fă codul"
 
-[makeProblemsVisible]
-en = "Make all problems visible"
-ro = "Fă toate problemele vizibile"
+[updateProblems1]
+en = "Update "
+ro = "Actualizare "
 
-[makeProblemsHidden]
-en = "Make all problems hidden"
-ro = "Fă toate problemele ascunse"
+[updateProblemsShallow]
+en = "all list problems"
+ro = "toate problemele listei"
+
+[updateProblemsRecursive]
+en = "all problems, recursively"
+ro = "toate problemele, recursiv"
+
+[updateProblems2]
+en = ", set "
+ro = ", setează "
+
+[updateProblemsVisible]
+en = "visible"
+ro = "vizibile"
+
+[updateProblemsHidden]
+en = "hidden"
+ro = "ascunse"
 
 [download]
 en = "Download"

@@ -96,7 +96,7 @@ export function Sublist({ list, numsolved }: { list: Sublist; numsolved?: number
 
 	async function load() {
 		setLoading(true);
-		const res = await getCall<QueryResult>("/problemList/getComplex", { id: list.id });
+		const res = await getCall<QueryResult>(`/problemList/${list.id}/complex`, {});
 		if (res.status === "error") {
 			apiToast(res);
 			return;

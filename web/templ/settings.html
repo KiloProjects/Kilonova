@@ -81,7 +81,7 @@ async function updatePassword(e) {
 		bundled.createToast({title: bundled.getText("differentPwds"), status: 'error'});
 		return
 	}
-	let res = await bundled.postCall("/user/changePassword", {password:pwd, oldpassword:oldpwd})
+	let res = await bundled.postCall("/user/changePassword", {password:pwd, old_password:oldpwd})
 	bundled.apiToast(res)
 }
 async function updateEmail(e) {

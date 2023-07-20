@@ -73,6 +73,9 @@ type ProblemFilter struct {
 
 	FuzzyName *string `json:"name_fuzzy"`
 
+	// DeepListID - the list ID in which to search recursively for problems
+	DeepListID *int `json:"deep_list_id"`
+
 	// EditorUserID filter marks if the user is part of the *editors* of the problem
 	// Note that it excludes factors like admin or contest editor, it's just the editors in the access section.
 	EditorUserID *int `json:"editor_user_id"`

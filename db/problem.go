@@ -191,7 +191,7 @@ func (s *DB) BulkUpdateProblems(ctx context.Context, filter kilonova.ProblemFilt
 	}
 	where, args1 := problemFilterQuery(&filter)
 	args = append(args, args1...)
-	query := s.conn.Rebind(fmt.Sprintf(bulkProblemUpdateStatement, strings.Join(toUpd, ", "), strings.Join(where, ", ")))
+	query := s.conn.Rebind(fmt.Sprintf(bulkProblemUpdateStatement, strings.Join(toUpd, ", "), strings.Join(where, " AND ")))
 	_, err := s.conn.ExecContext(ctx, query, args...)
 	return err
 }
@@ -217,6 +217,9 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []any) {
 	}
 	if v := filter.FuzzyName; v != nil {
 		where, args = append(where, "position(lower(unaccent(?)) in format('#%s %s', id, lower(unaccent(name)))) > 0"), append(args, v)
+	}
+	if v := filter.DeepListID; v != nil {
+		where, args = append(where, "EXISTS (SELECT 1 FROM problem_list_deep_problems WHERE list_id = ? AND problem_id = problems.id)"), append(args, v)
 	}
 	if v := filter.ConsoleInput; v != nil {
 		where, args = append(where, "console_input = ?"), append(args, v)

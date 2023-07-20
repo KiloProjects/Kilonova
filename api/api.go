@@ -272,13 +272,20 @@ func (s *API) Handler() http.Handler {
 		r.With(s.MustBeAuthed).Post("/changePassword", s.changePassword)
 	})
 	r.Route("/problemList", func(r chi.Router) {
-		r.Get("/get", s.getProblemList)
-		r.Get("/getComplex", s.getComplexProblemList)
 		r.Get("/filter", s.problemLists)
 		r.Get("/byName", s.problemListByName)
 		r.With(s.MustBeProposer).Post("/create", s.initProblemList)
-		r.With(s.MustBeAuthed).Post("/update", s.updateProblemList)
-		r.With(s.MustBeAuthed).Post("/delete", s.deleteProblemList)
+
+		r.Route("/{pblistID}", func(r chi.Router) {
+			r.Use(s.validateProblemListID)
+			r.Get("/", s.getProblemList)
+			r.Get("/complex", s.getComplexProblemList)
+
+			r.With(s.MustBeAuthed).Post("/update", s.updateProblemList)
+			r.With(s.MustBeAuthed).Post("/delete", s.deleteProblemList)
+
+			r.With(s.MustBeAdmin).Post("/toggleProblems", s.togglePblistProblems)
+		})
 	})
 
 	r.Route("/contest", func(r chi.Router) {
