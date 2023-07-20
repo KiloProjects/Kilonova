@@ -86,12 +86,14 @@ func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova
 			continue
 		}
 
-		if _, ok := problemsMap[sub.ProblemID]; !ok {
+		pb, ok := problemsMap[sub.ProblemID]
+		if !ok {
 			zap.S().Warnf("Couldn't find problem %d in map. Something has gone terribly wrong", sub.ProblemID)
 		}
 
 		if look {
-			s.filterSubmission(ctx, subs[i], lookingUser)
+			// if pb is nil, then it will failsafe into old-style visibility
+			s.filterSubmission(ctx, subs[i], pb, lookingUser)
 		}
 	}
 
@@ -186,6 +188,7 @@ func (s *BaseAPI) FullSubmission(ctx context.Context, subid int) (*FullSubmissio
 
 func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *UserBrief, isLooking bool) (*FullSubmission, *StatusError) {
 	var sub *kilonova.Submission
+	var problem *kilonova.Problem
 	if isLooking {
 		var userID int = 0
 		if lookingUser != nil {
@@ -196,14 +199,31 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *Use
 			return nil, Statusf(404, "Submission not found or user may not have access")
 		}
 
-		s.filterSubmission(ctx, sub2, lookingUser)
+		problem2, err1 := s.Problem(ctx, sub2.ProblemID)
+		if err1 != nil {
+			return nil, err1
+		}
+
+		if !s.IsProblemVisible(lookingUser, problem2) {
+			return nil, Statusf(403, "Submission hidden because problem is not visible.")
+		}
+
+		s.filterSubmission(ctx, sub2, problem2, lookingUser)
 		sub = sub2
+		problem = problem2
 	} else {
 		sub2, err := s.db.Submission(ctx, subid)
 		if err != nil || sub2 == nil {
 			return nil, Statusf(404, "Submission not found")
 		}
+
+		problem2, err1 := s.Problem(ctx, sub2.ProblemID)
+		if err1 != nil {
+			return nil, err1
+		}
+
 		sub = sub2
+		problem = problem2
 	}
 
 	rez := &FullSubmission{Submission: *sub, CodeTrulyVisible: s.subVisibleRegardless(ctx, sub, lookingUser)}
@@ -213,14 +233,7 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *Use
 	}
 	rez.Author = author
 
-	rez.Problem, err1 = s.Problem(ctx, sub.ProblemID)
-	if err1 != nil {
-		return nil, err1
-	}
-	if isLooking && !s.IsProblemVisible(lookingUser, rez.Problem) {
-		return nil, Statusf(403, "Submission hidden because problem is not visible.")
-	}
-
+	rez.Problem = problem
 	rez.ProblemEditor = s.IsProblemEditor(lookingUser, rez.Problem)
 
 	rez.SubTests, err1 = s.SubTests(ctx, subid)
@@ -365,7 +378,7 @@ func (s *BaseAPI) subVisibleRegardless(ctx context.Context, sub *kilonova.Submis
 	return score == 100
 }
 
-func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) bool {
+func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submission, subProblem *kilonova.Problem, user *kilonova.UserBrief) bool {
 	if sub == nil {
 		return false
 	}
@@ -375,15 +388,16 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 	}
 
 	// If enabled that people see all source code
-	if SubForEveryoneConfig.Value() && sub.ContestID == nil {
+	// IsProblemFullyVisible is a workaround when a contest is running but there are submissions that were not sent in the contest
+	if SubForEveryoneConfig.Value() && sub.ContestID == nil && s.IsProblemFullyVisible(user, subProblem) {
 		return true
 	}
 
 	return s.subVisibleRegardless(ctx, sub, user)
 }
 
-func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) {
-	if sub != nil && !s.isSubmissionVisible(ctx, sub, user) {
+func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission, subProblem *kilonova.Problem, user *kilonova.UserBrief) {
+	if sub != nil && !s.isSubmissionVisible(ctx, sub, subProblem, user) {
 		sub.Code = ""
 		sub.CompileMessage = nil
 		sub.CodeSize = 0
