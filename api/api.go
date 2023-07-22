@@ -40,6 +40,7 @@ func (s *API) Handler() http.Handler {
 		r.Post("/setProposer", s.setProposer)
 
 		r.Post("/updateConfig", webMessageWrapper("Updated config. Some changes may only apply after a restart", s.base.UpdateConfig))
+		r.Post("/updateFlags", s.updateBoolFlags)
 
 		r.Route("/maintenance", func(r chi.Router) {
 			r.Post("/resetWaitingSubs", webMessageWrapper("Reset waiting subs", func(ctx context.Context, args struct{}) *kilonova.StatusError {

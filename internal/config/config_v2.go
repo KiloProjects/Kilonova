@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 
 	"go.uber.org/zap"
@@ -22,18 +23,43 @@ type configT interface{ string | bool | int }
 type Flag[T configT] interface {
 	Value() T
 	Update(T)
+	InternalName() string
+	HumanName() string
 }
 
 type flag[T configT] struct {
-	mu   sync.RWMutex
-	name string
-	val  T
+	mu        sync.RWMutex
+	name      string
+	val       T
+	humanName string
 }
 
 func (f *flag[T]) Value() T {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	return f.val
+}
+
+func (f *flag[T]) InternalName() string {
+	return f.name
+}
+
+func (f *flag[T]) HumanName() string {
+	return f.humanName
+}
+
+func (f *flag[T]) MarshalJSON() ([]byte, error) {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	return json.Marshal(&struct {
+		InternalName string `json:"internal_name"`
+		HumanName    string `json:"human_name"`
+		Value        T      `json:"value"`
+	}{
+		InternalName: f.name,
+		HumanName:    f.humanName,
+		Value:        f.val,
+	})
 }
 
 func (f *flag[T]) Update(newVal T) {
@@ -53,10 +79,10 @@ func (f *flag[T]) sneakUpdate(newVal T) {
 	f.val = newVal
 }
 
-func GenFlag[T configT](name string, defaultVal T) Flag[T] {
+func GenFlag[T configT](name string, defaultVal T, readableName string) Flag[T] {
 	flagMapMu.Lock()
 	defer flagMapMu.Unlock()
-	f := &flag[T]{name: name, val: defaultVal}
+	f := &flag[T]{name: name, val: defaultVal, humanName: readableName}
 	allFlags[name] = f
 	return f
 }
@@ -82,11 +108,24 @@ func GetFlag[T configT](name string) (Flag[T], bool) {
 	if !ok {
 		return nil, false
 	}
-	switch v := flg.(type) {
-	case *flag[T]:
-		return v, true
+	v, ok := flg.(*flag[T])
+	return v, ok
+}
+
+func GetFlags[T configT]() []Flag[T] {
+	flagMapMu.RLock()
+	defer flagMapMu.RUnlock()
+	var flags []Flag[T]
+	for _, flg := range allFlags {
+		flag, ok := flg.(*flag[T])
+		if ok {
+			flags = append(flags, flag)
+		}
 	}
-	return nil, false
+	sort.Slice(flags, func(i, j int) bool {
+		return flags[i].InternalName() < flags[j].InternalName()
+	})
+	return flags
 }
 
 func FlagList[T configT](name string) []Flag[T] {

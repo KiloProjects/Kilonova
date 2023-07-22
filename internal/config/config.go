@@ -15,7 +15,6 @@ var (
 	Common     CommonConf
 	Eval       EvalConf
 	Email      EmailConf
-	Features   FeaturesConf
 	Frontend   FrontendConf
 )
 
@@ -25,7 +24,6 @@ type configStruct struct {
 	Common   CommonConf   `toml:"common"`
 	Eval     EvalConf     `toml:"eval"`
 	Email    EmailConf    `toml:"email"`
-	Features FeaturesConf `toml:"features"`
 	Frontend FrontendConf `toml:"frontend"`
 }
 
@@ -63,15 +61,6 @@ type CommonConf struct {
 	UpdatesWebhook string `toml:"updates_webhook"`
 }
 
-type FeaturesConf struct {
-	Grader bool `toml:"grader"`
-	Pastes bool `toml:"pastes"`
-
-	AllSubs bool `toml:"all_subs"`
-
-	FrontPagePbs bool `toml:"front_page_problems"`
-}
-
 type FrontendConf struct {
 	RootProblemList int `toml:"root_problem_list"`
 }
@@ -83,7 +72,6 @@ func spread() {
 	Common = c.Common
 	Email = c.Email
 	Eval = c.Eval
-	Features = c.Features
 	Frontend = c.Frontend
 }
 
@@ -91,7 +79,6 @@ func compactify() {
 	c.Common = Common
 	c.Email = Email
 	c.Eval = Eval
-	c.Features = Features
 	c.Frontend = Frontend
 }
 

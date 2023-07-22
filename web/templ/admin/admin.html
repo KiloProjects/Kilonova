@@ -7,6 +7,16 @@
 <button class="btn-blue font-bold py-2 px-4 rounded-lg mt-3 mb-2" onclick="resetSubs()">{{getText "resetSubs"}}</button>
 <button class="btn-blue font-bold py-2 px-4 rounded-lg mt-3 mb-2" onclick="invalidateAtts()">{{getText "invalidateAtts"}}</button>
 
+<script>
+	async function resetSubs() {
+		bundled.apiToast(await bundled.postCall("/admin/maintenance/resetWaitingSubs", {}))
+	}
+	async function invalidateAtts() {
+		let res = await bundled.postCall("/admin/maintenance/invalidateAttachments", {});
+		bundled.apiToast(res)
+	}
+</script>
+
 <div class="segment-panel">
 	<h2>{{getText "changeRoles"}}:</h2>
 	<label class="block">
@@ -19,101 +29,7 @@
 	</div>
 </div>
 
-<div class="segment-panel">
-	<h2 class="text-2xl">{{getText "admins"}}:</h2>
-	<div id="admin-group" class="block list-group list-group-rounded mb-2">
-		<div class="list-group-head">
-            {{getText "loading"}}
-        </div>
-	</div>
-	<h2 class="text-2xl">{{getText "proposers"}}:</h2>
-	<div id="proposer-group" class="block list-group list-group-rounded mb-2">
-		<div class="list-group-head">
-            {{getText "loading"}}
-        </div>
-	</div>
-</div>
-
-<form id="configForm" class="segment-panel" autocomplete="off">
-    <h2 class="text-2xl">{{getText "config.title"}}</h2>
-
-    <label class="block my-2">
-		<span class="form-label">{{getText "config.defaultLang"}}:</span>
-        <select name="default_lang" id="default_lang" class="form-select">
-            <option value="ro" {{if eq defaultLang "ro"}}selected{{end}}>🇷🇴 Română</option>
-            <option value="en" {{if eq defaultLang "en"}}selected{{end}}>🇬🇧 English</option>
-        </select>
-    </label>
-
-    <label class="block my-2">
-		<span class="form-label">{{getText "config.testMaxMemKB"}}:</span>
-        <input type="number" id="test_max_mem" name="test_max_mem" class="form-input" value="{{testMaxMemMB}}" /> 
-        <span class="form-label">MB</span>
-    </label>
-
-    <label class="block my-2">
-		<span class="form-label">{{getText "config.globalMaxMemKB"}}:</span>
-        <input type="number" id="global_max_mem" name="global_max_mem" class="form-input" value="{{globalMaxMem}}" /> 
-        <span class="form-label">MB</span>
-    </label>
-
-    <label class="block my-2">
-		<span class="form-label">{{getText "config.numWorkers"}}:</span>
-        <input type="number" id="num_workers" name="num_workers" class="form-input" value="{{numWorkers}}" /> 
-    </label>
-
-    <div class="segment-panel">
-        <h3>{{getText "featureSet"}}</h3>
-        <div class="block">
-            <label class="inline-flex items-center text-lg">
-                <input class="form-checkbox" name="grader" id="grader_feature" type="checkbox" {{if graderEnabled}}checked{{end}}>
-                <span class="ml-2">{{getText "featureSet.grader"}}</span>
-            </label>
-        </div>
-        <div class="block">
-            <label class="inline-flex items-center text-lg">
-                <input class="form-checkbox" name="signup" id="signup_feature" type="checkbox" {{if boolFlag `feature.platform.signup`}}checked{{end}}>
-                <span class="ml-2">{{getText "featureSet.signup"}}</span>
-            </label>
-        </div>
-        <div class="block">
-            <label class="inline-flex items-center text-lg">
-                <input class="form-checkbox" name="pastes" id="pastes_feature" type="checkbox" {{if pastesEnabled}}checked{{end}}>
-                <span class="ml-2">{{getText "featureSet.pastes"}}</span>
-            </label>
-        </div>
-        <div class="block">
-            <label class="inline-flex items-center text-lg">
-                <input class="form-checkbox" name="all_subs" id="all_subs_feature" type="checkbox" {{if allSubsView}}checked{{end}}>
-                <span class="ml-2">{{getText "featureSet.all_subs"}}</span>
-            </label>
-        </div>
-        <div class="block">
-            <label class="inline-flex items-center text-lg">
-                <input class="form-checkbox" name="ccDisclaimer" id="cc_disclaimer_feature" type="checkbox" {{if (boolFlag `feature.frontend.cc_disclaimer`)}}checked{{end}}>
-                <span class="ml-2">{{getText "featureSet.ccDisclaimer"}}</span>
-            </label>
-        </div>
-        <div class="block">
-            <label class="inline-flex items-center text-lg">
-                <input class="form-checkbox" name="frontPagePbs" id="frontPagePbs_feature" type="checkbox" {{if frontPagePbs}}checked{{end}}>
-                <span class="ml-2">{{getText "featureSet.frontPagePbs"}}</span>
-            </label>
-        </div>
-    </div>
-
-    <button type="submit" class="btn btn-blue">{{getText "button.update"}}</button>
-</form>
-
 <script>
-	async function resetSubs() {
-		let res = await bundled.postCall("/admin/maintenance/resetWaitingSubs", {});
-		bundled.apiToast(res)
-	}
-	async function invalidateAtts() {
-		let res = await bundled.postCall("/admin/maintenance/invalidateAttachments", {});
-		bundled.apiToast(res)
-	}
 	async function setAdmin(id, set) {
 		let res = await bundled.postCall("/admin/setAdmin", {id, set})
 		bundled.apiToast(res)
@@ -150,7 +66,23 @@
 		}
 		await setProposer(res.data.id, toSet)
 	}
+</script>
 
+<div class="segment-panel">
+	<h2 class="text-2xl">{{getText "admins"}}:</h2>
+	<div id="admin-group" class="block list-group list-group-rounded mb-2">
+		<div class="list-group-head">
+            {{getText "loading"}}
+        </div>
+	</div>
+	<h2 class="text-2xl">{{getText "proposers"}}:</h2>
+	<div id="proposer-group" class="block list-group list-group-rounded mb-2">
+		<div class="list-group-head">
+            {{getText "loading"}}
+        </div>
+	</div>
+</div>
+<script>
 	async function loadUsers(q, id = "admin-group", cb) {
 		document.getElementById(id).innerHTML = `<div class="list-group-head">${bundled.getText("loading")}</div>`
 		let res = await bundled.getCall("/admin/getAllUsers", q)
@@ -170,22 +102,120 @@
 	}
 	loadUsers({admin: true}, "admin-group", "setAdmin");
 	loadUsers({proposer: true}, "proposer-group", "setProposer");
+</script>
+
+<form id="configForm" class="segment-panel" autocomplete="off">
+    <h2 class="text-2xl">{{getText "config.title"}}</h2>
+
+    <label class="block my-2">
+		<span class="form-label">{{getText "config.defaultLang"}}:</span>
+        <select name="default_lang" id="default_lang" class="form-select">
+            <option value="ro" {{if eq defaultLang "ro"}}selected{{end}}>🇷🇴 Română</option>
+            <option value="en" {{if eq defaultLang "en"}}selected{{end}}>🇬🇧 English</option>
+        </select>
+    </label>
+
+    <label class="block my-2">
+		<span class="form-label">{{getText "config.testMaxMemKB"}}:</span>
+        <input type="number" id="test_max_mem" name="test_max_mem" class="form-input" value="{{testMaxMemMB}}" /> 
+        <span class="form-label">MB</span>
+    </label>
+
+    <label class="block my-2">
+		<span class="form-label">{{getText "config.globalMaxMemKB"}}:</span>
+        <input type="number" id="global_max_mem" name="global_max_mem" class="form-input" value="{{globalMaxMem}}" /> 
+        <span class="form-label">MB</span>
+    </label>
+
+    <label class="block my-2">
+		<span class="form-label">{{getText "config.numWorkers"}}:</span>
+        <input type="number" id="num_workers" name="num_workers" class="form-input" value="{{numWorkers}}" /> 
+    </label>
+</form>
+
+<script>
     document.getElementById("configForm").addEventListener("submit",async (e) => {
         e.preventDefault()
         const data = {
             default_lang: document.getElementById("default_lang").value,
-            grader: document.getElementById("grader_feature").checked,
-            signup: document.getElementById("signup_feature").checked,
-            pastes: document.getElementById("pastes_feature").checked,
-            all_subs: document.getElementById("all_subs_feature").checked,
-            ccDisclaimer: document.getElementById("cc_disclaimer_feature").checked,
-            frontPagePbs: document.getElementById("frontPagePbs_feature").checked,
             num_workers: document.getElementById("num_workers").value,
             test_max_mem: document.getElementById("test_max_mem").value * 1024,
             global_max_mem: document.getElementById("global_max_mem").value * 1024,
         };
         bundled.apiToast(await bundled.postCall("/admin/updateConfig", data))
     })
+</script>
+
+<form id="boolFlagsForm" class="segment-panel">
+    <h3>{{getText "boolFlags"}}</h3>
+    
+    <div class="mb-2" id="boolFlagsDiv"></div>
+
+    <button type="submit" class="btn btn-blue">{{getText "button.update"}}</button>
+</form>
+
+<script>
+    const flags = {{boolFlags}};
+    
+    (()=>{
+        const flagDiv = document.getElementById("boolFlagsDiv")
+        for(let flag of flags) {
+            let divNode = document.createElement("div");
+            divNode.classList.add("block");
+            let labelNode = document.createElement("label");
+            labelNode.classList.add("inline-flex", "items-center", "text-lg");
+            let spanNode = document.createElement("span");
+            spanNode.classList.add("ml-2")
+            spanNode.innerText = flag.human_name
+            let smallNode = document.createElement("span");
+            smallNode.classList.add("ml-2", "text-sm", "text-muted")
+            smallNode.innerText = `(${flag.internal_name})`
+            let inputNode = document.createElement("input");
+            inputNode.type = "checkbox"
+            inputNode.classList.add("form-checkbox")
+            inputNode.checked = flag.value
+            inputNode.dataset.name = flag.internal_name
+            inputNode.dataset.org_value = flag.value
+            labelNode.appendChild(inputNode)
+            labelNode.appendChild(spanNode)
+            labelNode.appendChild(smallNode)
+            divNode.appendChild(labelNode)
+            flagDiv.appendChild(divNode)
+        }
+    })()
+
+    function wrapFunc(func) {
+        return async (e) => {
+            if(!e.submitter) {
+            console.log(e.submitter)
+                return func(e)
+            }
+            console.log(1)
+            e.submitter.disabled = true
+            e.submitter.classList.add('btn-loading')
+            await func(e)
+            e.submitter.classList.remove('btn-loading')
+            e.submitter.disabled = false
+        }
+    }
+
+    document.getElementById("boolFlagsForm").addEventListener("submit", wrapFunc(async (e) => {
+        e.preventDefault()
+        let data = new Map()
+        for(let checkbox of document.getElementById("boolFlagsDiv").getElementsByTagName("input")) {
+            if(checkbox.checked != (checkbox.dataset.org_value === "true") ) {
+                data.set(checkbox.dataset.name, checkbox.checked)
+            }
+        }
+        // console.log(Object.fromEntries(data.entries()))
+        const res = await bundled.postCall("/admin/updateFlags", Object.fromEntries(data.entries()))
+        bundled.apiToast(res)
+        if(res.status === "success") {
+            for(let checkbox of document.getElementById("boolFlagsDiv").getElementsByTagName("input")) {
+                checkbox.dataset.org_value = checkbox.checked 
+            }
+        }
+    }))
 </script>
 
 {{ end }}

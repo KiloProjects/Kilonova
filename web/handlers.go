@@ -340,8 +340,9 @@ func (rt *Web) submissions() http.HandlerFunc {
 }
 
 // canViewAllSubs is just for the text in the navbar and the submissions page
+// TODO: Restrict on the backend, as well.
 func (rt *Web) canViewAllSubs(user *kilonova.UserBrief) bool {
-	if config.Features.AllSubs {
+	if AllSubsPage.Value() {
 		return true
 	}
 	return rt.base.IsProposer(user)

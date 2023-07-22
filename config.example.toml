@@ -22,13 +22,5 @@
  username = "USERNAME"
  password = "PASSWORD"
 
-[features]
- grader = true
- manual_signup = true
- pastes = true
- all_subs = true
- cc_disclaimer = true
- front_page_problems = true
-
 [frontend]
  root_problem_list = 5

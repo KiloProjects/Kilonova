@@ -11,7 +11,9 @@ import (
 )
 
 var (
-	SubForEveryoneConfig = config.GenFlag("config.behavior.everyone_subs", true)
+	SubForEveryoneConfig = config.GenFlag("behavior.everyone_subs", true, "Anyone can view others' source code")
+
+	PastesEnabled = config.GenFlag("feature.pastes.enabled", true, "Pastes")
 )
 
 // Submission stuff
@@ -405,7 +407,7 @@ func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission
 }
 
 func (s *BaseAPI) CreatePaste(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) (string, *StatusError) {
-	if !config.Features.Pastes {
+	if !PastesEnabled.Value() {
 		return "", kilonova.ErrFeatureDisabled
 	}
 	paste := &kilonova.SubmissionPaste{Submission: sub, Author: user}
@@ -416,7 +418,7 @@ func (s *BaseAPI) CreatePaste(ctx context.Context, sub *kilonova.Submission, use
 }
 
 func (s *BaseAPI) SubmissionPaste(ctx context.Context, id string) (*kilonova.SubmissionPaste, *StatusError) {
-	if !config.Features.Pastes {
+	if !PastesEnabled.Value() {
 		return nil, kilonova.ErrFeatureDisabled
 	}
 	paste, err := s.db.SubmissionPaste(ctx, id)
@@ -430,7 +432,7 @@ func (s *BaseAPI) SubmissionPaste(ctx context.Context, id string) (*kilonova.Sub
 }
 
 func (s *BaseAPI) DeletePaste(ctx context.Context, id string) *StatusError {
-	if !config.Features.Pastes {
+	if !PastesEnabled.Value() {
 		return kilonova.ErrFeatureDisabled
 	}
 	if err := s.db.DeleteSubPaste(ctx, id); err != nil {

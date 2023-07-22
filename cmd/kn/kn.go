@@ -22,6 +22,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var graderFeature = config.GenFlag("feature.grader.enabled", true, "Grader")
+
 func Kilonova() error {
 
 	// Setup context
@@ -43,7 +45,7 @@ func Kilonova() error {
 	defer base.Close()
 
 	// Initialize components
-	if config.Features.Grader {
+	if graderFeature.Value() { // TODO: Hot stopping/starting grader
 		grader, err := grader.NewHandler(ctx, base)
 		if err != nil {
 			zap.S().Fatal(err)

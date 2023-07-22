@@ -116,6 +116,7 @@ Before running `scripts/setup_crontab.sh`, make sure you modify your `DESTINATIO
  default_language = "ro"
  db_dsn = "sslmode=disable host=/var/run/postgresql dbname=kilonova user=<YOUR USERNAME> password=<YOUR PSQL PASSWORD> application_name=kilonova"
  test_max_mem_kb = 1048576 # 1gb limit for setting up tests
+ updates_webhook = "https://discord.com/api/webhooks/<WEBHOOK_ID>/<WEBHOOK_SECRET>" # Webhook for audit log updates
 
 [eval]
  isolatePath = "/usr/local/etc/isolate_bin"
@@ -123,18 +124,15 @@ Before running `scripts/setup_crontab.sh`, make sure you modify your `DESTINATIO
  num_concurrent = 3
  global_max_mem_kb = 1048576 # 1gb global memory limit
 
+ starting_box = 1 # If there are multiple kilonova instances active on the system, change to a multiple of 100, just to be safe 
+
 [email]
  host = "smtp.fastmail.com:587"
  username = "<SMTP USERNAME>"
  password = "<SMTP PASSWORD>"
 
-[features]
- grader = true
- manual_signup = true
- pastes = true
- all_subs = true
- cc_disclaimer = true
- front_page_problems = true
+[frontend]
+ root_problem_list = 1 # The problem list to show on the front page
  ```
 
 ## Finishing touches

@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	SignupEnabled = config.GenFlag("feature.platform.signup", true)
+	SignupEnabled = config.GenFlag("feature.platform.signup", true, "Manual signup")
 )
 
 // Login

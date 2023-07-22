@@ -1412,33 +1412,9 @@ ro = "Memorie maximă globală (worker sum usage)"
 en = "Number of workers"
 ro = "Numărul de workeri"
 
-[featureSet]
-en = "Feature set"
-ro = "Funcționalități"
-
-[featureSet.grader]
-en = "Grader"
-ro = "Evaluator"
-
-[featureSet.signup]
-en = "Manual signup"
-ro = "Signup manual"
-
-[featureSet.pastes]
-en = "Pastes"
-ro = "Paste-uri"
-
-[featureSet.ccDisclaimer]
-en = "Creative Commons disclaimer in footer"
-ro = "Disclaimer pt Creative Commons în footer"
-
-[featureSet.all_subs]
-en = "Anyone can view all submissions"
-ro = "Oricine poate vedea toate submisiile"
-
-[featureSet.frontPagePbs]
-en = "Show problems on front page"
-ro = "Arată listele de probleme pe pagina principală"
+[boolFlags]
+en = "Boolean flags"
+ro = "Flag-uri booleane"
 
 [tagDeleteConfirm]
 en = "Are you sure you want to delete this paste?"

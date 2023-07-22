@@ -182,8 +182,15 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 
 // ValidatePasteID puts the ID and the Paste in the router context
 func (rt *Web) ValidatePasteID(next http.Handler) http.Handler {
+	flg, ok := config.GetFlag[bool]("feature.pastes.enabled")
+	if !ok {
+		zap.S().Warn("Pastes feature flag not found")
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			rt.statusPage(w, r, 400, "Pastes are not available.")
+		})
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !config.Features.Pastes {
+		if !flg.Value() {
 			rt.statusPage(w, r, 404, "Feature has been disabled by administrator.")
 			return
 		}

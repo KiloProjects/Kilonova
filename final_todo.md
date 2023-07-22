@@ -6,8 +6,8 @@ TODO FOR 1.0:
 - [x] Blog support
     - [x] Proposer guide
 - [x] Polygon format
-- Use flag configuration properly (instead of features in config.toml)
-    - Show all options in admin dashboard
+- [x] Use flag configuration properly (instead of features in config.toml)
+    - [x] Show all options in admin dashboard
     - Force log in mode (disallow access to ALL resources if not authenticated)
 - Force username changes and allow changing usernames
     - With username history

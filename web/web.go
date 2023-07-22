@@ -42,7 +42,11 @@ const (
 )
 
 var (
-	CCDisclaimer = config.GenFlag("feature.frontend.cc_disclaimer", true)
+	CCDisclaimer = config.GenFlag("feature.frontend.cc_disclaimer", true, "CC disclaimer in footer")
+
+	AllSubsPage = config.GenFlag("feature.frontend.all_subs_page", true, "Anyone can view all submissions")
+
+	FrontPageProblems = config.GenFlag("feature.frontend.front_page_pbs", true, "Show problems on front page")
 )
 
 //go:embed static
@@ -544,6 +548,13 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			return rez
 		},
 
+		"intFlag": func(name string) int {
+			val, ok := config.GetFlagVal[int](name)
+			if !ok {
+				zap.S().Warnf("Flag with name %q is not int", name)
+			}
+			return val
+		},
 		"boolFlag": func(name string) bool {
 			val, ok := config.GetFlagVal[bool](name)
 			if !ok {
@@ -553,14 +564,12 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		},
 
 		// for admin configuration
-		"pastesEnabled": func() bool { return config.Features.Pastes },
-		"graderEnabled": func() bool { return config.Features.Grader },
-		"allSubsView":   func() bool { return config.Features.AllSubs },
-		"frontPagePbs":  func() bool { return config.Features.FrontPagePbs },
-		"defaultLang":   func() string { return config.Common.DefaultLang },
-		"testMaxMemMB":  func() int { return config.Common.TestMaxMemKB / 1024 },
-		"globalMaxMem":  func() int64 { return config.Eval.GlobalMaxMem / 1024 },
-		"numWorkers":    func() int { return config.Eval.NumConcurrent },
+		"defaultLang":  func() string { return config.Common.DefaultLang },
+		"testMaxMemMB": func() int { return config.Common.TestMaxMemKB / 1024 },
+		"globalMaxMem": func() int64 { return config.Eval.GlobalMaxMem / 1024 },
+		"numWorkers":   func() int { return config.Eval.NumConcurrent },
+
+		"boolFlags": config.GetFlags[bool],
 
 		// for problem edit page
 		"maxMemMB": func() float64 { return float64(config.Common.TestMaxMemKB) / 1024.0 },

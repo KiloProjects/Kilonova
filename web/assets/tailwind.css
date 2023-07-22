@@ -25,6 +25,13 @@
 	@apply dark:bg-[#333];
 }
 
+.btn-loading::before {
+	font-family: "Font Awesome 5 Free";
+	font-weight: 900;
+	@apply text-gray-600 dark:text-gray-200 mr-2 animate-spin;
+	content: "\f110";
+}
+
 .chroma > * {
 	word-break: break-all;
 }
