@@ -21,8 +21,8 @@
         <button id="test_del_button" class="btn btn-red block my-2"> {{getText "button.delete"}} </button>
     
         <div class="mb-2">
-            <a class="btn btn-blue" href="{{.Test.VisibleID}}/input" download>Download input</a>
-            <a class="btn btn-blue" href="{{.Test.VisibleID}}/output" download>Download output</a>
+            <a class="btn btn-blue" href="/assets/problem/{{.Problem.ID}}/test/{{.Test.VisibleID}}/input" download>Download input</a>
+            <a class="btn btn-blue" href="/assets/problem/{{.Problem.ID}}/test/{{.Test.VisibleID}}/output" download>Download output</a>
         </div>
     
         <form id="test_edit_form">

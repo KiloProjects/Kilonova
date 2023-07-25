@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
+	"fmt"
 	"net/http"
 	"path"
 	"strconv"
@@ -45,8 +46,8 @@ func (s *Assets) AssetsRouter() http.Handler {
 		r.Use(api.validateProblemID)
 		r.Use(api.validateProblemVisible)
 
-		// r.With(api.validateTestID).Get("/tests/{tID}/input", s.ServeTestInput)
-		// r.With(api.validateTestID).Get("/tests/{tID}/output", s.ServeTestOutput)
+		r.With(api.MustBeProposer, api.validateTestID).Get("/test/{tID}/input", s.ServeTestInput)
+		r.With(api.MustBeProposer, api.validateTestID).Get("/test/{tID}/output", s.ServeTestOutput)
 
 		r.With(api.validateAttachmentName).Get("/attachment/{aName}", s.ServeAttachment)
 		r.With(api.validateAttachmentID).Get("/attachmentByID/{aID}", s.ServeAttachment)
@@ -180,4 +181,34 @@ func (s *Assets) ServeSubtest(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rc.Close()
 	http.ServeContent(w, r, "subtest.out", time.Now(), rc)
+}
+
+func (s *Assets) ServeTestInput(w http.ResponseWriter, r *http.Request) {
+	rr, err := s.base.TestInput(util.Test(r).ID)
+	if err != nil {
+		zap.S().Warn(err)
+		http.Error(w, "Couldn't get test input", 500)
+		return
+	}
+	defer rr.Close()
+
+	tname := fmt.Sprintf("%d-%s.in", util.Test(r).VisibleID, util.Problem(r).TestName)
+
+	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=%q", tname))
+	http.ServeContent(w, r, tname, time.Unix(0, 0), rr)
+}
+
+func (s *Assets) ServeTestOutput(w http.ResponseWriter, r *http.Request) {
+	rr, err := s.base.TestOutput(util.Test(r).ID)
+	if err != nil {
+		zap.S().Warn(err)
+		http.Error(w, "Couldn't get test output", 500)
+		return
+	}
+	defer rr.Close()
+
+	tname := fmt.Sprintf("%d-%s.out", util.Test(r).VisibleID, util.Problem(r).TestName)
+
+	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=%q", tname))
+	http.ServeContent(w, r, tname, time.Unix(0, 0), rr)
 }

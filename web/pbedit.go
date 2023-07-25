@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/archive/test"
@@ -206,37 +204,6 @@ func (rt *Web) testEdit() func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (rt *Web) testInput() func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		rr, err := rt.base.TestInput(util.Test(r).ID)
-		if err != nil {
-			zap.S().Warn(err)
-			http.Error(w, "Couldn't get test input", 500)
-			return
-		}
-		defer rr.Close()
-
-		tname := fmt.Sprintf("%d-%s.in", util.Test(r).ID, util.Problem(r).TestName)
-
-		http.ServeContent(w, r, tname, time.Unix(0, 0), rr.(io.ReadSeeker))
-	}
-}
-func (rt *Web) testOutput() func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		rr, err := rt.base.TestOutput(util.Test(r).ID)
-		if err != nil {
-			zap.S().Warn(err)
-			http.Error(w, "Couldn't get test output", 500)
-			return
-		}
-		defer rr.Close()
-
-		tname := fmt.Sprintf("%d-%s.out", util.Test(r).ID, util.Problem(r).TestName)
-
-		http.ServeContent(w, r, tname, time.Unix(0, 0), rr.(io.ReadSeeker))
-	}
-}
-
 func (rt *Web) subtaskIndex() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/subtaskIndex.html", "problem/topbar.html", "problem/edit/subtaskSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -276,8 +243,6 @@ func (rt *Web) ProblemEditRouter(r chi.Router) {
 	r.Get("/test/archive", rt.testArchive())
 	r.Get("/test/add", rt.testAdd())
 	r.With(rt.TestIDValidator()).Get("/test/{tid}", rt.testEdit())
-	r.With(rt.TestIDValidator()).Get("/test/{tid}/input", rt.testInput())
-	r.With(rt.TestIDValidator()).Get("/test/{tid}/output", rt.testOutput())
 
 	r.Get("/subtasks", rt.subtaskIndex())
 	r.Get("/subtasks/add", rt.subtaskAdd())
