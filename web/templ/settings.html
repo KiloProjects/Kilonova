@@ -7,7 +7,7 @@
 <div class="segment-panel">
 	<h2> {{getText "updateBio"}} </h2>
 	<form id="bio_form">
-		<textarea id="newBio" class="form-textarea w-full mb-2" autocapitalize="sentences" autocomplete="off" maxlength="120" placeholder="Bio...">{{unescapeHTML $user.Bio}}</textarea>
+		<textarea id="newBio" class="form-textarea w-full mb-2" autocapitalize="sentences" autocomplete="off" placeholder="Bio...">{{unescapeHTML $user.Bio}}</textarea>
 		<button class="btn btn-blue" onclick="updateBio()">{{getText "button.update"}}</button>
 	</form>
 </div>
