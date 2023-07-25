@@ -60,14 +60,10 @@ func (s *API) MustBeProposer(next http.Handler) http.Handler {
 func (s *API) SetupSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, err := s.base.SessionUser(r.Context(), getAuthHeader(r))
-		if err != nil {
-			if !errors.Is(err, context.Canceled) {
+		if err != nil || user == nil {
+			if err != nil && !errors.Is(err, context.Canceled) {
 				zap.S().Warn(err)
 			}
-			next.ServeHTTP(w, r)
-			return
-		}
-		if user == nil {
 			next.ServeHTTP(w, r)
 			return
 		}

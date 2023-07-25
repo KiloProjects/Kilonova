@@ -143,6 +143,7 @@ func (s *API) processArchive(r *http.Request) *kilonova.StatusError {
 	s.testArchiveLock.Lock()
 	defer s.testArchiveLock.Unlock()
 	r.ParseMultipartForm(20 * 1024 * 1024)
+	defer cleanupMultipart(r)
 
 	if r.MultipartForm == nil || r.MultipartForm.File == nil {
 		return kilonova.Statusf(400, "Missing archive")

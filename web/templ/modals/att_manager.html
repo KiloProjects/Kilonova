@@ -28,7 +28,7 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
         cPrivate.checked = true
         cExec.checked = true
     }
-    if(name.toLowerCase().startsWith("lgrader")) {
+    if(name.toLowerCase().startsWith("lgrader") || name.toLowerCase().startsWith("_grader")) {
         if(cVisible.checked === false || cExec.checked === true) {
             isChanging = true;
         }
@@ -41,6 +41,14 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
         }
         cVisible.checked = true
         cExec.checked = true
+    }
+    if(name == ".output_only") {
+        if(cVisible.checked != false || cExec.checked != true || cPrivate.checked != true) {
+            isChanging = true
+        }
+        cVisible.checked = false
+        cExec.checked = true
+        cPrivate.checked = true
     }
     if(isChanging) {
         bundled.createToast({status: "info", description: bundled.getText("att_suggest_text")})

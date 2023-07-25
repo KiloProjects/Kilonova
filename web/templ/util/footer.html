@@ -23,8 +23,8 @@
 			<div class="h-auto mb-2">
 				<div class="text-lg">{{getText "otherInfo"}}</div>
 				<ul>
-					<li><a class="black-anchor" href="https://kilonova.ro/docs/CHANGELOG"><i class="fas fa-fw fa-code-branch"></i> Kilonova {{version}}</a></li>
-					{{if debug}}<li><span class="black-anchor"><i class="text-red-600 fas fa-fw fa-exclamation-triangle"></i> Debug Mode active</span></li>{{end}}
+					<li><span class="black-span"><i class="fas fa-fw fa-code-branch"></i> Kilonova {{version}}</span></li>
+					{{if debug}}<li><span class="black-span"><i class="text-red-600 fas fa-fw fa-exclamation-triangle"></i> Debug Mode active</span></li>{{end}}
 					<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="https://discord.gg/Qa6Ytgh"><i class="fab fa-fw fa-discord"></i> KiloProjects Discord</a></li>
 					<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="https://github.com/KiloProjects/Kilonova"><i class="fab fa-fw fa-github"></i> GitHub</a></li>
 					<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="mailto:admin@kilonova.ro?subject=Contact"><i class="fas fa-fw fa-envelope"></i> Contact</a></li>
@@ -35,12 +35,12 @@
                 <div class="text-lg">{{getText "credits"}}</div>
                 <ul>
                     <li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="https://github.com/AlexVasiluta"> Platform made with <i class="fas fa-fw fa-heart"></i> by Alex Vasiluță </a></li>
-                    <li class="black-anchor"> Problems generously uploaded by the Kilonova community</li>
+                    <li class="black-span"> Problems generously uploaded by the Kilonova community</li>
                     <li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="https://github.com/Secret-chest"> Favicon by Secret-chest </a></li>
                     {{ if (boolFlag "feature.frontend.cc_disclaimer") }}
                         {{$disclaimerImg := hashedName "static/by-nc-sa.eu.png" -}}
                         <li class="black-anchor">
-                            Cu excepția cazurilor unde este specificat diferit, conținutul platformei este publicat sub licența <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>. Vedeți <a href="/docs/CREATIVE-COMMONS">aici</a> mai multe detalii.
+                            Cu excepția cazurilor unde este specificat diferit, conținutul platformei este publicat sub licența <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>. Vedeți <a href="https://kilonova.ro/posts/creative-commons">aici</a> mai multe detalii.
                             <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">
                                 <img alt="Creative Commons Licence" style="border-width:0" width="88" height="31" src="/{{$disclaimerImg}}" />
                             </a>

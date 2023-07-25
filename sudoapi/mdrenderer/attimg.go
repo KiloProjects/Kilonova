@@ -16,21 +16,21 @@ import (
 	"go.uber.org/zap"
 )
 
-// Attachments are of the form ~[name.xyz]
+// Image attachments are of the form ~[name.xyz]
 
 var _ goldmark.Extender = &attNode{}
-var _ renderer.NodeRenderer = &attachmentRenderer{}
-var _ parser.InlineParser = &attachmentParser{}
+var _ renderer.NodeRenderer = &imgAttRenderer{}
+var _ parser.InlineParser = &imgAttParser{}
 
-var attNodeKind = ast.NewNodeKind("attachment")
+var attNodeKind = ast.NewNodeKind("img_att")
 
-type attachmentParser struct{}
+type imgAttParser struct{}
 
-func (attachmentParser) Trigger() []byte {
+func (imgAttParser) Trigger() []byte {
 	return []byte{'~'}
 }
 
-func (attachmentParser) Parse(parent ast.Node, block text.Reader, pc parser.Context) ast.Node {
+func (imgAttParser) Parse(parent ast.Node, block text.Reader, pc parser.Context) ast.Node {
 	line, _ := block.PeekLine()
 	if len(line) < 2 {
 		return nil
@@ -49,16 +49,16 @@ func (attachmentParser) Parse(parent ast.Node, block text.Reader, pc parser.Cont
 	}
 	block.Advance(i + 1)
 	fileName := line[2:i]
-	return &AttachmentNode{Filename: string(fileName)}
+	return &ImageAttNode{Filename: string(fileName)}
 }
 
-type attachmentRenderer struct{}
+type imgAttRenderer struct{}
 
-func (att *attachmentRenderer) RegisterFuncs(rd renderer.NodeRendererFuncRegisterer) {
+func (att *imgAttRenderer) RegisterFuncs(rd renderer.NodeRendererFuncRegisterer) {
 	rd.Register(attNodeKind, att.renderAttachment)
 }
 
-func (att *attachmentRenderer) renderAttachment(writer util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
+func (att *imgAttRenderer) renderAttachment(writer util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
 	if !entering {
 		return ast.WalkContinue, nil
 	}
@@ -67,7 +67,7 @@ func (att *attachmentRenderer) renderAttachment(writer util.BufWriter, source []
 	width := ""
 	var inline bool
 
-	node := n.(*AttachmentNode)
+	node := n.(*ImageAttNode)
 	parts := strings.Split(node.Filename, "|")
 	name := parts[0]
 	if len(parts) > 1 {
@@ -90,18 +90,7 @@ func (att *attachmentRenderer) renderAttachment(writer util.BufWriter, source []
 		}
 	}
 	ctx, ok := n.OwnerDocument().Meta()["ctx"].(*kilonova.RenderContext)
-	var link string
-	if !ok || ctx == nil || (ctx.Problem == nil && ctx.BlogPost == nil) {
-		link = url.PathEscape(name)
-	} else {
-		if ctx.Problem != nil {
-			link = fmt.Sprintf("/problems/%d/attachments/%s", ctx.Problem.ID, url.PathEscape(name))
-		} else if ctx.BlogPost != nil {
-			link = fmt.Sprintf("/posts/%s/attachments/%s", ctx.BlogPost.Slug, url.PathEscape(name))
-		} else {
-			zap.S().Warn("WTF")
-		}
-	}
+	link := attachmentURL(ctx, ok, name)
 
 	extra := ""
 	if inline {
@@ -117,20 +106,36 @@ func (att *attachmentRenderer) renderAttachment(writer util.BufWriter, source []
 type attNode struct{}
 
 func (*attNode) Extend(md goldmark.Markdown) {
-	md.Renderer().AddOptions(renderer.WithNodeRenderers(util.Prioritized(&attachmentRenderer{}, 900)))
-	md.Parser().AddOptions(parser.WithInlineParsers(util.Prioritized(&attachmentParser{}, 900)))
+	md.Renderer().AddOptions(renderer.WithNodeRenderers(util.Prioritized(&imgAttRenderer{}, 900)))
+	md.Parser().AddOptions(parser.WithInlineParsers(util.Prioritized(&imgAttParser{}, 900)))
 }
 
-type AttachmentNode struct {
+type ImageAttNode struct {
 	ast.BaseInline
 
 	Filename string
 }
 
-func (yt *AttachmentNode) Dump(source []byte, level int) {
-	ast.DumpHelper(yt, source, level, map[string]string{"filename": yt.Filename}, nil)
+func (att *ImageAttNode) Dump(source []byte, level int) {
+	ast.DumpHelper(att, source, level, map[string]string{"filename": att.Filename}, nil)
 }
 
-func (yt *AttachmentNode) Kind() ast.NodeKind {
+func (att *ImageAttNode) Kind() ast.NodeKind {
 	return attNodeKind
+}
+
+func attachmentURL(ctx *kilonova.RenderContext, okCtx bool, name string) string {
+	if !okCtx || ctx == nil {
+		return url.PathEscape(name)
+	}
+	if ctx.Problem != nil {
+		return fmt.Sprintf("/assets/problem/%d/attachment/%s", ctx.Problem.ID, url.PathEscape(name))
+	}
+
+	if ctx.BlogPost != nil {
+		return fmt.Sprintf("/assets/blogPost/%s/attachment/%s", ctx.BlogPost.Slug, url.PathEscape(name))
+	}
+
+	zap.S().Warn("WTF")
+	return url.PathEscape(name)
 }

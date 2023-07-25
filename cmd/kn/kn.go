@@ -127,6 +127,7 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 	*/
 
 	r.Mount("/api", api.New(base).Handler())
+	r.Mount("/assets", api.NewAssets(base).AssetsRouter())
 
 	if templWeb {
 		r.Mount("/", web.NewWeb(config.Common.Debug, base).Handler())

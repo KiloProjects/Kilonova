@@ -1018,7 +1018,7 @@ en = 'Already have an account? <a href="/login">Log in</a>!'
 ro = 'Ai deja cont? <a href="/login">Loghează-te</a>!'
 
 [authenticate]
-en = "Authenticate"
+en = "Log in"
 ro = "Autentificare"
 
 [resetSubs]

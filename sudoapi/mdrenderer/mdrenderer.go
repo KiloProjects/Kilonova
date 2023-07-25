@@ -14,6 +14,10 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
+var (
+	rctxKey = parser.NewContextKey()
+)
+
 // LocalRenderer is a local markdown renderer. It does not depend on any external services but it does not support mathjax rendering or any extensions to the markdown standard I intend to make.
 type LocalRenderer struct {
 	md goldmark.Markdown
@@ -21,7 +25,11 @@ type LocalRenderer struct {
 
 func (r *LocalRenderer) Render(src []byte, ctx *kilonova.RenderContext) ([]byte, error) {
 	var buf bytes.Buffer
-	doc := r.md.Parser().Parse(text.NewReader(src))
+
+	pctx := parser.NewContext()
+	pctx.Set(rctxKey, ctx)
+
+	doc := r.md.Parser().Parse(text.NewReader(src), parser.WithContext(pctx))
 	doc.OwnerDocument().Meta()["ctx"] = ctx
 	err := r.md.Renderer().Render(&buf, src, doc)
 	return buf.Bytes(), err
@@ -37,6 +45,7 @@ func NewLocalRenderer() *LocalRenderer {
 					chtml.WithClasses(true),
 				),
 			),
+			&LinkConv{},
 		),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID(), parser.WithAttribute()),
 		goldmark.WithRendererOptions(html.WithHardWraps(), html.WithXHTML()),

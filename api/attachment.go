@@ -13,6 +13,7 @@ import (
 
 func (s *API) createAttachment(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(50 * 1024 * 1024) // 50MB
+	defer cleanupMultipart(r)
 	var args struct {
 		Visible bool `json:"visible"`
 		Private bool `json:"private"`
@@ -89,8 +90,15 @@ func (s *API) bulkDeleteAttachments(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Deleted selected attachments")
 }
 
+func cleanupMultipart(r *http.Request) {
+	if err := r.MultipartForm.RemoveAll(); err != nil {
+		zap.S().Warn(err)
+	}
+}
+
 func (s *API) updateAttachmentData(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(20 * 1024 * 1024)
+	defer cleanupMultipart(r)
 	var args struct {
 		ID int `json:"id"`
 

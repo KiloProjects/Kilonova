@@ -1,5 +1,5 @@
 import { h, Fragment, render, Component } from "preact";
-import { useEffect, useState } from "preact/hooks";
+import { useState } from "preact/hooks";
 import register from "preact-custom-element";
 import { prettyLanguages } from "../langs";
 
@@ -205,7 +205,18 @@ function verdictString(verdict: string): string {
 	});
 }
 
-export function TestTable({ subtests, subtasks, problem_editor }: { subtests: SubTest[]; subtasks: SubmissionSubTask[]; problem_editor: boolean }) {
+// If subtask is not null, then it's inside a subtask view, so filter and show tests only for that subtask
+export function TestTable({
+	subtests,
+	subtasks,
+	problem_editor,
+	subtask,
+}: {
+	subtests: SubTest[];
+	subtasks: SubmissionSubTask[];
+	problem_editor: boolean;
+	subtask?: SubmissionSubTask;
+}) {
 	function testSubTasks(subtestID) {
 		let stks: number[] = [];
 		for (let st of subtasks) {
@@ -217,7 +228,7 @@ export function TestTable({ subtests, subtasks, problem_editor }: { subtests: Su
 	}
 
 	return (
-		<table class="kn-table mb-2">
+		<table class={`kn-table ${typeof subtask !== "undefined" ? "default-background" : ""} mb-2`}>
 			<thead>
 				<tr>
 					<th class="py-2" scope="col">
@@ -232,46 +243,54 @@ export function TestTable({ subtests, subtasks, problem_editor }: { subtests: Su
 				</tr>
 			</thead>
 			<tbody>
-				{subtests.map((subtest) => (
-					<tr class="kn-table-row" key={"kn_test" + subtest.id}>
-						<th class="py-1" scope="row" id={`test-${subtest.visible_id}`}>
-							{subtest.visible_id}
-						</th>
-						{subtest.done ? (
-							<>
-								<td>{Math.floor(subtest.time * 1000)} ms</td>
-								<td>{sizeFormatter(subtest.memory * 1024, 1, true)}</td>
-								<td>{verdictString(subtest.verdict)}</td>
-								<td class="text-black" style={{ backgroundColor: getGradient(subtest.score, 100) }}>
-									{subtasks.length > 0 ? (
-										<>
-											{subtest.score}% {getText("correct")}
-										</>
-									) : (
-										<>
-											{Math.round((subtest.max_score * subtest.score) / 100.0)} / {subtest.max_score}
-										</>
-									)}
-								</td>
-							</>
-						) : (
-							<>
-								<td></td>
-								<td></td>
-								<td>
-									<div class="fas fa-spinner animate-spin" role="status"></div> {getText("waiting")}
-								</td>
-								<td>-</td>
-							</>
-						)}
-						{subtasks.length > 0 && <td>{testSubTasks(subtest.id).join(", ")}</td>}
-						{problem_editor && (
-							<td>
-								<a href={"/proposer/get/subtest_output/" + subtest.id}>{getText("output")}</a>
-							</td>
-						)}
-					</tr>
-				))}
+				{subtests
+					.filter((subtest) => typeof subtask === "undefined" || subtask.subtests.includes(subtest.id))
+					.map((subtest) => {
+						let maxScore = subtest.max_score;
+						if (typeof subtask !== "undefined") {
+							maxScore = subtask.score;
+						}
+						return (
+							<tr class="kn-table-row" key={"kn_test" + subtest.id}>
+								<th class="py-1" scope="row" id={`test-${subtest.visible_id}`}>
+									{subtest.visible_id}
+								</th>
+								{subtest.done ? (
+									<>
+										<td>{Math.floor(subtest.time * 1000)} ms</td>
+										<td>{sizeFormatter(subtest.memory * 1024, 1, true)}</td>
+										<td>{verdictString(subtest.verdict)}</td>
+										<td class="text-black" style={{ backgroundColor: getGradient(subtest.score, 100) }}>
+											{subtasks.length > 0 ? (
+												<>
+													{subtest.score}% {getText("correct")}
+												</>
+											) : (
+												<>
+													{Math.round((maxScore * subtest.score) / 100.0)} / {maxScore}
+												</>
+											)}
+										</td>
+									</>
+								) : (
+									<>
+										<td></td>
+										<td></td>
+										<td>
+											<div class="fas fa-spinner animate-spin" role="status"></div> {getText("waiting")}
+										</td>
+										<td>-</td>
+									</>
+								)}
+								{subtasks.length > 0 && <td>{testSubTasks(subtest.id).join(", ")}</td>}
+								{problem_editor && (
+									<td>
+										<a href={"/assets/subtest/" + subtest.id}>{getText("output")}</a>
+									</td>
+								)}
+							</tr>
+						);
+					})}
 			</tbody>
 		</table>
 	);
@@ -309,55 +328,7 @@ export function SubTask({
 					</span>
 				)}
 			</summary>
-			<table class="kn-table default-background my-2">
-				<thead>
-					<tr>
-						<th class="py-2" scope="col">
-							{getText("id")}
-						</th>
-						<th scope="col">{getText("time")}</th>
-						<th scope="col">{getText("memory")}</th>
-						<th scope="col">{getText("verdict")}</th>
-						<th scope="col">{getText("score")}</th>
-						{problem_editor && <th scope="col">{getText("output")}</th>}
-					</tr>
-				</thead>
-				<tbody>
-					{subtests
-						.filter((subtest) => subtask.subtests.includes(subtest.id))
-						.map((subtest) => (
-							<tr class="kn-table-row" key={"kn_test" + subtest.id}>
-								<th class="py-1" scope="row" id={`test-${subtest.visible_id}`}>
-									{subtest.visible_id}
-								</th>
-								{subtest.done ? (
-									<>
-										<td>{Math.floor(subtest.time * 1000)} ms</td>
-										<td>{sizeFormatter(subtest.memory * 1024, 1, true)}</td>
-										<td>{verdictString(subtest.verdict)}</td>
-										<td class="text-black" style={{ backgroundColor: getGradient(subtest.score, 100) }}>
-											{Math.round((subtask.score * subtest.score) / 100.0)} / {subtask.score}
-										</td>
-									</>
-								) : (
-									<>
-										<td></td>
-										<td></td>
-										<td>
-											<div class="fas fa-spinner animate-spin" role="status"></div> {getText("waiting")}
-										</td>
-										<td>-</td>
-									</>
-								)}
-								{problem_editor && (
-									<td>
-										<a href={"/proposer/get/subtest_output/" + subtest.id}>{getText("output")}</a>
-									</td>
-								)}
-							</tr>
-						))}
-				</tbody>
-			</table>
+			<TestTable subtests={subtests} subtask={subtask} problem_editor={problem_editor} subtasks={[]} />
 		</details>
 	);
 }

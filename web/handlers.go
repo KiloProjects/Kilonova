@@ -3,12 +3,10 @@ package web
 import (
 	"bytes"
 	"context"
-	"encoding/csv"
 	"errors"
 	"fmt"
 	"html/template"
 	"io"
-	"io/fs"
 	"net/http"
 	"path"
 	"slices"
@@ -878,61 +876,6 @@ func (rt *Web) contestLeaderboard() http.HandlerFunc {
 	}
 }
 
-func (rt *Web) contestLeaderboardCSV(w http.ResponseWriter, r *http.Request) {
-	ld, err := rt.base.ContestLeaderboard(r.Context(), util.Contest(r).ID)
-	if err != nil {
-		http.Error(w, err.Error(), err.Code)
-		return
-	}
-	var buf bytes.Buffer
-	wr := csv.NewWriter(&buf)
-
-	// Header
-	header := []string{"username"}
-	for _, pb := range ld.ProblemOrder {
-		name, ok := ld.ProblemNames[pb]
-		if !ok {
-			zap.S().Warn("Invalid rt.base.ContestLeaderboard output")
-			http.Error(w, "Invalid internal data", 500)
-			continue
-		}
-		header = append(header, name)
-	}
-	header = append(header, "total")
-	if err := wr.Write(header); err != nil {
-		zap.S().Warn(err)
-		http.Error(w, "Couldn't write CSV", 500)
-		return
-	}
-	for _, entry := range ld.Entries {
-		line := []string{entry.User.Name}
-		for _, pb := range ld.ProblemOrder {
-			score, ok := entry.ProblemScores[pb]
-			if !ok {
-				line = append(line, "-")
-			} else {
-				line = append(line, strconv.Itoa(score))
-			}
-		}
-
-		line = append(line, strconv.Itoa(entry.TotalScore))
-		if err := wr.Write(line); err != nil {
-			zap.S().Warn(err)
-			http.Error(w, "Couldn't write CSV", 500)
-			return
-		}
-	}
-
-	wr.Flush()
-	if err := wr.Error(); err != nil {
-		zap.S().Warn(err)
-		http.Error(w, "Couldn't write CSV", 500)
-		return
-	}
-
-	http.ServeContent(w, r, "leaderboard.csv", time.Now(), bytes.NewReader(buf.Bytes()))
-}
-
 func (rt *Web) selfProfile() http.HandlerFunc {
 	templ := rt.parse(nil, "profile.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -1145,55 +1088,6 @@ func (rt *Web) blogPostAttachment(w http.ResponseWriter, r *http.Request) {
 	rt.serveAttachment(w, r, att, &kilonova.RenderContext{BlogPost: util.BlogPost(r)})
 }
 
-func (rt *Web) docs() http.HandlerFunc {
-	templ := rt.parse(nil, "util/mdrender.html")
-	return func(w http.ResponseWriter, r *http.Request) {
-		p := strings.TrimPrefix(r.URL.Path, "/")
-		stat, err := fs.Stat(kilonova.Docs, p)
-		_, err1 := fs.Stat(kilonova.Docs, p+".md")
-		if err != nil && err1 != nil {
-			rt.statusPage(w, r, 404, "Ce încerci să accesezi nu există")
-			return
-		} else if err1 == nil {
-			file, err := kilonova.Docs.ReadFile(p + ".md")
-			if err != nil {
-				if errors.Is(err, fs.ErrNotExist) {
-					rt.statusPage(w, r, 404, "Pagina nu există")
-					return
-				}
-				zap.S().Warn("Can't open docs", err)
-				rt.statusPage(w, r, 500, "N-am putut încărca pagina")
-				return
-			}
-
-			t, err1 := rt.base.RenderMarkdown(file, nil)
-			if err1 != nil {
-				zap.S().Warn("Can't render docs", err1)
-				rt.statusPage(w, r, 500, "N-am putut randa pagina")
-				return
-			}
-
-			rt.runTempl(w, r, templ, &MarkdownParams{GenContext(r), template.HTML(t), p})
-			return
-		}
-
-		if stat.IsDir() {
-			rt.statusPage(w, r, 400, "Can't read dir")
-		} else {
-			file, err := kilonova.Docs.ReadFile(p)
-			if err != nil {
-				if errors.Is(err, fs.ErrNotExist) {
-					http.Error(w, "Pagina nu există", 404)
-					return
-				}
-				http.Error(w, "N-am putut încărca pagina", 500)
-				return
-			}
-			http.ServeContent(w, r, path.Base(p), time.Now(), bytes.NewReader(file))
-		}
-	}
-}
-
 func (rt *Web) chromaCSS() http.HandlerFunc {
 	formatter := chtml.New(chtml.WithClasses(true), chtml.TabWidth(4)) // Identical to mdrenderer.go
 	var lightBuf, darkBuf bytes.Buffer
@@ -1220,38 +1114,6 @@ func (rt *Web) chromaCSS() http.HandlerFunc {
 
 		http.ServeContent(w, r, "chroma.css", createTime, bytes.NewReader(rez.Code))
 	}
-}
-
-func (rt *Web) subtestOutput(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "st_id"))
-	if err != nil {
-		http.Error(w, "Bad ID", 400)
-		return
-	}
-	subtest, err1 := rt.base.SubTest(r.Context(), id)
-	if err1 != nil {
-		http.Error(w, "Invalid subtest", 400)
-		return
-	}
-	sub, err1 := rt.base.Submission(r.Context(), subtest.SubmissionID, util.UserBrief(r))
-	if err1 != nil {
-		zap.S().Warn(err1)
-		http.Error(w, "You aren't allowed to do that", 500)
-		return
-	}
-
-	if !rt.base.IsProblemEditor(util.UserBrief(r), sub.Problem) {
-		http.Error(w, "You aren't allowed to do that!", http.StatusUnauthorized)
-		return
-	}
-
-	rc, err := rt.base.SubtestReader(subtest.ID)
-	if err != nil {
-		http.Error(w, "The subtest may have been purged as a routine data-saving process", 404)
-		return
-	}
-	defer rc.Close()
-	http.ServeContent(w, r, "subtest.out", time.Now(), rc)
 }
 
 func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, data any) {

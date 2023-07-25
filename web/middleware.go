@@ -294,17 +294,9 @@ func (rt *Web) mustBeContestEditor(next http.Handler) http.Handler {
 	})
 }
 
-func getSessCookie(r *http.Request) string {
-	cookie, err := r.Cookie("kn-sessionid")
-	if err != nil {
-		return ""
-	}
-	return cookie.Value
-}
-
 func (rt *Web) initSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := rt.base.SessionUser(r.Context(), getSessCookie(r))
+		user, err := rt.base.SessionUser(r.Context(), rt.base.GetSessCookie(r))
 		if err != nil || user == nil {
 			next.ServeHTTP(w, r)
 			return

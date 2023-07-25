@@ -55,9 +55,7 @@ class Client:
         return APIResponse(val["status"], val["data"])
 
     def post(self, path: str, data: Optional[dict] = None) -> APIResponse:
-        res = requests.post(
-            urljoin(self.base, path), data=data, headers={"Authorization": self.token}
-        )
+        res = requests.post(urljoin(self.base, path), data=data, headers={"Authorization": self.token})
         val = res.json()
         return APIResponse(val["status"], val["data"])
 
@@ -101,7 +99,7 @@ class Client:
 
     def leaderboard_csv(self, contest_id: int) -> pd.DataFrame:
         res = requests.get(
-            urljoin(self.base, f"/contests/{contest_id}/leaderboard.csv"),
+            urljoin(self.base, f"/assets/contest/{contest_id}/leaderboard.csv"),
             cookies={"kn-sessionid": self.token},
         )
         content = res.content.decode("utf-8")
@@ -111,11 +109,7 @@ class Client:
 
     def deanonymized_leaderboard(self, bundle: UserBundle) -> pd.DataFrame:
         df = self.leaderboard_csv(bundle.contest_id)
-        df["username"] = df["username"].map(
-            lambda x: bundle.created_users.get(x, [x, "no_pwd"])[0]
-            if bundle.created_users is not None
-            else x
-        )
+        df["username"] = df["username"].map(lambda x: bundle.created_users.get(x, [x, "no_pwd"])[0] if bundle.created_users is not None else x)
         return df
 
     def generate_users(self, bundle: UserBundle) -> UserBundle:
@@ -167,9 +161,7 @@ Parolă: {user[1]}
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        prog="kn_scripter", description="Scripting for Kilonova"
-    )
+    parser = argparse.ArgumentParser(prog="kn_scripter", description="Scripting for Kilonova")
     parser.add_argument("-u", "--username", required=True)
     parser.add_argument("-p", "--password", required=True)
     parser.add_argument("-bp", "--bundle_path")

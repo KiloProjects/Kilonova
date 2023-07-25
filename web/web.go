@@ -84,6 +84,8 @@ func (rt *Web) problemRouter(r chi.Router) {
 	r.Get("/submissions", rt.problemSubmissions())
 	r.With(rt.mustBeAuthed).Get("/submit", rt.problemSubmit())
 	r.With(rt.mustBeProblemEditor).Route("/edit", rt.ProblemEditRouter)
+
+	// TODO: Remove after all references on main are removed
 	r.Get("/attachments/{aid}", rt.problemAttachment)
 }
 
@@ -141,7 +143,6 @@ func (rt *Web) Handler() http.Handler {
 			r.Get("/communication", rt.contestCommunication())
 
 			r.Get("/leaderboard", rt.contestLeaderboard())
-			r.With(rt.mustBeContestEditor).Get("/leaderboard.csv", rt.contestLeaderboardCSV)
 
 			r.Route("/manage", func(r chi.Router) {
 				r.Use(rt.mustBeContestEditor)
@@ -164,8 +165,6 @@ func (rt *Web) Handler() http.Handler {
 		r.With(rt.ValidateListID).Get("/{id}", rt.pbListView())
 	})
 
-	r.Mount("/docs", rt.docs())
-
 	r.With(rt.mustBeAdmin).Route("/admin", func(r chi.Router) {
 		r.Get("/", rt.justRender("admin/admin.html"))
 		r.Get("/users", rt.justRender("admin/users.html"))
@@ -185,7 +184,7 @@ func (rt *Web) Handler() http.Handler {
 			"proposer/index.html",
 			"proposer/createproblem.html", "proposer/createpblist.html", "proposer/createcontest.html",
 		))
-		r.Get("/get/subtest_output/{st_id}", rt.subtestOutput)
+		// r.Get("/get/subtest_output/{st_id}", rt.subtestOutput)
 	})
 
 	// Email verification
@@ -203,6 +202,7 @@ func (rt *Web) Handler() http.Handler {
 			zap.S().Warn("Could not open robots.txt")
 			return
 		}
+		defer file.Close()
 		http.ServeContent(w, r, "robots.txt", time.Now(), file.(io.ReadSeeker))
 	})
 

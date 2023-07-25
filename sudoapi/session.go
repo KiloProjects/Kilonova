@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -57,4 +58,12 @@ func (s *BaseAPI) ExtendSession(ctx context.Context, sid string) (time.Time, *St
 		return time.Now(), kilonova.WrapError(err, "Couldn't extend session")
 	}
 	return newExpiration, nil
+}
+
+func (s *BaseAPI) GetSessCookie(r *http.Request) string {
+	cookie, err := r.Cookie("kn-sessionid")
+	if err != nil {
+		return ""
+	}
+	return cookie.Value
 }
