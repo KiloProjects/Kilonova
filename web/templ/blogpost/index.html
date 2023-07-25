@@ -17,7 +17,17 @@
 
     {{ range .Posts }}
         <div class="segment-panel">
-            <h2 class="mb-1"><a href="/posts/{{.Slug}}">{{.Title}}</a> {{with index $authors .AuthorID}} {{getText "posted_by" .Name}} {{end}}</h2>
+            <h2 class="mb-1">
+                <a href="/posts/{{.Slug}}">{{.Title}}</a> 
+                {{with index $authors .AuthorID}} {{getText "posted_by" .Name}} {{end}} 
+                {{if authedUser}}{{if or (authedUser.Admin) (eq authedUser.ID .AuthorID)}}
+                    {{- if .Visible }}
+                        <span class="badge badge-green">{{ getText "published" }}</span>
+                    {{- else -}}
+                        <span class="badge badge-red">{{ getText "unpublished" }}</span>
+                    {{- end -}}
+                {{end}}{{end}}
+            </h2>
         </div>
     {{ else }}
         {{getText "noPostFound"}}
