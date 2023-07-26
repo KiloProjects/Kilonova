@@ -53,8 +53,8 @@ func (s *Assets) AssetsRouter() http.Handler {
 		r.With(api.validateAttachmentID).Get("/attachmentByID/{aID}", s.ServeAttachment)
 	})
 
-	r.Route("/blogPost/{bpID}", func(r chi.Router) {
-		r.Use(api.validateBlogPostID)
+	r.Route("/blogPost/{bpName}", func(r chi.Router) {
+		r.Use(api.validateBlogPostName)
 		r.Use(api.validateBlogPostVisible)
 
 		r.With(api.validateAttachmentName).Get("/attachment/{aName}", s.ServeAttachment)

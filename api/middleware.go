@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
@@ -238,6 +239,18 @@ func (s *API) validateBlogPostID(next http.Handler) http.Handler {
 			return
 		}
 		post, err1 := s.base.BlogPost(r.Context(), bpID)
+		if err1 != nil {
+			errorData(w, "blog post does not exist", http.StatusBadRequest)
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.BlogPostKey, post)))
+	})
+}
+
+func (s *API) validateBlogPostName(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		bpName := strings.TrimSpace(chi.URLParam(r, "bpName"))
+		post, err1 := s.base.BlogPostBySlug(r.Context(), bpName)
 		if err1 != nil {
 			errorData(w, "blog post does not exist", http.StatusBadRequest)
 			return
