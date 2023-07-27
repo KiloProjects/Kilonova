@@ -13,6 +13,22 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
+
+type logLevel int
+
+const (
+	logLevelSystem logLevel = iota
+	logLevelImportant
+	logLevelWarning
+	logLevelInfo
+	logLevelVerbose
+)
+
+var (
+	ImportantUpdatesWebhook = config.GenFlag[string]("admin.important_webhook", "", "Webhook URL for audit log-level events")
+	VerboseUpdatesWebhook   = config.GenFlag[string]("admin.verbose_webhook", "", "Webhook URL for verbose platform information")
 )
 
 func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) *StatusError {
@@ -80,23 +96,32 @@ func (s *BaseAPI) SetProposer(ctx context.Context, userID int, toSet bool) *Stat
 type logEntry struct {
 	Message string
 	Author  *kilonova.UserBrief
-	System  bool
+
+	Level logLevel
 }
 
-func (s *BaseAPI) LogSystemAction(ctx context.Context, msg string) {
-	s.logChan <- &logEntry{
-		Message: msg,
-		Author:  nil,
-		System:  true,
-	}
-}
-
-func (s *BaseAPI) LogUserAction(ctx context.Context, msg string, args ...any) {
+func (s *BaseAPI) logAction(ctx context.Context, level logLevel, msg string, args ...any) {
 	s.logChan <- &logEntry{
 		Message: fmt.Sprintf(msg, args...),
 		Author:  util.UserBriefContext(ctx),
-		System:  false,
+		Level:   level,
 	}
+}
+
+func (s *BaseAPI) LogSystemAction(ctx context.Context, msg string, args ...any) {
+	s.logAction(ctx, logLevelSystem, msg, args...)
+}
+
+func (s *BaseAPI) LogUserAction(ctx context.Context, msg string, args ...any) {
+	s.logAction(ctx, logLevelImportant, msg, args...)
+}
+
+func (s *BaseAPI) LogInfo(ctx context.Context, msg string, args ...any) {
+	s.logAction(ctx, logLevelInfo, msg, args...)
+}
+
+func (s *BaseAPI) LogVerbose(ctx context.Context, msg string, args ...any) {
+	s.logAction(ctx, logLevelVerbose, msg, args...)
 }
 
 func (s *BaseAPI) GetAuditLogs(ctx context.Context, count int, offset int) ([]*kilonova.AuditLog, *StatusError) {
@@ -128,26 +153,39 @@ func (s *BaseAPI) ingestAuditLogs(ctx context.Context) error {
 			if val.Author != nil {
 				id = &val.Author.ID
 			}
-			if _, err := s.db.CreateAuditLog(ctx, val.Message, id, val.System); err != nil {
-				zap.S().Warn("Couldn't store audit log entry to database: ", err)
+
+			if val.Level.IsAuditLogLvl() {
+				if _, err := s.db.CreateAuditLog(ctx, val.Message, id, val.Level == logLevelSystem); err != nil {
+					zap.S().Warn("Couldn't store audit log entry to database: ", err)
+				}
 			}
 
 			var s strings.Builder
 			s.WriteString("Action")
-			if val.Author != nil {
-				s.WriteString(fmt.Sprintf(" (by user #%d: %s)", val.Author.ID, val.Author.Name))
-			}
-			if val.System {
+			if val.Level == logLevelSystem {
 				s.WriteString(" (system)")
+			} else if val.Author != nil {
+				s.WriteString(fmt.Sprintf(" (by user #%d: %s)", val.Author.ID, val.Author.Name))
 			}
 			s.WriteString(": " + val.Message)
 
-			zap.S().Info(s.String())
-			if config.Common.UpdatesWebhook != "" {
+			zap.S().Desugar().Log(val.Level.toZap(), s.String())
+
+			if val.Level.IsAuditLogLvl() && ImportantUpdatesWebhook.Value() != "" {
 				vals := make(url.Values)
 				vals.Add("content", s.String())
 				vals.Add("username", "Kilonova Audit Log")
-				_, err := http.PostForm(config.Common.UpdatesWebhook, vals)
+				_, err := http.PostForm(ImportantUpdatesWebhook.Value(), vals)
+				if err != nil {
+					zap.S().Warn(err)
+				}
+			}
+
+			if !val.Level.IsAuditLogLvl() && VerboseUpdatesWebhook.Value() != "" {
+				vals := make(url.Values)
+				vals.Add("content", s.String())
+				vals.Add("username", "Kilonova Verbose Log")
+				_, err := http.PostForm(VerboseUpdatesWebhook.Value(), vals)
 				if err != nil {
 					zap.S().Warn(err)
 				}
@@ -186,4 +224,19 @@ func (s *BaseAPI) WakeGrader() {
 
 func (s *BaseAPI) RegisterGrader(gr interface{ Wake() }) {
 	s.grader = gr
+}
+
+func (ll logLevel) IsAuditLogLvl() bool {
+	return ll == logLevelSystem || ll == logLevelImportant || ll == logLevelWarning
+}
+
+func (ll logLevel) toZap() zapcore.Level {
+	switch ll {
+	case logLevelWarning:
+		return zap.WarnLevel
+	case logLevelVerbose:
+		return zap.DebugLevel
+	default:
+		return zapcore.InfoLevel
+	}
 }

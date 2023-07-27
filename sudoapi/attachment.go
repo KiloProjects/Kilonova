@@ -11,6 +11,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/internal/util"
 	"go.uber.org/zap"
 )
 
@@ -20,6 +21,9 @@ import (
 func (s *BaseAPI) Attachment(ctx context.Context, id int) (*kilonova.Attachment, *StatusError) {
 	attachment, err := s.db.Attachment(ctx, &kilonova.AttachmentFilter{ID: &id})
 	if err != nil || attachment == nil {
+		if err != nil && !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
 		return nil, WrapError(ErrNotFound, "Attachment not found")
 	}
 	return attachment, nil
@@ -105,11 +109,45 @@ func (s *BaseAPI) UpdateAttachment(ctx context.Context, aid int, upd *kilonova.A
 	return nil
 }
 
-func (s *BaseAPI) UpdateAttachmentData(ctx context.Context, aid int, data []byte, authorID *int) *StatusError {
+func (s *BaseAPI) UpdateAttachmentData(ctx context.Context, aid int, data []byte, author *kilonova.UserBrief) *StatusError {
+	var authorID *int
+	if author != nil {
+		authorID = &author.ID
+	}
 	if err := s.db.UpdateAttachmentData(ctx, aid, data, authorID); err != nil {
 		return WrapError(err, "Couldn't update attachment contents")
 	}
 	s.manager.DelAttachmentRender(aid)
+	go func() {
+		ctx = context.WithValue(context.WithoutCancel(ctx), util.UserKey, author)
+		att, err := s.Attachment(ctx, aid)
+		if err != nil {
+			zap.S().Warn(err, aid)
+			return
+		}
+		var b strings.Builder
+		b.WriteString(fmt.Sprintf("Attachment %q ", att.Name))
+
+		pbs, _ := s.Problems(ctx, kilonova.ProblemFilter{AttachmentID: &aid})
+		if len(pbs) == 0 {
+			posts, _ := s.BlogPosts(ctx, kilonova.BlogPostFilter{AttachmentID: &aid})
+			if len(posts) == 0 {
+				b.WriteString("(orphaned, somehow) ")
+			} else if len(posts) == 1 {
+				b.WriteString(fmt.Sprintf("in blog post #%d: %q ", posts[0].ID, posts[0].Slug))
+			} else {
+				zap.S().Warn("Attachment %d is in multiple posts??", att.ID)
+			}
+		} else if len(pbs) == 1 {
+			b.WriteString(fmt.Sprintf("in problem #%d: %q ", pbs[0].ID, pbs[0].Name))
+		} else {
+			zap.S().Warn("Attachment %d is in multiple problems??", att.ID)
+		}
+
+		b.WriteString("was updated")
+
+		s.LogVerbose(ctx, b.String())
+	}()
 	return nil
 }
 

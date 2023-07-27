@@ -114,6 +114,9 @@ func blogPostParams(filter kilonova.BlogPostFilter, fb *filterBuilder) {
 	if v := filter.Slug; v != nil {
 		fb.AddConstraint("slug = %s", v)
 	}
+	if v := filter.AttachmentID; v != nil {
+		fb.AddConstraint("EXISTS (SELECT 1 FROM blog_post_attachments_m2m WHERE attachment_id = %s AND blog_post_id = id)", v)
+	}
 
 	if filter.Look {
 		var id int = 0

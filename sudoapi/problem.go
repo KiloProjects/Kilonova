@@ -47,18 +47,6 @@ func (s *BaseAPI) UpdateProblem(ctx context.Context, id int, args kilonova.Probl
 		return WrapError(err, "Couldn't update problem")
 	}
 
-	// TODO: How do we do it now?
-	// // Log in background, do not lock
-	// go func(id int, args kilonova.ProblemUpdate) {
-	// 	pb, err := s.Problem(context.Background(), id)
-	// 	if err != nil {
-	// 		zap.S().Warn(err)
-	// 	}
-	// 	if pb.Visible && args.Description != nil && !updater.Admin {
-	// 		s.LogUserAction(context.WithValue(context.Background(), util.UserKey, updater), "Updated problem #%d (%s) description while visible", pb.ID, pb.Name)
-	// 	}
-	// }(id, args)
-
 	return nil
 }
 

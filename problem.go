@@ -86,6 +86,10 @@ type ProblemFilter struct {
 	LookEditor  bool       `json:"-"`
 	LookingUser *UserBrief `json:"-"`
 
+	// Check problems that have attachment with that ID
+	// Currently used for logging statement changes
+	AttachmentID *int `json:"-"`
+
 	// Unassociated filter ensures that all returned problems are not "bound" to a problem list
 	Unassociated bool `json:"-"`
 

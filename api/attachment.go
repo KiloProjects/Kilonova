@@ -159,7 +159,7 @@ func (s *API) updateAttachmentData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.base.UpdateAttachmentData(r.Context(), att.ID, val, &util.UserBrief(r).ID); err != nil {
+	if err := s.base.UpdateAttachmentData(r.Context(), att.ID, val, util.UserBrief(r)); err != nil {
 		err.WriteError(w)
 		return
 	}

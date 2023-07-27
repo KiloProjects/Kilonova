@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -26,7 +27,7 @@ const auditLogCreateQuery = `INSERT INTO audit_logs (
 
 func (s *DB) CreateAuditLog(ctx context.Context, msg string, authorID *int, system bool) (int, error) {
 	var id int
-	err := s.pgconn.QueryRow(ctx, auditLogCreateQuery, system, msg, authorID).Scan(&id)
+	err := s.pgconn.QueryRow(ctx, auditLogCreateQuery, system, strings.TrimSpace(msg), authorID).Scan(&id)
 	return id, err
 }
 

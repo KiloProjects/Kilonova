@@ -29,6 +29,10 @@ type BlogPostFilter struct {
 	Look        bool       `json:"-"`
 	LookingUser *UserBrief `json:"-"`
 
+	// Check posts that have attachment with that ID
+	// Currently used for logging statement changes
+	AttachmentID *int `json:"-"`
+
 	Ordering  string `json:"ordering"`
 	Ascending bool   `json:"ascending"`
 }

@@ -52,7 +52,7 @@ func (s *BaseAPI) Close() *StatusError {
 }
 
 func GetBaseAPI(db *db.DB, manager kilonova.DataStore, mailer kilonova.Mailer) *BaseAPI {
-	return &BaseAPI{db, manager, mailer, mdrenderer.NewLocalRenderer(), nil, make(chan *logEntry, 20)}
+	return &BaseAPI{db, manager, mailer, mdrenderer.NewLocalRenderer(), nil, make(chan *logEntry, 50)}
 }
 
 func InitializeBaseAPI(ctx context.Context) (*BaseAPI, *StatusError) {
