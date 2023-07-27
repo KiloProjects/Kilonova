@@ -7,7 +7,6 @@ import (
 	"path"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
@@ -194,7 +193,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 				testIDs = append(testIDs, id)
 			}
 		}
-		sort.Ints(testIDs)
+		slices.Sort(testIDs)
 
 		n := len(aCtx.tests) - len(aCtx.scoredTests)
 		perTest := totalScore/n + 1

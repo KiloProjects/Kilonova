@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"path"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -141,7 +140,7 @@ func (rt *Web) problems() http.HandlerFunc {
 				}
 			}
 
-			sort.Ints(allTags)
+			slices.Sort(allTags)
 			allTags = slices.Compact(allTags)
 
 			var err *kilonova.StatusError

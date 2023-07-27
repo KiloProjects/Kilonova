@@ -307,9 +307,7 @@ func scoreTests(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submis
 					zap.S().Warn("Couldn't find subtest. This should not really happen.")
 					continue
 				}
-				if st.Score < percentage {
-					percentage = st.Score
-				}
+				percentage = min(st.Score, percentage)
 			}
 			score += int(math.Round(float64(stk.Score) * float64(percentage) / 100.0))
 			if err := base.UpdateSubmissionSubtaskPercentage(ctx, stk.ID, percentage); err != nil {
@@ -325,12 +323,8 @@ func scoreTests(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submis
 	var memory int
 	var time float64
 	for _, subtest := range subtests {
-		if subtest.Memory > memory {
-			memory = subtest.Memory
-		}
-		if subtest.Time > time {
-			time = subtest.Time
-		}
+		memory = max(memory, subtest.Memory)
+		time = max(time, subtest.Time)
 	}
 
 	return base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score, MaxTime: &time, MaxMemory: &memory})

@@ -5,7 +5,7 @@ import (
 	"bufio"
 	"io"
 	"regexp"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -253,7 +253,7 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 					stk.Tests = append(stk.Tests, test)
 				}
 			}
-			sort.Ints(stk.Tests)
+			slices.Sort(stk.Tests)
 
 			stks[id] = stk
 		}

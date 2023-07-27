@@ -118,7 +118,7 @@ func Load() error {
 	}
 	md, err := toml.DecodeFile(configPath, &c)
 	if len(md.Undecoded()) > 0 {
-		zap.S().Warn("NOTE: There were a few undecoded keys")
+		zap.S().Warn("NOTE: There were some undecoded keys")
 		spew.Dump(md.Undecoded())
 	}
 	if err == nil {

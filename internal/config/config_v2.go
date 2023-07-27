@@ -1,12 +1,13 @@
 package config
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"sync"
 
 	"go.uber.org/zap"
@@ -122,8 +123,8 @@ func GetFlags[T configT]() []Flag[T] {
 			flags = append(flags, flag)
 		}
 	}
-	sort.Slice(flags, func(i, j int) bool {
-		return flags[i].InternalName() < flags[j].InternalName()
+	slices.SortFunc(flags, func(a, b Flag[T]) int {
+		return cmp.Compare(a.InternalName(), b.InternalName())
 	})
 	return flags
 }

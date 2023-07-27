@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
@@ -139,7 +138,7 @@ func (s *BaseAPI) ProblemTags(ctx context.Context, problemID int) ([]*kilonova.T
 }
 
 func (s *BaseAPI) UpdateProblemTags(ctx context.Context, problemID int, tagIDs []int) *StatusError {
-	sort.Ints(tagIDs)
+	slices.Sort(tagIDs)
 	tagIDs = slices.Compact(tagIDs)
 	if err := s.db.UpdateProblemTags(ctx, problemID, tagIDs); err != nil {
 		return WrapError(err, "Couldn't update problem tags")
