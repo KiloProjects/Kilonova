@@ -31,7 +31,7 @@ async function login(e) {
     bundled.setSession(res.data)
 	console.log(window.location.pathname)
 	if(window.location.pathname.startsWith("/login")) {
-		window.location.assign("/")
+		bundled.navigateBack()
 	} else {
 		window.location.reload()
 	}

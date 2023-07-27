@@ -29,9 +29,9 @@
         {{ end }}
 		{{if not .Ctx.User }}
             {{ if (boolFlag "feature.platform.signup") }}
-			    <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/signup">{{getText "auth.signup"}}</a>
+			    <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/signup?back={{reqPath}}">{{getText "auth.signup"}}</a>
             {{ end }}
-            <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/login">{{getText "auth.login"}}</a>
+            <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/login?back={{reqPath}}">{{getText "auth.login"}}</a>
 		{{else}}
 			<div id="pr-dropdown" class="relative">
 				<button onclick="navbar_mgr.toggleDropdown()" id="profile-dropdown-button" class="relative z-10 block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable">{{.Ctx.User.Name}}<i id="dropdown-caret" class="ml-1 fas fa-caret-down"></i></button>
@@ -73,7 +73,7 @@
                         </a>
 					{{end}}
 					<div class="dropdown-divider"></div>
-					<a class="dropdown-list-item" href="/logout">
+					<a class="dropdown-list-item" href="/logout?back={{reqPath}}">
 						<i class="ml-n2 fas fa-sign-out-alt fa-fw"></i> {{getText "auth.logout"}}
 					</a>
 				</div>

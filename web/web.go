@@ -47,6 +47,8 @@ var (
 	AllSubsPage = config.GenFlag("feature.frontend.all_subs_page", true, "Anyone can view all submissions")
 
 	FrontPageProblems = config.GenFlag("feature.frontend.front_page_pbs", true, "Show problems on front page")
+
+	ForceLogin = config.GenFlag("behavior.force_authed", false, "Force authentication when accessing website")
 )
 
 //go:embed static
@@ -69,6 +71,10 @@ type Web struct {
 }
 
 func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int, errMessage string) {
+	if r.FormValue("logout") == "1" {
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
 	status := rt.parse(nil, "util/statusCode.html", "modals/login.html")
 	rt.runTempl(w, r, status, &StatusParams{
 		Ctx:     GenContext(r),
@@ -84,9 +90,6 @@ func (rt *Web) problemRouter(r chi.Router) {
 	r.Get("/submissions", rt.problemSubmissions())
 	r.With(rt.mustBeAuthed).Get("/submit", rt.problemSubmit())
 	r.With(rt.mustBeProblemEditor).Route("/edit", rt.ProblemEditRouter)
-
-	// TODO: Remove after all references on main are removed
-	r.Get("/attachments/{aid}", rt.problemAttachment)
 }
 
 func (rt *Web) blogPostRouter(r chi.Router) {
@@ -98,7 +101,6 @@ func (rt *Web) blogPostRouter(r chi.Router) {
 		r.Get("/", rt.editBlogPostIndex())
 		r.Get("/attachments", rt.editBlogPostAtts())
 	})
-	r.Get("/attachments/{aid}", rt.blogPostAttachment)
 }
 
 // Handler returns a http.Handler
@@ -108,102 +110,108 @@ func (rt *Web) Handler() http.Handler {
 	r.Use(rt.initLanguage)
 	r.Use(rt.initTheme)
 
-	r.Get("/static/chroma.css", rt.chromaCSS())
-	r.Mount("/static", http.HandlerFunc(staticFileServer))
+	r.Group(func(r chi.Router) {
+		// Util group. Will never be locked out
 
-	r.Get("/", rt.index())
-	r.With(rt.mustBeAuthed).Get("/profile", rt.selfProfile())
-	r.Get("/profile/{user}", rt.profile())
-	r.With(rt.mustBeAuthed).Get("/settings", rt.justRender("settings.html"))
+		r.Get("/static/chroma.css", rt.chromaCSS())
+		r.Mount("/static", http.HandlerFunc(staticFileServer))
 
-	r.Route("/problems", func(r chi.Router) {
-		r.Get("/", rt.problems())
-		r.Route("/{pbid}", rt.problemRouter)
-	})
-
-	r.Route("/posts", func(r chi.Router) {
-		r.Get("/", rt.blogPosts())
-		r.Route("/{postslug}", rt.blogPostRouter)
-	})
-	r.With(rt.mustBeProposer).Get("/createPost", rt.justRender("blogpost/create.html"))
-
-	r.Route("/tags", func(r chi.Router) {
-		r.Get("/", rt.tags())
-		r.With(rt.ValidateTagID).Get("/{tagid}", rt.tag())
-	})
-
-	r.Route("/contests", func(r chi.Router) {
-		r.Get("/", rt.contests())
-		r.Route("/{contestID}", func(r chi.Router) {
-			r.Use(rt.ValidateContestID)
-			r.Use(rt.ValidateContestVisible)
-			r.Get("/", rt.contest())
-
-			// Communication holds both questions and announcements
-			r.Get("/communication", rt.contestCommunication())
-
-			r.Get("/leaderboard", rt.contestLeaderboard())
-
-			r.Route("/manage", func(r chi.Router) {
-				r.Use(rt.mustBeContestEditor)
-				r.Get("/edit", rt.contestEdit())
-				r.Get("/registrations", rt.contestRegistrations())
-			})
-			r.Route("/problems/{pbid}", rt.problemRouter)
+		// Email verification
+		r.Route("/verify", func(r chi.Router) {
+			r.With(rt.mustBeAuthed).Get("/resend", rt.resendEmail())
+			r.Get("/{vid}", rt.verifyEmail())
 		})
+
+		// Password reset
+		r.With(rt.mustBeVisitor).Get("/resetPassword/{reqid}", rt.resetPassword())
+
+		r.Get("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
+			file, err := embedded.Open("static/robots.txt")
+			if err != nil {
+				zap.S().Warn("Could not open robots.txt")
+				return
+			}
+			defer file.Close()
+			http.ServeContent(w, r, "robots.txt", time.Now(), file.(io.ReadSeeker))
+		})
+
+		r.With(rt.mustBeVisitor).Get("/login", rt.justRender("auth/login.html", "modals/login.html"))
+		r.With(rt.mustBeVisitor).Get("/signup", rt.justRender("auth/signup.html"))
+		r.With(rt.mustBeVisitor).Get("/forgot_pwd", rt.justRender("auth/forgot_pwd_send.html"))
+
+		r.With(rt.mustBeAuthed).Get("/logout", rt.logout)
 	})
 
-	r.Route("/submissions", func(r chi.Router) {
-		r.Get("/", rt.submissions())
-		r.With(rt.ValidateSubmissionID).Get("/{id}", rt.submission())
-	})
+	r.Group(func(r chi.Router) {
+		// Page group, can be locked out
+		r.Use(rt.checkLockout())
 
-	r.With(rt.ValidatePasteID).Get("/pastes/{id}", rt.paste())
+		r.Get("/", rt.index())
+		r.With(rt.mustBeAuthed).Get("/profile", rt.selfProfile())
+		r.Get("/profile/{user}", rt.profile())
+		r.With(rt.mustBeAuthed).Get("/settings", rt.justRender("settings.html"))
 
-	r.Route("/problem_lists", func(r chi.Router) {
-		r.Get("/", rt.pbListIndex())
-		r.With(rt.ValidateListID).Get("/{id}", rt.pbListView())
-	})
+		r.Route("/problems", func(r chi.Router) {
+			r.Get("/", rt.problems())
+			r.Route("/{pbid}", rt.problemRouter)
+		})
 
-	r.With(rt.mustBeAdmin).Route("/admin", func(r chi.Router) {
-		r.Get("/", rt.justRender("admin/admin.html"))
-		r.Get("/users", rt.justRender("admin/users.html"))
-		r.Get("/auditLog", rt.auditLog())
-	})
+		r.Route("/posts", func(r chi.Router) {
+			r.Get("/", rt.blogPosts())
+			r.Route("/{postslug}", rt.blogPostRouter)
+		})
+		// not /posts/create since there could be a post that is slugged "create"
+		r.With(rt.mustBeProposer).Get("/createPost", rt.justRender("blogpost/create.html"))
 
-	r.With(rt.mustBeVisitor).Get("/login", rt.justRender("auth/login.html", "modals/login.html"))
-	r.With(rt.mustBeVisitor).Get("/signup", rt.justRender("auth/signup.html"))
-	r.With(rt.mustBeVisitor).Get("/forgot_pwd", rt.justRender("auth/forgot_pwd_send.html"))
+		r.Route("/tags", func(r chi.Router) {
+			r.Get("/", rt.tags())
+			r.With(rt.ValidateTagID).Get("/{tagid}", rt.tag())
+		})
 
-	r.With(rt.mustBeAuthed).Get("/logout", rt.logout)
+		r.Route("/contests", func(r chi.Router) {
+			r.Get("/", rt.contests())
+			r.Route("/{contestID}", func(r chi.Router) {
+				r.Use(rt.ValidateContestID)
+				r.Use(rt.ValidateContestVisible)
+				r.Get("/", rt.contest())
 
-	// Proposer panel
-	r.Route("/proposer", func(r chi.Router) {
-		r.Use(rt.mustBeProposer)
-		r.Get("/", rt.justRender(
+				// Communication holds both questions and announcements
+				r.Get("/communication", rt.contestCommunication())
+
+				r.Get("/leaderboard", rt.contestLeaderboard())
+
+				r.Route("/manage", func(r chi.Router) {
+					r.Use(rt.mustBeContestEditor)
+					r.Get("/edit", rt.contestEdit())
+					r.Get("/registrations", rt.contestRegistrations())
+				})
+				r.Route("/problems/{pbid}", rt.problemRouter)
+			})
+		})
+
+		r.Route("/submissions", func(r chi.Router) {
+			r.Get("/", rt.submissions())
+			r.With(rt.ValidateSubmissionID).Get("/{id}", rt.submission())
+		})
+
+		r.With(rt.ValidatePasteID).Get("/pastes/{id}", rt.paste())
+
+		r.Route("/problem_lists", func(r chi.Router) {
+			r.Get("/", rt.pbListIndex())
+			r.With(rt.ValidateListID).Get("/{id}", rt.pbListView())
+		})
+
+		r.With(rt.mustBeAdmin).Route("/admin", func(r chi.Router) {
+			r.Get("/", rt.justRender("admin/admin.html"))
+			r.Get("/users", rt.justRender("admin/users.html"))
+			r.Get("/auditLog", rt.auditLog())
+		})
+
+		// Proposer panel
+		r.With(rt.mustBeProposer).Get("/proposer", rt.justRender(
 			"proposer/index.html",
 			"proposer/createproblem.html", "proposer/createpblist.html", "proposer/createcontest.html",
 		))
-		// r.Get("/get/subtest_output/{st_id}", rt.subtestOutput)
-	})
-
-	// Email verification
-	r.Route("/verify", func(r chi.Router) {
-		r.With(rt.mustBeAuthed).Get("/resend", rt.resendEmail())
-		r.Get("/{vid}", rt.verifyEmail())
-	})
-
-	// Password reset
-	r.With(rt.mustBeVisitor).Get("/resetPassword/{reqid}", rt.resetPassword())
-
-	r.Get("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
-		file, err := embedded.Open("static/robots.txt")
-		if err != nil {
-			zap.S().Warn("Could not open robots.txt")
-			return
-		}
-		defer file.Close()
-		http.ServeContent(w, r, "robots.txt", time.Now(), file.(io.ReadSeeker))
 	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
@@ -637,6 +645,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"getText": func(key string, vals ...any) string {
 			zap.S().Error("Uninitialized `getText`")
 			return "FATAL ERR"
+		},
+		"reqPath": func() string {
+			zap.S().Error("Uninitialized `reqPath`")
+			return "/"
 		},
 		"language": func() string {
 			zap.S().Error("Uninitialized `language`")

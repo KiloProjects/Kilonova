@@ -8,7 +8,7 @@ import (
 	"html/template"
 	"io"
 	"net/http"
-	"path"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -1013,6 +1013,20 @@ func (rt *Web) resetPassword() http.HandlerFunc {
 	}
 }
 
+func (rt *Web) checkLockout() func(next http.Handler) http.Handler {
+	// templ := rt.parse(nil, "util/lockout.html")
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if ForceLogin.Value() && util.UserBrief(r) == nil {
+				http.Redirect(w, r, "/login?back="+url.PathEscape(r.URL.Path), http.StatusTemporaryRedirect)
+				return
+			}
+			next.ServeHTTP(w, r)
+			// rt.runTempl(w, r, templ, &LockoutParams{})
+		})
+	}
+}
+
 func (rt *Web) logout(w http.ResponseWriter, r *http.Request) {
 	emptyCookie := &http.Cookie{
 		Name:    "kn-sessionid",
@@ -1027,64 +1041,15 @@ func (rt *Web) logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rt.base.RemoveSession(r.Context(), c.Value)
-	http.Redirect(w, r, "/", http.StatusFound)
-}
 
-func (rt *Web) serveAttachment(w http.ResponseWriter, r *http.Request, att *kilonova.Attachment, renderContext *kilonova.RenderContext) {
-	w.Header().Add("X-Robots-Tag", "noindex, nofollow, noarchive")
-
-	attData, err := rt.base.AttachmentData(r.Context(), att.ID)
-	if err != nil {
-		zap.S().Warn(err)
-		http.Error(w, "Couldn't get attachment data", 500)
-		return
+	redirect := "/"
+	back := r.FormValue("back")
+	backURL, err := url.Parse(back)
+	if err == nil && backURL.Path != "" {
+		redirect = backURL.Path
 	}
 
-	w.Header().Set("Cache-Control", `public, max-age=3600`)
-
-	// If markdown file and client asks for HTML format, render the markdown
-	if path.Ext(att.Name) == ".md" && r.FormValue("format") == "html" {
-		data, err := rt.base.RenderMarkdown(attData, renderContext)
-		if err != nil {
-			zap.S().Warn(err)
-			http.Error(w, "Could not render file", 500)
-			return
-		}
-		http.ServeContent(w, r, att.Name+".html", att.LastUpdatedAt, bytes.NewReader(data))
-		return
-	}
-
-	http.ServeContent(w, r, att.Name, att.LastUpdatedAt, bytes.NewReader(attData))
-}
-
-func (rt *Web) problemAttachment(w http.ResponseWriter, r *http.Request) {
-	name := chi.URLParam(r, "aid")
-	att, err := rt.base.ProblemAttByName(r.Context(), util.Problem(r).ID, name)
-	if err != nil || att == nil {
-		http.Error(w, "The attachment doesn't exist", 400)
-		return
-	}
-	if att.Private && !rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
-		http.Error(w, "You aren't allowed to download the attachment!", 400)
-		return
-	}
-
-	rt.serveAttachment(w, r, att, &kilonova.RenderContext{Problem: util.Problem(r)})
-}
-
-func (rt *Web) blogPostAttachment(w http.ResponseWriter, r *http.Request) {
-	name := chi.URLParam(r, "aid")
-	att, err := rt.base.BlogPostAttByName(r.Context(), util.BlogPost(r).ID, name)
-	if err != nil || att == nil {
-		http.Error(w, "The attachment doesn't exist", 400)
-		return
-	}
-	if att.Private && !rt.base.IsBlogPostEditor(util.UserBrief(r), util.BlogPost(r)) {
-		http.Error(w, "You aren't allowed to download the attachment!", 400)
-		return
-	}
-
-	rt.serveAttachment(w, r, att, &kilonova.RenderContext{BlogPost: util.BlogPost(r)})
+	http.Redirect(w, r, redirect+"?logout=1", http.StatusTemporaryRedirect)
 }
 
 func (rt *Web) chromaCSS() http.HandlerFunc {
@@ -1135,6 +1100,20 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 	templ.Funcs(template.FuncMap{
 		"getText": func(line string, args ...any) template.HTML {
 			return template.HTML(kilonova.GetText(lang, line, args...))
+		},
+		"reqPath": func() string {
+			if r.URL.Path == "/login" || r.URL.Path == "/signup" {
+				// when navigating between /login and /signup, retain back or just leave empty
+				val := "/"
+				if back := r.FormValue("back"); back != "" {
+					link, err := url.Parse(back)
+					if err == nil {
+						val = link.Path
+					}
+				}
+				return val
+			}
+			return r.URL.Path
 		},
 		"language": func() string {
 			return lang

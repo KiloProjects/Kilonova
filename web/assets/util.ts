@@ -96,6 +96,18 @@ export function stringIntToNumber(ints: string[]): number[] {
 	return result;
 }
 
+export function navigateBack() {
+	let locURL = new URL(document.location.toString());
+	let val = locURL.searchParams.get("back");
+	if (val == null) {
+		window.location.assign("/");
+		return;
+	}
+	locURL.pathname = val;
+	locURL.search = "";
+	window.location.assign(locURL);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
 	document.querySelectorAll(".server_timestamp").forEach((val) => {
 		let timestamp = parseInt(val.innerHTML);

@@ -78,7 +78,7 @@ async function signup(e) {
 	}
     bundled.clearLanguageCookie()
     bundled.setSession(res.data)
-	window.location.assign("/");
+    bundled.navigateBack()
 }
 document.getElementById("signup_form").addEventListener("submit", signup)
 </script>
