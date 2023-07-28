@@ -134,7 +134,7 @@ func (s *DB) NameUsedBefore(ctx context.Context, name string) (bool, error) {
 }
 
 func (s *DB) UsernameChangeHistory(ctx context.Context, userID int) ([]*kilonova.UsernameChange, error) {
-	rows, _ := s.pgconn.Query(ctx, "SELECT * FROM username_change_history WHERE user_id = $1", userID)
+	rows, _ := s.pgconn.Query(ctx, "SELECT * FROM username_change_history WHERE user_id = $1 ORDER BY changed_at DESC", userID)
 	changes, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[kilonova.UsernameChange])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -173,6 +173,9 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate
 		ub.AddUpdate("email_verif_sent_at = %s", v)
 	}
 
+	if v := upd.LockedLogin; v != nil {
+		ub.AddUpdate("locked_login = %s", v)
+	}
 	if v := upd.NameChangeRequired; v != nil {
 		ub.AddUpdate("name_change_required = %s", v)
 	}

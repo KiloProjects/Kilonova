@@ -26,10 +26,14 @@ type ProblemFilter = {
 	offset: number;
 };
 
-function ProblemView({ problems, showTags }: { problems: FullProblem[]; showTags: boolean }) {
+function numPagesF(count: number, max: number): number {
+	return Math.floor(count / max) + (count % max != 0 ? 1 : 0);
+}
+
+export function ProblemView({ problems, showTags, scoreView }: { problems: FullProblem[]; showTags: boolean; scoreView: boolean }) {
 	let authed = window.platform_info.user_id >= 1;
 	let sizes: string[] = [];
-	if (authed) {
+	if (authed || scoreView) {
 		sizes = ["w-1/12", "w-4/12", /*"w-3/12",*/ "w-2/12", "w-2/12"];
 	} else {
 		sizes = ["w-1/12", "w-5/12", /*"w-4/12",*/ "", "w-2/12"];
@@ -54,14 +58,16 @@ function ProblemView({ problems, showTags }: { problems: FullProblem[]; showTags
 							{getText("source")}
 						</th>
 					)}
-					{authed && (
+					{(authed || scoreView) && (
 						<th class={sizes[2]} scope="col">
 							{getText("score")}
 						</th>
 					)}
-					<th class={sizes[3]} scope="col">
-						{getText("num_att_solved")}
-					</th>
+					{!scoreView && (
+						<th class={sizes[3]} scope="col">
+							{getText("num_att_solved")}
+						</th>
+					)}
 				</tr>
 			</thead>
 			<tbody>
@@ -79,7 +85,7 @@ function ProblemView({ problems, showTags }: { problems: FullProblem[]; showTags
 							<a class="text-lg" href={`/problems/${pb.id}`}>
 								{pb.name}
 							</a>{" "}
-							{pb.is_editor &&
+							{((!scoreView && pb.is_editor) || window.platform_info.admin) &&
 								(pb.visible ? (
 									<span class="badge badge-green text-sm ml-2">{getText("published")}</span>
 								) : (
@@ -91,16 +97,18 @@ function ProblemView({ problems, showTags }: { problems: FullProblem[]; showTags
 						) : (
 							<td>{pb.source_credits == "" ? "-" : pb.source_credits}</td>
 						)}
-						{authed && (
+						{(authed || scoreView) && (
 							<td>
 								<span class="badge">{pb.max_score < 0 ? "-" : pb.max_score}</span>
 							</td>
 						)}
-						<td>
-							<span class="badge">
-								{pb.solved_by} {" / "} {pb.attempted_by}
-							</span>
-						</td>
+						{!scoreView && (
+							<td>
+								<span class="badge">
+									{pb.solved_by} {" / "} {pb.attempted_by}
+								</span>
+							</td>
+						)}
 					</tr>
 				))}
 			</tbody>
@@ -109,6 +117,37 @@ function ProblemView({ problems, showTags }: { problems: FullProblem[]; showTags
 }
 
 const MAX_PER_PAGE = 50;
+
+// Currently used for user profile page
+export function CustomProblemListing(params: { count: number; problems: FullProblem[]; filter: ProblemQuery; showFull: boolean }) {
+	const [page, setPage] = useState(1);
+	const [problems, setProblems] = useState<FullProblem[]>(params.problems);
+	const [count, setCount] = useState(params.count);
+
+	const mounted = useRef(false);
+
+	async function load() {
+		const rez = await bodyCall<{ problems: FullProblem[]; count: number }>("/problem/search", serializeQuery({ ...params.filter, page }));
+		if (rez.status === "error") {
+			apiToast(rez);
+			return;
+		}
+		setCount(rez.data.count);
+		setProblems(rez.data.problems);
+	}
+
+	useEffect(() => {
+		if (mounted.current || problems.length == 0) load()?.catch(console.error);
+		else mounted.current = true;
+	}, [params.filter, page]);
+
+	return (
+		<>
+			{numPagesF(count, MAX_PER_PAGE) > 1 && <Paginator numpages={numPagesF(count, MAX_PER_PAGE)} page={page} setPage={setPage} />}
+			<ProblemView problems={problems} showTags={false} scoreView={true} />
+		</>
+	);
+}
 
 type TagGroup = {
 	negate: boolean;
@@ -122,7 +161,10 @@ type ProblemQuery = {
 	tags: TagGroup[];
 
 	published?: boolean;
-	editor_user: number;
+	editor_user?: number;
+
+	solved_by?: number;
+	attempted_by?: number;
 };
 
 function makeTagString(groups: TagGroup[]): string {
@@ -144,7 +186,7 @@ function initialQuery(params: URLSearchParams, groups: TagGroup[]): ProblemQuery
 		page: !isNaN(page) && page != 0 ? page : 1,
 
 		published: published,
-		editor_user: !isNaN(editorUserID) ? editorUserID : 0,
+		editor_user: !isNaN(editorUserID) ? editorUserID : undefined,
 		tags: groups,
 	};
 }
@@ -152,10 +194,13 @@ function initialQuery(params: URLSearchParams, groups: TagGroup[]): ProblemQuery
 function serializeQuery(f: ProblemQuery): any {
 	return {
 		name_fuzzy: f.textQuery,
-		editor_user_id: f.editor_user > 0 ? f.editor_user : undefined,
+		editor_user_id: typeof f.editor_user !== "undefined" && f.editor_user > 0 ? f.editor_user : undefined,
 		visible: f.published,
 
 		tags: f.tags,
+
+		solved_by: f.solved_by,
+		attempted_by: f.attempted_by,
 
 		limit: MAX_PER_PAGE,
 		offset: (f.page - 1) * MAX_PER_PAGE,
@@ -172,10 +217,8 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 	let [query, setQuery] = useState<ProblemQuery>(initialQuery(new URLSearchParams(window.location.search), params.groups));
 	let [problems, setProblems] = useState<FullProblem[]>(params.problems);
 	let [count, setCount] = useState<number>(params.count);
-	let numPages = useMemo(() => Math.floor(count / MAX_PER_PAGE) + (count % MAX_PER_PAGE != 0 ? 1 : 0), [count]);
+	let numPages = useMemo(() => numPagesF(count, MAX_PER_PAGE), [count]);
 
-	// TODO: Remove once proper tag filtering is implemented
-	// let [tagString, setTagString] = useState<string>(makeTagString(query.tags));
 	let [tagFilterMode, setTagFilterMode] = useState<TagFilterMode>(getModeByGroups(params.groups));
 	let [tags, setTags] = useState<Tag[]>(params.initialTags);
 
@@ -208,7 +251,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 		if (typeof query.published !== "undefined") {
 			p.append("published", String(query.published));
 		}
-		if (query.editor_user > 0) {
+		if (typeof query.editor_user !== "undefined" && query.editor_user > 0) {
 			p.append("editor_user", query.editor_user.toString());
 		}
 
@@ -490,4 +533,31 @@ function ProblemSearchDOM({ enc, count, groupenc, tagenc }: { enc: string; count
 	return <ProblemSearch problems={pbs} count={cnt} groups={groups} initialTags={tags}></ProblemSearch>;
 }
 
+function ProblemListingWrapper({ enc, count, showfull, filter }: { enc: string; count: string; showfull: string; filter: ProblemQuery }) {
+	let pbs: FullProblem[] = JSON.parse(fromBase64(enc));
+	let cnt = parseInt(count);
+	if (isNaN(cnt)) {
+		throw new Error("Invalid count");
+	}
+	return <CustomProblemListing problems={pbs} count={cnt} showFull={showfull === "true"} filter={filter}></CustomProblemListing>;
+}
+
+function ProblemSolvedByDOM({ enc, count, userid }: { enc: string; count: string; userid: string }) {
+	let uid = parseInt(userid);
+	if (isNaN(uid)) {
+		throw new Error("Invalid user ID");
+	}
+	return <ProblemListingWrapper enc={enc} count={count} showfull="false" filter={{ textQuery: "", tags: [], page: 1, solved_by: uid }} />;
+}
+
+function ProblemAttemptedByDOM({ enc, count, userid }: { enc: string; count: string; userid: string }) {
+	let uid = parseInt(userid);
+	if (isNaN(uid)) {
+		throw new Error("Invalid user ID");
+	}
+	return <ProblemListingWrapper enc={enc} count={count} showfull="false" filter={{ textQuery: "", tags: [], page: 1, attempted_by: uid }} />;
+}
+
 register(ProblemSearchDOM, "kn-pb-search", ["enc", "count", "groupenc", "tagenc"]);
+register(ProblemSolvedByDOM, "kn-pb-solvedby", ["enc", "count", "userid"]);
+register(ProblemAttemptedByDOM, "kn-pb-attemptedby", ["enc", "count", "userid"]);

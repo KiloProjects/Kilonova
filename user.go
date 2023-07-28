@@ -93,6 +93,7 @@ type UserFullUpdate struct {
 	Admin    *bool `json:"admin"`
 	Proposer *bool `json:"proposer"`
 
+	LockedLogin        *bool `json:"locked_login"`
 	NameChangeRequired *bool `json:"name_change_required"`
 
 	VerifiedEmail    *bool      `json:"verified_email"`

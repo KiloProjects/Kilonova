@@ -415,6 +415,9 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"unescapeHTML": func(s string) string {
 			return html.UnescapeString(s)
 		},
+		"formatTime": func(t time.Time) string {
+			return t.Format(TimeFormatExtended)
+		},
 		"syntaxHighlight": func(code, lang string) (string, error) {
 			fmt := chtml.New(chtml.WithClasses(true), chtml.TabWidth(4))
 			lm := lexers.Get(strings.TrimFunc(lang, unicode.IsDigit))

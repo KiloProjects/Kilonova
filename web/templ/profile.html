@@ -4,7 +4,7 @@
 <div class="segment-panel">
 	<img class="rounded-lg float-right" width="128" height="128" src="/api/user/getGravatar?name={{.ContentUser.Name}}&s=128" alt="{{getText `profilePic`}} {{.ContentUser.Name}}"/>
 	<div>
-		<h1>{{if authed}}{{if authedUser.Admin}} <span class="tag rounded-lg font-semibold badge-blue">#{{.ContentUser.ID}}</span> {{end}}{{end}} {{.ContentUser.Name}}</h1>
+		<h1>{{if isAdmin}} <span class="tag rounded-lg font-semibold badge-blue">#{{.ContentUser.ID}}</span> {{end}} {{.ContentUser.Name}}</h1>
         <p>{{getText "created_at"}}: <span class="server_timestamp">{{.ContentUser.CreatedAt.UnixMilli}}</span></p>
         {{ if .ContentUser.Generated }}
             <p>!!!{{getText "generated_acc"}}</p>
@@ -25,15 +25,61 @@
                 {{if eq .ContentUser.ID .Ctx.User.ID}}
                     <a class="btn btn-blue" href="/settings">{{getText "profile.settings"}}</a>
                 {{end}}
-
-                {{if and .Ctx.User.Admin (not .ContentUser.Admin)}}
-                <button class="btn btn-red" onclick="deleteAccount()">{{getText "deleteAccount"}}</button>
-                {{end}}
                 
             {{end}}
         </div>
 	</div>
 </div>
+
+{{ if isAdmin }}
+<form id="managerUserForm" class="segment-panel" autocomplete="off">
+    <h2>{{getText "manageUser"}}</h2>
+
+    
+    <div class="block my-2">
+        <label class="inline-flex items-center text-lg">
+            <input class="form-checkbox" name="can_login" id="can_login" type="checkbox" {{if not .ContentUser.LockedLogin}}checked{{end}}>
+            <span class="ml-2">{{getText "can_login"}}</span>
+        </label>
+    </div>
+    <div class="block my-2">
+        <label class="inline-flex items-center text-lg">
+            <input class="form-checkbox" name="must_change_uname" id="must_change_uname" type="checkbox" {{if .ContentUser.NameChangeForced}}checked{{end}}>
+            <span class="ml-2">{{getText "must_change_uname"}}</span>
+        </label>
+    </div>
+    <label class="block my-2">
+        <span class="form-label">{{getText "change_name"}}:</span>
+        <input type="text" id="manage_change_name" style="filter: none" class="form-input" value="{{.ContentUser.Name}}" autocomplete="off">
+    </label>
+
+    <button class="mr-2 btn btn-blue" type="submit">{{getText "button.update"}}</button>
+    {{if not .ContentUser.Admin}}
+    <button class="mr-2 btn btn-red" type="button" onclick="deleteAccount()">{{getText "deleteAccount"}}</button>
+    {{end}}
+    <button class="mr-2 btn btn-red" type="button" onclick="pruneBio()">{{getText "purgeBio"}}</button>
+</form>
+<script>
+    async function updateUserStatus(e) {
+        e.preventDefault()
+        const data = {
+            id: {{.ContentUser.ID}},
+            lockout: !document.getElementById("can_login").checked,
+            new_name: document.getElementById("manage_change_name").value,
+            force_username_change: document.getElementById("must_change_uname").value,
+        }
+
+        const rez = await bundled.postCall("/user/moderation/manage", data)
+        if(rez.status == "error") {
+            bundled.apiToast(rez)
+            return
+        }
+        window.location.assign(`/profile/${data.new_name}`);
+    }
+
+    document.getElementById("managerUserForm").addEventListener("submit", updateUserStatus);
+</script>
+{{end}}
 
 {{$isCUser := false}}
 {{ if authed }}
@@ -72,26 +118,54 @@ async function deleteAccount() {
 	}
 	bundled.apiToast(res);
 }
+
+async function pruneBio() {
+	if(!(await bundled.confirm(bundled.getText("bioPruneConfirmation")))) {
+		return
+	}
+
+	let res = await bundled.postCall("/user/moderation/purgeBio", {id: {{.ContentUser.ID}} });
+	if(res.status === "success") {
+		window.location.reload();
+	}
+	bundled.apiToast(res);
+}
 </script>
 
 
-{{ if .SolvedProblems }}
+{{ if .SolvedCount }}
     <div class="segment-panel">
-        {{$pbs := .SolvedProblems }}
-        {{ if len $pbs }}
-        <h2>{{if eq 1 (len $pbs)}}{{getText "oneSolvedProblem"}}{{else}}{{getText "solvedProblems" (len $pbs)}}{{end}}</h2>
-        {{ template "pb_list_group" (genProblemsParams $pbs false true false) }}
-        {{ end }}
+        {{if or (isAdmin) $isCUser}}
+        <h2>{{if eq 1 .SolvedCount}}{{getText "oneSolvedProblem"}}{{else}}{{getText "manySolvedProblems" .SolvedCount}}{{end}}</h2>
+        {{else}}
+        <h2>{{getText "solvedProblems"}}</h2>
+        {{end}}
+        <kn-pb-solvedby enc="{{.SolvedProblems | encodeJSON}}" count="{{.SolvedCount}}" userid="{{.ContentUser.ID}}"></kn-pb-solvedby>
     </div>
 {{ end }}
-{{ if .AttemptedProblems }}
+{{ if .AttemptedCount }}
     <div class="segment-panel">
-        {{$pbs := .AttemptedProblems }}
-        {{ if len $pbs }}
-        <h2>{{if eq 1 (len $pbs)}}{{getText "oneAttemptedProblem"}}{{else}}{{getText "attemptedProblems" (len $pbs)}}{{end}}</h2>
-        {{ template "pb_list_group" (genProblemsParams $pbs true true false) }}
-        {{ end }}
+        {{if or (isAdmin) $isCUser}}
+        <h2>{{if eq 1 .AttemptedCount}}{{getText "oneAttemptedProblem"}}{{else}}{{getText "manyAttemptedProblems" .AttemptedCount}}{{end}}</h2>
+        {{else}}
+        <h2>{{getText "attemptedProblems"}}</h2>
+        {{end}}
+        <kn-pb-attemptedby enc="{{.AttemptedProblems | encodeJSON}}" count="{{.AttemptedCount}}" userid="{{.ContentUser.ID}}"></kn-pb-solvedby>
     </div>
 {{ end }}
+
+
+{{ if gt (len .ChangeHistory) 1}}
+<div class="segment-panel reset-list">
+    <h2>{{getText "usernameChangeHistory"}}</h2>
+    <ul>
+        {{range .ChangeHistory}}
+        <li>
+            <code>{{.Name}}</code> ({{formatTime .ChangedAt}})
+        </li>
+        {{end}}
+    </ul>
+</div>
+{{end}}
 
 {{ end }}

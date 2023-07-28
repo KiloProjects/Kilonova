@@ -66,8 +66,9 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.LockedLogin {
-		errorData(w, "Login has been restricted by an administrator", 401)
+	if user.LockedLogin && !user.Admin {
+		// Lockout but don't lockout admins
+		errorData(w, "Login for this account has been restricted by an administrator", 401)
 		return
 	}
 

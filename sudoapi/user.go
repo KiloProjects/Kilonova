@@ -173,6 +173,9 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, userID int, newName string
 func (s *BaseAPI) SetForceUsernameChange(ctx context.Context, userID int, force bool) *StatusError {
 	return s.updateUser(ctx, userID, kilonova.UserFullUpdate{NameChangeRequired: &force})
 }
+func (s *BaseAPI) SetUserLockout(ctx context.Context, userID int, lockout bool) *StatusError {
+	return s.updateUser(ctx, userID, kilonova.UserFullUpdate{LockedLogin: &lockout})
+}
 
 func (s *BaseAPI) UsernameChangeHistory(ctx context.Context, userID int) ([]*kilonova.UsernameChange, *StatusError) {
 	changes, err := s.db.UsernameChangeHistory(ctx, userID)

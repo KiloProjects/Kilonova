@@ -184,6 +184,52 @@ func (s *API) purgeBio(w http.ResponseWriter, r *http.Request) {
 
 	returnData(w, "Purged bio")
 }
+
+func (s *API) manageUser(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		ID      int     `json:"id"`
+		Lockout *bool   `json:"lockout"`
+		NewName *string `json:"new_name"`
+
+		ForceUsernameChange *bool `json:"force_username_change"`
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	user, err := s.base.UserBrief(r.Context(), args.ID)
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	if args.NewName != nil && len(*args.NewName) > 2 && user.Name != *args.NewName {
+		// Admins can change to formerly existing names
+		if err := s.base.UpdateUsername(r.Context(), user.ID, *args.NewName, false, true); err != nil {
+			err.WriteError(w)
+			return
+		}
+	}
+
+	if args.ForceUsernameChange != nil {
+		if err := s.base.SetForceUsernameChange(r.Context(), user.ID, *args.ForceUsernameChange); err != nil {
+			err.WriteError(w)
+			return
+		}
+	}
+
+	if args.Lockout != nil {
+		if err := s.base.SetUserLockout(r.Context(), user.ID, *args.Lockout); err != nil {
+			err.WriteError(w)
+			return
+		}
+	}
+
+	returnData(w, "Updated user")
+}
+
 func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {

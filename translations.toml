@@ -302,18 +302,49 @@ ro = "Creare Bio"
 en = "One solved problem:"
 ro = "O problemă rezolvată:"
 
-[solvedProblems]
+[manySolvedProblems]
 en = "%d solved problems"
 ro = "%d probleme rezolvate"
 
+[solvedProblems]
+en = "Solved problems"
+ro = "Probleme rezolvate"
 
 [oneAttemptedProblem]
 en = "One attempted problem:"
 ro = "O problemă încercată:"
 
-[attemptedProblems]
+[manyAttemptedProblems]
 en = "%d attempted problems"
 ro = "%d probleme încercate"
+
+[usernameChangeHistory]
+en = "Username history"
+ro = "Istoric username"
+
+[attemptedProblems]
+en = "Attempted problems"
+ro = "Probleme încercate"
+
+[manageUser]
+en = "Manage user"
+ro = "Administrare utilizator"
+
+[can_login]
+en = "Can log in"
+ro = "Se poate autentifica"
+
+[must_change_uname]
+en = "Is required to change username"
+ro = "Este obligat să schimbe username-ul"
+
+[change_name]
+en = "Force change username"
+ro = "Schimbare forțată username"
+
+[purgeBio]
+en = "Remove bio"
+ro = "Ștergere bio"
 
 [deleteAccount]
 en = "Prune User"
@@ -322,6 +353,10 @@ ro = "Ștergere Profil"
 [delAccConfirmation]
 en = "Are you sure you want to prune the user?"
 ro = "Ești sigur că vrei să ștergi utilizatorul?"
+
+[bioPruneConfirmation]
+en = "Are you sure you want to remove this user's bio?"
+ro = "Eșit sigur că vrei să ștergi bio-ul utilizatorului?"
 
 [confirmedEmail]
 en = "Email confirmed for user %s"
@@ -2116,3 +2151,31 @@ ro = "Eroare internă"
 [att_suggest_text]
 en = "Autocompleting attachment flags with suggested values..."
 ro = "Se autocompletează proprietățile cu valori sugerate..."
+
+[usernameChangeForced]
+en = "Username change required"
+ro = "Este necesară schimbarea username-ului"
+
+[usernameChangeDetails]
+en = "An admin has flagged your account for a required username change. It may be because it contains obscene remarks, could be considered spam or uses characters that aren't allowed anymore."
+ro = "Un administrator a marcat contul tău pentru o schimbare necesară a numelui. E posibil ca numele prezent să conțină cuvinte obscene, poate fi considerat spam sau folosește caractere care nu mai sunt permise."
+
+[usernameChangeUniqueRemark]
+en = "Please choose a new name that wasn't used before."
+ro = "Te rugăm să introduci un nume nou care nu s-a mai folosit până acum."
+
+[usernameChangeWarning]
+en = "Please note that if the new name is not appropriate, the admins may lock your account."
+ro = "Te rugăm să iei în vedere faptul că dacă numele nou nu este adecvat, administratorii ar putea bloca contul."
+
+[currentUsername]
+en = "Current username"
+ro = "Nume prezent"
+
+[newUsername]
+en = "New username"
+ro = "Nume nou"
+
+[changeName]
+en = "Change name"
+ro = "Schimbare nume"

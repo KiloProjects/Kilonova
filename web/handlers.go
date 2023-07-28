@@ -878,19 +878,36 @@ func (rt *Web) contestLeaderboard() http.HandlerFunc {
 func (rt *Web) selfProfile() http.HandlerFunc {
 	templ := rt.parse(nil, "profile.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		solvedPbs, err := rt.base.SolvedProblems(r.Context(), util.UserBrief(r))
+		solvedPbs, solvedCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
+			LookingUser: util.UserBrief(r), Look: true,
+			SolvedBy: &util.UserBrief(r).ID,
+
+			Limit: 50,
+		}, util.UserBrief(r))
 		if err != nil {
-			solvedPbs = []*kilonova.ScoredProblem{}
+			zap.S().Warn(err)
+			solvedPbs = []*sudoapi.FullProblem{}
 		}
-		attemptedPbs, err := rt.base.AttemptedProblems(r.Context(), util.UserBrief(r))
+
+		attemptedPbs, attemptedCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
+			LookingUser: util.UserBrief(r), Look: true,
+			AttemptedBy: &util.UserBrief(r).ID,
+
+			Limit: 50,
+		}, util.UserBrief(r))
 		if err != nil {
-			attemptedPbs = []*kilonova.ScoredProblem{}
+			zap.S().Warn(err)
+			attemptedPbs = []*sudoapi.FullProblem{}
 		}
+
+		changeHistory, err := rt.base.UsernameChangeHistory(r.Context(), util.UserBrief(r).ID)
+		if err != nil {
+			changeHistory = []*kilonova.UsernameChange{}
+		}
+
 		rt.runTempl(w, r, templ, &ProfileParams{
-			GenContext(r),
-			util.UserFull(r),
-			solvedPbs,
-			attemptedPbs,
+			GenContext(r), util.UserFull(r), solvedPbs, solvedCnt, attemptedPbs, attemptedCnt,
+			changeHistory,
 		})
 	}
 }
@@ -909,19 +926,36 @@ func (rt *Web) profile() http.HandlerFunc {
 			return
 		}
 
-		solvedPbs, err := rt.base.SolvedProblems(r.Context(), user.Brief())
+		solvedPbs, solvedCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
+			LookingUser: util.UserBrief(r), Look: true,
+			SolvedBy: &user.ID,
+
+			Limit: 50,
+		}, user.Brief())
 		if err != nil {
-			solvedPbs = []*kilonova.ScoredProblem{}
+			zap.S().Warn(err)
+			solvedPbs = []*sudoapi.FullProblem{}
 		}
-		attemptedPbs, err := rt.base.AttemptedProblems(r.Context(), user.Brief())
+
+		attemptedPbs, attemptedCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
+			LookingUser: util.UserBrief(r), Look: true,
+			AttemptedBy: &user.ID,
+
+			Limit: 50,
+		}, user.Brief())
 		if err != nil {
-			attemptedPbs = []*kilonova.ScoredProblem{}
+			zap.S().Warn(err)
+			attemptedPbs = []*sudoapi.FullProblem{}
 		}
+
+		changeHistory, err := rt.base.UsernameChangeHistory(r.Context(), user.Brief().ID)
+		if err != nil {
+			changeHistory = []*kilonova.UsernameChange{}
+		}
+
 		rt.runTempl(w, r, templ, &ProfileParams{
-			GenContext(r),
-			user,
-			rt.base.FilterVisibleProblems(util.UserBrief(r), solvedPbs),
-			rt.base.FilterVisibleProblems(util.UserBrief(r), attemptedPbs),
+			GenContext(r), user, solvedPbs, solvedCnt, attemptedPbs, attemptedCnt,
+			changeHistory,
 		})
 	}
 }

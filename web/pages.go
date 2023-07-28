@@ -266,8 +266,12 @@ type ProfileParams struct {
 	Ctx *ReqContext
 
 	ContentUser       *kilonova.UserFull
-	SolvedProblems    []*kilonova.ScoredProblem
-	AttemptedProblems []*kilonova.ScoredProblem
+	SolvedProblems    []*sudoapi.FullProblem
+	SolvedCount       int
+	AttemptedProblems []*sudoapi.FullProblem
+	AttemptedCount    int
+
+	ChangeHistory []*kilonova.UsernameChange
 }
 
 type AuditLogParams struct {
