@@ -52,7 +52,7 @@ func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserF
 
 // Signup
 
-var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 
 func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, theme kilonova.PreferredTheme) (int, *StatusError) {
 	if !SignupEnabled.Value() {
@@ -117,7 +117,7 @@ func (s *BaseAPI) CheckValidPassword(pwd string) *StatusError {
 
 func (s *BaseAPI) CheckValidUsername(name string) *StatusError {
 	if !usernameRegex.MatchString(name) {
-		return Statusf(400, "Username must contain only letters, digits, underlines and dashes.")
+		return Statusf(400, "Username must contain only letters, digits, underlines, dashes and dots.")
 	}
 	if !(len(name) >= 3 && len(name) <= 24) {
 		return Statusf(400, "Username must be between 3 and 24 characters long.")
