@@ -119,8 +119,8 @@ func (s *BaseAPI) CheckValidUsername(name string) *StatusError {
 	if !usernameRegex.MatchString(name) {
 		return Statusf(400, "Username must contain only letters, digits, underlines and dashes.")
 	}
-	if !(len(name) >= 3 && len(name) <= 16) {
-		return Statusf(400, "Username must be between 3 and 16 characters long.")
+	if !(len(name) >= 3 && len(name) <= 24) {
+		return Statusf(400, "Username must be between 3 and 24 characters long.")
 	}
 	return nil
 }
