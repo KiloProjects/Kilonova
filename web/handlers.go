@@ -401,7 +401,7 @@ func (rt *Web) problem() http.HandlerFunc {
 
 		foundLang, foundFmt := rt.appropriateDescriptionVariant(r, variants)
 
-		url := fmt.Sprintf("/problems/%d/attachments/statement-%s.%s", problem.ID, foundLang, foundFmt)
+		url := fmt.Sprintf("/assets/problem/%d/attachment/statement-%s.%s", problem.ID, foundLang, foundFmt)
 		switch foundFmt {
 		case "md":
 			statement, err = rt.base.RenderedProblemDesc(r.Context(), problem, foundLang, foundFmt)
@@ -637,7 +637,7 @@ func (rt *Web) blogPost() http.HandlerFunc {
 
 		foundLang, foundFmt := rt.appropriateDescriptionVariant(r, variants)
 
-		url := fmt.Sprintf("/posts/%s/attachments/statement-%s.%s", post.Slug, foundLang, foundFmt)
+		url := fmt.Sprintf("/assets/blogPost/%s/attachment/statement-%s.%s", post.Slug, foundLang, foundFmt)
 		switch foundFmt {
 		case "md":
 			statement, err = rt.base.RenderedBlogPostDesc(r.Context(), post, foundLang, foundFmt)

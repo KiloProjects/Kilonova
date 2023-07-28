@@ -42,7 +42,7 @@
         <h2>{{getText "attachments"}}</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1">
             {{range .}}
-            <a style="word-wrap: anywhere;" href="/posts/{{$post.Slug}}/attachments/{{.Name}}"
+            <a style="word-wrap: anywhere;" href="/assets/blogPost/{{$post.Slug}}/attachment/{{.Name}}"
                 class="segment-panel m-0 flex justify-between black-anchor">
                 <h3 class="inline" id="att-name-{{.ID}}">{{.Name}}</h3>
                 <span class="badge-lite text-sm" id="att-size-{{.ID}}">

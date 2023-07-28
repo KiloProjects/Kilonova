@@ -26,10 +26,10 @@ export function AttachmentRenamer({
 		urlPrefix = "";
 	if (pbid?.length > 0) {
 		apiPrefix = `/problem/${pbid}`;
-		urlPrefix = `/problems/${pbid}`;
+		urlPrefix = `/assets/problem/${pbid}`;
 	} else if (postid?.length > 0) {
 		apiPrefix = `/blogPosts/${postid}`;
-		urlPrefix = `/posts/${postslug}`;
+		urlPrefix = `/assets/blogPost/${postslug}`;
 	} else {
 		throw new Error("problem id or post id not specified");
 	}
@@ -48,7 +48,7 @@ export function AttachmentRenamer({
 	if (!editing) {
 		return (
 			<>
-				<a href={urlPrefix + `/attachments/${name}`}>{name}</a>{" "}
+				<a href={urlPrefix + `/attachment/${name}`}>{name}</a>{" "}
 				<span
 					onClick={() => {
 						setEditing(true);

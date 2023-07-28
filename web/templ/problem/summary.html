@@ -160,7 +160,7 @@
             <div class="px-2">
                 <div class="list-group">
                     {{ range . }}
-                    <a style="word-wrap: anywhere;" href="{{$topbar.URLPrefix}}/problems/{{$pbid}}/attachments/{{.Name}}"
+                    <a style="word-wrap: anywhere;" href="/assets/problem/{{$pbid}}/attachment/{{.Name}}"
                         class="list-group-item flex justify-between">
                         <span id="att-name-{{.ID}}">{{.Name}}</span>
                         <span class="badge-lite text-sm" id="att-size-{{.ID}}">
