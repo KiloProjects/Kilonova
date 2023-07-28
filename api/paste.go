@@ -10,26 +10,12 @@ import (
 )
 
 func (s *API) createPaste(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	var args struct {
-		SubmissionID int `json:"id"`
-	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 500)
-		return
-	}
-
-	sub, err := s.base.RawSubmission(r.Context(), args.SubmissionID)
-	if err != nil {
-		err.WriteError(w)
-		return
-	}
-	if !s.base.IsSubmissionEditor(sub, util.UserBrief(r)) {
+	if !s.base.IsSubmissionEditor(&util.Submission(r).Submission, util.UserBrief(r)) {
 		errorData(w, "You can't create a paste for this submission!", 403)
 		return
 	}
 
-	id, err := s.base.CreatePaste(r.Context(), sub, util.UserBrief(r))
+	id, err := s.base.CreatePaste(r.Context(), &util.Submission(r).Submission, util.UserBrief(r))
 	if err != nil {
 		err.WriteError(w)
 		return

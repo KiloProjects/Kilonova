@@ -165,19 +165,7 @@ func (s *BaseAPI) RawSubmissions(ctx context.Context, filter kilonova.Submission
 	return subs, nil
 }
 
-type FullSubmission struct {
-	kilonova.Submission
-	Author   *UserBrief          `json:"author"`
-	Problem  *kilonova.Problem   `json:"problem"`
-	SubTests []*kilonova.SubTest `json:"subtests"`
-
-	SubTasks []*kilonova.SubmissionSubTask `json:"subtasks"`
-
-	// ProblemEditor returns whether the looking user is a problem editor
-	ProblemEditor bool `json:"problem_editor"`
-
-	CodeTrulyVisible bool `json:"truly_visible"`
-}
+type FullSubmission = kilonova.FullSubmission
 
 func (s *BaseAPI) Submission(ctx context.Context, subid int, lookingUser *UserBrief) (*FullSubmission, *StatusError) {
 	return s.getSubmission(ctx, subid, lookingUser, true)

@@ -316,12 +316,7 @@ func (rt *Web) auditLog() http.HandlerFunc {
 func (rt *Web) submission() http.HandlerFunc {
 	templ := rt.parse(nil, "submission.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		fullSub, err := rt.base.Submission(r.Context(), util.Submission(r).ID, util.UserBrief(r))
-		if err != nil {
-			rt.statusPage(w, r, 500, "N-am putut obține submisia")
-			return
-		}
-		rt.runTempl(w, r, templ, &SubParams{GenContext(r), util.Submission(r), fullSub})
+		rt.runTempl(w, r, templ, &SubParams{GenContext(r), util.Submission(r)})
 	}
 }
 

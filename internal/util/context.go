@@ -72,8 +72,11 @@ func BlogPost(r *http.Request) *kilonova.BlogPost {
 	return BlogPostContext(r.Context())
 }
 
-func Submission(r *http.Request) *kilonova.Submission {
-	return getValueContext[kilonova.Submission](r.Context(), SubKey)
+func SubmissionContext(ctx context.Context) *kilonova.FullSubmission {
+	return getValueContext[kilonova.FullSubmission](ctx, SubKey)
+}
+func Submission(r *http.Request) *kilonova.FullSubmission {
+	return SubmissionContext(r.Context())
 }
 
 func Contest(r *http.Request) *kilonova.Contest {

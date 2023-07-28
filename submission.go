@@ -117,3 +117,17 @@ type SubmissionPaste struct {
 	Submission *Submission `json:"sub"`
 	Author     *UserBrief  `json:"author"`
 }
+
+type FullSubmission struct {
+	Submission
+	Author   *UserBrief `json:"author"`
+	Problem  *Problem   `json:"problem"`
+	SubTests []*SubTest `json:"subtests"`
+
+	SubTasks []*SubmissionSubTask `json:"subtasks"`
+
+	// ProblemEditor returns whether the looking user is a problem editor
+	ProblemEditor bool `json:"problem_editor"`
+
+	CodeTrulyVisible bool `json:"truly_visible"`
+}

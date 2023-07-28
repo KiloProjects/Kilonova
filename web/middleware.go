@@ -176,7 +176,7 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.SubKey, &sub.Submission)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.SubKey, sub)))
 	})
 }
 

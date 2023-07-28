@@ -6,18 +6,18 @@
 
 <kn-sub-mgr 
     id="{{.Submission.ID}}" 
-    enc="{{.FullSub | encodeJSON}}" 
-    code="{{if .FullSub.Code}}{{syntaxHighlight .FullSub.Code .FullSub.Language}}{{end}}"></kn-sub-mgr>
+    enc="{{.Submission | encodeJSON}}" 
+    code="{{if .Submission.Code}}{{syntaxHighlight .Submission.Code .Submission.Language}}{{end}}"></kn-sub-mgr>
 
 <div class="mb-2"></div>
 
 {{ if authed }}
-    {{ if .Ctx.User.Admin }}
+    {{ if or (isAdmin) .Submission.ProblemEditor }}
     <button onclick="deleteSubmission()" class="btn btn-red mb-2">{{getText "removeSub"}}</button>
     <button onclick="reevaluateSubmission()" class="btn btn-blue mb-2">{{getText "reevaluate"}}</button>
     {{ end }}
     {{ if boolFlag "feature.pastes.enabled" }}
-        {{ if submissionEditor .Ctx.User.Brief .Submission }}
+        {{ if submissionEditor .Ctx.User.Brief .Submission.Submission }}
             <button id="pasteCreateBtn" class="btn btn-blue mb-2">{{getText "create_paste"}}</button>
         {{ end }}
     {{ end }}
@@ -26,7 +26,7 @@
 <script>
 const sub_id = {{.Submission.ID}};
 document.getElementById("pasteCreateBtn")?.addEventListener("click", async e => {
-    const res = await bundled.postCall("/submissions/createPaste", { id: sub_id });
+    const res = await bundled.postCall(`/submissions/${sub_id}/createPaste`, {});
     if (res.status === "error") {
         apiToast(res);
     }
@@ -47,8 +47,7 @@ async function deleteSubmission() {
     if(!(await bundled.confirm(bundled.getText("subDeleteConfirm")))) {
         return;
     }
-    const args = {submission_id: sub_id};
-    let res = await bundled.postCall("/submissions/delete", args)
+    let res = await bundled.postCall(`/submissions/${sub_id}/delete`, {})
     if(res.status === "success") {
         window.history.back();
         return
@@ -56,8 +55,7 @@ async function deleteSubmission() {
     bundled.apiToast(res)
 }
 async function reevaluateSubmission() {
-    const args = {id: sub_id};
-    let res = await bundled.postCall("/admin/maintenance/reevaluateSubmission", args);
+    let res = await bundled.postCall(`/submissions/${sub_id}/reevaluate`, {});
     if(res.status === "success") {
         window.location.reload();
         return

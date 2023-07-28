@@ -52,11 +52,6 @@ func (s *API) Handler() http.Handler {
 				}
 				return nil
 			}))
-			r.Post("/reevaluateSubmission", webMessageWrapper("Reset submission", func(ctx context.Context, args struct {
-				ID int `json:"id"`
-			}) *kilonova.StatusError {
-				return s.base.ResetSubmission(context.WithoutCancel(ctx), args.ID)
-			}))
 		})
 
 		r.Get("/getAllUsers", s.getAllUsers)
@@ -177,7 +172,30 @@ func (s *API) Handler() http.Handler {
 		r.Get("/get", s.filterSubs())
 		r.Get("/getByID", s.getSubmissionByID())
 
-		r.With(s.MustBeAuthed).Post("/createPaste", s.createPaste)
+		r.Route("/{subID}", func(r chi.Router) {
+			r.Use(s.validateSubmissionID)
+
+			r.With(s.MustBeAuthed).Post("/createPaste", s.createPaste)
+			r.With(s.MustBeAuthed).Post("/delete", webMessageWrapper("Deleted submission", func(ctx context.Context, args struct{}) *kilonova.StatusError {
+				// Check submission permissions
+				if !(util.UserBriefContext(ctx).Admin || util.SubmissionContext(ctx).ProblemEditor) {
+					return kilonova.Statusf(403, "You cannot delete this submission!")
+				}
+
+				if err := s.base.DeleteSubmission(ctx, util.SubmissionContext(ctx).ID); err != nil {
+					return err
+				}
+				return nil
+			}))
+			r.Post("/reevaluate", webMessageWrapper("Reset submission", func(ctx context.Context, args struct{}) *kilonova.StatusError {
+				// Check submission permissions
+				if !(util.UserBriefContext(ctx).Admin || util.SubmissionContext(ctx).ProblemEditor) {
+					return kilonova.Statusf(403, "You cannot delete this submission!")
+				}
+
+				return s.base.ResetSubmission(context.WithoutCancel(ctx), util.SubmissionContext(ctx).ID)
+			}))
+		})
 
 		r.With(s.MustBeAuthed).With(s.withProblem("problemID", true)).Post("/submit", webWrapper(func(ctx context.Context, args struct {
 			Code      string `json:"code"`
@@ -190,14 +208,6 @@ func (s *API) Handler() http.Handler {
 				return -1, kilonova.Statusf(400, "Invalid language")
 			}
 			return s.base.CreateSubmission(ctx, util.UserBriefContext(ctx), util.ProblemContext(ctx), args.Code, lang, args.ContestID, false)
-		}))
-		r.With(s.MustBeAdmin).Post("/delete", webWrapper(func(ctx context.Context, args struct {
-			SubmissionID int `json:"submission_id"`
-		}) (string, *kilonova.StatusError) {
-			if err := s.base.DeleteSubmission(ctx, args.SubmissionID); err != nil {
-				return "", err
-			}
-			return "Deleted submission", nil
 		}))
 	})
 	r.Route("/paste/{pasteID}", func(r chi.Router) {

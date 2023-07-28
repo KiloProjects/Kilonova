@@ -330,9 +330,7 @@ type PasswordResetParams struct {
 
 type SubParams struct {
 	Ctx        *ReqContext
-	Submission *kilonova.Submission
-
-	FullSub *sudoapi.FullSubmission
+	Submission *kilonova.FullSubmission
 }
 
 type PasteParams struct {
