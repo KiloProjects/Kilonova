@@ -60,13 +60,18 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uid, status := s.base.Login(r.Context(), auth.Username, auth.Password)
+	user, status := s.base.Login(r.Context(), auth.Username, auth.Password)
 	if status != nil {
 		status.WriteError(w)
 		return
 	}
 
-	sid, err1 := s.base.CreateSession(r.Context(), uid)
+	if user.LockedLogin {
+		errorData(w, "Login has been restricted by an administrator", 401)
+		return
+	}
+
+	sid, err1 := s.base.CreateSession(r.Context(), user.ID)
 	if err1 != nil {
 		err1.WriteError(w)
 		return

@@ -9,12 +9,18 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
+)
+
+var (
+	CanChangeNames = config.GenFlag("feature.username_changes.enabled", true, "Anyone can change their usernames")
 )
 
 func (s *BaseAPI) UserBrief(ctx context.Context, id int) (*UserBrief, *StatusError) {
@@ -109,6 +115,74 @@ func (s *BaseAPI) updateUser(ctx context.Context, userID int, upd kilonova.UserF
 		return WrapError(err, "Couldn't update user")
 	}
 	return nil
+}
+
+// Since it's a check-update situation, use a mutex to synchronize eventual double updates
+var usernameChangeMu sync.Mutex
+
+// fromAdmin also should include the forced username changes
+func (s *BaseAPI) UpdateUsername(ctx context.Context, userID int, newName string, checkUsed bool, fromAdmin bool) *StatusError {
+	usernameChangeMu.Lock()
+	defer usernameChangeMu.Unlock()
+
+	if !(CanChangeNames.Value() || fromAdmin) {
+		return Statusf(401, "Username changes have been disabled by administrator")
+	}
+
+	if err := s.CheckValidUsername(newName); err != nil {
+		return err
+	}
+
+	if !fromAdmin {
+		chAt, err := s.db.LastUsernameChange(ctx, userID)
+		if err != nil {
+			if !errors.Is(err, context.Canceled) {
+				zap.S().Warn(err)
+			}
+			return WrapError(err, "Couldn't get last change date")
+		}
+		nextEligbleDate := chAt.Add(14 * 24 * time.Hour)
+		if nextEligbleDate.After(time.Now()) {
+			return Statusf(400, "You can only change your username at most once every 14 days. You may change it again on %s", nextEligbleDate.Format(time.DateTime))
+		}
+	}
+
+	if _, err := s.UserBriefByName(ctx, newName); err == nil {
+		return Statusf(400, "Name must not be used by anyone currently")
+	}
+
+	if checkUsed {
+		used, err := s.db.NameUsedBefore(ctx, newName)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
+		if used {
+			return Statusf(400, "New name must have never been used by anyone. Contact us on discord if you want to take the name for yourself.")
+		}
+	}
+
+	f := false
+	if err := s.updateUser(ctx, userID, kilonova.UserFullUpdate{Name: &newName, NameChangeRequired: &f}); err != nil {
+		return err
+	}
+
+	s.LogInfo(ctx, "Changed user #%d name to %q", userID, newName)
+	return nil
+}
+
+func (s *BaseAPI) SetForceUsernameChange(ctx context.Context, userID int, force bool) *StatusError {
+	return s.updateUser(ctx, userID, kilonova.UserFullUpdate{NameChangeRequired: &force})
+}
+
+func (s *BaseAPI) UsernameChangeHistory(ctx context.Context, userID int) ([]*kilonova.UsernameChange, *StatusError) {
+	changes, err := s.db.UsernameChangeHistory(ctx, userID)
+	if err != nil {
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
+		return []*kilonova.UsernameChange{}, WrapError(err, "Couldn't get change history")
+	}
+	return changes, nil
 }
 
 func (s *BaseAPI) VerifyUserPassword(ctx context.Context, uid int, password string) *StatusError {

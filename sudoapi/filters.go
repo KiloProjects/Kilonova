@@ -180,16 +180,6 @@ func (s *BaseAPI) IsContestVisible(user *kilonova.UserBrief, contest *kilonova.C
 	return ok
 }
 
-func (s *BaseAPI) FilterVisibleProblems(user *kilonova.UserBrief, pbs []*kilonova.ScoredProblem) []*kilonova.ScoredProblem {
-	vpbs := make([]*kilonova.ScoredProblem, 0, len(pbs))
-	for _, pb := range pbs {
-		if s.IsProblemVisible(user, &pb.Problem) {
-			vpbs = append(vpbs, pb)
-		}
-	}
-	return vpbs
-}
-
 func (s *BaseAPI) IsSubmissionEditor(sub *kilonova.Submission, user *kilonova.UserBrief) bool {
 	if !s.IsAuthed(user) {
 		return false

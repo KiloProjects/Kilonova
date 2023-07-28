@@ -2,7 +2,6 @@ package sudoapi
 
 import (
 	"context"
-	"errors"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
@@ -209,41 +208,30 @@ func (s *BaseAPI) ContestProblem(ctx context.Context, contest *kilonova.Contest,
 	return nil, WrapError(ErrNotFound, "Problem isn't in contest")
 }
 
-func (s *BaseAPI) SolvedProblems(ctx context.Context, user *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
+// Deprecated. TODO: Remove
+func (s *BaseAPI) SolvedProblems(ctx context.Context, user *kilonova.UserBrief, lookingUser *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
 	if user == nil {
 		return []*kilonova.ScoredProblem{}, nil
 	}
-	ids, err := s.db.SolvedProblemIDs(ctx, user.ID)
-	if err != nil {
-		return nil, WrapError(err, "Couldn't get solved problem IDs")
-	}
-	return s.hydrateProblemIDs(ctx, ids, user), nil
+	return s.ScoredProblems(ctx, kilonova.ProblemFilter{
+		SolvedBy: &user.ID,
+
+		Look:        true,
+		LookingUser: lookingUser,
+	}, user)
 }
 
-func (s *BaseAPI) AttemptedProblems(ctx context.Context, user *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
+// Deprecated. TODO: Remove
+func (s *BaseAPI) AttemptedProblems(ctx context.Context, user *kilonova.UserBrief, lookingUser *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
 	if user == nil {
 		return []*kilonova.ScoredProblem{}, nil
 	}
-	ids, err := s.db.AttemptedProblemsIDs(ctx, user.ID)
-	if err != nil {
-		return nil, WrapError(err, "Couldn't get attempted problem IDs")
-	}
-	return s.hydrateProblemIDs(ctx, ids, user), nil
-}
+	return s.ScoredProblems(ctx, kilonova.ProblemFilter{
+		AttemptedBy: &user.ID,
 
-func (s *BaseAPI) hydrateProblemIDs(ctx context.Context, ids []int, user *kilonova.UserBrief) []*kilonova.ScoredProblem {
-	var pbs = make([]*kilonova.ScoredProblem, 0, len(ids))
-	for _, id := range ids {
-		pb, err := s.ScoredProblem(ctx, id, user.ID)
-		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				zap.S().Warnf("Couldn't get solved problem %d: %s\n", id, err)
-			}
-		} else {
-			pbs = append(pbs, pb)
-		}
-	}
-	return pbs
+		Look:        true,
+		LookingUser: lookingUser,
+	}, user)
 }
 
 func (s *BaseAPI) insertProblem(ctx context.Context, problem *kilonova.Problem, authorID int) (int, *StatusError) {

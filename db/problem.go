@@ -256,6 +256,13 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []any) {
 		}
 	}
 
+	if v := filter.SolvedBy; v != nil {
+		where, args = append(where, "EXISTS (SELECT 1 FROM max_score_view WHERE score = 100 AND problem_id = problems.id AND user_id = ?)"), append(args, v)
+	}
+	if v := filter.AttemptedBy; v != nil {
+		where, args = append(where, "EXISTS (SELECT 1 FROM max_score_view WHERE score != 100 AND score >= 0 AND problem_id = problems.id AND user_id = ?)"), append(args, v)
+	}
+
 	if filter.Unassociated {
 		where = append(where, "NOT EXISTS (SELECT 1 FROM problem_list_problems WHERE problem_id = problems.id)")
 	}

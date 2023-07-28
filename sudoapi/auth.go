@@ -19,35 +19,35 @@ var (
 
 // Login
 
-func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (int, *StatusError) {
+func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserFull, *StatusError) {
 	user, err := s.db.User(ctx, kilonova.UserFilter{Name: &uname})
 	if err != nil {
 		zap.S().Warn(err)
-		return -1, Statusf(400, "Invalid login details")
+		return nil, Statusf(400, "Invalid login details")
 	}
 	// Maybe the user is trying to log in by email
 	if user == nil {
 		user, err = s.db.User(ctx, kilonova.UserFilter{Email: &uname})
 		if err != nil {
 			zap.S().Warn(err)
-			return -1, Statusf(400, "Invalid login details")
+			return nil, Statusf(400, "Invalid login details")
 		}
 	}
 
 	if user == nil {
-		return -1, Statusf(400, "Invalid login details")
+		return nil, Statusf(400, "Invalid login details")
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(pwd))
 	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-		return -1, Statusf(400, "Invalid login details")
+		return nil, Statusf(400, "Invalid login details")
 	} else if err != nil {
 		// This should never happen. It means that bcrypt suffered something
 		zap.S().Warn(err)
-		return -1, ErrUnknownError
+		return nil, ErrUnknownError
 	}
 
-	return user.ID, nil
+	return user.ToFull(), nil
 }
 
 // Signup
@@ -60,8 +60,8 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 	}
 
 	uname = strings.TrimSpace(uname)
-	if !(len(uname) >= 3 && len(uname) <= 32 && usernameRegex.MatchString(uname)) {
-		return -1, Statusf(400, "Username must be between 3 and 32 characters long and must contain only letters, digits, underlines and dashes.")
+	if err := s.CheckValidUsername(uname); err != nil {
+		return -1, err
 	}
 	if err := s.CheckValidPassword(pwd); err != nil {
 		return -1, err
@@ -99,9 +99,11 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 		return -1, err1
 	}
 
-	if err := s.SendVerificationEmail(ctx, user.ID, user.Name, user.Email); err != nil {
-		zap.S().Info("Couldn't send user verification email:", err)
-	}
+	go func() {
+		if err := s.SendVerificationEmail(context.WithoutCancel(ctx), user.ID, user.Name, user.Email); err != nil {
+			zap.S().Info("Couldn't send user verification email:", err)
+		}
+	}()
 
 	return id, nil
 }
@@ -109,6 +111,16 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 func (s *BaseAPI) CheckValidPassword(pwd string) *StatusError {
 	if len(pwd) < 6 || len(pwd) > 128 {
 		return Statusf(400, "Invalid password length.")
+	}
+	return nil
+}
+
+func (s *BaseAPI) CheckValidUsername(name string) *StatusError {
+	if !usernameRegex.MatchString(name) {
+		return Statusf(400, "Username must contain only letters, digits, underlines and dashes.")
+	}
+	if !(len(name) >= 3 && len(name) <= 16) {
+		return Statusf(400, "Username must be between 3 and 16 characters long.")
 	}
 	return nil
 }

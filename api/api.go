@@ -243,6 +243,8 @@ func (s *API) Handler() http.Handler {
 
 		r.With(s.MustBeAuthed).Post("/resendEmail", s.resendVerificationEmail)
 
+		r.With(s.MustBeAuthed).Post("/updateName", s.updateUsername)
+
 		r.Get("/get", webWrapper(func(ctx context.Context, args struct {
 			ID int `json:"id"`
 		}) (*kilonova.UserBrief, *sudoapi.StatusError) {

@@ -6,7 +6,6 @@
 
 {{ define "content" }}
 
-{{ $user := .Ctx.User.Brief }}
 {{ $root := .}}
 
 {{ range pblistParent .ProblemList }}
@@ -19,8 +18,8 @@
     <div class="list-group mb-4">
         {{ template "problemlist_show" (genPblistParams . true)}}
     </div>
-	{{ if $user }}
-	{{ if or (eq $user.ID .AuthorID) $user.Admin }}
+	{{ if authed }}
+	{{ if or (eq authedUser.ID .AuthorID) authedUser.Admin }}
 	<form id="pblist-update" class="segment-panel" autocomplete="off">
 		<h1> {{getText "list.update"}} </h1>
         <label class="block my-2">
@@ -49,7 +48,7 @@
         <button id="delButton" class="btn btn-red">{{getText "button.delete"}}</button>
 	</form>
 
-{{if authedUser.Admin}}
+{{if isAdmin}}
     <form id="problemBulkVizForm" class="segment-panel" autocomplete="off">
         <span class="text-lg">{{getText "updateProblems1"}}</span>
         <select class="form-select" name="deep" id="updProblemsDeep" required autocomplete="off">

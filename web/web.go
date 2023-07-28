@@ -579,6 +579,8 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 
 		"boolFlags": config.GetFlags[bool],
 
+		"validUsername": func(name string) bool { return base.CheckValidUsername(name) == nil },
+
 		// for problem edit page
 		"maxMemMB": func() float64 { return float64(config.Common.TestMaxMemKB) / 1024.0 },
 
@@ -665,6 +667,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"authedUser": func() *kilonova.UserBrief {
 			zap.S().Error("Uninitialized `authedUser`")
 			return nil
+		},
+		"isAdmin": func() bool {
+			zap.S().Error("Uninitialized `isAdmin`")
+			return false
 		},
 		"isContestEditor": func(c *kilonova.Contest) bool {
 			zap.S().Error("Uninitialized `isContestEditor`")

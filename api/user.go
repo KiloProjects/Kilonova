@@ -214,7 +214,7 @@ func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getSelfSolvedProblems(w http.ResponseWriter, r *http.Request) {
-	pbs, err := s.base.SolvedProblems(r.Context(), util.UserBrief(r))
+	pbs, err := s.base.SolvedProblems(r.Context(), util.UserBrief(r), util.UserBrief(r))
 	if err != nil {
 		err.WriteError(w)
 		return
@@ -228,15 +228,43 @@ func (s *API) getSolvedProblems(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "User not found", http.StatusNotFound)
 		return
 	}
-	pbs, err := s.base.SolvedProblems(r.Context(), user)
+	pbs, err := s.base.SolvedProblems(r.Context(), user, util.UserBrief(r))
 	if err != nil {
 		err.WriteError(w)
 		return
 	}
-	returnData(w, s.base.FilterVisibleProblems(util.UserBrief(r), pbs))
+	returnData(w, pbs)
 }
 
-// ChangeEmail changes the password of the saved user
+func (s *API) updateUsername(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		UserID  *int   `json:"userID"`
+		NewName string `json:"newName"`
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+	user := util.UserBrief(r)
+	if args.UserID != nil && util.UserBrief(r).Admin {
+		newUser, err := s.base.UserBrief(r.Context(), *args.UserID)
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+		user = newUser
+	}
+
+	if err := s.base.UpdateUsername(r.Context(), user.ID, args.NewName, !util.UserBrief(r).Admin, util.UserBrief(r).Admin || util.UserFull(r).NameChangeForced); err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	returnData(w, "Username updated")
+}
+
+// changePassword changes the password of the saved user
 // TODO: Check this is not a scam and the user actually wants to change password
 func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()

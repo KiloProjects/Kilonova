@@ -1,0 +1,43 @@
+{{define "title"}}{{getText "usernameChangeForced"}}{{end}}
+{{define "content"}}
+<form id="forceUpdateForm" class="segment-panel" autocomplete="off">
+    <h1>{{getText "usernameChangeForced"}}</h1>
+    <p class="my-2">{{getText "usernameChangeDetails"}}</p>
+    <p>{{getText "usernameChangeUniqueRemark"}}</p>
+
+    <div class="block my-2">
+        <span class="form-label">{{getText "currentUsername"}}:</span>
+        <strong class="text-lg">{{authedUser.Name}}</strong>
+    </div>
+
+    <label class="block my-2">
+        <span class="form-label">{{getText "newUsername"}}: </span>
+        <input id="forcedNewUsername" type="text" class="form-input" required/>
+    </label>
+
+    {{/* Add if clause so usernames made before old changes are not scared off. */}}
+    {{if validUsername authedUser.Name}}
+        <p class="text-muted mb-2">{{getText "usernameChangeWarning"}}</p>
+    {{end}}
+
+    <button class="btn btn-blue">{{getText "button.update"}}</button>
+</form>
+
+<script>
+    async function updateUsername(e) {
+        e.preventDefault();
+        const data = {
+            newName: document.getElementById("forcedNewUsername").value
+        }
+        const rez = await bundled.postCall("/user/updateName", data)
+        if(rez.status == "error") {
+            bundled.apiToast(rez)
+            return
+        }
+        window.location.reload()
+    }
+
+    document.getElementById("forceUpdateForm").addEventListener("submit", updateUsername)
+</script>
+
+{{end}}

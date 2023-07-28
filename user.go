@@ -33,6 +33,8 @@ type UserFull struct {
 	EmailVerifResent  time.Time      `json:"-"`
 	CreatedAt         time.Time      `json:"created_at"`
 	Generated         bool           `json:"generated"`
+	LockedLogin       bool           `json:"locked_login"`
+	NameChangeForced  bool           `json:"name_change_forced"`
 }
 
 func (uf *UserFull) Brief() *UserBrief {
@@ -84,13 +86,23 @@ type UserUpdate struct {
 type UserFullUpdate struct {
 	UserUpdate
 
+	Name *string `json:"name"`
+
 	Email *string `json:"email"`
 
 	Admin    *bool `json:"admin"`
 	Proposer *bool `json:"proposer"`
 
+	NameChangeRequired *bool `json:"name_change_required"`
+
 	VerifiedEmail    *bool      `json:"verified_email"`
 	EmailVerifSentAt *time.Time `json:"-"`
+}
+
+type UsernameChange struct {
+	UserID    int       `json:"user_id" db:"user_id"`
+	Name      string    `json:"name" db:"name"`
+	ChangedAt time.Time `json:"changed_at" db:"changed_at"`
 }
 
 func HashPassword(password string) (string, error) {

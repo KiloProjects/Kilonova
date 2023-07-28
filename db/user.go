@@ -27,7 +27,10 @@ type User struct {
 	PreferredLanguage string                  `json:"-" db:"preferred_language"`
 	PreferredTheme    kilonova.PreferredTheme `json:"-" db:"preferred_theme"`
 
-	Generated bool `json:"generated" db:"generated"`
+	NameChangeRequired bool `json:"name_change_required" db:"name_change_required"`
+
+	LockedLogin bool `json:"locked_login" db:"locked_login"`
+	Generated   bool `json:"generated" db:"generated"`
 }
 
 func toUserBrief(user *User) *kilonova.UserBrief {
@@ -63,6 +66,8 @@ func (user *User) ToFull() *kilonova.UserFull {
 		CreatedAt:         user.CreatedAt,
 		EmailVerifResent:  t,
 		Generated:         user.Generated,
+		LockedLogin:       user.LockedLogin,
+		NameChangeForced:  user.NameChangeRequired,
 	}
 }
 
@@ -107,11 +112,47 @@ func (s *DB) UserExists(ctx context.Context, username string, email string) (boo
 	return count > 0, err
 }
 
+func (s *DB) LastUsernameChange(ctx context.Context, userID int) (time.Time, error) {
+	var changedAt time.Time
+	err := s.pgconn.QueryRow(ctx, "SELECT MAX(changed_at) FROM username_change_history WHERE user_id = $1", userID).Scan(&changedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return time.Now(), nil
+		}
+		return time.Now(), err
+	}
+	return changedAt, nil
+}
+
+func (s *DB) NameUsedBefore(ctx context.Context, name string) (bool, error) {
+	var cnt int
+	err := s.pgconn.QueryRow(ctx, "SELECT COUNT(name) FROM username_change_history WHERE lower(name) = lower($1)", name).Scan(&cnt)
+	if err != nil {
+		return true, err
+	}
+	return cnt > 0, nil
+}
+
+func (s *DB) UsernameChangeHistory(ctx context.Context, userID int) ([]*kilonova.UsernameChange, error) {
+	rows, _ := s.pgconn.Query(ctx, "SELECT * FROM username_change_history WHERE user_id = $1", userID)
+	changes, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[kilonova.UsernameChange])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []*kilonova.UsernameChange{}, nil
+		}
+		return nil, err
+	}
+	return changes, nil
+}
+
 // UpdateUser updates a user.
 // Returns ENOTFOUND if the user does not exist
 func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate) error {
 	ub := newUpdateBuilder()
 
+	if v := upd.Name; v != nil {
+		ub.AddUpdate("name = %s", v)
+	}
 	if v := upd.Email; v != nil {
 		ub.AddUpdate("email = %s", v)
 	}
@@ -131,6 +172,11 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate
 	if v := upd.EmailVerifSentAt; v != nil {
 		ub.AddUpdate("email_verif_sent_at = %s", v)
 	}
+
+	if v := upd.NameChangeRequired; v != nil {
+		ub.AddUpdate("name_change_required = %s", v)
+	}
+
 	if v := upd.PreferredLanguage; v != "" {
 		ub.AddUpdate("preferred_language = %s", v)
 	}

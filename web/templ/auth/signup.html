@@ -6,14 +6,14 @@
 
 {{ define "content_signup_enabled" }}
 <h1 class="mb-2">{{getText "auth.signup"}}</h1>
-<form class="segment-panel" id="signup_form" autocomplete="off">
+<form class="segment-panel" id="signup_form">
 	<label class="block mb-2">
 		<span>{{getText "email"}}</span>
 		<input class="form-input w-full" type="email" id="email" name="email" autocomplete="email" required />
 	</label>
 	<label class="block mb-2">
 		<span>{{getText "username"}}</span>
-		<input class="form-input w-full" type="text" id="name" name="username" autocomplete="username" required />
+		<input class="form-input w-full" type="text" id="name" name="username" minlength="3" maxlength="16" autocomplete="username" required />
 	</label>
 	<label class="block mb-2">
 		<span>{{getText "password"}}</span>

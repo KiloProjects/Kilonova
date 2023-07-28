@@ -90,6 +90,9 @@ type ProblemFilter struct {
 	// Currently used for logging statement changes
 	AttachmentID *int `json:"-"`
 
+	SolvedBy    *int `json:"solved_by"`
+	AttemptedBy *int `json:"attempted_by"`
+
 	// Unassociated filter ensures that all returned problems are not "bound" to a problem list
 	Unassociated bool `json:"-"`
 

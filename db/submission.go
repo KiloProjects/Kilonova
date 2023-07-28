@@ -179,30 +179,6 @@ func (s *DB) ContestMaxScore(ctx context.Context, userid, problemid, contestid i
 	return score
 }
 
-func (s *DB) SolvedProblemIDs(ctx context.Context, userid int) ([]int, error) {
-	rows, err := s.pgconn.Query(ctx, `SELECT problem_id FROM max_score_view WHERE score = 100 AND user_id = $1 ORDER BY problem_id;`, userid)
-	if err != nil {
-		return []int{}, err
-	}
-	pbs, err := pgx.CollectRows(rows, pgx.RowTo[int])
-	if err != nil {
-		return []int{}, err
-	}
-	return pbs, err
-}
-
-func (s *DB) AttemptedProblemsIDs(ctx context.Context, userid int) ([]int, error) {
-	rows, err := s.pgconn.Query(ctx, `SELECT problem_id FROM max_score_view WHERE score != 100 AND score >= 0 AND user_id = $1 ORDER BY problem_id;`, userid)
-	if err != nil {
-		return []int{}, err
-	}
-	pbs, err := pgx.CollectRows(rows, pgx.RowTo[int])
-	if err != nil {
-		return []int{}, err
-	}
-	return pbs, err
-}
-
 func subFilterQuery(filter *kilonova.SubmissionFilter, fb *filterBuilder) {
 	if v := filter.ID; v != nil {
 		fb.AddConstraint("id = %s", v)

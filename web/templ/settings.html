@@ -16,12 +16,21 @@
 	<h2> {{getText "updateLang"}} </h2>
 	<form id="lang_form" autocomplete="off">
 		<select id="langSelect" class="form-select block my-2">
-			<option value="ro" {{if eq $user.PreferredLanguage "ro"}}selected{{end}}>🇷🇴 Română</option>
-			<option value="en" {{if eq $user.PreferredLanguage "en"}}selected{{end}}>🇬🇧 English</option>
+			<option value="ro" {{if eq $user.PreferredLanguage `ro`}}selected{{end}}>🇷🇴 Română</option>
+			<option value="en" {{if eq $user.PreferredLanguage `en`}}selected{{end}}>🇬🇧 English</option>
 		</select>
 		<button class="btn btn-blue" type="submit">{{getText "button.update"}}</textarea>
 	</form>
 </div>
+
+<form class="segment-panel" id="name_change_form" autocomplete="off">
+    <h2>{{getText "changeName"}}</h2>
+    <label class="block my-2">
+        <span class="form-label">{{getText "newUsername"}}:</span>
+        <input type="text" id="name_change_name" class="form-input" required/>
+    </label>
+    <button class="btn btn-blue">{{getText "button.update"}}</button>
+</form>
 
 <form class="segment-panel" id="pwd_change_form">
 	<h2> {{getText "updatePwd"}} </h2>
@@ -72,6 +81,18 @@ async function updateLanguage(e) {
 	}
 	bundled.apiToast(res)
 }
+async function updateName(e) {
+    e.preventDefault()
+    const data = {
+        newName: document.getElementById("name_change_name").value
+    }
+    const rez = await bundled.postCall("/user/updateName", data)
+    if(rez.status == "error") {
+        bundled.apiToast(rez)
+        return
+    }
+    window.location.reload()
+}
 async function updatePassword(e) {
 	e.preventDefault()
 	let oldpwd = document.getElementById("pwd_change_org").value,
@@ -99,6 +120,7 @@ async function updateEmail(e) {
 }
 document.getElementById("bio_form").addEventListener("submit", updateBio)
 document.getElementById("lang_form").addEventListener("submit", updateLanguage)
+document.getElementById("name_change_form").addEventListener("submit", updateName)
 document.getElementById("pwd_change_form").addEventListener("submit", updatePassword)
 document.getElementById("email_change_form").addEventListener("submit", updateEmail)
 </script>

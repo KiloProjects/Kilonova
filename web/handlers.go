@@ -1014,15 +1014,20 @@ func (rt *Web) resetPassword() http.HandlerFunc {
 }
 
 func (rt *Web) checkLockout() func(next http.Handler) http.Handler {
-	// templ := rt.parse(nil, "util/lockout.html")
+	templ := rt.parse(nil, "util/lockout.html")
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if ForceLogin.Value() && util.UserBrief(r) == nil {
 				http.Redirect(w, r, "/login?back="+url.PathEscape(r.URL.Path), http.StatusTemporaryRedirect)
 				return
 			}
+
+			if util.UserFull(r) != nil && util.UserFull(r).NameChangeForced {
+				rt.runTempl(w, r, templ, &SimpleParams{GenContext(r)})
+				return
+			}
+
 			next.ServeHTTP(w, r)
-			// rt.runTempl(w, r, templ, &LockoutParams{})
 		})
 	}
 }
@@ -1126,6 +1131,9 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		},
 		"authedUser": func() *kilonova.UserBrief {
 			return authedUser
+		},
+		"isAdmin": func() bool {
+			return authedUser != nil && authedUser.Admin
 		},
 		"currentProblem": func() *kilonova.Problem {
 			return util.Problem(r)
