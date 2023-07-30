@@ -176,11 +176,11 @@ ro = "Submisii pentru"
 
 [title.problem_submit]
 en = "Upload code | Problem #%d: %s"
-ro = "Încărcare cod | Problam #%d: %s"
+ro = "Încărcare cod | Problema #%d: %s"
 
 [title.past_submissions]
 en = "Past submissions | Problem #%d: %s"
-ro = "Submisii anterioare | Problam #%d: %s"
+ro = "Submisii anterioare | Problema #%d: %s"
 
 [title.edit.index]
 en = "Edit Problem | Problem #%d: %s"

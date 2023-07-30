@@ -27,12 +27,17 @@ func (lt *LinkTransformer) Transform(doc *ast.Document, _ text.Reader, pc parser
 			return ast.WalkContinue, nil
 		}
 
+		if len(string(h.Destination)) == 0 || string(h.Destination)[0] == '#' {
+			return ast.WalkContinue, nil
+		}
+
 		if path.Base(path.Clean(string(h.Destination))) == string(h.Destination) {
 			ctx, ok := pc.Get(rctxKey).(*kilonova.RenderContext)
 			h.Destination = []byte(attachmentURL(ctx, ok, string(h.Destination)))
+			return ast.WalkSkipChildren, nil
 		}
 
-		return ast.WalkSkipChildren, nil
+		return ast.WalkContinue, nil
 	})
 }
 
