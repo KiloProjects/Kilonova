@@ -2,7 +2,9 @@ package test
 
 import (
 	"archive/zip"
+	"cmp"
 	"context"
+	"fmt"
 	"io/fs"
 	"path"
 	"path/filepath"
@@ -21,14 +23,17 @@ var (
 )
 
 type ArchiveCtx struct {
-	tests       map[int]archiveTest
+	tests       map[string]archiveTest
 	attachments map[string]archiveAttachment
-	scoredTests []int
 	props       *properties
 
 	submissions []*submissionStub
 
 	params *TestProcessParams
+
+	scoreParameters []ScoreParamEntry
+
+	testScores ScoreFileEntries
 }
 
 type properties struct {
@@ -55,9 +60,9 @@ type properties struct {
 
 func NewArchiveCtx(params *TestProcessParams) *ArchiveCtx {
 	return &ArchiveCtx{
-		tests:       make(map[int]archiveTest),
+		tests:       make(map[string]archiveTest),
 		attachments: make(map[string]archiveAttachment),
-		scoredTests: make([]int, 0, 10),
+		testScores:  make(ScoreFileEntries),
 
 		params: params,
 	}
@@ -79,7 +84,18 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	}
 
 	if ext == ".txt" { // test score file
-		return ProcessScoreFile(ctx, file)
+		// if using score parameters, test score file is redundant
+		if len(ctx.scoreParameters) > 0 {
+			return kilonova.Statusf(400, "Archive cannot contain tests.txt if you specified score parameters")
+		}
+
+		vals, err := ParseScoreFile(file)
+		if err != nil {
+			return err
+		}
+
+		ctx.testScores = vals
+		return nil
 	}
 
 	if ext == ".properties" { // test properties file
@@ -117,11 +133,11 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	}
 
 	// if nothing else is detected, it should be a test file
-	if slices.Contains(testInputSuffixes, ext) { // test input file (ex: 01.in)
+	if slices.Contains(testInputSuffixes, ext) || strings.HasPrefix(file.Name, "input") { // test input file (ex: 01.in)
 		return ProcessTestInputFile(ctx, file)
 	}
 
-	if slices.Contains(testOutputSuffixes, ext) { // test output file (ex: 01.out/01.ok)
+	if slices.Contains(testOutputSuffixes, ext) || strings.HasPrefix(file.Name, "output") { // test output file (ex: 01.out/01.ok)
 		return ProcessTestOutputFile(ctx, file)
 	}
 
@@ -131,11 +147,19 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 type TestProcessParams struct {
 	Requestor *kilonova.UserBrief
 
+	ScoreParamsStr string
+
 	Polygon          bool
 	MergeAttachments bool
+
+	// MergeTests bool
 }
 
 func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Reader, base *sudoapi.BaseAPI, params *TestProcessParams) *kilonova.StatusError {
+	if params.Requestor == nil {
+		return kilonova.Statusf(400, "There must be a requestor")
+	}
+
 	aCtx := NewArchiveCtx(params)
 
 	// Try to autodetect polygon archive
@@ -144,8 +168,12 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 		aCtx.params.MergeAttachments = true
 	}
 
-	if params.Requestor == nil {
-		return kilonova.Statusf(400, "There must be a requestor")
+	if len(params.ScoreParamsStr) > 0 {
+		scoreParams, err := ParseScoreParameters([]byte(params.ScoreParamsStr))
+		if err != nil {
+			return err
+		}
+		aCtx.scoreParameters = scoreParams
 	}
 
 	for _, file := range ar.File {
@@ -165,51 +193,92 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 
 	for k, v := range aCtx.tests {
 		if v.InFile == nil || v.OutFile == nil {
-			return kilonova.Statusf(400, "Missing input or output file for test %d", k)
+			return kilonova.Statusf(400, "Missing input or output file for test %q", k)
 		}
 	}
 
-	if len(aCtx.scoredTests) != len(aCtx.tests) {
-		// Try to deduce scoring remaining tests
+	idMode := deduceTestIDMode(aCtx)
+
+	// testsByID := make(map[int]*archiveTest)
+	var tests []archiveTest
+	if idMode == idModeParse || idMode == idModeParseSort {
+		tests = make([]archiveTest, 0, len(aCtx.tests))
+		for k, v := range aCtx.tests {
+			v := v
+			// Error ommited since deduceTestIDMode already checks for error on parse mode
+			v.VisibleID, _ = getTestID(k)
+			v.Key = fmt.Sprintf("%04d", v.VisibleID)
+			tests = append(tests, v)
+		}
+	}
+
+	if idMode == idModeParseSort {
+		aCtx.tests = make(map[string]archiveTest)
+		for _, test := range tests {
+			aCtx.tests[test.Key] = test
+		}
+	}
+
+	if idMode == idModeSort || idMode == idModeParseSort {
+		tests = make([]archiveTest, 0, len(aCtx.tests))
+		for _, test := range aCtx.tests {
+			tests = append(tests, test)
+		}
+		slices.SortFunc(tests, func(a, b archiveTest) int {
+			return cmp.Compare(a.Key, b.Key)
+		})
+		for i := range tests {
+			tests[i].VisibleID = i
+		}
+	}
+
+	// Sanity check: sort tests by visible IDs since idModeParse might not handle them correctly
+	slices.SortFunc(tests, func(a, b archiveTest) int {
+		return cmp.Compare(a.VisibleID, b.VisibleID)
+	})
+
+	if isMaskedScoring(aCtx.scoreParameters, tests) {
+		buildParamTestScores(aCtx, tests)
+		aCtx.scoreParameters = aCtx.scoreParameters[:0]
+	}
+
+	var mustAutofillTests bool = false
+	for i := range tests {
+		val, ok := aCtx.testScores[tests[i].VisibleID]
+		if !ok {
+			// Mark as needing score
+			mustAutofillTests = true
+			tests[i].Score = -1
+		} else {
+			tests[i].Score = val
+		}
+	}
+
+	if mustAutofillTests {
+		// Try to deduce scoring for remaining tests
 		// zap.S().Info("Automatically inserting scores...")
+		var n int
 		totalScore := 100
-		for _, test := range aCtx.scoredTests {
-			totalScore -= aCtx.tests[test].Score
-		}
-
-		// Since map order is ambiguous, get an ordered list of test IDs.
-		// Regrettably, there is not easy way to do the set difference of the keys of the map and the scoredTests
-		// so we'll do an O(N^2) operation for clarity's sake.
-		testIDs := []int{}
-		for id := range aCtx.tests {
-			ok := true
-			for _, scID := range aCtx.scoredTests {
-				if id == scID {
-					ok = false
-					break
-				}
-			}
-			if ok {
-				testIDs = append(testIDs, id)
+		for _, test := range tests {
+			if test.Score > 0 {
+				totalScore -= test.Score
+			} else {
+				n++
 			}
 		}
-		slices.Sort(testIDs)
 
-		n := len(aCtx.tests) - len(aCtx.scoredTests)
 		perTest := totalScore/n + 1
 		toSub := n - totalScore%n
 		k := 0
-		for _, i := range testIDs {
-			if aCtx.tests[i].Score > 0 {
-				continue
+
+		for i := range tests {
+			if tests[i].Score == -1 {
+				tests[i].Score = perTest
+				if k < toSub {
+					tests[i].Score--
+				}
+				k++
 			}
-			tst := aCtx.tests[i]
-			tst.Score = perTest
-			if k < toSub {
-				tst.Score--
-			}
-			aCtx.tests[i] = tst
-			k++
 		}
 	}
 
@@ -222,17 +291,17 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 
 	createdTests := map[int]kilonova.Test{}
 
-	for testID, v := range aCtx.tests {
+	for _, v := range tests {
 		var test kilonova.Test
 		test.ProblemID = pb.ID
-		test.VisibleID = testID
+		test.VisibleID = v.VisibleID
 		test.Score = v.Score
 		if err := base.CreateTest(ctx, &test); err != nil {
 			zap.S().Warn(err)
 			return err
 		}
 
-		createdTests[testID] = test
+		createdTests[v.VisibleID] = test
 
 		f, err := v.InFile.Open()
 		if err != nil {
@@ -256,62 +325,61 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 		f.Close()
 	}
 
-	if len(aCtx.attachments) > 0 {
-		atts, err := base.ProblemAttachments(ctx, pb.ID)
-		if err != nil {
-			zap.S().Warn("Couldn't get problem attachments")
-			return kilonova.WrapError(err, "Couldn't get attachments")
+	if len(aCtx.scoreParameters) > 0 {
+		// Decide subtasks based on score parameters, if they exist
+		if err := base.DeleteSubTasks(ctx, pb.ID); err != nil {
+			zap.S().Warn(err)
+			return kilonova.WrapError(err, "Couldn't delete existing subtasks")
 		}
 
-		// attachment IDs to mark for deletion
-		var attIDs []int
-		for _, att := range atts {
-			if aCtx.params.MergeAttachments {
-				// TODO: Use map for proper lookup, instead of O(N*M) nested for
-				for _, newAtt := range aCtx.attachments {
-					if newAtt.Name == att.Name {
-						attIDs = append(attIDs, att.ID)
-						break
+		startIdx := 0
+		for i, entry := range aCtx.scoreParameters {
+			testIDs := []int{}
+			if entry.Count != nil {
+				if startIdx < len(tests) {
+					for i := startIdx; i < startIdx+*entry.Count && i < len(tests); i++ {
+						test, ok := createdTests[tests[i].VisibleID]
+						if !ok {
+							zap.S().Warn("Created test not found anymore", tests[i].VisibleID)
+							continue
+						}
+						testIDs = append(testIDs, test.ID)
+					}
+					startIdx += *entry.Count
+				}
+			} else if entry.Match != nil {
+				for _, test := range tests {
+					if test.Matches(entry.Match) {
+						test, ok := createdTests[test.VisibleID]
+						if !ok {
+							zap.S().Warn("Created test not found anymore", test.VisibleID)
+							continue
+						}
+						testIDs = append(testIDs, test.ID)
 					}
 				}
 			} else {
-				attIDs = append(attIDs, att.ID)
+				zap.S().Warn("Somehow score param doesn't have neither count nor match non-nil")
+			}
+			if len(testIDs) > 0 {
+				// Tests are found, create subtask
+				if err := base.CreateSubTask(ctx, &kilonova.SubTask{
+					ProblemID: pb.ID,
+					VisibleID: i,
+					Score:     entry.Score,
+					Tests:     testIDs,
+				}); err != nil {
+					zap.S().Warn(err)
+					return kilonova.WrapError(err, "Couldn't create subtask")
+				}
 			}
 		}
-		if len(attIDs) > 0 {
-			if _, err := base.DeleteProblemAtts(ctx, pb.ID, attIDs); err != nil {
-				zap.S().Warn("Couldn't remove attachments")
-				return kilonova.WrapError(err, "Couldn't delete attachments")
-			}
-		}
-		for _, att := range aCtx.attachments {
-			if att.File == nil {
-				zap.S().Infof("Skipping attachment %s since it only has props", att.Name)
-				continue
-			}
 
-			f, err := att.File.Open()
-			if err != nil {
-				zap.S().Warn("Couldn't open attachment zip file", err)
-				continue
-			}
+	}
 
-			var userID *int
-			if params.Requestor != nil {
-				userID = &params.Requestor.ID
-			}
-
-			if err := base.CreateProblemAttachment(ctx, &kilonova.Attachment{
-				Name:    att.Name,
-				Private: att.Private,
-				Visible: att.Visible,
-				Exec:    att.Exec,
-			}, pb.ID, f, userID); err != nil {
-				zap.S().Warn("Couldn't create attachment", err)
-				f.Close()
-				continue
-			}
-			f.Close()
+	if len(aCtx.attachments) > 0 {
+		if err := createAttachments(ctx, aCtx, pb, base, params); err != nil {
+			return err
 		}
 	}
 
@@ -365,21 +433,21 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 				return kilonova.WrapError(err, "Couldn't delete existing subtasks")
 			}
 			for stkId, stk := range aCtx.props.Subtasks {
-				outStk := kilonova.SubTask{
-					ProblemID: pb.ID,
-					VisibleID: stkId,
-					Score:     stk.Score,
-					Tests:     []int{},
-				}
+				tests := make([]int, 0, len(stk.Tests))
 				for _, test := range stk.Tests {
 					if tt, exists := createdTests[test]; !exists {
 						return kilonova.Statusf(400, "Test %d not found in added tests. Aborting subtask creation", test)
 					} else {
-						outStk.Tests = append(outStk.Tests, tt.ID)
+						tests = append(tests, tt.ID)
 					}
 				}
 
-				if err := base.CreateSubTask(ctx, &outStk); err != nil {
+				if err := base.CreateSubTask(ctx, &kilonova.SubTask{
+					ProblemID: pb.ID,
+					VisibleID: stkId,
+					Score:     stk.Score,
+					Tests:     tests,
+				}); err != nil {
 					zap.S().Warn(err)
 					return kilonova.WrapError(err, "Couldn't create subtask")
 				}
@@ -454,6 +522,67 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 				zap.S().Warn(err)
 			}
 		}
+	}
+
+	return nil
+}
+
+func createAttachments(ctx context.Context, aCtx *ArchiveCtx, pb *kilonova.Problem, base *sudoapi.BaseAPI, params *TestProcessParams) *kilonova.StatusError {
+	atts, err := base.ProblemAttachments(ctx, pb.ID)
+	if err != nil {
+		zap.S().Warn("Couldn't get problem attachments")
+		return kilonova.WrapError(err, "Couldn't get attachments")
+	}
+
+	// attachment IDs to mark for deletion
+	var attIDs []int
+	for _, att := range atts {
+		if aCtx.params.MergeAttachments {
+			// TODO: Use map for proper lookup, instead of O(N*M) nested for
+			for _, newAtt := range aCtx.attachments {
+				if newAtt.Name == att.Name {
+					attIDs = append(attIDs, att.ID)
+					break
+				}
+			}
+		} else {
+			attIDs = append(attIDs, att.ID)
+		}
+	}
+	if len(attIDs) > 0 {
+		if _, err := base.DeleteProblemAtts(ctx, pb.ID, attIDs); err != nil {
+			zap.S().Warn("Couldn't remove attachments")
+			return kilonova.WrapError(err, "Couldn't delete attachments")
+		}
+	}
+	for _, att := range aCtx.attachments {
+		if att.File == nil {
+			zap.S().Infof("Skipping attachment %s since it only has props", att.Name)
+			continue
+		}
+
+		f, err := att.File.Open()
+		if err != nil {
+			zap.S().Warn("Couldn't open attachment zip file", err)
+			continue
+		}
+
+		var userID *int
+		if params.Requestor != nil {
+			userID = &params.Requestor.ID
+		}
+
+		if err := base.CreateProblemAttachment(ctx, &kilonova.Attachment{
+			Name:    att.Name,
+			Private: att.Private,
+			Visible: att.Visible,
+			Exec:    att.Exec,
+		}, pb.ID, f, userID); err != nil {
+			zap.S().Warn("Couldn't create attachment", err)
+			f.Close()
+			continue
+		}
+		f.Close()
 	}
 
 	return nil

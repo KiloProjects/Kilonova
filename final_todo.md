@@ -12,9 +12,9 @@ TODO FOR 1.0:
 - [x] Force username changes and allow changing usernames
     - [x] With username history
 - [x] Decide on final logo
-- [ ] Score parameters string option when uploading archive
-    - Allow tests to have names
-    - Selector to choose archive type (Classic, CMS, Polygon)
+- [x] Score parameters string option when uploading archive
+    - [~] Eh... Allow tests to have names
+    - [~] Eh... Selector to choose archive type (Classic, CMS, Polygon)
 - [ ] Fractional score
 - [ ] OAuth API
 

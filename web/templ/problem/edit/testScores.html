@@ -57,6 +57,10 @@
                 <span class="mr-2 text-xl"> {{getText "archive"}}:</span>
                 <input id="tests" type="file" class="form-input" accept=".zip" required />
             </label>
+            <label class="block my-2">
+                <span class="mr-2 text-xl"> {{getText "scoreParams"}}:</span>
+                <input id="scoreParams" type="text" class="form-input" autocomplete="off" />
+            </label>
             <button class="btn btn-blue mb-2">{{getText "button.upload"}}</button>
             <p class="text-muted text-sm">{{getText "polygonArchiveWarn"}}</p>
         </form>
@@ -160,6 +164,10 @@ async function uploadTests(e) {
 		return
 	}
 	form.append("testArchive", files[0]);
+    const scoreParams = document.getElementById("scoreParams").value;
+    if(scoreParams.length > 0) {
+        form.append("scoreParameters", scoreParams);
+    }
 
 	let res = await bundled.multipartProgressCall("/problem/{{.Problem.ID}}/update/processTestArchive", form)
 	if(res.status === "success") {

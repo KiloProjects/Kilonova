@@ -9,19 +9,24 @@ import (
 	"go.uber.org/zap"
 )
 
-func ProcessScoreFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
+// TestID -> Score
+type ScoreFileEntries = map[int]int
+
+func ParseScoreFile(file *zip.File) (ScoreFileEntries, *kilonova.StatusError) {
 	f, err := file.Open()
 	if err != nil {
-		return kilonova.Statusf(500, "Unknown error")
+		return nil, kilonova.Statusf(500, "Unknown error")
 	}
 	defer f.Close()
 
 	br := bufio.NewScanner(f)
 
+	rez := make(ScoreFileEntries)
+
 	for br.Scan() {
 		line := br.Text()
 
-		if line == "" { // empty line, skip
+		if line == "" || line[0] == '#' { // empty/comment line, skip
 			continue
 		}
 
@@ -32,20 +37,15 @@ func ProcessScoreFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 			continue
 		}
 
-		test := ctx.tests[testID]
-		test.Score = score
-		ctx.tests[testID] = test
-		for _, ex := range ctx.scoredTests {
-			if ex == testID {
-				return ErrBadTestFile
-			}
+		if _, ok := rez[testID]; ok {
+			return nil, ErrBadTestFile
 		}
-
-		ctx.scoredTests = append(ctx.scoredTests, testID)
+		rez[testID] = score
 	}
 	if br.Err() != nil {
 		zap.S().Info(br.Err())
-		return kilonova.WrapError(err, "Score file read error")
+		return nil, kilonova.WrapError(err, "Score file read error")
 	}
-	return nil
+
+	return rez, nil
 }

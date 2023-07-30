@@ -185,6 +185,11 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 
 	// handle subtasks
 	if rawProps.Groups != "" {
+		// if using score parameters, groups/weights data is redundant
+		if len(ctx.scoreParameters) > 0 {
+			return kilonova.Statusf(400, "Properties file cannot contain group parameters if you specified CMS-style score parameters")
+		}
+
 		subtaskedTests := map[int]bool{}
 
 		groups := map[int][]int{}

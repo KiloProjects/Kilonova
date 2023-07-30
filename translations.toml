@@ -643,6 +643,10 @@ ro = "Important pentru arhivele Polygon: doar checker-ul, sursele oficiale și t
 en = "Archive"
 ro = "Arhivă"
 
+[scoreParams]
+en = "CMS score parameters (advanced)"
+ro = "Parametri scor CMS (avansat)"
+
 [noFiles]
 en = "No files selected"
 ro = "Niciun fișier specificat"
