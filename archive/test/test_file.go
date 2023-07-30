@@ -55,6 +55,7 @@ func ProcessTestInputFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError
 	}
 
 	tf.InFile = file
+	tf.Key = testName
 	ctx.tests[testName] = tf
 	return nil
 }
@@ -72,6 +73,7 @@ func ProcessTestOutputFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 	}
 
 	tf.OutFile = file
+	tf.Key = testName
 	ctx.tests[testName] = tf
 	return nil
 }

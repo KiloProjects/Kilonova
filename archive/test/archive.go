@@ -365,7 +365,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 				// Tests are found, create subtask
 				if err := base.CreateSubTask(ctx, &kilonova.SubTask{
 					ProblemID: pb.ID,
-					VisibleID: i,
+					VisibleID: i + 1,
 					Score:     entry.Score,
 					Tests:     testIDs,
 				}); err != nil {
