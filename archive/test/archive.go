@@ -70,7 +70,7 @@ func NewArchiveCtx(params *TestProcessParams) *ArchiveCtx {
 
 var (
 	testInputSuffixes  = []string{".in", ".input"}
-	testOutputSuffixes = []string{".out", ".output", ".ok", ".sol"}
+	testOutputSuffixes = []string{".out", ".output", ".ok", ".sol", ".a"}
 )
 
 func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
