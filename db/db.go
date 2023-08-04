@@ -12,11 +12,11 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/jackc/pgx/v5/tracelog"
-	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	pgxdecimal "github.com/jackc/pgx-shopspring-decimal"
 )
 
 var (
@@ -25,41 +25,62 @@ var (
 	dbLogger   *zap.Logger
 )
 
+var (
+	LogQueries = config.GenFlag[bool]("behavior.log_sql", false, "Log SQL Requests (for debugging purposes)")
+)
+
 type DB struct {
-	conn   *sqlx.DB
-	pgconn *pgxpool.Pool
+	conn *pgxpool.Pool
 }
 
 func (d *DB) Close() error {
-	return d.conn.Close()
+	d.conn.Close()
+	return nil
+}
+
+// TODO: Remove. It's just a placeholder for old behavior
+func Get[T any](pgconn *pgxpool.Pool, ctx context.Context, dest *T, query string, args ...any) error {
+	rows, _ := pgconn.Query(ctx, query, args...)
+	val, err := pgx.CollectOneRow(rows, pgx.RowToStructByNameLax[T])
+	if err != nil {
+		return err
+	}
+	*dest = val
+	return nil
+}
+
+// TODO: Remove. It's just a placeholder for old behavior
+func Select[T any](pgconn *pgxpool.Pool, ctx context.Context, dest *[]*T, query string, args ...any) error {
+	rows, _ := pgconn.Query(ctx, query, args...)
+	vals, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByNameLax[T])
+	if err != nil {
+		return err
+	}
+	*dest = vals
+	return nil
 }
 
 func NewPSQL(ctx context.Context, dsn string) (*DB, error) {
-	config, err := pgx.ParseConfig(dsn)
-	if err != nil {
-		return nil, err
-	}
-	config.Tracer = &tracelog.TraceLog{Logger: tracelog.LoggerFunc(log), LogLevel: tracelog.LogLevelDebug}
-
-	conn, err := sqlx.ConnectContext(ctx, "pgx", stdlib.RegisterConnConfig(config))
-	if err != nil {
-		return nil, err
-	}
-	conn.SetMaxOpenConns(40)
-
-	// New
 	pgconf, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
 	}
-	pgconf.MaxConns = 10
+	if LogQueries.Value() {
+		pgconf.ConnConfig.Tracer = &tracelog.TraceLog{Logger: tracelog.LoggerFunc(log), LogLevel: tracelog.LogLevelDebug}
+	}
+
+	pgconf.MaxConns = 40
+	pgconf.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
+		pgxdecimal.Register(c.TypeMap())
+		return nil
+	}
 
 	pgconn, err := pgxpool.NewWithConfig(ctx, pgconf)
 	if err != nil {
 		return nil, err
 	}
 
-	return &DB{conn, pgconn}, nil
+	return &DB{pgconn}, nil
 }
 
 func FormatLimitOffset(limit int, offset int) string {

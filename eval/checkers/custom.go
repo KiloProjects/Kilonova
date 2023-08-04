@@ -30,8 +30,8 @@ type customCheckerInput struct {
 }
 
 type checkerResult struct {
-	Score  int
-	Output string
+	Percentage int
+	Output     string
 }
 
 type customChecker struct {
@@ -87,7 +87,7 @@ func (c *customChecker) RunChecker(ctx context.Context, pOut, cIn, cOut io.Reade
 
 	out = *resp
 
-	return out.Output, out.Score
+	return out.Output, out.Percentage
 }
 
 func (c *customChecker) Cleanup(_ context.Context) error {

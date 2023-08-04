@@ -27,12 +27,12 @@ const auditLogCreateQuery = `INSERT INTO audit_logs (
 
 func (s *DB) CreateAuditLog(ctx context.Context, msg string, authorID *int, system bool) (int, error) {
 	var id int
-	err := s.pgconn.QueryRow(ctx, auditLogCreateQuery, system, strings.TrimSpace(msg), authorID).Scan(&id)
+	err := s.conn.QueryRow(ctx, auditLogCreateQuery, system, strings.TrimSpace(msg), authorID).Scan(&id)
 	return id, err
 }
 
 func (s *DB) AuditLogs(ctx context.Context, limit, offset int) ([]*kilonova.AuditLog, error) {
-	rows, err := s.pgconn.Query(ctx, "SELECT * FROM audit_logs ORDER BY logged_at DESC, id DESC "+FormatLimitOffset(limit, offset))
+	rows, err := s.conn.Query(ctx, "SELECT * FROM audit_logs ORDER BY logged_at DESC, id DESC "+FormatLimitOffset(limit, offset))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.AuditLog{}, nil
 	} else if err != nil {
@@ -58,7 +58,7 @@ func (s *DB) AuditLogs(ctx context.Context, limit, offset int) ([]*kilonova.Audi
 
 func (s *DB) AuditLogCount(ctx context.Context) (int, error) {
 	var cnt int
-	err := s.pgconn.QueryRow(ctx, "SELECT COUNT(id) FROM audit_logs").Scan(&cnt)
+	err := s.conn.QueryRow(ctx, "SELECT COUNT(id) FROM audit_logs").Scan(&cnt)
 	return cnt, err
 }
 

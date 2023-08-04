@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 
 	"github.com/KiloProjects/kilonova"
@@ -11,8 +10,8 @@ import (
 
 func (s *DB) Tags(ctx context.Context) ([]*kilonova.Tag, error) {
 	var tags []*kilonova.Tag
-	err := s.conn.SelectContext(ctx, &tags, "SELECT * FROM tags ORDER BY name ASC")
-	if errors.Is(err, sql.ErrNoRows) || (tags == nil && err == nil) {
+	err := Select(s.conn, ctx, &tags, "SELECT * FROM tags ORDER BY name ASC")
+	if errors.Is(err, pgx.ErrNoRows) || (tags == nil && err == nil) {
 		return []*kilonova.Tag{}, nil
 	}
 	if err != nil {
@@ -23,8 +22,8 @@ func (s *DB) Tags(ctx context.Context) ([]*kilonova.Tag, error) {
 
 func (s *DB) TagsByID(ctx context.Context, tagIDs []int) ([]*kilonova.Tag, error) {
 	var tags []*kilonova.Tag
-	err := s.conn.SelectContext(ctx, &tags, "SELECT * FROM tags WHERE id = ANY($1) ORDER BY name ASC", tagIDs)
-	if errors.Is(err, sql.ErrNoRows) || (tags == nil && err == nil) {
+	err := Select(s.conn, ctx, &tags, "SELECT * FROM tags WHERE id = ANY($1) ORDER BY name ASC", tagIDs)
+	if errors.Is(err, pgx.ErrNoRows) || (tags == nil && err == nil) {
 		return []*kilonova.Tag{}, nil
 	}
 	if err != nil {
@@ -35,8 +34,8 @@ func (s *DB) TagsByID(ctx context.Context, tagIDs []int) ([]*kilonova.Tag, error
 
 func (s *DB) TagsByType(ctx context.Context, tagType kilonova.TagType) ([]*kilonova.Tag, error) {
 	var tags []*kilonova.Tag
-	err := s.conn.SelectContext(ctx, &tags, "SELECT * FROM tags WHERE type = $1 ORDER BY name ASC", tagType)
-	if errors.Is(err, sql.ErrNoRows) || (tags == nil && err == nil) {
+	err := Select(s.conn, ctx, &tags, "SELECT * FROM tags WHERE type = $1 ORDER BY name ASC", tagType)
+	if errors.Is(err, pgx.ErrNoRows) || (tags == nil && err == nil) {
 		return []*kilonova.Tag{}, nil
 	}
 	if err != nil {
@@ -51,7 +50,7 @@ func (s *DB) RelevantTags(ctx context.Context, tagID int, max int) ([]*kilonova.
 	if max <= 0 {
 		max = 10
 	}
-	err := s.conn.SelectContext(ctx, &tags, `
+	err := Select(s.conn, ctx, &tags, `
 	WITH rel_tag_ids AS (
 		SELECT rez.tag_id, COUNT(rez.tag_id) AS stats 
 			FROM problem_tags rez 
@@ -60,7 +59,7 @@ func (s *DB) RelevantTags(ctx context.Context, tagID int, max int) ([]*kilonova.
 	)
 	SELECT tags.* FROM tags, rel_tag_ids WHERE tags.id = rel_tag_ids.tag_id ORDER BY rel_tag_ids.stats DESC LIMIT $2 
 	`, tagID, max)
-	if errors.Is(err, sql.ErrNoRows) || (err == nil && tags == nil) {
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && tags == nil) {
 		return []*kilonova.Tag{}, nil
 	}
 	if err != nil {
@@ -71,8 +70,8 @@ func (s *DB) RelevantTags(ctx context.Context, tagID int, max int) ([]*kilonova.
 
 func (s *DB) Tag(ctx context.Context, id int) (*kilonova.Tag, error) {
 	var tag kilonova.Tag
-	err := s.conn.GetContext(ctx, &tag, "SELECT * FROM tags WHERE id = $1 LIMIT 1", id)
-	if errors.Is(err, sql.ErrNoRows) {
+	err := Get(s.conn, ctx, &tag, "SELECT * FROM tags WHERE id = $1 LIMIT 1", id)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -83,8 +82,8 @@ func (s *DB) Tag(ctx context.Context, id int) (*kilonova.Tag, error) {
 
 func (s *DB) TagByName(ctx context.Context, name string) (*kilonova.Tag, error) {
 	var tag kilonova.Tag
-	err := s.conn.GetContext(ctx, &tag, "SELECT * FROM tags WHERE name = $1 LIMIT 1", name)
-	if errors.Is(err, sql.ErrNoRows) {
+	err := Get(s.conn, ctx, &tag, "SELECT * FROM tags WHERE name = $1 LIMIT 1", name)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -95,8 +94,8 @@ func (s *DB) TagByName(ctx context.Context, name string) (*kilonova.Tag, error) 
 
 func (s *DB) TagByLooseName(ctx context.Context, name string) (*kilonova.Tag, error) {
 	var tag kilonova.Tag
-	err := s.conn.GetContext(ctx, &tag, "SELECT * FROM tags WHERE lower(unaccent(name)) = lower(unaccent($1)) LIMIT 1", name)
-	if errors.Is(err, sql.ErrNoRows) {
+	err := Get(s.conn, ctx, &tag, "SELECT * FROM tags WHERE lower(unaccent(name)) = lower(unaccent($1)) LIMIT 1", name)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -106,23 +105,23 @@ func (s *DB) TagByLooseName(ctx context.Context, name string) (*kilonova.Tag, er
 }
 
 func (s *DB) UpdateTagName(ctx context.Context, id int, newName string) error {
-	_, err := s.pgconn.Exec(ctx, "UPDATE tags SET name = $2 WHERE id = $1", id, newName)
+	_, err := s.conn.Exec(ctx, "UPDATE tags SET name = $2 WHERE id = $1", id, newName)
 	return err
 }
 
 func (s *DB) UpdateTagType(ctx context.Context, id int, newType kilonova.TagType) error {
-	_, err := s.pgconn.Exec(ctx, "UPDATE tags SET type = $2 WHERE id = $1", id, newType)
+	_, err := s.conn.Exec(ctx, "UPDATE tags SET type = $2 WHERE id = $1", id, newType)
 	return err
 }
 
 func (s *DB) DeleteTag(ctx context.Context, id int) error {
-	_, err := s.pgconn.Exec(ctx, "DELETE FROM tags WHERE id = $1", id)
+	_, err := s.conn.Exec(ctx, "DELETE FROM tags WHERE id = $1", id)
 	return err
 }
 
 func (s *DB) CreateTag(ctx context.Context, name string, tagType kilonova.TagType) (int, error) {
 	var id int
-	err := s.pgconn.QueryRow(ctx, "INSERT INTO tags (name, type) VALUES ($1, $2) RETURNING id", name, tagType).Scan(&id)
+	err := s.conn.QueryRow(ctx, "INSERT INTO tags (name, type) VALUES ($1, $2) RETURNING id", name, tagType).Scan(&id)
 	if err != nil {
 		return -1, err
 	}
@@ -132,7 +131,7 @@ func (s *DB) CreateTag(ctx context.Context, name string, tagType kilonova.TagTyp
 // original - the OG that will remain after the merge
 // toReplace - the one that will be replaced
 func (s *DB) MergeTags(ctx context.Context, original int, toReplace []int) error {
-	return pgx.BeginFunc(ctx, s.pgconn, func(tx pgx.Tx) error {
+	return pgx.BeginFunc(ctx, s.conn, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, "INSERT INTO problem_tags (tag_id, problem_id, position) SELECT $1, problem_id, position FROM problem_tags WHERE tag_id = ANY($2) ON CONFLICT DO NOTHING", original, toReplace); err != nil {
 			return err
 		}
@@ -146,14 +145,14 @@ func (s *DB) MergeTags(ctx context.Context, original int, toReplace []int) error
 }
 
 func (s *DB) RemoveTag(ctx context.Context, id int) error {
-	_, err := s.pgconn.Exec(ctx, "DELETE FROM tags WHERE id = $1", id)
+	_, err := s.conn.Exec(ctx, "DELETE FROM tags WHERE id = $1", id)
 	return err
 }
 
 func (s *DB) ProblemTags(ctx context.Context, problemID int) ([]*kilonova.Tag, error) {
 	var tags []*kilonova.Tag
-	err := s.conn.SelectContext(ctx, &tags, "SELECT tags.* FROM tags, problem_tags WHERE tags.id = problem_tags.tag_id AND problem_tags.problem_id = $1 ORDER BY tags.type ASC, tags.name ASC", problemID)
-	if errors.Is(err, sql.ErrNoRows) || (err == nil && tags == nil) {
+	err := Select(s.conn, ctx, &tags, "SELECT tags.* FROM tags, problem_tags WHERE tags.id = problem_tags.tag_id AND problem_tags.problem_id = $1 ORDER BY tags.type ASC, tags.name ASC", problemID)
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && tags == nil) {
 		return []*kilonova.Tag{}, nil
 	}
 	if err != nil {
@@ -173,8 +172,8 @@ func (s *DB) ManyProblemsTags(ctx context.Context, problemIDs []int) (map[int][]
 		rezTags[id] = []*kilonova.Tag{}
 	}
 	var tags []*ProblemTag
-	err := s.conn.SelectContext(ctx, &tags, "SELECT tags.*, problem_tags.problem_id FROM tags, problem_tags WHERE tags.id = problem_tags.tag_id AND problem_tags.problem_id = ANY($1) ORDER BY tags.type ASC, tags.name ASC", problemIDs)
-	if errors.Is(err, sql.ErrNoRows) || (err == nil && tags == nil) {
+	err := Select(s.conn, ctx, &tags, "SELECT tags.*, problem_tags.problem_id FROM tags, problem_tags WHERE tags.id = problem_tags.tag_id AND problem_tags.problem_id = ANY($1) ORDER BY tags.type ASC, tags.name ASC", problemIDs)
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && tags == nil) {
 		return rezTags, err
 	}
 	if err != nil {

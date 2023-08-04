@@ -8,7 +8,7 @@ import (
 )
 
 func (s *DB) ResetSubmission(ctx context.Context, subID int) error {
-	return pgx.BeginFunc(ctx, s.pgconn, func(tx pgx.Tx) error {
+	return pgx.BeginFunc(ctx, s.conn, func(tx pgx.Tx) error {
 		if err := clearSub(ctx, tx, subID); err != nil {
 			return err
 		}
@@ -20,7 +20,7 @@ func (s *DB) ResetSubmission(ctx context.Context, subID int) error {
 }
 
 func (s *DB) ResetProblemSubmissions(ctx context.Context, problemID int) error {
-	return pgx.BeginFunc(ctx, s.pgconn, func(tx pgx.Tx) error {
+	return pgx.BeginFunc(ctx, s.conn, func(tx pgx.Tx) error {
 		if err := clearProblemSubs(ctx, tx, problemID); err != nil {
 			return err
 		}
@@ -32,7 +32,7 @@ func (s *DB) ResetProblemSubmissions(ctx context.Context, problemID int) error {
 }
 
 func (s *DB) InitSubmission(ctx context.Context, subID int) error {
-	return pgx.BeginFunc(ctx, s.pgconn, func(tx pgx.Tx) error {
+	return pgx.BeginFunc(ctx, s.conn, func(tx pgx.Tx) error {
 		return initSub(ctx, tx, subID)
 	})
 }
@@ -63,8 +63,8 @@ func initSub(ctx context.Context, tx pgx.Tx, subID int) error {
 
 	// Init subtests
 	if _, err := tx.Exec(ctx, `
-	INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, max_score) 
-		SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, tests.id AS test_id, tests.visible_id, tests.score AS max_score 
+	INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, score) 
+		SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, tests.id AS test_id, tests.visible_id, tests.score AS score 
 		FROM submissions subs, tests 
 		WHERE subs.problem_id = tests.problem_id AND subs.id = $1
 `, subID); err != nil {
@@ -128,8 +128,8 @@ func initProblemSubs(ctx context.Context, tx pgx.Tx, problemID int) error {
 
 	// Initialize subtests
 	if _, err := tx.Exec(ctx, `
-INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, max_score) 
-	SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, tests.id AS test_id, tests.visible_id, tests.score AS max_score 
+INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, score) 
+	SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, tests.id AS test_id, tests.visible_id, tests.score AS score 
 	FROM submissions subs, tests 
 	WHERE subs.problem_id = tests.problem_id AND subs.problem_id = $1
 `, problemID); err != nil {

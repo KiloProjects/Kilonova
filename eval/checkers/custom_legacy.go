@@ -73,7 +73,7 @@ func legacyCheckerTask(ctx context.Context, box eval.Sandbox, job *customChecker
 		out.Reset()
 	}
 
-	if _, err := fmt.Fscanf(&out, "%d ", &rez.Score); err != nil {
+	if _, err := fmt.Fscanf(&out, "%d ", &rez.Percentage); err != nil {
 		rez.Output = "Wrong checker output"
 		return rez, nil
 	}

@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -23,8 +22,8 @@ type dbSubmission struct {
 	CodeSize  int       `db:"code_size"`
 	Status    string    `db:"status"`
 
-	CompileError   sql.NullBool   `db:"compile_error"`
-	CompileMessage sql.NullString `db:"compile_message"`
+	CompileError   *bool   `db:"compile_error"`
+	CompileMessage *string `db:"compile_message"`
 
 	MaxTime   float64 `db:"max_time"`
 	MaxMemory int     `db:"max_memory"`
@@ -36,8 +35,8 @@ type dbSubmission struct {
 
 func (s *DB) Submission(ctx context.Context, id int) (*kilonova.Submission, error) {
 	var sub dbSubmission
-	err := s.conn.GetContext(ctx, &sub, "SELECT * FROM submissions WHERE id = $1 LIMIT 1", id)
-	if errors.Is(err, sql.ErrNoRows) {
+	err := Get(s.conn, ctx, &sub, "SELECT * FROM submissions WHERE id = $1 LIMIT 1", id)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	return s.internalToSubmission(&sub), err
@@ -45,8 +44,8 @@ func (s *DB) Submission(ctx context.Context, id int) (*kilonova.Submission, erro
 
 func (s *DB) SubmissionLookingUser(ctx context.Context, id int, userID int) (*kilonova.Submission, error) {
 	var sub dbSubmission
-	err := s.conn.GetContext(ctx, &sub, "SELECT subs.* FROM submissions subs, visible_submissions($2) users WHERE subs.id = $1 AND users.sub_id = subs.id LIMIT 1", id, userID)
-	if errors.Is(err, sql.ErrNoRows) {
+	err := Get(s.conn, ctx, &sub, "SELECT subs.* FROM submissions subs, visible_submissions($2) users WHERE subs.id = $1 AND users.sub_id = subs.id LIMIT 1", id, userID)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	return s.internalToSubmission(&sub), err
@@ -58,8 +57,8 @@ func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) 
 	subFilterQuery(&filter, fb)
 
 	query := fmt.Sprintf("SELECT * FROM submissions WHERE %s %s %s", fb.Where(), getSubmissionOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset))
-	err := s.conn.SelectContext(ctx, &subs, query, fb.Args()...)
-	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, context.Canceled) {
+	err := Select(s.conn, ctx, &subs, query, fb.Args()...)
+	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return []*kilonova.Submission{}, nil
 	} else if err != nil {
 		zap.S().Warn(err)
@@ -72,7 +71,7 @@ func (s *DB) SubmissionCount(ctx context.Context, filter kilonova.SubmissionFilt
 	fb := newFilterBuilder()
 	subFilterQuery(&filter, fb)
 	var val int
-	err := s.pgconn.QueryRow(ctx, "SELECT COUNT(*) FROM submissions WHERE "+fb.Where(), fb.Args()...).Scan(&val)
+	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM submissions WHERE "+fb.Where(), fb.Args()...).Scan(&val)
 	if err != nil {
 		return -1, err
 	}
@@ -81,9 +80,9 @@ func (s *DB) SubmissionCount(ctx context.Context, filter kilonova.SubmissionFilt
 
 func (s *DB) RemainingSubmissionCount(ctx context.Context, contest *kilonova.Contest, problemID, userID int) (int, error) {
 	var cnt int
-	err := s.conn.GetContext(ctx, &cnt, "SELECT COUNT(*) FROM submissions WHERE contest_id = $1 AND problem_id = $2 AND user_id = $3", contest.ID, problemID, userID)
+	err := Get(s.conn, ctx, &cnt, "SELECT COUNT(*) FROM submissions WHERE contest_id = $1 AND problem_id = $2 AND user_id = $3", contest.ID, problemID, userID)
 	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
+		if !errors.Is(err, pgx.ErrNoRows) {
 			return -1, err
 		}
 		cnt = 0
@@ -93,9 +92,9 @@ func (s *DB) RemainingSubmissionCount(ctx context.Context, contest *kilonova.Con
 
 func (s *DB) WaitingSubmissionCount(ctx context.Context, userID int) (int, error) {
 	var cnt int
-	err := s.conn.GetContext(ctx, &cnt, "SELECT COUNT(*) FROM submissions WHERE status <> 'finished' AND user_id = $1", userID)
+	err := Get(s.conn, ctx, &cnt, "SELECT COUNT(*) FROM submissions WHERE status <> 'finished' AND user_id = $1", userID)
 	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
+		if !errors.Is(err, pgx.ErrNoRows) {
 			return -1, err
 		}
 		cnt = 0
@@ -110,7 +109,7 @@ func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilono
 		return -1, kilonova.ErrMissingRequired
 	}
 	var id int
-	err := s.conn.GetContext(ctx, &id, createSubQuery, authorID, problem.ID, contestID, language.InternalName, code)
+	err := Get(s.conn, ctx, &id, createSubQuery, authorID, problem.ID, contestID, language.InternalName, code)
 	return id, err
 }
 
@@ -126,24 +125,24 @@ func (s *DB) BulkUpdateSubmissions(ctx context.Context, filter kilonova.Submissi
 	}
 	fb := ub.MakeFilter()
 	subFilterQuery(&filter, fb)
-	_, err := s.pgconn.Exec(ctx, `UPDATE submissions SET `+fb.WithUpdate(), fb.Args()...)
+	_, err := s.conn.Exec(ctx, `UPDATE submissions SET `+fb.WithUpdate(), fb.Args()...)
 	return err
 }
 
 func (s *DB) ClearUserContestSubmissions(ctx context.Context, contestID, userID int) error {
-	_, err := s.pgconn.Exec(ctx, "UPDATE submissions SET contest_id = NULL WHERE contest_id = $1 AND user_id = $2", contestID, userID)
+	_, err := s.conn.Exec(ctx, "UPDATE submissions SET contest_id = NULL WHERE contest_id = $1 AND user_id = $2", contestID, userID)
 	return err
 }
 
 func (s *DB) DeleteSubmission(ctx context.Context, id int) error {
-	_, err := s.pgconn.Exec(ctx, "DELETE FROM submissions WHERE id = $1", id)
+	_, err := s.conn.Exec(ctx, "DELETE FROM submissions WHERE id = $1", id)
 	return err
 }
 
 func (s *DB) MaxScoreSubID(ctx context.Context, userid, problemid int) (int, error) {
 	var score int
 
-	err := s.pgconn.QueryRow(ctx, "SELECT id FROM submissions WHERE user_id = $1 AND problem_id = $2 ORDER BY score DESC, id ASC LIMIT 1", userid, problemid).Scan(&score)
+	err := s.conn.QueryRow(ctx, "SELECT id FROM submissions WHERE user_id = $1 AND problem_id = $2 ORDER BY score DESC, id ASC LIMIT 1", userid, problemid).Scan(&score)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return -1, nil
@@ -156,7 +155,7 @@ func (s *DB) MaxScoreSubID(ctx context.Context, userid, problemid int) (int, err
 func (s *DB) MaxScore(ctx context.Context, userid, problemid int) int {
 	var score int
 
-	err := s.pgconn.QueryRow(ctx, "SELECT ms.score FROM max_score_view ms WHERE ms.user_id = $1 AND ms.problem_id = $2", userid, problemid).Scan(&score)
+	err := s.conn.QueryRow(ctx, "SELECT ms.score FROM max_score_view ms WHERE ms.user_id = $1 AND ms.problem_id = $2", userid, problemid).Scan(&score)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			zap.S().Errorw("Couldn't get max score for ", zap.Int("userid", userid), zap.Int("problemid", problemid), zap.Error(err))
@@ -169,7 +168,7 @@ func (s *DB) MaxScore(ctx context.Context, userid, problemid int) int {
 func (s *DB) ContestMaxScore(ctx context.Context, userid, problemid, contestid int) int {
 	var score int
 
-	err := s.pgconn.QueryRow(ctx, "SELECT ms.score FROM max_score_contest_view ms WHERE ms.user_id = $1 AND ms.problem_id = $2 AND ms.contest_id = $3", userid, problemid, contestid).Scan(&score)
+	err := s.conn.QueryRow(ctx, "SELECT ms.score FROM max_score_contest_view ms WHERE ms.user_id = $1 AND ms.problem_id = $2 AND ms.contest_id = $3", userid, problemid, contestid).Scan(&score)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			zap.S().Errorw("Couldn't get contest max score for ", zap.Int("userid", userid), zap.Int("problemid", problemid), zap.Int("contestid", contestid), zap.Error(err))
@@ -273,14 +272,6 @@ func (s *DB) internalToSubmission(sub *dbSubmission) *kilonova.Submission {
 	if sub == nil {
 		return nil
 	}
-	var cErr *bool = nil
-	if sub.CompileError.Valid {
-		cErr = &sub.CompileError.Bool
-	}
-	var cMsg *string = nil
-	if sub.CompileMessage.Valid {
-		cMsg = &sub.CompileMessage.String
-	}
 
 	return &kilonova.Submission{
 		ID:             sub.ID,
@@ -291,8 +282,8 @@ func (s *DB) internalToSubmission(sub *dbSubmission) *kilonova.Submission {
 		Code:           sub.Code,
 		CodeSize:       sub.CodeSize,
 		Status:         kilonova.Status(sub.Status),
-		CompileError:   cErr,
-		CompileMessage: cMsg,
+		CompileError:   sub.CompileError,
+		CompileMessage: sub.CompileMessage,
 		MaxTime:        sub.MaxTime,
 		MaxMemory:      sub.MaxMemory,
 		ContestID:      sub.ContestID,

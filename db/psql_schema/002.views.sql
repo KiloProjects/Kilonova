@@ -1,0 +1,284 @@
+BEGIN;
+
+-- NOTE: This file will never be inside 001.base.sql
+-- This can be rerun every time a type or column is changed so the views will be refreshed
+
+-- TODO: Remove this once pushed on main
+DROP VIEW IF EXISTS problem_attachments CASCADE;
+DROP VIEW IF EXISTS blog_post_attachments CASCADE;
+
+DROP VIEW IF EXISTS submission_subtask_max_scores CASCADE;
+CREATE OR REPLACE VIEW submission_subtask_max_scores (problem_id, user_id, subtask_id, max_score) AS
+    SELECT problem_id, user_id, subtask_id, MAX(ROUND(COALESCE(final_percentage, 0) * score / 100.0)) max_score
+    FROM submission_subtasks stks
+    WHERE subtask_id IS NOT NULL GROUP BY user_id, problem_id, subtask_id;
+
+DROP VIEW IF EXISTS max_score_view CASCADE;
+CREATE OR REPLACE VIEW max_score_view (user_id, problem_id, score) AS 
+    WITH max_submission_strat AS (
+        SELECT user_id, problem_id, MAX(score) AS max_score FROM submissions GROUP BY user_id, problem_id
+    ), sum_subtasks_strat AS (
+        SELECT user_id, problem_id, coalesce(SUM(max_score), -1) AS max_score FROM submission_subtask_max_scores GROUP BY user_id, problem_id
+    ) SELECT users.id user_id, 
+            pbs.id problem_id, 
+            CASE WHEN pbs.scoring_strategy = 'max_submission' THEN COALESCE(ms_sub.max_score, -1)
+                 WHEN pbs.scoring_strategy = 'sum_subtasks'   THEN COALESCE(ms_subtask.max_score, -1)
+                 ELSE -1
+            END score
+    FROM (problems pbs CROSS JOIN users) 
+        LEFT JOIN max_submission_strat ms_sub ON (ms_sub.user_id = users.id AND ms_sub.problem_id = pbs.id)
+        LEFT JOIN sum_subtasks_strat ms_subtask ON (ms_subtask.user_id = users.id AND ms_subtask.problem_id = pbs.id);
+
+DROP VIEW IF EXISTS running_contests CASCADE;
+CREATE OR REPLACE VIEW running_contests AS (
+    SELECT * from contests WHERE contests.start_time <= NOW() AND NOW() <= contests.end_time
+);
+
+DROP VIEW IF EXISTS problem_statistics CASCADE;
+CREATE MATERIALIZED VIEW IF NOT EXISTS problem_statistics (problem_id, num_attempted, num_solved) AS
+    SELECT problem_id, COUNT(*) AS num_attempted, COUNT(*) FILTER (WHERE score = 100) AS num_solved FROM max_score_view WHERE score != -1 GROUP BY problem_id;
+
+DROP FUNCTION IF EXISTS visible_pbs CASCADE;
+-- param 1: the user ID for which we want to see the visible problems
+CREATE OR REPLACE FUNCTION visible_pbs(user_id bigint) RETURNS TABLE (problem_id bigint, user_id bigint) AS $$
+    (SELECT pbs.id as problem_id, 0 as user_id
+        FROM problems pbs
+        WHERE pbs.visible = true AND 0 = $1) -- Base case, problem is visible
+    UNION ALL
+    (SELECT pbs.id as problem_id, users.id as user_id 
+        FROM users CROSS JOIN problems pbs
+        WHERE (pbs.visible = true OR users.admin = true) AND users.id = $1) -- Problem is visible or user is admin
+    UNION ALL
+    (SELECT problem_id, user_id FROM problem_user_access WHERE user_id = $1) -- Problem editors/viewers
+    UNION ALL
+    (SELECT pbs.problem_id as problem_id, users.user_id as user_id 
+        FROM contest_problems pbs, contest_user_access users 
+        WHERE pbs.contest_id = users.contest_id AND users.user_id = $1) -- Contest testers/viewers
+    UNION ALL
+    (SELECT pbs.problem_id as problem_id, 0 as user_id
+        FROM contest_problems pbs, contests
+        WHERE pbs.contest_id = contests.id AND contests.visible = true
+        AND contests.end_time <= NOW()
+        AND 0 = $1) -- Visible contests after they ended for anons. TODO: Find alternative
+    UNION ALL
+    (SELECT pbs.problem_id as problem_id, users.id as user_id
+        FROM contest_problems pbs, users, contests
+        WHERE pbs.contest_id = contests.id AND contests.visible = true
+        AND contests.end_time <= NOW()
+        AND users.id = $1) -- Visible contests after they ended
+    UNION ALL
+    (SELECT pbs.problem_id as problem_id, 0 as user_id
+        FROM contest_problems pbs, running_contests contests
+        WHERE pbs.contest_id = contests.id AND contests.visible = true 
+        AND contests.per_user_time = 0 AND contests.register_during_contest = false
+        AND 0 = $1) -- Visible, running, non-USACO contests with no registering during contest, for anons. TODO: Find alternative
+    UNION ALL
+    (SELECT pbs.problem_id as problem_id, users.id as user_id
+        FROM contest_problems pbs, users, running_contests contests
+        WHERE pbs.contest_id = contests.id AND contests.visible = true 
+        AND contests.per_user_time = 0 AND contests.register_during_contest = false
+        AND users.id = $1) -- Visible, running, non-USACO contests with no registering during contest
+    UNION ALL
+    (SELECT pbs.problem_id as problem_id, users.user_id as user_id
+        FROM contest_problems pbs, contest_registrations users, running_contests contests 
+        WHERE pbs.contest_id = contests.id AND contests.id = users.contest_id 
+        AND contests.per_user_time = 0
+        AND users.user_id = $1) -- Contest registrants during the contest for non-USACO style
+    UNION ALL
+    (SELECT pbs.problem_id as problem_id, users.user_id as user_id
+        FROM contest_problems pbs, contest_registrations users, running_contests contests 
+        WHERE pbs.contest_id = contests.id AND contests.id = users.contest_id 
+        AND contests.per_user_time > 0 AND users.individual_start_at IS NOT NULL
+        AND users.user_id = $1); -- Contest registrants that started during the contest for USACO-style contests
+$$ LANGUAGE SQL STABLE;
+
+DROP FUNCTION IF EXISTS visible_posts CASCADE;
+-- Note: This must be in sync with sudoapi/filters.go:IsBlogPostVisible
+CREATE OR REPLACE FUNCTION visible_posts(user_id bigint) RETURNS TABLE (post_id bigint, user_id bigint) AS $$
+    SELECT id AS post_id, $1 AS user_id FROM blog_posts 
+        WHERE 
+            visible = true OR 
+            EXISTS (SELECT 1 FROM users WHERE id = $1 AND admin = true) OR 
+            author_id = $1
+$$ LANGUAGE SQL STABLE;
+
+DROP FUNCTION IF EXISTS persistently_visible_pbs CASCADE;
+-- param 1: the user ID for which we want to see the persistently visible problems
+-- persistently visible problems are problems that aren't conditioned on contest participation to be visible
+CREATE OR REPLACE FUNCTION persistently_visible_pbs(user_id bigint) RETURNS TABLE (problem_id bigint, user_id bigint) AS $$
+    (SELECT pbs.id as problem_id, 0 as user_id
+        FROM problems pbs
+        WHERE pbs.visible = true AND 0 = $1) -- Base case, problem is visible
+    UNION ALL
+    (SELECT pbs.id as problem_id, users.id as user_id 
+        FROM users CROSS JOIN problems pbs
+        WHERE (pbs.visible = true OR users.admin = true) AND users.id = $1) -- Problem is visible or user is admin
+    UNION ALL
+    (SELECT problem_id, user_id FROM problem_user_access WHERE user_id = $1) -- Problem editors/viewers
+    UNION ALL
+    (SELECT pbs.problem_id as problem_id, users.user_id as user_id 
+        FROM contest_problems pbs, contest_user_access users 
+        WHERE pbs.contest_id = users.contest_id AND users.user_id = $1) -- Contest testers/viewers
+    UNION ALL
+    (SELECT pbs.problem_id as problem_id, 0 as user_id
+        FROM contest_problems pbs, contests
+        WHERE pbs.contest_id = contests.id AND contests.visible = true
+        AND contests.end_time <= NOW()
+        AND 0 = $1) -- Visible contests after they ended for anons. TODO: Find alternative
+    UNION ALL
+    (SELECT pbs.problem_id as problem_id, users.id as user_id
+        FROM contest_problems pbs, users, contests
+        WHERE pbs.contest_id = contests.id AND contests.visible = true
+        AND contests.end_time <= NOW()
+        AND users.id = $1); -- Visible contests after they ended
+$$ LANGUAGE SQL STABLE;
+
+DROP VIEW IF EXISTS problem_editors CASCADE;
+CREATE OR REPLACE VIEW problem_editors AS
+    (SELECT pbs.id as problem_id, users.id as user_id 
+        FROM problems pbs, users 
+        WHERE users.admin = true) -- User is admin
+    UNION ALL
+    (SELECT problem_id, user_id FROM problem_user_access WHERE access = 'editor') -- Problem editors
+    UNION ALL
+    (SELECT pbs.problem_id as problem_id, users.user_id as user_id 
+        FROM contest_problems pbs, contest_user_access users 
+        WHERE pbs.contest_id = users.contest_id AND users.access = 'editor'); -- Contest editors
+
+-- Cases where a contest should be visible:
+--   - It's visible
+--   - Admins
+--   - Testers/Editors
+--   - It's not visible but it's running and user is registered
+
+DROP VIEW IF EXISTS contest_visibility CASCADE;
+CREATE OR REPLACE VIEW contest_visibility AS (
+    (SELECT contests.id AS contest_id, 0 AS user_id FROM contests 
+        WHERE contests.visible = true) -- visible to anonymous users
+    UNION
+    (SELECT contests.id AS contest_id, users.id AS user_id FROM contests, users 
+        WHERE contests.visible = true OR users.admin = true) -- visible to logged in users and admins
+    UNION
+    (SELECT contest_id, user_id FROM contest_user_access) -- Testers/Editors
+    UNION
+    (SELECT contests.id AS contest_id, users.user_id AS user_id FROM contests, contest_registrations users 
+        WHERE contests.id = users.contest_id AND contests.visible = false) -- not visible but registered
+);
+
+
+DROP VIEW IF EXISTS contest_submission_subtask_max_scores CASCADE;
+CREATE OR REPLACE VIEW contest_submission_subtask_max_scores (problem_id, user_id, subtask_id, contest_id, max_score) AS
+    SELECT MAX(stks.problem_id) as problem_id, stks.user_id, subtask_id, subs.contest_id, MAX(ROUND(COALESCE(final_percentage, 0) * stks.score / 100.0)) max_score
+    FROM submission_subtasks stks INNER JOIN submissions subs ON stks.submission_id = subs.id
+    WHERE subtask_id IS NOT NULL AND subs.contest_id IS NOT NULL GROUP BY stks.user_id, subtask_id, subs.contest_id;
+
+DROP VIEW IF EXISTS max_score_contest_view CASCADE;
+-- TODO: Refactor this like above
+CREATE OR REPLACE VIEW max_score_contest_view (user_id, problem_id, contest_id, score) AS 
+    WITH max_submission_strat AS (
+        SELECT user_id, problem_id, contest_id, MAX(score) AS max_score FROM submissions WHERE contest_id IS NOT NULL GROUP BY user_id, problem_id, contest_id
+    ), sum_subtasks_strat AS (
+        SELECT user_id, problem_id, contest_id, coalesce(SUM(max_score), -1) AS max_score FROM contest_submission_subtask_max_scores GROUP BY user_id, problem_id, contest_id
+    ) SELECT users.user_id user_id, 
+            pbs.problem_id problem_id,
+            users.contest_id contest_id, 
+            CASE WHEN problems.scoring_strategy = 'max_submission' THEN COALESCE(ms_sub.max_score, -1)
+                 WHEN problems.scoring_strategy = 'sum_subtasks'   THEN COALESCE(ms_subtask.max_score, -1)
+                 ELSE -1
+            END score
+    FROM ((contest_problems pbs INNER JOIN contest_registrations users ON users.contest_id = pbs.contest_id) INNER JOIN problems ON pbs.problem_id = problems.id) 
+        LEFT JOIN max_submission_strat ms_sub ON (ms_sub.user_id = users.user_id AND ms_sub.problem_id = pbs.problem_id AND ms_sub.contest_id = users.contest_id)
+        LEFT JOIN sum_subtasks_strat ms_subtask ON (ms_subtask.user_id = users.user_id AND ms_subtask.problem_id = pbs.problem_id AND ms_subtask.contest_id = users.contest_id);
+
+DROP VIEW IF EXISTS contest_top_view CASCADE;
+-- Since we now return -1 on no attempt, we must filter it when computing the top view
+-- also, exclude contest editors/testers since they didn't get that score legit
+CREATE OR REPLACE FUNCTION contest_top_view(contest_id bigint) RETURNS TABLE (user_id bigint, contest_id bigint, total_score decimal) AS $$
+    -- both contest_scores and legit_contestants will contain results only for that contest id, so it's safe to simply join them 
+    WITH contest_scores AS (
+        SELECT user_id, contest_id, SUM(score) AS total_score FROM max_score_contest_view WHERE score >= 0 AND contest_id = $1 GROUP BY user_id, contest_id
+    ), legit_contestants AS (
+        SELECT regs.* FROM contest_registrations regs WHERE regs.contest_id = $1 AND NOT EXISTS (SELECT 1 FROM contest_user_access acc WHERE acc.user_id = regs.user_id AND acc.contest_id = regs.contest_id)
+    )
+    SELECT users.user_id, users.contest_id, COALESCE(scores.total_score, 0) AS total_score 
+    FROM 
+        legit_contestants users 
+        LEFT JOIN contest_scores scores ON users.user_id = scores.user_id 
+        ORDER BY COALESCE(total_score, 0) DESC, user_id;
+$$ LANGUAGE SQL STABLE;
+
+DROP FUNCTION IF EXISTS visible_submissions;
+CREATE OR REPLACE FUNCTION visible_submissions(user_id bigint) RETURNS TABLE (sub_id bigint, user_id bigint) AS $$
+    WITH v_pbs AS (SELECT * FROM visible_pbs($1))
+    (SELECT id as sub_id, submissions.user_id as user_id 
+        FROM submissions, v_pbs
+        WHERE submissions.user_id = $1 AND submissions.problem_id = v_pbs.problem_id) -- base case, users should see their own submissions if problem is still visible (also, coincidentally, works for contest problems)
+    UNION ALL
+    (SELECT subs.id as sub_id, users.id as user_id
+        FROM submissions subs, users
+        WHERE users.admin = true AND users.id = $1) -- user admins
+    UNION ALL
+    (SELECT subs.id as sub_id, pb_viewers.user_id as user_id
+        FROM submissions subs, v_pbs pb_viewers
+        WHERE pb_viewers.problem_id = subs.problem_id AND subs.contest_id IS null) -- contest is null, so judge if problem is visible
+    UNION ALL
+    (SELECT subs.id as sub_id, users.user_id as user_id
+        FROM submissions subs, contest_user_access users
+        WHERE users.contest_id = subs.contest_id AND users.user_id = $1) -- contest staff if contest is not null
+    UNION ALL
+    (SELECT subs.id as sub_id, viz.user_id as user_id
+        FROM submissions subs, contests, contest_visibility viz, contest_problems c_pbs
+        WHERE contests.id = subs.contest_id AND contests.id = viz.contest_id AND contests.id = c_pbs.contest_id
+        AND c_pbs.problem_id = subs.problem_id
+        AND contests.end_time <= NOW()
+        AND viz.user_id = $1) -- ended contest, so everyone that can see the contest can also see submission
+            -- (if they can see the contest, they can also see the problem, since it ended)
+$$ LANGUAGE SQL STABLE;
+
+DROP VIEW IF EXISTS problem_list_deep_problems;
+CREATE OR REPLACE VIEW problem_list_deep_problems (list_id, problem_id) AS
+    WITH RECURSIVE pblist_tree(list_id, problem_id) AS (
+        SELECT pblist_id AS list_id, problem_id FROM problem_list_problems
+        UNION
+        SELECT pbs.parent_id AS list_id, pt.problem_id FROM problem_list_pblists pbs, pblist_tree PT WHERE pbs.child_id = pt.list_id
+    ) SELECT * FROM pblist_tree;
+
+DROP VIEW IF EXISTS problem_list_pb_count;
+CREATE OR REPLACE VIEW problem_list_pb_count(list_id, count) AS 
+    WITH RECURSIVE pblist_tree(list_id, problem_id) AS (
+        SELECT pblist_id AS list_id, problem_id FROM problem_list_problems
+        UNION
+        SELECT pbs.parent_id AS list_id, pt.problem_id FROM problem_list_pblists pbs, pblist_tree PT WHERE pbs.child_id = pt.list_id
+    ) SELECT list_id, COUNT(*) FROM pblist_tree GROUP BY list_id;
+
+DROP VIEW IF EXISTS pblist_user_solved;
+CREATE OR REPLACE VIEW pblist_user_solved (user_id, list_id, count) AS 
+    SELECT msv.user_id, pbs.list_id, COUNT(pbs.list_id) 
+    FROM problem_list_deep_problems pbs, max_score_view msv 
+    WHERE msv.score = 100 AND msv.problem_id = pbs.problem_id 
+    GROUP BY list_id, user_id;
+
+
+DROP VIEW IF EXISTS problem_checklist;
+-- note that, because max_score_view only counts *users* that completed the problem, the num_sols is actually the number of users that completed the problem
+-- NOT the number of 100-point solutions (but this metric would be irrelevant in the max-subtasks scoring strategy)
+CREATE OR REPLACE VIEW problem_checklist (problem_id, num_pdf, num_md, num_tests, num_subtasks, has_source, num_authors, num_other_tags, num_sols) AS 
+    WITH problem_attachments AS (
+        SELECT  atts.name AS name,
+                pam.problem_id AS problem_id 
+        FROM attachments atts, problem_attachments_m2m pam 
+        WHERE atts.id = pam.attachment_id
+    )
+    SELECT 
+        pbs.id AS problem_id,
+        (SELECT COUNT(*) FROM problem_attachments WHERE name LIKE 'statement-%.pdf' AND problem_id = pbs.id) AS num_pdf,
+        (SELECT COUNT(*) FROM problem_attachments WHERE name LIKE 'statement-%.md' AND problem_id = pbs.id) AS num_md,
+        (SELECT COUNT(*) FROM tests WHERE problem_id = pbs.id) AS num_tests,
+        (SELECT COUNT(*) FROM subtasks WHERE problem_id = pbs.id) AS num_subtasks,
+        (length(btrim(pbs.source_credits)) > 0) has_source,
+        (SELECT COUNT(*) FROM problem_tags ptags WHERE EXISTS (SELECT 1 FROM tags WHERE tags.id = ptags.tag_id AND tags.type = 'author') AND problem_id = pbs.id) AS num_authors,
+        (SELECT COUNT(*) FROM problem_tags ptags WHERE EXISTS (SELECT 1 FROM tags WHERE tags.id = ptags.tag_id AND tags.type != 'author') AND problem_id = pbs.id) AS num_other_tags,
+        (SELECT COUNT(*) FROM max_score_view WHERE problem_id = pbs.id AND score = 100) AS num_sols
+    FROM problems pbs;
+
+COMMIT;

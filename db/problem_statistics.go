@@ -15,7 +15,7 @@ type ProblemStats struct {
 }
 
 func (s *DB) ProblemsStatistics(ctx context.Context, problemIDs []int) (map[int]*ProblemStats, error) {
-	rows, _ := s.pgconn.Query(ctx, "SELECT problem_id, num_attempted, num_solved FROM problem_statistics WHERE problem_id = ANY($1)", problemIDs)
+	rows, _ := s.conn.Query(ctx, "SELECT problem_id, num_attempted, num_solved FROM problem_statistics WHERE problem_id = ANY($1)", problemIDs)
 	stats, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[ProblemStats])
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, err
@@ -33,7 +33,7 @@ func (s *DB) ProblemsStatistics(ctx context.Context, problemIDs []int) (map[int]
 
 func (s *DB) ProblemStatisticsSize(ctx context.Context, problemID int) ([]*kilonova.Submission, error) {
 	var subs []*dbSubmission
-	err := s.conn.SelectContext(ctx, &subs, `
+	err := Select(s.conn, ctx, &subs, `
 	WITH top_by_size AS (
 		SELECT DISTINCT ON (problem_id, user_id) id, problem_id, user_id, code_size FROM submissions WHERE score = 100 AND problem_id = $1 ORDER BY problem_id, user_id, code_size ASC
 	) SELECT submissions.* FROM submissions, top_by_size WHERE submissions.id = top_by_size.id ORDER BY submissions.code_size ASC LIMIT 5;
@@ -46,7 +46,7 @@ func (s *DB) ProblemStatisticsSize(ctx context.Context, problemID int) ([]*kilon
 
 func (s *DB) ProblemStatisticsMemory(ctx context.Context, problemID int) ([]*kilonova.Submission, error) {
 	var subs []*dbSubmission
-	err := s.conn.SelectContext(ctx, &subs, `
+	err := Select(s.conn, ctx, &subs, `
 	WITH top_by_memory AS (
 		SELECT DISTINCT ON (problem_id, user_id) id, problem_id, user_id, max_time FROM submissions WHERE score = 100 AND problem_id = $1 AND max_memory >= 0 ORDER BY problem_id, user_id, max_memory ASC
 	) SELECT submissions.* FROM submissions, top_by_memory WHERE submissions.id = top_by_memory.id ORDER BY submissions.max_memory LIMIT 5;
@@ -59,7 +59,7 @@ func (s *DB) ProblemStatisticsMemory(ctx context.Context, problemID int) ([]*kil
 
 func (s *DB) ProblemStatisticsTime(ctx context.Context, problemID int) ([]*kilonova.Submission, error) {
 	var subs []*dbSubmission
-	err := s.conn.SelectContext(ctx, &subs, `
+	err := Select(s.conn, ctx, &subs, `
 	WITH top_by_time AS (
 		SELECT DISTINCT ON (problem_id, user_id) id, problem_id, user_id, max_time FROM submissions WHERE score = 100 AND problem_id = $1 AND max_time >= 0 ORDER BY problem_id, user_id, max_time ASC
 	) SELECT submissions.* FROM submissions, top_by_time WHERE submissions.id = top_by_time.id ORDER BY submissions.max_time LIMIT 5;

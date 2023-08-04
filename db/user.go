@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"strings"
 	"time"
@@ -85,9 +84,9 @@ func (s *DB) User(ctx context.Context, filter kilonova.UserFilter) (*User, error
 func (s *DB) Users(ctx context.Context, filter kilonova.UserFilter) ([]*User, error) {
 	fb := newFilterBuilder()
 	userFilterQuery(&filter, fb)
-	rows, _ := s.pgconn.Query(ctx, "SELECT * from users WHERE "+fb.Where()+" ORDER BY id ASC "+FormatLimitOffset(filter.Limit, filter.Offset), fb.Args()...)
+	rows, _ := s.conn.Query(ctx, "SELECT * from users WHERE "+fb.Where()+" ORDER BY id ASC "+FormatLimitOffset(filter.Limit, filter.Offset), fb.Args()...)
 	users, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[User])
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return []*User{}, nil
 	}
 	return users, err
@@ -98,7 +97,7 @@ func (s *DB) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, e
 	var count int
 	fb := newFilterBuilder()
 	userFilterQuery(&filter, fb)
-	err := s.pgconn.QueryRow(ctx, "SELECT COUNT(*) FROM users WHERE "+fb.Where(), fb.Args()...).Scan(&count)
+	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM users WHERE "+fb.Where(), fb.Args()...).Scan(&count)
 	return count, err
 }
 
@@ -114,7 +113,7 @@ func (s *DB) UserExists(ctx context.Context, username string, email string) (boo
 
 func (s *DB) LastUsernameChange(ctx context.Context, userID int) (time.Time, error) {
 	var changedAt time.Time
-	err := s.pgconn.QueryRow(ctx, "SELECT MAX(changed_at) FROM username_change_history WHERE user_id = $1", userID).Scan(&changedAt)
+	err := s.conn.QueryRow(ctx, "SELECT MAX(changed_at) FROM username_change_history WHERE user_id = $1", userID).Scan(&changedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return time.Now(), nil
@@ -126,7 +125,7 @@ func (s *DB) LastUsernameChange(ctx context.Context, userID int) (time.Time, err
 
 func (s *DB) NameUsedBefore(ctx context.Context, name string) (bool, error) {
 	var cnt int
-	err := s.pgconn.QueryRow(ctx, "SELECT COUNT(name) FROM username_change_history WHERE lower(name) = lower($1)", name).Scan(&cnt)
+	err := s.conn.QueryRow(ctx, "SELECT COUNT(name) FROM username_change_history WHERE lower(name) = lower($1)", name).Scan(&cnt)
 	if err != nil {
 		return true, err
 	}
@@ -134,7 +133,7 @@ func (s *DB) NameUsedBefore(ctx context.Context, name string) (bool, error) {
 }
 
 func (s *DB) UsernameChangeHistory(ctx context.Context, userID int) ([]*kilonova.UsernameChange, error) {
-	rows, _ := s.pgconn.Query(ctx, "SELECT * FROM username_change_history WHERE user_id = $1 ORDER BY changed_at DESC", userID)
+	rows, _ := s.conn.Query(ctx, "SELECT * FROM username_change_history WHERE user_id = $1 ORDER BY changed_at DESC", userID)
 	changes, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[kilonova.UsernameChange])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -193,18 +192,18 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate
 	fb := ub.MakeFilter()
 	fb.AddConstraint("id = %s", id)
 
-	_, err := s.pgconn.Exec(ctx, "UPDATE users SET "+fb.WithUpdate(), fb.Args()...)
+	_, err := s.conn.Exec(ctx, "UPDATE users SET "+fb.WithUpdate(), fb.Args()...)
 	return err
 }
 
 func (s *DB) UpdateUserPasswordHash(ctx context.Context, userID int, hash string) error {
-	_, err := s.pgconn.Exec(ctx, "UPDATE users SET password = $1 WHERE id = $2", hash, userID)
+	_, err := s.conn.Exec(ctx, "UPDATE users SET password = $1 WHERE id = $2", hash, userID)
 	return err
 }
 
 // DeleteUser permanently deletes a user from the system.
 func (s *DB) DeleteUser(ctx context.Context, id int) error {
-	_, err := s.pgconn.Exec(ctx, "DELETE FROM users WHERE id = $1", id)
+	_, err := s.conn.Exec(ctx, "DELETE FROM users WHERE id = $1", id)
 	return err
 }
 
@@ -215,7 +214,7 @@ func (s *DB) CreateUser(ctx context.Context, name, passwordHash, email, preferre
 	}
 
 	var id = -1
-	err := s.pgconn.QueryRow(ctx,
+	err := s.conn.QueryRow(ctx,
 		"INSERT INTO users (name, email, password, preferred_language, preferred_theme, generated, verified_email) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
 		name, email, passwordHash, preferredLanguage, theme, generated, generated, // generated is for both generated and verified_email!
 	).Scan(&id)

@@ -32,7 +32,7 @@ func (s *DB) BlogPosts(ctx context.Context, filter kilonova.BlogPostFilter) ([]*
 	blogPostParams(filter, fb)
 
 	q := fmt.Sprintf("SELECT * FROM blog_posts WHERE %s %s %s", fb.Where(), getBlogPostOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset))
-	rows, _ := s.pgconn.Query(ctx, q, fb.Args()...)
+	rows, _ := s.conn.Query(ctx, q, fb.Args()...)
 	posts, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[dbBlogPost])
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
@@ -48,7 +48,7 @@ func (s *DB) CountBlogPosts(ctx context.Context, filter kilonova.BlogPostFilter)
 	blogPostParams(filter, fb)
 
 	var cnt int
-	err := s.pgconn.QueryRow(ctx, "SELECT COUNT(*) FROM blog_posts WHERE "+fb.Where(), fb.Args()...).Scan(&cnt)
+	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM blog_posts WHERE "+fb.Where(), fb.Args()...).Scan(&cnt)
 	if errors.Is(err, pgx.ErrNoRows) { // Should never happen
 		return 0, nil
 	}
@@ -63,7 +63,7 @@ func (s *DB) CreateBlogPost(ctx context.Context, title string, authorID int) (in
 		return -1, "", kilonova.ErrMissingRequired
 	}
 	slug := kilonova.MakeSlug(fmt.Sprintf("%s %d %s", title, authorID, kilonova.RandomString(6)))
-	rows, _ := s.pgconn.Query(ctx, "INSERT INTO blog_posts (title, author_id, slug) VALUES ($1, $2, $3) RETURNING id", title, authorID, slug)
+	rows, _ := s.conn.Query(ctx, "INSERT INTO blog_posts (title, author_id, slug) VALUES ($1, $2, $3) RETURNING id", title, authorID, slug)
 	id, err := pgx.CollectOneRow(rows, pgx.RowTo[int])
 	if err != nil {
 		return -1, "", err
@@ -92,12 +92,12 @@ func (s *DB) UpdateBlogPost(ctx context.Context, id int, upd kilonova.BlogPostUp
 	}
 	fb := ub.MakeFilter()
 	fb.AddConstraint("id = %s", id)
-	_, err := s.pgconn.Exec(ctx, "UPDATE blog_posts SET "+fb.WithUpdate(), fb.Args()...)
+	_, err := s.conn.Exec(ctx, "UPDATE blog_posts SET "+fb.WithUpdate(), fb.Args()...)
 	return err
 }
 
 func (s *DB) DeleteBlogPost(ctx context.Context, id int) error {
-	_, err := s.pgconn.Exec(ctx, "DELETE FROM blog_posts WHERE id = $1", id)
+	_, err := s.conn.Exec(ctx, "DELETE FROM blog_posts WHERE id = $1", id)
 	return err
 }
 

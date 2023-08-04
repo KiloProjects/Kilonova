@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"time"
 
@@ -32,7 +31,7 @@ type dbContestAnnouncement struct {
 
 func (s *DB) CreateContestQuestion(ctx context.Context, contestID, authorID int, text string) (int, error) {
 	var id int
-	err := s.pgconn.QueryRow(ctx, `INSERT INTO contest_questions (author_id, contest_id, question) VALUES ($1, $2, $3) RETURNING id`, authorID, contestID, text).Scan(&id)
+	err := s.conn.QueryRow(ctx, `INSERT INTO contest_questions (author_id, contest_id, question) VALUES ($1, $2, $3) RETURNING id`, authorID, contestID, text).Scan(&id)
 	if err != nil {
 		return -1, err
 	}
@@ -60,7 +59,7 @@ func (s *DB) ContestQuestions(ctx context.Context, filter QuestionFilter) ([]*ki
 		fb.AddConstraint("author_id = %s", v)
 	}
 
-	rows, _ := s.pgconn.Query(
+	rows, _ := s.conn.Query(
 		ctx,
 		"SELECT * FROM contest_questions WHERE "+fb.Where()+" ORDER BY created_at DESC "+FormatLimitOffset(filter.Limit, filter.Offset),
 		fb.Args()...,
@@ -81,13 +80,13 @@ func (s *DB) ContestQuestion(ctx context.Context, id int) (*kilonova.ContestQues
 }
 
 func (s *DB) AnswerContestQuestion(ctx context.Context, questionID int, response string) error {
-	_, err := s.pgconn.Exec(ctx, "UPDATE contest_questions SET responded_at = NOW(), response = $1 WHERE id = $2", response, questionID)
+	_, err := s.conn.Exec(ctx, "UPDATE contest_questions SET responded_at = NOW(), response = $1 WHERE id = $2", response, questionID)
 	return err
 }
 
 func (s *DB) CreateContestAnnouncement(ctx context.Context, contestID int, text string) (int, error) {
 	var id int
-	err := s.conn.GetContext(ctx, &id, `INSERT INTO contest_announcements (contest_id, announcement) VALUES ($1, $2) RETURNING id`, contestID, text)
+	err := s.conn.QueryRow(ctx, `INSERT INTO contest_announcements (contest_id, announcement) VALUES ($1, $2) RETURNING id`, contestID, text).Scan(&id)
 	if err != nil {
 		return -1, err
 	}
@@ -96,8 +95,8 @@ func (s *DB) CreateContestAnnouncement(ctx context.Context, contestID int, text 
 
 func (s *DB) ContestAnnouncements(ctx context.Context, contestID int) ([]*kilonova.ContestAnnouncement, error) {
 	var answers []*dbContestAnnouncement
-	err := s.conn.SelectContext(ctx, &answers, `SELECT * FROM contest_announcements WHERE contest_id = $1 ORDER BY created_at DESC`, contestID)
-	if errors.Is(err, sql.ErrNoRows) {
+	err := Select(s.conn, ctx, &answers, `SELECT * FROM contest_announcements WHERE contest_id = $1 ORDER BY created_at DESC`, contestID)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.ContestAnnouncement{}, nil
 	} else if err != nil {
 		return []*kilonova.ContestAnnouncement{}, err
@@ -107,20 +106,20 @@ func (s *DB) ContestAnnouncements(ctx context.Context, contestID int) ([]*kilono
 
 func (s *DB) ContestAnnouncement(ctx context.Context, id int) (*kilonova.ContestAnnouncement, error) {
 	var answer dbContestAnnouncement
-	err := s.conn.GetContext(ctx, &answer, `SELECT * FROM contest_announcements WHERE id = $1`, id)
-	if errors.Is(err, sql.ErrNoRows) {
+	err := Get(s.conn, ctx, &answer, `SELECT * FROM contest_announcements WHERE id = $1`, id)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	return s.internalToContestAnnouncement(&answer), err
 }
 
 func (s *DB) UpdateContestAnnouncement(ctx context.Context, announcementID int, text string) error {
-	_, err := s.pgconn.Exec(ctx, "UPDATE contest_announcements SET announcement = $1 WHERE id = $2", text, announcementID)
+	_, err := s.conn.Exec(ctx, "UPDATE contest_announcements SET announcement = $1 WHERE id = $2", text, announcementID)
 	return err
 }
 
 func (s *DB) DeleteContestAnnouncement(ctx context.Context, announcementID int) error {
-	_, err := s.pgconn.Exec(ctx, "DELETE FROM contest_announcements WHERE id = $1", announcementID)
+	_, err := s.conn.Exec(ctx, "DELETE FROM contest_announcements WHERE id = $1", announcementID)
 	return err
 }
 

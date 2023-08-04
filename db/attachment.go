@@ -18,7 +18,7 @@ func (a *DB) createAttachment(ctx context.Context, att *kilonova.Attachment, dat
 	}
 
 	var id int
-	err := a.pgconn.QueryRow(ctx, createAttachmentQuery, att.Visible, att.Private, att.Exec, att.Name, data, authorID).Scan(&id)
+	err := a.conn.QueryRow(ctx, createAttachmentQuery, att.Visible, att.Private, att.Exec, att.Name, data, authorID).Scan(&id)
 	if err != nil {
 		return -1, err
 	}
@@ -38,7 +38,7 @@ func (a *DB) CreateProblemAttachment(ctx context.Context, att *kilonova.Attachme
 		return err
 	}
 
-	_, err = a.pgconn.Exec(ctx, "INSERT INTO problem_attachments_m2m (problem_id, attachment_id) VALUES ($1, $2)", problemID, id)
+	_, err = a.conn.Exec(ctx, "INSERT INTO problem_attachments_m2m (problem_id, attachment_id) VALUES ($1, $2)", problemID, id)
 	if err != nil {
 		zap.S().Warn(err)
 		return err
@@ -60,7 +60,7 @@ func (a *DB) CreateBlogPostAttachment(ctx context.Context, att *kilonova.Attachm
 		return err
 	}
 
-	_, err = a.pgconn.Exec(ctx, "INSERT INTO blog_post_attachments_m2m (blog_post_id, attachment_id) VALUES ($1, $2)", postID, id)
+	_, err = a.conn.Exec(ctx, "INSERT INTO blog_post_attachments_m2m (blog_post_id, attachment_id) VALUES ($1, $2)", postID, id)
 	if err != nil {
 		zap.S().Warn(err)
 		return err
@@ -90,7 +90,7 @@ func (a *DB) Attachments(ctx context.Context, filter *kilonova.AttachmentFilter)
 	}
 
 	query := "SELECT " + selectedAttFields + " FROM attachments WHERE " + fb.Where() + " ORDER BY name ASC " + FormatLimitOffset(limit, offset)
-	rows, _ := a.pgconn.Query(ctx, query, fb.Args()...)
+	rows, _ := a.conn.Query(ctx, query, fb.Args()...)
 	attachments, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[dbAttachment])
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.Attachment{}, nil
@@ -102,7 +102,7 @@ func (a *DB) AttachmentData(ctx context.Context, filter *kilonova.AttachmentFilt
 	var data []byte
 	fb := newFilterBuilder()
 	attachmentFilterQuery(filter, fb)
-	err := a.pgconn.QueryRow(ctx, "SELECT data FROM attachments WHERE "+fb.Where()+" LIMIT 1", fb.Args()...).Scan(&data)
+	err := a.conn.QueryRow(ctx, "SELECT data FROM attachments WHERE "+fb.Where()+" LIMIT 1", fb.Args()...).Scan(&data)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []byte{}, nil
 	}
@@ -128,19 +128,19 @@ func (a *DB) UpdateAttachment(ctx context.Context, id int, upd *kilonova.Attachm
 	}
 	fb := ub.MakeFilter()
 	fb.AddConstraint("id = %s", id)
-	_, err := a.pgconn.Exec(ctx, "UPDATE attachments SET "+fb.WithUpdate(), fb.Args()...)
+	_, err := a.conn.Exec(ctx, "UPDATE attachments SET "+fb.WithUpdate(), fb.Args()...)
 	return err
 }
 
 func (a *DB) UpdateAttachmentData(ctx context.Context, id int, data []byte, updatedBy *int) error {
-	_, err := a.pgconn.Exec(ctx, "UPDATE attachments SET data = $1, last_updated_at = NOW(), last_updated_by = COALESCE($3, last_updated_by) WHERE id = $2", data, id, updatedBy)
+	_, err := a.conn.Exec(ctx, "UPDATE attachments SET data = $1, last_updated_at = NOW(), last_updated_by = COALESCE($3, last_updated_by) WHERE id = $2", data, id, updatedBy)
 	return err
 }
 
 func (a *DB) DeleteAttachments(ctx context.Context, filter *kilonova.AttachmentFilter) (int, error) {
 	fb := newFilterBuilder()
 	attachmentFilterQuery(filter, fb)
-	result, err := a.pgconn.Exec(ctx, "DELETE FROM attachments WHERE "+fb.Where(), fb.Args()...)
+	result, err := a.conn.Exec(ctx, "DELETE FROM attachments WHERE "+fb.Where(), fb.Args()...)
 	if err != nil {
 		return -1, err
 	}

@@ -19,12 +19,12 @@ type dbVerification struct {
 
 func (s *DB) CreateVerification(ctx context.Context, id int) (string, error) {
 	vid := kilonova.RandomString(16)
-	_, err := s.pgconn.Exec(ctx, `INSERT INTO verifications (id, user_id) VALUES ($1, $2)`, vid, id)
+	_, err := s.conn.Exec(ctx, `INSERT INTO verifications (id, user_id) VALUES ($1, $2)`, vid, id)
 	return vid, err
 }
 
 func (s *DB) GetVerification(ctx context.Context, id string) (int, error) {
-	rows, _ := s.pgconn.Query(ctx, `SELECT * FROM verifications WHERE id = $1`, id)
+	rows, _ := s.conn.Query(ctx, `SELECT * FROM verifications WHERE id = $1`, id)
 	verif, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[dbVerification])
 	if err != nil {
 		return -1, err
@@ -36,7 +36,7 @@ func (s *DB) GetVerification(ctx context.Context, id string) (int, error) {
 }
 
 func (s *DB) RemoveVerification(ctx context.Context, verif string) error {
-	_, err := s.pgconn.Exec(ctx, `DELETE FROM verifications WHERE id = $1`, verif)
+	_, err := s.conn.Exec(ctx, `DELETE FROM verifications WHERE id = $1`, verif)
 	return err
 }
 
@@ -49,7 +49,7 @@ type dbSession struct {
 
 func (s *DB) CreateSession(ctx context.Context, uid int) (string, error) {
 	vid := kilonova.RandomString(16)
-	_, err := s.pgconn.Exec(ctx, `INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, $3)`, vid, uid, time.Now().Add(sessionDuration))
+	_, err := s.conn.Exec(ctx, `INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, $3)`, vid, uid, time.Now().Add(sessionDuration))
 	if err != nil {
 		return "", err
 	}
@@ -66,7 +66,7 @@ func (s *DB) GetSession(ctx context.Context, sess string) (int, error) {
 
 func (s *DB) getSession(ctx context.Context, sess string) (*dbSession, error) {
 	var session dbSession
-	err := s.conn.GetContext(ctx, &session, `SELECT * FROM active_sessions WHERE id = $1`, sess)
+	err := Get(s.conn, ctx, &session, `SELECT * FROM active_sessions WHERE id = $1`, sess)
 	if err != nil {
 		return nil, errors.New("Unauthed")
 	}
@@ -74,7 +74,7 @@ func (s *DB) getSession(ctx context.Context, sess string) (*dbSession, error) {
 }
 
 func (s *DB) RemoveSession(ctx context.Context, sess string) error {
-	_, err := s.pgconn.Exec(ctx, `DELETE FROM sessions WHERE id = $1`, sess)
+	_, err := s.conn.Exec(ctx, `DELETE FROM sessions WHERE id = $1`, sess)
 	return err
 }
 
@@ -84,6 +84,6 @@ func (s *DB) ExtendSession(ctx context.Context, sid string) (time.Time, error) {
 		return time.Time{}, err
 	}
 	var newExpiration time.Time
-	err = s.pgconn.QueryRow(ctx, `UPDATE sessions SET expires_at = $2 WHERE id = $1 RETURNING expires_at`, sess.ID, time.Now().Add(sessionDuration)).Scan(&newExpiration)
+	err = s.conn.QueryRow(ctx, `UPDATE sessions SET expires_at = $2 WHERE id = $1 RETURNING expires_at`, sess.ID, time.Now().Add(sessionDuration)).Scan(&newExpiration)
 	return newExpiration, err
 }

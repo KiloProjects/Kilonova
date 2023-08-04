@@ -2,11 +2,11 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/jackc/pgx/v5"
 )
 
 type dbContest struct {
@@ -42,7 +42,7 @@ func (s *DB) CreateContest(ctx context.Context, name string) (int, error) {
 	var id int
 	// Default is one week from now, 2 hours
 	defaultStart := time.Now().AddDate(0, 0, 7).Truncate(time.Hour)
-	err := s.pgconn.QueryRow(
+	err := s.conn.QueryRow(
 		ctx, createContestQuery,
 		name,
 		defaultStart, defaultStart.Add(2*time.Hour),
@@ -52,8 +52,8 @@ func (s *DB) CreateContest(ctx context.Context, name string) (int, error) {
 
 func (s *DB) Contest(ctx context.Context, id int) (*kilonova.Contest, error) {
 	var contest dbContest
-	err := s.conn.GetContext(ctx, &contest, "SELECT * FROM contests WHERE id = $1", id)
-	if errors.Is(err, sql.ErrNoRows) {
+	err := Get(s.conn, ctx, &contest, "SELECT * FROM contests WHERE id = $1", id)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
@@ -64,13 +64,13 @@ func (s *DB) Contest(ctx context.Context, id int) (*kilonova.Contest, error) {
 // TODO: Test
 func (s *DB) RunningContestsByProblem(ctx context.Context, problemID int) ([]*kilonova.Contest, error) {
 	var contests []*dbContest
-	err := s.conn.SelectContext(
+	err := Select(s.conn,
 		ctx,
 		&contests,
 		"SELECT contests.* FROM running_contests contests, contest_problems pbs WHERE contests.id = pbs.contest_id AND pbs.problem_id = $1 ORDER BY contests.start_time DESC",
 		problemID,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.Contest{}, nil
 	} else if err != nil {
 		return []*kilonova.Contest{}, err
@@ -80,13 +80,13 @@ func (s *DB) RunningContestsByProblem(ctx context.Context, problemID int) ([]*ki
 
 func (s *DB) VisibleContests(ctx context.Context, userID int) ([]*kilonova.Contest, error) {
 	var contests []*dbContest
-	err := s.conn.SelectContext(
+	err := Select(s.conn,
 		ctx,
 		&contests,
 		"SELECT contests.* FROM contests, contest_visibility viz WHERE contests.id = viz.contest_id AND viz.user_id = $1 ORDER BY contests.start_time DESC",
 		userID,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.Contest{}, nil
 	}
 	return mapperCtx(ctx, contests, s.internalToContest), err
@@ -94,7 +94,7 @@ func (s *DB) VisibleContests(ctx context.Context, userID int) ([]*kilonova.Conte
 
 func (s *DB) VisibleFutureContests(ctx context.Context, userID int) ([]*kilonova.Contest, error) {
 	var contests []*dbContest
-	err := s.conn.SelectContext(
+	err := Select(s.conn,
 		ctx,
 		&contests,
 		`SELECT contests.* FROM contests, contest_visibility viz WHERE contests.id = viz.contest_id 
@@ -102,7 +102,7 @@ func (s *DB) VisibleFutureContests(ctx context.Context, userID int) ([]*kilonova
 		AND viz.user_id = $1 ORDER BY contests.start_time DESC`,
 		userID,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.Contest{}, nil
 	}
 	return mapperCtx(ctx, contests, s.internalToContest), err
@@ -110,7 +110,7 @@ func (s *DB) VisibleFutureContests(ctx context.Context, userID int) ([]*kilonova
 
 func (s *DB) VisibleRunningContests(ctx context.Context, userID int) ([]*kilonova.Contest, error) {
 	var contests []*dbContest
-	err := s.conn.SelectContext(
+	err := Select(s.conn,
 		ctx,
 		&contests,
 		`SELECT contests.* FROM contests, contest_visibility viz WHERE contests.id = viz.contest_id 
@@ -118,7 +118,7 @@ func (s *DB) VisibleRunningContests(ctx context.Context, userID int) ([]*kilonov
 		AND viz.user_id = $1 ORDER BY contests.start_time DESC`,
 		userID,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.Contest{}, nil
 	}
 	return mapperCtx(ctx, contests, s.internalToContest), err
@@ -132,12 +132,12 @@ func (s *DB) UpdateContest(ctx context.Context, id int, upd kilonova.ContestUpda
 	}
 	fb := ub.MakeFilter()
 	fb.AddConstraint("id = %s", id)
-	_, err := s.conn.ExecContext(ctx, "UPDATE contests SET "+fb.WithUpdate(), fb.Args()...)
+	_, err := s.conn.Exec(ctx, "UPDATE contests SET "+fb.WithUpdate(), fb.Args()...)
 	return err
 }
 
 func (s *DB) DeleteContest(ctx context.Context, id int) error {
-	_, err := s.pgconn.Exec(ctx, "DELETE FROM contests WHERE id = $1", id)
+	_, err := s.conn.Exec(ctx, "DELETE FROM contests WHERE id = $1", id)
 	return err
 }
 
@@ -155,11 +155,12 @@ func (s *DB) internalToLeaderboardEntry(ctx context.Context, entry *databaseTopE
 		return nil, err
 	}
 
-	var pbs = []struct {
+	rows, _ := s.conn.Query(ctx, "SELECT problem_id, score FROM max_score_contest_view WHERE user_id = $1 AND contest_id = $2", entry.UserID, entry.ContestID)
+	pbs, err := pgx.CollectRows(rows, pgx.RowToStructByName[struct {
 		ProblemID int `db:"problem_id"`
 		Score     int `db:"score"`
-	}{}
-	if err := s.conn.SelectContext(ctx, &pbs, "SELECT problem_id, score FROM max_score_contest_view WHERE user_id = $1 AND contest_id = $2", entry.UserID, entry.ContestID); err != nil {
+	}])
+	if err != nil {
 		return nil, err
 	}
 
@@ -191,7 +192,7 @@ func (s *DB) ContestLeaderboard(ctx context.Context, contestID int) (*kilonova.C
 
 	var topList []*databaseTopEntry
 
-	err = s.conn.SelectContext(ctx, &topList, "SELECT * FROM contest_top_view WHERE contest_id = $1", contestID)
+	err = Select(s.conn, ctx, &topList, "SELECT * FROM contest_top_view($1)", contestID)
 	if err != nil {
 		return nil, err
 	}

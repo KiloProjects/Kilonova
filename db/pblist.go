@@ -11,7 +11,7 @@ import (
 )
 
 func (s *DB) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, error) {
-	rows, _ := s.pgconn.Query(ctx, `
+	rows, _ := s.conn.Query(ctx, `
 	SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems, array(SELECT problem_id FROM problem_list_problems WHERE pblist_id = lists.id ORDER BY position ASC, problem_id ASC)::int[] AS list_problems
 		FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
 		WHERE id = $1 LIMIT 1`, id)
@@ -26,7 +26,7 @@ func (s *DB) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, er
 }
 
 func (s *DB) ProblemListByName(ctx context.Context, name string) (*kilonova.ProblemList, error) {
-	rows, _ := s.pgconn.Query(ctx, `
+	rows, _ := s.conn.Query(ctx, `
 	SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems, array(SELECT problem_id FROM problem_list_problems WHERE pblist_id = lists.id ORDER BY position ASC, problem_id ASC)::int[] AS list_problems
 		FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
 		WHERE title = $1 ORDER BY id LIMIT 1`, name)
@@ -49,7 +49,7 @@ func (s *DB) ProblemLists(ctx context.Context, root bool) ([]*kilonova.ProblemLi
 		FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
 		WHERE NOT EXISTS (SELECT 1 FROM problem_list_pblists WHERE child_id = lists.id) ORDER BY lists.id ASC`
 	}
-	rows, _ := s.pgconn.Query(ctx, q)
+	rows, _ := s.conn.Query(ctx, q)
 	lists, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[pblist])
 	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return []*kilonova.ProblemList{}, nil
@@ -69,7 +69,7 @@ func (s *DB) ProblemListsByProblemID(ctx context.Context, problemID int, showHid
 	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems, array(SELECT problem_id FROM problem_list_problems WHERE pblist_id = lists.id ORDER BY position ASC, problem_id ASC)::int[] AS list_problems
 	FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
 	WHERE EXISTS (SELECT 1 FROM problem_list_problems WHERE pblist_id = lists.id AND problem_id = $1)` + hidableQ + ` ORDER BY lists.id ASC`
-	rows, _ := s.pgconn.Query(ctx, q, problemID)
+	rows, _ := s.conn.Query(ctx, q, problemID)
 	lists, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[pblist])
 
 	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
@@ -85,7 +85,7 @@ func (s *DB) ParentProblemListsByPblistID(ctx context.Context, pblistID int) ([]
 	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems, array(SELECT problem_id FROM problem_list_problems WHERE pblist_id = lists.id ORDER BY position ASC, problem_id ASC)::int[] AS list_problems
 	FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
 	WHERE EXISTS (SELECT 1 FROM problem_list_pblists WHERE parent_id = lists.id AND child_id = $1) ORDER BY lists.id ASC`
-	rows, _ := s.pgconn.Query(ctx, q, pblistID)
+	rows, _ := s.conn.Query(ctx, q, pblistID)
 	lists, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[pblist])
 
 	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
@@ -104,7 +104,7 @@ func (s *DB) ChildrenProblemListsByPblistID(ctx context.Context, pblistID int) (
 	FROM (problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id)
 		INNER JOIN problem_list_pblists plpp ON (plpp.parent_id = $1 AND plpp.child_id = lists.id)
 	ORDER BY plpp.position ASC, lists.id ASC`
-	rows, _ := s.pgconn.Query(ctx, q, pblistID)
+	rows, _ := s.conn.Query(ctx, q, pblistID)
 	lists, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[pblist])
 
 	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
@@ -121,7 +121,7 @@ func (s *DB) shallowProblemLists(ctx context.Context, parentID int) ([]*kilonova
 	FROM (problem_lists lists INNER JOIN problem_list_pblists plpb ON plpb.parent_id = $1 AND lists.id = plpb.child_id)
 		LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id
 	ORDER BY plpb.position ASC, lists.id ASC`
-	rows, _ := s.pgconn.Query(ctx, query, parentID)
+	rows, _ := s.conn.Query(ctx, query, parentID)
 	lists, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[pblist])
 
 	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
@@ -144,7 +144,7 @@ func (s *DB) NumSolvedPblistProblems(ctx context.Context, listID, userID int) (i
 	var cnt int
 	// MAX(count) is a hacky fix for when there's no rows
 	// TODO: proper fix
-	err := s.conn.GetContext(ctx, &cnt, `SELECT COALESCE(MAX(count), 0) FROM pblist_user_solved WHERE list_id = $1 AND user_id = $2`, listID, userID)
+	err := s.conn.QueryRow(ctx, `SELECT COALESCE(MAX(count), 0) FROM pblist_user_solved WHERE list_id = $1 AND user_id = $2`, listID, userID).Scan(&cnt)
 	if err != nil {
 		zap.S().Warn(err)
 		return -1, err
@@ -153,7 +153,7 @@ func (s *DB) NumSolvedPblistProblems(ctx context.Context, listID, userID int) (i
 }
 
 func (s *DB) NumBulkedSolvedPblistProblems(ctx context.Context, userID int, listIDs []int) (map[int]int, error) {
-	rows, _ := s.pgconn.Query(ctx, "SELECT list_id, count FROM pblist_user_solved WHERE user_id = $1 AND list_id = ANY($2)", userID, listIDs)
+	rows, _ := s.conn.Query(ctx, "SELECT list_id, count FROM pblist_user_solved WHERE user_id = $1 AND list_id = ANY($2)", userID, listIDs)
 	lists, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[struct {
 		ListID int `db:"list_id"`
 		Count  int `db:"count"`
@@ -177,7 +177,7 @@ func (s *DB) CreateProblemList(ctx context.Context, list *kilonova.ProblemList) 
 	}
 	// Do insertion
 	var id int
-	err := s.conn.GetContext(ctx, &id, createProblemListQuery, list.AuthorID, list.Title, list.Description, list.SidebarHidable)
+	err := Get(s.conn, ctx, &id, createProblemListQuery, list.AuthorID, list.Title, list.Description, list.SidebarHidable)
 	if err != nil {
 		return err
 	}
@@ -206,12 +206,12 @@ func (s *DB) UpdateProblemList(ctx context.Context, id int, upd kilonova.Problem
 	}
 	fb := ub.MakeFilter()
 	fb.AddConstraint("id = %s", id)
-	_, err := s.pgconn.Exec(ctx, `UPDATE problem_lists SET `+fb.WithUpdate(), fb.Args()...)
+	_, err := s.conn.Exec(ctx, `UPDATE problem_lists SET `+fb.WithUpdate(), fb.Args()...)
 	return err
 }
 
 func (s *DB) DeleteProblemList(ctx context.Context, id int) error {
-	_, err := s.pgconn.Exec(ctx, "DELETE FROM problem_lists WHERE id = $1", id)
+	_, err := s.conn.Exec(ctx, "DELETE FROM problem_lists WHERE id = $1", id)
 	return err
 }
 

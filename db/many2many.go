@@ -9,7 +9,7 @@ import (
 )
 
 func (s *DB) updateManyToMany(ctx context.Context, tableName, parentKey, childKey string, parentID int, children []int, position bool) error {
-	return pgx.BeginFunc(ctx, s.pgconn, func(tx pgx.Tx) error {
+	return pgx.BeginFunc(ctx, s.conn, func(tx pgx.Tx) error {
 		// Naively delete all associations, then add them back
 		if _, err := tx.Exec(ctx, fmt.Sprintf("DELETE FROM %s WHERE %s = $1", tableName, parentKey), parentID); err != nil {
 			return err

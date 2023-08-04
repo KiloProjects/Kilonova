@@ -2,11 +2,11 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/jackc/pgx/v5"
 )
 
 type subSubtask struct {
@@ -24,14 +24,14 @@ type subSubtask struct {
 }
 
 func (s *DB) UpdateSubmissionSubtaskPercentage(ctx context.Context, id int, percentage int) (err error) {
-	_, err = s.pgconn.Exec(ctx, `UPDATE submission_subtasks SET final_percentage = $1 WHERE id = $2`, percentage, id)
+	_, err = s.conn.Exec(ctx, `UPDATE submission_subtasks SET final_percentage = $1 WHERE id = $2`, percentage, id)
 	return
 }
 
 func (s *DB) SubmissionSubTasksBySubID(ctx context.Context, subid int) ([]*kilonova.SubmissionSubTask, error) {
 	var subtasks []*subSubtask
-	err := s.conn.SelectContext(ctx, &subtasks, "SELECT * FROM submission_subtasks WHERE submission_id = $1 ORDER BY visible_id ASC", subid)
-	if errors.Is(err, sql.ErrNoRows) {
+	err := Select(s.conn, ctx, &subtasks, "SELECT * FROM submission_subtasks WHERE submission_id = $1 ORDER BY visible_id ASC", subid)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.SubmissionSubTask{}, nil
 	} else if err != nil {
 		return []*kilonova.SubmissionSubTask{}, err
@@ -63,8 +63,8 @@ func (s *DB) MaximumScoreSubTasks(ctx context.Context, problemID int, userID int
 	if contestID != nil {
 		args = append(args, contestID)
 	}
-	err := s.conn.SelectContext(ctx, &subtasks, getSubmissionSubtaskQuery(contestID != nil), args...)
-	if errors.Is(err, sql.ErrNoRows) {
+	err := Select(s.conn, ctx, &subtasks, getSubmissionSubtaskQuery(contestID != nil), args...)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.SubmissionSubTask{}, nil
 	} else if err != nil {
 		return []*kilonova.SubmissionSubTask{}, err
@@ -78,17 +78,15 @@ func (s *DB) internalToSubmissionSubTask(ctx context.Context, st *subSubtask) (*
 		return nil, nil
 	}
 
-	var ids []int
-	err := s.conn.SelectContext(ctx, &ids, `
-SELECT submission_subtask_subtests.submission_test_id
-FROM submission_subtask_subtests
-INNER JOIN submission_tests subtests
-	ON subtests.id = submission_subtask_subtests.submission_test_id 
-WHERE 
-	submission_subtask_subtests.submission_subtask_id = $1 
-ORDER BY subtests.visible_id ASC
-`, st.ID)
-	if errors.Is(err, sql.ErrNoRows) {
+	rows, _ := s.conn.Query(ctx, `SELECT submission_subtask_subtests.submission_test_id
+	FROM submission_subtask_subtests
+	INNER JOIN submission_tests subtests
+		ON subtests.id = submission_subtask_subtests.submission_test_id 
+	WHERE 
+		submission_subtask_subtests.submission_subtask_id = $1 
+	ORDER BY subtests.visible_id ASC`, st.ID)
+	ids, err := pgx.CollectRows(rows, pgx.RowTo[int])
+	if errors.Is(err, pgx.ErrNoRows) {
 		ids = []int{}
 	} else if err != nil {
 		return nil, err

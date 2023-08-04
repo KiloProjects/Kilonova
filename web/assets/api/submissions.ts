@@ -127,13 +127,13 @@ export type SubTest = {
 	verdict: string;
 	time: number;
 	memory: number;
-	score: number;
+	percentage: number;
 	test_id?: number;
 	user_id: number;
 	submission_id: number;
 
 	visible_id: number;
-	max_score: number;
+	score: number;
 };
 
 export type SubmissionSubTask = {

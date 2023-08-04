@@ -2,12 +2,12 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
@@ -29,7 +29,8 @@ type dbProblem struct {
 	SourceCredits string `db:"source_credits"`
 
 	// Eval stuff
-	ConsoleInput bool `db:"console_input"`
+	ConsoleInput   bool `db:"console_input"`
+	DigitPrecision int  `db:"digit_precision"`
 
 	ScoringStrategy kilonova.ScoringType `db:"scoring_strategy"`
 }
@@ -45,8 +46,8 @@ type dbScoredProblem struct {
 
 func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
 	var pb dbProblem
-	err := s.conn.GetContext(ctx, &pb, "SELECT * FROM problems WHERE id = $1 LIMIT 1", id)
-	if errors.Is(err, sql.ErrNoRows) {
+	err := Get(s.conn, ctx, &pb, "SELECT * FROM problems WHERE id = $1 LIMIT 1", id)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -57,12 +58,12 @@ func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
 
 func (s *DB) ScoredProblem(ctx context.Context, problemID int, userID int) (*kilonova.ScoredProblem, error) {
 	var pb dbScoredProblem
-	err := s.conn.GetContext(ctx, &pb, `SELECT pbs.*, ms.user_id, ms.score, (editors.user_id IS NOT NULL) AS pb_editor
+	err := Get(s.conn, ctx, &pb, `SELECT pbs.*, ms.user_id, ms.score, (editors.user_id IS NOT NULL) AS pb_editor
 FROM problems pbs 
 	LEFT JOIN max_score_view ms ON (pbs.id = ms.problem_id AND ms.user_id = $2) 
 	LEFT JOIN LATERAL (SELECT user_id FROM problem_editors editors WHERE pbs.id = editors.problem_id AND editors.user_id = $2 LIMIT 1) editors ON TRUE
 WHERE pbs.id = $1 LIMIT 1`, problemID, userID)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -85,8 +86,8 @@ func (s *DB) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*ki
 	problemFilterQuery(&filter, fb)
 
 	query := "SELECT * FROM problems WHERE " + fb.Where() + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset)
-	err := s.conn.SelectContext(ctx, &pbs, query, fb.Args()...)
-	if errors.Is(err, sql.ErrNoRows) {
+	err := Select(s.conn, ctx, &pbs, query, fb.Args()...)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.Problem{}, nil
 	}
 	return mapper(pbs, s.internalToProblem), err
@@ -102,8 +103,8 @@ FROM problems
 	LEFT JOIN max_score_view ms ON (problems.id = ms.problem_id AND ms.user_id = $1)
 	LEFT JOIN LATERAL (SELECT user_id FROM problem_editors editors WHERE problems.id = editors.problem_id AND editors.user_id = $1 LIMIT 1) editors ON TRUE
 WHERE ` + fb.Where() + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset)
-	err := s.conn.SelectContext(ctx, &pbs, query, fb.Args()...)
-	if errors.Is(err, sql.ErrNoRows) {
+	err := Select(s.conn, ctx, &pbs, query, fb.Args()...)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.ScoredProblem{}, nil
 	}
 	return s.internalToScoredProblems(pbs, userID), err
@@ -113,14 +114,14 @@ func (s *DB) CountProblems(ctx context.Context, filter kilonova.ProblemFilter) (
 	fb := newFilterBuilder()
 	problemFilterQuery(&filter, fb)
 	var val int
-	err := s.pgconn.QueryRow(ctx, "SELECT COUNT(*) FROM problems WHERE "+fb.Where(), fb.Args()...).Scan(&val)
+	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM problems WHERE "+fb.Where(), fb.Args()...).Scan(&val)
 	return val, err
 }
 
 func (s *DB) ContestProblems(ctx context.Context, contestID int) ([]*kilonova.Problem, error) {
 	var pbs []*dbProblem
-	err := s.conn.SelectContext(ctx, &pbs, "SELECT pbs.* FROM problems pbs, contest_problems cpbs WHERE cpbs.problem_id = pbs.id AND cpbs.contest_id = $1 ORDER BY cpbs.position ASC", contestID)
-	if errors.Is(err, sql.ErrNoRows) {
+	err := Select(s.conn, ctx, &pbs, "SELECT pbs.* FROM problems pbs, contest_problems cpbs WHERE cpbs.problem_id = pbs.id AND cpbs.contest_id = $1 ORDER BY cpbs.position ASC", contestID)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.Problem{}, nil
 	}
 	return mapper(pbs, s.internalToProblem), err
@@ -128,13 +129,13 @@ func (s *DB) ContestProblems(ctx context.Context, contestID int) ([]*kilonova.Pr
 
 func (s *DB) ScoredContestProblems(ctx context.Context, contestID int, userID int) ([]*kilonova.ScoredProblem, error) {
 	var pbs []*dbScoredProblem
-	err := s.conn.SelectContext(ctx, &pbs, `SELECT pbs.*, cpbs.position AS unused_position, ms.user_id, ms.score, (editors.user_id IS NOT NULL) AS pb_editor
+	err := Select(s.conn, ctx, &pbs, `SELECT pbs.*, cpbs.position AS unused_position, ms.user_id, ms.score, (editors.user_id IS NOT NULL) AS pb_editor
 FROM (problems pbs INNER JOIN contest_problems cpbs ON cpbs.problem_id = pbs.id) 
 	LEFT JOIN max_score_contest_view ms ON (pbs.id = ms.problem_id AND cpbs.contest_id = ms.contest_id AND ms.user_id = $2)
 	LEFT JOIN LATERAL (SELECT user_id FROM problem_editors editors WHERE pbs.id = editors.problem_id AND editors.user_id = $2 LIMIT 1) editors ON TRUE
 WHERE cpbs.contest_id = $1 
 ORDER BY cpbs.position ASC`, contestID, userID)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.ScoredProblem{}, nil
 	}
 	return s.internalToScoredProblems(pbs, userID), err
@@ -163,7 +164,7 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID in
 		p.SourceSize = kilonova.DefaultSourceSize
 	}
 	var id int
-	err := s.pgconn.QueryRow(ctx, problemCreateQuery, p.Name, p.ConsoleInput, p.TestName, p.MemoryLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.DefaultPoints).Scan(&id)
+	err := s.conn.QueryRow(ctx, problemCreateQuery, p.Name, p.ConsoleInput, p.TestName, p.MemoryLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.DefaultPoints).Scan(&id)
 	if err == nil {
 		p.ID = id
 	}
@@ -185,12 +186,12 @@ func (s *DB) BulkUpdateProblems(ctx context.Context, filter kilonova.ProblemFilt
 	}
 	fb := ub.MakeFilter()
 	problemFilterQuery(&filter, fb)
-	_, err := s.conn.ExecContext(ctx, "UPDATE problems SET "+fb.WithUpdate(), fb.Args()...)
+	_, err := s.conn.Exec(ctx, "UPDATE problems SET "+fb.WithUpdate(), fb.Args()...)
 	return err
 }
 
 func (s *DB) DeleteProblem(ctx context.Context, id int) error {
-	_, err := s.pgconn.Exec(ctx, "DELETE FROM problems WHERE id = $1", id)
+	_, err := s.conn.Exec(ctx, "DELETE FROM problems WHERE id = $1", id)
 	return err
 }
 

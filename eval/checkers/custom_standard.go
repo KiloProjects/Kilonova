@@ -86,7 +86,7 @@ func standardCheckerTask(ctx context.Context, box eval.Sandbox, job *customCheck
 		rez.Output = "Invalid checker score"
 		return rez, nil
 	}
-	rez.Score = int(floatScore * 100)
+	rez.Percentage = int(floatScore * 100)
 
 	rez.Output = strings.TrimSpace(stderr.String())
 	if rez.Output == "" {

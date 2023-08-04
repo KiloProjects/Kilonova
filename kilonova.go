@@ -3,6 +3,8 @@ package kilonova
 import (
 	"embed"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 const Version = "v0.19.0"
@@ -16,4 +18,10 @@ type AuditLog struct {
 	SystemLog bool       `json:"system_log"`
 	Message   string     `json:"message"`
 	Author    *UserBrief `json:"author"`
+}
+
+func init() {
+	// For returning submission data for fractional scores
+	// We do not offer enough precision for this to be a problem
+	decimal.MarshalJSONWithoutQuotes = true
 }

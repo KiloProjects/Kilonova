@@ -253,7 +253,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 		}
 	}
 
-	if err := base.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{Memory: &resp.Memory, Score: &testScore, Time: &resp.Time, Verdict: &resp.Comments, Done: &True}); err != nil {
+	if err := base.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{Memory: &resp.Memory, Percentage: &testScore, Time: &resp.Time, Verdict: &resp.Comments, Done: &True}); err != nil {
 		return kilonova.WrapError(err, "Error during evaltest updating")
 	}
 	return nil
@@ -307,7 +307,7 @@ func scoreTests(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submis
 					zap.S().Warn("Couldn't find subtest. This should not really happen.")
 					continue
 				}
-				percentage = min(st.Score, percentage)
+				percentage = min(st.Percentage, percentage)
 			}
 			score += int(math.Round(float64(stk.Score) * float64(percentage) / 100.0))
 			if err := base.UpdateSubmissionSubtaskPercentage(ctx, stk.ID, percentage); err != nil {
@@ -316,7 +316,7 @@ func scoreTests(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submis
 		}
 	} else {
 		for _, subtest := range subtests {
-			score += int(math.Round(float64(subtest.MaxScore) * float64(subtest.Score) / 100.0))
+			score += int(math.Round(float64(subtest.Score) * float64(subtest.Percentage) / 100.0))
 		}
 	}
 

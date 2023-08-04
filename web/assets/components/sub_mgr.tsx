@@ -246,7 +246,7 @@ export function TestTable({
 				{subtests
 					.filter((subtest) => typeof subtask === "undefined" || subtask.subtests.includes(subtest.id))
 					.map((subtest) => {
-						let maxScore = subtest.max_score;
+						let maxScore = subtest.score;
 						if (typeof subtask !== "undefined") {
 							maxScore = subtask.score;
 						}
@@ -260,14 +260,14 @@ export function TestTable({
 										<td>{Math.floor(subtest.time * 1000)} ms</td>
 										<td>{sizeFormatter(subtest.memory * 1024, 1, true)}</td>
 										<td>{verdictString(subtest.verdict)}</td>
-										<td class="text-black" style={{ backgroundColor: getGradient(subtest.score, 100) }}>
+										<td class="text-black" style={{ backgroundColor: getGradient(subtest.percentage, 100) }}>
 											{subtasks.length > 0 ? (
 												<>
-													{subtest.score}% {getText("correct")}
+													{subtest.percentage}% {getText("correct")}
 												</>
 											) : (
 												<>
-													{Math.round((maxScore * subtest.score) / 100.0)} / {maxScore}
+													{Math.round((maxScore * subtest.percentage) / 100.0)} / {maxScore}
 												</>
 											)}
 										</td>

@@ -516,7 +516,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 					showArrows={true}
 				/>
 			)}
-			<ProblemView problems={problems} showTags={showTags} />
+			<ProblemView problems={problems} showTags={showTags} scoreView={false} />
 		</div>
 	);
 }

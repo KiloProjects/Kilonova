@@ -75,7 +75,7 @@ type SubTest struct {
 	Verdict      string    `json:"verdict"`
 	Time         float64   `json:"time"`
 	Memory       int       `json:"memory"`
-	Score        int       `json:"score"`
+	Percentage   int       `json:"percentage"`
 	TestID       *int      `db:"test_id" json:"test_id"`
 	UserID       int       `db:"user_id" json:"user_id"`
 	SubmissionID int       `db:"submission_id" json:"submission_id"`
@@ -83,15 +83,15 @@ type SubTest struct {
 	ContestID *int `db:"contest_id" json:"contest_id"`
 
 	VisibleID int `db:"visible_id" json:"visible_id"`
-	MaxScore  int `db:"max_score" json:"max_score"`
+	Score     int `db:"score" json:"score"`
 }
 
 type SubTestUpdate struct {
-	Memory  *int
-	Time    *float64
-	Score   *int
-	Verdict *string
-	Done    *bool
+	Memory     *int
+	Time       *float64
+	Percentage *int
+	Verdict    *string
+	Done       *bool
 }
 
 type SubmissionSubTask struct {
