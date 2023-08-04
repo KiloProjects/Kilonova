@@ -7,7 +7,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-const Version = "v0.19.0"
+const Version = "v0.20.0"
 
 //go:embed docs
 var Docs embed.FS

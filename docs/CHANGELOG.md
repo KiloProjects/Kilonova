@@ -1,3 +1,19 @@
+- v0.20.0:
+    - !!! Decimal scores in submissions;
+    - !! Allow changing usernames and permit admins to lockout people;
+    - ! Allow problem editors to reevaluate/delete individual submissions;
+    - ! CMS-style score parameters support when uploading test archives;
+    - ! Polygon format;
+    - Change submission viewing permissions (anyone can view, if option is toggled);
+    - Move attachments and other files to `assets/` webserver route;
+    - Bulk visibility updating dialog for problem lists;
+    - Much improved configuration flag system;
+    - Show problem source in search;
+    - Huge database refactoring;
+        - Remove sqlx as a dependency;
+        - TODO: Refactor everything properly (tedious process).
+    - Allow exporting editors in archive file;
+    - Clean up `docs/`;
 - v0.19.0:
     - !! Basic blog post support;
     - Proper tag filtering;
