@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -82,9 +81,11 @@ func (s *DB) VisibleProblem(ctx context.Context, id int, user *kilonova.UserBrie
 
 func (s *DB) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*kilonova.Problem, error) {
 	var pbs []*dbProblem
-	where, args := problemFilterQuery(&filter)
-	query := s.conn.Rebind("SELECT * FROM problems WHERE " + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
-	err := s.conn.SelectContext(ctx, &pbs, query, args...)
+	fb := newFilterBuilder()
+	problemFilterQuery(&filter, fb)
+
+	query := "SELECT * FROM problems WHERE " + fb.Where() + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset)
+	err := s.conn.SelectContext(ctx, &pbs, query, fb.Args()...)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.Problem{}, nil
 	}
@@ -93,13 +94,15 @@ func (s *DB) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*ki
 
 func (s *DB) ScoredProblems(ctx context.Context, filter kilonova.ProblemFilter, userID int) ([]*kilonova.ScoredProblem, error) {
 	var pbs []*dbScoredProblem
-	where, args := problemFilterQuery(&filter)
-	query := s.conn.Rebind(`SELECT problems.*, ms.user_id, ms.score, (editors.user_id IS NOT NULL) AS pb_editor
+	fb := newFilterBuilderFromPos(userID)
+	problemFilterQuery(&filter, fb)
+
+	query := `SELECT problems.*, ms.user_id, ms.score, (editors.user_id IS NOT NULL) AS pb_editor
 FROM problems 
-	LEFT JOIN max_score_view ms ON (problems.id = ms.problem_id AND ms.user_id = ?)
-	LEFT JOIN LATERAL (SELECT user_id FROM problem_editors editors WHERE problems.id = editors.problem_id AND editors.user_id = ? LIMIT 1) editors ON TRUE
-WHERE ` + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset))
-	err := s.conn.SelectContext(ctx, &pbs, query, append([]any{userID, userID}, args...)...)
+	LEFT JOIN max_score_view ms ON (problems.id = ms.problem_id AND ms.user_id = $1)
+	LEFT JOIN LATERAL (SELECT user_id FROM problem_editors editors WHERE problems.id = editors.problem_id AND editors.user_id = $1 LIMIT 1) editors ON TRUE
+WHERE ` + fb.Where() + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset)
+	err := s.conn.SelectContext(ctx, &pbs, query, fb.Args()...)
 	if errors.Is(err, sql.ErrNoRows) {
 		return []*kilonova.ScoredProblem{}, nil
 	}
@@ -107,9 +110,10 @@ WHERE ` + strings.Join(where, " AND ") + " ORDER BY id ASC " + FormatLimitOffset
 }
 
 func (s *DB) CountProblems(ctx context.Context, filter kilonova.ProblemFilter) (int, error) {
-	where, args := problemFilterQuery(&filter)
+	fb := newFilterBuilder()
+	problemFilterQuery(&filter, fb)
 	var val int
-	err := s.pgconn.QueryRow(ctx, s.conn.Rebind("SELECT COUNT(*) FROM problems WHERE "+strings.Join(where, " AND ")), args...).Scan(&val)
+	err := s.pgconn.QueryRow(ctx, "SELECT COUNT(*) FROM problems WHERE "+fb.Where(), fb.Args()...).Scan(&val)
 	return val, err
 }
 
@@ -159,7 +163,7 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID in
 		p.SourceSize = kilonova.DefaultSourceSize
 	}
 	var id int
-	err := s.conn.GetContext(ctx, &id, problemCreateQuery, p.Name, p.ConsoleInput, p.TestName, p.MemoryLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.DefaultPoints)
+	err := s.pgconn.QueryRow(ctx, problemCreateQuery, p.Name, p.ConsoleInput, p.TestName, p.MemoryLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.DefaultPoints).Scan(&id)
 	if err == nil {
 		p.ID = id
 	}
@@ -169,30 +173,19 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID in
 	return s.AddProblemEditor(ctx, id, authorID)
 }
 
-const problemUpdateStatement = `UPDATE problems SET %s WHERE id = ?`
-
 func (s *DB) UpdateProblem(ctx context.Context, id int, upd kilonova.ProblemUpdate) error {
-	toUpd, args := problemUpdateQuery(&upd)
-	if len(toUpd) == 0 {
-		return kilonova.ErrNoUpdates
-	}
-	args = append(args, id)
-	query := s.conn.Rebind(fmt.Sprintf(problemUpdateStatement, strings.Join(toUpd, ", ")))
-	_, err := s.conn.ExecContext(ctx, query, args...)
-	return err
+	return s.BulkUpdateProblems(ctx, kilonova.ProblemFilter{ID: &id}, upd)
 }
 
-const bulkProblemUpdateStatement = `UPDATE problems SET %s WHERE %s`
-
 func (s *DB) BulkUpdateProblems(ctx context.Context, filter kilonova.ProblemFilter, upd kilonova.ProblemUpdate) error {
-	toUpd, args := problemUpdateQuery(&upd)
-	if len(toUpd) == 0 {
-		return kilonova.ErrNoUpdates
+	ub := newUpdateBuilder()
+	problemUpdateQuery(&upd, ub)
+	if ub.CheckUpdates() != nil {
+		return ub.CheckUpdates()
 	}
-	where, args1 := problemFilterQuery(&filter)
-	args = append(args, args1...)
-	query := s.conn.Rebind(fmt.Sprintf(bulkProblemUpdateStatement, strings.Join(toUpd, ", "), strings.Join(where, " AND ")))
-	_, err := s.conn.ExecContext(ctx, query, args...)
+	fb := ub.MakeFilter()
+	problemFilterQuery(&filter, fb)
+	_, err := s.conn.ExecContext(ctx, "UPDATE problems SET "+fb.WithUpdate(), fb.Args()...)
 	return err
 }
 
@@ -201,31 +194,30 @@ func (s *DB) DeleteProblem(ctx context.Context, id int) error {
 	return err
 }
 
-func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []any) {
-	where, args := []string{"1 = 1"}, []any{}
+func problemFilterQuery(filter *kilonova.ProblemFilter, fb *filterBuilder) {
 	if v := filter.ID; v != nil {
-		where, args = append(where, "id = ?"), append(args, v)
+		fb.AddConstraint("id = %s", v)
 	}
 	if v := filter.IDs; v != nil && len(v) == 0 {
-		where = append(where, "id = -1")
+		fb.AddConstraint("id = -1")
 	}
 	if v := filter.IDs; len(v) > 0 {
-		where, args = append(where, "id = ANY(?)"), append(args, v)
+		fb.AddConstraint("id = ANY(%s)", v)
 	}
 	if v := filter.Name; v != nil {
-		where, args = append(where, "lower(name) = lower(?)"), append(args, v)
+		fb.AddConstraint("lower(name) = lower(%s)", v)
 	}
 	if v := filter.FuzzyName; v != nil {
-		where, args = append(where, "position(lower(unaccent(?)) in format('#%s %s', id, lower(unaccent(name)))) > 0"), append(args, v)
+		fb.AddConstraint("position(lower(unaccent(%s)) in format('#%%s %%s', id, lower(unaccent(name)))) > 0", v)
 	}
 	if v := filter.DeepListID; v != nil {
-		where, args = append(where, "EXISTS (SELECT 1 FROM problem_list_deep_problems WHERE list_id = ? AND problem_id = problems.id)"), append(args, v)
+		fb.AddConstraint("EXISTS (SELECT 1 FROM problem_list_deep_problems WHERE list_id = %s AND problem_id = problems.id)", v)
 	}
 	if v := filter.ConsoleInput; v != nil {
-		where, args = append(where, "console_input = ?"), append(args, v)
+		fb.AddConstraint("console_input = %s", v)
 	}
 	if v := filter.Visible; v != nil {
-		where, args = append(where, "visible = ?"), append(args, v)
+		fb.AddConstraint("visible = %s", v)
 	}
 	if filter.Look {
 		var id int = 0
@@ -233,83 +225,78 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) ([]string, []any) {
 			id = filter.LookingUser.ID
 		}
 
-		args = append(args, id)
 		if filter.LookEditor {
-			where = append(where, "EXISTS (SELECT 1 FROM problem_editors WHERE user_id = ? AND problem_id = problems.id)")
+			fb.AddConstraint("EXISTS (SELECT 1 FROM problem_editors WHERE user_id = %s AND problem_id = problems.id)", id)
 		} else {
-			where = append(where, "EXISTS (SELECT 1 FROM visible_pbs(?) WHERE problem_id = problems.id)")
+			fb.AddConstraint("EXISTS (SELECT 1 FROM visible_pbs(%s) WHERE problem_id = problems.id)", id)
 		}
 	}
 	if v := filter.EditorUserID; v != nil {
-		where, args = append(where, "EXISTS (SELECT 1 FROM problem_user_access WHERE user_id = ? AND problem_id = problems.id)"), append(args, v)
+		fb.AddConstraint("EXISTS (SELECT 1 FROM problem_user_access WHERE user_id = %s AND problem_id = problems.id)", v)
 	}
 	if v := filter.AttachmentID; v != nil {
-		where, args = append(where, "EXISTS (SELECT 1 FROM problem_attachments_m2m WHERE attachment_id = ? AND problem_id = id)"), append(args, v)
+		fb.AddConstraint("EXISTS (SELECT 1 FROM problem_attachments_m2m WHERE attachment_id = %s AND problem_id = id)", v)
 	}
 	if v := filter.Tags; len(v) > 0 {
 		for _, group := range v {
-			q := "EXISTS (SELECT 1 FROM problem_tags WHERE problem_id = problems.id AND tag_id = ANY(?))"
+			q := "EXISTS (SELECT 1 FROM problem_tags WHERE problem_id = problems.id AND tag_id = ANY(%s))"
 			if group.Negate {
 				q = "NOT " + q
 			}
-			where, args = append(where, q), append(args, group.TagIDs)
+			fb.AddConstraint(q, group.TagIDs)
 		}
 	}
 
 	if v := filter.SolvedBy; v != nil {
-		where, args = append(where, "EXISTS (SELECT 1 FROM max_score_view WHERE score = 100 AND problem_id = problems.id AND user_id = ?)"), append(args, v)
+		fb.AddConstraint("EXISTS (SELECT 1 FROM max_score_view WHERE score = 100 AND problem_id = problems.id AND user_id = %s)", v)
 	}
 	if v := filter.AttemptedBy; v != nil {
-		where, args = append(where, "EXISTS (SELECT 1 FROM max_score_view WHERE score != 100 AND score >= 0 AND problem_id = problems.id AND user_id = ?)"), append(args, v)
+		fb.AddConstraint("EXISTS (SELECT 1 FROM max_score_view WHERE score != 100 AND score >= 0 AND problem_id = problems.id AND user_id = %s)", v)
 	}
 
 	if filter.Unassociated {
-		where = append(where, "NOT EXISTS (SELECT 1 FROM problem_list_problems WHERE problem_id = problems.id)")
+		fb.AddConstraint("NOT EXISTS (SELECT 1 FROM problem_list_problems WHERE problem_id = problems.id)")
 	}
-	return where, args
 }
 
-func problemUpdateQuery(upd *kilonova.ProblemUpdate) ([]string, []any) {
-	toUpd, args := []string{}, []any{}
+func problemUpdateQuery(upd *kilonova.ProblemUpdate, ub *updateBuilder) {
 	if v := upd.Name; v != nil {
-		toUpd, args = append(toUpd, "name = ?"), append(args, v)
+		ub.AddUpdate("name = %s", v)
 	}
 
 	if v := upd.TestName; v != nil {
-		toUpd, args = append(toUpd, "test_name = ?"), append(args, strings.TrimSpace(*v))
+		ub.AddUpdate("test_name = %s", strings.TrimSpace(*v))
 	}
 
 	if v := upd.TimeLimit; v != nil {
-		toUpd, args = append(toUpd, "time_limit = ?"), append(args, v)
+		ub.AddUpdate("time_limit = %s", v)
 	}
 	if v := upd.MemoryLimit; v != nil {
-		toUpd, args = append(toUpd, "memory_limit = ?"), append(args, v)
+		ub.AddUpdate("memory_limit = %s", v)
 	}
 
 	if v := upd.DefaultPoints; v != nil {
-		toUpd, args = append(toUpd, "default_points = ?"), append(args, v)
+		ub.AddUpdate("default_points = %s", v)
 	}
 
 	if v := upd.SourceCredits; v != nil {
-		toUpd, args = append(toUpd, "source_credits = ?"), append(args, strings.TrimSpace(*v))
+		ub.AddUpdate("source_credits = %s", strings.TrimSpace(*v))
 	}
 
 	if v := upd.ConsoleInput; v != nil {
-		toUpd, args = append(toUpd, "console_input = ?"), append(args, v)
+		ub.AddUpdate("console_input = %s", v)
 	}
 	if v := upd.Visible; v != nil {
-		toUpd, args = append(toUpd, "visible = ?"), append(args, v)
+		ub.AddUpdate("visible = %s", v)
 		// if is set to visible
 		if *v {
 			// Published at - first time it was set visible
-			toUpd = append(toUpd, "published_at = COALESCE(published_at, NOW())")
+			ub.AddUpdate("published_at = COALESCE(published_at, NOW())")
 		}
 	}
 	if v := upd.ScoringStrategy; v != kilonova.ScoringTypeNone {
-		toUpd, args = append(toUpd, "scoring_strategy = ?"), append(args, v)
+		ub.AddUpdate("scoring_strategy = %s", v)
 	}
-
-	return toUpd, args
 }
 
 // Access rights
