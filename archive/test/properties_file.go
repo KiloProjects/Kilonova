@@ -12,11 +12,12 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/gorilla/schema"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
 type Subtask struct {
-	Score int
+	Score decimal.Decimal
 	Tests []int
 }
 
@@ -31,7 +32,6 @@ type PropertiesRaw struct {
 	Dependencies string   `props:"dependencies"`
 	Time         *float64 `props:"time"`
 	Memory       *float64 `props:"memory"`
-	DefaultScore *int     `props:"default_score"`
 	Tags         *string  `props:"tags"`
 	Source       *string  `props:"source"`
 	ConsoleInput *string  `props:"console_input"`
@@ -40,6 +40,9 @@ type PropertiesRaw struct {
 
 	Editors *string `props:"editors"`
 
+	DefaultScore *string `props:"default_score"`
+
+	ScorePrecision  *int32  `props:"score_precision"`
 	ScoringStrategy *string `props:"scoring_strategy"`
 }
 
@@ -160,13 +163,20 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 	}
 
 	props := &properties{
-		TimeLimit:     rawProps.Time,
-		DefaultPoints: rawProps.DefaultScore,
-		Tags:          parseTags(rawProps.Tags),
-		Editors:       parseEditors(rawProps.Editors),
-		Source:        rawProps.Source,
-		TestName:      rawProps.TestName,
-		ProblemName:   rawProps.ProblemName,
+		TimeLimit:      rawProps.Time,
+		Tags:           parseTags(rawProps.Tags),
+		Editors:        parseEditors(rawProps.Editors),
+		Source:         rawProps.Source,
+		TestName:       rawProps.TestName,
+		ProblemName:    rawProps.ProblemName,
+		ScorePrecision: rawProps.ScorePrecision,
+	}
+	if rawProps.DefaultScore != nil {
+		val, err := decimal.NewFromString(*rawProps.DefaultScore)
+		if err != nil {
+			return kilonova.Statusf(400, "Invalid status score value: %#v", err)
+		}
+		props.DefaultPoints = &val
 	}
 	if rawProps.Memory != nil {
 		mem := int((*rawProps.Memory) * 1024.0)
@@ -204,17 +214,17 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 			groups[i+1] = glist
 		}
 
-		weights := map[int]int{}
+		weights := map[int]decimal.Decimal{}
 		weightStrings := strings.Split(rawProps.Weights, ",")
 		if len(groupStrings) != len(weightStrings) {
 			return kilonova.Statusf(400, "Number of weights must match number of groups")
 		}
 		for i, w := range weightStrings {
-			val, err := strconv.Atoi(w)
+			val, err := strconv.ParseFloat(w, 64)
 			if err != nil {
 				return kilonova.Statusf(400, "Invalid `weight` string in properties")
 			}
-			weights[i+1] = val
+			weights[i+1] = decimal.NewFromFloat(val)
 		}
 
 		if rawProps.Dependencies != "" {

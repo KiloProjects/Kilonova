@@ -61,6 +61,14 @@ func initSub(ctx context.Context, tx pgx.Tx, subID int) error {
 		return kilonova.ErrMissingRequired
 	}
 
+	// Set precision before everything, since subtask initialization is relying on it
+	if _, err := tx.Exec(ctx, `
+	UPDATE submissions SET 
+		digit_precision = COALESCE((SELECT digit_precision FROM problems WHERE problems.id = problem_id), digit_precision) 
+	WHERE id = $1`, subID); err != nil {
+		return err
+	}
+
 	// Init subtests
 	if _, err := tx.Exec(ctx, `
 	INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, score) 
@@ -74,8 +82,8 @@ func initSub(ctx context.Context, tx pgx.Tx, subID int) error {
 	// Init subtasks
 	if _, err := tx.Exec(ctx, `
 INSERT INTO submission_subtasks 
-	(user_id, submission_id, contest_id, subtask_id, problem_id, visible_id, score) 
-	SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, stks.id AS subtask_id, stks.problem_id AS problem_id, stks.visible_id, stks.score AS score 
+	(user_id, submission_id, contest_id, subtask_id, problem_id, visible_id, digit_precision, score) 
+	SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, stks.id AS subtask_id, stks.problem_id AS problem_id, stks.visible_id, subs.digit_precision AS digit_precision, stks.score AS score 
 	FROM submissions subs, subtasks stks 
 	WHERE subs.problem_id = stks.problem_id AND subs.id = $1
 `, subID); err != nil {
@@ -126,6 +134,14 @@ func initProblemSubs(ctx context.Context, tx pgx.Tx, problemID int) error {
 		return kilonova.ErrMissingRequired
 	}
 
+	// Set precision before everything, since subtask initialization is relying on it
+	if _, err := tx.Exec(ctx, `
+	UPDATE submissions SET 
+		digit_precision = COALESCE((SELECT digit_precision FROM problems WHERE problems.id = problem_id), digit_precision) 
+	WHERE problem_id = $1`, problemID); err != nil {
+		return err
+	}
+
 	// Initialize subtests
 	if _, err := tx.Exec(ctx, `
 INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, score) 
@@ -139,8 +155,8 @@ INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visib
 	// Initialize subtasks
 	if _, err := tx.Exec(ctx, `
 INSERT INTO submission_subtasks 
-	(user_id, submission_id, contest_id, subtask_id, problem_id, visible_id, score) 
-	SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, stks.id AS subtask_id, stks.problem_id AS problem_id, stks.visible_id, stks.score AS score 
+	(user_id, submission_id, contest_id, subtask_id, problem_id, visible_id, digit_precision, score) 
+	SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, stks.id AS subtask_id, stks.problem_id AS problem_id, stks.visible_id, subs.digit_precision AS digit_precision, stks.score AS score 
 	FROM submissions subs, subtasks stks 
 	WHERE subs.problem_id = stks.problem_id AND subs.problem_id = $1
 `, problemID); err != nil {

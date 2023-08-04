@@ -591,6 +591,10 @@ ro = "secunde"
 en = "Points by default"
 ro = "Puncte din oficiu"
 
+[scorePrecision]
+en = "Score precision (decimals after dot)"
+ro = "Precizie scor (zecimale după virgulă)"
+
 [id]
 en = "ID"
 ro = "ID"

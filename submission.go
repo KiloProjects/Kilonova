@@ -2,7 +2,11 @@ package kilonova
 
 import (
 	"time"
+
+	"github.com/shopspring/decimal"
 )
+
+const MaxScoreRoundingPlaces = 4
 
 type Status string
 
@@ -32,12 +36,14 @@ type Submission struct {
 	MaxTime   float64 `json:"max_time"`
 	MaxMemory int     `json:"max_memory"`
 
-	Score int `json:"score"`
+	Score decimal.Decimal `json:"score"`
+
+	ScorePrecision int32 `json:"score_precision"`
 }
 
 type SubmissionUpdate struct {
 	Status Status
-	Score  *int
+	Score  *decimal.Decimal
 
 	CompileError   *bool
 	CompileMessage *string
@@ -55,8 +61,9 @@ type SubmissionFilter struct {
 
 	Status       Status  `json:"status"`
 	Lang         *string `json:"lang"`
-	Score        *int    `json:"score"`
 	CompileError *bool   `json:"compile_error"`
+
+	Score *decimal.Decimal `json:"score"`
 
 	Look        bool       `json:"-"`
 	LookingUser *UserBrief `json:"-"`
@@ -69,27 +76,28 @@ type SubmissionFilter struct {
 }
 
 type SubTest struct {
-	ID           int       `json:"id"`
-	CreatedAt    time.Time `db:"created_at" json:"created_at"`
-	Done         bool      `json:"done"`
-	Verdict      string    `json:"verdict"`
-	Time         float64   `json:"time"`
-	Memory       int       `json:"memory"`
-	Percentage   int       `json:"percentage"`
-	TestID       *int      `db:"test_id" json:"test_id"`
-	UserID       int       `db:"user_id" json:"user_id"`
-	SubmissionID int       `db:"submission_id" json:"submission_id"`
+	ID           int             `json:"id"`
+	CreatedAt    time.Time       `db:"created_at" json:"created_at"`
+	Done         bool            `json:"done"`
+	Verdict      string          `json:"verdict"`
+	Time         float64         `json:"time"`
+	Memory       int             `json:"memory"`
+	Percentage   decimal.Decimal `json:"percentage"`
+	TestID       *int            `db:"test_id" json:"test_id"`
+	UserID       int             `db:"user_id" json:"user_id"`
+	SubmissionID int             `db:"submission_id" json:"submission_id"`
 
 	ContestID *int `db:"contest_id" json:"contest_id"`
 
 	VisibleID int `db:"visible_id" json:"visible_id"`
-	Score     int `db:"score" json:"score"`
+
+	Score decimal.Decimal `json:"score"`
 }
 
 type SubTestUpdate struct {
 	Memory     *int
 	Time       *float64
-	Percentage *int
+	Percentage *decimal.Decimal
 	Verdict    *string
 	Done       *bool
 }
@@ -105,9 +113,11 @@ type SubmissionSubTask struct {
 	ProblemID int  `json:"problem_id"`
 	ContestID *int `json:"contest_id"`
 	VisibleID int  `json:"visible_id"`
-	Score     int  `json:"score"`
 
-	FinalPercentage *int `json:"final_percentage,omitempty"`
+	Score           decimal.Decimal  `json:"score"`
+	FinalPercentage *decimal.Decimal `json:"final_percentage,omitempty"`
+
+	ScorePrecision int `json:"score_precision"`
 
 	Subtests []int `json:"subtests"`
 }

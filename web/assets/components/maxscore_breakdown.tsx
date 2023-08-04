@@ -66,10 +66,13 @@ export function MaxScoreBreakdown({ problemID, userID, contestID }: { problemID:
 							subtask={subtask}
 							breakdown_mode={problem?.scoring_strategy == "sum_subtasks"}
 							key={"stk_" + subtask.id}
+							precision={problem?.score_precision ?? 0}
 						/>
 					))}
 				</div>
-				{problem.scoring_strategy == "max_submission" && <TestTable problem_editor={problemEditor} subtests={subtests} subtasks={subtasks} />}
+				{problem.scoring_strategy == "max_submission" && (
+					<TestTable problem_editor={problemEditor} subtests={subtests} subtasks={subtasks} precision={problem?.score_precision ?? 0} />
+				)}
 			</>
 		);
 	}
@@ -79,7 +82,7 @@ export function MaxScoreBreakdown({ problemID, userID, contestID }: { problemID:
 			<h2>
 				{getText("problemSingle")}{" "}
 				<a href={`${typeof contestID !== "undefined" ? `/contests/${contestID}` : ""}/problems/${problem.id}`}>{problem.name}</a>:{" "}
-				{maxScore >= 0 ? `${maxScore}p` : `0p`}
+				{maxScore >= 0 ? `${maxScore.toFixed(problem?.score_precision ?? 0)}p` : `0p`}
 			</h2>
 
 			{content}

@@ -10,6 +10,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/tasks"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -30,7 +31,7 @@ type customCheckerInput struct {
 }
 
 type checkerResult struct {
-	Percentage int
+	Percentage decimal.Decimal
 	Output     string
 }
 
@@ -67,7 +68,7 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	return "", nil
 }
 
-func (c *customChecker) RunChecker(ctx context.Context, pOut, cIn, cOut io.Reader) (string, int) {
+func (c *customChecker) RunChecker(ctx context.Context, pOut, cIn, cOut io.Reader) (string, decimal.Decimal) {
 	var out checkerResult
 
 	task := standardCheckerTask
@@ -82,7 +83,7 @@ func (c *customChecker) RunChecker(ctx context.Context, pOut, cIn, cOut io.Reade
 		cOut: cOut,
 	}, task)
 	if err != nil || resp == nil {
-		return ErrOut, 0
+		return ErrOut, decimal.Zero
 	}
 
 	out = *resp

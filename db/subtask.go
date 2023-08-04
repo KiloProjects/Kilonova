@@ -7,6 +7,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/jackc/pgx/v5"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -145,7 +146,8 @@ type subtask struct {
 	CreatedAt time.Time `db:"created_at"`
 	ProblemID int       `db:"problem_id"`
 	VisibleID int       `db:"visible_id"`
-	Score     int
+
+	Score decimal.Decimal
 }
 
 func (s *DB) internalToSubTask(ctx context.Context, st *subtask) (*kilonova.SubTask, error) {

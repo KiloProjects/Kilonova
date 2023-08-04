@@ -32,7 +32,7 @@
                             {{.VisibleID}}
                         </td>
                         <td class="kn-table-cell">
-                            <input class="form-input" type="number" id="score-test-{{.VisibleID}}" value="{{.Score}}" min="0" max="100" autocomplete="off" />
+                            <input class="form-input" type="number" id="score-test-{{.VisibleID}}" value="{{.Score}}" min="0" max="100" step="{{scoreStep $pb}}" autocomplete="off" />
                         </td>
                     </tr>
                 {{ end }}
@@ -77,6 +77,7 @@ var scores = document.querySelectorAll("[id^='score-test-']");
 for(let e of scores) {
 	e.addEventListener('input', updateFinalScore);
 }
+var precision = {{.Problem.ScorePrecision}}
 
 const mgr = new bundled.CheckboxManager(document.getElementById("selectAllBox"), document.querySelectorAll("[id^='pb-test-']"))
 
@@ -91,7 +92,8 @@ function updateFinalScore() {
 	if(defaultPoints > 0) {
 		suffix = ` (${defaultPoints} ${bundled.getText("byDefault")})`;
 	}
-	console.log(score)
+    score = score.toFixed(precision)
+    
 	if(score != 100) {
 		document.getElementById("scoreOutput").innerHTML = `<span class='text-red-600 dark:text-red-400'>${score}</span>` + suffix;	
 	} else {
@@ -143,7 +145,7 @@ async function updateTests() {
 			console.error("id is somehow NaN", e.id)
 			continue
 		}
-		let score = parseInt(document.getElementById(`score-test-${id}`).value);
+		let score = parseFloat(document.getElementById(`score-test-${id}`).value);
 		if(isNaN(score)) {
 			console.error("Score is somehow NaN", document.getElementById(`score-test-${id}`))
 			continue

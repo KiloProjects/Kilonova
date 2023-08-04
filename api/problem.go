@@ -12,6 +12,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -46,7 +47,7 @@ func (s *API) problemStatistics(w http.ResponseWriter, r *http.Request) {
 }
 
 type scoreBreakdownRet struct {
-	MaxScore int                           `json:"max_score"`
+	MaxScore decimal.Decimal               `json:"max_score"`
 	Problem  *kilonova.Problem             `json:"problem"`
 	Subtasks []*kilonova.SubmissionSubTask `json:"subtasks"`
 
@@ -82,7 +83,7 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 		args.UserID = util.UserBrief(r).ID
 	}
 
-	maxScore := -1
+	maxScore := decimal.NewFromInt(-1)
 	if args.ContestID == nil {
 		maxScore = s.base.MaxScore(r.Context(), args.UserID, util.Problem(r).ID)
 	} else {

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -31,7 +32,7 @@ type archiveTest struct {
 
 	VisibleID int
 	Key       string
-	Score     int
+	Score     decimal.Decimal
 }
 
 func (t archiveTest) Matches(re *regexp.Regexp) bool {

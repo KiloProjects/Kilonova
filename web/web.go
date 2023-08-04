@@ -33,6 +33,7 @@ import (
 	"github.com/benbjohnson/hashfs"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-chi/chi/v5"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -293,27 +294,31 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return actualContests
 		},
+		"decimalFromInt": decimal.NewFromInt,
 		"subScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) string {
 			if user == nil {
 				return ""
 			}
 			score := base.MaxScore(context.Background(), user.ID, pb.ID)
-			if score < 0 {
+			if score.IsNegative() {
 				return "-"
 			}
-			return strconv.Itoa(score)
+			return score.StringFixed(pb.ScorePrecision)
 		},
-		"actualMaxScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) int {
+		"actualMaxScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) decimal.Decimal {
 			return base.MaxScore(context.Background(), user.ID, pb.ID)
 		},
 		"spbMaxScore": func(pb *kilonova.ScoredProblem) string {
 			if pb.ScoreUserID == nil {
 				return ""
 			}
-			if pb.MaxScore == nil || *pb.MaxScore < 0 {
+			if pb.MaxScore == nil || pb.MaxScore.IsNegative() {
 				return "-"
 			}
-			return strconv.Itoa(*pb.MaxScore)
+			return pb.MaxScore.StringFixed(pb.ScorePrecision)
+		},
+		"scoreStep": func(pb *kilonova.Problem) string {
+			return decimal.NewFromInt(1).Shift(-pb.ScorePrecision).String()
 		},
 		"contestAnnouncements": func(c *kilonova.Contest) []*kilonova.ContestAnnouncement {
 			announcements, err := base.ContestAnnouncements(context.Background(), c.ID)
@@ -452,8 +457,9 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		},
 		"numSolvedPbs": func(pbs []*kilonova.ScoredProblem) int {
 			var cnt int
+			hundred := decimal.NewFromInt(100)
 			for _, pb := range pbs {
-				if pb.MaxScore != nil && *pb.MaxScore == 100 {
+				if pb.MaxScore != nil && pb.MaxScore.Equal(hundred) {
 					cnt++
 				}
 			}

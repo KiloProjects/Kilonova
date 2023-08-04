@@ -92,7 +92,7 @@ function Summary({ sub, pasteAuthor }: { sub: FullSubmission; pasteAuthor?: User
 								<td class="kn-table-cell">{getText("score")}</td>
 								<td class="kn-table-cell">
 									<span class="badge-lite font-bold" style={{ backgroundColor: getGradient(sub.score, 100) }}>
-										{sub.score}
+										{sub.score.toFixed(sub.score_precision)}
 									</span>
 								</td>
 							</tr>
@@ -211,11 +211,13 @@ export function TestTable({
 	subtasks,
 	problem_editor,
 	subtask,
+	precision,
 }: {
 	subtests: SubTest[];
 	subtasks: SubmissionSubTask[];
 	problem_editor: boolean;
 	subtask?: SubmissionSubTask;
+	precision: number;
 }) {
 	function testSubTasks(subtestID) {
 		let stks: number[] = [];
@@ -226,7 +228,6 @@ export function TestTable({
 		}
 		return stks;
 	}
-
 	return (
 		<table class={`kn-table ${typeof subtask !== "undefined" ? "default-background" : ""} mb-2`}>
 			<thead>
@@ -267,7 +268,7 @@ export function TestTable({
 												</>
 											) : (
 												<>
-													{Math.round((maxScore * subtest.percentage) / 100.0)} / {maxScore}
+													{(maxScore * (subtest.percentage / 100.0)).toFixed(precision)} / {maxScore.toFixed(precision)}
 												</>
 											)}
 										</td>
@@ -301,11 +302,13 @@ export function SubTask({
 	subtask,
 	problem_editor,
 	breakdown_mode,
+	precision,
 }: {
 	subtests: SubTest[];
 	subtask: SubmissionSubTask;
 	problem_editor: boolean;
 	breakdown_mode: boolean;
+	precision: number;
 }) {
 	return (
 		<details id={`stk-det-${subtask.visible_id}`} class="list-group-item">
@@ -320,7 +323,7 @@ export function SubTask({
 				</span>
 				{typeof subtask.final_percentage !== "undefined" ? (
 					<span class="float-right badge" style={{ backgroundColor: getGradient(subtask.final_percentage, 100) }}>
-						{Math.round((subtask.score * subtask.final_percentage) / 100.0)} / {subtask.score}
+						{(subtask.score * (subtask.final_percentage / 100.0)).toFixed(precision)} / {subtask.score.toFixed(precision)}
 					</span>
 				) : (
 					<span class="float-right badge">
@@ -328,7 +331,7 @@ export function SubTask({
 					</span>
 				)}
 			</summary>
-			<TestTable subtests={subtests} subtask={subtask} problem_editor={problem_editor} subtasks={[]} />
+			<TestTable subtests={subtests} subtask={subtask} problem_editor={problem_editor} subtasks={[]} precision={precision} />
 		</details>
 	);
 }
@@ -348,6 +351,7 @@ function SubTasks({ sub, expandedTests }: { sub: FullSubmission; expandedTests: 
 							subtask={subtask}
 							breakdown_mode={false}
 							key={"stk_" + subtask.id}
+							precision={sub.score_precision}
 						/>
 					))}
 				</div>
@@ -356,7 +360,7 @@ function SubTasks({ sub, expandedTests }: { sub: FullSubmission; expandedTests: 
 				<summary>
 					<h2 class="inline-block">{getText("individualTests")}</h2>
 				</summary>
-				<TestTable subtests={sub.subtests} subtasks={sub.subtasks} problem_editor={sub.problem_editor} />
+				<TestTable subtests={sub.subtests} subtasks={sub.subtasks} problem_editor={sub.problem_editor} precision={sub.score_precision} />
 			</details>
 		</>
 	);
@@ -379,7 +383,7 @@ function SubmissionView({ sub, bigCode, codeHTML, pasteAuthor }: { sub: FullSubm
 				) : (
 					<>
 						<h2 class="mb-2">{getText("tests")}</h2>
-						<TestTable subtests={sub.subtests} subtasks={sub.subtasks} problem_editor={sub.problem_editor} />
+						<TestTable subtests={sub.subtests} subtasks={sub.subtasks} problem_editor={sub.problem_editor} precision={sub.score_precision} />
 					</>
 				))}
 		</div>

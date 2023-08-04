@@ -7,6 +7,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -26,11 +27,11 @@ func (s *BaseAPI) MaxScoreSubID(ctx context.Context, uid, pbID int) (int, *Statu
 	return id, nil
 }
 
-func (s *BaseAPI) MaxScore(ctx context.Context, uid, pbID int) int {
+func (s *BaseAPI) MaxScore(ctx context.Context, uid, pbID int) decimal.Decimal {
 	return s.db.MaxScore(ctx, uid, pbID)
 }
 
-func (s *BaseAPI) ContestMaxScore(ctx context.Context, uid, pbID, contestID int) int {
+func (s *BaseAPI) ContestMaxScore(ctx context.Context, uid, pbID, contestID int) decimal.Decimal {
 	return s.db.ContestMaxScore(ctx, uid, pbID, contestID)
 }
 
@@ -365,7 +366,7 @@ func (s *BaseAPI) subVisibleRegardless(ctx context.Context, sub *kilonova.Submis
 	}
 
 	score := s.db.MaxScore(context.Background(), user.ID, sub.ProblemID)
-	return score == 100
+	return score.Equal(decimal.NewFromInt(100))
 }
 
 func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submission, subProblem *kilonova.Problem, user *kilonova.UserBrief) bool {
@@ -445,9 +446,9 @@ func (s *BaseAPI) MaximumScoreSubTasks(ctx context.Context, problemID, userID in
 	return subs, nil
 }
 
-func (s *BaseAPI) UpdateSubmissionSubtaskPercentage(ctx context.Context, id int, score int) *kilonova.StatusError {
-	if err := s.db.UpdateSubmissionSubtaskPercentage(ctx, id, score); err != nil {
-		return WrapError(err, "Couldn't update subtask score")
+func (s *BaseAPI) UpdateSubmissionSubtaskPercentage(ctx context.Context, id int, percentage decimal.Decimal) *kilonova.StatusError {
+	if err := s.db.UpdateSubmissionSubtaskPercentage(ctx, id, percentage); err != nil {
+		return WrapError(err, "Couldn't update subtask percentage")
 	}
 	return nil
 }

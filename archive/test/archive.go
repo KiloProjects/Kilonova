@@ -14,6 +14,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -49,12 +50,13 @@ type properties struct {
 	TestName     *string
 	ProblemName  *string
 
-	DefaultPoints *int
+	DefaultPoints *decimal.Decimal
 
 	SubtaskedTests []int
 
 	Editors []string
 
+	ScorePrecision  *int32
 	ScoringStrategy kilonova.ScoringType
 }
 
@@ -242,40 +244,62 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 		aCtx.scoreParameters = aCtx.scoreParameters[:0]
 	}
 
+	precision := pb.ScorePrecision
+	if aCtx.props != nil && aCtx.props.ScorePrecision != nil {
+		precision = *aCtx.props.ScorePrecision
+	}
+
 	var mustAutofillTests bool = false
 	for i := range tests {
 		val, ok := aCtx.testScores[tests[i].VisibleID]
 		if !ok {
 			// Mark as needing score
 			mustAutofillTests = true
-			tests[i].Score = -1
+			tests[i].Score = decimal.NewFromInt(-1)
 		} else {
-			tests[i].Score = val
+			tests[i].Score = val.Round(int32(precision))
 		}
 	}
 
 	if mustAutofillTests {
 		// Try to deduce scoring for remaining tests
 		// zap.S().Info("Automatically inserting scores...")
-		var n int
-		totalScore := 100
+		var n decimal.Decimal
+		totalScore := decimal.NewFromInt(100)
 		for _, test := range tests {
-			if test.Score > 0 {
-				totalScore -= test.Score
+			if test.Score.IsPositive() {
+				totalScore = totalScore.Sub(test.Score)
 			} else {
-				n++
+				n = n.Add(decimal.NewFromInt(1))
 			}
 		}
 
-		perTest := totalScore/n + 1
-		toSub := n - totalScore%n
+		perTest := totalScore.Div(n).RoundDown(int32(precision))
+		toAdd := decimal.Zero
+		dif := totalScore.Sub(perTest.Mul(n))
+		if !dif.IsZero() {
+			// If not zero, we need to compensate on some tests
+			// But keep the delta <= 1.0 points
+			// totalScore > perTest*n, since we rounded down
+
+			// divide the difference by its ceiling to get the delta to insert to scores
+			// we'll handle with rounding approximations later.
+			toAdd = dif.DivRound(dif.Ceil(), int32(precision))
+		}
 		k := 0
 
 		for i := range tests {
-			if tests[i].Score == -1 {
+			if tests[i].Score.Equal(decimal.NewFromInt(-1)) {
 				tests[i].Score = perTest
-				if k < toSub {
-					tests[i].Score--
+				if !dif.IsZero() {
+					tests[i].Score = tests[i].Score.Add(toAdd)
+					dif = dif.Sub(toAdd)
+					if !dif.IsZero() && dif.Abs().LessThan(toAdd) {
+						// Pour the remaining difference here
+						// This should fix the roundings
+						tests[i].Score = tests[i].Score.Add(dif)
+						toAdd = decimal.Zero
+					}
 				}
 				k++
 			}
@@ -409,6 +433,10 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 		if aCtx.props.ScoringStrategy != kilonova.ScoringTypeNone {
 			shouldUpd = true
 			upd.ScoringStrategy = aCtx.props.ScoringStrategy
+		}
+		if aCtx.props.ScorePrecision != nil {
+			shouldUpd = true
+			upd.ScorePrecision = aCtx.props.ScorePrecision
 		}
 		if aCtx.props.TestName != nil {
 			shouldUpd = true

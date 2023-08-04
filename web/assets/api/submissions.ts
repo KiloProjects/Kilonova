@@ -15,6 +15,7 @@ export type Submission = {
 	max_memory: number;
 	score: number;
 	status: string;
+	score_precision: number;
 };
 
 export type UserBrief = {
@@ -36,6 +37,7 @@ export type Problem = {
 	source_credits: string;
 	console_input: boolean;
 	scoring_strategy: "sum_subtasks" | "max_submission";
+	score_precision: number;
 };
 
 export type ResultSubmission = {

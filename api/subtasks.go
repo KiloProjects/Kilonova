@@ -6,6 +6,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/shopspring/decimal"
 )
 
 func (s *API) createSubTask(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +42,7 @@ func (s *API) createSubTask(w http.ResponseWriter, r *http.Request) {
 	stk := kilonova.SubTask{
 		ProblemID: util.Problem(r).ID,
 		VisibleID: args.VisibleID,
-		Score:     args.Score,
+		Score:     decimal.NewFromInt(int64(args.Score)),
 		Tests:     realIDs,
 	}
 
@@ -55,10 +56,10 @@ func (s *API) createSubTask(w http.ResponseWriter, r *http.Request) {
 func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		SubTaskID *int  `json:"subtask_id"`
-		NewID     *int  `json:"new_id"`
-		Score     *int  `json:"score"`
-		Tests     []int `json:"tests"`
+		SubTaskID *int    `json:"subtask_id"`
+		NewID     *int    `json:"new_id"`
+		Score     *string `json:"score"`
+		Tests     []int   `json:"tests"`
 	}
 	if err := parseJsonBody(r, &args); err != nil {
 		err.WriteError(w)
@@ -76,9 +77,19 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var score *decimal.Decimal
+	if args.Score != nil {
+		val, err := decimal.NewFromString(*args.Score)
+		if err != nil {
+			errorData(w, "Invalid score", 400)
+			return
+		}
+		score = &val
+	}
+
 	if err := s.base.UpdateSubTask(r.Context(), stk.ID, kilonova.SubTaskUpdate{
 		VisibleID: args.NewID,
-		Score:     args.Score,
+		Score:     score,
 	}); err != nil {
 		err.WriteError(w)
 		return
@@ -127,7 +138,7 @@ func (s *API) bulkDeleteSubTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) bulkUpdateSubTaskScores(w http.ResponseWriter, r *http.Request) {
-	var data map[int]int
+	var data map[int]decimal.Decimal
 	var updatedSubTasks int
 
 	if err := parseJsonBody(r, &data); err != nil {

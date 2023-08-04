@@ -34,7 +34,7 @@
             <h5>{{getText "memoryLimit"}}: {{KBtoMB .Problem.MemoryLimit}}MB</h5>
             <h5>{{getText "input"}}: {{if .Problem.ConsoleInput}}stdin{{else}}{{.Problem.TestName}}.in{{end}}</h5>
             <h5>{{getText "output"}}: {{if .Problem.ConsoleInput}}stdout{{else}}{{.Problem.TestName}}.out{{end}}</h5>
-            {{- if gt .Problem.DefaultPoints 0 -}}
+            {{- if not .Problem.DefaultPoints.IsZero -}}
             <h5>{{getText "defaultPoints"}}: {{.Problem.DefaultPoints}}p</h5>
             {{- end -}}
         </div>
@@ -98,12 +98,12 @@
                 <p>{{getText "source"}}: {{.Problem.SourceCredits}}</p>
                 {{- end -}}
                 {{- $isEditor := .Topbar.IsProblemEditor -}}
-                {{ $maxScore := -1 }}
+                {{ $maxScore := decimalFromInt -1 }}
                 {{- if authed -}}
                     {{- $maxScore = actualMaxScore .Problem authedUser -}}
                 {{- end -}}
                 {{- with filterTags .Tags "author" true -}}
-                <p>{{getText "tags"}}: <kn-pb-tags enc="{{. | encodeJSON}}" open="{{if authed}}{{or ($isEditor) (eq $maxScore 100)}}{{else}}false{{end}}"></kn-pb-tags> </p>
+                <p>{{getText "tags"}}: <kn-pb-tags enc="{{. | encodeJSON}}" open="{{if authed}}{{or ($isEditor) ($maxScore.Equal (decimalFromInt 100))}}{{else}}false{{end}}"></kn-pb-tags> </p>
                 {{- end -}}
                 {{ if authed }}
                 <p>{{getText "score"}}: {{if eq .Problem.ScoringStrategy `sum_subtasks`}}<a class="max_score_breakdown" href="#" data-problemid="{{.Problem.ID}}">{{end}}<span id="max_score_counter">{{subScore .Problem .Ctx.User.Brief}}</span> {{if eq .Problem.ScoringStrategy `sum_subtasks`}}</a>{{end}}</p>

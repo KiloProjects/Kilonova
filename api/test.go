@@ -11,6 +11,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/archive/test"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -41,7 +42,10 @@ func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) updateTestInfo(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var args struct{ ID, Score int }
+	var args struct {
+		ID    int
+		Score string
+	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
@@ -52,7 +56,13 @@ func (s *API) updateTestInfo(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err := s.base.UpdateTest(r.Context(), util.Test(r).ID, kilonova.TestUpdate{VisibleID: &args.ID, Score: &args.Score}); err != nil {
+	scoreValue, err := decimal.NewFromString(args.Score)
+	if err != nil {
+		errorData(w, "Invalid score value", 400)
+		return
+	}
+
+	if err := s.base.UpdateTest(r.Context(), util.Test(r).ID, kilonova.TestUpdate{VisibleID: &args.ID, Score: &scoreValue}); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -96,9 +106,9 @@ func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
 // createTest inserts a new test to the problem
 // TODO: Move most stuff to logic
 func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
-	score, err := strconv.Atoi(r.FormValue("score"))
+	score, err := strconv.ParseFloat(r.FormValue("score"), 64)
 	if err != nil {
-		errorData(w, "Score not integer", http.StatusBadRequest)
+		errorData(w, "Score not float", http.StatusBadRequest)
 		return
 	}
 	var visibleID int
@@ -116,7 +126,7 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 	var test kilonova.Test
 	test.ProblemID = util.Problem(r).ID
 	test.VisibleID = visibleID
-	test.Score = score
+	test.Score = decimal.NewFromFloat(score).Round(kilonova.MaxScoreRoundingPlaces)
 	if err := s.base.CreateTest(r.Context(), &test); err != nil {
 		err.WriteError(w)
 		return
@@ -209,7 +219,7 @@ func (s *API) bulkDeleteTests(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) bulkUpdateTestScores(w http.ResponseWriter, r *http.Request) {
-	var data map[int]int
+	var data map[int]decimal.Decimal
 	var updatedTests int
 
 	if err := parseJsonBody(r, &data); err != nil {

@@ -5,12 +5,13 @@ import (
 	"regexp"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/shopspring/decimal"
 )
 
 // Score parameter documentation is located here: https://cms.readthedocs.io/en/latest/Score%20types.html#groupmin
 
 type ScoreParamEntry struct {
-	Score int
+	Score decimal.Decimal
 
 	Count *int
 	Match *regexp.Regexp
@@ -33,8 +34,8 @@ func (p *ScoreParamEntry) UnmarshalJSON(input []byte) error {
 
 	switch v := args[0].(type) {
 	case float64:
-		p.Score = int(v)
-		if p.Score < 0 {
+		p.Score = decimal.NewFromFloat(v)
+		if p.Score.IsNegative() {
 			return kilonova.Statusf(400, "cannot have negative score")
 		}
 	default:

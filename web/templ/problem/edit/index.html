@@ -47,8 +47,13 @@
                 </label>
                 <label class="block my-2">
                     <span class="form-label">{{getText "defaultPoints"}}:</span>
-                    <input id="defaultPoints" class="form-input" type="number" min="0" max="100" step="1" pattern="[\d]*"
+                    <input id="defaultPoints" class="form-input" type="number" min="0" max="100" step="{{scoreStep .Problem}}" pattern="[\d]*\.?[\d]*"
                         value="{{.Problem.DefaultPoints}}" />
+                </label>
+                <label class="block my-2">
+                    <span class="form-label">{{getText "scorePrecision"}}:</span>
+                    <input id="scorePrecision" class="form-input" type="number" min="0" max="4" step="1" pattern="[\d]*"
+                        value="{{.Problem.ScorePrecision}}" />
                 </label>
                 <button type="submit" class="btn btn-blue">{{getText "updateProblem"}}</button>
             </form>
@@ -161,7 +166,8 @@
             test_name: document.getElementById("testName").value,
             memory_limit: Math.trunc(parseFloat(document.getElementById("memoryLimit").value) * 1024),
             time_limit: parseFloat(document.getElementById("timeLimit").value),
-            default_points: parseInt(document.getElementById("defaultPoints").value),
+            default_points: parseFloat(document.getElementById("defaultPoints").value),
+            score_precision: parseInt(document.getElementById("scorePrecision").value)
         }
 
         if (data.name === "") {
@@ -170,6 +176,10 @@
         }
         bundled.apiToast(await bundled.postCall(`/problem/${problem.id}/update/`, data));
     }
+
+    document.getElementById("scorePrecision").addEventListener("change", e => {
+        document.getElementById("defaultPoints").step = Math.pow(10, -e.currentTarget.value)
+    })
 
     async function deleteProblem(e) {
         e.preventDefault();

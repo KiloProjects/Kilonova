@@ -10,11 +10,11 @@
         <form id="test_id_edit_form">
             <label class="block my-2">
                 <span class="mr-2 text-xl">ID: </span>
-                <input id="vID" type="number" class="form-input" value="{{ .Test.VisibleID }}" required />
+                <input id="vID" type="number" class="form-input" value="{{ .Test.VisibleID }}" min="0" required />
             </label>
             <label class="block my-2">
                 <span class="mr-2 text-xl">{{getText "score"}}: </span>
-                <input id="score" type="number" class="form-input" value="{{ .Test.Score }}" required />
+                <input id="score" type="number" class="form-input" value="{{ .Test.Score }}" min="0" max="100" step="{{scoreStep .Problem}}" required />
             </label>
             <button class="btn btn-blue mb-2">{{getText "button.update"}}</button>
         </form>

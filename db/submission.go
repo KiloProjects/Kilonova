@@ -9,6 +9,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/jackc/pgx/v5"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -30,7 +31,9 @@ type dbSubmission struct {
 
 	ContestID *int `db:"contest_id"`
 
-	Score int `db:"score"`
+	Score decimal.Decimal `db:"score"`
+
+	ScorePrecision int32 `db:"digit_precision"`
 }
 
 func (s *DB) Submission(ctx context.Context, id int) (*kilonova.Submission, error) {
@@ -80,7 +83,7 @@ func (s *DB) SubmissionCount(ctx context.Context, filter kilonova.SubmissionFilt
 
 func (s *DB) RemainingSubmissionCount(ctx context.Context, contest *kilonova.Contest, problemID, userID int) (int, error) {
 	var cnt int
-	err := Get(s.conn, ctx, &cnt, "SELECT COUNT(*) FROM submissions WHERE contest_id = $1 AND problem_id = $2 AND user_id = $3", contest.ID, problemID, userID)
+	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM submissions WHERE contest_id = $1 AND problem_id = $2 AND user_id = $3", contest.ID, problemID, userID).Scan(&cnt)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return -1, err
@@ -92,7 +95,7 @@ func (s *DB) RemainingSubmissionCount(ctx context.Context, contest *kilonova.Con
 
 func (s *DB) WaitingSubmissionCount(ctx context.Context, userID int) (int, error) {
 	var cnt int
-	err := Get(s.conn, ctx, &cnt, "SELECT COUNT(*) FROM submissions WHERE status <> 'finished' AND user_id = $1", userID)
+	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM submissions WHERE status <> 'finished' AND user_id = $1", userID).Scan(&cnt)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return -1, err
@@ -109,7 +112,7 @@ func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilono
 		return -1, kilonova.ErrMissingRequired
 	}
 	var id int
-	err := Get(s.conn, ctx, &id, createSubQuery, authorID, problem.ID, contestID, language.InternalName, code)
+	err := s.conn.QueryRow(ctx, createSubQuery, authorID, problem.ID, contestID, language.InternalName, code).Scan(&id)
 	return id, err
 }
 
@@ -152,28 +155,28 @@ func (s *DB) MaxScoreSubID(ctx context.Context, userid, problemid int) (int, err
 	return score, nil
 }
 
-func (s *DB) MaxScore(ctx context.Context, userid, problemid int) int {
-	var score int
+func (s *DB) MaxScore(ctx context.Context, userid, problemid int) decimal.Decimal {
+	var score decimal.Decimal
 
 	err := s.conn.QueryRow(ctx, "SELECT ms.score FROM max_score_view ms WHERE ms.user_id = $1 AND ms.problem_id = $2", userid, problemid).Scan(&score)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			zap.S().Errorw("Couldn't get max score for ", zap.Int("userid", userid), zap.Int("problemid", problemid), zap.Error(err))
 		}
-		return -1
+		return decimal.NewFromInt(-1)
 	}
 	return score
 }
 
-func (s *DB) ContestMaxScore(ctx context.Context, userid, problemid, contestid int) int {
-	var score int
+func (s *DB) ContestMaxScore(ctx context.Context, userid, problemid, contestid int) decimal.Decimal {
+	var score decimal.Decimal
 
 	err := s.conn.QueryRow(ctx, "SELECT ms.score FROM max_score_contest_view ms WHERE ms.user_id = $1 AND ms.problem_id = $2 AND ms.contest_id = $3", userid, problemid, contestid).Scan(&score)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			zap.S().Errorw("Couldn't get contest max score for ", zap.Int("userid", userid), zap.Int("problemid", problemid), zap.Int("contestid", contestid), zap.Error(err))
 		}
-		return -1
+		return decimal.NewFromInt(-1)
 	}
 	return score
 }
@@ -288,5 +291,6 @@ func (s *DB) internalToSubmission(sub *dbSubmission) *kilonova.Submission {
 		MaxMemory:      sub.MaxMemory,
 		ContestID:      sub.ContestID,
 		Score:          sub.Score,
+		ScorePrecision: sub.ScorePrecision,
 	}
 }

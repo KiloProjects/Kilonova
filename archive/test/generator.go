@@ -148,7 +148,7 @@ func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, bas
 					}
 				}
 				groups = append(groups, group)
-				weights = append(weights, strconv.Itoa(st.Score))
+				weights = append(weights, st.Score.String())
 			}
 			fmt.Fprintf(gr, "groups=%s\n", strings.Join(groups, ","))
 			fmt.Fprintf(gr, "weights=%s\n", strings.Join(weights, ","))
@@ -156,9 +156,10 @@ func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, bas
 
 		fmt.Fprintf(gr, "time=%f\n", pb.TimeLimit)
 		fmt.Fprintf(gr, "memory=%f\n", float64(pb.MemoryLimit)/1024.0)
-		if pb.DefaultPoints != 0 {
-			fmt.Fprintf(gr, "default_score=%d\n", pb.DefaultPoints)
+		if !pb.DefaultPoints.IsZero() {
+			fmt.Fprintf(gr, "default_score=%s\n", pb.DefaultPoints)
 		}
+		fmt.Fprintf(gr, "score_precision=%d\n", pb.ScorePrecision)
 		if pb.SourceSize != kilonova.DefaultSourceSize {
 			fmt.Fprintf(gr, "source_size=%d", pb.SourceSize)
 		}

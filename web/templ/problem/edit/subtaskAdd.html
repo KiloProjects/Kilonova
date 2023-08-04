@@ -1,22 +1,22 @@
 {{ define "title" }}{{getText "title.edit.subtask_add" .Problem.ID .Problem.Name}}{{ end }}
 {{ define "content" }}
 {{ template "topbar.html" . }}
-
+{{$root:=.}}
 <div class="page-holder">
     {{ template "subtaskSidebar.html" . }}
     <div class="page-content">
         <h2>
             {{getText "header.edit.subtask_add"}}
         </h2>
-        <form id="subtask-create">
+        <form id="subtask-create" autocomplete="off">
             {{ with problemTests .Problem }}
                 <label class="block my-2">
                     <span class="form-label">{{getText "id"}}: </span>
-                    <input class="form-input" id="subtask-id" type="number" min="0">
+                    <input class="form-input" id="subtask-id" type="number" min="0" required>
                 </label>
                 <label class="block my-2">
                     <span class="form-label">{{getText "score"}}: </span>
-                    <input class="form-input" id="subtask-score" type="number" min="0" max="100">
+                    <input class="form-input" id="subtask-score" type="number" min="0" max="100" step="{{scoreStep $root.Problem}}" value="0" required>
                 </label>
                 <table class="kn-table my-2" style="table-layout: fixed">
                     <thead>

@@ -31,7 +31,7 @@ func (s *DB) MaximumScoreSubTaskTests(ctx context.Context, problemID int, userID
 	err := Select(s.conn, ctx, &subtests, fmt.Sprintf(`
 WITH subtask_ids AS (
 	%s
-) SELECT sts.* 
+) SELECT DISTINCT ON (sts.id) sts.* 
 	FROM submission_tests sts, submission_subtask_subtests ssst, subtask_ids 
 	WHERE sts.id = ssst.submission_test_id 
 	  AND ssst.submission_subtask_id = subtask_ids.id 

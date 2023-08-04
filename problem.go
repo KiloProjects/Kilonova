@@ -2,6 +2,8 @@ package kilonova
 
 import (
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 var (
@@ -21,11 +23,12 @@ const (
 )
 
 type Problem struct {
-	ID            int       `json:"id"`
-	CreatedAt     time.Time `json:"created_at"`
-	Name          string    `json:"name"`
-	TestName      string    `json:"test_name"`
-	DefaultPoints int       `json:"default_points"`
+	ID        int       `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	Name      string    `json:"name"`
+	TestName  string    `json:"test_name"`
+
+	DefaultPoints decimal.Decimal `json:"default_points"`
 
 	Visible bool `json:"visible"`
 
@@ -37,7 +40,8 @@ type Problem struct {
 	SourceCredits string `json:"source_credits"`
 
 	// Eval stuff
-	ConsoleInput bool `json:"console_input"`
+	ConsoleInput   bool  `json:"console_input"`
+	ScorePrecision int32 `json:"score_precision"`
 
 	PublishedAt     *time.Time  `json:"published_at"`
 	ScoringStrategy ScoringType `json:"scoring_strategy"`
@@ -56,7 +60,8 @@ type StatementVariant struct {
 type ScoredProblem struct {
 	Problem
 	ScoreUserID *int `json:"score_user_id"`
-	MaxScore    *int `json:"max_score"`
+
+	MaxScore *decimal.Decimal `json:"max_score"`
 	// For showing the published/unpublished label on front page
 	IsEditor bool `json:"is_editor"`
 }
@@ -101,9 +106,10 @@ type ProblemFilter struct {
 }
 
 type ProblemUpdate struct {
-	Name          *string `json:"name"`
-	TestName      *string `json:"test_name"`
-	DefaultPoints *int    `json:"default_points"`
+	Name     *string `json:"name"`
+	TestName *string `json:"test_name"`
+
+	DefaultPoints *decimal.Decimal `json:"default_points"`
 
 	TimeLimit   *float64 `json:"time_limit"`
 	MemoryLimit *int     `json:"memory_limit"`
@@ -114,6 +120,7 @@ type ProblemUpdate struct {
 	ConsoleInput *bool `json:"console_input"`
 	Visible      *bool `json:"visible"`
 
+	ScorePrecision  *int32      `json:"score_precision"`
 	ScoringStrategy ScoringType `json:"scoring_strategy"`
 }
 

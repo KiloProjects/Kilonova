@@ -14,7 +14,7 @@
             </label>
             <label class="block my-2">
                 <span class="mr-2 text-xl">{{getText "score"}}: </span>
-                <input id="score" type="number" class="form-input" required />
+                <input id="score" type="number" class="form-input" min="0" max="100" step="{{scoreStep .Problem}}" required />
             </label>
             <div class="mb-3">
                 <h3> {{getText "input"}}: </h3>

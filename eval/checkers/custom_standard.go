@@ -12,6 +12,7 @@ import (
 
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -86,7 +87,7 @@ func standardCheckerTask(ctx context.Context, box eval.Sandbox, job *customCheck
 		rez.Output = "Invalid checker score"
 		return rez, nil
 	}
-	rez.Percentage = int(floatScore * 100)
+	rez.Percentage = decimal.NewFromFloat(floatScore).Shift(2)
 
 	rez.Output = strings.TrimSpace(stderr.String())
 	if rez.Output == "" {

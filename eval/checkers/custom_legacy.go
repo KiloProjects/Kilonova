@@ -11,6 +11,7 @@ import (
 
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -73,10 +74,12 @@ func legacyCheckerTask(ctx context.Context, box eval.Sandbox, job *customChecker
 		out.Reset()
 	}
 
-	if _, err := fmt.Fscanf(&out, "%d ", &rez.Percentage); err != nil {
+	var percentage float64
+	if _, err := fmt.Fscanf(&out, "%f ", &percentage); err != nil {
 		rez.Output = "Wrong checker output"
 		return rez, nil
 	}
+	rez.Percentage = decimal.NewFromFloat(percentage)
 
 	rez.Output = strings.TrimSpace(out.String())
 	return rez, nil

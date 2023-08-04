@@ -177,7 +177,7 @@ func (s *DB) CreateProblemList(ctx context.Context, list *kilonova.ProblemList) 
 	}
 	// Do insertion
 	var id int
-	err := Get(s.conn, ctx, &id, createProblemListQuery, list.AuthorID, list.Title, list.Description, list.SidebarHidable)
+	err := s.conn.QueryRow(ctx, createProblemListQuery, list.AuthorID, list.Title, list.Description, list.SidebarHidable).Scan(&id)
 	if err != nil {
 		return err
 	}

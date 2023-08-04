@@ -7,6 +7,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/jackc/pgx/v5"
+	"github.com/shopspring/decimal"
 )
 
 type subSubtask struct {
@@ -18,12 +19,14 @@ type subSubtask struct {
 	ProblemID    int       `db:"problem_id"`
 	ContestID    *int      `db:"contest_id"`
 	VisibleID    int       `db:"visible_id"`
-	Score        int       `db:"score"`
 
-	FinalPercentage *int `db:"final_percentage"`
+	ScorePrecision int `db:"digit_precision"`
+
+	Score           decimal.Decimal  `db:"score"`
+	FinalPercentage *decimal.Decimal `db:"final_percentage"`
 }
 
-func (s *DB) UpdateSubmissionSubtaskPercentage(ctx context.Context, id int, percentage int) (err error) {
+func (s *DB) UpdateSubmissionSubtaskPercentage(ctx context.Context, id int, percentage decimal.Decimal) (err error) {
 	_, err = s.conn.Exec(ctx, `UPDATE submission_subtasks SET final_percentage = $1 WHERE id = $2`, percentage, id)
 	return
 }
@@ -108,5 +111,6 @@ func (s *DB) internalToSubmissionSubTask(ctx context.Context, st *subSubtask) (*
 		Subtests:     ids,
 
 		FinalPercentage: st.FinalPercentage,
+		ScorePrecision:  st.ScorePrecision,
 	}, nil
 }

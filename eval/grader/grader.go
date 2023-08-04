@@ -3,7 +3,6 @@ package grader
 import (
 	"context"
 	"io"
-	"math"
 	"path"
 	"sync"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -178,7 +178,7 @@ func compileSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 			return kilonova.WrapError(err, "Couldn't get submission subtasks")
 		}
 		for _, stk := range stks {
-			if err := base.UpdateSubmissionSubtaskPercentage(ctx, stk.ID, 0); err != nil {
+			if err := base.UpdateSubmissionSubtaskPercentage(ctx, stk.ID, decimal.Zero); err != nil {
 				return kilonova.WrapError(err, "Couldn't finish subtasks")
 			}
 		}
@@ -216,7 +216,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 	if err != nil {
 		return kilonova.WrapError(err, "Couldn't execute test")
 	}
-	var testScore int
+	var testScore decimal.Decimal
 
 	// Rewind test input for use in checker
 	if _, err := tin.Seek(0, io.SeekStart); err != nil {
@@ -297,9 +297,9 @@ func scoreTests(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submis
 			subMap[st.ID] = st
 		}
 		for _, stk := range subTasks {
-			percentage := 100
+			percentage := decimal.NewFromInt(100)
 			if len(stk.Subtests) == 0 { // Empty subtasks should be invalidated
-				percentage = 0
+				percentage = decimal.Zero
 			}
 			for _, id := range stk.Subtests {
 				st, ok := subMap[id]
@@ -307,16 +307,20 @@ func scoreTests(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submis
 					zap.S().Warn("Couldn't find subtest. This should not really happen.")
 					continue
 				}
-				percentage = min(st.Percentage, percentage)
+				percentage = decimal.Min(percentage, st.Percentage)
 			}
-			score += int(math.Round(float64(stk.Score) * float64(percentage) / 100.0))
+			// subTaskScore = stk.Score * (percentage / 100) rounded to the precision
+			subTaskScore := stk.Score.Mul(percentage.Shift(-2)).Round(problem.ScorePrecision)
+			score = score.Add(subTaskScore)
 			if err := base.UpdateSubmissionSubtaskPercentage(ctx, stk.ID, percentage); err != nil {
 				zap.S().Warn(err)
 			}
 		}
 	} else {
 		for _, subtest := range subtests {
-			score += int(math.Round(float64(subtest.Score) * float64(subtest.Percentage) / 100.0))
+			// testScore = subtest.Score * (subtest.Percentage / 100) rounded to the precision
+			testScore := subtest.Score.Mul(subtest.Percentage.Shift(-2)).Round(problem.ScorePrecision)
+			score = score.Add(testScore)
 		}
 	}
 

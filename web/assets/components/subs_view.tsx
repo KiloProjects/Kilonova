@@ -26,7 +26,7 @@ export function rezStr(count: number): string {
 
 const status = (sub: Submission): string => {
 	if (sub.status === "finished") {
-		return `${getText("evaluated")}: ${sub.score} ${getText("points")}`;
+		return `${getText("evaluated")}: ${sub.score.toFixed(sub.score_precision)} ${getText("points")}`;
 	} else if (sub.status === "working") {
 		return getText("evaluating");
 	}
@@ -45,7 +45,7 @@ function getInitialData(overwrites: Overwrites): SubmissionQuery {
 	const userIDParam = parseInt(params.get("user_id") ?? "");
 	const problemIDParam = parseInt(params.get("problem_id") ?? "");
 	const contestIDParam = parseInt(params.get("contest_id") ?? "");
-	const score = parseInt(params.get("score") ?? "");
+	const score = parseFloat(params.get("score") ?? "");
 
 	let compile_error_str = params.get("compile_error");
 	let compile_error: boolean | undefined;
@@ -352,11 +352,12 @@ function SubsView(props: SubsViewProps) {
 							<input
 								class="form-input"
 								type="number"
-								min="-1"
-								max="100"
+								min={-1}
+								max={100}
+								step={0.0001}
 								value={typeof query.score == "undefined" ? "a" : query.score}
 								onInput={(e) => {
-									let val: number | null = parseInt(e.currentTarget.value);
+									let val: number | null = parseFloat(e.currentTarget.value);
 									if (isNaN(val)) {
 										val = null;
 									} else {

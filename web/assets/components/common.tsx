@@ -223,7 +223,7 @@ export function OlderSubmissions({
 									<span>{`#${sub.sub.id}: ${dayjs(sub.sub.created_at).format("DD/MM/YYYY HH:mm")}`}</span>
 									<span class="badge-lite text-sm">
 										{{
-											finished: <>{sub.sub.score}</>,
+											finished: <>{sub.sub.score.toFixed(sub.sub.score_precision)}</>,
 											working: <i class="fas fa-cog animate-spin"></i>,
 										}[sub.sub.status] || <i class="fas fa-clock"></i>}
 									</span>

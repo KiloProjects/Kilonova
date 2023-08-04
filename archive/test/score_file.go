@@ -6,11 +6,12 @@ import (
 	"fmt"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
 // TestID -> Score
-type ScoreFileEntries = map[int]int
+type ScoreFileEntries = map[int]decimal.Decimal
 
 func ParseScoreFile(file *zip.File) (ScoreFileEntries, *kilonova.StatusError) {
 	f, err := file.Open()
@@ -31,8 +32,8 @@ func ParseScoreFile(file *zip.File) (ScoreFileEntries, *kilonova.StatusError) {
 		}
 
 		var testID int
-		var score int
-		if _, err := fmt.Sscanf(line, "%d %d\n", &testID, &score); err != nil {
+		var score string
+		if _, err := fmt.Sscanf(line, "%d %s\n", &testID, &score); err != nil {
 			// Might just be a bad line
 			continue
 		}
@@ -40,7 +41,13 @@ func ParseScoreFile(file *zip.File) (ScoreFileEntries, *kilonova.StatusError) {
 		if _, ok := rez[testID]; ok {
 			return nil, ErrBadTestFile
 		}
-		rez[testID] = score
+
+		dec, err := decimal.NewFromString(score)
+		if err != nil {
+			// Bad line
+			continue
+		}
+		rez[testID] = dec
 	}
 	if br.Err() != nil {
 		zap.S().Info(br.Err())

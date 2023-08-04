@@ -9,7 +9,7 @@ DROP VIEW IF EXISTS blog_post_attachments CASCADE;
 
 DROP VIEW IF EXISTS submission_subtask_max_scores CASCADE;
 CREATE OR REPLACE VIEW submission_subtask_max_scores (problem_id, user_id, subtask_id, max_score) AS
-    SELECT problem_id, user_id, subtask_id, MAX(ROUND(COALESCE(final_percentage, 0) * score / 100.0)) max_score
+    SELECT problem_id, user_id, subtask_id, MAX(ROUND(COALESCE(final_percentage, 0) * (score / 100.0), stks.digit_precision)) max_score
     FROM submission_subtasks stks
     WHERE subtask_id IS NOT NULL GROUP BY user_id, problem_id, subtask_id;
 
@@ -168,7 +168,7 @@ CREATE OR REPLACE VIEW contest_visibility AS (
 
 DROP VIEW IF EXISTS contest_submission_subtask_max_scores CASCADE;
 CREATE OR REPLACE VIEW contest_submission_subtask_max_scores (problem_id, user_id, subtask_id, contest_id, max_score) AS
-    SELECT MAX(stks.problem_id) as problem_id, stks.user_id, subtask_id, subs.contest_id, MAX(ROUND(COALESCE(final_percentage, 0) * stks.score / 100.0)) max_score
+    SELECT MAX(stks.problem_id) as problem_id, stks.user_id, subtask_id, subs.contest_id, MAX(ROUND(COALESCE(final_percentage, 0) * stks.score / 100.0, stks.digit_precision)) max_score
     FROM submission_subtasks stks INNER JOIN submissions subs ON stks.submission_id = subs.id
     WHERE subtask_id IS NOT NULL AND subs.contest_id IS NOT NULL GROUP BY stks.user_id, subtask_id, subs.contest_id;
 

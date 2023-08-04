@@ -8,6 +8,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/jackc/pgx/v5"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -17,9 +18,10 @@ type dbProblem struct {
 	PublishedAt *time.Time `db:"published_at"`
 	Name        string     `db:"name"`
 
-	TestName      string `db:"test_name"`
-	Visible       bool   `db:"visible"`
-	DefaultPoints int    `db:"default_points"`
+	TestName string `db:"test_name"`
+	Visible  bool   `db:"visible"`
+
+	DefaultPoints decimal.Decimal `db:"default_points"`
 
 	// Limit stuff
 	TimeLimit   float64 `db:"time_limit"`
@@ -29,8 +31,8 @@ type dbProblem struct {
 	SourceCredits string `db:"source_credits"`
 
 	// Eval stuff
-	ConsoleInput   bool `db:"console_input"`
-	DigitPrecision int  `db:"digit_precision"`
+	ConsoleInput   bool  `db:"console_input"`
+	DigitPrecision int32 `db:"digit_precision"`
 
 	ScoringStrategy kilonova.ScoringType `db:"scoring_strategy"`
 }
@@ -38,10 +40,10 @@ type dbProblem struct {
 type dbScoredProblem struct {
 	dbProblem
 	ScoreUserID *int `db:"user_id"`
-	MaxScore    *int `db:"score"`
 	IsEditor    bool `db:"pb_editor"`
 
-	UNUSEDPOZ int `db:"unused_position"`
+	MaxScore  *decimal.Decimal `db:"score"`
+	UNUSEDPOZ int              `db:"unused_position"`
 }
 
 func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
@@ -298,6 +300,9 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate, ub *updateBuilder) {
 	if v := upd.ScoringStrategy; v != kilonova.ScoringTypeNone {
 		ub.AddUpdate("scoring_strategy = %s", v)
 	}
+	if v := upd.ScorePrecision; v != nil {
+		ub.AddUpdate("digit_precision = %s", v)
+	}
 }
 
 // Access rights
@@ -343,7 +348,8 @@ func (s *DB) internalToProblem(pb *dbProblem) *kilonova.Problem {
 
 		SourceCredits: pb.SourceCredits,
 
-		ConsoleInput: pb.ConsoleInput,
+		ConsoleInput:   pb.ConsoleInput,
+		ScorePrecision: pb.DigitPrecision,
 
 		PublishedAt:     pb.PublishedAt,
 		ScoringStrategy: pb.ScoringStrategy,
