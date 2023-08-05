@@ -15,6 +15,6 @@ TODO FOR 1.0:
 - [x] Score parameters string option when uploading archive
     - [~] Eh... Allow tests to have names
     - [~] Eh... Selector to choose archive type (Classic, CMS, Polygon)
-- [ ] Fractional score
+- [x] Fractional score
 - [ ] OAuth API
 
