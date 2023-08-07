@@ -56,10 +56,10 @@ func (s *API) createSubTask(w http.ResponseWriter, r *http.Request) {
 func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		SubTaskID *int    `json:"subtask_id"`
-		NewID     *int    `json:"new_id"`
-		Score     *string `json:"score"`
-		Tests     []int   `json:"tests"`
+		SubTaskID *int     `json:"subtask_id"`
+		NewID     *int     `json:"new_id"`
+		Score     *float64 `json:"score"`
+		Tests     []int    `json:"tests"`
 	}
 	if err := parseJsonBody(r, &args); err != nil {
 		err.WriteError(w)
@@ -79,11 +79,7 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 
 	var score *decimal.Decimal
 	if args.Score != nil {
-		val, err := decimal.NewFromString(*args.Score)
-		if err != nil {
-			errorData(w, "Invalid score", 400)
-			return
-		}
+		val := decimal.NewFromFloat(*args.Score)
 		score = &val
 	}
 
