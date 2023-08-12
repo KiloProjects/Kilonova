@@ -4,39 +4,57 @@
 
 <div class="page-holder">
     {{ template "testSidebar.html" .}}
-    <div class="page-content">
-        <h2> Editare test {{ .Test.VisibleID }} </h2>	
-
-        <form id="test_id_edit_form">
-            <label class="block my-2">
-                <span class="mr-2 text-xl">ID: </span>
-                <input id="vID" type="number" class="form-input" value="{{ .Test.VisibleID }}" min="0" required />
-            </label>
-            <label class="block my-2">
-                <span class="mr-2 text-xl">{{getText "score"}}: </span>
-                <input id="score" type="number" class="form-input" value="{{ .Test.Score }}" min="0" max="100" step="{{scoreStep .Problem}}" required />
-            </label>
-            <button class="btn btn-blue mb-2">{{getText "button.update"}}</button>
-        </form>
-        <button id="test_del_button" class="btn btn-red block my-2"> {{getText "button.delete"}} </button>
-    
-        <div class="mb-2">
-            <a class="btn btn-blue" href="/assets/problem/{{.Problem.ID}}/test/{{.Test.VisibleID}}/input" download>Download input</a>
-            <a class="btn btn-blue" href="/assets/problem/{{.Problem.ID}}/test/{{.Test.VisibleID}}/output" download>Download output</a>
+    <div class="page-content-wrapper">
+        <div class="segment-panel">
+            <h2> {{getText "updateTest" .Test.VisibleID}} </h2>	
+            
+            <form id="test_id_edit_form">
+                <label class="block my-2">
+                    <span class="mr-2 text-xl">ID: </span>
+                    <input id="vID" type="number" class="form-input" value="{{ .Test.VisibleID }}" min="0" required />
+                </label>
+                <label class="block my-2">
+                    <span class="mr-2 text-xl">{{getText "score"}}: </span>
+                    <input id="score" type="number" class="form-input" value="{{ .Test.Score }}" min="0" max="100" step="{{scoreStep .Problem}}" required />
+                </label>
+                <button class="btn btn-blue mr-2">{{getText "button.update"}}</button>
+                <button id="test_del_button" type="button" class="btn btn-red"> {{getText "button.delete"}} </button>
+            </form>
+            
+            <div class="my-2">
+                <a class="btn btn-blue mr-2" href="/assets/problem/{{.Problem.ID}}/test/{{.Test.VisibleID}}/input" download>Download input</a>
+                <a class="btn btn-blue" href="/assets/problem/{{.Problem.ID}}/test/{{.Test.VisibleID}}/output" download>Download output</a>
+            </div>
+            
+            <form id="test_edit_form">
+                {{ $test := .GetFullTests }}
+                <div class="mb-3">
+                    <h3> {{getText "input"}}: </h3>
+                    <textarea class="form-textarea" style="width:80%;" rows="15" id="input">{{$test.In}}</textarea>
+                </div>
+                <div class="mb-3">
+                    <h3> {{getText "output"}}: </h3>
+                    <textarea class="form-textarea" style="width:80%;" rows="15" id="output">{{$test.Out}}</textarea>
+                </div>
+                <button class="btn btn-blue mb-2" >{{getText "button.update"}}</button>
+            </form>
         </div>
-    
-        <form id="test_edit_form">
-            {{ $test := .GetFullTests }}
-            <div class="mb-3">
-                <h3> Input: </h3>
-                <textarea class="form-textarea" style="width:80%;" rows="15" id="input">{{$test.In}}</textarea>
-            </div>
-            <div class="mb-3">
-                <h3> Output: </h3>
-                <textarea class="form-textarea" style="width:80%;" rows="15" id="output">{{$test.Out}}</textarea>
-            </div>
-            <button class="btn btn-blue mb-2" >{{getText "button.update"}}</button>
-        </form>
+        <div class="segment-panel">
+            <h2>{{getText "updateTestFiles"}}</h2>
+            <form id="test_reupload_form" autocomplete="off">
+                <div class="block my-2">
+                    <input class="form-checkbox" id="newInputCheckbox" type="checkbox">
+                    <span id="newInputLabel" class="form-label text-muted">{{getText "input"}}:</span>
+                    <input class="form-input" id="newInput" type="file" disabled />
+                </div>
+                <div class="block my-2">
+                    <input class="form-checkbox" id="newOutputCheckbox" type="checkbox">
+                    <span id="newOutputLabel" class="form-label text-muted">{{getText "output"}}:</span>
+                    <input class="form-input" id="newOutput" type="file" disabled />
+                </div>
+                <button class="btn btn-blue" >{{getText "button.update"}}</button>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -60,27 +78,61 @@ async function updateID(e) {
 
 async function updateData(e) {
 	e.preventDefault()
-    let q = {}
+    var formdata = new FormData()
     {{if $test.OkIn}}
-    q.input = document.getElementById("input").value
+    formdata.set("input", new File([document.getElementById("input").value], "input", {type: "text/plain"}))
     {{else}}
     const inputVal = document.getElementById("input").value
     if(inputVal !== {{$test.In}}) {
-        q.input = val
+        formdata.set("input", new File([inputVal], "input", {type: "text/plain"}))
     }
     {{end}}
 
     {{if $test.OkOut}}
-    q.output = document.getElementById("output").value
+    formdata.set("output", new File([document.getElementById("output").value], "output", {type: "text/plain"}))
     {{else}}
     const outputVal = document.getElementById("output").value
     if(outputVal !== {{$test.Out}}) {
-        q.output = val
+        formdata.set("output", new File([outputVal], "output", {type: "text/plain"}))
     }
     {{end}}
 
-	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/data", q)
+	let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/data", formdata)
 	bundled.apiToast(res);
+}
+
+
+document.getElementById("newInputCheckbox").addEventListener("change", e => {
+    document.getElementById("newInputLabel").classList.toggle("text-muted", !e.currentTarget.checked)
+    document.getElementById("newInput").disabled = !e.currentTarget.checked
+    document.getElementById("newInput").required = e.currentTarget.checked
+})
+document.getElementById("newOutputCheckbox").addEventListener("change", e => {
+    document.getElementById("newOutputLabel").classList.toggle("text-muted", !e.currentTarget.checked)
+    document.getElementById("newOutput").disabled = !e.currentTarget.checked
+    document.getElementById("newOutput").required = e.currentTarget.checked
+})
+async function uploadReplacementData(e) {
+    e.preventDefault()
+    var formdata = new FormData()
+
+    let newIn = document.getElementById("newInput"),
+        newInBox = document.getElementById("newInputCheckbox")
+    if(newInBox.checked && newIn.files.length > 0) {
+        formdata.set("input", newIn.files[0])
+    }
+    let newOut = document.getElementById("newOutput"),
+        newOutBox = document.getElementById("newOutputCheckbox")
+    if(newOutBox.checked &&newOut.files.length > 0) {
+        formdata.set("output", newOut.files[0])
+    }
+
+    let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/data", formdata)
+    if(res.status === "success") {
+        window.location.reload();
+        return
+    }
+    bundled.apiToast(res)
 }
 
 async function removeTest(e) {
@@ -99,6 +151,7 @@ async function removeTest(e) {
 document.getElementById("test_edit_form").addEventListener("submit", updateData)
 document.getElementById("test_id_edit_form").addEventListener("submit", updateID)
 document.getElementById("test_del_button").addEventListener("click", removeTest)
+document.getElementById("test_reupload_form").addEventListener("submit", uploadReplacementData)
 </script>
 
 {{ end }}

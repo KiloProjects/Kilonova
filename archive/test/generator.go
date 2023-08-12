@@ -111,7 +111,7 @@ func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, bas
 			return kilonova.WrapError(err, "Couldn't create archive tests.txt file")
 		}
 		for _, test := range tests {
-			fmt.Fprintf(testFile, "%d %d\n", test.VisibleID, test.Score)
+			fmt.Fprintf(testFile, "%d %s\n", test.VisibleID, test.Score.String())
 		}
 	}
 	{

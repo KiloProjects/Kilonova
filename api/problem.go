@@ -83,7 +83,7 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 		args.UserID = util.UserBrief(r).ID
 	}
 
-	maxScore := decimal.NewFromInt(-1)
+	var maxScore decimal.Decimal
 	if args.ContestID == nil {
 		maxScore = s.base.MaxScore(r.Context(), args.UserID, util.Problem(r).ID)
 	} else {

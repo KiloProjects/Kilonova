@@ -91,6 +91,9 @@ func (s *API) bulkDeleteAttachments(w http.ResponseWriter, r *http.Request) {
 }
 
 func cleanupMultipart(r *http.Request) {
+	if r.MultipartForm == nil {
+		return
+	}
 	if err := r.MultipartForm.RemoveAll(); err != nil {
 		zap.S().Warn(err)
 	}

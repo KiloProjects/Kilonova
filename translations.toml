@@ -502,6 +502,14 @@ ro = "Subtaskuri"
 en = "Create Test"
 ro = "Creare Test"
 
+[updateTest]
+en = "Update test %d"
+ro = "Actualizare test %d"
+
+[updateTestFiles]
+en = "Upload replacement files for test"
+ro = "Încărcare fișiere de înlocuire pentru test"
+
 [createSubTask]
 en = "Create Subtask"
 ro = "Creare Subtask"
@@ -1190,7 +1198,7 @@ ro = "Afișare cod sursă?"
 
 [showSourceCodeExpl]
 en = "You haven't solved the problem. Please give it some more thought before looking at someone else's code."
-ro = "Incă n-ai rezolvat problema. Ar fi indicat să te mai gândești la ea înainte să te uiți la codul altei persoane."
+ro = "Încă n-ai rezolvat problema. Ar fi indicat să te mai gândești la ea înainte să te uiți la codul altei persoane."
 
 [showSourceCodeBtn]
 en = "Show source code"

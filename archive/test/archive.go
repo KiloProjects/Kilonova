@@ -76,6 +76,9 @@ var (
 )
 
 func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
+	if strings.Contains(file.Name, "__MACOSX") { // Support archives from MacOS
+		return nil
+	}
 	ext := strings.ToLower(path.Ext(file.Name))
 	if slices.Contains(filepath.SplitList(path.Dir(file.Name)), "attachments") { // Is in "attachments" directory
 		return ProcessAttachmentFile(ctx, file)
