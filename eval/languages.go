@@ -87,6 +87,7 @@ var Langs = map[string]Language{
 		Mounts: []Directory{{In: "/etc"}},
 	},
 	"golang": {
+		Disabled:      true, // Doesn't work
 		Extensions:    []string{".go"},
 		Compiled:      true,
 		PrintableName: "Go",
@@ -94,10 +95,10 @@ var Langs = map[string]Language{
 
 		CompileCommand: []string{"go", "build", MAGIC_REPLACE},
 		RunCommand:     []string{"/main"},
-		SourceName:     "/main.go",
-		CompiledName:   "/main",
+		SourceName:     "./main.go",
+		CompiledName:   "/box/main",
 
-		BuildEnv:  map[string]string{"GOCACHE": "/go/cache", "GOPATH": "/go"},
+		BuildEnv:  map[string]string{"GOCACHE": "/go/cache", "GOPATH": "/box", "GO111MODULE": "off"},
 		CommonEnv: map[string]string{"GOMAXPROCS": "1"},
 	},
 	"haskell": {

@@ -65,6 +65,9 @@ func disableLang(key string) {
 // It should be run at the start of the execution (and implemented more nicely tbh)
 func checkLanguages() {
 	for k, v := range Langs {
+		if v.Disabled { // Skip search if already disabled
+			continue
+		}
 		var toSearch []string
 		if v.Compiled {
 			toSearch = v.CompileCommand
