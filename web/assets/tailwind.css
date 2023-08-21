@@ -140,7 +140,6 @@
 
 	.statement-images img {
 		@apply py-1;
-		clear: both;
 	}
 
 	.statement-images img[data-imgalign="left"] {
@@ -153,6 +152,7 @@
 
 	.statement-images img[data-imgalign="right"] {
 		@apply pl-2 lg:pl-4 float-right max-w-[50%] lg:max-w-[30%];
+		clear: both;
 	}
 
 	.statement-images img[data-imginline] {
