@@ -48,7 +48,7 @@ func (q *filterBuilder) AddConstraint(wh string, args ...any) {
 
 	// If no parameters are added
 	if len(args) == 0 {
-		q.where = append(q.where, wh)
+		q.where = append(q.where, strings.TrimSpace(wh))
 		return
 	}
 
@@ -57,7 +57,7 @@ func (q *filterBuilder) AddConstraint(wh string, args ...any) {
 		positionals = append(positionals, "$"+strconv.Itoa(q.pos))
 		q.pos++
 	}
-	q.where = append(q.where, fmt.Sprintf(wh, positionals...))
+	q.where = append(q.where, strings.TrimSpace(fmt.Sprintf(wh, positionals...)))
 	q.args = append(q.args, args...)
 }
 

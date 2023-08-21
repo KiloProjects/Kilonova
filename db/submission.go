@@ -214,6 +214,16 @@ func subFilterQuery(filter *kilonova.SubmissionFilter, fb *filterBuilder) {
 		fb.AddConstraint("EXISTS (SELECT 1 FROM visible_submissions(%s) WHERE sub_id = submissions.id)", id)
 	}
 
+	if filter.FromAuthors {
+		fb.AddConstraint(`
+		EXISTS (
+			SELECT 1 FROM problem_user_access 
+				WHERE access = 'editor' 
+					AND problem_id = submissions.problem_id 
+					AND user_id = submissions.user_id
+		)`)
+	}
+
 	if v := filter.Status; v != kilonova.StatusNone {
 		fb.AddConstraint("status = %s", v)
 	}

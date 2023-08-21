@@ -30,7 +30,8 @@ type Problem struct {
 
 	DefaultPoints decimal.Decimal `json:"default_points"`
 
-	Visible bool `json:"visible"`
+	Visible      bool `json:"visible"`
+	VisibleTests bool `json:"visible_tests"`
 
 	// Limit stuff
 	TimeLimit   float64 `json:"time_limit"`
@@ -119,6 +120,7 @@ type ProblemUpdate struct {
 
 	ConsoleInput *bool `json:"console_input"`
 	Visible      *bool `json:"visible"`
+	VisibleTests *bool `json:"visible_tests"`
 
 	ScorePrecision  *int32      `json:"score_precision"`
 	ScoringStrategy ScoringType `json:"scoring_strategy"`

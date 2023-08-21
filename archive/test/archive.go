@@ -76,10 +76,9 @@ var (
 )
 
 func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
-	if strings.Contains(file.Name, "__MACOSX") { // Support archives from MacOS
+	if strings.Contains(file.Name, "__MACOSX") { // Support archives from MacOS by skipping MACOSX directory
 		return nil
 	}
-	ext := strings.ToLower(path.Ext(file.Name))
 	if slices.Contains(filepath.SplitList(path.Dir(file.Name)), "attachments") { // Is in "attachments" directory
 		return ProcessAttachmentFile(ctx, file)
 	}
@@ -88,6 +87,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 		return ProcessSubmissionFile(ctx, file)
 	}
 
+	ext := strings.ToLower(path.Ext(file.Name))
 	if ext == ".txt" { // test score file
 		// if using score parameters, test score file is redundant
 		if len(ctx.scoreParameters) > 0 {
@@ -202,206 +202,229 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 		}
 	}
 
-	idMode := deduceTestIDMode(aCtx)
+	// The archive may not have tests
+	if len(aCtx.tests) > 0 {
+		idMode := deduceTestIDMode(aCtx)
 
-	// testsByID := make(map[int]*archiveTest)
-	var tests []archiveTest
-	if idMode == idModeParse || idMode == idModeParseSort {
-		tests = make([]archiveTest, 0, len(aCtx.tests))
-		for k, v := range aCtx.tests {
-			v := v
-			// Error ommited since deduceTestIDMode already checks for error on parse mode
-			v.VisibleID, _ = getTestID(k)
-			v.Key = fmt.Sprintf("%04d", v.VisibleID)
-			tests = append(tests, v)
+		// testsByID := make(map[int]*archiveTest)
+		var tests []archiveTest
+		if idMode == idModeParse || idMode == idModeParseSort {
+			tests = make([]archiveTest, 0, len(aCtx.tests))
+			for k, v := range aCtx.tests {
+				v := v
+				// Error ommited since deduceTestIDMode already checks for error on parse mode
+				v.VisibleID, _ = getTestID(k)
+				v.Key = fmt.Sprintf("%04d", v.VisibleID)
+				tests = append(tests, v)
+			}
 		}
-	}
 
-	if idMode == idModeParseSort {
-		aCtx.tests = make(map[string]archiveTest)
-		for _, test := range tests {
-			aCtx.tests[test.Key] = test
+		if idMode == idModeParseSort {
+			aCtx.tests = make(map[string]archiveTest)
+			for _, test := range tests {
+				aCtx.tests[test.Key] = test
+			}
 		}
-	}
 
-	if idMode == idModeSort || idMode == idModeParseSort {
-		tests = make([]archiveTest, 0, len(aCtx.tests))
-		for _, test := range aCtx.tests {
-			tests = append(tests, test)
+		if idMode == idModeSort || idMode == idModeParseSort {
+			tests = make([]archiveTest, 0, len(aCtx.tests))
+			for _, test := range aCtx.tests {
+				tests = append(tests, test)
+			}
+			slices.SortFunc(tests, func(a, b archiveTest) int {
+				return cmp.Compare(a.Key, b.Key)
+			})
+			for i := range tests {
+				tests[i].VisibleID = i
+			}
 		}
+
+		// Sanity check: sort tests by visible IDs since idModeParse might not handle them correctly
 		slices.SortFunc(tests, func(a, b archiveTest) int {
-			return cmp.Compare(a.Key, b.Key)
+			return cmp.Compare(a.VisibleID, b.VisibleID)
 		})
+
+		if isMaskedScoring(aCtx.scoreParameters, tests) {
+			buildParamTestScores(aCtx, tests)
+			aCtx.scoreParameters = aCtx.scoreParameters[:0]
+		}
+
+		precision := pb.ScorePrecision
+		if aCtx.props != nil && aCtx.props.ScorePrecision != nil {
+			precision = *aCtx.props.ScorePrecision
+		}
+
+		var mustAutofillTests bool = false
 		for i := range tests {
-			tests[i].VisibleID = i
-		}
-	}
-
-	// Sanity check: sort tests by visible IDs since idModeParse might not handle them correctly
-	slices.SortFunc(tests, func(a, b archiveTest) int {
-		return cmp.Compare(a.VisibleID, b.VisibleID)
-	})
-
-	if isMaskedScoring(aCtx.scoreParameters, tests) {
-		buildParamTestScores(aCtx, tests)
-		aCtx.scoreParameters = aCtx.scoreParameters[:0]
-	}
-
-	precision := pb.ScorePrecision
-	if aCtx.props != nil && aCtx.props.ScorePrecision != nil {
-		precision = *aCtx.props.ScorePrecision
-	}
-
-	var mustAutofillTests bool = false
-	for i := range tests {
-		val, ok := aCtx.testScores[tests[i].VisibleID]
-		if !ok {
-			// Mark as needing score
-			mustAutofillTests = true
-			tests[i].Score = decimal.NewFromInt(-1)
-		} else {
-			tests[i].Score = val.Round(int32(precision))
-		}
-	}
-
-	if mustAutofillTests {
-		// Try to deduce scoring for remaining tests
-		// zap.S().Info("Automatically inserting scores...")
-		var n decimal.Decimal
-		totalScore := decimal.NewFromInt(100)
-		for _, test := range tests {
-			if test.Score.IsPositive() {
-				totalScore = totalScore.Sub(test.Score)
+			val, ok := aCtx.testScores[tests[i].VisibleID]
+			if !ok {
+				// Mark as needing score
+				mustAutofillTests = true
+				tests[i].Score = decimal.NewFromInt(-1)
 			} else {
-				n = n.Add(decimal.NewFromInt(1))
+				tests[i].Score = val.Round(int32(precision))
 			}
 		}
 
-		perTest := totalScore.Div(n).RoundDown(int32(precision))
-		toAdd := decimal.Zero
-		dif := totalScore.Sub(perTest.Mul(n))
-		if !dif.IsZero() {
-			// If not zero, we need to compensate on some tests
-			// But keep the delta <= 1.0 points
-			// totalScore > perTest*n, since we rounded down
-
-			// divide the difference by its ceiling to get the delta to insert to scores
-			// we'll handle with rounding approximations later.
-			toAdd = dif.DivRound(dif.Ceil(), int32(precision))
-		}
-		k := 0
-
-		for i := range tests {
-			if tests[i].Score.Equal(decimal.NewFromInt(-1)) {
-				tests[i].Score = perTest
-				if !dif.IsZero() {
-					tests[i].Score = tests[i].Score.Add(toAdd)
-					dif = dif.Sub(toAdd)
-					if !dif.IsZero() && dif.Abs().LessThan(toAdd) {
-						// Pour the remaining difference here
-						// This should fix the roundings
-						tests[i].Score = tests[i].Score.Add(dif)
-						toAdd = decimal.Zero
-					}
+		if mustAutofillTests {
+			// Try to deduce scoring for remaining tests
+			// zap.S().Info("Automatically inserting scores...")
+			var n decimal.Decimal
+			totalScore := decimal.NewFromInt(100)
+			for _, test := range tests {
+				if test.Score.IsPositive() {
+					totalScore = totalScore.Sub(test.Score)
+				} else {
+					n = n.Add(decimal.NewFromInt(1))
 				}
-				k++
+			}
+
+			perTest := totalScore.Div(n).RoundDown(int32(precision))
+			toAdd := decimal.Zero
+			dif := totalScore.Sub(perTest.Mul(n))
+			if !dif.IsZero() {
+				// If not zero, we need to compensate on some tests
+				// But keep the delta <= 1.0 points
+				// totalScore > perTest*n, since we rounded down
+
+				// divide the difference by its ceiling to get the delta to insert to scores
+				// we'll handle with rounding approximations later.
+				toAdd = dif.DivRound(dif.Ceil(), int32(precision))
+			}
+			k := 0
+
+			for i := range tests {
+				if tests[i].Score.Equal(decimal.NewFromInt(-1)) {
+					tests[i].Score = perTest
+					if !dif.IsZero() {
+						tests[i].Score = tests[i].Score.Add(toAdd)
+						dif = dif.Sub(toAdd)
+						if !dif.IsZero() && dif.Abs().LessThan(toAdd) {
+							// Pour the remaining difference here
+							// This should fix the roundings
+							tests[i].Score = tests[i].Score.Add(dif)
+							toAdd = decimal.Zero
+						}
+					}
+					k++
+				}
 			}
 		}
-	}
 
-	// If we are loading an archive, the user might want to remove all tests first
-	// So let's do it for them
-	if err := base.DeleteTests(ctx, pb.ID); err != nil {
-		zap.S().Warn(err)
-		return err
-	}
-
-	createdTests := map[int]kilonova.Test{}
-
-	for _, v := range tests {
-		var test kilonova.Test
-		test.ProblemID = pb.ID
-		test.VisibleID = v.VisibleID
-		test.Score = v.Score
-		if err := base.CreateTest(ctx, &test); err != nil {
+		// If we are loading an archive, the user might want to remove all tests first
+		// So let's do it for them
+		if err := base.DeleteTests(ctx, pb.ID); err != nil {
 			zap.S().Warn(err)
 			return err
 		}
 
-		createdTests[v.VisibleID] = test
+		createdTests := map[int]kilonova.Test{}
 
-		f, err := v.InFile.Open()
-		if err != nil {
-			return kilonova.WrapError(err, "Couldn't open() input file")
-		}
-		if err := base.SaveTestInput(test.ID, f); err != nil {
-			zap.S().Warn("Couldn't create test input", err)
-			f.Close()
-			return kilonova.WrapError(err, "Couldn't create test input")
-		}
-		f.Close()
-		f, err = v.OutFile.Open()
-		if err != nil {
-			return kilonova.WrapError(err, "Couldn't open() output file")
-		}
-		if err := base.SaveTestOutput(test.ID, f); err != nil {
-			zap.S().Warn("Couldn't create test output", err)
-			f.Close()
-			return kilonova.WrapError(err, "Couldn't create test output")
-		}
-		f.Close()
-	}
+		for _, v := range tests {
+			var test kilonova.Test
+			test.ProblemID = pb.ID
+			test.VisibleID = v.VisibleID
+			test.Score = v.Score
+			if err := base.CreateTest(ctx, &test); err != nil {
+				zap.S().Warn(err)
+				return err
+			}
 
-	if len(aCtx.scoreParameters) > 0 {
-		// Decide subtasks based on score parameters, if they exist
+			createdTests[v.VisibleID] = test
+
+			f, err := v.InFile.Open()
+			if err != nil {
+				return kilonova.WrapError(err, "Couldn't open() input file")
+			}
+			if err := base.SaveTestInput(test.ID, f); err != nil {
+				zap.S().Warn("Couldn't create test input", err)
+				f.Close()
+				return kilonova.WrapError(err, "Couldn't create test input")
+			}
+			f.Close()
+			f, err = v.OutFile.Open()
+			if err != nil {
+				return kilonova.WrapError(err, "Couldn't open() output file")
+			}
+			if err := base.SaveTestOutput(test.ID, f); err != nil {
+				zap.S().Warn("Couldn't create test output", err)
+				f.Close()
+				return kilonova.WrapError(err, "Couldn't create test output")
+			}
+			f.Close()
+		}
+
 		if err := base.DeleteSubTasks(ctx, pb.ID); err != nil {
 			zap.S().Warn(err)
 			return kilonova.WrapError(err, "Couldn't delete existing subtasks")
 		}
-
-		startIdx := 0
-		for i, entry := range aCtx.scoreParameters {
-			testIDs := []int{}
-			if entry.Count != nil {
-				if startIdx < len(tests) {
-					for i := startIdx; i < startIdx+*entry.Count && i < len(tests); i++ {
-						test, ok := createdTests[tests[i].VisibleID]
-						if !ok {
-							zap.S().Warn("Created test not found anymore", tests[i].VisibleID)
-							continue
+		if len(aCtx.scoreParameters) > 0 {
+			// Decide subtasks based on score parameters, if they exist
+			startIdx := 0
+			for i, entry := range aCtx.scoreParameters {
+				testIDs := []int{}
+				if entry.Count != nil {
+					if startIdx < len(tests) {
+						for i := startIdx; i < startIdx+*entry.Count && i < len(tests); i++ {
+							test, ok := createdTests[tests[i].VisibleID]
+							if !ok {
+								zap.S().Warn("Created test not found anymore", tests[i].VisibleID)
+								continue
+							}
+							testIDs = append(testIDs, test.ID)
 						}
-						testIDs = append(testIDs, test.ID)
+						startIdx += *entry.Count
 					}
-					startIdx += *entry.Count
-				}
-			} else if entry.Match != nil {
-				for _, test := range tests {
-					if test.Matches(entry.Match) {
-						test, ok := createdTests[test.VisibleID]
-						if !ok {
-							zap.S().Warn("Created test not found anymore", test.VisibleID)
-							continue
+				} else if entry.Match != nil {
+					for _, test := range tests {
+						if test.Matches(entry.Match) {
+							test, ok := createdTests[test.VisibleID]
+							if !ok {
+								zap.S().Warn("Created test not found anymore", test.VisibleID)
+								continue
+							}
+							testIDs = append(testIDs, test.ID)
 						}
-						testIDs = append(testIDs, test.ID)
+					}
+				} else {
+					zap.S().Warn("Somehow score param doesn't have neither count nor match non-nil")
+				}
+				if len(testIDs) > 0 {
+					// Tests are found, create subtask
+					if err := base.CreateSubTask(ctx, &kilonova.SubTask{
+						ProblemID: pb.ID,
+						VisibleID: i + 1,
+						Score:     entry.Score,
+						Tests:     testIDs,
+					}); err != nil {
+						zap.S().Warn(err)
+						return kilonova.WrapError(err, "Couldn't create subtask")
 					}
 				}
-			} else {
-				zap.S().Warn("Somehow score param doesn't have neither count nor match non-nil")
 			}
-			if len(testIDs) > 0 {
-				// Tests are found, create subtask
+		} else if aCtx.props != nil && aCtx.props.Subtasks != nil {
+			// Else, decide subtasks based on grader.properties
+			for stkId, stk := range aCtx.props.Subtasks {
+				tests := make([]int, 0, len(stk.Tests))
+				for _, test := range stk.Tests {
+					if tt, exists := createdTests[test]; !exists {
+						return kilonova.Statusf(400, "Test %d not found in added tests. Aborting subtask creation", test)
+					} else {
+						tests = append(tests, tt.ID)
+					}
+				}
+
 				if err := base.CreateSubTask(ctx, &kilonova.SubTask{
 					ProblemID: pb.ID,
-					VisibleID: i + 1,
-					Score:     entry.Score,
-					Tests:     testIDs,
+					VisibleID: stkId,
+					Score:     stk.Score,
+					Tests:     tests,
 				}); err != nil {
 					zap.S().Warn(err)
 					return kilonova.WrapError(err, "Couldn't create subtask")
 				}
 			}
 		}
-
 	}
 
 	if len(aCtx.attachments) > 0 {
@@ -458,33 +481,6 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 			}
 		}
 
-		if aCtx.props.Subtasks != nil {
-			if err := base.DeleteSubTasks(ctx, pb.ID); err != nil {
-				zap.S().Warn(err)
-				return kilonova.WrapError(err, "Couldn't delete existing subtasks")
-			}
-			for stkId, stk := range aCtx.props.Subtasks {
-				tests := make([]int, 0, len(stk.Tests))
-				for _, test := range stk.Tests {
-					if tt, exists := createdTests[test]; !exists {
-						return kilonova.Statusf(400, "Test %d not found in added tests. Aborting subtask creation", test)
-					} else {
-						tests = append(tests, tt.ID)
-					}
-				}
-
-				if err := base.CreateSubTask(ctx, &kilonova.SubTask{
-					ProblemID: pb.ID,
-					VisibleID: stkId,
-					Score:     stk.Score,
-					Tests:     tests,
-				}); err != nil {
-					zap.S().Warn(err)
-					return kilonova.WrapError(err, "Couldn't create subtask")
-				}
-			}
-		}
-
 		if len(aCtx.props.Tags) > 0 {
 			realTagIDs := []int{}
 			for _, mTag := range aCtx.props.Tags {
@@ -506,8 +502,13 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 			}
 		}
 
-		if len(aCtx.props.Editors) > 0 && params.Requestor.Admin {
+		if len(aCtx.props.Editors) > 0 {
 			var newEditors []*kilonova.UserBrief
+			// If user is not admin, add user to new editor list
+			// Since they should always be a part of the problem editor team
+			if !params.Requestor.Admin {
+				newEditors = append(newEditors, params.Requestor)
+			}
 			// First, get the new editors to make sure they are valid
 			for _, editor := range aCtx.props.Editors {
 				user, err := base.UserBriefByName(ctx, editor)

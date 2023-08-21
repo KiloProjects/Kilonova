@@ -142,6 +142,7 @@ func (s *API) bulkUpdateSubTaskScores(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for k, v := range data {
+		v := v
 		if stk, err := s.base.SubTask(r.Context(), util.Problem(r).ID, k); err == nil {
 			if err := s.base.UpdateSubTask(r.Context(), stk.ID, kilonova.SubTaskUpdate{Score: &v}); err == nil {
 				updatedSubTasks++

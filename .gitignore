@@ -1,18 +1,12 @@
 node_modules
 .vscode
-# .editorconfig
 /config.*
 /flags.json
 !/config.example.toml
-# simulation program
-sim.py
 
 knnnn
 
 _translations.json
-
-# pkger
-pkged.go
 
 /run.sh
 /prod.sh

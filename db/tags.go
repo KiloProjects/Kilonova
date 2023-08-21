@@ -8,6 +8,8 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// TODO: Tag filtering in a single function
+
 func (s *DB) Tags(ctx context.Context) ([]*kilonova.Tag, error) {
 	var tags []*kilonova.Tag
 	err := Select(s.conn, ctx, &tags, "SELECT * FROM tags ORDER BY name ASC")

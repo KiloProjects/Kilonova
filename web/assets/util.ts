@@ -43,7 +43,7 @@ export function sizeFormatter(size: number, max_step?: number, floor?: boolean) 
 }
 
 export function downloadBlob(blob: Blob, filename: string) {
-	var a = document.createElement("a");
+	let a = document.createElement("a");
 	a.href = URL.createObjectURL(blob);
 	a.download = filename;
 	a.click();

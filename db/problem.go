@@ -18,8 +18,9 @@ type dbProblem struct {
 	PublishedAt *time.Time `db:"published_at"`
 	Name        string     `db:"name"`
 
-	TestName string `db:"test_name"`
-	Visible  bool   `db:"visible"`
+	TestName     string `db:"test_name"`
+	Visible      bool   `db:"visible"`
+	VisibleTests bool   `db:"visible_tests"`
 
 	DefaultPoints decimal.Decimal `db:"default_points"`
 
@@ -297,6 +298,9 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate, ub *updateBuilder) {
 			ub.AddUpdate("published_at = COALESCE(published_at, NOW())")
 		}
 	}
+	if v := upd.VisibleTests; v != nil {
+		ub.AddUpdate("visible_tests = %s", v)
+	}
 	if v := upd.ScoringStrategy; v != kilonova.ScoringTypeNone {
 		ub.AddUpdate("scoring_strategy = %s", v)
 	}
@@ -338,7 +342,8 @@ func (s *DB) internalToProblem(pb *dbProblem) *kilonova.Problem {
 		Name:      pb.Name,
 		TestName:  pb.TestName,
 
-		Visible: pb.Visible,
+		Visible:      pb.Visible,
+		VisibleTests: pb.VisibleTests,
 
 		DefaultPoints: pb.DefaultPoints,
 

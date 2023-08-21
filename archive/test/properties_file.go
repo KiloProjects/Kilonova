@@ -50,7 +50,7 @@ func ParsePropertiesFile(r io.Reader) (*PropertiesRaw, bool, error) {
 	vals := map[string][]string{}
 	buf := bufio.NewScanner(r)
 	for buf.Scan() {
-		line := buf.Text()
+		line := strings.TrimSpace(buf.Text())
 		if len(line) == 0 || line[0] == '#' {
 			continue
 		}
@@ -148,6 +148,8 @@ func parseEditors(editors *string) []string {
 	return strings.Split(*editors, ",")
 }
 
+// TODO: Allow having multiple .properties files
+// And split grader.properties from generator.go into multiple files
 func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	f, err := file.Open()
 	if err != nil {

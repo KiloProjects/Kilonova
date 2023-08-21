@@ -224,6 +224,7 @@ func (s *API) bulkUpdateTestScores(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for k, v := range data {
+		v := v
 		if t, err := s.base.Test(r.Context(), util.Problem(r).ID, k); err == nil {
 			if err := s.base.UpdateTest(r.Context(), t.ID, kilonova.TestUpdate{Score: &v}); err == nil {
 				updatedTests++

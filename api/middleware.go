@@ -123,6 +123,26 @@ func (s *API) validateProblemVisible(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+func (s *API) validateVisibleTests(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !s.base.CanViewTests(util.UserBrief(r), util.Problem(r)) {
+			errorData(w, "You are not allowed to access this problem's tests", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+func (s *API) validateProblemFullyVisible(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !s.base.IsProblemFullyVisible(util.UserBrief(r), util.Problem(r)) {
+			errorData(w, "You are not allowed to access this problem data", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
 func (s *API) validateBlogPostVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !s.base.IsBlogPostVisible(util.UserBrief(r), util.BlogPost(r)) {

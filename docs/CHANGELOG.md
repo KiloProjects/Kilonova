@@ -1,3 +1,8 @@
+- v0.20.1:
+    - Visible problem tests toggle;
+    - Advanced problem archive generator;
+    - Allow updating single tests from files;
+    - Fix subtask editor bug.
 - v0.20.0:
     - !!! Decimal scores in submissions;
     - !! Allow changing usernames and permit admins to lockout people;

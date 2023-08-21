@@ -130,10 +130,6 @@ ro = "Filtrare"
 en = "There aren't any tests, it would be nice to create one :)"
 ro = "Nu există niciun test, ar fi bine să creezi unul :)"
 
-[create_list]
-en = "Create List"
-ro = "Creare Listă"
-
 [lists]
 en = "Lists"
 ro = "Liste"
@@ -145,10 +141,6 @@ ro = "Lista #%d"
 [list.update]
 en = "Update List"
 ro = "Actualizare Listă"
-
-[test.update]
-en = "Update tests"
-ro = "Actualizare teste"
 
 [profile]
 en = "Profile:"
@@ -181,6 +173,10 @@ ro = "Încărcare cod | Problema #%d: %s"
 [title.past_submissions]
 en = "Past submissions | Problem #%d: %s"
 ro = "Submisii anterioare | Problema #%d: %s"
+
+[title.problem_archive]
+en = "Download problem archive | Problem #%d: %s"
+ro = "Descărcare arhivă problemă | Problema #%d: %s"
 
 [title.edit.index]
 en = "Edit Problem | Problem #%d: %s"
@@ -221,6 +217,10 @@ ro = "Actualizare Subtasks | Problema #%d: %s"
 [title.edit.tests]
 en = "Update Tests | Problem #%d: %s"
 ro = "Actualizare Teste | Problema #%d: %s"
+
+[header.problem_archive]
+en = "Download data archive for"
+ro = "Descărcare arhivă date pentru "
 
 [header.past_submissions]
 en = "Past submissions"
@@ -490,6 +490,34 @@ ro = "General"
 en = "Attachments"
 ro = "Atașamente"
 
+[privateAttachments]
+en = "Private attachments"
+ro = "Atașamente private"
+
+[gen_title]
+en = "Select what to include in problem archive"
+ro = "Selectează ce să fie inclus în arhiva problemei"
+
+[gen_details]
+en = "Details (limits, credits, problem name, etc.)"
+ro = "Detalii (limite, credite, nume problemă, etc.)"
+
+[gen_tags]
+en = "Include tags"
+ro = "Include etichete"
+
+[gen_editors]
+en = "Include editor names"
+ro = "Include numele editorilor"
+
+[gen_submissions]
+en = "Include editor submissions"
+ro = "Include submissiile editorilor"
+
+[gen_all_submissions]
+en = "Include ALL submissions"
+ro = "Include TOATE submisiile"
+
 [tests]
 en = "Tests"
 ro = "Teste"
@@ -538,10 +566,6 @@ ro = "Autor submisie"
 en = "Source"
 ro = "Sursă"
 
-[pbType]
-en = "Problem Type"
-ro = "Tip Problemă"
-
 [scoring_strategy]
 en = "Scoring strategy"
 ro = "Strategie punctare"
@@ -554,17 +578,9 @@ ro = "Submisia de scor maxim (implicit)"
 en = "Sum of maximum subtasks"
 ro = "Suma maximelor subtaskurilor"
 
-[classic]
-en = "Classic"
-ro = "Clasic"
-
 [checker]
 en = "Checker"
 ro = "Verificator"
-
-[visiblePb]
-en = "Visible problem"
-ro = "Problemă vizibilă"
 
 [consoleInput]
 en = "Console input"
@@ -602,6 +618,10 @@ ro = "Puncte din oficiu"
 [scorePrecision]
 en = "Score precision (decimals after dot)"
 ro = "Precizie scor (zecimale după virgulă)"
+
+[visibleTests]
+en = "Visible tests (anyone can download problem archive)"
+ro = "Teste vizibile (oricine poate descărca arhiva problemei)"
 
 [id]
 en = "ID"
@@ -644,12 +664,12 @@ en = "by default"
 ro = "din oficiu"
 
 [testArchive]
-en = "Upload .zip archive with tests"
-ro = "Încărcare arhivă .zip cu teste"
+en = "Upload .zip test/problem data archive"
+ro = "Încărcare arhivă .zip cu teste/datele problemei"
 
 [polygonArchiveWarn]
-en = "Note for Polygon archives: only the checker, solutions and the <code>tests</code> testset data is taken into consideration. IMPORTANT! ONLY Full, Linux packages are supported."
-ro = "Important pentru arhivele Polygon: doar checker-ul, sursele oficiale și testset-ul <code>tests</code> este luat în considerare. IMPORTANT! DOAR package-urile de tipul Full, Linux sunt suportate."
+en = "Note for Polygon archives: only the checker, solutions and the <code>tests</code> testset data is taken into consideration. IMPORTANT! ONLY Full, Linux packages are oficially supported."
+ro = "Important pentru arhivele Polygon: doar checker-ul, sursele oficiale și testset-ul <code>tests</code> este luat în considerare. IMPORTANT! DOAR package-urile de tipul Full, Linux sunt suportate oficial."
 
 [archive]
 en = "Archive"
@@ -758,6 +778,10 @@ ro = "Detalii problemă"
 [uploader]
 en = "Uploader"
 ro = "Uploader"
+
+[downloadArchive]
+en = "Download tests"
+ro = "Descărcare teste"
 
 [input]
 en = "Input"
@@ -887,14 +911,6 @@ ro = "Eroare de compilare"
 [sorting]
 en = "Sorting criteria"
 ro = "Criteriu de sortare"
-
-[maxTime]
-en = "Max Time"
-ro = "Timp Maxim"
-
-[maxMemory]
-en = "Max Memory"
-ro = "Memorie Maximă"
 
 [maxSubs]
 en = "Maximum submission count (per problem)"
@@ -1108,25 +1124,9 @@ ro = "Propunător"
 en = "Proposers"
 ro = "Propunători"
 
-[mainPageAdmin]
-en = "Manage main page"
-ro = "Administrare pagina principală"
-
-[mainPagePbList]
-en = "Problem list (IDs, comma-separated)"
-ro = "Listă de probleme (IDuri, separate prin o virgulă)"
-
-[mainPageAllPbs]
-en = "Show all problems"
-ro = "Afișare toate problemele"
-
 [description]
 en = "Description"
 ro = "Descriere"
-
-[authorID]
-en = "Author ID"
-ro = "ID Autor"
 
 [copied]
 en = "Copied to clipboard"
@@ -1211,10 +1211,6 @@ ro = "Testul"
 [subTask]
 en = "SubTask"
 ro = "SubTask-ul"
-
-[seeTests]
-en = "See individual tests"
-ro = "Vizualizare teste individuale"
 
 [verdict]
 en = "Verdict"
@@ -1365,10 +1361,6 @@ ro = "Resetare parolă pentru utilizatorul %s"
 [access_control_short]
 en = "Access"
 ro = "Acces"
-
-[access_control_title]
-en = "Access control"
-ro = "Control acces"
 
 [editors]
 en = "Editors"
@@ -1619,10 +1611,6 @@ ro = "Concursul nu are, în prezent, probleme aferente."
 en = "Register"
 ro = "Înregistrare"
 
-[login_register]
-en = "Log in to register"
-ro = "Autentifică-te pentru înregistrare"
-
 [registered]
 en = "Registered"
 ro = "Înregistrat"
@@ -1683,14 +1671,6 @@ ro = "Răspunde"
 en = "Cancel"
 ro = "Anulare"
 
-[edit_announcement]
-en = "Edit announcement"
-ro = "Editare anunț"
-
-[delete_announcement]
-en = "Remove announcement"
-ro = "Ștergere anunț"
-
 [questions]
 en = "Questions"
 ro = "Întrebări"
@@ -1723,10 +1703,6 @@ ro = "Răspunde la întrebare"
 en = "Edit answer"
 ro = "Editare răspuns"
 
-[all_questions]
-en = "All questions"
-ro = "Toate întrebările"
-
 [header.contest.edit_problems]
 en = "Edit Contest Problems"
 ro = "Editare Probleme Concurs"
@@ -1746,10 +1722,6 @@ ro = "%d zile"
 [remaining_time]
 en = "Remaining time"
 ro = "Timp rămas"
-
-[starts_in]
-en = "Starts in"
-ro = "Începe în"
 
 [new]
 en = "New!"
@@ -1916,14 +1888,6 @@ ro = "[Listă părinte]"
 en = "Hide in sidebar"
 ro = "Ascuns din sidebar"
 
-[downloadTestArchive]
-en = "Download test archive"
-ro = "Descărcare arhivă cu teste"
-
-[downloadProblemArchive]
-en = "Download problem archive (including attachments and other details)"
-ro = "Descărcare arhivă cu problema (inclusiv atașamente și alte detalii)"
-
 [edit]
 en = "Edit"
 ro = "Editare"
@@ -2059,10 +2023,6 @@ ro = "Problemele mele"
 [search_tag]
 en = "Search tag"
 ro = "Căutare etichetă"
-
-[manage_tags]
-en = "Manage tags"
-ro = "Administrare etichete"
 
 [add_tags]
 en = "Add tags"

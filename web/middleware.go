@@ -120,6 +120,17 @@ func (rt *Web) ValidateProblemVisible(next http.Handler) http.Handler {
 	})
 }
 
+// ValidateProblemFullyVisible checks if the problem from context is FULLY visible from the logged in user
+func (rt *Web) ValidateProblemFullyVisible(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !rt.base.IsProblemFullyVisible(util.UserBrief(r), util.Problem(r)) {
+			rt.statusPage(w, r, 403, "Nu ai voie să accesezi această pagină!")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // ValidateBlogPostVisible checks if the post from context is visible from the logged in user
 func (rt *Web) ValidateBlogPostVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

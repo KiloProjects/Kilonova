@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"net/http"
 	"path"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/archive/test"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/go-chi/chi/v5"
@@ -46,8 +48,10 @@ func (s *Assets) AssetsRouter() http.Handler {
 		r.Use(api.validateProblemID)
 		r.Use(api.validateProblemVisible)
 
-		r.With(api.MustBeProposer, api.validateTestID).Get("/test/{tID}/input", s.ServeTestInput)
-		r.With(api.MustBeProposer, api.validateTestID).Get("/test/{tID}/output", s.ServeTestOutput)
+		r.With(api.validateVisibleTests, api.validateTestID).Get("/test/{tID}/input", s.ServeTestInput)
+		r.With(api.validateVisibleTests, api.validateTestID).Get("/test/{tID}/output", s.ServeTestOutput)
+
+		r.With(api.validateProblemFullyVisible).Get("/problemArchive", s.ServeProblemArchive)
 
 		r.With(api.validateAttachmentName).Get("/attachment/{aName}", s.ServeAttachment)
 		r.With(api.validateAttachmentID).Get("/attachmentByID/{aID}", s.ServeAttachment)
@@ -110,7 +114,7 @@ func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request)
 	for _, pb := range ld.ProblemOrder {
 		name, ok := ld.ProblemNames[pb]
 		if !ok {
-			zap.S().Warn("Invalid rt.base.ContestLeaderboard output")
+			zap.S().Warn("Invalid s.base.ContestLeaderboard output")
 			http.Error(w, "Invalid internal data", 500)
 			continue
 		}
@@ -211,4 +215,29 @@ func (s *Assets) ServeTestOutput(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=%q", tname))
 	http.ServeContent(w, r, tname, time.Unix(0, 0), rr)
+}
+
+func (s *Assets) ServeProblemArchive(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args test.ArchiveGenOptions
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		http.Error(w, "Can't decode parameters", 400)
+		return
+	}
+
+	args.Tests = args.Tests && s.base.CanViewTests(util.UserBrief(r), util.Problem(r))
+	args.PrivateAttachments = args.PrivateAttachments && s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r))
+	args.AllSubmissions = args.AllSubmissions && s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r))
+	args.SubsLook = true
+	args.SubsLookingUser = util.UserBrief(r)
+
+	w.Header().Add("Content-Type", "application/zip")
+	w.Header().Add("Content-Disposition", fmt.Sprintf(`attachment; filename="%d-%s.zip"`, util.Problem(r).ID, kilonova.MakeSlug(util.Problem(r).Name)))
+	w.WriteHeader(200)
+	if err := test.GenerateArchive(r.Context(), util.Problem(r), w, s.base, &args); err != nil {
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
+		fmt.Fprint(w, err)
+	}
 }

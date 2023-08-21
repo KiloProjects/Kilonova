@@ -1,16 +1,12 @@
 package kilonova
 
 import (
-	"embed"
 	"time"
 
 	"github.com/shopspring/decimal"
 )
 
-const Version = "v0.20.0"
-
-//go:embed docs
-var Docs embed.FS
+const Version = "v0.20.1"
 
 type AuditLog struct {
 	ID        int        `json:"id"`

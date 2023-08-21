@@ -555,6 +555,19 @@ func (rt *Web) problemSubmit() http.HandlerFunc {
 	}
 }
 
+func (rt *Web) problemArchive() http.HandlerFunc {
+	templ := rt.parse(nil, "problem/pb_archive.html", "problem/topbar.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		rt.runTempl(w, r, templ, &ProblemTopbarParams{
+			Ctx:    GenContext(r),
+			Topbar: rt.problemTopbar(r, "pb_archive", -1),
+
+			Problem: util.Problem(r),
+		})
+	}
+}
+
 var maxPostsPerPage = 10
 
 func (rt *Web) blogPosts() http.HandlerFunc {

@@ -68,6 +68,8 @@ type SubmissionFilter struct {
 	Look        bool       `json:"-"`
 	LookingUser *UserBrief `json:"-"`
 
+	FromAuthors bool `json:"from_authors"`
+
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
 

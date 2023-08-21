@@ -2,18 +2,14 @@ package web
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/archive/test"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/schema"
-	"github.com/gosimple/slug"
 	"go.uber.org/zap"
 )
 
@@ -150,42 +146,6 @@ func (rt *Web) testIndex() func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (rt *Web) testArchive() func(w http.ResponseWriter, r *http.Request) {
-	decoder := schema.NewDecoder()
-	decoder.SetAliasTag("Json")
-	return func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
-		var args struct {
-			Brief       bool `json:"brief"`
-			Submissions bool `json:"submissions"`
-			Editors     bool `json:"editors"`
-			Name        bool `json:"name"`
-		}
-		if err := decoder.Decode(&args, r.Form); err != nil {
-			http.Error(w, "Can't decode parameters", 400)
-			return
-		}
-
-		args.Submissions = args.Submissions && rt.base.IsAdmin(util.UserBrief(r))
-		args.Editors = args.Editors && rt.base.IsAdmin(util.UserBrief(r))
-
-		w.Header().Add("Content-Type", "application/zip")
-		w.Header().Add("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.zip"`, slug.Make(util.Problem(r).Name)))
-		w.WriteHeader(200)
-		if err := test.GenerateArchive(r.Context(), util.Problem(r), w, rt.base, &test.ArchiveGenOptions{
-			Brief:       args.Brief,
-			Submissions: args.Submissions,
-			Editors:     args.Editors,
-			Name:        args.Name,
-		}); err != nil {
-			if !errors.Is(err, context.Canceled) {
-				zap.S().Warn(err)
-			}
-			fmt.Fprint(w, err)
-		}
-	}
-}
-
 func (rt *Web) testAdd() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/testAdd.html", "problem/topbar.html", "problem/edit/testSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -240,7 +200,6 @@ func (rt *Web) ProblemEditRouter(r chi.Router) {
 	r.Get("/access", rt.editAccessControl())
 
 	r.Get("/test", rt.testIndex())
-	r.Get("/test/archive", rt.testArchive())
 	r.Get("/test/add", rt.testAdd())
 	r.With(rt.TestIDValidator()).Get("/test/{tid}", rt.testEdit())
 

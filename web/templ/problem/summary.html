@@ -107,7 +107,11 @@
                 {{- end -}}
                 {{ if authed }}
                 <p>{{getText "score"}}: {{if eq .Problem.ScoringStrategy `sum_subtasks`}}<a class="max_score_breakdown" href="#" data-problemid="{{.Problem.ID}}">{{end}}<span id="max_score_counter">{{subScore .Problem .Ctx.User.Brief}}</span> {{if eq .Problem.ScoringStrategy `sum_subtasks`}}</a>{{end}}</p>
-                {{ end }}
+                {{ end }}            
+                {{if .Topbar.CanViewTests}}
+                <p><a href="{{.Topbar.URLPrefix}}/problems/{{.Topbar.Problem.ID}}/archive">{{getText "downloadArchive"}}</a></p>
+                {{end}}
+    
             </div>
         </div>
         {{ range pbParentPblists .Problem }}

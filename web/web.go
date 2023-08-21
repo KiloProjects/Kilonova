@@ -90,6 +90,7 @@ func (rt *Web) problemRouter(r chi.Router) {
 	r.Get("/", rt.problem())
 	r.Get("/submissions", rt.problemSubmissions())
 	r.With(rt.mustBeAuthed).Get("/submit", rt.problemSubmit())
+	r.With(rt.ValidateProblemFullyVisible).Get("/archive", rt.problemArchive())
 	r.With(rt.mustBeProblemEditor).Route("/edit", rt.ProblemEditRouter)
 }
 

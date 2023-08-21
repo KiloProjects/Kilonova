@@ -95,7 +95,10 @@ func (s *BaseAPI) IsProblemVisible(user *kilonova.UserBrief, problem *kilonova.P
 	return ok
 }
 
-// Full visibility is currently used for problem statistics and submission code visibility
+// Full visibility is currently used for:
+//   - problem statistics;
+//   - submission code visibility;
+//   - problem archive availability (however, some stuff like private attachments or tests depend on further privileges).
 func (s *BaseAPI) IsProblemFullyVisible(user *kilonova.UserBrief, problem *kilonova.Problem) bool {
 	if problem == nil {
 		return false
@@ -114,6 +117,18 @@ func (s *BaseAPI) IsProblemFullyVisible(user *kilonova.UserBrief, problem *kilon
 		return false
 	}
 	return ok
+}
+
+func (s *BaseAPI) CanViewTests(user *kilonova.UserBrief, problem *kilonova.Problem) bool {
+	if !s.IsAuthed(user) {
+		return false
+	}
+
+	if problem.VisibleTests {
+		return true
+	}
+
+	return s.IsProblemEditor(user, problem)
 }
 
 func (s *BaseAPI) IsContestEditor(user *kilonova.UserBrief, contest *kilonova.Contest) bool {

@@ -40,6 +40,9 @@
     {{ $editProblemPage = false }}
 	<b>{{if $topbar.Contest}}{{$topbar.Contest.Name}} | {{end}}{{.Problem.Name}}</b>
 
+    {{ else if (eq $topbar.Page `pb_archive`) }}
+	<b>{{getText "header.problem_archive"}} {{.Problem.Name}}</b>
+
     {{ else }}
 
     {{/* Edit page */}}
@@ -139,6 +142,11 @@
                     {{getText "tests"}}
                 </a>
                 <div class="topbar-separator"></div>
+                <a class="p-1 {{if (eq $topbar.Page `pb_archive`)}} topbar-selected {{end}}"
+                    href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/archive">
+                    {{getText "archive"}}
+                </a>
+                <div class="topbar-separator"></div>
                 <a class="p-1 {{if and (eq $topbar.Page `subtasks`) (eq $topbar.PageID -2)}} topbar-selected {{end}}"
                     href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/edit/subtasks">
                     {{getText "subTasks"}}
@@ -165,6 +173,17 @@
                 })
             }
         </script>
+    {{ else }}
+    
+    {{ if eq $topbar.Page `pb_archive` }}
+    <!--If page is visible, show it separately-->
+    <div class="topbar-separator"></div>
+    <a class="p-1 topbar-selected"
+    href="{{$topbar.URLPrefix}}/problems/{{$topbar.Problem.ID}}/archive">
+        {{getText "archive"}}
+    </a>
+    {{end}}
+
     {{ end }}
 {{ end }}
 </div>

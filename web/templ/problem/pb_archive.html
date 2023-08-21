@@ -1,0 +1,109 @@
+{{define "title"}} {{getText "title.problem_archive" .Problem.ID .Problem.Name}} {{end}}
+{{ define "head" }}
+<meta name="robots" content="none">
+{{ end }}
+{{define "content"}}
+
+{{ template "topbar.html" . }}
+
+<form id="problemArchiveForm" class="segment-panel">
+    <h2>{{getText "gen_title"}}</h2>
+    {{if .Topbar.CanViewTests}}
+    <div class="block mb-2">
+        <label class="inline-flex items-center text-lg">
+            <input class="form-checkbox" id="aTests" type="checkbox" checked>
+            <span class="ml-2">{{getText "tests"}}</span>
+        </label>
+    </div>
+    {{else}}
+    <input class="hidden" id="aTests" type="checkbox"/>
+    {{end}}
+    
+    <div class="block mb-2">
+        <label class="inline-flex items-center text-lg">
+            <input class="form-checkbox" id="aAtts" type="checkbox" checked>
+            <span class="ml-2">{{getText "attachments"}}</span>
+        </label>
+    </div>
+    {{if .Topbar.IsProblemEditor}}
+    <div class="block mb-2">
+        <label class="inline-flex items-center text-lg">
+            <input class="form-checkbox" id="aPrivateAtts" type="checkbox" checked>
+            <span class="ml-2">{{getText "privateAttachments"}}</span>
+        </label>
+    </div>
+    {{else}}
+    <input class="hidden" id="aPrivateAtts" type="checkbox"/>
+    {{end}}
+
+    <div class="block mb-2">
+        <label class="inline-flex items-center text-lg">
+            <input class="form-checkbox" id="aDetails" type="checkbox" checked>
+            <span class="ml-2">{{getText "gen_details"}}</span>
+        </label>
+    </div>
+
+    <div class="block mb-2">
+        <label class="inline-flex items-center text-lg">
+            <input class="form-checkbox" id="aTags" type="checkbox" checked>
+            <span class="ml-2">{{getText "gen_tags"}}</span>
+        </label>
+    </div>
+    
+    <div class="block mb-2">
+        <label class="inline-flex items-center text-lg">
+            <input class="form-checkbox" id="aEditors" type="checkbox" checked>
+            <span class="ml-2">{{getText "gen_editors"}}</span>
+        </label>
+    </div>
+
+    <div class="block mb-2">
+        <label class="inline-flex items-center text-lg">
+            <input class="form-checkbox" id="aSubs" type="checkbox" checked>
+            <span class="ml-2">{{getText "gen_submissions"}}</span>
+        </label>
+    </div>
+
+    {{if .Topbar.IsProblemEditor}}
+    <div class="block mb-2">
+        <label class="inline-flex items-center text-lg">
+            <input class="form-checkbox" id="aAllSubs" type="checkbox">
+            <span class="ml-2">{{getText "gen_all_submissions"}}</span>
+        </label>
+    </div>
+    {{else}}
+    <input class="hidden" id="aAllSubs" type="checkbox"/>
+    {{end}}
+
+    <button class="btn btn-blue" type="submit">{{getText "download"}}</button>
+
+</form>
+
+<script>
+    var problemID = {{.Problem.ID}}
+    function startArchiveDownload(e) {
+        e.preventDefault()
+        let url = new URL(`/assets/problem/${problemID}/problemArchive`, window.location)
+        url.search = new URLSearchParams({
+            tests: document.getElementById("aTests").checked,
+
+            attachments: document.getElementById("aAtts").checked,
+            private_attachments: document.getElementById("aPrivateAtts").checked,
+
+            details: document.getElementById("aDetails").checked,
+            tags: document.getElementById("aTags").checked,
+            editors: document.getElementById("aEditors").checked,
+
+            submissions: document.getElementById("aSubs").checked,
+            all_submissions: document.getElementById("aAllSubs").checked,
+        }).toString()
+        console.log(url, url.toString())
+        let a = document.createElement("a")
+        a.href = url.toString()
+        a.download = true
+        a.click()
+    }
+    document.getElementById("problemArchiveForm").addEventListener("submit", startArchiveDownload)
+</script>
+
+{{end}}

@@ -46,8 +46,6 @@
                 <button class="btn btn-red mr-2" onclick="deleteTests()">{{getText "deleteTests"}}</button>
                 <button class="btn btn-blue" onclick="updateTests()">{{getText "updateTestScores"}}</button>
             </div>
-            <a class="inline-block btn btn-blue mr-2" href="/problems/{{$pb.ID}}/edit/test/archive?brief=true">{{getText "downloadTestArchive"}}</a>
-            <a class="inline-block btn btn-blue" href="/problems/{{$pb.ID}}/edit/test/archive">{{getText "downloadProblemArchive"}}</a>
         </div>
         {{ end }}
 

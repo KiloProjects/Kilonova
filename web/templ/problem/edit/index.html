@@ -55,6 +55,10 @@
                     <input id="scorePrecision" class="form-input" type="number" min="0" max="4" step="1" pattern="[\d]*"
                         value="{{.Problem.ScorePrecision}}" />
                 </label>
+                <label class="block my-2">
+                    <input id="visibleTests" class="form-checkbox" type="checkbox" {{if .Problem.VisibleTests}}checked{{end}}>
+                    <span class="form-label ml-2">{{getText "visibleTests"}}</span>
+                </label>
                 <button type="submit" class="btn btn-blue">{{getText "updateProblem"}}</button>
             </form>
             <div class="block my-2">
@@ -167,7 +171,8 @@
             memory_limit: Math.trunc(parseFloat(document.getElementById("memoryLimit").value) * 1024),
             time_limit: parseFloat(document.getElementById("timeLimit").value),
             default_points: parseFloat(document.getElementById("defaultPoints").value),
-            score_precision: parseInt(document.getElementById("scorePrecision").value)
+            score_precision: parseInt(document.getElementById("scorePrecision").value),
+            visible_tests: document.getElementById("visibleTests").checked,
         }
 
         if (data.name === "") {
