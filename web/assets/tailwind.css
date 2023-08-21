@@ -140,6 +140,7 @@
 
 	.statement-images img {
 		@apply py-1;
+		clear: both;
 	}
 
 	.statement-images img[data-imgalign="left"] {

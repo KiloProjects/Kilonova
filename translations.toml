@@ -512,7 +512,7 @@ ro = "Include numele editorilor"
 
 [gen_submissions]
 en = "Include editor submissions"
-ro = "Include submissiile editorilor"
+ro = "Include submisiile editorilor"
 
 [gen_all_submissions]
 en = "Include ALL submissions"
