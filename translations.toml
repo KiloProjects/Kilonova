@@ -651,6 +651,10 @@ ro = "Actualizare date problemă"
 en = "Delete problem"
 ro = "Șterge problema"
 
+[deleteContest]
+en = "Delete contest"
+ro = "Șterge concurs"
+
 [deleteTests]
 en = "Delete selected tests"
 ro = "Șterge testele selectate"
@@ -754,6 +758,10 @@ ro = "Titlu gol"
 [confirmProblemDelete]
 en = "Are you sure you want to delete the problem?"
 ro = "Ești sigur că vrei să ștergi problema?"
+
+[confirmContestDelete]
+en = "Are you sure you want to delete the contest?"
+ro = "Ești sigur că vrei să ștergi concursul?"
 
 [confirmTestDelete]
 en = "Are you sure you want to delete the test?"

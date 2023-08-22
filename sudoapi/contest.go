@@ -39,12 +39,15 @@ func (s *BaseAPI) UpdateContestProblems(ctx context.Context, id int, list []int)
 	return nil
 }
 
-func (s *BaseAPI) DeleteContest(ctx context.Context, id int) *StatusError {
-	if err := s.db.DeleteContest(ctx, id); err != nil {
+func (s *BaseAPI) DeleteContest(ctx context.Context, contest *kilonova.Contest) *StatusError {
+	if contest == nil {
+		return Statusf(400, "Invalid contest")
+	}
+	if err := s.db.DeleteContest(ctx, contest.ID); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't delete contest")
 	}
-	s.LogUserAction(ctx, "Removed contest %d", id)
+	s.LogUserAction(ctx, "Removed contest #%d: %q", contest.ID, contest.Name)
 	return nil
 }
 

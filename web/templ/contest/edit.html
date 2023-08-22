@@ -62,6 +62,11 @@
             </label>
 
             <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
+            {{if authedUser.Admin}}
+            <div class="block my-2">
+                <button type="button" id="deleteContestButton" class="btn btn-red mr-2">{{getText "deleteContest"}}</button>
+            </div>
+            {{end}}
         </form>
 
         <div class="segment-panel">
@@ -179,7 +184,21 @@ async function updateContestDesc(e) {
 document.getElementById("contest_update_form").addEventListener("submit", updateContest)
 document.getElementById("contest_description_form").addEventListener("submit", updateContestDesc)
 </script>
-
+<script>
+async function deleteContest(e) {
+    e.preventDefault();
+    if (!(await bundled.confirm(bundled.getText("confirmContestDelete")))) {
+        return
+    }
+    let res = await bundled.postCall(`/contest/${contest_id}/delete`, {})
+    if (res.status === "success") {
+        window.location.assign("/contests/");
+        return
+    }
+    bundled.apiToast(res)
+}
+document.getElementById("deleteContestButton").addEventListener("click", deleteContest);
+</script>
 <script>
 // Contest problems-specific stuff
 async function updateContestProblems(e) {

@@ -79,8 +79,12 @@ func Submission(r *http.Request) *kilonova.FullSubmission {
 	return SubmissionContext(r.Context())
 }
 
+func ContestContext(ctx context.Context) *kilonova.Contest {
+	return getValueContext[kilonova.Contest](ctx, ContestKey)
+}
+
 func Contest(r *http.Request) *kilonova.Contest {
-	return getValueContext[kilonova.Contest](r.Context(), ContestKey)
+	return ContestContext(r.Context())
 }
 
 func Paste(r *http.Request) *kilonova.SubmissionPaste {
