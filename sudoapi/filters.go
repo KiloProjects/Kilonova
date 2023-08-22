@@ -120,6 +120,9 @@ func (s *BaseAPI) IsProblemFullyVisible(user *kilonova.UserBrief, problem *kilon
 }
 
 func (s *BaseAPI) CanViewTests(user *kilonova.UserBrief, problem *kilonova.Problem) bool {
+	if problem == nil {
+		return false
+	}
 	if !s.IsAuthed(user) {
 		return false
 	}
