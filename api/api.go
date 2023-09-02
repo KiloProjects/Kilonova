@@ -118,9 +118,6 @@ func (s *API) Handler() http.Handler {
 					r.Post("/bulkDeleteSubTasks", s.bulkDeleteSubTasks)
 				})
 
-				r.Get("/checklist", webWrapper(func(ctx context.Context, args struct{}) (*kilonova.ProblemChecklist, *kilonova.StatusError) {
-					return s.base.ProblemChecklist(ctx, util.ProblemContext(ctx).ID)
-				}))
 				r.Post("/reevaluateSubs", webMessageWrapper("Reevaluating submissions", func(ctx context.Context, args struct{}) *kilonova.StatusError {
 					return s.base.ResetProblemSubmissions(context.WithoutCancel(ctx), util.ProblemContext(ctx))
 				}))
@@ -134,6 +131,10 @@ func (s *API) Handler() http.Handler {
 				}))
 				r.With(s.validateAttachmentID).Get("/attachment/{aID}", s.getFullAttachment)
 				r.With(s.validateAttachmentName).Get("/attachmentByName/{aName}", s.getFullAttachment)
+
+				r.Get("/checklist", webWrapper(func(ctx context.Context, args struct{}) (*kilonova.ProblemChecklist, *kilonova.StatusError) {
+					return s.base.ProblemChecklist(ctx, util.ProblemContext(ctx).ID)
+				}))
 
 				r.Get("/accessControl", s.getProblemAccessControl)
 
