@@ -118,4 +118,16 @@ document.addEventListener("DOMContentLoaded", () => {
 		val.innerHTML = parseTime(timestamp);
 		val.classList.remove("server_timestamp");
 	});
+	document.querySelectorAll(".score-cell").forEach((val) => {
+		const x = val as HTMLTableCellElement;
+		var score = parseFloat(x.dataset.score || "0");
+		if (isNaN(score)) {
+			score = -1;
+		}
+		if (score > -1) {
+			console.log(x.innerText, score);
+			x.style.backgroundColor = getGradient(score, 100);
+		}
+		val.classList.remove("score-cell");
+	});
 });

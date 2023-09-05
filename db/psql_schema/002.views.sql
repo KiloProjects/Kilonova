@@ -240,7 +240,15 @@ CREATE OR REPLACE VIEW problem_list_deep_problems (list_id, problem_id) AS
     WITH RECURSIVE pblist_tree(list_id, problem_id) AS (
         SELECT pblist_id AS list_id, problem_id FROM problem_list_problems
         UNION
-        SELECT pbs.parent_id AS list_id, pt.problem_id FROM problem_list_pblists pbs, pblist_tree PT WHERE pbs.child_id = pt.list_id
+        SELECT pbs.parent_id AS list_id, pt.problem_id FROM problem_list_pblists pbs, pblist_tree pt WHERE pbs.child_id = pt.list_id
+    ) SELECT * FROM pblist_tree;
+
+DROP VIEW IF EXISTS problem_list_deep_sublists;
+CREATE OR REPLACE VIEW problem_list_deep_sublists (parent_id, child_id) AS 
+    WITH RECURSIVE pblist_tree (parent_id, child_id) AS (
+        SELECT id AS parent_id, id AS child_id FROM problem_lists
+        UNION
+        SELECT pbs.parent_id AS parent_id, pt.child_id FROM problem_list_pblists pbs, pblist_tree pt WHERE pbs.child_id = pt.parent_id
     ) SELECT * FROM pblist_tree;
 
 DROP VIEW IF EXISTS problem_list_pb_count;

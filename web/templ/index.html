@@ -74,9 +74,12 @@
         {{ end }}
     </div>
     
-    <div class="mb-4">
+    <span class="mb-2">
+        {{ renderMarkdown (getText "all_checklists_announcement") }}
+    </span>
+    <span class="mb-4">
         {{ renderMarkdown (getText "all_problems_announcement") }}
-    </div>
+    </span>
 </div>
 
 

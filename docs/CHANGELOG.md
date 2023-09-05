@@ -1,3 +1,8 @@
+- v0.20.2:
+    - You can now view a "checklist" summary for the progress inside a problem list;
+    - Contests can now be deleted;
+    - Add problem checklist API endpoint (not to be confused with list checklists);
+    - Bug fixes.
 - v0.20.1:
     - Visible problem tests toggle;
     - Advanced problem archive generator;

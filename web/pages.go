@@ -148,6 +148,14 @@ type ProblemListParams struct {
 	Ctx         *ReqContext
 	ProblemList *kilonova.ProblemList
 	Lists       []*kilonova.ProblemList
+
+	RootProblemList int
+}
+
+type ProblemListProgressParams struct {
+	Ctx         *ReqContext
+	ProblemList *sudoapi.FullProblemList
+	CheckedUser *kilonova.UserBrief
 }
 
 type SubTaskEditParams struct {

@@ -14,6 +14,8 @@
 
 {{ end }}
 
+<a class="block mb-2" href="/problem_lists/{{.ProblemList.ID}}/progress">{{getText "list.view_checklist"}} <i class="fas fa-arrow-right"></i></a>
+
 {{ with .ProblemList }}
     <div class="list-group mb-4">
         {{ template "problemlist_show" (genPblistParams . true)}}
@@ -38,6 +40,12 @@
             <label class="inline-flex items-center text-lg">
                 <input class="form-checkbox" name="sidebar_hidable" id="sidebar_hidable" type="checkbox" {{if .SidebarHidable}}checked{{end}}>
                 <span class="ml-2">{{getText "sidebar_hidable"}}</span>
+            </label>
+        </div>
+        <div class="block my-2">
+            <label class="inline-flex items-center text-lg">
+                <input class="form-checkbox" name="featured_checklist" id="featured_checklist" type="checkbox" {{if .FeaturedChecklist}}checked{{end}}>
+                <span class="ml-2">{{getText "featured_checklist"}}</span>
             </label>
         </div>
         <label class="block my-2 mb-4">
@@ -103,6 +111,7 @@ async function updateProblemList(e) {
 		list: bundled.stringIntToNumber(document.getElementById("pblist-list").value.split(',')),
         sublists: bundled.stringIntToNumber(document.getElementById("pblist-sublists").value.split(',')),
         sidebar_hidable: document.getElementById("sidebar_hidable").checked,
+        featured_checklist: document.getElementById("featured_checklist").checked,
     };
 	let res = await bundled.bodyCall("/problemList/{{.ID}}/update", data)
 	if(res.status === "success") {

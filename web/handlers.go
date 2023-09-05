@@ -63,7 +63,7 @@ func (rt *Web) index() http.HandlerFunc {
 		}
 
 		if util.UserBrief(r) != nil {
-			pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r).ID)
+			pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r))
 			if err == nil {
 				r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, pblistCache))
 			} else if !errors.Is(err, context.Canceled) {
@@ -235,7 +235,7 @@ func (rt *Web) justRender(files ...string) http.HandlerFunc {
 func (rt *Web) pbListIndex() http.HandlerFunc {
 	templ := rt.parse(nil, "lists/index.html", "modals/pblist.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		pblists, err := rt.base.ProblemLists(context.Background(), true)
+		pblists, err := rt.base.ProblemLists(context.Background(), kilonova.ProblemListFilter{Root: true})
 		if err != nil {
 			rt.statusPage(w, r, 500, "Eroare la obținerea listelor")
 			return
@@ -250,7 +250,7 @@ func (rt *Web) pbListIndex() http.HandlerFunc {
 		}
 
 		if util.UserBrief(r) != nil {
-			pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r).ID)
+			pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r))
 			if err == nil {
 				r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, pblistCache))
 			} else {
@@ -258,7 +258,94 @@ func (rt *Web) pbListIndex() http.HandlerFunc {
 			}
 		}
 
-		rt.runTempl(w, r, templ, &ProblemListParams{GenContext(r), nil, pblists})
+		rt.runTempl(w, r, templ, &ProblemListParams{GenContext(r), nil, pblists, -1})
+	}
+}
+
+func (rt *Web) pbListProgressIndex() http.HandlerFunc {
+	templ := rt.parse(nil, "lists/pIndex.html")
+	t := true
+	return func(w http.ResponseWriter, r *http.Request) {
+		pblists, err := rt.base.ProblemLists(context.Background(), kilonova.ProblemListFilter{FeaturedChecklist: &t})
+		if err != nil {
+			rt.statusPage(w, r, 500, "Eroare la obținerea listelor")
+			return
+		}
+
+		listIDs := []int{}
+		for _, list := range pblists {
+			listIDs = append(listIDs, list.ID)
+			for _, slist := range list.SubLists {
+				listIDs = append(listIDs, slist.ID)
+			}
+		}
+
+		if util.UserBrief(r) != nil {
+			pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r))
+			if err == nil {
+				r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, pblistCache))
+			} else {
+				zap.S().Warn(err)
+			}
+		}
+
+		rt.runTempl(w, r, templ, &ProblemListParams{GenContext(r), nil, pblists, config.Frontend.RootProblemList})
+	}
+}
+
+func computeChecklistSpan(list *sudoapi.FullProblemList) int {
+	var cnt, countedSubLists int
+	for _, sublist := range list.SubLists {
+		cnt1 := computeChecklistSpan(sublist)
+		cnt += cnt1
+		if cnt1 > 0 {
+			countedSubLists++
+		}
+	}
+	if len(list.Problems) > 0 || countedSubLists > 0 {
+		cnt++
+	}
+
+	return cnt
+}
+
+func (rt *Web) pbListProgressView() http.HandlerFunc {
+	templ := rt.parse(nil, "lists/progress.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		// listIDs := []int{util.ProblemList(r).ID}
+		// for _, slist := range util.ProblemList(r).SubLists {
+		// 	listIDs = append(listIDs, slist.ID)
+		// }
+
+		// if util.UserBrief(r) != nil {
+		// 	pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r).ID)
+		// 	if err == nil {
+		// 		r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, pblistCache))
+		// 	} else {
+		// 		zap.S().Warn(err)
+		// 	}
+		// }
+		uname := r.FormValue("username")
+		var checkedUser *kilonova.UserBrief
+		if uname == "" {
+			checkedUser = util.UserBrief(r)
+		} else {
+			user, err := rt.base.UserBriefByName(r.Context(), uname)
+			if err == nil {
+				checkedUser = user
+			}
+		}
+
+		list, err := rt.base.FullProblemList(r.Context(), util.ProblemList(r).ID, checkedUser, util.UserBrief(r))
+		if err != nil {
+			if !errors.Is(err, context.Canceled) {
+				zap.S().Warn(err)
+			}
+			rt.statusPage(w, r, err.Code, err.Error())
+			return
+		}
+
+		rt.runTempl(w, r, templ, &ProblemListProgressParams{GenContext(r), list, checkedUser})
 	}
 }
 
@@ -271,7 +358,7 @@ func (rt *Web) pbListView() http.HandlerFunc {
 		}
 
 		if util.UserBrief(r) != nil {
-			pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r).ID)
+			pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r))
 			if err == nil {
 				r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, pblistCache))
 			} else {
@@ -279,7 +366,7 @@ func (rt *Web) pbListView() http.HandlerFunc {
 			}
 		}
 
-		rt.runTempl(w, r, templ, &ProblemListParams{GenContext(r), util.ProblemList(r), nil})
+		rt.runTempl(w, r, templ, &ProblemListParams{GenContext(r), util.ProblemList(r), nil, -1})
 	}
 }
 

@@ -200,6 +200,8 @@ func (rt *Web) Handler() http.Handler {
 
 		r.Route("/problem_lists", func(r chi.Router) {
 			r.Get("/", rt.pbListIndex())
+			r.Get("/progress", rt.pbListProgressIndex())
+			r.With(rt.ValidateListID).Get("/{id}/progress", rt.pbListProgressView())
 			r.With(rt.ValidateListID).Get("/{id}", rt.pbListView())
 		})
 
@@ -318,6 +320,16 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return pb.MaxScore.StringFixed(pb.ScorePrecision)
 		},
+		"checklistMaxScore": func(pb *kilonova.ScoredProblem) string {
+			if pb.ScoreUserID == nil {
+				return "-1"
+			}
+			if pb.MaxScore == nil || pb.MaxScore.IsNegative() {
+				return "-1"
+			}
+			return pb.MaxScore.StringFixed(pb.ScorePrecision)
+		},
+		"computeChecklistSpan": computeChecklistSpan,
 		"scoreStep": func(pb *kilonova.Problem) string {
 			return decimal.NewFromInt(1).Shift(-pb.ScorePrecision).String()
 		},

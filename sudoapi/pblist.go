@@ -3,6 +3,7 @@ package sudoapi
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/KiloProjects/kilonova"
 	"go.uber.org/zap"
@@ -47,8 +48,8 @@ func (s *BaseAPI) ProblemListProblems(ctx context.Context, ids []int, lookingUse
 	return rez, nil
 }
 
-func (s *BaseAPI) ProblemLists(ctx context.Context, root bool) ([]*kilonova.ProblemList, *StatusError) {
-	pblists, err := s.db.ProblemLists(ctx, root)
+func (s *BaseAPI) ProblemLists(ctx context.Context, filter kilonova.ProblemListFilter) ([]*kilonova.ProblemList, *StatusError) {
+	pblists, err := s.db.ProblemLists(ctx, filter)
 	if err != nil {
 		return nil, ErrUnknownError
 	}
@@ -129,8 +130,15 @@ func (s *BaseAPI) NumSolvedFromPblist(ctx context.Context, listID int, userID in
 	return num, nil
 }
 
-func (s *BaseAPI) NumSolvedFromPblists(ctx context.Context, listIDs []int, userID int) (map[int]int, *StatusError) {
-	vals, err := s.db.NumBulkedSolvedPblistProblems(ctx, userID, listIDs)
+func (s *BaseAPI) NumSolvedFromPblists(ctx context.Context, listIDs []int, user *kilonova.UserBrief) (map[int]int, *StatusError) {
+	if user == nil {
+		vals := make(map[int]int)
+		for _, id := range listIDs {
+			vals[id] = -1
+		}
+		return vals, nil
+	}
+	vals, err := s.db.NumBulkedSolvedPblistProblems(ctx, user.ID, listIDs)
 	if err != nil || vals == nil {
 		return nil, WrapError(err, "Couldn't get number of solved problems")
 	}
@@ -142,4 +150,81 @@ func (s *BaseAPI) NumSolvedFromPblists(ctx context.Context, listIDs []int, userI
 	}
 
 	return vals, nil
+}
+
+type FullProblemList struct {
+	kilonova.ProblemList
+	Problems []*kilonova.ScoredProblem `json:"problems"`
+	SubLists []*FullProblemList        `json:"problem_lists"`
+
+	SolvedCount int  `json:"solved_count"`
+	DepthLevel  int  `json:"depth_level"`
+	Root        bool `json:"root"`
+}
+
+// FullProblemList returns an entire problem list DAG. The operation will probably be slow.
+// Note that recursion to a "higher" level is automatically stripped
+func (s *BaseAPI) FullProblemList(ctx context.Context, listID int, user *kilonova.UserBrief, lookingUser *kilonova.UserBrief) (*FullProblemList, *StatusError) {
+	// Get all sublists
+	lists, err := s.ProblemLists(ctx, kilonova.ProblemListFilter{ParentID: &listID})
+	if err != nil {
+		return nil, err
+	}
+	// Get all problems
+	pbs, err := s.ScoredProblems(ctx, kilonova.ProblemFilter{Look: true, LookingUser: lookingUser, DeepListID: &listID}, user)
+	if err != nil {
+		return nil, err
+	}
+	listIDs := make([]int, 0, len(lists))
+	for _, list := range lists {
+		listIDs = append(listIDs, list.ID)
+	}
+	// Get solved count
+	solvedCnt, err := s.NumSolvedFromPblists(ctx, listIDs, lookingUser)
+	if err != nil {
+		return nil, err
+	}
+
+	// Try to get parent list
+	var firstList *kilonova.ProblemList
+	for _, list := range lists {
+		if list.ID == listID {
+			firstList = list
+			break
+		}
+	}
+	if firstList == nil {
+		return nil, kilonova.Statusf(500, "Could not load problem list tree")
+	}
+
+	return s.hydrateFullList(firstList, []int{firstList.ID}, lists, pbs, solvedCnt), nil
+}
+
+func (s *BaseAPI) hydrateFullList(list *kilonova.ProblemList, path []int, lists []*kilonova.ProblemList, pbs []*kilonova.ScoredProblem, solvedCnt map[int]int) *FullProblemList {
+	l := &FullProblemList{ProblemList: *list}
+	for _, pbid := range list.List {
+		if idx := slices.IndexFunc(pbs, func(pb *kilonova.ScoredProblem) bool { return pb.ID == pbid }); idx >= 0 {
+			l.Problems = append(l.Problems, pbs[idx])
+		}
+	}
+	var depthLvl int
+	for _, sublist := range list.SubLists {
+		if slices.Contains(path, sublist.ID) { // Try to break recursion
+			continue
+		}
+		if idx := slices.IndexFunc(lists, func(pl *kilonova.ProblemList) bool { return pl.ID == sublist.ID }); idx >= 0 {
+			list := s.hydrateFullList(lists[idx], append([]int{lists[idx].ID}, path...), lists, pbs, solvedCnt)
+			l.SubLists = append(l.SubLists, list)
+			depthLvl = max(depthLvl, list.DepthLevel)
+		}
+	}
+	if val, ok := solvedCnt[list.ID]; ok {
+		l.SolvedCount = val
+	}
+	l.DepthLevel = depthLvl + 1
+	if len(path) == 1 {
+		l.Root = true
+	}
+
+	return l
 }

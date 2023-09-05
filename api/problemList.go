@@ -46,7 +46,7 @@ func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
 		for _, sublists := range list.SubLists {
 			listIDs = append(listIDs, sublists.ID)
 		}
-		numSubSolved, err = s.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r).ID)
+		numSubSolved, err = s.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r))
 		if err != nil {
 			zap.S().Warn(err)
 			numSubSolved = map[int]int{}
@@ -88,7 +88,7 @@ func (s *API) problemLists(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lists, err := s.base.ProblemLists(r.Context(), args.Root)
+	lists, err := s.base.ProblemLists(r.Context(), kilonova.ProblemListFilter{Root: args.Root})
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -192,7 +192,8 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 		List        []int   `json:"list"`
 		Sublists    []int   `json:"sublists"`
 
-		SidebarHidable *bool `json:"sidebar_hidable"`
+		SidebarHidable    *bool `json:"sidebar_hidable"`
+		FeaturedChecklist *bool `json:"featured_checklist"`
 	}
 	if err := parseJsonBody(r, &args); err != nil {
 		err.WriteError(w)
@@ -209,7 +210,8 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 		Title:       args.Title,
 		Description: args.Description,
 
-		SidebarHidable: args.SidebarHidable,
+		SidebarHidable:    args.SidebarHidable,
+		FeaturedChecklist: args.FeaturedChecklist,
 	}); err != nil && !errors.Is(err, kilonova.ErrNoUpdates) {
 		errorData(w, err, 500)
 		return

@@ -249,6 +249,10 @@
 		@apply dark:text-gray-300 dark:hover:text-white dark:focus:text-white dark:active:text-white;
 	}
 
+	.white-anchor {
+		@apply black-anchor text-gray-700 dark:text-gray-200 font-bold;
+	}
+
 	.topbar-selected {
 		@apply inline-block p-1 rounded bg-gray-200 dark:bg-gray-700;
 	}

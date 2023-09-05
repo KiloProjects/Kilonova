@@ -40,16 +40,20 @@ func (s *DB) ProblemListByName(ctx context.Context, name string) (*kilonova.Prob
 	return s.internalToPbList(ctx, &pblist)
 }
 
-func (s *DB) ProblemLists(ctx context.Context, root bool) ([]*kilonova.ProblemList, error) {
-	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems, array(SELECT problem_id FROM problem_list_problems WHERE pblist_id = lists.id ORDER BY position ASC, problem_id ASC)::int[] AS list_problems
-	FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
-	ORDER BY lists.id ASC`
-	if root {
-		q = `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems, array(SELECT problem_id FROM problem_list_problems WHERE pblist_id = lists.id ORDER BY position ASC, problem_id ASC)::int[] AS list_problems
-		FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id 
-		WHERE NOT EXISTS (SELECT 1 FROM problem_list_pblists WHERE child_id = lists.id) ORDER BY lists.id ASC`
+func (s *DB) ProblemLists(ctx context.Context, filter kilonova.ProblemListFilter) ([]*kilonova.ProblemList, error) {
+	fb := newFilterBuilder()
+	if filter.Root {
+		fb.AddConstraint("NOT EXISTS (SELECT 1 FROM problem_list_pblists WHERE child_id = lists.id)")
 	}
-	rows, _ := s.conn.Query(ctx, q)
+	if v := filter.FeaturedChecklist; v != nil {
+		fb.AddConstraint("lists.featured_checklist = %s", v)
+	}
+	if v := filter.ParentID; v != nil {
+		fb.AddConstraint("EXISTS (SELECT 1 FROM problem_list_deep_sublists WHERE child_id = lists.id AND parent_id = %s)", v)
+	}
+	q := `SELECT lists.*, COALESCE(cnt.count, 0) AS num_problems, array(SELECT problem_id FROM problem_list_problems WHERE pblist_id = lists.id ORDER BY position ASC, problem_id ASC)::int[] AS list_problems
+	FROM problem_lists lists LEFT JOIN problem_list_pb_count cnt ON cnt.list_id = lists.id WHERE ` + fb.Where() + ` ORDER BY lists.id ASC`
+	rows, _ := s.conn.Query(ctx, q, fb.Args()...)
 	lists, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[pblist])
 	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return []*kilonova.ProblemList{}, nil
@@ -201,6 +205,9 @@ func (s *DB) UpdateProblemList(ctx context.Context, id int, upd kilonova.Problem
 	if v := upd.SidebarHidable; v != nil {
 		ub.AddUpdate("sidebar_hidable = %s", v)
 	}
+	if v := upd.FeaturedChecklist; v != nil {
+		ub.AddUpdate("featured_checklist = %s", v)
+	}
 	if ub.CheckUpdates() != nil {
 		return ub.CheckUpdates()
 	}
@@ -237,7 +244,8 @@ type pblist struct {
 	Title       string
 	Description string
 
-	SidebarHidable bool `db:"sidebar_hidable"`
+	SidebarHidable    bool `db:"sidebar_hidable"`
+	FeaturedChecklist bool `db:"featured_checklist"`
 
 	NumProblems int `db:"num_problems"`
 
@@ -253,7 +261,8 @@ func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.Prob
 		AuthorID:    list.AuthorID,
 		NumProblems: list.NumProblems,
 
-		SidebarHidable: list.SidebarHidable,
+		SidebarHidable:    list.SidebarHidable,
+		FeaturedChecklist: list.FeaturedChecklist,
 	}
 	if list.ListProblems != nil {
 		pblist.List = list.ListProblems
@@ -277,7 +286,8 @@ func (s *DB) internalToShallowProblemList(list *pblist) (*kilonova.ShallowProble
 		Title:    list.Title,
 		AuthorID: list.AuthorID,
 
-		SidebarHidable: list.SidebarHidable,
+		SidebarHidable:    list.SidebarHidable,
+		FeaturedChecklist: list.FeaturedChecklist,
 
 		NumProblems: list.NumProblems,
 	}, nil

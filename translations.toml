@@ -2,6 +2,10 @@
 en = "Feel free to join our %s and reach out if you have any suggestions, wish to become a contributor or would like to collaborate with us."
 ro = "Nu ezitați să vă alăturați %s-ului nostru și să ne contactați dacă aveți sugestii, doriți să deveniți un contribuitor sau doriți să colaborați cu noi."
 
+[all_checklists_announcement]
+en = "View all archive progress reports [on this page](/problem_lists/progress)."
+ro = "Poți să vezi progresul de rezolvare al arhivei [pe pagina aceasta](/problem_lists/progress)."
+
 [all_problems_announcement]
 en = "You can also view all problems ordered by ID [on this page](/problems)."
 ro = "Poți, de asemenea, să vezi toate problemele ordonate după ID [pe pagina aceasta](/problems)."
@@ -134,9 +138,37 @@ ro = "Nu există niciun test, ar fi bine să creezi unul :)"
 en = "Lists"
 ro = "Liste"
 
+[list]
+en = "List"
+ro = "Listă"
+
 [title.list]
 en = "List #%d"
 ro = "Lista #%d"
+
+[progress_overview]
+en = "Progress overview"
+ro = "Evaluare progres"
+
+[viewAllLists]
+en = "View all lists"
+ro = "Vizualizare toate listele"
+
+[selectChecklist]
+en = "Select a checklist to view"
+ro = "Selectează un progres de vizualizat"
+
+[noFeaturedChecklist]
+en = "No checklist was marked for presentation."
+ro = "Niciun checklist marcat pentru prezentare."
+
+[list.view_checklist]
+en = "View progress"
+ro = "Vizualizare progres"
+
+[list.view_list]
+en = "View as list"
+ro = "Vizualizare listă"
 
 [list.update]
 en = "Update List"
@@ -149,6 +181,10 @@ ro = "Profil:"
 [emailConfirm]
 en = "Verified Email"
 ro = "Email Verificat"
+
+[title.progressChecklist]
+en = "Progress Checklist"
+ro = "Checklist progres"
 
 [title.blogPosts]
 en = "Posts"
@@ -1895,6 +1931,10 @@ ro = "[Listă părinte]"
 [sidebar_hidable]
 en = "Hide in sidebar"
 ro = "Ascuns din sidebar"
+
+[featured_checklist]
+en = "Promoted checklist page"
+ro = "Pagină progres promovată"
 
 [edit]
 en = "Edit"

@@ -1,0 +1,15 @@
+{{define "title"}}{{getText "progress_overview"}}{{end}}
+{{define "content"}}
+<div class="segment-panel reset-list">
+    <a class="block mb-2" href="/problem_lists/{{.RootProblemList}}"><i class="fas fa-arrow-left"></i> {{getText "viewAllLists"}}</a>
+    <h1>{{getText "selectChecklist"}}</h1>
+    
+    {{range .Lists}}
+    <ul>
+        <li><a href="/problem_lists/{{.ID}}/progress">{{.Title}}</a> {{if authed}}({{numSolvedPblist .ID}}/{{.NumProblems}}){{end}}</li>
+    </ul>
+    {{else}}
+    {{getText "noFeaturedChecklist"}}
+    {{end}}
+</div>
+{{end}}
