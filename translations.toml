@@ -1755,6 +1755,10 @@ ro = "Editare Probleme Concurs"
 en = "Contest access control"
 ro = "Control acces concurs"
 
+[header.contest.create_pblist]
+en = "Create problem list from contest problems"
+ro = "Creare listă probleme din problemele concursului"
+
 [publicJoin]
 en = "Open registration"
 ro = "Înregistrare liberă"

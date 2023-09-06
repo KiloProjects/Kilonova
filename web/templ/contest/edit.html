@@ -10,7 +10,7 @@
             
             <label class="block mb-2">
                 <span class="form-label">{{getText "name"}}: </span>
-                <input class="form-input" name="name" type="text" value="{{.Contest.Name}}" required>
+                <input class="form-input" id="contest_name_upd" name="name" type="text" value="{{.Contest.Name}}" required>
             </label>
             <label class="block mb-2">
                 <span class="form-label">{{getText "maxSubs"}}: </span>
@@ -123,6 +123,16 @@
             </div>
         </form>
 
+        <form class="segment-panel" id="contest_pblist_form">
+            <h2 class="inline-block mb-2">{{getText "header.contest.create_pblist"}}</h2>
+
+            <label class="block my-2">
+                <span class="form-label">{{ getText "list_parent_id" }}:</span>
+                <input id="cr_pblist_parent_id" type="number" class="form-input">
+            </label>
+
+            <button type="submit" class="btn btn-blue">{{ getText "button.create" }}</button>
+        </form>
     </div>
 </div>
 
@@ -165,24 +175,47 @@ async function updateContest(e) {
     bundled.apiToast(res)
 }
 
+async function createPblistFromContest(e) {
+    e.preventDefault();
+    try {
+        var data = {
+            title: document.getElementById("contest_name_upd").value,
+            ids: bundled.stringIntToNumber(document.getElementById("contest_list").value.split(',')),
+        }
+        const parentID = parseInt(document.getElementById("cr_pblist_parent_id").value);
+        if(!isNaN(parentID)) {
+            data.parent_id = parentID
+        }
+    } catch(e) {
+        bundled.apiToast({status: "error", data: e.toString()});
+        return
+    }
+	let res = await bundled.bodyCall("/problemList/create", data)
+	if(res.status === "success") {
+		window.location.assign(`/problem_lists/${res.data.id}`);
+		return
+	}
+	bundled.apiToast(res)
+}
 
-var cm = CodeMirror.fromTextArea(document.getElementById("contestDesc"), {
+var desc_cm = CodeMirror.fromTextArea(document.getElementById("contestDesc"), {
     mode: {
         name: "gfm",
         gitHubSpice: false,
         emoji: false,
     },
 });
-cm.setSize(null, "100%");
+desc_cm.setSize(null, "100%");
 
 async function updateContestDesc(e) {
     e.preventDefault()
-    const rez = await bundled.postCall(`/contest/${contest_id}/update`, {description: cm.getValue()})
+    const rez = await bundled.postCall(`/contest/${contest_id}/update`, {description: desc_cm.getValue()})
     bundled.apiToast(rez)
 }
 
 document.getElementById("contest_update_form").addEventListener("submit", updateContest)
 document.getElementById("contest_description_form").addEventListener("submit", updateContestDesc)
+document.getElementById("contest_pblist_form").addEventListener("submit", createPblistFromContest)
 </script>
 <script>
 async function deleteContest(e) {
