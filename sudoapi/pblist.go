@@ -180,7 +180,7 @@ func (s *BaseAPI) FullProblemList(ctx context.Context, listID int, user *kilonov
 		listIDs = append(listIDs, list.ID)
 	}
 	// Get solved count
-	solvedCnt, err := s.NumSolvedFromPblists(ctx, listIDs, lookingUser)
+	solvedCnt, err := s.NumSolvedFromPblists(ctx, listIDs, user)
 	if err != nil {
 		return nil, err
 	}
