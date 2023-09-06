@@ -83,7 +83,7 @@ func (s *DB) VisibleContests(ctx context.Context, userID int) ([]*kilonova.Conte
 	err := Select(s.conn,
 		ctx,
 		&contests,
-		"SELECT contests.* FROM contests, contest_visibility viz WHERE contests.id = viz.contest_id AND viz.user_id = $1 ORDER BY contests.start_time DESC",
+		"SELECT contests.* FROM contests WHERE EXISTS (SELECT 1 FROM visible_contests($1) viz WHERE contests.id = viz.contest_id) ORDER BY contests.start_time DESC",
 		userID,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -97,9 +97,8 @@ func (s *DB) VisibleFutureContests(ctx context.Context, userID int) ([]*kilonova
 	err := Select(s.conn,
 		ctx,
 		&contests,
-		`SELECT contests.* FROM contests, contest_visibility viz WHERE contests.id = viz.contest_id 
-		AND NOW() < contests.start_time 
-		AND viz.user_id = $1 ORDER BY contests.start_time DESC`,
+		`SELECT contests.* FROM contests WHERE EXISTS (SELECT 1 FROM visible_contests($1) viz WHERE contests.id = viz.contest_id)
+		AND NOW() < contests.start_time ORDER BY contests.start_time DESC`,
 		userID,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -113,9 +112,8 @@ func (s *DB) VisibleRunningContests(ctx context.Context, userID int) ([]*kilonov
 	err := Select(s.conn,
 		ctx,
 		&contests,
-		`SELECT contests.* FROM contests, contest_visibility viz WHERE contests.id = viz.contest_id 
-		AND contests.start_time <= NOW() AND NOW() < contests.end_time
-		AND viz.user_id = $1 ORDER BY contests.start_time DESC`,
+		`SELECT contests.* FROM contests WHERE EXISTS (SELECT 1 FROM visible_contests($1) viz WHERE contests.id = viz.contest_id) 
+		AND contests.start_time <= NOW() AND NOW() < contests.end_time ORDER BY contests.start_time DESC`,
 		userID,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {

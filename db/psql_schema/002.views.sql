@@ -152,19 +152,19 @@ CREATE OR REPLACE VIEW problem_editors AS
 --   - It's not visible but it's running and user is registered
 
 DROP VIEW IF EXISTS contest_visibility CASCADE;
-CREATE OR REPLACE VIEW contest_visibility AS (
-    (SELECT contests.id AS contest_id, 0 AS user_id FROM contests 
-        WHERE contests.visible = true) -- visible to anonymous users
+
+CREATE OR REPLACE FUNCTION visible_contests(user_id bigint) RETURNS TABLE (contest_id bigint, user_id bigint) AS $$
+    (SELECT contests.id AS contest_id, $1 AS user_id FROM contests 
+        WHERE contests.visible = true AND 0 = $1) -- visible to anonymous users
     UNION
     (SELECT contests.id AS contest_id, users.id AS user_id FROM contests, users 
-        WHERE contests.visible = true OR users.admin = true) -- visible to logged in users and admins
+        WHERE (contests.visible = true OR users.admin = true) AND users.id = $1) -- visible to logged in users and admins
     UNION
-    (SELECT contest_id, user_id FROM contest_user_access) -- Testers/Editors
+    (SELECT contest_id, user_id FROM contest_user_access WHERE user_id = $1) -- Testers/Editors
     UNION
     (SELECT contests.id AS contest_id, users.user_id AS user_id FROM contests, contest_registrations users 
-        WHERE contests.id = users.contest_id AND contests.visible = false) -- not visible but registered
-);
-
+        WHERE contests.id = users.contest_id AND contests.visible = false AND users.user_id = $1) -- not visible but registered
+$$ LANGUAGE SQL STABLE;
 
 DROP VIEW IF EXISTS contest_submission_subtask_max_scores CASCADE;
 CREATE OR REPLACE VIEW contest_submission_subtask_max_scores (problem_id, user_id, subtask_id, contest_id, max_score) AS
@@ -220,18 +220,18 @@ CREATE OR REPLACE FUNCTION visible_submissions(user_id bigint) RETURNS TABLE (su
     UNION ALL
     (SELECT subs.id as sub_id, pb_viewers.user_id as user_id
         FROM submissions subs, v_pbs pb_viewers
-        WHERE pb_viewers.problem_id = subs.problem_id AND subs.contest_id IS null) -- contest is null, so judge if problem is visible
+        WHERE pb_viewers.problem_id = subs.problem_id AND subs.contest_id IS null AND pb_viewers.user_id = $1) -- contest is null, so judge if problem is visible
     UNION ALL
     (SELECT subs.id as sub_id, users.user_id as user_id
         FROM submissions subs, contest_user_access users
         WHERE users.contest_id = subs.contest_id AND users.user_id = $1) -- contest staff if contest is not null
     UNION ALL
-    (SELECT subs.id as sub_id, viz.user_id as user_id
-        FROM submissions subs, contests, contest_visibility viz, contest_problems c_pbs
-        WHERE contests.id = subs.contest_id AND contests.id = viz.contest_id AND contests.id = c_pbs.contest_id
+    (SELECT subs.id as sub_id, $1 as user_id
+        FROM submissions subs, contests, contest_problems c_pbs
+        WHERE EXISTS (SELECT 1 FROM visible_contests($1) viz WHERE contests.id = viz.contest_id)
+        AND contests.id = subs.contest_id AND contests.id = c_pbs.contest_id
         AND c_pbs.problem_id = subs.problem_id
-        AND contests.end_time <= NOW()
-        AND viz.user_id = $1) -- ended contest, so everyone that can see the contest can also see submission
+        AND contests.end_time <= NOW()) -- ended contest, so everyone that can see the contest can also see submission
             -- (if they can see the contest, they can also see the problem, since it ended)
 $$ LANGUAGE SQL STABLE;
 
@@ -252,12 +252,30 @@ CREATE OR REPLACE VIEW problem_list_deep_sublists (parent_id, child_id) AS
     ) SELECT * FROM pblist_tree;
 
 DROP VIEW IF EXISTS problem_list_pb_count;
-CREATE OR REPLACE VIEW problem_list_pb_count(list_id, count) AS 
+CREATE MATERIALIZED VIEW IF NOT EXISTS problem_list_pb_count(list_id, count) AS 
     WITH RECURSIVE pblist_tree(list_id, problem_id) AS (
         SELECT pblist_id AS list_id, problem_id FROM problem_list_problems
         UNION
         SELECT pbs.parent_id AS list_id, pt.problem_id FROM problem_list_pblists pbs, pblist_tree PT WHERE pbs.child_id = pt.list_id
     ) SELECT list_id, COUNT(*) FROM pblist_tree GROUP BY list_id;
+
+CREATE OR REPLACE FUNCTION refresh_pblist_pb_count() RETURNS TRIGGER AS $$
+    BEGIN
+        REFRESH MATERIALIZED VIEW problem_list_pb_count;
+        RETURN NULL;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER pblist_problem_count_on_pbs
+    AFTER INSERT OR UPDATE OR DELETE
+    ON problem_list_problems
+    FOR EACH STATEMENT
+    EXECUTE FUNCTION refresh_pblist_pb_count();
+CREATE OR REPLACE TRIGGER pblist_problem_count_on_pblists
+    AFTER INSERT OR UPDATE OR DELETE
+    ON problem_list_pblists
+    FOR EACH STATEMENT
+    EXECUTE FUNCTION refresh_pblist_pb_count();
 
 DROP VIEW IF EXISTS pblist_user_solved;
 CREATE OR REPLACE VIEW pblist_user_solved (user_id, list_id, count) AS 

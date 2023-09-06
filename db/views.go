@@ -48,7 +48,7 @@ func (s *DB) IsProblemEditor(ctx context.Context, problemID, userID int) (bool, 
 
 func (s *DB) IsContestViewer(ctx context.Context, contestID, userID int) (bool, error) {
 	var cnt int
-	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM contest_visibility WHERE contest_id = $1 AND user_id = $2", contestID, userID).Scan(&cnt)
+	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM visible_contests($2) WHERE contest_id = $1", contestID, userID).Scan(&cnt)
 	if err != nil {
 		return false, err
 	}
