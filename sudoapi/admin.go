@@ -159,7 +159,7 @@ func (s *BaseAPI) ingestAuditLogs(ctx context.Context) error {
 				id = &val.Author.ID
 			}
 
-			if val.Level.IsAuditLogLvl() {
+			if val.Level.IsAuditLogLvl() && val.Level != logLevelDiscord {
 				if _, err := s.db.CreateAuditLog(ctx, val.Message, id, val.Level == logLevelSystem); err != nil {
 					zap.S().Warn("Couldn't store audit log entry to database: ", err)
 				}
@@ -234,7 +234,7 @@ func (s *BaseAPI) RegisterGrader(gr interface{ Wake() }) {
 }
 
 func (ll logLevel) IsAuditLogLvl() bool {
-	return ll == logLevelSystem || ll == logLevelImportant || ll == logLevelWarning
+	return ll == logLevelSystem || ll == logLevelImportant || ll == logLevelWarning || ll == logLevelDiscord
 }
 
 func (ll logLevel) toZap() zapcore.Level {
