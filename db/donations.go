@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -28,7 +27,6 @@ func (s *DB) AddDonation(ctx context.Context, donation *kilonova.Donation) error
 	if donation.User != nil {
 		userID = &donation.User.ID
 	}
-	spew.Dump(donation)
 	var id int
 	err := s.conn.QueryRow(ctx,
 		"INSERT INTO donations (donated_at, user_id, amount, source, type, transaction_id, cancelled_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",

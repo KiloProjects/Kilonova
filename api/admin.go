@@ -6,7 +6,6 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
-	"github.com/davecgh/go-spew/spew"
 	"go.uber.org/zap"
 )
 
@@ -114,12 +113,9 @@ func (s *API) addDonation(w http.ResponseWriter, r *http.Request) {
 		Username *string `json:"username"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
-		spew.Dump(err)
 		errorData(w, "Invalid request parameters", 400)
 		return
 	}
-
-	spew.Dump(args)
 
 	if args.Username != nil && *args.Username != "" {
 		user, err := s.base.UserBriefByName(r.Context(), *args.Username)
