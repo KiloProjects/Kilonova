@@ -1,19 +1,22 @@
 {{define "title"}}{{getText "donations"}}{{end}}
 {{define "content"}}
+{{if eq .Status "success"}}
 <div class="segment-panel reset-list">
-    {{if eq .Status "success"}}
     <h1>{{getText "donate_success"}}</h1>
-    {{else if eq .Status "cancelled"}}
+</div>
+{{else if eq .Status "cancelled"}}
+<div class="segment-panel reset-list">
     <h1>{{getText "donate_cancelled"}}</h1>
-    {{end}}
-    
-    <h2>{{getText "support_kn"}}</h2>
+</div>
+{{end}}
 
+<div class="segment-panel">
+    <h1>{{getText "support_kn"}}</h1>
     <p>{{getText "donate_par"}}</p>
+</div>
 
-    <hr class="my-2"/>
-
-    <h2>{{getText "donation_methods"}}:</h2>
+<div class="segment-panel">
+    <h1>{{getText "donation_methods"}}:</h1>
     <ul>
         {{if .BMACName}}
         <li class="mb-2">
@@ -30,10 +33,100 @@
         </li>
         {{end}}
     </ul>
-
-    
-
 </div>
 
+{{with .Donations}}
+<div class="segment-panel reset-list">
+    <h1>{{getText "past_donations"}}</h1>
+    <ul>
+        {{range .}}
+        <li>
+            {{if .User}}<a href="/profile/{{.User.Name}}">{{.User.Name}} {{if isAdmin}}(#{{.User.ID}}){{end}}</a>{{else}}???{{end}} - {{.Amount}} {{.Currency}} (<span class="server_timestamp">{{.DonatedAt.UnixMilli}}</span>)
+            {{if isAdmin}}
+            <ul>
+                <li>{{getText "donation_method"}}: {{.Source}}</li>
+                <li>{{getText "donation_type"}}: {{.Type}}</li>
+                <li>{{getText "transaction_id"}}: {{.TransactionID}}</li>
+                {{if .CancelledAt}}
+                <li>{{getText "cancelled_at"}}: <span class="server_timestamp">{{.CancelledAt.UnixMilli}}</span></li>
+                {{end}}
+            </ul>
+            {{end}}
+        </li>
+        {{end}}
+    </ul>
+</div>
+{{end}}
+
+{{if isAdmin}}
+<form class="segment-panel" id="addDonationForm">
+    <h1>{{getText "add_donation"}}</h1>
+
+    <label class="block my-2">
+        <span class="form-label">{{getText "donation_time"}}:</span>
+        <input type="datetime-local" id="donation-time" class="form-input" required/>
+    </label>
+    <label class="block my-2">
+        <span class="form-label">{{getText "username"}} (empty = anonymous):</span>
+        <input type="text" id="donation-username" class="form-input"/>
+    </label>
+    <label class="block my-2">
+        <span class="form-label">{{getText "amount"}}:</span>
+        <input type="number" id="donation-amount" class="form-input" required/>
+    </label>
+    <label class="block mb-2">
+        <span class="form-label">{{getText "currency"}}:</span> 
+        <select id="donation-currency" class="form-select" autocomplete="off">
+            <option value="EUR" selected>🇪🇺 EUR €</option>
+            <option value="USD">🇺🇸 USD $</option>
+            <option value="RON">🇷🇴 RON</option>
+            <option value="GBP">🇬🇧 GBP £</option>
+        </select>
+    </label>
+    <label class="block mb-2">
+        <span class="form-label">{{getText "donation_method"}}:</span> 
+        <select id="donation-source" class="form-select" autocomplete="off">
+            <option value="buymeacoffee" selected>Buy Me A Coffee</option>
+            <option value="paypal">PayPal</option>
+            <option value="other">{{getText "other"}}</option>
+        </select>
+    </label>
+    <label class="block mb-2">
+        <span class="form-label">{{getText "donation_type"}}:</span> 
+        <select id="donation-type" class="form-select" autocomplete="off">
+            <option value="onetime" selected>One-Time</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+        </select>
+    </label>
+    <label class="block my-2">
+        <span class="form-label">{{getText "transaction_id"}}:</span>
+        <input type="text" id="donation-transactionid" class="form-input" required/>
+    </label>
+    <button class="btn btn-blue" type="submit">{{getText "button.create"}}</button>
+</form>
+<script>
+    async function addDonation(e) {
+        e.preventDefault();
+        let args = {
+            donated_at: bundled.dayjs(document.getElementById("donation-time").value).format(),
+            amount: document.getElementById("donation-amount").value,
+            currency: document.getElementById("donation-currency").value,
+            username: document.getElementById("donation-username").value,
+
+            source: document.getElementById("donation-source").value,
+            type: document.getElementById("donation-type").value,
+            transaction_id: document.getElementById("donation-transactionid").value,
+        }
+        const res = await bundled.postCall("/admin/addDonation", args)
+        if(res.status === "success") {
+            window.location.reload();
+            return
+        }
+        bundled.apiToast(res)
+    }
+    document.getElementById("addDonationForm").addEventListener("submit", addDonation)
+</script>
+{{end}}
 
 {{end}}

@@ -114,6 +114,8 @@ type ContestsIndexParams struct {
 type DonateParams struct {
 	Ctx *ReqContext
 
+	Donations []*kilonova.Donation
+
 	Status   string
 	BMACName string
 	PayPalID string

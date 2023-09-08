@@ -980,8 +980,16 @@ func (rt *Web) donationPage() http.HandlerFunc {
 			return
 		}
 
+		donations, err := rt.base.Donations(r.Context())
+		if err != nil {
+			zap.S().Warn(err)
+			donations = []*kilonova.Donation{}
+		}
+
 		rt.runTempl(w, r, templ, &DonateParams{
 			Ctx: GenContext(r),
+
+			Donations: donations,
 
 			Status:   r.FormValue("status"),
 			BMACName: config.Donations.BuyMeACoffeeName,

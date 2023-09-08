@@ -6,6 +6,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/davecgh/go-spew/spew"
 	"go.uber.org/zap"
 )
 
@@ -104,4 +105,33 @@ func (s *API) updateBoolFlags(w http.ResponseWriter, r *http.Request) {
 		flg.Update(v)
 	}
 	returnData(w, "Updated flags. Some changes may only apply after a restart")
+}
+
+func (s *API) addDonation(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		kilonova.Donation
+		Username *string `json:"username"`
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		spew.Dump(err)
+		errorData(w, "Invalid request parameters", 400)
+		return
+	}
+
+	spew.Dump(args)
+
+	if args.Username != nil && *args.Username != "" {
+		user, err := s.base.UserBriefByName(r.Context(), *args.Username)
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+		args.User = user
+	}
+	if err := s.base.AddDonation(r.Context(), &args.Donation); err != nil {
+		err.WriteError(w)
+		return
+	}
+	returnData(w, args.ID)
 }

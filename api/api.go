@@ -54,6 +54,8 @@ func (s *API) Handler() http.Handler {
 			}))
 		})
 
+		r.Post("/addDonation", s.addDonation)
+
 		r.Get("/getAllUsers", s.getAllUsers)
 	})
 

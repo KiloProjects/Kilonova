@@ -2243,3 +2243,43 @@ ro = "(recomandat)"
 [donate_paypal_disclaimer]
 en = "(a bit higher fees)"
 ro = "(comisioane puțin mai mari)"
+
+[past_donations]
+en = "Past donations"
+ro = "Donații anterioare"
+
+[donation_method]
+en = "Donation method"
+ro = "Metodă donare"
+
+[donation_type]
+en = "Donation type"
+ro = "Tip donare"
+
+[transaction_id]
+en = "Transaction ID"
+ro = "ID Tranzacție"
+
+[cancelled_at]
+en = "Cancelled at"
+ro = "Anulat la"
+
+[add_donation]
+en = "Add donation"
+ro = "Adăugare donație"
+
+[donation_time]
+en = "Donation time"
+ro = "Momentul donării"
+
+[amount]
+en = "Amount"
+ro = "Valoare"
+
+[currency]
+en = "Currency"
+ro = "Monedă"
+
+[other]
+en = "Other"
+ro = "Altceva"
