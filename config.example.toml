@@ -24,3 +24,7 @@
 
 [frontend]
  root_problem_list = 5
+
+[donations]
+ buy_cofee_name = ""
+ paypal_button_id = ""

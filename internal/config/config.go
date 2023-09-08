@@ -16,15 +16,17 @@ var (
 	Eval       EvalConf
 	Email      EmailConf
 	Frontend   FrontendConf
+	Donations  DonationConf
 )
 
 // configStruct is the glue for all configuration sections when unmarshaling
 // After load, it will disperse all the data in variables
 type configStruct struct {
-	Common   CommonConf   `toml:"common"`
-	Eval     EvalConf     `toml:"eval"`
-	Email    EmailConf    `toml:"email"`
-	Frontend FrontendConf `toml:"frontend"`
+	Common    CommonConf   `toml:"common"`
+	Eval      EvalConf     `toml:"eval"`
+	Email     EmailConf    `toml:"email"`
+	Frontend  FrontendConf `toml:"frontend"`
+	Donations DonationConf `toml:"donations"`
 }
 
 // EmailConf is the data required for the email part
@@ -61,6 +63,13 @@ type CommonConf struct {
 	UpdatesWebhook string `toml:"updates_webhook"`
 }
 
+type DonationConf struct {
+	BuyMeACoffeeName  string `toml:"buy_cofee_name"`
+	BMACWebhookSecret string `toml:"bmac_webhook_secret"`
+
+	PayPalButtonID string `toml:"paypal_button_id"`
+}
+
 type FrontendConf struct {
 	RootProblemList int `toml:"root_problem_list"`
 }
@@ -73,6 +82,7 @@ func spread() {
 	Email = c.Email
 	Eval = c.Eval
 	Frontend = c.Frontend
+	Donations = c.Donations
 }
 
 func compactify() {
@@ -80,6 +90,7 @@ func compactify() {
 	c.Email = Email
 	c.Eval = Eval
 	c.Frontend = Frontend
+	c.Donations = Donations
 }
 
 func SetConfigPath(path string) {

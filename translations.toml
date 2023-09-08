@@ -2207,3 +2207,39 @@ ro = "Nume nou"
 [changeName]
 en = "Change name"
 ro = "Schimbare nume"
+
+[donate]
+en = "Donate"
+ro = "Donează"
+
+[donations]
+en = "Donations"
+ro = "Donații"
+
+[support_kn]
+en = "Support Kilonova"
+ro = "Susțineți Kilonova"
+
+[donate_par]
+en = "If you enjoy using Kilonova, please consider leaving a small donation to support server consts and future development of the platform!"
+ro = "Dacă vă place să utilizați Kilonova, vă rugăm să luați în considerare lăsarea unei mici donații pentru a susține costurile serverelor și dezvoltarea viitoare a platformei!"
+
+[donate_success]
+en = "Thank you for supporting the platform!"
+ro = "Vă mulțumim pentru susținerea acordată!"
+
+[donate_cancelled]
+en = "Transaction was cancelled, but we thank you for the thought!"
+ro = "Tranzacția a fost anulată, dar vă mulțumim pentru gândul acordat!"
+
+[donation_methods]
+en = "Donation methods"
+ro = "Metode prin care puteți dona"
+
+[donate_bmac_disclaimer]
+en = "(recommended)"
+ro = "(recomandat)"
+
+[donate_paypal_disclaimer]
+en = "(a bit higher fees)"
+ro = "(comisioane puțin mai mari)"

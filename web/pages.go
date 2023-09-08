@@ -111,6 +111,14 @@ type ContestsIndexParams struct {
 	Contests []*kilonova.Contest
 }
 
+type DonateParams struct {
+	Ctx *ReqContext
+
+	Status   string
+	BMACName string
+	PayPalID string
+}
+
 type ContestParams struct {
 	Ctx    *ReqContext
 	Topbar *ProblemTopbar

@@ -6,6 +6,9 @@
 				<div class="text-lg">{{getText "usefulInfo"}}</div>
 				<ul>
 					<li><a class="black-anchor" href="/">{{getText "frontPage"}}</a></li>
+                    {{if boolFlag "frontend.donations.enabled"}}
+                    <li><a class="black-anchor" href="/donate">{{getText "donate"}}</a></li>
+                    {{end}}
 					<li><a class="black-anchor" href="/problems">{{getText "problem.list"}}</a></li>
 					<li><a class="black-anchor" href="/contests">{{getText "contests"}}</a></li>
 					<li><a class="black-anchor" href="/submissions">{{getText "submission.list"}}</a></li>

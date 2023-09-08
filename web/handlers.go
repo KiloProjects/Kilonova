@@ -970,6 +970,26 @@ func (rt *Web) contestLeaderboard() http.HandlerFunc {
 	}
 }
 
+var DonationsEnabled = config.GenFlag[bool]("frontend.donations.enabled", true, "Donations page enabled")
+
+func (rt *Web) donationPage() http.HandlerFunc {
+	templ := rt.parse(nil, "donate.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !DonationsEnabled.Value() {
+			rt.statusPage(w, r, 404, "Donations have been disabled on this instance")
+			return
+		}
+
+		rt.runTempl(w, r, templ, &DonateParams{
+			Ctx: GenContext(r),
+
+			Status:   r.FormValue("status"),
+			BMACName: config.Donations.BuyMeACoffeeName,
+			PayPalID: config.Donations.PayPalButtonID,
+		})
+	}
+}
+
 func (rt *Web) selfProfile() http.HandlerFunc {
 	templ := rt.parse(nil, "profile.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {

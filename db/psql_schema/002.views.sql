@@ -3,10 +3,6 @@ BEGIN;
 -- NOTE: This file will never be inside 001.base.sql
 -- This can be rerun every time a type or column is changed so the views will be refreshed
 
--- TODO: Remove this once pushed on main
-DROP VIEW IF EXISTS problem_attachments CASCADE;
-DROP VIEW IF EXISTS blog_post_attachments CASCADE;
-
 DROP VIEW IF EXISTS submission_subtask_max_scores CASCADE;
 CREATE OR REPLACE VIEW submission_subtask_max_scores (problem_id, user_id, subtask_id, max_score) AS
     SELECT problem_id, user_id, subtask_id, MAX(ROUND(COALESCE(final_percentage, 0) * (score / 100.0), stks.digit_precision)) max_score
@@ -150,9 +146,6 @@ CREATE OR REPLACE VIEW problem_editors AS
 --   - Admins
 --   - Testers/Editors
 --   - It's not visible but it's running and user is registered
-
-DROP VIEW IF EXISTS contest_visibility CASCADE;
-
 CREATE OR REPLACE FUNCTION visible_contests(user_id bigint) RETURNS TABLE (contest_id bigint, user_id bigint) AS $$
     (SELECT contests.id AS contest_id, $1 AS user_id FROM contests 
         WHERE contests.visible = true AND 0 = $1) -- visible to anonymous users

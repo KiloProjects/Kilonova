@@ -57,6 +57,10 @@ func (s *API) Handler() http.Handler {
 		r.Get("/getAllUsers", s.getAllUsers)
 	})
 
+	r.Route("/webhook", func(r chi.Router) {
+		r.Post("/bmac_event", s.bmacEvent)
+	})
+
 	r.Route("/auth", func(r chi.Router) {
 		r.With(s.MustBeAuthed).Post("/logout", s.logout)
 		r.With(s.MustBeVisitor).Post("/signup", s.signup)

@@ -21,6 +21,7 @@ type logLevel int
 const (
 	logLevelSystem logLevel = iota
 	logLevelImportant
+	logLevelDiscord
 	logLevelWarning
 	logLevelInfo
 	logLevelVerbose
@@ -112,6 +113,10 @@ func (s *BaseAPI) LogSystemAction(ctx context.Context, msg string, args ...any) 
 	s.logAction(ctx, logLevelSystem, msg, args...)
 }
 
+func (s *BaseAPI) LogToDiscord(ctx context.Context, msg string, args ...any) {
+	s.logAction(ctx, logLevelDiscord, msg, args...)
+}
+
 func (s *BaseAPI) LogUserAction(ctx context.Context, msg string, args ...any) {
 	s.logAction(ctx, logLevelImportant, msg, args...)
 }
@@ -169,7 +174,9 @@ func (s *BaseAPI) ingestAuditLogs(ctx context.Context) error {
 			}
 			s.WriteString(": " + val.Message)
 
-			zap.S().Desugar().Log(val.Level.toZap(), s.String())
+			if val.Level != logLevelDiscord {
+				zap.S().Desugar().Log(val.Level.toZap(), s.String())
+			}
 
 			if val.Level.IsAuditLogLvl() && ImportantUpdatesWebhook.Value() != "" {
 				vals := make(url.Values)
