@@ -154,6 +154,8 @@ type TagGroup = {
 	tag_ids: number[];
 };
 
+type ProblemOrdering = "" | "id" | "name" | "published_at";
+
 type ProblemQuery = {
 	textQuery: string;
 	page: number;
@@ -165,6 +167,9 @@ type ProblemQuery = {
 
 	solved_by?: number;
 	attempted_by?: number;
+
+	ordering: ProblemOrdering;
+	descending: boolean;
 };
 
 function makeTagString(groups: TagGroup[]): string {
@@ -181,6 +186,18 @@ function initialQuery(params: URLSearchParams, groups: TagGroup[]): ProblemQuery
 
 	const editorUserID = parseInt(params.get("editor_user") ?? "");
 
+	let ordering: ProblemOrdering = "";
+	const ord = params.get("ordering");
+	switch (ord) {
+		case "id":
+		case "name":
+		case "published_at":
+			ordering = ord;
+			break;
+		default:
+			ordering = "id";
+	}
+
 	return {
 		textQuery: params.get("q") ?? "",
 		page: !isNaN(page) && page != 0 ? page : 1,
@@ -188,6 +205,9 @@ function initialQuery(params: URLSearchParams, groups: TagGroup[]): ProblemQuery
 		published: published,
 		editor_user: !isNaN(editorUserID) ? editorUserID : undefined,
 		tags: groups,
+
+		ordering: ordering,
+		descending: params.get("descending") === "true",
 	};
 }
 
@@ -204,6 +224,9 @@ function serializeQuery(f: ProblemQuery): any {
 
 		limit: MAX_PER_PAGE,
 		offset: (f.page - 1) * MAX_PER_PAGE,
+
+		ordering: f.ordering,
+		descending: f.descending,
 	};
 }
 
@@ -547,7 +570,14 @@ function ProblemSolvedByDOM({ enc, count, userid }: { enc: string; count: string
 	if (isNaN(uid)) {
 		throw new Error("Invalid user ID");
 	}
-	return <ProblemListingWrapper enc={enc} count={count} showfull="false" filter={{ textQuery: "", tags: [], page: 1, solved_by: uid }} />;
+	return (
+		<ProblemListingWrapper
+			enc={enc}
+			count={count}
+			showfull="false"
+			filter={{ textQuery: "", tags: [], page: 1, solved_by: uid, descending: false, ordering: "" }}
+		/>
+	);
 }
 
 function ProblemAttemptedByDOM({ enc, count, userid }: { enc: string; count: string; userid: string }) {
@@ -555,7 +585,14 @@ function ProblemAttemptedByDOM({ enc, count, userid }: { enc: string; count: str
 	if (isNaN(uid)) {
 		throw new Error("Invalid user ID");
 	}
-	return <ProblemListingWrapper enc={enc} count={count} showfull="false" filter={{ textQuery: "", tags: [], page: 1, attempted_by: uid }} />;
+	return (
+		<ProblemListingWrapper
+			enc={enc}
+			count={count}
+			showfull="false"
+			filter={{ textQuery: "", tags: [], page: 1, attempted_by: uid, solved_by: uid, descending: false, ordering: "" }}
+		/>
+	);
 }
 
 register(ProblemSearchDOM, "kn-pb-search", ["enc", "count", "groupenc", "tagenc"]);

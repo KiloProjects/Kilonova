@@ -3,7 +3,7 @@
 {{ $showScore := .ShowScore }}
 {{ $contestIDScore := .ContestIDScore }}
 {{ $showPublished := .ShowPublished }}
-<div class="list-group grid grid-cols-1 {{if .MultiCols }} md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 {{end}}">
+<div class="list-group grid grid-cols-1">
 	{{ range .Problems }}
 		<a href="/{{if not (eq $contestIDScore -1)}}contests/{{$contestIDScore}}/{{end}}problems/{{.ID}}" class="list-group-item flex justify-between">
 			<span>{{.Name}} (#{{.ID}})</span>

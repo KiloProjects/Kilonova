@@ -2220,9 +2220,13 @@ ro = "Donații"
 en = "Support Kilonova"
 ro = "Susțineți Kilonova"
 
+[donate.front_page_par]
+en = 'If you enjoy using Kilonova, <a href="/donate">please consider leaving a small donation.</a>'
+ro = 'Dacă îți place să utilizezi Kilonova, <a href="/donate">te rugăm să iei în considerare lăsarea unei mici donații.</a>'
+
 [donate_par]
 en = "If you enjoy using Kilonova, please consider leaving a small donation to support server consts and future development of the platform!"
-ro = "Dacă vă place să utilizați Kilonova, vă rugăm să luați în considerare lăsarea unei mici donații pentru a susține costurile serverelor și dezvoltarea viitoare a platformei!"
+ro = "Dacă îți place să utilizezi Kilonova, te rugăm să iei în considerare lăsarea unei mici donații pentru a susține costurile serverelor și dezvoltarea viitoare a platformei!"
 
 [donate_success]
 en = "Thank you for supporting the platform!"
@@ -2283,3 +2287,15 @@ ro = "Monedă"
 [other]
 en = "Other"
 ro = "Altceva"
+
+[view_details]
+en = "View details"
+ro = "Vezi detalii"
+
+[view_more]
+en = "View more"
+ro = "Vezi mai multe"
+
+[latest_problems]
+en = "Latest problems"
+ro = "Ultimele probleme"

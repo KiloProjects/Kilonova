@@ -257,15 +257,6 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			}
 			return list
 		},
-		"visibleProblems": func(user *kilonova.UserBrief) []*kilonova.ScoredProblem {
-			pbs, err := base.ScoredProblems(context.Background(), kilonova.ProblemFilter{
-				LookingUser: user, Look: true,
-			}, user)
-			if err != nil {
-				return nil
-			}
-			return pbs
-		},
 		"unassociatedProblems": func(user *kilonova.UserBrief) []*kilonova.ScoredProblem {
 			pbs, err := base.ScoredProblems(context.Background(), kilonova.ProblemFilter{
 				LookingUser: user, Look: true, Unassociated: true,
@@ -460,11 +451,11 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"pasteEditor": func(user *kilonova.UserBrief, paste *kilonova.SubmissionPaste) bool {
 			return base.IsPasteEditor(paste, user)
 		},
-		"genProblemsParams": func(pbs []*kilonova.ScoredProblem, showScore, multiCols, showPublished bool) *ProblemListingParams {
-			return &ProblemListingParams{pbs, showScore, multiCols, showPublished, -1}
+		"genProblemsParams": func(pbs []*kilonova.ScoredProblem, showScore, showPublished bool) *ProblemListingParams {
+			return &ProblemListingParams{pbs, showScore, showPublished, -1}
 		},
 		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *ProblemListingParams {
-			return &ProblemListingParams{pbs, true, false, true, contest.ID}
+			return &ProblemListingParams{pbs, true, true, contest.ID}
 		},
 		"genPblistParams": func(pblist *kilonova.ProblemList, open bool) *PblistParams {
 			return &PblistParams{pblist, open}

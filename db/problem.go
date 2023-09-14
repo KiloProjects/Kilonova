@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -88,7 +89,7 @@ func (s *DB) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*ki
 	fb := newFilterBuilder()
 	problemFilterQuery(&filter, fb)
 
-	query := "SELECT * FROM problems WHERE " + fb.Where() + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset)
+	query := fmt.Sprintf("SELECT * FROM problems WHERE %s %s %s", fb.Where(), getProblemOrdering(filter.Ordering, filter.Descending), FormatLimitOffset(filter.Limit, filter.Offset))
 	err := Select(s.conn, ctx, &pbs, query, fb.Args()...)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.Problem{}, nil
@@ -105,7 +106,7 @@ func (s *DB) ScoredProblems(ctx context.Context, filter kilonova.ProblemFilter, 
 FROM problems 
 	LEFT JOIN max_score_view ms ON (problems.id = ms.problem_id AND ms.user_id = $1)
 	LEFT JOIN LATERAL (SELECT user_id FROM problem_editors editors WHERE problems.id = editors.problem_id AND editors.user_id = $1 LIMIT 1) editors ON TRUE
-WHERE ` + fb.Where() + " ORDER BY id ASC " + FormatLimitOffset(filter.Limit, filter.Offset)
+WHERE ` + fb.Where() + " " + getProblemOrdering(filter.Ordering, filter.Descending) + " " + FormatLimitOffset(filter.Limit, filter.Offset)
 	err := Select(s.conn, ctx, &pbs, query, fb.Args()...)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.ScoredProblem{}, nil
@@ -389,4 +390,19 @@ func (s *DB) internalToScoredProblems(spbs []*dbScoredProblem, userID int) []*ki
 		}
 	}
 	return rez
+}
+
+func getProblemOrdering(ordering string, descending bool) string {
+	ord := " ASC"
+	if descending {
+		ord = " DESC"
+	}
+	switch ordering {
+	case "name":
+		return "ORDER BY name" + ord + ", id ASC"
+	case "published_at":
+		return "ORDER BY published_at" + ord + " NULLS LAST, id ASC"
+	default:
+		return "ORDER BY id" + ord
+	}
 }

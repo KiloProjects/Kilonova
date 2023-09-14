@@ -31,6 +31,8 @@ type Donation struct {
 	Source DonationSource `json:"source"`
 	Type   DonationType   `json:"type"`
 
+	RealName string `json:"real_name"`
+
 	TransactionID string     `json:"transaction_id"`
 	CancelledAt   *time.Time `json:"cancelled_at"`
 }

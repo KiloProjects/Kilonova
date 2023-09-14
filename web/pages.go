@@ -265,12 +265,14 @@ type IndexParams struct {
 	RunningContests []*kilonova.Contest
 
 	ChildProblemLists []*kilonova.ProblemList
+
+	LastProblems []*kilonova.ScoredProblem
+	MoreProblems bool
 }
 
 type ProblemListingParams struct {
 	Problems  []*kilonova.ScoredProblem
 	ShowScore bool
-	MultiCols bool
 
 	ShowPublished bool
 

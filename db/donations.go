@@ -18,6 +18,8 @@ type donation struct {
 	Source kilonova.DonationSource `db:"source"`
 	Type   kilonova.DonationType   `db:"type"`
 
+	RealName string `db:"real_name"`
+
 	TransactionID string     `db:"transaction_id"`
 	CancelledAt   *time.Time `db:"cancelled_at"`
 }
@@ -29,8 +31,8 @@ func (s *DB) AddDonation(ctx context.Context, donation *kilonova.Donation) error
 	}
 	var id int
 	err := s.conn.QueryRow(ctx,
-		"INSERT INTO donations (donated_at, user_id, amount, source, type, transaction_id, cancelled_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
-		donation.DonatedAt, userID, donation.Amount, donation.Source, donation.Type, donation.TransactionID, donation.CancelledAt,
+		"INSERT INTO donations (donated_at, user_id, amount, source, type, transaction_id, cancelled_at, real_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
+		donation.DonatedAt, userID, donation.Amount, donation.Source, donation.Type, donation.TransactionID, donation.CancelledAt, donation.RealName,
 	).Scan(&id)
 	if err == nil {
 		donation.ID = id
@@ -63,6 +65,7 @@ func (s *DB) internalToDonation(ctx context.Context, d *donation) (*kilonova.Don
 		User:      user,
 		Amount:    d.Amount,
 		Currency:  d.Currency,
+		RealName:  d.RealName,
 
 		Source:        d.Source,
 		Type:          d.Type,

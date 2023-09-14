@@ -41,7 +41,7 @@
     <ul>
         {{range .}}
         <li>
-            {{if .User}}<a href="/profile/{{.User.Name}}">{{.User.Name}} {{if isAdmin}}(#{{.User.ID}}){{end}}</a>{{else}}???{{end}} - {{printf "%.2f" .Amount}} {{.Currency}} (<span class="server_timestamp">{{.DonatedAt.UnixMilli}}</span>)
+            {{if .User}}<a href="/profile/{{.User.Name}}">{{.User.Name}} {{if isAdmin}}(#{{.User.ID}}){{end}}</a>{{else if .RealName}}{{.RealName}}{{else}}???{{end}} - {{printf "%.2f" .Amount}} {{.Currency}} (<span class="server_timestamp">{{.DonatedAt.UnixMilli}}</span>)
             {{if isAdmin}}
             <ul>
                 <li>{{getText "donation_method"}}: {{.Source}}</li>

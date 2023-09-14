@@ -120,10 +120,10 @@ func (s *API) addDonation(w http.ResponseWriter, r *http.Request) {
 	if args.Username != nil && *args.Username != "" {
 		user, err := s.base.UserBriefByName(r.Context(), *args.Username)
 		if err != nil {
-			err.WriteError(w)
-			return
+			args.RealName = *args.Username
+		} else {
+			args.User = user
 		}
-		args.User = user
 	}
 	if err := s.base.AddDonation(r.Context(), &args.Donation); err != nil {
 		err.WriteError(w)

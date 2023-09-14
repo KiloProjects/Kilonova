@@ -7,82 +7,152 @@
     <p class="text-gray-600 dark:text-gray-300 mb-2">{{ getText "announcement" `<a target="_blank" rel="noopener noreferrer" href="https://discord.gg/Qa6Ytgh">Discord</a>` }} </p>
 </div>
 
-{{ $user := .Ctx.User.Brief }}
-
-{{ $showAllContests := false }}
-
-{{ if (or .RunningContests .FutureContests)}}
-<div class="segment-panel">
-    {{ $bothContests := and .RunningContests .FutureContests }}
-    <div class="grid grid-cols-1 md:grid-cols-2">
-        {{ with .RunningContests }}
-        <div class="col-span-1 {{ if not $bothContests }} col-span-full {{ else }} contest-small-grid {{ end }}">
-            <h2>{{getText "running_contests"}}</h2>
-            {{ template "contest_list.html" . }}
-        </div>
-        {{ end }}
-        {{ with .FutureContests }}
-        <div class="col-span-1 {{ if not $bothContests }} col-span-full {{ else }} contest-small-grid {{ end }}">
-            <h2>{{getText "future_contests"}}</h2>
-            {{ template "contest_list.html" . }}
-        </div>
-        {{ end }}
-    </div>
-    <div class="mt-3">
-        {{ renderMarkdown (getText "all_contests_announcement") }}
-    </div>
-</div>
-{{ end }}
-
-
-
-{{ if boolFlag "feature.frontend.front_page_pbs" }}
-
-<div class="segment-panel">
-    <h2>{{getText "problems"}}</h2>
-    
-    <div class="list-group mb-4">
-        {{ with .ChildProblemLists }}
-            {{ range . }}
-                {{template "problemlist_show" (genPblistParams . false)}}
+<div class="page-holder">
+    <div class="page-content-wrapper">
+        {{ if (or .RunningContests .FutureContests)}}
+        <div class="segment-panel {{ if boolFlag `feature.frontend.front_page_pbs` }} lg:hidden {{end}}">
+            {{ with .RunningContests}}
+                <h2>{{getText "running_contests"}}</h2>
+                {{ template "contest_list.html" . }}                
             {{ end }}
-        {{ end }}
-        {{ with (unassociatedProblems authedUser) }}
-            <details class="list-group-head">
-                <summary class="pb-1 mt-1">
-                    <span>{{getText "the_rest"}}</span>
-                    {{if $user}}
-                        <span class="float-right badge">
-                            {{ getText "num_solved" (numSolvedPbs .) (len .) }}
-                        </span>
-                    {{else}}
-                    <span class="float-right badge">
-                        {{ if eq 1 (len .)}}
-                            {{ getText "single_problem" }}
-                        {{ else }}
-                            {{ getText "num_problems" (len .) }}
-                        {{ end }}
-                    </span>
-                    {{end}}
-                </summary>
-                {{ with . }}
-                    <div class="mt-2">
-                        {{ template "pb_list_group" (genProblemsParams . true false true) }}
-                    </div>
+
+            {{if (and .RunningContests .FutureContests )}}
+                <div class="my-2"></div>
+            {{end}}
+
+            {{ with .FutureContests }}
+                <h2>{{getText "future_contests"}}</h2>
+                {{ template "contest_list.html" . }}
+            {{ end }}
+            <div class="mt-3">
+                {{ renderMarkdown (getText "all_contests_announcement") }}
+            </div>
+        </div>
+        {{end}}
+        
+        {{ if boolFlag "feature.frontend.front_page_pbs" }}
+        
+        <div class="segment-panel">
+            <h2>{{getText "problems"}}</h2>
+            
+            <div class="list-group mb-4">
+                {{ with .ChildProblemLists }}
+                    {{ range . }}
+                        {{template "problemlist_show" (genPblistParams . false)}}
+                    {{ end }}
                 {{ end }}
-            </details>
+                {{ with (unassociatedProblems authedUser) }}
+                    <details class="list-group-head">
+                        <summary class="pb-1 mt-1">
+                            <span>{{getText "the_rest"}}</span>
+                            {{if authed}}
+                                <span class="float-right badge">
+                                    {{ getText "num_solved" (numSolvedPbs .) (len .) }}
+                                </span>
+                            {{else}}
+                            <span class="float-right badge">
+                                {{ if eq 1 (len .)}}
+                                    {{ getText "single_problem" }}
+                                {{ else }}
+                                    {{ getText "num_problems" (len .) }}
+                                {{ end }}
+                            </span>
+                            {{end}}
+                        </summary>
+                        {{ with . }}
+                            <div class="mt-2">
+                                {{ template "pb_list_group" (genProblemsParams . true true) }}
+                            </div>
+                        {{ end }}
+                    </details>
+                {{ end }}
+            </div>
+            
+            <span class="mb-2">
+                {{ renderMarkdown (getText "all_checklists_announcement") }}
+            </span>
+            <span class="mb-4">
+                {{ renderMarkdown (getText "all_problems_announcement") }}
+            </span>
+        </div>
+
+        {{end}}
+    </div>
+    <div class="page-sidebar">
+        
+        {{ if (or .RunningContests .FutureContests)}}
+        <div class="segment-panel hidden lg:block">
+            {{ $bothContests := and .RunningContests .FutureContests }}
+            {{ with .RunningContests }}
+            <h2>{{getText "running_contests"}}</h2>
+            {{ template "contest_sidebar_view" . }}
+            {{ end }}
+            {{ with .FutureContests }}
+            <h2>{{getText "future_contests"}}</h2>
+            {{ template "contest_sidebar_view" . }}
+            {{ end }}
+            <div class="mt-3">
+                {{ renderMarkdown (getText "all_contests_announcement") }}
+            </div>
+        </div>
+        {{ end }}
+        {{if .LastProblems}}
+        <div class="segment-panel">
+            <h2>{{getText "latest_problems"}}</h2>
+            {{ template "pb_list_group" (genProblemsParams .LastProblems true false) }}
+            {{ if .MoreProblems }}
+            <p class="mt-2"><a href="/problems/?ordering=published_at&descending=true">{{getText "view_more"}}</a></p>
+            {{ end }}
+        </div>
+        {{end}}
+        {{ if boolFlag "frontend.donations.enabled" }}
+        {{ if boolFlag "frontent.donation.frontpage_nag"}}
+        <div class="segment-panel">
+            <h2>{{getText "support_kn"}} <i class="fas fa-hand-holding-dollar"></i></h2>
+            <p class="text-muted">{{getText "donate.front_page_par"}}</p>
+        </div>
+        {{ end }}
         {{ end }}
     </div>
-    
-    <span class="mb-2">
-        {{ renderMarkdown (getText "all_checklists_announcement") }}
-    </span>
-    <span class="mb-4">
-        {{ renderMarkdown (getText "all_problems_announcement") }}
-    </span>
 </div>
 
 
-{{ end }}
-
+{{end}}
+{{define "contest_sidebar_view"}}
+{{range .}}
+<div class="segment-panel my-1">
+    <h2>{{.Name}}</h2>
+    <p>
+        {{if .Ended}}
+            {{getText "contest_ended"}}
+        {{else if .Running}}
+            <kn-contest-countdown target_time="{{(remainingContestTime . (contestRegistration .)).UnixMilli}}" type="running"></kn-contest-countdown> 
+            {{getText "contest_remaining"}}
+        {{else}}
+            {{getText "contest_starting_in"}}
+            <kn-contest-countdown target_time="{{.StartTime.UnixMilli}}" type="before_start"></kn-contest-countdown>
+        {{end}}
+    </p>
+    {{ if isUSACOstyle . }}
+    <p>{{getText "contest_user_time"}}: {{usacoDuration .}}</p>
+    {{ end }}
+    {{ if isContestEditor . }}
+    <p>{{getText "visibility"}}:
+        {{if .Visible}}
+        <span class="badge-lite bg-green-700 text-sm font-semibold">{{getText "visible"}}</span>
+        {{else}}
+        <span class="badge-lite bg-red-700 text-sm font-semibold">{{getText "invisible"}}</span>
+        {{end}}
+    </p>
+    <p>{{getText "registration_status"}}:
+        {{if .PublicJoin}}
+        <span class="badge-lite bg-green-700 text-sm font-semibold">{{getText "registration_open"}}</span>
+        {{else}}
+        <span class="badge-lite bg-red-700 text-sm font-semibold">{{getText "registration_closed"}}</span>
+        {{end}}
+    </p>
+    {{ end }}
+    <a href="/contests/{{.ID}}" class="btn btn-blue mt-2">{{getText "view_details"}}</a>
+</div>
+{{end}}
 {{end}}

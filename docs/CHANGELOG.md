@@ -1,3 +1,13 @@
+- v0.21.0:
+    - Rework front page;
+    - Donations page:
+        - Actual page;
+        - Webhook notification for buymeacoffee;
+        - Manualy added donors.
+    - Internal addition of sorting problems ascending/descending and by id, name and published time
+        - `/problems` UI will follow soon enough
+    - Add button to make problem list from contest problems;
+    - Performance improvements by materialization.
 - v0.20.2:
     - You can now view a "checklist" summary for the progress inside a problem list;
     - Contests can now be deleted;

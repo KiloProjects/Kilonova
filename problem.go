@@ -104,6 +104,9 @@ type ProblemFilter struct {
 
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
+
+	Ordering   string `json:"ordering"`
+	Descending bool   `json:"descending"`
 }
 
 type ProblemUpdate struct {

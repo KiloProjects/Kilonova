@@ -90,7 +90,7 @@
     {{ $tagid := .Tag.ID }}
     {{ with .Problems }}
         <a class="btn btn-blue mb-2" href="/problems?tags={{$tagid}}">{{getText "use_in_search"}}</a>
-        {{ template "pb_list_group" (genProblemsParams . true false true) }}
+        {{ template "pb_list_group" (genProblemsParams . true true) }}
     {{ else }}
         <p>{{getText "noPbFound"}}</p>
     {{ end }}

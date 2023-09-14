@@ -33,6 +33,11 @@ const (
 	PblistCntCacheKey = WebCtx("pblist_cache")
 )
 
+var (
+	DonationsEnabled = config.GenFlag[bool]("frontend.donations.enabled", true, "Donations page enabled")
+	DonationsNag     = config.GenFlag[bool]("frontent.donation.frontpage_nag", true, "Donations front page notification")
+)
+
 func (rt *Web) index() http.HandlerFunc {
 	templ := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html", "modals/contest_list.html")
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +76,22 @@ func (rt *Web) index() http.HandlerFunc {
 			}
 		}
 
-		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), futureContests, runningContests, pblists})
+		lastProblems, err := rt.base.ScoredProblems(r.Context(), kilonova.ProblemFilter{
+			LookingUser: util.UserBrief(r), Look: true,
+			Ordering: "published_at", Descending: true,
+			Limit: 6,
+		}, util.UserBrief(r))
+		if err != nil {
+			lastProblems = []*kilonova.ScoredProblem{}
+		}
+
+		var moreProblems bool
+		if len(lastProblems) == 6 {
+			lastProblems = lastProblems[:5]
+			moreProblems = true
+		}
+
+		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), futureContests, runningContests, pblists, lastProblems, moreProblems})
 	}
 }
 
@@ -84,6 +104,9 @@ func (rt *Web) problems() http.HandlerFunc {
 		Query   *string `json:"q"`
 		Editor  *int    `json:"editor_user"`
 		Visible *bool   `json:"published"`
+
+		Ordering   string `json:"ordering"`
+		Descending bool   `json:"descending"`
 
 		Tags *string `json:"tags"`
 
@@ -175,6 +198,7 @@ func (rt *Web) problems() http.HandlerFunc {
 			Tags: gr,
 
 			Limit: 50, Offset: (q.Page - 1) * 50,
+			Ordering: q.Ordering, Descending: q.Descending,
 		}, util.UserBrief(r))
 		if err != nil {
 			zap.S().Warn(err)
@@ -969,8 +993,6 @@ func (rt *Web) contestLeaderboard() http.HandlerFunc {
 		})
 	}
 }
-
-var DonationsEnabled = config.GenFlag[bool]("frontend.donations.enabled", true, "Donations page enabled")
 
 func (rt *Web) donationPage() http.HandlerFunc {
 	templ := rt.parse(nil, "donate.html")

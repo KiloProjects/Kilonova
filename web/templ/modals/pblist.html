@@ -34,7 +34,7 @@
         {{ end }}
         {{ with (listProblems authedUser .) }}
             <div class="mt-2">
-                {{ template "pb_list_group" (genProblemsParams . true false true) }}
+                {{ template "pb_list_group" (genProblemsParams . true true) }}
             </div>
         {{ end }}
     </details>
