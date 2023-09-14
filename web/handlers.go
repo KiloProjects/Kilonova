@@ -59,12 +59,28 @@ func (rt *Web) index() http.HandlerFunc {
 			}
 		}
 
+		var pinnedLists []*kilonova.ProblemList
+		if config.Frontend.PinnedProblemList > 0 {
+			pinnedLists, err = rt.base.PblistChildrenLists(r.Context(), config.Frontend.PinnedProblemList)
+			if err != nil {
+				zap.S().Warn(err)
+				pblists = []*kilonova.ProblemList{}
+			}
+		}
+
 		listIDs := []int{}
 		for _, list := range pblists {
 			listIDs = append(listIDs, list.ID)
 			for _, slist := range list.SubLists {
 				listIDs = append(listIDs, slist.ID)
 			}
+		}
+		for _, list := range pinnedLists {
+			listIDs = append(listIDs, list.ID)
+			// sublists are not rendered for pinned lists
+			// for _, slist := range list.SubLists {
+			// 	listIDs = append(listIDs, slist.ID)
+			// }
 		}
 
 		if util.UserBrief(r) != nil {
@@ -76,22 +92,22 @@ func (rt *Web) index() http.HandlerFunc {
 			}
 		}
 
-		lastProblems, err := rt.base.ScoredProblems(r.Context(), kilonova.ProblemFilter{
+		hotProblems, err := rt.base.ScoredProblems(r.Context(), kilonova.ProblemFilter{
 			LookingUser: util.UserBrief(r), Look: true,
-			Ordering: "published_at", Descending: true,
+			Ordering: "hot", Descending: true,
 			Limit: 6,
 		}, util.UserBrief(r))
 		if err != nil {
-			lastProblems = []*kilonova.ScoredProblem{}
+			hotProblems = []*kilonova.ScoredProblem{}
 		}
 
 		var moreProblems bool
-		if len(lastProblems) == 6 {
-			lastProblems = lastProblems[:5]
+		if len(hotProblems) == 6 {
+			hotProblems = hotProblems[:5]
 			moreProblems = true
 		}
 
-		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), futureContests, runningContests, pblists, lastProblems, moreProblems})
+		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), futureContests, runningContests, pblists, hotProblems, moreProblems, pinnedLists})
 	}
 }
 

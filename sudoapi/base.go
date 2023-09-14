@@ -39,6 +39,7 @@ type BaseAPI struct {
 func (s *BaseAPI) Start(ctx context.Context) *StatusError {
 	go s.ingestAuditLogs(ctx)
 	go s.refreshProblemStatsJob(ctx, 5*time.Minute)
+	go s.refreshHotProblemsJob(ctx, 4*time.Hour)
 
 	return nil
 }

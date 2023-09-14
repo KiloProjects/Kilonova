@@ -60,6 +60,11 @@ func (s *DB) RefreshProblemStats(ctx context.Context) error {
 	return err
 }
 
+func (s *DB) RefreshHotProblems(ctx context.Context) error {
+	_, err := s.conn.Exec(ctx, "REFRESH MATERIALIZED VIEW hot_problems")
+	return err
+}
+
 func (s *DB) ProblemChecklist(ctx context.Context, problemID int) (*kilonova.ProblemChecklist, error) {
 	rows, _ := s.conn.Query(ctx, "SELECT * FROM problem_checklist WHERE problem_id = $1 LIMIT 1", problemID)
 	chk, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[kilonova.ProblemChecklist])

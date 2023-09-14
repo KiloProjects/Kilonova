@@ -96,12 +96,41 @@
             </div>
         </div>
         {{ end }}
-        {{if .LastProblems}}
+        {{ with .PinnedLists }}
         <div class="segment-panel">
-            <h2>{{getText "latest_problems"}}</h2>
-            {{ template "pb_list_group" (genProblemsParams .LastProblems true false) }}
+            <h2>{{getText "pinned_lists"}}</h2>
+            <div class="list-group">
+                {{range .}}
+                <a href="/problem_lists/{{.ID}}" class="list-group-item">
+                    <div class="pb-1 mt-1">
+                        <span>{{.Title}} (#{{.ID}})</span>
+                        {{if gt (.NumProblems) 0}}
+                            {{if authed}}
+                            <span class="float-right badge">
+                                {{numSolvedPblist .ID}} / {{.NumProblems}}
+                            </span>
+                            {{else}}
+                            <span class="float-right badge">
+                                {{ if eq 1 (.NumProblems)}}
+                                    {{ getText "single_problem" }}
+                                {{ else }}
+                                    {{ getText "num_problems" (.NumProblems) }}
+                                {{ end }}
+                            </span>
+                            {{end}}
+                        {{end}}
+                    </div>
+                </a>
+                {{end}}
+            </div>
+        </div>
+        {{ end }}
+        {{if .HotProblems}}
+        <div class="segment-panel">
+            <h2>{{getText "hot_problems"}}</h2>
+            {{ template "pb_list_group" (genProblemsParams .HotProblems true false) }}
             {{ if .MoreProblems }}
-            <p class="mt-2"><a href="/problems/?ordering=published_at&descending=true">{{getText "view_more"}}</a></p>
+            <p class="mt-2"><a href="/problems/?ordering=hot&descending=true">{{getText "view_more"}}</a></p>
             {{ end }}
         </div>
         {{end}}

@@ -154,7 +154,7 @@ type TagGroup = {
 	tag_ids: number[];
 };
 
-type ProblemOrdering = "" | "id" | "name" | "published_at";
+type ProblemOrdering = "" | "id" | "name" | "published_at" | "hot";
 
 type ProblemQuery = {
 	textQuery: string;
@@ -192,6 +192,7 @@ function initialQuery(params: URLSearchParams, groups: TagGroup[]): ProblemQuery
 		case "id":
 		case "name":
 		case "published_at":
+		case "hot":
 			ordering = ord;
 			break;
 		default:

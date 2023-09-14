@@ -223,6 +223,28 @@ func (s *BaseAPI) refreshProblemStatsJob(ctx context.Context, interval time.Dura
 	}
 }
 
+func (s *BaseAPI) refreshHotProblemsJob(ctx context.Context, interval time.Duration) error {
+	t := time.NewTicker(interval)
+	defer t.Stop()
+	go func() {
+		// Initial refresh
+		zap.S().Debug("Refreshing hot problems")
+		s.db.RefreshHotProblems(ctx)
+	}()
+	for {
+		select {
+		case <-ctx.Done():
+			if !errors.Is(ctx.Err(), context.Canceled) {
+				return ctx.Err()
+			}
+			return nil
+		case <-t.C:
+			zap.S().Debug("Refreshing hot problems")
+			s.db.RefreshHotProblems(ctx)
+		}
+	}
+}
+
 func (s *BaseAPI) WakeGrader() {
 	if s.grader != nil {
 		s.grader.Wake()

@@ -2296,6 +2296,10 @@ ro = "Vezi detalii"
 en = "View more"
 ro = "Vezi mai multe"
 
-[latest_problems]
-en = "Latest problems"
-ro = "Ultimele probleme"
+[hot_problems]
+en = "Trending problems"
+ro = "Probleme trending"
+
+[pinned_lists]
+en = "Highlighted lists"
+ro = "Liste evidențiate"

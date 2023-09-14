@@ -23,6 +23,7 @@
  password = "PASSWORD"
 
 [frontend]
+ pinned_problem_list = 1
  root_problem_list = 5
 
 [donations]

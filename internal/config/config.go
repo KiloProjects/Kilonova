@@ -71,6 +71,8 @@ type DonationConf struct {
 }
 
 type FrontendConf struct {
+	PinnedProblemList int `toml:"pinned_problem_list"`
+
 	RootProblemList int `toml:"root_problem_list"`
 }
 
