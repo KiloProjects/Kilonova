@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"errors"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
@@ -107,7 +108,9 @@ func (s *BaseAPI) ScoredProblems(ctx context.Context, filter kilonova.ProblemFil
 	}
 	problems, err := s.db.ScoredProblems(ctx, filter, uid)
 	if err != nil {
-		zap.S().Warn(err)
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
 		return nil, WrapError(err, "Couldn't get problems")
 	}
 	return problems, nil

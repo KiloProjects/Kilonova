@@ -1,14 +1,15 @@
 {{ define "title" }} Kilonova {{ end }}
 {{ define "content" }}
 
-<div class="segment-panel">
-    <h1>Kilonova {{version}}</h1>
-    
-    <p class="text-gray-600 dark:text-gray-300 mb-2">{{ getText "announcement" `<a target="_blank" rel="noopener noreferrer" href="https://discord.gg/Qa6Ytgh">Discord</a>` }} </p>
-</div>
-
 <div class="page-holder">
     <div class="page-content-wrapper">
+
+        <div class="segment-panel">
+            <h1>Kilonova {{version}}</h1>
+            
+            <p class="text-gray-600 dark:text-gray-300 mb-1">{{ getText "announcement" `<a target="_blank" rel="noopener noreferrer" href="https://discord.gg/Qa6Ytgh">Discord</a>` }} </p>
+        </div>
+
         {{ if (or .RunningContests .FutureContests)}}
         <div class="segment-panel {{ if boolFlag `feature.frontend.front_page_pbs` }} lg:hidden {{end}}">
             {{ with .RunningContests}}
