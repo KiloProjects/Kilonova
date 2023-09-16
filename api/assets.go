@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/csv"
@@ -234,10 +235,15 @@ func (s *Assets) ServeProblemArchive(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/zip")
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`attachment; filename="%d-%s.zip"`, util.Problem(r).ID, kilonova.MakeSlug(util.Problem(r).Name)))
 	w.WriteHeader(200)
-	if err := test.GenerateArchive(r.Context(), util.Problem(r), w, s.base, &args); err != nil {
+
+	wr := bufio.NewWriter(w)
+	if err := test.GenerateArchive(r.Context(), util.Problem(r), wr, s.base, &args); err != nil {
 		if !errors.Is(err, context.Canceled) {
 			zap.S().Warn(err)
 		}
 		fmt.Fprint(w, err)
+	}
+	if err := wr.Flush(); err != nil {
+		zap.S().Warn(err)
 	}
 }
