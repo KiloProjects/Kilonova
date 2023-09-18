@@ -154,7 +154,7 @@ func (s *DB) internalToLeaderboardEntry(ctx context.Context, entry *databaseTopE
 		return nil, err
 	}
 
-	rows, _ := s.conn.Query(ctx, "SELECT problem_id, score FROM max_score_contest_view WHERE user_id = $1 AND contest_id = $2", entry.UserID, entry.ContestID)
+	rows, _ := s.conn.Query(ctx, "SELECT problem_id, score FROM contest_max_scores($2) WHERE user_id = $1", entry.UserID, entry.ContestID)
 	pbs, err := pgx.CollectRows(rows, pgx.RowToStructByName[struct {
 		ProblemID int `db:"problem_id"`
 		Score     int `db:"score"`

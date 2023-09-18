@@ -135,7 +135,7 @@ func (s *DB) ScoredContestProblems(ctx context.Context, contestID int, userID in
 	var pbs []*dbScoredProblem
 	err := Select(s.conn, ctx, &pbs, `SELECT pbs.*, cpbs.position AS unused_position, ms.user_id, ms.score, (editors.user_id IS NOT NULL) AS pb_editor
 FROM (problems pbs INNER JOIN contest_problems cpbs ON cpbs.problem_id = pbs.id) 
-	LEFT JOIN max_score_contest_view ms ON (pbs.id = ms.problem_id AND cpbs.contest_id = ms.contest_id AND ms.user_id = $2)
+	LEFT JOIN contest_max_scores($1) ms ON (pbs.id = ms.problem_id AND ms.user_id = $2)
 	LEFT JOIN LATERAL (SELECT user_id FROM problem_editors editors WHERE pbs.id = editors.problem_id AND editors.user_id = $2 LIMIT 1) editors ON TRUE
 WHERE cpbs.contest_id = $1 
 ORDER BY cpbs.position ASC`, contestID, userID)
