@@ -33,10 +33,6 @@ func NewManager(p string) (kilonova.DataStore, error) {
 		return nil, err
 	}
 
-	if err := os.MkdirAll(path.Join(p, "dbs"), 0777); err != nil {
-		return nil, err
-	}
-
 	if err := os.MkdirAll(path.Join(p, "attachments"), 0777); err != nil {
 		return nil, err
 	}

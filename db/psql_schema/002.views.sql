@@ -5,7 +5,7 @@ BEGIN;
 
 DROP VIEW IF EXISTS submission_subtask_max_scores CASCADE;
 CREATE OR REPLACE VIEW submission_subtask_max_scores (problem_id, user_id, subtask_id, max_score) AS
-    SELECT problem_id, user_id, subtask_id, MAX(ROUND(COALESCE(final_percentage, 0) * (score / 100.0), stks.digit_precision)) max_score
+    SELECT problem_id, user_id, subtask_id, computed_score AS max_score
     FROM submission_subtasks stks
     WHERE subtask_id IS NOT NULL GROUP BY user_id, problem_id, subtask_id;
 
@@ -165,19 +165,31 @@ CREATE OR REPLACE FUNCTION contest_max_scores(contest_id bigint) RETURNS TABLE(u
             FROM submissions WHERE contest_id = $1
             WINDOW w AS (PARTITION BY user_id, problem_id ORDER BY score DESC, created_at ASC)
     ), subtask_max_scores AS (
-        SELECT DISTINCT FIRST_VALUE(stks.problem_id) OVER w as problem_id, stks.user_id, subtask_id, MAX(ROUND(COALESCE(final_percentage, 0) * (score / 100.0), digit_precision)) max_score
+        SELECT DISTINCT user_id, subtask_id, FIRST_VALUE(problem_id) OVER w as problem_id, FIRST_VALUE(computed_score) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
         FROM submission_subtasks stks
         WHERE subtask_id IS NOT NULL AND EXISTS (SELECT 1 FROM submissions WHERE contest_id = $1 AND submission_id = id)
-            WINDOW w AS (PARTITION BY stks.user_id, subtask_id ORDER BY ROUND(COALESCE(final_percentage, 0) * (score / 100.0), digit_precision) DESC)
-         GROUP BY stks.user_id, subtask_id;
+            WINDOW w AS (PARTITION BY user_id, subtask_id ORDER BY computed_score DESC, created_at ASC)
     ), sum_subtasks_strat AS (
-        SELECT DISTINCT user_id, problem_id, coalesce(SUM(max_score), -1) AS max_score FROM subtask_max_scores GROUP BY user_id, problem_id
-    ) SELECT * FROM max_submission_start
+        SELECT DISTINCT user_id, problem_id, coalesce(SUM(max_score), -1) AS max_score, MAX(mintime) AS mintime FROM subtask_max_scores GROUP BY user_id, problem_id
+    ) SELECT 
+        users.user_id user_id,
+        pbs.problem_id problem_id,
+        CASE WHEN problems.scoring_strategy = 'max_submission' THEN COALESCE(ms_sub.max_score, -1)
+            WHEN problems.scoring_strategy = 'sum_subtasks'   THEN COALESCE(ms_subtask.max_score, -1)
+            ELSE -1
+        END score,
+        CASE WHEN problems.scoring_strategy = 'max_submission' THEN COALESCE(ms_sub.mintime, NULL)
+            WHEN problems.scoring_strategy = 'sum_subtasks'   THEN COALESCE(ms_subtask.mintime, NULL)
+            ELSE NULL
+        END mintime
+    FROM ((contest_problems pbs INNER JOIN contest_registrations users ON users.contest_id = pbs.contest_id AND pbs.contest_id = $1) INNER JOIN problems ON pbs.problem_id = problems.id)
+        LEFT JOIN max_submission_strat ms_sub ON (ms_sub.user_id = users.user_id AND ms_sub.problem_id = pbs.problem_id)
+        LEFT JOIN sum_subtasks_strat ms_subtask ON (ms_subtask.user_id = users.user_id AND ms_subtask.problem_id = pbs.problem_id)
 $$ LANGUAGE SQL STABLE;
 
 DROP VIEW IF EXISTS contest_submission_subtask_max_scores CASCADE;
 CREATE OR REPLACE VIEW contest_submission_subtask_max_scores (problem_id, user_id, subtask_id, contest_id, max_score) AS
-    SELECT MAX(stks.problem_id) as problem_id, stks.user_id, subtask_id, subs.contest_id, MAX(ROUND(COALESCE(final_percentage, 0) * stks.score / 100.0, stks.digit_precision)) max_score
+    SELECT MAX(stks.problem_id) as problem_id, stks.user_id, subtask_id, subs.contest_id, MAX(computed_score) max_score
     FROM submission_subtasks stks INNER JOIN submissions subs ON stks.submission_id = subs.id
     WHERE subtask_id IS NOT NULL AND subs.contest_id IS NOT NULL GROUP BY stks.user_id, subtask_id, subs.contest_id;
 
@@ -205,15 +217,15 @@ DROP VIEW IF EXISTS contest_top_view CASCADE;
 CREATE OR REPLACE FUNCTION contest_top_view(contest_id bigint) RETURNS TABLE (user_id bigint, contest_id bigint, total_score decimal) AS $$
     -- both contest_scores and legit_contestants will contain results only for that contest id, so it's safe to simply join them 
     WITH contest_scores AS (
-        SELECT user_id, contest_id, SUM(score) AS total_score FROM max_score_contest_view WHERE score >= 0 AND contest_id = $1 GROUP BY user_id, contest_id
+        SELECT user_id, SUM(score) AS total_score, MAX(mintime) AS last_time FROM contest_max_scores($1) WHERE score >= 0 GROUP BY user_id
     ), legit_contestants AS (
         SELECT regs.* FROM contest_registrations regs WHERE regs.contest_id = $1 AND NOT EXISTS (SELECT 1 FROM contest_user_access acc WHERE acc.user_id = regs.user_id AND acc.contest_id = regs.contest_id)
     )
-    SELECT users.user_id, users.contest_id, COALESCE(scores.total_score, 0) AS total_score 
+    SELECT users.user_id, $1 AS contest_id, COALESCE(scores.total_score, 0) AS total_score 
     FROM 
         legit_contestants users 
         LEFT JOIN contest_scores scores ON users.user_id = scores.user_id 
-        ORDER BY COALESCE(total_score, 0) DESC, user_id;
+        ORDER BY COALESCE(total_score, 0) DESC, last_time ASC, user_id;
 $$ LANGUAGE SQL STABLE;
 
 DROP FUNCTION IF EXISTS visible_submissions;

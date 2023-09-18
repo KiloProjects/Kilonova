@@ -372,7 +372,7 @@ CREATE TABLE IF NOT EXISTS problem_tags (
 
 ---- username history
 
-CREATE INDEX username_change_history_uid ON username_change_history(user_id);
+CREATE INDEX IF NOT EXISTS username_change_history_uid ON username_change_history(user_id);
 
 ---- pblists
 
