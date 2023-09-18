@@ -159,6 +159,22 @@ CREATE OR REPLACE FUNCTION visible_contests(user_id bigint) RETURNS TABLE (conte
         WHERE contests.id = users.contest_id AND contests.visible = false AND users.user_id = $1) -- not visible but registered
 $$ LANGUAGE SQL STABLE;
 
+CREATE OR REPLACE FUNCTION contest_max_scores(contest_id bigint) RETURNS TABLE(user_id bigint, problem_id bigint, score integer, mintime timestamptz) AS $$
+    WITH max_submission_strat AS (
+        SELECT DISTINCT user_id, problem_id, FIRST_VALUE(score) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
+            FROM submissions WHERE contest_id = $1
+            WINDOW w AS (PARTITION BY user_id, problem_id ORDER BY score DESC, created_at ASC)
+    ), subtask_max_scores AS (
+        SELECT DISTINCT FIRST_VALUE(stks.problem_id) OVER w as problem_id, stks.user_id, subtask_id, MAX(ROUND(COALESCE(final_percentage, 0) * (score / 100.0), digit_precision)) max_score
+        FROM submission_subtasks stks
+        WHERE subtask_id IS NOT NULL AND EXISTS (SELECT 1 FROM submissions WHERE contest_id = $1 AND submission_id = id)
+            WINDOW w AS (PARTITION BY stks.user_id, subtask_id ORDER BY ROUND(COALESCE(final_percentage, 0) * (score / 100.0), digit_precision) DESC)
+         GROUP BY stks.user_id, subtask_id;
+    ), sum_subtasks_strat AS (
+        SELECT DISTINCT user_id, problem_id, coalesce(SUM(max_score), -1) AS max_score FROM subtask_max_scores GROUP BY user_id, problem_id
+    ) SELECT * FROM max_submission_start
+$$ LANGUAGE SQL STABLE;
+
 DROP VIEW IF EXISTS contest_submission_subtask_max_scores CASCADE;
 CREATE OR REPLACE VIEW contest_submission_subtask_max_scores (problem_id, user_id, subtask_id, contest_id, max_score) AS
     SELECT MAX(stks.problem_id) as problem_id, stks.user_id, subtask_id, subs.contest_id, MAX(ROUND(COALESCE(final_percentage, 0) * stks.score / 100.0, stks.digit_precision)) max_score

@@ -24,6 +24,8 @@ type subSubtask struct {
 
 	Score           decimal.Decimal  `db:"score"`
 	FinalPercentage *decimal.Decimal `db:"final_percentage"`
+
+	ComputedScore decimal.Decimal `db:"computed_score"`
 }
 
 func (s *DB) UpdateSubmissionSubtaskPercentage(ctx context.Context, id int, percentage decimal.Decimal) (err error) {
