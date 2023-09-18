@@ -142,9 +142,10 @@ func (s *DB) DeleteContest(ctx context.Context, id int) error {
 // Contest leaderboard
 
 type databaseTopEntry struct {
-	UserID    int `db:"user_id"`
-	ContestID int `db:"contest_id"`
-	Total     int `db:"total_score"`
+	UserID    int        `db:"user_id"`
+	ContestID int        `db:"contest_id"`
+	Total     int        `db:"total_score"`
+	LastTime  *time.Time `db:"last_time"`
 }
 
 func (s *DB) internalToLeaderboardEntry(ctx context.Context, entry *databaseTopEntry) (*kilonova.LeaderboardEntry, error) {
@@ -171,6 +172,8 @@ func (s *DB) internalToLeaderboardEntry(ctx context.Context, entry *databaseTopE
 		User:          user.ToBrief(),
 		TotalScore:    entry.Total,
 		ProblemScores: scores,
+
+		LastTime: entry.LastTime,
 	}, nil
 }
 

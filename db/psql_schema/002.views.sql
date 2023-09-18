@@ -212,20 +212,21 @@ CREATE OR REPLACE VIEW max_score_contest_view (user_id, problem_id, contest_id, 
         LEFT JOIN sum_subtasks_strat ms_subtask ON (ms_subtask.user_id = users.user_id AND ms_subtask.problem_id = pbs.problem_id AND ms_subtask.contest_id = users.contest_id);
 
 DROP VIEW IF EXISTS contest_top_view CASCADE;
+DROP FUNCTION contest_top_view;
 -- Since we now return -1 on no attempt, we must filter it when computing the top view
 -- also, exclude contest editors/testers since they didn't get that score legit
-CREATE OR REPLACE FUNCTION contest_top_view(contest_id bigint) RETURNS TABLE (user_id bigint, contest_id bigint, total_score decimal) AS $$
+CREATE OR REPLACE FUNCTION contest_top_view(contest_id bigint) RETURNS TABLE (user_id bigint, contest_id bigint, total_score decimal, last_time timestamptz) AS $$
     -- both contest_scores and legit_contestants will contain results only for that contest id, so it's safe to simply join them 
     WITH contest_scores AS (
         SELECT user_id, SUM(score) AS total_score, MAX(mintime) AS last_time FROM contest_max_scores($1) WHERE score >= 0 GROUP BY user_id
     ), legit_contestants AS (
         SELECT regs.* FROM contest_registrations regs WHERE regs.contest_id = $1 AND NOT EXISTS (SELECT 1 FROM contest_user_access acc WHERE acc.user_id = regs.user_id AND acc.contest_id = regs.contest_id)
     )
-    SELECT users.user_id, $1 AS contest_id, COALESCE(scores.total_score, 0) AS total_score 
+    SELECT users.user_id, $1 AS contest_id, COALESCE(scores.total_score, 0) AS total_score, last_time timestamptz
     FROM 
         legit_contestants users 
         LEFT JOIN contest_scores scores ON users.user_id = scores.user_id 
-        ORDER BY COALESCE(total_score, 0) DESC, last_time ASC, user_id;
+        ORDER BY COALESCE(total_score, 0) DESC, last_time ASC NULLS LAST, user_id;
 $$ LANGUAGE SQL STABLE;
 
 DROP FUNCTION IF EXISTS visible_submissions;

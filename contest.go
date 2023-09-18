@@ -126,6 +126,8 @@ type LeaderboardEntry struct {
 	User          *UserBrief  `json:"user"`
 	ProblemScores map[int]int `json:"scores"`
 	TotalScore    int         `json:"total"`
+
+	LastTime *time.Time `json:"last_time"`
 }
 
 type ContestLeaderboard struct {
