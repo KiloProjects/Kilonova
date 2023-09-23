@@ -60,8 +60,8 @@ func (s *DB) RefreshProblemStats(ctx context.Context) error {
 	return err
 }
 
-func (s *DB) RefreshHotProblems(ctx context.Context) error {
-	_, err := s.conn.Exec(ctx, "REFRESH MATERIALIZED VIEW hot_problems")
+func (s *DB) RefreshHotProblems(ctx context.Context, bannedProblems []int) error {
+	_, err := s.conn.Exec(ctx, "SELECT refresh_hot_pbs($1)", bannedProblems)
 	return err
 }
 

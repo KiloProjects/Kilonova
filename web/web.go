@@ -591,6 +591,8 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"globalMaxMem": func() int64 { return config.Eval.GlobalMaxMem / 1024 },
 		"numWorkers":   func() int { return config.Eval.NumConcurrent },
 
+		"bannedHotProblems": func() []int { return config.Frontend.BannedHotProblems },
+
 		"boolFlags": config.GetFlags[bool],
 
 		"validUsername": func(name string) bool { return base.CheckValidUsername(name) == nil },

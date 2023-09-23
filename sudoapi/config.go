@@ -13,6 +13,8 @@ type ConfigUpdate struct {
 	TestMaxMem   *int   `json:"test_max_mem"`
 	GlobalMaxMem *int64 `json:"global_max_mem"`
 	NumWorkers   *int   `json:"num_workers"`
+
+	BannedHotProblems []int `json:"banned_hot_pbs"`
 }
 
 func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) *StatusError {
@@ -27,6 +29,14 @@ func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) *StatusErr
 	}
 	if upd.NumWorkers != nil {
 		config.Eval.NumConcurrent = *upd.NumWorkers
+	}
+	if upd.BannedHotProblems != nil {
+		config.Frontend.BannedHotProblems = upd.BannedHotProblems
+		defer func() {
+			if err := s.db.RefreshHotProblems(ctx, upd.BannedHotProblems); err != nil {
+				zap.S().Warn(err)
+			}
+		}()
 	}
 	if err := config.Save(); err != nil {
 		zap.S().Error(err)

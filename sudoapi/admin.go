@@ -229,7 +229,7 @@ func (s *BaseAPI) refreshHotProblemsJob(ctx context.Context, interval time.Durat
 	go func() {
 		// Initial refresh
 		zap.S().Debug("Refreshing hot problems")
-		s.db.RefreshHotProblems(ctx)
+		s.db.RefreshHotProblems(ctx, config.Frontend.BannedHotProblems)
 	}()
 	for {
 		select {
@@ -240,7 +240,7 @@ func (s *BaseAPI) refreshHotProblemsJob(ctx context.Context, interval time.Durat
 			return nil
 		case <-t.C:
 			zap.S().Debug("Refreshing hot problems")
-			s.db.RefreshHotProblems(ctx)
+			s.db.RefreshHotProblems(ctx, config.Frontend.BannedHotProblems)
 		}
 	}
 }

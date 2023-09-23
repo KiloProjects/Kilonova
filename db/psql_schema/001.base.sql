@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS problems (
 
 	source_credits 	text				NOT NULL DEFAULT '',
 	default_points 	integer 			NOT NULL DEFAULT 0,
-    scoring_strategy scoring_type NOT NULL DEFAULT 'max_submission',
+    scoring_strategy scoring_type       NOT NULL DEFAULT 'max_submission',
 
     published_at timestamptz
 );

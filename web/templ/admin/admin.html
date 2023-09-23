@@ -131,6 +131,12 @@
 		<span class="form-label">{{getText "config.numWorkers"}}:</span>
         <input type="number" id="num_workers" name="num_workers" class="form-input" value="{{numWorkers}}" /> 
     </label>
+
+    <label class="block my-2">
+        <span class="form-label">{{getText "config.bannedHotProblems"}}:</span>
+        <input type="text" id="banned_hot_pbs" class="form-input" pattern="([0-9]+,?)+" value="{{intList bannedHotProblems}}">
+    </label>
+    <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
 </form>
 
 <script>
@@ -141,6 +147,7 @@
             num_workers: document.getElementById("num_workers").value,
             test_max_mem: document.getElementById("test_max_mem").value * 1024,
             global_max_mem: document.getElementById("global_max_mem").value * 1024,
+            banned_hot_pbs: bundled.stringIntToNumber(document.getElementById("banned_hot_pbs").value.split(','))
         };
         bundled.apiToast(await bundled.postCall("/admin/updateConfig", data))
     })

@@ -73,6 +73,11 @@ type DonationConf struct {
 type FrontendConf struct {
 	PinnedProblemList int `toml:"pinned_problem_list"`
 
+	// Note that BannedHotProblems only counts for problems that are sorted
+	// using the hotness filter (that is, had submissions in the last 7 days)
+	// Basically, banned problems are considered to have had 0 submissions in the last 7 days
+	BannedHotProblems []int `toml:"banned_hot_problems"`
+
 	RootProblemList int `toml:"root_problem_list"`
 }
 

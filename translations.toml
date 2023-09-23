@@ -1494,10 +1494,13 @@ ro = "Memorie maximă per test"
 en = "Global max memory (worker sum usage)"
 ro = "Memorie maximă globală (worker sum usage)"
 
-
 [config.numWorkers]
 en = "Number of workers"
 ro = "Numărul de workeri"
+
+[config.bannedHotProblems]
+en = "Problems hidden from Trending tab"
+ro = "Probleme ascunse din panoul Trending"
 
 [boolFlags]
 en = "Boolean flags"
