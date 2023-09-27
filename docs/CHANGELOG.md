@@ -1,3 +1,9 @@
+- v0.22.0:
+    - ICPC leaderboards for contests;
+        - Also includes a bit of a rework to how scores are handled.
+    - New (for now hidden) query parameter for listing all problems inside a list;
+    - Fixed bugs that didn't show fractional scores in leaderboards and in the notification when sending a submission;
+    - Allow hiding problems from the trending tab.
 - v0.21.0:
     - Rework front page;
     - Donations page:
