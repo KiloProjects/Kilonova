@@ -19,13 +19,6 @@ type FullProblem = Problem & {
 	attempted_by: number;
 };
 
-type ProblemFilter = {
-	name_fuzzy?: string;
-
-	limit: number;
-	offset: number;
-};
-
 function numPagesF(count: number, max: number): number {
 	return Math.floor(count / max) + (count % max != 0 ? 1 : 0);
 }
@@ -162,6 +155,8 @@ type ProblemQuery = {
 
 	tags: TagGroup[];
 
+	deep_list_id?: number;
+
 	published?: boolean;
 	editor_user?: number;
 
@@ -185,6 +180,7 @@ function initialQuery(params: URLSearchParams, groups: TagGroup[]): ProblemQuery
 	}
 
 	const editorUserID = parseInt(params.get("editor_user") ?? "");
+	const deepListID = parseInt(params.get("deep_list_id") ?? "");
 
 	let ordering: ProblemOrdering = "";
 	const ord = params.get("ordering");
@@ -203,6 +199,8 @@ function initialQuery(params: URLSearchParams, groups: TagGroup[]): ProblemQuery
 		textQuery: params.get("q") ?? "",
 		page: !isNaN(page) && page != 0 ? page : 1,
 
+		deep_list_id: !isNaN(deepListID) ? deepListID : undefined,
+
 		published: published,
 		editor_user: !isNaN(editorUserID) ? editorUserID : undefined,
 		tags: groups,
@@ -219,6 +217,8 @@ function serializeQuery(f: ProblemQuery): any {
 		visible: f.published,
 
 		tags: f.tags,
+
+		deep_list_id: typeof f.deep_list_id !== "undefined" ? f.deep_list_id : undefined,
 
 		solved_by: f.solved_by,
 		attempted_by: f.attempted_by,

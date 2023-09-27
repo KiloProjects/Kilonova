@@ -121,6 +121,8 @@ func (rt *Web) problems() http.HandlerFunc {
 		Editor  *int    `json:"editor_user"`
 		Visible *bool   `json:"published"`
 
+		DeepListID *int `json:"deep_list_id"`
+
 		Ordering   string `json:"ordering"`
 		Descending bool   `json:"descending"`
 
@@ -211,8 +213,9 @@ func (rt *Web) problems() http.HandlerFunc {
 		pbs, cnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
 			LookingUser: util.UserBrief(r), Look: true,
 			FuzzyName: q.Query, EditorUserID: q.Editor, Visible: q.Visible,
-			Tags: gr,
+			DeepListID: q.DeepListID,
 
+			Tags:  gr,
 			Limit: 50, Offset: (q.Page - 1) * 50,
 			Ordering: q.Ordering, Descending: q.Descending,
 		}, util.UserBrief(r))
