@@ -1666,6 +1666,10 @@ ro = "Înregistrat"
 en = "Edit Contest Information"
 ro = "Editare Informații Concurs"
 
+[header.contest.leaderboard]
+en = "Leaderboard settings"
+ro = "Setări clasament"
+
 [unanswered_questions]
 en = "Asked questions"
 ro = "Întrebări puse"
@@ -1822,6 +1826,18 @@ ro = "Poziție"
 en = "Leaderboard"
 ro = "Clasament"
 
+[last_updated_at]
+en = "Last updated at"
+ro = "Cea mai recentă actualizare"
+
+[icpc_num_solved]
+en = "# Solved"
+ro = "# Rezolvate"
+
+[penalty]
+en = "Penalty"
+ro = "Penalizare"
+
 [reload]
 en = "Reload"
 ro = "Reîncărcare"
@@ -1914,6 +1930,30 @@ ro = "Timp individual (stil USACO)"
 [per_user_time_warning]
 en = "Warning: setting the individual user time parameter to a nonzero value will turn the contest into an USACO-style contest."
 ro = "Warning: setarea parametrului pentru timp individual la o valoare nenulă va transforma concursul în unul tip USACO."
+
+[leaderboard.style]
+en = "Leaderboard type"
+ro = "Tip clasament"
+
+[leaderboard.classic]
+en = "Classic (IOI)"
+ro = "Clasic (IOI)"
+
+[leaderboard.icpc]
+en = "ACM-ICPC"
+ro = "ACM-ICPC"
+
+[icpc_submission_penalty]
+en = "ICPC penalty per attempt"
+ro = "Penalizare ICPC per încercare"
+
+[enable_freeze]
+en = "Freeze leaderboards"
+ro = "Înghețare clasament"
+
+[freeze_time]
+en = "Freeze moment"
+ro = "Momentul înghețării"
 
 [start_contest]
 en = "Start contest"

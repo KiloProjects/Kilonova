@@ -2,7 +2,6 @@ package api
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
@@ -30,62 +29,13 @@ func (s *API) createContest(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var args struct {
-		Name *string `json:"name"`
-		Desc *string `json:"description"`
-
-		PublicJoin *bool `json:"public_join"`
-		Visible    *bool `json:"visible"`
-
-		StartTime *string `json:"start_time"`
-		EndTime   *string `json:"end_time"`
-
-		MaxSubs *int `json:"max_subs"`
-
-		PublicLeaderboard *bool `json:"public_leaderboard"`
-
-		RegisterDuringContest *bool `json:"register_during_contest"`
-
-		PerUserTime *int `json:"per_user_time"` // Seconds
-	}
+	var args kilonova.ContestUpdate
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 500)
 		return
 	}
 
-	var startTime, endTime *time.Time
-	if args.StartTime != nil {
-		t, err := time.Parse(time.RFC1123Z, *args.StartTime)
-		if err != nil {
-			errorData(w, "Invalid timestamp", 400)
-			return
-		}
-		startTime = &t
-	}
-	if args.EndTime != nil {
-		t, err := time.Parse(time.RFC1123Z, *args.EndTime)
-		if err != nil {
-			errorData(w, "Invalid timestamp", 400)
-			return
-		}
-		endTime = &t
-	}
-
-	if err := s.base.UpdateContest(r.Context(), util.Contest(r).ID, kilonova.ContestUpdate{
-		Name:       args.Name,
-		PublicJoin: args.PublicJoin,
-		Visible:    args.Visible,
-		StartTime:  startTime,
-		EndTime:    endTime,
-		MaxSubs:    args.MaxSubs,
-
-		Description: args.Desc,
-
-		PublicLeaderboard:     args.PublicLeaderboard,
-		RegisterDuringContest: args.RegisterDuringContest,
-
-		PerUserTime: args.PerUserTime,
-	}); err != nil {
+	if err := s.base.UpdateContest(r.Context(), util.Contest(r).ID, args); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -135,13 +85,25 @@ func (s *API) getContestProblems(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) contestLeaderboard(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var args struct {
+		Frozen bool `json:"frozen"`
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		http.Error(w, "Can't decode parameters", 400)
+		return
+	}
 	// This is assumed to be called from a context in which
 	// IsContestVisible is already true
 	if !(util.Contest(r).PublicLeaderboard || s.base.IsContestEditor(util.UserBrief(r), util.Contest(r))) {
 		errorData(w, "You are not allowed to view the leaderboard", 400)
 		return
 	}
-	ld, err := s.base.ContestLeaderboard(r.Context(), util.Contest(r).ID)
+
+	ld, err := s.base.ContestLeaderboard(
+		r.Context(), util.Contest(r),
+		s.base.UserContestFreezeTime(util.UserBrief(r), util.Contest(r), args.Frozen),
+	)
 	if err != nil {
 		err.WriteError(w)
 		return

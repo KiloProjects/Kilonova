@@ -18,15 +18,11 @@
             </label>
             <label class="block mb-2">
                 <span class="form-label">{{getText "startTime"}}: </span>
-                <input class="form-input" name="start_time" type="text" 
-                    pattern="[\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2} [+-][\d]{4}"
-                    placeholder="2020-03-18 15:00 +0300" value="{{.Contest.StartTime.Format `2006-01-02 15:04 -0700`}}" required>
+                <input class="form-input" id="start_time" name="start_time" type="datetime-local" required>
             </label>
             <label class="block mb-2">
                 <span class="form-label">{{getText "endTime"}}: </span>
-                <input class="form-input" name="end_time" type="text" 
-                    pattern="[\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2} [+-][\d]{4}"
-                    placeholder="2020-03-18 18:00 +0300" value="{{.Contest.EndTime.Format `2006-01-02 15:04 -0700`}}" required>
+                <input class="form-input" id="end_time" name="end_time" type="datetime-local" required>
             </label>
             <div class="block mb-2">
                 <label class="inline-flex items-center text-lg">
@@ -48,18 +44,43 @@
                     <span class="ml-2">{{getText "visible"}}</span>
                 </label>
             </div>
-            <div class="block mb-2">
-                <label class="inline-flex items-center text-lg">
-                    <input class="form-checkbox" id="c_public_leaderboard" name="public_leaderboard" type="checkbox" {{if .Contest.PublicLeaderboard}}checked{{end}}>
-                    <span class="ml-2">{{getText "public_leaderboard"}}</span>
-                </label>
-            </div>
             <label class="block mb-2">
                 <span class="form-label">{{getText "per_user_time"}}: </span>
                 <input class="form-input" name="per_user_time" type="number" value="{{.Contest.PerUserTime}}" required>
                 <span class="form-label">{{getText "seconds"}}</span>
                 <p class="text-muted">{{getText "per_user_time_warning"}}</p>
             </label>
+
+            <div class="segment-panel">
+                <h2>{{getText "header.contest.leaderboard"}}</h2>
+                <label class="block my-2">
+                    <span class="form-label">{{getText "leaderboard.style"}}:</span>
+                    <select name="leaderboard_style" id="leaderboard_style" class="form-select" required>
+                        <option value="classic" default {{if eq .Contest.LeaderboardStyle `classic`}}selected{{end}}>{{getText "leaderboard.classic"}}</option>
+                        <option value="acm-icpc" {{if eq .Contest.LeaderboardStyle `acm-icpc`}}selected{{end}}>{{getText "leaderboard.icpc"}}</option>
+                    </select>
+                </label>
+                <label id="icpcPenaltyLabel" class="block mb-2 {{if not (eq .Contest.LeaderboardStyle `acm-icpc`)}} hidden {{end}} ">
+                    <span class="form-label">{{getText "icpc_submission_penalty"}}: </span>
+                    <input class="form-input" name="icpc_submission_penalty" type="number" value="{{.Contest.ICPCSubmissionPenalty}}" required>
+                </label>
+                <div class="block mb-2">
+                    <label class="inline-flex items-center text-lg">
+                        <input class="form-checkbox" id="c_public_leaderboard" name="public_leaderboard" type="checkbox" {{if .Contest.PublicLeaderboard}}checked{{end}}>
+                        <span class="ml-2">{{getText "public_leaderboard"}}</span>
+                    </label>
+                </div>
+                <div class="block mb-2">
+                    <label class="inline-flex items-center text-lg">
+                        <input class="form-checkbox" id="c_freeze_enabled" name="freeze_enabled" type="checkbox" {{if .Contest.LeaderboardFreeze}}checked{{end}}>
+                        <span class="ml-2">{{getText "enable_freeze"}}</span>
+                    </label>
+                </div>
+                <label id="freezeLabel" class="block mb-2 {{if not .Contest.LeaderboardFreeze}}hidden{{end}}">
+                    <span class="form-label">{{getText "freeze_time"}}: </span>
+                    <input class="form-input" id="freeze_time" name="freeze_time" type="datetime-local">
+                </label>
+            </div>
 
             <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
             {{if authedUser.Admin}}
@@ -68,6 +89,7 @@
             </div>
             {{end}}
         </form>
+
 
         <div class="segment-panel">
             <h2>{{getText "header.contest.edit_problems"}}</h2>
@@ -143,20 +165,52 @@
 </style>
 
 <script>
+// datetime handling
+function setDatetime(inputID, backendValue) {
+    console.log(backendValue, bundled.dayjs(backendValue).format("YYYY-MM-DD[T]HH:mm"))
+    document.getElementById(inputID).value = bundled.dayjs(backendValue).format("YYYY-MM-DD[T]HH:mm")
+}
+setDatetime("start_time", {{printf "%s" .Contest.StartTime.MarshalText}});
+setDatetime("end_time", {{printf "%s" .Contest.EndTime.MarshalText}});
+{{if .Contest.LeaderboardFreeze}}
+    setDatetime("freeze_time", {{printf "%s" .Contest.LeaderboardFreeze.MarshalText}});
+{{else}}
+    document.getElementById("freeze_time").value = "";
+{{end}}
+</script>
+<script>
+// contest option hiding handling
+document.getElementById("c_freeze_enabled").addEventListener("change", (e) => {
+    document.getElementById("freezeLabel").classList.toggle("hidden", !e.currentTarget.checked)
+})
+document.getElementById("leaderboard_style").addEventListener("change", (e) => {
+    document.getElementById("icpcPenaltyLabel").classList.toggle("hidden", e.currentTarget.value != "acm-icpc")
+})
+</script>
+
+<script>
 // Contest update-specific stuff
 const contest_id = {{.Contest.ID}};
 async function updateContest(e) {
     e.preventDefault();
     try {
         var fd = new FormData(e.currentTarget)
+
+        let leaderboardFreeze = document.getElementById("c_freeze_enabled").checked;
+
         var data = {
             name: fd.get("name"),
             max_subs: fd.get("max_subs"),
             public_join: document.getElementById("c_public_join").checked,
             visible: document.getElementById("c_visible").checked,
-            public_leaderboard: document.getElementById("c_public_leaderboard").checked,
             start_time: bundled.contestToNetworkDate(fd.get("start_time")),
             end_time: bundled.contestToNetworkDate(fd.get("end_time")),
+
+            public_leaderboard: document.getElementById("c_public_leaderboard").checked,
+            leaderboard_style: fd.get("leaderboard_style"),
+            change_leaderboard_freeze: true,
+            leaderboard_freeze: leaderboardFreeze ? bundled.contestToNetworkDate(fd.get("freeze_time")) : undefined,
+            icpc_submission_penalty: fd.get("icpc_submission_penalty"),
             
             per_user_time: fd.get("per_user_time"),
             register_during_contest: document.getElementById("c_reg").checked,
@@ -281,7 +335,6 @@ async function addEditor() {
     }
 
     async function loadUsers(users, id) {
-        console.log(id, document.getElementById(id))
         //document.getElementById(id).innerHTML = `<div class="list-group-head">${bundled.getText("loading")}</div>`
         let outhtml = ""
         if (users.length == 0) {

@@ -1,6 +1,10 @@
 package kilonova
 
-import "time"
+import (
+	"time"
+
+	"github.com/shopspring/decimal"
+)
 
 /*
 	Contest parameters:
@@ -11,6 +15,14 @@ import "time"
 			- false: contest can't be seen on the main page neither before nor during or after it's held;
 			- true: contest can be seen on the main page and its contents can be accessed while it's held by unregistered users.
 */
+
+type LeaderboardType string
+
+const (
+	LeaderboardTypeNone    LeaderboardType = ""
+	LeaderboardTypeClassic LeaderboardType = "classic"
+	LeaderboardTypeICPC    LeaderboardType = "acm-icpc"
+)
 
 type Contest struct {
 	ID        int          `json:"id"`
@@ -40,6 +52,10 @@ type Contest struct {
 	// PublicLeaderboard controls whether the contest's leaderboard
 	// is viewable by everybody or just admins
 	PublicLeaderboard bool `json:"public_leaderboard"`
+
+	LeaderboardStyle      LeaderboardType `json:"leaderboard_style"`
+	LeaderboardFreeze     *time.Time      `json:"leaderboard_freeze"`
+	ICPCSubmissionPenalty int             `json:"icpc_submission_penalty"`
 
 	StartTime time.Time `json:"start_time"`
 	EndTime   time.Time `json:"end_time"`
@@ -90,9 +106,14 @@ type ContestUpdate struct {
 
 	RegisterDuringContest *bool `json:"register_during_contest"`
 
-	PublicLeaderboard *bool `json:"public_leaderboard"`
+	PublicLeaderboard     *bool           `json:"public_leaderboard"`
+	LeaderboardStyle      LeaderboardType `json:"leaderboard_style"`
+	ICPCSubmissionPenalty *int            `json:"icpc_submission_penalty"`
 
-	PerUserTime *int `json:"per_user_time"` // In seconds
+	ChangeLeaderboardFreeze bool       `json:"change_leaderboard_freeze"`
+	LeaderboardFreeze       *time.Time `json:"leaderboard_freeze"`
+
+	PerUserTime *int `json:"per_user_time"` // Seconds
 }
 
 type ContestQuestion struct {
@@ -122,16 +143,30 @@ type ContestRegistration struct {
 	IndividualEndTime   *time.Time `json:"individual_end" db:"individual_end_at"`
 }
 
+// TODO: Maybe it would be nicer to coalesce all problem maps in a struct?
 type LeaderboardEntry struct {
-	User          *UserBrief  `json:"user"`
-	ProblemScores map[int]int `json:"scores"`
-	TotalScore    int         `json:"total"`
+	User *UserBrief `json:"user"`
 
-	LastTime *time.Time `json:"last_time"`
+	// For classic mode
+	ProblemScores map[int]decimal.Decimal `json:"scores"`
+	TotalScore    decimal.Decimal         `json:"total"`
+
+	// For ICPC mode
+	ProblemAttempts map[int]int `json:"attempts"`
+	Penalty         int         `json:"penalty"`
+	NumSolved       int         `json:"num_solved"`
+	// ProblemTimes is expressed as number of minutes since start
+	ProblemTimes map[int]int `json:"last_times"`
+
+	LastTime   *time.Time `json:"last_time"`
+	FreezeTime *time.Time `json:"freeze_time"`
 }
 
 type ContestLeaderboard struct {
 	ProblemOrder []int               `json:"problem_ordering"`
 	ProblemNames map[int]string      `json:"problem_names"`
 	Entries      []*LeaderboardEntry `json:"entries"`
+
+	FreezeTime *time.Time      `json:"freeze_time"`
+	Type       LeaderboardType `json:"type"`
 }

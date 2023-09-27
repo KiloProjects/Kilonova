@@ -102,7 +102,19 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request) {
-	ld, err := s.base.ContestLeaderboard(r.Context(), util.Contest(r).ID)
+	r.ParseForm()
+	var args struct {
+		Frozen bool `json:"frozen"`
+	}
+	if err := decoder.Decode(&args, r.Form); err != nil {
+		http.Error(w, "Can't decode parameters", 400)
+		return
+	}
+
+	ld, err := s.base.ContestLeaderboard(
+		r.Context(), util.Contest(r),
+		s.base.UserContestFreezeTime(util.UserBrief(r), util.Contest(r), args.Frozen),
+	)
 	if err != nil {
 		http.Error(w, err.Error(), err.Code)
 		return
@@ -121,7 +133,12 @@ func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request)
 		}
 		header = append(header, name)
 	}
-	header = append(header, "total")
+	if util.Contest(r).LeaderboardStyle == kilonova.LeaderboardTypeICPC {
+		header = append(header, "num_solved")
+		header = append(header, "penalty")
+	} else {
+		header = append(header, "total")
+	}
 	if err := wr.Write(header); err != nil {
 		zap.S().Warn(err)
 		http.Error(w, "Couldn't write CSV", 500)
@@ -134,11 +151,11 @@ func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request)
 			if !ok {
 				line = append(line, "-")
 			} else {
-				line = append(line, strconv.Itoa(score))
+				line = append(line, score.String())
 			}
 		}
 
-		line = append(line, strconv.Itoa(entry.TotalScore))
+		line = append(line, entry.TotalScore.String())
 		if err := wr.Write(line); err != nil {
 			zap.S().Warn(err)
 			http.Error(w, "Couldn't write CSV", 500)

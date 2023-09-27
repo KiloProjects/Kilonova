@@ -3,18 +3,17 @@ BEGIN;
 -- NOTE: This file will never be inside 001.base.sql
 -- This can be rerun every time a type or column is changed so the views will be refreshed
 
-DROP VIEW IF EXISTS submission_subtask_max_scores CASCADE;
-CREATE OR REPLACE VIEW submission_subtask_max_scores (problem_id, user_id, subtask_id, max_score) AS
-    SELECT problem_id, user_id, subtask_id, computed_score AS max_score
-    FROM submission_subtasks stks
-    WHERE subtask_id IS NOT NULL GROUP BY user_id, problem_id, subtask_id;
-
 DROP VIEW IF EXISTS max_score_view CASCADE;
 CREATE OR REPLACE VIEW max_score_view (user_id, problem_id, score) AS 
     WITH max_submission_strat AS (
         SELECT user_id, problem_id, MAX(score) AS max_score FROM submissions GROUP BY user_id, problem_id
+    ), subtask_max_scores AS (
+        SELECT DISTINCT user_id, subtask_id, FIRST_VALUE(problem_id) OVER w as problem_id, FIRST_VALUE(computed_score) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
+        FROM submission_subtasks stks
+        WHERE subtask_id IS NOT NULL 
+            WINDOW w AS (PARTITION BY user_id, subtask_id ORDER BY computed_score DESC, created_at ASC)
     ), sum_subtasks_strat AS (
-        SELECT user_id, problem_id, coalesce(SUM(max_score), -1) AS max_score FROM submission_subtask_max_scores GROUP BY user_id, problem_id
+        SELECT user_id, problem_id, coalesce(SUM(max_score), -1) AS max_score FROM subtask_max_scores GROUP BY user_id, problem_id
     ) SELECT users.id user_id, 
             pbs.id problem_id, 
             CASE WHEN pbs.scoring_strategy = 'max_submission' THEN COALESCE(ms_sub.max_score, -1)
@@ -159,15 +158,18 @@ CREATE OR REPLACE FUNCTION visible_contests(user_id bigint) RETURNS TABLE (conte
         WHERE contests.id = users.contest_id AND contests.visible = false AND users.user_id = $1) -- not visible but registered
 $$ LANGUAGE SQL STABLE;
 
-CREATE OR REPLACE FUNCTION contest_max_scores(contest_id bigint) RETURNS TABLE(user_id bigint, problem_id bigint, score integer, mintime timestamptz) AS $$
+DROP FUNCTION IF EXISTS contest_max_scores(bigint);
+DROP FUNCTION IF EXISTS contest_max_scores(bigint, timestamptz);
+CREATE OR REPLACE FUNCTION contest_max_scores(contest_id bigint, freeze_time timestamptz) RETURNS TABLE(user_id bigint, problem_id bigint, score decimal, mintime timestamptz) AS $$
     WITH max_submission_strat AS (
         SELECT DISTINCT user_id, problem_id, FIRST_VALUE(score) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
-            FROM submissions WHERE contest_id = $1
+            FROM submissions WHERE contest_id = $1 AND created_at <= COALESCE(freeze_time, NOW())
             WINDOW w AS (PARTITION BY user_id, problem_id ORDER BY score DESC, created_at ASC)
     ), subtask_max_scores AS (
         SELECT DISTINCT user_id, subtask_id, FIRST_VALUE(problem_id) OVER w as problem_id, FIRST_VALUE(computed_score) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
         FROM submission_subtasks stks
         WHERE subtask_id IS NOT NULL AND EXISTS (SELECT 1 FROM submissions WHERE contest_id = $1 AND submission_id = id)
+            AND created_at <= COALESCE(freeze_time, NOW())
             WINDOW w AS (PARTITION BY user_id, subtask_id ORDER BY computed_score DESC, created_at ASC)
     ), sum_subtasks_strat AS (
         SELECT DISTINCT user_id, problem_id, coalesce(SUM(max_score), -1) AS max_score, MAX(mintime) AS mintime FROM subtask_max_scores GROUP BY user_id, problem_id
@@ -191,21 +193,61 @@ DROP VIEW IF EXISTS contest_submission_subtask_max_scores CASCADE;
 DROP VIEW IF EXISTS max_score_contest_view CASCADE;
 
 DROP VIEW IF EXISTS contest_top_view CASCADE;
-DROP FUNCTION contest_top_view;
+DROP FUNCTION IF EXISTS contest_top_view;
 -- Since we now return -1 on no attempt, we must filter it when computing the top view
 -- also, exclude contest editors/testers since they didn't get that score legit
-CREATE OR REPLACE FUNCTION contest_top_view(contest_id bigint) RETURNS TABLE (user_id bigint, contest_id bigint, total_score decimal, last_time timestamptz) AS $$
+CREATE OR REPLACE FUNCTION contest_top_view(contest_id bigint, freeze_time timestamptz) RETURNS TABLE (user_id bigint, contest_id bigint, total_score decimal, last_time timestamptz) AS $$
     -- both contest_scores and legit_contestants will contain results only for that contest id, so it's safe to simply join them 
     WITH contest_scores AS (
-        SELECT user_id, SUM(score) AS total_score, MAX(mintime) AS last_time FROM contest_max_scores($1) WHERE score >= 0 GROUP BY user_id
+        SELECT user_id, SUM(score) AS total_score, MAX(mintime) AS last_time FROM contest_max_scores($1, $2) WHERE score >= 0 GROUP BY user_id
     ), legit_contestants AS (
         SELECT regs.* FROM contest_registrations regs WHERE regs.contest_id = $1 AND NOT EXISTS (SELECT 1 FROM contest_user_access acc WHERE acc.user_id = regs.user_id AND acc.contest_id = regs.contest_id)
     )
-    SELECT users.user_id, $1 AS contest_id, COALESCE(scores.total_score, 0) AS total_score, last_time timestamptz
+    SELECT users.user_id, $1 AS contest_id, COALESCE(scores.total_score, 0) AS total_score, last_time
     FROM 
         legit_contestants users 
         LEFT JOIN contest_scores scores ON users.user_id = scores.user_id 
         ORDER BY COALESCE(total_score, 0) DESC, last_time ASC NULLS LAST, user_id;
+$$ LANGUAGE SQL STABLE;
+
+DROP FUNCTION IF EXISTS contest_icpc_view;
+-- we exclude contest editors/testers since they didn't get that score legit
+CREATE OR REPLACE FUNCTION contest_icpc_view(contest_id bigint, freeze_time timestamptz) 
+RETURNS TABLE (user_id bigint, contest_id bigint, last_time timestamptz, num_solved integer, penalty integer, num_attempts integer) AS $$
+    WITH legit_contestants AS (
+        SELECT regs.* FROM contest_registrations regs WHERE regs.contest_id = $1 AND NOT EXISTS (SELECT 1 FROM contest_user_access acc WHERE acc.user_id = regs.user_id AND acc.contest_id = regs.contest_id)
+    ), solved_pbs AS (
+        SELECT user_id, problem_id, mintime AS last_time FROM contest_max_scores($1, $2) WHERE score = 100
+    ), num_solved AS (
+        SELECT user_id, COUNT(*) AS num_problems, MAX(last_time) AS mintime FROM solved_pbs GROUP BY user_id
+    ), num_attempts AS (
+        -- TODO: Keep kind of in sync with left join in icpcToLeaderboardEntry
+        SELECT solved_pbs.user_id, COUNT(*) AS num_attempts 
+            FROM solved_pbs 
+            INNER JOIN submissions subs ON subs.contest_id = $1 
+                AND subs.user_id = solved_pbs.user_id 
+                AND subs.problem_id = solved_pbs.problem_id 
+                AND subs.created_at < solved_pbs.last_time
+            GROUP BY solved_pbs.user_id
+    ), duration_sum AS (
+        -- get sum of number of minutes from problems
+        SELECT user_id, 
+            SUM(FLOOR(EXTRACT(EPOCH FROM last_time - (SELECT start_time FROM contests WHERE id = $1 LIMIT 1)) / 60)) AS mins 
+        FROM solved_pbs GROUP BY user_id
+    ), penalties AS (
+        SELECT users.user_id, 
+            COALESCE(atts.num_attempts, 0) * (SELECT icpc_submission_penalty FROM contests WHERE id = $1 LIMIT 1) 
+                + GREATEST(COALESCE(dsum.mins, 0), 0)
+                AS penalty, atts.num_attempts AS num_attempts
+        FROM legit_contestants users
+            LEFT JOIN num_attempts atts ON atts.user_id = users.user_id
+            LEFT JOIN duration_sum dsum ON dsum.user_id = users.user_id
+    ) SELECT users.user_id, $1 AS contest_id, last_time, COALESCE(num_problems, 0), COALESCE(penalty, 0), COALESCE(num_attempts, 0)
+        FROM legit_contestants users
+        LEFT JOIN solved_pbs ON users.user_id = solved_pbs.user_id
+        LEFT JOIN num_solved ON users.user_id = num_solved.user_id
+        LEFT JOIN penalties ON users.user_id = penalties.user_id
+    ORDER BY COALESCE(num_problems, 0) DESC, penalty ASC NULLS LAST, last_time ASC NULLS LAST, user_id;
 $$ LANGUAGE SQL STABLE;
 
 DROP FUNCTION IF EXISTS visible_submissions;
@@ -252,7 +294,7 @@ CREATE OR REPLACE VIEW problem_list_deep_sublists (parent_id, child_id) AS
         SELECT pbs.parent_id AS parent_id, pt.child_id FROM problem_list_pblists pbs, pblist_tree pt WHERE pbs.child_id = pt.parent_id
     ) SELECT * FROM pblist_tree;
 
-DROP VIEW IF EXISTS problem_list_pb_count;
+DROP MATERIALIZED VIEW IF EXISTS problem_list_pb_count;
 CREATE MATERIALIZED VIEW IF NOT EXISTS problem_list_pb_count(list_id, count) AS 
     WITH RECURSIVE pblist_tree(list_id, problem_id) AS (
         SELECT pblist_id AS list_id, problem_id FROM problem_list_problems

@@ -63,7 +63,8 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 	var args struct {
 		UserID int
 
-		ContestID *int
+		ContestID  *int
+		ViewFrozen bool `json:"view_frozen"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 400)
@@ -87,7 +88,16 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 	if args.ContestID == nil {
 		maxScore = s.base.MaxScore(r.Context(), args.UserID, util.Problem(r).ID)
 	} else {
-		maxScore = s.base.ContestMaxScore(r.Context(), args.UserID, util.Problem(r).ID, *args.ContestID)
+		contest, err := s.base.Contest(r.Context(), *args.ContestID)
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+
+		maxScore = s.base.ContestMaxScore(
+			r.Context(), args.UserID, util.Problem(r).ID, *args.ContestID,
+			s.base.UserContestFreezeTime(util.UserBrief(r), contest, args.ViewFrozen),
+		)
 	}
 
 	switch util.Problem(r).ScoringStrategy {

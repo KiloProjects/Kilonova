@@ -6,7 +6,10 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/jackc/pgx/v5"
+	"github.com/shopspring/decimal"
+	"go.uber.org/zap"
 )
 
 type dbContest struct {
@@ -24,6 +27,11 @@ type dbContest struct {
 	Virtual bool `db:"virtual"`
 
 	PublicLeaderboard bool `db:"public_leaderboard"`
+
+	LeaderboardStyle      kilonova.LeaderboardType `db:"leaderboard_style"`
+	LeaderboardFreezeTime *time.Time               `db:"leaderboard_freeze_time"`
+
+	ICPCSubmissionPenalty int `db:"icpc_submission_penalty"`
 
 	PerUserTime           int  `db:"per_user_time"`
 	RegisterDuringContest bool `db:"register_during_contest"`
@@ -141,31 +149,37 @@ func (s *DB) DeleteContest(ctx context.Context, id int) error {
 
 // Contest leaderboard
 
-type databaseTopEntry struct {
-	UserID    int        `db:"user_id"`
-	ContestID int        `db:"contest_id"`
-	Total     int        `db:"total_score"`
-	LastTime  *time.Time `db:"last_time"`
+type databaseClassicEntry struct {
+	UserID    int             `db:"user_id"`
+	ContestID int             `db:"contest_id"`
+	Total     decimal.Decimal `db:"total_score"`
+	LastTime  *time.Time      `db:"last_time"`
+
+	FreezeTime *time.Time `db:"freeze_time"`
 }
 
-func (s *DB) internalToLeaderboardEntry(ctx context.Context, entry *databaseTopEntry) (*kilonova.LeaderboardEntry, error) {
+func (s *DB) classicToLeaderboardEntry(ctx context.Context, entry *databaseClassicEntry) (*kilonova.LeaderboardEntry, error) {
 	user, err := s.User(ctx, kilonova.UserFilter{ID: &entry.UserID})
 	if err != nil {
 		return nil, err
 	}
 
-	rows, _ := s.conn.Query(ctx, "SELECT problem_id, score FROM contest_max_scores($2) WHERE user_id = $1", entry.UserID, entry.ContestID)
+	rows, _ := s.conn.Query(ctx, "SELECT problem_id, score FROM contest_max_scores($2, $3) WHERE user_id = $1", entry.UserID, entry.ContestID, entry.FreezeTime)
 	pbs, err := pgx.CollectRows(rows, pgx.RowToStructByName[struct {
-		ProblemID int `db:"problem_id"`
-		Score     int `db:"score"`
+		ProblemID int             `db:"problem_id"`
+		Score     decimal.Decimal `db:"score"`
 	}])
 	if err != nil {
 		return nil, err
 	}
 
-	scores := make(map[int]int)
+	var numSolved int
+	scores := make(map[int]decimal.Decimal)
 	for _, pb := range pbs {
 		scores[pb.ProblemID] = pb.Score
+		if pb.Score.Equal(decimal.NewFromInt(100)) {
+			numSolved++
+		}
 	}
 
 	return &kilonova.LeaderboardEntry{
@@ -173,12 +187,18 @@ func (s *DB) internalToLeaderboardEntry(ctx context.Context, entry *databaseTopE
 		TotalScore:    entry.Total,
 		ProblemScores: scores,
 
-		LastTime: entry.LastTime,
+		ProblemAttempts: make(map[int]int),
+		Penalty:         0,
+		NumSolved:       numSolved,
+		ProblemTimes:    make(map[int]int),
+
+		LastTime:   entry.LastTime,
+		FreezeTime: entry.FreezeTime,
 	}, nil
 }
 
-func (s *DB) ContestLeaderboard(ctx context.Context, contestID int) (*kilonova.ContestLeaderboard, error) {
-	pbs, err := s.ContestProblems(ctx, contestID)
+func (s *DB) ContestClassicLeaderboard(ctx context.Context, contest *kilonova.Contest, freezeTime *time.Time) (*kilonova.ContestLeaderboard, error) {
+	pbs, err := s.ContestProblems(ctx, contest.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -186,19 +206,114 @@ func (s *DB) ContestLeaderboard(ctx context.Context, contestID int) (*kilonova.C
 	leaderboard := &kilonova.ContestLeaderboard{
 		ProblemOrder: mapper(pbs, func(pb *kilonova.Problem) int { return pb.ID }),
 		ProblemNames: make(map[int]string),
+
+		FreezeTime: freezeTime,
+		Type:       kilonova.LeaderboardTypeClassic,
 	}
 	for _, pb := range pbs {
 		leaderboard.ProblemNames[pb.ID] = pb.Name
 	}
 
-	var topList []*databaseTopEntry
+	var topList []*databaseClassicEntry
 
-	err = Select(s.conn, ctx, &topList, "SELECT * FROM contest_top_view($1)", contestID)
+	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_top_view($1, $2)", contest.ID, freezeTime)
 	if err != nil {
 		return nil, err
 	}
 
-	leaderboard.Entries = mapperCtx(ctx, topList, s.internalToLeaderboardEntry)
+	leaderboard.Entries = mapperCtx(ctx, topList, s.classicToLeaderboardEntry)
+
+	return leaderboard, nil
+}
+
+// TODO: Update
+type databaseICPCEntry struct {
+	UserID    int        `db:"user_id"`
+	ContestID int        `db:"contest_id"`
+	LastTime  *time.Time `db:"last_time"`
+	NumSolved int        `db:"num_solved"`
+	Penalty   int        `db:"penalty"`
+
+	NumAttempts int `db:"num_attempts"`
+
+	FreezeTime *time.Time `db:"freeze_time"`
+}
+
+func (s *DB) icpcToLeaderboardEntry(ctx context.Context, entry *databaseICPCEntry) (*kilonova.LeaderboardEntry, error) {
+	user, err := s.User(ctx, kilonova.UserFilter{ID: &entry.UserID})
+	if err != nil {
+		return nil, err
+	}
+
+	rows, _ := s.conn.Query(ctx, `
+		SELECT problem_id, score, mintime, COALESCE(natts.num_atts, 0) AS num_attempts
+			FROM contest_max_scores($2, $3) cms, 
+			LATERAL (SELECT COUNT(*) AS num_atts FROM submissions 
+				WHERE contest_id = $2 AND user_id = $1 AND problem_id = cms.problem_id AND (cms.score < 100 OR created_at < cms.mintime)) natts 
+		WHERE user_id = $1
+`, entry.UserID, entry.ContestID, entry.FreezeTime)
+	pbs, err := pgx.CollectRows(rows, pgx.RowToStructByName[struct {
+		ProblemID int             `db:"problem_id"`
+		Score     decimal.Decimal `db:"score"`
+		MinTime   *time.Time      `db:"mintime"`
+		Attempts  int             `db:"num_attempts"`
+	}])
+	if err != nil {
+		return nil, err
+	}
+
+	scores := make(map[int]decimal.Decimal)
+	times := make(map[int]int)
+	attempts := make(map[int]int)
+	for _, pb := range pbs {
+		scores[pb.ProblemID] = pb.Score
+		if pb.MinTime != nil && util.ContestContext(ctx) != nil {
+			times[pb.ProblemID] = int(pb.MinTime.Sub(util.ContestContext(ctx).StartTime).Minutes())
+		}
+		attempts[pb.ProblemID] = pb.Attempts
+	}
+
+	return &kilonova.LeaderboardEntry{
+		User:          user.ToBrief(),
+		TotalScore:    decimal.Zero,
+		ProblemScores: scores,
+
+		ProblemAttempts: attempts,
+		ProblemTimes:    times,
+		Penalty:         entry.Penalty,
+		NumSolved:       entry.NumSolved,
+
+		LastTime:   entry.LastTime,
+		FreezeTime: entry.FreezeTime,
+	}, nil
+}
+
+func (s *DB) ContestICPCLeaderboard(ctx context.Context, contest *kilonova.Contest, freezeTime *time.Time) (*kilonova.ContestLeaderboard, error) {
+	pbs, err := s.ContestProblems(ctx, contest.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	leaderboard := &kilonova.ContestLeaderboard{
+		ProblemOrder: mapper(pbs, func(pb *kilonova.Problem) int { return pb.ID }),
+		ProblemNames: make(map[int]string),
+
+		FreezeTime: freezeTime,
+		Type:       kilonova.LeaderboardTypeICPC,
+	}
+	for _, pb := range pbs {
+		leaderboard.ProblemNames[pb.ID] = pb.Name
+	}
+
+	var topList []*databaseICPCEntry
+
+	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_icpc_view($1, $2)", contest.ID, freezeTime)
+	if err != nil {
+		zap.S().Warn(err)
+		return nil, err
+	}
+
+	leaderboard.Entries = mapperCtx(context.WithValue(ctx, util.ContestKey, contest), topList, s.icpcToLeaderboardEntry)
 
 	return leaderboard, nil
 }
@@ -256,6 +371,15 @@ func contestUpdateQuery(upd *kilonova.ContestUpdate, ub *updateBuilder) {
 	if v := upd.PublicLeaderboard; v != nil {
 		ub.AddUpdate("public_leaderboard = %s", v)
 	}
+	if v := upd.LeaderboardStyle; v != kilonova.LeaderboardTypeNone {
+		ub.AddUpdate("leaderboard_style = %s", v)
+	}
+	if v := upd.LeaderboardFreeze; upd.ChangeLeaderboardFreeze {
+		ub.AddUpdate("leaderboard_freeze_time = %s", v)
+	}
+	if v := upd.ICPCSubmissionPenalty; v != nil {
+		ub.AddUpdate("icpc_submission_penalty = %s", v)
+	}
 	if v := upd.PerUserTime; v != nil {
 		ub.AddUpdate("per_user_time = %s", v)
 	}
@@ -292,6 +416,10 @@ func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilono
 		PerUserTime: contest.PerUserTime,
 
 		PublicLeaderboard: contest.PublicLeaderboard,
+		LeaderboardStyle:  contest.LeaderboardStyle,
+		LeaderboardFreeze: contest.LeaderboardFreezeTime,
+
+		ICPCSubmissionPenalty: contest.ICPCSubmissionPenalty,
 
 		RegisterDuringContest: contest.RegisterDuringContest,
 

@@ -177,6 +177,8 @@ func (s *BaseAPI) SearchProblems(ctx context.Context, filter kilonova.ProblemFil
 	return fullPbs, cnt, nil
 }
 
+// NOTE: This function is assumed to be used only for the looking user.
+// As such, freeze times are bypassed and the current scores are shown.
 func (s *BaseAPI) ContestProblems(ctx context.Context, contest *kilonova.Contest, lookingUser *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
 	if !s.CanViewContestProblems(ctx, lookingUser, contest) {
 		return nil, Statusf(403, "User can't view contest problems")
@@ -185,7 +187,7 @@ func (s *BaseAPI) ContestProblems(ctx context.Context, contest *kilonova.Contest
 	if lookingUser != nil {
 		userID = lookingUser.ID
 	}
-	problems, err := s.db.ScoredContestProblems(ctx, contest.ID, userID)
+	problems, err := s.db.ScoredContestProblems(ctx, contest.ID, userID, nil)
 	if err != nil {
 		zap.S().Warn(err)
 		return nil, WrapError(err, "Couldn't get problems")

@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"go.uber.org/zap"
@@ -216,4 +217,27 @@ func (s *BaseAPI) IsPasteEditor(paste *kilonova.SubmissionPaste, user *kilonova.
 		return false
 	}
 	return s.IsSubmissionEditor(paste.Submission, user) || user.ID == paste.Author.ID
+}
+
+// The leaderboards are not frozen if:
+//   - No freeze time is set
+//   - Current moment is before freeze time
+//   - User is contest editor
+//
+// Otherwise, leaderboard should be frozen
+// Also, in case the editor wants to see the frozen leaderboard, an option is provided
+func (s *BaseAPI) UserContestFreezeTime(user *kilonova.UserBrief, contest *kilonova.Contest, showFrozen bool) *time.Time {
+	if contest.LeaderboardFreeze == nil {
+		return nil
+	}
+	if time.Now().Before(*contest.LeaderboardFreeze) {
+		return nil
+	}
+	if s.IsContestEditor(user, contest) {
+		if showFrozen {
+			return contest.LeaderboardFreeze
+		}
+		return nil
+	}
+	return contest.LeaderboardFreeze
 }

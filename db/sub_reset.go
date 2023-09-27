@@ -71,8 +71,8 @@ func initSub(ctx context.Context, tx pgx.Tx, subID int) error {
 
 	// Init subtests
 	if _, err := tx.Exec(ctx, `
-	INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, score) 
-		SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, tests.id AS test_id, tests.visible_id, tests.score AS score 
+	INSERT INTO submission_tests (user_id, created_at, submission_id, contest_id, test_id, visible_id, score) 
+		SELECT subs.user_id, subs.created_at AS created_at, subs.id AS submission_id, subs.contest_id, tests.id AS test_id, tests.visible_id, tests.score AS score 
 		FROM submissions subs, tests 
 		WHERE subs.problem_id = tests.problem_id AND subs.id = $1
 `, subID); err != nil {
@@ -82,8 +82,8 @@ func initSub(ctx context.Context, tx pgx.Tx, subID int) error {
 	// Init subtasks
 	if _, err := tx.Exec(ctx, `
 INSERT INTO submission_subtasks 
-	(user_id, submission_id, contest_id, subtask_id, problem_id, visible_id, digit_precision, score) 
-	SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, stks.id AS subtask_id, stks.problem_id AS problem_id, stks.visible_id, subs.digit_precision AS digit_precision, stks.score AS score 
+	(user_id, created_at, submission_id, contest_id, subtask_id, problem_id, visible_id, digit_precision, score) 
+	SELECT subs.user_id, subs.created_at AS created_at, subs.id AS submission_id, subs.contest_id, stks.id AS subtask_id, stks.problem_id AS problem_id, stks.visible_id, subs.digit_precision AS digit_precision, stks.score AS score 
 	FROM submissions subs, subtasks stks 
 	WHERE subs.problem_id = stks.problem_id AND subs.id = $1
 `, subID); err != nil {
@@ -144,8 +144,8 @@ func initProblemSubs(ctx context.Context, tx pgx.Tx, problemID int) error {
 
 	// Initialize subtests
 	if _, err := tx.Exec(ctx, `
-INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visible_id, score) 
-	SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, tests.id AS test_id, tests.visible_id, tests.score AS score 
+INSERT INTO submission_tests (user_id, created_at, submission_id, contest_id, test_id, visible_id, score) 
+	SELECT subs.user_id, subs.created_at AS created_at, subs.id AS submission_id, subs.contest_id, tests.id AS test_id, tests.visible_id, tests.score AS score 
 	FROM submissions subs, tests 
 	WHERE subs.problem_id = tests.problem_id AND subs.problem_id = $1
 `, problemID); err != nil {
@@ -155,8 +155,8 @@ INSERT INTO submission_tests (user_id, submission_id, contest_id, test_id, visib
 	// Initialize subtasks
 	if _, err := tx.Exec(ctx, `
 INSERT INTO submission_subtasks 
-	(user_id, submission_id, contest_id, subtask_id, problem_id, visible_id, digit_precision, score) 
-	SELECT subs.user_id, subs.id AS submission_id, subs.contest_id, stks.id AS subtask_id, stks.problem_id AS problem_id, stks.visible_id, subs.digit_precision AS digit_precision, stks.score AS score 
+	(user_id, created_at, submission_id, contest_id, subtask_id, problem_id, visible_id, digit_precision, score) 
+	SELECT subs.user_id, subs.created_at AS created_at, subs.id AS submission_id, subs.contest_id, stks.id AS subtask_id, stks.problem_id AS problem_id, stks.visible_id, subs.digit_precision AS digit_precision, stks.score AS score 
 	FROM submissions subs, subtasks stks 
 	WHERE subs.problem_id = stks.problem_id AND subs.problem_id = $1
 `, problemID); err != nil {

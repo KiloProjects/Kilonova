@@ -1,7 +1,7 @@
 import { h, Fragment, Component } from "preact";
 import register from "preact-custom-element";
 import { Reducer, useEffect, useMemo, useReducer, useState } from "preact/hooks";
-import { dayjs } from "../util";
+import { dayjs, getGradient } from "../util";
 import getText from "../translation";
 import { sprintf } from "sprintf-js";
 import { fromBase64 } from "js-base64";
@@ -14,14 +14,22 @@ import { getCall, postCall } from "../api/net";
 import { buildScoreBreakdownModal } from "./maxscore_breakdown";
 import { confirm } from "./modal";
 
-export const RFC1123Z = "ddd, DD MMM YYYY HH:mm:ss ZZ";
-
 export function contestToNetworkDate(timestamp: string): string {
-	const djs = dayjs(timestamp, "YYYY-MM-DD HH:mm ZZ", true);
+	const djs = dayjs(timestamp, "YYYY-MM-DDTHH:mm", true);
 	if (!djs.isValid()) {
 		throw new Error("Invalid timestamp");
 	}
-	return djs.format(RFC1123Z);
+	return djs.format("YYYY-MM-DDTHH:mm:ss.SSSZ");
+}
+
+function formatMinutes(mins: number): string {
+	const minutes = mins % 60;
+	mins = (mins - minutes) / 60;
+	const hours = mins;
+	if (hours >= 24) {
+		return `${Math.floor(hours / 24)}:${Math.floor(hours % 24)}:${minutes}`;
+	}
+	return `${hours}:${minutes}`;
 }
 
 function remainingTimeStr(time: dayjs.Dayjs): string {
@@ -92,13 +100,24 @@ type LeaderboardResponse = {
 		user: UserBrief;
 		scores: Record<number, number>;
 		total: number;
+
+		num_solved: number;
+		penalty: number;
+		last_time: string | null;
+		freeze_time: string | null;
+		last_times: Record<number, number>;
+		attempts: Record<number, number>; // TODO: check if will still be null once finished
 	}[];
+
+	freeze_time?: string;
+	type: "classic" | "acm-icpc";
 };
 
 export function ContestLeaderboard({ contestID, editor }: { contestID: number; editor: boolean }) {
 	let [loading, setLoading] = useState(true);
 	let [problems, setProblems] = useState<{ id: number; name: string }[]>([]);
 	let [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
+	let [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
 	async function loadLeaderboard() {
 		setLoading(true);
@@ -107,6 +126,18 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 			apiToast(res);
 			return;
 		}
+		setLastUpdated(
+			res.data.entries.reduce((ant: string | null, prez): string | null => {
+				if (prez.last_time == null) {
+					return ant;
+				}
+				if (ant == null) {
+					return prez.last_time;
+				}
+				return dayjs(ant).isBefore(prez.last_time) ? prez.last_time : ant;
+			}, null)
+		);
+		console.log(res.data);
 		setLeaderboard(res.data);
 		setProblems(res.data.problem_ordering.map((val) => ({ id: val, name: res.data.problem_names[val] })));
 		setLoading(false);
@@ -126,28 +157,51 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 			</>
 		);
 	}
+
 	return (
 		<>
 			<button class="btn btn-blue mb-2" onClick={() => loadLeaderboard()}>
 				{getText("reload")}
 			</button>
-			<table class="kn-table">
+			<div class="mb-2">
+				<p>
+					{getText("last_updated_at")}: {lastUpdated ? dayjs(lastUpdated).format("DD/MM/YYYY HH:mm") : "-"}
+				</p>
+				{leaderboard.freeze_time && dayjs().isAfter(leaderboard.freeze_time) && (
+					<p>
+						{getText("freeze_time")}: {dayjs(leaderboard.freeze_time).format("DD/MM/YYYY HH:mm")}
+					</p>
+				)}
+			</div>
+			<table class="kn-table table-fixed">
 				<thead>
 					<tr>
-						<th class="kn-table-cell w-1/12" scope="col">
+						<th class="kn-table-cell w-1/12" style={{ wordBreak: "break-all" }} scope="col">
 							{getText("position")}
 						</th>
-						<th class="kn-table-cell" scope="col">
+						<th class="kn-table-cell w-1/5" style={{ wordBreak: "break-all" }} scope="col">
 							{getText("name")}
 						</th>
+						{leaderboard.type == "acm-icpc" && (
+							<>
+								<th class="kn-table-cell w-1/12" style={{ wordBreak: "break-all" }} scope="col">
+									{getText("icpc_num_solved")}
+								</th>
+								<th class="kn-table-cell w-1/12" style={{ wordBreak: "break-all" }} scope="col">
+									{getText("penalty")}
+								</th>
+							</>
+						)}
 						{problems.map((pb) => (
-							<th class="kn-table-cell" scope="col" key={pb.id}>
+							<th class="kn-table-cell" style={{ wordBreak: "break-all" }} scope="col" key={pb.id}>
 								<a href={`/contests/${contestID}/problems/${pb.id}`}>{pb.name}</a>
 							</th>
 						))}
-						<th class="kn-table-cell" scope="col">
-							{getText("total")}
-						</th>
+						{leaderboard.type == "classic" && (
+							<th class="kn-table-cell w-1/6" style={{ wordBreak: "break-all" }} scope="col">
+								{getText("total")}
+							</th>
+						)}
 					</tr>
 				</thead>
 				<tbody>
@@ -157,17 +211,46 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 							<td class="kn-table-cell">
 								<a href={`/profile/${entry.user.name}`}>{entry.user.name}</a>
 							</td>
-							{problems.map((pb) => (
-								<td
-									class={"kn-table-cell" + (editor ? " cursor-pointer" : "")}
-									scope="col"
-									key={entry.user.name + pb.id + (editor ? "-e" : "-ne")}
-									onClick={() => editor && buildScoreBreakdownModal(pb.id, contestID, entry.user.id)}
-								>
-									{pb.id in entry.scores && entry.scores[pb.id] >= 0 ? entry.scores[pb.id] : "-"}
-								</td>
-							))}
-							<td class="kn-table-cell">{entry.total}</td>
+							{leaderboard?.type == "acm-icpc" && (
+								<>
+									<td class="kn-table-cell">{entry.num_solved}</td>
+									<td class="kn-table-cell">{entry.penalty}</td>
+								</>
+							)}
+							{problems.map((pb) =>
+								leaderboard?.type == "classic" ? (
+									<td
+										class={"kn-table-cell" + (editor ? " cursor-pointer" : "")}
+										scope="col"
+										key={entry.user.name + pb.id + (editor ? "-e" : "-ne")}
+										onClick={() => editor && buildScoreBreakdownModal(pb.id, contestID, entry.user.id)}
+									>
+										{pb.id in entry.scores && entry.scores[pb.id] >= 0 ? entry.scores[pb.id] : "-"}
+									</td>
+								) : entry.scores[pb.id] >= 0 ? (
+									<td
+										class="kn-table-cell"
+										style={{
+											color: entry.scores[pb.id] >= 100 ? "black" : undefined,
+											backgroundColor: getGradient(entry.scores[pb.id] >= 100 ? 1 : 0, 1),
+										}}
+									>
+										{entry.scores[pb.id] >= 0 ? (
+											<>
+												<span class="block font-bold text-lg">
+													{entry.scores[pb.id] >= 100 ? "+" : "-"} {entry.attempts[pb.id] > 0 && entry.attempts[pb.id]}
+												</span>
+												{entry.scores[pb.id] >= 100 && <span class="block">{formatMinutes(entry.last_times[pb.id] ?? 0)}</span>}
+											</>
+										) : (
+											"-"
+										)}
+									</td>
+								) : (
+									<td class="kn-table-cell">-</td>
+								)
+							)}
+							{leaderboard?.type == "classic" && <td class="kn-table-cell">{entry.total}</td>}
 						</tr>
 					))}
 					{leaderboard.entries.length == 0 && (

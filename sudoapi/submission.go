@@ -3,6 +3,7 @@ package sudoapi
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
@@ -31,8 +32,8 @@ func (s *BaseAPI) MaxScore(ctx context.Context, uid, pbID int) decimal.Decimal {
 	return s.db.MaxScore(ctx, uid, pbID)
 }
 
-func (s *BaseAPI) ContestMaxScore(ctx context.Context, uid, pbID, contestID int) decimal.Decimal {
-	return s.db.ContestMaxScore(ctx, uid, pbID, contestID)
+func (s *BaseAPI) ContestMaxScore(ctx context.Context, uid, pbID, contestID int, freezeTime *time.Time) decimal.Decimal {
+	return s.db.ContestMaxScore(ctx, uid, pbID, contestID, freezeTime)
 }
 
 func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova.Submission, look bool, lookingUser *UserBrief) (*Submissions, *StatusError) {

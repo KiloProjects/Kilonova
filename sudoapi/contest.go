@@ -106,12 +106,23 @@ func (s *BaseAPI) ProblemRunningContests(ctx context.Context, problemID int) ([]
 	return contests, nil
 }
 
-func (s *BaseAPI) ContestLeaderboard(ctx context.Context, contestID int) (*kilonova.ContestLeaderboard, *StatusError) {
-	leaderboard, err := s.db.ContestLeaderboard(ctx, contestID)
-	if err != nil {
-		return nil, WrapError(err, "Couldn't generate leaderboard")
+func (s *BaseAPI) ContestLeaderboard(ctx context.Context, contest *kilonova.Contest, freezeTime *time.Time) (*kilonova.ContestLeaderboard, *StatusError) {
+	switch contest.LeaderboardStyle {
+	case kilonova.LeaderboardTypeClassic:
+		leaderboard, err := s.db.ContestClassicLeaderboard(ctx, contest, freezeTime)
+		if err != nil {
+			return nil, WrapError(err, "Couldn't generate leaderboard")
+		}
+		return leaderboard, nil
+	case kilonova.LeaderboardTypeICPC:
+		leaderboard, err := s.db.ContestICPCLeaderboard(ctx, contest, freezeTime)
+		if err != nil {
+			return nil, WrapError(err, "Couldn't generate leaderboard")
+		}
+		return leaderboard, nil
+	default:
+		return nil, Statusf(400, "Invalid contest leaderboard type")
 	}
-	return leaderboard, nil
 }
 
 func (s *BaseAPI) CanJoinContest(c *kilonova.Contest) bool {
