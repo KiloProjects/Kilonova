@@ -884,8 +884,8 @@ en = "Submission evaluated"
 ro = "Evaluare finalizată"
 
 [finalScore]
-en = "Score for submission #%d: %d"
-ro = "Scor submisie #%d: %d"
+en = "Score for submission #%d: "
+ro = "Scor submisie #%d: "
 
 [view]
 en = "View"

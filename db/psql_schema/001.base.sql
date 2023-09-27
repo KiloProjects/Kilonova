@@ -389,6 +389,7 @@ CREATE INDEX IF NOT EXISTS submission_subtests_index ON submission_tests (submis
 CREATE INDEX IF NOT EXISTS submission_subtests_tests_index ON submission_tests (test_id);
 CREATE INDEX IF NOT EXISTS submission_subtasks_index ON submission_subtasks (submission_id);
 CREATE INDEX IF NOT EXISTS submission_subtasks_score_index ON submission_subtasks (user_id, problem_id);
+CREATE INDEX IF NOT EXISTS submission_subtasks_problem_index ON submission_subtasks (problem_id);
 
 ---- subtask subtests
 CREATE INDEX IF NOT EXISTS stk_stest_m2m_stk_index ON submission_subtask_subtests (submission_subtask_id);

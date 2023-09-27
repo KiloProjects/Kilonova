@@ -23,7 +23,7 @@ export function makeSubWaiter(id: number): string {
 		if (res.data.status == "finished") {
 			createToast({
 				title: getText("finishedEval"),
-				description: getText("finalScore", id, res.data.score),
+				description: getText("finalScore", id) + " " + res.data.score.toFixed(res.data.score_precision),
 				status: "success",
 			});
 			clearInterval(interv);
