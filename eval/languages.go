@@ -95,7 +95,7 @@ var Langs = map[string]Language{
 		PrintableName: "Pascal",
 		InternalName:  "pascal",
 
-		CompileCommand: []string{"fpc", "-O2", "-XSst", "-vw", "-dKNOVA", "-dONLINE_JUDGE", MAGIC_REPLACE, "-o/box/output"},
+		CompileCommand: []string{"fpc", "-O2", "-XSst", "-Mobjfpc", "-vw", "-dKNOVA", "-dONLINE_JUDGE", MAGIC_REPLACE, "-o/box/output"},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.pas",
 		CompiledName:   "/box/output",
