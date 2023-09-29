@@ -8,6 +8,7 @@ export const languages = {
 	haskell: "text/x-haskell",
 	java: "text/x-java",
 	python3: "text/x-python",
+	pascal: "text/x-pascal",
 	outputOnly: "text/plain",
 };
 
@@ -21,10 +22,9 @@ export const prettyLanguages = {
 	haskell: "Haskell",
 	java: "Java",
 	python3: "Python 3",
+	pascal: "Pascal",
 	outputOnly: "Output Only",
 };
-
-// TODO: Make use of them
 
 type CMMode = {
 	mimeType: string;
@@ -62,6 +62,11 @@ export const cm_modes: { [name: string]: CMMode } = {
 		mimeType: "text/x-python",
 		prettyName: "Python",
 		extensions: ["py", "py3"],
+	},
+	pascal: {
+		mimeType: "text/x-pascal",
+		prettyName: "Pascal",
+		extensions: ["pas"],
 	},
 	markdown: {
 		mimeType: "text/markdown",

@@ -86,6 +86,22 @@ var Langs = map[string]Language{
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
+	"pascal": {
+		// NOTE: fpc compiler is in the `fp-compiler` package on Ubuntu.
+		// The `fpc` package would also install the IDE, which depends on x11 and other unnecessary fluff
+
+		Extensions:    []string{".pas"},
+		Compiled:      true,
+		PrintableName: "Pascal",
+		InternalName:  "pascal",
+
+		CompileCommand: []string{"fpc", "-O2", "-XSst", "-vw", "-dKNOVA", "-dONLINE_JUDGE", MAGIC_REPLACE, "-o/box/output"},
+		RunCommand:     []string{"/box/output"},
+		SourceName:     "/box/main.pas",
+		CompiledName:   "/box/output",
+
+		Mounts: []Directory{{In: "/etc"}},
+	},
 	"golang": {
 		Disabled:      true, // Doesn't work
 		Extensions:    []string{".go"},

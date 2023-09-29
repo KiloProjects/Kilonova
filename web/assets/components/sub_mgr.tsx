@@ -16,8 +16,6 @@ const slugify = (str) =>
 import { BigSpinner, OlderSubmissions } from "./common";
 
 import { downloadBlob, parseTime, sizeFormatter, getGradient, fromBase64 } from "../util";
-
-import { getCall } from "../api/net";
 import { FullSubmission, SubTest, Submission, SubmissionSubTask, UserBrief, getSubmission } from "../api/submissions";
 
 function downloadCode(sub: FullSubmission) {

@@ -1,4 +1,4 @@
-<form class="segment-panel" id="sendSubForm" autocomplete="off">    
+<form class="segment-panel" id="sendSubForm" autocomplete="off">   
     {{ if .Topbar.Contest }}
         {{ if canSubmitInContest .Ctx.User.Brief .Topbar.Contest}}
             <h1 class="mt-2">{{getText "uploadContestSub"}}</h1>
@@ -58,7 +58,7 @@
 <script>
     // cm name should remain, or be updated in pb_submit.html as well
     var cm = CodeMirror.fromTextArea(document.getElementById("SubArea"), {
-        mode: bundled.languages["cpp17"],
+        mode: bundled.languages[bundled.getCodeLangPreference()],
     });
 
     document.getElementById("submit_style").addEventListener("change", (e) => {

@@ -24,6 +24,7 @@ import "codemirror/mode/meta";
 import "codemirror/mode/markdown/markdown";
 import "codemirror/mode/gfm/gfm";
 import "codemirror/mode/clike/clike";
+import "codemirror/mode/pascal/pascal";
 import "codemirror/mode/go/go";
 import "codemirror/mode/python/python";
 import "codemirror/mode/haskell/haskell";
