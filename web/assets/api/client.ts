@@ -27,7 +27,6 @@ export type SubmissionQuery = {
 type RequestParams = {
 	url: string;
 	method: "GET" | "POST" | "PUT" | "DELETE";
-	contentType?: string;
 	queryParams?: any;
 	body?: BodyInit;
 	headers?: HeadersInit;
@@ -63,7 +62,6 @@ export class KNClient {
 				headers: {
 					Accept: "application/json",
 					Authorization: this.session,
-					"Content-Type": params.contentType || "text/plain; charset=UTF-8",
 					...params.headers,
 				},
 				body: params.body || null,
@@ -137,7 +135,9 @@ export async function postCall<T = any>(call: string, params: any): Promise<Resp
 	return defaultClient.request<T>({
 		url: call,
 		method: "POST",
-		contentType: "application/x-www-form-urlencoded",
+		headers: {
+			"Content-Type": "application/x-www-form-urlencoded",
+		},
 		body: qs.stringify(params),
 	});
 }
@@ -146,7 +146,9 @@ export async function bodyCall<T = any>(call: string, body: any): Promise<Respon
 	return defaultClient.request<T>({
 		url: call,
 		method: "POST",
-		contentType: "application/json",
+		headers: {
+			"Content-Type": "application/json",
+		},
 		body: JSON.stringify(body),
 	});
 }
@@ -155,7 +157,6 @@ export async function multipartCall<T = any>(call: string, formdata: FormData): 
 	return defaultClient.request<T>({
 		url: call,
 		method: "POST",
-		contentType: "multipart/form-data",
 		body: formdata,
 	});
 }
