@@ -29,7 +29,7 @@ function formatMinutes(mins: number): string {
 	if (hours >= 24) {
 		return `${Math.floor(hours / 24)}:${Math.floor(hours % 24)}:${minutes}`;
 	}
-	return `${hours}:${minutes}`;
+	return sprintf("%02d:%02d", hours, minutes);
 }
 
 function remainingTimeStr(time: dayjs.Dayjs): string {

@@ -218,6 +218,8 @@ RETURNS TABLE (user_id bigint, contest_id bigint, last_time timestamptz, num_sol
         SELECT regs.* FROM contest_registrations regs WHERE regs.contest_id = $1 AND NOT EXISTS (SELECT 1 FROM contest_user_access acc WHERE acc.user_id = regs.user_id AND acc.contest_id = regs.contest_id)
     ), solved_pbs AS (
         SELECT user_id, problem_id, mintime AS last_time FROM contest_max_scores($1, $2) WHERE score = 100
+    ), last_times AS (
+        SELECT user_id, MAX(last_time) AS last_time FROM solved_pbs GROUP BY user_id
     ), num_solved AS (
         SELECT user_id, COUNT(*) AS num_problems, MAX(last_time) AS mintime FROM solved_pbs GROUP BY user_id
     ), num_attempts AS (
@@ -244,7 +246,7 @@ RETURNS TABLE (user_id bigint, contest_id bigint, last_time timestamptz, num_sol
             LEFT JOIN duration_sum dsum ON dsum.user_id = users.user_id
     ) SELECT users.user_id, $1 AS contest_id, last_time, COALESCE(num_problems, 0), COALESCE(penalty, 0), COALESCE(num_attempts, 0)
         FROM legit_contestants users
-        LEFT JOIN solved_pbs ON users.user_id = solved_pbs.user_id
+        LEFT JOIN last_times ON users.user_id = last_times.user_id
         LEFT JOIN num_solved ON users.user_id = num_solved.user_id
         LEFT JOIN penalties ON users.user_id = penalties.user_id
     ORDER BY COALESCE(num_problems, 0) DESC, penalty ASC NULLS LAST, last_time ASC NULLS LAST, user_id;
