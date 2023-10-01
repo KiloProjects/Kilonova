@@ -155,6 +155,7 @@ export async function multipartCall<T = any>(call: string, formdata: FormData): 
 	return defaultClient.request<T>({
 		url: call,
 		method: "POST",
+		contentType: "multipart/form-data",
 		body: formdata,
 	});
 }
