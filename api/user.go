@@ -415,7 +415,9 @@ func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.SendVerificationEmail(r.Context(), util.UserBrief(r).ID, util.UserBrief(r).Name, email); err != nil {
-		zap.S().Warn(err)
+		if err.Code != 400 {
+			zap.S().Warn(err)
+		}
 		err.WriteError(w)
 		return
 	}

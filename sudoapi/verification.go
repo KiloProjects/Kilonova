@@ -3,6 +3,7 @@ package sudoapi
 import (
 	"bytes"
 	"context"
+	"errors"
 	"text/template"
 	"time"
 
@@ -31,6 +32,13 @@ func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, e
 	if s.mailer == nil {
 		zap.S().Error("SendVerificationEmail called, but no mailer was provided to *sudoapi.BaseAPI")
 		return Statusf(500, "Can't send email")
+	}
+
+	if user, err := s.UserFullByEmail(ctx, email); err != nil && !errors.Is(err, ErrNotFound) {
+		zap.S().Warn(err)
+		return Statusf(500, "Couldn't check if email is already used. Report to admin")
+	} else if user != nil && user.ID != userID {
+		return Statusf(400, "Email is already in use")
 	}
 
 	f := false
