@@ -301,15 +301,17 @@ export function SubTask({
 	problem_editor,
 	breakdown_mode,
 	precision,
+	defaultOpen,
 }: {
 	subtests: SubTest[];
 	subtask: SubmissionSubTask;
 	problem_editor: boolean;
 	breakdown_mode: boolean;
 	precision: number;
+	defaultOpen?: boolean;
 }) {
 	return (
-		<details id={`stk-det-${subtask.visible_id}`} class="list-group-item">
+		<details id={`stk-det-${subtask.visible_id}`} class="list-group-item" open={defaultOpen}>
 			<summary class="pb-1 mt-1">
 				<span>
 					{getText("nthSubTask", subtask.visible_id)}{" "}
@@ -350,6 +352,7 @@ function SubTasks({ sub, expandedTests }: { sub: FullSubmission; expandedTests: 
 							breakdown_mode={false}
 							key={"stk_" + subtask.id}
 							precision={sub.score_precision}
+							defaultOpen={sub.subtasks.length === 1 ? true : undefined}
 						/>
 					))}
 				</div>
