@@ -17,6 +17,7 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/go-chi/chi/v5"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -146,16 +147,44 @@ func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request)
 	}
 	for _, entry := range ld.Entries {
 		line := []string{entry.User.Name}
-		for _, pb := range ld.ProblemOrder {
-			score, ok := entry.ProblemScores[pb]
-			if !ok {
-				line = append(line, "-")
-			} else {
-				line = append(line, score.String())
+		if util.Contest(r).LeaderboardStyle == kilonova.LeaderboardTypeICPC {
+			for _, pb := range ld.ProblemOrder {
+				score, ok := entry.ProblemScores[pb]
+				if !ok || score.Equal(decimal.NewFromInt(-1)) {
+					line = append(line, "-")
+					continue
+				}
+				if score.LessThan(decimal.NewFromInt(100)) {
+					if val, ok := entry.ProblemAttempts[pb]; ok {
+						line = append(line, strconv.Itoa(-val))
+					} else {
+						line = append(line, "-")
+					}
+				} else {
+					col := "+"
+					if val, ok := entry.ProblemAttempts[pb]; ok && val > 1 {
+						col += strconv.Itoa(val)
+					}
+					if dur, ok := entry.ProblemTimes[pb]; ok {
+						h, m := dur/60, dur%60
+						col += fmt.Sprintf(" / %02d:%02d", h, m)
+					}
+					line = append(line, col)
+				}
 			}
+			line = append(line, strconv.Itoa(entry.NumSolved), strconv.Itoa(entry.Penalty))
+		} else {
+			for _, pb := range ld.ProblemOrder {
+				score, ok := entry.ProblemScores[pb]
+				if !ok || score.Equal(decimal.NewFromInt(-1)) {
+					line = append(line, "-")
+				} else {
+					line = append(line, score.String())
+				}
+			}
+			line = append(line, entry.TotalScore.String())
 		}
 
-		line = append(line, entry.TotalScore.String())
 		if err := wr.Write(line); err != nil {
 			zap.S().Warn(err)
 			http.Error(w, "Couldn't write CSV", 500)
