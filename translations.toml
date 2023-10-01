@@ -879,6 +879,10 @@ ro = "Trimitere submisie de concurs"
 en = "Upload unofficial submission"
 ro = "Încărcare submisie neoficială"
 
+[selectContest]
+en = "Select contest"
+ro = "Selectare concurs"
+
 [finishedEval]
 en = "Submission evaluated"
 ro = "Evaluare finalizată"

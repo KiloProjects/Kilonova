@@ -12,10 +12,23 @@
         {{ with problemContests .Ctx.User.Brief .Problem }}
         <label class="block mb-2">
             <span class="form-label">{{getText "contest"}}: </span>
-            <select id="sub_contestid" class="form-select">
-                <option value="-1" selected>-</option>
-                {{ range . }}
-                <option value="{{.ID}}">{{.Name}}</option>
+            <select id="sub_contestid" class="form-select" required>
+                {{if problemFullyVisible}}
+                    <option value="-1" selected>-</option>
+                    {{ range . }}
+                    <option value="{{.ID}}">{{.Name}}</option>
+                    {{ end }}
+                {{ else }}
+                    {{ if eq (len .) 1}}
+                        {{ range . }}
+                        <option value="{{.ID}}" selected>{{.Name}}</option>
+                        {{ end }}
+                    {{ else }}
+                        <option value="" disabled selected>{{getText "selectContest"}}</option>
+                        {{ range . }}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                        {{ end }}
+                    {{ end }}
                 {{ end }}
             </select>
         </label>
