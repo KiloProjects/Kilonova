@@ -1,24 +1,7 @@
 // Functions for contest
 
-import { getCall, postCall } from "./net";
+import { getCall, postCall } from "./client";
 import { apiToast } from "../toast";
-
-export type Question = {
-	id: number;
-	asked_at: string;
-	responded_at?: string;
-	text: string;
-	response?: string;
-	author_id: number;
-	contest_id: number;
-};
-
-export type Announcement = {
-	id: number;
-	created_at: string;
-	contest_id: number;
-	text: string;
-};
 
 export async function registerForContest(contestID: number) {
 	const res = await postCall(`/contest/${contestID}/register`, {});

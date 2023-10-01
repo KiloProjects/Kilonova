@@ -2,7 +2,7 @@ import { h, Fragment, Component } from "preact";
 import register from "preact-custom-element";
 import getText from "../translation";
 import { useState } from "preact/hooks";
-import { bodyCall } from "../api/net";
+import { bodyCall } from "../api/client";
 import { apiToast } from "../toast";
 
 export function AttachmentRenamer({

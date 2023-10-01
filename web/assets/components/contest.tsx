@@ -6,13 +6,12 @@ import getText from "../translation";
 import { sprintf } from "sprintf-js";
 import { fromBase64 } from "js-base64";
 import { answerQuestion, getAllQuestions, getUserQuestions, getAnnouncements, updateAnnouncement, deleteAnnouncement } from "../api/contest";
-import type { Question, Announcement } from "../api/contest";
-import { UserBrief, getUser } from "../api/submissions";
 import { apiToast, createToast } from "../toast";
 import { BigSpinner, Paginator } from "./common";
-import { getCall, postCall } from "../api/net";
+import { getCall, postCall } from "../api/client";
 import { buildScoreBreakdownModal } from "./maxscore_breakdown";
 import { confirm } from "./modal";
+import { defaultClient } from "../api/client";
 
 export function contestToNetworkDate(timestamp: string): string {
 	const djs = dayjs(timestamp, "YYYY-MM-DDTHH:mm", true);
@@ -327,7 +326,8 @@ export function QuestionView({ q, canEditAnswer, userLoadable }: { q: Question; 
 
 	useEffect(() => {
 		if (userLoadable) {
-			getUser(q.author_id)
+			defaultClient
+				.getUser(q.author_id)
 				.then((d) => setUser(d))
 				.catch(console.error);
 		}

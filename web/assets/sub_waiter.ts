@@ -1,5 +1,4 @@
-import { FullSubmission } from "./api/submissions";
-import { getCall } from "./api/net";
+import { getCall } from "./api/client";
 import { createToast } from "./toast";
 import getText from "./translation";
 

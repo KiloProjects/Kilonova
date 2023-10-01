@@ -1,5 +1,5 @@
 import cookie from "js-cookie";
-import { postCall } from "./api/net";
+import { postCall } from "./api/client";
 import dayjs from "dayjs";
 import type { Editor } from "codemirror";
 import { languages } from "./langs";
@@ -10,7 +10,7 @@ export function setSession(sessionID: string) {
 	cookie.set("kn-sessionid", sessionID, { expires: 29, sameSite: "lax" });
 }
 
-export function getSession(): string {
+function getSession(): string {
 	return cookie.get("kn-sessionid") || "guest";
 }
 

@@ -1,11 +1,10 @@
 import { h, Fragment, Component } from "preact";
 import register from "preact-custom-element";
 import { useEffect, useState } from "preact/hooks";
-import { getCall } from "../api/net";
+import { getCall } from "../api/client";
 import { apiToast } from "../toast";
 import { Paginator } from "./common";
 import getText from "../translation";
-import { UserBrief } from "../api/submissions";
 
 function UserTable({ users }: { users: UserBrief[] }) {
 	if (users.length == 0) {

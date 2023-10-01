@@ -3,7 +3,7 @@ import register from "preact-custom-element";
 import getText from "../translation";
 import { dayjs, fromBase64 } from "../util";
 import { useEffect, useState } from "preact/hooks";
-import { getSubmissions, KNSubmissions, knSubsToGetSubmissionsRez, ResultSubmission } from "../api/submissions";
+import { Submissions, defaultClient } from "../api/client";
 
 interface PaginatorParams {
 	page: number;
@@ -170,24 +170,20 @@ export function OlderSubmissions({
 	contestID,
 	limit = 5,
 	initialData,
-	initialCount,
 }: {
 	userID: number;
 	problemID: number;
 	contestID?: number;
 	limit?: number;
-	initialData?: ResultSubmission[];
-	initialCount?: number;
+	initialData?: Submissions;
 }) {
-	let [subs, setSubs] = useState<ResultSubmission[]>(initialData ?? []);
-	let [loading, setLoading] = useState(typeof initialData === "undefined");
-	let [numHidden, setNumHidden] = useState(initialCount ? initialCount - limit : 0);
+	let [subs, setSubs] = useState<Submissions | undefined>(initialData);
+	let [numHidden, setNumHidden] = useState(initialData?.count ? initialData?.count - limit : 0);
 
 	async function load() {
-		var data = await getSubmissions({ user_id: userID, problem_id: problemID, contest_id: contestID, limit, page: 1 });
-		setSubs(data.subs);
+		var data = await defaultClient.getSubmissions({ user_id: userID, problem_id: problemID, contest_id: contestID, limit, page: 1 });
+		setSubs(data);
 		setNumHidden(Math.max(data.count - limit, 0));
-		setLoading(false);
 	}
 
 	useEffect(() => {
@@ -208,24 +204,24 @@ export function OlderSubmissions({
 			<summary>
 				<h2 class="inline-block mb-2">{getText("oldSubs")}</h2>
 			</summary>
-			{loading ? (
+			{typeof subs == "undefined" ? (
 				<InlineSpinner />
 			) : (
 				<>
-					{subs.length > 0 ? (
+					{subs?.submissions.length > 0 ? (
 						<div>
-							{subs.map((sub) => (
+							{subs.submissions.map((sub) => (
 								<a
-									href={`/submissions/${sub.sub.id}`}
+									href={`/submissions/${sub.id}`}
 									class="black-anchor flex justify-between items-center rounded py-1 px-2 hoverable"
-									key={sub.sub.id}
+									key={sub.id}
 								>
-									<span>{`#${sub.sub.id}: ${dayjs(sub.sub.created_at).format("DD/MM/YYYY HH:mm")}`}</span>
+									<span>{`#${sub.id}: ${dayjs(sub.created_at).format("DD/MM/YYYY HH:mm")}`}</span>
 									<span class="badge-lite text-sm">
 										{{
-											finished: <>{sub.sub.score.toFixed(sub.sub.score_precision)}</>,
+											finished: <>{sub.score.toFixed(sub.score_precision)}</>,
 											working: <i class="fas fa-cog animate-spin"></i>,
-										}[sub.sub.status] || <i class="fas fa-clock"></i>}
+										}[sub.status] || <i class="fas fa-clock"></i>}
 									</span>
 								</a>
 							))}
@@ -262,20 +258,8 @@ function OlderSubmissionsDOM({ userid, problemid, contestid, enc }: { userid: st
 		}
 	}
 
-	let initialData: ResultSubmission[] | undefined = undefined;
-	let initialCount: number | undefined = undefined;
-	try {
-		const initialStuff: KNSubmissions | undefined = JSON.parse(fromBase64(enc));
-		if (typeof initialStuff !== "undefined") {
-			const rez = knSubsToGetSubmissionsRez(initialStuff);
-			initialData = rez.subs;
-			initialCount = rez.count;
-		}
-	} catch (e) {}
-
-	return (
-		<OlderSubmissions userID={userID} problemID={problemID} contestID={contestID} initialCount={initialCount} initialData={initialData}></OlderSubmissions>
-	);
+	let initialData: Submissions | undefined = JSON.parse(fromBase64(enc));
+	return <OlderSubmissions userID={userID} problemID={problemID} contestID={contestID} initialData={initialData}></OlderSubmissions>;
 }
 
 register(OlderSubmissionsDOM, "older-subs", ["userid", "problemid", "contestid", "enc"]);

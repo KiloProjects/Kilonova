@@ -4,7 +4,8 @@ export * from "./api/contest";
 // float-left - leave here to include it in css bundle
 
 export * from "./util";
-export * from "./api/net";
+export * from "./api/client";
+export * from "./api/progressCall";
 export * from "./components";
 
 export * from "./langs";

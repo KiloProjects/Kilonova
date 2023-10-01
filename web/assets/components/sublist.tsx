@@ -2,7 +2,7 @@ import { fromBase64 } from "js-base64";
 import { h, Fragment } from "preact";
 import register from "preact-custom-element";
 import { useEffect, useState } from "preact/hooks";
-import { getCall } from "../api/net";
+import { getCall } from "../api/client";
 import { apiToast } from "../toast";
 import getText from "../translation";
 import { BigSpinner } from "./common";

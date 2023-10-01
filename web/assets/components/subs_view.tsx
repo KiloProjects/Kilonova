@@ -1,12 +1,11 @@
-import { h, Fragment, Component } from "preact";
+import { h, Fragment } from "preact";
 import getText from "../translation";
 import register from "preact-custom-element";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { apiToast, createToast } from "../toast";
 import { BigSpinner, Paginator } from "./common";
 import { dayjs, getGradient, sizeFormatter } from "../util";
-import { getSubmissions } from "../api/submissions";
-import type { Submission, SubmissionQuery, ResultSubmission } from "../api/submissions";
+import { SubmissionQuery, Submissions, defaultClient } from "../api/client";
 
 export function rezStr(count: number): string {
 	if (count < 0) {
@@ -103,7 +102,7 @@ function SubsView(props: SubsViewProps) {
 	let overwrites: Overwrites = { problemID: props.problemid, userID: props.userid, contestID: props.contestid };
 	let [loading, setLoading] = useState(true);
 	let [query, updQuery] = useState<SubmissionQuery>(getInitialData(overwrites));
-	let [subs, setSubs] = useState<ResultSubmission[]>([]);
+	let [subs, setSubs] = useState<Submissions | undefined>(undefined);
 	let [count, setCount] = useState<number>(-1);
 	let [initialLoad, setInitialLoad] = useState(true);
 
@@ -122,15 +121,15 @@ function SubsView(props: SubsViewProps) {
 		}
 
 		try {
-			var res = await getSubmissions(query);
+			var data = await defaultClient.getSubmissions(query);
 		} catch (e) {
 			apiToast({ data: (e as Error).message, status: "error" });
 			setLoading(false);
 			return;
 		}
 
-		setSubs(res.subs);
-		setCount(res.count);
+		setSubs(data);
+		setCount(data.count);
 		setLoading(false);
 		setInitialLoad(false);
 	}
@@ -424,7 +423,7 @@ function SubsView(props: SubsViewProps) {
 									ctxSize={2}
 									showArrows={true}
 								/>
-							) : subs.length > 0 ? (
+							) : typeof subs !== "undefined" && subs.submissions.length > 0 ? (
 								<Paginator page={1} numpages={1} setPage={() => {}} ctxSize={2} showArrows={true} />
 							) : (
 								<></>
@@ -432,17 +431,23 @@ function SubsView(props: SubsViewProps) {
 						</div>
 					</>
 				)}
-				{!loading && typeof overwrites.problemID === "undefined" && query.problem_id != null && query.problem_id > 0 && subs.length > 0 && (
-					<p>
-						{getText("problemSingle")} <a href={"/problems/" + subs[0].problem!.id}>{subs[0].problem!.name}</a>
-					</p>
-				)}
+				{!loading &&
+					typeof overwrites.problemID === "undefined" &&
+					query.problem_id != null &&
+					query.problem_id > 0 &&
+					typeof subs !== "undefined" &&
+					Object.keys(subs.problems).length > 0 && (
+						<p>
+							{getText("problemSingle")}{" "}
+							<a href={"/problems/" + subs.problems[Object.keys(subs.problems)[0]].id}>{subs.problems[Object.keys(subs.problems)[0]].name}</a>
+						</p>
+					)}
 				{initialLoad ? (
 					<>
 						<div class="lg:mt-6" />
 						<BigSpinner />
 					</>
-				) : subs.length > 0 ? (
+				) : typeof subs !== "undefined" && subs.submissions.length > 0 ? (
 					<div>
 						<table class="kn-table">
 							<thead>
@@ -480,26 +485,26 @@ function SubsView(props: SubsViewProps) {
 								</tbody>
 							) : (
 								<tbody>
-									{subs.map((sub) => (
-										<tr class="kn-table-row" key={sub.sub.id}>
+									{subs.submissions.map((sub) => (
+										<tr class="kn-table-row" key={sub.id}>
 											<th scope="row" class="text-center px-2 py-1">
-												{sub.sub.id}
+												{sub.id}
 											</th>
 											<td class="px-2 py-1">
-												<a href={"/profile/" + sub.author.name}>{sub.author.name}</a>
+												<a href={"/profile/" + subs!.users[sub.user_id]}>{subs!.users[sub.user_id].name}</a>
 											</td>
-											<td class="text-center px-2 py-1">{dayjs(sub.sub.created_at).format("DD/MM/YYYY HH:mm")}</td>
+											<td class="text-center px-2 py-1">{dayjs(sub.created_at).format("DD/MM/YYYY HH:mm")}</td>
 											{((query.problem_id == 0 || query.problem_id == null) && (
 												<td class="text-center px-2 py-1">
-													{sub.problem ? (
+													{subs!.problems[sub.problem_id] ? (
 														<>
 															<a
 																href={
-																	(typeof sub.sub.contest_id === "number" ? `/contests/${sub.sub.contest_id}` : "") +
-																	`/problems/${sub.problem.id}`
+																	(typeof sub.contest_id === "number" ? `/contests/${sub.contest_id}` : "") +
+																	`/problems/${subs!.problems[sub.problem_id].id}`
 																}
 															>
-																{sub.problem.name}
+																{subs!.problems[sub.problem_id].name}
 															</a>
 														</>
 													) : (
@@ -508,16 +513,16 @@ function SubsView(props: SubsViewProps) {
 												</td>
 											)) || (
 												<td class="text-center px-2 py-1">
-													<span>{sub.sub.code_size > 0 ? sizeFormatter(sub.sub.code_size) : "-"}</span>
+													<span>{sub.code_size > 0 ? sizeFormatter(sub.code_size) : "-"}</span>
 												</td>
 											)}
-											<td class="text-center px-2 py-1">{sub.sub.max_time == -1 ? "-" : Math.floor(sub.sub.max_time * 1000) + "ms"}</td>
-											<td class="text-center px-2 py-1">{sub.sub.max_memory == -1 ? "-" : sizeFormatter(sub.sub.max_memory * 1024)}</td>
+											<td class="text-center px-2 py-1">{sub.max_time == -1 ? "-" : Math.floor(sub.max_time * 1000) + "ms"}</td>
+											<td class="text-center px-2 py-1">{sub.max_memory == -1 ? "-" : sizeFormatter(sub.max_memory * 1024)}</td>
 											<td
-												class={(sub.sub.status === "finished" ? "text-black" : "") + " text-center"}
-												style={sub.sub.status == "finished" ? "background-color: " + getGradient(sub.sub.score, 100) : ""}
+												class={(sub.status === "finished" ? "text-black" : "") + " text-center"}
+												style={sub.status == "finished" ? "background-color: " + getGradient(sub.score, 100) : ""}
 											>
-												<a href={"/submissions/" + sub.sub.id}>{status(sub.sub)}</a>
+												<a href={"/submissions/" + sub.id}>{status(sub)}</a>
 											</td>
 										</tr>
 									))}

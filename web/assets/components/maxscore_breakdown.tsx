@@ -4,8 +4,7 @@ import register from "preact-custom-element";
 import getText from "../translation";
 import { apiToast } from "../toast";
 import { BigSpinner } from "./common";
-import { Problem, SubTest, SubmissionSubTask } from "../api/submissions";
-import { getCall } from "../api/net";
+import { getCall } from "../api/client";
 import { SubTask, TestTable } from "./sub_mgr";
 import { KNModal } from "./modal";
 

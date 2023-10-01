@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import register from "preact-custom-element";
 import getText from "../translation";
 import { apiToast } from "../toast";
-import { bodyCall, getCall, postCall } from "../api/net";
+import { bodyCall, getCall, postCall } from "../api/client";
 import { fromBase64 } from "js-base64";
 import { KNModal } from "./modal";
 import { BigSpinner } from "./common";

@@ -16,7 +16,7 @@ const slugify = (str) =>
 import { BigSpinner, OlderSubmissions } from "./common";
 
 import { downloadBlob, parseTime, sizeFormatter, getGradient, fromBase64 } from "../util";
-import { FullSubmission, SubTest, Submission, SubmissionSubTask, UserBrief, getSubmission } from "../api/submissions";
+import { defaultClient } from "../api/client";
 
 function downloadCode(sub: FullSubmission) {
 	if (typeof sub.code === "undefined") {
@@ -464,7 +464,7 @@ export class SubmissionManager extends Component<{ id: number; initialData: Full
 		else return;
 		console.info("Poll submission #", this.props.id);
 		try {
-			var resp = await getSubmission(this.props.id);
+			var resp = await defaultClient.getSubmission(this.props.id);
 		} catch (e) {
 			apiToast({ data: (e as Error).message, status: "error" });
 			console.error(e);
