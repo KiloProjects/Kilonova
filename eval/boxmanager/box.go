@@ -60,11 +60,13 @@ func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
 			continue
 		}
 		toAdd := "--dir="
-		toAdd += dir.In + "="
+		toAdd += dir.In
 		if dir.Out == "" {
-			toAdd += dir.In
+			if !dir.Verbatim {
+				toAdd += "=" + dir.In
+			}
 		} else {
-			toAdd += dir.Out
+			toAdd += "=" + dir.Out
 		}
 		if dir.Opts != "" {
 			toAdd += ":" + dir.Opts
@@ -262,7 +264,7 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 		b.metaFile = metaFile
 		meta, err = b.runCommand(ctx, append(b.buildRunFlags(conf), command...), metaFile)
 		b.metaFile = ""
-		if err == nil && meta.Status != "XX" {
+		if err == nil && meta != nil && meta.Status != "XX" {
 			return meta, err
 		}
 

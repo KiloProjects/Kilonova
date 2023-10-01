@@ -103,19 +103,21 @@ var Langs = map[string]Language{
 		Mounts: []Directory{{In: "/etc"}},
 	},
 	"golang": {
-		Disabled:      true, // Doesn't work
+		// Disabled:      true, // Doesn't work
 		Extensions:    []string{".go"},
 		Compiled:      true,
 		PrintableName: "Go",
 		InternalName:  "golang",
 
-		CompileCommand: []string{"go", "build", MAGIC_REPLACE},
-		RunCommand:     []string{"/main"},
-		SourceName:     "./main.go",
+		CompileCommand: []string{"/usr/bin/go", "build", MAGIC_REPLACE},
+		RunCommand:     []string{"/box/main"},
+		SourceName:     "/box/main.go",
 		CompiledName:   "/box/main",
 
-		BuildEnv:  map[string]string{"GOCACHE": "/go/cache", "GOPATH": "/box", "GO111MODULE": "off"},
+		BuildEnv:  map[string]string{"CGO_ENABLED": "0", "GOCACHE": "/go/cache", "GOPATH": "/box", "GO111MODULE": "off"},
 		CommonEnv: map[string]string{"GOMAXPROCS": "1"},
+
+		Mounts: []Directory{{In: "/go", Opts: "tmp", Verbatim: true}},
 	},
 	"haskell": {
 		Disabled:      true, // For now
@@ -197,4 +199,7 @@ type Directory struct {
 	Out     string `toml:"out"`
 	Opts    string `toml:"opts"`
 	Removes bool   `toml:"removes"`
+
+	// Verbatim doesn't set Out to In implicitly if it isn't set
+	Verbatim bool `toml:"verbatim"`
 }
