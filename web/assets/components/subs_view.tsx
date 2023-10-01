@@ -491,7 +491,7 @@ function SubsView(props: SubsViewProps) {
 												{sub.id}
 											</th>
 											<td class="px-2 py-1">
-												<a href={"/profile/" + subs!.users[sub.user_id]}>{subs!.users[sub.user_id].name}</a>
+												<a href={"/profile/" + subs!.users[sub.user_id].name}>{subs!.users[sub.user_id].name}</a>
 											</td>
 											<td class="text-center px-2 py-1">{dayjs(sub.created_at).format("DD/MM/YYYY HH:mm")}</td>
 											{((query.problem_id == 0 || query.problem_id == null) && (

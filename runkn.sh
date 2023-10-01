@@ -15,7 +15,8 @@ echo "Vendoring js dependencies"
 yarn --cwd ./web/assets vendor
 
 
-go build -race -v ./cmd/kn || exit 2
+#go build -race -v ./cmd/kn || exit 2
+go build -v ./cmd/kn || exit 2
 
 mv kn knnnn # fix gitignore issue
 
@@ -23,7 +24,7 @@ mv kn knnnn # fix gitignore issue
 while true
 do
 	echo "Starting server..."
-	./knnnn main
+	sudo ./knnnn main
 	echo "Server stopped..."
 	sleep 2
 done
