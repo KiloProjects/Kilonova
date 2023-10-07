@@ -1,0 +1,41 @@
+<div id="problem_import" class="segment-panel">
+    <h2>{{getText "importProblem"}}</h2>
+    <form id="problem_import_form" autocomplete="off">
+        <label class="block mb-2">
+            <span class="mr-2 text-xl">{{getText "file"}}: </span>
+            <input class="form-input" id="importArchiveFile" type="file" accept=".zip" required/>
+        </label>
+        <label class="block my-2">
+            <span class="mr-2 text-xl"> {{getText "scoreParams"}}:</span>
+            <input id="importScoreParams" type="text" class="form-input" autocomplete="off" />
+        </label>
+        <button class="btn btn-blue mb-2">{{getText "button.upload"}}</button>
+        <p class="text-muted text-sm">{{getText "importProblemWarn"}}</p>
+    </form>
+
+<script>
+async function importProblem(e) {
+	e.preventDefault()
+	var form = new FormData();
+	var files = document.getElementById("importArchiveFile").files;
+	if(files === null || files.length === 0) {
+		bundled.createToast({status: "error", title: '{{getText "noFiles"}}'})
+		return
+	}
+	form.append("testArchive", files[0]);
+    const scoreParams = document.getElementById("importScoreParams").value;
+    if(scoreParams.length > 0) {
+        form.append("scoreParameters", scoreParams);
+    }
+
+	let res = await bundled.multipartProgressCall("/problem/import", form)
+	if(res.status === "success") {
+		window.location.assign(`/problems/${res.data}`);
+		return
+	}
+	bundled.apiToast(res)
+}    
+
+document.getElementById("problem_import_form").addEventListener("submit", importProblem)
+</script>
+</div>

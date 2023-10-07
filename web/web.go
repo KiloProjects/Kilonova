@@ -215,7 +215,8 @@ func (rt *Web) Handler() http.Handler {
 		// Proposer panel
 		r.With(rt.mustBeProposer).Get("/proposer", rt.justRender(
 			"proposer/index.html",
-			"proposer/createproblem.html", "proposer/createpblist.html", "proposer/createcontest.html",
+			"proposer/createproblem.html", "proposer/importproblem.html",
+			"proposer/createpblist.html", "proposer/createcontest.html",
 		))
 	})
 

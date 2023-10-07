@@ -1100,6 +1100,14 @@ ro = "Creare listă probleme imbricată aici"
 en = "Create contest"
 ro = "Creare concurs"
 
+[importProblem]
+en = "Import problem from archive"
+ro = "Importare problemă din arhivă"
+
+[importProblemWarn]
+en = "A stub problem will be created and will have the file loaded as test archive."
+ro = "A problemă temporară va fi creată și va încărca fișierul drept arhivă de test."
+
 [problemName]
 en = "Problem name"
 ro = "Nume problemă"
