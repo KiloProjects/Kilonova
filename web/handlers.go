@@ -36,10 +36,12 @@ const (
 var (
 	DonationsEnabled = config.GenFlag[bool]("frontend.donations.enabled", true, "Donations page enabled")
 	DonationsNag     = config.GenFlag[bool]("frontent.donation.frontpage_nag", true, "Donations front page notification")
+
+	MainPageLogin = config.GenFlag[bool]("feature.frontend.main_page_login", false, "Login modal on front page")
 )
 
 func (rt *Web) index() http.HandlerFunc {
-	templ := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html", "modals/contest_list.html")
+	templ := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html", "modals/contest_list.html", "modals/login.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		runningContests, err := rt.base.VisibleRunningContests(r.Context(), util.UserBrief(r))
 		if err != nil {

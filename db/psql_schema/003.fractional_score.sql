@@ -1,9 +1,9 @@
 BEGIN DEFERRABLE;
 
-DROP VIEW max_score_view CASCADE;
-DROP VIEW max_score_contest_view CASCADE;
-DROP VIEW submission_subtask_max_scores CASCADE;
-DROP VIEW contest_submission_subtask_max_scores CASCADE;
+DROP VIEW IF EXISTS max_score_view CASCADE;
+DROP VIEW IF EXISTS max_score_contest_view CASCADE;
+DROP VIEW IF EXISTS submission_subtask_max_scores CASCADE;
+DROP VIEW IF EXISTS contest_submission_subtask_max_scores CASCADE;
 
 
 ALTER TABLE problems ADD COLUMN digit_precision integer NOT NULL DEFAULT 0;

@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS tests (
 	created_at 	timestamptz		NOT NULL DEFAULT NOW(),
 	score 		integer 		NOT NULL,
 	problem_id  bigint			NOT NULL REFERENCES problems(id) ON DELETE CASCADE,
-	visible_id  bigint 			NOT NULL,
+	visible_id  bigint 			NOT NULL
 );
 
 
@@ -398,7 +398,6 @@ CREATE INDEX IF NOT EXISTS stk_stest_m2m_stest_index ON submission_subtask_subte
 ---- problems
 
 CREATE INDEX IF NOT EXISTS problem_access_index ON problem_user_access (problem_id);
-CREATE INDEX IF NOT EXISTS problem_attachments_index ON attachments (problem_id);
 CREATE INDEX IF NOT EXISTS problem_tests_index ON tests (problem_id);
 CREATE INDEX IF NOT EXISTS problem_visibility_index ON problems (visible);
 

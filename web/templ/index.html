@@ -30,6 +30,12 @@
             </div>
         </div>
         {{end}}
+
+        {{ if boolFlag "feature.frontend.main_page_login" }}
+        {{ if not authed}}
+            {{template "login_modal" .}}
+        {{ end }}        
+        {{ end }}
         
         {{ if boolFlag "feature.frontend.front_page_pbs" }}
         
@@ -80,23 +86,24 @@
         {{end}}
     </div>
     <div class="page-sidebar">
-        
-        {{ if (or .RunningContests .FutureContests)}}
-        <div class="segment-panel hidden lg:block">
-            {{ $bothContests := and .RunningContests .FutureContests }}
-            {{ with .RunningContests }}
-            <h2>{{getText "running_contests"}}</h2>
-            {{ template "contest_sidebar_view" . }}
-            {{ end }}
-            {{ with .FutureContests }}
-            <h2>{{getText "future_contests"}}</h2>
-            {{ template "contest_sidebar_view" . }}
-            {{ end }}
-            <div class="mt-3">
-                {{ renderMarkdown (getText "all_contests_announcement") }}
+        {{ if boolFlag `feature.frontend.front_page_pbs` }}
+            {{ if (or .RunningContests .FutureContests)}}
+            <div class="segment-panel hidden lg:block">
+                {{ $bothContests := and .RunningContests .FutureContests }}
+                {{ with .RunningContests }}
+                <h2>{{getText "running_contests"}}</h2>
+                {{ template "contest_sidebar_view" . }}
+                {{ end }}
+                {{ with .FutureContests }}
+                <h2>{{getText "future_contests"}}</h2>
+                {{ template "contest_sidebar_view" . }}
+                {{ end }}
+                <div class="mt-3">
+                    {{ renderMarkdown (getText "all_contests_announcement") }}
+                </div>
             </div>
-        </div>
-        {{ end }}
+            {{ end }}
+        {{end}}
         {{ with .PinnedLists }}
         <div class="segment-panel">
             <h2>{{getText "pinned_lists"}}</h2>
