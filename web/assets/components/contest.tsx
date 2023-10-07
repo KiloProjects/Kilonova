@@ -208,7 +208,9 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 						<tr class="kn-table-row" key={entry.user.id}>
 							<td class="kn-table-cell">{idx + 1}.</td>
 							<td class="kn-table-cell">
-								<a href={`/profile/${entry.user.name}`}>{entry.user.name}</a>
+								<a href={`/profile/${entry.user.name}`}>
+									{entry.user.display_name.length > 0 ? `${entry.user.display_name} (${entry.user.name})` : entry.user.name}
+								</a>
 							</td>
 							{leaderboard?.type == "acm-icpc" && (
 								<>

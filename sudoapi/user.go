@@ -228,7 +228,8 @@ func (s *BaseAPI) UpdateUserPassword(ctx context.Context, uid int, password stri
 	return nil
 }
 
-func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, theme kilonova.PreferredTheme) (*kilonova.UserFull, *StatusError) {
+// TODO: displayName probably doesn't have to be *string, can be just string, but this was implemented quickly
+func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, theme kilonova.PreferredTheme, displayName *string) (*kilonova.UserFull, *StatusError) {
 	uname = strings.TrimSpace(uname)
 	if !(len(uname) >= 3 && len(uname) <= 32 && usernameRegex.MatchString(uname)) {
 		return nil, Statusf(400, "Username must be between 3 and 32 characters long and must contain only letters, digits, underlines and dashes.")
@@ -257,7 +258,12 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 	// Dummy email
 	email := fmt.Sprintf("email_%s@kilonova.ro", uname)
 
-	id, err := s.createUser(ctx, uname, email, pwd, lang, theme, true)
+	dName := ""
+	if displayName != nil {
+		dName = *displayName
+	}
+
+	id, err := s.createUser(ctx, uname, email, pwd, lang, theme, dName, true)
 	if err != nil {
 		zap.S().Warn(err)
 		return nil, Statusf(500, "Couldn't create user")
@@ -280,13 +286,13 @@ func (s *BaseAPI) GetGravatarLink(user *kilonova.UserFull, size int) string {
 	return fmt.Sprintf("https://www.gravatar.com/avatar/%s?%s", hex.EncodeToString(bSum[:]), v.Encode())
 }
 
-func (s *BaseAPI) createUser(ctx context.Context, username, email, password, lang string, theme kilonova.PreferredTheme, generated bool) (int, error) {
+func (s *BaseAPI) createUser(ctx context.Context, username, email, password, lang string, theme kilonova.PreferredTheme, displayName string, generated bool) (int, error) {
 	hash, err := hashPassword(password)
 	if err != nil {
 		return -1, err
 	}
 
-	id, err := s.db.CreateUser(ctx, username, hash, email, lang, theme, generated)
+	id, err := s.db.CreateUser(ctx, username, hash, email, lang, theme, displayName, generated)
 	if err != nil {
 		zap.S().Warn(err)
 		return -1, err

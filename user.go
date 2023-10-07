@@ -21,6 +21,8 @@ type UserBrief struct {
 	Name     string `json:"name"`
 	Admin    bool   `json:"admin"`
 	Proposer bool   `json:"proposer"`
+
+	DisplayName string `json:"display_name"`
 }
 
 type UserFull struct {
@@ -75,6 +77,7 @@ type UserFilter struct {
 // SudoAPI methods
 type UserUpdate struct {
 	//Name    *string `json:"name"`
+	DisplayName *string `json:"display_name"`
 
 	Bio *string `json:"bio"`
 

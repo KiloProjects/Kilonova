@@ -8,6 +8,8 @@ declare global {
 		name: string;
 		admin: boolean;
 		proposer: boolean;
+
+		display_name: string;
 	};
 
 	type Problem = {

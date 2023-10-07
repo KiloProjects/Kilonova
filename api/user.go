@@ -449,6 +449,8 @@ func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 		Name     string `json:"username"`
 		Password string `json:"password"`
 		Lang     string `json:"language"`
+
+		DisplayName *string `json:"display_name"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 500)
@@ -459,7 +461,7 @@ func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 		args.Password = kilonova.RandomString(7)
 	}
 
-	user, err := s.base.GenerateUser(r.Context(), args.Name, args.Password, args.Lang, kilonova.PreferredThemeDark)
+	user, err := s.base.GenerateUser(r.Context(), args.Name, args.Password, args.Lang, kilonova.PreferredThemeDark, args.DisplayName)
 	if err != nil {
 		err.WriteError(w)
 		return

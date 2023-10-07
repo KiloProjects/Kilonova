@@ -30,6 +30,8 @@ type User struct {
 
 	LockedLogin bool `json:"locked_login" db:"locked_login"`
 	Generated   bool `json:"generated" db:"generated"`
+
+	DisplayName string `json:"display_name" db:"display_name"`
 }
 
 func toUserBrief(user *User) *kilonova.UserBrief {
@@ -41,6 +43,8 @@ func toUserBrief(user *User) *kilonova.UserBrief {
 		Name:     user.Name,
 		Admin:    user.Admin,
 		Proposer: user.Proposer,
+
+		DisplayName: user.DisplayName,
 	}
 }
 
@@ -156,6 +160,10 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate
 		ub.AddUpdate("email = %s", v)
 	}
 
+	if v := upd.DisplayName; v != nil {
+		ub.AddUpdate("display_name = %s", v)
+	}
+
 	if v := upd.Admin; v != nil {
 		ub.AddUpdate("admin = %s", v)
 	}
@@ -208,15 +216,15 @@ func (s *DB) DeleteUser(ctx context.Context, id int) error {
 }
 
 // CreateUser creates a new user with the specified data.
-func (s *DB) CreateUser(ctx context.Context, name, passwordHash, email, preferredLanguage string, theme kilonova.PreferredTheme, generated bool) (int, error) {
+func (s *DB) CreateUser(ctx context.Context, name, passwordHash, email, preferredLanguage string, theme kilonova.PreferredTheme, displayName string, generated bool) (int, error) {
 	if name == "" || passwordHash == "" || email == "" || preferredLanguage == "" {
 		return -1, kilonova.ErrMissingRequired
 	}
 
 	var id = -1
 	err := s.conn.QueryRow(ctx,
-		"INSERT INTO users (name, email, password, preferred_language, preferred_theme, generated, verified_email) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
-		name, email, passwordHash, preferredLanguage, theme, generated, generated, // generated is for both generated and verified_email!
+		"INSERT INTO users (name, email, password, preferred_language, preferred_theme, display_name, generated, verified_email) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
+		name, email, passwordHash, preferredLanguage, theme, displayName, generated, generated, // generated is for both generated and verified_email!
 	).Scan(&id)
 	return id, err
 }
