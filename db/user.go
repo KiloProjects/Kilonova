@@ -161,7 +161,7 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate
 	}
 
 	if v := upd.DisplayName; v != nil {
-		ub.AddUpdate("display_name = %s", v)
+		ub.AddUpdate("display_name = %s", strings.TrimSpace(*v))
 	}
 
 	if v := upd.Admin; v != nil {
