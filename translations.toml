@@ -446,6 +446,10 @@ ro = "Link-uri utile"
 en = "Other information"
 ro = "Alte informații"
 
+[serverTime]
+en = "Server time"
+ro = "Ora serverului"
+
 [credits]
 en = "Credits"
 ro = "Credite"
@@ -1975,9 +1979,9 @@ ro = "Începe concursul"
 en = "Started"
 ro = "Început"
 
-[time_expired]
-en = "Time expired"
-ro = "Timp expirat"
+[time_elapsed]
+en = "Time elapsed"
+ro = "Timp încheiat"
 
 [not_started]
 en = "Not started"

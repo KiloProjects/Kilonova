@@ -240,8 +240,8 @@
 	}
 
 	.black-span {
-		@apply text-gray-600 outline-none;
-		@apply dark:text-gray-300;
+		@apply text-gray-500 outline-none;
+		@apply dark:text-gray-400;
 	}
 
 	.black-anchor {

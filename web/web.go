@@ -37,11 +37,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	TimeFormat         = "02/01/2006 15:04"
-	TimeFormatExtended = "02/01/2006 15:04:05"
-)
-
 var (
 	CCDisclaimer = config.GenFlag("feature.frontend.cc_disclaimer", true, "CC disclaimer in footer")
 
@@ -426,8 +421,11 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"unescapeHTML": func(s string) string {
 			return html.UnescapeString(s)
 		},
-		"formatTime": func(t time.Time) string {
-			return t.Format(TimeFormatExtended)
+		"serverTime": func() string {
+			return time.Now().Format(time.RFC3339Nano)
+		},
+		"serverTimeFooter": func() string {
+			return time.Now().Format("15:04:05")
 		},
 		"syntaxHighlight": func(code, lang string) (string, error) {
 			fmt := chtml.New(chtml.WithClasses(true), chtml.TabWidth(4))

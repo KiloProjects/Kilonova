@@ -161,7 +161,7 @@ async function pruneBio() {
     <ul>
         {{range .ChangeHistory}}
         <li>
-            <code>{{.Name}}</code> ({{formatTime .ChangedAt}})
+            <code>{{.Name}}</code> (<span class="server_timestamp">{{.ChangedAt.UnixMilli}}</span>)
         </li>
         {{end}}
     </ul>

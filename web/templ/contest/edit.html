@@ -167,7 +167,6 @@
 <script>
 // datetime handling
 function setDatetime(inputID, backendValue) {
-    console.log(backendValue, bundled.dayjs(backendValue).format("YYYY-MM-DD[T]HH:mm"))
     document.getElementById(inputID).value = bundled.dayjs(backendValue).format("YYYY-MM-DD[T]HH:mm")
 }
 setDatetime("start_time", {{printf "%s" .Contest.StartTime.MarshalText}});
@@ -203,13 +202,13 @@ async function updateContest(e) {
             max_subs: fd.get("max_subs"),
             public_join: document.getElementById("c_public_join").checked,
             visible: document.getElementById("c_visible").checked,
-            start_time: bundled.contestToNetworkDate(fd.get("start_time")),
-            end_time: bundled.contestToNetworkDate(fd.get("end_time")),
+            start_time: bundled.formatISO3601(fd.get("start_time")),
+            end_time: bundled.formatISO3601(fd.get("end_time")),
 
             public_leaderboard: document.getElementById("c_public_leaderboard").checked,
             leaderboard_style: fd.get("leaderboard_style"),
             change_leaderboard_freeze: true,
-            leaderboard_freeze: leaderboardFreeze ? bundled.contestToNetworkDate(fd.get("freeze_time")) : undefined,
+            leaderboard_freeze: leaderboardFreeze ? bundled.formatISO3601(fd.get("freeze_time")) : undefined,
             icpc_submission_penalty: fd.get("icpc_submission_penalty"),
             
             per_user_time: fd.get("per_user_time"),

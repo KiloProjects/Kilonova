@@ -12,50 +12,15 @@ import { getCall, postCall } from "../api/client";
 import { buildScoreBreakdownModal } from "./maxscore_breakdown";
 import { confirm } from "./modal";
 import { defaultClient } from "../api/client";
-
-export function contestToNetworkDate(timestamp: string): string {
-	const djs = dayjs(timestamp, "YYYY-MM-DDTHH:mm", true);
-	if (!djs.isValid()) {
-		throw new Error("Invalid timestamp");
-	}
-	return djs.format("YYYY-MM-DDTHH:mm:ss.SSSZ");
-}
-
-function formatMinutes(mins: number): string {
-	const minutes = mins % 60;
-	mins = (mins - minutes) / 60;
-	const hours = mins;
-	if (hours >= 24) {
-		return `${Math.floor(hours / 24)}:${Math.floor(hours % 24)}:${minutes}`;
-	}
-	return sprintf("%02d:%02d", hours, minutes);
-}
-
-function remainingTimeStr(time: dayjs.Dayjs): string {
-	let diff = time.diff(dayjs(), "s");
-	if (diff < 0) {
-		return getText("time_expired");
-	}
-	const seconds = diff % 60;
-	diff = (diff - seconds) / 60;
-	const minutes = diff % 60;
-	diff = (diff - minutes) / 60;
-	const hours = diff;
-	if (hours >= 48) {
-		// >2 days
-		return getText("days", Math.floor(diff / 24));
-	}
-
-	return sprintf("%02d:%02d:%02d", hours, minutes, seconds);
-}
+import { formatDuration, serverTime } from "../time";
 
 export function ContestRemainingTime({ target_time, reload }: { target_time: dayjs.Dayjs; reload: boolean }) {
-	let [text, setText] = useState<string>(remainingTimeStr(target_time));
+	let [text, setText] = useState<string>(formatDuration(target_time));
 
 	function updateTime() {
-		setText(remainingTimeStr(target_time));
+		setText(formatDuration(target_time));
 		if (reload) {
-			let diff = target_time.diff(dayjs(), "s");
+			let diff = target_time.diff(serverTime(), "s");
 			if (diff < 0) {
 				console.log("Reloading webpage...");
 				window.location.reload();
@@ -83,7 +48,7 @@ export function ContestCountdown({ target_time, type }: { target_time: string; t
 	const endTime = dayjs(timestamp);
 	return (
 		<>
-			{endTime.diff(dayjs()) <= 0 ? (
+			{endTime.diff(serverTime()) <= 0 ? (
 				<span>{{ running: getText("contest_ended"), before_start: getText("contest_running") }[type]}</span>
 			) : (
 				<ContestRemainingTime target_time={endTime} reload={true} />
@@ -166,7 +131,7 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 				<p>
 					{getText("last_updated_at")}: {lastUpdated ? dayjs(lastUpdated).format("DD/MM/YYYY HH:mm") : "-"}
 				</p>
-				{leaderboard.freeze_time && dayjs().isAfter(leaderboard.freeze_time) && (
+				{leaderboard.freeze_time && serverTime().isAfter(leaderboard.freeze_time) && (
 					<p>
 						{getText("freeze_time")}: {dayjs(leaderboard.freeze_time).format("DD/MM/YYYY HH:mm")}
 					</p>
@@ -241,7 +206,9 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 												<span class="block font-bold text-lg">
 													{entry.scores[pb.id] >= 100 ? "+" : "-"} {entry.attempts[pb.id] > 0 && entry.attempts[pb.id]}
 												</span>
-												{entry.scores[pb.id] >= 100 && <span class="block">{formatMinutes(entry.last_times[pb.id] ?? 0)}</span>}
+												{entry.scores[pb.id] >= 100 && (
+													<span class="block">{formatDuration(entry.last_times[pb.id] ?? 0, true, true)}</span>
+												)}
 											</>
 										) : (
 											"-"

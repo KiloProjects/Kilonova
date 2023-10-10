@@ -57,7 +57,7 @@
                     {{ if not (startedUSACO . $reg) }}
                         <button class="btn btn-blue" onclick="bundled.startContestRegistration({{.ID}})">{{getText "start_contest"}}</button>
                     {{ else if (endedUSACO . $reg) }}
-                        <span class="badge-lite">{{getText "time_expired"}}</span>
+                        <span class="badge-lite">{{getText "time_elapsed"}}</span>
                     {{ else }}
                         <span class="badge-lite">{{getText "started"}}</span>
                     {{ end }}
