@@ -6,15 +6,15 @@
         {{- if not .Root -}}
         <td class="kn-table-cell" rowspan="{{computeChecklistSpan .}}">
             {{- if not (eq .DepthLevel 1) -}}
-            <a class="white-anchor" href="/problem_lists/{{.ID}}">
+            <a class="white-anchor font-bold" href="/problem_lists/{{.ID}}">
                 {{- .Title -}}:</a>{{if authed}}<br/>({{.SolvedCount}}/{{.NumProblems}}){{end}}
             {{- else -}}
-            <a class="white-anchor" href="/problem_lists/{{.ID}}">
+            <a class="white-anchor font-bold" href="/problem_lists/{{.ID}}">
                 {{- .Title -}}</a> {{if authed}}({{.SolvedCount}}/{{.NumProblems}}){{end}}
             {{- end -}}
         </td>
         {{- else if gt (len .Problems) 0 -}}
-        <td class="kn-table-cell"><a class="white-anchor" href="/problem_lists/{{.ID}}">{{.Title}}</a></td>
+        <td class="kn-table-cell"><a class="white-anchor font-bold" href="/problem_lists/{{.ID}}">{{.Title}}</a></td>
         {{- end -}}
         {{- range .Problems -}}
             {{- template "problem_entry" . -}}
@@ -34,7 +34,7 @@
     <table class="kn-table kn-table-slim">
         <thead>
             <tr>
-                <th class="kn-table-cell" colspan="9999"><a class="text-2xl white-anchor" href="/problem_lists/{{.ProblemList.ID}}">{{.ProblemList.Title}} {{if authed}}({{.ProblemList.SolvedCount}}/{{.ProblemList.NumProblems}}){{end}}</a></th>
+                <th class="kn-table-cell" colspan="9999"><a class="text-2xl white-anchor font-bold" href="/problem_lists/{{.ProblemList.ID}}">{{.ProblemList.Title}} {{if authed}}({{.ProblemList.SolvedCount}}/{{.ProblemList.NumProblems}}){{end}}</a></th>
             </tr>
         </thead>
         <tbody>

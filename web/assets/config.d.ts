@@ -22,7 +22,7 @@ export declare global {
 		admin: boolean;
 		user_id: number;
 		user?: UserBrief;
-		language: string;
+		language: "en" | "ro";
 		langs: { [name: string]: WebLanguage };
 	}
 

@@ -32,8 +32,8 @@
 			<!--<h1>{{.Problem.Name}}</h1>-->
             <h5>{{getText "timeLimit"}}: {{.Problem.TimeLimit}}s</h5>
             <h5>{{getText "memoryLimit"}}: {{KBtoMB .Problem.MemoryLimit}}MB</h5>
-            <h5>{{getText "input"}}: {{if .Problem.ConsoleInput}}stdin{{else}}{{.Problem.TestName}}.in{{end}}</h5>
-            <h5>{{getText "output"}}: {{if .Problem.ConsoleInput}}stdout{{else}}{{.Problem.TestName}}.out{{end}}</h5>
+            <h5>{{getText "input"}}: {{if .Problem.ConsoleInput}}<kn-glossary name="stdin" content="stdin"></kn-glossary>{{else}}{{.Problem.TestName}}.in{{end}}</h5>
+            <h5>{{getText "output"}}: {{if .Problem.ConsoleInput}}<kn-glossary name="stdin" content="stdout"></kn-glossary>{{else}}{{.Problem.TestName}}.out{{end}}</h5>
             {{- if not .Problem.DefaultPoints.IsZero -}}
             <h5>{{getText "defaultPoints"}}: {{.Problem.DefaultPoints}}p</h5>
             {{- end -}}

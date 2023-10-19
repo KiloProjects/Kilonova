@@ -18,3 +18,6 @@ TODO FOR 1.0:
 - [x] Fractional score
 - [ ] OAuth API
 
+- [ ] Custom contest registration types (ex: official, official at home, unofficial)
+    - [ ] Leaderboard filtering based on these types
+

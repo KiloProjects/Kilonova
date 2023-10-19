@@ -250,7 +250,7 @@
 	}
 
 	.white-anchor {
-		@apply black-anchor text-gray-700 dark:text-gray-200 font-bold;
+		@apply black-anchor text-gray-700 dark:text-gray-200;
 	}
 
 	.topbar-selected {

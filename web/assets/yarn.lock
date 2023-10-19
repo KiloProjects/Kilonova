@@ -236,10 +236,10 @@
   resolved "https://registry.npmjs.org/@types/lodash/-/lodash-4.14.194.tgz#b71eb6f7a0ff11bff59fc987134a093029258a76"
   integrity sha512-r22s9tAS7imvBt2lyHC9B8AGwWnXaYb1tY09oyLkXDs4vArpYJzw09nj8MLx5VfciBPGIb+ZwG0ssYnEPJxn/g==
 
-"@types/preact-custom-element@^4.0.2":
-  version "4.0.2"
-  resolved "https://registry.npmjs.org/@types/preact-custom-element/-/preact-custom-element-4.0.2.tgz#05aed8f0ae5827e099849a5759849dbaa2da2571"
-  integrity sha512-Ea1m7ZTV4EzOvlAOJa3ZuwGwyRslFOzEEAzuXJM8jrxm1G4dYCpDKTWze4UojFMOmHfLmBhQebONS9t4Jqs1oQ==
+"@types/preact-custom-element@^4.0.3":
+  version "4.0.3"
+  resolved "https://registry.npmjs.org/@types/preact-custom-element/-/preact-custom-element-4.0.3.tgz#e243fd67a80ca8d036756af89a629730a4160484"
+  integrity sha512-r/MtaxUAFd3Eq11DGch1qlpzMnOmb7FX6wdE+VKDYmtbPtcrFwcBeJC0UDd3YG9sNrIhDaqSg1JQCJHM7crXyQ==
   dependencies:
     preact "^10.0.0"
 
@@ -1357,10 +1357,10 @@ postcss@^8.4.31:
     picocolors "^1.0.0"
     source-map-js "^1.0.2"
 
-preact-custom-element@^4.2.1:
-  version "4.2.1"
-  resolved "https://registry.npmjs.org/preact-custom-element/-/preact-custom-element-4.2.1.tgz#a18752ef60823ea61199d9cdc1866e51139b3f46"
-  integrity sha512-/fiEEAyC+MXRlCBRmv/owoN5BLpO2nF/MF3YBHLtp4C2lNqlhV+a4he74A5DhfDoRmxDHm0sYVgQzWFEyzTDsw==
+preact-custom-element@^4.3.0:
+  version "4.3.0"
+  resolved "https://registry.npmjs.org/preact-custom-element/-/preact-custom-element-4.3.0.tgz#0404a0759f797a133adf246ec25eb179256fc55a"
+  integrity sha512-5hG7nQhU4e7RNfCEQklaUqYQiiyibLuJ2wbhR+E2v1m8m9NDsJok5MykW/Nx0YLLBcXr8xnkap6DwByGy2TzDA==
 
 preact@^10.0.0:
   version "10.13.2"

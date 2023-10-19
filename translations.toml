@@ -2362,3 +2362,7 @@ ro = "Probleme trending"
 [pinned_lists]
 en = "Highlighted lists"
 ro = "Liste evidențiate"
+
+[glossary]
+en = "Glossary"
+ro = "Glosar"
