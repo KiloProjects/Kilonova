@@ -8,7 +8,7 @@ type Definition = {
 	description: () => h.JSX.Element | string;
 };
 
-let definitions = {
+let definitions: Record<string, { en: Definition; ro: Definition }> = {
 	stdin: {
 		en: {
 			name: "Standard input/output",
@@ -38,7 +38,10 @@ let definitions = {
 			name: "Unknown definition",
 			description: () => "Definition could not be loaded",
 		},
-		ro: {},
+		ro: {
+			name: "Definiție necunoscută",
+			description: () => "Definiția n-a putut fi încărcată",
+		},
 	},
 };
 
