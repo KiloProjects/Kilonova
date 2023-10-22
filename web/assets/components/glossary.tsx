@@ -53,8 +53,7 @@ export function GlossaryLink({ name, content, children }: { name: string; conten
 				e.preventDefault();
 				buildGlossaryModal(name);
 			}}
-			class="white-anchor inline-block"
-			style={{ textDecoration: "underline dashed" }}
+			class="white-anchor inline-block underline decoration-dashed"
 		>
 			{content}
 			{children}

@@ -540,7 +540,7 @@
 	}
 
 	.modal-content {
-		@apply w-full h-full my-2 grow overflow-y-auto;
+		@apply w-full my-2 grow overflow-y-auto;
 	}
 
 	.modal-footer {
