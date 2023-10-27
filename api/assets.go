@@ -7,6 +7,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"path"
 	"strconv"
@@ -166,7 +167,8 @@ func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request)
 						col += strconv.Itoa(val)
 					}
 					if dur, ok := entry.ProblemTimes[pb]; ok {
-						h, m := dur/60, dur%60
+						dur = math.Floor(dur)
+						h, m := int(dur)/60, int(dur)%60
 						col += fmt.Sprintf(" / %02d:%02d", h, m)
 					}
 					line = append(line, col)

@@ -618,6 +618,10 @@ ro = "Submisia de scor maxim (implicit)"
 en = "Sum of maximum subtasks"
 ro = "Suma maximelor subtaskurilor"
 
+[acm_icpc_strat]
+en = "ACM-ICPC style scoring"
+ro = "Scor stil ACM-ICPC"
+
 [checker]
 en = "Checker"
 ro = "Verificator"
@@ -1275,6 +1279,14 @@ ro = "SubTask-ul"
 [verdict]
 en = "Verdict"
 ro = "Verdict"
+
+[accepted]
+en = "Accepted"
+ro = "Acceptat"
+
+[rejected]
+en = "Rejected"
+ro = "Refuzat"
 
 [correct]
 en = "correct"

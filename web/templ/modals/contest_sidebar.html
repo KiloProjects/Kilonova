@@ -89,7 +89,7 @@
                         {{- if eq .ScoringStrategy `sum_subtasks` -}}
                             <a class="max_score_breakdown" href="#" data-problemid="{{.ID}}" data-contestid="{{$contest.ID}}">
                         {{- end -}}
-                        {{$score}} {{- if not (eq $score "-") -}}p{{end}}
+                        {{$score}} {{- if and (not (eq (index $score 0) '<')) (not (eq $score "-")) -}}p{{end}}
                         {{- if eq .ScoringStrategy `sum_subtasks` -}}
                             </a>
                         {{- end -}}

@@ -83,6 +83,27 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 	let [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
 	let [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
+	const firstSolves = useMemo(() => {
+		let firstSolves: Record<number, { minTime: number; userID: number }> = {};
+		if (leaderboard == null || typeof leaderboard.entries === "undefined") {
+			return {};
+		}
+		for (let entry of leaderboard.entries) {
+			for (let times of Object.entries(entry.last_times)) {
+				let problemID = parseInt(times[0]);
+				if (entry.scores[problemID] != 100) {
+					continue;
+				}
+				if (typeof firstSolves[problemID] == "undefined" || firstSolves[problemID].minTime > times[1]) {
+					firstSolves[problemID] = { minTime: times[1], userID: entry.user.id };
+				}
+			}
+		}
+		return firstSolves;
+	}, [problems, leaderboard]);
+
+	console.log(firstSolves);
+
 	async function loadLeaderboard() {
 		setLoading(true);
 		const res = await getCall<LeaderboardResponse>(`/contest/${contestID}/leaderboard`, {});
@@ -198,7 +219,12 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 										class="kn-table-cell"
 										style={{
 											color: entry.scores[pb.id] >= 100 ? "black" : undefined,
-											backgroundColor: getGradient(entry.scores[pb.id] >= 100 ? 1 : 0, 1),
+											backgroundColor: (() => {
+												if (typeof firstSolves[pb.id] !== "undefined" && firstSolves[pb.id].userID == entry.user.id) {
+													return "#51a300";
+												}
+												return getGradient(entry.scores[pb.id] >= 100 ? 1 : 0, 1);
+											})(),
 										}}
 									>
 										{entry.scores[pb.id] >= 0 ? (
@@ -207,7 +233,7 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 													{entry.scores[pb.id] >= 100 ? "+" : "-"} {entry.attempts[pb.id] > 0 && entry.attempts[pb.id]}
 												</span>
 												{entry.scores[pb.id] >= 100 && (
-													<span class="block">{formatDuration(entry.last_times[pb.id] ?? 0, true, true)}</span>
+													<span class="block">{formatDuration(entry.last_times[pb.id] ?? -1, true, true)}</span>
 												)}
 											</>
 										) : (

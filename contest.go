@@ -156,7 +156,7 @@ type LeaderboardEntry struct {
 	Penalty         int         `json:"penalty"`
 	NumSolved       int         `json:"num_solved"`
 	// ProblemTimes is expressed as number of minutes since start
-	ProblemTimes map[int]int `json:"last_times"`
+	ProblemTimes map[int]float64 `json:"last_times"`
 
 	LastTime   *time.Time `json:"last_time"`
 	FreezeTime *time.Time `json:"freeze_time"`

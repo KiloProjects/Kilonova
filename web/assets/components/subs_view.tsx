@@ -23,9 +23,24 @@ export function rezStr(count: number): string {
 	return `${count} ${getText("manyResults")}`;
 }
 
-const status = (sub: Submission): string => {
+const status = (sub: Submission): string | h.JSX.Element => {
 	if (sub.status === "finished") {
-		return `${getText("evaluated")}: ${sub.score.toFixed(sub.score_precision)} ${getText("points")}`;
+		if (sub.submission_type == "classic") {
+			return `${getText("evaluated")}: ${sub.score.toFixed(sub.score_precision)} ${getText("points")}`;
+		}
+		// else, icpc
+		if (sub.score == 100) {
+			return (
+				<>
+					<i class="fas fa-fw fa-check"></i> {getText("accepted")}
+				</>
+			);
+		}
+		return (
+			<>
+				<i class="fas fa-fw fa-xmark"></i> {sub.icpc_verdict || getText("rejected")}
+			</>
+		);
 	} else if (sub.status === "working") {
 		return getText("evaluating");
 	}
@@ -520,7 +535,14 @@ function SubsView(props: SubsViewProps) {
 											<td class="text-center px-2 py-1">{sub.max_memory == -1 ? "-" : sizeFormatter(sub.max_memory * 1024)}</td>
 											<td
 												class={(sub.status === "finished" ? "text-black" : "") + " text-center"}
-												style={sub.status == "finished" ? "background-color: " + getGradient(sub.score, 100) : ""}
+												style={
+													sub.status == "finished"
+														? "background-color: " +
+														  (sub.submission_type == "classic"
+																? getGradient(sub.score, 100)
+																: getGradient(sub.score == 100 ? 1 : 0, 1))
+														: ""
+												}
 											>
 												<a href={"/submissions/" + sub.id}>{status(sub)}</a>
 											</td>

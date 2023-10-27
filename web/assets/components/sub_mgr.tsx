@@ -86,14 +86,33 @@ function Summary({ sub, pasteAuthor }: { sub: FullSubmission; pasteAuthor?: User
 					</tr>
 					{sub.status === "finished" && (
 						<>
-							<tr class="kn-table-simple-border">
-								<td class="kn-table-cell">{getText("score")}</td>
-								<td class="kn-table-cell">
-									<span class="badge-lite font-bold" style={{ backgroundColor: getGradient(sub.score, 100) }}>
-										{sub.score.toFixed(sub.score_precision)}
-									</span>
-								</td>
-							</tr>
+							{sub.submission_type == "classic" ? (
+								<tr class="kn-table-simple-border">
+									<td class="kn-table-cell">{getText("score")}</td>
+									<td class="kn-table-cell">
+										<span class="badge-lite font-bold" style={{ backgroundColor: getGradient(sub.score, 100) }}>
+											{sub.score.toFixed(sub.score_precision)}
+										</span>
+									</td>
+								</tr>
+							) : (
+								<tr class="kn-table-simple-border">
+									<td class="kn-table-cell">{getText("verdict")}</td>
+									<td class="kn-table-cell">
+										<span class="badge-lite font-bold">
+											{sub.score == 100 ? (
+												<>
+													<i class="fas fa-fw fa-check"></i> {getText("accepted")}
+												</>
+											) : (
+												<>
+													<i class="fas fa-fw fa-xmark"></i> {sub.icpc_verdict || getText("rejected")}
+												</>
+											)}
+										</span>
+									</td>
+								</tr>
+							)}
 							<tr class="kn-table-simple-border">
 								<td class="kn-table-cell">{getText("time")}</td>
 								<td class="kn-table-cell">{sub.max_time == -1 ? "-" : `${Math.floor(sub.max_time * 1000)} ms`}</td>

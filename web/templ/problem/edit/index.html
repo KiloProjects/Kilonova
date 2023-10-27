@@ -18,8 +18,7 @@
                     <input id="sourceCredits" class="form-input" type="text" value="{{.Problem.SourceCredits}}" />
                 </label>
                 <label class="block my-2">
-                    <input id="consoleInput" class="form-checkbox" type="checkbox" {{if .Problem.ConsoleInput}} checked {{
-                        end }}>
+                    <input id="consoleInput" class="form-checkbox" type="checkbox" {{if .Problem.ConsoleInput}} checked {{ end }}>
                     <span class="form-label ml-2">{{getText "consoleInput"}}</span>
                 </label>
                 <label class="block my-2">
@@ -27,6 +26,7 @@
                     <select id="scoring_strategy" class="form-select">
                         <option value="max_submission" {{if eq .Problem.ScoringStrategy `max_submission`}}selected{{end}}>{{getText "max_submission_strat"}}</option>
                         <option value="sum_subtasks" {{if eq .Problem.ScoringStrategy `sum_subtasks`}}selected{{end}}>{{getText "sum_subtasks_strat"}}</option>
+                        <option value="acm-icpc" {{if eq .Problem.ScoringStrategy `acm-icpc`}}selected{{end}}>{{getText "acm_icpc_strat"}}</option>
                     </select>
                 </label>
                 <label class="block my-2">

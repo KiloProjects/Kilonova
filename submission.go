@@ -18,6 +18,14 @@ const (
 	StatusFinished Status = "finished"
 )
 
+type EvalType string
+
+const (
+	EvalTypeNone    Status = ""
+	EvalTypeClassic Status = "classic"
+	EvalTypeICPC    Status = "acm-icpc"
+)
+
 type Submission struct {
 	ID        int       `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
@@ -39,6 +47,9 @@ type Submission struct {
 	Score decimal.Decimal `json:"score"`
 
 	ScorePrecision int32 `json:"score_precision"`
+
+	SubmissionType EvalType `json:"submission_type"`
+	ICPCVerdict    *string  `json:"icpc_verdict"`
 }
 
 type SubmissionUpdate struct {
@@ -50,6 +61,9 @@ type SubmissionUpdate struct {
 
 	MaxTime   *float64
 	MaxMemory *int
+
+	ChangeVerdict bool
+	ICPCVerdict   *string
 }
 
 type SubmissionFilter struct {

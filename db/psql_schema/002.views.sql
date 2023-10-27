@@ -16,7 +16,7 @@ CREATE OR REPLACE VIEW max_score_view (user_id, problem_id, score) AS
         SELECT user_id, problem_id, coalesce(SUM(max_score), -1) AS max_score FROM subtask_max_scores GROUP BY user_id, problem_id
     ) SELECT users.id user_id, 
             pbs.id problem_id, 
-            CASE WHEN pbs.scoring_strategy = 'max_submission' THEN COALESCE(ms_sub.max_score, -1)
+            CASE WHEN pbs.scoring_strategy = 'max_submission' OR pbs.scoring_strategy = 'acm-icpc' THEN COALESCE(ms_sub.max_score, -1)
                  WHEN pbs.scoring_strategy = 'sum_subtasks'   THEN COALESCE(ms_subtask.max_score, -1)
                  ELSE -1
             END score
@@ -176,11 +176,11 @@ CREATE OR REPLACE FUNCTION contest_max_scores(contest_id bigint, freeze_time tim
     ) SELECT 
         users.user_id user_id,
         pbs.problem_id problem_id,
-        CASE WHEN problems.scoring_strategy = 'max_submission' THEN COALESCE(ms_sub.max_score, -1)
+        CASE WHEN problems.scoring_strategy = 'max_submission' OR problems.scoring_strategy = 'acm-icpc' THEN COALESCE(ms_sub.max_score, -1)
             WHEN problems.scoring_strategy = 'sum_subtasks'   THEN COALESCE(ms_subtask.max_score, -1)
             ELSE -1
         END score,
-        CASE WHEN problems.scoring_strategy = 'max_submission' THEN COALESCE(ms_sub.mintime, NULL)
+        CASE WHEN problems.scoring_strategy = 'max_submission' OR problems.scoring_strategy = 'acm-icpc' THEN COALESCE(ms_sub.mintime, NULL)
             WHEN problems.scoring_strategy = 'sum_subtasks'   THEN COALESCE(ms_subtask.mintime, NULL)
             ELSE NULL
         END mintime

@@ -164,6 +164,21 @@ export function InlineSpinner() {
 	);
 }
 
+function SubmissionStatus({ sub }: { sub: Submission }) {
+	switch (sub.status) {
+		case "finished":
+			if (sub.submission_type == "classic") {
+				return <>{sub.score.toFixed(sub.score_precision)}</>;
+			}
+			if (sub.score == 100) return <i class="fas fa-fw fa-check"></i>;
+			return <i class="fas fa-fw fa-xmark"></i>;
+		case "working":
+			return <i class="fas fa-cog animate-spin"></i>;
+		default:
+			return <i class="fas fa-clock"></i>;
+	}
+}
+
 export function OlderSubmissions({
 	userID,
 	problemID,
@@ -218,10 +233,7 @@ export function OlderSubmissions({
 								>
 									<span>{`#${sub.id}: ${dayjs(sub.created_at).format("DD/MM/YYYY HH:mm")}`}</span>
 									<span class="badge-lite text-sm">
-										{{
-											finished: <>{sub.score.toFixed(sub.score_precision)}</>,
-											working: <i class="fas fa-cog animate-spin"></i>,
-										}[sub.status] || <i class="fas fa-clock"></i>}
+										<SubmissionStatus sub={sub} />
 									</span>
 								</a>
 							))}

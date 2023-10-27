@@ -28,6 +28,14 @@ func (s *BaseAPI) MaxScoreSubID(ctx context.Context, uid, pbID int) (int, *Statu
 	return id, nil
 }
 
+func (s *BaseAPI) ICPCMaxScoreSubID(ctx context.Context, uid, pbID int) (int, *StatusError) {
+	id, err := s.db.ICPCMaxScoreSubID(ctx, uid, pbID)
+	if err != nil {
+		return -1, WrapError(err, "Couldn't get max score ID")
+	}
+	return id, nil
+}
+
 func (s *BaseAPI) MaxScore(ctx context.Context, uid, pbID int) decimal.Decimal {
 	return s.db.MaxScore(ctx, uid, pbID)
 }

@@ -52,7 +52,7 @@ export function MaxScoreBreakdown({ problemID, userID, contestID }: { problemID:
 	if (maxScore >= 0) {
 		content = (
 			<>
-				{problem.scoring_strategy == "max_submission" && subtests.length > 0 && (
+				{["max_submission", "acm-icpc"].includes(problem.scoring_strategy) && subtests.length > 0 && (
 					<h3>
 						{getText("sub")} <a href={`/submissions/${subtests[0].submission_id}`}>{`#${subtests[0].submission_id}`}</a>
 					</h3>
@@ -69,7 +69,7 @@ export function MaxScoreBreakdown({ problemID, userID, contestID }: { problemID:
 						/>
 					))}
 				</div>
-				{problem.scoring_strategy == "max_submission" && (
+				{["max_submission", "acm-icpc"].includes(problem.scoring_strategy) && (
 					<TestTable problem_editor={problemEditor} subtests={subtests} subtasks={subtasks} precision={problem?.score_precision ?? 0} />
 				)}
 			</>

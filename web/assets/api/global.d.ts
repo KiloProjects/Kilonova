@@ -23,7 +23,7 @@ declare global {
 		memory_limit: number;
 		source_credits: string;
 		console_input: boolean;
-		scoring_strategy: "sum_subtasks" | "max_submission";
+		scoring_strategy: "sum_subtasks" | "max_submission" | "acm_icpc";
 		score_precision: number;
 	};
 
@@ -43,6 +43,9 @@ declare global {
 		score: number;
 		status: string;
 		score_precision: number;
+
+		submission_type: "classic" | "acm-icpc";
+		icpc_verdict: string | null;
 	};
 	export type SubTest = {
 		id: number;

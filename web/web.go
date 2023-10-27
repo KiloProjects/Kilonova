@@ -299,14 +299,21 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"actualMaxScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) decimal.Decimal {
 			return base.MaxScore(context.Background(), user.ID, pb.ID)
 		},
-		"spbMaxScore": func(pb *kilonova.ScoredProblem) string {
+		"spbMaxScore": func(pb *kilonova.ScoredProblem) template.HTML {
 			if pb.ScoreUserID == nil {
 				return ""
 			}
 			if pb.MaxScore == nil || pb.MaxScore.IsNegative() {
 				return "-"
 			}
-			return pb.MaxScore.StringFixed(pb.ScorePrecision)
+			if pb.ScoringStrategy == kilonova.ScoringTypeICPC {
+				if pb.MaxScore.Equals(decimal.NewFromInt(100)) {
+					return `<i class="fas fa-fw fa-check"></i>`
+				} else {
+					return `<i class="fas fa-fw fa-xmark"></i>`
+				}
+			}
+			return template.HTML(pb.MaxScore.StringFixed(pb.ScorePrecision))
 		},
 		"checklistMaxScore": func(pb *kilonova.ScoredProblem) string {
 			if pb.ScoreUserID == nil {

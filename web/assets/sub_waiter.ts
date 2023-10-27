@@ -20,9 +20,24 @@ export function makeSubWaiter(id: number): string {
 			document.dispatchEvent(new CustomEvent("kn-poll"));
 		}
 		if (res.data.status == "finished") {
+			let rezStr = "";
+			if (res.data.submission_type == "classic") {
+				rezStr = getText("finalScore", id) + " " + res.data.score.toFixed(res.data.score_precision);
+			} else {
+				if (res.data.icpc_verdict) {
+					rezStr = res.data.icpc_verdict;
+				} else {
+					if (res.data.score == 100) {
+						rezStr = getText("accepted");
+					} else {
+						rezStr = getText("rejected");
+					}
+				}
+			}
+
 			createToast({
 				title: getText("finishedEval"),
-				description: getText("finalScore", id) + " " + res.data.score.toFixed(res.data.score_precision),
+				description: rezStr,
 				status: "success",
 			});
 			clearInterval(interv);

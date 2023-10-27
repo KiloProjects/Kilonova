@@ -64,7 +64,12 @@ func initSub(ctx context.Context, tx pgx.Tx, subID int) error {
 	// Set precision before everything, since subtask initialization is relying on it
 	if _, err := tx.Exec(ctx, `
 	UPDATE submissions SET 
-		digit_precision = COALESCE((SELECT digit_precision FROM problems WHERE problems.id = problem_id), digit_precision) 
+		digit_precision = COALESCE((SELECT digit_precision FROM problems WHERE problems.id = problem_id), digit_precision),
+		submission_type = 
+			CASE (SELECT scoring_strategy FROM problems WHERE problems.id = problem_id)
+				WHEN 'acm-icpc' THEN 'acm-icpc'::eval_type
+				ELSE 'classic'::eval_type
+			END
 	WHERE id = $1`, subID); err != nil {
 		return err
 	}
@@ -137,7 +142,12 @@ func initProblemSubs(ctx context.Context, tx pgx.Tx, problemID int) error {
 	// Set precision before everything, since subtask initialization is relying on it
 	if _, err := tx.Exec(ctx, `
 	UPDATE submissions SET 
-		digit_precision = COALESCE((SELECT digit_precision FROM problems WHERE problems.id = problem_id), digit_precision) 
+		digit_precision = COALESCE((SELECT digit_precision FROM problems WHERE problems.id = problem_id), digit_precision),
+		submission_type = 
+			CASE (SELECT scoring_strategy FROM problems WHERE problems.id = problem_id)
+				WHEN 'acm-icpc' THEN 'acm-icpc'::eval_type
+				ELSE 'classic'::eval_type
+			END
 	WHERE problem_id = $1`, problemID); err != nil {
 		return err
 	}

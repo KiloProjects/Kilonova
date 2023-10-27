@@ -20,6 +20,7 @@ const (
 	ScoringTypeNone        ScoringType = ""
 	ScoringTypeMaxSub      ScoringType = "max_submission"
 	ScoringTypeSumSubtasks ScoringType = "sum_subtasks"
+	ScoringTypeICPC        ScoringType = "acm-icpc"
 )
 
 type Problem struct {

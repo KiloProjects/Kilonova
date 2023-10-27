@@ -34,6 +34,9 @@ type dbSubmission struct {
 	Score decimal.Decimal `db:"score"`
 
 	ScorePrecision int32 `db:"digit_precision"`
+
+	SubmissionType kilonova.EvalType `db:"submission_type"`
+	ICPCVerdict    *string           `db:"icpc_verdict"`
 }
 
 func (s *DB) Submission(ctx context.Context, id int) (*kilonova.Submission, error) {
@@ -142,6 +145,19 @@ func (s *DB) DeleteSubmission(ctx context.Context, id int) error {
 	return err
 }
 
+func (s *DB) ICPCMaxScoreSubID(ctx context.Context, userid, problemid int) (int, error) {
+	var score int
+
+	err := s.conn.QueryRow(ctx, "SELECT id FROM submissions WHERE user_id = $1 AND problem_id = $2 ORDER BY score DESC, id DESC LIMIT 1", userid, problemid).Scan(&score)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return -1, nil
+		}
+		return -1, err
+	}
+	return score, nil
+}
+
 func (s *DB) MaxScoreSubID(ctx context.Context, userid, problemid int) (int, error) {
 	var score int
 
@@ -247,6 +263,10 @@ func subUpdateQuery(upd *kilonova.SubmissionUpdate, b *updateBuilder) {
 		b.AddUpdate("score = %s", v)
 	}
 
+	if v := upd.ICPCVerdict; upd.ChangeVerdict {
+		b.AddUpdate("icpc_verdict = %s", v)
+	}
+
 	if v := upd.CompileError; v != nil {
 		b.AddUpdate("compile_error = %s", v)
 	}
@@ -302,5 +322,8 @@ func (s *DB) internalToSubmission(sub *dbSubmission) *kilonova.Submission {
 		ContestID:      sub.ContestID,
 		Score:          sub.Score,
 		ScorePrecision: sub.ScorePrecision,
+
+		SubmissionType: sub.SubmissionType,
+		ICPCVerdict:    sub.ICPCVerdict,
 	}
 }

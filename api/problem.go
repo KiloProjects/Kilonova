@@ -101,7 +101,7 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch util.Problem(r).ScoringStrategy {
-	case kilonova.ScoringTypeMaxSub:
+	case kilonova.ScoringTypeMaxSub, kilonova.ScoringTypeICPC:
 		id, err := s.base.MaxScoreSubID(r.Context(), args.UserID, util.Problem(r).ID)
 		if err != nil {
 			err.WriteError(w)

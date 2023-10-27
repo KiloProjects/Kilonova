@@ -21,12 +21,16 @@ export function formatDuration(targetTime: Dayjs | number, hideSeconds: boolean 
 	// If user has clock forwards or backwards he will get the wrong time in this current implementation.
 	let diff = -1;
 	if (typeof targetTime == "number") {
-		diff = targetTime;
+		diff = Math.floor(targetTime);
 	} else {
 		diff = targetTime.diff(serverTime(), "s");
 	}
 	if (diff < 0) {
-		return getText("time_elapsed");
+		if (!showFull) {
+			return getText("time_elapsed");
+		} else {
+			return "-";
+		}
 	}
 	const seconds = diff % 60;
 	diff = (diff - seconds) / 60;

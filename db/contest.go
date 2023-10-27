@@ -190,7 +190,7 @@ func (s *DB) classicToLeaderboardEntry(ctx context.Context, entry *databaseClass
 		ProblemAttempts: make(map[int]int),
 		Penalty:         0,
 		NumSolved:       numSolved,
-		ProblemTimes:    make(map[int]int),
+		ProblemTimes:    make(map[int]float64),
 
 		LastTime:   entry.LastTime,
 		FreezeTime: entry.FreezeTime,
@@ -263,12 +263,12 @@ func (s *DB) icpcToLeaderboardEntry(ctx context.Context, entry *databaseICPCEntr
 	}
 
 	scores := make(map[int]decimal.Decimal)
-	times := make(map[int]int)
+	times := make(map[int]float64)
 	attempts := make(map[int]int)
 	for _, pb := range pbs {
 		scores[pb.ProblemID] = pb.Score
 		if pb.MinTime != nil && util.ContestContext(ctx) != nil {
-			times[pb.ProblemID] = int(pb.MinTime.Sub(util.ContestContext(ctx).StartTime).Minutes())
+			times[pb.ProblemID] = pb.MinTime.Sub(util.ContestContext(ctx).StartTime).Minutes()
 		}
 		attempts[pb.ProblemID] = pb.Attempts
 	}

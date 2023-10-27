@@ -229,7 +229,7 @@ func (s *BaseAPI) UpdateUserPassword(ctx context.Context, uid int, password stri
 }
 
 // TODO: displayName probably doesn't have to be *string, can be just string, but this was implemented quickly
-func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, theme kilonova.PreferredTheme, displayName *string) (*kilonova.UserFull, *StatusError) {
+func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, theme kilonova.PreferredTheme, displayName *string, email *string) (*kilonova.UserFull, *StatusError) {
 	uname = strings.TrimSpace(uname)
 	if !(len(uname) >= 3 && len(uname) <= 32 && usernameRegex.MatchString(uname)) {
 		return nil, Statusf(400, "Username must be between 3 and 32 characters long and must contain only letters, digits, underlines and dashes.")
@@ -255,15 +255,18 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 		theme = kilonova.PreferredThemeDark
 	}
 
-	// Dummy email
-	email := fmt.Sprintf("email_%s@kilonova.ro", uname)
+	if email == nil {
+		// Dummy email
+		genEmail := fmt.Sprintf("email_%s@kilonova.ro", uname)
+		email = &genEmail
+	}
 
 	dName := ""
 	if displayName != nil {
 		dName = *displayName
 	}
 
-	id, err := s.createUser(ctx, uname, email, pwd, lang, theme, dName, true)
+	id, err := s.createUser(ctx, uname, *email, pwd, lang, theme, dName, true)
 	if err != nil {
 		zap.S().Warn(err)
 		return nil, Statusf(500, "Couldn't create user")
