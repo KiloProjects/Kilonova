@@ -51,6 +51,7 @@ declare global {
 		id: number;
 		created_at: string;
 		done: boolean;
+		skipped: boolean;
 		verdict: string;
 		time: number;
 		memory: number;

@@ -105,10 +105,7 @@ function Summary({ sub, pasteAuthor }: { sub: FullSubmission; pasteAuthor?: User
 													<i class="fas fa-fw fa-check"></i> {getText("accepted")}
 												</>
 											) : (
-												<>
-													<i class="fas fa-fw fa-xmark"></i>{" "}
-													{sub.icpc_verdict ? icpcVerdictString(sub.icpc_verdict) : getText("rejected")}
-												</>
+												<>{sub.icpc_verdict ? icpcVerdictString(sub.icpc_verdict) : getText("rejected")}</>
 											)}
 										</span>
 									</td>
@@ -237,12 +234,14 @@ export function TestTable({
 	problem_editor,
 	subtask,
 	precision,
+	subType,
 }: {
 	subtests: SubTest[];
 	subtasks: SubmissionSubTask[];
 	problem_editor: boolean;
 	subtask?: SubmissionSubTask;
 	precision: number;
+	subType: "classic" | "acm-icpc";
 }) {
 	function testSubTasks(subtestID) {
 		let stks: number[] = [];
@@ -263,8 +262,12 @@ export function TestTable({
 					<th scope="col">{getText("time")}</th>
 					<th scope="col">{getText("memory")}</th>
 					<th scope="col">{getText("verdict")}</th>
-					<th scope="col">{getText("score")}</th>
-					{subtasks.length > 0 && <th scope="col">{getText("subTasks")}</th>}
+					{subType == "classic" && (
+						<>
+							<th scope="col">{getText("score")}</th>
+							{subtasks.length > 0 && <th scope="col">{getText("subTasks")}</th>}
+						</>
+					)}
 					{problem_editor && <th scope="col">{getText("output")}</th>}
 				</tr>
 			</thead>
@@ -281,22 +284,31 @@ export function TestTable({
 								<th class="py-1" scope="row" id={`test-${subtest.visible_id}`}>
 									{subtest.visible_id}
 								</th>
-								{subtest.done ? (
+								{subtest.skipped ? (
+									<>
+										<td>-</td>
+										<td>-</td>
+										<td>{testVerdictString(subtest.verdict)}</td>
+										{subType == "classic" && <td>-</td>}
+									</>
+								) : subtest.done ? (
 									<>
 										<td>{Math.floor(subtest.time * 1000)} ms</td>
 										<td>{sizeFormatter(subtest.memory * 1024, 1, true)}</td>
 										<td>{testVerdictString(subtest.verdict)}</td>
-										<td class="text-black" style={{ backgroundColor: getGradient(subtest.percentage, 100) }}>
-											{subtasks.length > 0 ? (
-												<>
-													{subtest.percentage}% {getText("correct")}
-												</>
-											) : (
-												<>
-													{(maxScore * (subtest.percentage / 100.0)).toFixed(precision)} / {maxScore.toFixed(precision)}
-												</>
-											)}
-										</td>
+										{subType == "classic" && (
+											<td class="text-black" style={{ backgroundColor: getGradient(subtest.percentage, 100) }}>
+												{subtasks.length > 0 ? (
+													<>
+														{subtest.percentage}% {getText("correct")}
+													</>
+												) : (
+													<>
+														{(maxScore * (subtest.percentage / 100.0)).toFixed(precision)} / {maxScore.toFixed(precision)}
+													</>
+												)}
+											</td>
+										)}
 									</>
 								) : (
 									<>
@@ -305,10 +317,10 @@ export function TestTable({
 										<td>
 											<div class="fas fa-spinner animate-spin" role="status"></div> {getText("waiting")}
 										</td>
-										<td>-</td>
+										{subType == "classic" && <td>-</td>}
 									</>
 								)}
-								{subtasks.length > 0 && <td>{testSubTasks(subtest.id).join(", ")}</td>}
+								{subType == "classic" && subtasks.length > 0 && <td>{testSubTasks(subtest.id).join(", ")}</td>}
 								{problem_editor && (
 									<td>
 										<a href={"/assets/subtest/" + subtest.id}>{getText("output")}</a>
@@ -406,12 +418,18 @@ function SubmissionView({ sub, bigCode, codeHTML, pasteAuthor }: { sub: FullSubm
 		<div class="segment-panel">
 			<CompileErrorInfo sub={sub} />
 			{sub.compile_error !== true &&
-				(sub.subtasks.length > 0 ? (
+				(sub.subtasks.length > 0 && sub.submission_type == "classic" ? (
 					<SubTasks sub={sub} expandedTests={typeof pasteAuthor !== "undefined"} />
 				) : (
 					<>
 						<h2 class="mb-2">{getText("tests")}</h2>
-						<TestTable subtests={sub.subtests} subtasks={sub.subtasks} problem_editor={sub.problem_editor} precision={sub.score_precision} />
+						<TestTable
+							subtests={sub.subtests}
+							subtasks={sub.subtasks}
+							problem_editor={sub.problem_editor}
+							precision={sub.score_precision}
+							subType={sub.submission_type}
+						/>
 					</>
 				))}
 		</div>
