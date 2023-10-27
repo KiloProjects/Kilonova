@@ -2,8 +2,10 @@ package grader
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"path"
+	"strings"
 	"sync"
 
 	"github.com/KiloProjects/kilonova"
@@ -18,7 +20,11 @@ import (
 	"go.uber.org/zap"
 )
 
-var True = true
+var (
+	True            = true
+	skippedVerdict  = "translate:skipped"
+	acceptedVerdict = "accepted"
+)
 
 func genSubCompileRequest(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submission, pb *kilonova.Problem, settings *kilonova.ProblemEvalSettings) (*eval.CompileRequest, *kilonova.StatusError) {
 	req := &eval.CompileRequest{
@@ -102,7 +108,12 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	if info, err := checker.Prepare(ctx); err != nil {
 		t := true
 		info = "Checker compile error:\n" + info
-		if err := base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints, CompileError: &t, CompileMessage: &info}); err != nil {
+		internalErr := "test_verdict.internal_error"
+		if err := base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{
+			Status: kilonova.StatusFinished, Score: &problem.DefaultPoints,
+			CompileError: &t, CompileMessage: &info,
+			ChangeVerdict: true, ICPCVerdict: &internalErr,
+		}); err != nil {
 			return kilonova.WrapError(err, "Error during update of compile information")
 		}
 		return kilonova.WrapError(err, "Could not prepare checker")
@@ -110,11 +121,42 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 
 	subTests, err1 := base.SubTests(ctx, sub.ID)
 	if err1 != nil {
-		if err := base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints}); err != nil {
+		internalErr := "test_verdict.internal_error"
+		if err := base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{
+			Status: kilonova.StatusFinished, Score: &problem.DefaultPoints,
+			ChangeVerdict: true, ICPCVerdict: &internalErr,
+		}); err != nil {
 			return kilonova.WrapError(err, "Could not update submission after subtest fetch fail")
 		}
 		return kilonova.WrapError(err1, "Could not fetch subtests")
 	}
+
+	// TODO: This is shit.
+	// It is basically 2 implementations for ~ the same thing. It could be merged neater
+	switch sub.SubmissionType {
+	case kilonova.EvalTypeClassic:
+		if err := handleClassicSubmission(ctx, base, runner, sub, problem, checker, subTests); err != nil {
+			return err
+		}
+	case kilonova.EvalTypeICPC:
+		if err := handleICPCSubmission(ctx, base, runner, sub, problem, checker, subTests); err != nil {
+			return err
+		}
+	default:
+		return kilonova.Statusf(500, "Invalid eval type")
+	}
+
+	if err := eval.CleanCompilation(sub.ID); err != nil {
+		zap.S().Warn("Couldn't remove compilation artifact: ", err)
+	}
+
+	if err := checker.Cleanup(ctx); err != nil {
+		zap.S().Warn("Couldn't remove checker artifact: ", err)
+	}
+	return nil
+}
+
+func handleClassicSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, problem *kilonova.Problem, checker eval.Checker, subTests []*kilonova.SubTest) *kilonova.StatusError {
 
 	var wg sync.WaitGroup
 
@@ -124,7 +166,7 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 
 		go func() {
 			defer wg.Done()
-			err := handleSubTest(ctx, base, runner, checker, sub, problem, subTest)
+			_, _, err := handleSubTest(ctx, base, runner, checker, sub, problem, subTest)
 			if err != nil {
 				zap.S().Warn("Error handling subtest:", err)
 			}
@@ -137,14 +179,63 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		zap.S().Warn("Couldn't score test: ", err)
 	}
 
-	if err := eval.CleanCompilation(sub.ID); err != nil {
-		zap.S().Warn("Couldn't remove compilation artifact: ", err)
+	return nil
+}
+
+func handleICPCSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, problem *kilonova.Problem, checker eval.Checker, subTests []*kilonova.SubTest) *kilonova.StatusError {
+	var failed bool
+	var upd kilonova.SubmissionUpdate
+	upd.Status = kilonova.StatusFinished
+
+	for _, subTest := range subTests {
+		if failed {
+			if err := base.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{
+				Done: &True, Skipped: &True,
+				Verdict: &skippedVerdict,
+			}); err != nil {
+				zap.S().Warn("Couldn't update skipped subtest:", err)
+			}
+			continue
+		}
+		score, verdict, err := handleSubTest(ctx, base, runner, checker, sub, problem, subTest)
+		if err != nil {
+			zap.S().Warn("Error handling subtest:", err)
+			continue
+		}
+		if !score.Equal(decimal.NewFromInt(100)) {
+			upd.Score = &problem.DefaultPoints
+			upd.ChangeVerdict = true
+
+			verdict = fmt.Sprintf("%s (test_verdict.test_x #%d)", strings.ReplaceAll(verdict, "translate:", "test_verdict."), subTest.VisibleID)
+			upd.ICPCVerdict = &verdict
+
+			failed = true
+		}
 	}
 
-	if err := checker.Cleanup(ctx); err != nil {
-		zap.S().Warn("Couldn't remove checker artifact: ", err)
+	if !failed {
+		hundred := decimal.NewFromInt(100)
+		upd.Score = &hundred
+		upd.ChangeVerdict = true
+		upd.ICPCVerdict = &acceptedVerdict
 	}
-	return nil
+
+	subTests, err := base.SubTests(ctx, sub.ID)
+	if err != nil {
+		zap.S().Warn("Could not get subtests for max score/mem updating:", err)
+		return err
+	}
+
+	var memory int
+	var time float64
+	for _, subtest := range subTests {
+		memory = max(memory, subtest.Memory)
+		time = max(time, subtest.Time)
+	}
+	upd.MaxTime = &time
+	upd.MaxMemory = &memory
+
+	return base.UpdateSubmission(ctx, sub.ID, upd)
 }
 
 func compileSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, problem *kilonova.Problem, problemSettings *kilonova.ProblemEvalSettings) *kilonova.StatusError {
@@ -170,7 +261,11 @@ func compileSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	}
 
 	if !resp.Success {
-		if err := base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &problem.DefaultPoints}); err != nil {
+		compileErrVerdict := "test_verdict.compile_error"
+		if err := base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{
+			Status: kilonova.StatusFinished, Score: &problem.DefaultPoints,
+			ChangeVerdict: true, ICPCVerdict: &compileErrVerdict,
+		}); err != nil {
 			return kilonova.WrapError(err, "Couldn't finalize submission with compiler error")
 		}
 		stks, err := base.SubmissionSubTasks(ctx, sub.ID)
@@ -187,15 +282,15 @@ func compileSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	return nil
 }
 
-func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, checker eval.Checker, sub *kilonova.Submission, problem *kilonova.Problem, subTest *kilonova.SubTest) error {
+func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, checker eval.Checker, sub *kilonova.Submission, problem *kilonova.Problem, subTest *kilonova.SubTest) (decimal.Decimal, string, error) {
 	if subTest.TestID == nil {
 		zap.S().Error("A subtest whose test was purged was detected.", spew.Sdump(subTest))
-		return kilonova.Statusf(400, "Trying to handle subtest whose test was purged. This should never happen")
+		return decimal.Zero, "", kilonova.Statusf(400, "Trying to handle subtest whose test was purged. This should never happen")
 	}
 
 	tin, err := base.TestInput(*subTest.TestID)
 	if err != nil {
-		return kilonova.Statusf(500, "Couldn't open test input")
+		return decimal.Zero, "", kilonova.Statusf(500, "Couldn't open test input")
 	}
 	defer tin.Close()
 
@@ -214,13 +309,13 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 
 	resp, err := eval.RunTask(ctx, runner, int64(problem.MemoryLimit), execRequest, tasks.GetExecuteTask(graderLogger, base))
 	if err != nil {
-		return kilonova.WrapError(err, "Couldn't execute test")
+		return decimal.Zero, "", kilonova.WrapError(err, "Couldn't execute test")
 	}
 	var testScore decimal.Decimal
 
 	// Rewind test input for use in checker
 	if _, err := tin.Seek(0, io.SeekStart); err != nil {
-		return kilonova.WrapError(err, "Couldn't rewind test input")
+		return decimal.Zero, "", kilonova.WrapError(err, "Couldn't rewind test input")
 	}
 
 	// Make sure TLEs are fully handled
@@ -254,9 +349,9 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 	}
 
 	if err := base.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{Memory: &resp.Memory, Percentage: &testScore, Time: &resp.Time, Verdict: &resp.Comments, Done: &True}); err != nil {
-		return kilonova.WrapError(err, "Error during evaltest updating")
+		return decimal.Zero, "", kilonova.WrapError(err, "Error during evaltest updating")
 	}
-	return nil
+	return testScore, resp.Comments, nil
 }
 
 func markSubtestsDone(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submission) error {

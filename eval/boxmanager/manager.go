@@ -15,13 +15,44 @@ var _ eval.BoxScheduler = &BoxManager{}
 type BoxManager struct {
 	dm kilonova.GraderStore
 
-	numConcurrent int
+	numConcurrent int64
 	concSem       *semaphore.Weighted
 	memSem        *semaphore.Weighted
 
 	logger *zap.SugaredLogger
 
 	availableIDs chan int
+
+	parentMgr *BoxManager
+}
+
+func (b *BoxManager) SubRunner(ctx context.Context, numConc int64) (eval.BoxScheduler, error) {
+	if err := b.concSem.Acquire(ctx, numConc); err != nil {
+		return nil, err
+	}
+
+	ids := make(chan int, 3*numConc)
+	for i := int64(0); i < numConc; i++ {
+		ids <- <-b.availableIDs
+	}
+
+	return &BoxManager{
+		dm: b.dm,
+
+		numConcurrent: numConc,
+		concSem:       semaphore.NewWeighted(numConc),
+		memSem:        b.memSem,
+
+		logger: b.logger,
+
+		availableIDs: ids,
+
+		parentMgr: b,
+	}, nil
+}
+
+func (b *BoxManager) NumConcurrent() int64 {
+	return b.numConcurrent
 }
 
 func (b *BoxManager) GetBox(ctx context.Context, memQuota int64) (eval.Sandbox, error) {
@@ -52,7 +83,13 @@ func (b *BoxManager) ReleaseBox(sb eval.Sandbox) {
 
 // Close waits for all boxes to finish running
 func (b *BoxManager) Close(ctx context.Context) error {
-	b.concSem.Acquire(ctx, int64(b.numConcurrent))
+	b.concSem.Acquire(ctx, b.numConcurrent)
+	if b.parentMgr != nil {
+		for len(b.availableIDs) > 0 {
+			b.parentMgr.availableIDs <- <-b.availableIDs
+		}
+		b.parentMgr.concSem.Release(b.numConcurrent)
+	}
 	close(b.availableIDs)
 	return nil
 }
@@ -74,9 +111,11 @@ func New(startingNumber int, count int, maxMemory int64, dm kilonova.GraderStore
 		concSem:       semaphore.NewWeighted(int64(count)),
 		memSem:        semaphore.NewWeighted(maxMemory),
 		availableIDs:  availableIDs,
-		numConcurrent: count,
+		numConcurrent: int64(count),
 
 		logger: logger,
+
+		parentMgr: nil,
 	}
 	return bm, nil
 }

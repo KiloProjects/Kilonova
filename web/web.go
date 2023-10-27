@@ -307,7 +307,7 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 				return "-"
 			}
 			if pb.ScoringStrategy == kilonova.ScoringTypeICPC {
-				if pb.MaxScore.Equals(decimal.NewFromInt(100)) {
+				if pb.MaxScore.Equal(decimal.NewFromInt(100)) {
 					return `<i class="fas fa-fw fa-check"></i>`
 				} else {
 					return `<i class="fas fa-fw fa-xmark"></i>`

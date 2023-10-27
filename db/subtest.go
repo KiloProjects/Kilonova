@@ -84,4 +84,7 @@ func subtestUpdateQuery(upd *kilonova.SubTestUpdate, ub *updateBuilder) {
 	if v := upd.Done; v != nil {
 		ub.AddUpdate("done = %s", v)
 	}
+	if v := upd.Skipped; v != nil {
+		ub.AddUpdate("skipped = %s", v)
+	}
 }

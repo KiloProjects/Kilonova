@@ -1,4 +1,5 @@
 import { getCall } from "./api/client";
+import { icpcVerdictString } from "./components";
 import { createToast } from "./toast";
 import getText from "./translation";
 
@@ -25,7 +26,7 @@ export function makeSubWaiter(id: number): string {
 				rezStr = getText("finalScore", id) + " " + res.data.score.toFixed(res.data.score_precision);
 			} else {
 				if (res.data.icpc_verdict) {
-					rezStr = res.data.icpc_verdict;
+					rezStr = icpcVerdictString(res.data.icpc_verdict);
 				} else {
 					if (res.data.score == 100) {
 						rezStr = getText("accepted");

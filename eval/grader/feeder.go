@@ -84,9 +84,30 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 						zap.S().Warn(err)
 						continue
 					}
-					if err := executeSubmission(h.ctx, h.base, runner, sub); err != nil {
-						zap.S().Warn("Couldn't run submission: ", err)
+					var subRunner eval.BoxScheduler
+					if sub.SubmissionType == kilonova.EvalTypeClassic {
+						r, err := runner.SubRunner(h.ctx, runner.NumConcurrent())
+						if err != nil {
+							zap.S().Warn(err)
+							continue
+						} else {
+							subRunner = r
+						}
+					} else {
+						r, err := runner.SubRunner(h.ctx, 1)
+						if err != nil {
+							zap.S().Warn(err)
+							continue
+						} else {
+							subRunner = r
+						}
 					}
+					go func(sub *kilonova.Submission, r eval.BoxScheduler) {
+						defer r.Close(h.ctx)
+						if err := executeSubmission(h.ctx, h.base, r, sub); err != nil {
+							zap.S().Warn("Couldn't run submission: ", err)
+						}
+					}(sub, subRunner)
 				}
 			}
 		}

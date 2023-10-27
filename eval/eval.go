@@ -37,6 +37,8 @@ type Checker interface {
 }
 
 type BoxScheduler interface {
+	SubRunner(ctx context.Context, numConc int64) (BoxScheduler, error)
+	NumConcurrent() int64
 	GetBox(ctx context.Context, memQuota int64) (Sandbox, error)
 	ReleaseBox(Sandbox)
 	Close(context.Context) error

@@ -2247,6 +2247,18 @@ ro = "Limita de timp depășită (wall clock)"
 en = "Internal error"
 ro = "Eroare internă"
 
+[test_verdict.compile_error]
+en = "Compile error"
+ro = "Eroare de compilare"
+
+[test_verdict.skipped]
+en = "Skipped"
+ro = "Ignorat"
+
+[test_verdict.test_x]
+en = "Test"
+ro = "Testul"
+
 [att_suggest_text]
 en = "Autocompleting attachment flags with suggested values..."
 ro = "Se autocompletează proprietățile cu valori sugerate..."

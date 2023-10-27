@@ -21,9 +21,9 @@ const (
 type EvalType string
 
 const (
-	EvalTypeNone    Status = ""
-	EvalTypeClassic Status = "classic"
-	EvalTypeICPC    Status = "acm-icpc"
+	EvalTypeNone    EvalType = ""
+	EvalTypeClassic EvalType = "classic"
+	EvalTypeICPC    EvalType = "acm-icpc"
 )
 
 type Submission struct {
@@ -95,6 +95,7 @@ type SubTest struct {
 	ID           int             `json:"id"`
 	CreatedAt    time.Time       `db:"created_at" json:"created_at"`
 	Done         bool            `json:"done"`
+	Skipped      bool            `json:"skipped"`
 	Verdict      string          `json:"verdict"`
 	Time         float64         `json:"time"`
 	Memory       int             `json:"memory"`
@@ -116,6 +117,7 @@ type SubTestUpdate struct {
 	Percentage *decimal.Decimal
 	Verdict    *string
 	Done       *bool
+	Skipped    *bool
 }
 
 type SubmissionSubTask struct {

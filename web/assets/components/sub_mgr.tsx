@@ -106,7 +106,8 @@ function Summary({ sub, pasteAuthor }: { sub: FullSubmission; pasteAuthor?: User
 												</>
 											) : (
 												<>
-													<i class="fas fa-fw fa-xmark"></i> {sub.icpc_verdict || getText("rejected")}
+													<i class="fas fa-fw fa-xmark"></i>{" "}
+													{sub.icpc_verdict ? icpcVerdictString(sub.icpc_verdict) : getText("rejected")}
 												</>
 											)}
 										</span>
@@ -215,8 +216,15 @@ function SubCode({ sub, codeHTML, isPaste }: { sub: FullSubmission; codeHTML: st
 	);
 }
 
-function verdictString(verdict: string): string {
-	return verdict.replace(/translate:([a-z]+)/g, (substr, p1) => {
+function testVerdictString(verdict: string): string {
+	return verdict.replace(/translate:([a-z_]+)/g, (substr, p1) => {
+		console.log(substr, p1);
+		return maybeGetText("test_verdict." + p1);
+	});
+}
+
+export function icpcVerdictString(verdict: string): string {
+	return verdict.replace(/test_verdict.([a-z_]+)/g, (substr, p1) => {
 		console.log(substr, p1);
 		return maybeGetText("test_verdict." + p1);
 	});
@@ -277,7 +285,7 @@ export function TestTable({
 									<>
 										<td>{Math.floor(subtest.time * 1000)} ms</td>
 										<td>{sizeFormatter(subtest.memory * 1024, 1, true)}</td>
-										<td>{verdictString(subtest.verdict)}</td>
+										<td>{testVerdictString(subtest.verdict)}</td>
 										<td class="text-black" style={{ backgroundColor: getGradient(subtest.percentage, 100) }}>
 											{subtasks.length > 0 ? (
 												<>

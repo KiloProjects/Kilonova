@@ -6,6 +6,7 @@ import { apiToast, createToast } from "../toast";
 import { BigSpinner, Paginator } from "./common";
 import { dayjs, getGradient, sizeFormatter } from "../util";
 import { SubmissionQuery, Submissions, defaultClient } from "../api/client";
+import { icpcVerdictString } from "./sub_mgr";
 
 export function rezStr(count: number): string {
 	if (count < 0) {
@@ -36,11 +37,7 @@ const status = (sub: Submission): string | h.JSX.Element => {
 				</>
 			);
 		}
-		return (
-			<>
-				<i class="fas fa-fw fa-xmark"></i> {sub.icpc_verdict || getText("rejected")}
-			</>
-		);
+		return <>{sub.icpc_verdict ? icpcVerdictString(sub.icpc_verdict) : getText("rejected")}</>;
 	} else if (sub.status === "working") {
 		return getText("evaluating");
 	}
