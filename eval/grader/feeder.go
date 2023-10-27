@@ -80,10 +80,6 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 			if len(subs) > 0 {
 				graderLogger.Infof("Found %d submissions", len(subs))
 				for _, sub := range subs {
-					if err := h.base.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
-						zap.S().Warn(err)
-						continue
-					}
 					var subRunner eval.BoxScheduler
 					if sub.SubmissionType == kilonova.EvalTypeClassic {
 						r, err := runner.SubRunner(h.ctx, runner.NumConcurrent())
@@ -104,6 +100,10 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 					}
 					go func(sub *kilonova.Submission, r eval.BoxScheduler) {
 						defer r.Close(h.ctx)
+						if err := h.base.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
+							zap.S().Warn(err)
+							return
+						}
 						if err := executeSubmission(h.ctx, h.base, r, sub); err != nil {
 							zap.S().Warn("Couldn't run submission: ", err)
 						}
