@@ -70,7 +70,13 @@ export function MaxScoreBreakdown({ problemID, userID, contestID }: { problemID:
 					))}
 				</div>
 				{["max_submission", "acm-icpc"].includes(problem.scoring_strategy) && (
-					<TestTable problem_editor={problemEditor} subtests={subtests} subtasks={subtasks} precision={problem?.score_precision ?? 0} />
+					<TestTable
+						problem_editor={problemEditor}
+						subtests={subtests}
+						subtasks={subtasks}
+						precision={problem?.score_precision ?? 0}
+						subType="classic"
+					/>
 				)}
 			</>
 		);

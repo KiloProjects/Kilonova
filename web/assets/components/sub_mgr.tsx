@@ -234,7 +234,7 @@ export function TestTable({
 	problem_editor,
 	subtask,
 	precision,
-	subType,
+	subType = "classic",
 }: {
 	subtests: SubTest[];
 	subtasks: SubmissionSubTask[];
@@ -370,7 +370,7 @@ export function SubTask({
 					</span>
 				)}
 			</summary>
-			<TestTable subtests={subtests} subtask={subtask} problem_editor={problem_editor} subtasks={[]} precision={precision} />
+			<TestTable subtests={subtests} subtask={subtask} problem_editor={problem_editor} subtasks={[]} precision={precision} subType="classic" />
 		</details>
 	);
 }
@@ -400,7 +400,13 @@ function SubTasks({ sub, expandedTests }: { sub: FullSubmission; expandedTests: 
 				<summary>
 					<h2 class="inline-block">{getText("individualTests")}</h2>
 				</summary>
-				<TestTable subtests={sub.subtests} subtasks={sub.subtasks} problem_editor={sub.problem_editor} precision={sub.score_precision} />
+				<TestTable
+					subtests={sub.subtests}
+					subtasks={sub.subtasks}
+					problem_editor={sub.problem_editor}
+					precision={sub.score_precision}
+					subType={sub.submission_type}
+				/>
 			</details>
 		</>
 	);
