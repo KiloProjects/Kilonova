@@ -25,14 +25,10 @@ export function makeSubWaiter(id: number): string {
 			if (res.data.submission_type == "classic") {
 				rezStr = getText("finalScore", id) + " " + res.data.score.toFixed(res.data.score_precision);
 			} else {
-				if (res.data.icpc_verdict) {
-					rezStr = icpcVerdictString(res.data.icpc_verdict);
+				if (res.data.score == 100) {
+					rezStr = `<i class="fas fa-fw fa-check"></i> ${getText("accepted")}`;
 				} else {
-					if (res.data.score == 100) {
-						rezStr = getText("accepted");
-					} else {
-						rezStr = getText("rejected");
-					}
+					rezStr = res.data.icpc_verdict ? icpcVerdictString(res.data.icpc_verdict) : getText("rejected");
 				}
 			}
 

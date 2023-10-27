@@ -23,7 +23,7 @@ import (
 var (
 	True            = true
 	skippedVerdict  = "translate:skipped"
-	acceptedVerdict = "accepted"
+	acceptedVerdict = "test_verdict.accepted"
 )
 
 func genSubCompileRequest(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submission, pb *kilonova.Problem, settings *kilonova.ProblemEvalSettings) (*eval.CompileRequest, *kilonova.StatusError) {
