@@ -233,7 +233,7 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 													{entry.scores[pb.id] >= 100 ? "+" : "-"} {entry.attempts[pb.id] > 0 && entry.attempts[pb.id]}
 												</span>
 												{entry.scores[pb.id] >= 100 && (
-													<span class="block">{formatDuration(entry.last_times[pb.id] ?? -1, true, true)}</span>
+													<span class="block">{formatDuration(Math.floor(entry.last_times[pb.id] ?? -1) * 60, true, true)}</span>
 												)}
 											</>
 										) : (
