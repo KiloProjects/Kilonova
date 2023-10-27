@@ -38,6 +38,9 @@ var (
 	DonationsNag     = config.GenFlag[bool]("frontent.donation.frontpage_nag", true, "Donations front page notification")
 
 	MainPageLogin = config.GenFlag[bool]("feature.frontend.main_page_login", false, "Login modal on front page")
+
+	NavbarProblems = config.GenFlag[bool]("feature.frontend.navbar.problems_btn", true, "Navbar button: Problems")
+	NavbarContests = config.GenFlag[bool]("feature.frontend.navbar.contests_btn", false, "Navbar button: Contests")
 )
 
 func (rt *Web) index() http.HandlerFunc {
