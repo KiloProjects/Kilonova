@@ -1,3 +1,12 @@
+- v0.23.0:
+    - !! Much improved ICPC handling;
+    - Add support for pascal and re-enable Go language support in grader;
+    - Display names;
+    - Problem import UI for proposers;
+    - Login modal on front page option;
+    - Glossary for frequently asked terms (for now, just stdin/stdout);
+    - Add "Contests" button in navbar, enabled optionally;
+        - "Problems" button in navbar is now also toggleable.
 - v0.22.0:
     - ICPC leaderboards for contests;
         - Also includes a bit of a rework to how scores are handled.
