@@ -163,7 +163,7 @@ DROP FUNCTION IF EXISTS contest_max_scores(bigint, timestamptz);
 CREATE OR REPLACE FUNCTION contest_max_scores(contest_id bigint, freeze_time timestamptz) RETURNS TABLE(user_id bigint, problem_id bigint, score decimal, mintime timestamptz) AS $$
     WITH max_submission_strat AS (
         SELECT DISTINCT user_id, problem_id, FIRST_VALUE(score) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
-            FROM submissions WHERE contest_id = $1 AND created_at <= COALESCE(freeze_time, NOW())
+            FROM submissions WHERE contest_id = $1 AND created_at <= COALESCE(freeze_time, NOW()) AND status = 'finished'
             WINDOW w AS (PARTITION BY user_id, problem_id ORDER BY score DESC, created_at ASC)
     ), subtask_max_scores AS (
         SELECT DISTINCT user_id, subtask_id, FIRST_VALUE(problem_id) OVER w as problem_id, FIRST_VALUE(computed_score) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
@@ -230,6 +230,7 @@ RETURNS TABLE (user_id bigint, contest_id bigint, last_time timestamptz, num_sol
                 AND subs.user_id = solved_pbs.user_id 
                 AND subs.problem_id = solved_pbs.problem_id 
                 AND subs.created_at < solved_pbs.last_time
+                AND subs.status = 'finished'
             GROUP BY solved_pbs.user_id
     ), duration_sum AS (
         -- get sum of number of minutes from problems
