@@ -32,8 +32,6 @@ type Handler struct {
 	sChan chan *kilonova.Submission
 	base  *sudoapi.BaseAPI
 
-	wg sync.WaitGroup
-
 	wakeChan chan struct{}
 }
 
@@ -50,7 +48,7 @@ func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, *kilonova
 		graderLogger = zap.New(kilonova.GetZapCore(config.Common.Debug, false, logFile), zap.AddCaller()).Sugar()
 	})
 
-	return &Handler{ctx, ch, base, sync.WaitGroup{}, wCh}, nil
+	return &Handler{ctx, ch, base, wCh}, nil
 }
 
 func (h *Handler) Wake() {
@@ -72,8 +70,6 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 			if !more {
 				return nil
 			}
-
-			h.wg.Wait()
 
 			subs, err := h.base.RawSubmissions(h.ctx, waitingSubs)
 			if err != nil {
@@ -102,14 +98,12 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 							subRunner = r
 						}
 					}
-					h.wg.Add(1)
+					if err := h.base.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
+						zap.S().Warn(err)
+						continue
+					}
 					go func(sub *kilonova.Submission, r eval.BoxScheduler) {
-						defer h.wg.Done()
 						defer r.Close(h.ctx)
-						if err := h.base.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
-							zap.S().Warn(err)
-							return
-						}
 						if err := executeSubmission(h.ctx, h.base, r, sub); err != nil {
 							zap.S().Warn("Couldn't run submission: ", err)
 						}

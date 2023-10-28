@@ -350,6 +350,16 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 		}
 	}
 
+	// Hide fatal signals for ICPC submissions
+	if sub.SubmissionType == kilonova.EvalTypeICPC {
+		if strings.Contains(resp.Comments, "signal 9") {
+			resp.Comments = "translate:memory_limit"
+		}
+		if strings.Contains(resp.Comments, "Caught fatal signal") || strings.Contains(resp.Comments, "Exited with error status") {
+			resp.Comments = "translate:runtime_error"
+		}
+	}
+
 	if err := base.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{Memory: &resp.Memory, Percentage: &testScore, Time: &resp.Time, Verdict: &resp.Comments, Done: &True}); err != nil {
 		return decimal.Zero, "", kilonova.WrapError(err, "Error during evaltest updating")
 	}

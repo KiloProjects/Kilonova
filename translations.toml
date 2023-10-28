@@ -2243,6 +2243,14 @@ ro = "Limita de timp depășită"
 en = "Time limit exceeded (wall clock)"
 ro = "Limita de timp depășită (wall clock)"
 
+[test_verdict.memory_limit]
+en = "Memory limit exceeded"
+ro = "Limita de memorie depășită"
+
+[test_verdict.runtime_error]
+en = "Runtime error"
+ro = "Eroare runtime"
+
 [test_verdict.internal_error]
 en = "Internal error"
 ro = "Eroare internă"
