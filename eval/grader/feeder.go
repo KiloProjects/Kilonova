@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	waitingSubs   = kilonova.SubmissionFilter{Status: kilonova.StatusWaiting, Ascending: true, Limit: 20}
+	waitingSubs   = kilonova.SubmissionFilter{Status: kilonova.StatusWaiting, Ascending: true, Limit: 40}
 	workingUpdate = kilonova.SubmissionUpdate{Status: kilonova.StatusWorking}
 
 	// If future me is running multiple grader handlers
@@ -31,6 +31,8 @@ type Handler struct {
 	ctx   context.Context
 	sChan chan *kilonova.Submission
 	base  *sudoapi.BaseAPI
+
+	wg sync.WaitGroup
 
 	wakeChan chan struct{}
 }
@@ -48,7 +50,7 @@ func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, *kilonova
 		graderLogger = zap.New(kilonova.GetZapCore(config.Common.Debug, false, logFile), zap.AddCaller()).Sugar()
 	})
 
-	return &Handler{ctx, ch, base, wCh}, nil
+	return &Handler{ctx, ch, base, sync.WaitGroup{}, wCh}, nil
 }
 
 func (h *Handler) Wake() {
@@ -70,6 +72,8 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 			if !more {
 				return nil
 			}
+
+			h.wg.Wait()
 
 			subs, err := h.base.RawSubmissions(h.ctx, waitingSubs)
 			if err != nil {
@@ -98,7 +102,9 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 							subRunner = r
 						}
 					}
+					h.wg.Add(1)
 					go func(sub *kilonova.Submission, r eval.BoxScheduler) {
+						defer h.wg.Done()
 						defer r.Close(h.ctx)
 						if err := h.base.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
 							zap.S().Warn(err)

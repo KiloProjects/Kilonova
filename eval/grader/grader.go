@@ -136,10 +136,12 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	switch sub.SubmissionType {
 	case kilonova.EvalTypeClassic:
 		if err := handleClassicSubmission(ctx, base, runner, sub, problem, checker, subTests); err != nil {
+			zap.S().Warn(err)
 			return err
 		}
 	case kilonova.EvalTypeICPC:
 		if err := handleICPCSubmission(ctx, base, runner, sub, problem, checker, subTests); err != nil {
+			zap.S().Warn(err)
 			return err
 		}
 	default:
