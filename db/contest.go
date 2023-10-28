@@ -249,7 +249,7 @@ func (s *DB) icpcToLeaderboardEntry(ctx context.Context, entry *databaseICPCEntr
 		SELECT problem_id, score, mintime, COALESCE(natts.num_atts, 0) AS num_attempts
 			FROM contest_max_scores($2, $3) cms, 
 			LATERAL (SELECT COUNT(*) AS num_atts FROM submissions 
-				WHERE contest_id = $2 AND user_id = $1 AND problem_id = cms.problem_id AND created_at <= COALESCE($3, NOW()) AND (cms.score < 100 OR created_at < cms.mintime)) natts 
+				WHERE contest_id = $2 AND user_id = $1 AND status = 'finished' AND problem_id = cms.problem_id AND created_at <= COALESCE($3, NOW()) AND (cms.score < 100 OR created_at < cms.mintime)) natts 
 		WHERE user_id = $1
 `, entry.UserID, entry.ContestID, entry.FreezeTime)
 	pbs, err := pgx.CollectRows(rows, pgx.RowToStructByName[struct {
