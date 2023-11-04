@@ -13,11 +13,11 @@ import (
 )
 
 func (m *StorageManager) TestInput(testID int) (io.ReadCloser, error) {
-	return openNormalOrGzip(m.TestInputPath(testID))
+	return openGzipOrNormal(m.TestInputPath(testID))
 }
 
 func (m *StorageManager) TestOutput(testID int) (io.ReadCloser, error) {
-	return openNormalOrGzip(m.TestOutputPath(testID))
+	return openGzipOrNormal(m.TestOutputPath(testID))
 }
 
 func (m *StorageManager) TestInputPath(testID int) string {
@@ -37,16 +37,16 @@ func (m *StorageManager) SaveTestOutput(testID int, output io.Reader) error {
 }
 
 func (m *StorageManager) PurgeTestData(testID int) error {
-	err1 := os.Remove(m.TestInputPath(testID))
-	err2 := os.Remove(m.TestOutputPath(testID))
+	err1 := os.Remove(m.TestInputPath(testID) + ".gz")
+	err2 := os.Remove(m.TestOutputPath(testID) + ".gz")
 	if err1 != nil && !errors.Is(err1, fs.ErrNotExist) {
 		return err1
 	}
 	if err2 != nil && !errors.Is(err2, fs.ErrNotExist) {
 		return err2
 	}
-	err3 := os.Remove(m.TestInputPath(testID) + ".gz")
-	err4 := os.Remove(m.TestOutputPath(testID) + ".gz")
+	err3 := os.Remove(m.TestInputPath(testID))
+	err4 := os.Remove(m.TestOutputPath(testID))
 	if err3 != nil && !errors.Is(err3, fs.ErrNotExist) {
 		return err3
 	}

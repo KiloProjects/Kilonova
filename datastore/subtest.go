@@ -24,7 +24,7 @@ func (m *StorageManager) SubtestWriter(subtest int) (io.WriteCloser, error) {
 
 // SubtestReader should be used by the grader
 func (m *StorageManager) SubtestReader(subtest int) (io.ReadCloser, error) {
-	return openNormalOrGzip(m.SubtestPath(subtest))
+	return openGzipOrNormal(m.SubtestPath(subtest))
 }
 
 func (m *StorageManager) SubtestPath(subtest int) string {
@@ -69,18 +69,17 @@ func (fw *gzipFileReader) Close() error {
 	return err
 }
 
-func openNormalOrGzip(fpath string) (io.ReadCloser, error) {
-	f, err := os.Open(fpath)
-	if err != nil && errors.Is(err, fs.ErrNotExist) {
-		f2, err := os.Open(fpath + ".gz")
-		if err != nil {
-			return f2, err
+func openGzipOrNormal(fpath string) (io.ReadCloser, error) {
+	f, err := os.Open(fpath + ".gz")
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return os.Open(fpath)
 		}
-		gz, err := gzip.NewReader(f2)
-		if err != nil {
-			return nil, err
-		}
-		return &gzipFileReader{f2, gz}, nil
+		return nil, err
 	}
-	return f, err
+	gz, err := gzip.NewReader(f)
+	if err != nil {
+		return nil, err
+	}
+	return &gzipFileReader{f, gz}, nil
 }
