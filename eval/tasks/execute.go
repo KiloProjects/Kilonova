@@ -94,6 +94,7 @@ func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Tas
 		}
 
 		if err := w.Close(); err != nil {
+			zap.S().Warn(err)
 			resp.Comments = "Could not close output file"
 			return resp, nil
 		}

@@ -37,6 +37,7 @@ require (
 	github.com/lithdew/quickjs v0.0.0-20200714182134-aaa42285c9d2
 	github.com/shopspring/decimal v1.3.1
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
+	vimagination.zapto.org/dos2unix v1.0.0
 )
 
 require (

@@ -13,8 +13,8 @@ var (
 )
 
 type GraderStore interface {
-	TestInput(testID int) (io.ReadSeekCloser, error)
-	TestOutput(testID int) (io.ReadSeekCloser, error)
+	TestInput(testID int) (io.ReadCloser, error)
+	TestOutput(testID int) (io.ReadCloser, error)
 
 	PurgeTestData(testID int) error
 
@@ -22,7 +22,7 @@ type GraderStore interface {
 	SaveTestOutput(testID int, output io.Reader) error
 
 	SubtestWriter(subtest int) (io.WriteCloser, error)
-	SubtestReader(subtest int) (io.ReadSeekCloser, error)
+	SubtestReader(subtest int) (io.ReadCloser, error)
 }
 
 // DataStore represents an interface for the Data Storage Manager
@@ -30,7 +30,7 @@ type DataStore interface {
 	GraderStore
 
 	HasAttachmentRender(attID int) bool
-	GetAttachmentRender(attID int) (io.ReadSeekCloser, error)
+	GetAttachmentRender(attID int) (io.ReadCloser, error)
 	DelAttachmentRender(attID int) error
 	SaveAttachmentRender(attID int, data []byte) error
 

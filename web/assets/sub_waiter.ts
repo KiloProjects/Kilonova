@@ -22,12 +22,14 @@ export function makeSubWaiter(id: number): string {
 		}
 		if (res.data.status == "finished") {
 			let rezStr = "";
+			let statusVal: "success" | "error" = "success";
 			if (res.data.submission_type == "classic") {
 				rezStr = getText("finalScore", id) + " " + res.data.score.toFixed(res.data.score_precision);
 			} else {
 				if (res.data.score == 100) {
 					rezStr = `<i class="fas fa-fw fa-check"></i> ${getText("accepted")}`;
 				} else {
+					statusVal = "error";
 					rezStr = res.data.icpc_verdict ? icpcVerdictString(res.data.icpc_verdict) : getText("rejected");
 				}
 			}
@@ -35,7 +37,7 @@ export function makeSubWaiter(id: number): string {
 			createToast({
 				title: getText("finishedEval"),
 				description: rezStr,
-				status: "success",
+				status: statusVal,
 			});
 			clearInterval(interv);
 		}

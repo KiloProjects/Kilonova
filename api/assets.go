@@ -7,6 +7,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"net/http"
 	"path"
@@ -218,7 +219,7 @@ func (s *Assets) ServeSubtest(w http.ResponseWriter, r *http.Request) {
 	sub, err1 := s.base.Submission(r.Context(), subtest.SubmissionID, util.UserBrief(r))
 	if err1 != nil {
 		zap.S().Warn(err1)
-		http.Error(w, "You aren't allowed to do that", 500)
+		http.Error(w, "Couldn't get submission", 500)
 		return
 	}
 
@@ -233,7 +234,8 @@ func (s *Assets) ServeSubtest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer rc.Close()
-	http.ServeContent(w, r, "subtest.out", time.Now(), rc)
+	w.WriteHeader(200)
+	io.Copy(w, rc)
 }
 
 func (s *Assets) ServeTestInput(w http.ResponseWriter, r *http.Request) {
@@ -248,7 +250,8 @@ func (s *Assets) ServeTestInput(w http.ResponseWriter, r *http.Request) {
 	tname := fmt.Sprintf("%d-%s.in", util.Test(r).VisibleID, util.Problem(r).TestName)
 
 	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=%q", tname))
-	http.ServeContent(w, r, tname, time.Unix(0, 0), rr)
+	w.WriteHeader(200)
+	io.Copy(w, rr)
 }
 
 func (s *Assets) ServeTestOutput(w http.ResponseWriter, r *http.Request) {
@@ -263,7 +266,8 @@ func (s *Assets) ServeTestOutput(w http.ResponseWriter, r *http.Request) {
 	tname := fmt.Sprintf("%d-%s.out", util.Test(r).VisibleID, util.Problem(r).TestName)
 
 	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=%q", tname))
-	http.ServeContent(w, r, tname, time.Unix(0, 0), rr)
+	w.WriteHeader(200)
+	io.Copy(w, rr)
 }
 
 func (s *Assets) ServeProblemArchive(w http.ResponseWriter, r *http.Request) {

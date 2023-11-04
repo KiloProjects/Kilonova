@@ -3,7 +3,6 @@ package grader
 import (
 	"context"
 	"fmt"
-	"io"
 	"path"
 	"strings"
 	"sync"
@@ -311,14 +310,9 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 
 	resp, err := eval.RunTask(ctx, runner, int64(problem.MemoryLimit), execRequest, tasks.GetExecuteTask(graderLogger, base))
 	if err != nil {
-		return decimal.Zero, "", kilonova.WrapError(err, "Couldn't execute test")
+		return decimal.Zero, "", kilonova.WrapError(err, "Couldn't execute subtest")
 	}
 	var testScore decimal.Decimal
-
-	// Rewind test input for use in checker
-	if _, err := tin.Seek(0, io.SeekStart); err != nil {
-		return decimal.Zero, "", kilonova.WrapError(err, "Couldn't rewind test input")
-	}
 
 	// Make sure TLEs are fully handled
 	if resp.Time > problem.TimeLimit {
@@ -328,6 +322,14 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 
 	if resp.Comments == "" {
 		var skipped bool
+		tin, err := base.TestInput(*subTest.TestID)
+		if err != nil {
+			resp.Comments = "translate:internal_error"
+			skipped = true
+		}
+		if tin != nil {
+			defer tin.Close()
+		}
 		tout, err := base.TestOutput(*subTest.TestID)
 		if err != nil {
 			resp.Comments = "translate:internal_error"

@@ -1,6 +1,8 @@
 package datastore
 
 import (
+	"compress/gzip"
+	"errors"
 	"io"
 	"io/fs"
 	"os"
@@ -21,36 +23,33 @@ var _ kilonova.DataStore = &StorageManager{}
 
 // NewManager returns a new manager instance
 func NewManager(p string) (kilonova.DataStore, error) {
-	if err := os.MkdirAll(p, 0777); err != nil {
+	if err := os.MkdirAll(p, 0755); err != nil {
 		return nil, err
 	}
 
-	if err := os.MkdirAll(path.Join(p, "subtests"), 0777); err != nil {
+	if err := os.MkdirAll(path.Join(p, "subtests"), 0755); err != nil {
 		return nil, err
 	}
 
-	if err := os.MkdirAll(path.Join(p, "tests"), 0777); err != nil {
+	if err := os.MkdirAll(path.Join(p, "tests"), 0755); err != nil {
 		return nil, err
 	}
 
-	if err := os.MkdirAll(path.Join(p, "attachments"), 0777); err != nil {
+	if err := os.MkdirAll(path.Join(p, "attachments"), 0755); err != nil {
 		return nil, err
 	}
 
-	mgr := &StorageManager{RootPath: p}
-	mgr.initDos2Unix()
-
-	return mgr, nil
+	return &StorageManager{RootPath: p}, nil
 }
 
-func writeFile(path string, r io.Reader, perms fs.FileMode) error {
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perms)
-	if err != nil {
-		return err
+func openNormalOrGzip(fpath string) (io.ReadCloser, error) {
+	f, err := os.Open(fpath)
+	if err != nil && errors.Is(err, fs.ErrNotExist) {
+		f2, err := os.Open(fpath + ".gz")
+		if err != nil {
+			return f2, err
+		}
+		return gzip.NewReader(f2)
 	}
-	_, err = io.Copy(f, r)
-	if err1 := f.Close(); err1 != nil && err == nil {
-		err = err1
-	}
-	return err
+	return f, err
 }

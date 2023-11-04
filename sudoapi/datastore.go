@@ -9,7 +9,7 @@ import (
 
 var _ kilonova.DataStore = &BaseAPI{}
 
-func (s *BaseAPI) TestInput(testID int) (io.ReadSeekCloser, error) {
+func (s *BaseAPI) TestInput(testID int) (io.ReadCloser, error) {
 	r, err := s.manager.TestInput(testID)
 	if err != nil {
 		return nil, WrapError(err, "Could not open test input")
@@ -17,7 +17,7 @@ func (s *BaseAPI) TestInput(testID int) (io.ReadSeekCloser, error) {
 	return r, nil
 }
 
-func (s *BaseAPI) TestOutput(testID int) (io.ReadSeekCloser, error) {
+func (s *BaseAPI) TestOutput(testID int) (io.ReadCloser, error) {
 	r, err := s.manager.TestOutput(testID)
 	if err != nil {
 		return nil, WrapError(err, "Could not open test input")
@@ -55,7 +55,7 @@ func (s *BaseAPI) SubtestWriter(subtest int) (io.WriteCloser, error) {
 	return w, nil
 }
 
-func (s *BaseAPI) SubtestReader(subtest int) (io.ReadSeekCloser, error) {
+func (s *BaseAPI) SubtestReader(subtest int) (io.ReadCloser, error) {
 	r, err := s.manager.SubtestReader(subtest)
 	if err != nil {
 		return nil, WrapError(err, "Could not open subtest reader")
@@ -67,7 +67,7 @@ func (s *BaseAPI) HasAttachmentRender(attID int) bool {
 	return s.manager.HasAttachmentRender(attID)
 }
 
-func (s *BaseAPI) GetAttachmentRender(attID int) (io.ReadSeekCloser, error) {
+func (s *BaseAPI) GetAttachmentRender(attID int) (io.ReadCloser, error) {
 	f, err := s.manager.GetAttachmentRender(attID)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get rendered attachment")

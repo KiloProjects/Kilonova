@@ -19,7 +19,7 @@ func (m *StorageManager) HasAttachmentRender(attID int) bool {
 	return true
 }
 
-func (m *StorageManager) GetAttachmentRender(attID int) (io.ReadSeekCloser, error) {
+func (m *StorageManager) GetAttachmentRender(attID int) (io.ReadCloser, error) {
 	m.attMu.RLock()
 	defer m.attMu.RUnlock()
 	return os.Open(m.AttachmentRenderPath(attID))
@@ -38,7 +38,7 @@ func (m *StorageManager) DelAttachmentRender(attID int) error {
 func (m *StorageManager) SaveAttachmentRender(attID int, data []byte) error {
 	m.attMu.Lock()
 	defer m.attMu.Unlock()
-	return os.WriteFile(m.AttachmentRenderPath(attID), data, 0777)
+	return os.WriteFile(m.AttachmentRenderPath(attID), data, 0644)
 }
 
 func (m *StorageManager) InvalidateAllAttachments() error {
