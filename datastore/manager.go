@@ -1,10 +1,6 @@
 package datastore
 
 import (
-	"compress/gzip"
-	"errors"
-	"io"
-	"io/fs"
 	"os"
 	"path"
 	"sync"
@@ -40,16 +36,4 @@ func NewManager(p string) (kilonova.DataStore, error) {
 	}
 
 	return &StorageManager{RootPath: p}, nil
-}
-
-func openNormalOrGzip(fpath string) (io.ReadCloser, error) {
-	f, err := os.Open(fpath)
-	if err != nil && errors.Is(err, fs.ErrNotExist) {
-		f2, err := os.Open(fpath + ".gz")
-		if err != nil {
-			return f2, err
-		}
-		return gzip.NewReader(f2)
-	}
-	return f, err
 }

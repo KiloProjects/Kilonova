@@ -2,7 +2,9 @@ package datastore
 
 import (
 	"compress/gzip"
+	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"path"
 	"strconv"
@@ -46,4 +48,39 @@ func (fw *gzipFileWriter) Close() error {
 		zap.S().Warn(err2)
 	}
 	return err
+}
+
+type gzipFileReader struct {
+	f  *os.File
+	gz *gzip.Reader
+}
+
+func (fw *gzipFileReader) Read(p []byte) (int, error) {
+	return fw.gz.Read(p)
+}
+
+func (fw *gzipFileReader) Close() error {
+	err2 := fw.gz.Close()
+	err := fw.f.Close()
+	if err == nil && err2 != nil {
+		err = err2
+		zap.S().Warn(err2)
+	}
+	return err
+}
+
+func openNormalOrGzip(fpath string) (io.ReadCloser, error) {
+	f, err := os.Open(fpath)
+	if err != nil && errors.Is(err, fs.ErrNotExist) {
+		f2, err := os.Open(fpath + ".gz")
+		if err != nil {
+			return f2, err
+		}
+		gz, err := gzip.NewReader(f2)
+		if err != nil {
+			return nil, err
+		}
+		return &gzipFileReader{f2, gz}, nil
+	}
+	return f, err
 }
