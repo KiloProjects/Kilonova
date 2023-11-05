@@ -12,6 +12,7 @@
 	{{$bundle := hashedName "static/bundle.js"}}
 	{{$vendored := hashedName "static/vendored.js"}}
 	{{$style := hashedName "static/styles.css" -}}
+	{{$ogimage := hashedName "static/ogimage.png" -}}
 
 
 	<link rel="apple-touch-icon" sizes="180x180" href="{{$favAppleTouch}}">
@@ -33,6 +34,7 @@
 	<meta name="description" content="{{template `description` .}}" />
 	<meta property="og:locale" content="ro_RO" />
 	<meta property="og:site_name" content="Kilonova" />
+	<meta property="og:image" content="/{{$ogimage}}" />
 
 	<!--Dependency bundle-->
 	<script src="/{{$bundle}}"></script>
