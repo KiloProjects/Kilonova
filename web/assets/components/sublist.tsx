@@ -24,13 +24,6 @@ type FullList = {
 	sublists: Sublist[];
 };
 
-// type Problem = {
-// 	id: number;
-// 	name: string;
-// 	visible: boolean;
-// 	editors: number[];
-// };
-
 type ScoredProblem = {
 	id: number;
 	name: string;
