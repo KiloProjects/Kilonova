@@ -29,9 +29,20 @@ https://kilonova.ro/`))
 //
 // If `email` is different than the user's email, the email address is also updated.
 func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, email string) *StatusError {
-	if s.mailer == nil {
-		zap.S().Error("SendVerificationEmail called, but no mailer was provided to *sudoapi.BaseAPI")
-		return Statusf(500, "Can't send email")
+	if s.mailer == nil || !s.MailerEnabled() || userID == 1 {
+		zap.S().Infof("Auto confirming email for user #%d as valid", userID)
+
+		t := true
+		now := time.Now()
+		if err := s.updateUser(ctx, userID, kilonova.UserFullUpdate{
+			Email:            &email,
+			VerifiedEmail:    &t,
+			EmailVerifSentAt: &now,
+		}); err != nil {
+			return err
+		}
+
+		return nil // Statusf(500, "Mailer system was disabled by admins")
 	}
 
 	if user, err := s.UserFullByEmail(ctx, email); err != nil && !errors.Is(err, ErrNotFound) {
@@ -97,4 +108,8 @@ func (s *BaseAPI) ConfirmVerificationEmail(vid string, user *kilonova.UserBrief)
 
 	ttrue := true
 	return s.updateUser(context.Background(), user.ID, kilonova.UserFullUpdate{VerifiedEmail: &ttrue})
+}
+
+func (s *BaseAPI) MailerEnabled() bool {
+	return config.Email.Enabled
 }

@@ -31,6 +31,8 @@ type configStruct struct {
 
 // EmailConf is the data required for the email part
 type EmailConf struct {
+	Enabled bool `toml:"enabled"`
+
 	Host     string `toml:"host"`
 	Username string `toml:"username"`
 	Password string `toml:"password"`
@@ -64,7 +66,7 @@ type CommonConf struct {
 }
 
 type DonationConf struct {
-	BuyMeACoffeeName  string `toml:"buy_cofee_name"`
+	BuyMeACoffeeName  string `toml:"buy_coffee_name"`
 	BMACWebhookSecret string `toml:"bmac_webhook_secret"`
 
 	PayPalButtonID string `toml:"paypal_button_id"`

@@ -24,9 +24,9 @@ https://kilonova.ro/`))
 // SendPasswordResetEmail sends a password reset email to the user.
 // Please provide a good context.
 func (s *BaseAPI) SendPasswordResetEmail(ctx context.Context, userID int, name, email string) *StatusError {
-	if s.mailer == nil {
+	if s.mailer == nil || !s.MailerEnabled() {
 		zap.S().Error("SendPasswordResetEmail called, but no mailer was provided to *sudoapi.BaseAPI")
-		return Statusf(500, "Can't send email")
+		return Statusf(500, "Mailer system was disabled by admins.")
 	}
 
 	vid, err := s.db.CreatePwdResetRequest(ctx, userID)

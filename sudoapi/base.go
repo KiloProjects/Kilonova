@@ -70,9 +70,14 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, *StatusError) {
 		return nil, WrapError(err, "Couldn't initialize data store")
 	}
 
-	mailer, err := email.NewMailer()
-	if err != nil {
-		return nil, WrapError(err, "Couldn't initialize mailer")
+	var knMailer kilonova.Mailer
+	if config.Email.Enabled {
+		mailer, err := email.NewMailer()
+		if err != nil {
+			zap.S().Warn("Couldn't initialize mailer: ", err)
+			zap.S().Warn("Make sure you entered the correct information")
+		}
+		knMailer = mailer
 	}
 
 	// DB Initialization
@@ -82,5 +87,5 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, *StatusError) {
 	}
 	zap.S().Info("Connected to DB")
 
-	return GetBaseAPI(db, manager, mailer), nil
+	return GetBaseAPI(db, manager, knMailer), nil
 }

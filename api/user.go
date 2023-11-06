@@ -344,8 +344,6 @@ func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Successfully changed password")
 }
 
-const pwdRequestResponse = "If the provided email address is correct, an email should arrive shortly."
-
 func (s *API) sendForgotPwdMail(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
@@ -359,10 +357,14 @@ func (s *API) sendForgotPwdMail(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "No email address specified", 400)
 		return
 	}
+	if !s.base.MailerEnabled() {
+		errorData(w, "Mailing subsystem was disabled by administrator", 400)
+		return
+	}
 	user, err := s.base.UserFullByEmail(r.Context(), args.Email)
 	if err != nil {
 		if errors.Is(err, kilonova.ErrNotFound) {
-			returnData(w, pwdRequestResponse)
+			returnData(w, "If the provided email address is correct, an email should arrive shortly.")
 			return
 		}
 		err.WriteError(w)
@@ -374,7 +376,7 @@ func (s *API) sendForgotPwdMail(w http.ResponseWriter, r *http.Request) {
 		}
 	}(user)
 
-	returnData(w, pwdRequestResponse)
+	returnData(w, "If the provided email address is correct, an email should arrive shortly.")
 }
 
 func (s *API) resetPassword(w http.ResponseWriter, r *http.Request) {
@@ -411,6 +413,20 @@ func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.base.VerifyUserPassword(r.Context(), util.UserBrief(r).ID, password); err != nil {
 		err.WriteError(w)
+		return
+	}
+
+	user, err := s.base.UserFullByEmail(r.Context(), email)
+	if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
+		err.WriteError(w)
+		return
+	}
+	if user != nil {
+		if user.ID == util.UserBrief(r).ID {
+			errorData(w, "You already use this email!", 400)
+			return
+		}
+		errorData(w, "Email is already in use.", 400)
 		return
 	}
 
