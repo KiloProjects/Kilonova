@@ -153,51 +153,62 @@
     })
 </script>
 
-<form id="boolFlagsForm" class="segment-panel">
-    <h3>{{getText "boolFlags"}}</h3>
-    
-    <div class="mb-2" id="boolFlagsDiv"></div>
+<form id="flagsForm" class="segment-panel" autocomplete="off">
+    <h2>{{getText "updateFlags"}}</h2>
+    <div class="segment-panel">
+        <h3>{{getText "boolFlags"}}</h3>
+        
+        <div id="boolFlagsDiv" class="mb-2">
+            {{range boolFlags}}
+            <div class="block">
+                <label class="inline-flex items-center text-lg">
+                    <input class="form-checkbox" type="checkbox" data-name="{{.InternalName}}" data-org_value="{{.Value}}" {{if .Value}}checked{{end}} autocomplete="off"/>
+                    <span class="ml-2">{{.HumanName}}</span>
+                    <span class="ml-2 text-sm text-muted">({{.InternalName}})</span>
+                </label>
+            </div>
+            {{else}}<span class="text-lg my-2">N/A</span>{{end}}
+        </div>
+    </div>
+
+    <div class="segment-panel">
+        <h3>{{getText "stringFlags"}}</h3>
+        
+        <div id="stringFlagsDiv" class="mb-2">
+            {{range stringFlags}}
+            <label class="block my-2">
+                <span>{{.HumanName}}</span>
+                <span class="mr-2 text-sm text-muted">({{.InternalName}})</span>
+                <input class="form-input w-full" type="text" data-name="{{.InternalName}}" data-org_value="{{.Value}}" value="{{.Value}}" autocomplete="off"/>
+            </label>
+            {{else}}<span class="text-lg my-2">N/A</span>{{end}}
+        </div>
+    </div>
+
+    <div class="segment-panel">
+        <h3>{{getText "intFlags"}}</h3>
+        
+        <div id="intFlagsDiv" class="mb-2">
+            {{range intFlags}}
+            <label class="block my-2">
+                <span>{{.HumanName}}</span>
+                <span class="mr-2 text-sm text-muted">({{.InternalName}})</span>
+                <input class="form-input w-full" type="number" data-name="{{.InternalName}}" data-org_value="{{.Value}}" value="{{.Value}}" autocomplete="off"/>
+            </label>
+            {{else}}<span class="text-lg my-2">N/A</span>{{end}}
+        </div>
+    </div>
 
     <button type="submit" class="btn btn-blue">{{getText "button.update"}}</button>
 </form>
 
 <script>
-    const flags = {{boolFlags}};
-    
-    (()=>{
-        const flagDiv = document.getElementById("boolFlagsDiv")
-        for(let flag of flags) {
-            let divNode = document.createElement("div");
-            divNode.classList.add("block");
-            let labelNode = document.createElement("label");
-            labelNode.classList.add("inline-flex", "items-center", "text-lg");
-            let spanNode = document.createElement("span");
-            spanNode.classList.add("ml-2")
-            spanNode.innerText = flag.human_name
-            let smallNode = document.createElement("span");
-            smallNode.classList.add("ml-2", "text-sm", "text-muted")
-            smallNode.innerText = `(${flag.internal_name})`
-            let inputNode = document.createElement("input");
-            inputNode.type = "checkbox"
-            inputNode.classList.add("form-checkbox")
-            inputNode.checked = flag.value
-            inputNode.dataset.name = flag.internal_name
-            inputNode.dataset.org_value = flag.value
-            labelNode.appendChild(inputNode)
-            labelNode.appendChild(spanNode)
-            labelNode.appendChild(smallNode)
-            divNode.appendChild(labelNode)
-            flagDiv.appendChild(divNode)
-        }
-    })()
-
     function wrapFunc(func) {
         return async (e) => {
             if(!e.submitter) {
             console.log(e.submitter)
                 return func(e)
             }
-            console.log(1)
             e.submitter.disabled = true
             e.submitter.classList.add('btn-loading')
             await func(e)
@@ -206,20 +217,36 @@
         }
     }
 
-    document.getElementById("boolFlagsForm").addEventListener("submit", wrapFunc(async (e) => {
+    document.getElementById("flagsForm").addEventListener("submit", wrapFunc(async (e) => {
         e.preventDefault()
-        let data = new Map()
+        let data = {bool_flags: {}, string_flags: {}, int_flags: {}}
         for(let checkbox of document.getElementById("boolFlagsDiv").getElementsByTagName("input")) {
             if(checkbox.checked != (checkbox.dataset.org_value === "true") ) {
-                data.set(checkbox.dataset.name, checkbox.checked)
+                data.bool_flags[checkbox.dataset.name] = checkbox.checked;
+            }
+        }
+        for(let input of document.getElementById("stringFlagsDiv").getElementsByTagName("input")) {
+            if(input.value != input.dataset.org_value) {
+                data.string_flags[input.dataset.name] = input.value;
+            }
+        }
+        for(let input of document.getElementById("intFlagsDiv").getElementsByTagName("input")) {
+            if(input.value != input.dataset.org_value) {
+                data.int_flags[input.dataset.name] = parseInt(input.value);
             }
         }
         // console.log(Object.fromEntries(data.entries()))
-        const res = await bundled.postCall("/admin/updateFlags", Object.fromEntries(data.entries()))
+        const res = await bundled.bodyCall("/admin/updateFlags", data)
         bundled.apiToast(res)
         if(res.status === "success") {
             for(let checkbox of document.getElementById("boolFlagsDiv").getElementsByTagName("input")) {
                 checkbox.dataset.org_value = checkbox.checked 
+            }
+            for(let input of document.getElementById("stringFlagsDiv").getElementsByTagName("input")) {
+                input.dataset.org_value = input.value
+            }
+            for(let input of document.getElementById("intFlagsDiv").getElementsByTagName("input")) {
+                input.dataset.org_value = input.value
             }
         }
     }))

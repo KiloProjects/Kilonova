@@ -1538,9 +1538,21 @@ ro = "Numărul de workeri"
 en = "Problems hidden from Trending tab"
 ro = "Probleme ascunse din panoul Trending"
 
+[updateFlags]
+en = "Update flags"
+ro = "Actualizare flag-uri"
+
 [boolFlags]
 en = "Boolean flags"
-ro = "Flag-uri booleane"
+ro = "Flag-uri bool"
+
+[stringFlags]
+en = "String flags"
+ro = "Flag-uri string"
+
+[intFlags]
+en = "Number flags"
+ro = "Flag-uri numere"
 
 [tagDeleteConfirm]
 en = "Are you sure you want to delete this paste?"

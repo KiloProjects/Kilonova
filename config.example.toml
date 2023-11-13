@@ -1,32 +1,30 @@
 [common]
-log_dir = "<LOGPATH>/logs"
-data_dir = "<LOGPATH>/data"
-debug = false
-host_prefix = "https://kilonova.ro"
-port = 8070
-default_language = "en"
-db_dsn = "postgresql://<fill here>"
-test_max_mem_kb = 655360 # 640 MB
-updates_webhook = "https://discord.com/api/webhooks/<WEBHOOK_ID>/<WEBHOOK_SECRET>"
+ log_dir = "<LOGPATH>/logs"
+ data_dir = "<LOGPATH>/data"
+ debug = false
+ host_prefix = "https://kilonova.ro"
+ port = 8070
+ default_language = "en"
+ db_dsn = "postgresql://<fill here>"
+ test_max_mem_kb = 655360 # 640 MB
 
 [eval]
-isolatePath = "/usr/local/etc/isolate_bin"
-compilePath = "/tmp/kncompiles"
-num_concurrent = 3
-global_max_mem_kb = 2097152 # 2 GB
-
-starting_box = 1
+ isolatePath = "/usr/local/etc/isolate_bin"
+ compilePath = "/tmp/kncompiles"
+ num_concurrent = 3
+ global_max_mem_kb = 2097152 # 2 GB
+ starting_box = 1
 
 [email]
-enabled = true
-host = "HOST:PORT"
-username = "USERNAME"
-password = "PASSWORD"
+ enabled = true
+ host = "HOST:PORT"
+ username = "USERNAME"
+ password = "PASSWORD"
 
 [frontend]
-pinned_problem_list = 1
-root_problem_list = 5
+ banned_hot_problems = []
 
 [donations]
-buy_coffee_name = ""
-paypal_button_id = ""
+ buy_coffee_name = ""
+ bmac_webhook_secret = ""
+ paypal_button_id = ""

@@ -41,6 +41,9 @@ var (
 
 	NavbarProblems = config.GenFlag[bool]("feature.frontend.navbar.problems_btn", true, "Navbar button: Problems")
 	NavbarContests = config.GenFlag[bool]("feature.frontend.navbar.contests_btn", false, "Navbar button: Contests")
+
+	PinnedProblemList = config.GenFlag[int]("frontend.front_page.pinned_problem_list", 0, "Pinned problem list (front page sidebar)")
+	RootProblemList   = config.GenFlag[int]("frontend.front_page.root_problem_list", 0, "Root problem list (front page main content)")
 )
 
 func (rt *Web) index() http.HandlerFunc {
@@ -56,8 +59,8 @@ func (rt *Web) index() http.HandlerFunc {
 		}
 
 		var pblists []*kilonova.ProblemList
-		if config.Frontend.RootProblemList > 0 {
-			pblists, err = rt.base.PblistChildrenLists(r.Context(), config.Frontend.RootProblemList)
+		if RootProblemList.Value() > 0 {
+			pblists, err = rt.base.PblistChildrenLists(r.Context(), RootProblemList.Value())
 			if err != nil {
 				zap.S().Warn(err)
 				pblists = []*kilonova.ProblemList{}
@@ -65,8 +68,8 @@ func (rt *Web) index() http.HandlerFunc {
 		}
 
 		var pinnedLists []*kilonova.ProblemList
-		if config.Frontend.PinnedProblemList > 0 {
-			pinnedLists, err = rt.base.PblistChildrenLists(r.Context(), config.Frontend.PinnedProblemList)
+		if PinnedProblemList.Value() > 0 {
+			pinnedLists, err = rt.base.PblistChildrenLists(r.Context(), PinnedProblemList.Value())
 			if err != nil {
 				zap.S().Warn(err)
 				pblists = []*kilonova.ProblemList{}
@@ -337,7 +340,7 @@ func (rt *Web) pbListProgressIndex() http.HandlerFunc {
 			}
 		}
 
-		rt.runTempl(w, r, templ, &ProblemListParams{GenContext(r), nil, pblists, config.Frontend.RootProblemList})
+		rt.runTempl(w, r, templ, &ProblemListParams{GenContext(r), nil, pblists, RootProblemList.Value()})
 	}
 }
 

@@ -599,7 +599,9 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 
 		"bannedHotProblems": func() []int { return config.Frontend.BannedHotProblems },
 
-		"boolFlags": config.GetFlags[bool],
+		"boolFlags":   config.GetFlags[bool],
+		"stringFlags": config.GetFlags[string],
+		"intFlags":    config.GetFlags[int],
 
 		"validUsername": func(name string) bool { return base.CheckValidUsername(name) == nil },
 

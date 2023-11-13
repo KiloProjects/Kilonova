@@ -2,7 +2,6 @@ package api
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -82,21 +81,33 @@ func (s *API) getAllUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) updateBoolFlags(w http.ResponseWriter, r *http.Request) {
-	var upd = make(map[string]bool)
-	r.ParseForm()
-	for k, val := range r.Form {
-		if len(val) > 0 {
-			bl, err := strconv.ParseBool(val[0])
-			if err != nil {
-				errorData(w, err, 400)
-				return
-			}
-			upd[k] = bl
-		}
+	var args struct {
+		BoolFlags   map[string]bool   `json:"bool_flags"`
+		StringFlags map[string]string `json:"string_flags"`
+		IntFlags    map[string]int    `json:"int_flags"`
 	}
-
-	for k, v := range upd {
+	if err := parseJsonBody(r, &args); err != nil {
+		err.WriteError(w)
+		return
+	}
+	for k, v := range args.BoolFlags {
 		flg, ok := config.GetFlag[bool](k)
+		if !ok {
+			zap.S().Warnf("Flag %q not found", k)
+			continue
+		}
+		flg.Update(v)
+	}
+	for k, v := range args.StringFlags {
+		flg, ok := config.GetFlag[string](k)
+		if !ok {
+			zap.S().Warnf("Flag %q not found", k)
+			continue
+		}
+		flg.Update(v)
+	}
+	for k, v := range args.IntFlags {
+		flg, ok := config.GetFlag[int](k)
 		if !ok {
 			zap.S().Warnf("Flag %q not found", k)
 			continue
