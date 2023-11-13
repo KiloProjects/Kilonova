@@ -68,7 +68,7 @@ func (b *BoxManager) GetBox(ctx context.Context, memQuota int64) (eval.Sandbox, 
 	if err != nil {
 		return nil, err
 	}
-	b.logger.Infof("Aquired box %d", box.boxID)
+	b.logger.Infof("Acquired box %d", box.boxID)
 	return box, nil
 }
 

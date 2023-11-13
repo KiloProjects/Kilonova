@@ -80,5 +80,9 @@ func GetCompileTask(logger *zap.SugaredLogger) eval.Task[eval.CompileRequest, ev
 }
 
 func getIDExec(id int) string {
+	if id < 0 { // checker
+		// use -id to turn back positive
+		return path.Join(config.Eval.CompilePath, "checker_cache", fmt.Sprintf("%d.bin", -id))
+	}
 	return path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", id))
 }

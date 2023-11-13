@@ -24,7 +24,7 @@ import (
 
 const (
 	runErrRetries = 3
-	runErrTimeout = 500 * time.Millisecond
+	runErrTimeout = 200 * time.Millisecond
 )
 
 var _ eval.Sandbox = &Box{}

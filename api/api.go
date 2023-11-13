@@ -52,6 +52,9 @@ func (s *API) Handler() http.Handler {
 				}
 				return nil
 			}))
+			r.Post("/invalidateCheckers", webMessageWrapper("Invalidated checkers", func(ctx context.Context, args struct{}) *kilonova.StatusError {
+				return s.base.InvalidateCheckers()
+			}))
 		})
 
 		r.Post("/addDonation", s.addDonation)

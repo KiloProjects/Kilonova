@@ -1164,6 +1164,10 @@ ro = "Resetare submisii în așteptare"
 en = "Invalidate statement cache"
 ro = "Invalidare cache enunțuri"
 
+[invalidateCheckers]
+en = "Invalidate checker cache"
+ro = "Invalidare cache checkere"
+
 [changeRoles]
 en = "Change roles"
 ro = "Schimbă rolurile"

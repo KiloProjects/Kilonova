@@ -473,13 +473,17 @@ func getAppropriateChecker(ctx context.Context, base *sudoapi.BaseAPI, runner ev
 	if settings.CheckerName == "" {
 		return &checkers.DiffChecker{}, nil
 	} else {
+		att, err := base.ProblemAttByName(ctx, pb.ID, settings.CheckerName)
+		if err != nil {
+			return nil, kilonova.WrapError(err, "Couldn't get problem checker metadata")
+		}
 		data, err := base.ProblemAttDataByName(ctx, pb.ID, settings.CheckerName)
 		if err != nil {
-			return nil, kilonova.WrapError(err, "Couldn't get problem checker")
+			return nil, kilonova.WrapError(err, "Couldn't get problem checker code")
 		}
 		if settings.LegacyChecker {
-			return checkers.NewLegacyCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data), nil
+			return checkers.NewLegacyCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data, att.LastUpdatedAt), nil
 		}
-		return checkers.NewStandardCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data), nil
+		return checkers.NewStandardCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data, att.LastUpdatedAt), nil
 	}
 }

@@ -115,7 +115,8 @@ func Initialize() error {
 		zap.S().Fatal("Sandbox binary not found. Run scripts/init_isolate.sh to properly install it.")
 	}
 
-	if err := os.MkdirAll(config.Eval.CompilePath, 0777); err != nil {
+	// Creating the checker cache will also create the compile path behind it
+	if err := os.MkdirAll(path.Join(config.Eval.CompilePath, "checker_cache"), 0777); err != nil {
 		return err
 	}
 

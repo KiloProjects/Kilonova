@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval/checkers"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"go.uber.org/zap"
@@ -268,4 +269,11 @@ func (ll logLevel) toZap() zapcore.Level {
 	default:
 		return zapcore.InfoLevel
 	}
+}
+
+func (s *BaseAPI) InvalidateCheckers() *kilonova.StatusError {
+	if err := checkers.PurgeCheckerCache(); err != nil {
+		return WrapError(err, "Couldn't purge checker cache")
+	}
+	return nil
 }
