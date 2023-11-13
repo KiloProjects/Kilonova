@@ -141,6 +141,12 @@ function Summary({ sub, pasteAuthor }: { sub: FullSubmission; pasteAuthor?: User
 						<td class="kn-table-cell">{getText("status")}</td>
 						<td class="kn-table-cell">{sub.status}</td>
 					</tr>
+					{sub.compile_time != null && (
+						<tr class="kn-table-simple-border">
+							<td class="kn-table-cell">{getText("compileTime")}</td>
+							<td class="kn-table-cell">{Math.floor(sub.compile_time * 1000)} ms</td>
+						</tr>
+					)}
 				</tbody>
 			</table>
 		</div>

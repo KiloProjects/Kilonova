@@ -65,6 +65,8 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 		return fmt.Sprintf("Output:\n%s\nOther:\n%s", resp.Output, resp.Other), kilonova.Statusf(400, "Invalid helper code")
 	}
 
+	c.Logger.Infof("Checker compilation time: %d ms", int(resp.Stats.Time*1000))
+
 	return "", nil
 }
 

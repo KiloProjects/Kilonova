@@ -57,6 +57,8 @@ type CompileResponse struct {
 	Output  string
 	Success bool
 	Other   string
+
+	Stats *RunStats
 }
 
 type ExecRequest struct {

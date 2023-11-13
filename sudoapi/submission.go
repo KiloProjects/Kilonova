@@ -403,10 +403,16 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 }
 
 func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission, subProblem *kilonova.Problem, user *kilonova.UserBrief) {
-	if sub != nil && !s.isSubmissionVisible(ctx, sub, subProblem, user) {
+	if sub == nil {
+		return
+	}
+	if !s.isSubmissionVisible(ctx, sub, subProblem, user) {
 		sub.Code = ""
 		sub.CompileMessage = nil
 		sub.CodeSize = 0
+	}
+	if !s.IsProblemEditor(user, subProblem) {
+		sub.CompileTime = nil
 	}
 }
 

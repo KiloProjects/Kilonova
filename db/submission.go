@@ -31,9 +31,10 @@ type dbSubmission struct {
 
 	ContestID *int `db:"contest_id"`
 
-	Score decimal.Decimal `db:"score"`
+	Score          decimal.Decimal `db:"score"`
+	ScorePrecision int32           `db:"digit_precision"`
 
-	ScorePrecision int32 `db:"digit_precision"`
+	CompileDuration *float64 `db:"compile_duration"`
 
 	SubmissionType kilonova.EvalType `db:"submission_type"`
 	ICPCVerdict    *string           `db:"icpc_verdict"`
@@ -273,6 +274,9 @@ func subUpdateQuery(upd *kilonova.SubmissionUpdate, b *updateBuilder) {
 	if v := upd.CompileMessage; v != nil {
 		b.AddUpdate("compile_message = %s", v)
 	}
+	if v := upd.CompileTime; v != nil {
+		b.AddUpdate("compile_duration = %s", v)
+	}
 
 	if v := upd.MaxTime; v != nil {
 		b.AddUpdate("max_time = %s", v)
@@ -322,6 +326,8 @@ func (s *DB) internalToSubmission(sub *dbSubmission) *kilonova.Submission {
 		ContestID:      sub.ContestID,
 		Score:          sub.Score,
 		ScorePrecision: sub.ScorePrecision,
+
+		CompileTime: sub.CompileDuration,
 
 		SubmissionType: sub.SubmissionType,
 		ICPCVerdict:    sub.ICPCVerdict,

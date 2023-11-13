@@ -996,6 +996,10 @@ ro = "Memorie"
 en = "Upload date"
 ro = "Data încărcării"
 
+[compileTime]
+en = "Compilation time"
+ro = "Timp compilare"
+
 [noSubFound]
 en = "No submission found"
 ro = "Nicio submisie găsită"

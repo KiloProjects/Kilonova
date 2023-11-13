@@ -40,7 +40,7 @@ func (s *DB) InitSubmission(ctx context.Context, subID int) error {
 // Don't forget to update clearProblemSubs
 func clearSub(ctx context.Context, tx pgx.Tx, subID int) error {
 	// Reset submission data:
-	if _, err := tx.Exec(ctx, "UPDATE submissions SET status = 'creating', score = 0, max_time = -1, max_memory = -1, compile_error = false, compile_message = '', icpc_verdict = NULL WHERE id = $1", subID); err != nil {
+	if _, err := tx.Exec(ctx, "UPDATE submissions SET status = 'creating', score = 0, max_time = -1, max_memory = -1, compile_error = false, compile_message = '', icpc_verdict = NULL, compile_duration = NULL WHERE id = $1", subID); err != nil {
 		return err
 	}
 
@@ -118,7 +118,7 @@ func clearProblemSubs(ctx context.Context, tx pgx.Tx, problemID int) error {
 		return kilonova.ErrMissingRequired
 	}
 	// Reset submission data:
-	if _, err := tx.Exec(ctx, "UPDATE submissions SET status = 'creating', score = 0, max_time = -1, max_memory = -1, compile_error = false, compile_message = '', icpc_verdict = NULL WHERE problem_id = $1", problemID); err != nil {
+	if _, err := tx.Exec(ctx, "UPDATE submissions SET status = 'creating', score = 0, max_time = -1, max_memory = -1, compile_error = false, compile_message = '', icpc_verdict = NULL, compile_duration = NULL WHERE problem_id = $1", problemID); err != nil {
 		return err
 	}
 

@@ -53,14 +53,14 @@ func RunSubmission(ctx context.Context, box Sandbox, language Language, constrai
 }
 
 // CompileFile compiles a file that has the corresponding language
-func CompileFile(ctx context.Context, box Sandbox, files map[string][]byte, compiledFiles []string, language Language) (string, error) {
+func CompileFile(ctx context.Context, box Sandbox, files map[string][]byte, compiledFiles []string, language Language) (string, *RunStats, error) {
 	if files == nil {
 		zap.S().Warn("No files specified")
 		files = make(map[string][]byte)
 	}
 	for fileName, fileData := range files {
 		if err := box.WriteFile(fileName, bytes.NewReader(fileData), 0644); err != nil {
-			return "", err
+			return "", nil, err
 		}
 	}
 
@@ -87,7 +87,7 @@ func CompileFile(ctx context.Context, box Sandbox, files map[string][]byte, comp
 		goodCmd = language.CompileCommand
 	}
 
-	_, err = box.RunCommand(ctx, goodCmd, &conf)
+	stats, err := box.RunCommand(ctx, goodCmd, &conf)
 
 	var out bytes.Buffer
 	if err := box.ReadFile("/box/compilation.out", &out); err != nil {
@@ -105,10 +105,10 @@ func CompileFile(ctx context.Context, box Sandbox, files map[string][]byte, comp
 	combinedOut := string(combinedOutRunes)
 
 	if err != nil {
-		return combinedOut, err
+		return combinedOut, stats, err
 	}
 
-	return combinedOut, nil
+	return combinedOut, stats, nil
 }
 
 func MakeGoodCompileCommand(command []string, files []string) ([]string, error) {

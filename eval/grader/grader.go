@@ -256,7 +256,9 @@ func compileSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	// }
 
 	compileError := !resp.Success
-	if err := base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{CompileError: &compileError, CompileMessage: &resp.Output}); err != nil {
+	if err := base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{
+		CompileError: &compileError, CompileMessage: &resp.Output, CompileTime: &resp.Stats.Time,
+	}); err != nil {
 		spew.Dump(err)
 		return kilonova.WrapError(err, "Couldn't update submission")
 	}

@@ -51,8 +51,9 @@ func GetCompileTask(logger *zap.SugaredLogger) eval.Task[eval.CompileRequest, ev
 			files[fName] = fData
 		}
 
-		out, err := eval.CompileFile(ctx, box, files, sourceFiles, lang)
+		out, stats, err := eval.CompileFile(ctx, box, files, sourceFiles, lang)
 		resp.Output = out
+		resp.Stats = stats
 
 		if err != nil {
 			resp.Success = false

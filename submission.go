@@ -44,9 +44,10 @@ type Submission struct {
 	MaxTime   float64 `json:"max_time"`
 	MaxMemory int     `json:"max_memory"`
 
-	Score decimal.Decimal `json:"score"`
+	Score          decimal.Decimal `json:"score"`
+	ScorePrecision int32           `json:"score_precision"`
 
-	ScorePrecision int32 `json:"score_precision"`
+	CompileTime *float64 `json:"compile_time"`
 
 	SubmissionType EvalType `json:"submission_type"`
 	ICPCVerdict    *string  `json:"icpc_verdict"`
@@ -58,6 +59,7 @@ type SubmissionUpdate struct {
 
 	CompileError   *bool
 	CompileMessage *string
+	CompileTime    *float64
 
 	MaxTime   *float64
 	MaxMemory *int

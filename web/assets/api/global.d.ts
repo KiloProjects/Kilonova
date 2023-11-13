@@ -44,6 +44,8 @@ declare global {
 		status: string;
 		score_precision: number;
 
+		compile_time: number | null;
+
 		submission_type: "classic" | "acm-icpc";
 		icpc_verdict: string | null;
 	};
