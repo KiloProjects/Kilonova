@@ -326,21 +326,37 @@ func (s *API) updateProblem(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Updated problem")
 }
 
+func boolPtrString(val *bool) string {
+	if val == nil {
+		return "N/A"
+	}
+	if *val {
+		return "true"
+	}
+	return "false"
+}
+
 func (s *API) togglePblistProblems(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		Deep    bool `json:"deep"`
-		Visible bool `json:"visible"`
+		Deep         bool  `json:"deep"`
+		Visible      *bool `json:"visible"`
+		VisibleTests *bool `json:"visibleTests"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 400)
 		return
 	}
 
-	if err := s.base.ToggleDeepPbListProblems(r.Context(), util.ProblemList(r), args.Deep, args.Visible); err != nil {
+	if err := s.base.ToggleDeepPbListProblems(r.Context(), util.ProblemList(r), args.Deep, kilonova.ProblemUpdate{Visible: args.Visible, VisibleTests: args.VisibleTests}); err != nil {
 		err.WriteError(w)
 		return
 	}
+
+	s.base.LogUserAction(r.Context(), "Bulk update pblist #%d: %q problems (deep: %v, visible problems: %s, downloadable tests: %s)",
+		util.ProblemList(r).ID, util.ProblemList(r).Title,
+		args.Deep, boolPtrString(args.Visible), boolPtrString(args.VisibleTests),
+	)
 
 	returnData(w, "Updated problems")
 }

@@ -1233,12 +1233,20 @@ en = ", set "
 ro = ", setează "
 
 [updateProblemsVisible]
-en = "visible"
-ro = "vizibile"
+en = "visibility: visible"
+ro = "vizibilitate: vizibile"
 
 [updateProblemsHidden]
-en = "hidden"
-ro = "ascunse"
+en = "visibility: hidden"
+ro = "vizibilitate: ascunse"
+
+[updateProblemTestsVisible]
+en = "tests: visible"
+ro = "teste: vizibile"
+
+[updateProblemTestsHidden]
+en = "tests: hidden"
+ro = "teste: ascunse"
 
 [download]
 en = "Download"

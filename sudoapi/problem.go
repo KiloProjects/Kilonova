@@ -50,14 +50,14 @@ func (s *BaseAPI) UpdateProblem(ctx context.Context, id int, args kilonova.Probl
 	return nil
 }
 
-func (s *BaseAPI) ToggleDeepPbListProblems(ctx context.Context, list *kilonova.ProblemList, deep bool, visible bool) *kilonova.StatusError {
+func (s *BaseAPI) ToggleDeepPbListProblems(ctx context.Context, list *kilonova.ProblemList, deep bool, upd kilonova.ProblemUpdate) *kilonova.StatusError {
 	var filter kilonova.ProblemFilter
 	if deep {
 		filter.DeepListID = &list.ID
 	} else {
 		filter.IDs = list.List
 	}
-	if err := s.db.BulkUpdateProblems(ctx, filter, kilonova.ProblemUpdate{Visible: &visible}); err != nil {
+	if err := s.db.BulkUpdateProblems(ctx, filter, kilonova.ProblemUpdate{Visible: upd.Visible, VisibleTests: upd.VisibleTests}); err != nil {
 		return WrapError(err, "Couldn't update list problem visibility")
 	}
 	return nil

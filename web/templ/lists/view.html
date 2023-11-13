@@ -65,10 +65,12 @@
             <option value="true">{{getText "updateProblemsRecursive"}}</option>
         </select>
         <span class="text-lg">{{getText "updateProblems2"}}</span>
-        <select class="form-select" name="visible" id="updProblemsDeep" required autocomplete="off">
+        <select class="form-select" name="property" id="updProblemsDeep" required autocomplete="off">
             <option value="" selected disabled hidden>-</option>
-            <option value="false">{{getText "updateProblemsHidden"}}</option>
-            <option value="true">{{getText "updateProblemsVisible"}}</option>
+            <option value="visible.false">{{getText "updateProblemsHidden"}}</option>
+            <option value="visible.true">{{getText "updateProblemsVisible"}}</option>
+            <option value="visibleTests.false">{{getText "updateProblemTestsHidden"}}</option>
+            <option value="visibleTests.true">{{getText "updateProblemTestsVisible"}}</option>
         </select>
         <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
     </form>
@@ -77,9 +79,10 @@
 async function updateProblemVisibilities(e) {
     e.preventDefault();
     let data = new FormData(e.currentTarget)
+    let [propertyName, propertyVal] = data.get("property").split('.', 2);
     const res = await bundled.postCall("/problemList/{{.ID}}/toggleProblems", {
         deep: data.get("deep"),
-        visible: data.get("visible")
+        [propertyName]: propertyVal
     })
     if(res.status === "error") {
         bundled.apiToast(res)
