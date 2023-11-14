@@ -255,9 +255,13 @@ func compileSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	// 	// resp.Output += "\nGrader notes: " + resp.Other
 	// }
 
+	var compileTime *float64
+	if resp.Stats != nil {
+		compileTime = &resp.Stats.Time
+	}
 	compileError := !resp.Success
 	if err := base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{
-		CompileError: &compileError, CompileMessage: &resp.Output, CompileTime: &resp.Stats.Time,
+		CompileError: &compileError, CompileMessage: &resp.Output, CompileTime: compileTime,
 	}); err != nil {
 		spew.Dump(err)
 		return kilonova.WrapError(err, "Couldn't update submission")
