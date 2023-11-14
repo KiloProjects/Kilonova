@@ -321,6 +321,9 @@ func writeReader(path string, r io.Reader, perms fs.FileMode) error {
 		return err
 	}
 	_, err = io.Copy(f, r)
+	if err1 := f.Sync(); err1 != nil && err == nil {
+		err = err1
+	}
 	if err1 := f.Close(); err1 != nil && err == nil {
 		err = err1
 	}
