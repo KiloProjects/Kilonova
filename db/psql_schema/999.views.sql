@@ -8,10 +8,10 @@ CREATE OR REPLACE VIEW max_score_view (user_id, problem_id, score) AS
     WITH max_submission_strat AS (
         SELECT user_id, problem_id, MAX(score) AS max_score FROM submissions GROUP BY user_id, problem_id
     ), subtask_max_scores AS (
-        SELECT DISTINCT user_id, subtask_id, FIRST_VALUE(problem_id) OVER w as problem_id, FIRST_VALUE(computed_score) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
+        SELECT DISTINCT user_id, subtask_id, problem_id, FIRST_VALUE(computed_score) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
         FROM submission_subtasks stks
         WHERE subtask_id IS NOT NULL 
-            WINDOW w AS (PARTITION BY user_id, subtask_id ORDER BY computed_score DESC, created_at ASC)
+            WINDOW w AS (PARTITION BY user_id, subtask_id, problem_id ORDER BY computed_score DESC, created_at ASC)
     ), sum_subtasks_strat AS (
         SELECT user_id, problem_id, coalesce(SUM(max_score), -1) AS max_score FROM subtask_max_scores GROUP BY user_id, problem_id
     ), user_subs AS (
@@ -168,11 +168,11 @@ CREATE OR REPLACE FUNCTION contest_max_scores(contest_id bigint, freeze_time tim
             FROM submissions WHERE contest_id = $1 AND created_at <= COALESCE(freeze_time, NOW()) AND status = 'finished'
             WINDOW w AS (PARTITION BY user_id, problem_id ORDER BY score DESC, created_at ASC)
     ), subtask_max_scores AS (
-        SELECT DISTINCT user_id, subtask_id, FIRST_VALUE(problem_id) OVER w as problem_id, FIRST_VALUE(computed_score) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
+        SELECT DISTINCT user_id, subtask_id, problem_id, FIRST_VALUE(computed_score) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
         FROM submission_subtasks stks
-        WHERE subtask_id IS NOT NULL AND EXISTS (SELECT 1 FROM submissions WHERE contest_id = $1 AND submission_id = id)
+        WHERE subtask_id IS NOT NULL AND contest_id = $1
             AND created_at <= COALESCE(freeze_time, NOW())
-            WINDOW w AS (PARTITION BY user_id, subtask_id ORDER BY computed_score DESC, created_at ASC)
+            WINDOW w AS (PARTITION BY user_id, subtask_id, problem_id ORDER BY computed_score DESC, created_at ASC)
     ), sum_subtasks_strat AS (
         SELECT DISTINCT user_id, problem_id, coalesce(SUM(max_score), -1) AS max_score, MAX(mintime) AS mintime FROM subtask_max_scores GROUP BY user_id, problem_id
     ) SELECT 
