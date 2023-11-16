@@ -14,15 +14,17 @@ CREATE OR REPLACE VIEW max_score_view (user_id, problem_id, score) AS
             WINDOW w AS (PARTITION BY user_id, subtask_id ORDER BY computed_score DESC, created_at ASC)
     ), sum_subtasks_strat AS (
         SELECT user_id, problem_id, coalesce(SUM(max_score), -1) AS max_score FROM subtask_max_scores GROUP BY user_id, problem_id
-    ) SELECT users.id user_id, 
+    ), user_subs AS (
+        SELECT DISTINCT user_id, problem_id FROM submissions
+    ) SELECT subs.user_id user_id, 
             pbs.id problem_id, 
             CASE WHEN pbs.scoring_strategy = 'max_submission' OR pbs.scoring_strategy = 'acm-icpc' THEN COALESCE(ms_sub.max_score, -1)
                  WHEN pbs.scoring_strategy = 'sum_subtasks'   THEN COALESCE(ms_subtask.max_score, -1)
                  ELSE -1
             END score
-    FROM (problems pbs CROSS JOIN users) 
-        LEFT JOIN max_submission_strat ms_sub ON (ms_sub.user_id = users.id AND ms_sub.problem_id = pbs.id)
-        LEFT JOIN sum_subtasks_strat ms_subtask ON (ms_subtask.user_id = users.id AND ms_subtask.problem_id = pbs.id);
+    FROM (user_subs subs JOIN problems pbs ON subs.problem_id = pbs.id) 
+        LEFT JOIN max_submission_strat ms_sub ON (ms_sub.user_id = subs.user_id AND ms_sub.problem_id = pbs.id)
+        LEFT JOIN sum_subtasks_strat ms_subtask ON (ms_subtask.user_id = subs.user_id AND ms_subtask.problem_id = pbs.id);
 
 DROP VIEW IF EXISTS running_contests CASCADE;
 CREATE OR REPLACE VIEW running_contests AS (

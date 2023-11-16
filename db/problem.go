@@ -62,7 +62,7 @@ func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
 
 func (s *DB) ScoredProblem(ctx context.Context, problemID int, userID int) (*kilonova.ScoredProblem, error) {
 	var pb dbScoredProblem
-	err := Get(s.conn, ctx, &pb, `SELECT pbs.*, ms.user_id, ms.score, (editors.user_id IS NOT NULL) AS pb_editor
+	err := Get(s.conn, ctx, &pb, `SELECT pbs.*, $2, COALESCE(ms.score, -1), (editors.user_id IS NOT NULL) AS pb_editor
 FROM problems pbs 
 	LEFT JOIN max_score_view ms ON (pbs.id = ms.problem_id AND ms.user_id = $2) 
 	LEFT JOIN LATERAL (SELECT user_id FROM problem_editors editors WHERE pbs.id = editors.problem_id AND editors.user_id = $2 LIMIT 1) editors ON TRUE
@@ -102,7 +102,7 @@ func (s *DB) ScoredProblems(ctx context.Context, filter kilonova.ProblemFilter, 
 	fb := newFilterBuilderFromPos(userID)
 	problemFilterQuery(&filter, fb)
 
-	query := `SELECT problems.*, ms.user_id, ms.score, (editors.user_id IS NOT NULL) AS pb_editor
+	query := `SELECT problems.*, $1, COALESCE(ms.score, -1), (editors.user_id IS NOT NULL) AS pb_editor
 FROM problems 
 	LEFT JOIN max_score_view ms ON (problems.id = ms.problem_id AND ms.user_id = $1)
 	LEFT JOIN LATERAL (SELECT user_id FROM problem_editors editors WHERE problems.id = editors.problem_id AND editors.user_id = $1 LIMIT 1) editors ON TRUE
