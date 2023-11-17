@@ -226,7 +226,7 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *Use
 		problem = problem2
 	}
 
-	rez := &FullSubmission{Submission: *sub, CodeTrulyVisible: s.subVisibleRegardless(ctx, sub, lookingUser)}
+	rez := &FullSubmission{Submission: *sub, CodeTrulyVisible: s.subVisibleRegardless(ctx, sub, lookingUser, problem)}
 	author, err1 := s.UserBrief(ctx, sub.UserID)
 	if err1 != nil {
 		return nil, err1
@@ -363,7 +363,7 @@ func (s *BaseAPI) ResetProblemSubmissions(ctx context.Context, problem *kilonova
 	return nil
 }
 
-func (s *BaseAPI) subVisibleRegardless(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) bool {
+func (s *BaseAPI) subVisibleRegardless(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief, subProblem *kilonova.Problem) bool {
 	if sub == nil {
 		return false
 	}
@@ -376,7 +376,7 @@ func (s *BaseAPI) subVisibleRegardless(ctx context.Context, sub *kilonova.Submis
 		return true
 	}
 
-	if pb, err := s.Problem(ctx, sub.ProblemID); err == nil && pb != nil && s.IsProblemEditor(user, pb) {
+	if subProblem != nil && s.IsProblemEditor(user, subProblem) {
 		return true
 	}
 
@@ -399,7 +399,7 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 		return true
 	}
 
-	return s.subVisibleRegardless(ctx, sub, user)
+	return s.subVisibleRegardless(ctx, sub, user, subProblem)
 }
 
 func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission, subProblem *kilonova.Problem, user *kilonova.UserBrief) {
