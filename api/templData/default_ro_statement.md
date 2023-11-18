@@ -1,3 +1,6 @@
+
+# Cerință
+
 Se dau două numere întregi $a$ și $b$. Să se calculeze suma celor două numere.
 
 # Date de intrare
