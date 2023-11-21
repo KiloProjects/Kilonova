@@ -7,6 +7,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"image"
 	"io"
 	"math"
 	"net/http"
@@ -18,9 +19,13 @@ import (
 	"github.com/KiloProjects/kilonova/archive/test"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/disintegration/gift"
 	"github.com/go-chi/chi/v5"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
+
+	"image/jpeg"
+	"image/png"
 )
 
 type Assets struct {
@@ -99,6 +104,71 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 		}
 		http.ServeContent(w, r, att.Name+".html", att.LastUpdatedAt, bytes.NewReader(data))
 		return
+	}
+
+	mimeType := http.DetectContentType(attData)
+	if (mimeType == "image/png" || mimeType == "image/jpeg") && (r.FormValue("w") != "" || r.FormValue("h") != "") {
+		var ok = true
+		width, height := 0, 0
+		if r.FormValue("w") != "" {
+			width2, err := strconv.Atoi(r.FormValue("w"))
+			if err != nil {
+				ok = false
+			}
+			width = width2
+		}
+		if r.FormValue("h") != "" {
+			height2, err := strconv.Atoi(r.FormValue("h"))
+			if err != nil {
+				ok = false
+			}
+			height = height2
+		}
+		if width > 6000 || height > 6000 {
+			// if it's too big, it's just eating up resources
+			ok = false
+		}
+
+		renderType := fmt.Sprintf("img_%dx%d", width, height)
+		if s.base.HasAttachmentRender(att.ID, renderType) {
+			data, err := s.base.GetAttachmentRender(att.ID, renderType)
+			if err != nil {
+				zap.S().Warn(err)
+			} else {
+				defer data.Close()
+				cachedData, err := io.ReadAll(data)
+				if err != nil {
+					zap.S().Warn(err)
+				}
+				http.ServeContent(w, r, att.Name, att.LastUpdatedAt, bytes.NewReader(cachedData))
+				return
+			}
+		}
+
+		src, _, err := image.Decode(bytes.NewReader(attData))
+		if err != nil {
+			zap.S().Debug(err)
+			ok = false
+		}
+		if ok {
+			g := gift.New(gift.Resize(width, height, gift.LanczosResampling))
+			dst := image.NewRGBA(g.Bounds(src.Bounds()))
+			g.Draw(dst, src)
+			var buf bytes.Buffer
+			if mimeType == "image/png" {
+				png.Encode(&buf, dst)
+			} else if mimeType == "image/jpeg" {
+				jpeg.Encode(&buf, dst, nil)
+			} else {
+				zap.S().Warn("We somehow got here")
+			}
+			// Also cache it if's relatively small
+			if width <= 4000 && height <= 4000 {
+				s.base.SaveAttachmentRender(att.ID, renderType, buf.Bytes())
+			}
+			http.ServeContent(w, r, att.Name, att.LastUpdatedAt, bytes.NewReader(buf.Bytes()))
+			return
+		}
 	}
 
 	http.ServeContent(w, r, att.Name, att.LastUpdatedAt, bytes.NewReader(attData))

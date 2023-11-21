@@ -42,6 +42,7 @@ require (
 
 require (
 	github.com/antchfx/xpath v1.2.5 // indirect
+	github.com/disintegration/gift v1.2.1 // indirect
 	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
