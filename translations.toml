@@ -2216,8 +2216,8 @@ en = "Create tag"
 ro = "Creare etichetă"
 
 [update_tag]
-en = "Update tag"
-ro = "Actualizare etichetă"
+en = "Update tag information"
+ro = "Actualizare informații etichetă"
 
 [no_tags]
 en = "No tag found"

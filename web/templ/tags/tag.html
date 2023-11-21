@@ -11,31 +11,33 @@
 {{ if authedUser.Proposer}}
 
 <div class="segment-panel">
-    <h2>{{getText "update_tag"}}</h2>
-
-    <form id="tag_update_form" autocomplete="off">
-        <label class="block my-2">
-            <span class="form-label">{{ getText "name" }}:</span>
-            <input id="editTagTitle" type="text" class="form-input" value="{{.Tag.Name}}" required>
-        </label>
-
-        <label class="block mb-2">
-            <span class="form-label">{{getText "tag_type"}}: </span>
-            <select id="editTagType" class="form-select">
-                <option value="author" {{if eq .Tag.Type `author`}}selected{{end}}>{{getText "tag_names.author"}}</option>
-                <option value="contest" {{if eq .Tag.Type `contest`}}selected{{end}}>{{getText "tag_names.contest"}}</option>
-                <option value="method" {{if eq .Tag.Type `method`}}selected{{end}}>{{getText "tag_names.method"}}</option>
-                <option value="other" {{if eq .Tag.Type `other`}}selected{{end}}>{{getText "tag_names.other"}}</option>
-            </select>
-        </label>
-
-        <button type="submit" class="btn btn-blue">{{getText "button.update"}}</button>
-
-        {{ if authedUser.Admin }}
-            <button id="tag_del_btn" type="submit" class="btn btn-red">{{getText "button.delete"}}</button>
-        {{ end }}
-    </form>
-
+    <details>
+        <summary>
+            <h2 class="inline-block">{{getText "update_tag"}}</h2>
+        </summary>
+        <form id="tag_update_form" autocomplete="off">
+            <label class="block my-2">
+                <span class="form-label">{{ getText "name" }}:</span>
+                <input id="editTagTitle" type="text" class="form-input" value="{{.Tag.Name}}" required>
+            </label>
+    
+            <label class="block mb-2">
+                <span class="form-label">{{getText "tag_type"}}: </span>
+                <select id="editTagType" class="form-select">
+                    <option value="author" {{if eq .Tag.Type `author`}}selected{{end}}>{{getText "tag_names.author"}}</option>
+                    <option value="contest" {{if eq .Tag.Type `contest`}}selected{{end}}>{{getText "tag_names.contest"}}</option>
+                    <option value="method" {{if eq .Tag.Type `method`}}selected{{end}}>{{getText "tag_names.method"}}</option>
+                    <option value="other" {{if eq .Tag.Type `other`}}selected{{end}}>{{getText "tag_names.other"}}</option>
+                </select>
+            </label>
+    
+            <button type="submit" class="btn btn-blue">{{getText "button.update"}}</button>
+    
+            {{ if authedUser.Admin }}
+                <button id="tag_del_btn" type="submit" class="btn btn-red">{{getText "button.delete"}}</button>
+            {{ end }}
+        </form>
+    </details>
     <script>
         const tag = {{.Tag}};
         async function updateTag(e) {
