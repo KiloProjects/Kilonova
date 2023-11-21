@@ -29,10 +29,12 @@ type GraderStore interface {
 type DataStore interface {
 	GraderStore
 
-	HasAttachmentRender(attID int) bool
-	GetAttachmentRender(attID int) (io.ReadCloser, error)
-	DelAttachmentRender(attID int) error
-	SaveAttachmentRender(attID int, data []byte) error
+	HasAttachmentRender(attID int, renderType string) bool
+	GetAttachmentRender(attID int, renderType string) (io.ReadCloser, error)
+	DelAttachmentRender(attID int, renderType string) error
+	// Like DelAttachmentRender but removes all renderTypes indiscriminately
+	DelAttachmentRenders(attID int) error
+	SaveAttachmentRender(attID int, renderType string, data []byte) error
 
 	InvalidateAllAttachments() error
 }

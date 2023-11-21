@@ -105,7 +105,7 @@ func (s *BaseAPI) UpdateAttachment(ctx context.Context, aid int, upd *kilonova.A
 	if err := s.db.UpdateAttachment(ctx, aid, upd); err != nil {
 		return WrapError(err, "Couldn't update attachment")
 	}
-	s.manager.DelAttachmentRender(aid)
+	s.DelAttachmentRenders(aid)
 	return nil
 }
 
@@ -117,7 +117,7 @@ func (s *BaseAPI) UpdateAttachmentData(ctx context.Context, aid int, data []byte
 	if err := s.db.UpdateAttachmentData(ctx, aid, data, authorID); err != nil {
 		return WrapError(err, "Couldn't update attachment contents")
 	}
-	s.manager.DelAttachmentRender(aid)
+	s.DelAttachmentRenders(aid)
 	go func() {
 		ctx = context.WithValue(context.WithoutCancel(ctx), util.UserKey, author)
 		att, err := s.Attachment(ctx, aid)
@@ -160,7 +160,7 @@ func (s *BaseAPI) DeleteProblemAtts(ctx context.Context, problemID int, attIDs [
 		return -1, WrapError(err, "Couldn't delete attachments")
 	}
 	for _, att := range attIDs {
-		s.manager.DelAttachmentRender(att)
+		s.DelAttachmentRenders(att)
 	}
 	return int(num), nil
 }
@@ -174,7 +174,7 @@ func (s *BaseAPI) DeleteBlogPostAtts(ctx context.Context, postID int, attIDs []i
 		return -1, WrapError(err, "Couldn't delete attachments")
 	}
 	for _, att := range attIDs {
-		s.manager.DelAttachmentRender(att)
+		s.DelAttachmentRenders(att)
 	}
 	return int(num), nil
 }
@@ -266,9 +266,9 @@ func (s *BaseAPI) BlogPostDescVariants(ctx context.Context, problemID int, getPr
 	return s.parseVariants(atts, getPrivate), nil
 }
 
-func (s *BaseAPI) getCachedAttachment(attID int) ([]byte, bool) {
-	if s.manager.HasAttachmentRender(attID) {
-		r, err := s.manager.GetAttachmentRender(attID)
+func (s *BaseAPI) getCachedAttachment(attID int, renderType string) ([]byte, bool) {
+	if s.HasAttachmentRender(attID, renderType) {
+		r, err := s.GetAttachmentRender(attID, renderType)
 		if err == nil {
 			data, err := io.ReadAll(r)
 			if err == nil {
@@ -293,7 +293,7 @@ func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Pro
 
 	switch format {
 	case "md":
-		d, ok := s.getCachedAttachment(att.ID)
+		d, ok := s.getCachedAttachment(att.ID, "mdhtml")
 		if ok {
 			return d, nil
 		}
@@ -306,7 +306,7 @@ func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Pro
 		if err != nil {
 			return data, WrapError(err, "Couldn't render markdown")
 		}
-		if err := s.manager.SaveAttachmentRender(att.ID, buf); err != nil {
+		if err := s.manager.SaveAttachmentRender(att.ID, "mdhtml", buf); err != nil {
 			zap.S().Warn("Couldn't save attachment to cache: ", err)
 		}
 		return buf, nil
@@ -327,7 +327,7 @@ func (s *BaseAPI) RenderedBlogPostDesc(ctx context.Context, post *kilonova.BlogP
 
 	switch format {
 	case "md":
-		d, ok := s.getCachedAttachment(att.ID)
+		d, ok := s.getCachedAttachment(att.ID, "mdhtml")
 		if ok {
 			return d, nil
 		}
@@ -340,7 +340,7 @@ func (s *BaseAPI) RenderedBlogPostDesc(ctx context.Context, post *kilonova.BlogP
 		if err != nil {
 			return data, WrapError(err, "Couldn't render markdown")
 		}
-		if err := s.manager.SaveAttachmentRender(att.ID, buf); err != nil {
+		if err := s.manager.SaveAttachmentRender(att.ID, "mdhtml", buf); err != nil {
 			zap.S().Warn("Couldn't save attachment to cache: ", err)
 		}
 		return buf, nil

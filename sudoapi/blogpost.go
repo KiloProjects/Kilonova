@@ -73,7 +73,7 @@ func (s *BaseAPI) UpdateBlogPost(ctx context.Context, id int, upd kilonova.BlogP
 			zap.S().Warn(err)
 		} else {
 			for _, att := range atts {
-				s.manager.DelAttachmentRender(att.ID)
+				s.DelAttachmentRenders(att.ID)
 			}
 		}
 	}

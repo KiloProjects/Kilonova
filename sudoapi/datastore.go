@@ -63,28 +63,36 @@ func (s *BaseAPI) SubtestReader(subtest int) (io.ReadCloser, error) {
 	return r, nil
 }
 
-func (s *BaseAPI) HasAttachmentRender(attID int) bool {
-	return s.manager.HasAttachmentRender(attID)
+func (s *BaseAPI) HasAttachmentRender(attID int, renderType string) bool {
+	return s.manager.HasAttachmentRender(attID, renderType)
 }
 
-func (s *BaseAPI) GetAttachmentRender(attID int) (io.ReadCloser, error) {
-	f, err := s.manager.GetAttachmentRender(attID)
+func (s *BaseAPI) GetAttachmentRender(attID int, renderType string) (io.ReadCloser, error) {
+	f, err := s.manager.GetAttachmentRender(attID, renderType)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get rendered attachment")
 	}
 	return f, nil
 }
 
-func (s *BaseAPI) DelAttachmentRender(attID int) error {
-	if err := s.manager.DelAttachmentRender(attID); err != nil {
-		zap.S().Warn("Couldn't delete rendered attachment: ", err)
-		return WrapError(err, "Couldn't delete rendered attachment")
+func (s *BaseAPI) DelAttachmentRender(attID int, renderType string) error {
+	if err := s.manager.DelAttachmentRender(attID, renderType); err != nil {
+		zap.S().Warn("Couldn't delete attachment render: ", err)
+		return WrapError(err, "Couldn't delete attachment render")
 	}
 	return nil
 }
 
-func (s *BaseAPI) SaveAttachmentRender(attID int, data []byte) error {
-	if err := s.manager.SaveAttachmentRender(attID, data); err != nil {
+func (s *BaseAPI) DelAttachmentRenders(attID int) error {
+	if err := s.manager.DelAttachmentRenders(attID); err != nil {
+		zap.S().Warn("Couldn't delete attachment renders: ", err)
+		return WrapError(err, "Couldn't delete attachment renders")
+	}
+	return nil
+}
+
+func (s *BaseAPI) SaveAttachmentRender(attID int, renderType string, data []byte) error {
+	if err := s.manager.SaveAttachmentRender(attID, renderType, data); err != nil {
 		zap.S().Warn("Couldn't save rendered attachment: ", err)
 		return WrapError(err, "Couldn't delete rendered attachment")
 	}
