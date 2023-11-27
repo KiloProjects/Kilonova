@@ -52,8 +52,12 @@ func UserBrief(r *http.Request) *kilonova.UserBrief {
 	return UserBriefContext(r.Context())
 }
 
+func UserFullContext(ctx context.Context) *kilonova.UserFull {
+	return getValueContext[kilonova.UserFull](ctx, UserKey)
+}
+
 func UserFull(r *http.Request) *kilonova.UserFull {
-	return getValueContext[kilonova.UserFull](r.Context(), UserKey)
+	return UserFullContext(r.Context())
 }
 
 func ProblemContext(ctx context.Context) *kilonova.Problem {

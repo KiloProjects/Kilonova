@@ -150,7 +150,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 }
 
 type TestProcessParams struct {
-	Requestor *kilonova.UserBrief
+	Requestor *kilonova.UserFull
 
 	ScoreParamsStr string
 
@@ -507,7 +507,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 			// If user is not admin, add user to new editor list
 			// Since they should always be a part of the problem editor team
 			if !params.Requestor.Admin {
-				newEditors = append(newEditors, params.Requestor)
+				newEditors = append(newEditors, params.Requestor.Brief())
 			}
 			// First, get the new editors to make sure they are valid
 			for _, editor := range aCtx.props.Editors {

@@ -109,6 +109,18 @@ func (s *DB) WaitingSubmissionCount(ctx context.Context, userID int) (int, error
 	return cnt, nil
 }
 
+func (s *DB) SubmissionCountSince(ctx context.Context, userID int, t time.Time) (int, error) {
+	var cnt int
+	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM submissions WHERE created_at > $2 AND user_id = $1", userID, t).Scan(&cnt)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return -1, err
+		}
+		cnt = 0
+	}
+	return cnt, nil
+}
+
 const createSubQuery = "INSERT INTO submissions (user_id, problem_id, contest_id, language, code) VALUES ($1, $2, $3, $4, $5) RETURNING id;"
 
 func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, language eval.Language, code string, contestID *int) (int, error) {

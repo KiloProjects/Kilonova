@@ -221,7 +221,7 @@ func (s *API) Handler() http.Handler {
 			if !ok {
 				return -1, kilonova.Statusf(400, "Invalid language")
 			}
-			return s.base.CreateSubmission(ctx, util.UserBriefContext(ctx), util.ProblemContext(ctx), args.Code, lang, args.ContestID, false)
+			return s.base.CreateSubmission(ctx, util.UserFullContext(ctx), util.ProblemContext(ctx), args.Code, lang, args.ContestID, false)
 		}))
 	})
 	r.Route("/paste/{pasteID}", func(r chi.Router) {

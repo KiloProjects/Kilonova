@@ -169,7 +169,7 @@ func (s *API) processArchive(r *http.Request) *kilonova.StatusError {
 	}
 
 	params := &test.TestProcessParams{
-		Requestor:      util.UserBrief(r),
+		Requestor:      util.UserFull(r),
 		ScoreParamsStr: r.FormValue("scoreParameters"),
 	}
 

@@ -267,8 +267,14 @@ func (s *BaseAPI) RemainingSubmissionCount(ctx context.Context, contest *kilonov
 	return cnt, nil
 }
 
+var (
+	WaitingSubLimit    = config.GenFlag[int]("behavior.submissions.user_max_waiting", 5, "Maximum number of 'waiting' submissions in the eval queue (for a single user)")
+	TotalSubLimit      = config.GenFlag[int]("behavior.submissions.user_max_minute", 20, "Maximum number of submissions uploaded per minute (for a single user with verified email)")
+	UnverifiedSubLimit = config.GenFlag[int]("behavior.submissions.user_max_unverified", 5, "Maximum number of submissions uploaded per minute (for a single user with unverified email)")
+)
+
 // CreateSubmission produces a new submission and also creates the necessary subtests
-func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, problem *kilonova.Problem, code string, lang eval.Language, contestID *int, bypassSubCount bool) (int, *StatusError) {
+func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserFull, problem *kilonova.Problem, code string, lang eval.Language, contestID *int, bypassSubCount bool) (int, *StatusError) {
 	if author == nil {
 		return -1, Statusf(400, "Invalid submission author")
 	}
@@ -278,7 +284,7 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 	if len(code) > problem.SourceSize { // Maximum admitted by problem
 		return -1, Statusf(400, "Code exceeds %d characters", problem.SourceSize)
 	}
-	if !s.IsProblemVisible(author, problem) {
+	if !s.IsProblemVisible(author.Brief(), problem) {
 		return -1, Statusf(400, "Submitter can't see the problem!")
 	}
 
@@ -288,24 +294,39 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 			return -1, Statusf(500, "Couldn't get unfinished submission count")
 		}
 
-		if cnt > 5 {
-			return -1, Statusf(400, "You cannot have more than 5 submissions in the evaluation queue at once")
+		if WaitingSubLimit.Value() > 0 && cnt > WaitingSubLimit.Value() {
+			return -1, Statusf(400, "You cannot have more than %d submissions to the evaluation queue at once", WaitingSubLimit.Value())
+		}
+
+		cnt, err = s.db.SubmissionCountSince(ctx, author.ID, time.Now().Add(-1*time.Minute))
+		if err != nil {
+			return -1, Statusf(500, "Couldn't get recent submission count")
+		}
+
+		if TotalSubLimit.Value() > 0 && cnt > TotalSubLimit.Value() {
+			s.LogToDiscord(ctx, "User tried to exceed submission send limit, something might be fishy")
+			return -1, Statusf(400, "You cannot submit more than %d submissions in a minute, please wait a bit", TotalSubLimit.Value())
+		}
+
+		if !author.VerifiedEmail && UnverifiedSubLimit.Value() > 0 && cnt > UnverifiedSubLimit.Value() {
+			s.LogVerbose(ctx, "Unverified user exceeded their submission limit")
+			return -1, Statusf(400, "Users with unverified email cannot submit more than %d times per minute, please verify your email or wait", UnverifiedSubLimit.Value())
 		}
 	}
 
 	if contestID != nil {
 		contest, err := s.Contest(ctx, *contestID)
-		if err != nil || !s.IsContestVisible(author, contest) {
+		if err != nil || !s.IsContestVisible(author.Brief(), contest) {
 			return -1, Statusf(404, "Couldn't find contest")
 		}
-		if !s.CanSubmitInContest(author, contest) {
+		if !s.CanSubmitInContest(author.Brief(), contest) {
 			return -1, Statusf(400, "Submitter cannot submit to contest")
 		}
-		pb, err := s.ContestProblem(ctx, contest, author, problem.ID)
+		pb, err := s.ContestProblem(ctx, contest, author.Brief(), problem.ID)
 		if err != nil || pb == nil {
 			return -1, Statusf(400, "Problem is not in contest")
 		}
-		cnt, err := s.RemainingSubmissionCount(ctx, contest, pb, author)
+		cnt, err := s.RemainingSubmissionCount(ctx, contest, pb, author.Brief())
 		if err != nil {
 			return -1, err
 		}
@@ -315,7 +336,7 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserBrief, probl
 	} else {
 		// Check that the problem is fully visible (ie. outside of a contest medium)
 		// Users may be able to bypass icpc penalties otherwise
-		if !s.IsProblemFullyVisible(author, problem) {
+		if !s.IsProblemFullyVisible(author.Brief(), problem) {
 			return -1, Statusf(400, "You cannot submit to a problem outside a contest while it's running")
 		}
 	}

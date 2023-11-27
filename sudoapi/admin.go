@@ -2,17 +2,21 @@ package sudoapi
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval/checkers"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/davecgh/go-spew/spew"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -146,7 +150,111 @@ func (s *BaseAPI) GetLogCount(ctx context.Context) (int, *StatusError) {
 	return cnt, nil
 }
 
+type webhookSender struct {
+	lastMessageText  string
+	lastMessageID    string
+	lastMessageCount int
+
+	webhookID    string
+	webhookToken string
+
+	name string
+	mu   sync.Mutex
+}
+
+func (ws *webhookSender) EditLastMessage(ctx context.Context) *StatusError {
+	vals := make(url.Values)
+	vals.Add("content", fmt.Sprintf("%s (message repeated %d times)", ws.lastMessageText, ws.lastMessageCount+1))
+	req, err := http.NewRequestWithContext(ctx, "PATCH", fmt.Sprintf("https://discord.com/api/webhooks/%s/%s/messages/%s", ws.webhookID, ws.webhookToken, ws.lastMessageID), strings.NewReader(vals.Encode()))
+	if err != nil {
+		return WrapError(err, "Couldn't build request")
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	if _, err := http.DefaultClient.Do(req); err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil
+		}
+		return WrapError(err, "Couldn't execute request")
+	}
+
+	ws.lastMessageCount++
+	return nil
+}
+
+func (ws *webhookSender) Send(ctx context.Context, text string) *StatusError {
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
+
+	if text == ws.lastMessageText {
+		return ws.EditLastMessage(ctx)
+	}
+
+	vals := make(url.Values)
+	vals.Add("content", text)
+	vals.Add("username", ws.name)
+	// We have to wait in order to see message ID
+	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("https://discord.com/api/webhooks/%s/%s?wait=true", ws.webhookID, ws.webhookToken), strings.NewReader(vals.Encode()))
+	if err != nil {
+		return WrapError(err, "Couldn't build request")
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil
+		}
+		return WrapError(err, "Couldn't execute request")
+	}
+	if resp.StatusCode == 200 && resp.Header.Get("Content-Type") == "application/json" {
+		var message = make(map[string]any)
+		if json.NewDecoder(resp.Body).Decode(&message); err != nil {
+			zap.S().Warn("Invalid JSON from Discord")
+		}
+		switch v := message["id"].(type) {
+		case string:
+			ws.lastMessageID = v
+			ws.lastMessageText = text
+			ws.lastMessageCount = 1
+			return nil
+		default:
+			zap.S().Warn("Invalid webhook message ID from Discord: ", v)
+		}
+	} else {
+		val, _ := io.ReadAll(resp.Body)
+		spew.Dump(resp.Header)
+		zap.S().Warn("Unsuccessful Discord request: ", string(val))
+	}
+	ws.lastMessageID = ""
+	ws.lastMessageText = ""
+	ws.lastMessageCount = -1
+	return nil
+}
+
+func newWebhookSender(webhookURL string, name string) *webhookSender {
+	if webhookURL == "" {
+		return nil
+	}
+	url, err := url.Parse(webhookURL)
+	if err != nil {
+		zap.S().Warn("Invalid webhook URL: ", err)
+		return nil
+	}
+	parts := strings.Split(url.Path, "/")
+	if len(parts) < 2 {
+		zap.S().Warn("Invalid webhook URL: ", err)
+		return nil
+	}
+	return &webhookSender{
+		webhookID:    parts[len(parts)-2],
+		webhookToken: parts[len(parts)-1],
+
+		name: name,
+	}
+}
+
 func (s *BaseAPI) ingestAuditLogs(ctx context.Context) error {
+	importantWebhook := newWebhookSender(ImportantUpdatesWebhook.Value(), "Kilonova Audit Log")
+	verboseWebhook := newWebhookSender(VerboseUpdatesWebhook.Value(), "Kilonova Verbose Log")
 	for {
 		select {
 		case <-ctx.Done():
@@ -179,22 +287,14 @@ func (s *BaseAPI) ingestAuditLogs(ctx context.Context) error {
 				zap.S().Desugar().Log(val.Level.toZap(), s.String())
 			}
 
-			if val.Level.IsAuditLogLvl() && ImportantUpdatesWebhook.Value() != "" {
-				vals := make(url.Values)
-				vals.Add("content", s.String())
-				vals.Add("username", "Kilonova Audit Log")
-				_, err := http.PostForm(ImportantUpdatesWebhook.Value(), vals)
-				if err != nil {
+			if val.Level.IsAuditLogLvl() && importantWebhook != nil {
+				if err := importantWebhook.Send(ctx, s.String()); err != nil {
 					zap.S().Warn(err)
 				}
 			}
 
-			if !val.Level.IsAuditLogLvl() && VerboseUpdatesWebhook.Value() != "" {
-				vals := make(url.Values)
-				vals.Add("content", s.String())
-				vals.Add("username", "Kilonova Verbose Log")
-				_, err := http.PostForm(VerboseUpdatesWebhook.Value(), vals)
-				if err != nil {
+			if !val.Level.IsAuditLogLvl() && verboseWebhook != nil {
+				if err := verboseWebhook.Send(ctx, s.String()); err != nil {
 					zap.S().Warn(err)
 				}
 			}
