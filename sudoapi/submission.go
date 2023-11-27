@@ -268,7 +268,7 @@ func (s *BaseAPI) RemainingSubmissionCount(ctx context.Context, contest *kilonov
 }
 
 var (
-	WaitingSubLimit    = config.GenFlag[int]("behavior.submissions.user_max_waiting", 5, "Maximum number of 'waiting' submissions in the eval queue (for a single user)")
+	WaitingSubLimit    = config.GenFlag[int]("behavior.submissions.user_max_waiting", 5, "Maximum number of unfinished submissions in the eval queue (for a single user)")
 	TotalSubLimit      = config.GenFlag[int]("behavior.submissions.user_max_minute", 20, "Maximum number of submissions uploaded per minute (for a single user with verified email)")
 	UnverifiedSubLimit = config.GenFlag[int]("behavior.submissions.user_max_unverified", 5, "Maximum number of submissions uploaded per minute (for a single user with unverified email)")
 )

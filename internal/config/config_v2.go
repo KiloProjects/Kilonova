@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
+	"strings"
 	"sync"
 
 	"go.uber.org/zap"
@@ -188,6 +190,46 @@ func LoadConfigV2() error {
 			zap.S().Warnf("Unknown type in config flags: %T", v)
 		}
 	}
+
+	overrides := strings.Split(os.Getenv("KN_FLAG_OVERRIDES"), ",")
+	if len(overrides) > 0 {
+		for _, override := range overrides {
+			if override == "" {
+				continue
+			}
+			vals := strings.SplitN(override, "=", 2)
+			if len(vals) != 2 {
+				zap.S().Warnf("Invalid override %q", override)
+				continue
+			}
+			flag, ok := allFlags[vals[0]]
+			if !ok {
+				zap.S().Warnf("Could not find flag named %q", vals[0])
+				continue
+			}
+			switch f := flag.(type) {
+			case Flag[int]:
+				val, err := strconv.Atoi(vals[1])
+				if err != nil {
+					zap.S().Warnf("Override for flag %q is not int", vals[0])
+					continue
+				}
+				f.Update(val)
+			case Flag[string]:
+				f.Update(vals[1])
+			case Flag[bool]:
+				val, err := strconv.ParseBool(vals[1])
+				if err != nil {
+					zap.S().Warnf("Override for flag %q is not boolean", vals[0])
+					continue
+				}
+				f.Update(val)
+			default:
+				zap.S().Warnf("Unknown flag type")
+			}
+		}
+	}
+
 	return nil
 }
 

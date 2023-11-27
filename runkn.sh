@@ -24,7 +24,8 @@ mv kn knnnn # fix gitignore issue
 while true
 do
 	echo "Starting server..."
-	sudo ./knnnn main
+    # Preserve overrides flag
+	sudo KN_FLAG_OVERRIDES=$KN_FLAG_OVERRIDES ./knnnn main
 	echo "Server stopped..."
 	sleep 2
 done
