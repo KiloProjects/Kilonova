@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -33,7 +34,8 @@ func (s *BaseAPI) GetSession(ctx context.Context, sid string) (int, *StatusError
 	return uid, nil
 }
 
-func (s *BaseAPI) SessionUser(ctx context.Context, sid string) (*kilonova.UserFull, *StatusError) {
+// Uncached function
+func (s *BaseAPI) sessionUser(ctx context.Context, sid string) (*kilonova.UserFull, *StatusError) {
 	user, err := s.db.User(ctx, kilonova.UserFilter{SessionID: &sid})
 	if err != nil {
 		return nil, WrapError(err, "Failed to get session user")
@@ -41,11 +43,34 @@ func (s *BaseAPI) SessionUser(ctx context.Context, sid string) (*kilonova.UserFu
 	return user.ToFull(), nil
 }
 
+// Cached function
+func (s *BaseAPI) SessionUser(ctx context.Context, sid string) (*kilonova.UserFull, *StatusError) {
+	user, err := s.sessionUserCache.Get(ctx, sid)
+	if err != nil {
+		var err1 *StatusError
+		if errors.As(err, &err1) {
+			return nil, err1
+		}
+		zap.S().Warn("session user cache error: ", err)
+		return s.sessionUser(ctx, sid)
+	}
+	return user, nil
+}
+
+func (s *BaseAPI) userSessions(ctx context.Context, userID int) ([]string, *StatusError) {
+	sessions, err := s.db.GetSessions(ctx, userID)
+	if err != nil {
+		return nil, WrapError(err, "Could not get user sessions")
+	}
+	return sessions, nil
+}
+
 func (s *BaseAPI) RemoveSession(ctx context.Context, sid string) *StatusError {
 	if err := s.db.RemoveSession(ctx, sid); err != nil {
 		zap.S().Warn("Failed to remove session: ", err)
 		return WrapError(err, "Failed to remove session")
 	}
+	s.sessionUserCache.Delete(sid)
 	return nil
 }
 

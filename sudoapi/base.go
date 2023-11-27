@@ -12,6 +12,7 @@ import (
 	"github.com/KiloProjects/kilonova/email"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer"
+	"github.com/Yiling-J/theine-go"
 	"go.uber.org/zap"
 )
 
@@ -30,6 +31,8 @@ type BaseAPI struct {
 	manager kilonova.DataStore
 	mailer  kilonova.Mailer
 	rd      kilonova.MarkdownRenderer
+
+	sessionUserCache *theine.LoadingCache[string, *kilonova.UserFull]
 
 	grader interface{ Wake() }
 
@@ -52,8 +55,34 @@ func (s *BaseAPI) Close() *StatusError {
 	return nil
 }
 
-func GetBaseAPI(db *db.DB, manager kilonova.DataStore, mailer kilonova.Mailer) *BaseAPI {
-	return &BaseAPI{db, manager, mailer, mdrenderer.NewLocalRenderer(), nil, make(chan *logEntry, 50)}
+func GetBaseAPI(db *db.DB, manager kilonova.DataStore, mailer kilonova.Mailer) (*BaseAPI, *StatusError) {
+	base := &BaseAPI{
+		db:      db,
+		manager: manager,
+		mailer:  mailer,
+		rd:      mdrenderer.NewLocalRenderer(),
+
+		sessionUserCache: nil,
+
+		grader:  nil,
+		logChan: make(chan *logEntry, 50),
+	}
+	sUserCache, err := theine.NewBuilder[string, *kilonova.UserFull](500).BuildWithLoader(func(ctx context.Context, sid string) (theine.Loaded[*kilonova.UserFull], error) {
+		user, err := base.sessionUser(ctx, sid)
+		if err != nil {
+			return theine.Loaded[*kilonova.UserFull]{}, err
+		}
+		return theine.Loaded[*kilonova.UserFull]{
+			Value: user,
+			Cost:  1,
+			TTL:   20 * time.Second,
+		}, nil
+	})
+	if err != nil {
+		return nil, WrapError(err, "Could not build session user cache")
+	}
+	base.sessionUserCache = sUserCache
+	return base, nil
 }
 
 func InitializeBaseAPI(ctx context.Context) (*BaseAPI, *StatusError) {
@@ -87,5 +116,5 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, *StatusError) {
 	}
 	zap.S().Info("Connected to DB")
 
-	return GetBaseAPI(db, manager, knMailer), nil
+	return GetBaseAPI(db, manager, knMailer)
 }

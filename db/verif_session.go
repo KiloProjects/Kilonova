@@ -56,6 +56,12 @@ func (s *DB) CreateSession(ctx context.Context, uid int) (string, error) {
 	return vid, nil
 }
 
+func (s *DB) GetSessions(ctx context.Context, uid int) ([]string, error) {
+	rows, _ := s.conn.Query(ctx, "SELECT id FROM sessions WHERE user_id = $1", uid)
+	sessions, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	return sessions, err
+}
+
 func (s *DB) GetSession(ctx context.Context, sess string) (int, error) {
 	session, err := s.getSession(ctx, sess)
 	if err != nil {

@@ -33,6 +33,7 @@ func New(base *sudoapi.BaseAPI) *API {
 func (s *API) Handler() http.Handler {
 	r := chi.NewRouter()
 	r.Use(s.SetupSession)
+	r.Use(s.filterUserAgent)
 
 	r.With(s.MustBeAdmin).Route("/admin", func(r chi.Router) {
 

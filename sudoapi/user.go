@@ -114,6 +114,15 @@ func (s *BaseAPI) updateUser(ctx context.Context, userID int, upd kilonova.UserF
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't update user")
 	}
+	sessions, err := s.userSessions(ctx, userID)
+	if err != nil {
+		zap.S().Warn(err)
+		return nil
+	}
+	for _, sess := range sessions {
+		s.sessionUserCache.Delete(sess)
+	}
+
 	return nil
 }
 
@@ -222,6 +231,7 @@ func (s *BaseAPI) UpdateUserPassword(ctx context.Context, uid int, password stri
 		return WrapError(err, "Couldn't generate hash")
 	}
 
+	// TODO: Replace UpdateUserPasswordHash with a key in UserFullUpdate
 	if err := s.db.UpdateUserPasswordHash(ctx, uid, hash); err != nil {
 		return WrapError(err, "Couldn't update password")
 	}
@@ -303,7 +313,7 @@ func (s *BaseAPI) createUser(ctx context.Context, username, email, password, lan
 
 	if id == 1 {
 		var True = true
-		if err := s.db.UpdateUser(ctx, id, kilonova.UserFullUpdate{Admin: &True, Proposer: &True}); err != nil {
+		if err := s.updateUser(ctx, id, kilonova.UserFullUpdate{Admin: &True, Proposer: &True}); err != nil {
 			zap.S().Warn(err)
 			return id, err
 		}
