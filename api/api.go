@@ -318,6 +318,10 @@ func (s *API) Handler() http.Handler {
 
 	r.Route("/contest", func(r chi.Router) {
 		r.With(s.MustBeProposer).Post("/create", s.createContest)
+
+		r.With(s.MustBeAuthed).Post("/acceptInvitation", webMessageWrapper("Registered for contest", s.acceptContestInvitation))
+		r.With(s.MustBeAuthed).Post("/updateInvitation", webMessageWrapper("Updated invitation", s.updateContestInvitation))
+
 		r.Route("/{contestID}", func(r chi.Router) {
 			r.Use(s.validateContestID)
 			r.Use(s.validateContestVisible)
@@ -337,8 +341,16 @@ func (s *API) Handler() http.Handler {
 			r.With(s.validateContestEditor).Post("/updateAnnouncement", s.updateContestAnnouncement)
 			r.With(s.validateContestEditor).Post("/deleteAnnouncement", s.deleteContestAnnouncement)
 
-			r.Post("/register", s.registerForContest)
-			r.Post("/startRegistration", s.startContestRegistration)
+			r.With(s.MustBeAuthed).Post("/register", s.registerForContest)
+			r.With(s.MustBeAuthed).Post("/startRegistration", s.startContestRegistration)
+
+			r.With(s.validateContestEditor).Get("/invitations", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.ContestInvitation, *kilonova.StatusError) {
+				return s.base.ContestInvitations(ctx, util.ContestContext(ctx).ID)
+			}))
+			r.With(s.validateContestEditor).Post("/createInvitation", webWrapper(func(ctx context.Context, args struct{}) (string, *kilonova.StatusError) {
+				return s.base.CreateContestInvitation(ctx, util.ContestContext(ctx).ID, util.UserBriefContext(ctx))
+			}))
+
 			r.With(s.MustBeAuthed).Get("/checkRegistration", s.checkRegistration)
 			r.With(s.validateContestEditor).Get("/registrations", s.contestRegistrations)
 			r.With(s.validateContestEditor).Post("/kickUser", s.stripContestRegistration)

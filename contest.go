@@ -141,6 +141,18 @@ type ContestRegistration struct {
 
 	IndividualStartTime *time.Time `json:"individual_start" db:"individual_start_at"`
 	IndividualEndTime   *time.Time `json:"individual_end" db:"individual_end_at"`
+
+	InvitationID *string `json:"invitation_id" db:"invitation_id"`
+}
+
+type ContestInvitation struct {
+	ID string `json:"id"`
+
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	ContestID int       `json:"contest_id" db:"contest_id"`
+	CreatorID *int      `json:"creator_id" db:"creator_id"`
+
+	Expired bool `json:"expired"`
 }
 
 // TODO: Maybe it would be nicer to coalesce all problem maps in a struct?

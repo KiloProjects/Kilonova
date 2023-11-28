@@ -970,11 +970,63 @@ func (rt *Web) contest() http.HandlerFunc {
 func (rt *Web) contestEdit() http.HandlerFunc {
 	templ := rt.parse(nil, "contest/edit.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
+		invitations, err := rt.base.ContestInvitations(r.Context(), util.Contest(r).ID)
+		if err != nil {
+			zap.S().Warn(err)
+			invitations = []*kilonova.ContestInvitation{}
+		}
+
 		rt.runTempl(w, r, templ, &ContestParams{
 			Ctx:    GenContext(r),
 			Topbar: rt.problemTopbar(r, "contest_edit", -1),
 
 			Contest: util.Contest(r),
+
+			ContestInvitations: invitations,
+		})
+	}
+}
+
+func (rt *Web) contestInvite() http.HandlerFunc {
+	templ := rt.parse(nil, "contest/invite.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		inv, err := rt.base.ContestInvitation(r.Context(), chi.URLParam(r, "inviteID"))
+		if err != nil {
+			if !errors.Is(err, kilonova.ErrNotExist) {
+				zap.S().Warn(err)
+			}
+			rt.statusPage(w, r, 404, "Invite not found")
+			return
+		}
+		contest, err := rt.base.Contest(r.Context(), inv.ContestID)
+		if err != nil {
+			zap.S().Warn(err)
+			rt.statusPage(w, r, 500, "Couldn't get invite's contest")
+			return
+		}
+
+		var invCreator *kilonova.UserBrief
+		if inv.CreatorID != nil {
+			user, err := rt.base.UserBrief(r.Context(), *inv.CreatorID)
+			if err == nil && user != nil {
+				invCreator = user
+			}
+		}
+
+		var alreadyRegistered bool
+		reg, err := rt.base.ContestRegistration(r.Context(), contest.ID, util.UserBrief(r).ID)
+		if err == nil && reg != nil {
+			alreadyRegistered = true
+		}
+
+		rt.runTempl(w, r, templ, &ContestInviteParams{
+			Ctx: GenContext(r),
+
+			Contest: contest,
+			Invite:  inv,
+			Inviter: invCreator,
+
+			AlreadyRegistered: alreadyRegistered,
 		})
 	}
 }

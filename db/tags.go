@@ -127,7 +127,7 @@ func (s *DB) CreateTag(ctx context.Context, name string, tagType kilonova.TagTyp
 	if err != nil {
 		return -1, err
 	}
-	return id, err
+	return id, nil
 }
 
 // original - the OG that will remain after the merge

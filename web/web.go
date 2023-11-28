@@ -168,6 +168,7 @@ func (rt *Web) Handler() http.Handler {
 
 		r.Route("/contests", func(r chi.Router) {
 			r.Get("/", rt.contests())
+			r.Get("/invite/{inviteID}", rt.contestInvite())
 			r.Route("/{contestID}", func(r chi.Router) {
 				r.Use(rt.ValidateContestID)
 				r.Use(rt.ValidateContestVisible)

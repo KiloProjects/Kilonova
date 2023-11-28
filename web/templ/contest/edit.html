@@ -145,6 +145,56 @@
             </div>
         </form>
 
+        <div class="segment-panel">
+            <h2>{{getText "header.contest.invitations"}}</h2>
+
+            {{with .ContestInvitations}}
+                <table class="kn-table">
+                    <thead>
+                        <tr>
+                            <th class="kn-table-cell" scope="col">{{getText "id"}}</th>
+                            <th class="kn-table-cell" scope="col">{{getText "created_at"}}</th>
+                            <th class="kn-table-cell" scope="col">{{getText "author"}}</th>
+                            <th class="kn-table-cell" scope="col">{{getText "expired"}}</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invitationsTableBody">
+                        {{range .}}
+                            <tr class="kn-table-row">
+                                <th class="kn-table-cell" scope="row">
+                                    <a href="/contests/invite/{{.ID}}">{{if .Expired}}<s>{{.ID}}</s>{{else}}{{.ID}}{{end}}</a> 
+                                    <button onclick="copyInvitationURL({{.ID}})" class="ml-2 tag tag-other"><i class="fas fa-copy"></i></button>
+                                </th>
+                                <td class="kn-table-cell">
+                                    <span class="server_timestamp">{{.CreatedAt.UnixMilli}}</span>
+                                </td>
+                                <td class="kn-table-cell">
+                                    {{if .CreatorID}}
+                                        {{with user .CreatorID}}
+                                            <a href="/profile/{{.Name}}">
+                                                <img class="rounded inline-block mr-2" src="/api/user/getGravatar?name={{.Name}}&s=32" width="32" height="32" alt="Avatar"/>
+                                                {{.Name}}
+                                            </a>
+                                        {{else}}-{{end}}
+                                    {{else}}-{{end}}
+                                </td>
+                                <td class="kn-table-cell">
+                                    {{.Expired}}
+                                    {{if not .Expired}}
+                                        <button onclick="invalidateInvite({{.ID}})" class="btn btn-red ml-2">{{getText "invalidate"}}</button>
+                                    {{end}}
+                                </td>
+                            </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            {{else}}
+                <p>{{getText "noInvitations"}}</p>
+            {{end}}
+
+            <button id="inviteCreateButton" class="my-2 btn btn-blue">{{getText "createInvitation"}}</button>
+        </div>
+
         <form class="segment-panel" id="contest_pblist_form">
             <h2 class="inline-block mb-2">{{getText "header.contest.create_pblist"}}</h2>
 
@@ -163,6 +213,39 @@
         min-height: 250px;
     }
 </style>
+
+<script>
+    // invite handling
+
+    async function copyInvitationURL(id) {
+        try {
+            await navigator.clipboard.writeText(window.location.origin + "/contests/invite/" + id)
+            bundled.apiToast({status: "success", data: bundled.getText("copied")})
+        } catch(e) {
+            console.error(e)
+            bundled.apiToast({status: "error", data: bundled.getText("notCopied")})
+        }
+    }
+
+    async function invalidateInvite(id) {
+        let res = await bundled.postCall("/contest/updateInvitation", {invite_id: id, expired: true})
+        if(res.status === "error") {
+            bundled.apiToat(res)
+            return
+        }
+        window.location.reload()
+    }
+
+    document.getElementById("inviteCreateButton").addEventListener("click", async () => {
+        let res = await bundled.postCall("/contest/{{.Contest.ID}}/createInvitation", {})
+        if(res.status === "error") {
+            bundled.apiToast(res)
+            return
+        }
+        await copyInvitationURL(res.data)
+        window.location.reload()
+    })
+</script>
 
 <script>
 // datetime handling

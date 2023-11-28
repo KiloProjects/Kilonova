@@ -1160,6 +1160,10 @@ ro = "Autentificare"
 en = "Reset waiting submissions"
 ro = "Resetare submisii în așteptare"
 
+[invalidate]
+en = "Invalidate"
+ro = "Invalidare"
+
 [invalidateAtts]
 en = "Invalidate statement cache"
 ro = "Invalidare cache enunțuri"
@@ -1299,6 +1303,10 @@ ro = "Verdict"
 [accepted]
 en = "Accepted"
 ro = "Acceptat"
+
+[accept]
+en = "Accept"
+ro = "Acceptare"
 
 [rejected]
 en = "Rejected"
@@ -1818,9 +1826,50 @@ ro = "Editare Probleme Concurs"
 en = "Contest access control"
 ro = "Control acces concurs"
 
+[header.contest.invitations]
+en = "Manage invitations"
+ro = "Administrare invitații"
+
+
 [header.contest.create_pblist]
 en = "Create problem list from contest problems"
 ro = "Creare listă probleme din problemele concursului"
+
+[title.invitation]
+en = "Invite for %s"
+ro = "Invitație pentru %s"
+
+[header.invitation]
+en = "Invitation to participate in <code>%s</code>"
+ro = "Invitație pentru participarea în <code>%s</code>"
+
+[header.invitation.from]
+en = 'from <a href="/profile/%s">%[1]s</a>'
+ro = 'de la <a href="/profile/%s">%[1]s</a>'
+
+[noInvitations]
+en = "No invitations found"
+ro = "Nicio invitație găsită"
+
+[createInvitation]
+en = "Create invitation"
+ro = "Creare invitație"
+
+[expired]
+en = "Expired"
+ro = "Expirat"
+
+[expiredInvite]
+en = "Unfortunately, the invitation has expired. You have to get access to a new one to join the contest."
+ro = "Din păcate, invitația a expirat. Trebuie să faci rost de alta pentru a participa în concurs."
+
+[alreadyRegistered]
+en = "You are already registered in the contest"
+ro = "Ești deja înregistrat în concurs"
+
+[alreadyRegistered.jump]
+en = "Go to contest page"
+ro = "Mergi la pagina acestuia"
 
 [publicJoin]
 en = "Open registration"

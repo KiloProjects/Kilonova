@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
@@ -355,8 +356,49 @@ func (s *API) answerContestQuestion(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Answered question")
 }
 
+func (s *API) acceptContestInvitation(ctx context.Context, args struct {
+	InviteID string `json:"invite_id"`
+}) *kilonova.StatusError {
+	inv, err := s.base.ContestInvitation(ctx, args.InviteID)
+	if err != nil {
+		return err
+	}
+	if inv.Expired {
+		return kilonova.Statusf(400, "Invite expired")
+	}
+	contest, err := s.base.Contest(ctx, inv.ContestID)
+	if err != nil {
+		return err
+	}
+	if contest.Ended() {
+		return kilonova.Statusf(400, "Contest ended")
+	}
+	if !contest.RegisterDuringContest && contest.Running() {
+		return kilonova.Statusf(400, "Cannot register while contest is running")
+	}
+	return s.base.RegisterContestUser(ctx, contest, util.UserBriefContext(ctx).ID, &inv.ID, true)
+}
+
+func (s *API) updateContestInvitation(ctx context.Context, args struct {
+	InviteID string `json:"invite_id"`
+	Expired  bool   `json:"expired"`
+}) *kilonova.StatusError {
+	inv, err := s.base.ContestInvitation(ctx, args.InviteID)
+	if err != nil {
+		return err
+	}
+	contest, err := s.base.Contest(ctx, inv.ContestID)
+	if err != nil {
+		return err
+	}
+	if !s.base.IsContestEditor(util.UserBriefContext(ctx), contest) {
+		return kilonova.Statusf(400, "Only contest editors can update the invitation")
+	}
+	return s.base.UpdateContestInvitation(ctx, inv.ID, args.Expired)
+}
+
 func (s *API) registerForContest(w http.ResponseWriter, r *http.Request) {
-	if err := s.base.RegisterContestUser(r.Context(), util.Contest(r), util.UserBrief(r).ID); err != nil {
+	if err := s.base.RegisterContestUser(r.Context(), util.Contest(r), util.UserBrief(r).ID, nil, false); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -387,7 +429,7 @@ func (s *API) forceRegisterForContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.base.RegisterContestUser(r.Context(), util.Contest(r), user.ID); err != nil {
+	if err := s.base.RegisterContestUser(r.Context(), util.Contest(r), user.ID, nil, true); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -435,7 +477,8 @@ type regRez struct {
 func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		FuzzyName *string `json:"name_fuzzy"`
+		FuzzyName    *string `json:"name_fuzzy"`
+		InvitationID *string `json:"invitation_id"`
 
 		Limit  int `json:"limit"`
 		Offset int `json:"offset"`
@@ -449,7 +492,7 @@ func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 		args.Limit = 50
 	}
 
-	regs, err := s.base.ContestRegistrations(r.Context(), util.Contest(r).ID, args.FuzzyName, args.Limit, args.Offset)
+	regs, err := s.base.ContestRegistrations(r.Context(), util.Contest(r).ID, args.FuzzyName, args.InvitationID, args.Limit, args.Offset)
 	if err != nil {
 		err.WriteError(w)
 		return

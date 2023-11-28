@@ -126,6 +126,20 @@ type ContestParams struct {
 	Topbar *ProblemTopbar
 
 	Contest *kilonova.Contest
+
+	ContestInvitations []*kilonova.ContestInvitation
+}
+
+type ContestInviteParams struct {
+	Ctx *ReqContext
+
+	Contest *kilonova.Contest
+	Invite  *kilonova.ContestInvitation
+
+	AlreadyRegistered bool
+
+	// may be nil
+	Inviter *kilonova.UserBrief
 }
 
 type ProblemParams struct {
