@@ -1,4 +1,4 @@
-package boxmanager
+package box
 
 import (
 	"bufio"
@@ -53,7 +53,7 @@ type Box struct {
 func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
 	res = append(res, "--box-id="+strconv.Itoa(b.boxID))
 
-	res = append(res, "--cg", "--cg-timing")
+	res = append(res, "--cg", "--cg-timing", "--processes")
 	for _, dir := range c.Directories {
 		if dir.Removes {
 			res = append(res, "--dir="+dir.In+"=")
@@ -102,12 +102,6 @@ func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
 		res = append(res, "--cg-mem="+strconv.Itoa(c.MemoryLimit))
 	}
 
-	if c.MaxProcs == 0 {
-		res = append(res, "--processes")
-	} else {
-		res = append(res, "--processes="+strconv.Itoa(c.MaxProcs))
-	}
-
 	if c.InputPath != "" {
 		res = append(res, "--stdin="+c.InputPath)
 	}
@@ -134,7 +128,18 @@ func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
 func (b *Box) WriteFile(fpath string, r io.Reader, mode fs.FileMode) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return writeReader(b.getFilePath(fpath), r, mode)
+	f, err := os.OpenFile(b.getFilePath(fpath), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(f, r)
+	if err1 := f.Sync(); err1 != nil && err == nil {
+		err = err1
+	}
+	if err1 := f.Close(); err1 != nil && err == nil {
+		err = err1
+	}
+	return err
 }
 
 func (b *Box) ReadFile(fpath string, w io.Writer) error {
@@ -149,21 +154,6 @@ func (b *Box) ReadFile(fpath string, w io.Writer) error {
 
 	_, err = io.Copy(w, f)
 	return err
-}
-
-func (b *Box) ReadDir(fpath string) ([]string, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	p := b.getFilePath(fpath)
-	d, err := os.ReadDir(p)
-	if err != nil {
-		return nil, err
-	}
-	out := []string{}
-	for _, file := range d {
-		out = append(out, file.Name())
-	}
-	return out, nil
 }
 
 func (b *Box) GetID() int {
@@ -181,38 +171,6 @@ func (b *Box) FileExists(fpath string) bool {
 	_, err := os.Stat(b.getFilePath(fpath))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return false
-		}
-		if strings.Contains(err.Error(), "permission denied") { // Try to diagnose the race condition if it happens
-			zap.S().Warnf("File stat (%q) returned the race condition error: %s", fpath, err)
-			zap.S().Info("Printing stat results of parents...")
-			x := strings.Split(b.getFilePath(fpath), "/")
-			x[0] = "/" + x[0]
-			for i := range x {
-				pp := path.Join(x[:i]...)
-				if pp == "" {
-					continue
-				}
-				if _, err := os.Stat(pp); err == nil {
-					zap.S().Infof("%q is ok", pp)
-				} else {
-					zap.S().Infof("%q churns out error: %s", pp, err)
-				}
-				if strings.HasPrefix(pp, "/var/local/lib/isolate/") {
-					zap.S().Infof("Running ls on %q...", pp)
-					out, err := exec.Command("/usr/bin/ls", "-la", "--author", pp).CombinedOutput()
-					fmt.Println(string(out))
-					spew.Dump(err)
-				}
-			}
-			zap.S().Info("Checking again")
-			_, err = os.Stat(b.getFilePath(fpath))
-			if err != nil {
-				zap.S().Infof("Still errors: %s", err)
-			} else {
-				zap.S().Info("It... works?")
-				return true
-			}
 			return false
 		}
 		zap.S().Warnf("File stat (%q) returned weird error: %s", fpath, err)
@@ -276,15 +234,15 @@ func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunCo
 	return meta, nil
 }
 
-// newBox returns a new box instance from the specified ID
-func newBox(id int, memQuota int64, logger *zap.SugaredLogger) (*Box, error) {
+// New returns a new box instance from the specified ID
+func New(id int, memQuota int64, logger *zap.SugaredLogger) (eval.Sandbox, error) {
 	ret, err := exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--init").CombinedOutput()
 	if strings.HasPrefix(string(ret), "Box already exists") {
 		zap.S().Info("Box reset: ", id)
 		if out, err := exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--cleanup").CombinedOutput(); err != nil {
 			zap.S().Warn(err, string(out))
 		}
-		return newBox(id, memQuota, logger)
+		return New(id, memQuota, logger)
 	}
 
 	if strings.HasPrefix(string(ret), "Must be started as root") {
@@ -292,7 +250,7 @@ func newBox(id int, memQuota int64, logger *zap.SugaredLogger) (*Box, error) {
 			fmt.Println("Couldn't chown root the isolate binary:", err)
 			return nil, err
 		}
-		return newBox(id, memQuota, logger)
+		return New(id, memQuota, logger)
 	}
 
 	if err != nil {
@@ -303,7 +261,7 @@ func newBox(id int, memQuota int64, logger *zap.SugaredLogger) (*Box, error) {
 }
 
 func CheckCanRun() bool {
-	box, err := newBox(0, 0, zap.S())
+	box, err := New(0, 0, zap.S())
 	if err != nil {
 		zap.S().Warn(err)
 		return false
@@ -313,21 +271,6 @@ func CheckCanRun() bool {
 		return false
 	}
 	return true
-}
-
-func writeReader(path string, r io.Reader, perms fs.FileMode) error {
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perms)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(f, r)
-	if err1 := f.Sync(); err1 != nil && err == nil {
-		err = err1
-	}
-	if err1 := f.Close(); err1 != nil && err == nil {
-		err = err1
-	}
-	return err
 }
 
 // parseMetaFile parses a specified meta file

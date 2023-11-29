@@ -1,13 +1,16 @@
-package boxmanager
+package scheduler
 
 import (
 	"context"
+	"errors"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
+
+type BoxFunc func(id int, mem int64, logger *zap.SugaredLogger) (eval.Sandbox, error)
 
 var _ eval.BoxScheduler = &BoxManager{}
 
@@ -24,6 +27,8 @@ type BoxManager struct {
 	availableIDs chan int
 
 	parentMgr *BoxManager
+
+	boxGenerator BoxFunc
 }
 
 func (b *BoxManager) SubRunner(ctx context.Context, numConc int64) (eval.BoxScheduler, error) {
@@ -48,6 +53,8 @@ func (b *BoxManager) SubRunner(ctx context.Context, numConc int64) (eval.BoxSche
 		availableIDs: ids,
 
 		parentMgr: b,
+
+		boxGenerator: b.boxGenerator,
 	}, nil
 }
 
@@ -56,6 +63,10 @@ func (b *BoxManager) NumConcurrent() int64 {
 }
 
 func (b *BoxManager) GetBox(ctx context.Context, memQuota int64) (eval.Sandbox, error) {
+	if b.boxGenerator == nil {
+		zap.S().Warn("Empty box generator")
+		return nil, errors.New("empty box generator")
+	}
 	if err := b.concSem.Acquire(ctx, 1); err != nil {
 		return nil, err
 	}
@@ -64,11 +75,11 @@ func (b *BoxManager) GetBox(ctx context.Context, memQuota int64) (eval.Sandbox, 
 			return nil, err
 		}
 	}
-	box, err := newBox(<-b.availableIDs, memQuota, b.logger)
+	box, err := b.boxGenerator(<-b.availableIDs, memQuota, b.logger)
 	if err != nil {
 		return nil, err
 	}
-	b.logger.Infof("Acquired box %d", box.boxID)
+	b.logger.Infof("Acquired box %d", box.GetID())
 	return box, nil
 }
 
@@ -97,7 +108,7 @@ func (b *BoxManager) Close(ctx context.Context) error {
 }
 
 // New creates a new box manager
-func New(startingNumber int, count int, maxMemory int64, dm kilonova.GraderStore, logger *zap.SugaredLogger) (*BoxManager, error) {
+func New(startingNumber int, count int, maxMemory int64, dm kilonova.GraderStore, logger *zap.SugaredLogger, boxGenerator BoxFunc) (*BoxManager, error) {
 
 	if startingNumber < 0 {
 		startingNumber = 0
@@ -118,6 +129,8 @@ func New(startingNumber int, count int, maxMemory int64, dm kilonova.GraderStore
 		logger: logger,
 
 		parentMgr: nil,
+
+		boxGenerator: boxGenerator,
 	}
 	return bm, nil
 }

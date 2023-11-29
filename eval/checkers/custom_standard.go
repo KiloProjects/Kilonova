@@ -59,8 +59,6 @@ func standardCheckerTask(ctx context.Context, box eval.Sandbox, job *customCheck
 		MemoryLimit: checkerMemoryLimit,
 
 		WallTimeLimit: 20,
-
-		MaxProcs: 2,
 	}
 
 	if _, err := box.RunCommand(ctx, goodCmd, conf); err != nil {

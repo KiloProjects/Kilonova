@@ -15,9 +15,6 @@ type Sandbox interface {
 	// RemoveFile(path string) error
 	FileExists(path string) bool
 
-	// For debugging that god forsaken no output file found bug
-	ReadDir(path string) ([]string, error)
-
 	GetID() int
 	MemoryQuota() int64
 
@@ -89,8 +86,6 @@ type RunConfig struct {
 
 	TimeLimit     float64
 	WallTimeLimit float64
-
-	MaxProcs int
 
 	InheritEnv   bool
 	EnvToInherit []string

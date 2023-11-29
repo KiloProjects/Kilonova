@@ -9,8 +9,9 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/eval/boxmanager"
+	"github.com/KiloProjects/kilonova/eval/box"
 	"github.com/KiloProjects/kilonova/eval/checkers"
+	"github.com/KiloProjects/kilonova/eval/scheduler"
 	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
@@ -449,28 +450,23 @@ func scoreTests(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submis
 	return base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score, MaxTime: &time, MaxMemory: &memory})
 }
 
-func getLocalRunner(base *sudoapi.BaseAPI) (eval.BoxScheduler, error) {
+func getAppropriateRunner(base *sudoapi.BaseAPI) (eval.BoxScheduler, error) {
+	var boxFunc scheduler.BoxFunc
+	if box.CheckCanRun() {
+		boxFunc = box.New
+	}
+	if boxFunc == nil {
+		zap.S().Fatal("Remote grader has not been implemented. No grader available!")
+	}
+
 	zap.S().Info("Trying to spin up local grader")
-	bm, err := boxmanager.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, base, graderLogger)
+	bm, err := scheduler.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, base, graderLogger, boxFunc)
 	if err != nil {
 		return nil, err
 	}
 	zap.S().Info("Running local grader")
+
 	return bm, nil
-}
-
-func getAppropriateRunner(base *sudoapi.BaseAPI) (eval.BoxScheduler, error) {
-	if boxmanager.CheckCanRun() {
-		runner, err := getLocalRunner(base)
-		if err == nil {
-			return runner, nil
-		}
-	}
-
-	zap.S().Fatal("Remote grader has not been implemented. No grader available!")
-	return nil, nil
-	// zap.S().Fatal("Remote grader has been disabled because it can't run problems with custom checker")
-	// return nil, nil
 }
 
 func getAppropriateChecker(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, pb *kilonova.Problem, settings *kilonova.ProblemEvalSettings) (eval.Checker, error) {
