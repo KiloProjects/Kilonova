@@ -82,7 +82,7 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	checkerPrepareMu.Lock()
 	defer checkerPrepareMu.Unlock()
 
-	resp, err := eval.RunTask(ctx, c.mgr, 0, &eval.CompileRequest{
+	resp, err := tasks.GetCompileTask(c.Logger).Run(ctx, c.mgr, 0, &eval.CompileRequest{
 		ID: -c.pb.ID,
 		CodeFiles: map[string][]byte{
 			eval.Langs[eval.GetLangByFilename(c.filename)].SourceName: c.code,
@@ -90,7 +90,7 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 			"/box/testlib.h": testlibFile,
 		},
 		Lang: eval.GetLangByFilename(c.filename),
-	}, tasks.GetCompileTask(c.Logger))
+	})
 	if err != nil {
 		return "Couldn't compile checker", err
 	}
@@ -109,17 +109,17 @@ func (c *customChecker) RunChecker(ctx context.Context, pOut, cIn, cOut io.Reade
 	defer checkerPrepareMu.RUnlock()
 	var out checkerResult
 
-	task := standardCheckerTask
+	var task eval.Task[customCheckerInput, checkerResult] = standardCheckerTask
 	if c.legacy {
 		task = legacyCheckerTask
 	}
 
-	resp, err := eval.RunTask(ctx, c.mgr, checkerMemoryLimit, &customCheckerInput{
+	resp, err := task.Run(ctx, c.mgr, checkerMemoryLimit, &customCheckerInput{
 		c:    c,
 		pOut: pOut,
 		cIn:  cIn,
 		cOut: cOut,
-	}, task)
+	})
 	if err != nil || resp == nil {
 		return ErrOut, decimal.Zero
 	}

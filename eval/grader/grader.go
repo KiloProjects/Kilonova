@@ -247,7 +247,7 @@ func compileSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		return kilonova.WrapError(err, "Couldn't generate compilation request")
 	}
 
-	resp, err1 := eval.RunTask(ctx, runner, 0, req, tasks.GetCompileTask(graderLogger))
+	resp, err1 := tasks.GetCompileTask(graderLogger).Run(ctx, runner, 0, req)
 	if err1 != nil {
 		return kilonova.WrapError(err1, "Error from eval")
 	}
@@ -315,7 +315,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 		execRequest.Filename = "stdin"
 	}
 
-	resp, err := eval.RunTask(ctx, runner, int64(problem.MemoryLimit), execRequest, tasks.GetExecuteTask(graderLogger, base))
+	resp, err := tasks.GetExecuteTask(graderLogger, base).Run(ctx, runner, int64(problem.MemoryLimit), execRequest)
 	if err != nil {
 		return decimal.Zero, "", kilonova.WrapError(err, "Couldn't execute subtest")
 	}

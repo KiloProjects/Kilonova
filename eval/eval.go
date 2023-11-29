@@ -6,6 +6,7 @@ import (
 	"io/fs"
 
 	"github.com/shopspring/decimal"
+	"go.uber.org/zap"
 )
 
 type Sandbox interface {
@@ -42,6 +43,16 @@ type BoxScheduler interface {
 }
 
 type Task[Req, Resp any] func(context.Context, Sandbox, *Req) (*Resp, error)
+
+func (t Task[Req, Resp]) Run(ctx context.Context, mgr BoxScheduler, memQuota int64, r *Req) (*Resp, error) {
+	box, err := mgr.GetBox(ctx, memQuota)
+	if err != nil {
+		zap.S().Info(err)
+		return nil, err
+	}
+	defer mgr.ReleaseBox(box)
+	return t(ctx, box, r)
+}
 
 type CompileRequest struct {
 	ID          int
@@ -106,12 +117,4 @@ type RunStats struct {
 
 	Time     float64 `json:"time"`
 	WallTime float64 `json:"wall_time"`
-}
-
-// Limits stores the constraints that need to be respected by a submission
-type Limits struct {
-	// seconds
-	TimeLimit float64
-	// kilobytes
-	MemoryLimit int
 }

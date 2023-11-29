@@ -30,11 +30,7 @@ func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Tas
 			return resp, err
 		}
 
-		lim := eval.Limits{
-			MemoryLimit: req.MemoryLimit,
-			TimeLimit:   req.TimeLimit,
-		}
-		meta, err := eval.RunSubmission(ctx, box, eval.Langs[req.Lang], lim, consoleInput)
+		meta, err := runSubmission(ctx, box, eval.Langs[req.Lang], req.TimeLimit, req.MemoryLimit, consoleInput)
 		if err != nil {
 			resp.Comments = fmt.Sprintf("Evaluation error: %v", err)
 			return resp, nil
@@ -90,4 +86,43 @@ func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Tas
 
 		return resp, nil
 	}
+}
+
+// runSubmission runs a program, following the language conventions
+// filenames contains the names for input and output, used if consoleInput is true
+// timeLimit is in seconds, memoryLimit is in kilbytes
+func runSubmission(ctx context.Context, box eval.Sandbox, language eval.Language, timeLimit float64, memoryLimit int, consoleInput bool) (*eval.RunStats, error) {
+
+	var runConf eval.RunConfig
+	runConf.EnvToSet = make(map[string]string)
+
+	// if our specified language is not compiled, then it means that
+	// the mounts specified should be added at runtime
+	if !language.Compiled {
+		runConf.Directories = append(runConf.Directories, language.Mounts...)
+	}
+
+	for key, val := range language.RunEnv {
+		runConf.EnvToSet[key] = val
+	}
+
+	runConf.MemoryLimit = memoryLimit
+	runConf.TimeLimit = timeLimit
+	runConf.WallTimeLimit = 2*timeLimit + 1
+	if timeLimit == 0 {
+		runConf.WallTimeLimit = 30
+	}
+
+	if consoleInput {
+		runConf.InputPath = "/box/stdin.in"
+		runConf.OutputPath = "/box/stdin.out"
+	}
+
+	goodCmd, err := eval.MakeGoodCommand(language.RunCommand)
+	if err != nil {
+		zap.S().Warnf("MakeGoodCommand returned an error: %q. This is not good, so we'll use the command from the config file. The supplied command was %#v", err, language.RunCommand)
+		goodCmd = language.RunCommand
+	}
+
+	return box.RunCommand(ctx, goodCmd, &runConf)
 }

@@ -114,8 +114,8 @@ var Langs = map[string]Language{
 		SourceName:     "/box/main.go",
 		CompiledName:   "/box/main",
 
-		BuildEnv:  map[string]string{"CGO_ENABLED": "0", "GOCACHE": "/go/cache", "GOPATH": "/box", "GO111MODULE": "off"},
-		CommonEnv: map[string]string{"GOMAXPROCS": "1"},
+		BuildEnv: map[string]string{"GOMAXPROCS": "1", "CGO_ENABLED": "0", "GOCACHE": "/go/cache", "GOPATH": "/box", "GO111MODULE": "off"},
+		RunEnv:   map[string]string{"GOMAXPROCS": "1"},
 
 		Mounts: []Directory{{In: "/go", Opts: "tmp", Verbatim: true}},
 	},
@@ -183,8 +183,6 @@ type Language struct {
 
 	BuildEnv map[string]string `toml:"build_env"`
 	RunEnv   map[string]string `toml:"run_env"`
-	// CommonEnv will be added at both compile-time and runtime, and can be replaced by BuildEnv/RunEnv
-	CommonEnv map[string]string `toml:"common_env"`
 
 	// Mounts represents all directories to be mounted
 	Mounts     []Directory `toml:"mounts"`
