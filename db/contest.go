@@ -70,12 +70,13 @@ func (s *DB) Contest(ctx context.Context, id int) (*kilonova.Contest, error) {
 }
 
 // TODO: Test
+// TODO: it might expose hidden running contests with that problem
 func (s *DB) RunningContestsByProblem(ctx context.Context, problemID int) ([]*kilonova.Contest, error) {
 	var contests []*dbContest
 	err := Select(s.conn,
 		ctx,
 		&contests,
-		"SELECT contests.* FROM running_contests contests, contest_problems pbs WHERE contests.id = pbs.contest_id AND pbs.problem_id = $1 ORDER BY contests.start_time DESC",
+		"SELECT contests.* FROM running_contests contests, contest_problems pbs WHERE contests.id = pbs.contest_id AND pbs.problem_id = $1 ORDER BY contests.start_time DESC, contests.id ASC",
 		problemID,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -91,7 +92,7 @@ func (s *DB) VisibleContests(ctx context.Context, userID int) ([]*kilonova.Conte
 	err := Select(s.conn,
 		ctx,
 		&contests,
-		"SELECT contests.* FROM contests WHERE EXISTS (SELECT 1 FROM visible_contests($1) viz WHERE contests.id = viz.contest_id) ORDER BY contests.start_time DESC",
+		"SELECT contests.* FROM contests WHERE EXISTS (SELECT 1 FROM visible_contests($1) viz WHERE contests.id = viz.contest_id) ORDER BY contests.start_time DESC, contests.id ASC",
 		userID,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -106,7 +107,7 @@ func (s *DB) VisibleFutureContests(ctx context.Context, userID int) ([]*kilonova
 		ctx,
 		&contests,
 		`SELECT contests.* FROM contests WHERE EXISTS (SELECT 1 FROM visible_contests($1) viz WHERE contests.id = viz.contest_id)
-		AND NOW() < contests.start_time ORDER BY contests.start_time DESC`,
+		AND NOW() < contests.start_time ORDER BY contests.start_time DESC, contests.id ASC`,
 		userID,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -121,7 +122,7 @@ func (s *DB) VisibleRunningContests(ctx context.Context, userID int) ([]*kilonov
 		ctx,
 		&contests,
 		`SELECT contests.* FROM contests WHERE EXISTS (SELECT 1 FROM visible_contests($1) viz WHERE contests.id = viz.contest_id) 
-		AND contests.start_time <= NOW() AND NOW() < contests.end_time ORDER BY contests.start_time DESC`,
+		AND contests.start_time <= NOW() AND NOW() < contests.end_time ORDER BY contests.start_time DESC, contests.id ASC`,
 		userID,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
