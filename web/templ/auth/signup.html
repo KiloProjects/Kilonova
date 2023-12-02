@@ -1,5 +1,9 @@
 {{ define "title" }} {{getText "auth.signup"}} {{ end }}
 
+{{ define "head"}}
+<link rel="canonical" href='{{formatCanonical "/signup"}}' />
+{{ end }}
+
 {{ define "content_signup_disabled" }}
 <h1>{{getText "disabled_signup"}}</h1>
 {{ end }}

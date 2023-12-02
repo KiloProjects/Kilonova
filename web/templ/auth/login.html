@@ -1,4 +1,7 @@
 {{ define "title" }} {{getText "auth.login"}} {{ end }}
+{{ define "head"}}
+<link rel="canonical" href='{{formatCanonical "/login"}}' />
+{{ end }}
 {{ define "content" }}
 
 <h1 class="mb-2">{{getText "authenticate"}}</h1>
