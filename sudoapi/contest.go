@@ -129,10 +129,10 @@ func (s *BaseAPI) CanJoinContest(c *kilonova.Contest) bool {
 	if !c.PublicJoin {
 		return false
 	}
-	if c.RegisterDuringContest && time.Now().Before(c.EndTime) { // Registration during contest is enabled
+	if c.RegisterDuringContest && !c.Ended() { // Registration during contest is enabled
 		return true
 	}
-	return time.Now().Before(c.StartTime)
+	return !c.Started()
 }
 
 // CanSubmitInContest checks if the user is either a contestant and the contest is running, or a tester/editor/admin.

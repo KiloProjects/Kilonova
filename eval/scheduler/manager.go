@@ -134,3 +134,16 @@ func New(startingNumber int, count int, maxMemory int64, dm kilonova.GraderStore
 	}
 	return bm, nil
 }
+
+func CheckCanRun(boxFunc BoxFunc) bool {
+	box, err := boxFunc(0, 0, zap.S())
+	if err != nil {
+		zap.S().Warn(err)
+		return false
+	}
+	if err := box.Close(); err != nil {
+		zap.S().Warn(err)
+		return false
+	}
+	return true
+}

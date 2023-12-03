@@ -3,7 +3,6 @@ package box
 import (
 	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -27,16 +26,10 @@ const (
 	runErrTimeout = 200 * time.Millisecond
 )
 
-var _ eval.Sandbox = &Box{}
+var _ eval.Sandbox = &IsolateBox{}
 
-// Env represents a variable-value pair for an environment variable
-type Env struct {
-	Var   string
-	Value string
-}
-
-// Box is the struct for the current box
-type Box struct {
+// IsolateBox is the struct for the current box
+type IsolateBox struct {
 	// the mutex makes sure we don't do anything stupid while we do other stuff
 	mu    sync.Mutex
 	path  string
@@ -50,7 +43,7 @@ type Box struct {
 }
 
 // buildRunFlags compiles all flags into an array
-func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
+func (b *IsolateBox) buildRunFlags(c *eval.RunConfig) (res []string) {
 	res = append(res, "--box-id="+strconv.Itoa(b.boxID))
 
 	res = append(res, "--cg", "--cg-timing", "--processes")
@@ -125,72 +118,45 @@ func (b *Box) buildRunFlags(c *eval.RunConfig) (res []string) {
 }
 
 // WriteFile writes a file to the specified path inside the box
-func (b *Box) WriteFile(fpath string, r io.Reader, mode fs.FileMode) error {
+func (b *IsolateBox) WriteFile(fpath string, r io.Reader, mode fs.FileMode) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	f, err := os.OpenFile(b.getFilePath(fpath), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(f, r)
-	if err1 := f.Sync(); err1 != nil && err == nil {
-		err = err1
-	}
-	if err1 := f.Close(); err1 != nil && err == nil {
-		err = err1
-	}
-	return err
+	return writeFile(b.getFilePath(fpath), r, mode)
 }
 
-func (b *Box) ReadFile(fpath string, w io.Writer) error {
+func (b *IsolateBox) ReadFile(fpath string, w io.Writer) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-
-	f, err := os.Open(b.getFilePath(fpath))
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = io.Copy(w, f)
-	return err
+	return readFile(b.getFilePath(fpath), w)
 }
 
-func (b *Box) GetID() int {
+func (b *IsolateBox) GetID() int {
 	return b.boxID
 }
 
-func (b *Box) MemoryQuota() int64 {
+func (b *IsolateBox) MemoryQuota() int64 {
 	return b.memoryQuota
 }
 
 // FileExists returns if a file exists or not
-func (b *Box) FileExists(fpath string) bool {
+func (b *IsolateBox) FileExists(fpath string) bool {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	_, err := os.Stat(b.getFilePath(fpath))
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return false
-		}
-		zap.S().Warnf("File stat (%q) returned weird error: %s", fpath, err)
-		return false
-	}
-	return true
+	return checkFile(b.getFilePath(fpath))
 }
 
 // getFilePath returns a path to the file location on disk of a box file
-func (b *Box) getFilePath(boxpath string) string {
+func (b *IsolateBox) getFilePath(boxpath string) string {
 	return path.Join(b.path, boxpath)
 }
 
-func (b *Box) Close() error {
+func (b *IsolateBox) Close() error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return exec.Command(config.Eval.IsolatePath, "--cg", "--box-id="+strconv.Itoa(b.boxID), "--cleanup").Run()
 }
 
-func (b *Box) runCommand(ctx context.Context, params []string, metaFile string) (*eval.RunStats, error) {
+func (b *IsolateBox) runCommand(ctx context.Context, params []string, metaFile string) (*eval.RunStats, error) {
 	cmd := exec.CommandContext(ctx, config.Eval.IsolatePath, params...)
 
 	err := cmd.Run()
@@ -210,7 +176,7 @@ func (b *Box) runCommand(ctx context.Context, params []string, metaFile string) 
 	return parseMetaFile(f), nil
 }
 
-func (b *Box) RunCommand(ctx context.Context, command []string, conf *eval.RunConfig) (*eval.RunStats, error) {
+func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eval.RunConfig) (*eval.RunStats, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -257,20 +223,7 @@ func New(id int, memQuota int64, logger *zap.SugaredLogger) (eval.Sandbox, error
 		return nil, err
 	}
 
-	return &Box{path: strings.TrimSpace(string(ret)), boxID: id, memoryQuota: memQuota, logger: logger}, nil
-}
-
-func CheckCanRun() bool {
-	box, err := New(0, 0, zap.S())
-	if err != nil {
-		zap.S().Warn(err)
-		return false
-	}
-	if err := box.Close(); err != nil {
-		zap.S().Warn(err)
-		return false
-	}
-	return true
+	return &IsolateBox{path: strings.TrimSpace(string(ret)), boxID: id, memoryQuota: memQuota, logger: logger}, nil
 }
 
 // parseMetaFile parses a specified meta file
@@ -303,7 +256,8 @@ func parseMetaFile(r io.Reader) *eval.RunStats {
 		case "time":
 			file.Time, _ = strconv.ParseFloat(l[1], 32)
 		case "time-wall":
-			file.WallTime, _ = strconv.ParseFloat(l[1], 32)
+			// file.WallTime, _ = strconv.ParseFloat(l[1], 32)
+			continue
 		case "max-rss", "csw-voluntary", "csw-forced", "cg-enabled", "cg-oom-killed":
 			continue
 		default:

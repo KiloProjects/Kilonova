@@ -85,6 +85,7 @@ func (s *DB) SubmissionCount(ctx context.Context, filter kilonova.SubmissionFilt
 	return val, nil
 }
 
+// TODO: Remove and move logic to s.Base
 func (s *DB) RemainingSubmissionCount(ctx context.Context, contest *kilonova.Contest, problemID, userID int) (int, error) {
 	var cnt int
 	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM submissions WHERE contest_id = $1 AND problem_id = $2 AND user_id = $3", contest.ID, problemID, userID).Scan(&cnt)

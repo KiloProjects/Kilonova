@@ -450,10 +450,15 @@ func scoreTests(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submis
 	return base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score, MaxTime: &time, MaxMemory: &memory})
 }
 
+var ForceSecureSandbox = config.GenFlag[bool]("feature.grader.force_secure_sandbox", true, "Force use of secure sandbox only. Should be always enabled in production environments")
+
 func getAppropriateRunner(base *sudoapi.BaseAPI) (eval.BoxScheduler, error) {
 	var boxFunc scheduler.BoxFunc
-	if box.CheckCanRun() {
+	if scheduler.CheckCanRun(box.New) {
 		boxFunc = box.New
+	} else if scheduler.CheckCanRun(box.NewStupid) && !ForceSecureSandbox.Value() {
+		zap.S().Warn("Secure sandbox not found. Using stupid sandbox")
+		boxFunc = box.NewStupid
 	}
 	if boxFunc == nil {
 		zap.S().Fatal("Remote grader has not been implemented. No grader available!")
