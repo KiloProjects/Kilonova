@@ -192,7 +192,10 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 			return meta, err
 		}
 
-		zap.S().Warnf("Run error in box %d, retrying (%d/%d). Check grader.log for more details", b.boxID, i, runErrRetries)
+		if i > 1 {
+			// Only warn if it comes to the second attempt. First error is often enough in prod
+			zap.S().Warnf("Run error in box %d, retrying (%d/%d). Check grader.log for more details", b.boxID, i, runErrRetries)
+		}
 		b.logger.Warnf("Run error in box %d, retrying (%d/%d): '%#v' %s", b.boxID, i, runErrRetries, err, spew.Sdump(meta))
 		time.Sleep(runErrTimeout)
 	}
