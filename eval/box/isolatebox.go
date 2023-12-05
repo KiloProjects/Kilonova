@@ -219,6 +219,14 @@ func New(id int, memQuota int64, logger *zap.SugaredLogger) (eval.Sandbox, error
 		return New(id, memQuota, logger)
 	}
 
+	if strings.Contains(string(ret), "incompatible control group mode") { // Created without --cg
+		zap.S().Info("Box reset: ", id)
+		if out, err := exec.Command(config.Eval.IsolatePath, fmt.Sprintf("--box-id=%d", id), "--cleanup").CombinedOutput(); err != nil {
+			zap.S().Warn(err, string(out))
+		}
+		return New(id, memQuota, logger)
+	}
+
 	if strings.HasPrefix(string(ret), "Must be started as root") {
 		if err := os.Chown(config.Eval.IsolatePath, 0, 0); err != nil {
 			fmt.Println("Couldn't chown root the isolate binary:", err)
