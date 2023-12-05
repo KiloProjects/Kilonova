@@ -80,46 +80,12 @@ func (s *DB) SubmissionCount(ctx context.Context, filter kilonova.SubmissionFilt
 	var val int
 	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM submissions WHERE "+fb.Where(), fb.Args()...).Scan(&val)
 	if err != nil {
-		return -1, err
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return -1, err
+		}
+		val = 0
 	}
 	return val, nil
-}
-
-// TODO: Remove and move logic to s.Base
-func (s *DB) RemainingSubmissionCount(ctx context.Context, contest *kilonova.Contest, problemID, userID int) (int, error) {
-	var cnt int
-	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM submissions WHERE contest_id = $1 AND problem_id = $2 AND user_id = $3", contest.ID, problemID, userID).Scan(&cnt)
-	if err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
-			return -1, err
-		}
-		cnt = 0
-	}
-	return contest.MaxSubs - cnt, nil
-}
-
-func (s *DB) WaitingSubmissionCount(ctx context.Context, userID int) (int, error) {
-	var cnt int
-	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM submissions WHERE status <> 'finished' AND user_id = $1", userID).Scan(&cnt)
-	if err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
-			return -1, err
-		}
-		cnt = 0
-	}
-	return cnt, nil
-}
-
-func (s *DB) SubmissionCountSince(ctx context.Context, userID int, t time.Time) (int, error) {
-	var cnt int
-	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM submissions WHERE created_at > $2 AND user_id = $1", userID, t).Scan(&cnt)
-	if err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
-			return -1, err
-		}
-		cnt = 0
-	}
-	return cnt, nil
 }
 
 const createSubQuery = "INSERT INTO submissions (user_id, problem_id, contest_id, language, code) VALUES ($1, $2, $3, $4, $5) RETURNING id;"
@@ -157,19 +123,6 @@ func (s *DB) ClearUserContestSubmissions(ctx context.Context, contestID, userID 
 func (s *DB) DeleteSubmission(ctx context.Context, id int) error {
 	_, err := s.conn.Exec(ctx, "DELETE FROM submissions WHERE id = $1", id)
 	return err
-}
-
-func (s *DB) ICPCMaxScoreSubID(ctx context.Context, userid, problemid int) (int, error) {
-	var score int
-
-	err := s.conn.QueryRow(ctx, "SELECT id FROM submissions WHERE user_id = $1 AND problem_id = $2 ORDER BY score DESC, id DESC LIMIT 1", userid, problemid).Scan(&score)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return -1, nil
-		}
-		return -1, err
-	}
-	return score, nil
 }
 
 func (s *DB) MaxScoreSubID(ctx context.Context, userid, problemid int) (int, error) {
@@ -257,11 +210,22 @@ func subFilterQuery(filter *kilonova.SubmissionFilter, fb *filterBuilder) {
 	if v := filter.Status; v != kilonova.StatusNone {
 		fb.AddConstraint("status = %s", v)
 	}
+	if filter.Waiting {
+		fb.AddConstraint("(status = %s OR status = %s OR status = %s)",
+			kilonova.StatusCreating,
+			kilonova.StatusWaiting,
+			kilonova.StatusWorking,
+		)
+	}
 	if v := filter.Lang; v != nil {
 		fb.AddConstraint("lower(language) = lower(%s)", v)
 	}
 	if v := filter.Score; v != nil {
 		fb.AddConstraint("score = %s", v)
+	}
+
+	if v := filter.Since; v != nil {
+		fb.AddConstraint("created_at > %s", v)
 	}
 
 	if v := filter.CompileError; v != nil {

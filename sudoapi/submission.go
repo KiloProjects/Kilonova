@@ -28,14 +28,6 @@ func (s *BaseAPI) MaxScoreSubID(ctx context.Context, uid, pbID int) (int, *Statu
 	return id, nil
 }
 
-func (s *BaseAPI) ICPCMaxScoreSubID(ctx context.Context, uid, pbID int) (int, *StatusError) {
-	id, err := s.db.ICPCMaxScoreSubID(ctx, uid, pbID)
-	if err != nil {
-		return -1, WrapError(err, "Couldn't get max score ID")
-	}
-	return id, nil
-}
-
 func (s *BaseAPI) MaxScore(ctx context.Context, uid, pbID int) decimal.Decimal {
 	return s.db.MaxScore(ctx, uid, pbID)
 }
@@ -259,12 +251,17 @@ func (s *BaseAPI) UpdateSubmission(ctx context.Context, id int, status kilonova.
 	return nil
 }
 
+// TODO: Either use in multiple places or remove
 func (s *BaseAPI) RemainingSubmissionCount(ctx context.Context, contest *kilonova.Contest, problem *kilonova.Problem, user *kilonova.UserBrief) (int, *StatusError) {
-	cnt, err := s.db.RemainingSubmissionCount(ctx, contest, problem.ID, user.ID)
+	cnt, err := s.db.SubmissionCount(ctx, kilonova.SubmissionFilter{
+		ContestID: &contest.ID,
+		ProblemID: &problem.ID,
+		UserID:    &user.ID,
+	})
 	if err != nil {
 		return -1, WrapError(err, "Couldn't get submission count")
 	}
-	return cnt, nil
+	return contest.MaxSubs - cnt, nil
 }
 
 var (
@@ -289,16 +286,24 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserFull, proble
 	}
 
 	if !bypassSubCount {
-		cnt, err := s.db.WaitingSubmissionCount(ctx, author.ID)
+		// Get the number of waiting submissions
+		cnt, err := s.db.SubmissionCount(ctx, kilonova.SubmissionFilter{
+			UserID:  &author.ID,
+			Waiting: true,
+		})
 		if err != nil {
 			return -1, Statusf(500, "Couldn't get unfinished submission count")
 		}
 
-		if WaitingSubLimit.Value() > 0 && cnt > WaitingSubLimit.Value() {
+		if WaitingSubLimit.Value() > 0 && cnt >= WaitingSubLimit.Value() {
 			return -1, Statusf(400, "You cannot have more than %d submissions to the evaluation queue at once", WaitingSubLimit.Value())
 		}
 
-		cnt, err = s.db.SubmissionCountSince(ctx, author.ID, time.Now().Add(-1*time.Minute))
+		t := time.Now().Add(-1 * time.Minute)
+		cnt, err = s.db.SubmissionCount(ctx, kilonova.SubmissionFilter{
+			UserID: &author.ID,
+			Since:  &t,
+		})
 		if err != nil {
 			return -1, Statusf(500, "Couldn't get recent submission count")
 		}
@@ -372,7 +377,7 @@ func (s *BaseAPI) DeleteSubmission(ctx context.Context, subID int) *StatusError 
 }
 
 func (s *BaseAPI) ResetProblemSubmissions(ctx context.Context, problem *kilonova.Problem) *StatusError {
-	if err := s.db.ResetProblemSubmissions(ctx, problem.ID); err != nil {
+	if err := s.db.ResetSubmissions(ctx, kilonova.SubmissionFilter{ProblemID: &problem.ID}); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't reset submissions tests")
 	}

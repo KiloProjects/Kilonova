@@ -60,6 +60,10 @@ func Kilonova() error {
 		}()
 	}
 
+	if err := base.ResetWaitingSubmissions(ctx); err != nil {
+		zap.S().Warn("Couldn't reset initial working submissions:", err)
+	}
+
 	// for graceful setup and shutdown
 	server := webV1(true, base)
 

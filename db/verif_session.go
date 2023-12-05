@@ -93,3 +93,8 @@ func (s *DB) ExtendSession(ctx context.Context, sid string) (time.Time, error) {
 	err = s.conn.QueryRow(ctx, `UPDATE sessions SET expires_at = $2 WHERE id = $1 RETURNING expires_at`, sess.ID, time.Now().Add(sessionDuration)).Scan(&newExpiration)
 	return newExpiration, err
 }
+
+func (s *DB) RemoveSessions(ctx context.Context, userID int) error {
+	_, err := s.conn.Exec(ctx, `DELETE FROM sessions WHERE user_id = $1`, userID)
+	return err
+}

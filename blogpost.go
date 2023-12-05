@@ -17,9 +17,9 @@ type BlogPost struct {
 }
 
 type BlogPostFilter struct {
-	ID       *int   `json:"id"`
-	IDs      []*int `json:"ids"`
-	AuthorID *int   `json:"author_id"`
+	ID       *int  `json:"id"`
+	IDs      []int `json:"ids"`
+	AuthorID *int  `json:"author_id"`
 
 	Slug *string `json:"slug"`
 

@@ -69,13 +69,18 @@ type SubmissionUpdate struct {
 }
 
 type SubmissionFilter struct {
-	ID        *int   `json:"id"`
-	IDs       []*int `json:"ids"`
-	UserID    *int   `json:"user_id"`
-	ProblemID *int   `json:"problem_id"`
-	ContestID *int   `json:"contest_id"`
+	ID        *int  `json:"id"`
+	IDs       []int `json:"ids"`
+	UserID    *int  `json:"user_id"`
+	ProblemID *int  `json:"problem_id"`
+	ContestID *int  `json:"contest_id"`
 
-	Status       Status  `json:"status"`
+	Status Status `json:"status"`
+
+	// If waiting is true, it returns all submissions with creating/waiting/working status
+	// Basically, all unfinished submissions. It's used in the creation of submissions to check limits
+	Waiting bool `json:"waiting"`
+
 	Lang         *string `json:"lang"`
 	CompileError *bool   `json:"compile_error"`
 
@@ -83,6 +88,8 @@ type SubmissionFilter struct {
 
 	Look        bool       `json:"-"`
 	LookingUser *UserBrief `json:"-"`
+
+	Since *time.Time `json:"-"`
 
 	FromAuthors bool `json:"from_authors"`
 

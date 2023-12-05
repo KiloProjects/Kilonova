@@ -38,7 +38,15 @@ var (
 )
 
 func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) *StatusError {
-	if err := s.db.BulkUpdateSubmissions(ctx, kilonova.SubmissionFilter{Status: kilonova.StatusWorking}, kilonova.SubmissionUpdate{Status: kilonova.StatusWaiting}); err != nil {
+	subs, err := s.db.Submissions(ctx, kilonova.SubmissionFilter{Status: kilonova.StatusWorking})
+	if err != nil {
+		return WrapError(err, "Couldn't get submissions to reset")
+	}
+	ids := make([]int, 0, len(subs))
+	for _, sub := range subs {
+		ids = append(ids, sub.ID)
+	}
+	if err := s.db.ResetSubmissions(ctx, kilonova.SubmissionFilter{IDs: ids}); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't reset submissions")
 	}
@@ -49,7 +57,7 @@ func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) *StatusError {
 }
 
 func (s *BaseAPI) ResetSubmission(ctx context.Context, id int) *StatusError {
-	if err := s.db.ResetSubmission(ctx, id); err != nil {
+	if err := s.db.ResetSubmissions(ctx, kilonova.SubmissionFilter{ID: &id}); err != nil {
 		zap.S().Warn("Couldn't reset submission: ", err)
 		return Statusf(500, "Couldn't reset submission")
 	}
