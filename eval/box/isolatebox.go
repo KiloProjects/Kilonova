@@ -42,11 +42,16 @@ type IsolateBox struct {
 	logger *zap.SugaredLogger
 }
 
+var CGTiming = config.GenFlag[bool]("feature.grader.use_cg_timing", false, "Use CGroups for timing in grader. Should probably not be necessary.")
+
 // buildRunFlags compiles all flags into an array
 func (b *IsolateBox) buildRunFlags(c *eval.RunConfig) (res []string) {
 	res = append(res, "--box-id="+strconv.Itoa(b.boxID))
 
-	res = append(res, "--cg", "--cg-timing", "--processes")
+	res = append(res, "--cg", "--processes")
+	if CGTiming.Value() {
+		res = append(res, "--cg-timing")
+	}
 	for _, dir := range c.Directories {
 		if dir.Removes {
 			res = append(res, "--dir="+dir.In+"=")
