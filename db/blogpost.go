@@ -62,7 +62,7 @@ func (s *DB) CreateBlogPost(ctx context.Context, title string, authorID int) (in
 	if title == "" || authorID == 0 {
 		return -1, "", kilonova.ErrMissingRequired
 	}
-	slug := kilonova.MakeSlug(fmt.Sprintf("%s %d %s", title, authorID, kilonova.RandomString(6)))
+	slug := kilonova.MakeSlug(fmt.Sprintf("%s %d %s", title, authorID, kilonova.RandomString(12)))
 	rows, _ := s.conn.Query(ctx, "INSERT INTO blog_posts (title, author_id, slug) VALUES ($1, $2, $3) RETURNING id", title, authorID, slug)
 	id, err := pgx.CollectOneRow(rows, pgx.RowTo[int])
 	if err != nil {

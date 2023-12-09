@@ -98,7 +98,7 @@ func (s *DB) UpdateContestInvitation(ctx context.Context, id string, expired boo
 }
 
 func (s *DB) CreateContestInvitation(ctx context.Context, contestID int, creatorID *int) (string, error) {
-	id := kilonova.RandomString(8)
+	id := kilonova.RandomString(12)
 	_, err := s.conn.Exec(ctx, "INSERT INTO contest_invitations (id, contest_id, creator_id) VALUES ($1, $2, $3)", id, contestID, creatorID)
 	return id, err
 }

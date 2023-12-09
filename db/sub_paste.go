@@ -18,7 +18,7 @@ func (s *DB) CreatePaste(ctx context.Context, p *kilonova.SubmissionPaste) error
 	if p.Submission == nil || p.Author == nil {
 		return kilonova.ErrMissingRequired
 	}
-	p.ID = kilonova.RandomString(6)
+	p.ID = kilonova.RandomString(12)
 	_, err := s.conn.Exec(ctx, "INSERT INTO submission_pastes (paste_id, submission_id, author_id) VALUES ($1, $2, $3)", p.ID, p.Submission.ID, p.Author.ID)
 	return err
 }
