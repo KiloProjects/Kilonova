@@ -26,8 +26,7 @@ func (s *BaseAPI) TestOutput(testID int) (io.ReadCloser, error) {
 }
 
 func (s *BaseAPI) PurgeTestData(testID int) error {
-	err := s.manager.PurgeTestData(testID)
-	if err != nil {
+	if err := s.manager.PurgeTestData(testID); err != nil {
 		return WrapError(err, "Could not purge test data")
 	}
 	return nil

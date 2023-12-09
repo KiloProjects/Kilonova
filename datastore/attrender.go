@@ -80,7 +80,7 @@ func (m *StorageManager) InvalidateAllAttachments() error {
 		return err
 	}
 
-	return os.MkdirAll(path.Join(m.RootPath, "attachments"), 0777)
+	return os.MkdirAll(path.Join(m.RootPath, "attachments"), 0755)
 }
 
 func (m *StorageManager) AttachmentRenderPath(attID int, renderType string) string {

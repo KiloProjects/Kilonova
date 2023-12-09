@@ -2,6 +2,7 @@ package kilonova
 
 import (
 	"io"
+	"time"
 )
 
 var (
@@ -35,6 +36,10 @@ type DataStore interface {
 	// Like DelAttachmentRender but removes all renderTypes indiscriminately
 	DelAttachmentRenders(attID int) error
 	SaveAttachmentRender(attID int, renderType string, data []byte) error
-
 	InvalidateAllAttachments() error
+
+	SaveAvatar(email string, size int, r io.Reader) error
+	// valid is true only if maxLastMod is greater than the saved value and if the avatar is saved
+	GetAvatar(email string, size int, maxLastMod time.Time) (data io.ReadSeeker, lastMod time.Time, valid bool, err error)
+	PurgeAvatarCache() error
 }

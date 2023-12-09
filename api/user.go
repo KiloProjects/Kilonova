@@ -1,12 +1,9 @@
 package api
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"mime"
 	"net/http"
 	"strconv"
 	"strings"
@@ -25,35 +22,18 @@ var (
 )
 
 func (s *API) serveGravatar(w http.ResponseWriter, r *http.Request, user *kilonova.UserFull, size int) {
-	url := s.base.GetGravatarLink(user, size)
-	resp, err := http.Get(url)
-	if err != nil {
-		zap.S().Warn(err)
-		errorData(w, err, 500)
+	// Read from cache
+	rd, lastmod, valid, err := s.base.GetAvatar(user.Email, size, time.Now().Add(-12*time.Hour))
+	if !valid || err != nil {
+		zap.S().Warn("BaseAPI GetAvatar is not valid or returned error", valid, err)
+		errorData(w, "Could not get avatar", 500)
 		return
 	}
-
-	// get the name
-	_, params, _ := mime.ParseMediaType(resp.Header.Get("content-disposition"))
-	name := params["filename"]
-
-	// get the modtime
-	time, _ := http.ParseTime(resp.Header.Get("last-modified"))
-
-	// get the image
-	buf, err := io.ReadAll(resp.Body)
-	if err != nil {
-		zap.S().Warn(err)
-		return
-	}
-	reader := bytes.NewReader(buf)
-	resp.Body.Close()
-
-	w.Header().Add("ETag", fmt.Sprintf("\"kn-%s-%d\"", user.Name, time.Unix()))
+	w.Header().Add("ETag", fmt.Sprintf("\"kn-%s-%d\"", user.Name, lastmod.Unix()))
 	// Cache for 1 day
-	w.Header().Add("cache-control", "public, max-age=86400, immutable")
+	w.Header().Add("Cache-Control", "public, max-age=86400, immutable")
 
-	http.ServeContent(w, r, name, time, reader)
+	http.ServeContent(w, r, "gravatar.png", lastmod, rd)
 }
 
 func (s *API) getSelfGravatar(w http.ResponseWriter, r *http.Request) {

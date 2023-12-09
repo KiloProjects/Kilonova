@@ -116,7 +116,7 @@ func Initialize() error {
 	}
 
 	// Creating the checker cache will also create the compile path behind it
-	if err := os.MkdirAll(path.Join(config.Eval.CompilePath, "checker_cache"), 0777); err != nil {
+	if err := os.MkdirAll(path.Join(config.Eval.CompilePath, "checker_cache"), 0755); err != nil {
 		return err
 	}
 

@@ -79,7 +79,7 @@ func (b *BoxManager) GetBox(ctx context.Context, memQuota int64) (eval.Sandbox, 
 	if err != nil {
 		return nil, err
 	}
-	b.logger.Infof("Acquired box %d", box.GetID())
+	// b.logger.Infof("Acquired box %d", box.GetID())
 	return box, nil
 }
 
@@ -88,7 +88,7 @@ func (b *BoxManager) ReleaseBox(sb eval.Sandbox) {
 	if err := sb.Close(); err != nil {
 		zap.S().Warnf("Could not release sandbox %d: %v", sb.GetID(), err)
 	}
-	b.logger.Infof("Yielded back box %d", sb.GetID())
+	// b.logger.Infof("Yielded back box %d", sb.GetID())
 	b.availableIDs <- sb.GetID()
 	b.memSem.Release(q)
 	b.concSem.Release(1)

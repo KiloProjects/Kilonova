@@ -1,11 +1,14 @@
 package sudoapi
 
 import (
+	"bytes"
 	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -290,15 +293,6 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 	return user, err1
 }
 
-func (s *BaseAPI) GetGravatarLink(user *kilonova.UserFull, size int) string {
-	v := url.Values{}
-	v.Add("s", strconv.Itoa(size))
-	v.Add("d", "identicon")
-
-	bSum := md5.Sum([]byte(user.Email))
-	return fmt.Sprintf("https://www.gravatar.com/avatar/%s?%s", hex.EncodeToString(bSum[:]), v.Encode())
-}
-
 func (s *BaseAPI) createUser(ctx context.Context, username, email, password, lang string, theme kilonova.PreferredTheme, displayName string, generated bool) (int, error) {
 	hash, err := hashPassword(password)
 	if err != nil {
@@ -328,4 +322,66 @@ func hashPassword(password string) (string, error) {
 		return "", err
 	}
 	return string(hash), err
+}
+
+func getGravatar(email string, size int) (*bytes.Reader, time.Time, error) {
+	v := url.Values{}
+	v.Add("s", strconv.Itoa(size))
+	v.Add("d", "identicon")
+	bSum := md5.Sum([]byte(email))
+	url := fmt.Sprintf("https://www.gravatar.com/avatar/%s.png?%s", hex.EncodeToString(bSum[:]), v.Encode())
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, time.Unix(0, 0), err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 || resp.Header.Get("Content-Type") == "text/html" {
+		return nil, time.Unix(0, 0), Statusf(resp.StatusCode, "Invalid gravatar response")
+	}
+
+	buf, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, time.Unix(0, 0), err
+	}
+	time, _ := http.ParseTime(resp.Header.Get("last-modified"))
+	return bytes.NewReader(buf), time, nil
+}
+
+// SaveAvatar wraps DataStore's SaveAvatar
+// if r is nil, it fetches the gravatar from the web
+func (s *BaseAPI) SaveAvatar(email string, size int, r io.Reader) error {
+	if r != nil {
+		return s.manager.SaveAvatar(email, size, r)
+	}
+
+	r, _, err := getGravatar(email, size)
+	if err != nil {
+		return err
+	}
+	return s.manager.SaveAvatar(email, size, r)
+}
+
+// GetAvatar wraps DataStore's GetAvatar
+// if manager.GetAvatar errors out or is not valid, it fetches the gravatar from the web
+func (s *BaseAPI) GetAvatar(email string, size int, maxLastMod time.Time) (io.ReadSeeker, time.Time, bool, error) {
+	if r, t, valid, err := s.manager.GetAvatar(email, size, maxLastMod); valid && err == nil {
+		return r, t, valid, err
+	}
+	r, t, err := getGravatar(email, size)
+	if err != nil {
+		return r, t, false, err
+	}
+	if err := s.manager.SaveAvatar(email, size, r); err != nil {
+		zap.S().Warn("Could not save avatar:", err)
+	}
+	r.Seek(0, io.SeekStart)
+	return r, t, true, nil
+}
+
+func (s *BaseAPI) PurgeAvatarCache() error {
+	if err := s.manager.PurgeAvatarCache(); err != nil {
+		return WrapError(err, "Could not purge avatar cache")
+	}
+	return nil
 }
