@@ -109,25 +109,23 @@
             <h2>{{getText "pinned_lists"}}</h2>
             <div class="list-group">
                 {{range .}}
-                <a href="/problem_lists/{{.ID}}" class="list-group-item">
-                    <div class="pb-1 mt-1">
-                        <span>{{.Title}} (#{{.ID}})</span>
-                        {{if gt (.NumProblems) 0}}
-                            {{if authed}}
-                            <span class="float-right badge">
-                                {{numSolvedPblist .ID}} / {{.NumProblems}}
-                            </span>
-                            {{else}}
-                            <span class="float-right badge">
-                                {{ if eq 1 (.NumProblems)}}
-                                    {{ getText "single_problem" }}
-                                {{ else }}
-                                    {{ getText "num_problems" (.NumProblems) }}
-                                {{ end }}
-                            </span>
-                            {{end}}
+                <a href="/problem_lists/{{.ID}}" class="list-group-item flex justify-between">
+                    <span class="pb-1 mt-1">{{.Title}} (#{{.ID}})</span>
+                    {{if gt (.NumProblems) 0}}
+                        {{if authed}}
+                        <span class="badge mt-1 ml-1 whitespace-nowrap">
+                            {{numSolvedPblist .ID}} / {{.NumProblems}}
+                        </span>
+                        {{else}}
+                        <span class="badge mt-1 ml-1 whitespace-nowrap">
+                            {{ if eq 1 (.NumProblems)}}
+                                {{ getText "single_problem" }}
+                            {{ else }}
+                                {{ getText "num_problems" (.NumProblems) }}
+                            {{ end }}
+                        </span>
                         {{end}}
-                    </div>
+                    {{end}}
                 </a>
                 {{end}}
             </div>
