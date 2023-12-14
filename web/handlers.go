@@ -1275,7 +1275,7 @@ func (rt *Web) checkLockout() func(next http.Handler) http.Handler {
 	templ := rt.parse(nil, "util/lockout.html")
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if ForceLogin.Value() && util.UserBrief(r) == nil {
+			if ForceLogin.Value() && !rt.base.IsAuthed(util.UserBrief(r)) {
 				http.Redirect(w, r, "/login?back="+url.PathEscape(r.URL.Path), http.StatusTemporaryRedirect)
 				return
 			}

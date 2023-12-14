@@ -328,7 +328,7 @@ func getGravatar(email string, size int) (*bytes.Reader, time.Time, error) {
 	v := url.Values{}
 	v.Add("s", strconv.Itoa(size))
 	v.Add("d", "identicon")
-	bSum := md5.Sum([]byte(email))
+	bSum := md5.Sum([]byte(strings.ToLower(strings.TrimSpace(email))))
 	url := fmt.Sprintf("https://www.gravatar.com/avatar/%s.png?%s", hex.EncodeToString(bSum[:]), v.Encode())
 
 	resp, err := http.Get(url)

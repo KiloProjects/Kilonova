@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"unicode"
@@ -238,7 +239,7 @@ func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
 func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !rt.base.IsAuthed(util.UserBrief(r)) {
-			rt.statusPage(w, r, 401, "Trebuie să fii logat")
+			http.Redirect(w, r, "/login?back="+url.PathEscape(r.URL.Path), http.StatusTemporaryRedirect)
 			return
 		}
 		next.ServeHTTP(w, r)

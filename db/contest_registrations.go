@@ -13,7 +13,7 @@ func (s *DB) ContestRegistrations(ctx context.Context, contestID int, fuzzyName 
 	fb := newFilterBuilder()
 	fb.AddConstraint("contest_id = %s", contestID)
 	if fuzzyName != nil {
-		fb.AddConstraint("EXISTS (SELECT 1 FROM users WHERE id = user_id AND position(lower(unaccent(%s)) in format('#%%s %%s', id, lower(unaccent(name)))) > 0", fuzzyName)
+		fb.AddConstraint("EXISTS (SELECT 1 FROM users WHERE id = user_id AND position(lower(unaccent(%s)) in format('#%%s %%s', id, lower(unaccent(name)))) > 0)", fuzzyName)
 	}
 	if inviteID != nil {
 		fb.AddConstraint("invitation_id = %s", inviteID)

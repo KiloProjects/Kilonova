@@ -1722,6 +1722,14 @@ ro = "Concursul nu are, în prezent, probleme aferente."
 en = "Register"
 ro = "Înregistrare"
 
+[register_login_anchor]
+en = "Log in"
+ro = "Loghează-te"
+
+[register_login_text]
+en = "to register for this contest"
+ro = "pentru a te înregistra în concurs"
+
 [registered]
 en = "Registered"
 ro = "Înregistrat"

@@ -35,18 +35,22 @@
             {{end}}
         </p>
         {{ end }}
-        {{ if (and authed (canJoinContest .)) }}
-            {{ $reg := (contestRegistration .) }}
-            {{ if $reg }}
-                {{ if .Running }}    
-                    {{ if (and (isUSACOstyle .) (not (startedUSACO . $reg))) }}
-                        <button class="btn btn-blue my-2" onclick="bundled.startContestRegistration({{.ID}})">{{getText "start_contest"}}</button>
+        {{ if (canJoinContest .) }}
+            {{ if authed }}
+                {{ $reg := (contestRegistration .) }}
+                {{ if $reg }}
+                    {{ if .Running }}    
+                        {{ if (and (isUSACOstyle .) (not (startedUSACO . $reg))) }}
+                            <button class="btn btn-blue my-2" onclick="bundled.startContestRegistration({{.ID}})">{{getText "start_contest"}}</button>
+                        {{ end }}
+                    {{ else }}
+                        <span class="my-2">{{getText "registered"}}</span>
                     {{ end }}
                 {{ else }}
-                    <span class="my-2">{{getText "registered"}}</span>
+                <button class="btn btn-blue my-2" onclick="bundled.registerForContest({{.ID}})">{{getText "register_btn"}}</button>
                 {{ end }}
             {{ else }}
-            <button class="btn btn-blue my-2" onclick="bundled.registerForContest({{.ID}})">{{getText "register_btn"}}</button>
+                <span class="my-2"><a href="/login?back={{reqPath}}">{{getText "register_login_anchor"}}</a> {{getText "register_login_text"}}</span>
             {{ end }}
         {{ end }}
     </div>

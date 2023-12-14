@@ -49,24 +49,28 @@
         </p>
         {{ end }}
 
-        {{ if (and authed (canJoinContest .)) }}
-            {{ $reg := (contestRegistration .) }}
-            {{ if $reg }}
-                <div class="my-2">
-                {{ if (and .Running (isUSACOstyle .)) }}
-                    {{ if not (startedUSACO . $reg) }}
-                        <button class="btn btn-blue" onclick="bundled.startContestRegistration({{.ID}})">{{getText "start_contest"}}</button>
-                    {{ else if (endedUSACO . $reg) }}
-                        <span class="badge-lite">{{getText "time_elapsed"}}</span>
+        {{ if (canJoinContest .) }}
+            {{if authed }}    
+                {{ $reg := (contestRegistration .) }}
+                {{ if $reg }}
+                    <div class="my-2">
+                    {{ if (and .Running (isUSACOstyle .)) }}
+                        {{ if not (startedUSACO . $reg) }}
+                            <button class="btn btn-blue" onclick="bundled.startContestRegistration({{.ID}})">{{getText "start_contest"}}</button>
+                        {{ else if (endedUSACO . $reg) }}
+                            <span class="badge-lite">{{getText "time_elapsed"}}</span>
+                        {{ else }}
+                            <span class="badge-lite">{{getText "started"}}</span>
+                        {{ end }}
                     {{ else }}
-                        <span class="badge-lite">{{getText "started"}}</span>
+                        <span class="badge-lite">{{getText "registered"}}</span>
                     {{ end }}
+                    </div>
                 {{ else }}
-                    <span class="badge-lite">{{getText "registered"}}</span>
+                <button class="btn btn-blue my-2" onclick="bundled.registerForContest({{.ID}})">{{getText "register_btn"}}</button>
                 {{ end }}
-                </div>
             {{ else }}
-            <button class="btn btn-blue my-2" onclick="bundled.registerForContest({{.ID}})">{{getText "register_btn"}}</button>
+                <span class="my-2"><a href="/login?back={{reqPath}}">{{getText "register_login_anchor"}}</a> {{getText "register_login_text"}}</span>
             {{ end }}
         {{ end }}
     </div>
