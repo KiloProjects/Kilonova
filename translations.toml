@@ -1838,10 +1838,13 @@ ro = "Control acces concurs"
 en = "Manage invitations"
 ro = "Administrare invitații"
 
-
 [header.contest.create_pblist]
 en = "Create problem list from contest problems"
 ro = "Creare listă probleme din problemele concursului"
+
+[header.contest.force_register]
+en = "Admin: force register user in contest"
+ro = "Admin: înregistrare forțată utilizator în concurs"
 
 [title.invitation]
 en = "Invite for %s"

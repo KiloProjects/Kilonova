@@ -429,6 +429,11 @@ func (s *API) forceRegisterForContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if _, err := s.base.ContestRegistration(r.Context(), util.Contest(r).ID, user.ID); err == nil {
+		errorData(w, "User is already registered", 400)
+		return
+	}
+
 	if err := s.base.RegisterContestUser(r.Context(), util.Contest(r), user.ID, nil, true); err != nil {
 		err.WriteError(w)
 		return

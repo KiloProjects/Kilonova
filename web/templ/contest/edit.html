@@ -205,6 +205,26 @@
 
             <button type="submit" class="btn btn-blue">{{ getText "button.create" }}</button>
         </form>
+
+        {{if isAdmin}}
+        <form class="segment-panel" id="force_register_form" autocomplete="off">
+            <h2 class="inline-block mb-2">{{getText "header.contest.force_register"}}</h2>
+            <label class="block my-2">
+                <span class="form-label">{{ getText "username" }}:</span>
+                <input id="force_register_uname" type="text" class="form-input" required />
+            </label>
+            <button type="submit" class="btn btn-blue">{{ getText "button.add" }}</button>
+        </form>
+        <script>
+            document.getElementById("force_register_form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                let res = await bundled.postCall("/contest/{{.Contest.ID}}/forceRegister", {
+                    name: document.getElementById("force_register_uname").value,
+                })
+                bundled.apiToast(res)
+            })
+        </script>
+        {{end}}
     </div>
 </div>
 

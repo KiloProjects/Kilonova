@@ -70,7 +70,7 @@ async function signup(e) {
 	if(password !== pwdVerify) {
 		bundled.createToast({
 			status: "error",
-			title: '{{getText "differentPwds"}}'
+			title: bundled.getText("differentPwds")
 		})
 		return
 	}
