@@ -438,6 +438,9 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		},
 		"syntaxHighlight": func(code, lang string) (string, error) {
 			fmt := chtml.New(chtml.WithClasses(true), chtml.TabWidth(4))
+			if lang == "pascal" {
+				lang = "pas"
+			}
 			lm := lexers.Get(strings.TrimFunc(lang, unicode.IsDigit))
 			if lm == nil {
 				lm = lexers.Fallback
