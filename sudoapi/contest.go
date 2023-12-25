@@ -5,14 +5,47 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
 )
 
-func (s *BaseAPI) CreateContest(ctx context.Context, name string, author *UserBrief) (int, *StatusError) {
+var (
+	NormalUserVirtualContests = config.GenFlag[bool]("behavior.contests.anyone_virtual", false, "Anyone can create virtual contests")
+	NormalUserVCLimit         = config.GenFlag[int]("behavior.contests.normal_user_max_day", 10, "Number of maximum contests a non-proposer can create per day")
+)
+
+func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova.ContestType, author *UserBrief) (int, *StatusError) {
 	if author == nil {
 		return -1, ErrMissingRequired
 	}
-	id, err := s.db.CreateContest(ctx, name)
+	if !(cType == kilonova.ContestTypeNone || cType == kilonova.ContestTypeOfficial || cType == kilonova.ContestTypeVirtual) {
+		return -1, Statusf(400, "Invalid contest type")
+	}
+	if cType == kilonova.ContestTypeNone {
+		cType = kilonova.ContestTypeVirtual
+	}
+	if cType == kilonova.ContestTypeOfficial && !s.IsAdmin(author) {
+		cType = kilonova.ContestTypeVirtual
+	}
+
+	if !s.IsProposer(author) {
+		if !NormalUserVirtualContests.Value() {
+			return -1, Statusf(403, "Creation of contests by non-proposers has been disabled")
+		}
+
+		// Enforce stricter limits for non-proposers
+		since := time.Now().Add(-24 * time.Hour) // rolling day
+		cnt, err := s.db.ContestCount(ctx, kilonova.ContestFilter{
+			Since: &since,
+		})
+		if err != nil || (cnt >= NormalUserVCLimit.Value() && NormalUserVCLimit.Value() >= 0) {
+			if err != nil {
+				zap.S().Warn(err)
+			}
+			return -1, Statusf(400, "You can create at most %d contests per day", NormalUserVCLimit.Value())
+		}
+	}
+	id, err := s.db.CreateContest(ctx, name, cType)
 	if err != nil {
 		return -1, WrapError(err, "Couldn't create contest")
 	}
@@ -59,13 +92,8 @@ func (s *BaseAPI) Contest(ctx context.Context, id int) (*kilonova.Contest, *Stat
 	return contest, nil
 }
 
-func (s *BaseAPI) VisibleContests(ctx context.Context, user *kilonova.UserBrief) ([]*kilonova.Contest, *StatusError) {
-	userID := 0
-	if user != nil {
-		userID = user.ID
-	}
-
-	contests, err := s.db.VisibleContests(ctx, userID)
+func (s *BaseAPI) Contests(ctx context.Context, filter kilonova.ContestFilter) ([]*kilonova.Contest, *StatusError) {
+	contests, err := s.db.Contests(ctx, filter)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't fetch contests")
 	}
@@ -73,37 +101,39 @@ func (s *BaseAPI) VisibleContests(ctx context.Context, user *kilonova.UserBrief)
 }
 
 func (s *BaseAPI) VisibleFutureContests(ctx context.Context, user *kilonova.UserBrief) ([]*kilonova.Contest, *StatusError) {
-	userID := 0
+	filter := kilonova.ContestFilter{
+		Future:      true,
+		Look:        true,
+		LookingUser: user,
+		Ascending:   true,
+	}
 	if user != nil {
-		userID = user.ID
+		filter.ImportantContestsUID = &user.ID
 	}
-
-	contests, err := s.db.VisibleFutureContests(ctx, userID)
-	if err != nil {
-		return nil, WrapError(err, "Couldn't fetch contests")
-	}
-	return contests, nil
+	return s.Contests(ctx, filter)
 }
 
 func (s *BaseAPI) VisibleRunningContests(ctx context.Context, user *kilonova.UserBrief) ([]*kilonova.Contest, *StatusError) {
-	userID := 0
+	filter := kilonova.ContestFilter{
+		Running:     true,
+		Look:        true,
+		LookingUser: user,
+		Ascending:   true,
+		Ordering:    "end_time",
+	}
 	if user != nil {
-		userID = user.ID
+		filter.ImportantContestsUID = &user.ID
 	}
-
-	contests, err := s.db.VisibleRunningContests(ctx, userID)
-	if err != nil {
-		return nil, WrapError(err, "Couldn't fetch contests")
-	}
-	return contests, nil
+	return s.Contests(ctx, filter)
 }
 
 func (s *BaseAPI) ProblemRunningContests(ctx context.Context, problemID int) ([]*kilonova.Contest, *StatusError) {
-	contests, err := s.db.RunningContestsByProblem(ctx, problemID)
-	if err != nil {
-		return nil, WrapError(err, "Couldn't fetch contests")
-	}
-	return contests, nil
+	return s.Contests(ctx, kilonova.ContestFilter{
+		Running:   true,
+		ProblemID: &problemID,
+		Ascending: true,
+		Ordering:  "end_time",
+	})
 }
 
 func (s *BaseAPI) ContestLeaderboard(ctx context.Context, contest *kilonova.Contest, freezeTime *time.Time) (*kilonova.ContestLeaderboard, *StatusError) {

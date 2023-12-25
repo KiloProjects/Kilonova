@@ -1614,6 +1614,27 @@ ro = "Ești sigur că vrei să ștergi subtaskul?"
 en = "Are you sure you want to delete %d subtasks?"
 ro = "Ești sigur că vrei să ștergi %d subtaskuri?"
 
+[contest_index.all]
+en = "All contests"
+ro = "Toate concursurile"
+
+[contest_index.official]
+en = "Official contests"
+ro = "Concursuri oficiale"
+
+[contest_index.virtual]
+en = "Virtual contests"
+ro = "Concursuri virtuale"
+
+[contest_index.personal]
+en = "My contests"
+ro = "Concursurile mele"
+
+[contest_index.create]
+en = "Create contest"
+ro = "Creare concurs"
+
+
 [contests]
 en = "Contests"
 ro = "Concursuri"
@@ -1657,6 +1678,30 @@ ro = "Deschis"
 [registration_closed]
 en = "Closed"
 ro = "Închis"
+
+[contest_type_warn]
+en = "Only admins can create/set official contests. Admins can mark virtual contests as official at a later date."
+ro = "Numai administratorii pot să creeze și marcheze concursuri de tip oficial. Administratorii pot marca, ulterior, concursurile virtuale drept oficiale."
+
+[contest_type]
+en = "Contest type"
+ro = "Tip concurs"
+
+[contest_type.official]
+en = "Official contest"
+ro = "Concurs oficial"
+
+[contest_type.virtual]
+en = "Virtual contest"
+ro = "Concurs virtual"
+
+[official]
+en = "Official"
+ro = "Oficial"
+
+[virtual]
+en = "Virtual"
+ro = "Virtual"
 
 [contest_info]
 en = "Contest Info"

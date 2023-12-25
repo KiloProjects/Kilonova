@@ -109,6 +109,8 @@ type ContestsIndexParams struct {
 	Ctx *ReqContext
 
 	Contests []*kilonova.Contest
+
+	Page string
 }
 
 type DonateParams struct {

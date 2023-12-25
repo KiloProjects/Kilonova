@@ -12,14 +12,15 @@ import (
 func (s *API) createContest(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
-		Name string `json:"name"`
+		Name string               `json:"name"`
+		Type kilonova.ContestType `json:"type"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 500)
 		return
 	}
 
-	id, err := s.base.CreateContest(r.Context(), args.Name, util.UserBrief(r))
+	id, err := s.base.CreateContest(r.Context(), args.Name, args.Type, util.UserBrief(r))
 	if err != nil {
 		err.WriteError(w)
 		return
@@ -33,6 +34,11 @@ func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
 	var args kilonova.ContestUpdate
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 500)
+		return
+	}
+
+	if args.Type != kilonova.ContestTypeNone && args.Type != util.Contest(r).Type && !s.base.IsAdmin(util.UserBrief(r)) {
+		errorData(w, "You aren't allowed to change contest type!", 400)
 		return
 	}
 
@@ -56,9 +62,10 @@ func (s *API) updateContestProblems(w http.ResponseWriter, r *http.Request) {
 
 	if args.List == nil {
 		errorData(w, "You must specify a list of problems", 400)
+		return
 	}
 
-	list, err := s.filterProblems(r.Context(), args.List, util.UserBrief(r), true)
+	list, err := s.filterProblems(r.Context(), args.List, util.UserBrief(r), util.Contest(r).Type == kilonova.ContestTypeOfficial)
 	if err != nil {
 		err.WriteError(w)
 		return

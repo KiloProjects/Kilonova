@@ -4,10 +4,16 @@
 {{ end }}
 {{ define "content" }}
 
-<h1 class="mb-2">
-    {{getText "contests"}}
-</h1>
+{{ template "index_topbar.html" . }}
 
-{{ template "contest_list.html" .Contests }}
+<div class="contest-grid">
+    {{ range .Contests }}
+        {{ template "contest_brief.html" .}}
+    {{ else }}
+        <div class="segment-panel col-span-full">
+            <p>{{getText "noContests"}}</p>
+        </div>
+    {{ end }}
+</div>
 
 {{ end }}

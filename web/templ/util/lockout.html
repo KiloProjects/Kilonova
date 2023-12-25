@@ -17,7 +17,7 @@
 
     {{/* Add if clause so usernames made before old changes are not scared off. */}}
     {{if validUsername authedUser.Name}}
-        <p class="text-muted mb-2">{{getText "usernameChangeWarning"}}</p>
+        <p class="text-sm text-muted mb-2">{{getText "usernameChangeWarning"}}</p>
     {{end}}
 
     <button class="btn btn-blue">{{getText "button.update"}}</button>

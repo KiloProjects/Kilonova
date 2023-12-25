@@ -4,6 +4,7 @@
     </h2>
 
     <div class="px-2">
+        <p>{{ printf "contest_type.%s" .Type | getText }}</p>
         <p>{{getText "startTime"}}: <span class="server_timestamp">{{.StartTime.UnixMilli}}</span></p>
         <p>{{getText "duration"}}: {{contestDuration .}}</p>
         {{ if not currentProblem}}

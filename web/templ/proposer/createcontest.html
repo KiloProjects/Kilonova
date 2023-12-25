@@ -2,8 +2,16 @@
     <h2>{{getText "createContest"}}</h2>
     <form id="contest_form">
         <label class="block my-2">
-            <span class="form-label">{{ getText "name" }}</span>
+            <span class="form-label">{{ getText "name" }}: </span>
             <input id="contest_title" type="text" class="form-input" required>
+        </label>
+        <label class="block my-2">
+            <span class="form-label {{if not isAdmin}} text-muted {{ end }}">{{ getText "contest_type" }}: </span>
+            <select id="contest_type" type="text" class="form-select" value="virtual" required autocomplete="off">
+                <option value="official" {{if not isAdmin}}disabled{{end}}>{{ getText "official" }}</option>
+                <option value="virtual" selected>{{ getText "virtual" }}</option>
+            </select>
+            <p class="block text-muted text-sm">{{getText "contest_type_warn"}}</p>
         </label>
         <button type="submit" class="btn btn-blue">{{ getText "button.create" }}</button>
     </form>
@@ -11,7 +19,8 @@
         async function createContest(e) {
             e.preventDefault();
             let name = document.getElementById("contest_title").value;
-            let res = await bundled.postCall("/contest/create", {name})
+            let type = document.getElementById("contest_type").value;
+            let res = await bundled.postCall("/contest/create", {name, type})
             if(res.status === "error") {
                 bundled.apiToast(res)
                 return

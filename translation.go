@@ -29,7 +29,7 @@ func TranslationKeyExists(line string) bool {
 func GetText(lang, line string, args ...any) string {
 	if _, ok := translations[line]; !ok {
 		zap.S().Warnf("Invalid translation key %q", line)
-		return "ERR"
+		return line
 	}
 	if _, ok := translations[line][lang]; !ok {
 		return translations[line][config.Common.DefaultLang]

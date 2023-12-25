@@ -366,7 +366,7 @@ CREATE TABLE IF NOT EXISTS problem_tags (
 
 -- views
 
----- moved to 002.fractional_score.sql
+---- moved to 999.views.sql
 
 -- indexes
 

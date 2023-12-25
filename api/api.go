@@ -317,7 +317,7 @@ func (s *API) Handler() http.Handler {
 	})
 
 	r.Route("/contest", func(r chi.Router) {
-		r.With(s.MustBeProposer).Post("/create", s.createContest)
+		r.Post("/create", s.createContest)
 
 		r.With(s.MustBeAuthed).Post("/acceptInvitation", webMessageWrapper("Registered for contest", s.acceptContestInvitation))
 		r.With(s.MustBeAuthed).Post("/updateInvitation", webMessageWrapper("Updated invitation", s.updateContestInvitation))

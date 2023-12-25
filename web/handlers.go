@@ -47,7 +47,7 @@ var (
 )
 
 func (rt *Web) index() http.HandlerFunc {
-	templ := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html", "modals/contest_list.html", "modals/login.html")
+	templ := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html", "modals/contest_brief.html", "modals/login.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		runningContests, err := rt.base.VisibleRunningContests(r.Context(), util.UserBrief(r))
 		if err != nil {
@@ -213,9 +213,6 @@ func (rt *Web) problems() http.HandlerFunc {
 			gr = slices.DeleteFunc(gr, func(tg *kilonova.TagGroup) bool {
 				return len(tg.TagIDs) == 0
 			})
-
-			_ = tags
-
 		}
 
 		pbs, cnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
@@ -941,16 +938,59 @@ func (rt *Web) editBlogPostAtts() http.HandlerFunc {
 }
 
 func (rt *Web) contests() http.HandlerFunc {
-	templ := rt.parse(nil, "contest/index.html", "modals/contest_list.html")
+	templ := rt.parse(nil, "contest/index.html", "modals/contest_brief.html", "contest/index_topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		contests, err := rt.base.VisibleContests(r.Context(), util.UserBrief(r))
+		filter := kilonova.ContestFilter{Look: true, LookingUser: util.UserBrief(r)}
+		page := "all"
+		switch v := r.URL.Query().Get("page"); v {
+		case "virtual", "official":
+			page = v
+		case "personal":
+			if !rt.base.IsAuthed(util.UserBrief(r)) {
+				// Important to redirect and return, since we will dereference for ID later
+				http.Redirect(w, r, "/contests", http.StatusTemporaryRedirect)
+				return
+			}
+			page = v
+		}
+		switch page {
+		case "all":
+			// no additional filter
+		case "official":
+			filter.Type = kilonova.ContestTypeOfficial
+		case "virtual":
+			filter.Type = kilonova.ContestTypeVirtual
+		case "personal":
+			filter.ImportantContestsUID = &util.UserBrief(r).ID
+		default:
+			zap.S().Warn("Unknown page type: ", page)
+		}
+
+		contests, err := rt.base.Contests(r.Context(), filter)
 		if err != nil {
-			rt.statusPage(w, r, 400, "")
+			zap.S().Warn(err)
+			rt.statusPage(w, r, 400, "Nu am putut obține concursurile")
 			return
 		}
 		rt.runTempl(w, r, templ, &ContestsIndexParams{
 			Ctx:      GenContext(r),
 			Contests: contests,
+			Page:     page,
+		})
+	}
+}
+
+func (rt *Web) createContest() http.HandlerFunc {
+	templ := rt.parse(nil, "contest/create.html", "proposer/createcontest.html", "contest/index_topbar.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !(rt.base.IsProposer(util.UserBrief(r)) || sudoapi.NormalUserVirtualContests.Value()) {
+			rt.statusPage(w, r, 403, "Nu poți crea concursuri!")
+			return
+		}
+		rt.runTempl(w, r, templ, &ContestsIndexParams{
+			Ctx:      GenContext(r),
+			Contests: nil,
+			Page:     "create",
 		})
 	}
 }
@@ -1392,6 +1432,9 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		},
 		"isAdmin": func() bool {
 			return authedUser != nil && authedUser.Admin
+		},
+		"isProposer": func() bool {
+			return authedUser != nil && (authedUser.Admin || authedUser.Proposer)
 		},
 		"currentProblem": func() *kilonova.Problem {
 			return util.Problem(r)

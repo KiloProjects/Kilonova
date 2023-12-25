@@ -1,0 +1,11 @@
+{{ define "title" }} {{getText "createContest"}} {{ end }}
+{{ define "head" }}
+<link rel="canonical" href="{{formatCanonical `/contests/create`}}" />
+{{ end }}
+{{ define "content" }}
+
+{{ template "index_topbar.html" . }}
+
+{{ template "createcontest.html" . }}
+
+{{ end }}

@@ -1,0 +1,21 @@
+
+<div class="segment-panel">
+    <h1>{{getText "contests"}}</h1>
+
+    <div class="mt-1">
+        <a class="p-1 {{if eq .Page `all`}} topbar-selected {{end}}" href="/contests/">{{getText "contest_index.all"}}</a>
+        |
+        <a class="p-1 {{if eq .Page `official`}} topbar-selected {{end}}" href="/contests/?page=official">{{getText "contest_index.official"}}</a>
+        |
+        <a class="p-1 {{if eq .Page `virtual`}} topbar-selected {{end}}" href="/contests/?page=virtual">{{getText "contest_index.virtual"}}</a>
+        |
+        <a class="p-1 {{if eq .Page `personal`}} topbar-selected {{end}}" href="/contests/?page=personal">{{getText "contest_index.personal"}}</a>
+        
+        {{if authed}}
+        {{if or (boolFlag "behavior.contests.anyone_virtual") (isProposer)}}
+        |
+        <a class="p-1 {{if eq .Page `create`}} topbar-selected {{end}}" href="/contests/create">{{getText "contest_index.create"}}</a>
+        {{end}}
+        {{end}}
+    </div>
+</div>

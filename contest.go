@@ -24,6 +24,14 @@ const (
 	LeaderboardTypeICPC    LeaderboardType = "acm-icpc"
 )
 
+type ContestType string
+
+const (
+	ContestTypeNone     ContestType = ""
+	ContestTypeOfficial ContestType = "official"
+	ContestTypeVirtual  ContestType = "virtual"
+)
+
 type Contest struct {
 	ID        int          `json:"id"`
 	CreatedAt time.Time    `json:"created_at"`
@@ -64,6 +72,8 @@ type Contest struct {
 	// Setting it to 0 will make contests behave "normally"
 	PerUserTime int `json:"per_user_time"`
 
+	Type ContestType `json:"type"`
+
 	// MaxSubs is the maximum number of submissions
 	// that someone is allowed to send to a problem during a contest
 	// < 0 => no limit
@@ -91,6 +101,39 @@ func (c *Contest) Running() bool {
 	return c.Started() && !c.Ended()
 }
 
+type ContestFilter struct {
+	ID          *int       `json:"id"`
+	IDs         []int      `json:"ids"`
+	Look        bool       `json:"-"`
+	LookingUser *UserBrief `json:"-"`
+
+	ProblemID *int `json:"problem_id"`
+
+	// Shows contests in which user with this ID was registered
+	ContestantID *int `json:"contestant_id"`
+
+	Future  bool `json:"future"`
+	Running bool `json:"running"`
+	Ended   bool `json:"ended"`
+
+	Type ContestType `json:"type"`
+
+	// Filters for that user the *important* contests:
+	//   - Official contests
+	//   - Virtual contests with participation
+	//   - Virtual contests the user organizes (editor/tester)
+	// This is used in filtering the contests for the main page
+	ImportantContestsUID *int `json:"important_contest_uid"`
+
+	Since *time.Time `json:"-"`
+
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+
+	Ordering  string `json:"ordering"`
+	Ascending bool   `json:"ascending"`
+}
+
 type ContestUpdate struct {
 	Name *string `json:"name"`
 
@@ -112,6 +155,8 @@ type ContestUpdate struct {
 
 	ChangeLeaderboardFreeze bool       `json:"change_leaderboard_freeze"`
 	LeaderboardFreeze       *time.Time `json:"leaderboard_freeze"`
+
+	Type ContestType `json:"type"`
 
 	PerUserTime *int `json:"per_user_time"` // Seconds
 }

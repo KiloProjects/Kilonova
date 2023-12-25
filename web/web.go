@@ -168,6 +168,7 @@ func (rt *Web) Handler() http.Handler {
 
 		r.Route("/contests", func(r chi.Router) {
 			r.Get("/", rt.contests())
+			r.With(rt.mustBeAuthed).Get("/create", rt.createContest())
 			r.With(rt.mustBeAuthed).Get("/invite/{inviteID}", rt.contestInvite())
 			r.Route("/{contestID}", func(r chi.Router) {
 				r.Use(rt.ValidateContestID)
@@ -695,6 +696,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		},
 		"isAdmin": func() bool {
 			zap.S().Error("Uninitialized `isAdmin`")
+			return false
+		},
+		"isProposer": func() bool {
+			zap.S().Error("Uninitialized `isProposer`")
 			return false
 		},
 		"isContestEditor": func(c *kilonova.Contest) bool {

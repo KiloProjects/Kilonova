@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -35,15 +36,17 @@ type dbContest struct {
 
 	PerUserTime           int  `db:"per_user_time"`
 	RegisterDuringContest bool `db:"register_during_contest"`
+
+	Type kilonova.ContestType `db:"type"`
 }
 
 const createContestQuery = `INSERT INTO contests (
-		name, start_time, end_time
+		name, type, start_time, end_time
 	) VALUES (
-		$1, $2, $3
+		$1, $2, $3, $4
 	) RETURNING id`
 
-func (s *DB) CreateContest(ctx context.Context, name string) (int, error) {
+func (s *DB) CreateContest(ctx context.Context, name string, cType kilonova.ContestType) (int, error) {
 	if name == "" {
 		return -1, kilonova.ErrMissingRequired
 	}
@@ -52,12 +55,13 @@ func (s *DB) CreateContest(ctx context.Context, name string) (int, error) {
 	defaultStart := time.Now().AddDate(0, 0, 7).Truncate(time.Hour)
 	err := s.conn.QueryRow(
 		ctx, createContestQuery,
-		name,
+		name, cType,
 		defaultStart, defaultStart.Add(2*time.Hour),
 	).Scan(&id)
 	return id, err
 }
 
+// TODO: Convert to taking Contests() and returning the first one
 func (s *DB) Contest(ctx context.Context, id int) (*kilonova.Contest, error) {
 	var contest dbContest
 	err := Get(s.conn, ctx, &contest, "SELECT * FROM contests WHERE id = $1", id)
@@ -69,66 +73,90 @@ func (s *DB) Contest(ctx context.Context, id int) (*kilonova.Contest, error) {
 	return s.internalToContest(ctx, &contest)
 }
 
-// TODO: Test
-// TODO: it might expose hidden running contests with that problem
-func (s *DB) RunningContestsByProblem(ctx context.Context, problemID int) ([]*kilonova.Contest, error) {
-	var contests []*dbContest
-	err := Select(s.conn,
-		ctx,
-		&contests,
-		"SELECT contests.* FROM running_contests contests, contest_problems pbs WHERE contests.id = pbs.contest_id AND pbs.problem_id = $1 ORDER BY contests.start_time DESC, contests.id ASC",
-		problemID,
-	)
+func (s *DB) Contests(ctx context.Context, filter kilonova.ContestFilter) ([]*kilonova.Contest, error) {
+	fb := newFilterBuilder()
+	contestFilterQuery(&filter, fb)
+
+	rows, _ := s.conn.Query(ctx, fmt.Sprintf(
+		"SELECT * FROM contests WHERE %s %s %s",
+		fb.Where(), getContestOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset),
+	), fb.Args()...)
+	contests, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[dbContest])
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.Contest{}, nil
 	} else if err != nil {
 		return []*kilonova.Contest{}, err
 	}
-	return mapperCtx(ctx, contests, s.internalToContest), err
+
+	return mapperCtx(ctx, contests, s.internalToContest), nil
 }
 
-func (s *DB) VisibleContests(ctx context.Context, userID int) ([]*kilonova.Contest, error) {
-	var contests []*dbContest
-	err := Select(s.conn,
-		ctx,
-		&contests,
-		"SELECT contests.* FROM contests WHERE EXISTS (SELECT 1 FROM visible_contests($1) viz WHERE contests.id = viz.contest_id) ORDER BY contests.start_time DESC, contests.id ASC",
-		userID,
-	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return []*kilonova.Contest{}, nil
+func (s *DB) ContestCount(ctx context.Context, filter kilonova.ContestFilter) (int, error) {
+	fb := newFilterBuilder()
+	contestFilterQuery(&filter, fb)
+	var val int
+	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM contests WHERE "+fb.Where(), fb.Args()...).Scan(&val)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return -1, err
+		}
+		val = 0
 	}
-	return mapperCtx(ctx, contests, s.internalToContest), err
+	return val, nil
 }
 
-func (s *DB) VisibleFutureContests(ctx context.Context, userID int) ([]*kilonova.Contest, error) {
-	var contests []*dbContest
-	err := Select(s.conn,
-		ctx,
-		&contests,
-		`SELECT contests.* FROM contests WHERE EXISTS (SELECT 1 FROM visible_contests($1) viz WHERE contests.id = viz.contest_id)
-		AND NOW() < contests.start_time ORDER BY contests.start_time DESC, contests.id ASC`,
-		userID,
-	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return []*kilonova.Contest{}, nil
+func contestFilterQuery(filter *kilonova.ContestFilter, fb *filterBuilder) {
+	if v := filter.ID; v != nil {
+		fb.AddConstraint("id = %s", v)
 	}
-	return mapperCtx(ctx, contests, s.internalToContest), err
-}
+	if v := filter.IDs; v != nil {
+		fb.AddConstraint("id = ANY(%s)", v)
+	}
+	if filter.Look {
+		var id int = 0
+		if filter.LookingUser != nil {
+			id = filter.LookingUser.ID
+		}
+		fb.AddConstraint("EXISTS (SELECT 1 FROM visible_contests(%s) viz WHERE contests.id = viz.contest_id)", id)
+	}
 
-func (s *DB) VisibleRunningContests(ctx context.Context, userID int) ([]*kilonova.Contest, error) {
-	var contests []*dbContest
-	err := Select(s.conn,
-		ctx,
-		&contests,
-		`SELECT contests.* FROM contests WHERE EXISTS (SELECT 1 FROM visible_contests($1) viz WHERE contests.id = viz.contest_id) 
-		AND contests.start_time <= NOW() AND NOW() < contests.end_time ORDER BY contests.start_time DESC, contests.id ASC`,
-		userID,
-	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return []*kilonova.Contest{}, nil
+	if v := filter.ProblemID; v != nil {
+		fb.AddConstraint("EXISTS (SELECT 1 FROM contest_problems pbs WHERE contests.id = pbs.contest_id AND pbs.problem_id = %s)", v)
 	}
-	return mapperCtx(ctx, contests, s.internalToContest), err
+	if v := filter.ContestantID; v != nil {
+		fb.AddConstraint("EXISTS (SELECT 1 FROM contest_registrations regs WHERE contests.id = regs.contest_id AND regs.user_id = %s)", v)
+	}
+
+	if filter.Future {
+		fb.AddConstraint("NOW() < start_time")
+	}
+	if filter.Running {
+		fb.AddConstraint("start_time <= NOW()")
+		fb.AddConstraint("NOW() < end_time")
+	}
+	if filter.Ended {
+		fb.AddConstraint("end_time <= NOW()")
+	}
+
+	if v := filter.Type; v != kilonova.ContestTypeNone {
+		fb.AddConstraint("type = %s", v)
+	}
+
+	if v := filter.Since; v != nil {
+		fb.AddConstraint("created_at > %s", v)
+	}
+
+	// See field comment for details
+	if v := filter.ImportantContestsUID; v != nil {
+		fb.AddConstraint(`(type = 'official' 
+			OR (type = 'virtual' AND (
+					EXISTS (SELECT 1 FROM contest_registrations regs WHERE contests.id = regs.contest_id AND regs.user_id = %s)
+					OR
+					EXISTS (SELECT 1 FROM contest_user_access acc WHERE contests.id = acc.contest_id AND acc.user_id = %s)
+				)
+			))`, v, v)
+	}
+
 }
 
 func (s *DB) UpdateContest(ctx context.Context, id int, upd kilonova.ContestUpdate) error {
@@ -387,6 +415,24 @@ func contestUpdateQuery(upd *kilonova.ContestUpdate, ub *updateBuilder) {
 	if v := upd.RegisterDuringContest; v != nil {
 		ub.AddUpdate("register_during_contest = %s", v)
 	}
+	if v := upd.Type; v != kilonova.ContestTypeNone {
+		ub.AddUpdate("type = %s", v)
+	}
+}
+
+func getContestOrdering(ordering string, ascending bool) string {
+	ord := " DESC"
+	if ascending {
+		ord = " ASC"
+	}
+	switch ordering {
+	case "id":
+		return "ORDER BY id" + ord
+	case "end_time":
+		return "ORDER BY end_time" + ord + ", id ASC"
+	default: // case "start_time":
+		return "ORDER BY start_time" + ord + ", id ASC"
+	}
 }
 
 func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilonova.Contest, error) {
@@ -425,5 +471,6 @@ func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilono
 		RegisterDuringContest: contest.RegisterDuringContest,
 
 		Visible: contest.Visible,
+		Type:    contest.Type,
 	}, nil
 }
