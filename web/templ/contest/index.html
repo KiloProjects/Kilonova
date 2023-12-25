@@ -6,6 +6,20 @@
 
 {{ template "index_topbar.html" . }}
 
+{{if not (eq .ContestCount (len .Contests))}}
+    <div id="contest_paginator">
+
+    </div>
+    <script>
+        const page = {{.PageNum}};
+        const numpages = Math.floor({{.ContestCount}} / 60) + ({{.ContestCount}} % 60 > 0 ? 1 : 0);
+        bundled.preactRender(bundled.Paginator({page, numpages, setPage: (page) => {
+            const params = new URLSearchParams(window.location.search)
+            params.set("p", page)
+            window.location.search = params.toString()
+        }}), document.getElementById("contest_paginator"))
+    </script>
+{{end}}
 <div class="contest-grid">
     {{ range .Contests }}
         {{ template "contest_brief.html" .}}

@@ -942,7 +942,7 @@ func (rt *Web) contests() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filter := kilonova.ContestFilter{Look: true, LookingUser: util.UserBrief(r)}
 		page := "all"
-		switch v := r.URL.Query().Get("page"); v {
+		switch v := r.FormValue("page"); v {
 		case "virtual", "official":
 			page = v
 		case "personal":
@@ -966,16 +966,34 @@ func (rt *Web) contests() http.HandlerFunc {
 			zap.S().Warn("Unknown page type: ", page)
 		}
 
+		cnt, err := rt.base.ContestCount(r.Context(), filter)
+		if err != nil {
+			zap.S().Warn(err)
+			cnt = -1
+		}
+
+		pageNum, err1 := strconv.Atoi(r.FormValue("p"))
+		if err1 != nil {
+			pageNum = 1
+		}
+
+		filter.Limit = 60
+		filter.Offset = filter.Limit * (pageNum - 1)
+
 		contests, err := rt.base.Contests(r.Context(), filter)
 		if err != nil {
 			zap.S().Warn(err)
 			rt.statusPage(w, r, 400, "Nu am putut obține concursurile")
 			return
 		}
+
 		rt.runTempl(w, r, templ, &ContestsIndexParams{
 			Ctx:      GenContext(r),
 			Contests: contests,
 			Page:     page,
+
+			ContestCount: cnt,
+			PageNum:      pageNum,
 		})
 	}
 }

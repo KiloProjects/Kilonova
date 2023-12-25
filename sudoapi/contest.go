@@ -100,6 +100,14 @@ func (s *BaseAPI) Contests(ctx context.Context, filter kilonova.ContestFilter) (
 	return contests, nil
 }
 
+func (s *BaseAPI) ContestCount(ctx context.Context, filter kilonova.ContestFilter) (int, *StatusError) {
+	cnt, err := s.db.ContestCount(ctx, filter)
+	if err != nil {
+		return -1, WrapError(err, "Couldn't fetch contests")
+	}
+	return cnt, nil
+}
+
 func (s *BaseAPI) VisibleFutureContests(ctx context.Context, user *kilonova.UserBrief) ([]*kilonova.Contest, *StatusError) {
 	filter := kilonova.ContestFilter{
 		Future:      true,

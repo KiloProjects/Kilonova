@@ -111,6 +111,9 @@ type ContestsIndexParams struct {
 	Contests []*kilonova.Contest
 
 	Page string
+
+	ContestCount int
+	PageNum      int
 }
 
 type DonateParams struct {
