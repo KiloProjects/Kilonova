@@ -148,13 +148,13 @@ func contestFilterQuery(filter *kilonova.ContestFilter, fb *filterBuilder) {
 
 	// See field comment for details
 	if v := filter.ImportantContestsUID; v != nil {
-		fb.AddConstraint(`(type = 'official' 
-			OR (type = 'virtual' AND (
-					EXISTS (SELECT 1 FROM contest_registrations regs WHERE contests.id = regs.contest_id AND regs.user_id = %s)
-					OR
-					EXISTS (SELECT 1 FROM contest_user_access acc WHERE contests.id = acc.contest_id AND acc.user_id = %s)
-				)
-			))`, v, v)
+		fb.AddConstraint(`(
+				(type = 'official' AND end_time >= NOW()) 
+				OR 
+				EXISTS (SELECT 1 FROM contest_registrations regs WHERE contests.id = regs.contest_id AND regs.user_id = %s)
+				OR
+				EXISTS (SELECT 1 FROM contest_user_access acc WHERE contests.id = acc.contest_id AND acc.user_id = %s)
+			)`, v, v)
 	}
 
 }
