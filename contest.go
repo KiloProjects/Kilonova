@@ -112,6 +112,9 @@ type ContestFilter struct {
 	// Shows contests in which user with this ID was registered
 	ContestantID *int `json:"contestant_id"`
 
+	// Shows contests in which user with this ID is an editor
+	EditorID *int `json:"editor_id"`
+
 	Future  bool `json:"future"`
 	Running bool `json:"running"`
 	Ended   bool `json:"ended"`

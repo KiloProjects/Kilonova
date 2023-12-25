@@ -126,6 +126,9 @@ func contestFilterQuery(filter *kilonova.ContestFilter, fb *filterBuilder) {
 	if v := filter.ContestantID; v != nil {
 		fb.AddConstraint("EXISTS (SELECT 1 FROM contest_registrations regs WHERE contests.id = regs.contest_id AND regs.user_id = %s)", v)
 	}
+	if v := filter.EditorID; v != nil {
+		fb.AddConstraint("EXISTS (SELECT 1 FROM contest_user_access acc WHERE contests.id = acc.contest_id AND acc.user_id = %s AND acc.access = 'editor')", v)
+	}
 
 	if filter.Future {
 		fb.AddConstraint("NOW() < start_time")

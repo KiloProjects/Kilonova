@@ -36,7 +36,8 @@ func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova
 		// Enforce stricter limits for non-proposers
 		since := time.Now().Add(-24 * time.Hour) // rolling day
 		cnt, err := s.db.ContestCount(ctx, kilonova.ContestFilter{
-			Since: &since,
+			Since:    &since,
+			EditorID: &author.ID,
 		})
 		if err != nil || (cnt >= NormalUserVCLimit.Value() && NormalUserVCLimit.Value() >= 0) {
 			if err != nil {
