@@ -355,7 +355,7 @@ func (s *API) Handler() http.Handler {
 			r.With(s.validateContestEditor).Get("/registrations", s.contestRegistrations)
 			r.With(s.validateContestEditor).Post("/kickUser", s.stripContestRegistration)
 			r.With(s.MustBeAdmin).Post("/forceRegister", s.forceRegisterForContest)
-			r.With(s.MustBeAdmin).Post("/delete", webMessageWrapper("Deleted contest", func(ctx context.Context, args struct{}) *kilonova.StatusError {
+			r.With(s.validateContestEditor).Post("/delete", webMessageWrapper("Deleted contest", func(ctx context.Context, args struct{}) *kilonova.StatusError {
 				return s.base.DeleteContest(ctx, util.ContestContext(ctx))
 			}))
 

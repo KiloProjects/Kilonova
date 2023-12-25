@@ -261,6 +261,9 @@ func (s *BaseAPI) RemainingSubmissionCount(ctx context.Context, contest *kilonov
 	if err != nil {
 		return -1, WrapError(err, "Couldn't get submission count")
 	}
+	if contest.MaxSubs < 0 {
+		return 1, nil
+	}
 	return contest.MaxSubs - cnt, nil
 }
 
