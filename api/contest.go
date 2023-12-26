@@ -41,6 +41,18 @@ func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "You aren't allowed to change contest type!", 400)
 		return
 	}
+	st := util.Contest(r).StartTime
+	et := util.Contest(r).EndTime
+	if args.StartTime != nil {
+		st = *args.StartTime
+	}
+	if args.EndTime != nil {
+		et = *args.EndTime
+	}
+	if !st.Before(et) {
+		errorData(w, "Start time must be before end time.", 400)
+		return
+	}
 
 	if err := s.base.UpdateContest(r.Context(), util.Contest(r).ID, args); err != nil {
 		err.WriteError(w)
