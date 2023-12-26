@@ -51,7 +51,7 @@ export function formatDuration(targetTime: Dayjs | number, hideSeconds: boolean 
 }
 
 // Formats datetime-local input into an ISO3601 timezone-aware string
-export function formatISO3601(timestamp: string): string {
+export function formatISO3601(timestamp: string | dayjs.Dayjs): string {
 	const djs = dayjs(timestamp, "YYYY-MM-DDTHH:mm", true);
 	if (!djs.isValid()) {
 		throw new Error("Invalid timestamp");

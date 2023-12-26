@@ -651,6 +651,10 @@ ro = "Limită de memorie"
 en = "Time limit"
 ro = "Limită de timp"
 
+[minutes]
+en = "minutes"
+ro = "minute"
+
 [seconds]
 en = "seconds"
 ro = "secunde"
@@ -2531,3 +2535,27 @@ ro = "Liste evidențiate"
 [glossary]
 en = "Glossary"
 ro = "Glosar"
+
+[created_by]
+en = "Created by"
+ro = "Creată de"
+
+[create_simulation]
+en = "Create simulation contest of list"
+ro = "Creare concurs de simulare a listei"
+
+[simulation]
+en = "Simulation"
+ro = "Simulare"
+
+[sim_name]
+en = "Simulation name"
+ro = "Nume simulare"
+
+[start_now]
+en = "Start now"
+ro = "Începe acum"
+
+[create_edit]
+en = "Create and Edit"
+ro = "Creare și Editare"

@@ -47,9 +47,11 @@
 					<a class="dropdown-list-item" href="/settings">
 						<i class="ml-n2 fas fa-user-cog fa-fw"></i> {{getText "settings"}}
 					</a>
-                    <a class="dropdown-list-item" href="/contests/">
-                        <i class="ml-n2 fas fa-medal fa-fw"></i> {{getText "contests"}}
-                    </a>
+                    {{ if not (boolFlag "feature.frontend.navbar.contests_btn") }}
+                        <a class="dropdown-list-item" href="/contests/">
+                            <i class="ml-n2 fas fa-medal fa-fw"></i> {{getText "contests"}}
+                        </a>
+                    {{ end }}
                     <a class="dropdown-list-item" href="/tags/">
                         <i class="ml-n2 fas fa-tag fa-fw"></i> {{getText "tags"}}
                     </a>
