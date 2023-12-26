@@ -941,6 +941,14 @@ func (rt *Web) contests() http.HandlerFunc {
 	templ := rt.parse(nil, "contest/index.html", "modals/contest_brief.html", "contest/index_topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		filter := kilonova.ContestFilter{Look: true, LookingUser: util.UserBrief(r)}
+
+		filter.Ordering = r.FormValue("ord")
+		asc, err := strconv.ParseBool(r.FormValue("asc"))
+		if err != nil {
+			asc = false
+		}
+		filter.Ascending = asc
+
 		page := "all"
 		switch v := r.FormValue("page"); v {
 		case "virtual", "official":
