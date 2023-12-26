@@ -249,7 +249,8 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 					))}
 					{leaderboard.entries.length == 0 && (
 						<tr class="kn-table-row">
-							<td class="kn-table-cell" colSpan={99}>
+							{/* TODO: Update here if header changes */}
+							<td class="kn-table-cell" colSpan={2 + (leaderboard.type === "acm-icpc" ? 2 : 1) + problems.length}>
 								<h1>{getText("no_users")}</h1>
 							</td>
 						</tr>
