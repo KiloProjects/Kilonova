@@ -943,8 +943,8 @@ func (rt *Web) contests() http.HandlerFunc {
 		filter := kilonova.ContestFilter{Look: true, LookingUser: util.UserBrief(r)}
 
 		filter.Ordering = r.FormValue("ord")
-		asc, err := strconv.ParseBool(r.FormValue("asc"))
-		if err != nil {
+		asc, err1 := strconv.ParseBool(r.FormValue("asc"))
+		if err1 != nil {
 			asc = false
 		}
 		filter.Ascending = asc
