@@ -248,7 +248,7 @@ func (s *DB) ContestClassicLeaderboard(ctx context.Context, contest *kilonova.Co
 
 	var topList []*databaseClassicEntry
 
-	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_top_view($1, $2)", contest.ID, freezeTime)
+	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_top_view($1, $2, $3)", contest.ID, freezeTime, contest.Type == kilonova.ContestTypeVirtual)
 	if err != nil {
 		return nil, err
 	}
@@ -339,7 +339,7 @@ func (s *DB) ContestICPCLeaderboard(ctx context.Context, contest *kilonova.Conte
 
 	var topList []*databaseICPCEntry
 
-	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_icpc_view($1, $2)", contest.ID, freezeTime)
+	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_icpc_view($1, $2, $3)", contest.ID, freezeTime, contest.Type == kilonova.ContestTypeVirtual)
 	if err != nil {
 		zap.S().Warn(err)
 		return nil, err

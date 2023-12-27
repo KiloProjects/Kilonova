@@ -81,6 +81,12 @@
                     window.location.assign(`/contests/${id}/manage/edit`)
                     return
                 }
+                res = await bundled.postCall(`/contest/${id}/register`, {});
+                if (res.status === "error") {
+                    res.data = `Contest created with errors: ${res.data}. <a href="/contests/${id}">View it here</a>`
+                    apiToast(res);
+                    return;
+                }
                 let startTime = bundled.dayjs(), endTime = startTime.add(dur, 'minute')
                 res = await bundled.postCall(`/contest/${id}/update`, {
                     start_time: bundled.formatISO3601(startTime),
