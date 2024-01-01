@@ -424,8 +424,16 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 
 	// If enabled that people see all source code
 	// IsProblemFullyVisible is a workaround when a contest is running but there are submissions that were not sent in the contest
-	if SubForEveryoneConfig.Value() && sub.ContestID == nil && s.IsProblemFullyVisible(user, subProblem) {
-		return true
+	if SubForEveryoneConfig.Value() && s.IsProblemFullyVisible(user, subProblem) {
+		if sub.ContestID == nil {
+			// If problem fully visible and submission not in contest, just show the source code
+			return true
+		}
+		contest, err := s.Contest(ctx, *sub.ContestID)
+		if err == nil && contest.Ended() {
+			// Or if it's from a contest that ended
+			return true
+		}
 	}
 
 	return s.subVisibleRegardless(ctx, sub, user, subProblem)
