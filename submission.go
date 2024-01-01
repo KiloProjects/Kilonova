@@ -11,11 +11,12 @@ const MaxScoreRoundingPlaces = 4
 type Status string
 
 const (
-	StatusNone     Status = ""
-	StatusCreating Status = "creating"
-	StatusWaiting  Status = "waiting"
-	StatusWorking  Status = "working"
-	StatusFinished Status = "finished"
+	StatusNone      Status = ""
+	StatusCreating  Status = "creating"
+	StatusWaiting   Status = "waiting"
+	StatusWorking   Status = "working"
+	StatusFinished  Status = "finished"
+	StatusReevaling Status = "reevaling"
 )
 
 type EvalType string

@@ -55,15 +55,15 @@ CREATE OR REPLACE FUNCTION visible_pbs(user_id bigint) RETURNS TABLE (problem_id
     UNION ALL
     (SELECT pbs.problem_id as problem_id, 0 as user_id
         FROM contest_problems pbs, contests
-        WHERE pbs.contest_id = contests.id AND contests.visible = true
+        WHERE pbs.contest_id = contests.id AND contests.visible = true AND contests.type = 'official'
         AND contests.end_time <= NOW()
-        AND 0 = $1) -- Visible contests after they ended for anons. TODO: Find alternative
+        AND 0 = $1) -- Visible OFFICIAL contests after they ended for anons. TODO: Find alternative
     UNION ALL
     (SELECT pbs.problem_id as problem_id, users.id as user_id
         FROM contest_problems pbs, users, contests
-        WHERE pbs.contest_id = contests.id AND contests.visible = true
+        WHERE pbs.contest_id = contests.id AND contests.visible = true AND contests.type = 'official'
         AND contests.end_time <= NOW()
-        AND users.id = $1) -- Visible contests after they ended
+        AND users.id = $1) -- Visible OFFICIAL contests after they ended
     UNION ALL
     (SELECT pbs.problem_id as problem_id, 0 as user_id
         FROM contest_problems pbs, running_contests contests
@@ -167,7 +167,7 @@ DROP FUNCTION IF EXISTS contest_max_scores(bigint, timestamptz);
 CREATE OR REPLACE FUNCTION contest_max_scores(contest_id bigint, freeze_time timestamptz) RETURNS TABLE(user_id bigint, problem_id bigint, score decimal, mintime timestamptz) AS $$
     WITH max_submission_strat AS (
         SELECT DISTINCT user_id, problem_id, FIRST_VALUE(score) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
-            FROM submissions WHERE contest_id = $1 AND created_at <= COALESCE(freeze_time, NOW()) AND status = 'finished'
+            FROM submissions WHERE contest_id = $1 AND created_at <= COALESCE(freeze_time, NOW()) AND (status = 'finished' OR status = 'reevaling')
             WINDOW w AS (PARTITION BY user_id, problem_id ORDER BY score DESC, created_at ASC)
     ), subtask_max_scores AS (
         SELECT DISTINCT user_id, subtask_id, problem_id, FIRST_VALUE(computed_score) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
@@ -234,7 +234,7 @@ RETURNS TABLE (user_id bigint, contest_id bigint, last_time timestamptz, num_sol
                 AND subs.user_id = solved_pbs.user_id 
                 AND subs.problem_id = solved_pbs.problem_id 
                 AND subs.created_at < solved_pbs.last_time
-                AND subs.status = 'finished'
+                AND (subs.status = 'finished' OR subs.status = 'reevaling')
             GROUP BY solved_pbs.user_id
     ), duration_sum AS (
         -- get sum of number of minutes from problems

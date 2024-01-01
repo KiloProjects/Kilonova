@@ -380,9 +380,11 @@ func (s *BaseAPI) DeleteSubmission(ctx context.Context, subID int) *StatusError 
 }
 
 func (s *BaseAPI) ResetProblemSubmissions(ctx context.Context, problem *kilonova.Problem) *StatusError {
-	if err := s.db.ResetSubmissions(ctx, kilonova.SubmissionFilter{ProblemID: &problem.ID}); err != nil {
+	if err := s.db.BulkUpdateSubmissions(ctx, kilonova.SubmissionFilter{ProblemID: &problem.ID}, kilonova.SubmissionUpdate{
+		Status: kilonova.StatusReevaling,
+	}); err != nil {
 		zap.S().Warn(err)
-		return WrapError(err, "Couldn't reset submissions tests")
+		return WrapError(err, "Couldn't mark submissions for reevaluation")
 	}
 
 	s.LogUserAction(ctx, "Reset submissions for problem #%d: %s", problem.ID, problem.Name)

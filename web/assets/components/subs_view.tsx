@@ -40,6 +40,8 @@ const status = (sub: Submission): string | h.JSX.Element => {
 		return <>{sub.icpc_verdict ? icpcVerdictString(sub.icpc_verdict) : getText("rejected")}</>;
 	} else if (sub.status === "working") {
 		return getText("evaluating");
+	} else if ((sub.status = "reevaling")) {
+		return getText("reevaling");
 	}
 	return getText("waiting");
 };
@@ -65,7 +67,7 @@ function getInitialData(overwrites: Overwrites): SubmissionQuery {
 	}
 
 	let status = params.get("status") ?? "";
-	if (!["working", "waiting", "finished"].includes(status)) {
+	if (!["working", "waiting", "finished", "reevaling"].includes(status)) {
 		status = "";
 	}
 
@@ -290,6 +292,7 @@ function SubsView(props: SubsViewProps) {
 								<option value="finished">{getText("finished")}</option>
 								<option value="working">{getText("working")}</option>
 								<option value="waiting">{getText("waiting")}</option>
+								<option value="reevaling">{getText("reevaling")}</option>
 							</select>
 						</label>
 						{typeof overwrites.userID === "undefined" && (

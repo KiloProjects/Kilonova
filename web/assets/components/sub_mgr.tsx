@@ -84,43 +84,44 @@ function Summary({ sub, pasteAuthor }: { sub: FullSubmission; pasteAuthor?: User
 						<td class="kn-table-cell">{getText("uploadDate")}</td>
 						<td class="kn-table-cell">{parseTime(sub.created_at)}</td>
 					</tr>
-					{sub.status === "finished" && (
-						<>
-							{sub.submission_type == "classic" ? (
+					{sub.status === "finished" ||
+						(sub.status == "reevaling" && (
+							<>
+								{sub.submission_type == "classic" ? (
+									<tr class="kn-table-simple-border">
+										<td class="kn-table-cell">{getText("score")}</td>
+										<td class="kn-table-cell">
+											<span class="badge-lite font-bold" style={{ backgroundColor: getGradient(sub.score, 100) }}>
+												{sub.score.toFixed(sub.score_precision)}
+											</span>
+										</td>
+									</tr>
+								) : (
+									<tr class="kn-table-simple-border">
+										<td class="kn-table-cell">{getText("verdict")}</td>
+										<td class="kn-table-cell">
+											<span class="badge-lite font-bold">
+												{sub.score == 100 ? (
+													<>
+														<i class="fas fa-fw fa-check"></i> {getText("accepted")}
+													</>
+												) : (
+													<>{sub.icpc_verdict ? icpcVerdictString(sub.icpc_verdict) : getText("rejected")}</>
+												)}
+											</span>
+										</td>
+									</tr>
+								)}
 								<tr class="kn-table-simple-border">
-									<td class="kn-table-cell">{getText("score")}</td>
-									<td class="kn-table-cell">
-										<span class="badge-lite font-bold" style={{ backgroundColor: getGradient(sub.score, 100) }}>
-											{sub.score.toFixed(sub.score_precision)}
-										</span>
-									</td>
+									<td class="kn-table-cell">{getText("time")}</td>
+									<td class="kn-table-cell">{sub.max_time == -1 ? "-" : `${Math.floor(sub.max_time * 1000)} ms`}</td>
 								</tr>
-							) : (
 								<tr class="kn-table-simple-border">
-									<td class="kn-table-cell">{getText("verdict")}</td>
-									<td class="kn-table-cell">
-										<span class="badge-lite font-bold">
-											{sub.score == 100 ? (
-												<>
-													<i class="fas fa-fw fa-check"></i> {getText("accepted")}
-												</>
-											) : (
-												<>{sub.icpc_verdict ? icpcVerdictString(sub.icpc_verdict) : getText("rejected")}</>
-											)}
-										</span>
-									</td>
+									<td class="kn-table-cell">{getText("memory")}</td>
+									<td class="kn-table-cell">{sub.max_memory == -1 ? "-" : sizeFormatter(sub.max_memory * 1024)}</td>
 								</tr>
-							)}
-							<tr class="kn-table-simple-border">
-								<td class="kn-table-cell">{getText("time")}</td>
-								<td class="kn-table-cell">{sub.max_time == -1 ? "-" : `${Math.floor(sub.max_time * 1000)} ms`}</td>
-							</tr>
-							<tr class="kn-table-simple-border">
-								<td class="kn-table-cell">{getText("memory")}</td>
-								<td class="kn-table-cell">{sub.max_memory == -1 ? "-" : sizeFormatter(sub.max_memory * 1024)}</td>
-							</tr>
-						</>
-					)}
+							</>
+						))}
 					{sub.problem.default_points > 0 && (
 						<tr class="kn-table-simple-border">
 							<td class="kn-table-cell">{getText("defaultPoints")}</td>

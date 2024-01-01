@@ -960,6 +960,10 @@ ro = "În lucru"
 en = "Waiting..."
 ro = "În așteptare..."
 
+[reevaling]
+en = "Awaiting re-evaluation"
+ro = "Așteaptă reevaluare"
+
 [special]
 en = "Special"
 ro = "Evidențiată"

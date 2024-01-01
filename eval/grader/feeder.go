@@ -16,7 +16,8 @@ import (
 )
 
 var (
-	waitingSubs   = kilonova.SubmissionFilter{Status: kilonova.StatusWaiting, Ascending: true, Limit: 40}
+	waitingSubs   = kilonova.SubmissionFilter{Status: kilonova.StatusWaiting, Ascending: true, Limit: 41}
+	reevalingSubs = kilonova.SubmissionFilter{Status: kilonova.StatusReevaling, Ascending: true, Limit: 6}
 	workingUpdate = kilonova.SubmissionUpdate{Status: kilonova.StatusWorking}
 
 	// If future me is running multiple grader handlers
@@ -58,6 +59,35 @@ func (h *Handler) Wake() {
 	}
 }
 
+func (h *Handler) ScheduleSubmission(runner eval.BoxScheduler, sub *kilonova.Submission) error {
+	var subRunner eval.BoxScheduler
+	if sub.SubmissionType == kilonova.EvalTypeClassic {
+		r, err := runner.SubRunner(h.ctx, runner.NumConcurrent())
+		if err != nil {
+			return err
+		} else {
+			subRunner = r
+		}
+	} else {
+		r, err := runner.SubRunner(h.ctx, 1)
+		if err != nil {
+			return err
+		} else {
+			subRunner = r
+		}
+	}
+	if err := h.base.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
+		return err
+	}
+	go func(sub *kilonova.Submission, r eval.BoxScheduler) {
+		defer r.Close(h.ctx)
+		if err := executeSubmission(h.ctx, h.base, r, sub); err != nil {
+			zap.S().Warn("Couldn't run submission: ", err)
+		}
+	}(sub, subRunner)
+	return nil
+}
+
 func (h *Handler) handle(runner eval.BoxScheduler) error {
 	for {
 		select {
@@ -70,45 +100,52 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 			if !more {
 				return nil
 			}
+			var rewake bool
 
 			subs, err := h.base.RawSubmissions(h.ctx, waitingSubs)
 			if err != nil {
 				zap.S().Warn(err)
-				continue
+			} else if len(subs) > 0 {
+				graderLogger.Infof("Found %d submissions", len(subs))
+				if len(subs) > 40 {
+					subs = subs[:40]
+					rewake = true
+				}
+				for _, sub := range subs {
+					if err := h.ScheduleSubmission(runner, sub); err != nil {
+						zap.S().Warn(err)
+					}
+				}
 			}
 
-			if len(subs) > 0 {
-				graderLogger.Infof("Found %d submissions", len(subs))
-				for _, sub := range subs {
-					var subRunner eval.BoxScheduler
-					if sub.SubmissionType == kilonova.EvalTypeClassic {
-						r, err := runner.SubRunner(h.ctx, runner.NumConcurrent())
-						if err != nil {
-							zap.S().Warn(err)
-							continue
-						} else {
-							subRunner = r
-						}
-					} else {
-						r, err := runner.SubRunner(h.ctx, 1)
-						if err != nil {
-							zap.S().Warn(err)
-							continue
-						} else {
-							subRunner = r
-						}
-					}
-					if err := h.base.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
-						zap.S().Warn(err)
+			reevalQueue, err := h.base.RawSubmissions(h.ctx, reevalingSubs)
+			if err != nil {
+				zap.S().Warn(err)
+			} else if len(reevalQueue) > 0 {
+				graderLogger.Infof("Found %d submissions for reevaluation", len(reevalQueue))
+				if len(reevalQueue) > 5 {
+					reevalQueue = reevalQueue[:5]
+					rewake = true
+				}
+				for _, sub := range reevalQueue {
+					if err := h.base.ResetSubmission(h.ctx, sub.ID); err != nil {
+						zap.S().Warn("Couldn't reset submission: ", err)
 						continue
 					}
-					go func(sub *kilonova.Submission, r eval.BoxScheduler) {
-						defer r.Close(h.ctx)
-						if err := executeSubmission(h.ctx, h.base, r, sub); err != nil {
-							zap.S().Warn("Couldn't run submission: ", err)
-						}
-					}(sub, subRunner)
+					sub2, err := h.base.RawSubmission(h.ctx, sub.ID)
+					if err != nil {
+						zap.S().Warn("Error refetching submission for reeval: ", err)
+						sub2 = sub
+					}
+					if err := h.ScheduleSubmission(runner, sub2); err != nil {
+						zap.S().Warn(err)
+					}
 				}
+			}
+
+			if rewake {
+				// Try to instantly continue working on the queue
+				h.Wake()
 			}
 		}
 	}
