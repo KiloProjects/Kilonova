@@ -1044,6 +1044,10 @@ ro = "Filtre"
 en = "Advanced filters"
 ro = "Filtre avansate"
 
+[viewingFromList]
+en = "Viewing problems from"
+ro = "Se vizualizează probleme din"
+
 [submitLogin]
 en = '<a href="/login">Log in</a> or <a href="/signup">sign up</a> to be able to send submissions!'
 ro = '<a href="/login">Autentifică-te</a> sau <a href="/signup">înregistrează-te</a> pentru a putea trimite submisii!'
@@ -2274,7 +2278,7 @@ ro = "Modul avansat"
 
 [use_in_search]
 en = "Use in search"
-ro = "Folosire în căutare"
+ro = "Folosește în căutare"
 
 [created_problems]
 en = "My problems"

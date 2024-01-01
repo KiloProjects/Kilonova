@@ -341,6 +341,8 @@ type MarkdownParams struct {
 type ProblemSearchParams struct {
 	Ctx *ReqContext
 
+	ProblemList *kilonova.ProblemList
+
 	Results   []*sudoapi.FullProblem
 	Groups    []*kilonova.TagGroup
 	GroupTags []*kilonova.Tag

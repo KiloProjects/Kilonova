@@ -27,10 +27,11 @@
                 {{with user .AuthorID}}
                     <a href="/profile/{{.Name}}">
                         <img class="rounded inline-block mx-1" src="/api/user/getGravatar?name={{.Name}}&s=32" width="24" height="24" alt="Avatar"/>
-                        {{.Name}}</a>.
+                        {{.Name}}</a>
                 {{else}}-{{end}}
-            {{else}}-{{end}}
+            {{else}}-{{end}} (<span class="server_timestamp">{{.CreatedAt.UnixMilli}}</span>)
         </p>
+        <a class="btn btn-blue my-2" href="/problems?deep_list_id={{.ID}}">{{getText "use_in_search"}}</a>
         {{if authed}}
         {{if gt (len .List) 0}}
         <form id="sim_create" class="segment-panel" autocomplete="off">

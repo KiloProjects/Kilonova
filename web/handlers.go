@@ -215,6 +215,17 @@ func (rt *Web) problems() http.HandlerFunc {
 			})
 		}
 
+		var pblist *kilonova.ProblemList
+		if q.DeepListID != nil {
+			list, err := rt.base.ProblemList(r.Context(), *q.DeepListID)
+			if err != nil {
+				zap.S().Warn(err)
+				list = nil
+				q.DeepListID = nil
+			}
+			pblist = list
+		}
+
 		pbs, cnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
 			LookingUser: util.UserBrief(r), Look: true,
 			FuzzyName: q.Query, EditorUserID: q.Editor, Visible: q.Visible,
@@ -230,7 +241,7 @@ func (rt *Web) problems() http.HandlerFunc {
 			rt.statusPage(w, r, 500, "N-am putut încărca problemele")
 			return
 		}
-		rt.runTempl(w, r, templ, &ProblemSearchParams{GenContext(r), pbs, gr, tags, cnt})
+		rt.runTempl(w, r, templ, &ProblemSearchParams{GenContext(r), pblist, pbs, gr, tags, cnt})
 	}
 }
 
@@ -247,21 +258,22 @@ type TagPageParams struct {
 	Tag *kilonova.Tag
 
 	RelevantTags []*kilonova.Tag
-	Problems     []*kilonova.ScoredProblem
+	Problems     []*sudoapi.FullProblem
+	ProblemCount int
 }
 
 func (rt *Web) tag() http.HandlerFunc {
 	templ := rt.parse(nil, "tags/tag.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		pbs, err := rt.base.ScoredProblems(r.Context(), kilonova.ProblemFilter{
-			Look: true,
+		pbs, pbsCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
+			LookingUser: util.UserBrief(r), Look: true,
+			Tags: []*kilonova.TagGroup{{TagIDs: []int{util.Tag(r).ID}}},
 
-			LookingUser: util.UserBrief(r),
-			Tags:        []*kilonova.TagGroup{{TagIDs: []int{util.Tag(r).ID}}},
+			Limit: 50,
 		}, util.UserBrief(r))
 		if err != nil {
 			zap.S().Warn("Couldn't fetch tag problems: ", err)
-			pbs = nil
+			pbs = []*sudoapi.FullProblem{}
 		}
 
 		relevantTags, err := rt.base.RelevantTags(r.Context(), util.Tag(r).ID, 15)
@@ -269,7 +281,7 @@ func (rt *Web) tag() http.HandlerFunc {
 			zap.S().Warn("Couldn't fetch relevant tags: ", err)
 			relevantTags = nil
 		}
-		rt.runTempl(w, r, templ, &TagPageParams{GenContext(r), util.Tag(r), relevantTags, pbs})
+		rt.runTempl(w, r, templ, &TagPageParams{GenContext(r), util.Tag(r), relevantTags, pbs, pbsCnt})
 	}
 }
 

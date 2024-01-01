@@ -89,13 +89,7 @@
 
 <div class="segment-panel">
     <h2>{{getText "tag_pbs"}}</h2>
-    {{ $tagid := .Tag.ID }}
-    {{ with .Problems }}
-        <a class="btn btn-blue mb-2" href="/problems?tags={{$tagid}}">{{getText "use_in_search"}}</a>
-        {{ template "pb_list_group" (genProblemsParams . true true) }}
-    {{ else }}
-        <p>{{getText "noPbFound"}}</p>
-    {{ end }}
+    <kn-tag-pbs enc="{{.Problems | encodeJSON}}" count="{{.ProblemCount}}" tagid="{{.Tag.ID}}"></kn-tag-pbs>
 </div>
 
 

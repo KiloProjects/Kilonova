@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import register from "preact-custom-element";
 import getText from "../translation";
 import { apiToast, createToast } from "../toast";
-import { bodyCall } from "../api/client";
+import { bodyCall, getCall } from "../api/client";
 import { fromBase64 } from "js-base64";
 import { Tag, TagView, selectTags } from "./tags";
 import { Paginator } from "./common";
@@ -110,8 +110,15 @@ export function ProblemView({ problems, showTags, scoreView }: { problems: FullP
 
 const MAX_PER_PAGE = 50;
 
-// Currently used for user profile page
-export function CustomProblemListing(params: { count: number; problems: FullProblem[]; filter: ProblemQuery; showFull: boolean }) {
+// Currently used for user profile and tag pages
+export function CustomProblemListing(params: {
+	count: number;
+	problems: FullProblem[];
+	filter: ProblemQuery;
+	showFull: boolean;
+	showTags: boolean;
+	scoreView: boolean;
+}) {
 	const [page, setPage] = useState(1);
 	const [problems, setProblems] = useState<FullProblem[]>(params.problems);
 	const [count, setCount] = useState(params.count);
@@ -136,7 +143,7 @@ export function CustomProblemListing(params: { count: number; problems: FullProb
 	return (
 		<>
 			{numPagesF(count, MAX_PER_PAGE) > 1 && <Paginator numpages={numPagesF(count, MAX_PER_PAGE)} page={page} setPage={setPage} />}
-			<ProblemView problems={problems} showTags={false} scoreView={true} />
+			<ProblemView problems={problems} showTags={params.showTags} scoreView={params.scoreView} />
 		</>
 	);
 }
@@ -236,7 +243,7 @@ function getModeByGroups(groups: TagGroup[]): TagFilterMode {
 	return groups.some((val) => val.negate || val.tag_ids.length > 1) ? "complex" : "simple";
 }
 
-function ProblemSearch(params: { count: number; problems: FullProblem[]; groups: TagGroup[]; initialTags: Tag[] }) {
+function ProblemSearch(params: { count: number; problems: FullProblem[]; groups: TagGroup[]; initialTags: Tag[]; pblist: ProblemList | null }) {
 	let [query, setQuery] = useState<ProblemQuery>(initialQuery(new URLSearchParams(window.location.search), params.groups));
 	let [problems, setProblems] = useState<FullProblem[]>(params.problems);
 	let [count, setCount] = useState<number>(params.count);
@@ -244,6 +251,8 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 
 	let [tagFilterMode, setTagFilterMode] = useState<TagFilterMode>(getModeByGroups(params.groups));
 	let [tags, setTags] = useState<Tag[]>(params.initialTags);
+
+	let [problemList, setProblemList] = useState<ProblemList | null | boolean>(params.pblist);
 
 	const mounted = useRef(false);
 
@@ -282,6 +291,10 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 			p.append("tags", makeTagString(query.tags));
 		}
 
+		if (typeof query.deep_list_id !== "undefined" && query.deep_list_id > 0) {
+			p.append("deep_list_id", query.deep_list_id.toString());
+		}
+
 		let url = window.location.origin + window.location.pathname + "?" + p.toString();
 		try {
 			await navigator.clipboard.writeText(url);
@@ -307,6 +320,21 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 		if (mounted.current) load()?.catch(console.error);
 		else mounted.current = true;
 	}, [query]);
+
+	useEffect(() => {
+		console.log(problemList, query);
+		const controller = new AbortController();
+		if (problemList == null && typeof query.deep_list_id !== "undefined" && query.deep_list_id > 0) {
+			getCall<ProblemList>(`/problemList/${query.deep_list_id}`, {}, controller.signal).then((rez) => {
+				if (rez.status == "error") {
+					setProblemList(false);
+					return;
+				}
+				setProblemList(rez.data);
+			});
+		}
+		return () => controller.abort("Stale");
+	}, [query, problemList]);
 
 	return (
 		<div class="segment-panel">
@@ -507,7 +535,34 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 							</div>
 						)}
 					</div>
+					<label class="block my-2">
+						<span class="form-label">{getText("pblist_id")}: </span>
+						<input
+							type="number"
+							class="form-input"
+							value={query.deep_list_id == 0 || typeof query.deep_list_id == "undefined" ? "" : query.deep_list_id}
+							onChange={(e) => {
+								let val: number | null = parseInt(e.currentTarget.value);
+								if (isNaN(val) || val <= 0) {
+									val = null;
+								}
+								setQuery({
+									...query,
+									page: 1,
+									deep_list_id: val == null ? undefined : val,
+								});
+								setProblemList(null);
+							}}
+						/>
+					</label>
 				</div>
+			)}
+
+			{typeof query.deep_list_id !== "undefined" && query.deep_list_id > 0 && typeof problemList !== "boolean" && (
+				<span class="block my-2">
+					{getText("viewingFromList")}{" "}
+					<a href={`/problem_lists/${query.deep_list_id}`}>{problemList == null ? getText("loading") : problemList.title}</a>.
+				</span>
 			)}
 
 			<div class="block my-2">
@@ -519,32 +574,35 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 				</button>
 			</div>
 
-			<label class="block my-2">
-				<input
-					type="checkbox"
-					onChange={(e) => {
-						setShowTags(e.currentTarget.checked);
-					}}
-					checked={showTags}
-				></input>{" "}
-				<span class="form-label">{getText("show_tags")}</span>
-			</label>
 			{count > 0 && (
-				<Paginator
-					numpages={numPages}
-					page={query.page}
-					setPage={(num) => {
-						setQuery({ ...query, page: num });
-					}}
-					showArrows={true}
-				/>
+				<div class="block my-2">
+					<Paginator
+						numpages={numPages}
+						page={query.page}
+						setPage={(num) => {
+							setQuery({ ...query, page: num });
+						}}
+						showArrows={true}
+					/>
+					<div class="topbar-separator text-xl mx-2"></div>
+					<label>
+						<input
+							type="checkbox"
+							onChange={(e) => {
+								setShowTags(e.currentTarget.checked);
+							}}
+							checked={showTags}
+						></input>{" "}
+						<span class="form-label">{getText("show_tags")}</span>
+					</label>
+				</div>
 			)}
 			<ProblemView problems={problems} showTags={showTags} scoreView={false} />
 		</div>
 	);
 }
 
-function ProblemSearchDOM({ enc, count, groupenc, tagenc }: { enc: string; count: string; groupenc: string; tagenc: string }) {
+function ProblemSearchDOM({ enc, count, groupenc, tagenc, pblistenc }: { enc: string; count: string; groupenc: string; tagenc: string; pblistenc: string }) {
 	let pbs: FullProblem[] = JSON.parse(fromBase64(enc));
 	let cnt = parseInt(count);
 	if (isNaN(cnt)) {
@@ -552,17 +610,79 @@ function ProblemSearchDOM({ enc, count, groupenc, tagenc }: { enc: string; count
 	}
 	let groups: TagGroup[] = JSON.parse(fromBase64(groupenc));
 	let tags: Tag[] = JSON.parse(fromBase64(tagenc));
-	console.log(groups, tags);
-	return <ProblemSearch problems={pbs} count={cnt} groups={groups} initialTags={tags}></ProblemSearch>;
+	let pblist: ProblemList | null = JSON.parse(fromBase64(pblistenc));
+	return <ProblemSearch problems={pbs} count={cnt} groups={groups} initialTags={tags} pblist={pblist}></ProblemSearch>;
 }
 
-function ProblemListingWrapper({ enc, count, showfull, filter }: { enc: string; count: string; showfull: string; filter: ProblemQuery }) {
+function ProblemListingWrapper({
+	enc,
+	count,
+	showTags,
+	showfull,
+	filter,
+	scoreView,
+}: {
+	enc: string;
+	count: string;
+	showTags: boolean;
+	showfull: string;
+	filter: ProblemQuery;
+	scoreView: boolean;
+}) {
 	let pbs: FullProblem[] = JSON.parse(fromBase64(enc));
 	let cnt = parseInt(count);
 	if (isNaN(cnt)) {
 		throw new Error("Invalid count");
 	}
-	return <CustomProblemListing problems={pbs} count={cnt} showFull={showfull === "true"} filter={filter}></CustomProblemListing>;
+	return (
+		<CustomProblemListing
+			problems={pbs}
+			count={cnt}
+			showTags={showTags}
+			showFull={showfull === "true"}
+			filter={filter}
+			scoreView={scoreView}
+		></CustomProblemListing>
+	);
+}
+
+function TagProblemsDOM({ enc, count, tagid }: { enc: string; count: string; tagid: string }) {
+	let tagID = parseInt(tagid);
+	if (isNaN(tagID)) {
+		throw new Error("Invalid tag ID");
+	}
+	let [showTags, setShowTags] = useState<boolean>(false);
+	return (
+		<>
+			<div class="block mb-2">
+				<a class="btn btn-blue" href={`/problems?tags=${tagID}`}>
+					{getText("use_in_search")}
+				</a>
+				<div class="topbar-separator text-xl mx-2"></div>
+				<label>
+					<input
+						type="checkbox"
+						onChange={(e) => {
+							setShowTags(e.currentTarget.checked);
+						}}
+						checked={showTags}
+					></input>{" "}
+					<span class="form-label">{getText("show_tags")}</span>
+				</label>
+			</div>
+
+			<div>
+				<ProblemListingWrapper
+					enc={enc}
+					count={count}
+					showTags={showTags}
+					showfull="true"
+					filter={{ textQuery: "", tags: [{ tag_ids: [tagID], negate: false }], page: 1, descending: false, ordering: "" }}
+					scoreView={false}
+				/>
+			</div>
+		</>
+	);
 }
 
 function ProblemSolvedByDOM({ enc, count, userid }: { enc: string; count: string; userid: string }) {
@@ -576,6 +696,8 @@ function ProblemSolvedByDOM({ enc, count, userid }: { enc: string; count: string
 			count={count}
 			showfull="false"
 			filter={{ textQuery: "", tags: [], page: 1, solved_by: uid, descending: false, ordering: "" }}
+			scoreView={true}
+			showTags={false}
 		/>
 	);
 }
@@ -591,10 +713,13 @@ function ProblemAttemptedByDOM({ enc, count, userid }: { enc: string; count: str
 			count={count}
 			showfull="false"
 			filter={{ textQuery: "", tags: [], page: 1, attempted_by: uid, solved_by: uid, descending: false, ordering: "" }}
+			scoreView={true}
+			showTags={false}
 		/>
 	);
 }
 
-register(ProblemSearchDOM, "kn-pb-search", ["enc", "count", "groupenc", "tagenc"]);
+register(ProblemSearchDOM, "kn-pb-search", ["enc", "count", "groupenc", "tagenc", "pblistenc"]);
+register(TagProblemsDOM, "kn-tag-pbs", ["enc", "count", "tagid"]);
 register(ProblemSolvedByDOM, "kn-pb-solvedby", ["enc", "count", "userid"]);
 register(ProblemAttemptedByDOM, "kn-pb-attemptedby", ["enc", "count", "userid"]);

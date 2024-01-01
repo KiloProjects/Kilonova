@@ -27,6 +27,28 @@ declare global {
 		score_precision: number;
 	};
 
+	type ShallowProblemList = {
+		id: number;
+		title: string;
+		author_id: number;
+		sidebar_hidable: boolean;
+		featured_checklist: boolean;
+		num_problems: number;
+	};
+
+	type ProblemList = {
+		id: number;
+		created_at: string;
+		author_id: number;
+		title: string;
+		description: string;
+		list: number[];
+		num_problems: number;
+		sidebar_hidable: boolean;
+		featured_checklist: boolean;
+		sublists: ShallowProblemList[];
+	};
+
 	type Submission = {
 		id: number;
 		created_at: string;
@@ -49,7 +71,7 @@ declare global {
 		submission_type: "classic" | "acm-icpc";
 		icpc_verdict: string | null;
 	};
-	export type SubTest = {
+	type SubTest = {
 		id: number;
 		created_at: string;
 		done: boolean;
@@ -66,7 +88,7 @@ declare global {
 		score: number;
 	};
 
-	export type SubmissionSubTask = {
+	type SubmissionSubTask = {
 		id: number;
 		created_at: string;
 
@@ -95,7 +117,7 @@ declare global {
 	};
 
 	// Contest types
-	export type Question = {
+	type Question = {
 		id: number;
 		asked_at: string;
 		responded_at?: string;
@@ -105,7 +127,7 @@ declare global {
 		contest_id: number;
 	};
 
-	export type Announcement = {
+	type Announcement = {
 		id: number;
 		created_at: string;
 		contest_id: number;

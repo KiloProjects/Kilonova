@@ -30,6 +30,7 @@ type RequestParams = {
 	queryParams?: any;
 	body?: BodyInit;
 	headers?: HeadersInit;
+	signal?: AbortSignal;
 };
 
 export type Submissions = {
@@ -65,6 +66,7 @@ export class KNClient {
 					...params.headers,
 				},
 				body: params.body || null,
+				signal: params.signal,
 			});
 			return (await resp.json()) as Response<T>;
 		} catch (e: any) {
@@ -123,11 +125,12 @@ export class KNClient {
 
 export const defaultClient = new KNClient(cookie.get("kn-sessionid") || "guest", "/api");
 
-export async function getCall<T = any>(call: string, params: any): Promise<Response<T>> {
+export async function getCall<T = any>(call: string, params: any, signal?: AbortSignal): Promise<Response<T>> {
 	return defaultClient.request<T>({
 		url: call,
 		method: "GET",
 		queryParams: params,
+		signal: signal,
 	});
 }
 

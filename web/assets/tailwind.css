@@ -275,7 +275,7 @@
 	}
 
 	.paginator {
-		@apply my-2 flex;
+		@apply my-2 inline-flex;
 	}
 	.paginator > *:first-child {
 		@apply rounded-l;
