@@ -134,6 +134,8 @@ func (rt *Web) problems() http.HandlerFunc {
 		Ordering   string `json:"ordering"`
 		Descending bool   `json:"descending"`
 
+		Language string `json:"lang"`
+
 		Tags *string `json:"tags"`
 
 		Page int `json:"page"`
@@ -226,10 +228,15 @@ func (rt *Web) problems() http.HandlerFunc {
 			pblist = list
 		}
 
+		var lang *string
+		if q.Language == "en" || q.Language == "ro" {
+			lang = &q.Language
+		}
+
 		pbs, cnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
 			LookingUser: util.UserBrief(r), Look: true,
 			FuzzyName: q.Query, EditorUserID: q.Editor, Visible: q.Visible,
-			DeepListID: q.DeepListID,
+			DeepListID: q.DeepListID, Language: lang,
 
 			Tags:  gr,
 			Limit: 50, Offset: (q.Page - 1) * 50,

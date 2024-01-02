@@ -93,6 +93,9 @@ type ProblemFilter struct {
 	LookEditor  bool       `json:"-"`
 	LookingUser *UserBrief `json:"-"`
 
+	// Should be "en" or "ro", if non-nil
+	Language *string `json:"lang"`
+
 	// Check problems that have attachment with that ID
 	// Currently used for logging statement changes
 	AttachmentID *int `json:"-"`

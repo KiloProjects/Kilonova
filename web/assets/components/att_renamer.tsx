@@ -11,12 +11,14 @@ export function AttachmentRenamer({
 	postslug,
 	attid,
 	orgname,
+	editable,
 }: {
 	pbid: string;
 	postid: string;
 	postslug: string;
 	attid: string;
 	orgname: string;
+	editable: string;
 }) {
 	let [editing, setEditing] = useState<boolean>(false);
 	let [name, setName] = useState<string>(orgname);
@@ -48,15 +50,20 @@ export function AttachmentRenamer({
 	if (!editing) {
 		return (
 			<>
-				<a href={urlPrefix + `/attachment/${name}`}>{name}</a>{" "}
-				<span
-					onClick={() => {
-						setEditing(true);
-						setPreEditName(name);
-					}}
-				>
-					<i class="fas fa-pencil"></i> {getText("edit")}
-				</span>
+				<a href={urlPrefix + `/attachment/${name}`}>{name}</a>
+				{editable == "true" && (
+					<>
+						{" "}
+						<span
+							onClick={() => {
+								setEditing(true);
+								setPreEditName(name);
+							}}
+						>
+							<i class="fas fa-pencil"></i> {getText("edit")}
+						</span>
+					</>
+				)}
 			</>
 		);
 	}
@@ -80,4 +87,4 @@ export function AttachmentRenamer({
 	);
 }
 
-register(AttachmentRenamer, "kn-att-name", ["pbid", "postid", "postslug", "attid", "orgname"]);
+register(AttachmentRenamer, "kn-att-name", ["pbid", "postid", "postslug", "attid", "orgname", "editable"]);

@@ -169,6 +169,8 @@ type ProblemQuery = {
 	solved_by?: number;
 	attempted_by?: number;
 
+	lang?: "ro" | "en";
+
 	ordering: ProblemOrdering;
 	descending: boolean;
 };
@@ -201,6 +203,12 @@ function initialQuery(params: URLSearchParams, groups: TagGroup[]): ProblemQuery
 			ordering = "id";
 	}
 
+	let language: "ro" | "en" | undefined;
+	const lang = params.get("lang");
+	if (lang == "ro" || lang == "en") {
+		language = lang;
+	}
+
 	return {
 		textQuery: params.get("q") ?? "",
 		page: !isNaN(page) && page != 0 ? page : 1,
@@ -210,6 +218,8 @@ function initialQuery(params: URLSearchParams, groups: TagGroup[]): ProblemQuery
 		published: published,
 		editor_user: !isNaN(editorUserID) ? editorUserID : undefined,
 		tags: groups,
+
+		lang: language,
 
 		ordering: ordering,
 		descending: params.get("descending") === "true",
@@ -228,6 +238,8 @@ function serializeQuery(f: ProblemQuery): any {
 
 		solved_by: f.solved_by,
 		attempted_by: f.attempted_by,
+
+		lang: f.lang,
 
 		limit: MAX_PER_PAGE,
 		offset: (f.page - 1) * MAX_PER_PAGE,
@@ -289,6 +301,10 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 
 		if (query.tags.length > 0) {
 			p.append("tags", makeTagString(query.tags));
+		}
+
+		if (typeof query.lang !== "undefined") {
+			p.append("lang", query.lang);
 		}
 
 		if (typeof query.deep_list_id !== "undefined" && query.deep_list_id > 0) {
@@ -554,6 +570,30 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 								setProblemList(null);
 							}}
 						/>
+					</label>
+					<label class="block my-2">
+						<span class="form-label">{getText("statementLanguage")}:</span>
+						<select
+							class="form-select"
+							autocomplete="off"
+							value={typeof query.lang == "undefined" ? "" : query.lang}
+							onChange={(e) => {
+								let val: "ro" | "en" | undefined;
+								let cval = e.currentTarget.value;
+								if (cval != "") {
+									if (cval == "ro" || cval == "en") {
+										val = cval;
+									} else {
+										val = undefined;
+									}
+								}
+								setQuery({ ...query, page: 1, lang: val });
+							}}
+						>
+							<option value="">-</option>
+							<option value="ro">🇷🇴 Română</option>
+							<option value="en">🇬🇧 English</option>
+						</select>
 					</label>
 				</div>
 			)}

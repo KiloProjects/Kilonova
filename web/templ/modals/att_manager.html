@@ -93,7 +93,7 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
                             <input class="form-checkbox" type="checkbox" id="pb-att-{{.ID}}" autocomplete="off" />
                         </td>
                         <td class="kn-table-cell" id="name-att-{{.ID}}">
-                            <kn-att-name {{if $pbid}}pbid="{{$pbid}}"{{else if $postid}}postid="{{$postid}}" postslug="{{$postslug}}"{{end}} attid="{{.ID}}" orgname="{{.Name}}">
+                            <kn-att-name {{if $pbid}}pbid="{{$pbid}}"{{else if $postid}}postid="{{$postid}}" postslug="{{$postslug}}"{{end}} attid="{{.ID}}" orgname="{{.Name}}" editable="true">
                             </kn-att-name>
                         </td>
                         <td class="kn-table-cell" id="size-att-{{.ID}}">
@@ -350,6 +350,52 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
         
             document.getElementById("addAttForm").addEventListener("submit", createNewAttachment)
         </script>
+
+        <div class="segment-panel">
+            <h2>{{getText "header.edit.attachment_history"}}</h2>
+            {{ with .Attachments }}
+            <table class="kn-table my-2">
+                <thead>
+                    <tr>
+                        <th scope="col" class="w-1/2">
+                            {{getText "name"}}
+                        </th>
+                        <th scope="col" class="w-1/4">
+                            {{getText "last_updated_at"}}
+                        </th>
+                        <th scope="col" class="w-1/4">
+                            {{getText "last_updated_by"}}
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="att-body">
+                    {{ range . }}
+                    <tr class="kn-table-row">
+                        <td class="kn-table-cell">
+                            <kn-att-name {{if $pbid}}pbid="{{$pbid}}"{{else if $postid}}postid="{{$postid}}" postslug="{{$postslug}}"{{end}} attid="{{.ID}}" orgname="{{.Name}}" editable="false">
+                            </kn-att-name>
+                        </td>
+                        <td class="kn-table-cell">
+                            <span class="server_timestamp">{{.LastUpdatedAt.UnixMilli}}</span>
+                        </td>
+                        <td class="kn-table-cell">
+                            {{with user .LastUpdatedBy}}
+                                <a href="/profile/{{.Name}}">
+                                    <img class="rounded inline-block mr-2" src="/api/user/getGravatar?name={{.Name}}&s=32" width="32" height="32" alt="Avatar"/>
+                                    {{.Name}}
+                                </a>
+                            {{else}}
+                                -
+                            {{end}}
+                        </td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+            {{ else }}
+            {{getText "noAttachments"}}
+            {{ end }}
+        </div>
 
     </div>
     <div class="page-sidebar">
