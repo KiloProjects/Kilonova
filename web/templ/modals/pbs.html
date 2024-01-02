@@ -2,10 +2,11 @@
 {{ $user := authedUser }}
 {{ $showScore := .ShowScore }}
 {{ $contestIDScore := .ContestIDScore }}
+{{ $listID := .ListID }}
 {{ $showPublished := .ShowPublished }}
 <div class="list-group grid grid-cols-1">
 	{{ range .Problems }}
-		<a href="/{{if not (eq $contestIDScore -1)}}contests/{{$contestIDScore}}/{{end}}problems/{{.ID}}" class="list-group-item flex justify-between">
+		<a href="/{{if not (eq $contestIDScore -1)}}contests/{{$contestIDScore}}/{{end}}problems/{{.ID}}{{if not (eq $listID -1)}}?list_id={{$listID}}{{end}}" class="list-group-item flex justify-between">
 			<span>{{.Name}} (#{{.ID}})</span>
             <div>
                 {{- if $showPublished -}}

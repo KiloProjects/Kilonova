@@ -1,5 +1,4 @@
 {{define "title"}}{{getText "title.progressChecklist"}} | {{.ProblemList.Title}}{{end}}
-{{define "problem_entry" -}}<td class="kn-table-cell score-cell" data-score="{{checklistMaxScore .}}"><a href="/problems/{{.ID}}" title="{{getText `score`}}: {{spbMaxScore .}}">{{.Name}}</a></td>{{- end}}
 {{define "render_list"}}
     {{- if computeChecklistSpan . -}}
     <tr class="kn-table-simple">
@@ -16,8 +15,9 @@
         {{- else if gt (len .Problems) 0 -}}
         <td class="kn-table-cell"><a class="white-anchor font-bold" href="/problem_lists/{{.ID}}">{{.Title}}</a></td>
         {{- end -}}
+        {{- $listID := .ID -}}
         {{- range .Problems -}}
-            {{- template "problem_entry" . -}}
+            <td class="kn-table-cell score-cell" data-score="{{checklistMaxScore .}}"><a href="/problems/{{.ID}}?list_id={{$listID}}" title="{{getText `score`}}: {{spbMaxScore .}}">{{.Name}}</a></td>
         {{- end -}}
     </tr>
     {{- range .SubLists -}}

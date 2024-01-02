@@ -42,11 +42,15 @@ function isProblemEditor(pb: ScoredProblem): boolean {
 type ProblemScore = { [problem: number]: number };
 type SublistSolved = { [num_solved: number]: number };
 
-export function Problems({ pbs }: { pbs: ScoredProblem[] }) {
+export function Problems({ pbs, listID }: { pbs: ScoredProblem[]; listID?: number }) {
 	return (
 		<div class="list-group">
 			{pbs.map((pb) => (
-				<a href={`/problems/${pb.id}`} class="list-group-item flex justify-between" key={pb.id}>
+				<a
+					href={`/problems/${pb.id}${typeof listID !== "undefined" ? `?list_id=${listID}` : ""}`}
+					class="list-group-item flex justify-between"
+					key={pb.id}
+				>
 					<span>
 						{pb.name} (#{pb.id})
 					</span>
@@ -140,7 +144,7 @@ export function Sublist({ list, numsolved }: { list: Sublist; numsolved?: number
 					)}
 					{problems.length > 0 && (
 						<div class="mt-2">
-							<Problems pbs={problems} />
+							<Problems pbs={problems} listID={fullData.id} />
 						</div>
 					)}
 				</>

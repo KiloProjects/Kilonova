@@ -298,6 +298,8 @@ type ProblemListingParams struct {
 	ShowPublished bool
 
 	ContestIDScore int
+
+	ListID int
 }
 
 type PblistParams struct {

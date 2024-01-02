@@ -1497,7 +1497,7 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 			return rt.base.IsContestEditor(authedUser, c)
 		},
 		"contestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {
-			questions, err := rt.base.ContestUserQuestions(context.Background(), c.ID, authedUser.ID)
+			questions, err := rt.base.ContestUserQuestions(r.Context(), c.ID, authedUser.ID)
 			if err != nil {
 				return []*kilonova.ContestQuestion{}
 			}
@@ -1510,9 +1510,9 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 			if authedUser == nil || c == nil {
 				return nil
 			}
-			reg, err := rt.base.ContestRegistration(context.Background(), c.ID, authedUser.ID)
+			reg, err := rt.base.ContestRegistration(r.Context(), c.ID, authedUser.ID)
 			if err != nil {
-				if !errors.Is(err, kilonova.ErrNotFound) {
+				if !errors.Is(err, kilonova.ErrNotFound) && !errors.Is(err, context.Canceled) {
 					zap.S().Warn(err)
 				}
 				return nil
@@ -1529,7 +1529,7 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 				}
 			}
 			zap.S().Warn("Cache miss: ", listID)
-			cnt, err := rt.base.NumSolvedFromPblist(context.Background(), listID, authedUser.ID)
+			cnt, err := rt.base.NumSolvedFromPblist(r.Context(), listID, authedUser.ID)
 			if err != nil {
 				if !errors.Is(err, context.Canceled) {
 					zap.S().Warn(err)
@@ -1537,6 +1537,48 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 				return -1
 			}
 			return cnt
+		},
+		"pbParentPblists": func(problem *kilonova.Problem) []*kilonova.ProblemList {
+			var topList *kilonova.ProblemList
+			if r.FormValue("list_id") != "" {
+				id, err := strconv.Atoi(r.FormValue("list_id"))
+				if err == nil {
+					list, err := rt.base.ProblemList(r.Context(), id)
+					if err != nil {
+						if !errors.Is(err, context.Canceled) {
+							zap.S().Warn(err)
+						}
+					} else {
+						var ok bool
+						for _, pbid := range list.ProblemIDs() {
+							if pbid == problem.ID {
+								ok = true
+								break
+							}
+						}
+						if ok {
+							topList = list
+						}
+					}
+				}
+			}
+			lists, err := rt.base.ProblemParentLists(r.Context(), problem.ID, false)
+			if err != nil {
+				return nil
+			}
+			if topList != nil {
+				for i := range lists {
+					if lists[i].ID == topList.ID {
+						lists = slices.Delete(lists, i, i+1)
+						break // This assumes that there are no duplicates in the lists array
+					}
+				}
+				lists = append([]*kilonova.ProblemList{topList}, lists...)
+			}
+			if len(lists) > 5 {
+				lists = lists[:5]
+			}
+			return lists
 		},
 	})
 

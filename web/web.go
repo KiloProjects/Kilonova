@@ -376,14 +376,8 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			return pbs
 		},
 		"pbParentPblists": func(problem *kilonova.Problem) []*kilonova.ProblemList {
-			lists, err := base.ProblemParentLists(context.Background(), problem.ID, false)
-			if err != nil {
-				return nil
-			}
-			if len(lists) > 5 {
-				lists = lists[:5]
-			}
-			return lists
+			zap.S().Error("Uninitialized `pbParentPblists`")
+			return nil
 		},
 		"pblistParent": func(pblist *kilonova.ProblemList) []*kilonova.ProblemList {
 			lists, err := base.PblistParentLists(context.Background(), pblist.ID)
@@ -463,10 +457,13 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			return base.IsPasteEditor(paste, user)
 		},
 		"genProblemsParams": func(pbs []*kilonova.ScoredProblem, showScore, showPublished bool) *ProblemListingParams {
-			return &ProblemListingParams{pbs, showScore, showPublished, -1}
+			return &ProblemListingParams{pbs, showScore, showPublished, -1, -1}
+		},
+		"genListProblemsParams": func(pbs []*kilonova.ScoredProblem, showScore, showPublished bool, listID int) *ProblemListingParams {
+			return &ProblemListingParams{pbs, showScore, showPublished, -1, listID}
 		},
 		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *ProblemListingParams {
-			return &ProblemListingParams{pbs, true, true, contest.ID}
+			return &ProblemListingParams{pbs, true, true, contest.ID, -1}
 		},
 		"genPblistParams": func(pblist *kilonova.ProblemList, open bool) *PblistParams {
 			return &PblistParams{pblist, open}

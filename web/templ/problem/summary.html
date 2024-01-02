@@ -122,13 +122,14 @@
                 </h2>
             </summary>
             <div class="reset-list text-lg">
+                {{$listID := .ID}}
                 {{ with listProblems authedUser . }}
                 <ul>
                     {{ range . }}
                     {{ $score := spbMaxScore . }}    
                     <li>
                         <a {{ if eq $pbid .ID }} class="topbar-selected p-0" {{end}}
-                            href="/problems/{{.ID}}">
+                            href="/problems/{{.ID}}?list_id={{$listID}}">
                             {{.Name}}
                         </a> 
                         {{ if not (eq $score "")}} 
