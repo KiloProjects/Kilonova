@@ -379,11 +379,13 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
                             <span class="server_timestamp">{{.LastUpdatedAt.UnixMilli}}</span>
                         </td>
                         <td class="kn-table-cell">
-                            {{with user .LastUpdatedBy}}
+                            {{with .LastUpdatedBy}}
+                                {{with user .}}
                                 <a href="/profile/{{.Name}}">
                                     <img class="rounded inline-block mr-2" src="/api/user/getGravatar?name={{.Name}}&s=32" width="32" height="32" alt="Avatar"/>
                                     {{.Name}}
                                 </a>
+                                {{else}}-{{end}}
                             {{else}}
                                 -
                             {{end}}
