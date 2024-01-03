@@ -87,7 +87,9 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 
 	attData, err := s.base.AttachmentData(r.Context(), att.ID)
 	if err != nil {
-		zap.S().Warn(err)
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
 		http.Error(w, "Couldn't get attachment data", 500)
 		return
 	}

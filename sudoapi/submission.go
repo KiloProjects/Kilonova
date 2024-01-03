@@ -77,7 +77,9 @@ func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova
 		LookingUser: lookingUser,
 	})
 	if err != nil {
-		zap.S().Warnf("Error getting problems: %v", err)
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warnf("Error getting problems: %v", err)
+		}
 		return nil, WrapError(err, "Couldn't get problems")
 	}
 	for _, problem := range problems {

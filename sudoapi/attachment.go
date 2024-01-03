@@ -204,7 +204,9 @@ func (s *BaseAPI) BlogPostAttachments(ctx context.Context, postID int) ([]*kilon
 func (s *BaseAPI) AttachmentData(ctx context.Context, id int) ([]byte, *StatusError) {
 	data, err := s.db.AttachmentData(ctx, &kilonova.AttachmentFilter{ID: &id})
 	if err != nil {
-		zap.S().Warn(err)
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
 		return nil, WrapError(err, "Couldn't read attachment data")
 	}
 	return data, nil
@@ -213,7 +215,9 @@ func (s *BaseAPI) AttachmentData(ctx context.Context, id int) ([]byte, *StatusEr
 func (s *BaseAPI) ProblemAttDataByName(ctx context.Context, problemID int, name string) ([]byte, *StatusError) {
 	data, err := s.db.AttachmentData(ctx, &kilonova.AttachmentFilter{ProblemID: &problemID, Name: &name})
 	if err != nil {
-		zap.S().Warn(err)
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
 		return nil, WrapError(err, "Couldn't read attachment data")
 	}
 	return data, nil
