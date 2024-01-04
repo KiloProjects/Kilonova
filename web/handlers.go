@@ -619,7 +619,9 @@ func (rt *Web) problem() http.HandlerFunc {
 
 		tags, err := rt.base.ProblemTags(r.Context(), util.Problem(r).ID)
 		if err != nil {
-			zap.S().Warn("Couldn't get tags: ", err)
+			if !errors.Is(err, context.Canceled) {
+				zap.S().Warn("Couldn't get tags: ", err)
+			}
 			tags = []*kilonova.Tag{}
 		}
 
@@ -641,7 +643,9 @@ func (rt *Web) problem() http.HandlerFunc {
 			if err == nil {
 				initialSubs = subs
 			} else {
-				zap.S().Warn("Couldn't fetch submissions: ", err)
+				if !errors.Is(err, context.Canceled) {
+					zap.S().Warn("Couldn't fetch submissions: ", err)
+				}
 			}
 		}
 
@@ -1242,7 +1246,9 @@ func (rt *Web) profile() http.HandlerFunc {
 			Limit: 50,
 		}, user.Brief())
 		if err != nil {
-			zap.S().Warn(err)
+			if !errors.Is(err, context.Canceled) {
+				zap.S().Warn(err)
+			}
 			solvedPbs = []*sudoapi.FullProblem{}
 		}
 
@@ -1253,7 +1259,9 @@ func (rt *Web) profile() http.HandlerFunc {
 			Limit: 50,
 		}, user.Brief())
 		if err != nil {
-			zap.S().Warn(err)
+			if !errors.Is(err, context.Canceled) {
+				zap.S().Warn(err)
+			}
 			attemptedPbs = []*sudoapi.FullProblem{}
 		}
 

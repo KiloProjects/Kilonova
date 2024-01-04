@@ -128,7 +128,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 	subs, err := s.db.Submissions(ctx, filter)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
-			return nil, ErrUnknownError
+			return nil, ErrContextCanceled
 		}
 		zap.S().Warn(err)
 		return nil, ErrUnknownError
@@ -137,7 +137,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 	cnt, err := s.db.SubmissionCount(ctx, filter)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
-			return nil, ErrUnknownError
+			return nil, ErrContextCanceled
 		}
 		zap.S().Warn(err)
 		return nil, ErrUnknownError

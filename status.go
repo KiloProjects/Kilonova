@@ -1,6 +1,7 @@
 package kilonova
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -15,6 +16,8 @@ var (
 	ErrUnknownError = Statusf(500, "Unknown error occured")
 
 	ErrFeatureDisabled = Statusf(400, "Feature disabled by administrator")
+
+	ErrContextCanceled = WrapError(context.Canceled, "Context canceled")
 )
 
 var _ error = &StatusError{}

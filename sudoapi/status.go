@@ -10,6 +10,8 @@ var (
 
 	ErrNotFound     = kilonova.ErrNotFound
 	ErrUnknownError = kilonova.ErrUnknownError
+
+	ErrContextCanceled = kilonova.ErrContextCanceled
 )
 
 type StatusError = kilonova.StatusError
