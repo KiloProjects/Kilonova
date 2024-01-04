@@ -88,7 +88,7 @@
 {{ end }}
 
 <div class="segment-panel">
-    <h2>{{getText "tag_pbs"}}</h2>
+    <h2>{{.ProblemCount}} {{getText "tag_pbs"}}</h2>
     <kn-tag-pbs enc="{{.Problems | encodeJSON}}" count="{{.ProblemCount}}" tagid="{{.Tag.ID}}"></kn-tag-pbs>
 </div>
 
