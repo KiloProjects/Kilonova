@@ -61,4 +61,9 @@
         bundled.setLanguage(e.currentTarget.value)
     })
 </script>
+{{with stringFlag "feature.analytics.goat_prefix"}}
+<script data-goatcounter="{{.}}/count"
+    async src="{{.}}/count.js"></script>
+{{end}}
+
 {{ end }}

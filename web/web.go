@@ -45,6 +45,8 @@ var (
 	FrontPageProblems = config.GenFlag("feature.frontend.front_page_pbs", true, "Show problems on front page")
 
 	ForceLogin = config.GenFlag("behavior.force_authed", false, "Force authentication when accessing website")
+
+	GoatCounterDomain = config.GenFlag("feature.analytics.goat_prefix", "https://goat.kilonova.ro", "URL prefix for GoatCounter analytics")
 )
 
 //go:embed static
@@ -589,6 +591,13 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			val, ok := config.GetFlagVal[bool](name)
 			if !ok {
 				zap.S().Warnf("Flag with name %q is not bool", name)
+			}
+			return val
+		},
+		"stringFlag": func(name string) string {
+			val, ok := config.GetFlagVal[string](name)
+			if !ok {
+				zap.S().Warnf("Flag with name %q is not string", name)
 			}
 			return val
 		},
