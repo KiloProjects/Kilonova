@@ -43,14 +43,16 @@
         <li>
             {{if .User}}<a href="/profile/{{.User.Name}}">{{.User.Name}} {{if isAdmin}}(#{{.User.ID}}){{end}}</a>{{else if .RealName}}{{.RealName}}{{else}}???{{end}} 
             - 
-            {{printf "%.2f" .Amount}} {{.Currency}} 
-                {{if not (eq .Type "onetime")}}
-                {{if eq .Type "monthly"}}
-                    {{getText "per_month"}} 
-                {{else if eq .Type "yearly"}}
-                    {{getText "per_year"}}
-                {{end}}
-                (<kn-glossary name="lifetime_donation_amount" content="{{getText `lifetime_donation_cnt`}}: {{computeDonationSum .}} {{.Currency}}"></kn-glossary>)
+            {{if eq .Type "onetime"}}
+                {{printf "%.2f" .Amount}} {{.Currency}} 
+            {{else}}
+                <kn-glossary name="lifetime_donation_amount" content="{{computeDonationSum .}} {{.Currency}}"></kn-glossary>
+                ({{printf "%.2f" .Amount}} {{.Currency}}     
+                {{- if eq .Type "monthly"}}
+                    {{getText "per_month" -}} 
+                {{- else if eq .Type "yearly"}}
+                    {{getText "per_year" -}}
+                {{- end -}})
             {{end}}
             (<span class="server_timestamp">{{.DonatedAt.UnixMilli}}</span>)
             {{if isAdmin}}
