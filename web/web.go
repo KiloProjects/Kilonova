@@ -668,6 +668,27 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 				return fmt
 			}
 		},
+
+		"computeDonationSum": func(d *kilonova.Donation) float64 {
+			endTime := time.Now()
+			if d.CancelledAt != nil {
+				endTime = *d.CancelledAt
+			}
+			numMonths := (endTime.Year()-d.DonatedAt.Year())*12 + int(endTime.Month()-d.DonatedAt.Month()) + 1
+			if endTime.Day() < d.DonatedAt.Day() {
+				numMonths--
+			}
+			switch d.Type {
+			case kilonova.DonationTypeMonthly:
+				return d.Amount * float64(numMonths)
+			case kilonova.DonationTypeYearly:
+				numMonths /= 12
+				return d.Amount * float64(numMonths)
+			default:
+				return d.Amount
+			}
+		},
+
 		"httpstatus":         http.StatusText,
 		"dump":               spew.Sdump,
 		"canJoinContest":     base.CanJoinContest,

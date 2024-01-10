@@ -2500,6 +2500,22 @@ ro = "(comisioane puțin mai mari)"
 en = "Past donations"
 ro = "Donații anterioare"
 
+[end_sub_confirmation]
+en = "Are you sure you want to mark this subscription as cancelled?"
+ro = "Ești sigur că vrei să marchezi abonamentul drept anulat?"
+
+[per_month]
+en = "/ month"
+ro = "/ lună"
+
+[lifetime_donation_cnt]
+en = "Total donated"
+ro = "Donat în total"
+
+[per_year]
+en = "/ year"
+ro = "/ an"
+
 [donation_method]
 en = "Donation method"
 ro = "Metodă donare"

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"mime"
 	"net/http"
 	"strconv"
 	"sync"
@@ -59,6 +60,7 @@ func (s *API) Handler() http.Handler {
 		})
 
 		r.Post("/addDonation", s.addDonation)
+		r.Post("/endSubscription", s.endSubscription)
 
 		r.Get("/getAllUsers", s.getAllUsers)
 	})
@@ -413,10 +415,9 @@ func (s *API) withProblem(fieldName string, required bool) func(next http.Handle
 
 func webWrapper[T1, T2 any](handler func(context.Context, T1) (T2, *sudoapi.StatusError)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
 		var query T1
-		if err := decoder.Decode(&query, r.Form); err != nil {
-			errorData(w, "Invalid request parameters", 400)
+		if err := parseRequest(r, &query); err != nil {
+			err.WriteError(w)
 			return
 		}
 		rez, err := handler(r.Context(), query)
@@ -455,6 +456,29 @@ func parseJsonBody[T any](r *http.Request, output *T) *kilonova.StatusError {
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(output); err != nil {
 		return kilonova.Statusf(400, "Invalid JSON input.")
+	}
+	return nil
+}
+
+func parseRequest[T any](r *http.Request, output *T) *kilonova.StatusError {
+	contentType := r.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	t, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		contentType = "application/octet-stream"
+	} else {
+		contentType = t
+	}
+
+	if contentType == "application/json" {
+		return parseJsonBody(r, output)
+	}
+
+	r.ParseForm()
+	if err := decoder.Decode(output, r.Form); err != nil {
+		return kilonova.WrapError(kilonova.Statusf(http.StatusBadRequest, err.Error()), "Invalid query parameters")
 	}
 	return nil
 }

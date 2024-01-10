@@ -32,13 +32,12 @@ func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		ID  int
 		Set bool
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, http.StatusBadRequest)
+	if err := parseRequest(r, &args); err != nil {
+		err.WriteError(w)
 		return
 	}
 
@@ -118,13 +117,12 @@ func (s *API) updateBoolFlags(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) addDonation(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		kilonova.Donation
 		Username *string `json:"username"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, "Invalid request parameters", 400)
+	if err := parseRequest(r, &args); err != nil {
+		err.WriteError(w)
 		return
 	}
 
@@ -137,6 +135,22 @@ func (s *API) addDonation(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err := s.base.AddDonation(r.Context(), &args.Donation); err != nil {
+		err.WriteError(w)
+		return
+	}
+	returnData(w, args.ID)
+}
+
+func (s *API) endSubscription(w http.ResponseWriter, r *http.Request) {
+	var args struct {
+		ID int
+	}
+	if err := parseRequest(r, &args); err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	if err := s.base.CancelSubscription(r.Context(), args.ID); err != nil {
 		err.WriteError(w)
 		return
 	}

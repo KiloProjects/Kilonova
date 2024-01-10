@@ -41,7 +41,18 @@
     <ul>
         {{range .}}
         <li>
-            {{if .User}}<a href="/profile/{{.User.Name}}">{{.User.Name}} {{if isAdmin}}(#{{.User.ID}}){{end}}</a>{{else if .RealName}}{{.RealName}}{{else}}???{{end}} - {{printf "%.2f" .Amount}} {{.Currency}} (<span class="server_timestamp">{{.DonatedAt.UnixMilli}}</span>)
+            {{if .User}}<a href="/profile/{{.User.Name}}">{{.User.Name}} {{if isAdmin}}(#{{.User.ID}}){{end}}</a>{{else if .RealName}}{{.RealName}}{{else}}???{{end}} 
+            - 
+            {{printf "%.2f" .Amount}} {{.Currency}} 
+                {{if not (eq .Type "onetime")}}
+                {{if eq .Type "monthly"}}
+                    {{getText "per_month"}} 
+                {{else if eq .Type "yearly"}}
+                    {{getText "per_year"}}
+                {{end}}
+                (<kn-glossary name="lifetime_donation_amount" content="{{getText `lifetime_donation_cnt`}}: {{computeDonationSum .}} {{.Currency}}"></kn-glossary>)
+            {{end}}
+            (<span class="server_timestamp">{{.DonatedAt.UnixMilli}}</span>)
             {{if isAdmin}}
             <ul>
                 <li>{{getText "donation_method"}}: {{.Source}}</li>
@@ -49,6 +60,10 @@
                 <li>{{getText "transaction_id"}}: {{.TransactionID}}</li>
                 {{if .CancelledAt}}
                 <li>{{getText "cancelled_at"}}: <span class="server_timestamp">{{.CancelledAt.UnixMilli}}</span></li>
+                {{else if not (eq .Type "onetime")}}
+                <li>
+                    <button class="btn btn-blue" onclick="endSubscription({{.ID}})">{{getText "button.cancel"}}</a>
+                </li>
                 {{end}}
             </ul>
             {{end}}
@@ -59,6 +74,21 @@
 {{end}}
 
 {{if isAdmin}}
+
+<script>
+    async function endSubscription(id) {
+        if(!(await bundled.confirm(bundled.getText("end_sub_confirmation")))) {
+            return
+        }
+        let res = await bundled.postCall("/admin/endSubscription", {id})
+        if(res.status === "error") {
+            bundled.apiToast(res)
+            return
+        }
+        window.location.reload()
+    }
+</script>
+
 <form class="segment-panel" id="addDonationForm">
     <h1>{{getText "add_donation"}}</h1>
 

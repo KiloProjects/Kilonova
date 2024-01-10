@@ -13,12 +13,15 @@ import (
 	"net/http"
 	"path"
 	"strconv"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/archive/test"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/Yiling-J/theine-go"
 	"github.com/disintegration/gift"
 	"github.com/go-chi/chi/v5"
 	"github.com/shopspring/decimal"
@@ -60,7 +63,8 @@ func (s *Assets) AssetsRouter() http.Handler {
 		r.With(api.validateVisibleTests, api.validateTestID).Get("/test/{tID}/input", s.ServeTestInput)
 		r.With(api.validateVisibleTests, api.validateTestID).Get("/test/{tID}/output", s.ServeTestOutput)
 
-		r.With(api.validateProblemFullyVisible).Get("/problemArchive", s.ServeProblemArchive)
+		// Enforce authed user for rate limit
+		r.With(api.MustBeAuthed, api.validateProblemFullyVisible).Get("/problemArchive", s.ServeProblemArchive())
 
 		r.With(api.validateAttachmentName).Get("/attachment/{aName}", s.ServeAttachment)
 		r.With(api.validateAttachmentID).Get("/attachmentByID/{aID}", s.ServeAttachment)
@@ -342,32 +346,60 @@ func (s *Assets) ServeTestOutput(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, rr)
 }
 
-func (s *Assets) ServeProblemArchive(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	var args test.ArchiveGenOptions
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		http.Error(w, "Can't decode parameters", 400)
-		return
+func (s *Assets) ServeProblemArchive() http.HandlerFunc {
+	// If people try to download archives on 1000 different accounts at the same time i think we have a different problem
+	pbArchiveUserCache, err := theine.NewBuilder[int, *sync.Mutex](1000).BuildWithLoader(func(ctx context.Context, key int) (theine.Loaded[*sync.Mutex], error) {
+		var mu sync.Mutex
+		return theine.Loaded[*sync.Mutex]{
+			Value: &mu,
+			Cost:  1,
+			TTL:   1 * time.Hour,
+		}, nil
+	})
+	if err != nil {
+		zap.S().Fatal(err)
 	}
 
-	args.Tests = args.Tests && s.base.CanViewTests(util.UserBrief(r), util.Problem(r))
-	args.PrivateAttachments = args.PrivateAttachments && s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r))
-	args.AllSubmissions = args.AllSubmissions && s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r))
-	args.SubsLook = true
-	args.SubsLookingUser = util.UserBrief(r)
+	return func(w http.ResponseWriter, r *http.Request) {
+		mu, err := pbArchiveUserCache.Get(r.Context(), util.UserBrief(r).ID)
+		if err != nil || mu == nil {
+			zap.S().Warn(err)
+			http.Error(w, "Could not aquire mutex", 500)
+			return
+		}
+		if !mu.TryLock() {
+			http.Error(w, "You cannot download more than one archive at once!", http.StatusForbidden)
+			return
+		}
+		defer mu.Unlock()
+		r.ParseForm()
+		var args test.ArchiveGenOptions
+		if err := decoder.Decode(&args, r.Form); err != nil {
+			http.Error(w, "Can't decode parameters", 400)
+			return
+		}
 
-	w.Header().Add("Content-Type", "application/zip")
-	w.Header().Add("Content-Disposition", fmt.Sprintf(`attachment; filename="%d-%s.zip"`, util.Problem(r).ID, kilonova.MakeSlug(util.Problem(r).Name)))
-	w.WriteHeader(200)
+		args.Tests = args.Tests && s.base.CanViewTests(util.UserBrief(r), util.Problem(r))
+		args.PrivateAttachments = args.PrivateAttachments && s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r))
+		args.AllSubmissions = args.AllSubmissions && s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r))
+		args.SubsLook = true
+		args.SubsLookingUser = util.UserBrief(r)
 
-	wr := bufio.NewWriter(w)
-	if err := test.GenerateArchive(r.Context(), util.Problem(r), wr, s.base, &args); err != nil {
-		if !errors.Is(err, context.Canceled) {
+		w.Header().Add("Content-Type", "application/zip")
+		w.Header().Add("Content-Disposition", fmt.Sprintf(`attachment; filename="%d-%s.zip"`, util.Problem(r).ID, kilonova.MakeSlug(util.Problem(r).Name)))
+		w.WriteHeader(200)
+
+		wr := bufio.NewWriter(w)
+		if err := test.GenerateArchive(r.Context(), util.Problem(r), wr, s.base, &args); err != nil {
+			if !errors.Is(err, context.Canceled) {
+				if !errors.Is(err, syscall.EPIPE) {
+					zap.S().Warn(err)
+				}
+			}
+			fmt.Fprint(w, err)
+		}
+		if err := wr.Flush(); err != nil && !errors.Is(err, syscall.EPIPE) {
 			zap.S().Warn(err)
 		}
-		fmt.Fprint(w, err)
-	}
-	if err := wr.Flush(); err != nil {
-		zap.S().Warn(err)
 	}
 }

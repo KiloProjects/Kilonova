@@ -33,6 +33,26 @@ let definitions: Record<string, { en: Definition; ro: Definition }> = {
 			),
 		},
 	},
+	lifetime_donation_amount: {
+		en: {
+			name: "Estimated total donation",
+			description: () => (
+				<>
+					<p>This is a calculated projection of the amount a person has donated during their subscription</p>
+					<p>The platform does not know when a payment is processed, so we try to make a best guess.</p>
+				</>
+			),
+		},
+		ro: {
+			name: "Donație totală estimată",
+			description: () => (
+				<>
+					<p>Aceasta este o proiecție calculată a sumei totale de bani pe care o persoană a donat-o prin abonament</p>
+					<p>Platforma nu știe când a fost procesată o tranzacție, deci încercăm doar să facem un estimat.</p>
+				</>
+			),
+		},
+	},
 	unknown: {
 		en: {
 			name: "Unknown definition",

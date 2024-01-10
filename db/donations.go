@@ -40,6 +40,11 @@ func (s *DB) AddDonation(ctx context.Context, donation *kilonova.Donation) error
 	return err
 }
 
+func (s *DB) CancelSubscription(ctx context.Context, id int, at time.Time) error {
+	_, err := s.conn.Exec(ctx, "UPDATE donations SET cancelled_at = $1 WHERE id = $2", at, id)
+	return err
+}
+
 func (s *DB) Donations(ctx context.Context) ([]*kilonova.Donation, error) {
 	rows, _ := s.conn.Query(ctx, "SELECT * FROM donations ORDER BY donated_at DESC")
 	donations, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[donation])

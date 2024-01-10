@@ -43,7 +43,7 @@
 		loadUsers({proposer: true}, "proposer-group", "setProposer");
 	}
 	async function setProposer(id, set) {
-		let res = await bundled.postCall("/admin/setProposer", {id, set})
+		let res = await bundled.bodyCall("/admin/setProposer", {id, set})
 		bundled.apiToast(res)
 		if(res.status == "error") {
 			return
