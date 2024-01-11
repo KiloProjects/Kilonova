@@ -315,12 +315,12 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserFull, proble
 
 		if TotalSubLimit.Value() > 0 && cnt > TotalSubLimit.Value() {
 			s.LogToDiscord(ctx, "User tried to exceed submission send limit, something might be fishy")
-			return -1, Statusf(400, "You cannot submit more than %d submissions in a minute, please wait a bit", TotalSubLimit.Value())
+			return -1, Statusf(401, "You cannot submit more than %d submissions in a minute, please wait a bit", TotalSubLimit.Value())
 		}
 
 		if !author.VerifiedEmail && UnverifiedSubLimit.Value() > 0 && cnt > UnverifiedSubLimit.Value() {
 			s.LogVerbose(ctx, "Unverified user exceeded their submission limit")
-			return -1, Statusf(400, "Users with unverified email cannot submit more than %d times per minute, please verify your email or wait", UnverifiedSubLimit.Value())
+			return -1, Statusf(401, "Users with unverified email cannot submit more than %d times per minute, please verify your email or wait", UnverifiedSubLimit.Value())
 		}
 	}
 
