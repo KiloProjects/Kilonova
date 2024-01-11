@@ -109,7 +109,7 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 }
 
 func (s *BaseAPI) CheckValidPassword(pwd string) *StatusError {
-	if len(pwd) < 6 || len(pwd) > 128 {
+	if len(pwd) < 6 || len(pwd) > 72 {
 		return Statusf(400, "Invalid password length.")
 	}
 	return nil

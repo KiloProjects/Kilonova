@@ -144,7 +144,7 @@ func (s *API) Handler() http.Handler {
 				r.With(s.validateAttachmentID).Get("/attachment/{aID}", s.getFullAttachment)
 				r.With(s.validateAttachmentName).Get("/attachmentByName/{aName}", s.getFullAttachment)
 
-				r.Get("/checklist", webWrapper(func(ctx context.Context, args struct{}) (*kilonova.ProblemChecklist, *kilonova.StatusError) {
+				r.With(s.validateProblemEditor).Get("/checklist", webWrapper(func(ctx context.Context, args struct{}) (*kilonova.ProblemChecklist, *kilonova.StatusError) {
 					return s.base.ProblemChecklist(ctx, util.ProblemContext(ctx).ID)
 				}))
 
@@ -203,7 +203,7 @@ func (s *API) Handler() http.Handler {
 				}
 				return nil
 			}))
-			r.Post("/reevaluate", webMessageWrapper("Reset submission", func(ctx context.Context, args struct{}) *kilonova.StatusError {
+			r.With(s.MustBeAuthed).Post("/reevaluate", webMessageWrapper("Reset submission", func(ctx context.Context, args struct{}) *kilonova.StatusError {
 				// Check submission permissions
 				if !(util.UserBriefContext(ctx).Admin || util.SubmissionContext(ctx).ProblemEditor) {
 					return kilonova.Statusf(403, "You cannot delete this submission!")
@@ -319,7 +319,7 @@ func (s *API) Handler() http.Handler {
 	})
 
 	r.Route("/contest", func(r chi.Router) {
-		r.Post("/create", s.createContest)
+		r.With(s.MustBeAuthed).Post("/create", s.createContest)
 
 		r.With(s.MustBeAuthed).Post("/acceptInvitation", webMessageWrapper("Registered for contest", s.acceptContestInvitation))
 		r.With(s.MustBeAuthed).Post("/updateInvitation", webMessageWrapper("Updated invitation", s.updateContestInvitation))

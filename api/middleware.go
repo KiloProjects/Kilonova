@@ -292,7 +292,7 @@ func (s *API) validateSubmissionID(next http.Handler) http.Handler {
 		}
 		sub, err1 := s.base.Submission(r.Context(), subID, util.UserBrief(r))
 		if err1 != nil {
-			errorData(w, "submission does not exist or can't be found", http.StatusBadRequest)
+			errorData(w, "submission does not exist or can't be found", http.StatusNotFound)
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.SubKey, sub)))
