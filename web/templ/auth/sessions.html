@@ -1,3 +1,24 @@
-{{define "title"}}{{end}}
+{{define "title"}}{{getText "manage_sessions"}}: {{.ContentUser.Name}} {{end}}
 {{define "content"}}
+
+<p class="text-muted text-sm">{{getText "session_mgmt_wip"}}</p>
+
+<div class="segment-panel">
+    <h1>{{getText "manage_sessions"}}</h1>
+
+    {{range .Sessions}}
+    <div class="segment-panel">
+        <ul>
+            {{if isAdmin}}
+            <li>{{getText "id"}}: <code>{{.ID}}</code></li>
+            {{end}}
+            <li>{{getText "created_at"}}: <span class="server_timestamp">{{.CreatedAt.UnixMilli}}</span></li>
+            <li>{{getText "expires_at"}}: <span class="server_timestamp">{{.ExpiresAt.UnixMilli}}</span></li>
+            <li>{{getText "expired"}}: {{.Expired}}</li>
+        </ul>
+    </div>
+    {{end}}
+
+</div>
+
 {{end}}

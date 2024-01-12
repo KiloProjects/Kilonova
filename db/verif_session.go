@@ -47,11 +47,15 @@ func (s *DB) RemoveVerification(ctx context.Context, verif string) error {
 	return err
 }
 
-type dbSession struct {
+type Session struct {
 	ID        string    `db:"id"`
 	CreatedAt time.Time `db:"created_at"`
 	UserID    int       `db:"user_id"`
 	ExpiresAt time.Time `db:"expires_at"`
+}
+
+func (sess *Session) Expired() bool {
+	return sess.ExpiresAt.Before(time.Now())
 }
 
 func (s *DB) CreateSession(ctx context.Context, uid int) (string, error) {
@@ -66,9 +70,9 @@ func (s *DB) CreateSession(ctx context.Context, uid int) (string, error) {
 	return vid, nil
 }
 
-func (s *DB) GetSessions(ctx context.Context, uid int) ([]string, error) {
-	rows, _ := s.conn.Query(ctx, "SELECT id FROM sessions WHERE user_id = $1", uid)
-	sessions, err := pgx.CollectRows(rows, pgx.RowTo[string])
+func (s *DB) UserSessions(ctx context.Context, uid int) ([]*Session, error) {
+	rows, _ := s.conn.Query(ctx, "SELECT * FROM sessions WHERE user_id = $1 ORDER BY created_at DESC", uid)
+	sessions, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[Session])
 	return sessions, err
 }
 
@@ -80,8 +84,8 @@ func (s *DB) GetSession(ctx context.Context, sess string) (int, error) {
 	return session.UserID, nil
 }
 
-func (s *DB) getSession(ctx context.Context, sess string) (*dbSession, error) {
-	var session dbSession
+func (s *DB) getSession(ctx context.Context, sess string) (*Session, error) {
+	var session Session
 	err := Get(s.conn, ctx, &session, `SELECT * FROM active_sessions WHERE id = $1`, sess)
 	if err != nil {
 		return nil, errors.New("Unauthed")

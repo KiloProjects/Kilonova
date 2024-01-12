@@ -35,6 +35,9 @@
 <form id="managerUserForm" class="segment-panel" autocomplete="off">
     <h2>{{getText "manageUser"}}</h2>
 
+    <p>
+        <a class="btn btn-blue" href="/profile/{{.ContentUser.Name}}/sessions">{{getText "manage_sessions_btn"}}</a>
+    </p>
     
     <div class="block my-2">
         <label class="inline-flex items-center text-lg">

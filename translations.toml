@@ -2595,3 +2595,19 @@ ro = "Începe acum"
 [create_edit]
 en = "Create and Edit"
 ro = "Creare și Editare"
+
+[manage_sessions]
+en = "Manage sessions"
+ro = "Administrare sesiuni"
+
+[session_mgmt_wip]
+en = "This is an experimental feature, it does not have all useful data and abilities."
+ro = "Aceasta este o funcționalitate experimentală, încă nu dispune de toate datele și abilitățile utile."
+
+[expires_at]
+en = "Expires at"
+ro = "Expiră pe"
+
+[manage_sessions_btn]
+en = "Manage sessions (experimental)"
+ro = "Administrare sesiuni (experimental)"

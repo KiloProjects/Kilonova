@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/db"
 	"go.uber.org/zap"
 )
 
@@ -39,12 +40,6 @@ func (s *BaseAPI) GetSession(ctx context.Context, sid string) (int, *StatusError
 	return uid, nil
 }
 
-type Session struct{}
-
-func (s *BaseAPI) UserSessions(ctx context.Context, user *kilonova.UserBrief) ([]*Session, *StatusError) {
-	panic("TODO")
-}
-
 // Uncached function
 func (s *BaseAPI) sessionUser(ctx context.Context, sid string) (*kilonova.UserFull, *StatusError) {
 	user, err := s.db.User(ctx, kilonova.UserFilter{SessionID: &sid})
@@ -68,8 +63,10 @@ func (s *BaseAPI) SessionUser(ctx context.Context, sid string) (*kilonova.UserFu
 	return user, nil
 }
 
-func (s *BaseAPI) userSessions(ctx context.Context, userID int) ([]string, *StatusError) {
-	sessions, err := s.db.GetSessions(ctx, userID)
+type Session = db.Session
+
+func (s *BaseAPI) UserSessions(ctx context.Context, userID int) ([]*Session, *StatusError) {
+	sessions, err := s.db.UserSessions(ctx, userID)
 	if err != nil {
 		return nil, WrapError(err, "Could not get user sessions")
 	}

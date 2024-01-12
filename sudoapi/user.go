@@ -117,13 +117,13 @@ func (s *BaseAPI) updateUser(ctx context.Context, userID int, upd kilonova.UserF
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't update user")
 	}
-	sessions, err := s.userSessions(ctx, userID)
+	sessions, err := s.UserSessions(ctx, userID)
 	if err != nil {
 		zap.S().Warn(err)
 		return nil
 	}
 	for _, sess := range sessions {
-		s.sessionUserCache.Delete(sess)
+		s.sessionUserCache.Delete(sess.ID)
 	}
 
 	return nil

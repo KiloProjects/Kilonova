@@ -1225,7 +1225,7 @@ func (rt *Web) profile() http.HandlerFunc {
 }
 
 func (rt *Web) sessionsPage(w http.ResponseWriter, r *http.Request, templ *template.Template, user *kilonova.UserFull) {
-	sessions, err := rt.base.UserSessions(r.Context(), user.Brief())
+	sessions, err := rt.base.UserSessions(r.Context(), user.ID)
 	if err != nil {
 		zap.S().Warn(err)
 		rt.statusPage(w, r, 500, err.Error())
