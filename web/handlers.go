@@ -1166,7 +1166,7 @@ func (rt *Web) donationPage() http.HandlerFunc {
 func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *template.Template, user *kilonova.UserFull) {
 	solvedPbs, solvedCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
 		LookingUser: util.UserBrief(r), Look: true,
-		SolvedBy: &util.UserBrief(r).ID,
+		SolvedBy: &user.ID,
 
 		Limit: 50,
 	}, util.UserBrief(r))
@@ -1179,7 +1179,7 @@ func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *templa
 
 	attemptedPbs, attemptedCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
 		LookingUser: util.UserBrief(r), Look: true,
-		AttemptedBy: &util.UserBrief(r).ID,
+		AttemptedBy: &user.ID,
 
 		Limit: 50,
 	}, util.UserBrief(r))
@@ -1190,13 +1190,13 @@ func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *templa
 		attemptedPbs = []*sudoapi.FullProblem{}
 	}
 
-	changeHistory, err := rt.base.UsernameChangeHistory(r.Context(), util.UserBrief(r).ID)
+	changeHistory, err := rt.base.UsernameChangeHistory(r.Context(), user.ID)
 	if err != nil {
 		changeHistory = []*kilonova.UsernameChange{}
 	}
 
 	rt.runTempl(w, r, templ, &ProfileParams{
-		util.UserFull(r), solvedPbs, solvedCnt, attemptedPbs, attemptedCnt, changeHistory,
+		user, solvedPbs, solvedCnt, attemptedPbs, attemptedCnt, changeHistory,
 	})
 }
 
