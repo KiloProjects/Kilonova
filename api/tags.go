@@ -31,6 +31,7 @@ func (s *API) getTags(w http.ResponseWriter, r *http.Request) {
 
 	if !kilonova.ValidTagType(args.Type) {
 		errorData(w, "Invalid tag type", 400)
+		return
 	}
 
 	tags, err := s.base.TagsByType(r.Context(), args.Type)
@@ -59,6 +60,7 @@ func (s *API) createTag(w http.ResponseWriter, r *http.Request) {
 
 	if !kilonova.ValidTagType(args.Type) {
 		errorData(w, "Invalid tag type", 400)
+		return
 	}
 
 	id, err := s.base.CreateTag(r.Context(), args.Name, args.Type)
@@ -106,22 +108,10 @@ func (s *API) updateTag(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Updated tag")
 }
 
-func (s *API) updateProblemTags(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	var args struct {
-		Tags []int `json:"tags"`
-	}
-	if err := parseJsonBody(r, &args); err != nil {
-		err.WriteError(w)
-		return
-	}
-
-	if err := s.base.UpdateProblemTags(r.Context(), util.Problem(r).ID, args.Tags); err != nil {
-		err.WriteError(w)
-		return
-	}
-
-	returnData(w, "Updated tags")
+func (s *API) updateProblemTags(ctx context.Context, args struct {
+	Tags []int `json:"tags"`
+}) *kilonova.StatusError {
+	return s.base.UpdateProblemTags(ctx, util.ProblemContext(ctx).ID, args.Tags)
 }
 
 func (s *API) problemTags(ctx context.Context, args struct{}) ([]*kilonova.Tag, *kilonova.StatusError) {

@@ -109,7 +109,7 @@ func (s *API) Handler() http.Handler {
 						r.Post("/delete", s.deleteTest)
 					})
 
-					r.Post("/tags", s.updateProblemTags)
+					r.Post("/tags", webMessageWrapper("Updated tags", s.updateProblemTags))
 
 					r.Post("/addEditor", s.addProblemEditor)
 					r.Post("/addViewer", s.addProblemViewer)
@@ -333,12 +333,12 @@ func (s *API) Handler() http.Handler {
 
 			r.Get("/leaderboard", s.contestLeaderboard)
 
-			r.With(s.MustBeAuthed).Get("/questions", s.contestUserQuestions)
-			r.With(s.validateContestEditor).Get("/allQuestions", s.contestAllQuestions)
+			r.With(s.MustBeAuthed).Get("/questions", webWrapper(s.contestUserQuestions))
+			r.With(s.validateContestEditor).Get("/allQuestions", webWrapper(s.contestAllQuestions))
 			r.With(s.validateContestParticipant).Post("/askQuestion", s.askContestQuestion)
 			r.With(s.validateContestEditor).Post("/answerQuestion", s.answerContestQuestion)
 
-			r.Get("/announcements", s.contestAnnouncements)
+			r.Get("/announcements", webWrapper(s.contestAnnouncements))
 			r.With(s.validateContestEditor).Post("/createAnnouncement", s.createContestAnnouncement)
 			r.With(s.validateContestEditor).Post("/updateAnnouncement", s.updateContestAnnouncement)
 			r.With(s.validateContestEditor).Post("/deleteAnnouncement", s.deleteContestAnnouncement)
@@ -353,7 +353,7 @@ func (s *API) Handler() http.Handler {
 				return s.base.CreateContestInvitation(ctx, util.ContestContext(ctx).ID, util.UserBriefContext(ctx))
 			}))
 
-			r.With(s.MustBeAuthed).Get("/checkRegistration", s.checkRegistration)
+			r.With(s.MustBeAuthed).Get("/checkRegistration", webWrapper(s.checkRegistration))
 			r.With(s.validateContestEditor).Get("/registrations", s.contestRegistrations)
 			r.With(s.validateContestEditor).Post("/kickUser", s.stripContestRegistration)
 			r.With(s.MustBeAdmin).Post("/forceRegister", s.forceRegisterForContest)

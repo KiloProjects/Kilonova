@@ -156,6 +156,7 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 	default:
 		zap.S().Warn("Unknown problem scoring type")
 		errorData(w, "Unknown problem scoring type", 500)
+		return
 	}
 
 }

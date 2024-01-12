@@ -207,13 +207,8 @@ func (s *API) stripContestAccess(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Stripped contest access")
 }
 
-func (s *API) contestAnnouncements(w http.ResponseWriter, r *http.Request) {
-	announcements, err := s.base.ContestAnnouncements(r.Context(), util.Contest(r).ID)
-	if err != nil {
-		err.WriteError(w)
-		return
-	}
-	returnData(w, announcements)
+func (s *API) contestAnnouncements(ctx context.Context, args struct{}) ([]*kilonova.ContestAnnouncement, *kilonova.StatusError) {
+	return s.base.ContestAnnouncements(ctx, util.ContestContext(ctx).ID)
 }
 
 func (s *API) createContestAnnouncement(w http.ResponseWriter, r *http.Request) {
@@ -299,22 +294,12 @@ func (s *API) deleteContestAnnouncement(w http.ResponseWriter, r *http.Request) 
 	returnData(w, "Removed announcement")
 }
 
-func (s *API) contestUserQuestions(w http.ResponseWriter, r *http.Request) {
-	qs, err := s.base.ContestUserQuestions(r.Context(), util.Contest(r).ID, util.UserBrief(r).ID)
-	if err != nil {
-		err.WriteError(w)
-		return
-	}
-	returnData(w, qs)
+func (s *API) contestUserQuestions(ctx context.Context, args struct{}) ([]*kilonova.ContestQuestion, *kilonova.StatusError) {
+	return s.base.ContestUserQuestions(ctx, util.ContestContext(ctx).ID, util.UserBriefContext(ctx).ID)
 }
 
-func (s *API) contestAllQuestions(w http.ResponseWriter, r *http.Request) {
-	qs, err := s.base.ContestQuestions(r.Context(), util.Contest(r).ID)
-	if err != nil {
-		err.WriteError(w)
-		return
-	}
-	returnData(w, qs)
+func (s *API) contestAllQuestions(ctx context.Context, args struct{}) ([]*kilonova.ContestQuestion, *kilonova.StatusError) {
+	return s.base.ContestQuestions(ctx, util.ContestContext(ctx).ID)
 }
 
 func (s *API) askContestQuestion(w http.ResponseWriter, r *http.Request) {
@@ -460,13 +445,8 @@ func (s *API) forceRegisterForContest(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Force registered user for contest")
 }
 
-func (s *API) checkRegistration(w http.ResponseWriter, r *http.Request) {
-	reg, err := s.base.ContestRegistration(r.Context(), util.Contest(r).ID, util.UserBrief(r).ID)
-	if err != nil {
-		err.WriteError(w)
-		return
-	}
-	returnData(w, reg)
+func (s *API) checkRegistration(ctx context.Context, args struct{}) (*kilonova.ContestRegistration, *kilonova.StatusError) {
+	return s.base.ContestRegistration(ctx, util.ContestContext(ctx).ID, util.UserBriefContext(ctx).ID)
 }
 
 func (s *API) stripContestRegistration(w http.ResponseWriter, r *http.Request) {
