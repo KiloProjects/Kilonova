@@ -73,30 +73,12 @@ func (s *API) deleteTest(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Removed test")
 }
 
-func (s *API) getTests(w http.ResponseWriter, r *http.Request) {
-	tests, err := s.base.Tests(r.Context(), util.Problem(r).ID)
-	if err != nil {
-		err.WriteError(w)
-		return
-	}
-	returnData(w, tests)
+func (s *API) getTests(ctx context.Context, args struct{}) ([]*kilonova.Test, *kilonova.StatusError) {
+	return s.base.Tests(ctx, util.ProblemContext(ctx).ID)
 }
 
-func (s *API) getTest(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	var args struct{ ID int }
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, http.StatusBadRequest)
-		return
-	}
-
-	test, err := s.base.Test(r.Context(), util.Problem(r).ID, args.ID)
-	if err != nil {
-		err.WriteError(w)
-		return
-	}
-
-	returnData(w, test)
+func (s *API) getTest(ctx context.Context, args struct{ ID int }) (*kilonova.Test, *kilonova.StatusError) {
+	return s.base.Test(ctx, util.ProblemContext(ctx).ID, args.ID)
 }
 
 // createTest inserts a new test to the problem

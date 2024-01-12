@@ -94,7 +94,7 @@ func (s *API) Handler() http.Handler {
 			r.Get("/maxScore", s.maxScore)
 			r.Get("/maxScoreBreakdown", s.maxScoreBreakdown)
 			r.Get("/statistics", s.problemStatistics)
-			r.Get("/tags", s.problemTags)
+			r.Get("/tags", webWrapper(s.problemTags))
 
 			r.Group(func(r chi.Router) {
 				r.Use(s.validateProblemEditor)
@@ -141,17 +141,17 @@ func (s *API) Handler() http.Handler {
 				r.Get("/attachments", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
 					return s.base.ProblemAttachments(ctx, util.ProblemContext(ctx).ID)
 				}))
-				r.With(s.validateAttachmentID).Get("/attachment/{aID}", s.getFullAttachment)
-				r.With(s.validateAttachmentName).Get("/attachmentByName/{aName}", s.getFullAttachment)
+				r.With(s.validateAttachmentID).Get("/attachment/{aID}", webWrapper(s.getFullAttachment))
+				r.With(s.validateAttachmentName).Get("/attachmentByName/{aName}", webWrapper(s.getFullAttachment))
 
 				r.With(s.validateProblemEditor).Get("/checklist", webWrapper(func(ctx context.Context, args struct{}) (*kilonova.ProblemChecklist, *kilonova.StatusError) {
 					return s.base.ProblemChecklist(ctx, util.ProblemContext(ctx).ID)
 				}))
 
-				r.Get("/accessControl", s.getProblemAccessControl)
+				r.Get("/accessControl", webWrapper(s.getProblemAccessControl))
 
-				r.Get("/tests", s.getTests)
-				r.Get("/test", s.getTest)
+				r.Get("/tests", webWrapper(s.getTests))
+				r.Get("/test", webWrapper(s.getTest))
 			})
 		})
 	})
@@ -178,10 +178,10 @@ func (s *API) Handler() http.Handler {
 				r.Get("/attachments", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
 					return s.base.BlogPostAttachments(ctx, util.BlogPostContext(ctx).ID)
 				}))
-				r.With(s.validateAttachmentID).Get("/attachment/{aID}", s.getFullAttachment)
-				r.With(s.validateAttachmentName).Get("/attachmentByName/{aName}", s.getFullAttachment)
+				r.With(s.validateAttachmentID).Get("/attachment/{aID}", webWrapper(s.getFullAttachment))
+				r.With(s.validateAttachmentName).Get("/attachmentByName/{aName}", webWrapper(s.getFullAttachment))
 			})
-			r.With(s.validateBlogPostEditor).Post("/delete", s.deleteBlogPost)
+			r.With(s.validateBlogPostEditor).Post("/delete", webMessageWrapper("Removed blog post", s.deleteBlogPost))
 		})
 	})
 	r.Route("/submissions", func(r chi.Router) {

@@ -108,7 +108,11 @@ func ProblemList(r *http.Request) *kilonova.ProblemList {
 }
 
 func Attachment(r *http.Request) *kilonova.Attachment {
-	return getValueContext[kilonova.Attachment](r.Context(), AttachmentKey)
+	return AttachmentContext(r.Context())
+}
+
+func AttachmentContext(ctx context.Context) *kilonova.Attachment {
+	return getValueContext[kilonova.Attachment](ctx, AttachmentKey)
 }
 
 func Tag(r *http.Request) *kilonova.Tag {

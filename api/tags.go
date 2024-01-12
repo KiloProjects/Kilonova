@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
@@ -123,11 +124,6 @@ func (s *API) updateProblemTags(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Updated tags")
 }
 
-func (s *API) problemTags(w http.ResponseWriter, r *http.Request) {
-	tags, err := s.base.ProblemTags(r.Context(), util.Problem(r).ID)
-	if err != nil {
-		err.WriteError(w)
-		return
-	}
-	returnData(w, tags)
+func (s *API) problemTags(ctx context.Context, args struct{}) ([]*kilonova.Tag, *kilonova.StatusError) {
+	return s.base.ProblemTags(ctx, util.ProblemContext(ctx).ID)
 }

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -170,22 +171,23 @@ func (s *API) updateAttachmentData(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Updated attachment")
 }
 
+type fullAttachment struct {
+	Metadata *kilonova.Attachment `json:"metadata"`
+	MimeType string               `json:"mime_type"`
+	Data     []byte               `json:"data"`
+}
+
 // NOTE: This depends on the middleware. The middleware actually resolves the attachment, either by name or by id.
-func (s *API) getFullAttachment(w http.ResponseWriter, r *http.Request) {
-	data, err := s.base.AttachmentData(r.Context(), util.Attachment(r).ID)
+func (s *API) getFullAttachment(ctx context.Context, args struct{}) (*fullAttachment, *kilonova.StatusError) {
+	data, err := s.base.AttachmentData(ctx, util.AttachmentContext(ctx).ID)
 	if err != nil {
-		err.WriteError(w)
-		return
+		return nil, err
 	}
-	returnData(w, struct {
-		Metadata *kilonova.Attachment `json:"metadata"`
-		MimeType string               `json:"mime_type"`
-		Data     []byte               `json:"data"`
-	}{
-		Metadata: util.Attachment(r),
+	return &fullAttachment{
+		Metadata: util.AttachmentContext(ctx),
 		MimeType: http.DetectContentType(data),
 		Data:     data,
-	})
+	}, nil
 }
 
 func (s *API) bulkUpdateAttachmentInfo(w http.ResponseWriter, r *http.Request) {

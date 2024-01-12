@@ -125,9 +125,6 @@ func (s *API) updateBlogPost(w http.ResponseWriter, r *http.Request) {
 	}{slug, "Updated blog post"})
 }
 
-func (s *API) deleteBlogPost(w http.ResponseWriter, r *http.Request) {
-	if err := s.base.DeleteBlogPost(context.WithoutCancel(r.Context()), util.BlogPost(r)); err != nil {
-		err.WriteError(w)
-		return
-	}
+func (s *API) deleteBlogPost(ctx context.Context, args struct{}) *kilonova.StatusError {
+	return s.base.DeleteBlogPost(context.WithoutCancel(ctx), util.BlogPostContext(ctx))
 }

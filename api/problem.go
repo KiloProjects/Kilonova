@@ -437,24 +437,24 @@ func (s *API) stripProblemAccess(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Stripped problem access")
 }
 
-func (s *API) getProblemAccessControl(w http.ResponseWriter, r *http.Request) {
-	editors, err := s.base.ProblemEditors(r.Context(), util.Problem(r).ID)
+type problemAccessControl struct {
+	Editors []*kilonova.UserBrief `json:"editors"`
+	Viewers []*kilonova.UserBrief `json:"viewers"`
+}
+
+func (s *API) getProblemAccessControl(ctx context.Context, args struct{}) (*problemAccessControl, *kilonova.StatusError) {
+	editors, err := s.base.ProblemEditors(ctx, util.ProblemContext(ctx).ID)
 	if err != nil {
-		err.WriteError(w)
-		return
+		return nil, err
 	}
 
-	viewers, err := s.base.ProblemViewers(r.Context(), util.Problem(r).ID)
+	viewers, err := s.base.ProblemViewers(ctx, util.ProblemContext(ctx).ID)
 	if err != nil {
-		err.WriteError(w)
-		return
+		return nil, err
 	}
 
-	returnData(w, struct {
-		Editors []*kilonova.UserBrief `json:"editors"`
-		Viewers []*kilonova.UserBrief `json:"viewers"`
-	}{
+	return &problemAccessControl{
 		Editors: editors,
 		Viewers: viewers,
-	})
+	}, nil
 }

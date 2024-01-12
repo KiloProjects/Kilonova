@@ -81,12 +81,7 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) logout(w http.ResponseWriter, r *http.Request) {
-	h := getAuthHeader(r)
-	if h == "" {
-		errorData(w, "You are already logged out!", 400)
-		return
-	}
-	s.base.RemoveSession(r.Context(), h)
+	s.base.RemoveSession(r.Context(), getAuthHeader(r))
 	returnData(w, "Logged out")
 }
 
