@@ -486,7 +486,7 @@ export class SubmissionManager extends Component<{ id: number; initialData: Full
 	constructor(props) {
 		super();
 		this.poll_mu = false;
-		this.finished = props.initialData?.status == "finished" ?? false;
+		this.finished = props.initialData?.status == "finished";
 		this.state = {
 			sub: props.initialData,
 		};
