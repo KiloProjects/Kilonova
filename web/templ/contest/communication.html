@@ -29,7 +29,7 @@
         </div>
         {{ end }}
 
-        {{ if canSubmitInContest .Ctx.User.Brief .Contest }}
+        {{ if canSubmitInContest authedUser .Contest }}
 
             <form id="question_submit_form" class="segment-panel" autocomplete="off">
                 <h2>{{getText "ask_question"}}</h2>

@@ -48,8 +48,8 @@
             {{if authed}}
             user: {{authedUser}},
             {{end}}
-			admin: {{if authed}}{{.Ctx.User.Admin}}{{else}}false{{end}},
-			user_id: {{if authed}}{{.Ctx.User.ID}}{{else}}0{{end}},
+			admin: {{if authed}}{{isAdmin}}{{else}}false{{end}},
+			user_id: {{if authed}}{{authedUser.ID}}{{else}}0{{end}},
 			language: {{language}},
             langs: {{pLanguages}},
 		};
@@ -71,8 +71,8 @@ if(bundled.isDarkMode()) {  // Dark Mode
 <body>
 	{{ template "navbar" . }}
 
-	{{- if .Ctx.User }}
-		{{ if not .Ctx.User.VerifiedEmail }}
+	{{- if authed }}
+		{{ if not fullAuthedUser.VerifiedEmail }}
 			<div class="w-full py-1 px-2 bg-green-200 dark:bg-green-700 text-black dark:text-white text-center">{{ getText "unverifiedEmail" }}</div>
 		{{ end }}
 	{{ end -}}

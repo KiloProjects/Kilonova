@@ -5,12 +5,10 @@
 <div class="segment-panel">
     <h1>{{getText "title.blogPosts"}}</h1>
     
-    {{ if authed }}
-    {{ if authedUser.Proposer }}
+    {{ if authedUser.IsProposer }}
     <div class="block my-2">
         <a class="btn btn-blue" href="/createPost">{{getText "createPost"}}</a>
     </div>
-    {{ end }}
     {{ end }}
 
     <div id="blog_post_paginator"></div>

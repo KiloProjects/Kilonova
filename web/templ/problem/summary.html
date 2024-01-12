@@ -106,7 +106,7 @@
                 <p>{{getText "tags"}}: <kn-pb-tags enc="{{. | encodeJSON}}" open="{{if authed}}{{or ($isEditor) ($maxScore.Equal (decimalFromInt 100))}}{{else}}false{{end}}"></kn-pb-tags> </p>
                 {{- end -}}
                 {{ if and authed (not (eq .Problem.ScoringStrategy `acm-icpc`)) }}
-                <p>{{getText "score"}}: {{if eq .Problem.ScoringStrategy `sum_subtasks`}}<a class="max_score_breakdown" href="#" data-problemid="{{.Problem.ID}}">{{end}}<span id="max_score_counter">{{subScore .Problem .Ctx.User.Brief}}</span> {{if eq .Problem.ScoringStrategy `sum_subtasks`}}</a>{{end}}</p>
+                <p>{{getText "score"}}: {{if eq .Problem.ScoringStrategy `sum_subtasks`}}<a class="max_score_breakdown" href="#" data-problemid="{{.Problem.ID}}">{{end}}<span id="max_score_counter">{{subScore .Problem authedUser}}</span> {{if eq .Problem.ScoringStrategy `sum_subtasks`}}</a>{{end}}</p>
                 {{ end }}            
                 {{if .Topbar.CanViewTests}}
                 <p><a href="{{.Topbar.URLPrefix}}/problems/{{.Topbar.Problem.ID}}/archive">{{getText "downloadArchive"}}</a></p>
@@ -153,7 +153,7 @@
         {{ end }}
         {{ if authed }}
         <div class="segment-panel">
-            <older-subs problemid="{{.Problem.ID}}" {{if (and .Topbar.Contest (not .Topbar.Contest.Ended))}}contestid="{{.Topbar.Contest.ID}}"{{end}} userid="{{.Ctx.User.ID}}" enc="{{.Submissions | encodeJSON}}"></older-subs>
+            <older-subs problemid="{{.Problem.ID}}" {{if (and .Topbar.Contest (not .Topbar.Contest.Ended))}}contestid="{{.Topbar.Contest.ID}}"{{end}} userid="{{authedUser.ID}}" enc="{{.Submissions | encodeJSON}}"></older-subs>
         </div>
         {{ end }}
         {{ $topbar := .Topbar}}

@@ -71,14 +71,7 @@ func (rt *Web) postTopbar(r *http.Request, page string) *PostTopbar {
 	}
 }
 
-type ReqContext struct {
-	User     *kilonova.UserFull
-	Language string
-}
-
 type BlogPostIndexParams struct {
-	Ctx *ReqContext
-
 	Posts   []*kilonova.BlogPost
 	Authors map[int]*kilonova.UserBrief
 
@@ -87,8 +80,6 @@ type BlogPostIndexParams struct {
 }
 
 type BlogPostParams struct {
-	Ctx *ReqContext
-
 	Topbar *PostTopbar
 
 	StatementEditor  *StatementEditorParams
@@ -106,8 +97,6 @@ type BlogPostParams struct {
 }
 
 type ContestsIndexParams struct {
-	Ctx *ReqContext
-
 	Contests []*kilonova.Contest
 
 	Page string
@@ -117,8 +106,6 @@ type ContestsIndexParams struct {
 }
 
 type DonateParams struct {
-	Ctx *ReqContext
-
 	Donations []*kilonova.Donation
 
 	Status   string
@@ -127,7 +114,6 @@ type DonateParams struct {
 }
 
 type ContestParams struct {
-	Ctx    *ReqContext
 	Topbar *ProblemTopbar
 
 	Contest *kilonova.Contest
@@ -136,8 +122,6 @@ type ContestParams struct {
 }
 
 type ContestInviteParams struct {
-	Ctx *ReqContext
-
 	Contest *kilonova.Contest
 	Invite  *kilonova.ContestInvitation
 
@@ -148,7 +132,6 @@ type ContestInviteParams struct {
 }
 
 type ProblemParams struct {
-	Ctx    *ReqContext
 	Topbar *ProblemTopbar
 
 	Problem     *kilonova.Problem
@@ -166,7 +149,6 @@ type ProblemParams struct {
 }
 
 type ProblemTopbarParams struct {
-	Ctx    *ReqContext
 	Topbar *ProblemTopbar
 
 	Languages map[string]eval.Language
@@ -174,7 +156,6 @@ type ProblemTopbarParams struct {
 }
 
 type ProblemListParams struct {
-	Ctx         *ReqContext
 	ProblemList *kilonova.ProblemList
 	Lists       []*kilonova.ProblemList
 
@@ -182,13 +163,11 @@ type ProblemListParams struct {
 }
 
 type ProblemListProgressParams struct {
-	Ctx         *ReqContext
 	ProblemList *sudoapi.FullProblemList
 	CheckedUser *kilonova.UserBrief
 }
 
 type SubTaskEditParams struct {
-	Ctx     *ReqContext
 	Problem *kilonova.Problem
 	SubTask *kilonova.SubTask
 	Topbar  *ProblemTopbar
@@ -221,7 +200,6 @@ func (s *SubTaskEditParams) TestInSubTask(test *kilonova.Test) bool {
 }
 
 type TestEditParams struct {
-	Ctx     *ReqContext
 	Problem *kilonova.Problem
 	Test    *kilonova.Test
 	Topbar  *ProblemTopbar
@@ -278,8 +256,6 @@ func (t *TestEditParams) GetFullTests() testDataType {
 }
 
 type IndexParams struct {
-	Ctx *ReqContext
-
 	FutureContests  []*kilonova.Contest
 	RunningContests []*kilonova.Contest
 
@@ -308,8 +284,6 @@ type PblistParams struct {
 }
 
 type ProfileParams struct {
-	Ctx *ReqContext
-
 	ContentUser       *kilonova.UserFull
 	SolvedProblems    []*sudoapi.FullProblem
 	SolvedCount       int
@@ -319,30 +293,28 @@ type ProfileParams struct {
 	ChangeHistory []*kilonova.UsernameChange
 }
 
-type AuditLogParams struct {
-	Ctx *ReqContext
+type SessionsParams struct {
+	ContentUser *kilonova.UserFull
+	Sessions    []*sudoapi.Session
+}
 
+type AuditLogParams struct {
 	Logs     []*kilonova.AuditLog
 	Page     int
 	NumPages int
 }
 
 type StatusParams struct {
-	Ctx *ReqContext
-
 	Code    int
 	Message string
 }
 
 type MarkdownParams struct {
-	Ctx      *ReqContext
 	Markdown template.HTML
 	Title    string
 }
 
 type ProblemSearchParams struct {
-	Ctx *ReqContext
-
 	ProblemList *kilonova.ProblemList
 
 	Results   []*sudoapi.FullProblem
@@ -351,37 +323,20 @@ type ProblemSearchParams struct {
 	Count     int
 }
 
-type SimpleParams struct {
-	Ctx *ReqContext
-}
-
-func GenContext(r *http.Request) *ReqContext {
-	return &ReqContext{
-		User:     util.UserFull(r),
-		Language: util.Language(r),
-	}
-}
-
 type VerifiedEmailParams struct {
-	Ctx *ReqContext
-
 	ContentUser *kilonova.UserBrief
 }
 
 type PasswordResetParams struct {
-	Ctx *ReqContext
-
 	User      *kilonova.UserFull
 	RequestID string
 }
 
 type SubParams struct {
-	Ctx        *ReqContext
 	Submission *kilonova.FullSubmission
 }
 
 type PasteParams struct {
-	Ctx   *ReqContext
 	Paste *kilonova.SubmissionPaste
 
 	FullSub *sudoapi.FullSubmission

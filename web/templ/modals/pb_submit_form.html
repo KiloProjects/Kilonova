@@ -1,6 +1,6 @@
 <form class="segment-panel" id="sendSubForm" autocomplete="off">   
     {{ if .Topbar.Contest }}
-        {{ if canSubmitInContest .Ctx.User.Brief .Topbar.Contest}}
+        {{ if canSubmitInContest authedUser .Topbar.Contest}}
             <h1 class="mt-2">{{getText "uploadContestSub"}}</h1>
             <input type="hidden" id="sub_contestid" value="{{.Topbar.Contest.ID}}">
         {{ else }}
@@ -9,7 +9,7 @@
         {{ end }}
     {{ else }}    
         <h1 class="mt-2">{{getText "uploadSub"}}</h1>
-        {{ with problemContests .Ctx.User.Brief .Problem }}
+        {{ with problemContests authedUser .Problem }}
         <label class="block mb-2">
             <span class="form-label">{{getText "contest"}}: </span>
             <select id="sub_contestid" class="form-select" required>

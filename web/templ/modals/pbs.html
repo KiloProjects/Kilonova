@@ -1,5 +1,4 @@
 {{ define "pb_list_group" }}
-{{ $user := authedUser }}
 {{ $showScore := .ShowScore }}
 {{ $contestIDScore := .ContestIDScore }}
 {{ $listID := .ListID }}
@@ -10,7 +9,7 @@
 			<span>{{.Name}} (#{{.ID}})</span>
             <div>
                 {{- if $showPublished -}}
-			    {{- if $user -}}
+			    {{- if authed -}}
 					{{ if .IsEditor }}
 						{{- if .Visible }}
 							<span class="badge badge-green">{{ getText "published" }}</span>

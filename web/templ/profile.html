@@ -9,7 +9,7 @@
         {{ if .ContentUser.Generated }}
             <p>!!!{{getText "generated_acc"}}</p>
         {{ end }}
-		{{- if authed -}} {{if (or .Ctx.User.Admin (eq .Ctx.User.ID .ContentUser.ID)) -}}
+		{{- if authed -}} {{if (or isAdmin (eq authedUser.ID .ContentUser.ID)) -}}
 		<p>{{getText "email"}}: {{.ContentUser.Email}}
             ({{getText "email.verified"}}? 
 			{{ if .ContentUser.VerifiedEmail -}}
@@ -22,7 +22,7 @@
         <div class="block my-2">
             <a class="btn btn-blue" href="/submissions/?user_id={{.ContentUser.ID}}">{{getText "submission.list"}}</a>
             {{if authed}}
-                {{if eq .ContentUser.ID .Ctx.User.ID}}
+                {{if eq .ContentUser.ID authedUser.ID}}
                     <a class="btn btn-blue" href="/settings">{{getText "profile.settings"}}</a>
                 {{end}}
                 
@@ -83,7 +83,7 @@
 
 {{$isCUser := false}}
 {{ if authed }}
-{{ if eq .ContentUser.ID .Ctx.User.ID}}
+{{ if eq .ContentUser.ID authedUser.ID}}
 {{$isCUser = true}}
 {{ end }}
 {{ end }}

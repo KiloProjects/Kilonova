@@ -75,7 +75,6 @@ func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int
 	}
 	status := rt.parse(nil, "util/statusCode.html", "modals/login.html")
 	rt.runTempl(w, r, status, &StatusParams{
-		Ctx:     GenContext(r),
 		Code:    statusCode,
 		Message: errMessage,
 	})
@@ -147,7 +146,9 @@ func (rt *Web) Handler() http.Handler {
 
 		r.Get("/", rt.index())
 		r.With(rt.mustBeAuthed).Get("/profile", rt.selfProfile())
+		r.With(rt.mustBeAuthed).Get("/profile/sessions", rt.selfSessions())
 		r.Get("/profile/{user}", rt.profile())
+		r.With(rt.mustBeAuthed).Get("/profile/{user}/sessions", rt.userSessions())
 		r.With(rt.mustBeAuthed).Get("/settings", rt.justRender("settings.html"))
 		r.Get("/donate", rt.donationPage())
 
@@ -719,6 +720,10 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 		"authed": func() bool {
 			zap.S().Error("Uninitialized `authed`")
 			return false
+		},
+		"fullAuthedUser": func() *kilonova.UserFull {
+			zap.S().Error("Uninitialized `fullAuthedUser`")
+			return nil
 		},
 		"authedUser": func() *kilonova.UserBrief {
 			zap.S().Error("Uninitialized `authedUser`")

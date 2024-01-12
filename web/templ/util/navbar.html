@@ -32,14 +32,14 @@
         {{ if canViewAllSubs }}
 		    <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/submissions">{{getText "submission.list"}}</a>
         {{ end }}
-		{{if not .Ctx.User }}
+		{{if not authed }}
             {{ if (boolFlag "feature.platform.signup") }}
 			    <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/signup?back={{reqPath}}">{{getText "auth.signup"}}</a>
             {{ end }}
             <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/login?back={{reqPath}}">{{getText "auth.login"}}</a>
 		{{else}}
 			<div id="pr-dropdown" class="relative">
-				<button onclick="navbar_mgr.toggleDropdown()" id="profile-dropdown-button" class="relative z-10 block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable">{{.Ctx.User.Name}}<i id="dropdown-caret" class="ml-1 fas fa-caret-down"></i></button>
+				<button onclick="navbar_mgr.toggleDropdown()" id="profile-dropdown-button" class="relative z-10 block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable">{{authedUser.Name}}<i id="dropdown-caret" class="ml-1 fas fa-caret-down"></i></button>
 				<div id="profile-dropdown" class="dropdown-list hidden">
 					<a class="dropdown-list-item" href="/profile">
 						<i class="ml-n2 fas fa-user fa-fw"></i> {{getText "profile.url"}} 
@@ -55,7 +55,7 @@
                     <a class="dropdown-list-item" href="/tags/">
                         <i class="ml-n2 fas fa-tag fa-fw"></i> {{getText "tags"}}
                     </a>
-					{{if (or .Ctx.User.Proposer .Ctx.User.Admin)}}
+					{{if authedUser.IsProposer}}
 						<div class="dropdown-divider"></div>
 						<a class="dropdown-list-item" href="/proposer">
 							<i class="ml-n2 fas fa-chalkboard-teacher fa-fw"></i> {{getText "panel.proposer"}}
@@ -67,7 +67,7 @@
 							<i class="ml-n2 fas fa-newspaper fa-fw"></i> {{getText "blog_posts"}}
 						</a>
 					{{end}}
-					{{if .Ctx.User.Admin}}
+					{{if authedUser.IsAdmin}}
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-list-item" href="/admin">
                             <i class="ml-n2 fas fa-sliders-h fa-fw"></i> {{getText "panel.admin"}}

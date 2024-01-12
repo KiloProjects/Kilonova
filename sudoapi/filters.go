@@ -8,22 +8,19 @@ import (
 	"go.uber.org/zap"
 )
 
+// Deprecated: use user.IsAuthed() instead
 func (s *BaseAPI) IsAuthed(user *kilonova.UserBrief) bool {
-	return user != nil && user.ID != 0
+	return user.IsAuthed()
 }
 
+// Deprecated: use user.IsAdmin() instead
 func (s *BaseAPI) IsAdmin(user *kilonova.UserBrief) bool {
-	if !s.IsAuthed(user) {
-		return false
-	}
-	return user.Admin
+	return user.IsAdmin()
 }
 
+// Deprecated: use user.IsProposer() instead
 func (s *BaseAPI) IsProposer(user *kilonova.UserBrief) bool {
-	if !s.IsAuthed(user) {
-		return false
-	}
-	return user.Admin || user.Proposer
+	return user.IsProposer()
 }
 
 // NOTE: This must be in sync with the visible_posts PSQL function

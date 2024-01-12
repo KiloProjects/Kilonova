@@ -25,6 +25,24 @@ type UserBrief struct {
 	DisplayName string `json:"display_name"`
 }
 
+func (u *UserBrief) IsAuthed() bool {
+	return u != nil && u.ID != 0
+}
+
+func (u *UserBrief) IsAdmin() bool {
+	if !u.IsAuthed() {
+		return false
+	}
+	return u.Admin
+}
+
+func (u *UserBrief) IsProposer() bool {
+	if !u.IsAuthed() {
+		return false
+	}
+	return u.Admin || u.Proposer
+}
+
 type UserFull struct {
 	UserBrief
 	Bio               string         `json:"bio,omitempty"`

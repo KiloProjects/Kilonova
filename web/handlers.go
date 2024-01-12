@@ -115,7 +115,7 @@ func (rt *Web) index() http.HandlerFunc {
 			moreProblems = true
 		}
 
-		rt.runTempl(w, r, templ, &IndexParams{GenContext(r), futureContests, runningContests, pblists, hotProblems, moreProblems, pinnedLists})
+		rt.runTempl(w, r, templ, &IndexParams{futureContests, runningContests, pblists, hotProblems, moreProblems, pinnedLists})
 	}
 }
 
@@ -248,20 +248,18 @@ func (rt *Web) problems() http.HandlerFunc {
 			rt.statusPage(w, r, 500, "N-am putut încărca problemele")
 			return
 		}
-		rt.runTempl(w, r, templ, &ProblemSearchParams{GenContext(r), pblist, pbs, gr, tags, cnt})
+		rt.runTempl(w, r, templ, &ProblemSearchParams{pblist, pbs, gr, tags, cnt})
 	}
 }
 
 func (rt *Web) tags() http.HandlerFunc {
 	templ := rt.parse(nil, "tags/index.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, templ, &SimpleParams{GenContext(r)})
+		rt.runTempl(w, r, templ, struct{}{})
 	}
 }
 
 type TagPageParams struct {
-	Ctx *ReqContext
-
 	Tag *kilonova.Tag
 
 	RelevantTags []*kilonova.Tag
@@ -288,14 +286,14 @@ func (rt *Web) tag() http.HandlerFunc {
 			zap.S().Warn("Couldn't fetch relevant tags: ", err)
 			relevantTags = nil
 		}
-		rt.runTempl(w, r, templ, &TagPageParams{GenContext(r), util.Tag(r), relevantTags, pbs, pbsCnt})
+		rt.runTempl(w, r, templ, &TagPageParams{util.Tag(r), relevantTags, pbs, pbsCnt})
 	}
 }
 
 func (rt *Web) justRender(files ...string) http.HandlerFunc {
 	templ := rt.parse(nil, files...)
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, templ, &SimpleParams{GenContext(r)})
+		rt.runTempl(w, r, templ, struct{}{})
 	}
 }
 
@@ -325,7 +323,7 @@ func (rt *Web) pbListIndex() http.HandlerFunc {
 			}
 		}
 
-		rt.runTempl(w, r, templ, &ProblemListParams{GenContext(r), nil, pblists, -1})
+		rt.runTempl(w, r, templ, &ProblemListParams{nil, pblists, -1})
 	}
 }
 
@@ -356,7 +354,7 @@ func (rt *Web) pbListProgressIndex() http.HandlerFunc {
 			}
 		}
 
-		rt.runTempl(w, r, templ, &ProblemListParams{GenContext(r), nil, pblists, RootProblemList.Value()})
+		rt.runTempl(w, r, templ, &ProblemListParams{nil, pblists, RootProblemList.Value()})
 	}
 }
 
@@ -412,7 +410,7 @@ func (rt *Web) pbListProgressView() http.HandlerFunc {
 			return
 		}
 
-		rt.runTempl(w, r, templ, &ProblemListProgressParams{GenContext(r), list, checkedUser})
+		rt.runTempl(w, r, templ, &ProblemListProgressParams{list, checkedUser})
 	}
 }
 
@@ -433,7 +431,7 @@ func (rt *Web) pbListView() http.HandlerFunc {
 			}
 		}
 
-		rt.runTempl(w, r, templ, &ProblemListParams{GenContext(r), util.ProblemList(r), nil, -1})
+		rt.runTempl(w, r, templ, &ProblemListParams{util.ProblemList(r), nil, -1})
 	}
 }
 
@@ -463,14 +461,14 @@ func (rt *Web) auditLog() http.HandlerFunc {
 			numPages++
 		}
 
-		rt.runTempl(w, r, templ, &AuditLogParams{GenContext(r), logs, page, numPages})
+		rt.runTempl(w, r, templ, &AuditLogParams{logs, page, numPages})
 	}
 }
 
 func (rt *Web) submission() http.HandlerFunc {
 	templ := rt.parse(nil, "submission.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, templ, &SubParams{GenContext(r), util.Submission(r)})
+		rt.runTempl(w, r, templ, &SubParams{util.Submission(r)})
 	}
 }
 
@@ -481,7 +479,7 @@ func (rt *Web) submissions() http.HandlerFunc {
 			rt.statusPage(w, r, 401, "Cannot view all submissions")
 			return
 		}
-		rt.runTempl(w, r, templ, &SimpleParams{GenContext(r)})
+		rt.runTempl(w, r, templ, struct{}{})
 	}
 }
 
@@ -502,7 +500,7 @@ func (rt *Web) paste() http.HandlerFunc {
 			rt.statusPage(w, r, 500, "N-am putut obține submisia aferentă")
 			return
 		}
-		rt.runTempl(w, r, templ, &PasteParams{GenContext(r), util.Paste(r), fullSub})
+		rt.runTempl(w, r, templ, &PasteParams{util.Paste(r), fullSub})
 	}
 }
 
@@ -650,7 +648,6 @@ func (rt *Web) problem() http.HandlerFunc {
 		}
 
 		rt.runTempl(w, r, templ, &ProblemParams{
-			Ctx:    GenContext(r),
 			Topbar: rt.problemTopbar(r, "pb_statement", -1),
 
 			Problem:     util.Problem(r),
@@ -673,7 +670,6 @@ func (rt *Web) problemSubmissions() http.HandlerFunc {
 	templ := rt.parse(nil, "problem/pb_submissions.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ProblemTopbarParams{
-			Ctx:    GenContext(r),
 			Topbar: rt.problemTopbar(r, "pb_submissions", -1),
 
 			Problem: util.Problem(r),
@@ -704,7 +700,6 @@ func (rt *Web) problemSubmit() http.HandlerFunc {
 		}
 
 		rt.runTempl(w, r, templ, &ProblemTopbarParams{
-			Ctx:    GenContext(r),
 			Topbar: rt.problemTopbar(r, "pb_submit", -1),
 
 			Languages: langs,
@@ -718,7 +713,6 @@ func (rt *Web) problemArchive() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		rt.runTempl(w, r, templ, &ProblemTopbarParams{
-			Ctx:    GenContext(r),
 			Topbar: rt.problemTopbar(r, "pb_archive", -1),
 
 			Problem: util.Problem(r),
@@ -784,8 +778,6 @@ func (rt *Web) blogPosts() http.HandlerFunc {
 		}
 
 		rt.runTempl(w, r, templ, &BlogPostIndexParams{
-			Ctx: GenContext(r),
-
 			Posts:   posts,
 			Authors: authorMap,
 
@@ -855,8 +847,6 @@ func (rt *Web) blogPost() http.HandlerFunc {
 		}
 
 		rt.runTempl(w, r, templ, &BlogPostParams{
-			Ctx: GenContext(r),
-
 			Topbar: rt.postTopbar(r, "view"),
 
 			Attachments:  atts,
@@ -924,8 +914,6 @@ func (rt *Web) editBlogPostIndex() http.HandlerFunc {
 		}
 
 		rt.runTempl(w, r, templ, &BlogPostParams{
-			Ctx: GenContext(r),
-
 			Topbar: rt.postTopbar(r, "editIndex"),
 
 			StatementEditor: &StatementEditorParams{
@@ -947,8 +935,6 @@ func (rt *Web) editBlogPostAtts() http.HandlerFunc {
 			atts = nil
 		}
 		rt.runTempl(w, r, templ, &BlogPostParams{
-			Ctx: GenContext(r),
-
 			Topbar: rt.postTopbar(r, "editAttachments"),
 
 			AttachmentEditor: &AttachmentEditorParams{
@@ -1019,7 +1005,6 @@ func (rt *Web) contests() http.HandlerFunc {
 		}
 
 		rt.runTempl(w, r, templ, &ContestsIndexParams{
-			Ctx:      GenContext(r),
 			Contests: contests,
 			Page:     page,
 
@@ -1037,7 +1022,6 @@ func (rt *Web) createContest() http.HandlerFunc {
 			return
 		}
 		rt.runTempl(w, r, templ, &ContestsIndexParams{
-			Ctx:      GenContext(r),
 			Contests: nil,
 			Page:     "create",
 		})
@@ -1048,7 +1032,6 @@ func (rt *Web) contest() http.HandlerFunc {
 	templ := rt.parse(nil, "contest/view.html", "problem/topbar.html", "modals/pbs.html", "modals/contest_sidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ContestParams{
-			Ctx:    GenContext(r),
 			Topbar: rt.problemTopbar(r, "contest_general", -1),
 
 			Contest: util.Contest(r),
@@ -1066,7 +1049,6 @@ func (rt *Web) contestEdit() http.HandlerFunc {
 		}
 
 		rt.runTempl(w, r, templ, &ContestParams{
-			Ctx:    GenContext(r),
 			Topbar: rt.problemTopbar(r, "contest_edit", -1),
 
 			Contest: util.Contest(r),
@@ -1109,8 +1091,6 @@ func (rt *Web) contestInvite() http.HandlerFunc {
 		}
 
 		rt.runTempl(w, r, templ, &ContestInviteParams{
-			Ctx: GenContext(r),
-
 			Contest: contest,
 			Invite:  inv,
 			Inviter: invCreator,
@@ -1124,7 +1104,6 @@ func (rt *Web) contestCommunication() http.HandlerFunc {
 	templ := rt.parse(nil, "contest/communication.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ContestParams{
-			Ctx:    GenContext(r),
 			Topbar: rt.problemTopbar(r, "contest_communication", -1),
 
 			Contest: util.Contest(r),
@@ -1136,7 +1115,6 @@ func (rt *Web) contestRegistrations() http.HandlerFunc {
 	templ := rt.parse(nil, "contest/registrations.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, templ, &ContestParams{
-			Ctx:    GenContext(r),
 			Topbar: rt.problemTopbar(r, "contest_registrations", -1),
 
 			Contest: util.Contest(r),
@@ -1154,7 +1132,6 @@ func (rt *Web) contestLeaderboard() http.HandlerFunc {
 			return
 		}
 		rt.runTempl(w, r, templ, &ContestParams{
-			Ctx:    GenContext(r),
 			Topbar: rt.problemTopbar(r, "contest_leaderboard", -1),
 
 			Contest: util.Contest(r),
@@ -1177,8 +1154,6 @@ func (rt *Web) donationPage() http.HandlerFunc {
 		}
 
 		rt.runTempl(w, r, templ, &DonateParams{
-			Ctx: GenContext(r),
-
 			Donations: donations,
 
 			Status:   r.FormValue("status"),
@@ -1188,40 +1163,47 @@ func (rt *Web) donationPage() http.HandlerFunc {
 	}
 }
 
+func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *template.Template, user *kilonova.UserFull) {
+	solvedPbs, solvedCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
+		LookingUser: util.UserBrief(r), Look: true,
+		SolvedBy: &util.UserBrief(r).ID,
+
+		Limit: 50,
+	}, util.UserBrief(r))
+	if err != nil {
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
+		solvedPbs = []*sudoapi.FullProblem{}
+	}
+
+	attemptedPbs, attemptedCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
+		LookingUser: util.UserBrief(r), Look: true,
+		AttemptedBy: &util.UserBrief(r).ID,
+
+		Limit: 50,
+	}, util.UserBrief(r))
+	if err != nil {
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
+		attemptedPbs = []*sudoapi.FullProblem{}
+	}
+
+	changeHistory, err := rt.base.UsernameChangeHistory(r.Context(), util.UserBrief(r).ID)
+	if err != nil {
+		changeHistory = []*kilonova.UsernameChange{}
+	}
+
+	rt.runTempl(w, r, templ, &ProfileParams{
+		util.UserFull(r), solvedPbs, solvedCnt, attemptedPbs, attemptedCnt, changeHistory,
+	})
+}
+
 func (rt *Web) selfProfile() http.HandlerFunc {
 	templ := rt.parse(nil, "profile.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		solvedPbs, solvedCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
-			LookingUser: util.UserBrief(r), Look: true,
-			SolvedBy: &util.UserBrief(r).ID,
-
-			Limit: 50,
-		}, util.UserBrief(r))
-		if err != nil {
-			zap.S().Warn(err)
-			solvedPbs = []*sudoapi.FullProblem{}
-		}
-
-		attemptedPbs, attemptedCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
-			LookingUser: util.UserBrief(r), Look: true,
-			AttemptedBy: &util.UserBrief(r).ID,
-
-			Limit: 50,
-		}, util.UserBrief(r))
-		if err != nil {
-			zap.S().Warn(err)
-			attemptedPbs = []*sudoapi.FullProblem{}
-		}
-
-		changeHistory, err := rt.base.UsernameChangeHistory(r.Context(), util.UserBrief(r).ID)
-		if err != nil {
-			changeHistory = []*kilonova.UsernameChange{}
-		}
-
-		rt.runTempl(w, r, templ, &ProfileParams{
-			GenContext(r), util.UserFull(r), solvedPbs, solvedCnt, attemptedPbs, attemptedCnt,
-			changeHistory,
-		})
+		rt.profilePage(w, r, templ, util.UserFull(r))
 	}
 }
 
@@ -1238,42 +1220,50 @@ func (rt *Web) profile() http.HandlerFunc {
 			rt.statusPage(w, r, 404, "")
 			return
 		}
+		rt.profilePage(w, r, templ, user)
+	}
+}
 
-		solvedPbs, solvedCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
-			LookingUser: util.UserBrief(r), Look: true,
-			SolvedBy: &user.ID,
+func (rt *Web) sessionsPage(w http.ResponseWriter, r *http.Request, templ *template.Template, user *kilonova.UserFull) {
+	sessions, err := rt.base.UserSessions(r.Context(), user.Brief())
+	if err != nil {
+		zap.S().Warn(err)
+		rt.statusPage(w, r, 500, err.Error())
+		return
+	}
 
-			Limit: 50,
-		}, user.Brief())
-		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				zap.S().Warn(err)
-			}
-			solvedPbs = []*sudoapi.FullProblem{}
+	rt.runTempl(w, r, templ, &SessionsParams{
+		ContentUser: user,
+		Sessions:    sessions,
+	})
+}
+
+func (rt *Web) selfSessions() http.HandlerFunc {
+	templ := rt.parse(nil, "auth/sessions.html", "modals/pbs.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		rt.sessionsPage(w, r, templ, util.UserFull(r))
+	}
+}
+
+func (rt *Web) userSessions() http.HandlerFunc {
+	templ := rt.parse(nil, "auth/sessions.html", "modals/pbs.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "user")))
+		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
+			zap.S().Warn(err)
+			rt.statusPage(w, r, 500, "")
+			return
+		}
+		if user == nil {
+			rt.statusPage(w, r, 404, "")
+			return
+		}
+		// Only admins and that specific user can view their sessions
+		if !(util.UserBrief(r).IsAdmin() || util.UserBrief(r).ID == user.ID) {
+			rt.statusPage(w, r, 403, "")
 		}
 
-		attemptedPbs, attemptedCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
-			LookingUser: util.UserBrief(r), Look: true,
-			AttemptedBy: &user.ID,
-
-			Limit: 50,
-		}, user.Brief())
-		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				zap.S().Warn(err)
-			}
-			attemptedPbs = []*sudoapi.FullProblem{}
-		}
-
-		changeHistory, err := rt.base.UsernameChangeHistory(r.Context(), user.Brief().ID)
-		if err != nil {
-			changeHistory = []*kilonova.UsernameChange{}
-		}
-
-		rt.runTempl(w, r, templ, &ProfileParams{
-			GenContext(r), user, solvedPbs, solvedCnt, attemptedPbs, attemptedCnt,
-			changeHistory,
-		})
+		rt.sessionsPage(w, r, templ, user)
 	}
 }
 
@@ -1297,7 +1287,7 @@ func (rt *Web) resendEmail() http.HandlerFunc {
 			return
 		}
 
-		rt.runTempl(w, r, templ, &SimpleParams{GenContext(r)})
+		rt.runTempl(w, r, templ, struct{}{})
 	}
 }
 
@@ -1332,7 +1322,7 @@ func (rt *Web) verifyEmail() http.HandlerFunc {
 
 		// rebuild session for user to disable popup
 		rt.initSession(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			rt.runTempl(w, r, templ, &VerifiedEmailParams{GenContext(r), user})
+			rt.runTempl(w, r, templ, &VerifiedEmailParams{user})
 		})).ServeHTTP(w, r)
 	}
 }
@@ -1360,7 +1350,7 @@ func (rt *Web) resetPassword() http.HandlerFunc {
 			return
 		}
 
-		rt.runTempl(w, r, templ, &PasswordResetParams{GenContext(r), user, reqid})
+		rt.runTempl(w, r, templ, &PasswordResetParams{user, reqid})
 	}
 }
 
@@ -1374,7 +1364,7 @@ func (rt *Web) checkLockout() func(next http.Handler) http.Handler {
 			}
 
 			if util.UserFull(r) != nil && util.UserFull(r).NameChangeForced {
-				rt.runTempl(w, r, templ, &SimpleParams{GenContext(r)})
+				rt.runTempl(w, r, templ, struct{}{})
 				return
 			}
 
@@ -1445,6 +1435,7 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 
 	// "cache" most util.* calls
 	lang := util.Language(r)
+	fullAuthedUser := util.UserFull(r)
 	authedUser := util.UserBrief(r)
 	var pblistCache map[int]int
 	switch v := r.Context().Value(PblistCntCacheKey).(type) {
@@ -1479,6 +1470,9 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		},
 		"authed": func() bool {
 			return authedUser != nil
+		},
+		"fullAuthedUser": func() *kilonova.UserFull {
+			return fullAuthedUser
 		},
 		"authedUser": func() *kilonova.UserBrief {
 			return authedUser

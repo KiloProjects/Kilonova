@@ -16,6 +16,11 @@ func (s *BaseAPI) CreateSession(ctx context.Context, uid int) (string, *StatusEr
 		zap.S().Warn("Failed to create session: ", err)
 		return "", WrapError(err, "Failed to create session")
 	}
+	if cnt, err := s.db.RemoveOldSessions(ctx, uid); err != nil {
+		zap.S().Warn("Failed to remove old sessions: ", err)
+	} else if cnt > 0 {
+		zap.S().Debugf("Removed %d old sessions", cnt)
+	}
 
 	return sid, nil
 }
@@ -32,6 +37,12 @@ func (s *BaseAPI) GetSession(ctx context.Context, sid string) (int, *StatusError
 	}
 
 	return uid, nil
+}
+
+type Session struct{}
+
+func (s *BaseAPI) UserSessions(ctx context.Context, user *kilonova.UserBrief) ([]*Session, *StatusError) {
+	panic("TODO")
 }
 
 // Uncached function

@@ -100,7 +100,7 @@
         <div class="segment-panel">
             <h2>{{getText "header.contest.edit_problems"}}</h2>
     
-            {{$pbs := contestProblems .Ctx.User.Brief .Contest}}
+            {{$pbs := contestProblems authedUser .Contest}}
     
             <form class="mb-4" id="contest_problems_form" autocomplete="off">
                 <label class="block my-2">
