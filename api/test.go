@@ -65,12 +65,8 @@ func (s *API) updateTestInfo(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Updated test info")
 }
 
-func (s *API) deleteTest(w http.ResponseWriter, r *http.Request) {
-	if err := s.base.DeleteTest(r.Context(), util.Test(r).ID); err != nil {
-		err.WriteError(w)
-		return
-	}
-	returnData(w, "Removed test")
+func (s *API) deleteTest(ctx context.Context, args struct{}) *kilonova.StatusError {
+	return s.base.DeleteTest(ctx, util.TestContext(ctx).ID)
 }
 
 func (s *API) getTests(ctx context.Context, args struct{}) ([]*kilonova.Test, *kilonova.StatusError) {
@@ -155,11 +151,7 @@ func (s *API) processArchive(r *http.Request) *kilonova.StatusError {
 		ScoreParamsStr: r.FormValue("scoreParameters"),
 	}
 
-	if err := test.ProcessZipTestArchive(context.Background(), util.Problem(r), ar, s.base, params); err != nil {
-		return err
-	}
-
-	return nil
+	return test.ProcessZipTestArchive(context.Background(), util.Problem(r), ar, s.base, params)
 }
 
 func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {

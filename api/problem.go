@@ -267,64 +267,36 @@ func (s *API) importProblemArchive(w http.ResponseWriter, r *http.Request) {
 	returnData(w, pb.ID)
 }
 
-func (s *API) getProblems(w http.ResponseWriter, r *http.Request) {
-	var args kilonova.ProblemFilter
-	if err := parseJsonBody(r, &args); err != nil {
-		err.WriteError(w)
-		return
-	}
-
+func (s *API) getProblems(ctx context.Context, args kilonova.ProblemFilter) ([]*kilonova.Problem, *kilonova.StatusError) {
 	args.Look = true
-	args.LookingUser = util.UserBrief(r)
+	args.LookingUser = util.UserBriefContext(ctx)
 
-	problems, err := s.base.Problems(r.Context(), args)
-	if err != nil {
-		err.WriteError(w)
-		return
-	}
-	returnData(w, problems)
+	return s.base.Problems(ctx, args)
 }
 
-func (s *API) searchProblems(w http.ResponseWriter, r *http.Request) {
-	var args kilonova.ProblemFilter
-	if err := parseJsonBody(r, &args); err != nil {
-		err.WriteError(w)
-		return
-	}
+type problemSearchResult struct {
+	Problems []*sudoapi.FullProblem `json:"problems"`
 
+	Count int `json:"count"`
+}
+
+func (s *API) searchProblems(ctx context.Context, args kilonova.ProblemFilter) (*problemSearchResult, *kilonova.StatusError) {
 	args.Look = true
-	args.LookingUser = util.UserBrief(r)
+	args.LookingUser = util.UserBriefContext(ctx)
 
 	if args.Limit == 0 || args.Limit > 50 {
 		args.Limit = 50
 	}
 
-	problems, cnt, err := s.base.SearchProblems(r.Context(), args, util.UserBrief(r))
+	problems, cnt, err := s.base.SearchProblems(ctx, args, util.UserBriefContext(ctx))
 	if err != nil {
-		err.WriteError(w)
-		return
+		return nil, err
 	}
-	returnData(w, struct {
-		Problems []*sudoapi.FullProblem `json:"problems"`
-
-		Count int `json:"count"`
-	}{Problems: problems, Count: cnt})
+	return &problemSearchResult{Problems: problems, Count: cnt}, nil
 }
 
-func (s *API) updateProblem(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	var args kilonova.ProblemUpdate
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 400)
-		return
-	}
-
-	if err := s.base.UpdateProblem(r.Context(), util.Problem(r).ID, args, util.UserBrief(r)); err != nil {
-		err.WriteError(w)
-		return
-	}
-
-	returnData(w, "Updated problem")
+func (s *API) updateProblem(ctx context.Context, args kilonova.ProblemUpdate) *kilonova.StatusError {
+	return s.base.UpdateProblem(ctx, util.ProblemContext(ctx).ID, args, util.UserBriefContext(ctx))
 }
 
 func boolPtrString(val *bool) string {
@@ -415,27 +387,14 @@ func (s *API) addProblemViewer(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Added problem viewer")
 }
 
-func (s *API) stripProblemAccess(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	var args struct {
-		UserID int `json:"user_id"`
-	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 400)
-		return
+func (s *API) stripProblemAccess(ctx context.Context, args struct {
+	UserID int `json:"user_id"`
+}) *kilonova.StatusError {
+	if args.UserID == util.UserBriefContext(ctx).ID {
+		return kilonova.Statusf(400, "You can't strip your own access!")
 	}
 
-	if args.UserID == util.UserBrief(r).ID {
-		errorData(w, "You can't strip your own access!", 400)
-		return
-	}
-
-	if err := s.base.StripProblemAccess(r.Context(), util.Problem(r).ID, args.UserID); err != nil {
-		err.WriteError(w)
-		return
-	}
-
-	returnData(w, "Stripped problem access")
+	return s.base.StripProblemAccess(ctx, util.ProblemContext(ctx).ID, args.UserID)
 }
 
 type problemAccessControl struct {

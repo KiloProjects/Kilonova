@@ -91,8 +91,8 @@ func (s *API) updateContestProblems(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Updated contest problems")
 }
 
-func (s *API) getContest(w http.ResponseWriter, r *http.Request) {
-	returnData(w, util.Contest(r))
+func (s *API) getContest(ctx context.Context, args struct{}) (*kilonova.Contest, *kilonova.StatusError) {
+	return util.ContestContext(ctx), nil
 }
 
 func (s *API) getContestProblems(w http.ResponseWriter, r *http.Request) {
@@ -211,87 +211,46 @@ func (s *API) contestAnnouncements(ctx context.Context, args struct{}) ([]*kilon
 	return s.base.ContestAnnouncements(ctx, util.ContestContext(ctx).ID)
 }
 
-func (s *API) createContestAnnouncement(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	var args struct {
-		Text string `json:"text"`
-	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 400)
-		return
-	}
-
+func (s *API) createContestAnnouncement(ctx context.Context, args struct {
+	Text string `json:"text"`
+}) *kilonova.StatusError {
 	if args.Text == "" {
-		errorData(w, "No announcement text supplied", 400)
-		return
+		return kilonova.Statusf(400, "No announcement text supplied")
 	}
 
-	_, err := s.base.CreateContestAnnouncement(r.Context(), util.Contest(r).ID, args.Text)
-	if err != nil {
-		err.WriteError(w)
-		return
-	}
-
-	returnData(w, "Created announcement")
+	_, err := s.base.CreateContestAnnouncement(ctx, util.ContestContext(ctx).ID, args.Text)
+	return err
 }
 
-func (s *API) updateContestAnnouncement(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	var args struct {
-		ID   int    `json:"id"`
-		Text string `json:"text"`
-	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 400)
-		return
-	}
-
-	announcement, err := s.base.ContestAnnouncement(r.Context(), args.ID)
+func (s *API) updateContestAnnouncement(ctx context.Context, args struct {
+	ID   int    `json:"id"`
+	Text string `json:"text"`
+}) *kilonova.StatusError {
+	announcement, err := s.base.ContestAnnouncement(ctx, args.ID)
 	if err != nil {
-		err.WriteError(w)
-		return
+		return err
 	}
 
-	if announcement.ContestID != util.Contest(r).ID {
-		errorData(w, "Contest announcement must be from contest", 400)
-		return
+	if announcement.ContestID != util.ContestContext(ctx).ID {
+		return kilonova.Statusf(400, "Contest announcement must be from contest")
 	}
 
-	if err := s.base.UpdateContestAnnouncement(r.Context(), args.ID, args.Text); err != nil {
-		err.WriteError(w)
-		return
-	}
-
-	returnData(w, "Updated announcement")
+	return s.base.UpdateContestAnnouncement(ctx, args.ID, args.Text)
 }
 
-func (s *API) deleteContestAnnouncement(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	var args struct {
-		ID int `json:"id"`
-	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 400)
-		return
-	}
-
-	announcement, err := s.base.ContestAnnouncement(r.Context(), args.ID)
+func (s *API) deleteContestAnnouncement(ctx context.Context, args struct {
+	ID int `json:"id"`
+}) *kilonova.StatusError {
+	announcement, err := s.base.ContestAnnouncement(ctx, args.ID)
 	if err != nil {
-		err.WriteError(w)
-		return
+		return err
 	}
 
-	if announcement.ContestID != util.Contest(r).ID {
-		errorData(w, "Contest announcement must be from contest", 400)
-		return
+	if announcement.ContestID != util.ContestContext(ctx).ID {
+		return kilonova.Statusf(400, "Contest announcement must be from contest")
 	}
 
-	if err := s.base.DeleteContestAnnouncement(r.Context(), announcement.ID); err != nil {
-		err.WriteError(w)
-		return
-	}
-
-	returnData(w, "Removed announcement")
+	return s.base.DeleteContestAnnouncement(ctx, announcement.ID)
 }
 
 func (s *API) contestUserQuestions(ctx context.Context, args struct{}) ([]*kilonova.ContestQuestion, *kilonova.StatusError) {

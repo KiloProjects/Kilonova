@@ -29,8 +29,8 @@ func (s *API) userBlogPosts(w http.ResponseWriter, r *http.Request) {
 	returnData(w, posts)
 }
 
-func (s *API) blogPostByID(w http.ResponseWriter, r *http.Request) {
-	returnData(w, util.BlogPost(r))
+func (s *API) blogPostByID(ctx context.Context, args struct{}) (*kilonova.BlogPost, *kilonova.StatusError) {
+	return util.BlogPostContext(ctx), nil
 }
 
 func (s *API) blogPostBySlug(w http.ResponseWriter, r *http.Request) {

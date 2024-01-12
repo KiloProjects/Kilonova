@@ -80,8 +80,8 @@ func (s *API) Handler() http.Handler {
 		r.Post("/resetPassword", s.resetPassword)
 	})
 	r.Route("/problem", func(r chi.Router) {
-		r.Post("/get", s.getProblems)
-		r.Post("/search", s.searchProblems)
+		r.Post("/get", webWrapper(s.getProblems))
+		r.Post("/search", webWrapper(s.searchProblems))
 
 		r.With(s.MustBeProposer).Post("/create", s.initProblem)
 
@@ -99,21 +99,21 @@ func (s *API) Handler() http.Handler {
 			r.Group(func(r chi.Router) {
 				r.Use(s.validateProblemEditor)
 				r.Route("/update", func(r chi.Router) {
-					r.Post("/", s.updateProblem)
+					r.Post("/", webMessageWrapper("Updated problem", s.updateProblem))
 
 					r.Post("/addTest", s.createTest)
 					r.Route("/test/{tID}", func(r chi.Router) {
 						r.Use(s.validateTestID)
 						r.Post("/data", s.saveTestData)
 						r.Post("/info", s.updateTestInfo)
-						r.Post("/delete", s.deleteTest)
+						r.Post("/delete", webMessageWrapper("Removed test", s.deleteTest))
 					})
 
 					r.Post("/tags", webMessageWrapper("Updated tags", s.updateProblemTags))
 
 					r.Post("/addEditor", s.addProblemEditor)
 					r.Post("/addViewer", s.addProblemViewer)
-					r.Post("/stripAccess", s.stripProblemAccess)
+					r.Post("/stripAccess", webMessageWrapper("Stripped problem access", s.stripProblemAccess))
 
 					r.Post("/addAttachment", s.createAttachment)
 					r.Post("/attachmentData", s.updateAttachmentData)
@@ -162,7 +162,7 @@ func (s *API) Handler() http.Handler {
 		r.Route("/{bpID}", func(r chi.Router) {
 			r.Use(s.validateBlogPostID)
 			r.Use(s.validateBlogPostVisible)
-			r.Get("/", s.blogPostByID)
+			r.Get("/", webWrapper(s.blogPostByID))
 
 			r.Route("/update", func(r chi.Router) {
 				r.Use(s.validateBlogPostEditor)
@@ -198,10 +198,7 @@ func (s *API) Handler() http.Handler {
 					return kilonova.Statusf(403, "You cannot delete this submission!")
 				}
 
-				if err := s.base.DeleteSubmission(ctx, util.SubmissionContext(ctx).ID); err != nil {
-					return err
-				}
-				return nil
+				return s.base.DeleteSubmission(ctx, util.SubmissionContext(ctx).ID)
 			}))
 			r.With(s.MustBeAuthed).Post("/reevaluate", webMessageWrapper("Reset submission", func(ctx context.Context, args struct{}) *kilonova.StatusError {
 				// Check submission permissions
@@ -308,7 +305,7 @@ func (s *API) Handler() http.Handler {
 
 		r.Route("/{pblistID}", func(r chi.Router) {
 			r.Use(s.validateProblemListID)
-			r.Get("/", s.getProblemList)
+			r.Get("/", webWrapper(s.getProblemList))
 			r.Get("/complex", s.getComplexProblemList)
 
 			r.With(s.MustBeAuthed).Post("/update", s.updateProblemList)
@@ -328,7 +325,7 @@ func (s *API) Handler() http.Handler {
 			r.Use(s.validateContestID)
 			r.Use(s.validateContestVisible)
 
-			r.Get("/", s.getContest)
+			r.Get("/", webWrapper(s.getContest))
 			r.Get("/problems", s.getContestProblems)
 
 			r.Get("/leaderboard", s.contestLeaderboard)
@@ -339,9 +336,9 @@ func (s *API) Handler() http.Handler {
 			r.With(s.validateContestEditor).Post("/answerQuestion", s.answerContestQuestion)
 
 			r.Get("/announcements", webWrapper(s.contestAnnouncements))
-			r.With(s.validateContestEditor).Post("/createAnnouncement", s.createContestAnnouncement)
-			r.With(s.validateContestEditor).Post("/updateAnnouncement", s.updateContestAnnouncement)
-			r.With(s.validateContestEditor).Post("/deleteAnnouncement", s.deleteContestAnnouncement)
+			r.With(s.validateContestEditor).Post("/createAnnouncement", webMessageWrapper("Created announcement", s.createContestAnnouncement))
+			r.With(s.validateContestEditor).Post("/updateAnnouncement", webMessageWrapper("Updated announcement", s.updateContestAnnouncement))
+			r.With(s.validateContestEditor).Post("/deleteAnnouncement", webMessageWrapper("Removed announcement", s.deleteContestAnnouncement))
 
 			r.With(s.MustBeAuthed).Post("/register", s.registerForContest)
 			r.With(s.MustBeAuthed).Post("/startRegistration", s.startContestRegistration)

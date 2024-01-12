@@ -96,7 +96,11 @@ func Paste(r *http.Request) *kilonova.SubmissionPaste {
 }
 
 func Test(r *http.Request) *kilonova.Test {
-	return getValueContext[kilonova.Test](r.Context(), TestKey)
+	return TestContext(r.Context())
+}
+
+func TestContext(ctx context.Context) *kilonova.Test {
+	return getValueContext[kilonova.Test](ctx, TestKey)
 }
 
 func SubTask(r *http.Request) *kilonova.SubTask {
@@ -104,7 +108,11 @@ func SubTask(r *http.Request) *kilonova.SubTask {
 }
 
 func ProblemList(r *http.Request) *kilonova.ProblemList {
-	return getValueContext[kilonova.ProblemList](r.Context(), ProblemListKey)
+	return ProblemListContext(r.Context())
+}
+
+func ProblemListContext(ctx context.Context) *kilonova.ProblemList {
+	return getValueContext[kilonova.ProblemList](ctx, ProblemListKey)
 }
 
 func Attachment(r *http.Request) *kilonova.Attachment {

@@ -10,8 +10,8 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *API) getProblemList(w http.ResponseWriter, r *http.Request) {
-	returnData(w, util.ProblemList(r))
+func (s *API) getProblemList(ctx context.Context, args struct{}) (*kilonova.ProblemList, *kilonova.StatusError) {
+	return util.ProblemListContext(ctx), nil
 }
 
 // if there are multiple, will return the one with the smallest ID
