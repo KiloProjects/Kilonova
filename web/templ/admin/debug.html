@@ -1,0 +1,46 @@
+{{define "title"}}{{getText "debug_info"}}{{end}}
+{{define "content"}}
+<h1>{{getText "debug_info"}}</h1>
+
+<div class="segment-panel">
+    <h2>{{getText "actions"}}</h2>
+
+    <div class="block my-2">
+        <button class="btn btn-blue font-bold mr-2" onclick="resetSubs()">{{getText "resetSubs"}}</button>
+        <button class="btn btn-blue font-bold mr-2" onclick="invalidateAtts()">{{getText "invalidateAtts"}}</button>
+        <button class="btn btn-blue font-bold mr-2" onclick="invalidateCheckers()">{{getText "invalidateCheckers"}}</button>
+    </div>
+
+    <script>
+        async function resetSubs() {
+            bundled.apiToast(await bundled.postCall("/admin/maintenance/resetWaitingSubs", {}))
+        }
+        async function invalidateAtts() {
+            bundled.apiToast(await bundled.postCall("/admin/maintenance/invalidateAttachments", {}))
+        }
+        async function invalidateCheckers() {
+            bundled.apiToast(await bundled.postCall("/admin/maintenance/invalidateCheckers", {}))
+        }
+    </script>
+</div>
+
+<div class="segment-panel">
+    <h2>{{getText "metrics"}}</h2>
+    <table class="kn-table table-fixed">
+        <thead>
+            <tr>
+                <th class="kn-table-cell w-1/2">{{getText "name"}}</th>
+                <th  class="kn-table-cell w-1/2">{{getText "value"}}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Metrics}}
+            <tr class="kn-table-row">
+                <th class="kn-table-cell"><details><summary>{{.Name}}</summary>{{.Description}}</details></th>
+                <td class="kn-table-cell">{{if .Float}}{{.Float}}{{else if .Int}}{{.Int}}{{else}}???{{end}}</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+{{end}}

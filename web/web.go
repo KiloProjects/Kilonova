@@ -59,10 +59,6 @@ var fsys = hashfs.NewFS(embedded)
 
 // Web is the struct representing this whole package
 type Web struct {
-	debug bool
-
-	// db *db.DB
-
 	funcs template.FuncMap
 
 	base *sudoapi.BaseAPI
@@ -210,6 +206,7 @@ func (rt *Web) Handler() http.Handler {
 			r.Get("/", rt.justRender("admin/admin.html"))
 			r.Get("/users", rt.justRender("admin/users.html"))
 			r.Get("/auditLog", rt.auditLog())
+			r.Get("/debug", rt.debugPage())
 		})
 
 		// Proposer panel
@@ -238,7 +235,7 @@ func (rt *Web) parse(optFuncs template.FuncMap, files ...string) *template.Templ
 }
 
 // NewWeb returns a new web instance
-func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
+func NewWeb(base *sudoapi.BaseAPI) *Web {
 	funcs := template.FuncMap{
 		"pLanguages": func() map[string]*WebLanguage {
 			return webLanguages
@@ -774,7 +771,7 @@ func NewWeb(debug bool, base *sudoapi.BaseAPI) *Web {
 			return -1
 		},
 	}
-	return &Web{debug, funcs, base}
+	return &Web{funcs, base}
 }
 
 var webLanguages map[string]*WebLanguage

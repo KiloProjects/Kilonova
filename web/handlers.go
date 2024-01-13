@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"runtime/metrics"
 	"slices"
 	"strconv"
 	"strings"
@@ -462,6 +463,55 @@ func (rt *Web) auditLog() http.HandlerFunc {
 		}
 
 		rt.runTempl(w, r, templ, &AuditLogParams{logs, page, numPages})
+	}
+}
+
+func (rt *Web) debugPage() http.HandlerFunc {
+	templ := rt.parse(nil, "admin/debug.html")
+	type Metric struct {
+		Name        string
+		Description string
+
+		Int   *uint64
+		Float *float64
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		all := metrics.All()
+		var descs = make(map[string]string)
+		samples := make([]metrics.Sample, 0, len(all))
+		for _, m := range all {
+			if m.Kind == metrics.KindFloat64 || m.Kind == metrics.KindUint64 {
+				descs[m.Name] = m.Description
+				samples = append(samples, metrics.Sample{Name: m.Name})
+			}
+		}
+		metrics.Read(samples)
+		finalMetrics := make([]*Metric, 0, len(samples))
+		for _, sample := range samples {
+			desc, ok := descs[sample.Name]
+			if !ok {
+				zap.S().Warn("Could not find description for metric: ", sample.Name)
+				desc = "No description provided"
+			}
+			m := &Metric{
+				Name:        sample.Name,
+				Description: desc,
+			}
+			switch sample.Value.Kind() {
+			case metrics.KindFloat64:
+				v := sample.Value.Float64()
+				m.Float = &v
+			case metrics.KindUint64:
+				v := sample.Value.Uint64()
+				m.Int = &v
+			default:
+				zap.S().Warnf("Unknown metric type for %s: %+v", sample.Name, sample.Value.Kind())
+			}
+			finalMetrics = append(finalMetrics, m)
+		}
+		rt.runTempl(w, r, templ, &struct {
+			Metrics []*Metric
+		}{finalMetrics})
 	}
 }
 

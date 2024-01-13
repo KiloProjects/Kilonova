@@ -498,6 +498,10 @@ ro = "Panou Admin"
 en = "Audit Logs"
 ro = "Registru acțiuni"
 
+[panel.debug]
+en = "Debugging Panel"
+ro = "Panou Debugging"
+
 [problem_lists]
 en = "Problem Lists"
 ro = "Liste de Probleme"
@@ -2611,3 +2615,19 @@ ro = "Expiră pe"
 [manage_sessions_btn]
 en = "Manage sessions (experimental)"
 ro = "Administrare sesiuni (experimental)"
+
+[debug_info]
+en = "Debug information"
+ro = "Informații pentru debugging"
+
+[actions]
+en = "Actions"
+ro = "Acțiuni"
+
+[metrics]
+en = "Metrics"
+ro = "Metrici"
+
+[value]
+en = "Value"
+ro = "Valoare"
