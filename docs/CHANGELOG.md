@@ -1,3 +1,39 @@
+- v0.24.0:
+    - !!! Virtual Contests and better contest discovery mechanism;
+    - !! Proper reevaluation queue;
+    - Contest invitations system;
+    - ICPC leaderboards go only after "finished"/"reevaling" submissions;
+    - Compilation durations are now saved;
+    - Better problem searching;
+    - Better problem interface for tag pages;
+    - Many bug fixes and performance improvements;
+    - Admins can now force add users from the Contest UI (before it was only an API endpoint);
+    - Can automatically create simulations of contests from problem lists;
+    - Better problem list showing on the right of the problem page;
+    - Per-minute submission limit (also reports fishy activity, that is, bypassing the limit, to webhook);
+    - Show cumulative amount for monthly donations;
+    - Misc:
+        - Initial, barebones user sessions page;
+        - Cgroups v2 support;
+        - Add og:image for better embeds of links;
+        - Convert more API endpoints to `webWrapper`;
+        - Can now resize image attachments using query parameters;
+        - Limit number of sessions per user;
+        - Mailer can now be disabled;
+        - Cache gravatars;
+    - Administration and backend changes:
+        - Debug metrics and actions page;
+        - Bulk update of test visibility in problem list children problems;
+        - All flags are now visible in the Admin Panel;
+        - Can now block python requests;
+        - Compress tests and subtests;
+        - Cache checker compilations;
+        - Environment variable override for flags.json, for future Docker containerization;
+        - Update some endpoints for fail2ban support;
+    - Internal refactoring:
+        - Refactor grader box/manager;
+        - Better task running;
+        - No more `GenContext` in code and `.Ctx` in templates.
 - v0.23.0:
     - !! Much improved ICPC handling;
     - Add support for pascal and re-enable Go language support in grader;
