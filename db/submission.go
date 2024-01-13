@@ -178,7 +178,7 @@ func lateralVisibleSubs(filter *kilonova.SubmissionFilter, fb *filterBuilder) st
 	if filter.LookingUser != nil {
 		id = filter.LookingUser.ID
 	}
-	return fb.FormatString(", LATERAL (SELECT sub_id FROM visible_submissions(%s) WHERE sub_id = submissions.id) v_subs", id)
+	return fb.FormatString(", LATERAL (SELECT sub_id FROM visible_submissions(%s) WHERE sub_id = submissions.id LIMIT 1) v_subs", id)
 }
 
 func subFilterQuery(filter *kilonova.SubmissionFilter, fb *filterBuilder, lateralLook bool) {
