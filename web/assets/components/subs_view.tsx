@@ -146,6 +146,12 @@ function SubsView(props: SubsViewProps) {
 		setCount(data.count);
 		setLoading(false);
 		setInitialLoad(false);
+		let str = getQuery().toString();
+		if (str.length > 0) str = "?" + str;
+		const newName = window.location.pathname + str;
+		if (window.location.pathname + window.location.search != newName) {
+			history.pushState({}, "", newName);
+		}
 	}
 
 	useEffect(() => {
@@ -158,7 +164,19 @@ function SubsView(props: SubsViewProps) {
 		return () => document.removeEventListener("kn-poll", eventPoll);
 	}, []);
 
-	async function copyQuery() {
+	useEffect(() => {
+		const historyPopEvent = async (e) => {
+			setSubs(undefined);
+			setCount(-1);
+			setLoading(true);
+			setInitialLoad(true);
+			updQuery(getInitialData(overwrites));
+		};
+		window.addEventListener("popstate", historyPopEvent);
+		return () => window.removeEventListener("popstate", historyPopEvent);
+	});
+
+	function getQuery() {
 		var p = new URLSearchParams();
 		// add to query only if they were not supplied by default
 		if (typeof overwrites.userID === "undefined" && typeof query.user_id !== "undefined" && query.user_id > 0) {
@@ -192,7 +210,11 @@ function SubsView(props: SubsViewProps) {
 		if (query.page != 1) {
 			p.append("page", query.page.toString());
 		}
-		let url = window.location.origin + window.location.pathname + "?" + p.toString();
+		return p;
+	}
+
+	async function copyQuery() {
+		let url = window.location.origin + window.location.pathname + "?" + getQuery().toString();
 		try {
 			await navigator.clipboard.writeText(url);
 			createToast({ status: "success", title: getText("copied") });

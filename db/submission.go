@@ -56,7 +56,7 @@ func (s *DB) Submission(ctx context.Context, id int) (*kilonova.Submission, erro
 
 func (s *DB) SubmissionLookingUser(ctx context.Context, id int, userID int) (*kilonova.Submission, error) {
 	var sub dbSubmission
-	err := Get(s.conn, ctx, &sub, "SELECT subs.* FROM submissions subs, visible_submissions($2) users WHERE subs.id = $1 AND users.sub_id = subs.id LIMIT 1", id, userID)
+	err := Get(s.conn, ctx, &sub, "SELECT subs.* FROM submissions subs, visible_submissions($2) v_subs WHERE subs.id = $1 AND v_subs.sub_id = subs.id LIMIT 1", id, userID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}

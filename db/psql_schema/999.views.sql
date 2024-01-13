@@ -258,25 +258,25 @@ RETURNS TABLE (user_id bigint, contest_id bigint, last_time timestamptz, num_sol
 $$ LANGUAGE SQL STABLE;
 
 DROP FUNCTION IF EXISTS visible_submissions;
-CREATE OR REPLACE FUNCTION visible_submissions(user_id bigint) RETURNS TABLE (sub_id bigint, user_id bigint) AS $$
+CREATE OR REPLACE FUNCTION visible_submissions(user_id bigint) RETURNS TABLE (sub_id bigint) AS $$
     WITH v_pbs AS (SELECT * FROM visible_pbs($1))
-    (SELECT id as sub_id, submissions.user_id as user_id 
+    (SELECT id as sub_id
         FROM submissions, v_pbs
         WHERE submissions.user_id = $1 AND submissions.problem_id = v_pbs.problem_id) -- base case, users should see their own submissions if problem is still visible (also, coincidentally, works for contest problems)
     UNION ALL
-    (SELECT subs.id as sub_id, users.id as user_id
-        FROM submissions subs, users
-        WHERE users.admin = true AND users.id = $1) -- user admins
+    (SELECT subs.id as sub_id
+        FROM submissions subs
+        WHERE EXISTS (SELECT 1 FROM users WHERE users.id = $1 AND admin = true)) -- user admins
     UNION ALL
-    (SELECT subs.id as sub_id, $1 as user_id
+    (SELECT subs.id as sub_id
         FROM submissions subs, v_pbs pb_viewers
         WHERE pb_viewers.problem_id = subs.problem_id AND subs.contest_id IS NULL) -- contest is null, so judge if problem is visible
     UNION ALL
-    (SELECT subs.id as sub_id, users.user_id as user_id
+    (SELECT subs.id as sub_id
         FROM submissions subs, contest_user_access users
-        WHERE users.contest_id = subs.contest_id AND users.user_id = $1) -- contest staff if contest is not null
+        WHERE users.contest_id = subs.contest_id AND users.user_id = $1 AND subs.contest_id IS NOT NULL) -- contest staff if contest is not null
     UNION ALL
-    (SELECT subs.id as sub_id, $1 as user_id
+    (SELECT subs.id as sub_id
         FROM submissions subs, contests, contest_problems c_pbs, v_pbs
         WHERE EXISTS (SELECT 1 FROM visible_contests($1) viz WHERE contests.id = viz.contest_id)
         AND contests.id = subs.contest_id AND contests.id = c_pbs.contest_id
