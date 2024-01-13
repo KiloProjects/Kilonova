@@ -40,6 +40,23 @@ func (q *filterBuilder) Args() []any {
 	return slices.Clone(q.args)
 }
 
+func (q *filterBuilder) FormatString(str string, args ...any) string {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	if len(args) == 0 {
+		return str
+	}
+
+	positionals := []any{}
+	for range args {
+		positionals = append(positionals, "$"+strconv.Itoa(q.pos))
+		q.pos++
+	}
+	q.args = append(q.args, args...)
+	return strings.TrimSpace(fmt.Sprintf(str, positionals...))
+}
+
 // AddConstraint inserts a new constraint with the correct positional parameters
 // The `wh` string MUST have `%s` for each position to be replaced by a positional parameter
 func (q *filterBuilder) AddConstraint(wh string, args ...any) {

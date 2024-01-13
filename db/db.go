@@ -26,7 +26,7 @@ var (
 )
 
 var (
-	LogQueries = config.GenFlag[bool]("behavior.log_sql", false, "Log SQL Requests (for debugging purposes)")
+	LogQueries = config.GenFlag[bool]("behavior.db.log_sql", false, "Log SQL Requests (for debugging purposes)")
 )
 
 type DB struct {

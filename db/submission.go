@@ -8,9 +8,14 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
+)
+
+var (
+	UseLateralVisibility = config.GenFlag[bool]("behavior.db.lateral_sub_visibility", true, "Use LATERAL query for submission filtering")
 )
 
 type dbSubmission struct {
@@ -61,9 +66,9 @@ func (s *DB) SubmissionLookingUser(ctx context.Context, id int, userID int) (*ki
 func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) ([]*kilonova.Submission, error) {
 	var subs []*dbSubmission
 	fb := newFilterBuilder()
-	subFilterQuery(&filter, fb)
+	subFilterQuery(&filter, fb, UseLateralVisibility.Value())
 
-	query := fmt.Sprintf("SELECT * FROM submissions WHERE %s %s %s", fb.Where(), getSubmissionOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset))
+	query := fmt.Sprintf("SELECT submissions.* FROM submissions %s WHERE %s %s %s", lateralVisibleSubs(&filter, fb), fb.Where(), getSubmissionOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset))
 	err := Select(s.conn, ctx, &subs, query, fb.Args()...)
 	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return []*kilonova.Submission{}, nil
@@ -76,9 +81,9 @@ func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) 
 
 func (s *DB) SubmissionCount(ctx context.Context, filter kilonova.SubmissionFilter) (int, error) {
 	fb := newFilterBuilder()
-	subFilterQuery(&filter, fb)
+	subFilterQuery(&filter, fb, UseLateralVisibility.Value())
 	var val int
-	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM submissions WHERE "+fb.Where(), fb.Args()...).Scan(&val)
+	err := s.conn.QueryRow(ctx, fmt.Sprintf("SELECT COUNT(*) FROM submissions %s WHERE %s", lateralVisibleSubs(&filter, fb), fb.Where()), fb.Args()...).Scan(&val)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return -1, err
@@ -110,7 +115,7 @@ func (s *DB) BulkUpdateSubmissions(ctx context.Context, filter kilonova.Submissi
 		return ub.CheckUpdates()
 	}
 	fb := ub.MakeFilter()
-	subFilterQuery(&filter, fb)
+	subFilterQuery(&filter, fb, false)
 	_, err := s.conn.Exec(ctx, `UPDATE submissions SET `+fb.WithUpdate(), fb.Args()...)
 	return err
 }
@@ -164,7 +169,19 @@ func (s *DB) ContestMaxScore(ctx context.Context, userid, problemid, contestid i
 	return score
 }
 
-func subFilterQuery(filter *kilonova.SubmissionFilter, fb *filterBuilder) {
+// Should match in logic with filter.Look from subFilterQuery
+func lateralVisibleSubs(filter *kilonova.SubmissionFilter, fb *filterBuilder) string {
+	if !filter.Look || !UseLateralVisibility.Value() {
+		return ""
+	}
+	var id int = 0
+	if filter.LookingUser != nil {
+		id = filter.LookingUser.ID
+	}
+	return fb.FormatString(", LATERAL (SELECT sub_id FROM visible_submissions(%s) WHERE sub_id = submissions.id) v_subs", id)
+}
+
+func subFilterQuery(filter *kilonova.SubmissionFilter, fb *filterBuilder, lateralLook bool) {
 	if v := filter.ID; v != nil {
 		fb.AddConstraint("id = %s", v)
 	}
@@ -188,13 +205,18 @@ func subFilterQuery(filter *kilonova.SubmissionFilter, fb *filterBuilder) {
 		}
 	}
 
+	// Should keep in mind to sync with lateralVisibleSubs
 	if filter.Look {
 		var id int = 0
 		if filter.LookingUser != nil {
 			id = filter.LookingUser.ID
 		}
 
-		fb.AddConstraint("EXISTS (SELECT 1 FROM visible_submissions(%s) WHERE sub_id = submissions.id)", id)
+		if lateralLook {
+			fb.AddConstraint("v_subs.sub_id = submissions.id")
+		} else {
+			fb.AddConstraint("EXISTS (SELECT 1 FROM visible_submissions(%s) WHERE sub_id = submissions.id)", id)
+		}
 	}
 
 	if filter.FromAuthors {
