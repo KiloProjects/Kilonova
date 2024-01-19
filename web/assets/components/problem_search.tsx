@@ -752,7 +752,7 @@ function ProblemAttemptedByDOM({ enc, count, userid }: { enc: string; count: str
 			enc={enc}
 			count={count}
 			showfull="false"
-			filter={{ textQuery: "", tags: [], page: 1, attempted_by: uid, solved_by: uid, descending: false, ordering: "" }}
+			filter={{ textQuery: "", tags: [], page: 1, attempted_by: uid, descending: false, ordering: "" }}
 			scoreView={true}
 			showTags={false}
 		/>
