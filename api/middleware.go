@@ -32,7 +32,7 @@ func (s *API) filterUserAgent(next http.Handler) http.Handler {
 // MustBeVisitor is middleware to make sure the user creating the request is not authenticated
 func (s *API) MustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if s.base.IsAuthed(util.UserBrief(r)) {
+		if util.UserBrief(r).IsAuthed() {
 			errorData(w, "You must not be logged in to do this", http.StatusUnauthorized)
 			return
 		}
@@ -43,7 +43,7 @@ func (s *API) MustBeVisitor(next http.Handler) http.Handler {
 // MustBeAdmin is middleware to make sure the user creating the request is an admin
 func (s *API) MustBeAdmin(next http.Handler) http.Handler {
 	return s.MustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !s.base.IsAdmin(util.UserBrief(r)) {
+		if !util.UserBrief(r).IsAdmin() {
 			errorData(w, "You must be an admin to do this", http.StatusUnauthorized)
 			return
 		}
@@ -54,7 +54,7 @@ func (s *API) MustBeAdmin(next http.Handler) http.Handler {
 // MustBeAuthed is middleware to make sure the user creating the request is authenticated
 func (s *API) MustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !s.base.IsAuthed(util.UserBrief(r)) {
+		if !util.UserBrief(r).IsAuthed() {
 			errorData(w, "You must be authenticated to do this", http.StatusUnauthorized)
 			return
 		}
@@ -65,7 +65,7 @@ func (s *API) MustBeAuthed(next http.Handler) http.Handler {
 // MustBeProposer is middleware to make sure the user creating the request is a proposer
 func (s *API) MustBeProposer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !s.base.IsProposer(util.UserBrief(r)) {
+		if !util.UserBrief(r).IsProposer() {
 			errorData(w, "You must be a proposer to do this", http.StatusUnauthorized)
 			return
 		}

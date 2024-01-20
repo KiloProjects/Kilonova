@@ -215,7 +215,7 @@ func (ws *webhookSender) Send(ctx context.Context, text string) *StatusError {
 	}
 	if resp.StatusCode == 200 && resp.Header.Get("Content-Type") == "application/json" {
 		var message = make(map[string]any)
-		if json.NewDecoder(resp.Body).Decode(&message); err != nil {
+		if err := json.NewDecoder(resp.Body).Decode(&message); err != nil {
 			zap.S().Warn("Invalid JSON from Discord")
 		}
 		switch v := message["id"].(type) {

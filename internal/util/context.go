@@ -155,10 +155,10 @@ func Theme(r *http.Request) kilonova.PreferredTheme {
 
 func getValueContext[T any](ctx context.Context, key KNContextType) *T {
 	switch v := ctx.Value(key).(type) {
-	case T:
-		return &v
 	case *T:
 		return v
+	case T:
+		return &v
 	default:
 		return nil
 	}

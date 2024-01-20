@@ -41,7 +41,7 @@ func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
 
 	numSolved := -1
 	numSubSolved := map[int]int{}
-	if s.base.IsAuthed(util.UserBrief(r)) {
+	if util.UserBrief(r).IsAuthed() {
 		listIDs := []int{list.ID}
 		for _, sublists := range list.SubLists {
 			listIDs = append(listIDs, sublists.ID)

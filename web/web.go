@@ -421,9 +421,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"safeHTML": func(s string) template.HTML {
 			return template.HTML(s)
 		},
-		"unescapeHTML": func(s string) string {
-			return html.UnescapeString(s)
-		},
+		"unescapeHTML": html.UnescapeString,
 		"serverTime": func() string {
 			return time.Now().Format(time.RFC3339Nano)
 		},

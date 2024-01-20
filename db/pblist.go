@@ -131,17 +131,8 @@ func (s *DB) shallowProblemLists(ctx context.Context, parentID int) ([]*kilonova
 	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return []*kilonova.ShallowProblemList{}, nil
 	}
-
-	outLists := make([]*kilonova.ShallowProblemList, 0, len(lists))
-	for _, el := range lists {
-		pblist, err := s.internalToShallowProblemList(el)
-		if err != nil {
-			zap.S().Warn(err)
-			continue
-		}
-		outLists = append(outLists, pblist)
-	}
-	return outLists, err
+	// TODO: This doesn't match the pattern used by others
+	return mapper(lists, s.internalToShallowProblemList), err
 }
 
 func (s *DB) NumSolvedPblistProblems(ctx context.Context, listID, userID int) (int, error) {
@@ -280,7 +271,7 @@ func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.Prob
 	return pblist, nil
 }
 
-func (s *DB) internalToShallowProblemList(list *pblist) (*kilonova.ShallowProblemList, error) {
+func (s *DB) internalToShallowProblemList(list *pblist) *kilonova.ShallowProblemList {
 	return &kilonova.ShallowProblemList{
 		ID:       list.ID,
 		Title:    list.Title,
@@ -290,5 +281,5 @@ func (s *DB) internalToShallowProblemList(list *pblist) (*kilonova.ShallowProble
 		FeaturedChecklist: list.FeaturedChecklist,
 
 		NumProblems: list.NumProblems,
-	}, nil
+	}
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/schema"
+	"go.uber.org/zap"
 )
 
 var decoder *schema.Decoder
@@ -473,7 +474,10 @@ func parseRequest[T any](r *http.Request, output *T) *kilonova.StatusError {
 		return parseJsonBody(r, output)
 	}
 
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		zap.S().Info("Form parse error: ", err)
+		return kilonova.Statusf(http.StatusBadRequest, "Could not parse form")
+	}
 	if err := decoder.Decode(output, r.Form); err != nil {
 		return kilonova.WrapError(kilonova.Statusf(http.StatusBadRequest, err.Error()), "Invalid query parameters")
 	}

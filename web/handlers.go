@@ -539,7 +539,7 @@ func (rt *Web) canViewAllSubs(user *kilonova.UserBrief) bool {
 	if AllSubsPage.Value() {
 		return true
 	}
-	return rt.base.IsProposer(user)
+	return user.IsProposer()
 }
 
 func (rt *Web) paste() http.HandlerFunc {
@@ -1013,7 +1013,7 @@ func (rt *Web) contests() http.HandlerFunc {
 		case "virtual", "official":
 			page = v
 		case "personal":
-			if !rt.base.IsAuthed(util.UserBrief(r)) {
+			if !util.UserBrief(r).IsAuthed() {
 				// Important to redirect and return, since we will dereference for ID later
 				http.Redirect(w, r, "/contests", http.StatusTemporaryRedirect)
 				return
@@ -1067,7 +1067,7 @@ func (rt *Web) contests() http.HandlerFunc {
 func (rt *Web) createContest() http.HandlerFunc {
 	templ := rt.parse(nil, "contest/create.html", "proposer/createcontest.html", "contest/index_topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !(rt.base.IsProposer(util.UserBrief(r)) || sudoapi.NormalUserVirtualContests.Value()) {
+		if !(util.UserBrief(r).IsProposer() || sudoapi.NormalUserVirtualContests.Value()) {
 			rt.statusPage(w, r, 403, "Nu poți crea concursuri!")
 			return
 		}
@@ -1408,7 +1408,7 @@ func (rt *Web) checkLockout() func(next http.Handler) http.Handler {
 	templ := rt.parse(nil, "util/lockout.html")
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if ForceLogin.Value() && !rt.base.IsAuthed(util.UserBrief(r)) {
+			if ForceLogin.Value() && !util.UserBrief(r).IsAuthed() {
 				http.Redirect(w, r, "/login?back="+url.PathEscape(r.URL.Path), http.StatusTemporaryRedirect)
 				return
 			}

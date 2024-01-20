@@ -363,14 +363,14 @@ func doWalk(filename string, nodes ...tparse.Node) bool {
 			}
 			ok = ok && doWalk(filename, nodes.Interface().([]tparse.Node)...)
 		}
-		//spew.Dump(node.Type(), node.Position(), node.String())
-		if rnode, ok := node.(*tparse.ActionNode); ok {
+		// spew.Dump(node.Type(), node.Position(), node.String())
+		if rnode, valid := node.(*tparse.ActionNode); valid {
 			for _, cmd := range rnode.Pipe.Cmds {
 				if len(cmd.Args) == 0 {
 					continue
 				}
-				val, ok := cmd.Args[0].(*tparse.IdentifierNode)
-				if !ok || val.Ident != "getText" || len(cmd.Args) < 2 {
+				val, valid := cmd.Args[0].(*tparse.IdentifierNode)
+				if !valid || val.Ident != "getText" || len(cmd.Args) < 2 {
 					continue
 				}
 				key := cmd.Args[1].(*tparse.StringNode).Text
@@ -379,7 +379,7 @@ func doWalk(filename string, nodes ...tparse.Node) bool {
 					ok = false
 				}
 			}
-			//spew.Dump(rnode)
+			// spew.Dump(rnode)
 		}
 	}
 	return ok

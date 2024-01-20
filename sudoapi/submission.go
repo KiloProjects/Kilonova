@@ -184,7 +184,7 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *Use
 	var sub *kilonova.Submission
 	var problem *kilonova.Problem
 	if isLooking {
-		var userID int = 0
+		var userID int
 		if lookingUser != nil {
 			userID = lookingUser.ID
 		}

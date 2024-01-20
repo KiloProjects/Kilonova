@@ -238,7 +238,7 @@ func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !rt.base.IsAuthed(util.UserBrief(r)) {
+		if !util.UserBrief(r).IsAuthed() {
 			http.Redirect(w, r, "/login?back="+url.PathEscape(r.URL.Path), http.StatusTemporaryRedirect)
 			return
 		}
@@ -248,7 +248,7 @@ func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeProposer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !rt.base.IsProposer(util.UserBrief(r)) {
+		if !util.UserBrief(r).IsProposer() {
 			rt.statusPage(w, r, 401, "Trebuie să fii propunător")
 			return
 		}
@@ -258,7 +258,7 @@ func (rt *Web) mustBeProposer(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 	return rt.mustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !rt.base.IsAdmin(util.UserBrief(r)) {
+		if !util.UserBrief(r).IsAdmin() {
 			rt.statusPage(w, r, 401, "Trebuie să fii admin")
 			return
 		}
@@ -268,7 +268,7 @@ func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if rt.base.IsAuthed(util.UserBrief(r)) {
+		if util.UserBrief(r).IsAuthed() {
 			rt.statusPage(w, r, 401, "Trebuie să fii delogat")
 			return
 		}
