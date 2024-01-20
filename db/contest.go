@@ -113,7 +113,7 @@ func contestFilterQuery(filter *kilonova.ContestFilter, fb *filterBuilder) {
 		fb.AddConstraint("id = ANY(%s)", v)
 	}
 	if filter.Look {
-		var id int = 0
+		var id int
 		if filter.LookingUser != nil {
 			id = filter.LookingUser.ID
 		}

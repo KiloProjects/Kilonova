@@ -8,22 +8,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// Deprecated: use user.IsAuthed() instead
-func (s *BaseAPI) IsAuthed(user *kilonova.UserBrief) bool {
-	return user.IsAuthed()
-}
-
-// Deprecated: use user.IsAdmin() instead
-func (s *BaseAPI) IsAdmin(user *kilonova.UserBrief) bool {
-	return user.IsAdmin()
-}
-
-// Deprecated: use user.IsProposer() instead
-func (s *BaseAPI) IsProposer(user *kilonova.UserBrief) bool {
-	return user.IsProposer()
-}
-
 // NOTE: This must be in sync with the visible_posts PSQL function
+// TODO: Refactor into method of *kilonova.BlogPost
 func (s *BaseAPI) IsBlogPostVisible(user *kilonova.UserBrief, post *kilonova.BlogPost) bool {
 	if post == nil {
 		return false
@@ -31,7 +17,7 @@ func (s *BaseAPI) IsBlogPostVisible(user *kilonova.UserBrief, post *kilonova.Blo
 	if post.Visible {
 		return true
 	}
-	if s.IsAdmin(user) {
+	if user.IsAdmin() {
 		return true
 	}
 	userID := 0
@@ -43,10 +29,10 @@ func (s *BaseAPI) IsBlogPostVisible(user *kilonova.UserBrief, post *kilonova.Blo
 }
 
 func (s *BaseAPI) IsBlogPostEditor(user *kilonova.UserBrief, post *kilonova.BlogPost) bool {
-	if !s.IsAuthed(user) {
+	if !user.IsAuthed() {
 		return false
 	}
-	if s.IsAdmin(user) {
+	if user.IsAdmin() {
 		return true
 	}
 	if post == nil {
@@ -56,10 +42,10 @@ func (s *BaseAPI) IsBlogPostEditor(user *kilonova.UserBrief, post *kilonova.Blog
 }
 
 func (s *BaseAPI) IsProblemEditor(user *kilonova.UserBrief, problem *kilonova.Problem) bool {
-	if !s.IsAuthed(user) {
+	if !user.IsAuthed() {
 		return false
 	}
-	if s.IsAdmin(user) {
+	if user.IsAdmin() {
 		return true
 	}
 	if problem == nil {
@@ -121,7 +107,7 @@ func (s *BaseAPI) CanViewTests(user *kilonova.UserBrief, problem *kilonova.Probl
 	if problem == nil {
 		return false
 	}
-	if !s.IsAuthed(user) {
+	if !user.IsAuthed() {
 		return false
 	}
 
@@ -132,11 +118,12 @@ func (s *BaseAPI) CanViewTests(user *kilonova.UserBrief, problem *kilonova.Probl
 	return s.IsProblemEditor(user, problem)
 }
 
+// TODO: Refactor into method of *kilonova.Contest
 func (s *BaseAPI) IsContestEditor(user *kilonova.UserBrief, contest *kilonova.Contest) bool {
-	if !s.IsAuthed(user) {
+	if !user.IsAuthed() {
 		return false
 	}
-	if s.IsAdmin(user) {
+	if user.IsAdmin() {
 		return true
 	}
 	if contest == nil {
@@ -152,11 +139,12 @@ func (s *BaseAPI) IsContestEditor(user *kilonova.UserBrief, contest *kilonova.Co
 }
 
 // Tester = Testers + Editors + Admins
+// TODO: Refactor into method of *kilonova.Contest
 func (s *BaseAPI) IsContestTester(user *kilonova.UserBrief, contest *kilonova.Contest) bool {
-	if !s.IsAuthed(user) {
+	if !user.IsAuthed() {
 		return false
 	}
-	if s.IsAdmin(user) {
+	if user.IsAdmin() {
 		return true
 	}
 	if contest == nil {
@@ -177,7 +165,7 @@ func (s *BaseAPI) IsContestTester(user *kilonova.UserBrief, contest *kilonova.Co
 }
 
 func (s *BaseAPI) IsContestVisible(user *kilonova.UserBrief, contest *kilonova.Contest) bool {
-	if s.IsAdmin(user) {
+	if user.IsAdmin() {
 		return true
 	}
 	if contest == nil {
@@ -196,18 +184,20 @@ func (s *BaseAPI) IsContestVisible(user *kilonova.UserBrief, contest *kilonova.C
 	return ok
 }
 
+// TODO: Refactor into method of *kilonova.Submission
 func (s *BaseAPI) IsSubmissionEditor(sub *kilonova.Submission, user *kilonova.UserBrief) bool {
-	if !s.IsAuthed(user) {
+	if !user.IsAuthed() {
 		return false
 	}
 	if sub == nil {
 		return false
 	}
-	return s.IsAdmin(user) || user.ID == sub.UserID
+	return user.IsAdmin() || user.ID == sub.UserID
 }
 
+// TODO: Refactor into method of *kilonova.SubmissionPaste
 func (s *BaseAPI) IsPasteEditor(paste *kilonova.SubmissionPaste, user *kilonova.UserBrief) bool {
-	if !s.IsAuthed(user) {
+	if !user.IsAuthed() {
 		return false
 	}
 	if paste == nil {

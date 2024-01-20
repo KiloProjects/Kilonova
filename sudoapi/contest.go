@@ -24,11 +24,11 @@ func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova
 	if cType == kilonova.ContestTypeNone {
 		cType = kilonova.ContestTypeVirtual
 	}
-	if cType == kilonova.ContestTypeOfficial && !s.IsAdmin(author) {
+	if cType == kilonova.ContestTypeOfficial && !author.IsAdmin() {
 		cType = kilonova.ContestTypeVirtual
 	}
 
-	if !s.IsProposer(author) {
+	if !author.IsProposer() {
 		if !NormalUserVirtualContests.Value() {
 			return -1, Statusf(403, "Creation of contests by non-proposers has been disabled")
 		}

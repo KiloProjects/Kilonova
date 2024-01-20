@@ -2,8 +2,6 @@ package db
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"errors"
 	"strconv"
 	"time"
@@ -22,10 +20,8 @@ type dbVerification struct {
 }
 
 func (s *DB) CreateVerification(ctx context.Context, id int) (string, error) {
-	// since RandomString might not always be unique, salt it with the ID
-	// thus, if there is a collision, at least it will be from that user already
-	vidB := md5.Sum([]byte(kilonova.RandomString(16) + strconv.Itoa(id)))
-	vid := hex.EncodeToString(vidB[:])
+	// If there is a collision, at least it will be from that user already
+	vid := kilonova.RandomSaltedString(strconv.Itoa(id))
 	_, err := s.conn.Exec(ctx, `INSERT INTO verifications (id, user_id) VALUES ($1, $2)`, vid, id)
 	return vid, err
 }
@@ -59,10 +55,8 @@ func (sess *Session) Expired() bool {
 }
 
 func (s *DB) CreateSession(ctx context.Context, uid int) (string, error) {
-	// since RandomString might not always be unique, salt it with the ID
-	// thus, if there is a collision, at least it will be from that user already
-	vidB := md5.Sum([]byte(kilonova.RandomString(16) + strconv.Itoa(uid)))
-	vid := hex.EncodeToString(vidB[:])
+	// If there is a collision, at least it will be from that user already
+	vid := kilonova.RandomSaltedString(strconv.Itoa(uid))
 	_, err := s.conn.Exec(ctx, `INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, $3)`, vid, uid, time.Now().Add(sessionDuration))
 	if err != nil {
 		return "", err

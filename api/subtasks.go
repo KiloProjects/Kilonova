@@ -15,7 +15,7 @@ func (s *API) createSubTask(w http.ResponseWriter, r *http.Request) {
 		Score     int   `json:"score"`
 		Tests     []int `json:"tests"`
 	}
-	if err := parseJsonBody(r, &args); err != nil {
+	if err := parseJSONBody(r, &args); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -61,7 +61,7 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 		Score     *float64 `json:"score"`
 		Tests     []int    `json:"tests"`
 	}
-	if err := parseJsonBody(r, &args); err != nil {
+	if err := parseJSONBody(r, &args); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -114,7 +114,7 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 func (s *API) bulkDeleteSubTasks(w http.ResponseWriter, r *http.Request) {
 	var removedSubTasks int
 	var subtaskIDs []int
-	if err := parseJsonBody(r, &subtaskIDs); err != nil {
+	if err := parseJSONBody(r, &subtaskIDs); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -137,7 +137,7 @@ func (s *API) bulkUpdateSubTaskScores(w http.ResponseWriter, r *http.Request) {
 	var data map[int]decimal.Decimal
 	var updatedSubTasks int
 
-	if err := parseJsonBody(r, &data); err != nil {
+	if err := parseJSONBody(r, &data); err != nil {
 		err.WriteError(w)
 		return
 	}

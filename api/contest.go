@@ -37,7 +37,7 @@ func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if args.Type != kilonova.ContestTypeNone && args.Type != util.Contest(r).Type && !s.base.IsAdmin(util.UserBrief(r)) {
+	if args.Type != kilonova.ContestTypeNone && args.Type != util.Contest(r).Type && !util.UserBrief(r).IsAdmin() {
 		errorData(w, "You aren't allowed to change contest type!", 400)
 		return
 	}
@@ -67,7 +67,7 @@ func (s *API) updateContestProblems(w http.ResponseWriter, r *http.Request) {
 	var args struct {
 		List []int `json:"list"`
 	}
-	if err := parseJsonBody(r, &args); err != nil {
+	if err := parseJSONBody(r, &args); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -91,7 +91,7 @@ func (s *API) updateContestProblems(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Updated contest problems")
 }
 
-func (s *API) getContest(ctx context.Context, args struct{}) (*kilonova.Contest, *kilonova.StatusError) {
+func (s *API) getContest(ctx context.Context, _ struct{}) (*kilonova.Contest, *kilonova.StatusError) {
 	return util.ContestContext(ctx), nil
 }
 
@@ -207,7 +207,7 @@ func (s *API) stripContestAccess(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Stripped contest access")
 }
 
-func (s *API) contestAnnouncements(ctx context.Context, args struct{}) ([]*kilonova.ContestAnnouncement, *kilonova.StatusError) {
+func (s *API) contestAnnouncements(ctx context.Context, _ struct{}) ([]*kilonova.ContestAnnouncement, *kilonova.StatusError) {
 	return s.base.ContestAnnouncements(ctx, util.ContestContext(ctx).ID)
 }
 
@@ -253,11 +253,11 @@ func (s *API) deleteContestAnnouncement(ctx context.Context, args struct {
 	return s.base.DeleteContestAnnouncement(ctx, announcement.ID)
 }
 
-func (s *API) contestUserQuestions(ctx context.Context, args struct{}) ([]*kilonova.ContestQuestion, *kilonova.StatusError) {
+func (s *API) contestUserQuestions(ctx context.Context, _ struct{}) ([]*kilonova.ContestQuestion, *kilonova.StatusError) {
 	return s.base.ContestUserQuestions(ctx, util.ContestContext(ctx).ID, util.UserBriefContext(ctx).ID)
 }
 
-func (s *API) contestAllQuestions(ctx context.Context, args struct{}) ([]*kilonova.ContestQuestion, *kilonova.StatusError) {
+func (s *API) contestAllQuestions(ctx context.Context, _ struct{}) ([]*kilonova.ContestQuestion, *kilonova.StatusError) {
 	return s.base.ContestQuestions(ctx, util.ContestContext(ctx).ID)
 }
 
@@ -404,7 +404,7 @@ func (s *API) forceRegisterForContest(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Force registered user for contest")
 }
 
-func (s *API) checkRegistration(ctx context.Context, args struct{}) (*kilonova.ContestRegistration, *kilonova.StatusError) {
+func (s *API) checkRegistration(ctx context.Context, _ struct{}) (*kilonova.ContestRegistration, *kilonova.StatusError) {
 	return s.base.ContestRegistration(ctx, util.ContestContext(ctx).ID, util.UserBriefContext(ctx).ID)
 }
 

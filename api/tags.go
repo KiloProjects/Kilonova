@@ -114,6 +114,6 @@ func (s *API) updateProblemTags(ctx context.Context, args struct {
 	return s.base.UpdateProblemTags(ctx, util.ProblemContext(ctx).ID, args.Tags)
 }
 
-func (s *API) problemTags(ctx context.Context, args struct{}) ([]*kilonova.Tag, *kilonova.StatusError) {
+func (s *API) problemTags(ctx context.Context, _ struct{}) ([]*kilonova.Tag, *kilonova.StatusError) {
 	return s.base.ProblemTags(ctx, util.ProblemContext(ctx).ID)
 }

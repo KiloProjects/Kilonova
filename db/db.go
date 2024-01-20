@@ -38,7 +38,7 @@ func (d *DB) Close() error {
 	return nil
 }
 
-// TODO: Remove. It's just a placeholder for old behavior
+// Deprecated: It's just a placeholder for old behavior
 func Get[T any](pgconn *pgxpool.Pool, ctx context.Context, dest *T, query string, args ...any) error {
 	rows, _ := pgconn.Query(ctx, query, args...)
 	val, err := pgx.CollectOneRow(rows, pgx.RowToStructByNameLax[T])
@@ -49,7 +49,7 @@ func Get[T any](pgconn *pgxpool.Pool, ctx context.Context, dest *T, query string
 	return nil
 }
 
-// TODO: Remove. It's just a placeholder for old behavior
+// Deprecated: It's just a placeholder for old behavior
 func Select[T any](pgconn *pgxpool.Pool, ctx context.Context, dest *[]*T, query string, args ...any) error {
 	rows, _ := pgconn.Query(ctx, query, args...)
 	vals, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByNameLax[T])

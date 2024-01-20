@@ -65,11 +65,11 @@ func (s *API) updateTestInfo(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Updated test info")
 }
 
-func (s *API) deleteTest(ctx context.Context, args struct{}) *kilonova.StatusError {
+func (s *API) deleteTest(ctx context.Context, _ struct{}) *kilonova.StatusError {
 	return s.base.DeleteTest(ctx, util.TestContext(ctx).ID)
 }
 
-func (s *API) getTests(ctx context.Context, args struct{}) ([]*kilonova.Test, *kilonova.StatusError) {
+func (s *API) getTests(ctx context.Context, _ struct{}) ([]*kilonova.Test, *kilonova.StatusError) {
 	return s.base.Tests(ctx, util.ProblemContext(ctx).ID)
 }
 
@@ -165,7 +165,7 @@ func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 func (s *API) bulkDeleteTests(w http.ResponseWriter, r *http.Request) {
 	var removedTests int
 	var testIDs []int
-	if err := parseJsonBody(r, &testIDs); err != nil {
+	if err := parseJSONBody(r, &testIDs); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -192,7 +192,7 @@ func (s *API) bulkUpdateTestScores(w http.ResponseWriter, r *http.Request) {
 	var data map[int]decimal.Decimal
 	var updatedTests int
 
-	if err := parseJsonBody(r, &data); err != nil {
+	if err := parseJSONBody(r, &data); err != nil {
 		err.WriteError(w)
 		return
 	}

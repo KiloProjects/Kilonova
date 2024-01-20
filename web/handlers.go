@@ -301,7 +301,7 @@ func (rt *Web) justRender(files ...string) http.HandlerFunc {
 func (rt *Web) pbListIndex() http.HandlerFunc {
 	templ := rt.parse(nil, "lists/index.html", "modals/pblist.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		pblists, err := rt.base.ProblemLists(context.Background(), kilonova.ProblemListFilter{Root: true})
+		pblists, err := rt.base.ProblemLists(r.Context(), kilonova.ProblemListFilter{Root: true})
 		if err != nil {
 			rt.statusPage(w, r, 500, "Eroare la obținerea listelor")
 			return
@@ -690,10 +690,8 @@ func (rt *Web) problem() http.HandlerFunc {
 			subs, err := rt.base.Submissions(r.Context(), filter, false, nil)
 			if err == nil {
 				initialSubs = subs
-			} else {
-				if !errors.Is(err, context.Canceled) {
-					zap.S().Warn("Couldn't fetch submissions: ", err)
-				}
+			} else if !errors.Is(err, context.Canceled) {
+				zap.S().Warn("Couldn't fetch submissions: ", err)
 			}
 		}
 
@@ -1451,8 +1449,12 @@ func (rt *Web) logout(w http.ResponseWriter, r *http.Request) {
 func (rt *Web) chromaCSS() http.HandlerFunc {
 	formatter := chtml.New(chtml.WithClasses(true), chtml.TabWidth(4)) // Identical to mdrenderer.go
 	var lightBuf, darkBuf bytes.Buffer
-	formatter.WriteCSS(&lightBuf, styles.Get("github"))
-	formatter.WriteCSS(&darkBuf, styles.Get("github-dark"))
+	if err := formatter.WriteCSS(&lightBuf, styles.Get("github")); err != nil {
+		zap.S().Warn("Could not write `github` theme")
+	}
+	if err := formatter.WriteCSS(&darkBuf, styles.Get("github-dark")); err != nil {
+		zap.S().Warn("Could not write `github-dark` theme")
+	}
 	css := fmt.Sprintf(".light {%s} .dark {%s}", lightBuf.String(), darkBuf.String())
 	rez := api.Transform(css, api.TransformOptions{
 		Loader: api.LoaderCSS,
@@ -1496,6 +1498,7 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 	// Add request-specific functions
 	templ.Funcs(template.FuncMap{
 		"getText": func(line string, args ...any) template.HTML {
+			// TODO: How safe is this?
 			return template.HTML(kilonova.GetText(lang, line, args...))
 		},
 		"reqPath": func() string {

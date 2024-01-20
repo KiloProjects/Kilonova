@@ -1,6 +1,8 @@
 package kilonova
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"math/rand"
 	"strings"
 )
@@ -15,4 +17,9 @@ func RandomString(size int) string {
 		sb.WriteByte(randomCharacters[rand.Intn(len(randomCharacters))])
 	}
 	return sb.String()
+}
+
+func RandomSaltedString(salt string) string {
+	vidB := sha256.Sum256([]byte(RandomString(16) + salt))
+	return hex.EncodeToString(vidB[:])
 }

@@ -1,7 +1,7 @@
 package datastore
 
 import (
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -12,7 +12,7 @@ import (
 )
 
 func (m *StorageManager) avatarPath(email string, size int) string {
-	bSum := md5.Sum([]byte(email))
+	bSum := sha256.Sum256([]byte(email))
 	return path.Join(m.RootPath, "avatars", fmt.Sprintf("%s-%d.png", hex.EncodeToString(bSum[:]), size))
 }
 

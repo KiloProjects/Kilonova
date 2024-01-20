@@ -89,6 +89,7 @@ func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, e
 }
 
 func (s *BaseAPI) CheckVerificationEmail(ctx context.Context, vid string) bool {
+	// TODO: Why did i write context.Background here?
 	val, err := s.db.GetVerification(context.Background(), vid)
 	return err == nil && val > 0
 }

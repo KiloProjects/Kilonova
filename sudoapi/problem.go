@@ -35,7 +35,7 @@ func (s *BaseAPI) UpdateProblem(ctx context.Context, id int, args kilonova.Probl
 	if args.Name != nil && *args.Name == "" {
 		return Statusf(400, "Title can't be empty!")
 	}
-	if updater != nil && args.Visible != nil && !s.IsAdmin(updater) {
+	if updater != nil && args.Visible != nil && !updater.IsAdmin() {
 		return Statusf(403, "User can't update visibility!")
 	}
 	if args.ScoringStrategy != kilonova.ScoringTypeNone && args.ScoringStrategy != kilonova.ScoringTypeMaxSub && args.ScoringStrategy != kilonova.ScoringTypeSumSubtasks && args.ScoringStrategy != kilonova.ScoringTypeICPC {

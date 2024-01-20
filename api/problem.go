@@ -402,7 +402,7 @@ type problemAccessControl struct {
 	Viewers []*kilonova.UserBrief `json:"viewers"`
 }
 
-func (s *API) getProblemAccessControl(ctx context.Context, args struct{}) (*problemAccessControl, *kilonova.StatusError) {
+func (s *API) getProblemAccessControl(ctx context.Context, _ struct{}) (*problemAccessControl, *kilonova.StatusError) {
 	editors, err := s.base.ProblemEditors(ctx, util.ProblemContext(ctx).ID)
 	if err != nil {
 		return nil, err

@@ -401,7 +401,7 @@ func (s *BaseAPI) subVisibleRegardless(ctx context.Context, sub *kilonova.Submis
 		return false
 	}
 
-	if !s.IsAuthed(user) {
+	if !user.IsAuthed() {
 		return false
 	}
 
@@ -422,7 +422,7 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 		return false
 	}
 
-	if !s.IsAuthed(user) {
+	if !user.IsAuthed() {
 		return false
 	}
 

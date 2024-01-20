@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *API) getProblemList(ctx context.Context, args struct{}) (*kilonova.ProblemList, *kilonova.StatusError) {
+func (s *API) getProblemList(ctx context.Context, _ struct{}) (*kilonova.ProblemList, *kilonova.StatusError) {
 	return util.ProblemListContext(ctx), nil
 }
 
@@ -111,7 +111,7 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 
 		SidebarHidable *bool `json:"sidebar_hidable"`
 	}
-	if err := parseJsonBody(r, &listData); err != nil {
+	if err := parseJSONBody(r, &listData); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -195,7 +195,7 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 		SidebarHidable    *bool `json:"sidebar_hidable"`
 		FeaturedChecklist *bool `json:"featured_checklist"`
 	}
-	if err := parseJsonBody(r, &args); err != nil {
+	if err := parseJSONBody(r, &args); err != nil {
 		err.WriteError(w)
 		return
 	}

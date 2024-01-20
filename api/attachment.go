@@ -62,7 +62,7 @@ func (s *API) createAttachment(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) bulkDeleteAttachments(w http.ResponseWriter, r *http.Request) {
 	var atts []int
-	if err := parseJsonBody(r, &atts); err != nil {
+	if err := parseJSONBody(r, &atts); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -178,7 +178,7 @@ type fullAttachment struct {
 }
 
 // NOTE: This depends on the middleware. The middleware actually resolves the attachment, either by name or by id.
-func (s *API) getFullAttachment(ctx context.Context, args struct{}) (*fullAttachment, *kilonova.StatusError) {
+func (s *API) getFullAttachment(ctx context.Context, _ struct{}) (*fullAttachment, *kilonova.StatusError) {
 	data, err := s.base.AttachmentData(ctx, util.AttachmentContext(ctx).ID)
 	if err != nil {
 		return nil, err
@@ -199,7 +199,7 @@ func (s *API) bulkUpdateAttachmentInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	var updatedAttachments int
 
-	if err := parseJsonBody(r, &data); err != nil {
+	if err := parseJSONBody(r, &data); err != nil {
 		err.WriteError(w)
 		return
 	}

@@ -97,8 +97,7 @@ func GetFlagVal[T configT](name string) (T, bool) {
 	if !ok {
 		return *new(T), false
 	}
-	switch v := flg.(type) {
-	case *flag[T]:
+	if v, ok := flg.(*flag[T]); ok {
 		return v.Value(), true
 	}
 	return *new(T), false
@@ -128,19 +127,6 @@ func GetFlags[T configT]() []Flag[T] {
 	slices.SortFunc(flags, func(a, b Flag[T]) int {
 		return cmp.Compare(a.InternalName(), b.InternalName())
 	})
-	return flags
-}
-
-func FlagList[T configT](name string) []Flag[T] {
-	flagMapMu.RLock()
-	defer flagMapMu.RUnlock()
-	var flags []Flag[T]
-	for _, val := range allFlags {
-		switch f := val.(type) {
-		case *flag[T]:
-			flags = append(flags, f)
-		}
-	}
 	return flags
 }
 

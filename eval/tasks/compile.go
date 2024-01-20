@@ -149,7 +149,7 @@ func makeGoodCompileCommand(command []string, files []string) ([]string, error) 
 		return nil, err
 	}
 	for i := range cmd {
-		if cmd[i] == eval.MAGIC_REPLACE {
+		if cmd[i] == eval.MagicReplace {
 			x := []string{}
 			x = append(x, cmd[:i]...)
 			x = append(x, files...)

@@ -95,9 +95,8 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		if err.Code != 204 { // Skip
 			zap.S().Warn(err)
 			return err
-		} else {
-			return nil
 		}
+		return nil
 	}
 
 	checker, err := getAppropriateChecker(ctx, base, runner, sub, problem, problemSettings)
@@ -477,7 +476,7 @@ func getAppropriateRunner(base *sudoapi.BaseAPI) (eval.BoxScheduler, error) {
 func getAppropriateChecker(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, pb *kilonova.Problem, settings *kilonova.ProblemEvalSettings) (eval.Checker, error) {
 	if settings.CheckerName == "" {
 		return &checkers.DiffChecker{}, nil
-	} else {
+	}
 		att, err := base.ProblemAttByName(ctx, pb.ID, settings.CheckerName)
 		if err != nil {
 			return nil, kilonova.WrapError(err, "Couldn't get problem checker metadata")
@@ -490,5 +489,4 @@ func getAppropriateChecker(ctx context.Context, base *sudoapi.BaseAPI, runner ev
 			return checkers.NewLegacyCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data, att.LastUpdatedAt), nil
 		}
 		return checkers.NewStandardCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data, att.LastUpdatedAt), nil
-	}
 }

@@ -178,12 +178,14 @@ func (ws *webhookSender) EditLastMessage(ctx context.Context) *StatusError {
 		return WrapError(err, "Couldn't build request")
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	if _, err := http.DefaultClient.Do(req); err != nil {
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return nil
 		}
 		return WrapError(err, "Couldn't execute request")
 	}
+	resp.Body.Close()
 
 	ws.lastMessageCount++
 	return nil
@@ -213,6 +215,7 @@ func (ws *webhookSender) Send(ctx context.Context, text string) *StatusError {
 		}
 		return WrapError(err, "Couldn't execute request")
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode == 200 && resp.Header.Get("Content-Type") == "application/json" {
 		var message = make(map[string]any)
 		if err := json.NewDecoder(resp.Body).Decode(&message); err != nil {

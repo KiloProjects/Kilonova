@@ -29,7 +29,7 @@ func (s *API) userBlogPosts(w http.ResponseWriter, r *http.Request) {
 	returnData(w, posts)
 }
 
-func (s *API) blogPostByID(ctx context.Context, args struct{}) (*kilonova.BlogPost, *kilonova.StatusError) {
+func (s *API) blogPostByID(ctx context.Context, _ struct{}) (*kilonova.BlogPost, *kilonova.StatusError) {
 	return util.BlogPostContext(ctx), nil
 }
 
@@ -125,6 +125,6 @@ func (s *API) updateBlogPost(w http.ResponseWriter, r *http.Request) {
 	}{slug, "Updated blog post"})
 }
 
-func (s *API) deleteBlogPost(ctx context.Context, args struct{}) *kilonova.StatusError {
+func (s *API) deleteBlogPost(ctx context.Context, _ struct{}) *kilonova.StatusError {
 	return s.base.DeleteBlogPost(context.WithoutCancel(ctx), util.BlogPostContext(ctx))
 }

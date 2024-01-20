@@ -2,6 +2,7 @@ package checkers
 
 import (
 	"context"
+	"errors"
 	"io"
 	"os"
 	"os/exec"
@@ -24,7 +25,7 @@ func (d *DiffChecker) Prepare(_ context.Context) (string, error) { return "", ni
 
 func (d *DiffChecker) Cleanup(_ context.Context) error { return nil }
 
-func (d *DiffChecker) RunChecker(ctx context.Context, pOut, cIn, cOut io.Reader) (string, decimal.Decimal) {
+func (d *DiffChecker) RunChecker(ctx context.Context, pOut, _, cOut io.Reader) (string, decimal.Decimal) {
 	tf, err := os.CreateTemp("", "prog-out-*")
 	if err != nil {
 		return ErrOut, decimal.Zero
@@ -48,8 +49,9 @@ func (d *DiffChecker) RunChecker(ctx context.Context, pOut, cIn, cOut io.Reader)
 
 	cmd := exec.CommandContext(ctx, "diff", "-qBbEa", tf.Name(), cf.Name())
 	if err := cmd.Run(); err != nil {
-		if err, ok := err.(*exec.ExitError); ok {
-			if err.ExitCode() == 0 {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			if exitErr.ExitCode() == 0 {
 				return CorrectOut, decimal.NewFromInt(100)
 			}
 

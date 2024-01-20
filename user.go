@@ -94,7 +94,6 @@ type UserFilter struct {
 // Stuff like admin and proposer should be updated through their dedicated
 // SudoAPI methods
 type UserUpdate struct {
-	//Name    *string `json:"name"`
 	DisplayName *string `json:"display_name"`
 
 	Bio *string `json:"bio"`

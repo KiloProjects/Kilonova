@@ -46,16 +46,16 @@ func (s *API) Handler() http.Handler {
 		r.Post("/updateFlags", s.updateBoolFlags)
 
 		r.Route("/maintenance", func(r chi.Router) {
-			r.Post("/resetWaitingSubs", webMessageWrapper("Reset waiting subs", func(ctx context.Context, args struct{}) *kilonova.StatusError {
+			r.Post("/resetWaitingSubs", webMessageWrapper("Reset waiting subs", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
 				return s.base.ResetWaitingSubmissions(ctx)
 			}))
-			r.Post("/invalidateAttachments", webMessageWrapper("Invalidated attachments", func(ctx context.Context, args struct{}) *kilonova.StatusError {
+			r.Post("/invalidateAttachments", webMessageWrapper("Invalidated attachments", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
 				if err := s.base.InvalidateAllAttachments(); err != nil {
 					return err.(*kilonova.StatusError)
 				}
 				return nil
 			}))
-			r.Post("/invalidateCheckers", webMessageWrapper("Invalidated checkers", func(ctx context.Context, args struct{}) *kilonova.StatusError {
+			r.Post("/invalidateCheckers", webMessageWrapper("Invalidated checkers", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
 				return s.base.InvalidateCheckers()
 			}))
 		})
@@ -131,7 +131,7 @@ func (s *API) Handler() http.Handler {
 					r.Post("/bulkDeleteSubTasks", s.bulkDeleteSubTasks)
 				})
 
-				r.Post("/reevaluateSubs", webMessageWrapper("Reevaluating submissions", func(ctx context.Context, args struct{}) *kilonova.StatusError {
+				r.Post("/reevaluateSubs", webMessageWrapper("Reevaluating submissions", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
 					return s.base.ResetProblemSubmissions(context.WithoutCancel(ctx), util.ProblemContext(ctx))
 				}))
 
@@ -139,13 +139,13 @@ func (s *API) Handler() http.Handler {
 			})
 
 			r.Route("/get", func(r chi.Router) {
-				r.Get("/attachments", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
+				r.Get("/attachments", webWrapper(func(ctx context.Context, _ struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
 					return s.base.ProblemAttachments(ctx, util.ProblemContext(ctx).ID)
 				}))
 				r.With(s.validateAttachmentID).Get("/attachment/{aID}", webWrapper(s.getFullAttachment))
 				r.With(s.validateAttachmentName).Get("/attachmentByName/{aName}", webWrapper(s.getFullAttachment))
 
-				r.With(s.validateProblemEditor).Get("/checklist", webWrapper(func(ctx context.Context, args struct{}) (*kilonova.ProblemChecklist, *kilonova.StatusError) {
+				r.With(s.validateProblemEditor).Get("/checklist", webWrapper(func(ctx context.Context, _ struct{}) (*kilonova.ProblemChecklist, *kilonova.StatusError) {
 					return s.base.ProblemChecklist(ctx, util.ProblemContext(ctx).ID)
 				}))
 
@@ -176,7 +176,7 @@ func (s *API) Handler() http.Handler {
 			})
 
 			r.Route("/get", func(r chi.Router) {
-				r.Get("/attachments", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
+				r.Get("/attachments", webWrapper(func(ctx context.Context, _ struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
 					return s.base.BlogPostAttachments(ctx, util.BlogPostContext(ctx).ID)
 				}))
 				r.With(s.validateAttachmentID).Get("/attachment/{aID}", webWrapper(s.getFullAttachment))
@@ -193,7 +193,7 @@ func (s *API) Handler() http.Handler {
 			r.Use(s.validateSubmissionID)
 
 			r.With(s.MustBeAuthed).Post("/createPaste", s.createPaste)
-			r.With(s.MustBeAuthed).Post("/delete", webMessageWrapper("Deleted submission", func(ctx context.Context, args struct{}) *kilonova.StatusError {
+			r.With(s.MustBeAuthed).Post("/delete", webMessageWrapper("Deleted submission", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
 				// Check submission permissions
 				if !(util.UserBriefContext(ctx).Admin || util.SubmissionContext(ctx).ProblemEditor) {
 					return kilonova.Statusf(403, "You cannot delete this submission!")
@@ -201,7 +201,7 @@ func (s *API) Handler() http.Handler {
 
 				return s.base.DeleteSubmission(ctx, util.SubmissionContext(ctx).ID)
 			}))
-			r.With(s.MustBeAuthed).Post("/reevaluate", webMessageWrapper("Reset submission", func(ctx context.Context, args struct{}) *kilonova.StatusError {
+			r.With(s.MustBeAuthed).Post("/reevaluate", webMessageWrapper("Reset submission", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
 				// Check submission permissions
 				if !(util.UserBriefContext(ctx).Admin || util.SubmissionContext(ctx).ProblemEditor) {
 					return kilonova.Statusf(403, "You cannot delete this submission!")
@@ -344,10 +344,10 @@ func (s *API) Handler() http.Handler {
 			r.With(s.MustBeAuthed).Post("/register", s.registerForContest)
 			r.With(s.MustBeAuthed).Post("/startRegistration", s.startContestRegistration)
 
-			r.With(s.validateContestEditor).Get("/invitations", webWrapper(func(ctx context.Context, args struct{}) ([]*kilonova.ContestInvitation, *kilonova.StatusError) {
+			r.With(s.validateContestEditor).Get("/invitations", webWrapper(func(ctx context.Context, _ struct{}) ([]*kilonova.ContestInvitation, *kilonova.StatusError) {
 				return s.base.ContestInvitations(ctx, util.ContestContext(ctx).ID)
 			}))
-			r.With(s.validateContestEditor).Post("/createInvitation", webWrapper(func(ctx context.Context, args struct{}) (string, *kilonova.StatusError) {
+			r.With(s.validateContestEditor).Post("/createInvitation", webWrapper(func(ctx context.Context, _ struct{}) (string, *kilonova.StatusError) {
 				return s.base.CreateContestInvitation(ctx, util.ContestContext(ctx).ID, util.UserBriefContext(ctx))
 			}))
 
@@ -355,7 +355,7 @@ func (s *API) Handler() http.Handler {
 			r.With(s.validateContestEditor).Get("/registrations", s.contestRegistrations)
 			r.With(s.validateContestEditor).Post("/kickUser", s.stripContestRegistration)
 			r.With(s.MustBeAdmin).Post("/forceRegister", s.forceRegisterForContest)
-			r.With(s.validateContestEditor).Post("/delete", webMessageWrapper("Deleted contest", func(ctx context.Context, args struct{}) *kilonova.StatusError {
+			r.With(s.validateContestEditor).Post("/delete", webMessageWrapper("Deleted contest", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
 				return s.base.DeleteContest(ctx, util.ContestContext(ctx))
 			}))
 
@@ -386,8 +386,8 @@ func (s *API) Handler() http.Handler {
 func (s *API) withProblem(fieldName string, required bool) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			problem_id, err := strconv.Atoi(r.FormValue(fieldName))
-			if err != nil || problem_id <= 0 {
+			problemID, err := strconv.Atoi(r.FormValue(fieldName))
+			if err != nil || problemID <= 0 {
 				if required {
 					errorData(w, "Invalid problem ID", 400)
 					return
@@ -396,7 +396,7 @@ func (s *API) withProblem(fieldName string, required bool) func(next http.Handle
 				return
 			}
 
-			problem, err1 := s.base.Problem(r.Context(), problem_id)
+			problem, err1 := s.base.Problem(r.Context(), problemID)
 			if err1 != nil {
 				if required {
 					err1.WriteError(w)
@@ -449,7 +449,7 @@ func errorData(w http.ResponseWriter, retData any, errCode int) {
 	kilonova.StatusData(w, "error", retData, errCode)
 }
 
-func parseJsonBody[T any](r *http.Request, output *T) *kilonova.StatusError {
+func parseJSONBody[T any](r *http.Request, output *T) *kilonova.StatusError {
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(output); err != nil {
@@ -471,7 +471,7 @@ func parseRequest[T any](r *http.Request, output *T) *kilonova.StatusError {
 	}
 
 	if contentType == "application/json" {
-		return parseJsonBody(r, output)
+		return parseJSONBody(r, output)
 	}
 
 	if err := r.ParseForm(); err != nil {

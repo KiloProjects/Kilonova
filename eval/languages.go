@@ -2,7 +2,7 @@ package eval
 
 import "path"
 
-const MAGIC_REPLACE = "<REPLACE>"
+const MagicReplace = "<REPLACE>"
 
 func GetLangByFilename(filename string) string {
 	fileExt := path.Ext(filename)
@@ -27,7 +27,7 @@ var Langs = map[string]Language{
 		PrintableName: "C",
 		InternalName:  "c",
 
-		CompileCommand: []string{"gcc", "-fuse-ld=mold", "-std=c11", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
+		CompileCommand: []string{"gcc", "-fuse-ld=mold", "-std=c11", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.c",
 		CompiledName:   "/box/output",
@@ -40,7 +40,7 @@ var Langs = map[string]Language{
 		PrintableName: "C++11",
 		InternalName:  "cpp",
 
-		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++11", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
+		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++11", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.cpp",
 		CompiledName:   "/box/output",
@@ -53,7 +53,7 @@ var Langs = map[string]Language{
 		PrintableName: "C++14",
 		InternalName:  "cpp14",
 
-		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++14", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
+		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++14", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.cpp",
 		CompiledName:   "/box/output",
@@ -66,7 +66,7 @@ var Langs = map[string]Language{
 		PrintableName: "C++17",
 		InternalName:  "cpp17",
 
-		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++17", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
+		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++17", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.cpp",
 		CompiledName:   "/box/output",
@@ -79,7 +79,7 @@ var Langs = map[string]Language{
 		PrintableName: "C++20",
 		InternalName:  "cpp20",
 
-		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++20", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MAGIC_REPLACE, "-o", "/box/output"},
+		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++20", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.cpp",
 		CompiledName:   "/box/output",
@@ -95,7 +95,7 @@ var Langs = map[string]Language{
 		PrintableName: "Pascal",
 		InternalName:  "pascal",
 
-		CompileCommand: []string{"fpc", "-O2", "-XSst", "-Mobjfpc", "-vw", "-dKNOVA", "-dONLINE_JUDGE", MAGIC_REPLACE, "-o/box/output"},
+		CompileCommand: []string{"fpc", "-O2", "-XSst", "-Mobjfpc", "-vw", "-dKNOVA", "-dONLINE_JUDGE", MagicReplace, "-o/box/output"},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.pas",
 		CompiledName:   "/box/output",
@@ -109,7 +109,7 @@ var Langs = map[string]Language{
 		PrintableName: "Go",
 		InternalName:  "golang",
 
-		CompileCommand: []string{"/usr/bin/go", "build", MAGIC_REPLACE},
+		CompileCommand: []string{"/usr/bin/go", "build", MagicReplace},
 		RunCommand:     []string{"/box/main"},
 		SourceName:     "/box/main.go",
 		CompiledName:   "/box/main",
@@ -126,7 +126,7 @@ var Langs = map[string]Language{
 		PrintableName: "Haskell",
 		InternalName:  "haskell",
 
-		CompileCommand: []string{"ghc", "-o", "/box/output", MAGIC_REPLACE},
+		CompileCommand: []string{"ghc", "-o", "/box/output", MagicReplace},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.hs",
 		CompiledName:   "/box/output",
@@ -138,7 +138,7 @@ var Langs = map[string]Language{
 		PrintableName: "Java",
 		InternalName:  "java",
 
-		CompileCommand: []string{"javac", MAGIC_REPLACE},
+		CompileCommand: []string{"javac", MagicReplace},
 		RunCommand:     []string{"java", "Main"},
 		SourceName:     "/Main.java",
 		CompiledName:   "/Main.class",

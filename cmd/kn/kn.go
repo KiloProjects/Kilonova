@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/api"
@@ -138,7 +139,8 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 	}
 
 	return &http.Server{
-		Addr:    net.JoinHostPort("localhost", strconv.Itoa(config.Common.Port)),
-		Handler: r,
+		Addr:              net.JoinHostPort("localhost", strconv.Itoa(config.Common.Port)),
+		Handler:           r,
+		ReadHeaderTimeout: 1 * time.Minute,
 	}
 }

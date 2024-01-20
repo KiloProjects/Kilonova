@@ -85,7 +85,7 @@ func (s *API) updateBoolFlags(w http.ResponseWriter, r *http.Request) {
 		StringFlags map[string]string `json:"string_flags"`
 		IntFlags    map[string]int    `json:"int_flags"`
 	}
-	if err := parseJsonBody(r, &args); err != nil {
+	if err := parseJSONBody(r, &args); err != nil {
 		err.WriteError(w)
 		return
 	}

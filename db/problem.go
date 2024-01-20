@@ -225,7 +225,7 @@ func problemFilterQuery(filter *kilonova.ProblemFilter, fb *filterBuilder) {
 		fb.AddConstraint("visible = %s", v)
 	}
 	if filter.Look {
-		var id int = 0
+		var id int
 		if filter.LookingUser != nil {
 			id = filter.LookingUser.ID
 		}
