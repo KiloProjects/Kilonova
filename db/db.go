@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path"
 	"sync"
 	"time"
@@ -16,13 +15,13 @@ import (
 	"github.com/jackc/pgx/v5/tracelog"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	pgxdecimal "github.com/jackc/pgx-shopspring-decimal"
 )
 
 var (
 	loggerOnce sync.Once
-	loggerFile *os.File
 	dbLogger   *zap.Logger
 )
 
@@ -134,12 +133,11 @@ func toSingular[T1, T2 any](ctx context.Context, filter T1, f func(ctx context.C
 
 func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]interface{}) {
 	loggerOnce.Do(func() {
-		var err error
-		loggerFile, err = os.OpenFile(path.Join(config.Common.LogDir, "db.log"), os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-		if err != nil {
-			zap.S().Fatal("Could not open db.log for writing")
-		}
-		dbLogger = zap.New(kilonova.GetZapCore(config.Common.Debug, false, loggerFile), zap.AddCaller())
+		dbLogger = zap.New(kilonova.GetZapCore(config.Common.Debug, false, &lumberjack.Logger{
+			Filename: path.Join(config.Common.LogDir, "db.log"),
+			MaxSize:  20, // MB
+			Compress: true,
+		}), zap.AddCaller())
 	})
 
 	if msg == "Prepare" {

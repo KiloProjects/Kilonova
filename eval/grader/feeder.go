@@ -3,7 +3,6 @@ package grader
 import (
 	"context"
 	"errors"
-	"os"
 	"path"
 	"sync"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"go.uber.org/zap"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
@@ -24,7 +24,7 @@ var (
 	// I have only one question: "Why are you doing it?"
 	openAction   sync.Once
 	closeAction  sync.Once
-	logFile      *os.File
+	logFile      *lumberjack.Logger
 	graderLogger *zap.SugaredLogger
 )
 
@@ -41,10 +41,10 @@ func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, *kilonova
 	wCh := make(chan struct{}, 1)
 
 	openAction.Do(func() {
-		var err error
-		logFile, err = os.OpenFile(path.Join(config.Common.LogDir, "grader.log"), os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-		if err != nil {
-			zap.S().Fatal("Could not open grader.log for writing")
+		logFile = &lumberjack.Logger{
+			Filename: path.Join(config.Common.LogDir, "grader.log"),
+			MaxSize:  20, //MB
+			Compress: true,
 		}
 		graderLogger = zap.New(kilonova.GetZapCore(config.Common.Debug, false, logFile), zap.AddCaller()).Sugar()
 	})
