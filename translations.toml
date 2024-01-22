@@ -1388,6 +1388,10 @@ ro = "rezultate"
 en = "results"
 ro = "de rezultate"
 
+[results]
+en = "Latest results"
+ro = "Ultimele rezultate"
+
 [seeOne]
 en = "See one more submission"
 ro = "Vezi încă o submisie"

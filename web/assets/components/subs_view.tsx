@@ -9,7 +9,6 @@ import { SubmissionQuery, Submissions, defaultClient } from "../api/client";
 import { icpcVerdictString } from "./sub_mgr";
 
 export function rezStr(count: number, truncatedCount: boolean = false): string {
-	let truncCnt = truncatedCount ? `>${count}` : count.toString();
 	if (count < 0) {
 		return `- ${getText("u20Results")}`;
 	}
@@ -20,9 +19,12 @@ export function rezStr(count: number, truncatedCount: boolean = false): string {
 		return getText("oneResult");
 	}
 	if (count < 20) {
-		return `${truncCnt} ${getText("u20Results")}`;
+		return `${count} ${getText("u20Results")}`;
 	}
-	return `${truncCnt} ${getText("manyResults")}`;
+	if (truncatedCount) {
+		return getText("results");
+	}
+	return `${count} ${getText("manyResults")}`;
 }
 
 const status = (sub: Submission): string | h.JSX.Element => {
