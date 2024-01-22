@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"sync"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -65,9 +66,7 @@ func NewPSQL(ctx context.Context, dsn string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	if LogQueries.Value() {
-		pgconf.ConnConfig.Tracer = &tracelog.TraceLog{Logger: tracelog.LoggerFunc(log), LogLevel: tracelog.LogLevelDebug}
-	}
+	pgconf.ConnConfig.Tracer = &tracelog.TraceLog{Logger: tracelog.LoggerFunc(log), LogLevel: tracelog.LogLevelDebug}
 
 	pgconf.MaxConns = 40
 	pgconf.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
@@ -143,25 +142,42 @@ func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[stri
 		dbLogger = zap.New(kilonova.GetZapCore(config.Common.Debug, false, loggerFile), zap.AddCaller())
 	})
 
-	fields := make([]zapcore.Field, len(data))
-	i := 0
-	for k, v := range data {
-		fields[i] = zap.Any(k, v)
-		i++
+	if msg == "Prepare" {
+		return
 	}
 
-	switch level {
-	case tracelog.LogLevelTrace:
-		dbLogger.Debug(msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
-	case tracelog.LogLevelDebug:
-		dbLogger.Debug(msg, fields...)
-	case tracelog.LogLevelInfo:
-		dbLogger.Info(msg, fields...)
-	case tracelog.LogLevelWarn:
-		dbLogger.Warn(msg, fields...)
-	case tracelog.LogLevelError:
-		dbLogger.Error(msg, fields...)
-	default:
-		dbLogger.Error(msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
+	dur, ok := data["time"].(time.Duration)
+	if ok {
+		if dur > 1*time.Second {
+			dbLogger.Sugar().Warnf("Really slow operation (%s): %q %#v", dur, data["sql"], data["args"])
+		}
+	} else {
+		zap.S().Warnf("DB time is not duration", data["time"])
+	}
+
+	if LogQueries.Value() {
+		//zap.S().Infof("%s %q %#v", data["time"], data["sql"], data["args"])
+
+		fields := make([]zapcore.Field, len(data))
+		i := 0
+		for k, v := range data {
+			fields[i] = zap.Any(k, v)
+			i++
+		}
+
+		switch level {
+		case tracelog.LogLevelTrace:
+			dbLogger.Debug(msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
+		case tracelog.LogLevelDebug:
+			dbLogger.Debug(msg, fields...)
+		case tracelog.LogLevelInfo:
+			dbLogger.Info(msg, fields...)
+		case tracelog.LogLevelWarn:
+			dbLogger.Warn(msg, fields...)
+		case tracelog.LogLevelError:
+			dbLogger.Error(msg, fields...)
+		default:
+			dbLogger.Error(msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
+		}
 	}
 }
