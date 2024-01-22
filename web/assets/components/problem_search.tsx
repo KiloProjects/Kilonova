@@ -355,7 +355,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 	return (
 		<div class="segment-panel">
 			<h1>{getText("problems")}</h1>
-			<h2>{rezStr(count)}</h2>
+			<h2>{rezStr(count, false)}</h2>
 			<div class="flex mx-auto gap-2 align-middle my-2">
 				<input
 					class="form-input grow"

@@ -2,14 +2,10 @@ package datastore
 
 import (
 	"compress/gzip"
-	"errors"
 	"io"
-	"io/fs"
 	"os"
 	"path"
 	"strconv"
-
-	"go.uber.org/zap"
 )
 
 // SubtestWriter should be used by the eval server
@@ -29,57 +25,4 @@ func (m *StorageManager) SubtestReader(subtest int) (io.ReadCloser, error) {
 
 func (m *StorageManager) SubtestPath(subtest int) string {
 	return path.Join(m.RootPath, "subtests", strconv.Itoa(subtest))
-}
-
-type gzipFileWriter struct {
-	f  *os.File
-	gz *gzip.Writer
-}
-
-func (fw *gzipFileWriter) Write(p []byte) (int, error) {
-	return fw.gz.Write(p)
-}
-
-func (fw *gzipFileWriter) Close() error {
-	err2 := fw.gz.Close()
-	err := fw.f.Close()
-	if err == nil && err2 != nil {
-		err = err2
-		zap.S().Warn(err2)
-	}
-	return err
-}
-
-type gzipFileReader struct {
-	f  *os.File
-	gz *gzip.Reader
-}
-
-func (fw *gzipFileReader) Read(p []byte) (int, error) {
-	return fw.gz.Read(p)
-}
-
-func (fw *gzipFileReader) Close() error {
-	err2 := fw.gz.Close()
-	err := fw.f.Close()
-	if err == nil && err2 != nil {
-		err = err2
-		zap.S().Warn(err2)
-	}
-	return err
-}
-
-func openGzipOrNormal(fpath string) (io.ReadCloser, error) {
-	f, err := os.Open(fpath + ".gz")
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return os.Open(fpath)
-		}
-		return nil, err
-	}
-	gz, err := gzip.NewReader(f)
-	if err != nil {
-		return nil, err
-	}
-	return &gzipFileReader{f, gz}, nil
 }

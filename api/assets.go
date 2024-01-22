@@ -304,7 +304,7 @@ func (s *Assets) ServeSubtest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rc, err := s.base.SubtestReader(subtest.ID)
+	rc, err := s.base.GraderStore().SubtestReader(subtest.ID)
 	if err != nil {
 		http.Error(w, "The subtest may have been purged as a routine data-saving process", 404)
 		return
@@ -315,7 +315,7 @@ func (s *Assets) ServeSubtest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Assets) ServeTestInput(w http.ResponseWriter, r *http.Request) {
-	rr, err := s.base.TestInput(util.Test(r).ID)
+	rr, err := s.base.GraderStore().TestInput(util.Test(r).ID)
 	if err != nil {
 		zap.S().Warn(err)
 		http.Error(w, "Couldn't get test input", 500)
@@ -331,7 +331,7 @@ func (s *Assets) ServeTestInput(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Assets) ServeTestOutput(w http.ResponseWriter, r *http.Request) {
-	rr, err := s.base.TestOutput(util.Test(r).ID)
+	rr, err := s.base.GraderStore().TestOutput(util.Test(r).ID)
 	if err != nil {
 		zap.S().Warn(err)
 		http.Error(w, "Couldn't get test output", 500)

@@ -65,7 +65,7 @@ func (ag *archiveGenerator) addTests(ctx context.Context) *kilonova.StatusError 
 				return kilonova.WrapError(err, "Couldn't create archive file")
 			}
 
-			r, err := ag.base.TestInput(test.ID)
+			r, err := ag.base.GraderStore().TestInput(test.ID)
 			if err != nil {
 				return kilonova.WrapError(err, "Couldn't get test input")
 			}
@@ -84,7 +84,7 @@ func (ag *archiveGenerator) addTests(ctx context.Context) *kilonova.StatusError 
 				return kilonova.WrapError(err, "Couldn't create archive file")
 			}
 
-			r, err := ag.base.TestOutput(test.ID)
+			r, err := ag.base.GraderStore().TestOutput(test.ID)
 			if err != nil {
 				return kilonova.WrapError(err, "Couldn't get test output")
 			}

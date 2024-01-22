@@ -8,7 +8,8 @@ import { dayjs, getGradient, sizeFormatter } from "../util";
 import { SubmissionQuery, Submissions, defaultClient } from "../api/client";
 import { icpcVerdictString } from "./sub_mgr";
 
-export function rezStr(count: number): string {
+export function rezStr(count: number, truncatedCount: boolean = false): string {
+	let truncCnt = truncatedCount ? `>${count}` : count.toString();
 	if (count < 0) {
 		return `- ${getText("u20Results")}`;
 	}
@@ -19,9 +20,9 @@ export function rezStr(count: number): string {
 		return getText("oneResult");
 	}
 	if (count < 20) {
-		return `${count} ${getText("u20Results")}`;
+		return `${truncCnt} ${getText("u20Results")}`;
 	}
-	return `${count} ${getText("manyResults")}`;
+	return `${truncCnt} ${getText("manyResults")}`;
 }
 
 const status = (sub: Submission): string | h.JSX.Element => {
@@ -118,12 +119,14 @@ function SubsView(props: SubsViewProps) {
 	let [query, updQuery] = useState<SubmissionQuery>(getInitialData(overwrites));
 	let [subs, setSubs] = useState<Submissions | undefined>(undefined);
 	let [count, setCount] = useState<number>(-1);
+	let [truncatedCount, setTruncatedCount] = useState<boolean>(false);
 	let [initialLoad, setInitialLoad] = useState(true);
 
 	const setQuery = (q: SubmissionQuery, ignoreReset?: boolean) => {
 		updQuery(q);
 		if (!ignoreReset) {
 			setCount(-1);
+			setTruncatedCount(false);
 		}
 	};
 
@@ -144,6 +147,7 @@ function SubsView(props: SubsViewProps) {
 
 		setSubs(data);
 		setCount(data.count);
+		setTruncatedCount(data.truncated_count);
 		setLoading(false);
 		setInitialLoad(false);
 		let str = getQuery().toString();
@@ -168,6 +172,7 @@ function SubsView(props: SubsViewProps) {
 		const historyPopEvent = async (e) => {
 			setSubs(undefined);
 			setCount(-1);
+			setTruncatedCount(false);
 			setLoading(true);
 			setInitialLoad(true);
 			updQuery(getInitialData(overwrites));
@@ -448,7 +453,7 @@ function SubsView(props: SubsViewProps) {
 				{typeof props.title !== "undefined" && <h1>{props.title}</h1>}
 				{!initialLoad && (
 					<>
-						<h2 class="inline-block">{rezStr(count)}</h2>
+						<h2 class="inline-block">{rezStr(count, truncatedCount)}</h2>
 						<div class="flex justify-center">
 							{count > 0 ? (
 								<Paginator

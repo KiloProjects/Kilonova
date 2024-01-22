@@ -231,13 +231,13 @@ func ReadOrTruncate(r io.Reader) ([]byte, bool) {
 }
 
 func (t *TestEditParams) GetFullTests() testDataType {
-	in, err := t.base.TestInput(t.Test.ID)
+	in, err := t.base.GraderStore().TestInput(t.Test.ID)
 	if err != nil {
 		return testDataType{In: "err", Out: "err"}
 	}
 	defer in.Close()
 
-	out, err := t.base.TestOutput(t.Test.ID)
+	out, err := t.base.GraderStore().TestOutput(t.Test.ID)
 	if err != nil {
 		return testDataType{In: "err", Out: "err"}
 	}

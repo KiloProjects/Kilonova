@@ -16,6 +16,8 @@ var (
 	SubForEveryoneConfig = config.GenFlag("behavior.everyone_subs", true, "Anyone can view others' source code")
 
 	PastesEnabled = config.GenFlag("feature.pastes.enabled", true, "Pastes")
+
+	LimitedSubCount = config.GenFlag[int]("behavior.submissions.max_viewing_count", 9999, "Maximum number of submissions to count on subs page. Set to < 0 to disable")
 )
 
 // Submission stuff
@@ -36,7 +38,7 @@ func (s *BaseAPI) ContestMaxScore(ctx context.Context, uid, pbID, contestID int,
 	return s.db.ContestMaxScore(ctx, uid, pbID, contestID, freezeTime)
 }
 
-func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova.Submission, look bool, lookingUser *UserBrief) (*Submissions, *StatusError) {
+func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova.Submission, look bool, lookingUser *UserBrief, truncatedCnt bool) (*Submissions, *StatusError) {
 	usersMap := make(map[int]*UserBrief)
 	problemsMap := make(map[int]*kilonova.Problem)
 
@@ -106,6 +108,7 @@ func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova
 	return &Submissions{
 		Submissions: subs,
 		Count:       cnt,
+		Truncated:   truncatedCnt,
 		Users:       usersMap,
 		Problems:    problemsMap,
 	}, nil
@@ -134,7 +137,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		return nil, ErrUnknownError
 	}
 
-	cnt, err := s.db.SubmissionCount(ctx, filter)
+	cnt, err := s.db.SubmissionCount(ctx, filter, LimitedSubCount.Value()+1)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return nil, ErrContextCanceled
@@ -143,7 +146,13 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		return nil, ErrUnknownError
 	}
 
-	return s.fillSubmissions(ctx, cnt, subs, look, lookingUser)
+	var truncated bool
+	if LimitedSubCount.Value() > 0 && cnt > LimitedSubCount.Value() {
+		cnt--
+		truncated = true
+	}
+
+	return s.fillSubmissions(ctx, cnt, subs, look, lookingUser, truncated)
 }
 
 // Remember to do proper authorization when using this
@@ -259,7 +268,7 @@ func (s *BaseAPI) RemainingSubmissionCount(ctx context.Context, contest *kilonov
 		ContestID: &contest.ID,
 		ProblemID: &problem.ID,
 		UserID:    &user.ID,
-	})
+	}, -1)
 	if err != nil {
 		return -1, WrapError(err, "Couldn't get submission count")
 	}
@@ -295,7 +304,7 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserFull, proble
 		cnt, err := s.db.SubmissionCount(ctx, kilonova.SubmissionFilter{
 			UserID:  &author.ID,
 			Waiting: true,
-		})
+		}, -1)
 		if err != nil {
 			return -1, Statusf(500, "Couldn't get unfinished submission count")
 		}
@@ -308,7 +317,7 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserFull, proble
 		cnt, err = s.db.SubmissionCount(ctx, kilonova.SubmissionFilter{
 			UserID: &author.ID,
 			Since:  &t,
-		})
+		}, -1)
 		if err != nil {
 			return -1, Statusf(500, "Couldn't get recent submission count")
 		}

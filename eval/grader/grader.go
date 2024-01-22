@@ -26,8 +26,8 @@ var (
 	acceptedVerdict = "test_verdict.accepted"
 )
 
-func genSubCompileRequest(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submission, pb *kilonova.Problem, settings *kilonova.ProblemEvalSettings) (*eval.CompileRequest, *kilonova.StatusError) {
-	req := &eval.CompileRequest{
+func genSubCompileRequest(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submission, pb *kilonova.Problem, settings *kilonova.ProblemEvalSettings) (*tasks.CompileRequest, *kilonova.StatusError) {
+	req := &tasks.CompileRequest{
 		ID:          sub.ID,
 		Lang:        sub.Language,
 		CodeFiles:   make(map[string][]byte),
@@ -157,7 +157,7 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	return nil
 }
 
-func handleClassicSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, problem *kilonova.Problem, checker eval.Checker, subTests []*kilonova.SubTest) *kilonova.StatusError {
+func handleClassicSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, problem *kilonova.Problem, checker checkers.Checker, subTests []*kilonova.SubTest) *kilonova.StatusError {
 
 	var wg sync.WaitGroup
 
@@ -183,7 +183,7 @@ func handleClassicSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner 
 	return nil
 }
 
-func handleICPCSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, problem *kilonova.Problem, checker eval.Checker, subTests []*kilonova.SubTest) *kilonova.StatusError {
+func handleICPCSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, problem *kilonova.Problem, checker checkers.Checker, subTests []*kilonova.SubTest) *kilonova.StatusError {
 	var failed bool
 	var upd kilonova.SubmissionUpdate
 	upd.Status = kilonova.StatusFinished
@@ -289,19 +289,21 @@ func compileSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	return nil
 }
 
-func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, checker eval.Checker, sub *kilonova.Submission, problem *kilonova.Problem, subTest *kilonova.SubTest) (decimal.Decimal, string, error) {
+func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, checker checkers.Checker, sub *kilonova.Submission, problem *kilonova.Problem, subTest *kilonova.SubTest) (decimal.Decimal, string, error) {
 	if subTest.TestID == nil {
 		zap.S().Error("A subtest whose test was purged was detected.", spew.Sdump(subTest))
 		return decimal.Zero, "", kilonova.Statusf(400, "Trying to handle subtest whose test was purged. This should never happen")
 	}
 
-	tin, err := base.TestInput(*subTest.TestID)
+	ds := base.GraderStore()
+
+	tin, err := ds.TestInput(*subTest.TestID)
 	if err != nil {
 		return decimal.Zero, "", kilonova.Statusf(500, "Couldn't open test input")
 	}
 	defer tin.Close()
 
-	execRequest := &eval.ExecRequest{
+	execRequest := &tasks.ExecRequest{
 		SubID:       sub.ID,
 		SubtestID:   subTest.ID,
 		Filename:    problem.TestName,
@@ -314,7 +316,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 		execRequest.Filename = "stdin"
 	}
 
-	resp, err := tasks.GetExecuteTask(graderLogger, base).Run(ctx, runner, int64(problem.MemoryLimit), execRequest)
+	resp, err := tasks.GetExecuteTask(graderLogger, ds).Run(ctx, runner, int64(problem.MemoryLimit), execRequest)
 	if err != nil {
 		return decimal.Zero, "", kilonova.WrapError(err, "Couldn't execute subtest")
 	}
@@ -328,7 +330,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 
 	if resp.Comments == "" {
 		var skipped bool
-		tin, err := base.TestInput(*subTest.TestID)
+		tin, err := ds.TestInput(*subTest.TestID)
 		if err != nil {
 			resp.Comments = "translate:internal_error"
 			skipped = true
@@ -336,7 +338,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 		if tin != nil {
 			defer tin.Close()
 		}
-		tout, err := base.TestOutput(*subTest.TestID)
+		tout, err := ds.TestOutput(*subTest.TestID)
 		if err != nil {
 			resp.Comments = "translate:internal_error"
 			skipped = true
@@ -344,7 +346,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 		if tout != nil {
 			defer tout.Close()
 		}
-		sout, err := base.SubtestReader(subTest.ID)
+		sout, err := ds.SubtestReader(subTest.ID)
 		if err != nil {
 			resp.Comments = "translate:internal_error"
 			skipped = true
@@ -464,7 +466,7 @@ func getAppropriateRunner(base *sudoapi.BaseAPI) (eval.BoxScheduler, error) {
 	}
 
 	zap.S().Info("Trying to spin up local grader")
-	bm, err := scheduler.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, base, graderLogger, boxFunc)
+	bm, err := scheduler.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, base.GraderStore(), graderLogger, boxFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -473,20 +475,20 @@ func getAppropriateRunner(base *sudoapi.BaseAPI) (eval.BoxScheduler, error) {
 	return bm, nil
 }
 
-func getAppropriateChecker(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, pb *kilonova.Problem, settings *kilonova.ProblemEvalSettings) (eval.Checker, error) {
+func getAppropriateChecker(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, pb *kilonova.Problem, settings *kilonova.ProblemEvalSettings) (checkers.Checker, error) {
 	if settings.CheckerName == "" {
 		return &checkers.DiffChecker{}, nil
 	}
-		att, err := base.ProblemAttByName(ctx, pb.ID, settings.CheckerName)
-		if err != nil {
-			return nil, kilonova.WrapError(err, "Couldn't get problem checker metadata")
-		}
-		data, err := base.ProblemAttDataByName(ctx, pb.ID, settings.CheckerName)
-		if err != nil {
-			return nil, kilonova.WrapError(err, "Couldn't get problem checker code")
-		}
-		if settings.LegacyChecker {
-			return checkers.NewLegacyCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data, att.LastUpdatedAt), nil
-		}
-		return checkers.NewStandardCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data, att.LastUpdatedAt), nil
+	att, err := base.ProblemAttByName(ctx, pb.ID, settings.CheckerName)
+	if err != nil {
+		return nil, kilonova.WrapError(err, "Couldn't get problem checker metadata")
+	}
+	data, err := base.ProblemAttDataByName(ctx, pb.ID, settings.CheckerName)
+	if err != nil {
+		return nil, kilonova.WrapError(err, "Couldn't get problem checker code")
+	}
+	if settings.LegacyChecker {
+		return checkers.NewLegacyCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data, att.LastUpdatedAt), nil
+	}
+	return checkers.NewStandardCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data, att.LastUpdatedAt), nil
 }

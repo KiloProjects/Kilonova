@@ -107,9 +107,13 @@ func launchProfiler() error {
 	return http.ListenAndServe(":6080", mux)
 }
 
+var (
+	listenHost = config.GenFlag[string]("server.listen.host", "localhost", "Host to listen to")
+	listenPort = config.GenFlag[int]("server.listen.port", 8070, "Port to listen on")
+)
+
 // initialize webserver for public api+web
 func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
-
 	// Initialize router
 	r := chi.NewRouter()
 
@@ -122,7 +126,7 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 		MaxAge:           300,
 	}))
 
-	r.Use(middleware.RealIP)
+	// r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.StripSlashes)
 	//r.Use(middleware.Timeout(1 * time.Minute))
@@ -139,7 +143,7 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 	}
 
 	return &http.Server{
-		Addr:              net.JoinHostPort("localhost", strconv.Itoa(config.Common.Port)),
+		Addr:              net.JoinHostPort(listenHost.Value(), strconv.Itoa(listenPort.Value())),
 		Handler:           r,
 		ReadHeaderTimeout: 1 * time.Minute,
 	}

@@ -1,15 +1,12 @@
 package datastore
 
 import (
-	"compress/gzip"
 	"errors"
 	"io"
 	"io/fs"
 	"os"
 	"path"
 	"strconv"
-
-	"vimagination.zapto.org/dos2unix"
 )
 
 func (m *StorageManager) TestInput(testID int) (io.ReadCloser, error) {
@@ -54,20 +51,4 @@ func (m *StorageManager) PurgeTestData(testID int) error {
 		return err4
 	}
 	return nil
-}
-
-func writeCompressedFile(path string, r io.Reader, perms fs.FileMode) error {
-	f, err := os.OpenFile(path+".gz", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perms)
-	if err != nil {
-		return err
-	}
-	gz := gzip.NewWriter(f)
-	_, err = io.Copy(gz, dos2unix.DOS2Unix(r))
-	if err1 := gz.Close(); err1 != nil && err == nil {
-		err = err1
-	}
-	if err1 := f.Close(); err1 != nil && err == nil {
-		err = err1
-	}
-	return err
 }

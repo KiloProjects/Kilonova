@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/shopspring/decimal"
 )
 
@@ -17,7 +16,7 @@ const (
 	WrongOut   = "translate:wrong"
 )
 
-var _ eval.Checker = &DiffChecker{}
+var _ Checker = &DiffChecker{}
 
 type DiffChecker struct{}
 
@@ -47,8 +46,7 @@ func (d *DiffChecker) RunChecker(ctx context.Context, pOut, _, cOut io.Reader) (
 		return ErrOut, decimal.Zero
 	}
 
-	cmd := exec.CommandContext(ctx, "diff", "-qBbEa", tf.Name(), cf.Name())
-	if err := cmd.Run(); err != nil {
+	if err := exec.CommandContext(ctx, "diff", "-qBbEa", tf.Name(), cf.Name()).Run(); err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
 			if exitErr.ExitCode() == 0 {

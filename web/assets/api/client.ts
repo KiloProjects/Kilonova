@@ -36,6 +36,7 @@ type RequestParams = {
 export type Submissions = {
 	submissions: Submission[];
 	count: number;
+	truncated_count: boolean;
 	users: Record<string, UserBrief>;
 	problems: Record<string, Problem>;
 };

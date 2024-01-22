@@ -36,7 +36,7 @@ const (
 
 var (
 	DonationsEnabled = config.GenFlag[bool]("frontend.donations.enabled", true, "Donations page enabled")
-	DonationsNag     = config.GenFlag[bool]("frontent.donation.frontpage_nag", true, "Donations front page notification")
+	DonationsNag     = config.GenFlag[bool]("frontend.donation.frontpage_nag", true, "Donations front page notification")
 
 	MainPageLogin = config.GenFlag[bool]("feature.frontend.main_page_login", false, "Login modal on front page")
 

@@ -20,10 +20,12 @@ type UserBrief = kilonova.UserBrief
 type UserFull = kilonova.UserFull
 
 type Submissions struct {
-	Submissions []*kilonova.Submission    `json:"submissions"`
-	Count       int                       `json:"count"`
-	Users       map[int]*UserBrief        `json:"users"`
-	Problems    map[int]*kilonova.Problem `json:"problems"`
+	Submissions []*kilonova.Submission `json:"submissions"`
+	Count       int                    `json:"count"`
+	Truncated   bool                   `json:"truncated_count"`
+
+	Users    map[int]*UserBrief        `json:"users"`
+	Problems map[int]*kilonova.Problem `json:"problems"`
 }
 
 type BaseAPI struct {

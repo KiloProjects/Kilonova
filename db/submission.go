@@ -79,11 +79,17 @@ func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) 
 	return mapper(subs, s.internalToSubmission), nil
 }
 
-func (s *DB) SubmissionCount(ctx context.Context, filter kilonova.SubmissionFilter) (int, error) {
+func (s *DB) SubmissionCount(ctx context.Context, filter kilonova.SubmissionFilter, limit int) (int, error) {
 	fb := newFilterBuilder()
 	subFilterQuery(&filter, fb, UseLateralVisibility.Value())
+	lat := lateralVisibleSubs(&filter, fb)
+	query := fmt.Sprintf("SELECT COUNT(*) FROM submissions %s WHERE %s", lat, fb.Where())
+	if limit > 0 {
+		lim := fb.FormatString("LIMIT %s", limit)
+		query = fmt.Sprintf("SELECT COUNT(*) FROM (SELECT 1 FROM submissions %s WHERE %s %s) sbc", lat, fb.Where(), lim)
+	}
 	var val int
-	err := s.conn.QueryRow(ctx, fmt.Sprintf("SELECT COUNT(*) FROM submissions %s WHERE %s", lateralVisibleSubs(&filter, fb), fb.Where()), fb.Args()...).Scan(&val)
+	err := s.conn.QueryRow(ctx, query, fb.Args()...).Scan(&val)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return -1, err

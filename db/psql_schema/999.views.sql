@@ -277,12 +277,10 @@ CREATE OR REPLACE FUNCTION visible_submissions(user_id bigint) RETURNS TABLE (su
         WHERE users.contest_id = subs.contest_id AND users.user_id = $1 AND subs.contest_id IS NOT NULL) -- contest staff if contest is not null
     UNION ALL
     (SELECT subs.id as sub_id
-        FROM submissions subs, contests, contest_problems c_pbs, v_pbs
+        FROM submissions subs, contests, v_pbs
         WHERE EXISTS (SELECT 1 FROM visible_contests($1) viz WHERE contests.id = viz.contest_id)
-        AND contests.id = subs.contest_id AND contests.id = c_pbs.contest_id
-        AND c_pbs.problem_id = subs.problem_id AND v_pbs.problem_id = c_pbs.problem_id
-        AND contests.end_time <= NOW()) -- ended contest, so everyone that can see the contest can also see submission
-            -- (if they can see the contest, they can also see the problem, since it ended)
+        AND contests.id = subs.contest_id AND v_pbs.problem_id = subs.problem_id
+        AND contests.end_time <= NOW()) -- if the contest ended and the problem is visible, show the submission
 $$ LANGUAGE SQL STABLE;
 
 DROP VIEW IF EXISTS problem_list_deep_problems;

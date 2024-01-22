@@ -122,7 +122,7 @@ func (b *IsolateBox) buildRunFlags(c *eval.RunConfig) (res []string) {
 	return
 }
 
-// WriteFile writes a file to the specified path inside the box
+// WriteFile writes an eval file to the specified path inside the box
 func (b *IsolateBox) WriteFile(fpath string, r io.Reader, mode fs.FileMode) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -162,9 +162,7 @@ func (b *IsolateBox) Close() error {
 }
 
 func (b *IsolateBox) runCommand(ctx context.Context, params []string, metaFile string) (*eval.RunStats, error) {
-	cmd := exec.CommandContext(ctx, config.Eval.IsolatePath, params...)
-
-	err := cmd.Run()
+	err := exec.CommandContext(ctx, config.Eval.IsolatePath, params...).Run()
 	if _, ok := err.(*exec.ExitError); err != nil && !ok {
 		spew.Dump(err)
 		return nil, err

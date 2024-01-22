@@ -55,7 +55,6 @@ type CommonConf struct {
 	DataDir     string `toml:"data_dir"`
 	Debug       bool   `toml:"debug"`
 	HostPrefix  string `toml:"host_prefix"`
-	Port        int    `toml:"port"`
 	DefaultLang string `toml:"default_language"`
 
 	DBDSN string `toml:"db_dsn"`

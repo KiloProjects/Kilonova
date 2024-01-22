@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
@@ -11,9 +12,26 @@ import (
 	"go.uber.org/zap"
 )
 
-func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Task[eval.ExecRequest, eval.ExecResponse] {
-	return func(ctx context.Context, box eval.Sandbox, req *eval.ExecRequest) (*eval.ExecResponse, error) {
-		resp := &eval.ExecResponse{}
+type ExecRequest struct {
+	SubID       int
+	SubtestID   int
+	Filename    string
+	MemoryLimit int
+	TimeLimit   float64
+	Lang        string
+	TestInput   io.Reader
+}
+
+type ExecResponse struct {
+	Time       float64
+	Memory     int
+	ExitStatus int
+	Comments   string
+}
+
+func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Task[ExecRequest, ExecResponse] {
+	return func(ctx context.Context, box eval.Sandbox, req *ExecRequest) (*ExecResponse, error) {
+		resp := &ExecResponse{}
 		logger.Infof("Executing test %d (for submission #%d) using box %d", req.SubtestID, req.SubID, box.GetID())
 
 		if err := box.WriteFile("/box/"+req.Filename+".in", req.TestInput, 0644); err != nil {

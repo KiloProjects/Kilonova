@@ -15,11 +15,26 @@ import (
 	"go.uber.org/zap"
 )
 
+type CompileRequest struct {
+	ID          int
+	CodeFiles   map[string][]byte
+	HeaderFiles map[string][]byte
+	Lang        string
+}
+
+type CompileResponse struct {
+	Output  string
+	Success bool
+	Other   string
+
+	Stats *eval.RunStats
+}
+
 const compileOutputLimit = 4500 // runes
 
-func GetCompileTask(logger *zap.SugaredLogger) eval.Task[eval.CompileRequest, eval.CompileResponse] {
-	return func(ctx context.Context, box eval.Sandbox, req *eval.CompileRequest) (*eval.CompileResponse, error) {
-		resp := &eval.CompileResponse{}
+func GetCompileTask(logger *zap.SugaredLogger) eval.Task[CompileRequest, CompileResponse] {
+	return func(ctx context.Context, box eval.Sandbox, req *CompileRequest) (*CompileResponse, error) {
+		resp := &CompileResponse{}
 		logger.Infof("Compiling file using box %d", box.GetID())
 
 		lang, ok := eval.Langs[req.Lang]

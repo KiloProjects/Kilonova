@@ -7,22 +7,8 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ kilonova.DataStore = &BaseAPI{}
-
-func (s *BaseAPI) TestInput(testID int) (io.ReadCloser, error) {
-	r, err := s.manager.TestInput(testID)
-	if err != nil {
-		return nil, WrapError(err, "Could not open test input")
-	}
-	return r, nil
-}
-
-func (s *BaseAPI) TestOutput(testID int) (io.ReadCloser, error) {
-	r, err := s.manager.TestOutput(testID)
-	if err != nil {
-		return nil, WrapError(err, "Could not open test input")
-	}
-	return r, nil
+func (s *BaseAPI) GraderStore() kilonova.GraderStore {
+	return s.manager
 }
 
 func (s *BaseAPI) PurgeTestData(testID int) error {
@@ -44,22 +30,6 @@ func (s *BaseAPI) SaveTestOutput(testID int, output io.Reader) error {
 		return WrapError(err, "Could not save test output")
 	}
 	return nil
-}
-
-func (s *BaseAPI) SubtestWriter(subtest int) (io.WriteCloser, error) {
-	w, err := s.manager.SubtestWriter(subtest)
-	if err != nil {
-		return nil, WrapError(err, "Could not open subtest writer")
-	}
-	return w, nil
-}
-
-func (s *BaseAPI) SubtestReader(subtest int) (io.ReadCloser, error) {
-	r, err := s.manager.SubtestReader(subtest)
-	if err != nil {
-		return nil, WrapError(err, "Could not open subtest reader")
-	}
-	return r, nil
 }
 
 func (s *BaseAPI) HasAttachmentRender(attID int, renderType string) bool {

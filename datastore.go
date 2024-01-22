@@ -17,11 +17,6 @@ type GraderStore interface {
 	TestInput(testID int) (io.ReadCloser, error)
 	TestOutput(testID int) (io.ReadCloser, error)
 
-	PurgeTestData(testID int) error
-
-	SaveTestInput(testID int, input io.Reader) error
-	SaveTestOutput(testID int, output io.Reader) error
-
 	SubtestWriter(subtest int) (io.WriteCloser, error)
 	SubtestReader(subtest int) (io.ReadCloser, error)
 }
@@ -30,6 +25,10 @@ type GraderStore interface {
 type DataStore interface {
 	GraderStore
 
+	PurgeTestData(testID int) error
+
+	SaveTestInput(testID int, input io.Reader) error
+	SaveTestOutput(testID int, output io.Reader) error
 	HasAttachmentRender(attID int, renderType string) bool
 	GetAttachmentRender(attID int, renderType string) (io.ReadCloser, error)
 	DelAttachmentRender(attID int, renderType string) error

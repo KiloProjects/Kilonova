@@ -410,6 +410,7 @@ CREATE INDEX IF NOT EXISTS blog_post_author ON blog_posts (author_id);
 
 CREATE INDEX IF NOT EXISTS contest_access_index ON contest_user_access (contest_id);
 CREATE INDEX IF NOT EXISTS contest_problems_index ON contest_problems (contest_id);
+CREATE INDEX IF NOT EXISTS contest_problems_pbid_index ON contest_problems (problem_id);
 CREATE INDEX IF NOT EXISTS contest_registrations_index ON contest_registrations (contest_id);
 CREATE INDEX IF NOT EXISTS contest_questions_index ON contest_questions (contest_id);
 CREATE INDEX IF NOT EXISTS contest_announcements_index ON contest_announcements (contest_id);

@@ -27,7 +27,7 @@ const (
 
 var checkerPrepareMu sync.RWMutex
 
-var _ eval.Checker = &customChecker{}
+var _ Checker = &customChecker{}
 
 //go:embed checkerdata/testlib.h
 var testlibFile []byte
@@ -82,7 +82,7 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	checkerPrepareMu.Lock()
 	defer checkerPrepareMu.Unlock()
 
-	resp, err := tasks.GetCompileTask(c.Logger).Run(ctx, c.mgr, 0, &eval.CompileRequest{
+	resp, err := tasks.GetCompileTask(c.Logger).Run(ctx, c.mgr, 0, &tasks.CompileRequest{
 		ID: -c.pb.ID,
 		CodeFiles: map[string][]byte{
 			eval.Langs[eval.GetLangByFilename(c.filename)].SourceName: c.code,
@@ -134,11 +134,11 @@ func (c *customChecker) Cleanup(_ context.Context) error {
 	return nil // eval.CleanCompilation(-c.sub.ID)
 }
 
-func NewLegacyCustomChecker(mgr eval.BoxScheduler, logger *zap.SugaredLogger, pb *kilonova.Problem, sub *kilonova.Submission, filename string, code []byte, lastUpdatedAt time.Time) eval.Checker {
+func NewLegacyCustomChecker(mgr eval.BoxScheduler, logger *zap.SugaredLogger, pb *kilonova.Problem, sub *kilonova.Submission, filename string, code []byte, lastUpdatedAt time.Time) Checker {
 	return &customChecker{mgr, pb, sub, filename, code, lastUpdatedAt, logger, true}
 }
 
-func NewStandardCustomChecker(mgr eval.BoxScheduler, logger *zap.SugaredLogger, pb *kilonova.Problem, sub *kilonova.Submission, filename string, code []byte, lastUpdatedAt time.Time) eval.Checker {
+func NewStandardCustomChecker(mgr eval.BoxScheduler, logger *zap.SugaredLogger, pb *kilonova.Problem, sub *kilonova.Submission, filename string, code []byte, lastUpdatedAt time.Time) Checker {
 	return &customChecker{mgr, pb, sub, filename, code, lastUpdatedAt, logger, false}
 }
 

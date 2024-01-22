@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -30,8 +31,7 @@ func CopyInBox(b Sandbox, p1 string, p2 string) error {
 // makeGoodCommand makes sure it's a full path (with no symlinks) for the command.
 // Some languages (like java) are hidden pretty deep in symlinks, and we don't want a hardcoded path that could be different on other platforms.
 func MakeGoodCommand(command []string) ([]string, error) {
-	tmp := make([]string, len(command))
-	copy(tmp, command)
+	tmp := slices.Clone(command)
 
 	if strings.HasPrefix(tmp[0], "/box") {
 		return tmp, nil
