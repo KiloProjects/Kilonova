@@ -1,15 +1,18 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
@@ -439,6 +442,26 @@ func (s *API) resendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Verification email resent")
 }
 
+var generatedUserTempl = template.Must(template.New("emailTempl").Parse(`<p>Hey, {{.Name}}!</p>
+
+<p>Contul tău Kilonova a fost creat. Acestea sunt datele tale de autentificare:</p>
+
+<p>Username: <code>{{.Username}}</code><br/>
+Parolă: <code>{{.Password}}</code></p>
+
+
+{{if .Contest}}
+{{$url := printf "%s/contests/%d" .HostPrefix .Contest.ID}}
+<p>În momentul creării contului, ai fost înscris automat în <a href="{{$url}}">{{.Contest.Name}}</a>. 
+Link-ul permanent pentru pagina concursului este: <a href="{{$url}}">{{$url}}</a></p>
+{{end}}
+
+<p>Mult spor în continuare!</p>
+
+<hr/>
+<p>Echipa Kilonova<br/>
+<a href="https://kilonova.ro/">https://kilonova.ro/</a></p>`))
+
 func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
@@ -448,20 +471,85 @@ func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 
 		Email       *string `json:"email"`
 		DisplayName *string `json:"display_name"`
+
+		ContestID      *int `json:"contest_id"`
+		PasswordByMail bool `json:"password_by_mail"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 500)
 		return
 	}
 
+	if args.PasswordByMail {
+		if !s.base.MailerEnabled() {
+			errorData(w, "Mailer has been disabled, but sending password by email was enabled.", 400)
+			return
+		}
+		if args.Email == nil {
+			errorData(w, "Cannot send password by email if no address was given", 400)
+			return
+		}
+	}
+
 	if args.Password == "" {
 		args.Password = kilonova.RandomString(7)
+	}
+
+	var contest *kilonova.Contest
+	if args.ContestID != nil {
+		contest2, err := s.base.Contest(r.Context(), *args.ContestID)
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+		contest = contest2
 	}
 
 	user, err := s.base.GenerateUser(r.Context(), args.Name, args.Password, args.Lang, kilonova.PreferredThemeDark, args.DisplayName, args.Email)
 	if err != nil {
 		err.WriteError(w)
 		return
+	}
+
+	if contest != nil {
+		if err := s.base.RegisterContestUser(r.Context(), contest, user.ID, nil, true); err != nil {
+			err.WriteError(w)
+			return
+		}
+	}
+
+	if args.PasswordByMail {
+		emailArgs := struct {
+			Name       string
+			Username   string
+			Password   string
+			Contest    *kilonova.Contest
+			HostPrefix string
+		}{
+			Name:       user.Name,
+			Username:   user.Name,
+			Password:   args.Password,
+			Contest:    contest,
+			HostPrefix: config.Common.HostPrefix,
+		}
+		if user.DisplayName != "" {
+			emailArgs.Name = user.DisplayName
+		}
+		var b bytes.Buffer
+		if err := generatedUserTempl.Execute(&b, emailArgs); err != nil {
+			zap.S().Error("Error rendering password send email:", err)
+			errorData(w, "Could not render email", 500)
+			return
+		}
+		if err := s.base.SendMail(&kilonova.MailerMessage{
+			To:          *args.Email,
+			Subject:     "Date de autentificare cont Kilonova",
+			HTMLContent: b.String(),
+		}); err != nil {
+			zap.S().Warn(err)
+			err.WriteError(w)
+			return
+		}
 	}
 
 	returnData(w, struct {

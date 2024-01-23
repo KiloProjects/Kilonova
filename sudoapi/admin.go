@@ -107,6 +107,16 @@ func (s *BaseAPI) SetProposer(ctx context.Context, userID int, toSet bool) *Stat
 	return s.updateUser(ctx, userID, kilonova.UserFullUpdate{Proposer: &toSet})
 }
 
+func (s *BaseAPI) SendMail(msg *kilonova.MailerMessage) *StatusError {
+	if !s.MailerEnabled() {
+		return Statusf(http.StatusServiceUnavailable, "Mailer is disabled")
+	}
+	if err := s.mailer.SendEmail(msg); err != nil {
+		return WrapError(err, "Could not send mail")
+	}
+	return nil
+}
+
 type logEntry struct {
 	Message string
 	Author  *kilonova.UserBrief
