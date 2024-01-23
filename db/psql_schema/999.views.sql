@@ -166,11 +166,11 @@ DROP FUNCTION IF EXISTS contest_max_scores(bigint);
 DROP FUNCTION IF EXISTS contest_max_scores(bigint, timestamptz);
 CREATE OR REPLACE FUNCTION contest_max_scores(contest_id bigint, freeze_time timestamptz) RETURNS TABLE(user_id bigint, problem_id bigint, score decimal, mintime timestamptz) AS $$
     WITH max_submission_strat AS (
-        SELECT DISTINCT user_id, problem_id, FIRST_VALUE(score) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
+        SELECT DISTINCT user_id, problem_id, FIRST_VALUE(score * (leaderboard_score_scale / 100)) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
             FROM submissions WHERE contest_id = $1 AND created_at <= COALESCE(freeze_time, NOW()) AND (status = 'finished' OR status = 'reevaling')
             WINDOW w AS (PARTITION BY user_id, problem_id ORDER BY score DESC, created_at ASC)
     ), subtask_max_scores AS (
-        SELECT DISTINCT user_id, subtask_id, problem_id, FIRST_VALUE(computed_score) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
+        SELECT DISTINCT user_id, subtask_id, problem_id, FIRST_VALUE(computed_score * (leaderboard_score_scale / 100)) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
         FROM submission_subtasks stks
         WHERE subtask_id IS NOT NULL AND contest_id = $1
             AND created_at <= COALESCE(freeze_time, NOW())

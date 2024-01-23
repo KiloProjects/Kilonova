@@ -32,6 +32,8 @@ type dbProblem struct {
 
 	SourceCredits string `db:"source_credits"`
 
+	ScoreScale decimal.Decimal `db:"leaderboard_score_scale"`
+
 	// Eval stuff
 	ConsoleInput   bool  `db:"console_input"`
 	DigitPrecision int32 `db:"digit_precision"`
@@ -287,6 +289,9 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate, ub *updateBuilder) {
 	if v := upd.DefaultPoints; v != nil {
 		ub.AddUpdate("default_points = %s", v)
 	}
+	if v := upd.ScoreScale; v != nil {
+		ub.AddUpdate("leaderboard_score_scale = %s", v)
+	}
 
 	if v := upd.SourceCredits; v != nil {
 		ub.AddUpdate("source_credits = %s", strings.TrimSpace(*v))
@@ -357,6 +362,8 @@ func (s *DB) internalToProblem(pb *dbProblem) *kilonova.Problem {
 		SourceSize:  pb.SourceSize,
 
 		SourceCredits: pb.SourceCredits,
+
+		ScoreScale: pb.ScoreScale,
 
 		ConsoleInput:   pb.ConsoleInput,
 		ScorePrecision: pb.DigitPrecision,

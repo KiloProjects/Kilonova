@@ -41,6 +41,9 @@ type Problem struct {
 
 	SourceCredits string `json:"source_credits"`
 
+	// Used only for leaderboard scoring right now
+	ScoreScale decimal.Decimal `json:"score_scale"`
+
 	// Eval stuff
 	ConsoleInput   bool  `json:"console_input"`
 	ScorePrecision int32 `json:"score_precision"`
@@ -118,6 +121,8 @@ type ProblemUpdate struct {
 	TestName *string `json:"test_name"`
 
 	DefaultPoints *decimal.Decimal `json:"default_points"`
+
+	ScoreScale *decimal.Decimal `json:"score_scale"`
 
 	TimeLimit   *float64 `json:"time_limit"`
 	MemoryLimit *int     `json:"memory_limit"`

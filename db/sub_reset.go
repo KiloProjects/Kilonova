@@ -34,7 +34,7 @@ func clearSubs(ctx context.Context, tx pgx.Tx, filter kilonova.SubmissionFilter)
 	// Reset submission data:
 	if _, err := tx.Exec(ctx, `
 		UPDATE submissions 
-			SET status = 'creating', score = 0, max_time = -1, max_memory = -1, compile_error = false, compile_message = '', icpc_verdict = NULL, compile_duration = NULL 
+			SET status = 'creating', score = 0, max_time = -1, max_memory = -1, compile_error = false, compile_message = '', icpc_verdict = NULL, compile_duration = NULL, leaderboard_score_scale = 100
 			WHERE `+fb.Where(), fb.Args()...); err != nil {
 		return err
 	}
@@ -61,7 +61,8 @@ func initSubs(ctx context.Context, tx pgx.Tx, filter kilonova.SubmissionFilter) 
 			CASE (SELECT scoring_strategy FROM problems WHERE problems.id = problem_id)
 				WHEN 'acm-icpc' THEN 'acm-icpc'::eval_type
 				ELSE 'classic'::eval_type
-			END
+			END,
+		leaderboard_score_scale = COALESCE((SELECT leaderboard_score_scale FROM problems WHERE problems.id = problem_id), leaderboard_score_scale)
 	WHERE `+fb.Where(), fb.Args()...); err != nil {
 		return err
 	}
@@ -79,9 +80,9 @@ func initSubs(ctx context.Context, tx pgx.Tx, filter kilonova.SubmissionFilter) 
 	// Init subtasks
 	if _, err := tx.Exec(ctx, fmt.Sprintf(`
 	INSERT INTO submission_subtasks 
-	(user_id, created_at, submission_id, contest_id, subtask_id, problem_id, visible_id, digit_precision, score) 
+	(user_id, created_at, submission_id, contest_id, subtask_id, problem_id, visible_id, digit_precision, score, leaderboard_score_scale) 
 		WITH subs_to_add AS (SELECT * FROM submissions WHERE %s)
-	SELECT subs.user_id, subs.created_at AS created_at, subs.id AS submission_id, subs.contest_id, stks.id AS subtask_id, stks.problem_id AS problem_id, stks.visible_id, subs.digit_precision AS digit_precision, stks.score AS score 
+	SELECT subs.user_id, subs.created_at AS created_at, subs.id AS submission_id, subs.contest_id, stks.id AS subtask_id, stks.problem_id AS problem_id, stks.visible_id, subs.digit_precision AS digit_precision, stks.score AS score, subs.leaderboard_score_scale AS leaderboard_score_scale
 	FROM subs_to_add subs, subtasks stks 
 	WHERE subs.problem_id = stks.problem_id`, fb.Where()), fb.Args()...); err != nil {
 		return err

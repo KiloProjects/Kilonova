@@ -46,15 +46,27 @@
                     <span class="ml-1 text-xl">{{getText "seconds"}}</span>
                 </label>
                 <label class="block my-2">
-                    <span class="form-label">{{getText "defaultPoints"}}:</span>
-                    <input id="defaultPoints" class="form-input" type="number" min="0" max="100" step="{{scoreStep .Problem}}" pattern="[\d]*\.?[\d]*"
-                        value="{{.Problem.DefaultPoints}}" />
-                </label>
-                <label class="block my-2">
                     <span class="form-label">{{getText "scorePrecision"}}:</span>
                     <input id="scorePrecision" class="form-input" type="number" min="0" max="4" step="1" pattern="[\d]*"
                         value="{{.Problem.ScorePrecision}}" />
                 </label>
+
+                <details>
+                    <summary>
+                        {{getText "advancedOptions"}}
+                    </summary>
+                    <label class="block my-2">
+                        <span class="form-label">{{getText "defaultPoints"}}:</span>
+                        <input id="defaultPoints" class="form-input" type="number" min="0" max="100" step="{{scoreStep .Problem}}" pattern="[\d]*\.?[\d]*"
+                            value="{{.Problem.DefaultPoints}}" />
+                    </label>
+                    <label class="block my-2">
+                        <span class="form-label">{{getText "scoreScale"}}:</span>
+                        <input id="scoreScale" class="form-input" type="number" min="0" max="10000" step="{{scoreStep .Problem}}" pattern="[\d]*\.?[\d]*"
+                            value="{{.Problem.ScoreScale}}" />
+                    </label>
+                </details>
+
                 <label class="block my-2">
                     <input id="visibleTests" class="form-checkbox" type="checkbox" {{if .Problem.VisibleTests}}checked{{end}}>
                     <span class="form-label ml-2">{{getText "visibleTests"}}</span>
@@ -170,6 +182,7 @@
             memory_limit: Math.trunc(parseFloat(document.getElementById("memoryLimit").value) * 1024),
             time_limit: parseFloat(document.getElementById("timeLimit").value),
             default_points: parseFloat(document.getElementById("defaultPoints").value),
+            score_scale: parseFloat(document.getElementById("scoreScale").value),
             score_precision: parseInt(document.getElementById("scorePrecision").value),
             visible_tests: document.getElementById("visibleTests").checked,
         }

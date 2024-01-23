@@ -675,6 +675,10 @@ ro = "secunde"
 en = "Points by default"
 ro = "Puncte din oficiu"
 
+[scoreScale]
+en = "Max score in leaderboard"
+ro = "Scor maxim în clasament"
+
 [scorePrecision]
 en = "Score precision (decimals after dot)"
 ro = "Precizie scor (zecimale după virgulă)"
@@ -1056,9 +1060,13 @@ ro = "Copiere link filtre"
 en = "Filters"
 ro = "Filtre"
 
-[advancedOptions]
+[advancedFilters]
 en = "Advanced filters"
 ro = "Filtre avansate"
+
+[advancedOptions]
+en = "Advanced options"
+ro = "Opțiuni avansate"
 
 [viewingFromList]
 en = "Viewing problems from"

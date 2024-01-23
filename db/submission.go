@@ -41,6 +41,8 @@ type dbSubmission struct {
 
 	CompileDuration *float64 `db:"compile_duration"`
 
+	ScoreScale decimal.Decimal `db:"leaderboard_score_scale"`
+
 	SubmissionType kilonova.EvalType `db:"submission_type"`
 	ICPCVerdict    *string           `db:"icpc_verdict"`
 }
@@ -346,6 +348,7 @@ func (s *DB) internalToSubmission(sub *dbSubmission) *kilonova.Submission {
 		ContestID:      sub.ContestID,
 		Score:          sub.Score,
 		ScorePrecision: sub.ScorePrecision,
+		ScoreScale:     sub.ScoreScale,
 
 		CompileTime: sub.CompileDuration,
 

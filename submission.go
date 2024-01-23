@@ -47,6 +47,8 @@ type Submission struct {
 
 	Score          decimal.Decimal `json:"score"`
 	ScorePrecision int32           `json:"score_precision"`
+	// Used only for leaderboard scoring right now
+	ScoreScale decimal.Decimal `json:"score_scale"`
 
 	CompileTime *float64 `json:"compile_time"`
 

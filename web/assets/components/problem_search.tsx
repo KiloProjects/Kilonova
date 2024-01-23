@@ -371,7 +371,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 					value={query.textQuery}
 				/>
 				<button class="btn btn-blue" onClick={() => setAdvOptions(!advOptions)}>
-					{getText("advancedOptions")} <i class={`ml-1 fas ${advOptions ? "fa-caret-up" : "fa-caret-down"}`}></i>
+					{getText("advancedFilters")} <i class={`ml-1 fas ${advOptions ? "fa-caret-up" : "fa-caret-down"}`}></i>
 				</button>
 			</div>
 
