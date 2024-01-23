@@ -147,6 +147,8 @@ type SubmissionSubTask struct {
 	Score           decimal.Decimal  `json:"score"`
 	FinalPercentage *decimal.Decimal `json:"final_percentage,omitempty"`
 
+	ScoreScale *decimal.Decimal `json:"score_scale"`
+
 	ScorePrecision int `json:"score_precision"`
 
 	Subtests []int `json:"subtests"`

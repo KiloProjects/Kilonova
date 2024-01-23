@@ -25,6 +25,8 @@ type subSubtask struct {
 	Score           decimal.Decimal  `db:"score"`
 	FinalPercentage *decimal.Decimal `db:"final_percentage"`
 
+	ScoreScale *decimal.Decimal `db:"leaderboard_score_scale"`
+
 	ComputedScore decimal.Decimal `db:"computed_score"`
 }
 
