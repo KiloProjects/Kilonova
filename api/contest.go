@@ -276,7 +276,7 @@ func (s *API) askContestQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := s.base.CreateContestQuestion(r.Context(), util.Contest(r).ID, util.UserBrief(r).ID, args.Text); err != nil {
+	if _, err := s.base.CreateContestQuestion(r.Context(), util.Contest(r), util.UserBrief(r).ID, args.Text); err != nil {
 		err.WriteError(w)
 		return
 	}

@@ -65,6 +65,9 @@ type Contest struct {
 	LeaderboardFreeze     *time.Time      `json:"leaderboard_freeze"`
 	ICPCSubmissionPenalty int             `json:"icpc_submission_penalty"`
 
+	SubmissionCooldown time.Duration `json:"submission_cooldown"`
+	QuestionCooldown   time.Duration `json:"question_cooldown"`
+
 	StartTime time.Time `json:"start_time"`
 	EndTime   time.Time `json:"end_time"`
 
@@ -158,6 +161,11 @@ type ContestUpdate struct {
 
 	ChangeLeaderboardFreeze bool       `json:"change_leaderboard_freeze"`
 	LeaderboardFreeze       *time.Time `json:"leaderboard_freeze"`
+
+	// Normally I'd put a *time.Duration directly here, but schema has a hard time decoding them
+	// So the convention is: the unit is an integer number of milliseconds (the resolution set in the DB)
+	SubmissionCooldown *int `json:"submission_cooldown"`
+	QuestionCooldown   *int `json:"question_cooldown"`
 
 	Type ContestType `json:"type"`
 

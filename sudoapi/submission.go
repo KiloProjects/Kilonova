@@ -3,6 +3,7 @@ package sudoapi
 import (
 	"context"
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -278,6 +279,14 @@ func (s *BaseAPI) RemainingSubmissionCount(ctx context.Context, contest *kilonov
 	return contest.MaxSubs - cnt, nil
 }
 
+func (s *BaseAPI) LastSubmissionTime(ctx context.Context, filter kilonova.SubmissionFilter) (*time.Time, *StatusError) {
+	t, err := s.db.LastSubmissionTime(ctx, filter)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't get last submission time")
+	}
+	return t, nil
+}
+
 var (
 	WaitingSubLimit    = config.GenFlag[int]("behavior.submissions.user_max_waiting", 5, "Maximum number of unfinished submissions in the eval queue (for a single user)")
 	TotalSubLimit      = config.GenFlag[int]("behavior.submissions.user_max_minute", 20, "Maximum number of submissions uploaded per minute (for a single user with verified email)")
@@ -350,7 +359,21 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserFull, proble
 			return -1, err
 		}
 		if cnt <= 0 {
-			return -1, Statusf(400, "Max submission count for problem reached")
+			return -1, Statusf(http.StatusTooManyRequests, "Max submission count for problem reached")
+		}
+		if !s.IsContestTester(author.Brief(), contest) && contest.SubmissionCooldown > 0 {
+			t, err := s.LastSubmissionTime(ctx, kilonova.SubmissionFilter{
+				ContestID: &contest.ID,
+				UserID:    &author.ID,
+			})
+			if err != nil {
+				return -1, err
+			}
+			if t != nil {
+				if d := contest.SubmissionCooldown - time.Since(*t); d > 0 {
+					return -1, Statusf(http.StatusTooManyRequests, "You are going too fast! Please wait %d more second(s) before submitting again.", int(d.Seconds())+1)
+				}
+			}
 		}
 	} else {
 		// Check that the problem is fully visible (ie. outside of a contest medium)

@@ -37,6 +37,9 @@ type dbContest struct {
 	PerUserTime           int  `db:"per_user_time"`
 	RegisterDuringContest bool `db:"register_during_contest"`
 
+	SubmissionCooldown int `db:"submission_cooldown_ms"`
+	QuestionCooldown   int `db:"question_cooldown_ms"`
+
 	Type kilonova.ContestType `db:"type"`
 }
 
@@ -412,6 +415,12 @@ func contestUpdateQuery(upd *kilonova.ContestUpdate, ub *updateBuilder) {
 	if v := upd.ICPCSubmissionPenalty; v != nil {
 		ub.AddUpdate("icpc_submission_penalty = %s", v)
 	}
+	if v := upd.QuestionCooldown; v != nil {
+		ub.AddUpdate("question_cooldown_ms = %s", v)
+	}
+	if v := upd.SubmissionCooldown; v != nil {
+		ub.AddUpdate("submission_cooldown_ms = %s", v)
+	}
 	if v := upd.PerUserTime; v != nil {
 		ub.AddUpdate("per_user_time = %s", v)
 	}
@@ -472,6 +481,9 @@ func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilono
 		ICPCSubmissionPenalty: contest.ICPCSubmissionPenalty,
 
 		RegisterDuringContest: contest.RegisterDuringContest,
+
+		SubmissionCooldown: time.Millisecond * time.Duration(contest.SubmissionCooldown),
+		QuestionCooldown:   time.Millisecond * time.Duration(contest.QuestionCooldown),
 
 		Visible: contest.Visible,
 		Type:    contest.Type,

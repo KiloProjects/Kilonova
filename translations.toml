@@ -1807,9 +1807,25 @@ ro = "pentru a te înregistra în concurs"
 en = "Registered"
 ro = "Înregistrat"
 
+[header.contest.main]
+en = "Update contest"
+ro = "Actualizare concurs"
+
 [header.contest.general]
-en = "Edit Contest Information"
-ro = "Editare Informații Concurs"
+en = "Contest Information"
+ro = "Informații Concurs"
+
+[header.contest.limits]
+en = "Contestant Limits"
+ro = "Limite Concurenți"
+
+[questionCooldown]
+en = "Question cooldown"
+ro = "Cooldown întrebări"
+
+[submissionCooldown]
+en = "Submission cooldown"
+ro = "Cooldown submisii"
 
 [header.contest.leaderboard]
 en = "Leaderboard settings"

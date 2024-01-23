@@ -99,6 +99,21 @@ func (s *DB) SubmissionCount(ctx context.Context, filter kilonova.SubmissionFilt
 	return val, nil
 }
 
+func (s *DB) LastSubmissionTime(ctx context.Context, filter kilonova.SubmissionFilter) (*time.Time, error) {
+	fb := newFilterBuilder()
+	subFilterQuery(&filter, fb, UseLateralVisibility.Value())
+	query := fmt.Sprintf("SELECT MAX(created_at) FROM submissions %s WHERE %s", lateralVisibleSubs(&filter, fb), fb.Where())
+	var val *time.Time
+	err := s.conn.QueryRow(ctx, query, fb.Args()...).Scan(&val)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return nil, err
+		}
+		val = nil
+	}
+	return val, nil
+}
+
 const createSubQuery = "INSERT INTO submissions (user_id, problem_id, contest_id, language, code) VALUES ($1, $2, $3, $4, $5) RETURNING id;"
 
 func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, language eval.Language, code string, contestID *int) (int, error) {

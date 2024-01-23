@@ -2,13 +2,27 @@ package sudoapi
 
 import (
 	"context"
+	"net/http"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
 )
 
-func (s *BaseAPI) CreateContestQuestion(ctx context.Context, contestID, authorID int, text string) (int, *StatusError) {
-	id, err := s.db.CreateContestQuestion(ctx, contestID, authorID, text)
+func (s *BaseAPI) CreateContestQuestion(ctx context.Context, contest *kilonova.Contest, authorID int, text string) (int, *StatusError) {
+	if contest.QuestionCooldown > 0 {
+		question, err := s.db.ContestQuestions(ctx, db.QuestionFilter{ContestID: &contest.ID, AuthorID: &authorID})
+		if err != nil {
+			return -1, WrapError(err, "Could not check for question cooldown")
+		}
+		if len(question) > 0 {
+			if d := contest.QuestionCooldown - time.Since(question[0].AskedAt); d > 0 {
+				return -1, Statusf(http.StatusTooManyRequests, "You are going too fast! Please wait %d more second(s) before asking another question.", int(d.Seconds())+1)
+			}
+		}
+	}
+
+	id, err := s.db.CreateContestQuestion(ctx, contest.ID, authorID, text)
 	if err != nil {
 		return -1, WrapError(err, "Couldn't ask question")
 	}
