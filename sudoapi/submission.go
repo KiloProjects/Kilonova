@@ -57,7 +57,9 @@ func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova
 		IDs: userIDs,
 	})
 	if err != nil {
-		zap.S().Warnf("Error getting users: %v", err)
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warnf("Error getting users: %v", err)
+		}
 		return nil, WrapError(err, "Couldn't get users")
 	}
 	for _, user := range users {
@@ -138,7 +140,13 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		return nil, ErrUnknownError
 	}
 
-	cnt, err := s.db.SubmissionCount(ctx, filter, LimitedSubCount.Value()+1)
+	maxCnt := LimitedSubCount.Value()
+	if filter.ContestID != nil || filter.ProblemID != nil {
+		// Never filter on these, for now.
+		maxCnt = -100
+	}
+
+	cnt, err := s.db.SubmissionCount(ctx, filter, maxCnt+1)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return nil, ErrContextCanceled
@@ -148,7 +156,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 	}
 
 	var truncated bool
-	if LimitedSubCount.Value() > 0 && cnt > LimitedSubCount.Value() {
+	if maxCnt > 0 && cnt > maxCnt {
 		cnt--
 		truncated = true
 	}
