@@ -116,9 +116,11 @@ func (s *BaseAPI) VisibleFutureContests(ctx context.Context, user *kilonova.User
 		LookingUser: user,
 		Ascending:   true,
 	}
+	var uid = -1
 	if user != nil {
-		filter.ImportantContestsUID = &user.ID
+		uid = user.ID
 	}
+	filter.ImportantContestsUID = &uid
 	return s.Contests(ctx, filter)
 }
 
@@ -130,9 +132,11 @@ func (s *BaseAPI) VisibleRunningContests(ctx context.Context, user *kilonova.Use
 		Ascending:   true,
 		Ordering:    "end_time",
 	}
+	var uid = -1
 	if user != nil {
-		filter.ImportantContestsUID = &user.ID
+		uid = user.ID
 	}
+	filter.ImportantContestsUID = &uid
 	return s.Contests(ctx, filter)
 }
 
