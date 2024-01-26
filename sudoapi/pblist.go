@@ -27,7 +27,7 @@ func (s *BaseAPI) ProblemListByName(ctx context.Context, name string) (*kilonova
 
 // Returns a list of problems in the slice's order
 func (s *BaseAPI) ProblemListProblems(ctx context.Context, ids []int, lookingUser *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
-	pbs, err := s.ScoredProblems(ctx, kilonova.ProblemFilter{IDs: ids, LookingUser: lookingUser, Look: true}, lookingUser)
+	pbs, err := s.ScoredProblems(ctx, kilonova.ProblemFilter{IDs: ids, LookingUser: lookingUser, Look: true}, lookingUser, lookingUser)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func (s *BaseAPI) FullProblemList(ctx context.Context, listID int, user *kilonov
 		return nil, err
 	}
 	// Get all problems
-	pbs, err := s.ScoredProblems(ctx, kilonova.ProblemFilter{Look: true, LookingUser: lookingUser, DeepListID: &listID}, user)
+	pbs, err := s.ScoredProblems(ctx, kilonova.ProblemFilter{Look: true, LookingUser: lookingUser, DeepListID: &listID}, user, lookingUser)
 	if err != nil {
 		return nil, err
 	}

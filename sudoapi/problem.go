@@ -20,14 +20,6 @@ func (s *BaseAPI) Problem(ctx context.Context, id int) (*kilonova.Problem, *Stat
 	return problem, nil
 }
 
-func (s *BaseAPI) ScoredProblem(ctx context.Context, problemID int, userID int) (*kilonova.ScoredProblem, *StatusError) {
-	problem, err := s.db.ScoredProblem(ctx, problemID, userID)
-	if err != nil || problem == nil {
-		return nil, WrapError(err, "Problem not found")
-	}
-	return problem, nil
-}
-
 // `updater` is an optional parameter, specifying the author of the change. It handles the visibility change option.
 // Visibility is the only parameter that can not be updated by a mere problem editor, it requires admin permissions!
 // Please note that, if updater is not specified, the function won't attempt to ensure correct permissions for visibility.
@@ -101,12 +93,16 @@ func (s *BaseAPI) Problems(ctx context.Context, filter kilonova.ProblemFilter) (
 	return problems, nil
 }
 
-func (s *BaseAPI) ScoredProblems(ctx context.Context, filter kilonova.ProblemFilter, user *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
-	uid := -1
-	if user != nil {
-		uid = user.ID
+func (s *BaseAPI) ScoredProblems(ctx context.Context, filter kilonova.ProblemFilter, scoreUser *kilonova.UserBrief, editorUser *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
+	scoreUID := -1
+	if scoreUser != nil {
+		scoreUID = scoreUser.ID
 	}
-	problems, err := s.db.ScoredProblems(ctx, filter, uid)
+	editorUID := -1
+	if editorUser != nil {
+		editorUID = editorUser.ID
+	}
+	problems, err := s.db.ScoredProblems(ctx, filter, scoreUID, editorUID)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
 			zap.S().Warn(err)
@@ -125,18 +121,14 @@ type FullProblem struct {
 }
 
 // SearchProblems is like the functions above but returns more detailed results for problems
-func (s *BaseAPI) SearchProblems(ctx context.Context, filter kilonova.ProblemFilter, user *kilonova.UserBrief) ([]*FullProblem, int, *StatusError) {
-	uid := -1
-	if user != nil {
-		uid = user.ID
-	}
-	pbs, err := s.db.ScoredProblems(ctx, filter, uid)
+func (s *BaseAPI) SearchProblems(ctx context.Context, filter kilonova.ProblemFilter, scoreUser *kilonova.UserBrief, editorUser *kilonova.UserBrief) ([]*FullProblem, int, *StatusError) {
+	pbs, err := s.ScoredProblems(ctx, filter, scoreUser, editorUser)
 	if err != nil {
 		return nil, -1, WrapError(err, "Couldn't get problems")
 	}
-	cnt, err := s.db.CountProblems(ctx, filter)
-	if err != nil {
-		return nil, -1, WrapError(err, "Couldn't get problem count")
+	cnt, err1 := s.db.CountProblems(ctx, filter)
+	if err1 != nil {
+		return nil, -1, WrapError(err1, "Couldn't get problem count")
 	}
 	ids := make([]int, 0, len(pbs))
 	for _, pb := range pbs {
@@ -213,7 +205,7 @@ func (s *BaseAPI) ContestProblem(ctx context.Context, contest *kilonova.Contest,
 	return nil, WrapError(ErrNotFound, "Problem isn't in contest")
 }
 
-// Deprecated. TODO: Remove
+// Deprecated: TODO: Remove
 func (s *BaseAPI) SolvedProblems(ctx context.Context, user *kilonova.UserBrief, lookingUser *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
 	if user == nil {
 		return []*kilonova.ScoredProblem{}, nil
@@ -223,10 +215,10 @@ func (s *BaseAPI) SolvedProblems(ctx context.Context, user *kilonova.UserBrief, 
 
 		Look:        true,
 		LookingUser: lookingUser,
-	}, user)
+	}, user, lookingUser)
 }
 
-// Deprecated. TODO: Remove
+// Deprecated: TODO: Remove
 func (s *BaseAPI) AttemptedProblems(ctx context.Context, user *kilonova.UserBrief, lookingUser *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
 	if user == nil {
 		return []*kilonova.ScoredProblem{}, nil
@@ -236,7 +228,7 @@ func (s *BaseAPI) AttemptedProblems(ctx context.Context, user *kilonova.UserBrie
 
 		Look:        true,
 		LookingUser: lookingUser,
-	}, user)
+	}, user, lookingUser)
 }
 
 func (s *BaseAPI) insertProblem(ctx context.Context, problem *kilonova.Problem, authorID int) (int, *StatusError) {

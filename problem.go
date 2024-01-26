@@ -109,6 +109,9 @@ type ProblemFilter struct {
 	// Unassociated filter ensures that all returned problems are not "bound" to a problem list
 	Unassociated bool `json:"-"`
 
+	// This is actually not used during filtering in DB, it's used by (*api.API).searchProblems
+	ScoreUserID *int `json:"score_user_id"`
+
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
 

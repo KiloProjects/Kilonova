@@ -288,7 +288,16 @@ func (s *API) searchProblems(ctx context.Context, args kilonova.ProblemFilter) (
 		args.Limit = 50
 	}
 
-	problems, cnt, err := s.base.SearchProblems(ctx, args, util.UserBriefContext(ctx))
+	var scoreUser = util.UserBriefContext(ctx)
+	if args.ScoreUserID != nil {
+		user, err := s.base.UserBrief(ctx, *args.ScoreUserID)
+		if err != nil {
+			return nil, err
+		}
+		scoreUser = user
+	}
+
+	problems, cnt, err := s.base.SearchProblems(ctx, args, scoreUser, util.UserBriefContext(ctx))
 	if err != nil {
 		return nil, err
 	}

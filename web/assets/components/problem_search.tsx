@@ -171,6 +171,8 @@ type ProblemQuery = {
 
 	lang?: "ro" | "en";
 
+	score_user_id?: number;
+
 	ordering: ProblemOrdering;
 	descending: boolean;
 };
@@ -240,6 +242,8 @@ function serializeQuery(f: ProblemQuery): any {
 		attempted_by: f.attempted_by,
 
 		lang: f.lang,
+
+		score_user_id: typeof f.score_user_id !== "undefined" ? f.score_user_id : undefined,
 
 		limit: MAX_PER_PAGE,
 		offset: (f.page - 1) * MAX_PER_PAGE,
@@ -735,7 +739,7 @@ function ProblemSolvedByDOM({ enc, count, userid }: { enc: string; count: string
 			enc={enc}
 			count={count}
 			showfull="false"
-			filter={{ textQuery: "", tags: [], page: 1, solved_by: uid, descending: false, ordering: "" }}
+			filter={{ textQuery: "", tags: [], page: 1, solved_by: uid, score_user_id: uid, descending: false, ordering: "" }}
 			scoreView={true}
 			showTags={false}
 		/>
@@ -752,7 +756,7 @@ function ProblemAttemptedByDOM({ enc, count, userid }: { enc: string; count: str
 			enc={enc}
 			count={count}
 			showfull="false"
-			filter={{ textQuery: "", tags: [], page: 1, attempted_by: uid, descending: false, ordering: "" }}
+			filter={{ textQuery: "", tags: [], page: 1, attempted_by: uid, score_user_id: uid, descending: false, ordering: "" }}
 			scoreView={true}
 			showTags={false}
 		/>

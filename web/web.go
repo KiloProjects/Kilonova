@@ -258,7 +258,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"unassociatedProblems": func(user *kilonova.UserBrief) []*kilonova.ScoredProblem {
 			pbs, err := base.ScoredProblems(context.Background(), kilonova.ProblemFilter{
 				LookingUser: user, Look: true, Unassociated: true,
-			}, user)
+			}, user, user)
 			if err != nil {
 				return nil
 			}

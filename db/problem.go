@@ -62,22 +62,6 @@ func (s *DB) Problem(ctx context.Context, id int) (*kilonova.Problem, error) {
 	return s.internalToProblem(&pb), nil
 }
 
-func (s *DB) ScoredProblem(ctx context.Context, problemID int, userID int) (*kilonova.ScoredProblem, error) {
-	var pb dbScoredProblem
-	err := Get(s.conn, ctx, &pb, `SELECT pbs.*, $2 AS user_id, COALESCE(ms.score, -1) AS score, (editors.user_id IS NOT NULL) AS pb_editor
-FROM problems pbs 
-	LEFT JOIN max_score_view ms ON (pbs.id = ms.problem_id AND ms.user_id = $2) 
-	LEFT JOIN LATERAL (SELECT user_id FROM problem_editors editors WHERE pbs.id = editors.problem_id AND editors.user_id = $2 LIMIT 1) editors ON TRUE
-WHERE pbs.id = $1 LIMIT 1`, problemID, userID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return s.internalToScoredProblem(&pb, userID)
-}
-
 func (s *DB) VisibleProblem(ctx context.Context, id int, user *kilonova.UserBrief) (*kilonova.Problem, error) {
 	pbs, err := s.Problems(ctx, kilonova.ProblemFilter{ID: &id, LookingUser: user, Look: true})
 	if err != nil || len(pbs) == 0 {
@@ -99,21 +83,21 @@ func (s *DB) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*ki
 	return mapper(pbs, s.internalToProblem), err
 }
 
-func (s *DB) ScoredProblems(ctx context.Context, filter kilonova.ProblemFilter, userID int) ([]*kilonova.ScoredProblem, error) {
+func (s *DB) ScoredProblems(ctx context.Context, filter kilonova.ProblemFilter, scoreUID, editorUID int) ([]*kilonova.ScoredProblem, error) {
 	var pbs []*dbScoredProblem
-	fb := newFilterBuilderFromPos(userID)
+	fb := newFilterBuilderFromPos(scoreUID, editorUID)
 	problemFilterQuery(&filter, fb)
 
 	query := `SELECT problems.*, $1 AS user_id, COALESCE(ms.score, -1) AS score, (editors.user_id IS NOT NULL) AS pb_editor
 FROM problems 
 	LEFT JOIN max_score_view ms ON (problems.id = ms.problem_id AND ms.user_id = $1)
-	LEFT JOIN LATERAL (SELECT user_id FROM problem_editors editors WHERE problems.id = editors.problem_id AND editors.user_id = $1 LIMIT 1) editors ON TRUE
+	LEFT JOIN LATERAL (SELECT user_id FROM problem_editors editors WHERE problems.id = editors.problem_id AND editors.user_id = $2 LIMIT 1) editors ON TRUE
 WHERE ` + fb.Where() + " " + getProblemOrdering(filter.Ordering, filter.Descending) + " " + FormatLimitOffset(filter.Limit, filter.Offset)
 	err := Select(s.conn, ctx, &pbs, query, fb.Args()...)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.ScoredProblem{}, nil
 	}
-	return s.internalToScoredProblems(pbs, userID), err
+	return s.internalToScoredProblems(pbs, scoreUID), err
 }
 
 func (s *DB) CountProblems(ctx context.Context, filter kilonova.ProblemFilter) (int, error) {
@@ -373,11 +357,11 @@ func (s *DB) internalToProblem(pb *dbProblem) *kilonova.Problem {
 	}
 }
 
-func (s *DB) internalToScoredProblem(spb *dbScoredProblem, userID int) (*kilonova.ScoredProblem, error) {
+func (s *DB) internalToScoredProblem(spb *dbScoredProblem, scoreUID int) (*kilonova.ScoredProblem, error) {
 	pb := s.internalToProblem(&spb.dbProblem)
 	var uid *int
-	if userID > 0 {
-		uid = &userID
+	if scoreUID > 0 {
+		uid = &scoreUID
 	}
 	return &kilonova.ScoredProblem{
 		Problem: *pb,
@@ -388,14 +372,14 @@ func (s *DB) internalToScoredProblem(spb *dbScoredProblem, userID int) (*kilonov
 	}, nil
 }
 
-func (s *DB) internalToScoredProblems(spbs []*dbScoredProblem, userID int) []*kilonova.ScoredProblem {
+func (s *DB) internalToScoredProblems(spbs []*dbScoredProblem, scoreUID int) []*kilonova.ScoredProblem {
 	if len(spbs) == 0 {
 		return []*kilonova.ScoredProblem{}
 	}
 	rez := make([]*kilonova.ScoredProblem, len(spbs))
 	for i := range rez {
 		var err error
-		rez[i], err = s.internalToScoredProblem(spbs[i], userID)
+		rez[i], err = s.internalToScoredProblem(spbs[i], scoreUID)
 		if err != nil && !errors.Is(err, context.Canceled) {
 			zap.S().WithOptions(zap.AddCallerSkip(1)).Warn(err)
 		}

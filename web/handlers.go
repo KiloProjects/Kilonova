@@ -105,7 +105,7 @@ func (rt *Web) index() http.HandlerFunc {
 			LookingUser: util.UserBrief(r), Look: true,
 			Ordering: "hot", Descending: true,
 			Limit: 6,
-		}, util.UserBrief(r))
+		}, util.UserBrief(r), util.UserBrief(r))
 		if err != nil {
 			hotProblems = []*kilonova.ScoredProblem{}
 		}
@@ -242,7 +242,7 @@ func (rt *Web) problems() http.HandlerFunc {
 			Tags:  gr,
 			Limit: 50, Offset: (q.Page - 1) * 50,
 			Ordering: q.Ordering, Descending: q.Descending,
-		}, util.UserBrief(r))
+		}, util.UserBrief(r), util.UserBrief(r))
 		if err != nil {
 			zap.S().Warn(err)
 			// TODO: Maybe not fail to load and insted just load on the browser?
@@ -276,7 +276,7 @@ func (rt *Web) tag() http.HandlerFunc {
 			Tags: []*kilonova.TagGroup{{TagIDs: []int{util.Tag(r).ID}}},
 
 			Limit: 50,
-		}, util.UserBrief(r))
+		}, util.UserBrief(r), util.UserBrief(r))
 		if err != nil {
 			zap.S().Warn("Couldn't fetch tag problems: ", err)
 			pbs = []*sudoapi.FullProblem{}
@@ -1217,7 +1217,7 @@ func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *templa
 		SolvedBy: &user.ID,
 
 		Limit: 50,
-	}, util.UserBrief(r))
+	}, user.Brief(), util.UserBrief(r))
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
 			zap.S().Warn(err)
@@ -1230,7 +1230,7 @@ func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *templa
 		AttemptedBy: &user.ID,
 
 		Limit: 50,
-	}, util.UserBrief(r))
+	}, user.Brief(), util.UserBrief(r))
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
 			zap.S().Warn(err)
