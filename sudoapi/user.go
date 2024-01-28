@@ -83,7 +83,9 @@ func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*UserFull,
 func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([]*UserBrief, *StatusError) {
 	users, err := s.db.Users(ctx, filter)
 	if err != nil {
-		zap.S().Warn(err)
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
 		return nil, ErrUnknownError
 	}
 	return mapUsersBrief(users), nil
