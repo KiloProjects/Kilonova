@@ -30,7 +30,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.12.0
 	github.com/antchfx/xmlquery v1.3.18
 	github.com/disintegration/gift v1.2.1
-	github.com/evanw/esbuild v0.19.11
+	github.com/evanw/esbuild v0.20.0
 	github.com/go-chi/chi/v5 v5.0.11
 	github.com/jackc/pgx-shopspring-decimal v0.0.0-20220624020537-1d36b5a1853e
 	github.com/jackc/pgx/v5 v5.5.2

@@ -277,6 +277,10 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate, ub *updateBuilder) {
 		ub.AddUpdate("leaderboard_score_scale = %s", v)
 	}
 
+	if v := upd.SourceSize; v != nil {
+		ub.AddUpdate("source_size = %s", v)
+	}
+
 	if v := upd.SourceCredits; v != nil {
 		ub.AddUpdate("source_credits = %s", strings.TrimSpace(*v))
 	}

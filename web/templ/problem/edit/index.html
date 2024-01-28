@@ -62,8 +62,15 @@
                     </label>
                     <label class="block my-2">
                         <span class="form-label">{{getText "scoreScale"}}:</span>
-                        <input id="scoreScale" class="form-input" type="number" min="0" max="10000" step="{{scoreStep .Problem}}" pattern="[\d]*\.?[\d]*"
+                        <input id="scoreScale" class="form-input" type="number" min="0" max="10000" step="1" pattern="[\d]*\.?[\d]*"
                             value="{{.Problem.ScoreScale}}" />
+                    </label>
+                    <label class="block my-2">
+                        <span class="form-label">{{getText "sourceSize"}}:</span>
+                        <!--2MB should be a healthy upper limit-->
+                        <input id="sourceSize" class="form-input" type="number" min="100" max="2000000" step="1" pattern="[\d]*" 
+                            value="{{.Problem.SourceSize}}" />
+                        <span class="ml-1 text-xl">Bytes</span>
                     </label>
                 </details>
 
@@ -183,6 +190,7 @@
             time_limit: parseFloat(document.getElementById("timeLimit").value),
             default_points: parseFloat(document.getElementById("defaultPoints").value),
             score_scale: parseFloat(document.getElementById("scoreScale").value),
+            source_size: parseFloat(document.getElementById("sourceSize").value),
             score_precision: parseInt(document.getElementById("scorePrecision").value),
             visible_tests: document.getElementById("visibleTests").checked,
         }
