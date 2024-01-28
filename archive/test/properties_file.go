@@ -54,11 +54,11 @@ func ParsePropertiesFile(r io.Reader) (*PropertiesRaw, bool, error) {
 		if len(line) == 0 || line[0] == '#' {
 			continue
 		}
-		kv := strings.SplitN(line, "=", 2)
-		if len(kv) != 2 {
+		key, val, found := strings.Cut(line, "=")
+		if !found {
 			return nil, false, nil
 		}
-		vals[strings.TrimSpace(kv[0])] = []string{strings.TrimSpace(kv[1])}
+		vals[strings.TrimSpace(key)] = []string{strings.TrimSpace(val)}
 	}
 	if buf.Err() != nil {
 		return nil, false, buf.Err()

@@ -49,8 +49,8 @@ func (m *StorageManager) DelAttachmentRenders(attID int) error {
 		return err
 	}
 	for _, entry := range entries {
-		parts := strings.SplitN(entry.Name(), ".", 2)
-		id, err := strconv.Atoi(parts[0])
+		prefix, _, _ := strings.Cut(entry.Name(), ".")
+		id, err := strconv.Atoi(prefix)
 		if err != nil {
 			zap.S().Warn("Attachment renders should start with attachment ID:", entry.Name())
 			continue

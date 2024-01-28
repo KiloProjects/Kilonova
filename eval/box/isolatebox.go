@@ -250,32 +250,32 @@ func parseMetaFile(r io.Reader) *eval.RunStats {
 	s := bufio.NewScanner(r)
 
 	for s.Scan() {
-		if !strings.Contains(s.Text(), ":") {
+		key, val, found := strings.Cut(s.Text(), ":")
+		if !found {
 			continue
 		}
-		l := strings.SplitN(s.Text(), ":", 2)
-		switch l[0] {
+		switch key {
 		case "cg-mem":
-			file.Memory, _ = strconv.Atoi(l[1])
+			file.Memory, _ = strconv.Atoi(val)
 		case "exitcode":
-			file.ExitCode, _ = strconv.Atoi(l[1])
+			file.ExitCode, _ = strconv.Atoi(val)
 		case "exitsig":
-			file.ExitSignal, _ = strconv.Atoi(l[1])
+			file.ExitSignal, _ = strconv.Atoi(val)
 		case "killed":
 			file.Killed = true
 		case "message":
-			file.Message = l[1]
+			file.Message = val
 		case "status":
-			file.Status = l[1]
+			file.Status = val
 		case "time":
-			file.Time, _ = strconv.ParseFloat(l[1], 32)
+			file.Time, _ = strconv.ParseFloat(val, 32)
 		case "time-wall":
-			// file.WallTime, _ = strconv.ParseFloat(l[1], 32)
+			// file.WallTime, _ = strconv.ParseFloat(val, 32)
 			continue
 		case "max-rss", "csw-voluntary", "csw-forced", "cg-enabled", "cg-oom-killed":
 			continue
 		default:
-			zap.S().Infof("Unknown isolate stat: %q (value: %v)", l[0], l[1])
+			zap.S().Infof("Unknown isolate stat: %q (value: %v)", key, val)
 			continue
 		}
 	}

@@ -72,19 +72,19 @@ func (att *imgAttRenderer) renderAttachment(writer util.BufWriter, source []byte
 	name := parts[0]
 	if len(parts) > 1 {
 		for _, part := range parts {
-			kv := strings.SplitN(part, "=", 2)
-			if len(kv) == 2 {
-				switch kv[0] {
+			key, val, found := strings.Cut(part, "=")
+			if found {
+				switch key {
 				case "align":
 					if align == "left" || align == "right" || align == "center" {
-						align = kv[1]
+						align = val
 					}
 				case "width":
-					width = kv[1]
+					width = val
 				case "inline":
 					inline = true
 				}
-			} else if len(kv) == 1 && kv[0] == "inline" {
+			} else if key == "inline" {
 				inline = true
 			}
 		}

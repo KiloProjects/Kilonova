@@ -187,23 +187,23 @@ func LoadConfigV2() error {
 		if override == "" {
 			continue
 		}
-		vals := strings.SplitN(override, "=", 2)
-		if len(vals) != 2 {
+		key, val, found := strings.Cut(override, "=")
+		if !found {
 			zap.S().Warnf("Invalid override %q", override)
 			continue
 		}
-		flg, ok := allFlags[vals[0]]
+		flg, ok := allFlags[key]
 		if !ok {
-			zap.S().Warnf("Could not find flag named %q", vals[0])
+			zap.S().Warnf("Could not find flag named %q", key)
 			continue
 		}
 		switch f := flg.(type) {
 		case *flag[string]:
 			// Strings are a bit special since they don't like the fact that overrides may not have quotes
-			f.Update(vals[1])
+			f.Update(val)
 		case configFlag:
-			if json.Unmarshal([]byte(vals[1]), f.getPtr()); err != nil {
-				zap.S().Warnf("Override for flag %q is invalid: %v", vals[0], err)
+			if json.Unmarshal([]byte(val), f.getPtr()); err != nil {
+				zap.S().Warnf("Override for flag %q is invalid: %v", key, err)
 			}
 		default:
 			zap.S().Warnf("Unknown flag type")
