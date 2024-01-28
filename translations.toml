@@ -679,6 +679,10 @@ ro = "Puncte din oficiu"
 en = "Max score in leaderboard"
 ro = "Scor maxim în clasament"
 
+[sourceSize]
+en = "Maximum submission size"
+ro = "Dimensiune maximă submisii"
+
 [scorePrecision]
 en = "Score precision (decimals after dot)"
 ro = "Precizie scor (zecimale după virgulă)"
