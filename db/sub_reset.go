@@ -69,9 +69,9 @@ func initSubs(ctx context.Context, tx pgx.Tx, filter kilonova.SubmissionFilter) 
 
 	// Init subtests
 	if _, err := tx.Exec(ctx, fmt.Sprintf(`
-	INSERT INTO submission_tests (user_id, created_at, submission_id, contest_id, test_id, visible_id, score) 
+	INSERT INTO submission_tests (created_at, submission_id, test_id, visible_id, score) 
 		WITH subs_to_add AS (SELECT * FROM submissions WHERE %s)
-		SELECT subs.user_id, subs.created_at AS created_at, subs.id AS submission_id, subs.contest_id, tests.id AS test_id, tests.visible_id, tests.score AS score 
+		SELECT subs.created_at AS created_at, subs.id AS submission_id, tests.id AS test_id, tests.visible_id, tests.score AS score 
 		FROM subs_to_add subs, tests 
 		WHERE subs.problem_id = tests.problem_id`, fb.Where()), fb.Args()...); err != nil {
 		return err

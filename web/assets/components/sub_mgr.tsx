@@ -280,6 +280,7 @@ export function TestTable({
 			<tbody>
 				{subtests
 					.filter((subtest) => typeof subtask === "undefined" || subtask.subtests.includes(subtest.id))
+					.sort((a, b) => a.visible_id - b.visible_id)
 					.map((subtest) => {
 						let maxScore = subtest.score;
 						if (typeof subtask !== "undefined") {

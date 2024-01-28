@@ -113,10 +113,7 @@ type SubTest struct {
 	Memory       int             `json:"memory"`
 	Percentage   decimal.Decimal `json:"percentage"`
 	TestID       *int            `db:"test_id" json:"test_id"`
-	UserID       int             `db:"user_id" json:"user_id"`
 	SubmissionID int             `db:"submission_id" json:"submission_id"`
-
-	ContestID *int `db:"contest_id" json:"contest_id"`
 
 	VisibleID int `db:"visible_id" json:"visible_id"`
 
