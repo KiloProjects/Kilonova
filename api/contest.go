@@ -104,26 +104,35 @@ func (s *API) getContestProblems(w http.ResponseWriter, r *http.Request) {
 	returnData(w, pbs)
 }
 
+type contestLeaderboardParams struct {
+	Frozen bool `json:"frozen"`
+
+	Generated *bool `json:"generated_acc"`
+}
+
+func (s *API) leaderboard(ctx context.Context, contest *kilonova.Contest, lookingUser *kilonova.UserBrief, args *contestLeaderboardParams) (*kilonova.ContestLeaderboard, *kilonova.StatusError) {
+	if !s.base.IsContestVisible(lookingUser, contest) {
+		return nil, kilonova.Statusf(404, "Contest not found or is not visible")
+	}
+	if !(contest.PublicLeaderboard || s.base.IsContestEditor(lookingUser, contest)) {
+		return nil, kilonova.Statusf(400, "You are not allowed to view the leaderboard")
+	}
+
+	return s.base.ContestLeaderboard(
+		ctx, contest,
+		s.base.UserContestFreezeTime(lookingUser, contest, args.Frozen),
+		kilonova.UserFilter{Generated: args.Generated},
+	)
+}
+
 func (s *API) contestLeaderboard(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var args struct {
-		Frozen bool `json:"frozen"`
-	}
+	var args contestLeaderboardParams
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		http.Error(w, "Can't decode parameters", 400)
 		return
 	}
-	// This is assumed to be called from a context in which
-	// IsContestVisible is already true
-	if !(util.Contest(r).PublicLeaderboard || s.base.IsContestEditor(util.UserBrief(r), util.Contest(r))) {
-		errorData(w, "You are not allowed to view the leaderboard", 400)
-		return
-	}
-
-	ld, err := s.base.ContestLeaderboard(
-		r.Context(), util.Contest(r),
-		s.base.UserContestFreezeTime(util.UserBrief(r), util.Contest(r), args.Frozen),
-	)
+	ld, err := s.leaderboard(r.Context(), util.Contest(r), util.UserBrief(r), &args)
 	if err != nil {
 		err.WriteError(w)
 		return

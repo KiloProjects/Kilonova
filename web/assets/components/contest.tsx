@@ -73,6 +73,8 @@ type LeaderboardResponse = {
 		attempts: Record<number, number>; // TODO: check if will still be null once finished
 	}[];
 
+	advanced_filter: boolean;
+
 	freeze_time?: string;
 	type: "classic" | "acm-icpc";
 };
@@ -82,6 +84,8 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 	let [problems, setProblems] = useState<{ id: number; name: string }[]>([]);
 	let [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
 	let [lastUpdated, setLastUpdated] = useState<string | null>(null);
+
+	let [generated, setGenerated] = useState<boolean | null>(null);
 
 	const firstSolves = useMemo(() => {
 		let firstSolves: Record<number, { minTime: number; userID: number }> = {};
@@ -106,7 +110,9 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 
 	async function loadLeaderboard() {
 		setLoading(true);
-		const res = await getCall<LeaderboardResponse>(`/contest/${contestID}/leaderboard`, {});
+		const res = await getCall<LeaderboardResponse>(`/contest/${contestID}/leaderboard`, {
+			generated_acc: generated == null ? undefined : generated,
+		});
 		if (res.status === "error") {
 			apiToast(res);
 			return;
@@ -130,7 +136,7 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 
 	useEffect(() => {
 		loadLeaderboard().catch(console.error);
-	}, [contestID]);
+	}, [contestID, generated]);
 
 	if (loading || leaderboard == null) {
 		return (
@@ -148,6 +154,22 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 			<button class="btn btn-blue mb-2" onClick={() => loadLeaderboard()}>
 				{getText("reload")}
 			</button>
+			{leaderboard.advanced_filter && (
+				<label class="block mb-2">
+					<span class="form-label">{getText("participants.label")}:</span>
+					<select
+						class="form-select"
+						value={generated == null ? "" : generated ? "true" : "false"}
+						onChange={(e) => {
+							setGenerated(e.currentTarget.value == "" ? null : e.currentTarget.value === "true");
+						}}
+					>
+						<option value="">{getText("participants.all")}</option>
+						<option value="true">{getText("participants.official")}</option>
+						<option value="false">{getText("participants.unofficial")}</option>
+					</select>
+				</label>
+			)}
 			<div class="mb-2">
 				<p>
 					{getText("last_updated_at")}: {lastUpdated ? dayjs(lastUpdated).format("DD/MM/YYYY HH:mm") : "-"}
@@ -257,6 +279,7 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 					)}
 				</tbody>
 			</table>
+			<a href={`/assets/contest/${contestID}/leaderboard.csv${generated != null ? "?generated_acc=" + generated : ""}`}>Download CSV</a>
 		</>
 	);
 }

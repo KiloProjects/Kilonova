@@ -99,10 +99,18 @@
                             <span class="ml-2">{{getText "enable_freeze"}}</span>
                         </label>
                     </div>
-                    <label id="freezeLabel" class="block mb-2 {{if not .Contest.LeaderboardFreeze}}hidden{{end}}">
-                        <span class="form-label">{{getText "freeze_time"}}: </span>
-                        <input class="form-input" id="freeze_time" name="freeze_time" type="datetime-local">
-                    </label>
+                    <div class="block mb-2">
+                        <label id="freezeLabel" class="block mb-2 {{if not .Contest.LeaderboardFreeze}}hidden{{end}}">
+                            <span class="form-label">{{getText "freeze_time"}}: </span>
+                            <input class="form-input" id="freeze_time" name="freeze_time" type="datetime-local">
+                        </label>
+                    </div>
+                    <div class="block mb-2">
+                        <label class="inline-flex items-center text-lg">
+                            <input class="form-checkbox" id="c_advanced_filters" name="advanced_filters" type="checkbox" {{if .Contest.LeaderboardAdvancedFilter}}checked{{end}}>
+                            <span class="ml-2">{{getText "advanced_filters"}}</span>
+                        </label>
+                    </div>
                 </div>
             </div>
             <div>
@@ -334,6 +342,7 @@ async function updateContest(e) {
             end_time: bundled.formatISO3601(fd.get("end_time")),
 
             public_leaderboard: document.getElementById("c_public_leaderboard").checked,
+            leaderboard_advanced_filter: document.getElementById("c_advanced_filters").checked,
             leaderboard_style: fd.get("leaderboard_style"),
             change_leaderboard_freeze: true,
             leaderboard_freeze: leaderboardFreeze ? bundled.formatISO3601(fd.get("freeze_time")) : undefined,

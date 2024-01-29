@@ -83,6 +83,9 @@ type UserFilter struct {
 	// For registrations
 	ContestID *int `json:"contest_id"`
 
+	// For filtering in leaderboards
+	Generated *bool `json:"generated"`
+
 	// For session recognition
 	SessionID *string `json:"session_id"`
 

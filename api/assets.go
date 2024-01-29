@@ -33,10 +33,11 @@ import (
 
 type Assets struct {
 	base *sudoapi.BaseAPI
+	api  *API
 }
 
 func NewAssets(base *sudoapi.BaseAPI) *Assets {
-	return &Assets{base}
+	return &Assets{base, New(base)}
 }
 
 func (s *Assets) initSession(next http.Handler) http.Handler {
@@ -52,35 +53,33 @@ func (s *Assets) initSession(next http.Handler) http.Handler {
 
 func (s *Assets) AssetsRouter() http.Handler {
 	r := chi.NewRouter()
-	api := New(s.base)
-
 	r.Use(s.initSession)
 
 	r.Route("/problem/{problemID}", func(r chi.Router) {
-		r.Use(api.validateProblemID)
-		r.Use(api.validateProblemVisible)
+		r.Use(s.api.validateProblemID)
+		r.Use(s.api.validateProblemVisible)
 
-		r.With(api.validateVisibleTests, api.validateTestID).Get("/test/{tID}/input", s.ServeTestInput)
-		r.With(api.validateVisibleTests, api.validateTestID).Get("/test/{tID}/output", s.ServeTestOutput)
+		r.With(s.api.validateVisibleTests, s.api.validateTestID).Get("/test/{tID}/input", s.ServeTestInput)
+		r.With(s.api.validateVisibleTests, s.api.validateTestID).Get("/test/{tID}/output", s.ServeTestOutput)
 
 		// Enforce authed user for rate limit
-		r.With(api.MustBeAuthed, api.validateProblemFullyVisible).Get("/problemArchive", s.ServeProblemArchive())
+		r.With(s.api.MustBeAuthed, s.api.validateProblemFullyVisible).Get("/problemArchive", s.ServeProblemArchive())
 
-		r.With(api.validateAttachmentName).Get("/attachment/{aName}", s.ServeAttachment)
-		r.With(api.validateAttachmentID).Get("/attachmentByID/{aID}", s.ServeAttachment)
+		r.With(s.api.validateAttachmentName).Get("/attachment/{aName}", s.ServeAttachment)
+		r.With(s.api.validateAttachmentID).Get("/attachmentByID/{aID}", s.ServeAttachment)
 	})
 
 	r.Route("/blogPost/{bpName}", func(r chi.Router) {
-		r.Use(api.validateBlogPostName)
-		r.Use(api.validateBlogPostVisible)
+		r.Use(s.api.validateBlogPostName)
+		r.Use(s.api.validateBlogPostVisible)
 
-		r.With(api.validateAttachmentName).Get("/attachment/{aName}", s.ServeAttachment)
-		r.With(api.validateAttachmentID).Get("/attachmentByID/{aID}", s.ServeAttachment)
+		r.With(s.api.validateAttachmentName).Get("/attachment/{aName}", s.ServeAttachment)
+		r.With(s.api.validateAttachmentID).Get("/attachmentByID/{aID}", s.ServeAttachment)
 	})
 
-	r.With(api.MustBeProposer).Get("/subtest/{subtestID}", s.ServeSubtest)
+	r.With(s.api.MustBeProposer).Get("/subtest/{subtestID}", s.ServeSubtest)
 
-	r.With(api.validateContestID, api.validateContestEditor).Get("/contest/{contestID}/leaderboard.csv", s.ServeContestLeaderboard)
+	r.With(s.api.validateContestID).Get("/contest/{contestID}/leaderboard.csv", s.ServeContestLeaderboard)
 
 	return r
 }
@@ -182,18 +181,13 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 
 func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var args struct {
-		Frozen bool `json:"frozen"`
-	}
+	var args contestLeaderboardParams
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		http.Error(w, "Can't decode parameters", 400)
 		return
 	}
 
-	ld, err := s.base.ContestLeaderboard(
-		r.Context(), util.Contest(r),
-		s.base.UserContestFreezeTime(util.UserBrief(r), util.Contest(r), args.Frozen),
-	)
+	ld, err := s.api.leaderboard(r.Context(), util.Contest(r), util.UserBrief(r), &args)
 	if err != nil {
 		http.Error(w, err.Error(), err.Code)
 		return

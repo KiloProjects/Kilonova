@@ -65,6 +65,8 @@ type Contest struct {
 	LeaderboardFreeze     *time.Time      `json:"leaderboard_freeze"`
 	ICPCSubmissionPenalty int             `json:"icpc_submission_penalty"`
 
+	LeaderboardAdvancedFilter bool `json:"leaderboard_advanced_filter"`
+
 	SubmissionCooldown time.Duration `json:"submission_cooldown"`
 	QuestionCooldown   time.Duration `json:"question_cooldown"`
 
@@ -159,6 +161,8 @@ type ContestUpdate struct {
 	LeaderboardStyle      LeaderboardType `json:"leaderboard_style"`
 	ICPCSubmissionPenalty *int            `json:"icpc_submission_penalty"`
 
+	LeaderboardAdvancedFilter *bool `json:"leaderboard_advanced_filter"`
+
 	ChangeLeaderboardFreeze bool       `json:"change_leaderboard_freeze"`
 	LeaderboardFreeze       *time.Time `json:"leaderboard_freeze"`
 
@@ -234,6 +238,8 @@ type ContestLeaderboard struct {
 	ProblemOrder []int               `json:"problem_ordering"`
 	ProblemNames map[int]string      `json:"problem_names"`
 	Entries      []*LeaderboardEntry `json:"entries"`
+
+	AdvancedFilter bool `json:"advanced_filter"`
 
 	FreezeTime *time.Time      `json:"freeze_time"`
 	Type       LeaderboardType `json:"type"`

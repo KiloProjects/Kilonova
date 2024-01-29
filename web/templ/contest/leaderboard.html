@@ -7,10 +7,6 @@
         <h2>{{getText "leaderboard"}}</h2>
         {{ $editor := isContestEditor .Contest }}
         <kn-leaderboard contestid="{{.Contest.ID}}" editor="{{$editor}}"></kn-leaderboard>
-
-        {{ if $editor }}
-        <a href="/assets/contest/{{.Contest.ID}}/leaderboard.csv">Download CSV</a>
-        {{ end }}
     </div>
 </div>
 

@@ -2176,9 +2176,29 @@ ro = "Penalizare ICPC per încercare"
 en = "Freeze leaderboards"
 ro = "Înghețare clasament"
 
+[advanced_filters]
+en = "Show advanced filters"
+ro = "Afișare filtre avansate"
+
 [freeze_time]
 en = "Freeze moment"
 ro = "Momentul înghețării"
+
+[participants.label]
+en = "Filter participants"
+ro = "Filtrare participanți"
+
+[participants.all]
+en = "All participants"
+ro = "Toți participanții"
+
+[participants.unofficial]
+en = "Unofficial participants"
+ro = "Participanții neoficiali"
+
+[participants.official]
+en = "Official participants"
+ro = "Participanții oficiali"
 
 [start_contest]
 en = "Start contest"

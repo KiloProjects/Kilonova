@@ -259,6 +259,10 @@ func userFilterQuery(filter *kilonova.UserFilter, fb *filterBuilder) {
 		fb.AddConstraint("EXISTS (SELECT 1 FROM contest_registrations WHERE user_id = users.id AND contest_id = %s)", v)
 	}
 
+	if v := filter.Generated; v != nil {
+		fb.AddConstraint("generated = %s", v)
+	}
+
 	if v := filter.SessionID; v != nil {
 		fb.AddConstraint("EXISTS (SELECT 1 FROM active_sessions WHERE user_id = users.id AND id = %s)", v)
 	}

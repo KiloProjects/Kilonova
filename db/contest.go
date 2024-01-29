@@ -31,6 +31,7 @@ type dbContest struct {
 
 	LeaderboardStyle      kilonova.LeaderboardType `db:"leaderboard_style"`
 	LeaderboardFreezeTime *time.Time               `db:"leaderboard_freeze_time"`
+	LeaderboardAdvFilter  bool                     `db:"leaderboard_advanced_filter"`
 
 	ICPCSubmissionPenalty int `db:"icpc_submission_penalty"`
 
@@ -232,7 +233,7 @@ func (s *DB) classicToLeaderboardEntry(ctx context.Context, entry *databaseClass
 	}, nil
 }
 
-func (s *DB) ContestClassicLeaderboard(ctx context.Context, contest *kilonova.Contest, freezeTime *time.Time) (*kilonova.ContestLeaderboard, error) {
+func (s *DB) ContestClassicLeaderboard(ctx context.Context, contest *kilonova.Contest, freezeTime *time.Time, filter *kilonova.UserFilter) (*kilonova.ContestLeaderboard, error) {
 	pbs, err := s.ContestProblems(ctx, contest.ID)
 	if err != nil {
 		return nil, err
@@ -241,6 +242,8 @@ func (s *DB) ContestClassicLeaderboard(ctx context.Context, contest *kilonova.Co
 	leaderboard := &kilonova.ContestLeaderboard{
 		ProblemOrder: mapper(pbs, func(pb *kilonova.Problem) int { return pb.ID }),
 		ProblemNames: make(map[int]string),
+
+		AdvancedFilter: contest.LeaderboardAdvancedFilter,
 
 		FreezeTime: freezeTime,
 		Type:       kilonova.LeaderboardTypeClassic,
@@ -251,7 +254,10 @@ func (s *DB) ContestClassicLeaderboard(ctx context.Context, contest *kilonova.Co
 
 	var topList []*databaseClassicEntry
 
-	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_top_view($1, $2, $3)", contest.ID, freezeTime, contest.Type == kilonova.ContestTypeVirtual)
+	fb := newFilterBuilderFromPos(contest.ID, freezeTime, contest.Type == kilonova.ContestTypeVirtual)
+	userFilterQuery(filter, fb)
+
+	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_top_view($1, $2, $3) WHERE EXISTS (SELECT 1 FROM users WHERE user_id = users.id AND "+fb.Where()+")", fb.Args()...)
 	if err != nil {
 		return nil, err
 	}
@@ -323,7 +329,7 @@ func (s *DB) icpcToLeaderboardEntry(ctx context.Context, entry *databaseICPCEntr
 	}, nil
 }
 
-func (s *DB) ContestICPCLeaderboard(ctx context.Context, contest *kilonova.Contest, freezeTime *time.Time) (*kilonova.ContestLeaderboard, error) {
+func (s *DB) ContestICPCLeaderboard(ctx context.Context, contest *kilonova.Contest, freezeTime *time.Time, filter *kilonova.UserFilter) (*kilonova.ContestLeaderboard, error) {
 	pbs, err := s.ContestProblems(ctx, contest.ID)
 	if err != nil {
 		return nil, err
@@ -332,6 +338,8 @@ func (s *DB) ContestICPCLeaderboard(ctx context.Context, contest *kilonova.Conte
 	leaderboard := &kilonova.ContestLeaderboard{
 		ProblemOrder: mapper(pbs, func(pb *kilonova.Problem) int { return pb.ID }),
 		ProblemNames: make(map[int]string),
+
+		AdvancedFilter: contest.LeaderboardAdvancedFilter,
 
 		FreezeTime: freezeTime,
 		Type:       kilonova.LeaderboardTypeICPC,
@@ -342,7 +350,10 @@ func (s *DB) ContestICPCLeaderboard(ctx context.Context, contest *kilonova.Conte
 
 	var topList []*databaseICPCEntry
 
-	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_icpc_view($1, $2, $3)", contest.ID, freezeTime, contest.Type == kilonova.ContestTypeVirtual)
+	fb := newFilterBuilderFromPos(contest.ID, freezeTime, contest.Type == kilonova.ContestTypeVirtual)
+	userFilterQuery(filter, fb)
+
+	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_icpc_view($1, $2, $3) WHERE EXISTS (SELECT 1 FROM users WHERE user_id = users.id AND "+fb.Where()+")", fb.Args()...)
 	if err != nil {
 		zap.S().Warn(err)
 		return nil, err
@@ -415,6 +426,9 @@ func contestUpdateQuery(upd *kilonova.ContestUpdate, ub *updateBuilder) {
 	if v := upd.ICPCSubmissionPenalty; v != nil {
 		ub.AddUpdate("icpc_submission_penalty = %s", v)
 	}
+	if v := upd.LeaderboardAdvancedFilter; v != nil {
+		ub.AddUpdate("leaderboard_advanced_filter = %s", v)
+	}
 	if v := upd.QuestionCooldown; v != nil {
 		ub.AddUpdate("question_cooldown_ms = %s", v)
 	}
@@ -477,6 +491,8 @@ func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilono
 		PublicLeaderboard: contest.PublicLeaderboard,
 		LeaderboardStyle:  contest.LeaderboardStyle,
 		LeaderboardFreeze: contest.LeaderboardFreezeTime,
+
+		LeaderboardAdvancedFilter: contest.LeaderboardAdvFilter,
 
 		ICPCSubmissionPenalty: contest.ICPCSubmissionPenalty,
 
