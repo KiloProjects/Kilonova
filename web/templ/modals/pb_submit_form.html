@@ -115,8 +115,8 @@
         let form = new FormData();
         form.set("problem_id", {{.Problem.ID}});
         form.set("language", document.getElementById("sub_language").value)
-        
-        if(bundled.getSubmitStyle() == "code") {
+
+        if(document.getElementById("submit_style").value == "code") {
             const code = cm.getValue().trim()
             if(code.length == 0) {
                 bundled.apiToast({status: "error", data: bundled.getText("no_code")})
