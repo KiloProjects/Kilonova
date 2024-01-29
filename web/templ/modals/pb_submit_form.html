@@ -69,6 +69,12 @@
 </form>
 
 <script>
+
+    function isOutputOnly() {
+        const languages = Object.values(document.getElementById("sub_language").options).map(x => x.value);
+        return languages.length == 1 && languages[0] == "outputOnly"
+    }
+
     // cm name should remain, or be updated in pb_submit.html as well
     var cm = CodeMirror.fromTextArea(document.getElementById("SubArea"), {
         mode: bundled.languages[bundled.getCodeLangPreference()],
@@ -76,13 +82,17 @@
 
     document.getElementById("submit_style").addEventListener("change", (e) => {
         const val = e.currentTarget.value;
-        bundled.setSubmitStyle(val);
+        if(!isOutputOnly()) {
+            bundled.setSubmitStyle(val);
+        }
         document.getElementById("file_label")?.classList.toggle("hidden", val === "code");
         document.getElementById("cm_label")?.classList.toggle("hidden", val !== "code");
     })
 
     document.addEventListener("DOMContentLoaded", () => {
-        const val = bundled.getSubmitStyle();
+        let val = bundled.getSubmitStyle();
+        if(isOutputOnly()) val = "file";
+
         document.getElementById("submit_style").value = val;
         document.getElementById("file_label")?.classList.toggle("hidden", val === "code");
         document.getElementById("cm_label")?.classList.toggle("hidden", val !== "code");
