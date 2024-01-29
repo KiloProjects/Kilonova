@@ -23,7 +23,7 @@ function downloadCode(sub: FullSubmission) {
 		console.error("Trying to download code when it isn't available");
 		return;
 	}
-	var file = new Blob([sub.code], { type: "text/plain" });
+	var file = new Blob([sub.code], { type: "text/plain;charset=utf-8" });
 	var filename = `${slugify(sub.problem.name)}-${sub.id}.${sub.language.replace(/[0-9]+$/g, "").replace("outputOnly", "txt")}`;
 	downloadBlob(file, filename);
 }
@@ -203,7 +203,16 @@ function SubCode({ sub, codeHTML, isPaste }: { sub: FullSubmission; codeHTML: st
 	return (
 		<div class="segment-panel">
 			<h2>{getText("sourceCode")}:</h2>
-			<div dangerouslySetInnerHTML={{ __html: codeHTML }}></div>
+			{codeHTML.length > 0 ? (
+				<div dangerouslySetInnerHTML={{ __html: codeHTML }}></div>
+			) : (
+				<>
+					<p>{getText("noSyntaxHighlight")}</p>
+					<pre class="chroma">
+						<code>{sub.code}</code>
+					</pre>
+				</>
+			)}
 			<div class="block my-2">
 				{window.isSecureContext && (
 					/* It only works with https OR localhost */

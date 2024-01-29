@@ -22,6 +22,7 @@ declare global {
 		time_limit: number;
 		memory_limit: number;
 		source_credits: string;
+		source_size: number;
 		console_input: boolean;
 		scoring_strategy: "sum_subtasks" | "max_submission" | "acm_icpc";
 		score_precision: number;
@@ -81,7 +82,6 @@ declare global {
 		memory: number;
 		percentage: number;
 		test_id?: number;
-		user_id: number;
 		submission_id: number;
 
 		visible_id: number;

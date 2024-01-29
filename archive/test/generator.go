@@ -204,7 +204,7 @@ func (ag *archiveGenerator) addGraderProperties(ctx context.Context) *kilonova.S
 			fmt.Fprintf(gr, "default_score=%s\n", ag.pb.DefaultPoints)
 		}
 		fmt.Fprintf(gr, "score_precision=%d\n", ag.pb.ScorePrecision)
-		if ag.pb.SourceSize != kilonova.DefaultSourceSize {
+		if ag.pb.SourceSize != kilonova.DefaultSourceSize.Value() {
 			fmt.Fprintf(gr, "source_size=%d", ag.pb.SourceSize)
 		}
 		fmt.Fprintf(gr, "console_input=%t\n", ag.pb.ConsoleInput)

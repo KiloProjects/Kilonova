@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -302,7 +303,7 @@ var (
 )
 
 // CreateSubmission produces a new submission and also creates the necessary subtests
-func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserFull, problem *kilonova.Problem, code string, lang eval.Language, contestID *int, bypassSubCount bool) (int, *StatusError) {
+func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserFull, problem *kilonova.Problem, code []byte, lang eval.Language, contestID *int, bypassSubCount bool) (int, *StatusError) {
 	if author == nil {
 		return -1, Statusf(400, "Invalid submission author")
 	}
@@ -391,12 +392,23 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserFull, proble
 		}
 	}
 
-	if code == "" {
+	if len(code) == 0 {
 		return -1, Statusf(400, "Empty code")
 	}
 
+	settings, err1 := s.ProblemSettings(ctx, problem.ID)
+	if err1 != nil {
+		return -1, WrapError(err1, "Could not get problem settings")
+	}
+	if settings.OutputOnly && lang.InternalName != "outputOnly" {
+		return -1, Statusf(400, "Problem is output only but wrong language was sent")
+	}
+	if settings.OnlyCPP && !strings.HasPrefix(lang.InternalName, "cpp") {
+		return -1, Statusf(400, "Only C++ submissions are allowed")
+	}
+
 	// Add submission
-	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang, code, contestID)
+	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang, string(code), contestID)
 	if err != nil {
 		zap.S().Warn("Couldn't create submission:", err)
 		return -1, Statusf(500, "Couldn't create submission")

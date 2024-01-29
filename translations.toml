@@ -1308,6 +1308,10 @@ ro = "Copiere"
 en = "Source Code"
 ro = "Codul Sursă"
 
+[noSyntaxHighlight]
+en = "Syntax highlighting is not available for this source code."
+ro = "Syntax highlighting nu este disponibil pentru acest cod sursă."
+
 [compileMsg]
 en = "Compilation Message"
 ro = "Mesaj Compilare"

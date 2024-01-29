@@ -12,7 +12,7 @@ import (
 )
 
 type submissionStub struct {
-	code string
+	code []byte
 	lang string
 }
 
@@ -35,7 +35,7 @@ func ProcessSubmissionFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 	}
 
 	ctx.submissions = append(ctx.submissions, &submissionStub{
-		code: string(data),
+		code: data,
 		lang: lang,
 	})
 	return nil

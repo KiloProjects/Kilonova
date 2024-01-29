@@ -3,15 +3,13 @@ package kilonova
 import (
 	"time"
 
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/shopspring/decimal"
 )
 
 var (
+	DefaultSourceSize   = config.GenFlag[int]("behavior.problem.default_source_size", 30000, "Default maximum source code size for problems")
 	ErrAttachmentExists = Statusf(400, "Attachment with that name already exists!")
-)
-
-const (
-	DefaultSourceSize = 30000
 )
 
 type ScoringType string

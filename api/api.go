@@ -5,11 +5,9 @@ import (
 	"encoding/json"
 	"mime"
 	"net/http"
-	"strconv"
 	"sync"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/go-chi/chi/v5"
@@ -211,18 +209,7 @@ func (s *API) Handler() http.Handler {
 			}))
 		})
 
-		r.With(s.MustBeAuthed).With(s.withProblem("problemID", true)).Post("/submit", webWrapper(func(ctx context.Context, args struct {
-			Code      string `json:"code"`
-			Lang      string `json:"language"`
-			ProblemID int    `json:"problemID"`
-			ContestID *int   `json:"contestID"`
-		}) (int, *kilonova.StatusError) {
-			lang, ok := eval.Langs[args.Lang]
-			if !ok {
-				return -1, kilonova.Statusf(400, "Invalid language")
-			}
-			return s.base.CreateSubmission(ctx, util.UserFullContext(ctx), util.ProblemContext(ctx), args.Code, lang, args.ContestID, false)
-		}))
+		r.With(s.MustBeAuthed).Post("/submit", s.createSubmission)
 	})
 	r.Route("/paste/{pasteID}", func(r chi.Router) {
 		r.Get("/", s.getPaste)
@@ -381,34 +368,6 @@ func (s *API) Handler() http.Handler {
 	})
 
 	return r
-}
-
-func (s *API) withProblem(fieldName string, required bool) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			problemID, err := strconv.Atoi(r.FormValue(fieldName))
-			if err != nil || problemID <= 0 {
-				if required {
-					errorData(w, "Invalid problem ID", 400)
-					return
-				}
-				next.ServeHTTP(w, r)
-				return
-			}
-
-			problem, err1 := s.base.Problem(r.Context(), problemID)
-			if err1 != nil {
-				if required {
-					err1.WriteError(w)
-					return
-				}
-				next.ServeHTTP(w, r)
-				return
-			}
-
-			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ProblemKey, problem)))
-		})
-	}
 }
 
 func webWrapper[T1, T2 any](handler func(context.Context, T1) (T2, *sudoapi.StatusError)) http.HandlerFunc {

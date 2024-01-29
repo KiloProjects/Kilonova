@@ -4,11 +4,12 @@
 {{ end }}
 {{ define "content" }}
 
+{{$maxSize := intFlag "behavior.problem.default_source_size"}}
+
 <kn-sub-mgr 
     id="{{.Submission.ID}}" 
     enc="{{.Submission | encodeJSON}}" 
-    code="{{if .Submission.Code}}{{syntaxHighlight .Submission.Code .Submission.Language}}{{end}}"></kn-sub-mgr>
-
+    code="{{if (and .Submission.Code (lt .Submission.CodeSize $maxSize))}}{{syntaxHighlight .Submission.Code .Submission.Language}}{{end}}"></kn-sub-mgr>
 <div class="mb-2"></div>
 
 {{ if authed }}

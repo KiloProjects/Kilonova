@@ -102,26 +102,27 @@
     })
 
     async function sendSub() {
-        let sendData = {
-            problemID: "{{ .Problem.ID }}",
-            language: document.getElementById("sub_language").value,
-            code: "",
-        };
+        let form = new FormData();
+        form.set("problem_id", {{.Problem.ID}});
+        form.set("language", document.getElementById("sub_language").value)
         
         if(bundled.getSubmitStyle() == "code") {
-            sendData.code = cm.getValue();
+            const code = cm.getValue().trim()
+            if(code.length == 0) {
+                bundled.apiToast({status: "error", data: bundled.getText("no_code")})
+                return;
+            }
+            form.set("code", new File([code], "code", {type: "text/plain;charset=utf-8"}));
         } else {
             const fInput = document.getElementById("submit_file");
-            if(fInput.files.length !== 1) {
+            if(fInput.files.length > 1) {
                 bundled.apiToast({status: "error", data: bundled.getText("invalid_file")})
                 return
+            } else if(fInput.files.length == 0) {
+                bundled.apiToast({status: "error", data: bundled.getText("no_code")})
+                return
             }
-            sendData.code = await fInput.files[0].text();
-        }
-
-        if(sendData.code === "") {
-            bundled.apiToast({status: "error", data: bundled.getText("no_code")})
-            return
+            form.set("code", fInput.files[0]);
         }
 
         if(document.getElementById("sub_contestid").value !== "-1") {
@@ -129,11 +130,11 @@
             if(isNaN(val)) {
                 console.warn("Submission form's contest ID is not a number")
             } else {
-                sendData.contestID = val
+                form.set("contest_id", val);
             }
         }
 
-        let res = await bundled.postCall("/submissions/submit", sendData)
+        let res = await bundled.multipartCall("/submissions/submit", form)
         if (res.status == "error") {
             bundled.apiToast(res)
             return

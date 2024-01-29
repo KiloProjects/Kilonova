@@ -2,11 +2,15 @@ package api
 
 import (
 	"context"
+	"errors"
+	"io"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
+	"go.uber.org/zap"
 )
 
 func (s *API) fullSubmission(ctx context.Context, id int, lookingUser *kilonova.UserBrief, looking bool) (*sudoapi.FullSubmission, *kilonova.StatusError) {
@@ -63,4 +67,61 @@ func (s *API) filterSubs() http.HandlerFunc {
 
 		returnData(w, subs)
 	}
+}
+
+func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
+	r.ParseMultipartForm(1 * 1024 * 1024) // 1MB
+	defer cleanupMultipart(r)
+	var args struct {
+		Lang      string `json:"language"`
+		ProblemID int    `json:"problem_id"`
+		ContestID *int   `json:"contest_id"`
+	}
+	if err := parseRequest(r, &args); err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	problem, err1 := s.base.Problem(r.Context(), args.ProblemID)
+	if err1 != nil {
+		err1.WriteError(w)
+		return
+	}
+
+	if !s.base.IsProblemVisible(util.UserBrief(r), problem) {
+		errorData(w, "Problem is not visible", 401)
+		return
+	}
+
+	lang, ok := eval.Langs[args.Lang]
+	if !ok {
+		errorData(w, "Invalid language", 400)
+		return
+	}
+
+	f, _, err := r.FormFile("code")
+	if err != nil {
+		if errors.Is(err, http.ErrMissingFile) {
+			errorData(w, "Missing `code` file with source code", 400)
+			return
+		}
+		zap.S().Warn(err)
+		errorData(w, "Could not open multipart file", 500)
+		return
+	}
+
+	code, err := io.ReadAll(f)
+	if err != nil {
+		zap.S().Warn(err)
+		errorData(w, "Could not read source code", 500)
+		return
+	}
+
+	id, err1 := s.base.CreateSubmission(r.Context(), util.UserFull(r), problem, code, lang, args.ContestID, false)
+	if err1 != nil {
+		err1.WriteError(w)
+		return
+	}
+
+	returnData(w, id)
 }
