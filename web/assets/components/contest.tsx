@@ -154,7 +154,7 @@ export function ContestLeaderboard({ contestID, editor }: { contestID: number; e
 			<button class="btn btn-blue mb-2" onClick={() => loadLeaderboard()}>
 				{getText("reload")}
 			</button>
-			{leaderboard.advanced_filter && (
+			{(generated != null || (leaderboard.advanced_filter && leaderboard.entries.filter((entry) => entry.user.generated).length > 0)) && (
 				<label class="block mb-2">
 					<span class="form-label">{getText("participants.label")}:</span>
 					<select

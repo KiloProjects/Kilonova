@@ -10,6 +10,8 @@ declare global {
 		proposer: boolean;
 
 		display_name: string;
+
+		generated: boolean;
 	};
 
 	type Problem = {

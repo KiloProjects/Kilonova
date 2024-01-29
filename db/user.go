@@ -45,6 +45,8 @@ func toUserBrief(user *User) *kilonova.UserBrief {
 		Proposer: user.Proposer,
 
 		DisplayName: user.DisplayName,
+
+		Generated: user.Generated,
 	}
 }
 
@@ -68,7 +70,6 @@ func (user *User) ToFull() *kilonova.UserFull {
 		PreferredLanguage: user.PreferredLanguage,
 		CreatedAt:         user.CreatedAt,
 		EmailVerifResent:  t,
-		Generated:         user.Generated,
 		LockedLogin:       user.LockedLogin,
 		NameChangeForced:  user.NameChangeRequired,
 	}

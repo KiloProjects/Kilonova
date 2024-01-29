@@ -23,6 +23,8 @@ type UserBrief struct {
 	Proposer bool   `json:"proposer"`
 
 	DisplayName string `json:"display_name"`
+
+	Generated bool `json:"generated"`
 }
 
 func (u *UserBrief) IsAuthed() bool {
@@ -52,9 +54,9 @@ type UserFull struct {
 	PreferredTheme    PreferredTheme `json:"preferred_theme"`
 	EmailVerifResent  time.Time      `json:"-"`
 	CreatedAt         time.Time      `json:"created_at"`
-	Generated         bool           `json:"generated"`
-	LockedLogin       bool           `json:"locked_login"`
-	NameChangeForced  bool           `json:"name_change_forced"`
+	// Generated         bool           `json:"generated"`
+	LockedLogin      bool `json:"locked_login"`
+	NameChangeForced bool `json:"name_change_forced"`
 }
 
 func (uf *UserFull) Brief() *UserBrief {
