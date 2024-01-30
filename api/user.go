@@ -474,6 +474,8 @@ func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 
 		ContestID      *int `json:"contest_id"`
 		PasswordByMail bool `json:"password_by_mail"`
+		// PasswordByMailTo overrides whom to send the email to
+		PasswordByMailTo *string `json:"password_by_mail_to"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 500)
@@ -541,8 +543,12 @@ func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 			errorData(w, "Could not render email", 500)
 			return
 		}
+		sendTo := *args.Email
+		if args.PasswordByMailTo != nil {
+			sendTo = *args.PasswordByMailTo
+		}
 		if err := s.base.SendMail(&kilonova.MailerMessage{
-			To:          *args.Email,
+			To:          sendTo,
 			Subject:     "Date de autentificare cont Kilonova",
 			HTMLContent: b.String(),
 		}); err != nil {
