@@ -472,10 +472,13 @@ func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 		Email       *string `json:"email"`
 		DisplayName *string `json:"display_name"`
 
-		ContestID      *int `json:"contest_id"`
+		ContestID *int `json:"contest_id"`
+
 		PasswordByMail bool `json:"password_by_mail"`
 		// PasswordByMailTo overrides whom to send the email to
 		PasswordByMailTo *string `json:"password_by_mail_to"`
+
+		MailSubject *string `json:"mail_subject"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 500)
@@ -487,7 +490,7 @@ func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 			errorData(w, "Mailer has been disabled, but sending password by email was enabled.", 400)
 			return
 		}
-		if args.Email == nil {
+		if args.Email == nil && args.PasswordByMailTo == nil {
 			errorData(w, "Cannot send password by email if no address was given", 400)
 			return
 		}
@@ -543,13 +546,22 @@ func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 			errorData(w, "Could not render email", 500)
 			return
 		}
-		sendTo := *args.Email
+		var sendTo string
+		if args.Email != nil {
+			sendTo = *args.Email
+		}
 		if args.PasswordByMailTo != nil {
 			sendTo = *args.PasswordByMailTo
 		}
+
+		var subject = "Date de autentificare cont Kilonova"
+		if args.MailSubject != nil {
+			subject = *args.MailSubject
+		}
+
 		if err := s.base.SendMail(&kilonova.MailerMessage{
 			To:          sendTo,
-			Subject:     "Date de autentificare cont Kilonova",
+			Subject:     subject,
 			HTMLContent: b.String(),
 		}); err != nil {
 			zap.S().Warn(err)
