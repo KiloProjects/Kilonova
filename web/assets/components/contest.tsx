@@ -722,7 +722,7 @@ function ContestRegistrations(params: { contestid: string; usacomode: string }) 
 											width={32}
 											height={32}
 											class="inline-block mr-2 rounded align-middle"
-											src={`/api/user/getGravatar?name=${user.user.name}&s=32`}
+											src={`/api/user/byName/${user.user.name}/gravatar?s=32`}
 										/>{" "}
 										<span class="align-middle">{user.user.name}</span>
 									</a>

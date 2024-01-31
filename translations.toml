@@ -386,6 +386,10 @@ ro = "Schimbare forțată username"
 en = "Remove bio"
 ro = "Ștergere bio"
 
+[deauthAll]
+en = "Log out everywhere"
+ro = "Delogare peste tot"
+
 [deleteAccount]
 en = "Prune User"
 ro = "Ștergere Profil"

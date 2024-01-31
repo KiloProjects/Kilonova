@@ -26,7 +26,7 @@
             {{if .AuthorID}}
                 {{with user .AuthorID}}
                     <a href="/profile/{{.Name}}">
-                        <img class="rounded inline-block mx-1" src="/api/user/getGravatar?name={{.Name}}&s=32" width="24" height="24" alt="Avatar"/>
+                        <img class="rounded inline-block mx-1" src="/api/user/byName/{{.Name}}/gravatar?s=32" width="24" height="24" alt="Avatar"/>
                         {{.Name}}</a>
                 {{else}}-{{end}}
             {{else}}-{{end}} (<span class="server_timestamp">{{.CreatedAt.UnixMilli}}</span>)

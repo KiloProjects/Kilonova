@@ -113,9 +113,9 @@ export class KNClient {
 
 	async getUser(id: number) {
 		let res = await this.request<UserBrief>({
-			url: "/user/get",
+			url: `/user/byID/${id}`,
 			method: "GET",
-			queryParams: { id: id },
+			queryParams: {},
 		});
 		if (res.status === "error") {
 			throw new Error(res.data);

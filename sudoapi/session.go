@@ -17,10 +17,13 @@ func (s *BaseAPI) CreateSession(ctx context.Context, uid int) (string, *StatusEr
 		zap.S().Warn("Failed to create session: ", err)
 		return "", WrapError(err, "Failed to create session")
 	}
-	if cnt, err := s.db.RemoveOldSessions(ctx, uid); err != nil {
+	if sessions, err := s.db.RemoveOldSessions(ctx, uid); err != nil {
 		zap.S().Warn("Failed to remove old sessions: ", err)
-	} else if cnt > 0 {
-		zap.S().Debugf("Removed %d old sessions", cnt)
+	} else if len(sessions) > 0 {
+		for _, sess := range sessions {
+			s.sessionUserCache.Delete(sess)
+		}
+		zap.S().Debugf("Removed %d old sessions", len(sessions))
 	}
 
 	return sid, nil
@@ -79,6 +82,17 @@ func (s *BaseAPI) RemoveSession(ctx context.Context, sid string) *StatusError {
 		return WrapError(err, "Failed to remove session")
 	}
 	s.sessionUserCache.Delete(sid)
+	return nil
+}
+
+func (s *BaseAPI) RemoveUserSessions(ctx context.Context, uid int) *StatusError {
+	removedSessions, err := s.db.RemoveSessions(ctx, uid)
+	if err != nil {
+		return WrapError(err, "Failed to remove sessions")
+	}
+	for _, sess := range removedSessions {
+		s.sessionUserCache.Delete(sess)
+	}
 	return nil
 }
 

@@ -12,8 +12,10 @@ import (
 type KNContextType string
 
 const (
-	// UserKey is the key to be used for adding user objects to context
-	UserKey = KNContextType("user")
+	// AuthedUserKey is the key to be used for adding (AUTHENTICATED) user objects to context
+	AuthedUserKey = KNContextType("authed")
+	// AuthedUserKey is the key to be used for adding CONTENT user objects to context
+	ContentUserKey = KNContextType("user")
 	// ProblemKey is the key to be used for adding problems to context
 	ProblemKey = KNContextType("problem")
 	// ProblemKey is the key to be used for adding blog posts to context
@@ -41,9 +43,9 @@ const (
 )
 
 func UserBriefContext(ctx context.Context) *kilonova.UserBrief {
-	b := getValueContext[kilonova.UserFull](ctx, UserKey).Brief()
+	b := getValueContext[kilonova.UserFull](ctx, AuthedUserKey).Brief()
 	if b == nil {
-		b = getValueContext[kilonova.UserBrief](ctx, UserKey)
+		b = getValueContext[kilonova.UserBrief](ctx, AuthedUserKey)
 	}
 	return b
 }
@@ -53,11 +55,19 @@ func UserBrief(r *http.Request) *kilonova.UserBrief {
 }
 
 func UserFullContext(ctx context.Context) *kilonova.UserFull {
-	return getValueContext[kilonova.UserFull](ctx, UserKey)
+	return getValueContext[kilonova.UserFull](ctx, AuthedUserKey)
 }
 
 func UserFull(r *http.Request) *kilonova.UserFull {
 	return UserFullContext(r.Context())
+}
+
+func ContentUserContext(ctx context.Context) *kilonova.UserFull {
+	return getValueContext[kilonova.UserFull](ctx, ContentUserKey)
+}
+
+func ContentUser(r *http.Request) *kilonova.UserFull {
+	return ContentUserContext(r.Context())
 }
 
 func ProblemContext(ctx context.Context) *kilonova.Problem {

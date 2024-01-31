@@ -248,39 +248,35 @@ func (s *API) Handler() http.Handler {
 		r.With(s.MustBeProposer).Post("/update", s.updateTag)
 	})
 	r.Route("/user", func(r chi.Router) {
-		r.With(s.MustBeAuthed).Post("/setBio", s.setBio())
-		r.With(s.MustBeAuthed).Post("/setPreferredLanguage", s.setPreferredLanguage())
-		r.With(s.MustBeAuthed).Post("/setPreferredTheme", s.setPreferredTheme())
 
 		r.With(s.MustBeAuthed).Post("/resendEmail", s.resendVerificationEmail)
 
-		r.With(s.MustBeAuthed).Post("/updateName", s.updateUsername)
-
-		r.Get("/get", webWrapper(func(ctx context.Context, args struct {
-			ID int `json:"id"`
+		userRouter := chi.NewMux()
+		userRouter.Get("/", webWrapper(func(ctx context.Context, args struct {
 		}) (*kilonova.UserBrief, *sudoapi.StatusError) {
-			return s.base.UserBrief(ctx, args.ID)
+			return util.ContentUserContext(ctx).Brief(), nil
 		}))
-		r.Get("/getByName", webWrapper(func(ctx context.Context, args struct {
-			Name string `json:"name"`
-		}) (*kilonova.UserBrief, *sudoapi.StatusError) {
-			return s.base.UserBriefByName(ctx, args.Name)
-		}))
-		r.Get("/getSelf", func(w http.ResponseWriter, r *http.Request) { returnData(w, util.UserFull(r)) })
-		r.With(s.MustBeAuthed).Get("/getSelfSolvedProblems", s.getSelfSolvedProblems)
-		r.With(s.MustBeAuthed).Get("/getSolvedProblems", s.getSolvedProblems)
+		userRouter.Get("/solvedProblems", s.getSolvedProblems)
+		userRouter.Get("/gravatar", s.getGravatar)
+		userRouter.With(s.selfOrAdmin).Post("/deauthAll", s.deauthAllSessions)
 
-		r.Route("/moderation", func(r chi.Router) {
+		userRouter.With(s.selfOrAdmin).Post("/setBio", s.setBio())
+		userRouter.With(s.selfOrAdmin).Post("/setPreferredLanguage", s.setPreferredLanguage())
+		userRouter.With(s.selfOrAdmin).Post("/setPreferredTheme", s.setPreferredTheme())
+
+		userRouter.Route("/moderation", func(r chi.Router) {
 			r.Use(s.MustBeAdmin)
-			r.Post("/purgeBio", s.purgeBio)
 			r.Post("/manage", s.manageUser)
 			r.Post("/deleteUser", s.deleteUser)
 		})
 
-		r.With(s.MustBeAdmin).Post("/generateUser", s.generateUser)
+		r.With(s.MustBeAuthed, s.authedContentUser).Mount("/self", userRouter)
+		r.With(s.validateUserID).Mount("/byID/{cUID}", userRouter)
+		r.With(s.validateUsername).Mount("/byName/{cUName}", userRouter)
 
-		r.Get("/getGravatar", s.getGravatar)
-		r.With(s.MustBeAuthed).Get("/getSelfGravatar", s.getSelfGravatar)
+		r.With(s.MustBeAuthed).Post("/updateName", s.updateUsername)
+
+		r.With(s.MustBeAdmin).Post("/generateUser", s.generateUser)
 
 		// TODO: Make this secure and maybe with email stuff
 		r.With(s.MustBeAuthed).Post("/changeEmail", s.changeEmail)

@@ -64,7 +64,7 @@ async function updateBio(e) {
 	e.preventDefault()
 	var bio = document.getElementById("newBio").value;
 
-	let res = await bundled.postCall("/user/setBio", {bio})
+	let res = await bundled.postCall("/user/self/setBio", {bio})
 	bundled.apiToast(res) 
 }
 async function updateLanguage(e) {
@@ -72,7 +72,7 @@ async function updateLanguage(e) {
 	var language = document.getElementById("langSelect").value;
     bundled.clearLanguageCookie()
 
-	let res = await bundled.postCall("/user/setPreferredLanguage", {language})
+	let res = await bundled.postCall("/user/self/setPreferredLanguage", {language})
 	if(res.status === "success") {
 		window.location.reload();
 		return

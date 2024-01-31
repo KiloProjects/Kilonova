@@ -55,7 +55,9 @@ class Client:
         return APIResponse(val["status"], val["data"])
 
     def post(self, path: str, data: Optional[dict] = None) -> APIResponse:
-        res = requests.post(urljoin(self.base, path), data=data, headers={"Authorization": self.token})
+        res = requests.post(
+            urljoin(self.base, path), data=data, headers={"Authorization": self.token}
+        )
         val = res.json()
         return APIResponse(val["status"], val["data"])
 
@@ -82,7 +84,7 @@ class Client:
                 print(f"Couldn't merge tag {tg} in {into}: {res.data}")
 
     def check_username_exists(self, uname: str) -> bool:
-        res = self.get("/api/user/getByName", {"name": uname})
+        res = self.get(f"/api/user/byName/{uname}")
         return res.status == "success"
 
     def generate_user(self, uname: str) -> tuple[str, UserFull]:
@@ -109,7 +111,11 @@ class Client:
 
     def deanonymized_leaderboard(self, bundle: UserBundle) -> pd.DataFrame:
         df = self.leaderboard_csv(bundle.contest_id)
-        df["username"] = df["username"].map(lambda x: bundle.created_users.get(x, [x, "no_pwd"])[0] if bundle.created_users is not None else x)
+        df["username"] = df["username"].map(
+            lambda x: bundle.created_users.get(x, [x, "no_pwd"])[0]
+            if bundle.created_users is not None
+            else x
+        )
         return df
 
     def generate_users(self, bundle: UserBundle) -> UserBundle:
@@ -161,7 +167,9 @@ Parolă: {user[1]}
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(prog="kn_scripter", description="Scripting for Kilonova")
+    parser = argparse.ArgumentParser(
+        prog="kn_scripter", description="Scripting for Kilonova"
+    )
     parser.add_argument("-u", "--username", required=True)
     parser.add_argument("-p", "--password", required=True)
     parser.add_argument("-bp", "--bundle_path")

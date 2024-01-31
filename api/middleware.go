@@ -84,7 +84,7 @@ func (s *API) SetupSession(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.UserKey, user)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AuthedUserKey, user)))
 	})
 }
 
@@ -264,6 +264,56 @@ func (s *API) validateAttachmentName(next http.Handler) http.Handler {
 			rezAtt = att
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AttachmentKey, rezAtt)))
+	})
+}
+
+func (s *API) validateUserID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID, err := strconv.Atoi(chi.URLParam(r, "cUID"))
+		if err != nil {
+			errorData(w, "invalid user ID", http.StatusBadRequest)
+			return
+		}
+		user, err1 := s.base.UserFull(r.Context(), userID)
+		if err1 != nil {
+			errorData(w, "user was not found", http.StatusNotFound)
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ContentUserKey, user)))
+	})
+}
+
+func (s *API) selfOrAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// ContentUser must not be nil, requesting user must be authenticated
+		// and the requesting user must EITHER be an admin or the user that is being operated on
+		if util.ContentUser(r) == nil || !util.UserBrief(r).IsAuthed() || !(util.UserBrief(r).IsAdmin() || util.ContentUser(r).ID == util.UserBrief(r).ID) {
+			errorData(w, "you aren't allowed to do this!", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *API) validateUsername(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, err1 := s.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "cUName")))
+		if err1 != nil {
+			errorData(w, "user was not found", http.StatusNotFound)
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ContentUserKey, user)))
+	})
+}
+
+func (s *API) authedContentUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if util.UserFull(r) == nil {
+			zap.S().Warn("authedContentUser got nil UserFull in context")
+			errorData(w, "user was not found", http.StatusNotFound)
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ContentUserKey, util.UserFull(r))))
 	})
 }
 

@@ -119,7 +119,7 @@ func (s *BaseAPI) UpdateAttachmentData(ctx context.Context, aid int, data []byte
 	}
 	s.DelAttachmentRenders(aid)
 	go func() {
-		ctx = context.WithValue(context.WithoutCancel(ctx), util.UserKey, author)
+		ctx = context.WithValue(context.WithoutCancel(ctx), util.AuthedUserKey, author)
 		att, err := s.Attachment(ctx, aid)
 		if err != nil {
 			zap.S().Warn(err, aid)

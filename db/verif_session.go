@@ -94,9 +94,9 @@ func (s *DB) RemoveSession(ctx context.Context, sess string) error {
 
 var MaxSessionCount = config.GenFlag[int]("behavior.sessions.max_concurrent", 10, "Maximum number of sessions a user can have in total")
 
-func (s *DB) RemoveOldSessions(ctx context.Context, userID int) (int, error) {
-	tag, err := s.conn.Exec(ctx, `DELETE FROM sessions WHERE user_id = $1 AND NOT (id = ANY(SELECT id FROM sessions WHERE user_id = $1 ORDER BY expires_at DESC LIMIT $2))`, userID, MaxSessionCount.Value())
-	return int(tag.RowsAffected()), err
+func (s *DB) RemoveOldSessions(ctx context.Context, userID int) ([]string, error) {
+	q, _ := s.conn.Query(ctx, `DELETE FROM sessions WHERE user_id = $1 AND NOT (id = ANY(SELECT id FROM sessions WHERE user_id = $1 ORDER BY expires_at DESC LIMIT $2))`, userID, MaxSessionCount.Value())
+	return pgx.CollectRows(q, pgx.RowTo[string])
 }
 
 func (s *DB) ExtendSession(ctx context.Context, sid string) (time.Time, error) {
@@ -109,7 +109,7 @@ func (s *DB) ExtendSession(ctx context.Context, sid string) (time.Time, error) {
 	return newExpiration, err
 }
 
-func (s *DB) RemoveSessions(ctx context.Context, userID int) error {
-	_, err := s.conn.Exec(ctx, `DELETE FROM sessions WHERE user_id = $1`, userID)
-	return err
+func (s *DB) RemoveSessions(ctx context.Context, userID int) ([]string, error) {
+	q, _ := s.conn.Query(ctx, `DELETE FROM sessions WHERE user_id = $1 RETURNING id`, userID)
+	return pgx.CollectRows(q, pgx.RowTo[string])
 }

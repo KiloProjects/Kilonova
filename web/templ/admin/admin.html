@@ -38,7 +38,7 @@
 
 	async function setFormAdmin(toSet) {
 		let user = document.getElementById("userToChange").value;
-		let res = await bundled.getCall('/user/getByName', {name: user})
+		let res = await bundled.getCall(`/user/byName/${user}`, {})
 		if(res.status == "error") {
 			bundled.apiToast(res)
 			return
@@ -47,7 +47,7 @@
 	}
 	async function setFormProposer(toSet) {
 		let user = document.getElementById("userToChange").value;
-		let res = await bundled.getCall('/user/getByName', {name: user})
+		let res = await bundled.getCall(`/user/byName/${user}`, {})
 		if(res.status == "error") {
 			bundled.apiToast(res)
 			return
@@ -80,7 +80,7 @@
 		}
 		let outhtml = ""
 		for(let user of res.data.users) {
-			outhtml += `<div class="list-group-item flex justify-between items-center"><a href="/profile/${user.name}"><img class="rounded inline-block mr-2" src="/api/user/getGravatar?name=${user.name}&s=32" width="32" height="32" alt="Avatar"/>${user.name}</a>`
+			outhtml += `<div class="list-group-item flex justify-between items-center"><a href="/profile/${user.name}"><img class="rounded inline-block mr-2" src="/api/user/byName/${user.name}/gravatar?s=32" width="32" height="32" alt="Avatar"/>${user.name}</a>`
 			if(user.id != 1 && {{authedUser.ID}} == 1) {
 				outhtml += `<span style="cursor: pointer;" onclick="${cb}(${user.id}, false)">X</span>`
 			}

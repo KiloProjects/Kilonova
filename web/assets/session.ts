@@ -74,7 +74,7 @@ export function setTheme(theme: "light" | "dark") {
 
 	// if user is logged in, update default preference
 	if (window.platform_info.user_id > 0) {
-		postCall<string>("/user/setPreferredTheme", { theme })
+		postCall<string>("/user/self/setPreferredTheme", { theme })
 			.then((res) => {
 				if (res.status == "error") {
 					console.error(res.data);
