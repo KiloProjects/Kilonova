@@ -252,10 +252,7 @@ func (s *API) Handler() http.Handler {
 		r.With(s.MustBeAuthed).Post("/resendEmail", s.resendVerificationEmail)
 
 		userRouter := chi.NewMux()
-		userRouter.Get("/", webWrapper(func(ctx context.Context, args struct {
-		}) (*kilonova.UserBrief, *sudoapi.StatusError) {
-			return util.ContentUserContext(ctx).Brief(), nil
-		}))
+		userRouter.Get("/", func(w http.ResponseWriter, r *http.Request) { returnData(w, util.ContentUser(r).Brief()) })
 		userRouter.Get("/solvedProblems", s.getSolvedProblems)
 		userRouter.Get("/gravatar", s.getGravatar)
 		userRouter.With(s.selfOrAdmin).Post("/deauthAll", s.deauthAllSessions)

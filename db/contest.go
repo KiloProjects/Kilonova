@@ -257,7 +257,7 @@ func (s *DB) ContestClassicLeaderboard(ctx context.Context, contest *kilonova.Co
 	fb := newFilterBuilderFromPos(contest.ID, freezeTime, contest.Type == kilonova.ContestTypeVirtual)
 	userFilterQuery(filter, fb)
 
-	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_top_view($1, $2, $3) WHERE EXISTS (SELECT 1 FROM users WHERE user_id = users.id AND "+fb.Where()+")", fb.Args()...)
+	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_top_view($1, $2, $3) WHERE EXISTS (SELECT 1 FROM users WHERE user_id = users.id AND "+fb.Where()+") ORDER BY total_score DESC, last_time ASC NULLS LAST, user_id", fb.Args()...)
 	if err != nil {
 		return nil, err
 	}
@@ -353,7 +353,7 @@ func (s *DB) ContestICPCLeaderboard(ctx context.Context, contest *kilonova.Conte
 	fb := newFilterBuilderFromPos(contest.ID, freezeTime, contest.Type == kilonova.ContestTypeVirtual)
 	userFilterQuery(filter, fb)
 
-	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_icpc_view($1, $2, $3) WHERE EXISTS (SELECT 1 FROM users WHERE user_id = users.id AND "+fb.Where()+")", fb.Args()...)
+	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_icpc_view($1, $2, $3) WHERE EXISTS (SELECT 1 FROM users WHERE user_id = users.id AND "+fb.Where()+") ORDER BY num_solved DESC, penalty ASC NULLS LAST, last_time ASC NULLS LAST, user_id", fb.Args()...)
 	if err != nil {
 		zap.S().Warn(err)
 		return nil, err
