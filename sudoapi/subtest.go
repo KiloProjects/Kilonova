@@ -21,9 +21,8 @@ func (s *BaseAPI) SubTests(ctx context.Context, submissionID int) ([]*kilonova.S
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
 			zap.S().Warn(err)
-			return nil, WrapError(err, "Couldn't get subtests")
 		}
-		return nil, ErrUnknownError
+		return nil, WrapError(err, "Couldn't get subtests")
 	}
 	return stests, nil
 }

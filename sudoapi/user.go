@@ -86,7 +86,7 @@ func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([
 		if !errors.Is(err, context.Canceled) {
 			zap.S().Warn(err)
 		}
-		return nil, ErrUnknownError
+		return nil, WrapError(err, "Couldn't get users")
 	}
 	return mapUsersBrief(users), nil
 }

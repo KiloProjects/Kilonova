@@ -193,7 +193,9 @@ func (s *BaseAPI) ContestProblem(ctx context.Context, contest *kilonova.Contest,
 	}
 	problems, err := s.db.ContestProblems(ctx, contest.ID)
 	if err != nil {
-		zap.S().Warn(err)
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
 		return nil, WrapError(err, "Couldn't get problems")
 	}
 	for _, problem := range problems {
