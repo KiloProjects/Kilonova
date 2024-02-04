@@ -44,12 +44,13 @@ type checkerResult struct {
 	Output     string
 }
 
+// note that customChecker should not be used between submissions
 type customChecker struct {
 	mgr      eval.BoxScheduler
 	pb       *kilonova.Problem
-	sub      *kilonova.Submission
 	filename string
 	code     []byte
+	subCode  []byte
 
 	// lastUpdatedAt is used to check if the checker needs to be recompiled, in the case it exists
 	lastUpdatedAt time.Time
@@ -59,7 +60,7 @@ type customChecker struct {
 	legacy bool
 }
 
-// Prepare compiles the grader
+// Prepare compiles the checker for the submission
 func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	var shouldCompile bool
 	stat, err := os.Stat(path.Join(config.Eval.CompilePath, "checker_cache", fmt.Sprintf("%d.bin", c.pb.ID)))
@@ -130,16 +131,16 @@ func (c *customChecker) RunChecker(ctx context.Context, pOut, cIn, cOut io.Reade
 }
 
 func (c *customChecker) Cleanup(_ context.Context) error {
-	// Try not to clean checkers all the time anymore
+	// Don't clean checkers all the time anymore
 	return nil // eval.CleanCompilation(-c.sub.ID)
 }
 
-func NewLegacyCustomChecker(mgr eval.BoxScheduler, logger *zap.SugaredLogger, pb *kilonova.Problem, sub *kilonova.Submission, filename string, code []byte, lastUpdatedAt time.Time) Checker {
-	return &customChecker{mgr, pb, sub, filename, code, lastUpdatedAt, logger, true}
+func NewLegacyCustomChecker(mgr eval.BoxScheduler, logger *zap.SugaredLogger, pb *kilonova.Problem, filename string, code []byte, subCode []byte, lastUpdatedAt time.Time) Checker {
+	return &customChecker{mgr, pb, filename, code, subCode, lastUpdatedAt, logger, true}
 }
 
-func NewStandardCustomChecker(mgr eval.BoxScheduler, logger *zap.SugaredLogger, pb *kilonova.Problem, sub *kilonova.Submission, filename string, code []byte, lastUpdatedAt time.Time) Checker {
-	return &customChecker{mgr, pb, sub, filename, code, lastUpdatedAt, logger, false}
+func NewStandardCustomChecker(mgr eval.BoxScheduler, logger *zap.SugaredLogger, pb *kilonova.Problem, filename string, code []byte, subCode []byte, lastUpdatedAt time.Time) Checker {
+	return &customChecker{mgr, pb, filename, code, subCode, lastUpdatedAt, logger, false}
 }
 
 func PurgeCheckerCache() error {

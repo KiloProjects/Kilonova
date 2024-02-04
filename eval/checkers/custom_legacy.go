@@ -35,7 +35,7 @@ func legacyCheckerTask(ctx context.Context, box eval.Sandbox, job *customChecker
 		rez.Output = ErrOut
 		return rez, nil
 	}
-	if err := box.WriteFile("/box/contestant.txt", strings.NewReader(job.c.sub.Code), 0644); err != nil {
+	if err := box.WriteFile("/box/contestant.txt", bytes.NewReader(job.c.subCode), 0644); err != nil {
 		rez.Output = ErrOut
 		return rez, nil
 	}

@@ -1,11 +1,14 @@
 {{ define "title" }} {{getText "paste_title"}} #{{.Paste.ID}} {{ end }} 
 {{ define "content" }}
 
+{{$maxSize := intFlag "behavior.problem.default_source_size"}}
+{{$subLang := .FullSub.Language}}
+
 <kn-paste-viewer 
     paste_id="{{.Paste.ID}}" 
     authorEnc="{{.Paste.Author | encodeJSON}}" 
     subEnc="{{.FullSub | encodeJSON}}" 
-    code="{{if .FullSub.Code}}{{syntaxHighlight .FullSub.Code .FullSub.Language}}{{end}}"></kn-paste-viewer>
+    code="{{if (lt .FullSub.CodeSize $maxSize)}}{{with subCode .FullSub}}{{syntaxHighlight . $subLang}}{{end}}{{end}}"></kn-paste-viewer>
 
 {{ if pasteEditor authedUser .Paste }}
     <button onclick="deletePaste()" class="btn btn-red my-2">{{getText "del_paste"}}</button>

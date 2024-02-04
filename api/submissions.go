@@ -117,7 +117,7 @@ func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err1 := s.base.CreateSubmission(r.Context(), util.UserFull(r), problem, code, lang, args.ContestID, false)
+	id, err1 := s.base.CreateSubmission(context.WithoutCancel(r.Context()), util.UserFull(r), problem, code, lang, args.ContestID, false)
 	if err1 != nil {
 		err1.WriteError(w)
 		return

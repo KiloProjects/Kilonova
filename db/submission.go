@@ -81,6 +81,12 @@ func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) 
 	return mapper(subs, s.internalToSubmission), nil
 }
 
+func (s *DB) SubmissionCode(ctx context.Context, subID int) ([]byte, error) {
+	var code []byte
+	err := s.conn.QueryRow(ctx, "SELECT code FROM submissions WHERE id = $1 LIMIT 1", subID).Scan(&code)
+	return code, err
+}
+
 func (s *DB) SubmissionCount(ctx context.Context, filter kilonova.SubmissionFilter, limit int) (int, error) {
 	fb := newFilterBuilder()
 	subFilterQuery(&filter, fb, UseLateralVisibility.Value())
@@ -333,12 +339,12 @@ func (s *DB) internalToSubmission(sub *dbSubmission) *kilonova.Submission {
 	}
 
 	return &kilonova.Submission{
-		ID:             sub.ID,
-		CreatedAt:      sub.CreatedAt,
-		UserID:         sub.UserID,
-		ProblemID:      sub.ProblemID,
-		Language:       sub.Language,
-		Code:           sub.Code,
+		ID:        sub.ID,
+		CreatedAt: sub.CreatedAt,
+		UserID:    sub.UserID,
+		ProblemID: sub.ProblemID,
+		Language:  sub.Language,
+		// Code:           sub.Code,
 		CodeSize:       sub.CodeSize,
 		Status:         kilonova.Status(sub.Status),
 		CompileError:   sub.CompileError,

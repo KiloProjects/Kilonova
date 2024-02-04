@@ -49,7 +49,11 @@ func genSubCompileRequest(ctx context.Context, base *sudoapi.BaseAPI, sub *kilon
 			}
 		}
 	}
-	req.CodeFiles[eval.Langs[sub.Language].SourceName] = []byte(sub.Code)
+	subCode, err := base.RawSubmissionCode(ctx, sub.ID)
+	if err != nil {
+		return nil, err
+	}
+	req.CodeFiles[eval.Langs[sub.Language].SourceName] = subCode
 	for _, headerFile := range settings.HeaderFiles {
 		for _, att := range atts {
 			if att.Name == headerFile {
@@ -487,8 +491,12 @@ func getAppropriateChecker(ctx context.Context, base *sudoapi.BaseAPI, runner ev
 	if err != nil {
 		return nil, kilonova.WrapError(err, "Couldn't get problem checker code")
 	}
-	if settings.LegacyChecker {
-		return checkers.NewLegacyCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data, att.LastUpdatedAt), nil
+	subCode, err := base.RawSubmissionCode(ctx, sub.ID)
+	if err != nil {
+		return nil, kilonova.WrapError(err, "Couldn't get submission source code")
 	}
-	return checkers.NewStandardCustomChecker(runner, graderLogger, pb, sub, settings.CheckerName, data, att.LastUpdatedAt), nil
+	if settings.LegacyChecker {
+		return checkers.NewLegacyCustomChecker(runner, graderLogger, pb, settings.CheckerName, data, subCode, att.LastUpdatedAt), nil
+	}
+	return checkers.NewStandardCustomChecker(runner, graderLogger, pb, settings.CheckerName, data, subCode, att.LastUpdatedAt), nil
 }

@@ -427,7 +427,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"serverTimeFooter": func() string {
 			return time.Now().Format("15:04:05")
 		},
-		"syntaxHighlight": func(code, lang string) (string, error) {
+		"syntaxHighlight": func(code []byte, lang string) (string, error) {
 			fmt := chtml.New(chtml.WithClasses(true), chtml.TabWidth(4))
 			if lang == "pascal" {
 				lang = "pas"
@@ -438,7 +438,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			}
 			lm = chroma.Coalesce(lm)
 			var buf bytes.Buffer
-			it, err := lm.Tokenise(nil, code)
+			it, err := lm.Tokenise(nil, string(code))
 			if err != nil {
 				return "", err
 			}
@@ -766,6 +766,10 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"numSolvedPblist": func(listID int) int {
 			zap.S().Error("Uninitialized `numSolvedPblist`")
 			return -1
+		},
+		"subCode": func(sub *kilonova.FullSubmission) []byte {
+			zap.S().Error("Uninitialized `subCode`")
+			return nil
 		},
 	}
 	return &Web{funcs, base}

@@ -265,14 +265,19 @@ func (ag *archiveGenerator) addSubmissions(ctx context.Context) *kilonova.Status
 	for _, sub := range subs {
 		lang, ok := eval.Langs[sub.Language]
 		if !ok || lang.Disabled {
-			zap.S().Info("Skipping submission due to unknown/disabled language ", sub.ID)
+			zap.S().Infof("Skipping submission due to unknown/disabled language (%q): %d", sub.Language, sub.ID)
 			continue
 		}
 		f, err := ag.ar.Create(fmt.Sprintf("submissions/%d-%sp%s", sub.ID, sub.Score.String(), lang.Extensions[len(lang.Extensions)-1]))
 		if err != nil {
 			return kilonova.WrapError(err, "Couldn't create archive submission file")
 		}
-		if _, err := io.WriteString(f, sub.Code); err != nil {
+		code, err1 := ag.base.RawSubmissionCode(ctx, sub.ID)
+		if err1 != nil {
+			return kilonova.WrapError(err1, "Couldn't get submission code")
+		}
+		n, err := f.Write(code)
+		if err != nil || n < len(code) {
 			return kilonova.WrapError(err, "Couldn't write submission file")
 		}
 	}

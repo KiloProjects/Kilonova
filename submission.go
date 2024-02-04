@@ -33,9 +33,9 @@ type Submission struct {
 	UserID    int       `json:"user_id"`
 	ProblemID int       `json:"problem_id"`
 	Language  string    `json:"language"`
-	Code      string    `json:"code,omitempty"`
-	CodeSize  int       `json:"code_size"`
-	Status    Status    `json:"status"`
+	// Code      string    `json:"code,omitempty"`
+	CodeSize int    `json:"code_size"`
+	Status   Status `json:"status"`
 
 	CompileError   *bool   `json:"compile_error"`
 	CompileMessage *string `json:"compile_message,omitempty"`
@@ -164,6 +164,8 @@ type FullSubmission struct {
 	SubTests []*SubTest `json:"subtests"`
 
 	SubTasks []*SubmissionSubTask `json:"subtasks"`
+
+	Code []byte `json:"code"`
 
 	// ProblemEditor returns whether the looking user is a problem editor
 	ProblemEditor bool `json:"problem_editor"`

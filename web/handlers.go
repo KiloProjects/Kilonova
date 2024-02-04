@@ -1635,6 +1635,16 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 			}
 			return lists
 		},
+		"subCode": func(sub *kilonova.FullSubmission) []byte {
+			code, err := rt.base.SubmissionCode(r.Context(), &sub.Submission, sub.Problem, util.UserBrief(r), true)
+			if err != nil {
+				if !errors.Is(err, context.Canceled) {
+					zap.S().Warn(err)
+				}
+				code = nil
+			}
+			return code
+		},
 	})
 
 	if err := templ.Execute(w, data); err != nil {

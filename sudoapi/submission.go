@@ -188,6 +188,34 @@ func (s *BaseAPI) RawSubmissions(ctx context.Context, filter kilonova.Submission
 	return subs, nil
 }
 
+func (s *BaseAPI) RawSubmissionCode(ctx context.Context, subid int) ([]byte, *StatusError) {
+	data, err := s.db.SubmissionCode(ctx, subid)
+	if err != nil {
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
+		return nil, WrapError(err, "Couldn't get submission code")
+	}
+	return data, nil
+}
+
+func (s *BaseAPI) SubmissionCode(ctx context.Context, sub *kilonova.Submission, subProblem *kilonova.Problem, lookingUser *kilonova.UserBrief, isLooking bool) ([]byte, *StatusError) {
+	if sub == nil || subProblem == nil || sub.ProblemID != subProblem.ID {
+		return nil, Statusf(400, "Invalid source code parameters")
+	}
+	if isLooking && !s.isSubmissionVisible(ctx, sub, subProblem, lookingUser) {
+		return []byte{}, nil
+	}
+	data, err := s.db.SubmissionCode(ctx, sub.ID)
+	if err != nil {
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
+		return nil, WrapError(err, "Couldn't get submission code")
+	}
+	return data, nil
+}
+
 type FullSubmission = kilonova.FullSubmission
 
 func (s *BaseAPI) Submission(ctx context.Context, subid int, lookingUser *UserBrief) (*FullSubmission, *StatusError) {
@@ -245,6 +273,12 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *Use
 		return nil, err1
 	}
 	rez.Author = author
+
+	code, err1 := s.SubmissionCode(ctx, sub, problem, lookingUser, isLooking)
+	if err1 != nil {
+		return nil, err1
+	}
+	rez.Code = code
 
 	rez.Problem = problem
 	rez.ProblemEditor = s.IsProblemEditor(lookingUser, rez.Problem)
@@ -500,7 +534,7 @@ func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission
 		return
 	}
 	if !s.isSubmissionVisible(ctx, sub, subProblem, user) {
-		sub.Code = ""
+		// sub.Code = ""
 		sub.CompileMessage = nil
 		sub.CodeSize = 0
 	}

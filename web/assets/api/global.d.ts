@@ -58,7 +58,6 @@ declare global {
 		user_id: number;
 		problem_id: number;
 		language: string;
-		code?: string;
 		code_size: number;
 		compile_error: boolean;
 		compile_message?: string;
@@ -113,6 +112,8 @@ declare global {
 		problem: Problem;
 		subtests: SubTest[];
 		subtasks: SubmissionSubTask[];
+
+		code: string;
 
 		problem_editor: boolean;
 		truly_visible: boolean;

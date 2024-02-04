@@ -19,21 +19,21 @@ import { downloadBlob, parseTime, sizeFormatter, getGradient, fromBase64 } from 
 import { defaultClient } from "../api/client";
 
 function downloadCode(sub: FullSubmission) {
-	if (typeof sub.code === "undefined") {
+	if (sub.code_size <= 0) {
 		console.error("Trying to download code when it isn't available");
 		return;
 	}
-	var file = new Blob([sub.code], { type: "text/plain;charset=utf-8" });
+	var file = new Blob([fromBase64(sub.code)], { type: "text/plain;charset=utf-8" });
 	var filename = `${slugify(sub.problem.name)}-${sub.id}.${sub.language.replace(/[0-9]+$/g, "").replace("outputOnly", "txt")}`;
 	downloadBlob(file, filename);
 }
 
-async function copyCode(sub: Submission) {
-	if (typeof sub.code === "undefined") {
+async function copyCode(sub: FullSubmission) {
+	if (sub.code_size <= 0) {
 		console.error("Trying to copy code when it isn't available");
 		return;
 	}
-	await navigator.clipboard.writeText(sub.code).then(
+	await navigator.clipboard.writeText(fromBase64(sub.code)).then(
 		() => {
 			createToast({ status: "success", description: getText("copied") });
 		},
@@ -187,7 +187,6 @@ function CompileErrorInfo({ sub }: { sub: FullSubmission }) {
 
 function SubCode({ sub, codeHTML, isPaste }: { sub: FullSubmission; codeHTML: string; isPaste: boolean }) {
 	let [warningDismissed, setWarningDismissed] = useState<boolean>(sub.truly_visible || isPaste);
-	console.log(sub);
 	if (!warningDismissed) {
 		return (
 			<div class="segment-panel">
@@ -209,7 +208,7 @@ function SubCode({ sub, codeHTML, isPaste }: { sub: FullSubmission; codeHTML: st
 				<>
 					<p>{getText("noSyntaxHighlight")}</p>
 					<pre class="chroma">
-						<code>{sub.code}</code>
+						<code>{fromBase64(sub.code)}</code>
 					</pre>
 				</>
 			)}
@@ -458,7 +457,7 @@ function SubmissionView({ sub, bigCode, codeHTML, pasteAuthor }: { sub: FullSubm
 	);
 
 	let under = <></>;
-	if (sub.code != null) {
+	if (sub.code_size > 0) {
 		under = <SubCode sub={sub} codeHTML={codeHTML} isPaste={typeof pasteAuthor !== "undefined"} />;
 	}
 
