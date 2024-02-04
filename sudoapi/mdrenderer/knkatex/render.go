@@ -3,51 +3,19 @@ package knkatex
 
 import (
 	_ "embed"
-	"errors"
-	"html"
 	"io"
-	"runtime"
-	"strings"
 
-	"github.com/lithdew/quickjs"
+	"github.com/KiloProjects/kilonova/internal/config"
 )
 
 //go:embed katex.min.js
 var code string
 
+var UseQuickJS = config.GenFlag[bool]("behavior.markdown.qjs_katex", false, "Use QuickJS for rendering KaTeX math (requires cgo)")
+
 func Render(w io.Writer, src []byte, display bool) error {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-
-	runtime := quickjs.NewRuntime()
-	defer runtime.Free()
-
-	context := runtime.NewContext()
-	defer context.Free()
-
-	globals := context.Globals()
-
-	result, err := context.Eval(code)
-	if err != nil {
-		return err
+	if UseQuickJS.Value() {
+		return RenderQuickJS(w, src, display)
 	}
-	defer result.Free()
-
-	globals.Set("_EqSrc3120", context.String(string(src)))
-	if display {
-		result, err = context.Eval("katex.renderToString(_EqSrc3120, { displayMode: true })")
-	} else {
-		result, err = context.Eval("katex.renderToString(_EqSrc3120)")
-	}
-	defer result.Free()
-	if err != nil {
-		var evalErr *quickjs.Error
-		if errors.As(err, &evalErr) {
-			io.WriteString(w, "<code>"+html.EscapeString(strings.TrimPrefix(evalErr.Cause, "ParseError: "))+"</code>")
-		}
-		return err
-	}
-
-	_, err = io.WriteString(w, result.String())
-	return err
+	return RenderGoja(w, src, display)
 }

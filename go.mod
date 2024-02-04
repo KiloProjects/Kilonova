@@ -30,6 +30,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.12.0
 	github.com/antchfx/xmlquery v1.3.18
 	github.com/disintegration/gift v1.2.1
+	github.com/dop251/goja v0.0.0-20231027120936-b396bb4c349d
 	github.com/evanw/esbuild v0.20.0
 	github.com/go-chi/chi/v5 v5.0.11
 	github.com/jackc/pgx-shopspring-decimal v0.0.0-20220624020537-1d36b5a1853e
@@ -46,7 +47,9 @@ require (
 	github.com/antchfx/xpath v1.2.5 // indirect
 	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
+	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
