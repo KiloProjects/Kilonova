@@ -180,6 +180,26 @@ func (b *IsolateBox) runCommand(ctx context.Context, params []string, metaFile s
 	return parseMetaFile(f), nil
 }
 
+func dumpFileListing(w io.Writer, path string, showPath string) {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		fmt.Fprintf(w, "Could not read `%s`: %#v", showPath, err)
+	} else {
+		fmt.Fprintf(w, "\t`%s` contents:\n", showPath)
+		for _, entry := range entries {
+			mode := "???"
+			info, err := entry.Info()
+			if err != nil {
+				mode = "ERR:" + err.Error()
+			} else {
+				mode = info.Mode().String()
+			}
+
+			fmt.Fprintf(w, "\t\t `%s` (mode: %s)\n", entry.Name(), mode)
+		}
+	}
+}
+
 func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eval.RunConfig) (*eval.RunStats, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -191,7 +211,7 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 		p := b.getFilePath(command[0])
 		if _, err := os.Stat(p); err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
-				zap.S().Warn("Executable does not exist in sandbox and will probably error")
+				zap.S().Warnf("Executable does not exist in sandbox and will probably error in box %d", b.boxID)
 			} else {
 				zap.S().Warn(err)
 			}
@@ -204,6 +224,14 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 		meta, err = b.runCommand(ctx, append(b.buildRunFlags(conf), command...), metaFile)
 		b.metaFile = ""
 		if err == nil && meta != nil && meta.Status != "XX" {
+			if meta.ExitCode == 127 {
+				zap.S().Warnf("Exit code 127 in box %d. Check grader.log for more details", b.boxID)
+				var s strings.Builder
+				fmt.Fprintf(&s, "Exit code 127 in box %d\n", b.boxID)
+				dumpFileListing(&s, b.getFilePath("/"), "/")
+				dumpFileListing(&s, b.getFilePath("/box"), "/box")
+				b.logger.Warn(s.String())
+			}
 			return meta, err
 		}
 

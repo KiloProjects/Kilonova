@@ -386,13 +386,13 @@ func (s *Assets) ServeProblemArchive() http.HandlerFunc {
 		wr := bufio.NewWriter(w)
 		if err := test.GenerateArchive(r.Context(), util.Problem(r), wr, s.base, &args); err != nil {
 			if !errors.Is(err, context.Canceled) {
-				if !errors.Is(err, syscall.EPIPE) {
+				if !errors.Is(err, syscall.EPIPE) && !errors.Is(err, syscall.ECONNRESET) {
 					zap.S().Warn(err)
 				}
 			}
 			fmt.Fprint(w, err)
 		}
-		if err := wr.Flush(); err != nil && !errors.Is(err, syscall.EPIPE) {
+		if err := wr.Flush(); err != nil && !errors.Is(err, syscall.EPIPE) && !errors.Is(err, syscall.ECONNRESET) {
 			zap.S().Warn(err)
 		}
 	}

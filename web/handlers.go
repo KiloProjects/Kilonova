@@ -1583,7 +1583,7 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 					return val
 				}
 			}
-			zap.S().Warn("Cache miss: ", listID)
+			zap.S().Warnf("Cache miss: %d (Page: %q, cache: %#+v)", listID, r.URL.Path, pblistCache)
 			cnt, err := rt.base.NumSolvedFromPblist(r.Context(), listID, authedUser.ID)
 			if err != nil {
 				if !errors.Is(err, context.Canceled) {
