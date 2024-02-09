@@ -32,16 +32,25 @@ def get_numeric_value(filename):
 
 def delete_files(path):
     """Deletes files in a directory in alphabetical order until the directory size is under a set size."""
-    while get_directory_size(path) > max_size:
+    dir_size = get_directory_size(path)
+    while dir_size > max_size:
+        
         files = os.listdir(path)
         files = sorted(files, key=lambda x: get_numeric_value(os.path.splitext(os.path.basename(x))[0]))
+        
+        removed_size = 0
         for file in files:
             file_path = os.path.join(path, file)
             if os.path.isfile(file_path):
+                sz = os.stat(file_path).st_size
+                removed_size += sz
                 os.remove(file_path)
-                print(f"Deleted file: {file_path}")
-                if get_directory_size(path) <= max_size:
-                    return
+                if dir_size - removed_size < max_size:
+                    break
+                print(f"Deleted file: {file_path} (size: {sz})")
+        
+        dir_size = get_directory_size(path)
+        print(f"New dir size: {dir_size}")
 
 if len(sys.argv) < 2:
     print("You must provide a path.")
