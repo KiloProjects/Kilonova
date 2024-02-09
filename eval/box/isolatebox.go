@@ -249,7 +249,7 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 				fmt.Fprintf(&s, "Exit code 127 in box %d\n", b.boxID)
 				spew.Fdump(&s, conf)
 				fmt.Fprintf(&s, "Command: %#+v\n", command)
-				fmt.Fprintf(&s, "Isolate out: %q\b", meta.InternalMessage)
+				fmt.Fprintf(&s, "Isolate out: %q\n", meta.InternalMessage)
 				dumpFileListing(&s, b.getFilePath("/"), "/", "", true)
 				b.logger.Warn(s.String())
 			}
