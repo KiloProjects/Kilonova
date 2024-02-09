@@ -3,6 +3,7 @@ package box
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -186,6 +187,17 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 	var meta *eval.RunStats
 	var err error
 
+	if strings.HasPrefix(command[0], "/box") {
+		p := b.getFilePath(command[0])
+		if _, err := os.Stat(p); err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				zap.S().Warn("Executable does not exist in sandbox and will probably error")
+			} else {
+				zap.S().Warn(err)
+			}
+		}
+	}
+
 	for i := 1; i <= runErrRetries; i++ {
 		metaFile := path.Join(os.TempDir(), "kn-"+kilonova.RandomString(12))
 		b.metaFile = metaFile
@@ -268,7 +280,7 @@ func parseMetaFile(r io.Reader) *eval.RunStats {
 		case "status":
 			file.Status = val
 		case "time":
-			file.Time, _ = strconv.ParseFloat(val, 32)
+			file.Time, _ = strconv.ParseFloat(val, 64)
 		case "time-wall":
 			// file.WallTime, _ = strconv.ParseFloat(val, 32)
 			continue

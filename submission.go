@@ -165,6 +165,7 @@ type FullSubmission struct {
 
 	SubTasks []*SubmissionSubTask `json:"subtasks"`
 
+	// TODO: maybe remove?
 	Code []byte `json:"code"`
 
 	// ProblemEditor returns whether the looking user is a problem editor

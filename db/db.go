@@ -135,7 +135,7 @@ func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[stri
 	loggerOnce.Do(func() {
 		dbLogger = zap.New(kilonova.GetZapCore(config.Common.Debug, false, &lumberjack.Logger{
 			Filename: path.Join(config.Common.LogDir, "db.log"),
-			MaxSize:  20, // MB
+			MaxSize:  200, // MB
 			Compress: true,
 		}), zap.AddCaller())
 	})
