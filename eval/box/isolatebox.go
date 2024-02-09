@@ -2,6 +2,7 @@ package box
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -163,7 +164,11 @@ func (b *IsolateBox) Close() error {
 }
 
 func (b *IsolateBox) runCommand(ctx context.Context, params []string, metaFile string) (*eval.RunStats, error) {
-	err := exec.CommandContext(ctx, config.Eval.IsolatePath, params...).Run()
+	var isolateOut bytes.Buffer
+	cmd := exec.CommandContext(ctx, config.Eval.IsolatePath, params...)
+	cmd.Stdout = &isolateOut
+	cmd.Stderr = &isolateOut
+	err := cmd.Run()
 	if _, ok := err.(*exec.ExitError); err != nil && !ok {
 		spew.Dump(err)
 		return nil, err
@@ -177,15 +182,15 @@ func (b *IsolateBox) runCommand(ctx context.Context, params []string, metaFile s
 	}
 	defer f.Close()
 	defer os.Remove(metaFile)
-	return parseMetaFile(f), nil
+	return parseMetaFile(f, isolateOut), nil
 }
 
-func dumpFileListing(w io.Writer, path string, showPath string) {
-	entries, err := os.ReadDir(path)
+func dumpFileListing(w io.Writer, p string, showPath string, indent string, rec bool) {
+	entries, err := os.ReadDir(p)
 	if err != nil {
-		fmt.Fprintf(w, "Could not read `%s`: %#v", showPath, err)
+		fmt.Fprintf(w, "%sCould not read `%s`: %#v", indent, showPath, err)
 	} else {
-		fmt.Fprintf(w, "\t`%s` contents:\n", showPath)
+		fmt.Fprintf(w, "%s- `%s` contents:\n", indent, showPath)
 		for _, entry := range entries {
 			mode := "???"
 			info, err := entry.Info()
@@ -195,7 +200,11 @@ func dumpFileListing(w io.Writer, path string, showPath string) {
 				mode = info.Mode().String()
 			}
 
-			fmt.Fprintf(w, "\t\t `%s` (mode: %s)\n", entry.Name(), mode)
+			fmt.Fprintf(w, "%s\t`%s` (mode: %s) size: %d\n", indent, info.Name(), mode, info.Size())
+			if info.IsDir() && rec {
+				dumpFileListing(w, path.Join(p, info.Name()), path.Join(showPath, info.Name()), indent+"\t", rec)
+			}
+
 		}
 	}
 }
@@ -225,11 +234,23 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 		b.metaFile = ""
 		if err == nil && meta != nil && meta.Status != "XX" {
 			if meta.ExitCode == 127 {
-				zap.S().Warnf("Exit code 127 in box %d. Check grader.log for more details", b.boxID)
+				if strings.Contains(meta.InternalMessage, "execve") { // It's text file busy, most likely...
+					// Not yet marked as a stable solution
+					// if i > 1 {
+					// 	// Only warn if it comes to the second attempt. First error is often enough in prod
+					zap.S().Warnf("Text file busy error in box %d, retrying (%d/%d). Check grader.log for more details", b.boxID, i, runErrRetries)
+					// }
+					b.logger.Warnf("Text file busy error in box %d, retrying (%d/%d): %s", b.boxID, i, runErrRetries, spew.Sdump(meta))
+					time.Sleep(runErrTimeout)
+					continue
+				}
+				zap.S().Warnf("Exit code 127 in box %d (not execve!). Check grader.log for more details", b.boxID)
 				var s strings.Builder
 				fmt.Fprintf(&s, "Exit code 127 in box %d\n", b.boxID)
-				dumpFileListing(&s, b.getFilePath("/"), "/")
-				dumpFileListing(&s, b.getFilePath("/box"), "/box")
+				spew.Fdump(&s, conf)
+				fmt.Fprintf(&s, "Command: %#+v\n", command)
+				fmt.Fprintf(&s, "Isolate out: %q\b", meta.InternalMessage)
+				dumpFileListing(&s, b.getFilePath("/"), "/", "", true)
 				b.logger.Warn(s.String())
 			}
 			return meta, err
@@ -281,11 +302,13 @@ func New(id int, memQuota int64, logger *zap.SugaredLogger) (eval.Sandbox, error
 }
 
 // parseMetaFile parses a specified meta file
-func parseMetaFile(r io.Reader) *eval.RunStats {
+func parseMetaFile(r io.Reader, out bytes.Buffer) *eval.RunStats {
 	if r == nil {
 		return nil
 	}
 	var file = new(eval.RunStats)
+
+	file.InternalMessage = out.String()
 
 	s := bufio.NewScanner(r)
 

@@ -21,7 +21,7 @@ func readFile(p string, w io.Writer) error {
 }
 
 func writeFile(p string, r io.Reader, mode fs.FileMode) error {
-	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|os.O_SYNC, mode)
 	if err != nil {
 		return err
 	}

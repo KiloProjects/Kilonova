@@ -74,5 +74,7 @@ type RunStats struct {
 	Status  string `json:"status"`
 
 	Time float64 `json:"time"`
+
+	InternalMessage string `json:"internal_msg"`
 	// WallTime float64 `json:"wall_time"`
 }
