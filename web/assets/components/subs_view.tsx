@@ -43,7 +43,7 @@ const status = (sub: Submission): string | h.JSX.Element => {
 		return <>{sub.icpc_verdict ? icpcVerdictString(sub.icpc_verdict) : getText("rejected")}</>;
 	} else if (sub.status === "working") {
 		return getText("evaluating");
-	} else if ((sub.status = "reevaling")) {
+	} else if (sub.status == "reevaling") {
 		return getText("reevaling");
 	}
 	return getText("waiting");
