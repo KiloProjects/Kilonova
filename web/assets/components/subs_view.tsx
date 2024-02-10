@@ -27,10 +27,14 @@ export function rezStr(count: number, truncatedCount: boolean = false): string {
 	return `${count} ${getText("manyResults")}`;
 }
 
-const status = (sub: Submission): string | h.JSX.Element => {
+const status = (sub: Submission, problem: Problem | undefined): string | h.JSX.Element => {
 	if (sub.status === "finished") {
 		if (sub.submission_type == "classic") {
-			return `${getText("evaluated")}: ${sub.score.toFixed(sub.score_precision)} ${getText("points")}`;
+			let afterText = ` ${getText("points")}`;
+			if (problem && Math.abs(problem.score_scale - 100.0) > 0.01) {
+				afterText = `% ${getText("correct")}`;
+			}
+			return `${getText("evaluated")}: ${sub.score.toFixed(sub.score_precision).replace(/\.?0*$/, "")}${afterText}`;
 		}
 		// else, icpc
 		if (sub.score == 100) {
@@ -535,17 +539,17 @@ function SubsView(props: SubsViewProps) {
 												{sub.id}
 											</th>
 											<td class="px-2 py-1">
-												<a href={"/profile/" + subs!.users[sub.user_id].name}>{subs!.users[sub.user_id].name}</a>
+												<a href={"/profile/" + subs.users[sub.user_id].name}>{subs.users[sub.user_id].name}</a>
 											</td>
 											<td class="text-center px-2 py-1">{dayjs(sub.created_at).format("DD/MM/YYYY HH:mm")}</td>
 											{((query.problem_id == 0 || query.problem_id == null) && (
 												<td class="text-center px-2 py-1">
-													{subs!.problems[sub.problem_id] ? (
+													{subs.problems[sub.problem_id] ? (
 														<>
 															<a
 																href={
 																	(typeof sub.contest_id === "number" ? `/contests/${sub.contest_id}` : "") +
-																	`/problems/${subs!.problems[sub.problem_id].id}`
+																	`/problems/${subs.problems[sub.problem_id].id}`
 																}
 															>
 																{subs!.problems[sub.problem_id].name}
@@ -573,7 +577,7 @@ function SubsView(props: SubsViewProps) {
 														: ""
 												}
 											>
-												<a href={"/submissions/" + sub.id}>{status(sub)}</a>
+												<a href={"/submissions/" + sub.id}>{status(sub, subs.problems[sub.problem_id])}</a>
 											</td>
 										</tr>
 									))}

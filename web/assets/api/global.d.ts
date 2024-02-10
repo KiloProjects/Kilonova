@@ -28,6 +28,8 @@ declare global {
 		console_input: boolean;
 		scoring_strategy: "sum_subtasks" | "max_submission" | "acm_icpc";
 		score_precision: number;
+
+		score_scale: number;
 	};
 
 	type ShallowProblemList = {
