@@ -54,58 +54,59 @@
         {{ end }}
         
         {{ if boolFlag "feature.frontend.front_page_pbs" }}
-        
-        <div class="segment-panel">
-            <h2>{{getText "problems"}}</h2>
-            
-            <div class="list-group mb-4">
-                {{$onlyOthers := false}}
-                {{$restName := "the_rest"}}
-                {{ with .ChildProblemLists }}
-                    {{ range . }}
-                        {{template "problemlist_show" (genPblistParams . false)}}
-                    {{ end }}
-                {{ else }}
-                    {{$onlyOthers = true}}
-                    {{$restName = "problems"}}
-                {{ end }}
-                {{ with (unassociatedProblems authedUser) }}
-                    <details class="list-group-head" {{if $onlyOthers}}open{{end}}>
-                        <summary class="pb-1 mt-1">
-                            <span>{{getText $restName}}</span>
-                            {{if authed}}
-                                <span class="float-right badge">
-                                    {{ getText "num_solved" (numSolvedPbs .) (len .) }}
-                                </span>
-                            {{else}}
-                            <span class="float-right badge">
-                                {{ if eq 1 (len .)}}
-                                    {{ getText "single_problem" }}
-                                {{ else }}
-                                    {{ getText "num_problems" (len .) }}
-                                {{ end }}
-                            </span>
-                            {{end}}
-                        </summary>
-                        {{ with . }}
-                            <div class="mt-2">
-                                {{ template "pb_list_group" (genProblemsParams . true true) }}
-                            </div>
+        {{$pbs := unassociatedProblems authedUser}}
+        {{if or $pbs .ChildProblemLists}}
+            <div class="segment-panel">
+                <h2>{{getText "problems"}}</h2>
+                
+                <div class="list-group mb-4">
+                    {{$onlyOthers := false}}
+                    {{$restName := "the_rest"}}
+                    {{ with .ChildProblemLists }}
+                        {{ range . }}
+                            {{template "problemlist_show" (genPblistParams . false)}}
                         {{ end }}
-                    </details>
-                {{ end }}
+                    {{ else }}
+                        {{$onlyOthers = true}}
+                        {{$restName = "problems"}}
+                    {{ end }}
+                    {{ with (unassociatedProblems authedUser) }}
+                        <details class="list-group-head" {{if $onlyOthers}}open{{end}}>
+                            <summary class="pb-1 mt-1">
+                                <span>{{getText $restName}}</span>
+                                {{if authed}}
+                                    <span class="float-right badge">
+                                        {{ getText "num_solved" (numSolvedPbs .) (len .) }}
+                                    </span>
+                                {{else}}
+                                <span class="float-right badge">
+                                    {{ if eq 1 (len .)}}
+                                        {{ getText "single_problem" }}
+                                    {{ else }}
+                                        {{ getText "num_problems" (len .) }}
+                                    {{ end }}
+                                </span>
+                                {{end}}
+                            </summary>
+                            {{ with . }}
+                                <div class="mt-2">
+                                    {{ template "pb_list_group" (genProblemsParams . true true) }}
+                                </div>
+                            {{ end }}
+                        </details>
+                    {{ end }}
+                </div>
+                
+                {{ if boolFlag "feature.frontend.front_page_pbs_links" }}
+                    <span class="mb-2">
+                        {{ renderMarkdown (getText "all_checklists_announcement") }}
+                    </span>
+                    <span class="mb-4">
+                        {{ renderMarkdown (getText "all_problems_announcement") }}
+                    </span>
+                {{end}}
             </div>
-            
-            {{ if boolFlag "feature.frontend.front_page_pbs_links" }}
-                <span class="mb-2">
-                    {{ renderMarkdown (getText "all_checklists_announcement") }}
-                </span>
-                <span class="mb-4">
-                    {{ renderMarkdown (getText "all_problems_announcement") }}
-                </span>
-            {{end}}
-        </div>
-
+        {{end}}
         {{end}}
     </div>
     <div class="page-sidebar">
