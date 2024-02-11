@@ -59,15 +59,20 @@
             <h2>{{getText "problems"}}</h2>
             
             <div class="list-group mb-4">
+                {{$onlyOthers := false}}
+                {{$restName := "the_rest"}}
                 {{ with .ChildProblemLists }}
                     {{ range . }}
                         {{template "problemlist_show" (genPblistParams . false)}}
                     {{ end }}
+                {{ else }}
+                    {{$onlyOthers = true}}
+                    {{$restName = "problems"}}
                 {{ end }}
                 {{ with (unassociatedProblems authedUser) }}
-                    <details class="list-group-head">
+                    <details class="list-group-head" {{if $onlyOthers}}open{{end}}>
                         <summary class="pb-1 mt-1">
-                            <span>{{getText "the_rest"}}</span>
+                            <span>{{getText $restName}}</span>
                             {{if authed}}
                                 <span class="float-right badge">
                                     {{ getText "num_solved" (numSolvedPbs .) (len .) }}
@@ -91,12 +96,14 @@
                 {{ end }}
             </div>
             
-            <span class="mb-2">
-                {{ renderMarkdown (getText "all_checklists_announcement") }}
-            </span>
-            <span class="mb-4">
-                {{ renderMarkdown (getText "all_problems_announcement") }}
-            </span>
+            {{ if boolFlag "feature.frontend.front_page_pbs_links" }}
+                <span class="mb-2">
+                    {{ renderMarkdown (getText "all_checklists_announcement") }}
+                </span>
+                <span class="mb-4">
+                    {{ renderMarkdown (getText "all_problems_announcement") }}
+                </span>
+            {{end}}
         </div>
 
         {{end}}

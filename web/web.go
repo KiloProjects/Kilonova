@@ -43,9 +43,11 @@ var (
 
 	AllSubsPage = config.GenFlag("feature.frontend.all_subs_page", true, "Anyone can view all submissions")
 
-	FrontPageProblems = config.GenFlag("feature.frontend.front_page_pbs", true, "Show problems on front page")
-	SidebarContests   = config.GenFlag("feature.frontend.front_page_csidebar", true, "Show contests in sidebar on the front page")
-	ShowTrending      = config.GenFlag("frontend.front_page.show_trending", true, "Show trending problems on the front page sidebar")
+	FrontPageProblems  = config.GenFlag("feature.frontend.front_page_pbs", true, "Show problems on front page")
+	FrontPagePbDetails = config.GenFlag("feature.frontend.front_page_pbs_links", true, "On the front page problems, show links to other resources")
+
+	SidebarContests = config.GenFlag("feature.frontend.front_page_csidebar", true, "Show contests in sidebar on the front page")
+	ShowTrending    = config.GenFlag("frontend.front_page.show_trending", true, "Show trending problems on the front page sidebar")
 
 	ForceLogin = config.GenFlag("behavior.force_authed", false, "Force authentication when accessing website")
 

@@ -373,10 +373,16 @@ func doWalk(filename string, nodes ...tparse.Node) bool {
 				if !valid || val.Ident != "getText" || len(cmd.Args) < 2 {
 					continue
 				}
-				key := cmd.Args[1].(*tparse.StringNode).Text
-				if !kilonova.TranslationKeyExists(key) {
-					zap.S().Infof("Template static analysis failed: Unknown translation key %q in file %s", key, filename)
-					ok = false
+				switch node := cmd.Args[1].(type) {
+				case *tparse.StringNode:
+					key := node.Text
+					if !kilonova.TranslationKeyExists(key) {
+						zap.S().Infof("Template static analysis failed: Unknown translation key %q in file %s", key, filename)
+						ok = false
+					}
+				case *tparse.VariableNode:
+				default:
+					zap.S().Warnf("Template static analysis warning: Unknown type for translation string node: %v (value: %s)", node.Type(), node.String())
 				}
 			}
 			// spew.Dump(rnode)
