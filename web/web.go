@@ -8,6 +8,7 @@ import (
 	"embed"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"html"
 	"html/template"
 	"io"
@@ -682,6 +683,16 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			default:
 				return d.Amount
 			}
+		},
+		"forceSubCode": func(sub *kilonova.FullSubmission) []byte {
+			code, err := base.SubmissionCode(context.Background(), &sub.Submission, sub.Problem, nil, false)
+			if err != nil {
+				if !errors.Is(err, context.Canceled) {
+					zap.S().Warn(err)
+				}
+				code = nil
+			}
+			return code
 		},
 
 		"httpstatus":         http.StatusText,
