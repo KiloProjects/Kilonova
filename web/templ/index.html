@@ -11,7 +11,7 @@
     <div class="page-content-wrapper">
 
         {{ if (or .RunningContests .FutureContests)}}
-        <div class="segment-panel {{ if boolFlag `feature.frontend.front_page_pbs` }} lg:hidden {{end}}">
+        <div class="segment-panel {{ if boolFlag `feature.frontend.front_page_csidebar` }} lg:hidden {{end}}">
             {{ with .RunningContests}}
                 <h2>{{getText "running_contests"}}</h2>
                 <div class="contest-grid">
@@ -102,7 +102,7 @@
         {{end}}
     </div>
     <div class="page-sidebar">
-        {{ if boolFlag `feature.frontend.front_page_pbs` }}
+        {{ if boolFlag `feature.frontend.front_page_csidebar` }}
             {{ if (or .RunningContests .FutureContests)}}
             <div class="segment-panel hidden lg:block">
                 {{ $bothContests := and .RunningContests .FutureContests }}
@@ -147,6 +147,7 @@
             </div>
         </div>
         {{ end }}
+        {{if boolFlag "frontend.front_page.show_trending"}}
         {{if .HotProblems}}
         <div class="segment-panel">
             <h2>{{getText "hot_problems"}}</h2>
@@ -155,6 +156,7 @@
             <p class="mt-2"><a href="/problems/?ordering=hot&descending=true">{{getText "view_more"}}</a></p>
             {{ end }}
         </div>
+        {{end}}
         {{end}}
         {{ if boolFlag "frontend.donations.enabled" }}
         {{ if boolFlag "frontend.donation.frontpage_nag"}}
