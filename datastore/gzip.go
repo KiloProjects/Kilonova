@@ -1,11 +1,13 @@
 package datastore
 
 import (
-	"compress/gzip"
 	"errors"
 	"io"
 	"io/fs"
 	"os"
+	"sync"
+
+	"github.com/klauspost/compress/gzip"
 
 	"go.uber.org/zap"
 	"vimagination.zapto.org/dos2unix"
@@ -69,7 +71,7 @@ func writeCompressedFile(path string, r io.Reader, perms fs.FileMode) error {
 	if err != nil {
 		return err
 	}
-	gz := gzip.NewWriter(f)
+	gz := newGzipWriter(f)
 	_, err = io.Copy(gz, dos2unix.DOS2Unix(r))
 	if err1 := gz.Close(); err1 != nil && err == nil {
 		err = err1
@@ -78,4 +80,16 @@ func writeCompressedFile(path string, r io.Reader, perms fs.FileMode) error {
 		err = err1
 	}
 	return err
+}
+
+var gzipPool = &sync.Pool{
+	New: func() any {
+		return gzip.NewWriter(nil)
+	},
+}
+
+func newGzipWriter(w io.Writer) *gzip.Writer {
+	gw := gzipPool.Get().(*gzip.Writer)
+	gw.Reset(w)
+	return gw
 }

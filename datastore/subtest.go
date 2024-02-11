@@ -1,7 +1,6 @@
 package datastore
 
 import (
-	"compress/gzip"
 	"io"
 	"os"
 	"path"
@@ -14,8 +13,7 @@ func (m *StorageManager) SubtestWriter(subtest int) (io.WriteCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	gz, _ := gzip.NewWriterLevel(f, gzip.BestCompression)
-	return &gzipFileWriter{f, gz}, nil
+	return &gzipFileWriter{f, newGzipWriter(f)}, nil
 }
 
 // SubtestReader should be used by the grader

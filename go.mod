@@ -35,6 +35,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.11
 	github.com/jackc/pgx-shopspring-decimal v0.0.0-20220624020537-1d36b5a1853e
 	github.com/jackc/pgx/v5 v5.5.2
+	github.com/klauspost/compress v1.17.6
 	github.com/litao91/goldmark-mathjax v0.0.0-20210217064022-a43cf739a50f
 	github.com/lithdew/quickjs v0.0.0-20200714182134-aaa42285c9d2
 	github.com/shopspring/decimal v1.3.1

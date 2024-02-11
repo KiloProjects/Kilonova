@@ -96,7 +96,13 @@ func (rt *Web) index() http.HandlerFunc {
 			pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r))
 			if err == nil {
 				r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, pblistCache))
-			} else if !errors.Is(err, context.Canceled) {
+			} else if errors.Is(err, context.Canceled) {
+				mockCache := make(map[int]int)
+				for _, id := range listIDs {
+					mockCache[id] = 0
+				}
+				r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, mockCache))
+			} else {
 				zap.S().Warn(err)
 			}
 		}
