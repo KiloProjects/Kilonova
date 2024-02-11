@@ -3,7 +3,7 @@ import getText from "../translation";
 import register from "preact-custom-element";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { apiToast, createToast } from "../toast";
-import { BigSpinner, Paginator } from "./common";
+import { BigSpinner, Paginator, formatScoreStr } from "./common";
 import { dayjs, getGradient, sizeFormatter } from "../util";
 import { SubmissionQuery, Submissions, defaultClient } from "../api/client";
 import { icpcVerdictString } from "./sub_mgr";
@@ -34,7 +34,7 @@ const status = (sub: Submission, problem: Problem | undefined): string | h.JSX.E
 			if (problem && Math.abs(problem.score_scale - 100.0) > 0.01) {
 				afterText = `% ${getText("correct")}`;
 			}
-			return `${getText("evaluated")}: ${sub.score.toFixed(sub.score_precision).replace(/\.?0*$/, "")}${afterText}`;
+			return `${getText("evaluated")}: ${formatScoreStr(sub.score.toFixed(sub.score_precision))}${afterText}`;
 		}
 		// else, icpc
 		if (sub.score == 100) {

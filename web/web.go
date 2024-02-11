@@ -296,7 +296,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			if score.IsNegative() {
 				return "-"
 			}
-			return score.StringFixed(pb.ScorePrecision)
+			return removeTrailingZeros(score.StringFixed(pb.ScorePrecision))
 		},
 		"actualMaxScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) decimal.Decimal {
 			return base.MaxScore(context.Background(), user.ID, pb.ID)
@@ -314,7 +314,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 				}
 				return `<i class="fas fa-fw fa-xmark"></i>`
 			}
-			return template.HTML(pb.MaxScore.StringFixed(pb.ScorePrecision))
+			return template.HTML(removeTrailingZeros(pb.MaxScore.StringFixed(pb.ScorePrecision)))
 		},
 		"checklistMaxScore": func(pb *kilonova.ScoredProblem) string {
 			if pb.ScoreUserID == nil {
@@ -323,7 +323,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			if pb.MaxScore == nil || pb.MaxScore.IsNegative() {
 				return "-1"
 			}
-			return pb.MaxScore.StringFixed(pb.ScorePrecision)
+			return removeTrailingZeros(pb.MaxScore.StringFixed(pb.ScorePrecision))
 		},
 		"computeChecklistSpan": computeChecklistSpan,
 		"scoreStep": func(pb *kilonova.Problem) string {
@@ -857,4 +857,11 @@ func staticFileServer(w http.ResponseWriter, r *http.Request) {
 			io.Copy(w, f)
 		}
 	}
+}
+
+func removeTrailingZeros(score string) string {
+	if !strings.ContainsRune(score, '.') {
+		return score
+	}
+	return strings.TrimSuffix(strings.TrimRight(score, "0"), ".")
 }

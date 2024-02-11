@@ -13,7 +13,7 @@ const slugify = (str) =>
 		.replace(/[\s_-]+/g, "-")
 		.replace(/^-+|-+$/g, "");
 
-import { BigSpinner, OlderSubmissions } from "./common";
+import { BigSpinner, OlderSubmissions, formatScoreStr } from "./common";
 
 import { downloadBlob, parseTime, sizeFormatter, getGradient, fromBase64 } from "../util";
 import { defaultClient } from "../api/client";
@@ -91,7 +91,7 @@ function Summary({ sub, pasteAuthor }: { sub: FullSubmission; pasteAuthor?: User
 									<td class="kn-table-cell">{getText("score")}</td>
 									<td class="kn-table-cell">
 										<span class="badge-lite font-bold" style={{ backgroundColor: getGradient(sub.score, 100) }}>
-											{sub.score.toFixed(sub.score_precision)}
+											{formatScoreStr(sub.score.toFixed(sub.score_precision))}
 										</span>
 									</td>
 								</tr>
@@ -227,16 +227,30 @@ function SubCode({ sub, codeHTML, isPaste }: { sub: FullSubmission; codeHTML: st
 	);
 }
 
-function testVerdictString(verdict: string): string {
-	return verdict.replace(/translate:([a-z_]+)/g, (substr, p1) => {
-		console.log(substr, p1);
-		return maybeGetText("test_verdict." + p1);
-	});
+function testVerdictString(verdict: string): string | h.JSX.Element {
+	let txt = verdict
+		.replace(/translate:([a-z_]+)/g, (substr, p1) => {
+			return maybeGetText("test_verdict." + p1);
+		})
+		.trim();
+	if (txt.split("\n").length == 1) {
+		return txt;
+	}
+	console.log("Multiline verdict");
+	return (
+		<>
+			{txt.split("\n").map((val, i, arr) => (
+				<>
+					{val}
+					{i != arr.length - 1 && <br />}
+				</>
+			))}
+		</>
+	);
 }
 
 export function icpcVerdictString(verdict: string): string {
 	return verdict.replace(/test_verdict.([a-z_]+)/g, (substr, p1) => {
-		console.log(substr, p1);
 		return maybeGetText("test_verdict." + p1);
 	});
 }
@@ -319,7 +333,8 @@ export function TestTable({
 													</>
 												) : (
 													<>
-														{(maxScore * (subtest.percentage / 100.0)).toFixed(precision)} / {maxScore.toFixed(precision)}
+														{formatScoreStr((maxScore * (subtest.percentage / 100.0)).toFixed(precision))} /{" "}
+														{formatScoreStr(maxScore.toFixed(precision))}
 													</>
 												)}
 											</td>
@@ -377,7 +392,8 @@ export function SubTask({
 				</span>
 				{typeof subtask.final_percentage !== "undefined" ? (
 					<span class="float-right badge" style={{ backgroundColor: getGradient(subtask.final_percentage, 100) }}>
-						{(subtask.score * (subtask.final_percentage / 100.0)).toFixed(precision)} / {subtask.score.toFixed(precision)}
+						{formatScoreStr((subtask.score * (subtask.final_percentage / 100.0)).toFixed(precision))} /{" "}
+						{formatScoreStr(subtask.score.toFixed(precision))}
 					</span>
 				) : (
 					<span class="float-right badge">

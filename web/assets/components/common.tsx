@@ -164,11 +164,18 @@ export function InlineSpinner() {
 	);
 }
 
+export function formatScoreStr(score: string): string {
+	if (score.includes(".")) {
+		return score.replace(/\.?0+$/, "");
+	}
+	return score;
+}
+
 function SubmissionStatus({ sub }: { sub: Submission }) {
 	switch (sub.status) {
 		case "finished":
 			if (sub.submission_type == "classic") {
-				return <>{sub.score.toFixed(sub.score_precision)}</>;
+				return <>{formatScoreStr(sub.score.toFixed(sub.score_precision))}</>;
 			}
 			if (sub.score == 100) return <i class="fas fa-fw fa-check"></i>;
 			return <i class="fas fa-fw fa-xmark"></i>;

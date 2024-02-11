@@ -1,5 +1,5 @@
 import { getCall } from "./api/client";
-import { icpcVerdictString } from "./components";
+import { formatScoreStr, icpcVerdictString } from "./components";
 import { createToast } from "./toast";
 import getText from "./translation";
 
@@ -24,7 +24,7 @@ export function makeSubWaiter(id: number): string {
 			let rezStr = "";
 			let statusVal: "success" | "error" = "success";
 			if (res.data.submission_type == "classic") {
-				rezStr = getText("finalScore", id) + " " + res.data.score.toFixed(res.data.score_precision);
+				rezStr = getText("finalScore", id) + " " + formatScoreStr(res.data.score.toFixed(res.data.score_precision));
 			} else {
 				if (res.data.score == 100) {
 					rezStr = `<i class="fas fa-fw fa-check"></i> ${getText("accepted")}`;

@@ -3,7 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 import register from "preact-custom-element";
 import getText from "../translation";
 import { apiToast } from "../toast";
-import { BigSpinner } from "./common";
+import { BigSpinner, formatScoreStr } from "./common";
 import { getCall } from "../api/client";
 import { SubTask, TestTable } from "./sub_mgr";
 import { KNModal } from "./modal";
@@ -87,7 +87,7 @@ export function MaxScoreBreakdown({ problemID, userID, contestID }: { problemID:
 			<h2>
 				{getText("problemSingle")}{" "}
 				<a href={`${typeof contestID !== "undefined" ? `/contests/${contestID}` : ""}/problems/${problem.id}`}>{problem.name}</a>:{" "}
-				{maxScore >= 0 ? `${maxScore.toFixed(problem?.score_precision ?? 0)}p` : `0p`}
+				{maxScore >= 0 ? `${formatScoreStr(maxScore.toFixed(problem?.score_precision ?? 0))}p` : `0p`}
 			</h2>
 
 			{content}
