@@ -1,7 +1,6 @@
 {{ define "title" }} {{getText "title.blogPosts"}} {{ end }}
 {{ define "content" }}
 
-{{$authors:=.Authors}}
 <div class="segment-panel">
     <h1>{{getText "title.blogPosts"}}</h1>
     
@@ -17,7 +16,7 @@
         <div class="segment-panel">
             <h2 class="mb-1">
                 <a href="/posts/{{.Slug}}">{{.Title}}</a> 
-                {{with index $authors .AuthorID}} {{getText "posted_by" .Name}} {{end}} 
+                {{with index $.Authors .AuthorID}} {{getText "posted_by" .Name}} {{end}} 
                 {{if authedUser}}{{if or (authedUser.Admin) (eq authedUser.ID .AuthorID)}}
                     {{- if .Visible }}
                         <span class="badge badge-green">{{ getText "published" }}</span>

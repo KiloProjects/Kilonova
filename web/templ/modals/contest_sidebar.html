@@ -76,7 +76,6 @@
         {{ end }}
     </div>
 </div>
-{{ $contest := . }}
 {{ with contestProblems (authedUser) . }}
     <div class="segment-panel">
         <h2>{{getText "problems"}}</h2>
@@ -86,13 +85,13 @@
                 {{ $score := spbMaxScore .}}
                 <li>
                     <a {{ if currentProblem }} {{ if eq (currentProblem).ID .ID }} class="topbar-selected p-0" {{end}} {{ end }}
-                        href="/contests/{{$contest.ID}}/problems/{{.ID}}"> 
+                        href="/contests/{{$.ID}}/problems/{{.ID}}"> 
                         {{.Name}} 
                     </a>                         
                     {{ if not (eq $score "")}} 
                     (
                         {{- if eq .ScoringStrategy `sum_subtasks` -}}
-                            <a class="max_score_breakdown" href="#" data-problemid="{{.ID}}" data-contestid="{{$contest.ID}}">
+                            <a class="max_score_breakdown" href="#" data-problemid="{{.ID}}" data-contestid="{{$.ID}}">
                         {{- end -}}
                         {{$score}} {{- if and (not (eq (index $score 0) '<')) (not (eq $score "-")) -}}p{{end}}
                         {{- if eq .ScoringStrategy `sum_subtasks` -}}

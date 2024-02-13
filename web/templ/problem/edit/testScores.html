@@ -2,8 +2,6 @@
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
-{{$pb := .Problem }}
-
 <div class="page-holder">
     {{ template "testSidebar.html" . }}
     <div class="page-content-wrapper">
@@ -32,7 +30,7 @@
                             {{.VisibleID}}
                         </td>
                         <td class="kn-table-cell">
-                            <input class="form-input" type="number" id="score-test-{{.VisibleID}}" value="{{.Score}}" min="0" max="100" step="{{scoreStep $pb}}" autocomplete="off" />
+                            <input class="form-input" type="number" id="score-test-{{.VisibleID}}" value="{{.Score}}" min="0" max="100" step="{{scoreStep $.Problem}}" autocomplete="off" />
                         </td>
                     </tr>
                 {{ end }}

@@ -70,7 +70,7 @@
                         {{$onlyOthers = true}}
                         {{$restName = "problems"}}
                     {{ end }}
-                    {{ with (unassociatedProblems authedUser) }}
+                    {{ with $pbs }}
                         <details class="list-group-head" {{if $onlyOthers}}open{{end}}>
                             <summary class="pb-1 mt-1">
                                 <span>{{getText $restName}}</span>

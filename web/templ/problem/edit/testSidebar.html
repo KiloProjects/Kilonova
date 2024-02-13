@@ -1,16 +1,14 @@
-
-{{ $topbar := .Topbar }}
 {{ $id := .Problem.ID}}
 <div class="page-sidebar lg:order-last">
     <div class="segment-panel">
         <div class="list-group grid grid-cols-2 xl:grid-cols-3">
-            <a class="list-group-head col-span-full {{if and (eq $topbar.Page "tests") (eq $topbar.PageID -2)}} list-group-selected {{end}}" href="{{$topbar.URLPrefix}}/problems/{{$id}}/edit/test">
+            <a class="list-group-head col-span-full {{if and (eq .Topbar.Page `tests`) (eq .Topbar.PageID -2)}} list-group-selected {{end}}" href="{{.Topbar.URLPrefix}}/problems/{{$id}}/edit/test">
                 <h2>{{getText "tests"}}</h2>
             </a>
-            <a class="list-group-item col-span-full {{if (eq $topbar.PageID -1)}} list-group-selected {{end}}" href="{{$topbar.URLPrefix}}/problems/{{$id}}/edit/test/add">{{getText "createTest"}}</a>
+            <a class="list-group-item col-span-full {{if (eq .Topbar.PageID -1)}} list-group-selected {{end}}" href="{{.Topbar.URLPrefix}}/problems/{{$id}}/edit/test/add">{{getText "createTest"}}</a>
             {{ range problemTests .Problem }}
-                <a class="list-group-item {{if (eq $topbar.PageID .VisibleID)}} list-group-selected {{end}}"
-                    href="{{$topbar.URLPrefix}}/problems/{{$id}}/edit/test/{{.VisibleID}}">
+                <a class="list-group-item {{if (eq $.Topbar.PageID .VisibleID)}} list-group-selected {{end}}"
+                    href="{{$.Topbar.URLPrefix}}/problems/{{$id}}/edit/test/{{.VisibleID}}">
                     {{getText "nthTest" .VisibleID}}
                 </a>
             {{ end }}

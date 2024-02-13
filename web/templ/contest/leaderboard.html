@@ -5,8 +5,7 @@
 <div class="page-holder">
     <div class="page-content-full">
         <h2>{{getText "leaderboard"}}</h2>
-        {{ $editor := isContestEditor .Contest }}
-        <kn-leaderboard contestid="{{.Contest.ID}}" editor="{{$editor}}"></kn-leaderboard>
+        <kn-leaderboard contestid="{{.Contest.ID}}" editor="{{isContestEditor .Contest}}"></kn-leaderboard>
     </div>
 </div>
 

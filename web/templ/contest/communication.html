@@ -5,8 +5,6 @@
 {{ define "content" }}
 {{ template "topbar.html" .}}
 
-{{$contest := .Contest}}
-
 <div class="page-holder">
     <div class="page-content-full-wrapper">
         <div class="segment-panel">
@@ -40,7 +38,7 @@
                 <button class="btn btn-blue" type="submit">{{getText "button.add"}}</button>
             </form>
 
-            <kn-questions contestid="{{$contest.ID}}" encoded="{{ contestQuestions .Contest | encodeJSON}}"></kn-questions>
+            <kn-questions contestid="{{.Contest.ID}}" encoded="{{ contestQuestions .Contest | encodeJSON}}"></kn-questions>
         {{ end }}
     </div>
 </div>

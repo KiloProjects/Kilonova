@@ -2,8 +2,6 @@
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
-{{ $root := . }}
-
 <div class="page-holder">
     {{ template "subtaskSidebar.html" . }}
     <div class="page-content">
@@ -14,11 +12,11 @@
             {{ with problemTests .Problem }}
                 <label class="block my-2">
                     <span class="form-label">{{getText "id"}}: </span>
-                    <input class="form-input" id="subtask-id" type="number" min="0" value="{{$root.SubTask.VisibleID}}" autocomplete="off" required>
+                    <input class="form-input" id="subtask-id" type="number" min="0" value="{{$.SubTask.VisibleID}}" autocomplete="off" required>
                 </label>
                 <label class="block my-2">
                     <span class="form-label">{{getText "score"}}: </span>
-                    <input class="form-input" id="subtask-score" type="number" min="0" max="100" value="{{$root.SubTask.Score}}" step="{{scoreStep $root.Problem}}" autocomplete="off" required>
+                    <input class="form-input" id="subtask-score" type="number" min="0" max="100" value="{{$.SubTask.Score}}" step="{{scoreStep $.Problem}}" autocomplete="off" required>
                 </label>
                 <table class="kn-table my-2" style="table-layout: fixed">
                     <thead>
@@ -33,7 +31,7 @@
                     {{ range . }}
                         <tr id="row-test-{{.VisibleID}}" class="kn-table-row">
                             <td class="kn-table-cell">
-                                <input class="form-checkbox" type="checkbox" id="pb-test-{{.VisibleID}}" autocomplete="off" {{if $root.TestInSubTask .}}checked{{end}}>
+                                <input class="form-checkbox" type="checkbox" id="pb-test-{{.VisibleID}}" autocomplete="off" {{if $.TestInSubTask .}}checked{{end}}>
                             </td>
                             <td class="kn-table-cell">
                                 {{.VisibleID}}

@@ -1,14 +1,10 @@
 {{ define "pb_list_group" }}
-{{ $showScore := .ShowScore }}
-{{ $contestIDScore := .ContestIDScore }}
-{{ $listID := .ListID }}
-{{ $showPublished := .ShowPublished }}
 <div class="list-group grid grid-cols-1">
 	{{ range .Problems }}
-		<a href="/{{if not (eq $contestIDScore -1)}}contests/{{$contestIDScore}}/{{end}}problems/{{.ID}}{{if not (eq $listID -1)}}?list_id={{$listID}}{{end}}" class="list-group-item flex justify-between">
+		<a href="/{{if not (eq $.ContestIDScore -1)}}contests/{{$.ContestIDScore}}/{{end}}problems/{{.ID}}{{if not (eq $.ListID -1)}}?list_id={{$.ListID}}{{end}}" class="list-group-item flex justify-between">
 			<span>{{.Name}} (#{{.ID}})</span>
             <div>
-                {{- if $showPublished -}}
+                {{- if $.ShowPublished -}}
 			    {{- if authed -}}
 					{{ if .IsEditor }}
 						{{- if .Visible }}
@@ -19,7 +15,7 @@
 					{{ end }}
                 {{- end -}}
                 {{- end -}}
-                {{ if $showScore }}
+                {{ if $.ShowScore }}
                     {{ with spbMaxScore . }}
                         <span class="badge">{{.}}</span>
                     {{ end }}

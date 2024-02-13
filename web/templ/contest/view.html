@@ -6,8 +6,6 @@
 
 {{ template "topbar.html" . }}
 
-{{ $contest := .Contest }}
-
 <div class="page-holder">
     <div class="page-content-wrapper">
         {{ if .Contest.Description }}
@@ -18,7 +16,7 @@
         <div class="segment-panel">
             {{ with contestProblems authedUser .Contest }}
                 <h2> {{ getText "problems" }} </h2>
-                {{ template "pb_list_group" (genContestProblemsParams . $contest) }}
+                {{ template "pb_list_group" (genContestProblemsParams . $.Contest) }}
             {{ else }}
                 {{ if not (.Contest.Started) }}
                     <p>{{getText "contest_problems_soon"}}</p>

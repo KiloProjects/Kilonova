@@ -17,10 +17,10 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20231201235250-de7065d80cb9 // indirect
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/microcosm-cc/bluemonday v1.0.26
-	github.com/yuin/goldmark v1.6.0
+	github.com/yuin/goldmark v1.7.0
 	go.uber.org/zap v1.26.0
-	golang.org/x/crypto v0.18.0
-	golang.org/x/net v0.20.0 // indirect
+	golang.org/x/crypto v0.19.0
+	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sync v0.6.0
 	golang.org/x/text v0.14.0
 )
@@ -34,10 +34,9 @@ require (
 	github.com/evanw/esbuild v0.20.0
 	github.com/go-chi/chi/v5 v5.0.11
 	github.com/jackc/pgx-shopspring-decimal v0.0.0-20220624020537-1d36b5a1853e
-	github.com/jackc/pgx/v5 v5.5.2
+	github.com/jackc/pgx/v5 v5.5.3
 	github.com/klauspost/compress v1.17.6
 	github.com/litao91/goldmark-mathjax v0.0.0-20210217064022-a43cf739a50f
-	github.com/lithdew/quickjs v0.0.0-20200714182134-aaa42285c9d2
 	github.com/shopspring/decimal v1.3.1
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -50,12 +49,12 @@ require (
 	github.com/gammazero/deque v0.2.1 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
+	github.com/google/pprof v0.0.0-20240207164012-fb44976bdcd5 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
 	github.com/ncw/directio v1.0.5 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 )

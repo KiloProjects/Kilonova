@@ -1,7 +1,6 @@
 {{define "problemlist_show"}}
-{{ $open := .Open }}
 {{ with .Pblist }}
-    <details class="list-group-head" {{if $open}}open{{end}}>
+    <details class="list-group-head" {{if $.Open}}open{{end}}>
         <summary class="pb-1 mt-1">
 			<span>{{.Title}} <a href="/problem_lists/{{.ID}}">(#{{.ID}})</a></span>
             {{if gt (.NumProblems) 0}}

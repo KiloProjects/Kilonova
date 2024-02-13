@@ -103,6 +103,7 @@ func GetCompileTask(logger *zap.SugaredLogger) eval.Task[CompileRequest, Compile
 func compileFile(ctx context.Context, box eval.Sandbox, files map[string][]byte, compiledFiles []string, language eval.Language) (string, *eval.RunStats, error) {
 	for fileName, fileData := range files {
 		if err := box.WriteFile(fileName, bytes.NewReader(fileData), 0644); err != nil {
+			zap.S().Warn(err)
 			return "", nil, err
 		}
 	}

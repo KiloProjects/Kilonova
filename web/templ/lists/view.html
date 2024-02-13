@@ -6,8 +6,6 @@
 
 {{ define "content" }}
 
-{{ $root := .}}
-
 {{ range pblistParent .ProblemList }}
 
 <a class="block mb-2" href="/problem_lists/{{.ID}}"><i class="fas fa-arrow-left"></i> {{.Title}}</a>
@@ -223,7 +221,7 @@ document.getElementById("pblist-update").addEventListener("submit", updateProble
 document.getElementById("delButton").addEventListener("click", deleteProblemList);
 </script>
 
-{{ template "createpblist.html" $root}}
+{{ template "createpblist.html" $}}
 
 	{{ end }}
 	{{ end }}

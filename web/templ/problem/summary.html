@@ -9,8 +9,6 @@
 {{ define "content" }}
 
 
-{{ $pbid := .Problem.ID }}
-
 {{ template "topbar.html" . }}
 
 {{$stmtLang := .SelectedLang}}
@@ -128,7 +126,7 @@
                     {{ range . }}
                     {{ $score := spbMaxScore . }}    
                     <li>
-                        <a {{ if eq $pbid .ID }} class="topbar-selected p-0" {{end}}
+                        <a {{ if eq $.Problem.ID .ID }} class="topbar-selected p-0" {{end}}
                             href="/problems/{{.ID}}?list_id={{$listID}}">
                             {{.Name}}
                         </a> 
@@ -156,7 +154,6 @@
             <older-subs problemid="{{.Problem.ID}}" {{if (and .Topbar.Contest (not .Topbar.Contest.Ended))}}contestid="{{.Topbar.Contest.ID}}"{{end}} userid="{{authedUser.ID}}" enc="{{.Submissions | encodeJSON}}"></older-subs>
         </div>
         {{ end }}
-        {{ $topbar := .Topbar}}
         {{ with .Attachments }}
         <details class="segment-panel" open> <!-- Attachments -->
             <summary>
@@ -165,7 +162,7 @@
             <div class="px-2">
                 <div class="list-group">
                     {{ range . }}
-                    <a style="word-wrap: anywhere;" href="/assets/problem/{{$pbid}}/attachment/{{.Name}}"
+                    <a style="word-wrap: anywhere;" href="/assets/problem/{{$.Problem.ID}}/attachment/{{.Name}}"
                         class="list-group-item flex justify-between">
                         <span id="att-name-{{.ID}}">{{.Name}}</span>
                         <span class="badge-lite text-sm" id="att-size-{{.ID}}">

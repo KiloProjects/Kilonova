@@ -2,8 +2,6 @@
 {{ define "content" }}
 {{ template "topbar.html" . }}
 
-{{ $root := . }}
-
 <div class="page-holder">
     {{ template "subtaskSidebar.html" . }}
     <div class="page-content-wrapper">
@@ -32,7 +30,7 @@
                             {{.VisibleID}}
                         </td>
                         <td class="kn-table-cell">
-                            <input class="form-input" type="number" id="score-subtask-{{.VisibleID}}" value="{{.Score}}" min="0" max="100" step="{{scoreStep $root.Problem}}" autocomplete="off" />
+                            <input class="form-input" type="number" id="score-subtask-{{.VisibleID}}" value="{{.Score}}" min="0" max="100" step="{{scoreStep $.Problem}}" autocomplete="off" />
                         </td>
                     </tr>
                 {{ end }}
@@ -68,7 +66,7 @@
                                 {{.VisibleID}}
                             </td>
                             <td class="kn-table-cell">
-                                {{$root.TestSubTasks .ID}}
+                                {{$.TestSubTasks .ID}}
                             </td>
                         </tr>
                     {{ end }}

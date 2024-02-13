@@ -1,8 +1,6 @@
 {{ define "title" }} {{getText "title.edit.access_control" .Problem.ID .Problem.Name}} {{ end }}
 {{ define "content" }}
 
-{{ $pbid := .Problem.ID }}
-
 {{ template "topbar.html" . }}
 
 <div class="page-holder">
@@ -44,7 +42,7 @@
 </div>
 
 <script>
-    const problem_id = {{ $pbid }};
+    const problem_id = {{ .Problem.ID }};
 
     async function addEditor() {
         const username = document.getElementById('userToAdd').value;
