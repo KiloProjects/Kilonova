@@ -47,6 +47,26 @@ var (
 	RootProblemList   = config.GenFlag[int]("frontend.front_page.root_problem_list", 0, "Root problem list (front page main content)")
 )
 
+func (rt *Web) buildPblistCache(r *http.Request, listIDs []int) *http.Request {
+	if util.UserBrief(r) == nil {
+		return r
+	}
+	cache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r))
+	if err == nil {
+		return r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, cache))
+	}
+	if errors.Is(err, context.Canceled) {
+		// Build mock cache to silence cache misses
+		mockCache := make(map[int]int)
+		for _, id := range listIDs {
+			mockCache[id] = 0
+		}
+		return r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, mockCache))
+	}
+	zap.S().Warn(err)
+	return r
+}
+
 func (rt *Web) index() http.HandlerFunc {
 	templ := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html", "modals/contest_brief.html", "modals/login.html")
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -92,20 +112,7 @@ func (rt *Web) index() http.HandlerFunc {
 			// }
 		}
 
-		if util.UserBrief(r) != nil {
-			pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r))
-			if err == nil {
-				r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, pblistCache))
-			} else if errors.Is(err, context.Canceled) {
-				mockCache := make(map[int]int)
-				for _, id := range listIDs {
-					mockCache[id] = 0
-				}
-				r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, mockCache))
-			} else {
-				zap.S().Warn(err)
-			}
-		}
+		r = rt.buildPblistCache(r, listIDs)
 
 		hotProblems, err := rt.base.ScoredProblems(r.Context(), kilonova.ProblemFilter{
 			LookingUser: util.UserBrief(r), Look: true,
@@ -321,14 +328,7 @@ func (rt *Web) pbListIndex() http.HandlerFunc {
 			}
 		}
 
-		if util.UserBrief(r) != nil {
-			pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r))
-			if err == nil {
-				r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, pblistCache))
-			} else {
-				zap.S().Warn(err)
-			}
-		}
+		r = rt.buildPblistCache(r, listIDs)
 
 		rt.runTempl(w, r, templ, &ProblemListParams{nil, pblists, -1})
 	}
@@ -352,14 +352,7 @@ func (rt *Web) pbListProgressIndex() http.HandlerFunc {
 			}
 		}
 
-		if util.UserBrief(r) != nil {
-			pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r))
-			if err == nil {
-				r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, pblistCache))
-			} else {
-				zap.S().Warn(err)
-			}
-		}
+		r = rt.buildPblistCache(r, listIDs)
 
 		rt.runTempl(w, r, templ, &ProblemListParams{nil, pblists, RootProblemList.Value()})
 	}
@@ -389,14 +382,7 @@ func (rt *Web) pbListProgressView() http.HandlerFunc {
 		// 	listIDs = append(listIDs, slist.ID)
 		// }
 
-		// if util.UserBrief(r) != nil {
-		// 	pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r).ID)
-		// 	if err == nil {
-		// 		r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, pblistCache))
-		// 	} else {
-		// 		zap.S().Warn(err)
-		// 	}
-		// }
+		// r = rt.buildPblistCache(r, listIDs)
 		uname := r.FormValue("username")
 		var checkedUser *kilonova.UserBrief
 		if uname == "" {
@@ -429,14 +415,7 @@ func (rt *Web) pbListView() http.HandlerFunc {
 			listIDs = append(listIDs, slist.ID)
 		}
 
-		if util.UserBrief(r) != nil {
-			pblistCache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r))
-			if err == nil {
-				r = r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, pblistCache))
-			} else {
-				zap.S().Warn(err)
-			}
-		}
+		r = rt.buildPblistCache(r, listIDs)
 
 		rt.runTempl(w, r, templ, &ProblemListParams{util.ProblemList(r), nil, -1})
 	}
