@@ -3,7 +3,7 @@ package kilonova
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"math/rand"
+	"math/rand/v2"
 	"strings"
 )
 
@@ -14,7 +14,7 @@ func RandomString(size int) string {
 	sb := strings.Builder{}
 	sb.Grow(size)
 	for ; size > 0; size-- {
-		sb.WriteByte(randomCharacters[rand.Intn(len(randomCharacters))])
+		sb.WriteByte(randomCharacters[rand.IntN(len(randomCharacters))])
 	}
 	return sb.String()
 }
