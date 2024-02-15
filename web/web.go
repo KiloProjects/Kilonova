@@ -39,12 +39,15 @@ import (
 )
 
 var (
-	CCDisclaimer = config.GenFlag("feature.frontend.cc_disclaimer", true, "CC disclaimer in footer")
+	CCDisclaimer    = config.GenFlag("frontend.footer.cc_disclaimer", true, "CC disclaimer in footer")
+	DiscordInviteID = config.GenFlag("frontend.footer.discord_id", "Qa6Ytgh", "Invite ID for Discord server")
 
 	AllSubsPage = config.GenFlag("feature.frontend.all_subs_page", true, "Anyone can view all submissions")
 
 	FrontPageProblems  = config.GenFlag("feature.frontend.front_page_pbs", true, "Show problems on front page")
 	FrontPagePbDetails = config.GenFlag("feature.frontend.front_page_pbs_links", true, "On the front page problems, show links to other resources")
+
+	FrontPageAnnouncement = config.GenFlag("frontend.front_page_announcement", "default", `Custom front page announcement ("default" = default text)`)
 
 	SidebarContests = config.GenFlag("feature.frontend.front_page_csidebar", true, "Show contests in sidebar on the front page")
 	ShowTrending    = config.GenFlag("frontend.front_page.show_trending", true, "Show trending problems on the front page sidebar")

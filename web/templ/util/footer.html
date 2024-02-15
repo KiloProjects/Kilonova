@@ -29,7 +29,9 @@
                     <li><span class="black-span"><i class="fas fa-fw fa-code-branch"></i> Kilonova {{version}}</span></li>
                     <li><span class="black-span"><i class="fas fa-fw fa-clock"></i> {{getText "serverTime"}}: <span id="footer_server_time">{{serverTimeFooter}}</span></span></li>
                 	{{if debug}}<li><span class="black-span"><i class="text-red-600 fas fa-fw fa-exclamation-triangle"></i> Debug Mode active</span></li>{{end}}
-					<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="https://discord.gg/Qa6Ytgh"><i class="fab fa-fw fa-discord"></i> KiloProjects Discord</a></li>
+                    {{with stringFlag "frontend.footer.discord_id"}}
+					<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="https://discord.gg/{{.}}"><i class="fab fa-fw fa-discord"></i> Discord Server</a></li>
+                    {{end}}
 					<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="https://github.com/KiloProjects/Kilonova"><i class="fab fa-fw fa-github"></i> GitHub</a></li>
 					<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="mailto:admin@kilonova.ro?subject=Contact"><i class="fas fa-fw fa-envelope"></i> Contact</a></li>
 				</ul>
@@ -41,7 +43,7 @@
                     <li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="https://github.com/AlexVasiluta"> Platform made with <i class="fas fa-fw fa-heart"></i> by Alex Vasiluță </a></li>
                     <li class="black-span"> Problems generously uploaded by the Kilonova community</li>
                     <li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="https://github.com/Secret-chest"> Favicon by Secret-chest </a></li>
-                    {{ if (boolFlag "feature.frontend.cc_disclaimer") }}
+                    {{ if (boolFlag "frontend.footer.cc_disclaimer") }}
                         {{$disclaimerImg := hashedName "static/by-nc-sa.eu.png" -}}
                         <li class="black-anchor">
                             Cu excepția cazurilor unde este specificat diferit, conținutul platformei este publicat sub licența <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>. Vedeți <a href="https://kilonova.ro/posts/creative-commons">aici</a> mai multe detalii.

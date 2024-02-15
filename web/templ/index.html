@@ -4,7 +4,15 @@
 <div class="segment-panel">
     <h1>Kilonova {{version}}</h1>
     
-    <p class="text-gray-600 dark:text-gray-300 mb-1">{{ getText "announcement" `<a target="_blank" rel="noopener noreferrer" href="https://discord.gg/Qa6Ytgh">Discord</a>` }} </p>
+    {{with stringFlag "frontend.front_page_announcement"}}
+    <p class="text-gray-600 dark:text-gray-300 mb-1">
+        {{if eq . "default"}}
+            {{ getText "announcement" (printf `<a target="_blank" rel="noopener noreferrer" href="https://discord.gg/%s">Discord</a>` (stringFlag "frontend.footer.discord_id")) }} 
+        {{else}}
+            {{ renderMarkdown . }}
+        {{end}}
+    </p>
+    {{end}}
 </div>
 
 <div class="page-holder">
