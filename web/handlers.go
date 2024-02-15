@@ -257,7 +257,9 @@ func (rt *Web) problems() http.HandlerFunc {
 			Ordering: q.Ordering, Descending: q.Descending,
 		}, util.UserBrief(r), util.UserBrief(r))
 		if err != nil {
-			zap.S().Warn(err)
+			if !errors.Is(err, context.Canceled) {
+				zap.S().Warn(err)
+			}
 			// TODO: Maybe not fail to load and insted just load on the browser?
 			rt.statusPage(w, r, 500, "N-am putut încărca problemele")
 			return
