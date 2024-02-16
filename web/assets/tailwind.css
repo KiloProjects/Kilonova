@@ -138,6 +138,10 @@
 		@apply kn-table-cell;
 	}
 
+	.enhance-tables thead th:empty {
+		display: none;
+	}
+
 	.statement-images img {
 		@apply py-1;
 	}
