@@ -1532,7 +1532,7 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 			return rt.base.IsContestEditor(authedUser, c)
 		},
 		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *ProblemListingParams {
-			return &ProblemListingParams{pbs, rt.base.IsContestEditor(authedUser, contest), true, contest.ID, -1}
+			return &ProblemListingParams{pbs, rt.base.IsContestEditor(authedUser, contest) || contest.Ended(), true, contest.ID, -1}
 		},
 		"contestLeaderboardVisible": func(c *kilonova.Contest) bool {
 			if c.PublicLeaderboard {
