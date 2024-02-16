@@ -2,7 +2,7 @@
 <div class="list-group grid grid-cols-1">
 	{{ range .Problems }}
 		<a href="/{{if not (eq $.ContestIDScore -1)}}contests/{{$.ContestIDScore}}/{{end}}problems/{{.ID}}{{if not (eq $.ListID -1)}}?list_id={{$.ListID}}{{end}}" class="list-group-item flex justify-between">
-			<span>{{.Name}} (#{{.ID}})</span>
+			<span>{{.Name}}{{if $.ShowID}} (#{{.ID}}){{end}}</span>
             <div>
                 {{- if $.ShowPublished -}}
 			    {{- if authed -}}
@@ -15,11 +15,9 @@
 					{{ end }}
                 {{- end -}}
                 {{- end -}}
-                {{ if $.ShowScore }}
-                    {{ with spbMaxScore . }}
-                        <span class="badge">{{.}}</span>
-                    {{ end }}
-                {{- end }}
+                {{ with spbMaxScore . }}
+                    <span class="badge">{{.}}</span>
+                {{ end }}
             </div>
 		</a>
 	{{ end }}

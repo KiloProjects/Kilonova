@@ -463,14 +463,15 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"pasteEditor": func(user *kilonova.UserBrief, paste *kilonova.SubmissionPaste) bool {
 			return base.IsPasteEditor(paste, user)
 		},
-		"genProblemsParams": func(pbs []*kilonova.ScoredProblem, showScore, showPublished bool) *ProblemListingParams {
-			return &ProblemListingParams{pbs, showScore, showPublished, -1, -1}
+		"genProblemsParams": func(pbs []*kilonova.ScoredProblem, showPublished bool) *ProblemListingParams {
+			return &ProblemListingParams{pbs, true, showPublished, -1, -1}
 		},
-		"genListProblemsParams": func(pbs []*kilonova.ScoredProblem, showScore, showPublished bool, listID int) *ProblemListingParams {
-			return &ProblemListingParams{pbs, showScore, showPublished, -1, listID}
+		"genListProblemsParams": func(pbs []*kilonova.ScoredProblem, showPublished bool, listID int) *ProblemListingParams {
+			return &ProblemListingParams{pbs, true, showPublished, -1, listID}
 		},
 		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *ProblemListingParams {
-			return &ProblemListingParams{pbs, true, true, contest.ID, -1}
+			zap.S().Warn("Uninitialized `genContestProblemsParams`")
+			return nil
 		},
 		"genPblistParams": func(pblist *kilonova.ProblemList, open bool) *PblistParams {
 			return &PblistParams{pblist, open}

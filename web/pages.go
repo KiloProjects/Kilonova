@@ -268,8 +268,8 @@ type IndexParams struct {
 }
 
 type ProblemListingParams struct {
-	Problems  []*kilonova.ScoredProblem
-	ShowScore bool
+	Problems []*kilonova.ScoredProblem
+	ShowID   bool
 
 	ShowPublished bool
 
