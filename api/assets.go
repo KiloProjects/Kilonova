@@ -195,8 +195,19 @@ func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request)
 	var buf bytes.Buffer
 	wr := csv.NewWriter(&buf)
 
+	var hasDisplayName bool
+	for _, entry := range ld.Entries {
+		if entry.User.DisplayName != "" {
+			hasDisplayName = true
+			break
+		}
+	}
+
 	// Header
 	header := []string{"username"}
+	if hasDisplayName {
+		header = append(header, "display_name")
+	}
 	for _, pb := range ld.ProblemOrder {
 		name, ok := ld.ProblemNames[pb]
 		if !ok {
@@ -219,6 +230,9 @@ func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request)
 	}
 	for _, entry := range ld.Entries {
 		line := []string{entry.User.Name}
+		if hasDisplayName {
+			line = append(line, entry.User.DisplayName)
+		}
 		if util.Contest(r).LeaderboardStyle == kilonova.LeaderboardTypeICPC {
 			for _, pb := range ld.ProblemOrder {
 				score, ok := entry.ProblemScores[pb]
