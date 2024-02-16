@@ -1036,7 +1036,9 @@ func (rt *Web) contests() http.HandlerFunc {
 
 		contests, err := rt.base.Contests(r.Context(), filter)
 		if err != nil {
-			zap.S().Warn(err)
+			if !errors.Is(err, context.Canceled) {
+				zap.S().Warn(err)
+			}
 			rt.statusPage(w, r, 400, "Nu am putut obține concursurile")
 			return
 		}

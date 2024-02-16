@@ -244,7 +244,7 @@ func (s *BaseAPI) UpdateUserPassword(ctx context.Context, uid int, password stri
 }
 
 // TODO: displayName probably doesn't have to be *string, can be just string, but this was implemented quickly
-func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, theme kilonova.PreferredTheme, displayName *string, email *string) (*kilonova.UserFull, *StatusError) {
+func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, theme kilonova.PreferredTheme, displayName *string, email *string, bio string) (*kilonova.UserFull, *StatusError) {
 	uname = strings.TrimSpace(uname)
 	if !(len(uname) >= 3 && len(uname) <= 32 && usernameRegex.MatchString(uname)) {
 		return nil, Statusf(400, "Username must be between 3 and 32 characters long and must contain only letters, digits, underlines and dashes.")
@@ -281,7 +281,7 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 		dName = *displayName
 	}
 
-	id, err := s.createUser(ctx, uname, *email, pwd, lang, theme, dName, true)
+	id, err := s.createUser(ctx, uname, *email, pwd, lang, theme, dName, bio, true)
 	if err != nil {
 		zap.S().Warn(err)
 		return nil, Statusf(500, "Couldn't create user")
@@ -295,13 +295,13 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 	return user, err1
 }
 
-func (s *BaseAPI) createUser(ctx context.Context, username, email, password, lang string, theme kilonova.PreferredTheme, displayName string, generated bool) (int, error) {
+func (s *BaseAPI) createUser(ctx context.Context, username, email, password, lang string, theme kilonova.PreferredTheme, displayName string, bio string, generated bool) (int, error) {
 	hash, err := hashPassword(password)
 	if err != nil {
 		return -1, err
 	}
 
-	id, err := s.db.CreateUser(ctx, username, hash, email, lang, theme, displayName, generated)
+	id, err := s.db.CreateUser(ctx, username, hash, email, lang, theme, displayName, bio, generated)
 	if err != nil {
 		zap.S().Warn(err)
 		return -1, err

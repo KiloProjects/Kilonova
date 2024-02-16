@@ -403,6 +403,8 @@ func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 		Lang     string `json:"language"`
 
+		Bio string `json:"bio"`
+
 		Email       *string `json:"email"`
 		DisplayName *string `json:"display_name"`
 
@@ -444,7 +446,7 @@ func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 		contest = contest2
 	}
 
-	user, err := s.base.GenerateUser(r.Context(), args.Name, args.Password, args.Lang, kilonova.PreferredThemeDark, args.DisplayName, args.Email)
+	user, err := s.base.GenerateUser(r.Context(), args.Name, args.Password, args.Lang, kilonova.PreferredThemeDark, args.DisplayName, args.Email, args.Bio)
 	if err != nil {
 		err.WriteError(w)
 		return
