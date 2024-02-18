@@ -112,5 +112,5 @@ func (s *BaseAPI) ConfirmVerificationEmail(vid string, user *kilonova.UserBrief)
 }
 
 func (s *BaseAPI) MailerEnabled() bool {
-	return config.Email.Enabled
+	return config.Email.Enabled && s.mailer != nil
 }

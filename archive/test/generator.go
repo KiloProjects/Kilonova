@@ -2,6 +2,7 @@ package test
 
 import (
 	"archive/zip"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -154,10 +155,7 @@ func (ag *archiveGenerator) addAttachments(ctx context.Context) *kilonova.Status
 }
 
 func (ag *archiveGenerator) addGraderProperties(ctx context.Context) *kilonova.StatusError {
-	gr, err := ag.ar.Create("grader.properties")
-	if err != nil {
-		return kilonova.WrapError(err, "Couldn't create archive grader.properties file")
-	}
+	var buf bytes.Buffer
 
 	if ag.opts.Tests {
 		subtasks, err := ag.base.SubTasks(ctx, ag.pb.ID)
@@ -193,28 +191,28 @@ func (ag *archiveGenerator) addGraderProperties(ctx context.Context) *kilonova.S
 				groups = append(groups, group)
 				weights = append(weights, st.Score.String())
 			}
-			fmt.Fprintf(gr, "groups=%s\n", strings.Join(groups, ","))
-			fmt.Fprintf(gr, "weights=%s\n", strings.Join(weights, ","))
+			fmt.Fprintf(&buf, "groups=%s\n", strings.Join(groups, ","))
+			fmt.Fprintf(&buf, "weights=%s\n", strings.Join(weights, ","))
 		}
 	}
 	if ag.opts.ProblemDetails {
-		fmt.Fprintf(gr, "time=%f\n", ag.pb.TimeLimit)
-		fmt.Fprintf(gr, "memory=%f\n", float64(ag.pb.MemoryLimit)/1024.0)
+		fmt.Fprintf(&buf, "time=%f\n", ag.pb.TimeLimit)
+		fmt.Fprintf(&buf, "memory=%f\n", float64(ag.pb.MemoryLimit)/1024.0)
 		if !ag.pb.DefaultPoints.IsZero() {
-			fmt.Fprintf(gr, "default_score=%s\n", ag.pb.DefaultPoints)
+			fmt.Fprintf(&buf, "default_score=%s\n", ag.pb.DefaultPoints)
 		}
-		fmt.Fprintf(gr, "score_precision=%d\n", ag.pb.ScorePrecision)
+		fmt.Fprintf(&buf, "score_precision=%d\n", ag.pb.ScorePrecision)
 		if ag.pb.SourceSize != kilonova.DefaultSourceSize.Value() {
-			fmt.Fprintf(gr, "source_size=%d", ag.pb.SourceSize)
+			fmt.Fprintf(&buf, "source_size=%d", ag.pb.SourceSize)
 		}
-		fmt.Fprintf(gr, "console_input=%t\n", ag.pb.ConsoleInput)
-		fmt.Fprintf(gr, "test_name=%s\n", ag.testName)
-		fmt.Fprintf(gr, "scoring_strategy=%s\n", ag.pb.ScoringStrategy)
+		fmt.Fprintf(&buf, "console_input=%t\n", ag.pb.ConsoleInput)
+		fmt.Fprintf(&buf, "test_name=%s\n", ag.testName)
+		fmt.Fprintf(&buf, "scoring_strategy=%s\n", ag.pb.ScoringStrategy)
 
-		fmt.Fprintf(gr, "problem_name=%s\n", ag.pb.Name)
+		fmt.Fprintf(&buf, "problem_name=%s\n", ag.pb.Name)
 
 		if ag.pb.SourceCredits != "" {
-			fmt.Fprintf(gr, "source=%s\n", ag.pb.SourceCredits)
+			fmt.Fprintf(&buf, "source=%s\n", ag.pb.SourceCredits)
 		}
 	}
 
@@ -228,7 +226,7 @@ func (ag *archiveGenerator) addGraderProperties(ctx context.Context) *kilonova.S
 			for _, tag := range tags {
 				tagNames = append(tagNames, fmt.Sprintf("%q:%s", tag.Name, tag.Type))
 			}
-			fmt.Fprintf(gr, "tags=%s\n", strings.Join(tagNames, ","))
+			fmt.Fprintf(&buf, "tags=%s\n", strings.Join(tagNames, ","))
 		}
 	}
 
@@ -242,8 +240,20 @@ func (ag *archiveGenerator) addGraderProperties(ctx context.Context) *kilonova.S
 			for _, editor := range editors {
 				editorNames = append(editorNames, editor.Name)
 			}
-			fmt.Fprintf(gr, "editors=%s\n", strings.Join(editorNames, ","))
+			fmt.Fprintf(&buf, "editors=%s\n", strings.Join(editorNames, ","))
 		}
+	}
+
+	if buf.Len() == 0 {
+		return nil // Do not create grader.properties when empty
+	}
+
+	gr, err := ag.ar.Create("grader.properties")
+	if err != nil {
+		return kilonova.WrapError(err, "Couldn't create archive grader.properties file")
+	}
+	if _, err := io.Copy(gr, &buf); err != nil {
+		return kilonova.WrapError(err, "Couldn't write grader.properties file")
 	}
 
 	return nil
