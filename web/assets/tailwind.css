@@ -230,7 +230,7 @@
 	.dropdown-list {
 		@apply absolute right-0 w-full md:w-64;
 		@apply py-1 mt-1 text-xl bg-white rounded-lg shadow-lg;
-		@apply dark:bg-gray-800;
+		@apply dark:bg-gray-800 z-50;
 	}
 	.dropdown-list-item {
 		@apply block px-4 py-1 text-gray-800 focus:text-gray-800 hover:text-gray-800 hoverable;
