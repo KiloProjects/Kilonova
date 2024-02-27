@@ -396,6 +396,9 @@ Link-ul permanent pentru pagina concursului este: <a href="{{$url}}">{{$url}}</a
 <p>Echipa Kilonova<br/>
 <a href="https://kilonova.ro/">https://kilonova.ro/</a></p>`))
 
+// Basically [a-zA-Z0-9] but exclude i/I/l/L and 0/o/O since they may be easily mistaken
+const userPasswordAlphabet = "abcdefghjklmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ123456789"
+
 func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var args struct {
@@ -433,7 +436,7 @@ func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if args.Password == "" {
-		args.Password = kilonova.RandomString(7)
+		args.Password = kilonova.RandomStringChars(7, userPasswordAlphabet)
 	}
 
 	var contest *kilonova.Contest
