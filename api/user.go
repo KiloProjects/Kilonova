@@ -32,6 +32,7 @@ func (s *API) serveGravatar(w http.ResponseWriter, r *http.Request, user *kilono
 		errorData(w, "Could not get avatar", 500)
 		return
 	}
+	defer rd.Close()
 	w.Header().Add("ETag", fmt.Sprintf("\"kn-%s-%d\"", user.Name, lastmod.Unix()))
 	// Cache for 1 day
 	w.Header().Add("Cache-Control", "public, max-age=86400, immutable")
@@ -397,7 +398,7 @@ Link-ul permanent pentru pagina concursului este: <a href="{{$url}}">{{$url}}</a
 <a href="https://kilonova.ro/">https://kilonova.ro/</a></p>`))
 
 // Basically [a-zA-Z0-9] but exclude i/I/l/L and 0/o/O since they may be easily mistaken
-const userPasswordAlphabet = "abcdefghjklmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ123456789"
+const userPasswordAlphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ123456789"
 
 func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()

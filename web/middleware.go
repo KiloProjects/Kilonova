@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -181,7 +182,7 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 		}
 		sub, err1 := rt.base.Submission(r.Context(), subID, util.UserBrief(r))
 		if err1 != nil {
-			if err1.Code != 404 {
+			if err1.Code != 404 && !errors.Is(err, context.Canceled) {
 				zap.S().Warn(err1)
 			}
 			rt.statusPage(w, r, 400, "Submisia nu există sau nu poate fi vizualizată")
@@ -308,7 +309,7 @@ func (rt *Web) mustBeContestEditor(next http.Handler) http.Handler {
 
 func (rt *Web) initSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := rt.base.SessionUser(r.Context(), rt.base.GetSessCookie(r))
+		user, err := rt.base.SessionUser(r.Context(), rt.base.GetSessCookie(r), r)
 		if err != nil || user == nil {
 			next.ServeHTTP(w, r)
 			return

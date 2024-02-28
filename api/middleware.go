@@ -76,7 +76,7 @@ func (s *API) MustBeProposer(next http.Handler) http.Handler {
 // SetupSession adds the user with the specified user ID to context
 func (s *API) SetupSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := s.base.SessionUser(r.Context(), getAuthHeader(r))
+		user, err := s.base.SessionUser(r.Context(), getAuthHeader(r), r)
 		if err != nil || user == nil {
 			if err != nil && !errors.Is(err, context.Canceled) {
 				zap.S().Warn(err)

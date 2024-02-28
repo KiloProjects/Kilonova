@@ -565,18 +565,14 @@ function AnnouncementList({ initialAnnouncements, contestID, canEdit }: { initia
 	);
 }
 
-function createUpdateToast(contestID: number, title: string) {
-	createToast({
-		status: "info",
-		title: title,
-		description: `<a href="/contests/${contestID}/communication">${getText("go_to_communication")}</a>`,
-	});
-}
-
 function genReducer(contestID: number, toast_text: string, setSthNew: (_: boolean) => void): Reducer<number, number> {
 	return (val, newVal) => {
 		if (newVal > val && val != -1) {
-			createUpdateToast(contestID, getText(toast_text));
+			createToast({
+				status: "info",
+				title: getText(toast_text),
+				description: `<a href="/contests/${contestID}/communication">${getText("go_to_communication")}</a>`,
+			});
 			setSthNew(true);
 		}
 		return newVal;

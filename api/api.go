@@ -56,6 +56,12 @@ func (s *API) Handler() http.Handler {
 			r.Post("/invalidateCheckers", webMessageWrapper("Invalidated checkers", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
 				return s.base.InvalidateCheckers()
 			}))
+			r.Post("/invalidateAvatars", webMessageWrapper("Invalidated avatars", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
+				if err := s.base.PurgeAvatarCache(); err != nil {
+					return err.(*kilonova.StatusError)
+				}
+				return nil
+			}))
 		})
 
 		r.Post("/addDonation", s.addDonation)

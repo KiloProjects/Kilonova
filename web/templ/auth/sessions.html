@@ -7,7 +7,7 @@
     <h1>{{getText "manage_sessions"}}</h1>
 
     {{range .Sessions}}
-    <div class="segment-panel">
+    <div class="segment-panel reset-list">
         <ul>
             {{if isAdmin}}
             <li>{{getText "id"}}: <code>{{.ID}}</code></li>
@@ -15,6 +15,18 @@
             <li>{{getText "created_at"}}: <span class="server_timestamp">{{.CreatedAt.UnixMilli}}</span></li>
             <li>{{getText "expires_at"}}: <span class="server_timestamp">{{.ExpiresAt.UnixMilli}}</span></li>
             <li>{{getText "expired"}}: {{.Expired}}</li>
+            {{if isAdmin}}
+            {{with sessionDevices .ID}}
+            <li>
+                {{getText "session_devices"}}:
+                <ul>
+                    {{range .}}
+                    <li>{{if .IPAddr}}{{.IPAddr.String}}{{end}} {{if .UserAgent}}(<code>{{.UserAgent}}</code>){{end}}</li>
+                    {{end}}
+                </ul>  
+            </li>
+            {{end}}
+            {{end}}
         </ul>
     </div>
     {{end}}

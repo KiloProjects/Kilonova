@@ -1,5 +1,5 @@
 
--- NOTE: When merging sql files, do not copy this in 002.views.sql
+-- NOTE: When merging sql files, do not copy this in 999.views.sql
 -- The table is now generated automatically by refresh_hot_pbs function defined later
 DROP MATERIALIZED VIEW IF EXISTS hot_problems;
 CREATE MATERIALIZED VIEW IF NOT EXISTS hot_problems (problem_id, hot_cnt) AS 

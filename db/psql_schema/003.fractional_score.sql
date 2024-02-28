@@ -28,4 +28,4 @@ ALTER TABLE submission_subtasks ADD COLUMN digit_precision integer NOT NULL DEFA
 UPDATE submission_subtasks SET digit_precision = COALESCE((SELECT digit_precision FROM submissions WHERE submissions.id = submission_id), 0);
 
 COMMIT;
--- don't forget to rerun 002.views.sql here
+-- don't forget to rerun 999.views.sql here

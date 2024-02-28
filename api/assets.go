@@ -42,7 +42,7 @@ func NewAssets(base *sudoapi.BaseAPI) *Assets {
 
 func (s *Assets) initSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := s.base.SessionUser(r.Context(), s.base.GetSessCookie(r))
+		user, err := s.base.SessionUser(r.Context(), s.base.GetSessCookie(r), r)
 		if err != nil || user == nil {
 			next.ServeHTTP(w, r)
 			return
@@ -100,6 +100,7 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", `public, max-age=3600`)
 
 	// If markdown file and client asks for HTML format, render the markdown
+	// TODO: Extract from cache if able to
 	if path.Ext(att.Name) == ".md" && r.FormValue("format") == "html" {
 		data, err := s.base.RenderMarkdown(attData, &kilonova.RenderContext{Problem: util.Problem(r), BlogPost: util.BlogPost(r)})
 		if err != nil {

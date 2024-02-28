@@ -622,6 +622,15 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 
 		"validUsername": func(name string) bool { return base.CheckValidUsername(name) == nil },
 
+		"sessionDevices": func(sid string) []*sudoapi.SessionDevice {
+			devices, err := base.SessionDevices(context.Background(), sid)
+			if err != nil {
+				zap.S().Warn(err)
+				return nil
+			}
+			return devices
+		},
+
 		// for problem edit page
 		"maxMemMB": func() float64 { return float64(config.Common.TestMaxMemKB) / 1024.0 },
 

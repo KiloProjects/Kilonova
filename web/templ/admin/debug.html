@@ -9,6 +9,7 @@
         <button class="btn btn-blue font-bold mr-2" onclick="resetSubs()">{{getText "resetSubs"}}</button>
         <button class="btn btn-blue font-bold mr-2" onclick="invalidateAtts()">{{getText "invalidateAtts"}}</button>
         <button class="btn btn-blue font-bold mr-2" onclick="invalidateCheckers()">{{getText "invalidateCheckers"}}</button>
+        <button class="btn btn-blue font-bold mr-2" onclick="invalidateAvatars()">{{getText "invalidateAvatars"}}</button>
     </div>
 
     <script>
@@ -20,6 +21,9 @@
         }
         async function invalidateCheckers() {
             bundled.apiToast(await bundled.postCall("/admin/maintenance/invalidateCheckers", {}))
+        }
+        async function invalidateAvatars() {
+            bundled.apiToast(await bundled.postCall("/admin/maintenance/invalidateAvatars", {}))
         }
     </script>
 </div>

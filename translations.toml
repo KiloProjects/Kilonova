@@ -1212,6 +1212,10 @@ ro = "Invalidare cache enunțuri"
 en = "Invalidate checker cache"
 ro = "Invalidare cache checkere"
 
+[invalidateAvatars]
+en = "Invalidate (Gr)avatar cache"
+ro = "Invalidare cache (Gr)avataruri"
+
 [changeRoles]
 en = "Change roles"
 ro = "Schimbă rolurile"
@@ -2667,6 +2671,10 @@ ro = "Administrare sesiuni"
 [session_mgmt_wip]
 en = "This is an experimental feature, it does not have all useful data and abilities."
 ro = "Aceasta este o funcționalitate experimentală, încă nu dispune de toate datele și abilitățile utile."
+
+[session_devices]
+en = "Devices"
+ro = "Dispozitive"
 
 [expires_at]
 en = "Expires at"

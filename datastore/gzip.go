@@ -1,16 +1,18 @@
 package datastore
 
 import (
-	"errors"
 	"io"
-	"io/fs"
 	"os"
 	"sync"
 
 	"github.com/klauspost/compress/gzip"
 
 	"go.uber.org/zap"
-	"vimagination.zapto.org/dos2unix"
+)
+
+var (
+	NoCompression      = gzip.NoCompression
+	DefaultCompression = gzip.DefaultCompression
 )
 
 type gzipFileReader struct {
@@ -34,21 +36,6 @@ func (fr *gzipFileReader) Close() error {
 		gzipReaderPool.Put(fr.gz)
 	}
 	return err
-}
-
-func openGzipOrNormal(fpath string) (io.ReadCloser, error) {
-	f, err := os.Open(fpath + ".gz")
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return os.Open(fpath)
-		}
-		return nil, err
-	}
-	gz, err := newGzipReader(f)
-	if err != nil {
-		return nil, err
-	}
-	return &gzipFileReader{f, gz}, nil
 }
 
 var gzipReaderPool = &sync.Pool{}
@@ -83,24 +70,8 @@ func (fw *gzipFileWriter) Close() error {
 		zap.S().Warn(err2)
 	}
 	if err2 == nil {
-		// If close was successful, put the gzip.Writer back in the pool
+		// If gzip close was successful, put the gzip.Writer back in the pool
 		gzipWriterPool.Put(fw.gz)
-	}
-	return err
-}
-
-func writeCompressedFile(path string, r io.Reader, perms fs.FileMode) error {
-	f, err := os.OpenFile(path+".gz", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perms)
-	if err != nil {
-		return err
-	}
-	gz := newGzipWriter(f)
-	_, err = io.Copy(gz, dos2unix.DOS2Unix(r))
-	if err1 := gz.Close(); err1 != nil && err == nil {
-		err = err1
-	}
-	if err1 := f.Close(); err1 != nil && err == nil {
-		err = err1
 	}
 	return err
 }

@@ -144,16 +144,6 @@ export function BigSpinner() {
 	);
 }
 
-export function SmallSpinner() {
-	return (
-		<div class="mx-auto my-auto w-full text-center">
-			<div>
-				<i class="fas fa-spinner animate-spin"></i> {getText("loading")}
-			</div>
-		</div>
-	);
-}
-
 export function InlineSpinner() {
 	return (
 		<div class="mx-auto w-full text-center">

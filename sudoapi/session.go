@@ -4,11 +4,17 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/netip"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
+)
+
+var (
+	TrueIPHeader = config.GenFlag[string]("server.listen.true_ip_header", "", "True IP header. Leave empty if not behind reverse proxy, the proxy's remote ip header (X-Forwarded-For, for example) otherwise")
 )
 
 func (s *BaseAPI) CreateSession(ctx context.Context, uid int) (string, *StatusError) {
@@ -53,7 +59,8 @@ func (s *BaseAPI) sessionUser(ctx context.Context, sid string) (*kilonova.UserFu
 }
 
 // Cached function
-func (s *BaseAPI) SessionUser(ctx context.Context, sid string) (*kilonova.UserFull, *StatusError) {
+// Should be called only in session initialization
+func (s *BaseAPI) SessionUser(ctx context.Context, sid string, r *http.Request) (*kilonova.UserFull, *StatusError) {
 	user, err := s.sessionUserCache.Get(ctx, sid)
 	if err != nil {
 		var err1 *StatusError
@@ -63,10 +70,41 @@ func (s *BaseAPI) SessionUser(ctx context.Context, sid string) (*kilonova.UserFu
 		zap.S().Warn("session user cache error: ", err)
 		return s.sessionUser(ctx, sid)
 	}
+	if user != nil {
+		go func() {
+			var ip *netip.Addr = nil
+			hostport, err := netip.ParseAddrPort(r.RemoteAddr)
+			if err == nil {
+				ip2 := hostport.Addr()
+				ip = &ip2
+			}
+			if len(TrueIPHeader.Value()) > 0 && len(r.Header.Get(TrueIPHeader.Value())) > 0 {
+				addr, err := netip.ParseAddr(r.Header.Get(TrueIPHeader.Value()))
+				if err != nil {
+					zap.S().Warn("Invalid address in reverse proxy header: ", err)
+				} else {
+					ip = &addr
+				}
+			}
+			ua := r.Header.Get("User-Agent")
+			if err := s.db.UpdateSessionDevice(context.Background(), sid, ip, &ua); err != nil {
+				zap.S().Warn(err)
+			}
+		}()
+	}
 	return user, nil
 }
 
 type Session = db.Session
+
+type SessionDevice struct {
+	SessID        string    `json:"session_id"`
+	CreatedAt     time.Time `json:"created_at"`
+	LastCheckedAt time.Time `json:"last_checked_at"`
+
+	IPAddr    *netip.Addr `json:"ip_addr"`
+	UserAgent *string     `json:"user_agent"`
+}
 
 func (s *BaseAPI) UserSessions(ctx context.Context, userID int) ([]*Session, *StatusError) {
 	sessions, err := s.db.UserSessions(ctx, userID)
@@ -74,6 +112,25 @@ func (s *BaseAPI) UserSessions(ctx context.Context, userID int) ([]*Session, *St
 		return nil, WrapError(err, "Could not get user sessions")
 	}
 	return sessions, nil
+}
+
+func (s *BaseAPI) SessionDevices(ctx context.Context, sid string) ([]*SessionDevice, *StatusError) {
+	devices, err := s.db.SessionDevices(ctx, sid)
+	if err != nil {
+		return nil, WrapError(err, "Could not get session devices")
+	}
+	retDevices := make([]*SessionDevice, 0, len(devices))
+	for _, device := range devices {
+		retDevices = append(retDevices, &SessionDevice{
+			SessID:        device.SessID,
+			CreatedAt:     device.CreatedAt,
+			LastCheckedAt: device.LastCheckedAt,
+
+			IPAddr:    device.IPAddr,
+			UserAgent: device.UserAgent,
+		})
+	}
+	return retDevices, nil
 }
 
 func (s *BaseAPI) RemoveSession(ctx context.Context, sid string) *StatusError {
@@ -110,6 +167,9 @@ func (s *BaseAPI) ExtendSession(ctx context.Context, sid string) (time.Time, *St
 func (s *BaseAPI) GetSessCookie(r *http.Request) string {
 	cookie, err := r.Cookie("kn-sessionid")
 	if err != nil {
+		return ""
+	}
+	if cookie.Value == "guest" {
 		return ""
 	}
 	return cookie.Value

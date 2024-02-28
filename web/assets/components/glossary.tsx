@@ -16,7 +16,10 @@ let definitions: Record<string, { en: Definition; ro: Definition }> = {
 				<>
 					<p>Input and output data is read from the keyboard and written to the console.</p>
 					<p>
-						For example, in C++, submissions must use <code>std::cin</code> and <code>std::cout</code>, respectively.
+						For example, in C++, submissions should use <code>std::cin</code> and <code>std::cout</code>, respectively.
+					</p>
+					<p>
+						In C and C++, the <code>scanf</code> and <code>printf</code> functions can also be used.
 					</p>
 				</>
 			),
@@ -27,7 +30,10 @@ let definitions: Record<string, { en: Definition; ro: Definition }> = {
 				<>
 					<p> Datele de intrare și de ieșire sunt citite de la tastatură și sunt scrise în consolă. </p>
 					<p>
-						De exemplu, în C++, submisiile trebuie să folosească <code>std::cin</code> și <code>std::cout</code>, respectiv.
+						De exemplu, în C++, submisiile ar trebui să folosească <code>std::cin</code> și <code>std::cout</code>, respectiv.
+					</p>
+					<p>
+						În C și C++, funcțiile <code>scanf</code>, respectiv <code>printf</code> pot să fie folosite pentru .
 					</p>
 				</>
 			),

@@ -326,13 +326,13 @@ func hashPassword(password string) (string, error) {
 	return string(hash), err
 }
 
-func getGravatar(email string, size int) (*bytes.Reader, time.Time, error) {
+func getGravatar(email string, size int) (io.ReadSeekCloser, time.Time, error) {
 	v := url.Values{}
 	v.Add("s", strconv.Itoa(size))
 	v.Add("d", "identicon")
-	bSum := md5.Sum([]byte(strings.ToLower(strings.TrimSpace(email))))
+	bSum := md5.Sum([]byte(email))
 
-	req, _ := http.NewRequest("GET", fmt.Sprintf("https://www.gravatar.com/avatar/%s.png?%s", hex.EncodeToString(bSum[:]), v.Encode()), nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("https://gravatar.com/avatar/%s.png?%s", hex.EncodeToString(bSum[:]), v.Encode()), nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
 	resp, err := http.DefaultClient.Do(req)
@@ -349,7 +349,7 @@ func getGravatar(email string, size int) (*bytes.Reader, time.Time, error) {
 		return nil, time.Unix(0, 0), err
 	}
 	time, _ := http.ParseTime(resp.Header.Get("last-modified"))
-	return bytes.NewReader(buf), time, nil
+	return &bytesReaderCloser{bytes.NewReader(buf)}, time, nil
 }
 
 // SaveAvatar wraps DataStore's SaveAvatar
@@ -368,7 +368,8 @@ func (s *BaseAPI) SaveAvatar(email string, size int, r io.Reader) error {
 
 // GetAvatar wraps DataStore's GetAvatar
 // if manager.GetAvatar errors out or is not valid, it fetches the gravatar from the web
-func (s *BaseAPI) GetAvatar(email string, size int, maxLastMod time.Time) (io.ReadSeeker, time.Time, bool, error) {
+func (s *BaseAPI) GetAvatar(email string, size int, maxLastMod time.Time) (io.ReadSeekCloser, time.Time, bool, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
 	if r, t, valid, err := s.manager.GetAvatar(email, size, maxLastMod); valid && err == nil {
 		return r, t, valid, err
 	}
@@ -389,3 +390,7 @@ func (s *BaseAPI) PurgeAvatarCache() error {
 	}
 	return nil
 }
+
+type bytesReaderCloser struct{ *bytes.Reader }
+
+func (r *bytesReaderCloser) Close() error { return nil }

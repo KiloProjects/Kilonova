@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"errors"
+	"net/netip"
 	"strconv"
 	"time"
 
@@ -52,6 +53,15 @@ type Session struct {
 
 func (sess *Session) Expired() bool {
 	return sess.ExpiresAt.Before(time.Now())
+}
+
+type SessionDevice struct {
+	SessID        string    `db:"session_id"`
+	CreatedAt     time.Time `db:"created_at"`
+	LastCheckedAt time.Time `db:"last_checked_at"`
+
+	IPAddr    *netip.Addr `db:"ip_addr"`
+	UserAgent *string     `db:"user_agent"`
 }
 
 func (s *DB) CreateSession(ctx context.Context, uid int) (string, error) {
@@ -112,4 +122,18 @@ func (s *DB) ExtendSession(ctx context.Context, sid string) (time.Time, error) {
 func (s *DB) RemoveSessions(ctx context.Context, userID int) ([]string, error) {
 	q, _ := s.conn.Query(ctx, `DELETE FROM sessions WHERE user_id = $1 RETURNING id`, userID)
 	return pgx.CollectRows(q, pgx.RowTo[string])
+}
+
+func (s *DB) UpdateSessionDevice(ctx context.Context, sid string, ip *netip.Addr, userAgent *string) error {
+	_, err := s.conn.Exec(ctx, `INSERT INTO session_clients (session_id, ip_addr, user_agent) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT unique_client_tuple DO UPDATE SET last_checked_at = NOW()`, sid, ip, userAgent)
+	return err
+}
+
+func (s *DB) SessionDevices(ctx context.Context, sid string) ([]*SessionDevice, error) {
+	rows, _ := s.conn.Query(ctx, "SELECT * FROM session_clients WHERE session_id = $1", sid)
+	devices, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[SessionDevice])
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+		return []*SessionDevice{}, nil
+	}
+	return devices, err
 }
