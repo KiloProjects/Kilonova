@@ -1,10 +1,23 @@
-{{define "title"}}{{getText "manage_sessions"}}: {{.ContentUser.Name}} {{end}}
+{{define "title"}}{{getText "manage_sessions"}}{{if .ContentUser}}: {{.ContentUser.Name}}{{end}} {{end}}
 {{define "content"}}
 
 <p class="text-muted text-sm">{{getText "session_mgmt_wip"}}</p>
 
 <div class="segment-panel">
     <h1>{{getText "manage_sessions"}}</h1>
+
+    {{if gt .NumPages 1}}
+    <div id="session_paginator"></div>
+    <script>
+        const page = {{.Page}};
+        const numpages = {{.NumPages}};
+        bundled.preactRender(bundled.Paginator({page, numpages, setPage: (page) => {
+            const params = new URLSearchParams(window.location.search)
+            params.set("page", page)
+            window.location.search = params.toString()
+        }}), document.getElementById("session_paginator"))
+    </script>
+    {{end}}
 
     {{range .Sessions}}
     <div class="segment-panel reset-list">
@@ -16,6 +29,13 @@
             <li>{{getText "expires_at"}}: <span class="server_timestamp">{{.ExpiresAt.UnixMilli}}</span></li>
             <li>{{getText "expired"}}: {{.Expired}}</li>
             {{if isAdmin}}
+            {{if not $.ContentUser}}
+                {{with user .UserID}}
+                <li>
+                    {{getText "username"}}: <a href="/profile/{{.Name}}">{{.Name}} (#{{.ID}})</a>
+                </li>
+                {{end}}
+            {{end}}
             {{with sessionDevices .ID}}
             <li>
                 {{getText "session_devices"}}:

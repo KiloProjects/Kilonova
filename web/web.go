@@ -217,6 +217,7 @@ func (rt *Web) Handler() http.Handler {
 			r.Get("/users", rt.justRender("admin/users.html"))
 			r.Get("/auditLog", rt.auditLog())
 			r.Get("/debug", rt.debugPage())
+			r.Get("/sessions", rt.sessionsFilter())
 		})
 
 		// Proposer panel

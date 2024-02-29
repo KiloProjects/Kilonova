@@ -106,8 +106,25 @@ type SessionDevice struct {
 	UserAgent *string     `json:"user_agent"`
 }
 
+type SessionFilter = db.SessionFilter
+
+func (s *BaseAPI) Sessions(ctx context.Context, filter *SessionFilter) ([]*Session, *StatusError) {
+	sessions, err := s.db.Sessions(ctx, filter)
+	if err != nil {
+		return nil, WrapError(err, "Could not filter sessions")
+	}
+	return sessions, nil
+}
+func (s *BaseAPI) CountSessions(ctx context.Context, filter *SessionFilter) (int, *StatusError) {
+	sessions, err := s.db.CountSessions(ctx, filter)
+	if err != nil {
+		return -1, WrapError(err, "Could not query session count")
+	}
+	return sessions, nil
+}
+
 func (s *BaseAPI) UserSessions(ctx context.Context, userID int) ([]*Session, *StatusError) {
-	sessions, err := s.db.UserSessions(ctx, userID)
+	sessions, err := s.db.Sessions(ctx, &db.SessionFilter{UserID: &userID})
 	if err != nil {
 		return nil, WrapError(err, "Could not get user sessions")
 	}

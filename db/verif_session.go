@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/netip"
 	"strconv"
 	"time"
@@ -64,6 +65,75 @@ type SessionDevice struct {
 	UserAgent *string     `db:"user_agent"`
 }
 
+type SessionFilter struct {
+	ID         *string
+	UserID     *int
+	UserPrefix *string
+
+	IPAddr   *netip.Addr
+	IPPrefix *netip.Prefix
+
+	Limit  int
+	Offset int
+
+	Ordering  string
+	Ascending bool
+}
+
+func (sf *SessionFilter) filterQuery(fb *filterBuilder) {
+	if v := sf.ID; v != nil {
+		fb.AddConstraint("id = %s", v)
+	}
+	if v := sf.UserID; v != nil {
+		fb.AddConstraint("user_id = %s", v)
+	}
+	if v := sf.UserPrefix; v != nil {
+		fb.AddConstraint("EXISTS (SELECT 1 FROM users WHERE users.id = user_id AND name LIKE %s || '%%')", v)
+	}
+
+	if v := sf.IPAddr; v != nil {
+		fb.AddConstraint("EXISTS (SELECT 1 FROM session_clients WHERE session_id = id AND ip_addr = %s)", v)
+	}
+	if v := sf.IPPrefix; v != nil {
+		fb.AddConstraint("EXISTS (SELECT 1 FROM session_clients WHERE session_id = id AND ip_addr <<= %s)", v)
+	}
+}
+
+func (sf *SessionFilter) ordering() string {
+	ord := " DESC"
+	if sf.Ascending {
+		ord = " ASC"
+	}
+	switch sf.Ordering {
+	case "last_access":
+		return "ORDER BY (SELECT MAX(last_checked_at) FROM session_clients WHERE session_id = id)" + ord + " NULLS LAST"
+	case "user_id":
+		return "ORDER BY user_id" + ord
+	default:
+		return "ORDER BY created_at" + ord
+	}
+}
+
+func (s *DB) Sessions(ctx context.Context, filter *SessionFilter) ([]*Session, error) {
+	fb := newFilterBuilder()
+	filter.filterQuery(fb)
+
+	query := fmt.Sprintf("SELECT * FROM sessions WHERE %s %s %s", fb.Where(), filter.ordering(), FormatLimitOffset(filter.Limit, filter.Offset))
+	rows, _ := s.conn.Query(ctx, query, fb.Args()...)
+	sessions, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[Session])
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+		return []*Session{}, nil
+	}
+	return sessions, err
+}
+func (s *DB) CountSessions(ctx context.Context, filter *SessionFilter) (int, error) {
+	fb := newFilterBuilder()
+	filter.filterQuery(fb)
+	var val int
+	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM sessions WHERE "+fb.Where(), fb.Args()...).Scan(&val)
+	return val, err
+}
+
 func (s *DB) CreateSession(ctx context.Context, uid int) (string, error) {
 	// If there is a collision, at least it will be from that user already
 	vid := kilonova.RandomSaltedString(strconv.Itoa(uid))
@@ -72,12 +142,6 @@ func (s *DB) CreateSession(ctx context.Context, uid int) (string, error) {
 		return "", err
 	}
 	return vid, nil
-}
-
-func (s *DB) UserSessions(ctx context.Context, uid int) ([]*Session, error) {
-	rows, _ := s.conn.Query(ctx, "SELECT * FROM sessions WHERE user_id = $1 ORDER BY created_at DESC", uid)
-	sessions, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[Session])
-	return sessions, err
 }
 
 func (s *DB) GetSession(ctx context.Context, sess string) (int, error) {
@@ -130,7 +194,7 @@ func (s *DB) UpdateSessionDevice(ctx context.Context, sid string, ip *netip.Addr
 }
 
 func (s *DB) SessionDevices(ctx context.Context, sid string) ([]*SessionDevice, error) {
-	rows, _ := s.conn.Query(ctx, "SELECT * FROM session_clients WHERE session_id = $1", sid)
+	rows, _ := s.conn.Query(ctx, "SELECT * FROM session_clients WHERE session_id = $1 ORDER BY last_checked_at DESC", sid)
 	devices, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[SessionDevice])
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		return []*SessionDevice{}, nil

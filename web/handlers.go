@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"runtime/metrics"
 	"slices"
@@ -1263,7 +1264,7 @@ func (rt *Web) profile() http.HandlerFunc {
 	}
 }
 
-func (rt *Web) sessionsPage(w http.ResponseWriter, r *http.Request, templ *template.Template, user *kilonova.UserFull) {
+func (rt *Web) userSessionsPage(w http.ResponseWriter, r *http.Request, templ *template.Template, user *kilonova.UserFull) {
 	sessions, err := rt.base.UserSessions(r.Context(), user.ID)
 	if err != nil {
 		zap.S().Warn(err)
@@ -1278,14 +1279,14 @@ func (rt *Web) sessionsPage(w http.ResponseWriter, r *http.Request, templ *templ
 }
 
 func (rt *Web) selfSessions() http.HandlerFunc {
-	templ := rt.parse(nil, "auth/sessions.html", "modals/pbs.html")
+	templ := rt.parse(nil, "auth/sessions.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.sessionsPage(w, r, templ, util.UserFull(r))
+		rt.userSessionsPage(w, r, templ, util.UserFull(r))
 	}
 }
 
 func (rt *Web) userSessions() http.HandlerFunc {
-	templ := rt.parse(nil, "auth/sessions.html", "modals/pbs.html")
+	templ := rt.parse(nil, "auth/sessions.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "user")))
 		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
@@ -1302,7 +1303,85 @@ func (rt *Web) userSessions() http.HandlerFunc {
 			rt.statusPage(w, r, 403, "")
 		}
 
-		rt.sessionsPage(w, r, templ, user)
+		rt.userSessionsPage(w, r, templ, user)
+	}
+}
+
+func (rt *Web) sessionsFilter() http.HandlerFunc {
+	templ := rt.parse(nil, "auth/sessions.html")
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+	decoder.SetAliasTag("json")
+	type filterQuery struct {
+		ID         *string `json:"id"`
+		UserID     *int    `json:"user_id"`
+		UserPrefix *string `json:"user_prefix"`
+
+		IPAddr   *string `json:"ip_addr"`
+		IPPrefix *string `json:"ip_prefix"`
+
+		Page int `json:"page"`
+
+		Ordering  string `json:"ord"`
+		Ascending bool   `json:"asc"`
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		var q filterQuery
+		r.ParseForm()
+		if err := decoder.Decode(&q, r.Form); err != nil {
+			zap.S().Warn(err)
+		}
+		if q.Page < 1 {
+			q.Page = 1
+		}
+
+		f := &sudoapi.SessionFilter{
+			ID: q.ID, UserID: q.UserID, UserPrefix: q.UserPrefix,
+
+			Limit: 50, Offset: (q.Page - 1) * 50,
+			Ordering: q.Ordering, Ascending: q.Ascending,
+		}
+
+		if q.IPAddr != nil {
+			addr, err := netip.ParseAddr(*q.IPAddr)
+			if err != nil {
+				rt.statusPage(w, r, 400, "Invalid IP address: "+err.Error())
+				return
+			}
+			f.IPAddr = &addr
+		}
+		if q.IPPrefix != nil {
+			prefix, err := netip.ParsePrefix(*q.IPPrefix)
+			if err != nil {
+				rt.statusPage(w, r, 400, "Invalid IP prefix: "+err.Error())
+				return
+			}
+			f.IPPrefix = &prefix
+		}
+
+		sessions, err := rt.base.Sessions(r.Context(), f)
+		if err != nil {
+			rt.statusPage(w, r, 500, err.Error())
+			return
+		}
+
+		numSessions, err := rt.base.CountSessions(r.Context(), f)
+		if err != nil {
+			rt.statusPage(w, r, 500, err.Error())
+			return
+		}
+
+		numPages := numSessions / 50
+		if numSessions%50 > 0 {
+			numPages++
+		}
+
+		rt.runTempl(w, r, templ, &SessionsParams{
+			ContentUser: nil,
+			Sessions:    sessions,
+			Page:        q.Page,
+			NumPages:    numPages,
+		})
 	}
 }
 

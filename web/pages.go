@@ -296,6 +296,8 @@ type ProfileParams struct {
 type SessionsParams struct {
 	ContentUser *kilonova.UserFull
 	Sessions    []*sudoapi.Session
+	Page        int
+	NumPages    int
 }
 
 type AuditLogParams struct {
