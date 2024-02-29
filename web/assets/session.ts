@@ -89,6 +89,10 @@ export function setTheme(theme: "light" | "dark") {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+	if (window.platform_info.user_id <= 0) {
+		// If the user is unauthenticated, it is of no use to try to extend the session
+		return;
+	}
 	const checkCookie = cookie.get("kn-session-check-date");
 	if (typeof checkCookie == "undefined" || checkCookie === "") {
 		if (getSession() != "guest") {
@@ -100,7 +104,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	if (isNaN(val)) {
 		return;
 	}
-	const checkTime = dayjs(val);
 	if (dayjs(val).isBefore(dayjs())) {
 		extendSession();
 	}

@@ -57,6 +57,10 @@ export async function getAllQuestions(contestID: number): Promise<Question[]> {
 }
 
 export async function getUserQuestions(contestID: number): Promise<Question[]> {
+	if (window.platform_info.user_id <= 0) {
+		// Skip if unauthed
+		return [];
+	}
 	let res = await getCall<Question[]>(`/contest/${contestID}/questions`, {});
 	if (res.status === "error") {
 		throw new Error(res.data);

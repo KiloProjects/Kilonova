@@ -89,6 +89,7 @@ func (s *API) extendSession(w http.ResponseWriter, r *http.Request) {
 	h := getAuthHeader(r)
 	if h == "" {
 		zap.S().Warn("Empty session on endpoint that must be authed")
+		returnData(w, nil)
 		return
 	}
 	exp, err := s.base.ExtendSession(r.Context(), h)

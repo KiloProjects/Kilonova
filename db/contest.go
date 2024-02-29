@@ -465,12 +465,18 @@ func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilono
 
 	editors, err := s.contestEditors(ctx, contest.ID)
 	if err != nil {
-		return nil, err
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
+		editors = []*User{}
 	}
 
 	viewers, err := s.contestViewers(ctx, contest.ID)
 	if err != nil {
-		return nil, err
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
+		viewers = []*User{}
 	}
 
 	return &kilonova.Contest{

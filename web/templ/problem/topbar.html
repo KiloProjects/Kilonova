@@ -87,7 +87,14 @@
         {{ end }}
         {{ if not .Topbar.Contest.Ended }}
             <script>
-                bundled.startReloadingQnA(5000); // Trigger reload every 5 or so seconds
+                (()=>{
+                    {{if isContestEditor .Topbar.Contest}}
+                    let pollTime = 5000; // 5 seconds for editors
+                    {{else}}
+                    let pollTime = 10000; // 10 seconds
+                    {{end}}
+                    bundled.startReloadingQnA(pollTime); // Trigger reload at specified interval
+                })
             </script>
         {{ end }}
     {{ end }}
