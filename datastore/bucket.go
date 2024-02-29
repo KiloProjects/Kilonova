@@ -145,11 +145,14 @@ func (b *Bucket) ResetCache() error {
 	if !b.Cache {
 		return errors.New("Bucket is not marked as cache, refusing to delete")
 	}
-	if err := os.RemoveAll(path.Join(b.RootPath, b.Name)); err != nil {
-		return err
-	}
-
-	return b.Init()
+	var errs []error
+	b.IterFiles(func(entry fs.DirEntry) error {
+		if err := b.RemoveFile(entry.Name()); err != nil {
+			errs = append(errs, err)
+		}
+		return nil
+	})
+	return errors.Join(errs...)
 }
 
 func NewBucket(path string, name string, compressionLevel int, cache bool) (*Bucket, error) {

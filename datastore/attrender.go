@@ -46,7 +46,7 @@ func (m *StorageManager) DelAttachmentRenders(attID int) error {
 		if id != attID {
 			return nil
 		}
-		if err := m.attBucket.RemoveFile(path.Join(m.RootPath, "attachments", entry.Name())); err != nil {
+		if err := m.attBucket.RemoveFile(entry.Name()); err != nil {
 			zap.S().Warn("Could not delete attachment render: ", err)
 		}
 		return nil

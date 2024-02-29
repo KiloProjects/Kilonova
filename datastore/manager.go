@@ -17,8 +17,6 @@ import (
 
 // StorageManager helps open the files in the data directory, this is supposed to be data that should not be stored in the DB
 type StorageManager struct {
-	RootPath string
-
 	subtestBucket *Bucket
 	testBucket    *Bucket
 	avatarsBucket *Bucket
@@ -55,7 +53,7 @@ func NewManager(p string) (kilonova.DataStore, error) {
 		return nil, err
 	}
 
-	return &StorageManager{RootPath: p, subtestBucket: sb, testBucket: tb, avatarsBucket: avb, attBucket: attb}, nil
+	return &StorageManager{subtestBucket: sb, testBucket: tb, avatarsBucket: avb, attBucket: attb}, nil
 }
 
 // SubtestWriter should be used by the eval server
