@@ -212,7 +212,14 @@ type ContestInvitation struct {
 	ContestID int       `json:"contest_id" db:"contest_id"`
 	CreatorID *int      `json:"creator_id" db:"creator_id"`
 
+	RedeemCount int  `json:"redeem_count" db:"redeem_cnt"`
+	MaxCount    *int `json:"max_invitation_count" db:"max_invitation_cnt"`
+
 	Expired bool `json:"expired"`
+}
+
+func (ci *ContestInvitation) Invalid() bool {
+	return ci.Expired || (ci.MaxCount != nil && *ci.MaxCount <= ci.RedeemCount)
 }
 
 // TODO: Maybe it would be nicer to coalesce all problem maps in a struct?

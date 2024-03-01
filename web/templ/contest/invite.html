@@ -4,66 +4,56 @@
 {{ end }}
 {{ define "content" }}
 
-{{if .Invite.Expired}}
 <div class="segment-panel">
-    <h1>{{getText "header.invitation" .Contest.Name}} {{if .Inviter}}{{getText "header.invitation.from" .Inviter.Name}}{{end}}</h1>
-
-    <p>{{getText "expiredInvite"}}</p>
-</div>
-{{else if .AlreadyRegistered}}
-<div class="segment-panel">
-    <h1>{{getText "header.invitation" .Contest.Name}} {{if .Inviter}}{{getText "header.invitation.from" .Inviter.Name}}{{end}}</h1>
-
-    <p>{{getText "alreadyRegistered"}}. <a href="/contests/{{.Contest.ID}}">{{getText "alreadyRegistered.jump"}}</a>.</p>
-
-</div>
-{{else}}
-<div class="segment-panel">
-    <h1>{{getText "header.invitation" .Contest.Name}} {{if .Inviter}}{{getText "header.invitation.from" .Inviter.Name}}{{end}}</h1>
-
-
-    <div class="segment-panel">
-        <h2 class="font-normal">
-            {{getText "contestInfo"}}
-        </h2>
-    
-        {{with .Contest}}
-        <div class="px-2">
-            <p>{{getText "startTime"}}: <span class="server_timestamp">{{.StartTime.UnixMilli}}</span></p>
-            <p>{{getText "duration"}}: {{contestDuration .}}</p>
-            <p>{{getText "status"}}: 
-                {{if .Ended}}
-                    {{getText "contest_ended"}}
-                {{else if .Running}}
-                    <kn-contest-countdown target_time="{{(remainingContestTime . (contestRegistration .)).UnixMilli}}" type="running"></kn-contest-countdown> 
-                    {{getText "contest_remaining"}}
-                {{else}}
-                    {{getText "contest_starting_in"}}
-                    <kn-contest-countdown target_time="{{.StartTime.UnixMilli}}" type="before_start"></kn-contest-countdown>
-                {{end}}
-            </p>
-            {{ if isUSACOstyle . }}
-                <p>{{getText "contest_user_time"}}: {{usacoDuration .}}</p>
-            {{ end }}
+    <h1 class="mb-2">{{getText "header.invitation" .Contest.Name}} {{if .Inviter}}{{getText "header.invitation.from" .Inviter.Name}}{{end}}</h1>
+    {{if .Invite.Expired}}
+        <p>{{getText "expiredInvite"}}</p>
+    {{else if .AlreadyRegistered}}
+        <p>{{getText "alreadyRegistered"}}. <a href="/contests/{{.Contest.ID}}">{{getText "alreadyRegistered.jump"}}</a>.</p>
+    {{else if .Invite.Invalid}}
+        <p>{{getText "inviteManyRedeems"}}</p>
+    {{else}}
+        <div class="segment-panel">
+            <h2 class="font-normal">
+                {{getText "contestInfo"}}
+            </h2>
+        
+            {{with .Contest}}
+            <div class="px-2">
+                <p>{{getText "startTime"}}: <span class="server_timestamp">{{.StartTime.UnixMilli}}</span></p>
+                <p>{{getText "duration"}}: {{contestDuration .}}</p>
+                <p>{{getText "status"}}: 
+                    {{if .Ended}}
+                        {{getText "contest_ended"}}
+                    {{else if .Running}}
+                        <kn-contest-countdown target_time="{{(remainingContestTime . (contestRegistration .)).UnixMilli}}" type="running"></kn-contest-countdown> 
+                        {{getText "contest_remaining"}}
+                    {{else}}
+                        {{getText "contest_starting_in"}}
+                        <kn-contest-countdown target_time="{{.StartTime.UnixMilli}}" type="before_start"></kn-contest-countdown>
+                    {{end}}
+                </p>
+                {{ if isUSACOstyle . }}
+                    <p>{{getText "contest_user_time"}}: {{usacoDuration .}}</p>
+                {{ end }}
+            </div>
+            {{end}}
         </div>
-        {{end}}
-    </div>
 
-    <button id="acceptButton" class="my-2 btn btn-blue">{{getText "accept"}}</button>
+        <button id="acceptButton" class="my-2 btn btn-blue">{{getText "accept"}}</button>
 
-</div>
-
-<script>
-    document.getElementById("acceptButton").addEventListener("click", async () => {
-        const res = await bundled.postCall("/contest/acceptInvitation", {invite_id: {{.Invite.ID}}})
-        if(res.status === "error") {
-            bundled.apiToast(res)
-            return
-        }
-        window.location.assign("/contests/{{.Contest.ID}}")
-    })
-</script>
+    <script>
+        document.getElementById("acceptButton").addEventListener("click", async () => {
+            const res = await bundled.postCall("/contest/acceptInvitation", {invite_id: {{.Invite.ID}}})
+            if(res.status === "error") {
+                bundled.apiToast(res)
+                return
+            }
+            window.location.assign("/contests/{{.Contest.ID}}")
+        })
+    </script>
 
 {{end}}
+</div>
 
 {{ end }}

@@ -203,7 +203,7 @@ DROP FUNCTION IF EXISTS contest_top_view;
 CREATE OR REPLACE FUNCTION contest_top_view(contest_id bigint, freeze_time timestamptz, include_editors boolean) RETURNS TABLE (user_id bigint, contest_id bigint, total_score decimal, last_time timestamptz) AS $$
     -- both contest_scores and legit_contestants will contain results only for that contest id, so it's safe to simply join them 
     WITH contest_scores AS (
-        SELECT user_id, SUM(score) AS total_score, MAX(mintime) AS last_time FROM contest_max_scores($1, $2) WHERE score >= 0 GROUP BY user_id
+        SELECT user_id, SUM(score) AS total_score, MAX(mintime) FILTER (WHERE score > 0) AS last_time FROM contest_max_scores($1, $2) WHERE score >= 0 GROUP BY user_id
     ), legit_contestants AS (
         SELECT regs.* FROM contest_registrations regs WHERE regs.contest_id = $1 AND (NOT EXISTS (SELECT 1 FROM contest_user_access acc WHERE acc.user_id = regs.user_id AND acc.contest_id = regs.contest_id) OR $3 = true)
     )

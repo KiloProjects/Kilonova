@@ -69,7 +69,7 @@ func (s *DB) DeleteContestRegistration(ctx context.Context, contestID, userID in
 }
 
 func (s *DB) ContestInvitations(ctx context.Context, contestID int) ([]*kilonova.ContestInvitation, error) {
-	rows, _ := s.conn.Query(ctx, "SELECT * FROM contest_invitations WHERE contest_id = $1 ORDER BY expired ASC, created_at DESC", contestID)
+	rows, _ := s.conn.Query(ctx, "SELECT *, (SELECT COUNT(*) FROM contest_registrations WHERE invitation_id = inv.id) AS redeem_cnt FROM contest_invitations inv WHERE contest_id = $1 ORDER BY expired ASC, created_at DESC", contestID)
 	invitations, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[kilonova.ContestInvitation])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -81,7 +81,7 @@ func (s *DB) ContestInvitations(ctx context.Context, contestID int) ([]*kilonova
 }
 
 func (s *DB) ContestInvitation(ctx context.Context, id string) (*kilonova.ContestInvitation, error) {
-	rows, _ := s.conn.Query(ctx, "SELECT * FROM contest_invitations WHERE id = $1 LIMIT 1", id)
+	rows, _ := s.conn.Query(ctx, "SELECT *, (SELECT COUNT(*) FROM contest_registrations WHERE invitation_id = inv.id) AS redeem_cnt FROM contest_invitations inv WHERE id = $1 LIMIT 1", id)
 	invitation, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[kilonova.ContestInvitation])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -97,8 +97,8 @@ func (s *DB) UpdateContestInvitation(ctx context.Context, id string, expired boo
 	return err
 }
 
-func (s *DB) CreateContestInvitation(ctx context.Context, contestID int, creatorID *int) (string, error) {
+func (s *DB) CreateContestInvitation(ctx context.Context, contestID int, creatorID *int, maxUses *int) (string, error) {
 	id := kilonova.RandomString(12)
-	_, err := s.conn.Exec(ctx, "INSERT INTO contest_invitations (id, contest_id, creator_id) VALUES ($1, $2, $3)", id, contestID, creatorID)
+	_, err := s.conn.Exec(ctx, "INSERT INTO contest_invitations (id, contest_id, creator_id, max_invitation_cnt) VALUES ($1, $2, $3, $4)", id, contestID, creatorID, maxUses)
 	return id, err
 }

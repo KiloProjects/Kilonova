@@ -86,12 +86,12 @@ func (s *BaseAPI) KickUserFromContest(ctx context.Context, contestID, userID int
 	return nil
 }
 
-func (s *BaseAPI) CreateContestInvitation(ctx context.Context, contestID int, author *kilonova.UserBrief) (string, *StatusError) {
+func (s *BaseAPI) CreateContestInvitation(ctx context.Context, contestID int, author *kilonova.UserBrief, maxUses *int) (string, *StatusError) {
 	var id *int
 	if author != nil {
 		id = &author.ID
 	}
-	invID, err := s.db.CreateContestInvitation(ctx, contestID, id)
+	invID, err := s.db.CreateContestInvitation(ctx, contestID, id, maxUses)
 	if err != nil {
 		return "", WrapError(err, "Couldn't create invitation")
 	}

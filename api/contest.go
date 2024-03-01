@@ -338,6 +338,9 @@ func (s *API) acceptContestInvitation(ctx context.Context, args struct {
 	if inv.Expired {
 		return kilonova.Statusf(400, "Invite expired")
 	}
+	if inv.MaxCount != nil && *inv.MaxCount <= inv.RedeemCount {
+		return kilonova.Statusf(400, "Invite limit reached")
+	}
 	contest, err := s.base.Contest(ctx, inv.ContestID)
 	if err != nil {
 		return err

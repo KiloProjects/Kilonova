@@ -333,8 +333,14 @@ func (s *API) Handler() http.Handler {
 			r.With(s.validateContestEditor).Get("/invitations", webWrapper(func(ctx context.Context, _ struct{}) ([]*kilonova.ContestInvitation, *kilonova.StatusError) {
 				return s.base.ContestInvitations(ctx, util.ContestContext(ctx).ID)
 			}))
-			r.With(s.validateContestEditor).Post("/createInvitation", webWrapper(func(ctx context.Context, _ struct{}) (string, *kilonova.StatusError) {
-				return s.base.CreateContestInvitation(ctx, util.ContestContext(ctx).ID, util.UserBriefContext(ctx))
+			r.With(s.validateContestEditor).Post("/createInvitation", webWrapper(func(ctx context.Context, args struct {
+				MaxUses int `json:"max_uses"`
+			}) (string, *kilonova.StatusError) {
+				var cnt *int
+				if args.MaxUses > 0 {
+					cnt = &args.MaxUses
+				}
+				return s.base.CreateContestInvitation(ctx, util.ContestContext(ctx).ID, util.UserBriefContext(ctx), cnt)
 			}))
 
 			r.With(s.MustBeAuthed).Get("/checkRegistration", webWrapper(s.checkRegistration))

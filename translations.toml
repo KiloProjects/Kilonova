@@ -1976,12 +1976,24 @@ en = "No invitations found"
 ro = "Nicio invitație găsită"
 
 [createInvitation]
-en = "Create invitation"
-ro = "Creare invitație"
+en = "Create invitation (unlimited uses)"
+ro = "Creare invitație (utilizări nelimitate)"
+
+[createSingleUseInvitation]
+en = "Create invitation (single-use)"
+ro = "Creare invitație (o singură utilizare)"
 
 [expired]
 en = "Expired"
 ro = "Expirat"
+
+[inviteUses]
+en = "Used / Total"
+ro = "Utilizat / Total"
+
+[inviteManyRedeems]
+en = "The invite was redeemed for a maximum number of times."
+ro = "Invitația a fost utilizată de un număr maxim de ori."
 
 [expiredInvite]
 en = "Unfortunately, the invitation has expired. You have to get access to a new one to join the contest."
