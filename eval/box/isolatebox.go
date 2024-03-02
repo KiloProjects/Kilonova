@@ -102,17 +102,22 @@ func (b *IsolateBox) buildRunFlags(c *eval.RunConfig) (res []string) {
 		res = append(res, "--cg-mem="+strconv.Itoa(c.MemoryLimit))
 	}
 
-	if c.InputPath != "" {
-		res = append(res, "--stdin="+c.InputPath)
+	if c.InputPath == "" {
+		c.InputPath = "/dev/null"
 	}
-	if c.OutputPath != "" {
-		res = append(res, "--stdout="+c.OutputPath)
+	if c.OutputPath == "" {
+		c.OutputPath = "/dev/null"
 	}
+	res = append(res, "--stdin="+c.InputPath)
+	res = append(res, "--stdout="+c.OutputPath)
 
-	if c.StderrPath != "" {
-		res = append(res, "--stderr="+c.StderrPath)
-	} else if c.StderrToStdout {
+	if c.StderrToStdout {
 		res = append(res, "--stderr-to-stdout")
+	} else {
+		if c.StderrPath == "" {
+			c.StderrPath = "/dev/null"
+		}
+		res = append(res, "--stderr="+c.StderrPath)
 	}
 
 	if b.metaFile != "" {

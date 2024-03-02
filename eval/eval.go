@@ -47,7 +47,9 @@ func (t Task[Req, Resp]) Run(ctx context.Context, mgr BoxScheduler, memQuota int
 type RunConfig struct {
 	StderrToStdout bool
 
-	InputPath  string
+	InputPath string
+	// If OutputPath or StderrPath are empty strings, they should default
+	// to "/dev/null" for security reasons.
 	OutputPath string
 	StderrPath string
 
