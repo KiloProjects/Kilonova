@@ -85,7 +85,8 @@
             </div>
         </div>
         <div class="segment-panel">
-            <h2>{{getText "problem_tags"}}</h2>
+            <h2 class="mb-0">{{getText "problem_tags"}}</h2>
+            <p class="text-sm text-muted mb-2">{{getText "problem_tags_explainer"}}</p>
             <kn-pb-tag-edit enc="{{problemTags .Problem | encodeJSON}}" pbid="{{.Problem.ID}}"></kn-pb-tag-edit>
         </div>
         <div class="segment-panel reset-list">

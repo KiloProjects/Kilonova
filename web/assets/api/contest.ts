@@ -51,6 +51,14 @@ export async function deleteAnnouncement(ann: Announcement) {
 export async function getAllQuestions(contestID: number): Promise<Question[]> {
 	let res = await getCall<Question[]>(`/contest/${contestID}/allQuestions`, {});
 	if (res.status === "error") {
+		if (res.statusCode == 401) {
+			apiToast({
+				status: "error",
+				data: "Error reloading questions (possibly logged out), please report this to the developers. Automatic verification will be disabled for this tab.",
+			});
+			stopReloadingQnA();
+			return [];
+		}
 		throw new Error(res.data);
 	}
 	return res.data;
@@ -63,6 +71,14 @@ export async function getUserQuestions(contestID: number): Promise<Question[]> {
 	}
 	let res = await getCall<Question[]>(`/contest/${contestID}/questions`, {});
 	if (res.status === "error") {
+		if (res.statusCode == 401) {
+			apiToast({
+				status: "error",
+				data: "Error reloading questions (possibly logged out), please report this to the developers. Automatic verification will be disabled for this tab.",
+			});
+			stopReloadingQnA();
+			return [];
+		}
 		throw new Error(res.data);
 	}
 	return res.data;
@@ -71,6 +87,14 @@ export async function getUserQuestions(contestID: number): Promise<Question[]> {
 export async function getAnnouncements(contestID: number): Promise<Announcement[]> {
 	let res = await getCall<Announcement[]>(`/contest/${contestID}/announcements`, {});
 	if (res.status === "error") {
+		if (res.statusCode == 401) {
+			apiToast({
+				status: "error",
+				data: "Error reloading announcements (possibly logged out), please report this to the developers. Automatic verification will be disabled for this tab.",
+			});
+			stopReloadingQnA();
+			return [];
+		}
 		throw new Error(res.data);
 	}
 	return res.data;
@@ -94,5 +118,6 @@ export function startReloadingQnA(interval_ms: number) {
 }
 
 export function stopReloadingQnA() {
+	console.warn("Disabling question/answer reloading");
 	clearInterval(x);
 }

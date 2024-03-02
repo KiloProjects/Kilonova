@@ -263,6 +263,9 @@ func (s *API) deleteContestAnnouncement(ctx context.Context, args struct {
 }
 
 func (s *API) contestUserQuestions(ctx context.Context, _ struct{}) ([]*kilonova.ContestQuestion, *kilonova.StatusError) {
+	if util.UserBriefContext(ctx) == nil {
+		return []*kilonova.ContestQuestion{}, nil
+	}
 	return s.base.ContestUserQuestions(ctx, util.ContestContext(ctx).ID, util.UserBriefContext(ctx).ID)
 }
 

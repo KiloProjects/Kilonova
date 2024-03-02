@@ -2344,6 +2344,10 @@ ro = "Afișare etichete"
 en = "Problem tags"
 ro = "Etichete problemă"
 
+[problem_tags_explainer]
+en = "Add authors, techniques, etc."
+ro = "Adaugă autorii, tehnici de rezolvare, etc."
+
 [tag_name]
 en = "Tag name..."
 ro = "Nume etichetă..."

@@ -317,7 +317,7 @@ func (s *API) Handler() http.Handler {
 
 			r.Get("/leaderboard", s.contestLeaderboard)
 
-			r.With(s.MustBeAuthed).Get("/questions", webWrapper(s.contestUserQuestions))
+			r.Get("/questions", webWrapper(s.contestUserQuestions))
 			r.With(s.validateContestEditor).Get("/allQuestions", webWrapper(s.contestAllQuestions))
 			r.With(s.validateContestParticipant).Post("/askQuestion", s.askContestQuestion)
 			r.With(s.validateContestEditor).Post("/answerQuestion", s.answerContestQuestion)

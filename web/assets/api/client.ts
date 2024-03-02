@@ -41,7 +41,7 @@ export type Submissions = {
 	problems: Record<string, Problem>;
 };
 
-export type Response<T> = { status: "error"; data: string } | { status: "success"; data: T };
+export type Response<T> = { status: "error"; data: string; statusCode: number } | { status: "success"; data: T; statusCode: number };
 
 export class KNClient {
 	session: string;
@@ -69,9 +69,11 @@ export class KNClient {
 				body: params.body || null,
 				signal: params.signal,
 			});
-			return (await resp.json()) as Response<T>;
+			let data = (await resp.json()) as Response<T>;
+			data.statusCode = resp.status;
+			return data;
 		} catch (e: any) {
-			return { status: "error", data: e.toString() };
+			return { status: "error", data: e.toString(), statusCode: 999 };
 		}
 	}
 
