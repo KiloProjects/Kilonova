@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/netip"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -190,6 +191,9 @@ func (s *DB) RemoveSessions(ctx context.Context, userID int) ([]string, error) {
 
 func (s *DB) UpdateSessionDevice(ctx context.Context, sid string, ip *netip.Addr, userAgent *string) error {
 	_, err := s.conn.Exec(ctx, `INSERT INTO session_clients (session_id, ip_addr, user_agent) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT unique_client_tuple DO UPDATE SET last_checked_at = NOW()`, sid, ip, userAgent)
+	if err != nil && strings.Contains(err.Error(), "foreign key constraint") {
+		return nil
+	}
 	return err
 }
 
