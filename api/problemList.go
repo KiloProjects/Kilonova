@@ -121,7 +121,7 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	actualIDs, err := s.filterProblems(r.Context(), listData.ProblemIDs, util.UserBrief(r), false)
+	actualIDs, err := s.filterProblems(r.Context(), listData.ProblemIDs, util.UserBrief(r), false, false)
 	if err != nil {
 		err.WriteError(w)
 		return
@@ -218,7 +218,7 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if args.List != nil {
-		list, err := s.filterProblems(r.Context(), args.List, util.UserBrief(r), false)
+		list, err := s.filterProblems(r.Context(), args.List, util.UserBrief(r), false, false)
 		if err != nil {
 			err.WriteError(w)
 			return
@@ -255,11 +255,11 @@ func (s *API) deleteProblemList(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Removed problem list")
 }
 
-func (s *API) filterProblems(ctx context.Context, problemIDs []int, user *kilonova.UserBrief, filterEditor bool) ([]int, *kilonova.StatusError) {
+func (s *API) filterProblems(ctx context.Context, problemIDs []int, user *kilonova.UserBrief, filterEditor bool, filterFullyVisible bool) ([]int, *kilonova.StatusError) {
 	if len(problemIDs) == 0 {
 		return []int{}, nil
 	}
-	pbs, err := s.base.Problems(ctx, kilonova.ProblemFilter{IDs: problemIDs, LookingUser: user, Look: true, LookEditor: filterEditor})
+	pbs, err := s.base.Problems(ctx, kilonova.ProblemFilter{IDs: problemIDs, LookingUser: user, Look: true, LookEditor: filterEditor, LookFullyVisible: filterFullyVisible})
 	if err != nil {
 		return nil, err
 	}
