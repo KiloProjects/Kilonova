@@ -198,7 +198,7 @@ func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request)
 
 	var hasDisplayName bool
 	for _, entry := range ld.Entries {
-		if entry.User.DisplayName != "" {
+		if entry.User != nil && entry.User.DisplayName != "" {
 			hasDisplayName = true
 			break
 		}
