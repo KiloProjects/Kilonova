@@ -503,7 +503,7 @@ func (s *BaseAPI) subVisibleRegardless(ctx context.Context, sub *kilonova.Submis
 		return true
 	}
 
-	score := s.db.MaxScore(context.Background(), user.ID, sub.ProblemID)
+	score := s.db.MaxScore(ctx, user.ID, sub.ProblemID)
 	return score.Equal(decimal.NewFromInt(100))
 }
 
@@ -517,16 +517,22 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 	}
 
 	// If enabled that people see all source code
-	// IsProblemFullyVisible is a workaround when a contest is running but there are submissions that were not sent in the contest
+	// IsProblemFullyVisible is a workaround for when a contest is running but there are submissions that were not sent in the contest
 	if SubForEveryoneConfig.Value() && s.IsProblemFullyVisible(user, subProblem) {
 		if sub.ContestID == nil {
 			// If problem fully visible and submission not in contest, just show the source code
 			return true
 		}
 		contest, err := s.Contest(ctx, *sub.ContestID)
-		if err == nil && contest.Ended() {
-			// Or if it's from a contest that ended
-			return true
+		if err == nil {
+			if contest.Ended() {
+				// Or if it's from a contest that ended
+				return true
+			}
+			if s.IsContestEditor(user, contest) {
+				// Contest editors should always be able to view submissions
+				return true
+			}
 		}
 	}
 
