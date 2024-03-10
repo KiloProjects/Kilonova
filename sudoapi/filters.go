@@ -83,6 +83,7 @@ func (s *BaseAPI) IsProblemVisible(user *kilonova.UserBrief, problem *kilonova.P
 //   - problem statistics;
 //   - submission code visibility;
 //   - tag visibility;
+//   - ability to add problems to contests;
 //   - problem archive availability (however, some stuff like private attachments or tests depend on further privileges).
 func (s *BaseAPI) IsProblemFullyVisible(user *kilonova.UserBrief, problem *kilonova.Problem) bool {
 	if problem == nil {

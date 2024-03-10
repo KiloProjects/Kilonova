@@ -77,7 +77,7 @@ func (s *API) updateContestProblems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	list, err := s.filterProblems(r.Context(), args.List, util.UserBrief(r), util.Contest(r).Type == kilonova.ContestTypeOfficial)
+	list, err := s.filterProblems(r.Context(), args.List, util.UserBrief(r), util.Contest(r).Type == kilonova.ContestTypeOfficial, true)
 	if err != nil {
 		err.WriteError(w)
 		return
