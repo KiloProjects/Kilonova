@@ -140,6 +140,21 @@ func (s *BaseAPI) SearchProblems(ctx context.Context, filter kilonova.ProblemFil
 		return nil, -1, WrapError(err1, "Couldn't get problem tags")
 	}
 
+	// Tags must be only on Fully Visible problems
+	var tagAll = true
+	var fullyVisiblePbs = make(map[int]bool)
+	if filter.Look {
+		pbs, err := s.Problems(ctx, kilonova.ProblemFilter{IDs: ids, Look: true, LookFullyVisible: true, LookingUser: filter.LookingUser})
+		if err != nil {
+			zap.S().Warn(err)
+		} else {
+			tagAll = false
+			for _, pb := range pbs {
+				fullyVisiblePbs[pb.ID] = true
+			}
+		}
+	}
+
 	stats, err1 := s.db.ProblemsStatistics(ctx, ids)
 	if err1 != nil {
 		return nil, -1, WrapError(err1, "Couldn't get problem statistics")
@@ -153,10 +168,13 @@ func (s *BaseAPI) SearchProblems(ctx context.Context, filter kilonova.ProblemFil
 			// Attempt to get this working even in case of error
 			stat = &db.ProblemStats{NumSolvedBy: -1, NumAttemptedBy: -1}
 		}
-		tags, ok := tagMap[pb.ID]
-		if !ok {
-			zap.S().Warnf("Couldn't find tags for problem %d", pb.ID)
-			tags = []*kilonova.Tag{}
+		var tags = []*kilonova.Tag{}
+		if _, ok := fullyVisiblePbs[pb.ID]; tagAll || ok {
+			tags, ok = tagMap[pb.ID]
+			if !ok {
+				zap.S().Warnf("Couldn't find tags for problem %d", pb.ID)
+				tags = []*kilonova.Tag{}
+			}
 		}
 		fullPbs = append(fullPbs, &FullProblem{
 			ScoredProblem: *pb,

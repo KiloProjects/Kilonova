@@ -237,6 +237,21 @@ func (s *BaseAPI) CanViewContestProblems(ctx context.Context, user *kilonova.Use
 	return s.CanSubmitInContest(user, contest)
 }
 
+func (s *BaseAPI) CanViewContestLeaderboard(user *kilonova.UserBrief, contest *kilonova.Contest) bool {
+	if !s.IsContestVisible(user, contest) {
+		return false
+	}
+	if s.IsContestTester(user, contest) { // Tester + Editor + Admin
+		return true
+	}
+	// Otherwise, normal contestant
+	if !contest.Started() {
+		// Non-started contests can leak problem IDs/names
+		return false
+	}
+	return contest.PublicLeaderboard
+}
+
 func (s *BaseAPI) AddContestEditor(ctx context.Context, pbid int, uid int) *StatusError {
 	if err := s.db.StripContestAccess(ctx, pbid, uid); err != nil {
 		return WrapError(err, "Couldn't add contest editor: sanity strip failed")

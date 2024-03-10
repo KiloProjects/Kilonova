@@ -557,6 +557,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			}
 			return tags
 		},
+		//NOTE: problemTags does no checking whether the tags are visible. It must be used only after making sure that the problem is Fully Visible.
 		"problemTags": func(pb *kilonova.Problem) []*kilonova.Tag {
 			if pb == nil {
 				return nil

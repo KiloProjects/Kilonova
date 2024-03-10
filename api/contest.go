@@ -111,11 +111,8 @@ type contestLeaderboardParams struct {
 }
 
 func (s *API) leaderboard(ctx context.Context, contest *kilonova.Contest, lookingUser *kilonova.UserBrief, args *contestLeaderboardParams) (*kilonova.ContestLeaderboard, *kilonova.StatusError) {
-	if !s.base.IsContestVisible(lookingUser, contest) {
-		return nil, kilonova.Statusf(404, "Contest not found or is not visible")
-	}
-	if !(contest.PublicLeaderboard || s.base.IsContestEditor(lookingUser, contest)) {
-		return nil, kilonova.Statusf(400, "You are not allowed to view the leaderboard")
+	if !s.base.CanViewContestLeaderboard(lookingUser, contest) {
+		return nil, kilonova.Statusf(400, "Leaderboard for this contest is not available")
 	}
 
 	return s.base.ContestLeaderboard(

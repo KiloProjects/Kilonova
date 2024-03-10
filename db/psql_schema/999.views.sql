@@ -86,7 +86,7 @@ CREATE OR REPLACE FUNCTION visible_pbs(user_id bigint) RETURNS TABLE (problem_id
     (SELECT pbs.problem_id as problem_id, users.user_id as user_id
         FROM contest_problems pbs, contest_registrations users, running_contests contests 
         WHERE pbs.contest_id = contests.id AND contests.id = users.contest_id 
-        AND contests.per_user_time > 0 AND users.individual_start_at IS NOT NULL
+        AND contests.per_user_time > 0 AND users.individual_start_at IS NOT NULL AND NOW() <= users.individual_end_at
         AND users.user_id = $1); -- Contest registrants that started during the contest for USACO-style contests
 $$ LANGUAGE SQL STABLE;
 

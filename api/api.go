@@ -99,7 +99,7 @@ func (s *API) Handler() http.Handler {
 			r.Get("/maxScore", s.maxScore)
 			r.Get("/maxScoreBreakdown", s.maxScoreBreakdown)
 			r.Get("/statistics", s.problemStatistics)
-			r.Get("/tags", webWrapper(s.problemTags))
+			r.With(s.validateProblemFullyVisible).Get("/tags", webWrapper(s.problemTags))
 
 			r.Group(func(r chi.Router) {
 				r.Use(s.validateProblemEditor)

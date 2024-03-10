@@ -90,9 +90,10 @@ type ProblemFilter struct {
 
 	Tags []*TagGroup `json:"tags"`
 
-	Look        bool       `json:"-"`
-	LookEditor  bool       `json:"-"`
-	LookingUser *UserBrief `json:"-"`
+	Look             bool       `json:"-"`
+	LookEditor       bool       `json:"-"`
+	LookFullyVisible bool       `json:"-"`
+	LookingUser      *UserBrief `json:"-"`
 
 	// Should be "en" or "ro", if non-nil
 	Language *string `json:"lang"`

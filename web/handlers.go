@@ -653,12 +653,15 @@ func (rt *Web) problem() http.HandlerFunc {
 			langs = newLangs
 		}
 
-		tags, err := rt.base.ProblemTags(r.Context(), util.Problem(r).ID)
-		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				zap.S().Warn("Couldn't get tags: ", err)
+		var tags = []*kilonova.Tag{}
+		if rt.base.IsProblemFullyVisible(util.UserBrief(r), util.Problem(r)) {
+			tags, err = rt.base.ProblemTags(r.Context(), util.Problem(r).ID)
+			if err != nil {
+				if !errors.Is(err, context.Canceled) {
+					zap.S().Warn("Couldn't get tags: ", err)
+				}
+				tags = []*kilonova.Tag{}
 			}
-			tags = []*kilonova.Tag{}
 		}
 
 		var initialSubs *sudoapi.Submissions
@@ -1616,13 +1619,7 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 			return &ProblemListingParams{pbs, rt.base.IsContestEditor(authedUser, contest) || contest.Ended(), true, contest.ID, -1}
 		},
 		"contestLeaderboardVisible": func(c *kilonova.Contest) bool {
-			if c.PublicLeaderboard {
-				// This is assumed to be called from a context in which
-				// IsContestVisible is already true
-				// return rt.base.IsContestVisible(authedUser, c)
-				return true
-			}
-			return rt.base.IsContestEditor(authedUser, c)
+			return rt.base.CanViewContestLeaderboard(authedUser, c)
 		},
 		"contestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {
 			questions, err := rt.base.ContestUserQuestions(r.Context(), c.ID, authedUser.ID)

@@ -218,6 +218,8 @@ func problemFilterQuery(filter *kilonova.ProblemFilter, fb *filterBuilder) {
 
 		if filter.LookEditor {
 			fb.AddConstraint("EXISTS (SELECT 1 FROM problem_editors WHERE user_id = %s AND problem_id = problems.id)", id)
+		} else if filter.LookFullyVisible {
+			fb.AddConstraint("EXISTS (SELECT 1 FROM persistently_visible_pbs(%s) WHERE problem_id = problems.id)", id)
 		} else {
 			fb.AddConstraint("EXISTS (SELECT 1 FROM visible_pbs(%s) WHERE problem_id = problems.id)", id)
 		}
