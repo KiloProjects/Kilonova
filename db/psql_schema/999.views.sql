@@ -279,6 +279,28 @@ CREATE OR REPLACE FUNCTION visible_submissions(user_id bigint) RETURNS TABLE (su
         AND contests.end_time <= NOW()) -- if the contest ended and the problem is visible, show the submission
 $$ LANGUAGE SQL STABLE;
 
+DROP FUNCTION IF EXISTS visible_submissions_ex;
+CREATE OR REPLACE FUNCTION visible_submissions_ex(user_id bigint, problem_id bigint, author_id bigint) RETURNS TABLE (sub_id bigint) AS $$
+    WITH v_pbs AS (SELECT * FROM visible_pbs($1) WHERE $2 IS NULL OR problem_id = $2)
+    (SELECT subs.id as sub_id
+        FROM submissions subs, v_pbs
+        WHERE subs.user_id = $1 AND subs.problem_id = v_pbs.problem_id AND ($3 IS NULL OR subs.user_id = $3) ) -- base case, users should see their own submissions if problem is still visible (also, coincidentally, works for contest problems)
+    UNION ALL
+    (SELECT subs.id as sub_id
+        FROM submissions subs, v_pbs pb_viewers
+        WHERE pb_viewers.problem_id = subs.problem_id AND subs.contest_id IS NULL) -- contest is null, so judge if problem is visible
+    UNION ALL
+    (SELECT subs.id as sub_id
+        FROM submissions subs, contest_user_access users
+        WHERE users.contest_id = subs.contest_id AND users.user_id = $1 AND subs.contest_id IS NOT NULL) -- contest staff if contest is not null
+    UNION ALL
+    (SELECT subs.id as sub_id
+        FROM submissions subs, contests, v_pbs
+        WHERE EXISTS (SELECT 1 FROM visible_contests($1) viz WHERE contests.id = viz.contest_id)
+        AND contests.id = subs.contest_id AND v_pbs.problem_id = subs.problem_id
+        AND contests.end_time <= NOW()) -- if the contest ended and the problem is visible, show the submission
+$$ LANGUAGE SQL STABLE;
+
 DROP VIEW IF EXISTS problem_list_deep_problems;
 CREATE OR REPLACE VIEW problem_list_deep_problems (list_id, problem_id) AS
     WITH RECURSIVE pblist_tree(list_id, problem_id) AS (

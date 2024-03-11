@@ -232,7 +232,7 @@ func subFilterQuery(filter *kilonova.SubmissionFilter, fb *filterBuilder) {
 		}
 
 		if !filter.LookingUser.IsAdmin() {
-			fb.AddConstraint("EXISTS (SELECT 1 FROM visible_submissions(%s) WHERE sub_id = submissions.id)", id)
+			fb.AddConstraint("EXISTS (SELECT 1 FROM visible_submissions_ex(%s, %s, %s) WHERE sub_id = submissions.id)", id, filter.ProblemID, filter.UserID)
 		}
 
 	}
