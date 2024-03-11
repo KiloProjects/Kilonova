@@ -8,14 +8,9 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
-)
-
-var (
-	UseLateralVisibility = config.GenFlag[bool]("behavior.db.lateral_sub_visibility", true, "Use LATERAL query for submission filtering")
 )
 
 type dbSubmission struct {
@@ -56,9 +51,17 @@ func (s *DB) Submission(ctx context.Context, id int) (*kilonova.Submission, erro
 	return s.internalToSubmission(&sub), err
 }
 
-func (s *DB) SubmissionLookingUser(ctx context.Context, id int, userID int) (*kilonova.Submission, error) {
+func (s *DB) SubmissionLookingUser(ctx context.Context, id int, user *kilonova.UserBrief) (*kilonova.Submission, error) {
+	if user.IsAdmin() {
+		return s.Submission(ctx, id)
+	}
+	var userID *int
+	if user != nil {
+		userID = &user.ID
+	}
+
 	var sub dbSubmission
-	err := Get(s.conn, ctx, &sub, "SELECT subs.* FROM submissions subs, visible_submissions($2) v_subs WHERE subs.id = $1 AND v_subs.sub_id = subs.id LIMIT 1", id, userID)
+	err := Get(s.conn, ctx, &sub, "SELECT subs.* FROM submissions subs, visible_submissions($2) v_subs WHERE subs.id = $1 AND v_subs.sub_id = $1 LIMIT 1", id, userID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -68,9 +71,9 @@ func (s *DB) SubmissionLookingUser(ctx context.Context, id int, userID int) (*ki
 func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) ([]*kilonova.Submission, error) {
 	var subs []*dbSubmission
 	fb := newFilterBuilder()
-	subFilterQuery(&filter, fb, UseLateralVisibility.Value())
+	subFilterQuery(&filter, fb)
 
-	query := fmt.Sprintf("SELECT submissions.* FROM submissions %s WHERE %s %s %s", lateralVisibleSubs(&filter, fb), fb.Where(), getSubmissionOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset))
+	query := fmt.Sprintf("SELECT submissions.* FROM submissions WHERE %s %s %s", fb.Where(), getSubmissionOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset))
 	err := Select(s.conn, ctx, &subs, query, fb.Args()...)
 	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return []*kilonova.Submission{}, nil
@@ -89,12 +92,11 @@ func (s *DB) SubmissionCode(ctx context.Context, subID int) ([]byte, error) {
 
 func (s *DB) SubmissionCount(ctx context.Context, filter kilonova.SubmissionFilter, limit int) (int, error) {
 	fb := newFilterBuilder()
-	subFilterQuery(&filter, fb, UseLateralVisibility.Value())
-	lat := lateralVisibleSubs(&filter, fb)
-	query := fmt.Sprintf("SELECT COUNT(*) FROM submissions %s WHERE %s", lat, fb.Where())
+	subFilterQuery(&filter, fb)
+	query := fmt.Sprintf("SELECT COUNT(*) FROM submissions WHERE %s", fb.Where())
 	if limit > 0 {
 		lim := fb.FormatString("LIMIT %s", limit)
-		query = fmt.Sprintf("SELECT COUNT(*) FROM (SELECT 1 FROM submissions %s WHERE %s %s) sbc", lat, fb.Where(), lim)
+		query = fmt.Sprintf("SELECT COUNT(*) FROM (SELECT 1 FROM submissions WHERE %s %s) sbc", fb.Where(), lim)
 	}
 	var val int
 	err := s.conn.QueryRow(ctx, query, fb.Args()...).Scan(&val)
@@ -109,8 +111,8 @@ func (s *DB) SubmissionCount(ctx context.Context, filter kilonova.SubmissionFilt
 
 func (s *DB) LastSubmissionTime(ctx context.Context, filter kilonova.SubmissionFilter) (*time.Time, error) {
 	fb := newFilterBuilder()
-	subFilterQuery(&filter, fb, UseLateralVisibility.Value())
-	query := fmt.Sprintf("SELECT MAX(created_at) FROM submissions %s WHERE %s", lateralVisibleSubs(&filter, fb), fb.Where())
+	subFilterQuery(&filter, fb)
+	query := fmt.Sprintf("SELECT MAX(created_at) FROM submissions WHERE %s", fb.Where())
 	var val *time.Time
 	err := s.conn.QueryRow(ctx, query, fb.Args()...).Scan(&val)
 	if err != nil {
@@ -144,7 +146,7 @@ func (s *DB) BulkUpdateSubmissions(ctx context.Context, filter kilonova.Submissi
 		return ub.CheckUpdates()
 	}
 	fb := ub.MakeFilter()
-	subFilterQuery(&filter, fb, false)
+	subFilterQuery(&filter, fb)
 	_, err := s.conn.Exec(ctx, `UPDATE submissions SET `+fb.WithUpdate(), fb.Args()...)
 	return err
 }
@@ -198,19 +200,7 @@ func (s *DB) ContestMaxScore(ctx context.Context, userid, problemid, contestid i
 	return score
 }
 
-// Should match in logic with filter.Look from subFilterQuery
-func lateralVisibleSubs(filter *kilonova.SubmissionFilter, fb *filterBuilder) string {
-	if !filter.Look || !UseLateralVisibility.Value() {
-		return ""
-	}
-	var id int = 0
-	if filter.LookingUser != nil {
-		id = filter.LookingUser.ID
-	}
-	return fb.FormatString(", LATERAL (SELECT sub_id FROM visible_submissions(%s) WHERE sub_id = submissions.id) v_subs", id)
-}
-
-func subFilterQuery(filter *kilonova.SubmissionFilter, fb *filterBuilder, lateralLook bool) {
+func subFilterQuery(filter *kilonova.SubmissionFilter, fb *filterBuilder) {
 	if v := filter.ID; v != nil {
 		fb.AddConstraint("id = %s", v)
 	}
@@ -241,11 +231,7 @@ func subFilterQuery(filter *kilonova.SubmissionFilter, fb *filterBuilder, latera
 			id = filter.LookingUser.ID
 		}
 
-		if lateralLook {
-			fb.AddConstraint("v_subs.sub_id = submissions.id")
-		} else {
-			fb.AddConstraint("EXISTS (SELECT 1 FROM visible_submissions(%s) WHERE sub_id = submissions.id)", id)
-		}
+		fb.AddConstraint("EXISTS (SELECT 1 FROM visible_submissions(%s) WHERE sub_id = submissions.id)", id)
 	}
 
 	if filter.FromAuthors {

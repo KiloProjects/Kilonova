@@ -231,11 +231,7 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *Use
 	var sub *kilonova.Submission
 	var problem *kilonova.Problem
 	if isLooking {
-		var userID int
-		if lookingUser != nil {
-			userID = lookingUser.ID
-		}
-		sub2, err := s.db.SubmissionLookingUser(ctx, subid, userID)
+		sub2, err := s.db.SubmissionLookingUser(ctx, subid, lookingUser)
 		if err != nil || sub2 == nil {
 			return nil, Statusf(404, "Submission not found or user may not have access")
 		}

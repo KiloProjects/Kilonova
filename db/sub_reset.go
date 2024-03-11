@@ -30,7 +30,7 @@ func (s *DB) InitSubmission(ctx context.Context, subID int) error {
 
 func clearSubs(ctx context.Context, tx pgx.Tx, filter kilonova.SubmissionFilter) error {
 	fb := newFilterBuilder()
-	subFilterQuery(&filter, fb, false)
+	subFilterQuery(&filter, fb)
 	// Reset submission data:
 	if _, err := tx.Exec(ctx, `
 		UPDATE submissions 
@@ -52,7 +52,7 @@ func clearSubs(ctx context.Context, tx pgx.Tx, filter kilonova.SubmissionFilter)
 
 func initSubs(ctx context.Context, tx pgx.Tx, filter kilonova.SubmissionFilter) error {
 	fb := newFilterBuilder()
-	subFilterQuery(&filter, fb, false)
+	subFilterQuery(&filter, fb)
 	// Set precision before everything, since subtask initialization is relying on it
 	if _, err := tx.Exec(ctx, `
 	UPDATE submissions SET 
