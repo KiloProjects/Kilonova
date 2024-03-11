@@ -299,7 +299,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return actualContests
 		},
 		"decimalFromInt": decimal.NewFromInt,
-		"subScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) string {
+		"subScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) template.HTML {
 			if user == nil {
 				return ""
 			}
@@ -307,12 +307,18 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			if score.IsNegative() {
 				return "-"
 			}
-			return removeTrailingZeros(score.StringFixed(pb.ScorePrecision))
+			if pb.ScoringStrategy == kilonova.ScoringTypeICPC {
+				if score.Equal(decimal.NewFromInt(100)) {
+					return `<i class="fas fa-fw fa-check"></i>`
+				}
+				return `<i class="fas fa-fw fa-xmark"></i>`
+			}
+			return template.HTML(removeTrailingZeros(score.StringFixed(pb.ScorePrecision)) + "p")
 		},
 		"actualMaxScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) decimal.Decimal {
 			return base.MaxScore(context.Background(), user.ID, pb.ID)
 		},
-		"spbMaxScore": func(pb *kilonova.ScoredProblem) template.HTML {
+		"spbMaxScore": func(pb *kilonova.ScoredProblem, summaryDisplay bool) template.HTML {
 			if pb.ScoreUserID == nil {
 				return ""
 			}
@@ -325,7 +331,12 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 				}
 				return `<i class="fas fa-fw fa-xmark"></i>`
 			}
-			return template.HTML(removeTrailingZeros(pb.MaxScore.StringFixed(pb.ScorePrecision)))
+			val := removeTrailingZeros(pb.MaxScore.StringFixed(pb.ScorePrecision))
+			if summaryDisplay {
+				// Add the unit at the end
+				val += "p"
+			}
+			return template.HTML(val)
 		},
 		"checklistMaxScore": func(pb *kilonova.ScoredProblem) string {
 			if pb.ScoreUserID == nil {

@@ -33,7 +33,7 @@ func NewManager(p string) (kilonova.DataStore, error) {
 		return nil, err
 	}
 
-	sb, err := NewBucket(p, "subtests", DefaultCompression, false)
+	sb, err := NewBucket(p, "subtests", NoCompression, false)
 	if err != nil {
 		return nil, err
 	}

@@ -103,8 +103,12 @@
                 {{- with filterTags .Tags "author" true -}}
                 <p>{{getText "tags"}}: <kn-pb-tags enc="{{. | encodeJSON}}" open="{{if authed}}{{or ($isEditor) ($maxScore.Equal (decimalFromInt 100))}}{{else}}false{{end}}"></kn-pb-tags> </p>
                 {{- end -}}
-                {{ if and authed (not (eq .Problem.ScoringStrategy `acm-icpc`)) }}
-                <p>{{getText "score"}}: {{if eq .Problem.ScoringStrategy `sum_subtasks`}}<a class="max_score_breakdown" href="#" data-problemid="{{.Problem.ID}}">{{end}}<span id="max_score_counter">{{subScore .Problem authedUser}}</span> {{if eq .Problem.ScoringStrategy `sum_subtasks`}}</a>{{end}}</p>
+                {{ if authed }}
+                {{if eq .Problem.ScoringStrategy `acm-icpc`}}
+                <p>{{getText "verdict"}}: <span data-pbid-reload="{{.Problem.ID}}">{{subScore .Problem authedUser}}</span></p>
+                {{else}}
+                <p>{{getText "score"}}: {{if eq .Problem.ScoringStrategy `sum_subtasks`}}<a class="max_score_breakdown" href="#" data-problemid="{{.Problem.ID}}">{{end}}<span data-pbid-reload="{{.Problem.ID}}">{{subScore .Problem authedUser}}</span> {{if eq .Problem.ScoringStrategy `sum_subtasks`}}</a>{{end}}</p>
+                {{end}}
                 {{ end }}            
                 {{if .Topbar.CanViewTests}}
                 <p><a href="{{.Topbar.URLPrefix}}/problems/{{.Topbar.Problem.ID}}/archive">{{getText "downloadArchive"}}</a></p>
@@ -124,7 +128,7 @@
                 {{ with listProblems authedUser . }}
                 <ul>
                     {{ range . }}
-                    {{ $score := spbMaxScore . }}    
+                    {{ $score := spbMaxScore . true }}    
                     <li>
                         <a {{ if eq $.Problem.ID .ID }} class="topbar-selected p-0" {{end}}
                             href="/problems/{{.ID}}?list_id={{$listID}}">
@@ -133,11 +137,15 @@
                         {{ if not (eq $score "")}} 
                             (
                                 {{- if eq .ScoringStrategy `sum_subtasks` -}}
-                                    <a class="max_score_breakdown" href="#" data-problemid="{{.ID}}">
+                                    <a class="max_score_breakdown" href="#" data-problemid="{{.ID}}" data-pbid-reload="{{.ID}}">
+                                {{- else -}}
+                                    <span data-pbid-reload="{{.ID}}">
                                 {{- end -}}
-                                {{$score}} {{- if and (not (eq (index $score 0) '<')) (not (eq $score "-")) -}}p{{end}}
+                                {{$score}}
                                 {{- if eq .ScoringStrategy `sum_subtasks` -}}
                                     </a>
+                                {{- else -}}
+                                    </span>
                                 {{- end -}}
                             ) 
                         {{ end }}
@@ -196,8 +204,27 @@
         params.set("pref_format", fmt)
         window.location.search = params.toString()
     })
-    const maxScoreElem = document.getElementById("max_score_counter");
-    if(maxScoreElem !== null) {
+    let prec = {{.Problem.ScorePrecision}}
+    let strat = {{.Problem.ScoringStrategy}};
+    function formatMaxScore(maxScore) {
+        let score = parseInt(maxScore);
+        if(isNaN(score)) {
+            console.error("Unknown value for maxScore")
+            return "ERR";
+        }
+        if(maxScore < 0) {
+            return "-"
+        }
+        if(strat == "acm-icpc") {
+            if(maxScore == 100) {
+                return `<i class="fas fa-fw fa-check"></i>`;
+            }
+            return `<i class="fas fa-fw fa-xmark"></i>`;
+        }
+        return bundled.formatScoreStr(maxScore.toFixed(prec)) + "p";
+    }
+    const reloaders = document.querySelectorAll(`[data-pbid-reload="{{.Problem.ID}}"]`)
+    if(reloaders.length > 0) {
         document.addEventListener("kn-poll", async () => {
             // Update max score on poll
             const res = await bundled.getCall("/problem/{{.Problem.ID}}/maxScore", {})
@@ -205,7 +232,14 @@
                 console.error(res.data)
                 return
             }
-            maxScoreElem.innerText = res.data
+            let val = formatMaxScore(res.data)
+            for(let reloader of reloaders) {
+                if("contest_id" in reloader.dataset) {
+                    // TODO
+                } else {
+                    reloader.innerHTML = val
+                }
+            }
         }) 
     }
 </script>

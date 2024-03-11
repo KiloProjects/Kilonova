@@ -43,7 +43,7 @@ func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, *kilonova
 	openAction.Do(func() {
 		logFile = &lumberjack.Logger{
 			Filename: path.Join(config.Common.LogDir, "grader.log"),
-			MaxSize:  20, //MB
+			MaxSize:  80, //MB. Since most rows are really similar it gets compressed really small
 			Compress: true,
 		}
 		graderLogger = zap.New(kilonova.GetZapCore(config.Common.Debug, false, logFile), zap.AddCaller()).Sugar()

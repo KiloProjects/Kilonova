@@ -82,7 +82,7 @@
         <div class="reset-list text-lg">
             <ul>
                 {{ range . }}
-                {{ $score := spbMaxScore .}}
+                {{ $score := spbMaxScore . true}}
                 <li>
                     <a {{ if currentProblem }} {{ if eq (currentProblem).ID .ID }} class="topbar-selected p-0" {{end}} {{ end }}
                         href="/contests/{{$.ID}}/problems/{{.ID}}"> 
@@ -93,7 +93,7 @@
                         {{- if eq .ScoringStrategy `sum_subtasks` -}}
                             <a class="max_score_breakdown" href="#" data-problemid="{{.ID}}" data-contestid="{{$.ID}}">
                         {{- end -}}
-                        {{$score}} {{- if and (not (eq (index $score 0) '<')) (not (eq $score "-")) -}}p{{end}}
+                        {{$score}}
                         {{- if eq .ScoringStrategy `sum_subtasks` -}}
                             </a>
                         {{- end -}}

@@ -17,7 +17,7 @@
         {{- end -}}
         {{- $listID := .ID -}}
         {{- range .Problems -}}
-            <td class="kn-table-cell score-cell" data-score="{{checklistMaxScore .}}"><a href="/problems/{{.ID}}?list_id={{$listID}}" title="{{getText `score`}}: {{spbMaxScore .}}">{{.Name}}</a></td>
+            <td class="kn-table-cell score-cell" data-score="{{checklistMaxScore .}}"><a href="/problems/{{.ID}}?list_id={{$listID}}" title="{{getText `score`}}: {{spbMaxScore . true}}">{{.Name}}</a></td>
         {{- end -}}
     </tr>
     {{- range .SubLists -}}
