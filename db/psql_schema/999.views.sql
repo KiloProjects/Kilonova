@@ -265,10 +265,6 @@ CREATE OR REPLACE FUNCTION visible_submissions(user_id bigint) RETURNS TABLE (su
         WHERE submissions.user_id = $1 AND submissions.problem_id = v_pbs.problem_id) -- base case, users should see their own submissions if problem is still visible (also, coincidentally, works for contest problems)
     UNION ALL
     (SELECT subs.id as sub_id
-        FROM submissions subs
-        WHERE EXISTS (SELECT 1 FROM users WHERE users.id = $1 AND admin = true)) -- user admins
-    UNION ALL
-    (SELECT subs.id as sub_id
         FROM submissions subs, v_pbs pb_viewers
         WHERE pb_viewers.problem_id = subs.problem_id AND subs.contest_id IS NULL) -- contest is null, so judge if problem is visible
     UNION ALL
