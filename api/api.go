@@ -21,12 +21,13 @@ var decoder *schema.Decoder
 type API struct {
 	base *sudoapi.BaseAPI
 
+	signupLock      sync.Mutex
 	testArchiveLock sync.Mutex
 }
 
 // New declares a new API instance
 func New(base *sudoapi.BaseAPI) *API {
-	return &API{base, sync.Mutex{}}
+	return &API{base: base}
 }
 
 // Handler is the magic behind the API

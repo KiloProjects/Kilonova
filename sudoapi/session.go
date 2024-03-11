@@ -71,12 +71,12 @@ func (s *BaseAPI) SessionUser(ctx context.Context, sid string, r *http.Request) 
 		return s.sessionUser(ctx, sid)
 	}
 	if user != nil {
-		go func() {
+		go func(uid int, r *http.Request) {
 			ip, ua := s.GetRequestInfo(r)
-			if err := s.db.UpdateSessionDevice(context.Background(), sid, ip, &ua); err != nil {
+			if err := s.db.UpdateSessionDevice(context.Background(), sid, user.ID, ip, &ua); err != nil {
 				zap.S().Warn(err)
 			}
-		}()
+		}(user.ID, r)
 	}
 	return user, nil
 }

@@ -55,7 +55,7 @@ func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserF
 
 var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 
-func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, theme kilonova.PreferredTheme) (int, *StatusError) {
+func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, theme kilonova.PreferredTheme, ip *netip.Addr, userAgent *string) (int, *StatusError) {
 	if !SignupEnabled.Value() {
 		return -1, kilonova.ErrFeatureDisabled
 	}
@@ -98,6 +98,10 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 	if err1 != nil {
 		zap.S().Warn(err1)
 		return -1, err1
+	}
+
+	if err := s.LogSignup(context.WithoutCancel(ctx), user.ID, ip, userAgent); err != nil {
+		zap.S().Warn(err)
 	}
 
 	go func() {

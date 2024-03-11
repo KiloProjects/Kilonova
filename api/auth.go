@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
@@ -21,6 +20,8 @@ import (
 */
 
 func (s *API) signup(w http.ResponseWriter, r *http.Request) {
+	s.signupLock.Lock()
+	defer s.signupLock.Unlock()
 	r.ParseForm()
 	var auth struct {
 		Username string `json:"username"`
@@ -62,7 +63,7 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	uid, status := s.base.Signup(r.Context(), auth.Email, auth.Username, auth.Password, auth.Language, kilonova.PreferredTheme(auth.Theme))
+	uid, status := s.base.Signup(r.Context(), auth.Email, auth.Username, auth.Password, auth.Language, kilonova.PreferredTheme(auth.Theme), ip, &ua)
 	if status != nil {
 		errorData(w, struct {
 			ID   string `json:"captcha_id"`
@@ -73,12 +74,6 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		}, status.Code)
 		return
 	}
-
-	go func() {
-		if err := s.base.LogSignup(context.Background(), uid, ip, &ua); err != nil {
-			zap.S().Warn(err)
-		}
-	}()
 
 	sid, err1 := s.base.CreateSession(r.Context(), uid)
 	if err1 != nil {
