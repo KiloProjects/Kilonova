@@ -357,7 +357,7 @@ func (s *Assets) ServeTestOutput(w http.ResponseWriter, r *http.Request) {
 
 func (s *Assets) ServeProblemArchive() http.HandlerFunc {
 	// If people try to download archives on 1000 different accounts at the same time i think we have a different problem
-	pbArchiveUserCache, err := theine.NewBuilder[int, *sync.Mutex](1000).BuildWithLoader(func(ctx context.Context, key int) (theine.Loaded[*sync.Mutex], error) {
+	pbArchiveUserCache, err := theine.NewBuilder[int, *sync.Mutex](1000).StringKey(strconv.Itoa).BuildWithLoader(func(ctx context.Context, key int) (theine.Loaded[*sync.Mutex], error) {
 		var mu sync.Mutex
 		return theine.Loaded[*sync.Mutex]{
 			Value: &mu,

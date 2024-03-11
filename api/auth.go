@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
@@ -22,11 +23,14 @@ import (
 func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var auth struct {
-		Username string
-		Email    string
-		Password string
-		Language string
-		Theme    string
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+		Language string `json:"language"`
+		Theme    string `json:"theme"`
+
+		CaptchaID       string `json:"captcha_id"`
+		CaptchaResponse string `json:"captcha_response"`
 	}
 
 	if err := decoder.Decode(&auth, r.Form); err != nil {
@@ -34,11 +38,47 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ip, ua := s.base.GetRequestInfo(r)
+	if s.base.MustSolveCaptcha(r.Context(), ip) {
+		if auth.CaptchaID == "" || auth.CaptchaResponse == "" {
+			errorData(w, struct {
+				ID  string `json:"captcha_id"`
+				Key string `json:"translation_key"`
+			}{
+				ID:  s.base.NewCaptchaID(),
+				Key: "auth.captcha.must_solve",
+			}, http.StatusPreconditionRequired)
+			return
+		}
+		if !s.base.CheckCaptcha(auth.CaptchaID, auth.CaptchaResponse) {
+			errorData(w, struct {
+				ID  string `json:"captcha_id"`
+				Key string `json:"translation_key"`
+			}{
+				ID:  s.base.NewCaptchaID(),
+				Key: "auth.captcha.invalid",
+			}, http.StatusBadRequest)
+			return
+		}
+	}
+
 	uid, status := s.base.Signup(r.Context(), auth.Email, auth.Username, auth.Password, auth.Language, kilonova.PreferredTheme(auth.Theme))
 	if status != nil {
-		status.WriteError(w)
+		errorData(w, struct {
+			ID   string `json:"captcha_id"`
+			Text string `json:"text"`
+		}{
+			ID:   s.base.NewCaptchaID(),
+			Text: status.Text,
+		}, status.Code)
 		return
 	}
+
+	go func() {
+		if err := s.base.LogSignup(context.Background(), uid, ip, &ua); err != nil {
+			zap.S().Warn(err)
+		}
+	}()
 
 	sid, err1 := s.base.CreateSession(r.Context(), uid)
 	if err1 != nil {

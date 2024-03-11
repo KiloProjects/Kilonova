@@ -3,6 +3,7 @@ package sudoapi
 import (
 	"context"
 	"errors"
+	"net/netip"
 	"regexp"
 	"strings"
 
@@ -106,6 +107,13 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 	}()
 
 	return id, nil
+}
+
+func (s *BaseAPI) LogSignup(ctx context.Context, userID int, ip *netip.Addr, userAgent *string) *kilonova.StatusError {
+	if err := s.db.LogSignup(ctx, userID, ip, userAgent); err != nil {
+		return WrapError(err, "Could not log signup")
+	}
+	return nil
 }
 
 func (s *BaseAPI) CheckValidPassword(pwd string) *StatusError {

@@ -34,16 +34,55 @@
 			<option value="en" {{if eq language "en" }}selected{{end}}>🇬🇧 English</option>
 		</select>
     </label>
+
+    {{if boolFlag "feature.captcha.enabled"}}
+    {{$captcha := getCaptchaID}}
+    <div id="captcha_container" class="segment-panel" {{if not mustSolveCaptcha}} style="display: none;"{{end}}>
+        <p>
+            {{getText "auth.captcha.title"}}:<br/>
+            <img id="captcha_img" class="rounded" src="/api/auth/captcha/{{$captcha}}.png" alt="Captcha image" width="240" height="80" style="background-color: white;" />
+        </p>
+        <input type="hidden" id="captcha_id" value="{{$captcha}}" />
+        <label class="block my-2">
+            <span>{{getText "response"}}</span>
+            <input type="text" id="captcha_response" class="form-input w-full" pattern="[0-9]*" value="" autocomplete="off" />
+        </label>
+        <button id="captcha_reload_btn" class="btn btn-blue" type="button"><i class="fas fa-fw fa-rotate"></i> {{getText "reload"}}</button>
+    </div>
+    <script>
+        function reloadCaptcha() {
+            document.getElementById("captcha_img").src = `/api/auth/captcha/${document.getElementById("captcha_id").value}.png?reload=${bundled.dayjs().valueOf()}`
+        }
+        document.getElementById("captcha_reload_btn").addEventListener("click", reloadCaptcha)
+        function resetCaptcha(newID) {
+            document.getElementById("captcha_container").style.display = "block"
+            document.getElementById("captcha_id").value = newID
+            document.getElementById("captcha_response").value = ""
+            reloadCaptcha()
+        }
+        function getCaptchaData() {
+            return {captcha_id: document.getElementById("captcha_id").value, captcha_response: document.getElementById("captcha_response").value}
+        }
+    </script>
+    {{else}}
+    <script>
+        function resetCaptcha() {
+            // CAPTCHA module not loaded in, prompt a page reload
+            window.location.reload();
+        }
+        function getCaptchaData() {
+            return {captcha_id: "", captcha_response: ""}
+        }
+    </script>
+    {{end}}
+
 	<button type="submit" class="block btn btn-blue">{{getText "auth.signup"}}</button>
 	<p class="text-gray-500 dark:text-gray-300"> {{getText "loginReminder"}}</p>
 </form>
 
 <script>
-let email = document.querySelector("#signup_form #email")
-let username = document.querySelector("#signup_form #name")
 let pwd = document.querySelector("#signup_form #pwd")
 let pwd_check = document.querySelector("#signup_form #pwd_check")
-let langSelect = document.querySelector("#signup_form #langSelect")
 function updateCheck() {
 	let pval = pwd.value;
 	let cval = pwd_check.value;
@@ -61,13 +100,18 @@ pwd_check.addEventListener("keyup", updateCheck)
 
 async function signup(e) {
 	e.preventDefault()
-	let em = email.value;
-	let name = username.value;
-	let password = pwd.value;
-    let lang = langSelect.value;
+    let data = {
+        email: document.querySelector("#signup_form #email").value,
+        username: document.querySelector("#signup_form #name").value,
+
+        password: pwd.value,
+
+        language: document.querySelector("#signup_form #langSelect").value,
+
+        ...getCaptchaData()
+    }
 	
-	let pwdVerify = pwd_check.value;
-	if(password !== pwdVerify) {
+	if(pwd.value !== pwd_check.value) {
 		bundled.createToast({
 			status: "error",
 			title: bundled.getText("differentPwds")
@@ -75,9 +119,18 @@ async function signup(e) {
 		return
 	}
 
-	let res = await bundled.postCall("/auth/signup", {email: em, username: name, password, language: lang})
+	let res = await bundled.postCall("/auth/signup", data)
 	if(res.status == "error") {
-		bundled.apiToast(res)
+        if(typeof res.data === "object") {
+            resetCaptcha(res.data.captcha_id)
+            if(res.data.hasOwnProperty("translation_key")) {
+                bundled.apiToast({"status": "error", "data": bundled.getText(res.data.translation_key)})
+            } else {
+                bundled.apiToast({"status": "error", "data": res.data.text})
+            }
+        } else {
+            bundled.apiToast(res)
+        }
 		return
 	}
     bundled.clearLanguageCookie()

@@ -727,6 +727,11 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"usacoDuration": func(c *kilonova.Contest) string {
 			return (time.Duration(c.PerUserTime) * time.Second).String()
 		},
+		"getCaptchaID": base.NewCaptchaID,
+		"mustSolveCaptcha": func() bool {
+			zap.S().Error("Uninitialized `mustSolveCaptcha`")
+			return false
+		},
 		"getText": func(key string, vals ...any) string {
 			zap.S().Error("Uninitialized `getText`")
 			return "FATAL ERR"

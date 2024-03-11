@@ -1715,6 +1715,10 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 			}
 			return code
 		},
+		"mustSolveCaptcha": func() bool {
+			ip, _ := rt.base.GetRequestInfo(r)
+			return rt.base.MustSolveCaptcha(r.Context(), ip)
+		},
 	})
 
 	if err := templ.Execute(w, data); err != nil {

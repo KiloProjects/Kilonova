@@ -72,27 +72,32 @@ func (s *BaseAPI) SessionUser(ctx context.Context, sid string, r *http.Request) 
 	}
 	if user != nil {
 		go func() {
-			var ip *netip.Addr = nil
-			hostport, err := netip.ParseAddrPort(r.RemoteAddr)
-			if err == nil {
-				ip2 := hostport.Addr()
-				ip = &ip2
-			}
-			if len(TrueIPHeader.Value()) > 0 && len(r.Header.Get(TrueIPHeader.Value())) > 0 {
-				addr, err := netip.ParseAddr(r.Header.Get(TrueIPHeader.Value()))
-				if err != nil {
-					zap.S().Warn("Invalid address in reverse proxy header: ", err)
-				} else {
-					ip = &addr
-				}
-			}
-			ua := r.Header.Get("User-Agent")
+			ip, ua := s.GetRequestInfo(r)
 			if err := s.db.UpdateSessionDevice(context.Background(), sid, ip, &ua); err != nil {
 				zap.S().Warn(err)
 			}
 		}()
 	}
 	return user, nil
+}
+
+func (s *BaseAPI) GetRequestInfo(r *http.Request) (ip *netip.Addr, ua string) {
+	hostport, err := netip.ParseAddrPort(r.RemoteAddr)
+	if err == nil {
+		ip2 := hostport.Addr()
+		ip = &ip2
+	}
+	if len(TrueIPHeader.Value()) > 0 && len(r.Header.Get(TrueIPHeader.Value())) > 0 {
+		addr, err := netip.ParseAddr(r.Header.Get(TrueIPHeader.Value()))
+		if err != nil {
+			zap.S().Warn("Invalid address in reverse proxy header: ", err)
+		} else {
+			ip = &addr
+		}
+	}
+
+	ua = r.Header.Get("User-Agent")
+	return
 }
 
 type Session = db.Session

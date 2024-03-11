@@ -253,6 +253,9 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) importProblemArchive(w http.ResponseWriter, r *http.Request) {
+	// TODO: "unnamed" is a placeholder, should be recognized by archive importer to change default test name
+	// (downloading solutions takes test name as hint, regardless if console input or not, gives off weird results this way).
+	// TODO: Allow option to create sample statement
 	pb, err := s.base.CreateProblem(r.Context(), "unnamed", util.UserBrief(r), true)
 	if err != nil {
 		err.WriteError(w)

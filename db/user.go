@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"errors"
+	"net/netip"
 	"strings"
 	"time"
 
@@ -228,6 +229,20 @@ func (s *DB) CreateUser(ctx context.Context, name, passwordHash, email, preferre
 		name, email, passwordHash, preferredLanguage, theme, displayName, generated, generated, bio, // generated is for both generated and verified_email!
 	).Scan(&id)
 	return id, err
+}
+
+func (s *DB) LogSignup(ctx context.Context, userID int, ip *netip.Addr, userAgent *string) error {
+	_, err := s.conn.Exec(ctx, `INSERT INTO signup_logs (user_id, ip_addr, user_agent) VALUES ($1, $2, $3)`, userID, ip, userAgent)
+	return err
+}
+
+func (s *DB) CountSignups(ctx context.Context, ip netip.Addr, since time.Time) (int, error) {
+	var cnt int
+	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM signup_logs WHERE ip_addr = $1 AND created_at >= $2", ip, since).Scan(&cnt)
+	if err != nil {
+		return -1, err
+	}
+	return cnt, nil
 }
 
 func userFilterQuery(filter *kilonova.UserFilter, fb *filterBuilder) {

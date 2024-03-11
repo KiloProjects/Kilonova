@@ -518,6 +518,22 @@ ro = "Postări"
 en = "Create post"
 ro = "Creare postare"
 
+[auth.captcha.title]
+en = "Please type the digits you see in the picture below"
+ro = "Vă rugăm scrieți cifrele pe care le vedeți în imaginea de mai jos"
+
+[auth.captcha.must_solve]
+en = "You must solve a CAPTCHA test in order to sign up."
+ro = "Trebuie să rezolvi un test CAPTCHA întâi ca să te poți înregistra."
+
+[response]
+en = "Response"
+ro = "Răspuns"
+
+[auth.captcha.invalid]
+en = "Invalid CAPTCHA response."
+ro = "Răspuns CAPTCHA invalid."
+
 [auth.signup]
 en = "Sign Up"
 ro = "Înregistrare"
@@ -1623,7 +1639,7 @@ en = "Number flags"
 ro = "Flag-uri numere"
 
 [tagDeleteConfirm]
-en = "Are you sure you want to delete this paste?"
+en = "Are you sure you want to delete this tag?"
 ro = "Ești sigur că vrei să ștergi această etichetă?"
 
 [pasteDeleteConfirm]
