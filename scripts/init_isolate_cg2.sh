@@ -25,7 +25,8 @@ fi
 echo "Cloning git repository"
 git clone https://github.com/ioi/isolate.git /tmp/isolate
 cd /tmp/isolate
-git checkout cg2
+# cg2 branch was merged into master
+# git checkout cg2
 
 echo "Installing isolate"
 make install

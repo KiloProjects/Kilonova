@@ -306,6 +306,19 @@ func New(id int, memQuota int64, logger *zap.SugaredLogger) (eval.Sandbox, error
 	return &IsolateBox{path: strings.TrimSpace(string(ret)), boxID: id, memoryQuota: memQuota, logger: logger}, nil
 }
 
+func IsolateVersion() string {
+	ret, err := exec.Command(config.Eval.IsolatePath, "--version").CombinedOutput()
+	if err != nil {
+		zap.S().Warn(err)
+		return "UNKNOWN"
+	}
+	if !bytes.Contains(ret, []byte("The process isolator")) {
+		return "precompiled"
+	}
+	line, _, _ := bytes.Cut(ret, []byte{'\n'})
+	return strings.TrimPrefix(string(line), "The process isolator ")
+}
+
 // parseMetaFile parses a specified meta file
 func parseMetaFile(r io.Reader, out bytes.Buffer) *eval.RunStats {
 	if r == nil {

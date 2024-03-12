@@ -13,6 +13,7 @@ groupadd -f kn_sandbox
 echo "Cloning git repository"
 git clone https://github.com/ioi/isolate.git /tmp/isolate
 cd /tmp/isolate
+git checkout c24e80f # It looks like this is the last pre-cg2 commit
 
 echo "Installing isolate"
 make install

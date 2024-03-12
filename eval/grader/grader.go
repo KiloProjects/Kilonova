@@ -459,11 +459,14 @@ var ForceSecureSandbox = config.GenFlag[bool]("feature.grader.force_secure_sandb
 
 func getAppropriateRunner(base *sudoapi.BaseAPI) (eval.BoxScheduler, error) {
 	var boxFunc scheduler.BoxFunc
+	var boxVersion string = "NONE"
 	if scheduler.CheckCanRun(box.New) {
 		boxFunc = box.New
+		boxVersion = box.IsolateVersion()
 	} else if scheduler.CheckCanRun(box.NewStupid) && !ForceSecureSandbox.Value() {
 		zap.S().Warn("Secure sandbox not found. Using stupid sandbox")
 		boxFunc = box.NewStupid
+		boxVersion = "stupid"
 	}
 	if boxFunc == nil {
 		zap.S().Fatal("Remote grader has not been implemented. No grader available!")
@@ -474,7 +477,7 @@ func getAppropriateRunner(base *sudoapi.BaseAPI) (eval.BoxScheduler, error) {
 	if err != nil {
 		return nil, err
 	}
-	zap.S().Info("Running local grader")
+	zap.S().Infof("Running local grader (version: %s)", boxVersion)
 
 	return bm, nil
 }
