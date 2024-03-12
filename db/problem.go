@@ -90,7 +90,7 @@ func (s *DB) ScoredProblems(ctx context.Context, filter kilonova.ProblemFilter, 
 
 	query := `SELECT problems.*, $1 AS user_id, COALESCE(ms.score, -1) AS score, (editors.user_id IS NOT NULL) AS pb_editor
 FROM problems 
-	LEFT JOIN max_score_view ms ON (problems.id = ms.problem_id AND ms.user_id = $1)
+	LEFT JOIN max_scores ms ON (problems.id = ms.problem_id AND ms.user_id = $1)
 	LEFT JOIN LATERAL (SELECT user_id FROM problem_editors editors WHERE problems.id = editors.problem_id AND editors.user_id = $2 LIMIT 1) editors ON TRUE
 WHERE ` + fb.Where() + " " + getProblemOrdering(filter.Ordering, filter.Descending) + " " + FormatLimitOffset(filter.Limit, filter.Offset)
 	err := Select(s.conn, ctx, &pbs, query, fb.Args()...)
@@ -245,10 +245,10 @@ func problemFilterQuery(filter *kilonova.ProblemFilter, fb *filterBuilder) {
 	}
 
 	if v := filter.SolvedBy; v != nil {
-		fb.AddConstraint("EXISTS (SELECT 1 FROM max_score_view WHERE score = 100 AND problem_id = problems.id AND user_id = %s)", v)
+		fb.AddConstraint("EXISTS (SELECT 1 FROM max_scores WHERE score = 100 AND problem_id = problems.id AND user_id = %s)", v)
 	}
 	if v := filter.AttemptedBy; v != nil {
-		fb.AddConstraint("EXISTS (SELECT 1 FROM max_score_view WHERE score != 100 AND score >= 0 AND problem_id = problems.id AND user_id = %s)", v)
+		fb.AddConstraint("EXISTS (SELECT 1 FROM max_scores WHERE score != 100 AND score >= 0 AND problem_id = problems.id AND user_id = %s)", v)
 	}
 
 	if filter.Unassociated {

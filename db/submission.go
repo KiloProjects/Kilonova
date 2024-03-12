@@ -177,7 +177,7 @@ func (s *DB) MaxScoreSubID(ctx context.Context, userid, problemid int) (int, err
 func (s *DB) MaxScore(ctx context.Context, userid, problemid int) decimal.Decimal {
 	var score decimal.Decimal
 
-	err := s.conn.QueryRow(ctx, "SELECT ms.score FROM max_score_view ms WHERE ms.user_id = $1 AND ms.problem_id = $2", userid, problemid).Scan(&score)
+	err := s.conn.QueryRow(ctx, "SELECT ms.score FROM max_scores ms WHERE ms.user_id = $1 AND ms.problem_id = $2", userid, problemid).Scan(&score)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) && !errors.Is(err, context.Canceled) {
 			zap.S().Errorw("Couldn't get max score for ", zap.Int("userid", userid), zap.Int("problemid", problemid), zap.Error(err))

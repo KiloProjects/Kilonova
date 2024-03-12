@@ -31,9 +31,9 @@ CREATE OR REPLACE VIEW running_contests AS (
     SELECT * from contests WHERE contests.start_time <= NOW() AND NOW() <= contests.end_time
 );
 
-DROP VIEW IF EXISTS problem_statistics CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS problem_statistics;
 CREATE MATERIALIZED VIEW IF NOT EXISTS problem_statistics (problem_id, num_attempted, num_solved) AS
-    SELECT problem_id, COUNT(*) AS num_attempted, COUNT(*) FILTER (WHERE score = 100) AS num_solved FROM max_score_view WHERE score != -1 GROUP BY problem_id;
+    SELECT problem_id, COUNT(*) AS num_attempted, COUNT(*) FILTER (WHERE score = 100) AS num_solved FROM max_scores WHERE score != -1 GROUP BY problem_id;
 
 DROP FUNCTION IF EXISTS visible_pbs CASCADE;
 -- param 1: the user ID for which we want to see the visible problems
@@ -301,8 +301,8 @@ CREATE OR REPLACE FUNCTION visible_submissions_ex(user_id bigint, problem_id big
         AND contests.end_time <= NOW()) -- if the contest ended and the problem is visible, show the submission
 $$ LANGUAGE SQL STABLE;
 
-DROP VIEW IF EXISTS problem_list_deep_problems;
-CREATE OR REPLACE VIEW problem_list_deep_problems (list_id, problem_id) AS
+DROP VIEW IF EXISTS problem_list_deep_problems CASCADE;
+CREATE MATERIALIZED VIEW IF NOT EXISTS problem_list_deep_problems (list_id, problem_id) AS
     WITH RECURSIVE pblist_tree(list_id, problem_id) AS (
         SELECT pblist_id AS list_id, problem_id FROM problem_list_problems
         UNION
@@ -322,12 +322,13 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS problem_list_pb_count(list_id, count) AS
     WITH RECURSIVE pblist_tree(list_id, problem_id) AS (
         SELECT pblist_id AS list_id, problem_id FROM problem_list_problems
         UNION
-        SELECT pbs.parent_id AS list_id, pt.problem_id FROM problem_list_pblists pbs, pblist_tree PT WHERE pbs.child_id = pt.list_id
+        SELECT pbs.parent_id AS list_id, pt.problem_id FROM problem_list_pblists pbs, pblist_tree pt WHERE pbs.child_id = pt.list_id
     ) SELECT list_id, COUNT(*) FROM pblist_tree GROUP BY list_id;
 
 CREATE OR REPLACE FUNCTION refresh_pblist_pb_count() RETURNS TRIGGER AS $$
     BEGIN
         REFRESH MATERIALIZED VIEW problem_list_pb_count;
+        REFRESH MATERIALIZED VIEW problem_list_deep_problems;
         RETURN NULL;
     END;
 $$ LANGUAGE plpgsql;
@@ -346,13 +347,13 @@ CREATE OR REPLACE TRIGGER pblist_problem_count_on_pblists
 DROP VIEW IF EXISTS pblist_user_solved;
 CREATE OR REPLACE VIEW pblist_user_solved (user_id, list_id, count) AS 
     SELECT msv.user_id, pbs.list_id, COUNT(pbs.list_id) 
-    FROM problem_list_deep_problems pbs, max_score_view msv 
+    FROM problem_list_deep_problems pbs, max_scores msv 
     WHERE msv.score = 100 AND msv.problem_id = pbs.problem_id 
     GROUP BY list_id, user_id;
 
 
 DROP VIEW IF EXISTS problem_checklist;
--- note that, because max_score_view only counts *users* that completed the problem, the num_sols is actually the number of users that completed the problem
+-- note that, because max_scores only counts *users* that completed the problem, the num_sols is actually the number of users that completed the problem
 -- NOT the number of 100-point solutions (but this metric would be irrelevant in the max-subtasks scoring strategy)
 CREATE OR REPLACE VIEW problem_checklist (problem_id, num_pdf, num_md, num_tests, num_subtasks, has_source, num_authors, num_other_tags, num_sols) AS 
     WITH problem_attachments AS (
@@ -370,7 +371,7 @@ CREATE OR REPLACE VIEW problem_checklist (problem_id, num_pdf, num_md, num_tests
         (length(btrim(pbs.source_credits)) > 0) has_source,
         (SELECT COUNT(*) FROM problem_tags ptags WHERE EXISTS (SELECT 1 FROM tags WHERE tags.id = ptags.tag_id AND tags.type = 'author') AND problem_id = pbs.id) AS num_authors,
         (SELECT COUNT(*) FROM problem_tags ptags WHERE EXISTS (SELECT 1 FROM tags WHERE tags.id = ptags.tag_id AND tags.type != 'author') AND problem_id = pbs.id) AS num_other_tags,
-        (SELECT COUNT(*) FROM max_score_view WHERE problem_id = pbs.id AND score = 100) AS num_sols
+        (SELECT COUNT(*) FROM max_scores WHERE problem_id = pbs.id AND score = 100) AS num_sols
     FROM problems pbs;
 
 COMMIT;
