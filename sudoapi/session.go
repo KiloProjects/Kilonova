@@ -151,6 +151,7 @@ func (s *BaseAPI) SessionDevices(ctx context.Context, sid string) ([]*SessionDev
 
 			IPAddr:    device.IPAddr,
 			UserAgent: device.UserAgent,
+			UserID:    device.UserID,
 		})
 	}
 	return retDevices, nil

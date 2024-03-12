@@ -64,6 +64,7 @@ type SessionDevice struct {
 
 	IPAddr    *netip.Addr `db:"ip_addr"`
 	UserAgent *string     `db:"user_agent"`
+	UserID    *int        `db:"user_id"`
 }
 
 type SessionFilter struct {
