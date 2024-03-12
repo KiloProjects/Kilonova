@@ -288,7 +288,7 @@ CREATE OR REPLACE FUNCTION visible_submissions_ex(user_id bigint, problem_id big
     UNION ALL
     (SELECT subs.id as sub_id
         FROM submissions subs, v_pbs pb_viewers
-        WHERE pb_viewers.problem_id = subs.problem_id AND subs.contest_id IS NULL) -- contest is null, so judge if problem is visible
+        WHERE pb_viewers.problem_id = subs.problem_id AND subs.contest_id IS NULL AND ($3 IS NULL OR subs.user_id = $3)) -- contest is null, so judge if problem is visible
     UNION ALL
     (SELECT subs.id as sub_id
         FROM submissions subs, contest_user_access users
@@ -297,7 +297,7 @@ CREATE OR REPLACE FUNCTION visible_submissions_ex(user_id bigint, problem_id big
     (SELECT subs.id as sub_id
         FROM submissions subs, contests, v_pbs
         WHERE EXISTS (SELECT 1 FROM visible_contests($1) viz WHERE contests.id = viz.contest_id)
-        AND contests.id = subs.contest_id AND v_pbs.problem_id = subs.problem_id
+        AND contests.id = subs.contest_id AND v_pbs.problem_id = subs.problem_id AND ($3 IS NULL OR subs.user_id = $3)
         AND contests.end_time <= NOW()) -- if the contest ended and the problem is visible, show the submission
 $$ LANGUAGE SQL STABLE;
 

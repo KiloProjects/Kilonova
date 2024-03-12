@@ -109,6 +109,7 @@ type SessionDevice struct {
 
 	IPAddr    *netip.Addr `json:"ip_addr"`
 	UserAgent *string     `json:"user_agent"`
+	UserID    *int        `json:"user_id"`
 }
 
 type SessionFilter = db.SessionFilter
