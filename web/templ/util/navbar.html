@@ -30,7 +30,9 @@
             <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/contests">{{getText "contests"}}</a>
         {{ end }}
         {{ if canViewAllSubs }}
+            {{ if (boolFlag "feature.frontend.navbar.submissions_btn") }}
 		    <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/submissions">{{getText "submission.list"}}</a>
+            {{ end }}
         {{ end }}
 		{{if not authed }}
             {{ if (boolFlag "feature.platform.signup") }}
@@ -47,8 +49,15 @@
 					<a class="dropdown-list-item" href="/settings">
 						<i class="ml-n2 fas fa-user-cog fa-fw"></i> {{getText "settings"}}
 					</a>
+                    {{ if canViewAllSubs }}
+                        {{ if not (boolFlag "feature.frontend.navbar.submissions_btn") }}
+                        <a class="dropdown-list-item" href="/submissions">
+                            <i class="ml-n2 fas fa-table-list fa-fw"></i> {{getText "submission.list"}}
+                        </a>
+                        {{ end }}
+                    {{ end }}
                     {{ if not (boolFlag "feature.frontend.navbar.contests_btn") }}
-                        <a class="dropdown-list-item" href="/contests/">
+                        <a class="dropdown-list-item" href="/contests">
                             <i class="ml-n2 fas fa-medal fa-fw"></i> {{getText "contests"}}
                         </a>
                     {{ end }}

@@ -41,8 +41,9 @@ var (
 
 	MainPageLogin = config.GenFlag[bool]("feature.frontend.main_page_login", false, "Login modal on front page")
 
-	NavbarProblems = config.GenFlag[bool]("feature.frontend.navbar.problems_btn", true, "Navbar button: Problems")
-	NavbarContests = config.GenFlag[bool]("feature.frontend.navbar.contests_btn", false, "Navbar button: Contests")
+	NavbarProblems    = config.GenFlag[bool]("feature.frontend.navbar.problems_btn", true, "Navbar button: Problems")
+	NavbarContests    = config.GenFlag[bool]("feature.frontend.navbar.contests_btn", false, "Navbar button: Contests")
+	NavbarSubmissions = config.GenFlag[bool]("feature.frontend.navbar.submissions_btn", true, "Navbar button: Submissions")
 
 	PinnedProblemList = config.GenFlag[int]("frontend.front_page.pinned_problem_list", 0, "Pinned problem list (front page sidebar)")
 	RootProblemList   = config.GenFlag[int]("frontend.front_page.root_problem_list", 0, "Root problem list (front page main content)")
