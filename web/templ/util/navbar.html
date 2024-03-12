@@ -27,7 +27,7 @@
             <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/problems">{{getText "problem.list"}}</a>
         {{ end }}
         {{ if (boolFlag "feature.frontend.navbar.contests_btn") }}
-            <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/contests">{{getText "contests"}}</a>
+            <a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/contests?page=official">{{getText "contests"}}</a>
         {{ end }}
         {{ if canViewAllSubs }}
             {{ if (boolFlag "feature.frontend.navbar.submissions_btn") }}
@@ -57,7 +57,7 @@
                         {{ end }}
                     {{ end }}
                     {{ if not (boolFlag "feature.frontend.navbar.contests_btn") }}
-                        <a class="dropdown-list-item" href="/contests">
+                        <a class="dropdown-list-item" href="/contests?page=official">
                             <i class="ml-n2 fas fa-medal fa-fw"></i> {{getText "contests"}}
                         </a>
                     {{ end }}

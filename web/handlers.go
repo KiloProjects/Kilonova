@@ -1007,7 +1007,7 @@ func (rt *Web) contests() http.HandlerFunc {
 		case "personal":
 			if !util.UserBrief(r).IsAuthed() {
 				// Important to redirect and return, since we will dereference for ID later
-				http.Redirect(w, r, "/contests", http.StatusTemporaryRedirect)
+				http.Redirect(w, r, "/contests?page=official", http.StatusTemporaryRedirect)
 				return
 			}
 			page = v

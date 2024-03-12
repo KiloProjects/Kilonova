@@ -162,7 +162,6 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 }
 
 func handleClassicSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, problem *kilonova.Problem, checker checkers.Checker, subTests []*kilonova.SubTest) *kilonova.StatusError {
-
 	var wg sync.WaitGroup
 
 	for _, subTest := range subTests {
