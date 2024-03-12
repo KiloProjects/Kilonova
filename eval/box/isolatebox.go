@@ -309,11 +309,7 @@ func New(id int, memQuota int64, logger *zap.SugaredLogger) (eval.Sandbox, error
 func IsolateVersion() string {
 	ret, err := exec.Command(config.Eval.IsolatePath, "--version").CombinedOutput()
 	if err != nil {
-		zap.S().Warn(err)
-		return "UNKNOWN"
-	}
-	if !bytes.Contains(ret, []byte("The process isolator")) {
-		return "precompiled"
+		return "precompiled?"
 	}
 	line, _, _ := bytes.Cut(ret, []byte{'\n'})
 	return strings.TrimPrefix(string(line), "The process isolator ")
