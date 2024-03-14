@@ -55,9 +55,9 @@ func (s *DB) SubmissionLookingUser(ctx context.Context, id int, user *kilonova.U
 	if user.IsAdmin() {
 		return s.Submission(ctx, id)
 	}
-	var userID *int
+	var userID int = 0
 	if user != nil {
-		userID = &user.ID
+		userID = user.ID
 	}
 
 	var sub dbSubmission
