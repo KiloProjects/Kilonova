@@ -233,6 +233,7 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
             </form>
         </details>
         <script>
+            let editCMChanged = false
             var editCM = CodeMirror.fromTextArea(document.getElementById("attEditContent"), {
                 mode: "text/plain",
             });
@@ -240,6 +241,7 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
             document.getElementById("addDetails").addEventListener("toggle", () => {
                 editCM.refresh()
             })
+            editCM.on("change", () => editCMChanged = true)
             
             async function editAttachment(e) {
                 e.preventDefault();
@@ -252,6 +254,9 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
         
                 let res = await bundled.multipartCall(apiPrefix+"/update/attachmentData", form)
                 bundled.apiToast(res);
+                if(res.status == "success") {
+                    editCMChanged = false
+                }
             };
         
             async function initAttEdit(id) {
@@ -281,6 +286,7 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
                 document.getElementById("ediAttNameView").innerText = rez.data.metadata.name
                 editCM.setValue(bundled.fromBase64(rez.data.data))
                 editCM.setOption("mode", bundled.get_cm_mode(rez.data.metadata.name));
+                editCMChanged = false
         
                 document.getElementById("editAttView").classList.toggle("hidden", false);
                 editCM.refresh();
@@ -304,10 +310,12 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
             document.getElementById("editAttForm").addEventListener("submit", editAttachment)
         </script>
         <script>
+            let addCMChanged = false
             var addCM = CodeMirror.fromTextArea(document.getElementById("attCreateContent"), {
                 mode: "text/plain",
             });
             addCM.setSize(null, "100%");
+            addCM.on("change", () => addCMChanged = true)
             document.getElementById("addDetails").addEventListener("toggle", () => {
                 addCM.refresh()
             })
@@ -344,11 +352,19 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
                     bundled.apiToast(res);
                     return
                 }
+                addCMChanged = false
                 window.location.reload();
             };
         
         
             document.getElementById("addAttForm").addEventListener("submit", createNewAttachment)
+            window.addEventListener("beforeunload", e => {
+                if(addCMChanged || editCMChanged) {
+                    e.preventDefault();
+                    e.returnValue = true
+                    return true
+                }
+            })
         </script>
 
         <div class="segment-panel">

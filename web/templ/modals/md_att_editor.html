@@ -41,6 +41,17 @@
 </style>
 
 <script>
+    let changed = false;
+    window.addEventListener("beforeunload", e => {
+        if(changed) {
+            e.preventDefault();
+            e.returnValue = true
+            return true
+        }
+    })
+</script>
+
+<script>
     const apiPrefix = {{.APIPrefix}};
     var cm = CodeMirror.fromTextArea(document.getElementById("description"), {
         mode: {
@@ -51,6 +62,7 @@
     });
     cm.setSize(null, "100%");
     cm.focus();
+    cm.on("change", () => changed = true)
 
     async function reloadStatement(newLang) {
         const rez = await bundled.getCall(`${apiPrefix}/get/attachmentByName/statement-${newLang}.md`)
@@ -58,6 +70,7 @@
             document.getElementById("private_checkbox").checked = false
             if (document.getElementById("attID").value != -1) {
                 cm.setValue("")
+                changed = false
             }
             document.getElementById("attID").value = -1
             return
@@ -66,6 +79,7 @@
         document.getElementById("private_checkbox").checked = rez.data.metadata.private
         document.getElementById("attID").value = rez.data.metadata.id
         cm.setValue(bundled.fromBase64(rez.data.data))
+        changed = false
     }
 
     async function updateStatement(e) {
@@ -85,6 +99,9 @@
     
             let res = await bundled.multipartCall(apiPrefix+"/update/attachmentData", form)
             bundled.apiToast(res);
+            if(res.status === "success") {
+                changed = false
+            }
         } else {
             // Create attachment
             let res = await bundled.multipartCall(apiPrefix+"/update/addAttachment", form)
@@ -93,6 +110,7 @@
                 return
             }
 
+            changed = false
             bundled.apiToast({status: "success", data: "Created statement."})
             document.getElementById("attID").value = res.data
         }
