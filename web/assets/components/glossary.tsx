@@ -33,7 +33,7 @@ let definitions: Record<string, { en: Definition; ro: Definition }> = {
 						De exemplu, în C++, submisiile ar trebui să folosească <code>std::cin</code> și <code>std::cout</code>, respectiv.
 					</p>
 					<p>
-						În C și C++, funcțiile <code>scanf</code>, respectiv <code>printf</code> pot să fie folosite pentru .
+						În C și C++, <code>scanf</code>, respectiv <code>printf</code> pot să fie folosite, de asemenea.
 					</p>
 				</>
 			),
