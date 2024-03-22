@@ -38,7 +38,11 @@ WITH pairs AS (
 ) INSERT INTO max_scores (user_id, problem_id, score) SELECT user_id, problem_id, max_score(user_id, problem_id) FROM pairs;
 
 CREATE OR REPLACE FUNCTION reset_max_score(user_id bigint, problem_id bigint) RETURNS void AS $$
-    INSERT INTO max_scores (user_id, problem_id, score) VALUES ($1, $2, max_score($1, $2)) ON CONFLICT ON CONSTRAINT unique_max_score_pair DO UPDATE SET score = max_score($1, $2);
+    INSERT INTO max_scores (user_id, problem_id, score) 
+        SELECT $1 AS user_id, $2 AS problem_id, max_score($1, $2) AS score 
+            WHERE EXISTS (SELECT 1 FROM users WHERE id = $1) AND EXISTS (SELECT 1 FROM problems WHERE id = $2) 
+        ON CONFLICT ON CONSTRAINT unique_max_score_pair 
+            DO UPDATE SET score = max_score($1, $2);
 $$ LANGUAGE SQL;
 
 CREATE OR REPLACE FUNCTION score_update_handler() RETURNS TRIGGER AS $$
