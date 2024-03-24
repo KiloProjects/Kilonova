@@ -16,7 +16,7 @@
         <div class="segment-panel">
             <h2 class="mb-1">
                 <a href="/posts/{{.Slug}}">{{.Title}}</a> 
-                {{with index $.Authors .AuthorID}} {{getText "posted_by" .Name}} {{end}} 
+                {{with index $.Authors .AuthorID}} {{getText "posted_by" (escapeHTML .Name) | safeHTML}} {{end}} 
                 {{if authedUser}}{{if or (authedUser.Admin) (eq authedUser.ID .AuthorID)}}
                     {{- if .Visible }}
                         <span class="badge badge-green">{{ getText "published" }}</span>

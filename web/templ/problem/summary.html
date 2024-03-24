@@ -248,7 +248,7 @@
 {{ template "pb_submit_form.html" .}}
 {{ else }}
 
-<h2 class="mt-3 mb-5">{{getText "submitLogin"}}</h2>
+<h2 class="mt-3 mb-5">{{getText "submitLogin" | safeHTML}}</h2>
 
 {{ end }}
 

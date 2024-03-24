@@ -76,7 +76,7 @@ var (
 )
 
 func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
-	if strings.Contains(file.Name, "__MACOSX") { // Support archives from MacOS by skipping MACOSX directory
+	if strings.Contains(file.Name, "__MACOSX") || strings.Contains(file.Name, ".DS_Store") { // Support archives from MacOS
 		return nil
 	}
 	if slices.Contains(filepath.SplitList(path.Dir(file.Name)), "attachments") { // Is in "attachments" directory
@@ -156,6 +156,9 @@ type TestProcessParams struct {
 
 	Polygon          bool
 	MergeAttachments bool
+
+	// ChangeTestName is used when importing problems, since they use a stub name and, if not set, should be updated anyway, if available
+	ChangeTestName bool
 
 	// MergeTests bool
 }
@@ -437,41 +440,45 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 		shouldUpd := false
 		upd := kilonova.ProblemUpdate{}
 		if aCtx.props.MemoryLimit != nil {
-			shouldUpd = true
-			upd.MemoryLimit = aCtx.props.MemoryLimit
+			upd.MemoryLimit, shouldUpd = aCtx.props.MemoryLimit, true
 		}
 		if aCtx.props.TimeLimit != nil {
-			shouldUpd = true
-			upd.TimeLimit = aCtx.props.TimeLimit
+			upd.TimeLimit, shouldUpd = aCtx.props.TimeLimit, true
 		}
 		if aCtx.props.DefaultPoints != nil {
-			shouldUpd = true
-			upd.DefaultPoints = aCtx.props.DefaultPoints
+			upd.DefaultPoints, shouldUpd = aCtx.props.DefaultPoints, true
 		}
 		if aCtx.props.Source != nil {
-			shouldUpd = true
-			upd.SourceCredits = aCtx.props.Source
+			upd.SourceCredits, shouldUpd = aCtx.props.Source, true
 		}
 		if aCtx.props.ConsoleInput != nil {
-			shouldUpd = true
-			upd.ConsoleInput = aCtx.props.ConsoleInput
+			upd.ConsoleInput, shouldUpd = aCtx.props.ConsoleInput, true
 		}
 		if aCtx.props.ScoringStrategy != kilonova.ScoringTypeNone {
-			shouldUpd = true
-			upd.ScoringStrategy = aCtx.props.ScoringStrategy
+			upd.ScoringStrategy, shouldUpd = aCtx.props.ScoringStrategy, true
 		}
 		if aCtx.props.ScorePrecision != nil {
-			shouldUpd = true
-			upd.ScorePrecision = aCtx.props.ScorePrecision
+			upd.ScorePrecision, shouldUpd = aCtx.props.ScorePrecision, true
 		}
 		if aCtx.props.TestName != nil {
-			shouldUpd = true
-			upd.TestName = aCtx.props.TestName
+			upd.TestName, shouldUpd = aCtx.props.TestName, true
 		}
 
 		if aCtx.props.ProblemName != nil && *aCtx.props.ProblemName != "" {
-			shouldUpd = true
-			upd.Name = aCtx.props.ProblemName
+			upd.Name, shouldUpd = aCtx.props.ProblemName, true
+		}
+
+		if params.ChangeTestName && aCtx.props.TestName == nil {
+			newTestName := ""
+			if upd.Name != nil {
+				newTestName = kilonova.MakeSlug(*upd.Name)
+			}
+
+			// TODO: More heuristics?
+
+			if len(newTestName) > 0 {
+				upd.TestName, shouldUpd = &newTestName, true
+			}
 		}
 
 		if shouldUpd {

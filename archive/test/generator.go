@@ -304,6 +304,9 @@ func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, bas
 	defer ag.ar.Close()
 
 	testName := strings.TrimSpace(ag.pb.TestName)
+	if testName == "unnamed" {
+		testName = strings.TrimSpace(ag.pb.Name)
+	}
 	if testName == "" {
 		testName = kilonova.MakeSlug(testName)
 	}

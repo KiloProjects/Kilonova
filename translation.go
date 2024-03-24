@@ -16,8 +16,6 @@ type Translations map[string]Translation
 
 var translations Translations
 
-//go:generate /bin/sh -c "echo $PWD && /usr/bin/python scripts/toml_gen.py"
-
 //go:embed _translations.json
 var keys []byte
 

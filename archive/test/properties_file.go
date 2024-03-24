@@ -202,31 +202,27 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 			return kilonova.Statusf(400, "Properties file cannot contain group parameters if you specified CMS-style score parameters")
 		}
 
-		subtaskedTests := map[int]bool{}
-
-		groups := map[int][]int{}
-		subTaskGroups := map[int][][]int{}
+		stks := make(map[string]parsedSubtask)
 
 		groupStrings := strings.Split(rawProps.Groups, ",")
-		for i, grp := range groupStrings {
-			glist, err := parsePropListItem(grp, "group")
-			if err != nil {
-				return err
-			}
-			groups[i+1] = glist
-		}
-
-		weights := map[int]decimal.Decimal{}
 		weightStrings := strings.Split(rawProps.Weights, ",")
 		if len(groupStrings) != len(weightStrings) {
 			return kilonova.Statusf(400, "Number of weights must match number of groups")
 		}
-		for i, w := range weightStrings {
-			val, err := strconv.ParseFloat(w, 64)
+
+		for i := range len(groupStrings) {
+			glist, err := parsePropListItem(groupStrings[i], "group")
 			if err != nil {
+				return err
+			}
+			val, err1 := decimal.NewFromString(weightStrings[i])
+			if err1 != nil {
 				return kilonova.Statusf(400, "Invalid `weight` string in properties")
 			}
-			weights[i+1] = decimal.NewFromFloat(val)
+			stk := stks[strconv.Itoa(i+1)]
+			stk.Tests = glist
+			stk.Score = val
+			stks[strconv.Itoa(i+1)] = stk
 		}
 
 		if rawProps.Dependencies != "" {
@@ -236,7 +232,6 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 			}
 
 			for i, d := range depStrings {
-				subTaskGroups[i+1] = [][]int{groups[i+1]}
 				if d == "" {
 					continue
 				}
@@ -244,46 +239,84 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 				if err != nil {
 					return err
 				}
+
+				stk := stks[strconv.Itoa(i+1)]
+				depStr := make([]string, 0, len(glist))
 				for _, vid := range glist {
 					if vid <= 0 || vid > len(groupStrings) {
 						return kilonova.Statusf(400, "Dependency number out of range")
 					}
-					subTaskGroups[i+1] = append(subTaskGroups[i+1], groups[vid])
+					depStr = append(depStr, strconv.Itoa(vid))
 				}
-			}
-		} else {
-			for i := range groupStrings {
-				subTaskGroups[i+1] = [][]int{groups[i+1]}
+				stk.Dependencies = depStr
+				stks[strconv.Itoa(i+1)] = stk
 			}
 		}
 
-		// coalesce maps into a single data type
-		stks := map[int]Subtask{}
-
-		for id, groups := range subTaskGroups {
-			stk := Subtask{}
-			stk.Score = weights[id]
-
-			for _, groupList := range groups {
-				for _, test := range groupList {
-					subtaskedTests[test] = true
-					stk.Tests = append(stk.Tests, test)
-				}
-			}
-			slices.Sort(stk.Tests)
-
-			stks[id] = stk
-		}
-
-		tests := []int{}
-		for k := range subtaskedTests {
-			tests = append(tests, k)
-		}
-
-		props.SubtaskedTests = tests
-		props.Subtasks = stks
+		props.Subtasks, props.SubtaskedTests = solveSubtaskDependencies(stks)
 	}
 
 	ctx.props = props
 	return nil
+}
+
+type parsedSubtask struct {
+	Score decimal.Decimal
+	Tests []int
+
+	// The current subtask is automatically considered a dependency
+	Dependencies []string
+}
+
+func solveSubtaskDependencies(subtasks map[string]parsedSubtask) (stks map[int]Subtask, groupedTests []int) {
+	stks = make(map[int]Subtask)
+	subtaskedTests := make(map[int]bool)
+
+	finalSubtasks := make(map[string]Subtask)
+
+	for id, group := range subtasks {
+		stk := Subtask{Score: group.Score}
+		stk.Tests = slices.Clone(group.Tests)
+		for _, dependency := range group.Dependencies {
+			dep, ok := subtasks[dependency]
+			if !ok {
+				zap.S().Debugf("Skipping unknown subtask %q", dependency)
+				continue
+			}
+			stk.Tests = append(stk.Tests, dep.Tests...)
+		}
+		slices.Sort(stk.Tests)
+		stk.Tests = slices.Compact(stk.Tests)
+		for _, test := range stk.Tests {
+			subtaskedTests[test] = true
+		}
+
+		finalSubtasks[id] = stk
+	}
+
+	var allInts = true
+	for id := range finalSubtasks {
+		if _, err := strconv.Atoi(id); err != nil {
+			allInts = false
+			break
+		}
+	}
+	if allInts {
+		for sid, stk := range finalSubtasks {
+			id, _ := strconv.Atoi(sid) // Safe to ignore, proven to be ok
+			stks[id] = stk
+		}
+	} else {
+		i := 1
+		for _, stk := range finalSubtasks {
+			stks[i] = stk
+			i++
+		}
+	}
+
+	groupedTests = make([]int, 0, len(subtaskedTests))
+	for k := range subtaskedTests {
+		groupedTests = append(groupedTests, k)
+	}
+	return
 }

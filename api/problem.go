@@ -179,8 +179,51 @@ var (
 	defaultRoProblemStatement = template.Must(template.New("enStmt").Parse(roPbStatementStr))
 )
 
+func (s *API) addStubStatement(ctx context.Context, pb *kilonova.Problem, lang *string, author *kilonova.UserBrief) *kilonova.StatusError {
+	if lang == nil || *lang == "" {
+		return nil
+	}
+
+	if !(*lang == "en" || *lang == "ro") {
+		return kilonova.Statusf(400, "Invalid statement language")
+	}
+
+	var attTempl *template.Template
+	if *lang == "en" {
+		attTempl = defaultEnProblemStatement
+	} else if *lang == "ro" {
+		attTempl = defaultRoProblemStatement
+	} else {
+		zap.S().Warn("How did we get here? %q", *lang)
+		return nil
+	}
+
+	inFile := "stdin"
+	outFile := "stdout"
+	if !pb.ConsoleInput {
+		inFile = pb.TestName + ".in"
+		outFile = pb.TestName + ".out"
+	}
+	var buf bytes.Buffer
+	if err := attTempl.Execute(&buf, struct {
+		InputFile  string
+		OutputFile string
+	}{InputFile: inFile, OutputFile: outFile}); err != nil {
+		zap.S().Warnf("Template rendering error: %v", err)
+		return nil
+	}
+	if err := s.base.CreateProblemAttachment(ctx, &kilonova.Attachment{
+		Visible: false,
+		Private: false,
+		Exec:    false,
+		Name:    fmt.Sprintf("statement-%s.md", *lang),
+	}, pb.ID, &buf, &author.ID); err != nil {
+		zap.S().Warn(err)
+	}
+	return nil
+}
+
 func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Title        string `json:"title"`
 		ConsoleInput bool   `json:"consoleInput"`
@@ -188,14 +231,14 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 		StatementLang *string `json:"statementLang"`
 		ProblemListID *int    `json:"pblistID"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
-		errorData(w, err, 400)
+	if err := parseRequest(r, &args); err != nil {
+		err.WriteError(w)
 		return
 	}
 
 	// Do the check before problem creation because it'd be awkward to create the problem and then show the error
-	if args.StatementLang != nil && !(*args.StatementLang == "en" || *args.StatementLang == "ro") {
-		errorData(w, "Invalid initial statement language", 400)
+	if args.StatementLang != nil && !(*args.StatementLang == "" || *args.StatementLang == "en" || *args.StatementLang == "ro") {
+		errorData(w, "Invalid statement language", 400)
 		return
 	}
 
@@ -215,54 +258,54 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if args.StatementLang != nil {
-		var attTempl *template.Template
-		if *args.StatementLang == "en" {
-			attTempl = defaultEnProblemStatement
-		} else if *args.StatementLang == "ro" {
-			attTempl = defaultRoProblemStatement
-		} else {
-			zap.S().Warn("How did we get here? %q", *args.StatementLang)
-			returnData(w, pb.ID)
-			return
-		}
-		inFile := "stdin"
-		outFile := "stdout"
-		if !args.ConsoleInput {
-			inFile = pb.TestName + ".in"
-			outFile = pb.TestName + ".out"
-		}
-		var buf bytes.Buffer
-		if err := attTempl.Execute(&buf, struct {
-			InputFile  string
-			OutputFile string
-		}{InputFile: inFile, OutputFile: outFile}); err != nil {
-			zap.S().Warnf("Template rendering error: %v", err)
-		}
-		if err := s.base.CreateProblemAttachment(r.Context(), &kilonova.Attachment{
-			Visible: false,
-			Private: false,
-			Exec:    false,
-			Name:    fmt.Sprintf("statement-%s.md", *args.StatementLang),
-		}, pb.ID, &buf, &util.UserBrief(r).ID); err != nil {
-			zap.S().Warn(err)
-		}
+	if err := s.addStubStatement(r.Context(), pb, args.StatementLang, util.UserBrief(r)); err != nil {
+		err.WriteError(w)
+		return
 	}
 
 	returnData(w, pb.ID)
 }
 
 func (s *API) importProblemArchive(w http.ResponseWriter, r *http.Request) {
-	// TODO: "unnamed" is a placeholder, should be recognized by archive importer to change default test name
-	// (downloading solutions takes test name as hint, regardless if console input or not, gives off weird results this way).
-	// TODO: Allow option to create sample statement
 	pb, err := s.base.CreateProblem(r.Context(), "unnamed", util.UserBrief(r), true)
 	if err != nil {
 		err.WriteError(w)
 		return
 	}
 
-	if err := s.processArchive(r.WithContext(context.WithValue(r.Context(), util.ProblemKey, pb))); err != nil {
+	r = r.WithContext(context.WithValue(r.Context(), util.ProblemKey, pb))
+	if err := s.processArchive(r, true); err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	// Get problem after most likely setting new properties after import
+	if pb2, err := s.base.Problem(r.Context(), pb.ID); err != nil {
+		zap.S().Error("Could not get problem again: ", err)
+	} else {
+		pb = pb2
+	}
+
+	var args struct {
+		StatementLang *string `json:"statementLang"`
+		ProblemListID *int    `json:"pblistID"`
+	}
+	if err := parseRequest(r, &args); err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	if args.ProblemListID != nil {
+		list, err := s.base.ProblemList(r.Context(), *args.ProblemListID)
+		if err == nil {
+			list.List = append(list.List, pb.ID)
+			if err := s.base.UpdateProblemListProblems(r.Context(), list.ID, list.List); err != nil {
+				zap.S().Warn(err)
+			}
+		}
+	}
+
+	if err := s.addStubStatement(r.Context(), pb, args.StatementLang, util.UserBrief(r)); err != nil {
 		err.WriteError(w)
 		return
 	}

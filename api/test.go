@@ -119,7 +119,7 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Created test")
 }
 
-func (s *API) processArchive(r *http.Request) *kilonova.StatusError {
+func (s *API) processArchive(r *http.Request, changeTestName bool) *kilonova.StatusError {
 	// Since this operation can take a lot of space, I am putting this lock as a precaution.
 	// This might create a problem with timeouts, and this should be handled asynchronously.
 	// (ie not in a request), but eh, I cant be bothered right now to do it the right way.
@@ -149,13 +149,15 @@ func (s *API) processArchive(r *http.Request) *kilonova.StatusError {
 	params := &test.TestProcessParams{
 		Requestor:      util.UserFull(r),
 		ScoreParamsStr: r.FormValue("scoreParameters"),
+
+		ChangeTestName: changeTestName,
 	}
 
 	return test.ProcessZipTestArchive(context.Background(), util.Problem(r), ar, s.base, params)
 }
 
 func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
-	if err := s.processArchive(r); err != nil {
+	if err := s.processArchive(r, false); err != nil {
 		err.WriteError(w)
 		return
 	}

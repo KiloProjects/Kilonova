@@ -9,6 +9,18 @@
             <span class="mr-2 text-xl"> {{getText "scoreParams"}}:</span>
             <input id="importScoreParams" type="text" class="form-input" autocomplete="off" />
         </label>
+        <label class="block mb-2">
+            <span class="form-label">{{getText "createDefaultStatement"}}:</span>
+            <select class="form-select" id="statementImport">
+                <option value="" selected>{{getText "dontCreate"}}</option>
+                <option value="ro">🇷🇴 Română</option>
+                <option value="en">🇬🇧 English</option>
+            </select>
+        </label>
+        <label class="block mb-2">
+            <span class="form-label">{{getText "addToPblist"}}:</span>
+            <input type="number" class="form-input" placeholder="{{getText `pblist_id`}}..." id="pb_import_pblist" value="">
+        </label>
         <button class="btn btn-blue mb-2">{{getText "button.upload"}}</button>
         <p class="text-muted text-sm">{{getText "importProblemWarn"}}</p>
     </form>
@@ -23,9 +35,14 @@ async function importProblem(e) {
 		return
 	}
 	form.append("testArchive", files[0]);
+    form.append("statementLang", document.getElementById("statementImport").value);
     const scoreParams = document.getElementById("importScoreParams").value;
     if(scoreParams.length > 0) {
         form.append("scoreParameters", scoreParams);
+    }
+    const pblistID = parseInt(document.getElementById("pb_import_pblist").value);
+    if(!isNaN(pblistID)) {
+        form.append("pblistID", pblistID);
     }
 
 	let res = await bundled.multipartProgressCall("/problem/import", form)

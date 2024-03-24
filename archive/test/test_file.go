@@ -88,7 +88,10 @@ func getTestID(name string) (int, *kilonova.StatusError) {
 		}
 
 		// maybe it's problem_name[.-_]%d.{in,sol,out} format
-		nm := strings.FieldsFunc(strings.TrimSuffix(name, path.Ext(name)), func(r rune) bool {
+		if ext := path.Ext(name); slices.Contains(testInputSuffixes, ext) || slices.Contains(testOutputSuffixes, ext) {
+			name = strings.TrimSuffix(name, ext)
+		}
+		nm := strings.FieldsFunc(name, func(r rune) bool {
 			return r == '-' || r == '.' || r == '_'
 		})
 		if len(nm) == 0 {

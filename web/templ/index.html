@@ -178,7 +178,7 @@
         {{ if boolFlag "frontend.donation.frontpage_nag"}}
         <div class="segment-panel">
             <h2>{{getText "support_kn"}} <i class="fas fa-hand-holding-dollar"></i></h2>
-            <p class="text-sm text-muted">{{getText "donate.front_page_par"}}</p>
+            <p class="text-sm text-muted">{{getText "donate.front_page_par" | safeHTML}}</p>
         </div>
         {{ end }}
         {{ end }}

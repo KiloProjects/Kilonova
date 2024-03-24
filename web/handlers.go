@@ -1571,9 +1571,8 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 
 	// Add request-specific functions
 	templ.Funcs(template.FuncMap{
-		"getText": func(line string, args ...any) template.HTML {
-			// TODO: How safe is this?
-			return template.HTML(kilonova.GetText(lang, line, args...))
+		"getText": func(line string, args ...any) string {
+			return kilonova.GetText(lang, line, args...)
 		},
 		"reqPath": func() string {
 			if r.URL.Path == "/login" || r.URL.Path == "/signup" {

@@ -2,7 +2,9 @@
 import toml
 import json
 
-print("Updating...")
+print(
+    "DEPRECATED: If you're still running this, it means that something is not ok. It will be removed soon"
+)
 
 targets = [
     "./_translations.json",
@@ -11,9 +13,9 @@ targets = [
     # "../sveltova/src/_translations.json"
 ]
 
-with open('./translations.toml', 'r') as f:
+with open("./translations.toml", "r") as f:
     vals = toml.load(f)
 
 for target in targets:
-    with open(target, 'w') as f:
+    with open(target, "w") as f:
         json.dump(vals, f)

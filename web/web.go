@@ -443,6 +443,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return template.HTML(s)
 		},
 		"unescapeHTML": html.UnescapeString,
+		"escapeHTML":   html.EscapeString,
 		"serverTime": func() string {
 			return time.Now().Format(time.RFC3339Nano)
 		},

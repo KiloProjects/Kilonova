@@ -5,7 +5,7 @@
 {{ define "content" }}
 
 <div class="segment-panel">
-    <h1 class="mb-2">{{getText "header.invitation" .Contest.Name}} {{if .Inviter}}{{getText "header.invitation.from" .Inviter.Name}}{{end}}</h1>
+    <h1 class="mb-2">{{getText "header.invitation" (escapeHTML .Contest.Name) | safeHTML}} {{if .Inviter}}{{getText "header.invitation.from" (escapeHTML .Inviter.Name) | safeHTML}}{{end}}</h1>
     {{if .Invite.Expired}}
         <p>{{getText "expiredInvite"}}</p>
     {{else if .AlreadyRegistered}}

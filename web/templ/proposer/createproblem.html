@@ -35,14 +35,16 @@
 <script>
 	async function createProblem(e) {
 		e.preventDefault();
-		let name = document.getElementById("pbname").value;
-		let cInput = document.getElementById("cInputSwitch").checked;
-        let stmt = document.getElementById("pbstatement").value;
-        let pblistID = parseInt(document.getElementById("pb_pblist").value);
-        if(isNaN(pblistID)) {
-            pblistID = undefined
+        let data = {
+            title: document.getElementById("pbname").value,
+            consoleInput: document.getElementById("cInputSwitch").checked,
+            statementLang: document.getElementById("pbstatement").value,
         }
-		let res = await bundled.postCall('/problem/create', {title: name, consoleInput: cInput, statementLang: stmt, pblistID})
+        const pblistID = parseInt(document.getElementById("pb_pblist").value);
+        if(!isNaN(pblistID)) {
+            data.pblistID = pblistID
+        }
+		const res = await bundled.postCall('/problem/create', data)
 		if(res.status == "error") {
 			bundled.apiToast(res)
 			return

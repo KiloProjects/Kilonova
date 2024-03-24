@@ -760,8 +760,8 @@ en = "Upload .zip test/problem data archive"
 ro = "Încărcare arhivă .zip cu teste/datele problemei"
 
 [polygonArchiveWarn]
-en = "Note for Polygon archives: only the checker, solutions and the <code>tests</code> testset data is taken into consideration. IMPORTANT! ONLY Full, Linux packages are oficially supported."
-ro = "Important pentru arhivele Polygon: doar checker-ul, sursele oficiale și testset-ul <code>tests</code> este luat în considerare. IMPORTANT! DOAR package-urile de tipul Full, Linux sunt suportate oficial."
+en = "Note for Polygon archives: only the checker, solutions and the <code>tests</code> testset data is taken into consideration. The platform does a best effort attempt to find and match groups and test scores, if supplied, however it likely won't be perfect (experimental feature, send message to admin for feedback). In ICPC mode, groups are ignored. Group dependencies are not chained, you need to list all of them explicitly. IMPORTANT! ONLY Full, Linux packages are oficially supported."
+ro = "Important pentru arhivele Polygon: doar checker-ul, sursele oficiale și testset-ul <code>tests</code> este luat în considerare. Platforma va încerca să deducă grupurile (subtaskurile) și scorurile pe teste, însă cel mai probabil nu va fi perfect (feature experimental, trimiteți mesaj adminului pentru feedback). În mod ICPC, groups sunt ignorate. Dependencies pentru grupuri nu sunt înlănțuite, trebuie selectate toate explicit. IMPORTANT! DOAR package-urile de tipul Full, Linux sunt suportate oficial."
 
 [archive]
 en = "Archive"

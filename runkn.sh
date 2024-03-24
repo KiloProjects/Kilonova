@@ -1,7 +1,7 @@
 #!/bin/bash
 
-echo "Regenerating translation strings"
-go generate
+echo "Regenerating translation strings..."
+go run ./scripts/toml_gen --target ./_translations.json --target ./web/assets/_translations.json
 
 if [[ $* == *--css* ]]; then
     echo "Regenerating CSS"

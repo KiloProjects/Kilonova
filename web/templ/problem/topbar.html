@@ -196,7 +196,7 @@
 {{ if and $problemPage .Topbar.Contest }}
 {{ if .Topbar.Contest.Ended }}
     <div>
-        {{getText "problem_contest_page_warning"}}
+        {{getText "problem_contest_page_warning" | safeHTML}}
     </div>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
