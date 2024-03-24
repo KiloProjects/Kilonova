@@ -7,7 +7,7 @@
     {{with stringFlag "frontend.front_page_announcement"}}
     <p class="text-gray-600 dark:text-gray-300 mb-1">
         {{if eq . "default"}}
-            {{ getText "announcement" (printf `<a target="_blank" rel="noopener noreferrer" href="https://discord.gg/%s">Discord</a>` (stringFlag "frontend.footer.discord_id")) }} 
+            {{ getText "announcement" (printf `<a target="_blank" rel="noopener noreferrer" href="https://discord.gg/%s">Discord</a>` (stringFlag "frontend.footer.discord_id")) | safeHTML }} 
         {{else}}
             {{ renderMarkdown . }}
         {{end}}
