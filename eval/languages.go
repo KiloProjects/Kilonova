@@ -27,7 +27,7 @@ var Langs = map[string]Language{
 		PrintableName: "C",
 		InternalName:  "c",
 
-		CompileCommand: []string{"gcc", "-fuse-ld=mold", "-std=c11", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
+		CompileCommand: []string{"gcc", "-fuse-ld=mold", "-std=c11", "-O2", "-lm", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.c",
 		CompiledName:   "/box/output",
