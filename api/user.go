@@ -205,6 +205,8 @@ func (s *API) updateUsername(w http.ResponseWriter, r *http.Request) {
 	var args struct {
 		UserID  *int   `json:"userID"`
 		NewName string `json:"newName"`
+
+		Password string `json:"password"`
 	}
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 500)
@@ -220,7 +222,15 @@ func (s *API) updateUsername(w http.ResponseWriter, r *http.Request) {
 		user = newUser
 	}
 
-	if err := s.base.UpdateUsername(r.Context(), user.ID, args.NewName, !util.UserBrief(r).Admin, util.UserBrief(r).Admin || util.UserFull(r).NameChangeForced); err != nil {
+	fromAdmin := util.UserBrief(r).Admin || util.UserFull(r).NameChangeForced
+	if !fromAdmin {
+		if err := s.base.VerifyUserPassword(r.Context(), user.ID, args.Password); err != nil {
+			err.WriteError(w)
+			return
+		}
+	}
+
+	if err := s.base.UpdateUsername(r.Context(), user.ID, args.NewName, !util.UserBrief(r).Admin, fromAdmin); err != nil {
 		err.WriteError(w)
 		return
 	}

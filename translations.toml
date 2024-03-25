@@ -1136,6 +1136,10 @@ ro = "Parolă nouă"
 en = "Confirm new password"
 ro = "Confirmare parolă nouă"
 
+[pwdConfirmation]
+en = "Confirm password"
+ro = "Confirmare parolă"
+
 [differentPwds]
 en = "Passwords do not match"
 ro = "Parolele nu se potrivesc"

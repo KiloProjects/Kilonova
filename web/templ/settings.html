@@ -27,6 +27,10 @@
         <span class="form-label">{{getText "newUsername"}}:</span>
         <input type="text" id="name_change_name" class="form-input" required/>
     </label>
+	<label class="block mb-2">
+		<span class="form-label">{{getText "pwdConfirmation"}}: </span>
+		<input class="form-input" type="password" id="name_change_pwd">
+	</label>
     <button class="btn btn-blue">{{getText "button.update"}}</button>
 </form>
 
@@ -49,12 +53,12 @@
 <form class="segment-panel" id="email_change_form">
 	<h2> {{getText "updateEmail"}} </h2>
 	<label class="block mb-2">
-		<span class="form-label">{{getText "password"}}: </span>
-		<input class="form-input" type="password" id="em_change_pwd">
-	</label>
-	<label class="block mb-2">
 		<span class="form-label">{{getText "newEmail"}}: </span>
 		<input class="form-input" type="email" id="em_change_email" autocomplete="off">
+	</label>
+	<label class="block mb-2">
+		<span class="form-label">{{getText "pwdConfirmation"}}: </span>
+		<input class="form-input" type="password" id="em_change_pwd">
 	</label>
 	<button type="submit" class="btn btn-blue">{{getText "button.update"}}</button>
 </form>
@@ -82,7 +86,8 @@ async function updateLanguage(e) {
 async function updateName(e) {
     e.preventDefault()
     const data = {
-        newName: document.getElementById("name_change_name").value
+        newName: document.getElementById("name_change_name").value,
+        password: document.getElementById("name_change_pwd").value,
     }
     const rez = await bundled.postCall("/user/updateName", data)
     if(rez.status == "error") {
