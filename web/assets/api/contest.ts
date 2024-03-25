@@ -18,7 +18,11 @@ export async function startContestRegistration(contestID: number) {
 		apiToast(res);
 		return;
 	}
-	window.location.reload();
+	if (window.location.pathname.startsWith(`/contests/${contestID}`)) {
+		window.location.reload();
+	} else {
+		window.location.assign(`/contests/${contestID}`);
+	}
 }
 
 export async function answerQuestion(q: Question, text: string) {

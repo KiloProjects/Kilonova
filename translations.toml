@@ -1840,8 +1840,8 @@ en = "Log in"
 ro = "Loghează-te"
 
 [register_login_text]
-en = "to register for this contest"
-ro = "pentru a te înregistra în concurs"
+en = "to register"
+ro = "pentru a te înregistra"
 
 [registered]
 en = "Registered"

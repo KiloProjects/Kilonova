@@ -1,6 +1,8 @@
 <div class="segment-panel my-1">
     <h2><a href="/contests/{{.ID}}">{{.Name}}</a></h2>
+    {{if or (eq .Type "virtual") (isContestEditor .)}}
     <p>{{ printf "contest_type.%s" .Type | getText }}</p>
+    {{end}}
     <p>{{getText "startTime"}}: <span class="server_timestamp">{{.StartTime.UnixMilli}}</span></p>
     <p>{{getText "duration"}}: {{contestDuration .}}</p>
     <p>{{getText "status"}}: 

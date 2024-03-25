@@ -187,11 +187,37 @@
 
 
 {{end}}
+
+{{define "contest_sidebar_register_url"}}
+    {{ $reg := (contestRegistration .) }}
+    {{if authed }}
+        {{ if $reg }}
+            {{ if (and .Running (isUSACOstyle .)) }}
+                {{ if not (startedUSACO . $reg) }}
+                    - <a href="#" onclick="event.preventDefault(), bundled.startContestRegistration({{.ID}})">{{getText "start_contest"}}</a>
+                {{ else if (endedUSACO . $reg) }}
+                    - <span>{{getText "time_elapsed"}}</span>
+                {{ else }}
+                    - <span>{{getText "started"}}</span>
+                {{ end }}
+            {{ else }}
+                - <span>{{getText "registered"}}</span>
+            {{ end }}
+        {{ else if (canJoinContest .)}}
+            - <a href="#" onclick="event.preventDefault(), bundled.registerForContest({{.ID}})">{{getText "register_btn"}}</a>
+        {{ end }}
+    {{ else if (canJoinContest .)}}
+        - <a href="/login?back={{reqPath}}">{{getText "register_login_anchor"}}</a> {{getText "register_login_text"}}
+    {{ end }}
+{{end}}
+
 {{define "contest_sidebar_view"}}
 {{range .}}
 <div class="segment-panel my-1">
-    <h2>{{.Name}}</h2>
+    <h2><a href="/contests/{{.ID}}">{{.Name}}</a></h3>
+    {{if or (eq .Type "virtual") (isContestEditor .)}}
     <p>{{ printf "contest_type.%s" .Type | getText }}</p>
+    {{end}}
     <p>
         {{if .Ended}}
             {{getText "contest_ended"}}
@@ -201,7 +227,7 @@
         {{else}}
             {{getText "contest_starting_in"}}
             <kn-contest-countdown target_time="{{.StartTime.UnixMilli}}" type="before_start"></kn-contest-countdown>
-        {{end}}
+        {{end}} {{template "contest_sidebar_register_url" .}}
     </p>
     {{ if isUSACOstyle . }}
     <p>{{getText "contest_user_time"}}: {{usacoDuration .}}</p>
@@ -222,7 +248,6 @@
         {{end}}
     </p>
     {{ end }}
-    <a href="/contests/{{.ID}}" class="btn btn-blue mt-2">{{getText "view_details"}}</a>
 </div>
 {{end}}
 {{end}}
