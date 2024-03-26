@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
@@ -16,8 +15,6 @@ var _ eval.BoxScheduler = &BoxManager{}
 
 // BoxManager manages a box with eval-based submissions
 type BoxManager struct {
-	dm kilonova.GraderStore
-
 	numConcurrent int64
 	concSem       *semaphore.Weighted
 	memSem        *semaphore.Weighted
@@ -42,8 +39,6 @@ func (b *BoxManager) SubRunner(ctx context.Context, numConc int64) (eval.BoxSche
 	}
 
 	return &BoxManager{
-		dm: b.dm,
-
 		numConcurrent: numConc,
 		concSem:       semaphore.NewWeighted(numConc),
 		memSem:        b.memSem,
@@ -108,7 +103,7 @@ func (b *BoxManager) Close(ctx context.Context) error {
 }
 
 // New creates a new box manager
-func New(startingNumber int, count int, maxMemory int64, dm kilonova.GraderStore, logger *zap.SugaredLogger, boxGenerator BoxFunc) (*BoxManager, error) {
+func New(startingNumber int, count int, maxMemory int64, logger *zap.SugaredLogger, boxGenerator BoxFunc) (*BoxManager, error) {
 
 	if startingNumber < 0 {
 		startingNumber = 0
@@ -120,7 +115,6 @@ func New(startingNumber int, count int, maxMemory int64, dm kilonova.GraderStore
 	}
 
 	bm := &BoxManager{
-		dm:            dm,
 		concSem:       semaphore.NewWeighted(int64(count)),
 		memSem:        semaphore.NewWeighted(maxMemory),
 		availableIDs:  availableIDs,

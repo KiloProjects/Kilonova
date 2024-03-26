@@ -6,6 +6,10 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"time"
+
+	"github.com/KiloProjects/kilonova"
+	"go.uber.org/zap"
 )
 
 type Bucket struct {
@@ -20,6 +24,34 @@ type Bucket struct {
 	// 0 = flate.NoCompression
 	// -1 = flate.DefaultCompression
 	CompressionLevel int
+
+	lastStats    *BucketStats
+	lastStatTime time.Time
+}
+
+type BucketStats struct {
+	Name  string
+	Cache bool
+
+	NumItems   int
+	OnDiskSize int64
+}
+
+func (b *Bucket) Statistics() *BucketStats {
+	if time.Since(b.lastStatTime) > 1*time.Minute {
+		b.lastStats = &BucketStats{Name: b.Name, Cache: b.Cache}
+		b.IterFiles(func(entry fs.DirEntry) error {
+			info, err := entry.Info()
+			if err != nil {
+				zap.S().Warn(err)
+				return nil
+			}
+			b.lastStats.NumItems++
+			b.lastStats.OnDiskSize += info.Size()
+			return nil
+		})
+	}
+	return b.lastStats
 }
 
 func (b *Bucket) Init() error {
@@ -68,7 +100,14 @@ func (b *Bucket) Reader(name string) (io.ReadCloser, error) {
 	f, err := os.Open(b.filePath(name) + ".gz")
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return os.Open(b.filePath(name))
+			f, err := os.Open(b.filePath(name))
+			if err != nil {
+				if errors.Is(err, fs.ErrNotExist) {
+					return nil, kilonova.ErrNotExist
+				}
+				return nil, err
+			}
+			return f, nil
 		}
 		return nil, err
 	}
@@ -88,6 +127,9 @@ func (b *Bucket) ReadSeeker(name string) (io.ReadSeekCloser, error) {
 		if errors.Is(err, fs.ErrNotExist) {
 			f, err = os.Open(b.filePath(name) + ".gz")
 			if err != nil {
+				if errors.Is(err, fs.ErrNotExist) {
+					return nil, kilonova.ErrNotExist
+				}
 				return nil, err
 			}
 			f2 := &deletingClosedFile{f}
@@ -152,11 +194,12 @@ func (b *Bucket) ResetCache() error {
 		}
 		return nil
 	})
+	b.lastStatTime = time.Time{}
 	return errors.Join(errs...)
 }
 
 func NewBucket(path string, name string, compressionLevel int, cache bool) (*Bucket, error) {
-	b := &Bucket{path, name, cache, compressionLevel}
+	b := &Bucket{path, name, cache, compressionLevel, nil, time.Time{}}
 	return b, b.Init()
 }
 

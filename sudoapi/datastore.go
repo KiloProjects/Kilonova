@@ -1,59 +1,75 @@
 package sudoapi
 
 import (
+	"bytes"
+	"errors"
 	"io"
+	"io/fs"
+	"strconv"
+	"strings"
 
-	"github.com/KiloProjects/kilonova"
 	"go.uber.org/zap"
+	"vimagination.zapto.org/dos2unix"
 )
 
-func (s *BaseAPI) GraderStore() kilonova.GraderStore {
-	return s.manager
-}
-
 func (s *BaseAPI) PurgeTestData(testID int) error {
-	if err := s.manager.PurgeTestData(testID); err != nil {
+	if err := errors.Join(
+		s.testBucket.RemoveFile(strconv.Itoa(testID)+".in"),
+		s.testBucket.RemoveFile(strconv.Itoa(testID)+".out"),
+	); err != nil {
 		return WrapError(err, "Could not purge test data")
 	}
 	return nil
 }
 
+func (s *BaseAPI) TestInput(testID int) (io.ReadCloser, error) {
+	return s.testBucket.Reader(strconv.Itoa(testID) + ".in")
+}
+func (s *BaseAPI) TestOutput(testID int) (io.ReadCloser, error) {
+	return s.testBucket.Reader(strconv.Itoa(testID) + ".out")
+}
+func (s *BaseAPI) SubtestReader(subtest int) (io.ReadCloser, error) {
+	return s.subtestBucket.Reader(strconv.Itoa(subtest))
+}
+
 func (s *BaseAPI) SaveTestInput(testID int, input io.Reader) error {
-	if err := s.manager.SaveTestInput(testID, input); err != nil {
+	if err := s.testBucket.WriteFile(strconv.Itoa(testID)+".in", dos2unix.DOS2Unix(input), 0644); err != nil {
 		return WrapError(err, "Could not save test input")
 	}
 	return nil
 }
 
 func (s *BaseAPI) SaveTestOutput(testID int, output io.Reader) error {
-	if err := s.manager.SaveTestOutput(testID, output); err != nil {
+	if err := s.testBucket.WriteFile(strconv.Itoa(testID)+".out", dos2unix.DOS2Unix(output), 0644); err != nil {
 		return WrapError(err, "Could not save test output")
 	}
 	return nil
 }
 
-func (s *BaseAPI) HasAttachmentRender(attID int, renderType string) bool {
-	return s.manager.HasAttachmentRender(attID, renderType)
-}
-
-func (s *BaseAPI) GetAttachmentRender(attID int, renderType string) (io.ReadCloser, error) {
-	f, err := s.manager.GetAttachmentRender(attID, renderType)
+func (s *BaseAPI) GetAttachmentRender(attID int, renderType string) (io.ReadSeekCloser, error) {
+	f, err := s.attachmentCacheBucket.ReadSeeker(attachmentCacheBucketName(attID, renderType))
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get rendered attachment")
 	}
 	return f, nil
 }
 
-func (s *BaseAPI) DelAttachmentRender(attID int, renderType string) error {
-	if err := s.manager.DelAttachmentRender(attID, renderType); err != nil {
-		zap.S().Warn("Couldn't delete attachment render: ", err)
-		return WrapError(err, "Couldn't delete attachment render")
-	}
-	return nil
-}
-
 func (s *BaseAPI) DelAttachmentRenders(attID int) error {
-	if err := s.manager.DelAttachmentRenders(attID); err != nil {
+	if err := s.attachmentCacheBucket.IterFiles(func(entry fs.DirEntry) error {
+		prefix, _, _ := strings.Cut(entry.Name(), ".")
+		id, err := strconv.Atoi(prefix)
+		if err != nil {
+			zap.S().Warn("Attachment renders should start with attachment ID:", entry.Name())
+			return nil
+		}
+		if id != attID {
+			return nil
+		}
+		if err := s.attachmentCacheBucket.RemoveFile(entry.Name()); err != nil {
+			zap.S().Warn("Could not delete attachment render: ", err)
+		}
+		return nil
+	}); err != nil {
 		zap.S().Warn("Couldn't delete attachment renders: ", err)
 		return WrapError(err, "Couldn't delete attachment renders")
 	}
@@ -61,17 +77,13 @@ func (s *BaseAPI) DelAttachmentRenders(attID int) error {
 }
 
 func (s *BaseAPI) SaveAttachmentRender(attID int, renderType string, data []byte) error {
-	if err := s.manager.SaveAttachmentRender(attID, renderType, data); err != nil {
+	if err := s.attachmentCacheBucket.WriteFile(attachmentCacheBucketName(attID, renderType), bytes.NewReader(data), 0644); err != nil {
 		zap.S().Warn("Couldn't save rendered attachment: ", err)
 		return WrapError(err, "Couldn't delete rendered attachment")
 	}
 	return nil
 }
 
-func (s *BaseAPI) InvalidateAllAttachments() error {
-	if err := s.manager.InvalidateAllAttachments(); err != nil {
-		zap.S().Warn("Couldn't invalidate all attachments: ", err)
-		return WrapError(err, "Couldn't invalidate attachment renders")
-	}
-	return nil
+func attachmentCacheBucketName(attID int, renderType string) string {
+	return strconv.Itoa(attID) + "." + renderType
 }

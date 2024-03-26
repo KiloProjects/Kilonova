@@ -271,15 +271,13 @@ func (s *BaseAPI) BlogPostDescVariants(ctx context.Context, problemID int, getPr
 }
 
 func (s *BaseAPI) getCachedAttachment(attID int, renderType string) ([]byte, bool) {
-	if s.HasAttachmentRender(attID, renderType) {
-		r, err := s.GetAttachmentRender(attID, renderType)
+	r, err := s.GetAttachmentRender(attID, renderType)
+	if err == nil {
+		data, err := io.ReadAll(r)
 		if err == nil {
-			data, err := io.ReadAll(r)
-			if err == nil {
-				return data, true
-			} else {
-				zap.S().Warn("Error reading cache: ", err)
-			}
+			return data, true
+		} else {
+			zap.S().Warn("Error reading cache: ", err)
 		}
 	}
 	return nil, false
@@ -310,7 +308,7 @@ func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Pro
 		if err != nil {
 			return data, WrapError(err, "Couldn't render markdown")
 		}
-		if err := s.manager.SaveAttachmentRender(att.ID, "mdhtml", buf); err != nil {
+		if err := s.SaveAttachmentRender(att.ID, "mdhtml", buf); err != nil {
 			zap.S().Warn("Couldn't save attachment to cache: ", err)
 		}
 		return buf, nil
@@ -344,7 +342,7 @@ func (s *BaseAPI) RenderedBlogPostDesc(ctx context.Context, post *kilonova.BlogP
 		if err != nil {
 			return data, WrapError(err, "Couldn't render markdown")
 		}
-		if err := s.manager.SaveAttachmentRender(att.ID, "mdhtml", buf); err != nil {
+		if err := s.SaveAttachmentRender(att.ID, "mdhtml", buf); err != nil {
 			zap.S().Warn("Couldn't save attachment to cache: ", err)
 		}
 		return buf, nil

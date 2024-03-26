@@ -298,9 +298,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 		return decimal.Zero, "", kilonova.Statusf(400, "Trying to handle subtest whose test was purged. This should never happen")
 	}
 
-	ds := base.GraderStore()
-
-	tin, err := ds.TestInput(*subTest.TestID)
+	tin, err := base.TestInput(*subTest.TestID)
 	if err != nil {
 		return decimal.Zero, "", kilonova.Statusf(500, "Couldn't open test input")
 	}
@@ -319,7 +317,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 		execRequest.Filename = "stdin"
 	}
 
-	resp, err := tasks.GetExecuteTask(graderLogger, ds).Run(ctx, runner, int64(problem.MemoryLimit), execRequest)
+	resp, err := tasks.GetExecuteTask(graderLogger).Run(ctx, runner, int64(problem.MemoryLimit), execRequest)
 	if err != nil {
 		return decimal.Zero, "", kilonova.WrapError(err, "Couldn't execute subtest")
 	}
@@ -333,7 +331,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 
 	if resp.Comments == "" {
 		var skipped bool
-		tin, err := ds.TestInput(*subTest.TestID)
+		tin, err := base.TestInput(*subTest.TestID)
 		if err != nil {
 			resp.Comments = "translate:internal_error"
 			skipped = true
@@ -341,7 +339,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 		if tin != nil {
 			defer tin.Close()
 		}
-		tout, err := ds.TestOutput(*subTest.TestID)
+		tout, err := base.TestOutput(*subTest.TestID)
 		if err != nil {
 			resp.Comments = "translate:internal_error"
 			skipped = true
@@ -349,7 +347,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 		if tout != nil {
 			defer tout.Close()
 		}
-		sout, err := ds.SubtestReader(subTest.ID)
+		sout, err := base.SubtestReader(subTest.ID)
 		if err != nil {
 			resp.Comments = "translate:internal_error"
 			skipped = true
@@ -456,7 +454,7 @@ func scoreTests(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submis
 
 var ForceSecureSandbox = config.GenFlag[bool]("feature.grader.force_secure_sandbox", true, "Force use of secure sandbox only. Should be always enabled in production environments")
 
-func getAppropriateRunner(base *sudoapi.BaseAPI) (eval.BoxScheduler, error) {
+func getAppropriateRunner() (eval.BoxScheduler, error) {
 	var boxFunc scheduler.BoxFunc
 	var boxVersion string = "NONE"
 	if scheduler.CheckCanRun(box.New) {
@@ -472,7 +470,7 @@ func getAppropriateRunner(base *sudoapi.BaseAPI) (eval.BoxScheduler, error) {
 	}
 
 	zap.S().Info("Trying to spin up local grader")
-	bm, err := scheduler.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, base.GraderStore(), graderLogger, boxFunc)
+	bm, err := scheduler.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, graderLogger, boxFunc)
 	if err != nil {
 		return nil, err
 	}

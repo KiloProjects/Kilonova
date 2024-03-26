@@ -2735,3 +2735,19 @@ ro = "Metrici"
 [value]
 en = "Value"
 ro = "Valoare"
+
+[buckets]
+en = "Buckets"
+ro = "Bucket-uri"
+
+[clearCache]
+en = "Clear cache"
+ro = "Golire cache"
+
+[objectCount]
+en = "Object count"
+ro = "Numărul de obiecte"
+
+[diskSize]
+en = "Size on disk"
+ro = "Dimensiune pe disc"

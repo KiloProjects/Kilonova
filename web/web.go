@@ -33,6 +33,7 @@ import (
 	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/benbjohnson/hashfs"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/dustin/go-humanize"
 	"github.com/go-chi/chi/v5"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
@@ -548,6 +549,10 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"KBtoMB": func(kb int) float64 {
 			return math.Round(float64(kb)/1024.0*100) / 100.0
 		},
+		"humanizeBytes": func(cnt int64) string {
+			return humanize.Bytes(uint64(cnt))
+		},
+		"titleName":  strings.Title, // Temporary, for buckets
 		"hashedName": fsys.HashName,
 		"version":    func() string { return kilonova.Version },
 		"debug":      func() bool { return config.Common.Debug },

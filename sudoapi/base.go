@@ -29,16 +29,20 @@ type Submissions struct {
 }
 
 type BaseAPI struct {
-	db      *db.DB
-	manager kilonova.DataStore
-	mailer  kilonova.Mailer
-	rd      kilonova.MarkdownRenderer
+	db     *db.DB
+	mailer kilonova.Mailer
+	rd     kilonova.MarkdownRenderer
 
 	sessionUserCache *theine.LoadingCache[string, *kilonova.UserFull]
 
 	grader interface{ Wake() }
 
 	logChan chan *logEntry
+
+	testBucket            *datastore.Bucket
+	attachmentCacheBucket *datastore.Bucket
+	subtestBucket         *datastore.Bucket
+	avatarBucket          *datastore.Bucket
 }
 
 func (s *BaseAPI) Start(ctx context.Context) {
@@ -55,17 +59,21 @@ func (s *BaseAPI) Close() *StatusError {
 	return nil
 }
 
-func GetBaseAPI(db *db.DB, manager kilonova.DataStore, mailer kilonova.Mailer) (*BaseAPI, *StatusError) {
+func GetBaseAPI(db *db.DB, mailer kilonova.Mailer) (*BaseAPI, *StatusError) {
 	base := &BaseAPI{
-		db:      db,
-		manager: manager,
-		mailer:  mailer,
-		rd:      mdrenderer.NewLocalRenderer(),
+		db:     db,
+		mailer: mailer,
+		rd:     mdrenderer.NewLocalRenderer(),
 
 		sessionUserCache: nil,
 
 		grader:  nil,
 		logChan: make(chan *logEntry, 50),
+
+		testBucket:            datastore.GetBucket(datastore.BucketTypeTests),
+		attachmentCacheBucket: datastore.GetBucket(datastore.BucketTypeAttachments),
+		subtestBucket:         datastore.GetBucket(datastore.BucketTypeSubtests),
+		avatarBucket:          datastore.GetBucket(datastore.BucketTypeAvatars),
 	}
 	sUserCache, err := theine.NewBuilder[string, *kilonova.UserFull](500).BuildWithLoader(func(ctx context.Context, sid string) (theine.Loaded[*kilonova.UserFull], error) {
 		user, err := base.sessionUser(ctx, sid)
@@ -94,8 +102,7 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, *StatusError) {
 		return nil, WrapError(err, "Couldn't create data dir")
 	}
 
-	manager, err := datastore.NewManager(config.Common.DataDir)
-	if err != nil {
+	if err := datastore.InitBuckets(config.Common.DataDir); err != nil {
 		return nil, WrapError(err, "Couldn't initialize data store")
 	}
 
@@ -116,5 +123,5 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, *StatusError) {
 	}
 	zap.S().Info("Connected to DB")
 
-	return GetBaseAPI(db, manager, knMailer)
+	return GetBaseAPI(db, knMailer)
 }

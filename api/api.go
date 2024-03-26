@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/go-chi/chi/v5"
@@ -48,18 +49,22 @@ func (s *API) Handler() http.Handler {
 			r.Post("/resetWaitingSubs", webMessageWrapper("Reset waiting subs", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
 				return s.base.ResetWaitingSubmissions(ctx)
 			}))
-			r.Post("/invalidateAttachments", webMessageWrapper("Invalidated attachments", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
-				if err := s.base.InvalidateAllAttachments(); err != nil {
-					return err.(*kilonova.StatusError)
-				}
-				return nil
-			}))
 			r.Post("/invalidateCheckers", webMessageWrapper("Invalidated checkers", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
 				return s.base.InvalidateCheckers()
 			}))
-			r.Post("/invalidateAvatars", webMessageWrapper("Invalidated avatars", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
-				if err := s.base.PurgeAvatarCache(); err != nil {
-					return err.(*kilonova.StatusError)
+			r.Post("/cleanBucketCache", webMessageWrapper("Reset bucket cache", func(ctx context.Context, args struct {
+				Name datastore.BucketType `json:"name"`
+			}) *kilonova.StatusError {
+				if !args.Name.Valid() {
+					return kilonova.Statusf(400, "Invalid bucket")
+				}
+				b := datastore.GetBucket(args.Name)
+				if !b.Cache {
+					return kilonova.Statusf(403, "Refusing to remove non-cache bucket")
+				}
+				if err := b.ResetCache(); err != nil {
+					zap.S().Warnf("Could not reset %q cache: %v", args.Name, err)
+					return kilonova.WrapError(err, "Could not reset cache")
 				}
 				return nil
 			}))

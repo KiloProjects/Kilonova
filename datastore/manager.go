@@ -1,119 +1,101 @@
 package datastore
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
-	"fmt"
-	"io"
 	"os"
-	"strconv"
-	"sync"
-	"time"
 
-	"github.com/KiloProjects/kilonova"
-	"vimagination.zapto.org/dos2unix"
+	"go.uber.org/zap"
 )
 
-// StorageManager helps open the files in the data directory, this is supposed to be data that should not be stored in the DB
-type StorageManager struct {
-	subtestBucket *Bucket
-	testBucket    *Bucket
-	avatarsBucket *Bucket
+type BucketType string
 
-	attMu     sync.RWMutex
-	attBucket *Bucket
+const (
+	BucketTypeNone        BucketType = ""
+	BucketTypeTests       BucketType = "tests"
+	BucketTypeSubtests    BucketType = "subtests"
+	BucketTypeAttachments BucketType = "attachments"
+	BucketTypeAvatars     BucketType = "avatars"
+)
+
+func (t BucketType) Valid() bool {
+	return t == BucketTypeTests || t == BucketTypeSubtests ||
+		t == BucketTypeAttachments || t == BucketTypeAvatars
 }
 
-var _ kilonova.DataStore = &StorageManager{}
+type bucketDef struct {
+	Name    BucketType
+	IsCache bool
 
-// NewManager returns a new manager instance
-func NewManager(p string) (kilonova.DataStore, error) {
-	if err := os.MkdirAll(p, 0755); err != nil {
-		return nil, err
+	CompressionLevel int
+}
+
+var (
+	buckets     = make(map[BucketType]*Bucket)
+	initialized = false
+
+	// TODO: Do better...
+	bucketData = []bucketDef{
+		{
+			Name:    BucketTypeSubtests,
+			IsCache: false,
+
+			CompressionLevel: NoCompression,
+		},
+		{
+			Name:    BucketTypeTests,
+			IsCache: false,
+
+			CompressionLevel: DefaultCompression,
+		},
+		{
+			Name:    BucketTypeAttachments,
+			IsCache: true,
+
+			CompressionLevel: NoCompression,
+		},
+		{
+			Name:    BucketTypeAvatars,
+			IsCache: true,
+
+			CompressionLevel: NoCompression,
+		},
 	}
+)
 
-	sb, err := NewBucket(p, "subtests", NoCompression, false)
-	if err != nil {
-		return nil, err
+func init() {
+	for _, b := range bucketData {
+		buckets[b.Name] = nil
 	}
+}
 
-	tb, err := NewBucket(p, "tests", DefaultCompression, false)
-	if err != nil {
-		return nil, err
+func InitBuckets(p string) error {
+	if initialized {
+		return errors.New("buckets already initialized")
 	}
-
-	attb, err := NewBucket(p, "attachments", NoCompression, true)
-	if err != nil {
-		return nil, err
+	initialized = true
+	if err := os.MkdirAll(p, 0777); err != nil {
+		return err
 	}
-
-	avb, err := NewBucket(p, "avatars", NoCompression, true)
-	if err != nil {
-		return nil, err
+	for _, b := range bucketData {
+		bucket, err := NewBucket(p, string(b.Name), b.CompressionLevel, b.IsCache)
+		if err != nil {
+			return err
+		}
+		buckets[b.Name] = bucket
 	}
-
-	return &StorageManager{subtestBucket: sb, testBucket: tb, avatarsBucket: avb, attBucket: attb}, nil
+	return nil
 }
 
-// SubtestWriter should be used by the eval server
-func (m *StorageManager) SubtestWriter(subtest int) (io.WriteCloser, error) {
-	return m.subtestBucket.Writer(strconv.Itoa(subtest), 0644)
+func IsBucket(name BucketType) bool {
+	_, ok := buckets[name]
+	return ok
 }
 
-// SubtestReader should be used by the grader
-func (m *StorageManager) SubtestReader(subtest int) (io.ReadCloser, error) {
-	return m.subtestBucket.Reader(strconv.Itoa(subtest))
-}
-
-func (m *StorageManager) TestInput(testID int) (io.ReadCloser, error) {
-	return m.testBucket.Reader(strconv.Itoa(testID) + ".in")
-}
-
-func (m *StorageManager) SaveTestInput(testID int, input io.Reader) error {
-	return m.testBucket.WriteFile(strconv.Itoa(testID)+".in", dos2unix.DOS2Unix(input), 0644)
-}
-
-func (m *StorageManager) TestOutput(testID int) (io.ReadCloser, error) {
-	return m.testBucket.Reader(strconv.Itoa(testID) + ".out")
-}
-
-func (m *StorageManager) SaveTestOutput(testID int, output io.Reader) error {
-	return m.testBucket.WriteFile(strconv.Itoa(testID)+".out", dos2unix.DOS2Unix(output), 0644)
-}
-
-func (m *StorageManager) SaveAvatar(email string, size int, r io.Reader) error {
-	return m.avatarsBucket.WriteFile(m.avatarName(email, size), r, 0644)
-}
-
-func (m *StorageManager) GetAvatar(email string, size int, maxLastMod time.Time) (io.ReadSeekCloser, time.Time, bool, error) {
-	f, err := m.avatarsBucket.ReadSeeker(m.avatarName(email, size))
-	if err != nil {
-		return nil, time.Unix(0, 0), false, err
+// GetBucket panics if there is no bucket with that name
+func GetBucket(name BucketType) *Bucket {
+	b, ok := buckets[name]
+	if !ok {
+		zap.S().Fatalf("No bucket found with name %q", name)
 	}
-	stat, err := m.avatarsBucket.Stat(m.avatarName(email, size))
-	if err != nil {
-		f.Close()
-		return nil, time.Unix(0, 0), false, err
-	}
-	if stat.ModTime().Before(maxLastMod) {
-		return f, stat.ModTime(), false, nil
-	}
-	return f, stat.ModTime(), true, nil
-}
-
-func (m *StorageManager) PurgeTestData(testID int) error {
-	return errors.Join(
-		m.testBucket.RemoveFile(strconv.Itoa(testID)+".in"),
-		m.testBucket.RemoveFile(strconv.Itoa(testID)+".out"),
-	)
-}
-
-func (m *StorageManager) PurgeAvatarCache() error {
-	return m.avatarsBucket.ResetCache()
-}
-
-func (m *StorageManager) avatarName(email string, size int) string {
-	bSum := sha256.Sum256([]byte(email))
-	return fmt.Sprintf("%s-%d.png", hex.EncodeToString(bSum[:]), size)
+	return b
 }

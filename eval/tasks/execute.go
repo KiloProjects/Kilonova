@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
-	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/davecgh/go-spew/spew"
 	"go.uber.org/zap"
@@ -29,7 +30,7 @@ type ExecResponse struct {
 	Comments   string
 }
 
-func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Task[ExecRequest, ExecResponse] {
+func GetExecuteTask(logger *zap.SugaredLogger) eval.Task[ExecRequest, ExecResponse] {
 	return func(ctx context.Context, box eval.Sandbox, req *ExecRequest) (*ExecResponse, error) {
 		resp := &ExecResponse{}
 		logger.Infof("Executing test %d (for submission #%d) using box %d", req.SubtestID, req.SubID, box.GetID())
@@ -85,7 +86,7 @@ func GetExecuteTask(logger *zap.SugaredLogger, dm kilonova.GraderStore) eval.Tas
 			return resp, nil
 		}
 
-		w, err := dm.SubtestWriter(req.SubtestID)
+		w, err := datastore.GetBucket(datastore.BucketTypeSubtests).Writer(strconv.Itoa(req.SubtestID), 0644)
 		if err != nil {
 			resp.Comments = "Could not open problem output"
 			return resp, nil

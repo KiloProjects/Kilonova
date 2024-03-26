@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -352,43 +353,58 @@ func getGravatar(email string, size int) (io.ReadSeekCloser, time.Time, error) {
 	return &bytesReaderCloser{bytes.NewReader(buf)}, time, nil
 }
 
+func avatarBucketName(email string, size int) string {
+	bSum := sha256.Sum256([]byte(email))
+	return fmt.Sprintf("%s-%d.png", hex.EncodeToString(bSum[:]), size)
+}
+
 // SaveAvatar wraps DataStore's SaveAvatar
 // if r is nil, it fetches the gravatar from the web
 func (s *BaseAPI) SaveAvatar(email string, size int, r io.Reader) error {
 	if r != nil {
-		return s.manager.SaveAvatar(email, size, r)
+		return s.avatarBucket.WriteFile(avatarBucketName(email, size), r, 0644)
 	}
 
 	r, _, err := getGravatar(email, size)
 	if err != nil {
 		return err
 	}
-	return s.manager.SaveAvatar(email, size, r)
+	return s.avatarBucket.WriteFile(avatarBucketName(email, size), r, 0644)
+}
+
+// valid is true only if maxLastMod is greater than the saved value and if the avatar is saved
+func (s *BaseAPI) avatarFromBucket(email string, size int, maxLastMod time.Time) (io.ReadSeekCloser, time.Time, bool, error) {
+	f, err := s.avatarBucket.ReadSeeker(avatarBucketName(email, size))
+	if err != nil {
+		return nil, time.Unix(0, 0), false, err
+	}
+	stat, err := s.avatarBucket.Stat(avatarBucketName(email, size))
+	if err != nil {
+		f.Close()
+		return nil, time.Unix(0, 0), false, err
+	}
+	if stat.ModTime().Before(maxLastMod) {
+		return f, stat.ModTime(), false, nil
+	}
+	return f, stat.ModTime(), true, nil
 }
 
 // GetAvatar wraps DataStore's GetAvatar
 // if manager.GetAvatar errors out or is not valid, it fetches the gravatar from the web
 func (s *BaseAPI) GetAvatar(email string, size int, maxLastMod time.Time) (io.ReadSeekCloser, time.Time, bool, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
-	if r, t, valid, err := s.manager.GetAvatar(email, size, maxLastMod); valid && err == nil {
+	if r, t, valid, err := s.avatarFromBucket(email, size, maxLastMod); valid && err == nil {
 		return r, t, valid, err
 	}
 	r, t, err := getGravatar(email, size)
 	if err != nil {
 		return r, t, false, err
 	}
-	if err := s.manager.SaveAvatar(email, size, r); err != nil {
+	if err := s.SaveAvatar(email, size, r); err != nil {
 		zap.S().Warn("Could not save avatar:", err)
 	}
 	r.Seek(0, io.SeekStart)
 	return r, t, true, nil
-}
-
-func (s *BaseAPI) PurgeAvatarCache() error {
-	if err := s.manager.PurgeAvatarCache(); err != nil {
-		return WrapError(err, "Could not purge avatar cache")
-	}
-	return nil
 }
 
 type bytesReaderCloser struct{ *bytes.Reader }

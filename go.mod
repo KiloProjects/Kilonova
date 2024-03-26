@@ -44,6 +44,8 @@ require (
 
 require github.com/dchest/captcha v1.0.0
 
+require github.com/dustin/go-humanize v1.0.1
+
 require (
 	github.com/antchfx/xpath v1.2.5 // indirect
 	github.com/dlclark/regexp2 v1.11.0 // indirect

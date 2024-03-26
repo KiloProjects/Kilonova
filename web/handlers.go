@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
@@ -498,9 +499,20 @@ func (rt *Web) debugPage() http.HandlerFunc {
 			}
 			finalMetrics = append(finalMetrics, m)
 		}
+
+		var stats = make([]*datastore.BucketStats, 0, 10)
+		for _, bucket := range []datastore.BucketType{
+			datastore.BucketTypeTests, datastore.BucketTypeSubtests,
+			datastore.BucketTypeAvatars, datastore.BucketTypeAttachments,
+		} {
+			stats = append(stats, datastore.GetBucket(bucket).Statistics())
+		}
+
 		rt.runTempl(w, r, templ, &struct {
 			Metrics []*Metric
-		}{finalMetrics})
+
+			BucketStats []*datastore.BucketStats
+		}{finalMetrics, stats})
 	}
 }
 

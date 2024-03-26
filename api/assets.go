@@ -136,19 +136,15 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 		}
 
 		renderType := fmt.Sprintf("img_%dx%d", width, height)
-		if s.base.HasAttachmentRender(att.ID, renderType) {
-			data, err := s.base.GetAttachmentRender(att.ID, renderType)
-			if err != nil {
+		data, err := s.base.GetAttachmentRender(att.ID, renderType)
+		if err != nil {
+			if !errors.Is(err, kilonova.ErrNotExist) {
 				zap.S().Warn(err)
-			} else {
-				defer data.Close()
-				cachedData, err := io.ReadAll(data)
-				if err != nil {
-					zap.S().Warn(err)
-				}
-				http.ServeContent(w, r, att.Name, att.LastUpdatedAt, bytes.NewReader(cachedData))
-				return
 			}
+		} else {
+			defer data.Close()
+			http.ServeContent(w, r, att.Name, att.LastUpdatedAt, data)
+			return
 		}
 
 		src, _, err := image.Decode(bytes.NewReader(attData))
@@ -313,7 +309,7 @@ func (s *Assets) ServeSubtest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rc, err := s.base.GraderStore().SubtestReader(subtest.ID)
+	rc, err := s.base.SubtestReader(subtest.ID)
 	if err != nil {
 		http.Error(w, "The subtest may have been purged as a routine data-saving process", 404)
 		return
@@ -324,7 +320,7 @@ func (s *Assets) ServeSubtest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Assets) ServeTestInput(w http.ResponseWriter, r *http.Request) {
-	rr, err := s.base.GraderStore().TestInput(util.Test(r).ID)
+	rr, err := s.base.TestInput(util.Test(r).ID)
 	if err != nil {
 		zap.S().Warn(err)
 		http.Error(w, "Couldn't get test input", 500)
@@ -340,7 +336,7 @@ func (s *Assets) ServeTestInput(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Assets) ServeTestOutput(w http.ResponseWriter, r *http.Request) {
-	rr, err := s.base.GraderStore().TestOutput(util.Test(r).ID)
+	rr, err := s.base.TestOutput(util.Test(r).ID)
 	if err != nil {
 		zap.S().Warn(err)
 		http.Error(w, "Couldn't get test output", 500)

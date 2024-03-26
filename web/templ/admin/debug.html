@@ -7,25 +7,47 @@
 
     <div class="block my-2">
         <button class="btn btn-blue font-bold mr-2" onclick="resetSubs()">{{getText "resetSubs"}}</button>
-        <button class="btn btn-blue font-bold mr-2" onclick="invalidateAtts()">{{getText "invalidateAtts"}}</button>
+        <button class="btn btn-blue font-bold mr-2" onclick="cleanBucket('attachments')">{{getText "invalidateAtts"}}</button>
         <button class="btn btn-blue font-bold mr-2" onclick="invalidateCheckers()">{{getText "invalidateCheckers"}}</button>
-        <button class="btn btn-blue font-bold mr-2" onclick="invalidateAvatars()">{{getText "invalidateAvatars"}}</button>
+        <button class="btn btn-blue font-bold mr-2" onclick="cleanBucket('avatars')">{{getText "invalidateAvatars"}}</button>
     </div>
 
     <script>
         async function resetSubs() {
             bundled.apiToast(await bundled.postCall("/admin/maintenance/resetWaitingSubs", {}))
         }
-        async function invalidateAtts() {
-            bundled.apiToast(await bundled.postCall("/admin/maintenance/invalidateAttachments", {}))
-        }
         async function invalidateCheckers() {
             bundled.apiToast(await bundled.postCall("/admin/maintenance/invalidateCheckers", {}))
         }
-        async function invalidateAvatars() {
-            bundled.apiToast(await bundled.postCall("/admin/maintenance/invalidateAvatars", {}))
+
+        async function cleanBucket(name) {
+            let res = await bundled.postCall("/admin/maintenance/cleanBucketCache", {name})
+            if(res.status !== "success") {
+                bundled.apiToast(res)
+                return
+            }
+            window.location.reload()
         }
     </script>
+</div>
+
+<div class="segment-panel">
+    <h2>{{getText "buckets"}}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
+        {{range .BucketStats}}
+            <div class="segment-panel reset-list">
+                <h3>{{titleName .Name}}</h3>
+                <ul>
+                    <li>{{getText "objectCount"}}: {{.NumItems}}</li>
+                    <li>{{getText "diskSize"}}: {{humanizeBytes .OnDiskSize}}</li>
+                </ul>
+                
+                {{if .Cache}}
+                <button class="btn btn-red font-bold mr-2" onclick="cleanBucket({{.Name}})">{{getText "clearCache"}}</button>
+                {{end}}
+            </div>
+        {{end}}
+    </div>
 </div>
 
 <div class="segment-panel">
