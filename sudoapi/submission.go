@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strings"
+	"slices"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -434,11 +434,8 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserFull, proble
 	if err1 != nil {
 		return -1, WrapError(err1, "Could not get problem settings")
 	}
-	if settings.OutputOnly && lang.InternalName != "outputOnly" {
-		return -1, Statusf(400, "Problem is output only but wrong language was sent")
-	}
-	if settings.OnlyCPP && !strings.HasPrefix(lang.InternalName, "cpp") {
-		return -1, Statusf(400, "Only C++ submissions are allowed")
+	if len(settings.LanguageWhitelist) > 0 && !slices.Contains(settings.LanguageWhitelist, lang.InternalName) {
+		return -1, Statusf(400, "Language not on whitelist")
 	}
 
 	// Add submission

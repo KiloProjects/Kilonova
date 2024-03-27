@@ -654,7 +654,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"maxMemMB": func() float64 { return float64(config.Common.TestMaxMemKB) / 1024.0 },
 
 		"intList": func(ids []int) string {
-			if ids == nil {
+			if len(ids) == 0 {
 				return ""
 			}
 			var b strings.Builder
@@ -665,6 +665,9 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 				}
 			}
 			return b.String()
+		},
+		"stringList": func(vals []string) string {
+			return strings.Join(vals, ", ")
 		},
 		"problemIDs": func(pbs []*kilonova.ScoredProblem) []int {
 			ids := make([]int, 0, len(pbs))

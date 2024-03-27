@@ -31,6 +31,7 @@ var Langs = map[string]Language{
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.c",
 		CompiledName:   "/box/output",
+		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
@@ -44,6 +45,7 @@ var Langs = map[string]Language{
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.cpp",
 		CompiledName:   "/box/output",
+		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
@@ -57,6 +59,7 @@ var Langs = map[string]Language{
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.cpp",
 		CompiledName:   "/box/output",
+		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
@@ -70,6 +73,7 @@ var Langs = map[string]Language{
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.cpp",
 		CompiledName:   "/box/output",
+		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
@@ -83,6 +87,7 @@ var Langs = map[string]Language{
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.cpp",
 		CompiledName:   "/box/output",
+		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
@@ -174,6 +179,10 @@ type Language struct {
 	// Useful to categorize by file upload
 	Extensions []string
 	Compiled   bool
+
+	// SimilarLangs is used on resolution of grader files during evaluation
+	// to decide which of the grader files to include for interactive problems
+	SimilarLangs []string `toml:"compatible_langs"`
 
 	PrintableName string
 	InternalName  string

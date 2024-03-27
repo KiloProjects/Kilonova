@@ -361,6 +361,9 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 		return nil, WrapError(err, "Couldn't get problem settings")
 	}
 
+	var whitelistC, whitelistCPP bool
+	var biggestCPP string
+
 	for _, att := range atts {
 		if !att.Exec {
 			continue
@@ -382,20 +385,50 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 			continue
 		}
 
-		if att.Name == ".output_only" {
-			settings.OutputOnly = true
-			continue
-		}
 		// If not checker and not skipped, continue searching
 
-		if path.Ext(att.Name) == ".h" || path.Ext(att.Name) == ".hpp" {
-			settings.OnlyCPP = true
+		if path.Ext(att.Name) == ".h" {
+			whitelistC = true
 			settings.HeaderFiles = append(settings.HeaderFiles, att.Name)
 		}
 
-		if eval.GetLangByFilename(att.Name) != "" {
-			settings.OnlyCPP = true
-			settings.GraderFiles = append(settings.GraderFiles, att.Name)
+		if path.Ext(att.Name) == ".hpp" {
+			whitelistCPP = true
+			settings.HeaderFiles = append(settings.HeaderFiles, att.Name)
+		}
+
+		if lang := eval.GetLangByFilename(att.Name); lang != "" {
+			if strings.HasPrefix(lang, "cpp") {
+				whitelistCPP = true
+				if lang > biggestCPP {
+					biggestCPP = lang
+				}
+			} else if lang == "c" {
+				whitelistC = true
+			} else {
+				settings.LanguageWhitelist = append(settings.LanguageWhitelist, lang)
+			}
+			if att.Size > 0 && att.Name != ".output_only" {
+				// .output_only is special since it's just a flag file, but the others should be included
+				settings.GraderFiles = append(settings.GraderFiles, att.Name)
+			}
+		}
+	}
+
+	if whitelistCPP {
+		// limit cpp version to the ones >= the grader has
+		for name := range eval.Langs {
+			if strings.HasPrefix(name, "cpp") && name >= biggestCPP {
+				settings.LanguageWhitelist = append(settings.LanguageWhitelist, name)
+			}
+		}
+	} else if whitelistC {
+		// Allow C and don't limit cpp version
+		settings.LanguageWhitelist = append(settings.LanguageWhitelist, "c")
+		for name := range eval.Langs {
+			if strings.HasPrefix(name, "cpp") {
+				settings.LanguageWhitelist = append(settings.LanguageWhitelist, name)
+			}
 		}
 	}
 

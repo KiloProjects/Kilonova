@@ -179,18 +179,17 @@ type AttachmentUpdate struct {
 }
 
 type ProblemEvalSettings struct {
-	// If header/grader files are found, this is turned on to True
-	OnlyCPP bool `json:"only_cpp"`
-	// Files to be included during compilation
+	// Files to be included during compilation, but not in the compile command
 	HeaderFiles []string `json:"header_files"`
-	// Files to be included in both the
+	// List of all grader files detected in attachments. Further processing is required to filter by language on evaluation
 	GraderFiles []string `json:"grader_files"`
 	// If problem has custom checker, this is non-empty
 	CheckerName string `json:"has_checker"`
 	// If problem has custom checker that is marked as legacy
 	LegacyChecker bool `json:"legacy_checker"`
-	// If problem has ".output_only" attachment, show only outputOnly language as option
-	OutputOnly bool `bool:"output_only"`
+
+	// Stores the list of languages that are allowed to be submitted based on existing attachments
+	LanguageWhitelist []string `json:"lang_whitelist"`
 }
 
 type ProblemChecklist struct {

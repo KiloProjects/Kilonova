@@ -652,17 +652,13 @@ func (rt *Web) problem() http.HandlerFunc {
 			}
 			rt.statusPage(w, r, 500, "Couldn't get problem settings")
 			return
-		} else if evalSettings.OnlyCPP {
+		} else if len(evalSettings.LanguageWhitelist) > 0 {
 			newLangs := make(map[string]eval.Language)
 			for name, lang := range langs {
-				if strings.HasPrefix(name, "cpp") {
+				if slices.Contains(evalSettings.LanguageWhitelist, name) {
 					newLangs[name] = lang
 				}
 			}
-			langs = newLangs
-		} else if evalSettings.OutputOnly {
-			newLangs := make(map[string]eval.Language)
-			newLangs["outputOnly"] = langs["outputOnly"]
 			langs = newLangs
 		}
 
@@ -739,17 +735,13 @@ func (rt *Web) problemSubmit() http.HandlerFunc {
 			}
 			rt.statusPage(w, r, 500, "Couldn't get problem settings")
 			return
-		} else if evalSettings.OnlyCPP {
+		} else if len(evalSettings.LanguageWhitelist) > 0 {
 			newLangs := make(map[string]eval.Language)
 			for name, lang := range langs {
-				if strings.HasPrefix(name, "cpp") {
+				if slices.Contains(evalSettings.LanguageWhitelist, name) {
 					newLangs[name] = lang
 				}
 			}
-			langs = newLangs
-		} else if evalSettings.OutputOnly {
-			newLangs := make(map[string]eval.Language)
-			newLangs["outputOnly"] = langs["outputOnly"]
 			langs = newLangs
 		}
 

@@ -156,11 +156,11 @@
             {{with problemSettings .Problem.ID}}
             <h3>Pe baza atașamentelor, aceste informații vor fi transmise evaluatorului:</h3>
             <ul>
-                <li>Se acceptă numai submisii C++: {{.OnlyCPP}}</li>
-                <li>Checker: {{if (ne (len .CheckerName) 0)}}Custom (este executat checker.cpp){{else}}Clasic/Default
+                <li>Limbaje permise: {{with .LanguageWhitelist}}[{{stringList .}}]{{else}}Toate{{end}}</li>
+                <li>Checker: {{if (ne (len .CheckerName) 0)}}Custom (este executat {{.CheckerName}}){{else}}Clasic/Default
                     (verifică conținutul fișierului de ieșire){{end}}</li>
-                <li>Fișiere extra incluse: {{range $i, $name := .HeaderFiles}}{{$name}}{{else}}N/A{{end}}</li>
-                <li>Fișiere grader incluse: {{range $i, $name := .GraderFiles}}{{$name}}{{else}}N/A{{end}}</li>
+                <li>Fișiere extra incluse: {{with .HeaderFiles}}{{stringList .}}{{else}}N/A{{end}}</li>
+                <li>Fișiere grader: {{with .GraderFiles}}{{stringList .}}{{else}}N/A{{end}}</li>
             </ul>
             {{end}}
             <button class="btn btn-red mt-2" onclick="reevaluateSubs()">Reevaluare submisii</button>

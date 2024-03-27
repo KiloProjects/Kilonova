@@ -6,8 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
-	"unicode"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
@@ -90,12 +88,12 @@ func Kilonova() error {
 		lang, ok := eval.Langs[sub.Language]
 		if !ok {
 			zap.S().Warn("Unknown language: ", sub.Language)
-			ext = "cpp"
+			ext = ".cpp"
 		} else {
-			ext = strings.TrimRightFunc(lang.Extensions[0], unicode.IsDigit)
+			ext = lang.Extensions[0]
 		}
 
-		w, err1 := wr.Create(fmt.Sprintf("%d-%s-%dp.%s", sub.ID, pb.TestName, sub.Score.IntPart(), ext))
+		w, err1 := wr.Create(fmt.Sprintf("%d-%s-%dp%s", sub.ID, pb.TestName, sub.Score.IntPart(), ext))
 		if err1 != nil {
 			return err1
 		}

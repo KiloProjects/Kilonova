@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"slices"
 	"strings"
 	"sync"
 
@@ -38,6 +39,10 @@ func genSubCompileRequest(ctx context.Context, base *sudoapi.BaseAPI, sub *kilon
 		return nil, err
 	}
 	for _, codeFile := range settings.GraderFiles {
+		lang := eval.GetLangByFilename(codeFile)
+		if lang != sub.Language && !slices.Contains(eval.Langs[sub.Language].SimilarLangs, lang) {
+			continue
+		}
 		for _, att := range atts {
 			if att.Name == codeFile {
 				data, err := base.AttachmentData(ctx, att.ID)
@@ -45,7 +50,8 @@ func genSubCompileRequest(ctx context.Context, base *sudoapi.BaseAPI, sub *kilon
 					zap.S().Warn("Couldn't get attachment data:", err)
 					return nil, kilonova.Statusf(500, "Couldn't get grader data")
 				}
-				req.CodeFiles[path.Join("/box", path.Base(att.Name))] = data
+				name := strings.Replace(path.Base(att.Name), path.Ext(att.Name), eval.Langs[lang].Extensions[0], 1)
+				req.CodeFiles[path.Join("/box", name)] = data
 			}
 		}
 	}
@@ -53,7 +59,14 @@ func genSubCompileRequest(ctx context.Context, base *sudoapi.BaseAPI, sub *kilon
 	if err != nil {
 		return nil, err
 	}
-	req.CodeFiles[eval.Langs[sub.Language].SourceName] = subCode
+	if len(settings.GraderFiles) > 0 && sub.Language == "pascal" {
+		// In interactive problems, include the source code as header
+		// Apparently the fpc compiler allows only one file as parameter, this should solve it
+		req.HeaderFiles[eval.Langs[sub.Language].SourceName] = subCode
+	} else {
+		// But by default it should be a code file
+		req.CodeFiles[eval.Langs[sub.Language].SourceName] = subCode
+	}
 	for _, headerFile := range settings.HeaderFiles {
 		for _, att := range atts {
 			if att.Name == headerFile {
