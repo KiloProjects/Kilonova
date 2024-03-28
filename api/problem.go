@@ -71,9 +71,20 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var contest *kilonova.Contest
+	if args.ContestID != nil {
+		c, err := s.base.Contest(r.Context(), *args.ContestID)
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+		contest = c
+	}
+
 	// This endpoint may leak stuff that shouldn't be generally seen (like in contests), so restrict this option to editors only
+	// OR to contest editors/testers when ContestID is supplied
 	// It isn't used anywhere right now, but it might be useful in the future
-	if !s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
+	if !(s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) || (contest != nil && s.base.IsContestTester(util.UserBrief(r), contest))) {
 		args.UserID = -1
 	}
 	if args.UserID <= 0 {
@@ -85,17 +96,11 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var maxScore decimal.Decimal
-	if args.ContestID == nil {
+	if contest == nil {
 		maxScore = s.base.MaxScore(r.Context(), args.UserID, util.Problem(r).ID)
 	} else {
-		contest, err := s.base.Contest(r.Context(), *args.ContestID)
-		if err != nil {
-			err.WriteError(w)
-			return
-		}
-
 		maxScore = s.base.ContestMaxScore(
-			r.Context(), args.UserID, util.Problem(r).ID, *args.ContestID,
+			r.Context(), args.UserID, util.Problem(r).ID, contest.ID,
 			s.base.UserContestFreezeTime(util.UserBrief(r), contest, args.ViewFrozen),
 		)
 	}

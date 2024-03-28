@@ -11,7 +11,7 @@ require (
 	github.com/go-chi/cors v1.2.1
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/gorilla/css v1.0.1 // indirect
-	github.com/gorilla/schema v1.2.1
+	github.com/gorilla/schema v1.3.0
 	github.com/gosimple/slug v1.14.0
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20231201235250-de7065d80cb9 // indirect
@@ -27,11 +27,11 @@ require (
 
 require (
 	github.com/Yiling-J/theine-go v0.3.2
-	github.com/alecthomas/chroma/v2 v2.12.0
+	github.com/alecthomas/chroma/v2 v2.13.0
 	github.com/antchfx/xmlquery v1.3.18
 	github.com/disintegration/gift v1.2.1
 	github.com/dop251/goja v0.0.0-20240220182346-e401ed450204
-	github.com/evanw/esbuild v0.20.1
+	github.com/evanw/esbuild v0.20.2
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/jackc/pgx-shopspring-decimal v0.0.0-20220624020537-1d36b5a1853e
 	github.com/jackc/pgx/v5 v5.5.5
@@ -50,9 +50,9 @@ require (
 	github.com/antchfx/xpath v1.2.5 // indirect
 	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
-	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
+	github.com/go-sourcemap/sourcemap v2.1.4+incompatible // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/google/pprof v0.0.0-20240227163752-401108e1b7e7 // indirect
+	github.com/google/pprof v0.0.0-20240320155624-b11c3daa6f07 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect

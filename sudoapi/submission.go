@@ -284,7 +284,7 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *Use
 		if !errors.Is(err1, context.Canceled) {
 			zap.S().Warn(err1)
 		}
-		return nil, Statusf(500, "Couldn't fetch subtests")
+		return nil, WrapError(err1, "Couldn't fetch subtests")
 	}
 
 	rez.SubTasks, err1 = s.SubmissionSubTasks(ctx, subid)
@@ -292,7 +292,7 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *Use
 		if !errors.Is(err1, context.Canceled) {
 			zap.S().Warn(err1)
 		}
-		return nil, Statusf(500, "Couldn't fetch subtasks")
+		return nil, WrapError(err1, "Couldn't fetch subtasks")
 	}
 
 	return rez, nil
