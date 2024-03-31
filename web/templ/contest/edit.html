@@ -353,6 +353,7 @@
     }
 
     async function createMOSS() {
+        bundled.apiToast({status: "info", data: "Submitting MOSS request. Will take a while, page will reload on finish."})
         let res = await bundled.postCall("/contest/{{.Contest.ID}}/runMOSS", {})
         if(res.status === "error") {
             bundled.apiToast(res)

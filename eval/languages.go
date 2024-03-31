@@ -26,7 +26,7 @@ var Langs = map[string]Language{
 		Compiled:      true,
 		PrintableName: "C",
 		InternalName:  "c",
-		MOSSName:      "c",
+		MOSSName:      "cc", // Treat C as C++. Not necessarily correct but might help
 
 		CompileCommand: []string{"gcc", "-fuse-ld=mold", "-std=c11", "-O2", "-lm", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
