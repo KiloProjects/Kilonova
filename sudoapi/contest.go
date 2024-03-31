@@ -325,7 +325,7 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) *Statu
 			zap.S().Debugf("%s - %s - %d", pb.Name, lang.InternalName, len(subs))
 			conn, err1 := moss.New(ctx)
 			if err1 != nil {
-				return WrapError(err, "Could not initialize MOSS")
+				return WrapError(err1, "Could not initialize MOSS")
 			}
 			users := make(map[int]bool)
 			for _, sub := range subs {
@@ -349,7 +349,7 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) *Statu
 				Comment:  fmt.Sprintf("%s - %s (%s)", contest.Name, pb.Name, lang.PrintableName),
 			})
 			if err1 != nil {
-				return WrapError(err, "Could not get MOSS result")
+				return WrapError(err1, "Could not get MOSS result")
 			}
 			if _, err := s.db.InsertMossSubmission(ctx, contest.ID, pb.ID, lang, url, len(users)); err != nil {
 				return WrapError(err, "Could not commit MOSS result to DB")
