@@ -26,6 +26,7 @@ var Langs = map[string]Language{
 		Compiled:      true,
 		PrintableName: "C",
 		InternalName:  "c",
+		MOSSName:      "c",
 
 		CompileCommand: []string{"gcc", "-fuse-ld=mold", "-std=c11", "-O2", "-lm", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
@@ -40,6 +41,7 @@ var Langs = map[string]Language{
 		Compiled:      true,
 		PrintableName: "C++11",
 		InternalName:  "cpp",
+		MOSSName:      "cc",
 
 		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++11", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
@@ -54,6 +56,7 @@ var Langs = map[string]Language{
 		Compiled:      true,
 		PrintableName: "C++14",
 		InternalName:  "cpp14",
+		MOSSName:      "cc",
 
 		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++14", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
@@ -68,6 +71,7 @@ var Langs = map[string]Language{
 		Compiled:      true,
 		PrintableName: "C++17",
 		InternalName:  "cpp17",
+		MOSSName:      "cc",
 
 		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++17", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
@@ -82,6 +86,7 @@ var Langs = map[string]Language{
 		Compiled:      true,
 		PrintableName: "C++20",
 		InternalName:  "cpp20",
+		MOSSName:      "cc",
 
 		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++20", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
@@ -99,6 +104,7 @@ var Langs = map[string]Language{
 		Compiled:      true,
 		PrintableName: "Pascal",
 		InternalName:  "pascal",
+		MOSSName:      "pascal",
 
 		CompileCommand: []string{"fpc", "-O2", "-XSst", "-Mobjfpc", "-vw", "-dKNOVA", "-dONLINE_JUDGE", MagicReplace, "-o/box/output"},
 		RunCommand:     []string{"/box/output"},
@@ -113,6 +119,7 @@ var Langs = map[string]Language{
 		Compiled:      true,
 		PrintableName: "Go",
 		InternalName:  "golang",
+		MOSSName:      "ascii", // MOSS doesn't support go
 
 		CompileCommand: []string{"/usr/bin/go", "build", MagicReplace},
 		RunCommand:     []string{"/box/main"},
@@ -130,6 +137,7 @@ var Langs = map[string]Language{
 		Compiled:      true,
 		PrintableName: "Haskell",
 		InternalName:  "haskell",
+		MOSSName:      "haskell",
 
 		CompileCommand: []string{"ghc", "-o", "/box/output", MagicReplace},
 		RunCommand:     []string{"/box/output"},
@@ -142,6 +150,7 @@ var Langs = map[string]Language{
 		Compiled:      true,
 		PrintableName: "Java",
 		InternalName:  "java",
+		MOSSName:      "java",
 
 		CompileCommand: []string{"javac", MagicReplace},
 		RunCommand:     []string{"java", "Main"},
@@ -155,6 +164,7 @@ var Langs = map[string]Language{
 		Compiled:      false,
 		PrintableName: "Python 3",
 		InternalName:  "python3",
+		MOSSName:      "python",
 
 		RunCommand:   []string{"python3", "/box/main.py"},
 		SourceName:   "/box/main.py",
@@ -165,6 +175,7 @@ var Langs = map[string]Language{
 		Compiled:      false,
 		PrintableName: "Output Only",
 		InternalName:  "outputOnly",
+		MOSSName:      "ascii", // Though MOSS isn't required for output only problems
 
 		RunCommand:   []string{"cat", "/box/output"},
 		SourceName:   "/box/output_src",
@@ -186,6 +197,9 @@ type Language struct {
 
 	PrintableName string
 	InternalName  string
+
+	// Reference: http://moss.stanford.edu/general/scripts/mossnet
+	MOSSName string
 
 	CompileCommand []string `toml:"compile_command"`
 	RunCommand     []string `toml:"run_command"`

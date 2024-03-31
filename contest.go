@@ -194,6 +194,19 @@ type ContestAnnouncement struct {
 	Text      string    `json:"text"`
 }
 
+type MOSSSubmission struct {
+	ID        int       `json:"id" db:"id"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+
+	ContestID int `json:"contest_id" db:"contest_id"`
+	ProblemID int `json:"problem_id" db:"problem_id"`
+
+	Language string `json:"language" db:"language"`
+
+	URL      string `json:"url" db:"url"`
+	SubCount int    `json:"subcount" db:"subcount"`
+}
+
 type ContestRegistration struct {
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	ContestID int       `json:"contest_id" db:"contest_id"`

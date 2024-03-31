@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
@@ -362,6 +363,26 @@ func (s *DB) ContestICPCLeaderboard(ctx context.Context, contest *kilonova.Conte
 	leaderboard.Entries = mapperCtx(context.WithValue(ctx, util.ContestKey, contest), topList, s.icpcToLeaderboardEntry)
 
 	return leaderboard, nil
+}
+
+// MOSS setup
+
+func (s *DB) InsertMossSubmission(ctx context.Context, contestID int, problemID int, lang eval.Language, url string, subcount int) (int, error) {
+	var id int
+	err := s.conn.QueryRow(ctx, "INSERT INTO moss_submissions (contest_id, problem_id, language, url, subcount) VALUES ($1, $2, $3, $4, $5) RETURNING id", contestID, problemID, lang.InternalName, url, subcount).Scan(&id)
+	return id, err
+}
+
+func (s *DB) MossSubmissions(ctx context.Context, contestID int) ([]*kilonova.MOSSSubmission, error) {
+	rows, _ := s.conn.Query(ctx, "SELECT * FROM moss_submissions WHERE contest_id = $1 ORDER BY created_at DESC", contestID)
+	subs, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[kilonova.MOSSSubmission])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return subs, nil
 }
 
 // Contest problems

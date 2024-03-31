@@ -263,6 +263,54 @@
             })
         </script>
         {{end}}
+
+        {{if eq .Contest.Type `official`}}
+        <div class="segment-panel">
+            <h2 class="inline-block mb-2">{{getText "header.contest.moss"}}</h2>
+            {{with .MOSSResults}}
+                <table class="kn-table">
+                    <thead>
+                        <tr>
+                            <th class="kn-table-cell" scope="col">{{getText "id"}}</th>
+                            <th class="kn-table-cell" scope="col">{{getText "created_at"}}</th>
+                            <th class="kn-table-cell" scope="col">{{getText "problemSingle"}}</th>
+                            <th class="kn-table-cell" scope="col">{{getText "subcount"}}</th>
+                            <th class="kn-table-cell" scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="invitationsTableBody">
+                        {{range .}}
+                            <tr class="kn-table-row">
+                                <th class="kn-table-cell" scope="row">
+                                    {{.ID}}
+                                </th>
+                                <td class="kn-table-cell">
+                                    <span class="server_timestamp">{{.CreatedAt.UnixMilli}}</span>
+                                </td>
+                                <td class="kn-table-cell">
+                                    {{with problemFromList $pbs .ProblemID}}
+                                        <a href="/problems/{{.ID}}">{{.Name}}</a>
+                                    {{else}}
+                                        <a href="/problems/{{.ProblemID}}">???</a>
+                                    {{end}} - {{.Language}}
+                                </td>
+                                <td class="kn-table-cell">
+                                    {{.SubCount}}
+                                </td>
+                                <td class="kn-table-cell">
+                                    <a class="btn btn-blue" href="{{.URL}}">{{getText "view"}}</a>
+                                </td>
+                            </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            {{else}}
+                <p>{{getText "noMOSSHistory"}}</p>
+            {{end}}
+            <button onclick="createMOSS()" class="my-2 btn btn-blue">{{getText "createMOSS"}}</button>
+        </div>
+        {{end}}
+
     </div>
 </div>
 
@@ -301,6 +349,15 @@
             return
         }
         await copyInvitationURL(res.data)
+        window.location.reload()
+    }
+
+    async function createMOSS() {
+        let res = await bundled.postCall("/contest/{{.Contest.ID}}/runMOSS", {})
+        if(res.status === "error") {
+            bundled.apiToast(res)
+            return
+        }
         window.location.reload()
     }
 </script>

@@ -283,6 +283,14 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			}
 			return pbs
 		},
+		"problemFromList": func(pbs []*kilonova.ScoredProblem, id int) *kilonova.ScoredProblem {
+			for _, pb := range pbs {
+				if pb.ID == id {
+					return pb
+				}
+			}
+			return nil
+		},
 		"problemContests": func(user *kilonova.UserBrief, pb *kilonova.Problem) []*kilonova.Contest {
 			// TODO: Once there will be more contests, this will need to be optimized out to exclude ended ones
 			// At the moment, however, this is not a priority

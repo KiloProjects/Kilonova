@@ -1979,6 +1979,22 @@ ro = "Creare listă probleme din problemele concursului"
 en = "Admin: force register user in contest"
 ro = "Admin: înregistrare forțată utilizator în concurs"
 
+[header.contest.moss]
+en = "Experimental: run MOSS plagiarism checker"
+ro = "Experimental: rulează verificatorul MOSS pentru plagiat"
+
+[subcount]
+en = "# Submissions"
+ro = "# Submisii"
+
+[noMOSSHistory]
+en = "No past MOSS invocations"
+ro = "Nicio invocare anterioară MOSS"
+
+[createMOSS]
+en = "Invoke MOSS (ideally after contest end)"
+ro = "Invocare MOSS (preferabil după sfârșitul concursului)"
+
 [title.invitation]
 en = "Invite for %s"
 ro = "Invitație pentru %s"

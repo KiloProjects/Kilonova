@@ -228,7 +228,11 @@ func problemFilterQuery(filter *kilonova.ProblemFilter, fb *filterBuilder) {
 		fb.AddConstraint("EXISTS (SELECT 1 FROM problem_user_access WHERE user_id = %s AND problem_id = problems.id)", v)
 	}
 	if v := filter.AttachmentID; v != nil {
-		fb.AddConstraint("EXISTS (SELECT 1 FROM problem_attachments_m2m WHERE attachment_id = %s AND problem_id = id)", v)
+		fb.AddConstraint("EXISTS (SELECT 1 FROM problem_attachments_m2m WHERE attachment_id = %s AND problem_id = problems.id)", v)
+	}
+	if v := filter.ContestID; v != nil {
+		fb.AddConstraint("EXISTS (SELECT 1 FROM contest_problems WHERE contest_id = %s AND problem_id = problems.id)", v)
+
 	}
 	if v := filter.Tags; len(v) > 0 {
 		for _, group := range v {

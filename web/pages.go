@@ -119,6 +119,7 @@ type ContestParams struct {
 	Contest *kilonova.Contest
 
 	ContestInvitations []*kilonova.ContestInvitation
+	MOSSResults        []*kilonova.MOSSSubmission
 }
 
 type ContestInviteParams struct {

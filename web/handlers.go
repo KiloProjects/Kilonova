@@ -1096,12 +1096,19 @@ func (rt *Web) contestEdit() http.HandlerFunc {
 			invitations = []*kilonova.ContestInvitation{}
 		}
 
+		mossSubs, err := rt.base.MOSSSubmissions(r.Context(), util.Contest(r).ID)
+		if err != nil {
+			zap.S().Warn(err)
+			mossSubs = []*kilonova.MOSSSubmission{}
+		}
+
 		rt.runTempl(w, r, templ, &ContestParams{
 			Topbar: rt.problemTopbar(r, "contest_edit", -1),
 
 			Contest: util.Contest(r),
 
 			ContestInvitations: invitations,
+			MOSSResults:        mossSubs,
 		})
 	}
 }

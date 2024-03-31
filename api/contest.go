@@ -518,3 +518,10 @@ func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 		Count int `json:"total_count"`
 	}{Registrations: rez, Count: cnt})
 }
+
+func (s *API) runMOSS(ctx context.Context, args struct{}) *kilonova.StatusError {
+	if util.ContestContext(ctx).Type != kilonova.ContestTypeOfficial {
+		return kilonova.Statusf(400, "MOSS can't run on virtual contests, for now")
+	}
+	return s.base.RunMOSS(ctx, util.ContestContext(ctx))
+}

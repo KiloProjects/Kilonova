@@ -102,6 +102,9 @@ type ProblemFilter struct {
 	// Currently used for logging statement changes
 	AttachmentID *int `json:"-"`
 
+	// Used for getting problems for MOSS
+	ContestID *int `json:"-"`
+
 	SolvedBy    *int `json:"solved_by"`
 	AttemptedBy *int `json:"attempted_by"`
 

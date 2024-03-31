@@ -2,9 +2,12 @@ package sudoapi
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/integrations/moss"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
 )
@@ -277,4 +280,89 @@ func (s *BaseAPI) StripContestAccess(ctx context.Context, pbid int, uid int) *St
 		return WrapError(err, "Couldn't strip contest access")
 	}
 	return nil
+}
+
+func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) *StatusError {
+	pbs, err := s.Problems(ctx, kilonova.ProblemFilter{ContestID: &contest.ID})
+	if err != nil {
+		return err
+	}
+
+	for _, pb := range pbs {
+		subs, err := s.RawSubmissions(ctx, kilonova.SubmissionFilter{
+			ProblemID: &pb.ID,
+			ContestID: &contest.ID,
+
+			Ordering:  "score",
+			Ascending: false,
+		})
+		if err != nil {
+			return err
+		}
+		if len(subs) == 0 {
+			continue
+		}
+		mossSubs := make(map[string][]*kilonova.Submission)
+		for _, sub := range subs {
+			name := eval.Langs[sub.Language].MOSSName
+			// TODO: See if this can be simplified?
+			_, ok := mossSubs[name]
+			if !ok {
+				mossSubs[name] = []*kilonova.Submission{sub}
+			} else {
+				mossSubs[name] = append(mossSubs[name], sub)
+			}
+		}
+
+		for mossLang, subs := range mossSubs {
+			var lang eval.Language
+			for _, elang := range eval.Langs {
+				if elang.MOSSName == mossLang && (lang.InternalName == "" || lang.InternalName < elang.InternalName) {
+					lang = elang
+				}
+			}
+
+			zap.S().Debugf("%s - %s - %d", pb.Name, lang.InternalName, len(subs))
+			conn, err1 := moss.New(ctx)
+			if err1 != nil {
+				return WrapError(err, "Could not initialize MOSS")
+			}
+			users := make(map[int]bool)
+			for _, sub := range subs {
+				if _, ok := users[sub.UserID]; ok {
+					continue
+				}
+				user, err := s.UserBrief(ctx, sub.UserID)
+				if err != nil {
+					return err
+				}
+				users[sub.UserID] = true
+
+				code, err := s.RawSubmissionCode(ctx, sub.ID)
+				if err != nil {
+					return err
+				}
+				conn.AddFile(eval.Langs[sub.Language], user.Name, code)
+			}
+			url, err1 := conn.Process(&moss.Options{
+				Language: lang,
+				Comment:  fmt.Sprintf("%s - %s (%s)", contest.Name, pb.Name, lang.PrintableName),
+			})
+			if err1 != nil {
+				return WrapError(err, "Could not get MOSS result")
+			}
+			if _, err := s.db.InsertMossSubmission(ctx, contest.ID, pb.ID, lang, url, len(users)); err != nil {
+				return WrapError(err, "Could not commit MOSS result to DB")
+			}
+		}
+	}
+	return nil
+}
+
+func (s *BaseAPI) MOSSSubmissions(ctx context.Context, contestID int) ([]*kilonova.MOSSSubmission, *StatusError) {
+	subs, err := s.db.MossSubmissions(ctx, contestID)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't fetch MOSS submissions")
+	}
+	return subs, nil
 }
