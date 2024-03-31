@@ -523,5 +523,5 @@ func (s *API) runMOSS(ctx context.Context, args struct{}) *kilonova.StatusError 
 	if util.ContestContext(ctx).Type != kilonova.ContestTypeOfficial {
 		return kilonova.Statusf(400, "MOSS can't run on virtual contests, for now")
 	}
-	return s.base.RunMOSS(ctx, util.ContestContext(ctx))
+	return s.base.RunMOSS(context.WithoutCancel(ctx), util.ContestContext(ctx))
 }
