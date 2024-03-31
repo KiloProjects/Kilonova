@@ -317,7 +317,7 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) *Statu
 		for mossLang, subs := range mossSubs {
 			var lang eval.Language
 			for _, elang := range eval.Langs {
-				if elang.MOSSName == mossLang && (lang.InternalName == "" || lang.InternalName > elang.InternalName) {
+				if elang.MOSSName == mossLang && (lang.InternalName == "" || lang.InternalName < elang.InternalName) {
 					lang = elang
 				}
 			}
