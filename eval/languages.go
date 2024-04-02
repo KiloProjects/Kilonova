@@ -9,14 +9,16 @@ func GetLangByFilename(filename string) string {
 	if fileExt == "" {
 		return ""
 	}
+	// bestLang heuristic to match .cpp to cpp11
+	bestLang := ""
 	for k, v := range Langs {
 		for _, ext := range v.Extensions {
-			if ext == fileExt {
-				return k
+			if ext == fileExt && (bestLang == "" || k < bestLang) {
+				bestLang = k
 			}
 		}
 	}
-	return ""
+	return bestLang
 }
 
 // NOTE: Last extension MUST be unique (for proper detection of submissions in problem archives)
