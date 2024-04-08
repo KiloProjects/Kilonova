@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/klauspost/compress/gzip"
+	"github.com/klauspost/compress/zstd"
 
 	"go.uber.org/zap"
 )
@@ -53,37 +54,30 @@ func newGzipReader(r io.Reader) (*gzip.Reader, error) {
 	return gr, nil
 }
 
-type gzipFileWriter struct {
+type zstdFileReader struct {
 	f  *os.File
-	gz *gzip.Writer
+	zr *zstd.Decoder
 }
 
-func (fw *gzipFileWriter) Write(p []byte) (int, error) {
-	return fw.gz.Write(p)
+func (fr *zstdFileReader) Read(p []byte) (int, error) {
+	return fr.zr.Read(p)
 }
 
-func (fw *gzipFileWriter) Close() error {
-	err2 := fw.gz.Close()
-	err := fw.f.Close()
-	if err == nil && err2 != nil {
-		err = err2
-		zap.S().Warn(err2)
-	}
-	if err2 == nil {
-		// If gzip close was successful, put the gzip.Writer back in the pool
-		gzipWriterPool.Put(fw.gz)
-	}
+func (fr *zstdFileReader) WriteTo(w io.Writer) (int64, error) {
+	return fr.zr.WriteTo(w)
+}
+
+func (fr *zstdFileReader) Close() error {
+	err := fr.f.Close()
+	fr.zr.Close()
 	return err
 }
 
-var gzipWriterPool = &sync.Pool{
-	New: func() any {
-		return gzip.NewWriter(nil)
-	},
-}
-
-func newGzipWriter(w io.Writer) *gzip.Writer {
-	gw := gzipWriterPool.Get().(*gzip.Writer)
-	gw.Reset(w)
-	return gw
+// zstd.NewReader acts weirdly with sync.Pool, TODO: we need a better pooling mechanism
+func newZstdReader(r io.Reader) *zstd.Decoder {
+	zr, err := zstd.NewReader(r, zstd.WithDecoderConcurrency(1))
+	if err != nil {
+		panic(err) // There's something wrong with the options, nothing else can give an error
+	}
+	return zr
 }

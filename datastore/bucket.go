@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/klauspost/compress/zstd"
 	"go.uber.org/zap"
 )
 
@@ -59,98 +60,116 @@ func (b *Bucket) Init() error {
 }
 
 func (b *Bucket) Stat(name string) (fs.FileInfo, error) {
-	stat, err := os.Stat(b.filePath(name) + ".gz")
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return os.Stat(b.filePath(name))
-		}
+	stat, err := os.Stat(b.filePath(name) + ".zst")
+	if err == nil {
+		return stat, nil
+	}
+	if !errors.Is(err, fs.ErrNotExist) {
 		return nil, err
 	}
-	return stat, nil
-}
 
-func (b *Bucket) Writer(name string, mode fs.FileMode) (io.WriteCloser, error) {
-	filename := b.filePath(name)
-	if b.CompressionLevel != NoCompression {
-		filename += ".gz"
+	stat, err = os.Stat(b.filePath(name) + ".gz")
+	if err == nil {
+		return stat, nil
 	}
-	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
-	if err != nil {
+	if !errors.Is(err, fs.ErrNotExist) {
 		return nil, err
 	}
-	if b.CompressionLevel != NoCompression {
-		return &gzipFileWriter{f, newGzipWriter(f)}, nil
-	}
-	return f, nil
+
+	return os.Stat(b.filePath(name))
 }
 
 func (b *Bucket) WriteFile(name string, r io.Reader, mode fs.FileMode) error {
-	wr, err := b.Writer(name, mode)
+	filename := b.filePath(name)
+	if b.CompressionLevel != NoCompression {
+		filename += ".zst"
+	}
+
+	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(wr, r)
-	if err1 := wr.Close(); err1 != nil && err == nil {
+	if b.CompressionLevel == NoCompression {
+		_, err = io.Copy(f, r)
+		if err1 := f.Close(); err1 != nil && err == nil {
+			err = err1
+		}
+		return err
+	}
+
+	zw, err := zstd.NewWriter(f, zstd.WithEncoderConcurrency(1))
+	if err != nil {
+		f.Close()
+		return err
+	}
+
+	_, err = io.Copy(zw, r)
+	if err1 := zw.Close(); err1 != nil && err == nil {
 		err = err1
+	}
+	if err1 := f.Close(); err1 != nil && err == nil {
+		err1 = err
 	}
 	return err
 }
 
 func (b *Bucket) Reader(name string) (io.ReadCloser, error) {
-	f, err := os.Open(b.filePath(name) + ".gz")
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			f, err := os.Open(b.filePath(name))
-			if err != nil {
-				if errors.Is(err, fs.ErrNotExist) {
-					return nil, kilonova.ErrNotExist
-				}
-				return nil, err
-			}
-			return f, nil
+	f, err := os.Open(b.filePath(name) + ".zst")
+	if err == nil {
+		return &zstdFileReader{f, newZstdReader(f)}, nil
+	}
+	if !errors.Is(err, fs.ErrNotExist) {
+		return nil, err
+	}
+
+	f, err = os.Open(b.filePath(name) + ".gz")
+	if err == nil {
+		gz, err := newGzipReader(f)
+		if err != nil {
+			return nil, err
 		}
+		return &gzipFileReader{f, gz}, nil
+	}
+	if !errors.Is(err, fs.ErrNotExist) {
 		return nil, err
 	}
-	gz, err := newGzipReader(f)
-	if err != nil {
-		return nil, err
+
+	f, err = os.Open(b.filePath(name))
+	if err == nil {
+		return f, nil
 	}
-	return &gzipFileReader{f, gz}, nil
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, kilonova.ErrNotExist
+	}
+	return nil, err
 }
 
-// ReadSeeker opens a new readseeker of the specified file. If uncompressed, it returns the file directly.
-// If compressed, then the contents are uncompressed on the fly into a file and that file is then served (it will be deleted on Close()).
+// ReadSeeker tries to open the given file using the normal reader function. If the output implements ReadSeekCloser,
+// then it is used directly. Otherwise, we decompress on the fly into a temp file and return that instead (it will be deleted on Close()).
 // TODO: Better caching, maybe some kind of sub-bucket concept?
 func (b *Bucket) ReadSeeker(name string) (io.ReadSeekCloser, error) {
-	f, err := os.Open(b.filePath(name))
+	rc, err := b.Reader(name)
 	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			f, err = os.Open(b.filePath(name) + ".gz")
-			if err != nil {
-				if errors.Is(err, fs.ErrNotExist) {
-					return nil, kilonova.ErrNotExist
-				}
-				return nil, err
-			}
-			f2 := &deletingClosedFile{f}
-			r, err := newGzipReader(f2)
-			if err != nil {
-				f2.Close()
-				return nil, err
-			}
-			if _, err := io.Copy(f2, r); err != nil {
-				f2.Close()
-				return nil, err
-			}
-			if _, err := f2.Seek(0, io.SeekStart); err != nil {
-				f2.Close()
-				return nil, err
-			}
-			return f2, nil
-		}
 		return nil, err
 	}
-	return f, nil
+	if rsc, ok := rc.(io.ReadSeekCloser); ok {
+		return rsc, nil
+	}
+	zap.S().Debug("ReadSeeker called on compressed file")
+	defer rc.Close()
+	f, err := os.CreateTemp("", "bucket-temp-*")
+	if err != nil {
+		return nil, err
+	}
+	if _, err := io.Copy(f, rc); err != nil {
+		f.Close()
+		return nil, err
+	}
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		f.Close()
+		return nil, err
+	}
+	return &deletingClosedFile{f}, nil
 }
 
 func (b *Bucket) IterFiles(f func(entry fs.DirEntry) error) error {
@@ -172,13 +191,14 @@ func (b *Bucket) IterFiles(f func(entry fs.DirEntry) error) error {
 }
 
 func (b *Bucket) RemoveFile(name string) error {
-	err1 := os.Remove(b.filePath(name) + ".gz")
-	if err1 != nil && !errors.Is(err1, fs.ErrNotExist) {
-		return err1
+	if err := os.Remove(b.filePath(name) + ".zst"); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
 	}
-	err2 := os.Remove(b.filePath(name))
-	if err2 != nil && !errors.Is(err2, fs.ErrNotExist) {
-		return err2
+	if err := os.Remove(b.filePath(name) + ".gz"); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	if err := os.Remove(b.filePath(name)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
 	}
 	return nil
 }

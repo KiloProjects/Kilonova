@@ -86,20 +86,17 @@ func GetExecuteTask(logger *zap.SugaredLogger) eval.Task[ExecRequest, ExecRespon
 			return resp, nil
 		}
 
-		w, err := datastore.GetBucket(datastore.BucketTypeSubtests).Writer(strconv.Itoa(req.SubtestID), 0644)
-		if err != nil {
+		pr, pw := io.Pipe()
+		go func() {
+			defer pw.Close()
+			if err := box.ReadFile(boxOut, pw); err != nil {
+				resp.Comments = "Could not write output file"
+				zap.S().Warn(err)
+			}
+		}()
+
+		if err := datastore.GetBucket(datastore.BucketTypeSubtests).WriteFile(strconv.Itoa(req.SubtestID), pr, 0644); err != nil {
 			resp.Comments = "Could not open problem output"
-			return resp, nil
-		}
-
-		if err := box.ReadFile(boxOut, w); err != nil {
-			resp.Comments = "Could not write output file"
-			return resp, nil
-		}
-
-		if err := w.Close(); err != nil {
-			zap.S().Warn(err)
-			resp.Comments = "Could not close output file"
 			return resp, nil
 		}
 
