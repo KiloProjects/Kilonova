@@ -662,6 +662,22 @@ ro = "Intrare din consolă"
 en = "Test name"
 ro = "Nume test"
 
+[experimentalZone]
+en = "Experimental zone"
+ro = "Zona experimentelor"
+
+[translateStatement]
+en = "Translate Romanian statement (using AI)"
+ro = "Traduce enunțul din română (prin AI)"
+
+[translateStatementWarning]
+en = "Are you sure you want to do this? This feature is currently experimental. Created statements might have hallucinated differences produced by LLMs. Please make sure the translated text is correct before making public."
+ro = "Ești sigur că vrei să faci asta? Acest feature este, momentan, experimental. Enunțurile create pot avea diferențe halucinate de LLM-uri. Te rog să asiguri faptul că textul tradus este corect înainte să devină public."
+
+[aiTranslationWarning]
+en = "Warning: This statement was translated by an LLM (like ChatGPT). Results might not be fully accurate or faithful to the original statement. Please report any potential errors on our Discord."
+ro = "Avertisment: Acest enunț a fost tradus de către un LLM (precum ChatGPT). Este probabil ca rezultatele să nu fie 100% corecte sau ca în enunțul original. Vă rugăm raportați eventual erori pe serverul nostru de Discord."
+
 [existingVariants]
 en = "Existing variants"
 ro = "Variante existente"

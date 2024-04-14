@@ -34,6 +34,11 @@
             {{- end -}}
         </div>
         <article class="text-justify">
+            {{with .SelectedVariant}}
+            {{if eq .Type "llm"}}
+            <blockquote>{{getText "aiTranslationWarning"}}</blockquote>
+            {{end}}
+            {{end}}
             {{.Statement}}
         </article>
         <div style="clear: both"></div>

@@ -621,7 +621,7 @@ func (rt *Web) problem() http.HandlerFunc {
 			statement, err = rt.base.RenderedProblemDesc(r.Context(), problem, foundLang, foundFmt, foundType)
 			if err != nil {
 				if !errors.Is(err, context.Canceled) {
-					zap.S().Warn("Error getting problem markdown: ", err)
+					zap.S().Warn("Error getting problem markdown: ", err, foundLang, foundFmt, foundType, problem.ID)
 				}
 				statement = []byte("Error loading markdown.")
 			}

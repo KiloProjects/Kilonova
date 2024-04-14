@@ -133,6 +133,8 @@ func (s *API) Handler() http.Handler {
 					r.Post("/bulkDeleteAttachments", s.bulkDeleteAttachments)
 					r.Post("/bulkUpdateAttachmentInfo", s.bulkUpdateAttachmentInfo)
 
+					r.Post("/translateStatement", s.translateProblemStatement)
+
 					r.Post("/bulkDeleteTests", s.bulkDeleteTests)
 					r.Post("/bulkUpdateTestScores", s.bulkUpdateTestScores)
 					r.Post("/processTestArchive", s.processTestArchive)

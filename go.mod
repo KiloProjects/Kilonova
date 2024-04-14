@@ -46,6 +46,8 @@ require github.com/dchest/captcha v1.0.0
 
 require github.com/dustin/go-humanize v1.0.1
 
+require github.com/sashabaranov/go-openai v1.21.0
+
 require (
 	github.com/antchfx/xpath v1.3.0 // indirect
 	github.com/dlclark/regexp2 v1.11.0 // indirect

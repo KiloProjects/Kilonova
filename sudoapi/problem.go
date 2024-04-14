@@ -87,7 +87,9 @@ func (s *BaseAPI) DeleteProblem(ctx context.Context, problem *kilonova.Problem) 
 func (s *BaseAPI) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*kilonova.Problem, *StatusError) {
 	problems, err := s.db.Problems(ctx, filter)
 	if err != nil {
-		zap.S().Warn(err)
+		if !errors.Is(err, context.Canceled) {
+			zap.S().Warn(err)
+		}
 		return nil, WrapError(err, "Couldn't get problems")
 	}
 	return problems, nil
