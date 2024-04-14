@@ -1,12 +1,29 @@
 
 <!-- Required:
     - Template data: a StatementEditorParams, which contains:
-        - .Lang - language, probably "ro" or "en"
+        - .Variants - existing variants
+        - .Variant - an existing or non-existing *markdown* variant
         - .Data - string of contents
         - .Att - attachment reference of file
         - .APIPrefix - prefix, such as `/problem/{.Problem.ID}` or `/blogPosts/{.Post.ID}`, with no trailing `/`
 -->
 
+{{with .Variants}}
+<div class="segment-panel reset-list" id="variantDiv">
+    {{getText "existingVariants"}}:
+    <ul id="variantList">
+        {{range .}}
+        {{if eq .Format "md"}}
+        <li><a href="?pref_lang={{.Language}}&pref_type={{.Type}}" data-type="{{.Type}}" data-lang="{{.Language}}">{{formatStmtVariant .}}{{if .Private}} ({{getText "private"}}){{end}}</a></li>
+        {{end}}
+        {{end}}
+    </ul>
+</div>
+{{if lt (mdVariantCount .) 2}}
+<!--TODO: Remove this hack-->
+<style>#variantDiv {display: none}</style>
+{{end}}
+{{end}}
 
 <div class="page-holder">
     <form id="statementUpdForm" class="page-content-full" autocomplete="off">
@@ -14,11 +31,13 @@
         <label class="block mb-2">
             <span class="form-label">{{getText "spokenLanguage"}}:</span> 
             <select id="variantSelect" class="form-select" autocomplete="off">
-                <option value="ro" {{if (eq "ro" .Lang)}} selected {{end}}>{{formatStmtLang "ro"}}</option>
-                <option value="en" {{if (eq "en" .Lang)}} selected {{end}}>{{formatStmtLang "en"}}</option>
+                <option value="ro" {{if (eq "ro" .Variant.Language)}} selected {{end}}>🇷🇴 Română</option>
+                <option value="en" {{if (eq "en" .Variant.Language)}} selected {{end}}>🇬🇧 English</option>
             </select>
         </label>
         <input type="hidden" id="attID" value="{{if not .Att}}-1{{else}}{{.Att.ID}}{{end}}"/>
+        <span id="selectedVariant" class="block mb-2"></span>
+        <input type="hidden" id="variantType" value=""/>
         <div class="block mb-2">
             <label class="inline-flex items-center text-lg">
                 <input class="form-checkbox" name="private" id="private_checkbox" type="checkbox" {{if .Att}}{{if .Att.Private}}checked{{end}}{{end}}>
@@ -64,10 +83,29 @@
     cm.focus();
     cm.on("change", () => changed = true)
 
-    async function reloadStatement(newLang) {
-        const rez = await bundled.getCall(`${apiPrefix}/get/attachmentByName/statement-${newLang}.md`)
+    function formatStatement(lang, type) {
+        if(type == "") {
+            return `statement-${lang}.md`
+        }
+        return `statement-${lang}-${type}.md`
+    }
+
+    function setType(newType) {
+        document.getElementById("variantType").value = newType
+        let varText = ""
+        if(typeof newType == 'string' && newType.length > 0) {
+            varText = `${bundled.getText("selectedType")}: ${bundled.maybeGetText("stmt_type."+newType)}`
+        }
+        document.getElementById("selectedVariant").innerText = varText
+    }
+    setType({{.Variant.Type}})
+
+    async function reloadStatement(newLang, newType) {
+        const rez = await bundled.getCall(`${apiPrefix}/get/attachmentByName/${formatStatement(newLang, newType)}`)
         if(rez.status !== "success") {
             document.getElementById("private_checkbox").checked = false
+            document.getElementById("variantSelect").value = newLang
+            setType(newType)
             if (document.getElementById("attID").value != -1) {
                 cm.setValue("")
                 changed = false
@@ -78,14 +116,24 @@
 
         document.getElementById("private_checkbox").checked = rez.data.metadata.private
         document.getElementById("attID").value = rez.data.metadata.id
+        document.getElementById("variantSelect").value = newLang
+        setType(newType)
         cm.setValue(bundled.fromBase64(rez.data.data))
         changed = false
     }
 
+
+    document.querySelectorAll("#variantList a").forEach(val => {
+        val.addEventListener("click", e => {
+            e.preventDefault()
+            reloadStatement(e.currentTarget.dataset.lang, e.currentTarget.dataset.type)
+        })
+    })
+
     async function updateStatement(e) {
         e.preventDefault();
         let content = cm.getValue();
-        let filename = `statement-${document.getElementById("variantSelect").value}.md`;
+        let filename = formatStatement(document.getElementById("variantSelect").value, document.getElementById("variantType").value);
         let id = document.getElementById("attID").value
 
         let form = new FormData();
@@ -116,6 +164,6 @@
         }
     }
 
-    document.getElementById("variantSelect").addEventListener("change", e => reloadStatement(e.target.value))
+    document.getElementById("variantSelect").addEventListener("change", e => reloadStatement(e.target.value, document.getElementById("variantType").value))
     document.getElementById("statementUpdForm").addEventListener("submit", updateStatement)
 </script>

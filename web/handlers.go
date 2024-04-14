@@ -28,6 +28,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/schema"
 	"go.uber.org/zap"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type WebCtx string
@@ -555,39 +557,48 @@ func (rt *Web) paste() http.HandlerFunc {
 	}
 }
 
-func (rt *Web) appropriateDescriptionVariant(r *http.Request, variants []*kilonova.StatementVariant) (string, string) {
-	prefLang := r.FormValue("pref_lang")
-	if prefLang == "" {
-		prefLang = util.Language(r)
+func (rt *Web) appropriateDescriptionVariant(r *http.Request, variants []*kilonova.StatementVariant) (string, string, string) {
+	prefLang, prefFormat, prefType := util.Language(r), "md", ""
+	variant := strings.SplitN(r.FormValue("var"), "-", 3)
+	if lang := r.FormValue("pref_lang"); len(lang) > 0 { // Backwards compatibility
+		prefLang = lang
 	}
-	prefFormat := r.FormValue("pref_format")
-	if prefFormat == "" {
-		prefFormat = "md"
+	if len(variant) > 0 && len(variant[0]) > 0 {
+		prefLang = variant[0]
+	}
+	if fmt := r.FormValue("pref_format"); len(fmt) > 0 { // Backwards compatibility
+		prefFormat = fmt
+	}
+	if len(variant) > 1 && len(variant[1]) > 0 {
+		prefFormat = variant[1]
+	}
+	if len(variant) > 2 && len(variant[2]) > 0 {
+		prefType = variant[2]
 	}
 
 	if len(variants) == 0 {
-		return "", ""
+		return "", "", ""
 	}
 	// Search for the ideal scenario
 	for _, v := range variants {
-		if v.Language == prefLang && v.Format == prefFormat {
-			return v.Language, v.Format
+		if v.Language == prefLang && v.Format == prefFormat && v.Type == prefType {
+			return v.Language, v.Format, v.Type
 		}
 	}
 	// Then search if anything matches the language
 	for _, v := range variants {
 		if v.Language == prefLang {
-			return v.Language, v.Format
+			return v.Language, v.Format, v.Type
 		}
 	}
 	// Then search if anything matches the format
 	for _, v := range variants {
 		if v.Language == prefLang {
-			return v.Language, v.Format
+			return v.Language, v.Format, v.Type
 		}
 	}
 	// If nothing was found, then just return the first available variant
-	return variants[0].Language, variants[0].Format
+	return variants[0].Language, variants[0].Format, variants[0].Type
 }
 
 func (rt *Web) problem() http.HandlerFunc {
@@ -602,12 +613,12 @@ func (rt *Web) problem() http.HandlerFunc {
 			zap.S().Warn("Couldn't get problem desc variants", err)
 		}
 
-		foundLang, foundFmt := rt.appropriateDescriptionVariant(r, variants)
+		foundLang, foundFmt, foundType := rt.appropriateDescriptionVariant(r, variants)
 
-		url := fmt.Sprintf("/assets/problem/%d/attachment/statement-%s.%s", problem.ID, foundLang, foundFmt)
+		url := fmt.Sprintf("/assets/problem/%d/attachment/%s", problem.ID, rt.base.FormatDescName(foundLang, foundFmt, foundType))
 		switch foundFmt {
 		case "md":
-			statement, err = rt.base.RenderedProblemDesc(r.Context(), problem, foundLang, foundFmt)
+			statement, err = rt.base.RenderedProblemDesc(r.Context(), problem, foundLang, foundFmt, foundType)
 			if err != nil {
 				if !errors.Is(err, context.Canceled) {
 					zap.S().Warn("Error getting problem markdown: ", err)
@@ -708,8 +719,11 @@ func (rt *Web) problem() http.HandlerFunc {
 			Languages: langs,
 			Variants:  variants,
 
-			SelectedLang:   foundLang,
-			SelectedFormat: foundFmt,
+			SelectedVariant: &kilonova.StatementVariant{
+				Language: foundLang,
+				Format:   foundFmt,
+				Type:     foundType,
+			},
 		})
 	}
 }
@@ -844,12 +858,12 @@ func (rt *Web) blogPost() http.HandlerFunc {
 			zap.S().Warn("Couldn't get problem desc variants", err)
 		}
 
-		foundLang, foundFmt := rt.appropriateDescriptionVariant(r, variants)
+		foundLang, foundFmt, foundType := rt.appropriateDescriptionVariant(r, variants)
 
-		url := fmt.Sprintf("/assets/blogPost/%s/attachment/statement-%s.%s", post.Slug, foundLang, foundFmt)
+		url := fmt.Sprintf("/assets/blogPost/%s/attachment/%s", post.Slug, rt.base.FormatDescName(foundLang, foundFmt, foundType))
 		switch foundFmt {
 		case "md":
-			statement, err = rt.base.RenderedBlogPostDesc(r.Context(), post, foundLang, foundFmt)
+			statement, err = rt.base.RenderedBlogPostDesc(r.Context(), post, foundLang, foundFmt, foundType)
 			if err != nil {
 				if !errors.Is(err, context.Canceled) {
 					zap.S().Warn("Error getting problem markdown: ", err)
@@ -887,7 +901,7 @@ func (rt *Web) blogPost() http.HandlerFunc {
 			atts = newAtts
 		}
 
-		att, err := rt.base.BlogPostAttByName(r.Context(), post.ID, fmt.Sprintf("statement-%s.%s", foundLang, foundFmt))
+		att, err := rt.base.BlogPostAttByName(r.Context(), post.ID, rt.base.FormatDescName(foundLang, foundFmt, foundType))
 		if err != nil {
 			att = nil
 		}
@@ -900,30 +914,53 @@ func (rt *Web) blogPost() http.HandlerFunc {
 			StatementAtt: att,
 			Variants:     variants,
 
-			SelectedLang:   foundLang,
-			SelectedFormat: foundFmt,
+			SelectedVariant: &kilonova.StatementVariant{
+				Language: foundLang,
+				Format:   foundFmt,
+				Type:     foundType,
+			},
 		})
 	}
 }
 
-func (rt *Web) getFinalLang(prefLang string, variants []*kilonova.StatementVariant) string {
-	var finalLang string
+// TODO: Properly figure out priorities
+func (rt *Web) getFinalVariant(prefLang string, prefType string, variants []*kilonova.StatementVariant) *kilonova.StatementVariant {
+	var finalVariant *kilonova.StatementVariant
 
 	for _, vr := range variants {
 		if vr.Format == "md" && vr.Language == prefLang {
-			finalLang = vr.Language
-		}
-	}
-
-	if finalLang == "" {
-		for _, vr := range variants {
-			if vr.Format == "md" {
-				finalLang = vr.Language
+			if len(prefType) > 0 && vr.Type == prefType {
+				return vr
+			}
+			if finalVariant == nil || finalVariant.Type > vr.Type {
+				finalVariant = vr
 			}
 		}
 	}
 
-	return finalLang
+	if finalVariant != nil {
+		return finalVariant
+	}
+
+	for _, vr := range variants {
+		if vr.Format == "md" {
+			if len(prefType) > 0 && vr.Type == prefType {
+				return vr
+			}
+			if finalVariant == nil || finalVariant.Type > vr.Type {
+				finalVariant = vr
+			}
+		}
+	}
+
+	if finalVariant == nil {
+		return &kilonova.StatementVariant{
+			Language: prefLang,
+			Format:   "md",
+			Type:     "",
+		}
+	}
+	return finalVariant
 }
 
 func (rt *Web) editBlogPostIndex() http.HandlerFunc {
@@ -937,19 +974,17 @@ func (rt *Web) editBlogPostIndex() http.HandlerFunc {
 			return
 		}
 
-		finalLang := rt.getFinalLang(r.FormValue("pref_lang"), variants)
+		finalVariant := rt.getFinalVariant(r.FormValue("pref_lang"), r.FormValue("pref_type"), variants)
 
 		var statementData string
 		var att *kilonova.Attachment
-		if finalLang == "" {
-			finalLang = config.Common.DefaultLang
-		} else {
-			att, err = rt.base.BlogPostAttByName(r.Context(), util.BlogPost(r).ID, fmt.Sprintf("statement-%s.md", finalLang))
-			if err != nil {
-				zap.S().Warn(err)
-				http.Error(w, "Couldn't get post content attachment", 500)
-				return
-			}
+		att, err = rt.base.BlogPostAttByName(r.Context(), util.BlogPost(r).ID, rt.base.FormatDescName(finalVariant.Language, finalVariant.Format, finalVariant.Type))
+		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
+			zap.S().Warn(err)
+			http.Error(w, "Couldn't get post content attachment", 500)
+			return
+		}
+		if att != nil {
 			val, err := rt.base.AttachmentData(r.Context(), att.ID)
 			if err != nil {
 				zap.S().Warn(err)
@@ -963,9 +998,10 @@ func (rt *Web) editBlogPostIndex() http.HandlerFunc {
 			Topbar: rt.postTopbar(r, "editIndex"),
 
 			StatementEditor: &StatementEditorParams{
-				Lang: finalLang,
-				Data: statementData,
-				Att:  att,
+				Variants: variants,
+				Variant:  finalVariant,
+				Data:     statementData,
+				Att:      att,
 
 				APIPrefix: fmt.Sprintf("/blogPosts/%d", util.BlogPost(r).ID),
 			},
@@ -1584,6 +1620,41 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 	templ.Funcs(template.FuncMap{
 		"getText": func(line string, args ...any) string {
 			return kilonova.GetText(lang, line, args...)
+		},
+		"formatStmtVariant": func(fmt *kilonova.StatementVariant) string {
+			var b strings.Builder
+			b.Grow(32)
+			switch fmt.Language {
+			case "en":
+				b.WriteString("🇬🇧 English")
+			case "ro":
+				b.WriteString("🇷🇴 Română")
+			default:
+				b.WriteString(fmt.Language)
+			}
+
+			if len(fmt.Type) > 0 {
+				b.WriteString(" - ")
+				switch fmt.Type {
+				case "llm", "short", "long", "editorial":
+					b.WriteString(kilonova.GetText(lang, "stmt_type."+fmt.Type))
+				default:
+					b.WriteString(cases.Title(language.English).String(fmt.Type))
+				}
+			}
+
+			b.WriteString(" - ")
+			switch fmt.Format {
+			case "pdf":
+				b.WriteString("PDF")
+			case "md":
+				b.WriteString("Markdown")
+			case "tex":
+				b.WriteString("LaTeX")
+			default:
+				b.WriteString(fmt.Format)
+			}
+			return b.String()
 		},
 		"reqPath": func() string {
 			if r.URL.Path == "/login" || r.URL.Path == "/signup" {

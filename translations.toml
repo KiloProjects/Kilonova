@@ -662,6 +662,30 @@ ro = "Intrare din consolă"
 en = "Test name"
 ro = "Nume test"
 
+[existingVariants]
+en = "Existing variants"
+ro = "Variante existente"
+
+[selectedType]
+en = "Selected statement type"
+ro = "Tip enunț selectat"
+
+[stmt_type.llm]
+en = "AI Translated"
+ro = "Tradus prin AI"
+
+[stmt_type.short]
+en = "Short format"
+ro = "Format scurt"
+
+[stmt_type.long]
+en = "Long format"
+ro = "Format lung"
+
+[stmt_type.editorial]
+en = "Editorial"
+ro = "Editorial"
+
 [statementLanguage]
 en = "Statement language"
 ro = "Limbă enunț"

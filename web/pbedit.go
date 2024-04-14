@@ -2,21 +2,22 @@ package web
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
 
 type StatementEditorParams struct {
-	Lang string
-	Data string
-	Att  *kilonova.Attachment
+	Variants []*kilonova.StatementVariant
+	Variant  *kilonova.StatementVariant
+	Data     string
+	Att      *kilonova.Attachment
 
 	APIPrefix string
 }
@@ -65,19 +66,17 @@ func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		finalLang := rt.getFinalLang(r.FormValue("pref_lang"), variants)
+		finalVariant := rt.getFinalVariant(r.FormValue("pref_lang"), r.FormValue("pref_type"), variants)
 
 		var statementData string
 		var att *kilonova.Attachment
-		if finalLang == "" {
-			finalLang = config.Common.DefaultLang
-		} else {
-			att, err = rt.base.ProblemAttByName(r.Context(), util.Problem(r).ID, fmt.Sprintf("statement-%s.md", finalLang))
-			if err != nil {
-				zap.S().Warn(err)
-				http.Error(w, "Couldn't get problem statement attachment", 500)
-				return
-			}
+		att, err = rt.base.ProblemAttByName(r.Context(), util.Problem(r).ID, rt.base.FormatDescName(finalVariant.Language, finalVariant.Format, finalVariant.Type))
+		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
+			zap.S().Warn(err)
+			http.Error(w, "Couldn't get problem statement attachment", 500)
+			return
+		}
+		if att != nil {
 			val, err := rt.base.AttachmentData(r.Context(), att.ID)
 			if err != nil {
 				zap.S().Warn(err)
@@ -92,9 +91,10 @@ func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
 			Topbar:  rt.problemTopbar(r, "desc", -1),
 
 			StatementEditor: &StatementEditorParams{
-				Lang: finalLang,
-				Data: statementData,
-				Att:  att,
+				Variants: variants,
+				Variant:  finalVariant,
+				Data:     statementData,
+				Att:      att,
 
 				APIPrefix: fmt.Sprintf("/problem/%d", util.Problem(r).ID),
 			},

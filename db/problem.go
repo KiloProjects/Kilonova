@@ -245,7 +245,7 @@ func problemFilterQuery(filter *kilonova.ProblemFilter, fb *filterBuilder) {
 	}
 
 	if v := filter.Language; v != nil {
-		fb.AddConstraint(`EXISTS (SELECT 1 FROM attachments, problem_attachments_m2m m2m WHERE attachments.name LIKE CONCAT('statement-', %s::text, '.%%') AND problem_id = problems.id AND m2m.attachment_id = attachments.id)`, filter.Language)
+		fb.AddConstraint(`EXISTS (SELECT 1 FROM attachments, problem_attachments_m2m m2m WHERE attachments.name LIKE CONCAT('statement-', %s::text, '%%') AND problem_id = problems.id AND m2m.attachment_id = attachments.id)`, filter.Language)
 	}
 
 	if v := filter.SolvedBy; v != nil {

@@ -37,6 +37,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 var (
@@ -560,7 +562,9 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"humanizeBytes": func(cnt int64) string {
 			return humanize.Bytes(uint64(cnt))
 		},
-		"titleName":  strings.Title, // Temporary, for buckets
+		"titleName": func(s string) string {
+			return cases.Title(language.English).String(s)
+		},
 		"hashedName": fsys.HashName,
 		"version":    func() string { return kilonova.Version },
 		"debug":      func() bool { return config.Common.Debug },
@@ -691,29 +695,19 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			}
 			return rez
 		},
-		"formatStmtLang": func(lang string) string {
-			switch lang {
-			case "en":
-				return "🇬🇧 English"
-			case "ro":
-				return "🇷🇴 Română"
-			default:
-				return lang
-			}
+		"formatStmtVariant": func(fmt *kilonova.StatementVariant) string {
+			zap.S().Error("Uninitialized `formatStmtVariant`")
+			return ""
 		},
-		"formatStmtFmt": func(fmt string) string {
-			switch fmt {
-			case "pdf":
-				return "PDF"
-			case "md":
-				return "Markdown"
-			case "tex":
-				return "LaTeX"
-			default:
-				return fmt
+		"mdVariantCount": func(sv []*kilonova.StatementVariant) int {
+			var cnt int
+			for _, v := range sv {
+				if v.Format == "md" {
+					cnt++
+				}
 			}
+			return cnt
 		},
-
 		"computeDonationSum": func(d *kilonova.Donation) float64 {
 			endTime := time.Now()
 			if d.CancelledAt != nil {

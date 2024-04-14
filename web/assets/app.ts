@@ -9,8 +9,7 @@ export * from "./api/progressCall";
 export * from "./components";
 
 export * from "./langs";
-import getText from "./translation";
-export { getText };
+export { default as getText, maybeGetText } from "./translation";
 
 export * from "./session";
 export { NavBarManager } from "./navbar";

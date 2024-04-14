@@ -55,9 +55,16 @@ type StatementVariant struct {
 	Language string `json:"lang"`
 	// Format, ie. pdf/md/etc.
 	Format string `json:"format"`
+	// Type, ie. normal/short/llm/etc.
+	Type string `json:"type"`
 	// Private is true if the attachment for this statement variant is private.
 	// it may be private if it's currently being worked on.
 	Private bool `json:"public"`
+}
+
+// Used for comparing in templates if the right option is selected.
+func (sv *StatementVariant) Equals(other *StatementVariant) bool {
+	return sv.Language == other.Language && sv.Format == other.Format && sv.Type == other.Type
 }
 
 type ScoredProblem struct {

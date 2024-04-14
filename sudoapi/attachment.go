@@ -223,7 +223,7 @@ func (s *BaseAPI) ProblemAttDataByName(ctx context.Context, problemID int, name 
 	return data, nil
 }
 
-var statementRegex = regexp.MustCompile("statement-([a-z]+).([a-z]+)")
+var statementRegex = regexp.MustCompile(`statement-([a-z]+)(?:-([a-z]+))?\.([a-z]+)`)
 
 func (s *BaseAPI) parseVariants(atts []*kilonova.Attachment, getPrivate bool) []*kilonova.StatementVariant {
 	variants := []*kilonova.StatementVariant{}
@@ -238,7 +238,8 @@ func (s *BaseAPI) parseVariants(atts []*kilonova.Attachment, getPrivate bool) []
 		}
 		variants = append(variants, &kilonova.StatementVariant{
 			Language: matches[1],
-			Format:   matches[2],
+			Type:     matches[2],
+			Format:   matches[3],
 			Private:  att.Private,
 		})
 	}
@@ -283,11 +284,19 @@ func (s *BaseAPI) getCachedAttachment(attID int, renderType string) ([]byte, boo
 	return nil, false
 }
 
-func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Problem, lang string, format string) ([]byte, *StatusError) {
+func (s *BaseAPI) FormatDescName(lang, format, t string) string {
+	if t == "" {
+		return fmt.Sprintf("statement-%s.%s", lang, format)
+	} else {
+		return fmt.Sprintf("statement-%s-%s.%s", lang, t, format)
+	}
+}
+
+func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Problem, lang, format, t string) ([]byte, *StatusError) {
 	if len(lang) > 10 || len(format) > 10 {
 		return nil, Statusf(400, "Not even trying to search for this description variant")
 	}
-	name := fmt.Sprintf("statement-%s.%s", lang, format)
+	name := s.FormatDescName(lang, format, t)
 	att, err := s.ProblemAttByName(ctx, problem.ID, name)
 	if err != nil {
 		return nil, err
@@ -317,11 +326,11 @@ func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Pro
 	}
 }
 
-func (s *BaseAPI) RenderedBlogPostDesc(ctx context.Context, post *kilonova.BlogPost, lang string, format string) ([]byte, *StatusError) {
+func (s *BaseAPI) RenderedBlogPostDesc(ctx context.Context, post *kilonova.BlogPost, lang, format, t string) ([]byte, *StatusError) {
 	if len(lang) > 10 || len(format) > 10 {
 		return nil, Statusf(400, "Not even trying to search for this description variant")
 	}
-	name := fmt.Sprintf("statement-%s.%s", lang, format)
+	name := s.FormatDescName(lang, format, t)
 	att, err := s.BlogPostAttByName(ctx, post.ID, name)
 	if err != nil {
 		return nil, err

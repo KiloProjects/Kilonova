@@ -4,9 +4,6 @@
 {{$post := .Topbar.Post}}
 {{ template "topbar.html" .Topbar }}
 
-{{$stmtLang := .SelectedLang}}
-{{$stmtFmt := .SelectedFormat}}
-
 <div class="segment-panel reset-list enhance-tables statement-images">
     <div class="text-justify">
         {{.Statement}}
@@ -18,7 +15,7 @@
             <span class="text-base">{{getText "postFormat"}}:</span> 
             <select id="variant-select" class="form-select-mini" autocomplete="off">
                 {{ range .Variants }}
-                    <option value="{{.Language}};{{.Format}}" {{if and (eq .Language $stmtLang) (eq .Format $stmtFmt)}}selected{{end}}>{{formatStmtLang .Language}} - {{formatStmtFmt .Format}}</option>
+                    <option value="{{.Language}}-{{.Format}}-{{.Type}}" {{if $.SelectedVariant.Equals .}}selected{{end}}>{{formatStmtVariant .}}</option>
                 {{ end }}
             </select>
         </label>    
@@ -55,10 +52,8 @@
 
 <script>
 document.getElementById("variant-select")?.addEventListener("change", e => {
-    const [lang, fmt] = e.target.value.split(";")
     var params = new URLSearchParams(window.location.search);
-    params.set("pref_lang", lang)
-    params.set("pref_format", fmt)
+    params.set("var", e.target.value.replace(/-+$/, ""))
     window.location.search = params.toString()
 });
 (() => {

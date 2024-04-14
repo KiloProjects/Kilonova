@@ -92,8 +92,7 @@ type BlogPostParams struct {
 	Languages    map[string]eval.Language
 	Variants     []*kilonova.StatementVariant
 
-	SelectedLang   string
-	SelectedFormat string
+	SelectedVariant *kilonova.StatementVariant
 }
 
 type ContestsIndexParams struct {
@@ -145,8 +144,7 @@ type ProblemParams struct {
 	Languages map[string]eval.Language
 	Variants  []*kilonova.StatementVariant
 
-	SelectedLang   string
-	SelectedFormat string
+	SelectedVariant *kilonova.StatementVariant
 }
 
 type ProblemTopbarParams struct {
