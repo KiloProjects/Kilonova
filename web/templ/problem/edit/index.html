@@ -168,15 +168,26 @@
         {{with stringFlag "integrations.openai.token"}}
         <div class="segment-panel">
             <h3>{{getText "experimentalZone"}}</h3>
-            <button class="btn btn-blue" onclick="translateStatement()">{{getText "translateStatement"}}</button>
+            <form class="segment-panel" id="translateStatementForm">
+                <h4>{{getText "translateStatement"}}</h4>
+                <label class="block my-2">
+                    <span class="form-label">Model:</span>
+                    <input id="translationModel" class="form-input" type="text" value="{{stringFlag `integrations.openai.default_model`}}" />
+                </label>
+                <button class="btn btn-blue" onclick="translateStatement()">{{getText "button.create"}}</button>
+            </form>
             <script>
-                async function translateStatement() {
+                async function translateStatement(e) {
+                    e.preventDefault()
                     if(!(await bundled.confirm(bundled.getText("translateStatementWarning")))) {
                         return
                     }
-                    let res = await bundled.postCall(`/problem/${problem.id}/update/translateStatement`, {})
+                    let res = await bundled.postCall(`/problem/${problem.id}/update/translateStatement`, {
+                        model: document.getElementById("translationModel").value
+                    })
                     bundled.apiToast(res)
                 }
+                document.getElementById("translateStatementForm").addEventListener("submit", translateStatement)
             </script>
         </div>
         {{end}}

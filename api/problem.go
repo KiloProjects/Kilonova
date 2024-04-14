@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/KiloProjects/kilonova/integrations/llm"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"github.com/sashabaranov/go-openai"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
@@ -364,44 +364,59 @@ func (s *API) updateProblem(ctx context.Context, args kilonova.ProblemUpdate) *k
 	return s.base.UpdateProblem(ctx, util.ProblemContext(ctx).ID, args, util.UserBriefContext(ctx))
 }
 
-func (s *API) translateProblemStatement(w http.ResponseWriter, r *http.Request) {
-	att, err := s.base.ProblemAttByName(r.Context(), util.Problem(r).ID, "statement-ro.md")
-	if err != nil {
-		err.WriteError(w)
-		return
-	}
-	data, err := s.base.AttachmentData(r.Context(), att.ID)
-	if err != nil {
-		err.WriteError(w)
-		return
-	}
-	t := time.Now()
-	output, err1 := llm.TranslateStatement(r.Context(), string(data), openai.GPT4)
-	if err1 != nil {
-		errorData(w, err1, 400)
-		return
-	}
-	s.base.LogUserAction(r.Context(), "Triggered LLM translation for Problem #%d: %s. Translation duration: %v", util.Problem(r).ID, util.Problem(r).Name, time.Since(t))
-	att2, err := s.base.ProblemAttByName(r.Context(), util.Problem(r).ID, "statement-en-llm.md")
-	if err != nil {
-		if errors.Is(err, kilonova.ErrNotFound) {
-			att2 = &kilonova.Attachment{Name: "statement-en-llm.md"}
-			err = s.base.CreateProblemAttachment(r.Context(), att2, util.Problem(r).ID, strings.NewReader(output), &util.UserBrief(r).ID)
-			if err != nil {
-				err.WriteError(w)
-			}
-			returnData(w, "Created translation")
+func (s *API) translateProblemStatement() http.HandlerFunc {
+	var translateMu sync.Mutex
+	return func(w http.ResponseWriter, r *http.Request) {
+		var args struct {
+			Model string `json:"model"`
+		}
+		if err := parseRequest(r, &args); err != nil {
+			err.WriteError(w)
 			return
 		}
-		err.WriteError(w)
-		return
-	}
-	if err := s.base.UpdateAttachmentData(r.Context(), att2.ID, []byte(output), util.UserBrief(r)); err != nil {
-		err.WriteError(w)
-		return
-	}
+		if !translateMu.TryLock() {
+			errorData(w, "Will not process more than one pending translation at once. Please try again later.", 400)
+			return
+		}
+		defer translateMu.Unlock()
+		att, err := s.base.ProblemAttByName(r.Context(), util.Problem(r).ID, "statement-ro.md")
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+		data, err := s.base.AttachmentData(r.Context(), att.ID)
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+		t := time.Now()
+		output, err1 := llm.TranslateStatement(r.Context(), string(data), args.Model)
+		if err1 != nil {
+			errorData(w, err1, 400)
+			return
+		}
+		s.base.LogUserAction(r.Context(), "Triggered LLM translation (Model: %q) for Problem #%d: %s. Translation duration: %v", args.Model, util.Problem(r).ID, util.Problem(r).Name, time.Since(t))
+		att2, err := s.base.ProblemAttByName(r.Context(), util.Problem(r).ID, "statement-en-llm.md")
+		if err != nil {
+			if errors.Is(err, kilonova.ErrNotFound) {
+				att2 = &kilonova.Attachment{Name: "statement-en-llm.md"}
+				err = s.base.CreateProblemAttachment(r.Context(), att2, util.Problem(r).ID, strings.NewReader(output), &util.UserBrief(r).ID)
+				if err != nil {
+					err.WriteError(w)
+				}
+				returnData(w, "Created translation")
+				return
+			}
+			err.WriteError(w)
+			return
+		}
+		if err := s.base.UpdateAttachmentData(r.Context(), att2.ID, []byte(output), util.UserBrief(r)); err != nil {
+			err.WriteError(w)
+			return
+		}
 
-	returnData(w, "Updated translation")
+		returnData(w, "Updated translation")
+	}
 }
 
 func boolPtrString(val *bool) string {

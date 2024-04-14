@@ -3,13 +3,16 @@ package llm
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/sashabaranov/go-openai"
 )
 
 var (
-	Token = config.GenFlag("integrations.openai.token", "", "API Key for OpenAI access (used in translating statements)")
+	BaseURL      = config.GenFlag("integrations.openai.base_url", "", "Base URL for OpenAI API (`https://openrouter.ai/api/v1` can be used for OpenRouter)")
+	Token        = config.GenFlag("integrations.openai.token", "", "API Key for OpenAI access (used in translating statements)")
+	DefaultModel = config.GenFlag("integrations.openai.default_model", "gpt-4-turbo", "Default model for LLM translations")
 
 	ErrUnauthed = errors.New("unauthenticated to OpenAI endpoint")
 )
@@ -26,7 +29,16 @@ func TranslateStatement(ctx context.Context, text string, model string) (string,
 	if len(Token.Value()) < 2 {
 		return "", ErrUnauthed
 	}
-	client := openai.NewClient(Token.Value())
+	if model == "" {
+		model = DefaultModel.Value()
+	}
+	config := openai.DefaultConfig(Token.Value())
+	config.HTTPClient = defaultClient
+	if v := BaseURL.Value(); len(v) > 0 {
+		config.BaseURL = v
+	}
+	client := openai.NewClientWithConfig(config)
+	// openai.NewClientWithConfig(ope)
 	resp, err := client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model: model,
 		Messages: []openai.ChatCompletionMessage{
@@ -38,4 +50,22 @@ func TranslateStatement(ctx context.Context, text string, model string) (string,
 		return "", err
 	}
 	return resp.Choices[0].Message.Content, nil
+}
+
+var defaultClient = &http.Client{
+	Transport: &openRouterHeaderTransport{T: http.DefaultTransport},
+}
+
+type openRouterHeaderTransport struct {
+	T http.RoundTripper
+}
+
+func (adt *openRouterHeaderTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	branding, ok := config.GetFlagVal[string]("frontend.navbar.branding")
+	if !ok {
+		branding = "Kilonova"
+	}
+	req.Header.Add("HTTP-Referer", branding)
+	req.Header.Add("X-Title", "Kilonova")
+	return adt.T.RoundTrip(req)
 }
