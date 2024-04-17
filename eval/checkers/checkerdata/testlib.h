@@ -4977,7 +4977,8 @@ __declspec(deprecated("Use registerGen(argc, argv, 0) or registerGen(argc, argv,
                       " If you are trying to compile old generator use macro -DUSE_RND_AS_BEFORE_087 or registerGen(argc, argv, 0)."
                       " Version 1 has been released on Spring, 2013. Use it to write new generators."))
 #endif
-    void registerGen(int argc, char *argv[])
+void
+registerGen(int argc, char *argv[])
 {
     std::fprintf(stderr, "Use registerGen(argc, argv, 0) or registerGen(argc, argv, 1)."
                          " The third parameter stands for the random generator version."

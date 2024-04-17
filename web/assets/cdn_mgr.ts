@@ -34,6 +34,9 @@ export function getFileIcon(name: string): string {
 	if (ext === undefined) {
 		return "fa-file";
 	}
+	if (ext.includes("cpp")) {
+		ext = ext.replace(/[0-9]+$/, "");
+	}
 	if (extensionIcons.has(ext)) {
 		return extensionIcons.get(ext)!;
 	}

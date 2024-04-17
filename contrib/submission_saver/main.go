@@ -88,7 +88,7 @@ func Kilonova() error {
 		lang, ok := eval.Langs[sub.Language]
 		if !ok {
 			zap.S().Warn("Unknown language: ", sub.Language)
-			ext = ".cpp"
+			ext = ".cpp17"
 		} else {
 			ext = lang.Extensions[0]
 		}

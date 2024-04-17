@@ -9,7 +9,10 @@ func GetLangByFilename(filename string) string {
 	if fileExt == "" {
 		return ""
 	}
-	// bestLang heuristic to match .cpp to cpp11
+	// bestLang heuristic to match .cpp to cpp17
+	if fileExt == ".cpp" {
+		return "cpp17"
+	}
 	bestLang := ""
 	for k, v := range Langs {
 		for _, ext := range v.Extensions {
@@ -38,11 +41,11 @@ var Langs = map[string]Language{
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
-	"cpp": {
+	"cpp11": {
 		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx", ".cpp11"},
 		Compiled:      true,
 		PrintableName: "C++11",
-		InternalName:  "cpp",
+		InternalName:  "cpp11",
 		MOSSName:      "cc",
 
 		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++11", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},

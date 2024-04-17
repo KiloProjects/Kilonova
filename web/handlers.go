@@ -1752,7 +1752,7 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 				if err == nil {
 					list, err := rt.base.ProblemList(r.Context(), id)
 					if err != nil {
-						if !errors.Is(err, context.Canceled) {
+						if !errors.Is(err, context.Canceled) && !errors.Is(err, kilonova.ErrNotFound) {
 							zap.S().Warn(err)
 						}
 					} else {

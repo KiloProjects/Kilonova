@@ -1,0 +1,1 @@
+UPDATE submissions SET language = 'cpp11' WHERE language = 'cpp';
