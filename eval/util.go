@@ -4,23 +4,24 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"slices"
 	"strings"
 
+	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
 )
 
-func CopyInBox(b Sandbox, p1 string, p2 string) error {
-	file, err := os.Open(p1)
+// Copies in box an object from a bucket
+func CopyInBox(b Sandbox, bucket *datastore.Bucket, filename string, p2 string) error {
+	file, err := bucket.Reader(filename)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	stat, err := file.Stat()
+	stat, err := bucket.Stat(filename)
 	if err != nil {
 		return err
 	}
@@ -52,7 +53,7 @@ func MakeGoodCommand(command []string) ([]string, error) {
 }
 
 func CleanCompilation(subid int) error {
-	return os.Remove(path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", subid)))
+	return datastore.GetBucket(datastore.BucketTypeCompiles).RemoveFile(fmt.Sprintf("%d.bin", subid))
 }
 
 func disableLang(key string) {
@@ -113,11 +114,6 @@ func Initialize() error {
 	zap.S().Info("Isolate path: ", config.Eval.IsolatePath)
 	if _, err := os.Stat(config.Eval.IsolatePath); os.IsNotExist(err) {
 		zap.S().Fatal("Sandbox binary not found. Run scripts/init_isolate.sh to properly install it.")
-	}
-
-	// Creating the checker cache will also create the compile path behind it
-	if err := os.MkdirAll(path.Join(config.Eval.CompilePath, "checker_cache"), 0755); err != nil {
-		return err
 	}
 
 	checkLanguages()

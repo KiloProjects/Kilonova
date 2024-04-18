@@ -42,8 +42,9 @@ func GetExecuteTask(logger *zap.SugaredLogger) eval.Task[ExecRequest, ExecRespon
 		}
 		consoleInput := req.Filename == "stdin"
 
+		bucket, fileName := bucketFromIDExec(req.SubID)
 		lang := eval.Langs[req.Lang]
-		if err := eval.CopyInBox(box, getIDExec(req.SubID), lang.CompiledName); err != nil {
+		if err := eval.CopyInBox(box, bucket, fileName, lang.CompiledName); err != nil {
 			zap.S().Warn("Couldn't copy executable in box: ", err)
 			resp.Comments = "translate:internal_error"
 			return resp, err

@@ -506,6 +506,7 @@ func (rt *Web) debugPage() http.HandlerFunc {
 		for _, bucket := range []datastore.BucketType{
 			datastore.BucketTypeTests, datastore.BucketTypeSubtests,
 			datastore.BucketTypeAvatars, datastore.BucketTypeAttachments,
+			datastore.BucketTypeCheckers, datastore.BucketTypeCompiles,
 		} {
 			stats = append(stats, datastore.GetBucket(bucket).Statistics())
 		}

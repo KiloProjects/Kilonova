@@ -1264,18 +1264,6 @@ ro = "Resetare submisii în așteptare"
 en = "Invalidate"
 ro = "Invalidare"
 
-[invalidateAtts]
-en = "Invalidate statement cache"
-ro = "Invalidare cache enunțuri"
-
-[invalidateCheckers]
-en = "Invalidate checker cache"
-ro = "Invalidare cache checkere"
-
-[invalidateAvatars]
-en = "Invalidate (Gr)avatar cache"
-ro = "Invalidare cache (Gr)avataruri"
-
 [changeRoles]
 en = "Change roles"
 ro = "Schimbă rolurile"

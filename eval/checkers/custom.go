@@ -6,17 +6,15 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"os"
-	"path"
 	"sync"
 	"time"
 
 	_ "embed"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/tasks"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
@@ -63,7 +61,7 @@ type customChecker struct {
 // Prepare compiles the checker for the submission
 func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	var shouldCompile bool
-	stat, err := os.Stat(path.Join(config.Eval.CompilePath, "checker_cache", fmt.Sprintf("%d.bin", c.pb.ID)))
+	stat, err := datastore.GetBucket(datastore.BucketTypeCheckers).Stat(fmt.Sprintf("%d.bin", c.pb.ID))
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
 			zap.S().Warn("Checker stat error:", err)
@@ -141,23 +139,4 @@ func NewLegacyCustomChecker(mgr eval.BoxScheduler, logger *zap.SugaredLogger, pb
 
 func NewStandardCustomChecker(mgr eval.BoxScheduler, logger *zap.SugaredLogger, pb *kilonova.Problem, filename string, code []byte, subCode []byte, lastUpdatedAt time.Time) Checker {
 	return &customChecker{mgr, pb, filename, code, subCode, lastUpdatedAt, logger, false}
-}
-
-func PurgeCheckerCache() error {
-	checkerPrepareMu.Lock()
-	defer checkerPrepareMu.Unlock()
-	entries, err := os.ReadDir(path.Join(config.Eval.CompilePath, "checker_cache"))
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		if err := os.Remove(path.Join(config.Eval.CompilePath, "checker_cache", entry.Name())); err != nil {
-			zap.S().Warn("Couldn't remove file from checker cache:", entry.Name(), err)
-		}
-	}
-
-	return nil
 }

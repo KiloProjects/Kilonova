@@ -10,7 +10,6 @@
 
 [eval]
  isolatePath = "/usr/local/etc/isolate_bin"
- compilePath = "/tmp/kncompiles"
  num_concurrent = 3
  global_max_mem_kb = 2097152 # 2 GB
  starting_box = 1

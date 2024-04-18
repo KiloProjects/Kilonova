@@ -41,7 +41,6 @@ type EmailConf struct {
 // EvalConf is the data required for the eval service
 type EvalConf struct {
 	IsolatePath string `toml:"isolatePath"`
-	CompilePath string `toml:"compilePath"`
 	// Address       string `toml:"address"`
 	NumConcurrent int   `toml:"num_concurrent"`
 	GlobalMaxMem  int64 `toml:"global_max_mem_kb"`

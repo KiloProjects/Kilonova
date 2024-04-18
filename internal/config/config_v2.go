@@ -202,7 +202,7 @@ func LoadConfigV2() error {
 			// Strings are a bit special since they don't like the fact that overrides may not have quotes
 			f.Update(val)
 		case configFlag:
-			if json.Unmarshal([]byte(val), f.getPtr()); err != nil {
+			if err := json.Unmarshal([]byte(val), f.getPtr()); err != nil {
 				zap.S().Warnf("Override for flag %q is invalid: %v", key, err)
 			}
 		default:

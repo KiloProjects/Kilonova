@@ -15,11 +15,14 @@ const (
 	BucketTypeSubtests    BucketType = "subtests"
 	BucketTypeAttachments BucketType = "attachments"
 	BucketTypeAvatars     BucketType = "avatars"
+	BucketTypeCheckers    BucketType = "checkers"
+	BucketTypeCompiles    BucketType = "compiles"
 )
 
 func (t BucketType) Valid() bool {
 	return t == BucketTypeTests || t == BucketTypeSubtests ||
-		t == BucketTypeAttachments || t == BucketTypeAvatars
+		t == BucketTypeAttachments || t == BucketTypeAvatars ||
+		t == BucketTypeCheckers || t == BucketTypeCompiles
 }
 
 type bucketDef struct {
@@ -56,6 +59,18 @@ var (
 		{
 			Name:    BucketTypeAvatars,
 			IsCache: true,
+
+			CompressionLevel: NoCompression,
+		},
+		{
+			Name:    BucketTypeCheckers,
+			IsCache: true,
+
+			CompressionLevel: NoCompression,
+		},
+		{
+			Name:    BucketTypeCompiles,
+			IsCache: false, // Well it kind of is but not really since it's cleaned up in the grader
 
 			CompressionLevel: NoCompression,
 		},

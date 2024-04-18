@@ -7,17 +7,11 @@
 
     <div class="block my-2">
         <button class="btn btn-blue font-bold mr-2" onclick="resetSubs()">{{getText "resetSubs"}}</button>
-        <button class="btn btn-blue font-bold mr-2" onclick="cleanBucket('attachments')">{{getText "invalidateAtts"}}</button>
-        <button class="btn btn-blue font-bold mr-2" onclick="invalidateCheckers()">{{getText "invalidateCheckers"}}</button>
-        <button class="btn btn-blue font-bold mr-2" onclick="cleanBucket('avatars')">{{getText "invalidateAvatars"}}</button>
     </div>
 
     <script>
         async function resetSubs() {
             bundled.apiToast(await bundled.postCall("/admin/maintenance/resetWaitingSubs", {}))
-        }
-        async function invalidateCheckers() {
-            bundled.apiToast(await bundled.postCall("/admin/maintenance/invalidateCheckers", {}))
         }
 
         async function cleanBucket(name) {

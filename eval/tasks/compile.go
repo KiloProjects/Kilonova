@@ -5,17 +5,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
-	"os"
-	"path"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
 )
 
 type CompileRequest struct {
+	// TODO: Better identifier for such requests
 	ID          int
 	CodeFiles   map[string][]byte
 	HeaderFiles map[string][]byte
@@ -32,6 +32,15 @@ type CompileResponse struct {
 
 const compileOutputLimit = 4500 // runes
 
+// returns the filename to save with and the bucket to save into
+func bucketFromIDExec(id int) (*datastore.Bucket, string) {
+	if id < 0 { // checker
+		// use -id to turn back positive
+		return datastore.GetBucket(datastore.BucketTypeCheckers), fmt.Sprintf("%d.bin", -id)
+	}
+	return datastore.GetBucket(datastore.BucketTypeCompiles), fmt.Sprintf("%d.bin", id)
+}
+
 func GetCompileTask(logger *zap.SugaredLogger) eval.Task[CompileRequest, CompileResponse] {
 	return func(ctx context.Context, box eval.Sandbox, req *CompileRequest) (*CompileResponse, error) {
 		resp := &CompileResponse{}
@@ -43,7 +52,7 @@ func GetCompileTask(logger *zap.SugaredLogger) eval.Task[CompileRequest, Compile
 			return resp, kilonova.Statusf(500, "No language found")
 		}
 
-		outName := getIDExec(req.ID)
+		bucket, outName := bucketFromIDExec(req.ID)
 		resp.Success = true
 
 		// If the language is interpreted, just save the code and leave
@@ -53,7 +62,7 @@ func GetCompileTask(logger *zap.SugaredLogger) eval.Task[CompileRequest, Compile
 				zap.S().Warn("More than one file specified for non-compiled language. This is not supported")
 			}
 			for _, fData := range req.CodeFiles {
-				if err := os.WriteFile(outName, fData, 0644); err != nil {
+				if err := bucket.WriteFile(outName, bytes.NewBuffer(fData), 0644); err != nil {
 					resp.Other = err.Error()
 					resp.Success = false
 				}
@@ -80,21 +89,20 @@ func GetCompileTask(logger *zap.SugaredLogger) eval.Task[CompileRequest, Compile
 			return resp, nil
 		}
 
-		f, err := os.OpenFile(outName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
-		if err != nil {
-			resp.Other = err.Error()
-			resp.Success = false
-			return resp, nil
-		}
-		if err := box.ReadFile(lang.CompiledName, f); err != nil {
-			resp.Other = err.Error()
-			resp.Success = false
-		}
-		if err := f.Close(); err != nil {
-			resp.Other = err.Error()
-			resp.Success = false
-		}
+		pr, pw := io.Pipe()
+		go func() {
+			err := box.ReadFile(lang.CompiledName, pw)
+			if err != nil {
+				resp.Other = err.Error()
+				resp.Success = false
+			}
+			pw.Close()
+		}()
 
+		if err := bucket.WriteFile(outName, pr, 0777); err != nil {
+			resp.Other = err.Error()
+			resp.Success = false
+		}
 		return resp, nil
 	}
 }
@@ -149,14 +157,6 @@ func compileFile(ctx context.Context, box eval.Sandbox, files map[string][]byte,
 	}
 
 	return combinedOut, stats, nil
-}
-
-func getIDExec(id int) string {
-	if id < 0 { // checker
-		// use -id to turn back positive
-		return path.Join(config.Eval.CompilePath, "checker_cache", fmt.Sprintf("%d.bin", -id))
-	}
-	return path.Join(config.Eval.CompilePath, fmt.Sprintf("%d.bin", id))
 }
 
 func makeGoodCompileCommand(command []string, files []string) ([]string, error) {

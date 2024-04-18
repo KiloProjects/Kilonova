@@ -6,11 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"path"
 	"strings"
 
+	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
@@ -39,7 +38,7 @@ func legacyCheckerTask(ctx context.Context, box eval.Sandbox, job *customChecker
 		rez.Output = ErrOut
 		return rez, nil
 	}
-	if err := eval.CopyInBox(box, path.Join(config.Eval.CompilePath, "checker_cache", fmt.Sprintf("%d.bin", job.c.pb.ID)), lang.CompiledName); err != nil {
+	if err := eval.CopyInBox(box, datastore.GetBucket(datastore.BucketTypeCheckers), fmt.Sprintf("%d.bin", job.c.pb.ID), lang.CompiledName); err != nil {
 		rez.Output = ErrOut
 		return rez, nil
 	}

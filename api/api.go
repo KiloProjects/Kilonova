@@ -49,9 +49,6 @@ func (s *API) Handler() http.Handler {
 			r.Post("/resetWaitingSubs", webMessageWrapper("Reset waiting subs", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
 				return s.base.ResetWaitingSubmissions(ctx)
 			}))
-			r.Post("/invalidateCheckers", webMessageWrapper("Invalidated checkers", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
-				return s.base.InvalidateCheckers()
-			}))
 			r.Post("/cleanBucketCache", webMessageWrapper("Reset bucket cache", func(ctx context.Context, args struct {
 				Name datastore.BucketType `json:"name"`
 			}) *kilonova.StatusError {
