@@ -4,6 +4,7 @@ node_modules
 /flags.json
 !/config.example.toml
 
+/kn
 knnnn
 
 _translations.json

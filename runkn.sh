@@ -18,14 +18,12 @@ yarn --cwd ./web/assets vendor
 #go build -race -v ./cmd/kn || exit 2
 go build -v ./cmd/kn || exit 2
 
-mv kn knnnn # fix gitignore issue
-
 # If it keeps crashing, restart
 while true
 do
 	echo "Starting server..."
     # Preserve overrides flag
-	sudo KN_FLAG_OVERRIDES=$KN_FLAG_OVERRIDES ./knnnn main
+	sudo KN_FLAG_OVERRIDES=$KN_FLAG_OVERRIDES ./kn main
 	echo "Server stopped..."
 	sleep 2
 done
