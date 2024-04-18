@@ -156,6 +156,13 @@
 
     const debounced = bundled.debounce(() => sendSub().catch(console.error), 400, {leading: true, trailing: false})
 
+    // send submission on ctrl + enter
+    document.body.addEventListener('keydown', (event) => {
+        if(event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+            debounced()
+        }
+    });
+
     document.getElementById("sendSubForm").addEventListener("submit", (e) => {
         e.preventDefault();
         debounced()

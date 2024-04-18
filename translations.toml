@@ -676,7 +676,7 @@ ro = "Ești sigur că vrei să faci asta? Acest feature este, momentan, experime
 
 [aiTranslationWarning]
 en = "Warning: This statement was translated by an LLM (like ChatGPT). Results might not be fully accurate or faithful to the original statement. Please report any potential errors on our Discord."
-ro = "Avertisment: Acest enunț a fost tradus de către un LLM (precum ChatGPT). Este probabil ca rezultatele să nu fie 100% corecte sau ca în enunțul original. Vă rugăm raportați eventual erori pe serverul nostru de Discord."
+ro = "Avertisment: Acest enunț a fost tradus de către un LLM (precum ChatGPT). Este probabil ca rezultatele să nu fie 100%% corecte sau ca în enunțul original. Vă rugăm raportați eventual erori pe serverul nostru de Discord."
 
 [existingVariants]
 en = "Existing variants"
