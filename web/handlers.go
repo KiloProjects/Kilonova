@@ -586,13 +586,13 @@ func (rt *Web) appropriateDescriptionVariant(r *http.Request, variants []*kilono
 			return v.Language, v.Format, v.Type
 		}
 	}
-	// Then search if anything matches the language
+	// Then search if anything matches the format
 	for _, v := range variants {
-		if v.Language == prefLang {
+		if v.Format == prefFormat {
 			return v.Language, v.Format, v.Type
 		}
 	}
-	// Then search if anything matches the format
+	// Then search if anything matches the language
 	for _, v := range variants {
 		if v.Language == prefLang {
 			return v.Language, v.Format, v.Type
