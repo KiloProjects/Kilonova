@@ -3,6 +3,7 @@ package datastore
 import (
 	"errors"
 	"os"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -29,6 +30,10 @@ type bucketDef struct {
 	Name    BucketType
 	IsCache bool
 
+	IsPersistent bool
+	MaxSize      int64
+	MaxTTL       time.Duration
+
 	CompressionLevel int
 }
 
@@ -42,36 +47,45 @@ var (
 			Name:    BucketTypeSubtests,
 			IsCache: false,
 
+			MaxSize: 2 * 1024 * 1024 * 1024, // 2GB
+
+			IsPersistent:     false,
 			CompressionLevel: NoCompression,
 		},
 		{
 			Name:    BucketTypeTests,
 			IsCache: false,
 
+			IsPersistent:     true,
 			CompressionLevel: DefaultCompression,
 		},
 		{
 			Name:    BucketTypeAttachments,
 			IsCache: true,
 
+			IsPersistent:     false,
 			CompressionLevel: NoCompression,
 		},
 		{
 			Name:    BucketTypeAvatars,
 			IsCache: true,
 
+			MaxTTL:           31 * 24 * time.Hour, // 31d
+			IsPersistent:     false,
 			CompressionLevel: NoCompression,
 		},
 		{
 			Name:    BucketTypeCheckers,
 			IsCache: true,
 
+			IsPersistent:     false,
 			CompressionLevel: NoCompression,
 		},
 		{
 			Name:    BucketTypeCompiles,
 			IsCache: false, // Well it kind of is but not really since it's cleaned up in the grader
 
+			IsPersistent:     false,
 			CompressionLevel: NoCompression,
 		},
 	}
@@ -92,7 +106,7 @@ func InitBuckets(p string) error {
 		return err
 	}
 	for _, b := range bucketData {
-		bucket, err := NewBucket(p, string(b.Name), b.CompressionLevel, b.IsCache)
+		bucket, err := NewBucket(p, string(b.Name), b.CompressionLevel, b.IsCache, b.IsPersistent, b.MaxSize, b.MaxTTL)
 		if err != nil {
 			return err
 		}
@@ -113,4 +127,12 @@ func GetBucket(name BucketType) *Bucket {
 		zap.S().Fatalf("No bucket found with name %q", name)
 	}
 	return b
+}
+
+func GetBuckets() []*Bucket {
+	ret := make([]*Bucket, 0, len(buckets))
+	for _, val := range buckets {
+		ret = append(ret, val)
+	}
+	return ret
 }

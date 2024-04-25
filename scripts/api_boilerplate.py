@@ -7,6 +7,9 @@ import argparse
 import io
 import json
 
+# NOTE(alexv): This script is unmaintained. I have an updated version that I use for various contests, however it needs a lot of cleanup before possibly being upstreamed.
+# Please notify me if you require this script so I can clean it up and post it here
+
 
 @dataclasses.dataclass
 class APIResponse:
@@ -112,9 +115,11 @@ class Client:
     def deanonymized_leaderboard(self, bundle: UserBundle) -> pd.DataFrame:
         df = self.leaderboard_csv(bundle.contest_id)
         df["username"] = df["username"].map(
-            lambda x: bundle.created_users.get(x, [x, "no_pwd"])[0]
-            if bundle.created_users is not None
-            else x
+            lambda x: (
+                bundle.created_users.get(x, [x, "no_pwd"])[0]
+                if bundle.created_users is not None
+                else x
+            )
         )
         return df
 

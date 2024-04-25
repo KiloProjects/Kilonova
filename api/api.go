@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"mime"
 	"net/http"
 	"sync"
@@ -64,6 +65,24 @@ func (s *API) Handler() http.Handler {
 					return kilonova.WrapError(err, "Could not reset cache")
 				}
 				return nil
+			}))
+			r.Post("/evictBucketObjects", webWrapper(func(ctx context.Context, args struct {
+				Name datastore.BucketType `json:"name"`
+			}) (string, *kilonova.StatusError) {
+				if !args.Name.Valid() {
+					return "", kilonova.Statusf(400, "Invalid bucket")
+				}
+				b := datastore.GetBucket(args.Name)
+				if b.Persistent {
+					return "", kilonova.Statusf(403, "Refusing to remove important bucket")
+				}
+				s.base.LogUserAction(ctx, "Attempted running bucket eviction for %q", args.Name)
+				numDeleted, err := b.RunEvictionPolicy(s.base.EvictionLogger())
+				if err != nil {
+					zap.S().Warnf("Could not evict %q objects: %v", args.Name, err)
+					return "", kilonova.WrapError(err, "Could not evict objects")
+				}
+				return fmt.Sprintf("Deleted %d objects", numDeleted), nil
 			}))
 		})
 

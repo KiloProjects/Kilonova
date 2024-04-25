@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/fs"
 	"strconv"
 	"strings"
 
@@ -55,23 +54,24 @@ func (s *BaseAPI) GetAttachmentRender(attID int, renderType string) (io.ReadSeek
 }
 
 func (s *BaseAPI) DelAttachmentRenders(attID int) error {
-	if err := s.attachmentCacheBucket.IterFiles(func(entry fs.DirEntry) error {
+	entries, err := s.attachmentCacheBucket.FileList()
+	if err != nil {
+		zap.S().Warn("Couldn't delete attachment renders: ", err)
+		return WrapError(err, "Couldn't delete attachment renders")
+	}
+	for _, entry := range entries {
 		prefix, _, _ := strings.Cut(entry.Name(), ".")
 		id, err := strconv.Atoi(prefix)
 		if err != nil {
 			zap.S().Warn("Attachment renders should start with attachment ID:", entry.Name())
-			return nil
+			continue
 		}
 		if id != attID {
-			return nil
+			continue
 		}
 		if err := s.attachmentCacheBucket.RemoveFile(entry.Name()); err != nil {
 			zap.S().Warn("Could not delete attachment render: ", err)
 		}
-		return nil
-	}); err != nil {
-		zap.S().Warn("Couldn't delete attachment renders: ", err)
-		return WrapError(err, "Couldn't delete attachment renders")
 	}
 	return nil
 }

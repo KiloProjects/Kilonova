@@ -39,6 +39,7 @@ type BaseAPI struct {
 
 	logChan chan *logEntry
 
+	evictionLogger        *zap.SugaredLogger
 	testBucket            *datastore.Bucket
 	attachmentCacheBucket *datastore.Bucket
 	subtestBucket         *datastore.Bucket
@@ -47,6 +48,7 @@ type BaseAPI struct {
 
 func (s *BaseAPI) Start(ctx context.Context) {
 	go s.ingestAuditLogs(ctx)
+	go s.cleanupBucketsJob(ctx, 30*time.Minute)
 	go s.refreshProblemStatsJob(ctx, 5*time.Minute)
 	go s.refreshHotProblemsJob(ctx, 4*time.Hour)
 }

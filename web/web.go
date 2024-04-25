@@ -560,7 +560,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return math.Round(float64(kb)/1024.0*100) / 100.0
 		},
 		"humanizeBytes": func(cnt int64) string {
-			return humanize.Bytes(uint64(cnt))
+			return humanize.IBytes(uint64(cnt))
 		},
 		"titleName": func(s string) string {
 			return cases.Title(language.English).String(s)

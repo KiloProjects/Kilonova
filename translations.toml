@@ -2795,3 +2795,15 @@ ro = "Numărul de obiecte"
 [diskSize]
 en = "Size on disk"
 ro = "Dimensiune pe disc"
+
+[maxBucketSize]
+en = "Maximum eviction size"
+ro = "Dimensiune maximă pentru evicție"
+
+[maxBucketTTL]
+en = "Maximum bucket TTL"
+ro = "TTL maxim per bucket"
+
+[evictBucket]
+en = "Run eviction now"
+ro = "Executare curățare acum"

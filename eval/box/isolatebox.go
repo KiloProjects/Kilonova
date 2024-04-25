@@ -16,7 +16,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/davecgh/go-spew/spew"
@@ -39,15 +38,13 @@ type IsolateBox struct {
 
 	memoryQuota int64
 
-	metaFile string
-
 	logger *zap.SugaredLogger
 }
 
 var CGTiming = config.GenFlag[bool]("feature.grader.use_cg_timing", false, "Use --cg-timing flag in grader. Should not be necessary.")
 
 // buildRunFlags compiles all flags into an array
-func (b *IsolateBox) buildRunFlags(c *eval.RunConfig) (res []string) {
+func (b *IsolateBox) buildRunFlags(c *eval.RunConfig, metaFilePath string) (res []string) {
 	res = append(res, "--box-id="+strconv.Itoa(b.boxID))
 
 	res = append(res, "--cg", "--processes")
@@ -120,8 +117,8 @@ func (b *IsolateBox) buildRunFlags(c *eval.RunConfig) (res []string) {
 		res = append(res, "--stderr="+c.StderrPath)
 	}
 
-	if b.metaFile != "" {
-		res = append(res, "--meta="+b.metaFile)
+	if len(metaFilePath) > 0 {
+		res = append(res, "--meta="+metaFilePath)
 	}
 
 	res = append(res, "--silent", "--run", "--")
@@ -168,7 +165,7 @@ func (b *IsolateBox) Close() error {
 	return exec.Command(config.Eval.IsolatePath, "--cg", "--box-id="+strconv.Itoa(b.boxID), "--cleanup").Run()
 }
 
-func (b *IsolateBox) runCommand(ctx context.Context, params []string, metaFile string) (*eval.RunStats, error) {
+func (b *IsolateBox) runCommand(ctx context.Context, params []string, metaFile *os.File) (*eval.RunStats, error) {
 	var isolateOut bytes.Buffer
 	cmd := exec.CommandContext(ctx, config.Eval.IsolatePath, params...)
 	cmd.Stdout = &isolateOut
@@ -180,14 +177,9 @@ func (b *IsolateBox) runCommand(ctx context.Context, params []string, metaFile s
 	}
 
 	// read Meta File
-	f, err := os.Open(metaFile)
-	if err != nil {
-		zap.S().Warn("Couldn't open meta file, wtf: ", err)
-		return nil, nil
-	}
-	defer f.Close()
-	defer os.Remove(metaFile)
-	return parseMetaFile(f, isolateOut), nil
+	defer metaFile.Close()
+	defer os.Remove(metaFile.Name())
+	return parseMetaFile(metaFile, isolateOut), nil
 }
 
 func dumpFileListing(w io.Writer, p string, showPath string, indent string, rec bool) {
@@ -219,7 +211,6 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 	defer b.mu.Unlock()
 
 	var meta *eval.RunStats
-	var err error
 
 	if strings.HasPrefix(command[0], "/box") {
 		p := b.getFilePath(command[0])
@@ -233,10 +224,12 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 	}
 
 	for i := 1; i <= runErrRetries; i++ {
-		metaFile := path.Join(os.TempDir(), "kn-"+kilonova.RandomString(12))
-		b.metaFile = metaFile
-		meta, err = b.runCommand(ctx, append(b.buildRunFlags(conf), command...), metaFile)
-		b.metaFile = ""
+		metaFile, err := os.CreateTemp("", "kn-meta-*")
+		if err != nil {
+			zap.S().Warn("Couldn't create meta file")
+			continue
+		}
+		meta, err = b.runCommand(ctx, append(b.buildRunFlags(conf, metaFile.Name()), command...), metaFile)
 		if err == nil && meta != nil && meta.Status != "XX" {
 			if meta.ExitCode == 127 {
 				if strings.Contains(meta.InternalMessage, "execve") { // It's text file busy, most likely...

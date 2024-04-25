@@ -8,16 +8,19 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/davecgh/go-spew/spew"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type logLevel int
@@ -319,6 +322,49 @@ func (s *BaseAPI) ingestAuditLogs(ctx context.Context) error {
 				}
 			}
 		}
+	}
+}
+
+func (s *BaseAPI) cleanupBucketsJob(ctx context.Context, interval time.Duration) error {
+	t := time.NewTicker(interval)
+	defer t.Stop()
+	logFile := &lumberjack.Logger{
+		Filename: path.Join(config.Common.LogDir, "eviction.log"),
+		MaxSize:  80, //MB
+		Compress: true,
+	}
+	s.evictionLogger = zap.New(kilonova.GetZapCore(config.Common.Debug, false, logFile), zap.AddCaller()).Sugar()
+	// Initial refresh
+	go s.cleanupBuckets()
+	for {
+		select {
+		case <-ctx.Done():
+			if !errors.Is(ctx.Err(), context.Canceled) {
+				return ctx.Err()
+			}
+			return nil
+		case <-t.C:
+			zap.S().Debug("Running eviction policy")
+			s.cleanupBuckets()
+		}
+	}
+}
+
+func (s *BaseAPI) EvictionLogger() *zap.SugaredLogger { return s.evictionLogger }
+
+func (s *BaseAPI) cleanupBuckets() {
+	for _, bucket := range datastore.GetBuckets() {
+		if !bucket.Evictable() {
+			continue
+		}
+		s.evictionLogger.Infof("Running eviction policy on %s", bucket.Name)
+		numDeleted, err := bucket.RunEvictionPolicy(s.evictionLogger)
+		if err != nil {
+			s.evictionLogger.Error(err)
+			zap.S().Warn("Error running bucket cleanup. Check eviction.log for details")
+			continue
+		}
+		s.evictionLogger.Infof("Deleted %d objects from %q", numDeleted, bucket.Name)
 	}
 }
 
