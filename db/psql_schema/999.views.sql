@@ -3,29 +3,6 @@ BEGIN;
 -- NOTE: This file will never be inside 001.base.sql
 -- This can be rerun every time a type or column is changed so the views will be refreshed
 
-DROP VIEW IF EXISTS max_score_view CASCADE;
-CREATE OR REPLACE VIEW max_score_view (user_id, problem_id, score) AS 
-    WITH max_submission_strat AS (
-        SELECT user_id, problem_id, MAX(score) AS max_score FROM submissions GROUP BY user_id, problem_id
-    ), subtask_max_scores AS (
-        SELECT DISTINCT user_id, subtask_id, problem_id, FIRST_VALUE(computed_score) OVER w AS max_score, FIRST_VALUE(created_at) OVER w AS mintime
-        FROM submission_subtasks stks
-        WHERE subtask_id IS NOT NULL 
-            WINDOW w AS (PARTITION BY user_id, subtask_id, problem_id ORDER BY computed_score DESC, created_at ASC)
-    ), sum_subtasks_strat AS (
-        SELECT user_id, problem_id, coalesce(SUM(max_score), -1) AS max_score FROM subtask_max_scores GROUP BY user_id, problem_id
-    ), user_subs AS (
-        SELECT DISTINCT user_id, problem_id FROM submissions
-    ) SELECT subs.user_id user_id, 
-            pbs.id problem_id, 
-            CASE WHEN pbs.scoring_strategy = 'max_submission' OR pbs.scoring_strategy = 'acm-icpc' THEN COALESCE(ms_sub.max_score, -1)
-                 WHEN pbs.scoring_strategy = 'sum_subtasks'   THEN COALESCE(ms_subtask.max_score, -1)
-                 ELSE -1
-            END score
-    FROM (user_subs subs JOIN problems pbs ON subs.problem_id = pbs.id) 
-        LEFT JOIN max_submission_strat ms_sub ON (ms_sub.user_id = subs.user_id AND ms_sub.problem_id = pbs.id)
-        LEFT JOIN sum_subtasks_strat ms_subtask ON (ms_subtask.user_id = subs.user_id AND ms_subtask.problem_id = pbs.id);
-
 DROP VIEW IF EXISTS running_contests CASCADE;
 CREATE OR REPLACE VIEW running_contests AS (
     SELECT * from contests WHERE contests.start_time <= NOW() AND NOW() <= contests.end_time

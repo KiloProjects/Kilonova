@@ -69,6 +69,3 @@ CREATE OR REPLACE TRIGGER submission_score_delete
     EXECUTE FUNCTION score_delete_handler();
 
 COMMIT;
-
--- Sync checkup query:
--- (SELECT * FROM max_score_view EXCEPT SELECT * FROM max_scores) UNION ALL (SELECT * FROM max_scores EXCEPT SELECT * FROM max_score_view);
