@@ -1,6 +1,10 @@
 BEGIN; -- submissions references contests which is defined later
 
-CREATE EXTENSION unaccent;
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
+CREATE TABLE IF NOT EXISTS kn_schema_version (
+    version integer not null
+);
 
 -- user stuff
 
@@ -574,8 +578,6 @@ CREATE OR REPLACE TRIGGER username_change_inserts
     FOR EACH ROW
     EXECUTE FUNCTION insert_username_change();
 
-COMMIT;
-
 -- max score logic
 
 
@@ -642,3 +644,4 @@ CREATE OR REPLACE TRIGGER submission_score_delete
     FOR EACH ROW
     EXECUTE FUNCTION score_delete_handler();
 
+COMMIT;

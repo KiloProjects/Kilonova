@@ -16,6 +16,10 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	MigrateOnStart = config.GenFlag("behavior.db.run_migrations", true, "Run PostgreSQL migrations on platform start")
+)
+
 type UserBrief = kilonova.UserBrief
 type UserFull = kilonova.UserFull
 
@@ -124,6 +128,12 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, *StatusError) {
 		return nil, WrapError(err, "Couldn't connect to DB")
 	}
 	zap.S().Info("Connected to DB")
+
+	if MigrateOnStart.Value() {
+		if err := db.RunMigrations(ctx); err != nil {
+			return nil, WrapError(err, "Couldn't run migrations")
+		}
+	}
 
 	return GetBaseAPI(db, knMailer)
 }
