@@ -193,9 +193,6 @@ CREATE OR REPLACE FUNCTION contest_max_scores(contest_id bigint, freeze_time tim
         LEFT JOIN sum_subtasks_strat ms_subtask ON (ms_subtask.user_id = users.user_id AND ms_subtask.problem_id = pbs.problem_id)
 $$ LANGUAGE SQL STABLE;
 
-DROP VIEW IF EXISTS contest_submission_subtask_max_scores CASCADE;
-DROP VIEW IF EXISTS max_score_contest_view CASCADE;
-
 DROP VIEW IF EXISTS contest_top_view CASCADE;
 DROP FUNCTION IF EXISTS contest_top_view;
 -- Since we now return -1 on no attempt, we must filter it when computing the top view
