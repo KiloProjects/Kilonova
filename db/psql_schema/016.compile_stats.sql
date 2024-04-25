@@ -1,1 +1,0 @@
-ALTER TABLE submissions ADD COLUMN compile_duration DOUBLE PRECISION;
