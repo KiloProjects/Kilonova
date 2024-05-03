@@ -134,6 +134,14 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 			return ProcessPolygonCheckFile(ctx, file)
 		}
 
+		match, err := path.Match("statements/.pdf/*/problem.pdf", file.Name)
+		if err != nil {
+			zap.S().Warn(err)
+		}
+		if err == nil && match {
+			return ProcessPolygonPDFStatement(ctx, file)
+		}
+
 		return nil
 	}
 
@@ -157,8 +165,9 @@ type TestProcessParams struct {
 	Polygon          bool
 	MergeAttachments bool
 
-	// ChangeTestName is used when importing problems, since they use a stub name and, if not set, should be updated anyway, if available
-	ChangeTestName bool
+	// It's used when importing problems, since they use a stub name and, if not set, should be updated anyway, if available.
+	// Also when uploading ICPC archive decide if importing as ICPC or not
+	FirstImport bool
 
 	// MergeTests bool
 }
@@ -468,7 +477,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 			upd.Name, shouldUpd = aCtx.props.ProblemName, true
 		}
 
-		if params.ChangeTestName && aCtx.props.TestName == nil {
+		if params.FirstImport && aCtx.props.TestName == nil {
 			newTestName := ""
 			if upd.Name != nil {
 				newTestName = kilonova.MakeSlug(*upd.Name)

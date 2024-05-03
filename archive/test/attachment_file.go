@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"go.uber.org/zap"
 )
 
 type archiveAttachment struct {
@@ -82,6 +83,31 @@ func ProcessPolygonCheckFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusEr
 		Visible: false,
 		Private: true,
 		Exec:    true,
+	}
+	return nil
+}
+
+func ProcessPolygonPDFStatement(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
+	parts := strings.Split(file.Name, "/")
+	if len(parts) != 4 {
+		zap.S().Warn("Sanity check failed: Polygon PDF statement is not 4 parts")
+		return nil
+	}
+	filename := ""
+	switch parts[2] {
+	case "english":
+		filename = "statement-en.pdf"
+	case "romanian":
+		filename = "statement-ro.pdf"
+	default:
+		return nil
+	}
+	ctx.attachments[filename] = archiveAttachment{
+		File:    file,
+		Name:    filename,
+		Visible: false,
+		Private: false,
+		Exec:    false,
 	}
 	return nil
 }

@@ -43,15 +43,18 @@ func ProcessProblemXMLFile(actx *ArchiveCtx, file io.Reader) *kilonova.StatusErr
 	}
 
 	// Get task points and subtask
+	var isICPC bool = true
 	var subtasks = make(map[string]parsedSubtask)
 	for id, test := range xmlquery.Find(testsetNode, "//tests/test") {
 		if points := test.SelectAttr("points"); points != "" {
+			isICPC = false
 			val, err := decimal.NewFromString(points)
 			if err == nil {
 				actx.testScores[id+1] = val
 			}
 		}
 		if group := test.SelectAttr("group"); group != "" {
+			isICPC = false
 			stk, ok := subtasks[group]
 			if !ok {
 				stk = parsedSubtask{}
@@ -59,6 +62,9 @@ func ProcessProblemXMLFile(actx *ArchiveCtx, file io.Reader) *kilonova.StatusErr
 			stk.Tests = append(stk.Tests, id+1)
 			subtasks[group] = stk
 		}
+	}
+	if isICPC && actx.params.FirstImport {
+		actx.props.ScoringStrategy = kilonova.ScoringTypeICPC
 	}
 
 	if len(subtasks) > 0 {
@@ -95,7 +101,7 @@ func ProcessProblemXMLFile(actx *ArchiveCtx, file io.Reader) *kilonova.StatusErr
 
 	// Parse time/memory limit
 	if node := xmlquery.FindOne(testsetNode, "//time-limit"); node != nil {
-		timeLimit, err := strconv.Atoi(node.Data)
+		timeLimit, err := strconv.Atoi(node.InnerText())
 		if err == nil {
 			timeLimitF := float64(timeLimit) / 1000.0
 			actx.props.TimeLimit = &timeLimitF
@@ -103,7 +109,7 @@ func ProcessProblemXMLFile(actx *ArchiveCtx, file io.Reader) *kilonova.StatusErr
 	}
 
 	if node := xmlquery.FindOne(testsetNode, "//memory-limit"); node != nil {
-		memoryLimit, err := strconv.Atoi(node.Data)
+		memoryLimit, err := strconv.Atoi(node.InnerText())
 		if err == nil {
 			memoryLimit /= 1024
 			actx.props.MemoryLimit = &memoryLimit
