@@ -5,7 +5,7 @@ import { useEffect, useState } from "preact/hooks";
 import { getCall } from "../api/client";
 import { apiToast } from "../toast";
 import getText from "../translation";
-import { BigSpinner } from "./common";
+import { BigSpinner, formatScoreStr } from "./common";
 
 type Sublist = {
 	id: number;
@@ -24,12 +24,10 @@ type FullList = {
 	sublists: Sublist[];
 };
 
-type ScoredProblem = {
-	id: number;
-	name: string;
-	visible: boolean;
+type ScoredProblem = Problem & {
 	is_editor: boolean;
-	max_score?: number;
+	score_user_id?: number | null;
+	max_score?: number | null;
 };
 
 function isProblemEditor(pb: ScoredProblem): boolean {
@@ -41,6 +39,23 @@ function isProblemEditor(pb: ScoredProblem): boolean {
 
 type ProblemScore = { [problem: number]: number };
 type SublistSolved = { [num_solved: number]: number };
+
+function SPBMaxScore({ pb }: { pb: ScoredProblem }) {
+	console.log(pb);
+	if (typeof pb.score_user_id == "undefined" || pb.score_user_id == null) {
+		return <></>;
+	}
+	if (typeof pb.max_score == "undefined" || pb.max_score == null || pb.max_score < 0) {
+		return <>-</>;
+	}
+	if (pb.scoring_strategy == "acm-icpc") {
+		if (Math.abs(pb.max_score - 100) < 0.01) {
+			return <i class="fas fa-fw fa-check"></i>;
+		}
+		return <i class="fas fa-fw fa-xmark"></i>;
+	}
+	return <>{formatScoreStr(pb.max_score.toFixed(pb.score_precision))}</>;
+}
 
 export function Problems({ pbs, listID }: { pbs: ScoredProblem[]; listID?: number }) {
 	return (
@@ -62,9 +77,9 @@ export function Problems({ pbs, listID }: { pbs: ScoredProblem[]; listID?: numbe
 								) : (
 									<span class="badge badge-red">{getText("unpublished")}</span>
 								))}{" "}
-							{(typeof pb.max_score !== "undefined" && pb.max_score !== null && pb.max_score >= 0 && (
-								<span class="badge">{pb.max_score}</span>
-							)) || <span class="badge">-</span>}
+							<span class="badge">
+								<SPBMaxScore pb={pb} />
+							</span>
 						</div>
 					)}
 				</a>

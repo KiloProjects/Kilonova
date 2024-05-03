@@ -26,7 +26,7 @@ declare global {
 		source_credits: string;
 		source_size: number;
 		console_input: boolean;
-		scoring_strategy: "sum_subtasks" | "max_submission" | "acm_icpc";
+		scoring_strategy: "sum_subtasks" | "max_submission" | "acm-icpc";
 		score_precision: number;
 
 		score_scale: number;
