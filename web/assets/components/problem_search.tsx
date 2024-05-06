@@ -118,6 +118,7 @@ export function CustomProblemListing(params: {
 	showFull: boolean;
 	showTags: boolean;
 	scoreView: boolean;
+	saveHistory: boolean;
 }) {
 	const [page, setPage] = useState(1);
 	const [problems, setProblems] = useState<FullProblem[]>(params.problems);
@@ -133,12 +134,42 @@ export function CustomProblemListing(params: {
 		}
 		setCount(rez.data.count);
 		setProblems(rez.data.problems);
+		if (page > 1) {
+			const newName = window.location.pathname + "?page=" + page.toString();
+			if (window.location.pathname + window.location.search != newName) {
+				history.pushState({}, "", newName);
+			}
+		} else {
+			if (window.location.search.length > 0) {
+				history.pushState({}, "", window.location.pathname);
+			}
+		}
 	}
 
 	useEffect(() => {
 		if (mounted.current || problems.length == 0) load()?.catch(console.error);
 		else mounted.current = true;
 	}, [params.filter, page]);
+
+	useEffect(() => {
+		const historyPopEvent = async (e) => {
+			// TODO: Keep tag groups
+			let page = new URLSearchParams(window.location.search).get("page");
+			let val = parseInt(page ?? "");
+			if (!isNaN(val)) {
+				setPage(val);
+			} else {
+				setPage(1);
+			}
+		};
+		if (params.saveHistory) {
+			window.addEventListener("popstate", historyPopEvent);
+			return () => window.removeEventListener("popstate", historyPopEvent);
+		} else {
+			// Make sure
+			window.removeEventListener("popstate", historyPopEvent);
+		}
+	}, [params.saveHistory]);
 
 	return (
 		<>
@@ -683,6 +714,7 @@ function ProblemListingWrapper({
 	showfull,
 	filter,
 	scoreView,
+	saveHistory,
 }: {
 	enc: string;
 	count: string;
@@ -690,6 +722,7 @@ function ProblemListingWrapper({
 	showfull: string;
 	filter: ProblemQuery;
 	scoreView: boolean;
+	saveHistory: boolean;
 }) {
 	let pbs: FullProblem[] = JSON.parse(fromBase64(enc));
 	let cnt = parseInt(count);
@@ -704,6 +737,7 @@ function ProblemListingWrapper({
 			showFull={showfull === "true"}
 			filter={filter}
 			scoreView={scoreView}
+			saveHistory={saveHistory}
 		></CustomProblemListing>
 	);
 }
@@ -741,6 +775,7 @@ function TagProblemsDOM({ enc, count, tagid }: { enc: string; count: string; tag
 					showfull="true"
 					filter={{ textQuery: "", tags: [{ tag_ids: [tagID], negate: false }], page: 1, descending: false, ordering: "" }}
 					scoreView={false}
+					saveHistory={true}
 				/>
 			</div>
 		</>
@@ -760,6 +795,7 @@ function ProblemSolvedByDOM({ enc, count, userid }: { enc: string; count: string
 			filter={{ textQuery: "", tags: [], page: 1, solved_by: uid, score_user_id: uid, descending: false, ordering: "" }}
 			scoreView={true}
 			showTags={false}
+			saveHistory={false}
 		/>
 	);
 }
@@ -777,6 +813,7 @@ function ProblemAttemptedByDOM({ enc, count, userid }: { enc: string; count: str
 			filter={{ textQuery: "", tags: [], page: 1, attempted_by: uid, score_user_id: uid, descending: false, ordering: "" }}
 			scoreView={true}
 			showTags={false}
+			saveHistory={false}
 		/>
 	);
 }
