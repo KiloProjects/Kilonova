@@ -284,9 +284,15 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 		}
 		setCount(rez.data.count);
 		setProblems(rez.data.problems);
+		let str = getQuery().toString();
+		if (str.length > 0) str = "?" + str;
+		const newName = window.location.pathname + str;
+		if (window.location.pathname + window.location.search != newName) {
+			history.pushState({}, "", newName);
+		}
 	}
 
-	async function copyQuery() {
+	function getQuery() {
 		var p = new URLSearchParams();
 		console.log(query);
 		if (query.textQuery != "") {
@@ -314,8 +320,11 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 		if (typeof query.deep_list_id !== "undefined" && query.deep_list_id > 0) {
 			p.append("deep_list_id", query.deep_list_id.toString());
 		}
+		return p;
+	}
 
-		let url = window.location.origin + window.location.pathname + "?" + p.toString();
+	async function copyQuery() {
+		let url = window.location.origin + window.location.pathname + "?" + getQuery().toString();
 		try {
 			await navigator.clipboard.writeText(url);
 			createToast({ status: "success", title: getText("copied") });
@@ -340,6 +349,15 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 		if (mounted.current) load()?.catch(console.error);
 		else mounted.current = true;
 	}, [query]);
+
+	useEffect(() => {
+		const historyPopEvent = async (e) => {
+			// TODO: Keep tag groups
+			setQuery(initialQuery(new URLSearchParams(window.location.search), []));
+		};
+		window.addEventListener("popstate", historyPopEvent);
+		return () => window.removeEventListener("popstate", historyPopEvent);
+	});
 
 	useEffect(() => {
 		console.log(problemList, query);
