@@ -63,7 +63,7 @@ func ProcessProblemXMLFile(actx *ArchiveCtx, file io.Reader) *kilonova.StatusErr
 			subtasks[group] = stk
 		}
 	}
-	if isICPC && actx.params.FirstImport {
+	if isICPC && actx.params.FirstImport && len(actx.params.ScoreParamsStr) == 0 {
 		actx.props.ScoringStrategy = kilonova.ScoringTypeICPC
 	}
 

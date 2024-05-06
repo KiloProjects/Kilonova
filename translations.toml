@@ -2428,6 +2428,10 @@ ro = "Probleme cu această etichetă"
 en = "Search"
 ro = "Căutare"
 
+[name_or_id]
+en = "Name or ID"
+ro = "Nume sau ID"
+
 [filter_tags]
 en = "Filter by tags"
 ro = "Filtrare după etichete"
@@ -2715,6 +2719,10 @@ ro = "Probleme trending"
 [pinned_lists]
 en = "Highlighted lists"
 ro = "Liste evidențiate"
+
+[quick_search]
+en = "Search problems"
+ro = "Căutare probleme"
 
 [glossary]
 en = "Glossary"
