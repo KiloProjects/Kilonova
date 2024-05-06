@@ -2807,3 +2807,11 @@ ro = "TTL maxim per bucket"
 [evictBucket]
 en = "Run eviction now"
 ro = "Executare curățare acum"
+
+[feedbackHeader]
+en = "Help us with some feedback!"
+ro = "Ajută-ne cu niște feedback!"
+
+[feedbackCallToArms]
+en = "Your voice is valuable. Please [respond to a few simple questions](%s) to improve the platform. Shouldn't take more than 2 minutes :)"
+ro = "Vocea ta este importantă. Te rugăm [să răspunzi la niște întrebări](%s) simple pentru a face platforma mai bună. N-ar trebui să ia mai mult de 2 minute :)"

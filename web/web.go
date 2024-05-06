@@ -60,6 +60,8 @@ var (
 	GoatCounterDomain = config.GenFlag("feature.analytics.goat_prefix", "https://goat.kilonova.ro", "URL prefix for GoatCounter analytics")
 
 	NavbarBranding = config.GenFlag("frontend.navbar.branding", "Kilonova", "Branding in navbar")
+
+	FeedbackURL = config.GenFlag("feature.frontend.feedback_url", "", "Feedback URL for main page")
 )
 
 //go:embed static

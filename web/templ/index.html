@@ -18,6 +18,13 @@
 <div class="page-holder">
     <div class="page-content-wrapper">
 
+        {{with stringFlag "feature.frontend.feedback_url"}}
+        <div class="segment-panel">
+            <h2>{{getText "feedbackHeader"}}</h2>
+            <p class="mb-1">{{getText "feedbackCallToArms" . | renderMarkdown}} </p>
+        </div>
+        {{end}}
+
         {{ if (or .RunningContests .FutureContests)}}
         <div class="segment-panel {{ if boolFlag `feature.frontend.front_page_csidebar` }} lg:hidden {{end}}">
             {{ with .RunningContests}}
