@@ -422,6 +422,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 						});
 					}}
 					value={query.textQuery}
+					autofocus={true}
 				/>
 				<button class="btn btn-blue" onClick={() => setAdvOptions(!advOptions)}>
 					{getText("advancedFilters")} <i class={`ml-1 fas ${advOptions ? "fa-caret-up" : "fa-caret-down"}`}></i>

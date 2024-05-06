@@ -107,4 +107,46 @@
     document.getElementById("problemArchiveForm").addEventListener("submit", startArchiveDownload)
 </script>
 
+{{with .Tests}}
+<div class="segment-panel">
+    <h2>{{getText "individual_tests"}}</h2>
+    <table class="kn-table kn-table-slim">
+        <thead>
+            <tr>
+                <th class="kn-table-cell" scope="col">
+                    {{getText "id"}}
+                </th>
+                <th class="kn-table-cell" scope="col">
+                    {{getText "input"}}
+                </th>
+                <th class="kn-table-cell" scope="col">
+                    {{getText "output"}}
+                </th>
+                <th class="kn-table-cell" scope="col">
+                    {{getText "score"}}
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .}}
+            <tr class="kn-table-row">
+                <th class="kn-table-cell" scope="row">
+                    {{.VisibleID}}.
+                </th>
+                <td class="kn-table-cell">
+                    <a class="btn btn-blue mr-2" href="/assets/problem/{{$.Problem.ID}}/test/{{.VisibleID}}/input" download>Download input</a>
+                </td>
+                <td class="kn-table-cell">
+                    <a class="btn btn-blue" href="/assets/problem/{{$.Problem.ID}}/test/{{.VisibleID}}/output" download>Download output</a>
+                </td>
+                <td class="kn-table-cell">
+                    {{.Score}}      
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+{{end}}
+
 {{end}}

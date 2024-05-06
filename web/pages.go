@@ -154,6 +154,13 @@ type ProblemTopbarParams struct {
 	Problem   *kilonova.Problem
 }
 
+type ProblemArchiveParams struct {
+	Topbar *ProblemTopbar
+
+	Tests   []*kilonova.Test
+	Problem *kilonova.Problem
+}
+
 type ProblemListParams struct {
 	ProblemList *kilonova.ProblemList
 	Lists       []*kilonova.ProblemList

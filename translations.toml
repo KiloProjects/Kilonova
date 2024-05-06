@@ -562,6 +562,10 @@ ro = "Atașamente"
 en = "Private attachments"
 ro = "Atașamente private"
 
+[individual_tests]
+en = "Download individual tests"
+ro = "Descărcare teste individuale"
+
 [gen_title]
 en = "Select what to include in problem archive"
 ro = "Selectează ce să fie inclus în arhiva problemei"

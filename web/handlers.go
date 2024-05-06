@@ -772,10 +772,23 @@ func (rt *Web) problemSubmit() http.HandlerFunc {
 func (rt *Web) problemArchive() http.HandlerFunc {
 	templ := rt.parse(nil, "problem/pb_archive.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
+		topbar := rt.problemTopbar(r, "pb_archive", -1)
+		var tests []*kilonova.Test
+		if topbar.CanViewTests {
+			tests2, err := rt.base.Tests(r.Context(), util.Problem(r).ID)
+			if err != nil {
+				if !errors.Is(err, context.Canceled) {
+					zap.S().Warn(err)
+				}
+			} else {
+				tests = tests2
+			}
+		}
 
-		rt.runTempl(w, r, templ, &ProblemTopbarParams{
-			Topbar: rt.problemTopbar(r, "pb_archive", -1),
+		rt.runTempl(w, r, templ, &ProblemArchiveParams{
+			Topbar: topbar,
 
+			Tests:   tests,
 			Problem: util.Problem(r),
 		})
 	}
