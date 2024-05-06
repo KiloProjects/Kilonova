@@ -61,7 +61,8 @@ var (
 
 	NavbarBranding = config.GenFlag("frontend.navbar.branding", "Kilonova", "Branding in navbar")
 
-	FeedbackURL = config.GenFlag("feature.frontend.feedback_url", "", "Feedback URL for main page")
+	FeedbackURL    = config.GenFlag("feature.frontend.feedback_url", "", "Feedback URL for main page")
+	QuickSearchBox = config.GenFlag("feature.frontend.quick_search", false, "Quick search box on main page")
 )
 
 //go:embed static
