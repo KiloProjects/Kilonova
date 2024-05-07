@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"path"
@@ -333,7 +334,14 @@ func (s *BaseAPI) cleanupBucketsJob(ctx context.Context, interval time.Duration)
 		MaxSize:  80, //MB
 		Compress: true,
 	}
-	s.evictionLogger = zap.New(kilonova.GetZapCore(config.Common.Debug, false, logFile), zap.AddCaller()).Sugar()
+	lvl := slog.LevelInfo
+	if config.Common.Debug {
+		lvl = slog.LevelDebug
+	}
+	s.evictionLogger = slog.New(slog.NewTextHandler(logFile, &slog.HandlerOptions{
+		AddSource: true,
+		Level:     lvl,
+	}))
 	// Initial refresh
 	go s.cleanupBuckets()
 	for {
@@ -350,21 +358,21 @@ func (s *BaseAPI) cleanupBucketsJob(ctx context.Context, interval time.Duration)
 	}
 }
 
-func (s *BaseAPI) EvictionLogger() *zap.SugaredLogger { return s.evictionLogger }
+func (s *BaseAPI) EvictionLogger() *slog.Logger { return s.evictionLogger }
 
 func (s *BaseAPI) cleanupBuckets() {
 	for _, bucket := range datastore.GetBuckets() {
 		if !bucket.Evictable() {
 			continue
 		}
-		s.evictionLogger.Infof("Running eviction policy on %s", bucket.Name)
+		s.evictionLogger.Info("Running bucket eviction policy", slog.String("bucket", bucket.Name))
 		numDeleted, err := bucket.RunEvictionPolicy(s.evictionLogger)
 		if err != nil {
-			s.evictionLogger.Error(err)
+			s.evictionLogger.Error(err.Error())
 			zap.S().Warn("Error running bucket cleanup. Check eviction.log for details")
 			continue
 		}
-		s.evictionLogger.Infof("Deleted %d objects from %q", numDeleted, bucket.Name)
+		s.evictionLogger.Info("Deleted bucket objects", slog.String("bucket", bucket.Name), slog.Int("count", numDeleted))
 	}
 }
 

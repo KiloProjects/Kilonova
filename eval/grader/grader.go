@@ -3,6 +3,7 @@ package grader
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"path"
 	"slices"
 	"strings"
@@ -83,7 +84,7 @@ func genSubCompileRequest(ctx context.Context, base *sudoapi.BaseAPI, sub *kilon
 }
 
 func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission) error {
-	graderLogger.Infof("Executing submission %d with status %q", sub.ID, sub.Status)
+	graderLogger.Info("Executing submission", slog.Int("id", sub.ID), slog.Any("status", sub.Status))
 	defer func() {
 		// In case anything ever happens, make sure it is at least marked as finished
 		if err := base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished}); err != nil {

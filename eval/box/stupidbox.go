@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path"
 	"sync"
 
 	"github.com/KiloProjects/kilonova/eval"
-	"go.uber.org/zap"
 )
 
 var _ eval.Sandbox = &StupidSandbox{}
@@ -26,7 +26,7 @@ type StupidSandbox struct {
 
 	memoryQuota int64
 
-	logger *zap.SugaredLogger
+	logger *slog.Logger
 }
 
 func (b *StupidSandbox) GetID() int {
@@ -63,7 +63,7 @@ func (b *StupidSandbox) getFilePath(boxpath string) string {
 	return path.Join(b.path, boxpath)
 }
 
-func NewStupid(boxID int, memoryQuota int64, logger *zap.SugaredLogger) (eval.Sandbox, error) {
+func NewStupid(boxID int, memoryQuota int64, logger *slog.Logger) (eval.Sandbox, error) {
 	dirname := path.Join(os.TempDir(), fmt.Sprintf("stupid-box-%d", boxID))
 	// Try to clear existing box first, if it exited without cleanup
 	if err := os.RemoveAll(dirname); err != nil {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path"
 	"slices"
@@ -232,7 +233,7 @@ func (b *Bucket) Evictable() bool {
 	return !b.Persistent && (b.MaxSize > 1024 || b.MaxTTL > time.Second)
 }
 
-func (b *Bucket) RunEvictionPolicy(logger *zap.SugaredLogger) (int, error) {
+func (b *Bucket) RunEvictionPolicy(logger *slog.Logger) (int, error) {
 	if b.Persistent {
 		return -1, errors.New("Bucket is marked as persistent, refusing to run eviction policy")
 	}
@@ -262,7 +263,7 @@ func (b *Bucket) RunEvictionPolicy(logger *zap.SugaredLogger) (int, error) {
 	})
 
 	if logger != nil {
-		logger.Infof("Found %d objects. Total filesize before: %s", len(evictionEntries), humanize.IBytes(uint64(dirSize)))
+		logger.Info("Before cleanup", slog.String("bucket", b.Name), slog.Int("object_count", len(evictionEntries)), slog.String("bucket_size", humanize.IBytes(uint64(dirSize))))
 	}
 
 	var numDeleted int
@@ -295,7 +296,7 @@ func (b *Bucket) RunEvictionPolicy(logger *zap.SugaredLogger) (int, error) {
 	b.lastStatTime = time.Now()
 
 	if logger != nil {
-		logger.Infof("Total filesize after: %s", humanize.IBytes(uint64(dirSize)))
+		logger.Info("After cleanup", slog.String("bucket", b.Name), slog.Int("object_count", len(evictionEntries)), slog.String("bucket_size", humanize.IBytes(uint64(dirSize))))
 	}
 
 	return numDeleted, nil

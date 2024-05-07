@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/datastore"
@@ -41,10 +42,10 @@ func bucketFromIDExec(id int) (*datastore.Bucket, string) {
 	return datastore.GetBucket(datastore.BucketTypeCompiles), fmt.Sprintf("%d.bin", id)
 }
 
-func GetCompileTask(logger *zap.SugaredLogger) eval.Task[CompileRequest, CompileResponse] {
+func GetCompileTask(logger *slog.Logger) eval.Task[CompileRequest, CompileResponse] {
 	return func(ctx context.Context, box eval.Sandbox, req *CompileRequest) (*CompileResponse, error) {
 		resp := &CompileResponse{}
-		logger.Infof("Compiling file using box %d", box.GetID())
+		logger.Info("Compiling file", slog.Int("box_id", box.GetID()), slog.Int("req_id", req.ID))
 
 		lang, ok := eval.Langs[req.Lang]
 		if !ok {

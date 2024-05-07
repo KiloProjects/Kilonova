@@ -3,13 +3,14 @@ package scheduler
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/KiloProjects/kilonova/eval"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
 
-type BoxFunc func(id int, mem int64, logger *zap.SugaredLogger) (eval.Sandbox, error)
+type BoxFunc func(id int, mem int64, logger *slog.Logger) (eval.Sandbox, error)
 
 var _ eval.BoxScheduler = &BoxManager{}
 
@@ -19,7 +20,7 @@ type BoxManager struct {
 	concSem       *semaphore.Weighted
 	memSem        *semaphore.Weighted
 
-	logger *zap.SugaredLogger
+	logger *slog.Logger
 
 	availableIDs chan int
 
@@ -103,7 +104,7 @@ func (b *BoxManager) Close(ctx context.Context) error {
 }
 
 // New creates a new box manager
-func New(startingNumber int, count int, maxMemory int64, logger *zap.SugaredLogger, boxGenerator BoxFunc) (*BoxManager, error) {
+func New(startingNumber int, count int, maxMemory int64, logger *slog.Logger, boxGenerator BoxFunc) (*BoxManager, error) {
 
 	if startingNumber < 0 {
 		startingNumber = 0
@@ -130,7 +131,7 @@ func New(startingNumber int, count int, maxMemory int64, logger *zap.SugaredLogg
 }
 
 func CheckCanRun(boxFunc BoxFunc) bool {
-	box, err := boxFunc(0, 0, zap.S())
+	box, err := boxFunc(0, 0, slog.Default())
 	if err != nil {
 		zap.S().Warn(err)
 		return false

@@ -1,11 +1,11 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
-	"go.uber.org/zap"
 )
 
 func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
@@ -92,7 +92,7 @@ func (s *API) updateBoolFlags(w http.ResponseWriter, r *http.Request) {
 	for k, v := range args.BoolFlags {
 		flg, ok := config.GetFlag[bool](k)
 		if !ok {
-			zap.S().Warnf("Flag %q not found", k)
+			slog.Warn("Flag not found", slog.String("name", k))
 			continue
 		}
 		flg.Update(v)
@@ -100,7 +100,7 @@ func (s *API) updateBoolFlags(w http.ResponseWriter, r *http.Request) {
 	for k, v := range args.StringFlags {
 		flg, ok := config.GetFlag[string](k)
 		if !ok {
-			zap.S().Warnf("Flag %q not found", k)
+			slog.Warn("Flag not found", slog.String("name", k))
 			continue
 		}
 		flg.Update(v)
@@ -108,7 +108,7 @@ func (s *API) updateBoolFlags(w http.ResponseWriter, r *http.Request) {
 	for k, v := range args.IntFlags {
 		flg, ok := config.GetFlag[int](k)
 		if !ok {
-			zap.S().Warnf("Flag %q not found", k)
+			slog.Warn("Flag not found", slog.String("name", k))
 			continue
 		}
 		flg.Update(v)

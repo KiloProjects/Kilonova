@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"path"
 	"time"
@@ -43,7 +44,7 @@ type BaseAPI struct {
 
 	logChan chan *logEntry
 
-	evictionLogger        *zap.SugaredLogger
+	evictionLogger        *slog.Logger
 	testBucket            *datastore.Bucket
 	attachmentCacheBucket *datastore.Bucket
 	subtestBucket         *datastore.Bucket

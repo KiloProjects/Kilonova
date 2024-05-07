@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path"
@@ -38,7 +39,7 @@ type IsolateBox struct {
 
 	memoryQuota int64
 
-	logger *zap.SugaredLogger
+	logger *slog.Logger
 }
 
 var CGTiming = config.GenFlag[bool]("feature.grader.use_cg_timing", false, "Use --cg-timing flag in grader. Should not be necessary.")
@@ -238,7 +239,7 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 					// 	// Only warn if it comes to the second attempt. First error is often enough in prod
 					zap.S().Warnf("Text file busy error in box %d, retrying (%d/%d). Check grader.log for more details", b.boxID, i, runErrRetries)
 					// }
-					b.logger.Warnf("Text file busy error in box %d, retrying (%d/%d): %s", b.boxID, i, runErrRetries, spew.Sdump(meta))
+					b.logger.Warn("Text file busy error, retrying", slog.Int("box_id", b.boxID), slog.Int("attempt", i), slog.Int("max_retries", runErrRetries), slog.Any("metadata", meta))
 					time.Sleep(runErrTimeout)
 					continue
 				}
@@ -258,15 +259,22 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 			// Only warn if it comes to the second attempt. First error is often enough in prod
 			zap.S().Warnf("Run error in box %d, retrying (%d/%d). Check grader.log for more details", b.boxID, i, runErrRetries)
 		}
-		b.logger.Warnf("Run error in box %d, retrying (%d/%d): '%#v' %s", b.boxID, i, runErrRetries, err, spew.Sdump(meta))
+		b.logger.Warn("Run error in box, retrying", slog.Int("box_id", b.boxID), slog.Int("attempt", i), slog.Int("max_retries", runErrRetries), slog.Any("err", err), slog.Any("metadata", meta))
 		time.Sleep(runErrTimeout)
 	}
 
 	return meta, nil
 }
 
+var keeperOnce sync.Once
+
 // New returns a new box instance from the specified ID
-func New(id int, memQuota int64, logger *zap.SugaredLogger) (eval.Sandbox, error) {
+func New(id int, memQuota int64, logger *slog.Logger) (eval.Sandbox, error) {
+	keeperOnce.Do(func() {
+		if err := InitKeeper(); err != nil {
+			zap.S().Warn("Could not initialize keeper: ", err)
+		}
+	})
 	ret, err := exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--init").CombinedOutput()
 	if strings.HasPrefix(string(ret), "Box already exists") {
 		zap.S().Info("Box reset: ", id)

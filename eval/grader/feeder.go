@@ -3,6 +3,7 @@ package grader
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"path"
 	"sync"
 	"time"
@@ -25,7 +26,7 @@ var (
 	openAction   sync.Once
 	closeAction  sync.Once
 	logFile      *lumberjack.Logger
-	graderLogger *zap.SugaredLogger
+	graderLogger *slog.Logger
 )
 
 type Handler struct {
@@ -46,7 +47,14 @@ func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, *kilonova
 			MaxSize:  80, //MB. Since most rows are really similar it gets compressed really small
 			Compress: true,
 		}
-		graderLogger = zap.New(kilonova.GetZapCore(config.Common.Debug, false, logFile), zap.AddCaller()).Sugar()
+		lvl := slog.LevelInfo
+		if config.Common.Debug {
+			lvl = slog.LevelDebug
+		}
+		graderLogger = slog.New(slog.NewTextHandler(logFile, &slog.HandlerOptions{
+			AddSource: true,
+			Level:     lvl,
+		}))
 	})
 
 	return &Handler{ctx, ch, base, wCh}, nil
@@ -106,7 +114,7 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 			if err != nil {
 				zap.S().Warn(err)
 			} else if len(subs) > 0 {
-				graderLogger.Infof("Found %d submissions", len(subs))
+				graderLogger.Info("Found waiting submissions", slog.Int("count", len(subs)))
 				if len(subs) > 40 {
 					subs = subs[:40]
 					rewake = true
@@ -122,7 +130,7 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 			if err != nil {
 				zap.S().Warn(err)
 			} else if len(reevalQueue) > 0 {
-				graderLogger.Infof("Found %d submissions for reevaluation", len(reevalQueue))
+				graderLogger.Info("Found submissions to reevaluate", slog.Int("count", len(reevalQueue)))
 				if len(reevalQueue) > 5 {
 					reevalQueue = reevalQueue[:5]
 					rewake = true

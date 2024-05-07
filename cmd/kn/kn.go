@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -21,6 +22,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"go.uber.org/zap"
+	"go.uber.org/zap/exp/zapslog"
 )
 
 var graderFeature = config.GenFlag("feature.grader.enabled", true, "Grader")
@@ -95,6 +97,8 @@ func initLogger(debug bool) {
 	logg := zap.New(core, zap.AddCaller())
 
 	zap.ReplaceGlobals(logg)
+
+	slog.SetDefault(slog.New(zapslog.NewHandler(core, &zapslog.HandlerOptions{AddSource: true})))
 }
 
 func launchProfiler() error {

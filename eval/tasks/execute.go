@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"strconv"
 	"strings"
 
 	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/davecgh/go-spew/spew"
 	"go.uber.org/zap"
 )
 
@@ -30,10 +30,10 @@ type ExecResponse struct {
 	Comments   string
 }
 
-func GetExecuteTask(logger *zap.SugaredLogger) eval.Task[ExecRequest, ExecResponse] {
+func GetExecuteTask(logger *slog.Logger) eval.Task[ExecRequest, ExecResponse] {
 	return func(ctx context.Context, box eval.Sandbox, req *ExecRequest) (*ExecResponse, error) {
 		resp := &ExecResponse{}
-		logger.Infof("Executing test %d (for submission #%d) using box %d", req.SubtestID, req.SubID, box.GetID())
+		logger.Info("Executing subtest", slog.Int("subtest_id", req.SubtestID), slog.Int("sub_id", req.SubID), slog.Int("box_id", box.GetID()))
 
 		if err := box.WriteFile("/box/"+req.Filename+".in", req.TestInput, 0644); err != nil {
 			zap.S().Info("Can't write input file:", err)
@@ -73,7 +73,7 @@ func GetExecuteTask(logger *zap.SugaredLogger) eval.Task[ExecRequest, ExecRespon
 		case "XX":
 			resp.Comments = "Sandbox Error: " + meta.Message
 			zap.S().Warn("Sandbox error detected, check grader.log for more detials ", zap.Int("subtest_id", req.SubtestID), zap.Int("box_id", box.GetID()), zap.Int("sub_id", req.SubID))
-			logger.Warn("Sandbox error: ", req.SubID, req.SubtestID, box.GetID(), spew.Sdump(meta))
+			logger.Warn("Sandbox error", slog.Int("sub_id", req.SubID), slog.Int("subtest_id", req.SubtestID), slog.Int("box_id", box.GetID()), slog.Any("metadata", meta))
 		default:
 			okExit = true
 		}

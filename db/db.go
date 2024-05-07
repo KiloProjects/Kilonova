@@ -4,17 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"path"
 	"sync"
 	"time"
 
-	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	pgxdecimal "github.com/jackc/pgx-shopspring-decimal"
@@ -22,7 +21,7 @@ import (
 
 var (
 	loggerOnce sync.Once
-	dbLogger   *zap.Logger
+	dbLogger   *slog.Logger
 )
 
 var (
@@ -133,11 +132,17 @@ func toSingular[T1, T2 any](ctx context.Context, filter T1, f func(ctx context.C
 
 func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]interface{}) {
 	loggerOnce.Do(func() {
-		dbLogger = zap.New(kilonova.GetZapCore(config.Common.Debug, false, &lumberjack.Logger{
+		lvl := slog.LevelInfo
+		if config.Common.Debug {
+			lvl = slog.LevelDebug
+		}
+		dbLogger = slog.New(slog.NewJSONHandler(&lumberjack.Logger{
 			Filename: path.Join(config.Common.LogDir, "db.log"),
 			MaxSize:  200, // MB
 			Compress: true,
-		}), zap.AddCaller())
+		}, &slog.HandlerOptions{
+			Level: lvl,
+		}))
 	})
 
 	if msg == "Prepare" {
@@ -147,7 +152,7 @@ func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[stri
 	dur, ok := data["time"].(time.Duration)
 	if ok {
 		if dur > 1*time.Second {
-			dbLogger.Sugar().Warnf("Really slow operation (%s): %q %#v", dur, data["sql"], data["args"])
+			dbLogger.Warn("Really slow operation", slog.Duration("duration", dur), slog.Any("query", data["sql"]), slog.Any("args", data["args"]))
 		}
 	} else {
 		zap.S().Warnf("DB time is not duration", data["time"])
@@ -156,26 +161,28 @@ func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[stri
 	if LogQueries.Value() {
 		//zap.S().Infof("%s %q %#v", data["time"], data["sql"], data["args"])
 
-		fields := make([]zapcore.Field, len(data))
-		i := 0
+		fields := make([]slog.Attr, 0, len(data))
 		for k, v := range data {
-			fields[i] = zap.Any(k, v)
-			i++
+			fields = append(fields, slog.Any(k, v))
 		}
 
+		var lvl slog.Level
 		switch level {
 		case tracelog.LogLevelTrace:
-			dbLogger.Debug(msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
+			lvl = slog.LevelDebug - 1
+			fields = append(fields, slog.Any("PGX_LOG_LEVEL", level))
 		case tracelog.LogLevelDebug:
-			dbLogger.Debug(msg, fields...)
+			lvl = slog.LevelDebug
 		case tracelog.LogLevelInfo:
-			dbLogger.Info(msg, fields...)
+			lvl = slog.LevelInfo
 		case tracelog.LogLevelWarn:
-			dbLogger.Warn(msg, fields...)
+			lvl = slog.LevelWarn
 		case tracelog.LogLevelError:
-			dbLogger.Error(msg, fields...)
+			lvl = slog.LevelError
 		default:
-			dbLogger.Error(msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
+			lvl = slog.LevelError
+			fields = append(fields, slog.Any("PGX_LOG_LEVEL", level))
 		}
+		dbLogger.LogAttrs(ctx, lvl, msg, fields...)
 	}
 }

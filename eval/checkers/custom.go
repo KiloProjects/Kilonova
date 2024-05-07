@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -53,7 +54,7 @@ type customChecker struct {
 	// lastUpdatedAt is used to check if the checker needs to be recompiled, in the case it exists
 	lastUpdatedAt time.Time
 
-	Logger *zap.SugaredLogger
+	Logger *slog.Logger
 
 	legacy bool
 }
@@ -72,12 +73,12 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	}
 
 	if !shouldCompile {
-		c.Logger.Infof("Using cached checker")
+		c.Logger.Info("Using cached checker")
 		return "", nil
 	}
 
 	zap.S().Debugf("Compiling checker for problem %d", c.pb.ID)
-	c.Logger.Infof("Compiling checker for problem %d", c.pb.ID)
+	c.Logger.Info("Compiling checker", slog.Int("problem_id", c.pb.ID))
 	checkerPrepareMu.Lock()
 	defer checkerPrepareMu.Unlock()
 
@@ -98,7 +99,7 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 		return fmt.Sprintf("Output:\n%s\nOther:\n%s", resp.Output, resp.Other), kilonova.Statusf(400, "Invalid helper code")
 	}
 
-	c.Logger.Infof("Checker compilation time: %d ms", int(resp.Stats.Time*1000))
+	c.Logger.Info("Compiled checker", slog.Duration("duration", time.Duration(resp.Stats.Time*float64(time.Second))))
 
 	return "", nil
 }
@@ -133,10 +134,10 @@ func (c *customChecker) Cleanup(_ context.Context) error {
 	return nil // eval.CleanCompilation(-c.sub.ID)
 }
 
-func NewLegacyCustomChecker(mgr eval.BoxScheduler, logger *zap.SugaredLogger, pb *kilonova.Problem, filename string, code []byte, subCode []byte, lastUpdatedAt time.Time) Checker {
+func NewLegacyCustomChecker(mgr eval.BoxScheduler, logger *slog.Logger, pb *kilonova.Problem, filename string, code []byte, subCode []byte, lastUpdatedAt time.Time) Checker {
 	return &customChecker{mgr, pb, filename, code, subCode, lastUpdatedAt, logger, true}
 }
 
-func NewStandardCustomChecker(mgr eval.BoxScheduler, logger *zap.SugaredLogger, pb *kilonova.Problem, filename string, code []byte, subCode []byte, lastUpdatedAt time.Time) Checker {
+func NewStandardCustomChecker(mgr eval.BoxScheduler, logger *slog.Logger, pb *kilonova.Problem, filename string, code []byte, subCode []byte, lastUpdatedAt time.Time) Checker {
 	return &customChecker{mgr, pb, filename, code, subCode, lastUpdatedAt, logger, false}
 }
