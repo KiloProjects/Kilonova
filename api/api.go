@@ -51,40 +51,38 @@ func (s *API) Handler() http.Handler {
 			r.Post("/resetWaitingSubs", webMessageWrapper("Reset waiting subs", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
 				return s.base.ResetWaitingSubmissions(ctx)
 			}))
-			r.Post("/cleanBucketCache", webMessageWrapper("Reset bucket cache", func(ctx context.Context, args struct {
-				Name datastore.BucketType `json:"name"`
-			}) *kilonova.StatusError {
-				if !args.Name.Valid() {
-					return kilonova.Statusf(400, "Invalid bucket")
-				}
-				b := datastore.GetBucket(args.Name)
-				if !b.Cache {
-					return kilonova.Statusf(403, "Refusing to remove non-cache bucket")
-				}
-				if err := b.ResetCache(); err != nil {
-					slog.Warn("Could not bucket cache", slog.String("bucket", string(args.Name)), slog.Any("reason", err))
-					return kilonova.WrapError(err, "Could not reset cache")
-				}
-				return nil
-			}))
-			r.Post("/evictBucketObjects", webWrapper(func(ctx context.Context, args struct {
-				Name datastore.BucketType `json:"name"`
-			}) (string, *kilonova.StatusError) {
-				if !args.Name.Valid() {
-					return "", kilonova.Statusf(400, "Invalid bucket")
-				}
-				b := datastore.GetBucket(args.Name)
-				if b.Persistent {
-					return "", kilonova.Statusf(403, "Refusing to remove important bucket")
-				}
-				s.base.LogUserAction(ctx, "Attempted running bucket eviction for %q", args.Name)
-				numDeleted, err := b.RunEvictionPolicy(s.base.EvictionLogger())
-				if err != nil {
-					slog.Warn("Could not evict bucket objects", slog.String("bucket", string(args.Name)), slog.Any("reason", err))
-					return "", kilonova.WrapError(err, "Could not evict objects")
-				}
-				return fmt.Sprintf("Deleted %d objects", numDeleted), nil
-			}))
+			r.Route("/bucket/{bname}", func(r chi.Router) {
+				r.Use(s.validateBucket)
+				r.Post("/cleanCache", webMessageWrapper("Reset bucket cache", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
+					b := util.BucketContext(ctx)
+					if !b.Cache {
+						return kilonova.Statusf(403, "Refusing to remove non-cache bucket")
+					}
+					if err := b.ResetCache(); err != nil {
+						slog.Warn("Could not bucket cache", slog.String("bucket", b.Name), slog.Any("reason", err))
+						return kilonova.WrapError(err, "Could not reset cache")
+					}
+					return nil
+				}))
+				r.Post("/evictObjects", webWrapper(func(ctx context.Context, _ struct{}) (string, *kilonova.StatusError) {
+					b := util.BucketContext(ctx)
+					if b.Persistent {
+						return "", kilonova.Statusf(403, "Refusing to remove important bucket")
+					}
+					s.base.LogUserAction(ctx, "Attempted running bucket eviction for %q", b.Name)
+					numDeleted, err := b.RunEvictionPolicy(s.base.EvictionLogger())
+					if err != nil {
+						slog.Warn("Could not evict bucket objects", slog.String("bucket", string(b.Name)), slog.Any("reason", err))
+						return "", kilonova.WrapError(err, "Could not evict objects")
+					}
+					return fmt.Sprintf("Deleted %d objects", numDeleted), nil
+				}))
+				r.Post("/stats", webWrapper(func(ctx context.Context, args struct {
+					Refresh bool `json:"refresh"`
+				}) (*datastore.BucketStats, *kilonova.StatusError) {
+					return util.BucketContext(ctx).Statistics(args.Refresh), nil
+				}))
+			})
 		})
 
 		r.Post("/addDonation", s.addDonation)

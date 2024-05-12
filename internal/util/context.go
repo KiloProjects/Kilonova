@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/internal/config"
 )
 
@@ -38,6 +39,8 @@ const (
 	ContestKey = KNContextType("contest")
 	// LangKey is the key to be used for adding the user language to context
 	LangKey = KNContextType("language")
+	// BucketKey is the key to be used for adding the requested bucket to context
+	BucketKey = KNContextType("bucket")
 	// ThemeKey is the key to be used for adding the user's preferred theme to context
 	ThemeKey = KNContextType("theme")
 )
@@ -131,6 +134,10 @@ func Attachment(r *http.Request) *kilonova.Attachment {
 
 func AttachmentContext(ctx context.Context) *kilonova.Attachment {
 	return getValueContext[kilonova.Attachment](ctx, AttachmentKey)
+}
+
+func BucketContext(ctx context.Context) *datastore.Bucket {
+	return getValueContext[datastore.Bucket](ctx, BucketKey)
 }
 
 func Tag(r *http.Request) *kilonova.Tag {

@@ -18,12 +18,13 @@ const (
 	BucketTypeAvatars     BucketType = "avatars"
 	BucketTypeCheckers    BucketType = "checkers"
 	BucketTypeCompiles    BucketType = "compiles"
+	BucketTypeArtifacts   BucketType = "artifacts"
 )
 
 func (t BucketType) Valid() bool {
 	return t == BucketTypeTests || t == BucketTypeSubtests ||
 		t == BucketTypeAttachments || t == BucketTypeAvatars ||
-		t == BucketTypeCheckers || t == BucketTypeCompiles
+		t == BucketTypeCheckers || t == BucketTypeCompiles || t == BucketTypeArtifacts
 }
 
 type bucketDef struct {
@@ -84,6 +85,16 @@ var (
 		{
 			Name:    BucketTypeCompiles,
 			IsCache: false, // Well it kind of is but not really since it's cleaned up in the grader
+
+			IsPersistent:     false,
+			CompressionLevel: NoCompression,
+		},
+		{
+			Name:    BucketTypeArtifacts,
+			IsCache: true,
+
+			MaxTTL:  2 * time.Hour,      // 2 hours should be enough
+			MaxSize: 1024 * 1024 * 1024, // or 1GB
 
 			IsPersistent:     false,
 			CompressionLevel: NoCompression,

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi/v5"
@@ -303,6 +304,17 @@ func (s *API) validateUsername(next http.Handler) http.Handler {
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ContentUserKey, user)))
+	})
+}
+
+func (s *API) validateBucket(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		name := datastore.BucketType(chi.URLParam(r, "bname"))
+		if !name.Valid() {
+			errorData(w, "Invalid bucket", 400)
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.BucketKey, datastore.GetBucket(name))))
 	})
 }
 

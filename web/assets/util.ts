@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			console.warn("NaN timestamp");
 			return;
 		}
-		val.innerHTML = parseTime(timestamp);
+		val.innerHTML = parseTime(timestamp, val.classList.contains("extended"));
 		val.classList.remove("server_timestamp");
 	});
 	document.querySelectorAll(".score-cell").forEach((val) => {

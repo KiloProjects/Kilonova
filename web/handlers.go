@@ -2,6 +2,7 @@ package web
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -502,14 +503,11 @@ func (rt *Web) debugPage() http.HandlerFunc {
 			finalMetrics = append(finalMetrics, m)
 		}
 
-		var stats = make([]*datastore.BucketStats, 0, 10)
-		for _, bucket := range []datastore.BucketType{
-			datastore.BucketTypeTests, datastore.BucketTypeSubtests,
-			datastore.BucketTypeAvatars, datastore.BucketTypeAttachments,
-			datastore.BucketTypeCheckers, datastore.BucketTypeCompiles,
-		} {
-			stats = append(stats, datastore.GetBucket(bucket).Statistics())
+		var stats = make([]*datastore.BucketStats, 0, 16)
+		for _, bucket := range datastore.GetBuckets() {
+			stats = append(stats, bucket.Statistics(false))
 		}
+		slices.SortFunc(stats, func(a, b *datastore.BucketStats) int { return cmp.Compare(a.Name, b.Name) })
 
 		rt.runTempl(w, r, templ, &struct {
 			Metrics []*Metric

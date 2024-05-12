@@ -38,9 +38,8 @@ type Bucket struct {
 	// -1 = flate.DefaultCompression
 	CompressionLevel int
 
-	lastStatsMu  sync.RWMutex
-	lastStats    *BucketStats
-	lastStatTime time.Time
+	lastStatsMu sync.RWMutex
+	lastStats   *BucketStats
 }
 
 type BucketStats struct {
@@ -51,37 +50,39 @@ type BucketStats struct {
 	MaxSize    int64         // Maximum size in bytes.
 	MaxTTL     time.Duration // Maximum duration before cleaning up object
 
+	CreatedAt time.Time
+
 	// Actual statistics
 	NumItems   int
 	OnDiskSize int64
 }
 
-func (b *Bucket) Statistics() *BucketStats {
-	if time.Since(b.lastStatTime) > 1*time.Minute {
-		b.lastStatsMu.Lock()
-		defer b.lastStatsMu.Unlock()
-		b.lastStats = &BucketStats{
-			Name: b.Name, Cache: b.Cache,
-			Persistent: b.Persistent, MaxSize: b.MaxSize, MaxTTL: b.MaxTTL,
-		}
-		entries, err := b.FileList()
-		if err != nil {
-			zap.S().Warn(err)
-		}
-		for _, entry := range entries {
-			info, err := entry.Info()
-			if err != nil {
-				zap.S().Warn(err)
-				return nil
-			}
-			b.lastStats.NumItems++
-			b.lastStats.OnDiskSize += info.Size()
-		}
-		b.lastStatTime = time.Now()
+func (b *Bucket) Statistics(refresh bool) *BucketStats {
+	if !refresh && b.lastStats != nil {
+		b.lastStatsMu.RLock()
+		defer b.lastStatsMu.RUnlock()
 		return b.lastStats
 	}
-	b.lastStatsMu.RLock()
-	defer b.lastStatsMu.RUnlock()
+	b.lastStatsMu.Lock()
+	defer b.lastStatsMu.Unlock()
+	b.lastStats = &BucketStats{
+		Name: b.Name, Cache: b.Cache,
+		Persistent: b.Persistent, MaxSize: b.MaxSize, MaxTTL: b.MaxTTL,
+	}
+	entries, err := b.FileList()
+	if err != nil {
+		zap.S().Warn(err)
+	}
+	for _, entry := range entries {
+		info, err := entry.Info()
+		if err != nil {
+			zap.S().Warn(err)
+			return nil
+		}
+		b.lastStats.NumItems++
+		b.lastStats.OnDiskSize += info.Size()
+	}
+	b.lastStats.CreatedAt = time.Now()
 	return b.lastStats
 }
 
@@ -292,8 +293,8 @@ func (b *Bucket) RunEvictionPolicy(logger *slog.Logger) (int, error) {
 		Name: b.Name, Cache: b.Cache,
 		Persistent: b.Persistent, MaxSize: b.MaxSize, MaxTTL: b.MaxTTL,
 		NumItems: len(evictionEntries), OnDiskSize: dirSize,
+		CreatedAt: time.Now(),
 	}
-	b.lastStatTime = time.Now()
 
 	if logger != nil {
 		logger.Info("After cleanup", slog.String("bucket", b.Name), slog.Int("object_count", len(evictionEntries)), slog.String("bucket_size", humanize.IBytes(uint64(dirSize))))
@@ -319,7 +320,8 @@ func (b *Bucket) ResetCache() error {
 			errs = append(errs, err)
 		}
 	}
-	b.lastStatTime = time.Time{}
+	// Refresh stats
+	b.Statistics(true)
 	return errors.Join(errs...)
 }
 
