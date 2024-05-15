@@ -12,7 +12,7 @@ import (
 var (
 	BaseURL      = config.GenFlag("integrations.openai.base_url", "", "Base URL for OpenAI API (`https://openrouter.ai/api/v1` can be used for OpenRouter)")
 	Token        = config.GenFlag("integrations.openai.token", "", "API Key for OpenAI access (used in translating statements)")
-	DefaultModel = config.GenFlag("integrations.openai.default_model", "gpt-4-turbo", "Default model for LLM translations")
+	DefaultModel = config.GenFlag("integrations.openai.default_model", "gpt-4o", "Default model for LLM translations")
 
 	ErrUnauthed = errors.New("unauthenticated to OpenAI endpoint")
 )
