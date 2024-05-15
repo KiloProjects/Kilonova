@@ -4,12 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io/fs"
 	"strconv"
 	"strings"
 
-	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
@@ -23,23 +21,7 @@ func standardCheckerTask(ctx context.Context, box eval.Sandbox, job *customCheck
 		return rez, nil
 	}
 
-	if err := box.WriteFile("/box/program.out", job.pOut, 0644); err != nil {
-		rez.Output = ErrOut
-		return rez, nil
-	}
-	if err := box.WriteFile("/box/correct.in", job.cIn, 0644); err != nil {
-		rez.Output = ErrOut
-		return rez, nil
-	}
-	if err := box.WriteFile("/box/correct.out", job.cOut, 0644); err != nil {
-		rez.Output = ErrOut
-		return rez, nil
-	}
-	if err := box.WriteFile("/box/contestant.txt", bytes.NewReader(job.c.subCode), 0644); err != nil {
-		rez.Output = ErrOut
-		return rez, nil
-	}
-	if err := eval.CopyInBox(box, datastore.GetBucket(datastore.BucketTypeCheckers), fmt.Sprintf("%d.bin", job.c.pb.ID), lang.CompiledName); err != nil {
+	if ok := copyFiles(box, lang, job); !ok {
 		rez.Output = ErrOut
 		return rez, nil
 	}

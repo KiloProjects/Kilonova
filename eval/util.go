@@ -2,6 +2,7 @@ package eval
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,19 +15,22 @@ import (
 )
 
 // Copies in box an object from a bucket
-func CopyInBox(b Sandbox, bucket *datastore.Bucket, filename string, p2 string) error {
+func CopyInBox(b Sandbox, bucket *datastore.Bucket, filename string, p2 string, mode fs.FileMode) error {
 	file, err := bucket.Reader(filename)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	stat, err := bucket.Stat(filename)
-	if err != nil {
-		return err
+	if mode == 0000 {
+		stat, err := bucket.Stat(filename)
+		if err != nil {
+			return err
+		}
+		mode = stat.Mode()
 	}
 
-	return b.WriteFile(p2, file, stat.Mode())
+	return b.WriteFile(p2, file, mode)
 }
 
 // makeGoodCommand makes sure it's a full path (with no symlinks) for the command.

@@ -6,7 +6,9 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strconv"
 
+	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/shopspring/decimal"
 )
 
@@ -24,7 +26,7 @@ func (d *DiffChecker) Prepare(_ context.Context) (string, error) { return "", ni
 
 func (d *DiffChecker) Cleanup(_ context.Context) error { return nil }
 
-func (d *DiffChecker) RunChecker(ctx context.Context, pOut, _, cOut io.Reader) (string, decimal.Decimal) {
+func (d *DiffChecker) RunChecker(ctx context.Context, subtestID int, testID int) (string, decimal.Decimal) {
 	tf, err := os.CreateTemp("", "prog-out-*")
 	if err != nil {
 		return ErrOut, decimal.Zero
@@ -39,10 +41,10 @@ func (d *DiffChecker) RunChecker(ctx context.Context, pOut, _, cOut io.Reader) (
 	defer cf.Close()
 	defer os.Remove(cf.Name())
 
-	if _, err := io.Copy(tf, pOut); err != nil {
+	if err := redirBucketFile(tf, datastore.GetBucket(datastore.BucketTypeSubtests), strconv.Itoa(subtestID)); err != nil {
 		return ErrOut, decimal.Zero
 	}
-	if _, err := io.Copy(cf, cOut); err != nil {
+	if err := redirBucketFile(cf, datastore.GetBucket(datastore.BucketTypeTests), strconv.Itoa(testID)+".out"); err != nil {
 		return ErrOut, decimal.Zero
 	}
 
@@ -60,4 +62,14 @@ func (d *DiffChecker) RunChecker(ctx context.Context, pOut, _, cOut io.Reader) (
 	}
 
 	return CorrectOut, decimal.NewFromInt(100)
+}
+
+func redirBucketFile(w io.Writer, bucket *datastore.Bucket, filename string) error {
+	f, err := bucket.Reader(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = io.Copy(w, f)
+	return err
 }

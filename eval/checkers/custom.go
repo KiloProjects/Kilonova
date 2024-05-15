@@ -1,12 +1,13 @@
 package checkers
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"log/slog"
+	"strconv"
 	"sync"
 	"time"
 
@@ -32,10 +33,10 @@ var _ Checker = &customChecker{}
 var testlibFile []byte
 
 type customCheckerInput struct {
-	c    *customChecker
-	pOut io.Reader
-	cIn  io.Reader
-	cOut io.Reader
+	c *customChecker
+
+	subtestID int
+	testID    int
 }
 
 type checkerResult struct {
@@ -104,7 +105,7 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	return "", nil
 }
 
-func (c *customChecker) RunChecker(ctx context.Context, pOut, cIn, cOut io.Reader) (string, decimal.Decimal) {
+func (c *customChecker) RunChecker(ctx context.Context, subtestID int, testID int) (string, decimal.Decimal) {
 	checkerPrepareMu.RLock()
 	defer checkerPrepareMu.RUnlock()
 	var out checkerResult
@@ -115,10 +116,10 @@ func (c *customChecker) RunChecker(ctx context.Context, pOut, cIn, cOut io.Reade
 	}
 
 	resp, err := task.Run(ctx, c.mgr, checkerMemoryLimit, &customCheckerInput{
-		c:    c,
-		pOut: pOut,
-		cIn:  cIn,
-		cOut: cOut,
+		c: c,
+
+		subtestID: subtestID,
+		testID:    testID,
 	})
 	if err != nil || resp == nil {
 		return ErrOut, decimal.Zero
@@ -140,4 +141,23 @@ func NewLegacyCustomChecker(mgr eval.BoxScheduler, logger *slog.Logger, pb *kilo
 
 func NewStandardCustomChecker(mgr eval.BoxScheduler, logger *slog.Logger, pb *kilonova.Problem, filename string, code []byte, subCode []byte, lastUpdatedAt time.Time) Checker {
 	return &customChecker{mgr, pb, filename, code, subCode, lastUpdatedAt, logger, false}
+}
+
+func copyFiles(box eval.Sandbox, lang eval.Language, job *customCheckerInput) bool {
+	if err := eval.CopyInBox(box, datastore.GetBucket(datastore.BucketTypeSubtests), strconv.Itoa(job.subtestID), "/box/program.out", 0644); err != nil {
+		return false
+	}
+	if err := eval.CopyInBox(box, datastore.GetBucket(datastore.BucketTypeTests), strconv.Itoa(job.testID)+".in", "/box/correct.in", 0644); err != nil {
+		return false
+	}
+	if err := eval.CopyInBox(box, datastore.GetBucket(datastore.BucketTypeTests), strconv.Itoa(job.testID)+".out", "/box/correct.out", 0644); err != nil {
+		return false
+	}
+	if err := eval.CopyInBox(box, datastore.GetBucket(datastore.BucketTypeCheckers), fmt.Sprintf("%d.bin", job.c.pb.ID), lang.CompiledName, 0000); err != nil {
+		return false
+	}
+	if err := box.WriteFile("/box/contestant.txt", bytes.NewReader(job.c.subCode), 0644); err != nil {
+		return false
+	}
+	return true
 }

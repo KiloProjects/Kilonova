@@ -2,7 +2,6 @@ package checkers
 
 import (
 	"context"
-	"io"
 
 	"github.com/shopspring/decimal"
 )
@@ -13,5 +12,5 @@ type Checker interface {
 	Cleanup(context.Context) error
 
 	// RunChecker returns a comment and a decimal number [0, 100] signifying the percentage of correctness of the subtest
-	RunChecker(ctx context.Context, programOut, correctInput, correctOut io.Reader) (string, decimal.Decimal)
+	RunChecker(ctx context.Context, subtestID int, testID int) (string, decimal.Decimal)
 }

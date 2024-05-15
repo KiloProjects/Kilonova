@@ -20,7 +20,7 @@ type ExecRequest struct {
 	MemoryLimit int
 	TimeLimit   float64
 	Lang        string
-	TestInput   io.Reader
+	TestID      int
 }
 
 type ExecResponse struct {
@@ -35,7 +35,7 @@ func GetExecuteTask(logger *slog.Logger) eval.Task[ExecRequest, ExecResponse] {
 		resp := &ExecResponse{}
 		logger.Info("Executing subtest", slog.Int("subtest_id", req.SubtestID), slog.Int("sub_id", req.SubID), slog.Int("box_id", box.GetID()))
 
-		if err := box.WriteFile("/box/"+req.Filename+".in", req.TestInput, 0644); err != nil {
+		if err := eval.CopyInBox(box, datastore.GetBucket(datastore.BucketTypeTests), strconv.Itoa(req.TestID)+".in", "/box/"+req.Filename+".in", 0644); err != nil {
 			zap.S().Info("Can't write input file:", err)
 			resp.Comments = "translate:internal_error"
 			return resp, err
@@ -44,7 +44,7 @@ func GetExecuteTask(logger *slog.Logger) eval.Task[ExecRequest, ExecResponse] {
 
 		bucket, fileName := bucketFromIDExec(req.SubID)
 		lang := eval.Langs[req.Lang]
-		if err := eval.CopyInBox(box, bucket, fileName, lang.CompiledName); err != nil {
+		if err := eval.CopyInBox(box, bucket, fileName, lang.CompiledName, 0); err != nil {
 			zap.S().Warn("Couldn't copy executable in box: ", err)
 			resp.Comments = "translate:internal_error"
 			return resp, err

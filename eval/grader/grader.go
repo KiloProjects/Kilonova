@@ -312,12 +312,6 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 		return decimal.Zero, "", kilonova.Statusf(400, "Trying to handle subtest whose test was purged. This should never happen")
 	}
 
-	tin, err := base.TestInput(*subTest.TestID)
-	if err != nil {
-		return decimal.Zero, "", kilonova.Statusf(500, "Couldn't open test input")
-	}
-	defer tin.Close()
-
 	execRequest := &tasks.ExecRequest{
 		SubID:       sub.ID,
 		SubtestID:   subTest.ID,
@@ -325,7 +319,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 		MemoryLimit: problem.MemoryLimit,
 		TimeLimit:   problem.TimeLimit,
 		Lang:        sub.Language,
-		TestInput:   tin,
+		TestID:      *subTest.TestID,
 	}
 	if problem.ConsoleInput {
 		execRequest.Filename = "stdin"
@@ -344,35 +338,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 	}
 
 	if resp.Comments == "" {
-		var skipped bool
-		tin, err := base.TestInput(*subTest.TestID)
-		if err != nil {
-			resp.Comments = "translate:internal_error"
-			skipped = true
-		}
-		if tin != nil {
-			defer tin.Close()
-		}
-		tout, err := base.TestOutput(*subTest.TestID)
-		if err != nil {
-			resp.Comments = "translate:internal_error"
-			skipped = true
-		}
-		if tout != nil {
-			defer tout.Close()
-		}
-		sout, err := base.SubtestReader(subTest.ID)
-		if err != nil {
-			resp.Comments = "translate:internal_error"
-			skipped = true
-		}
-		if sout != nil {
-			defer sout.Close()
-		}
-
-		if !skipped {
-			resp.Comments, testScore = checker.RunChecker(ctx, sout, tin, tout)
-		}
+		resp.Comments, testScore = checker.RunChecker(ctx, subTest.ID, *subTest.TestID)
 	}
 
 	// Hide fatal signals for ICPC submissions

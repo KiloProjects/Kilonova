@@ -21,6 +21,7 @@ func (s *BaseAPI) PurgeTestData(testID int) error {
 	return nil
 }
 
+// NOTE: If changing filename format, make sure to also change when directly accessing
 func (s *BaseAPI) TestInput(testID int) (io.ReadCloser, error) {
 	return s.testBucket.Reader(strconv.Itoa(testID) + ".in")
 }
