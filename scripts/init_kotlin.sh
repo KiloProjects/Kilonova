@@ -11,7 +11,7 @@ set -e
 
 KOTLIN_VERSION="1.9.24"
 
-rm -r /tmp/kotlin
+rm -rf /tmp/kotlin
 mkdir /tmp/kotlin
 cd /tmp/kotlin
 echo "Downloading archive"
