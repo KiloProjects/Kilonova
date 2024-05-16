@@ -23,7 +23,7 @@ while true
 do
 	echo "Starting server..."
     # Preserve overrides flag
-	sudo -E KN_FLAG_OVERRIDES=$KN_FLAG_OVERRIDES ./kn main
+	sudo KN_FLAG_OVERRIDES=$KN_FLAG_OVERRIDES ./kn main
 	echo "Server stopped..."
 	sleep 2
 done
