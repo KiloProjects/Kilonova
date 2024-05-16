@@ -2,7 +2,10 @@ package eval
 
 import "path"
 
-const MagicReplace = "<REPLACE>"
+const (
+	MagicReplace  = "<REPLACE>"
+	MemoryReplace = "<MEMORY>"
+)
 
 func GetLangByFilename(filename string) string {
 	fileExt := path.Ext(filename)
@@ -161,6 +164,20 @@ var Langs = map[string]Language{
 		RunCommand:     []string{"java", "Main"},
 		SourceName:     "/Main.java",
 		CompiledName:   "/Main.class",
+
+		Mounts: []Directory{{In: "/etc"}},
+	},
+	"kotlin": {
+		Extensions:    []string{".kt"},
+		Compiled:      true,
+		PrintableName: "Kotlin",
+		InternalName:  "kotlin",
+		MOSSName:      "ascii", // MOSS doesn't support kotlin
+
+		CompileCommand: []string{"kotlinc", MagicReplace, "-include-runtime", "-d", "output.jar"},
+		RunCommand:     []string{"java", "-Xmx" + MemoryReplace + "K", "-DKNOVA", "-DONLINE_JUDGE", "-jar", "/box/output.jar"},
+		SourceName:     "/box/main.kt",
+		CompiledName:   "/box/output.jar",
 
 		Mounts: []Directory{{In: "/etc"}},
 	},

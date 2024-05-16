@@ -30,6 +30,9 @@ type BoxScheduler interface {
 	GetBox(ctx context.Context, memQuota int64) (Sandbox, error)
 	ReleaseBox(Sandbox)
 	Close(context.Context) error
+
+	// Experimental
+	RunBox2(ctx context.Context, req *Box2Request, memQuota int64) (*Box2Response, error)
 }
 
 type Task[Req, Resp any] func(context.Context, Sandbox, *Req) (*Resp, error)

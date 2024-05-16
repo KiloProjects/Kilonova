@@ -21,7 +21,7 @@ for (let t of ["zip", "rar", "7z", "gz", "tar"]) {
 	extensionIcons[t] = "fa-file-archive";
 }
 
-for (let t of ["c", "cpp", "go", "pas", "py", "py3", "java", "js"]) {
+for (let t of ["c", "cpp", "go", "pas", "py", "py3", "java", "js", "kt"]) {
 	extensionIcons[t] = "fa-file-code";
 }
 

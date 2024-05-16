@@ -8,6 +8,7 @@ export const languages = {
 	golang: "text/x-go",
 	haskell: "text/x-haskell",
 	java: "text/x-java",
+	kotlin: "text/x-kotlin",
 	python3: "text/x-python",
 	pascal: "text/x-pascal",
 	outputOnly: "text/plain",
@@ -23,6 +24,7 @@ export const prettyLanguages = {
 	golang: "Go",
 	haskell: "Haskell",
 	java: "Java",
+	kotlin: "Kotlin",
 	python3: "Python 3",
 	pascal: "Pascal",
 	outputOnly: "Output Only",
@@ -59,6 +61,11 @@ export const cm_modes: { [name: string]: CMMode } = {
 		mimeType: "text/x-java",
 		prettyName: "Java",
 		extensions: ["java"],
+	},
+	kotlin: {
+		mimeType: "text/x-kotlin",
+		prettyName: "Kotlin",
+		extensions: ["kt"],
 	},
 	python: {
 		mimeType: "text/x-python",

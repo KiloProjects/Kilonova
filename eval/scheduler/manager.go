@@ -1,8 +1,10 @@
 package scheduler
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
 	"log/slog"
 
 	"github.com/KiloProjects/kilonova/eval"
@@ -141,4 +143,81 @@ func CheckCanRun(boxFunc BoxFunc) bool {
 		return false
 	}
 	return true
+}
+
+func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQuota int64) (*eval.Box2Response, error) {
+	goodCmd, err := eval.MakeGoodCommand(req.Command)
+	if err != nil {
+		slog.Error("Error running MakeGoodCommand", slog.Any("err", err))
+		return nil, err
+	}
+
+	box, err := mgr.GetBox(ctx, memQuota)
+	if err != nil {
+		slog.Warn("Could not get box", slog.Any("err", err))
+		return nil, err
+	}
+	defer mgr.ReleaseBox(box)
+
+	for path, val := range req.InputByteFiles {
+		if val.Mode == 0 {
+			val.Mode = 0666
+		}
+		if err := box.WriteFile(path, bytes.NewReader(val.Data), val.Mode); err != nil {
+			return nil, err
+		}
+	}
+
+	for path, val := range req.InputBucketFiles {
+		if val.Mode == 0 {
+			val.Mode = 0666
+		}
+		if err := eval.CopyInBox(box, val.Bucket, val.Filename, path, val.Mode); err != nil {
+			return nil, err
+		}
+	}
+
+	stats, err := box.RunCommand(ctx, goodCmd, req.RunConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &eval.Box2Response{
+		Stats:       stats,
+		ByteFiles:   make(map[string][]byte),
+		BucketFiles: make(map[string]*eval.BucketFile),
+	}
+
+	var b bytes.Buffer
+	for _, path := range req.OutputByteFiles {
+		b.Reset()
+		if !box.FileExists(path) {
+			continue
+		}
+		if err := box.ReadFile(path, &b); err != nil {
+			return nil, err
+		}
+		resp.ByteFiles[path] = bytes.Clone(b.Bytes())
+	}
+
+	for path, file := range req.OutputBucketFiles {
+		if file.Mode == 0 {
+			file.Mode = 0666
+		}
+
+		pr, pw := io.Pipe()
+		go func() {
+			err := box.ReadFile(path, pw)
+			if err != nil {
+				slog.Warn("Error reading box file", slog.Any("err", err))
+			}
+			pw.Close()
+		}()
+
+		if err := file.Bucket.WriteFile(file.Filename, pr, file.Mode); err != nil {
+			return nil, err
+		}
+	}
+
+	return resp, nil
 }

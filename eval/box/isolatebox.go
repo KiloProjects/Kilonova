@@ -224,6 +224,14 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 		}
 	}
 
+	if conf.MemoryLimit > 0 {
+		for i := range command {
+			if strings.Contains(command[i], eval.MemoryReplace) {
+				command[i] = strings.ReplaceAll(command[i], eval.MemoryReplace, strconv.Itoa(conf.MemoryLimit))
+			}
+		}
+	}
+
 	for i := 1; i <= runErrRetries; i++ {
 		metaFile, err := os.CreateTemp("", "kn-meta-*")
 		if err != nil {
