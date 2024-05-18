@@ -2,12 +2,10 @@ package eval
 
 import (
 	"io/fs"
-
-	"github.com/KiloProjects/kilonova/datastore"
 )
 
 type BucketFile struct {
-	Bucket   *datastore.Bucket
+	Bucket   Bucket
 	Filename string
 	Mode     fs.FileMode
 }

@@ -365,14 +365,14 @@ func (s *BaseAPI) cleanupBuckets() {
 		if !bucket.Evictable() {
 			continue
 		}
-		s.evictionLogger.Info("Running bucket eviction policy", slog.String("bucket", bucket.Name))
+		s.evictionLogger.Info("Running bucket eviction policy", slog.Any("bucket", bucket))
 		numDeleted, err := bucket.RunEvictionPolicy(s.evictionLogger)
 		if err != nil {
 			s.evictionLogger.Error(err.Error())
 			zap.S().Warn("Error running bucket cleanup. Check eviction.log for details")
 			continue
 		}
-		s.evictionLogger.Info("Deleted bucket objects", slog.String("bucket", bucket.Name), slog.Int("count", numDeleted))
+		s.evictionLogger.Info("Deleted bucket objects", slog.Any("bucket", bucket), slog.Int("count", numDeleted))
 	}
 }
 

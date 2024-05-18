@@ -3,8 +3,9 @@ package tasks
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
+	"maps"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -14,13 +15,16 @@ import (
 )
 
 type ExecRequest struct {
-	SubID       int
-	SubtestID   int
-	Filename    string
+	SubID     int
+	SubtestID int
+	Filename  string
+
+	// TimeLimit is in seconds, MemoryLimit is in kilobytes
 	MemoryLimit int
 	TimeLimit   float64
-	Lang        string
-	TestID      int
+
+	Lang   string
+	TestID int
 }
 
 type ExecResponse struct {
@@ -30,116 +34,103 @@ type ExecResponse struct {
 	Comments   string
 }
 
-func GetExecuteTask(logger *slog.Logger) eval.Task[ExecRequest, ExecResponse] {
-	return func(ctx context.Context, box eval.Sandbox, req *ExecRequest) (*ExecResponse, error) {
-		resp := &ExecResponse{}
-		logger.Info("Executing subtest", slog.Int("subtest_id", req.SubtestID), slog.Int("sub_id", req.SubID), slog.Int("box_id", box.GetID()))
+func ExecuteTask(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, req *ExecRequest, logger *slog.Logger) (*ExecResponse, error) {
+	logger.Info("Executing subtest", slog.Int("subtest_id", req.SubtestID), slog.Int("sub_id", req.SubID))
 
-		if err := eval.CopyInBox(box, datastore.GetBucket(datastore.BucketTypeTests), strconv.Itoa(req.TestID)+".in", "/box/"+req.Filename+".in", 0644); err != nil {
-			zap.S().Info("Can't write input file:", err)
-			resp.Comments = "translate:internal_error"
-			return resp, err
-		}
-		consoleInput := req.Filename == "stdin"
+	bucket, fileName := bucketFromIDExec(req.SubID)
+	lang := eval.Langs[req.Lang]
 
-		bucket, fileName := bucketFromIDExec(req.SubID)
-		lang := eval.Langs[req.Lang]
-		if err := eval.CopyInBox(box, bucket, fileName, lang.CompiledName, 0); err != nil {
-			zap.S().Warn("Couldn't copy executable in box: ", err)
-			resp.Comments = "translate:internal_error"
-			return resp, err
-		}
+	boxOut := fmt.Sprintf("/box/%s.out", req.Filename)
 
-		meta, err := runSubmission(ctx, box, eval.Langs[req.Lang], req.TimeLimit, req.MemoryLimit, consoleInput)
-		if err != nil {
-			resp.Comments = fmt.Sprintf("Evaluation error: %v", err)
-			return resp, nil
-		}
-		resp.Time = meta.Time
-		resp.Memory = meta.Memory
+	bReq := &eval.Box2Request{
+		InputBucketFiles: map[string]*eval.BucketFile{
+			// Test input
+			"/box/" + req.Filename + ".in": {
+				Bucket:   datastore.GetBucket(datastore.BucketTypeTests),
+				Filename: strconv.Itoa(req.TestID) + ".in",
+				Mode:     0666,
+			},
+			// User executable
+			lang.CompiledName: {
+				Bucket:   bucket,
+				Filename: fileName,
+				Mode:     0777,
+			},
+		},
 
-		okExit := false
-		switch meta.Status {
-		case "TO":
-			if strings.Contains(meta.Message, "wall") {
-				resp.Comments = "translate:walltimeout"
-			} else {
-				resp.Comments = "translate:timeout"
-			}
-		case "RE":
-			resp.Comments = meta.Message
-		case "SG":
-			resp.Comments = meta.Message
-		case "XX":
-			resp.Comments = "Sandbox Error: " + meta.Message
-			zap.S().Warn("Sandbox error detected, check grader.log for more detials ", zap.Int("subtest_id", req.SubtestID), zap.Int("box_id", box.GetID()), zap.Int("sub_id", req.SubID))
-			logger.Warn("Sandbox error", slog.Int("sub_id", req.SubID), slog.Int("subtest_id", req.SubtestID), slog.Int("box_id", box.GetID()), slog.Any("metadata", meta))
-		default:
-			okExit = true
-		}
-		if !okExit {
-			return resp, nil
-		}
+		RunConfig: &eval.RunConfig{
+			EnvToSet:      maps.Clone(lang.RunEnv),
+			MemoryLimit:   req.MemoryLimit,
+			TimeLimit:     req.TimeLimit,
+			WallTimeLimit: 2*req.TimeLimit + 1,
+		},
 
-		boxOut := fmt.Sprintf("/box/%s.out", req.Filename)
-		if !box.FileExists(boxOut) {
-			resp.Comments = "No output file found"
-			return resp, nil
-		}
+		OutputBucketFiles: map[string]*eval.BucketFile{
+			boxOut: {
+				Bucket:   datastore.GetBucket(datastore.BucketTypeSubtests),
+				Filename: strconv.Itoa(req.SubtestID),
+				Mode:     0644,
+			},
+		},
 
-		pr, pw := io.Pipe()
-		go func() {
-			defer pw.Close()
-			if err := box.ReadFile(boxOut, pw); err != nil {
-				resp.Comments = "Could not write output file"
-				zap.S().Warn(err)
-			}
-		}()
-
-		if err := datastore.GetBucket(datastore.BucketTypeSubtests).WriteFile(strconv.Itoa(req.SubtestID), pr, 0644); err != nil {
-			resp.Comments = "Could not open problem output"
-			return resp, nil
-		}
-
-		return resp, nil
+		Command: slices.Clone(lang.RunCommand),
 	}
-}
-
-// runSubmission runs a program, following the language conventions
-// filenames contains the names for input and output, used if consoleInput is true
-// timeLimit is in seconds, memoryLimit is in kilbytes
-func runSubmission(ctx context.Context, box eval.Sandbox, language eval.Language, timeLimit float64, memoryLimit int, consoleInput bool) (*eval.RunStats, error) {
-
-	var runConf eval.RunConfig
-	runConf.EnvToSet = make(map[string]string)
 
 	// if our specified language is not compiled, then it means that
 	// the mounts specified should be added at runtime
-	if !language.Compiled {
-		runConf.Directories = append(runConf.Directories, language.Mounts...)
+	if !lang.Compiled {
+		bReq.RunConfig.Directories = slices.Clone(lang.Mounts)
 	}
 
-	for key, val := range language.RunEnv {
-		runConf.EnvToSet[key] = val
+	if req.TimeLimit == 0 {
+		bReq.RunConfig.WallTimeLimit = 30
 	}
 
-	runConf.MemoryLimit = memoryLimit
-	runConf.TimeLimit = timeLimit
-	runConf.WallTimeLimit = 2*timeLimit + 1
-	if timeLimit == 0 {
-		runConf.WallTimeLimit = 30
+	if req.Filename == "stdin" {
+		bReq.RunConfig.InputPath = "/box/stdin.in"
+		bReq.RunConfig.OutputPath = "/box/stdin.out"
 	}
 
-	if consoleInput {
-		runConf.InputPath = "/box/stdin.in"
-		runConf.OutputPath = "/box/stdin.out"
+	resp := &ExecResponse{}
+
+	bResp, err := mgr.RunBox2(ctx, bReq, memQuota)
+	if bResp == nil || err != nil {
+		resp.Comments = "translate:internal_error"
+		if err != nil {
+			resp.Comments += "(" + err.Error() + ")"
+		}
+		return resp, nil
 	}
 
-	goodCmd, err := eval.MakeGoodCommand(language.RunCommand)
-	if err != nil {
-		zap.S().Warnf("MakeGoodCommand returned an error: %q. This is not good, so we'll use the command from the config file. The supplied command was %#v", err, language.RunCommand)
-		goodCmd = language.RunCommand
+	resp.Time, resp.Memory = bResp.Stats.Time, bResp.Stats.Memory
+
+	okExit := false
+	switch msg, status := bResp.Stats.Message, bResp.Stats.Status; status {
+	case "TO":
+		if strings.Contains(msg, "wall") {
+			resp.Comments = "translate:walltimeout"
+		} else {
+			resp.Comments = "translate:timeout"
+		}
+	case "RE":
+		resp.Comments = msg
+	case "SG":
+		resp.Comments = msg
+	case "XX":
+		resp.Comments = "Sandbox Error: " + msg
+		zap.S().Warn("Sandbox error detected, check grader.log for more detials ", zap.Int("subtest_id", req.SubtestID), zap.Int("sub_id", req.SubID))
+		logger.Warn("Sandbox error", slog.Int("sub_id", req.SubID), slog.Int("subtest_id", req.SubtestID), slog.Any("metadata", bResp.Stats))
+	default:
+		okExit = true
+	}
+	if !okExit {
+		return resp, nil
 	}
 
-	return box.RunCommand(ctx, goodCmd, &runConf)
+	if _, ok := bResp.BucketFiles[boxOut]; !ok {
+		resp.Comments = "No output file found"
+		return resp, nil
+	}
+
+	return resp, nil
 }

@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/box"
 	"github.com/KiloProjects/kilonova/eval/checkers"
@@ -165,7 +166,7 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		return kilonova.Statusf(500, "Invalid eval type")
 	}
 
-	if err := eval.CleanCompilation(sub.ID); err != nil {
+	if err := datastore.GetBucket(datastore.BucketTypeCompiles).RemoveFile(fmt.Sprintf("%d.bin", sub.ID)); err != nil {
 		zap.S().Warn("Couldn't remove compilation artifact: ", err)
 	}
 
@@ -263,7 +264,7 @@ func compileSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		return kilonova.WrapError(err, "Couldn't generate compilation request")
 	}
 
-	resp, err1 := tasks.GetCompileTask(graderLogger).Run(ctx, runner, 0, req)
+	resp, err1 := tasks.CompileTask(ctx, runner, req, graderLogger)
 	if err1 != nil {
 		return kilonova.WrapError(err1, "Error from eval")
 	}
@@ -325,7 +326,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 		execRequest.Filename = "stdin"
 	}
 
-	resp, err := tasks.GetExecuteTask(graderLogger).Run(ctx, runner, int64(problem.MemoryLimit), execRequest)
+	resp, err := tasks.ExecuteTask(ctx, runner, int64(problem.MemoryLimit), execRequest, graderLogger)
 	if err != nil {
 		return decimal.Zero, "", kilonova.WrapError(err, "Couldn't execute subtest")
 	}

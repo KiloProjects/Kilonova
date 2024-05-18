@@ -1,64 +1,13 @@
 package eval
 
 import (
-	"fmt"
-	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
-	"strings"
 
-	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
 )
-
-// Copies in box an object from a bucket
-func CopyInBox(b Sandbox, bucket *datastore.Bucket, filename string, p2 string, mode fs.FileMode) error {
-	file, err := bucket.Reader(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	if mode == 0000 {
-		stat, err := bucket.Stat(filename)
-		if err != nil {
-			return err
-		}
-		mode = stat.Mode()
-	}
-
-	return b.WriteFile(p2, file, mode)
-}
-
-// makeGoodCommand makes sure it's a full path (with no symlinks) for the command.
-// Some languages (like java) are hidden pretty deep in symlinks, and we don't want a hardcoded path that could be different on other platforms.
-func MakeGoodCommand(command []string) ([]string, error) {
-	tmp := slices.Clone(command)
-
-	if strings.HasPrefix(tmp[0], "/box") {
-		return tmp, nil
-	}
-
-	cmd, err := exec.LookPath(tmp[0])
-	if err != nil {
-		return nil, err
-	}
-
-	cmd, err = filepath.EvalSymlinks(cmd)
-	if err != nil {
-		return nil, err
-	}
-
-	tmp[0] = cmd
-	return tmp, nil
-}
-
-func CleanCompilation(subid int) error {
-	return datastore.GetBucket(datastore.BucketTypeCompiles).RemoveFile(fmt.Sprintf("%d.bin", subid))
-}
 
 func disableLang(key string) {
 	lang := Langs[key]

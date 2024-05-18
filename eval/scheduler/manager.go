@@ -4,12 +4,26 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io"
+	"io/fs"
 	"log/slog"
+	"os/exec"
+	"path"
+	"path/filepath"
+	"slices"
+	"strings"
+	"sync"
 
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
+	"gopkg.in/natefinch/lumberjack.v2"
+)
+
+var (
+	cmdAuditLogger *slog.Logger
+	loggerOnce     sync.Once
 )
 
 type BoxFunc func(id int, mem int64, logger *slog.Logger) (eval.Sandbox, error)
@@ -60,7 +74,7 @@ func (b *BoxManager) NumConcurrent() int64 {
 	return b.numConcurrent
 }
 
-func (b *BoxManager) GetBox(ctx context.Context, memQuota int64) (eval.Sandbox, error) {
+func (b *BoxManager) getBox(ctx context.Context, memQuota int64) (eval.Sandbox, error) {
 	if b.boxGenerator == nil {
 		zap.S().Warn("Empty box generator")
 		return nil, errors.New("empty box generator")
@@ -81,7 +95,7 @@ func (b *BoxManager) GetBox(ctx context.Context, memQuota int64) (eval.Sandbox, 
 	return box, nil
 }
 
-func (b *BoxManager) ReleaseBox(sb eval.Sandbox) {
+func (b *BoxManager) releaseBox(sb eval.Sandbox) {
 	q := sb.MemoryQuota()
 	if err := sb.Close(); err != nil {
 		zap.S().Warnf("Could not release sandbox %d: %v", sb.GetID(), err)
@@ -146,18 +160,28 @@ func CheckCanRun(boxFunc BoxFunc) bool {
 }
 
 func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQuota int64) (*eval.Box2Response, error) {
-	goodCmd, err := eval.MakeGoodCommand(req.Command)
+	loggerOnce.Do(func() {
+		cmdAuditLogger = slog.New(slog.NewJSONHandler(&lumberjack.Logger{
+			Filename: path.Join(config.Common.LogDir, "sandbox_runs.log"),
+			MaxSize:  200, // MB
+			Compress: true,
+		}, &slog.HandlerOptions{
+			AddSource: false,
+		}))
+	})
+
+	goodCmd, err := makeGoodCommand(req.Command)
 	if err != nil {
 		slog.Error("Error running MakeGoodCommand", slog.Any("err", err))
 		return nil, err
 	}
 
-	box, err := mgr.GetBox(ctx, memQuota)
+	box, err := mgr.getBox(ctx, memQuota)
 	if err != nil {
 		slog.Warn("Could not get box", slog.Any("err", err))
 		return nil, err
 	}
-	defer mgr.ReleaseBox(box)
+	defer mgr.releaseBox(box)
 
 	for path, val := range req.InputByteFiles {
 		if val.Mode == 0 {
@@ -169,10 +193,14 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 	}
 
 	for path, val := range req.InputBucketFiles {
-		if val.Mode == 0 {
-			val.Mode = 0666
-		}
-		if err := eval.CopyInBox(box, val.Bucket, val.Filename, path, val.Mode); err != nil {
+		// Do not reset val.Mode here, since CopyInBox stats and sets the proper mode
+		if err := copyInBox(box, val.Bucket, val.Filename, path, val.Mode); err != nil {
+			if errors.Is(err, kilonova.ErrNotExist) {
+				slog.Warn("Bucket file doesn't exist when copying in sandbox",
+					slog.Any("bucket", val.Bucket), slog.String("filename", val.Filename),
+					slog.String("target_path", path), slog.Int("box_id", box.GetID()),
+				)
+			}
 			return nil, err
 		}
 	}
@@ -181,6 +209,12 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 	if err != nil {
 		return nil, err
 	}
+	cmdAuditLogger.Info("Ran command",
+		slog.Any("command", goodCmd),
+		slog.Any("stats", stats),
+		slog.Any("output_byte_files", req.OutputByteFiles),
+		slog.Int64("mem_quota", memQuota),
+	)
 
 	resp := &eval.Box2Response{
 		Stats:       stats,
@@ -195,29 +229,71 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 			continue
 		}
 		if err := box.ReadFile(path, &b); err != nil {
-			return nil, err
+			return resp, err
 		}
 		resp.ByteFiles[path] = bytes.Clone(b.Bytes())
 	}
 
 	for path, file := range req.OutputBucketFiles {
+		if !box.FileExists(path) {
+			continue
+		}
 		if file.Mode == 0 {
 			file.Mode = 0666
 		}
 
-		pr, pw := io.Pipe()
-		go func() {
-			err := box.ReadFile(path, pw)
-			if err != nil {
-				slog.Warn("Error reading box file", slog.Any("err", err))
-			}
-			pw.Close()
-		}()
-
-		if err := file.Bucket.WriteFile(file.Filename, pr, file.Mode); err != nil {
-			return nil, err
+		if err := box.SaveFile(path, file.Bucket, file.Filename, file.Mode); err != nil {
+			slog.Warn("Error saving box file", slog.Any("err", err), slog.String("path", path), slog.Any("bucket", file.Bucket))
+			return resp, err
+		}
+		resp.BucketFiles[path] = &eval.BucketFile{
+			Bucket:   file.Bucket,
+			Filename: file.Filename,
+			Mode:     file.Mode,
 		}
 	}
 
 	return resp, nil
+}
+
+// Copies in box an object from a bucket
+func copyInBox(b eval.Sandbox, bucket eval.Bucket, filename string, p2 string, mode fs.FileMode) error {
+	file, err := bucket.Reader(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if mode == 0000 {
+		stat, err := bucket.Stat(filename)
+		if err != nil {
+			return err
+		}
+		mode = stat.Mode()
+	}
+
+	return b.WriteFile(p2, file, mode)
+}
+
+// makeGoodCommand makes sure it's a full path (with no symlinks) for the command.
+// Some languages (like java) are hidden pretty deep in symlinks, and we don't want a hardcoded path that could be different on other platforms.
+func makeGoodCommand(command []string) ([]string, error) {
+	tmp := slices.Clone(command)
+
+	if strings.HasPrefix(tmp[0], "/box") {
+		return tmp, nil
+	}
+
+	cmd, err := exec.LookPath(tmp[0])
+	if err != nil {
+		return nil, err
+	}
+
+	cmd, err = filepath.EvalSymlinks(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	tmp[0] = cmd
+	return tmp, nil
 }

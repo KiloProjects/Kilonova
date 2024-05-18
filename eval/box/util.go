@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 
+	"github.com/KiloProjects/kilonova/eval"
 	"go.uber.org/zap"
 )
 
@@ -18,6 +19,16 @@ func readFile(p string, w io.Writer) error {
 
 	_, err = io.Copy(w, f)
 	return err
+}
+
+func saveFile(p string, bucket eval.Bucket, filename string, mode fs.FileMode) error {
+	f, err := os.Open(p)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	return bucket.WriteFile(filename, f, mode)
 }
 
 func writeFile(p string, r io.Reader, mode fs.FileMode) error {

@@ -18,6 +18,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var _ slog.LogValuer = &Bucket{}
+
 type Bucket struct {
 	RootPath string
 	Name     string
@@ -264,7 +266,7 @@ func (b *Bucket) RunEvictionPolicy(logger *slog.Logger) (int, error) {
 	})
 
 	if logger != nil {
-		logger.Info("Before cleanup", slog.String("bucket", b.Name), slog.Int("object_count", len(evictionEntries)), slog.String("bucket_size", humanize.IBytes(uint64(dirSize))))
+		logger.Info("Before cleanup", slog.Any("bucket", b), slog.Int("object_count", len(evictionEntries)), slog.String("bucket_size", humanize.IBytes(uint64(dirSize))))
 	}
 
 	var numDeleted int
@@ -297,7 +299,7 @@ func (b *Bucket) RunEvictionPolicy(logger *slog.Logger) (int, error) {
 	}
 
 	if logger != nil {
-		logger.Info("After cleanup", slog.String("bucket", b.Name), slog.Int("object_count", len(evictionEntries)), slog.String("bucket_size", humanize.IBytes(uint64(dirSize))))
+		logger.Info("After cleanup", slog.Any("bucket", b), slog.Int("object_count", len(evictionEntries)), slog.String("bucket_size", humanize.IBytes(uint64(dirSize))))
 	}
 
 	return numDeleted, nil
@@ -323,6 +325,10 @@ func (b *Bucket) ResetCache() error {
 	// Refresh stats
 	b.Statistics(true)
 	return errors.Join(errs...)
+}
+
+func (b *Bucket) LogValue() slog.Value {
+	return slog.StringValue(b.Name)
 }
 
 func NewBucket(path string, name string, compressionLevel int, cache bool, persistent bool, maxSize int64, maxTTL time.Duration) (*Bucket, error) {

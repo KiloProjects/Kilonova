@@ -98,6 +98,10 @@ func (b *IsolateBox) buildRunFlags(c *eval.RunConfig, metaFilePath string) (res 
 			c.MemoryLimit = int(b.memoryQuota)
 		}
 		res = append(res, "--cg-mem="+strconv.Itoa(c.MemoryLimit))
+	} else if b.memoryQuota > 0 {
+		// Still include a memory limit if quota is defined.
+		// Just a sanity check to ensure resources aren't exhausted.
+		res = append(res, "--cg-mem="+strconv.FormatInt(b.memoryQuota, 10))
 	}
 
 	if c.InputPath == "" {
@@ -138,6 +142,12 @@ func (b *IsolateBox) ReadFile(fpath string, w io.Writer) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return readFile(b.getFilePath(fpath), w)
+}
+
+func (b *IsolateBox) SaveFile(fpath string, bucket eval.Bucket, filename string, mode fs.FileMode) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return saveFile(b.getFilePath(fpath), bucket, filename, mode)
 }
 
 func (b *IsolateBox) GetID() int {
@@ -260,6 +270,7 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 				dumpFileListing(&s, b.getFilePath("/"), "/", "", true)
 				b.logger.Warn(s.String())
 			}
+			// TODO: err is nil in this branch. Why return it?
 			return meta, err
 		}
 

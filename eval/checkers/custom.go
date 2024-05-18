@@ -1,7 +1,6 @@
 package checkers
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -83,7 +82,7 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	checkerPrepareMu.Lock()
 	defer checkerPrepareMu.Unlock()
 
-	resp, err := tasks.GetCompileTask(c.Logger).Run(ctx, c.mgr, 0, &tasks.CompileRequest{
+	resp, err := tasks.CompileTask(ctx, c.mgr, &tasks.CompileRequest{
 		ID: -c.pb.ID,
 		CodeFiles: map[string][]byte{
 			eval.Langs[eval.GetLangByFilename(c.filename)].SourceName: c.code,
@@ -91,7 +90,7 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 			"/box/testlib.h": testlibFile,
 		},
 		Lang: eval.GetLangByFilename(c.filename),
-	})
+	}, c.Logger)
 	if err != nil {
 		return "Couldn't compile checker", err
 	}
@@ -110,17 +109,17 @@ func (c *customChecker) RunChecker(ctx context.Context, subtestID int, testID in
 	defer checkerPrepareMu.RUnlock()
 	var out checkerResult
 
-	var task eval.Task[customCheckerInput, checkerResult] = standardCheckerTask
+	var task = standardCheckerTask
 	if c.legacy {
 		task = legacyCheckerTask
 	}
 
-	resp, err := task.Run(ctx, c.mgr, checkerMemoryLimit, &customCheckerInput{
+	resp, err := task(ctx, c.mgr, &customCheckerInput{
 		c: c,
 
 		subtestID: subtestID,
 		testID:    testID,
-	})
+	}, slog.Default())
 	if err != nil || resp == nil {
 		return ErrOut, decimal.Zero
 	}
@@ -143,21 +142,41 @@ func NewStandardCustomChecker(mgr eval.BoxScheduler, logger *slog.Logger, pb *ki
 	return &customChecker{mgr, pb, filename, code, subCode, lastUpdatedAt, logger, false}
 }
 
-func copyFiles(box eval.Sandbox, lang eval.Language, job *customCheckerInput) bool {
-	if err := eval.CopyInBox(box, datastore.GetBucket(datastore.BucketTypeSubtests), strconv.Itoa(job.subtestID), "/box/program.out", 0644); err != nil {
-		return false
+func initRequest(lang eval.Language, job *customCheckerInput) *eval.Box2Request {
+	return &eval.Box2Request{
+		InputBucketFiles: map[string]*eval.BucketFile{
+			"/box/program.out": {
+				Bucket:   datastore.GetBucket(datastore.BucketTypeSubtests),
+				Filename: strconv.Itoa(job.subtestID),
+				Mode:     0666,
+			},
+			"/box/correct.in": {
+				Bucket:   datastore.GetBucket(datastore.BucketTypeTests),
+				Filename: strconv.Itoa(job.testID) + ".in",
+				Mode:     0666,
+			},
+			"/box/correct.out": {
+				Bucket:   datastore.GetBucket(datastore.BucketTypeTests),
+				Filename: strconv.Itoa(job.testID) + ".out",
+				Mode:     0666,
+			},
+			lang.CompiledName: {
+				Bucket:   datastore.GetBucket(datastore.BucketTypeCheckers),
+				Filename: fmt.Sprintf("%d.bin", job.c.pb.ID),
+				Mode:     0000,
+			},
+		},
+		InputByteFiles: map[string]*eval.ByteFile{
+			"/box/contestant.txt": {
+				Data: job.c.subCode,
+				Mode: 0666,
+			},
+		},
+
+		RunConfig: &eval.RunConfig{
+			MemoryLimit: checkerMemoryLimit,
+
+			WallTimeLimit: 20,
+		},
 	}
-	if err := eval.CopyInBox(box, datastore.GetBucket(datastore.BucketTypeTests), strconv.Itoa(job.testID)+".in", "/box/correct.in", 0644); err != nil {
-		return false
-	}
-	if err := eval.CopyInBox(box, datastore.GetBucket(datastore.BucketTypeTests), strconv.Itoa(job.testID)+".out", "/box/correct.out", 0644); err != nil {
-		return false
-	}
-	if err := eval.CopyInBox(box, datastore.GetBucket(datastore.BucketTypeCheckers), fmt.Sprintf("%d.bin", job.c.pb.ID), lang.CompiledName, 0000); err != nil {
-		return false
-	}
-	if err := box.WriteFile("/box/contestant.txt", bytes.NewReader(job.c.subCode), 0644); err != nil {
-		return false
-	}
-	return true
 }

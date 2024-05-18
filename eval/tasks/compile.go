@@ -3,17 +3,18 @@ package tasks
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
-	"io"
-	"io/fs"
 	"log/slog"
+	"maps"
+	"slices"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
 	"go.uber.org/zap"
 )
+
+const outputPath = "/box/compilation.out"
 
 type CompileRequest struct {
 	// TODO: Better identifier for such requests
@@ -42,129 +43,124 @@ func bucketFromIDExec(id int) (*datastore.Bucket, string) {
 	return datastore.GetBucket(datastore.BucketTypeCompiles), fmt.Sprintf("%d.bin", id)
 }
 
-func GetCompileTask(logger *slog.Logger) eval.Task[CompileRequest, CompileResponse] {
-	return func(ctx context.Context, box eval.Sandbox, req *CompileRequest) (*CompileResponse, error) {
-		resp := &CompileResponse{}
-		logger.Info("Compiling file", slog.Int("box_id", box.GetID()), slog.Int("req_id", req.ID))
+func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest, logger *slog.Logger) (*CompileResponse, error) {
+	resp := &CompileResponse{}
 
-		lang, ok := eval.Langs[req.Lang]
-		if !ok {
-			zap.S().Warnf("Language for submission %d could not be found: %q", req.ID, req.Lang)
-			return resp, kilonova.Statusf(500, "No language found")
+	lang, ok := eval.Langs[req.Lang]
+	if !ok {
+		zap.S().Warnf("Language for submission %d could not be found: %q", req.ID, req.Lang)
+		return resp, kilonova.Statusf(500, "No language found")
+	}
+
+	bucket, outName := bucketFromIDExec(req.ID)
+	resp.Success = true
+
+	// If the language is interpreted, just save the code and leave
+	if !lang.Compiled {
+		// It should only be one file here anyway
+		if len(req.CodeFiles) > 1 {
+			zap.S().Warn("More than one file specified for non-compiled language. This is not properly supported")
 		}
-
-		bucket, outName := bucketFromIDExec(req.ID)
-		resp.Success = true
-
-		// If the language is interpreted, just save the code and leave
-		if !lang.Compiled {
-			// It should only be one file here anyway
-			if len(req.CodeFiles) > 1 {
-				zap.S().Warn("More than one file specified for non-compiled language. This is not supported")
-			}
-			for _, fData := range req.CodeFiles {
-				if err := bucket.WriteFile(outName, bytes.NewBuffer(fData), 0644); err != nil {
-					resp.Other = err.Error()
-					resp.Success = false
-				}
-			}
-			return resp, nil
-		}
-
-		files := make(map[string][]byte)
-		sourceFiles := []string{}
-		for fName, fData := range req.CodeFiles {
-			files[fName] = fData
-			sourceFiles = append(sourceFiles, fName)
-		}
-		for fName, fData := range req.HeaderFiles {
-			files[fName] = fData
-		}
-
-		out, stats, err := compileFile(ctx, box, files, sourceFiles, lang)
-		resp.Output = out
-		resp.Stats = stats
-
-		if err != nil {
-			resp.Success = false
-			return resp, nil
-		}
-
-		pr, pw := io.Pipe()
-		go func() {
-			err := box.ReadFile(lang.CompiledName, pw)
-			if err != nil {
+		for _, fData := range req.CodeFiles {
+			if err := bucket.WriteFile(outName, bytes.NewBuffer(fData), 0644); err != nil {
 				resp.Other = err.Error()
 				resp.Success = false
 			}
-			pw.Close()
-		}()
-
-		if err := bucket.WriteFile(outName, pr, 0777); err != nil {
-			resp.Other = err.Error()
-			resp.Success = false
 		}
 		return resp, nil
 	}
+
+	logger.Info("Compiling file", slog.Int("req_id", req.ID))
+
+	bReq := &eval.Box2Request{
+		InputByteFiles: make(map[string]*eval.ByteFile),
+
+		// Compilation output
+		OutputBucketFiles: map[string]*eval.BucketFile{
+			lang.CompiledName: {
+				Bucket:   bucket,
+				Filename: outName,
+				Mode:     0777,
+			},
+		},
+		OutputByteFiles: []string{outputPath},
+
+		// Run config
+		RunConfig: &eval.RunConfig{
+			EnvToSet:    maps.Clone(lang.BuildEnv),
+			InheritEnv:  true,
+			Directories: slices.Clone(lang.Mounts),
+
+			StderrToStdout: true,
+			OutputPath:     outputPath,
+		},
+	}
+
+	// File environment
+	sourceFiles := []string{}
+	for fName, fData := range req.CodeFiles {
+		bReq.InputByteFiles[fName] = &eval.ByteFile{
+			Data: fData,
+			Mode: 0666,
+		}
+		sourceFiles = append(sourceFiles, fName)
+	}
+	for fName, fData := range req.HeaderFiles {
+		bReq.InputByteFiles[fName] = &eval.ByteFile{
+			Data: fData,
+			Mode: 0666,
+		}
+	}
+
+	// Init compilation command
+	goodCmd, err := makeGoodCompileCommand(lang.CompileCommand, sourceFiles)
+	if err != nil {
+		zap.S().Warnf("MakeGoodCompileCommand returned an error: %q. This is not good, so we'll use the command from the config file. The supplied command was %#v", err, lang.CompileCommand)
+		goodCmd = lang.CompileCommand
+	}
+	bReq.Command = goodCmd
+
+	// TODO: Maybe define a max memory quota for compilations?
+	bResp, err := mgr.RunBox2(ctx, bReq, 0)
+	if bResp == nil {
+		resp.Output = "Internal runner error"
+		resp.Success = false
+		return resp, nil
+	}
+	resp.Output = compilationOutput(bResp)
+	resp.Stats = bResp.Stats
+
+	if err != nil {
+		resp.Success = false
+		return resp, nil
+	}
+
+	if _, ok := bResp.BucketFiles[lang.CompiledName]; !ok {
+		resp.Other = "Could not save compilation output"
+		resp.Success = false
+	}
+
+	return resp, nil
 }
 
-// compileFile compiles a file that has the corresponding language
-func compileFile(ctx context.Context, box eval.Sandbox, files map[string][]byte, compiledFiles []string, language eval.Language) (string, *eval.RunStats, error) {
-	for fileName, fileData := range files {
-		if err := box.WriteFile(fileName, bytes.NewReader(fileData), 0644); err != nil {
-			zap.S().Warn(err)
-			return "", nil, err
-		}
+func compilationOutput(resp *eval.Box2Response) string {
+	if resp == nil {
+		return ""
 	}
-
-	var conf eval.RunConfig
-	conf.EnvToSet = make(map[string]string)
-
-	conf.InheritEnv = true
-	conf.Directories = append(conf.Directories, language.Mounts...)
-
-	for key, val := range language.BuildEnv {
-		conf.EnvToSet[key] = val
+	val, ok := resp.ByteFiles[outputPath]
+	if !ok {
+		return ""
 	}
-
-	conf.StderrToStdout = true
-	conf.OutputPath = "/box/compilation.out"
-
-	goodCmd, err := makeGoodCompileCommand(language.CompileCommand, compiledFiles)
-	if err != nil {
-		zap.S().Warnf("MakeGoodCompileCommand returned an error: %q. This is not good, so we'll use the command from the config file. The supplied command was %#v", err, language.CompileCommand)
-		goodCmd = language.CompileCommand
-	}
-
-	stats, err := box.RunCommand(ctx, goodCmd, &conf)
-
-	var out bytes.Buffer
-	if err := box.ReadFile("/box/compilation.out", &out); err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			zap.S().Warn("Couldn't read compilation output: ", err)
-			out.Reset()
-		}
-	}
-
-	combinedOutRunes := []rune(out.String())
+	combinedOutRunes := []rune(string(val))
 
 	if len(combinedOutRunes) > compileOutputLimit { // Truncate output on error
 		combinedOutRunes = append(combinedOutRunes[:compileOutputLimit], []rune("... (compilation output trimmed)")...)
 	}
-	combinedOut := string(combinedOutRunes)
-
-	if err != nil {
-		return combinedOut, stats, err
-	}
-
-	return combinedOut, stats, nil
+	return string(combinedOutRunes)
 }
 
 func makeGoodCompileCommand(command []string, files []string) ([]string, error) {
-	cmd, err := eval.MakeGoodCommand(command)
-	if err != nil {
-		return nil, err
-	}
+	cmd := slices.Clone(command)
 	for i := range cmd {
 		if cmd[i] == eval.MagicReplace {
 			x := []string{}

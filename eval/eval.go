@@ -4,13 +4,22 @@ import (
 	"context"
 	"io"
 	"io/fs"
-
-	"go.uber.org/zap"
 )
+
+type Bucket interface {
+	// It should also implement slog.LogValuer for pretty printing in debug output
+	// But it's not really necessary
+
+	Reader(name string) (io.ReadCloser, error)
+	Stat(name string) (fs.FileInfo, error)
+	WriteFile(name string, r io.Reader, mode fs.FileMode) error
+}
 
 type Sandbox interface {
 	// ReadFile reads contents of path from sandbox and pipes them to the given writer
 	ReadFile(path string, w io.Writer) error
+	// SaveFile reads contents of path from sandbox and saves them in the given bucket by calling WriteFile
+	SaveFile(path string, bucket Bucket, filename string, mode fs.FileMode) error
 	WriteFile(path string, r io.Reader, mode fs.FileMode) error
 	// RemoveFile(path string) error
 	FileExists(path string) bool
@@ -27,24 +36,8 @@ type Sandbox interface {
 type BoxScheduler interface {
 	SubRunner(ctx context.Context, numConc int64) (BoxScheduler, error)
 	NumConcurrent() int64
-	GetBox(ctx context.Context, memQuota int64) (Sandbox, error)
-	ReleaseBox(Sandbox)
-	Close(context.Context) error
-
-	// Experimental
 	RunBox2(ctx context.Context, req *Box2Request, memQuota int64) (*Box2Response, error)
-}
-
-type Task[Req, Resp any] func(context.Context, Sandbox, *Req) (*Resp, error)
-
-func (t Task[Req, Resp]) Run(ctx context.Context, mgr BoxScheduler, memQuota int64, r *Req) (*Resp, error) {
-	box, err := mgr.GetBox(ctx, memQuota)
-	if err != nil {
-		zap.S().Info(err)
-		return nil, err
-	}
-	defer mgr.ReleaseBox(box)
-	return t(ctx, box, r)
+	Close(context.Context) error
 }
 
 type RunConfig struct {
