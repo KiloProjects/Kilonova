@@ -1,3 +1,56 @@
+- v0.25.0:
+    - The number wasn't incremented, but many changes were made since January
+    - List of changes by month:
+        - May
+            - Improve polygon archive parsing;
+            - Save history in problem search so pressing back in the browser goes to previous page/state;
+            - UI for downloading individual tests in archive generator;
+            - Bucket statistics improvements;
+            - Kotlin language support and setup script;
+            - !!! Huge refactoring of task execution, paving the way for remote graders and, finally, an official v1.0 release of the platform.
+        - April
+            - Better language matching for .cpp files;
+            - `zstd` compression in bucket data store;
+            - Custom statement types (for example `statement-ro-editorial.md`);
+            - Send submissions on Ctrl+Enter;
+            - Preference changes for default display for problem statements;
+            - Add eviction policies based on TTL and max file size for bucket files (in cache environments such as subtests);
+                - This deprecated and later removed a cron job that already tried to do this;
+            - Coalesce schema with existing migrations;
+            - !!! Automatic schema migrator.
+        - March
+            - Added variable number of max uses to contest invites;
+            - Created submission saver script, useful for on-prem post-contest requests;
+            - Changed the visibility requirements for problems to be added to virtual contests;
+                - For example, a problem from an official contest could, in the past, be added to a virtual contest and bypass the submission count limit.
+            - Significant submission visibility performance improvements;
+            - Better auto update for problem scores in problem sidebar;
+            - Display sandbox version on initialization;
+            - Huge performance improvements to calculating problem score by caching and recalculating on submission changes instead of storing in a view;
+            - Improve polygon archive importing;
+            - Require passwords for name change;
+            - !! Reorganize data storage (tests, subtests, etc) in an S3-like bucket system;
+            - Support for multiple submission languages to interactive problems;
+            - Experimental support for MOSS plagiarism checker.
+        - February
+            - API reorganization;
+            - Replace quickjs with pure go library goja for katex;
+            - Remove Code field in Submission struct;
+            - For non-default score scale, show percentage instead of points in multiple places (cosmetic change);
+            - More dynamic front page based on flags (for example, the subtitle can be changed);
+            - Problem IDs are now hidden in contest lists when user doesn't have edit rights;
+            - Show display name in leaderboard.csv;
+            - Remove misinterpretable characters from user account generation;
+            - Fix some polling issues that caused fail2ban triggers;
+            - Save session information such as user agent and ip, used mostly for official contests to protect against cheating.
+        - January
+            - Contest submission/question cooldown;
+            - Improved submissions page performance;
+            - Generated user account improvements like sending a mail with password;
+            - Score "scaling" feature (for example, you can have 1000 points show up in the contest leaderboard for a problem);
+            - Output only problem handling improvements;
+                - Variable max submission size;
+                - Default to file upload regardless of preference (avoids nasty lag when copy-pasting large text in codemirror).
 - v0.24.0:
     - !!! Virtual Contests and better contest discovery mechanism;
     - !! Proper reevaluation queue;
