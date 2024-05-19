@@ -3,7 +3,7 @@
 {{ define "description" }} {{- .Problem.Name}} {{- if .Problem.SourceCredits}} - propusă la {{.Problem.SourceCredits}} {{- end}}{{with authorsFromTags .Tags}} - de către {{.}}{{end -}} {{ end }}
 
 {{ define "head" }}
-<link rel="canonical" href='{{printf "/problems/%d" .Problem.ID | formatCanonical}}' />
+<link rel="canonical" href='{{printf "/problems/%d" .Problem.ID | formatCanonical}}'>
 {{ end }}
 
 {{ define "content" }}
