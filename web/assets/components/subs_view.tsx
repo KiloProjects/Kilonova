@@ -264,7 +264,7 @@ function SubsView(props: SubsViewProps) {
 	// Page-holder has mt-0 so it looks neat on the problem submit page
 	return (
 		<div class="page-holder mt-0">
-			<div class="page-sidebar lg:order-last">
+			<aside class="page-sidebar lg:order-last">
 				<div class="segment-panel">
 					<h2>{getText("filters")}</h2>
 					<label class="block mb-2">
@@ -454,7 +454,7 @@ function SubsView(props: SubsViewProps) {
 						{getText("filterLink")}
 					</button>
 				</div>
-			</div>
+			</aside>
 			<div class="page-content">
 				{typeof props.title !== "undefined" && <h1>{props.title}</h1>}
 				{!initialLoad && (

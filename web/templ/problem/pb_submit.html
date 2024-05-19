@@ -15,9 +15,9 @@
         {{ template "pb_submit_form.html" .}}
     </div>
     {{ if .Topbar.Contest }}
-        <div class="page-sidebar min-h-0">
+        <aside class="page-sidebar min-h-0">
             {{ template "contest_sidebar.html" .Topbar.Contest }}
-        </div>
+        </aside>
     {{ end }}
     <div class="page-content-full-wrapper pt-0">
         <kn-sub-viewer problemID="{{.Problem.ID}}" userID="{{authedUser.ID}}"

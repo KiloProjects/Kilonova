@@ -484,14 +484,14 @@ function SubmissionView({ sub, bigCode, codeHTML, pasteAuthor }: { sub: FullSubm
 	return (
 		<>
 			<div class="page-holder">
-				<div class="page-sidebar lg:order-last">
+				<aside class="page-sidebar lg:order-last">
 					<Summary sub={sub} pasteAuthor={pasteAuthor} />
 					{window.platform_info.user_id !== undefined && window.platform_info.user_id > 0 && (
 						<div class="segment-panel">
 							<OlderSubmissions problemID={sub.problem.id} userID={window.platform_info.user_id} />
 						</div>
 					)}
-				</div>
+				</aside>
 				<div class="page-content-wrapper">{content}</div>
 			</div>
 			{under}

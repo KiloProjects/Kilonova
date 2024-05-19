@@ -50,7 +50,7 @@
 
     {{ end }}
 </h1>
-<div id="topbar_wrapper" class="mt-1">
+<div id="topbar_wrapper" class="mt-1" role="navigation">
     {{ if .Topbar.Contest }}
         <a class="p-1 {{if (eq .Topbar.Page `contest_general`)}} topbar-selected {{end}}" href="{{.Topbar.URLPrefix}}/">
             {{getText "contest_info"}}
