@@ -21,7 +21,7 @@
         {{with stringFlag "feature.frontend.feedback_url"}}
         <div class="segment-panel">
             <h2>{{getText "feedbackHeader"}}</h2>
-            <p class="mb-1">{{getText "feedbackCallToArms" . | renderMarkdown}} </p>
+            <div class="mb-1">{{getText "feedbackCallToArms" . | renderMarkdown}} </div>
         </div>
         {{end}}
 
@@ -113,12 +113,12 @@
                 </div>
                 
                 {{ if boolFlag "feature.frontend.front_page_pbs_links" }}
-                    <span class="mb-2">
+                    <div class="mb-2">
                         {{ renderMarkdown (getText "all_checklists_announcement") }}
-                    </span>
-                    <span class="mb-4">
+                    </div>
+                    <div class="mb-4">
                         {{ renderMarkdown (getText "all_problems_announcement") }}
-                    </span>
+                    </div>
                 {{end}}
             </div>
         {{end}}
