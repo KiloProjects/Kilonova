@@ -1264,6 +1264,14 @@ ro = "Autentificare"
 en = "Reset waiting submissions"
 ro = "Resetare submisii în așteptare"
 
+[mdCacheWarmup]
+en = "Warm up markdown statement cache"
+ro = "Generare cache enunțuri markdown"
+
+[warmingUp]
+en = "Warming up..."
+ro = "Se generează..."
+
 [invalidate]
 en = "Invalidate"
 ro = "Invalidare"

@@ -120,6 +120,32 @@ func (s *BaseAPI) SendMail(msg *kilonova.MailerMessage) *StatusError {
 	return nil
 }
 
+// Warms up markdown statement cache by force triggering renders
+func (s *BaseAPI) WarmupStatementCache(ctx context.Context) *StatusError {
+	start := time.Now()
+	pbs, err := s.Problems(ctx, kilonova.ProblemFilter{})
+	if err != nil {
+		return err
+	}
+	for _, pb := range pbs {
+		variants, err := s.ProblemDescVariants(ctx, pb.ID, true)
+		if err != nil {
+			return err
+		}
+		for _, variant := range variants {
+			if variant.Format != "md" {
+				continue
+			}
+			if _, err := s.RenderedProblemDesc(ctx, pb, variant.Language, variant.Format, variant.Type); err != nil {
+				return err
+			}
+		}
+	}
+	slog.Info("Triggered statement cache", slog.Duration("duration", time.Since(start)))
+	s.LogUserAction(ctx, "Triggered statement cache warmup")
+	return nil
+}
+
 type logEntry struct {
 	Message string
 	Author  *kilonova.UserBrief
