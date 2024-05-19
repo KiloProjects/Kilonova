@@ -127,8 +127,10 @@
     <div class="page-sidebar">
         {{ if boolFlag "feature.frontend.quick_search" }}
             <form class="segment-panel" action="/problems">
-                <h2>{{getText "quick_search"}}</h2>
-                <input class="form-input w-full mb-2" type="text" name="q" placeholder="{{getText `name_or_id`}}"/>
+                <label>
+                    <h2>{{getText "quick_search"}}</h2>
+                    <input class="form-input w-full mb-2" type="text" name="q" placeholder="{{getText `name_or_id`}}"/>
+                </label>
                 <button class="btn btn-blue">{{getText "search_pb"}}</button>
             </form>
         {{end}}

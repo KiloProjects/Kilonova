@@ -490,6 +490,14 @@ ro = "Setări profil"
 en = "Settings"
 ro = "Setări"
 
+[toggleTheme]
+en = "Toggle theme"
+ro = "Schimbare temă"
+
+[toggleNavbar]
+en = "Toggle navigation bar"
+ro = "Afișare/ascundere bară navigare"
+
 [panel.proposer]
 en = "Proposer Panel"
 ro = "Panou Propunător"
