@@ -46,6 +46,7 @@ func NewLocalRenderer() *LocalRenderer {
 				),
 			),
 			&LinkConv{},
+			&HeadingConv{},
 		),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID(), parser.WithAttribute()),
 		goldmark.WithRendererOptions(html.WithHardWraps(), html.WithXHTML()),

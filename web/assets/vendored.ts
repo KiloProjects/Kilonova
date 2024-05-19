@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	document.querySelectorAll("pre.chroma code").forEach((val) => {
 		x["after:highlightElement"]({ el: val, text: (val as HTMLPreElement).innerText.replaceAll("\n\n", "\n") });
 	});
-	document.querySelectorAll(".statement-images pre:not(.chroma) code").forEach((val) => {
+	document.querySelectorAll(".statement-content pre:not(.chroma) code").forEach((val) => {
 		x["after:highlightElement"]({ el: val, text: (val as HTMLPreElement).innerText.replaceAll("\n\n", "\n").trimEnd() });
 	});
 });

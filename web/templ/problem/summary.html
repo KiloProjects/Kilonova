@@ -12,7 +12,7 @@
 {{ template "topbar.html" . }}
 
 <div class="page-holder">
-    <div class="page-content reset-list enhance-tables statement-images">
+    <div class="page-content reset-list enhance-tables statement-content">
         {{ if gt (len .Variants) 1 }}
             <label class="block my-2">
                 <span class="form-label">{{getText "statementFormat"}}:</span> 
@@ -25,12 +25,12 @@
         {{ end }}
         <div class="w-full mb-6 mt-2 text-center">
 			<!--<h1>{{.Problem.Name}}</h1>-->
-            <h5>{{getText "timeLimit"}}: {{.Problem.TimeLimit}}s</h5>
-            <h5>{{getText "memoryLimit"}}: {{KBtoMB .Problem.MemoryLimit}}MB</h5>
-            <h5>{{getText "input"}}: {{if .Problem.ConsoleInput}}<kn-glossary name="stdin" content="stdin"></kn-glossary>{{else}}{{.Problem.TestName}}.in{{end}}</h5>
-            <h5>{{getText "output"}}: {{if .Problem.ConsoleInput}}<kn-glossary name="stdin" content="stdout"></kn-glossary>{{else}}{{.Problem.TestName}}.out{{end}}</h5>
+            <span class="block">{{getText "timeLimit"}}: {{.Problem.TimeLimit}}s</span>
+            <span class="block">{{getText "memoryLimit"}}: {{KBtoMB .Problem.MemoryLimit}}MB</span>
+            <span class="block">{{getText "input"}}: {{if .Problem.ConsoleInput}}<kn-glossary name="stdin" content="stdin"></kn-glossary>{{else}}{{.Problem.TestName}}.in{{end}}</span>
+            <span class="block">{{getText "output"}}: {{if .Problem.ConsoleInput}}<kn-glossary name="stdin" content="stdout"></kn-glossary>{{else}}{{.Problem.TestName}}.out{{end}}</span>
             {{- if not .Problem.DefaultPoints.IsZero -}}
-            <h5>{{getText "defaultPoints"}}: {{.Problem.DefaultPoints}}p</h5>
+            <span class="block">{{getText "defaultPoints"}}: {{.Problem.DefaultPoints}}p</span>
             {{- end -}}
         </div>
         <article class="text-justify">
