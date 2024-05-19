@@ -1,5 +1,7 @@
 import CopyButtonPlugin from "highlightjs-copy";
 
+import "katex/contrib/copy-tex";
+
 document.addEventListener("DOMContentLoaded", () => {
 	const x = new CopyButtonPlugin();
 	document.querySelectorAll("pre.chroma code").forEach((val) => {

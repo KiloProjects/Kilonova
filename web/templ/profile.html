@@ -101,7 +101,7 @@
 {{ end }}
 
 {{if (or .ContentUser.Bio $isCUser)}}
-<div class="segment-panel reset-list enhance-images enhance-tables">
+<div class="segment-panel reset-list statement-content enhance-tables">
     <h2>{{getText "about_me_bio"}}
     {{ if and $isCUser (.ContentUser.Bio) }}
     <a href="/settings#bio"><i class="fas fa-edit"></i> {{getText "editBio"}}</a>
