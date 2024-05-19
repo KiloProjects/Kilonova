@@ -2,8 +2,8 @@
 <html lang="{{language}}" {{if isDarkMode}}class="dark"{{else}}class="light"{{end}}>
 
 <head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>{{block "title" .}}Kilonova{{end}}</title>
 	{{- $fav := hashedName "static/favicons/favicon.ico"}}
 	{{ $fav16x16 := hashedName "static/favicons/favicon-16x16.png"}}
@@ -27,13 +27,13 @@
     <meta name="theme-color" content="#ffffff">
         
 	<!-- OpenGraph stuff -->
-	<meta property="og:title" content="{{template `title` .}}" />
-	<meta property="og:type" content="website" />
-	<meta property="og:description" content="{{block `description` .}}Programming platform for learning and practising{{end}}" />
-	<meta name="description" content="{{template `description` .}}" />
-	<meta property="og:locale" content="ro_RO" />
-	<meta property="og:site_name" content="Kilonova" />
-	<meta property="og:image" content="/{{$ogimage}}" />
+	<meta property="og:title" content="{{template `title` .}}">
+	<meta property="og:type" content="website">
+	<meta property="og:description" content="{{block `description` .}}Programming platform for learning and practising{{end}}">
+	<meta name="description" content="{{template `description` .}}">
+	<meta property="og:locale" content="ro_RO">
+	<meta property="og:site_name" content="Kilonova">
+	<meta property="og:image" content="/{{$ogimage}}">
 
 	<!--Dependency bundle-->
 	<script src="/{{$bundle}}"></script>
