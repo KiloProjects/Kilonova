@@ -1040,6 +1040,10 @@ en = "Problem ID"
 ro = "ID Problemă"
 
 
+[problemListID]
+en = "Problem List ID"
+ro = "ID Listă Probleme"
+
 [contestID]
 en = "Contest ID"
 ro = "ID Concurs"
@@ -2475,6 +2479,10 @@ ro = "Modul avansat"
 [use_in_search]
 en = "Use in search"
 ro = "Folosește în căutare"
+
+[pblist_submissions]
+en = "View submissions"
+ro = "Vizualizare submisii"
 
 [created_problems]
 en = "My problems"

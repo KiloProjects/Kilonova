@@ -216,6 +216,9 @@ func subFilterQuery(filter *kilonova.SubmissionFilter, fb *filterBuilder) {
 	if v := filter.ProblemID; v != nil {
 		fb.AddConstraint("problem_id = %s", v)
 	}
+	if v := filter.ProblemListID; v != nil {
+		fb.AddConstraint("EXISTS (SELECT 1 FROM problem_list_deep_problems WHERE list_id = %s AND problem_id = submissions.problem_id)", v)
+	}
 	if v := filter.ContestID; v != nil {
 		if *v == 0 { // Allow filtering for submissions from no contest
 			fb.AddConstraint("contest_id IS NULL")

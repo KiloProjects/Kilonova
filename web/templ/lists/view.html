@@ -29,7 +29,10 @@
                 {{else}}-{{end}}
             {{else}}-{{end}} (<span class="server_timestamp">{{.CreatedAt.UnixMilli}}</span>)
         </p>
-        <a class="btn btn-blue my-2" href="/problems?deep_list_id={{.ID}}">{{getText "use_in_search"}}</a>
+        <div class="my-2">
+            <a class="btn btn-blue mr-2" href="/problems?deep_list_id={{.ID}}">{{getText "use_in_search"}}</a>
+            <a class="btn btn-blue mr-2" href="/submissions?problem_list_id={{.ID}}">{{getText "pblist_submissions"}}</a>
+        </div>
         {{if authed}}
         {{if gt (len .List) 0}}
         <form id="sim_create" class="segment-panel" autocomplete="off">

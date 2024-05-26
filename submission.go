@@ -72,11 +72,12 @@ type SubmissionUpdate struct {
 }
 
 type SubmissionFilter struct {
-	ID        *int  `json:"id"`
-	IDs       []int `json:"ids"`
-	UserID    *int  `json:"user_id"`
-	ProblemID *int  `json:"problem_id"`
-	ContestID *int  `json:"contest_id"`
+	ID            *int  `json:"id"`
+	IDs           []int `json:"ids"`
+	UserID        *int  `json:"user_id"`
+	ProblemID     *int  `json:"problem_id"`
+	ProblemListID *int  `json:"problem_list_id"`
+	ContestID     *int  `json:"contest_id"`
 
 	Status Status `json:"status"`
 

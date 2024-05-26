@@ -56,6 +56,7 @@ const status = (sub: Submission, problem: Problem | undefined): string | h.JSX.E
 type Overwrites = {
 	contestID?: number;
 	problemID?: number;
+	problemListID?: number;
 	userID?: number;
 };
 
@@ -64,6 +65,7 @@ function getInitialData(overwrites: Overwrites): SubmissionQuery {
 
 	const userIDParam = parseInt(params.get("user_id") ?? "");
 	const problemIDParam = parseInt(params.get("problem_id") ?? "");
+	const problemListIDParam = parseInt(params.get("problem_list_id") ?? "");
 	const contestIDParam = parseInt(params.get("contest_id") ?? "");
 	const score = parseFloat(params.get("score") ?? "");
 
@@ -86,6 +88,11 @@ function getInitialData(overwrites: Overwrites): SubmissionQuery {
 		problemID = overwrites.problemID;
 	}
 
+	let problemListID = !isNaN(problemListIDParam) ? problemListIDParam : undefined;
+	if (typeof overwrites.problemListID !== "undefined") {
+		problemListID = overwrites.problemListID;
+	}
+
 	let userID = !isNaN(userIDParam) ? userIDParam : undefined;
 	if (typeof overwrites.userID !== "undefined") {
 		userID = overwrites.userID;
@@ -99,6 +106,7 @@ function getInitialData(overwrites: Overwrites): SubmissionQuery {
 	return {
 		user_id: userID,
 		problem_id: problemID,
+		problem_list_id: problemListID,
 		contest_id: contestID,
 		score: !isNaN(score) ? score : undefined,
 		status: status,
@@ -195,6 +203,9 @@ function SubsView(props: SubsViewProps) {
 		}
 		if (typeof overwrites.problemID === "undefined" && typeof query.problem_id !== "undefined" && query.problem_id > 0) {
 			p.append("problem_id", query.problem_id.toString());
+		}
+		if (typeof overwrites.problemListID === "undefined" && typeof query.problem_list_id !== "undefined" && query.problem_list_id > 0) {
+			p.append("problem_list_id", query.problem_list_id.toString());
 		}
 		if (typeof overwrites.contestID === "undefined" && typeof query.contest_id !== "undefined" && query.contest_id >= 0) {
 			p.append("contest_id", query.contest_id.toString());
@@ -367,6 +378,28 @@ function SubsView(props: SubsViewProps) {
 											...query,
 											page: 1,
 											problem_id: val == null ? undefined : val,
+										});
+									}}
+								/>
+							</label>
+						)}
+						{typeof overwrites.problemListID === "undefined" && (
+							<label class="block mb-2">
+								<span class="form-label">{getText("problemListID")}:</span>
+								<input
+									class="form-input"
+									type="number"
+									min="0"
+									value={typeof query.problem_list_id == "undefined" ? "a" : query.problem_list_id}
+									onInput={(e) => {
+										let val: number | null = parseInt(e.currentTarget.value);
+										if (isNaN(val) || val <= 0) {
+											val = null;
+										}
+										setQuery({
+											...query,
+											page: 1,
+											problem_list_id: val == null ? undefined : val,
 										});
 									}}
 								/>

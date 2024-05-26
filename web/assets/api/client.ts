@@ -10,6 +10,7 @@ export type ResultSubmission = {
 export type SubmissionQuery = {
 	user_id?: number;
 	problem_id?: number;
+	problem_list_id?: number;
 	contest_id?: number;
 	score?: number;
 	status?: string;
@@ -86,6 +87,7 @@ export class KNClient {
 				ascending: (typeof q.ordering !== "undefined" && q.ascending) || false,
 				user_id: typeof q.user_id !== "undefined" && q.user_id > 0 ? q.user_id : undefined,
 				problem_id: typeof q.problem_id !== "undefined" && q.problem_id > 0 ? q.problem_id : undefined,
+				problem_list_id: typeof q.problem_list_id !== "undefined" && q.problem_list_id > 0 ? q.problem_list_id : undefined,
 				contest_id: typeof q.contest_id !== "undefined" && q.contest_id > 0 ? q.contest_id : undefined,
 				status: q.status !== "" ? q.status : undefined,
 				score: typeof q.score !== "undefined" && q.score >= 0 ? q.score : undefined,
