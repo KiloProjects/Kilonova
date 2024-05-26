@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
+	"path"
 	"runtime/metrics"
 	"slices"
 	"strconv"
@@ -1282,8 +1283,10 @@ func (rt *Web) graderInfo() http.HandlerFunc {
 					if cmds[i] == eval.MagicReplace {
 						cmds[i] = lang.SourceName
 					}
+					cmds[i] = strings.TrimPrefix(cmds[i], "/box/")
 				}
 				if len(cmds) > 0 {
+					cmds[0] = path.Base(cmds[0])
 					cmd = strings.Join(cmds, " ")
 				}
 			}
