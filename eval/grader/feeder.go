@@ -35,6 +35,8 @@ type Handler struct {
 	base  *sudoapi.BaseAPI
 
 	wakeChan chan struct{}
+
+	runner eval.BoxScheduler
 }
 
 func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, *kilonova.StatusError) {
@@ -57,7 +59,7 @@ func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, *kilonova
 		}))
 	})
 
-	return &Handler{ctx, ch, base, wCh}, nil
+	return &Handler{ctx, ch, base, wCh, nil}, nil
 }
 
 func (h *Handler) Wake() {
@@ -65,6 +67,10 @@ func (h *Handler) Wake() {
 	case h.wakeChan <- struct{}{}:
 	default:
 	}
+}
+
+func (h *Handler) LanguageVersions(ctx context.Context) map[string]string {
+	return h.runner.LanguageVersions(ctx)
 }
 
 func (h *Handler) ScheduleSubmission(runner eval.BoxScheduler, sub *kilonova.Submission) error {
@@ -165,6 +171,7 @@ func (h *Handler) Start() error {
 		return err
 	}
 
+	h.runner = runner
 	h.base.RegisterGrader(h) // To allow waking from outside grader
 
 	go func() {

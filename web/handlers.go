@@ -1256,6 +1256,48 @@ func (rt *Web) contestLeaderboard() http.HandlerFunc {
 	}
 }
 
+func (rt *Web) graderInfo() http.HandlerFunc {
+	templ := rt.parse(nil, "admin/grader.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		versions := rt.base.LanguageVersions(r.Context())
+		langs := make([]*GraderInfoLanguage, 0, len(versions))
+		for _, lang := range eval.Langs {
+			if lang.Disabled {
+				continue
+			}
+			if _, ok := versions[lang.InternalName]; !ok {
+				versions[lang.InternalName] = "?"
+			}
+		}
+		for langName, version := range versions {
+			name, cmd := langName, "-"
+
+			if lang, ok := eval.Langs[langName]; ok {
+				name = lang.PrintableName
+				cmds := slices.Clone(lang.CompileCommand)
+				if !lang.Compiled {
+					cmds = slices.Clone(lang.RunCommand)
+				}
+				for i := range cmds {
+					if cmds[i] == eval.MagicReplace {
+						cmds[i] = lang.SourceName
+					}
+				}
+				if len(cmds) > 0 {
+					cmd = strings.Join(cmds, " ")
+				}
+			}
+			langs = append(langs, &GraderInfoLanguage{
+				Name:    name,
+				Version: version,
+				Command: cmd,
+			})
+		}
+		slices.SortFunc(langs, func(a, b *GraderInfoLanguage) int { return cmp.Compare(a.Name, b.Name) })
+		rt.runTempl(w, r, templ, &GraderInfoParams{langs})
+	}
+}
+
 func (rt *Web) donationPage() http.HandlerFunc {
 	templ := rt.parse(nil, "donate.html")
 	return func(w http.ResponseWriter, r *http.Request) {

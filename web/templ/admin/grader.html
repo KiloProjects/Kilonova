@@ -1,0 +1,40 @@
+{{define "title"}} {{getText "panel.grader"}} {{end}}
+{{define "content"}}
+<!-- Keep in mind that this page is visible to both non admins and admins -->
+<div class="segment-panel">
+    <h1>{{getText "compilerVersions"}}</h1>
+    <table class="kn-table">
+        <thead>
+            <tr>
+                <th class="kn-table-cell" scope="col">
+                    {{getText "languageName"}}
+                </th>
+                <th class="kn-table-cell" scope="col">
+                    {{getText "compileCommand"}}
+                </th>
+                <th class="kn-table-cell" scope="col">
+                    {{getText "compilerVersion"}}
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Languages}}
+            <tr class="kn-table-row">
+                <th class="kn-table-cell" scope="row">
+                    {{.Name}}
+                </th>
+                <td class="kn-table-cell" scope="row">
+                    <code>{{.Command}}</code>
+                </td>
+                <td class="kn-table-cell" scope="row">
+                    <code>{{.Version}}</code>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+<div class="segment-panel">
+    Note: Page still WIP
+</div>
+{{end}}

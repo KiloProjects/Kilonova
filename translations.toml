@@ -530,6 +530,10 @@ ro = "Registru acțiuni"
 en = "Debugging Panel"
 ro = "Panou Debugging"
 
+[panel.grader]
+en = "Grader Panel"
+ro = "Panou Grader"
+
 [problem_lists]
 en = "Problem Lists"
 ro = "Liste de Probleme"
@@ -2871,3 +2875,19 @@ ro = "Ajută-ne cu niște feedback!"
 [feedbackCallToArms]
 en = "Your voice is valuable. Please [respond to a few simple questions](%s) to improve the platform. Shouldn't take more than 2 minutes :)"
 ro = "Vocea ta este importantă. Te rugăm [să răspunzi la niște întrebări](%s) simple pentru a face platforma mai bună. N-ar trebui să ia mai mult de 2 minute :)"
+
+[compilerVersions]
+en = "Compiler versions"
+ro = "Versiuni compilatoare"
+
+[languageName]
+en = "Language"
+ro = "Limbaj"
+
+[compileCommand]
+en = "Compile command"
+ro = "Comandă compilare"
+
+[compilerVersion]
+en = "Version"
+ro = "Versiune"

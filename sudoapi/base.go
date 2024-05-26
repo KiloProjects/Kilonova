@@ -33,6 +33,11 @@ type Submissions struct {
 	Problems map[int]*kilonova.Problem `json:"problems"`
 }
 
+type Grader interface {
+	Wake()
+	LanguageVersions(ctx context.Context) map[string]string
+}
+
 type BaseAPI struct {
 	db     *db.DB
 	mailer kilonova.Mailer
@@ -40,7 +45,7 @@ type BaseAPI struct {
 
 	sessionUserCache *theine.LoadingCache[string, *kilonova.UserFull]
 
-	grader interface{ Wake() }
+	grader Grader
 
 	logChan chan *logEntry
 

@@ -446,14 +446,20 @@ func (s *BaseAPI) refreshHotProblemsJob(ctx context.Context, interval time.Durat
 	}
 }
 
+func (s *BaseAPI) LanguageVersions(ctx context.Context) map[string]string {
+	return s.grader.LanguageVersions(ctx)
+}
+
 func (s *BaseAPI) WakeGrader() {
 	if s.grader != nil {
 		s.grader.Wake()
 	}
 }
 
-func (s *BaseAPI) RegisterGrader(gr interface{ Wake() }) {
+func (s *BaseAPI) RegisterGrader(gr Grader) {
 	s.grader = gr
+	// Initial load
+	go s.LanguageVersions(context.Background())
 }
 
 func (ll logLevel) IsAuditLogLvl() bool {

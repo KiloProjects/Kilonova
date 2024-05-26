@@ -164,6 +164,7 @@ func (rt *Web) Handler() http.Handler {
 		r.With(rt.mustBeAuthed).Get("/profile/{user}/sessions", rt.userSessions())
 		r.With(rt.mustBeAuthed).Get("/settings", rt.justRender("settings.html"))
 		r.Get("/donate", rt.donationPage())
+		r.Get("/grader", rt.graderInfo())
 
 		r.Route("/problems", func(r chi.Router) {
 			r.Get("/", rt.problems())

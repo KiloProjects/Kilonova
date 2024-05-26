@@ -38,6 +38,8 @@ type BoxScheduler interface {
 	NumConcurrent() int64
 	RunBox2(ctx context.Context, req *Box2Request, memQuota int64) (*Box2Response, error)
 	Close(context.Context) error
+
+	LanguageVersions(ctx context.Context) map[string]string
 }
 
 type RunConfig struct {

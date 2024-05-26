@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io/fs"
 	"log/slog"
+	"maps"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
@@ -44,6 +46,9 @@ type BoxManager struct {
 	parentMgr *BoxManager
 
 	boxGenerator BoxFunc
+
+	languageVersionsMu sync.RWMutex
+	languageVersions   map[string]string
 
 	// TODO: Datastore manager here
 }
@@ -160,6 +165,36 @@ func CheckCanRun(boxFunc BoxFunc) bool {
 		return false
 	}
 	return true
+}
+
+func (mgr *BoxManager) getLangVersions(ctx context.Context) map[string]string {
+	mgr.languageVersionsMu.Lock()
+	defer mgr.languageVersionsMu.Unlock()
+	mgr.languageVersions = make(map[string]string)
+	for name, lang := range eval.Langs {
+		if lang.Disabled {
+			continue
+		}
+		ver, err := tasks.VersionTask(ctx, mgr, lang)
+		if err != nil {
+			slog.Warn("Could not get version for language", slog.String("lang", name))
+			ver = "ERR"
+		} else {
+			ver = strings.TrimSpace(ver)
+			mgr.logger.Info("Got version for language", slog.String("lang", name), slog.String("version", ver))
+		}
+		mgr.languageVersions[name] = ver
+	}
+	return mgr.languageVersions
+}
+
+func (mgr *BoxManager) LanguageVersions(ctx context.Context) map[string]string {
+	if mgr.languageVersions == nil {
+		return mgr.getLangVersions(ctx)
+	}
+	mgr.languageVersionsMu.RLock()
+	defer mgr.languageVersionsMu.RUnlock()
+	return maps.Clone(mgr.languageVersions)
 }
 
 func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQuota int64) (*eval.Box2Response, error) {

@@ -1,6 +1,9 @@
 package eval
 
-import "path"
+import (
+	"path"
+	"strings"
+)
 
 const (
 	MagicReplace  = "<REPLACE>"
@@ -42,6 +45,9 @@ var Langs = map[string]Language{
 		CompiledName:   "/box/output",
 		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
 
+		VersionCommand: []string{"gcc", "--version"},
+		VersionParser:  getFirstLine,
+
 		Mounts: []Directory{{In: "/etc"}},
 	},
 	"cpp11": {
@@ -56,6 +62,9 @@ var Langs = map[string]Language{
 		SourceName:     "/box/main.cpp",
 		CompiledName:   "/box/output",
 		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
+
+		VersionCommand: []string{"g++", "--version"},
+		VersionParser:  getFirstLine,
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
@@ -72,6 +81,9 @@ var Langs = map[string]Language{
 		CompiledName:   "/box/output",
 		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
 
+		VersionCommand: []string{"g++", "--version"},
+		VersionParser:  getFirstLine,
+
 		Mounts: []Directory{{In: "/etc"}},
 	},
 	"cpp17": {
@@ -87,6 +99,9 @@ var Langs = map[string]Language{
 		CompiledName:   "/box/output",
 		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
 
+		VersionCommand: []string{"g++", "--version"},
+		VersionParser:  getFirstLine,
+
 		Mounts: []Directory{{In: "/etc"}},
 	},
 	"cpp20": {
@@ -101,6 +116,9 @@ var Langs = map[string]Language{
 		SourceName:     "/box/main.cpp",
 		CompiledName:   "/box/output",
 		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
+
+		VersionCommand: []string{"g++", "--version"},
+		VersionParser:  getFirstLine,
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
@@ -119,6 +137,9 @@ var Langs = map[string]Language{
 		SourceName:     "/box/main.pas",
 		CompiledName:   "/box/output",
 
+		VersionCommand: []string{"fpc", "-iWDSOSP"},
+		VersionParser:  nil,
+
 		Mounts: []Directory{{In: "/etc"}},
 	},
 	"golang": {
@@ -133,6 +154,9 @@ var Langs = map[string]Language{
 		RunCommand:     []string{"/box/main"},
 		SourceName:     "/box/main.go",
 		CompiledName:   "/box/main",
+
+		VersionCommand: []string{"/usr/bin/go", "version"},
+		VersionParser:  nil,
 
 		BuildEnv: map[string]string{"GOMAXPROCS": "1", "CGO_ENABLED": "0", "GOCACHE": "/go/cache", "GOPATH": "/box", "GO111MODULE": "off"},
 		RunEnv:   map[string]string{"GOMAXPROCS": "1"},
@@ -151,6 +175,9 @@ var Langs = map[string]Language{
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.hs",
 		CompiledName:   "/box/output",
+
+		VersionCommand: []string{"ghc", "--numeric-version"},
+		VersionParser:  nil,
 	},
 	"java": {
 		Disabled:      true, // For now
@@ -164,6 +191,9 @@ var Langs = map[string]Language{
 		RunCommand:     []string{"java", "Main"},
 		SourceName:     "/Main.java",
 		CompiledName:   "/Main.class",
+
+		VersionCommand: []string{"javac", "--version"},
+		VersionParser:  nil,
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
@@ -179,6 +209,9 @@ var Langs = map[string]Language{
 		SourceName:     "/box/main.kt",
 		CompiledName:   "/box/output.jar",
 
+		VersionCommand: []string{"kotlinc", "-version"},
+		VersionParser:  func(s string) string { return strings.TrimPrefix(s, "info:") },
+
 		Mounts: []Directory{{In: "/etc"}},
 	},
 	"python3": {
@@ -191,6 +224,9 @@ var Langs = map[string]Language{
 		RunCommand:   []string{"python3", "/box/main.py"},
 		SourceName:   "/box/main.py",
 		CompiledName: "/box/main.py",
+
+		VersionCommand: []string{"python3", "--version"},
+		VersionParser:  nil,
 	},
 	"outputOnly": {
 		Extensions:    []string{".output_only"},
@@ -202,6 +238,9 @@ var Langs = map[string]Language{
 		RunCommand:   []string{"cat", "/box/output"},
 		SourceName:   "/box/output_src",
 		CompiledName: "/box/output",
+
+		VersionCommand: []string{"echo", "N/A"},
+		VersionParser:  nil,
 	},
 }
 
@@ -226,6 +265,11 @@ type Language struct {
 	CompileCommand []string `toml:"compile_command"`
 	RunCommand     []string `toml:"run_command"`
 
+	VersionCommand []string `toml:"version_command"`
+	// Function to process the output of the VersionCommand output.
+	// If nil, command output will be returned as is
+	VersionParser func(string) string
+
 	BuildEnv map[string]string `toml:"build_env"`
 	RunEnv   map[string]string `toml:"run_env"`
 
@@ -245,4 +289,9 @@ type Directory struct {
 
 	// Verbatim doesn't set Out to In implicitly if it isn't set
 	Verbatim bool `toml:"verbatim"`
+}
+
+func getFirstLine(s string) string {
+	s, _, _ = strings.Cut(s, "\n")
+	return s
 }

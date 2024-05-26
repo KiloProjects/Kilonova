@@ -104,6 +104,16 @@ type ContestsIndexParams struct {
 	PageNum      int
 }
 
+type GraderInfoLanguage struct {
+	Name    string
+	Version string
+	Command string
+}
+
+type GraderInfoParams struct {
+	Languages []*GraderInfoLanguage
+}
+
 type DonateParams struct {
 	Donations []*kilonova.Donation
 
