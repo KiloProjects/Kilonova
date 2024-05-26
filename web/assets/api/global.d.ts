@@ -28,6 +28,7 @@ declare global {
 		console_input: boolean;
 		scoring_strategy: "sum_subtasks" | "max_submission" | "acm-icpc";
 		score_precision: number;
+		published_at?: string;
 
 		score_scale: number;
 	};

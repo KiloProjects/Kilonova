@@ -129,13 +129,30 @@ func (rt *Web) index() http.HandlerFunc {
 			hotProblems = []*kilonova.ScoredProblem{}
 		}
 
-		var moreProblems bool
-		if len(hotProblems) == 6 {
-			hotProblems = hotProblems[:5]
-			moreProblems = true
+		latestProblems, problemCount, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
+			LookingUser: util.UserBrief(r), Look: true,
+
+			Ordering: "published_at", Descending: true,
+			Limit: 20,
+		}, util.UserBrief(r), util.UserBrief(r))
+		if err != nil {
+			latestProblems = []*sudoapi.FullProblem{}
+			problemCount = 0
 		}
 
-		rt.runTempl(w, r, templ, &IndexParams{futureContests, runningContests, pblists, hotProblems, moreProblems, pinnedLists})
+		var moreHotProblems bool
+		if len(hotProblems) == 6 {
+			hotProblems = hotProblems[:5]
+			moreHotProblems = true
+		}
+
+		rt.runTempl(w, r, templ, &IndexParams{
+			futureContests, runningContests,
+			pblists,
+			hotProblems, moreHotProblems,
+			latestProblems, problemCount > 20,
+			pinnedLists,
+		})
 	}
 }
 

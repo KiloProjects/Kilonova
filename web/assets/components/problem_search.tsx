@@ -8,6 +8,7 @@ import { fromBase64 } from "js-base64";
 import { Tag, TagView, selectTags } from "./tags";
 import { Paginator } from "./common";
 import { rezStr } from "./subs_view";
+import { parseTime } from "../util";
 
 type FullProblem = Problem & {
 	tags: Tag[];
@@ -22,7 +23,17 @@ function numPagesF(count: number, max: number): number {
 	return Math.floor(count / max) + (count % max != 0 ? 1 : 0);
 }
 
-export function ProblemView({ problems, showTags, scoreView }: { problems: FullProblem[]; showTags: boolean; scoreView: boolean }) {
+export function ProblemView({
+	problems,
+	showTags,
+	scoreView,
+	latestView,
+}: {
+	problems: FullProblem[];
+	showTags: boolean;
+	scoreView: boolean;
+	latestView: boolean;
+}) {
 	let authed = window.platform_info.user_id >= 1;
 	let sizes: string[] = [];
 	if (authed || scoreView) {
@@ -55,9 +66,14 @@ export function ProblemView({ problems, showTags, scoreView }: { problems: FullP
 							{getText("score")}
 						</th>
 					)}
-					{!scoreView && (
+					{!scoreView && !latestView && (
 						<th class={sizes[3]} scope="col">
 							{getText("num_att_solved")}
+						</th>
+					)}
+					{latestView && (
+						<th class={sizes[3]} scope="col">
+							{getText("published_at")}
 						</th>
 					)}
 				</tr>
@@ -94,13 +110,14 @@ export function ProblemView({ problems, showTags, scoreView }: { problems: FullP
 								<span class="badge">{pb.max_score < 0 ? "-" : pb.max_score}</span>
 							</td>
 						)}
-						{!scoreView && (
+						{!scoreView && !latestView && (
 							<td>
 								<span class="badge">
 									{pb.solved_by} {" / "} {pb.attempted_by}
 								</span>
 							</td>
 						)}
+						{latestView && <td>{parseTime(pb.published_at) || "N/A"}</td>}
 					</tr>
 				))}
 			</tbody>
@@ -118,7 +135,10 @@ export function CustomProblemListing(params: {
 	showFull: boolean;
 	showTags: boolean;
 	scoreView: boolean;
+	latestView: boolean;
 	saveHistory: boolean;
+	showPages: boolean;
+	maxCount?: number;
 }) {
 	const [page, setPage] = useState(1);
 	const [problems, setProblems] = useState<FullProblem[]>(params.problems);
@@ -127,7 +147,10 @@ export function CustomProblemListing(params: {
 	const mounted = useRef(false);
 
 	async function load() {
-		const rez = await bodyCall<{ problems: FullProblem[]; count: number }>("/problem/search", serializeQuery({ ...params.filter, page }));
+		const rez = await bodyCall<{ problems: FullProblem[]; count: number }>(
+			"/problem/search",
+			serializeQuery({ ...params.filter, page }, params.maxCount ?? MAX_PER_PAGE)
+		);
 		if (rez.status === "error") {
 			apiToast(rez);
 			return;
@@ -173,8 +196,8 @@ export function CustomProblemListing(params: {
 
 	return (
 		<>
-			{numPagesF(count, MAX_PER_PAGE) > 1 && <Paginator numpages={numPagesF(count, MAX_PER_PAGE)} page={page} setPage={setPage} />}
-			<ProblemView problems={problems} showTags={params.showTags} scoreView={params.scoreView} />
+			{params.showPages && numPagesF(count, MAX_PER_PAGE) > 1 && <Paginator numpages={numPagesF(count, MAX_PER_PAGE)} page={page} setPage={setPage} />}
+			<ProblemView problems={problems} showTags={params.showTags} scoreView={params.scoreView} latestView={params.latestView} />
 		</>
 	);
 }
@@ -259,7 +282,7 @@ function initialQuery(params: URLSearchParams, groups: TagGroup[]): ProblemQuery
 	};
 }
 
-function serializeQuery(f: ProblemQuery): any {
+function serializeQuery(f: ProblemQuery, max_cnt: number = MAX_PER_PAGE): any {
 	return {
 		name_fuzzy: f.textQuery,
 		editor_user_id: typeof f.editor_user !== "undefined" && f.editor_user > 0 ? f.editor_user : undefined,
@@ -276,8 +299,8 @@ function serializeQuery(f: ProblemQuery): any {
 
 		score_user_id: typeof f.score_user_id !== "undefined" ? f.score_user_id : undefined,
 
-		limit: MAX_PER_PAGE,
-		offset: (f.page - 1) * MAX_PER_PAGE,
+		limit: max_cnt,
+		offset: (f.page - 1) * max_cnt,
 
 		ordering: f.ordering,
 		descending: f.descending,
@@ -350,6 +373,12 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 
 		if (typeof query.deep_list_id !== "undefined" && query.deep_list_id > 0) {
 			p.append("deep_list_id", query.deep_list_id.toString());
+		}
+		if (query.ordering !== "id") {
+			p.append("ordering", query.ordering);
+		}
+		if (query.descending) {
+			p.append("descending", "true");
 		}
 		return p;
 	}
@@ -691,7 +720,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 					</label>
 				</div>
 			)}
-			<ProblemView problems={problems} showTags={showTags} scoreView={false} />
+			<ProblemView problems={problems} showTags={showTags} scoreView={false} latestView={false} />
 		</div>
 	);
 }
@@ -715,7 +744,10 @@ function ProblemListingWrapper({
 	showfull,
 	filter,
 	scoreView,
+	latestView,
 	saveHistory,
+	showPages,
+	maxCount,
 }: {
 	enc: string;
 	count: string;
@@ -723,7 +755,10 @@ function ProblemListingWrapper({
 	showfull: string;
 	filter: ProblemQuery;
 	scoreView: boolean;
+	latestView?: boolean;
 	saveHistory: boolean;
+	showPages?: boolean;
+	maxCount?: number;
 }) {
 	let pbs: FullProblem[] = JSON.parse(fromBase64(enc));
 	let cnt = parseInt(count);
@@ -738,7 +773,10 @@ function ProblemListingWrapper({
 			showFull={showfull === "true"}
 			filter={filter}
 			scoreView={scoreView}
+			latestView={typeof latestView === "undefined" ? true : latestView}
 			saveHistory={saveHistory}
+			showPages={typeof showPages === "undefined" ? true : showPages}
+			maxCount={maxCount}
 		></CustomProblemListing>
 	);
 }
@@ -819,7 +857,40 @@ function ProblemAttemptedByDOM({ enc, count, userid }: { enc: string; count: str
 	);
 }
 
+function LatestProblemsDOM({ enc }: { enc: string }) {
+	let [showTags, setShowTags] = useState<boolean>(false);
+	return (
+		<>
+			<div class="block mb-2">
+				<label>
+					<input
+						type="checkbox"
+						onChange={(e) => {
+							setShowTags(e.currentTarget.checked);
+						}}
+						checked={showTags}
+					></input>{" "}
+					<span class="form-label">{getText("show_tags")}</span>
+				</label>
+			</div>
+			<ProblemListingWrapper
+				enc={enc}
+				count={"-1"}
+				showfull="true"
+				filter={{ textQuery: "", tags: [], page: 1, descending: true, ordering: "published_at" }}
+				scoreView={false}
+				latestView={true}
+				showTags={showTags}
+				saveHistory={false}
+				showPages={false}
+				maxCount={20}
+			/>
+		</>
+	);
+}
+
 register(ProblemSearchDOM, "kn-pb-search", ["enc", "count", "groupenc", "tagenc", "pblistenc"]);
 register(TagProblemsDOM, "kn-tag-pbs", ["enc", "count", "tagid"]);
+register(LatestProblemsDOM, "kn-pb-latest", ["enc"]);
 register(ProblemSolvedByDOM, "kn-pb-solvedby", ["enc", "count", "userid"]);
 register(ProblemAttemptedByDOM, "kn-pb-attemptedby", ["enc", "count", "userid"]);

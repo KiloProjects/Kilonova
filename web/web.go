@@ -47,8 +47,9 @@ var (
 
 	AllSubsPage = config.GenFlag("feature.frontend.all_subs_page", true, "Anyone can view all submissions")
 
-	FrontPageProblems  = config.GenFlag("feature.frontend.front_page_pbs", true, "Show problems on front page")
-	FrontPagePbDetails = config.GenFlag("feature.frontend.front_page_pbs_links", true, "On the front page problems, show links to other resources")
+	FrontPageLatestProblems = config.GenFlag("feature.frontend.front_page_latest_pbs", true, "Show list with latest published problems on front page")
+	FrontPageProblems       = config.GenFlag("feature.frontend.front_page_pbs", true, "Show problems on front page")
+	FrontPagePbDetails      = config.GenFlag("feature.frontend.front_page_pbs_links", true, "On the front page problems, show links to other resources")
 
 	FrontPageAnnouncement = config.GenFlag("frontend.front_page_announcement", "default", `Custom front page announcement ("default" = default text)`)
 

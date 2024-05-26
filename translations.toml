@@ -10,6 +10,10 @@ ro = "Poți să vezi progresul de rezolvare al arhivei [pe pagina aceasta](/prob
 en = "You can also view all problems ordered by ID [on this page](/problems)."
 ro = "Poți, de asemenea, să vezi toate problemele ordonate după ID [pe pagina aceasta](/problems)."
 
+[latest_problems_announcement]
+en = "You can view a longer list [on this page](/problems?ordering=published_at&descending=true)."
+ro = "Poți să vezi o listă mai lungă [pe pagina aceasta](/problems?ordering=published_at&descending=true)."
+
 [all_contests_announcement]
 en = "You can also view all available contests [on this page](/contests)."
 ro = "Poți, de asemenea, să vezi toate concursurile disponibile [pe pagina aceasta](/contests)."
@@ -25,6 +29,10 @@ ro = "%d probleme"
 [single_problem]
 en = "1 problem"
 ro = "o problemă"
+
+[latestPbs]
+en = "Latest published problems"
+ro = "Ultimele probleme publicate"
 
 [the_rest]
 en = "Other problems"
@@ -790,6 +798,10 @@ ro = "Scor"
 [num_att_solved]
 en = "Num. Solved / Attempted"
 ro = "Nr. Rezolvat / Încercat"
+
+[published_at]
+en = "Published at"
+ro = "Publicată pe"
 
 [updateProblem]
 en = "Update problem info"

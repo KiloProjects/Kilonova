@@ -406,7 +406,7 @@ func getProblemOrdering(ordering string, descending bool) string {
 	case "name":
 		return "ORDER BY name" + ord + ", id ASC"
 	case "published_at":
-		return "ORDER BY published_at" + ord + " NULLS LAST, id ASC"
+		return "ORDER BY published_at" + ord + " NULLS LAST, created_at " + ord + ", id ASC"
 	case "hot":
 		return "ORDER BY (SELECT hot_cnt FROM hot_problems WHERE problem_id = id) " + ord + " NULLS LAST, published_at" + ord + " NULLS LAST, id ASC"
 	default:

@@ -123,6 +123,20 @@
             </div>
         {{end}}
         {{end}}
+
+        {{ if boolFlag "feature.frontend.front_page_latest_pbs" }}
+        {{with .LatestProblems}}
+        <div class="segment-panel">
+            <h2>{{getText "latestPbs"}}</h2>
+            <kn-pb-latest enc="{{. | encodeJSON}}"></kn-pb-latest>
+            {{if $.MoreLatestProblems}}
+            <div class="my-2">
+                {{renderMarkdown (getText "latest_problems_announcement")}}
+            </div>
+            {{end}}
+        </div>
+        {{end}}
+        {{end}}
     </div>
     <aside class="page-sidebar">
         {{ if boolFlag "feature.frontend.quick_search" }}
@@ -184,7 +198,7 @@
         <div class="segment-panel">
             <h2>{{getText "hot_problems"}}</h2>
             {{ template "pb_list_group" (genProblemsParams .HotProblems false) }}
-            {{ if .MoreProblems }}
+            {{ if .MoreHotProblems }}
             <p class="mt-2"><a href="/problems/?ordering=hot&descending=true">{{getText "view_more"}}</a></p>
             {{ end }}
         </div>

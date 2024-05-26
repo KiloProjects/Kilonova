@@ -267,8 +267,11 @@ type IndexParams struct {
 
 	ChildProblemLists []*kilonova.ProblemList
 
-	HotProblems  []*kilonova.ScoredProblem
-	MoreProblems bool
+	HotProblems     []*kilonova.ScoredProblem
+	MoreHotProblems bool
+
+	LatestProblems     []*sudoapi.FullProblem
+	MoreLatestProblems bool
 
 	PinnedLists []*kilonova.ProblemList
 }
