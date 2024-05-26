@@ -146,22 +146,22 @@ func initRequest(lang eval.Language, job *customCheckerInput) *eval.Box2Request 
 	return &eval.Box2Request{
 		InputBucketFiles: map[string]*eval.BucketFile{
 			"/box/program.out": {
-				Bucket:   datastore.GetBucket(datastore.BucketTypeSubtests),
+				Bucket:   datastore.BucketTypeSubtests,
 				Filename: strconv.Itoa(job.subtestID),
 				Mode:     0666,
 			},
 			"/box/correct.in": {
-				Bucket:   datastore.GetBucket(datastore.BucketTypeTests),
+				Bucket:   datastore.BucketTypeTests,
 				Filename: strconv.Itoa(job.testID) + ".in",
 				Mode:     0666,
 			},
 			"/box/correct.out": {
-				Bucket:   datastore.GetBucket(datastore.BucketTypeTests),
+				Bucket:   datastore.BucketTypeTests,
 				Filename: strconv.Itoa(job.testID) + ".out",
 				Mode:     0666,
 			},
 			lang.CompiledName: {
-				Bucket:   datastore.GetBucket(datastore.BucketTypeCheckers),
+				Bucket:   datastore.BucketTypeCheckers,
 				Filename: fmt.Sprintf("%d.bin", job.c.pb.ID),
 				Mode:     0000,
 			},

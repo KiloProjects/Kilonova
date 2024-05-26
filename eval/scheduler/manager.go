@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
@@ -43,6 +44,8 @@ type BoxManager struct {
 	parentMgr *BoxManager
 
 	boxGenerator BoxFunc
+
+	// TODO: Datastore manager here
 }
 
 func (b *BoxManager) SubRunner(ctx context.Context, numConc int64) (eval.BoxScheduler, error) {
@@ -193,8 +196,9 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 	}
 
 	for path, val := range req.InputBucketFiles {
+		// TODO: Use datastore manager
 		// Do not reset val.Mode here, since CopyInBox stats and sets the proper mode
-		if err := copyInBox(box, val.Bucket, val.Filename, path, val.Mode); err != nil {
+		if err := copyInBox(box, datastore.GetBucket(val.Bucket), val.Filename, path, val.Mode); err != nil {
 			if errors.Is(err, kilonova.ErrNotExist) {
 				slog.Warn("Bucket file doesn't exist when copying in sandbox",
 					slog.Any("bucket", val.Bucket), slog.String("filename", val.Filename),
@@ -242,7 +246,7 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 			file.Mode = 0666
 		}
 
-		if err := box.SaveFile(path, file.Bucket, file.Filename, file.Mode); err != nil {
+		if err := box.SaveFile(path, datastore.GetBucket(file.Bucket), file.Filename, file.Mode); err != nil {
 			slog.Warn("Error saving box file", slog.Any("err", err), slog.String("path", path), slog.Any("bucket", file.Bucket))
 			return resp, err
 		}

@@ -284,7 +284,7 @@ func (s *API) Handler() http.Handler {
 		r.With(s.MustBeAuthed).Post("/resendEmail", s.resendVerificationEmail)
 
 		userRouter := chi.NewMux()
-		userRouter.Get("/", func(w http.ResponseWriter, r *http.Request) { returnData(w, util.ContentUser(r).Brief()) })
+		userRouter.Get("/", func(w http.ResponseWriter, r *http.Request) { returnData(w, util.ContentUserBrief(r)) })
 		userRouter.Get("/solvedProblems", s.getSolvedProblems)
 		userRouter.Get("/gravatar", s.getGravatar)
 		userRouter.With(s.selfOrAdmin).Post("/deauthAll", s.deauthAllSessions)

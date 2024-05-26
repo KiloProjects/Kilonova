@@ -777,6 +777,10 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			zap.S().Error("Uninitialized `authed`")
 			return false
 		},
+		"contentUser": func() *kilonova.UserBrief {
+			zap.S().Error("Uninitialized `contentUser`")
+			return nil
+		},
 		"fullAuthedUser": func() *kilonova.UserFull {
 			zap.S().Error("Uninitialized `fullAuthedUser`")
 			return nil

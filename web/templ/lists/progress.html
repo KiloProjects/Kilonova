@@ -6,10 +6,10 @@
         <td class="kn-table-cell" rowspan="{{computeChecklistSpan .}}">
             {{- if not (eq .DepthLevel 1) -}}
             <a class="white-anchor font-bold" href="/problem_lists/{{.ID}}">
-                {{- .Title -}}:</a>{{if authed}}<br/>({{.SolvedCount}}/{{.NumProblems}}){{end}}
+                {{- .Title -}}:</a>{{if contentUser}}<br/>({{if eq .SolvedCount -1}}0{{else}}{{.SolvedCount}}{{end}}/{{.NumProblems}}){{end}}
             {{- else -}}
             <a class="white-anchor font-bold" href="/problem_lists/{{.ID}}">
-                {{- .Title -}}</a> {{if authed}}({{.SolvedCount}}/{{.NumProblems}}){{end}}
+                {{- .Title -}}</a> {{if contentUser}}({{if eq .SolvedCount -1}}0{{else}}{{.SolvedCount}}{{end}}/{{.NumProblems}}){{end}}
             {{- end -}}
         </td>
         {{- else if gt (len .Problems) 0 -}}
@@ -31,10 +31,19 @@
 <div class="segment-panel">
     <a class="block mb-2" href="/problem_lists/{{.ProblemList.ID}}"><i class="fas fa-arrow-left"></i> {{getText "list.view_list"}}</a>
 
+    {{with contentUser}}
+    <span class="block my-2">{{getText "list.user_view_info"}} 
+        <a href="/profile/{{.Name}}">
+            <img class="rounded inline-block mr-1" src="/api/user/byName/{{.Name}}/gravatar?s=32" width="32" height="32" alt="Avatar"/>
+            {{.Name -}}
+        </a>.
+    </span>
+    {{end}}
+
     <table class="kn-table kn-table-slim">
         <thead>
             <tr>
-                <th class="kn-table-cell" colspan="9999"><a class="text-2xl white-anchor font-bold" href="/problem_lists/{{.ProblemList.ID}}">{{.ProblemList.Title}} {{if authed}}({{.ProblemList.SolvedCount}}/{{.ProblemList.NumProblems}}){{end}}</a></th>
+                <th class="kn-table-cell" colspan="9999"><a class="text-2xl white-anchor font-bold" href="/problem_lists/{{.ProblemList.ID}}">{{.ProblemList.Title}} {{if contentUser}}({{.ProblemList.SolvedCount}}/{{.ProblemList.NumProblems}}){{end}}</a></th>
             </tr>
         </thead>
         <tbody>
@@ -43,5 +52,29 @@
         </tbody>
     </table>
 </div>
+
+<form id="otherUserForm" class="segment-panel" method="GET">
+    <h2>{{getText "list.view_as_user"}}</h2>
+    <label class="block my-2">
+        <span class="form-label">{{getText "username"}}</span>
+        <input id="otherUsername" name="username" type="text" class="form-input" />
+    </label>
+    <button class="btn btn-blue" type="submit">{{getText "view"}}</button>
+</form>
+
+<script>
+    document.getElementById("otherUserForm").addEventListener("submit", async (e) => {
+        e.preventDefault()
+        const username = document.getElementById("otherUsername").value
+        let res = await bundled.getCall(`/user/byName/${encodeURIComponent(username)}`, {})
+        if(res.status === "error") {
+            bundled.apiToast(res)
+            return
+        }
+        var params = new URLSearchParams(window.location.search)
+        params.set("username", username);
+        window.location.search = params.toString()
+    })
+</script>
 
 {{end}}

@@ -391,11 +391,9 @@ func (rt *Web) pbListProgressView() http.HandlerFunc {
 		// }
 
 		// r = rt.buildPblistCache(r, listIDs)
-		uname := r.FormValue("username")
-		var checkedUser *kilonova.UserBrief
-		if uname == "" {
-			checkedUser = util.UserBrief(r)
-		} else {
+
+		var checkedUser = util.UserBrief(r)
+		if uname := r.FormValue("username"); len(uname) > 0 {
 			user, err := rt.base.UserBriefByName(r.Context(), uname)
 			if err == nil {
 				checkedUser = user
@@ -410,8 +408,7 @@ func (rt *Web) pbListProgressView() http.HandlerFunc {
 			rt.statusPage(w, r, err.Code, err.Error())
 			return
 		}
-
-		rt.runTempl(w, r, templ, &ProblemListProgressParams{list, checkedUser})
+		rt.runTempl(w, r.WithContext(context.WithValue(r.Context(), util.ContentUserKey, checkedUser)), templ, &ProblemListProgressParams{list, checkedUser})
 	}
 }
 
@@ -1690,6 +1687,9 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		},
 		"authed": func() bool {
 			return authedUser != nil
+		},
+		"contentUser": func() *kilonova.UserBrief {
+			return util.ContentUserBrief(r)
 		},
 		"fullAuthedUser": func() *kilonova.UserFull {
 			return fullAuthedUser

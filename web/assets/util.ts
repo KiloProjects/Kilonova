@@ -125,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			score = -1;
 		}
 		if (score > -1) {
-			console.log(x.innerText, score);
+			// console.log(x.innerText, score);
 			x.style.backgroundColor = getGradient(score, 100);
 		}
 		val.classList.remove("score-cell");

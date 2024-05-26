@@ -46,7 +46,7 @@ func ExecuteTask(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, req
 		InputBucketFiles: map[string]*eval.BucketFile{
 			// Test input
 			"/box/" + req.Filename + ".in": {
-				Bucket:   datastore.GetBucket(datastore.BucketTypeTests),
+				Bucket:   datastore.BucketTypeTests,
 				Filename: strconv.Itoa(req.TestID) + ".in",
 				Mode:     0666,
 			},
@@ -67,7 +67,7 @@ func ExecuteTask(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, req
 
 		OutputBucketFiles: map[string]*eval.BucketFile{
 			boxOut: {
-				Bucket:   datastore.GetBucket(datastore.BucketTypeSubtests),
+				Bucket:   datastore.BucketTypeSubtests,
 				Filename: strconv.Itoa(req.SubtestID),
 				Mode:     0644,
 			},

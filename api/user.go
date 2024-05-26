@@ -45,11 +45,11 @@ func (s *API) getGravatar(w http.ResponseWriter, r *http.Request) {
 	if err != nil || size == 0 {
 		size = 128
 	}
-	s.serveGravatar(w, r, util.ContentUser(r), size)
+	s.serveGravatar(w, r, util.ContentUserFull(r), size)
 }
 
 func (s *API) deauthAllSessions(w http.ResponseWriter, r *http.Request) {
-	if err := s.base.RemoveUserSessions(r.Context(), util.ContentUser(r).ID); err != nil {
+	if err := s.base.RemoveUserSessions(r.Context(), util.ContentUserBrief(r).ID); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -73,7 +73,7 @@ func (s *API) setPreferredLanguage() func(w http.ResponseWriter, r *http.Request
 
 		if err := s.base.UpdateUser(
 			r.Context(),
-			util.ContentUser(r).ID,
+			util.ContentUserBrief(r).ID,
 			kilonova.UserUpdate{PreferredLanguage: safe},
 		); err != nil {
 			err.WriteError(w)
@@ -101,7 +101,7 @@ func (s *API) setPreferredTheme() func(w http.ResponseWriter, r *http.Request) {
 
 		if err := s.base.UpdateUser(
 			r.Context(),
-			util.ContentUser(r).ID,
+			util.ContentUserBrief(r).ID,
 			kilonova.UserUpdate{PreferredTheme: kilonova.PreferredTheme(safe)},
 		); err != nil {
 			err.WriteError(w)
@@ -125,7 +125,7 @@ func (s *API) setBio() func(w http.ResponseWriter, r *http.Request) {
 
 		if err := s.base.UpdateUser(
 			r.Context(),
-			util.ContentUser(r).ID,
+			util.ContentUserBrief(r).ID,
 			kilonova.UserUpdate{Bio: &safe},
 		); err != nil {
 			err.WriteError(w)
@@ -149,7 +149,7 @@ func (s *API) manageUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := util.ContentUser(r)
+	user := util.ContentUserBrief(r)
 	if args.NewName != nil && len(*args.NewName) > 2 && user.Name != *args.NewName {
 		// Admins can change to formerly existing names
 		if err := s.base.UpdateUsername(r.Context(), user.ID, *args.NewName, false, true); err != nil {
@@ -176,14 +176,14 @@ func (s *API) manageUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
-	user := util.ContentUser(r)
+	user := util.ContentUserBrief(r)
 
 	if user.Admin {
 		errorData(w, "You can't delete an admin account!", 400)
 		return
 	}
 
-	if err := s.base.DeleteUser(r.Context(), user.Brief()); err != nil {
+	if err := s.base.DeleteUser(r.Context(), user); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -192,7 +192,7 @@ func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getSolvedProblems(w http.ResponseWriter, r *http.Request) {
-	pbs, err := s.base.SolvedProblems(r.Context(), util.ContentUser(r).Brief(), util.UserBrief(r))
+	pbs, err := s.base.SolvedProblems(r.Context(), util.ContentUserBrief(r), util.UserBrief(r))
 	if err != nil {
 		err.WriteError(w)
 		return

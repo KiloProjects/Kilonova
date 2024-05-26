@@ -35,12 +35,12 @@ type CompileResponse struct {
 const compileOutputLimit = 4500 // runes
 
 // returns the filename to save with and the bucket to save into
-func bucketFromIDExec(id int) (*datastore.Bucket, string) {
+func bucketFromIDExec(id int) (datastore.BucketType, string) {
 	if id < 0 { // checker
 		// use -id to turn back positive
-		return datastore.GetBucket(datastore.BucketTypeCheckers), fmt.Sprintf("%d.bin", -id)
+		return datastore.BucketTypeCheckers, fmt.Sprintf("%d.bin", -id)
 	}
-	return datastore.GetBucket(datastore.BucketTypeCompiles), fmt.Sprintf("%d.bin", id)
+	return datastore.BucketTypeCompiles, fmt.Sprintf("%d.bin", id)
 }
 
 func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest, logger *slog.Logger) (*CompileResponse, error) {
@@ -62,7 +62,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 			zap.S().Warn("More than one file specified for non-compiled language. This is not properly supported")
 		}
 		for _, fData := range req.CodeFiles {
-			if err := bucket.WriteFile(outName, bytes.NewBuffer(fData), 0644); err != nil {
+			if err := datastore.GetBucket(bucket).WriteFile(outName, bytes.NewBuffer(fData), 0644); err != nil {
 				resp.Other = err.Error()
 				resp.Success = false
 			}

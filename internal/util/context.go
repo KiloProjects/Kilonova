@@ -45,12 +45,16 @@ const (
 	ThemeKey = KNContextType("theme")
 )
 
-func UserBriefContext(ctx context.Context) *kilonova.UserBrief {
-	b := getValueContext[kilonova.UserFull](ctx, AuthedUserKey).Brief()
+func userBrief(ctx context.Context, key KNContextType) *kilonova.UserBrief {
+	b := getValueContext[kilonova.UserFull](ctx, key).Brief()
 	if b == nil {
-		b = getValueContext[kilonova.UserBrief](ctx, AuthedUserKey)
+		b = getValueContext[kilonova.UserBrief](ctx, key)
 	}
 	return b
+}
+
+func UserBriefContext(ctx context.Context) *kilonova.UserBrief {
+	return userBrief(ctx, AuthedUserKey)
 }
 
 func UserBrief(r *http.Request) *kilonova.UserBrief {
@@ -65,12 +69,20 @@ func UserFull(r *http.Request) *kilonova.UserFull {
 	return UserFullContext(r.Context())
 }
 
-func ContentUserContext(ctx context.Context) *kilonova.UserFull {
+func ContentUserFullContext(ctx context.Context) *kilonova.UserFull {
 	return getValueContext[kilonova.UserFull](ctx, ContentUserKey)
 }
 
-func ContentUser(r *http.Request) *kilonova.UserFull {
-	return ContentUserContext(r.Context())
+func ContentUserFull(r *http.Request) *kilonova.UserFull {
+	return ContentUserFullContext(r.Context())
+}
+
+func ContentUserBriefContext(ctx context.Context) *kilonova.UserBrief {
+	return userBrief(ctx, ContentUserKey)
+}
+
+func ContentUserBrief(r *http.Request) *kilonova.UserBrief {
+	return ContentUserBriefContext(r.Context())
 }
 
 func ProblemContext(ctx context.Context) *kilonova.Problem {

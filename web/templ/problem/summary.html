@@ -48,7 +48,7 @@
         {{ if .Topbar.Contest }}
         {{ template "contest_sidebar.html" .Topbar.Contest }}
         {{ else }}
-        <div class="segment-panel font-semibold">
+        <section class="segment-panel font-semibold">
             <h2 class="font-normal">
                 {{getText "problemInfo"}}
             </h2>
@@ -117,9 +117,9 @@
                 {{end}}
     
             </div>
-        </div>
+        </section>
         {{ range pbParentPblists .Problem }}
-        <details class="segment-panel" open>
+        <details class="segment-panel" open role="region">
             <summary>
                 <h2 class="font-normal inline-block">
                     <a href="/problem_lists/{{.ID}}">{{.Title}}</a>
@@ -160,12 +160,12 @@
         {{ end }}
         {{ end }}
         {{ if authed }}
-        <div class="segment-panel">
+        <section class="segment-panel">
             <older-subs problemid="{{.Problem.ID}}" {{if (and .Topbar.Contest (not .Topbar.Contest.Ended))}}contestid="{{.Topbar.Contest.ID}}"{{end}} userid="{{authedUser.ID}}" enc="{{.Submissions | encodeJSON}}"></older-subs>
-        </div>
+        </section>
         {{ end }}
         {{ with .Attachments }}
-        <details class="segment-panel" open> <!-- Attachments -->
+        <details class="segment-panel" open role="region"> <!-- Attachments -->
             <summary>
                 <h2 class="inline-block">{{getText "attachments"}}</h2>
             </summary>

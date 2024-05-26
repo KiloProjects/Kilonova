@@ -170,6 +170,14 @@ ro = "Vizualizare progres"
 en = "View as list"
 ro = "Vizualizare listă"
 
+[list.user_view_info]
+en = "Viewing progress for"
+ro = "Se afișează progresul pentru"
+
+[list.view_as_user]
+en = "View another user's progress"
+ro = "Vezi progresul altui utilizator"
+
 [list.update]
 en = "Update List"
 ro = "Actualizare Listă"
