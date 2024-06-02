@@ -14,6 +14,7 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer"
 	"github.com/Yiling-J/theine-go"
+	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
 )
 
@@ -49,6 +50,8 @@ type BaseAPI struct {
 
 	logChan chan *logEntry
 
+	dSess *discordgo.Session
+
 	evictionLogger        *slog.Logger
 	testBucket            *datastore.Bucket
 	attachmentCacheBucket *datastore.Bucket
@@ -57,6 +60,9 @@ type BaseAPI struct {
 }
 
 func (s *BaseAPI) Start(ctx context.Context) {
+	if err := s.initDiscord(); err != nil {
+		slog.Warn("Could not initialize Discord", slog.Any("err", err))
+	}
 	go s.ingestAuditLogs(ctx)
 	go s.cleanupBucketsJob(ctx, 30*time.Minute)
 	go s.refreshProblemStatsJob(ctx, 5*time.Minute)
@@ -66,6 +72,12 @@ func (s *BaseAPI) Start(ctx context.Context) {
 func (s *BaseAPI) Close() *StatusError {
 	if err := s.db.Close(); err != nil {
 		return WrapError(err, "Couldn't close DB")
+	}
+
+	if s.dSess != nil {
+		if err := s.dSess.Close(); err != nil {
+			return WrapError(err, "Couldn't close Discord session ")
+		}
 	}
 
 	return nil

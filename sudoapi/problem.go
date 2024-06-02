@@ -3,6 +3,7 @@ package sudoapi
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
@@ -79,7 +80,7 @@ func (s *BaseAPI) DeleteProblem(ctx context.Context, problem *kilonova.Problem) 
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't delete problem")
 	}
-	s.LogUserAction(ctx, "Removed problem #%d: %s", problem.ID, problem.Name)
+	s.LogUserAction(ctx, "Removed problem", slog.Any("problem", problem))
 	return nil
 }
 

@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/KiloProjects/kilonova"
 	"go.uber.org/zap"
@@ -106,6 +107,6 @@ func (s *BaseAPI) DeleteBlogPost(ctx context.Context, post *kilonova.BlogPost) *
 	if err := s.db.DeleteBlogPost(ctx, post.ID); err != nil {
 		return WrapError(err, "Couldn't delete blog post")
 	}
-	s.LogUserAction(ctx, "Removed blog post #%d: %s", post.ID, post.Title)
+	s.LogUserAction(ctx, "Removed blog post", slog.Any("post", post))
 	return nil
 }

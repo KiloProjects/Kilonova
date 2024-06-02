@@ -3,6 +3,7 @@ package sudoapi
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -84,7 +85,7 @@ func (s *BaseAPI) DeleteContest(ctx context.Context, contest *kilonova.Contest) 
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't delete contest")
 	}
-	s.LogUserAction(ctx, "Removed contest #%d: %q", contest.ID, contest.Name)
+	s.LogUserAction(ctx, "Removed contest", slog.Any("contest", contest))
 	return nil
 }
 

@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
 	"go.uber.org/zap"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func (s *BaseAPI) Tags(ctx context.Context) ([]*kilonova.Tag, *StatusError) {
@@ -103,7 +106,7 @@ func (s *BaseAPI) DeleteTag(ctx context.Context, tag *kilonova.Tag) *StatusError
 	if err := s.db.DeleteTag(ctx, tag.ID); err != nil {
 		return WrapError(err, "Couldn't delete tag")
 	}
-	s.LogUserAction(ctx, "Deleted tag #%d: %s", tag.ID, tag.Name)
+	s.LogUserAction(ctx, "Deleted tag", slog.Any("tag", tag))
 	return nil
 }
 
@@ -116,7 +119,10 @@ func (s *BaseAPI) CreateTag(ctx context.Context, name string, tagType kilonova.T
 	if err != nil {
 		return -1, WrapError(err, "Couldn't create tag")
 	}
-	s.LogUserAction(ctx, "Tag %q of type %q created", name, tagType)
+	s.LogUserAction(ctx, "New tag created",
+		slog.String("name", name),
+		slog.String("type", cases.Title(language.English).String(string(tagType))), // Title case
+	)
 	return id, nil
 }
 

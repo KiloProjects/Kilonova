@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"path"
 	"regexp"
 	"strings"
@@ -125,28 +126,27 @@ func (s *BaseAPI) UpdateAttachmentData(ctx context.Context, aid int, data []byte
 			zap.S().Warn(err, aid)
 			return
 		}
-		var b strings.Builder
-		b.WriteString(fmt.Sprintf("Attachment %q ", att.Name))
+		attrs := []slog.Attr{}
 
 		pbs, _ := s.Problems(ctx, kilonova.ProblemFilter{AttachmentID: &aid})
 		if len(pbs) == 0 {
 			posts, _ := s.BlogPosts(ctx, kilonova.BlogPostFilter{AttachmentID: &aid})
 			if len(posts) == 0 {
-				b.WriteString("(orphaned, somehow) ")
+				attrs = append(attrs, slog.String("error", "Orphaned"))
 			} else if len(posts) == 1 {
-				b.WriteString(fmt.Sprintf("in blog post #%d: %q ", posts[0].ID, posts[0].Slug))
+				attrs = append(attrs, slog.Any("post", posts[0]))
 			} else {
-				zap.S().Warn("Attachment %d is in multiple posts??", att.ID)
+				attrs = append(attrs, slog.String("error", "In multiple posts"))
 			}
 		} else if len(pbs) == 1 {
-			b.WriteString(fmt.Sprintf("in problem #%d: %q ", pbs[0].ID, pbs[0].Name))
+			attrs = append(attrs, slog.Any("problem", pbs[0]))
 		} else {
-			zap.S().Warn("Attachment %d is in multiple problems??", att.ID)
+			attrs = append(attrs, slog.String("error", "In multiple problems"))
 		}
 
-		b.WriteString("was updated")
+		attrs = append(attrs, slog.String("attachment_name", att.Name))
 
-		s.LogVerbose(ctx, b.String())
+		s.LogVerbose(ctx, "Attachment updated", attrs...)
 	}()
 	return nil
 }

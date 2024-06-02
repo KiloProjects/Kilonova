@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"path"
+	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -18,17 +19,17 @@ import (
 	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/davecgh/go-spew/spew"
+	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type logLevel int
 
 const (
-	logLevelSystem logLevel = iota
-	logLevelImportant
+	logLevelImportant logLevel = iota
 	logLevelDiscord
 	logLevelWarning
 	logLevelInfo
@@ -71,43 +72,34 @@ func (s *BaseAPI) ResetSubmission(ctx context.Context, id int) *StatusError {
 	return nil
 }
 
-func (s *BaseAPI) SetAdmin(ctx context.Context, userID int, toSet bool) *StatusError {
-	if userID <= 0 {
-		return Statusf(400, "Invalid ID")
-	}
-
+func (s *BaseAPI) SetAdmin(ctx context.Context, user *kilonova.UserBrief, toSet bool) *StatusError {
 	if !toSet {
-		if userID == 1 {
+		if user.ID == 1 {
 			return Statusf(406, "First user must have admin rights.")
 		}
 	}
 
 	if toSet {
-		s.LogUserAction(ctx, "Promoted user #%d to admin status", userID)
+		s.LogUserAction(ctx, "Promoted user to admin status", slog.Any("user", user))
 	} else {
-		s.LogUserAction(ctx, "Demoted user #%d from admin status", userID)
+		s.LogUserAction(ctx, "Demoted user from admin status", slog.Any("user", user))
 	}
 
-	return s.updateUser(ctx, userID, kilonova.UserFullUpdate{Admin: &toSet, Proposer: &toSet})
+	return s.updateUser(ctx, user.ID, kilonova.UserFullUpdate{Admin: &toSet, Proposer: &toSet})
 }
 
-func (s *BaseAPI) SetProposer(ctx context.Context, userID int, toSet bool) *StatusError {
-	user, err := s.UserBrief(ctx, userID)
-	if err != nil {
-		return err
-	}
-
+func (s *BaseAPI) SetProposer(ctx context.Context, user *kilonova.UserBrief, toSet bool) *StatusError {
 	if user.Admin {
 		return Statusf(400, "Cannot update proposer status of an admin.")
 	}
 
 	if toSet {
-		s.LogUserAction(ctx, "Promoted user #%d to proposer status", userID)
+		s.LogUserAction(ctx, "Promoted user to proposer status", slog.Any("user", user))
 	} else {
-		s.LogUserAction(ctx, "Demoted user #%d from proposer status", userID)
+		s.LogUserAction(ctx, "Demoted user from proposer status", slog.Any("user", user))
 	}
 
-	return s.updateUser(ctx, userID, kilonova.UserFullUpdate{Proposer: &toSet})
+	return s.updateUser(ctx, user.ID, kilonova.UserFullUpdate{Proposer: &toSet})
 }
 
 func (s *BaseAPI) SendMail(msg *kilonova.MailerMessage) *StatusError {
@@ -148,37 +140,48 @@ func (s *BaseAPI) WarmupStatementCache(ctx context.Context) *StatusError {
 
 type logEntry struct {
 	Message string
+	Attrs   []slog.Attr
 	Author  *kilonova.UserBrief
 
 	Level logLevel
 }
 
-func (s *BaseAPI) logAction(ctx context.Context, level logLevel, msg string, args ...any) {
+func (s *logEntry) Equal(other *logEntry) bool {
+	if s.Message != other.Message || s.Level != other.Level {
+		return false
+	}
+	if (s.Author == nil) != (other.Author == nil) { // check if both either have or don't have an author
+		return false
+	}
+	if s.Author != nil && s.Author.ID != other.Author.ID {
+		return false
+	}
+	return equalAttrs(s.Attrs, other.Attrs)
+}
+
+func (s *BaseAPI) logAction(ctx context.Context, level logLevel, msg string, args []slog.Attr) {
 	s.logChan <- &logEntry{
-		Message: fmt.Sprintf(msg, args...),
+		Message: msg,
+		Attrs:   args,
 		Author:  util.UserBriefContext(ctx),
 		Level:   level,
 	}
 }
 
-func (s *BaseAPI) LogSystemAction(ctx context.Context, msg string, args ...any) {
-	s.logAction(ctx, logLevelSystem, msg, args...)
+func (s *BaseAPI) LogToDiscord(ctx context.Context, msg string, args ...slog.Attr) {
+	s.logAction(ctx, logLevelDiscord, msg, args)
 }
 
-func (s *BaseAPI) LogToDiscord(ctx context.Context, msg string, args ...any) {
-	s.logAction(ctx, logLevelDiscord, msg, args...)
+func (s *BaseAPI) LogUserAction(ctx context.Context, msg string, args ...slog.Attr) {
+	s.logAction(ctx, logLevelImportant, msg, args)
 }
 
-func (s *BaseAPI) LogUserAction(ctx context.Context, msg string, args ...any) {
-	s.logAction(ctx, logLevelImportant, msg, args...)
+func (s *BaseAPI) LogInfo(ctx context.Context, msg string, attrs ...slog.Attr) {
+	s.logAction(ctx, logLevelInfo, msg, attrs)
 }
 
-func (s *BaseAPI) LogInfo(ctx context.Context, msg string, args ...any) {
-	s.logAction(ctx, logLevelInfo, msg, args...)
-}
-
-func (s *BaseAPI) LogVerbose(ctx context.Context, msg string, args ...any) {
-	s.logAction(ctx, logLevelVerbose, msg, args...)
+func (s *BaseAPI) LogVerbose(ctx context.Context, msg string, args ...slog.Attr) {
+	s.logAction(ctx, logLevelVerbose, msg, args)
 }
 
 func (s *BaseAPI) GetAuditLogs(ctx context.Context, count int, offset int) ([]*kilonova.AuditLog, *StatusError) {
@@ -198,7 +201,7 @@ func (s *BaseAPI) GetLogCount(ctx context.Context) (int, *StatusError) {
 }
 
 type webhookSender struct {
-	lastMessageText  string
+	lastMessageEntry *logEntry
 	lastMessageID    string
 	lastMessageCount int
 
@@ -207,80 +210,97 @@ type webhookSender struct {
 
 	name string
 	mu   sync.Mutex
+
+	base *BaseAPI
 }
 
-func (ws *webhookSender) EditLastMessage(ctx context.Context) *StatusError {
-	vals := make(url.Values)
-	vals.Add("content", fmt.Sprintf("%s (message repeated %d times)", ws.lastMessageText, ws.lastMessageCount+1))
-	req, err := http.NewRequestWithContext(ctx, "PATCH", fmt.Sprintf("https://discord.com/api/webhooks/%s/%s/messages/%s", ws.webhookID, ws.webhookToken, ws.lastMessageID), strings.NewReader(vals.Encode()))
-	if err != nil {
-		return WrapError(err, "Couldn't build request")
+func (ws *webhookSender) getWebhookEmbed(entry *logEntry, showRepeatCount bool) *discordgo.MessageEmbed {
+	hostPrefix := config.Common.HostPrefix
+	embed := &discordgo.MessageEmbed{
+		Title:       entry.Message,
+		Description: "New action",
+		Fields:      make([]*discordgo.MessageEmbedField, 0, len(entry.Attrs)+2),
 	}
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return nil
+	if entry.Author != nil {
+		embed.Description += " (by [" + entry.Author.AppropriateName() + "](" + hostPrefix + "/profile/" + entry.Author.Name + "))"
+	}
+	cc := cases.Title(language.English)
+	for _, attr := range entry.Attrs {
+		val := attr.Value.String()
+		switch v := attr.Value.Any().(type) {
+		case *kilonova.UserBrief:
+			val = fmt.Sprintf("[%s (#%d)](%s/profile/%s)", v.AppropriateName(), v.ID, hostPrefix, v.Name)
+		case *kilonova.Problem:
+			val = fmt.Sprintf("[%s (#%d)](%s/problems/%d)", v.Name, v.ID, hostPrefix, v.ID)
+		case *kilonova.Tag:
+			val = fmt.Sprintf("[%s (#%d)](%s/tags/%d)", v.Name, v.ID, hostPrefix, v.ID)
+		case *kilonova.BlogPost:
+			val = fmt.Sprintf("[%s (#%d)](%s/posts/%s)", v.Title, v.ID, hostPrefix, v.Slug)
+		case *kilonova.ProblemList:
+			val = fmt.Sprintf("[%s (#%d)](%s/problem_lists/%d)", v.Title, v.ID, hostPrefix, v.ID)
 		}
-		return WrapError(err, "Couldn't execute request")
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name:   cc.String(strings.ReplaceAll(attr.Key, "_", " ")),
+			Value:  val,
+			Inline: true,
+		})
 	}
-	resp.Body.Close()
+	if showRepeatCount {
+		embed.Footer = &discordgo.MessageEmbedFooter{
+			Text: "Action repeated " + strconv.Itoa(ws.lastMessageCount) + " times",
+		}
+	}
 
+	return embed
+}
+
+func (ws *webhookSender) editLastMessage() *StatusError {
 	ws.lastMessageCount++
+	if _, err := ws.base.dSess.WebhookMessageEdit(ws.webhookID, ws.webhookToken, ws.lastMessageID, &discordgo.WebhookEdit{
+		Embeds: &[]*discordgo.MessageEmbed{
+			ws.getWebhookEmbed(ws.lastMessageEntry, true),
+		},
+	}); err != nil {
+		return WrapError(err, "Couldn't edit webhook message")
+	}
 	return nil
 }
 
-func (ws *webhookSender) Send(ctx context.Context, text string) *StatusError {
+func (ws *webhookSender) Send(entry *logEntry) *StatusError {
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
 
-	if text == ws.lastMessageText {
-		return ws.EditLastMessage(ctx)
+	if ws.lastMessageEntry != nil && ws.lastMessageEntry.Equal(entry) {
+		return ws.editLastMessage()
 	}
 
-	vals := make(url.Values)
-	vals.Add("content", text)
-	vals.Add("username", ws.name)
-	// We have to wait in order to see message ID
-	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("https://discord.com/api/webhooks/%s/%s?wait=true", ws.webhookID, ws.webhookToken), strings.NewReader(vals.Encode()))
+	msg, err := ws.base.dSess.WebhookExecute(ws.webhookID, ws.webhookToken, true, &discordgo.WebhookParams{
+		Username: ws.name,
+
+		Embeds: []*discordgo.MessageEmbed{
+			ws.getWebhookEmbed(entry, false),
+		},
+	})
 	if err != nil {
-		return WrapError(err, "Couldn't build request")
+		slog.Warn("Unsuccessful Webhook execution", slog.Any("err", err), slog.Any("entry", entry))
+		return WrapError(err, "Couldn't execute webhook")
 	}
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return nil
-		}
-		return WrapError(err, "Couldn't execute request")
+
+	if msg != nil {
+		ws.lastMessageID = msg.ID
+		ws.lastMessageEntry = entry
+		ws.lastMessageCount = 1
+		return nil
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode == 200 && resp.Header.Get("Content-Type") == "application/json" {
-		var message = make(map[string]any)
-		if err := json.NewDecoder(resp.Body).Decode(&message); err != nil {
-			zap.S().Warn("Invalid JSON from Discord")
-		}
-		switch v := message["id"].(type) {
-		case string:
-			ws.lastMessageID = v
-			ws.lastMessageText = text
-			ws.lastMessageCount = 1
-			return nil
-		default:
-			zap.S().Warn("Invalid webhook message ID from Discord: ", v)
-		}
-	} else {
-		val, _ := io.ReadAll(resp.Body)
-		spew.Dump(resp.Header)
-		zap.S().Warn("Unsuccessful Discord request: ", string(val))
-	}
+
+	slog.Debug("Empty message response", slog.Any("entry", entry))
 	ws.lastMessageID = ""
-	ws.lastMessageText = ""
+	ws.lastMessageEntry = nil
 	ws.lastMessageCount = -1
 	return nil
 }
 
-func newWebhookSender(webhookURL string, name string) *webhookSender {
+func (s *BaseAPI) newWebhookSender(webhookURL string, name string) *webhookSender {
 	if webhookURL == "" {
 		return nil
 	}
@@ -299,12 +319,57 @@ func newWebhookSender(webhookURL string, name string) *webhookSender {
 		webhookToken: parts[len(parts)-1],
 
 		name: name,
+
+		base: s,
+	}
+}
+
+func (s *BaseAPI) processLogEntry(ctx context.Context, val *logEntry, importantWebhook, verboseWebhook *webhookSender) {
+	defer func() {
+		if err := recover(); err != nil {
+			slog.Warn("Log entry panic", slog.Any("err", err))
+		}
+	}()
+	var id *int
+	if val.Author != nil {
+		id = &val.Author.ID
+	}
+
+	if val.Level.IsAuditLogLvl() && val.Level != logLevelDiscord {
+		attrs, err := json.Marshal(marshalAttrs(val.Attrs...))
+		if err != nil {
+			attrs = []byte(`{"attrs": "err"}`)
+		}
+		if _, err := s.db.CreateAuditLog(ctx, val.Message+" "+string(attrs), id, false); err != nil {
+			zap.S().Warn("Couldn't store audit log entry to database: ", err)
+		}
+	}
+
+	if val.Level != logLevelDiscord {
+		var s strings.Builder
+		if val.Author != nil {
+			s.WriteString(fmt.Sprintf(" (by user #%d: %s)", val.Author.ID, val.Author.Name))
+		}
+		s.WriteString(": " + val.Message)
+		slog.LogAttrs(ctx, val.Level.toSlog(), s.String(), val.Attrs...)
+	}
+
+	if val.Level.IsAuditLogLvl() && importantWebhook != nil {
+		if err := importantWebhook.Send(val); err != nil {
+			slog.Warn("Could not send to important webhook", slog.Any("err", err))
+		}
+	}
+
+	if !val.Level.IsAuditLogLvl() && verboseWebhook != nil {
+		if err := verboseWebhook.Send(val); err != nil {
+			slog.Warn("Could not send to verbose webhook", slog.Any("err", err))
+		}
 	}
 }
 
 func (s *BaseAPI) ingestAuditLogs(ctx context.Context) error {
-	importantWebhook := newWebhookSender(ImportantUpdatesWebhook.Value(), "Kilonova Audit Log")
-	verboseWebhook := newWebhookSender(VerboseUpdatesWebhook.Value(), "Kilonova Verbose Log")
+	importantWebhook := s.newWebhookSender(ImportantUpdatesWebhook.Value(), "Kilonova Audit Log")
+	verboseWebhook := s.newWebhookSender(VerboseUpdatesWebhook.Value(), "Kilonova Verbose Log")
 	for {
 		select {
 		case <-ctx.Done():
@@ -313,41 +378,7 @@ func (s *BaseAPI) ingestAuditLogs(ctx context.Context) error {
 			}
 			return nil
 		case val := <-s.logChan:
-			var id *int
-			if val.Author != nil {
-				id = &val.Author.ID
-			}
-
-			if val.Level.IsAuditLogLvl() && val.Level != logLevelDiscord {
-				if _, err := s.db.CreateAuditLog(ctx, val.Message, id, val.Level == logLevelSystem); err != nil {
-					zap.S().Warn("Couldn't store audit log entry to database: ", err)
-				}
-			}
-
-			var s strings.Builder
-			s.WriteString("Action")
-			if val.Level == logLevelSystem {
-				s.WriteString(" (system)")
-			} else if val.Author != nil {
-				s.WriteString(fmt.Sprintf(" (by user #%d: %s)", val.Author.ID, val.Author.Name))
-			}
-			s.WriteString(": " + val.Message)
-
-			if val.Level != logLevelDiscord {
-				zap.S().Desugar().Log(val.Level.toZap(), s.String())
-			}
-
-			if val.Level.IsAuditLogLvl() && importantWebhook != nil {
-				if err := importantWebhook.Send(ctx, s.String()); err != nil {
-					zap.S().Warn(err)
-				}
-			}
-
-			if !val.Level.IsAuditLogLvl() && verboseWebhook != nil {
-				if err := verboseWebhook.Send(ctx, s.String()); err != nil {
-					zap.S().Warn(err)
-				}
-			}
+			s.processLogEntry(ctx, val, importantWebhook, verboseWebhook)
 		}
 	}
 }
@@ -463,16 +494,58 @@ func (s *BaseAPI) RegisterGrader(gr Grader) {
 }
 
 func (ll logLevel) IsAuditLogLvl() bool {
-	return ll == logLevelSystem || ll == logLevelImportant || ll == logLevelWarning || ll == logLevelDiscord
+	return ll == logLevelImportant || ll == logLevelWarning || ll == logLevelDiscord
 }
 
-func (ll logLevel) toZap() zapcore.Level {
+func (ll logLevel) toSlog() slog.Level {
 	switch ll {
 	case logLevelWarning:
-		return zap.WarnLevel
+		return slog.LevelWarn
 	case logLevelVerbose:
-		return zap.DebugLevel
+		return slog.LevelDebug
 	default:
-		return zapcore.InfoLevel
+		return slog.LevelInfo
 	}
+}
+
+func equalAttrs(a, b []slog.Attr) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].Key != b[i].Key || a[i].Value.Kind() != b[i].Value.Kind() {
+			return false
+		}
+		switch a[i].Value.Kind() {
+		case slog.KindAny, slog.KindLogValuer:
+			if !reflect.DeepEqual(a[i].Value.Any(), b[i].Value.Any()) {
+				return false
+			}
+		case slog.KindGroup:
+			if !equalAttrs(a[i].Value.Group(), b[i].Value.Group()) {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+func marshalAttr(attr slog.Attr) any {
+	switch attr.Value.Kind() {
+	case slog.KindGroup:
+		return marshalAttrs(attr.Value.Group()...)
+	case slog.KindLogValuer:
+		return marshalAttr(slog.Attr{"deep", attr.Value.LogValuer().LogValue()})
+	default:
+		return attr.Value.String()
+	}
+}
+
+func marshalAttrs(a ...slog.Attr) map[string]any {
+	var attMap = make(map[string]any)
+	for _, attr := range a {
+		attMap[attr.Key] = marshalAttr(attr)
+	}
+	return attMap
 }

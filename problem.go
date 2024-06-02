@@ -1,6 +1,7 @@
 package kilonova
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -48,6 +49,10 @@ type Problem struct {
 
 	PublishedAt     *time.Time  `json:"published_at"`
 	ScoringStrategy ScoringType `json:"scoring_strategy"`
+}
+
+func (pb *Problem) LogValue() slog.Value {
+	return slog.GroupValue(slog.Int("id", pb.ID), slog.String("name", pb.Name))
 }
 
 type StatementVariant struct {

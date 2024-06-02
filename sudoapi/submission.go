@@ -3,6 +3,7 @@ package sudoapi
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"slices"
 	"time"
@@ -472,7 +473,7 @@ func (s *BaseAPI) ResetProblemSubmissions(ctx context.Context, problem *kilonova
 		return WrapError(err, "Couldn't mark submissions for reevaluation")
 	}
 
-	s.LogUserAction(ctx, "Reset submissions for problem #%d: %s", problem.ID, problem.Name)
+	s.LogUserAction(ctx, "Reset problem submissions", slog.Any("problem", problem))
 
 	// Wake grader to start processing immediately
 	s.WakeGrader()

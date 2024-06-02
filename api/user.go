@@ -152,7 +152,7 @@ func (s *API) manageUser(w http.ResponseWriter, r *http.Request) {
 	user := util.ContentUserBrief(r)
 	if args.NewName != nil && len(*args.NewName) > 2 && user.Name != *args.NewName {
 		// Admins can change to formerly existing names
-		if err := s.base.UpdateUsername(r.Context(), user.ID, *args.NewName, false, true); err != nil {
+		if err := s.base.UpdateUsername(r.Context(), user, *args.NewName, false, true); err != nil {
 			err.WriteError(w)
 			return
 		}
@@ -230,7 +230,7 @@ func (s *API) updateUsername(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := s.base.UpdateUsername(r.Context(), user.ID, args.NewName, !util.UserBrief(r).Admin, fromAdmin); err != nil {
+	if err := s.base.UpdateUsername(r.Context(), user, args.NewName, !util.UserBrief(r).Admin, fromAdmin); err != nil {
 		err.WriteError(w)
 		return
 	}

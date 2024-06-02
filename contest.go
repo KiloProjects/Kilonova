@@ -1,6 +1,7 @@
 package kilonova
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -104,6 +105,10 @@ func (c *Contest) Running() bool {
 		return false
 	}
 	return c.Started() && !c.Ended()
+}
+
+func (c *Contest) LogValue() slog.Value {
+	return slog.GroupValue(slog.Int("id", c.ID), slog.String("name", c.Name))
 }
 
 type ContestFilter struct {

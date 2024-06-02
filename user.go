@@ -2,6 +2,7 @@ package kilonova
 
 import (
 	"errors"
+	"log/slog"
 	"time"
 
 	"go.uber.org/zap"
@@ -27,6 +28,10 @@ type UserBrief struct {
 	Generated bool `json:"generated"`
 }
 
+func (u *UserBrief) LogValue() slog.Value {
+	return slog.GroupValue(slog.Int("id", u.ID), slog.String("name", u.Name))
+}
+
 func (u *UserBrief) IsAuthed() bool {
 	return u != nil && u.ID != 0
 }
@@ -43,6 +48,13 @@ func (u *UserBrief) IsProposer() bool {
 		return false
 	}
 	return u.Admin || u.Proposer
+}
+
+func (u *UserBrief) AppropriateName() string {
+	if len(u.DisplayName) == 0 {
+		return u.Name
+	}
+	return u.DisplayName
 }
 
 type UserFull struct {

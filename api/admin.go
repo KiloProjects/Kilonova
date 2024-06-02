@@ -19,7 +19,18 @@ func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.base.SetAdmin(r.Context(), args.ID, args.Set); err != nil {
+	if args.ID <= 0 {
+		errorData(w, "Invalid ID", 400)
+		return
+	}
+
+	user, err := s.base.UserBrief(r.Context(), args.ID)
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	if err := s.base.SetAdmin(r.Context(), user, args.Set); err != nil {
 		err.WriteError(w)
 		return
 	}
@@ -41,7 +52,18 @@ func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.base.SetProposer(r.Context(), args.ID, args.Set); err != nil {
+	if args.ID <= 0 {
+		errorData(w, "Invalid ID", 400)
+		return
+	}
+
+	user, err := s.base.UserBrief(r.Context(), args.ID)
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+
+	if err := s.base.SetProposer(r.Context(), user, args.Set); err != nil {
 		err.WriteError(w)
 		return
 	}

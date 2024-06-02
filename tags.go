@@ -1,5 +1,7 @@
 package kilonova
 
+import "log/slog"
+
 type TagType string
 
 const (
@@ -14,6 +16,10 @@ type Tag struct {
 	ID   int     `json:"id"`
 	Name string  `json:"name"`
 	Type TagType `json:"type"`
+}
+
+func (t *Tag) LogValue() slog.Value {
+	return slog.GroupValue(slog.Int("id", t.ID), slog.String("name", t.Name))
 }
 
 // Should be used for problem filtering

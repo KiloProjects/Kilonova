@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -136,7 +137,7 @@ func (s *BaseAPI) updateUser(ctx context.Context, userID int, upd kilonova.UserF
 var usernameChangeMu sync.Mutex
 
 // fromAdmin also should include the forced username changes
-func (s *BaseAPI) UpdateUsername(ctx context.Context, userID int, newName string, checkUsed bool, fromAdmin bool) *StatusError {
+func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserBrief, newName string, checkUsed bool, fromAdmin bool) *StatusError {
 	usernameChangeMu.Lock()
 	defer usernameChangeMu.Unlock()
 
@@ -149,7 +150,7 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, userID int, newName string
 	}
 
 	if !fromAdmin {
-		chAt, err := s.db.LastUsernameChange(ctx, userID)
+		chAt, err := s.db.LastUsernameChange(ctx, user.ID)
 		if err != nil {
 			if !errors.Is(err, context.Canceled) {
 				zap.S().Warn(err)
@@ -177,11 +178,11 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, userID int, newName string
 	}
 
 	f := false
-	if err := s.updateUser(ctx, userID, kilonova.UserFullUpdate{Name: &newName, NameChangeRequired: &f}); err != nil {
+	if err := s.updateUser(ctx, user.ID, kilonova.UserFullUpdate{Name: &newName, NameChangeRequired: &f}); err != nil {
 		return err
 	}
 
-	s.LogInfo(ctx, "Changed user #%d name to %q", userID, newName)
+	s.LogInfo(ctx, "Username was changed", slog.Any("user", user), slog.String("new_name", newName))
 	return nil
 }
 
@@ -223,7 +224,7 @@ func (s *BaseAPI) DeleteUser(ctx context.Context, user *kilonova.UserBrief) *Sta
 	if err := s.db.DeleteUser(ctx, user.ID); err != nil {
 		return WrapError(err, "Couldn't delete user")
 	}
-	s.LogUserAction(ctx, "Deleted user #%d: %s", user.ID, user.Name)
+	s.LogUserAction(ctx, "Deleted user", slog.Any("user", user))
 	return nil
 }
 

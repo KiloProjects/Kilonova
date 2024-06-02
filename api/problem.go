@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -395,7 +396,7 @@ func (s *API) translateProblemStatement() http.HandlerFunc {
 			errorData(w, err1, 400)
 			return
 		}
-		s.base.LogUserAction(r.Context(), "Triggered LLM translation (Model: %q) for Problem #%d: %s. Translation duration: %v", args.Model, util.Problem(r).ID, util.Problem(r).Name, time.Since(t))
+		s.base.LogUserAction(r.Context(), "Triggered LLM translation", slog.String("model", args.Model), slog.Any("problem", util.Problem(r)), slog.Duration("duration", time.Since(t)))
 		att2, err := s.base.ProblemAttByName(r.Context(), util.Problem(r).ID, "statement-en-llm.md")
 		if err != nil {
 			if errors.Is(err, kilonova.ErrNotFound) {
@@ -446,9 +447,10 @@ func (s *API) togglePblistProblems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.base.LogUserAction(r.Context(), "Bulk update pblist #%d: %q problems (deep: %v, visible problems: %s, downloadable tests: %s)",
-		util.ProblemList(r).ID, util.ProblemList(r).Title,
-		args.Deep, boolPtrString(args.Visible), boolPtrString(args.VisibleTests),
+	s.base.LogUserAction(r.Context(), "Bulk updated problem lists",
+		slog.Any("problem_list", util.ProblemList(r)),
+		slog.String("visible_problems", boolPtrString(args.Visible)), slog.String("downloadable_tests", boolPtrString(args.VisibleTests)),
+		slog.Bool("deep", args.Deep),
 	)
 
 	returnData(w, "Updated problems")

@@ -6,7 +6,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -75,21 +77,33 @@ func (s *API) bmacEvent(w http.ResponseWriter, r *http.Request) {
 			zap.S().Warn(err)
 			return
 		}
-		s.base.LogToDiscord(r.Context(), "Donation for %f %s created. You have to manually add it to donations page (name: %s, email: %s, message: %q) (transaction id: %s)", donation.Amount, donation.Currency, donation.Name, donation.Email, donation.Note, donation.TransactionID)
+		s.base.LogToDiscord(r.Context(), "New Buy Me a Coffee donation. You have to manually add it to donations page",
+			slog.String("amount", fmt.Sprintf("%f %s", donation.Amount, donation.Currency)),
+			slog.String("name", donation.Name), slog.String("email", donation.Email), slog.String("note", donation.Note),
+			slog.String("transaction_id", donation.TransactionID),
+		)
 	case "membership.started":
 		var membership membershipDonationData
 		if err := json.Unmarshal(data.Data, &membership); err != nil {
 			zap.S().Warn(err)
 			return
 		}
-		s.base.LogToDiscord(r.Context(), "Membership (%f %s) created. You have to manually add it to donations page (level: %s, name: %s, email: %s, message: %q) (PSP id: %s)", membership.Amount, membership.Currency, membership.LevelName, membership.Name, membership.Email, membership.Note, membership.PSPID)
+		s.base.LogToDiscord(r.Context(), "New Buy Me a Coffee membership. You have to manually add it to donations page",
+			slog.String("amount", fmt.Sprintf("%f %s", membership.Amount, membership.Currency)), slog.String("level", membership.LevelName),
+			slog.String("name", membership.Name), slog.String("email", membership.Email), slog.String("note", membership.Note),
+			slog.String("psp_id", membership.PSPID),
+		)
 	case "membership.cancelled":
 		var membership membershipDonationData
 		if err := json.Unmarshal(data.Data, &membership); err != nil {
 			zap.S().Warn(err)
 			return
 		}
-		s.base.LogToDiscord(r.Context(), "Membership **cancelled**. You have to manually remove it from donations page (level: %s, name: %s, email: %s, message: %q) (PSP id: %s)", membership.LevelName, membership.Name, membership.Email, membership.Note, membership.PSPID)
+		s.base.LogToDiscord(r.Context(), "Buy Me a Coffee membership **cancelled**. You have to manually remove it from donations page",
+			slog.String("level", membership.LevelName),
+			slog.String("name", membership.Name), slog.String("email", membership.Email), slog.String("note", membership.Note),
+			slog.String("psp_id", membership.PSPID),
+		)
 	}
 
 	returnData(w, "Logged event")

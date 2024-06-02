@@ -1,6 +1,7 @@
 package kilonova
 
 import (
+	"log/slog"
 	"time"
 )
 
@@ -21,6 +22,10 @@ type ProblemList struct {
 	// This is a separate type and not a ProblemList because it might
 	// not necessairly be a tree-like structure (ie. it might have cycles)
 	SubLists []*ShallowProblemList `json:"sublists"`
+}
+
+func (p *ProblemList) LogValue() slog.Value {
+	return slog.GroupValue(slog.Int("id", p.ID), slog.String("name", p.Title))
 }
 
 func (p *ProblemList) ProblemIDs() []int {

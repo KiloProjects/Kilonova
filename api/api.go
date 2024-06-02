@@ -70,7 +70,7 @@ func (s *API) Handler() http.Handler {
 					if b.Persistent {
 						return "", kilonova.Statusf(403, "Refusing to remove important bucket")
 					}
-					s.base.LogUserAction(ctx, "Attempted running bucket eviction for %q", b.Name)
+					s.base.LogUserAction(ctx, "Attempted running bucket eviction", slog.Any("bucket", b))
 					numDeleted, err := b.RunEvictionPolicy(s.base.EvictionLogger())
 					if err != nil {
 						slog.Warn("Could not evict bucket objects", slog.Any("bucket", b), slog.Any("reason", err))

@@ -1,6 +1,9 @@
 package kilonova
 
-import "time"
+import (
+	"log/slog"
+	"time"
+)
 
 // Just a sketch of the concepts behind a blog functionality
 type BlogPost struct {
@@ -14,6 +17,10 @@ type BlogPost struct {
 	Visible bool   `json:"visible"`
 
 	PublishedAt *time.Time `json:"published_at"`
+}
+
+func (bp *BlogPost) LogValue() slog.Value {
+	return slog.GroupValue(slog.Int("id", bp.ID), slog.String("name", bp.Title))
 }
 
 type BlogPostFilter struct {
