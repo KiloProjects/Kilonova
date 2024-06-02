@@ -3,7 +3,6 @@ package sudoapi
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
@@ -90,7 +89,7 @@ func (s *BaseAPI) UpdateTagName(ctx context.Context, tag *kilonova.Tag, newName 
 	if err := s.db.UpdateTagName(ctx, tag.ID, newName); err != nil {
 		return WrapError(err, "Couldn't update tag")
 	}
-	s.LogUserAction(ctx, fmt.Sprintf("Tag %q name (type %q) changed to %q", tag.Name, tag.Type, newName))
+	s.LogUserAction(ctx, "Changed tag name", slog.Any("tag", tag), slog.String("new_name", newName))
 	return nil
 }
 
@@ -98,7 +97,7 @@ func (s *BaseAPI) UpdateTagType(ctx context.Context, tag *kilonova.Tag, newType 
 	if err := s.db.UpdateTagType(ctx, tag.ID, newType); err != nil {
 		return WrapError(err, "Couldn't update tag")
 	}
-	s.LogUserAction(ctx, fmt.Sprintf("Tag %q changed from %q to %q", tag.Name, tag.Type, newType))
+	s.LogUserAction(ctx, "Changed tag type", slog.Any("tag", tag), slog.Any("old_type", tag.Type), slog.Any("new_type", newType))
 	return nil
 }
 
