@@ -271,7 +271,11 @@ func (ws *webhookSender) Send(entry *logEntry) *StatusError {
 	defer ws.mu.Unlock()
 
 	if ws.lastMessageEntry != nil && ws.lastMessageEntry.Equal(entry) {
-		return ws.editLastMessage()
+		if err := ws.editLastMessage(); err == nil {
+			return nil
+		} else {
+			slog.Warn("Could not edit last webhook message. Defaulting to sending a new one", slog.Any("err", err))
+		}
 	}
 
 	msg, err := ws.base.dSess.WebhookExecute(ws.webhookID, ws.webhookToken, true, &discordgo.WebhookParams{
