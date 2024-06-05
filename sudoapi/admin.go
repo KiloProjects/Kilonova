@@ -521,12 +521,24 @@ func equalAttrs(a, b []slog.Attr) bool {
 			return false
 		}
 		switch a[i].Value.Kind() {
-		case slog.KindAny, slog.KindLogValuer:
+		case slog.KindLogValuer:
+			// Try to go deeper
+			if !equalAttrs(
+				[]slog.Attr{{Key: "deep", Value: a[i].Value.LogValuer().LogValue()}},
+				[]slog.Attr{{Key: "deep", Value: b[i].Value.LogValuer().LogValue()}},
+			) {
+				return false
+			}
+		case slog.KindAny:
 			if !reflect.DeepEqual(a[i].Value.Any(), b[i].Value.Any()) {
 				return false
 			}
 		case slog.KindGroup:
 			if !equalAttrs(a[i].Value.Group(), b[i].Value.Group()) {
+				return false
+			}
+		default:
+			if !a[i].Value.Equal(b[i].Value) {
 				return false
 			}
 		}
@@ -540,7 +552,7 @@ func marshalAttr(attr slog.Attr) any {
 	case slog.KindGroup:
 		return marshalAttrs(attr.Value.Group()...)
 	case slog.KindLogValuer:
-		return marshalAttr(slog.Attr{"deep", attr.Value.LogValuer().LogValue()})
+		return marshalAttr(slog.Attr{Key: "deep", Value: attr.Value.LogValuer().LogValue()})
 	default:
 		return attr.Value.String()
 	}

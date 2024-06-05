@@ -3,6 +3,7 @@ package checkers
 import (
 	"context"
 	"log/slog"
+	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -42,7 +43,7 @@ func standardCheckerTask(ctx context.Context, mgr eval.BoxScheduler, job *custom
 	}
 
 	floatScore, err := strconv.ParseFloat(strings.TrimSpace(string(stdout)), 64)
-	if err != nil {
+	if err != nil || math.IsInf(floatScore, 0) || math.IsNaN(floatScore) {
 		rez.Output = "Invalid checker score"
 		return rez, nil
 	}
