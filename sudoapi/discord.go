@@ -75,7 +75,7 @@ func (s *BaseAPI) UnlinkDiscordIdentity(ctx context.Context, userID int) *Status
 	if user.DiscordID == nil {
 		return Statusf(400, "User has no linked Discord identity")
 	}
-	s.LogVerbose(ctx, "User tried to unlink Discord identity", slog.Any("user", user.ToFull()), slog.String("discord_id", *user.DiscordID))
+	s.LogVerbose(ctx, "User tried to unlink Discord identity", slog.Any("user", user.ToBrief()), slog.String("discord_id", *user.DiscordID))
 	return s.updateUser(ctx, userID, kilonova.UserFullUpdate{SetDiscordID: true, DiscordID: nil})
 }
 
@@ -135,7 +135,7 @@ func (s *BaseAPI) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) 
 	userAttr := slog.Any("userID", uid)
 	user, err := s.db.User(r.Context(), kilonova.UserFilter{ID: &uid})
 	if err == nil && user != nil {
-		userAttr = slog.Any("user", user.ToFull())
+		userAttr = slog.Any("user", user.ToBrief())
 	}
 	s.LogVerbose(r.Context(), "User linked Discord identity", userAttr, slog.String("discord_id", dUser.ID), slog.String("discord_user", dUser.Mention()))
 
