@@ -32,6 +32,7 @@ import (
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/benbjohnson/hashfs"
+	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dustin/go-humanize"
 	"github.com/go-chi/chi/v5"
@@ -158,9 +159,12 @@ func (rt *Web) Handler() http.Handler {
 		r.Use(rt.checkLockout())
 
 		r.Get("/", rt.index())
+		r.With(rt.mustBeAuthed).Get("/link", rt.discordLink())
 		r.With(rt.mustBeAuthed).Get("/profile", rt.selfProfile())
+		r.With(rt.mustBeAuthed).Get("/profile/linked", rt.selfLinkStatus())
 		r.With(rt.mustBeAuthed).Get("/profile/sessions", rt.selfSessions())
 		r.Get("/profile/{user}", rt.profile())
+		r.With(rt.mustBeAuthed).Get("/profile/{user}/linked", rt.linkStatus())
 		r.With(rt.mustBeAuthed).Get("/profile/{user}/sessions", rt.userSessions())
 		r.With(rt.mustBeAuthed).Get("/settings", rt.justRender("settings.html"))
 		r.Get("/donate", rt.donationPage())
@@ -798,6 +802,10 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"isProposer": func() bool {
 			zap.S().Error("Uninitialized `isProposer`")
 			return false
+		},
+		"discordIdentity": func(user *kilonova.UserFull) *discordgo.User {
+			zap.S().Error("Uninitialized `discordIdentity`")
+			return nil
 		},
 		"isContestEditor": func(c *kilonova.Contest) bool {
 			zap.S().Error("Uninitialized `isContestEditor`")

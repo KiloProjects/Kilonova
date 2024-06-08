@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/netip"
 	"net/url"
@@ -26,6 +27,7 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi"
 	chtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/styles"
+	"github.com/bwmarrin/discordgo"
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/schema"
@@ -72,6 +74,22 @@ func (rt *Web) buildPblistCache(r *http.Request, listIDs []int) *http.Request {
 	}
 	zap.S().Warn(err)
 	return r
+}
+
+func (rt *Web) discordLink() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if util.UserFull(r).DiscordID != nil {
+			http.Redirect(w, r, "/profile/linked", http.StatusTemporaryRedirect)
+			return
+		}
+		st, err := rt.base.DiscordAuthURL(r.Context(), util.UserBrief(r).ID)
+		if err != nil {
+			rt.statusPage(w, r, err.Code, err.Text)
+			return
+		}
+
+		http.Redirect(w, r, st, http.StatusTemporaryRedirect)
+	}
 }
 
 func (rt *Web) index() http.HandlerFunc {
@@ -1386,6 +1404,47 @@ func (rt *Web) profile() http.HandlerFunc {
 	}
 }
 
+func (rt *Web) linkStatusPage(w http.ResponseWriter, r *http.Request, templ *template.Template, user *kilonova.UserFull) {
+	dUser, err := rt.base.GetDiscordIdentity(r.Context(), user.ID)
+	if err != nil {
+		slog.Warn("Could not get Discord identity", slog.Any("user", user), slog.Any("err", err))
+		dUser = nil
+	}
+	rt.runTempl(w, r, templ, &DiscordLinkParams{
+		ContentUser: user,
+		DiscordUser: dUser,
+	})
+}
+
+func (rt *Web) selfLinkStatus() http.HandlerFunc {
+	templ := rt.parse(nil, "discordLink.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		rt.linkStatusPage(w, r, templ, util.UserFull(r))
+	}
+}
+
+func (rt *Web) linkStatus() http.HandlerFunc {
+	templ := rt.parse(nil, "discordLink.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "user")))
+		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
+			zap.S().Warn(err)
+			rt.statusPage(w, r, 500, "")
+			return
+		}
+		if user == nil {
+			rt.statusPage(w, r, 404, "")
+			return
+		}
+		// Only admins and that specific user can view their sessions
+		if !(util.UserBrief(r).IsAdmin() || util.UserBrief(r).ID == user.ID) {
+			rt.statusPage(w, r, 403, "")
+		}
+
+		rt.linkStatusPage(w, r, templ, user)
+	}
+}
+
 func (rt *Web) userSessionsPage(w http.ResponseWriter, r *http.Request, templ *template.Template, user *kilonova.UserFull) {
 	sessions, err := rt.base.UserSessions(r.Context(), user.ID)
 	if err != nil {
@@ -1764,6 +1823,13 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		},
 		"isProposer": func() bool {
 			return authedUser != nil && (authedUser.Admin || authedUser.Proposer)
+		},
+		"discordIdentity": func(user *kilonova.UserFull) *discordgo.User {
+			dUser, err := rt.base.GetDiscordIdentity(r.Context(), user.ID)
+			if err != nil {
+				dUser = nil
+			}
+			return dUser
 		},
 		"currentProblem": func() *kilonova.Problem {
 			return util.Problem(r)

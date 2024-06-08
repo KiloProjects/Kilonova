@@ -17,6 +17,7 @@ import (
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
 )
 
@@ -310,6 +311,12 @@ type ProfileParams struct {
 	AttemptedCount    int
 
 	ChangeHistory []*kilonova.UsernameChange
+}
+
+type DiscordLinkParams struct {
+	ContentUser *kilonova.UserFull
+
+	DiscordUser *discordgo.User
 }
 
 type SessionsParams struct {

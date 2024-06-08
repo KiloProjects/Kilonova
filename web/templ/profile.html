@@ -2,7 +2,7 @@
 {{ define "content" }}
 
 <div class="segment-panel">
-	<img class="rounded-lg float-right" width="128" height="128" src="/api/user/byName/{{.ContentUser.Name}}/gravatar?s=128" alt="{{getText `profilePic`}} {{.ContentUser.Name}}"/>
+	<img class="rounded-lg float-right" width="128" height="128" src="/api/user/byName/{{.ContentUser.Name}}/avatar?s=128" alt="{{getText `profilePic`}} {{.ContentUser.Name}}"/>
 	<div>
 		<h1>{{if isAdmin}} <span class="tag rounded-lg font-semibold badge-blue">#{{.ContentUser.ID}}</span> {{end}} {{if .ContentUser.DisplayName}} {{.ContentUser.DisplayName}} ({{.ContentUser.Name}}) {{else}} {{.ContentUser.Name}} {{ end }}</h1>
         <p>{{getText "created_at"}}: <span class="server_timestamp">{{.ContentUser.CreatedAt.UnixMilli}}</span></p>

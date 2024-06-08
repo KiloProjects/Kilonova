@@ -34,6 +34,20 @@
     <button class="btn btn-blue">{{getText "button.update"}}</button>
 </form>
 
+<form class="segment-panel" id="avatar_change_form" autocomplete="off">
+    <h2>{{getText "changeAvatar"}}</h2>
+    <select id="avatarSelect" class="form-select block my-2">
+        <option value="gravatar" {{if eq fullAuthedUser.AvatarType `gravatar`}}selected{{end}}>Gravatar</option>
+        <option value="discord" {{if eq fullAuthedUser.AvatarType `discord`}}selected{{end}}>Discord</option>
+    </select>
+    {{with discordIdentity fullAuthedUser}}
+        {{getText "changeAvatarWithDiscord" .String | renderMarkdown}}
+    {{else}}
+        {{getText "changeAvatarNoDiscord" | renderMarkdown}}
+    {{end}}
+    <button class="btn btn-blue">{{getText "button.update"}}</button>
+</form>
+
 <form class="segment-panel" id="pwd_change_form">
 	<h2> {{getText "updatePwd"}} </h2>
 	<label class="block mb-2">
@@ -96,6 +110,14 @@ async function updateName(e) {
     }
     window.location.reload()
 }
+async function updateAvatar(e) {
+    e.preventDefault()
+    const data = {
+        avatarType: document.getElementById("avatarSelect").value
+    }
+    const rez = await bundled.postCall("/user/self/setAvatarType", data)
+    bundled.apiToast(rez)
+}
 async function updatePassword(e) {
 	e.preventDefault()
 	let oldpwd = document.getElementById("pwd_change_org").value,
@@ -124,6 +146,7 @@ async function updateEmail(e) {
 document.getElementById("bio_form").addEventListener("submit", updateBio)
 document.getElementById("lang_form").addEventListener("submit", updateLanguage)
 document.getElementById("name_change_form").addEventListener("submit", updateName)
+document.getElementById("avatar_change_form").addEventListener("submit", updateAvatar)
 document.getElementById("pwd_change_form").addEventListener("submit", updatePassword)
 document.getElementById("email_change_form").addEventListener("submit", updateEmail)
 </script>

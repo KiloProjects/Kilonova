@@ -83,7 +83,7 @@
             outhtml += `
             <div class="list-group-item flex justify-between items-center">
                 <a href="/profile/${user.name}">
-                    <img class="rounded inline-block mr-2" src="/api/user/byName/${user.name}/gravatar?s=32" width="32" height="32" alt="Avatar"/>
+                    <img class="rounded inline-block mr-2" src="/api/user/byName/${user.name}/avatar?s=32" width="32" height="32" alt="Avatar"/>
                     ${user.name}
                 </a>
                 ${user.id != window.platform_info.user_id ? `<span style="cursor: pointer;" onclick="stripAccess(${user.id})">X</span>` : ''}

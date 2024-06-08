@@ -398,7 +398,7 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
                             {{with .LastUpdatedBy}}
                                 {{with user .}}
                                 <a href="/profile/{{.Name}}">
-                                    <img class="rounded inline-block mr-2" src="/api/user/byName/{{.Name}}/gravatar?s=32" width="32" height="32" alt="Avatar"/>
+                                    <img class="rounded inline-block mr-2" src="/api/user/byName/{{.Name}}/avatar?s=32" width="32" height="32" alt="Avatar"/>
                                     {{.Name}}
                                 </a>
                                 {{else}}-{{end}}

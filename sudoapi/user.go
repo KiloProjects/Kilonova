@@ -20,6 +20,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -354,32 +355,31 @@ func getGravatar(email string, size int) (io.ReadSeekCloser, time.Time, error) {
 	return &bytesReaderCloser{bytes.NewReader(buf)}, time, nil
 }
 
-func avatarBucketName(email string, size int) string {
+func gravatarBucketName(email string, size int) string {
 	bSum := sha256.Sum256([]byte(email))
 	return fmt.Sprintf("%s-%d.png", hex.EncodeToString(bSum[:]), size)
 }
 
-// SaveAvatar wraps DataStore's SaveAvatar
 // if r is nil, it fetches the gravatar from the web
-func (s *BaseAPI) SaveAvatar(email string, size int, r io.Reader) error {
+func (s *BaseAPI) saveGravatar(email string, size int, r io.Reader) error {
 	if r != nil {
-		return s.avatarBucket.WriteFile(avatarBucketName(email, size), r, 0644)
+		return s.avatarBucket.WriteFile(gravatarBucketName(email, size), r, 0644)
 	}
 
 	r, _, err := getGravatar(email, size)
 	if err != nil {
 		return err
 	}
-	return s.avatarBucket.WriteFile(avatarBucketName(email, size), r, 0644)
+	return s.avatarBucket.WriteFile(gravatarBucketName(email, size), r, 0644)
 }
 
 // valid is true only if maxLastMod is greater than the saved value and if the avatar is saved
-func (s *BaseAPI) avatarFromBucket(email string, size int, maxLastMod time.Time) (io.ReadSeekCloser, time.Time, bool, error) {
-	f, err := s.avatarBucket.ReadSeeker(avatarBucketName(email, size))
+func (s *BaseAPI) avatarFromBucket(filename string, maxLastMod time.Time) (io.ReadSeekCloser, time.Time, bool, error) {
+	f, err := s.avatarBucket.ReadSeeker(filename)
 	if err != nil {
 		return nil, time.Unix(0, 0), false, err
 	}
-	stat, err := s.avatarBucket.Stat(avatarBucketName(email, size))
+	stat, err := s.avatarBucket.Stat(filename)
 	if err != nil {
 		f.Close()
 		return nil, time.Unix(0, 0), false, err
@@ -390,18 +390,84 @@ func (s *BaseAPI) avatarFromBucket(email string, size int, maxLastMod time.Time)
 	return f, stat.ModTime(), true, nil
 }
 
-// GetAvatar wraps DataStore's GetAvatar
-// if manager.GetAvatar errors out or is not valid, it fetches the gravatar from the web
-func (s *BaseAPI) GetAvatar(email string, size int, maxLastMod time.Time) (io.ReadSeekCloser, time.Time, bool, error) {
+// if manager.GetGravatar errors out or is not valid, it fetches the gravatar from the web
+func (s *BaseAPI) GetGravatar(email string, size int, maxLastMod time.Time) (io.ReadSeekCloser, time.Time, bool, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
-	if r, t, valid, err := s.avatarFromBucket(email, size, maxLastMod); valid && err == nil {
+	if r, t, valid, err := s.avatarFromBucket(gravatarBucketName(email, size), maxLastMod); valid && err == nil {
 		return r, t, valid, err
 	}
 	r, t, err := getGravatar(email, size)
 	if err != nil {
 		return r, t, false, err
 	}
-	if err := s.SaveAvatar(email, size, r); err != nil {
+	if err := s.saveGravatar(email, size, r); err != nil {
+		zap.S().Warn("Could not save avatar:", err)
+	}
+	r.Seek(0, io.SeekStart)
+	return r, t, true, nil
+}
+
+func discordAvatarBucketName(user *kilonova.UserFull, size int) string {
+	bSum := sha256.Sum256([]byte(*user.DiscordID))
+	return fmt.Sprintf("%s-%d.png", hex.EncodeToString(bSum[:]), size)
+}
+
+func getDiscordAvatar(dUser *discordgo.User, size int) (io.ReadSeekCloser, time.Time, error) {
+	req, _ := http.NewRequest("GET", dUser.AvatarURL(strconv.Itoa(size)), nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, time.Unix(0, 0), err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 || resp.Header.Get("Content-Type") == "text/html" {
+		return nil, time.Unix(0, 0), Statusf(resp.StatusCode, "Invalid discord avatar response")
+	}
+
+	buf, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, time.Unix(0, 0), err
+	}
+	time, _ := http.ParseTime(resp.Header.Get("last-modified"))
+	return &bytesReaderCloser{bytes.NewReader(buf)}, time, nil
+}
+
+// if r is nil, it fetches the gravatar from the web
+func (s *BaseAPI) saveDiscordAvatar(user *kilonova.UserFull, dUser *discordgo.User, size int, r io.Reader) error {
+	if r != nil {
+		return s.avatarBucket.WriteFile(discordAvatarBucketName(user, size), r, 0644)
+	}
+
+	r, _, err := getDiscordAvatar(dUser, size)
+	if err != nil {
+		return err
+	}
+	return s.avatarBucket.WriteFile(discordAvatarBucketName(user, size), r, 0644)
+}
+
+// if manager.GetDiscordAvatar errors out or is not valid, it fetches the gravatar from the web
+func (s *BaseAPI) GetDiscordAvatar(ctx context.Context, user *kilonova.UserFull, size int, maxLastMod time.Time) (io.ReadSeekCloser, time.Time, bool, error) {
+	if user.DiscordID == nil {
+		return nil, time.Time{}, false, nil
+	}
+	if r, t, valid, err := s.avatarFromBucket(discordAvatarBucketName(user, size), maxLastMod); valid && err == nil {
+		return r, t, valid, err
+	}
+
+	dUser, err1 := s.GetDiscordIdentity(ctx, user.ID)
+	if err1 != nil {
+		return nil, time.Time{}, false, err1
+	}
+	if dUser == nil {
+		return nil, time.Time{}, false, nil
+	}
+
+	r, t, err := getDiscordAvatar(dUser, size)
+	if err != nil {
+		return r, t, false, err
+	}
+	if err := s.saveDiscordAvatar(user, dUser, size, r); err != nil {
 		zap.S().Warn("Could not save avatar:", err)
 	}
 	r.Seek(0, io.SeekStart)

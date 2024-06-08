@@ -94,6 +94,7 @@ func (s *API) Handler() http.Handler {
 
 	r.Route("/webhook", func(r chi.Router) {
 		r.Post("/bmac_event", s.bmacEvent)
+		r.Get("/discord_callback", s.base.HandleDiscordCallback)
 	})
 
 	r.Route("/auth", func(r chi.Router) {
@@ -287,9 +288,12 @@ func (s *API) Handler() http.Handler {
 		userRouter.Get("/", func(w http.ResponseWriter, r *http.Request) { returnData(w, util.ContentUserBrief(r)) })
 		userRouter.Get("/solvedProblems", s.getSolvedProblems)
 		userRouter.Get("/gravatar", s.getGravatar)
+		userRouter.Get("/avatar", s.getAvatar)
+		userRouter.Get("/discordAvatar", s.getDiscordAvatar)
 		userRouter.With(s.selfOrAdmin).Post("/deauthAll", s.deauthAllSessions)
 
 		userRouter.With(s.selfOrAdmin).Post("/setBio", s.setBio())
+		userRouter.With(s.selfOrAdmin).Post("/setAvatarType", s.setAvatarType())
 		userRouter.With(s.selfOrAdmin).Post("/setPreferredLanguage", s.setPreferredLanguage())
 		userRouter.With(s.selfOrAdmin).Post("/setPreferredTheme", s.setPreferredTheme())
 

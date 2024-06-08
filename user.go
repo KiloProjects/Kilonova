@@ -69,6 +69,9 @@ type UserFull struct {
 	// Generated         bool           `json:"generated"`
 	LockedLogin      bool `json:"locked_login"`
 	NameChangeForced bool `json:"name_change_forced"`
+
+	DiscordID  *string `json:"discord_id"`
+	AvatarType string  `json:"avatar_type"`
 }
 
 func (uf *UserFull) Brief() *UserBrief {
@@ -115,6 +118,8 @@ type UserUpdate struct {
 
 	Bio *string `json:"bio"`
 
+	AvatarType *string `json:"avatar_type"`
+
 	PreferredLanguage string         `json:"-"`
 	PreferredTheme    PreferredTheme `json:"-"`
 }
@@ -132,6 +137,9 @@ type UserFullUpdate struct {
 
 	LockedLogin        *bool `json:"locked_login"`
 	NameChangeRequired *bool `json:"name_change_required"`
+
+	SetDiscordID bool    `json:"set_discord_id"`
+	DiscordID    *string `json:"discord_id"`
 
 	VerifiedEmail    *bool      `json:"verified_email"`
 	EmailVerifSentAt *time.Time `json:"-"`

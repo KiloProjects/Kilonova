@@ -190,6 +190,22 @@ ro = "Vezi progresul altui utilizator"
 en = "Update List"
 ro = "Actualizare Listă"
 
+[discordLink]
+en = "Discord link"
+ro = "Asociere Discord"
+
+[discordLinkStatus]
+en = "is linked with the following Discord account"
+ro = "este asociat cu următorul cont de Discord"
+
+[noDiscordLink]
+en = "No Discord connection has been made."
+ro = "Nu a fost făcută nicio asociere cu vreun cont de Discord."
+
+[backToProfile]
+en = "Back to profile page"
+ro = "Înapoi la pagina de profil"
+
 [profile]
 en = "Profile:"
 ro = "Profil:"
@@ -2659,6 +2675,18 @@ ro = "Nume nou"
 [changeName]
 en = "Change name"
 ro = "Schimbare nume"
+
+[changeAvatar]
+en = "Change avatar source"
+ro = "Schimbare sursă avatar"
+
+[changeAvatarWithDiscord]
+en = "If Discord is selected, it will use the avatar for the user `%s`."
+ro = "Dacă este selectat Discord, acesta va folosi avatarul pentru utilizatorul `%s`."
+
+[changeAvatarNoDiscord]
+en = "This option will have no effect until you link your Discord account [using this link](/link)"
+ro = "Această opțiune nu va avea niciun efect cât timp nu asociați contul de Discord [folosind acest link](/link)"
 
 [donate]
 en = "Donate"

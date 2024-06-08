@@ -28,6 +28,16 @@ var migrations = []migration{
 		name:    "Base schema",
 		handler: runFile("001.base.sql"),
 	},
+	{
+		id:      2,
+		name:    "Discord Integration",
+		handler: runFile("002.discord_oauth_secret.sql"),
+	},
+	{
+		id:      3,
+		name:    "Discord Avatar as main",
+		handler: runFile("003.use_discord_avatar.sql"),
+	},
 }
 
 var specialMigrations = []migration{

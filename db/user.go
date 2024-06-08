@@ -29,6 +29,9 @@ type User struct {
 
 	NameChangeRequired bool `json:"name_change_required" db:"name_change_required"`
 
+	DiscordID  *string `json:"discord_id" db:"discord_id"`
+	AvatarType string  `json:"avatar_type" db:"avatar_type"`
+
 	LockedLogin bool `json:"locked_login" db:"locked_login"`
 	Generated   bool `json:"generated" db:"generated"`
 
@@ -73,6 +76,9 @@ func (user *User) ToFull() *kilonova.UserFull {
 		EmailVerifResent:  t,
 		LockedLogin:       user.LockedLogin,
 		NameChangeForced:  user.NameChangeRequired,
+
+		DiscordID:  user.DiscordID,
+		AvatarType: user.AvatarType,
 	}
 }
 
@@ -180,6 +186,13 @@ func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate
 	}
 	if v := upd.EmailVerifSentAt; v != nil {
 		ub.AddUpdate("email_verif_sent_at = %s", v)
+	}
+
+	if v := upd.DiscordID; upd.SetDiscordID {
+		ub.AddUpdate("discord_id = %s", v)
+	}
+	if v := upd.AvatarType; v != nil {
+		ub.AddUpdate("avatar_type = %s", v)
 	}
 
 	if v := upd.LockedLogin; v != nil {
