@@ -161,6 +161,7 @@ var Langs = map[string]Language{
 		BuildEnv: map[string]string{"GOMAXPROCS": "1", "CGO_ENABLED": "0", "GOCACHE": "/go/cache", "GOPATH": "/box", "GO111MODULE": "off"},
 		RunEnv:   map[string]string{"GOMAXPROCS": "1"},
 
+		// TODO: Find way to nicely mount compilation cache so it doesn't take 10 seconds to compile stdlib.
 		Mounts: []Directory{{In: "/go", Opts: "tmp", Verbatim: true}},
 	},
 	"haskell": {
