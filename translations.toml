@@ -2446,7 +2446,7 @@ ro = "O soluție de 100 de puncte"
 
 [checklist_contest_required]
 en = "If problem is/was from a contest, the following are strongly recommended"
-ro = "Dacă problema este/a fost la un concurs, următoarele sunt foarte recomandate:"
+ro = "Dacă problema este/a fost la un concurs, următoarele sunt foarte recomandate"
 
 [checklist_pdf]
 en = "PDF statement, from contest"
