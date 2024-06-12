@@ -1,4 +1,4 @@
-package api
+\package api
 
 import (
 	"context"
@@ -235,7 +235,7 @@ func (s *API) Handler() http.Handler {
 			r.With(s.MustBeAuthed).Post("/reevaluate", webMessageWrapper("Reset submission", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
 				// Check submission permissions
 				if !(util.UserBriefContext(ctx).Admin || util.SubmissionContext(ctx).ProblemEditor) {
-					return kilonova.Statusf(403, "You cannot delete this submission!")
+					return kilonova.Statusf(403, "You cannot reevaluate this submission!")
 				}
 
 				return s.base.ResetSubmission(context.WithoutCancel(ctx), util.SubmissionContext(ctx).ID)
