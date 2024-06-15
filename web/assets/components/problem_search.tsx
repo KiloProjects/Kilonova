@@ -773,7 +773,7 @@ function ProblemListingWrapper({
 			showFull={showfull === "true"}
 			filter={filter}
 			scoreView={scoreView}
-			latestView={typeof latestView === "undefined" ? true : latestView}
+			latestView={typeof latestView === "undefined" ? false : latestView}
 			saveHistory={saveHistory}
 			showPages={typeof showPages === "undefined" ? true : showPages}
 			maxCount={maxCount}
@@ -815,6 +815,7 @@ function TagProblemsDOM({ enc, count, tagid }: { enc: string; count: string; tag
 					filter={{ textQuery: "", tags: [{ tag_ids: [tagID], negate: false }], page: 1, descending: false, ordering: "" }}
 					scoreView={false}
 					saveHistory={true}
+					latestView={false}
 				/>
 			</div>
 		</>
@@ -835,6 +836,7 @@ function ProblemSolvedByDOM({ enc, count, userid }: { enc: string; count: string
 			scoreView={true}
 			showTags={false}
 			saveHistory={false}
+			latestView={false}
 		/>
 	);
 }

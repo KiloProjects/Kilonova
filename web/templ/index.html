@@ -120,6 +120,11 @@
                         {{ renderMarkdown (getText "all_problems_announcement") }}
                     </div>
                 {{end}}
+
+                {{ if boolFlag "feature.frontend.front_page_random_pb"}}
+                    {{ renderMarkdown (getText "random_problem_announcement") }}
+                    {{ renderMarkdown (getText "random_unsolved_problem_announcement") }}
+                {{ end }}
             </div>
         {{end}}
         {{end}}

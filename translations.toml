@@ -2919,3 +2919,19 @@ ro = "Comandă compilare"
 [compilerVersion]
 en = "Version"
 ro = "Versiune"
+
+[random_problem]
+en = "Get a random problem"
+ro = "Problemă aleatorie"
+
+[random_unsolved_problem]
+en = "Get a random, unsolved problem"
+ro = "Problemă aleatorie nerezolvată"
+
+[random_problem_announcement]
+en = "You can draw a random problem by [clicking here](/problems/random)."
+ro = "Poți să vezi o problemă aleatorie [apăsând aici](/problems/random)."
+
+[random_unsolved_problem_announcement]
+en = "You can draw a random, unsolved problem by [clicking here](/problems/random?unsolved=true)."
+ro = "Poți să vezi o problemă aleatorie, nerezolvată [apăsând aici](/problems/random?unsolved=true)."

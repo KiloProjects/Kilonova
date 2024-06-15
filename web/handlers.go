@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"io"
 	"log/slog"
+	"math/rand/v2"
 	"net/http"
 	"net/netip"
 	"net/url"
@@ -586,6 +587,74 @@ func (rt *Web) paste() http.HandlerFunc {
 			return
 		}
 		rt.runTempl(w, r, templ, &PasteParams{util.Paste(r), fullSub})
+	}
+}
+
+func (rt *Web) randomProblem() http.HandlerFunc {
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+	decoder.SetAliasTag("json")
+
+	type problemArgs struct {
+		ListID int   `json:"list_id"`
+		TagIDs []int `json:"tag_id"`
+
+		// If nil, it's disregarded
+		// If true, searches for unsolved problems
+		// If false, searches for solved problems
+		Unsolved *bool `json:"unsolved"`
+		// User ID to base searches on.
+		UnsolvedBy *int `json:"unsolved_by"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+		var args problemArgs
+		if err := decoder.Decode(&args, r.Form); err != nil {
+			slog.Warn("Could not decode HTTP form", slog.Any("err", err))
+		}
+		filter := kilonova.ProblemFilter{
+			Look: true, LookingUser: util.UserBrief(r),
+		}
+		if args.ListID > 0 {
+			filter.DeepListID = &args.ListID
+		}
+		if len(args.TagIDs) > 0 {
+			filter.Tags = []*kilonova.TagGroup{
+				{TagIDs: args.TagIDs},
+			}
+		}
+		if args.Unsolved != nil {
+			userID := -1
+			if util.UserBrief(r) != nil {
+				userID = util.UserBrief(r).ID
+			}
+			if args.UnsolvedBy != nil && *args.UnsolvedBy > 0 {
+				userID = *args.UnsolvedBy
+			}
+			if userID > 0 {
+				if *args.Unsolved {
+					filter.UnsolvedBy = &userID
+				} else {
+					filter.SolvedBy = &userID
+				}
+			}
+		}
+
+		pbs, err := rt.base.Problems(r.Context(), filter)
+		if err != nil {
+			rt.statusPage(w, r, 500, "Could not get random problem: "+err.Error())
+			return
+		}
+		if len(pbs) == 0 {
+			w.Header().Add("X-Problem-ID", "-1")
+			rt.statusPage(w, r, 400, "Cold not find a random problem matching the given criteria")
+			return
+		}
+
+		pbid := strconv.Itoa(pbs[rand.N(len(pbs))].ID)
+		w.Header().Add("X-Problem-ID", pbid)
+		http.Redirect(w, r, "/problems/"+pbid, http.StatusFound)
 	}
 }
 

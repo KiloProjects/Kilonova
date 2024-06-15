@@ -251,6 +251,10 @@ func problemFilterQuery(filter *kilonova.ProblemFilter, fb *filterBuilder) {
 	if v := filter.SolvedBy; v != nil {
 		fb.AddConstraint("EXISTS (SELECT 1 FROM max_scores WHERE score = 100 AND problem_id = problems.id AND user_id = %s)", v)
 	}
+	// Negated SolvedBy
+	if v := filter.UnsolvedBy; v != nil {
+		fb.AddConstraint("NOT EXISTS (SELECT 1 FROM max_scores WHERE score = 100 AND problem_id = problems.id AND user_id = %s)", v)
+	}
 	if v := filter.AttemptedBy; v != nil {
 		fb.AddConstraint("EXISTS (SELECT 1 FROM max_scores WHERE score != 100 AND score >= 0 AND problem_id = problems.id AND user_id = %s)", v)
 	}

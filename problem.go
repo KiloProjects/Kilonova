@@ -117,6 +117,7 @@ type ProblemFilter struct {
 	// Used for getting problems for MOSS
 	ContestID *int `json:"-"`
 
+	UnsolvedBy  *int `json:"unsolved_by"`
 	SolvedBy    *int `json:"solved_by"`
 	AttemptedBy *int `json:"attempted_by"`
 

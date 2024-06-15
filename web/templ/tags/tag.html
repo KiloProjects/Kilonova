@@ -90,6 +90,14 @@
 <div class="segment-panel">
     <h2>{{.ProblemCount}} {{getText "tag_pbs"}}</h2>
     <kn-tag-pbs enc="{{.Problems | encodeJSON}}" count="{{.ProblemCount}}" tagid="{{.Tag.ID}}"></kn-tag-pbs>
+    {{if gt .ProblemCount 2}}
+    <div class="block my-2">
+        <a class="btn btn-blue mr-2" href="/problems/random?tag_id={{.Tag.ID}}">{{getText "random_problem"}}</a>
+        {{if authed}}
+        <a class="btn btn-blue" href="/problems/random?tag_id={{.Tag.ID}}&unsolved=true">{{getText "random_unsolved_problem"}}</a>
+        {{end}}
+    </div>
+    {{end}}
 </div>
 
 

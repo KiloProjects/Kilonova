@@ -33,6 +33,12 @@
             <a class="btn btn-blue mr-2" href="/problems?deep_list_id={{.ID}}">{{getText "use_in_search"}}</a>
             <a class="btn btn-blue mr-2" href="/submissions?problem_list_id={{.ID}}">{{getText "pblist_submissions"}}</a>
         </div>
+        <div class="block my-2">
+            <a class="btn btn-blue mr-2" href="/problems/random?list_id={{.ID}}">{{getText "random_problem"}}</a>
+            {{if authed}}
+            <a class="btn btn-blue" href="/problems/random?list_id={{.ID}}&unsolved=true">{{getText "random_unsolved_problem"}}</a>
+            {{end}}
+        </div>
         {{if authed}}
         {{if gt (len .List) 0}}
         <form id="sim_create" class="segment-panel" autocomplete="off">
