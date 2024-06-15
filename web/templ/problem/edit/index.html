@@ -118,10 +118,10 @@
             <h3>{{getText "checklist_optional"}}:</h3>
             <ul>
                 <li>
-                    {{template "boolean_expression" (ne .Checklist.NumSubtasks 0)}} {{getText "checklist_subtasks" .Checklist.NumSubtasks}}.
+                    {{template "boolean_expression" (ne .Checklist.NumSubtasks 0)}} {{getText "checklist_subtasks" .Checklist.NumSubtasks}};
                 </li>
                 <li>
-                    {{template "boolean_expression" (ne .Checklist.NumOtherTags 0)}} {{getText "checklist_other_tags"}};
+                    {{template "boolean_expression" (ne .Checklist.NumOtherTags 0)}} {{getText "checklist_other_tags"}}.
                 </li>
             </ul>
 
