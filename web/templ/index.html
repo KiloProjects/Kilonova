@@ -113,17 +113,17 @@
                 </div>
                 
                 {{ if boolFlag "feature.frontend.front_page_pbs_links" }}
-                    <div class="mb-2">
-                        {{ renderMarkdown (getText "all_checklists_announcement") }}
-                    </div>
-                    <div class="mb-4">
-                        {{ renderMarkdown (getText "all_problems_announcement") }}
-                    </div>
+                <div class="my-2">
+                    {{ renderMarkdown (getText "all_checklists_announcement") }}
+                    {{ renderMarkdown (getText "all_problems_announcement") }}
+                </div>
                 {{end}}
 
                 {{ if boolFlag "feature.frontend.front_page_random_pb"}}
+                <div class="my-2">
                     {{ renderMarkdown (getText "random_problem_announcement") }}
                     {{ renderMarkdown (getText "random_unsolved_problem_announcement") }}
+                </div>
                 {{ end }}
             </div>
         {{end}}
