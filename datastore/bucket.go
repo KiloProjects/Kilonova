@@ -141,7 +141,7 @@ func (b *Bucket) WriteFile(name string, r io.Reader, mode fs.FileMode) error {
 		err = err1
 	}
 	if err1 := f.Close(); err1 != nil && err == nil {
-		err1 = err
+		err = err1
 	}
 	return err
 }

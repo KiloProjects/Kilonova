@@ -26,6 +26,10 @@ type UserBrief struct {
 	DisplayName string `json:"display_name"`
 
 	Generated bool `json:"generated"`
+
+	// Do not JSON encode, for now.
+	// Used for logging
+	DiscordID *string `json:"-"`
 }
 
 func (u *UserBrief) LogValue() slog.Value {
@@ -66,7 +70,7 @@ type UserFull struct {
 	PreferredTheme    PreferredTheme `json:"preferred_theme"`
 	EmailVerifResent  time.Time      `json:"-"`
 	CreatedAt         time.Time      `json:"created_at"`
-	// Generated         bool           `json:"generated"`
+
 	LockedLogin      bool `json:"locked_login"`
 	NameChangeForced bool `json:"name_change_forced"`
 

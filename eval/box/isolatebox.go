@@ -200,7 +200,7 @@ func dumpFileListing(w io.Writer, p string, showPath string, indent string, rec 
 	} else {
 		fmt.Fprintf(w, "%s- `%s` contents:\n", indent, showPath)
 		for _, entry := range entries {
-			mode := "???"
+			var mode string
 			info, err := entry.Info()
 			if err != nil {
 				mode = "ERR:" + err.Error()

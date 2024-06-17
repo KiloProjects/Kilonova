@@ -643,6 +643,7 @@ func (rt *Web) randomProblem() http.HandlerFunc {
 
 		pbs, err := rt.base.Problems(r.Context(), filter)
 		if err != nil {
+			w.Header().Add("X-Problem-ID", "-1")
 			rt.statusPage(w, r, 500, "Could not get random problem: "+err.Error())
 			return
 		}

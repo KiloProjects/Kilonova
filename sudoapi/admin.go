@@ -222,14 +222,23 @@ func (ws *webhookSender) getWebhookEmbed(entry *logEntry, showRepeatCount bool) 
 		Fields:      make([]*discordgo.MessageEmbedField, 0, len(entry.Attrs)+2),
 	}
 	if entry.Author != nil {
-		embed.Description += " (by [" + entry.Author.AppropriateName() + "](" + hostPrefix + "/profile/" + entry.Author.Name + "))"
+		embed.Description += " (by [" + entry.Author.AppropriateName() + "](" + hostPrefix + "/profile/" + entry.Author.Name + ")"
+		if entry.Author.DiscordID != nil {
+			embed.Description += " / <@" + *entry.Author.DiscordID + ">"
+		}
+
+		embed.Description += ")"
 	}
 	cc := cases.Title(language.English)
 	for _, attr := range entry.Attrs {
 		val := attr.Value.String()
 		switch v := attr.Value.Any().(type) {
 		case *kilonova.UserBrief:
-			val = fmt.Sprintf("[%s (#%d)](%s/profile/%s)", v.AppropriateName(), v.ID, hostPrefix, v.Name)
+			var dID string
+			if v.DiscordID != nil {
+				dID = " / <@" + *v.DiscordID + ">"
+			}
+			val = fmt.Sprintf("[%s (#%d)](%s/profile/%s)", v.AppropriateName(), v.ID, hostPrefix, v.Name) + dID
 		case *kilonova.Problem:
 			val = fmt.Sprintf("[%s (#%d)](%s/problems/%d)", v.Name, v.ID, hostPrefix, v.ID)
 		case *kilonova.Tag:

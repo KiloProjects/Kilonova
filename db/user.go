@@ -51,6 +51,8 @@ func toUserBrief(user *User) *kilonova.UserBrief {
 		DisplayName: user.DisplayName,
 
 		Generated: user.Generated,
+
+		DiscordID: user.DiscordID,
 	}
 }
 

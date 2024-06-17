@@ -26,6 +26,7 @@ func TestParseScoreParameters(t *testing.T) {
 	for k, v := range scoreParameterExamples {
 		v := v
 		t.Run(k, func(t *testing.T) {
+			t.Parallel()
 			val, err := test.ParseScoreParameters([]byte(v.Str))
 			if err != nil && !v.Error {
 				t.Fatalf("Error parsing score parameters: %#v", err)
