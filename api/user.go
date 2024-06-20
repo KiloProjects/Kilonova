@@ -464,8 +464,8 @@ Link-ul permanent pentru pagina concursului este: <a href="{{$url}}">{{$url}}</a
 <p>Mult spor în continuare!</p>
 
 <hr/>
-<p>Echipa Kilonova<br/>
-<a href="https://kilonova.ro/">https://kilonova.ro/</a></p>`))
+<p>Echipa {{.Branding}}<br/>
+<a href="{{.HostPrefix}}">{{.HostPrefix}}/</a></p>`))
 
 // Basically [a-zA-Z0-9] but exclude i/I/l/L and 0/o/O since they may be easily mistaken
 const userPasswordAlphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ123456789"
@@ -540,15 +540,20 @@ func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 			Password   string
 			Contest    *kilonova.Contest
 			HostPrefix string
+			Branding   string
 		}{
 			Name:       user.Name,
 			Username:   user.Name,
 			Password:   args.Password,
 			Contest:    contest,
 			HostPrefix: config.Common.HostPrefix,
+			Branding:   "Kilonova",
 		}
 		if user.DisplayName != "" {
 			emailArgs.Name = user.DisplayName
+		}
+		if val, ok := config.GetFlagVal[string]("frontend.navbar.branding"); ok && len(val) > 0 {
+			emailArgs.Branding = val
 		}
 		var b bytes.Buffer
 		if err := generatedUserTempl.Execute(&b, emailArgs); err != nil {
