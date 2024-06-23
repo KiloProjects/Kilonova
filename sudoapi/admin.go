@@ -241,12 +241,16 @@ func (ws *webhookSender) getWebhookEmbed(entry *logEntry, showRepeatCount bool) 
 			val = fmt.Sprintf("[%s (#%d)](%s/profile/%s)", v.AppropriateName(), v.ID, hostPrefix, v.Name) + dID
 		case *kilonova.Problem:
 			val = fmt.Sprintf("[%s (#%d)](%s/problems/%d)", v.Name, v.ID, hostPrefix, v.ID)
+		case *kilonova.Contest:
+			val = fmt.Sprintf("[%s (#%d)](%s/contests/%d)", v.Name, v.ID, hostPrefix, v.ID)
 		case *kilonova.Tag:
 			val = fmt.Sprintf("[%s (#%d)](%s/tags/%d)", v.Name, v.ID, hostPrefix, v.ID)
 		case *kilonova.BlogPost:
 			val = fmt.Sprintf("[%s (#%d)](%s/posts/%s)", v.Title, v.ID, hostPrefix, v.Slug)
 		case *kilonova.ProblemList:
 			val = fmt.Sprintf("[%s (#%d)](%s/problem_lists/%d)", v.Title, v.ID, hostPrefix, v.ID)
+		case slog.LogValuer:
+			val = v.LogValue().String()
 		}
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
 			Name:   cc.String(strings.ReplaceAll(attr.Key, "_", " ")),
