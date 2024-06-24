@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -273,7 +274,7 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate, ub *updateBuilder) {
 		ub.AddUpdate("test_name = %s", strings.TrimSpace(*v))
 	}
 
-	if v := upd.TimeLimit; v != nil {
+	if v := upd.TimeLimit; v != nil && !math.IsNaN(*v) {
 		ub.AddUpdate("time_limit = %s", v)
 	}
 	if v := upd.MemoryLimit; v != nil {

@@ -36,13 +36,13 @@
                 <label class="block my-2">
                     <span class="form-label">{{getText "memoryLimit"}}:</span>
                     <input id="memoryLimit" type="number" class="form-input" placeholder="Limită de memorie (total)" min="0"
-                        step="0.1" max="{{maxMemMB}}" pattern="[\d]*" value="{{KBtoMB .Problem.MemoryLimit}}">
+                        step="0.1" max="{{maxMemMB}}" pattern="[\d]*" value="{{KBtoMB .Problem.MemoryLimit}}" required>
                     <span class="ml-1 text-xl">MB</span>
                 </label>
                 <label class="block my-2">
                     <span class="form-label">{{getText "timeLimit"}}:</span>
                     <input id="timeLimit" type="number" class="form-input" placeholder="Limită de timp..." min="0"
-                        step="0.01" pattern="[\d]*" value="{{.Problem.TimeLimit}}">
+                        step="0.01" pattern="[\d]*" value="{{.Problem.TimeLimit}}" required>
                     <span class="ml-1 text-xl">{{getText "seconds"}}</span>
                 </label>
                 <label class="block my-2">
@@ -214,11 +214,11 @@
             scoring_strategy: document.getElementById("scoring_strategy").value,
             test_name: document.getElementById("testName").value,
             memory_limit: Math.trunc(parseFloat(document.getElementById("memoryLimit").value) * 1024),
-            time_limit: parseFloat(document.getElementById("timeLimit").value),
-            default_points: parseFloat(document.getElementById("defaultPoints").value),
-            score_scale: parseFloat(document.getElementById("scoreScale").value),
-            source_size: parseFloat(document.getElementById("sourceSize").value),
-            score_precision: parseInt(document.getElementById("scorePrecision").value),
+            time_limit: parseFloat(document.getElementById("timeLimit").value || "0"),
+            default_points: parseFloat(document.getElementById("defaultPoints").value || "0"),
+            score_scale: parseFloat(document.getElementById("scoreScale").value || "0"),
+            source_size: parseFloat(document.getElementById("sourceSize").value || "0"),
+            score_precision: parseInt(document.getElementById("scorePrecision").value || "0"),
             visible_tests: document.getElementById("visibleTests").checked,
         }
 
