@@ -28,6 +28,7 @@ func ProcessAttachmentFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 	name := path.Base(file.Name)
 	if strings.HasSuffix(name, ".att_props") {
 		// Parse attachment props
+		// TODO: Bring property autocomplete from frontend for attachments that don't have .att_props
 
 		var props attachmentProps
 

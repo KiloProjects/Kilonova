@@ -1,6 +1,7 @@
 package sudoapi
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"log/slog"
 	"path"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
@@ -442,4 +444,36 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 	}
 
 	return settings, nil
+}
+
+// ProblemLanguages wraps around ProblemSettings to provide a better interface to expose to the API
+// And deduplicate separate code that handles allowed submission languages
+func (s *BaseAPI) ProblemLanguages(ctx context.Context, problemID int) ([]eval.Language, *StatusError) {
+	settings, err := s.ProblemSettings(ctx, problemID)
+	if err != nil {
+		return nil, err
+	}
+	langs := make([]eval.Language, 0, len(eval.Langs))
+	if len(settings.LanguageWhitelist) == 0 {
+		for _, val := range eval.Langs {
+			if val.Disabled {
+				continue
+			}
+			langs = append(langs, val)
+		}
+	} else {
+		for _, val := range settings.LanguageWhitelist {
+			v, ok := eval.Langs[val]
+			if !ok {
+				slog.Warn("Language found in whitelist but not present in eval.Langs", slog.String("wh_value", val))
+			}
+			if v.Disabled {
+				continue
+			}
+			langs = append(langs, eval.Langs[val])
+		}
+	}
+
+	slices.SortFunc(langs, func(a, b eval.Language) int { return cmp.Compare(a.InternalName, b.InternalName) })
+	return langs, nil
 }

@@ -90,7 +90,6 @@ type BlogPostParams struct {
 
 	Statement    template.HTML
 	StatementAtt *kilonova.Attachment
-	Languages    map[string]eval.Language
 	Variants     []*kilonova.StatementVariant
 
 	SelectedVariant *kilonova.StatementVariant
@@ -152,7 +151,7 @@ type ProblemParams struct {
 	Submissions *sudoapi.Submissions
 
 	Statement template.HTML
-	Languages map[string]eval.Language
+	Languages []eval.Language
 	Variants  []*kilonova.StatementVariant
 
 	SelectedVariant *kilonova.StatementVariant
@@ -161,7 +160,7 @@ type ProblemParams struct {
 type ProblemTopbarParams struct {
 	Topbar *ProblemTopbar
 
-	Languages map[string]eval.Language
+	Languages []eval.Language
 	Problem   *kilonova.Problem
 }
 

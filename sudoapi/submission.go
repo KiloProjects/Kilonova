@@ -431,12 +431,12 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserFull, proble
 		return -1, Statusf(400, "Empty code")
 	}
 
-	settings, err1 := s.ProblemSettings(ctx, problem.ID)
+	langs, err1 := s.ProblemLanguages(ctx, problem.ID)
 	if err1 != nil {
-		return -1, WrapError(err1, "Could not get problem settings")
+		return -1, WrapError(err1, "Could not get problem languages")
 	}
-	if len(settings.LanguageWhitelist) > 0 && !slices.Contains(settings.LanguageWhitelist, lang.InternalName) {
-		return -1, Statusf(400, "Language not on whitelist")
+	if !slices.ContainsFunc(langs, func(a eval.Language) bool { return a.InternalName == lang.InternalName }) {
+		return -1, Statusf(400, "Language not supported by problem")
 	}
 
 	// Add submission

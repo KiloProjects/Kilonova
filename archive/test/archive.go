@@ -291,6 +291,10 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 				}
 			}
 
+			// TODO: Round up and make a toSubtract instead of toAdd
+			// We'd like test scores to be in ascending order instead of descending
+			// Also, totalScore should also subtract default points when autofilling
+
 			perTest := totalScore.Div(n).RoundDown(int32(precision))
 			toAdd := decimal.Zero
 			dif := totalScore.Sub(perTest.Mul(n))

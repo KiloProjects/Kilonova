@@ -40,10 +40,8 @@
     <label class="block mb-2">
         <span class="form-label">{{getText "language"}}:</span>
         <select id="sub_language" class="form-select">
-            {{ range $name, $lang := .Languages }}
-            {{ if not $lang.Disabled }}
-            <option value="{{$name}}" {{if eq $name "cpp17" }}selected{{end}}>{{$lang.PrintableName}}</option>
-            {{ end }}
+            {{ range .Languages }}
+            <option value="{{.InternalName}}" {{if eq .InternalName "cpp17" }}selected{{end}}>{{.PrintableName}}</option>
             {{ end }}
         </select>
     </label>

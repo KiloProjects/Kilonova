@@ -247,38 +247,38 @@ var Langs = map[string]Language{
 
 // Language is the data available for a language
 type Language struct {
-	Disabled bool
+	Disabled bool `json:"disabled"`
 
 	// Useful to categorize by file upload
-	Extensions []string
-	Compiled   bool
+	Extensions []string `json:"extensions"`
+	Compiled   bool     `json:"compiled"`
 
 	// SimilarLangs is used on resolution of grader files during evaluation
 	// to decide which of the grader files to include for interactive problems
-	SimilarLangs []string `toml:"compatible_langs"`
+	SimilarLangs []string `json:"-"`
 
-	PrintableName string
-	InternalName  string
+	PrintableName string `json:"printable_name"`
+	InternalName  string `json:"internal_name"`
 
 	// Reference: http://moss.stanford.edu/general/scripts/mossnet
-	MOSSName string
+	MOSSName string `json:"-"`
 
-	CompileCommand []string `toml:"compile_command"`
-	RunCommand     []string `toml:"run_command"`
+	CompileCommand []string `json:"compile_command"`
+	RunCommand     []string `json:"run_command"`
 
-	VersionCommand []string `toml:"version_command"`
+	VersionCommand []string `json:"-"`
 	// Function to process the output of the VersionCommand output.
 	// If nil, command output will be returned as is
-	VersionParser func(string) string
+	VersionParser func(string) string `json:"-"`
 
-	BuildEnv map[string]string `toml:"build_env"`
-	RunEnv   map[string]string `toml:"run_env"`
+	BuildEnv map[string]string `json:"-"`
+	RunEnv   map[string]string `json:"-"`
 
 	// Mounts represents all directories to be mounted
-	Mounts     []Directory `toml:"mounts"`
-	SourceName string      `toml:"source_name"`
+	Mounts     []Directory `json:"-"`
+	SourceName string      `json:"-"`
 
-	CompiledName string `toml:"compiled_name"`
+	CompiledName string `json:"compiled_name"`
 }
 
 // Directory represents a directory rule

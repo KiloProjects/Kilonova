@@ -758,21 +758,11 @@ func (rt *Web) problem() http.HandlerFunc {
 			atts = newAtts
 		}
 
-		langs := eval.Langs
-		if evalSettings, err := rt.base.ProblemSettings(r.Context(), util.Problem(r).ID); err != nil {
-			if !errors.Is(err, context.Canceled) {
-				zap.S().Warn("Error getting problem settings:", err, util.Problem(r).ID)
-			}
-			rt.statusPage(w, r, 500, "Couldn't get problem settings")
+		langs, err := rt.base.ProblemLanguages(r.Context(), util.Problem(r).ID)
+		if err != nil {
+			slog.Warn("Error getting problem languages", slog.Any("err", err), slog.Any("problem", util.Problem(r)))
+			rt.statusPage(w, r, 500, "Couldn't get supported problem languages.")
 			return
-		} else if len(evalSettings.LanguageWhitelist) > 0 {
-			newLangs := make(map[string]eval.Language)
-			for name, lang := range langs {
-				if slices.Contains(evalSettings.LanguageWhitelist, name) {
-					newLangs[name] = lang
-				}
-			}
-			langs = newLangs
 		}
 
 		var tags = []*kilonova.Tag{}
@@ -844,21 +834,11 @@ func (rt *Web) problemSubmissions() http.HandlerFunc {
 func (rt *Web) problemSubmit() http.HandlerFunc {
 	templ := rt.parse(nil, "problem/pb_submit.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		langs := eval.Langs
-		if evalSettings, err := rt.base.ProblemSettings(r.Context(), util.Problem(r).ID); err != nil {
-			if !errors.Is(err, context.Canceled) {
-				zap.S().Warn("Error getting problem settings:", err, util.Problem(r).ID)
-			}
-			rt.statusPage(w, r, 500, "Couldn't get problem settings")
+		langs, err := rt.base.ProblemLanguages(r.Context(), util.Problem(r).ID)
+		if err != nil {
+			slog.Warn("Error getting problem languages", slog.Any("err", err), slog.Any("problem", util.Problem(r)))
+			rt.statusPage(w, r, 500, "Couldn't get supported problem languages.")
 			return
-		} else if len(evalSettings.LanguageWhitelist) > 0 {
-			newLangs := make(map[string]eval.Language)
-			for name, lang := range langs {
-				if slices.Contains(evalSettings.LanguageWhitelist, name) {
-					newLangs[name] = lang
-				}
-			}
-			langs = newLangs
 		}
 
 		rt.runTempl(w, r, templ, &ProblemTopbarParams{
