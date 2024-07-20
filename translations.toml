@@ -710,6 +710,14 @@ ro = "Intrare din consolă"
 en = "Test name"
 ro = "Nume test"
 
+[problem_diagnostics]
+en = "Problem diagnostics"
+ro = "Diagnostice problemă"
+
+[no_notices]
+en = "No notices, problem seems well-configured."
+ro = "Nicio înștiințare, problema pare bine configurată."
+
 [experimentalZone]
 en = "Experimental zone"
 ro = "Zona experimentelor"

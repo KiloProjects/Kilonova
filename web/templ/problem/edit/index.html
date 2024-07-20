@@ -165,6 +165,20 @@
             {{end}}
             <button class="btn btn-red mt-2" onclick="reevaluateSubs()">Reevaluare submisii</button>
         </div>
+        <div class="segment-panel">
+            <h3>{{getText "problem_diagnostics"}}</h3>
+            {{with .Diagnostics}}
+            <ul>
+                {{range .}}
+                <li>
+                    {{.Level.String}}: {{.Message}}
+                </li>
+                {{end}}
+            </ul>
+            {{else}}
+            <p>{{getText "no_notices"}}</p>
+            {{end}}
+        </div>
         {{with stringFlag "integrations.openai.token"}}
         <div class="segment-panel">
             <h3>{{getText "experimentalZone"}}</h3>

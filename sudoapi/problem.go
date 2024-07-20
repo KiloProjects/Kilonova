@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"maps"
+	"math"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -389,4 +392,77 @@ func (s *BaseAPI) ProblemStatistics(ctx context.Context, problem *kilonova.Probl
 		MemoryLeaderboard: memory,
 		TimeLeaderboard:   time,
 	}, nil
+}
+
+type ProblemDiagnostic struct {
+	// Use an slog.Level for the type (Info, Warn, Error)
+	Level slog.Level
+
+	// English diagnostic message
+	Message string
+}
+
+func (s *BaseAPI) ProblemDiagnostics(ctx context.Context, problem *kilonova.Problem) ([]*ProblemDiagnostic, *StatusError) {
+	diags := []*ProblemDiagnostic{}
+
+	tests, err := s.Tests(ctx, problem.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	subtasks, err := s.SubTasks(ctx, problem.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Sum of maximum subtasks but no subtasks will error the max score attribute
+	if problem.ScoringStrategy == kilonova.ScoringTypeSumSubtasks && len(subtasks) == 0 {
+		diags = append(diags, &ProblemDiagnostic{
+			Level:   slog.LevelError,
+			Message: "Scoring Type is 'Sum of maximum Subtasks' but no Subtasks exist.",
+		})
+	}
+
+	// Check if all tests are in at least one subtask
+	testMap := make(map[int]bool)
+	subtaskTestMap := make(map[int]bool)
+	for _, test := range tests {
+		testMap[test.ID] = true
+	}
+	for _, subtask := range subtasks {
+		for _, test := range subtask.Tests {
+			subtaskTestMap[test] = true
+		}
+	}
+	if len(subtaskTestMap) > 0 && !maps.Equal(testMap, subtaskTestMap) {
+		diags = append(diags, &ProblemDiagnostic{
+			Level:   slog.LevelInfo,
+			Message: "Not all tests belong to a Subtask.",
+		})
+	}
+
+	var totalScore decimal.Decimal = problem.DefaultPoints.Copy()
+	if len(subtasks) == 0 {
+		for _, test := range tests {
+			totalScore = totalScore.Add(test.Score)
+		}
+	} else {
+		for _, subtask := range subtasks {
+			totalScore = totalScore.Add(subtask.Score)
+		}
+	}
+
+	// If score is not zero but also not 100, warn
+	if math.Abs(totalScore.InexactFloat64()-100) > 0.01 && !totalScore.IsZero() {
+		msg := "Total score is not 100"
+		if problem.ScoringStrategy == kilonova.ScoringTypeICPC {
+			msg += " (problem type is ICPC, however)"
+		}
+		diags = append(diags, &ProblemDiagnostic{
+			Level:   slog.LevelWarn,
+			Message: msg + ".",
+		})
+	}
+
+	return diags, nil
 }

@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
@@ -34,7 +36,8 @@ type ProblemEditParams struct {
 	Problem *kilonova.Problem
 	Topbar  *ProblemTopbar
 
-	Checklist *kilonova.ProblemChecklist
+	Diagnostics []*sudoapi.ProblemDiagnostic
+	Checklist   *kilonova.ProblemChecklist
 
 	AttachmentEditor *AttachmentEditorParams
 	StatementEditor  *StatementEditorParams
@@ -47,11 +50,19 @@ func (rt *Web) editIndex() func(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			chk = nil
 		}
+
+		diagnostics, err := rt.base.ProblemDiagnostics(r.Context(), util.Problem(r))
+		if err != nil {
+			slog.Warn("Error getting diagnostics", slog.Any("err", err))
+			diagnostics = nil
+		}
+
 		rt.runTempl(w, r, tmpl, &ProblemEditParams{
 			Problem: util.Problem(r),
 			Topbar:  rt.problemTopbar(r, "general", -1),
 
-			Checklist: chk,
+			Checklist:   chk,
+			Diagnostics: diagnostics,
 		})
 	}
 }
