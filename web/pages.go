@@ -246,6 +246,10 @@ func ReadOrTruncate(r io.Reader) ([]byte, bool) {
 	return []byte("Files larger than 1MB cannot be displayed"), false
 }
 
+func (t *TestEditParams) NextVID() int {
+	return t.base.NextVID(context.Background(), t.Problem.ID)
+}
+
 func (t *TestEditParams) GetFullTests() testDataType {
 	in, err := t.base.TestInput(t.Test.ID)
 	if err != nil {

@@ -9,20 +9,48 @@
         <form id="test_create_form">	
             <h2> {{getText "createTest"}} </h2>
             <label class="block my-2">
-                <span class="mr-2 text-xl">{{getText "id"}}: </span>
-                <input id="vID" type="number" class="form-input" required />
+                <span class="form-label">{{getText "id"}}: </span>
+                <input id="vID" type="number" class="form-input" value="{{.NextVID}}" required />
             </label>
             <label class="block my-2">
-                <span class="mr-2 text-xl">{{getText "score"}}: </span>
-                <input id="score" type="number" class="form-input" min="0" max="100" step="{{scoreStep .Problem}}" required />
+                <span class="form-label">{{getText "score"}}: </span>
+                <input id="score" type="number" class="form-input" min="0" max="100" step="{{scoreStep .Problem}}" value="0" required />
             </label>
-            <div class="mb-3">
-                <h3> {{getText "input"}}: </h3>
-                <textarea class="form-textarea" id="input" rows="15" style="width: 80%;"></textarea>
+            <div class="segment-panel">
+                <h2> {{getText "input"}} </h2>
+                <label class="block mb-2">
+                    <span class="form-label">{{getText "upload_method"}}:</span>
+                    <select id="input_submit_style" class="form-select" autocomplete="off">
+                        <option value="text">{{getText "text_insert"}}</option>
+                        <option value="file">{{getText "file"}}</option>
+                    </select>
+                </label>
+
+                <label id="input_textarea_label" class="block mb-2">
+                    <textarea class="form-textarea" id="input_textarea" rows="15" style="width: 80%;"></textarea>
+                </label>
+                <label id="input_file_label" class="block mb-2 hidden">
+                    <span class="form-label">{{getText "upload_file"}}:</span>
+                    <input class="form-input" id="input_file" type="file" autocomplete="off">
+                </label>
             </div>
-            <div class="mb-3">
-                <h3> {{getText "output"}}: </h3>
-                <textarea class="form-textarea" id="output" rows="15" style="width: 80%;"></textarea>
+            <div class="segment-panel">
+                <h2> {{getText "output"}} </h2>
+                <label class="block mb-2">
+                    <span class="form-label">{{getText "upload_method"}}:</span>
+                    <select id="output_submit_style" class="form-select" autocomplete="off">
+                        <option value="text">{{getText "text_insert"}}</option>
+                        <option value="file">{{getText "file"}}</option>
+                    </select>
+                </label>
+
+                <label id="output_textarea_label" class="block mb-2">
+                    <textarea class="form-textarea" id="output_textarea" rows="15" style="width: 80%;"></textarea>
+                </label>
+                <label id="output_file_label" class="block mb-2 hidden">
+                    <span class="form-label">{{getText "upload_file"}}:</span>
+                    <input class="form-input" id="output_file" type="file" autocomplete="off">
+                </label>
             </div>
             <button class="btn btn-blue mb-2">{{getText "button.add"}}</button>
         </form>
@@ -31,18 +59,44 @@
 
 
 <script>
+
+["input", "output"].map(type => document.getElementById(type+"_submit_style").addEventListener("change", (e) => {
+    const val = e.currentTarget.value;
+    document.getElementById(type+"_file_label")?.classList.toggle("hidden", val === "text")
+    document.getElementById(type+"_textarea_label")?.classList.toggle("hidden", val !== "text")
+}))
+
+async function getValue(type) {
+    if(document.getElementById(type+"_submit_style").value == "text") {
+        return document.getElementById(type+"_textarea").value
+    }
+    const files = document.getElementById(type+"_file").files
+    if(files.length > 1) {
+        throw new Error(bundled.getText("invalid_file"))
+    }
+    if(files.length == 0) {
+        throw new Error(bundled.getText("no_file"))
+    }
+    return await files[0].text()
+}
+
 async function addTest(e) {
 	e.preventDefault()
-	let q = {
-		visibleID: document.getElementById("vID").value, 
-		input: document.getElementById("input").value,
-		output: document.getElementById("output").value,
-		score: document.getElementById("score").value,
-	};
-	let res = await bundled.postCall("/problem/{{ .Problem.ID }}/update/addTest", q)
-	if(res.status === "success") {
-		window.location.reload();
-	}
+    try {
+        var q = {
+            visibleID: document.getElementById("vID").value, 
+            input: await getValue("input"),
+            output: await getValue("output"),
+            score: document.getElementById("score").value,
+        };
+        let res = await bundled.postCall("/problem/{{ .Problem.ID }}/update/addTest", q)
+        if(res.status === "success") {
+            window.location.reload();
+        }
+    } catch(e) {
+        bundled.apiToast({status: "error", data: e.toString()})
+        return
+    }
 }
 document.getElementById("test_create_form").addEventListener("submit", addTest)
 </script>

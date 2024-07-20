@@ -2256,13 +2256,25 @@ ro = "Încărcare finalizată, se procesează request-ul"
 en = "No code provided"
 ro = "Nu ai specificat niciun cod"
 
+[no_file]
+en = "No file provided"
+ro = "Nu ai specificat niciun fișier"
+
 [invalid_file]
 en = "Invalid file"
 ro = "Fișier invalid"
 
+[upload_method]
+en = "Upload method"
+ro = "Metodă încărcare"
+
 [submit_style]
 en = "Submit style"
 ro = "Stil submisie"
+
+[text_insert]
+en = "Insert text"
+ro = "Inserare text"
 
 [code_insert]
 en = "Insert code"
