@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	tomlPath = flag.String("toml_path", "./translations.toml", "Path to translation file")
+	tomlPath = flag.String("toml_path", "./translations.toml", "Path to toml file")
 )
 
 type strArray []string
@@ -47,8 +47,13 @@ func main() {
 	}
 
 	for _, path := range outPaths {
+		if path == "stdout" { // Used in backup script
+			if _, err := os.Stdout.Write(data); err != nil {
+				log.Printf("Could not write to stdout: %v", err)
+			}
+		}
 		if err := os.WriteFile(path, data, 0666); err != nil {
-			log.Printf("Could not write translations to %s: %v\n", path, err)
+			log.Printf("Could not write file to %q: %v", path, err)
 		}
 	}
 }

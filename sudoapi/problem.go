@@ -149,7 +149,9 @@ func (s *BaseAPI) SearchProblems(ctx context.Context, filter kilonova.ProblemFil
 	if filter.Look {
 		pbs, err := s.Problems(ctx, kilonova.ProblemFilter{IDs: ids, Look: true, LookFullyVisible: true, LookingUser: filter.LookingUser})
 		if err != nil {
-			zap.S().Warn(err)
+			if !errors.Is(err, context.Canceled) {
+				zap.S().Warn(err)
+			}
 		} else {
 			tagAll = false
 			for _, pb := range pbs {
