@@ -865,12 +865,20 @@ func (rt *Web) problemArchive() http.HandlerFunc {
 				tests = tests2
 			}
 		}
+		settings, err := rt.base.ProblemSettings(r.Context(), util.Problem(r).ID)
+		if err != nil {
+			if !errors.Is(err, context.Canceled) {
+				slog.Warn("Could not get problem settings", slog.Any("err", err))
+			}
+			settings = nil
+		}
 
 		rt.runTempl(w, r, templ, &ProblemArchiveParams{
 			Topbar: topbar,
 
-			Tests:   tests,
-			Problem: util.Problem(r),
+			Tests:    tests,
+			Problem:  util.Problem(r),
+			Settings: settings,
 		})
 	}
 }

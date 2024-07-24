@@ -167,8 +167,9 @@ type ProblemTopbarParams struct {
 type ProblemArchiveParams struct {
 	Topbar *ProblemTopbar
 
-	Tests   []*kilonova.Test
-	Problem *kilonova.Problem
+	Tests    []*kilonova.Test
+	Problem  *kilonova.Problem
+	Settings *kilonova.ProblemEvalSettings
 }
 
 type ProblemListParams struct {

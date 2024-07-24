@@ -610,6 +610,10 @@ ro = "Atașamente private"
 en = "Download individual tests"
 ro = "Descărcare teste individuale"
 
+[gen_checker_warning]
+en = "NOTE: Problem uses a custom checker program. It's likely that the output file won't have proper answers."
+ro = "NOTE: Problema folosește un program de verificare. Este posibil ca fișierul de ieșire să nu aibă răspunsurile potrivite."
+
 [gen_title]
 en = "Select what to include in problem archive"
 ro = "Selectează ce să fie inclus în arhiva problemei"
