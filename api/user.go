@@ -156,6 +156,11 @@ func (s *API) setBio() func(w http.ResponseWriter, r *http.Request) {
 
 		safe := strings.TrimSpace(args.Bio)
 
+		if len(safe) > 10000 { // 10k characters
+			errorData(w, "Bio is too long", 400)
+			return
+		}
+
 		if err := s.base.UpdateUser(
 			r.Context(),
 			util.ContentUserBrief(r).ID,

@@ -5,9 +5,19 @@
 <div class="segment-panel">
 	<h2> {{getText "updateBio"}} </h2>
 	<form id="bio_form">
-		<textarea id="newBio" class="form-textarea w-full mb-2" autocapitalize="sentences" autocomplete="off" placeholder="Bio...">{{unescapeHTML fullAuthedUser.Bio}}</textarea>
+		<textarea id="newBio" class="form-textarea w-full mb-1" autocapitalize="sentences" autocomplete="off" placeholder="Bio...">{{unescapeHTML fullAuthedUser.Bio}}</textarea>
+        <p id="bio_len_notice" class="text-sm text-muted mb-2"><span id="bio_len">{{len fullAuthedUser.Bio}}</span> / 10000</p>
 		<button class="btn btn-blue" onclick="updateBio()">{{getText "button.update"}}</button>
 	</form>
+    <script>
+        const maxSize = 10000
+        document.getElementById("newBio").addEventListener("input", e => {
+            document.getElementById("bio_len").innerText = e.currentTarget.value.length 
+            document.getElementById("bio_len_notice").classList.toggle("text-muted", !(e.currentTarget.value.length > maxSize))
+            document.getElementById("bio_len_notice").classList.toggle("text-red-600", e.currentTarget.value.length > maxSize)
+            document.getElementById("bio_len_notice").classList.toggle("dark:text-red-400", e.currentTarget.value.length > maxSize)
+        })
+    </script>
 </div>
 
 <div class="segment-panel">
