@@ -1,5 +1,5 @@
 <p align="center">
-    ![Kilonova](./web/static/logo.png)
+<img src="./web/static/logo.png" alt="Kilonova logo"/>
 </p>
 
 <h1 align="center">Kilonova</h1>
