@@ -12,7 +12,7 @@ Please refer to [this guide](https://kilonova.ro/posts/running-kilonova) when se
 
 - Official instance: [kilonova.ro](https://kilonova.ro);
 - Join the [Discord server](https://discord.gg/Qa6Ytgh);
-* You can always [submit an issue](https://github.com/KiloProjects/kilonova/issues) or send a message in the Discord server for any questions, suggestions and overall feedback;
+- You can always [submit an issue](https://github.com/KiloProjects/kilonova/issues) or send a message in the Discord server for any questions, suggestions and overall feedback;
 - Lead developer: [AlexVasiluta](https://github.com/AlexVasiluta) (Discord username: `KiloCNC`);
 - You can see the Changelog [here](./docs/CHANGELOG.md).
 
