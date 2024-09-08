@@ -3,13 +3,12 @@
  data_dir = "<LOGPATH>/data"
  debug = false
  host_prefix = "https://kilonova.ro"
- port = 8070
  default_language = "en"
- db_dsn = "postgresql://<fill here>"
+ db_dsn = "sslmode=disable host=/var/run/postgresql dbname=kilonova user=<YOUR USERNAME> password=<YOUR PSQL PASSWORD> application_name=kilonova"
  test_max_mem_kb = 655360 # 640 MB
 
 [eval]
- isolatePath = "/usr/local/etc/isolate_bin"
+ isolatePath = "/usr/local/bin/isolate"
  num_concurrent = 3
  global_max_mem_kb = 2097152 # 2 GB
  starting_box = 1
