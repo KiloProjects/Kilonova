@@ -1,8 +1,4 @@
-<p align="center">
-<img src="./web/static/logo.png" alt="Kilonova logo"/>
-</p>
-
-<h1 align="center">Kilonova</h1>
+# Kilonova
 
 A competitive programming platform for everyone, with a focus on openness and modern features.
 
