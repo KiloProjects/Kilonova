@@ -2959,3 +2959,35 @@ ro = "Poți să vezi o problemă aleatorie [apăsând aici](/problems/random)."
 [random_unsolved_problem_announcement]
 en = "You can draw a random, unsolved problem by [clicking here](/problems/random?unsolved=true)."
 ro = "Poți să vezi o problemă aleatorie, nerezolvată [apăsând aici](/problems/random?unsolved=true)."
+
+[user_gen.title]
+en = "Generate user"
+ro = "Generare utilizator"
+
+[user_gen.optional_fields]
+en = "All fields except username are optional."
+ro = "Toate câmpurile, cu excepția celui de username, sunt opționale."
+
+[user_gen.display_name]
+en = "Display name"
+ro = "Nume de afișaj"
+
+[user_gen.password_by_mail]
+en = "Send password through email"
+ro = "Trimite parolă prin email"
+
+[user_gen.password_mail_address]
+en = "Override email address for password"
+ro = "Trimite parola la altă adresă"
+
+[user_gen.password_mail_subject]
+en = "Email Subject"
+ro = "Subiect Email"
+
+[user_gen.created_accounts]
+en = "Created accounts"
+ro = "Conturile create"
+
+[user_gen.created_accounts_info]
+en = "Passwords will be lost on page reload, they are not saved anywhere."
+ro = "Parolele vor fi pierdute când se reîncarcă pagina, nu sunt salvate niciunde."

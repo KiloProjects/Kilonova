@@ -229,6 +229,7 @@ func (rt *Web) Handler() http.Handler {
 		r.With(rt.mustBeAdmin).Route("/admin", func(r chi.Router) {
 			r.Get("/", rt.justRender("admin/admin.html"))
 			r.Get("/users", rt.justRender("admin/users.html"))
+			r.Get("/user_gen", rt.justRender("admin/user_gen.html"))
 			r.Get("/auditLog", rt.auditLog())
 			r.Get("/debug", rt.debugPage())
 			r.Get("/sessions", rt.sessionsFilter())

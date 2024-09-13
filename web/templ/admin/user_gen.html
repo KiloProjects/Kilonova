@@ -1,0 +1,131 @@
+{{ define "title" }} {{ getText "user_gen.title" }} {{ end }}
+{{ define "content" }}
+
+<div class="segment-panel">
+    <h1>{{getText "user_gen.title"}}</h1>
+    <p class="text-muted">{{getText "user_gen.optional_fields"}}</p>
+    <form id="userGenForm" autocomplete="off">
+        <label class="block my-2">
+            <span class="form-label">{{getText "username"}}:</span>
+            <input id="username" class="form-input" type="text" autocomplete="off" required />
+        </label>
+        <label class="block my-2">
+            <span class="form-label">{{getText "user_gen.display_name"}}:</span>
+            <input id="display_name" class="form-input" type="text" autocomplete="off" />
+        </label>
+        <label class="block my-2">
+            <span class="form-label">{{getText "email"}}:</span>
+            <input id="email" class="form-input" type="email" autocomplete="off" />
+        </label>
+        <label class="block my-2">
+            <span class="form-label">{{getText "password"}}:</span>
+            <input id="password" class="form-input" type="password" autocomplete="new-password" />
+        </label>
+
+        <label class="block my-2">
+            <span class="form-label">{{getText "contestID"}}:</span>
+            <input id="contestID" class="form-input" type="number" autocomplete="off" />
+        </label>
+
+        <label class="block mb-2">
+            <span class="form-label">{{getText "displayLang"}}:</span>
+            <select id="langSelect" class="form-select">
+                <option value="ro" {{if eq defaultLang "ro" }}selected{{end}}>🇷🇴 Română</option>
+                <option value="en" {{if eq defaultLang "en" }}selected{{end}}>🇬🇧 English</option>
+            </select>
+        </label>
+
+        <details class="segment-panel">
+            <summary>
+                <h2 class="inline-block">{{getText "advancedOptions"}}</h2>
+            </summary>
+
+            <label class="block my-2">
+                <span class="form-label block">{{getText "createBio"}}: </span>
+                <textarea id="bio" class="form-textarea"></textarea>
+            </label>
+
+            <div class="block mb-2">
+                <label class="inline-flex items-center text-lg">
+                    <input class="form-checkbox" id="pwd_mail_enable" type="checkbox" autocomplete="off">
+                    <span class="ml-2">{{getText "user_gen.password_by_mail"}}</span>
+                </label>
+            </div>
+
+            <label class="block my-2">
+                <span class="form-label">{{getText "user_gen.password_mail_address"}}:</span>
+                <input id="pwd_email_address" class="form-input" type="email" />
+            </label>
+
+            <label class="block my-2">
+                <span class="form-label">{{getText "user_gen.password_mail_subject"}}:</span>
+                <input id="pwd_email_subject" class="form-input" type="text" />
+            </label>
+        </details>
+
+        <button class="btn btn-blue" type="submit">{{getText "button.create"}}</button>
+    </form>
+
+    <div class="segment-panel">
+        <h2>{{getText "user_gen.created_accounts"}}</h2>
+        <p class="text-muted">{{getText "user_gen.created_accounts_info"}}</p>
+        <div id="output">
+        </div>
+    </div>
+
+    <script>
+        function strOrUndefinedValue(id) {
+            let val = document.getElementById(id).value;
+            if (typeof val !== "string" || val.length == 0) {
+                return undefined;
+            }
+            return val;
+        }
+
+        async function generateUser(e) {
+            e.preventDefault()
+
+            let contestID = parseInt(document.getElementById("contestID").value);
+            if (isNaN(contestID)) {
+                contestID = undefined;
+            }
+
+            let data = {
+                username: document.getElementById("username").value,
+                password: strOrUndefinedValue("password"),
+                language: strOrUndefinedValue("langSelect"),
+
+                bio: strOrUndefinedValue("bio"),
+
+                email: strOrUndefinedValue("email"),
+                display_name: strOrUndefinedValue("display_name"),
+                contest_id: contestID,
+
+                password_by_mail: document.getElementById("pwd_mail_enable").checked,
+                password_by_mail_to: strOrUndefinedValue("pwd_email_address"),
+
+                mail_subject: strOrUndefinedValue("pwd_email_subject"),
+            }
+
+            let res = await bundled.postCall("/user/generateUser", data)
+            if (res.status === "error") {
+                bundled.apiToast(res)
+                return
+            }
+
+            let output = document.createElement("div")
+            output.classList.add("reset-list", "segment-panel", "my-2")
+            output.innerHTML = `<ul>
+                <li>User: <a href="/profile/${res.data.user.name}">${res.data.user.name}</a></li>
+                <li>${bundled.getText("password")}: <code>${res.data.password}</code></li>
+            </ul>`
+
+            document.getElementById("output").appendChild(output)
+
+        }
+        document.getElementById("userGenForm").addEventListener("submit", generateUser)
+    </script>
+
+</div>
+
+{{ end }}

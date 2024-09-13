@@ -50,6 +50,7 @@
         </p>
         {{ end }}
 
+        <!--BUG: if registration during contest is disabled, the USACO start button will not show up.-->
         {{ if (canJoinContest .) }}
             {{if authed }}    
                 {{ $reg := (contestRegistration .) }}
