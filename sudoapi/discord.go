@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	DiscordEnabled = config.GenFlag("integrations.discord.enabled", false, "Whether Discord integration is enabled. If true, you must provide client ID/secret and bot token.")
+	DiscordEnabled = config.GenFlag("integrations.discord.enabled", false, "Enable Discord integration. If checked, you must provide client ID/secret and bot token.")
 
 	Token = config.GenFlag("integrations.discord.token", "", "Discord token for bot")
 

@@ -5,7 +5,6 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
 )
 
@@ -17,6 +16,7 @@ func disableLang(key string) {
 
 // checkLanguages disables all languages that are *not* detected by the system in the current configuration
 // It should be run at the start of the execution (and implemented more nicely tbh)
+// TODO: do it on scheduler initialization
 func checkLanguages() {
 	for k, v := range Langs {
 		if v.Disabled { // Skip search if already disabled
@@ -45,6 +45,8 @@ func checkLanguages() {
 			zap.S().Infof("Language %q was disabled because the compiler/interpreter had a bad symlink", k)
 			continue
 		}
+
+		// TODO: exec.LookPath also checks if the file has execute perms, do we need to do this?
 		stat, err := os.Stat(cmd)
 		if err != nil {
 			disableLang(k)
@@ -62,14 +64,6 @@ func checkLanguages() {
 
 // Initialize should be called after reading the flags, but before manager.New
 func Initialize() error {
-
-	// Test right now if they exist
-	zap.S().Info("Isolate path: ", config.Eval.IsolatePath)
-	if _, err := os.Stat(config.Eval.IsolatePath); os.IsNotExist(err) {
-		zap.S().Fatal("Sandbox binary not found. Run scripts/init_isolate.sh to properly install it.")
-	}
-
 	checkLanguages()
-
 	return nil
 }

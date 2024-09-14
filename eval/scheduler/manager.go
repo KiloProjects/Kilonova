@@ -19,7 +19,6 @@ import (
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/KiloProjects/kilonova/internal/config"
-	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -84,7 +83,7 @@ func (b *BoxManager) NumConcurrent() int64 {
 
 func (b *BoxManager) getBox(ctx context.Context, memQuota int64) (eval.Sandbox, error) {
 	if b.boxGenerator == nil {
-		zap.S().Warn("Empty box generator")
+		slog.Warn("Empty box generator")
 		return nil, errors.New("empty box generator")
 	}
 	if err := b.concSem.Acquire(ctx, 1); err != nil {
@@ -106,7 +105,7 @@ func (b *BoxManager) getBox(ctx context.Context, memQuota int64) (eval.Sandbox, 
 func (b *BoxManager) releaseBox(sb eval.Sandbox) {
 	q := sb.MemoryQuota()
 	if err := sb.Close(); err != nil {
-		zap.S().Warnf("Could not release sandbox %d: %v", sb.GetID(), err)
+		slog.Warn("Could not release sandbox", slog.Any("box_id", sb.GetID()), slog.Any("err", err))
 	}
 	// b.logger.Infof("Yielded back box %d", sb.GetID())
 	b.availableIDs <- sb.GetID()
@@ -157,11 +156,11 @@ func New(startingNumber int, count int, maxMemory int64, logger *slog.Logger, bo
 func CheckCanRun(boxFunc BoxFunc) bool {
 	box, err := boxFunc(0, 0, slog.Default())
 	if err != nil {
-		zap.S().Warn(err)
+		slog.Warn("Error creating sandbox", slog.Any("err", err))
 		return false
 	}
 	if err := box.Close(); err != nil {
-		zap.S().Warn(err)
+		slog.Warn("Error closing sandbox", slog.Any("err", err))
 		return false
 	}
 	return true

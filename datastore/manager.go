@@ -97,6 +97,7 @@ func init() {
 	}
 }
 
+// TODO: Do not do singletons
 func InitBuckets(p string) error {
 	if initialized {
 		return errors.New("buckets already initialized")
@@ -121,6 +122,7 @@ func IsBucket(name BucketType) bool {
 }
 
 // GetBucket panics if there is no bucket with that name
+
 func GetBucket(name BucketType) *Bucket {
 	b, ok := buckets[name]
 	if !ok {

@@ -17,7 +17,6 @@ import (
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 )
 
 const (
@@ -65,7 +64,7 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	stat, err := datastore.GetBucket(datastore.BucketTypeCheckers).Stat(fmt.Sprintf("%d.bin", c.pb.ID))
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
-			zap.S().Warn("Checker stat error:", err)
+			slog.Warn("Checker stat error", slog.Any("err", err))
 		}
 		shouldCompile = true
 	} else if stat.ModTime().Before(c.lastUpdatedAt) {
@@ -77,8 +76,8 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 		return "", nil
 	}
 
-	zap.S().Debugf("Compiling checker for problem %d", c.pb.ID)
-	c.Logger.Info("Compiling checker", slog.Int("problem_id", c.pb.ID))
+	slog.Debug("Compiling problem checker", slog.Any("problem", c.pb))
+	c.Logger.Info("Compiling checker", slog.Any("problem", c.pb))
 	checkerPrepareMu.Lock()
 	defer checkerPrepareMu.Unlock()
 

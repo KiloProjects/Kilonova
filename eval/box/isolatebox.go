@@ -20,7 +20,6 @@ import (
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/davecgh/go-spew/spew"
-	"go.uber.org/zap"
 )
 
 const (
@@ -94,7 +93,7 @@ func (b *IsolateBox) buildRunFlags(c *eval.RunConfig, metaFilePath string) (res 
 
 	if c.MemoryLimit != 0 {
 		if b.memoryQuota > 0 && int64(c.MemoryLimit) > b.memoryQuota {
-			zap.S().Info("Memory limit supplied exceeds quota")
+			slog.Info("Memory limit supplied exceeds quota", slog.Int64("quota", b.memoryQuota), slog.Int("target_limit", c.MemoryLimit))
 			c.MemoryLimit = int(b.memoryQuota)
 		}
 		res = append(res, "--cg-mem="+strconv.Itoa(c.MemoryLimit))
@@ -173,12 +172,12 @@ func (b *IsolateBox) getFilePath(boxpath string) string {
 func (b *IsolateBox) Close() error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return exec.Command(config.Eval.IsolatePath, "--cg", "--box-id="+strconv.Itoa(b.boxID), "--cleanup").Run()
+	return exec.Command(isolatePath, "--cg", "--box-id="+strconv.Itoa(b.boxID), "--cleanup").Run()
 }
 
 func (b *IsolateBox) runCommand(ctx context.Context, params []string, metaFile *os.File) (*eval.RunStats, error) {
 	var isolateOut bytes.Buffer
-	cmd := exec.CommandContext(ctx, config.Eval.IsolatePath, params...)
+	cmd := exec.CommandContext(ctx, isolatePath, params...)
 	cmd.Stdout = &isolateOut
 	cmd.Stderr = &isolateOut
 	err := cmd.Run()
@@ -227,9 +226,9 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 		p := b.getFilePath(command[0])
 		if _, err := os.Stat(p); err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
-				zap.S().Warnf("Executable does not exist in sandbox and will probably error in box %d", b.boxID)
+				slog.Warn("Executable does not exist in sandbox and will probably error", slog.Int("box_id", b.boxID))
 			} else {
-				zap.S().Warn(err)
+				slog.Warn("Could not find file to run in sandbox", slog.Any("err", err))
 			}
 		}
 	}
@@ -245,7 +244,7 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 	for i := 1; i <= runErrRetries; i++ {
 		metaFile, err := os.CreateTemp("", "kn-meta-*")
 		if err != nil {
-			zap.S().Warn("Couldn't create meta file")
+			slog.Warn("Couldn't create meta file", slog.Any("err", err))
 			continue
 		}
 		meta, err = b.runCommand(ctx, append(b.buildRunFlags(conf, metaFile.Name()), command...), metaFile)
@@ -255,13 +254,13 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 					// Not yet marked as a stable solution
 					// if i > 1 {
 					// 	// Only warn if it comes to the second attempt. First error is often enough in prod
-					zap.S().Warnf("Text file busy error in box %d, retrying (%d/%d). Check grader.log for more details", b.boxID, i, runErrRetries)
+					slog.Warn("Text file busy error in sandbox, will retry. Check grader.log for more details", slog.Int("box_id", b.boxID), slog.Int("attempt", i), slog.Int("max_retries", runErrRetries))
 					// }
 					b.logger.Warn("Text file busy error, retrying", slog.Int("box_id", b.boxID), slog.Int("attempt", i), slog.Int("max_retries", runErrRetries), slog.Any("metadata", meta))
 					time.Sleep(runErrTimeout)
 					continue
 				}
-				zap.S().Warnf("Exit code 127 in box %d (not execve!). Check grader.log for more details", b.boxID)
+				slog.Warn("Exit code 127 in sandbox (not execve). Check grader.log for more details", slog.Int("box_id", b.boxID))
 				var s strings.Builder
 				fmt.Fprintf(&s, "Exit code 127 in box %d\n", b.boxID)
 				spew.Fdump(&s, conf)
@@ -270,13 +269,12 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 				dumpFileListing(&s, b.getFilePath("/"), "/", "", true)
 				b.logger.Warn(s.String())
 			}
-			// TODO: err is nil in this branch. Why return it?
-			return meta, err
+			return meta, nil
 		}
 
 		if i > 1 {
 			// Only warn if it comes to the second attempt. First error is often enough in prod
-			zap.S().Warnf("Run error in box %d, retrying (%d/%d). Check grader.log for more details", b.boxID, i, runErrRetries)
+			slog.Warn("Run error in sandbox, retrying. Check grader.log for more details", slog.Int("box_id", b.boxID), slog.Int("attempt", i), slog.Int("max_retries", runErrRetries))
 		}
 		b.logger.Warn("Run error in box, retrying", slog.Int("box_id", b.boxID), slog.Int("attempt", i), slog.Int("max_retries", runErrRetries), slog.Any("err", err), slog.Any("metadata", meta))
 		time.Sleep(runErrTimeout)
@@ -291,29 +289,30 @@ var keeperOnce sync.Once
 func New(id int, memQuota int64, logger *slog.Logger) (eval.Sandbox, error) {
 	keeperOnce.Do(func() {
 		if err := InitKeeper(); err != nil {
-			zap.S().Warn("Could not initialize keeper: ", err)
+			slog.Error("Could not initialize keeper", slog.Any("err", err))
+			os.Exit(1)
 		}
 	})
-	ret, err := exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--init").CombinedOutput()
+	ret, err := exec.Command(isolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--init").CombinedOutput()
 	if strings.HasPrefix(string(ret), "Box already exists") {
-		zap.S().Info("Box reset: ", id)
-		if out, err := exec.Command(config.Eval.IsolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--cleanup").CombinedOutput(); err != nil {
-			zap.S().Warn(err, string(out))
+		slog.Info("Box reset", slog.Int("id", id))
+		if out, err := exec.Command(isolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--cleanup").CombinedOutput(); err != nil {
+			slog.Warn("Could not clean up sandbox", slog.Any("err", err), slog.String("stdout", string(out)))
 		}
 		return New(id, memQuota, logger)
 	}
 
 	if strings.Contains(string(ret), "incompatible control group mode") { // Created without --cg
-		zap.S().Info("Box reset: ", id)
-		if out, err := exec.Command(config.Eval.IsolatePath, fmt.Sprintf("--box-id=%d", id), "--cleanup").CombinedOutput(); err != nil {
-			zap.S().Warn(err, string(out))
+		slog.Info("Box reset", slog.Int("id", id))
+		if out, err := exec.Command(isolatePath, fmt.Sprintf("--box-id=%d", id), "--cleanup").CombinedOutput(); err != nil {
+			slog.Warn("Could not clean up non-cgroup sandbox", slog.Any("err", err), slog.String("stdout", string(out)))
 		}
 		return New(id, memQuota, logger)
 	}
 
 	if strings.HasPrefix(string(ret), "Must be started as root") {
-		if err := os.Chown(config.Eval.IsolatePath, 0, 0); err != nil {
-			fmt.Println("Couldn't chown root the isolate binary:", err)
+		if err := os.Chown(isolatePath, 0, 0); err != nil {
+			slog.Warn("Could not chown root the isolate binary", slog.Any("err", err))
 			return nil, err
 		}
 		return New(id, memQuota, logger)
@@ -327,7 +326,7 @@ func New(id int, memQuota int64, logger *slog.Logger) (eval.Sandbox, error) {
 }
 
 func IsolateVersion() string {
-	ret, err := exec.Command(config.Eval.IsolatePath, "--version").CombinedOutput()
+	ret, err := exec.Command(isolatePath, "--version").CombinedOutput()
 	if err != nil {
 		return "precompiled?"
 	}
@@ -372,7 +371,7 @@ func parseMetaFile(r io.Reader, out bytes.Buffer) *eval.RunStats {
 		case "max-rss", "csw-voluntary", "csw-forced", "cg-enabled", "cg-oom-killed":
 			continue
 		default:
-			zap.S().Infof("Unknown isolate stat: %q (value: %v)", key, val)
+			slog.Info("Unknown isolate stat", slog.String("key", key), slog.String("value", val))
 			continue
 		}
 	}

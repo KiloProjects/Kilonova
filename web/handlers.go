@@ -1774,7 +1774,7 @@ func (rt *Web) chromaCSS() http.HandlerFunc {
 			{Name: api.EngineSafari, Version: "11"},
 		},
 	})
-	// fmt.Println(string(rez.Code))
+
 	if len(rez.Errors) > 0 {
 		zap.S().Fatalf("Found %d errors in chroma.css: %#v", len(rez.Errors), rez.Errors)
 		return nil

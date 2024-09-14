@@ -11,7 +11,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
-	"go.uber.org/zap"
 )
 
 const outputPath = "/box/compilation.out"
@@ -48,7 +47,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 
 	lang, ok := eval.Langs[req.Lang]
 	if !ok {
-		zap.S().Warnf("Language for submission %d could not be found: %q", req.ID, req.Lang)
+		slog.Warn("Could not find language for submission", slog.Any("sub_id", req.ID), slog.Any("lang", req.Lang))
 		return resp, kilonova.Statusf(500, "No language found")
 	}
 
@@ -59,7 +58,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 	if !lang.Compiled {
 		// It should only be one file here anyway
 		if len(req.CodeFiles) > 1 {
-			zap.S().Warn("More than one file specified for non-compiled language. This is not properly supported")
+			slog.Warn("More than one file specified for non-compiled language. This is not properly supported")
 		}
 		for _, fData := range req.CodeFiles {
 			if err := datastore.GetBucket(bucket).WriteFile(outName, bytes.NewBuffer(fData), 0644); err != nil {
@@ -115,7 +114,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 	// Init compilation command
 	goodCmd, err := makeGoodCompileCommand(lang.CompileCommand, sourceFiles)
 	if err != nil {
-		zap.S().Warnf("MakeGoodCompileCommand returned an error: %q. This is not good, so we'll use the command from the config file. The supplied command was %#v", err, lang.CompileCommand)
+		slog.Warn("error in makeGoodCompileCommand. This is not good, so we'll use the command from the config file", slog.Any("err", err), slog.Any("command", lang.CompileCommand))
 		goodCmd = lang.CompileCommand
 	}
 	bReq.Command = goodCmd
@@ -171,6 +170,6 @@ func makeGoodCompileCommand(command []string, files []string) ([]string, error) 
 		}
 	}
 
-	zap.S().Warnf("Didn't replace any fields in %#v", command)
+	slog.Warn("Did not replace any fields in command", slog.Any("command", command))
 	return cmd, nil
 }

@@ -31,6 +31,7 @@ func GetLangByFilename(filename string) string {
 }
 
 // NOTE: Last extension MUST be unique (for proper detection of submissions in problem archives)
+// TODO: remove Disabled and try to have a different interface (probably in sudoapi) for enabled languages in the platform
 var Langs = map[string]Language{
 	"c": {
 		Extensions:    []string{".c"},

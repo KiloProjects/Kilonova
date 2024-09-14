@@ -4,10 +4,10 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"log/slog"
 	"os"
 
 	"github.com/KiloProjects/kilonova/eval"
-	"go.uber.org/zap"
 )
 
 func readFile(p string, w io.Writer) error {
@@ -52,7 +52,7 @@ func checkFile(p string) bool {
 		if errors.Is(err, fs.ErrNotExist) {
 			return false
 		}
-		zap.S().Warnf("File stat (%q) returned weird error: %s", p, err)
+		slog.Warn("File stat returned weird error", slog.String("path", p), slog.Any("err", err))
 		return false
 	}
 	return true
