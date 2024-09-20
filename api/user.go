@@ -1,19 +1,17 @@
 package api
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/sudoapi"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/microcosm-cc/bluemonday"
@@ -452,149 +450,25 @@ func (s *API) resendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Verification email resent")
 }
 
-var generatedUserTempl = template.Must(template.New("emailTempl").Parse(`<p>Hey, {{.Name}}!</p>
-
-<p>Contul tău Kilonova a fost creat. Acestea sunt datele tale de autentificare:</p>
-
-<p>Username: <code>{{.Username}}</code><br/>
-Parolă: <code>{{.Password}}</code></p>
-
-
-{{if .Contest}}
-{{$url := printf "%s/contests/%d" .HostPrefix .Contest.ID}}
-<p>În momentul creării contului, ai fost înscris automat în <a href="{{$url}}">{{.Contest.Name}}</a>. 
-Link-ul permanent pentru pagina concursului este: <a href="{{$url}}">{{$url}}</a></p>
-{{end}}
-
-<p>Mult spor în continuare!</p>
-
-<hr/>
-<p>Echipa {{.Branding}}<br/>
-<a href="{{.HostPrefix}}">{{.HostPrefix}}/</a></p>`))
-
-// Basically [a-zA-Z0-9] but exclude i/I/l/L and 0/o/O since they may be easily mistaken
-const userPasswordAlphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ123456789"
-
 func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var args struct {
-		Name     string `json:"username"`
-		Password string `json:"password"`
-		Lang     string `json:"language"`
-
-		Bio string `json:"bio"`
-
-		Email       *string `json:"email"`
-		DisplayName *string `json:"display_name"`
-
-		ContestID *int `json:"contest_id"`
-
-		PasswordByMail bool `json:"password_by_mail"`
-		// PasswordByMailTo overrides whom to send the email to
-		PasswordByMailTo *string `json:"password_by_mail_to"`
-
-		MailSubject *string `json:"mail_subject"`
-	}
+	var args sudoapi.UserGenerationRequest
 	if err := decoder.Decode(&args, r.Form); err != nil {
 		errorData(w, err, 500)
 		return
 	}
 
-	if args.PasswordByMail {
-		if !s.base.MailerEnabled() {
-			errorData(w, "Mailer has been disabled, but sending password by email was enabled.", 400)
-			return
-		}
-		if args.Email == nil && args.PasswordByMailTo == nil {
-			errorData(w, "Cannot send password by email if no address was given", 400)
-			return
-		}
-	}
-
-	if args.Password == "" {
-		args.Password = kilonova.RandomStringChars(7, userPasswordAlphabet)
-	}
-
-	var contest *kilonova.Contest
-	if args.ContestID != nil {
-		contest2, err := s.base.Contest(r.Context(), *args.ContestID)
-		if err != nil {
-			err.WriteError(w)
-			return
-		}
-		contest = contest2
-	}
-
-	user, err := s.base.GenerateUser(r.Context(), args.Name, args.Password, args.Lang, kilonova.PreferredThemeDark, args.DisplayName, args.Email, args.Bio)
+	pwd, user, err := s.base.GenerateUserFlow(r.Context(), args)
 	if err != nil {
 		err.WriteError(w)
 		return
-	}
-
-	if contest != nil {
-		if err := s.base.RegisterContestUser(r.Context(), contest, user.ID, nil, true); err != nil {
-			err.WriteError(w)
-			return
-		}
-	}
-
-	if args.PasswordByMail {
-		emailArgs := struct {
-			Name       string
-			Username   string
-			Password   string
-			Contest    *kilonova.Contest
-			HostPrefix string
-			Branding   string
-		}{
-			Name:       user.Name,
-			Username:   user.Name,
-			Password:   args.Password,
-			Contest:    contest,
-			HostPrefix: config.Common.HostPrefix,
-			Branding:   "Kilonova",
-		}
-		if user.DisplayName != "" {
-			emailArgs.Name = user.DisplayName
-		}
-		if val, ok := config.GetFlagVal[string]("frontend.navbar.branding"); ok && len(val) > 0 {
-			emailArgs.Branding = val
-		}
-		var b bytes.Buffer
-		if err := generatedUserTempl.Execute(&b, emailArgs); err != nil {
-			zap.S().Error("Error rendering password send email:", err)
-			errorData(w, "Could not render email", 500)
-			return
-		}
-		var sendTo string
-		if args.Email != nil {
-			sendTo = *args.Email
-		}
-		if args.PasswordByMailTo != nil {
-			sendTo = *args.PasswordByMailTo
-		}
-
-		var subject = "Date de autentificare cont Kilonova"
-		if args.MailSubject != nil {
-			subject = *args.MailSubject
-		}
-
-		if err := s.base.SendMail(&kilonova.MailerMessage{
-			To:          sendTo,
-			Subject:     subject,
-			HTMLContent: b.String(),
-		}); err != nil {
-			zap.S().Warn(err)
-			err.WriteError(w)
-			return
-		}
 	}
 
 	returnData(w, struct {
 		Password string             `json:"password"`
 		User     *kilonova.UserFull `json:"user"`
 	}{
-		Password: args.Password,
+		Password: pwd,
 		User:     user,
 	})
 }

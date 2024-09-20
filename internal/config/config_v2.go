@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
@@ -170,7 +171,7 @@ func LoadConfigV2() error {
 		// Do sneak update
 		val, ok := allFlags[key]
 		if !ok {
-			zap.S().Warnf("Unknown config key %q", key)
+			slog.Warn("Unknown config key", slog.String("key", key))
 			continue
 		}
 		if v, ok := val.(configFlag); ok {

@@ -3,6 +3,7 @@ package kilonova
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -27,6 +28,13 @@ type StatusError struct {
 	Text string
 
 	WrappedError error
+}
+
+func (s *StatusError) LogValue() slog.Value {
+	if s == nil {
+		return slog.Value{}
+	}
+	return slog.GroupValue(slog.Int("code", s.Code), slog.String("text", s.Text))
 }
 
 func (s *StatusError) Error() string {

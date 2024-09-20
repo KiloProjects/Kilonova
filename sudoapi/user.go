@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -249,8 +250,8 @@ func (s *BaseAPI) UpdateUserPassword(ctx context.Context, uid int, password stri
 // TODO: displayName probably doesn't have to be *string, can be just string, but this was implemented quickly
 func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, theme kilonova.PreferredTheme, displayName *string, email *string, bio string) (*kilonova.UserFull, *StatusError) {
 	uname = strings.TrimSpace(uname)
-	if !(len(uname) >= 3 && len(uname) <= 32 && usernameRegex.MatchString(uname)) {
-		return nil, Statusf(400, "Username must be between 3 and 32 characters long and must contain only letters, digits, underlines and dashes.")
+	if err := s.CheckValidUsername(uname); err != nil {
+		return nil, err
 	}
 	if err := s.CheckValidPassword(pwd); err != nil {
 		return nil, err
@@ -296,6 +297,137 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 	}
 
 	return user, err1
+}
+
+var generatedUserTempl = template.Must(template.New("emailTempl").Parse(`<p>Hey, {{.Name}}!</p>
+
+<p>Contul tău Kilonova a fost creat. Acestea sunt datele tale de autentificare:</p>
+
+<p>Username: <code>{{.Username}}</code><br/>
+Parolă: <code>{{.Password}}</code></p>
+
+
+{{if .Contest}}
+{{$url := printf "%s/contests/%d" .HostPrefix .Contest.ID}}
+<p>În momentul creării contului, ai fost înscris automat în <a href="{{$url}}">{{.Contest.Name}}</a>. 
+Link-ul permanent pentru pagina concursului este: <a href="{{$url}}">{{$url}}</a></p>
+{{end}}
+
+<p>Mult spor în continuare!</p>
+
+<hr/>
+<p>Echipa {{.Branding}}<br/>
+<a href="{{.HostPrefix}}">{{.HostPrefix}}/</a></p>`))
+
+// Basically [a-zA-Z0-9] but exclude i/I/l/L and 0/o/O since they may be easily mistaken
+const userPasswordAlphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ123456789"
+
+type UserGenerationRequest struct {
+	Name     string `json:"username"`
+	Password string `json:"password"`
+	Lang     string `json:"language"`
+
+	Bio string `json:"bio"`
+
+	Email       *string `json:"email"`
+	DisplayName *string `json:"display_name"`
+
+	ContestID *int `json:"contest_id"`
+
+	PasswordByMail bool `json:"password_by_mail"`
+	// PasswordByMailTo overrides whom to send the email to
+	PasswordByMailTo *string `json:"password_by_mail_to"`
+
+	MailSubject *string `json:"mail_subject"`
+}
+
+// returns password, UserFull and eventual error
+func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationRequest) (string, *kilonova.UserFull, *kilonova.StatusError) {
+
+	if args.PasswordByMail {
+		if !s.MailerEnabled() {
+			return "", nil, kilonova.Statusf(400, "Mailer has been disabled, but sending password by email was enabled.")
+		}
+		if args.Email == nil && args.PasswordByMailTo == nil {
+			return "", nil, kilonova.Statusf(400, "Cannot send password by email if no address was given")
+		}
+	}
+
+	if args.Password == "" {
+		args.Password = kilonova.RandomStringChars(7, userPasswordAlphabet)
+	}
+
+	var contest *kilonova.Contest
+	if args.ContestID != nil {
+		contest2, err := s.Contest(ctx, *args.ContestID)
+		if err != nil {
+			return "", nil, err
+		}
+		contest = contest2
+	}
+
+	user, err := s.GenerateUser(ctx, args.Name, args.Password, args.Lang, kilonova.PreferredThemeDark, args.DisplayName, args.Email, args.Bio)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if contest != nil {
+		if err := s.RegisterContestUser(ctx, contest, user.ID, nil, true); err != nil {
+			return args.Password, user, err
+		}
+	}
+
+	if args.PasswordByMail {
+		emailArgs := struct {
+			Name       string
+			Username   string
+			Password   string
+			Contest    *kilonova.Contest
+			HostPrefix string
+			Branding   string
+		}{
+			Name:       user.Name,
+			Username:   user.Name,
+			Password:   args.Password,
+			Contest:    contest,
+			HostPrefix: config.Common.HostPrefix,
+			Branding:   "Kilonova",
+		}
+		if user.DisplayName != "" {
+			emailArgs.Name = user.DisplayName
+		}
+		if val, ok := config.GetFlagVal[string]("frontend.navbar.branding"); ok && len(val) > 0 {
+			emailArgs.Branding = val
+		}
+		var b bytes.Buffer
+		if err := generatedUserTempl.Execute(&b, emailArgs); err != nil {
+			slog.Error("Error rendering password send email", slog.Any("err", err))
+			return args.Password, user, kilonova.Statusf(500, "Could not render email")
+		}
+		var sendTo string
+		if args.Email != nil {
+			sendTo = *args.Email
+		}
+		if args.PasswordByMailTo != nil {
+			sendTo = *args.PasswordByMailTo
+		}
+
+		var subject = "Date de autentificare cont Kilonova"
+		if args.MailSubject != nil {
+			subject = *args.MailSubject
+		}
+
+		if err := s.SendMail(&kilonova.MailerMessage{
+			To:          sendTo,
+			Subject:     subject,
+			HTMLContent: b.String(),
+		}); err != nil {
+			slog.Warn("Could not send email", slog.Any("err", err))
+			return args.Password, user, err
+		}
+	}
+
+	return args.Password, user, nil
 }
 
 func (s *BaseAPI) createUser(ctx context.Context, username, email, password, lang string, theme kilonova.PreferredTheme, displayName string, bio string, generated bool) (int, error) {
