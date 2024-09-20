@@ -115,7 +115,7 @@ func (rt *Web) ValidateTagID(next http.Handler) http.Handler {
 func (rt *Web) ValidateProblemVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !rt.base.IsProblemVisible(util.UserBrief(r), util.Problem(r)) {
-			rt.statusPage(w, r, 403, "Nu ai voie să accesezi problema!")
+			rt.authedStatusPage(w, r, 403, "Nu ai voie să accesezi problema!")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -126,7 +126,7 @@ func (rt *Web) ValidateProblemVisible(next http.Handler) http.Handler {
 func (rt *Web) ValidateProblemFullyVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !rt.base.IsProblemFullyVisible(util.UserBrief(r), util.Problem(r)) {
-			rt.statusPage(w, r, 403, "Nu ai voie să accesezi această pagină!")
+			rt.authedStatusPage(w, r, 403, "Nu ai voie să accesezi această pagină!")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -137,7 +137,7 @@ func (rt *Web) ValidateProblemFullyVisible(next http.Handler) http.Handler {
 func (rt *Web) ValidateBlogPostVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !rt.base.IsBlogPostVisible(util.UserBrief(r), util.BlogPost(r)) {
-			rt.statusPage(w, r, 403, "Nu ai voie să accesezi articolul!")
+			rt.authedStatusPage(w, r, 403, "Nu ai voie să accesezi articolul!")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -165,7 +165,7 @@ func (rt *Web) ValidateContestID(next http.Handler) http.Handler {
 func (rt *Web) ValidateContestVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !rt.base.IsContestVisible(util.UserBrief(r), util.Contest(r)) {
-			rt.statusPage(w, r, 403, "Nu ai voie să accesezi concursul!")
+			rt.authedStatusPage(w, r, 403, "Nu ai voie să accesezi concursul!")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -231,7 +231,8 @@ func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
 			return
 		}
 		if att.Private && !rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
-			rt.statusPage(w, r, 403, "Nu ai voie să accesezi acest atașament")
+			rt.authedStatusPage(w, r, 403, "Nu ai voie să accesezi acest atașament")
+			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AttachmentKey, att)))
 	})
@@ -245,6 +246,15 @@ func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// maybe the user is just not authed, let's give them another chance before actually returning an error
+func (rt *Web) authedStatusPage(w http.ResponseWriter, r *http.Request, code int, message string) {
+	if !util.UserBrief(r).IsAuthed() {
+		http.Redirect(w, r, "/login?back="+url.PathEscape(r.URL.Path), http.StatusTemporaryRedirect)
+		return
+	}
+	rt.statusPage(w, r, code, message)
 }
 
 func (rt *Web) mustBeProposer(next http.Handler) http.Handler {
