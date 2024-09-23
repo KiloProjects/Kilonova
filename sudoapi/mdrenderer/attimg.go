@@ -106,8 +106,8 @@ func (att *imgAttRenderer) renderAttachment(writer util.BufWriter, source []byte
 type attNode struct{}
 
 func (*attNode) Extend(md goldmark.Markdown) {
-	md.Renderer().AddOptions(renderer.WithNodeRenderers(util.Prioritized(&imgAttRenderer{}, 900)))
-	md.Parser().AddOptions(parser.WithInlineParsers(util.Prioritized(&imgAttParser{}, 900)))
+	md.Renderer().AddOptions(renderer.WithNodeRenderers(util.Prioritized(&imgAttRenderer{}, 300)))
+	md.Parser().AddOptions(parser.WithInlineParsers(util.Prioritized(&imgAttParser{}, 300)))
 }
 
 type ImageAttNode struct {
