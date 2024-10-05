@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
@@ -367,10 +366,15 @@ func (s *DB) ContestICPCLeaderboard(ctx context.Context, contest *kilonova.Conte
 
 // MOSS setup
 
-func (s *DB) InsertMossSubmission(ctx context.Context, contestID int, problemID int, lang eval.Language, url string, subcount int) (int, error) {
+func (s *DB) InsertMossSubmission(ctx context.Context, contestID int, problemID int, lang string, subcount int) (int, error) {
 	var id int
-	err := s.conn.QueryRow(ctx, "INSERT INTO moss_submissions (contest_id, problem_id, language, url, subcount) VALUES ($1, $2, $3, $4, $5) RETURNING id", contestID, problemID, lang.InternalName, url, subcount).Scan(&id)
+	err := s.conn.QueryRow(ctx, "INSERT INTO moss_submissions (contest_id, problem_id, language, subcount, url) VALUES ($1, $2, $3, $4, '') RETURNING id", contestID, problemID, lang, subcount).Scan(&id)
 	return id, err
+}
+
+func (s *DB) SetMossURL(ctx context.Context, subID int, url string) error {
+	_, err := s.conn.Exec(ctx, "UPDATE moss_submissions SET url = $1 WHERE id = $2", url, subID)
+	return err
 }
 
 func (s *DB) MossSubmissions(ctx context.Context, contestID int) ([]*kilonova.MOSSSubmission, error) {

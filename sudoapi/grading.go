@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"context"
 	"log/slog"
-	"maps"
 	"path"
 	"slices"
 	"strings"
@@ -31,12 +30,18 @@ func (l *Language) Extension() string {
 	return l.lang.Extensions[len(l.lang.Extensions)-1]
 }
 
-// Language returns nil if the language was not found
-func (s *BaseAPI) Language(name string) *Language {
-	lang, ok := eval.Langs[name]
-	if !ok {
-		return nil
+func (l *Language) MOSSName() string {
+	if l == nil {
+		return "ascii"
 	}
+	if l.lang == nil {
+		slog.Warn("Language created outside sudoapi tried to get MOSS name")
+		return "ascii"
+	}
+	return l.lang.MOSSName
+}
+
+func (s *BaseAPI) evalLangToInternal(lang eval.Language) *Language {
 	return &Language{
 		InternalName:  lang.InternalName,
 		PrintableName: lang.PrintableName,
@@ -45,9 +50,27 @@ func (s *BaseAPI) Language(name string) *Language {
 	}
 }
 
-// TODO: Improve
-func (s *BaseAPI) GetLanguages() map[string]eval.Language {
-	return maps.Clone(eval.Langs)
+// Language returns nil if the language was not found
+func (s *BaseAPI) Language(name string) *Language {
+	lang, ok := eval.Langs[name]
+	if !ok {
+		return nil
+	}
+	return s.evalLangToInternal(lang)
+}
+
+func (s *BaseAPI) LanguageFromMOSS(mossLang string) *Language {
+	var lang eval.Language
+	for _, elang := range eval.Langs {
+		if elang.MOSSName == mossLang && (lang.InternalName == "" || lang.InternalName < elang.InternalName) {
+			lang = elang
+		}
+	}
+	if lang.InternalName == "" {
+		slog.Warn("Could not find language for MOSS language", slog.String("moss_lang", mossLang))
+		return nil
+	}
+	return s.evalLangToInternal(lang)
 }
 
 type GraderLanguage struct {

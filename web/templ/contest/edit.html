@@ -298,7 +298,12 @@
                                     {{.SubCount}}
                                 </td>
                                 <td class="kn-table-cell">
-                                    <a class="btn btn-blue" href="{{.URL}}">{{getText "view"}}</a>
+                                    {{with .URL}}
+                                        <a class="btn btn-blue" href="{{.URL}}">{{getText "view"}}</a>
+                                    {{else}}
+                                        {{/* TODO: Once implementing HTMX, make this a modal that reloads until the data is available */}}
+                                        <i class="fas fa-spinner animate-spin"></i> {{getText "waiting"}}
+                                    {{end}}
                                 </td>
                             </tr>
                         {{end}}

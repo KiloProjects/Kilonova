@@ -3,11 +3,11 @@ package sudoapi
 import (
 	"context"
 	"fmt"
+	"iter"
 	"log/slog"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/integrations/moss"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
@@ -303,9 +303,15 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) *Statu
 		if len(subs) == 0 {
 			continue
 		}
+		users := make(map[int]bool)
 		mossSubs := make(map[string][]*kilonova.Submission)
 		for _, sub := range subs {
-			name := eval.Langs[sub.Language].MOSSName
+			if _, ok := users[sub.UserID]; ok {
+				continue
+			}
+			users[sub.UserID] = true
+
+			name := s.Language(sub.Language).MOSSName()
 			// TODO: See if this can be simplified?
 			_, ok := mossSubs[name]
 			if !ok {
@@ -316,45 +322,52 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) *Statu
 		}
 
 		for mossLang, subs := range mossSubs {
-			var lang eval.Language
-			for _, elang := range eval.Langs {
-				if elang.MOSSName == mossLang && (lang.InternalName == "" || lang.InternalName < elang.InternalName) {
-					lang = elang
-				}
+			lang := s.LanguageFromMOSS(mossLang)
+
+			slog.Info("Running MOSS", slog.Any("problem", pb), slog.Any("lang", lang), slog.Int("sub_count", len(subs)))
+			mossID, err := s.db.InsertMossSubmission(ctx, contest.ID, pb.ID, lang.InternalName, len(subs))
+			if err != nil {
+				return WrapError(err, "Could not add MOSS stub to DB")
 			}
 
-			zap.S().Debugf("%s - %s - %d", pb.Name, lang.InternalName, len(subs))
-			conn, err1 := moss.New(ctx)
-			if err1 != nil {
-				return WrapError(err1, "Could not initialize MOSS")
-			}
-			users := make(map[int]bool)
-			for _, sub := range subs {
-				if _, ok := users[sub.UserID]; ok {
-					continue
-				}
-				user, err := s.UserBrief(ctx, sub.UserID)
+			go func(mossID int, lang *Language, mossLang string, subs []*kilonova.Submission) {
+				conn, err := moss.New(ctx)
 				if err != nil {
-					return err
+					slog.Warn("Could not initialize MOSS", slog.Any("err", err))
 				}
-				users[sub.UserID] = true
+				defer conn.Close()
 
-				code, err := s.RawSubmissionCode(ctx, sub.ID)
+				url, err := conn.Process(&moss.Options{
+					LanguageName: mossLang,
+					Comment:      fmt.Sprintf("%s - %s (%s)", contest.Name, pb.Name, lang.PrintableName),
+
+					Files: iter.Seq[*moss.File](func(yield func(*moss.File) bool) {
+						for _, sub := range subs {
+							user, err := s.UserBrief(ctx, sub.UserID)
+							if err != nil {
+								slog.Warn("Could not get user", slog.Any("err", err))
+								return
+							}
+
+							code, err := s.RawSubmissionCode(ctx, sub.ID)
+							if err != nil {
+								slog.Warn("Could not get submission code", slog.Any("err", err))
+								return
+							}
+
+							if !yield(moss.NewFile(mossLang, user.Name, code)) {
+								return
+							}
+						}
+					}),
+				})
 				if err != nil {
-					return err
+					slog.Warn("Could not get MOSS result", slog.Any("err", err))
 				}
-				conn.AddFile(eval.Langs[sub.Language], user.Name, code)
-			}
-			url, err1 := conn.Process(&moss.Options{
-				Language: lang,
-				Comment:  fmt.Sprintf("%s - %s (%s)", contest.Name, pb.Name, lang.PrintableName),
-			})
-			if err1 != nil {
-				return WrapError(err1, "Could not get MOSS result")
-			}
-			if _, err := s.db.InsertMossSubmission(ctx, contest.ID, pb.ID, lang, url, len(users)); err != nil {
-				return WrapError(err, "Could not commit MOSS result to DB")
-			}
+				if err := s.db.SetMossURL(ctx, mossID, url); err != nil {
+					slog.Warn("Could not set MOSS results URL", slog.Any("err", err))
+				}
+			}(mossID, lang, mossLang, subs)
 		}
 	}
 	return nil

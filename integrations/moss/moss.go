@@ -5,12 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
+	"log/slog"
 	"net"
 	"strings"
 
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
-	"go.uber.org/zap"
 )
 
 var (
@@ -27,8 +27,8 @@ const (
 )
 
 type Options struct {
-	// "l" - default C++
-	Language eval.Language
+	// "l" - default C++ - must be given MOSSName
+	LanguageName string
 	// "m" - default 10
 	Sensitivity int
 	// "c" - default empty
@@ -37,10 +37,12 @@ type Options struct {
 	ExperimentalServer bool
 	// "n" - default 250
 	MatchingFileLimit int
+
+	Files iter.Seq[*File]
 }
 
 type File struct {
-	Lang     eval.Language
+	Lang     string
 	Filename string
 	Data     []byte
 }
@@ -48,8 +50,6 @@ type File struct {
 type Conn struct {
 	conn net.Conn
 	sc   *bufio.Scanner
-
-	files []*File
 }
 
 func (m *Conn) recvLine() (string, error) {
@@ -59,12 +59,13 @@ func (m *Conn) recvLine() (string, error) {
 	return strings.TrimSpace(m.sc.Text()), nil
 }
 
-func (m *Conn) AddFile(lang eval.Language, filename string, data []byte) {
-	m.files = append(m.files, &File{
-		Lang:     lang,
+// langName must be the MOSS name and not kilonova name
+func NewFile(langName string, filename string, data []byte) *File {
+	return &File{
+		Lang:     langName,
 		Filename: strings.ReplaceAll(filename, " ", "_"),
 		Data:     data,
-	})
+	}
 }
 
 func (m *Conn) Process(conf *Options) (string, error) {
@@ -93,7 +94,7 @@ func (m *Conn) Process(conf *Options) (string, error) {
 	if _, err := fmt.Fprintf(m.conn, "show %d\n", conf.MatchingFileLimit); err != nil {
 		return "", err
 	}
-	if _, err := fmt.Fprintf(m.conn, "language %s\n", conf.Language.MOSSName); err != nil {
+	if _, err := fmt.Fprintf(m.conn, "language %s\n", conf.LanguageName); err != nil {
 		return "", err
 	}
 
@@ -105,20 +106,22 @@ func (m *Conn) Process(conf *Options) (string, error) {
 		return "", ErrUnsupportedLang
 	}
 
-	for i, file := range m.files {
-		if _, err := fmt.Fprintf(m.conn, "file %d %s %d %s\n", i+1, file.Lang.MOSSName, len(file.Data), file.Filename); err != nil {
+	i := 1
+	for file := range conf.Files {
+		if _, err := fmt.Fprintf(m.conn, "file %d %s %d %s\n", i, file.Lang, len(file.Data), file.Filename); err != nil {
 			return "", err
 		}
 		_, err := m.conn.Write(file.Data)
 		if err != nil {
 			return "", err
 		}
+		i++
 	}
 
 	if _, err := fmt.Fprintf(m.conn, "query 0 %s\n", conf.Comment); err != nil {
 		return "", err
 	}
-	zap.S().Debug("MOSS Query sent. Waiting for response")
+	slog.Debug("MOSS Query sent. Waiting for response")
 	return m.recvLine()
 }
 
@@ -138,5 +141,5 @@ func New(ctx context.Context) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Conn{conn, bufio.NewScanner(conn), nil}, nil
+	return &Conn{conn, bufio.NewScanner(conn)}, nil
 }

@@ -361,7 +361,7 @@ func (s *API) Handler() http.Handler {
 
 			r.With(s.MustBeAuthed).Post("/register", s.registerForContest)
 			r.With(s.MustBeAuthed).Post("/startRegistration", s.startContestRegistration)
-			r.With(s.validateContestEditor).Post("/runMOSS", webMessageWrapper("MOSS executed successfully", s.runMOSS))
+			r.With(s.validateContestEditor).Post("/runMOSS", webMessageWrapper("Sent submissions to MOSS. It should be done soon", s.runMOSS))
 
 			r.With(s.validateContestEditor).Get("/invitations", webWrapper(func(ctx context.Context, _ struct{}) ([]*kilonova.ContestInvitation, *kilonova.StatusError) {
 				return s.base.ContestInvitations(ctx, util.ContestContext(ctx).ID)
