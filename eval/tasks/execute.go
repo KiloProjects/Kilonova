@@ -23,7 +23,7 @@ type ExecRequest struct {
 	MemoryLimit int
 	TimeLimit   float64
 
-	Lang   string
+	Lang   *eval.Language
 	TestID int
 }
 
@@ -38,7 +38,6 @@ func ExecuteTask(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, req
 	logger.Info("Executing subtest", slog.Int("subtest_id", req.SubtestID), slog.Int("sub_id", req.SubID))
 
 	bucket, fileName := bucketFromIDExec(req.SubID)
-	lang := eval.Langs[req.Lang]
 
 	boxOut := fmt.Sprintf("/box/%s.out", req.Filename)
 
@@ -51,7 +50,7 @@ func ExecuteTask(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, req
 				Mode:     0666,
 			},
 			// User executable
-			lang.CompiledName: {
+			req.Lang.CompiledName: {
 				Bucket:   bucket,
 				Filename: fileName,
 				Mode:     0777,
@@ -59,7 +58,7 @@ func ExecuteTask(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, req
 		},
 
 		RunConfig: &eval.RunConfig{
-			EnvToSet:      maps.Clone(lang.RunEnv),
+			EnvToSet:      maps.Clone(req.Lang.RunEnv),
 			MemoryLimit:   req.MemoryLimit,
 			TimeLimit:     req.TimeLimit,
 			WallTimeLimit: 2*req.TimeLimit + 1,
@@ -73,13 +72,13 @@ func ExecuteTask(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, req
 			},
 		},
 
-		Command: slices.Clone(lang.RunCommand),
+		Command: slices.Clone(req.Lang.RunCommand),
 	}
 
 	// if our specified language is not compiled, then it means that
 	// the mounts specified should be added at runtime
-	if !lang.Compiled {
-		bReq.RunConfig.Directories = slices.Clone(lang.Mounts)
+	if !req.Lang.Compiled {
+		bReq.RunConfig.Directories = slices.Clone(req.Lang.Mounts)
 	}
 
 	if req.TimeLimit == 0 {

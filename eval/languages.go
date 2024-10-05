@@ -1,7 +1,6 @@
 package eval
 
 import (
-	"path"
 	"strings"
 )
 
@@ -10,29 +9,8 @@ const (
 	MemoryReplace = "<MEMORY>"
 )
 
-// Deprecated: TODO: Replace
-func GetLangByFilename(filename string) string {
-	fileExt := path.Ext(filename)
-	if fileExt == "" {
-		return ""
-	}
-	// bestLang heuristic to match .cpp to cpp17
-	if fileExt == ".cpp" {
-		return "cpp17"
-	}
-	bestLang := ""
-	for k, v := range Langs {
-		for _, ext := range v.Extensions {
-			if ext == fileExt && (bestLang == "" || k < bestLang) {
-				bestLang = k
-			}
-		}
-	}
-	return bestLang
-}
-
 // NOTE: Last extension MUST be unique (for proper detection of submissions in problem archives)
-// TODO: remove Disabled and try to have a different interface (probably in sudoapi) for enabled languages in the platform
+// TODO: remove Disabled
 var Langs = map[string]Language{
 	"c": {
 		Extensions:    []string{".c"},

@@ -29,50 +29,63 @@ var (
 	acceptedVerdict = "test_verdict.accepted"
 )
 
-func genSubCompileRequest(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submission, pb *kilonova.Problem, settings *kilonova.ProblemEvalSettings) (*tasks.CompileRequest, *kilonova.StatusError) {
+type submissionHandler struct {
+	base *sudoapi.BaseAPI
+
+	runner eval.BoxScheduler
+
+	settings *kilonova.ProblemEvalSettings
+	pb       *kilonova.Problem
+	sub      *kilonova.Submission
+
+	lang *eval.Language
+}
+
+func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.CompileRequest, *kilonova.StatusError) {
 	req := &tasks.CompileRequest{
-		ID:          sub.ID,
-		Lang:        sub.Language,
+		ID:          sh.sub.ID,
+		Lang:        sh.lang,
 		CodeFiles:   make(map[string][]byte),
 		HeaderFiles: make(map[string][]byte),
 	}
-	atts, err := base.ProblemAttachments(ctx, pb.ID)
+	atts, err := sh.base.ProblemAttachments(ctx, sh.pb.ID)
 	if err != nil {
 		return nil, err
 	}
-	for _, codeFile := range settings.GraderFiles {
-		lang := eval.GetLangByFilename(codeFile)
-		if lang != sub.Language && !slices.Contains(eval.Langs[sub.Language].SimilarLangs, lang) {
+
+	for _, codeFile := range sh.settings.GraderFiles {
+		lang := sh.runner.LanguageFromFilename(codeFile)
+		if lang == nil || (lang.InternalName != sh.lang.InternalName && !slices.Contains(sh.lang.SimilarLangs, lang.InternalName)) {
 			continue
 		}
 		for _, att := range atts {
 			if att.Name == codeFile {
-				data, err := base.AttachmentData(ctx, att.ID)
+				data, err := sh.base.AttachmentData(ctx, att.ID)
 				if err != nil {
 					zap.S().Warn("Couldn't get attachment data:", err)
 					return nil, kilonova.Statusf(500, "Couldn't get grader data")
 				}
-				name := strings.Replace(path.Base(att.Name), path.Ext(att.Name), eval.Langs[lang].Extensions[0], 1)
+				name := strings.Replace(path.Base(att.Name), path.Ext(att.Name), lang.Extensions[0], 1)
 				req.CodeFiles[path.Join("/box", name)] = data
 			}
 		}
 	}
-	subCode, err := base.RawSubmissionCode(ctx, sub.ID)
+	subCode, err := sh.base.RawSubmissionCode(ctx, sh.sub.ID)
 	if err != nil {
 		return nil, err
 	}
-	if len(settings.GraderFiles) > 0 && sub.Language == "pascal" {
+	if len(sh.settings.GraderFiles) > 0 && sh.sub.Language == "pascal" {
 		// In interactive problems, include the source code as header
 		// Apparently the fpc compiler allows only one file as parameter, this should solve it
-		req.HeaderFiles[eval.Langs[sub.Language].SourceName] = subCode
+		req.HeaderFiles[sh.lang.SourceName] = subCode
 	} else {
 		// But by default it should be a code file
-		req.CodeFiles[eval.Langs[sub.Language].SourceName] = subCode
+		req.CodeFiles[sh.lang.SourceName] = subCode
 	}
-	for _, headerFile := range settings.HeaderFiles {
+	for _, headerFile := range sh.settings.HeaderFiles {
 		for _, att := range atts {
 			if att.Name == headerFile {
-				data, err := base.AttachmentData(ctx, att.ID)
+				data, err := sh.base.AttachmentData(ctx, att.ID)
 				if err != nil {
 					zap.S().Warn("Couldn't get attachment data:", err)
 					return nil, kilonova.Statusf(500, "Couldn't get grader data")
@@ -93,8 +106,19 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		}
 	}()
 
+	sh := submissionHandler{
+		base:   base,
+		runner: runner,
+		sub:    sub,
+		lang:   runner.Language(sub.Language),
+	}
+	if sh.lang == nil {
+		slog.Warn("Could not find submission language when evaluating", slog.String("lang", sub.Language))
+		return kilonova.Statusf(500, "Language not found for submission")
+	}
+
 	defer func() {
-		err := markSubtestsDone(ctx, base, sub)
+		err := sh.markSubtestsDone(ctx)
 		if err != nil {
 			zap.S().Warn("Couldn't clean up subtests:", err)
 		}
@@ -110,7 +134,10 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		return kilonova.WrapError(err1, "Couldn't get problem settings")
 	}
 
-	if err := compileSubmission(ctx, base, runner, sub, problem, problemSettings); err != nil {
+	sh.pb = problem
+	sh.settings = problemSettings
+
+	if err := sh.compileSubmission(ctx); err != nil {
 		if err.Code != 204 { // Skip
 			zap.S().Warn(err)
 			return err
@@ -118,7 +145,7 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		return nil
 	}
 
-	checker, err := getAppropriateChecker(ctx, base, runner, sub, problem, problemSettings)
+	checker, err := sh.getAppropriateChecker(ctx)
 	if err != nil {
 		return kilonova.WrapError(err, "Couldn't get checker")
 	}
@@ -153,12 +180,12 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	// It is basically 2 implementations for ~ the same thing. It could be merged neater
 	switch sub.SubmissionType {
 	case kilonova.EvalTypeClassic:
-		if err := handleClassicSubmission(ctx, base, runner, sub, problem, checker, subTests); err != nil {
+		if err := sh.handleClassicSubmission(ctx, checker, subTests); err != nil {
 			zap.S().Warn(err)
 			return err
 		}
 	case kilonova.EvalTypeICPC:
-		if err := handleICPCSubmission(ctx, base, runner, sub, problem, checker, subTests); err != nil {
+		if err := sh.handleICPCSubmission(ctx, checker, subTests); err != nil {
 			zap.S().Warn(err)
 			return err
 		}
@@ -176,7 +203,7 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	return nil
 }
 
-func handleClassicSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, problem *kilonova.Problem, checker checkers.Checker, subTests []*kilonova.SubTest) *kilonova.StatusError {
+func (sh *submissionHandler) handleClassicSubmission(ctx context.Context, checker checkers.Checker, subTests []*kilonova.SubTest) *kilonova.StatusError {
 	var wg sync.WaitGroup
 
 	for _, subTest := range subTests {
@@ -185,7 +212,7 @@ func handleClassicSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner 
 
 		go func() {
 			defer wg.Done()
-			_, _, err := handleSubTest(ctx, base, runner, checker, sub, problem, subTest)
+			_, _, err := sh.handleSubTest(ctx, checker, subTest)
 			if err != nil {
 				zap.S().Warn("Error handling subtest:", err)
 			}
@@ -194,21 +221,21 @@ func handleClassicSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner 
 
 	wg.Wait()
 
-	if err := scoreTests(ctx, base, sub, problem); err != nil {
+	if err := sh.scoreTests(ctx); err != nil {
 		zap.S().Warn("Couldn't score test: ", err)
 	}
 
 	return nil
 }
 
-func handleICPCSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, problem *kilonova.Problem, checker checkers.Checker, subTests []*kilonova.SubTest) *kilonova.StatusError {
+func (sh *submissionHandler) handleICPCSubmission(ctx context.Context, checker checkers.Checker, subTests []*kilonova.SubTest) *kilonova.StatusError {
 	var failed bool
 	var upd kilonova.SubmissionUpdate
 	upd.Status = kilonova.StatusFinished
 
 	for _, subTest := range subTests {
 		if failed {
-			if err := base.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{
+			if err := sh.base.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{
 				Done: &True, Skipped: &True,
 				Verdict: &skippedVerdict,
 			}); err != nil {
@@ -216,13 +243,13 @@ func handleICPCSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eva
 			}
 			continue
 		}
-		score, verdict, err := handleSubTest(ctx, base, runner, checker, sub, problem, subTest)
+		score, verdict, err := sh.handleSubTest(ctx, checker, subTest)
 		if err != nil {
 			zap.S().Warn("Error handling subtest:", err)
 			continue
 		}
 		if !score.Equal(decimal.NewFromInt(100)) {
-			upd.Score = &problem.DefaultPoints
+			upd.Score = &sh.pb.DefaultPoints
 			upd.ChangeVerdict = true
 
 			verdict = fmt.Sprintf("%s (test_verdict.test_x #%d)", strings.ReplaceAll(verdict, "translate:", "test_verdict."), subTest.VisibleID)
@@ -239,7 +266,7 @@ func handleICPCSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eva
 		upd.ICPCVerdict = &acceptedVerdict
 	}
 
-	subTests, err := base.SubTests(ctx, sub.ID)
+	subTests, err := sh.base.SubTests(ctx, sh.sub.ID)
 	if err != nil {
 		zap.S().Warn("Could not get subtests for max score/mem updating:", err)
 		return err
@@ -254,17 +281,17 @@ func handleICPCSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eva
 	upd.MaxTime = &time
 	upd.MaxMemory = &memory
 
-	return base.UpdateSubmission(ctx, sub.ID, upd)
+	return sh.base.UpdateSubmission(ctx, sh.sub.ID, upd)
 }
 
-func compileSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, problem *kilonova.Problem, problemSettings *kilonova.ProblemEvalSettings) *kilonova.StatusError {
-	req, err := genSubCompileRequest(ctx, base, sub, problem, problemSettings)
+func (sh *submissionHandler) compileSubmission(ctx context.Context) *kilonova.StatusError {
+	req, err := sh.genSubCompileRequest(ctx)
 	if err != nil {
 		zap.S().Warn(err)
 		return kilonova.WrapError(err, "Couldn't generate compilation request")
 	}
 
-	resp, err1 := tasks.CompileTask(ctx, runner, req, graderLogger)
+	resp, err1 := tasks.CompileTask(ctx, sh.runner, req, graderLogger)
 	if err1 != nil {
 		return kilonova.WrapError(err1, "Error from eval")
 	}
@@ -278,7 +305,7 @@ func compileSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		compileTime = &resp.Stats.Time
 	}
 	compileError := !resp.Success
-	if err := base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{
+	if err := sh.base.UpdateSubmission(ctx, sh.sub.ID, kilonova.SubmissionUpdate{
 		CompileError: &compileError, CompileMessage: &resp.Output, CompileTime: compileTime,
 	}); err != nil {
 		spew.Dump(err)
@@ -287,18 +314,18 @@ func compileSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 
 	if !resp.Success {
 		compileErrVerdict := "test_verdict.compile_error"
-		if err := base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{
-			Status: kilonova.StatusFinished, Score: &problem.DefaultPoints,
+		if err := sh.base.UpdateSubmission(ctx, sh.sub.ID, kilonova.SubmissionUpdate{
+			Status: kilonova.StatusFinished, Score: &sh.pb.DefaultPoints,
 			ChangeVerdict: true, ICPCVerdict: &compileErrVerdict,
 		}); err != nil {
 			return kilonova.WrapError(err, "Couldn't finalize submission with compiler error")
 		}
-		stks, err := base.SubmissionSubTasks(ctx, sub.ID)
+		stks, err := sh.base.SubmissionSubTasks(ctx, sh.sub.ID)
 		if err != nil {
 			return kilonova.WrapError(err, "Couldn't get submission subtasks")
 		}
 		for _, stk := range stks {
-			if err := base.UpdateSubmissionSubtaskPercentage(ctx, stk.ID, decimal.Zero); err != nil {
+			if err := sh.base.UpdateSubmissionSubtaskPercentage(ctx, stk.ID, decimal.Zero); err != nil {
 				return kilonova.WrapError(err, "Couldn't finish subtasks")
 			}
 		}
@@ -307,34 +334,34 @@ func compileSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	return nil
 }
 
-func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, checker checkers.Checker, sub *kilonova.Submission, problem *kilonova.Problem, subTest *kilonova.SubTest) (decimal.Decimal, string, error) {
+func (sh *submissionHandler) handleSubTest(ctx context.Context, checker checkers.Checker, subTest *kilonova.SubTest) (decimal.Decimal, string, error) {
 	if subTest.TestID == nil {
 		zap.S().Error("A subtest whose test was purged was detected.", spew.Sdump(subTest))
 		return decimal.Zero, "", kilonova.Statusf(400, "Trying to handle subtest whose test was purged. This should never happen")
 	}
 
 	execRequest := &tasks.ExecRequest{
-		SubID:       sub.ID,
+		SubID:       sh.sub.ID,
 		SubtestID:   subTest.ID,
-		Filename:    problem.TestName,
-		MemoryLimit: problem.MemoryLimit,
-		TimeLimit:   problem.TimeLimit,
-		Lang:        sub.Language,
+		Filename:    sh.pb.TestName,
+		MemoryLimit: sh.pb.MemoryLimit,
+		TimeLimit:   sh.pb.TimeLimit,
+		Lang:        sh.lang,
 		TestID:      *subTest.TestID,
 	}
-	if problem.ConsoleInput {
+	if sh.pb.ConsoleInput {
 		execRequest.Filename = "stdin"
 	}
 
-	resp, err := tasks.ExecuteTask(ctx, runner, int64(problem.MemoryLimit), execRequest, graderLogger)
+	resp, err := tasks.ExecuteTask(ctx, sh.runner, int64(sh.pb.MemoryLimit), execRequest, graderLogger)
 	if err != nil {
 		return decimal.Zero, "", kilonova.WrapError(err, "Couldn't execute subtest")
 	}
 	var testScore decimal.Decimal
 
 	// Make sure TLEs are fully handled
-	if resp.Time > problem.TimeLimit {
-		resp.Time = problem.TimeLimit
+	if resp.Time > sh.pb.TimeLimit {
+		resp.Time = sh.pb.TimeLimit
 		resp.Comments = "translate:timeout"
 	}
 
@@ -343,7 +370,7 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 	}
 
 	// Hide fatal signals for ICPC submissions
-	if sub.SubmissionType == kilonova.EvalTypeICPC {
+	if sh.sub.SubmissionType == kilonova.EvalTypeICPC {
 		if strings.Contains(resp.Comments, "signal 9") {
 			resp.Comments = "translate:memory_limit"
 		}
@@ -352,14 +379,14 @@ func handleSubTest(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxSc
 		}
 	}
 
-	if err := base.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{Memory: &resp.Memory, Percentage: &testScore, Time: &resp.Time, Verdict: &resp.Comments, Done: &True}); err != nil {
+	if err := sh.base.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{Memory: &resp.Memory, Percentage: &testScore, Time: &resp.Time, Verdict: &resp.Comments, Done: &True}); err != nil {
 		return decimal.Zero, "", kilonova.WrapError(err, "Error during evaltest updating")
 	}
 	return testScore, resp.Comments, nil
 }
 
-func markSubtestsDone(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submission) error {
-	sts, err := base.SubTests(ctx, sub.ID)
+func (sh *submissionHandler) markSubtestsDone(ctx context.Context) error {
+	sts, err := sh.base.SubTests(ctx, sh.sub.ID)
 	if err != nil {
 		return kilonova.WrapError(err, "Error during getting subtests")
 	}
@@ -367,20 +394,20 @@ func markSubtestsDone(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.
 		if st.Done {
 			continue
 		}
-		if err := base.UpdateSubTest(ctx, st.ID, kilonova.SubTestUpdate{Done: &True}); err != nil {
+		if err := sh.base.UpdateSubTest(ctx, st.ID, kilonova.SubTestUpdate{Done: &True}); err != nil {
 			zap.S().Warnf("Couldn't mark subtest %d done: %s", st.ID, err)
 		}
 	}
 	return nil
 }
 
-func scoreTests(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submission, problem *kilonova.Problem) *kilonova.StatusError {
-	subtests, err1 := base.SubTests(ctx, sub.ID)
+func (sh *submissionHandler) scoreTests(ctx context.Context) *kilonova.StatusError {
+	subtests, err1 := sh.base.SubTests(ctx, sh.sub.ID)
 	if err1 != nil {
 		return err1
 	}
 
-	subTasks, err1 := base.SubmissionSubTasks(ctx, sub.ID)
+	subTasks, err1 := sh.base.SubmissionSubTasks(ctx, sh.sub.ID)
 	if err1 != nil {
 		return err1
 	}
@@ -388,7 +415,7 @@ func scoreTests(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submis
 		subTasks = nil
 	}
 
-	var score = problem.DefaultPoints
+	var score = sh.pb.DefaultPoints
 
 	if len(subTasks) > 0 {
 		subMap := make(map[int]*kilonova.SubTest)
@@ -409,16 +436,16 @@ func scoreTests(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submis
 				percentage = decimal.Min(percentage, st.Percentage)
 			}
 			// subTaskScore = stk.Score * (percentage / 100) rounded to the precision
-			subTaskScore := stk.Score.Mul(percentage.Shift(-2)).Round(problem.ScorePrecision)
+			subTaskScore := stk.Score.Mul(percentage.Shift(-2)).Round(sh.pb.ScorePrecision)
 			score = score.Add(subTaskScore)
-			if err := base.UpdateSubmissionSubtaskPercentage(ctx, stk.ID, percentage); err != nil {
+			if err := sh.base.UpdateSubmissionSubtaskPercentage(ctx, stk.ID, percentage); err != nil {
 				zap.S().Warn(err)
 			}
 		}
 	} else {
 		for _, subtest := range subtests {
 			// testScore = subtest.Score * (subtest.Percentage / 100) rounded to the precision
-			testScore := subtest.Score.Mul(subtest.Percentage.Shift(-2)).Round(problem.ScorePrecision)
+			testScore := subtest.Score.Mul(subtest.Percentage.Shift(-2)).Round(sh.pb.ScorePrecision)
 			score = score.Add(testScore)
 		}
 	}
@@ -430,7 +457,7 @@ func scoreTests(ctx context.Context, base *sudoapi.BaseAPI, sub *kilonova.Submis
 		time = max(time, subtest.Time)
 	}
 
-	return base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score, MaxTime: &time, MaxMemory: &memory})
+	return sh.base.UpdateSubmission(ctx, sh.sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score, MaxTime: &time, MaxMemory: &memory})
 }
 
 var ForceSecureSandbox = config.GenFlag[bool]("feature.grader.force_secure_sandbox", true, "Force use of secure sandbox only. Should be always enabled in production environments")
@@ -460,24 +487,24 @@ func getAppropriateRunner() (eval.BoxScheduler, error) {
 	return bm, nil
 }
 
-func getAppropriateChecker(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission, pb *kilonova.Problem, settings *kilonova.ProblemEvalSettings) (checkers.Checker, error) {
-	if settings.CheckerName == "" {
+func (sh *submissionHandler) getAppropriateChecker(ctx context.Context) (checkers.Checker, error) {
+	if sh.settings.CheckerName == "" {
 		return &checkers.DiffChecker{}, nil
 	}
-	att, err := base.ProblemAttByName(ctx, pb.ID, settings.CheckerName)
+	att, err := sh.base.ProblemAttByName(ctx, sh.pb.ID, sh.settings.CheckerName)
 	if err != nil {
 		return nil, kilonova.WrapError(err, "Couldn't get problem checker metadata")
 	}
-	data, err := base.ProblemAttDataByName(ctx, pb.ID, settings.CheckerName)
+	data, err := sh.base.ProblemAttDataByName(ctx, sh.pb.ID, sh.settings.CheckerName)
 	if err != nil {
 		return nil, kilonova.WrapError(err, "Couldn't get problem checker code")
 	}
-	subCode, err := base.RawSubmissionCode(ctx, sub.ID)
+	subCode, err := sh.base.RawSubmissionCode(ctx, sh.sub.ID)
 	if err != nil {
 		return nil, kilonova.WrapError(err, "Couldn't get submission source code")
 	}
-	if settings.LegacyChecker {
-		return checkers.NewLegacyCustomChecker(runner, graderLogger, pb, settings.CheckerName, data, subCode, att.LastUpdatedAt), nil
+	if sh.settings.LegacyChecker {
+		return checkers.NewLegacyCustomChecker(sh.runner, graderLogger, sh.pb, sh.settings.CheckerName, data, subCode, att.LastUpdatedAt), nil
 	}
-	return checkers.NewStandardCustomChecker(runner, graderLogger, pb, settings.CheckerName, data, subCode, att.LastUpdatedAt), nil
+	return checkers.NewStandardCustomChecker(sh.runner, graderLogger, sh.pb, sh.settings.CheckerName, data, subCode, att.LastUpdatedAt), nil
 }

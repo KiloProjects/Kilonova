@@ -74,7 +74,7 @@ var (
 	testOutputSuffixes = []string{".out", ".output", ".ok", ".sol", ".a", ".ans"}
 )
 
-func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
+func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File, base *sudoapi.BaseAPI) *kilonova.StatusError {
 	if strings.Contains(file.Name, "__MACOSX") || strings.Contains(file.Name, ".DS_Store") { // Support archives from MacOS
 		return nil
 	}
@@ -83,7 +83,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	}
 
 	if slices.Contains(filepath.SplitList(path.Dir(file.Name)), "submissions") { // Is in "submissions" directory
-		return ProcessSubmissionFile(ctx, file)
+		return ProcessSubmissionFile(ctx, file, base)
 	}
 
 	ext := strings.ToLower(path.Ext(file.Name))
@@ -118,7 +118,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	// Polygon-specific handling
 	if ctx.params.Polygon {
 		if strings.HasPrefix(file.Name, "solutions") {
-			return ProcessSubmissionFile(ctx, file)
+			return ProcessSubmissionFile(ctx, file, base)
 		}
 
 		if strings.HasPrefix(file.Name, "tests") {
@@ -197,7 +197,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 			continue
 		}
 
-		if err := ProcessArchiveFile(aCtx, file); err != nil {
+		if err := ProcessArchiveFile(aCtx, file, base); err != nil {
 			return err
 		}
 	}

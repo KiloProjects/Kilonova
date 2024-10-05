@@ -3,12 +3,12 @@ package test
 import (
 	"archive/zip"
 	"io"
+	"log/slog"
 	"path"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/eval"
-	"go.uber.org/zap"
+	"github.com/KiloProjects/kilonova/sudoapi"
 )
 
 type submissionStub struct {
@@ -16,20 +16,21 @@ type submissionStub struct {
 	lang string
 }
 
-func ProcessSubmissionFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
+func ProcessSubmissionFile(ctx *ArchiveCtx, file *zip.File, base *sudoapi.BaseAPI) *kilonova.StatusError {
 	f, err := file.Open()
 	if err != nil {
 		return kilonova.WrapError(err, "Couldn't open submission file")
 	}
+	defer f.Close()
 	data, err := io.ReadAll(f)
 	if err != nil {
 		return kilonova.WrapError(err, "Couldn't read submission file")
 	}
 
-	lang := eval.GetLangByFilename(path.Base(file.Name))
+	lang := base.LanguageFromFilename(path.Base(file.Name))
 	if lang == "" {
 		if !strings.HasSuffix(file.Name, ".desc") { // Don't show for polygon description files
-			zap.S().Warnf("Unrecognized submisison language for file %q", path.Base(file.Name))
+			slog.Warn("Unrecognized submisison language for archive file", slog.String("filename", path.Base(file.Name)))
 		}
 		return nil
 	}

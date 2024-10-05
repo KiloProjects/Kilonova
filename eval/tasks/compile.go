@@ -20,7 +20,7 @@ type CompileRequest struct {
 	ID          int
 	CodeFiles   map[string][]byte
 	HeaderFiles map[string][]byte
-	Lang        string
+	Lang        *eval.Language
 }
 
 type CompileResponse struct {
@@ -45,8 +45,8 @@ func bucketFromIDExec(id int) (datastore.BucketType, string) {
 func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest, logger *slog.Logger) (*CompileResponse, error) {
 	resp := &CompileResponse{}
 
-	lang, ok := eval.Langs[req.Lang]
-	if !ok {
+	// TODO: I don't think we need this anymore
+	if req.Lang == nil {
 		slog.Warn("Could not find language for submission", slog.Any("sub_id", req.ID), slog.Any("lang", req.Lang))
 		return resp, kilonova.Statusf(500, "No language found")
 	}
@@ -55,7 +55,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 	resp.Success = true
 
 	// If the language is interpreted, just save the code and leave
-	if !lang.Compiled {
+	if !req.Lang.Compiled {
 		// It should only be one file here anyway
 		if len(req.CodeFiles) > 1 {
 			slog.Warn("More than one file specified for non-compiled language. This is not properly supported")
@@ -76,7 +76,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 
 		// Compilation output
 		OutputBucketFiles: map[string]*eval.BucketFile{
-			lang.CompiledName: {
+			req.Lang.CompiledName: {
 				Bucket:   bucket,
 				Filename: outName,
 				Mode:     0777,
@@ -86,9 +86,9 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 
 		// Run config
 		RunConfig: &eval.RunConfig{
-			EnvToSet:    maps.Clone(lang.BuildEnv),
+			EnvToSet:    maps.Clone(req.Lang.BuildEnv),
 			InheritEnv:  true,
-			Directories: slices.Clone(lang.Mounts),
+			Directories: slices.Clone(req.Lang.Mounts),
 
 			StderrToStdout: true,
 			OutputPath:     outputPath,
@@ -112,10 +112,10 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 	}
 
 	// Init compilation command
-	goodCmd, err := makeGoodCompileCommand(lang.CompileCommand, sourceFiles)
+	goodCmd, err := makeGoodCompileCommand(req.Lang.CompileCommand, sourceFiles)
 	if err != nil {
-		slog.Warn("error in makeGoodCompileCommand. This is not good, so we'll use the command from the config file", slog.Any("err", err), slog.Any("command", lang.CompileCommand))
-		goodCmd = lang.CompileCommand
+		slog.Warn("error in makeGoodCompileCommand. This is not good, so we'll use the command from the config file", slog.Any("err", err), slog.Any("command", req.Lang.CompileCommand))
+		goodCmd = req.Lang.CompileCommand
 	}
 	bReq.Command = goodCmd
 
@@ -134,7 +134,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 		return resp, nil
 	}
 
-	if _, ok := bResp.BucketFiles[lang.CompiledName]; !ok {
+	if _, ok := bResp.BucketFiles[req.Lang.CompiledName]; !ok {
 		resp.Other = "Could not save compilation output"
 		resp.Success = false
 	}

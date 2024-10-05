@@ -39,6 +39,9 @@ type BoxScheduler interface {
 	RunBox2(ctx context.Context, req *Box2Request, memQuota int64) (*Box2Response, error)
 	Close(context.Context) error
 
+	Language(name string) *Language
+	Languages() map[string]*Language
+	LanguageFromFilename(filename string) *Language
 	LanguageVersions(ctx context.Context) map[string]string
 }
 

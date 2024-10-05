@@ -7,7 +7,6 @@ import (
 	"path"
 	"slices"
 	"strings"
-	"sync"
 
 	"github.com/KiloProjects/kilonova/eval"
 )
@@ -19,54 +18,52 @@ type Language struct {
 	lang *eval.Language
 }
 
-func (l *Language) Extension() string {
-	if l == nil {
-		return ".txt"
+func (s *BaseAPI) evalLangToInternal(lang *eval.Language) *Language {
+	if lang == nil {
+		return nil
 	}
-	if l.lang == nil {
-		slog.Warn("Language created outside sudoapi tried to get extension")
-		return ".err"
-	}
-	return l.lang.Extensions[len(l.lang.Extensions)-1]
-}
-
-func (l *Language) MOSSName() string {
-	if l == nil {
-		return "ascii"
-	}
-	if l.lang == nil {
-		slog.Warn("Language created outside sudoapi tried to get MOSS name")
-		return "ascii"
-	}
-	return l.lang.MOSSName
-}
-
-func (s *BaseAPI) evalLangToInternal(lang eval.Language) *Language {
 	return &Language{
 		InternalName:  lang.InternalName,
 		PrintableName: lang.PrintableName,
 
-		lang: &lang,
+		lang: lang,
 	}
 }
 
 // Language returns nil if the language was not found
 func (s *BaseAPI) Language(name string) *Language {
-	lang, ok := eval.Langs[name]
-	if !ok {
-		return nil
+	return s.evalLangToInternal(s.grader.Language(name))
+}
+
+// TODO: Just use the one from grader.LanguageFromFilename maybe? Reduce code duplication
+func (s *BaseAPI) LanguageFromFilename(filename string) string {
+	fileExt := path.Ext(filename)
+	if fileExt == "" {
+		return ""
 	}
-	return s.evalLangToInternal(lang)
+	// bestLang heuristic to match .cpp to cpp17
+	if fileExt == ".cpp" {
+		return "cpp17"
+	}
+	bestLang := ""
+	for k := range s.EnabledLanguages() {
+		for _, ext := range s.Language(k).Extensions() {
+			if ext == fileExt && (bestLang == "" || k < bestLang) {
+				bestLang = k
+			}
+		}
+	}
+	return bestLang
 }
 
 func (s *BaseAPI) LanguageFromMOSS(mossLang string) *Language {
-	var lang eval.Language
-	for _, elang := range eval.Langs {
-		if elang.MOSSName == mossLang && (lang.InternalName == "" || lang.InternalName < elang.InternalName) {
+	var lang *eval.Language
+	for _, elang := range s.grader.Languages() {
+		if elang.MOSSName == mossLang && (lang == nil || lang.InternalName < elang.InternalName) {
 			lang = elang
 		}
 	}
-	if lang.InternalName == "" {
+	if lang == nil {
 		slog.Warn("Could not find language for MOSS language", slog.String("moss_lang", mossLang))
 		return nil
 	}
@@ -83,18 +80,15 @@ type GraderLanguage struct {
 func (s *BaseAPI) GraderLanguages(ctx context.Context) []*GraderLanguage {
 	versions := s.grader.LanguageVersions(ctx)
 	langs := make([]*GraderLanguage, 0, len(versions))
-	for _, lang := range eval.Langs {
-		if lang.Disabled {
-			continue
-		}
-		if _, ok := versions[lang.InternalName]; !ok {
-			versions[lang.InternalName] = "?"
+	for name := range s.EnabledLanguages() {
+		if _, ok := versions[name]; !ok {
+			versions[name] = "?"
 		}
 	}
 	for langName, version := range versions {
 		name, cmd := langName, "-"
 
-		if lang, ok := eval.Langs[langName]; ok {
+		if lang := s.grader.Language(langName); lang != nil {
 			name = lang.PrintableName
 			cmds := slices.Clone(lang.CompileCommand)
 			if !lang.Compiled {
@@ -122,16 +116,56 @@ func (s *BaseAPI) GraderLanguages(ctx context.Context) []*GraderLanguage {
 	return langs
 }
 
-var enabledLanguages = sync.OnceValue(func() map[string]string {
+func (s *BaseAPI) EnabledLanguages() map[string]string {
 	langs := make(map[string]string)
-	for _, lang := range eval.Langs {
-		if !lang.Disabled {
-			langs[lang.InternalName] = lang.PrintableName
-		}
+	for _, lang := range s.grader.Languages() {
+		langs[lang.InternalName] = lang.PrintableName
 	}
 	return langs
-})
+}
 
-func (s *BaseAPI) EnabledLanguages() map[string]string {
-	return enabledLanguages()
+// The extension when used for saving (unique per language)
+func (l *Language) Extension() string {
+	if l == nil {
+		return ".txt"
+	}
+	if l.lang == nil {
+		slog.Warn("Language created outside sudoapi tried to get extension")
+		return ".err"
+	}
+	return l.lang.Extensions[len(l.lang.Extensions)-1]
+}
+
+// List of all valid extensions
+func (l *Language) Extensions() []string {
+	if l == nil {
+		return nil
+	}
+	if l.lang == nil {
+		slog.Warn("Language created outside sudoapi tried to get extensions")
+		return nil
+	}
+	return l.lang.Extensions
+}
+
+func (l *Language) MOSSName() string {
+	if l == nil {
+		return "ascii"
+	}
+	if l.lang == nil {
+		slog.Warn("Language created outside sudoapi tried to get MOSS name")
+		return "ascii"
+	}
+	return l.lang.MOSSName
+}
+
+func (l *Language) SimilarLangs() []string {
+	if l == nil {
+		return nil
+	}
+	if l.lang == nil {
+		slog.Warn("Language created outside sudoapi tried to get similar languages")
+		return nil
+	}
+	return l.lang.SimilarLangs
 }

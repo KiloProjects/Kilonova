@@ -48,6 +48,7 @@ type BoxManager struct {
 
 	languageVersionsMu sync.RWMutex
 	languageVersions   map[string]string
+	supportedLanguages map[string]*eval.Language
 
 	// TODO: Datastore manager here
 }
@@ -74,6 +75,9 @@ func (b *BoxManager) SubRunner(ctx context.Context, numConc int64) (eval.BoxSche
 		parentMgr: b,
 
 		boxGenerator: b.boxGenerator,
+
+		languageVersions:   b.languageVersions,
+		supportedLanguages: b.supportedLanguages,
 	}, nil
 }
 
@@ -149,6 +153,8 @@ func New(startingNumber int, count int, maxMemory int64, logger *slog.Logger, bo
 		parentMgr: nil,
 
 		boxGenerator: boxGenerator,
+
+		supportedLanguages: supportedLanguages(),
 	}
 	return bm, nil
 }
@@ -170,7 +176,7 @@ func (mgr *BoxManager) getLangVersions(ctx context.Context) map[string]string {
 	mgr.languageVersionsMu.Lock()
 	defer mgr.languageVersionsMu.Unlock()
 	mgr.languageVersions = make(map[string]string)
-	for name, lang := range eval.Langs {
+	for name, lang := range mgr.supportedLanguages {
 		if lang.Disabled {
 			continue
 		}
@@ -187,6 +193,19 @@ func (mgr *BoxManager) getLangVersions(ctx context.Context) map[string]string {
 	return mgr.languageVersions
 }
 
+func (mgr *BoxManager) Language(name string) *eval.Language {
+	lang, ok := mgr.supportedLanguages[name]
+	if !ok {
+		return nil
+	}
+	return lang
+}
+
+func (mgr *BoxManager) Languages() map[string]*eval.Language {
+	// TODO: maybe a maps.Clone()?
+	return mgr.supportedLanguages
+}
+
 func (mgr *BoxManager) LanguageVersions(ctx context.Context) map[string]string {
 	if mgr.languageVersions == nil {
 		return mgr.getLangVersions(ctx)
@@ -194,6 +213,38 @@ func (mgr *BoxManager) LanguageVersions(ctx context.Context) map[string]string {
 	mgr.languageVersionsMu.RLock()
 	defer mgr.languageVersionsMu.RUnlock()
 	return maps.Clone(mgr.languageVersions)
+}
+
+// TODO: Improve
+func (mgr *BoxManager) LanguageFromFilename(filename string) *eval.Language {
+	fileExt := path.Ext(filename)
+	if fileExt == "" {
+		return nil
+	}
+	// bestLang heuristic to match .cpp to cpp17
+	if fileExt == ".cpp" {
+		x := mgr.Language("cpp17")
+		if x != nil {
+			return x
+		}
+		// Otherwise fall back to earliest cpp version
+		best := ""
+		for _, lang := range mgr.supportedLanguages {
+			if strings.HasPrefix(lang.InternalName, ".cpp") && (best == "" || lang.InternalName < best) {
+				best = lang.InternalName
+			}
+		}
+		return mgr.Language(best)
+	}
+	bestLang := ""
+	for k, v := range mgr.Languages() {
+		for _, ext := range v.Extensions {
+			if ext == fileExt && (bestLang == "" || k < bestLang) {
+				bestLang = k
+			}
+		}
+	}
+	return mgr.Language(bestLang)
 }
 
 func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQuota int64) (*eval.Box2Response, error) {
@@ -334,4 +385,37 @@ func makeGoodCommand(command []string) ([]string, error) {
 
 	tmp[0] = cmd
 	return tmp, nil
+}
+
+// supportedLanguages disables all languages that are *not* detected by the system in the current configuration
+// It should be run at the start of the execution (and implemented more nicely tbh)
+func supportedLanguages() map[string]*eval.Language {
+	langs := make(map[string]*eval.Language)
+	for k, v := range eval.Langs {
+		if v.Disabled { // Skip search if already disabled
+			continue
+		}
+		var toSearch []string
+		if v.Compiled {
+			toSearch = v.CompileCommand
+		} else {
+			toSearch = v.RunCommand
+		}
+		if len(toSearch) == 0 {
+			slog.Info("Disabled language - empty line", slog.String("lang", k))
+			continue
+		}
+		cmd, err := exec.LookPath(toSearch[0])
+		if err != nil {
+			slog.Info("Disabled language - compiler/interpreter was not found in $PATH", slog.String("lang", k))
+			continue
+		}
+		if _, err = filepath.EvalSymlinks(cmd); err != nil {
+			slog.Info("Disabled language - compiler/interpreter had a bad symlink", slog.String("lang", k))
+			continue
+		}
+
+		langs[k] = &v
+	}
+	return langs
 }

@@ -81,14 +81,20 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	checkerPrepareMu.Lock()
 	defer checkerPrepareMu.Unlock()
 
+	lang := c.mgr.LanguageFromFilename(c.filename)
+	if lang == nil {
+		slog.Warn("Language not found for custom checker compilation", slog.String("filename", c.filename))
+		return "Couldn't compile checker", kilonova.Statusf(500, "Unknown checker language")
+	}
+
 	resp, err := tasks.CompileTask(ctx, c.mgr, &tasks.CompileRequest{
 		ID: -c.pb.ID,
 		CodeFiles: map[string][]byte{
-			eval.Langs[eval.GetLangByFilename(c.filename)].SourceName: c.code,
+			lang.SourceName: c.code,
 		}, HeaderFiles: map[string][]byte{
 			"/box/testlib.h": testlibFile,
 		},
-		Lang: eval.GetLangByFilename(c.filename),
+		Lang: lang,
 	}, c.Logger)
 	if err != nil {
 		return "Couldn't compile checker", err
@@ -141,7 +147,7 @@ func NewStandardCustomChecker(mgr eval.BoxScheduler, logger *slog.Logger, pb *ki
 	return &customChecker{mgr, pb, filename, code, subCode, lastUpdatedAt, logger, false}
 }
 
-func initRequest(lang eval.Language, job *customCheckerInput) *eval.Box2Request {
+func initRequest(lang *eval.Language, job *customCheckerInput) *eval.Box2Request {
 	return &eval.Box2Request{
 		InputBucketFiles: map[string]*eval.BucketFile{
 			"/box/program.out": {

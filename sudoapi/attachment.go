@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"go.uber.org/zap"
 )
@@ -381,12 +380,12 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 		}
 		filename := path.Base(att.Name)
 		filename = strings.TrimSuffix(filename, path.Ext(filename))
-		if filename == "checker_legacy" && eval.GetLangByFilename(att.Name) != "" {
+		if filename == "checker_legacy" && s.LanguageFromFilename(att.Name) != "" {
 			settings.CheckerName = att.Name
 			settings.LegacyChecker = true
 			continue
 		}
-		if filename == "checker" && eval.GetLangByFilename(att.Name) != "" {
+		if filename == "checker" && s.LanguageFromFilename(att.Name) != "" {
 			settings.CheckerName = att.Name
 			settings.LegacyChecker = false
 			continue
@@ -408,7 +407,7 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 			settings.HeaderFiles = append(settings.HeaderFiles, att.Name)
 		}
 
-		if lang := eval.GetLangByFilename(att.Name); lang != "" {
+		if lang := s.LanguageFromFilename(att.Name); lang != "" {
 			if strings.HasPrefix(lang, "cpp") {
 				whitelistCPP = true
 				if lang > biggestCPP {

@@ -4,7 +4,6 @@ import (
 	"flag"
 	"os"
 
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
 )
@@ -40,10 +39,6 @@ func main() {
 	// save the flags in case any new ones were added
 	if err := config.SaveConfigV2(); err != nil {
 		zap.S().Fatal(err)
-	}
-
-	if err := eval.Initialize(); err != nil {
-		zap.S().Fatal("Could not initialize the box manager:", err)
 	}
 
 	if err := Kilonova(); err != nil {

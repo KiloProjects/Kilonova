@@ -36,9 +36,7 @@ type Bucket struct {
 	MaxSize int64         // Maximum size in bytes. Values < 1024 mean system is off
 	MaxTTL  time.Duration // Maximum duration before emptying
 
-	// 0 = flate.NoCompression
-	// -1 = flate.DefaultCompression
-	CompressionLevel int
+	UseCompression bool
 
 	lastStatsMu sync.RWMutex
 	lastStats   *BucketStats
@@ -114,7 +112,7 @@ func (b *Bucket) Stat(name string) (fs.FileInfo, error) {
 
 func (b *Bucket) WriteFile(name string, r io.Reader, mode fs.FileMode) error {
 	filename := b.filePath(name)
-	if b.CompressionLevel != NoCompression {
+	if b.UseCompression {
 		filename += ".zst"
 	}
 
@@ -122,7 +120,7 @@ func (b *Bucket) WriteFile(name string, r io.Reader, mode fs.FileMode) error {
 	if err != nil {
 		return err
 	}
-	if b.CompressionLevel == NoCompression {
+	if !b.UseCompression {
 		_, err = io.Copy(f, r)
 		if err1 := f.Close(); err1 != nil && err == nil {
 			err = err1
@@ -155,24 +153,16 @@ func (b *Bucket) Reader(name string) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	f, err = os.Open(b.filePath(name) + ".gz")
-	if err == nil {
-		gz, err := newGzipReader(f)
-		if err != nil {
-			return nil, err
-		}
-		return &gzipFileReader{f, gz}, nil
-	}
-	if !errors.Is(err, fs.ErrNotExist) {
-		return nil, err
-	}
-
 	f, err = os.Open(b.filePath(name))
 	if err == nil {
 		return f, nil
 	}
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, kilonova.ErrNotExist
+	}
+
+	if _, err := os.Stat(b.filePath(name) + ".gz"); err == nil {
+		return nil, kilonova.Statusf(500, "Can't open file: gzip support removed")
 	}
 	return nil, err
 }
@@ -331,7 +321,7 @@ func (b *Bucket) LogValue() slog.Value {
 	return slog.StringValue(b.Name)
 }
 
-func NewBucket(path string, name string, compressionLevel int, cache bool, persistent bool, maxSize int64, maxTTL time.Duration) (*Bucket, error) {
+func NewBucket(path string, name string, useCompression bool, cache bool, persistent bool, maxSize int64, maxTTL time.Duration) (*Bucket, error) {
 	b := &Bucket{
 		RootPath:   path,
 		Name:       name,
@@ -340,7 +330,7 @@ func NewBucket(path string, name string, compressionLevel int, cache bool, persi
 		MaxSize:    maxSize,
 		MaxTTL:     maxTTL,
 
-		CompressionLevel: compressionLevel,
+		UseCompression: useCompression,
 	}
 	return b, b.Init()
 }

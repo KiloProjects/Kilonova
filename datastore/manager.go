@@ -34,7 +34,7 @@ type bucketDef struct {
 	MaxSize      int64
 	MaxTTL       time.Duration
 
-	CompressionLevel int
+	UseCompression bool
 }
 
 var (
@@ -49,44 +49,44 @@ var (
 
 			MaxSize: 2 * 1024 * 1024 * 1024, // 2GB
 
-			IsPersistent:     false,
-			CompressionLevel: NoCompression,
+			IsPersistent:   false,
+			UseCompression: false,
 		},
 		{
 			Name:    BucketTypeTests,
 			IsCache: false,
 
-			IsPersistent:     true,
-			CompressionLevel: DefaultCompression,
+			IsPersistent:   true,
+			UseCompression: true,
 		},
 		{
 			Name:    BucketTypeAttachments,
 			IsCache: true,
 
-			IsPersistent:     false,
-			CompressionLevel: NoCompression,
+			IsPersistent:   false,
+			UseCompression: false,
 		},
 		{
 			Name:    BucketTypeAvatars,
 			IsCache: true,
 
-			MaxTTL:           31 * 24 * time.Hour, // 31d
-			IsPersistent:     false,
-			CompressionLevel: NoCompression,
+			MaxTTL:         31 * 24 * time.Hour, // 31d
+			IsPersistent:   false,
+			UseCompression: false,
 		},
 		{
 			Name:    BucketTypeCheckers,
 			IsCache: true,
 
-			IsPersistent:     false,
-			CompressionLevel: NoCompression,
+			IsPersistent:   false,
+			UseCompression: false,
 		},
 		{
 			Name:    BucketTypeCompiles,
 			IsCache: false, // Well it kind of is but not really since it's cleaned up in the grader
 
-			IsPersistent:     false,
-			CompressionLevel: NoCompression,
+			IsPersistent:   false,
+			UseCompression: false,
 		},
 	}
 )
@@ -107,7 +107,7 @@ func InitBuckets(p string) error {
 		return err
 	}
 	for _, b := range bucketData {
-		bucket, err := NewBucket(p, string(b.Name), b.CompressionLevel, b.IsCache, b.IsPersistent, b.MaxSize, b.MaxTTL)
+		bucket, err := NewBucket(p, string(b.Name), b.UseCompression, b.IsCache, b.IsPersistent, b.MaxSize, b.MaxTTL)
 		if err != nil {
 			return err
 		}

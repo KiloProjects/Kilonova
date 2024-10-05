@@ -13,8 +13,8 @@ import (
 
 func legacyCheckerTask(ctx context.Context, mgr eval.BoxScheduler, job *customCheckerInput, log *slog.Logger) (*checkerResult, error) {
 	rez := &checkerResult{}
-	lang, ok := eval.Langs[eval.GetLangByFilename(job.c.filename)]
-	if !ok {
+	lang := mgr.LanguageFromFilename(job.c.filename)
+	if lang == nil {
 		rez.Output = ErrOut
 		return rez, nil
 	}

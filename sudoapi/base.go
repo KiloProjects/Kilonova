@@ -11,6 +11,7 @@ import (
 	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/email"
+	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer"
 	"github.com/Yiling-J/theine-go"
@@ -36,6 +37,8 @@ type Submissions struct {
 
 type Grader interface {
 	Wake()
+	Language(string) *eval.Language
+	Languages() map[string]*eval.Language
 	LanguageVersions(ctx context.Context) map[string]string
 }
 

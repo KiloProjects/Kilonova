@@ -73,6 +73,14 @@ func (h *Handler) LanguageVersions(ctx context.Context) map[string]string {
 	return h.runner.LanguageVersions(ctx)
 }
 
+func (h *Handler) Language(name string) *eval.Language {
+	return h.runner.Language(name)
+}
+
+func (h *Handler) Languages() map[string]*eval.Language {
+	return h.runner.Languages()
+}
+
 func (h *Handler) ScheduleSubmission(runner eval.BoxScheduler, sub *kilonova.Submission) error {
 	var subRunner eval.BoxScheduler
 	if sub.SubmissionType == kilonova.EvalTypeClassic {
