@@ -292,14 +292,11 @@ function SubsView(props: SubsViewProps) {
 							}}
 						>
 							<option value="">-</option>
-							{Object.entries(window.platform_info.langs).map(
-								([name, lang]) =>
-									!lang.disabled && (
-										<option value={name} key={name}>
-											{lang.name}
-										</option>
-									)
-							)}
+							{Object.entries(window.platform_info.langs).map(([name, humanName]) => (
+								<option value={name} key={name}>
+									{humanName}
+								</option>
+							))}
 						</select>
 					</label>
 					<label class="block mb-2">

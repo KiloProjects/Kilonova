@@ -115,7 +115,7 @@ func (s *BaseAPI) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) 
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
-		Statusf(500, res.Status).WriteError(w)
+		Statusf(500, "%s", res.Status).WriteError(w)
 		return
 	}
 

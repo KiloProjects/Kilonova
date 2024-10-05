@@ -23,7 +23,7 @@ export declare global {
 		user_id: number;
 		user?: UserBrief;
 		language: "en" | "ro";
-		langs: { [name: string]: WebLanguage };
+		langs: { [name: string]: string };
 	}
 
 	interface WebLanguage {

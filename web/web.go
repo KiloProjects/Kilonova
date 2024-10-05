@@ -12,6 +12,7 @@ import (
 	"html"
 	"html/template"
 	"io"
+	"log/slog"
 	"math"
 	"net/http"
 	"net/url"
@@ -24,7 +25,6 @@ import (
 	"unicode"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/alecthomas/chroma/v2"
@@ -263,9 +263,6 @@ func (rt *Web) parse(optFuncs template.FuncMap, files ...string) *template.Templ
 // NewWeb returns a new web instance
 func NewWeb(base *sudoapi.BaseAPI) *Web {
 	funcs := template.FuncMap{
-		"pLanguages": func() map[string]*WebLanguage {
-			return webLanguages
-		},
 		"problemSettings": func(problemID int) *kilonova.ProblemEvalSettings {
 			settings, err := base.ProblemSettings(context.Background(), problemID)
 			if err != nil {
@@ -762,115 +759,100 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return (time.Duration(c.PerUserTime) * time.Second).String()
 		},
 		"getCaptchaID": base.NewCaptchaID,
+		"pLanguages": func() map[string]string {
+			slog.Error("Uninitialized `pLanguages`")
+			return make(map[string]string)
+		},
 		"mustSolveCaptcha": func() bool {
-			zap.S().Error("Uninitialized `mustSolveCaptcha`")
+			slog.Error("Uninitialized `mustSolveCaptcha`")
 			return false
 		},
 		"getText": func(key string, vals ...any) string {
-			zap.S().Error("Uninitialized `getText`")
+			slog.Error("Uninitialized `getText`")
 			return "FATAL ERR"
 		},
 		"reqPath": func() string {
-			zap.S().Error("Uninitialized `reqPath`")
+			slog.Error("Uninitialized `reqPath`")
 			return "/"
 		},
 		"language": func() string {
-			zap.S().Error("Uninitialized `language`")
+			slog.Error("Uninitialized `language`")
 			return "en"
 		},
 		"isDarkMode": func() bool {
-			zap.S().Error("Uninitialized `isDarkMode`")
+			slog.Error("Uninitialized `isDarkMode`")
 			return true
 		},
 		"authed": func() bool {
-			zap.S().Error("Uninitialized `authed`")
+			slog.Error("Uninitialized `authed`")
 			return false
 		},
 		"contentUser": func() *kilonova.UserBrief {
-			zap.S().Error("Uninitialized `contentUser`")
+			slog.Error("Uninitialized `contentUser`")
 			return nil
 		},
 		"fullAuthedUser": func() *kilonova.UserFull {
-			zap.S().Error("Uninitialized `fullAuthedUser`")
+			slog.Error("Uninitialized `fullAuthedUser`")
 			return nil
 		},
 		"authedUser": func() *kilonova.UserBrief {
-			zap.S().Error("Uninitialized `authedUser`")
+			slog.Error("Uninitialized `authedUser`")
 			return nil
 		},
 		"isAdmin": func() bool {
-			zap.S().Error("Uninitialized `isAdmin`")
+			slog.Error("Uninitialized `isAdmin`")
 			return false
 		},
 		"isProposer": func() bool {
-			zap.S().Error("Uninitialized `isProposer`")
+			slog.Error("Uninitialized `isProposer`")
 			return false
 		},
 		"discordIdentity": func(user *kilonova.UserFull) *discordgo.User {
-			zap.S().Error("Uninitialized `discordIdentity`")
+			slog.Error("Uninitialized `discordIdentity`")
 			return nil
 		},
 		"isContestEditor": func(c *kilonova.Contest) bool {
-			zap.S().Error("Uninitialized `isContestEditor`")
+			slog.Error("Uninitialized `isContestEditor`")
 			return false
 		},
 		"contestLeaderboardVisible": func(c *kilonova.Contest) bool {
-			zap.S().Error("Uninitialized `contestLeaderboardVisible`")
+			slog.Error("Uninitialized `contestLeaderboardVisible`")
 			return false
 		},
 		"contestProblemsVisible": func(c *kilonova.Contest) bool {
-			zap.S().Error("Uninitialized `contestProblemsVisible`")
+			slog.Error("Uninitialized `contestProblemsVisible`")
 			return false
 		},
 		"contestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {
-			zap.S().Error("Uninitialized `contestQuestions`")
+			slog.Error("Uninitialized `contestQuestions`")
 			return nil
 		},
 		"currentProblem": func() *kilonova.Problem {
-			zap.S().Error("Uninitialized `currentProblem`")
+			slog.Error("Uninitialized `currentProblem`")
 			return nil
 		},
 		"canViewAllSubs": func() bool {
-			zap.S().Error("Uninitialized `canViewAllSubs`")
+			slog.Error("Uninitialized `canViewAllSubs`")
 			return false
 		},
 		"contestRegistration": func(c *kilonova.Contest) *kilonova.ContestRegistration {
-			zap.S().Error("Uninitialized `contestRegistration`")
+			slog.Error("Uninitialized `contestRegistration`")
 			return nil
 		},
 		"problemFullyVisible": func() bool {
-			zap.S().Error("Uninitialized `problemFullyVisible`")
+			slog.Error("Uninitialized `problemFullyVisible`")
 			return false
 		},
 		"numSolvedPblist": func(listID int) int {
-			zap.S().Error("Uninitialized `numSolvedPblist`")
+			slog.Error("Uninitialized `numSolvedPblist`")
 			return -1
 		},
 		"subCode": func(sub *kilonova.FullSubmission) []byte {
-			zap.S().Error("Uninitialized `subCode`")
+			slog.Error("Uninitialized `subCode`")
 			return nil
 		},
 	}
 	return &Web{funcs, base}
-}
-
-var webLanguages map[string]*WebLanguage
-
-type WebLanguage struct {
-	Disabled bool   `json:"disabled"`
-	Name     string `json:"name"`
-	// Extensions []string `json:"extensions"`
-}
-
-func init() {
-	webLanguages = make(map[string]*WebLanguage)
-	for name, lang := range eval.Langs {
-		webLanguages[name] = &WebLanguage{
-			Disabled: lang.Disabled,
-			Name:     lang.PrintableName,
-			// Extensions: lang.Extensions,
-		}
-	}
 }
 
 // staticFileServer is a modification of the original hashfs

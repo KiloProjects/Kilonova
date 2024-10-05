@@ -428,7 +428,7 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 
 	if whitelistCPP {
 		// limit cpp version to the ones >= the grader has
-		for name := range eval.Langs {
+		for name := range s.EnabledLanguages() {
 			if strings.HasPrefix(name, "cpp") && name >= biggestCPP {
 				settings.LanguageWhitelist = append(settings.LanguageWhitelist, name)
 			}
@@ -436,7 +436,7 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 	} else if whitelistC {
 		// Allow C and don't limit cpp version
 		settings.LanguageWhitelist = append(settings.LanguageWhitelist, "c")
-		for name := range eval.Langs {
+		for name := range s.EnabledLanguages() {
 			if strings.HasPrefix(name, "cpp") {
 				settings.LanguageWhitelist = append(settings.LanguageWhitelist, name)
 			}
@@ -448,32 +448,26 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 
 // ProblemLanguages wraps around ProblemSettings to provide a better interface to expose to the API
 // And deduplicate separate code that handles allowed submission languages
-func (s *BaseAPI) ProblemLanguages(ctx context.Context, problemID int) ([]eval.Language, *StatusError) {
+func (s *BaseAPI) ProblemLanguages(ctx context.Context, problemID int) ([]*Language, *StatusError) {
 	settings, err := s.ProblemSettings(ctx, problemID)
 	if err != nil {
 		return nil, err
 	}
-	langs := make([]eval.Language, 0, len(eval.Langs))
+	langs := make([]*Language, 0, len(s.EnabledLanguages()))
 	if len(settings.LanguageWhitelist) == 0 {
-		for _, val := range eval.Langs {
-			if val.Disabled {
-				continue
-			}
-			langs = append(langs, val)
+		for name := range s.EnabledLanguages() {
+			langs = append(langs, s.Language(name))
 		}
 	} else {
 		for _, val := range settings.LanguageWhitelist {
-			v, ok := eval.Langs[val]
-			if !ok {
-				slog.Warn("Language found in whitelist but not present in eval.Langs", slog.String("wh_value", val))
+			v := s.Language(val)
+			if v == nil {
+				slog.Warn("Language found in whitelist but not enabled", slog.String("wh_value", val))
 			}
-			if v.Disabled {
-				continue
-			}
-			langs = append(langs, eval.Langs[val])
+			langs = append(langs, v)
 		}
 	}
 
-	slices.SortFunc(langs, func(a, b eval.Language) int { return cmp.Compare(a.InternalName, b.InternalName) })
+	slices.SortFunc(langs, func(a, b *Language) int { return cmp.Compare(a.InternalName, b.InternalName) })
 	return langs, nil
 }

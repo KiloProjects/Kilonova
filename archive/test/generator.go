@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"go.uber.org/zap"
 )
@@ -273,12 +272,12 @@ func (ag *archiveGenerator) addSubmissions(ctx context.Context) *kilonova.Status
 		return err
 	}
 	for _, sub := range subs {
-		lang, ok := eval.Langs[sub.Language]
-		if !ok || lang.Disabled {
+		lang := ag.base.Language(sub.Language)
+		if lang == nil {
 			zap.S().Infof("Skipping submission due to unknown/disabled language (%q): %d", sub.Language, sub.ID)
 			continue
 		}
-		f, err := ag.ar.Create(fmt.Sprintf("submissions/%d-%sp%s", sub.ID, sub.Score.String(), lang.Extensions[len(lang.Extensions)-1]))
+		f, err := ag.ar.Create(fmt.Sprintf("submissions/%d-%sp%s", sub.ID, sub.Score.String(), lang.Extension()))
 		if err != nil {
 			return kilonova.WrapError(err, "Couldn't create archive submission file")
 		}

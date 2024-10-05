@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"go.uber.org/zap"
@@ -93,8 +92,8 @@ func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lang, ok := eval.Langs[args.Lang]
-	if !ok {
+	lang := s.base.Language(args.Lang)
+	if lang == nil {
 		errorData(w, "Invalid language", 400)
 		return
 	}

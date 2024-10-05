@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
@@ -126,12 +125,12 @@ func (s *DB) LastSubmissionTime(ctx context.Context, filter kilonova.SubmissionF
 
 const createSubQuery = "INSERT INTO submissions (user_id, problem_id, contest_id, language, code) VALUES ($1, $2, $3, $4, $5) RETURNING id;"
 
-func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, language eval.Language, code string, contestID *int) (int, error) {
-	if authorID <= 0 || problem == nil || language.InternalName == "" || code == "" {
+func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, langName string, code string, contestID *int) (int, error) {
+	if authorID <= 0 || problem == nil || langName == "" || code == "" {
 		return -1, kilonova.ErrMissingRequired
 	}
 	var id int
-	err := s.conn.QueryRow(ctx, createSubQuery, authorID, problem.ID, contestID, language.InternalName, code).Scan(&id)
+	err := s.conn.QueryRow(ctx, createSubQuery, authorID, problem.ID, contestID, langName, code).Scan(&id)
 	return id, err
 }
 

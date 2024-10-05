@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"go.uber.org/zap"
@@ -84,15 +83,7 @@ func Kilonova() error {
 			return err
 		}
 
-		ext := ""
-		lang, ok := eval.Langs[sub.Language]
-		if !ok {
-			zap.S().Warn("Unknown language: ", sub.Language)
-			ext = ".cpp17"
-		} else {
-			ext = lang.Extensions[0]
-		}
-
+		ext := base.Language(sub.Language).Extension()
 		w, err1 := wr.Create(fmt.Sprintf("%d-%s-%dp%s", sub.ID, pb.TestName, sub.Score.IntPart(), ext))
 		if err1 != nil {
 			return err1

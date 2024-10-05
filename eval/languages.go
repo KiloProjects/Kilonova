@@ -10,6 +10,7 @@ const (
 	MemoryReplace = "<MEMORY>"
 )
 
+// Deprecated: TODO: Replace
 func GetLangByFilename(filename string) string {
 	fileExt := path.Ext(filename)
 	if fileExt == "" {

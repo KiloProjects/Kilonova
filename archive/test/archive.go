@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
@@ -565,8 +564,8 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 	// Do submissions at the end after all changes have been merged
 	if len(aCtx.submissions) > 0 {
 		for _, sub := range aCtx.submissions {
-			lang, ok := eval.Langs[sub.lang]
-			if !ok {
+			lang := base.Language(sub.lang)
+			if lang == nil {
 				zap.S().Warn("Skipping submission")
 				continue
 			}

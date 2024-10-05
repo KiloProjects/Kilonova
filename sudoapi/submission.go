@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
@@ -338,7 +337,7 @@ var (
 )
 
 // CreateSubmission produces a new submission and also creates the necessary subtests
-func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserFull, problem *kilonova.Problem, code []byte, lang eval.Language, contestID *int, bypassSubCount bool) (int, *StatusError) {
+func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserFull, problem *kilonova.Problem, code []byte, lang *Language, contestID *int, bypassSubCount bool) (int, *StatusError) {
 	if author == nil {
 		return -1, Statusf(400, "Invalid submission author")
 	}
@@ -435,12 +434,12 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserFull, proble
 	if err1 != nil {
 		return -1, WrapError(err1, "Could not get problem languages")
 	}
-	if !slices.ContainsFunc(langs, func(a eval.Language) bool { return a.InternalName == lang.InternalName }) {
+	if !slices.ContainsFunc(langs, func(a *Language) bool { return a.InternalName == lang.InternalName }) {
 		return -1, Statusf(400, "Language not supported by problem")
 	}
 
 	// Add submission
-	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang, string(code), contestID)
+	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang.InternalName, string(code), contestID)
 	if err != nil {
 		zap.S().Warn("Couldn't create submission:", err)
 		return -1, Statusf(500, "Couldn't create submission")

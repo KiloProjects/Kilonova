@@ -476,7 +476,7 @@ func parseRequest[T any](r *http.Request, output *T) *kilonova.StatusError {
 		return kilonova.Statusf(http.StatusBadRequest, "Could not parse form")
 	}
 	if err := decoder.Decode(output, r.Form); err != nil {
-		return kilonova.WrapError(kilonova.Statusf(http.StatusBadRequest, err.Error()), "Invalid query parameters")
+		return kilonova.Statusf(http.StatusBadRequest, "Invalid query parameters: %s", err)
 	}
 	return nil
 }

@@ -14,7 +14,6 @@ import (
 	tparse "text/template/parse"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/bwmarrin/discordgo"
@@ -104,14 +103,8 @@ type ContestsIndexParams struct {
 	PageNum      int
 }
 
-type GraderInfoLanguage struct {
-	Name    string
-	Version string
-	Command string
-}
-
 type GraderInfoParams struct {
-	Languages []*GraderInfoLanguage
+	Languages []*sudoapi.GraderLanguage
 }
 
 type DonateParams struct {
@@ -151,7 +144,7 @@ type ProblemParams struct {
 	Submissions *sudoapi.Submissions
 
 	Statement template.HTML
-	Languages []eval.Language
+	Languages []*sudoapi.Language
 	Variants  []*kilonova.StatementVariant
 
 	SelectedVariant *kilonova.StatementVariant
@@ -160,7 +153,7 @@ type ProblemParams struct {
 type ProblemTopbarParams struct {
 	Topbar *ProblemTopbar
 
-	Languages []eval.Language
+	Languages []*sudoapi.Language
 	Problem   *kilonova.Problem
 }
 

@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
-	"path"
 	"runtime/metrics"
 	"slices"
 	"strconv"
@@ -22,7 +21,6 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/datastore"
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
@@ -1336,43 +1334,7 @@ func (rt *Web) contestLeaderboard() http.HandlerFunc {
 func (rt *Web) graderInfo() http.HandlerFunc {
 	templ := rt.parse(nil, "admin/grader.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		versions := rt.base.LanguageVersions(r.Context())
-		langs := make([]*GraderInfoLanguage, 0, len(versions))
-		for _, lang := range eval.Langs {
-			if lang.Disabled {
-				continue
-			}
-			if _, ok := versions[lang.InternalName]; !ok {
-				versions[lang.InternalName] = "?"
-			}
-		}
-		for langName, version := range versions {
-			name, cmd := langName, "-"
-
-			if lang, ok := eval.Langs[langName]; ok {
-				name = lang.PrintableName
-				cmds := slices.Clone(lang.CompileCommand)
-				if !lang.Compiled {
-					cmds = slices.Clone(lang.RunCommand)
-				}
-				for i := range cmds {
-					if cmds[i] == eval.MagicReplace {
-						cmds[i] = lang.SourceName
-					}
-					cmds[i] = strings.TrimPrefix(cmds[i], "/box/")
-				}
-				if len(cmds) > 0 {
-					cmds[0] = path.Base(cmds[0])
-					cmd = strings.Join(cmds, " ")
-				}
-			}
-			langs = append(langs, &GraderInfoLanguage{
-				Name:    name,
-				Version: version,
-				Command: cmd,
-			})
-		}
-		slices.SortFunc(langs, func(a, b *GraderInfoLanguage) int { return cmp.Compare(a.Name, b.Name) })
+		langs := rt.base.GraderLanguages(r.Context())
 		rt.runTempl(w, r, templ, &GraderInfoParams{langs})
 	}
 }
@@ -1808,6 +1770,9 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 	templ.Funcs(template.FuncMap{
 		"getText": func(line string, args ...any) string {
 			return kilonova.GetText(lang, line, args...)
+		},
+		"pLanguages": func() map[string]string {
+			return rt.base.EnabledLanguages()
 		},
 		"formatStmtVariant": func(fmt *kilonova.StatementVariant) string {
 			var b strings.Builder

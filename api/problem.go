@@ -15,7 +15,6 @@ import (
 	_ "embed"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/integrations/llm"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
@@ -542,7 +541,7 @@ func (s *API) getProblemAccessControl(ctx context.Context, _ struct{}) (*problem
 	}, nil
 }
 
-func (s *API) problemLanguages(ctx context.Context, _ struct{}) ([]eval.Language, *kilonova.StatusError) {
+func (s *API) problemLanguages(ctx context.Context, _ struct{}) ([]*sudoapi.Language, *kilonova.StatusError) {
 	return s.base.ProblemLanguages(ctx, util.ProblemContext(ctx).ID)
 }
 
