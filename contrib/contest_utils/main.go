@@ -112,7 +112,7 @@ func Kilonova() error {
 		spew.Dump(config.Profiles)
 	} else {
 		var subject *string
-		if len(config.MailSubject) == 0 {
+		if len(config.MailSubject) > 0 {
 			subject = &config.MailSubject
 		}
 		for _, team := range config.Profiles {
