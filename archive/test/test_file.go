@@ -3,6 +3,7 @@ package test
 import (
 	"archive/zip"
 	"fmt"
+	"log/slog"
 	"path"
 	"regexp"
 	"slices"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 )
 
 type testIDMode int
@@ -112,7 +112,7 @@ func deduceTestIDMode(ctx *ArchiveCtx) testIDMode {
 	for key := range ctx.tests {
 		if _, err := getTestID(key); err != nil {
 			mode = idModeSort
-			zap.S().Debug("Using `sort` ID mode")
+			slog.Debug("Using `sort` ID mode")
 			break
 		}
 	}
@@ -133,7 +133,7 @@ func deduceTestIDMode(ctx *ArchiveCtx) testIDMode {
 		}
 		if ctx.scoreParameters[0].Count != nil && mode == idModeParse {
 			mode = idModeParseSort
-			zap.S().Debug("Using `parseSort` ID mode")
+			slog.Debug("Using `parseSort` ID mode")
 		}
 	}
 	return mode

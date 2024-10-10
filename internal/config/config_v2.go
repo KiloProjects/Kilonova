@@ -147,7 +147,7 @@ func GetFlags[T any]() []Flag[T] {
 	return flags
 }
 
-func LoadConfigV2() error {
+func LoadConfigV2(skipUnknown bool) error {
 	flagMapMu.RLock()
 	defer flagMapMu.RUnlock()
 	if configV2Path == "" {
@@ -171,7 +171,9 @@ func LoadConfigV2() error {
 		// Do sneak update
 		val, ok := allFlags[key]
 		if !ok {
-			slog.Warn("Unknown config key", slog.String("key", key))
+			if skipUnknown {
+				slog.Warn("Unknown config key", slog.String("key", key))
+			}
 			continue
 		}
 		if v, ok := val.(configFlag); ok {

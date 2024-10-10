@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"io"
+	"log/slog"
 	"regexp"
 	"slices"
 	"strconv"
@@ -280,7 +281,7 @@ func solveSubtaskDependencies(subtasks map[string]parsedSubtask) (stks map[int]S
 		for _, dependency := range group.Dependencies {
 			dep, ok := subtasks[dependency]
 			if !ok {
-				zap.S().Debugf("Skipping unknown subtask %q", dependency)
+				slog.Debug("Skipping unknown subtask", slog.String("dependency", dependency))
 				continue
 			}
 			stk.Tests = append(stk.Tests, dep.Tests...)

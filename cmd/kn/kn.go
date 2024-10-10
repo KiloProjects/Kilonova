@@ -31,18 +31,20 @@ func Kilonova() error {
 
 	// Setup context
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, os.Kill)
 
 	// Print welcome message
-	zap.S().Infof("Starting Kilonova %s", kilonova.Version)
+	slog.Info("Starting Kilonova", slog.String("version", kilonova.Version))
 
 	if config.Common.Debug {
-		zap.S().Warn("Debug mode activated, expect worse performance")
+		slog.Warn("Debug mode activated, expect worse performance")
 	}
 
 	base, err := sudoapi.InitializeBaseAPI(context.Background())
 	if err != nil {
-		zap.S().Fatal(err)
+		slog.Error("Could not initialize BaseAPI", slog.Any("err", err))
+		return err
 	}
 	base.Start(ctx)
 	defer base.Close()
@@ -51,20 +53,21 @@ func Kilonova() error {
 	if graderFeature.Value() { // TODO: Hot stopping/starting grader
 		grader, err := grader.NewHandler(ctx, base)
 		if err != nil {
-			zap.S().Fatal(err)
+			slog.Error("Could not initialize grader", slog.Any("err", err))
+			return err
 		}
 		defer grader.Close()
 
 		go func() {
 			err := grader.Start()
 			if err != nil {
-				zap.S().Error(err)
+				slog.Error("Could not start grader", slog.Any("err", err))
 			}
 		}()
 	}
 
 	if err := base.ResetWaitingSubmissions(ctx); err != nil {
-		zap.S().Warn("Couldn't reset initial working submissions:", err)
+		slog.Warn("Couldn't reset initial working submissions:", slog.Any("err", err))
 	}
 
 	// for graceful setup and shutdown
@@ -73,17 +76,17 @@ func Kilonova() error {
 	go launchProfiler()
 	go func() {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			zap.S().Error(err)
+			slog.Error("Error initializing web server", slog.Any("err", err))
 			cancel()
 		}
 	}()
 
-	zap.S().Info("Successfully started")
+	slog.Info("Successfully started")
 
 	defer func() {
-		zap.S().Info("Shutting Down")
+		slog.Info("Shutting Down")
 		if err := server.Shutdown(ctx); err != nil && !errors.Is(err, context.Canceled) {
-			zap.S().Error(err)
+			slog.Error("Error shutting down", slog.Any("err", err))
 		}
 	}()
 

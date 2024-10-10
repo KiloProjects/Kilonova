@@ -3,11 +3,11 @@ package test
 import (
 	"archive/zip"
 	"encoding/json"
+	"log/slog"
 	"path"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
-	"go.uber.org/zap"
 )
 
 type archiveAttachment struct {
@@ -91,7 +91,7 @@ func ProcessPolygonCheckFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusEr
 func ProcessPolygonPDFStatement(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	parts := strings.Split(file.Name, "/")
 	if len(parts) != 4 {
-		zap.S().Warn("Sanity check failed: Polygon PDF statement is not 4 parts")
+		slog.Warn("Sanity check failed: Polygon PDF statement is not 4 parts")
 		return nil
 	}
 	filename := ""

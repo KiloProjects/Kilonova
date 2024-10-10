@@ -30,8 +30,7 @@ var (
 
 	teamsPath = flag.String("profiles", "./profiles.json", "Profiles file")
 
-	dryRun  = flag.Bool("dryRun", false, "Dry run to check data")
-	fullRun = flag.Bool("fullRun", false, "Also submit emails")
+	dryRun = flag.Bool("dryRun", false, "Dry run to check data")
 )
 
 type Profile struct {
@@ -149,7 +148,7 @@ func Kilonova() error {
 				DisplayName: &displayName,
 
 				ContestID:      &config.ContestID,
-				PasswordByMail: *fullRun,
+				PasswordByMail: config.SendMail,
 				MailSubject:    subject,
 			}
 
@@ -236,7 +235,7 @@ func main() {
 		slog.Error("Could not load config", slog.Any("err", err))
 		os.Exit(1)
 	}
-	if err := config.LoadConfigV2(); err != nil {
+	if err := config.LoadConfigV2(false); err != nil {
 		slog.Error("Could not load flags", slog.Any("err", err))
 		os.Exit(1)
 	}
