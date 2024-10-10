@@ -10,17 +10,13 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
+
+	_ "embed"
 )
 
-var verificationEmailTempl = template.Must(template.New("emailTempl").Parse(`Hey, {{.Name}}!
-
-Încă nu ți-ai verificat emailul. Te rog să intri pe acest link ca să fim siguri că ești tu: {{.HostPrefix}}/verify/{{.VID}}
-
-Dacă acest cont nu este al tău, poți ignora acest email.
-
-------
-Echipa Kilonova
-https://kilonova.ro/`))
+//go:embed emails/emailVerification.txt
+var verificationEmailText string
+var verificationEmailTempl = template.Must(template.New("emailTempl").Parse(verificationEmailText))
 
 // SendVerificationEmail updates the user metadata with an unverified email status and sends an email with the hard-coded template to the desired user.
 // Please provide a good context.
@@ -28,7 +24,7 @@ https://kilonova.ro/`))
 // NOTE: I think the user update breaks some single responsibility principle or something, but I think most places this could be used also does this, so meh.
 //
 // If `email` is different than the user's email, the email address is also updated.
-func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, email string) *StatusError {
+func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, email, lang string) *StatusError {
 	if s.mailer == nil || !s.MailerEnabled() || userID == 1 {
 		zap.S().Infof("Auto confirming email for user #%d as valid", userID)
 
@@ -68,21 +64,26 @@ func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, e
 	}
 
 	var b bytes.Buffer
-	if err := verificationEmailTempl.Execute(&b, struct {
+	if err := verificationEmailTempl.ExecuteTemplate(&b, lang, struct {
 		Name       string
 		VID        string
 		HostPrefix string
+		Branding   string
 	}{
 		Name:       name,
 		VID:        vid,
 		HostPrefix: config.Common.HostPrefix,
+		Branding:   EmailBranding.Value(),
 	}); err != nil {
 		zap.S().Error("Error rendering verification email:", err)
 		return Statusf(500, "Error rendering email")
 	}
-	if err := s.mailer.SendEmail(&kilonova.MailerMessage{Subject: "Verifică-ți adresa de mail", PlainContent: b.String(), To: email}); err != nil {
-		zap.S().Warn(err)
-		return Statusf(500, "Error sending email")
+	if err := s.SendMail(&kilonova.MailerMessage{
+		Subject:      kilonova.GetText(lang, "mail.subject.verification"),
+		PlainContent: b.String(),
+		To:           email,
+	}); err != nil {
+		return err
 	}
 
 	return nil

@@ -39,6 +39,8 @@ const (
 var (
 	ImportantUpdatesWebhook = config.GenFlag[string]("admin.important_webhook", "", "Webhook URL for audit log-level events")
 	VerboseUpdatesWebhook   = config.GenFlag[string]("admin.verbose_webhook", "", "Webhook URL for verbose platform information")
+
+	EmailBranding = config.GenFlag("admin.mailer.branding", "Kilonova", "Branding to use at the end of emails")
 )
 
 func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) *StatusError {

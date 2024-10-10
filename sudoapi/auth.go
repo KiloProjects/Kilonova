@@ -105,7 +105,7 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 	}
 
 	go func() {
-		if err := s.SendVerificationEmail(context.WithoutCancel(ctx), user.ID, user.Name, user.Email); err != nil {
+		if err := s.SendVerificationEmail(context.WithoutCancel(ctx), user.ID, user.Name, user.Email, user.PreferredLanguage); err != nil {
 			zap.S().Info("Couldn't send user verification email:", err)
 		}
 	}()

@@ -24,6 +24,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
+
+	_ "embed"
 )
 
 var (
@@ -299,25 +301,9 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 	return user, err1
 }
 
-var generatedUserTempl = template.Must(template.New("emailTempl").Parse(`<p>Hey, {{.Name}}!</p>
-
-<p>Contul tău Kilonova a fost creat. Acestea sunt datele tale de autentificare:</p>
-
-<p>Username: <code>{{.Username}}</code><br/>
-Parolă: <code>{{.Password}}</code></p>
-
-
-{{if .Contest}}
-{{$url := printf "%s/contests/%d" .HostPrefix .Contest.ID}}
-<p>În momentul creării contului, ai fost înscris automat în <a href="{{$url}}">{{.Contest.Name}}</a>. 
-Link-ul permanent pentru pagina concursului este: <a href="{{$url}}">{{$url}}</a></p>
-{{end}}
-
-<p>Mult spor în continuare!</p>
-
-<hr/>
-<p>Echipa {{.Branding}}<br/>
-<a href="{{.HostPrefix}}">{{.HostPrefix}}/</a></p>`))
+//go:embed emails/generated.html
+var generatedUserEmail string
+var generatedUserTempl = template.Must(template.New("emailTempl").Parse(generatedUserEmail))
 
 // Basically [a-zA-Z0-9] but exclude i/I/l/L and 0/o/O since they may be easily mistaken
 const userPasswordAlphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ123456789"
@@ -391,7 +377,7 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 			Password:   args.Password,
 			Contest:    contest,
 			HostPrefix: config.Common.HostPrefix,
-			Branding:   "Kilonova",
+			Branding:   EmailBranding.Value(),
 		}
 		if user.DisplayName != "" {
 			emailArgs.Name = user.DisplayName
@@ -400,7 +386,7 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 			emailArgs.Branding = val
 		}
 		var b bytes.Buffer
-		if err := generatedUserTempl.Execute(&b, emailArgs); err != nil {
+		if err := generatedUserTempl.ExecuteTemplate(&b, user.PreferredLanguage, emailArgs); err != nil {
 			slog.Error("Error rendering password send email", slog.Any("err", err))
 			return args.Password, user, kilonova.Statusf(500, "Could not render email")
 		}
@@ -412,7 +398,7 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 			sendTo = *args.PasswordByMailTo
 		}
 
-		var subject = "Date de autentificare cont Kilonova"
+		var subject = kilonova.GetText(user.PreferredLanguage, "mail.subject.generated")
 		if args.MailSubject != nil {
 			subject = *args.MailSubject
 		}

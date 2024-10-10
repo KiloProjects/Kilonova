@@ -1,0 +1,22 @@
+{{- define "ro" -}}
+Hey, {{.Name}}!
+
+Încă nu ți-ai verificat emailul. Te rog să intri pe acest link ca să fim siguri că ești tu: {{.HostPrefix}}/verify/{{.VID}}
+
+Dacă acest cont nu este al tău, poți ignora acest email.
+
+------
+Echipa {{.Branding}}
+{{.HostPrefix}}
+{{- end -}}
+{{- define "en" -}}
+Hey, {{.Name}}!
+
+You haven't verified your email yet. Please go to this link to make sure this is your address: {{.HostPrefix}}/verify/{{.VID}}
+
+If this account is not yours, you can safely ignore this email.
+
+------
+Team {{.Branding}}
+{{.HostPrefix}}
+{{- end -}}

@@ -2991,3 +2991,15 @@ ro = "Conturile create"
 [user_gen.created_accounts_info]
 en = "Passwords will be lost on page reload, they are not saved anywhere."
 ro = "Parolele vor fi pierdute când se reîncarcă pagina, nu sunt salvate niciunde."
+
+[mail.subject.verification]
+en = "Verify your email address"
+ro = "Verifică-ți adresa de email"
+
+[mail.subject.generated]
+en = "Kilonova login details"
+ro = "Date de autentificare cont Kilonova"
+
+[mail.subject.password_recovery]
+en = "Recover Kilonova account password"
+ro = "Recuperare parolă cont Kilonova"

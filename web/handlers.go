@@ -1600,7 +1600,7 @@ func (rt *Web) resendEmail() http.HandlerFunc {
 			rt.statusPage(w, r, 403, text)
 			return
 		}
-		if err := rt.base.SendVerificationEmail(context.Background(), u.ID, u.Name, u.Email); err != nil {
+		if err := rt.base.SendVerificationEmail(context.Background(), u.ID, u.Name, u.Email, u.PreferredLanguage); err != nil {
 			zap.S().Warn(err)
 			rt.statusPage(w, r, 500, "N-am putut retrimite emailul de verificare")
 			return

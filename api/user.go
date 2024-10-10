@@ -362,7 +362,7 @@ func (s *API) sendForgotPwdMail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	go func(user *kilonova.UserFull) {
-		if err := s.base.SendPasswordResetEmail(context.Background(), user.ID, user.Name, user.Email); err != nil {
+		if err := s.base.SendPasswordResetEmail(context.Background(), user.ID, user.Name, user.Email, user.PreferredLanguage); err != nil {
 			zap.S().Info(err)
 		}
 	}(user)
@@ -421,7 +421,7 @@ func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.base.SendVerificationEmail(r.Context(), util.UserBrief(r).ID, util.UserBrief(r).Name, email); err != nil {
+	if err := s.base.SendVerificationEmail(r.Context(), util.UserBrief(r).ID, util.UserBrief(r).Name, email, util.UserFull(r).PreferredLanguage); err != nil {
 		if err.Code != 400 {
 			zap.S().Warn(err)
 		}
@@ -443,7 +443,7 @@ func (s *API) resendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.base.SendVerificationEmail(r.Context(), u.ID, u.Name, u.Email); err != nil {
+	if err := s.base.SendVerificationEmail(r.Context(), u.ID, u.Name, u.Email, u.PreferredLanguage); err != nil {
 		err.WriteError(w)
 		return
 	}

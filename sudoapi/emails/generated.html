@@ -1,0 +1,43 @@
+{{define "ro"}}
+<p>Hey, {{.Name}}!</p>
+
+<p>Contul tău Kilonova a fost creat. Acestea sunt datele tale de autentificare:</p>
+
+<p>Username: <code>{{.Username}}</code><br/>
+Parolă: <code>{{.Password}}</code></p>
+
+
+{{if .Contest}}
+{{$url := printf "%s/contests/%d" .HostPrefix .Contest.ID}}
+<p>În momentul creării contului, ai fost înscris automat în <a href="{{$url}}">{{.Contest.Name}}</a>. 
+Link-ul permanent pentru pagina concursului este: <a href="{{$url}}">{{$url}}</a></p>
+{{end}}
+
+<p>Mult spor în continuare!</p>
+
+<hr/>
+<p>Echipa {{.Branding}}<br/>
+<a href="{{.HostPrefix}}">{{.HostPrefix}}/</a></p>
+{{end}}
+
+{{define "en"}}
+<p>Hey, {{.Name}}!</p>
+
+<p>Your Kilonova account was created. These are your login details:</p>
+
+<p>Username: <code>{{.Username}}</code><br/>
+Password: <code>{{.Password}}</code></p>
+
+
+{{if .Contest}}
+{{$url := printf "%s/contests/%d" .HostPrefix .Contest.ID}}
+<p>When creating your account, you were registered automatically for the following contest: <a href="{{$url}}">{{.Contest.Name}}</a>. 
+The permalink for the contest page is: <a href="{{$url}}">{{$url}}</a></p>
+{{end}}
+
+<p>We wish you best of luck!</p>
+
+<hr/>
+<p>Team {{.Branding}}<br/>
+<a href="{{.HostPrefix}}">{{.HostPrefix}}/</a></p>
+{{end}}

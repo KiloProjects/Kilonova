@@ -8,22 +8,17 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
+
+	_ "embed"
 )
 
-var forgotPwdTempl = template.Must(template.New("emailTempl").Parse(`Hey, {{.Name}}!
-
-Cineva a solicitat o cerere de resetare a parolei pentru contul tău. 
-Dacă tu ai fost cel care a trimis-o, accesează link-ul următor pentru a schimba parola: {{.HostPrefix}}/resetPassword/{{.VID}} 
-
-Dacă solicitarea nu a fost trimisă de tine, poți ignora acest email.
-
-------
-Echipa Kilonova
-https://kilonova.ro/`))
+//go:embed emails/forgotPassword.txt
+var passwordForgotEmailText string
+var forgotPwdTempl = template.Must(template.New("emailTempl").Parse(passwordForgotEmailText))
 
 // SendPasswordResetEmail sends a password reset email to the user.
 // Please provide a good context.
-func (s *BaseAPI) SendPasswordResetEmail(ctx context.Context, userID int, name, email string) *StatusError {
+func (s *BaseAPI) SendPasswordResetEmail(ctx context.Context, userID int, name, email, lang string) *StatusError {
 	if s.mailer == nil || !s.MailerEnabled() {
 		zap.S().Error("SendPasswordResetEmail called, but no mailer was provided to *sudoapi.BaseAPI")
 		return Statusf(500, "Mailer system was disabled by admins.")
@@ -36,21 +31,27 @@ func (s *BaseAPI) SendPasswordResetEmail(ctx context.Context, userID int, name, 
 	}
 
 	var b bytes.Buffer
-	if err := forgotPwdTempl.Execute(&b, struct {
+	if err := forgotPwdTempl.ExecuteTemplate(&b, lang, struct {
 		Name       string
 		VID        string
 		HostPrefix string
+		Branding   string
 	}{
 		Name:       name,
 		VID:        vid,
 		HostPrefix: config.Common.HostPrefix,
+		Branding:   EmailBranding.Value(),
 	}); err != nil {
 		zap.S().Error("Error rendering password request email:", err)
 		return Statusf(500, "Error rendering email")
 	}
-	if err := s.mailer.SendEmail(&kilonova.MailerMessage{Subject: "Recuperare parolă kilonova.ro", PlainContent: b.String(), To: email}); err != nil {
+	if err := s.SendMail(&kilonova.MailerMessage{
+		Subject:      kilonova.GetText(lang, "mail.subject.password_recovery"),
+		PlainContent: b.String(),
+		To:           email,
+	}); err != nil {
 		zap.S().Warn(err)
-		return Statusf(500, "Error sending email")
+		return err
 	}
 
 	return nil

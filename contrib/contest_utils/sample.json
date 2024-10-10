@@ -1,0 +1,21 @@
+{
+	"contest_id": 1,
+	"language": "en",
+
+	"write_bio": false,
+
+	"send_mail": false,
+	"mail_subject": "Login data for Kilonova contest",
+
+	"hybrid": false,
+	"teams": false,
+
+	"profiles": [
+		{
+			"name": "Team #1",
+			"slug": "team_1",
+
+			"email": "example@kilonova.ro"
+		}
+	]
+}
