@@ -209,6 +209,22 @@ var Langs = map[string]Language{
 		VersionCommand: []string{"python3", "--version"},
 		VersionParser:  nil,
 	},
+	"nodejs": {
+		Disabled: true, // For now
+
+		Extensions:    []string{".js"},
+		Compiled:      false,
+		PrintableName: "Node.js",
+		InternalName:  "nodejs",
+		MOSSName:      "javascript",
+
+		RunCommand:   []string{"node", "/box/index.js"},
+		SourceName:   "/box/index.js",
+		CompiledName: "/box/index.js",
+
+		VersionCommand: []string{"node", "--version"},
+		VersionParser:  nil,
+	},
 	"outputOnly": {
 		Extensions:    []string{".output_only"},
 		Compiled:      false,

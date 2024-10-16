@@ -30,4 +30,5 @@ import "codemirror/mode/pascal/pascal";
 import "codemirror/mode/go/go";
 import "codemirror/mode/python/python";
 import "codemirror/mode/haskell/haskell";
+import "codemirror/mode/javascript/javascript";
 // import "codemirror/mode/stex/stex";

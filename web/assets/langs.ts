@@ -9,6 +9,7 @@ export const languages = {
 	haskell: "text/x-haskell",
 	java: "text/x-java",
 	kotlin: "text/x-kotlin",
+	nodejs: "text/javascript",
 	python3: "text/x-python",
 	pascal: "text/x-pascal",
 	outputOnly: "text/plain",
@@ -25,6 +26,7 @@ export const prettyLanguages = {
 	haskell: "Haskell",
 	java: "Java",
 	kotlin: "Kotlin",
+	nodejs: "Node.js",
 	python3: "Python 3",
 	pascal: "Pascal",
 	outputOnly: "Output Only",
@@ -66,6 +68,11 @@ export const cm_modes: { [name: string]: CMMode } = {
 		mimeType: "text/x-kotlin",
 		prettyName: "Kotlin",
 		extensions: ["kt"],
+	},
+	nodejs: {
+		mimeType: "text/javascript",
+		prettyName: "Node.js",
+		extensions: ["js"],
 	},
 	python: {
 		mimeType: "text/x-python",

@@ -498,6 +498,14 @@ ro = "Credite"
 en = "Front page"
 ro = "Pagina principală"
 
+[privacyPolicy]
+en = "Privacy policy"
+ro = "Politica de confidențialitate"
+
+[termsOfService]
+en = "Terms of service"
+ro = "Termeni și condiții"
+
 [problem.list]
 en = "Problems"
 ro = "Probleme"
