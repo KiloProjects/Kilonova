@@ -148,6 +148,9 @@ func (rt *Web) Handler() http.Handler {
 			http.ServeContent(w, r, "robots.txt", time.Now(), file.(io.ReadSeeker))
 		})
 
+		r.Get("/termsOfService", rt.justRender("util/termsOfService.html"))
+		r.Get("/privacyPolicy", rt.justRender("util/privacyPolicy.html"))
+
 		r.With(rt.mustBeVisitor).Get("/login", rt.justRender("auth/login.html", "modals/login.html"))
 		r.With(rt.mustBeVisitor).Get("/signup", rt.justRender("auth/signup.html"))
 		r.With(rt.mustBeVisitor).Get("/forgot_pwd", rt.justRender("auth/forgot_pwd_send.html"))
