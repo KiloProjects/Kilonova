@@ -206,6 +206,8 @@
 	.list-group {
 		@apply border-gray-300 w-full;
 		@apply dark:border-gray-700;
+
+		@apply rounded-lg;
 	}
 
 	.list-group-head {
@@ -219,13 +221,19 @@
 		@apply black-anchor list-group-head hover:list-group-selected;
 	}
 
-	.list-group-rounded {
+	/* .list-group-rounded {
 		@apply rounded-lg;
 	}
 	.list-group-rounded > *:first-child {
 		@apply rounded-t-lg;
 	}
 	.list-group-rounded > *:last-child {
+		@apply rounded-b-lg;
+	} */
+	.list-group > *:first-child {
+		@apply rounded-t-lg;
+	}
+	.list-group > *:last-child {
 		@apply rounded-b-lg;
 	}
 
