@@ -1508,6 +1508,13 @@ func (rt *Web) userSessions() http.HandlerFunc {
 	}
 }
 
+func (rt *Web) problemQueue() http.HandlerFunc {
+	templ := rt.parse(nil, "admin/problemQueue.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		rt.runTempl(w, r, templ, nil)
+	}
+}
+
 func (rt *Web) sessionsFilter() http.HandlerFunc {
 	templ := rt.parse(nil, "auth/sessions.html")
 	decoder := schema.NewDecoder()

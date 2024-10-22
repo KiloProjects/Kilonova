@@ -49,6 +49,7 @@ require github.com/dustin/go-humanize v1.0.1
 require (
 	github.com/bwmarrin/discordgo v0.28.1
 	github.com/google/uuid v1.6.0
+	github.com/oschwald/maxminddb-golang/v2 v2.0.0-beta.1
 	github.com/sashabaranov/go-openai v1.31.0
 	go.uber.org/zap/exp v0.2.0
 	golang.org/x/oauth2 v0.23.0

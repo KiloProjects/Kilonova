@@ -15,6 +15,7 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"os"
 	"path"
@@ -25,6 +26,7 @@ import (
 	"unicode"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/integrations/maxmind"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/alecthomas/chroma/v2"
@@ -236,6 +238,7 @@ func (rt *Web) Handler() http.Handler {
 			r.Get("/auditLog", rt.auditLog())
 			r.Get("/debug", rt.debugPage())
 			r.Get("/sessions", rt.sessionsFilter())
+			r.Get("/problemQueue", rt.problemQueue())
 		})
 
 		// Proposer panel
@@ -672,6 +675,16 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 				return nil
 			}
 			return devices
+		},
+		"ipData": func(ip *netip.Addr) *maxmind.Data {
+			if ip == nil {
+				return nil
+			}
+			data, err := maxmind.IPData(*ip)
+			if err == nil && data != nil {
+				return data
+			}
+			return nil
 		},
 
 		// for problem edit page

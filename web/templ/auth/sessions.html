@@ -41,7 +41,18 @@
                 {{getText "session_devices"}}:
                 <ul>
                     {{range .}}
-                    <li>{{if .IPAddr}}{{.IPAddr.String}}{{end}} {{if .UserAgent}}(<code>{{.UserAgent}}</code>){{end}}</li>
+                    <li>{{with .IPAddr}}
+                            {{.String}}
+                            {{with ipData . }}
+                            {{if or .City .Country}}
+                            ({{with .City}}{{.}},{{end}}{{with .Country}} {{.}}{{end}})
+                            {{end}}
+                            {{end}}
+                        {{end}} 
+                        {{if .UserAgent}}
+                            (<code>{{.UserAgent}}</code>)
+                        {{end}}
+                    </li>
                     {{end}}
                 </ul>  
             </li>

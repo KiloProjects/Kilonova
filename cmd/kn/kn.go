@@ -15,6 +15,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/api"
 	"github.com/KiloProjects/kilonova/eval/grader"
+	"github.com/KiloProjects/kilonova/integrations/maxmind"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/web"
@@ -40,6 +41,8 @@ func Kilonova() error {
 	if config.Common.Debug {
 		slog.Warn("Debug mode activated, expect worse performance")
 	}
+
+	maxmind.Initialize()
 
 	base, err := sudoapi.InitializeBaseAPI(context.Background())
 	if err != nil {
