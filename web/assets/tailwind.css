@@ -230,10 +230,12 @@
 	.list-group-rounded > *:last-child {
 		@apply rounded-b-lg;
 	} */
-	.list-group > *:first-child {
+	.list-group > *:first-child,
+	.list-group > kn-dom-sublist:first-child > *:first-child {
 		@apply rounded-t-lg;
 	}
-	.list-group > *:last-child {
+	.list-group > *:last-child,
+	.list-group > kn-dom-sublist:last-child > *:first-child {
 		@apply rounded-b-lg;
 	}
 
