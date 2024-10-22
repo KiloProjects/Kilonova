@@ -44,8 +44,8 @@
                     <li>{{with .IPAddr}}
                             {{.String}}
                             {{with ipData . }}
-                            {{if or .City .Country}}
-                            ({{with .City}}{{.}},{{end}}{{with .Country}} {{.}}{{end}})
+                            {{if or (or .City .Country) (len .Subdivisions)}}
+							({{with .City}}{{.}}, {{end}}{{range .Subdivisions}}{{.}}, {{end}}{{with .Country}} {{.}}{{end}})
                             {{end}}
                             {{end}}
                         {{end}} 

@@ -13,8 +13,9 @@ var MaxMindPath = config.GenFlag("integrations.maxmind.db_path", "/usr/share/Geo
 var reader *maxminddb.Reader
 
 type Data struct {
-	City    string
-	Country string
+	City         string
+	Subdivisions []string
+	Country      string
 
 	Latitude  float64
 	Longitude float64
@@ -27,16 +28,26 @@ func IPData(ip netip.Addr) (*Data, error) {
 	}
 	result := reader.Lookup(ip)
 	var data Data
-	if err := result.DecodePath(data.City, "city", "names", "en"); err != nil {
+	if err := result.DecodePath(&data.City, "city", "names", "en"); err != nil {
 		data.City = ""
 	}
-	if err := result.DecodePath(data.Country, "country", "names", "en"); err != nil {
+
+	var subdivisions []map[string]interface{}
+	if err := result.DecodePath(&subdivisions, "subdivisions"); err != nil {
+		data.Subdivisions = nil
+	} else {
+		for _, subdivision := range subdivisions {
+			data.Subdivisions = append(data.Subdivisions, subdivision["names"].(map[string]interface{})["en"].(string))
+		}
+	}
+
+	if err := result.DecodePath(&data.Country, "country", "names", "en"); err != nil {
 		data.Country = ""
 	}
-	if err := result.DecodePath(data.Latitude, "location", "latitude"); err != nil {
+	if err := result.DecodePath(&data.Latitude, "location", "latitude"); err != nil {
 		data.Latitude = 0
 	}
-	if err := result.DecodePath(data.Longitude, "location", "longitude"); err != nil {
+	if err := result.DecodePath(&data.Longitude, "location", "longitude"); err != nil {
 		data.Longitude = 0
 	}
 	return &data, nil
