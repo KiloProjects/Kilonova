@@ -647,7 +647,7 @@ func (rt *Web) randomProblem() http.HandlerFunc {
 		}
 		if len(pbs) == 0 {
 			w.Header().Add("X-Problem-ID", "-1")
-			rt.statusPage(w, r, 400, "Cold not find a random problem matching the given criteria")
+			rt.statusPage(w, r, 400, "Could not find a random problem matching the given criteria")
 			return
 		}
 

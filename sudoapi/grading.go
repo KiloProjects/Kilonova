@@ -12,8 +12,8 @@ import (
 )
 
 type Language struct {
-	InternalName  string
-	PrintableName string
+	InternalName  string `json:"internal_name"`
+	PrintableName string `json:"printable_name"`
 
 	lang *eval.Language
 }
