@@ -5,12 +5,14 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
 	"os"
 	"slices"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/KiloProjects/kilonova"
@@ -65,6 +67,22 @@ type Configuration struct {
 func Kilonova() error {
 	ctx := context.Background()
 
+	auditLogFile, err := os.Create("./generator-" + time.Now().Format(time.RFC3339) + ".log")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := auditLogFile.Close(); err != nil {
+			slog.Warn("Error closing audit log", slog.Any("err", err))
+		}
+	}()
+
+	handler := slog.NewJSONHandler(auditLogFile, &slog.HandlerOptions{
+		AddSource: true,
+	})
+
+	auditLog := slog.New(handler)
+
 	// Print welcome message
 	slog.Info("Starting Kilonova Contest Registration Manager")
 
@@ -116,6 +134,19 @@ func Kilonova() error {
 			subject = &config.MailSubject
 		}
 		for _, team := range config.Profiles {
+			if len(team.Password) > 0 {
+				slog.Info("Skipping already created account", slog.String("slug", team.Slug))
+				continue
+			}
+
+			user, err2 := base.UserFullByName(ctx, team.Slug)
+			if err2 != nil && !errors.Is(err2, sudoapi.ErrNotFound) {
+				slog.Error("Could not test user existence", slog.Any("err", err2))
+				continue
+			} else if user != nil && user.Email == team.Email {
+				slog.Info("Skipping already created account, even though it has no password in profile", slog.String("slug", team.Slug))
+				continue
+			}
 
 			var bio string
 			if config.WriteBio {
@@ -156,9 +187,13 @@ func Kilonova() error {
 			if err != nil {
 				slog.Error("Error creating user", slog.Any("err", err))
 			}
+			auditLog.Info("Created user", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug))
+			slog.Info("Created user and sent email", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug))
 
 			team.Password = pwd
 			outTeams = append(outTeams, team)
+
+			time.Sleep(200 * time.Millisecond)
 		}
 	}
 

@@ -283,7 +283,7 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 	}
 
 	dName := ""
-	if displayName != nil {
+	if displayName != nil && len(*displayName) > 0 {
 		dName = *displayName
 	}
 
