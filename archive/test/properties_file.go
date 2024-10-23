@@ -20,6 +20,8 @@ import (
 type Subtask struct {
 	Score decimal.Decimal
 	Tests []int
+
+	index *int
 }
 
 type mockTag struct {
@@ -265,6 +267,8 @@ type parsedSubtask struct {
 	Score decimal.Decimal
 	Tests []int
 
+	Index *int
+
 	// The current subtask is automatically considered a dependency
 	Dependencies []string
 }
@@ -276,7 +280,7 @@ func solveSubtaskDependencies(subtasks map[string]parsedSubtask) (stks map[int]S
 	finalSubtasks := make(map[string]Subtask)
 
 	for id, group := range subtasks {
-		stk := Subtask{Score: group.Score}
+		stk := Subtask{Score: group.Score, index: group.Index}
 		stk.Tests = slices.Clone(group.Tests)
 		for _, dependency := range group.Dependencies {
 			dep, ok := subtasks[dependency]
@@ -296,15 +300,24 @@ func solveSubtaskDependencies(subtasks map[string]parsedSubtask) (stks map[int]S
 	}
 
 	var allInts = true
-	for id := range finalSubtasks {
+	for id, stk := range finalSubtasks {
 		if _, err := strconv.Atoi(id); err != nil {
-			allInts = false
+			if stk.index == nil {
+				allInts = false
+			}
 			break
 		}
 	}
 	if allInts {
 		for sid, stk := range finalSubtasks {
-			id, _ := strconv.Atoi(sid) // Safe to ignore, proven to be ok
+			id, err := strconv.Atoi(sid)
+			if err != nil {
+				if stk.index != nil {
+					id = *stk.index
+				} else {
+					slog.Warn("Weird state: subtask id is invalid and index is not set")
+				}
+			}
 			stks[id] = stk
 		}
 	} else {

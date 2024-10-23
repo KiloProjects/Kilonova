@@ -69,7 +69,7 @@ func ProcessProblemXMLFile(actx *ArchiveCtx, file io.Reader) *kilonova.StatusErr
 
 	if len(subtasks) > 0 {
 		// Parse group points and dependencies
-		for _, group := range xmlquery.Find(testsetNode, "//groups/group") {
+		for i, group := range xmlquery.Find(testsetNode, "//groups/group") {
 			name := group.SelectAttr("name")
 			stk, ok := subtasks[name]
 			if !ok {
@@ -80,6 +80,12 @@ func ProcessProblemXMLFile(actx *ArchiveCtx, file io.Reader) *kilonova.StatusErr
 				if err == nil {
 					stk.Score = val
 				}
+			} else {
+				val := decimal.Zero
+				for _, test := range stk.Tests {
+					val = val.Add(actx.testScores[test])
+				}
+				stk.Score = val
 			}
 
 			var dependencies []string
@@ -91,6 +97,8 @@ func ProcessProblemXMLFile(actx *ArchiveCtx, file io.Reader) *kilonova.StatusErr
 			if len(dependencies) > 0 {
 				stk.Dependencies = dependencies
 			}
+
+			stk.Index = &i
 
 			subtasks[name] = stk
 		}

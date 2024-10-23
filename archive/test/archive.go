@@ -122,7 +122,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File, base *sudoapi.BaseAPI) 
 		}
 
 		if strings.HasPrefix(file.Name, "tests") {
-			if ext == ".a" {
+			if slices.Contains(testOutputSuffixes, ext) {
 				return ProcessTestOutputFile(ctx, file)
 			}
 
