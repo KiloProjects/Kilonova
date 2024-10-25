@@ -210,20 +210,60 @@ var Langs = map[string]Language{
 		VersionParser:  nil,
 	},
 	"nodejs": {
-		Disabled: true, // For now
+		// Disabled: true, // For now
 
 		Extensions:    []string{".js"},
-		Compiled:      false,
+		Compiled:      true,
 		PrintableName: "Node.js",
 		InternalName:  "nodejs",
 		MOSSName:      "javascript",
 
-		RunCommand:   []string{"node", "/box/index.js"},
-		SourceName:   "/box/index.js",
-		CompiledName: "/box/index.js",
+		CompileCommand: []string{"node", "-c", MagicReplace},
+		RunCommand:     []string{"node", "/box/index.js"},
+		SourceName:     "/box/index.js",
+		CompiledName:   "/box/index.js",
 
 		VersionCommand: []string{"node", "--version"},
 		VersionParser:  nil,
+	},
+	"php": {
+		// NOTE: Requires the php-cli package
+		Extensions:    []string{".php"},
+		Compiled:      true,
+		PrintableName: "PHP",
+		InternalName:  "php",
+		MOSSName:      "ascii", // MOSS doesn't support php
+
+		CompileCommand: []string{"php", "-l", MagicReplace},
+		RunCommand: []string{"php", "-n",
+			"-d", "ONLINE_JUDGE=true", "-d", "KNOVA=true", "-d", "display_errors=Off", "-d", "error_reporting=0",
+			"-d", "memory_limit=" + MemoryReplace + "K",
+			"/box/index.php",
+		},
+		SourceName:   "/box/index.php",
+		CompiledName: "/box/index.php",
+
+		VersionCommand: []string{"php", "--version"},
+		VersionParser:  getFirstLine,
+	},
+	"rust": {
+		Extensions: []string{".rs"},
+
+		Compiled:      true,
+		PrintableName: "Rust",
+		InternalName:  "rust",
+		MOSSName:      "ascii", // MOSS doesn't support rust
+
+		CompileCommand: []string{"rustc", "--edition", "2021", "-O", "-C", "strip=symbols",
+			"--cfg", "ONLINE_JUDGE", "--cfg", "KNOVA", MagicReplace, "-o", "/box/output",
+		},
+		RunCommand:   []string{"/box/output"},
+		SourceName:   "/box/main.rs",
+		CompiledName: "/box/output",
+
+		VersionCommand: []string{"rustc", "--version"},
+
+		Mounts: []Directory{{In: "/etc"}},
 	},
 	"outputOnly": {
 		Extensions:    []string{".output_only"},

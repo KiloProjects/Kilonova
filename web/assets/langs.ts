@@ -12,6 +12,8 @@ export const languages = {
 	nodejs: "text/javascript",
 	python3: "text/x-python",
 	pascal: "text/x-pascal",
+	php: "text/x-php",
+	rust: "text/rust",
 	outputOnly: "text/plain",
 };
 
@@ -29,6 +31,8 @@ export const prettyLanguages = {
 	nodejs: "Node.js",
 	python3: "Python 3",
 	pascal: "Pascal",
+	php: "PHP",
+	rust: "Rust",
 	outputOnly: "Output Only",
 };
 
@@ -83,6 +87,16 @@ export const cm_modes: { [name: string]: CMMode } = {
 		mimeType: "text/x-pascal",
 		prettyName: "Pascal",
 		extensions: ["pas"],
+	},
+	php: {
+		mimeType: "text/x-php",
+		prettyName: "PHP",
+		extensions: ["php"],
+	},
+	rust: {
+		mimeType: "text/rust",
+		prettyName: "Rust",
+		extensions: ["rs"],
 	},
 	markdown: {
 		mimeType: "text/markdown",

@@ -481,6 +481,9 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			if lang == "pascal" {
 				lang = "pas"
 			}
+			if lang == "nodejs" {
+				lang = "js"
+			}
 			lm := lexers.Get(strings.TrimFunc(lang, unicode.IsDigit))
 			if lm == nil {
 				lm = lexers.Fallback

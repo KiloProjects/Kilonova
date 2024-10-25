@@ -134,6 +134,11 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 		return resp, nil
 	}
 
+	if bResp.Stats.ExitCode > 0 {
+		resp.Success = false
+		return resp, nil
+	}
+
 	if _, ok := bResp.BucketFiles[req.Lang.CompiledName]; !ok {
 		resp.Other = "Could not save compilation output"
 		resp.Success = false
