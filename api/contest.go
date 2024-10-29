@@ -104,6 +104,32 @@ func (s *API) getContestProblems(w http.ResponseWriter, r *http.Request) {
 	returnData(w, pbs)
 }
 
+type remainingSubCountResult struct {
+	Limited   bool `json:"limited"`
+	Remaining int  `json:"remaining"`
+}
+
+func (s *API) getRemainingSubmissionCount(w http.ResponseWriter, r *http.Request) {
+	pbs, err := s.base.ContestProblems(r.Context(), util.Contest(r), util.UserBrief(r))
+	if err != nil {
+		err.WriteError(w)
+		return
+	}
+	var remainingCount = make(map[int]remainingSubCountResult)
+	for _, pb := range pbs {
+		cnt, limited, err := s.base.RemainingSubmissionCount(r.Context(), util.Contest(r), &pb.Problem, util.UserBrief(r))
+		if err != nil {
+			err.WriteError(w)
+			return
+		}
+		remainingCount[pb.ID] = remainingSubCountResult{
+			Limited:   limited,
+			Remaining: cnt,
+		}
+	}
+	returnData(w, remainingCount)
+}
+
 type contestLeaderboardParams struct {
 	Frozen bool `json:"frozen"`
 

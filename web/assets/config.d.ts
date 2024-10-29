@@ -1,6 +1,8 @@
 import type { katex } from "katex";
 import type { UserBrief } from "./api/submissions";
 
+import type htmx from "htmx.org";
+
 interface CustomEventMap {
 	"kn-poll": CustomEvent;
 	"kn-upload-update": CustomEvent;
@@ -34,6 +36,7 @@ export declare global {
 	interface Window {
 		platform_info: PlatformInfo;
 		katex: katex;
+		htmx: typeof htmx;
 	}
 	interface Document {
 		//adds definition to Document, but you can do the same with HTMLElement

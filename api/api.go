@@ -346,6 +346,7 @@ func (s *API) Handler() http.Handler {
 
 			r.Get("/", webWrapper(s.getContest))
 			r.Get("/problems", s.getContestProblems)
+			r.With(s.MustBeAuthed).Get("/problemRemainingCount", s.getRemainingSubmissionCount)
 
 			r.Get("/leaderboard", s.contestLeaderboard)
 

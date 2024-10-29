@@ -814,6 +814,11 @@ highlightjs-copy@^1.0.5:
   resolved "https://registry.npmjs.org/highlightjs-copy/-/highlightjs-copy-1.0.5.tgz#44fa17c2d3ed27d87ca8efcb67a937e7f760ce4a"
   integrity sha512-e7vXcq4HyMqXEw9omt8riYMxEGSanjY2bLQL91Jk0zGnqEhs/pO/6X4tC0PQEVkGBqUdYUyfr06V/VEfQZ7Pmg==
 
+htmx.org@2.0.3:
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/htmx.org/-/htmx.org-2.0.3.tgz#83f76a53d3fc562fe839f0f57ee7cd5f75fe7b59"
+  integrity sha512-AeoJUAjkCVVajbfKX+3sVQBTCt8Ct4lif1T+z/tptTXo8+8yyq3QIMQQe/IT+R8ssfrO1I0DeX4CAronzCL6oA==
+
 ignore@^5.2.4:
   version "5.3.1"
   resolved "https://registry.npmjs.org/ignore/-/ignore-5.3.1.tgz#5073e554cd42c5b33b394375f538b8593e34d4ef"

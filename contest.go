@@ -81,8 +81,8 @@ type Contest struct {
 	Type ContestType `json:"type"`
 
 	// MaxSubs is the maximum number of submissions
-	// that someone is allowed to send to a problem during a contest
-	// < 0 => no limit
+	// that someone is allowed to send to a problem during a contest.
+	// Any number < 0 means no limit
 	MaxSubs int `json:"max_subs"`
 }
 

@@ -31,6 +31,7 @@
 		"dayjs": "^1.11.11",
 		"esbuild": "^0.21.5",
 		"highlightjs-copy": "^1.0.5",
+		"htmx.org": "2.0.3",
 		"js-base64": "^3.7.7",
 		"js-cookie": "^3.0.5",
 		"katex": "^0.16.10",

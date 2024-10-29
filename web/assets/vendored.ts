@@ -1,5 +1,8 @@
 import CopyButtonPlugin from "highlightjs-copy";
 
+import htmx from "htmx.org";
+window.htmx = htmx;
+
 import "katex/contrib/copy-tex";
 
 document.addEventListener("DOMContentLoaded", () => {

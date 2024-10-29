@@ -306,20 +306,22 @@ func (s *BaseAPI) UpdateSubmission(ctx context.Context, id int, status kilonova.
 	return nil
 }
 
-// TODO: Either use in multiple places or remove
-func (s *BaseAPI) RemainingSubmissionCount(ctx context.Context, contest *kilonova.Contest, problem *kilonova.Problem, user *kilonova.UserBrief) (int, *StatusError) {
+// RemainingSubmissionCount calculates how many more submissions a user can send
+// The first return value shows how many submissions they can still send
+// The second return value shows whether there is a limit or not
+func (s *BaseAPI) RemainingSubmissionCount(ctx context.Context, contest *kilonova.Contest, problem *kilonova.Problem, user *kilonova.UserBrief) (int, bool, *StatusError) {
+	if contest.MaxSubs < 0 {
+		return 1, false, nil
+	}
 	cnt, err := s.db.SubmissionCount(ctx, kilonova.SubmissionFilter{
 		ContestID: &contest.ID,
 		ProblemID: &problem.ID,
 		UserID:    &user.ID,
 	}, -1)
 	if err != nil {
-		return -1, WrapError(err, "Couldn't get submission count")
+		return -1, true, WrapError(err, "Couldn't get submission count")
 	}
-	if contest.MaxSubs < 0 {
-		return 1, nil
-	}
-	return contest.MaxSubs - cnt, nil
+	return contest.MaxSubs - cnt, true, nil
 }
 
 func (s *BaseAPI) LastSubmissionTime(ctx context.Context, filter kilonova.SubmissionFilter) (*time.Time, *StatusError) {
@@ -397,7 +399,7 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserFull, proble
 		if err != nil || pb == nil {
 			return -1, Statusf(400, "Problem is not in contest")
 		}
-		cnt, err := s.RemainingSubmissionCount(ctx, contest, pb, author.Brief())
+		cnt, _, err := s.RemainingSubmissionCount(ctx, contest, pb, author.Brief())
 		if err != nil {
 			return -1, err
 		}
