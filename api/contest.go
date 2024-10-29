@@ -104,30 +104,47 @@ func (s *API) getContestProblems(w http.ResponseWriter, r *http.Request) {
 	returnData(w, pbs)
 }
 
-type remainingSubCountResult struct {
+type subCountResult struct {
 	Limited   bool `json:"limited"`
 	Remaining int  `json:"remaining"`
 }
 
 func (s *API) getRemainingSubmissionCount(w http.ResponseWriter, r *http.Request) {
+	var args struct {
+		UserID int `json:"user_id"`
+	}
+	if err := parseRequest(r, &args); err != nil {
+		err.WriteError(w)
+		return
+	}
+	user := util.UserBrief(r)
+	if s.base.IsContestEditor(util.UserBrief(r), util.Contest(r)) {
+
+	}
 	pbs, err := s.base.ContestProblems(r.Context(), util.Contest(r), util.UserBrief(r))
 	if err != nil {
 		err.WriteError(w)
 		return
 	}
-	var remainingCount = make(map[int]remainingSubCountResult)
+	var remainingCount = make(map[int]subCountResult)
 	for _, pb := range pbs {
-		cnt, limited, err := s.base.RemainingSubmissionCount(r.Context(), util.Contest(r), &pb.Problem, util.UserBrief(r))
+		cnt, limited, err := s.base.RemainingSubmissionCount(r.Context(), util.Contest(r), pb.ID, util.UserBrief(r).ID)
 		if err != nil {
 			err.WriteError(w)
 			return
 		}
-		remainingCount[pb.ID] = remainingSubCountResult{
+		remainingCount[pb.ID] = subCountResult{
 			Limited:   limited,
 			Remaining: cnt,
 		}
 	}
-	returnData(w, remainingCount)
+	returnData(w, struct {
+		UserID int                    `json:"user_id"`
+		Counts map[int]subCountResult `json:"counts"`
+	}{
+		UserID: user.ID,
+		Counts: remainingCount,
+	})
 }
 
 type contestLeaderboardParams struct {
