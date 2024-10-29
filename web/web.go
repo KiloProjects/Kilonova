@@ -256,6 +256,16 @@ func (rt *Web) Handler() http.Handler {
 	return r
 }
 
+func (rt *Web) parseModal(optFuncs template.FuncMap, files ...string) *template.Template {
+	if optFuncs == nil {
+		return parseModal(rt.funcs, files...)
+	}
+	for k, v := range rt.funcs {
+		optFuncs[k] = v
+	}
+	return parseModal(optFuncs, files...)
+}
+
 func (rt *Web) parse(optFuncs template.FuncMap, files ...string) *template.Template {
 	if optFuncs == nil {
 		return parse(rt.funcs, files...)
@@ -325,6 +335,18 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return actualContests
 		},
 		"decimalFromInt": decimal.NewFromInt,
+		"formatScore": func(pb *kilonova.Problem, score *decimal.Decimal) template.HTML {
+			if score == nil || score.IsNegative() {
+				return "-"
+			}
+			if pb.ScoringStrategy == kilonova.ScoringTypeICPC {
+				if score.Equal(decimal.NewFromInt(100)) {
+					return `<i class="fas fa-fw fa-check"></i>`
+				}
+				return `<i class="fas fa-fw fa-xmark"></i>`
+			}
+			return template.HTML(removeTrailingZeros(score.StringFixed(pb.ScorePrecision)))
+		},
 		"subScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) template.HTML {
 			if user == nil {
 				return ""
@@ -778,37 +800,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return (time.Duration(c.PerUserTime) * time.Second).String()
 		},
 
-		"olderSubmissions": func(user *kilonova.UserBrief, problem *kilonova.Problem, contest *kilonova.Contest, limit int) *OlderSubmissionsParams {
-			var filter = kilonova.SubmissionFilter{
-				UserID:    &user.ID,
-				ProblemID: &problem.ID,
-			}
-			if contest != nil {
-				filter.UserID = &user.ID
-			}
-			if limit > 0 {
-				filter.Limit = limit
-			}
-			subs, err := base.Submissions(context.Background(), filter, true, user)
-			if err != nil {
-				slog.Warn("Couldn't get submissions", slog.Any("err", err))
-				return nil
-			}
-			var numHidden int
-			if subs.Truncated {
-				numHidden = subs.Count - len(subs.Submissions)
-			}
-
-			return &OlderSubmissionsParams{
-				User:    user,
-				Problem: problem,
-				Contest: contest,
-				Limit:   limit,
-
-				Submissions: subs,
-				NumHidden:   numHidden,
-			}
-		},
 		"getCaptchaID": base.NewCaptchaID,
 		"pLanguages": func() map[string]string {
 			slog.Error("Uninitialized `pLanguages`")
@@ -821,6 +812,10 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"getText": func(key string, vals ...any) string {
 			slog.Error("Uninitialized `getText`")
 			return "FATAL ERR"
+		},
+		"olderSubmissions": func(user *kilonova.UserBrief, problem *kilonova.Problem, contest *kilonova.Contest, limit int) *OlderSubmissionsParams {
+			slog.Error("Uninitialized `olderSubmissions`")
+			return nil
 		},
 		"reqPath": func() string {
 			slog.Error("Uninitialized `reqPath`")
@@ -983,5 +978,5 @@ func removeTrailingZeros(score string) string {
 }
 
 func isHTMXRequest(r *http.Request) bool {
-	return r.Header.Get("HX-Request") == "true"
+	return r.Header.Get("HX-Request") == "true" || r.FormValue("force_htmx") == "true"
 }

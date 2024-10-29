@@ -42,10 +42,8 @@
 	<script>
 
         bundled.initTime(bundled.dayjs(), bundled.dayjs({{serverTime}}));
-        window.htmx.onLoad((el) => {
-            if (el.parentNode != null) {
-                bundled.initialLoad(el.parentNode);
-            }
+        window.htmx.on(("htmx:afterSwap"), (el) => {
+            bundled.initialLoad(el.target);
         });
 		var platform_info = {
 			debug: {{debug}},
@@ -57,6 +55,11 @@
 			language: {{language}},
             langs: {{pLanguages}},
 		};
+
+        if(platform_info.debug) {
+            window.htmx.logAll();
+        }
+
 	</script>
 
 	<script>

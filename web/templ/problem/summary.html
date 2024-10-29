@@ -161,7 +161,9 @@
         {{ end }}
         {{ if authed }}
         <section class="segment-panel">
-            <older-subs problemid="{{.Problem.ID}}" {{if (and .Topbar.Contest (not .Topbar.Contest.Ended))}}contestid="{{.Topbar.Contest.ID}}"{{end}} userid="{{authedUser.ID}}" enc="{{.Submissions | encodeJSON}}"></older-subs>
+            {{with olderSubmissions authedUser .Problem .Topbar.Contest}}
+                {{template "older_subs" .}}
+            {{end}}
         </section>
         {{ end }}
         {{ with .Attachments }}

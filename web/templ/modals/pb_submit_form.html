@@ -158,6 +158,7 @@
         bundled.createToast({ title: bundled.getText("uploaded"), description: `<a href="/submissions/${res.data}">${bundled.getText("view")}</btn>` })
         console.log(res.data, bundled.makeSubWaiter(res.data));
         document.dispatchEvent(new CustomEvent("kn-poll"));
+        htmx.trigger("#older_subs", "kn-poll", {})
     }
 
     let oldContestID = "";

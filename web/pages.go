@@ -8,7 +8,9 @@ import (
 	"html/template"
 	"io"
 	"io/fs"
+	"log/slog"
 	"net/http"
+	"os"
 	"reflect"
 	"strconv"
 	tparse "text/template/parse"
@@ -369,13 +371,14 @@ type PasteParams struct {
 
 // HTMX modals
 type OlderSubmissionsParams struct {
-	User    *kilonova.UserBrief
+	UserID  int
 	Problem *kilonova.Problem
 	Contest *kilonova.Contest
 	Limit   int
 
 	Submissions *sudoapi.Submissions
 	NumHidden   int
+	AllFinished bool
 }
 
 func doWalk(filename string, nodes ...tparse.Node) bool {
@@ -427,38 +430,51 @@ func doWalk(filename string, nodes ...tparse.Node) bool {
 	return ok
 }
 
-func parse(optFuncs template.FuncMap, files ...string) *template.Template {
+func parseTempl(optFuncs template.FuncMap, modal bool, files ...string) *template.Template {
 	templs, err := fs.Sub(templateDir, "templ")
 	if err != nil {
-		zap.S().Fatal(err)
+		slog.Error("Could not read template directory", slog.Any("err", err))
+		os.Exit(1)
 	}
-	t := template.New("layout.html")
+	t := template.New(files[0])
 	if optFuncs != nil {
 		t = t.Funcs(optFuncs)
 	}
-	files = append(files, "util/navbar.html", "util/footer.html")
 	if true { //config.Common.Debug { // && false {
 		f, err := fs.ReadFile(templs, files[0])
 		if err != nil {
-			zap.S().Fatal(err)
+			slog.Error("Could not read template file", slog.Any("err", err))
+			os.Exit(1)
 		}
 		ptrees, err := tparse.Parse(files[0], string(f), "{{", "}}", optFuncs, builtinTemporaryTemplate())
 		if err != nil {
-			zap.S().Fatal(err)
+			slog.Error("Could not parse template file", slog.Any("err", err))
+			os.Exit(1)
 		}
 
-		// Check title
-		if _, ok := ptrees["title"]; !ok {
-			zap.S().Warnf("Page %s lacks a title", files[0])
+		if !modal {
+			// Check title
+			if _, ok := ptrees["title"]; !ok {
+				slog.Warn("Page lacks a title", slog.String("path", files[0]))
+			}
+
+			// Check content
+			tree := ptrees["content"]
+			if tree != nil {
+				doWalk(files[0], tree.Root)
+			}
 		}
 
-		// Check content
-		tree := ptrees["content"]
-		if tree != nil {
-			doWalk(files[0], tree.Root)
-		}
 	}
-	return template.Must(t.ParseFS(templs, append([]string{"layout.html"}, files...)...))
+	return template.Must(t.ParseFS(templs, files...))
+}
+
+func parseModal(optFuncs template.FuncMap, files ...string) *template.Template {
+	return parseTempl(optFuncs, true, files...)
+}
+
+func parse(optFuncs template.FuncMap, files ...string) *template.Template {
+	return parseTempl(optFuncs, false, append([]string{"layout.html", "util/navbar.html", "util/footer.html"}, files...)...)
 }
 
 func builtinTemporaryTemplate() template.FuncMap {

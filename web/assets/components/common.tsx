@@ -249,30 +249,6 @@ export function OlderSubmissions({
 	);
 }
 
-function OlderSubmissionsDOM({ userid, problemid, contestid, enc }: { userid: string; problemid: string; contestid: string; enc: string }) {
-	const userID = parseInt(userid);
-	if (isNaN(userID)) {
-		throw new Error("Invalid user ID");
-	}
-	const problemID = parseInt(problemid);
-	if (isNaN(problemID)) {
-		throw new Error("Invalid problem ID");
-	}
-	let contestID: number | undefined = undefined;
-	if (contestid !== "" && typeof contestid !== "undefined") {
-		contestID = parseInt(contestid);
-		if (isNaN(contestID)) {
-			console.warn("Invalid Contest ID");
-			contestID = undefined;
-		}
-	}
-
-	let initialData: Submissions | undefined = JSON.parse(fromBase64(enc));
-	return <OlderSubmissions userID={userID} problemID={problemID} contestID={contestID} initialData={initialData}></OlderSubmissions>;
-}
-
-register(OlderSubmissionsDOM, "older-subs", ["userid", "problemid", "contestid", "enc"]);
-
 function ProgressChecker({ id }: { id: number }) {
 	var [computable, setComputable] = useState<boolean>(false);
 	var [loaded, setLoaded] = useState<number>(0);

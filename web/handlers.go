@@ -702,7 +702,7 @@ func (rt *Web) appropriateDescriptionVariant(r *http.Request, variants []*kilono
 }
 
 func (rt *Web) problem() http.HandlerFunc {
-	templ := rt.parse(nil, "problem/summary.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
+	templ := rt.parse(nil, "problem/summary.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html", "modals/htmx/older_subs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		problem := util.Problem(r)
 
@@ -819,9 +819,24 @@ func (rt *Web) problem() http.HandlerFunc {
 }
 
 func (rt *Web) problemSubmissions() http.HandlerFunc {
-	templ := rt.parse(nil, "problem/pb_submissions.html", "problem/topbar.html")
+	normalTempl := rt.parse(nil, "problem/pb_submissions.html", "problem/topbar.html")
+	fragmentTempl := rt.parseModal(nil, "modals/htmx/older_subs.html")
+
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, templ, &ProblemTopbarParams{
+		// OlderSubs HTMX fragment
+		userID, err := strconv.Atoi(r.FormValue("user_id"))
+		if isHTMXRequest(r) && err == nil {
+			olderSubs, err := rt.getOlderSubmissions(r.Context(), util.UserBrief(r), userID, util.Problem(r), util.Contest(r), 5)
+			if err != nil {
+				// TODO: Not the best solution
+				http.Error(w, err.Text, err.Code)
+				return
+			}
+			rt.runModal(w, r, fragmentTempl, "older_subs", olderSubs)
+			return
+		}
+
+		rt.runTempl(w, r, normalTempl, &ProblemTopbarParams{
 			Topbar: rt.problemTopbar(r, "pb_submissions", -1),
 
 			Problem: util.Problem(r),
@@ -1756,7 +1771,7 @@ func (rt *Web) chromaCSS() http.HandlerFunc {
 	}
 }
 
-func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, data any) {
+func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Template, name string, data any) {
 	templ, err := templ.Clone()
 	if err != nil {
 		fmt.Fprintf(w, "Error cloning template, report to admin: %s", err)
@@ -1780,6 +1795,14 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		},
 		"pLanguages": func() map[string]string {
 			return rt.base.EnabledLanguages()
+		},
+		"olderSubmissions": func(user *kilonova.UserBrief, problem *kilonova.Problem, contest *kilonova.Contest) *OlderSubmissionsParams {
+			olderSubs, err := rt.getOlderSubmissions(r.Context(), util.UserBrief(r), user.ID, problem, contest, 5)
+			if err != nil {
+				slog.Warn("Couldn't get submissions", slog.Any("err", err))
+				return nil
+			}
+			return olderSubs
 		},
 		"formatStmtVariant": func(fmt *kilonova.StatementVariant) string {
 			var b strings.Builder
@@ -1976,10 +1999,53 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 		},
 	})
 
-	if err := templ.Execute(w, data); err != nil {
+	if err := templ.ExecuteTemplate(w, name, data); err != nil {
 		fmt.Fprintf(w, "Error executing template, report to admin: %s", err)
 		if !strings.Contains(err.Error(), "broken pipe") {
-			zap.S().WithOptions(zap.AddCallerSkip(1)).Warnf("Error executing template: %q %q %#v", err, r.URL.Path, util.UserBrief(r))
+			zap.S().WithOptions(zap.AddCallerSkip(2)).Warnf("Error executing template: %q %q %#v", err, r.URL.Path, util.UserBrief(r))
 		}
 	}
+}
+
+func (rt *Web) runTempl(w http.ResponseWriter, r *http.Request, templ *template.Template, data any) {
+	rt.runTemplate(w, r, templ, templ.Name(), data)
+}
+
+func (rt *Web) runModal(w http.ResponseWriter, r *http.Request, templ *template.Template, name string, data any) {
+	w.Header().Add("Content-Type", "text/html; charset=utf-8")
+	rt.runTemplate(w, r, templ, name, data)
+}
+
+func (rt *Web) getOlderSubmissions(ctx context.Context, lookingUser *kilonova.UserBrief, userID int, problem *kilonova.Problem, contest *kilonova.Contest, limit int) (*OlderSubmissionsParams, *kilonova.StatusError) {
+	var filter = kilonova.SubmissionFilter{
+		UserID:    &userID,
+		ProblemID: &problem.ID,
+	}
+	if contest != nil {
+		filter.ContestID = &contest.ID
+	}
+	if limit > 0 {
+		filter.Limit = limit
+	}
+	subs, err := rt.base.Submissions(ctx, filter, true, lookingUser)
+	if err != nil {
+		return nil, err
+	}
+	allFinished := true
+	for _, sub := range subs.Submissions {
+		if sub.Status != kilonova.StatusFinished {
+			allFinished = false
+		}
+	}
+
+	return &OlderSubmissionsParams{
+		UserID:  userID,
+		Problem: problem,
+		Contest: contest,
+		Limit:   limit,
+
+		Submissions: subs,
+		NumHidden:   subs.Count - len(subs.Submissions),
+		AllFinished: allFinished,
+	}, nil
 }
