@@ -1,8 +1,10 @@
 <form class="segment-panel" id="sendSubForm" autocomplete="off">   
+    {{$initiallyContest := false}}
     {{ if .Topbar.Contest }}
         {{ if canSubmitInContest authedUser .Topbar.Contest}}
             <h1 class="mt-2">{{getText "uploadContestSub"}}</h1>
             <input type="hidden" id="sub_contestid" value="{{.Topbar.Contest.ID}}">
+            {{$initiallyContest = true}}
         {{ else }}
             <h1 class="mt-2">{{getText "upsolveSub"}}</h1>
             <input type="hidden" id="sub_contestid" value="-1">
@@ -19,6 +21,7 @@
                     <option value="{{.ID}}">{{.Name}}</option>
                     {{ end }}
                 {{ else }}
+                    {{$initiallyContest = true}}
                     {{ if eq (len .) 1}}
                         {{ range . }}
                         <option value="{{.ID}}" selected>{{.Name}}</option>
@@ -36,6 +39,10 @@
             <input type="hidden" id="sub_contestid" value="-1">
         {{ end }}
     {{ end }}
+
+    <span id="submit_attempts_label" class="block mb-2 form-label {{if not $initiallyContest}}hidden{{end}}">
+        {{getText "remainingAttempts"}}: <span id="submit_attempts">{{getText "loading"}}</span>
+    </span>
 
     <label class="block mb-2">
         <span class="form-label">{{getText "language"}}:</span>
@@ -67,6 +74,7 @@
 </form>
 
 <script>
+    let problemID = {{.Problem.ID}};
 
     function isOutputOnly() {
         const languages = Object.values(document.getElementById("sub_language").options).map(x => x.value);
@@ -111,7 +119,7 @@
 
     async function sendSub() {
         let form = new FormData();
-        form.set("problem_id", {{.Problem.ID}});
+        form.set("problem_id", problemID);
         form.set("language", document.getElementById("sub_language").value)
 
         if(document.getElementById("submit_style").value == "code") {
@@ -151,6 +159,50 @@
         console.log(res.data, bundled.makeSubWaiter(res.data));
         document.dispatchEvent(new CustomEvent("kn-poll"));
     }
+
+    let oldContestID = "";
+
+    function reloadRemainingAttempts() {
+        let contestID = document.getElementById("sub_contestid").value
+        let attemptsLabel = document.getElementById("submit_attempts_label");
+        let attemptsText = document.getElementById("submit_attempts");
+        if(oldContestID != contestID) {
+            attemptsText.innerText = bundled.getText("loading")
+        }
+        attemptsLabel.classList.toggle("hidden", contestID == "-1");
+        if( contestID!= "-1") {
+            bundled.getCall(`/contest/${contestID}/problemRemainingCount`).then(rez => {
+                if(rez.status == "error") {
+                    bundled.apiToast(rez)
+                    return
+                }
+                if(problemID in rez.data.counts) {
+                    let pb = rez.data.counts[problemID];
+                    if(!pb.limited) {
+                        attemptsText.innerText = bundled.getText("unlimitedAttempts")
+                    } else {
+                        attemptsText.innerText = Math.max(pb.remaining, 0);
+                    }
+                } else {
+                    attemptsText.innerText = "N/A"
+                }
+                oldContestID = contestID
+            })
+        } else {
+            oldContestID = contestID
+        }
+    }
+
+    {{if $initiallyContest}}
+    reloadRemainingAttempts()
+    {{end}}
+
+    document.getElementById("sub_contestid").addEventListener("change", (e) => {
+        reloadRemainingAttempts();
+    })
+    document.addEventListener("kn-poll", () => {
+        reloadRemainingAttempts();
+    })
 
     const debounced = bundled.debounce(() => sendSub().catch(console.error), 400, {leading: true, trailing: false})
 

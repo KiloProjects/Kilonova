@@ -108,8 +108,8 @@ export function navigateBack() {
 	window.location.assign(locURL);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-	document.querySelectorAll(".server_timestamp").forEach((val) => {
+export function initialLoad(el: ParentNode) {
+	el.querySelectorAll(".server_timestamp").forEach((val) => {
 		let timestamp = parseInt(val.innerHTML);
 		if (isNaN(timestamp)) {
 			console.warn("NaN timestamp");
@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		val.innerHTML = parseTime(timestamp, val.classList.contains("extended"));
 		val.classList.remove("server_timestamp");
 	});
-	document.querySelectorAll(".score-cell").forEach((val) => {
+	el.querySelectorAll(".score-cell").forEach((val) => {
 		const x = val as HTMLTableCellElement;
 		var score = parseFloat(x.dataset.score || "0");
 		if (isNaN(score)) {
@@ -130,4 +130,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 		val.classList.remove("score-cell");
 	});
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+	initialLoad(document);
 });

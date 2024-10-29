@@ -777,6 +777,38 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"usacoDuration": func(c *kilonova.Contest) string {
 			return (time.Duration(c.PerUserTime) * time.Second).String()
 		},
+
+		"olderSubmissions": func(user *kilonova.UserBrief, problem *kilonova.Problem, contest *kilonova.Contest, limit int) *OlderSubmissionsParams {
+			var filter = kilonova.SubmissionFilter{
+				UserID:    &user.ID,
+				ProblemID: &problem.ID,
+			}
+			if contest != nil {
+				filter.UserID = &user.ID
+			}
+			if limit > 0 {
+				filter.Limit = limit
+			}
+			subs, err := base.Submissions(context.Background(), filter, true, user)
+			if err != nil {
+				slog.Warn("Couldn't get submissions", slog.Any("err", err))
+				return nil
+			}
+			var numHidden int
+			if subs.Truncated {
+				numHidden = subs.Count - len(subs.Submissions)
+			}
+
+			return &OlderSubmissionsParams{
+				User:    user,
+				Problem: problem,
+				Contest: contest,
+				Limit:   limit,
+
+				Submissions: subs,
+				NumHidden:   numHidden,
+			}
+		},
 		"getCaptchaID": base.NewCaptchaID,
 		"pLanguages": func() map[string]string {
 			slog.Error("Uninitialized `pLanguages`")
@@ -793,6 +825,10 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"reqPath": func() string {
 			slog.Error("Uninitialized `reqPath`")
 			return "/"
+		},
+		"htmxRequest": func() bool {
+			slog.Error("Uninitialized `htmxRequest`")
+			return false
 		},
 		"language": func() string {
 			slog.Error("Uninitialized `language`")
@@ -944,4 +980,8 @@ func removeTrailingZeros(score string) string {
 		return score
 	}
 	return strings.TrimSuffix(strings.TrimRight(score, "0"), ".")
+}
+
+func isHTMXRequest(r *http.Request) bool {
+	return r.Header.Get("HX-Request") == "true"
 }

@@ -367,6 +367,17 @@ type PasteParams struct {
 	FullSub *sudoapi.FullSubmission
 }
 
+// HTMX modals
+type OlderSubmissionsParams struct {
+	User    *kilonova.UserBrief
+	Problem *kilonova.Problem
+	Contest *kilonova.Contest
+	Limit   int
+
+	Submissions *sudoapi.Submissions
+	NumHidden   int
+}
+
 func doWalk(filename string, nodes ...tparse.Node) bool {
 	ok := true
 	for _, node := range nodes {

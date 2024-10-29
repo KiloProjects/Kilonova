@@ -1830,6 +1830,9 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 			}
 			return r.URL.Path
 		},
+		"htmxRequest": func() bool {
+			return isHTMXRequest(r)
+		},
 		"language": func() string {
 			return lang
 		},

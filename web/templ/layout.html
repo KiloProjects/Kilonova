@@ -42,7 +42,11 @@
 	<script>
 
         bundled.initTime(bundled.dayjs(), bundled.dayjs({{serverTime}}));
-
+        window.htmx.onLoad((el) => {
+            if (el.parentNode != null) {
+                bundled.initialLoad(el.parentNode);
+            }
+        });
 		var platform_info = {
 			debug: {{debug}},
             {{if authed}}

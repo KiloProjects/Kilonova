@@ -1047,6 +1047,14 @@ ro = "Încărcare submisie neoficială"
 en = "Select contest"
 ro = "Selectare concurs"
 
+[remainingAttempts]
+en = "Remaining attempts"
+ro = "Submisii rămase"
+
+[unlimitedAttempts]
+en = "Unlimited"
+ro = "Nelimitat"
+
 [finishedEval]
 en = "Submission evaluated"
 ro = "Evaluare finalizată"
