@@ -143,8 +143,6 @@ type ProblemParams struct {
 	Attachments []*kilonova.Attachment
 	Tags        []*kilonova.Tag
 
-	Submissions *sudoapi.Submissions
-
 	Statement template.HTML
 	Languages []*sudoapi.Language
 	Variants  []*kilonova.StatementVariant
