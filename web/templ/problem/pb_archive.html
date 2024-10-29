@@ -14,7 +14,7 @@
             <input class="form-checkbox" id="aTests" type="checkbox" checked>
             <span class="ml-2">{{getText "tests"}}</span>
         </label>
-        {{with .Settings}}
+        {{if .Settings}}
             {{if and (not .Topbar.IsProblemEditor) (.Settings.CheckerName)}}
             <p class="text-sm text-muted">{{getText "gen_checker_warning"}}</p>
             {{end}}
