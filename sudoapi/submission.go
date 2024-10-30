@@ -15,7 +15,8 @@ import (
 )
 
 var (
-	SubForEveryoneConfig = config.GenFlag("behavior.everyone_subs", true, "Anyone can view others' source code")
+	SubForEveryoneConfig    = config.GenFlag("behavior.everyone_subs", true, "Anyone can view others' source code")
+	SubForEveryoneBlacklist = config.GenFlag("behavior.everyone_subs.blacklist", []int{}, "Blacklist of problems where nobody should see eachother's source code")
 
 	PastesEnabled = config.GenFlag("feature.pastes.enabled", true, "Pastes")
 
@@ -512,7 +513,8 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 
 	// If enabled that people see all source code
 	// IsProblemFullyVisible is a workaround for when a contest is running but there are submissions that were not sent in the contest
-	if SubForEveryoneConfig.Value() && s.IsProblemFullyVisible(user, subProblem) {
+	if SubForEveryoneConfig.Value() && s.IsProblemFullyVisible(user, subProblem) &&
+		!slices.Contains(SubForEveryoneBlacklist.Value(), sub.ProblemID) {
 		if sub.ContestID == nil {
 			// If problem fully visible and submission not in contest, just show the source code
 			return true
