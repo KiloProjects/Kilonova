@@ -502,6 +502,10 @@ ro = "Durata randării"
 en = "Prepare duration"
 ro = "Durata pregătirii"
 
+[queryCount]
+en = "Number of DB queries"
+ro = "Numărul de query-uri DB"
+
 [credits]
 en = "Credits"
 ro = "Credite"

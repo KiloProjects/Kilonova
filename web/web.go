@@ -845,6 +845,10 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			slog.Error("Uninitialized `renderDuration`")
 			return time.Duration(0)
 		},
+		"queryCount": func() int64 {
+			slog.Error("Uninitialized `queryCount`")
+			return -1
+		},
 		"contentUser": func() *kilonova.UserBrief {
 			slog.Error("Uninitialized `contentUser`")
 			return nil

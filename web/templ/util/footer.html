@@ -64,6 +64,9 @@
             <ul>
                 <li>{{getText "prepareDuration"}}: {{prepareDuration}}</li>
                 <li>{{getText "renderDuration"}}: {{renderDuration}}</li>
+                {{with queryCount}}
+                    <li>{{getText "queryCount"}}: ~{{.}}</li>
+                {{end}}
             </ul>
         </details>
         {{end}}

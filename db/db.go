@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"path"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -24,8 +25,15 @@ var (
 	dbLogger   *slog.Logger
 )
 
+type dbCtx string
+
+const (
+	queryCount = dbCtx("queryCount")
+)
+
 var (
-	LogQueries = config.GenFlag[bool]("behavior.db.log_sql", false, "Log SQL Requests (for debugging purposes)")
+	LogQueries   = config.GenFlag[bool]("behavior.db.log_sql", false, "Log SQL Requests (for debugging purposes)")
+	CountQueries = config.GenFlag[bool]("behavior.db.count_queries", false, "Count SQL Queries (for debugging purposes)")
 )
 
 type DB struct {
@@ -130,6 +138,18 @@ func toSingular[T1, T2 any](ctx context.Context, filter T1, f func(ctx context.C
 	return many[0], nil
 }
 
+func InitContextCounter(rootCtx context.Context) context.Context {
+	return context.WithValue(rootCtx, queryCount, &atomic.Int64{})
+}
+
+func GetContextQueryCount(ctx context.Context) int64 {
+	cnt, ok := ctx.Value(queryCount).(*atomic.Int64)
+	if !ok {
+		return -1
+	}
+	return cnt.Load()
+}
+
 func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]interface{}) {
 	loggerOnce.Do(func() {
 		lvl := slog.LevelInfo
@@ -156,6 +176,12 @@ func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[stri
 		}
 	} else {
 		zap.S().Warnf("DB time is not duration", data["time"])
+	}
+
+	if CountQueries.Value() {
+		if v, ok := ctx.Value(queryCount).(*atomic.Int64); ok {
+			v.Add(1)
+		}
 	}
 
 	if LogQueries.Value() {

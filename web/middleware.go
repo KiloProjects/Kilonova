@@ -321,7 +321,8 @@ func (rt *Web) mustBeContestEditor(next http.Handler) http.Handler {
 func (rt *Web) initSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), MiddlewareStartKey, time.Now())
-		user, err := rt.base.SessionUser(r.Context(), rt.base.GetSessCookie(r), r)
+		ctx = rt.base.InitQueryCounter(ctx)
+		user, err := rt.base.SessionUser(ctx, rt.base.GetSessCookie(r), r)
 		if err != nil || user == nil {
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return

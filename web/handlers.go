@@ -1985,6 +1985,9 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 		"renderDuration": func() time.Duration {
 			return time.Since(renderStart)
 		},
+		"queryCount": func() int64 {
+			return rt.base.GetQueryCounter(r.Context())
+		},
 	})
 
 	if err := templ.ExecuteTemplate(w, name, data); err != nil {
