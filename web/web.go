@@ -837,6 +837,14 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			slog.Error("Uninitialized `authed`")
 			return false
 		},
+		"prepareDuration": func() time.Duration {
+			slog.Error("Uninitialized `prepareDuration`")
+			return time.Duration(0)
+		},
+		"renderDuration": func() time.Duration {
+			slog.Error("Uninitialized `renderDuration`")
+			return time.Duration(0)
+		},
 		"contentUser": func() *kilonova.UserBrief {
 			slog.Error("Uninitialized `contentUser`")
 			return nil

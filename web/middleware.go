@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/KiloProjects/kilonova"
@@ -319,12 +320,18 @@ func (rt *Web) mustBeContestEditor(next http.Handler) http.Handler {
 
 func (rt *Web) initSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		startTime := time.Now()
 		user, err := rt.base.SessionUser(r.Context(), rt.base.GetSessCookie(r), r)
 		if err != nil || user == nil {
 			next.ServeHTTP(w, r)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AuthedUserKey, user)))
+		next.ServeHTTP(w, r.WithContext(
+			context.WithValue(
+				context.WithValue(r.Context(), util.AuthedUserKey, user),
+				MiddlewareStartKey, startTime,
+			),
+		))
 	})
 }
 

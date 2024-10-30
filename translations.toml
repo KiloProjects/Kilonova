@@ -490,6 +490,18 @@ ro = "Alte informații"
 en = "Server time"
 ro = "Ora serverului"
 
+[requestStats]
+en = "Request statistics (debug info)"
+ro = "Statistici pagină (debug info)"
+
+[renderDuration]
+en = "Render duration"
+ro = "Durata randării"
+
+[prepareDuration]
+en = "Prepare duration"
+ro = "Durata pregătirii"
+
 [credits]
 en = "Credits"
 ro = "Credite"

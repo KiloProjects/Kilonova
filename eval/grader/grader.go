@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"path"
 	"slices"
 	"strings"
@@ -469,20 +470,21 @@ func getAppropriateRunner() (eval.BoxScheduler, error) {
 		boxFunc = box.New
 		boxVersion = box.IsolateVersion()
 	} else if scheduler.CheckCanRun(box.NewStupid) && !ForceSecureSandbox.Value() {
-		zap.S().Warn("Secure sandbox not found. Using stupid sandbox")
+		slog.Warn("Secure sandbox not found. Using stupid sandbox")
 		boxFunc = box.NewStupid
 		boxVersion = "stupid"
 	}
 	if boxFunc == nil {
-		zap.S().Fatal("Remote grader has not been implemented. No grader available!")
+		slog.Error("Remote grader has not been implemented. No grader available!")
+		os.Exit(1)
 	}
 
-	zap.S().Info("Trying to spin up local grader")
+	slog.Info("Trying to spin up local grader")
 	bm, err := scheduler.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, graderLogger, boxFunc)
 	if err != nil {
 		return nil, err
 	}
-	zap.S().Infof("Running local grader (version: %s)", boxVersion)
+	slog.Info("Running local grader", slog.String("version", boxVersion))
 
 	return bm, nil
 }

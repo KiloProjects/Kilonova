@@ -39,6 +39,8 @@ type WebCtx string
 
 const (
 	PblistCntCacheKey = WebCtx("pblist_cache")
+
+	MiddlewareStartKey = WebCtx("middleware_start")
 )
 
 var (
@@ -50,6 +52,8 @@ var (
 	NavbarProblems    = config.GenFlag[bool]("feature.frontend.navbar.problems_btn", true, "Navbar button: Problems")
 	NavbarContests    = config.GenFlag[bool]("feature.frontend.navbar.contests_btn", false, "Navbar button: Contests")
 	NavbarSubmissions = config.GenFlag[bool]("feature.frontend.navbar.submissions_btn", true, "Navbar button: Submissions")
+
+	FooterTimings = config.GenFlag("feature.frontend.footer.time_statistics", true, "Show measurements about time taken to render pages in footer")
 
 	PinnedProblemList = config.GenFlag[int]("frontend.front_page.pinned_problem_list", 0, "Pinned problem list (front page sidebar)")
 	RootProblemList   = config.GenFlag[int]("frontend.front_page.root_problem_list", 0, "Root problem list (front page main content)")
@@ -1764,6 +1768,8 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 		pblistCache = v
 	}
 
+	renderStart := time.Now()
+
 	// Add request-specific functions
 	templ.Funcs(template.FuncMap{
 		"getText": func(line string, args ...any) string {
@@ -1972,6 +1978,12 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 		"mustSolveCaptcha": func() bool {
 			ip, _ := rt.base.GetRequestInfo(r)
 			return rt.base.MustSolveCaptcha(r.Context(), ip)
+		},
+		"prepareDuration": func() time.Duration {
+			return renderStart.Sub(r.Context().Value(MiddlewareStartKey).(time.Time))
+		},
+		"renderDuration": func() time.Duration {
+			return time.Since(renderStart)
 		},
 	})
 

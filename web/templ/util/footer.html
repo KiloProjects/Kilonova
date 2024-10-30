@@ -58,6 +58,15 @@
                 </ul>
             </div>
 		</div>
+        {{if boolFlag "feature.frontend.footer.time_statistics"}}
+        <details class="text-muted reset-list">
+            <summary>{{getText "requestStats"}}</summary>
+            <ul>
+                <li>{{getText "prepareDuration"}}: {{prepareDuration}}</li>
+                <li>{{getText "renderDuration"}}: {{renderDuration}}</li>
+            </ul>
+        </details>
+        {{end}}
 	</div>
 </footer>
 <script>
