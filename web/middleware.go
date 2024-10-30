@@ -320,18 +320,13 @@ func (rt *Web) mustBeContestEditor(next http.Handler) http.Handler {
 
 func (rt *Web) initSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		startTime := time.Now()
+		ctx := context.WithValue(r.Context(), MiddlewareStartKey, time.Now())
 		user, err := rt.base.SessionUser(r.Context(), rt.base.GetSessCookie(r), r)
 		if err != nil || user == nil {
-			next.ServeHTTP(w, r)
+			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(
-			context.WithValue(
-				context.WithValue(r.Context(), util.AuthedUserKey, user),
-				MiddlewareStartKey, startTime,
-			),
-		))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(ctx, util.AuthedUserKey, user)))
 	})
 }
 
