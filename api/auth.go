@@ -65,13 +65,17 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 
 	uid, status := s.base.Signup(r.Context(), auth.Email, auth.Username, auth.Password, auth.Language, kilonova.PreferredTheme(auth.Theme), ip, &ua)
 	if status != nil {
-		errorData(w, struct {
-			ID   string `json:"captcha_id"`
-			Text string `json:"text"`
-		}{
-			ID:   s.base.NewCaptchaID(),
-			Text: status.Text,
-		}, status.Code)
+		if s.base.CaptchaEnabled() {
+			errorData(w, struct {
+				ID   string `json:"captcha_id"`
+				Text string `json:"text"`
+			}{
+				ID:   s.base.NewCaptchaID(),
+				Text: status.Text,
+			}, status.Code)
+		} else {
+			status.WriteError(w)
+		}
 		return
 	}
 

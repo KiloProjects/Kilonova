@@ -46,3 +46,7 @@ func (s *BaseAPI) MustSolveCaptcha(ctx context.Context, ip *netip.Addr) bool {
 	}
 	return cnt > triggerCount.Value()
 }
+
+func (s *BaseAPI) CaptchaEnabled() bool {
+	return captchaEnabled.Value()
+}
