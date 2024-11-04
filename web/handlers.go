@@ -1405,14 +1405,20 @@ func (rt *Web) selfProfile() http.HandlerFunc {
 func (rt *Web) profile() http.HandlerFunc {
 	templ := rt.parse(nil, "profile.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "user")))
-		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
-			zap.S().Warn(err)
+		username := strings.TrimSpace(chi.URLParam(r, "user"))
+		user, err := rt.base.UserFullByName(r.Context(), username)
+		if err != nil && !errors.Is(err, kilonova.ErrNotFound) && !errors.Is(err, context.Canceled) {
+			slog.Warn("Could not get user", slog.Any("err", err))
 			rt.statusPage(w, r, 500, "")
 			return
 		}
 		if user == nil {
-			rt.statusPage(w, r, 404, "")
+			user2, err := rt.base.HistoricalUsernameHolder(r.Context(), username)
+			if err != nil || user2 == nil {
+				rt.statusPage(w, r, 404, "")
+			} else {
+				http.Redirect(w, r, "/profile/"+user2.Name, http.StatusMovedPermanently)
+			}
 			return
 		}
 		rt.profilePage(w, r, templ, user)

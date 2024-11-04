@@ -141,7 +141,7 @@ func (s *BaseAPI) updateUser(ctx context.Context, userID int, upd kilonova.UserF
 var usernameChangeMu sync.Mutex
 
 // fromAdmin also should include the forced username changes
-func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserBrief, newName string, checkUsed bool, fromAdmin bool) *StatusError {
+func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserFull, newName string, checkUsed bool, fromAdmin bool) *StatusError {
 	usernameChangeMu.Lock()
 	defer usernameChangeMu.Unlock()
 
@@ -161,7 +161,10 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserBrief, 
 			}
 			return WrapError(err, "Couldn't get last change date")
 		}
-		nextEligbleDate := chAt.Add(14 * 24 * time.Hour)
+		var nextEligbleDate time.Time
+		if !chAt.Equal(user.CreatedAt) {
+			nextEligbleDate = chAt.Add(14 * 24 * time.Hour)
+		}
 		if nextEligbleDate.After(time.Now()) {
 			return Statusf(400, "You can only change your username at most once every 14 days. You may change it again on %s", nextEligbleDate.Format(time.DateTime))
 		}
@@ -177,7 +180,13 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserBrief, 
 			zap.S().Warn(err)
 		}
 		if used {
-			return Statusf(400, "New name must have never been used by anyone. Contact us on discord if you want to take the name for yourself.")
+			userIDs, err := s.db.HistoricalUsernameHolders(ctx, newName)
+			if err != nil && !errors.Is(err, context.Canceled) {
+				userIDs = []int{-1, -2}
+			}
+			if !(len(userIDs) == 0 || (len(userIDs) == 1 && userIDs[0] == user.ID)) {
+				return Statusf(400, "New name must have never been used by anyone else. Contact us on Discord if you want to take the name for yourself.")
+			}
 		}
 	}
 
@@ -206,6 +215,19 @@ func (s *BaseAPI) UsernameChangeHistory(ctx context.Context, userID int) ([]*kil
 		return []*kilonova.UsernameChange{}, WrapError(err, "Couldn't get change history")
 	}
 	return changes, nil
+}
+
+// Returns the people that last held the given username
+// Used for redirecting on the frontend the profile page
+func (s *BaseAPI) HistoricalUsernameHolder(ctx context.Context, name string) (*kilonova.UserBrief, *StatusError) {
+	userIDs, err := s.db.HistoricalUsernameHolders(ctx, name)
+	if err != nil {
+		return nil, WrapError(err, "Couldn't get username holders")
+	}
+	if len(userIDs) == 0 {
+		return nil, nil
+	}
+	return s.UserBrief(ctx, userIDs[0])
 }
 
 func (s *BaseAPI) VerifyUserPassword(ctx context.Context, uid int, password string) *StatusError {

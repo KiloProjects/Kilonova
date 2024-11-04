@@ -158,6 +158,22 @@ func (s *DB) UsernameChangeHistory(ctx context.Context, userID int) ([]*kilonova
 	return changes, nil
 }
 
+func (s *DB) HistoricalUsernameHolders(ctx context.Context, name string) ([]int, error) {
+	rows, _ := s.conn.Query(ctx, "SELECT user_id, MAX(changed_at) FROM username_change_history WHERE lower(name) = lower($1) GROUP BY user_id ORDER BY MAX(changed_at) DESC", name)
+	entries, err := pgx.CollectRows(rows, pgx.RowToStructByPos[struct {
+		UserID    int
+		ChangedAt time.Time
+	}])
+	if errors.Is(err, pgx.ErrNoRows) {
+		return []int{}, nil
+	}
+	ids := make([]int, len(entries))
+	for i := range ids {
+		ids[i] = entries[i].UserID
+	}
+	return ids, err
+}
+
 // UpdateUser updates a user.
 // Returns ENOTFOUND if the user does not exist
 func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate) error {
