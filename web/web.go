@@ -63,6 +63,7 @@ var (
 	ForceLogin = config.GenFlag("behavior.force_authed", false, "Force authentication when accessing website")
 
 	GoatCounterDomain = config.GenFlag("feature.analytics.goat_prefix", "https://goat.kilonova.ro", "URL prefix for GoatCounter analytics")
+	TwiplaID          = config.GenFlag("feature.analytics.twipla_id", "", "ID for TWIPLA Analytics integration")
 
 	NavbarBranding = config.GenFlag("frontend.navbar.branding", "Kilonova", "Branding in navbar")
 
