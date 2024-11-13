@@ -281,7 +281,8 @@ func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if util.UserBrief(r).IsAuthed() {
-			rt.statusPage(w, r, 401, "Trebuie să fii delogat")
+			http.Redirect(w, r, "/", http.StatusFound)
+			//rt.statusPage(w, r, 401, "Trebuie să fii delogat")
 			return
 		}
 		next.ServeHTTP(w, r)

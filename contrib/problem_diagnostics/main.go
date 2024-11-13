@@ -66,7 +66,7 @@ func Kilonova() error {
 }
 
 func initLogger(debug bool) {
-	core := kilonova.GetZapCore(debug, true, os.Stdout)
+	core := kilonova.GetZapCore(debug, os.Stdout)
 	logg := zap.New(core, zap.AddCaller())
 
 	zap.ReplaceGlobals(logg)

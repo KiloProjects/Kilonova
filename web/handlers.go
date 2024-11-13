@@ -453,6 +453,7 @@ func (rt *Web) pbListProgressView() http.HandlerFunc {
 
 func (rt *Web) pbListView() http.HandlerFunc {
 	templ := rt.parse(nil, "lists/view.html", "modals/pblist.html", "modals/pbs.html", "proposer/createpblist.html")
+	fragmentTempl := rt.parse(nil, "modals/pblist.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		listIDs := []int{util.ProblemList(r).ID}
 		for _, slist := range util.ProblemList(r).SubLists {
@@ -460,6 +461,11 @@ func (rt *Web) pbListView() http.HandlerFunc {
 		}
 
 		r = rt.buildPblistCache(r, listIDs)
+
+		if isHTMXRequest(r) {
+			rt.runModal(w, r, fragmentTempl, "problemlist_show", &PblistParams{util.ProblemList(r), true})
+			return
+		}
 
 		rt.runTempl(w, r, templ, &ProblemListParams{util.ProblemList(r), nil, -1})
 	}
@@ -778,6 +784,14 @@ func (rt *Web) problem() http.HandlerFunc {
 			}
 		}
 
+		olderSubs, err := rt.getOlderSubmissions(r.Context(), util.UserBrief(r), util.UserBrief(r).ID, util.Problem(r), util.Contest(r), 5)
+		if err != nil {
+			if !errors.Is(err, context.Canceled) {
+				slog.Warn("Couldn't get submissions", slog.Any("err", err))
+			}
+			olderSubs = nil
+		}
+
 		rt.runTempl(w, r, templ, &ProblemParams{
 			Topbar: rt.problemTopbar(r, "pb_statement", -1),
 
@@ -788,6 +802,8 @@ func (rt *Web) problem() http.HandlerFunc {
 			Statement: template.HTML(statement),
 			Languages: langs,
 			Variants:  variants,
+
+			OlderSubmissions: olderSubs,
 
 			SelectedVariant: &kilonova.StatementVariant{
 				Language: foundLang,
@@ -808,8 +824,7 @@ func (rt *Web) problemSubmissions() http.HandlerFunc {
 		if isHTMXRequest(r) && err == nil {
 			olderSubs, err := rt.getOlderSubmissions(r.Context(), util.UserBrief(r), userID, util.Problem(r), util.Contest(r), 5)
 			if err != nil {
-				// TODO: Not the best solution
-				http.Error(w, err.Text, err.Code)
+				rt.statusPage(w, r, err.Code, err.Text)
 				return
 			}
 			rt.runModal(w, r, fragmentTempl, "older_subs", olderSubs)

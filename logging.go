@@ -1,24 +1,43 @@
 package kilonova
 
 import (
+	"golang.org/x/term"
 	"io"
+	"os"
 	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-func GetZapCore(debug bool, color bool, out io.Writer) zapcore.Core {
+func logColors(w io.Writer) bool {
+	f, ok := w.(*os.File)
+	if !ok {
+		return false
+	}
+
+	if os.Getenv("NO_COLOR") != "" {
+		return false
+	}
+
+	if !term.IsTerminal(int(f.Fd())) {
+		return false
+	}
+
+	return os.Getenv("TERM") != "dumb"
+}
+
+func GetZapCore(debug bool, out io.Writer) zapcore.Core {
 	var cfg zapcore.EncoderConfig
 	if debug {
 		cfg = zap.NewDevelopmentEncoderConfig()
 	} else {
 		cfg = zap.NewProductionEncoderConfig()
 	}
-	cfg.EncodeTime = zapcore.TimeEncoder(func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+	cfg.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 		enc.AppendString(t.UTC().Format(time.RFC3339))
-	})
-	if color {
+	}
+	if logColors(out) {
 		cfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	} else {
 		cfg.EncodeLevel = zapcore.CapitalLevelEncoder

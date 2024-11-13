@@ -249,12 +249,12 @@ func Kilonova() error {
 }
 
 func initLogger(debug bool) {
-	core := kilonova.GetZapCore(debug, true, os.Stdout)
+	core := kilonova.GetZapCore(debug, os.Stdout)
 	logg := zap.New(core, zap.AddCaller())
 
 	zap.ReplaceGlobals(logg)
 
-	slog.SetDefault(slog.New(zapslog.NewHandler(core, &zapslog.HandlerOptions{AddSource: true})))
+	slog.SetDefault(slog.New(zapslog.NewHandler(core, zapslog.WithCaller(true))))
 }
 
 func init() {

@@ -1,7 +1,7 @@
-import { h, Fragment, Component } from "preact";
+import { h, Fragment } from "preact";
 import register from "preact-custom-element";
 import getText from "../translation";
-import { dayjs, fromBase64 } from "../util";
+import { dayjs } from "../util";
 import { useEffect, useState } from "preact/hooks";
 import { Submissions, defaultClient } from "../api/client";
 

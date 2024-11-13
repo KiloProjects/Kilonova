@@ -9,7 +9,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"html"
 	"html/template"
 	"io"
@@ -90,6 +89,10 @@ type Web struct {
 func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int, errMessage string) {
 	if r.FormValue("logout") == "1" {
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
+	if isHTMXRequest(r) {
+		http.Error(w, errMessage, statusCode)
 		return
 	}
 	status := rt.parse(nil, "util/statusCode.html", "modals/login.html")
@@ -801,9 +804,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		},
 		"usacoDuration": func(c *kilonova.Contest) string {
 			return (time.Duration(c.PerUserTime) * time.Second).String()
-		},
-		"twiplaSnippet": func(id string) template.HTML {
-			return template.HTML(fmt.Sprintf(`<!-- TWIPLA Tracking Code for %s --><script>(function(v,i,s,a,t){v[t]=v[t]||function(){(v[t].v=v[t].v||[]).push(arguments)};if(!v._visaSettings){v._visaSettings={}}v._visaSettings[a]={v:'1.0',s:a,a:'1',t:t};var b=i.getElementsByTagName('body')[0];var p=i.createElement('script');p.defer=1;p.async=1;p.src=s+'?s='+a;b.appendChild(p)})(window,document,'//app-worker.visitor-analytics.io/main.js','%s','va')</script><!-- TWIPLA Tracking Code for %s -->`, hostURL.Hostname(), id, hostURL.Hostname()))
 		},
 
 		"getCaptchaID": base.NewCaptchaID,

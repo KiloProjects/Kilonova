@@ -147,6 +147,8 @@ type ProblemParams struct {
 	Languages []*sudoapi.Language
 	Variants  []*kilonova.StatementVariant
 
+	OlderSubmissions *OlderSubmissionsParams
+
 	SelectedVariant *kilonova.StatementVariant
 }
 

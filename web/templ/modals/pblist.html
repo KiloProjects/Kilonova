@@ -27,7 +27,32 @@
         {{ with .SubLists }}
             <div class="list-group mt-2">
                 {{ range . }}
-                    <kn-dom-sublist encoded="{{encodeJSON .}}" {{if authed}}numsolved="{{numSolvedPblist .ID}}"{{end}}></kn-dom-sublist>
+                    <details class="list-group-head" hx-get="/problem_lists/{{.ID}}" hx-swap="outerHTML">
+                        <summary class="pb-1 mt-1">
+                            <span>{{.Title}} <a href="/problem_lists/{{.ID}}">(#{{.ID}})</a></span>
+                            {{if gt (.NumProblems) 0}}
+                                {{if authed}}
+                                <span class="float-right badge">
+                                    {{ getText "num_solved" (numSolvedPblist .ID) (.NumProblems) }}
+                                </span>
+                                {{else}}
+                                <span class="float-right badge">
+                                    {{ if eq 1 (.NumProblems)}}
+                                        {{ getText "single_problem" }}
+                                    {{ else }}
+                                        {{ getText "num_problems" (.NumProblems) }}
+                                    {{ end }}
+                                </span>
+                                {{end}}
+                            {{end}}
+                        </summary>
+                        <noscript><a href="/problem_lists/{{.ID}}">{{getText "sublist_noscript"}}</a> </noscript>
+                        <div class="text-4xl mx-auto w-full my-10 text-center">
+                            <div>
+                                <i class="fas fa-spinner animate-spin"></i> {{getText "loading"}}
+                            </div>
+                        </div>
+                    </details>
                 {{ end }}
             </div>
         {{ end }}

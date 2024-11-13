@@ -159,11 +159,9 @@
         </details>
         {{ end }}
         {{ end }}
-        {{ if authed }}
+        {{ with $.OlderSubmissions }}
         <section class="segment-panel">
-            {{with olderSubmissions authedUser .Problem .Topbar.Contest}}
-                {{template "older_subs" .}}
-            {{end}}
+            {{template "older_subs" .}}
         </section>
         {{ end }}
         {{ with .Attachments }}
@@ -206,7 +204,7 @@
         params.set("var", e.target.value.replace(/-+$/, ""))
         window.location.search = params.toString()
     })
-    let prec = {{.Problem.ScorePrecision}}
+    let prec = {{.Problem.ScorePrecision}};
     let strat = {{.Problem.ScoringStrategy}};
     function formatMaxScore(maxScore) {
         let score = parseInt(maxScore);

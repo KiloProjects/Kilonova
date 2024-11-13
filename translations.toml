@@ -30,6 +30,10 @@ ro = "%d probleme"
 en = "1 problem"
 ro = "o problemă"
 
+[sublist_noscript]
+en = "Browse list"
+ro = "Explorează lista"
+
 [latestPbs]
 en = "Latest published problems"
 ro = "Ultimele probleme publicate"
