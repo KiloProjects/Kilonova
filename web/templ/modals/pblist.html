@@ -27,7 +27,7 @@
         {{ with .SubLists }}
             <div class="list-group mt-2">
                 {{ range . }}
-                    <details class="list-group-head" hx-get="/problem_lists/{{.ID}}" hx-swap="outerHTML">
+                    <details class="list-group-head" hx-get="/problem_lists/{{.ID}}" hx-swap="outerHTML" hx-trigger="toggle once">
                         <summary class="pb-1 mt-1">
                             <span>{{.Title}} <a href="/problem_lists/{{.ID}}">(#{{.ID}})</a></span>
                             {{if gt (.NumProblems) 0}}
