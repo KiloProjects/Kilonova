@@ -1,5 +1,6 @@
 node_modules
 .vscode
+.idea
 /config.*
 /flags.json
 !/config.example.toml

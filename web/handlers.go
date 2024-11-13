@@ -784,12 +784,15 @@ func (rt *Web) problem() http.HandlerFunc {
 			}
 		}
 
-		olderSubs, err := rt.getOlderSubmissions(r.Context(), util.UserBrief(r), util.UserBrief(r).ID, util.Problem(r), util.Contest(r), 5)
-		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				slog.Warn("Couldn't get submissions", slog.Any("err", err))
+		var olderSubs *OlderSubmissionsParams
+		if util.UserBrief(r) != nil {
+			olderSubs, err = rt.getOlderSubmissions(r.Context(), util.UserBrief(r), util.UserBrief(r).ID, util.Problem(r), util.Contest(r), 5)
+			if err != nil {
+				if !errors.Is(err, context.Canceled) {
+					slog.Warn("Couldn't get submissions", slog.Any("err", err))
+				}
+				olderSubs = nil
 			}
-			olderSubs = nil
 		}
 
 		rt.runTempl(w, r, templ, &ProblemParams{
