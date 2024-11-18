@@ -20,8 +20,3 @@
 
 [frontend]
  banned_hot_problems = []
-
-[donations]
- buy_coffee_name = ""
- bmac_webhook_secret = ""
- paypal_button_id = ""

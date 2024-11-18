@@ -112,9 +112,7 @@ type GraderInfoParams struct {
 type DonateParams struct {
 	Donations []*kilonova.Donation
 
-	Status   string
-	BMACName string
-	PayPalID string
+	Status string
 }
 
 type ContestParams struct {

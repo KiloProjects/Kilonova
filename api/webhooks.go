@@ -15,6 +15,10 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	BMACWebhookSecret = config.GenFlag[string]("frontend.donation.bmac_webhook_secret", "", "Secret validation ID for Buy Me a Coffee notifications")
+)
+
 type bmacEvent struct {
 	Type    string          `json:"type"`
 	Created int             `json:"created"`
@@ -39,16 +43,17 @@ type membershipDonationData struct {
 
 // bmacEvent handles an event from Buy Me A Coffee
 func (s *API) bmacEvent(w http.ResponseWriter, r *http.Request) {
-	if config.Donations.BMACWebhookSecret == "" {
+	if BMACWebhookSecret.Value() == "" {
 		zap.S().Warn("bmac_event was POSTed but no signature was specified in config file")
 		errorData(w, "BMAC secret not rolled out", 400)
+		return
 	}
 
 	if r.Header.Get("X-Signature-Sha256") == "" {
 		errorData(w, "Invalid Signature", 400)
 		return
 	}
-	mac := hmac.New(sha256.New, []byte(config.Donations.BMACWebhookSecret))
+	mac := hmac.New(sha256.New, []byte(BMACWebhookSecret.Value()))
 	var buf bytes.Buffer
 	if _, err := io.Copy(&buf, r.Body); err != nil {
 		zap.S().Warn(err)

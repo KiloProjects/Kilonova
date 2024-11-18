@@ -18,17 +18,17 @@
 <div class="segment-panel">
     <h1>{{getText "donation_methods"}}:</h1>
     <ul>
-        {{if .BMACName}}
+        {{with stringFlag "frontend.donation.bmac_name"}}
         <li class="mb-2">
             Buy Me A Coffee:
-            <a target="_blank" href="https://www.buymeacoffee.com/{{.BMACName}}"><img class="inline" src="https://img.buymeacoffee.com/button-api/?text=Donate&emoji=&slug={{.BMACName}}&button_colour=FFDD00&font_family=Lato&outline_colour=000000&coffee_colour=ffffff"/></a>
+			<a target="_blank" href="https://www.buymeacoffee.com/{{.}}"><img class="inline" src="https://img.buymeacoffee.com/button-api/?text=Donate&emoji=&slug={{.}}&button_colour=FFDD00&font_family=Lato&outline_colour=000000&coffee_colour=ffffff"/></a>
             {{getText "donate_bmac_disclaimer"}}
         </li>
         {{end}}
-        {{if .PayPalID}}
+        {{with stringFlag "frontend.donation.paypal_btn_id"}}
         <li> 
             PayPal:
-            <a target="_blank" class="btn btn-blue" href="https://www.paypal.com/donate/?hosted_button_id=5UK5BMN93KXFG"><i class="fab fa-paypal mr-2"></i> Donate with PayPal</a>
+			<a target="_blank" class="btn btn-blue" href="https://www.paypal.com/donate/?hosted_button_id={{.}}"><i class="fab fa-paypal mr-2"></i> Donate with PayPal</a>
             {{getText "donate_paypal_disclaimer"}}
         </li>
         {{end}}

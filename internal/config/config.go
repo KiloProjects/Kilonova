@@ -16,17 +16,15 @@ var (
 	Eval       EvalConf
 	Email      EmailConf
 	Frontend   FrontendConf
-	Donations  DonationConf
 )
 
 // configStruct is the glue for all configuration sections when unmarshaling
 // After load, it will disperse all the data in variables
 type configStruct struct {
-	Common    CommonConf   `toml:"common"`
-	Eval      EvalConf     `toml:"eval"`
-	Email     EmailConf    `toml:"email"`
-	Frontend  FrontendConf `toml:"frontend"`
-	Donations DonationConf `toml:"donations"`
+	Common   CommonConf   `toml:"common"`
+	Eval     EvalConf     `toml:"eval"`
+	Email    EmailConf    `toml:"email"`
+	Frontend FrontendConf `toml:"frontend"`
 }
 
 // EmailConf is the data required for the email part
@@ -60,13 +58,6 @@ type CommonConf struct {
 	TestMaxMemKB int `toml:"test_max_mem_kb"`
 }
 
-type DonationConf struct {
-	BuyMeACoffeeName  string `toml:"buy_coffee_name"`
-	BMACWebhookSecret string `toml:"bmac_webhook_secret"`
-
-	PayPalButtonID string `toml:"paypal_button_id"`
-}
-
 type FrontendConf struct {
 	// Note that BannedHotProblems only counts for problems that are sorted
 	// using the hotness filter (that is, had submissions in the last 7 days)
@@ -82,7 +73,6 @@ func spread() {
 	Email = c.Email
 	Eval = c.Eval
 	Frontend = c.Frontend
-	Donations = c.Donations
 }
 
 func compactify() {
@@ -90,7 +80,6 @@ func compactify() {
 	c.Email = Email
 	c.Eval = Eval
 	c.Frontend = Frontend
-	c.Donations = Donations
 }
 
 func SetConfigPath(path string) {

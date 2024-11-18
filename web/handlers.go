@@ -46,6 +46,8 @@ const (
 var (
 	DonationsEnabled = config.GenFlag[bool]("frontend.donations.enabled", true, "Donations page enabled")
 	DonationsNag     = config.GenFlag[bool]("frontend.donation.frontpage_nag", true, "Donations front page notification")
+	PaypalID         = config.GenFlag[string]("frontend.donation.paypal_btn_id", "", "Paypal Donate button ID")
+	BuyMeACoffeeName = config.GenFlag[string]("frontend.donation.bmac_name", "", "Name of Buy Me a Coffee page")
 
 	MainPageLogin = config.GenFlag[bool]("feature.frontend.main_page_login", false, "Login modal on front page")
 
@@ -1369,9 +1371,7 @@ func (rt *Web) donationPage() http.HandlerFunc {
 		rt.runTempl(w, r, templ, &DonateParams{
 			Donations: donations,
 
-			Status:   r.FormValue("status"),
-			BMACName: config.Donations.BuyMeACoffeeName,
-			PayPalID: config.Donations.PayPalButtonID,
+			Status: r.FormValue("status"),
 		})
 	}
 }
