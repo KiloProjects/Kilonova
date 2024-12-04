@@ -380,12 +380,12 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 		}
 		filename := path.Base(att.Name)
 		filename = strings.TrimSuffix(filename, path.Ext(filename))
-		if filename == "checker_legacy" && s.LanguageFromFilename(att.Name) != "" {
+		if filename == "checker_legacy" && s.LanguageFromFilename(ctx, att.Name) != "" {
 			settings.CheckerName = att.Name
 			settings.LegacyChecker = true
 			continue
 		}
-		if filename == "checker" && s.LanguageFromFilename(att.Name) != "" {
+		if filename == "checker" && s.LanguageFromFilename(ctx, att.Name) != "" {
 			settings.CheckerName = att.Name
 			settings.LegacyChecker = false
 			continue
@@ -407,7 +407,7 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 			settings.HeaderFiles = append(settings.HeaderFiles, att.Name)
 		}
 
-		if lang := s.LanguageFromFilename(att.Name); lang != "" {
+		if lang := s.LanguageFromFilename(ctx, att.Name); lang != "" {
 			if strings.HasPrefix(lang, "cpp") {
 				whitelistCPP = true
 				if lang > biggestCPP {
@@ -455,13 +455,13 @@ func (s *BaseAPI) ProblemLanguages(ctx context.Context, problemID int) ([]*Langu
 	langs := make([]*Language, 0, len(s.EnabledLanguages()))
 	if len(settings.LanguageWhitelist) == 0 {
 		for name := range s.EnabledLanguages() {
-			langs = append(langs, s.Language(name))
+			langs = append(langs, s.Language(ctx, name))
 		}
 	} else {
 		for _, val := range settings.LanguageWhitelist {
-			v := s.Language(val)
+			v := s.Language(ctx, val)
 			if v == nil {
-				slog.Warn("Language found in whitelist but not enabled", slog.String("wh_value", val))
+				slog.WarnContext(ctx, "Language found in whitelist but not enabled", slog.String("wh_value", val))
 			}
 			langs = append(langs, v)
 		}

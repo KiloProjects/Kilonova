@@ -91,7 +91,7 @@ func ProcessPolygonCheckFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusEr
 func ProcessPolygonPDFStatement(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
 	parts := strings.Split(file.Name, "/")
 	if len(parts) != 4 {
-		slog.Warn("Sanity check failed: Polygon PDF statement is not 4 parts")
+		slog.WarnContext(ctx.ctx, "Sanity check failed: Polygon PDF statement is not 4 parts")
 		return nil
 	}
 	filename := ""

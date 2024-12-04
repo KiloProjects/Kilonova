@@ -3,6 +3,7 @@ package test
 import (
 	"archive/zip"
 	"bufio"
+	"context"
 	"io"
 	"log/slog"
 	"regexp"
@@ -256,7 +257,7 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 			}
 		}
 
-		props.Subtasks, props.SubtaskedTests = solveSubtaskDependencies(stks)
+		props.Subtasks, props.SubtaskedTests = solveSubtaskDependencies(ctx.ctx, stks)
 	}
 
 	ctx.props = props
@@ -273,7 +274,7 @@ type parsedSubtask struct {
 	Dependencies []string
 }
 
-func solveSubtaskDependencies(subtasks map[string]parsedSubtask) (stks map[int]Subtask, groupedTests []int) {
+func solveSubtaskDependencies(ctx context.Context, subtasks map[string]parsedSubtask) (stks map[int]Subtask, groupedTests []int) {
 	stks = make(map[int]Subtask)
 	subtaskedTests := make(map[int]bool)
 
@@ -285,7 +286,7 @@ func solveSubtaskDependencies(subtasks map[string]parsedSubtask) (stks map[int]S
 		for _, dependency := range group.Dependencies {
 			dep, ok := subtasks[dependency]
 			if !ok {
-				slog.Debug("Skipping unknown subtask", slog.String("dependency", dependency))
+				slog.DebugContext(ctx, "Skipping unknown subtask", slog.String("dependency", dependency))
 				continue
 			}
 			stk.Tests = append(stk.Tests, dep.Tests...)
@@ -315,7 +316,7 @@ func solveSubtaskDependencies(subtasks map[string]parsedSubtask) (stks map[int]S
 				if stk.index != nil {
 					id = *stk.index
 				} else {
-					slog.Warn("Weird state: subtask id is invalid and index is not set")
+					slog.WarnContext(ctx, "Weird state: subtask id is invalid and index is not set")
 				}
 			}
 			stks[id] = stk

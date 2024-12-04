@@ -63,7 +63,7 @@ func (b *StupidSandbox) getFilePath(boxpath string) string {
 	return path.Join(b.path, boxpath)
 }
 
-func NewStupid(boxID int, memoryQuota int64, logger *slog.Logger) (eval.Sandbox, error) {
+func NewStupid(_ context.Context, boxID int, memoryQuota int64, logger *slog.Logger) (eval.Sandbox, error) {
 	dirname := path.Join(os.TempDir(), fmt.Sprintf("stupid-box-%d", boxID))
 	// Try to clear existing box first, if it exited without cleanup
 	if err := os.RemoveAll(dirname); err != nil {

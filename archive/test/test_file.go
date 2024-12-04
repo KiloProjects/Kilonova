@@ -112,7 +112,7 @@ func deduceTestIDMode(ctx *ArchiveCtx) testIDMode {
 	for key := range ctx.tests {
 		if _, err := getTestID(key); err != nil {
 			mode = idModeSort
-			slog.Debug("Using `sort` ID mode")
+			slog.DebugContext(ctx.ctx, "Using `sort` ID mode")
 			break
 		}
 	}
@@ -133,7 +133,7 @@ func deduceTestIDMode(ctx *ArchiveCtx) testIDMode {
 		}
 		if ctx.scoreParameters[0].Count != nil && mode == idModeParse {
 			mode = idModeParseSort
-			slog.Debug("Using `parseSort` ID mode")
+			slog.DebugContext(ctx.ctx, "Using `parseSort` ID mode")
 		}
 	}
 	return mode

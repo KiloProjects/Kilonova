@@ -83,7 +83,7 @@ func Kilonova() error {
 			return err
 		}
 
-		ext := base.Language(sub.Language).Extension()
+		ext := base.Language(ctx, sub.Language).Extension()
 		w, err1 := wr.Create(fmt.Sprintf("%d-%s-%dp%s", sub.ID, pb.TestName, sub.Score.IntPart(), ext))
 		if err1 != nil {
 			return err1

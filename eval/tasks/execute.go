@@ -11,7 +11,6 @@ import (
 
 	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
-	"go.uber.org/zap"
 )
 
 type ExecRequest struct {
@@ -35,7 +34,7 @@ type ExecResponse struct {
 }
 
 func ExecuteTask(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, req *ExecRequest, logger *slog.Logger) (*ExecResponse, error) {
-	logger.Info("Executing subtest", slog.Int("subtest_id", req.SubtestID), slog.Int("sub_id", req.SubID))
+	logger.InfoContext(ctx, "Executing subtest", slog.Int("subtest_id", req.SubtestID), slog.Int("sub_id", req.SubID))
 
 	bucket, fileName := bucketFromIDExec(req.SubID)
 
@@ -117,8 +116,8 @@ func ExecuteTask(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, req
 		resp.Comments = msg
 	case "XX":
 		resp.Comments = "Sandbox Error: " + msg
-		zap.S().Warn("Sandbox error detected, check grader.log for more detials ", zap.Int("subtest_id", req.SubtestID), zap.Int("sub_id", req.SubID))
-		logger.Warn("Sandbox error", slog.Int("sub_id", req.SubID), slog.Int("subtest_id", req.SubtestID), slog.Any("metadata", bResp.Stats))
+		slog.WarnContext(ctx, "Sandbox error detected, check grader.log for more details", slog.Int("subtest_id", req.SubtestID), slog.Int("sub_id", req.SubID))
+		logger.WarnContext(ctx, "Sandbox error", slog.Int("sub_id", req.SubID), slog.Int("subtest_id", req.SubtestID), slog.Any("metadata", bResp.Stats))
 	default:
 		okExit = true
 	}

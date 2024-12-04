@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"log/slog"
 	"math"
 	"net/http"
 	"path"
@@ -91,7 +92,7 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 	attData, err := s.base.AttachmentData(r.Context(), att.ID)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Could not load attachment data", slog.Any("err", err))
 		}
 		http.Error(w, "Couldn't get attachment data", 500)
 		return
@@ -104,7 +105,7 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 	if path.Ext(att.Name) == ".md" && r.FormValue("format") == "html" {
 		data, err := s.base.RenderMarkdown(attData, &kilonova.RenderContext{Problem: util.Problem(r), BlogPost: util.BlogPost(r)})
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Could not render markdown contents", slog.Any("err", err))
 			http.Error(w, "Could not render file", 500)
 			return
 		}
@@ -139,7 +140,7 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 		data, err := s.base.GetAttachmentRender(att.ID, renderType)
 		if err != nil {
 			if !errors.Is(err, kilonova.ErrNotExist) {
-				zap.S().Warn(err)
+				slog.WarnContext(r.Context(), "Could not load attachment render cache", slog.Any("err", err))
 			}
 		} else {
 			defer data.Close()
@@ -149,7 +150,7 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 
 		src, _, err := image.Decode(bytes.NewReader(attData))
 		if err != nil {
-			zap.S().Debug(err)
+			slog.DebugContext(r.Context(), "Could not decode image data", slog.Any("err", err))
 			ok = false
 		}
 		if ok {
@@ -157,12 +158,13 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 			dst := image.NewRGBA(g.Bounds(src.Bounds()))
 			g.Draw(dst, src)
 			var buf bytes.Buffer
-			if mimeType == "image/png" {
+			switch mimeType {
+			case "image/png":
 				png.Encode(&buf, dst)
-			} else if mimeType == "image/jpeg" {
+			case "image/jpeg":
 				jpeg.Encode(&buf, dst, nil)
-			} else {
-				zap.S().Warn("We somehow got here")
+			default:
+				slog.WarnContext(r.Context(), "Unknown mimeType", slog.String("mimeType", mimeType))
 			}
 			// Also cache it if's relatively small
 			if width <= 4000 && height <= 4000 {
@@ -208,7 +210,7 @@ func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request)
 	for _, pb := range ld.ProblemOrder {
 		name, ok := ld.ProblemNames[pb]
 		if !ok {
-			zap.S().Warn("Invalid s.base.ContestLeaderboard output")
+			slog.WarnContext(r.Context(), "Invalid s.base.ContestLeaderboard output")
 			http.Error(w, "Invalid internal data", 500)
 			continue
 		}
@@ -221,7 +223,7 @@ func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request)
 		header = append(header, "total")
 	}
 	if err := wr.Write(header); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(r.Context(), "Could not write CSV header", slog.Any("err", err))
 		http.Error(w, "Couldn't write CSV", 500)
 		return
 	}
@@ -270,7 +272,7 @@ func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request)
 		}
 
 		if err := wr.Write(line); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Could not write CSV line", slog.Any("err", err))
 			http.Error(w, "Couldn't write CSV", 500)
 			return
 		}
@@ -278,7 +280,7 @@ func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request)
 
 	wr.Flush()
 	if err := wr.Error(); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(r.Context(), "Error writing CSV", slog.Any("err", err))
 		http.Error(w, "Couldn't write CSV", 500)
 		return
 	}
@@ -299,7 +301,7 @@ func (s *Assets) ServeSubtest(w http.ResponseWriter, r *http.Request) {
 	}
 	sub, err1 := s.base.Submission(r.Context(), subtest.SubmissionID, util.UserBrief(r))
 	if err1 != nil {
-		zap.S().Warn(err1)
+		slog.WarnContext(r.Context(), "Error loading submission", slog.Any("err", err))
 		http.Error(w, "Couldn't get submission", 500)
 		return
 	}
@@ -322,7 +324,7 @@ func (s *Assets) ServeSubtest(w http.ResponseWriter, r *http.Request) {
 func (s *Assets) ServeTestInput(w http.ResponseWriter, r *http.Request) {
 	rr, err := s.base.TestInput(util.Test(r).ID)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(r.Context(), "Error getting test input data", slog.Any("err", err))
 		http.Error(w, "Couldn't get test input", 500)
 		return
 	}
@@ -338,7 +340,7 @@ func (s *Assets) ServeTestInput(w http.ResponseWriter, r *http.Request) {
 func (s *Assets) ServeTestOutput(w http.ResponseWriter, r *http.Request) {
 	rr, err := s.base.TestOutput(util.Test(r).ID)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(r.Context(), "Error getting test output data", slog.Any("err", err))
 		http.Error(w, "Couldn't get test output", 500)
 		return
 	}

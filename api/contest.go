@@ -118,9 +118,9 @@ func (s *API) getRemainingSubmissionCount(w http.ResponseWriter, r *http.Request
 		return
 	}
 	user := util.UserBrief(r)
-	if s.base.IsContestEditor(util.UserBrief(r), util.Contest(r)) {
-
-	}
+	//if s.base.IsContestEditor(util.UserBrief(r), util.Contest(r)) {
+	//
+	//}
 	pbs, err := s.base.ContestProblems(r.Context(), util.Contest(r), util.UserBrief(r))
 	if err != nil {
 		err.WriteError(w)

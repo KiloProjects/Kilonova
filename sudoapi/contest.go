@@ -311,7 +311,7 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) *Statu
 			}
 			users[sub.UserID] = true
 
-			name := s.Language(sub.Language).MOSSName()
+			name := s.Language(ctx, sub.Language).MOSSName()
 			// TODO: See if this can be simplified?
 			_, ok := mossSubs[name]
 			if !ok {
@@ -322,9 +322,9 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) *Statu
 		}
 
 		for mossLang, subs := range mossSubs {
-			lang := s.LanguageFromMOSS(mossLang)
+			lang := s.LanguageFromMOSS(ctx, mossLang)
 
-			slog.Info("Running MOSS", slog.Any("problem", pb), slog.Any("lang", lang), slog.Int("sub_count", len(subs)))
+			slog.InfoContext(ctx, "Running MOSS", slog.Any("problem", pb), slog.Any("lang", lang), slog.Int("sub_count", len(subs)))
 			mossID, err := s.db.InsertMossSubmission(ctx, contest.ID, pb.ID, lang.InternalName, len(subs))
 			if err != nil {
 				return WrapError(err, "Could not add MOSS stub to DB")
@@ -333,7 +333,7 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) *Statu
 			go func(mossID int, lang *Language, mossLang string, subs []*kilonova.Submission) {
 				conn, err := moss.New(ctx)
 				if err != nil {
-					slog.Warn("Could not initialize MOSS", slog.Any("err", err))
+					slog.WarnContext(ctx, "Could not initialize MOSS", slog.Any("err", err))
 				}
 				defer conn.Close()
 
@@ -345,13 +345,13 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) *Statu
 						for _, sub := range subs {
 							user, err := s.UserBrief(ctx, sub.UserID)
 							if err != nil {
-								slog.Warn("Could not get user", slog.Any("err", err))
+								slog.WarnContext(ctx, "Could not get user", slog.Any("err", err))
 								return
 							}
 
 							code, err := s.RawSubmissionCode(ctx, sub.ID)
 							if err != nil {
-								slog.Warn("Could not get submission code", slog.Any("err", err))
+								slog.WarnContext(ctx, "Could not get submission code", slog.Any("err", err))
 								return
 							}
 
@@ -362,10 +362,10 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) *Statu
 					}),
 				})
 				if err != nil {
-					slog.Warn("Could not get MOSS result", slog.Any("err", err))
+					slog.WarnContext(ctx, "Could not get MOSS result", slog.Any("err", err))
 				}
 				if err := s.db.SetMossURL(ctx, mossID, url); err != nil {
-					slog.Warn("Could not set MOSS results URL", slog.Any("err", err))
+					slog.WarnContext(ctx, "Could not set MOSS results URL", slog.Any("err", err))
 				}
 			}(mossID, lang, mossLang, subs)
 		}

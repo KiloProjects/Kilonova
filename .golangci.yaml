@@ -1,0 +1,10 @@
+linters-settings:
+  sloglint:
+    no-mixed-args: true
+    attr-only: true
+    context: "all"
+linters:
+  enable:
+    - sloglint
+  disable:
+    - errcheck

@@ -48,6 +48,8 @@ require github.com/dustin/go-humanize v1.0.1
 
 require (
 	github.com/bwmarrin/discordgo v0.28.1
+	github.com/dominikbraun/graph v0.23.0
+	github.com/google/btree v1.1.3
 	github.com/google/uuid v1.6.0
 	github.com/oschwald/maxminddb-golang/v2 v2.0.0-beta.1
 	github.com/sashabaranov/go-openai v1.35.6
@@ -56,7 +58,10 @@ require (
 	golang.org/x/term v0.26.0
 )
 
-require github.com/gorilla/websocket v1.5.3 // indirect
+require (
+	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/gorilla/websocket v1.5.3 // indirect
+)
 
 require (
 	github.com/antchfx/xpath v1.3.2 // indirect

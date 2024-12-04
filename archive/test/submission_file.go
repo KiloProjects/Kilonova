@@ -27,10 +27,10 @@ func ProcessSubmissionFile(ctx *ArchiveCtx, file *zip.File, base *sudoapi.BaseAP
 		return kilonova.WrapError(err, "Couldn't read submission file")
 	}
 
-	lang := base.LanguageFromFilename(path.Base(file.Name))
+	lang := base.LanguageFromFilename(ctx.ctx, path.Base(file.Name))
 	if lang == "" {
 		if !strings.HasSuffix(file.Name, ".desc") { // Don't show for polygon description files
-			slog.Warn("Unrecognized submisison language for archive file", slog.String("filename", path.Base(file.Name)))
+			slog.WarnContext(ctx.ctx, "Unrecognized submisison language for archive file", slog.String("filename", path.Base(file.Name)))
 		}
 		return nil
 	}

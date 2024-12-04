@@ -104,7 +104,7 @@ func ProcessProblemXMLFile(actx *ArchiveCtx, file io.Reader) *kilonova.StatusErr
 		}
 
 		// Solve dependencies
-		actx.props.Subtasks, actx.props.SubtaskedTests = solveSubtaskDependencies(subtasks)
+		actx.props.Subtasks, actx.props.SubtaskedTests = solveSubtaskDependencies(actx.ctx, subtasks)
 	}
 
 	// Parse time/memory limit

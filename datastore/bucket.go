@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"cmp"
+	"context"
 	"errors"
 	"io"
 	"io/fs"
@@ -226,7 +227,7 @@ func (b *Bucket) Evictable() bool {
 	return !b.Persistent && (b.MaxSize > 1024 || b.MaxTTL > time.Second)
 }
 
-func (b *Bucket) RunEvictionPolicy(logger *slog.Logger) (int, error) {
+func (b *Bucket) RunEvictionPolicy(ctx context.Context, logger *slog.Logger) (int, error) {
 	if b.Persistent {
 		return -1, errors.New("Bucket is marked as persistent, refusing to run eviction policy")
 	}
@@ -256,7 +257,7 @@ func (b *Bucket) RunEvictionPolicy(logger *slog.Logger) (int, error) {
 	})
 
 	if logger != nil {
-		logger.Info("Before cleanup", slog.Any("bucket", b), slog.Int("object_count", len(evictionEntries)), slog.String("bucket_size", humanize.IBytes(uint64(dirSize))))
+		logger.InfoContext(ctx, "Before cleanup", slog.Any("bucket", b), slog.Int("object_count", len(evictionEntries)), slog.String("bucket_size", humanize.IBytes(uint64(dirSize))))
 	}
 
 	var numDeleted int
@@ -289,7 +290,7 @@ func (b *Bucket) RunEvictionPolicy(logger *slog.Logger) (int, error) {
 	}
 
 	if logger != nil {
-		logger.Info("After cleanup", slog.Any("bucket", b), slog.Int("object_count", len(evictionEntries)), slog.String("bucket_size", humanize.IBytes(uint64(dirSize))))
+		logger.InfoContext(ctx, "After cleanup", slog.Any("bucket", b), slog.Int("object_count", len(evictionEntries)), slog.String("bucket_size", humanize.IBytes(uint64(dirSize))))
 	}
 
 	return numDeleted, nil

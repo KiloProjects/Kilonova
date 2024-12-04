@@ -431,7 +431,7 @@ func doWalk(filename string, nodes ...tparse.Node) bool {
 func parseTempl(optFuncs template.FuncMap, modal bool, files ...string) *template.Template {
 	templs, err := fs.Sub(templateDir, "templ")
 	if err != nil {
-		slog.Error("Could not read template directory", slog.Any("err", err))
+		slog.ErrorContext(context.TODO(), "Could not read template directory", slog.Any("err", err))
 		os.Exit(1)
 	}
 	t := template.New(files[0])
@@ -441,19 +441,19 @@ func parseTempl(optFuncs template.FuncMap, modal bool, files ...string) *templat
 	if true { //config.Common.Debug { // && false {
 		f, err := fs.ReadFile(templs, files[0])
 		if err != nil {
-			slog.Error("Could not read template file", slog.Any("err", err))
+			slog.ErrorContext(context.TODO(), "Could not read template file", slog.Any("err", err))
 			os.Exit(1)
 		}
 		ptrees, err := tparse.Parse(files[0], string(f), "{{", "}}", optFuncs, builtinTemporaryTemplate())
 		if err != nil {
-			slog.Error("Could not parse template file", slog.Any("err", err))
+			slog.ErrorContext(context.TODO(), "Could not parse template file", slog.Any("err", err))
 			os.Exit(1)
 		}
 
 		if !modal {
 			// Check title
 			if _, ok := ptrees["title"]; !ok {
-				slog.Warn("Page lacks a title", slog.String("path", files[0]))
+				slog.WarnContext(context.TODO(), "Page lacks a title", slog.String("path", files[0]))
 			}
 
 			// Check content

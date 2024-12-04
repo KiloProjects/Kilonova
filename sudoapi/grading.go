@@ -16,9 +16,10 @@ type Language struct {
 	PrintableName string `json:"printable_name"`
 
 	lang *eval.Language
+	ctx  context.Context
 }
 
-func (s *BaseAPI) evalLangToInternal(lang *eval.Language) *Language {
+func (s *BaseAPI) evalLangToInternal(ctx context.Context, lang *eval.Language) *Language {
 	if lang == nil {
 		return nil
 	}
@@ -27,16 +28,17 @@ func (s *BaseAPI) evalLangToInternal(lang *eval.Language) *Language {
 		PrintableName: lang.PrintableName,
 
 		lang: lang,
+		ctx:  ctx,
 	}
 }
 
 // Language returns nil if the language was not found
-func (s *BaseAPI) Language(name string) *Language {
-	return s.evalLangToInternal(s.grader.Language(name))
+func (s *BaseAPI) Language(ctx context.Context, name string) *Language {
+	return s.evalLangToInternal(ctx, s.grader.Language(name))
 }
 
 // TODO: Just use the one from grader.LanguageFromFilename maybe? Reduce code duplication
-func (s *BaseAPI) LanguageFromFilename(filename string) string {
+func (s *BaseAPI) LanguageFromFilename(ctx context.Context, filename string) string {
 	fileExt := path.Ext(filename)
 	if fileExt == "" {
 		return ""
@@ -47,7 +49,7 @@ func (s *BaseAPI) LanguageFromFilename(filename string) string {
 	}
 	bestLang := ""
 	for k := range s.EnabledLanguages() {
-		for _, ext := range s.Language(k).Extensions() {
+		for _, ext := range s.Language(ctx, k).Extensions() {
 			if ext == fileExt && (bestLang == "" || k < bestLang) {
 				bestLang = k
 			}
@@ -56,7 +58,7 @@ func (s *BaseAPI) LanguageFromFilename(filename string) string {
 	return bestLang
 }
 
-func (s *BaseAPI) LanguageFromMOSS(mossLang string) *Language {
+func (s *BaseAPI) LanguageFromMOSS(ctx context.Context, mossLang string) *Language {
 	var lang *eval.Language
 	for _, elang := range s.grader.Languages() {
 		if elang.MOSSName == mossLang && (lang == nil || lang.InternalName < elang.InternalName) {
@@ -64,10 +66,10 @@ func (s *BaseAPI) LanguageFromMOSS(mossLang string) *Language {
 		}
 	}
 	if lang == nil {
-		slog.Warn("Could not find language for MOSS language", slog.String("moss_lang", mossLang))
+		slog.WarnContext(ctx, "Could not find language for MOSS language", slog.String("moss_lang", mossLang))
 		return nil
 	}
-	return s.evalLangToInternal(lang)
+	return s.evalLangToInternal(ctx, lang)
 }
 
 type GraderLanguage struct {
@@ -130,7 +132,7 @@ func (l *Language) Extension() string {
 		return ".txt"
 	}
 	if l.lang == nil {
-		slog.Warn("Language created outside sudoapi tried to get extension")
+		slog.WarnContext(l.ctx, "Language created outside sudoapi tried to get extension")
 		return ".err"
 	}
 	return l.lang.Extensions[len(l.lang.Extensions)-1]
@@ -142,7 +144,7 @@ func (l *Language) Extensions() []string {
 		return nil
 	}
 	if l.lang == nil {
-		slog.Warn("Language created outside sudoapi tried to get extensions")
+		slog.WarnContext(l.ctx, "Language created outside sudoapi tried to get extensions")
 		return nil
 	}
 	return l.lang.Extensions
@@ -153,7 +155,7 @@ func (l *Language) MOSSName() string {
 		return "ascii"
 	}
 	if l.lang == nil {
-		slog.Warn("Language created outside sudoapi tried to get MOSS name")
+		slog.WarnContext(l.ctx, "Language created outside sudoapi tried to get MOSS name")
 		return "ascii"
 	}
 	return l.lang.MOSSName
@@ -164,7 +166,7 @@ func (l *Language) SimilarLangs() []string {
 		return nil
 	}
 	if l.lang == nil {
-		slog.Warn("Language created outside sudoapi tried to get similar languages")
+		slog.WarnContext(l.ctx, "Language created outside sudoapi tried to get similar languages")
 		return nil
 	}
 	return l.lang.SimilarLangs

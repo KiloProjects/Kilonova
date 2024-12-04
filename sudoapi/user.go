@@ -409,7 +409,7 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 		}
 		var b bytes.Buffer
 		if err := generatedUserTempl.ExecuteTemplate(&b, user.PreferredLanguage, emailArgs); err != nil {
-			slog.Error("Error rendering password send email", slog.Any("err", err))
+			slog.ErrorContext(ctx, "Error rendering password send email", slog.Any("err", err))
 			return args.Password, user, kilonova.Statusf(500, "Could not render email")
 		}
 		var sendTo string
@@ -430,7 +430,7 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 			Subject:     subject,
 			HTMLContent: b.String(),
 		}); err != nil {
-			slog.Warn("Could not send email", slog.Any("err", err))
+			slog.WarnContext(ctx, "Could not send email", slog.Any("err", err))
 			return args.Password, user, err
 		}
 	}

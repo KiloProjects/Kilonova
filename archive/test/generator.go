@@ -272,7 +272,7 @@ func (ag *archiveGenerator) addSubmissions(ctx context.Context) *kilonova.Status
 		return err
 	}
 	for _, sub := range subs {
-		lang := ag.base.Language(sub.Language)
+		lang := ag.base.Language(ctx, sub.Language)
 		if lang == nil {
 			zap.S().Infof("Skipping submission due to unknown/disabled language (%q): %d", sub.Language, sub.ID)
 			continue

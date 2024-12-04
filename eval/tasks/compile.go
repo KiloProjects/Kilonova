@@ -47,7 +47,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 
 	// TODO: I don't think we need this anymore
 	if req.Lang == nil {
-		slog.Warn("Could not find language for submission", slog.Any("sub_id", req.ID), slog.Any("lang", req.Lang))
+		slog.WarnContext(ctx, "Could not find language for submission", slog.Any("sub_id", req.ID), slog.Any("lang", req.Lang))
 		return resp, kilonova.Statusf(500, "No language found")
 	}
 
@@ -58,7 +58,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 	if !req.Lang.Compiled {
 		// It should only be one file here anyway
 		if len(req.CodeFiles) > 1 {
-			slog.Warn("More than one file specified for non-compiled language. This is not properly supported")
+			slog.WarnContext(ctx, "More than one file specified for non-compiled language. This is not properly supported")
 		}
 		for _, fData := range req.CodeFiles {
 			if err := datastore.GetBucket(bucket).WriteFile(outName, bytes.NewBuffer(fData), 0644); err != nil {
@@ -69,7 +69,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 		return resp, nil
 	}
 
-	logger.Info("Compiling file", slog.Int("req_id", req.ID))
+	logger.InfoContext(ctx, "Compiling file", slog.Int("req_id", req.ID))
 
 	bReq := &eval.Box2Request{
 		InputByteFiles: make(map[string]*eval.ByteFile),
@@ -112,9 +112,9 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 	}
 
 	// Init compilation command
-	goodCmd, err := makeGoodCompileCommand(req.Lang.CompileCommand, sourceFiles)
+	goodCmd, err := makeGoodCompileCommand(ctx, req.Lang.CompileCommand, sourceFiles)
 	if err != nil {
-		slog.Warn("error in makeGoodCompileCommand. This is not good, so we'll use the command from the config file", slog.Any("err", err), slog.Any("command", req.Lang.CompileCommand))
+		slog.WarnContext(ctx, "error in makeGoodCompileCommand. This is not good, so we'll use the command from the config file", slog.Any("err", err), slog.Any("command", req.Lang.CompileCommand))
 		goodCmd = req.Lang.CompileCommand
 	}
 	bReq.Command = goodCmd
@@ -163,7 +163,7 @@ func compilationOutput(resp *eval.Box2Response) string {
 	return string(combinedOutRunes)
 }
 
-func makeGoodCompileCommand(command []string, files []string) ([]string, error) {
+func makeGoodCompileCommand(ctx context.Context, command []string, files []string) ([]string, error) {
 	cmd := slices.Clone(command)
 	for i := range cmd {
 		if cmd[i] == eval.MagicReplace {
@@ -175,6 +175,6 @@ func makeGoodCompileCommand(command []string, files []string) ([]string, error) 
 		}
 	}
 
-	slog.Warn("Did not replace any fields in command", slog.Any("command", command))
+	slog.WarnContext(ctx, "Did not replace any fields in command", slog.Any("command", command))
 	return cmd, nil
 }

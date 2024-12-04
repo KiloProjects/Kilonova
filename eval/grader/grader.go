@@ -2,7 +2,10 @@ package grader
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/dominikbraun/graph"
+	"github.com/dominikbraun/graph/draw"
 	"log/slog"
 	"os"
 	"path"
@@ -40,6 +43,74 @@ type submissionHandler struct {
 	sub      *kilonova.Submission
 
 	lang *eval.Language
+}
+
+var GraphvizSave = config.GenFlag("experimental.grader.save_graphviz", false, "Save graphviz .dot files to tmp directory for run graph debugging purposes")
+
+func (sh *submissionHandler) buildRunGraph(ctx context.Context, subtests []*kilonova.SubTest) (graph.Graph[int, *kilonova.SubTest], error) {
+	g := graph.New(func(sub *kilonova.SubTest) int {
+		if sub == nil {
+			return -1
+		}
+		return sub.ID
+	}, graph.Acyclic(), graph.PreventCycles(), graph.Directed(), graph.Rooted())
+	_ = g.AddVertex(nil)
+	for _, test := range subtests {
+		if err := g.AddVertex(test); err != nil && !errors.Is(err, graph.ErrVertexAlreadyExists) {
+			return nil, err
+		}
+	}
+	switch sh.sub.SubmissionType {
+	case kilonova.EvalTypeClassic:
+		stks, err := sh.base.SubmissionSubTasks(ctx, sh.sub.ID)
+		if err != nil {
+			return nil, err
+		}
+		if len(stks) == 0 {
+			for _, subtest := range subtests {
+				if err := g.AddEdge(-1, subtest.ID); err != nil && !errors.Is(err, graph.ErrEdgeAlreadyExists) {
+					return nil, err
+				}
+			}
+		} else {
+			for _, subtask := range stks {
+				// Only do it if sequential
+				//if subtask.Ordering = kilonova.SubtaskOrderingSequential {
+				lastVertex := -1
+				for i := range subtask.Subtests {
+					if err := g.AddEdge(lastVertex, subtask.Subtests[i]); err != nil && !errors.Is(err, graph.ErrEdgeAlreadyExists) {
+						return nil, err
+					}
+					lastVertex = subtask.Subtests[i]
+				}
+				//}
+			}
+		}
+	case kilonova.EvalTypeICPC:
+		lastsVertex := -1
+		for i := range subtests {
+			if err := g.AddEdge(lastsVertex, subtests[i].ID); err != nil && !errors.Is(err, graph.ErrEdgeAlreadyExists) {
+				return nil, err
+			}
+			lastsVertex = subtests[i].ID
+		}
+	}
+
+	edges, err := g.Edges()
+	if err != nil {
+		return nil, err
+	}
+	satisfiedSubtests := make(map[int]bool)
+	for _, edge := range edges {
+		satisfiedSubtests[edge.Target] = true
+	}
+	for _, subtest := range subtests {
+		if _, ok := satisfiedSubtests[subtest.ID]; !ok {
+			_ = g.AddEdge(-1, subtest.ID)
+		}
+	}
+
+	return g, nil
 }
 
 func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.CompileRequest, *kilonova.StatusError) {
@@ -99,11 +170,11 @@ func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.C
 }
 
 func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission) error {
-	graderLogger.Info("Executing submission", slog.Int("id", sub.ID), slog.Any("status", sub.Status))
+	graderLogger.InfoContext(ctx, "Executing submission", slog.Int("id", sub.ID), slog.Any("status", sub.Status))
 	defer func() {
 		// In case anything ever happens, make sure it is at least marked as finished
 		if err := base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished}); err != nil {
-			zap.S().Warn("Couldn't finish submission:", err)
+			slog.WarnContext(ctx, "Couldn't finish submission", slog.Any("err", err))
 		}
 	}()
 
@@ -114,14 +185,14 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		lang:   runner.Language(sub.Language),
 	}
 	if sh.lang == nil {
-		slog.Warn("Could not find submission language when evaluating", slog.String("lang", sub.Language))
+		slog.WarnContext(ctx, "Could not find submission language when evaluating", slog.String("lang", sub.Language))
 		return kilonova.Statusf(500, "Language not found for submission")
 	}
 
 	defer func() {
 		err := sh.markSubtestsDone(ctx)
 		if err != nil {
-			zap.S().Warn("Couldn't clean up subtests:", err)
+			slog.WarnContext(ctx, "Couldn't clean up subtests", slog.Any("err", err))
 		}
 	}()
 
@@ -140,7 +211,7 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 
 	if err := sh.compileSubmission(ctx); err != nil {
 		if err.Code != 204 { // Skip
-			zap.S().Warn(err)
+			slog.WarnContext(ctx, "Non-skip error code", slog.Any("err", err))
 			return err
 		}
 		return nil
@@ -175,6 +246,27 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 			return kilonova.WrapError(err, "Could not update submission after subtest fetch fail")
 		}
 		return kilonova.WrapError(err1, "Could not fetch subtests")
+	}
+
+	if g, err := sh.buildRunGraph(ctx, subTests); err != nil {
+		slog.WarnContext(ctx, "Error building experimental run graph", slog.Any("err", err))
+	} else if GraphvizSave.Value() {
+		go func(g graph.Graph[int, *kilonova.SubTest]) {
+			f, err := os.CreateTemp("", fmt.Sprintf("submission-graph-%d-*.gv", sub.ID))
+			if err != nil {
+				slog.WarnContext(ctx, "Couldn't save graph file", slog.Any("err", err))
+				return
+			}
+			defer func() {
+				if err := f.Close(); err != nil {
+					slog.WarnContext(ctx, "Could not close graph file", slog.Any("err", err))
+				}
+			}()
+			if err := draw.DOT(g, f); err != nil {
+				slog.WarnContext(ctx, "Couldn't write graph file", slog.Any("err", err))
+				return
+			}
+		}(g)
 	}
 
 	// TODO: This is shit.
@@ -463,28 +555,28 @@ func (sh *submissionHandler) scoreTests(ctx context.Context) *kilonova.StatusErr
 
 var ForceSecureSandbox = config.GenFlag[bool]("feature.grader.force_secure_sandbox", true, "Force use of secure sandbox only. Should be always enabled in production environments")
 
-func getAppropriateRunner() (eval.BoxScheduler, error) {
+func getAppropriateRunner(ctx context.Context) (eval.BoxScheduler, error) {
 	var boxFunc scheduler.BoxFunc
-	var boxVersion string = "NONE"
-	if scheduler.CheckCanRun(box.New) {
+	var boxVersion = "NONE"
+	if scheduler.CheckCanRun(ctx, box.New) {
 		boxFunc = box.New
 		boxVersion = box.IsolateVersion()
-	} else if scheduler.CheckCanRun(box.NewStupid) && !ForceSecureSandbox.Value() {
-		slog.Warn("Secure sandbox not found. Using stupid sandbox")
+	} else if scheduler.CheckCanRun(ctx, box.NewStupid) && !ForceSecureSandbox.Value() {
+		slog.WarnContext(ctx, "Secure sandbox not found. Using stupid sandbox")
 		boxFunc = box.NewStupid
 		boxVersion = "stupid"
 	}
 	if boxFunc == nil {
-		slog.Error("Remote grader has not been implemented. No grader available!")
+		slog.ErrorContext(ctx, "Remote grader has not been implemented. No grader available!")
 		os.Exit(1)
 	}
 
-	slog.Info("Trying to spin up local grader")
+	slog.InfoContext(ctx, "Trying to spin up local grader")
 	bm, err := scheduler.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, graderLogger, boxFunc)
 	if err != nil {
 		return nil, err
 	}
-	slog.Info("Running local grader", slog.String("version", boxVersion))
+	slog.InfoContext(ctx, "Running local grader", slog.String("version", boxVersion))
 
 	return bm, nil
 }

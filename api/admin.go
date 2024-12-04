@@ -114,7 +114,7 @@ func (s *API) updateBoolFlags(w http.ResponseWriter, r *http.Request) {
 	for k, v := range args.BoolFlags {
 		flg, ok := config.GetFlag[bool](k)
 		if !ok {
-			slog.Warn("Flag not found", slog.String("name", k))
+			slog.WarnContext(r.Context(), "Flag not found", slog.String("name", k))
 			continue
 		}
 		flg.Update(v)
@@ -122,7 +122,7 @@ func (s *API) updateBoolFlags(w http.ResponseWriter, r *http.Request) {
 	for k, v := range args.StringFlags {
 		flg, ok := config.GetFlag[string](k)
 		if !ok {
-			slog.Warn("Flag not found", slog.String("name", k))
+			slog.WarnContext(r.Context(), "Flag not found", slog.String("name", k))
 			continue
 		}
 		flg.Update(v)
@@ -130,7 +130,7 @@ func (s *API) updateBoolFlags(w http.ResponseWriter, r *http.Request) {
 	for k, v := range args.IntFlags {
 		flg, ok := config.GetFlag[int](k)
 		if !ok {
-			slog.Warn("Flag not found", slog.String("name", k))
+			slog.WarnContext(r.Context(), "Flag not found", slog.String("name", k))
 			continue
 		}
 		flg.Update(v)

@@ -135,7 +135,7 @@ func (s *BaseAPI) WarmupStatementCache(ctx context.Context) *StatusError {
 			}
 		}
 	}
-	slog.Info("Triggered statement cache", slog.Duration("duration", time.Since(start)))
+	slog.InfoContext(ctx, "Triggered statement cache", slog.Duration("duration", time.Since(start)))
 	s.LogUserAction(ctx, "Triggered statement cache warmup")
 	return nil
 }
@@ -281,7 +281,7 @@ func (ws *webhookSender) editLastMessage() *StatusError {
 	return nil
 }
 
-func (ws *webhookSender) Send(entry *logEntry) *StatusError {
+func (ws *webhookSender) Send(ctx context.Context, entry *logEntry) *StatusError {
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
 
@@ -289,7 +289,7 @@ func (ws *webhookSender) Send(entry *logEntry) *StatusError {
 		if err := ws.editLastMessage(); err == nil {
 			return nil
 		} else {
-			slog.Warn("Could not edit last webhook message. Defaulting to sending a new one", slog.Any("err", err))
+			slog.WarnContext(ctx, "Could not edit last webhook message. Defaulting to sending a new one", slog.Any("err", err))
 		}
 	}
 
@@ -301,7 +301,7 @@ func (ws *webhookSender) Send(entry *logEntry) *StatusError {
 		},
 	})
 	if err != nil {
-		slog.Warn("Unsuccessful Webhook execution", slog.Any("err", err), slog.Any("entry", entry))
+		slog.WarnContext(ctx, "Unsuccessful Webhook execution", slog.Any("err", err), slog.Any("entry", entry))
 		return WrapError(err, "Couldn't execute webhook")
 	}
 
@@ -312,7 +312,7 @@ func (ws *webhookSender) Send(entry *logEntry) *StatusError {
 		return nil
 	}
 
-	slog.Debug("Empty message response", slog.Any("entry", entry))
+	slog.DebugContext(ctx, "Empty message response", slog.Any("entry", entry))
 	ws.lastMessageID = ""
 	ws.lastMessageEntry = nil
 	ws.lastMessageCount = -1
@@ -346,7 +346,7 @@ func (s *BaseAPI) newWebhookSender(webhookURL string, name string) *webhookSende
 func (s *BaseAPI) processLogEntry(ctx context.Context, val *logEntry, importantWebhook, verboseWebhook *webhookSender) {
 	defer func() {
 		if err := recover(); err != nil {
-			slog.Warn("Log entry panic", slog.Any("err", err))
+			slog.WarnContext(ctx, "Log entry panic", slog.Any("err", err))
 		}
 	}()
 	var id *int
@@ -374,14 +374,14 @@ func (s *BaseAPI) processLogEntry(ctx context.Context, val *logEntry, importantW
 	}
 
 	if val.Level.IsAuditLogLvl() && importantWebhook != nil {
-		if err := importantWebhook.Send(val); err != nil {
-			slog.Warn("Could not send to important webhook", slog.Any("err", err))
+		if err := importantWebhook.Send(ctx, val); err != nil {
+			slog.WarnContext(ctx, "Could not send to important webhook", slog.Any("err", err))
 		}
 	}
 
 	if !val.Level.IsAuditLogLvl() && verboseWebhook != nil {
-		if err := verboseWebhook.Send(val); err != nil {
-			slog.Warn("Could not send to verbose webhook", slog.Any("err", err))
+		if err := verboseWebhook.Send(ctx, val); err != nil {
+			slog.WarnContext(ctx, "Could not send to verbose webhook", slog.Any("err", err))
 		}
 	}
 }
@@ -419,7 +419,7 @@ func (s *BaseAPI) cleanupBucketsJob(ctx context.Context, interval time.Duration)
 		Level:     lvl,
 	}))
 	// Initial refresh
-	go s.cleanupBuckets()
+	go s.cleanupBuckets(ctx)
 	for {
 		select {
 		case <-ctx.Done():
@@ -429,26 +429,26 @@ func (s *BaseAPI) cleanupBucketsJob(ctx context.Context, interval time.Duration)
 			return nil
 		case <-t.C:
 			zap.S().Debug("Running eviction policy")
-			s.cleanupBuckets()
+			s.cleanupBuckets(ctx)
 		}
 	}
 }
 
 func (s *BaseAPI) EvictionLogger() *slog.Logger { return s.evictionLogger }
 
-func (s *BaseAPI) cleanupBuckets() {
+func (s *BaseAPI) cleanupBuckets(ctx context.Context) {
 	for _, bucket := range datastore.GetBuckets() {
 		if !bucket.Evictable() {
 			continue
 		}
-		s.evictionLogger.Info("Running bucket eviction policy", slog.Any("bucket", bucket))
-		numDeleted, err := bucket.RunEvictionPolicy(s.evictionLogger)
+		s.evictionLogger.InfoContext(ctx, "Running bucket eviction policy", slog.Any("bucket", bucket))
+		numDeleted, err := bucket.RunEvictionPolicy(ctx, s.evictionLogger)
 		if err != nil {
-			s.evictionLogger.Error(err.Error())
-			zap.S().Warn("Error running bucket cleanup. Check eviction.log for details")
+			s.evictionLogger.ErrorContext(ctx, "Could not run eviction policy", slog.Any("err", err))
+			slog.WarnContext(ctx, "Error running bucket cleanup. Check eviction.log for details")
 			continue
 		}
-		s.evictionLogger.Info("Deleted bucket objects", slog.Any("bucket", bucket), slog.Int("count", numDeleted))
+		s.evictionLogger.InfoContext(ctx, "Deleted bucket objects", slog.Any("bucket", bucket), slog.Int("count", numDeleted))
 	}
 }
 

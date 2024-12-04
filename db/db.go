@@ -172,10 +172,10 @@ func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[stri
 	dur, ok := data["time"].(time.Duration)
 	if ok {
 		if dur > 1*time.Second {
-			dbLogger.Warn("Really slow operation", slog.Duration("duration", dur), slog.Any("query", data["sql"]), slog.Any("args", data["args"]))
+			dbLogger.WarnContext(ctx, "Really slow operation", slog.Duration("duration", dur), slog.Any("query", data["sql"]), slog.Any("args", data["args"]))
 		}
 	} else {
-		zap.S().Warnf("DB time is not duration", data["time"])
+		slog.WarnContext(ctx, "DB time is not duration", slog.Any("time", data["time"]))
 	}
 
 	if CountQueries.Value() {

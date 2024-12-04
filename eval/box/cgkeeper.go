@@ -1,6 +1,7 @@
 package box
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"os/exec"
@@ -23,12 +24,12 @@ var (
 // 	panic("TODO")
 // }
 
-func InitKeeper() error {
-	if err := initIsolatePath(); err != nil {
+func InitKeeper(ctx context.Context) error {
+	if err := initIsolatePath(ctx); err != nil {
 		return err
 	}
 
-	slog.Info("Initialized sandbox binary path", slog.String("path", isolatePath))
+	slog.InfoContext(ctx, "Initialized sandbox binary path", slog.String("path", isolatePath))
 
 	if !EnsureCGKeeper.Value() {
 		return nil
@@ -37,7 +38,7 @@ func InitKeeper() error {
 	panic("TODO")
 }
 
-func initIsolatePath() error {
+func initIsolatePath(ctx context.Context) error {
 	for _, path := range []string{
 		"/usr/local/bin/isolate",     // Official path
 		"/usr/local/etc/isolate_bin", // Cgroup v1 path
@@ -49,6 +50,6 @@ func initIsolatePath() error {
 			return nil
 		}
 	}
-	slog.Error("Sandbox binary not found. Set it up using scripts/init_isolate_cg2.sh")
+	slog.ErrorContext(ctx, "Sandbox binary not found. Set it up using scripts/init_isolate_cg2.sh")
 	return errors.New("no isolate binary found")
 }

@@ -34,6 +34,8 @@ type ArchiveCtx struct {
 	scoreParameters []ScoreParamEntry
 
 	testScores ScoreFileEntries
+
+	ctx context.Context
 }
 
 type properties struct {
@@ -59,13 +61,15 @@ type properties struct {
 	ScoringStrategy kilonova.ScoringType
 }
 
-func NewArchiveCtx(params *TestProcessParams) *ArchiveCtx {
+func NewArchiveCtx(ctx context.Context, params *TestProcessParams) *ArchiveCtx {
 	return &ArchiveCtx{
 		tests:       make(map[string]archiveTest),
 		attachments: make(map[string]archiveAttachment),
 		testScores:  make(ScoreFileEntries),
 
 		params: params,
+
+		ctx: ctx,
 	}
 }
 
@@ -176,7 +180,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 		return kilonova.Statusf(400, "There must be a requestor")
 	}
 
-	aCtx := NewArchiveCtx(params)
+	aCtx := NewArchiveCtx(ctx, params)
 
 	// Try to autodetect polygon archive
 	if _, err := fs.Stat(ar, "problem.xml"); err == nil {
@@ -564,7 +568,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 	// Do submissions at the end after all changes have been merged
 	if len(aCtx.submissions) > 0 {
 		for _, sub := range aCtx.submissions {
-			lang := base.Language(sub.lang)
+			lang := base.Language(ctx, sub.lang)
 			if lang == nil {
 				zap.S().Warn("Skipping submission")
 				continue

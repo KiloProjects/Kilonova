@@ -26,8 +26,6 @@ import (
 	"go.uber.org/zap/exp/zapslog"
 )
 
-var graderFeature = config.GenFlag("feature.grader.enabled", true, "Grader")
-
 func Kilonova() error {
 
 	// Setup context
@@ -36,41 +34,39 @@ func Kilonova() error {
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, os.Kill)
 
 	// Print welcome message
-	slog.Info("Starting Kilonova", slog.String("version", kilonova.Version))
+	slog.InfoContext(ctx, "Starting Kilonova", slog.String("version", kilonova.Version))
 
 	if config.Common.Debug {
-		slog.Warn("Debug mode activated, expect worse performance")
+		slog.WarnContext(ctx, "Debug mode activated, expect worse performance")
 	}
 
-	maxmind.Initialize()
+	maxmind.Initialize(ctx)
 
 	base, err := sudoapi.InitializeBaseAPI(context.Background())
 	if err != nil {
-		slog.Error("Could not initialize BaseAPI", slog.Any("err", err))
+		slog.ErrorContext(ctx, "Could not initialize BaseAPI", slog.Any("err", err))
 		return err
 	}
 	base.Start(ctx)
 	defer base.Close()
 
 	// Initialize components
-	if graderFeature.Value() { // TODO: Hot stopping/starting grader
-		grader, err := grader.NewHandler(ctx, base)
-		if err != nil {
-			slog.Error("Could not initialize grader", slog.Any("err", err))
-			return err
-		}
-		defer grader.Close()
-
-		go func() {
-			err := grader.Start()
-			if err != nil {
-				slog.Error("Could not start grader", slog.Any("err", err))
-			}
-		}()
+	grader, err := grader.NewHandler(ctx, base)
+	if err != nil {
+		slog.ErrorContext(ctx, "Could not initialize grader", slog.Any("err", err))
+		return err
 	}
+	defer grader.Close()
+
+	go func() {
+		err := grader.Start()
+		if err != nil {
+			slog.ErrorContext(ctx, "Could not start grader", slog.Any("err", err))
+		}
+	}()
 
 	if err := base.ResetWaitingSubmissions(ctx); err != nil {
-		slog.Warn("Couldn't reset initial working submissions:", slog.Any("err", err))
+		slog.WarnContext(ctx, "Couldn't reset initial working submissions:", slog.Any("err", err))
 	}
 
 	// for graceful setup and shutdown
@@ -79,17 +75,17 @@ func Kilonova() error {
 	go launchProfiler()
 	go func() {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("Error initializing web server", slog.Any("err", err))
+			slog.ErrorContext(ctx, "Error initializing web server", slog.Any("err", err))
 			cancel()
 		}
 	}()
 
-	slog.Info("Successfully started")
+	slog.InfoContext(ctx, "Successfully started")
 
 	defer func() {
-		slog.Info("Shutting Down")
+		slog.InfoContext(ctx, "Shutting Down")
 		if err := server.Shutdown(ctx); err != nil && !errors.Is(err, context.Canceled) {
-			slog.Error("Error shutting down", slog.Any("err", err))
+			slog.ErrorContext(ctx, "Error shutting down", slog.Any("err", err))
 		}
 	}()
 

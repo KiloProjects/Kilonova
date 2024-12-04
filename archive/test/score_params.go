@@ -17,7 +17,7 @@ type ScoreParamEntry struct {
 	Match *regexp.Regexp
 }
 
-func (p ScoreParamEntry) Valid() bool {
+func (p *ScoreParamEntry) Valid() bool {
 	// At most one is nil
 	// Probably can just do an xor but meh
 	return (p.Count != nil || p.Match != nil) && (p.Count == nil || p.Match == nil)

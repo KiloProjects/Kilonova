@@ -20,8 +20,9 @@ type Sandbox interface {
 	ReadFile(path string, w io.Writer) error
 	// SaveFile reads contents of path from sandbox and saves them in the given bucket by calling WriteFile
 	SaveFile(path string, bucket Bucket, filename string, mode fs.FileMode) error
+	// WriteFile saves the io.Reader into that file in the box
 	WriteFile(path string, r io.Reader, mode fs.FileMode) error
-	// RemoveFile(path string) error
+
 	FileExists(path string) bool
 
 	GetID() int

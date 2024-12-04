@@ -73,7 +73,7 @@ func Kilonova() error {
 	}
 	defer func() {
 		if err := auditLogFile.Close(); err != nil {
-			slog.Warn("Error closing audit log", slog.Any("err", err))
+			slog.WarnContext(ctx, "Error closing audit log", slog.Any("err", err))
 		}
 	}()
 
@@ -84,7 +84,7 @@ func Kilonova() error {
 	auditLog := slog.New(handler)
 
 	// Print welcome message
-	slog.Info("Starting Kilonova Contest Registration Manager")
+	slog.InfoContext(ctx, "Starting Kilonova Contest Registration Manager")
 
 	base, err1 := sudoapi.InitializeBaseAPI(ctx)
 	if err1 != nil {
@@ -135,16 +135,16 @@ func Kilonova() error {
 		}
 		for _, team := range config.Profiles {
 			if len(team.Password) > 0 {
-				slog.Info("Skipping already created account", slog.String("slug", team.Slug))
+				slog.InfoContext(ctx, "Skipping already created account", slog.String("slug", team.Slug))
 				continue
 			}
 
 			user, err2 := base.UserFullByName(ctx, team.Slug)
 			if err2 != nil && !errors.Is(err2, sudoapi.ErrNotFound) {
-				slog.Error("Could not test user existence", slog.Any("err", err2))
+				slog.ErrorContext(ctx, "Could not test user existence", slog.Any("err", err2))
 				continue
 			} else if user != nil && user.Email == team.Email {
-				slog.Info("Skipping already created account, even though it has no password in profile", slog.String("slug", team.Slug))
+				slog.InfoContext(ctx, "Skipping already created account, even though it has no password in profile", slog.String("slug", team.Slug))
 				continue
 			}
 
@@ -185,10 +185,10 @@ func Kilonova() error {
 
 			pwd, _, err := base.GenerateUserFlow(ctx, req)
 			if err != nil {
-				slog.Error("Error creating user", slog.Any("err", err))
+				slog.ErrorContext(ctx, "Error creating user", slog.Any("err", err))
 			}
-			auditLog.Info("Created user", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug))
-			slog.Info("Created user and sent email", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug))
+			auditLog.InfoContext(ctx, "Created user", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug))
+			slog.InfoContext(ctx, "Created user and sent email", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug))
 
 			team.Password = pwd
 			outTeams = append(outTeams, team)
@@ -263,20 +263,21 @@ func init() {
 
 func main() {
 	flag.Parse()
+	ctx := context.Background()
 
 	config.SetConfigPath(*confPath)
 	config.SetConfigV2Path(*flagPath)
 	if err := config.Load(); err != nil {
-		slog.Error("Could not load config", slog.Any("err", err))
+		slog.ErrorContext(ctx, "Could not load config", slog.Any("err", err))
 		os.Exit(1)
 	}
-	if err := config.LoadConfigV2(false); err != nil {
-		slog.Error("Could not load flags", slog.Any("err", err))
+	if err := config.LoadConfigV2(ctx, false); err != nil {
+		slog.ErrorContext(ctx, "Could not load flags", slog.Any("err", err))
 		os.Exit(1)
 	}
 
 	if err := Kilonova(); err != nil {
-		slog.Error("Error running Kilonova", slog.Any("err", err))
+		slog.ErrorContext(ctx, "Error running Kilonova", slog.Any("err", err))
 		os.Exit(1)
 	}
 

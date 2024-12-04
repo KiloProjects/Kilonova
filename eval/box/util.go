@@ -1,6 +1,7 @@
 package box
 
 import (
+	"context"
 	"errors"
 	"io"
 	"io/fs"
@@ -52,7 +53,7 @@ func checkFile(p string) bool {
 		if errors.Is(err, fs.ErrNotExist) {
 			return false
 		}
-		slog.Warn("File stat returned weird error", slog.String("path", p), slog.Any("err", err))
+		slog.WarnContext(context.Background(), "File stat returned weird error", slog.String("path", p), slog.Any("err", err))
 		return false
 	}
 	return true

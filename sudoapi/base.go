@@ -63,8 +63,8 @@ type BaseAPI struct {
 }
 
 func (s *BaseAPI) Start(ctx context.Context) {
-	if err := s.initDiscord(); err != nil {
-		slog.Warn("Could not initialize Discord", slog.Any("err", err))
+	if err := s.initDiscord(ctx); err != nil {
+		slog.WarnContext(ctx, "Could not initialize Discord", slog.Any("err", err))
 	}
 	go s.ingestAuditLogs(ctx)
 	go s.cleanupBucketsJob(ctx, 30*time.Minute)

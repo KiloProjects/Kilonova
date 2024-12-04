@@ -1,6 +1,7 @@
 package maxmind
 
 import (
+	"context"
 	"log/slog"
 	"net/netip"
 	"time"
@@ -53,20 +54,20 @@ func IPData(ip netip.Addr) (*Data, error) {
 	return &data, nil
 }
 
-func Initialize() {
+func Initialize(ctx context.Context) {
 	var err error
 	reader, err = maxminddb.Open(MaxMindPath.Value())
 	if err != nil {
-		slog.Info("Could not open MaxMind DB")
-		slog.Debug("MaxMind DB error", slog.Any("err", err))
+		slog.InfoContext(ctx, "Could not open MaxMind DB")
+		slog.DebugContext(ctx, "MaxMind DB error", slog.Any("err", err))
 		return
 	}
 
 	if reader.Metadata.DatabaseType != "GeoLite2-City" {
-		slog.Warn("Only GeoLite2-City format is supported for MaxMind DBs")
+		slog.WarnContext(ctx, "Only GeoLite2-City format is supported for MaxMind DBs")
 		reader = nil
 		return
 	}
 
-	slog.Info("MaxMind DB loaded", slog.String("version", time.Unix(int64(reader.Metadata.BuildEpoch), 0).Format(time.DateOnly)))
+	slog.InfoContext(ctx, "MaxMind DB loaded", slog.String("version", time.Unix(int64(reader.Metadata.BuildEpoch), 0).Format(time.DateOnly)))
 }

@@ -81,7 +81,7 @@ func (h *Handler) Languages() map[string]*eval.Language {
 	return h.runner.Languages()
 }
 
-func (h *Handler) ScheduleSubmission(runner eval.BoxScheduler, sub *kilonova.Submission) error {
+func (h *Handler) runSubmission(runner eval.BoxScheduler, sub *kilonova.Submission) error {
 	var subRunner eval.BoxScheduler
 	if sub.SubmissionType == kilonova.EvalTypeClassic {
 		r, err := runner.SubRunner(h.ctx, runner.NumConcurrent())
@@ -110,6 +110,10 @@ func (h *Handler) ScheduleSubmission(runner eval.BoxScheduler, sub *kilonova.Sub
 	return nil
 }
 
+func (h *Handler) ScheduleSubmission(runner eval.BoxScheduler, sub *kilonova.Submission) error {
+	return h.runSubmission(runner, sub)
+}
+
 func (h *Handler) handle(runner eval.BoxScheduler) error {
 	for {
 		select {
@@ -128,7 +132,7 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 			if err != nil {
 				zap.S().Warn(err)
 			} else if len(subs) > 0 {
-				graderLogger.Info("Found waiting submissions", slog.Int("count", len(subs)))
+				graderLogger.InfoContext(h.ctx, "Found waiting submissions", slog.Int("count", len(subs)))
 				if len(subs) > 40 {
 					subs = subs[:40]
 					rewake = true
@@ -142,21 +146,21 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 
 			reevalQueue, err := h.base.RawSubmissions(h.ctx, reevalingSubs)
 			if err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(h.ctx, "Could not get raw submissions", slog.Any("err", err))
 			} else if len(reevalQueue) > 0 {
-				graderLogger.Info("Found submissions to reevaluate", slog.Int("count", len(reevalQueue)))
+				graderLogger.InfoContext(h.ctx, "Found submissions to reevaluate", slog.Int("count", len(reevalQueue)))
 				if len(reevalQueue) > 5 {
 					reevalQueue = reevalQueue[:5]
 					rewake = true
 				}
 				for _, sub := range reevalQueue {
 					if err := h.base.ResetSubmission(h.ctx, sub.ID); err != nil {
-						zap.S().Warn("Couldn't reset submission: ", err)
+						slog.WarnContext(h.ctx, "Couldn't reset submission", slog.Any("err", err))
 						continue
 					}
 					sub2, err := h.base.RawSubmission(h.ctx, sub.ID)
 					if err != nil {
-						zap.S().Warn("Error refetching submission for reeval: ", err)
+						slog.WarnContext(h.ctx, "Error refetching submission for reeval", slog.Any("err", err))
 						sub2 = sub
 					}
 					if err := h.ScheduleSubmission(runner, sub2); err != nil {
@@ -174,7 +178,7 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 }
 
 func (h *Handler) Start() error {
-	runner, err := getAppropriateRunner()
+	runner, err := getAppropriateRunner(h.ctx)
 	if err != nil {
 		return err
 	}

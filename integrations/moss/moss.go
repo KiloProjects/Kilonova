@@ -48,6 +48,7 @@ type File struct {
 }
 
 type Conn struct {
+	ctx  context.Context
 	conn net.Conn
 	sc   *bufio.Scanner
 }
@@ -121,7 +122,7 @@ func (m *Conn) Process(conf *Options) (string, error) {
 	if _, err := fmt.Fprintf(m.conn, "query 0 %s\n", conf.Comment); err != nil {
 		return "", err
 	}
-	slog.Debug("MOSS Query sent. Waiting for response")
+	slog.DebugContext(m.ctx, "MOSS Query sent. Waiting for response")
 	return m.recvLine()
 }
 
@@ -141,5 +142,5 @@ func New(ctx context.Context) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Conn{conn, bufio.NewScanner(conn)}, nil
+	return &Conn{ctx, conn, bufio.NewScanner(conn)}, nil
 }

@@ -28,15 +28,18 @@ var (
 	loggerOnce     sync.Once
 )
 
-type BoxFunc func(id int, mem int64, logger *slog.Logger) (eval.Sandbox, error)
+type BoxFunc func(ctx context.Context, id int, mem int64, logger *slog.Logger) (eval.Sandbox, error)
 
 var _ eval.BoxScheduler = &BoxManager{}
 
 // BoxManager manages a box with eval-based submissions
 type BoxManager struct {
 	numConcurrent int64
-	concSem       *semaphore.Weighted
-	memSem        *semaphore.Weighted
+	// concSem measures the number of running Box2 requests.
+	// Since a request will be able to have multiple boxes (communication problems), it does not reflect the number of concurrent boxes running.
+	concSem   *semaphore.Weighted
+	memSem    *semaphore.Weighted
+	maxMemory int64
 
 	logger *slog.Logger
 
@@ -87,18 +90,15 @@ func (b *BoxManager) NumConcurrent() int64 {
 
 func (b *BoxManager) getBox(ctx context.Context, memQuota int64) (eval.Sandbox, error) {
 	if b.boxGenerator == nil {
-		slog.Warn("Empty box generator")
+		slog.WarnContext(ctx, "Empty box generator")
 		return nil, errors.New("empty box generator")
-	}
-	if err := b.concSem.Acquire(ctx, 1); err != nil {
-		return nil, err
 	}
 	if memQuota > 0 {
 		if err := b.memSem.Acquire(ctx, memQuota); err != nil {
 			return nil, err
 		}
 	}
-	box, err := b.boxGenerator(<-b.availableIDs, memQuota, b.logger)
+	box, err := b.boxGenerator(ctx, <-b.availableIDs, memQuota, b.logger)
 	if err != nil {
 		return nil, err
 	}
@@ -106,15 +106,14 @@ func (b *BoxManager) getBox(ctx context.Context, memQuota int64) (eval.Sandbox, 
 	return box, nil
 }
 
-func (b *BoxManager) releaseBox(sb eval.Sandbox) {
+func (b *BoxManager) releaseBox(ctx context.Context, sb eval.Sandbox) {
 	q := sb.MemoryQuota()
 	if err := sb.Close(); err != nil {
-		slog.Warn("Could not release sandbox", slog.Any("box_id", sb.GetID()), slog.Any("err", err))
+		slog.WarnContext(ctx, "Could not release sandbox", slog.Any("box_id", sb.GetID()), slog.Any("err", err))
 	}
 	// b.logger.Infof("Yielded back box %d", sb.GetID())
 	b.availableIDs <- sb.GetID()
 	b.memSem.Release(q)
-	b.concSem.Release(1)
 }
 
 // Close waits for all boxes to finish running
@@ -145,6 +144,7 @@ func New(startingNumber int, count int, maxMemory int64, logger *slog.Logger, bo
 	bm := &BoxManager{
 		concSem:       semaphore.NewWeighted(int64(count)),
 		memSem:        semaphore.NewWeighted(maxMemory),
+		maxMemory:     maxMemory,
 		availableIDs:  availableIDs,
 		numConcurrent: int64(count),
 
@@ -154,19 +154,19 @@ func New(startingNumber int, count int, maxMemory int64, logger *slog.Logger, bo
 
 		boxGenerator: boxGenerator,
 
-		supportedLanguages: supportedLanguages(),
+		supportedLanguages: supportedLanguages(context.Background()),
 	}
 	return bm, nil
 }
 
-func CheckCanRun(boxFunc BoxFunc) bool {
-	box, err := boxFunc(0, 0, slog.Default())
+func CheckCanRun(ctx context.Context, boxFunc BoxFunc) bool {
+	box, err := boxFunc(ctx, 0, 0, slog.Default())
 	if err != nil {
-		slog.Warn("Error creating sandbox", slog.Any("err", err))
+		slog.WarnContext(ctx, "Error creating sandbox", slog.Any("err", err))
 		return false
 	}
 	if err := box.Close(); err != nil {
-		slog.Warn("Error closing sandbox", slog.Any("err", err))
+		slog.WarnContext(ctx, "Error closing sandbox", slog.Any("err", err))
 		return false
 	}
 	return true
@@ -182,11 +182,11 @@ func (mgr *BoxManager) getLangVersions(ctx context.Context) map[string]string {
 		}
 		ver, err := tasks.VersionTask(ctx, mgr, lang)
 		if err != nil {
-			slog.Warn("Could not get version for language", slog.String("lang", name))
+			slog.WarnContext(ctx, "Could not get version for language", slog.String("lang", name))
 			ver = "ERR"
 		} else {
 			ver = strings.TrimSpace(ver)
-			mgr.logger.Info("Got version for language", slog.String("lang", name), slog.String("version", ver))
+			mgr.logger.InfoContext(ctx, "Got version for language", slog.String("lang", name), slog.String("version", ver))
 		}
 		mgr.languageVersions[name] = ver
 	}
@@ -260,16 +260,20 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 
 	goodCmd, err := makeGoodCommand(req.Command)
 	if err != nil {
-		slog.Error("Error running MakeGoodCommand", slog.Any("err", err))
+		slog.ErrorContext(ctx, "Error running MakeGoodCommand", slog.Any("err", err))
 		return nil, err
 	}
 
-	box, err := mgr.getBox(ctx, memQuota)
-	if err != nil {
-		slog.Warn("Could not get box", slog.Any("err", err))
+	if err := mgr.concSem.Acquire(ctx, 1); err != nil {
 		return nil, err
 	}
-	defer mgr.releaseBox(box)
+	box, err := mgr.getBox(ctx, memQuota)
+	if err != nil {
+		slog.WarnContext(ctx, "Could not get box", slog.Any("err", err))
+		return nil, err
+	}
+	defer mgr.concSem.Release(1)
+	defer mgr.releaseBox(ctx, box)
 
 	for path, val := range req.InputByteFiles {
 		if val.Mode == 0 {
@@ -285,7 +289,7 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 		// Do not reset val.Mode here, since CopyInBox stats and sets the proper mode
 		if err := copyInBox(box, datastore.GetBucket(val.Bucket), val.Filename, path, val.Mode); err != nil {
 			if errors.Is(err, kilonova.ErrNotExist) {
-				slog.Warn("Bucket file doesn't exist when copying in sandbox",
+				slog.WarnContext(ctx, "Bucket file doesn't exist when copying in sandbox",
 					slog.Any("bucket", val.Bucket), slog.String("filename", val.Filename),
 					slog.String("target_path", path), slog.Int("box_id", box.GetID()),
 				)
@@ -298,7 +302,7 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 	if err != nil {
 		return nil, err
 	}
-	cmdAuditLogger.Info("Ran command",
+	cmdAuditLogger.InfoContext(ctx, "Ran command",
 		slog.Any("command", goodCmd),
 		slog.Any("stats", stats),
 		slog.Any("output_byte_files", req.OutputByteFiles),
@@ -332,7 +336,7 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 		}
 
 		if err := box.SaveFile(path, datastore.GetBucket(file.Bucket), file.Filename, file.Mode); err != nil {
-			slog.Warn("Error saving box file", slog.Any("err", err), slog.String("path", path), slog.Any("bucket", file.Bucket))
+			slog.WarnContext(ctx, "Error saving box file", slog.Any("err", err), slog.String("path", path), slog.Any("bucket", file.Bucket))
 			return resp, err
 		}
 		resp.BucketFiles[path] = &eval.BucketFile{
@@ -389,7 +393,7 @@ func makeGoodCommand(command []string) ([]string, error) {
 
 // supportedLanguages disables all languages that are *not* detected by the system in the current configuration
 // It should be run at the start of the execution (and implemented more nicely tbh)
-func supportedLanguages() map[string]*eval.Language {
+func supportedLanguages(ctx context.Context) map[string]*eval.Language {
 	langs := make(map[string]*eval.Language)
 	for k, v := range eval.Langs {
 		if v.Disabled { // Skip search if already disabled
@@ -402,16 +406,16 @@ func supportedLanguages() map[string]*eval.Language {
 			toSearch = v.RunCommand
 		}
 		if len(toSearch) == 0 {
-			slog.Info("Disabled language - empty line", slog.String("lang", k))
+			slog.InfoContext(ctx, "Disabled language - empty line", slog.String("lang", k))
 			continue
 		}
 		cmd, err := exec.LookPath(toSearch[0])
 		if err != nil {
-			slog.Info("Disabled language - compiler/interpreter was not found in $PATH", slog.String("lang", k))
+			slog.InfoContext(ctx, "Disabled language - compiler/interpreter was not found in $PATH", slog.String("lang", k))
 			continue
 		}
 		if _, err = filepath.EvalSymlinks(cmd); err != nil {
-			slog.Info("Disabled language - compiler/interpreter had a bad symlink", slog.String("lang", k))
+			slog.InfoContext(ctx, "Disabled language - compiler/interpreter had a bad symlink", slog.String("lang", k))
 			continue
 		}
 

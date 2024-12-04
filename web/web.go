@@ -283,15 +283,16 @@ func (rt *Web) parse(optFuncs template.FuncMap, files ...string) *template.Templ
 
 // NewWeb returns a new web instance
 func NewWeb(base *sudoapi.BaseAPI) *Web {
+	ctx := context.Background()
 	hostURL, err := url.Parse(config.Common.HostPrefix)
 	if err != nil {
 		hostURL, _ = url.Parse("localhost:8080")
-		slog.Error("Invalid host prefix", slog.Any("err", err))
+		slog.ErrorContext(ctx, "Invalid host prefix", slog.Any("err", err))
 	}
 
 	funcs := template.FuncMap{
 		"problemSettings": func(problemID int) *kilonova.ProblemEvalSettings {
-			settings, err := base.ProblemSettings(context.Background(), problemID)
+			settings, err := base.ProblemSettings(ctx, problemID)
 			if err != nil {
 				zap.S().Warn(err)
 				return nil
@@ -299,14 +300,14 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return settings
 		},
 		"problemList": func(id int) *kilonova.ProblemList {
-			list, err := base.ProblemList(context.Background(), id)
+			list, err := base.ProblemList(ctx, id)
 			if err != nil {
 				return nil
 			}
 			return list
 		},
 		"unassociatedProblems": func(user *kilonova.UserBrief) []*kilonova.ScoredProblem {
-			pbs, err := base.ScoredProblems(context.Background(), kilonova.ProblemFilter{
+			pbs, err := base.ScoredProblems(ctx, kilonova.ProblemFilter{
 				LookingUser: user, Look: true, Unassociated: true,
 			}, user, user)
 			if err != nil {
@@ -315,7 +316,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return pbs
 		},
 		"contestProblems": func(user *kilonova.UserBrief, c *kilonova.Contest) []*kilonova.ScoredProblem {
-			pbs, err := base.ContestProblems(context.Background(), c, user)
+			pbs, err := base.ContestProblems(ctx, c, user)
 			if err != nil {
 				return []*kilonova.ScoredProblem{}
 			}
@@ -332,7 +333,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"problemContests": func(user *kilonova.UserBrief, pb *kilonova.Problem) []*kilonova.Contest {
 			// TODO: Once there will be more contests, this will need to be optimized out to exclude ended ones
 			// At the moment, however, this is not a priority
-			contests, err := base.ProblemRunningContests(context.Background(), pb.ID)
+			contests, err := base.ProblemRunningContests(ctx, pb.ID)
 			if err != nil {
 				zap.S().Warn(err)
 				return nil
@@ -362,7 +363,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			if user == nil {
 				return ""
 			}
-			score := base.MaxScore(context.Background(), user.ID, pb.ID)
+			score := base.MaxScore(ctx, user.ID, pb.ID)
 			if score.IsNegative() {
 				return "-"
 			}
@@ -375,7 +376,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return template.HTML(removeTrailingZeros(score.StringFixed(pb.ScorePrecision)) + "p")
 		},
 		"actualMaxScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) decimal.Decimal {
-			return base.MaxScore(context.Background(), user.ID, pb.ID)
+			return base.MaxScore(ctx, user.ID, pb.ID)
 		},
 		"spbMaxScore": func(pb *kilonova.ScoredProblem, summaryDisplay bool) template.HTML {
 			if pb.ScoreUserID == nil {
@@ -411,7 +412,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return decimal.NewFromInt(1).Shift(-pb.ScorePrecision).String()
 		},
 		"contestAnnouncements": func(c *kilonova.Contest) []*kilonova.ContestAnnouncement {
-			announcements, err := base.ContestAnnouncements(context.Background(), c.ID)
+			announcements, err := base.ContestAnnouncements(ctx, c.ID)
 			if err != nil {
 				return []*kilonova.ContestAnnouncement{}
 			}
@@ -442,14 +443,14 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return c.EndTime
 		},
 		"allContestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {
-			questions, err := base.ContestQuestions(context.Background(), c.ID)
+			questions, err := base.ContestQuestions(ctx, c.ID)
 			if err != nil {
 				return []*kilonova.ContestQuestion{}
 			}
 			return questions
 		},
 		"listProblems": func(user *kilonova.UserBrief, list *kilonova.ProblemList) []*kilonova.ScoredProblem {
-			pbs, err := base.ProblemListProblems(context.Background(), list.List, user)
+			pbs, err := base.ProblemListProblems(ctx, list.List, user)
 			if err != nil {
 				return nil
 			}
@@ -460,7 +461,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return nil
 		},
 		"pblistParent": func(pblist *kilonova.ProblemList) []*kilonova.ProblemList {
-			lists, err := base.PblistParentLists(context.Background(), pblist.ID)
+			lists, err := base.PblistParentLists(ctx, pblist.ID)
 			if err != nil {
 				return nil
 			}
@@ -562,35 +563,35 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return cnt
 		},
 		"user": func(uid int) *kilonova.UserBrief {
-			user, err := base.UserBrief(context.Background(), uid)
+			user, err := base.UserBrief(ctx, uid)
 			if err != nil {
 				return nil
 			}
 			return user
 		},
 		"problemEditors": func(problem *kilonova.Problem) []*kilonova.UserBrief {
-			users, err := base.ProblemEditors(context.Background(), problem.ID)
+			users, err := base.ProblemEditors(ctx, problem.ID)
 			if err != nil {
 				return nil
 			}
 			return users
 		},
 		"problemViewers": func(problem *kilonova.Problem) []*kilonova.UserBrief {
-			users, err := base.ProblemViewers(context.Background(), problem.ID)
+			users, err := base.ProblemViewers(ctx, problem.ID)
 			if err != nil {
 				return nil
 			}
 			return users
 		},
 		"problemTests": func(problem *kilonova.Problem) []*kilonova.Test {
-			tests, err := base.Tests(context.Background(), problem.ID)
+			tests, err := base.Tests(ctx, problem.ID)
 			if err != nil {
 				return nil
 			}
 			return tests
 		},
 		"problemSubtasks": func(problem *kilonova.Problem) []*kilonova.SubTask {
-			sts, err := base.SubTasks(context.Background(), problem.ID)
+			sts, err := base.SubTasks(ctx, problem.ID)
 			if err != nil {
 				return nil
 			}
@@ -625,7 +626,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		},
 
 		"tagsByType": func(g string) []*kilonova.Tag {
-			tags, err := base.TagsByType(context.Background(), kilonova.TagType(g))
+			tags, err := base.TagsByType(ctx, kilonova.TagType(g))
 			if err != nil {
 				zap.S().Warnf("Couldn't get tags of type %q", g)
 				return nil
@@ -637,7 +638,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			if pb == nil {
 				return nil
 			}
-			tags, err := base.ProblemTags(context.Background(), pb.ID)
+			tags, err := base.ProblemTags(ctx, pb.ID)
 			if err != nil {
 				zap.S().Warn("Couldn't get problem tags: ", err)
 				return nil
@@ -700,7 +701,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"validUsername": func(name string) bool { return base.CheckValidUsername(name) == nil },
 
 		"sessionDevices": func(sid string) []*sudoapi.SessionDevice {
-			devices, err := base.SessionDevices(context.Background(), sid)
+			devices, err := base.SessionDevices(ctx, sid)
 			if err != nil {
 				zap.S().Warn(err)
 				return nil
@@ -784,7 +785,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			}
 		},
 		"forceSubCode": func(sub *kilonova.FullSubmission) []byte {
-			code, err := base.SubmissionCode(context.Background(), &sub.Submission, sub.Problem, nil, false)
+			code, err := base.SubmissionCode(ctx, &sub.Submission, sub.Problem, nil, false)
 			if err != nil {
 				if !errors.Is(err, context.Canceled) {
 					zap.S().Warn(err)
@@ -808,115 +809,115 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 
 		"getCaptchaID": base.NewCaptchaID,
 		"pLanguages": func() map[string]string {
-			slog.Error("Uninitialized `pLanguages`")
+			slog.ErrorContext(ctx, "Uninitialized `pLanguages`")
 			return make(map[string]string)
 		},
 		"mustSolveCaptcha": func() bool {
-			slog.Error("Uninitialized `mustSolveCaptcha`")
+			slog.ErrorContext(ctx, "Uninitialized `mustSolveCaptcha`")
 			return false
 		},
 		"getText": func(key string, vals ...any) string {
-			slog.Error("Uninitialized `getText`")
+			slog.ErrorContext(ctx, "Uninitialized `getText`")
 			return "FATAL ERR"
 		},
 		"olderSubmissions": func(user *kilonova.UserBrief, problem *kilonova.Problem, contest *kilonova.Contest, limit int) *OlderSubmissionsParams {
-			slog.Error("Uninitialized `olderSubmissions`")
+			slog.ErrorContext(ctx, "Uninitialized `olderSubmissions`")
 			return nil
 		},
 		"reqPath": func() string {
-			slog.Error("Uninitialized `reqPath`")
+			slog.ErrorContext(ctx, "Uninitialized `reqPath`")
 			return "/"
 		},
 		"htmxRequest": func() bool {
-			slog.Error("Uninitialized `htmxRequest`")
+			slog.ErrorContext(ctx, "Uninitialized `htmxRequest`")
 			return false
 		},
 		"language": func() string {
-			slog.Error("Uninitialized `language`")
+			slog.ErrorContext(ctx, "Uninitialized `language`")
 			return "en"
 		},
 		"isDarkMode": func() bool {
-			slog.Error("Uninitialized `isDarkMode`")
+			slog.ErrorContext(ctx, "Uninitialized `isDarkMode`")
 			return true
 		},
 		"authed": func() bool {
-			slog.Error("Uninitialized `authed`")
+			slog.ErrorContext(ctx, "Uninitialized `authed`")
 			return false
 		},
 		"prepareDuration": func() time.Duration {
-			slog.Error("Uninitialized `prepareDuration`")
+			slog.ErrorContext(ctx, "Uninitialized `prepareDuration`")
 			return time.Duration(0)
 		},
 		"renderDuration": func() time.Duration {
-			slog.Error("Uninitialized `renderDuration`")
+			slog.ErrorContext(ctx, "Uninitialized `renderDuration`")
 			return time.Duration(0)
 		},
 		"queryCount": func() int64 {
-			slog.Error("Uninitialized `queryCount`")
+			slog.ErrorContext(ctx, "Uninitialized `queryCount`")
 			return -1
 		},
 		"contentUser": func() *kilonova.UserBrief {
-			slog.Error("Uninitialized `contentUser`")
+			slog.ErrorContext(ctx, "Uninitialized `contentUser`")
 			return nil
 		},
 		"fullAuthedUser": func() *kilonova.UserFull {
-			slog.Error("Uninitialized `fullAuthedUser`")
+			slog.ErrorContext(ctx, "Uninitialized `fullAuthedUser`")
 			return nil
 		},
 		"authedUser": func() *kilonova.UserBrief {
-			slog.Error("Uninitialized `authedUser`")
+			slog.ErrorContext(ctx, "Uninitialized `authedUser`")
 			return nil
 		},
 		"isAdmin": func() bool {
-			slog.Error("Uninitialized `isAdmin`")
+			slog.ErrorContext(ctx, "Uninitialized `isAdmin`")
 			return false
 		},
 		"isProposer": func() bool {
-			slog.Error("Uninitialized `isProposer`")
+			slog.ErrorContext(ctx, "Uninitialized `isProposer`")
 			return false
 		},
 		"discordIdentity": func(user *kilonova.UserFull) *discordgo.User {
-			slog.Error("Uninitialized `discordIdentity`")
+			slog.ErrorContext(ctx, "Uninitialized `discordIdentity`")
 			return nil
 		},
 		"isContestEditor": func(c *kilonova.Contest) bool {
-			slog.Error("Uninitialized `isContestEditor`")
+			slog.ErrorContext(ctx, "Uninitialized `isContestEditor`")
 			return false
 		},
 		"contestLeaderboardVisible": func(c *kilonova.Contest) bool {
-			slog.Error("Uninitialized `contestLeaderboardVisible`")
+			slog.ErrorContext(ctx, "Uninitialized `contestLeaderboardVisible`")
 			return false
 		},
 		"contestProblemsVisible": func(c *kilonova.Contest) bool {
-			slog.Error("Uninitialized `contestProblemsVisible`")
+			slog.ErrorContext(ctx, "Uninitialized `contestProblemsVisible`")
 			return false
 		},
 		"contestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {
-			slog.Error("Uninitialized `contestQuestions`")
+			slog.ErrorContext(ctx, "Uninitialized `contestQuestions`")
 			return nil
 		},
 		"currentProblem": func() *kilonova.Problem {
-			slog.Error("Uninitialized `currentProblem`")
+			slog.ErrorContext(ctx, "Uninitialized `currentProblem`")
 			return nil
 		},
 		"canViewAllSubs": func() bool {
-			slog.Error("Uninitialized `canViewAllSubs`")
+			slog.ErrorContext(ctx, "Uninitialized `canViewAllSubs`")
 			return false
 		},
 		"contestRegistration": func(c *kilonova.Contest) *kilonova.ContestRegistration {
-			slog.Error("Uninitialized `contestRegistration`")
+			slog.ErrorContext(ctx, "Uninitialized `contestRegistration`")
 			return nil
 		},
 		"problemFullyVisible": func() bool {
-			slog.Error("Uninitialized `problemFullyVisible`")
+			slog.ErrorContext(ctx, "Uninitialized `problemFullyVisible`")
 			return false
 		},
 		"numSolvedPblist": func(listID int) int {
-			slog.Error("Uninitialized `numSolvedPblist`")
+			slog.ErrorContext(ctx, "Uninitialized `numSolvedPblist`")
 			return -1
 		},
 		"subCode": func(sub *kilonova.FullSubmission) []byte {
-			slog.Error("Uninitialized `subCode`")
+			slog.ErrorContext(ctx, "Uninitialized `subCode`")
 			return nil
 		},
 	}

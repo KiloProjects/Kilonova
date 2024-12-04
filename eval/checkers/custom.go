@@ -64,7 +64,7 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	stat, err := datastore.GetBucket(datastore.BucketTypeCheckers).Stat(fmt.Sprintf("%d.bin", c.pb.ID))
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
-			slog.Warn("Checker stat error", slog.Any("err", err))
+			slog.WarnContext(ctx, "Checker stat error", slog.Any("err", err))
 		}
 		shouldCompile = true
 	} else if stat.ModTime().Before(c.lastUpdatedAt) {
@@ -72,18 +72,18 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	}
 
 	if !shouldCompile {
-		c.Logger.Info("Using cached checker")
+		c.Logger.InfoContext(ctx, "Using cached checker")
 		return "", nil
 	}
 
-	slog.Debug("Compiling problem checker", slog.Any("problem", c.pb))
-	c.Logger.Info("Compiling checker", slog.Any("problem", c.pb))
+	slog.DebugContext(ctx, "Compiling problem checker", slog.Any("problem", c.pb))
+	c.Logger.InfoContext(ctx, "Compiling checker", slog.Any("problem", c.pb))
 	checkerPrepareMu.Lock()
 	defer checkerPrepareMu.Unlock()
 
 	lang := c.mgr.LanguageFromFilename(c.filename)
 	if lang == nil {
-		slog.Warn("Language not found for custom checker compilation", slog.String("filename", c.filename))
+		slog.WarnContext(ctx, "Language not found for custom checker compilation", slog.String("filename", c.filename))
 		return "Couldn't compile checker", kilonova.Statusf(500, "Unknown checker language")
 	}
 
@@ -104,7 +104,7 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 		return fmt.Sprintf("Output:\n%s\nOther:\n%s", resp.Output, resp.Other), kilonova.Statusf(400, "Invalid helper code")
 	}
 
-	c.Logger.Info("Compiled checker", slog.Duration("duration", time.Duration(resp.Stats.Time*float64(time.Second))))
+	c.Logger.InfoContext(ctx, "Compiled checker", slog.Duration("duration", time.Duration(resp.Stats.Time*float64(time.Second))))
 
 	return "", nil
 }

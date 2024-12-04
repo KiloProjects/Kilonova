@@ -60,7 +60,7 @@ func (s *API) Handler() http.Handler {
 						return kilonova.Statusf(403, "Refusing to remove non-cache bucket")
 					}
 					if err := b.ResetCache(); err != nil {
-						slog.Warn("Could not bucket cache", slog.Any("bucket", b), slog.Any("reason", err))
+						slog.WarnContext(ctx, "Could not bucket cache", slog.Any("bucket", b), slog.Any("reason", err))
 						return kilonova.WrapError(err, "Could not reset cache")
 					}
 					return nil
@@ -71,9 +71,9 @@ func (s *API) Handler() http.Handler {
 						return "", kilonova.Statusf(403, "Refusing to remove important bucket")
 					}
 					s.base.LogUserAction(ctx, "Attempted running bucket eviction", slog.Any("bucket", b))
-					numDeleted, err := b.RunEvictionPolicy(s.base.EvictionLogger())
+					numDeleted, err := b.RunEvictionPolicy(ctx, s.base.EvictionLogger())
 					if err != nil {
-						slog.Warn("Could not evict bucket objects", slog.Any("bucket", b), slog.Any("reason", err))
+						slog.WarnContext(ctx, "Could not evict bucket objects", slog.Any("bucket", b), slog.Any("reason", err))
 						return "", kilonova.WrapError(err, "Could not evict objects")
 					}
 					return fmt.Sprintf("Deleted %d objects", numDeleted), nil

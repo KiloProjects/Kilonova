@@ -92,7 +92,7 @@ func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lang := s.base.Language(args.Lang)
+	lang := s.base.Language(r.Context(), args.Lang)
 	if lang == nil {
 		errorData(w, "Invalid language", 400)
 		return

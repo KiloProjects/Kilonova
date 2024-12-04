@@ -25,7 +25,7 @@ var (
 	ErrDisconnected = Statusf(401, "Not connected to Discord")
 )
 
-func (s *BaseAPI) initDiscord() *kilonova.StatusError {
+func (s *BaseAPI) initDiscord(ctx context.Context) *kilonova.StatusError {
 	// if len(Token.Value()) < 2 {
 	// 	return Statusf(406, "No Discord token provided")
 	// }
@@ -41,7 +41,7 @@ func (s *BaseAPI) initDiscord() *kilonova.StatusError {
 			return WrapError(err, "Could not open gateway")
 		}
 	} else {
-		slog.Info("Initializing Discord session unauthed")
+		slog.InfoContext(ctx, "Initializing Discord session unauthed")
 	}
 
 	return nil

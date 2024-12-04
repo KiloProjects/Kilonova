@@ -2,6 +2,7 @@ package config
 
 import (
 	"cmp"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"sync"
@@ -71,7 +73,7 @@ func (f *flag[T]) MarshalJSON() ([]byte, error) {
 
 func (f *flag[T]) Update(newVal T) {
 	defer func() {
-		if err := SaveConfigV2(); err != nil {
+		if err := SaveConfigV2(context.Background()); err != nil {
 			zap.S().Warn("Couldn't save flag: ", err)
 		}
 	}()
@@ -147,7 +149,7 @@ func GetFlags[T any]() []Flag[T] {
 	return flags
 }
 
-func LoadConfigV2(skipUnknown bool) error {
+func LoadConfigV2(ctx context.Context, skipUnknown bool) error {
 	flagMapMu.RLock()
 	defer flagMapMu.RUnlock()
 	if configV2Path == "" {
@@ -172,7 +174,7 @@ func LoadConfigV2(skipUnknown bool) error {
 		val, ok := allFlags[key]
 		if !ok {
 			if skipUnknown {
-				slog.Warn("Unknown config key", slog.String("key", key))
+				slog.WarnContext(ctx, "Unknown config key", slog.String("key", key))
 			}
 			continue
 		}
@@ -181,7 +183,7 @@ func LoadConfigV2(skipUnknown bool) error {
 				zap.S().Warnf("Could not update key %q: %v", key, err)
 			}
 		} else {
-			zap.S().Warn("Could not sneak update")
+			slog.WarnContext(ctx, "Could not sneak update")
 		}
 	}
 
@@ -192,12 +194,12 @@ func LoadConfigV2(skipUnknown bool) error {
 		}
 		key, val, found := strings.Cut(override, "=")
 		if !found {
-			zap.S().Warnf("Invalid override %q", override)
+			slog.WarnContext(ctx, "Invalid override", slog.String("override", override))
 			continue
 		}
 		flg, ok := allFlags[key]
 		if !ok {
-			zap.S().Warnf("Could not find flag named %q", key)
+			slog.WarnContext(ctx, "Could not find flag", slog.String("name", key))
 			continue
 		}
 		switch f := flg.(type) {
@@ -206,17 +208,17 @@ func LoadConfigV2(skipUnknown bool) error {
 			f.Update(val)
 		case configFlag:
 			if err := json.Unmarshal([]byte(val), f.getPtr()); err != nil {
-				zap.S().Warnf("Override for flag %q is invalid: %v", key, err)
+				slog.WarnContext(ctx, "Invalid flag override", slog.Any("err", err), slog.String("key", key))
 			}
 		default:
-			zap.S().Warnf("Unknown flag type")
+			slog.WarnContext(ctx, "Unknown flag type")
 		}
 	}
 
 	return nil
 }
 
-func SaveConfigV2() error {
+func SaveConfigV2(ctx context.Context) error {
 	if configV2Path == "" {
 		return errors.New("invalid config path")
 	}
@@ -238,7 +240,7 @@ func SaveConfigV2() error {
 		case configFlag:
 			data[key] = v.getPtr()
 		default:
-			zap.S().Warnf("Unknown type %T", v)
+			slog.WarnContext(ctx, "Unknown flag type", slog.Any("type", reflect.TypeOf(v)))
 		}
 	}
 

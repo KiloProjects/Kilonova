@@ -12,7 +12,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func standardCheckerTask(ctx context.Context, mgr eval.BoxScheduler, job *customCheckerInput, log *slog.Logger) (*checkerResult, error) {
+func standardCheckerTask(ctx context.Context, mgr eval.BoxScheduler, job *customCheckerInput, _ *slog.Logger) (*checkerResult, error) {
 	rez := &checkerResult{}
 	lang := mgr.LanguageFromFilename(job.c.filename)
 	if lang == nil {

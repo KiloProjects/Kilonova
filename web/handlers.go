@@ -621,7 +621,7 @@ func (rt *Web) randomProblem() http.HandlerFunc {
 		r.ParseForm()
 		var args problemArgs
 		if err := decoder.Decode(&args, r.Form); err != nil {
-			slog.Warn("Could not decode HTTP form", slog.Any("err", err))
+			slog.WarnContext(r.Context(), "Could not decode HTTP form", slog.Any("err", err))
 		}
 		filter := kilonova.ProblemFilter{
 			Look: true, LookingUser: util.UserBrief(r),
@@ -722,7 +722,7 @@ func (rt *Web) problem() http.HandlerFunc {
 
 		variants, err := rt.base.ProblemDescVariants(r.Context(), problem.ID, rt.base.IsProblemEditor(util.UserBrief(r), problem))
 		if err != nil && !errors.Is(err, context.Canceled) {
-			zap.S().Warn("Couldn't get problem desc variants", err)
+			slog.WarnContext(r.Context(), "Couldn't get problem desc variants", slog.Any("err", err))
 		}
 
 		foundLang, foundFmt, foundType := rt.appropriateDescriptionVariant(r, variants)
@@ -770,7 +770,7 @@ func (rt *Web) problem() http.HandlerFunc {
 
 		langs, err := rt.base.ProblemLanguages(r.Context(), util.Problem(r).ID)
 		if err != nil {
-			slog.Warn("Error getting problem languages", slog.Any("err", err), slog.Any("problem", util.Problem(r)))
+			slog.WarnContext(r.Context(), "Error getting problem languages", slog.Any("err", err), slog.Any("problem", util.Problem(r)))
 			rt.statusPage(w, r, 500, "Couldn't get supported problem languages.")
 			return
 		}
@@ -791,7 +791,7 @@ func (rt *Web) problem() http.HandlerFunc {
 			olderSubs, err = rt.getOlderSubmissions(r.Context(), util.UserBrief(r), util.UserBrief(r).ID, util.Problem(r), util.Contest(r), 5)
 			if err != nil {
 				if !errors.Is(err, context.Canceled) {
-					slog.Warn("Couldn't get submissions", slog.Any("err", err))
+					slog.WarnContext(r.Context(), "Couldn't get submissions", slog.Any("err", err))
 				}
 				olderSubs = nil
 			}
@@ -849,7 +849,7 @@ func (rt *Web) problemSubmit() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		langs, err := rt.base.ProblemLanguages(r.Context(), util.Problem(r).ID)
 		if err != nil {
-			slog.Warn("Error getting problem languages", slog.Any("err", err), slog.Any("problem", util.Problem(r)))
+			slog.WarnContext(r.Context(), "Error getting problem languages", slog.Any("err", err), slog.Any("problem", util.Problem(r)))
 			rt.statusPage(w, r, 500, "Couldn't get supported problem languages.")
 			return
 		}
@@ -881,7 +881,7 @@ func (rt *Web) problemArchive() http.HandlerFunc {
 		settings, err := rt.base.ProblemSettings(r.Context(), util.Problem(r).ID)
 		if err != nil {
 			if !errors.Is(err, context.Canceled) {
-				slog.Warn("Could not get problem settings", slog.Any("err", err))
+				slog.WarnContext(r.Context(), "Could not get problem settings", slog.Any("err", err))
 			}
 			settings = nil
 		}
@@ -1426,7 +1426,7 @@ func (rt *Web) profile() http.HandlerFunc {
 		username := strings.TrimSpace(chi.URLParam(r, "user"))
 		user, err := rt.base.UserFullByName(r.Context(), username)
 		if err != nil && !errors.Is(err, kilonova.ErrNotFound) && !errors.Is(err, context.Canceled) {
-			slog.Warn("Could not get user", slog.Any("err", err))
+			slog.WarnContext(r.Context(), "Could not get user", slog.Any("err", err))
 			rt.statusPage(w, r, 500, "")
 			return
 		}
@@ -1446,7 +1446,7 @@ func (rt *Web) profile() http.HandlerFunc {
 func (rt *Web) linkStatusPage(w http.ResponseWriter, r *http.Request, templ *template.Template, user *kilonova.UserFull) {
 	dUser, err := rt.base.GetDiscordIdentity(r.Context(), user.ID)
 	if err != nil {
-		slog.Warn("Could not get Discord identity", slog.Any("user", user), slog.Any("err", err))
+		slog.WarnContext(r.Context(), "Could not get Discord identity", slog.Any("user", user), slog.Any("err", err))
 		dUser = nil
 	}
 	rt.runTempl(w, r, templ, &DiscordLinkParams{
@@ -1805,7 +1805,7 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 		"olderSubmissions": func(user *kilonova.UserBrief, problem *kilonova.Problem, contest *kilonova.Contest) *OlderSubmissionsParams {
 			olderSubs, err := rt.getOlderSubmissions(r.Context(), util.UserBrief(r), user.ID, problem, contest, 5)
 			if err != nil {
-				slog.Warn("Couldn't get submissions", slog.Any("err", err))
+				slog.WarnContext(r.Context(), "Couldn't get submissions", slog.Any("err", err))
 				return nil
 			}
 			return olderSubs

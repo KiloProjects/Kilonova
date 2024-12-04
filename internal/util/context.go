@@ -15,11 +15,11 @@ type KNContextType string
 const (
 	// AuthedUserKey is the key to be used for adding (AUTHENTICATED) user objects to context
 	AuthedUserKey = KNContextType("authed")
-	// AuthedUserKey is the key to be used for adding CONTENT user objects to context
+	// ContentUserKey is the key to be used for adding CONTENT user objects to context
 	ContentUserKey = KNContextType("user")
 	// ProblemKey is the key to be used for adding problems to context
 	ProblemKey = KNContextType("problem")
-	// ProblemKey is the key to be used for adding blog posts to context
+	// BlogPostKey is the key to be used for adding blog posts to context
 	BlogPostKey = KNContextType("blogPost")
 	// SubKey is the key to be used for adding submissions to context
 	SubKey = KNContextType("submission")

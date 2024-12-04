@@ -53,7 +53,7 @@ func (rt *Web) editIndex() func(w http.ResponseWriter, r *http.Request) {
 
 		diagnostics, err := rt.base.ProblemDiagnostics(r.Context(), util.Problem(r))
 		if err != nil {
-			slog.Warn("Error getting diagnostics", slog.Any("err", err))
+			slog.WarnContext(r.Context(), "Error getting diagnostics", slog.Any("err", err))
 			diagnostics = nil
 		}
 
