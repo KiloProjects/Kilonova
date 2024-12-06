@@ -42,6 +42,8 @@ type PropertiesRaw struct {
 	TestName     *string  `props:"test_name"`
 	ProblemName  *string  `props:"problem_name"`
 
+	MergeAttachments *string `props:"merge_attachments"`
+
 	Editors *string `props:"editors"`
 
 	DefaultScore *string `props:"default_score"`
@@ -197,6 +199,9 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 	if rawProps.ConsoleInput != nil && (*rawProps.ConsoleInput == "true" || *rawProps.ConsoleInput == "false") {
 		val := *rawProps.ConsoleInput == "true"
 		props.ConsoleInput = &val
+	}
+	if rawProps.MergeAttachments != nil && (*rawProps.MergeAttachments == "true" || *rawProps.MergeAttachments == "false") {
+		ctx.params.MergeAttachments = (*rawProps.MergeAttachments == "true")
 	}
 
 	// handle subtasks

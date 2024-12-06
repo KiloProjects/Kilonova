@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/fs"
 	"path"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -82,11 +81,11 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File, base *sudoapi.BaseAPI) 
 	if strings.Contains(file.Name, "__MACOSX") || strings.Contains(file.Name, ".DS_Store") { // Support archives from MacOS
 		return nil
 	}
-	if slices.Contains(filepath.SplitList(path.Dir(file.Name)), "attachments") { // Is in "attachments" directory
+	if slices.Contains(strings.Split(path.Dir(file.Name), "/"), "attachments") { // Is in "attachments" directory
 		return ProcessAttachmentFile(ctx, file)
 	}
 
-	if slices.Contains(filepath.SplitList(path.Dir(file.Name)), "submissions") { // Is in "submissions" directory
+	if slices.Contains(strings.Split(path.Dir(file.Name), "/"), "submissions") { // Is in "submissions" directory
 		return ProcessSubmissionFile(ctx, file, base)
 	}
 
