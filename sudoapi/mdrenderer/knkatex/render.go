@@ -2,15 +2,16 @@
 package knkatex
 
 import (
+	"context"
 	_ "embed"
 	"errors"
 	"html"
 	"io"
+	"log/slog"
 	"strings"
 	"sync"
 
 	"github.com/dop251/goja"
-	"go.uber.org/zap"
 )
 
 //go:embed katex.min.js
@@ -19,7 +20,7 @@ var code string
 func initGoja() *goja.Program {
 	prog, err := goja.Compile("katex.min.js", code, true)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(context.Background(), "Could not init goja", slog.Any("err", err))
 		return nil
 	}
 	return prog
@@ -32,10 +33,10 @@ var displayRenderToString = sync.OnceValue(func() *goja.Program {
 	return goja.MustCompile("", "katex.renderToString(_EqSrc3120, {displayMode: true})", true)
 })
 
-func Render(w io.Writer, src []byte, display bool) error {
+func Render(ctx context.Context, w io.Writer, src []byte, display bool) error {
 	katex := compiledKatex()
 	if katex == nil {
-		zap.S().Warn("No katex program provided")
+		slog.WarnContext(ctx, "No katex program provided")
 		io.WriteString(w, "<code>Failed to render KaTeX</code>")
 		return nil
 	}
@@ -58,7 +59,7 @@ func Render(w io.Writer, src []byte, display bool) error {
 			if val != nil {
 				msg = val.String()
 			} else {
-				zap.S().Warn("Exception value is nil")
+				slog.WarnContext(ctx, "Exception value is nil")
 				msg = exception.Error()
 			}
 			io.WriteString(w, "<code>"+html.EscapeString(strings.TrimPrefix(msg, "ParseError: "))+"</code>")

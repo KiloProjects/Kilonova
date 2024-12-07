@@ -1,8 +1,10 @@
 package mdrenderer
 
 import (
+	"context"
 	"fmt"
 	"html"
+	"log/slog"
 	"net/url"
 	"strings"
 
@@ -13,7 +15,6 @@ import (
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
-	"go.uber.org/zap"
 )
 
 // Image attachments are of the form ~[name.xyz]
@@ -136,6 +137,6 @@ func attachmentURL(ctx *kilonova.RenderContext, okCtx bool, name string) string 
 		return fmt.Sprintf("/assets/blogPost/%s/attachment/%s", ctx.BlogPost.Slug, url.PathEscape(name))
 	}
 
-	zap.S().Warn("WTF")
+	slog.WarnContext(context.TODO(), "Unexpected attachment URL state")
 	return url.PathEscape(name)
 }

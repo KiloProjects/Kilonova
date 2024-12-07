@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -261,7 +262,7 @@ func (s *DB) internalToPbList(ctx context.Context, list *pblist) (*kilonova.Prob
 		pblist.List = list.ListProblems
 	} else {
 		pblist.List = []int{}
-		zap.S().WithOptions(zap.AddCallerSkip(1)).Info("Forgot to query for list problems")
+		slog.WarnContext(ctx, "Forgot to query for list problems")
 	}
 
 	var err error

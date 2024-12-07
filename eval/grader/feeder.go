@@ -199,10 +199,10 @@ func (h *Handler) Start() error {
 	}()
 
 	defer runner.Close(h.ctx)
-	zap.S().Info("Connected to eval")
+	slog.InfoContext(h.ctx, "Connected to eval")
 
 	if err = h.handle(runner); err != nil {
-		zap.S().Error("Handling error:", zap.Error(err))
+		slog.ErrorContext(h.ctx, "Handling error:", slog.Any("err", err))
 		return err
 	}
 	return nil
@@ -211,7 +211,7 @@ func (h *Handler) Start() error {
 func (h *Handler) Close() {
 	closeAction.Do(func() {
 		if err := logFile.Close(); err != nil {
-			zap.S().Warn("Error closing grader.log:", err)
+			slog.WarnContext(h.ctx, "Error closing grader.log", slog.Any("err", err))
 		}
 		close(h.wakeChan)
 	})

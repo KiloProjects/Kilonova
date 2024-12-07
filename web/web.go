@@ -39,7 +39,6 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/go-chi/chi/v5"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -148,7 +147,7 @@ func (rt *Web) Handler() http.Handler {
 		r.Get("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 			file, err := embedded.Open("static/robots.txt")
 			if err != nil {
-				zap.S().Warn("Could not open robots.txt")
+				slog.WarnContext(r.Context(), "Could not open robots.txt")
 				return
 			}
 			defer file.Close()
@@ -294,7 +293,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"problemSettings": func(problemID int) *kilonova.ProblemEvalSettings {
 			settings, err := base.ProblemSettings(ctx, problemID)
 			if err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(ctx, "Could not get problem settings", slog.Any("err", err))
 				return nil
 			}
 			return settings
@@ -335,7 +334,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			// At the moment, however, this is not a priority
 			contests, err := base.ProblemRunningContests(ctx, pb.ID)
 			if err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(ctx, "Couldn't get running contests", slog.Any("err", err))
 				return nil
 			}
 			actualContests := make([]*kilonova.Contest, 0, len(contests))
@@ -457,7 +456,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return pbs
 		},
 		"pbParentPblists": func(problem *kilonova.Problem) []*kilonova.ProblemList {
-			zap.S().Error("Uninitialized `pbParentPblists`")
+			slog.ErrorContext(ctx, "Uninitialized `pbParentPblists`")
 			return nil
 		},
 		"pblistParent": func(pblist *kilonova.ProblemList) []*kilonova.ProblemList {
@@ -480,11 +479,12 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			case template.HTML:
 				bd = []byte(body)
 			default:
-				zap.S().Fatal("Unknown renderMarkdown type")
+				slog.ErrorContext(ctx, "Unknown renderMarkdown type")
+				return "[Fatal error rendering markdown]"
 			}
 			val, err := base.RenderMarkdown(bd, nil)
 			if err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(ctx, "Error rendering markdown", slog.Any("err", err))
 				return "[Error rendering markdown]"
 			}
 			return template.HTML(val)
@@ -546,7 +546,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return &ProblemListingParams{pbs, true, showPublished, -1, listID}
 		},
 		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *ProblemListingParams {
-			zap.S().Warn("Uninitialized `genContestProblemsParams`")
+			slog.ErrorContext(ctx, "Uninitialized `genContestProblemsParams`")
 			return nil
 		},
 		"genPblistParams": func(pblist *kilonova.ProblemList, open bool) *PblistParams {
@@ -628,7 +628,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"tagsByType": func(g string) []*kilonova.Tag {
 			tags, err := base.TagsByType(ctx, kilonova.TagType(g))
 			if err != nil {
-				zap.S().Warnf("Couldn't get tags of type %q", g)
+				slog.WarnContext(ctx, "Couldn't get tags", slog.String("tag_type", g))
 				return nil
 			}
 			return tags
@@ -640,7 +640,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			}
 			tags, err := base.ProblemTags(ctx, pb.ID)
 			if err != nil {
-				zap.S().Warn("Couldn't get problem tags: ", err)
+				slog.WarnContext(ctx, "Couldn't get problem tags", slog.Any("err", err))
 				return nil
 			}
 			return tags
@@ -667,21 +667,21 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"intFlag": func(name string) int {
 			val, ok := config.GetFlagVal[int](name)
 			if !ok {
-				zap.S().Warnf("Flag with name %q is not int", name)
+				slog.WarnContext(ctx, "Flag is not int", slog.String("name", name))
 			}
 			return val
 		},
 		"boolFlag": func(name string) bool {
 			val, ok := config.GetFlagVal[bool](name)
 			if !ok {
-				zap.S().Warnf("Flag with name %q is not bool", name)
+				slog.WarnContext(ctx, "Flag is not bool", slog.String("name", name))
 			}
 			return val
 		},
 		"stringFlag": func(name string) string {
 			val, ok := config.GetFlagVal[string](name)
 			if !ok {
-				zap.S().Warnf("Flag with name %q is not string", name)
+				slog.WarnContext(ctx, "Flag is not string", slog.String("name", name))
 			}
 			return val
 		},
@@ -703,7 +703,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"sessionDevices": func(sid string) []*sudoapi.SessionDevice {
 			devices, err := base.SessionDevices(ctx, sid)
 			if err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(ctx, "Could not get session devices", slog.Any("err", err))
 				return nil
 			}
 			return devices
@@ -753,7 +753,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return rez
 		},
 		"formatStmtVariant": func(fmt *kilonova.StatementVariant) string {
-			zap.S().Error("Uninitialized `formatStmtVariant`")
+			slog.ErrorContext(ctx, "Uninitialized `formatStmtVariant`")
 			return ""
 		},
 		"mdVariantCount": func(sv []*kilonova.StatementVariant) int {
@@ -788,7 +788,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			code, err := base.SubmissionCode(ctx, &sub.Submission, sub.Problem, nil, false)
 			if err != nil {
 				if !errors.Is(err, context.Canceled) {
-					zap.S().Warn(err)
+					slog.WarnContext(ctx, "Could not get submission code", slog.Any("err", err))
 				}
 				code = nil
 			}

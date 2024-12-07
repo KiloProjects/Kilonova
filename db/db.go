@@ -14,7 +14,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
-	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	pgxdecimal "github.com/jackc/pgx-shopspring-decimal"
@@ -124,7 +123,7 @@ func mapperCtx[T1 any, T2 any](ctx context.Context, lst []T1, f func(context.Con
 		var err error
 		rez[i], err = f(ctx, lst[i])
 		if err != nil && !errors.Is(err, context.Canceled) {
-			zap.S().WithOptions(zap.AddCallerSkip(1)).Warn(err)
+			slog.WarnContext(ctx, "Error running mapper", slog.Any("err", err))
 		}
 	}
 	return rez

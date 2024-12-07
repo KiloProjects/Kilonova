@@ -2,6 +2,7 @@ package knkatex_test
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer/knkatex"
@@ -28,8 +29,8 @@ func BenchmarkRender(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for _, test := range tests {
 			var buf bytes.Buffer
-			knkatex.Render(&buf, []byte(test.Source), false)
-			knkatex.Render(&buf, []byte(test.Source), true)
+			knkatex.Render(context.Background(), &buf, []byte(test.Source), false)
+			knkatex.Render(context.Background(), &buf, []byte(test.Source), true)
 		}
 	}
 }

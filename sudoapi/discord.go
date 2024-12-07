@@ -98,17 +98,18 @@ func (s *BaseAPI) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) 
 		Statusf(http.StatusBadRequest, "State does not match").WriteError(w)
 		return
 	}
-	defer s.db.RemoveDiscordState(context.Background(), r.FormValue("state"))
+	ctx := context.WithoutCancel(r.Context())
+	defer s.db.RemoveDiscordState(ctx, r.FormValue("state"))
 
 	conf := s.discordConfig()
 
-	token, err := conf.Exchange(context.Background(), r.FormValue("code"))
+	token, err := conf.Exchange(ctx, r.FormValue("code"))
 	if err != nil {
 		WrapError(err, "Could not get Discord token").WriteError(w)
 		return
 	}
 
-	res, err := conf.Client(context.Background(), token).Get("https://discord.com/api/users/@me")
+	res, err := conf.Client(ctx, token).Get("https://discord.com/api/users/@me")
 	if err != nil {
 		WrapError(err, "Could not get user").WriteError(w)
 		return
@@ -125,7 +126,7 @@ func (s *BaseAPI) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) 
 		WrapError(err, "Could not decode Discord response").WriteError(w)
 	}
 
-	if err := s.updateUser(r.Context(), uid, kilonova.UserFullUpdate{
+	if err := s.updateUser(ctx, uid, kilonova.UserFullUpdate{
 		SetDiscordID: true, DiscordID: &dUser.ID,
 	}); err != nil {
 		err.WriteError(w)
@@ -133,11 +134,11 @@ func (s *BaseAPI) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) 
 	}
 
 	userAttr := slog.Any("userID", uid)
-	user, err := s.db.User(r.Context(), kilonova.UserFilter{ID: &uid})
+	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &uid})
 	if err == nil && user != nil {
 		userAttr = slog.Any("user", user.ToBrief())
 	}
-	s.LogVerbose(r.Context(), "User linked Discord identity", userAttr, slog.String("discord_id", dUser.ID), slog.String("discord_user", dUser.Mention()))
+	s.LogVerbose(ctx, "User linked Discord identity", userAttr, slog.String("discord_id", dUser.ID), slog.String("discord_user", dUser.Mention()))
 
 	http.Redirect(w, r, config.Common.HostPrefix+"/profile/linked", http.StatusTemporaryRedirect)
 }

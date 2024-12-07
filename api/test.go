@@ -153,7 +153,7 @@ func (s *API) processArchive(r *http.Request, firstImport bool) *kilonova.Status
 		FirstImport: firstImport,
 	}
 
-	return test.ProcessZipTestArchive(context.Background(), util.Problem(r), ar, s.base, params)
+	return test.ProcessZipTestArchive(context.WithoutCancel(r.Context()), util.Problem(r), ar, s.base, params)
 }
 
 func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
@@ -178,7 +178,7 @@ func (s *API) bulkDeleteTests(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	if err := s.base.CleanupSubTasks(context.Background(), util.Problem(r).ID); err != nil {
+	if err := s.base.CleanupSubTasks(context.WithoutCancel(r.Context()), util.Problem(r).ID); err != nil {
 		errorData(w, "Couldn't clean up subtasks", 500)
 		return
 	}

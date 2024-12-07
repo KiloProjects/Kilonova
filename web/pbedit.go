@@ -146,21 +146,21 @@ func (rt *Web) editAccessControl() func(w http.ResponseWriter, r *http.Request) 
 func (rt *Web) testIndex() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/testScores.html", "problem/topbar.html", "problem/edit/testSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, tmpl, &TestEditParams{util.Problem(r), nil, rt.problemTopbar(r, "tests", -2), rt.base})
+		rt.runTempl(w, r, tmpl, &TestEditParams{util.Problem(r), nil, rt.problemTopbar(r, "tests", -2), rt.base, r.Context()})
 	}
 }
 
 func (rt *Web) testAdd() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/testAdd.html", "problem/topbar.html", "problem/edit/testSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, tmpl, &TestEditParams{util.Problem(r), nil, rt.problemTopbar(r, "tests", -1), rt.base})
+		rt.runTempl(w, r, tmpl, &TestEditParams{util.Problem(r), nil, rt.problemTopbar(r, "tests", -1), rt.base, r.Context()})
 	}
 }
 
 func (rt *Web) testEdit() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse(nil, "problem/edit/testEdit.html", "problem/topbar.html", "problem/edit/testSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, tmpl, &TestEditParams{util.Problem(r), util.Test(r), rt.problemTopbar(r, "tests", util.Test(r).VisibleID), rt.base})
+		rt.runTempl(w, r, tmpl, &TestEditParams{util.Problem(r), util.Test(r), rt.problemTopbar(r, "tests", util.Test(r).VisibleID), rt.base, r.Context()})
 	}
 }
 

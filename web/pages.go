@@ -19,7 +19,6 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/bwmarrin/discordgo"
-	"go.uber.org/zap"
 )
 
 type ProblemTopbar struct {
@@ -215,6 +214,7 @@ type TestEditParams struct {
 	Topbar  *ProblemTopbar
 
 	base *sudoapi.BaseAPI
+	ctx  context.Context
 }
 
 type testDataType struct {
@@ -227,13 +227,13 @@ type testDataType struct {
 
 const readLimit = 1024 * 1024 // 1MB
 
-func ReadOrTruncate(r io.Reader) ([]byte, bool) {
+func ReadOrTruncate(ctx context.Context, r io.Reader) ([]byte, bool) {
 	var buf bytes.Buffer
 	if _, err := io.CopyN(&buf, r, readLimit); err != nil {
 		if errors.Is(err, io.EOF) {
 			return buf.Bytes(), true
 		}
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Could not read until limit", slog.Any("err", err))
 		return []byte("err"), false
 	}
 
@@ -257,8 +257,8 @@ func (t *TestEditParams) GetFullTests() testDataType {
 	}
 	defer out.Close()
 
-	inData, okIn := ReadOrTruncate(in)
-	outData, okOut := ReadOrTruncate(out)
+	inData, okIn := ReadOrTruncate(t.ctx, in)
+	outData, okOut := ReadOrTruncate(t.ctx, out)
 
 	return testDataType{
 		In:   string(inData),
@@ -389,14 +389,16 @@ func doWalk(filename string, nodes ...tparse.Node) bool {
 			}
 			if nodes := val.FieldByName("Nodes"); nodes.IsValid() {
 				if nodes.Kind() != reflect.Slice {
-					zap.S().Fatalf("Invalid template static analysis tree")
+					slog.ErrorContext(context.TODO(), "Invalid template static analysis tree")
+					os.Exit(1)
 				}
 				ok = ok && doWalk(filename, nodes.Interface().([]tparse.Node)...)
 			}
 		}
 		if nodes := tp.FieldByName("Nodes"); nodes.IsValid() {
 			if nodes.Kind() != reflect.Slice {
-				zap.S().Fatalf("Invalid template static analysis tree")
+				slog.ErrorContext(context.TODO(), "Invalid template static analysis tree")
+				os.Exit(1)
 			}
 			ok = ok && doWalk(filename, nodes.Interface().([]tparse.Node)...)
 		}
@@ -414,12 +416,12 @@ func doWalk(filename string, nodes ...tparse.Node) bool {
 				case *tparse.StringNode:
 					key := node.Text
 					if !kilonova.TranslationKeyExists(key) {
-						zap.S().Infof("Template static analysis failed: Unknown translation key %q in file %s", key, filename)
+						slog.InfoContext(context.TODO(), "Template static analysis failed: Unknown translation key", slog.String("key", key), slog.String("filename", filename))
 						ok = false
 					}
 				case *tparse.VariableNode:
 				default:
-					zap.S().Warnf("Template static analysis warning: Unknown type for translation string node: %v (value: %s)", node.Type(), node.String())
+					slog.WarnContext(context.TODO(), "Template static analysis warning: Unknown type for translation string node", slog.Any("type", node.Type()), slog.String("value", node.String()))
 				}
 			}
 			// spew.Dump(rnode)

@@ -425,7 +425,7 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 			subject = *args.MailSubject
 		}
 
-		if err := s.SendMail(&kilonova.MailerMessage{
+		if err := s.SendMail(ctx, &kilonova.MailerMessage{
 			To:          sendTo,
 			Subject:     subject,
 			HTMLContent: b.String(),

@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	"os"
 	"path"
 	"strconv"
 	"sync"
@@ -26,8 +27,6 @@ import (
 	"github.com/disintegration/gift"
 	"github.com/go-chi/chi/v5"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
-
 	"image/jpeg"
 	"image/png"
 )
@@ -364,13 +363,14 @@ func (s *Assets) ServeProblemArchive() http.HandlerFunc {
 		}, nil
 	})
 	if err != nil {
-		zap.S().Fatal(err)
+		slog.ErrorContext(context.Background(), "Could not initialize problem archive user cache", slog.Any("err", err))
+		os.Exit(1)
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		mu, err := pbArchiveUserCache.Get(r.Context(), util.UserBrief(r).ID)
 		if err != nil || mu == nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Could hit archive cache", slog.Any("err", err))
 			http.Error(w, "Could not aquire mutex", 500)
 			return
 		}
@@ -398,15 +398,15 @@ func (s *Assets) ServeProblemArchive() http.HandlerFunc {
 
 		wr := bufio.NewWriter(w)
 		if err := test.GenerateArchive(r.Context(), util.Problem(r), wr, s.base, &args); err != nil {
-			if !errors.Is(err, context.Canceled) {
-				if !errors.Is(err, syscall.EPIPE) && !errors.Is(err, syscall.ECONNRESET) {
-					zap.S().Warn(err)
+			if !errors.Is(err, syscall.EPIPE) && !errors.Is(err, syscall.ECONNRESET) {
+				if !errors.Is(err, context.Canceled) {
+					slog.WarnContext(r.Context(), "Could not generate problem archive", slog.Any("err", err))
 				}
 			}
 			fmt.Fprint(w, err)
 		}
 		if err := wr.Flush(); err != nil && !errors.Is(err, syscall.EPIPE) && !errors.Is(err, syscall.ECONNRESET) {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Could not finish writing problem archive", slog.Any("err", err))
 		}
 	}
 }

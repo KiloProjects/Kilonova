@@ -3,9 +3,9 @@ package db
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/jackc/pgx/v5"
-	"go.uber.org/zap"
 )
 
 func (s *DB) updateManyToMany(ctx context.Context, tableName, parentKey, childKey string, parentID int, children []int, position bool) error {
@@ -30,7 +30,7 @@ func (s *DB) updateManyToMany(ctx context.Context, tableName, parentKey, childKe
 
 		_, err := tx.CopyFrom(ctx, pgx.Identifier{tableName}, colNames, pgx.CopyFromRows(rows))
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(ctx, "Could not update many2many", slog.Any("err", err))
 			return err
 		}
 

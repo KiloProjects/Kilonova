@@ -1,10 +1,10 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
-	"go.uber.org/zap"
 )
 
 /*
@@ -127,7 +127,7 @@ func (s *API) logout(w http.ResponseWriter, r *http.Request) {
 func (s *API) extendSession(w http.ResponseWriter, r *http.Request) {
 	h := getAuthHeader(r)
 	if h == "" {
-		zap.S().Warn("Empty session on endpoint that must be authed")
+		slog.DebugContext(r.Context(), "Empty session on endpoint that must be authed")
 		returnData(w, nil)
 		return
 	}

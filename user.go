@@ -1,12 +1,8 @@
 package kilonova
 
 import (
-	"errors"
 	"log/slog"
 	"time"
-
-	"go.uber.org/zap"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type PreferredTheme string
@@ -155,22 +151,22 @@ type UsernameChange struct {
 	ChangedAt time.Time `json:"changed_at" db:"changed_at"`
 }
 
-func HashPassword(password string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hash), err
-}
-
-func CheckPwdHash(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-		return false
-	}
-	if err != nil {
-		zap.S().Warn(err)
-		return false
-	}
-	return true
-}
+//func HashPassword(password string) (string, error) {
+//	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+//	if err != nil {
+//		return "", err
+//	}
+//	return string(hash), err
+//}
+//
+//func CheckPwdHash(password, hash string) bool {
+//	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+//	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+//		return false
+//	}
+//	if err != nil {
+//		slog.WarnContext(context.Background(), "Bcrypt failure", slog.Any("err", err)
+//		return false
+//	}
+//	return true
+//}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -92,7 +93,7 @@ func (s *DB) SubmissionCode(ctx context.Context, subID int) ([]byte, error) {
 func (s *DB) SubmissionCount(ctx context.Context, filter kilonova.SubmissionFilter, limit int) (int, error) {
 	fb := newFilterBuilder()
 	subFilterQuery(&filter, fb)
-	query := fmt.Sprintf("SELECT COUNT(*) FROM submissions WHERE %s", fb.Where())
+	query := "SELECT COUNT(*) FROM submissions WHERE " + fb.Where()
 	if limit > 0 {
 		lim := fb.FormatString("LIMIT %s", limit)
 		query = fmt.Sprintf("SELECT COUNT(*) FROM (SELECT 1 FROM submissions WHERE %s %s) sbc", fb.Where(), lim)
@@ -179,7 +180,7 @@ func (s *DB) MaxScore(ctx context.Context, userid, problemid int) decimal.Decima
 	err := s.conn.QueryRow(ctx, "SELECT ms.score FROM max_scores ms WHERE ms.user_id = $1 AND ms.problem_id = $2", userid, problemid).Scan(&score)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) && !errors.Is(err, context.Canceled) {
-			zap.S().Errorw("Couldn't get max score for ", zap.Int("userid", userid), zap.Int("problemid", problemid), zap.Error(err))
+			slog.ErrorContext(ctx, "Couldn't get max score", slog.Any("err", err), slog.Int("user_id", userid), slog.Int("problem_id", problemid))
 		}
 		return decimal.NewFromInt(-1)
 	}
@@ -192,7 +193,7 @@ func (s *DB) ContestMaxScore(ctx context.Context, userid, problemid, contestid i
 	err := s.conn.QueryRow(ctx, "SELECT ms.score FROM contest_max_scores($3, $4) ms WHERE ms.user_id = $1 AND ms.problem_id = $2", userid, problemid, contestid, freezeTime).Scan(&score)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) && !errors.Is(err, context.Canceled) {
-			zap.S().Errorw("Couldn't get contest max score for ", zap.Int("userid", userid), zap.Int("problemid", problemid), zap.Int("contestid", contestid), zap.Error(err))
+			slog.ErrorContext(ctx, "Couldn't get contest max score", slog.Any("err", err), slog.Int("user_id", userid), slog.Int("problem_id", problemid), slog.Int("contest_id", contestid))
 		}
 		return decimal.NewFromInt(-1)
 	}

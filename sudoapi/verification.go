@@ -78,7 +78,7 @@ func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, e
 		zap.S().Error("Error rendering verification email:", err)
 		return Statusf(500, "Error rendering email")
 	}
-	if err := s.SendMail(&kilonova.MailerMessage{
+	if err := s.SendMail(ctx, &kilonova.MailerMessage{
 		Subject:      kilonova.GetText(lang, "mail.subject.verification"),
 		PlainContent: b.String(),
 		To:           email,
@@ -90,8 +90,7 @@ func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, e
 }
 
 func (s *BaseAPI) CheckVerificationEmail(ctx context.Context, vid string) bool {
-	// TODO: Why did i write context.Background here?
-	val, err := s.db.GetVerification(context.Background(), vid)
+	val, err := s.db.GetVerification(ctx, vid)
 	return err == nil && val > 0
 }
 

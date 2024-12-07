@@ -3,11 +3,11 @@ package api
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"go.uber.org/zap"
 )
 
 func (s *API) getProblemList(ctx context.Context, _ struct{}) (*kilonova.ProblemList, *kilonova.StatusError) {
@@ -48,7 +48,7 @@ func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
 		}
 		numSubSolved, err = s.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r))
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "NumSolvedFromPblists fail", slog.Any("err", err))
 			numSubSolved = map[int]int{}
 		}
 		if val, ok := numSubSolved[list.ID]; ok {
@@ -163,7 +163,7 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 		}
 		ids = append(ids, list.ID)
 		if err := s.base.UpdateProblemListSublists(r.Context(), *listData.ParentID, ids); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Couldn't update sublists", slog.Any("err", err))
 			returnData(w, pblistInitReturn{
 				ID:     list.ID,
 				Nested: false,

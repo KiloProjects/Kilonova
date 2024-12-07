@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,7 +16,6 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/microcosm-cc/bluemonday"
-	"go.uber.org/zap"
 )
 
 var (
@@ -26,7 +26,7 @@ func (s *API) serveGravatar(w http.ResponseWriter, r *http.Request, user *kilono
 	// Read from cache
 	rd, lastmod, valid, err := s.base.GetGravatar(user.Email, size, time.Now().Add(-12*time.Hour))
 	if !valid || err != nil {
-		zap.S().Warn("BaseAPI GetGravatar is not valid or returned error", valid, err)
+		slog.WarnContext(r.Context(), "BaseAPI GetGravatar is not valid or returned error", slog.Bool("valid", valid), slog.Any("err", err))
 		http.Error(w, "", 500)
 		return
 	}
@@ -50,7 +50,7 @@ func (s *API) serveDiscordAvatar(w http.ResponseWriter, r *http.Request, user *k
 	// Read from cache
 	rd, lastmod, valid, err := s.base.GetDiscordAvatar(r.Context(), user, size, time.Now().Add(-12*time.Hour))
 	if !valid || err != nil {
-		// zap.S().Warn("BaseAPI GetDiscordAvatar is not valid or returned error", valid, err)
+		// slog.WarnContext(r.Context(), "BaseAPI GetDiscordAvatar is not valid or returned error", slog.Bool("valid", valid), slog.Any("err", err))
 		http.Error(w, "", 500)
 		return
 	}
@@ -362,8 +362,8 @@ func (s *API) sendForgotPwdMail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	go func(user *kilonova.UserFull) {
-		if err := s.base.SendPasswordResetEmail(context.Background(), user.ID, user.Name, user.Email, user.PreferredLanguage); err != nil {
-			zap.S().Info(err)
+		if err := s.base.SendPasswordResetEmail(context.WithoutCancel(r.Context()), user.ID, user.Name, user.Email, user.PreferredLanguage); err != nil {
+			slog.InfoContext(r.Context(), "Could not send password reset email", slog.Any("err", err))
 		}
 	}(user)
 
@@ -423,7 +423,7 @@ func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.base.SendVerificationEmail(r.Context(), util.UserBrief(r).ID, util.UserBrief(r).Name, email, util.UserFull(r).PreferredLanguage); err != nil {
 		if err.Code != 400 {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Could not send verification email", slog.Any("err", err))
 		}
 		err.WriteError(w)
 		return

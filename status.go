@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-
-	"go.uber.org/zap"
 )
 
 var (
@@ -50,7 +48,7 @@ func (s *StatusError) String() string {
 
 func (s *StatusError) WriteError(w http.ResponseWriter) {
 	if s == nil {
-		zap.S().Warn("Attempted to send nil *StatusError over http.ResponseWriter.")
+		slog.WarnContext(context.Background(), "Attempted to send nil *StatusError over http.ResponseWriter.")
 		return
 	}
 	StatusData(w, "error", s.Text, s.Code)

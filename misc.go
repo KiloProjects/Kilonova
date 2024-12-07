@@ -1,9 +1,12 @@
 package kilonova
 
-import "github.com/gosimple/slug"
+import (
+	"context"
+	"github.com/gosimple/slug"
+)
 
 type Mailer interface {
-	SendEmail(msg *MailerMessage) error
+	SendEmail(ctx context.Context, msg *MailerMessage) error
 }
 
 type MailerMessage struct {

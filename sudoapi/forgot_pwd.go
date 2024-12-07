@@ -45,7 +45,7 @@ func (s *BaseAPI) SendPasswordResetEmail(ctx context.Context, userID int, name, 
 		zap.S().Error("Error rendering password request email:", err)
 		return Statusf(500, "Error rendering email")
 	}
-	if err := s.SendMail(&kilonova.MailerMessage{
+	if err := s.SendMail(ctx, &kilonova.MailerMessage{
 		Subject:      kilonova.GetText(lang, "mail.subject.password_recovery"),
 		PlainContent: b.String(),
 		To:           email,
@@ -58,7 +58,7 @@ func (s *BaseAPI) SendPasswordResetEmail(ctx context.Context, userID int, name, 
 }
 
 func (s *BaseAPI) CheckPasswordResetRequest(ctx context.Context, rid string) bool {
-	val, err := s.db.GetPwdResetRequest(context.Background(), rid)
+	val, err := s.db.GetPwdResetRequest(ctx, rid)
 	return err == nil && val > 0
 }
 

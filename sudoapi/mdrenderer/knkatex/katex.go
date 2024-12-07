@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
+	"os"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/Yiling-J/theine-go"
@@ -14,7 +16,6 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/util"
-	"go.uber.org/zap"
 )
 
 type mjRenderCtx string
@@ -101,41 +102,43 @@ func (katexExtension) Extend(m goldmark.Markdown) {
 
 	inlineCache, err := theine.NewBuilder[string, []byte](5000).BuildWithLoader(func(ctx context.Context, key string) (theine.Loaded[[]byte], error) {
 		var buf bytes.Buffer
-		if err := Render(&buf, []byte(key), false); err != nil {
+		if err := Render(ctx, &buf, []byte(key), false); err != nil {
 			// TODO: Better checking for ctx and stuff
 			val, ok := ctx.Value(mjRenderCtxNode).(ast.Node)
 			if ok && val.OwnerDocument().Meta()["ctx"] != nil {
 				x, ok := val.OwnerDocument().Meta()["ctx"].(*kilonova.RenderContext)
 				if x != nil && ok && x.Problem != nil {
-					zap.S().Debugf("In problem #%d, markdown error: %q", x.Problem.ID, err)
+					slog.DebugContext(ctx, "Markdown error", slog.Any("err", err), slog.Any("problem", x.Problem))
 				}
 			} else {
-				zap.S().Debug(err)
+				slog.DebugContext(ctx, "Couldn't render markdown", slog.Any("err", err))
 			}
 		}
 		return theine.Loaded[[]byte]{Value: buf.Bytes(), Cost: 1, TTL: 0}, nil
 	})
 	if err != nil {
-		zap.S().Fatal(err)
+		slog.ErrorContext(context.Background(), "Couldn't initialize KaTeX inline cache")
+		os.Exit(1)
 	}
 
 	displayCache, err := theine.NewBuilder[string, []byte](5000).BuildWithLoader(func(ctx context.Context, key string) (theine.Loaded[[]byte], error) {
 		var buf bytes.Buffer
-		if err := Render(&buf, []byte(key), true); err != nil {
+		if err := Render(ctx, &buf, []byte(key), true); err != nil {
 			val, ok := ctx.Value(mjRenderCtxNode).(ast.Node)
 			if ok && val.OwnerDocument().Meta()["ctx"] != nil {
 				x := val.OwnerDocument().Meta()["ctx"].(*kilonova.RenderContext)
 				if x.Problem != nil {
-					zap.S().Debugf("In problem #%d, markdown error: %q", x.Problem.ID, err)
+					slog.DebugContext(ctx, "Markdown error", slog.Any("err", err), slog.Any("problem", x.Problem))
 				}
 			} else {
-				zap.S().Debug(err)
+				slog.DebugContext(ctx, "Couldn't render markdown", slog.Any("err", err))
 			}
 		}
 		return theine.Loaded[[]byte]{Value: buf.Bytes(), Cost: 1, TTL: 0}, nil
 	})
 	if err != nil {
-		zap.S().Fatal(err)
+		slog.ErrorContext(context.Background(), "Couldn't initialize KaTeX display cache")
+		os.Exit(1)
 	}
 
 	m.Renderer().AddOptions(renderer.WithNodeRenderers(

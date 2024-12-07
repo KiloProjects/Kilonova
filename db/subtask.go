@@ -3,12 +3,12 @@ package db
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 )
 
 func (s *DB) CreateSubTask(ctx context.Context, subtask *kilonova.SubTask) error {
@@ -63,7 +63,7 @@ func (s *DB) SubTasks(ctx context.Context, pbid int) ([]*kilonova.SubTask, error
 		stk, err := s.internalToSubTask(ctx, ss)
 		if err != nil {
 			if !errors.Is(err, context.Canceled) {
-				zap.S().Warn(err)
+				slog.WarnContext(ctx, "Could not get subtask", slog.Any("err", err))
 			}
 			continue
 		}
@@ -82,7 +82,7 @@ func (s *DB) SubTasksByTest(ctx context.Context, pbid, tid int) ([]*kilonova.Sub
 	for _, ss := range st {
 		stk, err := s.internalToSubTask(ctx, ss)
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(ctx, "Could not get subtask", slog.Any("err", err))
 			continue
 		}
 		sts = append(sts, stk)
@@ -107,7 +107,7 @@ func (s *DB) UpdateSubTask(ctx context.Context, id int, upd kilonova.SubTaskUpda
 
 	_, err := s.conn.Exec(ctx, "UPDATE subtasks SET "+fb.WithUpdate(), fb.Args()...)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Could not update subtask", slog.Any("err", err))
 	}
 	return err
 }

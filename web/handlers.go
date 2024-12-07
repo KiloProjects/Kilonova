@@ -387,7 +387,7 @@ func (rt *Web) pbListProgressIndex() http.HandlerFunc {
 	templ := rt.parse(nil, "lists/pIndex.html")
 	t := true
 	return func(w http.ResponseWriter, r *http.Request) {
-		pblists, err := rt.base.ProblemLists(context.Background(), kilonova.ProblemListFilter{FeaturedChecklist: &t})
+		pblists, err := rt.base.ProblemLists(r.Context(), kilonova.ProblemListFilter{FeaturedChecklist: &t})
 		if err != nil {
 			rt.statusPage(w, r, 500, "Eroare la obținerea listelor")
 			return
@@ -1626,7 +1626,7 @@ func (rt *Web) resendEmail() http.HandlerFunc {
 			rt.statusPage(w, r, 403, text)
 			return
 		}
-		if err := rt.base.SendVerificationEmail(context.Background(), u.ID, u.Name, u.Email, u.PreferredLanguage); err != nil {
+		if err := rt.base.SendVerificationEmail(context.WithoutCancel(r.Context()), u.ID, u.Name, u.Email, u.PreferredLanguage); err != nil {
 			zap.S().Warn(err)
 			rt.statusPage(w, r, 500, "N-am putut retrimite emailul de verificare")
 			return

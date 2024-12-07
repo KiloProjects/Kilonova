@@ -53,7 +53,7 @@ func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) *StatusError {
 		ids = append(ids, sub.ID)
 	}
 	if err := s.db.ResetSubmissions(ctx, kilonova.SubmissionFilter{IDs: ids}); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't reset submissions", slog.Any("err", err))
 		return WrapError(err, "Couldn't reset submissions")
 	}
 
@@ -64,7 +64,7 @@ func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) *StatusError {
 
 func (s *BaseAPI) ResetSubmission(ctx context.Context, id int) *StatusError {
 	if err := s.db.ResetSubmissions(ctx, kilonova.SubmissionFilter{ID: &id}); err != nil {
-		zap.S().Warn("Couldn't reset submission: ", err)
+		slog.WarnContext(ctx, "Couldn't reset submission", slog.Any("err", err))
 		return Statusf(500, "Couldn't reset submission")
 	}
 
@@ -104,11 +104,11 @@ func (s *BaseAPI) SetProposer(ctx context.Context, user *kilonova.UserBrief, toS
 	return s.updateUser(ctx, user.ID, kilonova.UserFullUpdate{Proposer: &toSet})
 }
 
-func (s *BaseAPI) SendMail(msg *kilonova.MailerMessage) *StatusError {
+func (s *BaseAPI) SendMail(ctx context.Context, msg *kilonova.MailerMessage) *StatusError {
 	if !s.MailerEnabled() {
 		return Statusf(http.StatusServiceUnavailable, "Mailer is disabled")
 	}
-	if err := s.mailer.SendEmail(msg); err != nil {
+	if err := s.mailer.SendEmail(ctx, msg); err != nil {
 		return WrapError(err, "Could not send mail")
 	}
 	return nil
@@ -319,18 +319,18 @@ func (ws *webhookSender) Send(ctx context.Context, entry *logEntry) *StatusError
 	return nil
 }
 
-func (s *BaseAPI) newWebhookSender(webhookURL string, name string) *webhookSender {
+func (s *BaseAPI) newWebhookSender(ctx context.Context, webhookURL string, name string) *webhookSender {
 	if webhookURL == "" {
 		return nil
 	}
 	url, err := url.Parse(webhookURL)
 	if err != nil {
-		zap.S().Warn("Invalid webhook URL: ", err)
+		slog.WarnContext(ctx, "Invalid webhook URL", slog.Any("err", err))
 		return nil
 	}
 	parts := strings.Split(url.Path, "/")
 	if len(parts) < 2 {
-		zap.S().Warn("Invalid webhook URL: ", err)
+		slog.WarnContext(ctx, "Invalid webhook URL", slog.Any("err", err))
 		return nil
 	}
 	return &webhookSender{
@@ -387,8 +387,8 @@ func (s *BaseAPI) processLogEntry(ctx context.Context, val *logEntry, importantW
 }
 
 func (s *BaseAPI) ingestAuditLogs(ctx context.Context) error {
-	importantWebhook := s.newWebhookSender(ImportantUpdatesWebhook.Value(), "Kilonova Audit Log")
-	verboseWebhook := s.newWebhookSender(VerboseUpdatesWebhook.Value(), "Kilonova Verbose Log")
+	importantWebhook := s.newWebhookSender(ctx, ImportantUpdatesWebhook.Value(), "Kilonova Audit Log")
+	verboseWebhook := s.newWebhookSender(ctx, VerboseUpdatesWebhook.Value(), "Kilonova Verbose Log")
 	for {
 		select {
 		case <-ctx.Done():
@@ -428,7 +428,7 @@ func (s *BaseAPI) cleanupBucketsJob(ctx context.Context, interval time.Duration)
 			}
 			return nil
 		case <-t.C:
-			zap.S().Debug("Running eviction policy")
+			slog.DebugContext(ctx, "Running eviction policy")
 			s.cleanupBuckets(ctx)
 		}
 	}
@@ -457,7 +457,7 @@ func (s *BaseAPI) refreshProblemStatsJob(ctx context.Context, interval time.Dura
 	defer t.Stop()
 	go func() {
 		// Initial refresh
-		zap.S().Debug("Refreshing problem statistics")
+		slog.DebugContext(ctx, "Refreshing problem statistics")
 		s.db.RefreshProblemStats(ctx)
 	}()
 	for {
@@ -468,7 +468,7 @@ func (s *BaseAPI) refreshProblemStatsJob(ctx context.Context, interval time.Dura
 			}
 			return nil
 		case <-t.C:
-			zap.S().Debug("Refreshing problem statistics")
+			slog.DebugContext(ctx, "Refreshing problem statistics")
 			s.db.RefreshProblemStats(ctx)
 		}
 	}
@@ -479,7 +479,7 @@ func (s *BaseAPI) refreshHotProblemsJob(ctx context.Context, interval time.Durat
 	defer t.Stop()
 	go func() {
 		// Initial refresh
-		zap.S().Debug("Refreshing hot problems")
+		slog.DebugContext(ctx, "Refreshing hot problems")
 		s.db.RefreshHotProblems(ctx, config.Frontend.BannedHotProblems)
 	}()
 	for {
@@ -490,7 +490,7 @@ func (s *BaseAPI) refreshHotProblemsJob(ctx context.Context, interval time.Durat
 			}
 			return nil
 		case <-t.C:
-			zap.S().Debug("Refreshing hot problems")
+			slog.DebugContext(ctx, "Refreshing hot problems")
 			s.db.RefreshHotProblems(ctx, config.Frontend.BannedHotProblems)
 		}
 	}

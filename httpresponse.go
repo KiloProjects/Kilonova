@@ -1,16 +1,16 @@
 package kilonova
 
 import (
+	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strings"
-
-	"go.uber.org/zap"
 )
 
 func StatusData(w http.ResponseWriter, status string, retData any, statusCode int) {
 	if err, ok := retData.(*StatusError); ok {
-		// zap.S().Warn("*StatusError passed to sudoapi.statusData. This might not be intended")
+		// slog.Warn(context.Background(), "*StatusError passed to sudoapi.statusData. This might not be intended")
 		err.WriteError(w)
 		return
 	}
@@ -30,6 +30,6 @@ func StatusData(w http.ResponseWriter, status string, retData any, statusCode in
 		if strings.Contains(err.Error(), "broken pipe") {
 			return
 		}
-		zap.S().WithOptions(zap.AddCallerSkip(1)).Errorf("Couldn't send return data: %v", err)
+		slog.ErrorContext(context.Background(), "Couldn't send return data", slog.Any("err", err))
 	}
 }

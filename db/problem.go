@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math"
 	"strings"
 	"time"
@@ -11,7 +12,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 )
 
 type dbProblem struct {
@@ -98,7 +98,7 @@ WHERE ` + fb.Where() + " " + getProblemOrdering(filter.Ordering, filter.Descendi
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.ScoredProblem{}, nil
 	}
-	return s.internalToScoredProblems(pbs, scoreUID), err
+	return s.internalToScoredProblems(ctx, pbs, scoreUID), err
 }
 
 func (s *DB) CountProblems(ctx context.Context, filter kilonova.ProblemFilter) (int, error) {
@@ -129,7 +129,7 @@ ORDER BY cpbs.position ASC`, contestID, userID, freezeTime)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.ScoredProblem{}, nil
 	}
-	return s.internalToScoredProblems(pbs, userID), err
+	return s.internalToScoredProblems(ctx, pbs, userID), err
 }
 
 const problemCreateQuery = `INSERT INTO problems (
@@ -387,7 +387,7 @@ func (s *DB) internalToScoredProblem(spb *dbScoredProblem, scoreUID int) (*kilon
 	}, nil
 }
 
-func (s *DB) internalToScoredProblems(spbs []*dbScoredProblem, scoreUID int) []*kilonova.ScoredProblem {
+func (s *DB) internalToScoredProblems(ctx context.Context, spbs []*dbScoredProblem, scoreUID int) []*kilonova.ScoredProblem {
 	if len(spbs) == 0 {
 		return []*kilonova.ScoredProblem{}
 	}
@@ -396,7 +396,7 @@ func (s *DB) internalToScoredProblems(spbs []*dbScoredProblem, scoreUID int) []*
 		var err error
 		rez[i], err = s.internalToScoredProblem(spbs[i], scoreUID)
 		if err != nil && !errors.Is(err, context.Canceled) {
-			zap.S().WithOptions(zap.AddCallerSkip(1)).Warn(err)
+			slog.WarnContext(ctx, "Could not convert to scored problem", slog.Any("err", err))
 		}
 	}
 	return rez

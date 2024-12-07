@@ -1,14 +1,15 @@
 package kilonova
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
+	"os"
 
 	_ "embed"
 
 	"github.com/KiloProjects/kilonova/internal/config"
-	"go.uber.org/zap"
 )
 
 type Translation map[string]string
@@ -28,7 +29,7 @@ func TranslationKeyExists(line string) bool {
 
 func GetText(lang, line string, args ...any) string {
 	if _, ok := translations[line]; !ok {
-		zap.S().Warnf("Invalid translation key %q", line)
+		slog.WarnContext(context.TODO(), "Invalid translation key", slog.Any("key", line))
 		return line
 	}
 	if _, ok := translations[line][lang]; !ok {
@@ -47,7 +48,8 @@ func recurse(prefix string, val map[string]any) {
 		} else if deeper, ok := val.(map[string]any); ok {
 			recurse(prefix+"."+name, deeper)
 		} else {
-			zap.S().Fatal("Invalid translation JSON type")
+			slog.ErrorContext(context.Background(), "Invalid translation JSON type")
+			os.Exit(1)
 		}
 	}
 }
@@ -57,8 +59,8 @@ func init() {
 	var elems = make(map[string]map[string]any)
 	err := json.Unmarshal(keys, &elems)
 	if err != nil {
-		// zap is, unfortunately, not really available in init()
-		log.Fatalf("Error unmarshaling translation keys: %#v", err)
+		slog.ErrorContext(context.Background(), "Error unmarshaling translation keys", slog.Any("err", err))
+		os.Exit(1)
 	}
 	for name, children := range elems {
 		recurse(name, children)
