@@ -1,6 +1,6 @@
 // NOTE: This document is meant to be compiled only with run.sh
 
-#set page("a4", margin: 1.5cm)
+#set page("a4", margin: 1.5cm, numbering: "1 / 1")
 
 #set text(size: 13pt)
 

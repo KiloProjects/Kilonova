@@ -44,7 +44,8 @@ type Profile struct {
 	Password string `json:"password"`
 
 	// Configuration override
-	ContestID int `json:"contest_id"`
+	ContestID int    `json:"contest_id"`
+	BioData   string `json:"bio_data"`
 
 	Online      bool     `json:"online"`
 	MemberNames []string `json:"member_names"`
@@ -63,8 +64,6 @@ type Configuration struct {
 	Hybrid bool `json:"hybrid"`
 	// If true, Profile.MemberNames is used
 	Teams bool `json:"teams"`
-
-	BioData string `json:"bio_data"`
 
 	Profiles []Profile `json:"profiles"`
 }
@@ -146,6 +145,15 @@ func Kilonova() error {
 				continue
 			}
 
+			if len(team.Email) == 0 {
+				if config.SendMail {
+					slog.ErrorContext(ctx, "SendMail is set but no email specified for user, skipping..", slog.String("slug", team.Slug))
+					auditLog.ErrorContext(ctx, "SendMail is set but no email specified for user, skipping..", slog.String("slug", team.Slug))
+					continue
+				}
+				team.Email = "email_" + team.Slug + "@kilonova.ro"
+			}
+
 			user, err2 := base.UserFullByName(ctx, team.Slug)
 			if err2 != nil && !errors.Is(err2, sudoapi.ErrNotFound) {
 				slog.ErrorContext(ctx, "Could not test user existence", slog.Any("err", err2))
@@ -166,7 +174,7 @@ func Kilonova() error {
 				}
 
 			}
-			if team.BioData {
+			if len(team.BioData) > 0 {
 				fmt.Fprintln(&bio, "\n", team.BioData)
 			}
 
@@ -196,7 +204,7 @@ func Kilonova() error {
 				Name: team.Slug,
 				Lang: config.Language,
 
-				Bio: bio,
+				Bio: bio.String(),
 
 				Email:       &team.Email,
 				DisplayName: &displayName,
