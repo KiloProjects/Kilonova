@@ -40,7 +40,7 @@
         </li>
         {{end}}
         {{with stringFlag "frontend.donation.paypal_btn_id"}}
-        <li>
+        <li class="mb-2">
             PayPal:
 			<a target="_blank" class="btn btn-blue" href="https://www.paypal.com/donate/?hosted_button_id={{.}}"><i class="fab fa-paypal mr-2"></i> Donate with PayPal</a>
             {{getText "donate_paypal_disclaimer"}}
