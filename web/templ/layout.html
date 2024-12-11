@@ -55,6 +55,9 @@
 			user_id: {{if authed}}{{authedUser.ID}}{{else}}0{{end}},
 			language: {{language}},
             langs: {{pLanguages}},
+			{{with stringFlag "feature.analytics.faro_id"}}
+			faro_id: {{.}},
+			{{end}}
 		};
 
         if(platform_info.debug) {

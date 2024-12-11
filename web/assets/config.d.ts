@@ -26,6 +26,7 @@ export declare global {
 		user?: UserBrief;
 		language: "en" | "ro";
 		langs: { [name: string]: string };
+		faro_id?: string;
 	}
 
 	interface WebLanguage {

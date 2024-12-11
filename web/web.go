@@ -63,6 +63,7 @@ var (
 
 	GoatCounterDomain = config.GenFlag("feature.analytics.goat_prefix", "https://goat.kilonova.ro", "URL prefix for GoatCounter analytics")
 	TwiplaID          = config.GenFlag("feature.analytics.twipla_id", "", "ID for TWIPLA Analytics integration")
+	FaroID            = config.GenFlag("feature.analytics.faro_id", "", "ID for Grafana Faro integration")
 
 	NavbarBranding = config.GenFlag("frontend.navbar.branding", "Kilonova", "Branding in navbar")
 
