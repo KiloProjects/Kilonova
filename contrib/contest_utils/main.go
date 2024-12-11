@@ -43,6 +43,9 @@ type Profile struct {
 	// Password is in the generated output
 	Password string `json:"password"`
 
+	// Configuration override
+	ContestID int `json:"contest_id"`
+
 	Online      bool     `json:"online"`
 	MemberNames []string `json:"member_names"`
 }
@@ -60,6 +63,8 @@ type Configuration struct {
 	Hybrid bool `json:"hybrid"`
 	// If true, Profile.MemberNames is used
 	Teams bool `json:"teams"`
+
+	BioData string `json:"bio_data"`
 
 	Profiles []Profile `json:"profiles"`
 }
@@ -105,8 +110,10 @@ func Kilonova() error {
 		return fmt.Errorf("invalid language: %q", config.Language)
 	}
 
-	if _, err := base.Contest(ctx, config.ContestID); err != nil {
-		return err
+	if config.ContestID > 0 {
+		if _, err := base.Contest(ctx, config.ContestID); err != nil {
+			return err
+		}
 	}
 
 	for i := range config.Profiles {
@@ -148,14 +155,19 @@ func Kilonova() error {
 				continue
 			}
 
-			var bio string
+			var bio strings.Builder
 			if config.WriteBio {
-				bio = fmt.Sprintf(
-					"Team name: %s\nOnline: %t\nContestants: %s",
-					team.Name,
-					team.Online,
-					strings.Join(team.MemberNames, ", "),
-				)
+				fmt.Fprintf(&bio, "Name: %s\n", team.Name)
+				if config.Hybrid {
+					fmt.Fprintf(&bio, "Online: %t\n", team.Online)
+				}
+				if config.Teams {
+					fmt.Fprintf(&bio, "Contestants: %s\n", strings.Join(team.MemberNames, ", "))
+				}
+
+			}
+			if team.BioData {
+				fmt.Fprintln(&bio, "\n", team.BioData)
 			}
 
 			displayName := team.Name
@@ -169,6 +181,17 @@ func Kilonova() error {
 				displayName = strings.Join(lastNames, ", ")
 			}
 
+			contestID := config.ContestID
+			if team.ContestID > 0 {
+				contestID = team.ContestID
+			}
+
+			if contestID <= 0 {
+				auditLog.ErrorContext(ctx, "Did not create: no contest ID for user", slog.String("email", team.Email), slog.String("slug", team.Slug))
+				slog.ErrorContext(ctx, "Did not create: no contest ID for user", slog.String("email", team.Email), slog.String("slug", team.Slug))
+				continue
+			}
+
 			req := sudoapi.UserGenerationRequest{
 				Name: team.Slug,
 				Lang: config.Language,
@@ -178,7 +201,7 @@ func Kilonova() error {
 				Email:       &team.Email,
 				DisplayName: &displayName,
 
-				ContestID:      &config.ContestID,
+				ContestID:      &contestID,
 				PasswordByMail: config.SendMail,
 				MailSubject:    subject,
 			}
@@ -186,14 +209,17 @@ func Kilonova() error {
 			pwd, _, err := base.GenerateUserFlow(ctx, req)
 			if err != nil {
 				slog.ErrorContext(ctx, "Error creating user", slog.Any("err", err))
+				continue
 			}
-			auditLog.InfoContext(ctx, "Created user", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug))
-			slog.InfoContext(ctx, "Created user and sent email", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug))
+			auditLog.InfoContext(ctx, "Created user", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug), slog.Int("contestID", contestID))
+			slog.InfoContext(ctx, "Created user", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug), slog.Int("contestID", contestID))
 
 			team.Password = pwd
 			outTeams = append(outTeams, team)
 
-			time.Sleep(200 * time.Millisecond)
+			if config.SendMail {
+				time.Sleep(100 * time.Millisecond)
+			}
 		}
 	}
 

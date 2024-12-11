@@ -15,7 +15,9 @@
 			"name": "Team #1",
 			"slug": "team_1",
 
-			"email": "example@kilonova.ro"
+			"email": "example@kilonova.ro",
+
+			"bio_data": "This is at the end of the bio"
 		}
 	]
 }
