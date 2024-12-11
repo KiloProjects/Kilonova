@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -321,7 +322,7 @@ func (s *API) validateBucket(next http.Handler) http.Handler {
 func (s *API) authedContentUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if util.UserFull(r) == nil {
-			zap.S().Warn("authedContentUser got nil UserFull in context")
+			slog.WarnContext(r.Context(), "authedContentUser got nil UserFull in context")
 			errorData(w, "User was not found", http.StatusNotFound)
 			return
 		}

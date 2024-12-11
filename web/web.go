@@ -70,6 +70,8 @@ var (
 	QuickSearchBox = config.GenFlag("feature.frontend.quick_search", false, "Quick search box on main page")
 )
 
+//go:generate go run ../scripts/chroma_gen -o ./static/chroma.css
+
 //go:embed static
 var embedded embed.FS
 
@@ -132,7 +134,6 @@ func (rt *Web) Handler() http.Handler {
 	r.Group(func(r chi.Router) {
 		// Util group. Will never be locked out
 
-		r.Get("/static/chroma.css", rt.chromaCSS())
 		r.Mount("/static", http.HandlerFunc(staticFileServer))
 
 		// Email verification
@@ -961,15 +962,9 @@ func staticFileServer(w http.ResponseWriter, r *http.Request) {
 	_, trueHash := hashfs.ParseName(fsys.HashName(trueName))
 
 	// Cache the file aggressively if the file contains a hash.
-	if orgHash != "" {
-		w.Header().Set("Cache-Control", `public, max-age=31536000`)
-		w.Header().Set("ETag", "\""+trueHash+"\"")
-	}
-
-	// Cache the file not-so-aggressively if the file is in the misc directory and has no hash.
-	// 2 hours should be good enough
-	if orgHash == "" && strings.HasPrefix(trueName, "static/misc/") {
-		w.Header().Set("Cache-Control", `public, max-age=7200`)
+	// Note that all files created in static/misc should have a hash generated automatically by the bundler
+	if orgHash != "" || strings.HasPrefix(trueName, "static/misc/") {
+		w.Header().Set("Cache-Control", `public, max-age=31536000, immutable`)
 		w.Header().Set("ETag", "\""+trueHash+"\"")
 	}
 

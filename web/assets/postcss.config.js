@@ -7,7 +7,8 @@ module.exports = {
     require("postcss-url")({
         url: "copy",
         useHash: true,
-        assetsPath: "misc"
+        assetsPath: "misc",
+		hashOptions: {append: true}
     }),
     require("tailwindcss"),
 	require("autoprefixer"),

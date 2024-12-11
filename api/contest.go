@@ -2,11 +2,11 @@ package api
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"go.uber.org/zap"
 )
 
 func (s *API) createContest(w http.ResponseWriter, r *http.Request) {
@@ -543,14 +543,14 @@ func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 
 	var rez = make([]regRez, 0, len(users))
 	if len(users) != len(regs) {
-		zap.S().Warn("mismatched user and reg length")
+		slog.WarnContext(r.Context(), "mismatched user and reg length", slog.Int("users_len", len(users)), slog.Int("regs_len", len(regs)))
 	}
 
 	for _, user := range users {
 		user := user
 		val, ok := regMap[user.ID]
 		if !ok {
-			zap.S().Warnf("Couldn't find user %d in registrations", user.ID)
+			slog.WarnContext(r.Context(), "Couldn't find user in registrations", slog.Any("user", user))
 		}
 		rez = append(rez, regRez{User: user, Reg: val})
 	}

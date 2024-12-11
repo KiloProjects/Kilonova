@@ -18,7 +18,7 @@ var (
 	NormalUserVCLimit         = config.GenFlag[int]("behavior.contests.normal_user_max_day", 10, "Number of maximum contests a non-proposer can create per day")
 )
 
-func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova.ContestType, author *UserBrief) (int, *StatusError) {
+func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova.ContestType, author *kilonova.UserBrief) (int, *StatusError) {
 	if author == nil {
 		return -1, ErrMissingRequired
 	}

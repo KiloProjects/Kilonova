@@ -269,7 +269,7 @@ func (s *BaseAPI) insertProblem(ctx context.Context, problem *kilonova.Problem, 
 
 // CreateProblem is the simple way of creating a new problem. Just provide a title, an author and the type of input.
 // The other stuff will be automatically set for sensible defaults.
-func (s *BaseAPI) CreateProblem(ctx context.Context, title string, author *UserBrief, consoleInput bool) (*kilonova.Problem, *StatusError) {
+func (s *BaseAPI) CreateProblem(ctx context.Context, title string, author *kilonova.UserBrief, consoleInput bool) (*kilonova.Problem, *StatusError) {
 	problem := &kilonova.Problem{
 		Name:         title,
 		ConsoleInput: consoleInput,
@@ -344,7 +344,7 @@ type ProblemStatistics struct {
 	TimeLeaderboard   *Submissions `json:"time_leaderboard"`
 }
 
-func (s *BaseAPI) ProblemStatistics(ctx context.Context, problem *kilonova.Problem, lookingUser *UserBrief) (*ProblemStatistics, *StatusError) {
+func (s *BaseAPI) ProblemStatistics(ctx context.Context, problem *kilonova.Problem, lookingUser *kilonova.UserBrief) (*ProblemStatistics, *StatusError) {
 	if ok := s.IsProblemFullyVisible(lookingUser, problem); !ok {
 		return nil, Statusf(401, "Looking user must be full problem viewer")
 	}

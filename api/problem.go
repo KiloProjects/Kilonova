@@ -19,7 +19,6 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 )
 
 func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
@@ -165,7 +164,7 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 			ProblemEditor: s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
 		})
 	default:
-		zap.S().Warn("Unknown problem scoring type")
+		slog.WarnContext(r.Context(), "Unknown problem scoring type", slog.Any("type", util.Problem(r).ScoringStrategy))
 		errorData(w, "Unknown problem scoring type", 500)
 		return
 	}
@@ -205,7 +204,7 @@ func (s *API) addStubStatement(ctx context.Context, pb *kilonova.Problem, lang *
 	} else if *lang == "ro" {
 		attTempl = defaultRoProblemStatement
 	} else {
-		zap.S().Warn("How did we get here? %q", *lang)
+		slog.WarnContext(ctx, "Unknown language", slog.String("lang", *lang))
 		return nil
 	}
 
@@ -220,7 +219,7 @@ func (s *API) addStubStatement(ctx context.Context, pb *kilonova.Problem, lang *
 		InputFile  string
 		OutputFile string
 	}{InputFile: inFile, OutputFile: outFile}); err != nil {
-		zap.S().Warnf("Template rendering error: %v", err)
+		slog.WarnContext(ctx, "Template rendering error", slog.Any("err", err))
 		return nil
 	}
 	if err := s.base.CreateProblemAttachment(ctx, &kilonova.Attachment{
@@ -229,7 +228,7 @@ func (s *API) addStubStatement(ctx context.Context, pb *kilonova.Problem, lang *
 		Exec:    false,
 		Name:    fmt.Sprintf("statement-%s.md", *lang),
 	}, pb.ID, &buf, &author.ID); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Could not create problem attachment", slog.Any("err", err))
 	}
 	return nil
 }
@@ -264,7 +263,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			list.List = append(list.List, pb.ID)
 			if err := s.base.UpdateProblemListProblems(r.Context(), list.ID, list.List); err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(r.Context(), "Could not update list problems", slog.Any("err", err))
 			}
 		}
 	}
@@ -292,7 +291,7 @@ func (s *API) importProblemArchive(w http.ResponseWriter, r *http.Request) {
 
 	// Get problem after most likely setting new properties after import
 	if pb2, err := s.base.Problem(r.Context(), pb.ID); err != nil {
-		zap.S().Error("Could not get problem again: ", err)
+		slog.ErrorContext(r.Context(), "Could not get problem again", slog.Any("err", err))
 	} else {
 		pb = pb2
 	}
@@ -311,7 +310,7 @@ func (s *API) importProblemArchive(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			list.List = append(list.List, pb.ID)
 			if err := s.base.UpdateProblemListProblems(r.Context(), list.ID, list.List); err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(r.Context(), "Could not update problem list problems", slog.Any("err", err))
 			}
 		}
 	}

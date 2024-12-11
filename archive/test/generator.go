@@ -7,12 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"strconv"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"go.uber.org/zap"
 )
 
 type ArchiveGenOptions struct {
@@ -182,7 +182,7 @@ func (ag *archiveGenerator) addGraderProperties(ctx context.Context) *kilonova.S
 					}
 					tt, ok := tmap[t]
 					if !ok {
-						zap.S().Warn("Couldn't find test in test map")
+						slog.WarnContext(ctx, "Couldn't find test in test map", slog.Int("test", t))
 					} else {
 						group += strconv.Itoa(tt.VisibleID)
 					}
@@ -274,7 +274,7 @@ func (ag *archiveGenerator) addSubmissions(ctx context.Context) *kilonova.Status
 	for _, sub := range subs {
 		lang := ag.base.Language(ctx, sub.Language)
 		if lang == nil {
-			zap.S().Infof("Skipping submission due to unknown/disabled language (%q): %d", sub.Language, sub.ID)
+			slog.InfoContext(ctx, "Skipping submission due to unknown/disabled language", slog.String("lang", sub.Language), slog.Any("submission", sub.ID))
 			continue
 		}
 		f, err := ag.ar.Create(fmt.Sprintf("submissions/%d-%sp%s", sub.ID, sub.Score.String(), lang.Extension()))

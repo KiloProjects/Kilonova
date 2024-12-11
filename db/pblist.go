@@ -8,7 +8,6 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/jackc/pgx/v5"
-	"go.uber.org/zap"
 )
 
 func (s *DB) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, error) {
@@ -143,7 +142,7 @@ func (s *DB) NumSolvedPblistProblems(ctx context.Context, listID, userID int) (i
 	err := s.conn.QueryRow(ctx, `SELECT COALESCE(MAX(count), 0) FROM pblist_user_solved WHERE list_id = $1 AND user_id = $2`, listID, userID).Scan(&cnt)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
+			slog.WarnContext(ctx, "Could not get number of solved problems", slog.Any("err", err), slog.Int("list_id", listID), slog.Int("user_id", userID))
 		}
 		return -1, err
 	}

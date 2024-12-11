@@ -130,7 +130,7 @@ func (s *BaseAPI) WarmupStatementCache(ctx context.Context) *StatusError {
 			if variant.Format != "md" {
 				continue
 			}
-			if _, err := s.RenderedProblemDesc(ctx, pb, variant.Language, variant.Format, variant.Type); err != nil {
+			if _, err := s.RenderedProblemDesc(ctx, pb, variant); err != nil {
 				return err
 			}
 		}

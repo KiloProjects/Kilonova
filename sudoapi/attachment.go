@@ -242,6 +242,8 @@ func (s *BaseAPI) parseVariants(atts []*kilonova.Attachment, getPrivate bool) []
 			Type:     matches[2],
 			Format:   matches[3],
 			Private:  att.Private,
+
+			LastUpdatedAt: att.LastUpdatedAt,
 		})
 	}
 
@@ -285,25 +287,22 @@ func (s *BaseAPI) getCachedAttachment(attID int, renderType string) ([]byte, boo
 	return nil, false
 }
 
-func (s *BaseAPI) FormatDescName(lang, format, t string) string {
-	if t == "" {
-		return fmt.Sprintf("statement-%s.%s", lang, format)
+func (s *BaseAPI) FormatDescName(variant *kilonova.StatementVariant) string {
+	if variant.Type == "" {
+		return fmt.Sprintf("statement-%s.%s", variant.Language, variant.Format)
 	} else {
-		return fmt.Sprintf("statement-%s-%s.%s", lang, t, format)
+		return fmt.Sprintf("statement-%s-%s.%s", variant.Language, variant.Type, variant.Format)
 	}
 }
 
-func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Problem, lang, format, t string) ([]byte, *StatusError) {
-	if len(lang) > 10 || len(format) > 10 {
-		return nil, Statusf(400, "Not even trying to search for this description variant")
-	}
-	name := s.FormatDescName(lang, format, t)
+func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Problem, variant *kilonova.StatementVariant) ([]byte, *StatusError) {
+	name := s.FormatDescName(variant)
 	att, err := s.ProblemAttByName(ctx, problem.ID, name)
 	if err != nil {
 		return nil, err
 	}
 
-	switch format {
+	switch variant.Format {
 	case "md":
 		d, ok := s.getCachedAttachment(att.ID, "mdhtml")
 		if ok {
@@ -327,17 +326,14 @@ func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Pro
 	}
 }
 
-func (s *BaseAPI) RenderedBlogPostDesc(ctx context.Context, post *kilonova.BlogPost, lang, format, t string) ([]byte, *StatusError) {
-	if len(lang) > 10 || len(format) > 10 {
-		return nil, Statusf(400, "Not even trying to search for this description variant")
-	}
-	name := s.FormatDescName(lang, format, t)
+func (s *BaseAPI) RenderedBlogPostDesc(ctx context.Context, post *kilonova.BlogPost, variant *kilonova.StatementVariant) ([]byte, *StatusError) {
+	name := s.FormatDescName(variant)
 	att, err := s.BlogPostAttByName(ctx, post.ID, name)
 	if err != nil {
 		return nil, err
 	}
 
-	switch format {
+	switch variant.Format {
 	case "md":
 		d, ok := s.getCachedAttachment(att.ID, "mdhtml")
 		if ok {

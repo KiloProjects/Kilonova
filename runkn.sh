@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Regenerating translation strings..."
-go generate
+go generate ./...
 
 if [[ $* == *--css* ]]; then
     echo "Regenerating CSS"

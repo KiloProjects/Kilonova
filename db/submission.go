@@ -10,7 +10,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 )
 
 type dbSubmission struct {
@@ -78,7 +77,7 @@ func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) 
 	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, context.Canceled) {
 		return []*kilonova.Submission{}, nil
 	} else if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Could not load submisions", slog.Any("err", err))
 		return []*kilonova.Submission{}, err
 	}
 	return mapper(subs, s.internalToSubmission), nil

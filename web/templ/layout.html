@@ -12,6 +12,7 @@
 	{{$bundle := hashedName "static/bundle.js"}}
 	{{$vendored := hashedName "static/vendored.js"}}
 	{{$style := hashedName "static/styles.css" -}}
+	{{$chroma := hashedName "static/chroma.css" -}}
 	{{$ogimage := hashedName "static/ogimage.jpeg" -}}
 
 	<link rel="apple-touch-icon" sizes="180x180" href="/{{$favAppleTouch}}">
@@ -71,7 +72,7 @@ if(bundled.isDarkMode()) {  // Dark Mode
 
 	{{ block "head" . }} {{ end }}
 
-	<link rel="stylesheet" href="/static/chroma.css">
+	<link rel="stylesheet" href="/{{$chroma}}">
 	<link rel="stylesheet" href="/{{$style}}">
 </head>
 

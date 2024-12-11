@@ -41,8 +41,8 @@ func (s *BaseAPI) ContestMaxScore(ctx context.Context, uid, pbID, contestID int,
 	return s.db.ContestMaxScore(ctx, uid, pbID, contestID, freezeTime)
 }
 
-func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova.Submission, look bool, lookingUser *UserBrief, truncatedCnt bool) (*Submissions, *StatusError) {
-	usersMap := make(map[int]*UserBrief)
+func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova.Submission, look bool, lookingUser *kilonova.UserBrief, truncatedCnt bool) (*Submissions, *StatusError) {
+	usersMap := make(map[int]*kilonova.UserBrief)
 	problemsMap := make(map[int]*kilonova.Problem)
 
 	userIDs := make([]int, 0, len(subs))
@@ -119,7 +119,7 @@ func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova
 	}, nil
 }
 
-func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFilter, look bool, lookingUser *UserBrief) (*Submissions, *StatusError) {
+func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFilter, look bool, lookingUser *kilonova.UserBrief) (*Submissions, *StatusError) {
 	if filter.Limit == 0 || filter.Limit > 50 {
 		filter.Limit = 50
 	}
@@ -219,7 +219,7 @@ func (s *BaseAPI) SubmissionCode(ctx context.Context, sub *kilonova.Submission, 
 
 type FullSubmission = kilonova.FullSubmission
 
-func (s *BaseAPI) Submission(ctx context.Context, subid int, lookingUser *UserBrief) (*FullSubmission, *StatusError) {
+func (s *BaseAPI) Submission(ctx context.Context, subid int, lookingUser *kilonova.UserBrief) (*FullSubmission, *StatusError) {
 	return s.getSubmission(ctx, subid, lookingUser, true)
 }
 
@@ -228,7 +228,7 @@ func (s *BaseAPI) FullSubmission(ctx context.Context, subid int) (*FullSubmissio
 	return s.getSubmission(ctx, subid, nil, false)
 }
 
-func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *UserBrief, isLooking bool) (*FullSubmission, *StatusError) {
+func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *kilonova.UserBrief, isLooking bool) (*FullSubmission, *StatusError) {
 	var sub *kilonova.Submission
 	var problem *kilonova.Problem
 	if isLooking {
@@ -340,7 +340,7 @@ var (
 )
 
 // CreateSubmission produces a new submission and also creates the necessary subtests
-func (s *BaseAPI) CreateSubmission(ctx context.Context, author *UserFull, problem *kilonova.Problem, code []byte, lang *Language, contestID *int, bypassSubCount bool) (int, *StatusError) {
+func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFull, problem *kilonova.Problem, code []byte, lang *Language, contestID *int, bypassSubCount bool) (int, *StatusError) {
 	if author == nil {
 		return -1, Statusf(400, "Invalid submission author")
 	}

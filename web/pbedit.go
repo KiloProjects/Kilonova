@@ -81,7 +81,7 @@ func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
 
 		var statementData string
 		var att *kilonova.Attachment
-		att, err = rt.base.ProblemAttByName(r.Context(), util.Problem(r).ID, rt.base.FormatDescName(finalVariant.Language, finalVariant.Format, finalVariant.Type))
+		att, err = rt.base.ProblemAttByName(r.Context(), util.Problem(r).ID, rt.base.FormatDescName(finalVariant))
 		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
 			zap.S().Warn(err)
 			http.Error(w, "Couldn't get problem statement attachment", 500)

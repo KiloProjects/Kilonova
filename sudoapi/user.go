@@ -32,7 +32,7 @@ var (
 	CanChangeNames = config.GenFlag("feature.username_changes.enabled", true, "Anyone can change their usernames")
 )
 
-func (s *BaseAPI) UserBrief(ctx context.Context, id int) (*UserBrief, *StatusError) {
+func (s *BaseAPI) UserBrief(ctx context.Context, id int) (*kilonova.UserBrief, *StatusError) {
 	user, err := s.UserFull(ctx, id)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (s *BaseAPI) UserBrief(ctx context.Context, id int) (*UserBrief, *StatusErr
 	return &user.UserBrief, nil
 }
 
-func (s *BaseAPI) UserFull(ctx context.Context, id int) (*UserFull, *StatusError) {
+func (s *BaseAPI) UserFull(ctx context.Context, id int) (*kilonova.UserFull, *StatusError) {
 	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &id})
 	if err != nil || user == nil {
 		if errors.Is(err, context.Canceled) {
@@ -54,7 +54,7 @@ func (s *BaseAPI) UserFull(ctx context.Context, id int) (*UserFull, *StatusError
 	return user.ToFull(), nil
 }
 
-func (s *BaseAPI) UserBriefByName(ctx context.Context, name string) (*UserBrief, *StatusError) {
+func (s *BaseAPI) UserBriefByName(ctx context.Context, name string) (*kilonova.UserBrief, *StatusError) {
 	user, err := s.UserFullByName(ctx, name)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (s *BaseAPI) UserBriefByName(ctx context.Context, name string) (*UserBrief,
 	return &user.UserBrief, nil
 }
 
-func (s *BaseAPI) UserFullByName(ctx context.Context, name string) (*UserFull, *StatusError) {
+func (s *BaseAPI) UserFullByName(ctx context.Context, name string) (*kilonova.UserFull, *StatusError) {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return nil, Statusf(400, "Username not specified")
@@ -74,7 +74,7 @@ func (s *BaseAPI) UserFullByName(ctx context.Context, name string) (*UserFull, *
 	return user.ToFull(), nil
 }
 
-func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*UserFull, *StatusError) {
+func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*kilonova.UserFull, *StatusError) {
 	email = strings.TrimSpace(email)
 	if email == "" {
 		return nil, Statusf(400, "Email not specified")
@@ -86,7 +86,7 @@ func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*UserFull,
 	return user.ToFull(), nil
 }
 
-func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([]*UserBrief, *StatusError) {
+func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([]*kilonova.UserBrief, *StatusError) {
 	users, err := s.db.Users(ctx, filter)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -97,13 +97,13 @@ func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([
 	return mapUsersBrief(users), nil
 }
 
-func mapUsersBrief(users []*db.User) []*UserBrief {
-	var usersBrief []*UserBrief
+func mapUsersBrief(users []*db.User) []*kilonova.UserBrief {
+	var usersBrief []*kilonova.UserBrief
 	for _, user := range users {
 		usersBrief = append(usersBrief, user.ToBrief())
 	}
 	if len(usersBrief) == 0 {
-		return []*UserBrief{}
+		return []*kilonova.UserBrief{}
 	}
 	return usersBrief
 }

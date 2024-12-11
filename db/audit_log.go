@@ -3,12 +3,12 @@ package db
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/jackc/pgx/v5"
-	"go.uber.org/zap"
 )
 
 type auditLog struct {
@@ -48,7 +48,7 @@ func (s *DB) AuditLogs(ctx context.Context, limit, offset int) ([]*kilonova.Audi
 	for _, log := range logs {
 		realLog, err := s.internalToAuditLog(ctx, log)
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(ctx, "Could not convert audit logs", slog.Any("err", err))
 			continue
 		}
 		realLogs = append(realLogs, realLog)

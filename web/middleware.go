@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -14,7 +15,6 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi/v5"
-	"go.uber.org/zap"
 	"golang.org/x/text/language"
 )
 
@@ -184,7 +184,7 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 		sub, err1 := rt.base.Submission(r.Context(), subID, util.UserBrief(r))
 		if err1 != nil {
 			if err1.Code != 404 && !errors.Is(err, context.Canceled) {
-				zap.S().Warn(err1)
+				slog.WarnContext(r.Context(), "Could not get submission", slog.Any("err", err1), slog.Int("subID", subID))
 			}
 			rt.statusPage(w, r, 400, "Submisia nu există sau nu poate fi vizualizată")
 			return
@@ -198,7 +198,7 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 func (rt *Web) ValidatePasteID(next http.Handler) http.Handler {
 	flg, ok := config.GetFlag[bool]("feature.pastes.enabled")
 	if !ok {
-		zap.S().Warn("Pastes feature flag not found")
+		slog.WarnContext(context.Background(), "Pastes feature flag not found")
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			rt.statusPage(w, r, 400, "Pastes are not available.")
 		})

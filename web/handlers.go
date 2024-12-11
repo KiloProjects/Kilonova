@@ -1,7 +1,6 @@
 package web
 
 import (
-	"bytes"
 	"cmp"
 	"context"
 	"errors"
@@ -24,10 +23,7 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	chtml "github.com/alecthomas/chroma/v2/formatters/html"
-	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/bwmarrin/discordgo"
-	"github.com/evanw/esbuild/pkg/api"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/schema"
 	"go.uber.org/zap"
@@ -669,7 +665,7 @@ func (rt *Web) randomProblem() http.HandlerFunc {
 	}
 }
 
-func (rt *Web) appropriateDescriptionVariant(r *http.Request, variants []*kilonova.StatementVariant) (string, string, string) {
+func (rt *Web) appropriateDescriptionVariant(r *http.Request, variants []*kilonova.StatementVariant) *kilonova.StatementVariant {
 	prefLang, prefFormat, prefType := util.Language(r), "md", ""
 	variant := strings.SplitN(r.FormValue("var"), "-", 3)
 	if lang := r.FormValue("pref_lang"); len(lang) > 0 { // Backwards compatibility
@@ -678,8 +674,8 @@ func (rt *Web) appropriateDescriptionVariant(r *http.Request, variants []*kilono
 	if len(variant) > 0 && len(variant[0]) > 0 {
 		prefLang = variant[0]
 	}
-	if fmt := r.FormValue("pref_format"); len(fmt) > 0 { // Backwards compatibility
-		prefFormat = fmt
+	if format := r.FormValue("pref_format"); len(format) > 0 { // Backwards compatibility
+		prefFormat = format
 	}
 	if len(variant) > 1 && len(variant[1]) > 0 {
 		prefFormat = variant[1]
@@ -689,28 +685,28 @@ func (rt *Web) appropriateDescriptionVariant(r *http.Request, variants []*kilono
 	}
 
 	if len(variants) == 0 {
-		return "", "", ""
+		return &kilonova.StatementVariant{}
 	}
 	// Search for the ideal scenario
 	for _, v := range variants {
 		if v.Language == prefLang && v.Format == prefFormat && v.Type == prefType {
-			return v.Language, v.Format, v.Type
+			return v
 		}
 	}
 	// Then search if anything matches the format
 	for _, v := range variants {
 		if v.Format == prefFormat {
-			return v.Language, v.Format, v.Type
+			return v
 		}
 	}
 	// Then search if anything matches the language
 	for _, v := range variants {
 		if v.Language == prefLang {
-			return v.Language, v.Format, v.Type
+			return v
 		}
 	}
 	// If nothing was found, then just return the first available variant
-	return variants[0].Language, variants[0].Format, variants[0].Type
+	return variants[0]
 }
 
 func (rt *Web) problem() http.HandlerFunc {
@@ -725,15 +721,15 @@ func (rt *Web) problem() http.HandlerFunc {
 			slog.WarnContext(r.Context(), "Couldn't get problem desc variants", slog.Any("err", err))
 		}
 
-		foundLang, foundFmt, foundType := rt.appropriateDescriptionVariant(r, variants)
+		descVariant := rt.appropriateDescriptionVariant(r, variants)
 
-		url := fmt.Sprintf("/assets/problem/%d/attachment/%s", problem.ID, rt.base.FormatDescName(foundLang, foundFmt, foundType))
-		switch foundFmt {
+		assetLink := fmt.Sprintf("/assets/problem/%d/attachment/%s?t=%d", problem.ID, rt.base.FormatDescName(descVariant), descVariant.LastUpdatedAt.UnixMilli())
+		switch descVariant.Format {
 		case "md":
-			statement, err = rt.base.RenderedProblemDesc(r.Context(), problem, foundLang, foundFmt, foundType)
+			statement, err = rt.base.RenderedProblemDesc(r.Context(), problem, descVariant)
 			if err != nil {
 				if !errors.Is(err, context.Canceled) {
-					zap.S().Warn("Error getting problem markdown: ", err, foundLang, foundFmt, foundType, problem.ID)
+					zap.S().Warn("Error getting problem markdown: ", err, descVariant, problem.ID)
 				}
 				statement = []byte("Error loading markdown.")
 			}
@@ -742,13 +738,13 @@ func (rt *Web) problem() http.HandlerFunc {
 				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>
 					<embed class="mx-2 my-2" type="application/pdf" src="%s"
 					style="width:95%%; height: 90vh; background: white; object-fit: contain;"></embed>`,
-				url, kilonova.GetText(util.Language(r), "desc_link"), url,
+				assetLink, kilonova.GetText(util.Language(r), "desc_link"), assetLink,
 			))
 		case "":
 		default:
 			statement = []byte(fmt.Sprintf(
 				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>`,
-				url, kilonova.GetText(util.Language(r), "desc_link"),
+				assetLink, kilonova.GetText(util.Language(r), "desc_link"),
 			))
 		}
 
@@ -810,11 +806,7 @@ func (rt *Web) problem() http.HandlerFunc {
 
 			OlderSubmissions: olderSubs,
 
-			SelectedVariant: &kilonova.StatementVariant{
-				Language: foundLang,
-				Format:   foundFmt,
-				Type:     foundType,
-			},
+			SelectedVariant: descVariant,
 		})
 	}
 }
@@ -916,14 +908,14 @@ func (rt *Web) blogPosts() http.HandlerFunc {
 
 		posts, err1 := rt.base.BlogPosts(r.Context(), filter)
 		if err1 != nil {
-			zap.S().Warn(err1)
+			slog.WarnContext(r.Context(), "Could not get blog posts", slog.Any("err", err1))
 			rt.statusPage(w, r, 500, "N-am putut încărca postările")
 			return
 		}
 
 		numPosts, err1 := rt.base.CountBlogPosts(r.Context(), filter)
 		if err1 != nil {
-			zap.S().Warn("N-am putut încărca numărul de postări", err1)
+			slog.WarnContext(r.Context(), "Could not get number of posts", slog.Any("err", err1))
 			numPosts = 0
 		}
 
@@ -974,12 +966,12 @@ func (rt *Web) blogPost() http.HandlerFunc {
 			zap.S().Warn("Couldn't get problem desc variants", err)
 		}
 
-		foundLang, foundFmt, foundType := rt.appropriateDescriptionVariant(r, variants)
+		descVariant := rt.appropriateDescriptionVariant(r, variants)
 
-		url := fmt.Sprintf("/assets/blogPost/%s/attachment/%s", post.Slug, rt.base.FormatDescName(foundLang, foundFmt, foundType))
-		switch foundFmt {
+		assetLink := fmt.Sprintf("/assets/blogPost/%s/attachment/%s?t=%d", post.Slug, rt.base.FormatDescName(descVariant), descVariant.LastUpdatedAt.UnixMilli())
+		switch descVariant.Format {
 		case "md":
-			statement, err = rt.base.RenderedBlogPostDesc(r.Context(), post, foundLang, foundFmt, foundType)
+			statement, err = rt.base.RenderedBlogPostDesc(r.Context(), post, descVariant)
 			if err != nil {
 				if !errors.Is(err, context.Canceled) {
 					zap.S().Warn("Error getting problem markdown: ", err)
@@ -991,13 +983,13 @@ func (rt *Web) blogPost() http.HandlerFunc {
 				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>
 					<embed class="mx-2 my-2" type="application/pdf" src="%s"
 					style="width:95%%; height: 90vh; background: white; object-fit: contain;"></embed>`,
-				url, kilonova.GetText(util.Language(r), "desc_link_post"), url,
+				assetLink, kilonova.GetText(util.Language(r), "desc_link_post"), assetLink,
 			))
 		case "":
 		default:
 			statement = []byte(fmt.Sprintf(
 				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>`,
-				url, kilonova.GetText(util.Language(r), "desc_link_post"),
+				assetLink, kilonova.GetText(util.Language(r), "desc_link_post"),
 			))
 		}
 
@@ -1017,7 +1009,7 @@ func (rt *Web) blogPost() http.HandlerFunc {
 			atts = newAtts
 		}
 
-		att, err := rt.base.BlogPostAttByName(r.Context(), post.ID, rt.base.FormatDescName(foundLang, foundFmt, foundType))
+		att, err := rt.base.BlogPostAttByName(r.Context(), post.ID, rt.base.FormatDescName(descVariant))
 		if err != nil {
 			att = nil
 		}
@@ -1030,11 +1022,7 @@ func (rt *Web) blogPost() http.HandlerFunc {
 			StatementAtt: att,
 			Variants:     variants,
 
-			SelectedVariant: &kilonova.StatementVariant{
-				Language: foundLang,
-				Format:   foundFmt,
-				Type:     foundType,
-			},
+			SelectedVariant: descVariant,
 		})
 	}
 }
@@ -1094,7 +1082,7 @@ func (rt *Web) editBlogPostIndex() http.HandlerFunc {
 
 		var statementData string
 		var att *kilonova.Attachment
-		att, err = rt.base.BlogPostAttByName(r.Context(), util.BlogPost(r).ID, rt.base.FormatDescName(finalVariant.Language, finalVariant.Format, finalVariant.Type))
+		att, err = rt.base.BlogPostAttByName(r.Context(), util.BlogPost(r).ID, rt.base.FormatDescName(finalVariant))
 		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
 			zap.S().Warn(err)
 			http.Error(w, "Couldn't get post content attachment", 500)
@@ -1741,38 +1729,6 @@ func (rt *Web) logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, redirect+"?logout=1", http.StatusTemporaryRedirect)
-}
-
-func (rt *Web) chromaCSS() http.HandlerFunc {
-	formatter := chtml.New(chtml.WithClasses(true), chtml.TabWidth(4)) // Identical to mdrenderer.go
-	var lightBuf, darkBuf bytes.Buffer
-	if err := formatter.WriteCSS(&lightBuf, styles.Get("github")); err != nil {
-		zap.S().Warn("Could not write `github` theme")
-	}
-	if err := formatter.WriteCSS(&darkBuf, styles.Get("github-dark")); err != nil {
-		zap.S().Warn("Could not write `github-dark` theme")
-	}
-	css := fmt.Sprintf(".light {%s} .dark {%s}", lightBuf.String(), darkBuf.String())
-	rez := api.Transform(css, api.TransformOptions{
-		Loader: api.LoaderCSS,
-		// MinifyWhitespace: true,
-		Engines: []api.Engine{
-			{Name: api.EngineChrome, Version: "100"},
-			{Name: api.EngineFirefox, Version: "100"},
-			{Name: api.EngineSafari, Version: "11"},
-		},
-	})
-
-	if len(rez.Errors) > 0 {
-		zap.S().Fatalf("Found %d errors in chroma.css: %#v", len(rez.Errors), rez.Errors)
-		return nil
-	}
-
-	createTime := time.Now()
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		http.ServeContent(w, r, "chroma.css", createTime, bytes.NewReader(rez.Code))
-	}
 }
 
 func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Template, name string, data any) {

@@ -23,16 +23,13 @@ var (
 	MigrateOnStart = config.GenFlag("behavior.db.run_migrations", true, "Run PostgreSQL migrations on platform start")
 )
 
-type UserBrief = kilonova.UserBrief
-type UserFull = kilonova.UserFull
-
 type Submissions struct {
 	Submissions []*kilonova.Submission `json:"submissions"`
 	Count       int                    `json:"count"`
 	Truncated   bool                   `json:"truncated_count"`
 
-	Users    map[int]*UserBrief        `json:"users"`
-	Problems map[int]*kilonova.Problem `json:"problems"`
+	Users    map[int]*kilonova.UserBrief `json:"users"`
+	Problems map[int]*kilonova.Problem   `json:"problems"`
 }
 
 type Grader interface {
