@@ -2780,13 +2780,18 @@ ro = "Tranzacția a fost anulată, dar vă mulțumim pentru gândul acordat!"
 en = "Donation methods"
 ro = "Metode prin care puteți dona"
 
-[donate_bmac_disclaimer]
+[donate_stripe_disclaimer]
 en = "(recommended)"
 ro = "(recomandat)"
 
 [donate_paypal_disclaimer]
-en = "(slightly larger fees)"
-ro = "(comisioane puțin mai mari)"
+en = "(for recurring donations)"
+ro = "(pentru donații recurente)"
+
+[donate_bmac_disclaimer]
+en = "(alternative)"
+ro = "(alternativă)"
+
 
 [past_donations]
 en = "Past donations"

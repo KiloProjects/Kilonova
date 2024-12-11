@@ -1,7 +1,7 @@
 package kilonova
 
 import (
-	"golang.org/x/term"
+	"github.com/mattn/go-isatty"
 	"io"
 	"os"
 	"time"
@@ -20,7 +20,7 @@ func logColors(w io.Writer) bool {
 		return false
 	}
 
-	if !term.IsTerminal(int(f.Fd())) {
+	if !isatty.IsTerminal(f.Fd()) {
 		return false
 	}
 

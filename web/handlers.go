@@ -45,6 +45,10 @@ var (
 	PaypalID         = config.GenFlag[string]("frontend.donation.paypal_btn_id", "", "Paypal Donate button ID")
 	BuyMeACoffeeName = config.GenFlag[string]("frontend.donation.bmac_name", "", "Name of Buy Me a Coffee page")
 
+	StripeButtonID    = config.GenFlag[string]("frontend.donation.stripe_button_id", "", "Stripe donation button ID")
+	StripePK          = config.GenFlag[string]("frontend.donation.stripe_publishable_key", "", "Stripe Publishable Key")
+	StripePaymentLink = config.GenFlag[string]("frontend.donation.stripe_payment_link", "", "Stripe donation payment link URL")
+
 	MainPageLogin = config.GenFlag[bool]("feature.frontend.main_page_login", false, "Login modal on front page")
 
 	NavbarProblems    = config.GenFlag[bool]("feature.frontend.navbar.problems_btn", true, "Navbar button: Problems")
