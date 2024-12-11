@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/KiloProjects/kilonova/integrations/otel"
+	"github.com/riandyrn/otelchi"
 	"log/slog"
 	"net"
 	"net/http"
@@ -32,6 +34,12 @@ func Kilonova() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, os.Kill)
+
+	shutdown, err1 := otel.SetupOpenTelemetry(ctx)
+	if err1 != nil {
+		return err1
+	}
+	defer shutdown(ctx)
 
 	// Print welcome message
 	slog.InfoContext(ctx, "Starting Kilonova", slog.String("version", kilonova.Version))
@@ -138,8 +146,9 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 	//r.Use(middleware.Timeout(1 * time.Minute))
 	/*
 		r.Use(middleware.Compress(flate.DefaultCompression))
-		r.Use(middleware.RequestID)
 	*/
+	r.Use(otelchi.Middleware("kilonova-web", otelchi.WithChiRoutes(r)))
+	r.Use(middleware.RequestID)
 
 	r.Mount("/api", api.New(base).Handler())
 	r.Mount("/assets", api.NewAssets(base).AssetsRouter())

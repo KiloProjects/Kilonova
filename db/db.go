@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/exaring/otelpgx"
+	"github.com/jackc/pgx/v5/multitracer"
 	"log/slog"
 	"path"
 	"sync"
@@ -71,7 +73,10 @@ func NewPSQL(ctx context.Context, dsn string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	pgconf.ConnConfig.Tracer = &tracelog.TraceLog{Logger: tracelog.LoggerFunc(log), LogLevel: tracelog.LogLevelDebug}
+	pgconf.ConnConfig.Tracer = multitracer.New(
+		&tracelog.TraceLog{Logger: tracelog.LoggerFunc(log), LogLevel: tracelog.LogLevelDebug},
+		otelpgx.NewTracer(otelpgx.WithTrimSQLInSpanName()),
+	)
 
 	pgconf.MaxConns = 40
 	pgconf.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
