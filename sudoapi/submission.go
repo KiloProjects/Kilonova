@@ -515,6 +515,23 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 	// IsProblemFullyVisible is a workaround for when a contest is running but there are submissions that were not sent in the contest
 	if SubForEveryoneConfig.Value() && s.IsProblemFullyVisible(user, subProblem) &&
 		!slices.Contains(SubForEveryoneBlacklist.Value(), sub.ProblemID) {
+
+		if user != nil {
+			// Get number of running virtual contests where user is participant for this problem
+			// If it returns a nonzero number of results, then we need to filter out
+			numContests, err := s.ContestCount(ctx, kilonova.ContestFilter{
+				Running:      true,
+				ContestantID: &user.ID,
+				ProblemID:    &subProblem.ID,
+				Type:         kilonova.ContestTypeVirtual,
+			})
+			if err != nil {
+				slog.WarnContext(ctx, "Couldn't get running contests", slog.Any("err", err))
+			} else if numContests > 0 {
+				return false
+			}
+		}
+
 		if sub.ContestID == nil {
 			// If problem fully visible and submission not in contest, just show the source code
 			return true

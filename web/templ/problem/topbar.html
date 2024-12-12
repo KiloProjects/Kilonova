@@ -116,8 +116,10 @@
         </a>
     {{ end }}
     {{ if problemFullyVisible }}
-        <div class="topbar-separator"></div>
-        <a class="p-1 problem_statistics" href="#" data-problem="{{encodeJSON .Topbar.Problem}}">{{getText "problemStats"}}</a>
+        {{if or (not .Topbar.Contest) (or (.Topbar.Contest.Ended) (isContestEditor .Topbar.Contest))}}
+            <div class="topbar-separator"></div>
+            <a class="p-1 problem_statistics" href="#" data-problem="{{encodeJSON .Topbar.Problem}}">{{getText "problemStats"}}</a>
+        {{end}}
     {{ end }}
     {{ if .Topbar.IsProblemEditor }}
         <div class="topbar-separator topbar-separator-lg"></div>

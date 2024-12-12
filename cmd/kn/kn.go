@@ -5,6 +5,8 @@ import (
 	"errors"
 	"github.com/KiloProjects/kilonova/integrations/otel"
 	"github.com/riandyrn/otelchi"
+	slogmulti "github.com/samber/slog-multi"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"log/slog"
 	"net"
 	"net/http"
@@ -108,7 +110,12 @@ func initLogger(debug bool) {
 
 	zap.ReplaceGlobals(logg)
 
-	slog.SetDefault(slog.New(zapslog.NewHandler(core, zapslog.WithCaller(true))))
+	slog.SetDefault(slog.New(
+		slogmulti.Fanout(
+			zapslog.NewHandler(core, zapslog.WithCaller(true)),
+			otelslog.NewHandler("kilonova"),
+		),
+	))
 }
 
 func launchProfiler() error {

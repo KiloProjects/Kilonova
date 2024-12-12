@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/joho/godotenv"
 	"log/slog"
 	"os"
 
@@ -17,6 +18,10 @@ var (
 func main() {
 	flag.Parse()
 	ctx := context.Background()
+	err := godotenv.Load()
+	if err != nil {
+		slog.ErrorContext(ctx, "Error loading .env file", slog.Any("err", err))
+	}
 
 	config.SetConfigPath(*confPath)
 	config.SetConfigV2Path(*flagPath)
