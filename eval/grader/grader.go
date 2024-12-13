@@ -24,7 +24,6 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 )
 
 var (
@@ -134,7 +133,7 @@ func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.C
 			if att.Name == codeFile {
 				data, err := sh.base.AttachmentData(ctx, att.ID)
 				if err != nil {
-					zap.S().Warn("Couldn't get attachment data:", err)
+					slog.WarnContext(ctx, "Couldn't get attachment data", slog.Any("err", err))
 					return nil, kilonova.Statusf(500, "Couldn't get grader data")
 				}
 				name := strings.Replace(path.Base(att.Name), path.Ext(att.Name), lang.Extensions[0], 1)
@@ -159,7 +158,7 @@ func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.C
 			if att.Name == headerFile {
 				data, err := sh.base.AttachmentData(ctx, att.ID)
 				if err != nil {
-					zap.S().Warn("Couldn't get attachment data:", err)
+					slog.WarnContext(ctx, "Couldn't get attachment data", slog.Any("err", err))
 					return nil, kilonova.Statusf(500, "Couldn't get grader data")
 				}
 				req.HeaderFiles[path.Join("/box", path.Base(att.Name))] = data
@@ -274,12 +273,12 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	switch sub.SubmissionType {
 	case kilonova.EvalTypeClassic:
 		if err := sh.handleClassicSubmission(ctx, checker, subTests); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(ctx, "Couldn't deal with classic submission", slog.Any("err", err))
 			return err
 		}
 	case kilonova.EvalTypeICPC:
 		if err := sh.handleICPCSubmission(ctx, checker, subTests); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(ctx, "Couldn't deal with ICPC submission", slog.Any("err", err))
 			return err
 		}
 	default:
@@ -287,11 +286,11 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	}
 
 	if err := datastore.GetBucket(datastore.BucketTypeCompiles).RemoveFile(fmt.Sprintf("%d.bin", sub.ID)); err != nil {
-		zap.S().Warn("Couldn't remove compilation artifact: ", err)
+		slog.WarnContext(ctx, "Couldn't remove compilation artifact", slog.Any("err", err))
 	}
 
 	if err := checker.Cleanup(ctx); err != nil {
-		zap.S().Warn("Couldn't remove checker artifact: ", err)
+		slog.WarnContext(ctx, "Couldn't remove checker artifact", slog.Any("err", err))
 	}
 	return nil
 }
@@ -307,7 +306,7 @@ func (sh *submissionHandler) handleClassicSubmission(ctx context.Context, checke
 			defer wg.Done()
 			_, _, err := sh.handleSubTest(ctx, checker, subTest)
 			if err != nil {
-				zap.S().Warn("Error handling subtest:", err)
+				slog.WarnContext(ctx, "Error handling subtest", slog.Any("err", err))
 			}
 		}()
 	}
@@ -315,7 +314,7 @@ func (sh *submissionHandler) handleClassicSubmission(ctx context.Context, checke
 	wg.Wait()
 
 	if err := sh.scoreTests(ctx); err != nil {
-		zap.S().Warn("Couldn't score test: ", err)
+		slog.WarnContext(ctx, "Couldn't score test", slog.Any("err", err))
 	}
 
 	return nil
@@ -332,13 +331,13 @@ func (sh *submissionHandler) handleICPCSubmission(ctx context.Context, checker c
 				Done: &True, Skipped: &True,
 				Verdict: &skippedVerdict,
 			}); err != nil {
-				zap.S().Warn("Couldn't update skipped subtest:", err)
+				slog.WarnContext(ctx, "Couldn't update skipped subtest", slog.Any("err", err))
 			}
 			continue
 		}
 		score, verdict, err := sh.handleSubTest(ctx, checker, subTest)
 		if err != nil {
-			zap.S().Warn("Error handling subtest:", err)
+			slog.WarnContext(ctx, "Error handling subtest", slog.Any("err", err))
 			continue
 		}
 		if !score.Equal(decimal.NewFromInt(100)) {
@@ -361,7 +360,7 @@ func (sh *submissionHandler) handleICPCSubmission(ctx context.Context, checker c
 
 	subTests, err := sh.base.SubTests(ctx, sh.sub.ID)
 	if err != nil {
-		zap.S().Warn("Could not get subtests for max score/mem updating:", err)
+		slog.WarnContext(ctx, "Could not get subtests for max score/mem updating", slog.Any("err", err))
 		return err
 	}
 
@@ -380,7 +379,7 @@ func (sh *submissionHandler) handleICPCSubmission(ctx context.Context, checker c
 func (sh *submissionHandler) compileSubmission(ctx context.Context) *kilonova.StatusError {
 	req, err := sh.genSubCompileRequest(ctx)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't generate compilation request", slog.Any("err", err))
 		return kilonova.WrapError(err, "Couldn't generate compilation request")
 	}
 
@@ -388,10 +387,6 @@ func (sh *submissionHandler) compileSubmission(ctx context.Context) *kilonova.St
 	if err1 != nil {
 		return kilonova.WrapError(err1, "Error from eval")
 	}
-	// if !resp.Success && resp.Other != "" {
-	// 	// zap.S().Warnf("Internal grader error during compilation (#%d): %s", sub.ID, resp.Other)
-	// 	// resp.Output += "\nGrader notes: " + resp.Other
-	// }
 
 	var compileTime *float64
 	if resp.Stats != nil {
@@ -429,7 +424,7 @@ func (sh *submissionHandler) compileSubmission(ctx context.Context) *kilonova.St
 
 func (sh *submissionHandler) handleSubTest(ctx context.Context, checker checkers.Checker, subTest *kilonova.SubTest) (decimal.Decimal, string, error) {
 	if subTest.TestID == nil {
-		zap.S().Error("A subtest whose test was purged was detected.", spew.Sdump(subTest))
+		slog.ErrorContext(ctx, "A subtest whose test was purged was detected.", slog.Any("subtest", subTest))
 		return decimal.Zero, "", kilonova.Statusf(400, "Trying to handle subtest whose test was purged. This should never happen")
 	}
 
@@ -488,7 +483,7 @@ func (sh *submissionHandler) markSubtestsDone(ctx context.Context) error {
 			continue
 		}
 		if err := sh.base.UpdateSubTest(ctx, st.ID, kilonova.SubTestUpdate{Done: &True}); err != nil {
-			zap.S().Warnf("Couldn't mark subtest %d done: %s", st.ID, err)
+			slog.WarnContext(ctx, "Couldn't mark subtest done", slog.Any("subtest", st), slog.Any("err", err))
 		}
 	}
 	return nil
@@ -523,7 +518,7 @@ func (sh *submissionHandler) scoreTests(ctx context.Context) *kilonova.StatusErr
 			for _, id := range stk.Subtests {
 				st, ok := subMap[id]
 				if !ok {
-					zap.S().Warn("Couldn't find subtest. This should not really happen.")
+					slog.WarnContext(ctx, "Couldn't find subtest. This should not really happen.")
 					continue
 				}
 				percentage = decimal.Min(percentage, st.Percentage)
@@ -532,7 +527,7 @@ func (sh *submissionHandler) scoreTests(ctx context.Context) *kilonova.StatusErr
 			subTaskScore := stk.Score.Mul(percentage.Shift(-2)).Round(sh.pb.ScorePrecision)
 			score = score.Add(subTaskScore)
 			if err := sh.base.UpdateSubmissionSubtaskPercentage(ctx, stk.ID, percentage); err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(ctx, "Couldn't update subtask percentage", slog.Any("err", err))
 			}
 		}
 	} else {

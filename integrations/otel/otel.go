@@ -3,6 +3,8 @@ package otel
 import (
 	"context"
 	"errors"
+	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/go-logr/logr"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -12,10 +14,16 @@ import (
 	"go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 	"time"
 )
 
+var OtelEnabled = config.GenFlag("integrations.otel.enabled", false, "Enable OpenTelemetry collectors")
+
 func SetupOpenTelemetry(ctx context.Context) (shutdown func(context.Context) error, err error) {
+	if !OtelEnabled.Value() {
+		return func(context.Context) error { return nil }, nil
+	}
 	var shutdownFuncs []func(context.Context) error
 
 	// shutdown calls cleanup functions registered via shutdownFuncs.
@@ -116,4 +124,9 @@ func newLoggerProvider(ctx context.Context) (*log.LoggerProvider, error) {
 		log.WithProcessor(log.NewBatchProcessor(logExporter)),
 	)
 	return loggerProvider, nil
+}
+
+func init() {
+	otel.SetTracerProvider(noop.NewTracerProvider())
+	otel.SetLogger(logr.Discard())
 }

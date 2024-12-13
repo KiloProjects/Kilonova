@@ -14,8 +14,6 @@ import (
 	"slices"
 	"strings"
 	"sync"
-
-	"go.uber.org/zap"
 )
 
 var (
@@ -74,7 +72,7 @@ func (f *flag[T]) MarshalJSON() ([]byte, error) {
 func (f *flag[T]) Update(newVal T) {
 	defer func() {
 		if err := SaveConfigV2(context.Background()); err != nil {
-			zap.S().Warn("Couldn't save flag: ", err)
+			slog.WarnContext(context.Background(), "Couldn't save flag", slog.Any("err", err))
 		}
 	}()
 	f.mu.Lock()
@@ -180,7 +178,7 @@ func LoadConfigV2(ctx context.Context, skipUnknown bool) error {
 		}
 		if v, ok := val.(configFlag); ok {
 			if err := v.sneakUpdate(confVal); err != nil {
-				zap.S().Warnf("Could not update key %q: %v", key, err)
+				slog.WarnContext(ctx, "Couldn't update key", slog.String("key", key), slog.Any("err", err))
 			}
 		} else {
 			slog.WarnContext(ctx, "Could not sneak update")
