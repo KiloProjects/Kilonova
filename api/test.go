@@ -59,21 +59,21 @@ func (s *API) updateTestInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.UpdateTest(r.Context(), util.Test(r).ID, kilonova.TestUpdate{VisibleID: &args.ID, Score: &scoreValue}); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	returnData(w, "Updated test info")
 }
 
-func (s *API) deleteTest(ctx context.Context, _ struct{}) *kilonova.StatusError {
+func (s *API) deleteTest(ctx context.Context, _ struct{}) error {
 	return s.base.DeleteTest(ctx, util.TestContext(ctx).ID)
 }
 
-func (s *API) getTests(ctx context.Context, _ struct{}) ([]*kilonova.Test, *kilonova.StatusError) {
+func (s *API) getTests(ctx context.Context, _ struct{}) ([]*kilonova.Test, error) {
 	return s.base.Tests(ctx, util.ProblemContext(ctx).ID)
 }
 
-func (s *API) getTest(ctx context.Context, args struct{ ID int }) (*kilonova.Test, *kilonova.StatusError) {
+func (s *API) getTest(ctx context.Context, args struct{ ID int }) (*kilonova.Test, error) {
 	return s.base.Test(ctx, util.ProblemContext(ctx).ID, args.ID)
 }
 
@@ -102,7 +102,7 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 	test.VisibleID = visibleID
 	test.Score = decimal.NewFromFloat(score).Round(kilonova.MaxScoreRoundingPlaces)
 	if err := s.base.CreateTest(r.Context(), &test); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -119,7 +119,7 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Created test")
 }
 
-func (s *API) processArchive(r *http.Request, firstImport bool) *kilonova.StatusError {
+func (s *API) processArchive(r *http.Request, firstImport bool) error {
 	// Since this operation can take a lot of space, I am putting this lock as a precaution.
 	// This might create a problem with timeouts, and this should be handled asynchronously.
 	// (ie not in a request), but eh, I cant be bothered right now to do it the right way.
@@ -158,7 +158,7 @@ func (s *API) processArchive(r *http.Request, firstImport bool) *kilonova.Status
 
 func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {
 	if err := s.processArchive(r, false); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	returnData(w, "Processed tests")
@@ -168,7 +168,7 @@ func (s *API) bulkDeleteTests(w http.ResponseWriter, r *http.Request) {
 	var removedTests int
 	var testIDs []int
 	if err := parseJSONBody(r, &testIDs); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	for _, id := range testIDs {
@@ -195,7 +195,7 @@ func (s *API) bulkUpdateTestScores(w http.ResponseWriter, r *http.Request) {
 	var updatedTests int
 
 	if err := parseJSONBody(r, &data); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 

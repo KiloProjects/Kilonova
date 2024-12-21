@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *BaseAPI) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, *StatusError) {
+func (s *BaseAPI) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, error) {
 	pblist, err := s.db.ProblemList(ctx, id)
 	if err != nil || pblist == nil {
 		return nil, WrapError(ErrNotFound, "Problem list not found")
@@ -17,7 +17,7 @@ func (s *BaseAPI) ProblemList(ctx context.Context, id int) (*kilonova.ProblemLis
 	return pblist, nil
 }
 
-func (s *BaseAPI) ProblemListByName(ctx context.Context, name string) (*kilonova.ProblemList, *StatusError) {
+func (s *BaseAPI) ProblemListByName(ctx context.Context, name string) (*kilonova.ProblemList, error) {
 	pblist, err := s.db.ProblemListByName(ctx, name)
 	if err != nil || pblist == nil {
 		return nil, WrapError(ErrNotFound, "Problem list not found")
@@ -26,7 +26,7 @@ func (s *BaseAPI) ProblemListByName(ctx context.Context, name string) (*kilonova
 }
 
 // Returns a list of problems in the slice's order
-func (s *BaseAPI) ProblemListProblems(ctx context.Context, ids []int, lookingUser *kilonova.UserBrief) ([]*kilonova.ScoredProblem, *StatusError) {
+func (s *BaseAPI) ProblemListProblems(ctx context.Context, ids []int, lookingUser *kilonova.UserBrief) ([]*kilonova.ScoredProblem, error) {
 	pbs, err := s.ScoredProblems(ctx, kilonova.ProblemFilter{IDs: ids, LookingUser: lookingUser, Look: true}, lookingUser, lookingUser)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (s *BaseAPI) ProblemListProblems(ctx context.Context, ids []int, lookingUse
 	return rez, nil
 }
 
-func (s *BaseAPI) ProblemLists(ctx context.Context, filter kilonova.ProblemListFilter) ([]*kilonova.ProblemList, *StatusError) {
+func (s *BaseAPI) ProblemLists(ctx context.Context, filter kilonova.ProblemListFilter) ([]*kilonova.ProblemList, error) {
 	pblists, err := s.db.ProblemLists(ctx, filter)
 	if err != nil {
 		return nil, ErrUnknownError
@@ -56,7 +56,7 @@ func (s *BaseAPI) ProblemLists(ctx context.Context, filter kilonova.ProblemListF
 	return pblists, nil
 }
 
-func (s *BaseAPI) ProblemParentLists(ctx context.Context, problemID int, showHidable bool) ([]*kilonova.ProblemList, *StatusError) {
+func (s *BaseAPI) ProblemParentLists(ctx context.Context, problemID int, showHidable bool) ([]*kilonova.ProblemList, error) {
 	pblists, err := s.db.ProblemListsByProblemID(ctx, problemID, showHidable)
 	if err != nil {
 		return nil, ErrUnknownError
@@ -64,7 +64,7 @@ func (s *BaseAPI) ProblemParentLists(ctx context.Context, problemID int, showHid
 	return pblists, nil
 }
 
-func (s *BaseAPI) PblistParentLists(ctx context.Context, problemListID int) ([]*kilonova.ProblemList, *StatusError) {
+func (s *BaseAPI) PblistParentLists(ctx context.Context, problemListID int) ([]*kilonova.ProblemList, error) {
 	pblists, err := s.db.ParentProblemListsByPblistID(ctx, problemListID)
 	if err != nil {
 		return nil, ErrUnknownError
@@ -72,7 +72,7 @@ func (s *BaseAPI) PblistParentLists(ctx context.Context, problemListID int) ([]*
 	return pblists, nil
 }
 
-func (s *BaseAPI) PblistChildrenLists(ctx context.Context, problemListID int) ([]*kilonova.ProblemList, *StatusError) {
+func (s *BaseAPI) PblistChildrenLists(ctx context.Context, problemListID int) ([]*kilonova.ProblemList, error) {
 	pblists, err := s.db.ChildrenProblemListsByPblistID(ctx, problemListID)
 	if err != nil {
 		return nil, ErrUnknownError
@@ -80,7 +80,7 @@ func (s *BaseAPI) PblistChildrenLists(ctx context.Context, problemListID int) ([
 	return pblists, nil
 }
 
-func (s *BaseAPI) CreateProblemList(ctx context.Context, pblist *kilonova.ProblemList) *StatusError {
+func (s *BaseAPI) CreateProblemList(ctx context.Context, pblist *kilonova.ProblemList) error {
 	if err := s.db.CreateProblemList(ctx, pblist); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't create problem list")
@@ -88,7 +88,7 @@ func (s *BaseAPI) CreateProblemList(ctx context.Context, pblist *kilonova.Proble
 	return nil
 }
 
-func (s *BaseAPI) UpdateProblemList(ctx context.Context, id int, upd kilonova.ProblemListUpdate) *StatusError {
+func (s *BaseAPI) UpdateProblemList(ctx context.Context, id int, upd kilonova.ProblemListUpdate) error {
 	if err := s.db.UpdateProblemList(ctx, id, upd); err != nil {
 		if !errors.Is(err, kilonova.ErrNoUpdates) {
 			zap.S().Warn(err)
@@ -98,7 +98,7 @@ func (s *BaseAPI) UpdateProblemList(ctx context.Context, id int, upd kilonova.Pr
 	return nil
 }
 
-func (s *BaseAPI) UpdateProblemListProblems(ctx context.Context, id int, list []int) *StatusError {
+func (s *BaseAPI) UpdateProblemListProblems(ctx context.Context, id int, list []int) error {
 	if err := s.db.UpdateProblemListProblems(ctx, id, list); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't update problem list problems")
@@ -106,7 +106,7 @@ func (s *BaseAPI) UpdateProblemListProblems(ctx context.Context, id int, list []
 	return nil
 }
 
-func (s *BaseAPI) UpdateProblemListSublists(ctx context.Context, id int, listIDs []int) *StatusError {
+func (s *BaseAPI) UpdateProblemListSublists(ctx context.Context, id int, listIDs []int) error {
 	if err := s.db.UpdateProblemListSublists(ctx, id, listIDs); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't update problem list nested lists")
@@ -114,7 +114,7 @@ func (s *BaseAPI) UpdateProblemListSublists(ctx context.Context, id int, listIDs
 	return nil
 }
 
-func (s *BaseAPI) DeleteProblemList(ctx context.Context, id int) *StatusError {
+func (s *BaseAPI) DeleteProblemList(ctx context.Context, id int) error {
 	if err := s.db.DeleteProblemList(ctx, id); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't delete problem list")
@@ -122,7 +122,7 @@ func (s *BaseAPI) DeleteProblemList(ctx context.Context, id int) *StatusError {
 	return nil
 }
 
-func (s *BaseAPI) NumSolvedFromPblist(ctx context.Context, listID int, userID int) (int, *StatusError) {
+func (s *BaseAPI) NumSolvedFromPblist(ctx context.Context, listID int, userID int) (int, error) {
 	num, err := s.db.NumSolvedPblistProblems(ctx, listID, userID)
 	if err != nil {
 		return -1, WrapError(err, "Couldn't get number of solved problems")
@@ -130,7 +130,7 @@ func (s *BaseAPI) NumSolvedFromPblist(ctx context.Context, listID int, userID in
 	return num, nil
 }
 
-func (s *BaseAPI) NumSolvedFromPblists(ctx context.Context, listIDs []int, user *kilonova.UserBrief) (map[int]int, *StatusError) {
+func (s *BaseAPI) NumSolvedFromPblists(ctx context.Context, listIDs []int, user *kilonova.UserBrief) (map[int]int, error) {
 	if user == nil {
 		vals := make(map[int]int)
 		for _, id := range listIDs {
@@ -164,7 +164,7 @@ type FullProblemList struct {
 
 // FullProblemList returns an entire problem list DAG. The operation will probably be slow.
 // Note that recursion to a "higher" level is automatically stripped
-func (s *BaseAPI) FullProblemList(ctx context.Context, listID int, user *kilonova.UserBrief, lookingUser *kilonova.UserBrief) (*FullProblemList, *StatusError) {
+func (s *BaseAPI) FullProblemList(ctx context.Context, listID int, user *kilonova.UserBrief, lookingUser *kilonova.UserBrief) (*FullProblemList, error) {
 	// Get all sublists
 	lists, err := s.ProblemLists(ctx, kilonova.ProblemListFilter{ParentID: &listID})
 	if err != nil {

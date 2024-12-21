@@ -62,7 +62,7 @@ func (p *ScoreParamEntry) UnmarshalJSON(input []byte) error {
 	return nil
 }
 
-func ParseScoreParameters(params []byte) ([]ScoreParamEntry, *kilonova.StatusError) {
+func ParseScoreParameters(params []byte) ([]ScoreParamEntry, error) {
 	var sParams []ScoreParamEntry
 
 	if err := json.Unmarshal(params, &sParams); err != nil {

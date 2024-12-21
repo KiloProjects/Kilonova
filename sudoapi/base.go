@@ -69,21 +69,21 @@ func (s *BaseAPI) Start(ctx context.Context) {
 	go s.refreshHotProblemsJob(ctx, 4*time.Hour)
 }
 
-func (s *BaseAPI) Close() *StatusError {
+func (s *BaseAPI) Close() error {
 	if err := s.db.Close(); err != nil {
 		return WrapError(err, "Couldn't close DB")
 	}
 
 	if s.dSess != nil {
 		if err := s.dSess.Close(); err != nil {
-			return WrapError(err, "Couldn't close Discord session ")
+			return WrapError(err, "Couldn't close Discord session")
 		}
 	}
 
 	return nil
 }
 
-func GetBaseAPI(db *db.DB, mailer kilonova.Mailer) (*BaseAPI, *StatusError) {
+func GetBaseAPI(db *db.DB, mailer kilonova.Mailer) (*BaseAPI, error) {
 	base := &BaseAPI{
 		db:     db,
 		mailer: mailer,
@@ -117,7 +117,7 @@ func GetBaseAPI(db *db.DB, mailer kilonova.Mailer) (*BaseAPI, *StatusError) {
 	return base, nil
 }
 
-func InitializeBaseAPI(ctx context.Context) (*BaseAPI, *StatusError) {
+func InitializeBaseAPI(ctx context.Context) (*BaseAPI, error) {
 	// Data directory setup
 	if !path.IsAbs(config.Common.DataDir) {
 		return nil, Statusf(400, "dataDir is not absolute")

@@ -8,7 +8,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 )
 
-func (s *BaseAPI) RegisterContestUser(ctx context.Context, contest *kilonova.Contest, userID int, invitationID *string, force bool) *StatusError {
+func (s *BaseAPI) RegisterContestUser(ctx context.Context, contest *kilonova.Contest, userID int, invitationID *string, force bool) error {
 	_, err := s.ContestRegistration(ctx, contest.ID, userID)
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return WrapError(err, "User already registered")
@@ -24,7 +24,7 @@ func (s *BaseAPI) RegisterContestUser(ctx context.Context, contest *kilonova.Con
 	return nil
 }
 
-func (s *BaseAPI) StartContestRegistration(ctx context.Context, contest *kilonova.Contest, userID int) *StatusError {
+func (s *BaseAPI) StartContestRegistration(ctx context.Context, contest *kilonova.Contest, userID int) error {
 	if contest.PerUserTime == 0 {
 		return Statusf(400, "Contest is not USACO-style")
 	}
@@ -48,7 +48,7 @@ func (s *BaseAPI) StartContestRegistration(ctx context.Context, contest *kilonov
 	return nil
 }
 
-func (s *BaseAPI) ContestRegistrations(ctx context.Context, contestID int, fuzzyName *string, inviteID *string, limit, offset int) ([]*kilonova.ContestRegistration, *StatusError) {
+func (s *BaseAPI) ContestRegistrations(ctx context.Context, contestID int, fuzzyName *string, inviteID *string, limit, offset int) ([]*kilonova.ContestRegistration, error) {
 	regs, err := s.db.ContestRegistrations(ctx, contestID, fuzzyName, inviteID, limit, offset)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get registrations")
@@ -56,7 +56,7 @@ func (s *BaseAPI) ContestRegistrations(ctx context.Context, contestID int, fuzzy
 	return regs, nil
 }
 
-func (s *BaseAPI) ContestRegistrationCount(ctx context.Context, contestID int) (int, *StatusError) {
+func (s *BaseAPI) ContestRegistrationCount(ctx context.Context, contestID int) (int, error) {
 	cnt, err := s.db.ContestRegistrationCount(ctx, contestID)
 	if err != nil {
 		return -1, WrapError(err, "Couldn't get registration count")
@@ -64,7 +64,7 @@ func (s *BaseAPI) ContestRegistrationCount(ctx context.Context, contestID int) (
 	return cnt, nil
 }
 
-func (s *BaseAPI) ContestRegistration(ctx context.Context, contestID, userID int) (*kilonova.ContestRegistration, *StatusError) {
+func (s *BaseAPI) ContestRegistration(ctx context.Context, contestID, userID int) (*kilonova.ContestRegistration, error) {
 	reg, err := s.db.ContestRegistration(ctx, contestID, userID)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get registration")
@@ -76,7 +76,7 @@ func (s *BaseAPI) ContestRegistration(ctx context.Context, contestID, userID int
 	return reg, nil
 }
 
-func (s *BaseAPI) KickUserFromContest(ctx context.Context, contestID, userID int) *StatusError {
+func (s *BaseAPI) KickUserFromContest(ctx context.Context, contestID, userID int) error {
 	if err := s.db.DeleteContestRegistration(ctx, contestID, userID); err != nil {
 		return WrapError(err, "Couldn't kick contestant")
 	}
@@ -86,7 +86,7 @@ func (s *BaseAPI) KickUserFromContest(ctx context.Context, contestID, userID int
 	return nil
 }
 
-func (s *BaseAPI) CreateContestInvitation(ctx context.Context, contestID int, author *kilonova.UserBrief, maxUses *int) (string, *StatusError) {
+func (s *BaseAPI) CreateContestInvitation(ctx context.Context, contestID int, author *kilonova.UserBrief, maxUses *int) (string, error) {
 	var id *int
 	if author != nil {
 		id = &author.ID
@@ -98,14 +98,14 @@ func (s *BaseAPI) CreateContestInvitation(ctx context.Context, contestID int, au
 	return invID, nil
 }
 
-func (s *BaseAPI) UpdateContestInvitation(ctx context.Context, id string, expired bool) *StatusError {
+func (s *BaseAPI) UpdateContestInvitation(ctx context.Context, id string, expired bool) error {
 	if err := s.db.UpdateContestInvitation(ctx, id, expired); err != nil {
 		return WrapError(err, "Couldn't update invitation status")
 	}
 	return nil
 }
 
-func (s *BaseAPI) ContestInvitations(ctx context.Context, contestID int) ([]*kilonova.ContestInvitation, *StatusError) {
+func (s *BaseAPI) ContestInvitations(ctx context.Context, contestID int) ([]*kilonova.ContestInvitation, error) {
 	invitations, err := s.db.ContestInvitations(ctx, contestID)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get invitations")
@@ -113,7 +113,7 @@ func (s *BaseAPI) ContestInvitations(ctx context.Context, contestID int) ([]*kil
 	return invitations, nil
 }
 
-func (s *BaseAPI) ContestInvitation(ctx context.Context, id string) (*kilonova.ContestInvitation, *StatusError) {
+func (s *BaseAPI) ContestInvitation(ctx context.Context, id string) (*kilonova.ContestInvitation, error) {
 	inv, err := s.db.ContestInvitation(ctx, id)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get invitation")

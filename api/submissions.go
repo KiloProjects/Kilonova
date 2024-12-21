@@ -12,9 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *API) fullSubmission(ctx context.Context, id int, lookingUser *kilonova.UserBrief, looking bool) (*sudoapi.FullSubmission, *kilonova.StatusError) {
-	var sub *sudoapi.FullSubmission
-	var err *kilonova.StatusError
+func (s *API) fullSubmission(ctx context.Context, id int, lookingUser *kilonova.UserBrief, looking bool) (sub *sudoapi.FullSubmission, err error) {
 	if looking {
 		sub, err = s.base.Submission(ctx, id, lookingUser)
 	} else {
@@ -41,7 +39,7 @@ func (s *API) getSubmissionByID() func(w http.ResponseWriter, r *http.Request) {
 
 		sub, err := s.fullSubmission(r.Context(), args.SubID, util.UserBrief(r), true)
 		if err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 
@@ -60,7 +58,7 @@ func (s *API) filterSubs() http.HandlerFunc {
 
 		subs, err := s.base.Submissions(r.Context(), args, true, util.UserBrief(r))
 		if err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 
@@ -77,13 +75,13 @@ func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
 		ContestID *int   `json:"contest_id"`
 	}
 	if err := parseRequest(r, &args); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	problem, err1 := s.base.Problem(r.Context(), args.ProblemID)
 	if err1 != nil {
-		err1.WriteError(w)
+		statusError(w, err1)
 		return
 	}
 
@@ -118,7 +116,7 @@ func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
 
 	id, err1 := s.base.CreateSubmission(context.WithoutCancel(r.Context()), util.UserFull(r), problem, code, lang, args.ContestID, false)
 	if err1 != nil {
-		err1.WriteError(w)
+		statusError(w, err1)
 		return
 	}
 

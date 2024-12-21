@@ -112,7 +112,7 @@ func (sh *submissionHandler) buildRunGraph(ctx context.Context, subtests []*kilo
 	return g, nil
 }
 
-func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.CompileRequest, *kilonova.StatusError) {
+func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.CompileRequest, error) {
 	req := &tasks.CompileRequest{
 		ID:          sh.sub.ID,
 		Lang:        sh.lang,
@@ -209,7 +209,7 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	sh.settings = problemSettings
 
 	if err := sh.compileSubmission(ctx); err != nil {
-		if err.Code != 204 { // Skip
+		if kilonova.ErrorCode(err) != 204 { // Skip
 			slog.WarnContext(ctx, "Non-skip error code", slog.Any("err", err))
 			return err
 		}
@@ -295,7 +295,7 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	return nil
 }
 
-func (sh *submissionHandler) handleClassicSubmission(ctx context.Context, checker checkers.Checker, subTests []*kilonova.SubTest) *kilonova.StatusError {
+func (sh *submissionHandler) handleClassicSubmission(ctx context.Context, checker checkers.Checker, subTests []*kilonova.SubTest) error {
 	var wg sync.WaitGroup
 
 	for _, subTest := range subTests {
@@ -320,7 +320,7 @@ func (sh *submissionHandler) handleClassicSubmission(ctx context.Context, checke
 	return nil
 }
 
-func (sh *submissionHandler) handleICPCSubmission(ctx context.Context, checker checkers.Checker, subTests []*kilonova.SubTest) *kilonova.StatusError {
+func (sh *submissionHandler) handleICPCSubmission(ctx context.Context, checker checkers.Checker, subTests []*kilonova.SubTest) error {
 	var failed bool
 	var upd kilonova.SubmissionUpdate
 	upd.Status = kilonova.StatusFinished
@@ -376,7 +376,7 @@ func (sh *submissionHandler) handleICPCSubmission(ctx context.Context, checker c
 	return sh.base.UpdateSubmission(ctx, sh.sub.ID, upd)
 }
 
-func (sh *submissionHandler) compileSubmission(ctx context.Context) *kilonova.StatusError {
+func (sh *submissionHandler) compileSubmission(ctx context.Context) error {
 	req, err := sh.genSubCompileRequest(ctx)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't generate compilation request", slog.Any("err", err))
@@ -489,7 +489,7 @@ func (sh *submissionHandler) markSubtestsDone(ctx context.Context) error {
 	return nil
 }
 
-func (sh *submissionHandler) scoreTests(ctx context.Context) *kilonova.StatusError {
+func (sh *submissionHandler) scoreTests(ctx context.Context) error {
 	subtests, err1 := sh.base.SubTests(ctx, sh.sub.ID)
 	if err1 != nil {
 		return err1

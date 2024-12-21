@@ -1,83 +1,74 @@
 package kilonova
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"log/slog"
-	"net/http"
 )
 
 var (
 	ErrNoUpdates       = Statusf(400, "No updates specified")
 	ErrMissingRequired = Statusf(400, "Missing required fields")
 
-	ErrNotFound     = Statusf(404, "Not found")
-	ErrUnknownError = Statusf(500, "Unknown error occured")
+	ErrNotFound = Statusf(404, "Not found")
 
 	ErrFeatureDisabled = Statusf(400, "Feature disabled by administrator")
-
-	ErrContextCanceled = WrapError(context.Canceled, "Context canceled")
 )
 
-var _ error = &StatusError{}
+var _ error = &statusError{}
 
-type StatusError struct {
+type statusError struct {
 	Code int
 	Text string
 
 	WrappedError error
 }
 
-func (s *StatusError) LogValue() slog.Value {
+func (s *statusError) LogValue() slog.Value {
 	if s == nil {
 		return slog.Value{}
 	}
-	return slog.GroupValue(slog.Int("code", s.Code), slog.String("text", s.Text))
+	return slog.StringValue(s.Text)
 }
 
-func (s *StatusError) Error() string {
-	return s.String()
+func (s *statusError) Error() string {
+	return s.Text
 }
 
-func (s *StatusError) String() string {
+func (s *statusError) String() string {
 	if s == nil {
 		return "<No error>"
 	}
 	return fmt.Sprintf("<%d %q>", s.Code, s.Text)
 }
 
-func (s *StatusError) WriteError(w http.ResponseWriter) {
-	if s == nil {
-		slog.WarnContext(context.Background(), "Attempted to send nil *StatusError over http.ResponseWriter.")
-		return
-	}
-	StatusData(w, "error", s.Text, s.Code)
-}
-
-func (s *StatusError) Unwrap() error {
+func (s *statusError) Unwrap() error {
 	return s.WrappedError
 }
 
-func (s *StatusError) Is(target error) bool {
-	if err, ok := target.(*StatusError); ok {
+func (s *statusError) Is(target error) bool {
+	if err, ok := target.(*statusError); ok {
 		return err.Code == s.Code && err.Text == s.Text
 	}
 	return false
 }
 
-func Statusf(status int, format string, args ...any) *StatusError {
-	return &StatusError{Code: status, Text: fmt.Sprintf(format, args...)}
+func Statusf(status int, format string, args ...any) error {
+	return &statusError{Code: status, Text: fmt.Sprintf(format, args...)}
 }
 
-func WrapError(err error, text string) *StatusError {
+// Deprecated: Use fmt.Errorf("%s: %w", text, err) instead
+func WrapError(err error, text string) error {
+	return fmt.Errorf("%s: %w", text, err)
+}
+
+func ErrorCode(err error) int {
 	if err == nil {
-		return &StatusError{Code: 500, Text: text}
+		return 200
 	}
-	if text != "" {
-		text += ": "
+	var err2 *statusError
+	if errors.As(err, &err2) {
+		return err2.Code
 	}
-	if err1, ok := err.(*StatusError); ok {
-		return &StatusError{Code: err1.Code, Text: text + err1.Text, WrappedError: err1}
-	}
-	return &StatusError{Code: 500, Text: text + err.Error(), WrappedError: err}
+	return 500
 }

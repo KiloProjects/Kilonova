@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer"
 	chtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/evanw/esbuild/pkg/api"
@@ -17,7 +18,7 @@ var (
 
 func main() {
 	flag.Parse()
-	formatter := chtml.New(chtml.WithClasses(true), chtml.TabWidth(4)) // Identical to mdrenderer.go
+	formatter := chtml.New(mdrenderer.HighlightFormatOptions()...)
 	var lightBuf, darkBuf bytes.Buffer
 	if err := formatter.WriteCSS(&lightBuf, styles.Get("github")); err != nil {
 		log.Println("Could not write `github` theme")

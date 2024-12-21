@@ -20,7 +20,7 @@ var (
 
 // Login
 
-func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserFull, *StatusError) {
+func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserFull, error) {
 	user, err := s.db.User(ctx, kilonova.UserFilter{Name: &uname})
 	if err != nil {
 		zap.S().Warn(err)
@@ -55,7 +55,7 @@ func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserF
 
 var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 
-func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, theme kilonova.PreferredTheme, ip *netip.Addr, userAgent *string) (int, *StatusError) {
+func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, theme kilonova.PreferredTheme, ip *netip.Addr, userAgent *string) (int, error) {
 	if !SignupEnabled.Value() {
 		return -1, kilonova.ErrFeatureDisabled
 	}
@@ -113,21 +113,21 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 	return id, nil
 }
 
-func (s *BaseAPI) LogSignup(ctx context.Context, userID int, ip *netip.Addr, userAgent *string) *kilonova.StatusError {
+func (s *BaseAPI) LogSignup(ctx context.Context, userID int, ip *netip.Addr, userAgent *string) error {
 	if err := s.db.LogSignup(ctx, userID, ip, userAgent); err != nil {
 		return WrapError(err, "Could not log signup")
 	}
 	return nil
 }
 
-func (s *BaseAPI) CheckValidPassword(pwd string) *StatusError {
+func (s *BaseAPI) CheckValidPassword(pwd string) error {
 	if len(pwd) < 6 || len(pwd) > 72 {
 		return Statusf(400, "Invalid password length.")
 	}
 	return nil
 }
 
-func (s *BaseAPI) CheckValidUsername(name string) *StatusError {
+func (s *BaseAPI) CheckValidUsername(name string) error {
 	if !usernameRegex.MatchString(name) {
 		return Statusf(400, "Username must contain only letters, digits, underlines, dashes and dots.")
 	}

@@ -43,7 +43,7 @@ var (
 	EmailBranding = config.GenFlag("admin.mailer.branding", "Kilonova", "Branding to use at the end of emails")
 )
 
-func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) *StatusError {
+func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) error {
 	subs, err := s.db.Submissions(ctx, kilonova.SubmissionFilter{Status: kilonova.StatusWorking})
 	if err != nil {
 		return WrapError(err, "Couldn't get submissions to reset")
@@ -62,7 +62,7 @@ func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) *StatusError {
 	return nil
 }
 
-func (s *BaseAPI) ResetSubmission(ctx context.Context, id int) *StatusError {
+func (s *BaseAPI) ResetSubmission(ctx context.Context, id int) error {
 	if err := s.db.ResetSubmissions(ctx, kilonova.SubmissionFilter{ID: &id}); err != nil {
 		slog.WarnContext(ctx, "Couldn't reset submission", slog.Any("err", err))
 		return Statusf(500, "Couldn't reset submission")
@@ -74,7 +74,7 @@ func (s *BaseAPI) ResetSubmission(ctx context.Context, id int) *StatusError {
 	return nil
 }
 
-func (s *BaseAPI) SetAdmin(ctx context.Context, user *kilonova.UserBrief, toSet bool) *StatusError {
+func (s *BaseAPI) SetAdmin(ctx context.Context, user *kilonova.UserBrief, toSet bool) error {
 	if !toSet {
 		if user.ID == 1 {
 			return Statusf(406, "First user must have admin rights.")
@@ -90,7 +90,7 @@ func (s *BaseAPI) SetAdmin(ctx context.Context, user *kilonova.UserBrief, toSet 
 	return s.updateUser(ctx, user.ID, kilonova.UserFullUpdate{Admin: &toSet, Proposer: &toSet})
 }
 
-func (s *BaseAPI) SetProposer(ctx context.Context, user *kilonova.UserBrief, toSet bool) *StatusError {
+func (s *BaseAPI) SetProposer(ctx context.Context, user *kilonova.UserBrief, toSet bool) error {
 	if user.Admin {
 		return Statusf(400, "Cannot update proposer status of an admin.")
 	}
@@ -104,7 +104,7 @@ func (s *BaseAPI) SetProposer(ctx context.Context, user *kilonova.UserBrief, toS
 	return s.updateUser(ctx, user.ID, kilonova.UserFullUpdate{Proposer: &toSet})
 }
 
-func (s *BaseAPI) SendMail(ctx context.Context, msg *kilonova.MailerMessage) *StatusError {
+func (s *BaseAPI) SendMail(ctx context.Context, msg *kilonova.MailerMessage) error {
 	if !s.MailerEnabled() {
 		return Statusf(http.StatusServiceUnavailable, "Mailer is disabled")
 	}
@@ -115,7 +115,7 @@ func (s *BaseAPI) SendMail(ctx context.Context, msg *kilonova.MailerMessage) *St
 }
 
 // Warms up markdown statement cache by force triggering renders
-func (s *BaseAPI) WarmupStatementCache(ctx context.Context) *StatusError {
+func (s *BaseAPI) WarmupStatementCache(ctx context.Context) error {
 	start := time.Now()
 	pbs, err := s.Problems(ctx, kilonova.ProblemFilter{})
 	if err != nil {
@@ -186,7 +186,7 @@ func (s *BaseAPI) LogVerbose(ctx context.Context, msg string, args ...slog.Attr)
 	s.logAction(ctx, logLevelVerbose, msg, args)
 }
 
-func (s *BaseAPI) GetAuditLogs(ctx context.Context, count int, offset int) ([]*kilonova.AuditLog, *StatusError) {
+func (s *BaseAPI) GetAuditLogs(ctx context.Context, count int, offset int) ([]*kilonova.AuditLog, error) {
 	logs, err := s.db.AuditLogs(ctx, count, offset)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't fetch audit logs")
@@ -194,7 +194,7 @@ func (s *BaseAPI) GetAuditLogs(ctx context.Context, count int, offset int) ([]*k
 	return logs, nil
 }
 
-func (s *BaseAPI) GetLogCount(ctx context.Context) (int, *StatusError) {
+func (s *BaseAPI) GetLogCount(ctx context.Context) (int, error) {
 	cnt, err := s.db.AuditLogCount(ctx)
 	if err != nil {
 		return -1, WrapError(err, "Couldn't get audit log count")
@@ -269,7 +269,7 @@ func (ws *webhookSender) getWebhookEmbed(entry *logEntry, showRepeatCount bool) 
 	return embed
 }
 
-func (ws *webhookSender) editLastMessage() *StatusError {
+func (ws *webhookSender) editLastMessage() error {
 	ws.lastMessageCount++
 	if _, err := ws.base.dSess.WebhookMessageEdit(ws.webhookID, ws.webhookToken, ws.lastMessageID, &discordgo.WebhookEdit{
 		Embeds: &[]*discordgo.MessageEmbed{
@@ -281,7 +281,7 @@ func (ws *webhookSender) editLastMessage() *StatusError {
 	return nil
 }
 
-func (ws *webhookSender) Send(ctx context.Context, entry *logEntry) *StatusError {
+func (ws *webhookSender) Send(ctx context.Context, entry *logEntry) error {
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
 

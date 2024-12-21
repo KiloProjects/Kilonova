@@ -10,7 +10,7 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 )
 
-func (s *API) getProblemList(ctx context.Context, _ struct{}) (*kilonova.ProblemList, *kilonova.StatusError) {
+func (s *API) getProblemList(ctx context.Context, _ struct{}) (*kilonova.ProblemList, error) {
 	return util.ProblemListContext(ctx), nil
 }
 
@@ -112,7 +112,7 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 		SidebarHidable *bool `json:"sidebar_hidable"`
 	}
 	if err := parseJSONBody(r, &listData); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -123,7 +123,7 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 
 	actualIDs, err := s.filterProblems(r.Context(), listData.ProblemIDs, util.UserBrief(r), false, false)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -136,13 +136,13 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 		list.SidebarHidable = *listData.SidebarHidable
 	}
 	if err := s.base.CreateProblemList(r.Context(), &list); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	if len(listData.SublistIDs) > 0 {
 		if err := s.base.UpdateProblemListSublists(r.Context(), list.ID, listData.SublistIDs); err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 	}
@@ -196,7 +196,7 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 		FeaturedChecklist *bool `json:"featured_checklist"`
 	}
 	if err := parseJSONBody(r, &args); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	orgList := util.ProblemList(r)
@@ -220,19 +220,19 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 	if args.List != nil {
 		list, err := s.filterProblems(r.Context(), args.List, util.UserBrief(r), false, false)
 		if err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 
 		if err := s.base.UpdateProblemListProblems(r.Context(), orgList.ID, list); err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 	}
 
 	if args.Sublists != nil {
 		if err := s.base.UpdateProblemListSublists(r.Context(), orgList.ID, args.Sublists); err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 	}
@@ -249,13 +249,13 @@ func (s *API) deleteProblemList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.DeleteProblemList(r.Context(), list.ID); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	returnData(w, "Removed problem list")
 }
 
-func (s *API) filterProblems(ctx context.Context, problemIDs []int, user *kilonova.UserBrief, filterEditor bool, filterFullyVisible bool) ([]int, *kilonova.StatusError) {
+func (s *API) filterProblems(ctx context.Context, problemIDs []int, user *kilonova.UserBrief, filterEditor bool, filterFullyVisible bool) ([]int, error) {
 	if len(problemIDs) == 0 {
 		return []int{}, nil
 	}

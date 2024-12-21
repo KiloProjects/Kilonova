@@ -13,7 +13,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-func (s *BaseAPI) Tags(ctx context.Context) ([]*kilonova.Tag, *StatusError) {
+func (s *BaseAPI) Tags(ctx context.Context) ([]*kilonova.Tag, error) {
 	tags, err := s.db.Tags(ctx)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -24,7 +24,7 @@ func (s *BaseAPI) Tags(ctx context.Context) ([]*kilonova.Tag, *StatusError) {
 	return tags, nil
 }
 
-func (s *BaseAPI) TagsByID(ctx context.Context, tagIDs []int) ([]*kilonova.Tag, *StatusError) {
+func (s *BaseAPI) TagsByID(ctx context.Context, tagIDs []int) ([]*kilonova.Tag, error) {
 	tags, err := s.db.TagsByID(ctx, tagIDs)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -35,7 +35,7 @@ func (s *BaseAPI) TagsByID(ctx context.Context, tagIDs []int) ([]*kilonova.Tag, 
 	return tags, nil
 }
 
-func (s *BaseAPI) TagsByType(ctx context.Context, tagType kilonova.TagType) ([]*kilonova.Tag, *StatusError) {
+func (s *BaseAPI) TagsByType(ctx context.Context, tagType kilonova.TagType) ([]*kilonova.Tag, error) {
 	tags, err := s.db.TagsByType(ctx, tagType)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -46,7 +46,7 @@ func (s *BaseAPI) TagsByType(ctx context.Context, tagType kilonova.TagType) ([]*
 	return tags, nil
 }
 
-func (s *BaseAPI) RelevantTags(ctx context.Context, tagID int, max int) ([]*kilonova.Tag, *StatusError) {
+func (s *BaseAPI) RelevantTags(ctx context.Context, tagID int, max int) ([]*kilonova.Tag, error) {
 	tags, err := s.db.RelevantTags(ctx, tagID, max)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -57,7 +57,7 @@ func (s *BaseAPI) RelevantTags(ctx context.Context, tagID int, max int) ([]*kilo
 	return tags, nil
 }
 
-func (s *BaseAPI) TagByID(ctx context.Context, id int) (*kilonova.Tag, *StatusError) {
+func (s *BaseAPI) TagByID(ctx context.Context, id int) (*kilonova.Tag, error) {
 	tag, err := s.db.Tag(ctx, id)
 	if err != nil || tag == nil {
 		return nil, WrapError(err, "Tag not found")
@@ -65,7 +65,7 @@ func (s *BaseAPI) TagByID(ctx context.Context, id int) (*kilonova.Tag, *StatusEr
 	return tag, nil
 }
 
-func (s *BaseAPI) TagByName(ctx context.Context, name string) (*kilonova.Tag, *StatusError) {
+func (s *BaseAPI) TagByName(ctx context.Context, name string) (*kilonova.Tag, error) {
 	tag, err := s.db.TagByName(ctx, name)
 	if err != nil || tag == nil {
 		return nil, WrapError(err, "Tag not found")
@@ -73,7 +73,7 @@ func (s *BaseAPI) TagByName(ctx context.Context, name string) (*kilonova.Tag, *S
 	return tag, nil
 }
 
-func (s *BaseAPI) TagByLooseName(ctx context.Context, name string) (*kilonova.Tag, *StatusError) {
+func (s *BaseAPI) TagByLooseName(ctx context.Context, name string) (*kilonova.Tag, error) {
 	tag, err := s.db.TagByLooseName(ctx, name)
 	if err != nil || tag == nil {
 		return nil, WrapError(err, "Tag not found")
@@ -81,10 +81,10 @@ func (s *BaseAPI) TagByLooseName(ctx context.Context, name string) (*kilonova.Ta
 	return tag, nil
 }
 
-func (s *BaseAPI) UpdateTagName(ctx context.Context, tag *kilonova.Tag, newName string) *StatusError {
+func (s *BaseAPI) UpdateTagName(ctx context.Context, tag *kilonova.Tag, newName string) error {
 	newName = strings.TrimSpace(newName)
 	if newName == "" {
-		return ErrMissingRequired
+		return kilonova.ErrMissingRequired
 	}
 	if err := s.db.UpdateTagName(ctx, tag.ID, newName); err != nil {
 		return WrapError(err, "Couldn't update tag")
@@ -93,7 +93,7 @@ func (s *BaseAPI) UpdateTagName(ctx context.Context, tag *kilonova.Tag, newName 
 	return nil
 }
 
-func (s *BaseAPI) UpdateTagType(ctx context.Context, tag *kilonova.Tag, newType kilonova.TagType) *StatusError {
+func (s *BaseAPI) UpdateTagType(ctx context.Context, tag *kilonova.Tag, newType kilonova.TagType) error {
 	if err := s.db.UpdateTagType(ctx, tag.ID, newType); err != nil {
 		return WrapError(err, "Couldn't update tag")
 	}
@@ -101,7 +101,7 @@ func (s *BaseAPI) UpdateTagType(ctx context.Context, tag *kilonova.Tag, newType 
 	return nil
 }
 
-func (s *BaseAPI) DeleteTag(ctx context.Context, tag *kilonova.Tag) *StatusError {
+func (s *BaseAPI) DeleteTag(ctx context.Context, tag *kilonova.Tag) error {
 	if err := s.db.DeleteTag(ctx, tag.ID); err != nil {
 		return WrapError(err, "Couldn't delete tag")
 	}
@@ -109,10 +109,10 @@ func (s *BaseAPI) DeleteTag(ctx context.Context, tag *kilonova.Tag) *StatusError
 	return nil
 }
 
-func (s *BaseAPI) CreateTag(ctx context.Context, name string, tagType kilonova.TagType) (int, *StatusError) {
+func (s *BaseAPI) CreateTag(ctx context.Context, name string, tagType kilonova.TagType) (int, error) {
 	name = strings.TrimSpace(name)
 	if name == "" || tagType == kilonova.TagTypeNone {
-		return -1, ErrMissingRequired
+		return -1, kilonova.ErrMissingRequired
 	}
 	id, err := s.db.CreateTag(ctx, name, tagType)
 	if err != nil {
@@ -127,14 +127,14 @@ func (s *BaseAPI) CreateTag(ctx context.Context, name string, tagType kilonova.T
 
 // original - the OG that will remain after the merge
 // toReplace - the one that will be replaced
-func (s *BaseAPI) MergeTags(ctx context.Context, original int, toReplace []int) *StatusError {
+func (s *BaseAPI) MergeTags(ctx context.Context, original int, toReplace []int) error {
 	if err := s.db.MergeTags(ctx, original, toReplace); err != nil {
 		return WrapError(err, "Couldn't merge tags")
 	}
 	return nil
 }
 
-func (s *BaseAPI) ProblemTags(ctx context.Context, problemID int) ([]*kilonova.Tag, *StatusError) {
+func (s *BaseAPI) ProblemTags(ctx context.Context, problemID int) ([]*kilonova.Tag, error) {
 	tags, err := s.db.ProblemTags(ctx, problemID)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get problem tags")
@@ -142,7 +142,7 @@ func (s *BaseAPI) ProblemTags(ctx context.Context, problemID int) ([]*kilonova.T
 	return tags, nil
 }
 
-func (s *BaseAPI) UpdateProblemTags(ctx context.Context, problemID int, tagIDs []int) *StatusError {
+func (s *BaseAPI) UpdateProblemTags(ctx context.Context, problemID int, tagIDs []int) error {
 	slices.Sort(tagIDs)
 	tagIDs = slices.Compact(tagIDs)
 	if err := s.db.UpdateProblemTags(ctx, problemID, tagIDs); err != nil {

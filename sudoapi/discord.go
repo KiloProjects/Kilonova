@@ -25,7 +25,7 @@ var (
 	ErrDisconnected = Statusf(401, "Not connected to Discord")
 )
 
-func (s *BaseAPI) initDiscord(ctx context.Context) *kilonova.StatusError {
+func (s *BaseAPI) initDiscord(ctx context.Context) error {
 	// if len(Token.Value()) < 2 {
 	// 	return Statusf(406, "No Discord token provided")
 	// }
@@ -49,7 +49,7 @@ func (s *BaseAPI) initDiscord(ctx context.Context) *kilonova.StatusError {
 
 // If both user and error is nil, it means that a user doesn't have a Discord account attached (or that Discord integration is disabled)
 // TODO: Cache output
-func (s *BaseAPI) GetDiscordIdentity(ctx context.Context, userID int) (*discordgo.User, *StatusError) {
+func (s *BaseAPI) GetDiscordIdentity(ctx context.Context, userID int) (*discordgo.User, error) {
 	if !DiscordEnabled.Value() {
 		return nil, nil
 	}
@@ -67,7 +67,7 @@ func (s *BaseAPI) GetDiscordIdentity(ctx context.Context, userID int) (*discordg
 	return dUser, nil
 }
 
-func (s *BaseAPI) UnlinkDiscordIdentity(ctx context.Context, userID int) *StatusError {
+func (s *BaseAPI) UnlinkDiscordIdentity(ctx context.Context, userID int) error {
 	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &userID})
 	if err != nil || user == nil {
 		return WrapError(err, "Could not get user")
@@ -79,7 +79,7 @@ func (s *BaseAPI) UnlinkDiscordIdentity(ctx context.Context, userID int) *Status
 	return s.updateUser(ctx, userID, kilonova.UserFullUpdate{SetDiscordID: true, DiscordID: nil})
 }
 
-func (s *BaseAPI) DiscordAuthURL(ctx context.Context, userID int) (string, *StatusError) {
+func (s *BaseAPI) DiscordAuthURL(ctx context.Context, userID int) (string, error) {
 	if !DiscordEnabled.Value() {
 		return "/", nil
 	}
@@ -95,7 +95,7 @@ func (s *BaseAPI) DiscordAuthURL(ctx context.Context, userID int) (string, *Stat
 func (s *BaseAPI) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	uid, err := s.db.GetDiscordState(r.Context(), r.FormValue("state"))
 	if err != nil || uid <= 0 {
-		Statusf(http.StatusBadRequest, "State does not match").WriteError(w)
+		kilonova.StatusData(w, "error", "State does not match", http.StatusBadRequest)
 		return
 	}
 	ctx := context.WithoutCancel(r.Context())
@@ -105,31 +105,32 @@ func (s *BaseAPI) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) 
 
 	token, err := conf.Exchange(ctx, r.FormValue("code"))
 	if err != nil {
-		WrapError(err, "Could not get Discord token").WriteError(w)
+		kilonova.StatusData(w, "error", "Could not get Discord token: "+err.Error(), 500)
 		return
 	}
 
 	res, err := conf.Client(ctx, token).Get("https://discord.com/api/users/@me")
 	if err != nil {
-		WrapError(err, "Could not get user").WriteError(w)
+		kilonova.StatusData(w, "error", "Could not get user: "+err.Error(), 500)
 		return
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
-		Statusf(500, "%s", res.Status).WriteError(w)
+		kilonova.StatusData(w, "error", res.Status, 500)
 		return
 	}
 
 	// Should be able to unmarshal directly into discordgo user
 	var dUser discordgo.User
 	if err := json.NewDecoder(res.Body).Decode(&dUser); err != nil {
-		WrapError(err, "Could not decode Discord response").WriteError(w)
+		kilonova.StatusData(w, "error", "Could not decode Discord response: "+err.Error(), 500)
+		return
 	}
 
 	if err := s.updateUser(ctx, uid, kilonova.UserFullUpdate{
 		SetDiscordID: true, DiscordID: &dUser.ID,
 	}); err != nil {
-		err.WriteError(w)
+		kilonova.StatusData(w, "error", err.Error(), kilonova.ErrorCode(err))
 		return
 	}
 

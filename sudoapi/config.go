@@ -17,7 +17,7 @@ type ConfigUpdate struct {
 	BannedHotProblems []int `json:"banned_hot_pbs"`
 }
 
-func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) *StatusError {
+func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) error {
 	if upd.DefaultLanguage != nil {
 		config.Common.DefaultLang = *upd.DefaultLanguage
 	}

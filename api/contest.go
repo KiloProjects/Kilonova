@@ -22,7 +22,7 @@ func (s *API) createContest(w http.ResponseWriter, r *http.Request) {
 
 	id, err := s.base.CreateContest(r.Context(), args.Name, args.Type, util.UserBrief(r))
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -55,7 +55,7 @@ func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.UpdateContest(r.Context(), util.Contest(r).ID, args); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -68,7 +68,7 @@ func (s *API) updateContestProblems(w http.ResponseWriter, r *http.Request) {
 		List []int `json:"list"`
 	}
 	if err := parseJSONBody(r, &args); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -79,26 +79,26 @@ func (s *API) updateContestProblems(w http.ResponseWriter, r *http.Request) {
 
 	list, err := s.filterProblems(r.Context(), args.List, util.UserBrief(r), util.Contest(r).Type == kilonova.ContestTypeOfficial, true)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	if err := s.base.UpdateContestProblems(r.Context(), util.Contest(r).ID, list); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	returnData(w, "Updated contest problems")
 }
 
-func (s *API) getContest(ctx context.Context, _ struct{}) (*kilonova.Contest, *kilonova.StatusError) {
+func (s *API) getContest(ctx context.Context, _ struct{}) (*kilonova.Contest, error) {
 	return util.ContestContext(ctx), nil
 }
 
 func (s *API) getContestProblems(w http.ResponseWriter, r *http.Request) {
 	pbs, err := s.base.ContestProblems(r.Context(), util.Contest(r), util.UserBrief(r))
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	returnData(w, pbs)
@@ -114,7 +114,7 @@ func (s *API) getRemainingSubmissionCount(w http.ResponseWriter, r *http.Request
 		UserID int `json:"user_id"`
 	}
 	if err := parseRequest(r, &args); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	user := util.UserBrief(r)
@@ -123,14 +123,14 @@ func (s *API) getRemainingSubmissionCount(w http.ResponseWriter, r *http.Request
 	//}
 	pbs, err := s.base.ContestProblems(r.Context(), util.Contest(r), util.UserBrief(r))
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	var remainingCount = make(map[int]subCountResult)
 	for _, pb := range pbs {
 		cnt, limited, err := s.base.RemainingSubmissionCount(r.Context(), util.Contest(r), pb.ID, util.UserBrief(r).ID)
 		if err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 		remainingCount[pb.ID] = subCountResult{
@@ -153,7 +153,7 @@ type contestLeaderboardParams struct {
 	Generated *bool `json:"generated_acc"`
 }
 
-func (s *API) leaderboard(ctx context.Context, contest *kilonova.Contest, lookingUser *kilonova.UserBrief, args *contestLeaderboardParams) (*kilonova.ContestLeaderboard, *kilonova.StatusError) {
+func (s *API) leaderboard(ctx context.Context, contest *kilonova.Contest, lookingUser *kilonova.UserBrief, args *contestLeaderboardParams) (*kilonova.ContestLeaderboard, error) {
 	if !s.base.CanViewContestLeaderboard(lookingUser, contest) {
 		return nil, kilonova.Statusf(400, "Leaderboard for this contest is not available")
 	}
@@ -174,7 +174,7 @@ func (s *API) contestLeaderboard(w http.ResponseWriter, r *http.Request) {
 	}
 	ld, err := s.leaderboard(r.Context(), util.Contest(r), util.UserBrief(r), &args)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	returnData(w, ld)
@@ -192,12 +192,12 @@ func (s *API) addContestEditor(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.base.UserBriefByName(r.Context(), args.Username)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	if err := s.base.AddContestEditor(r.Context(), util.Contest(r).ID, user.ID); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -216,7 +216,7 @@ func (s *API) addContestTester(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.base.UserBriefByName(r.Context(), args.Username)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -226,7 +226,7 @@ func (s *API) addContestTester(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.AddContestTester(r.Context(), util.Contest(r).ID, user.ID); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -249,20 +249,20 @@ func (s *API) stripContestAccess(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.StripContestAccess(r.Context(), util.Contest(r).ID, args.UserID); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	returnData(w, "Stripped contest access")
 }
 
-func (s *API) contestAnnouncements(ctx context.Context, _ struct{}) ([]*kilonova.ContestAnnouncement, *kilonova.StatusError) {
+func (s *API) contestAnnouncements(ctx context.Context, _ struct{}) ([]*kilonova.ContestAnnouncement, error) {
 	return s.base.ContestAnnouncements(ctx, util.ContestContext(ctx).ID)
 }
 
 func (s *API) createContestAnnouncement(ctx context.Context, args struct {
 	Text string `json:"text"`
-}) *kilonova.StatusError {
+}) error {
 	if args.Text == "" {
 		return kilonova.Statusf(400, "No announcement text supplied")
 	}
@@ -274,7 +274,7 @@ func (s *API) createContestAnnouncement(ctx context.Context, args struct {
 func (s *API) updateContestAnnouncement(ctx context.Context, args struct {
 	ID   int    `json:"id"`
 	Text string `json:"text"`
-}) *kilonova.StatusError {
+}) error {
 	announcement, err := s.base.ContestAnnouncement(ctx, args.ID)
 	if err != nil {
 		return err
@@ -289,7 +289,7 @@ func (s *API) updateContestAnnouncement(ctx context.Context, args struct {
 
 func (s *API) deleteContestAnnouncement(ctx context.Context, args struct {
 	ID int `json:"id"`
-}) *kilonova.StatusError {
+}) error {
 	announcement, err := s.base.ContestAnnouncement(ctx, args.ID)
 	if err != nil {
 		return err
@@ -302,14 +302,14 @@ func (s *API) deleteContestAnnouncement(ctx context.Context, args struct {
 	return s.base.DeleteContestAnnouncement(ctx, announcement.ID)
 }
 
-func (s *API) contestUserQuestions(ctx context.Context, _ struct{}) ([]*kilonova.ContestQuestion, *kilonova.StatusError) {
+func (s *API) contestUserQuestions(ctx context.Context, _ struct{}) ([]*kilonova.ContestQuestion, error) {
 	if util.UserBriefContext(ctx) == nil {
 		return []*kilonova.ContestQuestion{}, nil
 	}
 	return s.base.ContestUserQuestions(ctx, util.ContestContext(ctx).ID, util.UserBriefContext(ctx).ID)
 }
 
-func (s *API) contestAllQuestions(ctx context.Context, _ struct{}) ([]*kilonova.ContestQuestion, *kilonova.StatusError) {
+func (s *API) contestAllQuestions(ctx context.Context, _ struct{}) ([]*kilonova.ContestQuestion, error) {
 	return s.base.ContestQuestions(ctx, util.ContestContext(ctx).ID)
 }
 
@@ -329,7 +329,7 @@ func (s *API) askContestQuestion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := s.base.CreateContestQuestion(r.Context(), util.Contest(r), util.UserBrief(r).ID, args.Text); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -354,7 +354,7 @@ func (s *API) answerContestQuestion(w http.ResponseWriter, r *http.Request) {
 
 	question, err := s.base.ContestQuestion(r.Context(), args.ID)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -364,7 +364,7 @@ func (s *API) answerContestQuestion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.AnswerContestQuestion(r.Context(), args.ID, args.Text); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -373,7 +373,7 @@ func (s *API) answerContestQuestion(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) acceptContestInvitation(ctx context.Context, args struct {
 	InviteID string `json:"invite_id"`
-}) *kilonova.StatusError {
+}) error {
 	inv, err := s.base.ContestInvitation(ctx, args.InviteID)
 	if err != nil {
 		return err
@@ -400,7 +400,7 @@ func (s *API) acceptContestInvitation(ctx context.Context, args struct {
 func (s *API) updateContestInvitation(ctx context.Context, args struct {
 	InviteID string `json:"invite_id"`
 	Expired  bool   `json:"expired"`
-}) *kilonova.StatusError {
+}) error {
 	inv, err := s.base.ContestInvitation(ctx, args.InviteID)
 	if err != nil {
 		return err
@@ -417,7 +417,7 @@ func (s *API) updateContestInvitation(ctx context.Context, args struct {
 
 func (s *API) registerForContest(w http.ResponseWriter, r *http.Request) {
 	if err := s.base.RegisterContestUser(r.Context(), util.Contest(r), util.UserBrief(r).ID, nil, false); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	returnData(w, "Registered for contest")
@@ -425,7 +425,7 @@ func (s *API) registerForContest(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) startContestRegistration(w http.ResponseWriter, r *http.Request) {
 	if err := s.base.StartContestRegistration(r.Context(), util.Contest(r), util.UserBrief(r).ID); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	returnData(w, "Started contest registration.")
@@ -443,7 +443,7 @@ func (s *API) forceRegisterForContest(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.base.UserBriefByName(r.Context(), args.Username)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -453,13 +453,13 @@ func (s *API) forceRegisterForContest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.RegisterContestUser(r.Context(), util.Contest(r), user.ID, nil, true); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	returnData(w, "Force registered user for contest")
 }
 
-func (s *API) checkRegistration(ctx context.Context, _ struct{}) (*kilonova.ContestRegistration, *kilonova.StatusError) {
+func (s *API) checkRegistration(ctx context.Context, _ struct{}) (*kilonova.ContestRegistration, error) {
 	return s.base.ContestRegistration(ctx, util.ContestContext(ctx).ID, util.UserBriefContext(ctx).ID)
 }
 
@@ -475,12 +475,12 @@ func (s *API) stripContestRegistration(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.base.UserBriefByName(r.Context(), args.Username)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	if err := s.base.KickUserFromContest(r.Context(), util.Contest(r).ID, user.ID); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -512,13 +512,13 @@ func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 
 	regs, err := s.base.ContestRegistrations(r.Context(), util.Contest(r).ID, args.FuzzyName, args.InvitationID, args.Limit, args.Offset)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	cnt, err := s.base.ContestRegistrationCount(r.Context(), util.Contest(r).ID)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -537,7 +537,7 @@ func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 		IDs: ids,
 	})
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -562,7 +562,7 @@ func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 	}{Registrations: rez, Count: cnt})
 }
 
-func (s *API) runMOSS(ctx context.Context, args struct{}) *kilonova.StatusError {
+func (s *API) runMOSS(ctx context.Context, _ struct{}) error {
 	if util.ContestContext(ctx).Type != kilonova.ContestTypeOfficial {
 		return kilonova.Statusf(400, "MOSS can't run on virtual contests, for now")
 	}

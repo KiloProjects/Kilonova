@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *BaseAPI) Test(ctx context.Context, pbID int, testVID int) (*kilonova.Test, *StatusError) {
+func (s *BaseAPI) Test(ctx context.Context, pbID int, testVID int) (*kilonova.Test, error) {
 	test, err := s.db.Test(ctx, pbID, testVID)
 	if err != nil || test == nil {
 		return nil, WrapError(ErrNotFound, "Test not found")
@@ -16,7 +16,7 @@ func (s *BaseAPI) Test(ctx context.Context, pbID int, testVID int) (*kilonova.Te
 	return test, nil
 }
 
-func (s *BaseAPI) Tests(ctx context.Context, pbID int) ([]*kilonova.Test, *StatusError) {
+func (s *BaseAPI) Tests(ctx context.Context, pbID int) ([]*kilonova.Test, error) {
 	tests, err := s.db.Tests(ctx, pbID)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
@@ -28,7 +28,7 @@ func (s *BaseAPI) Tests(ctx context.Context, pbID int) ([]*kilonova.Test, *Statu
 	return tests, nil
 }
 
-func (s *BaseAPI) UpdateTest(ctx context.Context, testID int, upd kilonova.TestUpdate) *StatusError {
+func (s *BaseAPI) UpdateTest(ctx context.Context, testID int, upd kilonova.TestUpdate) error {
 	if err := s.db.UpdateTest(ctx, testID, upd); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't update test")
@@ -36,7 +36,7 @@ func (s *BaseAPI) UpdateTest(ctx context.Context, testID int, upd kilonova.TestU
 	return nil
 }
 
-func (s *BaseAPI) CreateTest(ctx context.Context, test *kilonova.Test) *StatusError {
+func (s *BaseAPI) CreateTest(ctx context.Context, test *kilonova.Test) error {
 	if err := s.db.CreateTest(ctx, test); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't create test")
@@ -44,7 +44,7 @@ func (s *BaseAPI) CreateTest(ctx context.Context, test *kilonova.Test) *StatusEr
 	return nil
 }
 
-func (s *BaseAPI) DeleteTests(ctx context.Context, problemID int) *StatusError {
+func (s *BaseAPI) DeleteTests(ctx context.Context, problemID int) error {
 	ids, err := s.db.DeleteProblemTests(ctx, problemID)
 	if err != nil {
 		zap.S().Warn(err)
@@ -63,7 +63,7 @@ func (s *BaseAPI) DeleteTests(ctx context.Context, problemID int) *StatusError {
 
 // Please note that this function does not properly ensure that subtasks would be cleaned up afterwards.
 // This is left as an exercise to the caller
-func (s *BaseAPI) DeleteTest(ctx context.Context, id int) *StatusError {
+func (s *BaseAPI) DeleteTest(ctx context.Context, id int) error {
 	if err := s.db.DeleteTest(ctx, id); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't remove test")

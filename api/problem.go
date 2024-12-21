@@ -45,7 +45,7 @@ func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
 func (s *API) problemStatistics(w http.ResponseWriter, r *http.Request) {
 	stats, err := s.base.ProblemStatistics(r.Context(), util.Problem(r), util.UserBrief(r))
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	returnData(w, stats)
@@ -80,7 +80,7 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 	if args.ContestID != nil {
 		c, err := s.base.Contest(r.Context(), *args.ContestID)
 		if err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 		contest = c
@@ -114,7 +114,7 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 	case kilonova.ScoringTypeMaxSub, kilonova.ScoringTypeICPC:
 		id, err := s.base.MaxScoreSubID(r.Context(), args.UserID, util.Problem(r).ID)
 		if err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 		if id <= 0 {
@@ -130,7 +130,7 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 		}
 		sub, err := s.base.Submission(r.Context(), id, util.UserBrief(r))
 		if err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 
@@ -145,13 +145,13 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 	case kilonova.ScoringTypeSumSubtasks:
 		stks, err := s.base.MaximumScoreSubTasks(r.Context(), util.Problem(r).ID, args.UserID, args.ContestID)
 		if err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 
 		tests, err := s.base.MaximumScoreSubTaskTests(r.Context(), util.Problem(r).ID, args.UserID, args.ContestID)
 		if err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 
@@ -173,7 +173,7 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) deleteProblem(w http.ResponseWriter, r *http.Request) {
 	if err := s.base.DeleteProblem(context.WithoutCancel(r.Context()), util.Problem(r)); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	returnData(w, "Deleted problem")
@@ -189,7 +189,7 @@ var (
 	defaultRoProblemStatement = template.Must(template.New("enStmt").Parse(roPbStatementStr))
 )
 
-func (s *API) addStubStatement(ctx context.Context, pb *kilonova.Problem, lang *string, author *kilonova.UserBrief) *kilonova.StatusError {
+func (s *API) addStubStatement(ctx context.Context, pb *kilonova.Problem, lang *string, author *kilonova.UserBrief) error {
 	if lang == nil || *lang == "" {
 		return nil
 	}
@@ -242,7 +242,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 		ProblemListID *int    `json:"pblistID"`
 	}
 	if err := parseRequest(r, &args); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -254,7 +254,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 
 	pb, err := s.base.CreateProblem(r.Context(), args.Title, util.UserBrief(r), args.ConsoleInput)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -269,7 +269,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.addStubStatement(r.Context(), pb, args.StatementLang, util.UserBrief(r)); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -279,13 +279,13 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 func (s *API) importProblemArchive(w http.ResponseWriter, r *http.Request) {
 	pb, err := s.base.CreateProblem(r.Context(), "unnamed", util.UserBrief(r), true)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	r = r.WithContext(context.WithValue(r.Context(), util.ProblemKey, pb))
 	if err := s.processArchive(r, true); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -301,7 +301,7 @@ func (s *API) importProblemArchive(w http.ResponseWriter, r *http.Request) {
 		ProblemListID *int    `json:"pblistID"`
 	}
 	if err := parseRequest(r, &args); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -316,14 +316,14 @@ func (s *API) importProblemArchive(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.addStubStatement(r.Context(), pb, args.StatementLang, util.UserBrief(r)); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	returnData(w, pb.ID)
 }
 
-func (s *API) getProblems(ctx context.Context, args kilonova.ProblemFilter) ([]*kilonova.Problem, *kilonova.StatusError) {
+func (s *API) getProblems(ctx context.Context, args kilonova.ProblemFilter) ([]*kilonova.Problem, error) {
 	args.Look = true
 	args.LookingUser = util.UserBriefContext(ctx)
 
@@ -336,7 +336,7 @@ type problemSearchResult struct {
 	Count int `json:"count"`
 }
 
-func (s *API) searchProblems(ctx context.Context, args kilonova.ProblemFilter) (*problemSearchResult, *kilonova.StatusError) {
+func (s *API) searchProblems(ctx context.Context, args kilonova.ProblemFilter) (*problemSearchResult, error) {
 	args.Look = true
 	args.LookingUser = util.UserBriefContext(ctx)
 
@@ -360,7 +360,7 @@ func (s *API) searchProblems(ctx context.Context, args kilonova.ProblemFilter) (
 	return &problemSearchResult{Problems: problems, Count: cnt}, nil
 }
 
-func (s *API) updateProblem(ctx context.Context, args kilonova.ProblemUpdate) *kilonova.StatusError {
+func (s *API) updateProblem(ctx context.Context, args kilonova.ProblemUpdate) error {
 	return s.base.UpdateProblem(ctx, util.ProblemContext(ctx).ID, args, util.UserBriefContext(ctx))
 }
 
@@ -371,7 +371,7 @@ func (s *API) translateProblemStatement() http.HandlerFunc {
 			Model string `json:"model"`
 		}
 		if err := parseRequest(r, &args); err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 		if !translateMu.TryLock() {
@@ -381,12 +381,12 @@ func (s *API) translateProblemStatement() http.HandlerFunc {
 		defer translateMu.Unlock()
 		att, err := s.base.ProblemAttByName(r.Context(), util.Problem(r).ID, "statement-ro.md")
 		if err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 		data, err := s.base.AttachmentData(r.Context(), att.ID)
 		if err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 		t := time.Now()
@@ -402,16 +402,16 @@ func (s *API) translateProblemStatement() http.HandlerFunc {
 				att2 = &kilonova.Attachment{Name: "statement-en-llm.md"}
 				err = s.base.CreateProblemAttachment(r.Context(), att2, util.Problem(r).ID, strings.NewReader(output), &util.UserBrief(r).ID)
 				if err != nil {
-					err.WriteError(w)
+					statusError(w, err)
 				}
 				returnData(w, "Created translation")
 				return
 			}
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 		if err := s.base.UpdateAttachmentData(r.Context(), att2.ID, []byte(output), util.UserBrief(r)); err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 
@@ -442,7 +442,7 @@ func (s *API) togglePblistProblems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.ToggleDeepPbListProblems(r.Context(), util.ProblemList(r), args.Deep, kilonova.ProblemUpdate{Visible: args.Visible, VisibleTests: args.VisibleTests}); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -467,12 +467,12 @@ func (s *API) addProblemEditor(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.base.UserBriefByName(r.Context(), args.Username)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	if err := s.base.AddProblemEditor(r.Context(), util.Problem(r).ID, user.ID); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -491,7 +491,7 @@ func (s *API) addProblemViewer(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.base.UserBriefByName(r.Context(), args.Username)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -501,7 +501,7 @@ func (s *API) addProblemViewer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.AddProblemViewer(r.Context(), util.Problem(r).ID, user.ID); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -510,7 +510,7 @@ func (s *API) addProblemViewer(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) stripProblemAccess(ctx context.Context, args struct {
 	UserID int `json:"user_id"`
-}) *kilonova.StatusError {
+}) error {
 	if args.UserID == util.UserBriefContext(ctx).ID {
 		return kilonova.Statusf(400, "You can't strip your own access!")
 	}
@@ -523,7 +523,7 @@ type problemAccessControl struct {
 	Viewers []*kilonova.UserBrief `json:"viewers"`
 }
 
-func (s *API) getProblemAccessControl(ctx context.Context, _ struct{}) (*problemAccessControl, *kilonova.StatusError) {
+func (s *API) getProblemAccessControl(ctx context.Context, _ struct{}) (*problemAccessControl, error) {
 	editors, err := s.base.ProblemEditors(ctx, util.ProblemContext(ctx).ID)
 	if err != nil {
 		return nil, err
@@ -540,10 +540,10 @@ func (s *API) getProblemAccessControl(ctx context.Context, _ struct{}) (*problem
 	}, nil
 }
 
-func (s *API) problemLanguages(ctx context.Context, _ struct{}) ([]*sudoapi.Language, *kilonova.StatusError) {
+func (s *API) problemLanguages(ctx context.Context, _ struct{}) ([]*sudoapi.Language, error) {
 	return s.base.ProblemLanguages(ctx, util.ProblemContext(ctx).ID)
 }
 
-func (s *API) getProblem(ctx context.Context, _ struct{}) (*kilonova.Problem, *kilonova.StatusError) {
+func (s *API) getProblem(ctx context.Context, _ struct{}) (*kilonova.Problem, error) {
 	return util.ProblemContext(ctx), nil
 }

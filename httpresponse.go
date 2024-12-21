@@ -3,19 +3,21 @@ package kilonova
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
 )
 
 func StatusData(w http.ResponseWriter, status string, retData any, statusCode int) {
-	if err, ok := retData.(*StatusError); ok {
-		// slog.Warn(context.Background(), "*StatusError passed to sudoapi.statusData. This might not be intended")
-		err.WriteError(w)
-		return
-	}
+
 	if err, ok := retData.(error); ok {
 		retData = err.Error()
+
+		var err2 *statusError
+		if errors.As(err, &err2) {
+			statusCode = err2.Code
+		}
 	}
 	w.Header().Add("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(statusCode)

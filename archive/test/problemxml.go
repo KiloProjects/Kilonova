@@ -9,7 +9,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func ProcessProblemXMLFile(actx *ArchiveCtx, file io.Reader) *kilonova.StatusError {
+func ProcessProblemXMLFile(actx *ArchiveCtx, file io.Reader) error {
 	node, err := xmlquery.Parse(file)
 	if err != nil {
 		return kilonova.WrapError(err, "Could not read problem.xml")

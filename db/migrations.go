@@ -3,11 +3,11 @@ package db
 import (
 	"context"
 	"embed"
+	"log/slog"
 	"path"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/jackc/pgx/v5"
-	"go.uber.org/zap"
 )
 
 // Inspired by https://github.com/miniflux/v2/blob/main/internal/database/database.go
@@ -55,13 +55,13 @@ func (s *DB) RunMigrations(ctx context.Context) error {
 	var databaseSchema int
 	var runSpecial bool
 	s.conn.QueryRow(ctx, "SELECT version FROM kn_schema_version").Scan(&databaseSchema)
-	zap.S().Debug("Schema version: ", databaseSchema)
+	slog.DebugContext(ctx, "Checked DB schema", slog.Int("version", databaseSchema))
 	for _, mig := range migrations {
 		if mig.id <= databaseSchema {
 			continue
 		}
 		runSpecial = true
-		zap.S().Infof("Executing migration %d", mig.id)
+		slog.InfoContext(ctx, "Executing migration", slog.Int("migration_id", mig.id))
 
 		if err := pgx.BeginFunc(ctx, s.conn, func(tx pgx.Tx) error {
 			if err := mig.handler(ctx, tx); err != nil {
@@ -107,7 +107,7 @@ func (s *DB) checkLegacy(ctx context.Context) error {
 	if !hasMSV || schemaVersion > 0 {
 		return nil
 	}
-	zap.S().Info("Legacy database detected. Initialized as schema version 1")
+	slog.InfoContext(ctx, "Legacy database detected. Initialized as schema version 1")
 	_, err := s.conn.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS kn_schema_version (
 			version integer not null

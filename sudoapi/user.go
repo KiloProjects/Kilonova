@@ -32,7 +32,7 @@ var (
 	CanChangeNames = config.GenFlag("feature.username_changes.enabled", true, "Anyone can change their usernames")
 )
 
-func (s *BaseAPI) UserBrief(ctx context.Context, id int) (*kilonova.UserBrief, *StatusError) {
+func (s *BaseAPI) UserBrief(ctx context.Context, id int) (*kilonova.UserBrief, error) {
 	user, err := s.UserFull(ctx, id)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (s *BaseAPI) UserBrief(ctx context.Context, id int) (*kilonova.UserBrief, *
 	return &user.UserBrief, nil
 }
 
-func (s *BaseAPI) UserFull(ctx context.Context, id int) (*kilonova.UserFull, *StatusError) {
+func (s *BaseAPI) UserFull(ctx context.Context, id int) (*kilonova.UserFull, error) {
 	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &id})
 	if err != nil || user == nil {
 		if errors.Is(err, context.Canceled) {
@@ -54,7 +54,7 @@ func (s *BaseAPI) UserFull(ctx context.Context, id int) (*kilonova.UserFull, *St
 	return user.ToFull(), nil
 }
 
-func (s *BaseAPI) UserBriefByName(ctx context.Context, name string) (*kilonova.UserBrief, *StatusError) {
+func (s *BaseAPI) UserBriefByName(ctx context.Context, name string) (*kilonova.UserBrief, error) {
 	user, err := s.UserFullByName(ctx, name)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (s *BaseAPI) UserBriefByName(ctx context.Context, name string) (*kilonova.U
 	return &user.UserBrief, nil
 }
 
-func (s *BaseAPI) UserFullByName(ctx context.Context, name string) (*kilonova.UserFull, *StatusError) {
+func (s *BaseAPI) UserFullByName(ctx context.Context, name string) (*kilonova.UserFull, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return nil, Statusf(400, "Username not specified")
@@ -74,7 +74,7 @@ func (s *BaseAPI) UserFullByName(ctx context.Context, name string) (*kilonova.Us
 	return user.ToFull(), nil
 }
 
-func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*kilonova.UserFull, *StatusError) {
+func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*kilonova.UserFull, error) {
 	email = strings.TrimSpace(email)
 	if email == "" {
 		return nil, Statusf(400, "Email not specified")
@@ -86,7 +86,7 @@ func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*kilonova.
 	return user.ToFull(), nil
 }
 
-func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([]*kilonova.UserBrief, *StatusError) {
+func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([]*kilonova.UserBrief, error) {
 	users, err := s.db.Users(ctx, filter)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -108,7 +108,7 @@ func mapUsersBrief(users []*db.User) []*kilonova.UserBrief {
 	return usersBrief
 }
 
-func (s *BaseAPI) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, *StatusError) {
+func (s *BaseAPI) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, error) {
 	cnt, err := s.db.CountUsers(ctx, filter)
 	if err != nil {
 		return -1, WrapError(err, "Couldn't get user count")
@@ -116,11 +116,11 @@ func (s *BaseAPI) CountUsers(ctx context.Context, filter kilonova.UserFilter) (i
 	return cnt, nil
 }
 
-func (s *BaseAPI) UpdateUser(ctx context.Context, userID int, upd kilonova.UserUpdate) *StatusError {
+func (s *BaseAPI) UpdateUser(ctx context.Context, userID int, upd kilonova.UserUpdate) error {
 	return s.updateUser(ctx, userID, kilonova.UserFullUpdate{UserUpdate: upd})
 }
 
-func (s *BaseAPI) updateUser(ctx context.Context, userID int, upd kilonova.UserFullUpdate) *StatusError {
+func (s *BaseAPI) updateUser(ctx context.Context, userID int, upd kilonova.UserFullUpdate) error {
 	if err := s.db.UpdateUser(ctx, userID, upd); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't update user")
@@ -141,7 +141,7 @@ func (s *BaseAPI) updateUser(ctx context.Context, userID int, upd kilonova.UserF
 var usernameChangeMu sync.Mutex
 
 // fromAdmin also should include the forced username changes
-func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserFull, newName string, checkUsed bool, fromAdmin bool) *StatusError {
+func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserFull, newName string, checkUsed bool, fromAdmin bool) error {
 	usernameChangeMu.Lock()
 	defer usernameChangeMu.Unlock()
 
@@ -199,14 +199,14 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserFull, n
 	return nil
 }
 
-func (s *BaseAPI) SetForceUsernameChange(ctx context.Context, userID int, force bool) *StatusError {
+func (s *BaseAPI) SetForceUsernameChange(ctx context.Context, userID int, force bool) error {
 	return s.updateUser(ctx, userID, kilonova.UserFullUpdate{NameChangeRequired: &force})
 }
-func (s *BaseAPI) SetUserLockout(ctx context.Context, userID int, lockout bool) *StatusError {
+func (s *BaseAPI) SetUserLockout(ctx context.Context, userID int, lockout bool) error {
 	return s.updateUser(ctx, userID, kilonova.UserFullUpdate{LockedLogin: &lockout})
 }
 
-func (s *BaseAPI) UsernameChangeHistory(ctx context.Context, userID int) ([]*kilonova.UsernameChange, *StatusError) {
+func (s *BaseAPI) UsernameChangeHistory(ctx context.Context, userID int) ([]*kilonova.UsernameChange, error) {
 	changes, err := s.db.UsernameChangeHistory(ctx, userID)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -219,7 +219,7 @@ func (s *BaseAPI) UsernameChangeHistory(ctx context.Context, userID int) ([]*kil
 
 // Returns the people that last held the given username
 // Used for redirecting on the frontend the profile page
-func (s *BaseAPI) HistoricalUsernameHolder(ctx context.Context, name string) (*kilonova.UserBrief, *StatusError) {
+func (s *BaseAPI) HistoricalUsernameHolder(ctx context.Context, name string) (*kilonova.UserBrief, error) {
 	userIDs, err := s.db.HistoricalUsernameHolders(ctx, name)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get username holders")
@@ -230,7 +230,7 @@ func (s *BaseAPI) HistoricalUsernameHolder(ctx context.Context, name string) (*k
 	return s.UserBrief(ctx, userIDs[0])
 }
 
-func (s *BaseAPI) VerifyUserPassword(ctx context.Context, uid int, password string) *StatusError {
+func (s *BaseAPI) VerifyUserPassword(ctx context.Context, uid int, password string) error {
 	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &uid})
 	if err != nil || user == nil {
 		return WrapError(ErrNotFound, "User not found")
@@ -246,7 +246,7 @@ func (s *BaseAPI) VerifyUserPassword(ctx context.Context, uid int, password stri
 	return nil
 }
 
-func (s *BaseAPI) DeleteUser(ctx context.Context, user *kilonova.UserBrief) *StatusError {
+func (s *BaseAPI) DeleteUser(ctx context.Context, user *kilonova.UserBrief) error {
 	if err := s.db.DeleteUser(ctx, user.ID); err != nil {
 		return WrapError(err, "Couldn't delete user")
 	}
@@ -254,7 +254,7 @@ func (s *BaseAPI) DeleteUser(ctx context.Context, user *kilonova.UserBrief) *Sta
 	return nil
 }
 
-func (s *BaseAPI) UpdateUserPassword(ctx context.Context, uid int, password string) *StatusError {
+func (s *BaseAPI) UpdateUserPassword(ctx context.Context, uid int, password string) error {
 	if err := s.CheckValidPassword(password); err != nil {
 		return err
 	}
@@ -272,7 +272,7 @@ func (s *BaseAPI) UpdateUserPassword(ctx context.Context, uid int, password stri
 }
 
 // TODO: displayName probably doesn't have to be *string, can be just string, but this was implemented quickly
-func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, theme kilonova.PreferredTheme, displayName *string, email *string, bio string) (*kilonova.UserFull, *StatusError) {
+func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, theme kilonova.PreferredTheme, displayName *string, email *string, bio string) (*kilonova.UserFull, error) {
 	uname = strings.TrimSpace(uname)
 	if err := s.CheckValidUsername(uname); err != nil {
 		return nil, err
@@ -350,7 +350,7 @@ type UserGenerationRequest struct {
 }
 
 // returns password, UserFull and eventual error
-func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationRequest) (string, *kilonova.UserFull, *kilonova.StatusError) {
+func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationRequest) (string, *kilonova.UserFull, error) {
 
 	if args.PasswordByMail {
 		if !s.MailerEnabled() {

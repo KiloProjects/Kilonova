@@ -5,23 +5,16 @@ import (
 )
 
 var (
-	ErrNoUpdates       = kilonova.ErrNoUpdates
-	ErrMissingRequired = kilonova.ErrMissingRequired
-
 	ErrNotFound     = kilonova.ErrNotFound
-	ErrUnknownError = kilonova.ErrUnknownError
-
-	ErrContextCanceled = kilonova.ErrContextCanceled
+	ErrUnknownError = Statusf(500, "Unknown error occured")
 )
-
-type StatusError = kilonova.StatusError
 
 // Reimplement Statusf and WrapError functions here for faster reference
 
-func Statusf(status int, format string, args ...any) *StatusError {
+func Statusf(status int, format string, args ...any) error {
 	return kilonova.Statusf(status, format, args...)
 }
 
-func WrapError(err error, text string) *StatusError {
+func WrapError(err error, text string) error {
 	return kilonova.WrapError(err, text)
 }

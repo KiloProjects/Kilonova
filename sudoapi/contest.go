@@ -18,9 +18,9 @@ var (
 	NormalUserVCLimit         = config.GenFlag[int]("behavior.contests.normal_user_max_day", 10, "Number of maximum contests a non-proposer can create per day")
 )
 
-func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova.ContestType, author *kilonova.UserBrief) (int, *StatusError) {
+func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova.ContestType, author *kilonova.UserBrief) (int, error) {
 	if author == nil {
-		return -1, ErrMissingRequired
+		return -1, kilonova.ErrMissingRequired
 	}
 	if !(cType == kilonova.ContestTypeNone || cType == kilonova.ContestTypeOfficial || cType == kilonova.ContestTypeVirtual) {
 		return -1, Statusf(400, "Invalid contest type")
@@ -61,7 +61,7 @@ func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova
 	return id, nil
 }
 
-func (s *BaseAPI) UpdateContest(ctx context.Context, id int, upd kilonova.ContestUpdate) *kilonova.StatusError {
+func (s *BaseAPI) UpdateContest(ctx context.Context, id int, upd kilonova.ContestUpdate) error {
 	if err := s.db.UpdateContest(ctx, id, upd); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't update contest")
@@ -69,7 +69,7 @@ func (s *BaseAPI) UpdateContest(ctx context.Context, id int, upd kilonova.Contes
 	return nil
 }
 
-func (s *BaseAPI) UpdateContestProblems(ctx context.Context, id int, list []int) *StatusError {
+func (s *BaseAPI) UpdateContestProblems(ctx context.Context, id int, list []int) error {
 	if err := s.db.UpdateContestProblems(ctx, id, list); err != nil {
 		zap.S().Warn(err)
 		return WrapError(err, "Couldn't update contest problems")
@@ -77,7 +77,7 @@ func (s *BaseAPI) UpdateContestProblems(ctx context.Context, id int, list []int)
 	return nil
 }
 
-func (s *BaseAPI) DeleteContest(ctx context.Context, contest *kilonova.Contest) *StatusError {
+func (s *BaseAPI) DeleteContest(ctx context.Context, contest *kilonova.Contest) error {
 	if contest == nil {
 		return Statusf(400, "Invalid contest")
 	}
@@ -89,7 +89,7 @@ func (s *BaseAPI) DeleteContest(ctx context.Context, contest *kilonova.Contest) 
 	return nil
 }
 
-func (s *BaseAPI) Contest(ctx context.Context, id int) (*kilonova.Contest, *StatusError) {
+func (s *BaseAPI) Contest(ctx context.Context, id int) (*kilonova.Contest, error) {
 	contest, err := s.db.Contest(ctx, id)
 	if err != nil || contest == nil {
 		return nil, WrapError(ErrNotFound, "Contest not found")
@@ -97,7 +97,7 @@ func (s *BaseAPI) Contest(ctx context.Context, id int) (*kilonova.Contest, *Stat
 	return contest, nil
 }
 
-func (s *BaseAPI) Contests(ctx context.Context, filter kilonova.ContestFilter) ([]*kilonova.Contest, *StatusError) {
+func (s *BaseAPI) Contests(ctx context.Context, filter kilonova.ContestFilter) ([]*kilonova.Contest, error) {
 	contests, err := s.db.Contests(ctx, filter)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't fetch contests")
@@ -105,7 +105,7 @@ func (s *BaseAPI) Contests(ctx context.Context, filter kilonova.ContestFilter) (
 	return contests, nil
 }
 
-func (s *BaseAPI) ContestCount(ctx context.Context, filter kilonova.ContestFilter) (int, *StatusError) {
+func (s *BaseAPI) ContestCount(ctx context.Context, filter kilonova.ContestFilter) (int, error) {
 	cnt, err := s.db.ContestCount(ctx, filter)
 	if err != nil {
 		return -1, WrapError(err, "Couldn't fetch contests")
@@ -113,7 +113,7 @@ func (s *BaseAPI) ContestCount(ctx context.Context, filter kilonova.ContestFilte
 	return cnt, nil
 }
 
-func (s *BaseAPI) VisibleFutureContests(ctx context.Context, user *kilonova.UserBrief) ([]*kilonova.Contest, *StatusError) {
+func (s *BaseAPI) VisibleFutureContests(ctx context.Context, user *kilonova.UserBrief) ([]*kilonova.Contest, error) {
 	filter := kilonova.ContestFilter{
 		Future:      true,
 		Look:        true,
@@ -128,7 +128,7 @@ func (s *BaseAPI) VisibleFutureContests(ctx context.Context, user *kilonova.User
 	return s.Contests(ctx, filter)
 }
 
-func (s *BaseAPI) VisibleRunningContests(ctx context.Context, user *kilonova.UserBrief) ([]*kilonova.Contest, *StatusError) {
+func (s *BaseAPI) VisibleRunningContests(ctx context.Context, user *kilonova.UserBrief) ([]*kilonova.Contest, error) {
 	filter := kilonova.ContestFilter{
 		Running:     true,
 		Look:        true,
@@ -144,7 +144,7 @@ func (s *BaseAPI) VisibleRunningContests(ctx context.Context, user *kilonova.Use
 	return s.Contests(ctx, filter)
 }
 
-func (s *BaseAPI) ProblemRunningContests(ctx context.Context, problemID int) ([]*kilonova.Contest, *StatusError) {
+func (s *BaseAPI) ProblemRunningContests(ctx context.Context, problemID int) ([]*kilonova.Contest, error) {
 	return s.Contests(ctx, kilonova.ContestFilter{
 		Running:   true,
 		ProblemID: &problemID,
@@ -153,7 +153,7 @@ func (s *BaseAPI) ProblemRunningContests(ctx context.Context, problemID int) ([]
 	})
 }
 
-func (s *BaseAPI) ContestLeaderboard(ctx context.Context, contest *kilonova.Contest, freezeTime *time.Time, filter kilonova.UserFilter) (*kilonova.ContestLeaderboard, *StatusError) {
+func (s *BaseAPI) ContestLeaderboard(ctx context.Context, contest *kilonova.Contest, freezeTime *time.Time, filter kilonova.UserFilter) (*kilonova.ContestLeaderboard, error) {
 	switch contest.LeaderboardStyle {
 	case kilonova.LeaderboardTypeClassic:
 		leaderboard, err := s.db.ContestClassicLeaderboard(ctx, contest, freezeTime, &filter)
@@ -256,7 +256,7 @@ func (s *BaseAPI) CanViewContestLeaderboard(user *kilonova.UserBrief, contest *k
 	return contest.PublicLeaderboard
 }
 
-func (s *BaseAPI) AddContestEditor(ctx context.Context, pbid int, uid int) *StatusError {
+func (s *BaseAPI) AddContestEditor(ctx context.Context, pbid int, uid int) error {
 	if err := s.db.StripContestAccess(ctx, pbid, uid); err != nil {
 		return WrapError(err, "Couldn't add contest editor: sanity strip failed")
 	}
@@ -266,7 +266,7 @@ func (s *BaseAPI) AddContestEditor(ctx context.Context, pbid int, uid int) *Stat
 	return nil
 }
 
-func (s *BaseAPI) AddContestTester(ctx context.Context, pbid int, uid int) *StatusError {
+func (s *BaseAPI) AddContestTester(ctx context.Context, pbid int, uid int) error {
 	if err := s.db.StripContestAccess(ctx, pbid, uid); err != nil {
 		return WrapError(err, "Couldn't add contest tester: sanity strip failed")
 	}
@@ -276,14 +276,14 @@ func (s *BaseAPI) AddContestTester(ctx context.Context, pbid int, uid int) *Stat
 	return nil
 }
 
-func (s *BaseAPI) StripContestAccess(ctx context.Context, pbid int, uid int) *StatusError {
+func (s *BaseAPI) StripContestAccess(ctx context.Context, pbid int, uid int) error {
 	if err := s.db.StripContestAccess(ctx, pbid, uid); err != nil {
 		return WrapError(err, "Couldn't strip contest access")
 	}
 	return nil
 }
 
-func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) *StatusError {
+func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) error {
 	pbs, err := s.Problems(ctx, kilonova.ProblemFilter{ContestID: &contest.ID})
 	if err != nil {
 		return err
@@ -373,7 +373,7 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) *Statu
 	return nil
 }
 
-func (s *BaseAPI) MOSSSubmissions(ctx context.Context, contestID int) ([]*kilonova.MOSSSubmission, *StatusError) {
+func (s *BaseAPI) MOSSSubmissions(ctx context.Context, contestID int) ([]*kilonova.MOSSSubmission, error) {
 	subs, err := s.db.MossSubmissions(ctx, contestID)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't fetch MOSS submissions")

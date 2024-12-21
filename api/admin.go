@@ -26,12 +26,12 @@ func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.base.UserBrief(r.Context(), args.ID)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	if err := s.base.SetAdmin(r.Context(), user, args.Set); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -48,7 +48,7 @@ func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 		Set bool
 	}
 	if err := parseRequest(r, &args); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -59,12 +59,12 @@ func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.base.UserBrief(r.Context(), args.ID)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	if err := s.base.SetProposer(r.Context(), user, args.Set); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -84,13 +84,13 @@ func (s *API) getAllUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	rez, err := s.base.UsersBrief(r.Context(), query)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	cnt, err := s.base.CountUsers(r.Context(), query)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -108,7 +108,7 @@ func (s *API) updateBoolFlags(w http.ResponseWriter, r *http.Request) {
 		IntFlags    map[string]int    `json:"int_flags"`
 	}
 	if err := parseJSONBody(r, &args); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	for k, v := range args.BoolFlags {
@@ -144,7 +144,7 @@ func (s *API) addDonation(w http.ResponseWriter, r *http.Request) {
 		Username *string `json:"username"`
 	}
 	if err := parseRequest(r, &args); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -157,7 +157,7 @@ func (s *API) addDonation(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err := s.base.AddDonation(r.Context(), &args.Donation); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	returnData(w, args.ID)
@@ -168,12 +168,12 @@ func (s *API) endSubscription(w http.ResponseWriter, r *http.Request) {
 		ID int
 	}
 	if err := parseRequest(r, &args); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	if err := s.base.CancelSubscription(r.Context(), args.ID); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	returnData(w, args.ID)

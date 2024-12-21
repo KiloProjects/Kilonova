@@ -82,7 +82,7 @@ func ParsePropertiesFile(r io.Reader) (*PropertiesRaw, bool, error) {
 }
 
 // item is the item that we wish to split, field is for error reporting purposes
-func parsePropListItem(item string, field string) ([]int, *kilonova.StatusError) {
+func parsePropListItem(item string, field string) ([]int, error) {
 	glist := []int{}
 	gg := strings.Split(item, ";")
 	for _, g := range gg {
@@ -156,7 +156,7 @@ func parseEditors(editors *string) []string {
 
 // TODO: Allow having multiple .properties files
 // And split grader.properties from generator.go into multiple files
-func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
+func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) error {
 	f, err := file.Open()
 	if err != nil {
 		return kilonova.WrapError(err, "Couldn't open file")

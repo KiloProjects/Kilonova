@@ -20,7 +20,7 @@ import (
 // Expected attachment behavior:
 //   - Private = true => Visible = false
 
-func (s *BaseAPI) Attachment(ctx context.Context, id int) (*kilonova.Attachment, *StatusError) {
+func (s *BaseAPI) Attachment(ctx context.Context, id int) (*kilonova.Attachment, error) {
 	attachment, err := s.db.Attachment(ctx, &kilonova.AttachmentFilter{ID: &id})
 	if err != nil || attachment == nil {
 		if err != nil && !errors.Is(err, context.Canceled) {
@@ -31,7 +31,7 @@ func (s *BaseAPI) Attachment(ctx context.Context, id int) (*kilonova.Attachment,
 	return attachment, nil
 }
 
-func (s *BaseAPI) ProblemAttachment(ctx context.Context, problemID, attachmentID int) (*kilonova.Attachment, *StatusError) {
+func (s *BaseAPI) ProblemAttachment(ctx context.Context, problemID, attachmentID int) (*kilonova.Attachment, error) {
 	attachment, err := s.db.Attachment(ctx, &kilonova.AttachmentFilter{ProblemID: &problemID, ID: &attachmentID})
 	if err != nil || attachment == nil {
 		return nil, WrapError(ErrNotFound, "Attachment not found")
@@ -39,7 +39,7 @@ func (s *BaseAPI) ProblemAttachment(ctx context.Context, problemID, attachmentID
 	return attachment, nil
 }
 
-func (s *BaseAPI) BlogPostAttachment(ctx context.Context, postID, attachmentID int) (*kilonova.Attachment, *StatusError) {
+func (s *BaseAPI) BlogPostAttachment(ctx context.Context, postID, attachmentID int) (*kilonova.Attachment, error) {
 	attachment, err := s.db.Attachment(ctx, &kilonova.AttachmentFilter{BlogPostID: &postID, ID: &attachmentID})
 	if err != nil || attachment == nil {
 		return nil, WrapError(ErrNotFound, "Attachment not found")
@@ -47,7 +47,7 @@ func (s *BaseAPI) BlogPostAttachment(ctx context.Context, postID, attachmentID i
 	return attachment, nil
 }
 
-func (s *BaseAPI) ProblemAttByName(ctx context.Context, problemID int, name string) (*kilonova.Attachment, *StatusError) {
+func (s *BaseAPI) ProblemAttByName(ctx context.Context, problemID int, name string) (*kilonova.Attachment, error) {
 	attachment, err := s.db.Attachment(ctx, &kilonova.AttachmentFilter{ProblemID: &problemID, Name: &name})
 	if err != nil || attachment == nil {
 		return nil, WrapError(ErrNotFound, "Attachment not found")
@@ -55,7 +55,7 @@ func (s *BaseAPI) ProblemAttByName(ctx context.Context, problemID int, name stri
 	return attachment, nil
 }
 
-func (s *BaseAPI) BlogPostAttByName(ctx context.Context, postID int, name string) (*kilonova.Attachment, *StatusError) {
+func (s *BaseAPI) BlogPostAttByName(ctx context.Context, postID int, name string) (*kilonova.Attachment, error) {
 	attachment, err := s.db.Attachment(ctx, &kilonova.AttachmentFilter{BlogPostID: &postID, Name: &name})
 	if err != nil || attachment == nil {
 		return nil, WrapError(ErrNotFound, "Attachment not found")
@@ -63,7 +63,7 @@ func (s *BaseAPI) BlogPostAttByName(ctx context.Context, postID int, name string
 	return attachment, nil
 }
 
-func (s *BaseAPI) CreateProblemAttachment(ctx context.Context, att *kilonova.Attachment, problemID int, r io.Reader, authorID *int) *StatusError {
+func (s *BaseAPI) CreateProblemAttachment(ctx context.Context, att *kilonova.Attachment, problemID int, r io.Reader, authorID *int) error {
 	// since we store the attachment in the database (hopefully, just for now),
 	// we need to read the data into a byte array and send it over.
 	// I cannot emphasize how inefficient this is.
@@ -83,7 +83,7 @@ func (s *BaseAPI) CreateProblemAttachment(ctx context.Context, att *kilonova.Att
 	return nil
 }
 
-func (s *BaseAPI) CreateBlogPostAttachment(ctx context.Context, att *kilonova.Attachment, postID int, r io.Reader, authorID *int) *StatusError {
+func (s *BaseAPI) CreateBlogPostAttachment(ctx context.Context, att *kilonova.Attachment, postID int, r io.Reader, authorID *int) error {
 	// since we store the attachment in the database (hopefully, just for now),
 	// we need to read the data into a byte array and send it over.
 	// I cannot emphasize how inefficient this is.
@@ -103,7 +103,7 @@ func (s *BaseAPI) CreateBlogPostAttachment(ctx context.Context, att *kilonova.At
 	return nil
 }
 
-func (s *BaseAPI) UpdateAttachment(ctx context.Context, aid int, upd *kilonova.AttachmentUpdate) *StatusError {
+func (s *BaseAPI) UpdateAttachment(ctx context.Context, aid int, upd *kilonova.AttachmentUpdate) error {
 	if err := s.db.UpdateAttachment(ctx, aid, upd); err != nil {
 		return WrapError(err, "Couldn't update attachment")
 	}
@@ -111,7 +111,7 @@ func (s *BaseAPI) UpdateAttachment(ctx context.Context, aid int, upd *kilonova.A
 	return nil
 }
 
-func (s *BaseAPI) UpdateAttachmentData(ctx context.Context, aid int, data []byte, author *kilonova.UserBrief) *StatusError {
+func (s *BaseAPI) UpdateAttachmentData(ctx context.Context, aid int, data []byte, author *kilonova.UserBrief) error {
 	var authorID *int
 	if author != nil {
 		authorID = &author.ID
@@ -152,7 +152,7 @@ func (s *BaseAPI) UpdateAttachmentData(ctx context.Context, aid int, data []byte
 	return nil
 }
 
-func (s *BaseAPI) DeleteProblemAtts(ctx context.Context, problemID int, attIDs []int) (int, *StatusError) {
+func (s *BaseAPI) DeleteProblemAtts(ctx context.Context, problemID int, attIDs []int) (int, error) {
 	num, err := s.db.DeleteAttachments(ctx, &kilonova.AttachmentFilter{ProblemID: &problemID, IDs: attIDs})
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -166,7 +166,7 @@ func (s *BaseAPI) DeleteProblemAtts(ctx context.Context, problemID int, attIDs [
 	return int(num), nil
 }
 
-func (s *BaseAPI) DeleteBlogPostAtts(ctx context.Context, postID int, attIDs []int) (int, *StatusError) {
+func (s *BaseAPI) DeleteBlogPostAtts(ctx context.Context, postID int, attIDs []int) (int, error) {
 	num, err := s.db.DeleteAttachments(ctx, &kilonova.AttachmentFilter{BlogPostID: &postID, IDs: attIDs})
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -180,7 +180,7 @@ func (s *BaseAPI) DeleteBlogPostAtts(ctx context.Context, postID int, attIDs []i
 	return int(num), nil
 }
 
-func (s *BaseAPI) ProblemAttachments(ctx context.Context, problemID int) ([]*kilonova.Attachment, *StatusError) {
+func (s *BaseAPI) ProblemAttachments(ctx context.Context, problemID int) ([]*kilonova.Attachment, error) {
 	atts, err := s.db.Attachments(ctx, &kilonova.AttachmentFilter{ProblemID: &problemID})
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -191,7 +191,7 @@ func (s *BaseAPI) ProblemAttachments(ctx context.Context, problemID int) ([]*kil
 	return atts, nil
 }
 
-func (s *BaseAPI) BlogPostAttachments(ctx context.Context, postID int) ([]*kilonova.Attachment, *StatusError) {
+func (s *BaseAPI) BlogPostAttachments(ctx context.Context, postID int) ([]*kilonova.Attachment, error) {
 	atts, err := s.db.Attachments(ctx, &kilonova.AttachmentFilter{BlogPostID: &postID})
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -202,7 +202,7 @@ func (s *BaseAPI) BlogPostAttachments(ctx context.Context, postID int) ([]*kilon
 	return atts, nil
 }
 
-func (s *BaseAPI) AttachmentData(ctx context.Context, id int) ([]byte, *StatusError) {
+func (s *BaseAPI) AttachmentData(ctx context.Context, id int) ([]byte, error) {
 	data, err := s.db.AttachmentData(ctx, &kilonova.AttachmentFilter{ID: &id})
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -213,7 +213,7 @@ func (s *BaseAPI) AttachmentData(ctx context.Context, id int) ([]byte, *StatusEr
 	return data, nil
 }
 
-func (s *BaseAPI) ProblemAttDataByName(ctx context.Context, problemID int, name string) ([]byte, *StatusError) {
+func (s *BaseAPI) ProblemAttDataByName(ctx context.Context, problemID int, name string) ([]byte, error) {
 	data, err := s.db.AttachmentData(ctx, &kilonova.AttachmentFilter{ProblemID: &problemID, Name: &name})
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -250,7 +250,7 @@ func (s *BaseAPI) parseVariants(atts []*kilonova.Attachment, getPrivate bool) []
 	return variants
 }
 
-func (s *BaseAPI) ProblemDescVariants(ctx context.Context, problemID int, getPrivate bool) ([]*kilonova.StatementVariant, *StatusError) {
+func (s *BaseAPI) ProblemDescVariants(ctx context.Context, problemID int, getPrivate bool) ([]*kilonova.StatementVariant, error) {
 	atts, err := s.ProblemAttachments(ctx, problemID)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -262,7 +262,7 @@ func (s *BaseAPI) ProblemDescVariants(ctx context.Context, problemID int, getPri
 	return s.parseVariants(atts, getPrivate), nil
 }
 
-func (s *BaseAPI) BlogPostDescVariants(ctx context.Context, problemID int, getPrivate bool) ([]*kilonova.StatementVariant, *StatusError) {
+func (s *BaseAPI) BlogPostDescVariants(ctx context.Context, problemID int, getPrivate bool) ([]*kilonova.StatementVariant, error) {
 	atts, err := s.BlogPostAttachments(ctx, problemID)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -295,7 +295,7 @@ func (s *BaseAPI) FormatDescName(variant *kilonova.StatementVariant) string {
 	}
 }
 
-func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Problem, variant *kilonova.StatementVariant) ([]byte, *StatusError) {
+func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Problem, variant *kilonova.StatementVariant) ([]byte, error) {
 	name := s.FormatDescName(variant)
 	att, err := s.ProblemAttByName(ctx, problem.ID, name)
 	if err != nil {
@@ -326,7 +326,7 @@ func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Pro
 	}
 }
 
-func (s *BaseAPI) RenderedBlogPostDesc(ctx context.Context, post *kilonova.BlogPost, variant *kilonova.StatementVariant) ([]byte, *StatusError) {
+func (s *BaseAPI) RenderedBlogPostDesc(ctx context.Context, post *kilonova.BlogPost, variant *kilonova.StatementVariant) ([]byte, error) {
 	name := s.FormatDescName(variant)
 	att, err := s.BlogPostAttByName(ctx, post.ID, name)
 	if err != nil {
@@ -357,7 +357,7 @@ func (s *BaseAPI) RenderedBlogPostDesc(ctx context.Context, post *kilonova.BlogP
 	}
 }
 
-func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova.ProblemEvalSettings, *StatusError) {
+func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova.ProblemEvalSettings, error) {
 	var settings = &kilonova.ProblemEvalSettings{}
 	atts, err := s.ProblemAttachments(ctx, problemID)
 	if err != nil {
@@ -443,7 +443,7 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 
 // ProblemLanguages wraps around ProblemSettings to provide a better interface to expose to the API
 // And deduplicate separate code that handles allowed submission languages
-func (s *BaseAPI) ProblemLanguages(ctx context.Context, problemID int) ([]*Language, *StatusError) {
+func (s *BaseAPI) ProblemLanguages(ctx context.Context, problemID int) ([]*Language, error) {
 	settings, err := s.ProblemSettings(ctx, problemID)
 	if err != nil {
 		return nil, err

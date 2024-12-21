@@ -43,7 +43,7 @@ func (t archiveTest) Matches(re *regexp.Regexp) bool {
 	return places[0] == 0
 }
 
-func ProcessTestInputFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
+func ProcessTestInputFile(ctx *ArchiveCtx, file *zip.File) error {
 	testName := path.Base(file.Name)
 	if slices.Contains(testInputSuffixes, path.Ext(testName)) {
 		testName = strings.TrimSuffix(testName, path.Ext(testName))
@@ -61,7 +61,7 @@ func ProcessTestInputFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError
 	return nil
 }
 
-func ProcessTestOutputFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
+func ProcessTestOutputFile(ctx *ArchiveCtx, file *zip.File) error {
 	testName := path.Base(file.Name)
 	if slices.Contains(testOutputSuffixes, path.Ext(testName)) {
 		testName = strings.TrimSuffix(testName, path.Ext(testName))
@@ -79,7 +79,7 @@ func ProcessTestOutputFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 	return nil
 }
 
-func getTestID(name string) (int, *kilonova.StatusError) {
+func getTestID(name string) (int, error) {
 	var tid int
 	if _, err := fmt.Sscanf(name, "%d-", &tid); err != nil {
 		// check grader_test%d format

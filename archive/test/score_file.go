@@ -1,26 +1,21 @@
 package test
 
 import (
-	"archive/zip"
 	"bufio"
+	"context"
 	"fmt"
+	"io"
+	"log/slog"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 )
 
 // TestID -> Score
 type ScoreFileEntries = map[int]decimal.Decimal
 
-func ParseScoreFile(file *zip.File) (ScoreFileEntries, *kilonova.StatusError) {
-	f, err := file.Open()
-	if err != nil {
-		return nil, kilonova.Statusf(500, "Unknown error")
-	}
-	defer f.Close()
-
-	br := bufio.NewScanner(f)
+func ParseScoreFile(ctx context.Context, r io.Reader) (ScoreFileEntries, error) {
+	br := bufio.NewScanner(r)
 
 	rez := make(ScoreFileEntries)
 
@@ -50,8 +45,8 @@ func ParseScoreFile(file *zip.File) (ScoreFileEntries, *kilonova.StatusError) {
 		rez[testID] = dec
 	}
 	if br.Err() != nil {
-		zap.S().Info(br.Err())
-		return nil, kilonova.WrapError(err, "Score file read error")
+		slog.InfoContext(ctx, "Could not read score file", slog.Any("err", br.Err()))
+		return nil, kilonova.WrapError(br.Err(), "Score file read error")
 	}
 
 	return rez, nil

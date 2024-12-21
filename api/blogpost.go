@@ -3,12 +3,12 @@ package api
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"go.uber.org/zap"
 )
 
 func (s *API) userBlogPosts(w http.ResponseWriter, r *http.Request) {
@@ -22,21 +22,21 @@ func (s *API) userBlogPosts(w http.ResponseWriter, r *http.Request) {
 	}
 	posts, err := s.base.UserBlogPosts(r.Context(), args.UserID, util.UserBrief(r))
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	returnData(w, posts)
 }
 
-func (s *API) blogPostByID(ctx context.Context, _ struct{}) (*kilonova.BlogPost, *kilonova.StatusError) {
+func (s *API) blogPostByID(ctx context.Context, _ struct{}) (*kilonova.BlogPost, error) {
 	return util.BlogPostContext(ctx), nil
 }
 
 func (s *API) blogPostBySlug(w http.ResponseWriter, r *http.Request) {
 	post, err := s.base.BlogPostBySlug(r.Context(), r.FormValue("slug"))
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -79,7 +79,7 @@ func (s *API) createBlogPost(w http.ResponseWriter, r *http.Request) {
 
 	id, slug, err := s.base.CreateBlogPost(r.Context(), args.Title, util.UserBrief(r))
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	if args.Body != nil && args.BodyLang != nil {
@@ -90,9 +90,8 @@ func (s *API) createBlogPost(w http.ResponseWriter, r *http.Request) {
 			Name:    fmt.Sprintf("statement-%s.md", *args.BodyLang),
 		}, id, strings.NewReader(*args.Body), &util.UserBrief(r).ID,
 		); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Couldn't initialize blog post attachment", slog.Any("err", err), slog.Any("post_id", id))
 		}
-
 	}
 
 	returnData(w, struct {
@@ -110,7 +109,7 @@ func (s *API) updateBlogPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.UpdateBlogPost(r.Context(), util.BlogPost(r).ID, args); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -125,6 +124,6 @@ func (s *API) updateBlogPost(w http.ResponseWriter, r *http.Request) {
 	}{slug, "Updated blog post"})
 }
 
-func (s *API) deleteBlogPost(ctx context.Context, _ struct{}) *kilonova.StatusError {
+func (s *API) deleteBlogPost(ctx context.Context, _ struct{}) error {
 	return s.base.DeleteBlogPost(context.WithoutCancel(ctx), util.BlogPostContext(ctx))
 }

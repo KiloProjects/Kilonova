@@ -25,7 +25,7 @@ var (
 
 // Submission stuff
 
-func (s *BaseAPI) MaxScoreSubID(ctx context.Context, uid, pbID int) (int, *StatusError) {
+func (s *BaseAPI) MaxScoreSubID(ctx context.Context, uid, pbID int) (int, error) {
 	id, err := s.db.MaxScoreSubID(ctx, uid, pbID)
 	if err != nil {
 		return -1, WrapError(err, "Couldn't get max score ID")
@@ -41,7 +41,7 @@ func (s *BaseAPI) ContestMaxScore(ctx context.Context, uid, pbID, contestID int,
 	return s.db.ContestMaxScore(ctx, uid, pbID, contestID, freezeTime)
 }
 
-func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova.Submission, look bool, lookingUser *kilonova.UserBrief, truncatedCnt bool) (*Submissions, *StatusError) {
+func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova.Submission, look bool, lookingUser *kilonova.UserBrief, truncatedCnt bool) (*Submissions, error) {
 	usersMap := make(map[int]*kilonova.UserBrief)
 	problemsMap := make(map[int]*kilonova.Problem)
 
@@ -119,7 +119,7 @@ func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova
 	}, nil
 }
 
-func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFilter, look bool, lookingUser *kilonova.UserBrief) (*Submissions, *StatusError) {
+func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFilter, look bool, lookingUser *kilonova.UserBrief) (*Submissions, error) {
 	if filter.Limit == 0 || filter.Limit > 50 {
 		filter.Limit = 50
 	}
@@ -136,7 +136,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 	subs, err := s.db.Submissions(ctx, filter)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
-			return nil, ErrContextCanceled
+			return nil, err
 		}
 		zap.S().Warn(err)
 		return nil, ErrUnknownError
@@ -151,7 +151,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 	cnt, err := s.db.SubmissionCount(ctx, filter, maxCnt+1)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
-			return nil, ErrContextCanceled
+			return nil, err
 		}
 		zap.S().Warn(err)
 		return nil, ErrUnknownError
@@ -167,7 +167,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 }
 
 // Remember to do proper authorization when using this
-func (s *BaseAPI) RawSubmission(ctx context.Context, id int) (*kilonova.Submission, *StatusError) {
+func (s *BaseAPI) RawSubmission(ctx context.Context, id int) (*kilonova.Submission, error) {
 	sub, err := s.db.Submission(ctx, id)
 	if err != nil {
 		zap.S().Warn(err)
@@ -180,7 +180,7 @@ func (s *BaseAPI) RawSubmission(ctx context.Context, id int) (*kilonova.Submissi
 }
 
 // Should only ever be used for grader stuff
-func (s *BaseAPI) RawSubmissions(ctx context.Context, filter kilonova.SubmissionFilter) ([]*kilonova.Submission, *StatusError) {
+func (s *BaseAPI) RawSubmissions(ctx context.Context, filter kilonova.SubmissionFilter) ([]*kilonova.Submission, error) {
 	subs, err := s.db.Submissions(ctx, filter)
 	if err != nil {
 		zap.S().Warn(err)
@@ -189,7 +189,7 @@ func (s *BaseAPI) RawSubmissions(ctx context.Context, filter kilonova.Submission
 	return subs, nil
 }
 
-func (s *BaseAPI) RawSubmissionCode(ctx context.Context, subid int) ([]byte, *StatusError) {
+func (s *BaseAPI) RawSubmissionCode(ctx context.Context, subid int) ([]byte, error) {
 	data, err := s.db.SubmissionCode(ctx, subid)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -200,7 +200,7 @@ func (s *BaseAPI) RawSubmissionCode(ctx context.Context, subid int) ([]byte, *St
 	return data, nil
 }
 
-func (s *BaseAPI) SubmissionCode(ctx context.Context, sub *kilonova.Submission, subProblem *kilonova.Problem, lookingUser *kilonova.UserBrief, isLooking bool) ([]byte, *StatusError) {
+func (s *BaseAPI) SubmissionCode(ctx context.Context, sub *kilonova.Submission, subProblem *kilonova.Problem, lookingUser *kilonova.UserBrief, isLooking bool) ([]byte, error) {
 	if sub == nil || subProblem == nil || sub.ProblemID != subProblem.ID {
 		return nil, Statusf(400, "Invalid source code parameters")
 	}
@@ -219,16 +219,16 @@ func (s *BaseAPI) SubmissionCode(ctx context.Context, sub *kilonova.Submission, 
 
 type FullSubmission = kilonova.FullSubmission
 
-func (s *BaseAPI) Submission(ctx context.Context, subid int, lookingUser *kilonova.UserBrief) (*FullSubmission, *StatusError) {
+func (s *BaseAPI) Submission(ctx context.Context, subid int, lookingUser *kilonova.UserBrief) (*FullSubmission, error) {
 	return s.getSubmission(ctx, subid, lookingUser, true)
 }
 
 // FullSubmission gets the submission regardless of if there is a user watching or not
-func (s *BaseAPI) FullSubmission(ctx context.Context, subid int) (*FullSubmission, *StatusError) {
+func (s *BaseAPI) FullSubmission(ctx context.Context, subid int) (*FullSubmission, error) {
 	return s.getSubmission(ctx, subid, nil, false)
 }
 
-func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *kilonova.UserBrief, isLooking bool) (*FullSubmission, *StatusError) {
+func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *kilonova.UserBrief, isLooking bool) (*FullSubmission, error) {
 	var sub *kilonova.Submission
 	var problem *kilonova.Problem
 	if isLooking {
@@ -299,7 +299,7 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *kil
 	return rez, nil
 }
 
-func (s *BaseAPI) UpdateSubmission(ctx context.Context, id int, status kilonova.SubmissionUpdate) *StatusError {
+func (s *BaseAPI) UpdateSubmission(ctx context.Context, id int, status kilonova.SubmissionUpdate) error {
 	if err := s.db.UpdateSubmission(ctx, id, status); err != nil {
 		zap.S().Warn(err, id)
 		return WrapError(err, "Couldn't update submission")
@@ -310,7 +310,7 @@ func (s *BaseAPI) UpdateSubmission(ctx context.Context, id int, status kilonova.
 // RemainingSubmissionCount calculates how many more submissions a user can send
 // The first return value shows how many submissions they can still send
 // The second return value shows whether there is a limit or not
-func (s *BaseAPI) RemainingSubmissionCount(ctx context.Context, contest *kilonova.Contest, problemID int, userID int) (int, bool, *StatusError) {
+func (s *BaseAPI) RemainingSubmissionCount(ctx context.Context, contest *kilonova.Contest, problemID int, userID int) (int, bool, error) {
 	if contest.MaxSubs < 0 {
 		return 1, false, nil
 	}
@@ -325,7 +325,7 @@ func (s *BaseAPI) RemainingSubmissionCount(ctx context.Context, contest *kilonov
 	return contest.MaxSubs - cnt, true, nil
 }
 
-func (s *BaseAPI) LastSubmissionTime(ctx context.Context, filter kilonova.SubmissionFilter) (*time.Time, *StatusError) {
+func (s *BaseAPI) LastSubmissionTime(ctx context.Context, filter kilonova.SubmissionFilter) (*time.Time, error) {
 	t, err := s.db.LastSubmissionTime(ctx, filter)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get last submission time")
@@ -340,7 +340,7 @@ var (
 )
 
 // CreateSubmission produces a new submission and also creates the necessary subtests
-func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFull, problem *kilonova.Problem, code []byte, lang *Language, contestID *int, bypassSubCount bool) (int, *StatusError) {
+func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFull, problem *kilonova.Problem, code []byte, lang *Language, contestID *int, bypassSubCount bool) (int, error) {
 	if author == nil {
 		return -1, Statusf(400, "Invalid submission author")
 	}
@@ -458,7 +458,7 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 	return id, nil
 }
 
-func (s *BaseAPI) DeleteSubmission(ctx context.Context, subID int) *StatusError {
+func (s *BaseAPI) DeleteSubmission(ctx context.Context, subID int) error {
 	if err := s.db.DeleteSubmission(ctx, subID); err != nil {
 		zap.S().Warn("Couldn't delete submission:", err)
 		return Statusf(500, "Failed to delete submission")
@@ -466,7 +466,7 @@ func (s *BaseAPI) DeleteSubmission(ctx context.Context, subID int) *StatusError 
 	return nil
 }
 
-func (s *BaseAPI) ResetProblemSubmissions(ctx context.Context, problem *kilonova.Problem) *StatusError {
+func (s *BaseAPI) ResetProblemSubmissions(ctx context.Context, problem *kilonova.Problem) error {
 	if err := s.db.BulkUpdateSubmissions(ctx, kilonova.SubmissionFilter{ProblemID: &problem.ID}, kilonova.SubmissionUpdate{
 		Status: kilonova.StatusReevaling,
 	}); err != nil {
@@ -566,7 +566,7 @@ func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission
 	}
 }
 
-func (s *BaseAPI) CreatePaste(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) (string, *StatusError) {
+func (s *BaseAPI) CreatePaste(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) (string, error) {
 	if !PastesEnabled.Value() {
 		return "", kilonova.ErrFeatureDisabled
 	}
@@ -577,7 +577,7 @@ func (s *BaseAPI) CreatePaste(ctx context.Context, sub *kilonova.Submission, use
 	return paste.ID, nil
 }
 
-func (s *BaseAPI) SubmissionPaste(ctx context.Context, id string) (*kilonova.SubmissionPaste, *StatusError) {
+func (s *BaseAPI) SubmissionPaste(ctx context.Context, id string) (*kilonova.SubmissionPaste, error) {
 	if !PastesEnabled.Value() {
 		return nil, kilonova.ErrFeatureDisabled
 	}
@@ -591,7 +591,7 @@ func (s *BaseAPI) SubmissionPaste(ctx context.Context, id string) (*kilonova.Sub
 	return paste, nil
 }
 
-func (s *BaseAPI) DeletePaste(ctx context.Context, id string) *StatusError {
+func (s *BaseAPI) DeletePaste(ctx context.Context, id string) error {
 	if !PastesEnabled.Value() {
 		return kilonova.ErrFeatureDisabled
 	}
@@ -601,7 +601,7 @@ func (s *BaseAPI) DeletePaste(ctx context.Context, id string) *StatusError {
 	return nil
 }
 
-func (s *BaseAPI) SubmissionSubTasks(ctx context.Context, subID int) ([]*kilonova.SubmissionSubTask, *StatusError) {
+func (s *BaseAPI) SubmissionSubTasks(ctx context.Context, subID int) ([]*kilonova.SubmissionSubTask, error) {
 	subs, err := s.db.SubmissionSubTasksBySubID(ctx, subID)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get submission subtasks")
@@ -609,7 +609,7 @@ func (s *BaseAPI) SubmissionSubTasks(ctx context.Context, subID int) ([]*kilonov
 	return subs, nil
 }
 
-func (s *BaseAPI) MaximumScoreSubTasks(ctx context.Context, problemID, userID int, contestID *int) ([]*kilonova.SubmissionSubTask, *StatusError) {
+func (s *BaseAPI) MaximumScoreSubTasks(ctx context.Context, problemID, userID int, contestID *int) ([]*kilonova.SubmissionSubTask, error) {
 	subs, err := s.db.MaximumScoreSubTasks(ctx, problemID, userID, contestID)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't get maximum subtasks")
@@ -617,7 +617,7 @@ func (s *BaseAPI) MaximumScoreSubTasks(ctx context.Context, problemID, userID in
 	return subs, nil
 }
 
-func (s *BaseAPI) UpdateSubmissionSubtaskPercentage(ctx context.Context, id int, percentage decimal.Decimal) *kilonova.StatusError {
+func (s *BaseAPI) UpdateSubmissionSubtaskPercentage(ctx context.Context, id int, percentage decimal.Decimal) error {
 	if err := s.db.UpdateSubmissionSubtaskPercentage(ctx, id, percentage); err != nil {
 		return WrapError(err, "Couldn't update subtask percentage")
 	}

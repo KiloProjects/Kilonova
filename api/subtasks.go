@@ -16,7 +16,7 @@ func (s *API) createSubTask(w http.ResponseWriter, r *http.Request) {
 		Tests     []int `json:"tests"`
 	}
 	if err := parseJSONBody(r, &args); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -47,7 +47,7 @@ func (s *API) createSubTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.CreateSubTask(r.Context(), &stk); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	returnData(w, stk.ID)
@@ -62,7 +62,7 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 		Tests     []int    `json:"tests"`
 	}
 	if err := parseJSONBody(r, &args); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -73,7 +73,7 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 
 	stk, err := s.base.SubTask(r.Context(), util.Problem(r).ID, *args.SubTaskID)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -87,7 +87,7 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 		VisibleID: args.NewID,
 		Score:     score,
 	}); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -103,7 +103,7 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := s.base.UpdateSubTaskTests(r.Context(), stk.ID, newIDs); err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 	}
@@ -115,7 +115,7 @@ func (s *API) bulkDeleteSubTasks(w http.ResponseWriter, r *http.Request) {
 	var removedSubTasks int
 	var subtaskIDs []int
 	if err := parseJSONBody(r, &subtaskIDs); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -138,7 +138,7 @@ func (s *API) bulkUpdateSubTaskScores(w http.ResponseWriter, r *http.Request) {
 	var updatedSubTasks int
 
 	if err := parseJSONBody(r, &data); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	for k, v := range data {

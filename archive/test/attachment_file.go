@@ -1,8 +1,8 @@
 package test
 
 import (
-	"archive/zip"
 	"encoding/json"
+	"io/fs"
 	"log/slog"
 	"path"
 	"strings"
@@ -11,11 +11,11 @@ import (
 )
 
 type archiveAttachment struct {
-	File    *zip.File
-	Name    string
-	Visible bool
-	Private bool
-	Exec    bool
+	FilePath string
+	Name     string
+	Visible  bool
+	Private  bool
+	Exec     bool
 }
 
 type attachmentProps struct {
@@ -24,8 +24,8 @@ type attachmentProps struct {
 	Exec    bool `json:"exec"`
 }
 
-func ProcessAttachmentFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
-	name := path.Base(file.Name)
+func ProcessAttachmentFile(ctx *ArchiveCtx, fpath string) error {
+	name := path.Base(fpath)
 	if strings.HasSuffix(name, ".att_props") {
 		// Parse attachment props
 		// TODO: Bring property autocomplete from frontend for attachments that don't have .att_props
@@ -34,12 +34,11 @@ func ProcessAttachmentFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 
 		name = strings.TrimSuffix(name, ".att_props")
 
-		f, err := file.Open()
+		data, err := fs.ReadFile(ctx.fs, name)
 		if err != nil {
-			return kilonova.WrapError(err, "Couldn't open props file")
+			return kilonova.WrapError(err, "Couldn't read props file")
 		}
-		defer f.Close()
-		if err := json.NewDecoder(f).Decode(&props); err != nil {
+		if err := json.Unmarshal(data, &props); err != nil {
 			return kilonova.WrapError(err, "Invalid props file")
 		}
 
@@ -63,33 +62,33 @@ func ProcessAttachmentFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusErro
 	_, ok := ctx.attachments[name]
 	if ok {
 		val := ctx.attachments[name]
-		val.File = file
+		val.FilePath = fpath
 		ctx.attachments[name] = val
 	} else {
 		ctx.attachments[name] = archiveAttachment{
-			File:    file,
-			Name:    name,
-			Visible: false,
-			Private: false,
-			Exec:    false,
+			FilePath: fpath,
+			Name:     name,
+			Visible:  false,
+			Private:  false,
+			Exec:     false,
 		}
 	}
 	return nil
 }
 
-func ProcessPolygonCheckFile(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
+func ProcessPolygonCheckFile(ctx *ArchiveCtx, fpath string) error {
 	ctx.attachments["checker.cpp17"] = archiveAttachment{
-		File:    file,
-		Name:    "checker.cpp17",
-		Visible: false,
-		Private: true,
-		Exec:    true,
+		FilePath: fpath,
+		Name:     "checker.cpp17",
+		Visible:  false,
+		Private:  true,
+		Exec:     true,
 	}
 	return nil
 }
 
-func ProcessPolygonPDFStatement(ctx *ArchiveCtx, file *zip.File) *kilonova.StatusError {
-	parts := strings.Split(file.Name, "/")
+func ProcessPolygonPDFStatement(ctx *ArchiveCtx, fpath string) error {
+	parts := strings.Split(fpath, "/")
 	if len(parts) != 4 {
 		slog.WarnContext(ctx.ctx, "Sanity check failed: Polygon PDF statement is not 4 parts")
 		return nil
@@ -104,11 +103,11 @@ func ProcessPolygonPDFStatement(ctx *ArchiveCtx, file *zip.File) *kilonova.Statu
 		return nil
 	}
 	ctx.attachments[filename] = archiveAttachment{
-		File:    file,
-		Name:    filename,
-		Visible: false,
-		Private: false,
-		Exec:    false,
+		FilePath: fpath,
+		Name:     filename,
+		Visible:  false,
+		Private:  false,
+		Exec:     false,
 	}
 	return nil
 }

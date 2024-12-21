@@ -39,7 +39,7 @@ type Handler struct {
 	runner eval.BoxScheduler
 }
 
-func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, *kilonova.StatusError) {
+func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, error) {
 	ch := make(chan *kilonova.Submission, 1)
 	wCh := make(chan struct{}, 1)
 

@@ -40,9 +40,8 @@ func NewLocalRenderer() *LocalRenderer {
 		goldmark.WithExtensions(extension.GFM, extension.Footnote, &attNode{}, knkatex.Extension,
 			highlighting.NewHighlighting(
 				highlighting.WithStyle("github"),
-				highlighting.WithFormatOptions( // TODO: Keep in line with handlers.go:chromaCSS()
-					chtml.TabWidth(4),
-					chtml.WithClasses(true),
+				highlighting.WithFormatOptions(
+					HighlightFormatOptions()...,
 				),
 			),
 			&LinkConv{},
@@ -52,4 +51,11 @@ func NewLocalRenderer() *LocalRenderer {
 		goldmark.WithRendererOptions(html.WithHardWraps(), html.WithXHTML()),
 	)
 	return &LocalRenderer{md}
+}
+
+func HighlightFormatOptions() []chtml.Option {
+	return []chtml.Option{
+		chtml.TabWidth(4),
+		chtml.WithClasses(true),
+	}
 }

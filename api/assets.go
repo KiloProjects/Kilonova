@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"io/fs"
 	"log/slog"
 	"math"
 	"net/http"
@@ -138,7 +139,7 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 		renderType := fmt.Sprintf("img_%dx%d", width, height)
 		data, err := s.base.GetAttachmentRender(att.ID, renderType)
 		if err != nil {
-			if !errors.Is(err, kilonova.ErrNotExist) {
+			if !errors.Is(err, fs.ErrNotExist) {
 				slog.WarnContext(r.Context(), "Could not load attachment render cache", slog.Any("err", err))
 			}
 		} else {
@@ -187,7 +188,7 @@ func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request)
 
 	ld, err := s.api.leaderboard(r.Context(), util.Contest(r), util.UserBrief(r), &args)
 	if err != nil {
-		http.Error(w, err.Error(), err.Code)
+		http.Error(w, err.Error(), kilonova.ErrorCode(err))
 		return
 	}
 	var buf bytes.Buffer

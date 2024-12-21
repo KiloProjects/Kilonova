@@ -16,7 +16,7 @@ type submissionStub struct {
 	lang string
 }
 
-func ProcessSubmissionFile(ctx *ArchiveCtx, file *zip.File, base *sudoapi.BaseAPI) *kilonova.StatusError {
+func ProcessSubmissionFile(ctx *ArchiveCtx, file *zip.File, base *sudoapi.BaseAPI) error {
 	f, err := file.Open()
 	if err != nil {
 		return kilonova.WrapError(err, "Couldn't open submission file")

@@ -14,7 +14,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/tasks"
@@ -288,7 +287,7 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 		// TODO: Use datastore manager
 		// Do not reset val.Mode here, since CopyInBox stats and sets the proper mode
 		if err := copyInBox(box, datastore.GetBucket(val.Bucket), val.Filename, path, val.Mode); err != nil {
-			if errors.Is(err, kilonova.ErrNotExist) {
+			if errors.Is(err, fs.ErrNotExist) {
 				slog.WarnContext(ctx, "Bucket file doesn't exist when copying in sandbox",
 					slog.Any("bucket", val.Bucket), slog.String("filename", val.Filename),
 					slog.String("target_path", path), slog.Int("box_id", box.GetID()),

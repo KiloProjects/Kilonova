@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *BaseAPI) UserBlogPosts(ctx context.Context, userID int, lookingUser *kilonova.UserBrief) ([]*kilonova.BlogPost, *StatusError) {
+func (s *BaseAPI) UserBlogPosts(ctx context.Context, userID int, lookingUser *kilonova.UserBrief) ([]*kilonova.BlogPost, error) {
 	blogPosts, err := s.db.BlogPosts(ctx, kilonova.BlogPostFilter{AuthorID: &userID, Look: true, LookingUser: lookingUser})
 	if err != nil {
 		return nil, WrapError(err, "Couldn't find blog posts")
@@ -19,7 +19,7 @@ func (s *BaseAPI) UserBlogPosts(ctx context.Context, userID int, lookingUser *ki
 	return blogPosts, nil
 }
 
-func (s *BaseAPI) BlogPosts(ctx context.Context, filter kilonova.BlogPostFilter) ([]*kilonova.BlogPost, *StatusError) {
+func (s *BaseAPI) BlogPosts(ctx context.Context, filter kilonova.BlogPostFilter) ([]*kilonova.BlogPost, error) {
 	blogPosts, err := s.db.BlogPosts(ctx, filter)
 	if err != nil {
 		return nil, WrapError(err, "Couldn't find posts")
@@ -30,7 +30,7 @@ func (s *BaseAPI) BlogPosts(ctx context.Context, filter kilonova.BlogPostFilter)
 	return blogPosts, nil
 }
 
-func (s *BaseAPI) CountBlogPosts(ctx context.Context, filter kilonova.BlogPostFilter) (int, *StatusError) {
+func (s *BaseAPI) CountBlogPosts(ctx context.Context, filter kilonova.BlogPostFilter) (int, error) {
 	cnt, err := s.db.CountBlogPosts(ctx, filter)
 	if err != nil {
 		return -1, WrapError(err, "Couldn't count posts")
@@ -38,7 +38,7 @@ func (s *BaseAPI) CountBlogPosts(ctx context.Context, filter kilonova.BlogPostFi
 	return cnt, nil
 }
 
-func (s *BaseAPI) BlogPost(ctx context.Context, id int) (*kilonova.BlogPost, *StatusError) {
+func (s *BaseAPI) BlogPost(ctx context.Context, id int) (*kilonova.BlogPost, error) {
 	blogPost, err := s.db.BlogPost(ctx, kilonova.BlogPostFilter{ID: &id})
 	if err != nil || blogPost == nil {
 		return nil, WrapError(err, "Blog post not found")
@@ -46,7 +46,7 @@ func (s *BaseAPI) BlogPost(ctx context.Context, id int) (*kilonova.BlogPost, *St
 	return blogPost, nil
 }
 
-func (s *BaseAPI) BlogPostBySlug(ctx context.Context, slug string) (*kilonova.BlogPost, *StatusError) {
+func (s *BaseAPI) BlogPostBySlug(ctx context.Context, slug string) (*kilonova.BlogPost, error) {
 	blogPost, err := s.db.BlogPost(ctx, kilonova.BlogPostFilter{Slug: &slug})
 	if err != nil || blogPost == nil {
 		return nil, WrapError(err, "Blog post not found")
@@ -54,7 +54,7 @@ func (s *BaseAPI) BlogPostBySlug(ctx context.Context, slug string) (*kilonova.Bl
 	return blogPost, nil
 }
 
-func (s *BaseAPI) UpdateBlogPost(ctx context.Context, id int, upd kilonova.BlogPostUpdate) *StatusError {
+func (s *BaseAPI) UpdateBlogPost(ctx context.Context, id int, upd kilonova.BlogPostUpdate) error {
 	if upd.Title != nil && *upd.Title == "" {
 		return Statusf(400, "Title can't be empty!")
 	}
@@ -81,7 +81,7 @@ func (s *BaseAPI) UpdateBlogPost(ctx context.Context, id int, upd kilonova.BlogP
 	return nil
 }
 
-func (s *BaseAPI) CreateBlogPost(ctx context.Context, title string, author *kilonova.UserBrief) (int, string, *StatusError) {
+func (s *BaseAPI) CreateBlogPost(ctx context.Context, title string, author *kilonova.UserBrief) (int, string, error) {
 	postID, slug, err := s.db.CreateBlogPost(ctx, title, author.ID)
 	if err != nil {
 		return -1, "", WrapError(err, "Couldn't create blog post")
@@ -89,7 +89,7 @@ func (s *BaseAPI) CreateBlogPost(ctx context.Context, title string, author *kilo
 	return postID, slug, nil
 }
 
-func (s *BaseAPI) DeleteBlogPost(ctx context.Context, post *kilonova.BlogPost) *StatusError {
+func (s *BaseAPI) DeleteBlogPost(ctx context.Context, post *kilonova.BlogPost) error {
 	// Delete attachments first, so they are fully removed from the database
 	atts, err := s.BlogPostAttachments(ctx, post.ID)
 	if err != nil {

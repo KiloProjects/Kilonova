@@ -18,7 +18,7 @@ var forgotPwdTempl = template.Must(template.New("emailTempl").Parse(passwordForg
 
 // SendPasswordResetEmail sends a password reset email to the user.
 // Please provide a good context.
-func (s *BaseAPI) SendPasswordResetEmail(ctx context.Context, userID int, name, email, lang string) *StatusError {
+func (s *BaseAPI) SendPasswordResetEmail(ctx context.Context, userID int, name, email, lang string) error {
 	if s.mailer == nil || !s.MailerEnabled() {
 		zap.S().Error("SendPasswordResetEmail called, but no mailer was provided to *sudoapi.BaseAPI")
 		return Statusf(500, "Mailer system was disabled by admins.")
@@ -62,7 +62,7 @@ func (s *BaseAPI) CheckPasswordResetRequest(ctx context.Context, rid string) boo
 	return err == nil && val > 0
 }
 
-func (s *BaseAPI) GetPwdResetRequestUser(ctx context.Context, rid string) (int, *StatusError) {
+func (s *BaseAPI) GetPwdResetRequestUser(ctx context.Context, rid string) (int, error) {
 	id, err := s.db.GetPwdResetRequest(ctx, rid)
 	if err != nil || id == -1 {
 		return -1, Statusf(404, "PwdResetRequest code doesn't exist")
@@ -70,7 +70,7 @@ func (s *BaseAPI) GetPwdResetRequestUser(ctx context.Context, rid string) (int, 
 	return id, nil
 }
 
-func (s *BaseAPI) FinalizePasswordReset(ctx context.Context, rid string, newPassword string) *StatusError {
+func (s *BaseAPI) FinalizePasswordReset(ctx context.Context, rid string, newPassword string) error {
 	userID, err := s.GetPwdResetRequestUser(ctx, rid)
 	if err != nil {
 		return err

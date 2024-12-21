@@ -17,7 +17,7 @@ func (s *API) createPaste(w http.ResponseWriter, r *http.Request) {
 
 	id, err := s.base.CreatePaste(r.Context(), &util.Submission(r).Submission, util.UserBrief(r))
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	returnData(w, id)
@@ -28,13 +28,13 @@ func (s *API) getPaste(w http.ResponseWriter, r *http.Request) {
 
 	paste, err := s.base.SubmissionPaste(r.Context(), id)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
 	sub, err := s.fullSubmission(r.Context(), paste.Submission.ID, nil, false)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -54,7 +54,7 @@ func (s *API) deletePaste(w http.ResponseWriter, r *http.Request) {
 
 	paste, err := s.base.SubmissionPaste(r.Context(), id)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 
@@ -64,7 +64,7 @@ func (s *API) deletePaste(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.DeletePaste(r.Context(), paste.ID); err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 

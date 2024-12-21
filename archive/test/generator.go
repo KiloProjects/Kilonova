@@ -51,7 +51,7 @@ type archiveGenerator struct {
 	testName string
 }
 
-func (ag *archiveGenerator) addTests(ctx context.Context) *kilonova.StatusError {
+func (ag *archiveGenerator) addTests(ctx context.Context) error {
 	tests, err := ag.base.Tests(ctx, ag.pb.ID)
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func (ag *archiveGenerator) addTests(ctx context.Context) *kilonova.StatusError 
 
 	// Add test files
 	for _, test := range tests {
-		if err := func() *kilonova.StatusError {
+		if err := func() error {
 			f, err := ag.ar.Create(fmt.Sprintf("%d-%s.in", test.VisibleID, ag.testName))
 			if err != nil {
 				return kilonova.WrapError(err, "Couldn't create archive file")
@@ -78,7 +78,7 @@ func (ag *archiveGenerator) addTests(ctx context.Context) *kilonova.StatusError 
 		}(); err != nil {
 			return err
 		}
-		if err := func() *kilonova.StatusError {
+		if err := func() error {
 			f, err := ag.ar.Create(fmt.Sprintf("%d-%s.ok", test.VisibleID, ag.testName))
 			if err != nil {
 				return kilonova.WrapError(err, "Couldn't create archive file")
@@ -113,7 +113,7 @@ func (ag *archiveGenerator) addTests(ctx context.Context) *kilonova.StatusError 
 	return nil
 }
 
-func (ag *archiveGenerator) addAttachments(ctx context.Context) *kilonova.StatusError {
+func (ag *archiveGenerator) addAttachments(ctx context.Context) error {
 	atts, err := ag.base.ProblemAttachments(ctx, ag.pb.ID)
 	if err != nil {
 		return kilonova.WrapError(err, "Couldn't get attachments")
@@ -153,7 +153,7 @@ func (ag *archiveGenerator) addAttachments(ctx context.Context) *kilonova.Status
 	return nil
 }
 
-func (ag *archiveGenerator) addGraderProperties(ctx context.Context) *kilonova.StatusError {
+func (ag *archiveGenerator) addGraderProperties(ctx context.Context) error {
 	var buf bytes.Buffer
 
 	if ag.opts.Tests {
@@ -258,7 +258,7 @@ func (ag *archiveGenerator) addGraderProperties(ctx context.Context) *kilonova.S
 	return nil
 }
 
-func (ag *archiveGenerator) addSubmissions(ctx context.Context) *kilonova.StatusError {
+func (ag *archiveGenerator) addSubmissions(ctx context.Context) error {
 	filter := kilonova.SubmissionFilter{ProblemID: &ag.pb.ID}
 	if !ag.opts.AllSubmissions {
 		filter.FromAuthors = true
@@ -293,7 +293,7 @@ func (ag *archiveGenerator) addSubmissions(ctx context.Context) *kilonova.Status
 	return nil
 }
 
-func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, base *sudoapi.BaseAPI, opts *ArchiveGenOptions) *kilonova.StatusError {
+func GenerateArchive(ctx context.Context, pb *kilonova.Problem, w io.Writer, base *sudoapi.BaseAPI, opts *ArchiveGenOptions) error {
 	ag := &archiveGenerator{
 		pb:   pb,
 		ar:   zip.NewWriter(w),

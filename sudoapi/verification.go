@@ -24,7 +24,7 @@ var verificationEmailTempl = template.Must(template.New("emailTempl").Parse(veri
 // NOTE: I think the user update breaks some single responsibility principle or something, but I think most places this could be used also does this, so meh.
 //
 // If `email` is different than the user's email, the email address is also updated.
-func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, email, lang string) *StatusError {
+func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, email, lang string) error {
 	if s.mailer == nil || !s.MailerEnabled() || userID == 1 {
 		zap.S().Infof("Auto confirming email for user #%d as valid", userID)
 
@@ -94,7 +94,7 @@ func (s *BaseAPI) CheckVerificationEmail(ctx context.Context, vid string) bool {
 	return err == nil && val > 0
 }
 
-func (s *BaseAPI) GetVerificationUser(ctx context.Context, vid string) (int, *StatusError) {
+func (s *BaseAPI) GetVerificationUser(ctx context.Context, vid string) (int, error) {
 	id, err := s.db.GetVerification(ctx, vid)
 	if err != nil || id == -1 {
 		return -1, Statusf(404, "Verification code doesn't exist")
@@ -102,7 +102,7 @@ func (s *BaseAPI) GetVerificationUser(ctx context.Context, vid string) (int, *St
 	return id, nil
 }
 
-func (s *BaseAPI) ConfirmVerificationEmail(vid string, user *kilonova.UserBrief) *StatusError {
+func (s *BaseAPI) ConfirmVerificationEmail(vid string, user *kilonova.UserBrief) error {
 	if err := s.db.RemoveVerification(context.Background(), vid); err != nil {
 		return Statusf(500, "Couldn't delete verification code.")
 	}

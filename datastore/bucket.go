@@ -159,7 +159,7 @@ func (b *Bucket) Reader(name string) (io.ReadCloser, error) {
 		return f, nil
 	}
 	if errors.Is(err, fs.ErrNotExist) {
-		return nil, kilonova.ErrNotExist
+		return nil, fs.ErrNotExist
 	}
 
 	if _, err := os.Stat(b.filePath(name) + ".gz"); err == nil {

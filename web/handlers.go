@@ -255,7 +255,7 @@ func (rt *Web) problems() http.HandlerFunc {
 			slices.Sort(allTags)
 			allTags = slices.Compact(allTags)
 
-			var err *kilonova.StatusError
+			var err error
 			tags, err = rt.base.TagsByID(r.Context(), allTags)
 			if err != nil {
 				zap.S().Warn(err)
@@ -1991,7 +1991,7 @@ func (rt *Web) runModal(w http.ResponseWriter, r *http.Request, templ *template.
 	rt.runTemplate(w, r, templ, name, data)
 }
 
-func (rt *Web) getOlderSubmissions(ctx context.Context, lookingUser *kilonova.UserBrief, userID int, problem *kilonova.Problem, contest *kilonova.Contest, limit int) (*OlderSubmissionsParams, *kilonova.StatusError) {
+func (rt *Web) getOlderSubmissions(ctx context.Context, lookingUser *kilonova.UserBrief, userID int, problem *kilonova.Problem, contest *kilonova.Contest, limit int) (*OlderSubmissionsParams, error) {
 	var filter = kilonova.SubmissionFilter{
 		UserID:    &userID,
 		ProblemID: &problem.ID,

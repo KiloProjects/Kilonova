@@ -2,7 +2,7 @@ package sudoapi
 
 import (
 	"context"
-	"errors"
+	"log/slog"
 	"net/http"
 	"net/netip"
 	"time"
@@ -17,7 +17,7 @@ var (
 	TrueIPHeader = config.GenFlag[string]("server.listen.true_ip_header", "", "True IP header. Leave empty if not behind reverse proxy, the proxy's remote ip header (X-Forwarded-For, for example) otherwise")
 )
 
-func (s *BaseAPI) CreateSession(ctx context.Context, uid int) (string, *StatusError) {
+func (s *BaseAPI) CreateSession(ctx context.Context, uid int) (string, error) {
 	sid, err := s.db.CreateSession(ctx, uid)
 	if err != nil {
 		zap.S().Warn("Failed to create session: ", err)
@@ -36,7 +36,7 @@ func (s *BaseAPI) CreateSession(ctx context.Context, uid int) (string, *StatusEr
 }
 
 // Please note that, when unauthed, GetSession will return a session with UserID set to -1
-func (s *BaseAPI) GetSession(ctx context.Context, sid string) (int, *StatusError) {
+func (s *BaseAPI) GetSession(ctx context.Context, sid string) (int, error) {
 	uid, err := s.db.GetSession(ctx, sid)
 	if err != nil {
 		if err.Error() == "Unauthed" {
@@ -50,7 +50,7 @@ func (s *BaseAPI) GetSession(ctx context.Context, sid string) (int, *StatusError
 }
 
 // Uncached function
-func (s *BaseAPI) sessionUser(ctx context.Context, sid string) (*kilonova.UserFull, *StatusError) {
+func (s *BaseAPI) sessionUser(ctx context.Context, sid string) (*kilonova.UserFull, error) {
 	user, err := s.db.User(ctx, kilonova.UserFilter{SessionID: &sid})
 	if err != nil {
 		return nil, WrapError(err, "Failed to get session user")
@@ -60,21 +60,17 @@ func (s *BaseAPI) sessionUser(ctx context.Context, sid string) (*kilonova.UserFu
 
 // Cached function
 // Should be called only in session initialization
-func (s *BaseAPI) SessionUser(ctx context.Context, sid string, r *http.Request) (*kilonova.UserFull, *StatusError) {
+func (s *BaseAPI) SessionUser(ctx context.Context, sid string, r *http.Request) (*kilonova.UserFull, error) {
 	user, err := s.sessionUserCache.Get(ctx, sid)
 	if err != nil {
-		var err1 *StatusError
-		if errors.As(err, &err1) {
-			return nil, err1
-		}
-		zap.S().Warn("session user cache error: ", err)
+		slog.WarnContext(ctx, "session user cache error", slog.Any("err", err))
 		return s.sessionUser(ctx, sid)
 	}
 	if user != nil {
 		go func(uid int, r *http.Request) {
 			ip, ua := s.GetRequestInfo(r)
 			if err := s.db.UpdateSessionDevice(context.Background(), sid, user.ID, ip, &ua); err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(ctx, "Couldn't update session device", slog.Any("err", err))
 			}
 		}(user.ID, r)
 	}
@@ -90,7 +86,7 @@ func (s *BaseAPI) GetRequestInfo(r *http.Request) (ip *netip.Addr, ua string) {
 	if len(TrueIPHeader.Value()) > 0 && len(r.Header.Get(TrueIPHeader.Value())) > 0 {
 		addr, err := netip.ParseAddr(r.Header.Get(TrueIPHeader.Value()))
 		if err != nil {
-			zap.S().Warn("Invalid address in reverse proxy header: ", err)
+			slog.WarnContext(r.Context(), "Invalid address in reverse proxy header", slog.Any("err", err))
 		} else {
 			ip = &addr
 		}
@@ -114,14 +110,14 @@ type SessionDevice struct {
 
 type SessionFilter = db.SessionFilter
 
-func (s *BaseAPI) Sessions(ctx context.Context, filter *SessionFilter) ([]*Session, *StatusError) {
+func (s *BaseAPI) Sessions(ctx context.Context, filter *SessionFilter) ([]*Session, error) {
 	sessions, err := s.db.Sessions(ctx, filter)
 	if err != nil {
 		return nil, WrapError(err, "Could not filter sessions")
 	}
 	return sessions, nil
 }
-func (s *BaseAPI) CountSessions(ctx context.Context, filter *SessionFilter) (int, *StatusError) {
+func (s *BaseAPI) CountSessions(ctx context.Context, filter *SessionFilter) (int, error) {
 	sessions, err := s.db.CountSessions(ctx, filter)
 	if err != nil {
 		return -1, WrapError(err, "Could not query session count")
@@ -129,7 +125,7 @@ func (s *BaseAPI) CountSessions(ctx context.Context, filter *SessionFilter) (int
 	return sessions, nil
 }
 
-func (s *BaseAPI) UserSessions(ctx context.Context, userID int) ([]*Session, *StatusError) {
+func (s *BaseAPI) UserSessions(ctx context.Context, userID int) ([]*Session, error) {
 	sessions, err := s.db.Sessions(ctx, &db.SessionFilter{UserID: &userID})
 	if err != nil {
 		return nil, WrapError(err, "Could not get user sessions")
@@ -137,7 +133,7 @@ func (s *BaseAPI) UserSessions(ctx context.Context, userID int) ([]*Session, *St
 	return sessions, nil
 }
 
-func (s *BaseAPI) SessionDevices(ctx context.Context, sid string) ([]*SessionDevice, *StatusError) {
+func (s *BaseAPI) SessionDevices(ctx context.Context, sid string) ([]*SessionDevice, error) {
 	devices, err := s.db.SessionDevices(ctx, sid)
 	if err != nil {
 		return nil, WrapError(err, "Could not get session devices")
@@ -157,7 +153,7 @@ func (s *BaseAPI) SessionDevices(ctx context.Context, sid string) ([]*SessionDev
 	return retDevices, nil
 }
 
-func (s *BaseAPI) RemoveSession(ctx context.Context, sid string) *StatusError {
+func (s *BaseAPI) RemoveSession(ctx context.Context, sid string) error {
 	if err := s.db.RemoveSession(ctx, sid); err != nil {
 		zap.S().Warn("Failed to remove session: ", err)
 		return WrapError(err, "Failed to remove session")
@@ -166,7 +162,7 @@ func (s *BaseAPI) RemoveSession(ctx context.Context, sid string) *StatusError {
 	return nil
 }
 
-func (s *BaseAPI) RemoveUserSessions(ctx context.Context, uid int) *StatusError {
+func (s *BaseAPI) RemoveUserSessions(ctx context.Context, uid int) error {
 	removedSessions, err := s.db.RemoveSessions(ctx, uid)
 	if err != nil {
 		return WrapError(err, "Failed to remove sessions")
@@ -177,7 +173,7 @@ func (s *BaseAPI) RemoveUserSessions(ctx context.Context, uid int) *StatusError 
 	return nil
 }
 
-func (s *BaseAPI) ExtendSession(ctx context.Context, sid string) (time.Time, *StatusError) {
+func (s *BaseAPI) ExtendSession(ctx context.Context, sid string) (time.Time, error) {
 	newExpiration, err := s.db.ExtendSession(ctx, sid)
 	if err != nil {
 		if err.Error() == "Unauthed" {

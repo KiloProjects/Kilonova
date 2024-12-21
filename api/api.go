@@ -48,13 +48,13 @@ func (s *API) Handler() http.Handler {
 		r.Post("/updateFlags", s.updateBoolFlags)
 
 		r.Route("/maintenance", func(r chi.Router) {
-			r.Post("/resetWaitingSubs", webMessageWrapper("Reset waiting subs", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
+			r.Post("/resetWaitingSubs", webMessageWrapper("Reset waiting subs", func(ctx context.Context, _ struct{}) error {
 				return s.base.ResetWaitingSubmissions(ctx)
 			}))
-			r.Post("/mdCacheWarmup", webMessageWrapper("Warmed up cache.", func(ctx context.Context, _ struct{}) *kilonova.StatusError { return s.base.WarmupStatementCache(ctx) }))
+			r.Post("/mdCacheWarmup", webMessageWrapper("Warmed up cache.", func(ctx context.Context, _ struct{}) error { return s.base.WarmupStatementCache(ctx) }))
 			r.Route("/bucket/{bname}", func(r chi.Router) {
 				r.Use(s.validateBucket)
-				r.Post("/cleanCache", webMessageWrapper("Reset bucket cache", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
+				r.Post("/cleanCache", webMessageWrapper("Reset bucket cache", func(ctx context.Context, _ struct{}) error {
 					b := util.BucketContext(ctx)
 					if !b.Cache {
 						return kilonova.Statusf(403, "Refusing to remove non-cache bucket")
@@ -65,7 +65,7 @@ func (s *API) Handler() http.Handler {
 					}
 					return nil
 				}))
-				r.Post("/evictObjects", webWrapper(func(ctx context.Context, _ struct{}) (string, *kilonova.StatusError) {
+				r.Post("/evictObjects", webWrapper(func(ctx context.Context, _ struct{}) (string, error) {
 					b := util.BucketContext(ctx)
 					if b.Persistent {
 						return "", kilonova.Statusf(403, "Refusing to remove important bucket")
@@ -80,7 +80,7 @@ func (s *API) Handler() http.Handler {
 				}))
 				r.Post("/stats", webWrapper(func(ctx context.Context, args struct {
 					Refresh bool `json:"refresh"`
-				}) (*datastore.BucketStats, *kilonova.StatusError) {
+				}) (*datastore.BucketStats, error) {
 					return util.BucketContext(ctx).Statistics(args.Refresh), nil
 				}))
 			})
@@ -164,7 +164,7 @@ func (s *API) Handler() http.Handler {
 					r.Post("/bulkDeleteSubTasks", s.bulkDeleteSubTasks)
 				})
 
-				r.Post("/reevaluateSubs", webMessageWrapper("Reevaluating submissions", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
+				r.Post("/reevaluateSubs", webMessageWrapper("Reevaluating submissions", func(ctx context.Context, _ struct{}) error {
 					return s.base.ResetProblemSubmissions(context.WithoutCancel(ctx), util.ProblemContext(ctx))
 				}))
 
@@ -172,13 +172,13 @@ func (s *API) Handler() http.Handler {
 			})
 
 			r.Route("/get", func(r chi.Router) {
-				r.Get("/attachments", webWrapper(func(ctx context.Context, _ struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
+				r.Get("/attachments", webWrapper(func(ctx context.Context, _ struct{}) ([]*kilonova.Attachment, error) {
 					return s.base.ProblemAttachments(ctx, util.ProblemContext(ctx).ID)
 				}))
 				r.With(s.validateAttachmentID).Get("/attachment/{aID}", webWrapper(s.getFullAttachment))
 				r.With(s.validateAttachmentName).Get("/attachmentByName/{aName}", webWrapper(s.getFullAttachment))
 
-				r.With(s.validateProblemEditor).Get("/checklist", webWrapper(func(ctx context.Context, _ struct{}) (*kilonova.ProblemChecklist, *kilonova.StatusError) {
+				r.With(s.validateProblemEditor).Get("/checklist", webWrapper(func(ctx context.Context, _ struct{}) (*kilonova.ProblemChecklist, error) {
 					return s.base.ProblemChecklist(ctx, util.ProblemContext(ctx).ID)
 				}))
 
@@ -209,7 +209,7 @@ func (s *API) Handler() http.Handler {
 			})
 
 			r.Route("/get", func(r chi.Router) {
-				r.Get("/attachments", webWrapper(func(ctx context.Context, _ struct{}) ([]*kilonova.Attachment, *kilonova.StatusError) {
+				r.Get("/attachments", webWrapper(func(ctx context.Context, _ struct{}) ([]*kilonova.Attachment, error) {
 					return s.base.BlogPostAttachments(ctx, util.BlogPostContext(ctx).ID)
 				}))
 				r.With(s.validateAttachmentID).Get("/attachment/{aID}", webWrapper(s.getFullAttachment))
@@ -226,7 +226,7 @@ func (s *API) Handler() http.Handler {
 			r.Use(s.validateSubmissionID)
 
 			r.With(s.MustBeAuthed).Post("/createPaste", s.createPaste)
-			r.With(s.MustBeAuthed).Post("/delete", webMessageWrapper("Deleted submission", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
+			r.With(s.MustBeAuthed).Post("/delete", webMessageWrapper("Deleted submission", func(ctx context.Context, _ struct{}) error {
 				// Check submission permissions
 				if !(util.UserBriefContext(ctx).Admin || util.SubmissionContext(ctx).ProblemEditor) {
 					return kilonova.Statusf(403, "You cannot delete this submission!")
@@ -234,7 +234,7 @@ func (s *API) Handler() http.Handler {
 
 				return s.base.DeleteSubmission(ctx, util.SubmissionContext(ctx).ID)
 			}))
-			r.With(s.MustBeAuthed).Post("/reevaluate", webMessageWrapper("Reset submission", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
+			r.With(s.MustBeAuthed).Post("/reevaluate", webMessageWrapper("Reset submission", func(ctx context.Context, _ struct{}) error {
 				// Check submission permissions
 				if !(util.UserBriefContext(ctx).Admin || util.SubmissionContext(ctx).ProblemEditor) {
 					return kilonova.Statusf(403, "You cannot reevaluate this submission!")
@@ -255,17 +255,17 @@ func (s *API) Handler() http.Handler {
 
 		r.Get("/getByID", webWrapper(func(ctx context.Context, args struct {
 			ID int `json:"id"`
-		}) (*kilonova.Tag, *kilonova.StatusError) {
+		}) (*kilonova.Tag, error) {
 			return s.base.TagByID(ctx, args.ID)
 		}))
 		r.Get("/getByName", webWrapper(func(ctx context.Context, args struct {
 			Name string `json:"name"`
-		}) (*kilonova.Tag, *kilonova.StatusError) {
+		}) (*kilonova.Tag, error) {
 			return s.base.TagByName(ctx, args.Name)
 		}))
 		r.With(s.MustBeAdmin).Post("/delete", webMessageWrapper("Deleted tag", func(ctx context.Context, args struct {
 			ID int `json:"id"`
-		}) *sudoapi.StatusError {
+		}) error {
 			tag, err := s.base.TagByID(ctx, args.ID)
 			if err != nil {
 				return err
@@ -277,7 +277,7 @@ func (s *API) Handler() http.Handler {
 		r.With(s.MustBeAdmin).Post("/merge", webMessageWrapper("Merged tags", func(ctx context.Context, args struct {
 			ToKeep    int `json:"to_keep"`
 			ToReplace int `json:"to_replace"`
-		}) *sudoapi.StatusError {
+		}) error {
 			return s.base.MergeTags(ctx, args.ToKeep, []int{args.ToReplace}) // TODO: Many tags
 		}))
 		r.With(s.MustBeProposer).Post("/update", s.updateTag)
@@ -364,12 +364,12 @@ func (s *API) Handler() http.Handler {
 			r.With(s.MustBeAuthed).Post("/startRegistration", s.startContestRegistration)
 			r.With(s.validateContestEditor).Post("/runMOSS", webMessageWrapper("Sent submissions to MOSS. It should be done soon", s.runMOSS))
 
-			r.With(s.validateContestEditor).Get("/invitations", webWrapper(func(ctx context.Context, _ struct{}) ([]*kilonova.ContestInvitation, *kilonova.StatusError) {
+			r.With(s.validateContestEditor).Get("/invitations", webWrapper(func(ctx context.Context, _ struct{}) ([]*kilonova.ContestInvitation, error) {
 				return s.base.ContestInvitations(ctx, util.ContestContext(ctx).ID)
 			}))
 			r.With(s.validateContestEditor).Post("/createInvitation", webWrapper(func(ctx context.Context, args struct {
 				MaxUses int `json:"max_uses"`
-			}) (string, *kilonova.StatusError) {
+			}) (string, error) {
 				var cnt *int
 				if args.MaxUses > 0 {
 					cnt = &args.MaxUses
@@ -381,7 +381,7 @@ func (s *API) Handler() http.Handler {
 			r.With(s.validateContestEditor).Get("/registrations", s.contestRegistrations)
 			r.With(s.validateContestEditor).Post("/kickUser", s.stripContestRegistration)
 			r.With(s.MustBeAdmin).Post("/forceRegister", s.forceRegisterForContest)
-			r.With(s.validateContestEditor).Post("/delete", webMessageWrapper("Deleted contest", func(ctx context.Context, _ struct{}) *kilonova.StatusError {
+			r.With(s.validateContestEditor).Post("/delete", webMessageWrapper("Deleted contest", func(ctx context.Context, _ struct{}) error {
 				return s.base.DeleteContest(ctx, util.ContestContext(ctx))
 			}))
 
@@ -409,24 +409,24 @@ func (s *API) Handler() http.Handler {
 	return r
 }
 
-func webWrapper[T1, T2 any](handler func(context.Context, T1) (T2, *sudoapi.StatusError)) http.HandlerFunc {
+func webWrapper[T1, T2 any](handler func(context.Context, T1) (T2, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var query T1
 		if err := parseRequest(r, &query); err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 		rez, err := handler(r.Context(), query)
 		if err != nil {
-			err.WriteError(w)
+			statusError(w, err)
 			return
 		}
 		returnData(w, rez)
 	}
 }
 
-func webMessageWrapper[T1 any](successString string, handler func(context.Context, T1) *sudoapi.StatusError) http.HandlerFunc {
-	return webWrapper(func(ctx context.Context, args T1) (string, *kilonova.StatusError) {
+func webMessageWrapper[T1 any](successString string, handler func(context.Context, T1) error) http.HandlerFunc {
+	return webWrapper(func(ctx context.Context, args T1) (string, error) {
 		if err := handler(ctx, args); err != nil {
 			return "", err
 		}
@@ -447,7 +447,11 @@ func errorData(w http.ResponseWriter, retData any, errCode int) {
 	kilonova.StatusData(w, "error", retData, errCode)
 }
 
-func parseJSONBody[T any](r *http.Request, output *T) *kilonova.StatusError {
+func statusError(w http.ResponseWriter, err error) {
+	kilonova.StatusData(w, "error", err.Error(), kilonova.ErrorCode(err))
+}
+
+func parseJSONBody[T any](r *http.Request, output *T) error {
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(output); err != nil {
@@ -456,7 +460,7 @@ func parseJSONBody[T any](r *http.Request, output *T) *kilonova.StatusError {
 	return nil
 }
 
-func parseRequest[T any](r *http.Request, output *T) *kilonova.StatusError {
+func parseRequest[T any](r *http.Request, output *T) error {
 	contentType := r.Header.Get("Content-Type")
 	if contentType == "" {
 		contentType = "application/octet-stream"

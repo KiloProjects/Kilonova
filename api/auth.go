@@ -71,17 +71,17 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 				Text string `json:"text"`
 			}{
 				ID:   s.base.NewCaptchaID(),
-				Text: status.Text,
-			}, status.Code)
+				Text: status.Error(),
+			}, kilonova.ErrorCode(status))
 		} else {
-			status.WriteError(w)
+			statusError(w, status)
 		}
 		return
 	}
 
-	sid, err1 := s.base.CreateSession(r.Context(), uid)
-	if err1 != nil {
-		err1.WriteError(w)
+	sid, err := s.base.CreateSession(r.Context(), uid)
+	if err != nil {
+		statusError(w, err)
 		return
 	}
 	returnData(w, sid)
@@ -101,7 +101,7 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 
 	user, status := s.base.Login(r.Context(), auth.Username, auth.Password)
 	if status != nil {
-		status.WriteError(w)
+		statusError(w, status)
 		return
 	}
 
@@ -113,7 +113,7 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 
 	sid, err1 := s.base.CreateSession(r.Context(), user.ID)
 	if err1 != nil {
-		err1.WriteError(w)
+		statusError(w, err1)
 		return
 	}
 	returnData(w, sid)
@@ -133,7 +133,7 @@ func (s *API) extendSession(w http.ResponseWriter, r *http.Request) {
 	}
 	exp, err := s.base.ExtendSession(r.Context(), h)
 	if err != nil {
-		err.WriteError(w)
+		statusError(w, err)
 		return
 	}
 	returnData(w, exp)

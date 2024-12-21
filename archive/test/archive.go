@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"path"
 	"slices"
 	"strings"
@@ -22,6 +23,8 @@ var (
 )
 
 type ArchiveCtx struct {
+	fs fs.FS
+
 	tests       map[string]archiveTest
 	attachments map[string]archiveAttachment
 	props       *properties
@@ -60,8 +63,9 @@ type properties struct {
 	ScoringStrategy kilonova.ScoringType
 }
 
-func NewArchiveCtx(ctx context.Context, params *TestProcessParams) *ArchiveCtx {
+func NewArchiveCtx(ctx context.Context, params *TestProcessParams, filesystem fs.FS) *ArchiveCtx {
 	return &ArchiveCtx{
+		fs:          filesystem,
 		tests:       make(map[string]archiveTest),
 		attachments: make(map[string]archiveAttachment),
 		testScores:  make(ScoreFileEntries),
@@ -77,26 +81,31 @@ var (
 	testOutputSuffixes = []string{".out", ".output", ".ok", ".sol", ".a", ".ans"}
 )
 
-func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File, base *sudoapi.BaseAPI) *kilonova.StatusError {
-	if strings.Contains(file.Name, "__MACOSX") || strings.Contains(file.Name, ".DS_Store") { // Support archives from MacOS
+func ProcessArchiveFile(ctx *ArchiveCtx, fpath string, file *zip.File, base *sudoapi.BaseAPI) error {
+	if strings.Contains(fpath, "__MACOSX") || strings.Contains(fpath, ".DS_Store") { // Support archives from MacOS
 		return nil
 	}
-	if slices.Contains(strings.Split(path.Dir(file.Name), "/"), "attachments") { // Is in "attachments" directory
-		return ProcessAttachmentFile(ctx, file)
+	if slices.Contains(strings.Split(path.Dir(fpath), "/"), "attachments") { // Is in "attachments" directory
+		return ProcessAttachmentFile(ctx, fpath)
 	}
 
-	if slices.Contains(strings.Split(path.Dir(file.Name), "/"), "submissions") { // Is in "submissions" directory
+	if slices.Contains(strings.Split(path.Dir(fpath), "/"), "submissions") { // Is in "submissions" directory
 		return ProcessSubmissionFile(ctx, file, base)
 	}
 
-	ext := strings.ToLower(path.Ext(file.Name))
+	ext := strings.ToLower(path.Ext(fpath))
 	if ext == ".txt" { // test score file
 		// if using score parameters, test score file is redundant
 		if len(ctx.scoreParameters) > 0 {
 			return kilonova.Statusf(400, "Archive cannot contain tests.txt if you specified score parameters")
 		}
 
-		vals, err := ParseScoreFile(file)
+		r, err := ctx.fs.Open(fpath)
+		if err != nil {
+			return kilonova.WrapError(err, "Could not open problem.xml")
+		}
+		defer r.Close()
+		vals, err := ParseScoreFile(ctx.ctx, r)
 		if err != nil {
 			return err
 		}
@@ -109,8 +118,8 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File, base *sudoapi.BaseAPI) 
 		return ProcessPropertiesFile(ctx, file)
 	}
 
-	if strings.ToLower(file.Name) == "problem.xml" { // Polygon archive format
-		r, err := file.Open()
+	if strings.ToLower(fpath) == "problem.xml" { // Polygon archive format
+		r, err := ctx.fs.Open(fpath)
 		if err != nil {
 			return kilonova.WrapError(err, "Could not open problem.xml")
 		}
@@ -120,11 +129,11 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File, base *sudoapi.BaseAPI) 
 
 	// Polygon-specific handling
 	if ctx.params.Polygon {
-		if strings.HasPrefix(file.Name, "solutions") {
+		if strings.HasPrefix(fpath, "solutions") {
 			return ProcessSubmissionFile(ctx, file, base)
 		}
 
-		if strings.HasPrefix(file.Name, "tests") {
+		if strings.HasPrefix(fpath, "tests") {
 			if slices.Contains(testOutputSuffixes, ext) {
 				return ProcessTestOutputFile(ctx, file)
 			}
@@ -132,27 +141,27 @@ func ProcessArchiveFile(ctx *ArchiveCtx, file *zip.File, base *sudoapi.BaseAPI) 
 			return ProcessTestInputFile(ctx, file)
 		}
 
-		if file.Name == "check.cpp" {
-			return ProcessPolygonCheckFile(ctx, file)
+		if fpath == "check.cpp" {
+			return ProcessPolygonCheckFile(ctx, fpath)
 		}
 
-		match, err := path.Match("statements/.pdf/*/problem.pdf", file.Name)
+		match, err := path.Match("statements/.pdf/*/problem.pdf", fpath)
 		if err != nil {
 			zap.S().Warn(err)
 		}
 		if err == nil && match {
-			return ProcessPolygonPDFStatement(ctx, file)
+			return ProcessPolygonPDFStatement(ctx, fpath)
 		}
 
 		return nil
 	}
 
 	// if nothing else is detected, it should be a test file
-	if slices.Contains(testInputSuffixes, ext) || strings.HasPrefix(file.Name, "input") { // test input file (ex: 01.in)
+	if slices.Contains(testInputSuffixes, ext) || strings.HasPrefix(fpath, "input") { // test input file (ex: 01.in)
 		return ProcessTestInputFile(ctx, file)
 	}
 
-	if slices.Contains(testOutputSuffixes, ext) || strings.HasPrefix(file.Name, "output") { // test output file (ex: 01.out/01.ok)
+	if slices.Contains(testOutputSuffixes, ext) || strings.HasPrefix(fpath, "output") { // test output file (ex: 01.out/01.ok)
 		return ProcessTestOutputFile(ctx, file)
 	}
 
@@ -174,12 +183,12 @@ type TestProcessParams struct {
 	// MergeTests bool
 }
 
-func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Reader, base *sudoapi.BaseAPI, params *TestProcessParams) *kilonova.StatusError {
+func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Reader, base *sudoapi.BaseAPI, params *TestProcessParams) error {
 	if params.Requestor == nil {
 		return kilonova.Statusf(400, "There must be a requestor")
 	}
 
-	aCtx := NewArchiveCtx(ctx, params)
+	aCtx := NewArchiveCtx(ctx, params, ar)
 
 	// Try to autodetect polygon archive
 	if _, err := fs.Stat(ar, "problem.xml"); err == nil {
@@ -200,7 +209,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 			continue
 		}
 
-		if err := ProcessArchiveFile(aCtx, file, base); err != nil {
+		if err := ProcessArchiveFile(aCtx, file.Name, file, base); err != nil {
 			return err
 		}
 	}
@@ -581,7 +590,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 	return nil
 }
 
-func createAttachments(ctx context.Context, aCtx *ArchiveCtx, pb *kilonova.Problem, base *sudoapi.BaseAPI, params *TestProcessParams) *kilonova.StatusError {
+func createAttachments(ctx context.Context, aCtx *ArchiveCtx, pb *kilonova.Problem, base *sudoapi.BaseAPI, params *TestProcessParams) error {
 	atts, err := base.ProblemAttachments(ctx, pb.ID)
 	if err != nil {
 		zap.S().Warn("Couldn't get problem attachments")
@@ -610,12 +619,12 @@ func createAttachments(ctx context.Context, aCtx *ArchiveCtx, pb *kilonova.Probl
 		}
 	}
 	for _, att := range aCtx.attachments {
-		if att.File == nil {
-			zap.S().Infof("Skipping attachment %s since it only has props", att.Name)
+		if att.FilePath == "" {
+			slog.InfoContext(ctx, "Skipping attachment since it only has props", slog.String("name", att.Name))
 			continue
 		}
 
-		f, err := att.File.Open()
+		f, err := aCtx.fs.Open(att.FilePath)
 		if err != nil {
 			zap.S().Warn("Couldn't open attachment zip file", err)
 			continue
