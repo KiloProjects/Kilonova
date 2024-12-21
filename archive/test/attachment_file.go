@@ -2,12 +2,11 @@ package test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"path"
 	"strings"
-
-	"github.com/KiloProjects/kilonova"
 )
 
 type archiveAttachment struct {
@@ -36,10 +35,10 @@ func ProcessAttachmentFile(ctx *ArchiveCtx, fpath string) error {
 
 		data, err := fs.ReadFile(ctx.fs, name)
 		if err != nil {
-			return kilonova.WrapError(err, "Couldn't read props file")
+			return fmt.Errorf("Couldn't read props file: %w", err)
 		}
 		if err := json.Unmarshal(data, &props); err != nil {
-			return kilonova.WrapError(err, "Invalid props file")
+			return fmt.Errorf("Invalid props file: %w", err)
 		}
 
 		_, ok := ctx.attachments[name]

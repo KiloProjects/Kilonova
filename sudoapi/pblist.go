@@ -3,6 +3,7 @@ package sudoapi
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 
 	"github.com/KiloProjects/kilonova"
@@ -12,7 +13,7 @@ import (
 func (s *BaseAPI) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, error) {
 	pblist, err := s.db.ProblemList(ctx, id)
 	if err != nil || pblist == nil {
-		return nil, WrapError(ErrNotFound, "Problem list not found")
+		return nil, fmt.Errorf("Problem list not found: %w", ErrNotFound)
 	}
 	return pblist, nil
 }
@@ -20,7 +21,7 @@ func (s *BaseAPI) ProblemList(ctx context.Context, id int) (*kilonova.ProblemLis
 func (s *BaseAPI) ProblemListByName(ctx context.Context, name string) (*kilonova.ProblemList, error) {
 	pblist, err := s.db.ProblemListByName(ctx, name)
 	if err != nil || pblist == nil {
-		return nil, WrapError(ErrNotFound, "Problem list not found")
+		return nil, fmt.Errorf("Problem list not found: %w", ErrNotFound)
 	}
 	return pblist, nil
 }
@@ -83,7 +84,7 @@ func (s *BaseAPI) PblistChildrenLists(ctx context.Context, problemListID int) ([
 func (s *BaseAPI) CreateProblemList(ctx context.Context, pblist *kilonova.ProblemList) error {
 	if err := s.db.CreateProblemList(ctx, pblist); err != nil {
 		zap.S().Warn(err)
-		return WrapError(err, "Couldn't create problem list")
+		return fmt.Errorf("Couldn't create problem list: %w", err)
 	}
 	return nil
 }
@@ -93,7 +94,7 @@ func (s *BaseAPI) UpdateProblemList(ctx context.Context, id int, upd kilonova.Pr
 		if !errors.Is(err, kilonova.ErrNoUpdates) {
 			zap.S().Warn(err)
 		}
-		return WrapError(err, "Couldn't update problem list metadata")
+		return fmt.Errorf("Couldn't update problem list metadata: %w", err)
 	}
 	return nil
 }
@@ -101,7 +102,7 @@ func (s *BaseAPI) UpdateProblemList(ctx context.Context, id int, upd kilonova.Pr
 func (s *BaseAPI) UpdateProblemListProblems(ctx context.Context, id int, list []int) error {
 	if err := s.db.UpdateProblemListProblems(ctx, id, list); err != nil {
 		zap.S().Warn(err)
-		return WrapError(err, "Couldn't update problem list problems")
+		return fmt.Errorf("Couldn't update problem list problems: %w", err)
 	}
 	return nil
 }
@@ -109,7 +110,7 @@ func (s *BaseAPI) UpdateProblemListProblems(ctx context.Context, id int, list []
 func (s *BaseAPI) UpdateProblemListSublists(ctx context.Context, id int, listIDs []int) error {
 	if err := s.db.UpdateProblemListSublists(ctx, id, listIDs); err != nil {
 		zap.S().Warn(err)
-		return WrapError(err, "Couldn't update problem list nested lists")
+		return fmt.Errorf("Couldn't update problem list nested lists: %w", err)
 	}
 	return nil
 }
@@ -117,7 +118,7 @@ func (s *BaseAPI) UpdateProblemListSublists(ctx context.Context, id int, listIDs
 func (s *BaseAPI) DeleteProblemList(ctx context.Context, id int) error {
 	if err := s.db.DeleteProblemList(ctx, id); err != nil {
 		zap.S().Warn(err)
-		return WrapError(err, "Couldn't delete problem list")
+		return fmt.Errorf("Couldn't delete problem list: %w", err)
 	}
 	return nil
 }
@@ -125,7 +126,7 @@ func (s *BaseAPI) DeleteProblemList(ctx context.Context, id int) error {
 func (s *BaseAPI) NumSolvedFromPblist(ctx context.Context, listID int, userID int) (int, error) {
 	num, err := s.db.NumSolvedPblistProblems(ctx, listID, userID)
 	if err != nil {
-		return -1, WrapError(err, "Couldn't get number of solved problems")
+		return -1, fmt.Errorf("Couldn't get number of solved problems: %w", err)
 	}
 	return num, nil
 }
@@ -140,7 +141,7 @@ func (s *BaseAPI) NumSolvedFromPblists(ctx context.Context, listIDs []int, user 
 	}
 	vals, err := s.db.NumBulkedSolvedPblistProblems(ctx, user.ID, listIDs)
 	if err != nil || vals == nil {
-		return nil, WrapError(err, "Couldn't get number of solved problems")
+		return nil, fmt.Errorf("Couldn't get number of solved problems: %w", err)
 	}
 
 	for _, id := range listIDs {

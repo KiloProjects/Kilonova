@@ -1,11 +1,14 @@
 package sudoapi
 
-import "github.com/KiloProjects/kilonova"
+import (
+	"fmt"
+	"github.com/KiloProjects/kilonova"
+)
 
 func (s *BaseAPI) RenderMarkdown(src []byte, ctx *kilonova.RenderContext) ([]byte, error) {
 	out, err := s.rd.Render(src, ctx)
 	if err != nil {
-		return nil, WrapError(err, "Couldn't render markdown")
+		return nil, fmt.Errorf("Couldn't render markdown: %w", err)
 	}
 	return out, nil
 }

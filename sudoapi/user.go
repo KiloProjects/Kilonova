@@ -44,12 +44,12 @@ func (s *BaseAPI) UserFull(ctx context.Context, id int) (*kilonova.UserFull, err
 	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &id})
 	if err != nil || user == nil {
 		if errors.Is(err, context.Canceled) {
-			return nil, WrapError(err, "Context canceled")
+			return nil, fmt.Errorf("Context canceled: %w", err)
 		}
 		if err != nil {
 			zap.S().Warn(err)
 		}
-		return nil, WrapError(ErrNotFound, "User not found")
+		return nil, fmt.Errorf("User not found: %w", ErrNotFound)
 	}
 	return user.ToFull(), nil
 }
@@ -69,7 +69,7 @@ func (s *BaseAPI) UserFullByName(ctx context.Context, name string) (*kilonova.Us
 	}
 	user, err := s.db.User(ctx, kilonova.UserFilter{Name: &name})
 	if err != nil || user == nil {
-		return nil, WrapError(ErrNotFound, "User not found")
+		return nil, fmt.Errorf("User not found: %w", ErrNotFound)
 	}
 	return user.ToFull(), nil
 }
@@ -81,7 +81,7 @@ func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*kilonova.
 	}
 	user, err := s.db.User(ctx, kilonova.UserFilter{Email: &email})
 	if err != nil || user == nil {
-		return nil, WrapError(ErrNotFound, "User not found")
+		return nil, fmt.Errorf("User not found: %w", ErrNotFound)
 	}
 	return user.ToFull(), nil
 }
@@ -92,7 +92,7 @@ func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([
 		if !errors.Is(err, context.Canceled) {
 			zap.S().Warn(err)
 		}
-		return nil, WrapError(err, "Couldn't get users")
+		return nil, fmt.Errorf("Couldn't get users: %w", err)
 	}
 	return mapUsersBrief(users), nil
 }
@@ -111,7 +111,7 @@ func mapUsersBrief(users []*db.User) []*kilonova.UserBrief {
 func (s *BaseAPI) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, error) {
 	cnt, err := s.db.CountUsers(ctx, filter)
 	if err != nil {
-		return -1, WrapError(err, "Couldn't get user count")
+		return -1, fmt.Errorf("Couldn't get user count: %w", err)
 	}
 	return cnt, nil
 }
@@ -123,7 +123,7 @@ func (s *BaseAPI) UpdateUser(ctx context.Context, userID int, upd kilonova.UserU
 func (s *BaseAPI) updateUser(ctx context.Context, userID int, upd kilonova.UserFullUpdate) error {
 	if err := s.db.UpdateUser(ctx, userID, upd); err != nil {
 		zap.S().Warn(err)
-		return WrapError(err, "Couldn't update user")
+		return fmt.Errorf("Couldn't update user: %w", err)
 	}
 	sessions, err := s.UserSessions(ctx, userID)
 	if err != nil {
@@ -159,7 +159,7 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserFull, n
 			if !errors.Is(err, context.Canceled) {
 				zap.S().Warn(err)
 			}
-			return WrapError(err, "Couldn't get last change date")
+			return fmt.Errorf("Couldn't get last change date: %w", err)
 		}
 		var nextEligbleDate time.Time
 		if !chAt.Equal(user.CreatedAt) {
@@ -212,7 +212,7 @@ func (s *BaseAPI) UsernameChangeHistory(ctx context.Context, userID int) ([]*kil
 		if !errors.Is(err, context.Canceled) {
 			zap.S().Warn(err)
 		}
-		return []*kilonova.UsernameChange{}, WrapError(err, "Couldn't get change history")
+		return []*kilonova.UsernameChange{}, fmt.Errorf("Couldn't get change history: %w", err)
 	}
 	return changes, nil
 }
@@ -222,7 +222,7 @@ func (s *BaseAPI) UsernameChangeHistory(ctx context.Context, userID int) ([]*kil
 func (s *BaseAPI) HistoricalUsernameHolder(ctx context.Context, name string) (*kilonova.UserBrief, error) {
 	userIDs, err := s.db.HistoricalUsernameHolders(ctx, name)
 	if err != nil {
-		return nil, WrapError(err, "Couldn't get username holders")
+		return nil, fmt.Errorf("Couldn't get username holders: %w", err)
 	}
 	if len(userIDs) == 0 {
 		return nil, nil
@@ -233,7 +233,7 @@ func (s *BaseAPI) HistoricalUsernameHolder(ctx context.Context, name string) (*k
 func (s *BaseAPI) VerifyUserPassword(ctx context.Context, uid int, password string) error {
 	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &uid})
 	if err != nil || user == nil {
-		return WrapError(ErrNotFound, "User not found")
+		return fmt.Errorf("User not found: %w", ErrNotFound)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
@@ -248,7 +248,7 @@ func (s *BaseAPI) VerifyUserPassword(ctx context.Context, uid int, password stri
 
 func (s *BaseAPI) DeleteUser(ctx context.Context, user *kilonova.UserBrief) error {
 	if err := s.db.DeleteUser(ctx, user.ID); err != nil {
-		return WrapError(err, "Couldn't delete user")
+		return fmt.Errorf("Couldn't delete user: %w", err)
 	}
 	s.LogUserAction(ctx, "Deleted user", slog.Any("user", user))
 	return nil
@@ -261,12 +261,12 @@ func (s *BaseAPI) UpdateUserPassword(ctx context.Context, uid int, password stri
 
 	hash, err := hashPassword(password)
 	if err != nil {
-		return WrapError(err, "Couldn't generate hash")
+		return fmt.Errorf("Couldn't generate hash: %w", err)
 	}
 
 	// TODO: Replace UpdateUserPasswordHash with a key in UserFullUpdate
 	if err := s.db.UpdateUserPasswordHash(ctx, uid, hash); err != nil {
-		return WrapError(err, "Couldn't update password")
+		return fmt.Errorf("Couldn't update password: %w", err)
 	}
 	return nil
 }

@@ -57,11 +57,6 @@ func Statusf(status int, format string, args ...any) error {
 	return &statusError{Code: status, Text: fmt.Sprintf(format, args...)}
 }
 
-// Deprecated: Use fmt.Errorf("%s: %w", text, err) instead
-func WrapError(err error, text string) error {
-	return fmt.Errorf("%s: %w", text, err)
-}
-
 func ErrorCode(err error) int {
 	if err == nil {
 		return 200

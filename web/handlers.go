@@ -89,7 +89,7 @@ func (rt *Web) discordLink() http.HandlerFunc {
 		}
 		st, err := rt.base.DiscordAuthURL(r.Context(), util.UserBrief(r).ID)
 		if err != nil {
-			rt.statusPage(w, r, err.Code, err.Text)
+			rt.statusPage(w, r, kilonova.ErrorCode(err), err.Error())
 			return
 		}
 
@@ -446,7 +446,7 @@ func (rt *Web) pbListProgressView() http.HandlerFunc {
 			if !errors.Is(err, context.Canceled) {
 				zap.S().Warn(err)
 			}
-			rt.statusPage(w, r, err.Code, err.Error())
+			rt.statusPage(w, r, kilonova.ErrorCode(err), err.Error())
 			return
 		}
 		rt.runTempl(w, r.WithContext(context.WithValue(r.Context(), util.ContentUserKey, checkedUser)), templ, &ProblemListProgressParams{list, checkedUser})
@@ -825,7 +825,7 @@ func (rt *Web) problemSubmissions() http.HandlerFunc {
 		if isHTMXRequest(r) && err == nil {
 			olderSubs, err := rt.getOlderSubmissions(r.Context(), util.UserBrief(r), userID, util.Problem(r), util.Contest(r), 5)
 			if err != nil {
-				rt.statusPage(w, r, err.Code, err.Text)
+				rt.statusPage(w, r, kilonova.ErrorCode(err), err.Error())
 				return
 			}
 			rt.runModal(w, r, fragmentTempl, "older_subs", olderSubs)

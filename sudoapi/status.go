@@ -14,7 +14,3 @@ var (
 func Statusf(status int, format string, args ...any) error {
 	return kilonova.Statusf(status, format, args...)
 }
-
-func WrapError(err error, text string) error {
-	return kilonova.WrapError(err, text)
-}

@@ -197,12 +197,12 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 
 	problem, err1 := base.Problem(ctx, sub.ProblemID)
 	if err1 != nil {
-		return kilonova.WrapError(err1, "Couldn't get submission problem")
+		return fmt.Errorf("Couldn't get submission problem: %w", err1)
 	}
 
 	problemSettings, err1 := base.ProblemSettings(ctx, sub.ProblemID)
 	if err1 != nil {
-		return kilonova.WrapError(err1, "Couldn't get problem settings")
+		return fmt.Errorf("Couldn't get problem settings: %w", err1)
 	}
 
 	sh.pb = problem
@@ -218,7 +218,7 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 
 	checker, err := sh.getAppropriateChecker(ctx)
 	if err != nil {
-		return kilonova.WrapError(err, "Couldn't get checker")
+		return fmt.Errorf("Couldn't get checker: %w", err)
 	}
 
 	if info, err := checker.Prepare(ctx); err != nil {
@@ -230,9 +230,9 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 			CompileError: &t, CompileMessage: &info,
 			ChangeVerdict: true, ICPCVerdict: &internalErr,
 		}); err != nil {
-			return kilonova.WrapError(err, "Error during update of compile information")
+			return fmt.Errorf("Error during update of compile information: %w", err)
 		}
-		return kilonova.WrapError(err, "Could not prepare checker")
+		return fmt.Errorf("Could not prepare checker: %w", err)
 	}
 
 	subTests, err1 := base.SubTests(ctx, sub.ID)
@@ -242,9 +242,9 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 			Status: kilonova.StatusFinished, Score: &problem.DefaultPoints,
 			ChangeVerdict: true, ICPCVerdict: &internalErr,
 		}); err != nil {
-			return kilonova.WrapError(err, "Could not update submission after subtest fetch fail")
+			return fmt.Errorf("Could not update submission after subtest fetch fail: %w", err)
 		}
-		return kilonova.WrapError(err1, "Could not fetch subtests")
+		return fmt.Errorf("Could not fetch subtests: %w", err1)
 	}
 
 	if g, err := sh.buildRunGraph(ctx, subTests); err != nil {
@@ -380,12 +380,12 @@ func (sh *submissionHandler) compileSubmission(ctx context.Context) error {
 	req, err := sh.genSubCompileRequest(ctx)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't generate compilation request", slog.Any("err", err))
-		return kilonova.WrapError(err, "Couldn't generate compilation request")
+		return fmt.Errorf("Couldn't generate compilation request: %w", err)
 	}
 
-	resp, err1 := tasks.CompileTask(ctx, sh.runner, req, graderLogger)
-	if err1 != nil {
-		return kilonova.WrapError(err1, "Error from eval")
+	resp, err := tasks.CompileTask(ctx, sh.runner, req, graderLogger)
+	if err != nil {
+		return fmt.Errorf("Error from eval: %w", err)
 	}
 
 	var compileTime *float64
@@ -397,7 +397,7 @@ func (sh *submissionHandler) compileSubmission(ctx context.Context) error {
 		CompileError: &compileError, CompileMessage: &resp.Output, CompileTime: compileTime,
 	}); err != nil {
 		spew.Dump(err)
-		return kilonova.WrapError(err, "Couldn't update submission")
+		return fmt.Errorf("Couldn't update submission: %w", err)
 	}
 
 	if !resp.Success {
@@ -406,15 +406,15 @@ func (sh *submissionHandler) compileSubmission(ctx context.Context) error {
 			Status: kilonova.StatusFinished, Score: &sh.pb.DefaultPoints,
 			ChangeVerdict: true, ICPCVerdict: &compileErrVerdict,
 		}); err != nil {
-			return kilonova.WrapError(err, "Couldn't finalize submission with compiler error")
+			return fmt.Errorf("Couldn't finalize submission with compiler error: %w", err)
 		}
 		stks, err := sh.base.SubmissionSubTasks(ctx, sh.sub.ID)
 		if err != nil {
-			return kilonova.WrapError(err, "Couldn't get submission subtasks")
+			return fmt.Errorf("Couldn't get submission subtasks: %w", err)
 		}
 		for _, stk := range stks {
 			if err := sh.base.UpdateSubmissionSubtaskPercentage(ctx, stk.ID, decimal.Zero); err != nil {
-				return kilonova.WrapError(err, "Couldn't finish subtasks")
+				return fmt.Errorf("Couldn't finish subtasks: %w", err)
 			}
 		}
 		return kilonova.Statusf(204, "Compile failed")
@@ -443,7 +443,7 @@ func (sh *submissionHandler) handleSubTest(ctx context.Context, checker checkers
 
 	resp, err := tasks.ExecuteTask(ctx, sh.runner, int64(sh.pb.MemoryLimit), execRequest, graderLogger)
 	if err != nil {
-		return decimal.Zero, "", kilonova.WrapError(err, "Couldn't execute subtest")
+		return decimal.Zero, "", fmt.Errorf("Couldn't execute subtest: %w", err)
 	}
 	var testScore decimal.Decimal
 
@@ -468,7 +468,7 @@ func (sh *submissionHandler) handleSubTest(ctx context.Context, checker checkers
 	}
 
 	if err := sh.base.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{Memory: &resp.Memory, Percentage: &testScore, Time: &resp.Time, Verdict: &resp.Comments, Done: &True}); err != nil {
-		return decimal.Zero, "", kilonova.WrapError(err, "Error during evaltest updating")
+		return decimal.Zero, "", fmt.Errorf("Error during evaltest updating: %w", err)
 	}
 	return testScore, resp.Comments, nil
 }
@@ -476,7 +476,7 @@ func (sh *submissionHandler) handleSubTest(ctx context.Context, checker checkers
 func (sh *submissionHandler) markSubtestsDone(ctx context.Context) error {
 	sts, err := sh.base.SubTests(ctx, sh.sub.ID)
 	if err != nil {
-		return kilonova.WrapError(err, "Error during getting subtests")
+		return fmt.Errorf("Error during getting subtests: %w", err)
 	}
 	for _, st := range sts {
 		if st.Done {
@@ -582,15 +582,15 @@ func (sh *submissionHandler) getAppropriateChecker(ctx context.Context) (checker
 	}
 	att, err := sh.base.ProblemAttByName(ctx, sh.pb.ID, sh.settings.CheckerName)
 	if err != nil {
-		return nil, kilonova.WrapError(err, "Couldn't get problem checker metadata")
+		return nil, fmt.Errorf("Couldn't get problem checker metadata: %w", err)
 	}
 	data, err := sh.base.ProblemAttDataByName(ctx, sh.pb.ID, sh.settings.CheckerName)
 	if err != nil {
-		return nil, kilonova.WrapError(err, "Couldn't get problem checker code")
+		return nil, fmt.Errorf("Couldn't get problem checker code: %w", err)
 	}
 	subCode, err := sh.base.RawSubmissionCode(ctx, sh.sub.ID)
 	if err != nil {
-		return nil, kilonova.WrapError(err, "Couldn't get submission source code")
+		return nil, fmt.Errorf("Couldn't get submission source code: %w", err)
 	}
 	if sh.settings.LegacyChecker {
 		return checkers.NewLegacyCustomChecker(sh.runner, graderLogger, sh.pb, sh.settings.CheckerName, data, subCode, att.LastUpdatedAt), nil

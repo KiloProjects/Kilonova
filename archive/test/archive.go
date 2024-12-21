@@ -102,7 +102,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, fpath string, file *zip.File, base *sud
 
 		r, err := ctx.fs.Open(fpath)
 		if err != nil {
-			return kilonova.WrapError(err, "Could not open problem.xml")
+			return fmt.Errorf("Could not open problem.xml: %w", err)
 		}
 		defer r.Close()
 		vals, err := ParseScoreFile(ctx.ctx, r)
@@ -121,7 +121,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, fpath string, file *zip.File, base *sud
 	if strings.ToLower(fpath) == "problem.xml" { // Polygon archive format
 		r, err := ctx.fs.Open(fpath)
 		if err != nil {
-			return kilonova.WrapError(err, "Could not open problem.xml")
+			return fmt.Errorf("Could not open problem.xml: %w", err)
 		}
 		defer r.Close()
 		return ProcessProblemXMLFile(ctx, r)
@@ -361,29 +361,29 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 
 			f, err := v.InFile.Open()
 			if err != nil {
-				return kilonova.WrapError(err, "Couldn't open() input file")
+				return fmt.Errorf("Couldn't open() input file: %w", err)
 			}
 			if err := base.SaveTestInput(test.ID, f); err != nil {
 				zap.S().Warn("Couldn't create test input", err)
 				f.Close()
-				return kilonova.WrapError(err, "Couldn't create test input")
+				return fmt.Errorf("Couldn't create test input: %w", err)
 			}
 			f.Close()
 			f, err = v.OutFile.Open()
 			if err != nil {
-				return kilonova.WrapError(err, "Couldn't open() output file")
+				return fmt.Errorf("Couldn't open() output file: %w", err)
 			}
 			if err := base.SaveTestOutput(test.ID, f); err != nil {
 				zap.S().Warn("Couldn't create test output", err)
 				f.Close()
-				return kilonova.WrapError(err, "Couldn't create test output")
+				return fmt.Errorf("Couldn't create test output: %w", err)
 			}
 			f.Close()
 		}
 
 		if err := base.DeleteSubTasks(ctx, pb.ID); err != nil {
 			zap.S().Warn(err)
-			return kilonova.WrapError(err, "Couldn't delete existing subtasks")
+			return fmt.Errorf("Couldn't delete existing subtasks: %w", err)
 		}
 		if len(aCtx.scoreParameters) > 0 {
 			// Decide subtasks based on score parameters, if they exist
@@ -425,7 +425,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 						Tests:     testIDs,
 					}); err != nil {
 						zap.S().Warn(err)
-						return kilonova.WrapError(err, "Couldn't create subtask")
+						return fmt.Errorf("Couldn't create subtask: %w", err)
 					}
 				}
 			}
@@ -448,7 +448,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 					Tests:     tests,
 				}); err != nil {
 					zap.S().Warn(err)
-					return kilonova.WrapError(err, "Couldn't create subtask")
+					return fmt.Errorf("Couldn't create subtask: %w", err)
 				}
 			}
 		}
@@ -508,7 +508,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 		if shouldUpd {
 			if err := base.UpdateProblem(ctx, pb.ID, upd, nil); err != nil {
 				zap.S().Warn(err)
-				return kilonova.WrapError(err, "Couldn't update problem medatada")
+				return fmt.Errorf("Couldn't update problem medatada: %w", err)
 			}
 		}
 
@@ -529,7 +529,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 			}
 			if err := base.UpdateProblemTags(ctx, pb.ID, realTagIDs); err != nil {
 				zap.S().Warn(err)
-				return kilonova.WrapError(err, "Couldn't update tags")
+				return fmt.Errorf("Couldn't update tags: %w", err)
 			}
 		}
 
@@ -594,7 +594,7 @@ func createAttachments(ctx context.Context, aCtx *ArchiveCtx, pb *kilonova.Probl
 	atts, err := base.ProblemAttachments(ctx, pb.ID)
 	if err != nil {
 		zap.S().Warn("Couldn't get problem attachments")
-		return kilonova.WrapError(err, "Couldn't get attachments")
+		return fmt.Errorf("Couldn't get attachments: %w", err)
 	}
 
 	// attachment IDs to mark for deletion
@@ -615,7 +615,7 @@ func createAttachments(ctx context.Context, aCtx *ArchiveCtx, pb *kilonova.Probl
 	if len(attIDs) > 0 {
 		if _, err := base.DeleteProblemAtts(ctx, pb.ID, attIDs); err != nil {
 			zap.S().Warn("Couldn't remove attachments")
-			return kilonova.WrapError(err, "Couldn't delete attachments")
+			return fmt.Errorf("Couldn't delete attachments: %w", err)
 		}
 	}
 	for _, att := range aCtx.attachments {

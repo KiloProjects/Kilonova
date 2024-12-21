@@ -3,6 +3,7 @@ package sudoapi
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/KiloProjects/kilonova"
 	"go.uber.org/zap"
@@ -11,7 +12,7 @@ import (
 func (s *BaseAPI) Test(ctx context.Context, pbID int, testVID int) (*kilonova.Test, error) {
 	test, err := s.db.Test(ctx, pbID, testVID)
 	if err != nil || test == nil {
-		return nil, WrapError(ErrNotFound, "Test not found")
+		return nil, fmt.Errorf("Test not found: %w", ErrNotFound)
 	}
 	return test, nil
 }
@@ -20,10 +21,10 @@ func (s *BaseAPI) Tests(ctx context.Context, pbID int) ([]*kilonova.Test, error)
 	tests, err := s.db.Tests(ctx, pbID)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
-			return nil, WrapError(err, "Context canceled")
+			return nil, err
 		}
 		zap.S().Warn(err)
-		return nil, WrapError(err, "Couldn't get test")
+		return nil, fmt.Errorf("Couldn't get test: %w", err)
 	}
 	return tests, nil
 }
@@ -31,7 +32,7 @@ func (s *BaseAPI) Tests(ctx context.Context, pbID int) ([]*kilonova.Test, error)
 func (s *BaseAPI) UpdateTest(ctx context.Context, testID int, upd kilonova.TestUpdate) error {
 	if err := s.db.UpdateTest(ctx, testID, upd); err != nil {
 		zap.S().Warn(err)
-		return WrapError(err, "Couldn't update test")
+		return fmt.Errorf("Couldn't update test: %w", err)
 	}
 	return nil
 }
@@ -39,7 +40,7 @@ func (s *BaseAPI) UpdateTest(ctx context.Context, testID int, upd kilonova.TestU
 func (s *BaseAPI) CreateTest(ctx context.Context, test *kilonova.Test) error {
 	if err := s.db.CreateTest(ctx, test); err != nil {
 		zap.S().Warn(err)
-		return WrapError(err, "Couldn't create test")
+		return fmt.Errorf("Couldn't create test: %w", err)
 	}
 	return nil
 }
@@ -48,7 +49,7 @@ func (s *BaseAPI) DeleteTests(ctx context.Context, problemID int) error {
 	ids, err := s.db.DeleteProblemTests(ctx, problemID)
 	if err != nil {
 		zap.S().Warn(err)
-		return WrapError(err, "Couldn't remove tests")
+		return fmt.Errorf("Couldn't remove tests: %w", err)
 	}
 	for _, id := range ids {
 		if err := s.PurgeTestData(id); err != nil {
@@ -66,7 +67,7 @@ func (s *BaseAPI) DeleteTests(ctx context.Context, problemID int) error {
 func (s *BaseAPI) DeleteTest(ctx context.Context, id int) error {
 	if err := s.db.DeleteTest(ctx, id); err != nil {
 		zap.S().Warn(err)
-		return WrapError(err, "Couldn't remove test")
+		return fmt.Errorf("Couldn't remove test: %w", err)
 	}
 	if err := s.PurgeTestData(id); err != nil {
 		zap.S().Warn(err)

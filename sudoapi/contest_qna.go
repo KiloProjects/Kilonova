@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -13,7 +14,7 @@ func (s *BaseAPI) CreateContestQuestion(ctx context.Context, contest *kilonova.C
 	if contest.QuestionCooldown > 0 {
 		question, err := s.db.ContestQuestions(ctx, db.QuestionFilter{ContestID: &contest.ID, AuthorID: &authorID})
 		if err != nil {
-			return -1, WrapError(err, "Could not check for question cooldown")
+			return -1, fmt.Errorf("Could not check for question cooldown: %w", err)
 		}
 		if len(question) > 0 {
 			if d := contest.QuestionCooldown - time.Since(question[0].AskedAt); d > 0 {
@@ -24,7 +25,7 @@ func (s *BaseAPI) CreateContestQuestion(ctx context.Context, contest *kilonova.C
 
 	id, err := s.db.CreateContestQuestion(ctx, contest.ID, authorID, text)
 	if err != nil {
-		return -1, WrapError(err, "Couldn't ask question")
+		return -1, fmt.Errorf("Couldn't ask question: %w", err)
 	}
 	return id, nil
 }
@@ -32,7 +33,7 @@ func (s *BaseAPI) CreateContestQuestion(ctx context.Context, contest *kilonova.C
 func (s *BaseAPI) CreateContestAnnouncement(ctx context.Context, contestID int, text string) (int, error) {
 	id, err := s.db.CreateContestAnnouncement(ctx, contestID, text)
 	if err != nil {
-		return -1, WrapError(err, "Couldn't create announcement")
+		return -1, fmt.Errorf("Couldn't create announcement: %w", err)
 	}
 	return id, nil
 }
@@ -40,7 +41,7 @@ func (s *BaseAPI) CreateContestAnnouncement(ctx context.Context, contestID int, 
 func (s *BaseAPI) ContestAnnouncements(ctx context.Context, contestID int) ([]*kilonova.ContestAnnouncement, error) {
 	announcements, err := s.db.ContestAnnouncements(ctx, contestID)
 	if err != nil {
-		return nil, WrapError(err, "Couldn't fetch announcements")
+		return nil, fmt.Errorf("Couldn't fetch announcements: %w", err)
 	}
 	return announcements, nil
 }
@@ -48,10 +49,10 @@ func (s *BaseAPI) ContestAnnouncements(ctx context.Context, contestID int) ([]*k
 func (s *BaseAPI) ContestAnnouncement(ctx context.Context, id int) (*kilonova.ContestAnnouncement, error) {
 	announcement, err := s.db.ContestAnnouncement(ctx, id)
 	if err != nil {
-		return nil, WrapError(err, "Couldn't fetch announcement")
+		return nil, fmt.Errorf("Couldn't fetch announcement: %w", err)
 	}
 	if announcement == nil {
-		return nil, WrapError(ErrNotFound, "Couldn't fetch question")
+		return nil, fmt.Errorf("Couldn't fetch question: %w", ErrNotFound)
 	}
 	return announcement, nil
 }
@@ -59,7 +60,7 @@ func (s *BaseAPI) ContestAnnouncement(ctx context.Context, id int) (*kilonova.Co
 func (s *BaseAPI) ContestQuestions(ctx context.Context, contestID int) ([]*kilonova.ContestQuestion, error) {
 	questions, err := s.db.ContestQuestions(ctx, db.QuestionFilter{ContestID: &contestID})
 	if err != nil {
-		return nil, WrapError(err, "Couldn't fetch questions")
+		return nil, fmt.Errorf("Couldn't fetch questions: %w", err)
 	}
 	return questions, nil
 }
@@ -67,10 +68,10 @@ func (s *BaseAPI) ContestQuestions(ctx context.Context, contestID int) ([]*kilon
 func (s *BaseAPI) ContestQuestion(ctx context.Context, id int) (*kilonova.ContestQuestion, error) {
 	question, err := s.db.ContestQuestion(ctx, id)
 	if err != nil {
-		return nil, WrapError(err, "Couldn't fetch question")
+		return nil, fmt.Errorf("Couldn't fetch question: %w", err)
 	}
 	if question == nil {
-		return nil, WrapError(ErrNotFound, "Couldn't fetch question")
+		return nil, fmt.Errorf("Couldn't fetch question: %w", ErrNotFound)
 	}
 	return question, nil
 }
@@ -78,28 +79,28 @@ func (s *BaseAPI) ContestQuestion(ctx context.Context, id int) (*kilonova.Contes
 func (s *BaseAPI) ContestUserQuestions(ctx context.Context, contestID, userID int) ([]*kilonova.ContestQuestion, error) {
 	questions, err := s.db.ContestQuestions(ctx, db.QuestionFilter{ContestID: &contestID, AuthorID: &userID})
 	if err != nil {
-		return nil, WrapError(err, "Couldn't fetch questions")
+		return nil, fmt.Errorf("Couldn't fetch questions: %w", err)
 	}
 	return questions, nil
 }
 
 func (s *BaseAPI) AnswerContestQuestion(ctx context.Context, id int, text string) error {
 	if err := s.db.AnswerContestQuestion(ctx, id, text); err != nil {
-		return WrapError(err, "Couldn't answer question")
+		return fmt.Errorf("Couldn't answer question: %w", err)
 	}
 	return nil
 }
 
 func (s *BaseAPI) UpdateContestAnnouncement(ctx context.Context, announcementID int, text string) error {
 	if err := s.db.UpdateContestAnnouncement(ctx, announcementID, text); err != nil {
-		return WrapError(err, "Couldn't update announcement")
+		return fmt.Errorf("Couldn't update announcement: %w", err)
 	}
 	return nil
 }
 
 func (s *BaseAPI) DeleteContestAnnouncement(ctx context.Context, announcementID int) error {
 	if err := s.db.DeleteContestAnnouncement(ctx, announcementID); err != nil {
-		return WrapError(err, "Couldn't delete announcement")
+		return fmt.Errorf("Couldn't delete announcement: %w", err)
 	}
 	return nil
 }

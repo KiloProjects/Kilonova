@@ -183,7 +183,7 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 		}
 		sub, err1 := rt.base.Submission(r.Context(), subID, util.UserBrief(r))
 		if err1 != nil {
-			if err1.Code != 404 && !errors.Is(err, context.Canceled) {
+			if kilonova.ErrorCode(err1) != 404 && !errors.Is(err, context.Canceled) {
 				slog.WarnContext(r.Context(), "Could not get submission", slog.Any("err", err1), slog.Int("subID", subID))
 			}
 			rt.statusPage(w, r, 400, "Submisia nu există sau nu poate fi vizualizată")

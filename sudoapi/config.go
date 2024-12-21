@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
@@ -40,7 +41,7 @@ func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) error {
 	}
 	if err := config.Save(); err != nil {
 		zap.S().Error(err)
-		return WrapError(err, "Couldn't update config. This is *very* bad")
+		return fmt.Errorf("Couldn't update config. This is *very* bad: %w", err)
 	}
 	return nil
 }

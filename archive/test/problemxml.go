@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"io"
 	"strconv"
 
@@ -12,7 +13,7 @@ import (
 func ProcessProblemXMLFile(actx *ArchiveCtx, file io.Reader) error {
 	node, err := xmlquery.Parse(file)
 	if err != nil {
-		return kilonova.WrapError(err, "Could not read problem.xml")
+		return fmt.Errorf("Could not read problem.xml: %w", err)
 	}
 
 	if actx.props == nil {

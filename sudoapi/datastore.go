@@ -3,6 +3,7 @@ package sudoapi
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -16,7 +17,7 @@ func (s *BaseAPI) PurgeTestData(testID int) error {
 		s.testBucket.RemoveFile(strconv.Itoa(testID)+".in"),
 		s.testBucket.RemoveFile(strconv.Itoa(testID)+".out"),
 	); err != nil {
-		return WrapError(err, "Could not purge test data")
+		return fmt.Errorf("Could not purge test data: %w", err)
 	}
 	return nil
 }
@@ -34,14 +35,14 @@ func (s *BaseAPI) SubtestReader(subtest int) (io.ReadCloser, error) {
 
 func (s *BaseAPI) SaveTestInput(testID int, input io.Reader) error {
 	if err := s.testBucket.WriteFile(strconv.Itoa(testID)+".in", dos2unix.DOS2Unix(input), 0644); err != nil {
-		return WrapError(err, "Could not save test input")
+		return fmt.Errorf("Could not save test input: %w", err)
 	}
 	return nil
 }
 
 func (s *BaseAPI) SaveTestOutput(testID int, output io.Reader) error {
 	if err := s.testBucket.WriteFile(strconv.Itoa(testID)+".out", dos2unix.DOS2Unix(output), 0644); err != nil {
-		return WrapError(err, "Could not save test output")
+		return fmt.Errorf("Could not save test output: %w", err)
 	}
 	return nil
 }
@@ -49,7 +50,7 @@ func (s *BaseAPI) SaveTestOutput(testID int, output io.Reader) error {
 func (s *BaseAPI) GetAttachmentRender(attID int, renderType string) (io.ReadSeekCloser, error) {
 	f, err := s.attachmentCacheBucket.ReadSeeker(attachmentCacheBucketName(attID, renderType))
 	if err != nil {
-		return nil, WrapError(err, "Couldn't get rendered attachment")
+		return nil, fmt.Errorf("Couldn't get rendered attachment: %w", err)
 	}
 	return f, nil
 }
@@ -58,7 +59,7 @@ func (s *BaseAPI) DelAttachmentRenders(attID int) error {
 	entries, err := s.attachmentCacheBucket.FileList()
 	if err != nil {
 		zap.S().Warn("Couldn't delete attachment renders: ", err)
-		return WrapError(err, "Couldn't delete attachment renders")
+		return fmt.Errorf("Couldn't delete attachment renders: %w", err)
 	}
 	for _, entry := range entries {
 		prefix, _, _ := strings.Cut(entry.Name(), ".")
@@ -80,7 +81,7 @@ func (s *BaseAPI) DelAttachmentRenders(attID int) error {
 func (s *BaseAPI) SaveAttachmentRender(attID int, renderType string, data []byte) error {
 	if err := s.attachmentCacheBucket.WriteFile(attachmentCacheBucketName(attID, renderType), bytes.NewReader(data), 0644); err != nil {
 		zap.S().Warn("Couldn't save rendered attachment: ", err)
-		return WrapError(err, "Couldn't delete rendered attachment")
+		return fmt.Errorf("Couldn't delete rendered attachment: %w", err)
 	}
 	return nil
 }

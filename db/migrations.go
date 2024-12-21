@@ -3,10 +3,10 @@ package db
 import (
 	"context"
 	"embed"
+	"fmt"
 	"log/slog"
 	"path"
 
-	"github.com/KiloProjects/kilonova"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -69,11 +69,11 @@ func (s *DB) RunMigrations(ctx context.Context) error {
 			}
 
 			if _, err := tx.Exec(ctx, `DELETE FROM kn_schema_version`); err != nil {
-				return kilonova.WrapError(err, "Could not clear schema version")
+				return fmt.Errorf("Could not clear schema version: %w", err)
 			}
 
 			if _, err := tx.Exec(ctx, `INSERT INTO kn_schema_version (version) VALUES ($1)`, mig.id); err != nil {
-				return kilonova.WrapError(err, "Could not update schema version")
+				return fmt.Errorf("Could not update schema version: %w", err)
 			}
 
 			return nil

@@ -46,7 +46,7 @@ var (
 func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) error {
 	subs, err := s.db.Submissions(ctx, kilonova.SubmissionFilter{Status: kilonova.StatusWorking})
 	if err != nil {
-		return WrapError(err, "Couldn't get submissions to reset")
+		return fmt.Errorf("Couldn't get submissions to reset: %w", err)
 	}
 	ids := make([]int, 0, len(subs))
 	for _, sub := range subs {
@@ -54,7 +54,7 @@ func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) error {
 	}
 	if err := s.db.ResetSubmissions(ctx, kilonova.SubmissionFilter{IDs: ids}); err != nil {
 		slog.WarnContext(ctx, "Couldn't reset submissions", slog.Any("err", err))
-		return WrapError(err, "Couldn't reset submissions")
+		return fmt.Errorf("Couldn't reset submissions: %w", err)
 	}
 
 	// Wake grader to start processing immediately
@@ -109,7 +109,7 @@ func (s *BaseAPI) SendMail(ctx context.Context, msg *kilonova.MailerMessage) err
 		return Statusf(http.StatusServiceUnavailable, "Mailer is disabled")
 	}
 	if err := s.mailer.SendEmail(ctx, msg); err != nil {
-		return WrapError(err, "Could not send mail")
+		return fmt.Errorf("Could not send mail: %w", err)
 	}
 	return nil
 }
@@ -189,7 +189,7 @@ func (s *BaseAPI) LogVerbose(ctx context.Context, msg string, args ...slog.Attr)
 func (s *BaseAPI) GetAuditLogs(ctx context.Context, count int, offset int) ([]*kilonova.AuditLog, error) {
 	logs, err := s.db.AuditLogs(ctx, count, offset)
 	if err != nil {
-		return nil, WrapError(err, "Couldn't fetch audit logs")
+		return nil, fmt.Errorf("Couldn't fetch audit logs: %w", err)
 	}
 	return logs, nil
 }
@@ -197,7 +197,7 @@ func (s *BaseAPI) GetAuditLogs(ctx context.Context, count int, offset int) ([]*k
 func (s *BaseAPI) GetLogCount(ctx context.Context) (int, error) {
 	cnt, err := s.db.AuditLogCount(ctx)
 	if err != nil {
-		return -1, WrapError(err, "Couldn't get audit log count")
+		return -1, fmt.Errorf("Couldn't get audit log count: %w", err)
 	}
 	return cnt, nil
 }
@@ -276,7 +276,7 @@ func (ws *webhookSender) editLastMessage() error {
 			ws.getWebhookEmbed(ws.lastMessageEntry, true),
 		},
 	}); err != nil {
-		return WrapError(err, "Couldn't edit webhook message")
+		return fmt.Errorf("Couldn't edit webhook message: %w", err)
 	}
 	return nil
 }
@@ -302,7 +302,7 @@ func (ws *webhookSender) Send(ctx context.Context, entry *logEntry) error {
 	})
 	if err != nil {
 		slog.WarnContext(ctx, "Unsuccessful Webhook execution", slog.Any("err", err), slog.Any("entry", entry))
-		return WrapError(err, "Couldn't execute webhook")
+		return fmt.Errorf("Couldn't execute webhook: %w", err)
 	}
 
 	if msg != nil {

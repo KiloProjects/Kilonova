@@ -2,12 +2,12 @@ package test
 
 import (
 	"archive/zip"
+	"fmt"
 	"io"
 	"log/slog"
 	"path"
 	"strings"
 
-	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi"
 )
 
@@ -19,12 +19,12 @@ type submissionStub struct {
 func ProcessSubmissionFile(ctx *ArchiveCtx, file *zip.File, base *sudoapi.BaseAPI) error {
 	f, err := file.Open()
 	if err != nil {
-		return kilonova.WrapError(err, "Couldn't open submission file")
+		return fmt.Errorf("Couldn't open submission file: %w", err)
 	}
 	defer f.Close()
 	data, err := io.ReadAll(f)
 	if err != nil {
-		return kilonova.WrapError(err, "Couldn't read submission file")
+		return fmt.Errorf("Couldn't read submission file: %w", err)
 	}
 
 	lang := base.LanguageFromFilename(ctx.ctx, path.Base(file.Name))

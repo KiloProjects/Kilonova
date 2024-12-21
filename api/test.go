@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -137,13 +138,13 @@ func (s *API) processArchive(r *http.Request, firstImport bool) error {
 	file, fh, err := r.FormFile("testArchive")
 	if err != nil {
 		zap.S().Warn(err)
-		return kilonova.WrapError(err, "Couldn't open zip file")
+		return fmt.Errorf("Couldn't open zip file: %w", err)
 	}
 	defer file.Close()
 
 	ar, err := zip.NewReader(file, fh.Size)
 	if err != nil {
-		return kilonova.WrapError(err, "Couldn't read zip archive")
+		return fmt.Errorf("Couldn't read zip archive: %w", err)
 	}
 
 	params := &test.TestProcessParams{

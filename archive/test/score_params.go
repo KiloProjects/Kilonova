@@ -2,6 +2,7 @@ package test
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 
 	"github.com/KiloProjects/kilonova"
@@ -66,7 +67,7 @@ func ParseScoreParameters(params []byte) ([]ScoreParamEntry, error) {
 	var sParams []ScoreParamEntry
 
 	if err := json.Unmarshal(params, &sParams); err != nil {
-		return nil, kilonova.WrapError(err, "Couldn't parse score parameters")
+		return nil, fmt.Errorf("Couldn't parse score parameters: %w", err)
 	}
 
 	if len(sParams) == 0 {

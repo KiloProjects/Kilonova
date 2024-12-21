@@ -7,7 +7,6 @@ import (
 	"io"
 	"log/slog"
 
-	"github.com/KiloProjects/kilonova"
 	"github.com/shopspring/decimal"
 )
 
@@ -46,7 +45,7 @@ func ParseScoreFile(ctx context.Context, r io.Reader) (ScoreFileEntries, error) 
 	}
 	if br.Err() != nil {
 		slog.InfoContext(ctx, "Could not read score file", slog.Any("err", br.Err()))
-		return nil, kilonova.WrapError(br.Err(), "Score file read error")
+		return nil, fmt.Errorf("Score file read error: %w", br.Err())
 	}
 
 	return rez, nil

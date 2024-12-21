@@ -52,11 +52,11 @@ func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova
 	}
 	id, err := s.db.CreateContest(ctx, name, cType)
 	if err != nil {
-		return -1, WrapError(err, "Couldn't create contest")
+		return -1, fmt.Errorf("Couldn't create contest: %w", err)
 	}
 	if err := s.db.AddContestEditor(ctx, id, author.ID); err != nil {
 		zap.S().Warn(err)
-		return id, WrapError(err, "Couldn't add author to contest editors")
+		return id, fmt.Errorf("Couldn't add author to contest editors: %w", err)
 	}
 	return id, nil
 }
@@ -64,7 +64,7 @@ func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova
 func (s *BaseAPI) UpdateContest(ctx context.Context, id int, upd kilonova.ContestUpdate) error {
 	if err := s.db.UpdateContest(ctx, id, upd); err != nil {
 		zap.S().Warn(err)
-		return WrapError(err, "Couldn't update contest")
+		return fmt.Errorf("Couldn't update contest: %w", err)
 	}
 	return nil
 }
@@ -72,7 +72,7 @@ func (s *BaseAPI) UpdateContest(ctx context.Context, id int, upd kilonova.Contes
 func (s *BaseAPI) UpdateContestProblems(ctx context.Context, id int, list []int) error {
 	if err := s.db.UpdateContestProblems(ctx, id, list); err != nil {
 		zap.S().Warn(err)
-		return WrapError(err, "Couldn't update contest problems")
+		return fmt.Errorf("Couldn't update contest problems: %w", err)
 	}
 	return nil
 }
@@ -83,7 +83,7 @@ func (s *BaseAPI) DeleteContest(ctx context.Context, contest *kilonova.Contest) 
 	}
 	if err := s.db.DeleteContest(ctx, contest.ID); err != nil {
 		zap.S().Warn(err)
-		return WrapError(err, "Couldn't delete contest")
+		return fmt.Errorf("Couldn't delete contest: %w", err)
 	}
 	s.LogUserAction(ctx, "Removed contest", slog.Any("contest", contest))
 	return nil
@@ -92,7 +92,7 @@ func (s *BaseAPI) DeleteContest(ctx context.Context, contest *kilonova.Contest) 
 func (s *BaseAPI) Contest(ctx context.Context, id int) (*kilonova.Contest, error) {
 	contest, err := s.db.Contest(ctx, id)
 	if err != nil || contest == nil {
-		return nil, WrapError(ErrNotFound, "Contest not found")
+		return nil, fmt.Errorf("Contest not found: %w", ErrNotFound)
 	}
 	return contest, nil
 }
@@ -100,7 +100,7 @@ func (s *BaseAPI) Contest(ctx context.Context, id int) (*kilonova.Contest, error
 func (s *BaseAPI) Contests(ctx context.Context, filter kilonova.ContestFilter) ([]*kilonova.Contest, error) {
 	contests, err := s.db.Contests(ctx, filter)
 	if err != nil {
-		return nil, WrapError(err, "Couldn't fetch contests")
+		return nil, fmt.Errorf("Couldn't fetch contests: %w", err)
 	}
 	return contests, nil
 }
@@ -108,7 +108,7 @@ func (s *BaseAPI) Contests(ctx context.Context, filter kilonova.ContestFilter) (
 func (s *BaseAPI) ContestCount(ctx context.Context, filter kilonova.ContestFilter) (int, error) {
 	cnt, err := s.db.ContestCount(ctx, filter)
 	if err != nil {
-		return -1, WrapError(err, "Couldn't fetch contests")
+		return -1, fmt.Errorf("Couldn't fetch contests: %w", err)
 	}
 	return cnt, nil
 }
@@ -158,13 +158,13 @@ func (s *BaseAPI) ContestLeaderboard(ctx context.Context, contest *kilonova.Cont
 	case kilonova.LeaderboardTypeClassic:
 		leaderboard, err := s.db.ContestClassicLeaderboard(ctx, contest, freezeTime, &filter)
 		if err != nil {
-			return nil, WrapError(err, "Couldn't generate leaderboard")
+			return nil, fmt.Errorf("Couldn't generate leaderboard: %w", err)
 		}
 		return leaderboard, nil
 	case kilonova.LeaderboardTypeICPC:
 		leaderboard, err := s.db.ContestICPCLeaderboard(ctx, contest, freezeTime, &filter)
 		if err != nil {
-			return nil, WrapError(err, "Couldn't generate leaderboard")
+			return nil, fmt.Errorf("Couldn't generate leaderboard: %w", err)
 		}
 		return leaderboard, nil
 	default:
@@ -258,27 +258,27 @@ func (s *BaseAPI) CanViewContestLeaderboard(user *kilonova.UserBrief, contest *k
 
 func (s *BaseAPI) AddContestEditor(ctx context.Context, pbid int, uid int) error {
 	if err := s.db.StripContestAccess(ctx, pbid, uid); err != nil {
-		return WrapError(err, "Couldn't add contest editor: sanity strip failed")
+		return fmt.Errorf("Couldn't add contest editor: sanity strip failed: %w", err)
 	}
 	if err := s.db.AddContestEditor(ctx, pbid, uid); err != nil {
-		return WrapError(err, "Couldn't add contest editor")
+		return fmt.Errorf("Couldn't add contest editor: %w", err)
 	}
 	return nil
 }
 
 func (s *BaseAPI) AddContestTester(ctx context.Context, pbid int, uid int) error {
 	if err := s.db.StripContestAccess(ctx, pbid, uid); err != nil {
-		return WrapError(err, "Couldn't add contest tester: sanity strip failed")
+		return fmt.Errorf("Couldn't add contest tester: sanity strip failed: %w", err)
 	}
 	if err := s.db.AddContestTester(ctx, pbid, uid); err != nil {
-		return WrapError(err, "Couldn't add contest tester")
+		return fmt.Errorf("Couldn't add contest tester: %w", err)
 	}
 	return nil
 }
 
 func (s *BaseAPI) StripContestAccess(ctx context.Context, pbid int, uid int) error {
 	if err := s.db.StripContestAccess(ctx, pbid, uid); err != nil {
-		return WrapError(err, "Couldn't strip contest access")
+		return fmt.Errorf("Couldn't strip contest access: %w", err)
 	}
 	return nil
 }
@@ -327,7 +327,7 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) error 
 			slog.InfoContext(ctx, "Running MOSS", slog.Any("problem", pb), slog.Any("lang", lang), slog.Int("sub_count", len(subs)))
 			mossID, err := s.db.InsertMossSubmission(ctx, contest.ID, pb.ID, lang.InternalName, len(subs))
 			if err != nil {
-				return WrapError(err, "Could not add MOSS stub to DB")
+				return fmt.Errorf("Could not add MOSS stub to DB: %w", err)
 			}
 
 			go func(mossID int, lang *Language, mossLang string, subs []*kilonova.Submission) {
@@ -376,7 +376,7 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) error 
 func (s *BaseAPI) MOSSSubmissions(ctx context.Context, contestID int) ([]*kilonova.MOSSSubmission, error) {
 	subs, err := s.db.MossSubmissions(ctx, contestID)
 	if err != nil {
-		return nil, WrapError(err, "Couldn't fetch MOSS submissions")
+		return nil, fmt.Errorf("Couldn't fetch MOSS submissions: %w", err)
 	}
 	return subs, nil
 }
