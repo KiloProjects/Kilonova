@@ -9,7 +9,7 @@
     subEnc="{{.FullSub | encodeJSON}}" 
     code="{{if (lt .FullSub.CodeSize $maxSize)}}{{with forceSubCode .FullSub}}{{syntaxHighlight . $.FullSub.Language}}{{end}}{{end}}"></kn-paste-viewer>
 
-{{ if pasteEditor authedUser .Paste }}
+{{ if .Paste.IsEditor authedUser }}
     <button onclick="deletePaste()" class="btn btn-red my-2">{{getText "del_paste"}}</button>
 {{ end }}
 

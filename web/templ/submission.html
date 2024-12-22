@@ -18,7 +18,7 @@
     <button onclick="reevaluateSubmission()" class="btn btn-blue mb-2">{{getText "reevaluate"}}</button>
     {{ end }}
     {{ if boolFlag "feature.pastes.enabled" }}
-        {{ if submissionEditor authedUser .Submission.Submission }}
+        {{ if .Submission.Submission.IsEditor authedUser }}
             <button id="pasteCreateBtn" class="btn btn-blue mb-2">{{getText "create_paste"}}</button>
         {{ end }}
     {{ end }}

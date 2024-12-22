@@ -332,8 +332,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return nil
 		},
 		"problemContests": func(user *kilonova.UserBrief, pb *kilonova.Problem) []*kilonova.Contest {
-			// TODO: Once there will be more contests, this will need to be optimized out to exclude ended ones
-			// At the moment, however, this is not a priority
 			contests, err := base.ProblemRunningContests(ctx, pb.ID)
 			if err != nil {
 				slog.WarnContext(ctx, "Couldn't get running contests", slog.Any("err", err))
@@ -534,12 +532,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 				return "", err
 			}
 			return buf.String(), nil
-		},
-		"submissionEditor": func(user *kilonova.UserBrief, sub *kilonova.Submission) bool {
-			return base.IsSubmissionEditor(sub, user)
-		},
-		"pasteEditor": func(user *kilonova.UserBrief, paste *kilonova.SubmissionPaste) bool {
-			return base.IsPasteEditor(paste, user)
 		},
 		"genProblemsParams": func(pbs []*kilonova.ScoredProblem, showPublished bool) *ProblemListingParams {
 			return &ProblemListingParams{pbs, true, showPublished, -1, -1}

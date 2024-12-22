@@ -42,7 +42,7 @@ func (rt *Web) problemTopbar(r *http.Request, page string, pageID int) *ProblemT
 	}
 	return &ProblemTopbar{
 		IsProblemEditor: rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
-		IsContestEditor: rt.base.IsContestEditor(util.UserBrief(r), util.Contest(r)),
+		IsContestEditor: util.Contest(r).IsEditor(util.UserBrief(r)),
 		CanViewTests:    rt.base.CanViewTests(util.UserBrief(r), util.Problem(r)),
 
 		Contest: util.Contest(r),

@@ -189,7 +189,7 @@ func (s *BaseAPI) CanSubmitInContest(user *kilonova.UserBrief, c *kilonova.Conte
 	if c.Ended() {
 		return false
 	}
-	if s.IsContestTester(user, c) {
+	if c.IsTester(user) {
 		return true
 	}
 	if user == nil || c == nil {
@@ -225,7 +225,8 @@ func (s *BaseAPI) CanSubmitInContest(user *kilonova.UserBrief, c *kilonova.Conte
 // It's a bit frustrating but it's an important distinction
 // If you think about it, all submitters can view problems, but not all problem viewers can submit
 func (s *BaseAPI) CanViewContestProblems(ctx context.Context, user *kilonova.UserBrief, contest *kilonova.Contest) bool {
-	if s.IsContestTester(user, contest) { // Tester + Editor + Admin
+
+	if contest.IsTester(user) { // Tester + Editor + Admin
 		return true
 	}
 	if !contest.Started() {
@@ -245,7 +246,7 @@ func (s *BaseAPI) CanViewContestLeaderboard(user *kilonova.UserBrief, contest *k
 	if !s.IsContestVisible(user, contest) {
 		return false
 	}
-	if s.IsContestTester(user, contest) { // Tester + Editor + Admin
+	if contest.IsTester(user) { // Tester + Editor + Admin
 		return true
 	}
 	// Otherwise, normal contestant

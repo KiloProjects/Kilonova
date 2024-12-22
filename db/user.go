@@ -281,7 +281,7 @@ func userFilterQuery(filter *kilonova.UserFilter, fb *filterBuilder) {
 		fb.AddConstraint("id = %s", v)
 	}
 	if v := filter.IDs; v != nil && len(v) == 0 {
-		fb.AddConstraint("id = -1")
+		fb.AddConstraint("0 = 1")
 	}
 	if v := filter.IDs; len(v) > 0 {
 		fb.AddConstraint("id = ANY(%s)", v)

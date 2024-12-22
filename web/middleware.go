@@ -311,7 +311,7 @@ func (rt *Web) mustBePostEditor(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeContestEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !rt.base.IsContestEditor(util.UserBrief(r), util.Contest(r)) {
+		if !util.Contest(r).IsEditor(util.UserBrief(r)) {
 			rt.statusPage(w, r, 401, "Trebuie să fii un administrator al concursului")
 			return
 		}

@@ -247,19 +247,6 @@ func (s *BaseAPI) SolvedProblems(ctx context.Context, user *kilonova.UserBrief, 
 	}, user, lookingUser)
 }
 
-// Deprecated: TODO: Remove
-func (s *BaseAPI) AttemptedProblems(ctx context.Context, user *kilonova.UserBrief, lookingUser *kilonova.UserBrief) ([]*kilonova.ScoredProblem, error) {
-	if user == nil {
-		return []*kilonova.ScoredProblem{}, nil
-	}
-	return s.ScoredProblems(ctx, kilonova.ProblemFilter{
-		AttemptedBy: &user.ID,
-
-		Look:        true,
-		LookingUser: lookingUser,
-	}, user, lookingUser)
-}
-
 func (s *BaseAPI) insertProblem(ctx context.Context, problem *kilonova.Problem, authorID int) (int, error) {
 	err := s.db.CreateProblem(ctx, problem, authorID)
 	if err != nil {

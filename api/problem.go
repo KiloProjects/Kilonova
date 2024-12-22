@@ -89,7 +89,7 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 	// This endpoint may leak stuff that shouldn't be generally seen (like in contests), so restrict this option to editors only
 	// OR to contest editors/testers when ContestID is supplied
 	// It isn't used anywhere right now, but it might be useful in the future
-	if !(s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) || (contest != nil && s.base.IsContestTester(util.UserBrief(r), contest))) {
+	if !(s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) || (contest != nil && contest.IsTester(util.UserBrief(r)))) {
 		args.UserID = -1
 	}
 	if args.UserID <= 0 {

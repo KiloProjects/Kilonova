@@ -4,6 +4,7 @@ node_modules
 /config.*
 /flags.json
 !/config.example.toml
+.env
 
 /kn
 knnnn

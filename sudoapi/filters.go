@@ -120,52 +120,6 @@ func (s *BaseAPI) CanViewTests(user *kilonova.UserBrief, problem *kilonova.Probl
 	return s.IsProblemEditor(user, problem)
 }
 
-// TODO: Refactor into method of *kilonova.Contest
-func (s *BaseAPI) IsContestEditor(user *kilonova.UserBrief, contest *kilonova.Contest) bool {
-	if !user.IsAuthed() {
-		return false
-	}
-	if user.IsAdmin() {
-		return true
-	}
-	if contest == nil {
-		return false
-	}
-
-	for _, editor := range contest.Editors {
-		if editor.ID == user.ID {
-			return true
-		}
-	}
-	return false
-}
-
-// Tester = Testers + Editors + Admins
-// TODO: Refactor into method of *kilonova.Contest
-func (s *BaseAPI) IsContestTester(user *kilonova.UserBrief, contest *kilonova.Contest) bool {
-	if !user.IsAuthed() {
-		return false
-	}
-	if user.IsAdmin() {
-		return true
-	}
-	if contest == nil {
-		return false
-	}
-
-	for _, editor := range contest.Editors {
-		if editor.ID == user.ID {
-			return true
-		}
-	}
-	for _, tester := range contest.Testers {
-		if tester.ID == user.ID {
-			return true
-		}
-	}
-	return false
-}
-
 func (s *BaseAPI) IsContestVisible(user *kilonova.UserBrief, contest *kilonova.Contest) bool {
 	if user.IsAdmin() {
 		return true
@@ -186,28 +140,6 @@ func (s *BaseAPI) IsContestVisible(user *kilonova.UserBrief, contest *kilonova.C
 	return ok
 }
 
-// TODO: Refactor into method of *kilonova.Submission
-func (s *BaseAPI) IsSubmissionEditor(sub *kilonova.Submission, user *kilonova.UserBrief) bool {
-	if !user.IsAuthed() {
-		return false
-	}
-	if sub == nil {
-		return false
-	}
-	return user.IsAdmin() || user.ID == sub.UserID
-}
-
-// TODO: Refactor into method of *kilonova.SubmissionPaste
-func (s *BaseAPI) IsPasteEditor(paste *kilonova.SubmissionPaste, user *kilonova.UserBrief) bool {
-	if !user.IsAuthed() {
-		return false
-	}
-	if paste == nil {
-		return false
-	}
-	return s.IsSubmissionEditor(paste.Submission, user) || user.ID == paste.Author.ID
-}
-
 // The leaderboards are not frozen if:
 //   - No freeze time is set
 //   - Current moment is before freeze time
@@ -222,7 +154,8 @@ func (s *BaseAPI) UserContestFreezeTime(user *kilonova.UserBrief, contest *kilon
 	if time.Now().Before(*contest.LeaderboardFreeze) {
 		return nil
 	}
-	if s.IsContestEditor(user, contest) {
+
+	if contest.IsEditor(user) {
 		if showFrozen {
 			return contest.LeaderboardFreeze
 		}

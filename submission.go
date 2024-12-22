@@ -56,6 +56,16 @@ type Submission struct {
 	ICPCVerdict    *string  `json:"icpc_verdict"`
 }
 
+func (sub *Submission) IsEditor(user *UserBrief) bool {
+	if sub == nil {
+		return false
+	}
+	if !user.IsAuthed() {
+		return false
+	}
+	return user.IsAdmin() || user.ID == sub.UserID
+}
+
 type SubmissionUpdate struct {
 	Status Status
 	Score  *decimal.Decimal
@@ -156,6 +166,16 @@ type SubmissionPaste struct {
 	ID         string      `json:"id"`
 	Submission *Submission `json:"sub"`
 	Author     *UserBrief  `json:"author"`
+}
+
+func (paste *SubmissionPaste) IsEditor(user *UserBrief) bool {
+	if paste == nil {
+		return false
+	}
+	if !user.IsAuthed() {
+		return false
+	}
+	return paste.Submission.IsEditor(user) || user.ID == paste.Author.ID
 }
 
 type FullSubmission struct {

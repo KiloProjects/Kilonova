@@ -54,10 +54,6 @@ type Contest struct {
 	// Contestants may be able to see the contest
 	Visible bool `json:"hidden"`
 
-	// Virtual indicates a virtual contest.
-	// TODO: Implement this
-	// Virtual bool `json:"virtual"`
-
 	// PublicLeaderboard controls whether the contest's leaderboard
 	// is viewable by everybody or just admins
 	PublicLeaderboard bool `json:"public_leaderboard"`
@@ -105,6 +101,50 @@ func (c *Contest) Running() bool {
 		return false
 	}
 	return c.Started() && !c.Ended()
+}
+
+func (c *Contest) IsEditor(user *UserBrief) bool {
+	if c == nil {
+		return false
+	}
+	if !user.IsAuthed() {
+		return false
+	}
+	if user.IsAdmin() {
+		return true
+	}
+
+	for _, editor := range c.Editors {
+		if editor.ID == user.ID {
+			return true
+		}
+	}
+	return false
+}
+
+// Tester = Testers + Editors + Admins
+func (c *Contest) IsTester(user *UserBrief) bool {
+	if c == nil {
+		return false
+	}
+	if !user.IsAuthed() {
+		return false
+	}
+	if user.IsAdmin() {
+		return true
+	}
+
+	for _, editor := range c.Editors {
+		if editor.ID == user.ID {
+			return true
+		}
+	}
+	for _, tester := range c.Testers {
+		if tester.ID == user.ID {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *Contest) LogValue() slog.Value {

@@ -41,8 +41,8 @@ type DB struct {
 	conn *pgxpool.Pool
 }
 
-func (d *DB) Close() error {
-	d.conn.Close()
+func (s *DB) Close() error {
+	s.conn.Close()
 	return nil
 }
 

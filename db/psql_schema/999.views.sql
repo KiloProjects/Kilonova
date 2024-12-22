@@ -154,9 +154,9 @@ CREATE OR REPLACE FUNCTION contest_max_scores(contest_id bigint, freeze_time tim
             WINDOW w AS (PARTITION BY user_id, subtask_id, problem_id ORDER BY computed_score DESC, created_at ASC)
     ), sum_subtasks_strat AS (
         SELECT DISTINCT user_id, problem_id, coalesce(SUM(max_score), -1) AS max_score, MAX(mintime) AS mintime FROM subtask_max_scores GROUP BY user_id, problem_id
-    ) SELECT 
-        users.user_id user_id,
-        pbs.problem_id problem_id,
+    ) SELECT
+        users.user_id AS user_id,
+        pbs.problem_id AS problem_id,
         CASE WHEN problems.scoring_strategy = 'max_submission' OR problems.scoring_strategy = 'acm-icpc' THEN COALESCE(ms_sub.max_score, -1)
             WHEN problems.scoring_strategy = 'sum_subtasks'   THEN COALESCE(ms_subtask.max_score, -1)
             ELSE -1
@@ -164,7 +164,7 @@ CREATE OR REPLACE FUNCTION contest_max_scores(contest_id bigint, freeze_time tim
         CASE WHEN problems.scoring_strategy = 'max_submission' OR problems.scoring_strategy = 'acm-icpc' THEN COALESCE(ms_sub.mintime, NULL)
             WHEN problems.scoring_strategy = 'sum_subtasks'   THEN COALESCE(ms_subtask.mintime, NULL)
             ELSE NULL
-        END mintime
+        END AS mintime
     FROM ((contest_problems pbs INNER JOIN contest_registrations users ON users.contest_id = pbs.contest_id AND pbs.contest_id = $1) INNER JOIN problems ON pbs.problem_id = problems.id)
         LEFT JOIN max_submission_strat ms_sub ON (ms_sub.user_id = users.user_id AND ms_sub.problem_id = pbs.problem_id)
         LEFT JOIN sum_subtasks_strat ms_subtask ON (ms_subtask.user_id = users.user_id AND ms_subtask.problem_id = pbs.problem_id)

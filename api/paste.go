@@ -10,7 +10,7 @@ import (
 )
 
 func (s *API) createPaste(w http.ResponseWriter, r *http.Request) {
-	if !s.base.IsSubmissionEditor(&util.Submission(r).Submission, util.UserBrief(r)) {
+	if !util.Submission(r).IsEditor(util.UserBrief(r)) {
 		errorData(w, "You can't create a paste for this submission!", 403)
 		return
 	}
@@ -58,7 +58,7 @@ func (s *API) deletePaste(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !s.base.IsPasteEditor(paste, util.UserBrief(r)) {
+	if !paste.IsEditor(util.UserBrief(r)) {
 		errorData(w, "You can't delete this paste", 403)
 		return
 	}

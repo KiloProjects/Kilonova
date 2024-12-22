@@ -409,7 +409,7 @@ func (s *API) updateContestInvitation(ctx context.Context, args struct {
 	if err != nil {
 		return err
 	}
-	if !s.base.IsContestEditor(util.UserBriefContext(ctx), contest) {
+	if !contest.IsEditor(util.UserBriefContext(ctx)) {
 		return kilonova.Statusf(400, "Only contest editors can update the invitation")
 	}
 	return s.base.UpdateContestInvitation(ctx, inv.ID, args.Expired)

@@ -35,20 +35,13 @@ func (s *statusError) Error() string {
 	return s.Text
 }
 
-func (s *statusError) String() string {
-	if s == nil {
-		return "<No error>"
-	}
-	return fmt.Sprintf("<%d %q>", s.Code, s.Text)
-}
-
 func (s *statusError) Unwrap() error {
 	return s.WrappedError
 }
 
 func (s *statusError) Is(target error) bool {
 	if err, ok := target.(*statusError); ok {
-		return err.Code == s.Code && err.Text == s.Text
+		return err.Text == s.Text
 	}
 	return false
 }

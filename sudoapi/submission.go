@@ -407,7 +407,7 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 		if cnt <= 0 {
 			return -1, Statusf(http.StatusTooManyRequests, "Max submission count for problem reached")
 		}
-		if !s.IsContestTester(author.Brief(), contest) && contest.SubmissionCooldown > 0 {
+		if !contest.IsTester(author.Brief()) && contest.SubmissionCooldown > 0 {
 			t, err := s.LastSubmissionTime(ctx, kilonova.SubmissionFilter{
 				ContestID: &contest.ID,
 				UserID:    &author.ID,
@@ -491,7 +491,7 @@ func (s *BaseAPI) subVisibleRegardless(ctx context.Context, sub *kilonova.Submis
 		return false
 	}
 
-	if s.IsSubmissionEditor(sub, user) {
+	if sub.IsEditor(user) {
 		return true
 	}
 
@@ -543,7 +543,7 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 				// Or if it's from a contest that ended
 				return true
 			}
-			if s.IsContestEditor(user, contest) {
+			if contest.IsEditor(user) {
 				// Contest editors should always be able to view submissions
 				return true
 			}
