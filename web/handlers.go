@@ -144,13 +144,21 @@ func (rt *Web) index() http.HandlerFunc {
 
 		r = rt.buildPblistCache(r, listIDs)
 
-		hotProblems, err := rt.base.ScoredProblems(r.Context(), kilonova.ProblemFilter{
-			LookingUser: util.UserBrief(r), Look: true,
-			Ordering: "hot", Descending: true,
-			Limit: 6,
-		}, util.UserBrief(r), util.UserBrief(r))
-		if err != nil {
-			hotProblems = []*kilonova.ScoredProblem{}
+		var hotProblems []*kilonova.ScoredProblem
+		var moreHotProblems bool
+		if ShowTrending.Value() {
+			hotProblems, err = rt.base.ScoredProblems(r.Context(), kilonova.ProblemFilter{
+				LookingUser: util.UserBrief(r), Look: true,
+				Ordering: "hot", Descending: true,
+				Limit: 6,
+			}, util.UserBrief(r), util.UserBrief(r))
+			if err != nil {
+				hotProblems = []*kilonova.ScoredProblem{}
+			}
+			if len(hotProblems) == 6 {
+				hotProblems = hotProblems[:5]
+				moreHotProblems = true
+			}
 		}
 
 		latestProblems, problemCount, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
@@ -162,12 +170,6 @@ func (rt *Web) index() http.HandlerFunc {
 		if err != nil {
 			latestProblems = []*sudoapi.FullProblem{}
 			problemCount = 0
-		}
-
-		var moreHotProblems bool
-		if len(hotProblems) == 6 {
-			hotProblems = hotProblems[:5]
-			moreHotProblems = true
 		}
 
 		rt.runTempl(w, r, templ, &IndexParams{
