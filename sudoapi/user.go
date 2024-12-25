@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"io"
 	"log/slog"
 	"net/http"
@@ -478,7 +479,7 @@ func getGravatar(email string, size int) (io.ReadSeekCloser, time.Time, error) {
 	req, _ := http.NewRequest("GET", fmt.Sprintf("https://gravatar.com/avatar/%s.png?%s", hex.EncodeToString(bSum[:]), v.Encode()), nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := otelhttp.DefaultClient.Do(req)
 	if err != nil {
 		return nil, time.Unix(0, 0), err
 	}
@@ -556,7 +557,7 @@ func getDiscordAvatar(dUser *discordgo.User, size int) (io.ReadSeekCloser, time.
 	req, _ := http.NewRequest("GET", dUser.AvatarURL(strconv.Itoa(size)), nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := otelhttp.DefaultClient.Do(req)
 	if err != nil {
 		return nil, time.Unix(0, 0), err
 	}

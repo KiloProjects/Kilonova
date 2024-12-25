@@ -2,6 +2,8 @@ package email
 
 import (
 	"context"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"net"
 	"net/smtp"
 
@@ -19,6 +21,10 @@ type emailer struct {
 }
 
 func (e *emailer) SendEmail(ctx context.Context, msg *kilonova.MailerMessage) error {
+	ctx, span := otel.Tracer("email").Start(ctx, "SendEmail")
+	defer span.End()
+	span.SetAttributes(attribute.String("email", msg.To), attribute.String("subject", msg.Subject))
+
 	em := email.NewEmail()
 
 	em.From = "noreply@kilonova.ro"

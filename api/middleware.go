@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 	"errors"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -86,6 +88,7 @@ func (s *API) SetupSession(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
+		trace.SpanFromContext(r.Context()).SetAttributes(attribute.Int("user.id", user.ID), attribute.String("user.name", user.Name))
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AuthedUserKey, user)))
 	})
 }

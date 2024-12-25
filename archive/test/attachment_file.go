@@ -33,7 +33,7 @@ func ProcessAttachmentFile(ctx *ArchiveCtx, fpath string) error {
 
 		name = strings.TrimSuffix(name, ".att_props")
 
-		data, err := fs.ReadFile(ctx.fs, name)
+		data, err := fs.ReadFile(ctx.fs, fpath)
 		if err != nil {
 			return fmt.Errorf("couldn't read props file: %w", err)
 		}

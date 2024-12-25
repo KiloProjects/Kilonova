@@ -3,6 +3,7 @@ package llm
 import (
 	"context"
 	"errors"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -59,7 +60,7 @@ func TranslateStatement(ctx context.Context, text string, model string) (string,
 }
 
 var defaultClient = &http.Client{
-	Transport: &openRouterHeaderTransport{T: http.DefaultTransport},
+	Transport: &openRouterHeaderTransport{T: otelhttp.NewTransport(http.DefaultTransport)},
 }
 
 type openRouterHeaderTransport struct {
