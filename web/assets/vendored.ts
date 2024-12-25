@@ -57,10 +57,12 @@ import "katex/contrib/copy-tex";
 document.addEventListener("DOMContentLoaded", () => {
 	const x = new CopyButtonPlugin();
 	document.querySelectorAll("pre.chroma code").forEach((val) => {
-		x["after:highlightElement"]({ el: val, text: (val as HTMLPreElement).innerText.replaceAll("\n\n", "\n") });
+		x["after:highlightElement"]({ el: val, text: (val as HTMLElement).innerText.replaceAll("\n\n", "\n")});
+		val.parentElement?.querySelector(".hljs-copy-container")?.style.setProperty("--hljs-theme-padding", "16px");
 	});
 	document.querySelectorAll(".statement-content pre:not(.chroma) code").forEach((val) => {
-		x["after:highlightElement"]({ el: val, text: (val as HTMLPreElement).innerText.replaceAll("\n\n", "\n").trimEnd() });
+		x["after:highlightElement"]({ el: val, text: (val as HTMLElement).innerText.replaceAll("\n\n", "\n").trimEnd()});
+		val.parentElement?.querySelector(".hljs-copy-container")?.style.setProperty("--hljs-theme-padding", "16px");
 	});
 });
 

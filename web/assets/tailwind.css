@@ -11,7 +11,7 @@
 @tailwind utilities;
 .hljs-copy-button {
 	@apply bg-[#333] !important;
-	@apply top-2;
+	/*@apply top-2;*/
 }
 .bg-hljs,
 .hljs {
