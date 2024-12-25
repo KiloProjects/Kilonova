@@ -67,7 +67,7 @@ func ParseScoreParameters(params []byte) ([]ScoreParamEntry, error) {
 	var sParams []ScoreParamEntry
 
 	if err := json.Unmarshal(params, &sParams); err != nil {
-		return nil, fmt.Errorf("Couldn't parse score parameters: %w", err)
+		return nil, fmt.Errorf("couldn't parse score parameters: %w", err)
 	}
 
 	if len(sParams) == 0 {

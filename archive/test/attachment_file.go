@@ -35,10 +35,10 @@ func ProcessAttachmentFile(ctx *ArchiveCtx, fpath string) error {
 
 		data, err := fs.ReadFile(ctx.fs, name)
 		if err != nil {
-			return fmt.Errorf("Couldn't read props file: %w", err)
+			return fmt.Errorf("couldn't read props file: %w", err)
 		}
 		if err := json.Unmarshal(data, &props); err != nil {
-			return fmt.Errorf("Invalid props file: %w", err)
+			return fmt.Errorf("invalid props file: %w", err)
 		}
 
 		_, ok := ctx.attachments[name]

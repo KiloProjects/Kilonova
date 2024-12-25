@@ -69,11 +69,11 @@ func (s *DB) RunMigrations(ctx context.Context) error {
 			}
 
 			if _, err := tx.Exec(ctx, `DELETE FROM kn_schema_version`); err != nil {
-				return fmt.Errorf("Could not clear schema version: %w", err)
+				return fmt.Errorf("could not clear schema version: %w", err)
 			}
 
 			if _, err := tx.Exec(ctx, `INSERT INTO kn_schema_version (version) VALUES ($1)`, mig.id); err != nil {
-				return fmt.Errorf("Could not update schema version: %w", err)
+				return fmt.Errorf("could not update schema version: %w", err)
 			}
 
 			return nil

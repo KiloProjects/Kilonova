@@ -141,9 +141,7 @@ func (s *DB) NumSolvedPblistProblems(ctx context.Context, listID, userID int) (i
 	// TODO: proper fix
 	err := s.conn.QueryRow(ctx, `SELECT COALESCE(MAX(count), 0) FROM pblist_user_solved WHERE list_id = $1 AND user_id = $2`, listID, userID).Scan(&cnt)
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			slog.WarnContext(ctx, "Could not get number of solved problems", slog.Any("err", err), slog.Int("list_id", listID), slog.Int("user_id", userID))
-		}
+		slog.WarnContext(ctx, "Could not get number of solved problems", slog.Any("err", err), slog.Int("list_id", listID), slog.Int("user_id", userID))
 		return -1, err
 	}
 	return cnt, nil

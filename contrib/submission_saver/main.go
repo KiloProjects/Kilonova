@@ -5,12 +5,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"go.uber.org/zap"
 )
 
 var (
@@ -20,29 +20,30 @@ var (
 
 func main() {
 	flag.Parse()
+	ctx := context.Background()
 
 	if len(*username) == 0 {
-		zap.S().Fatal("Empty username")
+		slog.ErrorContext(ctx, "Empty username")
+		os.Exit(1)
 	}
 
 	config.SetConfigPath(*confPath)
 	if err := config.Load(); err != nil {
-		zap.S().Fatal(err)
+		slog.ErrorContext(ctx, "Error loading config", slog.Any("err", err))
+		os.Exit(1)
 	}
 
-	if err := Kilonova(); err != nil {
-		zap.S().Fatal(err)
+	if err := Kilonova(ctx); err != nil {
+		slog.ErrorContext(ctx, "Error processing", slog.Any("err", err))
+		os.Exit(1)
 	}
-
-	os.Exit(0)
 }
 
-func Kilonova() error {
-	ctx := context.Background()
+func Kilonova(ctx context.Context) error {
 
 	// Print welcome message
-	zap.S().Infof("Starting Kilonova Submission Exporter")
-	zap.S().Infof("Saving for user %q...", *username)
+	slog.InfoContext(ctx, "Starting Kilonova Submission Exporter")
+	slog.InfoContext(ctx, "Saving for user", slog.Any("user", *username))
 
 	base, err := sudoapi.InitializeBaseAPI(context.Background())
 	if err != nil {
@@ -57,17 +58,19 @@ func Kilonova() error {
 
 	subs, err := base.RawSubmissions(ctx, kilonova.SubmissionFilter{UserID: &user.ID})
 	if err != nil {
-		zap.S().Fatal(err)
+		slog.ErrorContext(ctx, "Couldn't get submissions", slog.Any("err", err))
+		os.Exit(1)
 	}
 
 	f, err1 := os.Create("./" + user.Name + ".zip")
 	if err1 != nil {
-		zap.S().Fatal(err1)
+		slog.ErrorContext(ctx, "Couldn't create archive file", slog.Any("err", err1))
+		os.Exit(1)
 	}
 
 	defer func() {
 		if err := f.Close(); err != nil {
-			zap.S().Warn(err)
+			slog.ErrorContext(ctx, "Couldn't close file", slog.Any("err", err))
 		}
 	}()
 
@@ -94,15 +97,4 @@ func Kilonova() error {
 	}
 
 	return wr.Close()
-}
-
-func initLogger(debug bool) {
-	core := kilonova.GetZapCore(debug, os.Stdout)
-	logg := zap.New(core, zap.AddCaller())
-
-	zap.ReplaceGlobals(logg)
-}
-
-func init() {
-	initLogger(true)
 }

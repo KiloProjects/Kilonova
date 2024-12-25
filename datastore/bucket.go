@@ -229,7 +229,7 @@ func (b *Bucket) Evictable() bool {
 
 func (b *Bucket) RunEvictionPolicy(ctx context.Context, logger *slog.Logger) (int, error) {
 	if b.Persistent {
-		return -1, errors.New("Bucket is marked as persistent, refusing to run eviction policy")
+		return -1, errors.New("bucket is marked as persistent, refusing to run eviction policy")
 	}
 	b.lastStatsMu.Lock()
 	defer b.lastStatsMu.Unlock()
@@ -298,10 +298,10 @@ func (b *Bucket) RunEvictionPolicy(ctx context.Context, logger *slog.Logger) (in
 
 func (b *Bucket) ResetCache() error {
 	if b.Persistent {
-		return errors.New("Bucket is marked as persistent, refusing to delete")
+		return errors.New("bucket is marked as persistent, refusing to delete")
 	}
 	if !b.Cache {
-		return errors.New("Bucket is not marked as cache, refusing to delete")
+		return errors.New("bucket is not marked as cache, refusing to delete")
 	}
 	var errs []error
 	entries, err := b.FileList()

@@ -61,7 +61,7 @@ func (s *API) Handler() http.Handler {
 					}
 					if err := b.ResetCache(); err != nil {
 						slog.WarnContext(ctx, "Could not bucket cache", slog.Any("bucket", b), slog.Any("reason", err))
-						return fmt.Errorf("Could not reset cache: %w", err)
+						return fmt.Errorf("could not reset cache: %w", err)
 					}
 					return nil
 				}))
@@ -74,7 +74,7 @@ func (s *API) Handler() http.Handler {
 					numDeleted, err := b.RunEvictionPolicy(ctx, s.base.EvictionLogger())
 					if err != nil {
 						slog.WarnContext(ctx, "Could not evict bucket objects", slog.Any("bucket", b), slog.Any("reason", err))
-						return "", fmt.Errorf("Could not evict objects: %w", err)
+						return "", fmt.Errorf("could not evict objects: %w", err)
 					}
 					return fmt.Sprintf("Deleted %d objects", numDeleted), nil
 				}))

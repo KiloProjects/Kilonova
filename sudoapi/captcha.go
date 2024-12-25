@@ -2,7 +2,7 @@ package sudoapi
 
 import (
 	"context"
-	"errors"
+	"log/slog"
 	"net/http"
 	"net/netip"
 	"time"
@@ -39,9 +39,7 @@ func (s *BaseAPI) MustSolveCaptcha(ctx context.Context, ip *netip.Addr) bool {
 	}
 	cnt, err := s.db.CountSignups(ctx, *ip, time.Now().Add(-10*time.Minute))
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
-		}
+		slog.WarnContext(ctx, "Could not count signups", slog.Any("err", err))
 		return true // Err on the side of caution
 	}
 	return cnt > triggerCount.Value()

@@ -2,7 +2,6 @@ package grader
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"path"
 	"sync"
@@ -118,10 +117,7 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 	for {
 		select {
 		case <-h.ctx.Done():
-			if !errors.Is(h.ctx.Err(), context.Canceled) {
-				return h.ctx.Err()
-			}
-			return nil
+			return h.ctx.Err()
 		case _, more := <-h.wakeChan:
 			if !more {
 				return nil

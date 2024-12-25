@@ -19,12 +19,12 @@ type submissionStub struct {
 func ProcessSubmissionFile(ctx *ArchiveCtx, file *zip.File, base *sudoapi.BaseAPI) error {
 	f, err := file.Open()
 	if err != nil {
-		return fmt.Errorf("Couldn't open submission file: %w", err)
+		return fmt.Errorf("couldn't open submission file: %w", err)
 	}
 	defer f.Close()
 	data, err := io.ReadAll(f)
 	if err != nil {
-		return fmt.Errorf("Couldn't read submission file: %w", err)
+		return fmt.Errorf("couldn't read submission file: %w", err)
 	}
 
 	lang := base.LanguageFromFilename(ctx.ctx, path.Base(file.Name))

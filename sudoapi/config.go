@@ -41,7 +41,7 @@ func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) error {
 	}
 	if err := config.Save(); err != nil {
 		zap.S().Error(err)
-		return fmt.Errorf("Couldn't update config. This is *very* bad: %w", err)
+		return fmt.Errorf("couldn't update config. This is *very* bad: %w", err)
 	}
 	return nil
 }

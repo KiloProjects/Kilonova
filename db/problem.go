@@ -395,7 +395,7 @@ func (s *DB) internalToScoredProblems(ctx context.Context, spbs []*dbScoredProbl
 	for i := range rez {
 		var err error
 		rez[i], err = s.internalToScoredProblem(spbs[i], scoreUID)
-		if err != nil && !errors.Is(err, context.Canceled) {
+		if err != nil {
 			slog.WarnContext(ctx, "Could not convert to scored problem", slog.Any("err", err))
 		}
 	}

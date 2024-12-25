@@ -8,7 +8,6 @@ import (
 	"embed"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"html"
 	"html/template"
 	"io"
@@ -781,9 +780,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"forceSubCode": func(sub *kilonova.FullSubmission) []byte {
 			code, err := base.SubmissionCode(ctx, &sub.Submission, sub.Problem, nil, false)
 			if err != nil {
-				if !errors.Is(err, context.Canceled) {
-					slog.WarnContext(ctx, "Could not get submission code", slog.Any("err", err))
-				}
+				slog.WarnContext(ctx, "Could not get submission code", slog.Any("err", err))
 				code = nil
 			}
 			return code

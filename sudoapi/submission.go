@@ -29,7 +29,7 @@ var (
 func (s *BaseAPI) MaxScoreSubID(ctx context.Context, uid, pbID int) (int, error) {
 	id, err := s.db.MaxScoreSubID(ctx, uid, pbID)
 	if err != nil {
-		return -1, fmt.Errorf("Couldn't get max score ID: %w", err)
+		return -1, fmt.Errorf("couldn't get max score ID: %w", err)
 	}
 	return id, nil
 }
@@ -60,10 +60,8 @@ func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova
 		IDs: userIDs,
 	})
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			zap.S().Warnf("Error getting users: %v", err)
-		}
-		return nil, fmt.Errorf("Couldn't get users: %w", err)
+		slog.WarnContext(ctx, "Error getting users", slog.Any("err", err))
+		return nil, fmt.Errorf("couldn't get users: %w", err)
 	}
 	for _, user := range users {
 		usersMap[user.ID] = user
@@ -88,7 +86,7 @@ func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova
 		if !errors.Is(err, context.Canceled) {
 			zap.S().Warnf("Error getting problems: %v", err)
 		}
-		return nil, fmt.Errorf("Couldn't get problems: %w", err)
+		return nil, fmt.Errorf("couldn't get problems: %w", err)
 	}
 	for _, problem := range problems {
 		problemsMap[problem.ID] = problem
@@ -196,7 +194,7 @@ func (s *BaseAPI) RawSubmissionCode(ctx context.Context, subid int) ([]byte, err
 		if !errors.Is(err, context.Canceled) {
 			zap.S().Warn(err)
 		}
-		return nil, fmt.Errorf("Couldn't get submission code: %w", err)
+		return nil, fmt.Errorf("couldn't get submission code: %w", err)
 	}
 	return data, nil
 }
@@ -213,7 +211,7 @@ func (s *BaseAPI) SubmissionCode(ctx context.Context, sub *kilonova.Submission, 
 		if !errors.Is(err, context.Canceled) {
 			zap.S().Warn(err)
 		}
-		return nil, fmt.Errorf("Couldn't get submission code: %w", err)
+		return nil, fmt.Errorf("couldn't get submission code: %w", err)
 	}
 	return data, nil
 }
@@ -286,7 +284,7 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *kil
 		if !errors.Is(err1, context.Canceled) {
 			zap.S().Warn(err1)
 		}
-		return nil, fmt.Errorf("Couldn't fetch subtests: %w", err1)
+		return nil, fmt.Errorf("couldn't fetch subtests: %w", err1)
 	}
 
 	rez.SubTasks, err1 = s.SubmissionSubTasks(ctx, subid)
@@ -294,7 +292,7 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *kil
 		if !errors.Is(err1, context.Canceled) {
 			zap.S().Warn(err1)
 		}
-		return nil, fmt.Errorf("Couldn't fetch subtasks: %w", err1)
+		return nil, fmt.Errorf("couldn't fetch subtasks: %w", err1)
 	}
 
 	return rez, nil
@@ -303,7 +301,7 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *kil
 func (s *BaseAPI) UpdateSubmission(ctx context.Context, id int, status kilonova.SubmissionUpdate) error {
 	if err := s.db.UpdateSubmission(ctx, id, status); err != nil {
 		zap.S().Warn(err, id)
-		return fmt.Errorf("Couldn't update submission: %w", err)
+		return fmt.Errorf("couldn't update submission: %w", err)
 	}
 	return nil
 }
@@ -321,7 +319,7 @@ func (s *BaseAPI) RemainingSubmissionCount(ctx context.Context, contest *kilonov
 		UserID:    &userID,
 	}, -1)
 	if err != nil {
-		return -1, true, fmt.Errorf("Couldn't get submission count: %w", err)
+		return -1, true, fmt.Errorf("couldn't get submission count: %w", err)
 	}
 	return contest.MaxSubs - cnt, true, nil
 }
@@ -329,7 +327,7 @@ func (s *BaseAPI) RemainingSubmissionCount(ctx context.Context, contest *kilonov
 func (s *BaseAPI) LastSubmissionTime(ctx context.Context, filter kilonova.SubmissionFilter) (*time.Time, error) {
 	t, err := s.db.LastSubmissionTime(ctx, filter)
 	if err != nil {
-		return nil, fmt.Errorf("Couldn't get last submission time: %w", err)
+		return nil, fmt.Errorf("couldn't get last submission time: %w", err)
 	}
 	return t, nil
 }
@@ -435,7 +433,7 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 
 	langs, err1 := s.ProblemLanguages(ctx, problem.ID)
 	if err1 != nil {
-		return -1, fmt.Errorf("Could not get problem languages: %w", err1)
+		return -1, fmt.Errorf("could not get problem languages: %w", err1)
 	}
 	if !slices.ContainsFunc(langs, func(a *Language) bool { return a.InternalName == lang.InternalName }) {
 		return -1, Statusf(400, "Language not supported by problem")
@@ -472,7 +470,7 @@ func (s *BaseAPI) ResetProblemSubmissions(ctx context.Context, problem *kilonova
 		Status: kilonova.StatusReevaling,
 	}); err != nil {
 		zap.S().Warn(err)
-		return fmt.Errorf("Couldn't mark submissions for reevaluation: %w", err)
+		return fmt.Errorf("couldn't mark submissions for reevaluation: %w", err)
 	}
 
 	s.LogUserAction(ctx, "Reset problem submissions", slog.Any("problem", problem))
@@ -573,7 +571,7 @@ func (s *BaseAPI) CreatePaste(ctx context.Context, sub *kilonova.Submission, use
 	}
 	paste := &kilonova.SubmissionPaste{Submission: sub, Author: user}
 	if err := s.db.CreatePaste(ctx, paste); err != nil {
-		return "", fmt.Errorf("Couldn't create paste: %w", err)
+		return "", fmt.Errorf("couldn't create paste: %w", err)
 	}
 	return paste.ID, nil
 }
@@ -584,7 +582,7 @@ func (s *BaseAPI) SubmissionPaste(ctx context.Context, id string) (*kilonova.Sub
 	}
 	paste, err := s.db.SubmissionPaste(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("Couldn't get paste: %w", err)
+		return nil, fmt.Errorf("couldn't get paste: %w", err)
 	}
 	if paste == nil {
 		return nil, Statusf(404, "Couldn't find paste")
@@ -597,7 +595,7 @@ func (s *BaseAPI) DeletePaste(ctx context.Context, id string) error {
 		return kilonova.ErrFeatureDisabled
 	}
 	if err := s.db.DeleteSubPaste(ctx, id); err != nil {
-		return fmt.Errorf("Couldn't delete paste: %w", err)
+		return fmt.Errorf("couldn't delete paste: %w", err)
 	}
 	return nil
 }
@@ -605,7 +603,7 @@ func (s *BaseAPI) DeletePaste(ctx context.Context, id string) error {
 func (s *BaseAPI) SubmissionSubTasks(ctx context.Context, subID int) ([]*kilonova.SubmissionSubTask, error) {
 	subs, err := s.db.SubmissionSubTasksBySubID(ctx, subID)
 	if err != nil {
-		return nil, fmt.Errorf("Couldn't get submission subtasks: %w", err)
+		return nil, fmt.Errorf("couldn't get submission subtasks: %w", err)
 	}
 	return subs, nil
 }
@@ -613,14 +611,14 @@ func (s *BaseAPI) SubmissionSubTasks(ctx context.Context, subID int) ([]*kilonov
 func (s *BaseAPI) MaximumScoreSubTasks(ctx context.Context, problemID, userID int, contestID *int) ([]*kilonova.SubmissionSubTask, error) {
 	subs, err := s.db.MaximumScoreSubTasks(ctx, problemID, userID, contestID)
 	if err != nil {
-		return nil, fmt.Errorf("Couldn't get maximum subtasks: %w", err)
+		return nil, fmt.Errorf("couldn't get maximum subtasks: %w", err)
 	}
 	return subs, nil
 }
 
 func (s *BaseAPI) UpdateSubmissionSubtaskPercentage(ctx context.Context, id int, percentage decimal.Decimal) error {
 	if err := s.db.UpdateSubmissionSubtaskPercentage(ctx, id, percentage); err != nil {
-		return fmt.Errorf("Couldn't update subtask percentage: %w", err)
+		return fmt.Errorf("couldn't update subtask percentage: %w", err)
 	}
 	return nil
 }

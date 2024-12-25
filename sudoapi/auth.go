@@ -116,7 +116,7 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 
 func (s *BaseAPI) LogSignup(ctx context.Context, userID int, ip *netip.Addr, userAgent *string) error {
 	if err := s.db.LogSignup(ctx, userID, ip, userAgent); err != nil {
-		return fmt.Errorf("Could not log signup: %w", err)
+		return fmt.Errorf("could not log signup: %w", err)
 	}
 	return nil
 }

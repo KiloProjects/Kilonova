@@ -34,12 +34,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	initLogger(config.Common.Debug)
-
 	if err := os.MkdirAll(config.Common.LogDir, 0755); err != nil {
 		slog.ErrorContext(ctx, "Error initializing log directory", slog.Any("err", err))
 		os.Exit(1)
 	}
+
+	initLogger(config.Common.Debug, true)
 
 	// save the config for formatting
 	if err := config.Save(); err != nil {
@@ -62,5 +62,5 @@ func main() {
 }
 
 func init() {
-	initLogger(true)
+	initLogger(true, false)
 }

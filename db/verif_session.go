@@ -158,7 +158,7 @@ func (s *DB) getSession(ctx context.Context, sess string) (*Session, error) {
 	var session Session
 	err := Get(s.conn, ctx, &session, `SELECT * FROM active_sessions WHERE id = $1`, sess)
 	if err != nil {
-		return nil, errors.New("Unauthed")
+		return nil, errors.New("unauthed")
 	}
 	return &session, nil
 }

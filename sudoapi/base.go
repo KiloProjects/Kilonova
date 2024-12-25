@@ -72,12 +72,12 @@ func (s *BaseAPI) Start(ctx context.Context) {
 
 func (s *BaseAPI) Close() error {
 	if err := s.db.Close(); err != nil {
-		return fmt.Errorf("Couldn't close DB: %w", err)
+		return fmt.Errorf("couldn't close DB: %w", err)
 	}
 
 	if s.dSess != nil {
 		if err := s.dSess.Close(); err != nil {
-			return fmt.Errorf("Couldn't close Discord session: %w", err)
+			return fmt.Errorf("couldn't close Discord session: %w", err)
 		}
 	}
 
@@ -112,7 +112,7 @@ func GetBaseAPI(db *db.DB, mailer kilonova.Mailer) (*BaseAPI, error) {
 		}, nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Could not build session user cache: %w", err)
+		return nil, fmt.Errorf("could not build session user cache: %w", err)
 	}
 	base.sessionUserCache = sUserCache
 	return base, nil
@@ -124,11 +124,11 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, error) {
 		return nil, Statusf(400, "dataDir is not absolute")
 	}
 	if err := os.MkdirAll(config.Common.DataDir, 0755); err != nil {
-		return nil, fmt.Errorf("Couldn't create data dir: %w", err)
+		return nil, fmt.Errorf("couldn't create data dir: %w", err)
 	}
 
 	if err := datastore.InitBuckets(config.Common.DataDir); err != nil {
-		return nil, fmt.Errorf("Couldn't initialize data store: %w", err)
+		return nil, fmt.Errorf("couldn't initialize data store: %w", err)
 	}
 
 	var knMailer kilonova.Mailer
@@ -144,13 +144,13 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, error) {
 	// DB Initialization
 	db, err := db.NewPSQL(ctx, config.Common.DBDSN)
 	if err != nil {
-		return nil, fmt.Errorf("Couldn't connect to DB: %w", err)
+		return nil, fmt.Errorf("couldn't connect to DB: %w", err)
 	}
 	zap.S().Info("Connected to DB")
 
 	if MigrateOnStart.Value() {
 		if err := db.RunMigrations(ctx); err != nil {
-			return nil, fmt.Errorf("Couldn't run migrations: %w", err)
+			return nil, fmt.Errorf("couldn't run migrations: %w", err)
 		}
 	}
 

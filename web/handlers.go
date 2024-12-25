@@ -306,10 +306,8 @@ func (rt *Web) problems() http.HandlerFunc {
 			Ordering: q.Ordering, Descending: q.Descending,
 		}, util.UserBrief(r), util.UserBrief(r))
 		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				zap.S().Warn(err)
-			}
-			// TODO: Maybe not fail to load and insted just load on the browser?
+			slog.WarnContext(r.Context(), "Could not search problems", slog.Any("err", err))
+			// TODO: Maybe not fail to load and instead just load on the browser?
 			rt.statusPage(w, r, 500, "N-am putut încărca problemele")
 			return
 		}
@@ -445,9 +443,7 @@ func (rt *Web) pbListProgressView() http.HandlerFunc {
 
 		list, err := rt.base.FullProblemList(r.Context(), util.ProblemList(r).ID, checkedUser, util.UserBrief(r))
 		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				zap.S().Warn(err)
-			}
+			slog.WarnContext(r.Context(), "Could not get problem list", slog.Any("err", err))
 			rt.statusPage(w, r, kilonova.ErrorCode(err), err.Error())
 			return
 		}
@@ -723,7 +719,7 @@ func (rt *Web) problem() http.HandlerFunc {
 		var statement = []byte("This problem doesn't have a statement.")
 
 		variants, err := rt.base.ProblemDescVariants(r.Context(), problem.ID, rt.base.IsProblemEditor(util.UserBrief(r), problem))
-		if err != nil && !errors.Is(err, context.Canceled) {
+		if err != nil {
 			slog.WarnContext(r.Context(), "Couldn't get problem desc variants", slog.Any("err", err))
 		}
 
@@ -734,9 +730,7 @@ func (rt *Web) problem() http.HandlerFunc {
 		case "md":
 			statement, err = rt.base.RenderedProblemDesc(r.Context(), problem, descVariant)
 			if err != nil {
-				if !errors.Is(err, context.Canceled) {
-					zap.S().Warn("Error getting problem markdown: ", err, descVariant, problem.ID)
-				}
+				slog.WarnContext(r.Context(), "Error getting problem markdown", slog.Any("err", err), slog.Any("variant", descVariant), slog.Any("problem", problem))
 				statement = []byte("Error loading markdown.")
 			}
 		case "pdf":
@@ -781,9 +775,7 @@ func (rt *Web) problem() http.HandlerFunc {
 		if rt.base.IsProblemFullyVisible(util.UserBrief(r), util.Problem(r)) {
 			tags, err = rt.base.ProblemTags(r.Context(), util.Problem(r).ID)
 			if err != nil {
-				if !errors.Is(err, context.Canceled) {
-					zap.S().Warn("Couldn't get tags: ", err)
-				}
+				slog.WarnContext(r.Context(), "Couldn't get tags", slog.Any("err", err))
 				tags = []*kilonova.Tag{}
 			}
 		}
@@ -792,9 +784,7 @@ func (rt *Web) problem() http.HandlerFunc {
 		if util.UserBrief(r) != nil {
 			olderSubs, err = rt.getOlderSubmissions(r.Context(), util.UserBrief(r), util.UserBrief(r).ID, util.Problem(r), util.Contest(r), 5)
 			if err != nil {
-				if !errors.Is(err, context.Canceled) {
-					slog.WarnContext(r.Context(), "Couldn't get submissions", slog.Any("err", err))
-				}
+				slog.WarnContext(r.Context(), "Couldn't get submissions", slog.Any("err", err))
 				olderSubs = nil
 			}
 		}
@@ -869,18 +859,14 @@ func (rt *Web) problemArchive() http.HandlerFunc {
 		if topbar.CanViewTests {
 			tests2, err := rt.base.Tests(r.Context(), util.Problem(r).ID)
 			if err != nil {
-				if !errors.Is(err, context.Canceled) {
-					zap.S().Warn(err)
-				}
+				slog.WarnContext(r.Context(), "Couldn't get tests", slog.Any("err", err))
 			} else {
 				tests = tests2
 			}
 		}
 		settings, err := rt.base.ProblemSettings(r.Context(), util.Problem(r).ID)
 		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				slog.WarnContext(r.Context(), "Could not get problem settings", slog.Any("err", err))
-			}
+			slog.WarnContext(r.Context(), "Could not get problem settings", slog.Any("err", err))
 			settings = nil
 		}
 
@@ -968,8 +954,8 @@ func (rt *Web) blogPost() http.HandlerFunc {
 		var statement = []byte("Post is empty.")
 
 		variants, err := rt.base.BlogPostDescVariants(r.Context(), post.ID, rt.base.IsBlogPostEditor(util.UserBrief(r), post))
-		if err != nil && !errors.Is(err, context.Canceled) {
-			zap.S().Warn("Couldn't get problem desc variants", err)
+		if err != nil {
+			slog.WarnContext(r.Context(), "Couldn't get problem desc variants", slog.Any("err", err))
 		}
 
 		descVariant := rt.appropriateDescriptionVariant(r, variants)
@@ -1419,7 +1405,7 @@ func (rt *Web) profile() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		username := strings.TrimSpace(chi.URLParam(r, "user"))
 		user, err := rt.base.UserFullByName(r.Context(), username)
-		if err != nil && !errors.Is(err, kilonova.ErrNotFound) && !errors.Is(err, context.Canceled) {
+		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
 			slog.WarnContext(r.Context(), "Could not get user", slog.Any("err", err))
 			rt.statusPage(w, r, 500, "")
 			return

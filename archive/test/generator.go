@@ -62,17 +62,17 @@ func (ag *archiveGenerator) addTests(ctx context.Context) error {
 		if err := func() error {
 			f, err := ag.ar.Create(fmt.Sprintf("%d-%s.in", test.VisibleID, ag.testName))
 			if err != nil {
-				return fmt.Errorf("Couldn't create archive file: %w", err)
+				return fmt.Errorf("couldn't create archive file: %w", err)
 			}
 
 			r, err := ag.base.TestInput(test.ID)
 			if err != nil {
-				return fmt.Errorf("Couldn't get test input: %w", err)
+				return fmt.Errorf("couldn't get test input: %w", err)
 			}
 			defer r.Close()
 
 			if _, err := io.Copy(f, r); err != nil {
-				return fmt.Errorf("Couldn't save test input file: %w", err)
+				return fmt.Errorf("couldn't save test input file: %w", err)
 			}
 			return nil
 		}(); err != nil {
@@ -81,17 +81,17 @@ func (ag *archiveGenerator) addTests(ctx context.Context) error {
 		if err := func() error {
 			f, err := ag.ar.Create(fmt.Sprintf("%d-%s.ok", test.VisibleID, ag.testName))
 			if err != nil {
-				return fmt.Errorf("Couldn't create archive file: %w", err)
+				return fmt.Errorf("couldn't create archive file: %w", err)
 			}
 
 			r, err := ag.base.TestOutput(test.ID)
 			if err != nil {
-				return fmt.Errorf("Couldn't get test output: %w", err)
+				return fmt.Errorf("couldn't get test output: %w", err)
 			}
 			defer r.Close()
 
 			if _, err := io.Copy(f, r); err != nil {
-				return fmt.Errorf("Couldn't save test output file: %w", err)
+				return fmt.Errorf("couldn't save test output file: %w", err)
 			}
 			return nil
 		}(); err != nil {
@@ -104,7 +104,7 @@ func (ag *archiveGenerator) addTests(ctx context.Context) error {
 		// Then, the scores
 		testFile, err := ag.ar.Create("tests.txt")
 		if err != nil {
-			return fmt.Errorf("Couldn't create archive tests.txt file: %w", err)
+			return fmt.Errorf("couldn't create archive tests.txt file: %w", err)
 		}
 		for _, test := range tests {
 			fmt.Fprintf(testFile, "%d %s\n", test.VisibleID, test.Score.String())
@@ -116,7 +116,7 @@ func (ag *archiveGenerator) addTests(ctx context.Context) error {
 func (ag *archiveGenerator) addAttachments(ctx context.Context) error {
 	atts, err := ag.base.ProblemAttachments(ctx, ag.pb.ID)
 	if err != nil {
-		return fmt.Errorf("Couldn't get attachments: %w", err)
+		return fmt.Errorf("couldn't get attachments: %w", err)
 	}
 	for _, att := range atts {
 		if att.Private && !ag.opts.PrivateAttachments {
@@ -128,26 +128,26 @@ func (ag *archiveGenerator) addAttachments(ctx context.Context) error {
 			// If any of the flags is not false, generate an att_props file
 			pFile, err := ag.ar.Create("attachments/" + att.Name + ".att_props")
 			if err != nil {
-				return fmt.Errorf("Couldn't create archive attachment props file: %w", err)
+				return fmt.Errorf("couldn't create archive attachment props file: %w", err)
 			}
 			if err := json.NewEncoder(pFile).Encode(attachmentProps{
 				Visible: att.Visible,
 				Private: att.Private,
 				Exec:    att.Exec,
 			}); err != nil {
-				return fmt.Errorf("Couldn't encode attachment props: %w", err)
+				return fmt.Errorf("couldn't encode attachment props: %w", err)
 			}
 		}
 		attFile, err := ag.ar.Create("attachments/" + att.Name)
 		if err != nil {
-			return fmt.Errorf("Couldn't create attachment file: %w", err)
+			return fmt.Errorf("couldn't create attachment file: %w", err)
 		}
 		data, err1 := ag.base.AttachmentData(ctx, att.ID)
 		if err1 != nil {
-			return fmt.Errorf("Couldn't get attachment data: %w", err)
+			return fmt.Errorf("couldn't get attachment data: %w", err)
 		}
 		if _, err := attFile.Write(data); err != nil {
-			return fmt.Errorf("Couldn't save attachment file: %w", err)
+			return fmt.Errorf("couldn't save attachment file: %w", err)
 		}
 	}
 	return nil
@@ -249,10 +249,10 @@ func (ag *archiveGenerator) addGraderProperties(ctx context.Context) error {
 
 	gr, err := ag.ar.Create("grader.properties")
 	if err != nil {
-		return fmt.Errorf("Couldn't create archive grader.properties file: %w", err)
+		return fmt.Errorf("couldn't create archive grader.properties file: %w", err)
 	}
 	if _, err := io.Copy(gr, &buf); err != nil {
-		return fmt.Errorf("Couldn't write grader.properties file: %w", err)
+		return fmt.Errorf("couldn't write grader.properties file: %w", err)
 	}
 
 	return nil
@@ -279,15 +279,15 @@ func (ag *archiveGenerator) addSubmissions(ctx context.Context) error {
 		}
 		f, err := ag.ar.Create(fmt.Sprintf("submissions/%d-%sp%s", sub.ID, sub.Score.String(), lang.Extension()))
 		if err != nil {
-			return fmt.Errorf("Couldn't create archive submission file: %w", err)
+			return fmt.Errorf("couldn't create archive submission file: %w", err)
 		}
 		code, err1 := ag.base.RawSubmissionCode(ctx, sub.ID)
 		if err1 != nil {
-			return fmt.Errorf("Couldn't get submission code: %w", err1)
+			return fmt.Errorf("couldn't get submission code: %w", err1)
 		}
 		n, err := f.Write(code)
 		if err != nil || n < len(code) {
-			return fmt.Errorf("Couldn't write submission file: %w", err)
+			return fmt.Errorf("couldn't write submission file: %w", err)
 		}
 	}
 	return nil

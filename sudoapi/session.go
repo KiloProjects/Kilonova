@@ -22,7 +22,7 @@ func (s *BaseAPI) CreateSession(ctx context.Context, uid int) (string, error) {
 	sid, err := s.db.CreateSession(ctx, uid)
 	if err != nil {
 		zap.S().Warn("Failed to create session: ", err)
-		return "", fmt.Errorf("Failed to create session: %w", err)
+		return "", fmt.Errorf("failed to create session: %w", err)
 	}
 	if sessions, err := s.db.RemoveOldSessions(ctx, uid); err != nil {
 		zap.S().Warn("Failed to remove old sessions: ", err)
@@ -44,7 +44,7 @@ func (s *BaseAPI) GetSession(ctx context.Context, sid string) (int, error) {
 			return -1, nil
 		}
 		zap.S().Warn("Failed to get session: ", err)
-		return -1, fmt.Errorf("Failed to get session: %w", err)
+		return -1, fmt.Errorf("failed to get session: %w", err)
 	}
 
 	return uid, nil
@@ -54,7 +54,7 @@ func (s *BaseAPI) GetSession(ctx context.Context, sid string) (int, error) {
 func (s *BaseAPI) sessionUser(ctx context.Context, sid string) (*kilonova.UserFull, error) {
 	user, err := s.db.User(ctx, kilonova.UserFilter{SessionID: &sid})
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get session user: %w", err)
+		return nil, fmt.Errorf("failed to get session user: %w", err)
 	}
 	return user.ToFull(), nil
 }
@@ -114,14 +114,14 @@ type SessionFilter = db.SessionFilter
 func (s *BaseAPI) Sessions(ctx context.Context, filter *SessionFilter) ([]*Session, error) {
 	sessions, err := s.db.Sessions(ctx, filter)
 	if err != nil {
-		return nil, fmt.Errorf("Could not filter sessions: %w", err)
+		return nil, fmt.Errorf("could not filter sessions: %w", err)
 	}
 	return sessions, nil
 }
 func (s *BaseAPI) CountSessions(ctx context.Context, filter *SessionFilter) (int, error) {
 	sessions, err := s.db.CountSessions(ctx, filter)
 	if err != nil {
-		return -1, fmt.Errorf("Could not query session count: %w", err)
+		return -1, fmt.Errorf("could not query session count: %w", err)
 	}
 	return sessions, nil
 }
@@ -129,7 +129,7 @@ func (s *BaseAPI) CountSessions(ctx context.Context, filter *SessionFilter) (int
 func (s *BaseAPI) UserSessions(ctx context.Context, userID int) ([]*Session, error) {
 	sessions, err := s.db.Sessions(ctx, &db.SessionFilter{UserID: &userID})
 	if err != nil {
-		return nil, fmt.Errorf("Could not get user sessions: %w", err)
+		return nil, fmt.Errorf("could not get user sessions: %w", err)
 	}
 	return sessions, nil
 }
@@ -137,7 +137,7 @@ func (s *BaseAPI) UserSessions(ctx context.Context, userID int) ([]*Session, err
 func (s *BaseAPI) SessionDevices(ctx context.Context, sid string) ([]*SessionDevice, error) {
 	devices, err := s.db.SessionDevices(ctx, sid)
 	if err != nil {
-		return nil, fmt.Errorf("Could not get session devices: %w", err)
+		return nil, fmt.Errorf("could not get session devices: %w", err)
 	}
 	retDevices := make([]*SessionDevice, 0, len(devices))
 	for _, device := range devices {
@@ -157,7 +157,7 @@ func (s *BaseAPI) SessionDevices(ctx context.Context, sid string) ([]*SessionDev
 func (s *BaseAPI) RemoveSession(ctx context.Context, sid string) error {
 	if err := s.db.RemoveSession(ctx, sid); err != nil {
 		zap.S().Warn("Failed to remove session: ", err)
-		return fmt.Errorf("Failed to remove session: %w", err)
+		return fmt.Errorf("failed to remove session: %w", err)
 	}
 	s.sessionUserCache.Delete(sid)
 	return nil
@@ -166,7 +166,7 @@ func (s *BaseAPI) RemoveSession(ctx context.Context, sid string) error {
 func (s *BaseAPI) RemoveUserSessions(ctx context.Context, uid int) error {
 	removedSessions, err := s.db.RemoveSessions(ctx, uid)
 	if err != nil {
-		return fmt.Errorf("Failed to remove sessions: %w", err)
+		return fmt.Errorf("failed to remove sessions: %w", err)
 	}
 	for _, sess := range removedSessions {
 		s.sessionUserCache.Delete(sess)
@@ -180,7 +180,7 @@ func (s *BaseAPI) ExtendSession(ctx context.Context, sid string) (time.Time, err
 		if err.Error() == "Unauthed" {
 			return time.Now(), Statusf(400, "Session already expired")
 		}
-		return time.Now(), fmt.Errorf("Couldn't extend session: %w", err)
+		return time.Now(), fmt.Errorf("couldn't extend session: %w", err)
 	}
 	return newExpiration, nil
 }

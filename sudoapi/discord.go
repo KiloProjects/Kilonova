@@ -33,13 +33,13 @@ func (s *BaseAPI) initDiscord(ctx context.Context) error {
 
 	discord, err := discordgo.New("Bot " + Token.Value())
 	if err != nil {
-		return fmt.Errorf("Could not connect to Discord: %w", err)
+		return fmt.Errorf("could not connect to Discord: %w", err)
 	}
 	s.dSess = discord
 
 	if DiscordEnabled.Value() {
 		if err := s.dSess.Open(); err != nil {
-			return fmt.Errorf("Could not open gateway: %w", err)
+			return fmt.Errorf("could not open gateway: %w", err)
 		}
 	} else {
 		slog.InfoContext(ctx, "Initializing Discord session unauthed")
@@ -56,14 +56,14 @@ func (s *BaseAPI) GetDiscordIdentity(ctx context.Context, userID int) (*discordg
 	}
 	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &userID})
 	if err != nil {
-		return nil, fmt.Errorf("Could not get user: %w", err)
+		return nil, fmt.Errorf("could not get user: %w", err)
 	}
 	if user == nil || user.DiscordID == nil {
 		return nil, nil
 	}
 	dUser, err := s.dSess.User(*user.DiscordID)
 	if err != nil {
-		return nil, fmt.Errorf("Could not get Discord user: %w", err)
+		return nil, fmt.Errorf("could not get Discord user: %w", err)
 	}
 	return dUser, nil
 }
@@ -71,7 +71,7 @@ func (s *BaseAPI) GetDiscordIdentity(ctx context.Context, userID int) (*discordg
 func (s *BaseAPI) UnlinkDiscordIdentity(ctx context.Context, userID int) error {
 	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &userID})
 	if err != nil || user == nil {
-		return fmt.Errorf("Could not get user: %w", err)
+		return fmt.Errorf("could not get user: %w", err)
 	}
 	if user.DiscordID == nil {
 		return Statusf(400, "User has no linked Discord identity")
@@ -86,7 +86,7 @@ func (s *BaseAPI) DiscordAuthURL(ctx context.Context, userID int) (string, error
 	}
 	st, err := s.db.CreateDiscordState(ctx, userID)
 	if err != nil {
-		return "", fmt.Errorf("Could not initialize Discord request: %w", err)
+		return "", fmt.Errorf("could not initialize Discord request: %w", err)
 	}
 	return s.discordConfig().AuthCodeURL(st), nil
 }

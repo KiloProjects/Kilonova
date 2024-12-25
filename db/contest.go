@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -490,17 +491,13 @@ func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilono
 
 	editors, err := s.contestEditors(ctx, contest.ID)
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
-		}
+		slog.WarnContext(ctx, "Could not get contest editors", slog.Any("err", err))
 		editors = []*User{}
 	}
 
 	viewers, err := s.contestViewers(ctx, contest.ID)
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
-		}
+		slog.WarnContext(ctx, "Could not get contest viewers", slog.Any("err", err))
 		viewers = []*User{}
 	}
 

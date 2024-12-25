@@ -160,12 +160,12 @@ func parseEditors(editors *string) []string {
 func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) error {
 	f, err := file.Open()
 	if err != nil {
-		return fmt.Errorf("Couldn't open file: %w", err)
+		return fmt.Errorf("couldn't open file: %w", err)
 	}
 	defer f.Close()
 	rawProps, ok, err := ParsePropertiesFile(f)
 	if err != nil {
-		return fmt.Errorf("Couldn't parse properties file: %w", err)
+		return fmt.Errorf("couldn't parse properties file: %w", err)
 	}
 	if !ok {
 		return kilonova.Statusf(400, "Invalid properties file")

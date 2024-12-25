@@ -7,12 +7,14 @@ import (
 	"github.com/riandyrn/otelchi"
 	slogmulti "github.com/samber/slog-multi"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"log/slog"
 	"net"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"os/signal"
+	"path"
 	"strconv"
 	"time"
 
@@ -94,7 +96,7 @@ func Kilonova() error {
 
 	defer func() {
 		slog.InfoContext(ctx, "Shutting Down")
-		if err := server.Shutdown(ctx); err != nil && !errors.Is(err, context.Canceled) {
+		if err := server.Shutdown(ctx); err != nil {
 			slog.ErrorContext(ctx, "Error shutting down", slog.Any("err", err))
 		}
 	}()
@@ -104,18 +106,52 @@ func Kilonova() error {
 	return nil
 }
 
-func initLogger(debug bool) {
+func initLogger(debug, writeFile bool) {
 	core := kilonova.GetZapCore(debug, os.Stdout)
 	logg := zap.New(core, zap.AddCaller())
 
 	zap.ReplaceGlobals(logg)
 
-	slog.SetDefault(slog.New(
-		slogmulti.Fanout(
-			zapslog.NewHandler(core, zapslog.WithCaller(true)),
-			otelslog.NewHandler("kilonova"),
-		),
-	))
+	skipContextCanceled := slogmulti.NewHandleInlineMiddleware(func(ctx context.Context, record slog.Record, next func(context.Context, slog.Record) error) error {
+		ok := true
+		for attr := range record.Attrs {
+			if attr.Key == "err" {
+				if err, isErr := attr.Value.Any().(error); isErr && errors.Is(err, context.Canceled) {
+					ok = false
+					break
+				}
+			}
+		}
+		if !ok {
+			return nil
+		}
+		return next(ctx, record)
+	})
+
+	handlers := []slog.Handler{
+		slogmulti.Pipe(skipContextCanceled).Handler(zapslog.NewHandler(core, zapslog.WithCaller(true))),
+		otelslog.NewHandler("kilonova"),
+	}
+
+	if writeFile {
+		file := &lumberjack.Logger{
+			Filename: path.Join(config.Common.LogDir, "run.log"),
+			MaxSize:  80, //MB
+			Compress: true,
+		}
+
+		loglevel := slog.LevelInfo
+		if debug {
+			loglevel = slog.LevelDebug
+		}
+
+		handlers = append(handlers, slog.NewTextHandler(file, &slog.HandlerOptions{
+			AddSource: true,
+			Level:     loglevel,
+		}))
+	}
+
+	slog.SetDefault(slog.New(slogmulti.Fanout(handlers...)))
 }
 
 func launchProfiler() error {

@@ -3,7 +3,6 @@ package sudoapi
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -46,7 +45,7 @@ var (
 func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) error {
 	subs, err := s.db.Submissions(ctx, kilonova.SubmissionFilter{Status: kilonova.StatusWorking})
 	if err != nil {
-		return fmt.Errorf("Couldn't get submissions to reset: %w", err)
+		return fmt.Errorf("couldn't get submissions to reset: %w", err)
 	}
 	ids := make([]int, 0, len(subs))
 	for _, sub := range subs {
@@ -54,7 +53,7 @@ func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) error {
 	}
 	if err := s.db.ResetSubmissions(ctx, kilonova.SubmissionFilter{IDs: ids}); err != nil {
 		slog.WarnContext(ctx, "Couldn't reset submissions", slog.Any("err", err))
-		return fmt.Errorf("Couldn't reset submissions: %w", err)
+		return fmt.Errorf("couldn't reset submissions: %w", err)
 	}
 
 	// Wake grader to start processing immediately
@@ -109,7 +108,7 @@ func (s *BaseAPI) SendMail(ctx context.Context, msg *kilonova.MailerMessage) err
 		return Statusf(http.StatusServiceUnavailable, "Mailer is disabled")
 	}
 	if err := s.mailer.SendEmail(ctx, msg); err != nil {
-		return fmt.Errorf("Could not send mail: %w", err)
+		return fmt.Errorf("could not send mail: %w", err)
 	}
 	return nil
 }
@@ -189,7 +188,7 @@ func (s *BaseAPI) LogVerbose(ctx context.Context, msg string, args ...slog.Attr)
 func (s *BaseAPI) GetAuditLogs(ctx context.Context, count int, offset int) ([]*kilonova.AuditLog, error) {
 	logs, err := s.db.AuditLogs(ctx, count, offset)
 	if err != nil {
-		return nil, fmt.Errorf("Couldn't fetch audit logs: %w", err)
+		return nil, fmt.Errorf("couldn't fetch audit logs: %w", err)
 	}
 	return logs, nil
 }
@@ -197,7 +196,7 @@ func (s *BaseAPI) GetAuditLogs(ctx context.Context, count int, offset int) ([]*k
 func (s *BaseAPI) GetLogCount(ctx context.Context) (int, error) {
 	cnt, err := s.db.AuditLogCount(ctx)
 	if err != nil {
-		return -1, fmt.Errorf("Couldn't get audit log count: %w", err)
+		return -1, fmt.Errorf("couldn't get audit log count: %w", err)
 	}
 	return cnt, nil
 }
@@ -276,7 +275,7 @@ func (ws *webhookSender) editLastMessage() error {
 			ws.getWebhookEmbed(ws.lastMessageEntry, true),
 		},
 	}); err != nil {
-		return fmt.Errorf("Couldn't edit webhook message: %w", err)
+		return fmt.Errorf("couldn't edit webhook message: %w", err)
 	}
 	return nil
 }
@@ -302,7 +301,7 @@ func (ws *webhookSender) Send(ctx context.Context, entry *logEntry) error {
 	})
 	if err != nil {
 		slog.WarnContext(ctx, "Unsuccessful Webhook execution", slog.Any("err", err), slog.Any("entry", entry))
-		return fmt.Errorf("Couldn't execute webhook: %w", err)
+		return fmt.Errorf("couldn't execute webhook: %w", err)
 	}
 
 	if msg != nil {
@@ -392,10 +391,7 @@ func (s *BaseAPI) ingestAuditLogs(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			if !errors.Is(ctx.Err(), context.Canceled) {
-				return ctx.Err()
-			}
-			return nil
+			return ctx.Err()
 		case val := <-s.logChan:
 			s.processLogEntry(ctx, val, importantWebhook, verboseWebhook)
 		}
@@ -423,10 +419,7 @@ func (s *BaseAPI) cleanupBucketsJob(ctx context.Context, interval time.Duration)
 	for {
 		select {
 		case <-ctx.Done():
-			if !errors.Is(ctx.Err(), context.Canceled) {
-				return ctx.Err()
-			}
-			return nil
+			return ctx.Err()
 		case <-t.C:
 			slog.DebugContext(ctx, "Running eviction policy")
 			s.cleanupBuckets(ctx)
@@ -463,10 +456,7 @@ func (s *BaseAPI) refreshProblemStatsJob(ctx context.Context, interval time.Dura
 	for {
 		select {
 		case <-ctx.Done():
-			if !errors.Is(ctx.Err(), context.Canceled) {
-				return ctx.Err()
-			}
-			return nil
+			return ctx.Err()
 		case <-t.C:
 			slog.DebugContext(ctx, "Refreshing problem statistics")
 			s.db.RefreshProblemStats(ctx)
@@ -485,10 +475,7 @@ func (s *BaseAPI) refreshHotProblemsJob(ctx context.Context, interval time.Durat
 	for {
 		select {
 		case <-ctx.Done():
-			if !errors.Is(ctx.Err(), context.Canceled) {
-				return ctx.Err()
-			}
-			return nil
+			return ctx.Err()
 		case <-t.C:
 			slog.DebugContext(ctx, "Refreshing hot problems")
 			s.db.RefreshHotProblems(ctx, config.Frontend.BannedHotProblems)

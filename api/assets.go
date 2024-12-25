@@ -91,9 +91,7 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 
 	attData, err := s.base.AttachmentData(r.Context(), att.ID)
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			slog.WarnContext(r.Context(), "Could not load attachment data", slog.Any("err", err))
-		}
+		slog.WarnContext(r.Context(), "Could not load attachment data", slog.Any("err", err))
 		http.Error(w, "Couldn't get attachment data", 500)
 		return
 	}
@@ -400,9 +398,7 @@ func (s *Assets) ServeProblemArchive() http.HandlerFunc {
 		wr := bufio.NewWriter(w)
 		if err := test.GenerateArchive(r.Context(), util.Problem(r), wr, s.base, &args); err != nil {
 			if !errors.Is(err, syscall.EPIPE) && !errors.Is(err, syscall.ECONNRESET) {
-				if !errors.Is(err, context.Canceled) {
-					slog.WarnContext(r.Context(), "Could not generate problem archive", slog.Any("err", err))
-				}
+				slog.WarnContext(r.Context(), "Could not generate problem archive", slog.Any("err", err))
 			}
 			fmt.Fprint(w, err)
 		}
