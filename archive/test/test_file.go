@@ -1,7 +1,6 @@
 package test
 
 import (
-	"archive/zip"
 	"fmt"
 	"log/slog"
 	"path"
@@ -27,8 +26,8 @@ var (
 )
 
 type archiveTest struct {
-	InFile  *zip.File
-	OutFile *zip.File
+	InFilePath  string
+	OutFilePath string
 
 	VisibleID int
 	Key       string
@@ -43,37 +42,37 @@ func (t archiveTest) Matches(re *regexp.Regexp) bool {
 	return places[0] == 0
 }
 
-func ProcessTestInputFile(ctx *ArchiveCtx, file *zip.File) error {
-	testName := path.Base(file.Name)
+func ProcessTestInputFile(ctx *ArchiveCtx, fpath string) error {
+	testName := path.Base(fpath)
 	if slices.Contains(testInputSuffixes, path.Ext(testName)) {
 		testName = strings.TrimSuffix(testName, path.Ext(testName))
 	} else {
 		testName = strings.TrimPrefix(testName, "input")
 	}
 	tf := ctx.tests[testName]
-	if tf.InFile != nil { // in file already exists
+	if len(tf.InFilePath) > 0 { // in file already exists
 		return kilonova.Statusf(400, "Multiple input files for test %q", testName)
 	}
 
-	tf.InFile = file
+	tf.InFilePath = fpath
 	tf.Key = testName
 	ctx.tests[testName] = tf
 	return nil
 }
 
-func ProcessTestOutputFile(ctx *ArchiveCtx, file *zip.File) error {
-	testName := path.Base(file.Name)
+func ProcessTestOutputFile(ctx *ArchiveCtx, fpath string) error {
+	testName := path.Base(fpath)
 	if slices.Contains(testOutputSuffixes, path.Ext(testName)) {
 		testName = strings.TrimSuffix(testName, path.Ext(testName))
 	} else {
 		testName = strings.TrimPrefix(testName, "output")
 	}
 	tf := ctx.tests[testName]
-	if tf.OutFile != nil { // out file already exists
+	if len(tf.OutFilePath) > 0 { // out file already exists
 		return kilonova.Statusf(400, "Multiple output files for test %q", testName)
 	}
 
-	tf.OutFile = file
+	tf.OutFilePath = fpath
 	tf.Key = testName
 	ctx.tests[testName] = tf
 	return nil

@@ -35,7 +35,7 @@ var _ eval.BoxScheduler = &BoxManager{}
 type BoxManager struct {
 	numConcurrent int64
 	// concSem measures the number of running Box2 requests.
-	// Since a request will be able to have multiple boxes (communication problems), it does not reflect the number of concurrent boxes running.
+	// Since a request will be able to have multiple boxes (communication type submissions), it does not reflect the number of concurrent boxes running.
 	concSem   *semaphore.Weighted
 	memSem    *semaphore.Weighted
 	maxMemory int64
@@ -60,11 +60,6 @@ func (b *BoxManager) SubRunner(ctx context.Context, numConc int64) (eval.BoxSche
 		return nil, err
 	}
 
-	ids := make(chan int, 3*numConc)
-	for i := int64(0); i < numConc; i++ {
-		ids <- <-b.availableIDs
-	}
-
 	return &BoxManager{
 		numConcurrent: numConc,
 		concSem:       semaphore.NewWeighted(numConc),
@@ -72,7 +67,7 @@ func (b *BoxManager) SubRunner(ctx context.Context, numConc int64) (eval.BoxSche
 
 		logger: b.logger,
 
-		availableIDs: ids,
+		availableIDs: b.availableIDs,
 
 		parentMgr: b,
 
@@ -119,12 +114,10 @@ func (b *BoxManager) releaseBox(ctx context.Context, sb eval.Sandbox) {
 func (b *BoxManager) Close(ctx context.Context) error {
 	b.concSem.Acquire(ctx, b.numConcurrent)
 	if b.parentMgr != nil {
-		for len(b.availableIDs) > 0 {
-			b.parentMgr.availableIDs <- <-b.availableIDs
-		}
 		b.parentMgr.concSem.Release(b.numConcurrent)
+	} else {
+		close(b.availableIDs)
 	}
-	close(b.availableIDs)
 	return nil
 }
 
@@ -274,23 +267,23 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 	defer mgr.concSem.Release(1)
 	defer mgr.releaseBox(ctx, box)
 
-	for path, val := range req.InputByteFiles {
+	for fpath, val := range req.InputByteFiles {
 		if val.Mode == 0 {
 			val.Mode = 0666
 		}
-		if err := box.WriteFile(path, bytes.NewReader(val.Data), val.Mode); err != nil {
+		if err := box.WriteFile(fpath, bytes.NewReader(val.Data), val.Mode); err != nil {
 			return nil, err
 		}
 	}
 
-	for path, val := range req.InputBucketFiles {
+	for fpath, val := range req.InputBucketFiles {
 		// TODO: Use datastore manager
 		// Do not reset val.Mode here, since CopyInBox stats and sets the proper mode
-		if err := copyInBox(box, datastore.GetBucket(val.Bucket), val.Filename, path, val.Mode); err != nil {
+		if err := copyInBox(box, datastore.GetBucket(val.Bucket), val.Filename, fpath, val.Mode); err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
 				slog.WarnContext(ctx, "Bucket file doesn't exist when copying in sandbox",
 					slog.Any("bucket", val.Bucket), slog.String("filename", val.Filename),
-					slog.String("target_path", path), slog.Int("box_id", box.GetID()),
+					slog.String("target_path", fpath), slog.Int("box_id", box.GetID()),
 				)
 			}
 			return nil, err

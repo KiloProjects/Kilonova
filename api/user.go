@@ -89,9 +89,8 @@ func (s *API) deauthAllSessions(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) setPreferredLanguage() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
 		var args struct{ Language string }
-		if err := decoder.Decode(&args, r.Form); err != nil {
+		if err := parseRequest(r, &args); err != nil {
 			errorData(w, err, 400)
 			return
 		}
@@ -117,9 +116,8 @@ func (s *API) setPreferredLanguage() func(w http.ResponseWriter, r *http.Request
 
 func (s *API) setPreferredTheme() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
 		var args struct{ Theme string }
-		if err := decoder.Decode(&args, r.Form); err != nil {
+		if err := parseRequest(r, &args); err != nil {
 			errorData(w, err, 400)
 			return
 		}
@@ -145,9 +143,8 @@ func (s *API) setPreferredTheme() func(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) setBio() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
 		var args struct{ Bio string }
-		if err := decoder.Decode(&args, r.Form); err != nil {
+		if err := parseRequest(r, &args); err != nil {
 			errorData(w, err, 400)
 			return
 		}
@@ -174,9 +171,8 @@ func (s *API) setBio() func(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) setAvatarType() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
 		var args struct{ AvatarType string }
-		if err := decoder.Decode(&args, r.Form); err != nil {
+		if err := parseRequest(r, &args); err != nil {
 			errorData(w, err, 400)
 			return
 		}
@@ -200,14 +196,13 @@ func (s *API) setAvatarType() func(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) manageUser(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Lockout *bool   `json:"lockout"`
 		NewName *string `json:"new_name"`
 
 		ForceUsernameChange *bool `json:"force_username_change"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -264,14 +259,13 @@ func (s *API) getSolvedProblems(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) updateUsername(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		UserID  *int   `json:"userID"`
 		NewName string `json:"newName"`
 
 		Password string `json:"password"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -304,12 +298,11 @@ func (s *API) updateUsername(w http.ResponseWriter, r *http.Request) {
 // changePassword changes the password of the saved user
 // TODO: Check this is not a scam and the user actually wants to change password
 func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Password    string `json:"password"`
 		PasswordOld string `json:"old_password"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -336,11 +329,10 @@ func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) sendForgotPwdMail(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Email string `json:"email"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -371,12 +363,11 @@ func (s *API) sendForgotPwdMail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) resetPassword(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		RequestID   string `json:"req_id"`
 		NewPassword string `json:"password"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -451,9 +442,8 @@ func (s *API) resendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args sudoapi.UserGenerationRequest
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 500)
 		return
 	}

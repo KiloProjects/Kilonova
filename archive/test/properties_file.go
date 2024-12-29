@@ -1,7 +1,6 @@
 package test
 
 import (
-	"archive/zip"
 	"bufio"
 	"context"
 	"fmt"
@@ -157,13 +156,8 @@ func parseEditors(editors *string) []string {
 
 // TODO: Allow having multiple .properties files
 // And split grader.properties from generator.go into multiple files
-func ProcessPropertiesFile(ctx *ArchiveCtx, file *zip.File) error {
-	f, err := file.Open()
-	if err != nil {
-		return fmt.Errorf("couldn't open file: %w", err)
-	}
-	defer f.Close()
-	rawProps, ok, err := ParsePropertiesFile(f)
+func ProcessPropertiesFile(ctx *ArchiveCtx, r io.Reader) error {
+	rawProps, ok, err := ParsePropertiesFile(r)
 	if err != nil {
 		return fmt.Errorf("couldn't parse properties file: %w", err)
 	}

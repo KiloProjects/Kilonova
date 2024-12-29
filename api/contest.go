@@ -10,12 +10,11 @@ import (
 )
 
 func (s *API) createContest(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Name string               `json:"name"`
 		Type kilonova.ContestType `json:"type"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -30,9 +29,8 @@ func (s *API) createContest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args kilonova.ContestUpdate
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 500)
 		return
 	}
@@ -63,7 +61,6 @@ func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) updateContestProblems(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		List []int `json:"list"`
 	}
@@ -166,9 +163,8 @@ func (s *API) leaderboard(ctx context.Context, contest *kilonova.Contest, lookin
 }
 
 func (s *API) contestLeaderboard(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args contestLeaderboardParams
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		http.Error(w, "Can't decode parameters", 400)
 		return
 	}
@@ -181,11 +177,10 @@ func (s *API) contestLeaderboard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) addContestEditor(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Username string `json:"username"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
@@ -205,11 +200,10 @@ func (s *API) addContestEditor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) addContestTester(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Username string `json:"username"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
@@ -234,11 +228,10 @@ func (s *API) addContestTester(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) stripContestAccess(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		UserID int `json:"user_id"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
@@ -314,11 +307,10 @@ func (s *API) contestAllQuestions(ctx context.Context, _ struct{}) ([]*kilonova.
 }
 
 func (s *API) askContestQuestion(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Text string `json:"text"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
@@ -337,12 +329,11 @@ func (s *API) askContestQuestion(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) answerContestQuestion(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		ID   int    `json:"questionID"`
 		Text string `json:"text"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
@@ -432,11 +423,10 @@ func (s *API) startContestRegistration(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) forceRegisterForContest(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Username string `json:"name"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
@@ -464,11 +454,10 @@ func (s *API) checkRegistration(ctx context.Context, _ struct{}) (*kilonova.Cont
 }
 
 func (s *API) stripContestRegistration(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Username string `json:"name"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
@@ -493,7 +482,6 @@ type regRez struct {
 }
 
 func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		FuzzyName    *string `json:"name_fuzzy"`
 		InvitationID *string `json:"invitation_id"`
@@ -501,7 +489,7 @@ func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 		Limit  int `json:"limit"`
 		Offset int `json:"offset"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}

@@ -12,11 +12,10 @@ import (
 )
 
 func (s *API) userBlogPosts(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		UserID int `json:"id"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
@@ -60,13 +59,12 @@ func (s *API) validateBlogPostEditor(next http.Handler) http.Handler {
 }
 
 func (s *API) createBlogPost(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Title    string  `json:"title"`
 		Body     *string `json:"body"`
 		BodyLang *string `json:"body_lang"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
@@ -101,9 +99,8 @@ func (s *API) createBlogPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) updateBlogPost(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args kilonova.BlogPostUpdate
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}

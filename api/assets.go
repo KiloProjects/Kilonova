@@ -177,9 +177,8 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args contestLeaderboardParams
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		http.Error(w, "Can't decode parameters", 400)
 		return
 	}
@@ -378,9 +377,8 @@ func (s *Assets) ServeProblemArchive() http.HandlerFunc {
 			return
 		}
 		defer mu.Unlock()
-		r.ParseForm()
 		var args test.ArchiveGenOptions
-		if err := decoder.Decode(&args, r.Form); err != nil {
+		if err := parseRequest(r, &args); err != nil {
 			http.Error(w, "Can't decode parameters", 400)
 			return
 		}

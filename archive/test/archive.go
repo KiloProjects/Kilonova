@@ -1,7 +1,6 @@
 package test
 
 import (
-	"archive/zip"
 	"cmp"
 	"context"
 	"fmt"
@@ -81,7 +80,7 @@ var (
 	testOutputSuffixes = []string{".out", ".output", ".ok", ".sol", ".a", ".ans"}
 )
 
-func ProcessArchiveFile(ctx *ArchiveCtx, fpath string, file *zip.File, base *sudoapi.BaseAPI) error {
+func ProcessArchiveFile(ctx *ArchiveCtx, fpath string, base *sudoapi.BaseAPI) error {
 	if strings.Contains(fpath, "__MACOSX") || strings.Contains(fpath, ".DS_Store") { // Support archives from MacOS
 		return nil
 	}
@@ -90,7 +89,12 @@ func ProcessArchiveFile(ctx *ArchiveCtx, fpath string, file *zip.File, base *sud
 	}
 
 	if slices.Contains(strings.Split(path.Dir(fpath), "/"), "submissions") { // Is in "submissions" directory
-		return ProcessSubmissionFile(ctx, file, base)
+		r, err := ctx.fs.Open(fpath)
+		if err != nil {
+			return fmt.Errorf("could not open submission file: %w", err)
+		}
+		defer r.Close()
+		return ProcessSubmissionFile(ctx, fpath, r, base)
 	}
 
 	ext := strings.ToLower(path.Ext(fpath))
@@ -115,7 +119,12 @@ func ProcessArchiveFile(ctx *ArchiveCtx, fpath string, file *zip.File, base *sud
 	}
 
 	if ext == ".properties" { // test properties file
-		return ProcessPropertiesFile(ctx, file)
+		r, err := ctx.fs.Open(fpath)
+		if err != nil {
+			return fmt.Errorf("could not open properties file: %w", err)
+		}
+		defer r.Close()
+		return ProcessPropertiesFile(ctx, r)
 	}
 
 	if strings.ToLower(fpath) == "problem.xml" { // Polygon archive format
@@ -130,15 +139,20 @@ func ProcessArchiveFile(ctx *ArchiveCtx, fpath string, file *zip.File, base *sud
 	// Polygon-specific handling
 	if ctx.params.Polygon {
 		if strings.HasPrefix(fpath, "solutions") {
-			return ProcessSubmissionFile(ctx, file, base)
+			r, err := ctx.fs.Open(fpath)
+			if err != nil {
+				return fmt.Errorf("could not open submission file: %w", err)
+			}
+			defer r.Close()
+			return ProcessSubmissionFile(ctx, fpath, r, base)
 		}
 
 		if strings.HasPrefix(fpath, "tests") {
 			if slices.Contains(testOutputSuffixes, ext) {
-				return ProcessTestOutputFile(ctx, file)
+				return ProcessTestOutputFile(ctx, fpath)
 			}
 
-			return ProcessTestInputFile(ctx, file)
+			return ProcessTestInputFile(ctx, fpath)
 		}
 
 		if fpath == "check.cpp" {
@@ -158,11 +172,11 @@ func ProcessArchiveFile(ctx *ArchiveCtx, fpath string, file *zip.File, base *sud
 
 	// if nothing else is detected, it should be a test file
 	if slices.Contains(testInputSuffixes, ext) || strings.HasPrefix(fpath, "input") { // test input file (ex: 01.in)
-		return ProcessTestInputFile(ctx, file)
+		return ProcessTestInputFile(ctx, fpath)
 	}
 
 	if slices.Contains(testOutputSuffixes, ext) || strings.HasPrefix(fpath, "output") { // test output file (ex: 01.out/01.ok)
-		return ProcessTestOutputFile(ctx, file)
+		return ProcessTestOutputFile(ctx, fpath)
 	}
 
 	return nil
@@ -183,7 +197,7 @@ type TestProcessParams struct {
 	// MergeTests bool
 }
 
-func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Reader, base *sudoapi.BaseAPI, params *TestProcessParams) error {
+func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, base *sudoapi.BaseAPI, params *TestProcessParams) error {
 	if params.Requestor == nil {
 		return kilonova.Statusf(400, "There must be a requestor")
 	}
@@ -204,14 +218,15 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 		aCtx.scoreParameters = scoreParams
 	}
 
-	for _, file := range ar.File {
-		if file.FileInfo().IsDir() {
-			continue
+	if err := fs.WalkDir(ar, ".", func(path string, d fs.DirEntry, err error) error {
+		// Skip directory entries
+		if d.IsDir() {
+			return nil
 		}
 
-		if err := ProcessArchiveFile(aCtx, file.Name, file, base); err != nil {
-			return err
-		}
+		return ProcessArchiveFile(aCtx, path, base)
+	}); err != nil {
+		return err
 	}
 
 	if aCtx.props != nil && aCtx.props.Subtasks != nil && len(aCtx.props.SubtaskedTests) != len(aCtx.tests) {
@@ -220,7 +235,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 	}
 
 	for k, v := range aCtx.tests {
-		if v.InFile == nil || v.OutFile == nil {
+		if v.InFilePath == "" || v.OutFilePath == "" {
 			return kilonova.Statusf(400, "Missing input or output file for test %q", k)
 		}
 	}
@@ -359,7 +374,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 
 			createdTests[v.VisibleID] = test
 
-			f, err := v.InFile.Open()
+			f, err := aCtx.fs.Open(v.InFilePath)
 			if err != nil {
 				return fmt.Errorf("couldn't open() input file: %w", err)
 			}
@@ -369,7 +384,7 @@ func ProcessZipTestArchive(ctx context.Context, pb *kilonova.Problem, ar *zip.Re
 				return fmt.Errorf("couldn't create test input: %w", err)
 			}
 			f.Close()
-			f, err = v.OutFile.Open()
+			f, err = aCtx.fs.Open(v.OutFilePath)
 			if err != nil {
 				return fmt.Errorf("couldn't open() output file: %w", err)
 			}

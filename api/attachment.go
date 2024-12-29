@@ -20,7 +20,7 @@ func (s *API) createAttachment(w http.ResponseWriter, r *http.Request) {
 		Private bool `json:"private"`
 		Exec    bool `json:"exec"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
@@ -111,7 +111,7 @@ func (s *API) updateAttachmentData(w http.ResponseWriter, r *http.Request) {
 		Private *bool   `json:"private"`
 		Exec    *bool   `json:"exec"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}

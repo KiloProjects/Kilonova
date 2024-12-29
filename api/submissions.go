@@ -28,11 +28,10 @@ func (s *API) fullSubmission(ctx context.Context, id int, lookingUser *kilonova.
 // getSubmissionByID returns a submission based on an ID
 func (s *API) getSubmissionByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
 		var args struct {
 			SubID int `json:"id"`
 		}
-		if err := decoder.Decode(&args, r.Form); err != nil {
+		if err := parseRequest(r, &args); err != nil {
 			errorData(w, err, http.StatusBadRequest)
 			return
 		}
@@ -49,9 +48,8 @@ func (s *API) getSubmissionByID() func(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) filterSubs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
 		var args kilonova.SubmissionFilter
-		if err := decoder.Decode(&args, r.Form); err != nil {
+		if err := parseRequest(r, &args); err != nil {
 			errorData(w, err, http.StatusBadRequest)
 			return
 		}

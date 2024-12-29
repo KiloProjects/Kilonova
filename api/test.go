@@ -38,12 +38,11 @@ func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) updateTestInfo(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		ID    int
 		Score string
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
@@ -154,7 +153,7 @@ func (s *API) processArchive(r *http.Request, firstImport bool) error {
 		FirstImport: firstImport,
 	}
 
-	return test.ProcessZipTestArchive(context.WithoutCancel(r.Context()), util.Problem(r), ar, s.base, params)
+	return test.ProcessTestArchive(context.WithoutCancel(r.Context()), util.Problem(r), ar, s.base, params)
 }
 
 func (s *API) processTestArchive(w http.ResponseWriter, r *http.Request) {

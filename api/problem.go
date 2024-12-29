@@ -22,11 +22,10 @@ import (
 )
 
 func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		UserID int
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
@@ -64,14 +63,13 @@ type scoreBreakdownRet struct {
 }
 
 func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		UserID int
 
 		ContestID  *int
 		ViewFrozen bool `json:"view_frozen"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
@@ -430,13 +428,12 @@ func boolPtrString(val *bool) string {
 }
 
 func (s *API) togglePblistProblems(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Deep         bool  `json:"deep"`
 		Visible      *bool `json:"visible"`
 		VisibleTests *bool `json:"visibleTests"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
@@ -456,11 +453,10 @@ func (s *API) togglePblistProblems(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) addProblemEditor(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Username string `json:"username"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
@@ -480,11 +476,10 @@ func (s *API) addProblemEditor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) addProblemViewer(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Username string `json:"username"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}

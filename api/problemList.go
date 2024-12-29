@@ -16,9 +16,8 @@ func (s *API) getProblemList(ctx context.Context, _ struct{}) (*kilonova.Problem
 
 // if there are multiple, will return the one with the smallest ID
 func (s *API) problemListByName(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct{ Name string }
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
@@ -79,11 +78,10 @@ func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) problemLists(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Root bool `json:"root"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
@@ -185,7 +183,6 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Title       *string `json:"title"`
 		Description *string `json:"description"`

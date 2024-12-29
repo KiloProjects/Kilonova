@@ -22,7 +22,6 @@ import (
 func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 	s.signupLock.Lock()
 	defer s.signupLock.Unlock()
-	r.ParseForm()
 	var auth struct {
 		Username string `json:"username"`
 		Email    string `json:"email"`
@@ -34,7 +33,7 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		CaptchaResponse string `json:"captcha_response"`
 	}
 
-	if err := decoder.Decode(&auth, r.Form); err != nil {
+	if err := parseRequest(r, &auth); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
@@ -88,13 +87,12 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) login(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var auth struct {
 		Username string
 		Password string
 	}
 
-	if err := decoder.Decode(&auth, r.Form); err != nil {
+	if err := parseRequest(r, &auth); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}

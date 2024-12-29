@@ -54,7 +54,6 @@ func (s *API) createSubTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		SubTaskID *int     `json:"subtask_id"`
 		NewID     *int     `json:"new_id"`

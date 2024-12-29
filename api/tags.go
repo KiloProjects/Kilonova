@@ -9,11 +9,10 @@ import (
 )
 
 func (s *API) getTags(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Type kilonova.TagType `json:"type"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
@@ -44,12 +43,11 @@ func (s *API) getTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) createTag(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		Name string           `json:"name"`
 		Type kilonova.TagType `json:"type"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
@@ -73,14 +71,13 @@ func (s *API) createTag(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) updateTag(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		ID int `json:"id"`
 
 		Type kilonova.TagType `json:"type"`
 		Name *string          `json:"name"`
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}

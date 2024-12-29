@@ -9,12 +9,11 @@ import (
 )
 
 func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var args struct {
 		ID  int
 		Set bool
 	}
-	if err := decoder.Decode(&args, r.Form); err != nil {
+	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
@@ -76,9 +75,8 @@ func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getAllUsers(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	var query kilonova.UserFilter
-	if err := decoder.Decode(&query, r.Form); err != nil {
+	if err := parseRequest(r, &query); err != nil {
 		errorData(w, "Invalid request parameters", 400)
 		return
 	}
