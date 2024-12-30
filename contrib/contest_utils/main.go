@@ -90,9 +90,9 @@ func Kilonova() error {
 	// Print welcome message
 	slog.InfoContext(ctx, "Starting Kilonova Contest Registration Manager")
 
-	base, err1 := sudoapi.InitializeBaseAPI(ctx)
-	if err1 != nil {
-		return err1
+	base, err := sudoapi.InitializeBaseAPI(ctx)
+	if err != nil {
+		return err
 	}
 	defer base.Close()
 
@@ -154,9 +154,9 @@ func Kilonova() error {
 				team.Email = "email_" + team.Slug + "@kilonova.ro"
 			}
 
-			user, err2 := base.UserFullByName(ctx, team.Slug)
-			if err2 != nil && !errors.Is(err2, sudoapi.ErrNotFound) {
-				slog.ErrorContext(ctx, "Could not test user existence", slog.Any("err", err2))
+			user, err := base.UserFullByName(ctx, team.Slug)
+			if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
+				slog.ErrorContext(ctx, "Could not test user existence", slog.Any("err", err))
 				continue
 			} else if user != nil && user.Email == team.Email {
 				slog.InfoContext(ctx, "Skipping already created account, even though it has no password in profile", slog.String("slug", team.Slug))

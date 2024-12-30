@@ -291,9 +291,9 @@ func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Pro
 		if ok {
 			return d, nil
 		}
-		data, err1 := s.db.AttachmentData(ctx, &kilonova.AttachmentFilter{ProblemID: &problem.ID, Name: &name})
-		if err1 != nil {
-			return nil, fmt.Errorf("couldn't get problem description: %w", err1)
+		data, err := s.db.AttachmentData(ctx, &kilonova.AttachmentFilter{ProblemID: &problem.ID, Name: &name})
+		if err != nil {
+			return nil, fmt.Errorf("couldn't get problem description: %w", err)
 		}
 
 		buf, err := s.RenderMarkdown(data, &kilonova.RenderContext{Problem: problem})
@@ -322,9 +322,9 @@ func (s *BaseAPI) RenderedBlogPostDesc(ctx context.Context, post *kilonova.BlogP
 		if ok {
 			return d, nil
 		}
-		data, err1 := s.db.AttachmentData(ctx, &kilonova.AttachmentFilter{BlogPostID: &post.ID, Name: &name})
-		if err1 != nil {
-			return nil, fmt.Errorf("couldn't get blog post description: %w", err1)
+		data, err := s.db.AttachmentData(ctx, &kilonova.AttachmentFilter{BlogPostID: &post.ID, Name: &name})
+		if err != nil {
+			return nil, fmt.Errorf("couldn't get blog post description: %w", err)
 		}
 
 		buf, err := s.RenderMarkdown(data, &kilonova.RenderContext{BlogPost: post})

@@ -236,9 +236,9 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *kil
 			return nil, Statusf(404, "Submission not found or user may not have access")
 		}
 
-		problem2, err1 := s.Problem(ctx, sub2.ProblemID)
-		if err1 != nil {
-			return nil, err1
+		problem2, err := s.Problem(ctx, sub2.ProblemID)
+		if err != nil {
+			return nil, err
 		}
 
 		if !s.IsProblemVisible(lookingUser, problem2) {
@@ -254,9 +254,9 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *kil
 			return nil, Statusf(404, "Submission not found")
 		}
 
-		problem2, err1 := s.Problem(ctx, sub2.ProblemID)
-		if err1 != nil {
-			return nil, err1
+		problem2, err := s.Problem(ctx, sub2.ProblemID)
+		if err != nil {
+			return nil, err
 		}
 
 		sub = sub2
@@ -264,35 +264,31 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *kil
 	}
 
 	rez := &FullSubmission{Submission: *sub, CodeTrulyVisible: s.subVisibleRegardless(ctx, sub, lookingUser, problem)}
-	author, err1 := s.UserBrief(ctx, sub.UserID)
-	if err1 != nil {
-		return nil, err1
+	author, err := s.UserBrief(ctx, sub.UserID)
+	if err != nil {
+		return nil, err
 	}
 	rez.Author = author
 
-	code, err1 := s.SubmissionCode(ctx, sub, problem, lookingUser, isLooking)
-	if err1 != nil {
-		return nil, err1
+	code, err := s.SubmissionCode(ctx, sub, problem, lookingUser, isLooking)
+	if err != nil {
+		return nil, err
 	}
 	rez.Code = code
 
 	rez.Problem = problem
 	rez.ProblemEditor = s.IsProblemEditor(lookingUser, rez.Problem)
 
-	rez.SubTests, err1 = s.SubTests(ctx, subid)
-	if err1 != nil {
-		if !errors.Is(err1, context.Canceled) {
-			zap.S().Warn(err1)
-		}
-		return nil, fmt.Errorf("couldn't fetch subtests: %w", err1)
+	rez.SubTests, err = s.SubTests(ctx, subid)
+	if err != nil {
+		slog.WarnContext(ctx, "Couldn't get subtests", slog.Any("err", err))
+		return nil, fmt.Errorf("couldn't fetch subtests: %w", err)
 	}
 
-	rez.SubTasks, err1 = s.SubmissionSubTasks(ctx, subid)
-	if err1 != nil {
-		if !errors.Is(err1, context.Canceled) {
-			zap.S().Warn(err1)
-		}
-		return nil, fmt.Errorf("couldn't fetch subtasks: %w", err1)
+	rez.SubTasks, err = s.SubmissionSubTasks(ctx, subid)
+	if err != nil {
+		slog.WarnContext(ctx, "Couldn't get subtasks", slog.Any("err", err))
+		return nil, fmt.Errorf("couldn't fetch subtasks: %w", err)
 	}
 
 	return rez, nil
@@ -431,9 +427,9 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 		return -1, Statusf(400, "Empty code")
 	}
 
-	langs, err1 := s.ProblemLanguages(ctx, problem.ID)
-	if err1 != nil {
-		return -1, fmt.Errorf("could not get problem languages: %w", err1)
+	langs, err := s.ProblemLanguages(ctx, problem.ID)
+	if err != nil {
+		return -1, fmt.Errorf("could not get problem languages: %w", err)
 	}
 	if !slices.ContainsFunc(langs, func(a *Language) bool { return a.InternalName == lang.InternalName }) {
 		return -1, Statusf(400, "Language not supported by problem")

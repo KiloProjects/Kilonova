@@ -6,7 +6,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"strings"
 )
 
 func StatusData(w http.ResponseWriter, status string, retData any, statusCode int) {
@@ -14,9 +13,9 @@ func StatusData(w http.ResponseWriter, status string, retData any, statusCode in
 	if err, ok := retData.(error); ok {
 		retData = err.Error()
 
-		var err2 *statusError
-		if errors.As(err, &err2) {
-			statusCode = err2.Code
+		var sErr *statusError
+		if errors.As(err, &sErr) {
+			statusCode = sErr.Code
 		}
 	}
 	w.Header().Add("Content-Type", "application/json; charset=utf-8")
@@ -29,9 +28,6 @@ func StatusData(w http.ResponseWriter, status string, retData any, statusCode in
 		Data:   retData,
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "broken pipe") {
-			return
-		}
 		slog.ErrorContext(context.Background(), "Couldn't send return data", slog.Any("err", err))
 	}
 }

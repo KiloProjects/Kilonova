@@ -11,7 +11,6 @@ import (
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -103,7 +102,7 @@ func (h *Handler) runSubmission(runner eval.BoxScheduler, sub *kilonova.Submissi
 	go func(sub *kilonova.Submission, r eval.BoxScheduler) {
 		defer r.Close(h.ctx)
 		if err := executeSubmission(h.ctx, h.base, r, sub); err != nil {
-			zap.S().Warn("Couldn't run submission: ", err)
+			slog.WarnContext(h.ctx, "Couldn't run submission", slog.Any("err", err))
 		}
 	}(sub, subRunner)
 	return nil
@@ -126,7 +125,7 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 
 			subs, err := h.base.RawSubmissions(h.ctx, waitingSubs)
 			if err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(h.ctx, "Couldn't get waiting submissions", slog.Any("err", err))
 			} else if len(subs) > 0 {
 				graderLogger.InfoContext(h.ctx, "Found waiting submissions", slog.Int("count", len(subs)))
 				if len(subs) > 40 {
@@ -135,7 +134,7 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 				}
 				for _, sub := range subs {
 					if err := h.ScheduleSubmission(runner, sub); err != nil {
-						zap.S().Warn(err)
+						slog.WarnContext(h.ctx, "Couldn't schedule waiting submission", slog.Any("err", err))
 					}
 				}
 			}
@@ -160,7 +159,7 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 						sub2 = sub
 					}
 					if err := h.ScheduleSubmission(runner, sub2); err != nil {
-						zap.S().Warn(err)
+						slog.WarnContext(h.ctx, "Couldn't schedule reevaluation submission", slog.Any("err", err))
 					}
 				}
 			}

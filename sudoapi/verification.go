@@ -102,13 +102,13 @@ func (s *BaseAPI) GetVerificationUser(ctx context.Context, vid string) (int, err
 	return id, nil
 }
 
-func (s *BaseAPI) ConfirmVerificationEmail(vid string, user *kilonova.UserBrief) error {
-	if err := s.db.RemoveVerification(context.Background(), vid); err != nil {
+func (s *BaseAPI) ConfirmVerificationEmail(ctx context.Context, vid string, user *kilonova.UserBrief) error {
+	if err := s.db.RemoveVerification(ctx, vid); err != nil {
 		return Statusf(500, "Couldn't delete verification code.")
 	}
 
 	ttrue := true
-	return s.updateUser(context.Background(), user.ID, kilonova.UserFullUpdate{VerifiedEmail: &ttrue})
+	return s.updateUser(ctx, user.ID, kilonova.UserFullUpdate{VerifiedEmail: &ttrue})
 }
 
 func (s *BaseAPI) MailerEnabled() bool {

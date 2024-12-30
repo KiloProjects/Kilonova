@@ -366,7 +366,7 @@ func (s *BaseAPI) processLogEntry(ctx context.Context, val *logEntry, importantW
 	if val.Level != logLevelDiscord {
 		var s strings.Builder
 		if val.Author != nil {
-			s.WriteString(fmt.Sprintf(" (by user #%d: %s)", val.Author.ID, val.Author.Name))
+			s.WriteString(fmt.Sprintf("(by user #%d: %s)", val.Author.ID, val.Author.Name))
 		}
 		s.WriteString(": " + val.Message)
 		slog.LogAttrs(ctx, val.Level.toSlog(), s.String(), val.Attrs...)

@@ -95,10 +95,10 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 		return -1, Statusf(500, "Couldn't create user")
 	}
 
-	user, err1 := s.UserFull(ctx, id)
-	if err1 != nil {
-		zap.S().Warn(err1)
-		return -1, err1
+	user, err := s.UserFull(ctx, id)
+	if err != nil {
+		zap.S().Warn(err)
+		return -1, err
 	}
 
 	if err := s.LogSignup(context.WithoutCancel(ctx), user.ID, ip, userAgent); err != nil {

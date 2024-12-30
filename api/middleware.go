@@ -185,8 +185,8 @@ func (s *API) validateTestID(next http.Handler) http.Handler {
 			errorData(w, "invalid test ID", http.StatusBadRequest)
 			return
 		}
-		test, err1 := s.base.Test(r.Context(), util.Problem(r).ID, testID)
-		if err1 != nil {
+		test, err := s.base.Test(r.Context(), util.Problem(r).ID, testID)
+		if err != nil {
 			errorData(w, "test does not exist", http.StatusBadRequest)
 			return
 		}
@@ -203,14 +203,14 @@ func (s *API) validateAttachmentID(next http.Handler) http.Handler {
 			return
 		}
 		if util.Problem(r) == nil && util.BlogPost(r) == nil {
-			zap.S().Fatal("Attachment context is not available")
+			slog.ErrorContext(r.Context(), "Attachment context is not available")
 			return
 		}
 
 		var rezAtt *kilonova.Attachment
 		if util.Problem(r) != nil {
-			att, err1 := s.base.ProblemAttachment(r.Context(), util.Problem(r).ID, attID)
-			if err1 != nil {
+			att, err := s.base.ProblemAttachment(r.Context(), util.Problem(r).ID, attID)
+			if err != nil {
 				errorData(w, "attachment does not exist", http.StatusBadRequest)
 				return
 			}
@@ -220,8 +220,8 @@ func (s *API) validateAttachmentID(next http.Handler) http.Handler {
 			}
 			rezAtt = att
 		} else if util.BlogPost(r) != nil {
-			att, err1 := s.base.BlogPostAttachment(r.Context(), util.BlogPost(r).ID, attID)
-			if err1 != nil {
+			att, err := s.base.BlogPostAttachment(r.Context(), util.BlogPost(r).ID, attID)
+			if err != nil {
 				errorData(w, "attachment does not exist", http.StatusBadRequest)
 				return
 			}
@@ -240,14 +240,14 @@ func (s *API) validateAttachmentName(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attName := chi.URLParam(r, "aName")
 		if util.Problem(r) == nil && util.BlogPost(r) == nil {
-			zap.S().Fatal("Attachment context is not available")
+			slog.ErrorContext(r.Context(), "Attachment context is not available")
 			return
 		}
 
 		var rezAtt *kilonova.Attachment
 		if util.Problem(r) != nil {
-			att, err1 := s.base.ProblemAttByName(r.Context(), util.Problem(r).ID, attName)
-			if err1 != nil {
+			att, err := s.base.ProblemAttByName(r.Context(), util.Problem(r).ID, attName)
+			if err != nil {
 				errorData(w, "attachment does not exist", http.StatusBadRequest)
 				return
 			}
@@ -257,8 +257,8 @@ func (s *API) validateAttachmentName(next http.Handler) http.Handler {
 			}
 			rezAtt = att
 		} else if util.BlogPost(r) != nil {
-			att, err1 := s.base.BlogPostAttByName(r.Context(), util.BlogPost(r).ID, attName)
-			if err1 != nil {
+			att, err := s.base.BlogPostAttByName(r.Context(), util.BlogPost(r).ID, attName)
+			if err != nil {
 				errorData(w, "attachment does not exist", http.StatusBadRequest)
 				return
 			}
@@ -279,8 +279,8 @@ func (s *API) validateUserID(next http.Handler) http.Handler {
 			errorData(w, "Invalid user ID", http.StatusBadRequest)
 			return
 		}
-		user, err1 := s.base.UserFull(r.Context(), userID)
-		if err1 != nil {
+		user, err := s.base.UserFull(r.Context(), userID)
+		if err != nil {
 			errorData(w, "User was not found", http.StatusNotFound)
 			return
 		}
@@ -302,8 +302,8 @@ func (s *API) selfOrAdmin(next http.Handler) http.Handler {
 
 func (s *API) validateUsername(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err1 := s.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "cUName")))
-		if err1 != nil {
+		user, err := s.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "cUName")))
+		if err != nil {
 			errorData(w, "User was not found", http.StatusNotFound)
 			return
 		}
@@ -340,8 +340,8 @@ func (s *API) validateBlogPostID(next http.Handler) http.Handler {
 			errorData(w, "invalid blog post ID", http.StatusBadRequest)
 			return
 		}
-		post, err1 := s.base.BlogPost(r.Context(), bpID)
-		if err1 != nil {
+		post, err := s.base.BlogPost(r.Context(), bpID)
+		if err != nil {
 			errorData(w, "blog post does not exist", http.StatusBadRequest)
 			return
 		}
@@ -356,8 +356,8 @@ func (s *API) validateSubmissionID(next http.Handler) http.Handler {
 			errorData(w, "invalid submission ID", http.StatusBadRequest)
 			return
 		}
-		sub, err1 := s.base.Submission(r.Context(), subID, util.UserBrief(r))
-		if err1 != nil {
+		sub, err := s.base.Submission(r.Context(), subID, util.UserBrief(r))
+		if err != nil {
 			errorData(w, "submission does not exist or can't be found", http.StatusNotFound)
 			return
 		}
@@ -368,8 +368,8 @@ func (s *API) validateSubmissionID(next http.Handler) http.Handler {
 func (s *API) validateBlogPostName(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		bpName := strings.TrimSpace(chi.URLParam(r, "bpName"))
-		post, err1 := s.base.BlogPostBySlug(r.Context(), bpName)
-		if err1 != nil {
+		post, err := s.base.BlogPostBySlug(r.Context(), bpName)
+		if err != nil {
 			errorData(w, "blog post does not exist", http.StatusBadRequest)
 			return
 		}
@@ -386,8 +386,8 @@ func (s *API) validateProblemID(next http.Handler) http.Handler {
 			errorData(w, "invalid problem ID", http.StatusBadRequest)
 			return
 		}
-		problem, err1 := s.base.Problem(r.Context(), problemID)
-		if err1 != nil {
+		problem, err := s.base.Problem(r.Context(), problemID)
+		if err != nil {
 			errorData(w, "problem does not exist", http.StatusBadRequest)
 			return
 		}
@@ -404,8 +404,8 @@ func (s *API) validateProblemListID(next http.Handler) http.Handler {
 			errorData(w, "invalid problem list ID", http.StatusBadRequest)
 			return
 		}
-		pblist, err1 := s.base.ProblemList(r.Context(), pblistID)
-		if err1 != nil {
+		pblist, err := s.base.ProblemList(r.Context(), pblistID)
+		if err != nil {
 			errorData(w, "problem list does not exist", http.StatusBadRequest)
 			return
 		}
@@ -420,8 +420,8 @@ func (s *API) validateContestID(next http.Handler) http.Handler {
 			errorData(w, "invalid contest ID", http.StatusBadRequest)
 			return
 		}
-		contest, err1 := s.base.Contest(r.Context(), contestID)
-		if err1 != nil {
+		contest, err := s.base.Contest(r.Context(), contestID)
+		if err != nil {
 			errorData(w, "contest does not exist", http.StatusBadRequest)
 			return
 		}

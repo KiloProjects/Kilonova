@@ -189,8 +189,6 @@ func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[stri
 	}
 
 	if LogQueries.Value() {
-		//zap.S().Infof("%s %q %#v", data["time"], data["sql"], data["args"])
-
 		fields := make([]slog.Attr, 0, len(data))
 		for k, v := range data {
 			fields = append(fields, slog.Any(k, v))

@@ -319,6 +319,9 @@ func (b *Bucket) ResetCache() error {
 }
 
 func (b *Bucket) LogValue() slog.Value {
+	if b == nil {
+		return slog.Value{}
+	}
 	return slog.StringValue(b.Name)
 }
 

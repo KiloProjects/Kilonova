@@ -128,18 +128,18 @@ func (s *BaseAPI) SearchProblems(ctx context.Context, filter kilonova.ProblemFil
 	if err != nil {
 		return nil, -1, fmt.Errorf("couldn't get problems: %w", err)
 	}
-	cnt, err1 := s.db.CountProblems(ctx, filter)
-	if err1 != nil {
-		return nil, -1, fmt.Errorf("couldn't get problem count: %w", err1)
+	cnt, err := s.db.CountProblems(ctx, filter)
+	if err != nil {
+		return nil, -1, fmt.Errorf("couldn't get problem count: %w", err)
 	}
 	ids := make([]int, 0, len(pbs))
 	for _, pb := range pbs {
 		ids = append(ids, pb.ID)
 	}
 
-	tagMap, err1 := s.db.ManyProblemsTags(ctx, ids)
-	if err1 != nil {
-		return nil, -1, fmt.Errorf("couldn't get problem tags: %w", err1)
+	tagMap, err := s.db.ManyProblemsTags(ctx, ids)
+	if err != nil {
+		return nil, -1, fmt.Errorf("couldn't get problem tags: %w", err)
 	}
 
 	// Tags must be only on Fully Visible problems
@@ -157,9 +157,9 @@ func (s *BaseAPI) SearchProblems(ctx context.Context, filter kilonova.ProblemFil
 		}
 	}
 
-	stats, err1 := s.db.ProblemsStatistics(ctx, ids)
-	if err1 != nil {
-		return nil, -1, fmt.Errorf("couldn't get problem statistics: %w", err1)
+	stats, err := s.db.ProblemsStatistics(ctx, ids)
+	if err != nil {
+		return nil, -1, fmt.Errorf("couldn't get problem statistics: %w", err)
 	}
 
 	fullPbs := make([]*FullProblem, 0, len(pbs))

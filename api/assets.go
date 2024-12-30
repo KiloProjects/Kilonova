@@ -17,7 +17,6 @@ import (
 	"path"
 	"strconv"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -291,13 +290,13 @@ func (s *Assets) ServeSubtest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad ID", 400)
 		return
 	}
-	subtest, err1 := s.base.SubTest(r.Context(), id)
-	if err1 != nil {
+	subtest, err := s.base.SubTest(r.Context(), id)
+	if err != nil {
 		http.Error(w, "Invalid subtest", 400)
 		return
 	}
-	sub, err1 := s.base.Submission(r.Context(), subtest.SubmissionID, util.UserBrief(r))
-	if err1 != nil {
+	sub, err := s.base.Submission(r.Context(), subtest.SubmissionID, util.UserBrief(r))
+	if err != nil {
 		slog.WarnContext(r.Context(), "Error loading submission", slog.Any("err", err))
 		http.Error(w, "Couldn't get submission", 500)
 		return
@@ -395,12 +394,10 @@ func (s *Assets) ServeProblemArchive() http.HandlerFunc {
 
 		wr := bufio.NewWriter(w)
 		if err := test.GenerateArchive(r.Context(), util.Problem(r), wr, s.base, &args); err != nil {
-			if !errors.Is(err, syscall.EPIPE) && !errors.Is(err, syscall.ECONNRESET) {
-				slog.WarnContext(r.Context(), "Could not generate problem archive", slog.Any("err", err))
-			}
+			slog.WarnContext(r.Context(), "Could not generate problem archive", slog.Any("err", err))
 			fmt.Fprint(w, err)
 		}
-		if err := wr.Flush(); err != nil && !errors.Is(err, syscall.EPIPE) && !errors.Is(err, syscall.ECONNRESET) {
+		if err := wr.Flush(); err != nil {
 			slog.WarnContext(r.Context(), "Could not finish writing problem archive", slog.Any("err", err))
 		}
 	}

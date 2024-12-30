@@ -1,11 +1,11 @@
 package datastore
 
 import (
+	"context"
 	"errors"
+	"log/slog"
 	"os"
 	"time"
-
-	"go.uber.org/zap"
 )
 
 type BucketType string
@@ -116,17 +116,12 @@ func InitBuckets(p string) error {
 	return nil
 }
 
-func IsBucket(name BucketType) bool {
-	_, ok := buckets[name]
-	return ok
-}
-
 // GetBucket panics if there is no bucket with that name
-
 func GetBucket(name BucketType) *Bucket {
 	b, ok := buckets[name]
 	if !ok {
-		zap.S().Fatalf("No bucket found with name %q", name)
+		slog.ErrorContext(context.Background(), "No bucket found", slog.String("name", string(name)))
+		panic("No bucket found")
 	}
 	return b
 }

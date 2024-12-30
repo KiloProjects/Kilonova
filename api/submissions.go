@@ -77,9 +77,9 @@ func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	problem, err1 := s.base.Problem(r.Context(), args.ProblemID)
-	if err1 != nil {
-		statusError(w, err1)
+	problem, err := s.base.Problem(r.Context(), args.ProblemID)
+	if err != nil {
+		statusError(w, err)
 		return
 	}
 
@@ -112,9 +112,9 @@ func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err1 := s.base.CreateSubmission(context.WithoutCancel(r.Context()), util.UserFull(r), problem, code, lang, args.ContestID, false)
-	if err1 != nil {
-		statusError(w, err1)
+	id, err := s.base.CreateSubmission(context.WithoutCancel(r.Context()), util.UserFull(r), problem, code, lang, args.ContestID, false)
+	if err != nil {
+		statusError(w, err)
 		return
 	}
 

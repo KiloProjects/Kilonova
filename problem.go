@@ -52,6 +52,9 @@ type Problem struct {
 }
 
 func (pb *Problem) LogValue() slog.Value {
+	if pb == nil {
+		return slog.Value{}
+	}
 	return slog.GroupValue(slog.Int("id", pb.ID), slog.String("name", pb.Name))
 }
 

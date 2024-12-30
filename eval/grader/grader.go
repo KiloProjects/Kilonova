@@ -195,14 +195,14 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		}
 	}()
 
-	problem, err1 := base.Problem(ctx, sub.ProblemID)
-	if err1 != nil {
-		return fmt.Errorf("couldn't get submission problem: %w", err1)
+	problem, err := base.Problem(ctx, sub.ProblemID)
+	if err != nil {
+		return fmt.Errorf("couldn't get submission problem: %w", err)
 	}
 
-	problemSettings, err1 := base.ProblemSettings(ctx, sub.ProblemID)
-	if err1 != nil {
-		return fmt.Errorf("couldn't get problem settings: %w", err1)
+	problemSettings, err := base.ProblemSettings(ctx, sub.ProblemID)
+	if err != nil {
+		return fmt.Errorf("couldn't get problem settings: %w", err)
 	}
 
 	sh.pb = problem
@@ -235,8 +235,8 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		return fmt.Errorf("could not prepare checker: %w", err)
 	}
 
-	subTests, err1 := base.SubTests(ctx, sub.ID)
-	if err1 != nil {
+	subTests, err := base.SubTests(ctx, sub.ID)
+	if err != nil {
 		internalErr := "test_verdict.internal_error"
 		if err := base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{
 			Status: kilonova.StatusFinished, Score: &problem.DefaultPoints,
@@ -244,7 +244,7 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		}); err != nil {
 			return fmt.Errorf("could not update submission after subtest fetch fail: %w", err)
 		}
-		return fmt.Errorf("could not fetch subtests: %w", err1)
+		return fmt.Errorf("could not fetch subtests: %w", err)
 	}
 
 	if g, err := sh.buildRunGraph(ctx, subTests); err != nil {
@@ -490,14 +490,14 @@ func (sh *submissionHandler) markSubtestsDone(ctx context.Context) error {
 }
 
 func (sh *submissionHandler) scoreTests(ctx context.Context) error {
-	subtests, err1 := sh.base.SubTests(ctx, sh.sub.ID)
-	if err1 != nil {
-		return err1
+	subtests, err := sh.base.SubTests(ctx, sh.sub.ID)
+	if err != nil {
+		return err
 	}
 
-	subTasks, err1 := sh.base.SubmissionSubTasks(ctx, sh.sub.ID)
-	if err1 != nil {
-		return err1
+	subTasks, err := sh.base.SubmissionSubTasks(ctx, sh.sub.ID)
+	if err != nil {
+		return err
 	}
 	if len(subTasks) == 0 {
 		subTasks = nil

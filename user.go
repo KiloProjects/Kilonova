@@ -29,6 +29,9 @@ type UserBrief struct {
 }
 
 func (u *UserBrief) LogValue() slog.Value {
+	if u == nil {
+		return slog.Value{}
+	}
 	return slog.GroupValue(slog.Int("id", u.ID), slog.String("name", u.Name))
 }
 

@@ -39,9 +39,9 @@ func Kilonova() error {
 	defer cancel()
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, os.Kill)
 
-	shutdown, err1 := otel.SetupOpenTelemetry(ctx)
-	if err1 != nil {
-		return err1
+	shutdown, err := otel.SetupOpenTelemetry(ctx)
+	if err != nil {
+		return err
 	}
 	defer shutdown(ctx)
 
@@ -54,7 +54,7 @@ func Kilonova() error {
 
 	maxmind.Initialize(ctx)
 
-	base, err := sudoapi.InitializeBaseAPI(context.Background())
+	base, err := sudoapi.InitializeBaseAPI(ctx)
 	if err != nil {
 		slog.ErrorContext(ctx, "Could not initialize BaseAPI", slog.Any("err", err))
 		return err
@@ -115,8 +115,12 @@ func initLogger(debug, writeFile bool) {
 	skipContextCanceled := slogmulti.NewHandleInlineMiddleware(func(ctx context.Context, record slog.Record, next func(context.Context, slog.Record) error) error {
 		ok := true
 		for attr := range record.Attrs {
-			if attr.Key == "err" {
-				if err, isErr := attr.Value.Any().(error); isErr && errors.Is(err, context.Canceled) {
+			if attr.Key != "err" {
+				continue
+			}
+			if err, isErr := attr.Value.Any().(error); isErr {
+				var opErr *net.OpError
+				if errors.As(err, &opErr) || errors.Is(err, context.Canceled) {
 					ok = false
 					break
 				}

@@ -45,7 +45,7 @@ func Kilonova(ctx context.Context) error {
 	slog.InfoContext(ctx, "Starting Kilonova Submission Exporter")
 	slog.InfoContext(ctx, "Saving for user", slog.Any("user", *username))
 
-	base, err := sudoapi.InitializeBaseAPI(context.Background())
+	base, err := sudoapi.InitializeBaseAPI(ctx)
 	if err != nil {
 		return err
 	}
@@ -62,9 +62,9 @@ func Kilonova(ctx context.Context) error {
 		os.Exit(1)
 	}
 
-	f, err1 := os.Create("./" + user.Name + ".zip")
-	if err1 != nil {
-		slog.ErrorContext(ctx, "Couldn't create archive file", slog.Any("err", err1))
+	f, err := os.Create("./" + user.Name + ".zip")
+	if err != nil {
+		slog.ErrorContext(ctx, "Couldn't create archive file", slog.Any("err", err))
 		os.Exit(1)
 	}
 
@@ -87,9 +87,9 @@ func Kilonova(ctx context.Context) error {
 		}
 
 		ext := base.Language(ctx, sub.Language).Extension()
-		w, err1 := wr.Create(fmt.Sprintf("%d-%s-%dp%s", sub.ID, pb.TestName, sub.Score.IntPart(), ext))
-		if err1 != nil {
-			return err1
+		w, err := wr.Create(fmt.Sprintf("%d-%s-%dp%s", sub.ID, pb.TestName, sub.Score.IntPart(), ext))
+		if err != nil {
+			return err
 		}
 		if _, err := w.Write(code); err != nil {
 			return err

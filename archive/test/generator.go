@@ -142,8 +142,8 @@ func (ag *archiveGenerator) addAttachments(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("couldn't create attachment file: %w", err)
 		}
-		data, err1 := ag.base.AttachmentData(ctx, att.ID)
-		if err1 != nil {
+		data, err := ag.base.AttachmentData(ctx, att.ID)
+		if err != nil {
 			return fmt.Errorf("couldn't get attachment data: %w", err)
 		}
 		if _, err := attFile.Write(data); err != nil {
@@ -281,9 +281,9 @@ func (ag *archiveGenerator) addSubmissions(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("couldn't create archive submission file: %w", err)
 		}
-		code, err1 := ag.base.RawSubmissionCode(ctx, sub.ID)
-		if err1 != nil {
-			return fmt.Errorf("couldn't get submission code: %w", err1)
+		code, err := ag.base.RawSubmissionCode(ctx, sub.ID)
+		if err != nil {
+			return fmt.Errorf("couldn't get submission code: %w", err)
 		}
 		n, err := f.Write(code)
 		if err != nil || n < len(code) {

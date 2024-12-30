@@ -241,7 +241,7 @@ func ReadOrTruncate(ctx context.Context, r io.Reader) ([]byte, bool) {
 }
 
 func (t *TestEditParams) NextVID() int {
-	return t.base.NextVID(context.Background(), t.Problem.ID)
+	return t.base.NextVID(t.ctx, t.Problem.ID)
 }
 
 func (t *TestEditParams) GetFullTests() testDataType {

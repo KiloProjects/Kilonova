@@ -38,15 +38,15 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 		}
 		var pb *kilonova.Problem
 		if util.Contest(r) == nil {
-			problem, err1 := rt.base.Problem(r.Context(), problemID)
-			if err1 != nil || problem == nil {
+			problem, err := rt.base.Problem(r.Context(), problemID)
+			if err != nil || problem == nil {
 				rt.statusPage(w, r, 404, "Problema nu a fost găsită")
 				return
 			}
 			pb = problem
 		} else {
-			problem, err1 := rt.base.ContestProblem(r.Context(), util.Contest(r), util.UserBrief(r), problemID)
-			if err1 != nil || problem == nil {
+			problem, err := rt.base.ContestProblem(r.Context(), util.Contest(r), util.UserBrief(r), problemID)
+			if err != nil || problem == nil {
 				rt.statusPage(w, r, 404, "Problema nu a fost găsită sau nu aparține concursului")
 				return
 			}
@@ -62,8 +62,8 @@ func (rt *Web) ValidateBlogPostSlug(next http.Handler) http.Handler {
 		postSlug := strings.TrimRightFunc(chi.URLParam(r, "postslug"), func(r rune) bool {
 			return !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-' || r == '_')
 		})
-		post, err1 := rt.base.BlogPostBySlug(r.Context(), postSlug)
-		if err1 != nil {
+		post, err := rt.base.BlogPostBySlug(r.Context(), postSlug)
+		if err != nil {
 			rt.statusPage(w, r, 404, "Articolul nu a fost găsit")
 			return
 		}
@@ -79,8 +79,8 @@ func (rt *Web) ValidateListID(next http.Handler) http.Handler {
 			rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
 			return
 		}
-		list, err1 := rt.base.ProblemList(r.Context(), listID)
-		if err1 != nil {
+		list, err := rt.base.ProblemList(r.Context(), listID)
+		if err != nil {
 			rt.statusPage(w, r, 404, "Lista nu a fost găsită")
 			return
 		}
@@ -94,16 +94,16 @@ func (rt *Web) ValidateTagID(next http.Handler) http.Handler {
 		tagID, err := strconv.Atoi(trimNonDigits(chi.URLParam(r, "tagid")))
 		if err != nil {
 			// Try to also match names
-			tag, err1 := rt.base.TagByName(r.Context(), chi.URLParam(r, "tagid"))
-			if err1 != nil {
+			tag, err := rt.base.TagByName(r.Context(), chi.URLParam(r, "tagid"))
+			if err != nil {
 				rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
 				return
 			}
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.TagKey, tag)))
 			return
 		}
-		tag, err1 := rt.base.TagByID(r.Context(), tagID)
-		if err1 != nil {
+		tag, err := rt.base.TagByID(r.Context(), tagID)
+		if err != nil {
 			rt.statusPage(w, r, 404, "Eticheta nu a fost găsită")
 			return
 		}
@@ -152,8 +152,8 @@ func (rt *Web) ValidateContestID(next http.Handler) http.Handler {
 			rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
 			return
 		}
-		contest, err1 := rt.base.Contest(r.Context(), contestID)
-		if err1 != nil {
+		contest, err := rt.base.Contest(r.Context(), contestID)
+		if err != nil {
 			rt.statusPage(w, r, 404, "Concursul nu a fost găsit")
 			return
 		}
@@ -180,10 +180,10 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 			rt.statusPage(w, r, 400, "ID submisie invalid")
 			return
 		}
-		sub, err1 := rt.base.Submission(r.Context(), subID, util.UserBrief(r))
-		if err1 != nil {
-			if kilonova.ErrorCode(err1) != 404 {
-				slog.WarnContext(r.Context(), "Could not get submission", slog.Any("err", err1), slog.Int("subID", subID))
+		sub, err := rt.base.Submission(r.Context(), subID, util.UserBrief(r))
+		if err != nil {
+			if kilonova.ErrorCode(err) != 404 {
+				slog.WarnContext(r.Context(), "Could not get submission", slog.Any("err", err), slog.Int("subID", subID))
 			}
 			rt.statusPage(w, r, 400, "Submisia nu există sau nu poate fi vizualizată")
 			return
@@ -207,8 +207,8 @@ func (rt *Web) ValidatePasteID(next http.Handler) http.Handler {
 			rt.statusPage(w, r, 404, "Feature has been disabled by administrator.")
 			return
 		}
-		paste, err1 := rt.base.SubmissionPaste(r.Context(), chi.URLParam(r, "id"))
-		if err1 != nil {
+		paste, err := rt.base.SubmissionPaste(r.Context(), chi.URLParam(r, "id"))
+		if err != nil {
 			rt.statusPage(w, r, 400, "Paste-ul nu există")
 			return
 		}
@@ -225,8 +225,8 @@ func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
 			http.Error(w, "ID invalid", 400)
 			return
 		}
-		att, err1 := rt.base.Attachment(r.Context(), attid)
-		if err1 != nil {
+		att, err := rt.base.Attachment(r.Context(), attid)
+		if err != nil {
 			http.Error(w, "Atașamentul nu a fost găsit", 404)
 			return
 		}

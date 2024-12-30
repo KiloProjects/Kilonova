@@ -388,9 +388,9 @@ func (s *API) translateProblemStatement() http.HandlerFunc {
 			return
 		}
 		t := time.Now()
-		output, err1 := llm.TranslateStatement(r.Context(), string(data), args.Model)
-		if err1 != nil {
-			errorData(w, err1, 400)
+		output, err := llm.TranslateStatement(r.Context(), string(data), args.Model)
+		if err != nil {
+			errorData(w, err, 400)
 			return
 		}
 		s.base.LogUserAction(r.Context(), "Triggered LLM translation", slog.String("model", args.Model), slog.Any("problem", util.Problem(r)), slog.Duration("duration", time.Since(t)))

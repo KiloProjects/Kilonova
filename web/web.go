@@ -170,7 +170,7 @@ func (rt *Web) Handler() http.Handler {
 		r.Use(rt.checkLockout())
 
 		r.Get("/", rt.index())
-		r.With(rt.mustBeAuthed).Get("/link", rt.discordLink())
+		r.With(rt.mustBeAuthed).Get("/link/discord", rt.discordLink())
 		r.With(rt.mustBeAuthed).Get("/profile", rt.selfProfile())
 		r.With(rt.mustBeAuthed).Get("/profile/linked", rt.selfLinkStatus())
 		r.With(rt.mustBeAuthed).Get("/profile/sessions", rt.selfSessions())

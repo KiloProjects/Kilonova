@@ -20,6 +20,9 @@ type BlogPost struct {
 }
 
 func (bp *BlogPost) LogValue() slog.Value {
+	if bp == nil {
+		return slog.Value{}
+	}
 	return slog.GroupValue(slog.Int("id", bp.ID), slog.String("name", bp.Title))
 }
 

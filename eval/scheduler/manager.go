@@ -259,12 +259,12 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 	if err := mgr.concSem.Acquire(ctx, 1); err != nil {
 		return nil, err
 	}
+	defer mgr.concSem.Release(1)
 	box, err := mgr.getBox(ctx, memQuota)
 	if err != nil {
 		slog.WarnContext(ctx, "Could not get box", slog.Any("err", err))
 		return nil, err
 	}
-	defer mgr.concSem.Release(1)
 	defer mgr.releaseBox(ctx, box)
 
 	for fpath, val := range req.InputByteFiles {

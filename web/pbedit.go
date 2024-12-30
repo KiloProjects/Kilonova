@@ -210,9 +210,9 @@ func (rt *Web) TestIDValidator() func(next http.Handler) http.Handler {
 				rt.statusPage(w, r, 400, "Test invalid")
 				return
 			}
-			test, err1 := rt.base.Test(r.Context(), util.Problem(r).ID, testID)
-			if err1 != nil {
-				zap.S().Warn(err)
+			test, err := rt.base.Test(r.Context(), util.Problem(r).ID, testID)
+			if err != nil {
+				slog.WarnContext(r.Context(), "Couldn't get test", slog.Any("err", err))
 				rt.statusPage(w, r, 500, "")
 				return
 			}
@@ -233,8 +233,8 @@ func (rt *Web) SubTaskValidator() func(next http.Handler) http.Handler {
 				rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
 				return
 			}
-			subtask, err1 := rt.base.SubTask(r.Context(), util.Problem(r).ID, subtaskID)
-			if err1 != nil {
+			subtask, err := rt.base.SubTask(r.Context(), util.Problem(r).ID, subtaskID)
+			if err != nil {
 				rt.statusPage(w, r, 500, "")
 				return
 			}

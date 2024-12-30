@@ -148,6 +148,9 @@ func (c *Contest) IsTester(user *UserBrief) bool {
 }
 
 func (c *Contest) LogValue() slog.Value {
+	if c == nil {
+		return slog.Value{}
+	}
 	return slog.GroupValue(slog.Int("id", c.ID), slog.String("name", c.Name))
 }
 

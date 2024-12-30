@@ -31,12 +31,12 @@ import (
 	"golang.org/x/text/language"
 )
 
-type WebCtx string
+type ctxKey string
 
 const (
-	PblistCntCacheKey = WebCtx("pblist_cache")
+	PblistCntCacheKey = ctxKey("pblist_cache")
 
-	MiddlewareStartKey = WebCtx("middleware_start")
+	MiddlewareStartKey = ctxKey("middleware_start")
 )
 
 var (
@@ -77,7 +77,7 @@ func (rt *Web) buildPblistCache(r *http.Request, listIDs []int) *http.Request {
 		}
 		return r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, mockCache))
 	}
-	zap.S().Warn(err)
+	slog.WarnContext(r.Context(), "Couldn't build problem list cache", slog.Any("err", err))
 	return r
 }
 
@@ -113,7 +113,7 @@ func (rt *Web) index() http.HandlerFunc {
 		if RootProblemList.Value() > 0 {
 			pblists, err = rt.base.PblistChildrenLists(r.Context(), RootProblemList.Value())
 			if err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(r.Context(), "Couldn't get index page problem lists", slog.Any("err", err))
 				pblists = []*kilonova.ProblemList{}
 			}
 		}
@@ -122,7 +122,7 @@ func (rt *Web) index() http.HandlerFunc {
 		if PinnedProblemList.Value() > 0 {
 			pinnedLists, err = rt.base.PblistChildrenLists(r.Context(), PinnedProblemList.Value())
 			if err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(r.Context(), "Couldn't get pinned problem lists", slog.Any("err", err))
 				pblists = []*kilonova.ProblemList{}
 			}
 		}
@@ -207,7 +207,7 @@ func (rt *Web) problems() http.HandlerFunc {
 		var q filterQuery
 		r.ParseForm()
 		if err := decoder.Decode(&q, r.Form); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Couldn't decode problems query", slog.Any("err", err))
 		}
 		if q.Page < 1 {
 			q.Page = 1
@@ -260,7 +260,7 @@ func (rt *Web) problems() http.HandlerFunc {
 			var err error
 			tags, err = rt.base.TagsByID(r.Context(), allTags)
 			if err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(r.Context(), "Couldn't get tags", slog.Any("err", err))
 			}
 
 			var tagMap = make(map[int]*kilonova.Tag)
@@ -284,7 +284,7 @@ func (rt *Web) problems() http.HandlerFunc {
 		if q.DeepListID != nil {
 			list, err := rt.base.ProblemList(r.Context(), *q.DeepListID)
 			if err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(r.Context(), "Couldn't problem list", slog.Any("err", err))
 				list = nil
 				q.DeepListID = nil
 			}
@@ -340,13 +340,13 @@ func (rt *Web) tag() http.HandlerFunc {
 			Limit: 50,
 		}, util.UserBrief(r), util.UserBrief(r))
 		if err != nil {
-			zap.S().Warn("Couldn't fetch tag problems: ", err)
+			slog.WarnContext(r.Context(), "Couldn't fetch tag problems", slog.Any("err", err))
 			pbs = []*sudoapi.FullProblem{}
 		}
 
 		relevantTags, err := rt.base.RelevantTags(r.Context(), util.Tag(r).ID, 15)
 		if err != nil {
-			zap.S().Warn("Couldn't fetch relevant tags: ", err)
+			slog.WarnContext(r.Context(), "Couldn't fetch relevant tags", slog.Any("err", err))
 			relevantTags = nil
 		}
 		rt.runTempl(w, r, templ, &TagPageParams{util.Tag(r), relevantTags, pbs, pbsCnt})
@@ -480,14 +480,14 @@ func (rt *Web) auditLog() http.HandlerFunc {
 			page = 0
 		}
 
-		logs, err1 := rt.base.GetAuditLogs(r.Context(), 50, (page-1)*50)
-		if err1 != nil {
+		logs, err := rt.base.GetAuditLogs(r.Context(), 50, (page-1)*50)
+		if err != nil {
 			rt.statusPage(w, r, 500, "Couldn't fetch logs")
 			return
 		}
 
-		numLogs, err1 := rt.base.GetLogCount(r.Context())
-		if err1 != nil {
+		numLogs, err := rt.base.GetLogCount(r.Context())
+		if err != nil {
 			rt.statusPage(w, r, 500, "Couldn't fetch log count")
 			return
 		}
@@ -525,7 +525,7 @@ func (rt *Web) debugPage() http.HandlerFunc {
 		for _, sample := range samples {
 			desc, ok := descs[sample.Name]
 			if !ok {
-				zap.S().Warn("Could not find description for metric: ", sample.Name)
+				slog.WarnContext(r.Context(), "Could not find description for metric", slog.String("name", sample.Name))
 				desc = "No description provided"
 			}
 			m := &Metric{
@@ -540,7 +540,7 @@ func (rt *Web) debugPage() http.HandlerFunc {
 				v := sample.Value.Uint64()
 				m.Int = &v
 			default:
-				zap.S().Warnf("Unknown metric type for %s: %+v", sample.Name, sample.Value.Kind())
+				slog.WarnContext(r.Context(), "Unknown metric type", slog.String("name", sample.Name), slog.Any("kind", sample.Value.Kind()))
 			}
 			finalMetrics = append(finalMetrics, m)
 		}
@@ -898,16 +898,16 @@ func (rt *Web) blogPosts() http.HandlerFunc {
 			LookingUser: util.UserBrief(r),
 		}
 
-		posts, err1 := rt.base.BlogPosts(r.Context(), filter)
-		if err1 != nil {
-			slog.WarnContext(r.Context(), "Could not get blog posts", slog.Any("err", err1))
+		posts, err := rt.base.BlogPosts(r.Context(), filter)
+		if err != nil {
+			slog.WarnContext(r.Context(), "Could not get blog posts", slog.Any("err", err))
 			rt.statusPage(w, r, 500, "N-am putut încărca postările")
 			return
 		}
 
-		numPosts, err1 := rt.base.CountBlogPosts(r.Context(), filter)
-		if err1 != nil {
-			slog.WarnContext(r.Context(), "Could not get number of posts", slog.Any("err", err1))
+		numPosts, err := rt.base.CountBlogPosts(r.Context(), filter)
+		if err != nil {
+			slog.WarnContext(r.Context(), "Could not get number of posts", slog.Any("err", err))
 			numPosts = 0
 		}
 
@@ -921,9 +921,9 @@ func (rt *Web) blogPosts() http.HandlerFunc {
 			authorIDs = append(authorIDs, post.AuthorID)
 		}
 
-		authors, err1 := rt.base.UsersBrief(r.Context(), kilonova.UserFilter{IDs: authorIDs})
-		if err1 != nil {
-			zap.S().Warn(err1)
+		authors, err := rt.base.UsersBrief(r.Context(), kilonova.UserFilter{IDs: authorIDs})
+		if err != nil {
+			slog.WarnContext(r.Context(), "Couldn't get authors", slog.Any("err", err))
 		}
 
 		authorMap := make(map[int]*kilonova.UserBrief)
@@ -1130,8 +1130,8 @@ func (rt *Web) contests() http.HandlerFunc {
 		filter := kilonova.ContestFilter{Look: true, LookingUser: util.UserBrief(r)}
 
 		filter.Ordering = r.FormValue("ord")
-		asc, err1 := strconv.ParseBool(r.FormValue("asc"))
-		if err1 != nil {
+		asc, err := strconv.ParseBool(r.FormValue("asc"))
+		if err != nil {
 			asc = false
 		}
 		filter.Ascending = asc
@@ -1167,8 +1167,8 @@ func (rt *Web) contests() http.HandlerFunc {
 			cnt = -1
 		}
 
-		pageNum, err1 := strconv.Atoi(r.FormValue("p"))
-		if err1 != nil {
+		pageNum, err := strconv.Atoi(r.FormValue("p"))
+		if err != nil {
 			pageNum = 1
 		}
 
@@ -1632,14 +1632,14 @@ func (rt *Web) verifyEmail() http.HandlerFunc {
 			return
 		}
 
-		user, err1 := rt.base.UserBrief(r.Context(), uid)
-		if err1 != nil {
-			zap.S().Warn(err1)
+		user, err := rt.base.UserBrief(r.Context(), uid)
+		if err != nil {
+			slog.WarnContext(r.Context(), "Couldn't get user", slog.Any("err", err))
 			rt.statusPage(w, r, 404, "")
 			return
 		}
 
-		if err := rt.base.ConfirmVerificationEmail(vid, user); err != nil {
+		if err := rt.base.ConfirmVerificationEmail(context.WithoutCancel(r.Context()), vid, user); err != nil {
 			zap.S().Warn(err)
 			rt.statusPage(w, r, 404, "")
 			return
@@ -1663,14 +1663,14 @@ func (rt *Web) resetPassword() http.HandlerFunc {
 
 		uid, err := rt.base.GetPwdResetRequestUser(r.Context(), reqid)
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Couldn't get user from password reset request", slog.Any("err", err))
 			rt.statusPage(w, r, 404, "")
 			return
 		}
 
-		user, err1 := rt.base.UserFull(r.Context(), uid)
-		if err1 != nil {
-			zap.S().Warn(err1)
+		user, err := rt.base.UserFull(r.Context(), uid)
+		if err != nil {
+			slog.WarnContext(r.Context(), "Couldn't get full user", slog.Any("err", err))
 			rt.statusPage(w, r, 404, "")
 			return
 		}
@@ -1964,9 +1964,7 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 
 	if err := templ.ExecuteTemplate(w, name, data); err != nil {
 		fmt.Fprintf(w, "Error executing template, report to admin: %s", err)
-		if !strings.Contains(err.Error(), "broken pipe") {
-			zap.S().WithOptions(zap.AddCallerSkip(2)).Warnf("Error executing template: %q %q %#v", err, r.URL.Path, util.UserBrief(r))
-		}
+		slog.WarnContext(r.Context(), "Error executing template", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", util.UserBrief(r)))
 	}
 }
 

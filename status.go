@@ -47,6 +47,9 @@ func (s *statusError) Is(target error) bool {
 }
 
 func Statusf(status int, format string, args ...any) error {
+	if status == 500 {
+		return fmt.Errorf(format, args...)
+	}
 	return &statusError{Code: status, Text: fmt.Sprintf(format, args...)}
 }
 
@@ -54,9 +57,9 @@ func ErrorCode(err error) int {
 	if err == nil {
 		return 200
 	}
-	var err2 *statusError
-	if errors.As(err, &err2) {
-		return err2.Code
+	var sErr *statusError
+	if errors.As(err, &sErr) {
+		return sErr.Code
 	}
 	return 500
 }

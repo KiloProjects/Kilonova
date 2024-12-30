@@ -4,12 +4,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"go.uber.org/zap"
 )
 
 var (
@@ -18,26 +18,27 @@ var (
 
 func main() {
 	flag.Parse()
+	ctx := context.Background()
 
 	config.SetConfigPath(*confPath)
 	if err := config.Load(); err != nil {
-		zap.S().Fatal(err)
+		slog.ErrorContext(ctx, "Couldn't load config", slog.Any("err", err))
+		os.Exit(1)
 	}
 
-	if err := Kilonova(); err != nil {
-		zap.S().Fatal(err)
+	if err := Kilonova(ctx); err != nil {
+		slog.ErrorContext(ctx, "Script run failed", slog.Any("err", err))
+		os.Exit(1)
 	}
 
 	os.Exit(0)
 }
 
-func Kilonova() error {
-	ctx := context.Background()
-
+func Kilonova(ctx context.Context) error {
 	// Print welcome message
-	zap.S().Infof("Starting Kilonova Quick Problem Diagnostics Runner")
+	slog.InfoContext(ctx, "Starting Kilonova Quick Problem Diagnostics Runner")
 
-	base, err := sudoapi.InitializeBaseAPI(context.Background())
+	base, err := sudoapi.InitializeBaseAPI(ctx)
 	if err != nil {
 		return err
 	}
@@ -63,15 +64,4 @@ func Kilonova() error {
 	}
 
 	return nil
-}
-
-func initLogger(debug bool) {
-	core := kilonova.GetZapCore(debug, os.Stdout)
-	logg := zap.New(core, zap.AddCaller())
-
-	zap.ReplaceGlobals(logg)
-}
-
-func init() {
-	initLogger(true)
 }

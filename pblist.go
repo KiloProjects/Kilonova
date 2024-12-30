@@ -25,6 +25,9 @@ type ProblemList struct {
 }
 
 func (p *ProblemList) LogValue() slog.Value {
+	if p == nil {
+		return slog.Value{}
+	}
 	return slog.GroupValue(slog.Int("id", p.ID), slog.String("name", p.Title))
 }
 

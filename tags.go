@@ -19,6 +19,9 @@ type Tag struct {
 }
 
 func (t *Tag) LogValue() slog.Value {
+	if t == nil {
+		return slog.Value{}
+	}
 	return slog.GroupValue(slog.Int("id", t.ID), slog.String("name", t.Name))
 }
 

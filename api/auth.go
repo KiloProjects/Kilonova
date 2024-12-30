@@ -109,9 +109,9 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sid, err1 := s.base.CreateSession(r.Context(), user.ID)
-	if err1 != nil {
-		statusError(w, err1)
+	sid, err := s.base.CreateSession(r.Context(), user.ID)
+	if err != nil {
+		statusError(w, err)
 		return
 	}
 	returnData(w, sid)

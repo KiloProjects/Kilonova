@@ -312,16 +312,16 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 
 	id, err := s.createUser(ctx, uname, *email, pwd, lang, theme, dName, bio, true)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't create user", slog.Any("err", err))
 		return nil, Statusf(500, "Couldn't create user")
 	}
 
-	user, err1 := s.UserFull(ctx, id)
-	if err1 != nil {
-		zap.S().Warn(err1)
+	user, err := s.UserFull(ctx, id)
+	if err != nil {
+		slog.WarnContext(ctx, "Couldn't get full user", slog.Any("err", err))
 	}
 
-	return user, err1
+	return user, err
 }
 
 //go:embed emails/generated.html
@@ -596,9 +596,9 @@ func (s *BaseAPI) GetDiscordAvatar(ctx context.Context, user *kilonova.UserFull,
 		return r, t, valid, err
 	}
 
-	dUser, err1 := s.GetDiscordIdentity(ctx, user.ID)
-	if err1 != nil {
-		return nil, time.Time{}, false, err1
+	dUser, err := s.GetDiscordIdentity(ctx, user.ID)
+	if err != nil {
+		return nil, time.Time{}, false, err
 	}
 	if dUser == nil {
 		return nil, time.Time{}, false, nil

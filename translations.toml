@@ -2745,8 +2745,8 @@ en = "If Discord is selected, it will use the avatar for the user `%s`."
 ro = "Dacă este selectat Discord, acesta va folosi avatarul pentru utilizatorul `%s`."
 
 [changeAvatarNoDiscord]
-en = "This option will have no effect until you link your Discord account [using this link](/link)"
-ro = "Această opțiune nu va avea niciun efect cât timp nu asociați contul de Discord [folosind acest link](/link)"
+en = "This option will have no effect until you link your Discord account [using this link](/link/discord)"
+ro = "Această opțiune nu va avea niciun efect cât timp nu asociați contul de Discord [folosind acest link](/link/discord)"
 
 [donate]
 en = "Donate"

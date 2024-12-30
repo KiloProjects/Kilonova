@@ -219,8 +219,8 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, r io.Reader) error {
 			if err != nil {
 				return err
 			}
-			val, err1 := decimal.NewFromString(weightStrings[i])
-			if err1 != nil {
+			val, err := decimal.NewFromString(weightStrings[i])
+			if err != nil {
 				return kilonova.Statusf(400, "Invalid `weight` string in properties")
 			}
 			stk := stks[strconv.Itoa(i+1)]
