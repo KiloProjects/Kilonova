@@ -48,6 +48,7 @@ export async function multipartProgressCall<T = any>(call: string, formdata: For
 				resolve({
 					status: "error",
 					data: "Upload error",
+					statusCode: xhr.status,
 				});
 			});
 			xhr.addEventListener("load", () => {
@@ -58,6 +59,7 @@ export async function multipartProgressCall<T = any>(call: string, formdata: For
 				resolve({
 					status: "error",
 					data: xhr.statusText,
+					statusCode: xhr.status,
 				});
 			});
 			xhr.setRequestHeader("Accept", "application/json");
@@ -78,6 +80,6 @@ export async function multipartProgressCall<T = any>(call: string, formdata: For
 		dismissToast(toast);
 		return resp;
 	} catch (e: any) {
-		return { status: "error", data: e.toString() };
+		return { status: "error", data: e.toString(), statusCode: 500 };
 	}
 }

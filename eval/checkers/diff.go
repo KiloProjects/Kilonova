@@ -64,7 +64,7 @@ func (d *DiffChecker) RunChecker(ctx context.Context, subtestID int, testID int)
 	return CorrectOut, decimal.NewFromInt(100)
 }
 
-func redirBucketFile(w io.Writer, bucket *datastore.Bucket, filename string) error {
+func redirBucketFile(w io.Writer, bucket datastore.Bucket, filename string) error {
 	f, err := bucket.Reader(filename)
 	if err != nil {
 		return err

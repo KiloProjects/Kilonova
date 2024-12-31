@@ -19,9 +19,12 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ slog.LogValuer = &Bucket{}
+var (
+	_ slog.LogValuer = (*localBucket)(nil)
+	_ Bucket         = (*localBucket)(nil)
+)
 
-type Bucket struct {
+type localBucket struct {
 	rootPath string
 	name     string
 
@@ -39,13 +42,13 @@ type Bucket struct {
 
 // Persistent is a sanity check flag for important buckets such as the tests bucket
 // Such that eviction or cleaning is never performed
-func (b *Bucket) Persistent() bool {
+func (b *localBucket) Persistent() bool {
 	return b.persistent
 }
 
 // Cache is true only if the bucket should act like a cache. That is, it can be fully purged using the Reset() method
 // It's a safeguard against accidentally removing real data
-func (b *Bucket) Cache() bool {
+func (b *localBucket) Cache() bool {
 	return b.cache
 }
 
@@ -64,7 +67,7 @@ type BucketStats struct {
 	OnDiskSize int64
 }
 
-func (b *Bucket) Statistics(refresh bool) *BucketStats {
+func (b *localBucket) Statistics(refresh bool) *BucketStats {
 	if !refresh && b.lastStats != nil {
 		b.lastStatsMu.RLock()
 		defer b.lastStatsMu.RUnlock()
@@ -93,11 +96,11 @@ func (b *Bucket) Statistics(refresh bool) *BucketStats {
 	return b.lastStats
 }
 
-func (b *Bucket) init() error {
+func (b *localBucket) init() error {
 	return os.MkdirAll(path.Join(b.rootPath, b.name), 0755)
 }
 
-func (b *Bucket) Stat(name string) (fs.FileInfo, error) {
+func (b *localBucket) Stat(name string) (fs.FileInfo, error) {
 	stat, err := os.Stat(b.filePath(name) + ".zst")
 	if err == nil {
 		return stat, nil
@@ -117,7 +120,7 @@ func (b *Bucket) Stat(name string) (fs.FileInfo, error) {
 	return os.Stat(b.filePath(name))
 }
 
-func (b *Bucket) WriteFile(name string, r io.Reader, mode fs.FileMode) error {
+func (b *localBucket) WriteFile(name string, r io.Reader, mode fs.FileMode) error {
 	filename := b.filePath(name)
 	if b.useCompression {
 		filename += ".zst"
@@ -151,7 +154,7 @@ func (b *Bucket) WriteFile(name string, r io.Reader, mode fs.FileMode) error {
 	return err
 }
 
-func (b *Bucket) Reader(name string) (io.ReadCloser, error) {
+func (b *localBucket) Reader(name string) (io.ReadCloser, error) {
 	f, err := os.Open(b.filePath(name) + ".zst")
 	if err == nil {
 		return &zstdFileReader{f, newZstdReader(f)}, nil
@@ -177,7 +180,7 @@ func (b *Bucket) Reader(name string) (io.ReadCloser, error) {
 // ReadSeeker tries to open the given file using the normal reader function. If the output implements ReadSeekCloser,
 // then it is used directly. Otherwise, we decompress on the fly into a temp file and return that instead (it will be deleted on Close()).
 // TODO: Better caching, maybe some kind of sub-bucket concept?
-func (b *Bucket) ReadSeeker(name string) (io.ReadSeekCloser, error) {
+func (b *localBucket) ReadSeeker(name string) (io.ReadSeekCloser, error) {
 	rc, err := b.Reader(name)
 	if err != nil {
 		return nil, err
@@ -202,7 +205,7 @@ func (b *Bucket) ReadSeeker(name string) (io.ReadSeekCloser, error) {
 	return &deletingClosedFile{f}, nil
 }
 
-func (b *Bucket) RemoveFile(name string) error {
+func (b *localBucket) RemoveFile(name string) error {
 	if err := os.Remove(b.filePath(name) + ".zst"); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
@@ -215,7 +218,7 @@ func (b *Bucket) RemoveFile(name string) error {
 	return nil
 }
 
-func (b *Bucket) FileList() ([]fs.DirEntry, error) {
+func (b *localBucket) FileList() ([]fs.DirEntry, error) {
 	entries, err := os.ReadDir(path.Join(b.rootPath, b.name))
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
@@ -229,11 +232,11 @@ type evictionEntry struct {
 	size    int64
 }
 
-func (b *Bucket) Evictable() bool {
+func (b *localBucket) Evictable() bool {
 	return !b.persistent && (b.maxSize > 1024 || b.maxTTL > time.Second)
 }
 
-func (b *Bucket) RunEvictionPolicy(ctx context.Context, logger *slog.Logger) (int, error) {
+func (b *localBucket) RunEvictionPolicy(ctx context.Context, logger *slog.Logger) (int, error) {
 	if b.persistent {
 		return -1, errors.New("bucket is marked as persistent, refusing to run eviction policy")
 	}
@@ -302,7 +305,7 @@ func (b *Bucket) RunEvictionPolicy(ctx context.Context, logger *slog.Logger) (in
 	return numDeleted, nil
 }
 
-func (b *Bucket) ResetCache() error {
+func (b *localBucket) ResetCache() error {
 	if b.persistent {
 		return errors.New("bucket is marked as persistent, refusing to delete")
 	}
@@ -324,15 +327,15 @@ func (b *Bucket) ResetCache() error {
 	return errors.Join(errs...)
 }
 
-func (b *Bucket) LogValue() slog.Value {
+func (b *localBucket) LogValue() slog.Value {
 	if b == nil {
 		return slog.Value{}
 	}
 	return slog.StringValue(b.name)
 }
 
-func newBucket(path string, name string, useCompression bool, cache bool, persistent bool, maxSize int64, maxTTL time.Duration) (*Bucket, error) {
-	b := &Bucket{
+func newBucket(path string, name string, useCompression bool, cache bool, persistent bool, maxSize int64, maxTTL time.Duration) (*localBucket, error) {
+	b := &localBucket{
 		rootPath:   path,
 		name:       name,
 		persistent: persistent,
@@ -345,7 +348,7 @@ func newBucket(path string, name string, useCompression bool, cache bool, persis
 	return b, b.init()
 }
 
-func (b *Bucket) filePath(name string) string {
+func (b *localBucket) filePath(name string) string {
 	return path.Join(b.rootPath, b.name, name)
 }
 

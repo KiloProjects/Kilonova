@@ -148,8 +148,15 @@ func AttachmentContext(ctx context.Context) *kilonova.Attachment {
 	return getValueContext[kilonova.Attachment](ctx, AttachmentKey)
 }
 
-func BucketContext(ctx context.Context) *datastore.Bucket {
-	return getValueContext[datastore.Bucket](ctx, BucketKey)
+func BucketContext(ctx context.Context) datastore.Bucket {
+	switch v := ctx.Value(BucketKey).(type) {
+	case *datastore.Bucket:
+		return *v
+	case datastore.Bucket:
+		return v
+	default:
+		return nil
+	}
 }
 
 func Tag(r *http.Request) *kilonova.Tag {

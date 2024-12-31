@@ -1,8 +1,12 @@
 package datastore
 
 import (
+	"context"
 	"errors"
 	"github.com/KiloProjects/kilonova"
+	"io"
+	"io/fs"
+	"log/slog"
 	"os"
 	"time"
 )
@@ -83,35 +87,51 @@ type bucketDef struct {
 	UseCompression bool
 }
 
-type Manager struct {
-	buckets map[BucketType]*Bucket
+type Bucket interface {
+	Persistent() bool
+	Cache() bool
+	Statistics(refresh bool) *BucketStats
+	Stat(name string) (fs.FileInfo, error)
+	WriteFile(name string, r io.Reader, mode fs.FileMode) error
+	Reader(name string) (io.ReadCloser, error)
+	ReadSeeker(name string) (io.ReadSeekCloser, error)
+	RemoveFile(name string) error
+	FileList() ([]fs.DirEntry, error)
+	Evictable() bool
+	RunEvictionPolicy(ctx context.Context, logger *slog.Logger) (int, error)
+	ResetCache() error
+	LogValue() slog.Value
 }
 
-func (m *Manager) Tests() *Bucket {
+type Manager struct {
+	buckets map[BucketType]Bucket
+}
+
+func (m *Manager) Tests() Bucket {
 	return m.buckets[BucketTypeTests]
 }
 
-func (m *Manager) Subtests() *Bucket {
+func (m *Manager) Subtests() Bucket {
 	return m.buckets[BucketTypeSubtests]
 }
 
-func (m *Manager) Attachments() *Bucket {
+func (m *Manager) Attachments() Bucket {
 	return m.buckets[BucketTypeAttachments]
 }
 
-func (m *Manager) Avatars() *Bucket {
+func (m *Manager) Avatars() Bucket {
 	return m.buckets[BucketTypeAvatars]
 }
 
-func (m *Manager) Checkers() *Bucket {
+func (m *Manager) Checkers() Bucket {
 	return m.buckets[BucketTypeCheckers]
 }
 
-func (m *Manager) Compilations() *Bucket {
+func (m *Manager) Compilations() Bucket {
 	return m.buckets[BucketTypeCompiles]
 }
 
-func (m *Manager) Get(bt BucketType) (*Bucket, error) {
+func (m *Manager) Get(bt BucketType) (Bucket, error) {
 	switch bt {
 	case BucketTypeTests, BucketTypeSubtests, BucketTypeAttachments, BucketTypeAvatars, BucketTypeCheckers, BucketTypeCompiles:
 		return m.buckets[bt], nil
@@ -129,8 +149,8 @@ func (m *Manager) Get(bt BucketType) (*Bucket, error) {
 //	return bucket
 //}
 
-func (m *Manager) GetAll() (buckets []*Bucket) {
-	buckets = make([]*Bucket, 0, len(m.buckets))
+func (m *Manager) GetAll() (buckets []Bucket) {
+	buckets = make([]Bucket, 0, len(m.buckets))
 	for _, val := range m.buckets {
 		buckets = append(buckets, val)
 	}
@@ -145,7 +165,7 @@ func New(rootPath string) (*Manager, error) {
 	if err := os.MkdirAll(rootPath, 0777); err != nil {
 		return nil, err
 	}
-	buckets := make(map[BucketType]*Bucket)
+	buckets := make(map[BucketType]Bucket)
 	for _, b := range bucketData {
 		bucket, err := newBucket(rootPath, string(b.Name), b.UseCompression, b.IsCache, b.IsPersistent, b.MaxSize, b.MaxTTL)
 		if err != nil {

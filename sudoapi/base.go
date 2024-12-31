@@ -56,10 +56,10 @@ type BaseAPI struct {
 	dSess *discordgo.Session
 
 	evictionLogger        *slog.Logger
-	testBucket            *datastore.Bucket
-	attachmentCacheBucket *datastore.Bucket
-	subtestBucket         *datastore.Bucket
-	avatarBucket          *datastore.Bucket
+	testBucket            datastore.Bucket
+	attachmentCacheBucket datastore.Bucket
+	subtestBucket         datastore.Bucket
+	avatarBucket          datastore.Bucket
 }
 
 func (s *BaseAPI) Start(ctx context.Context) {
