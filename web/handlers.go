@@ -546,7 +546,7 @@ func (rt *Web) debugPage() http.HandlerFunc {
 		}
 
 		var stats = make([]*datastore.BucketStats, 0, 16)
-		for _, bucket := range datastore.GetBuckets() {
+		for _, bucket := range rt.base.DataStore().GetAll() {
 			stats = append(stats, bucket.Statistics(false))
 		}
 		slices.SortFunc(stats, func(a, b *datastore.BucketStats) int { return cmp.Compare(a.Name, b.Name) })

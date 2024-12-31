@@ -55,13 +55,15 @@ type customChecker struct {
 
 	Logger *slog.Logger
 
+	store *datastore.Manager
+
 	legacy bool
 }
 
 // Prepare compiles the checker for the submission
 func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	var shouldCompile bool
-	stat, err := datastore.GetBucket(datastore.BucketTypeCheckers).Stat(fmt.Sprintf("%d.bin", c.pb.ID))
+	stat, err := c.store.Checkers().Stat(fmt.Sprintf("%d.bin", c.pb.ID))
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
 			slog.WarnContext(ctx, "Checker stat error", slog.Any("err", err))
@@ -95,6 +97,8 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 			"/box/testlib.h": testlibFile,
 		},
 		Lang: lang,
+
+		Store: c.store,
 	}, c.Logger)
 	if err != nil {
 		return "Couldn't compile checker", err
@@ -139,12 +143,12 @@ func (c *customChecker) Cleanup(_ context.Context) error {
 	return nil // eval.CleanCompilation(-c.sub.ID)
 }
 
-func NewLegacyCustomChecker(mgr eval.BoxScheduler, logger *slog.Logger, pb *kilonova.Problem, filename string, code []byte, subCode []byte, lastUpdatedAt time.Time) Checker {
-	return &customChecker{mgr, pb, filename, code, subCode, lastUpdatedAt, logger, true}
+func NewLegacyCustomChecker(mgr eval.BoxScheduler, store *datastore.Manager, logger *slog.Logger, pb *kilonova.Problem, filename string, code []byte, subCode []byte, lastUpdatedAt time.Time) Checker {
+	return &customChecker{mgr, pb, filename, code, subCode, lastUpdatedAt, logger, store, true}
 }
 
-func NewStandardCustomChecker(mgr eval.BoxScheduler, logger *slog.Logger, pb *kilonova.Problem, filename string, code []byte, subCode []byte, lastUpdatedAt time.Time) Checker {
-	return &customChecker{mgr, pb, filename, code, subCode, lastUpdatedAt, logger, false}
+func NewStandardCustomChecker(mgr eval.BoxScheduler, store *datastore.Manager, logger *slog.Logger, pb *kilonova.Problem, filename string, code []byte, subCode []byte, lastUpdatedAt time.Time) Checker {
+	return &customChecker{mgr, pb, filename, code, subCode, lastUpdatedAt, logger, store, false}
 }
 
 func initRequest(lang *eval.Language, job *customCheckerInput) *eval.Box2Request {

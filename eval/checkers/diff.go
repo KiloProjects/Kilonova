@@ -20,7 +20,7 @@ const (
 
 var _ Checker = &DiffChecker{}
 
-type DiffChecker struct{}
+type DiffChecker struct{ Store *datastore.Manager }
 
 func (d *DiffChecker) Prepare(_ context.Context) (string, error) { return "", nil }
 
@@ -41,10 +41,10 @@ func (d *DiffChecker) RunChecker(ctx context.Context, subtestID int, testID int)
 	defer cf.Close()
 	defer os.Remove(cf.Name())
 
-	if err := redirBucketFile(tf, datastore.GetBucket(datastore.BucketTypeSubtests), strconv.Itoa(subtestID)); err != nil {
+	if err := redirBucketFile(tf, d.Store.Subtests(), strconv.Itoa(subtestID)); err != nil {
 		return ErrOut, decimal.Zero
 	}
-	if err := redirBucketFile(cf, datastore.GetBucket(datastore.BucketTypeTests), strconv.Itoa(testID)+".out"); err != nil {
+	if err := redirBucketFile(cf, d.Store.Tests(), strconv.Itoa(testID)+".out"); err != nil {
 		return ErrOut, decimal.Zero
 	}
 

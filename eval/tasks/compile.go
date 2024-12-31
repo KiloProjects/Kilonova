@@ -21,6 +21,7 @@ type CompileRequest struct {
 	CodeFiles   map[string][]byte
 	HeaderFiles map[string][]byte
 	Lang        *eval.Language
+	Store       *datastore.Manager
 }
 
 type CompileResponse struct {
@@ -61,7 +62,11 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 			slog.WarnContext(ctx, "More than one file specified for non-compiled language. This is not properly supported")
 		}
 		for _, fData := range req.CodeFiles {
-			if err := datastore.GetBucket(bucket).WriteFile(outName, bytes.NewBuffer(fData), 0644); err != nil {
+			b, err := req.Store.Get(bucket)
+			if err != nil {
+				resp.Other = err.Error()
+				resp.Success = false
+			} else if err := b.WriteFile(outName, bytes.NewBuffer(fData), 0644); err != nil {
 				resp.Other = err.Error()
 				resp.Success = false
 			}

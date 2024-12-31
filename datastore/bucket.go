@@ -22,25 +22,31 @@ import (
 var _ slog.LogValuer = &Bucket{}
 
 type Bucket struct {
-	RootPath string
-	Name     string
+	rootPath string
+	name     string
 
-	// Persistent is a sanity check flag for important buckets such as the tests bucket
-	// Such that eviction or cleaning is never performed
-	Persistent bool
+	persistent bool
+	cache      bool
 
-	// Cache is true only if the bucket should act like a cache
-	// That is, it can be fully purged using the Reset() method
-	// It's a safeguard against accidentally removing real data
-	Cache bool
+	maxSize int64         // Maximum size in bytes. Values < 1024 mean system is off
+	maxTTL  time.Duration // Maximum duration before emptying
 
-	MaxSize int64         // Maximum size in bytes. Values < 1024 mean system is off
-	MaxTTL  time.Duration // Maximum duration before emptying
-
-	UseCompression bool
+	useCompression bool
 
 	lastStatsMu sync.RWMutex
 	lastStats   *BucketStats
+}
+
+// Persistent is a sanity check flag for important buckets such as the tests bucket
+// Such that eviction or cleaning is never performed
+func (b *Bucket) Persistent() bool {
+	return b.persistent
+}
+
+// Cache is true only if the bucket should act like a cache. That is, it can be fully purged using the Reset() method
+// It's a safeguard against accidentally removing real data
+func (b *Bucket) Cache() bool {
+	return b.cache
 }
 
 type BucketStats struct {
@@ -67,8 +73,8 @@ func (b *Bucket) Statistics(refresh bool) *BucketStats {
 	b.lastStatsMu.Lock()
 	defer b.lastStatsMu.Unlock()
 	b.lastStats = &BucketStats{
-		Name: b.Name, Cache: b.Cache,
-		Persistent: b.Persistent, MaxSize: b.MaxSize, MaxTTL: b.MaxTTL,
+		Name: b.name, Cache: b.cache,
+		Persistent: b.persistent, MaxSize: b.maxSize, MaxTTL: b.maxTTL,
 	}
 	entries, err := b.FileList()
 	if err != nil {
@@ -87,8 +93,8 @@ func (b *Bucket) Statistics(refresh bool) *BucketStats {
 	return b.lastStats
 }
 
-func (b *Bucket) Init() error {
-	return os.MkdirAll(path.Join(b.RootPath, b.Name), 0755)
+func (b *Bucket) init() error {
+	return os.MkdirAll(path.Join(b.rootPath, b.name), 0755)
 }
 
 func (b *Bucket) Stat(name string) (fs.FileInfo, error) {
@@ -113,7 +119,7 @@ func (b *Bucket) Stat(name string) (fs.FileInfo, error) {
 
 func (b *Bucket) WriteFile(name string, r io.Reader, mode fs.FileMode) error {
 	filename := b.filePath(name)
-	if b.UseCompression {
+	if b.useCompression {
 		filename += ".zst"
 	}
 
@@ -121,7 +127,7 @@ func (b *Bucket) WriteFile(name string, r io.Reader, mode fs.FileMode) error {
 	if err != nil {
 		return err
 	}
-	if !b.UseCompression {
+	if !b.useCompression {
 		_, err = io.Copy(f, r)
 		if err1 := f.Close(); err1 != nil && err == nil {
 			err = err1
@@ -210,7 +216,7 @@ func (b *Bucket) RemoveFile(name string) error {
 }
 
 func (b *Bucket) FileList() ([]fs.DirEntry, error) {
-	entries, err := os.ReadDir(path.Join(b.RootPath, b.Name))
+	entries, err := os.ReadDir(path.Join(b.rootPath, b.name))
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}
@@ -224,16 +230,16 @@ type evictionEntry struct {
 }
 
 func (b *Bucket) Evictable() bool {
-	return !b.Persistent && (b.MaxSize > 1024 || b.MaxTTL > time.Second)
+	return !b.persistent && (b.maxSize > 1024 || b.maxTTL > time.Second)
 }
 
 func (b *Bucket) RunEvictionPolicy(ctx context.Context, logger *slog.Logger) (int, error) {
-	if b.Persistent {
+	if b.persistent {
 		return -1, errors.New("bucket is marked as persistent, refusing to run eviction policy")
 	}
 	b.lastStatsMu.Lock()
 	defer b.lastStatsMu.Unlock()
-	entries, err := os.ReadDir(path.Join(b.RootPath, b.Name))
+	entries, err := os.ReadDir(path.Join(b.rootPath, b.name))
 	if err != nil {
 		return -1, err
 	}
@@ -263,12 +269,12 @@ func (b *Bucket) RunEvictionPolicy(ctx context.Context, logger *slog.Logger) (in
 	var numDeleted int
 	for len(evictionEntries) > 0 {
 		var ok bool = true
-		// If MaxTTL is big enough and file is earlier than that policy, mark for deletion
-		if b.MaxTTL > time.Second && time.Since(evictionEntries[0].modTime) > b.MaxTTL {
+		// If maxTTL is big enough and file is earlier than that policy, mark for deletion
+		if b.maxTTL > time.Second && time.Since(evictionEntries[0].modTime) > b.maxTTL {
 			ok = false
 		}
 		// If directory size is still bigger than maximum
-		if b.MaxSize > 1024 && dirSize > b.MaxSize {
+		if b.maxSize > 1024 && dirSize > b.maxSize {
 			ok = false
 		}
 		if ok {
@@ -283,8 +289,8 @@ func (b *Bucket) RunEvictionPolicy(ctx context.Context, logger *slog.Logger) (in
 	}
 
 	b.lastStats = &BucketStats{
-		Name: b.Name, Cache: b.Cache,
-		Persistent: b.Persistent, MaxSize: b.MaxSize, MaxTTL: b.MaxTTL,
+		Name: b.name, Cache: b.cache,
+		Persistent: b.persistent, MaxSize: b.maxSize, MaxTTL: b.maxTTL,
 		NumItems: len(evictionEntries), OnDiskSize: dirSize,
 		CreatedAt: time.Now(),
 	}
@@ -297,10 +303,10 @@ func (b *Bucket) RunEvictionPolicy(ctx context.Context, logger *slog.Logger) (in
 }
 
 func (b *Bucket) ResetCache() error {
-	if b.Persistent {
+	if b.persistent {
 		return errors.New("bucket is marked as persistent, refusing to delete")
 	}
-	if !b.Cache {
+	if !b.cache {
 		return errors.New("bucket is not marked as cache, refusing to delete")
 	}
 	var errs []error
@@ -322,25 +328,25 @@ func (b *Bucket) LogValue() slog.Value {
 	if b == nil {
 		return slog.Value{}
 	}
-	return slog.StringValue(b.Name)
+	return slog.StringValue(b.name)
 }
 
-func NewBucket(path string, name string, useCompression bool, cache bool, persistent bool, maxSize int64, maxTTL time.Duration) (*Bucket, error) {
+func newBucket(path string, name string, useCompression bool, cache bool, persistent bool, maxSize int64, maxTTL time.Duration) (*Bucket, error) {
 	b := &Bucket{
-		RootPath:   path,
-		Name:       name,
-		Persistent: persistent,
-		Cache:      cache,
-		MaxSize:    maxSize,
-		MaxTTL:     maxTTL,
+		rootPath:   path,
+		name:       name,
+		persistent: persistent,
+		cache:      cache,
+		maxSize:    maxSize,
+		maxTTL:     maxTTL,
 
-		UseCompression: useCompression,
+		useCompression: useCompression,
 	}
-	return b, b.Init()
+	return b, b.init()
 }
 
 func (b *Bucket) filePath(name string) string {
-	return path.Join(b.RootPath, b.Name, name)
+	return path.Join(b.rootPath, b.name, name)
 }
 
 type deletingClosedFile struct {

@@ -14,7 +14,6 @@ import (
 	"sync"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/box"
 	"github.com/KiloProjects/kilonova/eval/checkers"
@@ -118,6 +117,8 @@ func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.C
 		Lang:        sh.lang,
 		CodeFiles:   make(map[string][]byte),
 		HeaderFiles: make(map[string][]byte),
+
+		Store: sh.base.DataStore(),
 	}
 	atts, err := sh.base.ProblemAttachments(ctx, sh.pb.ID)
 	if err != nil {
@@ -285,7 +286,7 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		return kilonova.Statusf(500, "Invalid eval type")
 	}
 
-	if err := datastore.GetBucket(datastore.BucketTypeCompiles).RemoveFile(fmt.Sprintf("%d.bin", sub.ID)); err != nil {
+	if err := base.DataStore().Compilations().RemoveFile(fmt.Sprintf("%d.bin", sub.ID)); err != nil {
 		slog.WarnContext(ctx, "Couldn't remove compilation artifact", slog.Any("err", err))
 	}
 
@@ -550,7 +551,7 @@ func (sh *submissionHandler) scoreTests(ctx context.Context) error {
 
 var ForceSecureSandbox = config.GenFlag[bool]("feature.grader.force_secure_sandbox", true, "Force use of secure sandbox only. Should be always enabled in production environments")
 
-func getAppropriateRunner(ctx context.Context) (eval.BoxScheduler, error) {
+func (h *Handler) getAppropriateRunner(ctx context.Context) (eval.BoxScheduler, error) {
 	var boxFunc scheduler.BoxFunc
 	var boxVersion = "NONE"
 	if scheduler.CheckCanRun(ctx, box.New) {
@@ -567,7 +568,7 @@ func getAppropriateRunner(ctx context.Context) (eval.BoxScheduler, error) {
 	}
 
 	slog.InfoContext(ctx, "Trying to spin up local grader")
-	bm, err := scheduler.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, graderLogger, boxFunc)
+	bm, err := scheduler.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, graderLogger, h.base.DataStore(), boxFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -578,7 +579,7 @@ func getAppropriateRunner(ctx context.Context) (eval.BoxScheduler, error) {
 
 func (sh *submissionHandler) getAppropriateChecker(ctx context.Context) (checkers.Checker, error) {
 	if sh.settings.CheckerName == "" {
-		return &checkers.DiffChecker{}, nil
+		return &checkers.DiffChecker{Store: sh.base.DataStore()}, nil
 	}
 	att, err := sh.base.ProblemAttByName(ctx, sh.pb.ID, sh.settings.CheckerName)
 	if err != nil {
@@ -593,7 +594,7 @@ func (sh *submissionHandler) getAppropriateChecker(ctx context.Context) (checker
 		return nil, fmt.Errorf("couldn't get submission source code: %w", err)
 	}
 	if sh.settings.LegacyChecker {
-		return checkers.NewLegacyCustomChecker(sh.runner, graderLogger, sh.pb, sh.settings.CheckerName, data, subCode, att.LastUpdatedAt), nil
+		return checkers.NewLegacyCustomChecker(sh.runner, sh.base.DataStore(), graderLogger, sh.pb, sh.settings.CheckerName, data, subCode, att.LastUpdatedAt), nil
 	}
-	return checkers.NewStandardCustomChecker(sh.runner, graderLogger, sh.pb, sh.settings.CheckerName, data, subCode, att.LastUpdatedAt), nil
+	return checkers.NewStandardCustomChecker(sh.runner, sh.base.DataStore(), graderLogger, sh.pb, sh.settings.CheckerName, data, subCode, att.LastUpdatedAt), nil
 }

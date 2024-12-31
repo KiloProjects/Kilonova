@@ -470,13 +470,13 @@ func hashPassword(password string) (string, error) {
 	return string(hash), err
 }
 
-func getGravatar(email string, size int) (io.ReadSeekCloser, time.Time, error) {
+func getGravatar(ctx context.Context, email string, size int) (io.ReadSeekCloser, time.Time, error) {
 	v := url.Values{}
 	v.Add("s", strconv.Itoa(size))
 	v.Add("d", "identicon")
 	bSum := md5.Sum([]byte(email))
 
-	req, _ := http.NewRequest("GET", fmt.Sprintf("https://gravatar.com/avatar/%s.png?%s", hex.EncodeToString(bSum[:]), v.Encode()), nil)
+	req, _ := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("https://gravatar.com/avatar/%s.png?%s", hex.EncodeToString(bSum[:]), v.Encode()), nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
 	resp, err := otelhttp.DefaultClient.Do(req)
@@ -502,12 +502,12 @@ func gravatarBucketName(email string, size int) string {
 }
 
 // if r is nil, it fetches the gravatar from the web
-func (s *BaseAPI) saveGravatar(email string, size int, r io.Reader) error {
+func (s *BaseAPI) saveGravatar(ctx context.Context, email string, size int, r io.Reader) error {
 	if r != nil {
 		return s.avatarBucket.WriteFile(gravatarBucketName(email, size), r, 0644)
 	}
 
-	r, _, err := getGravatar(email, size)
+	r, _, err := getGravatar(ctx, email, size)
 	if err != nil {
 		return err
 	}
@@ -532,16 +532,16 @@ func (s *BaseAPI) avatarFromBucket(filename string, maxLastMod time.Time) (io.Re
 }
 
 // if manager.GetGravatar errors out or is not valid, it fetches the gravatar from the web
-func (s *BaseAPI) GetGravatar(email string, size int, maxLastMod time.Time) (io.ReadSeekCloser, time.Time, bool, error) {
+func (s *BaseAPI) GetGravatar(ctx context.Context, email string, size int, maxLastMod time.Time) (io.ReadSeekCloser, time.Time, bool, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 	if r, t, valid, err := s.avatarFromBucket(gravatarBucketName(email, size), maxLastMod); valid && err == nil {
 		return r, t, valid, err
 	}
-	r, t, err := getGravatar(email, size)
+	r, t, err := getGravatar(ctx, email, size)
 	if err != nil {
 		return r, t, false, err
 	}
-	if err := s.saveGravatar(email, size, r); err != nil {
+	if err := s.saveGravatar(ctx, email, size, r); err != nil {
 		zap.S().Warn("Could not save avatar:", err)
 	}
 	r.Seek(0, io.SeekStart)
@@ -553,8 +553,8 @@ func discordAvatarBucketName(user *kilonova.UserFull, size int) string {
 	return fmt.Sprintf("%s-%d.png", hex.EncodeToString(bSum[:]), size)
 }
 
-func getDiscordAvatar(dUser *discordgo.User, size int) (io.ReadSeekCloser, time.Time, error) {
-	req, _ := http.NewRequest("GET", dUser.AvatarURL(strconv.Itoa(size)), nil)
+func getDiscordAvatar(ctx context.Context, dUser *discordgo.User, size int) (io.ReadSeekCloser, time.Time, error) {
+	req, _ := http.NewRequestWithContext(ctx, "GET", dUser.AvatarURL(strconv.Itoa(size)), nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
 	resp, err := otelhttp.DefaultClient.Do(req)
@@ -575,12 +575,12 @@ func getDiscordAvatar(dUser *discordgo.User, size int) (io.ReadSeekCloser, time.
 }
 
 // if r is nil, it fetches the gravatar from the web
-func (s *BaseAPI) saveDiscordAvatar(user *kilonova.UserFull, dUser *discordgo.User, size int, r io.Reader) error {
+func (s *BaseAPI) saveDiscordAvatar(ctx context.Context, user *kilonova.UserFull, dUser *discordgo.User, size int, r io.Reader) error {
 	if r != nil {
 		return s.avatarBucket.WriteFile(discordAvatarBucketName(user, size), r, 0644)
 	}
 
-	r, _, err := getDiscordAvatar(dUser, size)
+	r, _, err := getDiscordAvatar(ctx, dUser, size)
 	if err != nil {
 		return err
 	}
@@ -604,11 +604,11 @@ func (s *BaseAPI) GetDiscordAvatar(ctx context.Context, user *kilonova.UserFull,
 		return nil, time.Time{}, false, nil
 	}
 
-	r, t, err := getDiscordAvatar(dUser, size)
+	r, t, err := getDiscordAvatar(ctx, dUser, size)
 	if err != nil {
 		return r, t, false, err
 	}
-	if err := s.saveDiscordAvatar(user, dUser, size, r); err != nil {
+	if err := s.saveDiscordAvatar(ctx, user, dUser, size, r); err != nil {
 		zap.S().Warn("Could not save avatar:", err)
 	}
 	r.Seek(0, io.SeekStart)

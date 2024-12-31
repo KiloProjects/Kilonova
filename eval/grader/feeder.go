@@ -173,7 +173,7 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 }
 
 func (h *Handler) Start() error {
-	runner, err := getAppropriateRunner(h.ctx)
+	runner, err := h.getAppropriateRunner(h.ctx)
 	if err != nil {
 		return err
 	}

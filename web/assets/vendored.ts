@@ -1,6 +1,6 @@
 import CopyButtonPlugin from "highlightjs-copy";
 import htmx from "htmx.org";
-import Idiomorph from "idiomorph";
+import {Idiomorph} from "idiomorph";
 window.htmx = htmx;
 
 // import { getWebInstrumentations, initializeFaro } from '@grafana/faro-web-sdk';

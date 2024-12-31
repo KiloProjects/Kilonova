@@ -1,9 +1,8 @@
 package datastore
 
 import (
-	"context"
 	"errors"
-	"log/slog"
+	"github.com/KiloProjects/kilonova"
 	"os"
 	"time"
 )
@@ -20,25 +19,7 @@ const (
 	BucketTypeCompiles    BucketType = "compiles"
 )
 
-func (t BucketType) Valid() bool {
-	return t == BucketTypeTests || t == BucketTypeSubtests ||
-		t == BucketTypeAttachments || t == BucketTypeAvatars ||
-		t == BucketTypeCheckers || t == BucketTypeCompiles
-}
-
-type bucketDef struct {
-	Name    BucketType
-	IsCache bool
-
-	IsPersistent bool
-	MaxSize      int64
-	MaxTTL       time.Duration
-
-	UseCompression bool
-}
-
 var (
-	buckets     = make(map[BucketType]*Bucket)
 	initialized = false
 
 	// TODO: Do better...
@@ -91,45 +72,86 @@ var (
 	}
 )
 
-func init() {
-	for _, b := range bucketData {
-		buckets[b.Name] = nil
+type bucketDef struct {
+	Name    BucketType
+	IsCache bool
+
+	IsPersistent bool
+	MaxSize      int64
+	MaxTTL       time.Duration
+
+	UseCompression bool
+}
+
+type Manager struct {
+	buckets map[BucketType]*Bucket
+}
+
+func (m *Manager) Tests() *Bucket {
+	return m.buckets[BucketTypeTests]
+}
+
+func (m *Manager) Subtests() *Bucket {
+	return m.buckets[BucketTypeSubtests]
+}
+
+func (m *Manager) Attachments() *Bucket {
+	return m.buckets[BucketTypeAttachments]
+}
+
+func (m *Manager) Avatars() *Bucket {
+	return m.buckets[BucketTypeAvatars]
+}
+
+func (m *Manager) Checkers() *Bucket {
+	return m.buckets[BucketTypeCheckers]
+}
+
+func (m *Manager) Compilations() *Bucket {
+	return m.buckets[BucketTypeCompiles]
+}
+
+func (m *Manager) Get(bt BucketType) (*Bucket, error) {
+	switch bt {
+	case BucketTypeTests, BucketTypeSubtests, BucketTypeAttachments, BucketTypeAvatars, BucketTypeCheckers, BucketTypeCompiles:
+		return m.buckets[bt], nil
+	default:
+		return nil, kilonova.ErrNotFound
 	}
 }
 
-// TODO: Do not do singletons
-func InitBuckets(p string) error {
+//func (m *Manager) MustGet(bt BucketType) *Bucket {
+//	bucket, err := m.Get(bt)
+//	if err != nil {
+//		slog.ErrorContext(context.Background(), "No bucket found", slog.Any("type", bt))
+//		panic("No bucket found")
+//	}
+//	return bucket
+//}
+
+func (m *Manager) GetAll() (buckets []*Bucket) {
+	buckets = make([]*Bucket, 0, len(m.buckets))
+	for _, val := range m.buckets {
+		buckets = append(buckets, val)
+	}
+	return
+}
+
+func New(rootPath string) (*Manager, error) {
 	if initialized {
-		return errors.New("buckets already initialized")
+		return nil, errors.New("buckets already initialized")
 	}
 	initialized = true
-	if err := os.MkdirAll(p, 0777); err != nil {
-		return err
+	if err := os.MkdirAll(rootPath, 0777); err != nil {
+		return nil, err
 	}
+	buckets := make(map[BucketType]*Bucket)
 	for _, b := range bucketData {
-		bucket, err := NewBucket(p, string(b.Name), b.UseCompression, b.IsCache, b.IsPersistent, b.MaxSize, b.MaxTTL)
+		bucket, err := newBucket(rootPath, string(b.Name), b.UseCompression, b.IsCache, b.IsPersistent, b.MaxSize, b.MaxTTL)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		buckets[b.Name] = bucket
 	}
-	return nil
-}
-
-// GetBucket panics if there is no bucket with that name
-func GetBucket(name BucketType) *Bucket {
-	b, ok := buckets[name]
-	if !ok {
-		slog.ErrorContext(context.Background(), "No bucket found", slog.String("name", string(name)))
-		panic("No bucket found")
-	}
-	return b
-}
-
-func GetBuckets() []*Bucket {
-	ret := make([]*Bucket, 0, len(buckets))
-	for _, val := range buckets {
-		ret = append(ret, val)
-	}
-	return ret
+	return &Manager{buckets}, nil
 }

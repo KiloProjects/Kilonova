@@ -45,6 +45,8 @@ type BaseAPI struct {
 	mailer kilonova.Mailer
 	rd     kilonova.MarkdownRenderer
 
+	mgr *datastore.Manager
+
 	sessionUserCache *theine.LoadingCache[string, *kilonova.UserFull]
 
 	grader Grader
@@ -84,21 +86,23 @@ func (s *BaseAPI) Close() error {
 	return nil
 }
 
-func GetBaseAPI(db *db.DB, mailer kilonova.Mailer) (*BaseAPI, error) {
+func GetBaseAPI(db *db.DB, mgr *datastore.Manager, mailer kilonova.Mailer) (*BaseAPI, error) {
 	base := &BaseAPI{
 		db:     db,
 		mailer: mailer,
 		rd:     mdrenderer.NewLocalRenderer(),
+
+		mgr: mgr,
 
 		sessionUserCache: nil,
 
 		grader:  nil,
 		logChan: make(chan *logEntry, 50),
 
-		testBucket:            datastore.GetBucket(datastore.BucketTypeTests),
-		attachmentCacheBucket: datastore.GetBucket(datastore.BucketTypeAttachments),
-		subtestBucket:         datastore.GetBucket(datastore.BucketTypeSubtests),
-		avatarBucket:          datastore.GetBucket(datastore.BucketTypeAvatars),
+		testBucket:            mgr.Tests(),
+		attachmentCacheBucket: mgr.Attachments(),
+		subtestBucket:         mgr.Subtests(),
+		avatarBucket:          mgr.Avatars(),
 	}
 	sUserCache, err := theine.NewBuilder[string, *kilonova.UserFull](500).BuildWithLoader(func(ctx context.Context, sid string) (theine.Loaded[*kilonova.UserFull], error) {
 		user, err := base.sessionUser(ctx, sid)
@@ -127,7 +131,8 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, error) {
 		return nil, fmt.Errorf("couldn't create data dir: %w", err)
 	}
 
-	if err := datastore.InitBuckets(config.Common.DataDir); err != nil {
+	mgr, err := datastore.New(config.Common.DataDir)
+	if err != nil {
 		return nil, fmt.Errorf("couldn't initialize data store: %w", err)
 	}
 
@@ -154,7 +159,7 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, error) {
 		}
 	}
 
-	return GetBaseAPI(db, knMailer)
+	return GetBaseAPI(db, mgr, knMailer)
 }
 
 func (s *BaseAPI) InitQueryCounter(ctx context.Context) context.Context {

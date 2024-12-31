@@ -314,11 +314,13 @@ func (s *API) validateUsername(next http.Handler) http.Handler {
 func (s *API) validateBucket(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		name := datastore.BucketType(chi.URLParam(r, "bname"))
-		if !name.Valid() {
+		bucket, err := s.base.DataStore().Get(name)
+		if err != nil {
 			errorData(w, "Invalid bucket", 400)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.BucketKey, datastore.GetBucket(name))))
+
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.BucketKey, bucket)))
 	})
 }
 

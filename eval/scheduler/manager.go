@@ -52,7 +52,7 @@ type BoxManager struct {
 	languageVersions   map[string]string
 	supportedLanguages map[string]*eval.Language
 
-	// TODO: Datastore manager here
+	store *datastore.Manager
 }
 
 func (b *BoxManager) SubRunner(ctx context.Context, numConc int64) (eval.BoxScheduler, error) {
@@ -75,6 +75,8 @@ func (b *BoxManager) SubRunner(ctx context.Context, numConc int64) (eval.BoxSche
 
 		languageVersions:   b.languageVersions,
 		supportedLanguages: b.supportedLanguages,
+
+		store: b.store,
 	}, nil
 }
 
@@ -122,7 +124,7 @@ func (b *BoxManager) Close(ctx context.Context) error {
 }
 
 // New creates a new box manager
-func New(startingNumber int, count int, maxMemory int64, logger *slog.Logger, boxGenerator BoxFunc) (*BoxManager, error) {
+func New(startingNumber int, count int, maxMemory int64, logger *slog.Logger, dataStore *datastore.Manager, boxGenerator BoxFunc) (*BoxManager, error) {
 
 	if startingNumber < 0 {
 		startingNumber = 0
@@ -147,6 +149,8 @@ func New(startingNumber int, count int, maxMemory int64, logger *slog.Logger, bo
 		boxGenerator: boxGenerator,
 
 		supportedLanguages: supportedLanguages(context.Background()),
+
+		store: dataStore,
 	}
 	return bm, nil
 }
@@ -277,9 +281,14 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 	}
 
 	for fpath, val := range req.InputBucketFiles {
-		// TODO: Use datastore manager
+		bucket, err := mgr.store.Get(val.Bucket)
+		if err != nil {
+			slog.ErrorContext(ctx, "Error getting bucket", slog.Any("err", err))
+			continue
+		}
+
 		// Do not reset val.Mode here, since CopyInBox stats and sets the proper mode
-		if err := copyInBox(box, datastore.GetBucket(val.Bucket), val.Filename, fpath, val.Mode); err != nil {
+		if err := copyInBox(box, bucket, val.Filename, fpath, val.Mode); err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
 				slog.WarnContext(ctx, "Bucket file doesn't exist when copying in sandbox",
 					slog.Any("bucket", val.Bucket), slog.String("filename", val.Filename),
@@ -327,7 +336,13 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 			file.Mode = 0666
 		}
 
-		if err := box.SaveFile(path, datastore.GetBucket(file.Bucket), file.Filename, file.Mode); err != nil {
+		bucket, err := mgr.store.Get(file.Bucket)
+		if err != nil {
+			slog.ErrorContext(ctx, "Error getting bucket", slog.Any("err", err))
+			continue
+		}
+
+		if err := box.SaveFile(path, bucket, file.Filename, file.Mode); err != nil {
 			slog.WarnContext(ctx, "Error saving box file", slog.Any("err", err), slog.String("path", path), slog.Any("bucket", file.Bucket))
 			return resp, err
 		}

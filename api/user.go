@@ -24,7 +24,7 @@ var (
 
 func (s *API) serveGravatar(w http.ResponseWriter, r *http.Request, user *kilonova.UserFull, size int) {
 	// Read from cache
-	rd, lastmod, valid, err := s.base.GetGravatar(user.Email, size, time.Now().Add(-12*time.Hour))
+	rd, lastmod, valid, err := s.base.GetGravatar(r.Context(), user.Email, size, time.Now().Add(-12*time.Hour))
 	if !valid || err != nil {
 		slog.WarnContext(r.Context(), "BaseAPI GetGravatar is not valid or returned error", slog.Bool("valid", valid), slog.Any("err", err))
 		http.Error(w, "", 500)

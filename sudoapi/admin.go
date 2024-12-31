@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/KiloProjects/kilonova/datastore"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -15,7 +16,6 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/bwmarrin/discordgo"
@@ -41,6 +41,10 @@ var (
 
 	EmailBranding = config.GenFlag("admin.mailer.branding", "Kilonova", "Branding to use at the end of emails")
 )
+
+func (s *BaseAPI) DataStore() *datastore.Manager {
+	return s.mgr
+}
 
 func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) error {
 	subs, err := s.db.Submissions(ctx, kilonova.SubmissionFilter{Status: kilonova.StatusWorking})
@@ -430,7 +434,7 @@ func (s *BaseAPI) cleanupBucketsJob(ctx context.Context, interval time.Duration)
 func (s *BaseAPI) EvictionLogger() *slog.Logger { return s.evictionLogger }
 
 func (s *BaseAPI) cleanupBuckets(ctx context.Context) {
-	for _, bucket := range datastore.GetBuckets() {
+	for _, bucket := range s.mgr.GetAll() {
 		if !bucket.Evictable() {
 			continue
 		}

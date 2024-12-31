@@ -55,7 +55,7 @@ func (s *API) Handler() http.Handler {
 				r.Use(s.validateBucket)
 				r.Post("/cleanCache", webMessageWrapper("Reset bucket cache", func(ctx context.Context, _ struct{}) error {
 					b := util.BucketContext(ctx)
-					if !b.Cache {
+					if !b.Cache() {
 						return kilonova.Statusf(403, "Refusing to remove non-cache bucket")
 					}
 					if err := b.ResetCache(); err != nil {
@@ -66,7 +66,7 @@ func (s *API) Handler() http.Handler {
 				}))
 				r.Post("/evictObjects", webWrapper(func(ctx context.Context, _ struct{}) (string, error) {
 					b := util.BucketContext(ctx)
-					if b.Persistent {
+					if b.Persistent() {
 						return "", kilonova.Statusf(403, "Refusing to remove important bucket")
 					}
 					s.base.LogUserAction(ctx, "Attempted running bucket eviction", slog.Any("bucket", b))
