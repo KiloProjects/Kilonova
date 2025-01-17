@@ -1357,6 +1357,11 @@ func (rt *Web) donationPage() http.HandlerFunc {
 }
 
 func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *template.Template, user *kilonova.UserFull) {
+	if !(ViewOtherProfiles.Value() || util.UserBrief(r).IsAdmin() || (util.UserBrief(r) != nil && util.UserBrief(r).ID == user.ID)) {
+		rt.statusPage(w, r, 400, "You are not allowed to view other profiles!")
+		return
+	}
+
 	solvedPbs, solvedCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
 		LookingUser: util.UserBrief(r), Look: true,
 		SolvedBy: &user.ID,
@@ -1419,6 +1424,7 @@ func (rt *Web) profile() http.HandlerFunc {
 			}
 			return
 		}
+
 		rt.profilePage(w, r, templ, user)
 	}
 }

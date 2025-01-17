@@ -46,7 +46,8 @@ var (
 	CCDisclaimer    = config.GenFlag("frontend.footer.cc_disclaimer", true, "CC disclaimer in footer")
 	DiscordInviteID = config.GenFlag("frontend.footer.discord_id", "Qa6Ytgh", "Invite ID for Discord server")
 
-	AllSubsPage = config.GenFlag("feature.frontend.all_subs_page", true, "Anyone can view all submissions")
+	AllSubsPage       = config.GenFlag("feature.frontend.all_subs_page", true, "Anyone can view all submissions")
+	ViewOtherProfiles = config.GenFlag("feature.frontend.view_other_profiles", true, "Allow anyone to view other profiles")
 
 	FrontPageLatestProblems = config.GenFlag("feature.frontend.front_page_latest_pbs", true, "Show list with latest published problems on front page")
 	FrontPageProblems       = config.GenFlag("feature.frontend.front_page_pbs", true, "Show problems on front page")
