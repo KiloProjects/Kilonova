@@ -90,7 +90,7 @@ func (att *imgAttRenderer) renderAttachment(writer util.BufWriter, source []byte
 			}
 		}
 	}
-	ctx, ok := n.OwnerDocument().Meta()["ctx"].(*kilonova.RenderContext)
+	ctx, ok := n.OwnerDocument().Meta()["ctx"].(*kilonova.MarkdownRenderContext)
 	link := attachmentURL(ctx, ok, name)
 
 	extra := ""
@@ -125,7 +125,7 @@ func (att *ImageAttNode) Kind() ast.NodeKind {
 	return attNodeKind
 }
 
-func attachmentURL(ctx *kilonova.RenderContext, okCtx bool, name string) string {
+func attachmentURL(ctx *kilonova.MarkdownRenderContext, okCtx bool, name string) string {
 	if !okCtx || ctx == nil {
 		return url.PathEscape(name)
 	}

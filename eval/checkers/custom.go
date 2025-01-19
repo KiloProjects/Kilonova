@@ -86,7 +86,7 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	lang := c.mgr.LanguageFromFilename(c.filename)
 	if lang == nil {
 		slog.WarnContext(ctx, "Language not found for custom checker compilation", slog.String("filename", c.filename))
-		return "Couldn't compile checker", kilonova.Statusf(500, "Unknown checker language")
+		return "Couldn't compile checker", errors.New("unknown checker language")
 	}
 
 	resp, err := tasks.CompileTask(ctx, c.mgr, &tasks.CompileRequest{

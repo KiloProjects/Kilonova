@@ -135,7 +135,7 @@ func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.C
 				data, err := sh.base.AttachmentData(ctx, att.ID)
 				if err != nil {
 					slog.WarnContext(ctx, "Couldn't get attachment data", slog.Any("err", err))
-					return nil, kilonova.Statusf(500, "Couldn't get grader data")
+					return nil, errors.New("couldn't get grader data")
 				}
 				name := strings.Replace(path.Base(att.Name), path.Ext(att.Name), lang.Extensions[0], 1)
 				req.CodeFiles[path.Join("/box", name)] = data
@@ -160,7 +160,7 @@ func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.C
 				data, err := sh.base.AttachmentData(ctx, att.ID)
 				if err != nil {
 					slog.WarnContext(ctx, "Couldn't get attachment data", slog.Any("err", err))
-					return nil, kilonova.Statusf(500, "Couldn't get grader data")
+					return nil, errors.New("couldn't get grader data")
 				}
 				req.HeaderFiles[path.Join("/box", path.Base(att.Name))] = data
 			}

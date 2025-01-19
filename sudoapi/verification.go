@@ -43,7 +43,7 @@ func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, e
 
 	if user, err := s.UserFullByEmail(ctx, email); err != nil && !errors.Is(err, ErrNotFound) {
 		zap.S().Warn(err)
-		return Statusf(500, "Couldn't check if email is already used. Report to admin")
+		return errors.New("couldn't check if email is already used: report to admin")
 	} else if user != nil && user.ID != userID {
 		return Statusf(400, "Email is already in use")
 	}
@@ -60,7 +60,7 @@ func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, e
 
 	vid, err := s.db.CreateVerification(ctx, userID)
 	if err != nil {
-		return Statusf(500, "Couldn't create verification code")
+		return errors.New("couldn't create verification code")
 	}
 
 	var b bytes.Buffer

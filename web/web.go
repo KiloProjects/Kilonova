@@ -864,10 +864,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			slog.ErrorContext(ctx, "Uninitialized `isAdmin`")
 			return false
 		},
-		"isProposer": func() bool {
-			slog.ErrorContext(ctx, "Uninitialized `isProposer`")
-			return false
-		},
 		"discordIdentity": func(user *kilonova.UserFull) *discordgo.User {
 			slog.ErrorContext(ctx, "Uninitialized `discordIdentity`")
 			return nil

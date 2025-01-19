@@ -534,7 +534,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 				if err != nil || tag == nil {
 					id, err := base.CreateTag(ctx, mTag.Name, mTag.Type)
 					if err != nil {
-						zap.S().Warn("Couldn't create tag: ", err)
+						slog.WarnContext(ctx, "Couldn't create tag", slog.Any("err", err))
 						continue
 					}
 					realTagIDs = append(realTagIDs, id)

@@ -296,7 +296,7 @@ func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Pro
 			return nil, fmt.Errorf("couldn't get problem description: %w", err)
 		}
 
-		buf, err := s.RenderMarkdown(data, &kilonova.RenderContext{Problem: problem})
+		buf, err := s.RenderMarkdown(data, &kilonova.MarkdownRenderContext{Problem: problem})
 		if err != nil {
 			return data, fmt.Errorf("couldn't render markdown: %w", err)
 		}
@@ -327,7 +327,7 @@ func (s *BaseAPI) RenderedBlogPostDesc(ctx context.Context, post *kilonova.BlogP
 			return nil, fmt.Errorf("couldn't get blog post description: %w", err)
 		}
 
-		buf, err := s.RenderMarkdown(data, &kilonova.RenderContext{BlogPost: post})
+		buf, err := s.RenderMarkdown(data, &kilonova.MarkdownRenderContext{BlogPost: post})
 		if err != nil {
 			return data, fmt.Errorf("couldn't render markdown: %w", err)
 		}

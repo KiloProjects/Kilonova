@@ -18,12 +18,11 @@ var (
 	rctxKey = parser.NewContextKey()
 )
 
-// LocalRenderer is a local markdown renderer. It does not depend on any external services but it does not support mathjax rendering or any extensions to the markdown standard I intend to make.
-type LocalRenderer struct {
+type Renderer struct {
 	md goldmark.Markdown
 }
 
-func (r *LocalRenderer) Render(src []byte, ctx *kilonova.RenderContext) ([]byte, error) {
+func (r *Renderer) Render(src []byte, ctx *kilonova.MarkdownRenderContext) ([]byte, error) {
 	var buf bytes.Buffer
 
 	pctx := parser.NewContext()
@@ -35,7 +34,7 @@ func (r *LocalRenderer) Render(src []byte, ctx *kilonova.RenderContext) ([]byte,
 	return buf.Bytes(), err
 }
 
-func NewLocalRenderer() *LocalRenderer {
+func NewRenderer() *Renderer {
 	md := goldmark.New(
 		goldmark.WithExtensions(extension.GFM, extension.Footnote, &attNode{}, knkatex.Extension,
 			highlighting.NewHighlighting(
@@ -50,7 +49,7 @@ func NewLocalRenderer() *LocalRenderer {
 		goldmark.WithParserOptions(parser.WithAutoHeadingID(), parser.WithAttribute()),
 		goldmark.WithRendererOptions(html.WithHardWraps(), html.WithXHTML()),
 	)
-	return &LocalRenderer{md}
+	return &Renderer{md}
 }
 
 func HighlightFormatOptions() []chtml.Option {

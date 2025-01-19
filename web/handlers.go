@@ -1837,9 +1837,6 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 		"isAdmin": func() bool {
 			return authedUser != nil && authedUser.Admin
 		},
-		"isProposer": func() bool {
-			return authedUser != nil && (authedUser.Admin || authedUser.Proposer)
-		},
 		"discordIdentity": func(user *kilonova.UserFull) *discordgo.User {
 			dUser, err := rt.base.GetDiscordIdentity(r.Context(), user.ID)
 			if err != nil {

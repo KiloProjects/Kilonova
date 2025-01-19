@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/KiloProjects/kilonova/integrations/otel"
+	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/riandyrn/otelchi"
 	slogmulti "github.com/samber/slog-multi"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
@@ -112,6 +113,16 @@ func initLogger(debug, writeFile bool) {
 
 	zap.ReplaceGlobals(logg)
 
+	showUser := slogmulti.NewHandleInlineMiddleware(func(ctx context.Context, record slog.Record, next func(context.Context, slog.Record) error) error {
+		if user := util.UserBriefContext(ctx); user != nil {
+			record.AddAttrs(slog.Any("user", user))
+		}
+		if contentUser := util.ContentUserBriefContext(ctx); contentUser != nil {
+			record.AddAttrs(slog.Any("contentUser", contentUser))
+		}
+		return next(ctx, record)
+	})
+
 	skipContextCanceled := slogmulti.NewHandleInlineMiddleware(func(ctx context.Context, record slog.Record, next func(context.Context, slog.Record) error) error {
 		ok := true
 		for attr := range record.Attrs {
@@ -155,7 +166,7 @@ func initLogger(debug, writeFile bool) {
 		}))
 	}
 
-	slog.SetDefault(slog.New(slogmulti.Fanout(handlers...)))
+	slog.SetDefault(slog.New(slogmulti.Pipe(showUser).Handler(slogmulti.Fanout(handlers...))))
 }
 
 func launchProfiler() error {

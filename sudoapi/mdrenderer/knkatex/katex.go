@@ -106,7 +106,7 @@ func (katexExtension) Extend(m goldmark.Markdown) {
 			// TODO: Better checking for ctx and stuff
 			val, ok := ctx.Value(mjRenderCtxNode).(ast.Node)
 			if ok && val.OwnerDocument().Meta()["ctx"] != nil {
-				x, ok := val.OwnerDocument().Meta()["ctx"].(*kilonova.RenderContext)
+				x, ok := val.OwnerDocument().Meta()["ctx"].(*kilonova.MarkdownRenderContext)
 				if x != nil && ok && x.Problem != nil {
 					slog.DebugContext(ctx, "Markdown error", slog.Any("err", err), slog.Any("problem", x.Problem))
 				}
@@ -126,7 +126,7 @@ func (katexExtension) Extend(m goldmark.Markdown) {
 		if err := Render(ctx, &buf, []byte(key), true); err != nil {
 			val, ok := ctx.Value(mjRenderCtxNode).(ast.Node)
 			if ok && val.OwnerDocument().Meta()["ctx"] != nil {
-				x := val.OwnerDocument().Meta()["ctx"].(*kilonova.RenderContext)
+				x := val.OwnerDocument().Meta()["ctx"].(*kilonova.MarkdownRenderContext)
 				if x.Problem != nil {
 					slog.DebugContext(ctx, "Markdown error", slog.Any("err", err), slog.Any("problem", x.Problem))
 				}

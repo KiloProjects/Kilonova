@@ -368,12 +368,7 @@ func (s *BaseAPI) processLogEntry(ctx context.Context, val *logEntry, importantW
 	}
 
 	if val.Level != logLevelDiscord {
-		var s strings.Builder
-		if val.Author != nil {
-			s.WriteString(fmt.Sprintf("(by user #%d: %s)", val.Author.ID, val.Author.Name))
-		}
-		s.WriteString(": " + val.Message)
-		slog.LogAttrs(ctx, val.Level.toSlog(), s.String(), val.Attrs...)
+		slog.LogAttrs(context.WithValue(ctx, util.ContentUserKey, val.Author), val.Level.toSlog(), val.Message, val.Attrs...)
 	}
 
 	if val.Level.IsAuditLogLvl() && importantWebhook != nil {

@@ -100,7 +100,7 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 	// If markdown file and client asks for HTML format, render the markdown
 	// TODO: Extract from cache if able to
 	if path.Ext(att.Name) == ".md" && r.FormValue("format") == "html" {
-		data, err := s.base.RenderMarkdown(attData, &kilonova.RenderContext{Problem: util.Problem(r), BlogPost: util.BlogPost(r)})
+		data, err := s.base.RenderMarkdown(attData, &kilonova.MarkdownRenderContext{Problem: util.Problem(r), BlogPost: util.BlogPost(r)})
 		if err != nil {
 			slog.WarnContext(r.Context(), "Could not render markdown contents", slog.Any("err", err))
 			http.Error(w, "Could not render file", 500)

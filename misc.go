@@ -18,13 +18,9 @@ type MailerMessage struct {
 	HTMLContent  string
 }
 
-type RenderContext struct {
+type MarkdownRenderContext struct {
 	Problem  *Problem
 	BlogPost *BlogPost
-}
-
-type MarkdownRenderer interface {
-	Render(src []byte, ctx *RenderContext) ([]byte, error)
 }
 
 func MakeSlug(org string) string {

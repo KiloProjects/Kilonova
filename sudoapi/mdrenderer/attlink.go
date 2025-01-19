@@ -32,7 +32,7 @@ func (lt *LinkTransformer) Transform(doc *ast.Document, _ text.Reader, pc parser
 		}
 
 		if path.Base(path.Clean(string(h.Destination))) == string(h.Destination) {
-			ctx, ok := pc.Get(rctxKey).(*kilonova.RenderContext)
+			ctx, ok := pc.Get(rctxKey).(*kilonova.MarkdownRenderContext)
 			h.Destination = []byte(attachmentURL(ctx, ok, string(h.Destination)))
 			return ast.WalkSkipChildren, nil
 		}

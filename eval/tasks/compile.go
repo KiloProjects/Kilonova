@@ -3,12 +3,12 @@ package tasks
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
 	"slices"
 
-	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
 )
@@ -49,7 +49,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 	// TODO: I don't think we need this anymore
 	if req.Lang == nil {
 		slog.WarnContext(ctx, "Could not find language for submission", slog.Any("sub_id", req.ID), slog.Any("lang", req.Lang))
-		return resp, kilonova.Statusf(500, "No language found")
+		return resp, errors.New("no language found")
 	}
 
 	bucket, outName := bucketFromIDExec(req.ID)

@@ -43,7 +43,7 @@ type Grader interface {
 type BaseAPI struct {
 	db     *db.DB
 	mailer kilonova.Mailer
-	rd     kilonova.MarkdownRenderer
+	rd     *mdrenderer.Renderer
 
 	mgr *datastore.Manager
 
@@ -90,7 +90,7 @@ func GetBaseAPI(db *db.DB, mgr *datastore.Manager, mailer kilonova.Mailer) (*Bas
 	base := &BaseAPI{
 		db:     db,
 		mailer: mailer,
-		rd:     mdrenderer.NewLocalRenderer(),
+		rd:     mdrenderer.NewRenderer(),
 
 		mgr: mgr,
 
@@ -147,19 +147,19 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, error) {
 	}
 
 	// DB Initialization
-	db, err := db.NewPSQL(ctx, config.Common.DBDSN)
+	dbClient, err := db.NewPSQL(ctx, config.Common.DBDSN)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't connect to DB: %w", err)
 	}
 	zap.S().Info("Connected to DB")
 
 	if MigrateOnStart.Value() {
-		if err := db.RunMigrations(ctx); err != nil {
+		if err := dbClient.RunMigrations(ctx); err != nil {
 			return nil, fmt.Errorf("couldn't run migrations: %w", err)
 		}
 	}
 
-	return GetBaseAPI(db, mgr, knMailer)
+	return GetBaseAPI(dbClient, mgr, knMailer)
 }
 
 func (s *BaseAPI) InitQueryCounter(ctx context.Context) context.Context {

@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/KiloProjects/kilonova"
 	"github.com/dustin/go-humanize"
 	"github.com/klauspost/compress/zstd"
 	"go.uber.org/zap"
@@ -172,7 +171,7 @@ func (b *localBucket) Reader(name string) (io.ReadCloser, error) {
 	}
 
 	if _, err := os.Stat(b.filePath(name) + ".gz"); err == nil {
-		return nil, kilonova.Statusf(500, "Can't open file: gzip support removed")
+		return nil, errors.New("can't open file: gzip support removed")
 	}
 	return nil, err
 }

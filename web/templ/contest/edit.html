@@ -231,7 +231,7 @@
             <button onclick="createInvite(1)" class="my-2 btn btn-blue">{{getText "createSingleUseInvitation"}}</button>
         </div>
 
-        {{if isProposer}}
+        {{if authedUser.IsProposer}}
         <form class="segment-panel" id="contest_pblist_form">
             <h2 class="inline-block mb-2">{{getText "header.contest.create_pblist"}}</h2>
 

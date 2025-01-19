@@ -3,6 +3,8 @@ package sudoapi
 import (
 	"bytes"
 	"context"
+	"errors"
+	"log/slog"
 	"text/template"
 
 	"github.com/KiloProjects/kilonova"
@@ -20,14 +22,14 @@ var forgotPwdTempl = template.Must(template.New("emailTempl").Parse(passwordForg
 // Please provide a good context.
 func (s *BaseAPI) SendPasswordResetEmail(ctx context.Context, userID int, name, email, lang string) error {
 	if s.mailer == nil || !s.MailerEnabled() {
-		zap.S().Error("SendPasswordResetEmail called, but no mailer was provided to *sudoapi.BaseAPI")
-		return Statusf(500, "Mailer system was disabled by admins.")
+		slog.ErrorContext(ctx, "SendPasswordResetEmail called, but no mailer was provided to *sudoapi.BaseAPI")
+		return errors.New("mailer system was disabled by admins")
 	}
 
 	vid, err := s.db.CreatePwdResetRequest(ctx, userID)
 	if err != nil {
-		zap.S().Warn(err)
-		return Statusf(500, "Couldn't create password request code")
+		slog.WarnContext(ctx, "Could not create password reset request", slog.Any("err", err))
+		return errors.New("couldn't create password request code")
 	}
 
 	var b bytes.Buffer
