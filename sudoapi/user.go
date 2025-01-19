@@ -48,7 +48,7 @@ func (s *BaseAPI) UserFull(ctx context.Context, id int) (*kilonova.UserFull, err
 			return nil, err
 		}
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(ctx, "Couldn't get user", slog.Any("err", err))
 		}
 		return nil, fmt.Errorf("user not found: %w", ErrNotFound)
 	}

@@ -284,7 +284,7 @@ func (rt *Web) problems() http.HandlerFunc {
 		if q.DeepListID != nil {
 			list, err := rt.base.ProblemList(r.Context(), *q.DeepListID)
 			if err != nil {
-				slog.WarnContext(r.Context(), "Couldn't problem list", slog.Any("err", err))
+				slog.WarnContext(r.Context(), "Couldn't get problem list", slog.Any("err", err))
 				list = nil
 				q.DeepListID = nil
 			}
@@ -1473,7 +1473,7 @@ func (rt *Web) linkStatus() http.HandlerFunc {
 func (rt *Web) userSessionsPage(w http.ResponseWriter, r *http.Request, templ *template.Template, user *kilonova.UserFull) {
 	sessions, err := rt.base.UserSessions(r.Context(), user.ID)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(r.Context(), "Couldn't get sessions", slog.Any("err", err))
 		rt.statusPage(w, r, 500, err.Error())
 		return
 	}
@@ -1496,7 +1496,7 @@ func (rt *Web) userSessions() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "user")))
 		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Could not get user", slog.Any("err", err))
 			rt.statusPage(w, r, 500, "")
 			return
 		}
@@ -1613,7 +1613,7 @@ func (rt *Web) resendEmail() http.HandlerFunc {
 			return
 		}
 		if err := rt.base.SendVerificationEmail(context.WithoutCancel(r.Context()), u.ID, u.Name, u.Email, u.PreferredLanguage); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Could not resend verification email", slog.Any("err", err))
 			rt.statusPage(w, r, 500, "N-am putut retrimite emailul de verificare")
 			return
 		}
@@ -1633,7 +1633,7 @@ func (rt *Web) verifyEmail() http.HandlerFunc {
 
 		uid, err := rt.base.GetVerificationUser(r.Context(), vid)
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Could not get email verification", slog.Any("err", err))
 			rt.statusPage(w, r, 404, "")
 			return
 		}
@@ -1646,7 +1646,7 @@ func (rt *Web) verifyEmail() http.HandlerFunc {
 		}
 
 		if err := rt.base.ConfirmVerificationEmail(context.WithoutCancel(r.Context()), vid, user); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Could not confirm email", slog.Any("err", err))
 			rt.statusPage(w, r, 404, "")
 			return
 		}
@@ -1772,6 +1772,8 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 				b.WriteString("🇬🇧 English")
 			case "ro":
 				b.WriteString("🇷🇴 Română")
+			case "hu":
+				b.WriteString("🇭🇺 Magyar")
 			default:
 				b.WriteString(fmt.Language)
 			}
@@ -1872,9 +1874,7 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 			}
 			reg, err := rt.base.ContestRegistration(r.Context(), c.ID, authedUser.ID)
 			if err != nil {
-				if !errors.Is(err, kilonova.ErrNotFound) && !errors.Is(err, context.Canceled) {
-					zap.S().Warn(err)
-				}
+				slog.WarnContext(r.Context(), "Couldn't get contest registration", slog.Any("err", err))
 				return nil
 			}
 			return reg
@@ -1888,12 +1888,10 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 					return val
 				}
 			}
-			zap.S().Warnf("Cache miss: %d (Page: %q, cache: %#+v)", listID, r.URL.Path, pblistCache)
+			slog.WarnContext(r.Context(), "Cache miss", slog.Int("listID", listID), slog.String("page", r.URL.Path), slog.Any("cache", pblistCache))
 			cnt, err := rt.base.NumSolvedFromPblist(r.Context(), listID, authedUser.ID)
 			if err != nil {
-				if !errors.Is(err, context.Canceled) {
-					zap.S().Warn(err)
-				}
+				slog.WarnContext(r.Context(), "Couldn't get problem list number solved", slog.Any("err", err))
 				return -1
 			}
 			return cnt
@@ -1905,9 +1903,7 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 				if err == nil {
 					list, err := rt.base.ProblemList(r.Context(), id)
 					if err != nil {
-						if !errors.Is(err, context.Canceled) && !errors.Is(err, kilonova.ErrNotFound) {
-							zap.S().Warn(err)
-						}
+						slog.WarnContext(r.Context(), "Couldn't get problem list", slog.Any("err", err))
 					} else {
 						var ok bool
 						for _, pbid := range list.ProblemIDs() {

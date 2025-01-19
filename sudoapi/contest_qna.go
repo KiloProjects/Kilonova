@@ -52,7 +52,7 @@ func (s *BaseAPI) ContestAnnouncement(ctx context.Context, id int) (*kilonova.Co
 		return nil, fmt.Errorf("couldn't fetch announcement: %w", err)
 	}
 	if announcement == nil {
-		return nil, fmt.Errorf("couldn't fetch question: %w", ErrNotFound)
+		return nil, fmt.Errorf("couldn't fetch announcement: %w", ErrNotFound)
 	}
 	return announcement, nil
 }

@@ -13,7 +13,7 @@ import (
 func (s *BaseAPI) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, error) {
 	pblist, err := s.db.ProblemList(ctx, id)
 	if err != nil || pblist == nil {
-		return nil, fmt.Errorf("problem list not found: %w", ErrNotFound)
+		return nil, fmt.Errorf("problem list not found: %w", errors.Join(ErrNotFound, err))
 	}
 	return pblist, nil
 }
@@ -21,7 +21,7 @@ func (s *BaseAPI) ProblemList(ctx context.Context, id int) (*kilonova.ProblemLis
 func (s *BaseAPI) ProblemListByName(ctx context.Context, name string) (*kilonova.ProblemList, error) {
 	pblist, err := s.db.ProblemListByName(ctx, name)
 	if err != nil || pblist == nil {
-		return nil, fmt.Errorf("problem list not found: %w", ErrNotFound)
+		return nil, fmt.Errorf("problem list not found: %w", errors.Join(ErrNotFound, err))
 	}
 	return pblist, nil
 }

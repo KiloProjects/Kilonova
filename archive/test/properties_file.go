@@ -15,7 +15,6 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/gorilla/schema"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 )
 
 type Subtask struct {
@@ -92,12 +91,12 @@ func parsePropListItem(item string, field string) ([]int, error) {
 		} else if len(vals) == 2 {
 			start, err := strconv.Atoi(vals[0])
 			if err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(context.Background(), "Invalid list item value", slog.Any("err", err))
 				return nil, kilonova.Statusf(400, "Invalid %q string in properties, expected int", field)
 			}
 			end, err := strconv.Atoi(vals[1])
 			if err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(context.Background(), "Invalid list item value", slog.Any("err", err))
 				return nil, kilonova.Statusf(400, "Invalid %q string in properties, expected int", field)
 			}
 			for i := start; i <= end; i++ {
@@ -106,7 +105,7 @@ func parsePropListItem(item string, field string) ([]int, error) {
 		} else if len(vals) == 1 && len(vals[0]) > 0 {
 			val, err := strconv.Atoi(vals[0])
 			if err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(context.Background(), "Invalid list item value", slog.Any("err", err))
 				return nil, kilonova.Statusf(400, "Invalid %q string in properties, expected int", field)
 			}
 			glist = append(glist, val)

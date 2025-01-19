@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"iter"
 	"log/slog"
@@ -82,7 +83,7 @@ func (s *BaseAPI) DeleteContest(ctx context.Context, contest *kilonova.Contest) 
 		return Statusf(400, "Invalid contest")
 	}
 	if err := s.db.DeleteContest(ctx, contest.ID); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't delete contest", slog.Any("err", err))
 		return fmt.Errorf("couldn't delete contest: %w", err)
 	}
 	s.LogUserAction(ctx, "Removed contest", slog.Any("contest", contest))
@@ -92,7 +93,7 @@ func (s *BaseAPI) DeleteContest(ctx context.Context, contest *kilonova.Contest) 
 func (s *BaseAPI) Contest(ctx context.Context, id int) (*kilonova.Contest, error) {
 	contest, err := s.db.Contest(ctx, id)
 	if err != nil || contest == nil {
-		return nil, fmt.Errorf("contest not found: %w", ErrNotFound)
+		return nil, fmt.Errorf("contest not found: %w", errors.Join(ErrNotFound, err))
 	}
 	return contest, nil
 }

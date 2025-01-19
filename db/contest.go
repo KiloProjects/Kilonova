@@ -11,7 +11,6 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 )
 
 type dbContest struct {
@@ -356,7 +355,7 @@ func (s *DB) ContestICPCLeaderboard(ctx context.Context, contest *kilonova.Conte
 
 	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_icpc_view($1, $2, $3) WHERE EXISTS (SELECT 1 FROM users WHERE user_id = users.id AND "+fb.Where()+") ORDER BY num_solved DESC, penalty ASC NULLS LAST, last_time ASC NULLS LAST, user_id", fb.Args()...)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't get ICPC leaderboard", slog.Any("err", err))
 		return nil, err
 	}
 

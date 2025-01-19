@@ -3,9 +3,9 @@ package sudoapi
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/KiloProjects/kilonova/internal/config"
-	"go.uber.org/zap"
 )
 
 type ConfigUpdate struct {
@@ -35,12 +35,12 @@ func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) error {
 		config.Frontend.BannedHotProblems = upd.BannedHotProblems
 		defer func() {
 			if err := s.db.RefreshHotProblems(ctx, upd.BannedHotProblems); err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(ctx, "Couldn't refresh hot problems", slog.Any("err", err))
 			}
 		}()
 	}
 	if err := config.Save(); err != nil {
-		zap.S().Error(err)
+		slog.WarnContext(ctx, "Couldn't update config", slog.Any("err", err))
 		return fmt.Errorf("couldn't update config. This is *very* bad: %w", err)
 	}
 	return nil

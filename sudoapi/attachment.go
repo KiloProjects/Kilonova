@@ -3,6 +3,7 @@ package sudoapi
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -25,7 +26,7 @@ func (s *BaseAPI) Attachment(ctx context.Context, id int) (*kilonova.Attachment,
 		if err != nil {
 			slog.WarnContext(ctx, "Could not find attachment", slog.Any("err", err))
 		}
-		return nil, fmt.Errorf("attachment not found: %w", ErrNotFound)
+		return nil, fmt.Errorf("attachment not found: %w", errors.Join(ErrNotFound, err))
 	}
 	return attachment, nil
 }
@@ -33,7 +34,7 @@ func (s *BaseAPI) Attachment(ctx context.Context, id int) (*kilonova.Attachment,
 func (s *BaseAPI) ProblemAttachment(ctx context.Context, problemID, attachmentID int) (*kilonova.Attachment, error) {
 	attachment, err := s.db.Attachment(ctx, &kilonova.AttachmentFilter{ProblemID: &problemID, ID: &attachmentID})
 	if err != nil || attachment == nil {
-		return nil, fmt.Errorf("attachment not found: %w", ErrNotFound)
+		return nil, fmt.Errorf("attachment not found: %w", errors.Join(ErrNotFound, err))
 	}
 	return attachment, nil
 }
@@ -41,7 +42,7 @@ func (s *BaseAPI) ProblemAttachment(ctx context.Context, problemID, attachmentID
 func (s *BaseAPI) BlogPostAttachment(ctx context.Context, postID, attachmentID int) (*kilonova.Attachment, error) {
 	attachment, err := s.db.Attachment(ctx, &kilonova.AttachmentFilter{BlogPostID: &postID, ID: &attachmentID})
 	if err != nil || attachment == nil {
-		return nil, fmt.Errorf("attachment not found: %w", ErrNotFound)
+		return nil, fmt.Errorf("attachment not found: %w", errors.Join(ErrNotFound, err))
 	}
 	return attachment, nil
 }
@@ -49,7 +50,7 @@ func (s *BaseAPI) BlogPostAttachment(ctx context.Context, postID, attachmentID i
 func (s *BaseAPI) ProblemAttByName(ctx context.Context, problemID int, name string) (*kilonova.Attachment, error) {
 	attachment, err := s.db.Attachment(ctx, &kilonova.AttachmentFilter{ProblemID: &problemID, Name: &name})
 	if err != nil || attachment == nil {
-		return nil, fmt.Errorf("attachment not found: %w", ErrNotFound)
+		return nil, fmt.Errorf("attachment not found: %w", errors.Join(ErrNotFound, err))
 	}
 	return attachment, nil
 }
@@ -57,7 +58,7 @@ func (s *BaseAPI) ProblemAttByName(ctx context.Context, problemID int, name stri
 func (s *BaseAPI) BlogPostAttByName(ctx context.Context, postID int, name string) (*kilonova.Attachment, error) {
 	attachment, err := s.db.Attachment(ctx, &kilonova.AttachmentFilter{BlogPostID: &postID, Name: &name})
 	if err != nil || attachment == nil {
-		return nil, fmt.Errorf("attachment not found: %w", ErrNotFound)
+		return nil, fmt.Errorf("attachment not found: %w", errors.Join(ErrNotFound, err))
 	}
 	return attachment, nil
 }

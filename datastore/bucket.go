@@ -15,7 +15,6 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/klauspost/compress/zstd"
-	"go.uber.org/zap"
 )
 
 var (
@@ -80,12 +79,12 @@ func (b *localBucket) Statistics(refresh bool) *BucketStats {
 	}
 	entries, err := b.FileList()
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(context.Background(), "Couldn't get file listing", slog.Any("err", err))
 	}
 	for _, entry := range entries {
 		info, err := entry.Info()
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(context.Background(), "Couldn't get entry info", slog.Any("err", err))
 			return nil
 		}
 		b.lastStats.NumItems++
@@ -187,7 +186,7 @@ func (b *localBucket) ReadSeeker(name string) (io.ReadSeekCloser, error) {
 	if rsc, ok := rc.(io.ReadSeekCloser); ok {
 		return rsc, nil
 	}
-	zap.S().Debug("ReadSeeker called on compressed file")
+	slog.DebugContext(context.Background(), "ReadSeeker called on compressed file")
 	defer rc.Close()
 	f, err := os.CreateTemp("", "bucket-temp-*")
 	if err != nil {
@@ -251,7 +250,7 @@ func (b *localBucket) RunEvictionPolicy(ctx context.Context, logger *slog.Logger
 	for i := range entries {
 		info, err := entries[i].Info()
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(ctx, "Couldn't get dir entry info", slog.Any("err", err))
 			return -1, nil
 		}
 		evictionEntries[i].name = info.Name()
@@ -314,7 +313,7 @@ func (b *localBucket) ResetCache() error {
 	var errs []error
 	entries, err := b.FileList()
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(context.Background(), "Couldn't get file listing", slog.Any("err", err))
 	}
 	for _, entry := range entries {
 		if err := b.RemoveFile(entry.Name()); err != nil {

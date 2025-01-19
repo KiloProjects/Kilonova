@@ -28,7 +28,7 @@ func main() {
 	}
 
 	config.SetConfigPath(*confPath)
-	if err := config.Load(); err != nil {
+	if err := config.Load(ctx); err != nil {
 		slog.ErrorContext(ctx, "Error loading config", slog.Any("err", err))
 		os.Exit(1)
 	}

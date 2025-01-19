@@ -13,7 +13,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 )
 
 var (
@@ -161,7 +160,7 @@ func ProcessArchiveFile(ctx *ArchiveCtx, fpath string, base *sudoapi.BaseAPI) er
 
 		match, err := path.Match("statements/.pdf/*/problem.pdf", fpath)
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(ctx.ctx, "Error matching filepath", slog.Any("err", err))
 		}
 		if err == nil && match {
 			return ProcessPolygonPDFStatement(ctx, fpath)
@@ -230,7 +229,11 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 	}
 
 	if aCtx.props != nil && aCtx.props.Subtasks != nil && len(aCtx.props.SubtaskedTests) != len(aCtx.tests) {
-		zap.S().Info(len(aCtx.props.SubtaskedTests), len(aCtx.tests))
+		slog.InfoContext(ctx,
+			"Mismatched tests and subtasked tests",
+			slog.Int("tests", len(aCtx.tests)),
+			slog.Int("subtaskedTests", len(aCtx.props.SubtaskedTests)),
+		)
 		return kilonova.Statusf(400, "Mismatched number of tests in archive and tests that correspond to at least one subtask")
 	}
 
@@ -306,7 +309,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 
 		if mustAutofillTests {
 			// Try to deduce scoring for remaining tests
-			// zap.S().Info("Automatically inserting scores...")
+			// slog.InfoContext(ctx, "Automatically inserting scores...")
 			var n decimal.Decimal
 			totalScore := decimal.NewFromInt(100)
 			for _, test := range tests {
@@ -356,7 +359,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 		// If we are loading an archive, the user might want to remove all tests first
 		// So let's do it for them
 		if err := base.DeleteTests(ctx, pb.ID); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(ctx, "Couldn't delete tests", slog.Any("err", err))
 			return err
 		}
 
@@ -368,7 +371,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 			test.VisibleID = v.VisibleID
 			test.Score = v.Score
 			if err := base.CreateTest(ctx, &test); err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(ctx, "Couldn't create test", slog.Any("err", err))
 				return err
 			}
 
@@ -379,7 +382,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 				return fmt.Errorf("couldn't open() input file: %w", err)
 			}
 			if err := base.SaveTestInput(test.ID, f); err != nil {
-				zap.S().Warn("Couldn't create test input", err)
+				slog.WarnContext(ctx, "Couldn't save test input", slog.Any("err", err))
 				f.Close()
 				return fmt.Errorf("couldn't create test input: %w", err)
 			}
@@ -389,7 +392,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 				return fmt.Errorf("couldn't open() output file: %w", err)
 			}
 			if err := base.SaveTestOutput(test.ID, f); err != nil {
-				zap.S().Warn("Couldn't create test output", err)
+				slog.WarnContext(ctx, "Couldn't save test output", slog.Any("err", err))
 				f.Close()
 				return fmt.Errorf("couldn't create test output: %w", err)
 			}
@@ -397,7 +400,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 		}
 
 		if err := base.DeleteSubTasks(ctx, pb.ID); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(ctx, "Couldn't delete subtasks", slog.Any("err", err))
 			return fmt.Errorf("couldn't delete existing subtasks: %w", err)
 		}
 		if len(aCtx.scoreParameters) > 0 {
@@ -410,7 +413,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 						for i := startIdx; i < startIdx+*entry.Count && i < len(tests); i++ {
 							test, ok := createdTests[tests[i].VisibleID]
 							if !ok {
-								zap.S().Warn("Created test not found anymore", tests[i].VisibleID)
+								slog.WarnContext(ctx, "Created test not found anymore", slog.Int("id", tests[i].VisibleID))
 								continue
 							}
 							testIDs = append(testIDs, test.ID)
@@ -422,14 +425,14 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 						if test.Matches(entry.Match) {
 							test, ok := createdTests[test.VisibleID]
 							if !ok {
-								zap.S().Warn("Created test not found anymore", test.VisibleID)
+								slog.WarnContext(ctx, "Created test not found anymore", slog.Int("id", test.VisibleID))
 								continue
 							}
 							testIDs = append(testIDs, test.ID)
 						}
 					}
 				} else {
-					zap.S().Warn("Somehow score param doesn't have neither count nor match non-nil")
+					slog.WarnContext(ctx, "Somehow score param doesn't have neither count nor match non-nil")
 				}
 				if len(testIDs) > 0 {
 					// Tests are found, create subtask
@@ -439,7 +442,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 						Score:     entry.Score,
 						Tests:     testIDs,
 					}); err != nil {
-						zap.S().Warn(err)
+						slog.WarnContext(ctx, "Couldn't create subtask", slog.Any("err", err))
 						return fmt.Errorf("couldn't create subtask: %w", err)
 					}
 				}
@@ -462,7 +465,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 					Score:     stk.Score,
 					Tests:     tests,
 				}); err != nil {
-					zap.S().Warn(err)
+					slog.WarnContext(ctx, "Couldn't create subtask", slog.Any("err", err))
 					return fmt.Errorf("couldn't create subtask: %w", err)
 				}
 			}
@@ -522,7 +525,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 
 		if shouldUpd {
 			if err := base.UpdateProblem(ctx, pb.ID, upd, nil); err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(ctx, "Couldn't update problem", slog.Any("err", err))
 				return fmt.Errorf("couldn't update problem medatada: %w", err)
 			}
 		}
@@ -543,7 +546,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 				realTagIDs = append(realTagIDs, tag.ID)
 			}
 			if err := base.UpdateProblemTags(ctx, pb.ID, realTagIDs); err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(ctx, "Couldn't update problem tags", slog.Any("err", err))
 				return fmt.Errorf("couldn't update tags: %w", err)
 			}
 		}
@@ -567,19 +570,19 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 				// Then, remove existing editors
 				cEditors, err := base.ProblemEditors(ctx, pb.ID)
 				if err != nil {
-					zap.S().Warn(err)
+					slog.WarnContext(ctx, "Couldn't update problem editors", slog.Any("err", err))
 					return err
 				}
 				for _, ed := range cEditors {
 					if err := base.StripProblemAccess(ctx, pb.ID, ed.ID); err != nil {
-						zap.S().Warn(err)
+						slog.WarnContext(ctx, "Couldn't remove problem access", slog.Any("err", err))
 					}
 				}
 
 				// Lastly, add the new editors
 				for _, editor := range newEditors {
 					if err := base.AddProblemEditor(ctx, pb.ID, editor.ID); err != nil {
-						zap.S().Warn(err)
+						slog.WarnContext(ctx, "Couldn't add problem editor``", slog.Any("err", err))
 					}
 				}
 			}
@@ -593,11 +596,11 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 		for _, sub := range aCtx.submissions {
 			lang := base.Language(ctx, sub.lang)
 			if lang == nil {
-				zap.S().Warn("Skipping submission")
+				slog.InfoContext(ctx, "Skipping submission, unknown language")
 				continue
 			}
 			if _, err := base.CreateSubmission(ctx, params.Requestor, pb, sub.code, lang, nil, true); err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(ctx, "Couldn't create submission", slog.Any("err", err))
 			}
 		}
 	}
@@ -608,7 +611,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 func createAttachments(ctx context.Context, aCtx *ArchiveCtx, pb *kilonova.Problem, base *sudoapi.BaseAPI, params *TestProcessParams) error {
 	atts, err := base.ProblemAttachments(ctx, pb.ID)
 	if err != nil {
-		zap.S().Warn("Couldn't get problem attachments")
+		slog.WarnContext(ctx, "Couldn't get problem attachments", slog.Any("err", err))
 		return fmt.Errorf("couldn't get attachments: %w", err)
 	}
 
@@ -629,7 +632,7 @@ func createAttachments(ctx context.Context, aCtx *ArchiveCtx, pb *kilonova.Probl
 	}
 	if len(attIDs) > 0 {
 		if _, err := base.DeleteProblemAtts(ctx, pb.ID, attIDs); err != nil {
-			zap.S().Warn("Couldn't remove attachments")
+			slog.WarnContext(ctx, "Couldn't remove attachments", slog.Any("err", err))
 			return fmt.Errorf("couldn't delete attachments: %w", err)
 		}
 	}
@@ -641,7 +644,7 @@ func createAttachments(ctx context.Context, aCtx *ArchiveCtx, pb *kilonova.Probl
 
 		f, err := aCtx.fs.Open(att.FilePath)
 		if err != nil {
-			zap.S().Warn("Couldn't open attachment zip file", err)
+			slog.WarnContext(ctx, "Couldn't open attachment zip file", slog.Any("err", err))
 			continue
 		}
 
@@ -656,7 +659,7 @@ func createAttachments(ctx context.Context, aCtx *ArchiveCtx, pb *kilonova.Probl
 			Visible: att.Visible,
 			Exec:    att.Exec,
 		}, pb.ID, f, userID); err != nil {
-			zap.S().Warn("Couldn't create attachment", err)
+			slog.WarnContext(ctx, "Couldn't create attachment", slog.Any("err", err))
 			f.Close()
 			continue
 		}

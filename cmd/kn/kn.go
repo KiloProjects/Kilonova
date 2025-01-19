@@ -131,7 +131,7 @@ func initLogger(debug, writeFile bool) {
 			}
 			if err, isErr := attr.Value.Any().(error); isErr {
 				var opErr *net.OpError
-				if errors.As(err, &opErr) || errors.Is(err, context.Canceled) {
+				if errors.As(err, &opErr) || errors.Is(err, context.Canceled) || errors.Is(err, kilonova.ErrNotFound) {
 					ok = false
 					break
 				}

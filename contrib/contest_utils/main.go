@@ -301,7 +301,7 @@ func main() {
 
 	config.SetConfigPath(*confPath)
 	config.SetConfigV2Path(*flagPath)
-	if err := config.Load(); err != nil {
+	if err := config.Load(ctx); err != nil {
 		slog.ErrorContext(ctx, "Could not load config", slog.Any("err", err))
 		os.Exit(1)
 	}

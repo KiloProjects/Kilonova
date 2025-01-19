@@ -1,13 +1,13 @@
 package config
 
 import (
+	"context"
 	"errors"
+	"log/slog"
 	"os"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
-	"github.com/davecgh/go-spew/spew"
-	"go.uber.org/zap"
 )
 
 var (
@@ -112,24 +112,25 @@ func Save() error {
 	return file.Close()
 }
 
-func Load() error {
+func Load(ctx context.Context) error {
 	if configPath == "" {
 		return errors.New("invalid config path")
 	}
 	md, err := toml.DecodeFile(configPath, &c)
+	if err != nil {
+		slog.ErrorContext(ctx, "Couldn't load config file", slog.Any("err", err))
+		return err
+	}
 	if len(md.Undecoded()) > 0 {
-		zap.S().Warn("NOTE: There were some undecoded keys")
-		spew.Dump(md.Undecoded())
+		slog.InfoContext(ctx, "There were some undecoded keys: ", slog.Any("keys", md.Undecoded()))
 	}
-	if err == nil {
-		if c.Common.DefaultLang == "" {
-			zap.S().Warn("No default language set, defaulting to English")
-			c.Common.DefaultLang = "en"
-		}
-		if !(c.Common.DefaultLang == "en" || c.Common.DefaultLang == "ro") {
-			zap.S().Warnf("Invalid language %q\n", c.Common.DefaultLang)
-		}
-		spread()
+	if c.Common.DefaultLang == "" {
+		slog.WarnContext(ctx, "No default language set, defaulting to English")
+		c.Common.DefaultLang = "en"
 	}
-	return err
+	if !(c.Common.DefaultLang == "en" || c.Common.DefaultLang == "ro") {
+		slog.WarnContext(ctx, "Invalid language", slog.String("lang", c.Common.DefaultLang))
+	}
+	spread()
+	return nil
 }

@@ -3,11 +3,11 @@ package db
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/jackc/pgx/v5"
-	"go.uber.org/zap"
 )
 
 const createAttachmentQuery = "INSERT INTO attachments (visible, private, execable, name, data, last_updated_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;"
@@ -40,7 +40,7 @@ func (a *DB) CreateProblemAttachment(ctx context.Context, att *kilonova.Attachme
 
 	_, err = a.conn.Exec(ctx, "INSERT INTO problem_attachments_m2m (problem_id, attachment_id) VALUES ($1, $2)", problemID, id)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't associate problem with attachment", slog.Any("err", err))
 		return err
 	}
 	att.ID = id
@@ -62,7 +62,7 @@ func (a *DB) CreateBlogPostAttachment(ctx context.Context, att *kilonova.Attachm
 
 	_, err = a.conn.Exec(ctx, "INSERT INTO blog_post_attachments_m2m (blog_post_id, attachment_id) VALUES ($1, $2)", postID, id)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't associate blog post with attachment", slog.Any("err", err))
 		return err
 	}
 	att.ID = id
