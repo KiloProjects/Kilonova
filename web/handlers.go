@@ -334,7 +334,7 @@ func (rt *Web) tag() http.HandlerFunc {
 	templ := rt.parse(nil, "tags/tag.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		pbs, pbsCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
-			LookingUser: util.UserBrief(r), Look: true,
+			LookingUser: util.UserBrief(r), Look: true, LookFullyVisible: true,
 			Tags: []*kilonova.TagGroup{{TagIDs: []int{util.Tag(r).ID}}},
 
 			Limit: 50,

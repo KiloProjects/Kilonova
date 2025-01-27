@@ -195,7 +195,7 @@ func (rt *Web) Handler() http.Handler {
 		// not /posts/create since there could be a post that is slugged "create"
 		r.With(rt.mustBeProposer).Get("/createPost", rt.justRender("blogpost/create.html"))
 
-		r.Route("/tags", func(r chi.Router) {
+		r.With(rt.canViewTags).Route("/tags", func(r chi.Router) {
 			r.Get("/", rt.tags())
 			r.With(rt.ValidateTagID).Get("/{tagid}", rt.tag())
 		})

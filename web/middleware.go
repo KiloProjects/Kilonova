@@ -19,6 +19,10 @@ import (
 	"golang.org/x/text/language"
 )
 
+var (
+	AnyoneTags = config.GenFlag("feature.frontend.anyone_tags", true, "Anyone can view the list of tags")
+)
+
 // Language stuff
 var serverLangs = []language.Tag{
 	language.English,
@@ -110,6 +114,17 @@ func (rt *Web) ValidateTagID(next http.Handler) http.Handler {
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.TagKey, tag)))
+	})
+}
+
+// canViewTags makes sure the user can view tags
+func (rt *Web) canViewTags(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !(AnyoneTags.Value() || util.UserBrief(r).IsProposer()) {
+			rt.authedStatusPage(w, r, 400, "Nu ai voie să accesezi etichetele!")
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 
