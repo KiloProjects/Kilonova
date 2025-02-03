@@ -8,6 +8,7 @@ const (
 	DonationSourceUnknown DonationSource = ""
 	DonationSourceBMAC    DonationSource = "buymeacoffee"
 	DonationSourcePaypal  DonationSource = "paypal"
+	DonationSourceStripe  DonationSource = "stripe"
 	DonationSourceOther   DonationSource = "other"
 )
 

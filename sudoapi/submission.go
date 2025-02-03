@@ -512,13 +512,16 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 		!slices.Contains(SubForEveryoneBlacklist.Value(), sub.ProblemID) {
 
 		if user != nil {
-			// Get number of running virtual contests where user is participant for this problem
+			// Get number of running virtual contests where user is participant for this problem and the person trying to look is not a contest editor
 			// If it returns a nonzero number of results, then we need to filter out
 			numContests, err := s.ContestCount(ctx, kilonova.ContestFilter{
 				Running:      true,
 				ContestantID: &user.ID,
 				ProblemID:    &subProblem.ID,
 				Type:         kilonova.ContestTypeVirtual,
+
+				EditorID:  &user.ID,
+				NotEditor: true,
 			})
 			if err != nil {
 				slog.WarnContext(ctx, "Couldn't get running contests", slog.Any("err", err))

@@ -124,6 +124,7 @@ func Kilonova() error {
 				"-", "_",
 			))
 		}
+		fmt.Println(config.Profiles[i].Slug)
 		if err := base.CheckValidUsername(config.Profiles[i].Slug); err != nil {
 			return err
 		}

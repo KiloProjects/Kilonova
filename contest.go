@@ -165,8 +165,11 @@ type ContestFilter struct {
 	// Shows contests in which user with this ID was registered
 	ContestantID *int `json:"contestant_id"`
 
-	// Shows contests in which user with this ID is an editor
+	// Shows contests in which user with this ID is an editor or not.
+	// If NotEditor is true, then the contests are filtered such that the user ID is NOT an editor
 	EditorID *int `json:"editor_id"`
+	// NotEditor negates EditorID's behaviour
+	NotEditor bool `json:"not_editor"`
 
 	Future  bool `json:"future"`
 	Running bool `json:"running"`
