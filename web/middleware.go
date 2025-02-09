@@ -94,6 +94,31 @@ func (rt *Web) ValidateListID(next http.Handler) http.Handler {
 	})
 }
 
+// ValidateExternalResourceID makes sure the resource ID is a valid uint
+func (rt *Web) ValidateExternalResourceID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resourceID, err := strconv.Atoi(trimNonDigits(chi.URLParam(r, "resID")))
+		if err != nil {
+			rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
+			return
+		}
+		resources, err := rt.base.ExternalResources(r.Context(), kilonova.ExternalResourceFilter{
+			ID: &resourceID,
+
+			Look:        true,
+			LookingUser: util.UserBrief(r),
+		})
+		if err != nil || len(resources) != 1 {
+			rt.statusPage(w, r, 404, "Eticheta nu există sau nu ai acces la aceasta")
+			return
+		}
+
+		next.ServeHTTP(w, r.WithContext(
+			context.WithValue(r.Context(), util.ExternalResourceKey, resources[0]),
+		))
+	})
+}
+
 // ValidateTagID makes sure the tag ID is a valid uint
 func (rt *Web) ValidateTagID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -212,18 +237,7 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 
 // ValidatePasteID puts the ID and the Paste in the router context
 func (rt *Web) ValidatePasteID(next http.Handler) http.Handler {
-	flg, ok := config.GetFlag[bool]("feature.pastes.enabled")
-	if !ok {
-		slog.WarnContext(context.Background(), "Pastes feature flag not found")
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			rt.statusPage(w, r, 400, "Pastes are not available.")
-		})
-	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !flg.Value() {
-			rt.statusPage(w, r, 404, "Feature has been disabled by administrator.")
-			return
-		}
 		paste, err := rt.base.SubmissionPaste(r.Context(), chi.URLParam(r, "id"))
 		if err != nil {
 			rt.statusPage(w, r, 400, "Paste-ul nu există")
@@ -333,6 +347,18 @@ func (rt *Web) mustBeContestEditor(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (rt *Web) checkFlag(flag config.Flag[bool]) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !flag.Value() {
+				rt.statusPage(w, r, http.StatusPreconditionFailed, "Page has been disabled on this instance.")
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 func (rt *Web) initSession(next http.Handler) http.Handler {

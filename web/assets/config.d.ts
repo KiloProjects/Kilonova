@@ -34,11 +34,15 @@ export declare global {
 		name: string;
 	}
 
+	let bundled: typeof import("./app");
+
 	interface Window {
 		platform_info: PlatformInfo;
 		katex: katex;
 		htmx: typeof htmx;
+		bundled: typeof import("./app");
 	}
+
 	interface Document {
 		//adds definition to Document, but you can do the same with HTMLElement
 		addEventListener<K extends keyof CustomEventMap>(type: K, listener: (this: Document, ev: CustomEventMap[K]) => void): void;

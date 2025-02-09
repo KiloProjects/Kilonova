@@ -47,8 +47,9 @@
         <div class="mb-2">
             <textarea id="description" class="hidden" autofocus>{{- .Data -}}</textarea>
         </div>
-        <div class="mb-2">
+        <div class="mb-1">
             <button class="btn btn-blue">{{getText "button.update"}}</button>
+            <span class="block mt-2 text-muted text-sm">{{getText "hint.edit.description_save"}}</span>
         </div>
     </form>
 </div>
@@ -100,11 +101,13 @@
     }
     setType({{.Variant.Type}})
 
+    var currentLang = "{{.Variant.Language}}"
     async function reloadStatement(newLang, newType) {
         const rez = await bundled.getCall(`${apiPrefix}/get/attachmentByName/${formatStatement(newLang, newType)}`)
         if(rez.status !== "success") {
             document.getElementById("private_checkbox").checked = false
             document.getElementById("variantSelect").value = newLang
+            currentLang = newLang
             setType(newType)
             if (document.getElementById("attID").value != -1) {
                 cm.setValue("")
@@ -117,16 +120,19 @@
         document.getElementById("private_checkbox").checked = rez.data.metadata.private
         document.getElementById("attID").value = rez.data.metadata.id
         document.getElementById("variantSelect").value = newLang
+        currentLang = newLang
         setType(newType)
         cm.setValue(bundled.fromBase64(rez.data.data))
         changed = false
     }
 
-
     document.querySelectorAll("#variantList a").forEach(val => {
-        val.addEventListener("click", e => {
+        val.addEventListener("click",async e => {
             e.preventDefault()
-            reloadStatement(e.currentTarget.dataset.lang, e.currentTarget.dataset.type)
+            if (changed && !(await bundled.confirm(bundled.getText("variantChangeConfirm")))) {
+                return
+            }
+            await reloadStatement(e.target.dataset.lang, e.target.dataset.type)
         })
     })
 
@@ -164,6 +170,19 @@
         }
     }
 
-    document.getElementById("variantSelect").addEventListener("change", e => reloadStatement(e.target.value, document.getElementById("variantType").value))
+    document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            updateStatement(e);
+        }
+    });
+
+    document.getElementById("variantSelect").addEventListener("change", async e => {
+        if (changed && !(await bundled.confirm(bundled.getText("variantChangeConfirm")))) {
+            e.preventDefault()
+            e.target.value = currentLang
+            return
+        }
+        reloadStatement(e.target.value, document.getElementById("variantType").value)
+    })
     document.getElementById("statementUpdForm").addEventListener("submit", updateStatement)
 </script>

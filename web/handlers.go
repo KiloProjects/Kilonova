@@ -1335,11 +1335,6 @@ func (rt *Web) graderInfo() http.HandlerFunc {
 func (rt *Web) donationPage() http.HandlerFunc {
 	templ := rt.parse(nil, "donate.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !DonationsEnabled.Value() {
-			rt.statusPage(w, r, 404, "Donations have been disabled on this instance")
-			return
-		}
-
 		donations, err := rt.base.Donations(r.Context())
 		if err != nil {
 			zap.S().Warn(err)
@@ -1350,6 +1345,32 @@ func (rt *Web) donationPage() http.HandlerFunc {
 			Donations: donations,
 
 			Status: r.FormValue("status"),
+		})
+	}
+}
+
+func (rt *Web) externalResources() http.HandlerFunc {
+	templ := rt.parse(nil, "externalResources/index.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		rt.runTempl(w, r, templ, &ResourcesIndexParams{})
+	}
+}
+
+func (rt *Web) externalResource() http.HandlerFunc {
+	templ := rt.parse(nil, "externalResources/view.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		var author *kilonova.UserBrief
+		if res := util.ExternalResource(r); res.ProposedBy != nil {
+			if proposer, err := rt.base.UserBrief(r.Context(), *res.ProposedBy); err != nil {
+				slog.WarnContext(r.Context(), "Couldn't get external resource author", slog.Any("err", err))
+			} else {
+				author = proposer
+			}
+		}
+		rt.runTempl(w, r, templ, &ResourcesPageParams{
+			util.ExternalResource(r),
+			util.Problem(r),
+			author,
 		})
 	}
 }

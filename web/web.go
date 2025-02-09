@@ -179,13 +179,25 @@ func (rt *Web) Handler() http.Handler {
 		r.With(rt.mustBeAuthed).Get("/profile/{user}/linked", rt.linkStatus())
 		r.With(rt.mustBeAuthed).Get("/profile/{user}/sessions", rt.userSessions())
 		r.With(rt.mustBeAuthed).Get("/settings", rt.justRender("settings.html"))
-		r.Get("/donate", rt.donationPage())
+		r.With(rt.checkFlag(DonationsEnabled)).Get("/donate", rt.donationPage())
 		r.Get("/grader", rt.graderInfo())
 
 		r.Route("/problems", func(r chi.Router) {
 			r.Get("/", rt.problems())
 			r.Get("/random", rt.randomProblem())
 			r.Route("/{pbid}", rt.problemRouter)
+		})
+
+		// TODO: This is not goooddddd, this should be related to the problem, not necessarily something global.
+		// Admins will have their own panel to view them all maybe
+		r.Group(func(r chi.Router) {
+			r.Use(rt.checkFlag(sudoapi.ExternalResourcesEnabled))
+			r.Get("/externalResources", rt.externalResources())
+			//r.Get("/externalResources/create", rt.createExternalResourceView())
+			//r.Post("/externalResources/create", rt.createExternalResource())
+			r.With(rt.ValidateExternalResourceID).Route("/externalResources/{resID}", func(r chi.Router) {
+				r.Get("/", rt.externalResource())
+			})
 		})
 
 		r.Route("/posts", func(r chi.Router) {
@@ -228,7 +240,7 @@ func (rt *Web) Handler() http.Handler {
 			r.With(rt.ValidateSubmissionID).Get("/{id}", rt.submission())
 		})
 
-		r.With(rt.ValidatePasteID).Get("/pastes/{id}", rt.paste())
+		r.With(rt.checkFlag(sudoapi.PastesEnabled), rt.ValidatePasteID).Get("/pastes/{id}", rt.paste())
 
 		r.Route("/problem_lists", func(r chi.Router) {
 			r.Get("/", rt.pbListIndex())

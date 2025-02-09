@@ -1,3 +1,4 @@
+
 export class CheckboxManager {
 	overall?: HTMLInputElement;
 	checks?: NodeListOf<HTMLInputElement>;

@@ -306,6 +306,10 @@ ro = "Editare Informații Problemă"
 en = "Edit Description (Markdown)"
 ro = "Editare Descriere (Markdown)"
 
+[hint.edit.description_save]
+en = "Hint! You can use Ctrl+S to quickly save the text."
+ro = "Sfat util! Poți folosi Ctrl+S ca să salvezi rapid textul."
+
 [header.edit.attachments]
 en = "Edit Attachments"
 ro = "Editare Atașamente"
@@ -769,6 +773,10 @@ ro = "Avertisment: Acest enunț a fost tradus de către un LLM (precum ChatGPT).
 [existingVariants]
 en = "Existing variants"
 ro = "Variante existente"
+
+[variantChangeConfirm]
+en = "You have unsaved changes. Are you sure you want to change the file?"
+ro = "Ai modificări nesalvate. Sigur vrei să schimbi fișierul pe care îl editezi?"
 
 [selectedType]
 en = "Selected statement type"
@@ -3043,3 +3051,7 @@ ro = "Date de autentificare cont Kilonova"
 [mail.subject.password_recovery]
 en = "Recover Kilonova account password"
 ro = "Recuperare parolă cont Kilonova"
+
+[external_resources]
+en = "External resources"
+ro = "Resurse externe"

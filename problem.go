@@ -228,3 +228,83 @@ type ProblemChecklist struct {
 
 	NumSolutions int `json:"num_sols" db:"num_sols"`
 }
+
+type ResourceType string
+
+const (
+	ResourceTypeNone      ResourceType = ""
+	ResourceTypeEditorial ResourceType = "editorial"
+	ResourceTypeVideo     ResourceType = "video"
+	ResourceTypeSolution  ResourceType = "solution"
+	ResourceTypeArticle   ResourceType = "article"
+	ResourceTypeOther     ResourceType = "other"
+)
+
+type ExternalResource struct {
+	ID          int       `json:"id" db:"id"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	Name        string    `json:"name" db:"name"`
+	Description string    `json:"description" db:"description"`
+	URL         string    `json:"url" db:"url"`
+	Visible     bool      `json:"visible" db:"visible"`
+	Accepted    bool      `json:"accepted" db:"accepted"`
+
+	ProposedBy *int         `json:"proposed_by" db:"proposed_by"`
+	Type       ResourceType `json:"type" db:"type"`
+	ProblemID  int          `json:"problem_id" db:"problem_id"`
+
+	Position int `json:"position" db:"position"`
+}
+
+func (r *ExternalResource) LogValue() slog.Value {
+	if r == nil {
+		return slog.Value{}
+	}
+	return slog.GroupValue(slog.String("name", r.Name), slog.Any("type", r.Type), slog.Int("pbid", r.ProblemID))
+}
+
+type ExternalResourceFilter struct {
+	ID        *int         `json:"id"`
+	ProblemID *int         `json:"problem_id"`
+	Type      ResourceType `json:"type"`
+
+	Visible    *bool `json:"visible"`
+	Accepted   *bool `json:"accepted"`
+	ProposedBy *int  `json:"proposed_by"`
+
+	Look        bool       `json:"-"`
+	LookingUser *UserBrief `json:"-"`
+
+	Ordering   string `json:"ordering"`
+	Descending bool   `json:"descending"`
+
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+}
+
+type ExternalResourceUpdate struct {
+	Name        *string      `json:"name"`
+	Description *string      `json:"description"`
+	URL         *string      `json:"url"`
+	Visible     *bool        `json:"visible"`
+	Accepted    *bool        `json:"accepted"`
+	Type        ResourceType `json:"type"`
+	Position    *int         `json:"position"`
+}
+
+func (t ResourceType) FontAwesomeIcon() string {
+	switch t {
+	case ResourceTypeEditorial:
+		return "fa-book"
+	case ResourceTypeVideo:
+		return "fa-film"
+	case ResourceTypeSolution:
+		return "fa-file-circle-check"
+	case ResourceTypeArticle:
+		return "fa-newspaper"
+	case ResourceTypeOther:
+		return "fa-file-circle-question"
+	default:
+		return "fa-file-lines"
+	}
+}

@@ -31,6 +31,8 @@ const (
 	SubTaskKey = KNContextType("subtask")
 	// ProblemListKey is the key to be used for adding problem lists to context
 	ProblemListKey = KNContextType("problemList")
+	// ExternalResourceKey is the key to be used for adding external resources to context
+	ExternalResourceKey = KNContextType("externalResource")
 	// AttachmentKey is the key to be used for adding attachments to context
 	AttachmentKey = KNContextType("attachment")
 	// TagKey is the key to be used for adding tags to context
@@ -118,6 +120,10 @@ func Contest(r *http.Request) *kilonova.Contest {
 
 func Paste(r *http.Request) *kilonova.SubmissionPaste {
 	return getValueContext[kilonova.SubmissionPaste](r.Context(), PasteKey)
+}
+
+func ExternalResource(r *http.Request) *kilonova.ExternalResource {
+	return getValueContext[kilonova.ExternalResource](r.Context(), ExternalResourceKey)
 }
 
 func Test(r *http.Request) *kilonova.Test {

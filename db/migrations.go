@@ -38,6 +38,16 @@ var migrations = []migration{
 		name:    "Discord Avatar as main",
 		handler: runFile("003.use_discord_avatar.sql"),
 	},
+	{
+		id:      4,
+		name:    "Add Stripe support to donations workflow",
+		handler: runFile("004.stripe.sql"),
+	},
+	{
+		id:      5,
+		name:    "External resources support",
+		handler: runFile("005.external_resources.sql"),
+	},
 }
 
 var specialMigrations = []migration{
