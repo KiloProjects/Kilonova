@@ -350,6 +350,10 @@ type UserGenerationRequest struct {
 	MailSubject *string `json:"mail_subject"`
 }
 
+func (s *BaseAPI) RandomPassword() string {
+	return kilonova.RandomStringChars(7, userPasswordAlphabet)
+}
+
 // returns password, UserFull and eventual error
 func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationRequest) (string, *kilonova.UserFull, error) {
 
@@ -363,7 +367,7 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 	}
 
 	if args.Password == "" {
-		args.Password = kilonova.RandomStringChars(7, userPasswordAlphabet)
+		args.Password = s.RandomPassword()
 	}
 
 	var contest *kilonova.Contest

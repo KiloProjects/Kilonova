@@ -380,6 +380,11 @@ func (s *API) resetPassword(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Password reset. You may now log in with the updated credentials")
 }
 
+func (s *API) refreshPassword(ctx context.Context, _ struct{}) (string, error) {
+	pwd := s.base.RandomPassword()
+	return pwd, s.base.UpdateUserPassword(ctx, util.UserBriefContext(ctx).ID, pwd)
+}
+
 // ChangeEmail changes the email of the saved user
 func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(r.FormValue("email"))

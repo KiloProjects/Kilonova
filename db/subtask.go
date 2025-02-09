@@ -62,9 +62,7 @@ func (s *DB) SubTasks(ctx context.Context, pbid int) ([]*kilonova.SubTask, error
 	for _, ss := range st {
 		stk, err := s.internalToSubTask(ctx, ss)
 		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				slog.WarnContext(ctx, "Could not get subtask", slog.Any("err", err))
-			}
+			slog.WarnContext(ctx, "Could not get subtask", slog.Any("err", err))
 			continue
 		}
 		sts = append(sts, stk)

@@ -302,6 +302,7 @@ func (s *API) Handler() http.Handler {
 			r.Use(s.MustBeAdmin)
 			r.Post("/manage", s.manageUser)
 			r.Post("/deleteUser", s.deleteUser)
+			r.Post("/refreshPassword", webWrapper(s.refreshPassword))
 		})
 
 		r.With(s.MustBeAuthed, s.authedContentUser).Mount("/self", userRouter)

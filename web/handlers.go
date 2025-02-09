@@ -1158,12 +1158,12 @@ func (rt *Web) contests() http.HandlerFunc {
 		case "personal":
 			filter.ImportantContestsUID = &util.UserBrief(r).ID
 		default:
-			zap.S().Warn("Unknown page type: ", page)
+			slog.WarnContext(r.Context(), "Unknown page type", slog.String("type", page))
 		}
 
 		cnt, err := rt.base.ContestCount(r.Context(), filter)
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Couldn't get contest count", slog.Any("err", err))
 			cnt = -1
 		}
 
@@ -1177,9 +1177,7 @@ func (rt *Web) contests() http.HandlerFunc {
 
 		contests, err := rt.base.Contests(r.Context(), filter)
 		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				zap.S().Warn(err)
-			}
+			slog.WarnContext(r.Context(), "Couldn't get contests", slog.Any("err", err))
 			rt.statusPage(w, r, 400, "Nu am putut obține concursurile")
 			return
 		}
