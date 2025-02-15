@@ -1,7 +1,7 @@
-import { Notyf, INotyfOptions, NotyfNotification } from "notyf";
+import {INotyfOptions, Notyf, NotyfNotification} from "notyf";
 
 let notyfConf: INotyfOptions = {
-	position: { x: "right", y: "bottom" },
+	position: {x: "right", y: "bottom"},
 	duration: 6000,
 	ripple: false,
 	dismissible: true,
@@ -104,3 +104,19 @@ export function dismissToast(toast: NotyfNotification | undefined) {
 	}
 	notyf?.dismiss(toast);
 }
+
+window.addEventListener("DOMContentLoaded", () => {
+	document.body.addEventListener("showToast", e => {
+		switch (e.detail.level) {
+			case "success":
+				createToast({status: "success", description: e.detail.message});
+				break
+			case "error":
+				createToast({status: "error", description: e.detail.message});
+				break
+			default:
+				createToast({status: "info", description: e.detail.message});
+				break
+		}
+	})
+})

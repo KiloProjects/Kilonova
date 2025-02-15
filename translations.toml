@@ -775,8 +775,8 @@ en = "Existing variants"
 ro = "Variante existente"
 
 [variantChangeConfirm]
-en = "You have unsaved changes. Are you sure you want to change the file?"
-ro = "Ai modificări nesalvate. Sigur vrei să schimbi fișierul pe care îl editezi?"
+en = "You have unsaved changes. Are you sure you want to discard changes?"
+ro = "Ai modificări nesalvate. Sigur vrei să schimbi fișierul pe care îl editezi? Conținutul actual nu va fi salvat."
 
 [selectedType]
 en = "Selected statement type"
@@ -3055,3 +3055,19 @@ ro = "Recuperare parolă cont Kilonova"
 [external_resources]
 en = "External resources"
 ro = "Resurse externe"
+
+[suggest_resource]
+en = "Suggest resource"
+ro = "Propune resursă"
+
+[no_resources]
+en = "No resources found"
+ro = "Nu există resurse"
+
+[bulk_update_sources]
+en = "Bulk update source credits"
+ro = "Actualizare rapidă sursa problemei"
+
+[new_format]
+en = "New format"
+ro = "Format nou"

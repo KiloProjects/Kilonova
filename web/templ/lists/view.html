@@ -185,6 +185,7 @@ async function updateProblemVisibilities(e) {
 document.getElementById("problemBulkVizForm").addEventListener("submit", updateProblemVisibilities);
 
 </script>
+
 {{ end }}
 <script>
 let problemListID = {{.ID}};
@@ -232,6 +233,9 @@ document.getElementById("delButton").addEventListener("click", deleteProblemList
 
 {{ template "createpblist.html" $}}
 
+    {{if authedUser.IsAdmin}}
+        {{template "change_sources" .}}
+    {{end}}
 	{{ end }}
 	{{ end }}
 {{ end }}

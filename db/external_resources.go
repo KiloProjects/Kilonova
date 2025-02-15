@@ -10,10 +10,10 @@ import (
 
 func (s *DB) CreateExternalResource(ctx context.Context, resource *kilonova.ExternalResource) error {
 	return s.conn.QueryRow(ctx, `INSERT INTO external_resources (
-	name, description, url, visible, accepted, proposed_by, type, problem_id, position
+	name, description, url, visible, accepted, proposed_by, type, problem_id, position, language
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9
-) RETURNING id, created_at;`, resource.Name, resource.Description, resource.URL, resource.Visible, resource.Accepted, resource.ProposedBy, resource.Type, resource.ProblemID, resource.Position).Scan(&resource.ID, &resource.CreatedAt)
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+) RETURNING id, created_at;`, resource.Name, resource.Description, resource.URL, resource.Visible, resource.Accepted, resource.ProposedBy, resource.Type, resource.ProblemID, resource.Position, resource.Language).Scan(&resource.ID, &resource.CreatedAt)
 }
 
 func (s *DB) ExternalResources(ctx context.Context, filter kilonova.ExternalResourceFilter) ([]*kilonova.ExternalResource, error) {
@@ -57,8 +57,11 @@ func externalResourceFilterQuery(filter *kilonova.ExternalResourceFilter, fb *fi
 	if v := filter.Type; v != kilonova.ResourceTypeNone {
 		fb.AddConstraint("type = %s", v)
 	}
+	if v := filter.Language; v != nil {
+		fb.AddConstraint("language = %s", v)
+	}
 	if v := filter.Visible; v != nil {
-		fb.AddConstraint("visible = %v", v)
+		fb.AddConstraint("visible = %s", v)
 	}
 	if v := filter.Accepted; v != nil {
 		fb.AddConstraint("accepted = %s", v)
@@ -73,7 +76,7 @@ func externalResourceFilterQuery(filter *kilonova.ExternalResourceFilter, fb *fi
 			id = filter.LookingUser.ID
 		}
 
-		fb.AddConstraint("EXISTS (SELECT 1 FROM visible_pbs(%s) vpbs WHERE vpbs.problem_id = external_resources.problem_id)", id)
+		fb.AddConstraint("EXISTS (SELECT 1 FROM persistently_visible_pbs(%s) vpbs WHERE vpbs.problem_id = external_resources.problem_id)", id)
 	}
 }
 
@@ -88,7 +91,10 @@ func externalResourceUpdateQuery(upd *kilonova.ExternalResourceUpdate, fb *updat
 		fb.AddUpdate("url = %s", v)
 	}
 	if v := upd.Visible; v != nil {
-		fb.AddUpdate("visible = %v", v)
+		fb.AddUpdate("language = %s", v)
+	}
+	if v := upd.Visible; v != nil {
+		fb.AddUpdate("visible = %s", v)
 	}
 	if v := upd.Accepted; v != nil {
 		fb.AddUpdate("accepted = %s", v)
@@ -97,7 +103,7 @@ func externalResourceUpdateQuery(upd *kilonova.ExternalResourceUpdate, fb *updat
 		fb.AddUpdate("type = %s", v)
 	}
 	if v := upd.Position; v != nil {
-		fb.AddUpdate("position = %v", v)
+		fb.AddUpdate("position = %s", v)
 	}
 }
 

@@ -452,7 +452,7 @@ func (rt *Web) pbListProgressView() http.HandlerFunc {
 }
 
 func (rt *Web) pbListView() http.HandlerFunc {
-	templ := rt.parse(nil, "lists/view.html", "modals/pblist.html", "modals/pbs.html", "proposer/createpblist.html")
+	templ := rt.parse(nil, "lists/view.html", "modals/pblist.html", "modals/pbs.html", "proposer/createpblist.html", "modals/htmx/problem_sources.html")
 	fragmentTempl := rt.parse(nil, "modals/pblist.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		listIDs := []int{util.ProblemList(r).ID}

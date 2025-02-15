@@ -184,6 +184,30 @@
             </div>
         </details>
         {{ end }}
+        {{ if boolFlag "feature.external_resources.enabled" }}
+            <details class="segment-panel" {{if gt (len .ExternalResources) 0}}open{{end}} role="region"> <!-- External resources -->
+                <summary>
+                    <h2 class="inline-block">{{getText "external_resources"}}</h2>
+                </summary>
+                <div class="px-2">
+                    {{with .ExternalResources}}
+                        <div class="list-group">
+                            {{ range . }}
+                                <a style="text-overflow: ellipsis;" href="{{.URL}}" class="list-group-item flex justify-between">
+                                    <span><i class="fas fa-fw {{.Type.FontAwesomeIcon}}"></i> {{.Name}}</span>
+                                </a>
+                            {{ end }}
+                        </div>
+                    {{else}}
+
+                    {{end}}
+                    <div class="grid grid-cols-1 lg:grid-cols-2 justify-between">
+                        <a>{{getText "view_details"}}</a>
+                        <a class="lg:text-right">{{getText "suggest_resource"}}</a>
+                    </div>
+                </div>
+            </details>
+        {{ end }}
     </aside>
 </div>
 

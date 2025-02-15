@@ -43,10 +43,10 @@
         <button type="submit" class="btn btn-blue">{{ getText "button.create" }}</button>
     </form>
 
-{{if $nested}}
-</summary>
-{{else}}
+{{if not $nested}}
 </div>
+{{else}}
+</details>
 {{end}}
 
 

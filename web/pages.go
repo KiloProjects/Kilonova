@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"slices"
 	"strconv"
 	tparse "text/template/parse"
 
@@ -157,6 +158,8 @@ type ProblemParams struct {
 	OlderSubmissions *OlderSubmissionsParams
 
 	SelectedVariant *kilonova.StatementVariant
+
+	ExternalResources []*kilonova.ExternalResource
 }
 
 type ProblemTopbarParams struct {
@@ -450,41 +453,38 @@ func parseTempl(optFuncs template.FuncMap, modal bool, files ...string) *templat
 	if optFuncs != nil {
 		t = t.Funcs(optFuncs)
 	}
-	if true { //config.Common.Debug { // && false {
-		f, err := fs.ReadFile(templs, files[0])
-		if err != nil {
-			slog.ErrorContext(context.TODO(), "Could not read template file", slog.Any("err", err))
-			os.Exit(1)
-		}
-		ptrees, err := tparse.Parse(files[0], string(f), "{{", "}}", optFuncs, builtinTemporaryTemplate())
-		if err != nil {
-			slog.ErrorContext(context.TODO(), "Could not parse template file", slog.Any("err", err))
-			os.Exit(1)
-		}
+	f, err := fs.ReadFile(templs, files[0])
+	if err != nil {
+		slog.ErrorContext(context.TODO(), "Could not read template file", slog.Any("err", err))
+		os.Exit(1)
+	}
+	ptrees, err := tparse.Parse(files[0], string(f), "{{", "}}", optFuncs, builtinTemporaryTemplate())
+	if err != nil {
+		slog.ErrorContext(context.TODO(), "Could not parse template file", slog.Any("err", err))
+		os.Exit(1)
+	}
 
-		if !modal {
-			// Check title
-			if _, ok := ptrees["title"]; !ok {
-				slog.WarnContext(context.TODO(), "Page lacks a title", slog.String("path", files[0]))
-			}
-
-			// Check content
-			tree := ptrees["content"]
-			if tree != nil {
-				doWalk(files[0], tree.Root)
-			}
+	if !modal {
+		// Check title
+		if _, ok := ptrees["title"]; !ok {
+			slog.WarnContext(context.TODO(), "Page lacks a title", slog.String("path", files[0]))
 		}
 
+		// Check content
+		tree := ptrees["content"]
+		if tree != nil {
+			doWalk(files[0], tree.Root)
+		}
 	}
 	return template.Must(t.ParseFS(templs, files...))
 }
 
 func parseModal(optFuncs template.FuncMap, files ...string) *template.Template {
-	return parseTempl(optFuncs, true, files...)
+	return parseTempl(optFuncs, true, slices.Concat([]string{"modals/htmx/helpers.html"}, files)...)
 }
 
 func parse(optFuncs template.FuncMap, files ...string) *template.Template {
-	return parseTempl(optFuncs, false, append([]string{"layout.html", "util/navbar.html", "util/footer.html"}, files...)...)
+	return parseTempl(optFuncs, false, slices.Concat([]string{"layout.html", "util/navbar.html", "util/footer.html"}, files)...)
 }
 
 func builtinTemporaryTemplate() template.FuncMap {

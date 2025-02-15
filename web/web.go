@@ -247,6 +247,7 @@ func (rt *Web) Handler() http.Handler {
 			r.Get("/progress", rt.pbListProgressIndex())
 			r.With(rt.ValidateListID).Get("/{id}/progress", rt.pbListProgressView())
 			r.With(rt.ValidateListID).Get("/{id}", rt.pbListView())
+			r.With(rt.mustBeAdmin, rt.ValidateListID).Post("/{id}/updateSources", rt.updateProblemSources())
 		})
 
 		r.With(rt.mustBeAdmin).Route("/admin", func(r chi.Router) {
@@ -991,5 +992,35 @@ func removeTrailingZeros(score string) string {
 }
 
 func isHTMXRequest(r *http.Request) bool {
-	return r.Header.Get("HX-Request") == "true" || r.FormValue("force_htmx") == "true"
+	return (r.Header.Get("HX-Request") == "true" || r.FormValue("force_htmx") == "true") && r.FormValue("HX-Boosted") != "true"
+}
+
+type htmxShowToast struct {
+	Level   string `json:"level"`
+	Message string `json:"message"`
+}
+
+func setHTMXToast(w http.ResponseWriter, r *http.Request, level string, message string) {
+	data := struct {
+		ShowToast htmxShowToast `json:"showToast"`
+	}{
+		htmxShowToast{level, message},
+	}
+	result, err := json.Marshal(data)
+	if err != nil {
+		slog.WarnContext(r.Context(), "Could not marshal JSON", slog.Any("err", err))
+	}
+	w.Header().Set("HX-Trigger", string(result))
+}
+
+func htmxSuccessToast(w http.ResponseWriter, r *http.Request, message string) {
+	setHTMXToast(w, r, "success", message)
+}
+
+func htmxInfoToast(w http.ResponseWriter, r *http.Request, message string) {
+	setHTMXToast(w, r, "info", message)
+}
+
+func htmxErrorToast(w http.ResponseWriter, r *http.Request, message string) {
+	setHTMXToast(w, r, "error", message)
 }

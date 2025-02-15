@@ -246,6 +246,7 @@ type ExternalResource struct {
 	Name        string    `json:"name" db:"name"`
 	Description string    `json:"description" db:"description"`
 	URL         string    `json:"url" db:"url"`
+	Language    string    `json:"language" db:"language"`
 	Visible     bool      `json:"visible" db:"visible"`
 	Accepted    bool      `json:"accepted" db:"accepted"`
 
@@ -268,9 +269,10 @@ type ExternalResourceFilter struct {
 	ProblemID *int         `json:"problem_id"`
 	Type      ResourceType `json:"type"`
 
-	Visible    *bool `json:"visible"`
-	Accepted   *bool `json:"accepted"`
-	ProposedBy *int  `json:"proposed_by"`
+	Language   *string `json:"language"`
+	Visible    *bool   `json:"visible"`
+	Accepted   *bool   `json:"accepted"`
+	ProposedBy *int    `json:"proposed_by"`
 
 	Look        bool       `json:"-"`
 	LookingUser *UserBrief `json:"-"`
@@ -286,6 +288,7 @@ type ExternalResourceUpdate struct {
 	Name        *string      `json:"name"`
 	Description *string      `json:"description"`
 	URL         *string      `json:"url"`
+	Language    *string      `json:"language"`
 	Visible     *bool        `json:"visible"`
 	Accepted    *bool        `json:"accepted"`
 	Type        ResourceType `json:"type"`
