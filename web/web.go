@@ -8,6 +8,7 @@ import (
 	"embed"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"html"
 	"html/template"
 	"io"
@@ -104,14 +105,19 @@ func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int
 	})
 }
 
-func (rt *Web) problemRouter(r chi.Router) {
-	r.Use(rt.ValidateProblemID)
-	r.Use(rt.ValidateProblemVisible)
-	r.Get("/", rt.problem())
-	r.Get("/submissions", rt.problemSubmissions())
-	r.With(rt.mustBeAuthed).Get("/submit", rt.problemSubmit())
-	r.With(rt.ValidateProblemFullyVisible).Get("/archive", rt.problemArchive())
-	r.With(rt.mustBeProblemEditor).Route("/edit", rt.ProblemEditRouter)
+func (rt *Web) problemRouter(inContest bool) func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Use(rt.ValidateProblemID)
+		r.Use(rt.ValidateProblemVisible)
+		r.Get("/", rt.problem())
+		r.Get("/submissions", rt.problemSubmissions())
+		if !inContest {
+			r.With(rt.ValidateProblemFullyVisible).Get("/statistics", rt.problemStatistics())
+		}
+		r.With(rt.mustBeAuthed).Get("/submit", rt.problemSubmit())
+		r.With(rt.ValidateProblemFullyVisible).Get("/archive", rt.problemArchive())
+		r.With(rt.mustBeProblemEditor).Route("/edit", rt.ProblemEditRouter)
+	}
 }
 
 func (rt *Web) blogPostRouter(r chi.Router) {
@@ -185,7 +191,7 @@ func (rt *Web) Handler() http.Handler {
 		r.Route("/problems", func(r chi.Router) {
 			r.Get("/", rt.problems())
 			r.Get("/random", rt.randomProblem())
-			r.Route("/{pbid}", rt.problemRouter)
+			r.Route("/{pbid}", rt.problemRouter(false))
 		})
 
 		// TODO: This is not goooddddd, this should be related to the problem, not necessarily something global.
@@ -231,7 +237,7 @@ func (rt *Web) Handler() http.Handler {
 					r.Get("/edit", rt.contestEdit())
 					r.Get("/registrations", rt.contestRegistrations())
 				})
-				r.Route("/problems/{pbid}", rt.problemRouter)
+				r.Route("/problems/{pbid}", rt.problemRouter(true))
 			})
 		})
 
@@ -621,6 +627,11 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"humanizeBytes": func(cnt int64) string {
 			return humanize.IBytes(uint64(cnt))
 		},
+		"humanizeMaxSize":  func(cnt int) string { return humanize.IBytes(uint64(cnt) * 1024) },
+		"humanizeCodeSize": func(cnt int) string { return humanize.IBytes(uint64(cnt)) },
+		"formatMs": func(seconds float64) string {
+			return fmt.Sprintf("%dms", int(math.Floor(seconds*1000)))
+		},
 		"titleName": func(s string) string {
 			return cases.Title(language.English).String(s)
 		},
@@ -811,6 +822,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"usacoDuration": func(c *kilonova.Contest) string {
 			return (time.Duration(c.PerUserTime) * time.Second).String()
 		},
+		"add1": func(i int) int { return i + 1 },
 
 		"getCaptchaID": base.NewCaptchaID,
 		"pLanguages": func() map[string]string {
@@ -819,6 +831,10 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		},
 		"mustSolveCaptcha": func() bool {
 			slog.ErrorContext(ctx, "Uninitialized `mustSolveCaptcha`")
+			return false
+		},
+		"inModal": func() bool {
+			slog.ErrorContext(ctx, "Uninitialized `inModal`")
 			return false
 		},
 		"getText": func(key string, vals ...any) string {

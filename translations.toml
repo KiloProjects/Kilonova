@@ -294,6 +294,10 @@ ro = "Actualizare Teste | Problema #%d: %s"
 en = "Download data archive for"
 ro = "Descărcare arhivă date pentru "
 
+[header.problem_statistics]
+en = "Statistics for "
+ro = "Statistici pentru "
+
 [header.past_submissions]
 en = "Past submissions"
 ro = "Submisii anterioare"
@@ -449,10 +453,6 @@ ro = "Email confirmat pentru utilizatorul %s"
 [problemStats]
 en = "Statistics"
 ro = "Statistici"
-
-[problemStatsTitle]
-en = "Statistics for <code>%s</code>"
-ro = "Statistici pentru <code>%s</code>"
 
 [generalStats]
 en = "General statistics"
@@ -2492,6 +2492,10 @@ ro = "Verificări problemă"
 en = "Required items"
 ro = "Elemente necesare"
 
+[checklist_no_diagnostics]
+en = "No diagnostic messages (see sidebar)"
+ro = "Niciun mesaj de diagnosticare (vezi bara laterală)"
+
 [checklist_md]
 en = "Markdown statement"
 ro = "Enunț în format markdown"
@@ -3061,13 +3065,21 @@ en = "Suggest resource"
 ro = "Propune resursă"
 
 [no_resources]
-en = "No resources found"
-ro = "Nu există resurse"
+en = "No resources added"
+ro = "Nu există resurse asociate"
 
 [bulk_update_sources]
 en = "Bulk update source credits"
 ro = "Actualizare rapidă sursa problemei"
 
+[bulk_update_templ]
+en = "%s: Problem %%d"
+ro = "%s: Problema %%d"
+
 [new_format]
 en = "New format"
 ro = "Format nou"
+
+[misconfigured_modal]
+en = "This modal was misconfigured. Please report this bug."
+ro = "Acest modal a fost configurat gresit. Vă rugăm să raportați acest bug."

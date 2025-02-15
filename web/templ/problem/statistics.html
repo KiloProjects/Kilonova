@@ -1,0 +1,101 @@
+{{define "title"}}{{getText "header.problem_statistics"}} <code>{{.Problem.Name}}</code>{{end}}
+{{define "modal_content"}}
+    {{with .ProblemStatistics}}
+	    {{if inModal}}
+		<h2>{{getText "generalStats"}}</h2>
+		{{else}}
+		<h1>{{getText "generalStats"}}</h1>
+	    {{end}}
+		<p>{{getText "numUsersSolved" .NumSolved}}</p>
+		<p>{{getText "numUsersAttempted" .NumAttempted}}</p>
+        {{if .TimeLeaderboard.Count}}
+			<h2>{{getText "timeLeaderboard"}}</h2>
+			<table class="kn-table kn-table-slim">
+				<thead>
+				<tr>
+					<th class="kn-table-cell" scope="col">{{getText "position"}}</th>
+					<th class="kn-table-cell" scope="col">{{getText "name"}}</th>
+					<th class="kn-table-cell" scope="col">{{getText "memory"}}</th>
+				</tr>
+				</thead>
+				<tbody>
+                {{range $index, $sub := .TimeLeaderboard.Submissions}}
+					<tr class="kn-table-row">
+						<td class="kn-table-cell">{{add1 $index}}.</td>
+						<td class="kn-table-cell">{{with user .UserID}}<a
+									href="/profile/{{.Name}}">{{.Name}}</a>{{else}}????{{end}}</td>
+						<td class="kn-table-cell">
+                            {{if gt .MaxTime -1.0}}
+                                {{formatMs .MaxTime}}
+                            {{else}}-{{end}}
+						</td>
+					</tr>
+                {{end}}
+				</tbody>
+			</table>
+        {{end}}
+        {{if .MemoryLeaderboard.Count}}
+			<h2>{{getText "memoryLeaderboard"}}</h2>
+			<table class="kn-table kn-table-slim">
+				<thead>
+				<tr>
+					<th class="kn-table-cell" scope="col">{{getText "position"}}</th>
+					<th class="kn-table-cell" scope="col">{{getText "name"}}</th>
+					<th class="kn-table-cell" scope="col">{{getText "time"}}</th>
+				</tr>
+				</thead>
+				<tbody>
+                {{range $index, $sub := .MemoryLeaderboard.Submissions}}
+					<tr class="kn-table-row">
+						<td class="kn-table-cell">{{add1 $index}}.</td>
+						<td class="kn-table-cell">{{with user .UserID}}<a
+									href="/profile/{{.Name}}">{{.Name}}</a>{{else}}????{{end}}</td>
+						<td class="kn-table-cell">
+                            {{if gt .MaxMemory -1}}
+                                {{humanizeMaxSize .MaxMemory}}
+                            {{else}}-{{end}}
+						</td>
+					</tr>
+                {{end}}
+				</tbody>
+			</table>
+        {{end}}
+        {{if .SizeLeaderboard.Count}}
+	        {{if gt (index .SizeLeaderboard.Submissions 0).CodeSize 0}}
+				<h2>{{getText "sizeLeaderboard"}}</h2>
+				<table class="kn-table kn-table-slim">
+					<thead>
+					<tr>
+						<th class="kn-table-cell" scope="col">{{getText "position"}}</th>
+						<th class="kn-table-cell" scope="col">{{getText "name"}}</th>
+						<th class="kn-table-cell" scope="col">{{getText "codeSize"}}</th>
+					</tr>
+					</thead>
+					<tbody>
+	                {{range $index, $sub := .SizeLeaderboard.Submissions}}
+						<tr class="kn-table-row">
+							<td class="kn-table-cell">{{add1 $index}}.</td>
+							<td class="kn-table-cell">{{with user .UserID}}<a
+										href="/profile/{{.Name}}">{{.Name}}</a>{{else}}????{{end}}</td>
+							<td class="kn-table-cell">
+	                            {{if gt .CodeSize 0}}
+	                                {{humanizeCodeSize .MaxMemory}}
+	                            {{else}}-{{end}}
+							</td>
+						</tr>
+	                {{end}}
+					</tbody>
+				</table>
+	        {{end}}
+        {{end}}
+    {{end}}
+{{end}}
+
+{{define "content"}}
+    {{ template "topbar.html" . }}
+	<div class="page-holder">
+		<div class="page-content-full">
+            {{template "modal_content" .}}
+		</div>
+	</div>
+{{end}}

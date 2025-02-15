@@ -169,6 +169,13 @@ type ProblemTopbarParams struct {
 	Problem   *kilonova.Problem
 }
 
+type ProblemStatisticsParams struct {
+	Topbar *ProblemTopbar
+
+	Problem           *kilonova.Problem
+	ProblemStatistics *sudoapi.ProblemStatistics
+}
+
 type ProblemArchiveParams struct {
 	Topbar *ProblemTopbar
 
@@ -390,6 +397,12 @@ type OlderSubmissionsParams struct {
 	Submissions *sudoapi.Submissions
 	NumHidden   int
 	AllFinished bool
+}
+
+type ModalParams struct {
+	Small bool
+
+	ChildParams any
 }
 
 func doWalk(filename string, nodes ...tparse.Node) bool {

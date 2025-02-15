@@ -123,7 +123,6 @@ func (s *API) Handler() http.Handler {
 			r.Get("/", webWrapper(s.getProblem))
 			r.Get("/maxScore", s.maxScore)
 			r.Get("/maxScoreBreakdown", s.maxScoreBreakdown)
-			r.Get("/statistics", s.problemStatistics)
 			r.Get("/languages", webWrapper(s.problemLanguages))
 			r.With(s.validateProblemFullyVisible).Get("/tags", webWrapper(s.problemTags))
 

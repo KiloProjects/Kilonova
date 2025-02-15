@@ -832,6 +832,24 @@ func (rt *Web) problemSubmissions() http.HandlerFunc {
 	}
 }
 
+func (rt *Web) problemStatistics() http.HandlerFunc {
+	templ := rt.parse(nil, "problem/statistics.html", "problem/topbar.html", "modals/htmx/helpers.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		stats, err := rt.base.ProblemStatistics(r.Context(), util.Problem(r), util.UserBrief(r))
+		if err != nil {
+			rt.authedStatusPage(w, r, kilonova.ErrorCode(err), err.Error())
+			return
+		}
+
+		rt.runTemplModal(w, r, templ, &ProblemStatisticsParams{
+			Topbar: rt.problemTopbar(r, "pb_statistics", -1),
+
+			Problem:           util.Problem(r),
+			ProblemStatistics: stats,
+		})
+	}
+}
+
 func (rt *Web) problemSubmit() http.HandlerFunc {
 	templ := rt.parse(nil, "problem/pb_submit.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -1969,6 +1987,9 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 			ip, _ := rt.base.GetRequestInfo(r)
 			return rt.base.MustSolveCaptcha(r.Context(), ip)
 		},
+		"inModal": func() bool {
+			return name == "modal"
+		},
 		"prepareDuration": func() time.Duration {
 			return renderStart.Sub(r.Context().Value(MiddlewareStartKey).(time.Time))
 		},
@@ -1984,6 +2005,15 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 		fmt.Fprintf(w, "Error executing template, report to admin: %s", err)
 		slog.WarnContext(r.Context(), "Error executing template", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", util.UserBrief(r)))
 	}
+}
+
+// Runs template, but if hx_modal form parameter is "true" and template has "modal_content" template defined, can also return a modal
+func (rt *Web) runTemplModal(w http.ResponseWriter, r *http.Request, templ *template.Template, data any) {
+	if r.FormValue("hx_modal") == "true" && templ.Lookup("modal_content") != nil {
+		rt.runModal(w, r, templ, "modal", &ModalParams{false, data})
+		return
+	}
+	rt.runTempl(w, r, templ, data)
 }
 
 func (rt *Web) runTempl(w http.ResponseWriter, r *http.Request, templ *template.Template, data any) {
