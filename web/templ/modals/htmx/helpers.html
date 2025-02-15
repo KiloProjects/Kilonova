@@ -1,1 +1,20 @@
-<!--TODO-->
+{{define "modal"}}
+    <div hx-swap-oob="beforeend:#modals">
+        <dialog class="modal-container {{if not .Small}}modal-container-large{{end}}">
+            <div class="modal-header">
+                <h1>{{block "title" .ChildParams}}{{end}}</h1>
+                <form method="dialog">
+                    <button type="submit">
+                        <i class="modal-close"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="modal-content">
+                {{block "modal_content" .ChildParams}}
+
+                {{end}}
+            </div>
+            <div class="modal-footer">{{block "modal_footer" .ChildParams}}{{end}}</div>
+        </dialog>
+    </div>
+{{end}}

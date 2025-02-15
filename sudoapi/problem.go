@@ -318,6 +318,7 @@ type ProblemStatistics struct {
 	NumSolved    int `json:"num_solved"`
 	NumAttempted int `json:"num_attempted"`
 
+	// TODO: This feels like bringing a gun to a knife fight, it's probably too much to filter it like this
 	SizeLeaderboard   *Submissions `json:"size_leaderboard"`
 	MemoryLeaderboard *Submissions `json:"memory_leaderboard"`
 	TimeLeaderboard   *Submissions `json:"time_leaderboard"`

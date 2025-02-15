@@ -563,6 +563,9 @@
 	.modal-footer {
 		@apply flex border-t-2 border-gr justify-end items-center pt-2;
 	}
+	.modal-footer:not(:has(:first-child)) {
+		@apply hidden;
+	}
 
 	.contest-grid {
 		@apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2;

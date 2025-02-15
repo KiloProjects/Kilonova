@@ -98,6 +98,9 @@
                     {{template "boolean_expression" (ne .Checklist.NumMarkdown 0)}} {{getText "checklist_md"}};
                 </li>
                 <li>
+                    {{template "boolean_expression" (eq (len .Diagnostics) 0)}} {{getText "checklist_no_diagnostics"}};
+                </li>
+                <li>
                     {{template "boolean_expression" (ne .Checklist.NumTests 0)}} {{getText "checklist_tests" .Checklist.NumTests}};
                 </li>
                 <li>

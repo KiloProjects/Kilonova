@@ -1,16 +1,15 @@
-import { h, Fragment, render } from "preact";
-import { useEffect, useRef, useState } from "preact/hooks";
-import register from "preact-custom-element";
+import {Fragment, h, render} from "preact";
+import {useEffect, useRef, useState} from "preact/hooks";
 import getText from "../translation";
 
 export function KNModal({
-	open,
-	title,
-	children,
-	footer,
-	closeCallback,
-	large = true,
-}: {
+	                        open,
+	                        title,
+	                        children,
+	                        footer,
+	                        closeCallback,
+	                        large = true,
+                        }: {
 	open: boolean;
 	title: any;
 	children?: preact.ComponentChildren;
@@ -20,8 +19,6 @@ export function KNModal({
 }) {
 	let [lastState, setLastState] = useState<boolean | null>(null);
 	let ref = useRef<HTMLDialogElement>(null);
-
-	ref.current?.addEventListener;
 
 	useEffect(() => {
 		if (open == lastState) {
@@ -41,7 +38,8 @@ export function KNModal({
 	}, [open]);
 
 	return (
-		<dialog onClose={closeCallback} onCancel={closeCallback} ref={ref} class={`modal-container ${large && "modal-container-large"}`} id="max_score_dialog">
+		<dialog onClose={closeCallback} onCancel={closeCallback} ref={ref}
+		        class={`modal-container ${large && "modal-container-large"}`}>
 			<div class="modal-header">
 				<h1>{title}</h1>
 				<form method="dialog" onSubmit={closeCallback}>
@@ -92,10 +90,24 @@ export function confirm(message: string): Promise<boolean> {
 
 
 document.addEventListener("htmx:confirm", e => {
-	if(!e.detail.target.hasAttribute("hx-confirm")) return
+	if (!e.detail.target.hasAttribute("hx-confirm")) return
 
 	e.preventDefault();
 	confirm(e.detail.question).then(ok => {
-		if(ok) e.detail.issueRequest(true);
+		if (ok) e.detail.issueRequest(true);
 	})
 })
+
+document.addEventListener("DOMContentLoaded", e => {
+	const observer = new MutationObserver(records => {
+		for (let record of records) {
+			for (let node of record.addedNodes) {
+				if (node instanceof HTMLDialogElement) {
+					node.showModal();
+				}
+			}
+		}
+	})
+	observer.observe(document.getElementById("modals")!, {childList: true})
+})
+

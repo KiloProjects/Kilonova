@@ -42,6 +42,8 @@
     {{ else if (eq .Topbar.Page `pb_archive`) }}
 	{{getText "header.problem_archive"}} <b>{{.Problem.Name}}</b>
 
+    {{else if (eq .Topbar.Page `pb_statistics`) }}
+    {{getText "header.problem_statistics"}} <b>{{.Problem.Name}}</b>
     {{ else }}
 
     {{/* Edit page */}}
@@ -115,11 +117,9 @@
             {{getText "submissions"}}
         </a>
     {{ end }}
-    {{ if problemFullyVisible }}
-        {{if or (not .Topbar.Contest) (or (.Topbar.Contest.Ended) (isContestEditor .Topbar.Contest))}}
-            <div class="topbar-separator"></div>
-            <a class="p-1 problem_statistics" href="#" data-problem="{{encodeJSON .Topbar.Problem}}">{{getText "problemStats"}}</a>
-        {{end}}
+    {{ if and problemFullyVisible (not .Topbar.Contest) }}
+        <div class="topbar-separator"></div>
+        <a class="p-1 {{if (eq .Topbar.Page `pb_statistics`)}} topbar-selected {{end}}" hx-swap="none" hx-get="/problems/{{.Topbar.Problem.ID}}/statistics?hx_modal=true" href="{{.Topbar.URLPrefix}}/problems/{{.Topbar.Problem.ID}}/statistics">{{getText "problemStats"}}</a>
     {{ end }}
     {{ if .Topbar.IsProblemEditor }}
         <div class="topbar-separator topbar-separator-lg"></div>

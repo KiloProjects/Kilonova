@@ -1,0 +1,17 @@
+{{define "change_sources"}}
+<form id="change_sources_panel" class="segment-panel reset-list" hx-post="/problem_lists/{{.ID}}/updateSources" hx-swap="outerHTML">
+    <h2>{{getText "bulk_update_sources"}}</h2>
+    <ul>
+        {{ range (listProblems authedUser .) }}
+            <li><a href="/problems/{{.ID}}">{{.Name}}</a>: {{with .SourceCredits}}<code>{{.}}</code>{{else}}-{{end}}</li>
+        {{ else }}
+            <div>{{getText "noPbFound"}}</div>
+        {{end}}
+    </ul>
+    <label class="block mb-2">
+        <span class="form-label">{{getText "new_format"}}:</span>
+    <input class="form-input" id="new_format" name="new_format" type="text" hx-preserve="true" value="{{getText "bulk_update_templ" .Title}}" hx-disabled-elt="this" required />
+    </label>
+    <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
+</form>
+{{end}}
