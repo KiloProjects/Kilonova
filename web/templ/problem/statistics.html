@@ -8,7 +8,7 @@
 	    {{end}}
 		<p>{{getText "numUsersSolved" .NumSolved}}</p>
 		<p>{{getText "numUsersAttempted" .NumAttempted}}</p>
-        {{if .TimeLeaderboard.Count}}
+        {{if .TimeLeaderboard.Submissions}}
 			<h2>{{getText "timeLeaderboard"}}</h2>
 			<table class="kn-table kn-table-slim">
 				<thead>
@@ -34,7 +34,7 @@
 				</tbody>
 			</table>
         {{end}}
-        {{if .MemoryLeaderboard.Count}}
+        {{if .MemoryLeaderboard.Submissions}}
 			<h2>{{getText "memoryLeaderboard"}}</h2>
 			<table class="kn-table kn-table-slim">
 				<thead>
@@ -60,7 +60,7 @@
 				</tbody>
 			</table>
         {{end}}
-        {{if .SizeLeaderboard.Count}}
+        {{if .SizeLeaderboard.Submissions}}
 	        {{if gt (index .SizeLeaderboard.Submissions 0).CodeSize 0}}
 				<h2>{{getText "sizeLeaderboard"}}</h2>
 				<table class="kn-table kn-table-slim">
