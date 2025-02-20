@@ -480,7 +480,7 @@ func getGravatar(ctx context.Context, email string, size int) (io.ReadSeekCloser
 	v.Add("d", "identicon")
 	bSum := md5.Sum([]byte(email))
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("https://gravatar.com/avatar/%s.png?%s", hex.EncodeToString(bSum[:]), v.Encode()), nil)
+	req, _ := http.NewRequestWithContext(context.WithoutCancel(ctx), "GET", fmt.Sprintf("https://gravatar.com/avatar/%s.png?%s", hex.EncodeToString(bSum[:]), v.Encode()), nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
 	resp, err := otelhttp.DefaultClient.Do(req)
@@ -558,7 +558,7 @@ func discordAvatarBucketName(user *kilonova.UserFull, size int) string {
 }
 
 func getDiscordAvatar(ctx context.Context, dUser *discordgo.User, size int) (io.ReadSeekCloser, time.Time, error) {
-	req, _ := http.NewRequestWithContext(ctx, "GET", dUser.AvatarURL(strconv.Itoa(size)), nil)
+	req, _ := http.NewRequestWithContext(context.WithoutCancel(ctx), "GET", dUser.AvatarURL(strconv.Itoa(size)), nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
 	resp, err := otelhttp.DefaultClient.Do(req)

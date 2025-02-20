@@ -79,7 +79,7 @@
 										href="/profile/{{.Name}}">{{.Name}}</a>{{else}}????{{end}}</td>
 							<td class="kn-table-cell">
 	                            {{if gt .CodeSize 0}}
-									<a href="/submissions/{{$sub.ID}}">{{humanizeCodeSize .MaxMemory}}</a>
+									<a href="/submissions/{{$sub.ID}}">{{humanizeCodeSize .CodeSize}}</a>
 	                            {{else}}-{{end}}
 							</td>
 						</tr>
