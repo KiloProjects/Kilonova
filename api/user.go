@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Yiling-J/theine-go"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -328,38 +330,56 @@ func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Successfully changed password")
 }
 
-func (s *API) sendForgotPwdMail(w http.ResponseWriter, r *http.Request) {
-	var args struct {
-		Email string `json:"email"`
-	}
-	if err := parseRequest(r, &args); err != nil {
-		errorData(w, err, 500)
-		return
-	}
-	if args.Email == "" {
-		errorData(w, "No email address specified", 400)
-		return
-	}
-	if !s.base.MailerEnabled() {
-		errorData(w, "Mailing subsystem was disabled by administrator", 400)
-		return
-	}
-	user, err := s.base.UserFullByEmail(r.Context(), args.Email)
+func (s *API) sendForgotPwdMail() http.HandlerFunc {
+	throttler, err := theine.NewBuilder[string, time.Time](5000).Build()
 	if err != nil {
-		if errors.Is(err, kilonova.ErrNotFound) {
-			returnData(w, "If the provided email address is correct, an email should arrive shortly.")
+		panic(err)
+	}
+	var mu sync.Mutex
+	return func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		var args struct {
+			Email string `json:"email"`
+		}
+		if err := parseRequest(r, &args); err != nil {
+			errorData(w, err, 500)
 			return
 		}
-		statusError(w, err)
-		return
-	}
-	go func(user *kilonova.UserFull) {
-		if err := s.base.SendPasswordResetEmail(context.WithoutCancel(r.Context()), user.ID, user.Name, user.Email, user.PreferredLanguage); err != nil {
-			slog.InfoContext(r.Context(), "Could not send password reset email", slog.Any("err", err))
+		if args.Email == "" {
+			errorData(w, "No email address specified", 400)
+			return
 		}
-	}(user)
+		if !s.base.MailerEnabled() {
+			errorData(w, "Mailing subsystem was disabled by administrator", 400)
+			return
+		}
+		if lastUpdated, ok := throttler.Get(args.Email); ok && time.Since(lastUpdated) <= 2*time.Minute {
+			errorData(w, "Please wait a little longer until requesting another password reset email!", 401)
+			return
+		}
+		if !throttler.SetWithTTL(args.Email, time.Now(), 1, 10*time.Minute) {
+			fmt.Println("bruh")
+		}
 
-	returnData(w, "If the provided email address is correct, an email should arrive shortly.")
+		user, err := s.base.UserFullByEmail(r.Context(), args.Email)
+		if err != nil {
+			if errors.Is(err, kilonova.ErrNotFound) {
+				returnData(w, "If the provided email address is correct, an email should arrive shortly.")
+				return
+			}
+			statusError(w, err)
+			return
+		}
+
+		go func(user *kilonova.UserFull) {
+			if err := s.base.SendPasswordResetEmail(context.WithoutCancel(r.Context()), user.ID, user.Name, user.Email, user.PreferredLanguage); err != nil {
+				slog.InfoContext(r.Context(), "Could not send password reset email", slog.Any("err", err), slog.String("email", args.Email))
+			}
+		}(user)
+
+		returnData(w, "If the provided email address is correct, an email should arrive shortly.")
+	}
 }
 
 func (s *API) resetPassword(w http.ResponseWriter, r *http.Request) {

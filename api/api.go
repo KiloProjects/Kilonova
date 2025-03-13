@@ -4,9 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"log/slog"
 	"mime"
 	"net/http"
+	"net/url"
 	"sync"
 
 	"github.com/KiloProjects/kilonova"
@@ -32,8 +36,29 @@ func New(base *sudoapi.BaseAPI) *API {
 	return &API{base: base}
 }
 
-// Handler is the magic behind the API
-func (s *API) Handler() http.Handler {
+func (s *API) HandlerV2() http.Handler {
+	prefixURL, err := url.Parse(config.Common.HostPrefix)
+	if err != nil {
+		panic(err)
+	}
+
+	humaConf := huma.DefaultConfig("Kilonova", "2.0")
+	humaConf.Servers = []*huma.Server{
+		{URL: prefixURL.JoinPath("api/v2").String()},
+	}
+	r := chi.NewRouter()
+	api := humachi.New(r, humaConf)
+	api.UseMiddleware(s.SetupSessionV2)
+
+	huma.Get(api, "/", func(ctx context.Context, _ *struct{}) (*struct{ Response string }, error) {
+		return &struct{ Response string }{Response: "hellow"}, nil
+	}, huma.OperationTags())
+
+	return r
+}
+
+// HandlerV1 is the magic behind the API
+func (s *API) HandlerV1() http.Handler {
 	r := chi.NewRouter()
 	r.Use(s.SetupSession)
 	r.Use(s.filterUserAgent)
@@ -105,7 +130,7 @@ func (s *API) Handler() http.Handler {
 
 		r.With(s.MustBeAuthed).Post("/extendSession", s.extendSession)
 
-		r.With(s.MustBeVisitor).Post("/forgotPassword", s.sendForgotPwdMail)
+		r.With(s.MustBeVisitor).Post("/forgotPassword", s.sendForgotPwdMail())
 		r.Post("/resetPassword", s.resetPassword)
 	})
 	r.Route("/problem", func(r chi.Router) {

@@ -208,7 +208,8 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 	r.Use(middleware.RequestID)
 	r.Use(otelchi.Middleware("kilonova-web", otelchi.WithChiRoutes(r)))
 
-	r.Mount("/api", api.New(base).Handler())
+	r.Mount("/api", api.New(base).HandlerV1())
+	//r.Mount("/api/v2", api.New(base).HandlerV2())
 	r.Mount("/assets", api.NewAssets(base).AssetsRouter())
 
 	if templWeb {

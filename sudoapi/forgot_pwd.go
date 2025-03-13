@@ -4,12 +4,11 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"log/slog"
-	"text/template"
-
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"go.uber.org/zap"
+	"log/slog"
+	"text/template"
 
 	_ "embed"
 )
