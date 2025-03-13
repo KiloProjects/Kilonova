@@ -1007,6 +1007,14 @@ ro = "Asta-i o eroare!"
 en = "Contest info"
 ro = "Detalii concurs"
 
+[contestDisclaimerTitle]
+en = "Disclaimer"
+ro = "Notă informativă"
+
+[contestDisclaimerBody]
+en = "Evaluation results on Kilonova might be different to those during the contest."
+ro = "Rezultatele evaluării pe Kilonova pot fi diferite față de cele din timpul concursului."
+
 [problemInfo]
 en = "Problem info"
 ro = "Detalii problemă"

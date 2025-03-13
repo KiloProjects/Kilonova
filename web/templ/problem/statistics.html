@@ -1,4 +1,4 @@
-{{define "title"}}{{getText "header.problem_statistics"}} <code>{{.Problem.Name}}</code>{{end}}
+{{define "title"}}{{getText "header.problem_statistics"}} {{if inModal}}<code>{{.Problem.Name}}</code>{{else}}{{.Problem.Name}}{{end}}{{end}}
 {{define "modal_content"}}
     {{with .ProblemStatistics}}
 	    {{if inModal}}

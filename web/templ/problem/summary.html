@@ -15,13 +15,13 @@
     <div class="page-content reset-list enhance-tables statement-content">
         {{ if gt (len .Variants) 1 }}
             <label class="block my-2">
-                <span class="form-label">{{getText "statementFormat"}}:</span> 
+                <span class="form-label">{{getText "statementFormat"}}:</span>
                 <select id="variant-select" class="form-select" autocomplete="off">
                     {{ range .Variants }}
                         <option value="{{.Language}}-{{.Format}}-{{.Type}}" {{if $.SelectedVariant.Equals .}}selected{{end}}>{{formatStmtVariant .}}</option>
                     {{ end }}
                 </select>
-            </label>    
+            </label>
         {{ end }}
         <div class="w-full mb-6 mt-2 text-center">
 			<!--<h1>{{.Problem.Name}}</h1>-->
@@ -48,6 +48,34 @@
         {{ if .Topbar.Contest }}
         {{ template "contest_sidebar.html" .Topbar.Contest }}
         {{ else }}
+        {{- with filterTags .Tags "contest" false -}}
+            <section id="disclaimer_section" class="segment-panel hidden">
+                <div class="modal-header">
+                    <h2 style="margin: 0.25rem;"><i class="fas fa-triangle-exclamation"></i> {{getText "contestDisclaimerTitle"}} </h2>
+                    <button id="disclaimer_close"><i class="modal-close"></i></button>
+                </div>
+                <div class="px-2 py-2">{{getText "contestDisclaimerBody"}}</div>
+                <script>
+                    let unauthedStorageKey = "contest_disclaimer_dismissed:unauthed";
+                    let storageKey = `contest_disclaimer_dismissed:${window.platform_info.user_id}`
+                    if(window.platform_info.user_id === 0) {
+                        storageKey = unauthedStorageKey
+                    }
+                    document.getElementById("disclaimer_close").addEventListener("click", function () {
+                        window.localStorage.setItem(storageKey, "disabled");
+                        document.getElementById("disclaimer_section").remove();
+                    })
+                    if(window.localStorage.getItem(storageKey) === null) {
+                        if(window.localStorage.getItem(unauthedStorageKey) !== null) {
+                            window.localStorage.removeItem(unauthedStorageKey);
+                            window.localStorage.setItem(storageKey, "disabled");
+                        } else {
+                            document.getElementById("disclaimer_section").classList.remove("hidden");
+                        }
+                    }
+                </script>
+            </section>
+        {{- end -}}
         <section class="segment-panel font-semibold">
             <h2 class="font-normal">
                 {{getText "problemInfo"}}
@@ -111,11 +139,11 @@
                 {{else}}
                 <p>{{getText "score"}}: {{if eq .Problem.ScoringStrategy `sum_subtasks`}}<a class="max_score_breakdown" href="#" data-problemid="{{.Problem.ID}}">{{end}}<span data-pbid-reload="{{.Problem.ID}}">{{subScore .Problem authedUser}}</span> {{if eq .Problem.ScoringStrategy `sum_subtasks`}}</a>{{end}}</p>
                 {{end}}
-                {{ end }}            
+                {{ end }}
                 {{if .Topbar.CanViewTests}}
                 <p><a href="{{.Topbar.URLPrefix}}/problems/{{.Topbar.Problem.ID}}/archive">{{getText "downloadArchive"}}</a></p>
                 {{end}}
-    
+
             </div>
         </section>
         {{ range pbParentPblists .Problem }}
@@ -130,13 +158,13 @@
                 {{ with listProblems authedUser . }}
                 <ul>
                     {{ range . }}
-                    {{ $score := spbMaxScore . true }}    
+                    {{ $score := spbMaxScore . true }}
                     <li>
                         <a {{ if eq $.Problem.ID .ID }} class="topbar-selected p-0" {{end}}
                             href="/problems/{{.ID}}?list_id={{$listID}}">
                             {{.Name}}
-                        </a> 
-                        {{ if not (eq $score "")}} 
+                        </a>
+                        {{ if not (eq $score "")}}
                             (
                                 {{- if eq .ScoringStrategy `sum_subtasks` -}}
                                     <a class="max_score_breakdown" href="#" data-problemid="{{.ID}}" data-pbid-reload="{{.ID}}">
@@ -149,7 +177,7 @@
                                 {{- else -}}
                                     </span>
                                 {{- end -}}
-                            ) 
+                            )
                         {{ end }}
                     </li>
                     {{ end }}
@@ -266,7 +294,7 @@
                     reloader.innerHTML = val
                 }
             }
-        }) 
+        })
     }
 </script>
 
