@@ -1,6 +1,6 @@
 module github.com/KiloProjects/kilonova
 
-go 1.23.2
+go 1.24.1
 
 require (
 	github.com/BurntSushi/toml v1.4.0
@@ -48,6 +48,7 @@ require github.com/dustin/go-humanize v1.0.1
 
 require (
 	github.com/bwmarrin/discordgo v0.28.1
+	github.com/danielgtaylor/huma/v2 v2.30.0
 	github.com/dominikbraun/graph v0.23.0
 	github.com/exaring/otelpgx v0.7.0
 	github.com/go-logr/logr v1.4.2
@@ -76,12 +77,19 @@ require (
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/danielgtaylor/huma/v2 v2.30.0 // indirect
+	github.com/clbanning/mxj/v2 v2.7.0 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.25.1 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/samber/lo v1.47.0 // indirect
+	github.com/spf13/cobra v1.8.1 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/tomwright/dasel/v2 v2.8.2-0.20241008211502-e96f281f05a1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.33.0 // indirect
 	go.opentelemetry.io/otel/metric v1.33.0 // indirect
@@ -90,6 +98,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241223144023-3abc09e42ca8 // indirect
 	google.golang.org/grpc v1.69.2 // indirect
 	google.golang.org/protobuf v1.36.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (
@@ -106,3 +115,5 @@ require (
 	golang.org/x/sys v0.28.0 // indirect
 	vimagination.zapto.org/dos2unix v1.0.1
 )
+
+tool github.com/tomwright/dasel/v2/cmd/dasel

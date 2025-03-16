@@ -17,7 +17,7 @@ type Translations map[string]Translation
 
 var translations Translations
 
-//go:generate go run ./scripts/toml_gen --target ./_translations.json --target ./web/assets/_translations.json
+//go:generate go run -v ./scripts/toml_gen --target ./_translations.json --target ./web/assets/_translations.json
 
 //go:embed _translations.json
 var keys []byte

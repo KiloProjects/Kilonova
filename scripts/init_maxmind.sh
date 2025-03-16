@@ -10,7 +10,7 @@ echo "Downloaded GeoLite2-City database."
 
 tmp=$(mktemp)
 echo $tmp
-jq ".\"integrations.maxmind.db_path\" = \"$OUT_PATH\"" flags.json > "$tmp" && mv "$tmp" "flags.json"
+jq ".\"integrations.maxmind.db_path\" = \"$OUT_PATH\"" "$SCRIPT_DIR/../flags.json" > "$tmp" && mv "$tmp" "flags.json"
 
 
 echo "Updated configuration file with correct path."
