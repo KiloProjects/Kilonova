@@ -310,6 +310,18 @@ ro = "Editare Informații Problemă"
 en = "Edit Description (Markdown)"
 ro = "Editare Descriere (Markdown)"
 
+[header.edit.advanced_settings]
+en = "Experimental settings"
+ro = "Setări experimentale"
+
+[edit.option.autoformat_paste]
+en = "Autoformat LaTeX->Markdown on paste."
+ro = "Formatare automată LaTeX->Markdown pentru Ctrl+V."
+
+[edit.command.format_document]
+en = "Autoformat document LaTeX"
+ro = "Formatare automată document LaTeX"
+
 [hint.edit.description_save]
 en = "Hint! You can use Ctrl+S to quickly save the text."
 ro = "Sfat util! Poți folosi Ctrl+S ca să salvezi rapid textul."

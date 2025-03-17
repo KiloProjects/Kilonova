@@ -110,6 +110,8 @@ func (s *API) HandlerV1() http.Handler {
 			})
 		})
 
+		r.Post("/exportSubmissions", webWrapper(s.exportSubmissions))
+
 		r.Post("/addDonation", s.addDonation)
 		r.Post("/endSubscription", s.endSubscription)
 
