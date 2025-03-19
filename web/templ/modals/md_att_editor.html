@@ -117,10 +117,11 @@
             replacement: "# $1"
         },
         {
-            pattern: /\\np{(.*)}/g,
+            pattern: /\\np{([0-9]*)}/g,
             replacement: (match, p1) => {
                 const spl = p1.split('').reverse().join('')
                     .match(/.{1,3}/g).map(group => group.split('').reverse().join('')).reverse();
+                console.log(match, p1, spl)
                 return spl.join(' \\ ')
             }
         },
