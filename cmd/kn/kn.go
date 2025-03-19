@@ -79,7 +79,7 @@ func Kilonova() error {
 	}()
 
 	if err := base.ResetWaitingSubmissions(ctx); err != nil {
-		slog.WarnContext(ctx, "Couldn't reset initial working submissions:", slog.Any("err", err))
+		slog.WarnContext(ctx, "Couldn't reset initial working submissions", slog.Any("err", err))
 	}
 
 	// for graceful setup and shutdown

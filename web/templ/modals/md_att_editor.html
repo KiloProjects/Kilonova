@@ -52,6 +52,21 @@
             <span class="block mt-2 text-muted text-sm">{{getText "hint.edit.description_save"}}</span>
         </div>
     </form>
+
+    <details class="page-content-full">
+        <summary><h2 class="inline-block">{{getText "header.edit.advanced_settings"}}</h2></summary>
+        <div class="block mb-2">
+            <label class="inline-flex items-center text-sm">
+                <!-- TODO: Hook into codemirror paste -->
+                <input id="autoformat_paste" class="form-checkbox" type="checkbox">
+                <span class="form-label ml-2">{{getText "edit.option.autoformat_paste"}}</span>
+            </label>
+        </div>
+        <div class="block mb-2">
+            <!-- TODO: run format function on document -->
+            <button id="formatDocumentButton" class="btn btn-blue">{{getText "edit.command.format_document"}}</button>
+        </div>
+    </details>
 </div>
 
 <style>
@@ -72,6 +87,58 @@
 </script>
 
 <script>
+    const rewriteRules = [
+        {
+            pattern: /\\textbf{(.*)}/g,
+            replacement: "**$1**"
+        },
+        {
+            pattern: /\\textsc{(.*)}/g,
+            replacement: "**$1**"
+        },
+        {
+            pattern: /\\emph{(.*)}/g,
+            replacement: "**$1**"
+        },
+        {
+            pattern: /\\textit{(.*)}/g,
+            replacement: "_$1_"
+        },
+        {
+            pattern: /\\texttt{(.*)}/g,
+            replacement: "`$1`"
+        },
+        {
+            pattern: /\\item (.*)/g,
+            replacement: "* $1"
+        },
+        {
+            pattern: /\\section{(.*)}/g,
+            replacement: "# $1"
+        },
+        {
+            pattern: /\\np{(.*)}/g,
+            replacement: (match, p1) => {
+                const spl = p1.split('').reverse().join('')
+                    .match(/.{1,3}/g).map(group => group.split('').reverse().join('')).reverse();
+                return spl.join(' \\ ')
+            }
+        },
+        {
+            pattern: /\\restr{(.*)}{(.*)}/g,
+            replacement: "| x | $1 | $2 |",
+        },
+    ]
+
+    function rewriteLaTeXMarkdown(snippet) {
+        for(let rule of rewriteRules) {
+            snippet = snippet.replaceAll(rule.pattern, rule.replacement)
+        }
+        return snippet
+    }
+</script>
+
+<script>
     const apiPrefix = {{.APIPrefix}};
     var cm = CodeMirror.fromTextArea(document.getElementById("description"), {
         mode: {
@@ -83,6 +150,38 @@
     cm.setSize(null, "100%");
     cm.focus();
     cm.on("change", () => changed = true)
+
+    document.getElementById("formatDocumentButton").addEventListener("click", () => {
+        let val = cm.getValue();
+        let newVal = rewriteLaTeXMarkdown(val);
+        if(val === newVal) {
+            bundled.createToast({
+                status: "info",
+                description: bundled.getText("notif.edit.no_changes")
+            })
+            return
+        }
+        cm.setValue(newVal);
+        bundled.createToast({
+            status: "success",
+            description: bundled.getText("notif.edit.rewrote_rule")
+        })
+    })
+
+    cm.on('beforeChange', (cm, event) => {
+        if(event.origin === "paste") {
+            if(document.getElementById("autoformat_paste").checked) {
+                let newVal = event.text.map(rewriteLaTeXMarkdown);
+                if(!bundled.isEqual(newVal, event.text)) {
+                    event.update(null, null, newVal);
+                    bundled.createToast({
+                        status: "success",
+                        description: bundled.getText("notif.edit.rewrote_rule")
+                    })
+                }
+            }
+        }
+    })
 
     function formatStatement(lang, type) {
         if(type == "") {

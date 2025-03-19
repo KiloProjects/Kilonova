@@ -322,6 +322,14 @@ ro = "Formatare automată LaTeX->Markdown pentru Ctrl+V."
 en = "Autoformat document LaTeX"
 ro = "Formatare automată document LaTeX"
 
+[notif.edit.rewrote_rule]
+en = "Reformatted parts of LaTeX"
+ro = "Au fost reformatate părți"
+
+[notif.edit.no_changes]
+en = "No changes made"
+ro = "Nicio modificare efectuată"
+
 [hint.edit.description_save]
 en = "Hint! You can use Ctrl+S to quickly save the text."
 ro = "Sfat util! Poți folosi Ctrl+S ca să salvezi rapid textul."
