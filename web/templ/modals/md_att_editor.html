@@ -89,23 +89,23 @@
 <script>
     const rewriteRules = [
         {
-            pattern: /\\textbf{(.*)}/g,
+            pattern: /\\textbf{([^}]*)}/g,
             replacement: "**$1**"
         },
         {
-            pattern: /\\textsc{(.*)}/g,
+            pattern: /\\textsc{([^}]*)}/g,
             replacement: "**$1**"
         },
         {
-            pattern: /\\emph{(.*)}/g,
+            pattern: /\\emph{([^}]*)}/g,
             replacement: "**$1**"
         },
         {
-            pattern: /\\textit{(.*)}/g,
+            pattern: /\\textit{([^}]*)}/g,
             replacement: "_$1_"
         },
         {
-            pattern: /\\texttt{(.*)}/g,
+            pattern: /\\texttt{([^}]*)}/g,
             replacement: "`$1`"
         },
         {
@@ -113,7 +113,7 @@
             replacement: "* $1"
         },
         {
-            pattern: /\\section{(.*)}/g,
+            pattern: /\\section{([^}]*)}/g,
             replacement: "# $1"
         },
         {
