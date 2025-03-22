@@ -47,6 +47,9 @@ type Profile struct {
 	ContestID int    `json:"contest_id"`
 	BioData   string `json:"bio_data"`
 
+	// For printing purposes
+	ExternalID string `json:"external_id"`
+
 	Online      bool     `json:"online"`
 	MemberNames []string `json:"member_names"`
 }
@@ -115,6 +118,7 @@ func Kilonova() error {
 		}
 	}
 
+	var anyExternalID bool
 	for i := range config.Profiles {
 		if len(config.Profiles[i].Slug) == 0 {
 			t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
@@ -127,6 +131,9 @@ func Kilonova() error {
 		fmt.Println(config.Profiles[i].Slug)
 		if err := base.CheckValidUsername(config.Profiles[i].Slug); err != nil {
 			return err
+		}
+		if len(team.ExternalID) > 0 {
+			anyExternalID = true
 		}
 	}
 
@@ -254,6 +261,9 @@ func Kilonova() error {
 	if !config.Teams {
 		headers = slices.Delete(headers, 1, 2)
 	}
+	if anyExternalID {
+		headers = append(headers, "External ID")
+	}
 	cw.Write(headers)
 	for _, t := range outTeams {
 		status := "Physical"
@@ -269,6 +279,9 @@ func Kilonova() error {
 		}
 		if !config.Teams {
 			values = slices.Delete(values, 1, 2)
+		}
+		if anyExternalID {
+			values = append(values, t.ExternalID)
 		}
 		cw.Write(values)
 	}

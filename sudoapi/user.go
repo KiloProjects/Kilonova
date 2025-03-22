@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"io"
 	"log/slog"
 	"net/http"
@@ -18,6 +17,8 @@ import (
 	"sync"
 	"text/template"
 	"time"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
@@ -371,7 +372,7 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 	}
 
 	var contest *kilonova.Contest
-	if args.ContestID != nil {
+	if args.ContestID != nil && *args.ContestID > 0 {
 		contest2, err := s.Contest(ctx, *args.ContestID)
 		if err != nil {
 			return "", nil, err
