@@ -800,9 +800,9 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 				return orgURL
 			}
 			q := u.Query()
-			q.Set("utm_source", "kilonova")
+			q.Set("utm_source", "resource")
 			q.Set("utm_medium", "external_resource")
-			q.Set("utm_campaign", "resource")
+			q.Set("utm_campaign", "kilonova")
 			u.RawQuery = q.Encode()
 			return u.String()
 		},
