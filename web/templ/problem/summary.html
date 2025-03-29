@@ -221,7 +221,7 @@
                         <div class="list-group mb-2">
                         {{with .ExternalResources}}
                             {{ range . }}
-                                <a style="text-overflow: ellipsis;" href="{{.URL}}" class="list-group-item flex justify-between" title="{{printf "external_resource.type.%s" .Type | getText}}">
+                                <a style="text-overflow: ellipsis;" href="{{formatResourceURL .URL}}" class="list-group-item flex justify-between" title="{{printf "external_resource.type.%s" .Type | getText}}">
                                     <span><i class="fas fa-fw {{.Type.FontAwesomeIcon}}"></i> {{.Name}}</span>
                                 </a>
                             {{ end }}

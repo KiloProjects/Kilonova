@@ -794,6 +794,18 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return (time.Duration(c.PerUserTime) * time.Second).String()
 		},
 		"add1": func(i int) int { return i + 1 },
+		"formatResourceURL": func(orgURL string) string {
+			u, err := url.Parse(orgURL)
+			if err != nil {
+				return orgURL
+			}
+			q := u.Query()
+			q.Set("utm_source", "kilonova")
+			q.Set("utm_medium", "external_resource")
+			q.Set("utm_campaign", "resource")
+			u.RawQuery = q.Encode()
+			return u.String()
+		},
 
 		"getCaptchaID": base.NewCaptchaID,
 		"pLanguages": func() map[string]string {
