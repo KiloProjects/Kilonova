@@ -208,6 +208,7 @@ RETURNS TABLE (user_id bigint, contest_id bigint, last_time timestamptz, num_sol
                 AND subs.user_id = solved_pbs.user_id 
                 AND subs.problem_id = solved_pbs.problem_id 
                 AND subs.created_at < solved_pbs.last_time
+				AND compile_error = false
                 AND (subs.status = 'finished' OR subs.status = 'reevaling')
             GROUP BY solved_pbs.user_id
     ), duration_sum AS (

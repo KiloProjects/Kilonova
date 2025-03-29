@@ -159,7 +159,8 @@ type ProblemParams struct {
 
 	SelectedVariant *kilonova.StatementVariant
 
-	ExternalResources []*kilonova.ExternalResource
+	ShowExternalResources bool
+	ExternalResources     []*kilonova.ExternalResource
 }
 
 type ProblemTopbarParams struct {

@@ -298,6 +298,10 @@ ro = "Descărcare arhivă date pentru "
 en = "Statistics for "
 ro = "Statistici pentru "
 
+[header.external_resources.new]
+en = "New external resource"
+ro = "Resursă externă nouă"
+
 [header.past_submissions]
 en = "Past submissions"
 ro = "Submisii anterioare"

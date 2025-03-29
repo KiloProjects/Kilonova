@@ -113,6 +113,16 @@ func (rt *Web) problemRouter(inContest bool) func(r chi.Router) {
 		r.Get("/submissions", rt.problemSubmissions())
 		if !inContest {
 			r.With(rt.ValidateProblemFullyVisible).Get("/statistics", rt.problemStatistics())
+			r.Route("/externalResources", func(r chi.Router) {
+				r.Use(rt.ValidateProblemFullyVisible)
+				r.Use(rt.checkFlag(sudoapi.ExternalResourcesEnabled))
+				r.Get("/", rt.externalResources())
+				//r.With(rt.mustBeProblemEditor).Get("/create", rt.createExternalResourceView())
+				//r.With(rt.mustBeProblemEditor).Post("/create", rt.createExternalResource())
+				//r.With(rt.ValidateExternalResourceID).Route("/externalResources/{resID}", func(r chi.Router) {
+				//	r.Get("/", rt.externalResource())
+				//})
+			})
 		}
 		r.With(rt.mustBeAuthed).Get("/submit", rt.problemSubmit())
 		r.With(rt.ValidateProblemFullyVisible).Get("/archive", rt.problemArchive())
@@ -203,6 +213,8 @@ func (rt *Web) Handler() http.Handler {
 			//r.Post("/externalResources/create", rt.createExternalResource())
 			r.With(rt.ValidateExternalResourceID).Route("/externalResources/{resID}", func(r chi.Router) {
 				r.Get("/", rt.externalResource())
+				r.Put("/", rt.updateExternalResource())
+				r.Delete("/", rt.deleteExternalResource())
 			})
 		})
 

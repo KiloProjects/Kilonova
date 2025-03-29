@@ -771,13 +771,22 @@ func (rt *Web) problem() http.HandlerFunc {
 			return
 		}
 
-		var tags = []*kilonova.Tag{}
+		var tags []*kilonova.Tag
+		var showExternalResources bool
+		var externalResources []*kilonova.ExternalResource
 		if rt.base.IsProblemFullyVisible(util.UserBrief(r), util.Problem(r)) {
 			tags, err = rt.base.ProblemTags(r.Context(), util.Problem(r).ID)
 			if err != nil {
 				slog.WarnContext(r.Context(), "Couldn't get tags", slog.Any("err", err))
 				tags = []*kilonova.Tag{}
 			}
+			showExternalResources = true
+			externalResources, err = rt.base.ExternalResources(r.Context(), kilonova.ExternalResourceFilter{
+				ProblemID: &util.Problem(r).ID,
+				// Technically not needed but just for safety
+				Look:        true,
+				LookingUser: util.UserBrief(r),
+			})
 		}
 
 		var olderSubs *OlderSubmissionsParams
@@ -803,6 +812,9 @@ func (rt *Web) problem() http.HandlerFunc {
 			OlderSubmissions: olderSubs,
 
 			SelectedVariant: descVariant,
+
+			ShowExternalResources: showExternalResources,
+			ExternalResources:     externalResources,
 		})
 	}
 }
@@ -1392,6 +1404,42 @@ func (rt *Web) externalResource() http.HandlerFunc {
 		})
 	}
 }
+func (rt *Web) updateExternalResource() http.HandlerFunc {
+	templ := rt.parse(nil, "externalResources/view.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		var author *kilonova.UserBrief
+		if res := util.ExternalResource(r); res.ProposedBy != nil {
+			if proposer, err := rt.base.UserBrief(r.Context(), *res.ProposedBy); err != nil {
+				slog.WarnContext(r.Context(), "Couldn't get external resource author", slog.Any("err", err))
+			} else {
+				author = proposer
+			}
+		}
+		rt.runTempl(w, r, templ, &ResourcesPageParams{
+			util.ExternalResource(r),
+			util.Problem(r),
+			author,
+		})
+	}
+}
+func (rt *Web) deleteExternalResource() http.HandlerFunc {
+	templ := rt.parse(nil, "externalResources/view.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		var author *kilonova.UserBrief
+		if res := util.ExternalResource(r); res.ProposedBy != nil {
+			if proposer, err := rt.base.UserBrief(r.Context(), *res.ProposedBy); err != nil {
+				slog.WarnContext(r.Context(), "Couldn't get external resource author", slog.Any("err", err))
+			} else {
+				author = proposer
+			}
+		}
+		rt.runTempl(w, r, templ, &ResourcesPageParams{
+			util.ExternalResource(r),
+			util.Problem(r),
+			author,
+		})
+	}
+}
 
 func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *template.Template, user *kilonova.UserFull) {
 	if !(ViewOtherProfiles.Value() || util.UserBrief(r).IsAdmin() || (util.UserBrief(r) != nil && util.UserBrief(r).ID == user.ID)) {
@@ -1400,7 +1448,7 @@ func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *templa
 	}
 
 	solvedPbs, solvedCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
-		LookingUser: util.UserBrief(r), Look: true,
+		LookingUser: util.UserBrief(r), Look: true, LookFullyVisible: true,
 		SolvedBy: &user.ID,
 
 		Limit: 50,
@@ -1413,7 +1461,7 @@ func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *templa
 	}
 
 	attemptedPbs, attemptedCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
-		LookingUser: util.UserBrief(r), Look: true,
+		LookingUser: util.UserBrief(r), Look: true, LookFullyVisible: true,
 		AttemptedBy: &user.ID,
 
 		Limit: 50,
