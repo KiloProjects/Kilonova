@@ -80,7 +80,7 @@ if(bundled.isDarkMode()) {  // Dark Mode
 </head>
 
 <body>
-	{{ template "navbar" . }}
+	{{navbar | renderComponent}}
 
 	{{- if authed }}
 		{{ if not fullAuthedUser.VerifiedEmail }}
@@ -96,7 +96,7 @@ if(bundled.isDarkMode()) {  // Dark Mode
 
     <div id="modals"></div>
 
-	{{ template "footer" . }}
+    {{footer | renderComponent}}
 </body>
 
 </html>

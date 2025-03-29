@@ -170,7 +170,11 @@ func Tag(r *http.Request) *kilonova.Tag {
 }
 
 func Language(r *http.Request) string {
-	switch v := r.Context().Value(LangKey).(type) {
+	return LanguageContext(r.Context())
+}
+
+func LanguageContext(ctx context.Context) string {
+	switch v := ctx.Value(LangKey).(type) {
 	case string:
 		return v
 	case *string:
@@ -180,8 +184,8 @@ func Language(r *http.Request) string {
 	}
 }
 
-func Theme(r *http.Request) kilonova.PreferredTheme {
-	switch v := r.Context().Value(ThemeKey).(type) {
+func Theme(ctx context.Context) kilonova.PreferredTheme {
+	switch v := ctx.Value(ThemeKey).(type) {
 	case string:
 		return kilonova.PreferredTheme(v)
 	case *string:

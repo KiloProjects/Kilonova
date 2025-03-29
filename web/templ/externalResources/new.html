@@ -1,6 +1,39 @@
 {{define "title"}}{{getText "header.external_resources.new"}}{{end}}
-{{define "modal_content"}}
-	{{if not inModal}}
-		<h1>{{getText "header.external_resources.new"}}</h1>
-	{{end}}
+{{define "content"}}
+	<form class="segment-panel" id="externalResourceForm" hx-post="/problems/{{.Problem.ID}}/externalResources/create">
+		{{if not inModal}}
+			<h1>{{getText "header.external_resources.new"}}</h1>
+		{{end}}
+		<label class="block my-2">
+			<span class="form-label">{{getText "name"}}</span>
+			<input class="form-input" type="text" name="name" required />
+		</label>
+		<label class="block my-2">
+			<span class="form-label">{{getText "description"}}</span>
+			<input class="form-input" type="text" name="description" required />
+		</label>
+		<label class="block my-2">
+			<span class="form-label">{{getText "url"}}</span>
+			<input class="form-input" type="url" name="url" required />
+		</label>
+		<label class="block my-2">
+			<span class="form-label">{{getText "external_resource.type.label"}}</span>
+			<select class="form-select" name="type">
+				<option value="editorial">{{getText "external_resource.type.editorial"}}</option>
+				<option value="video">{{getText "external_resource.type.video"}}</option>
+				<option value="solution">{{getText "external_resource.type.solution"}}</option>
+				<option value="article">{{getText "external_resource.type.article"}}</option>
+				<option value="other">{{getText "external_resource.type.other"}}</option>
+			</select>
+		</label>
+		{{if isAdmin}}
+			<div class="block my-2">
+				<label class="inline-flex items-center text-lg">
+					<input class="form-checkbox" name="preApproved" type="checkbox" checked>
+					<span class="ml-2">{{getText "preApprovedResource"}}</span>
+				</label>
+			</div>
+		{{end}}
+		<button class="btn btn-blue" type="submit">{{getText "button.create"}}</button>
+	</form>
 {{end}}

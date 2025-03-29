@@ -48,6 +48,11 @@ var migrations = []migration{
 		name:    "External resources support",
 		handler: runFile("005.external_resources.sql"),
 	},
+	{
+		id:      6,
+		name:    "External resources language support",
+		handler: runFile("006.external_resource_lang.sql"),
+	},
 }
 
 var specialMigrations = []migration{

@@ -162,10 +162,10 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, error) {
 	return GetBaseAPI(dbClient, mgr, knMailer)
 }
 
-func (s *BaseAPI) InitQueryCounter(ctx context.Context) context.Context {
+func InitQueryCounter(ctx context.Context) context.Context {
 	return db.InitContextCounter(ctx)
 }
 
-func (s *BaseAPI) GetQueryCounter(ctx context.Context) int64 {
+func GetQueryCounter(ctx context.Context) int64 {
 	return db.GetContextQueryCount(ctx)
 }

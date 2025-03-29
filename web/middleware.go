@@ -2,8 +2,6 @@ package web
 
 import (
 	"context"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -12,9 +10,13 @@ import (
 	"time"
 	"unicode"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/text/language"
 )
@@ -364,7 +366,7 @@ func (rt *Web) checkFlag(flag config.Flag[bool]) func(next http.Handler) http.Ha
 func (rt *Web) initSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), MiddlewareStartKey, time.Now())
-		ctx = rt.base.InitQueryCounter(ctx)
+		ctx = sudoapi.InitQueryCounter(ctx)
 		user, err := rt.base.SessionUser(ctx, rt.base.GetSessCookie(r), r)
 		if err != nil || user == nil {
 			next.ServeHTTP(w, r.WithContext(ctx))

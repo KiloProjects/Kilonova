@@ -125,6 +125,10 @@ type ResourcesPageParams struct {
 	Author   *kilonova.UserBrief
 }
 
+type ResourcesNewParams struct {
+	Problem *kilonova.Problem
+}
+
 type ContestParams struct {
 	Topbar *ProblemTopbar
 
@@ -406,11 +410,62 @@ type ModalParams struct {
 	ChildParams any
 }
 
+var calledFunctions = make(map[string]bool)
+
 func doWalk(filename string, nodes ...tparse.Node) bool {
 	ok := true
 	for _, node := range nodes {
 		tp := reflect.Indirect(reflect.ValueOf(node))
+		if chainNode, ok := node.(*tparse.ChainNode); ok {
+			doWalk(filename, chainNode.Node)
+		}
+		if val := tp.FieldByName("Ident"); val.IsValid() {
+			if val.Kind() == reflect.Slice {
+				idents := val.Interface().([]string)
+				for _, ident := range idents {
+					if _, ok := calledFunctions[ident]; !ok {
+						calledFunctions[ident] = true
+					}
+				}
+			} else {
+				ident := val.Interface().(string)
+				if _, ok := calledFunctions[ident]; !ok {
+					calledFunctions[ident] = true
+				}
+			}
+		}
+		if val := tp.FieldByName("Field"); val.IsValid() {
+			if val.Kind() == reflect.Slice {
+				idents := val.Interface().([]string)
+				for _, ident := range idents {
+					if _, ok := calledFunctions[ident]; !ok {
+						calledFunctions[ident] = true
+					}
+				}
+			} else {
+				ident := val.Interface().(string)
+				if _, ok := calledFunctions[ident]; !ok {
+					calledFunctions[ident] = true
+				}
+			}
+		}
+		if val := tp.FieldByName("BranchNode"); val.IsValid() {
+			node := val.Interface().(tparse.BranchNode)
+			doWalk(filename, &node)
+		}
 		if val := tp.FieldByName("List"); val.IsValid() {
+			if val.Kind() == reflect.Pointer {
+				val = reflect.Indirect(val)
+			}
+			if nodes := val.FieldByName("Nodes"); nodes.IsValid() {
+				if nodes.Kind() != reflect.Slice {
+					slog.ErrorContext(context.TODO(), "Invalid template static analysis tree")
+					os.Exit(1)
+				}
+				ok = ok && doWalk(filename, nodes.Interface().([]tparse.Node)...)
+			}
+		}
+		if val := tp.FieldByName("ElseList"); val.IsValid() && !val.IsNil() {
 			if val.Kind() == reflect.Pointer {
 				val = reflect.Indirect(val)
 			}
@@ -429,14 +484,40 @@ func doWalk(filename string, nodes ...tparse.Node) bool {
 			}
 			ok = ok && doWalk(filename, nodes.Interface().([]tparse.Node)...)
 		}
+		if nodes := tp.FieldByName("Node"); nodes.IsValid() {
+			ok = ok && doWalk(filename, nodes.Interface().(tparse.Node))
+		}
+		if nodes := tp.FieldByName("Args"); nodes.IsValid() {
+			if nodes.Kind() != reflect.Slice {
+				slog.ErrorContext(context.TODO(), "Invalid template static analysis tree")
+				os.Exit(1)
+			}
+			ok = ok && doWalk(filename, nodes.Interface().([]tparse.Node)...)
+		}
 		// spew.Dump(node.Type(), node.Position(), node.String())
-		if rnode, valid := node.(*tparse.ActionNode); valid {
-			for _, cmd := range rnode.Pipe.Cmds {
+		if pipe := tp.FieldByName("Pipe"); pipe.IsValid() {
+			if pipe.Kind() != reflect.Pointer {
+				slog.ErrorContext(context.TODO(), "Invalid template static analysis tree")
+				os.Exit(1)
+			}
+			pipe, valid := pipe.Interface().(*tparse.PipeNode)
+			if !valid {
+				slog.ErrorContext(context.TODO(), "Invalid template static analysis tree")
+				os.Exit(1)
+			}
+			for _, cmd := range pipe.Cmds {
 				if len(cmd.Args) == 0 {
 					continue
 				}
+				doWalk(filename, cmd.Args...)
 				val, valid := cmd.Args[0].(*tparse.IdentifierNode)
-				if !valid || val.Ident != "getText" || len(cmd.Args) < 2 {
+				if !valid {
+					continue
+				}
+				if _, ok := calledFunctions[val.Ident]; !ok {
+					calledFunctions[val.Ident] = true
+				}
+				if val.Ident != "getText" || len(cmd.Args) < 2 {
 					continue
 				}
 				switch node := cmd.Args[1].(type) {
@@ -484,9 +565,7 @@ func parseTempl(optFuncs template.FuncMap, modal bool, files ...string) *templat
 			slog.WarnContext(context.TODO(), "Page lacks a title", slog.String("path", files[0]))
 		}
 
-		// Check content
-		tree := ptrees["content"]
-		if tree != nil {
+		for _, tree := range ptrees {
 			doWalk(files[0], tree.Root)
 		}
 	}
@@ -498,7 +577,7 @@ func parseModal(optFuncs template.FuncMap, files ...string) *template.Template {
 }
 
 func parse(optFuncs template.FuncMap, files ...string) *template.Template {
-	return parseTempl(optFuncs, false, slices.Concat([]string{"layout.html", "util/navbar.html", "util/footer.html"}, files)...)
+	return parseTempl(optFuncs, false, slices.Concat([]string{"layout.html"}, files)...)
 }
 
 func builtinTemporaryTemplate() template.FuncMap {

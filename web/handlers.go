@@ -18,9 +18,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/KiloProjects/kilonova/web/components"
+	"github.com/a-h/templ"
+
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/datastore"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/bwmarrin/discordgo"
@@ -37,28 +40,6 @@ const (
 	PblistCntCacheKey = ctxKey("pblist_cache")
 
 	MiddlewareStartKey = ctxKey("middleware_start")
-)
-
-var (
-	DonationsEnabled = config.GenFlag[bool]("frontend.donations.enabled", true, "Donations page enabled")
-	DonationsNag     = config.GenFlag[bool]("frontend.donation.frontpage_nag", true, "Donations front page notification")
-	PaypalID         = config.GenFlag[string]("frontend.donation.paypal_btn_id", "", "Paypal Donate button ID")
-	BuyMeACoffeeName = config.GenFlag[string]("frontend.donation.bmac_name", "", "Name of Buy Me a Coffee page")
-
-	StripeButtonID    = config.GenFlag[string]("frontend.donation.stripe_button_id", "", "Stripe donation button ID")
-	StripePK          = config.GenFlag[string]("frontend.donation.stripe_publishable_key", "", "Stripe Publishable Key")
-	StripePaymentLink = config.GenFlag[string]("frontend.donation.stripe_payment_link", "", "Stripe donation payment link URL")
-
-	MainPageLogin = config.GenFlag[bool]("feature.frontend.main_page_login", false, "Login modal on front page")
-
-	NavbarProblems    = config.GenFlag[bool]("feature.frontend.navbar.problems_btn", true, "Navbar button: Problems")
-	NavbarContests    = config.GenFlag[bool]("feature.frontend.navbar.contests_btn", false, "Navbar button: Contests")
-	NavbarSubmissions = config.GenFlag[bool]("feature.frontend.navbar.submissions_btn", true, "Navbar button: Submissions")
-
-	FooterTimings = config.GenFlag("feature.frontend.footer.time_statistics", true, "Show measurements about time taken to render pages in footer")
-
-	PinnedProblemList = config.GenFlag[int]("frontend.front_page.pinned_problem_list", 0, "Pinned problem list (front page sidebar)")
-	RootProblemList   = config.GenFlag[int]("frontend.front_page.root_problem_list", 0, "Root problem list (front page main content)")
 )
 
 func (rt *Web) buildPblistCache(r *http.Request, listIDs []int) *http.Request {
@@ -110,8 +91,8 @@ func (rt *Web) index() http.HandlerFunc {
 		}
 
 		var pblists []*kilonova.ProblemList
-		if RootProblemList.Value() > 0 {
-			pblists, err = rt.base.PblistChildrenLists(r.Context(), RootProblemList.Value())
+		if val := flags.RootProblemList.Value(); val > 0 {
+			pblists, err = rt.base.PblistChildrenLists(r.Context(), val)
 			if err != nil {
 				slog.WarnContext(r.Context(), "Couldn't get index page problem lists", slog.Any("err", err))
 				pblists = []*kilonova.ProblemList{}
@@ -119,8 +100,8 @@ func (rt *Web) index() http.HandlerFunc {
 		}
 
 		var pinnedLists []*kilonova.ProblemList
-		if PinnedProblemList.Value() > 0 {
-			pinnedLists, err = rt.base.PblistChildrenLists(r.Context(), PinnedProblemList.Value())
+		if val := flags.PinnedProblemList.Value(); val > 0 {
+			pinnedLists, err = rt.base.PblistChildrenLists(r.Context(), val)
 			if err != nil {
 				slog.WarnContext(r.Context(), "Couldn't get pinned problem lists", slog.Any("err", err))
 				pblists = []*kilonova.ProblemList{}
@@ -146,7 +127,7 @@ func (rt *Web) index() http.HandlerFunc {
 
 		var hotProblems []*kilonova.ScoredProblem
 		var moreHotProblems bool
-		if ShowTrending.Value() {
+		if flags.ShowTrending.Value() {
 			hotProblems, err = rt.base.ScoredProblems(r.Context(), kilonova.ProblemFilter{
 				LookingUser: util.UserBrief(r), Look: true,
 				Ordering: "hot", Descending: true,
@@ -403,7 +384,7 @@ func (rt *Web) pbListProgressIndex() http.HandlerFunc {
 
 		r = rt.buildPblistCache(r, listIDs)
 
-		rt.runTempl(w, r, templ, &ProblemListParams{nil, pblists, RootProblemList.Value()})
+		rt.runTempl(w, r, templ, &ProblemListParams{nil, pblists, flags.RootProblemList.Value()})
 	}
 }
 
@@ -580,7 +561,7 @@ func (rt *Web) submissions() http.HandlerFunc {
 // canViewAllSubs is just for the text in the navbar and the submissions page
 // TODO: Restrict on the backend, as well.
 func (rt *Web) canViewAllSubs(user *kilonova.UserBrief) bool {
-	if AllSubsPage.Value() {
+	if flags.AllSubsPage.Value() {
 		return true
 	}
 	return user.IsProposer()
@@ -780,13 +761,17 @@ func (rt *Web) problem() http.HandlerFunc {
 				slog.WarnContext(r.Context(), "Couldn't get tags", slog.Any("err", err))
 				tags = []*kilonova.Tag{}
 			}
-			showExternalResources = true
-			externalResources, err = rt.base.ExternalResources(r.Context(), kilonova.ExternalResourceFilter{
-				ProblemID: &util.Problem(r).ID,
-				// Technically not needed but just for safety
-				Look:        true,
-				LookingUser: util.UserBrief(r),
-			})
+			if sudoapi.ExternalResourcesEnabled.Value() {
+				accepted := true
+				externalResources, err = rt.base.ExternalResources(r.Context(), kilonova.ExternalResourceFilter{
+					ProblemID: &util.Problem(r).ID,
+					Accepted:  &accepted,
+					// Technically not needed but just for safety
+					Look:        true,
+					LookingUser: util.UserBrief(r),
+				})
+				showExternalResources = len(externalResources) > 0 || rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r))
+			}
 		}
 
 		var olderSubs *OlderSubmissionsParams
@@ -1382,7 +1367,14 @@ func (rt *Web) donationPage() http.HandlerFunc {
 func (rt *Web) externalResources() http.HandlerFunc {
 	templ := rt.parse(nil, "externalResources/index.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, templ, &ResourcesIndexParams{})
+		problemResources, err := rt.base.ExternalResources(r.Context(), kilonova.ExternalResourceFilter{
+			ProblemID: &util.Problem(r).ID,
+		})
+		if err != nil {
+			slog.WarnContext(r.Context(), "Couldn't get problem resources", slog.Any("err", err))
+			problemResources = []*kilonova.ExternalResource{}
+		}
+		rt.runTempl(w, r, templ, &ResourcesIndexParams{problemResources})
 	}
 }
 
@@ -1404,45 +1396,102 @@ func (rt *Web) externalResource() http.HandlerFunc {
 		})
 	}
 }
-func (rt *Web) updateExternalResource() http.HandlerFunc {
-	templ := rt.parse(nil, "externalResources/view.html")
+
+func (rt *Web) createExternalResourceView() http.HandlerFunc {
+	templ := rt.parse(nil, "externalResources/new.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		var author *kilonova.UserBrief
-		if res := util.ExternalResource(r); res.ProposedBy != nil {
-			if proposer, err := rt.base.UserBrief(r.Context(), *res.ProposedBy); err != nil {
-				slog.WarnContext(r.Context(), "Couldn't get external resource author", slog.Any("err", err))
-			} else {
-				author = proposer
-			}
-		}
-		rt.runTempl(w, r, templ, &ResourcesPageParams{
-			util.ExternalResource(r),
-			util.Problem(r),
-			author,
-		})
-	}
-}
-func (rt *Web) deleteExternalResource() http.HandlerFunc {
-	templ := rt.parse(nil, "externalResources/view.html")
-	return func(w http.ResponseWriter, r *http.Request) {
-		var author *kilonova.UserBrief
-		if res := util.ExternalResource(r); res.ProposedBy != nil {
-			if proposer, err := rt.base.UserBrief(r.Context(), *res.ProposedBy); err != nil {
-				slog.WarnContext(r.Context(), "Couldn't get external resource author", slog.Any("err", err))
-			} else {
-				author = proposer
-			}
-		}
-		rt.runTempl(w, r, templ, &ResourcesPageParams{
-			util.ExternalResource(r),
-			util.Problem(r),
-			author,
-		})
+		rt.runTempl(w, r, templ, &ResourcesNewParams{util.Problem(r)})
 	}
 }
 
+func (rt *Web) createExternalResource() http.HandlerFunc {
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+	decoder.SetAliasTag("json")
+	return func(w http.ResponseWriter, r *http.Request) {
+		var params struct {
+			Name        string                `json:"name"`
+			Description string                `json:"description"`
+			URL         string                `json:"url"`
+			Type        kilonova.ResourceType `json:"type"`
+			PreApproved bool                  `json:"preApproved"`
+		}
+		r.ParseForm()
+		if err := decoder.Decode(&params, r.Form); err != nil {
+			htmxErrorToast(w, r, "Invalid request body")
+			rt.statusPage(w, r, 400, "Invalid request body")
+			return
+		}
+		if params.Name == "" || params.URL == "" || params.Type == "" {
+			htmxErrorToast(w, r, "Invalid request body")
+			rt.statusPage(w, r, 400, "Invalid request body")
+			return
+		}
+		if params.PreApproved {
+			params.PreApproved = util.UserBrief(r).IsAdmin()
+		}
+
+		res, err := rt.base.CreateExternalResource(
+			r.Context(),
+			params.Name, params.Description,
+			params.URL,
+			kilonova.ResourceType(params.Type),
+			util.UserBrief(r),
+			util.Problem(r),
+			params.PreApproved,
+		)
+		if err != nil {
+			slog.WarnContext(r.Context(), "Couldn't create external resource", slog.Any("err", err))
+			htmxErrorToast(w, r, "Couldn't create external resource")
+			rt.statusPage(w, r, 500, "Couldn't create external resource")
+			return
+		}
+		w.Header().Add("X-Resource-ID", fmt.Sprintf("%d", res.ID))
+		htmxSuccessToast(w, r, "External resource created")
+		w.Header().Add("HX-Redirect", fmt.Sprintf("/problems/%d", util.Problem(r).ID))
+		http.Redirect(w, r, fmt.Sprintf("/problems/%d", util.Problem(r).ID), http.StatusOK)
+	}
+}
+
+//func (rt *Web) updateExternalResource() http.HandlerFunc {
+//	templ := rt.parse(nil, "externalResources/view.html")
+//	return func(w http.ResponseWriter, r *http.Request) {
+//		var author *kilonova.UserBrief
+//		if res := util.ExternalResource(r); res.ProposedBy != nil {
+//			if proposer, err := rt.base.UserBrief(r.Context(), *res.ProposedBy); err != nil {
+//				slog.WarnContext(r.Context(), "Couldn't get external resource author", slog.Any("err", err))
+//			} else {
+//				author = proposer
+//			}
+//		}
+//		rt.runTempl(w, r, templ, &ResourcesPageParams{
+//			util.ExternalResource(r),
+//			util.Problem(r),
+//			author,
+//		})
+//	}
+//}
+//func (rt *Web) deleteExternalResource() http.HandlerFunc {
+//	templ := rt.parse(nil, "externalResources/view.html")
+//	return func(w http.ResponseWriter, r *http.Request) {
+//		var author *kilonova.UserBrief
+//		if res := util.ExternalResource(r); res.ProposedBy != nil {
+//			if proposer, err := rt.base.UserBrief(r.Context(), *res.ProposedBy); err != nil {
+//				slog.WarnContext(r.Context(), "Couldn't get external resource author", slog.Any("err", err))
+//			} else {
+//				author = proposer
+//			}
+//		}
+//		rt.runTempl(w, r, templ, &ResourcesPageParams{
+//			util.ExternalResource(r),
+//			util.Problem(r),
+//			author,
+//		})
+//	}
+//}
+
 func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *template.Template, user *kilonova.UserFull) {
-	if !(ViewOtherProfiles.Value() || util.UserBrief(r).IsAdmin() || (util.UserBrief(r) != nil && util.UserBrief(r).ID == user.ID)) {
+	if !(flags.ViewOtherProfiles.Value() || util.UserBrief(r).IsAdmin() || (util.UserBrief(r) != nil && util.UserBrief(r).ID == user.ID)) {
 		rt.statusPage(w, r, 400, "You are not allowed to view other profiles!")
 		return
 	}
@@ -1774,7 +1823,7 @@ func (rt *Web) checkLockout() func(next http.Handler) http.Handler {
 	templ := rt.parse(nil, "util/lockout.html")
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if ForceLogin.Value() && !util.UserBrief(r).IsAuthed() {
+			if flags.ForceLogin.Value() && !util.UserBrief(r).IsAuthed() {
 				http.Redirect(w, r, "/login?back="+url.PathEscape(r.URL.Path), http.StatusTemporaryRedirect)
 				return
 			}
@@ -1814,8 +1863,8 @@ func (rt *Web) logout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, redirect+"?logout=1", http.StatusTemporaryRedirect)
 }
 
-func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Template, name string, data any) {
-	templ, err := templ.Clone()
+func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Template, name string, data any) {
+	hTempl, err := hTempl.Clone()
 	if err != nil {
 		fmt.Fprintf(w, "Error cloning template, report to admin: %s", err)
 		return
@@ -1834,7 +1883,7 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 	renderStart := time.Now()
 
 	// Add request-specific functions
-	templ.Funcs(template.FuncMap{
+	hTempl.Funcs(template.FuncMap{
 		"getText": func(line string, args ...any) string {
 			return kilonova.GetText(lang, line, args...)
 		},
@@ -1887,18 +1936,7 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 			return b.String()
 		},
 		"reqPath": func() string {
-			if r.URL.Path == "/login" || r.URL.Path == "/signup" {
-				// when navigating between /login and /signup, retain back or just leave empty
-				val := "/"
-				if back := r.FormValue("back"); back != "" {
-					link, err := url.Parse(back)
-					if err == nil {
-						val = link.Path
-					}
-				}
-				return val
-			}
-			return r.URL.Path
+			return reqPath(r)
 		},
 		"htmxRequest": func() bool {
 			return isHTMXRequest(r)
@@ -1907,7 +1945,8 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 			return lang
 		},
 		"isDarkMode": func() bool {
-			return util.Theme(r) == kilonova.PreferredThemeDark
+			// TODO: Remove once layout.html is removed
+			return util.Theme(r.Context()) == kilonova.PreferredThemeDark
 		},
 		"authed": func() bool {
 			return authedUser != nil
@@ -1921,9 +1960,7 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 		"authedUser": func() *kilonova.UserBrief {
 			return authedUser
 		},
-		"isAdmin": func() bool {
-			return authedUser != nil && authedUser.Admin
-		},
+		"isAdmin": authedUser.IsAdmin,
 		"discordIdentity": func(user *kilonova.UserFull) *discordgo.User {
 			dUser, err := rt.base.GetDiscordIdentity(r.Context(), user.ID)
 			if err != nil {
@@ -1952,6 +1989,9 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 		},
 		"canViewAllSubs": func() bool {
 			return rt.canViewAllSubs(authedUser)
+		},
+		"navbar": func() templ.Component {
+			return components.Navbar(rt.canViewAllSubs(authedUser), reqPath(r))
 		},
 		"contestRegistration": func(c *kilonova.Contest) *kilonova.ContestRegistration {
 			if authedUser == nil || c == nil {
@@ -2038,21 +2078,34 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, templ *template.Templat
 		"inModal": func() bool {
 			return name == "modal"
 		},
-		"prepareDuration": func() time.Duration {
-			return renderStart.Sub(r.Context().Value(MiddlewareStartKey).(time.Time))
+		"footer": func() templ.Component {
+			prepareDuration := renderStart.Sub(r.Context().Value(MiddlewareStartKey).(time.Time))
+			return components.Footer(prepareDuration, renderStart, fsys)
 		},
-		"renderDuration": func() time.Duration {
-			return time.Since(renderStart)
-		},
-		"queryCount": func() int64 {
-			return rt.base.GetQueryCounter(r.Context())
+		"renderComponent": func(c templ.Component) (template.HTML, error) {
+			return templ.ToGoHTML(r.Context(), c)
 		},
 	})
 
-	if err := templ.ExecuteTemplate(w, name, data); err != nil {
+	if err := hTempl.ExecuteTemplate(w, name, data); err != nil {
 		fmt.Fprintf(w, "Error executing template, report to admin: %s", err)
 		slog.WarnContext(r.Context(), "Error executing template", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", util.UserBrief(r)))
 	}
+}
+
+func reqPath(r *http.Request) string {
+	if r.URL.Path == "/login" || r.URL.Path == "/signup" {
+		// when navigating between /login and /signup, retain back or just leave empty
+		val := "/"
+		if back := r.FormValue("back"); back != "" {
+			link, err := url.Parse(back)
+			if err == nil {
+				val = link.Path
+			}
+		}
+		return val
+	}
+	return r.URL.Path
 }
 
 // Runs template, but if hx_modal form parameter is "true" and template has "modal_content" template defined, can also return a modal

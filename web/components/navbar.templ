@@ -1,0 +1,124 @@
+package components
+
+import (
+	"context"
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
+)
+
+func authed(ctx context.Context) bool {
+	return util.UserBriefContext(ctx) != nil
+}
+
+templ Navbar(viewAllSubs bool, reqPath string) {
+	<header class="text-2xl bg-gray-100 dark:bg-gray-800 border-b-2 border-gr md:flex md:justify-between md:px-5 md:py-3 md:items-center">
+		<div class="flex items-center justify-between px-4 py-3 md:p-0">
+			<div class="inline-block">
+				<a class="roboto h-8 black-anchor" href="/">{ flags.NavbarBranding.Value() }</a>
+			</div>
+			<div class="md:hidden inline-block">
+				<a id="theme_button_mobile" class="text-gray-500 dark:text-gray-300 hover:text-black focus:text-black dark:hover:text-white dark:focus:text-white focus:outline-none h-6 w-6 mx-2" href="#">
+					if util.Theme(ctx) == kilonova.PreferredThemeDark {
+						<i id="theme_button_mobile_icon" class="fas fa-fw fa-lightbulb"></i>
+					} else {
+						<i id="theme_button_mobile_icon" class="fas fa-fw fa-moon"></i>
+					}
+					<span class="fa-sr-only">{ T(ctx, "toggleTheme") }</span>
+				</a>
+				<button id="nav-toggler" type="button" onclick="navbar_mgr.toggleNavbar()" class="fas fa-bars text-gray-500 dark:text-gray-300 hover:text-black focus:text-black dark:hover:text-white dark:focus:text-white focus:outline-none h-6 w-6 mx-2" aria-label={ T(ctx, "toggleNavbar") }></button>
+			</div>
+		</div>
+		<nav id="nav-dropdown" class="px-2 pt-1 pb-3 md:flex md:p-0 z-50">
+			<a id="theme_button" class="hidden md:block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="#">
+				if util.Theme(ctx) == kilonova.PreferredThemeDark {
+					<i id="theme_button_mobile_icon" class="fas fa-fw fa-lightbulb"></i>
+				} else {
+					<i id="theme_button_mobile_icon" class="fas fa-fw fa-moon"></i>
+				}
+				<span class="fa-sr-only">{ T(ctx, "toggleTheme") }</span>
+			</a>
+			if flags.NavbarProblems.Value() {
+				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/problems">{ T(ctx, "problem.list") }</a>
+			}
+			if flags.NavbarContests.Value() {
+				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/contests?page=official">{ T(ctx, "contests") }</a>
+			}
+			if viewAllSubs && flags.NavbarSubmissions.Value() {
+				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/submissions">{ T(ctx, "submission.list") }</a>
+			}
+			if !authed(ctx) {
+				if sudoapi.SignupEnabled.Value() {
+					<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href={ templ.URL("/signup?back=" + reqPath) }>{ T(ctx, "auth.signup") }</a>
+				}
+				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href={ templ.URL("/login?back=" + reqPath) }>{ T(ctx, "auth.login") }</a>
+			} else {
+				{{ authedUser := util.UserBriefContext(ctx) }}
+				<div id="pr-dropdown" class="relative">
+					<button onclick="navbar_mgr.toggleDropdown()" id="profile-dropdown-button" class="relative z-10 block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable">{ authedUser.Name }<i id="dropdown-caret" class="ml-1 fas fa-caret-down"></i></button>
+					<div id="profile-dropdown" class="dropdown-list hidden">
+						<a class="dropdown-list-item" href="/profile">
+							<i class="ml-n2 fas fa-user fa-fw"></i> { T(ctx, "profile.url") }
+						</a>
+						<a class="dropdown-list-item" href="/settings">
+							<i class="ml-n2 fas fa-user-cog fa-fw"></i> { T(ctx, "settings") }
+						</a>
+						if viewAllSubs && !flags.NavbarSubmissions.Value() {
+							<a class="dropdown-list-item" href="/submissions">
+								<i class="ml-n2 fas fa-table-list fa-fw"></i> { T(ctx, "submission.list") }
+							</a>
+						}
+						if !flags.NavbarContests.Value() {
+							<a class="dropdown-list-item" href="/contests?page=official">
+								<i class="ml-n2 fas fa-medal fa-fw"></i> { T(ctx, "contests") }
+							</a>
+						}
+						<a class="dropdown-list-item" href="/tags/">
+							<i class="ml-n2 fas fa-tag fa-fw"></i> { T(ctx, "tags") }
+						</a>
+						if authedUser.IsProposer() {
+							<div class="dropdown-divider"></div>
+							<a class="dropdown-list-item" href="/proposer">
+								<i class="ml-n2 fas fa-chalkboard-teacher fa-fw"></i> { T(ctx, "panel.proposer") }
+							</a>
+							<a class="dropdown-list-item" href="/problem_lists">
+								<i class="ml-n2 fas fa-list-ul fa-fw"></i> { T(ctx, "problem_lists") }
+							</a>
+							<a class="dropdown-list-item" href="/posts">
+								<i class="ml-n2 fas fa-newspaper fa-fw"></i> { T(ctx, "blog_posts") }
+							</a>
+						}
+						if authedUser.IsAdmin() {
+							<div class="dropdown-divider"></div>
+							<a class="dropdown-list-item" href="/admin">
+								<i class="ml-n2 fas fa-sliders-h fa-fw"></i> { T(ctx, "panel.admin") }
+							</a>
+							<a class="dropdown-list-item" href="/admin/users">
+								<i class="ml-n2 fas fa-users fa-fw"></i> { T(ctx, "users") }
+							</a>
+							<a class="dropdown-list-item" href="/admin/auditLog">
+								<i class="ml-n2 fas fa-file-medical-alt fa-fw"></i> { T(ctx, "panel.audit_log") }
+							</a>
+							<a class="dropdown-list-item" href="/admin/debug">
+								<i class="ml-n2 fas fa-bug-slash fa-fw"></i> { T(ctx, "panel.debug") }
+							</a>
+							<a class="dropdown-list-item" href="/grader">
+								<i class="ml-n2 fas fa-heart-pulse fa-fw"></i> { T(ctx, "panel.grader") }
+							</a>
+						}
+						<div class="dropdown-divider"></div>
+						<a class="dropdown-list-item" href={ templ.URL("/logout?back=" + reqPath) }>
+							<i class="ml-n2 fas fa-sign-out-alt fa-fw"></i> { T(ctx, "auth.logout") }
+						</a>
+					</div>
+				</div>
+			}
+		</nav>
+	</header>
+	<script>
+    var navbar_mgr = new bundled.NavBarManager()
+    document.getElementById("theme_button").addEventListener("click", bundled.toggleTheme)
+    document.getElementById("theme_button_mobile").addEventListener("click", bundled.toggleTheme)
+    </script>
+}

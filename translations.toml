@@ -302,6 +302,38 @@ ro = "Statistici pentru "
 en = "New external resource"
 ro = "Resursă externă nouă"
 
+[url]
+en = "URL"
+ro = "URL"
+
+[external_resource.type.label]
+en = "Type"
+ro = "Tip"
+
+[external_resource.type.editorial]
+en = "Editorial"
+ro = "Editorial"
+
+[external_resource.type.video]
+en = "Video"
+ro = "Video"
+
+[external_resource.type.solution]
+en = "Solution"
+ro = "Soluție"
+
+[external_resource.type.article]
+en = "Article"
+ro = "Articol"
+
+[external_resource.type.other]
+en = "Other"
+ro = "Altele"
+
+[preApprovedResource]
+en = "Pre-approved resource"
+ro = "Resursă pre-aprobată"
+
 [header.past_submissions]
 en = "Past submissions"
 ro = "Submisii anterioare"
@@ -3093,8 +3125,8 @@ en = "External resources"
 ro = "Resurse externe"
 
 [suggest_resource]
-en = "Suggest resource"
-ro = "Propune resursă"
+en = "Add resource"
+ro = "Adăugare resursă"
 
 [no_resources]
 en = "No resources added"

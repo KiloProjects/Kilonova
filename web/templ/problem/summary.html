@@ -212,7 +212,7 @@
             </div>
         </details>
         {{ end }}
-        {{ if and (not .Topbar.Contest) (boolFlag "feature.external_resources.enabled") }}
+        {{ if and (not .Topbar.Contest) .ShowExternalResources }}
             <details class="segment-panel" {{if gt (len .ExternalResources) 0}}open{{end}} role="region"> <!-- External resources -->
                 <summary>
                     <h2 class="inline-block">{{getText "external_resources"}}</h2>
@@ -221,7 +221,7 @@
                         <div class="list-group mb-2">
                         {{with .ExternalResources}}
                             {{ range . }}
-                                <a style="text-overflow: ellipsis;" href="{{.URL}}" class="list-group-item flex justify-between">
+                                <a style="text-overflow: ellipsis;" href="{{.URL}}" class="list-group-item flex justify-between" title="{{printf "external_resource.type.%s" .Type | getText}}">
                                     <span><i class="fas fa-fw {{.Type.FontAwesomeIcon}}"></i> {{.Name}}</span>
                                 </a>
                             {{ end }}
@@ -232,10 +232,12 @@
                         {{end}}
                         </div>
                 </div>
-                <div class="grid grid-cols-1 lg:grid-cols-2 justify-between">
-                    <a>{{getText "view_details"}}</a>
-                    <a class="lg:text-right">{{getText "suggest_resource"}}</a>
-                </div>
+                {{if .Topbar.IsProblemEditor}}
+                    <div class="grid grid-cols-1 lg:grid-cols-2 justify-between">
+                        <a href="{{.Topbar.URLPrefix}}/problems/{{.Problem.ID}}/externalResources">{{getText "view_details"}}</a>
+                        <a class="lg:text-right" href="{{.Topbar.URLPrefix}}/problems/{{.Problem.ID}}/externalResources/create">{{getText "suggest_resource"}}</a>
+                    </div>
+                {{end}}
             </details>
         {{ end }}
     </aside>

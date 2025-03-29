@@ -25,6 +25,9 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/a-h/templ"
+
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/integrations/maxmind"
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -43,36 +46,8 @@ import (
 	"golang.org/x/text/language"
 )
 
-var (
-	CCDisclaimer    = config.GenFlag("frontend.footer.cc_disclaimer", true, "CC disclaimer in footer")
-	DiscordInviteID = config.GenFlag("frontend.footer.discord_id", "Qa6Ytgh", "Invite ID for Discord server")
-
-	AllSubsPage       = config.GenFlag("feature.frontend.all_subs_page", true, "Anyone can view all submissions")
-	ViewOtherProfiles = config.GenFlag("feature.frontend.view_other_profiles", true, "Allow anyone to view other profiles")
-
-	FrontPageLatestProblems = config.GenFlag("feature.frontend.front_page_latest_pbs", true, "Show list with latest published problems on front page")
-	FrontPageProblems       = config.GenFlag("feature.frontend.front_page_pbs", true, "Show problems on front page")
-	FrontPagePbDetails      = config.GenFlag("feature.frontend.front_page_pbs_links", true, "On the front page problems, show links to other resources")
-	FrontPageRandomProblem  = config.GenFlag("feature.frontend.front_page_random_pb", true, "On the front page problems, show buttons to draw a random problem")
-
-	FrontPageAnnouncement = config.GenFlag("frontend.front_page_announcement", "default", `Custom front page announcement ("default" = default text)`)
-
-	SidebarContests = config.GenFlag("feature.frontend.front_page_csidebar", true, "Show contests in sidebar on the front page")
-	ShowTrending    = config.GenFlag("frontend.front_page.show_trending", true, "Show trending problems on the front page sidebar")
-
-	ForceLogin = config.GenFlag("behavior.force_authed", false, "Force authentication when accessing website")
-
-	GoatCounterDomain = config.GenFlag("feature.analytics.goat_prefix", "https://goat.kilonova.ro", "URL prefix for GoatCounter analytics")
-	TwiplaID          = config.GenFlag("feature.analytics.twipla_id", "", "ID for TWIPLA Analytics integration")
-	FaroID            = config.GenFlag("feature.analytics.faro_id", "", "ID for Grafana Faro integration")
-
-	NavbarBranding = config.GenFlag("frontend.navbar.branding", "Kilonova", "Branding in navbar")
-
-	FeedbackURL    = config.GenFlag("feature.frontend.feedback_url", "", "Feedback URL for main page")
-	QuickSearchBox = config.GenFlag("feature.frontend.quick_search", false, "Quick search box on main page")
-)
-
 //go:generate go run ../scripts/chroma_gen -o ./static/chroma.css
+//go:generate go tool templ generate
 
 //go:embed static
 var embedded embed.FS
@@ -117,8 +92,8 @@ func (rt *Web) problemRouter(inContest bool) func(r chi.Router) {
 				r.Use(rt.ValidateProblemFullyVisible)
 				r.Use(rt.checkFlag(sudoapi.ExternalResourcesEnabled))
 				r.Get("/", rt.externalResources())
-				//r.With(rt.mustBeProblemEditor).Get("/create", rt.createExternalResourceView())
-				//r.With(rt.mustBeProblemEditor).Post("/create", rt.createExternalResource())
+				r.With(rt.mustBeProblemEditor).Get("/create", rt.createExternalResourceView())
+				r.With(rt.mustBeProblemEditor).Post("/create", rt.createExternalResource())
 				//r.With(rt.ValidateExternalResourceID).Route("/externalResources/{resID}", func(r chi.Router) {
 				//	r.Get("/", rt.externalResource())
 				//})
@@ -163,13 +138,11 @@ func (rt *Web) Handler() http.Handler {
 		r.With(rt.mustBeVisitor).Get("/resetPassword/{reqid}", rt.resetPassword())
 
 		r.Get("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
-			file, err := embedded.Open("static/robots.txt")
-			if err != nil {
-				slog.WarnContext(r.Context(), "Could not open robots.txt")
-				return
-			}
-			defer file.Close()
-			http.ServeContent(w, r, "robots.txt", time.Now(), file.(io.ReadSeeker))
+			http.ServeFileFS(w, r, embedded, "static/robots.txt")
+		})
+
+		r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFileFS(w, r, embedded, "static/favicons/favicon.ico")
 		})
 
 		r.Get("/termsOfService", rt.justRender("util/termsOfService.html"))
@@ -195,27 +168,13 @@ func (rt *Web) Handler() http.Handler {
 		r.With(rt.mustBeAuthed).Get("/profile/{user}/linked", rt.linkStatus())
 		r.With(rt.mustBeAuthed).Get("/profile/{user}/sessions", rt.userSessions())
 		r.With(rt.mustBeAuthed).Get("/settings", rt.justRender("settings.html"))
-		r.With(rt.checkFlag(DonationsEnabled)).Get("/donate", rt.donationPage())
+		r.With(rt.checkFlag(flags.DonationsEnabled)).Get("/donate", rt.donationPage())
 		r.Get("/grader", rt.graderInfo())
 
 		r.Route("/problems", func(r chi.Router) {
 			r.Get("/", rt.problems())
 			r.Get("/random", rt.randomProblem())
 			r.Route("/{pbid}", rt.problemRouter(false))
-		})
-
-		// TODO: This is not goooddddd, this should be related to the problem, not necessarily something global.
-		// Admins will have their own panel to view them all maybe
-		r.Group(func(r chi.Router) {
-			r.Use(rt.checkFlag(sudoapi.ExternalResourcesEnabled))
-			r.Get("/externalResources", rt.externalResources())
-			//r.Get("/externalResources/create", rt.createExternalResourceView())
-			//r.Post("/externalResources/create", rt.createExternalResource())
-			r.With(rt.ValidateExternalResourceID).Route("/externalResources/{resID}", func(r chi.Router) {
-				r.Get("/", rt.externalResource())
-				r.Put("/", rt.updateExternalResource())
-				r.Delete("/", rt.deleteExternalResource())
-			})
 		})
 
 		r.Route("/posts", func(r chi.Router) {
@@ -290,6 +249,8 @@ func (rt *Web) Handler() http.Handler {
 		rt.statusPage(w, r, 404, "")
 	})
 
+	rt.checkUsedFunctions()
+
 	return r
 }
 
@@ -311,6 +272,14 @@ func (rt *Web) parse(optFuncs template.FuncMap, files ...string) *template.Templ
 		optFuncs[k] = v
 	}
 	return parse(optFuncs, files...)
+}
+
+func (rt *Web) checkUsedFunctions() {
+	for key := range rt.funcs {
+		if _, ok := calledFunctions[key]; !ok {
+			slog.DebugContext(context.Background(), "Possibly unused template function", slog.String("name", key))
+		}
+	}
 }
 
 // NewWeb returns a new web instance
@@ -538,9 +507,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"serverTime": func() string {
 			return time.Now().Format(time.RFC3339Nano)
 		},
-		"serverTimeFooter": func() string {
-			return time.Now().Format("15:04:05")
-		},
 		"syntaxHighlight": func(code []byte, lang string) (string, error) {
 			fmt := chtml.New(chtml.WithClasses(true), chtml.TabWidth(4))
 			if lang == "pascal" {
@@ -621,13 +587,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 				return nil
 			}
 			return sts
-		},
-		"ispdflink": func(link string) bool {
-			u, err := url.Parse(link)
-			if err != nil {
-				return false
-			}
-			return path.Ext(u.Path) == ".pdf"
 		},
 		"encodeJSON": func(data any) (string, error) {
 			d, err := json.Marshal(data)
@@ -877,18 +836,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			slog.ErrorContext(ctx, "Uninitialized `authed`")
 			return false
 		},
-		"prepareDuration": func() time.Duration {
-			slog.ErrorContext(ctx, "Uninitialized `prepareDuration`")
-			return time.Duration(0)
-		},
-		"renderDuration": func() time.Duration {
-			slog.ErrorContext(ctx, "Uninitialized `renderDuration`")
-			return time.Duration(0)
-		},
-		"queryCount": func() int64 {
-			slog.ErrorContext(ctx, "Uninitialized `queryCount`")
-			return -1
-		},
 		"contentUser": func() *kilonova.UserBrief {
 			slog.ErrorContext(ctx, "Uninitialized `contentUser`")
 			return nil
@@ -915,10 +862,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		},
 		"contestLeaderboardVisible": func(c *kilonova.Contest) bool {
 			slog.ErrorContext(ctx, "Uninitialized `contestLeaderboardVisible`")
-			return false
-		},
-		"contestProblemsVisible": func(c *kilonova.Contest) bool {
-			slog.ErrorContext(ctx, "Uninitialized `contestProblemsVisible`")
 			return false
 		},
 		"contestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {
@@ -948,6 +891,18 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"subCode": func(sub *kilonova.FullSubmission) []byte {
 			slog.ErrorContext(ctx, "Uninitialized `subCode`")
 			return nil
+		},
+		"navbar": func() templ.Component {
+			slog.ErrorContext(ctx, "Uninitialized `navbar`")
+			return nil
+		},
+		"footer": func() templ.Component {
+			slog.ErrorContext(ctx, "Uninitialized `footer`")
+			return nil
+		},
+		"renderComponent": func(c templ.Component) (template.HTML, error) {
+			slog.ErrorContext(ctx, "Uninitialized `renderComponent`")
+			return "", nil
 		},
 	}
 	return &Web{funcs, base}

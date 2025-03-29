@@ -1,0 +1,153 @@
+package components
+
+import (
+	"context"
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"strconv"
+	"time"
+)
+
+templ Button() {
+	<button class="btn btn-blue">
+		{ children... }
+	</button>
+}
+
+type HashNamer interface {
+	HashName(filename string) string
+}
+
+func language(ctx context.Context) string {
+	return util.LanguageContext(ctx)
+}
+
+func T(ctx context.Context, key string, vals ...any) string {
+	return kilonova.GetText(util.LanguageContext(ctx), key, vals...)
+}
+
+templ Footer(prepareDuration time.Duration, renderStart time.Time, hashNamer HashNamer) {
+	<footer class="w-full bg-gray-200 dark:bg-gray-800 py-2 mt-6">
+		<div class="c-container min-h-0 mx-auto">
+			<div class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mb-2 justify-between">
+				<div class="h-auto mb-2">
+					<div class="text-lg">{ T(ctx, "usefulInfo") }</div>
+					<ul>
+						<li><a class="black-anchor" href="/">{ T(ctx, "frontPage") }</a></li>
+						if flags.DonationsEnabled.Value() {
+							<li><a class="black-anchor" href="/donate">{ T(ctx, "donate") }</a></li>
+						}
+						<li><a class="black-anchor" href="/problems">{ T(ctx, "problem.list") }</a></li>
+						<li><a class="black-anchor" href="/contests?page=official">{ T(ctx, "contests") }</a></li>
+						<li><a class="black-anchor" href="/submissions">{ T(ctx, "submission.list") }</a></li>
+						<li><a class="black-anchor" href="/posts">{ T(ctx, "blogpost.list") }</a></li>
+					</ul>
+					<label class="block my-2">
+						<select id="sessionLang" class="form-select" autocomplete="off">
+							<option
+								value="ro"
+								if language(ctx) == "ro" {
+									selected
+								}
+							>🇷🇴 Română</option>
+							<option
+								value="en"
+								if language(ctx) == "en" {
+									selected
+								}
+							>🇬🇧 English</option>
+						</select>
+						<span>{ T(ctx, "displayLang") }</span>
+					</label>
+				</div>
+				<div class="h-auto mb-2">
+					<div class="text-lg">{ T(ctx, "otherInfo") }</div>
+					<ul>
+						<li><span class="black-span"><i class="fas fa-fw fa-code-branch"></i> Kilonova { kilonova.Version }</span></li>
+						<li><span class="black-span"><i class="fas fa-fw fa-clock"></i> { T(ctx, "serverTime") }: <span id="footer_server_time">{ time.Now().Format("15:04:05") }</span></span></li>
+						if config.Common.Debug {
+							<li><span class="black-span"><i class="text-red-600 fas fa-fw fa-exclamation-triangle"></i> Debug Mode active</span></li>
+						}
+						if len(flags.DiscordInviteID.Value()) > 0 {
+							<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href={ templ.URL("https://discord.gg/" + flags.DiscordInviteID.Value()) }><i class="fab fa-fw fa-discord"></i> Discord Server</a></li>
+						}
+						<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="https://github.com/KiloProjects/Kilonova"><i class="fab fa-fw fa-github"></i> GitHub</a></li>
+						<li><a class="black-anchor" rel="noopener noreferrer" href="/termsOfService"><i class="fas fa-fw fa-gavel"></i> { T(ctx, "termsOfService") }</a></li>
+						<li><a class="black-anchor" rel="noopener noreferrer" href="/privacyPolicy"><i class="fas fa-fw fa-unlock"></i> { T(ctx, "privacyPolicy") }</a></li>
+						<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="mailto:admin@kilonova.ro?subject=Contact"><i class="fas fa-fw fa-envelope"></i> Contact</a></li>
+					</ul>
+				</div>
+				<div class="h-auto mb-2 reset-list">
+					<div class="text-lg">{ T(ctx, "credits") }</div>
+					<ul>
+						<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="https://github.com/AlexVasiluta">Platform made with <i class="fas fa-fw fa-heart"></i> by Alex Vasiluță </a></li>
+						<li class="black-span">Problems generously uploaded by the Kilonova community</li>
+						<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="https://github.com/Secret-chest">Favicon by Secret-chest </a></li>
+						if flags.CCDisclaimer.Value() {
+							<li class="black-anchor">
+								Cu excepția cazurilor unde este specificat diferit, conținutul platformei este publicat sub licența <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>. Vedeți <a href="https://kilonova.ro/posts/creative-commons">aici</a> mai multe detalii.
+								<a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+									<img alt="Creative Commons Licence" style="border-width:0" width="88" height="31" src={ "/" + hashNamer.HashName("static/by-nc-sa.eu.png") }/>
+								</a>
+							</li>
+						}
+					</ul>
+				</div>
+			</div>
+			if flags.FooterTimings.Value() {
+				<details class="text-muted reset-list">
+					<summary>
+						{ T(ctx, "requestStats") }
+					</summary>
+					<ul>
+						<li>{ T(ctx, "prepareDuration") }: { prepareDuration.String() }</li>
+						<li>{ T(ctx, "renderDuration") }: { time.Since(renderStart).String() }</li>
+						if util.UserBriefContext(ctx).IsAdmin() {
+							<li>{ T(ctx, "queryCount") }: ~{ strconv.FormatInt(sudoapi.GetQueryCounter(ctx), 10) }</li>
+						}
+					</ul>
+				</details>
+			}
+		</div>
+	</footer>
+	<script>
+        document.getElementById("sessionLang").addEventListener("change", (e)=>{
+            e.preventDefault();
+            bundled.setLanguage(e.currentTarget.value)
+        })
+    </script>
+	if domain := flags.GoatCounterDomain.Value(); len(domain) > 0 {
+		<script data-goatcounter={ domain + "/count" } async src={ domain + "/count.js" }></script>
+	}
+	if val := flags.TwiplaID.Value();len(val) > 0 {
+		@TwiplaScript(val)
+	}
+}
+
+templ TwiplaScript(websiteID string) {
+	<script>
+	(function(v, i, s, a, t) {
+        v[t] = v[t] || function() {
+            (v[t].v = v[t].v || []).push(arguments)
+        };
+        if (!v._visaSettings) {
+            v._visaSettings = {}
+        }
+        v._visaSettings[a] = {
+            v: '1.0',
+            s: a,
+            a: '1',
+            t: t
+        };
+        var b = i.getElementsByTagName('body')[0];
+        var p = i.createElement('script');
+        p.defer = 1;
+        p.async = 1;
+        p.src = s + '?s=' + a;
+        b.appendChild(p)
+    })(window, document, '//app-worker.visitor-analytics.io/main.js', {{ websiteID }}, 'va')
+	</script>
+}
