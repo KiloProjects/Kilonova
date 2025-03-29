@@ -48,7 +48,7 @@ type Profile struct {
 	BioData   string `json:"bio_data"`
 
 	// For printing purposes
-	ExternalID string `json:"external_id"`
+	ExternalID any `json:"external_id,omitempty,omitzero"`
 
 	Online      bool     `json:"online"`
 	MemberNames []string `json:"member_names"`
@@ -132,7 +132,7 @@ func Kilonova() error {
 		if err := base.CheckValidUsername(config.Profiles[i].Slug); err != nil {
 			return err
 		}
-		if len(team.ExternalID) > 0 {
+		if config.Profiles[i].ExternalID != nil {
 			anyExternalID = true
 		}
 	}
@@ -281,7 +281,11 @@ func Kilonova() error {
 			values = slices.Delete(values, 1, 2)
 		}
 		if anyExternalID {
-			values = append(values, t.ExternalID)
+			val, err := json.Marshal(t.ExternalID)
+			if err != nil {
+				val = []byte(err.Error())
+			}
+			values = append(values, string(val))
 		}
 		cw.Write(values)
 	}

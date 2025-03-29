@@ -5,7 +5,7 @@
 #set text(size: 13pt)
 
 #let data = csv("in.csv", row-type: dictionary).map(entry => table.cell(breakable: false)[
-    #text(weight: "bold", size: 1.25em)[#entry.at("Team Name")] \
+    #if entry.at("Team Name").len() > 0 {[ #text(weight: "bold", size: 1.25em)[#entry.at("Team Name")] \ ]}
     Username: #text(font: "DejaVu Sans Mono")[#entry.at("Username")] \
     Password: #text(font: "DejaVu Sans Mono")[#entry.at("Password")]
 ])
