@@ -325,7 +325,7 @@ func (rt *Web) tag() http.HandlerFunc {
 			pbs = []*sudoapi.FullProblem{}
 		}
 
-		relevantTags, err := rt.base.RelevantTags(r.Context(), util.Tag(r).ID, 15)
+		relevantTags, err := rt.base.RelevantTags(r.Context(), util.Tag(r).ID, 15, util.UserBrief(r))
 		if err != nil {
 			slog.WarnContext(r.Context(), "Couldn't fetch relevant tags", slog.Any("err", err))
 			relevantTags = nil

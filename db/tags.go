@@ -47,7 +47,7 @@ func (s *DB) TagsByType(ctx context.Context, tagType kilonova.TagType) ([]*kilon
 }
 
 // RelevantTags returns tags that are most commonly found in problems containing that tag
-func (s *DB) RelevantTags(ctx context.Context, tagID int, max int) ([]*kilonova.Tag, error) {
+func (s *DB) RelevantTags(ctx context.Context, tagID int, max int, lookingUserID int) ([]*kilonova.Tag, error) {
 	var tags []*kilonova.Tag
 	if max <= 0 {
 		max = 10
@@ -57,10 +57,11 @@ func (s *DB) RelevantTags(ctx context.Context, tagID int, max int) ([]*kilonova.
 		SELECT rez.tag_id, COUNT(rez.tag_id) AS stats 
 			FROM problem_tags rez 
 			INNER JOIN problem_tags tag_pbs ON (rez.tag_id != tag_pbs.tag_id AND tag_pbs.tag_id = $1 AND rez.problem_id = tag_pbs.problem_id)
+			INNER JOIN persistently_visible_pbs($3) ON (tag_pbs.problem_id = persistently_visible_pbs.problem_id)
 			GROUP BY rez.tag_id 
 	)
 	SELECT tags.* FROM tags, rel_tag_ids WHERE tags.id = rel_tag_ids.tag_id ORDER BY rel_tag_ids.stats DESC LIMIT $2 
-	`, tagID, max)
+	`, tagID, max, lookingUserID)
 	if errors.Is(err, pgx.ErrNoRows) || (err == nil && tags == nil) {
 		return []*kilonova.Tag{}, nil
 	}

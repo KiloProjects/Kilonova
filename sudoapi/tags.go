@@ -47,8 +47,12 @@ func (s *BaseAPI) TagsByType(ctx context.Context, tagType kilonova.TagType) ([]*
 	return tags, nil
 }
 
-func (s *BaseAPI) RelevantTags(ctx context.Context, tagID int, max int) ([]*kilonova.Tag, error) {
-	tags, err := s.db.RelevantTags(ctx, tagID, max)
+func (s *BaseAPI) RelevantTags(ctx context.Context, tagID int, max int, lookingUser *kilonova.UserBrief) ([]*kilonova.Tag, error) {
+	var id int
+	if lookingUser != nil {
+		id = lookingUser.ID
+	}
+	tags, err := s.db.RelevantTags(ctx, tagID, max, id)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
 			zap.S().Warn(err)
