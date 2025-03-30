@@ -64,7 +64,7 @@ func (r *mathjaxRenderer) renderInlineMath(w util.BufWriter, source []byte, n as
 
 func (r *mathjaxRenderer) writeLines(w *bytes.Buffer, source []byte, n ast.Node) {
 	l := n.Lines().Len()
-	for i := 0; i < l; i++ {
+	for i := range l {
 		line := n.Lines().At(i)
 		w.Write(line.Value(source))
 	}

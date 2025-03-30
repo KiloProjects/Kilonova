@@ -38,7 +38,6 @@ require (
 	github.com/klauspost/compress v1.18.0
 	github.com/litao91/goldmark-mathjax v0.0.0-20210217064022-a43cf739a50f
 	github.com/shopspring/decimal v1.4.0
-	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
@@ -47,11 +46,13 @@ require github.com/dchest/captcha v1.1.0
 require github.com/dustin/go-humanize v1.0.1
 
 require (
+	github.com/a-h/templ v0.3.857
 	github.com/bwmarrin/discordgo v0.28.1
 	github.com/danielgtaylor/huma/v2 v2.32.0
 	github.com/dominikbraun/graph v0.23.0
 	github.com/exaring/otelpgx v0.9.0
 	github.com/go-logr/logr v1.4.2
+	github.com/gohugoio/hugo-goldmark-extensions/passthrough v0.3.1-0.20250212020601-ab277a417231
 	github.com/google/btree v1.1.3
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
@@ -60,6 +61,7 @@ require (
 	github.com/riandyrn/otelchi v0.12.1
 	github.com/samber/slog-multi v1.4.0
 	github.com/sashabaranov/go-openai v1.38.1
+	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
 	go.opentelemetry.io/contrib/bridges/otelslog v0.10.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0
 	go.opentelemetry.io/otel v1.35.0
@@ -77,7 +79,6 @@ require (
 
 require (
 	github.com/a-h/parse v0.0.0-20250122154542-74294addb73e // indirect
-	github.com/a-h/templ v0.3.857 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
@@ -132,3 +133,7 @@ tool (
 	github.com/a-h/templ/cmd/templ
 	github.com/tomwright/dasel/v2/cmd/dasel
 )
+
+// Until https://github.com/gohugoio/hugo-goldmark-extensions/pull/34 is merged, we need to
+// replace the original module with my fork that has the fix.
+replace github.com/gohugoio/hugo-goldmark-extensions/passthrough => github.com/AlexVasiluta/hugo-goldmark-extensions/passthrough v0.0.0-20250330172021-9af18403aeaf
