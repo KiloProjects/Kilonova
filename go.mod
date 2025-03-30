@@ -52,7 +52,7 @@ require (
 	github.com/dominikbraun/graph v0.23.0
 	github.com/exaring/otelpgx v0.9.0
 	github.com/go-logr/logr v1.4.2
-	github.com/gohugoio/hugo-goldmark-extensions/passthrough v0.3.1-0.20250212020601-ab277a417231
+	github.com/gohugoio/hugo-goldmark-extensions/passthrough v0.3.1
 	github.com/google/btree v1.1.3
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
@@ -133,7 +133,3 @@ tool (
 	github.com/a-h/templ/cmd/templ
 	github.com/tomwright/dasel/v2/cmd/dasel
 )
-
-// Until https://github.com/gohugoio/hugo-goldmark-extensions/pull/34 is merged, we need to
-// replace the original module with my fork that has the fix.
-replace github.com/gohugoio/hugo-goldmark-extensions/passthrough => github.com/AlexVasiluta/hugo-goldmark-extensions/passthrough v0.0.0-20250330172021-9af18403aeaf
