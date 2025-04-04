@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/text"
 	"log/slog"
 	"os"
 	"strings"
@@ -31,10 +33,98 @@ var (
 		{Open: "$$", Close: "$$"},
 		{Open: "\\[", Close: "\\]"},
 	}
+
+	customBlockInfoKey = parser.NewContextKey()
 )
 
 var ExtensionV2 goldmark.Extender = katexV2Extension{}
 var _ renderer.NodeRenderer = &katexV2Renderer{}
+var _ parser.BlockParser = &katexBlockParser{}
+
+type blockData struct {
+	indent int
+	length int
+	node   ast.Node
+}
+
+type katexBlockParser struct {
+}
+
+func (b *katexBlockParser) Trigger() []byte {
+	return []byte{'$'}
+}
+
+func (b *katexBlockParser) Open(parent ast.Node, reader text.Reader, pc parser.Context) (ast.Node, parser.State) {
+	line, _ := reader.PeekLine()
+	pos := pc.BlockOffset()
+	if pos < 0 || line[pos] != '$' {
+		return nil, parser.NoChildren
+	}
+	findent := pos
+	i := pos
+	for ; i < len(line) && line[i] == '$'; i++ {
+	}
+	oFenceLength := i - pos
+	if oFenceLength < 2 {
+		return nil, parser.NoChildren
+	}
+	node := &passthrough.PassthroughBlock{Delimiters: &passthrough.Delimiters{Open: "$$", Close: "$$"}, BaseBlock: ast.BaseBlock{}}
+	pc.Set(customBlockInfoKey, &blockData{findent, oFenceLength, node})
+	return node, parser.NoChildren
+}
+
+func (b *katexBlockParser) Continue(node ast.Node, reader text.Reader, pc parser.Context) parser.State {
+	line, segment := reader.PeekLine()
+	fdata := pc.Get(customBlockInfoKey).(*blockData)
+
+	w, pos := util.IndentWidth(line, fdata.indent)
+	if w < 3 {
+		i := pos
+		for ; i < len(line) && line[i] == '$'; i++ {
+		}
+		length := i - pos
+		if length >= fdata.length && util.IsBlank(line[i:]) {
+			newline := 1
+			if line[len(line)-1] != '\n' {
+				newline = 0
+			}
+			reader.Advance(segment.Stop - segment.Start - newline + segment.Padding)
+			return parser.Close
+		}
+	}
+	pos, padding := util.IndentPositionPadding(line, reader.LineOffset(), segment.Padding, fdata.indent)
+	if pos < 0 {
+		pos = util.FirstNonSpacePosition(line)
+		if pos < 0 {
+			pos = 0
+		}
+		padding = 0
+	}
+	seg := text.NewSegmentPadding(segment.Start+pos, segment.Stop, padding)
+	// if code block line starts with a tab, keep a tab as it is.
+	if padding != 0 {
+		preserveLeadingTabInCodeBlock(&seg, reader, fdata.indent)
+	}
+	seg.ForceNewline = true // EOF as newline
+	node.Lines().Append(seg)
+	reader.AdvanceAndSetPadding(segment.Stop-segment.Start-pos-1, padding)
+	return parser.Continue | parser.NoChildren
+}
+
+func (b *katexBlockParser) Close(node ast.Node, reader text.Reader, pc parser.Context) {
+	fdata := pc.Get(customBlockInfoKey).(*blockData)
+	if fdata.node == node {
+		pc.Set(customBlockInfoKey, nil)
+	}
+}
+
+func (b *katexBlockParser) CanInterruptParagraph() bool {
+	return true
+}
+
+func (b *katexBlockParser) CanAcceptIndentedLine() bool {
+	return false
+}
 
 type katexV2Extension struct{}
 
@@ -97,10 +187,17 @@ func (r *katexV2Renderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer)
 }
 
 func (katexV2Extension) Extend(m goldmark.Markdown) {
+
 	passthrough.New(passthrough.Config{
 		InlineDelimiters: inlineDelimiters,
 		BlockDelimiters:  blockDelimiters,
 	}).Extend(m)
+
+	m.Parser().AddOptions(
+		parser.WithBlockParsers(
+			util.Prioritized(&katexBlockParser{}, 201),
+		),
+	)
 
 	inlineCache, err := theine.NewBuilder[string, []byte](5000).BuildWithLoader(cacheLoader(false))
 	if err != nil {
@@ -139,4 +236,15 @@ func cacheLoader(display bool) func(ctx context.Context, key string) (theine.Loa
 		}
 		return theine.Loaded[[]byte]{Value: buf.Bytes(), Cost: 1, TTL: 0}, nil
 	}
+}
+
+func preserveLeadingTabInCodeBlock(segment *text.Segment, reader text.Reader, indent int) {
+	offsetWithPadding := reader.LineOffset() + indent
+	sl, ss := reader.Position()
+	reader.SetPosition(sl, text.NewSegment(ss.Start-1, ss.Stop))
+	if offsetWithPadding == reader.LineOffset() {
+		segment.Padding = 0
+		segment.Start--
+	}
+	reader.SetPosition(sl, ss)
 }

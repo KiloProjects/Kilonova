@@ -8,7 +8,7 @@
 <div class="page-holder">
     <div class="page-content-full-wrapper">
         <div class="segment-panel">
-            <kn-announcements contestid="{{.Contest.ID}}" encoded="{{contestAnnouncements .Contest | encodeJSON}}" canedit="{{isContestEditor .Contest}}"></kn-announcements>
+            <kn-announcements contestid="{{.Contest.ID}}" encoded="{{contestAnnouncements .Contest | encodeJSON}}" canedit="{{and (isContestEditor .Contest) (not .Contest.Ended)}}"></kn-announcements>
         </div>
 
         {{ if isContestEditor .Contest }}

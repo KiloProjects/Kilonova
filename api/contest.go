@@ -292,6 +292,10 @@ func (s *API) deleteContestAnnouncement(ctx context.Context, args struct {
 		return kilonova.Statusf(400, "Contest announcement must be from contest")
 	}
 
+	if util.ContestContext(ctx).Ended() {
+		return kilonova.Statusf(400, "Ended contests should not be modified")
+	}
+
 	return s.base.DeleteContestAnnouncement(ctx, announcement.ID)
 }
 

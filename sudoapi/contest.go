@@ -82,6 +82,9 @@ func (s *BaseAPI) DeleteContest(ctx context.Context, contest *kilonova.Contest) 
 	if contest == nil {
 		return Statusf(400, "Invalid contest")
 	}
+	if contest.Started() {
+		return Statusf(400, "Started contests cannot be deleted, sorry.")
+	}
 	if err := s.db.DeleteContest(ctx, contest.ID); err != nil {
 		slog.WarnContext(ctx, "Couldn't delete contest", slog.Any("err", err))
 		return fmt.Errorf("couldn't delete contest: %w", err)

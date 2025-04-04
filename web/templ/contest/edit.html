@@ -115,9 +115,11 @@
             </div>
             <div>
                 <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
+                {{if not .Contest.Started}}
                 <div class="block my-2">
                     <button type="button" id="deleteContestButton" class="btn btn-red mr-2">{{getText "deleteContest"}}</button>
                 </div>
+                {{end}}
             </div>
         </form>
 
