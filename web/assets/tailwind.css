@@ -653,6 +653,7 @@
 	html {
 		tab-size: 4;
 		@apply font-sans;
+		font-variant: tabular-nums;
 		/* @apply dark:bg-gray-900 dark:text-white; */
 	}
 

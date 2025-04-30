@@ -23,6 +23,8 @@ var (
 	DiscordClientID     = config.GenFlag("integrations.discord.client_id", "", "Discord Client ID")
 	DiscordClientSecret = config.GenFlag("integrations.discord.client_secret", "", "Discord Client Secret")
 
+	ProblemAnnouncementChannel = config.GenFlag("integrations.discord.publish_announcement_channel", "", "Discord channel to announce new problems")
+
 	ErrDisconnected = Statusf(401, "Not connected to Discord")
 )
 
@@ -46,6 +48,18 @@ func (s *BaseAPI) initDiscord(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (s *BaseAPI) AnnounceProblemPublished(ctx context.Context, problemID int) {
+	slog.DebugContext(ctx, "Announcing problem publish", slog.Int("problem_id", problemID))
+	if !DiscordEnabled.Value() || ProblemAnnouncementChannel.Value() == "" {
+		return // noop
+	}
+
+	_, err := s.dSess.ChannelMessageSend(ProblemAnnouncementChannel.Value(), fmt.Sprintf("New problem was just published: %s/problems/%d", config.Common.HostPrefix, problemID))
+	if err != nil {
+		slog.WarnContext(ctx, "Could not announce problem publish", slog.Any("err", err))
+	}
 }
 
 // If both user and error is nil, it means that a user doesn't have a Discord account attached (or that Discord integration is disabled)

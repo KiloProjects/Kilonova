@@ -165,20 +165,42 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID in
 	return s.AddProblemEditor(ctx, id, authorID)
 }
 
-func (s *DB) UpdateProblem(ctx context.Context, id int, upd kilonova.ProblemUpdate) error {
+func (s *DB) UpdateProblem(ctx context.Context, id int, upd kilonova.ProblemUpdate) ([]int, error) {
 	return s.BulkUpdateProblems(ctx, kilonova.ProblemFilter{ID: &id}, upd)
 }
 
-func (s *DB) BulkUpdateProblems(ctx context.Context, filter kilonova.ProblemFilter, upd kilonova.ProblemUpdate) error {
+type problemUpdateInfo struct {
+	ID          int        `db:"id"`
+	Visible     bool       `db:"visible"`
+	PublishedAt *time.Time `db:"published_at"`
+	Now         time.Time  `db:"now"`
+}
+
+func (s *DB) BulkUpdateProblems(ctx context.Context, filter kilonova.ProblemFilter, upd kilonova.ProblemUpdate) ([]int, error) {
 	ub := newUpdateBuilder()
 	problemUpdateQuery(&upd, ub)
 	if ub.CheckUpdates() != nil {
-		return ub.CheckUpdates()
+		return nil, ub.CheckUpdates()
 	}
 	fb := ub.MakeFilter()
 	problemFilterQuery(&filter, fb)
-	_, err := s.conn.Exec(ctx, "UPDATE problems SET "+fb.WithUpdate(), fb.Args()...)
-	return err
+	rows, _ := s.conn.Query(ctx, "UPDATE problems SET "+fb.WithUpdate()+" RETURNING id, visible, published_at, NOW() as now", fb.Args()...)
+	updatedInfo, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[problemUpdateInfo])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var updatedProblems = make([]int, 0, len(updatedInfo))
+	for _, pb := range updatedInfo {
+		if pb.Visible && pb.PublishedAt != nil && pb.PublishedAt.Equal(pb.Now) {
+			updatedProblems = append(updatedProblems, pb.ID)
+		}
+	}
+
+	return updatedProblems, nil
 }
 
 func (s *DB) DeleteProblem(ctx context.Context, id int) error {

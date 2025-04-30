@@ -38,9 +38,15 @@ func (s *BaseAPI) UpdateProblem(ctx context.Context, id int, args kilonova.Probl
 		return Statusf(400, "Invalid scoring strategy!")
 	}
 
-	if err := s.db.UpdateProblem(ctx, id, args); err != nil {
-		zap.S().Warn(err)
+	newlyPublished, err := s.db.UpdateProblem(ctx, id, args)
+	if err != nil {
+		slog.WarnContext(ctx, "Couldn't update problem", slog.Any("err", err))
 		return fmt.Errorf("couldn't update problem: %w", err)
+	}
+	if len(newlyPublished) > 0 {
+		for _, id := range newlyPublished {
+			go s.AnnounceProblemPublished(ctx, id)
+		}
 	}
 
 	return nil
@@ -53,9 +59,16 @@ func (s *BaseAPI) ToggleDeepPbListProblems(ctx context.Context, list *kilonova.P
 	} else {
 		filter.IDs = list.List
 	}
-	if err := s.db.BulkUpdateProblems(ctx, filter, kilonova.ProblemUpdate{Visible: upd.Visible, VisibleTests: upd.VisibleTests}); err != nil {
+	newlyPublished, err := s.db.BulkUpdateProblems(ctx, filter, kilonova.ProblemUpdate{Visible: upd.Visible, VisibleTests: upd.VisibleTests})
+	if err != nil {
 		return fmt.Errorf("couldn't update list problem visibility: %w", err)
 	}
+	if len(newlyPublished) > 0 {
+		for _, id := range newlyPublished {
+			go s.AnnounceProblemPublished(ctx, id)
+		}
+	}
+
 	return nil
 }
 
