@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"slices"
 	"strings"
 	"time"
 
@@ -199,6 +200,7 @@ func (s *DB) BulkUpdateProblems(ctx context.Context, filter kilonova.ProblemFilt
 			updatedProblems = append(updatedProblems, pb.ID)
 		}
 	}
+	slices.Sort(updatedProblems)
 
 	return updatedProblems, nil
 }
