@@ -19,7 +19,8 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
-	"github.com/KiloProjects/kilonova/web/components"
+	"github.com/KiloProjects/kilonova/web/components/layout"
+	"github.com/KiloProjects/kilonova/web/components/views/modals"
 	"github.com/a-h/templ"
 
 	"github.com/KiloProjects/kilonova"
@@ -358,7 +359,10 @@ func (rt *Web) pbListIndex() http.HandlerFunc {
 
 		r = rt.buildPblistCache(r, listIDs)
 
-		rt.runTempl(w, r, templ, &ProblemListParams{nil, pblists, -1})
+		rt.runTempl(w, r, templ, &ProblemListParams{
+			nil, pblists, -1,
+			nil,
+		})
 	}
 }
 
@@ -382,7 +386,10 @@ func (rt *Web) pbListProgressIndex() http.HandlerFunc {
 
 		r = rt.buildPblistCache(r, listIDs)
 
-		rt.runTempl(w, r, templ, &ProblemListParams{nil, pblists, flags.RootProblemList.Value()})
+		rt.runTempl(w, r, templ, &ProblemListParams{
+			nil, pblists, flags.RootProblemList.Value(),
+			nil,
+		})
 	}
 }
 
@@ -431,7 +438,7 @@ func (rt *Web) pbListProgressView() http.HandlerFunc {
 }
 
 func (rt *Web) pbListView() http.HandlerFunc {
-	templ := rt.parse(nil, "lists/view.html", "modals/pblist.html", "modals/pbs.html", "proposer/createpblist.html", "modals/htmx/problem_sources.html")
+	templ := rt.parse(nil, "lists/view.html", "modals/pblist.html", "modals/pbs.html", "proposer/createpblist.html")
 	fragmentTempl := rt.parse(nil, "modals/pblist.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		listIDs := []int{util.ProblemList(r).ID}
@@ -446,7 +453,15 @@ func (rt *Web) pbListView() http.HandlerFunc {
 			return
 		}
 
-		rt.runTempl(w, r, templ, &ProblemListParams{util.ProblemList(r), nil, -1})
+		problems, err := rt.base.ProblemListProblems(r.Context(), util.ProblemList(r).List, util.UserBrief(r))
+		if err != nil {
+			slog.ErrorContext(r.Context(), "Could not get problems", slog.Any("err", err))
+		}
+
+		rt.runTempl(w, r, templ, &ProblemListParams{
+			util.ProblemList(r), nil, -1,
+			modals.ProblemSources(r.Context(), util.ProblemList(r), problems),
+		})
 	}
 }
 
@@ -2100,11 +2115,11 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 		head = templ.FromGoHTML(hTempl.Lookup("head"), data)
 	}
 
-	if err := components.Layout(
+	if err := layout.Layout(
 		r.Context(),
 		rt.base.EnabledLanguages(),
 		title, description,
-		components.Navbar(rt.canViewAllSubs(authedUser), reqPath(r)),
+		layout.Navbar(rt.canViewAllSubs(authedUser), reqPath(r)),
 		head,
 		templ.FromGoHTML(hTempl.Lookup("content"), data),
 		fsys,
@@ -2145,6 +2160,13 @@ func (rt *Web) runTempl(w http.ResponseWriter, r *http.Request, templ *template.
 func (rt *Web) runModal(w http.ResponseWriter, r *http.Request, templ *template.Template, name string, data any) {
 	w.Header().Add("Content-Type", "text/html; charset=utf-8")
 	rt.runTemplate(w, r, templ, name, data)
+}
+
+func (rt *Web) componentModal(w http.ResponseWriter, r *http.Request, component templ.Component) {
+	w.Header().Add("Content-Type", "text/html; charset=utf-8")
+	if err := component.Render(r.Context(), w); err != nil {
+		slog.WarnContext(r.Context(), "Error rendering modal", slog.Any("err", err))
+	}
 }
 
 func (rt *Web) getOlderSubmissions(ctx context.Context, lookingUser *kilonova.UserBrief, userID int, problem *kilonova.Problem, contest *kilonova.Contest, limit int) (*OlderSubmissionsParams, error) {

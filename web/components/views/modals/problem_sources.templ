@@ -1,0 +1,38 @@
+package modals
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/web/components"
+)
+
+var T = components.T
+
+templ ProblemSources(ctx context.Context, problemList *kilonova.ProblemList, problems []*kilonova.ScoredProblem) {
+	<form id="change_sources_panel" class="segment-panel reset-list" hx-post={ fmt.Sprintf("/problem_lists/%d/updateSources", problemList.ID) } hx-swap="outerHTML">
+		<h2>{ T(ctx, "bulk_update_sources") }</h2>
+		<ul>
+			if len(problems) > 0 {
+				for _, problem := range problems {
+					<li>
+						<a href={ templ.SafeURL(fmt.Sprintf("/problems/%d", problem.ID)) }>{ problem.Name }</a>: 
+						if problem.SourceCredits != "" {
+							<code>{ problem.SourceCredits }</code>
+						} else {
+							<span>-</span>
+						}
+					</li>
+				}
+			} else {
+				<div>{ T(ctx, "noPbFound") }</div>
+			}
+		</ul>
+		<label class="block mb-2">
+			<span class="form-label">{ T(ctx, "new_format") }:</span>
+			<input class="form-input" id="new_format" name="new_format" type="text" hx-preserve="true" value={ T(ctx, "bulk_update_templ", problemList.Title) } hx-disabled-elt="this" required/>
+		</label>
+		<button class="btn btn-blue" type="submit">{ T(ctx, "button.update") }</button>
+	</form>
+}

@@ -2,16 +2,17 @@ package web
 
 import (
 	"fmt"
-	"github.com/KiloProjects/kilonova"
 	"log/slog"
 	"net/http"
 	"strconv"
 
+	"github.com/KiloProjects/kilonova"
+
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/web/components/views/modals"
 )
 
 func (rt *Web) updateProblemSources() http.HandlerFunc {
-	templ := rt.parseModal(nil, "modals/htmx/problem_sources.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		r = rt.buildPblistCache(r, []int{util.ProblemList(r).ID})
 
@@ -34,7 +35,14 @@ func (rt *Web) updateProblemSources() http.HandlerFunc {
 		}
 
 		if isHTMXRequest(r) {
-			rt.runModal(w, r, templ, "change_sources", util.ProblemList(r))
+			problems, err := rt.base.ProblemListProblems(r.Context(), util.ProblemList(r).List, util.UserBrief(r))
+			if err != nil {
+				slog.ErrorContext(r.Context(), "Could not get problems", slog.Any("err", err))
+				return
+			}
+
+			rt.componentModal(w, r, modals.ProblemSources(r.Context(), util.ProblemList(r), problems))
+
 			return
 		}
 

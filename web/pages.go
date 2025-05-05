@@ -19,6 +19,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/a-h/templ"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -194,6 +195,8 @@ type ProblemListParams struct {
 	Lists       []*kilonova.ProblemList
 
 	RootProblemList int
+
+	ProblemSources templ.Component
 }
 
 type ProblemListProgressParams struct {

@@ -234,7 +234,7 @@ document.getElementById("delButton").addEventListener("click", deleteProblemList
 {{ template "createpblist.html" $}}
 
     {{if authedUser.IsAdmin}}
-        {{template "change_sources" .}}
+        {{$.ProblemSources | renderComponent}}
     {{end}}
 	{{ end }}
 	{{ end }}

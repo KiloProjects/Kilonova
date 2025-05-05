@@ -1,4 +1,4 @@
-package components
+package layout
 
 import (
 	"context"
@@ -7,15 +7,12 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/KiloProjects/kilonova/web/components"
 	"strconv"
 	"time"
 )
 
-templ Button() {
-	<button class="btn btn-blue">
-		{ children... }
-	</button>
-}
+var T = components.T
 
 type HashNamer interface {
 	HashName(filename string) string
@@ -23,10 +20,6 @@ type HashNamer interface {
 
 func language(ctx context.Context) string {
 	return util.LanguageContext(ctx)
-}
-
-func T(ctx context.Context, key string, vals ...any) string {
-	return kilonova.GetText(util.LanguageContext(ctx), key, vals...)
 }
 
 templ Footer(prepareDuration time.Duration, renderStart time.Time, hashNamer HashNamer) {
