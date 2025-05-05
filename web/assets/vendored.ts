@@ -1,31 +1,7 @@
 import CopyButtonPlugin from "highlightjs-copy";
 import htmx from "htmx.org";
-import {Idiomorph} from "idiomorph";
+import { Idiomorph } from "idiomorph";
 window.htmx = htmx;
-
-// import { getWebInstrumentations, initializeFaro } from '@grafana/faro-web-sdk';
-// import { TracingInstrumentation } from '@grafana/faro-web-tracing';
-// document.addEventListener("DOMContentLoaded", () => {
-// 	if(typeof window.platform_info.faro_id !== 'undefined' && window.platform_info.faro_id.length > 0) {
-// 		console.log("Starting faro", window.platform_info.faro_id)
-// 		initializeFaro({
-// 			url: `https://faro-collector-prod-eu-west-2.grafana.net/collect/${window.platform_info.faro_id}`,
-// 			app: {
-// 				name: 'kilonova.ro',
-// 				version: '1.0.0',
-// 				environment: 'production'
-// 			},
-//
-// 			instrumentations: [
-// 				// Mandatory, omits default instrumentations otherwise.
-// 				...getWebInstrumentations(),
-//
-// 				// Tracing package to get end-to-end visibility for HTTP requests.
-// 				new TracingInstrumentation(),
-// 			],
-// 		});
-// 	}
-// })
 
 // Copy-pasted from idiomorph-htmx.js, since it errors out for whatever reason
 function createMorphConfig(swapStyle) {
@@ -57,11 +33,11 @@ import "katex/contrib/copy-tex";
 document.addEventListener("DOMContentLoaded", () => {
 	const x = new CopyButtonPlugin();
 	document.querySelectorAll("pre.chroma code").forEach((val) => {
-		x["after:highlightElement"]({ el: val, text: (val as HTMLElement).innerText.replaceAll("\n\n", "\n")});
+		x["after:highlightElement"]({ el: val, text: (val as HTMLElement).innerText.replaceAll("\n\n", "\n") });
 		val.parentElement?.querySelector(".hljs-copy-container")?.style.setProperty("--hljs-theme-padding", "16px");
 	});
 	document.querySelectorAll(".statement-content pre:not(.chroma) code").forEach((val) => {
-		x["after:highlightElement"]({ el: val, text: (val as HTMLElement).innerText.replaceAll("\n\n", "\n").trimEnd()});
+		x["after:highlightElement"]({ el: val, text: (val as HTMLElement).innerText.replaceAll("\n\n", "\n").trimEnd() });
 		val.parentElement?.querySelector(".hljs-copy-container")?.style.setProperty("--hljs-theme-padding", "16px");
 	});
 });

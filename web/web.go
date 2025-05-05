@@ -884,10 +884,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			slog.ErrorContext(ctx, "Uninitialized `currentProblem`")
 			return nil
 		},
-		"canViewAllSubs": func() bool {
-			slog.ErrorContext(ctx, "Uninitialized `canViewAllSubs`")
-			return false
-		},
 		"contestRegistration": func(c *kilonova.Contest) *kilonova.ContestRegistration {
 			slog.ErrorContext(ctx, "Uninitialized `contestRegistration`")
 			return nil
@@ -902,14 +898,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		},
 		"subCode": func(sub *kilonova.FullSubmission) []byte {
 			slog.ErrorContext(ctx, "Uninitialized `subCode`")
-			return nil
-		},
-		"navbar": func() templ.Component {
-			slog.ErrorContext(ctx, "Uninitialized `navbar`")
-			return nil
-		},
-		"footer": func() templ.Component {
-			slog.ErrorContext(ctx, "Uninitialized `footer`")
 			return nil
 		},
 		"renderComponent": func(c templ.Component) (template.HTML, error) {

@@ -1,0 +1,129 @@
+package components
+
+import (
+	"context"
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/internal/util"
+	"io"
+	"time"
+)
+
+func stringComponent(s string) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		_, err := w.Write([]byte(s))
+		return err
+	})
+}
+
+type platformInfoValue struct {
+	Debug            bool                `json:"debug"`
+	User             *kilonova.UserBrief `json:"user"`
+	Admin            bool                `json:"admin"`
+	UserID           int                 `json:"user_id"`
+	Language         string              `json:"language"`
+	EnabledLanguages map[string]string   `json:"langs"`
+}
+
+func platformInfo(ctx context.Context, enabledLanguages map[string]string) platformInfoValue {
+	user := util.UserBriefContext(ctx)
+	var userID int = 0
+	if user != nil {
+		userID = user.ID
+	}
+
+	return platformInfoValue{
+		Debug:            config.Common.Debug,
+		User:             user,
+		Admin:            user.IsAdmin(),
+		UserID:           userID,
+		Language:         language(ctx),
+		EnabledLanguages: enabledLanguages,
+	}
+}
+
+templ Layout(ctx context.Context, enabledLanguages map[string]string, title string, description string, navbar templ.Component, head templ.Component, content templ.Component, hashNamer HashNamer) {
+	{{
+	if len(title) == 0 {
+		title = "Kilonova"
+	}
+	if len(description) == 0 {
+		description = "Modern competitive programming platform"
+	}
+	renderStart := time.Now()
+	}}
+	<!DOCTYPE html>
+	<html
+		lang={ util.LanguageContext(ctx) }
+		class={ templ.Class(string(util.Theme(ctx))) }
+	>
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ title }</title>
+			<link rel="apple-touch-icon" sizes="180x180" href={ "/" + hashNamer.HashName("static/favicons/favicon.ico") }/>
+			<link rel="icon" type="image/png" sizes="32x32" href={ "/" + hashNamer.HashName("static/favicons/favicon-32x32.png") }/>
+			<link rel="icon" type="image/png" sizes="16x16" href={ "/" + hashNamer.HashName("static/favicons/favicon-16x16.png") }/>
+			<link rel="manifest" href="/static/favicons/site.webmanifest?v=4"/>
+			<link rel="mask-icon" href="/static/favicons/safari-pinned-tab.svg?v=4" color="#5bbad5"/>
+			<link rel="shortcut icon" href={ "/" + hashNamer.HashName("static/favicons/favicon.ico") }/>
+			<meta name="apple-mobile-web-app-title" content="Kilonova"/>
+			<meta name="application-name" content="Kilonova"/>
+			<meta name="msapplication-TileColor" content="#da532c"/>
+			<meta name="msapplication-config" content="/static/favicons/browserconfig.xml?v=4"/>
+			<meta name="theme-color" content="#ffffff"/>
+			<!-- OpenGraph stuff -->
+			<meta property="og:title" content={ title }/>
+			<meta property="og:type" content="website"/>
+			<meta property="og:description" content={ description }/>
+			<meta name="description" content={ description }/>
+			<meta property="og:locale" content="ro_RO"/>
+			<meta property="og:site_name" content="Kilonova"/>
+			<meta property="og:image" content={ "/" + hashNamer.HashName("static/ogimage.jpeg") }/>
+			<!--Dependency bundle-->
+			<script src={ "/" + hashNamer.HashName("static/bundle.js") }></script>
+			<script src={ "/" + hashNamer.HashName("static/vendored.js") }></script>
+			@templ.JSONScript("server_time", time.Now().Format(time.RFC3339Nano))
+			@templ.JSONScript("platform_info", platformInfo(ctx, enabledLanguages))
+			<script>
+                const server_time = JSON.parse(document.getElementById("server_time").textContent);
+                var platform_info = JSON.parse(document.getElementById("platform_info").textContent);
+				bundled.initTime(bundled.dayjs(), bundled.dayjs(server_time));
+                window.htmx.on(("htmx:afterSwap"), (el) => {
+                    bundled.initialLoad(el.target);
+                });
+                if(platform_info.debug) {
+                    window.htmx.logAll();
+                }
+
+                CodeMirror.defineInitHook(bundled.CodeMirrorThemeHook)
+                if(bundled.isDarkMode()) {  // Dark Mode
+                    CodeMirror.defaults.theme = "monokai";
+                }
+			</script>
+			@head
+			<link rel="stylesheet" href={ "/" + hashNamer.HashName("static/chroma.css") }/>
+			<link rel="stylesheet" href={ "/" + hashNamer.HashName("static/styles.css") }/>
+		</head>
+		<body>
+			// TODO: Use component directly
+			@navbar
+			if user := util.UserFullContext(ctx); user != nil {
+				if !user.VerifiedEmail {
+					<div class="w-full py-1 px-2 bg-green-200 dark:bg-green-700 text-black dark:text-white text-center">
+						{ T(ctx, "unverifiedEmail") }
+					</div>
+				}
+			}
+			<main class="c-container mb-2">
+				if content == nil {
+					<h1>Well... this is awkward... There's no content</h1>
+				} else {
+					@content
+				}
+			</main>
+			<div id="modals"></div>
+			@Footer(renderStart.Sub(ctx.Value(util.KNContextType("middleware_start")).(time.Time)), renderStart, hashNamer)
+		</body>
+	</html>
+}

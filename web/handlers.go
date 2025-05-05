@@ -34,12 +34,10 @@ import (
 	"golang.org/x/text/language"
 )
 
-type ctxKey string
-
 const (
-	PblistCntCacheKey = ctxKey("pblist_cache")
+	PblistCntCacheKey = util.KNContextType("pblist_cache")
 
-	MiddlewareStartKey = ctxKey("middleware_start")
+	MiddlewareStartKey = util.KNContextType("middleware_start")
 )
 
 func (rt *Web) buildPblistCache(r *http.Request, listIDs []int) *http.Request {
@@ -1880,8 +1878,6 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 		pblistCache = v
 	}
 
-	renderStart := time.Now()
-
 	// Add request-specific functions
 	hTempl.Funcs(template.FuncMap{
 		"getText": func(line string, args ...any) string {
@@ -1944,10 +1940,6 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 		"language": func() string {
 			return lang
 		},
-		"isDarkMode": func() bool {
-			// TODO: Remove once layout.html is removed
-			return util.Theme(r.Context()) == kilonova.PreferredThemeDark
-		},
 		"authed": func() bool {
 			return authedUser != nil
 		},
@@ -1986,12 +1978,6 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 				return []*kilonova.ContestQuestion{}
 			}
 			return questions
-		},
-		"canViewAllSubs": func() bool {
-			return rt.canViewAllSubs(authedUser)
-		},
-		"navbar": func() templ.Component {
-			return components.Navbar(rt.canViewAllSubs(authedUser), reqPath(r))
 		},
 		"contestRegistration": func(c *kilonova.Contest) *kilonova.ContestRegistration {
 			if authedUser == nil || c == nil {
@@ -2078,18 +2064,53 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 		"inModal": func() bool {
 			return name == "modal"
 		},
-		"footer": func() templ.Component {
-			prepareDuration := renderStart.Sub(r.Context().Value(MiddlewareStartKey).(time.Time))
-			return components.Footer(prepareDuration, renderStart, fsys)
-		},
 		"renderComponent": func(c templ.Component) (template.HTML, error) {
 			return templ.ToGoHTML(r.Context(), c)
 		},
 	})
 
-	if err := hTempl.ExecuteTemplate(w, name, data); err != nil {
-		fmt.Fprintf(w, "Error executing template, report to admin: %s", err)
-		slog.WarnContext(r.Context(), "Error executing template", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", util.UserBrief(r)))
+	if name != "" {
+		if err := hTempl.ExecuteTemplate(w, name, data); err != nil {
+			fmt.Fprintf(w, "Error executing template, report to admin: %s", err)
+			slog.WarnContext(r.Context(), "Error executing template", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", util.UserBrief(r)))
+		}
+		return
+	}
+
+	var title string
+	if hTempl.Lookup("title") != nil {
+		var titleBuf strings.Builder
+		if err := hTempl.ExecuteTemplate(&titleBuf, "title", data); err != nil {
+			slog.WarnContext(r.Context(), "Error executing title template", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", util.UserBrief(r)))
+		}
+		title = titleBuf.String()
+	}
+
+	var description string
+	if hTempl.Lookup("description") != nil {
+		var descriptionBuf strings.Builder
+		if err := hTempl.ExecuteTemplate(&descriptionBuf, "description", data); err != nil {
+			slog.WarnContext(r.Context(), "Error executing description template", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", util.UserBrief(r)))
+		}
+		description = descriptionBuf.String()
+	}
+
+	var head templ.Component = templ.NopComponent
+	if hTempl.Lookup("head") != nil {
+		head = templ.FromGoHTML(hTempl.Lookup("head"), data)
+	}
+
+	if err := components.Layout(
+		r.Context(),
+		rt.base.EnabledLanguages(),
+		title, description,
+		components.Navbar(rt.canViewAllSubs(authedUser), reqPath(r)),
+		head,
+		templ.FromGoHTML(hTempl.Lookup("content"), data),
+		fsys,
+	).Render(r.Context(), w); err != nil {
+		slog.WarnContext(r.Context(), "Error rendering layout", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", util.UserBrief(r)))
+		fmt.Fprintf(w, "Error rendering layout, report to admin: %s", err)
 	}
 }
 
@@ -2118,7 +2139,7 @@ func (rt *Web) runTemplModal(w http.ResponseWriter, r *http.Request, templ *temp
 }
 
 func (rt *Web) runTempl(w http.ResponseWriter, r *http.Request, templ *template.Template, data any) {
-	rt.runTemplate(w, r, templ, templ.Name(), data)
+	rt.runTemplate(w, r, templ, "", data)
 }
 
 func (rt *Web) runModal(w http.ResponseWriter, r *http.Request, templ *template.Template, name string, data any) {

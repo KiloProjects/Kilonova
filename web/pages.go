@@ -577,7 +577,7 @@ func parseModal(optFuncs template.FuncMap, files ...string) *template.Template {
 }
 
 func parse(optFuncs template.FuncMap, files ...string) *template.Template {
-	return parseTempl(optFuncs, false, slices.Concat([]string{"layout.html"}, files)...)
+	return parseTempl(optFuncs, false, files...)
 }
 
 func builtinTemporaryTemplate() template.FuncMap {
