@@ -1,0 +1,149 @@
+package views
+
+import (
+	"context"
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/web/components"
+	"math"
+	"strings"
+)
+
+var T = components.T
+
+func kbToMB(kb int) float64 {
+	return math.Round(float64(kb)/1024.0*100) / 100.0
+}
+
+templ GlossaryLink(ctx context.Context, name string) {
+	<a href="" onClick={ templ.JSUnsafeFuncCall("event.preventDefault(); bundled.buildGlossaryModal('" + name + "');") } class="white-anchor inline-block underline decoration-dashed">
+		{ children... }
+		<i class="text-muted fas fa-fw fa-circle-info"></i>
+	</a>
+}
+
+templ Statement(ctx context.Context, statementText []byte, problem *kilonova.Problem, selectedVariant *kilonova.StatementVariant, variants []*kilonova.StatementVariant, showTitle bool) {
+	<div class="reset-list enhance-tables statement-content print-content">
+		if len(variants) > 1 {
+			<label class="block my-2">
+				<span class="form-label">{ T(ctx, "statementFormat") }:</span>
+				<select id="variant-select" class="form-select" autocomplete="off">
+					for _, variant := range variants {
+						<option
+							value="{{.Language}}-{{.Format}}-{{.Type}}"
+							if selectedVariant.Equals(variant) {
+								selected
+							}
+						>
+							switch variant.Language {
+								case "en":
+									🇬🇧 English
+								case "ro":
+									🇷🇴 Română
+								case "hu":
+									🇭🇺 Magyar
+								default:
+									{ variant.Language }
+							}
+						</option>
+					}
+				</select>
+			</label>
+		}
+		<div
+			if !showTitle {
+				class="w-full mb-6 mt-2 text-center"
+			} else {
+				class="w-full mb-6 mt-2 title-details"
+			}
+		>
+			if showTitle {
+				<h1 class="print-title">{ T(ctx, "problemSingle") } <code>{ problem.Name }</code></h1>
+			}
+			<span class="block">{ T(ctx, "timeLimit") }: { problem.TimeLimit }s</span>
+			<span class="block">{ T(ctx, "memoryLimit") }: { kbToMB(problem.MemoryLimit) }MB</span>
+			<span class="block">
+				{ T(ctx, "input") }:
+				if problem.ConsoleInput {
+					@GlossaryLink(ctx, "stdin") {
+						stdin
+					}
+				} else {
+					{ problem.TestName }.in
+				}
+			</span>
+			<span class="block">
+				{ T(ctx, "output") }:
+				if problem.ConsoleInput {
+					@GlossaryLink(ctx, "stdout") {
+						stdout
+					}
+				} else {
+					{ problem.TestName }.out
+				}
+			</span>
+			if !problem.DefaultPoints.IsZero() {
+				<span class="block">{ T(ctx, "defaultPoints") }: { problem.DefaultPoints.String() }p</span>
+			}
+		</div>
+		<article>
+			if selectedVariant.Type == "llm" {
+				<blockquote>{ T(ctx, "aiTranslationWarning") }</blockquote>
+			}
+			@templ.Raw(string(statementText))
+		</article>
+		<div style="clear: both"></div>
+	</div>
+}
+
+templ PrintStatement(ctx context.Context, statementText []byte, problem *kilonova.Problem, selectedVariant *kilonova.StatementVariant, variants []*kilonova.StatementVariant) {
+	<div id="long-logo">
+		<img src="/static/logo_long.png" alt="Kilonova"/>
+	</div>
+	<div id="problem-source">{ strings.Split(problem.SourceCredits, ":")[0] }</div>
+	<div id="sponsor-logo"></div>
+	@Statement(ctx, statementText, problem, selectedVariant, variants, true)
+}
+
+templ PrintHeader(ctx context.Context) {
+	<script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
+	<style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap');
+        body {
+            font-family: 'Noto Serif', serif;
+            font-size: 11pt;
+        }
+
+        @page {
+            size: A4;
+            margin-left: 0.8in;
+            margin-right: 0.8in;
+            @top-left {
+                content: element(logo);
+            }
+            @top-center {
+                content: element(source);
+            }
+            @top-right {
+                content: element(sponsor);
+            }
+            @bottom-center {
+                content: counter(page) " / " counter(pages);
+            }
+        }
+        #long-logo {
+            position: running(logo);
+        }
+        #sponsor-logo {
+            position: running(sponsor);
+        }
+        #problem-source {
+            position: running(source);
+        }
+        .notyf, .notyf-announcer {
+            display: none;
+        }
+        .title-details .block {
+            margin-left: 1cm;
+        }
+    </style>
+}

@@ -8,6 +8,7 @@
     <div class="text-justify">
         {{.Statement}}
     </div>
+    <div style="clear: both"></div>
 
     <div class="block mt-4">    
         {{ if gt (len .Variants) 1 }}
@@ -30,7 +31,6 @@
         <span class="block text-sm text-muted italic">{{getText "created_at"}}: <span class="server_timestamp">{{$post.CreatedAt.UnixMilli}}</span></span>
         {{end}}
     </div>
-    <div style="clear: both"></div>
 </div>
 
 {{ with .Attachments }}

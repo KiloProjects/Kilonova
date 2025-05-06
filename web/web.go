@@ -85,6 +85,7 @@ func (rt *Web) problemRouter(inContest bool) func(r chi.Router) {
 		r.Use(rt.ValidateProblemID)
 		r.Use(rt.ValidateProblemVisible)
 		r.Get("/", rt.problem())
+		r.Get("/print", rt.problemPrint())
 		r.Get("/submissions", rt.problemSubmissions())
 		if !inContest {
 			r.With(rt.ValidateProblemFullyVisible).Get("/statistics", rt.problemStatistics())

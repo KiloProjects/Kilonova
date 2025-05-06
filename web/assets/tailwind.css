@@ -60,7 +60,8 @@
 	}
 
 	h1:not(.statement-content h1),
-	.statement-content h2 {
+	.statement-content h2,
+	.print-title {
 		@apply text-3xl leading-normal;
 	}
 

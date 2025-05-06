@@ -20,6 +20,7 @@ import (
 
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/components/layout"
+	"github.com/KiloProjects/kilonova/web/components/views"
 	"github.com/KiloProjects/kilonova/web/components/views/modals"
 	"github.com/a-h/templ"
 
@@ -703,6 +704,50 @@ func (rt *Web) appropriateDescriptionVariant(r *http.Request, variants []*kilono
 	}
 	// If nothing was found, then just return the first available variant
 	return variants[0]
+}
+
+func (rt *Web) problemPrint() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		problem := util.Problem(r)
+
+		var statement = []byte("This problem doesn't have a statement.")
+
+		variants, err := rt.base.ProblemDescVariants(r.Context(), problem.ID, rt.base.IsProblemEditor(util.UserBrief(r), problem))
+		if err != nil {
+			slog.WarnContext(r.Context(), "Couldn't get problem desc variants", slog.Any("err", err))
+		}
+
+		descVariant := rt.appropriateDescriptionVariant(r, variants)
+
+		assetLink := fmt.Sprintf("/assets/problem/%d/attachment/%s?t=%d", problem.ID, rt.base.FormatDescName(descVariant), descVariant.LastUpdatedAt.UnixMilli())
+		switch descVariant.Format {
+		case "md":
+			statement, err = rt.base.RenderedProblemDesc(r.Context(), problem, descVariant)
+			if err != nil {
+				slog.WarnContext(r.Context(), "Error getting problem markdown", slog.Any("err", err), slog.Any("variant", descVariant), slog.Any("problem", problem))
+				statement = []byte("Error loading markdown.")
+			}
+		case "pdf":
+			statement = []byte(fmt.Sprintf(
+				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>
+					<embed class="mx-2 my-2" type="application/pdf" src="%s"
+					style="width:95%%; height: 90vh; background: white; object-fit: contain;"></embed>`,
+				assetLink, kilonova.GetText(util.Language(r), "desc_link"), assetLink,
+			))
+		case "":
+		default:
+			statement = []byte(fmt.Sprintf(
+				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>`,
+				assetLink, kilonova.GetText(util.Language(r), "desc_link"),
+			))
+		}
+
+		rt.printLayout(w, r, &PrintLayoutParams{
+			Title:     problem.Name,
+			ExtraHead: views.PrintHeader(r.Context()),
+			Component: views.PrintStatement(r.Context(), statement, problem, descVariant, nil),
+		})
+	}
 }
 
 func (rt *Web) problem() http.HandlerFunc {
@@ -2166,6 +2211,27 @@ func (rt *Web) componentModal(w http.ResponseWriter, r *http.Request, component 
 	w.Header().Add("Content-Type", "text/html; charset=utf-8")
 	if err := component.Render(r.Context(), w); err != nil {
 		slog.WarnContext(r.Context(), "Error rendering modal", slog.Any("err", err))
+	}
+}
+
+type PrintLayoutParams struct {
+	Title       string
+	Description string
+	ExtraHead   templ.Component
+	Component   templ.Component
+}
+
+func (rt *Web) printLayout(w http.ResponseWriter, r *http.Request, params *PrintLayoutParams) {
+	w.Header().Add("Content-Type", "text/html; charset=utf-8")
+	if err := layout.PrintLayout(
+		r.Context(),
+		rt.base.EnabledLanguages(),
+		params.Title, params.Description,
+		params.ExtraHead,
+		params.Component,
+		fsys,
+	).Render(r.Context(), w); err != nil {
+		slog.WarnContext(r.Context(), "Error rendering layout", slog.Any("err", err))
 	}
 }
 

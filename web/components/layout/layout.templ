@@ -42,7 +42,7 @@ func platformInfo(ctx context.Context, enabledLanguages map[string]string) platf
 	}
 }
 
-templ Layout(ctx context.Context, enabledLanguages map[string]string, title string, description string, navbar templ.Component, head templ.Component, content templ.Component, hashNamer HashNamer) {
+templ mainHeadTags(ctx context.Context, enabledLanguages map[string]string, title string, description string, hashNamer HashNamer) {
 	{{
 	if len(title) == 0 {
 		title = "Kilonova"
@@ -50,6 +50,56 @@ templ Layout(ctx context.Context, enabledLanguages map[string]string, title stri
 	if len(description) == 0 {
 		description = "Modern competitive programming platform"
 	}
+	}}
+	<meta charset="utf-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+	<title>{ title }</title>
+	<link rel="apple-touch-icon" sizes="180x180" href={ "/" + hashNamer.HashName("static/favicons/favicon.ico") }/>
+	<link rel="icon" type="image/png" sizes="32x32" href={ "/" + hashNamer.HashName("static/favicons/favicon-32x32.png") }/>
+	<link rel="icon" type="image/png" sizes="16x16" href={ "/" + hashNamer.HashName("static/favicons/favicon-16x16.png") }/>
+	<link rel="manifest" href="/static/favicons/site.webmanifest?v=4"/>
+	<link rel="mask-icon" href="/static/favicons/safari-pinned-tab.svg?v=4" color="#5bbad5"/>
+	<link rel="shortcut icon" href={ "/" + hashNamer.HashName("static/favicons/favicon.ico") }/>
+	<meta name="apple-mobile-web-app-title" content="Kilonova"/>
+	<meta name="application-name" content="Kilonova"/>
+	<meta name="msapplication-TileColor" content="#da532c"/>
+	<meta name="msapplication-config" content="/static/favicons/browserconfig.xml?v=4"/>
+	<meta name="theme-color" content="#ffffff"/>
+	<!-- OpenGraph stuff -->
+	<meta property="og:title" content={ title }/>
+	<meta property="og:type" content="website"/>
+	<meta property="og:description" content={ description }/>
+	<meta name="description" content={ description }/>
+	<meta property="og:locale" content="ro_RO"/>
+	<meta property="og:site_name" content="Kilonova"/>
+	<meta property="og:image" content={ "/" + hashNamer.HashName("static/ogimage.jpeg") }/>
+	<!--Dependency bundle-->
+	<script src={ "/" + hashNamer.HashName("static/bundle.js") }></script>
+	<script src={ "/" + hashNamer.HashName("static/vendored.js") }></script>
+	@templ.JSONScript("server_time", time.Now().Format(time.RFC3339Nano))
+	@templ.JSONScript("platform_info", platformInfo(ctx, enabledLanguages))
+	<script>
+        const server_time = JSON.parse(document.getElementById("server_time").textContent);
+        var platform_info = JSON.parse(document.getElementById("platform_info").textContent);
+        bundled.initTime(bundled.dayjs(), bundled.dayjs(server_time));
+        window.htmx.on(("htmx:afterSwap"), (el) => {
+            bundled.initialLoad(el.target);
+        });
+        if(platform_info.debug) {
+            window.htmx.logAll();
+        }
+
+        CodeMirror.defineInitHook(bundled.CodeMirrorThemeHook)
+        if(bundled.isDarkMode()) {  // Dark Mode
+            CodeMirror.defaults.theme = "monokai";
+        }
+    </script>
+	<link rel="stylesheet" href={ "/" + hashNamer.HashName("static/chroma.css") }/>
+	<link rel="stylesheet" href={ "/" + hashNamer.HashName("static/styles.css") }/>
+}
+
+templ Layout(ctx context.Context, enabledLanguages map[string]string, title string, description string, navbar templ.Component, head templ.Component, content templ.Component, hashNamer HashNamer) {
+	{{
 	renderStart := time.Now()
 	}}
 	<!DOCTYPE html>
@@ -58,52 +108,8 @@ templ Layout(ctx context.Context, enabledLanguages map[string]string, title stri
 		class={ templ.Class(string(util.Theme(ctx))) }
 	>
 		<head>
-			<meta charset="utf-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1"/>
-			<title>{ title }</title>
-			<link rel="apple-touch-icon" sizes="180x180" href={ "/" + hashNamer.HashName("static/favicons/favicon.ico") }/>
-			<link rel="icon" type="image/png" sizes="32x32" href={ "/" + hashNamer.HashName("static/favicons/favicon-32x32.png") }/>
-			<link rel="icon" type="image/png" sizes="16x16" href={ "/" + hashNamer.HashName("static/favicons/favicon-16x16.png") }/>
-			<link rel="manifest" href="/static/favicons/site.webmanifest?v=4"/>
-			<link rel="mask-icon" href="/static/favicons/safari-pinned-tab.svg?v=4" color="#5bbad5"/>
-			<link rel="shortcut icon" href={ "/" + hashNamer.HashName("static/favicons/favicon.ico") }/>
-			<meta name="apple-mobile-web-app-title" content="Kilonova"/>
-			<meta name="application-name" content="Kilonova"/>
-			<meta name="msapplication-TileColor" content="#da532c"/>
-			<meta name="msapplication-config" content="/static/favicons/browserconfig.xml?v=4"/>
-			<meta name="theme-color" content="#ffffff"/>
-			<!-- OpenGraph stuff -->
-			<meta property="og:title" content={ title }/>
-			<meta property="og:type" content="website"/>
-			<meta property="og:description" content={ description }/>
-			<meta name="description" content={ description }/>
-			<meta property="og:locale" content="ro_RO"/>
-			<meta property="og:site_name" content="Kilonova"/>
-			<meta property="og:image" content={ "/" + hashNamer.HashName("static/ogimage.jpeg") }/>
-			<!--Dependency bundle-->
-			<script src={ "/" + hashNamer.HashName("static/bundle.js") }></script>
-			<script src={ "/" + hashNamer.HashName("static/vendored.js") }></script>
-			@templ.JSONScript("server_time", time.Now().Format(time.RFC3339Nano))
-			@templ.JSONScript("platform_info", platformInfo(ctx, enabledLanguages))
-			<script>
-                const server_time = JSON.parse(document.getElementById("server_time").textContent);
-                var platform_info = JSON.parse(document.getElementById("platform_info").textContent);
-				bundled.initTime(bundled.dayjs(), bundled.dayjs(server_time));
-                window.htmx.on(("htmx:afterSwap"), (el) => {
-                    bundled.initialLoad(el.target);
-                });
-                if(platform_info.debug) {
-                    window.htmx.logAll();
-                }
-
-                CodeMirror.defineInitHook(bundled.CodeMirrorThemeHook)
-                if(bundled.isDarkMode()) {  // Dark Mode
-                    CodeMirror.defaults.theme = "monokai";
-                }
-			</script>
+			@mainHeadTags(ctx, enabledLanguages, title, description, hashNamer)
 			@head
-			<link rel="stylesheet" href={ "/" + hashNamer.HashName("static/chroma.css") }/>
-			<link rel="stylesheet" href={ "/" + hashNamer.HashName("static/styles.css") }/>
 		</head>
 		<body>
 			// TODO: Use component directly
@@ -124,6 +130,22 @@ templ Layout(ctx context.Context, enabledLanguages map[string]string, title stri
 			</main>
 			<div id="modals"></div>
 			@Footer(renderStart.Sub(ctx.Value(util.KNContextType("middleware_start")).(time.Time)), renderStart, hashNamer)
+		</body>
+	</html>
+}
+
+templ PrintLayout(ctx context.Context, enabledLanguages map[string]string, title string, description string, head templ.Component, content templ.Component, hashNamer HashNamer) {
+	<!DOCTYPE html>
+	<html
+		lang={ util.LanguageContext(ctx) }
+		class="light"
+	>
+		<head>
+			@mainHeadTags(ctx, enabledLanguages, title, description, hashNamer)
+			@head
+		</head>
+		<body>
+			@content
 		</body>
 	</html>
 }
