@@ -9,13 +9,13 @@
             <h2>{{getText "header.edit.access_control"}}</h2>
             
             <h3>{{getText "editors"}}:</h3>
-            <div id="editors_list" class="list-group list-group-rounded mb-2">
+            <div id="editors_list" class="list-group mb-2">
                 <div class="list-group-head">
                     {{getText "loading"}}
                 </div>
             </div>
             <h3>{{getText "viewers"}}:</h3>
-            <div id="viewers_list" class="list-group list-group-rounded mb-2">
+            <div id="viewers_list" class="list-group mb-2">
                 <div class="list-group-head">
                     {{getText "loading"}}
                 </div>
@@ -30,9 +30,9 @@
                 <input class="form-input my-1 block" type="text" id="userToAdd" placeholder="AlexVasiluta" autocomplete="off">
             </label>
             <div class="mt-2 mb-2 inline-flex">
-                <button type="button" class="btn-blue font-bold py-2 px-4 rounded-l" onclick="addEditor()">{{getText
+                <button type="button" class="btn-blue font-bold py-2 px-4 rounded-l-sm" onclick="addEditor()">{{getText
                     "add_editor"}}</button>
-                <button type="button" class="btn-blue font-bold py-2 px-4 rounded-r" onclick="addViewer()">{{getText
+                <button type="button" class="btn-blue font-bold py-2 px-4 rounded-r-sm" onclick="addViewer()">{{getText
                     "add_viewer"}}</button>
             </div>
         </div>
@@ -83,7 +83,7 @@
             outhtml += `
             <div class="list-group-item flex justify-between items-center">
                 <a href="/profile/${user.name}">
-                    <img class="rounded inline-block mr-2" src="/api/user/byName/${user.name}/avatar?s=32" width="32" height="32" alt="Avatar"/>
+                    <img class="rounded-sm inline-block mr-2" src="/api/user/byName/${user.name}/avatar?s=32" width="32" height="32" alt="Avatar"/>
                     ${user.name}
                 </a>
                 ${user.id != window.platform_info.user_id ? `<span style="cursor: pointer;" onclick="stripAccess(${user.id})">X</span>` : ''}

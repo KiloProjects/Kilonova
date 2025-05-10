@@ -5,11 +5,11 @@
     {{with .DiscordUser}}
     <p>
         <a href="/profile/{{$.ContentUser.Name}}">
-            <img class="rounded inline-block mr-2" src="/api/user/byName/{{$.ContentUser.Name}}/avatar?s=32" width="32" height="32" alt="Avatar"/> 
+            <img class="rounded-sm inline-block mr-2" src="/api/user/byName/{{$.ContentUser.Name}}/avatar?s=32" width="32" height="32" alt="Avatar"/>
             {{$.ContentUser.Name}}
         </a>
         {{getText "discordLinkStatus"}}: 
-        <img class="rounded inline-block mr-2" src="/api/user/byName/{{$.ContentUser.Name}}/discordAvatar?s=32" width="32" height="32" alt="Avatar"/>
+        <img class="rounded-sm inline-block mr-2" src="/api/user/byName/{{$.ContentUser.Name}}/discordAvatar?s=32" width="32" height="32" alt="Avatar"/>
         {{.String}}{{ if isAdmin}} (<code>{{.ID}}</code>){{end}}.
     </p>
     {{else}}

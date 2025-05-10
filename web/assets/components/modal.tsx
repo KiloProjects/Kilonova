@@ -44,7 +44,7 @@ export function KNModal({
 				<h1>{title}</h1>
 				<form method="dialog" onSubmit={closeCallback}>
 					<button type="submit">
-						<i class="modal-close"></i>
+						<i class="modal-close fas fa-xmark"></i>
 					</button>
 				</form>
 			</div>

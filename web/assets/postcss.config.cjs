@@ -3,15 +3,13 @@ const cssnano = require("cssnano")
 module.exports = {
   plugins: [
 	require("postcss-import"),
-	require("tailwindcss/nesting"),
     require("postcss-url")({
         url: "copy",
         useHash: true,
         assetsPath: "misc",
 		hashOptions: {append: true}
     }),
-    require("tailwindcss"),
-	require("autoprefixer"),
+      require("autoprefixer"),
 	process.env.NODE_ENV === 'production' ? cssnano({preset: "default"}) : null,
   ]
 }

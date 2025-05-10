@@ -8,7 +8,7 @@
     <div id="older_subs" hx-select="#older_subs" hx-get="{{$url}}" hx-swap="outerHTML" hx-trigger="kn-poll{{if not .AllFinished}},load delay:1s{{end}}">
         {{with .Submissions.Submissions}}
             {{range .}}
-                <a href="/submissions/{{.ID}}" class="black-anchor flex justify-between items-center rounded py-1 px-2 hoverable">
+                <a href="/submissions/{{.ID}}" class="black-anchor flex justify-between items-center rounded-sm py-1 px-2 hoverable">
                     <span>
                         #{{.ID}}: <span class="server_timestamp">{{.CreatedAt.UnixMilli}}</span>
                     </span>

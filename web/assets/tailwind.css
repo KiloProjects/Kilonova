@@ -1,23 +1,33 @@
-@import "@fontsource/noto-sans";
-@import "notyf/notyf.min.css";
-@import "@fortawesome/fontawesome-free/css/all.min.css";
-@import "highlightjs-copy/dist/highlightjs-copy.min.css";
-@import "codemirror/lib/codemirror.css";
-@import "codemirror/theme/monokai.css";
-@import "katex/dist/katex.css";
+@import "tailwindcss" source("../");
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/typography";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+	--color-gray-50: oklch(0.985 0 0);
+	--color-gray-100: oklch(0.967 0.001 286.375);
+	--color-gray-200: oklch(0.92 0.004 286.32);
+	--color-gray-300: oklch(0.871 0.006 286.286);
+	--color-gray-400: oklch(0.705 0.015 286.067);
+	--color-gray-500: oklch(0.552 0.016 285.938);
+	--color-gray-600: oklch(0.442 0.017 285.786);
+	--color-gray-700: oklch(0.37 0.013 285.805);
+	--color-gray-800: oklch(0.274 0.006 286.033);
+	--color-gray-900: oklch(0.21 0.006 285.885);
+	--color-gray-950: oklch(0.141 0.005 285.823);
+}
+
 .hljs-copy-button {
-	@apply bg-[#333] !important;
+	@apply bg-[#333]!;
 	/*@apply top-2;*/
 }
-.bg-hljs,
-.hljs {
+
+@utility bg-hljs {
 	background: #f0f0f0;
 	@apply dark:bg-[#333];
 }
+
 .cm-s-monokai.CodeMirror {
 	@apply dark:bg-[#333];
 }
@@ -57,6 +67,14 @@
 
 	table {
 		@apply border-collapse;
+	}
+
+	button:not(:disabled),
+	[role="button"]:not(:disabled) {
+		cursor: pointer;
+	}
+	dialog {
+		margin: auto;
 	}
 
 	h1:not(.statement-content h1),
@@ -171,506 +189,504 @@
 	}
 }
 
-@layer components {
-	.c-container {
-		max-width: 98%;
-		@apply mx-auto min-h-screen mt-6;
-	}
+@utility c-container {
+	max-width: 98%;
+	@apply mx-auto min-h-screen mt-6;
 	@media (min-width: 576px) {
-		.c-container {
+		& {
 			max-width: 97%;
 		}
 	}
 	@media (min-width: 768px) {
-		.c-container {
+		& {
 			max-width: 96%;
 		}
 	}
 	@media (min-width: 992px) {
-		.c-container {
+		& {
 			max-width: 95%;
 		}
 	}
+}
 
-	.kn-border {
-		@apply border-gray-700 dark:border-gray-200;
-	}
+@utility kn-border {
+	@apply border-gray-700 dark:border-gray-200;
+}
 
-	.border-wh {
-		@apply border-gray-600 dark:border-gray-200;
-	}
+@utility border-wh {
+	@apply border-gray-600 dark:border-gray-200;
+}
 
-	.border-gr {
-		@apply border-gray-300 dark:border-gray-700;
-	}
+@utility border-gr {
+	@apply border-gray-300 dark:border-gray-700;
+}
 
-	.list-group {
-		@apply border-gray-300 w-full;
-		@apply dark:border-gray-700;
+@utility list-group {
+	@apply border-gray-300 w-full;
+	@apply dark:border-gray-700;
 
-		@apply rounded-lg;
-	}
+	@apply rounded-lg;
 
-	.list-group-head {
-		@apply block border-b border-t border-x border-gray-300 dark:border-gray-700 w-full px-4 text-lg leading-normal py-2;
-		@apply bg-white dark:bg-gray-800;
-	}
-	.list-group-selected {
-		@apply bg-gray-100 dark:bg-gray-600 text-black dark:text-white !important;
-	}
-	.list-group-item {
-		@apply black-anchor list-group-head hover:list-group-selected;
-	}
 
-	/* .list-group-rounded {
-		@apply rounded-lg;
-	}
-	.list-group-rounded > *:first-child {
+	& > *:first-child {
 		@apply rounded-t-lg;
 	}
-	.list-group-rounded > *:last-child {
-		@apply rounded-b-lg;
-	} */
-	.list-group > *:first-child {
-		@apply rounded-t-lg;
-	}
-	.list-group > *:last-child {
+	& > *:last-child {
 		@apply rounded-b-lg;
 	}
+}
 
-	.dropdown-divider {
-		@apply h-0 my-1 border-t border-gray-200;
-		@apply dark:border-black;
-	}
-	.dropdown-list {
-		@apply absolute right-0 w-full md:w-64;
-		@apply py-1 mt-1 text-xl bg-white rounded-lg shadow-lg;
-		@apply dark:bg-gray-800 z-50;
-	}
-	.dropdown-list-item {
-		@apply block px-4 py-1 text-gray-800 focus:text-gray-800 hover:text-gray-800 hoverable;
-		@apply dark:text-gray-200 dark:focus:text-gray-100 dark:hover:text-gray-100;
-	}
-	.dropdown-list-item:first-child {
+@utility list-group-head {
+	@apply block border-b border-t border-x border-gray-300 dark:border-gray-700 w-full px-4 text-lg leading-normal py-2;
+	@apply bg-white dark:bg-gray-800;
+}
+@utility list-group-selected {
+	@apply bg-gray-100! dark:bg-gray-600! text-black! dark:text-white!;
+}
+@utility list-group-item {
+	@apply black-anchor list-group-head hover:list-group-selected;
+}
+
+@utility dropdown-divider {
+	@apply h-0 my-1 border-t border-gray-200;
+	@apply dark:border-black;
+}
+@utility dropdown-list {
+	@apply absolute right-0 w-full md:w-64;
+	@apply py-1 mt-1 text-xl bg-white rounded-lg shadow-lg;
+	@apply dark:bg-gray-800 z-50;
+}
+@utility dropdown-list-item {
+	@apply block px-4 py-1 text-gray-800 focus:text-gray-800 hover:text-gray-800 hoverable;
+	@apply dark:text-gray-200 dark:focus:text-gray-100 dark:hover:text-gray-100;
+
+	&:first-child {
 		@apply rounded-t-lg -mt-1;
 	}
-	.dropdown-list-item:last-child {
+	&:last-child {
 		@apply rounded-b-lg -mb-1;
 	}
+}
 
-	.black-span {
-		@apply text-gray-500 outline-none;
-		@apply dark:text-gray-400;
-	}
+@utility black-span {
+	@apply text-gray-500 outline-hidden;
+	@apply dark:text-gray-400;
+}
 
-	.black-anchor {
-		@apply text-gray-600 hover:text-black focus:text-black active:text-black outline-none;
-		@apply dark:text-gray-300 dark:hover:text-white dark:focus:text-white dark:active:text-white;
-	}
+@utility black-anchor {
+	@apply text-gray-600 hover:text-black focus:text-black active:text-black outline-hidden;
+	@apply dark:text-gray-300 dark:hover:text-white dark:focus:text-white dark:active:text-white;
+}
 
-	.white-anchor {
-		@apply black-anchor text-gray-700 dark:text-gray-200;
-	}
+@utility white-anchor {
+	@apply black-anchor text-gray-700 dark:text-gray-200;
+}
 
-	.topbar-selected {
-		@apply inline-block p-1 rounded bg-gray-200 dark:bg-gray-700;
-	}
+@utility topbar-selected {
+	@apply inline-block p-1 rounded bg-gray-200 dark:bg-gray-700;
+}
 
-	.topbar-separator {
-		@apply inline-block my-1;
-	}
+@utility topbar-separator {
+	@apply inline-block my-1;
 
-	.topbar-separator::after {
+	&::after {
 		content: "|";
 	}
+}
 
-	.topbar-separator-lg::after {
+@utility topbar-separator-lg {
+	&::after {
 		@apply text-xl;
 	}
+}
 
-	.hoverable {
-		@apply hover:bg-gray-200 focus:bg-gray-200;
-		@apply dark:hover:bg-gray-700 dark:focus:bg-gray-700;
-	}
+@utility hoverable {
+	@apply hover:bg-gray-200 focus:bg-gray-200;
+	@apply dark:hover:bg-gray-700 dark:focus:bg-gray-700;
+}
 
-	.paginator {
-		@apply my-2 inline-flex;
-	}
-	.paginator > *:first-child {
-		@apply rounded-l;
-	}
-	.paginator > *:last-child {
-		@apply rounded-r;
+@utility paginator {
+	@apply my-2 inline-flex;
+	& > *:first-child {
+		@apply rounded-l-sm;
 	}
 
-	.paginator-item {
-		@apply btn-blue py-1 px-2;
+	& > *:last-child {
+		@apply rounded-r-sm;
 	}
+}
 
-	.paginator-item-active {
-		@apply border-2 border-black dark:border-gray-200;
-	}
+@utility paginator-item {
+	@apply btn-blue py-1 px-2;
+}
 
-	.kn-table {
-		@apply border-2 border-collapse table-auto w-full mb-2 kn-border;
-	}
+@utility paginator-item-active {
+	@apply border-2 border-black dark:border-gray-200;
+}
 
-	.kn-table-slim {
-		width: auto;
-	}
+@utility kn-table {
+	@apply border-2 border-collapse table-auto w-full mb-2 kn-border;
+}
 
-	.kn-table-simple-border {
-		@apply border-t kn-border;
-	}
+@utility kn-table-slim {
+	width: auto;
+}
 
-	.kn-table-simple {
-		@apply text-center kn-table-simple-border;
-	}
+@utility kn-table-simple-border {
+	@apply border-t kn-border;
+}
 
-	.kn-table-row {
-		@apply kn-table-simple hoverable;
-	}
+@utility kn-table-simple {
+	@apply text-center kn-table-simple-border;
+}
 
-	.kn-table-cell-notext {
-		@apply border-r px-4 py-2 kn-border;
-	}
+.kn-table-row {
+	@apply kn-table-simple hoverable;
+}
 
-	.kn-table-cell {
-		@apply text-center kn-table-cell-notext;
-	}
+@utility kn-table-cell-notext {
+	@apply border-r px-4 py-2 kn-border;
+}
 
-	.alert {
-		@apply w-full;
-	}
+@utility kn-table-cell {
+	@apply text-center kn-table-cell-notext;
+}
 
-	.alert-green {
-		@apply bg-green-200;
-	}
+@utility alert {
+	@apply w-full;
+}
 
-	details > summary {
-		@apply list-none;
-	}
-	summary::-webkit-details-marker {
-		@apply hidden;
-	}
-	summary::after {
-		font-family: "Font Awesome 5 Free";
-		font-weight: 900;
-		@apply text-gray-600 dark:text-gray-200 ml-2;
-		content: "\f0d7";
-	}
-	details[open] > summary::after {
-		content: "\f0d8";
-	}
-	summary {
-		@apply cursor-pointer;
-	}
+@utility alert-green {
+	@apply bg-green-200;
+}
 
-	.segment-colors {
-		@apply bg-gray-50 dark:bg-gray-900;
-		@apply border-gray-100 dark:border-gray-800;
-		@apply shadow-gray-200/50 hover:shadow-gray-200/50;
-		@apply dark:shadow-gray-800/50 dark:hover:shadow-gray-800/50;
-	}
+details > summary {
+	@apply list-none;
+}
+summary::-webkit-details-marker {
+	@apply hidden;
+}
+summary {
+	@apply after:text-gray-600 dark:after:text-gray-200 after:ml-2;
+}
+summary::after {
+	font-family: "Font Awesome 5 Free";
+	font-weight: 900;
+	content: "\f0d7";
+}
+details[open] > summary::after {
+	content: "\f0d8";
+}
+summary {
+	@apply cursor-pointer;
+}
 
-	.segment-colors-2 {
-		@apply bg-gray-100 dark:bg-gray-800;
-		@apply border-gray-200 dark:border-gray-700;
-		@apply shadow-gray-300/50 hover:shadow-gray-300/50;
-		@apply dark:shadow-gray-700/50 dark:hover:shadow-gray-700/50;
-	}
+@utility segment-colors {
+	@apply bg-gray-50 dark:bg-gray-900;
+	@apply border-gray-100 dark:border-gray-800;
+	@apply shadow-gray-200/50 hover:shadow-gray-200/50;
+	@apply dark:shadow-gray-800/50 dark:hover:shadow-gray-800/50;
+}
 
-	.segment-panel {
-		@apply segment-colors;
-		@apply border-2 rounded-lg p-2 lg:px-4 lg:py-3 mx-1 my-2 lg:my-3 shadow;
-		@apply hover:shadow-md transition-shadow;
-	}
+@utility segment-colors-2 {
+	@apply bg-gray-100 dark:bg-gray-800;
+	@apply border-gray-200 dark:border-gray-700;
+	@apply shadow-gray-300/50 hover:shadow-gray-300/50;
+	@apply dark:shadow-gray-700/50 dark:hover:shadow-gray-700/50;
+}
 
-	.segment-panel .segment-panel,
-	.modal-content .segment-panel {
+@utility segment-panel {
+	@apply segment-colors;
+	@apply border-2 rounded-lg p-2 lg:px-4 lg:py-3 mx-1 my-2 lg:my-3 shadow-sm;
+	@apply hover:shadow-md transition-shadow;
+
+	.segment-panel &,
+	.modal-content &{
 		@apply segment-colors-2;
 	}
+}
 
-	.light-btn {
-		@apply cursor-pointer rounded-md shadow-sm border border-gr p-1;
-	}
+.light-btn {
+	@apply cursor-pointer rounded-md shadow-xs border border-gr p-1;
+}
 
-	.btn {
-		@apply inline-flex justify-center items-center px-4 py-2 leading-5 rounded-md font-medium ring-1 ring-opacity-50;
-		@apply transition ease-in-out duration-150;
+@utility btn {
+	@apply inline-flex justify-center items-center px-4 py-2 leading-5 rounded-md font-medium ring-1;
+	@apply transition ease-in-out duration-150;
 
-		@apply bg-gray-200 text-gray-800 ring-gray-100;
-		@apply dark:bg-gray-700 dark:text-white dark:ring-gray-600;
-		font-family: inherit;
-	}
+	@apply bg-gray-200 text-gray-800 ring-gray-100/50;
+	@apply dark:bg-gray-700 dark:text-white dark:ring-gray-600/50;
+	font-family: inherit;
 
-	.btn:not([disabled]) {
+	&:not([disabled]) {
 		@apply hover:bg-gray-700 hover:text-white;
 		@apply active:bg-gray-700 active:text-white;
-		@apply focus:bg-gray-700 focus:text-white focus:outline-none;
+		@apply focus:bg-gray-700 focus:text-white focus:outline-hidden;
 		@apply focus:ring-4 focus:ring-gray-600 hover:ring-2 hover:ring-gray-600;
 		@apply dark:hover:bg-gray-600 dark:hover:text-white;
 		@apply dark:active:bg-gray-600 dark:active:text-white;
 		@apply dark:focus:bg-gray-600 dark:focus:text-white;
 		@apply dark:focus:ring-gray-400 dark:hover:ring-gray-400;
 	}
+}
 
-	.btn-blue {
-		@apply bg-blue-500 text-white ring-blue-400;
-		@apply dark:bg-blue-600 dark:ring-blue-500;
-	}
+@utility btn-blue {
+	@apply bg-blue-500 text-white ring-blue-400;
+	@apply dark:bg-blue-600 dark:ring-blue-500;
 
-	.btn-blue:not([disabled]) {
+	&:not([disabled]) {
 		@apply hover:bg-blue-700 active:bg-blue-700;
-		@apply focus:bg-blue-700 focus:outline-none hover:ring-blue-600 focus:ring-blue-600;
+		@apply focus:bg-blue-700 focus:outline-hidden hover:ring-blue-600 focus:ring-blue-600;
 		@apply dark:hover:ring-blue-500 dark:focus:ring-blue-500;
 		@apply dark:hover:bg-blue-800 dark:active:bg-blue-800 dark:focus:bg-blue-800;
 		@apply dark:hover:text-white dark:active:text-white dark:focus:text-white;
 	}
+}
 
-	.btn-red {
-		@apply bg-red-500 text-white ring-red-400;
-		@apply dark:bg-red-600 dark:ring-red-500;
-	}
+@utility btn-red {
+	@apply bg-red-500 text-white ring-red-400;
+	@apply dark:bg-red-600 dark:ring-red-500;
 
-	.btn-red:not([disabled]) {
+	&:not([disabled]) {
 		@apply hover:bg-red-700 active:bg-red-700;
-		@apply focus:bg-red-700 focus:outline-none hover:ring-red-600 focus:ring-red-600;
+		@apply focus:bg-red-700 focus:outline-hidden hover:ring-red-600 focus:ring-red-600;
 		@apply dark:hover:ring-red-500 dark:focus:ring-red-500;
 		@apply dark:hover:bg-red-800 dark:active:bg-red-800 dark:focus:bg-red-800;
 		@apply dark:hover:text-white dark:active:text-white dark:focus:text-white;
 	}
+}
 
-	.is-invalid {
-		@apply ring-red-500 ring-1;
-		@apply transition ease-out duration-500;
-	}
+@utility is-invalid {
+	@apply ring-red-500 ring-1;
+	@apply transition ease-out duration-500;
+}
 
-	.is-valid {
-		@apply ring-green-500 ring-1;
-		@apply transition ease-out duration-500;
-	}
+@utility is-valid {
+	@apply ring-green-500 ring-1;
+	@apply transition ease-out duration-500;
+}
 
-	.form-input,
-	.form-textarea,
-	.form-select,
-	.form-multiselect {
-		@apply rounded-lg dark:bg-gray-600 dark:text-white border-gr !important;
-	}
+.form-input,
+.form-textarea,
+.form-select,
+.form-multiselect {
+	@apply rounded-lg! dark:bg-gray-600! dark:text-white! border-gr!;
+}
 
-	.form-input:disabled {
-		@apply dark:bg-gray-700 text-gray-600 dark:text-gray-200 !important;
-	}
+.form-input:disabled {
+	@apply dark:bg-gray-700! text-gray-600! dark:text-gray-200!;
+}
 
-	.form-input {
-		@apply inline-block px-2 py-2 border bg-white text-black;
-	}
+.form-input {
+	@apply inline-block px-2 py-2 border bg-white text-black;
+}
 
-	select.form-select {
-		@apply pr-8;
-	}
+select.form-select {
+	@apply pr-8;
+}
 
-	select.form-select-mini {
-		@apply form-select text-sm py-1 pr-8 pl-2;
-	}
+select.form-select-mini {
+	@apply form-select text-sm py-1 pr-8 pl-2;
+}
 
-	.form-input::placeholder,
-	.form-select::placeholder,
-	.form-textarea::placeholder {
-		@apply text-gray-500 dark:text-gray-300 !important;
-	}
+.form-input::placeholder,
+.form-select::placeholder,
+.form-textarea::placeholder {
+	@apply text-gray-500! dark:text-gray-300!;
+}
 
-	.badge-lite {
-		@apply inline-block rounded-md py-1 px-2 text-base bg-teal-700 text-white h-fit;
-	}
+@utility badge-lite {
+	@apply inline-block rounded-md py-1 px-2 text-base bg-teal-700 text-white h-fit;
+}
 
-	.badge {
-		@apply badge-lite rounded-full font-semibold;
-	}
+@utility badge {
+	@apply badge-lite rounded-full font-semibold;
+}
 
-	.badge-red {
-		@apply bg-red-700;
-	}
+@utility badge-red {
+	@apply bg-red-700;
+}
 
-	.badge-green {
-		@apply bg-green-700;
-	}
+@utility badge-green {
+	@apply bg-green-700;
+}
 
-	.badge-blue {
-		@apply bg-blue-500 text-white ring-blue-400;
-		@apply dark:bg-blue-600 dark:ring-blue-500;
-	}
+@utility badge-blue {
+	@apply bg-blue-500 text-white ring-blue-400;
+	@apply dark:bg-blue-600 dark:ring-blue-500;
+}
 
-	.text-muted {
-		@apply text-gray-500 dark:text-gray-300 !important;
-	}
+@utility text-muted {
+	@apply text-gray-500! dark:text-gray-300!;
+}
 
-	.tag {
-		@apply inline-block rounded-md py-1 px-2 my-1 bg-teal-700 text-white h-fit;
-	}
-	.tag-author {
-		@apply bg-amber-400 dark:bg-amber-700;
-	}
-	.tag-contest {
-		@apply bg-green-400 dark:bg-green-700;
-	}
-	.tag-method {
-		@apply bg-fuchsia-400 dark:bg-fuchsia-700;
-	}
-	.tag-other {
-		@apply bg-cyan-400 dark:bg-cyan-700;
-	}
+@utility tag {
+	@apply inline-block rounded-md py-1 px-2 my-1 bg-teal-700 text-white h-fit;
+}
+@utility tag-author {
+	@apply bg-amber-400 dark:bg-amber-700;
+}
+@utility tag-contest {
+	@apply bg-green-400 dark:bg-green-700;
+}
+@utility tag-method {
+	@apply bg-fuchsia-400 dark:bg-fuchsia-700;
+}
+@utility tag-other {
+	@apply bg-cyan-400 dark:bg-cyan-700;
+}
 
-	.tag-editable:empty:before {
+@utility tag-editable {
+	@apply outline-hidden;
+	&:empty::before {
 		content: attr(data-bf);
 		@apply text-gray-300 italic;
 	}
+}
 
-	.tag-editable {
-		@apply outline-none;
-	}
-
-	.modal-container[open] {
+@utility modal-container {
+	&[open] {
 		@apply z-50 p-4 md:inset-0 dark:bg-gray-800 rounded-lg shadow-lg;
 		@apply flex flex-col items-stretch;
 		@apply border-2 border-gr;
-		@apply max-h-[95vh] lg:max-h-[70vh] !important;
+		@apply max-h-[95vh]! lg:max-h-[70vh]!;
 		@apply max-w-[90vw] lg:max-w-[50vw];
 		@apply overflow-hidden;
 	}
 
-	/* Set min width only on large containers */
-	.modal-container-large[open] {
-		@apply min-h-[max(30vh,100px)] lg:min-h-[70vh];
-		@apply min-w-[90vw] lg:min-w-[max(50vw,700px)];
-	}
-
-	.modal-container::backdrop {
+	&::backdrop {
 		@apply opacity-60 bg-black;
-	}
-
-	.modal-header {
-		@apply flex border-b-2 border-gr justify-between items-center pb-1;
-	}
-
-	.modal-close {
-		@apply fas fa-xmark text-2xl mr-2 rounded-lg border border-gr px-2 py-1 ml-4 shadow-sm;
-	}
-
-	.modal-content {
-		@apply w-full my-2 grow overflow-y-auto;
-	}
-
-	.modal-footer {
-		@apply flex border-t-2 border-gr justify-end items-center pt-2;
-	}
-	.modal-footer:not(:has(:first-child)) {
-		@apply hidden;
-	}
-
-	.contest-grid {
-		@apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2;
-	}
-
-	/* 
-        this looks like it's going to be a sort of "standard" design between pages
-        so let's standardize it
-    */
-
-	.page-holder {
-		@apply grid grid-cols-1 lg:grid-cols-4;
-	}
-
-	.page-content {
-		@apply page-content-wrapper segment-panel;
-	}
-
-	.page-content-wrapper {
-		@apply col-span-1 min-w-fit lg:min-w-0 lg:col-span-3;
-	}
-
-	.page-content-full {
-		@apply col-span-full min-w-fit segment-panel;
-	}
-
-	.page-content-full-wrapper {
-		@apply col-span-full min-w-fit;
-	}
-
-	.page-sidebar {
-		@apply col-span-1;
-	}
-
-	.page-sidebar-box {
-		@apply segment-panel;
 	}
 }
 
-@layer utilities {
-	code {
-		@apply bg-hljs rounded-md mt-2 mb-2 px-1;
+/* Set min width only on large containers */
+@utility modal-container-large {
+	&[open] {
+		@apply min-h-[max(30vh,100px)] lg:min-h-[70vh];
+		@apply min-w-[90vw] lg:min-w-[max(50vw,700px)];
 	}
-	pre code:not(.hljs) {
-		@apply block px-2 py-1;
-	}
-	pre code.hljs {
-		@apply px-2 py-1;
-	}
-	.dark pre code.hljs {
-		/* we also need this specificity for dark mode */
-		@apply px-2 py-1;
-	}
+}
 
-	.server_timestamp {
-		visibility: hidden;
-	}
-	.server_timestamp::before {
-		visibility: visible;
-		content: "...";
-	}
 
-	blockquote {
-		@apply rounded-md p-3 my-2 border-l-4 border-gray-300 bg-gray-100 dark:border-gray-500 dark:bg-gray-800;
-		@apply italic leading-relaxed;
-	}
+@utility modal-header {
+	@apply flex border-b-2 border-gr justify-between items-center pb-1;
+}
 
-	pre {
-		white-space: pre-wrap; /* Since CSS 2.1 */
-		white-space: -moz-pre-wrap; /* Mozilla, since 1999 */
-		white-space: -pre-wrap; /* Opera 4-6 */
-		white-space: -o-pre-wrap; /* Opera 7 */
-		word-wrap: break-word; /* Internet Explorer 5.5+ */
-		tab-size: 4;
-		@apply break-normal;
-		@apply bg-hljs rounded-lg px-2 mt-1 mb-1 overflow-hidden;
-	}
+@utility modal-close {
+	@apply text-2xl mr-2 rounded-lg border border-gr px-2 py-1 ml-4 shadow-xs;
+}
 
-	body {
-		font-size: 16px;
-		font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Roboto, "Helvetica Neue", Arial, "Noto Sans",
-			sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-	}
+@utility modal-content {
+	@apply w-full my-2 grow overflow-y-auto;
+}
 
+@utility modal-footer {
+	@apply flex border-t-2 border-gr justify-end items-center pt-2;
+	&:not(:has(:first-child)) {
+		@apply hidden;
+	}
+}
+
+@utility contest-grid {
+	@apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2;
+}
+
+/*
+	this looks like it's going to be a sort of "standard" design between pages
+	so let's standardize it
+*/
+
+@utility page-holder {
+	@apply grid grid-cols-1 lg:grid-cols-4;
+}
+
+@utility page-content {
+	@apply page-content-wrapper segment-panel;
+}
+
+@utility page-content-wrapper {
+	@apply col-span-1 min-w-fit lg:min-w-0 lg:col-span-3;
+}
+
+@utility page-content-full {
+	@apply col-span-full min-w-fit segment-panel;
+}
+
+@utility page-content-full-wrapper {
+	@apply col-span-full min-w-fit;
+}
+
+@utility page-sidebar {
+	@apply col-span-1;
+}
+
+@utility page-sidebar-box {
+	@apply segment-panel;
+}
+
+code {
+	@apply bg-hljs rounded-md mt-2 mb-2 px-1;
+}
+pre code:not(.hljs) {
+	@apply block px-2 py-1;
+}
+pre code.hljs {
+	@apply px-2 py-1;
+}
+.dark pre code.hljs {
+	/* we also need this specificity for dark mode */
+	@apply px-2 py-1;
+}
+
+@utility server_timestamp {
+	@apply invisible;
+
+	&::before {
+		@apply visible content-[...];
+	}
+}
+
+blockquote {
+	@apply rounded-md p-3 my-2 border-l-4 border-gray-300 bg-gray-100 dark:border-gray-500 dark:bg-gray-800;
+	@apply italic leading-relaxed;
+}
+
+pre {
+	white-space: pre-wrap; /* Since CSS 2.1 */
+	white-space: -moz-pre-wrap; /* Mozilla, since 1999 */
+	white-space: -pre-wrap; /* Opera 4-6 */
+	white-space: -o-pre-wrap; /* Opera 7 */
+	word-wrap: break-word; /* Internet Explorer 5.5+ */
+	tab-size: 4;
+	@apply break-normal;
+	@apply bg-hljs rounded-lg px-2 mt-1 mb-1 overflow-hidden;
+}
+
+body {
+	font-size: 16px;
+	font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Roboto, "Helvetica Neue", Arial, "Noto Sans",
+		sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+html {
+	tab-size: 4;
+	@apply font-sans;
+	font-variant: tabular-nums;
+	/* @apply dark:bg-gray-900 dark:text-white; */
+}
+
+/* @media (prefers-color-scheme: dark) {
 	html {
-		tab-size: 4;
-		@apply font-sans;
-		font-variant: tabular-nums;
-		/* @apply dark:bg-gray-900 dark:text-white; */
-	}
-
-	/* @media (prefers-color-scheme: dark) {
-		html {
-			color-scheme: dark;
-		}
-	} */
-	html.dark {
-		/* We'll soon probably use the class strategy instead of browser preference */
 		color-scheme: dark;
-		@apply bg-gray-950 text-white;
 	}
+} */
+html.dark {
+	/* We'll soon probably use the class strategy instead of browser preference */
+	color-scheme: dark;
+	@apply bg-gray-950 text-white;
+}
 
-	.form-label {
-		@apply text-xl text-gray-700 mr-2;
-		@apply dark:text-white;
-	}
+@utility form-label {
+	@apply text-xl text-gray-700 mr-2;
+	@apply dark:text-white;
 }

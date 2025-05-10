@@ -12,8 +12,8 @@
 		<input class="form-input my-1 block" type="text" id="userToChange" placeholder="AlexVasiluta" autocomplete="off">
 	</label>
 	<div class="my-2 inline-flex">
-		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-l" onclick="setFormAdmin(true)">{{getText "makeAdmin"}}</button>
-		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-r" onclick="setFormProposer(true)">{{getText "makeProposer"}}</button>
+		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-l-sm" onclick="setFormAdmin(true)">{{getText "makeAdmin"}}</button>
+		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-r-sm" onclick="setFormProposer(true)">{{getText "makeProposer"}}</button>
 	</div>
 </div>
 
@@ -58,13 +58,13 @@
 
 <div class="segment-panel">
 	<h2 class="text-2xl">{{getText "admins"}}:</h2>
-	<div id="admin-group" class="block list-group list-group-rounded mb-2">
+	<div id="admin-group" class="block list-group mb-2">
 		<div class="list-group-head">
             {{getText "loading"}}
         </div>
 	</div>
 	<h2 class="text-2xl">{{getText "proposers"}}:</h2>
-	<div id="proposer-group" class="block list-group list-group-rounded mb-2">
+	<div id="proposer-group" class="block list-group mb-2">
 		<div class="list-group-head">
             {{getText "loading"}}
         </div>
@@ -80,7 +80,7 @@
 		}
 		let outhtml = ""
 		for(let user of res.data.users) {
-			outhtml += `<div class="list-group-item flex justify-between items-center"><a href="/profile/${user.name}"><img class="rounded inline-block mr-2" src="/api/user/byName/${user.name}/avatar?s=32" width="32" height="32" alt="Avatar"/>${user.name}</a>`
+			outhtml += `<div class="list-group-item flex justify-between items-center"><a href="/profile/${user.name}"><img class="rounded-sm inline-block mr-2" src="/api/user/byName/${user.name}/avatar?s=32" width="32" height="32" alt="Avatar"/>${user.name}</a>`
 			if(user.id != 1 && {{authedUser.ID}} == 1) {
 				outhtml += `<span style="cursor: pointer;" onclick="${cb}(${user.id}, false)">X</span>`
 			}

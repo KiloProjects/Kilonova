@@ -225,7 +225,7 @@ export function OlderSubmissions({
 							{subs.submissions.map((sub) => (
 								<a
 									href={`/submissions/${sub.id}`}
-									class="black-anchor flex justify-between items-center rounded py-1 px-2 hoverable"
+									class="black-anchor flex justify-between items-center rounded-sm py-1 px-2 hoverable"
 									key={sub.id}
 								>
 									<span>{`#${sub.id}: ${dayjs(sub.created_at).format("DD/MM/YYYY HH:mm")}`}</span>

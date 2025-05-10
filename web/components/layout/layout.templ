@@ -95,6 +95,7 @@ templ mainHeadTags(ctx context.Context, enabledLanguages map[string]string, titl
         }
     </script>
 	<link rel="stylesheet" href={ "/" + hashNamer.HashName("static/chroma.css") }/>
+	<link rel="stylesheet" href={ "/" + hashNamer.HashName("static/vendored.css") }/>
 	<link rel="stylesheet" href={ "/" + hashNamer.HashName("static/styles.css") }/>
 }
 

@@ -1,6 +1,7 @@
 *.js
 *.js.map
 styles.css
+vendored.css
 *.ttf
 *.woff2
 *.woff

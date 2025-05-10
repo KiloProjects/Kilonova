@@ -19,7 +19,7 @@ templ Navbar(viewAllSubs bool, reqPath string) {
 				<a class="roboto h-8 black-anchor" href="/">{ flags.NavbarBranding.Value() }</a>
 			</div>
 			<div class="md:hidden inline-block">
-				<a id="theme_button_mobile" class="text-gray-500 dark:text-gray-300 hover:text-black focus:text-black dark:hover:text-white dark:focus:text-white focus:outline-none h-6 w-6 mx-2" href="#">
+				<a id="theme_button_mobile" class="text-gray-500 dark:text-gray-300 hover:text-black focus:text-black dark:hover:text-white dark:focus:text-white focus:outline-hidden h-6 w-6 mx-2" href="#">
 					if util.Theme(ctx) == kilonova.PreferredThemeDark {
 						<i id="theme_button_mobile_icon" class="fas fa-fw fa-lightbulb"></i>
 					} else {
@@ -27,11 +27,11 @@ templ Navbar(viewAllSubs bool, reqPath string) {
 					}
 					<span class="fa-sr-only">{ T(ctx, "toggleTheme") }</span>
 				</a>
-				<button id="nav-toggler" type="button" onclick="navbar_mgr.toggleNavbar()" class="fas fa-bars text-gray-500 dark:text-gray-300 hover:text-black focus:text-black dark:hover:text-white dark:focus:text-white focus:outline-none h-6 w-6 mx-2" aria-label={ T(ctx, "toggleNavbar") }></button>
+				<button id="nav-toggler" type="button" onclick="navbar_mgr.toggleNavbar()" class="fas fa-bars text-gray-500 dark:text-gray-300 hover:text-black focus:text-black dark:hover:text-white dark:focus:text-white focus:outline-hidden h-6 w-6 mx-2" aria-label={ T(ctx, "toggleNavbar") }></button>
 			</div>
 		</div>
 		<nav id="nav-dropdown" class="px-2 pt-1 pb-3 md:flex md:p-0 z-50">
-			<a id="theme_button" class="hidden md:block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="#">
+			<a id="theme_button" class="hidden md:block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable" href="#">
 				if util.Theme(ctx) == kilonova.PreferredThemeDark {
 					<i id="theme_button_mobile_icon" class="fas fa-fw fa-lightbulb"></i>
 				} else {
@@ -40,23 +40,23 @@ templ Navbar(viewAllSubs bool, reqPath string) {
 				<span class="fa-sr-only">{ T(ctx, "toggleTheme") }</span>
 			</a>
 			if flags.NavbarProblems.Value() {
-				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/problems">{ T(ctx, "problem.list") }</a>
+				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable" href="/problems">{ T(ctx, "problem.list") }</a>
 			}
 			if flags.NavbarContests.Value() {
-				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/contests?page=official">{ T(ctx, "contests") }</a>
+				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable" href="/contests?page=official">{ T(ctx, "contests") }</a>
 			}
 			if viewAllSubs && flags.NavbarSubmissions.Value() {
-				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href="/submissions">{ T(ctx, "submission.list") }</a>
+				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable" href="/submissions">{ T(ctx, "submission.list") }</a>
 			}
 			if !authed(ctx) {
 				if sudoapi.SignupEnabled.Value() {
-					<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href={ templ.URL("/signup?back=" + reqPath) }>{ T(ctx, "auth.signup") }</a>
+					<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable" href={ templ.URL("/signup?back=" + reqPath) }>{ T(ctx, "auth.signup") }</a>
 				}
-				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable" href={ templ.URL("/login?back=" + reqPath) }>{ T(ctx, "auth.login") }</a>
+				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable" href={ templ.URL("/login?back=" + reqPath) }>{ T(ctx, "auth.login") }</a>
 			} else {
 				{{ authedUser := util.UserBriefContext(ctx) }}
 				<div id="pr-dropdown" class="relative">
-					<button onclick="navbar_mgr.toggleDropdown()" id="profile-dropdown-button" class="relative z-10 block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable">{ authedUser.Name }<i id="dropdown-caret" class="ml-1 fas fa-caret-down"></i></button>
+					<button onclick="navbar_mgr.toggleDropdown()" id="profile-dropdown-button" class="relative z-10 block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable">{ authedUser.Name }<i id="dropdown-caret" class="ml-1 fas fa-caret-down"></i></button>
 					<div id="profile-dropdown" class="dropdown-list hidden">
 						<a class="dropdown-list-item" href="/profile">
 							<i class="ml-n2 fas fa-user fa-fw"></i> { T(ctx, "profile.url") }

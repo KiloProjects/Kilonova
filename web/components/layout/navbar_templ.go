@@ -54,7 +54,7 @@ func Navbar(viewAllSubs bool, reqPath string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</a></div><div class=\"md:hidden inline-block\"><a id=\"theme_button_mobile\" class=\"text-gray-500 dark:text-gray-300 hover:text-black focus:text-black dark:hover:text-white dark:focus:text-white focus:outline-none h-6 w-6 mx-2\" href=\"#\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</a></div><div class=\"md:hidden inline-block\"><a id=\"theme_button_mobile\" class=\"text-gray-500 dark:text-gray-300 hover:text-black focus:text-black dark:hover:text-white dark:focus:text-white focus:outline-hidden h-6 w-6 mx-2\" href=\"#\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -82,20 +82,20 @@ func Navbar(viewAllSubs bool, reqPath string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</span></a> <button id=\"nav-toggler\" type=\"button\" onclick=\"navbar_mgr.toggleNavbar()\" class=\"fas fa-bars text-gray-500 dark:text-gray-300 hover:text-black focus:text-black dark:hover:text-white dark:focus:text-white focus:outline-none h-6 w-6 mx-2\" aria-label=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</span></a> <button id=\"nav-toggler\" type=\"button\" onclick=\"navbar_mgr.toggleNavbar()\" class=\"fas fa-bars text-gray-500 dark:text-gray-300 hover:text-black focus:text-black dark:hover:text-white dark:focus:text-white focus:outline-hidden h-6 w-6 mx-2\" aria-label=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "toggleNavbar"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/navbar.templ`, Line: 30, Col: 277}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/navbar.templ`, Line: 30, Col: 279}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\"></button></div></div><nav id=\"nav-dropdown\" class=\"px-2 pt-1 pb-3 md:flex md:p-0 z-50\"><a id=\"theme_button\" class=\"hidden md:block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable\" href=\"#\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\"></button></div></div><nav id=\"nav-dropdown\" class=\"px-2 pt-1 pb-3 md:flex md:p-0 z-50\"><a id=\"theme_button\" class=\"hidden md:block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable\" href=\"#\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -128,14 +128,14 @@ func Navbar(viewAllSubs bool, reqPath string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if flags.NavbarProblems.Value() {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<a class=\"block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable\" href=\"/problems\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<a class=\"block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable\" href=\"/problems\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "problem.list"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/navbar.templ`, Line: 43, Col: 124}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/navbar.templ`, Line: 43, Col: 127}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -147,14 +147,14 @@ func Navbar(viewAllSubs bool, reqPath string) templ.Component {
 			}
 		}
 		if flags.NavbarContests.Value() {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<a class=\"block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable\" href=\"/contests?page=official\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<a class=\"block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable\" href=\"/contests?page=official\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "contests"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/navbar.templ`, Line: 46, Col: 134}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/navbar.templ`, Line: 46, Col: 137}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -166,14 +166,14 @@ func Navbar(viewAllSubs bool, reqPath string) templ.Component {
 			}
 		}
 		if viewAllSubs && flags.NavbarSubmissions.Value() {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<a class=\"block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable\" href=\"/submissions\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<a class=\"block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable\" href=\"/submissions\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "submission.list"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/navbar.templ`, Line: 49, Col: 130}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/navbar.templ`, Line: 49, Col: 133}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -186,7 +186,7 @@ func Navbar(viewAllSubs bool, reqPath string) templ.Component {
 		}
 		if !authed(ctx) {
 			if sudoapi.SignupEnabled.Value() {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<a class=\"block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable\" href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<a class=\"block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -202,7 +202,7 @@ func Navbar(viewAllSubs bool, reqPath string) templ.Component {
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "auth.signup"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/navbar.templ`, Line: 53, Col: 153}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/navbar.templ`, Line: 53, Col: 156}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -213,7 +213,7 @@ func Navbar(viewAllSubs bool, reqPath string) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " <a class=\"block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " <a class=\"block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -229,7 +229,7 @@ func Navbar(viewAllSubs bool, reqPath string) templ.Component {
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "auth.login"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/navbar.templ`, Line: 55, Col: 150}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/navbar.templ`, Line: 55, Col: 153}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -241,14 +241,14 @@ func Navbar(viewAllSubs bool, reqPath string) templ.Component {
 			}
 		} else {
 			authedUser := util.UserBriefContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<div id=\"pr-dropdown\" class=\"relative\"><button onclick=\"navbar_mgr.toggleDropdown()\" id=\"profile-dropdown-button\" class=\"relative z-10 block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded hoverable\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<div id=\"pr-dropdown\" class=\"relative\"><button onclick=\"navbar_mgr.toggleDropdown()\" id=\"profile-dropdown-button\" class=\"relative z-10 block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(authedUser.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/navbar.templ`, Line: 59, Col: 187}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/navbar.templ`, Line: 59, Col: 190}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {

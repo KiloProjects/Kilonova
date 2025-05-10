@@ -40,7 +40,7 @@
     <div id="captcha_container" class="segment-panel" {{if not mustSolveCaptcha}} style="display: none;"{{end}}>
         <p>
             {{getText "auth.captcha.title"}}:<br/>
-            <img id="captcha_img" class="rounded" src="/api/auth/captcha/{{$captcha}}.png" alt="Captcha image" width="240" height="80" style="background-color: white;" />
+            <img id="captcha_img" class="rounded-sm" src="/api/auth/captcha/{{$captcha}}.png" alt="Captcha image" width="240" height="80" style="background-color: white;" />
         </p>
         <input type="hidden" id="captcha_id" value="{{$captcha}}" />
         <label class="block my-2">

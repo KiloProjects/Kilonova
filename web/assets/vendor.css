@@ -1,0 +1,7 @@
+@import "@fontsource/noto-sans";
+@import "notyf/notyf.min.css";
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+@import "highlightjs-copy/dist/highlightjs-copy.min.css";
+@import "codemirror/lib/codemirror.css";
+@import "codemirror/theme/monokai.css";
+@import "katex/dist/katex.css";

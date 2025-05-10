@@ -1,32 +1,7 @@
 import CopyButtonPlugin from "highlightjs-copy";
 import htmx from "htmx.org";
-import { Idiomorph } from "idiomorph";
 window.htmx = htmx;
-
-// Copy-pasted from idiomorph-htmx.js, since it errors out for whatever reason
-function createMorphConfig(swapStyle) {
-	if (swapStyle === "morph" || swapStyle === "morph:outerHTML") {
-		return { morphStyle: "outerHTML" };
-	} else if (swapStyle === "morph:innerHTML") {
-		return { morphStyle: "innerHTML" };
-	} else if (swapStyle.startsWith("morph:")) {
-		return Function("return (" + swapStyle.slice(6) + ")")();
-	}
-}
-// @ts-expect-error
-htmx.defineExtension("morph", {
-	isInlineSwap: function (swapStyle) {
-		let config = createMorphConfig(swapStyle);
-		return config.swapStyle === "outerHTML" || config.swapStyle == null;
-	},
-	handleSwap: function (swapStyle, target, fragment) {
-		let config = createMorphConfig(swapStyle);
-		if (config) {
-			// @ts-expect-error
-			return Idiomorph.morph(target, fragment.children, config);
-		}
-	},
-});
+import "idiomorph/dist/idiomorph-ext.esm.js";
 
 import "katex/contrib/copy-tex";
 
