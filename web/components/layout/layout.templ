@@ -118,7 +118,7 @@ templ Layout(ctx context.Context, enabledLanguages map[string]string, title stri
 			if user := util.UserFullContext(ctx); user != nil {
 				if !user.VerifiedEmail {
 					<div class="w-full py-1 px-2 bg-green-200 dark:bg-green-700 text-black dark:text-white text-center">
-						{ templ.Raw(T(ctx, "unverifiedEmail")) }
+						@templ.Raw(T(ctx, "unverifiedEmail"))
 					</div>
 				}
 			}

@@ -44,9 +44,11 @@ func (s *BaseAPI) UpdateProblem(ctx context.Context, id int, args kilonova.Probl
 		return fmt.Errorf("couldn't update problem: %w", err)
 	}
 	if len(newlyPublished) > 0 {
-		for _, id := range newlyPublished {
-			go s.AnnounceProblemPublished(ctx, id)
-		}
+		go func() {
+			for _, id := range newlyPublished {
+				go s.AnnounceProblemPublished(ctx, id)
+			}
+		}()
 	}
 
 	return nil
@@ -64,9 +66,11 @@ func (s *BaseAPI) ToggleDeepPbListProblems(ctx context.Context, list *kilonova.P
 		return fmt.Errorf("couldn't update list problem visibility: %w", err)
 	}
 	if len(newlyPublished) > 0 {
-		for _, id := range newlyPublished {
-			go s.AnnounceProblemPublished(ctx, id)
-		}
+		go func() {
+			for _, id := range newlyPublished {
+				go s.AnnounceProblemPublished(ctx, id)
+			}
+		}()
 	}
 
 	return nil

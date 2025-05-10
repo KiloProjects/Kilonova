@@ -38,7 +38,7 @@ func NewRenderer() *Renderer {
 	md := goldmark.New(
 		goldmark.WithExtensions(
 			extension.GFM, extension.Footnote, &attNode{},
-			// knkatex.Extension,
+			//knkatex.Extension,
 			knkatex.ExtensionV2,
 			highlighting.NewHighlighting(
 				highlighting.WithStyle("github"),
