@@ -1,3 +1,34 @@
+- v0.25.2:
+    - More zap -> slog conversions
+    - Codebase-wide refactorings
+    - Don't rely on zip package anymore for archive/test
+    - Barebones external resources UI
+    - Migrate more components to htmx
+    - Autoformat LaTeX in Markdown editor
+    - New LaTeX Math parser in Markdown (can now do `$1$ $2$` without issue)
+    - Upgrade to tailwind v4
+    - Start migrating html templates to [templ](https://templ.guide)
+    - Add page for printing problem statements
+- v0.25.1:
+    - Latest problems view at the bottom of the page
+    - Start using htmx for some page parts
+    - Use slog context and move a lot of usages of zap over to slog
+    - Grader page for compilation commands
+    - Discord embeds for audit log
+    - Initial linking with Discord integration
+    - Slightly overhaul UI for adding tests
+    - Updated README.md
+    - User generation UI for admins
+    - Contrib tool for contest user generation
+    - Internal refactoring
+    - Add english translations for emails
+    - Add barebones support for PHP and Rust
+    - Support for TWIPLA Analytics
+    - Measure number of SQL queries for admins
+    - Problem list filter for submissions
+    - Form to view another user's progress checklist (exposes functionality already present)
+    - Tool to warmup markdown statement cache
+    - More semantic HTML + accessibility
 - v0.25.0:
     - The number wasn't incremented, but many changes were made since January
     - List of changes by month:
