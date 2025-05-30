@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -77,6 +78,10 @@ func (s *BaseAPI) ToggleDeepPbListProblems(ctx context.Context, list *kilonova.P
 }
 
 func (s *BaseAPI) DeleteProblem(ctx context.Context, problem *kilonova.Problem) error {
+	if problem.Visible {
+		return errors.New("can't delete published problem. Unpublish first")
+	}
+
 	// Try to delete tests first, so the contents also get deleted
 	if err := s.DeleteTests(ctx, problem.ID); err != nil {
 		zap.S().Warn(err)

@@ -1,0 +1,30 @@
+site_name: Kilonova Documentation
+site_url: https://docs.kilonova.ro
+repo_url: https://github.com/KiloProjects/Kilonova
+repo_name: Kilonova
+edit_uri: edit/main/docs/
+site_dir: docs_site
+theme:
+  name: material
+  logo: logo.png
+  favicon: favicon.png
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - content.action.edit
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.top
+    - toc.follow
+  palette:
+    scheme: slate
+    primary: teal
+    accent: teal
+plugins:
+  - privacy
+  - search
+markdown_extensions: 
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tasklist

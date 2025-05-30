@@ -3,6 +3,8 @@ package otel
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/go-logr/logr"
 	"go.opentelemetry.io/otel"
@@ -15,7 +17,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace/noop"
-	"time"
 )
 
 var OtelEnabled = config.GenFlag("integrations.otel.enabled", false, "Enable OpenTelemetry collectors")
