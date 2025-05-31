@@ -11,7 +11,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/internal/config"
-	"go.uber.org/zap"
 )
 
 var (
@@ -21,16 +20,16 @@ var (
 func (s *BaseAPI) CreateSession(ctx context.Context, uid int) (string, error) {
 	sid, err := s.db.CreateSession(ctx, uid)
 	if err != nil {
-		zap.S().Warn("Failed to create session: ", err)
+		slog.WarnContext(ctx, "Failed to create session", slog.Any("err", err))
 		return "", fmt.Errorf("failed to create session: %w", err)
 	}
 	if sessions, err := s.db.RemoveOldSessions(ctx, uid); err != nil {
-		zap.S().Warn("Failed to remove old sessions: ", err)
+		slog.WarnContext(ctx, "Failed to remove old sessions", slog.Any("err", err))
 	} else if len(sessions) > 0 {
 		for _, sess := range sessions {
 			s.sessionUserCache.Delete(sess)
 		}
-		zap.S().Debugf("Removed %d old sessions", len(sessions))
+		slog.DebugContext(ctx, "Removed old sessions", slog.Int("count", len(sessions)))
 	}
 
 	return sid, nil
@@ -43,7 +42,7 @@ func (s *BaseAPI) GetSession(ctx context.Context, sid string) (int, error) {
 		if err.Error() == "Unauthed" {
 			return -1, nil
 		}
-		zap.S().Warn("Failed to get session: ", err)
+		slog.WarnContext(ctx, "Failed to get session", slog.Any("err", err))
 		return -1, fmt.Errorf("failed to get session: %w", err)
 	}
 
@@ -156,7 +155,7 @@ func (s *BaseAPI) SessionDevices(ctx context.Context, sid string) ([]*SessionDev
 
 func (s *BaseAPI) RemoveSession(ctx context.Context, sid string) error {
 	if err := s.db.RemoveSession(ctx, sid); err != nil {
-		zap.S().Warn("Failed to remove session: ", err)
+		slog.WarnContext(ctx, "Failed to remove session", slog.Any("err", err))
 		return fmt.Errorf("failed to remove session: %w", err)
 	}
 	s.sessionUserCache.Delete(sid)

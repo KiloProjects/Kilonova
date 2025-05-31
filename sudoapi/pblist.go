@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 
 	"github.com/KiloProjects/kilonova"
-	"go.uber.org/zap"
 )
 
 func (s *BaseAPI) ProblemList(ctx context.Context, id int) (*kilonova.ProblemList, error) {
@@ -83,7 +83,7 @@ func (s *BaseAPI) PblistChildrenLists(ctx context.Context, problemListID int) ([
 
 func (s *BaseAPI) CreateProblemList(ctx context.Context, pblist *kilonova.ProblemList) error {
 	if err := s.db.CreateProblemList(ctx, pblist); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Could not create problem list", slog.Any("err", err))
 		return fmt.Errorf("couldn't create problem list: %w", err)
 	}
 	return nil
@@ -91,9 +91,7 @@ func (s *BaseAPI) CreateProblemList(ctx context.Context, pblist *kilonova.Proble
 
 func (s *BaseAPI) UpdateProblemList(ctx context.Context, id int, upd kilonova.ProblemListUpdate) error {
 	if err := s.db.UpdateProblemList(ctx, id, upd); err != nil {
-		if !errors.Is(err, kilonova.ErrNoUpdates) {
-			zap.S().Warn(err)
-		}
+		slog.WarnContext(ctx, "Could not update problem list", slog.Any("err", err))
 		return fmt.Errorf("couldn't update problem list metadata: %w", err)
 	}
 	return nil
@@ -101,7 +99,7 @@ func (s *BaseAPI) UpdateProblemList(ctx context.Context, id int, upd kilonova.Pr
 
 func (s *BaseAPI) UpdateProblemListProblems(ctx context.Context, id int, list []int) error {
 	if err := s.db.UpdateProblemListProblems(ctx, id, list); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Could not update problem list problems", slog.Any("err", err))
 		return fmt.Errorf("couldn't update problem list problems: %w", err)
 	}
 	return nil
@@ -109,7 +107,7 @@ func (s *BaseAPI) UpdateProblemListProblems(ctx context.Context, id int, list []
 
 func (s *BaseAPI) UpdateProblemListSublists(ctx context.Context, id int, listIDs []int) error {
 	if err := s.db.UpdateProblemListSublists(ctx, id, listIDs); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Could not update problem list sublists", slog.Any("err", err))
 		return fmt.Errorf("couldn't update problem list nested lists: %w", err)
 	}
 	return nil
@@ -117,7 +115,7 @@ func (s *BaseAPI) UpdateProblemListSublists(ctx context.Context, id int, listIDs
 
 func (s *BaseAPI) DeleteProblemList(ctx context.Context, id int) error {
 	if err := s.db.DeleteProblemList(ctx, id); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Could not delete problem list", slog.Any("err", err))
 		return fmt.Errorf("couldn't delete problem list: %w", err)
 	}
 	return nil

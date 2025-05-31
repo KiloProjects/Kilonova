@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/KiloProjects/kilonova/archive/test"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 )
 
 func (s *API) saveTestData(w http.ResponseWriter, r *http.Request) {
@@ -107,12 +107,12 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.base.SaveTestInput(test.ID, bytes.NewBufferString(r.FormValue("input"))); err != nil {
-		zap.S().Warn("Couldn't create test input", err)
+		slog.WarnContext(r.Context(), "Couldn't create test input", slog.Any("err", err))
 		errorData(w, "Couldn't create test input", 500)
 		return
 	}
 	if err := s.base.SaveTestOutput(test.ID, bytes.NewBufferString(r.FormValue("output"))); err != nil {
-		zap.S().Warn("Couldn't create test output", err)
+		slog.WarnContext(r.Context(), "Couldn't create test output", slog.Any("err", err))
 		errorData(w, "Couldn't create test output", 500)
 		return
 	}
@@ -136,7 +136,7 @@ func (s *API) processArchive(r *http.Request, firstImport bool) error {
 	// Process zip file
 	file, fh, err := r.FormFile("testArchive")
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(r.Context(), "Couldn't open zip file", slog.Any("err", err))
 		return fmt.Errorf("couldn't open zip file: %w", err)
 	}
 	defer file.Close()

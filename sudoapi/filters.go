@@ -2,10 +2,10 @@ package sudoapi
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"go.uber.org/zap"
 )
 
 // NOTE: This must be in sync with the visible_posts PSQL function
@@ -53,7 +53,7 @@ func (s *BaseAPI) IsProblemEditor(user *kilonova.UserBrief, problem *kilonova.Pr
 	}
 	ok, err := s.db.IsProblemEditor(context.Background(), problem.ID, user.ID)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(context.Background(), "Could not check if user is problem editor", slog.Any("err", err))
 		return false
 	}
 	return ok
@@ -73,13 +73,13 @@ func (s *BaseAPI) IsProblemVisible(user *kilonova.UserBrief, problem *kilonova.P
 
 	ok, err := s.db.IsProblemViewer(context.Background(), problem.ID, userID)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(context.Background(), "Could not check if user is problem viewer", slog.Any("err", err))
 		return false
 	}
 	return ok
 }
 
-// Full visibility is currently used for:
+// IsProblemFullyVisible is currently used for:
 //   - problem statistics;
 //   - submission code visibility;
 //   - tag visibility;
@@ -99,7 +99,7 @@ func (s *BaseAPI) IsProblemFullyVisible(user *kilonova.UserBrief, problem *kilon
 
 	ok, err := s.db.IsFullProblemViewer(context.Background(), problem.ID, userID)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(context.Background(), "Could not check if user can fully view problem", slog.Any("err", err))
 		return false
 	}
 	return ok
@@ -134,15 +134,16 @@ func (s *BaseAPI) IsContestVisible(user *kilonova.UserBrief, contest *kilonova.C
 
 	ok, err := s.db.IsContestViewer(context.Background(), contest.ID, userID)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(context.Background(), "Could not check if user is contest viewer", slog.Any("err", err))
 		return false
 	}
 	return ok
 }
 
+// UserContestFreezeTime determines the time at which leaderboards are frozen.
 // The leaderboards are not frozen if:
 //   - No freeze time is set
-//   - Current moment is before freeze time
+//   - The current moment is before freeze time
 //   - User is contest editor
 //
 // Otherwise, leaderboard should be frozen

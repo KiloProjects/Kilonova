@@ -17,7 +17,6 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer"
 	"github.com/Yiling-J/theine-go"
 	"github.com/bwmarrin/discordgo"
-	"go.uber.org/zap"
 )
 
 var (
@@ -140,8 +139,7 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, error) {
 	if config.Email.Enabled {
 		mailer, err := email.NewMailer()
 		if err != nil {
-			zap.S().Warn("Couldn't initialize mailer: ", err)
-			zap.S().Warn("Make sure you entered the correct information")
+			slog.WarnContext(ctx, "Couldn't initialize mailer. Make sure you entered the correct information", slog.Any("err", err))
 		}
 		knMailer = mailer
 	}
@@ -151,7 +149,7 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, error) {
 	if err != nil {
 		return nil, fmt.Errorf("couldn't connect to DB: %w", err)
 	}
-	zap.S().Info("Connected to DB")
+	slog.InfoContext(ctx, "Connected to DB")
 
 	if MigrateOnStart.Value() {
 		if err := dbClient.RunMigrations(ctx); err != nil {

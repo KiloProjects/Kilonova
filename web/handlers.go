@@ -31,7 +31,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/schema"
-	"go.uber.org/zap"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -1038,9 +1037,13 @@ func (rt *Web) blogPost() http.HandlerFunc {
 		case "md":
 			statement, err = rt.base.RenderedBlogPostDesc(r.Context(), post, descVariant)
 			if err != nil {
-				if !errors.Is(err, context.Canceled) {
-					zap.S().Warn("Error getting problem markdown: ", err)
-				}
+				slog.WarnContext(
+					r.Context(),
+					"Error getting problem markdown",
+					slog.Any("err", err),
+					slog.Any("variant", descVariant),
+					slog.Any("problem", post),
+				)
 				statement = []byte("Error loading markdown.")
 			}
 		case "pdf":
@@ -1138,7 +1141,7 @@ func (rt *Web) editBlogPostIndex() http.HandlerFunc {
 
 		variants, err := rt.base.BlogPostDescVariants(r.Context(), util.BlogPost(r).ID, true)
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Couldn't get blog post desc variants", slog.Any("err", err))
 			http.Error(w, "Couldn't get statement variants", 500)
 			return
 		}
@@ -1149,14 +1152,14 @@ func (rt *Web) editBlogPostIndex() http.HandlerFunc {
 		var att *kilonova.Attachment
 		att, err = rt.base.BlogPostAttByName(r.Context(), util.BlogPost(r).ID, rt.base.FormatDescName(finalVariant))
 		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Couldn't get blog post content attachment", slog.Any("err", err))
 			http.Error(w, "Couldn't get post content attachment", 500)
 			return
 		}
 		if att != nil {
 			val, err := rt.base.AttachmentData(r.Context(), att.ID)
 			if err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(r.Context(), "Couldn't get blog post content attachment data", slog.Any("err", err))
 				http.Error(w, "Couldn't get post content", 500)
 				return
 			}
@@ -1295,13 +1298,13 @@ func (rt *Web) contestEdit() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		invitations, err := rt.base.ContestInvitations(r.Context(), util.Contest(r).ID)
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Couldn't get contest invitations", slog.Any("err", err))
 			invitations = []*kilonova.ContestInvitation{}
 		}
 
 		mossSubs, err := rt.base.MOSSSubmissions(r.Context(), util.Contest(r).ID)
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Couldn't get MOSS submissions", slog.Any("err", err))
 			mossSubs = []*kilonova.MOSSSubmission{}
 		}
 
@@ -1321,15 +1324,13 @@ func (rt *Web) contestInvite() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		inv, err := rt.base.ContestInvitation(r.Context(), chi.URLParam(r, "inviteID"))
 		if err != nil {
-			if !errors.Is(err, kilonova.ErrNotFound) {
-				zap.S().Warn(err)
-			}
+			slog.WarnContext(r.Context(), "Couldn't get contest invitation", slog.Any("err", err))
 			rt.statusPage(w, r, 404, "Invite not found")
 			return
 		}
 		contest, err := rt.base.Contest(r.Context(), inv.ContestID)
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Couldn't get contest", slog.Any("err", err))
 			rt.statusPage(w, r, 500, "Couldn't get invite's contest")
 			return
 		}
@@ -1410,7 +1411,7 @@ func (rt *Web) donationPage() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		donations, err := rt.base.Donations(r.Context())
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Couldn't get donations", slog.Any("err", err))
 			donations = []*kilonova.Donation{}
 		}
 
@@ -1561,9 +1562,7 @@ func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *templa
 		Limit: 50,
 	}, user.Brief(), util.UserBrief(r))
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
-		}
+		slog.WarnContext(r.Context(), "Couldn't get solved problems", slog.Any("err", err))
 		solvedPbs = []*sudoapi.FullProblem{}
 	}
 
@@ -1574,9 +1573,7 @@ func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *templa
 		Limit: 50,
 	}, user.Brief(), util.UserBrief(r))
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
-		}
+		slog.WarnContext(r.Context(), "Couldn't get attempted problems", slog.Any("err", err))
 		attemptedPbs = []*sudoapi.FullProblem{}
 	}
 
@@ -1645,7 +1642,7 @@ func (rt *Web) linkStatus() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "user")))
 		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Could not get user", slog.Any("err", err))
 			rt.statusPage(w, r, 500, "")
 			return
 		}
@@ -1734,7 +1731,7 @@ func (rt *Web) sessionsFilter() http.HandlerFunc {
 		var q filterQuery
 		r.ParseForm()
 		if err := decoder.Decode(&q, r.Form); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Couldn't decode filter query", slog.Any("err", err))
 		}
 		if q.Page < 1 {
 			q.Page = 1
@@ -2110,9 +2107,7 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 		"subCode": func(sub *kilonova.FullSubmission) []byte {
 			code, err := rt.base.SubmissionCode(r.Context(), &sub.Submission, sub.Problem, util.UserBrief(r), true)
 			if err != nil {
-				if !errors.Is(err, context.Canceled) {
-					zap.S().Warn(err)
-				}
+				slog.WarnContext(r.Context(), "Couldn't get submission code", slog.Any("err", err))
 				code = nil
 			}
 			return code

@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"text/template"
 	"time"
 
+	_ "embed"
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
-	"go.uber.org/zap"
-
-	_ "embed"
 )
 
 //go:embed emails/emailVerification.txt
@@ -26,7 +25,7 @@ var verificationEmailTempl = template.Must(template.New("emailTempl").Parse(veri
 // If `email` is different than the user's email, the email address is also updated.
 func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, email, lang string) error {
 	if s.mailer == nil || !s.MailerEnabled() || userID == 1 {
-		zap.S().Infof("Auto confirming email for user #%d as valid", userID)
+		slog.InfoContext(ctx, "Auto confirming email for user as valid", slog.Int("userID", userID))
 
 		t := true
 		now := time.Now()
@@ -42,7 +41,7 @@ func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, e
 	}
 
 	if user, err := s.UserFullByEmail(ctx, email); err != nil && !errors.Is(err, ErrNotFound) {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Error checking if email is already used", slog.Any("err", err))
 		return errors.New("couldn't check if email is already used: report to admin")
 	} else if user != nil && user.ID != userID {
 		return Statusf(400, "Email is already in use")
@@ -75,7 +74,7 @@ func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, e
 		HostPrefix: config.Common.HostPrefix,
 		Branding:   EmailBranding.Value(),
 	}); err != nil {
-		zap.S().Error("Error rendering verification email:", err)
+		slog.WarnContext(ctx, "Error rendering verification email", slog.Any("err", err))
 		return Statusf(500, "Error rendering email")
 	}
 	if err := s.SendMail(ctx, &kilonova.MailerMessage{

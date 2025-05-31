@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"log/slog"
@@ -15,7 +14,6 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/go-chi/chi/v5"
-	"go.uber.org/zap"
 )
 
 var FilterUserAgent = config.GenFlag[bool]("behavior.user_agent_filter", true, "Filter user agent in API (block python requests from non-admins)")
@@ -82,8 +80,8 @@ func (s *API) SetupSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, err := s.base.SessionUser(r.Context(), getAuthHeader(r), r)
 		if err != nil || user == nil {
-			if err != nil && !errors.Is(err, context.Canceled) {
-				zap.S().Warn(err)
+			if err != nil {
+				slog.WarnContext(r.Context(), "Error getting session user", slog.Any("err", err))
 			}
 			next.ServeHTTP(w, r)
 			return

@@ -197,7 +197,7 @@ func (h *Handler) Start() error {
 	slog.InfoContext(h.ctx, "Connected to eval")
 
 	if err = h.handle(runner); err != nil {
-		slog.ErrorContext(h.ctx, "Handling error:", slog.Any("err", err))
+		slog.ErrorContext(h.ctx, "Handling error", slog.Any("err", err))
 		return err
 	}
 	return nil

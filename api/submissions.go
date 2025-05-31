@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"go.uber.org/zap"
 )
 
 func (s *API) fullSubmission(ctx context.Context, id int, lookingUser *kilonova.UserBrief, looking bool) (sub *sudoapi.FullSubmission, err error) {
@@ -100,14 +100,14 @@ func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
 			errorData(w, "Missing `code` file with source code", 400)
 			return
 		}
-		zap.S().Warn(err)
+		slog.WarnContext(r.Context(), "Could not open multipart file", slog.Any("err", err))
 		errorData(w, "Could not open multipart file", 500)
 		return
 	}
 
 	code, err := io.ReadAll(f)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(r.Context(), "Could not read source code", slog.Any("err", err))
 		errorData(w, "Could not read source code", 500)
 		return
 	}

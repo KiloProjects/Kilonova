@@ -12,7 +12,6 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/go-chi/chi/v5"
-	"go.uber.org/zap"
 )
 
 type StatementEditorParams struct {
@@ -72,7 +71,7 @@ func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		variants, err := rt.base.ProblemDescVariants(r.Context(), util.Problem(r).ID, true)
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Couldn't get statement variants", slog.Any("err", err))
 			http.Error(w, "Couldn't get statement variants", 500)
 			return
 		}
@@ -83,14 +82,14 @@ func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
 		var att *kilonova.Attachment
 		att, err = rt.base.ProblemAttByName(r.Context(), util.Problem(r).ID, rt.base.FormatDescName(finalVariant))
 		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Couldn't get problem statement attachment", slog.Any("err", err))
 			http.Error(w, "Couldn't get problem statement attachment", 500)
 			return
 		}
 		if att != nil {
 			val, err := rt.base.AttachmentData(r.Context(), att.ID)
 			if err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(r.Context(), "Couldn't get problem statement", slog.Any("err", err))
 				http.Error(w, "Couldn't get problem statement", 500)
 				return
 			}

@@ -19,8 +19,6 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/davecgh/go-spew/spew"
-	"go.uber.org/zap"
-	"go.uber.org/zap/exp/zapslog"
 	"golang.org/x/text/runes"
 	"golang.org/x/text/transform"
 	"golang.org/x/text/unicode/norm"
@@ -301,12 +299,7 @@ func Kilonova() error {
 }
 
 func initLogger(debug bool) {
-	core := kilonova.GetZapCore(debug, os.Stdout)
-	logg := zap.New(core, zap.AddCaller())
-
-	zap.ReplaceGlobals(logg)
-
-	slog.SetDefault(slog.New(zapslog.NewHandler(core, zapslog.WithCaller(true))))
+	slog.SetDefault(slog.New(kilonova.GetSlogHandler(debug, os.Stdout)))
 }
 
 func init() {

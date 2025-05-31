@@ -6,7 +6,6 @@ import (
 	"log/slog"
 
 	"github.com/KiloProjects/kilonova"
-	"go.uber.org/zap"
 )
 
 func (s *BaseAPI) UserBlogPosts(ctx context.Context, userID int, lookingUser *kilonova.UserBrief) ([]*kilonova.BlogPost, error) {
@@ -66,13 +65,13 @@ func (s *BaseAPI) UpdateBlogPost(ctx context.Context, id int, upd kilonova.BlogP
 		}
 	}
 	if err := s.db.UpdateBlogPost(ctx, id, upd); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't update blog post", slog.Any("err", err))
 		return fmt.Errorf("couldn't update blog post: %w", err)
 	}
 	if upd.Slug != nil {
 		atts, err := s.BlogPostAttachments(ctx, id)
 		if err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(ctx, "Couldn't get blog post attachments", slog.Any("err", err))
 		} else {
 			for _, att := range atts {
 				s.DelAttachmentRenders(att.ID)
@@ -94,14 +93,14 @@ func (s *BaseAPI) DeleteBlogPost(ctx context.Context, post *kilonova.BlogPost) e
 	// Delete attachments first, so they are fully removed from the database
 	atts, err := s.BlogPostAttachments(ctx, post.ID)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't get blog post attachments", slog.Any("err", err))
 	} else {
 		attIDs := []int{}
 		for _, att := range atts {
 			attIDs = append(attIDs, att.ID)
 		}
 		if _, err := s.db.DeleteAttachments(ctx, &kilonova.AttachmentFilter{IDs: attIDs, BlogPostID: &post.ID}); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(ctx, "Couldn't delete blog post attachments", slog.Any("err", err))
 		}
 	}
 

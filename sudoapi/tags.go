@@ -2,14 +2,12 @@ package sudoapi
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
-	"go.uber.org/zap"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -17,9 +15,7 @@ import (
 func (s *BaseAPI) Tags(ctx context.Context) ([]*kilonova.Tag, error) {
 	tags, err := s.db.Tags(ctx)
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
-		}
+		slog.WarnContext(ctx, "couldn't get tags", slog.Any("err", err))
 		return nil, fmt.Errorf("couldn't get tags: %w", err)
 	}
 	return tags, nil
@@ -28,9 +24,7 @@ func (s *BaseAPI) Tags(ctx context.Context) ([]*kilonova.Tag, error) {
 func (s *BaseAPI) TagsByID(ctx context.Context, tagIDs []int) ([]*kilonova.Tag, error) {
 	tags, err := s.db.TagsByID(ctx, tagIDs)
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
-		}
+		slog.WarnContext(ctx, "couldn't get tags", slog.Any("err", err))
 		return nil, fmt.Errorf("couldn't get tags: %w", err)
 	}
 	return tags, nil
@@ -39,9 +33,7 @@ func (s *BaseAPI) TagsByID(ctx context.Context, tagIDs []int) ([]*kilonova.Tag, 
 func (s *BaseAPI) TagsByType(ctx context.Context, tagType kilonova.TagType) ([]*kilonova.Tag, error) {
 	tags, err := s.db.TagsByType(ctx, tagType)
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
-		}
+		slog.WarnContext(ctx, "couldn't get tags", slog.Any("err", err))
 		return nil, fmt.Errorf("couldn't get tags: %w", err)
 	}
 	return tags, nil
@@ -54,9 +46,7 @@ func (s *BaseAPI) RelevantTags(ctx context.Context, tagID int, max int, lookingU
 	}
 	tags, err := s.db.RelevantTags(ctx, tagID, max, id)
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
-		}
+		slog.WarnContext(ctx, "couldn't get relevant tags", slog.Int("tagID", tagID), slog.Any("err", err))
 		return nil, fmt.Errorf("couldn't get relevant tags: %w", err)
 	}
 	return tags, nil

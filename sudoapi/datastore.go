@@ -2,13 +2,14 @@ package sudoapi
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"strconv"
 	"strings"
 
-	"go.uber.org/zap"
 	"vimagination.zapto.org/dos2unix"
 )
 
@@ -58,21 +59,26 @@ func (s *BaseAPI) GetAttachmentRender(attID int, renderType string) (io.ReadSeek
 func (s *BaseAPI) DelAttachmentRenders(attID int) error {
 	entries, err := s.attachmentCacheBucket.FileList()
 	if err != nil {
-		zap.S().Warn("Couldn't delete attachment renders: ", err)
+		slog.WarnContext(context.Background(), "Couldn't list attachment renders", slog.Any("err", err))
 		return fmt.Errorf("couldn't delete attachment renders: %w", err)
 	}
 	for _, entry := range entries {
 		prefix, _, _ := strings.Cut(entry.Name(), ".")
 		id, err := strconv.Atoi(prefix)
 		if err != nil {
-			zap.S().Warn("Attachment renders should start with attachment ID:", entry.Name())
+			slog.WarnContext(
+				context.Background(),
+				"Attachment renders should start with attachment ID",
+				slog.String("name", entry.Name()),
+				slog.Any("err", err),
+			)
 			continue
 		}
 		if id != attID {
 			continue
 		}
 		if err := s.attachmentCacheBucket.RemoveFile(entry.Name()); err != nil {
-			zap.S().Warn("Could not delete attachment render: ", err)
+			slog.WarnContext(context.Background(), "Couldn't delete attachment render", slog.Any("err", err))
 		}
 	}
 	return nil
@@ -80,7 +86,7 @@ func (s *BaseAPI) DelAttachmentRenders(attID int) error {
 
 func (s *BaseAPI) SaveAttachmentRender(attID int, renderType string, data []byte) error {
 	if err := s.attachmentCacheBucket.WriteFile(attachmentCacheBucketName(attID, renderType), bytes.NewReader(data), 0644); err != nil {
-		zap.S().Warn("Couldn't save rendered attachment: ", err)
+		slog.WarnContext(context.Background(), "Couldn't save rendered attachment", slog.Any("err", err))
 		return fmt.Errorf("couldn't delete rendered attachment: %w", err)
 	}
 	return nil

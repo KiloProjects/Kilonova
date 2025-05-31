@@ -25,6 +25,8 @@ plugins:
   - search
 markdown_extensions: 
   - admonition
+  - tables
   - pymdownx.details
+  - pymdownx.highlight
   - pymdownx.superfences
   - pymdownx.tasklist

@@ -14,7 +14,6 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"go.uber.org/zap"
 )
 
 // Expected attachment behavior:
@@ -69,7 +68,7 @@ func (s *BaseAPI) CreateProblemAttachment(ctx context.Context, att *kilonova.Att
 	// I cannot emphasize how inefficient this is.
 	data, err := io.ReadAll(r)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Could not read attachment data", slog.Any("err", err))
 		return fmt.Errorf("couldn't read attachment data: %w", err)
 	}
 
@@ -77,7 +76,7 @@ func (s *BaseAPI) CreateProblemAttachment(ctx context.Context, att *kilonova.Att
 		att.Visible = false
 	}
 	if err := s.db.CreateProblemAttachment(ctx, att, problemID, data, authorID); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Could not create attachment", slog.Any("err", err))
 		return fmt.Errorf("couldn't create attachment: %w", err)
 	}
 	return nil
@@ -89,7 +88,7 @@ func (s *BaseAPI) CreateBlogPostAttachment(ctx context.Context, att *kilonova.At
 	// I cannot emphasize how inefficient this is.
 	data, err := io.ReadAll(r)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Could not read attachment data", slog.Any("err", err))
 		return fmt.Errorf("couldn't read attachment data: %w", err)
 	}
 
@@ -97,7 +96,7 @@ func (s *BaseAPI) CreateBlogPostAttachment(ctx context.Context, att *kilonova.At
 		att.Visible = false
 	}
 	if err := s.db.CreateBlogPostAttachment(ctx, att, postID, data, authorID); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Could not create attachment", slog.Any("err", err))
 		return fmt.Errorf("couldn't create attachment: %w", err)
 	}
 	return nil
@@ -124,7 +123,7 @@ func (s *BaseAPI) UpdateAttachmentData(ctx context.Context, aid int, data []byte
 		ctx = context.WithValue(context.WithoutCancel(ctx), util.AuthedUserKey, author)
 		att, err := s.Attachment(ctx, aid)
 		if err != nil {
-			zap.S().Warn(err, aid)
+			slog.WarnContext(ctx, "Could not get attachment", slog.Any("err", err), slog.Int("attachmentID", aid))
 			return
 		}
 		attrs := []slog.Attr{}
@@ -265,7 +264,7 @@ func (s *BaseAPI) getCachedAttachment(attID int, renderType string) ([]byte, boo
 		if err == nil {
 			return data, true
 		} else {
-			zap.S().Warn("Error reading cache: ", err)
+			slog.WarnContext(context.Background(), "Error reading attachment cache", slog.Any("err", err))
 		}
 	}
 	return nil, false
@@ -302,7 +301,7 @@ func (s *BaseAPI) RenderedProblemDesc(ctx context.Context, problem *kilonova.Pro
 			return data, fmt.Errorf("couldn't render markdown: %w", err)
 		}
 		if err := s.SaveAttachmentRender(att.ID, "mdhtml", buf); err != nil {
-			zap.S().Warn("Couldn't save attachment to cache: ", err)
+			slog.WarnContext(ctx, "Couldn't save attachment to cache", slog.Any("err", err))
 		}
 		return buf, nil
 	default:
@@ -333,7 +332,7 @@ func (s *BaseAPI) RenderedBlogPostDesc(ctx context.Context, post *kilonova.BlogP
 			return data, fmt.Errorf("couldn't render markdown: %w", err)
 		}
 		if err := s.SaveAttachmentRender(att.ID, "mdhtml", buf); err != nil {
-			zap.S().Warn("Couldn't save attachment to cache: ", err)
+			slog.WarnContext(ctx, "Couldn't save attachment to cache", slog.Any("err", err))
 		}
 		return buf, nil
 	default:

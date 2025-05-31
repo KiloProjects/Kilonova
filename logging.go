@@ -1,13 +1,12 @@
 package kilonova
 
 import (
+	"github.com/lmittmann/tint"
 	"github.com/mattn/go-isatty"
 	"io"
+	"log/slog"
 	"os"
 	"time"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 func logColors(w io.Writer) bool {
@@ -27,29 +26,22 @@ func logColors(w io.Writer) bool {
 	return os.Getenv("TERM") != "dumb"
 }
 
-func GetZapCore(debug bool, out io.Writer) zapcore.Core {
-	var cfg zapcore.EncoderConfig
+func GetSlogHandler(debug bool, out io.Writer) slog.Handler {
+	level := slog.LevelInfo
 	if debug {
-		cfg = zap.NewDevelopmentEncoderConfig()
-	} else {
-		cfg = zap.NewProductionEncoderConfig()
-	}
-	cfg.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-		enc.AppendString(t.UTC().Format(time.RFC3339))
-	}
-	if logColors(out) {
-		cfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	} else {
-		cfg.EncodeLevel = zapcore.CapitalLevelEncoder
+		level = slog.LevelDebug
 	}
 
-	level := zapcore.InfoLevel
-	if debug {
-		level = zapcore.DebugLevel
-	}
-	return zapcore.NewCore(
-		zapcore.NewConsoleEncoder(cfg),
-		zapcore.AddSync(out),
-		level,
-	)
+	return tint.NewHandler(out, &tint.Options{
+		AddSource: true,
+		Level:     level,
+		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
+			if _, ok := attr.Value.Any().(error); attr.Key == "err" || ok {
+				return tint.Attr(9, attr)
+			}
+			return attr
+		},
+		TimeFormat: time.RFC3339,
+		NoColor:    !logColors(out),
+	})
 }

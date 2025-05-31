@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
-	"go.uber.org/zap"
 	"log/slog"
 	"text/template"
 
@@ -43,7 +42,7 @@ func (s *BaseAPI) SendPasswordResetEmail(ctx context.Context, userID int, name, 
 		HostPrefix: config.Common.HostPrefix,
 		Branding:   EmailBranding.Value(),
 	}); err != nil {
-		zap.S().Error("Error rendering password request email:", err)
+		slog.ErrorContext(ctx, "Error rendering password request email", slog.Any("err", err))
 		return Statusf(500, "Error rendering email")
 	}
 	if err := s.SendMail(ctx, &kilonova.MailerMessage{
@@ -51,7 +50,7 @@ func (s *BaseAPI) SendPasswordResetEmail(ctx context.Context, userID int, name, 
 		PlainContent: b.String(),
 		To:           email,
 	}); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Error sending password reset email", slog.Any("err", err))
 		return err
 	}
 
@@ -81,7 +80,7 @@ func (s *BaseAPI) FinalizePasswordReset(ctx context.Context, rid string, newPass
 		return err
 	}
 	if err := s.db.RemovePwdResetRequest(ctx, rid); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't remove password reset request", slog.Any("err", err))
 		return Statusf(400, "Couldn't remove password reset request")
 	}
 	return nil

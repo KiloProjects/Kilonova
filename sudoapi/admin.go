@@ -19,7 +19,6 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/bwmarrin/discordgo"
-	"go.uber.org/zap"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -363,7 +362,7 @@ func (s *BaseAPI) processLogEntry(ctx context.Context, val *logEntry, importantW
 			attrs = []byte(`{"attrs": "err"}`)
 		}
 		if _, err := s.db.CreateAuditLog(ctx, val.Message+" "+string(attrs), id, false); err != nil {
-			zap.S().Warn("Couldn't store audit log entry to database: ", err)
+			slog.WarnContext(ctx, "Couldn't store audit log entry to database", slog.Any("err", err))
 		}
 	}
 

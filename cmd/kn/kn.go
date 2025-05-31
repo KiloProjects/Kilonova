@@ -29,8 +29,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	"go.uber.org/zap"
-	"go.uber.org/zap/exp/zapslog"
 )
 
 func Kilonova() error {
@@ -108,10 +106,6 @@ func Kilonova() error {
 }
 
 func initLogger(debug, writeFile bool) {
-	core := kilonova.GetZapCore(debug, os.Stdout)
-	logg := zap.New(core, zap.AddCaller())
-
-	zap.ReplaceGlobals(logg)
 
 	showUser := slogmulti.NewHandleInlineMiddleware(func(ctx context.Context, record slog.Record, next func(context.Context, slog.Record) error) error {
 		if user := util.UserBriefContext(ctx); user != nil {
@@ -131,7 +125,7 @@ func initLogger(debug, writeFile bool) {
 			}
 			if err, isErr := attr.Value.Any().(error); isErr {
 				var opErr *net.OpError
-				if errors.As(err, &opErr) || errors.Is(err, context.Canceled) || errors.Is(err, kilonova.ErrNotFound) {
+				if errors.As(err, &opErr) || errors.Is(err, context.Canceled) || errors.Is(err, kilonova.ErrNotFound) || errors.Is(err, kilonova.ErrNoUpdates) {
 					ok = false
 					break
 				}
@@ -144,7 +138,7 @@ func initLogger(debug, writeFile bool) {
 	})
 
 	handlers := []slog.Handler{
-		slogmulti.Pipe(skipContextCanceled).Handler(zapslog.NewHandler(core, zapslog.WithCaller(true))),
+		slogmulti.Pipe(skipContextCanceled).Handler(kilonova.GetSlogHandler(debug, os.Stdout)),
 		otelslog.NewHandler("kilonova"),
 	}
 

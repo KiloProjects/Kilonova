@@ -11,7 +11,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 )
 
 // Problem stuff
@@ -84,25 +83,25 @@ func (s *BaseAPI) DeleteProblem(ctx context.Context, problem *kilonova.Problem) 
 
 	// Try to delete tests first, so the contents also get deleted
 	if err := s.DeleteTests(ctx, problem.ID); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't delete tests", slog.Any("err", err))
 	}
 
 	// Then, delete attachments, so they are fully removed from the database
 	atts, err := s.ProblemAttachments(ctx, problem.ID)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't get problem attachments", slog.Any("err", err))
 	} else {
 		attIDs := []int{}
 		for _, att := range atts {
 			attIDs = append(attIDs, att.ID)
 		}
 		if _, err := s.db.DeleteAttachments(ctx, &kilonova.AttachmentFilter{IDs: attIDs, ProblemID: &problem.ID}); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(ctx, "Couldn't delete problem attachments", slog.Any("err", err))
 		}
 	}
 
 	if err := s.db.DeleteProblem(ctx, problem.ID); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't delete problem", slog.Any("err", err))
 		return fmt.Errorf("couldn't delete problem: %w", err)
 	}
 	s.LogUserAction(ctx, "Removed problem", slog.Any("problem", problem))
@@ -188,7 +187,7 @@ func (s *BaseAPI) SearchProblems(ctx context.Context, filter kilonova.ProblemFil
 	for _, pb := range pbs {
 		stat, ok := stats[pb.ID]
 		if !ok {
-			zap.S().Warnf("Couldn't find stats for problem %d", pb.ID)
+			slog.WarnContext(ctx, "Couldn't find stats for problem", slog.Any("problem", pb))
 			// Attempt to get this working even in case of error
 			stat = &db.ProblemStats{NumSolvedBy: -1, NumAttemptedBy: -1}
 		}
@@ -196,7 +195,7 @@ func (s *BaseAPI) SearchProblems(ctx context.Context, filter kilonova.ProblemFil
 		if _, ok := fullyVisiblePbs[pb.ID]; tagAll || ok {
 			tags, ok = tagMap[pb.ID]
 			if !ok {
-				zap.S().Warnf("Couldn't find tags for problem %d", pb.ID)
+				slog.WarnContext(ctx, "Couldn't find tags for problem", slog.Any("problem", pb))
 				tags = []*kilonova.Tag{}
 			}
 		}
@@ -223,7 +222,7 @@ func (s *BaseAPI) ContestProblems(ctx context.Context, contest *kilonova.Contest
 	}
 	problems, err := s.db.ScoredContestProblems(ctx, contest.ID, userID, nil)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't get problems", slog.Any("err", err))
 		return nil, fmt.Errorf("couldn't get problems: %w", err)
 	}
 	return problems, nil

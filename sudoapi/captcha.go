@@ -9,7 +9,6 @@ import (
 
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/dchest/captcha"
-	"go.uber.org/zap"
 )
 
 var (
@@ -34,7 +33,7 @@ func (s *BaseAPI) MustSolveCaptcha(ctx context.Context, ip *netip.Addr) bool {
 		return false
 	}
 	if ip == nil {
-		zap.S().Warn("nil ip given to MustSolveCaptcha")
+		slog.WarnContext(ctx, "nil ip given to MustSolveCaptcha")
 		return true // Err on the side of caution
 	}
 	cnt, err := s.db.CountSignups(ctx, *ip, time.Now().Add(-10*time.Minute))

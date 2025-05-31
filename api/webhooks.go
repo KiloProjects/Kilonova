@@ -12,7 +12,6 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/kilonova/internal/config"
-	"go.uber.org/zap"
 )
 
 var (
@@ -44,7 +43,7 @@ type membershipDonationData struct {
 // bmacEvent handles an event from Buy Me A Coffee
 func (s *API) bmacEvent(w http.ResponseWriter, r *http.Request) {
 	if BMACWebhookSecret.Value() == "" {
-		zap.S().Warn("bmac_event was POSTed but no signature was specified in config file")
+		slog.WarnContext(r.Context(), "bmac_event was POSTed but no secret was specified in config file")
 		errorData(w, "BMAC secret not rolled out", 400)
 		return
 	}
@@ -56,7 +55,7 @@ func (s *API) bmacEvent(w http.ResponseWriter, r *http.Request) {
 	mac := hmac.New(sha256.New, []byte(BMACWebhookSecret.Value()))
 	var buf bytes.Buffer
 	if _, err := io.Copy(&buf, r.Body); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(r.Context(), "Couldn't read body to buffer", slog.Any("err", err))
 		errorData(w, "Couldn't read body to buffer", 500)
 		return
 	}
@@ -70,7 +69,7 @@ func (s *API) bmacEvent(w http.ResponseWriter, r *http.Request) {
 	var data bmacEvent
 
 	if err := json.NewDecoder(&buf).Decode(&data); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(r.Context(), "Invalid JSON", slog.Any("err", err))
 		errorData(w, "Invalid JSON", 400)
 		return
 	}
@@ -79,7 +78,7 @@ func (s *API) bmacEvent(w http.ResponseWriter, r *http.Request) {
 	case "donation.created":
 		var donation donationData
 		if err := json.Unmarshal(data.Data, &donation); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Invalid JSON donation data", slog.Any("err", err))
 			return
 		}
 		s.base.LogToDiscord(r.Context(), "New Buy Me a Coffee donation. You have to manually add it to donations page",
@@ -90,7 +89,7 @@ func (s *API) bmacEvent(w http.ResponseWriter, r *http.Request) {
 	case "membership.started":
 		var membership membershipDonationData
 		if err := json.Unmarshal(data.Data, &membership); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Invalid JSON membership start data", slog.Any("err", err))
 			return
 		}
 		s.base.LogToDiscord(r.Context(), "New Buy Me a Coffee membership. You have to manually add it to donations page",
@@ -101,7 +100,7 @@ func (s *API) bmacEvent(w http.ResponseWriter, r *http.Request) {
 	case "membership.cancelled":
 		var membership membershipDonationData
 		if err := json.Unmarshal(data.Data, &membership); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(r.Context(), "Invalid JSON membership cancel data", slog.Any("err", err))
 			return
 		}
 		s.base.LogToDiscord(r.Context(), "Buy Me a Coffee membership **cancelled**. You have to manually remove it from donations page",

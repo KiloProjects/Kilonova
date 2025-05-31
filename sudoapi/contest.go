@@ -11,7 +11,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/integrations/moss"
 	"github.com/KiloProjects/kilonova/internal/config"
-	"go.uber.org/zap"
 )
 
 var (
@@ -46,7 +45,7 @@ func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova
 		})
 		if err != nil || (cnt >= NormalUserVCLimit.Value() && NormalUserVCLimit.Value() >= 0) {
 			if err != nil {
-				zap.S().Warn(err)
+				slog.WarnContext(ctx, "Couldn't fetch contest count", slog.Any("err", err))
 			}
 			return -1, Statusf(400, "You can create at most %d contests per day", NormalUserVCLimit.Value())
 		}
@@ -56,7 +55,7 @@ func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova
 		return -1, fmt.Errorf("couldn't create contest: %w", err)
 	}
 	if err := s.db.AddContestEditor(ctx, id, author.ID); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't add author to contest editors", slog.Any("err", err))
 		return id, fmt.Errorf("couldn't add author to contest editors: %w", err)
 	}
 	return id, nil
@@ -64,7 +63,7 @@ func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova
 
 func (s *BaseAPI) UpdateContest(ctx context.Context, id int, upd kilonova.ContestUpdate) error {
 	if err := s.db.UpdateContest(ctx, id, upd); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't update contest", slog.Any("err", err))
 		return fmt.Errorf("couldn't update contest: %w", err)
 	}
 	return nil
@@ -72,7 +71,7 @@ func (s *BaseAPI) UpdateContest(ctx context.Context, id int, upd kilonova.Contes
 
 func (s *BaseAPI) UpdateContestProblems(ctx context.Context, id int, list []int) error {
 	if err := s.db.UpdateContestProblems(ctx, id, list); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't update contest problems", slog.Any("err", err))
 		return fmt.Errorf("couldn't update contest problems: %w", err)
 	}
 	return nil
@@ -204,7 +203,7 @@ func (s *BaseAPI) CanSubmitInContest(user *kilonova.UserBrief, c *kilonova.Conte
 	}
 	reg, err := s.db.ContestRegistration(context.Background(), c.ID, user.ID)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(context.Background(), "Couldn't fetch contest registration", slog.Any("err", err))
 		return false
 	}
 

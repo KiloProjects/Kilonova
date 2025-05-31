@@ -12,7 +12,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 )
 
 var (
@@ -83,9 +82,7 @@ func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova
 		LookingUser: lookingUser,
 	})
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			zap.S().Warnf("Error getting problems: %v", err)
-		}
+		slog.WarnContext(ctx, "Error getting problems", slog.Any("err", err))
 		return nil, fmt.Errorf("couldn't get problems: %w", err)
 	}
 	for _, problem := range problems {
@@ -94,13 +91,13 @@ func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova
 
 	for i, sub := range subs {
 		if _, ok := usersMap[sub.UserID]; !ok {
-			zap.S().Warnf("Couldn't find user %d in map", sub.UserID)
+			slog.WarnContext(ctx, "Couldn't find user in map", slog.Int("userID", sub.UserID))
 			continue
 		}
 
 		pb, ok := problemsMap[sub.ProblemID]
 		if !ok {
-			zap.S().Warnf("Couldn't find problem %d in map. Something has gone terribly wrong", sub.ProblemID)
+			slog.WarnContext(ctx, "Couldn't find problem in map. Something has gone terribly wrong", slog.Int("problemID", sub.ProblemID))
 		}
 
 		if look {
@@ -134,10 +131,10 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 
 	subs, err := s.db.Submissions(ctx, filter)
 	if err != nil {
+		slog.WarnContext(ctx, "Couldn't get submissions", slog.Any("err", err))
 		if errors.Is(err, context.Canceled) {
 			return nil, err
 		}
-		zap.S().Warn(err)
 		return nil, ErrUnknownError
 	}
 
@@ -149,10 +146,10 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 
 	cnt, err := s.db.SubmissionCount(ctx, filter, maxCnt+1)
 	if err != nil {
+		slog.WarnContext(ctx, "Couldn't get submission count", slog.Any("err", err))
 		if errors.Is(err, context.Canceled) {
 			return nil, err
 		}
-		zap.S().Warn(err)
 		return nil, ErrUnknownError
 	}
 
@@ -169,7 +166,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 func (s *BaseAPI) RawSubmission(ctx context.Context, id int) (*kilonova.Submission, error) {
 	sub, err := s.db.Submission(ctx, id)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't get raw submission", slog.Any("err", err))
 		return nil, ErrUnknownError
 	}
 	if sub == nil {
@@ -182,7 +179,7 @@ func (s *BaseAPI) RawSubmission(ctx context.Context, id int) (*kilonova.Submissi
 func (s *BaseAPI) RawSubmissions(ctx context.Context, filter kilonova.SubmissionFilter) ([]*kilonova.Submission, error) {
 	subs, err := s.db.Submissions(ctx, filter)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't get raw submissions", slog.Any("err", err))
 		return nil, ErrUnknownError
 	}
 	return subs, nil
@@ -191,9 +188,7 @@ func (s *BaseAPI) RawSubmissions(ctx context.Context, filter kilonova.Submission
 func (s *BaseAPI) RawSubmissionCode(ctx context.Context, subid int) ([]byte, error) {
 	data, err := s.db.SubmissionCode(ctx, subid)
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
-		}
+		slog.WarnContext(ctx, "Couldn't get raw submission code", slog.Any("err", err))
 		return nil, fmt.Errorf("couldn't get submission code: %w", err)
 	}
 	return data, nil
@@ -208,9 +203,7 @@ func (s *BaseAPI) SubmissionCode(ctx context.Context, sub *kilonova.Submission, 
 	}
 	data, err := s.db.SubmissionCode(ctx, sub.ID)
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
-		}
+		slog.WarnContext(ctx, "Couldn't get submission code", slog.Any("err", err))
 		return nil, fmt.Errorf("couldn't get submission code: %w", err)
 	}
 	return data, nil
@@ -296,7 +289,7 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *kil
 
 func (s *BaseAPI) UpdateSubmission(ctx context.Context, id int, status kilonova.SubmissionUpdate) error {
 	if err := s.db.UpdateSubmission(ctx, id, status); err != nil {
-		zap.S().Warn(err, id)
+		slog.WarnContext(ctx, "Couldn't update submission", slog.Any("err", err), slog.Int("subID", id))
 		return fmt.Errorf("couldn't update submission: %w", err)
 	}
 	return nil
@@ -438,12 +431,12 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 	// Add submission
 	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang.InternalName, string(code), contestID)
 	if err != nil {
-		zap.S().Warn("Couldn't create submission:", err)
+		slog.WarnContext(ctx, "Couldn't create submission", slog.Any("err", err))
 		return -1, Statusf(500, "Couldn't create submission")
 	}
 
 	if err := s.db.InitSubmission(ctx, id); err != nil {
-		zap.S().Warn("Couldn't initialize submission:", err)
+		slog.WarnContext(ctx, "Couldn't initialize submission", slog.Any("err", err), slog.Int("subID", id))
 		return -1, Statusf(500, "Couldn't initialize submission")
 	}
 
@@ -455,7 +448,7 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 
 func (s *BaseAPI) DeleteSubmission(ctx context.Context, subID int) error {
 	if err := s.db.DeleteSubmission(ctx, subID); err != nil {
-		zap.S().Warn("Couldn't delete submission:", err)
+		slog.WarnContext(ctx, "Couldn't delete submission", slog.Any("err", err), slog.Int("subID", subID))
 		return Statusf(500, "Failed to delete submission")
 	}
 	return nil
@@ -465,7 +458,7 @@ func (s *BaseAPI) ResetProblemSubmissions(ctx context.Context, problem *kilonova
 	if err := s.db.BulkUpdateSubmissions(ctx, kilonova.SubmissionFilter{ProblemID: &problem.ID}, kilonova.SubmissionUpdate{
 		Status: kilonova.StatusReevaling,
 	}); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't mark submissions for reevaluation", slog.Any("err", err))
 		return fmt.Errorf("couldn't mark submissions for reevaluation: %w", err)
 	}
 

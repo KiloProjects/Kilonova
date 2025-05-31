@@ -24,7 +24,6 @@ import (
 	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/bwmarrin/discordgo"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 
 	_ "embed"
@@ -45,11 +44,11 @@ func (s *BaseAPI) UserBrief(ctx context.Context, id int) (*kilonova.UserBrief, e
 func (s *BaseAPI) UserFull(ctx context.Context, id int) (*kilonova.UserFull, error) {
 	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &id})
 	if err != nil || user == nil {
-		if errors.Is(err, context.Canceled) {
-			return nil, err
-		}
 		if err != nil {
 			slog.WarnContext(ctx, "Couldn't get user", slog.Any("err", err))
+		}
+		if errors.Is(err, context.Canceled) {
+			return nil, err
 		}
 		return nil, fmt.Errorf("user not found: %w", ErrNotFound)
 	}
@@ -91,9 +90,7 @@ func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*kilonova.
 func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([]*kilonova.UserBrief, error) {
 	users, err := s.db.Users(ctx, filter)
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
-		}
+		slog.WarnContext(ctx, "Couldn't get users", slog.Any("err", err))
 		return nil, fmt.Errorf("couldn't get users: %w", err)
 	}
 	return mapUsersBrief(users), nil
@@ -124,12 +121,12 @@ func (s *BaseAPI) UpdateUser(ctx context.Context, userID int, upd kilonova.UserU
 
 func (s *BaseAPI) updateUser(ctx context.Context, userID int, upd kilonova.UserFullUpdate) error {
 	if err := s.db.UpdateUser(ctx, userID, upd); err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't update user", slog.Any("err", err))
 		return fmt.Errorf("couldn't update user: %w", err)
 	}
 	sessions, err := s.UserSessions(ctx, userID)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't get user sessions", slog.Any("err", err))
 		return nil
 	}
 	for _, sess := range sessions {
@@ -158,17 +155,15 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserFull, n
 	if !fromAdmin {
 		chAt, err := s.db.LastUsernameChange(ctx, user.ID)
 		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				zap.S().Warn(err)
-			}
+			slog.WarnContext(ctx, "Couldn't get last username change date", slog.Any("err", err))
 			return fmt.Errorf("couldn't get last change date: %w", err)
 		}
-		var nextEligbleDate time.Time
+		var nextEligibleDate time.Time
 		if !chAt.Equal(user.CreatedAt) {
-			nextEligbleDate = chAt.Add(14 * 24 * time.Hour)
+			nextEligibleDate = chAt.Add(14 * 24 * time.Hour)
 		}
-		if nextEligbleDate.After(time.Now()) {
-			return Statusf(400, "You can only change your username at most once every 14 days. You may change it again on %s", nextEligbleDate.Format(time.DateTime))
+		if nextEligibleDate.After(time.Now()) {
+			return Statusf(400, "You can only change your username at most once every 14 days. You may change it again on %s", nextEligibleDate.Format(time.DateTime))
 		}
 	}
 
@@ -178,8 +173,8 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserFull, n
 
 	if checkUsed {
 		used, err := s.db.NameUsedBefore(ctx, newName)
-		if err != nil && !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
+		if err != nil {
+			slog.WarnContext(ctx, "Couldn't check if name was used before", slog.Any("err", err))
 		}
 		if used {
 			userIDs, err := s.db.HistoricalUsernameHolders(ctx, newName)
@@ -211,9 +206,7 @@ func (s *BaseAPI) SetUserLockout(ctx context.Context, userID int, lockout bool) 
 func (s *BaseAPI) UsernameChangeHistory(ctx context.Context, userID int) ([]*kilonova.UsernameChange, error) {
 	changes, err := s.db.UsernameChangeHistory(ctx, userID)
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			zap.S().Warn(err)
-		}
+		slog.WarnContext(ctx, "Couldn't get username change history", slog.Any("err", err))
 		return []*kilonova.UsernameChange{}, fmt.Errorf("couldn't get change history: %w", err)
 	}
 	return changes, nil
@@ -452,14 +445,14 @@ func (s *BaseAPI) createUser(ctx context.Context, username, email, password, lan
 
 	id, err := s.db.CreateUser(ctx, username, hash, email, lang, theme, displayName, bio, generated)
 	if err != nil {
-		zap.S().Warn(err)
+		slog.WarnContext(ctx, "Couldn't create user", slog.Any("err", err))
 		return -1, err
 	}
 
 	if id == 1 {
 		var True = true
 		if err := s.updateUser(ctx, id, kilonova.UserFullUpdate{Admin: &True, Proposer: &True}); err != nil {
-			zap.S().Warn(err)
+			slog.WarnContext(ctx, "Couldn't set first user as admin", slog.Any("err", err))
 			return id, err
 		}
 	}
@@ -547,7 +540,7 @@ func (s *BaseAPI) GetGravatar(ctx context.Context, email string, size int, maxLa
 		return r, t, false, err
 	}
 	if err := s.saveGravatar(ctx, email, size, r); err != nil {
-		zap.S().Warn("Could not save avatar:", err)
+		slog.WarnContext(ctx, "Could not save avatar", slog.Any("err", err))
 	}
 	r.Seek(0, io.SeekStart)
 	return r, t, true, nil
@@ -614,7 +607,7 @@ func (s *BaseAPI) GetDiscordAvatar(ctx context.Context, user *kilonova.UserFull,
 		return r, t, false, err
 	}
 	if err := s.saveDiscordAvatar(ctx, user, dUser, size, r); err != nil {
-		zap.S().Warn("Could not save avatar:", err)
+		slog.WarnContext(ctx, "Could not save avatar", slog.Any("err", err))
 	}
 	r.Seek(0, io.SeekStart)
 	return r, t, true, nil
