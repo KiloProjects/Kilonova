@@ -560,6 +560,7 @@ BEGIN
 				AND problem_id != ANY(%L::bigint[])
 			GROUP BY problem_id
 		ORDER BY user_cnt DESC;', $1);
+    CREATE INDEX ON hot_problems (problem_id);
 END;
 $$ LANGUAGE plpgsql;
 
