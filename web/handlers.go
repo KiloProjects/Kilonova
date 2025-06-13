@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/KiloProjects/kilonova/web/views"
+	"github.com/KiloProjects/kilonova/web/views/modals"
 	"html/template"
 	"io"
 	"log/slog"
@@ -20,8 +22,6 @@ import (
 
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/components/layout"
-	"github.com/KiloProjects/kilonova/web/components/views"
-	"github.com/KiloProjects/kilonova/web/components/views/modals"
 	"github.com/a-h/templ"
 
 	"github.com/KiloProjects/kilonova"
@@ -1211,6 +1211,13 @@ func (rt *Web) contests() http.HandlerFunc {
 			asc = false
 		}
 		filter.Ascending = asc
+
+		if contestant := r.FormValue("contestant"); len(contestant) > 0 {
+			user, err := rt.base.UserBriefByName(r.Context(), contestant)
+			if err == nil {
+				filter.ContestantID = &user.ID
+			}
+		}
 
 		page := "all"
 		switch v := r.FormValue("page"); v {

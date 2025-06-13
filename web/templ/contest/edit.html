@@ -389,7 +389,7 @@ document.getElementById("c_freeze_enabled").addEventListener("change", (e) => {
     document.getElementById("freezeLabel").classList.toggle("hidden", !e.currentTarget.checked)
 })
 document.getElementById("leaderboard_style").addEventListener("change", (e) => {
-    document.getElementById("icpcPenaltyLabel").classList.toggle("hidden", e.currentTarget.value != "acm-icpc")
+    document.getElementById("icpcPenaltyLabel").classList.toggle("hidden", e.currentTarget.value !== "acm-icpc")
 })
 </script>
 

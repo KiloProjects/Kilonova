@@ -5,18 +5,20 @@ package views
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
+import (
+	"github.com/KiloProjects/kilonova/web/tutils"
+	"github.com/a-h/templ"
+)
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"context"
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/web/components"
 	"math"
 	"strings"
 )
 
-var T = components.T
+var T = tutils.T
 
 func kbToMB(kb int) float64 {
 	return math.Round(float64(kb)/1024.0*100) / 100.0
@@ -105,7 +107,7 @@ func Statement(ctx context.Context, statementText []byte, problem *kilonova.Prob
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "statementFormat"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/views/statement.templ`, Line: 28, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/statement.templ`, Line: 28, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -150,7 +152,7 @@ func Statement(ctx context.Context, statementText []byte, problem *kilonova.Prob
 					var templ_7745c5c3_Var5 string
 					templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(variant.Language)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/views/statement.templ`, Line: 45, Col: 27}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/statement.templ`, Line: 45, Col: 27}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 					if templ_7745c5c3_Err != nil {
@@ -194,7 +196,7 @@ func Statement(ctx context.Context, statementText []byte, problem *kilonova.Prob
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "problemSingle"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/views/statement.templ`, Line: 60, Col: 53}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/statement.templ`, Line: 60, Col: 53}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -207,7 +209,7 @@ func Statement(ctx context.Context, statementText []byte, problem *kilonova.Prob
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(problem.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/views/statement.templ`, Line: 60, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/statement.templ`, Line: 60, Col: 76}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -225,7 +227,7 @@ func Statement(ctx context.Context, statementText []byte, problem *kilonova.Prob
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "timeLimit"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/views/statement.templ`, Line: 62, Col: 44}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/statement.templ`, Line: 62, Col: 44}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -238,7 +240,7 @@ func Statement(ctx context.Context, statementText []byte, problem *kilonova.Prob
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(problem.TimeLimit)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/views/statement.templ`, Line: 62, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/statement.templ`, Line: 62, Col: 67}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -251,7 +253,7 @@ func Statement(ctx context.Context, statementText []byte, problem *kilonova.Prob
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "memoryLimit"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/views/statement.templ`, Line: 63, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/statement.templ`, Line: 63, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -264,7 +266,7 @@ func Statement(ctx context.Context, statementText []byte, problem *kilonova.Prob
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(kbToMB(problem.MemoryLimit))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/views/statement.templ`, Line: 63, Col: 79}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/statement.templ`, Line: 63, Col: 79}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -277,7 +279,7 @@ func Statement(ctx context.Context, statementText []byte, problem *kilonova.Prob
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "input"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/views/statement.templ`, Line: 65, Col: 21}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/statement.templ`, Line: 65, Col: 21}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -314,7 +316,7 @@ func Statement(ctx context.Context, statementText []byte, problem *kilonova.Prob
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(problem.TestName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/views/statement.templ`, Line: 71, Col: 23}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/statement.templ`, Line: 71, Col: 23}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -332,7 +334,7 @@ func Statement(ctx context.Context, statementText []byte, problem *kilonova.Prob
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "output"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/views/statement.templ`, Line: 75, Col: 22}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/statement.templ`, Line: 75, Col: 22}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -369,7 +371,7 @@ func Statement(ctx context.Context, statementText []byte, problem *kilonova.Prob
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(problem.TestName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/views/statement.templ`, Line: 81, Col: 23}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/statement.templ`, Line: 81, Col: 23}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
@@ -392,7 +394,7 @@ func Statement(ctx context.Context, statementText []byte, problem *kilonova.Prob
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "defaultPoints"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/views/statement.templ`, Line: 85, Col: 49}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/statement.templ`, Line: 85, Col: 49}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
@@ -405,7 +407,7 @@ func Statement(ctx context.Context, statementText []byte, problem *kilonova.Prob
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(problem.DefaultPoints.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/views/statement.templ`, Line: 85, Col: 85}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/statement.templ`, Line: 85, Col: 85}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
@@ -428,7 +430,7 @@ func Statement(ctx context.Context, statementText []byte, problem *kilonova.Prob
 			var templ_7745c5c3_Var20 string
 			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "aiTranslationWarning"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/views/statement.templ`, Line: 90, Col: 48}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/statement.templ`, Line: 90, Col: 48}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 			if templ_7745c5c3_Err != nil {
@@ -479,7 +481,7 @@ func PrintStatement(ctx context.Context, statementText []byte, problem *kilonova
 		var templ_7745c5c3_Var22 string
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(strings.Split(problem.SourceCredits, ":")[0])
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/views/statement.templ`, Line: 102, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/statement.templ`, Line: 102, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {

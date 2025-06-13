@@ -213,10 +213,6 @@
 	@apply border-gray-700 dark:border-gray-200;
 }
 
-@utility border-wh {
-	@apply border-gray-600 dark:border-gray-200;
-}
-
 @utility border-gr {
 	@apply border-gray-300 dark:border-gray-700;
 }
@@ -226,7 +222,6 @@
 	@apply dark:border-gray-700;
 
 	@apply rounded-lg;
-
 
 	& > *:first-child {
 		@apply rounded-t-lg;
@@ -260,12 +255,8 @@
 	@apply block px-4 py-1 text-gray-800 focus:text-gray-800 hover:text-gray-800 hoverable;
 	@apply dark:text-gray-200 dark:focus:text-gray-100 dark:hover:text-gray-100;
 
-	&:first-child {
-		@apply rounded-t-lg -mt-1;
-	}
-	&:last-child {
-		@apply rounded-b-lg -mb-1;
-	}
+	@apply first:rounded-t-lg first:-mt-1;
+	@apply last:rounded-b-lg last:-mb-1;
 }
 
 @utility black-span {
@@ -401,7 +392,7 @@ summary {
 	@apply hover:shadow-md transition-shadow;
 
 	.segment-panel &,
-	.modal-content &{
+	.modal-content & {
 		@apply segment-colors-2;
 	}
 }
@@ -567,7 +558,6 @@ select.form-select-mini {
 	}
 }
 
-
 @utility modal-header {
 	@apply flex border-b-2 border-gr justify-between items-center pb-1;
 }
@@ -620,10 +610,6 @@ select.form-select-mini {
 	@apply col-span-1;
 }
 
-@utility page-sidebar-box {
-	@apply segment-panel;
-}
-
 code {
 	@apply bg-hljs rounded-md mt-2 mb-2 px-1;
 }
@@ -664,8 +650,8 @@ pre {
 
 body {
 	font-size: 16px;
-	font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Roboto, "Helvetica Neue", Arial, "Noto Sans",
-		sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+	font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
+		"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
 html {

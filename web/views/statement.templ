@@ -3,12 +3,12 @@ package views
 import (
 	"context"
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/web/components"
+	"github.com/KiloProjects/kilonova/web/tutils"
 	"math"
 	"strings"
 )
 
-var T = components.T
+var T = tutils.T
 
 func kbToMB(kb int) float64 {
 	return math.Round(float64(kb)/1024.0*100) / 100.0

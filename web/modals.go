@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"github.com/KiloProjects/kilonova/web/views/modals"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -9,7 +10,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/KiloProjects/kilonova/web/components/views/modals"
 )
 
 func (rt *Web) updateProblemSources() http.HandlerFunc {

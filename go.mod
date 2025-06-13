@@ -44,7 +44,7 @@ require github.com/dchest/captcha v1.1.0
 require github.com/dustin/go-humanize v1.0.1
 
 require (
-	github.com/a-h/templ v0.3.865
+	github.com/a-h/templ v0.3.898
 	github.com/bwmarrin/discordgo v0.29.0
 	github.com/danielgtaylor/huma/v2 v2.32.0
 	github.com/dominikbraun/graph v0.23.0
@@ -75,6 +75,7 @@ require (
 )
 
 require (
+	github.com/Oudwins/tailwind-merge-go v0.2.1 // indirect
 	github.com/a-h/parse v0.0.0-20250122154542-74294addb73e // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect

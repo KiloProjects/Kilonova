@@ -7,12 +7,12 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
-	"github.com/KiloProjects/kilonova/web/components"
+	"github.com/KiloProjects/kilonova/web/tutils"
 	"strconv"
 	"time"
 )
 
-var T = components.T
+var T = tutils.T
 
 type HashNamer interface {
 	HashName(filename string) string

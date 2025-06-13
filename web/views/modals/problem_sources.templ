@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/web/components"
+	"github.com/KiloProjects/kilonova/web/tutils"
 )
 
-var T = components.T
+var T = tutils.T
 
 templ ProblemSources(ctx context.Context, problemList *kilonova.ProblemList, problems []*kilonova.ScoredProblem) {
 	<form id="change_sources_panel" class="segment-panel reset-list" hx-post={ fmt.Sprintf("/problem_lists/%d/updateSources", problemList.ID) } hx-swap="outerHTML">

@@ -5,7 +5,10 @@ package layout
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
+import (
+	"github.com/KiloProjects/kilonova/web/tutils"
+	"github.com/a-h/templ"
+)
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
@@ -15,12 +18,11 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
-	"github.com/KiloProjects/kilonova/web/components"
 	"strconv"
 	"time"
 )
 
-var T = components.T
+var T = tutils.T
 
 type HashNamer interface {
 	HashName(filename string) string
