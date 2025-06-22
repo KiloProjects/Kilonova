@@ -6,6 +6,11 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/config"
+)
+
+var (
+	LockdownProblemEditor = config.GenFlag("behavior.problems.lockdown_published", false, "Lockdown published problems such that only admins can edit them")
 )
 
 // NOTE: This must be in sync with the visible_posts PSQL function
@@ -48,7 +53,7 @@ func (s *BaseAPI) IsProblemEditor(user *kilonova.UserBrief, problem *kilonova.Pr
 	if user.IsAdmin() {
 		return true
 	}
-	if problem == nil || problem.Visible {
+	if problem == nil || (LockdownProblemEditor.Value() && problem.Visible) {
 		return false
 	}
 	ok, err := s.db.IsProblemEditor(context.Background(), problem.ID, user.ID)
