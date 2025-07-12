@@ -1,0 +1,27 @@
+package utilviews
+
+import (
+	"net/http"
+
+	"github.com/KiloProjects/kilonova/web/tutils"
+)
+
+type StatusCodeParams struct {
+	Code    int
+	Message string
+}
+
+templ StatusCode(params StatusCodeParams) {
+	<div class="text-center">
+		<h2>{ params.Code }: { http.StatusText(params.Code) }</h2>
+		if len(params.Message) > 0 {
+			<h1>{ params.Message }</h1>
+		} else {
+			<p>{ tutils.T(ctx,"error.message") } </p>
+		}
+	</div>
+}
+
+templ NoRobotsHead() {
+	<meta name="robots" content="none"/>
+}

@@ -42,7 +42,7 @@ func platformInfo(ctx context.Context, enabledLanguages map[string]string) platf
 	}
 }
 
-templ mainHeadTags(ctx context.Context, enabledLanguages map[string]string, title string, description string, hashNamer HashNamer) {
+templ mainHeadTags(enabledLanguages map[string]string, title string, description string, hashNamer HashNamer) {
 	{{
 	if len(title) == 0 {
 		title = "Kilonova"
@@ -99,7 +99,18 @@ templ mainHeadTags(ctx context.Context, enabledLanguages map[string]string, titl
 	<link rel="stylesheet" href={ "/" + hashNamer.HashName("static/styles.css") }/>
 }
 
-templ Layout(ctx context.Context, enabledLanguages map[string]string, title string, description string, navbar templ.Component, head templ.Component, content templ.Component, hashNamer HashNamer) {
+type LayoutParams struct {
+	EnabledLanguages map[string]string
+	Title            string
+	Description      string
+	Navbar           templ.Component
+	Head             templ.Component
+	Content          templ.Component
+	HashNamer        HashNamer
+	HideFooter       bool
+}
+
+templ Layout(params LayoutParams) {
 	{{
 	renderStart := time.Now()
 	}}
@@ -109,12 +120,12 @@ templ Layout(ctx context.Context, enabledLanguages map[string]string, title stri
 		class={ templ.Class(string(util.Theme(ctx))) }
 	>
 		<head>
-			@mainHeadTags(ctx, enabledLanguages, title, description, hashNamer)
-			@head
+			@mainHeadTags(params.EnabledLanguages, params.Title, params.Description, params.HashNamer)
+			@params.Head
 		</head>
 		<body>
 			// TODO: Use component directly
-			@navbar
+			@params.Navbar
 			if user := util.UserFullContext(ctx); user != nil {
 				if !user.VerifiedEmail {
 					<div class="w-full py-1 px-2 bg-green-200 dark:bg-green-700 text-black dark:text-white text-center">
@@ -123,26 +134,28 @@ templ Layout(ctx context.Context, enabledLanguages map[string]string, title stri
 				}
 			}
 			<main class="c-container mb-2">
-				if content == nil {
+				if params.Content == nil {
 					<h1>Well... this is awkward... There's no content</h1>
 				} else {
-					@content
+					@params.Content
 				}
 			</main>
 			<div id="modals"></div>
-			@Footer(renderStart.Sub(ctx.Value(util.KNContextType("middleware_start")).(time.Time)), renderStart, hashNamer)
+			if !params.HideFooter {
+				@Footer(renderStart.Sub(ctx.Value(util.KNContextType("middleware_start")).(time.Time)), renderStart, params.HashNamer)
+			}
 		</body>
 	</html>
 }
 
-templ PrintLayout(ctx context.Context, enabledLanguages map[string]string, title string, description string, head templ.Component, content templ.Component, hashNamer HashNamer) {
+templ PrintLayout(enabledLanguages map[string]string, title string, description string, head templ.Component, content templ.Component, hashNamer HashNamer) {
 	<!DOCTYPE html>
 	<html
 		lang={ util.LanguageContext(ctx) }
 		class="light"
 	>
 		<head>
-			@mainHeadTags(ctx, enabledLanguages, title, description, hashNamer)
+			@mainHeadTags(enabledLanguages, title, description, hashNamer)
 			@head
 		</head>
 		<body>

@@ -1,7 +1,6 @@
 package modals
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/KiloProjects/kilonova"
@@ -10,7 +9,7 @@ import (
 
 var T = tutils.T
 
-templ ProblemSources(ctx context.Context, problemList *kilonova.ProblemList, problems []*kilonova.ScoredProblem) {
+templ ProblemSources(problemList *kilonova.ProblemList, problems []*kilonova.ScoredProblem) {
 	<form id="change_sources_panel" class="segment-panel reset-list" hx-post={ fmt.Sprintf("/problem_lists/%d/updateSources", problemList.ID) } hx-swap="outerHTML">
 		<h2>{ T(ctx, "bulk_update_sources") }</h2>
 		<ul>

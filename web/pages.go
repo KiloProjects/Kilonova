@@ -160,7 +160,7 @@ type ProblemParams struct {
 	Languages []*sudoapi.Language
 	Variants  []*kilonova.StatementVariant
 
-	OlderSubmissions *OlderSubmissionsParams
+	OlderSubmissions templ.Component
 
 	SelectedVariant *kilonova.StatementVariant
 
@@ -357,16 +357,6 @@ type AuditLogParams struct {
 	NumPages int
 }
 
-type StatusParams struct {
-	Code    int
-	Message string
-}
-
-type MarkdownParams struct {
-	Markdown template.HTML
-	Title    string
-}
-
 type ProblemSearchParams struct {
 	ProblemList *kilonova.ProblemList
 
@@ -396,16 +386,6 @@ type PasteParams struct {
 }
 
 // HTMX modals
-type OlderSubmissionsParams struct {
-	UserID  int
-	Problem *kilonova.Problem
-	Contest *kilonova.Contest
-	Limit   int
-
-	Submissions *sudoapi.Submissions
-	NumHidden   int
-	AllFinished bool
-}
 
 type ModalParams struct {
 	Small bool
@@ -414,6 +394,7 @@ type ModalParams struct {
 }
 
 var calledFunctions = make(map[string]bool)
+var addedTemplates = make(map[string]bool)
 
 func doWalk(filename string, nodes ...tparse.Node) bool {
 	ok := true
@@ -560,6 +541,9 @@ func parseTempl(optFuncs template.FuncMap, modal bool, files ...string) *templat
 	if err != nil {
 		slog.ErrorContext(context.TODO(), "Could not parse template file", slog.Any("err", err))
 		os.Exit(1)
+	}
+	for _, file := range files {
+		addedTemplates["templ/"+file] = true
 	}
 
 	if !modal {

@@ -2,10 +2,11 @@ package web
 
 import (
 	"fmt"
-	"github.com/KiloProjects/kilonova/web/views/modals"
 	"log/slog"
 	"net/http"
 	"strconv"
+
+	"github.com/KiloProjects/kilonova/web/views/modals"
 
 	"github.com/KiloProjects/kilonova"
 
@@ -41,7 +42,7 @@ func (rt *Web) updateProblemSources() http.HandlerFunc {
 				return
 			}
 
-			rt.componentModal(w, r, modals.ProblemSources(r.Context(), util.ProblemList(r), problems))
+			rt.componentModal(w, r, modals.ProblemSources(util.ProblemList(r), problems))
 
 			return
 		}

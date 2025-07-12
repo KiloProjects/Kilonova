@@ -204,7 +204,7 @@ func (rt *Web) ProblemEditRouter(r chi.Router) {
 func (rt *Web) TestIDValidator() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			testID, err := strconv.Atoi(chi.URLParam(r, "tid"))
+			testID, err := strconv.Atoi(r.PathValue("tid"))
 			if err != nil {
 				rt.statusPage(w, r, 400, "Test invalid")
 				return
@@ -227,7 +227,7 @@ func (rt *Web) TestIDValidator() func(next http.Handler) http.Handler {
 func (rt *Web) SubTaskValidator() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			subtaskID, err := strconv.Atoi(chi.URLParam(r, "stid"))
+			subtaskID, err := strconv.Atoi(r.PathValue("stid"))
 			if err != nil {
 				rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
 				return

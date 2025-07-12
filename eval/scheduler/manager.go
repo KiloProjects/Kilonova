@@ -389,9 +389,12 @@ func makeGoodCommand(command []string) ([]string, error) {
 		return nil, err
 	}
 
-	cmd, err = filepath.EvalSymlinks(cmd)
+	cmd2, err := filepath.EvalSymlinks(cmd)
 	if err != nil {
 		return nil, err
+	}
+	if !strings.Contains(cmd2, "ccache") {
+		cmd = cmd2
 	}
 
 	tmp[0] = cmd

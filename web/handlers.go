@@ -5,8 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/KiloProjects/kilonova/web/views"
-	"github.com/KiloProjects/kilonova/web/views/modals"
 	"html/template"
 	"io"
 	"log/slog"
@@ -20,6 +18,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/KiloProjects/kilonova/web/views"
+	"github.com/KiloProjects/kilonova/web/views/modals"
+
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/components/layout"
 	"github.com/a-h/templ"
@@ -29,7 +30,6 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/bwmarrin/discordgo"
-	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/schema"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -460,7 +460,7 @@ func (rt *Web) pbListView() http.HandlerFunc {
 
 		rt.runTempl(w, r, templ, &ProblemListParams{
 			util.ProblemList(r), nil, -1,
-			modals.ProblemSources(r.Context(), util.ProblemList(r), problems),
+			modals.ProblemSources(util.ProblemList(r), problems),
 		})
 	}
 }
@@ -743,14 +743,14 @@ func (rt *Web) problemPrint() http.HandlerFunc {
 
 		rt.printLayout(w, r, &PrintLayoutParams{
 			Title:     problem.Name,
-			ExtraHead: views.PrintHeader(r.Context()),
-			Component: views.PrintStatement(r.Context(), statement, problem, descVariant, nil),
+			ExtraHead: views.PrintHeader(),
+			Component: views.PrintStatement(statement, problem, descVariant, nil),
 		})
 	}
 }
 
 func (rt *Web) problem() http.HandlerFunc {
-	templ := rt.parse(nil, "problem/summary.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html", "modals/htmx/older_subs.html")
+	pageTempl := rt.parse(nil, "problem/summary.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		problem := util.Problem(r)
 
@@ -831,16 +831,17 @@ func (rt *Web) problem() http.HandlerFunc {
 			}
 		}
 
-		var olderSubs *OlderSubmissionsParams
+		var olderSubmissions templ.Component = nil
 		if util.UserBrief(r) != nil {
-			olderSubs, err = rt.getOlderSubmissions(r.Context(), util.UserBrief(r), util.UserBrief(r).ID, util.Problem(r), util.Contest(r), 5)
+			olderSubs, err := rt.getOlderSubmissions(r.Context(), util.UserBrief(r), util.UserBrief(r).ID, util.Problem(r), util.Contest(r), 5)
 			if err != nil {
 				slog.WarnContext(r.Context(), "Couldn't get submissions", slog.Any("err", err))
-				olderSubs = nil
+			} else {
+				olderSubmissions = modals.OlderSubmissions(olderSubs)
 			}
 		}
 
-		rt.runTempl(w, r, templ, &ProblemParams{
+		rt.runTempl(w, r, pageTempl, &ProblemParams{
 			Topbar: rt.problemTopbar(r, "pb_statement", -1),
 
 			Problem:     util.Problem(r),
@@ -851,7 +852,7 @@ func (rt *Web) problem() http.HandlerFunc {
 			Languages: langs,
 			Variants:  variants,
 
-			OlderSubmissions: olderSubs,
+			OlderSubmissions: olderSubmissions,
 
 			SelectedVariant: descVariant,
 
@@ -863,7 +864,6 @@ func (rt *Web) problem() http.HandlerFunc {
 
 func (rt *Web) problemSubmissions() http.HandlerFunc {
 	normalTempl := rt.parse(nil, "problem/pb_submissions.html", "problem/topbar.html")
-	fragmentTempl := rt.parseModal(nil, "modals/htmx/older_subs.html")
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// OlderSubs HTMX fragment
@@ -874,7 +874,7 @@ func (rt *Web) problemSubmissions() http.HandlerFunc {
 				rt.statusPage(w, r, kilonova.ErrorCode(err), err.Error())
 				return
 			}
-			rt.runModal(w, r, fragmentTempl, "older_subs", olderSubs)
+			rt.componentModal(w, r, modals.OlderSubmissions(olderSubs))
 			return
 		}
 
@@ -1329,7 +1329,7 @@ func (rt *Web) contestEdit() http.HandlerFunc {
 func (rt *Web) contestInvite() http.HandlerFunc {
 	templ := rt.parse(nil, "contest/invite.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		inv, err := rt.base.ContestInvitation(r.Context(), chi.URLParam(r, "inviteID"))
+		inv, err := rt.base.ContestInvitation(r.Context(), r.PathValue("inviteID"))
 		if err != nil {
 			slog.WarnContext(r.Context(), "Couldn't get contest invitation", slog.Any("err", err))
 			rt.statusPage(w, r, 404, "Invite not found")
@@ -1604,7 +1604,7 @@ func (rt *Web) selfProfile() http.HandlerFunc {
 func (rt *Web) profile() http.HandlerFunc {
 	templ := rt.parse(nil, "profile.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		username := strings.TrimSpace(chi.URLParam(r, "user"))
+		username := strings.TrimSpace(r.PathValue("user"))
 		user, err := rt.base.UserFullByName(r.Context(), username)
 		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
 			slog.WarnContext(r.Context(), "Could not get user", slog.Any("err", err))
@@ -1647,7 +1647,7 @@ func (rt *Web) selfLinkStatus() http.HandlerFunc {
 func (rt *Web) linkStatus() http.HandlerFunc {
 	templ := rt.parse(nil, "discordLink.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "user")))
+		user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(r.PathValue("user")))
 		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
 			slog.WarnContext(r.Context(), "Could not get user", slog.Any("err", err))
 			rt.statusPage(w, r, 500, "")
@@ -1690,7 +1690,7 @@ func (rt *Web) selfSessions() http.HandlerFunc {
 func (rt *Web) userSessions() http.HandlerFunc {
 	templ := rt.parse(nil, "auth/sessions.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "user")))
+		user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(r.PathValue("user")))
 		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
 			slog.WarnContext(r.Context(), "Could not get user", slog.Any("err", err))
 			rt.statusPage(w, r, 500, "")
@@ -1821,7 +1821,7 @@ func (rt *Web) resendEmail() http.HandlerFunc {
 func (rt *Web) verifyEmail() http.HandlerFunc {
 	templ := rt.parse(nil, "verified-email.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		vid := chi.URLParam(r, "vid")
+		vid := r.PathValue("vid")
 		if !rt.base.CheckVerificationEmail(r.Context(), vid) {
 			rt.statusPage(w, r, 404, "")
 			return
@@ -1857,7 +1857,7 @@ func (rt *Web) verifyEmail() http.HandlerFunc {
 func (rt *Web) resetPassword() http.HandlerFunc {
 	templ := rt.parse(nil, "auth/forgot_pwd_reset.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqid := chi.URLParam(r, "reqid")
+		reqid := r.PathValue("reqid")
 		if !rt.base.CheckPasswordResetRequest(r.Context(), reqid) {
 			rt.statusPage(w, r, 404, "")
 			return
@@ -1949,14 +1949,6 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 		},
 		"pLanguages": func() map[string]string {
 			return rt.base.EnabledLanguages()
-		},
-		"olderSubmissions": func(user *kilonova.UserBrief, problem *kilonova.Problem, contest *kilonova.Contest) *OlderSubmissionsParams {
-			olderSubs, err := rt.getOlderSubmissions(r.Context(), util.UserBrief(r), user.ID, problem, contest, 5)
-			if err != nil {
-				slog.WarnContext(r.Context(), "Couldn't get submissions", slog.Any("err", err))
-				return nil
-			}
-			return olderSubs
 		},
 		"formatStmtVariant": func(fmt *kilonova.StatementVariant) string {
 			var b strings.Builder
@@ -2162,15 +2154,52 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 		head = templ.FromGoHTML(hTempl.Lookup("head"), data)
 	}
 
-	if err := layout.Layout(
-		r.Context(),
-		rt.base.EnabledLanguages(),
-		title, description,
-		layout.Navbar(rt.canViewAllSubs(authedUser), reqPath(r)),
-		head,
-		templ.FromGoHTML(hTempl.Lookup("content"), data),
-		fsys,
-	).Render(r.Context(), w); err != nil {
+	rt.runLayout(w, r, &LayoutParams{
+		Title:       title,
+		Description: description,
+		Head:        head,
+		Content:     templ.FromGoHTML(hTempl.Lookup("content"), data),
+	})
+}
+
+type LayoutParams struct {
+	Title       string
+	Description string
+	Head        templ.Component
+	Content     templ.Component
+}
+
+func (rt *Web) runLayout(w io.Writer, r *http.Request, params *LayoutParams) {
+	layoutParams := layout.LayoutParams{
+		EnabledLanguages: rt.base.EnabledLanguages(),
+		Title:            params.Title,
+		Description:      params.Description,
+		Navbar:           layout.Navbar(rt.canViewAllSubs(util.UserBrief(r)), reqPath(r)),
+		Head:             params.Head,
+		Content:          params.Content,
+		HashNamer:        fsys,
+		HideFooter:       false,
+	}
+
+	if err := layout.Layout(layoutParams).Render(r.Context(), w); err != nil {
+		slog.WarnContext(r.Context(), "Error rendering layout", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", util.UserBrief(r)))
+		fmt.Fprintf(w, "Error rendering layout, report to admin: %s", err)
+	}
+}
+
+func (rt *Web) runEmptyPage(w io.Writer, r *http.Request, params *LayoutParams) {
+	layoutParams := layout.LayoutParams{
+		EnabledLanguages: rt.base.EnabledLanguages(),
+		Title:            params.Title,
+		Description:      params.Description,
+		Navbar:           templ.NopComponent,
+		Head:             params.Head,
+		Content:          params.Content,
+		HashNamer:        fsys,
+		HideFooter:       true,
+	}
+
+	if err := layout.Layout(layoutParams).Render(r.Context(), w); err != nil {
 		slog.WarnContext(r.Context(), "Error rendering layout", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", util.UserBrief(r)))
 		fmt.Fprintf(w, "Error rendering layout, report to admin: %s", err)
 	}
@@ -2226,7 +2255,6 @@ type PrintLayoutParams struct {
 func (rt *Web) printLayout(w http.ResponseWriter, r *http.Request, params *PrintLayoutParams) {
 	w.Header().Add("Content-Type", "text/html; charset=utf-8")
 	if err := layout.PrintLayout(
-		r.Context(),
 		rt.base.EnabledLanguages(),
 		params.Title, params.Description,
 		params.ExtraHead,
@@ -2237,7 +2265,7 @@ func (rt *Web) printLayout(w http.ResponseWriter, r *http.Request, params *Print
 	}
 }
 
-func (rt *Web) getOlderSubmissions(ctx context.Context, lookingUser *kilonova.UserBrief, userID int, problem *kilonova.Problem, contest *kilonova.Contest, limit int) (*OlderSubmissionsParams, error) {
+func (rt *Web) getOlderSubmissions(ctx context.Context, lookingUser *kilonova.UserBrief, userID int, problem *kilonova.Problem, contest *kilonova.Contest, limit int) (*modals.OlderSubmissionsParams, error) {
 	var filter = kilonova.SubmissionFilter{
 		UserID:    &userID,
 		ProblemID: &problem.ID,
@@ -2259,7 +2287,7 @@ func (rt *Web) getOlderSubmissions(ctx context.Context, lookingUser *kilonova.Us
 		}
 	}
 
-	return &OlderSubmissionsParams{
+	return &modals.OlderSubmissionsParams{
 		UserID:  userID,
 		Problem: problem,
 		Contest: contest,

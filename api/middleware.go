@@ -13,7 +13,6 @@ import (
 	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/go-chi/chi/v5"
 )
 
 var FilterUserAgent = config.GenFlag[bool]("behavior.user_agent_filter", true, "Filter user agent in API (block python requests from non-admins)")
@@ -178,7 +177,7 @@ func (s *API) validateBlogPostVisible(next http.Handler) http.Handler {
 // NOTE: This does not fetch the test data from disk
 func (s *API) validateTestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		testID, err := strconv.Atoi(chi.URLParam(r, "tID"))
+		testID, err := strconv.Atoi(r.PathValue("tID"))
 		if err != nil {
 			errorData(w, "invalid test ID", http.StatusBadRequest)
 			return
@@ -195,7 +194,7 @@ func (s *API) validateTestID(next http.Handler) http.Handler {
 // TODO: restrucutre validateAttachmentID and validateAttachmentName to use *AttachmentFilter (reduce code repetition)
 func (s *API) validateAttachmentID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		attID, err := strconv.Atoi(chi.URLParam(r, "aID"))
+		attID, err := strconv.Atoi(r.PathValue("aID"))
 		if err != nil {
 			errorData(w, "invalid attachment ID", http.StatusBadRequest)
 			return
@@ -236,7 +235,7 @@ func (s *API) validateAttachmentID(next http.Handler) http.Handler {
 // TODO: restrucutre validateAttachmentID and validateAttachmentName to use *AttachmentFilter (reduce code repetition)
 func (s *API) validateAttachmentName(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		attName := chi.URLParam(r, "aName")
+		attName := r.PathValue("aName")
 		if util.Problem(r) == nil && util.BlogPost(r) == nil {
 			slog.ErrorContext(r.Context(), "Attachment context is not available")
 			return
@@ -272,7 +271,7 @@ func (s *API) validateAttachmentName(next http.Handler) http.Handler {
 
 func (s *API) validateUserID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID, err := strconv.Atoi(chi.URLParam(r, "cUID"))
+		userID, err := strconv.Atoi(r.PathValue("cUID"))
 		if err != nil {
 			errorData(w, "Invalid user ID", http.StatusBadRequest)
 			return
@@ -300,7 +299,7 @@ func (s *API) selfOrAdmin(next http.Handler) http.Handler {
 
 func (s *API) validateUsername(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := s.base.UserFullByName(r.Context(), strings.TrimSpace(chi.URLParam(r, "cUName")))
+		user, err := s.base.UserFullByName(r.Context(), strings.TrimSpace(r.PathValue("cUName")))
 		if err != nil {
 			errorData(w, "User was not found", http.StatusNotFound)
 			return
@@ -311,7 +310,7 @@ func (s *API) validateUsername(next http.Handler) http.Handler {
 
 func (s *API) validateBucket(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		name := datastore.BucketType(chi.URLParam(r, "bname"))
+		name := datastore.BucketType(r.PathValue("bname"))
 		bucket, err := s.base.DataStore().Get(name)
 		if err != nil {
 			errorData(w, "Invalid bucket", 400)
@@ -335,7 +334,7 @@ func (s *API) authedContentUser(next http.Handler) http.Handler {
 
 func (s *API) validateBlogPostID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		bpID, err := strconv.Atoi(chi.URLParam(r, "bpID"))
+		bpID, err := strconv.Atoi(r.PathValue("bpID"))
 		if err != nil {
 			errorData(w, "invalid blog post ID", http.StatusBadRequest)
 			return
@@ -351,7 +350,7 @@ func (s *API) validateBlogPostID(next http.Handler) http.Handler {
 
 func (s *API) validateSubmissionID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		subID, err := strconv.Atoi(chi.URLParam(r, "subID"))
+		subID, err := strconv.Atoi(r.PathValue("subID"))
 		if err != nil {
 			errorData(w, "invalid submission ID", http.StatusBadRequest)
 			return
@@ -367,7 +366,7 @@ func (s *API) validateSubmissionID(next http.Handler) http.Handler {
 
 func (s *API) validateBlogPostName(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		bpName := strings.TrimSpace(chi.URLParam(r, "bpName"))
+		bpName := strings.TrimSpace(r.PathValue("bpName"))
 		post, err := s.base.BlogPostBySlug(r.Context(), bpName)
 		if err != nil {
 			errorData(w, "blog post does not exist", http.StatusBadRequest)
@@ -381,7 +380,7 @@ func (s *API) validateBlogPostName(next http.Handler) http.Handler {
 // Also, it fetches the problem from the DB and makes sure it exists
 func (s *API) validateProblemID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		problemID, err := strconv.Atoi(chi.URLParam(r, "problemID"))
+		problemID, err := strconv.Atoi(r.PathValue("problemID"))
 		if err != nil {
 			errorData(w, "invalid problem ID", http.StatusBadRequest)
 			return
@@ -399,7 +398,7 @@ func (s *API) validateProblemID(next http.Handler) http.Handler {
 // Also, it fetches the problem from the DB and makes sure it exists
 func (s *API) validateProblemListID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		pblistID, err := strconv.Atoi(chi.URLParam(r, "pblistID"))
+		pblistID, err := strconv.Atoi(r.PathValue("pblistID"))
 		if err != nil {
 			errorData(w, "invalid problem list ID", http.StatusBadRequest)
 			return
@@ -415,7 +414,7 @@ func (s *API) validateProblemListID(next http.Handler) http.Handler {
 
 func (s *API) validateContestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		contestID, err := strconv.Atoi(chi.URLParam(r, "contestID"))
+		contestID, err := strconv.Atoi(r.PathValue("contestID"))
 		if err != nil {
 			errorData(w, "invalid contest ID", http.StatusBadRequest)
 			return

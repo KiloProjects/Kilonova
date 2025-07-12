@@ -6,7 +6,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"github.com/go-chi/chi/v5"
 )
 
 func (s *API) createPaste(w http.ResponseWriter, r *http.Request) {
@@ -24,7 +23,7 @@ func (s *API) createPaste(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getPaste(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "pasteID")
+	id := r.PathValue("pasteID")
 
 	paste, err := s.base.SubmissionPaste(r.Context(), id)
 	if err != nil {
@@ -50,7 +49,7 @@ func (s *API) getPaste(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) deletePaste(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "pasteID")
+	id := r.PathValue("pasteID")
 
 	paste, err := s.base.SubmissionPaste(r.Context(), id)
 	if err != nil {

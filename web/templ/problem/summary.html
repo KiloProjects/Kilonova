@@ -189,7 +189,7 @@
         {{ end }}
         {{ with $.OlderSubmissions }}
         <section class="segment-panel">
-            {{template "older_subs" .}}
+            {{renderComponent $.OlderSubmissions}}
         </section>
         {{ end }}
         {{ with .Attachments }}

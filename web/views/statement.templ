@@ -1,7 +1,6 @@
 package views
 
 import (
-	"context"
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/web/tutils"
 	"math"
@@ -14,14 +13,14 @@ func kbToMB(kb int) float64 {
 	return math.Round(float64(kb)/1024.0*100) / 100.0
 }
 
-templ GlossaryLink(ctx context.Context, name string) {
+templ GlossaryLink(name string) {
 	<a href="" onClick={ templ.JSUnsafeFuncCall("event.preventDefault(); bundled.buildGlossaryModal('" + name + "');") } class="white-anchor inline-block underline decoration-dashed">
 		{ children... }
 		<i class="text-muted fas fa-fw fa-circle-info"></i>
 	</a>
 }
 
-templ Statement(ctx context.Context, statementText []byte, problem *kilonova.Problem, selectedVariant *kilonova.StatementVariant, variants []*kilonova.StatementVariant, showTitle bool) {
+templ Statement(statementText []byte, problem *kilonova.Problem, selectedVariant *kilonova.StatementVariant, variants []*kilonova.StatementVariant, showTitle bool) {
 	<div class="reset-list enhance-tables statement-content print-content">
 		if len(variants) > 1 {
 			<label class="block my-2">
@@ -64,7 +63,7 @@ templ Statement(ctx context.Context, statementText []byte, problem *kilonova.Pro
 			<span class="block">
 				{ T(ctx, "input") }:
 				if problem.ConsoleInput {
-					@GlossaryLink(ctx, "stdin") {
+					@GlossaryLink("stdin") {
 						stdin
 					}
 				} else {
@@ -74,7 +73,7 @@ templ Statement(ctx context.Context, statementText []byte, problem *kilonova.Pro
 			<span class="block">
 				{ T(ctx, "output") }:
 				if problem.ConsoleInput {
-					@GlossaryLink(ctx, "stdout") {
+					@GlossaryLink("stdout") {
 						stdout
 					}
 				} else {
@@ -95,16 +94,16 @@ templ Statement(ctx context.Context, statementText []byte, problem *kilonova.Pro
 	</div>
 }
 
-templ PrintStatement(ctx context.Context, statementText []byte, problem *kilonova.Problem, selectedVariant *kilonova.StatementVariant, variants []*kilonova.StatementVariant) {
+templ PrintStatement(statementText []byte, problem *kilonova.Problem, selectedVariant *kilonova.StatementVariant, variants []*kilonova.StatementVariant) {
 	<div id="long-logo">
 		<img src="/static/logo_long.png" alt="Kilonova"/>
 	</div>
 	<div id="problem-source">{ strings.Split(problem.SourceCredits, ":")[0] }</div>
 	<div id="sponsor-logo"></div>
-	@Statement(ctx, statementText, problem, selectedVariant, variants, true)
+	@Statement(statementText, problem, selectedVariant, variants, true)
 }
 
-templ PrintHeader(ctx context.Context) {
+templ PrintHeader() {
 	<script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
 	<style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap');

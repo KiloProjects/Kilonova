@@ -12,6 +12,7 @@ import (
 	"html"
 	"html/template"
 	"io"
+	"io/fs"
 	"log/slog"
 	"math"
 	"net/http"
@@ -26,6 +27,7 @@ import (
 	"unicode"
 
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/KiloProjects/kilonova/web/views/utilviews"
 	"github.com/a-h/templ"
 
 	"github.com/KiloProjects/kilonova"
@@ -73,10 +75,14 @@ func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int
 		http.Error(w, errMessage, statusCode)
 		return
 	}
-	status := rt.parse(nil, "util/statusCode.html", "modals/login.html")
-	rt.runTempl(w, r, status, &StatusParams{
-		Code:    statusCode,
-		Message: errMessage,
+	rt.runLayout(w, r, &LayoutParams{
+		Title:       fmt.Sprintf("Error %d | Kilonova", statusCode),
+		Description: errMessage,
+		Head:        utilviews.NoRobotsHead(),
+		Content: utilviews.StatusCode(utilviews.StatusCodeParams{
+			Code:    statusCode,
+			Message: errMessage,
+		}),
 	})
 }
 
@@ -251,6 +257,7 @@ func (rt *Web) Handler() http.Handler {
 	})
 
 	rt.checkUsedFunctions()
+	rt.checkUsedTemplateFiles()
 
 	return r
 }
@@ -281,6 +288,21 @@ func (rt *Web) checkUsedFunctions() {
 			slog.DebugContext(context.Background(), "Possibly unused template function", slog.String("name", key))
 		}
 	}
+}
+
+func (rt *Web) checkUsedTemplateFiles() {
+	fs.WalkDir(templateDir, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if _, ok := addedTemplates[path]; !ok {
+			slog.DebugContext(context.Background(), "Possibly unused template file", slog.String("name", path))
+		}
+		return nil
+	})
 }
 
 // NewWeb returns a new web instance
@@ -347,18 +369,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return actualContests
 		},
 		"decimalFromInt": decimal.NewFromInt,
-		"formatScore": func(pb *kilonova.Problem, score *decimal.Decimal) template.HTML {
-			if score == nil || score.IsNegative() {
-				return "-"
-			}
-			if pb.ScoringStrategy == kilonova.ScoringTypeICPC {
-				if score.Equal(decimal.NewFromInt(100)) {
-					return `<i class="fas fa-fw fa-check"></i>`
-				}
-				return `<i class="fas fa-fw fa-xmark"></i>`
-			}
-			return template.HTML(removeTrailingZeros(score.StringFixed(pb.ScorePrecision)))
-		},
 		"subScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) template.HTML {
 			if user == nil {
 				return ""
@@ -824,10 +834,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"getText": func(key string, vals ...any) string {
 			slog.ErrorContext(ctx, "Uninitialized `getText`")
 			return "FATAL ERR"
-		},
-		"olderSubmissions": func(user *kilonova.UserBrief, problem *kilonova.Problem, contest *kilonova.Contest, limit int) *OlderSubmissionsParams {
-			slog.ErrorContext(ctx, "Uninitialized `olderSubmissions`")
-			return nil
 		},
 		"reqPath": func() string {
 			slog.ErrorContext(ctx, "Uninitialized `reqPath`")

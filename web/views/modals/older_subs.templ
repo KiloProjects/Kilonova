@@ -1,0 +1,95 @@
+package modals
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/KiloProjects/kilonova/web/tutils"
+	"github.com/shopspring/decimal"
+)
+
+type OlderSubmissionsParams struct {
+	UserID  int
+	Problem *kilonova.Problem
+	Contest *kilonova.Contest
+	Limit   int
+
+	Submissions *sudoapi.Submissions
+	NumHidden   int
+	AllFinished bool
+}
+
+func removeTrailingZeros(score string) string {
+	if !strings.ContainsRune(score, '.') {
+		return score
+	}
+	return strings.TrimSuffix(strings.TrimRight(score, "0"), ".")
+}
+
+templ FormatScore(problem *kilonova.Problem, score *decimal.Decimal) {
+	if score == nil || score.IsNegative() {
+		-
+	} else {
+		if problem.ScoringStrategy == kilonova.ScoringTypeICPC {
+			if score.Equal(decimal.NewFromInt(100)) {
+				<i class="fas fa-fw fa-check"></i>
+			} else {
+				<i class="fas fa-fw fa-xmark"></i>
+			}
+		} else {
+			{ removeTrailingZeros(score.StringFixed(problem.ScorePrecision)) }
+		}
+	}
+}
+
+func cond(cond bool, then string, otherwise string) string {
+	if cond {
+		return then
+	}
+	return otherwise
+}
+
+templ OlderSubmissions(params *OlderSubmissionsParams) {
+	<details hx-ext="morph" open>
+		{{ url := fmt.Sprintf("/problems/%d/submissions/?user_id=%d", params.Problem.ID, params.UserID) }}
+		if params.Contest != nil {
+			{{ url = fmt.Sprintf("/contests/%d/problems/%d/submissions/?user_id=%d", params.Contest.ID, params.Problem.ID, params.UserID) }}
+		}
+		<summary><h2 class="inline-block mb-2">{ tutils.T(ctx, "oldSubs") }</h2></summary>
+		<div id="older_subs" hx-select="#older_subs" hx-get={ templ.URL(url) } hx-swap="outerHTML" hx-trigger={ "kn-poll" + cond(!params.AllFinished, ",load delay:1s", "") }>
+			if len(params.Submissions.Submissions) > 0 {
+				for _, submission := range params.Submissions.Submissions {
+					<a href={ templ.URL(fmt.Sprintf("/submissions/%d", submission.ID)) } class="black-anchor flex justify-between items-center rounded-sm py-1 px-2 hoverable">
+						<span>
+							#{ submission.ID }: <span class="server_timestamp">{ submission.CreatedAt.UnixMilli() }</span>
+						</span>
+						<span class="badge-lite text-sm">
+							if submission.Status == "finished" {
+								@FormatScore(params.Problem, &submission.Score)
+							} else if submission.Status == "working" {
+								<i class="fas fa-cog animate-spin"></i>
+							} else {
+								<i class="fas fa-clock"></i>
+							}
+						</span>
+					</a>
+				}
+			} else {
+				<p class="px-2">{{ tutils.T(ctx, "noSub") }}</p>
+			}
+			if params.NumHidden > 0 {
+				<a class="px-2" href={ templ.URL(url) }>
+					if params.NumHidden == 1 {
+						{ tutils.T(ctx, "seeOne") }
+					} else if params.NumHidden < 20 {
+						{ tutils.T(ctx, "seeU20", params.NumHidden) }
+					} else {
+						{ tutils.T(ctx, "seeMany", params.NumHidden) }
+					}
+				</a>
+			}
+		</div>
+	</details>
+}

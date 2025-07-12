@@ -285,7 +285,7 @@ func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *Assets) ServeSubtest(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "subtestID"))
+	id, err := strconv.Atoi(r.PathValue("subtestID"))
 	if err != nil {
 		http.Error(w, "Bad ID", 400)
 		return
