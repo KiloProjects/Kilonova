@@ -16,7 +16,7 @@ type BreakdownResult = {
 	problem_editor: boolean;
 };
 
-export function MaxScoreBreakdown({ problemID, userID, contestID }: { problemID: number; userID?: number; contestID?: number }) {
+function MaxScoreBreakdown({ problemID, userID, contestID }: { problemID: number; userID?: number; contestID?: number }) {
 	let [subtasks, setSubtasks] = useState<SubmissionSubTask[]>([]);
 	let [subtests, setSubtests] = useState<SubTest[] | null>(null);
 	let [loading, setLoading] = useState(true);

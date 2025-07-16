@@ -92,7 +92,7 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 	id, err := s.createUser(ctx, uname, email, pwd, lang, theme, "", "", false)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't create user", slog.Any("err", err))
-		return -1, Statusf(500, "Couldn't create user")
+		return -1, fmt.Errorf("couldn't create user")
 	}
 
 	user, err := s.UserFull(ctx, id)

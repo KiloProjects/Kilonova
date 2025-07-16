@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/KiloProjects/kilonova/internal/config"
-	"github.com/danielgtaylor/huma/v2"
-	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"log/slog"
 	"mime"
 	"net/http"
 	"net/url"
 	"sync"
+
+	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/datastore"
@@ -46,13 +47,16 @@ func (s *API) HandlerV2() http.Handler {
 	humaConf.Servers = []*huma.Server{
 		{URL: prefixURL.JoinPath("api/v2").String()},
 	}
+	humaConf.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
+		"session": {
+			Type: "apiKey",
+			In:   "cookie",
+			Name: "kn-sessionid",
+		},
+	}
 	r := chi.NewRouter()
 	api := humachi.New(r, humaConf)
 	api.UseMiddleware(s.SetupSessionV2)
-
-	huma.Get(api, "/", func(ctx context.Context, _ *struct{}) (*struct{ Response string }, error) {
-		return &struct{ Response string }{Response: "hellow"}, nil
-	}, huma.OperationTags())
 
 	return r
 }

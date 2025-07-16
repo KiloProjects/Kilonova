@@ -17,8 +17,9 @@ export { CheckboxManager } from "./checkbox_mgr";
 export { getFileIcon } from "./cdn_mgr";
 
 export { default as debounce } from "lodash-es/debounce";
-export { default as isEqual } from 'lodash-es/isEqual';
+export { default as isEqual } from "lodash-es/isEqual";
 
 export { makeSubWaiter } from "./sub_waiter";
 
 export * from "./time";
+export * from "./lit";

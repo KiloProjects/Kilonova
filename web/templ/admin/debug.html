@@ -66,7 +66,7 @@
                     {{if .MaxTTL}}
                     <li>{{getText "maxBucketTTL"}}: {{.MaxTTL.String}}</li>
                     {{end}}
-                    <li>{{getText "last_updated_at"}}: <span class="server_timestamp extended">{{.CreatedAt.UnixMilli}}</span> <a onclick="refreshBucket({{.Name}})" href="#"><i class="fas fa-arrows-rotate"></i></a> </li>
+                    <li>{{getText "last_updated_at"}}: <server-timestamp timestamp="{{.CreatedAt.UnixMilli}}" extended></server-timestamp> <a onclick="refreshBucket({{.Name}})" href="#"><i class="fas fa-arrows-rotate"></i></a> </li>
                 </ul>
                 
                 <div class="mt-2">

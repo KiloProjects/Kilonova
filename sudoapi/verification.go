@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"text/template"
 	"time"
 
 	_ "embed"
+
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 )
@@ -75,7 +77,7 @@ func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, e
 		Branding:   EmailBranding.Value(),
 	}); err != nil {
 		slog.WarnContext(ctx, "Error rendering verification email", slog.Any("err", err))
-		return Statusf(500, "Error rendering email")
+		return fmt.Errorf("error rendering email")
 	}
 	if err := s.SendMail(ctx, &kilonova.MailerMessage{
 		Subject:      kilonova.GetText(lang, "mail.subject.verification"),
@@ -103,7 +105,7 @@ func (s *BaseAPI) GetVerificationUser(ctx context.Context, vid string) (int, err
 
 func (s *BaseAPI) ConfirmVerificationEmail(ctx context.Context, vid string, user *kilonova.UserBrief) error {
 	if err := s.db.RemoveVerification(ctx, vid); err != nil {
-		return Statusf(500, "Couldn't delete verification code.")
+		return fmt.Errorf("couldn't delete verification code: %w", err)
 	}
 
 	ttrue := true

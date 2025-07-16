@@ -624,6 +624,12 @@ pre code.hljs {
 	@apply px-2 py-1;
 }
 
+server-timestamp:not(:defined) {
+	&::before {
+		@apply content-[...];
+	}
+}
+
 @utility server_timestamp {
 	@apply invisible;
 

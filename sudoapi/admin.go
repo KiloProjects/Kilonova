@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/KiloProjects/kilonova/datastore"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/KiloProjects/kilonova/datastore"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -67,7 +68,7 @@ func (s *BaseAPI) ResetWaitingSubmissions(ctx context.Context) error {
 func (s *BaseAPI) ResetSubmission(ctx context.Context, id int) error {
 	if err := s.db.ResetSubmissions(ctx, kilonova.SubmissionFilter{ID: &id}); err != nil {
 		slog.WarnContext(ctx, "Couldn't reset submission", slog.Any("err", err))
-		return Statusf(500, "Couldn't reset submission")
+		return fmt.Errorf("couldn't reset submission: %w", err)
 	}
 
 	// Wake grader to start processing immediately

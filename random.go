@@ -1,10 +1,12 @@
 package kilonova
 
 import (
+	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"math/rand/v2"
-	"strings"
+	"log/slog"
+	"math/big"
 )
 
 const randomCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -14,14 +16,21 @@ func RandomString(size int) string {
 	return RandomStringChars(size, randomCharacters)
 }
 
-// RandomString returns a new string of a specified size containing only characters from the given string
+// RandomStringChars returns a new string of a specified size containing only characters from the given string
 func RandomStringChars(size int, characters string) string {
-	sb := strings.Builder{}
-	sb.Grow(size)
-	for ; size > 0; size-- {
-		sb.WriteByte(characters[rand.IntN(len(characters))])
+	result := make([]rune, size)
+	runes := []rune(characters)
+	x := int64(len(runes))
+	for i := range result {
+		num, err := rand.Int(rand.Reader, big.NewInt(x))
+		if err != nil {
+			// unreachable, according to the go source code
+			slog.WarnContext(context.Background(), "Error generating cryptographically random string", slog.Any("err", err))
+			num.SetInt64(4) // chosen by a fair dice roll. guaranteed to be random.
+		}
+		result[i] = runes[num.Int64()]
 	}
-	return sb.String()
+	return string(result)
 }
 
 func RandomSaltedString(salt string) string {

@@ -31,8 +31,8 @@ const (
 )
 
 var (
-	LogQueries   = config.GenFlag[bool]("behavior.db.log_sql", false, "Log SQL Requests (for debugging purposes)")
-	CountQueries = config.GenFlag[bool]("behavior.db.count_queries", false, "Count SQL Queries (for debugging purposes)")
+	LogQueries   = config.GenFlag("behavior.db.log_sql", false, "Log SQL Requests (for debugging purposes)")
+	CountQueries = config.GenFlag("behavior.db.count_queries", false, "Count SQL Queries (for debugging purposes)")
 )
 
 type DB struct {
@@ -44,8 +44,17 @@ func (s *DB) Close() error {
 	return nil
 }
 
+// GetPool returns the underlying pgxpool.Pool. It's used for internal purposes.
+func (s *DB) GetPool() *pgxpool.Pool {
+	return s.conn
+}
+
+type Queryer interface {
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+}
+
 // Deprecated: It's just a placeholder for old behavior
-func Get[T any](pgconn *pgxpool.Pool, ctx context.Context, dest *T, query string, args ...any) error {
+func Get[T any](pgconn Queryer, ctx context.Context, dest *T, query string, args ...any) error {
 	rows, _ := pgconn.Query(ctx, query, args...)
 	val, err := pgx.CollectOneRow(rows, pgx.RowToStructByNameLax[T])
 	if err != nil {
@@ -56,7 +65,7 @@ func Get[T any](pgconn *pgxpool.Pool, ctx context.Context, dest *T, query string
 }
 
 // Deprecated: It's just a placeholder for old behavior
-func Select[T any](pgconn *pgxpool.Pool, ctx context.Context, dest *[]*T, query string, args ...any) error {
+func Select[T any](pgconn Queryer, ctx context.Context, dest *[]*T, query string, args ...any) error {
 	rows, _ := pgconn.Query(ctx, query, args...)
 	vals, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByNameLax[T])
 	if err != nil {

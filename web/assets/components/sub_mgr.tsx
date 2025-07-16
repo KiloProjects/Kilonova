@@ -15,8 +15,15 @@ const slugify = (str) =>
 
 import { BigSpinner, OlderSubmissions, formatScoreStr } from "./common";
 
-import { downloadBlob, parseTime, sizeFormatter, getGradient, fromBase64 } from "../util";
+import { parseTime, sizeFormatter, getGradient, fromBase64 } from "../util";
 import { defaultClient } from "../api/client";
+
+function downloadBlob(blob: Blob, filename: string) {
+	let a = document.createElement("a");
+	a.href = URL.createObjectURL(blob);
+	a.download = filename;
+	a.click();
+}
 
 function downloadCode(sub: FullSubmission) {
 	if (sub.code_size <= 0) {

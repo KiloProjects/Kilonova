@@ -22,13 +22,13 @@
         </label>    
         {{ end }}
         {{if .StatementAtt}}
-            <span class="block text-sm text-muted italic">{{getText "updated_at"}}: <span class="server_timestamp">{{.StatementAtt.LastUpdatedAt.UnixMilli}}</span></span>
+            <span class="block text-sm text-muted italic">{{getText "updated_at"}}: <server-timestamp timestamp="{{.StatementAtt.LastUpdatedAt.UnixMilli}}"></server-timestamp></span>
         {{end}}
         {{if $post.PublishedAt}}
-            <span class="block text-sm text-muted italic">{{getText "posted_at"}}: <span class="server_timestamp">{{$post.PublishedAt.UnixMilli}}</span></span>
+            <span class="block text-sm text-muted italic">{{getText "posted_at"}}: <server-timestamp timestamp="{{$post.PublishedAt.UnixMilli}}"></server-timestamp></span>
         {{end}}
         {{if .Topbar.IsPostEditor }}
-        <span class="block text-sm text-muted italic">{{getText "created_at"}}: <span class="server_timestamp">{{$post.CreatedAt.UnixMilli}}</span></span>
+        <span class="block text-sm text-muted italic">{{getText "created_at"}}: <server-timestamp timestamp="{{$post.CreatedAt.UnixMilli}}"></server-timestamp></span>
         {{end}}
     </div>
 </div>

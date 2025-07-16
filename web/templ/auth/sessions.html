@@ -25,8 +25,8 @@
             {{if isAdmin}}
             <li>{{getText "id"}}: <code>{{.ID}}</code></li>
             {{end}}
-            <li>{{getText "created_at"}}: <span class="server_timestamp">{{.CreatedAt.UnixMilli}}</span></li>
-            <li>{{getText "expires_at"}}: <span class="server_timestamp">{{.ExpiresAt.UnixMilli}}</span></li>
+            <li>{{getText "created_at"}}: <server-timestamp timestamp="{{.CreatedAt.UnixMilli}}"></server-timestamp></li>
+            <li>{{getText "expires_at"}}: <server-timestamp timestamp="{{.ExpiresAt.UnixMilli}}"></server-timestamp></li>
             <li>{{getText "expired"}}: {{.Expired}}</li>
             {{if isAdmin}}
             {{if not $.ContentUser}}

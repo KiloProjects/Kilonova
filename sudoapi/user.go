@@ -307,7 +307,7 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 	id, err := s.createUser(ctx, uname, *email, pwd, lang, theme, dName, bio, true)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't create user", slog.Any("err", err))
-		return nil, Statusf(500, "Couldn't create user")
+		return nil, fmt.Errorf("couldn't create user: %w", err)
 	}
 
 	user, err := s.UserFull(ctx, id)
@@ -409,7 +409,7 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 		var b bytes.Buffer
 		if err := generatedUserTempl.ExecuteTemplate(&b, user.PreferredLanguage, emailArgs); err != nil {
 			slog.ErrorContext(ctx, "Error rendering password send email", slog.Any("err", err))
-			return args.Password, user, kilonova.Statusf(500, "Could not render email")
+			return args.Password, user, fmt.Errorf("could not render email: %w", err)
 		}
 		var sendTo string
 		if args.Email != nil {

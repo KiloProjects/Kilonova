@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dominikbraun/graph"
-	"github.com/dominikbraun/graph/draw"
 	"log/slog"
 	"os"
 	"path"
 	"slices"
 	"strings"
 	"sync"
+
+	"github.com/dominikbraun/graph"
+	"github.com/dominikbraun/graph/draw"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
@@ -186,7 +187,7 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	}
 	if sh.lang == nil {
 		slog.WarnContext(ctx, "Could not find submission language when evaluating", slog.String("lang", sub.Language))
-		return kilonova.Statusf(500, "Language not found for submission")
+		return fmt.Errorf("language not found for submission")
 	}
 
 	defer func() {
@@ -283,7 +284,7 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 			return err
 		}
 	default:
-		return kilonova.Statusf(500, "Invalid eval type")
+		return fmt.Errorf("invalid eval type")
 	}
 
 	if err := base.DataStore().Compilations().RemoveFile(fmt.Sprintf("%d.bin", sub.ID)); err != nil {

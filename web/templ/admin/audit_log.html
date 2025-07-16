@@ -45,8 +45,8 @@
                     <td class="text-center px-2 py-1">
                         {{.Message}}
                     </td>
-                    <td class="text-center px-2 py-1 server_timestamp">
-                        {{.LogTime.UnixMilli}}
+                    <td class="text-center px-2 py-1">
+                        <server-timestamp timestamp="{{.LogTime.UnixMilli}}"></server-timestamp>
                     </td>
                 </tr>
             {{end}}

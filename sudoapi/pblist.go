@@ -193,7 +193,7 @@ func (s *BaseAPI) FullProblemList(ctx context.Context, listID int, user *kilonov
 		}
 	}
 	if firstList == nil {
-		return nil, Statusf(500, "Could not load problem list tree")
+		return nil, fmt.Errorf("could not load problem list tree")
 	}
 
 	return s.hydrateFullList(firstList, []int{firstList.ID}, lists, pbs, solvedCnt), nil

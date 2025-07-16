@@ -2,15 +2,24 @@ package email
 
 import (
 	"context"
+	"log/slog"
 	"net"
 	"net/smtp"
+	"path"
+	"sync"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/jordan-wright/email"
+)
+
+var (
+	loggerOnce  sync.Once
+	emailLogger *slog.Logger
 )
 
 var _ kilonova.Mailer = &emailer{}
@@ -22,6 +31,16 @@ type emailer struct {
 }
 
 func (e *emailer) SendEmail(ctx context.Context, msg *kilonova.MailerMessage) error {
+	loggerOnce.Do(func() {
+		emailLogger = slog.New(slog.NewJSONHandler(&lumberjack.Logger{
+			Filename: path.Join(config.Common.LogDir, "email.log"),
+			MaxSize:  200, // MB
+			Compress: true,
+		}, &slog.HandlerOptions{
+			Level: slog.LevelInfo,
+		}))
+	})
+
 	ctx, span := otel.Tracer("email").Start(ctx, "SendEmail")
 	defer span.End()
 	span.SetAttributes(attribute.String("email", msg.To), attribute.String("subject", msg.Subject))
@@ -37,8 +56,13 @@ func (e *emailer) SendEmail(ctx context.Context, msg *kilonova.MailerMessage) er
 	em.Subject = msg.Subject
 	em.Text = []byte(msg.PlainContent)
 	em.HTML = []byte(msg.HTMLContent)
-	return em.Send(e.host, e.auth)
-
+	err := em.Send(e.host, e.auth)
+	if err != nil {
+		emailLogger.ErrorContext(ctx, "Error sending email", slog.Any("err", err))
+	} else {
+		emailLogger.InfoContext(ctx, "Sent email", slog.Any("email", msg.To), slog.String("subject", msg.Subject))
+	}
+	return err
 }
 
 func NewMailer() (kilonova.Mailer, error) {

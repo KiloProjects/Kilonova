@@ -349,7 +349,7 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 			Waiting: true,
 		}, -1)
 		if err != nil {
-			return -1, Statusf(500, "Couldn't get unfinished submission count")
+			return -1, fmt.Errorf("couldn't get unfinished submission count")
 		}
 
 		if WaitingSubLimit.Value() > 0 && cnt >= WaitingSubLimit.Value() {
@@ -362,7 +362,7 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 			Since:  &t,
 		}, -1)
 		if err != nil {
-			return -1, Statusf(500, "Couldn't get recent submission count")
+			return -1, fmt.Errorf("couldn't get recent submission count")
 		}
 
 		if TotalSubLimit.Value() > 0 && cnt > TotalSubLimit.Value() {
@@ -432,12 +432,12 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang.InternalName, string(code), contestID)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't create submission", slog.Any("err", err))
-		return -1, Statusf(500, "Couldn't create submission")
+		return -1, fmt.Errorf("couldn't create submission")
 	}
 
 	if err := s.db.InitSubmission(ctx, id); err != nil {
 		slog.WarnContext(ctx, "Couldn't initialize submission", slog.Any("err", err), slog.Int("subID", id))
-		return -1, Statusf(500, "Couldn't initialize submission")
+		return -1, fmt.Errorf("couldn't initialize submission")
 	}
 
 	// Wake immediately to grade submission
@@ -449,7 +449,7 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 func (s *BaseAPI) DeleteSubmission(ctx context.Context, subID int) error {
 	if err := s.db.DeleteSubmission(ctx, subID); err != nil {
 		slog.WarnContext(ctx, "Couldn't delete submission", slog.Any("err", err), slog.Int("subID", subID))
-		return Statusf(500, "Failed to delete submission")
+		return fmt.Errorf("failed to delete submission")
 	}
 	return nil
 }

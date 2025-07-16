@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
+	"fmt"
 	"log/slog"
 	"text/template"
+
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/config"
 
 	_ "embed"
 )
@@ -43,7 +45,7 @@ func (s *BaseAPI) SendPasswordResetEmail(ctx context.Context, userID int, name, 
 		Branding:   EmailBranding.Value(),
 	}); err != nil {
 		slog.ErrorContext(ctx, "Error rendering password request email", slog.Any("err", err))
-		return Statusf(500, "Error rendering email")
+		return fmt.Errorf("error rendering email")
 	}
 	if err := s.SendMail(ctx, &kilonova.MailerMessage{
 		Subject:      kilonova.GetText(lang, "mail.subject.password_recovery"),

@@ -355,7 +355,7 @@ func (s *BaseAPI) ProblemStatistics(ctx context.Context, problem *kilonova.Probl
 		return nil, fmt.Errorf("couldn't get attempted/solved user count: %w", err)
 	}
 	if _, ok := numberStats[problem.ID]; !ok {
-		return nil, Statusf(500, "Couldn't get attempted/solved user count for problem")
+		return nil, fmt.Errorf("couldn't get attempted/solved user count for problem")
 	}
 
 	sizeRaw, err := s.db.ProblemStatisticsSize(ctx, problem.ID)

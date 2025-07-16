@@ -1,12 +1,14 @@
 package sudoapi
 
 import (
+	"fmt"
+
 	"github.com/KiloProjects/kilonova"
 )
 
 var (
 	ErrNotFound     = kilonova.ErrNotFound
-	ErrUnknownError = Statusf(500, "Unknown error occured")
+	ErrUnknownError = fmt.Errorf("unknown error occured")
 )
 
 // Reimplement Statusf and WrapError functions here for faster reference

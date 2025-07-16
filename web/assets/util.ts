@@ -42,13 +42,6 @@ export function sizeFormatter(size: number, max_step?: number, floor?: boolean) 
 	return units + " " + suffix;
 }
 
-export function downloadBlob(blob: Blob, filename: string) {
-	let a = document.createElement("a");
-	a.href = URL.createObjectURL(blob);
-	a.download = filename;
-	a.click();
-}
-
 export function parseTime(str?: string | number, extended?: boolean) {
 	if (!str) {
 		return "";
