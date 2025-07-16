@@ -200,7 +200,7 @@
                                     <button onclick="copyInvitationURL({{.ID}})" class="ml-2 tag tag-other"><i class="fas fa-copy"></i></button>
                                 </th>
                                 <td class="kn-table-cell">
-                                    <span class="server_timestamp">{{.CreatedAt.UnixMilli}}</span>
+                                    <server-timestamp timestamp="{{.CreatedAt.UnixMilli}}"></server-timestamp>
                                 </td>
                                 <td class="kn-table-cell">
                                     {{if .CreatorID}}
@@ -287,7 +287,7 @@
                                     {{.ID}}
                                 </th>
                                 <td class="kn-table-cell">
-                                    <span class="server_timestamp">{{.CreatedAt.UnixMilli}}</span>
+                                    <server-timestamp timestamp="{{.CreatedAt.UnixMilli}}"></server-timestamp>
                                 </td>
                                 <td class="kn-table-cell">
                                     {{with problemFromList $pbs .ProblemID}}

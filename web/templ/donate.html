@@ -74,14 +74,14 @@
                     {{getText "per_year" -}}
                 {{- end -}})
             {{end}}
-            (<span class="server_timestamp">{{.DonatedAt.UnixMilli}}</span>)
+            (<server-timestamp timestamp="{{.DonatedAt.UnixMilli}}"></server-timestamp>)
             {{if isAdmin}}
             <ul>
                 <li>{{getText "donation_method"}}: {{.Source}}</li>
                 <li>{{getText "donation_type"}}: {{.Type}}</li>
                 <li>{{getText "transaction_id"}}: {{.TransactionID}}</li>
                 {{if .CancelledAt}}
-                <li>{{getText "cancelled_at"}}: <span class="server_timestamp">{{.CancelledAt.UnixMilli}}</span></li>
+                <li>{{getText "cancelled_at"}}: <server-timestamp timestamp="{{.CancelledAt.UnixMilli}}"></server-timestamp></li>
                 {{else if not (eq .Type "onetime")}}
                 <li>
                     <button class="btn btn-blue" onclick="endSubscription({{.ID}})">{{getText "button.cancel"}}</a>

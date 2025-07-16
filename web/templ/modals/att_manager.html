@@ -391,7 +391,7 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
                             </kn-att-name>
                         </td>
                         <td class="kn-table-cell">
-                            <span class="server_timestamp">{{.LastUpdatedAt.UnixMilli}}</span>
+                            <server-timestamp timestamp="{{.LastUpdatedAt.UnixMilli}}"></server-timestamp>
                         </td>
                         <td class="kn-table-cell">
                             {{with .LastUpdatedBy}}

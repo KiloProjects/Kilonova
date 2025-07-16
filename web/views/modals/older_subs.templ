@@ -63,7 +63,7 @@ templ OlderSubmissions(params *OlderSubmissionsParams) {
 				for _, submission := range params.Submissions.Submissions {
 					<a href={ templ.URL(fmt.Sprintf("/submissions/%d", submission.ID)) } class="black-anchor flex justify-between items-center rounded-sm py-1 px-2 hoverable">
 						<span>
-							#{ submission.ID }: <span class="server_timestamp">{ submission.CreatedAt.UnixMilli() }</span>
+							#{ submission.ID }: <server-timestamp timestamp={ submission.CreatedAt.UnixMilli() }></server-timestamp>
 						</span>
 						<span class="badge-lite text-sm">
 							if submission.Status == "finished" {

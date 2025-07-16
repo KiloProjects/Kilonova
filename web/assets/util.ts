@@ -102,15 +102,6 @@ export function navigateBack() {
 }
 
 export function initialLoad(el: ParentNode) {
-	el.querySelectorAll(".server_timestamp").forEach((val) => {
-		let timestamp = parseInt(val.innerHTML);
-		if (isNaN(timestamp)) {
-			console.warn("NaN timestamp");
-			return;
-		}
-		val.innerHTML = parseTime(timestamp, val.classList.contains("extended"));
-		val.classList.remove("server_timestamp");
-	});
 	el.querySelectorAll(".score-cell").forEach((val) => {
 		const x = val as HTMLTableCellElement;
 		var score = parseFloat(x.dataset.score || "0");

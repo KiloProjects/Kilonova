@@ -3,7 +3,7 @@
     {{if or (eq .Type "virtual") (isContestEditor .)}}
     <p>{{ printf "contest_type.%s" .Type | getText }}</p>
     {{end}}
-    <p>{{getText "startTime"}}: <span class="server_timestamp">{{.StartTime.UnixMilli}}</span></p>
+    <p>{{getText "startTime"}}: <server-timestamp timestamp="{{.StartTime.UnixMilli}}"></server-timestamp></p>
     <p>{{getText "duration"}}: {{contestDuration .}}</p>
     <p>{{getText "status"}}: 
         {{if .Ended}}

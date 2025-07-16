@@ -27,7 +27,7 @@
                         <img class="rounded-sm inline-block mx-1" src="/api/user/byName/{{.Name}}/avatar?s=32" width="24" height="24" alt="Avatar"/>
                         {{.Name}}</a>
                 {{else}}-{{end}}
-            {{else}}-{{end}} (<span class="server_timestamp">{{.CreatedAt.UnixMilli}}</span>)
+            {{else}}-{{end}} (<server-timestamp timestamp="{{.CreatedAt.UnixMilli}}"></server-timestamp>)
         </p>
         <div class="my-2">
             <a class="btn btn-blue mr-2" href="/problems?deep_list_id={{.ID}}">{{getText "use_in_search"}}</a>

@@ -630,14 +630,6 @@ server-timestamp:not(:defined) {
 	}
 }
 
-@utility server_timestamp {
-	@apply invisible;
-
-	&::before {
-		@apply visible content-[...];
-	}
-}
-
 blockquote {
 	@apply rounded-md p-3 my-2 border-l-4 border-gray-300 bg-gray-100 dark:border-gray-500 dark:bg-gray-800;
 	@apply italic leading-relaxed;
