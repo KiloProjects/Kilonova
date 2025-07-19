@@ -158,7 +158,7 @@ func (s *API) leaderboard(ctx context.Context, contest *kilonova.Contest, lookin
 	return s.base.ContestLeaderboard(
 		ctx, contest,
 		s.base.UserContestFreezeTime(lookingUser, contest, args.Frozen),
-		kilonova.UserFilter{Generated: args.Generated},
+		args.Generated,
 	)
 }
 
@@ -490,8 +490,8 @@ func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 		FuzzyName    *string `json:"name_fuzzy"`
 		InvitationID *string `json:"invitation_id"`
 
-		Limit  int `json:"limit"`
-		Offset int `json:"offset"`
+		Limit  uint64 `json:"limit"`
+		Offset uint64 `json:"offset"`
 	}
 	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)

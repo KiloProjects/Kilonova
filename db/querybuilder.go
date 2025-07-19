@@ -162,11 +162,3 @@ func newUpdateBuilder() *updateBuilder {
 		pos:   1,
 	}
 }
-
-// func newUpdateBuilderFromPos(args []any) *updateBuilder {
-// 	return &updateBuilder{
-// 		toUpd: []string{},
-// 		args:  slices.Clone(args),
-// 		pos:   len(args) + 1,
-// 	}
-// }

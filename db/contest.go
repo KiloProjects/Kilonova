@@ -9,6 +9,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 )
@@ -237,7 +238,108 @@ func (s *DB) classicToLeaderboardEntry(ctx context.Context, entry *databaseClass
 	}, nil
 }
 
-func (s *DB) ContestClassicLeaderboard(ctx context.Context, contest *kilonova.Contest, freezeTime *time.Time, filter *kilonova.UserFilter) (*kilonova.ContestLeaderboard, error) {
+func (s *DB) contestMaxScores(contestID int, freezeTime *time.Time, userID *int, problemID *int) sq.SelectBuilder {
+	maxSubmissionStrat := sq.Select(
+		"user_id",
+		"problem_id",
+		"FIRST_VALUE(score * (leaderboard_score_scale / 100)) OVER w AS max_score",
+		"FIRST_VALUE(created_at) OVER w AS mintime").Distinct().
+		From("submissions").Where("contest_id = ?", contestID).
+		Where("created_at <= COALESCE(?, NOW())", freezeTime).
+		Where("(status = 'finished' OR status = 'reevaling')").
+		Suffix("WINDOW w AS (PARTITION BY user_id, problem_id ORDER BY score DESC, created_at ASC)")
+
+	subtaskMaxScores := sq.Select(
+		"user_id",
+		"subtask_id",
+		"problem_id",
+		"FIRST_VALUE(computed_score * (leaderboard_score_scale / 100)) OVER w AS max_score",
+		"FIRST_VALUE(created_at) OVER w AS mintime").Distinct().
+		From("submission_subtasks").Where("contest_id = ?", contestID).Where("subtask_id IS NOT NULL").
+		Suffix("WINDOW w AS (PARTITION BY user_id, subtask_id, problem_id ORDER BY computed_score DESC, created_at ASC)")
+
+	sumSubtasksStrat := sq.Select("user_id", "problem_id", "coalesce(SUM(max_score), -1) AS max_score", "MAX(mintime) AS mintime").
+		FromSelect(subtaskMaxScores, "max_scores").
+		GroupBy("user_id", "problem_id")
+
+	if userID != nil {
+		maxSubmissionStrat = maxSubmissionStrat.Where("user_id = ?", userID)
+	}
+	if problemID != nil {
+		maxSubmissionStrat = maxSubmissionStrat.Where("problem_id = ?", problemID)
+	}
+
+	maxScores := sq.Select("contest_users.user_id AS user_id", "pbs.problem_id AS problem_id")
+	maxScores = maxScores.Column(sq.Alias(sq.Case().When(
+		sq.Expr("problems.scoring_strategy IN ('max_submission', 'acm-icpc')"),
+		"COALESCE(ms_sub.max_score, -1)",
+	).When(
+		sq.Expr("problems.scoring_strategy = 'sum_subtasks'"),
+		"COALESCE(ms_subtask.max_score, -1)",
+	).Else("-1"), "score",
+	))
+	maxScores = maxScores.Column(sq.Alias(sq.Case().When(
+		sq.Expr("problems.scoring_strategy IN ('max_submission', 'acm-icpc')"),
+		"COALESCE(ms_sub.mintime, NULL)",
+	).When(
+		sq.Expr("problems.scoring_strategy = 'sum_subtasks'"),
+		"COALESCE(ms_subtask.mintime, NULL)",
+	).Else("NULL"), "mintime",
+	)).From("contest_problems pbs").
+		InnerJoin("contest_registrations contest_users ON contest_users.contest_id = pbs.contest_id").
+		InnerJoin("problems ON pbs.problem_id = problems.id").
+		JoinClause(maxSubmissionStrat.Prefix("LEFT JOIN (").Suffix(") AS ms_sub ON (ms_sub.user_id = contest_users.user_id AND ms_sub.problem_id = pbs.problem_id)")).
+		JoinClause(sumSubtasksStrat.Prefix("LEFT JOIN (").Suffix(") AS ms_subtask ON (ms_subtask.user_id = contest_users.user_id AND ms_subtask.problem_id = pbs.problem_id)")).
+		Where(sq.Eq{"pbs.contest_id": contestID})
+
+	if userID != nil {
+		maxScores = maxScores.Where("contest_users.user_id = ?", userID)
+	}
+	if problemID != nil {
+		maxScores = maxScores.Where("pbs.problem_id = ?", problemID)
+	}
+
+	return maxScores
+
+}
+
+func (s *DB) contestTopView(contestID int, freezeTime *time.Time, includeEditors bool) sq.SelectBuilder {
+	contestScores := sq.Select("user_id", "SUM(score) AS total_score", "MAX(mintime) FILTER (WHERE score > 0) AS last_time").
+		FromSelect(s.contestMaxScores(contestID, freezeTime, nil, nil), "contest_max_scores").
+		Where("score > 0").
+		GroupBy("user_id")
+
+	legitContestants := sq.Select("regs.*").From("contest_registrations regs").Where("regs.contest_id = ?", contestID)
+	if !includeEditors {
+		legitContestants = legitContestants.Where("NOT EXISTS (SELECT 1 FROM contest_user_access acc WHERE acc.user_id = regs.user_id AND acc.contest_id = regs.contest_id)")
+	}
+
+	return sq.Select().
+		Column("contest_users.user_id").
+		Column("?::integer AS contest_id", contestID).
+		Column("COALESCE(scores.total_score, 0) AS total_score").
+		Column("last_time").
+		FromSelect(legitContestants, "contest_users").
+		JoinClause(contestScores.Prefix("LEFT JOIN (").Suffix(") AS scores ON contest_users.user_id = scores.user_id")).
+		OrderBy("total_score DESC", "last_time ASC NULLS LAST")
+}
+
+// TODO
+// func (s *DB) contestICPCView(contestID int, freezeTime *time.Time, includeEditors bool) sq.SelectBuilder {
+// 	legitContestants := sq.Select("regs.*").From("contest_registrations regs").Where("regs.contest_id = ?", contestID)
+// 	if !includeEditors {
+// 		legitContestants = legitContestants.Where("NOT EXISTS (SELECT 1 FROM contest_user_access acc WHERE acc.user_id = regs.user_id AND acc.contest_id = regs.contest_id)")
+// 	}
+
+// 	solvedPbs := sq.Select("user_id", "problem_id", "mintime AS last_time").
+// 		FromSelect(s.contestMaxScores(contestID, freezeTime, nil, nil), "contest_max_scores").
+// 		Where("score = 100")
+
+// 	lastTimes := sq.Select("user_id", "MAX(last_time) AS last_time", "COUNT(*) AS num_problems", "MAX_").
+// 		FromSelect(solvedPbs, "solved_pbs").GroupBy("user_id")
+// }
+
+func (s *DB) ContestClassicLeaderboard(ctx context.Context, contest *kilonova.Contest, freezeTime *time.Time, generated *bool) (*kilonova.ContestLeaderboard, error) {
 	pbs, err := s.ContestProblems(ctx, contest.ID)
 	if err != nil {
 		return nil, err
@@ -256,12 +358,21 @@ func (s *DB) ContestClassicLeaderboard(ctx context.Context, contest *kilonova.Co
 		leaderboard.ProblemNames[pb.ID] = pb.Name
 	}
 
-	var topList []*databaseClassicEntry
+	sb := sq.Select("*").Column("?::timestamptz AS freeze_time", freezeTime).
+		FromSelect(s.contestTopView(contest.ID, freezeTime, contest.Type == kilonova.ContestTypeVirtual), "contest_top_view").
+		OrderBy("total_score DESC", "last_time ASC NULLS LAST", "user_id")
 
-	fb := newFilterBuilderFromPos(contest.ID, freezeTime, contest.Type == kilonova.ContestTypeVirtual)
-	userFilterQuery(filter, fb)
+	if generated != nil {
+		sb = sb.Where("EXISTS (SELECT 1 FROM users WHERE user_id = users.id AND generated = ?)", *generated)
+	}
 
-	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_top_view($1, $2, $3) WHERE EXISTS (SELECT 1 FROM users WHERE user_id = users.id AND "+fb.Where()+") ORDER BY total_score DESC, last_time ASC NULLS LAST, user_id", fb.Args()...)
+	query, args, err := sb.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, _ := s.conn.Query(ctx, query, args...)
+	topList, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[databaseClassicEntry])
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +444,7 @@ func (s *DB) icpcToLeaderboardEntry(ctx context.Context, entry *databaseICPCEntr
 	}, nil
 }
 
-func (s *DB) ContestICPCLeaderboard(ctx context.Context, contest *kilonova.Contest, freezeTime *time.Time, filter *kilonova.UserFilter) (*kilonova.ContestLeaderboard, error) {
+func (s *DB) ContestICPCLeaderboard(ctx context.Context, contest *kilonova.Contest, freezeTime *time.Time, generated *bool) (*kilonova.ContestLeaderboard, error) {
 	pbs, err := s.ContestProblems(ctx, contest.ID)
 	if err != nil {
 		return nil, err
@@ -354,10 +465,13 @@ func (s *DB) ContestICPCLeaderboard(ctx context.Context, contest *kilonova.Conte
 
 	var topList []*databaseICPCEntry
 
-	fb := newFilterBuilderFromPos(contest.ID, freezeTime, contest.Type == kilonova.ContestTypeVirtual)
-	userFilterQuery(filter, fb)
+	where, args := "1 = 1", []any{contest.ID, freezeTime, contest.Type == kilonova.ContestTypeVirtual}
+	if generated != nil {
+		where = "EXISTS (SELECT 1 FROM users WHERE user_id = users.id AND generated = ?)"
+		args = append(args, *generated)
+	}
 
-	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_icpc_view($1, $2, $3) WHERE EXISTS (SELECT 1 FROM users WHERE user_id = users.id AND "+fb.Where()+") ORDER BY num_solved DESC, penalty ASC NULLS LAST, last_time ASC NULLS LAST, user_id", fb.Args()...)
+	err = Select(s.conn, ctx, &topList, "SELECT *, $2 AS freeze_time FROM contest_icpc_view($1, $2, $3) WHERE "+where+" ORDER BY num_solved DESC, penalty ASC NULLS LAST, last_time ASC NULLS LAST, user_id", args...)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't get ICPC leaderboard", slog.Any("err", err))
 		return nil, err
@@ -535,43 +649,4 @@ func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilono
 		Visible: contest.Visible,
 		Type:    contest.Type,
 	}, nil
-}
-
-func userFilterQuery(filter *kilonova.UserFilter, fb *filterBuilder) {
-	if v := filter.ID; v != nil {
-		fb.AddConstraint("id = %s", v)
-	}
-	if v := filter.IDs; v != nil && len(v) == 0 {
-		fb.AddConstraint("0 = 1")
-	}
-	if v := filter.IDs; len(v) > 0 {
-		fb.AddConstraint("id = ANY(%s)", v)
-	}
-	if v := filter.Name; v != nil {
-		fb.AddConstraint("lower(name) = lower(%s)", v)
-	}
-	if v := filter.FuzzyName; v != nil {
-		fb.AddConstraint("position(lower(unaccent(%s)) in format('#%%s %%s', id, lower(unaccent(name)))) > 0", v)
-	}
-	if v := filter.Email; v != nil {
-		fb.AddConstraint("lower(email) = lower(%s)", v)
-	}
-	if v := filter.Admin; v != nil {
-		fb.AddConstraint("admin = %s", v)
-	}
-	if v := filter.Proposer; v != nil {
-		fb.AddConstraint("proposer = %s", v)
-	}
-
-	if v := filter.ContestID; v != nil {
-		fb.AddConstraint("EXISTS (SELECT 1 FROM contest_registrations WHERE user_id = users.id AND contest_id = %s)", v)
-	}
-
-	if v := filter.Generated; v != nil {
-		fb.AddConstraint("generated = %s", v)
-	}
-
-	if v := filter.SessionID; v != nil {
-		fb.AddConstraint("EXISTS (SELECT 1 FROM active_sessions WHERE user_id = users.id AND id = %s)", v)
-	}
 }

@@ -181,7 +181,7 @@ func (rt *Web) problems() http.HandlerFunc {
 
 		Tags *string `json:"tags"`
 
-		Page int `json:"page"`
+		Page uint64 `json:"page"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		var q filterQuery

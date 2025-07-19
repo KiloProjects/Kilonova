@@ -6,19 +6,25 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 )
 
-func (s *DB) ContestRegistrations(ctx context.Context, contestID int, fuzzyName *string, inviteID *string, limit, offset int) ([]*kilonova.ContestRegistration, error) {
-	fb := newFilterBuilder()
-	fb.AddConstraint("contest_id = %s", contestID)
+func (s *DB) ContestRegistrations(ctx context.Context, contestID int, fuzzyName *string, inviteID *string, limit, offset uint64) ([]*kilonova.ContestRegistration, error) {
+	qb := sq.Select("*").From("contest_registrations").Where(sq.Eq{"contest_id": contestID}).OrderBy("created_at ASC")
 	if fuzzyName != nil {
-		fb.AddConstraint("EXISTS (SELECT 1 FROM users WHERE id = user_id AND position(lower(unaccent(%s)) in format('#%%s %%s', id, lower(unaccent(name)))) > 0)", fuzzyName)
+		qb = qb.Where(sq.Expr("EXISTS (SELECT 1 FROM users WHERE id = user_id AND position(lower(unaccent(?)) in format('#%s %s', id, lower(unaccent(name)))) > 0)", fuzzyName))
 	}
 	if inviteID != nil {
-		fb.AddConstraint("invitation_id = %s", inviteID)
+		qb = qb.Where(sq.Eq{"invitation_id": inviteID})
 	}
-	rows, _ := s.conn.Query(ctx, "SELECT * FROM contest_registrations WHERE "+fb.Where()+" ORDER BY created_at ASC "+FormatLimitOffset(limit, offset), fb.Args()...)
+	qb = LimitOffset(qb, limit, offset)
+	query, args, err := qb.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, _ := s.conn.Query(ctx, query, args...)
 	regs, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[kilonova.ContestRegistration])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

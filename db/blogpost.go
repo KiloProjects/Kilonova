@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -72,27 +73,26 @@ func (s *DB) CreateBlogPost(ctx context.Context, title string, authorID int) (in
 }
 
 func (s *DB) UpdateBlogPost(ctx context.Context, id int, upd kilonova.BlogPostUpdate) error {
-	ub := newUpdateBuilder()
+	qb := sq.Update("blog_posts").Where(sq.Eq{"id": id})
 	if v := upd.Slug; v != nil {
-		ub.AddUpdate("slug = %s", v)
+		qb = qb.Set("slug", v)
 	}
 	if v := upd.Title; v != nil {
-		ub.AddUpdate("title = %s", v)
+		qb = qb.Set("title", v)
 	}
 	if v := upd.Visible; v != nil {
-		ub.AddUpdate("visible = %s", v)
+		qb = qb.Set("visible", v)
 		// if is set to visible
 		if *v {
 			// Published at - first time it was set visible
-			ub.AddUpdate("published_at = COALESCE(published_at, NOW())")
+			qb = qb.Set("published_at", sq.Expr("COALESCE(published_at, NOW())"))
 		}
 	}
-	if ub.CheckUpdates() != nil {
-		return ub.CheckUpdates()
+	query, args, err := qb.ToSql()
+	if err != nil {
+		return err
 	}
-	fb := ub.MakeFilter()
-	fb.AddConstraint("id = %s", id)
-	_, err := s.conn.Exec(ctx, "UPDATE blog_posts SET "+fb.WithUpdate(), fb.Args()...)
+	_, err = s.conn.Exec(ctx, query, args...)
 	return err
 }
 

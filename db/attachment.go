@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -69,7 +70,7 @@ func (a *DB) CreateBlogPostAttachment(ctx context.Context, att *kilonova.Attachm
 	return nil
 }
 
-const selectedAttFields = "id, created_at, last_updated_at, last_updated_by, visible, private, execable, name, data_size" // Make sure to keep this in sync
+var selectedAttFields = []string{"id", "created_at", "last_updated_at", "last_updated_by", "visible", "private", "execable", "name", "data_size"} // Make sure to keep this in sync
 
 func (a *DB) Attachment(ctx context.Context, filter *kilonova.AttachmentFilter) (*kilonova.Attachment, error) {
 	if filter == nil {
@@ -81,16 +82,14 @@ func (a *DB) Attachment(ctx context.Context, filter *kilonova.AttachmentFilter) 
 
 // TODO: Remove problem_attachments and blog_post_attachments views from DB
 func (a *DB) Attachments(ctx context.Context, filter *kilonova.AttachmentFilter) ([]*kilonova.Attachment, error) {
-	fb := newFilterBuilder()
-	attachmentFilterQuery(filter, fb)
-
-	limit, offset := 0, 0
-	if filter != nil {
-		limit, offset = filter.Limit, filter.Offset
+	qb := sq.Select(selectedAttFields...).From("attachments").Where(attachmentFilterQuery(filter)).OrderBy("name ASC")
+	qb = LimitOffset(qb, filter.Limit, filter.Offset)
+	query, args, err := qb.ToSql()
+	if err != nil {
+		return []*kilonova.Attachment{}, err
 	}
 
-	query := "SELECT " + selectedAttFields + " FROM attachments WHERE " + fb.Where() + " ORDER BY name ASC " + FormatLimitOffset(limit, offset)
-	rows, _ := a.conn.Query(ctx, query, fb.Args()...)
+	rows, _ := a.conn.Query(ctx, query, args...)
 	attachments, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[dbAttachment])
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.Attachment{}, nil
@@ -100,9 +99,11 @@ func (a *DB) Attachments(ctx context.Context, filter *kilonova.AttachmentFilter)
 
 func (a *DB) AttachmentData(ctx context.Context, filter *kilonova.AttachmentFilter) ([]byte, error) {
 	var data []byte
-	fb := newFilterBuilder()
-	attachmentFilterQuery(filter, fb)
-	err := a.conn.QueryRow(ctx, "SELECT data FROM attachments WHERE "+fb.Where()+" LIMIT 1", fb.Args()...).Scan(&data)
+	query, args, err := sq.Select("data").From("attachments").Where(attachmentFilterQuery(filter)).Limit(1).ToSql()
+	if err != nil {
+		return []byte{}, err
+	}
+	err = a.conn.QueryRow(ctx, query, args...).Scan(&data)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []byte{}, nil
 	}
@@ -110,25 +111,24 @@ func (a *DB) AttachmentData(ctx context.Context, filter *kilonova.AttachmentFilt
 }
 
 func (a *DB) UpdateAttachment(ctx context.Context, id int, upd *kilonova.AttachmentUpdate) error {
-	ub := newUpdateBuilder()
+	qb := sq.Update("attachments").Where(sq.Eq{"id": id})
 	if v := upd.Name; v != nil {
-		ub.AddUpdate("name = %s", v)
+		qb = qb.Set("name", v)
 	}
 	if v := upd.Visible; v != nil {
-		ub.AddUpdate("visible = %s", v)
+		qb = qb.Set("visible", v)
 	}
 	if v := upd.Private; v != nil {
-		ub.AddUpdate("private = %s", v)
+		qb = qb.Set("private", v)
 	}
 	if v := upd.Exec; v != nil {
-		ub.AddUpdate("execable = %s", v)
+		qb = qb.Set("execable", v)
 	}
-	if ub.CheckUpdates() != nil {
-		return ub.CheckUpdates()
+	query, args, err := qb.ToSql()
+	if err != nil {
+		return err
 	}
-	fb := ub.MakeFilter()
-	fb.AddConstraint("id = %s", id)
-	_, err := a.conn.Exec(ctx, "UPDATE attachments SET "+fb.WithUpdate(), fb.Args()...)
+	_, err = a.conn.Exec(ctx, query, args...)
 	return err
 }
 
@@ -138,46 +138,62 @@ func (a *DB) UpdateAttachmentData(ctx context.Context, id int, data []byte, upda
 }
 
 func (a *DB) DeleteAttachments(ctx context.Context, filter *kilonova.AttachmentFilter) (int, error) {
-	fb := newFilterBuilder()
-	attachmentFilterQuery(filter, fb)
-	result, err := a.conn.Exec(ctx, "DELETE FROM attachments WHERE "+fb.Where(), fb.Args()...)
+	qb := sq.Delete("attachments").Where(attachmentFilterQuery(filter))
+	query, args, err := qb.ToSql()
+	if err != nil {
+		return -1, err
+	}
+	result, err := a.conn.Exec(ctx, query, args...)
 	if err != nil {
 		return -1, err
 	}
 	return int(result.RowsAffected()), nil
 }
 
-func attachmentFilterQuery(filter *kilonova.AttachmentFilter, fb *filterBuilder) {
-	if filter == nil {
-		return
+func LimitOffset(qb sq.SelectBuilder, limit uint64, offset uint64) sq.SelectBuilder {
+	if limit > 0 {
+		qb = qb.Limit(limit)
 	}
+	if offset > 0 {
+		qb = qb.Offset(offset)
+	}
+	return qb
+}
+
+func attachmentFilterQuery(filter *kilonova.AttachmentFilter) sq.And {
+	if filter == nil {
+		return sq.And{sq.Expr("1 = 1")}
+	}
+	sb := sq.And{}
 	if v := filter.ID; v != nil {
-		fb.AddConstraint("id = %s", v)
+		sb = append(sb, sq.Eq{"id": v})
 	}
 	if v := filter.IDs; v != nil && len(v) == 0 {
-		fb.AddConstraint("0 = 1")
+		sb = append(sb, sq.Expr("0 = 1"))
 	}
 	if v := filter.IDs; len(v) > 0 {
-		fb.AddConstraint("id = ANY(%s)", v)
+		sb = append(sb, sq.Eq{"id": v})
 	}
 	if v := filter.ProblemID; v != nil {
-		fb.AddConstraint("EXISTS (SELECT 1 FROM problem_attachments_m2m WHERE attachment_id = id AND problem_id = %s)", v)
+		sb = append(sb, sq.Expr("EXISTS (SELECT 1 FROM problem_attachments_m2m WHERE attachment_id = id AND problem_id = ?)", v))
 	}
 	if v := filter.BlogPostID; v != nil {
-		fb.AddConstraint("EXISTS (SELECT 1 FROM blog_post_attachments_m2m WHERE attachment_id = id AND blog_post_id = %s)", v)
+		sb = append(sb, sq.Expr("EXISTS (SELECT 1 FROM blog_post_attachments_m2m WHERE attachment_id = id AND blog_post_id = ?)", v))
 	}
 	if v := filter.Name; v != nil {
-		fb.AddConstraint("name = %s", v)
+		sb = append(sb, sq.Eq{"name": v})
 	}
 	if v := filter.Visible; v != nil {
-		fb.AddConstraint("visible = %s", v)
+		sb = append(sb, sq.Eq{"visible": v})
 	}
 	if v := filter.Private; v != nil {
-		fb.AddConstraint("private = %s", v)
+		sb = append(sb, sq.Eq{"private": v})
 	}
 	if v := filter.Exec; v != nil {
-		fb.AddConstraint("execable = %s", v)
+		sb = append(sb, sq.Eq{"execable": v})
 	}
+
+	return sb
 }
 
 type dbAttachment struct {

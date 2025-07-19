@@ -49,7 +49,7 @@ func (s *BaseAPI) StartContestRegistration(ctx context.Context, contest *kilonov
 	return nil
 }
 
-func (s *BaseAPI) ContestRegistrations(ctx context.Context, contestID int, fuzzyName *string, inviteID *string, limit, offset int) ([]*kilonova.ContestRegistration, error) {
+func (s *BaseAPI) ContestRegistrations(ctx context.Context, contestID int, fuzzyName *string, inviteID *string, limit, offset uint64) ([]*kilonova.ContestRegistration, error) {
 	regs, err := s.db.ContestRegistrations(ctx, contestID, fuzzyName, inviteID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get registrations: %w", err)

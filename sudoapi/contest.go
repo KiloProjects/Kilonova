@@ -156,16 +156,16 @@ func (s *BaseAPI) ProblemRunningContests(ctx context.Context, problemID int) ([]
 	})
 }
 
-func (s *BaseAPI) ContestLeaderboard(ctx context.Context, contest *kilonova.Contest, freezeTime *time.Time, filter kilonova.UserFilter) (*kilonova.ContestLeaderboard, error) {
+func (s *BaseAPI) ContestLeaderboard(ctx context.Context, contest *kilonova.Contest, freezeTime *time.Time, generated *bool) (*kilonova.ContestLeaderboard, error) {
 	switch contest.LeaderboardStyle {
 	case kilonova.LeaderboardTypeClassic:
-		leaderboard, err := s.db.ContestClassicLeaderboard(ctx, contest, freezeTime, &filter)
+		leaderboard, err := s.db.ContestClassicLeaderboard(ctx, contest, freezeTime, generated)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't generate leaderboard: %w", err)
 		}
 		return leaderboard, nil
 	case kilonova.LeaderboardTypeICPC:
-		leaderboard, err := s.db.ContestICPCLeaderboard(ctx, contest, freezeTime, &filter)
+		leaderboard, err := s.db.ContestICPCLeaderboard(ctx, contest, freezeTime, generated)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't generate leaderboard: %w", err)
 		}

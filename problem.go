@@ -132,8 +132,8 @@ type ProblemFilter struct {
 	// This is actually not used during filtering in DB, it's used by (*api.API).searchProblems
 	ScoreUserID *int `json:"score_user_id"`
 
-	Limit  int `json:"limit"`
-	Offset int `json:"offset"`
+	Limit  uint64 `json:"limit"`
+	Offset uint64 `json:"offset"`
 
 	Ordering   string `json:"ordering"`
 	Descending bool   `json:"descending"`
@@ -188,8 +188,8 @@ type AttachmentFilter struct {
 	Exec    *bool
 	Name    *string
 
-	Limit  int
-	Offset int
+	Limit  uint64
+	Offset uint64
 }
 
 type AttachmentUpdate struct {
