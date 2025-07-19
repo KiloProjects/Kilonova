@@ -4,9 +4,13 @@
 {{ end }}
 {{ define "content" }}
 
-<h1 class="mb-2">{{getText "authenticate"}}</h1>
-{{ block "login_modal" . }}
-	Uhhh... I don't know how to log you in. Please report this to an admin
-{{ end }}
+<div class="flex items-center justify-center min-h-screen">
+    <div style="width: 500px;">
+        {{ block "login_modal" . }}
+            Uhhh... I don't know how to log you in. Please report this to an admin
+        {{ end }}
+    </div>
+</div>
+
 
 {{ end }}

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/repository"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -27,18 +29,23 @@ func (s *DB) removeAccess(ctx context.Context, tableName, colName string, colVal
 	return err
 }
 
-func (s *DB) getAccessUsers(ctx context.Context, tableName, colName string, colValue int, rank accessType) ([]*User, error) {
+func (s *DB) getAccessUsers(ctx context.Context, tableName, colName string, colValue int, rank accessType) ([]*kilonova.UserFull, error) {
 	q := fmt.Sprintf("SELECT users.* FROM users INNER JOIN %s tb ON tb.user_id = users.id WHERE tb.%s = $1 AND tb.access = $2", tableName, colName)
 	rows, err := s.conn.Query(ctx, q, colValue, rank)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return []*User{}, nil
+		return []*kilonova.UserFull{}, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	users, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[User])
+	users, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[repository.User])
 	if err != nil {
 		return nil, err
 	}
-	return users, nil
+
+	usersFull := make([]*kilonova.UserFull, len(users))
+	for i := range users {
+		usersFull[i] = users[i].Full()
+	}
+	return usersFull, nil
 }

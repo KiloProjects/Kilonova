@@ -9,76 +9,80 @@
 {{ end }}
 
 {{ define "content_signup_enabled" }}
-<h1 class="mb-2">{{getText "auth.signup"}}</h1>
-<form class="segment-panel" id="signup_form">
-	<label class="block mb-2">
-		<span>{{getText "email"}}</span>
-		<input class="form-input w-full" type="email" id="email" name="email" autocomplete="email" required />
-	</label>
-	<label class="block mb-2">
-		<span>{{getText "username"}}</span>
-		<input class="form-input w-full" type="text" id="name" name="username" minlength="3" maxlength="24" autocomplete="username" required />
-	</label>
-	<label class="block mb-2">
-		<span>{{getText "password"}}</span>
-		<input class="form-input w-full" type="password" id="pwd" name="password" minlength="6" maxlength="72" autocomplete="new-password" required />
-	</label>
-	<label class="block mb-2">
-		<span>{{getText "passwordCheck"}}</span>
-		<input class="form-input w-full" type="password" id="pwd_check" name="pwd_check" minlength="6" maxlength="72" autocomplete="new-password" required />
-	</label>
-    <label class="block mb-2">
-		<span>{{getText "displayLang"}}</span>
-        <select id="langSelect" name="langSelect" class="form-select w-full">
-			<option value="ro" {{if eq language "ro" }}selected{{end}}>🇷🇴 Română</option>
-			<option value="en" {{if eq language "en" }}selected{{end}}>🇬🇧 English</option>
-		</select>
-    </label>
+<div class="flex items-center justify-center min-h-screen">
+    <div style="width: 500px;">
+        <form class="segment-panel" id="signup_form">
+            <h1 class="mb-2">{{getText "auth.signup"}}</h1>
+            <label class="block mb-2">
+                <span>{{getText "email"}}</span>
+                <input class="form-input w-full" type="email" id="email" name="email" autocomplete="email" required />
+            </label>
+            <label class="block mb-2">
+                <span>{{getText "username"}}</span>
+                <input class="form-input w-full" type="text" id="name" name="username" minlength="3" maxlength="24" autocomplete="username" required />
+            </label>
+            <label class="block mb-2">
+                <span>{{getText "password"}}</span>
+                <input class="form-input w-full" type="password" id="pwd" name="password" minlength="6" maxlength="72" autocomplete="new-password" required />
+            </label>
+            <label class="block mb-2">
+                <span>{{getText "passwordCheck"}}</span>
+                <input class="form-input w-full" type="password" id="pwd_check" name="pwd_check" minlength="6" maxlength="72" autocomplete="new-password" required />
+            </label>
+            <label class="block mb-2">
+                <span>{{getText "displayLang"}}</span>
+                <select id="langSelect" name="langSelect" class="form-select w-full">
+                    <option value="ro" {{if eq language "ro" }}selected{{end}}>🇷🇴 Română</option>
+                    <option value="en" {{if eq language "en" }}selected{{end}}>🇬🇧 English</option>
+                </select>
+            </label>
 
-    {{if boolFlag "feature.captcha.enabled"}}
-    {{$captcha := getCaptchaID}}
-    <div id="captcha_container" class="segment-panel" {{if not mustSolveCaptcha}} style="display: none;"{{end}}>
-        <p>
-            {{getText "auth.captcha.title"}}:<br/>
-            <img id="captcha_img" class="rounded-sm" src="/api/auth/captcha/{{$captcha}}.png" alt="Captcha image" width="240" height="80" style="background-color: white;" />
-        </p>
-        <input type="hidden" id="captcha_id" value="{{$captcha}}" />
-        <label class="block my-2">
-            <span>{{getText "response"}}</span>
-            <input type="text" id="captcha_response" class="form-input w-full" pattern="[0-9]*" value="" autocomplete="off" />
-        </label>
-        <button id="captcha_reload_btn" class="btn btn-blue" type="button"><i class="fas fa-fw fa-rotate"></i> {{getText "reload"}}</button>
+            {{if boolFlag "feature.captcha.enabled"}}
+            {{$captcha := getCaptchaID}}
+            <div id="captcha_container" class="segment-panel" {{if not mustSolveCaptcha}} style="display: none;"{{end}}>
+                <p>
+                    {{getText "auth.captcha.title"}}:<br/>
+                    <img id="captcha_img" class="rounded-sm" src="/api/auth/captcha/{{$captcha}}.png" alt="Captcha image" width="240" height="80" style="background-color: white;" />
+                </p>
+                <input type="hidden" id="captcha_id" value="{{$captcha}}" />
+                <label class="block my-2">
+                    <span>{{getText "response"}}</span>
+                    <input type="text" id="captcha_response" class="form-input w-full" pattern="[0-9]*" value="" autocomplete="off" />
+                </label>
+                <button id="captcha_reload_btn" class="btn btn-blue" type="button"><i class="fas fa-fw fa-rotate"></i> {{getText "reload"}}</button>
+            </div>
+            <script>
+                function reloadCaptcha() {
+                    document.getElementById("captcha_img").src = `/api/auth/captcha/${document.getElementById("captcha_id").value}.png?reload=${bundled.dayjs().valueOf()}`
+                }
+                document.getElementById("captcha_reload_btn").addEventListener("click", reloadCaptcha)
+                function resetCaptcha(newID) {
+                    document.getElementById("captcha_container").style.display = "block"
+                    document.getElementById("captcha_id").value = newID
+                    document.getElementById("captcha_response").value = ""
+                    reloadCaptcha()
+                }
+                function getCaptchaData() {
+                    return {captcha_id: document.getElementById("captcha_id").value, captcha_response: document.getElementById("captcha_response").value}
+                }
+            </script>
+            {{else}}
+            <script>
+                function resetCaptcha() {
+                    // CAPTCHA module not loaded in, prompt a page reload
+                    window.location.reload();
+                }
+                function getCaptchaData() {
+                    return {captcha_id: "", captcha_response: ""}
+                }
+            </script>
+            {{end}}
+
+            <button type="submit" class="block btn btn-blue">{{getText "auth.signup"}}</button>
+            <p class="text-gray-500 dark:text-gray-300"> {{getText "loginReminder" | safeHTML}}</p>
+        </form>
     </div>
-    <script>
-        function reloadCaptcha() {
-            document.getElementById("captcha_img").src = `/api/auth/captcha/${document.getElementById("captcha_id").value}.png?reload=${bundled.dayjs().valueOf()}`
-        }
-        document.getElementById("captcha_reload_btn").addEventListener("click", reloadCaptcha)
-        function resetCaptcha(newID) {
-            document.getElementById("captcha_container").style.display = "block"
-            document.getElementById("captcha_id").value = newID
-            document.getElementById("captcha_response").value = ""
-            reloadCaptcha()
-        }
-        function getCaptchaData() {
-            return {captcha_id: document.getElementById("captcha_id").value, captcha_response: document.getElementById("captcha_response").value}
-        }
-    </script>
-    {{else}}
-    <script>
-        function resetCaptcha() {
-            // CAPTCHA module not loaded in, prompt a page reload
-            window.location.reload();
-        }
-        function getCaptchaData() {
-            return {captcha_id: "", captcha_response: ""}
-        }
-    </script>
-    {{end}}
-
-	<button type="submit" class="block btn btn-blue">{{getText "auth.signup"}}</button>
-	<p class="text-gray-500 dark:text-gray-300"> {{getText "loginReminder" | safeHTML}}</p>
-</form>
+</div>
 
 <script>
 let pwd = document.querySelector("#signup_form #pwd")

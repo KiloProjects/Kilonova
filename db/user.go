@@ -2,315 +2,88 @@ package db
 
 import (
 	"context"
-	"errors"
 	"net/netip"
-	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/jackc/pgx/v5"
 )
 
-type User struct {
-	ID        int       `json:"id"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	Name      string    `json:"name"`
-	Admin     bool      `json:"admin"`
-	Proposer  bool      `json:"proposer"`
-	Email     string    `json:"email"`
-	Password  string    `json:"-"`
-	Bio       string    `json:"bio"`
-
-	VerifiedEmail    bool       `json:"verified_email" db:"verified_email"`
-	EmailVerifSentAt *time.Time `json:"-" db:"email_verif_sent_at"`
-
-	PreferredLanguage string                  `json:"-" db:"preferred_language"`
-	PreferredTheme    kilonova.PreferredTheme `json:"-" db:"preferred_theme"`
-
-	NameChangeRequired bool `json:"name_change_required" db:"name_change_required"`
-
-	DiscordID  *string `json:"discord_id" db:"discord_id"`
-	AvatarType string  `json:"avatar_type" db:"avatar_type"`
-
-	LockedLogin bool `json:"locked_login" db:"locked_login"`
-	Generated   bool `json:"generated" db:"generated"`
-
-	DisplayName string `json:"display_name" db:"display_name"`
-}
-
-func toUserBrief(user *User) *kilonova.UserBrief {
-	if user == nil {
-		return nil
-	}
-	return &kilonova.UserBrief{
-		ID:       user.ID,
-		Name:     user.Name,
-		Admin:    user.Admin,
-		Proposer: user.Proposer,
-
-		DisplayName: user.DisplayName,
-
-		Generated: user.Generated,
-
-		DiscordID: user.DiscordID,
-	}
-}
-
-func (user *User) ToBrief() *kilonova.UserBrief {
-	return toUserBrief(user)
-}
-
-func (user *User) ToFull() *kilonova.UserFull {
-	if user == nil {
-		return nil
-	}
-	t := time.Unix(0, 0)
-	if user.EmailVerifSentAt != nil {
-		t = *user.EmailVerifSentAt
-	}
-	return &kilonova.UserFull{
-		UserBrief:         *user.ToBrief(),
-		Bio:               user.Bio,
-		Email:             user.Email,
-		VerifiedEmail:     user.VerifiedEmail,
-		PreferredLanguage: user.PreferredLanguage,
-		CreatedAt:         user.CreatedAt,
-		EmailVerifResent:  t,
-		LockedLogin:       user.LockedLogin,
-		NameChangeForced:  user.NameChangeRequired,
-
-		DiscordID:  user.DiscordID,
-		AvatarType: user.AvatarType,
-	}
-}
-
 // User looks up a user by ID.
-func (s *DB) User(ctx context.Context, filter kilonova.UserFilter) (*User, error) {
-	filter.Limit = 1
-	users, err := s.Users(ctx, filter)
-	if err != nil || len(users) == 0 {
-		return nil, err
-	}
-	return users[0], nil
+// Deprecated: Use UserRepository instead
+func (s *DB) User(ctx context.Context, filter kilonova.UserFilter) (*kilonova.UserFull, error) {
+	return s.userRepo.User(ctx, filter)
+}
+
+func (s *DB) HashedPassword(ctx context.Context, userID int) (string, error) {
+	return s.userRepo.HashedPassword(ctx, userID)
 }
 
 // Users retrieves users based on a filter.
-func (s *DB) Users(ctx context.Context, filter kilonova.UserFilter) ([]*User, error) {
-	fb := newFilterBuilder()
-	userFilterQuery(&filter, fb)
-	rows, _ := s.conn.Query(ctx, "SELECT * from users WHERE "+fb.Where()+" ORDER BY id ASC "+FormatLimitOffset(filter.Limit, filter.Offset), fb.Args()...)
-	users, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[User])
-	if errors.Is(err, pgx.ErrNoRows) {
-		return []*User{}, nil
-	}
-	return users, err
+// Deprecated: Use UserRepository instead
+func (s *DB) Users(ctx context.Context, filter kilonova.UserFilter) ([]*kilonova.UserFull, error) {
+	return s.userRepo.Users(ctx, filter)
 }
 
 // CountUsers retrieves the number of users matching a filter. It ignores the limit fields in `filter`.
+// Deprecated: Use UserRepository instead
 func (s *DB) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, error) {
-	var count int
-	fb := newFilterBuilder()
-	userFilterQuery(&filter, fb)
-	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM users WHERE "+fb.Where(), fb.Args()...).Scan(&count)
-	return count, err
+	return s.userRepo.CountUsers(ctx, filter)
 }
 
 // UserExists says wether or not a user matches either a specific username (case-insensitive), either a specific email address.
+// Deprecated: Use UserRepository instead
 func (s *DB) UserExists(ctx context.Context, username string, email string) (bool, error) {
-	count, err := s.CountUsers(ctx, kilonova.UserFilter{Name: &username})
-	if err == nil && count > 0 {
-		return true, nil
-	}
-	count, err = s.CountUsers(ctx, kilonova.UserFilter{Email: &email})
-	return count > 0, err
+	return s.userRepo.UserExists(ctx, username, email)
 }
 
+// Deprecated: Use UserRepository instead
 func (s *DB) LastUsernameChange(ctx context.Context, userID int) (time.Time, error) {
-	var changedAt time.Time
-	err := s.conn.QueryRow(ctx, "SELECT MAX(changed_at) FROM username_change_history WHERE user_id = $1", userID).Scan(&changedAt)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return time.Now(), nil
-		}
-		return time.Now(), err
-	}
-	return changedAt, nil
+	return s.userRepo.LastUsernameChange(ctx, userID)
 }
 
 func (s *DB) NameUsedBefore(ctx context.Context, name string) (bool, error) {
-	var cnt int
-	err := s.conn.QueryRow(ctx, "SELECT COUNT(name) FROM username_change_history WHERE lower(name) = lower($1)", name).Scan(&cnt)
-	if err != nil {
-		return true, err
-	}
-	return cnt > 0, nil
+	return s.userRepo.NameUsedBefore(ctx, name)
 }
 
+// Deprecated: Use UserRepository instead
 func (s *DB) UsernameChangeHistory(ctx context.Context, userID int) ([]*kilonova.UsernameChange, error) {
-	rows, _ := s.conn.Query(ctx, "SELECT * FROM username_change_history WHERE user_id = $1 ORDER BY changed_at DESC", userID)
-	changes, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[kilonova.UsernameChange])
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return []*kilonova.UsernameChange{}, nil
-		}
-		return nil, err
-	}
-	return changes, nil
+	return s.userRepo.UsernameChangeHistory(ctx, userID)
 }
 
+// Deprecated: Use UserRepository instead
 func (s *DB) HistoricalUsernameHolders(ctx context.Context, name string) ([]int, error) {
-	rows, _ := s.conn.Query(ctx, "SELECT user_id, MAX(changed_at) FROM username_change_history WHERE lower(name) = lower($1) GROUP BY user_id ORDER BY MAX(changed_at) DESC", name)
-	entries, err := pgx.CollectRows(rows, pgx.RowToStructByPos[struct {
-		UserID    int
-		ChangedAt time.Time
-	}])
-	if errors.Is(err, pgx.ErrNoRows) {
-		return []int{}, nil
-	}
-	ids := make([]int, len(entries))
-	for i := range ids {
-		ids[i] = entries[i].UserID
-	}
-	return ids, err
+	return s.userRepo.HistoricalUsernameHolders(ctx, name)
 }
 
 // UpdateUser updates a user.
-// Returns ENOTFOUND if the user does not exist
+// Deprecated: Use UserRepository instead
 func (s *DB) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate) error {
-	ub := newUpdateBuilder()
-
-	if v := upd.Name; v != nil {
-		ub.AddUpdate("name = %s", v)
-	}
-	if v := upd.Email; v != nil {
-		ub.AddUpdate("email = %s", v)
-	}
-
-	if v := upd.DisplayName; v != nil {
-		ub.AddUpdate("display_name = %s", strings.TrimSpace(*v))
-	}
-
-	if v := upd.Admin; v != nil {
-		ub.AddUpdate("admin = %s", v)
-	}
-	if v := upd.Proposer; v != nil {
-		ub.AddUpdate("proposer = %s", v)
-	}
-	if v := upd.Bio; v != nil {
-		ub.AddUpdate("bio = %s", strings.TrimSpace(*v))
-	}
-	if v := upd.VerifiedEmail; v != nil {
-		ub.AddUpdate("verified_email = %s", v)
-	}
-	if v := upd.EmailVerifSentAt; v != nil {
-		ub.AddUpdate("email_verif_sent_at = %s", v)
-	}
-
-	if v := upd.DiscordID; upd.SetDiscordID {
-		ub.AddUpdate("discord_id = %s", v)
-	}
-	if v := upd.AvatarType; v != nil {
-		ub.AddUpdate("avatar_type = %s", v)
-	}
-
-	if v := upd.LockedLogin; v != nil {
-		ub.AddUpdate("locked_login = %s", v)
-	}
-	if v := upd.NameChangeRequired; v != nil {
-		ub.AddUpdate("name_change_required = %s", v)
-	}
-
-	if v := upd.PreferredLanguage; v != "" {
-		ub.AddUpdate("preferred_language = %s", v)
-	}
-	if v := upd.PreferredTheme; v != kilonova.PreferredThemeNone {
-		ub.AddUpdate("preferred_theme = %s", v)
-	}
-	if ub.CheckUpdates() != nil {
-		return ub.CheckUpdates()
-	}
-
-	fb := ub.MakeFilter()
-	fb.AddConstraint("id = %s", id)
-
-	_, err := s.conn.Exec(ctx, "UPDATE users SET "+fb.WithUpdate(), fb.Args()...)
-	return err
+	return s.userRepo.UpdateUser(ctx, id, upd)
 }
 
+// Deprecated: Use UserRepository instead
 func (s *DB) UpdateUserPasswordHash(ctx context.Context, userID int, hash string) error {
-	_, err := s.conn.Exec(ctx, "UPDATE users SET password = $1 WHERE id = $2", hash, userID)
-	return err
+	return s.userRepo.UpdateUserPasswordHash(ctx, userID, hash)
 }
 
 // DeleteUser permanently deletes a user from the system.
+// Deprecated: Use UserRepository instead
 func (s *DB) DeleteUser(ctx context.Context, id int) error {
-	_, err := s.conn.Exec(ctx, "DELETE FROM users WHERE id = $1", id)
-	return err
+	return s.userRepo.DeleteUser(ctx, id)
 }
 
 // CreateUser creates a new user with the specified data.
+// Deprecated: Use UserRepository instead
 func (s *DB) CreateUser(ctx context.Context, name, passwordHash, email, preferredLanguage string, theme kilonova.PreferredTheme, displayName string, bio string, generated bool) (int, error) {
-	if name == "" || passwordHash == "" || email == "" || preferredLanguage == "" {
-		return -1, kilonova.ErrMissingRequired
-	}
-
-	var id = -1
-	err := s.conn.QueryRow(ctx,
-		"INSERT INTO users (name, email, password, preferred_language, preferred_theme, display_name, generated, verified_email, bio) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id",
-		name, email, passwordHash, preferredLanguage, theme, displayName, generated, generated, bio, // generated is for both generated and verified_email!
-	).Scan(&id)
-	return id, err
+	return s.userRepo.CreateUser(ctx, name, passwordHash, email, preferredLanguage, theme, displayName, bio, generated)
 }
 
+// Deprecated: Use UserRepository instead
 func (s *DB) LogSignup(ctx context.Context, userID int, ip *netip.Addr, userAgent *string) error {
-	_, err := s.conn.Exec(ctx, `INSERT INTO signup_logs (user_id, ip_addr, user_agent) VALUES ($1, $2, $3)`, userID, ip, userAgent)
-	return err
+	return s.userRepo.LogSignup(ctx, userID, ip, userAgent)
 }
 
+// Deprecated: Use UserRepository instead
 func (s *DB) CountSignups(ctx context.Context, ip netip.Addr, since time.Time) (int, error) {
-	var cnt int
-	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM signup_logs WHERE ip_addr = $1 AND created_at >= $2", ip, since).Scan(&cnt)
-	if err != nil {
-		return -1, err
-	}
-	return cnt, nil
-}
-
-func userFilterQuery(filter *kilonova.UserFilter, fb *filterBuilder) {
-	if v := filter.ID; v != nil {
-		fb.AddConstraint("id = %s", v)
-	}
-	if v := filter.IDs; v != nil && len(v) == 0 {
-		fb.AddConstraint("0 = 1")
-	}
-	if v := filter.IDs; len(v) > 0 {
-		fb.AddConstraint("id = ANY(%s)", v)
-	}
-	if v := filter.Name; v != nil {
-		fb.AddConstraint("lower(name) = lower(%s)", v)
-	}
-	if v := filter.FuzzyName; v != nil {
-		fb.AddConstraint("position(lower(unaccent(%s)) in format('#%%s %%s', id, lower(unaccent(name)))) > 0", v)
-	}
-	if v := filter.Email; v != nil {
-		fb.AddConstraint("lower(email) = lower(%s)", v)
-	}
-	if v := filter.Admin; v != nil {
-		fb.AddConstraint("admin = %s", v)
-	}
-	if v := filter.Proposer; v != nil {
-		fb.AddConstraint("proposer = %s", v)
-	}
-
-	if v := filter.ContestID; v != nil {
-		fb.AddConstraint("EXISTS (SELECT 1 FROM contest_registrations WHERE user_id = users.id AND contest_id = %s)", v)
-	}
-
-	if v := filter.Generated; v != nil {
-		fb.AddConstraint("generated = %s", v)
-	}
-
-	if v := filter.SessionID; v != nil {
-		fb.AddConstraint("EXISTS (SELECT 1 FROM active_sessions WHERE user_id = users.id AND id = %s)", v)
-	}
+	return s.userRepo.CountSignups(ctx, ip, since)
 }

@@ -3,12 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/KiloProjects/kilonova/integrations/otel"
-	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/riandyrn/otelchi"
-	slogmulti "github.com/samber/slog-multi"
-	"go.opentelemetry.io/contrib/bridges/otelslog"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"log/slog"
 	"net"
 	"net/http"
@@ -18,6 +12,13 @@ import (
 	"path"
 	"strconv"
 	"time"
+
+	"github.com/KiloProjects/kilonova/integrations/otel"
+	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/riandyrn/otelchi"
+	slogmulti "github.com/samber/slog-multi"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/api"

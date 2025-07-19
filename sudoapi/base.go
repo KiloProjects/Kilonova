@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"path"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/email"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/internal/auth"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer"
 	"github.com/Yiling-J/theine-go"
@@ -83,6 +85,15 @@ func (s *BaseAPI) Close() error {
 	}
 
 	return nil
+}
+
+func (s *BaseAPI) GetOIDCProvider(ctx context.Context) (http.Handler, error) {
+	storage := auth.NewAuthStorage(ctx, s.db.GetPool())
+	handler, err := auth.GetProvider(storage)
+	if err != nil {
+		return nil, err
+	}
+	return handler, nil
 }
 
 func GetBaseAPI(db *db.DB, mgr *datastore.Manager, mailer kilonova.Mailer) (*BaseAPI, error) {

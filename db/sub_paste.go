@@ -55,6 +55,6 @@ func (s *DB) internalToPaste(ctx context.Context, p *dbPaste) (*kilonova.Submiss
 	return &kilonova.SubmissionPaste{
 		ID:         p.ID,
 		Submission: sub,
-		Author:     user.ToBrief(),
+		Author:     user.Brief(),
 	}, nil
 }

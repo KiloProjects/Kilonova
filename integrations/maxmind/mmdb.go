@@ -33,12 +33,12 @@ func IPData(ip netip.Addr) (*Data, error) {
 		data.City = ""
 	}
 
-	var subdivisions []map[string]interface{}
+	var subdivisions []map[string]any
 	if err := result.DecodePath(&subdivisions, "subdivisions"); err != nil {
 		data.Subdivisions = nil
 	} else {
 		for _, subdivision := range subdivisions {
-			data.Subdivisions = append(data.Subdivisions, subdivision["names"].(map[string]interface{})["en"].(string))
+			data.Subdivisions = append(data.Subdivisions, subdivision["names"].(map[string]any)["en"].(string))
 		}
 	}
 

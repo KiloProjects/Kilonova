@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/internal/repository"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -36,7 +37,8 @@ var (
 )
 
 type DB struct {
-	conn *pgxpool.Pool
+	conn     *pgxpool.Pool
+	userRepo *repository.UserRepository
 }
 
 func (s *DB) Close() error {
@@ -96,7 +98,7 @@ func NewPSQL(ctx context.Context, dsn string) (*DB, error) {
 		return nil, err
 	}
 
-	return &DB{pgconn}, nil
+	return &DB{pgconn, repository.NewUserRepository(pgconn)}, nil
 }
 
 func FormatLimitOffset(limit int, offset int) string {
@@ -161,7 +163,7 @@ func GetContextQueryCount(ctx context.Context) int64 {
 	return cnt.Load()
 }
 
-func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]interface{}) {
+func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]any) {
 	loggerOnce.Do(func() {
 		lvl := slog.LevelInfo
 		if config.Common.Debug {

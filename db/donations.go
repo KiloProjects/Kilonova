@@ -62,7 +62,7 @@ func (s *DB) internalToDonation(ctx context.Context, d *donation) (*kilonova.Don
 		if err != nil {
 			return nil, err
 		}
-		user = user1.ToBrief()
+		user = user1.Brief()
 	}
 	return &kilonova.Donation{
 		ID:        d.ID,

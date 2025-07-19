@@ -40,7 +40,11 @@ func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserF
 		return nil, Statusf(400, "Invalid login details")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(pwd))
+	hashedPassword, err := s.db.HashedPassword(ctx, user.ID)
+	if err != nil {
+		return nil, Statusf(400, "Invalid login details")
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(pwd))
 	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 		return nil, Statusf(400, "Invalid login details")
 	} else if err != nil {
@@ -49,7 +53,7 @@ func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserF
 		return nil, ErrUnknownError
 	}
 
-	return user.ToFull(), nil
+	return user, nil
 }
 
 // Signup

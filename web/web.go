@@ -160,6 +160,12 @@ func (rt *Web) Handler() http.Handler {
 		r.With(rt.mustBeVisitor).Get("/forgot_pwd", rt.justRender("auth/forgot_pwd_send.html"))
 
 		r.With(rt.mustBeAuthed).Get("/logout", rt.logout)
+		provider, err := rt.base.GetOIDCProvider(context.Background())
+		if err != nil {
+			slog.ErrorContext(context.Background(), "Failed to get OIDC provider", slog.Any("err", err))
+		} else {
+			r.Mount("/", provider)
+		}
 	})
 
 	r.Group(func(r chi.Router) {

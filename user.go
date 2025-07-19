@@ -109,8 +109,8 @@ type UserFilter struct {
 	// For session recognition
 	SessionID *string `json:"session_id"`
 
-	Limit  int `json:"limit"`
-	Offset int `json:"offset"`
+	Limit  uint64 `json:"limit"`
+	Offset uint64 `json:"offset"`
 }
 
 // UserUpdate is the struct with updatable fields that can be easily changed.

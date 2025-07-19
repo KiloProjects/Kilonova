@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/bwmarrin/discordgo"
 	"golang.org/x/crypto/bcrypt"
@@ -52,7 +51,7 @@ func (s *BaseAPI) UserFull(ctx context.Context, id int) (*kilonova.UserFull, err
 		}
 		return nil, fmt.Errorf("user not found: %w", ErrNotFound)
 	}
-	return user.ToFull(), nil
+	return user, nil
 }
 
 func (s *BaseAPI) UserBriefByName(ctx context.Context, name string) (*kilonova.UserBrief, error) {
@@ -72,7 +71,7 @@ func (s *BaseAPI) UserFullByName(ctx context.Context, name string) (*kilonova.Us
 	if err != nil || user == nil {
 		return nil, fmt.Errorf("user not found: %w", ErrNotFound)
 	}
-	return user.ToFull(), nil
+	return user, nil
 }
 
 func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*kilonova.UserFull, error) {
@@ -84,7 +83,7 @@ func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*kilonova.
 	if err != nil || user == nil {
 		return nil, fmt.Errorf("user not found: %w", ErrNotFound)
 	}
-	return user.ToFull(), nil
+	return user, nil
 }
 
 func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([]*kilonova.UserBrief, error) {
@@ -96,10 +95,10 @@ func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([
 	return mapUsersBrief(users), nil
 }
 
-func mapUsersBrief(users []*db.User) []*kilonova.UserBrief {
+func mapUsersBrief(users []*kilonova.UserFull) []*kilonova.UserBrief {
 	var usersBrief []*kilonova.UserBrief
 	for _, user := range users {
-		usersBrief = append(usersBrief, user.ToBrief())
+		usersBrief = append(usersBrief, user.Brief())
 	}
 	if len(usersBrief) == 0 {
 		return []*kilonova.UserBrief{}
@@ -226,12 +225,12 @@ func (s *BaseAPI) HistoricalUsernameHolder(ctx context.Context, name string) (*k
 }
 
 func (s *BaseAPI) VerifyUserPassword(ctx context.Context, uid int, password string) error {
-	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &uid})
-	if err != nil || user == nil {
+	hashedPassword, err := s.db.HashedPassword(ctx, uid)
+	if err != nil || hashedPassword == "" {
 		return fmt.Errorf("user not found: %w", ErrNotFound)
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 		return Statusf(400, "Invalid password")
 	} else if err != nil {

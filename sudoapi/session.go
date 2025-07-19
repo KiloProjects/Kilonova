@@ -55,7 +55,7 @@ func (s *BaseAPI) sessionUser(ctx context.Context, sid string) (*kilonova.UserFu
 	if err != nil {
 		return nil, fmt.Errorf("failed to get session user: %w", err)
 	}
-	return user.ToFull(), nil
+	return user, nil
 }
 
 // Cached function

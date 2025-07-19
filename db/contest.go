@@ -223,7 +223,7 @@ func (s *DB) classicToLeaderboardEntry(ctx context.Context, entry *databaseClass
 	}
 
 	return &kilonova.LeaderboardEntry{
-		User:          user.ToBrief(),
+		User:          user.Brief(),
 		TotalScore:    entry.Total,
 		ProblemScores: scores,
 
@@ -319,7 +319,7 @@ func (s *DB) icpcToLeaderboardEntry(ctx context.Context, entry *databaseICPCEntr
 	}
 
 	return &kilonova.LeaderboardEntry{
-		User:          user.ToBrief(),
+		User:          user.Brief(),
 		TotalScore:    decimal.Zero,
 		ProblemScores: scores,
 
@@ -413,11 +413,11 @@ func (s *DB) StripContestAccess(ctx context.Context, contestID int, uid int) err
 	return s.removeAccess(ctx, "contest_user_access", "contest_id", contestID, uid)
 }
 
-func (s *DB) contestEditors(ctx context.Context, contestID int) ([]*User, error) {
+func (s *DB) contestEditors(ctx context.Context, contestID int) ([]*kilonova.UserFull, error) {
 	return s.getAccessUsers(ctx, "contest_user_access", "contest_id", contestID, accessEditor)
 }
 
-func (s *DB) contestViewers(ctx context.Context, contestID int) ([]*User, error) {
+func (s *DB) contestViewers(ctx context.Context, contestID int) ([]*kilonova.UserFull, error) {
 	return s.getAccessUsers(ctx, "contest_user_access", "contest_id", contestID, accessViewer)
 }
 
@@ -495,21 +495,21 @@ func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilono
 	editors, err := s.contestEditors(ctx, contest.ID)
 	if err != nil {
 		slog.WarnContext(ctx, "Could not get contest editors", slog.Any("err", err))
-		editors = []*User{}
+		editors = []*kilonova.UserFull{}
 	}
 
 	viewers, err := s.contestViewers(ctx, contest.ID)
 	if err != nil {
 		slog.WarnContext(ctx, "Could not get contest viewers", slog.Any("err", err))
-		viewers = []*User{}
+		viewers = []*kilonova.UserFull{}
 	}
 
 	return &kilonova.Contest{
 		ID:         contest.ID,
 		CreatedAt:  contest.CreatedAt,
 		Name:       contest.Name,
-		Editors:    mapper(editors, toUserBrief),
-		Testers:    mapper(viewers, toUserBrief),
+		Editors:    mapper(editors, (*kilonova.UserFull).Brief),
+		Testers:    mapper(viewers, (*kilonova.UserFull).Brief),
 		PublicJoin: contest.PublicJoin,
 		StartTime:  contest.StartTime,
 		EndTime:    contest.EndTime,
@@ -535,4 +535,43 @@ func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilono
 		Visible: contest.Visible,
 		Type:    contest.Type,
 	}, nil
+}
+
+func userFilterQuery(filter *kilonova.UserFilter, fb *filterBuilder) {
+	if v := filter.ID; v != nil {
+		fb.AddConstraint("id = %s", v)
+	}
+	if v := filter.IDs; v != nil && len(v) == 0 {
+		fb.AddConstraint("0 = 1")
+	}
+	if v := filter.IDs; len(v) > 0 {
+		fb.AddConstraint("id = ANY(%s)", v)
+	}
+	if v := filter.Name; v != nil {
+		fb.AddConstraint("lower(name) = lower(%s)", v)
+	}
+	if v := filter.FuzzyName; v != nil {
+		fb.AddConstraint("position(lower(unaccent(%s)) in format('#%%s %%s', id, lower(unaccent(name)))) > 0", v)
+	}
+	if v := filter.Email; v != nil {
+		fb.AddConstraint("lower(email) = lower(%s)", v)
+	}
+	if v := filter.Admin; v != nil {
+		fb.AddConstraint("admin = %s", v)
+	}
+	if v := filter.Proposer; v != nil {
+		fb.AddConstraint("proposer = %s", v)
+	}
+
+	if v := filter.ContestID; v != nil {
+		fb.AddConstraint("EXISTS (SELECT 1 FROM contest_registrations WHERE user_id = users.id AND contest_id = %s)", v)
+	}
+
+	if v := filter.Generated; v != nil {
+		fb.AddConstraint("generated = %s", v)
+	}
+
+	if v := filter.SessionID; v != nil {
+		fb.AddConstraint("EXISTS (SELECT 1 FROM active_sessions WHERE user_id = users.id AND id = %s)", v)
+	}
 }

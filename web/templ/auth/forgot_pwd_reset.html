@@ -1,21 +1,25 @@
 {{define "title"}} {{getText "reset_pwd"}} {{end}}
 {{ define "content" }}
 
-<h1>{{getText "resetTitle" .User.Name}}</h1>
 
-<form class="segment-panel" id="pwd_reset_form" autocomplete="off">
-    <input type="hidden" id="pwd_reset_reqid" name="req_id" value="{{.RequestID}}" />
-    <input type="email" class="hidden" value="{{.User.Email}}"/>
-    <label class="block mb-2">
-        <span class="form-label">{{getText "newPwd"}}</span>
-		<input class="form-input w-full" type="password" id="pwd_reset_pwd" autocomplete="off" name="password" required/>
-    </label>
-    <label class="block mb-2">
-        <span class="form-label">{{getText "newPwdConfirm"}}</span>
-		<input class="form-input w-full" type="password" id="pwd_reset_pwd1" autocomplete="off" name="password" required/>
-    </label>
-    <button type="submit" class="block btn btn-blue">{{getText "reset"}}</button>
-</form>
+<div class="flex items-center justify-center min-h-screen">
+    <div style="width: 500px;">
+        <form class="segment-panel" id="pwd_reset_form" autocomplete="off">
+            <h1 class="mb-2">{{getText "resetTitle" .User.Name}}</h1>
+            <input type="hidden" id="pwd_reset_reqid" name="req_id" value="{{.RequestID}}" />
+            <input type="email" class="hidden" value="{{.User.Email}}"/>
+            <label class="block mb-2">
+                <span class="form-label">{{getText "newPwd"}}</span>
+                <input class="form-input w-full" type="password" id="pwd_reset_pwd" autocomplete="off" name="password" required/>
+            </label>
+            <label class="block mb-2">
+                <span class="form-label">{{getText "newPwdConfirm"}}</span>
+                <input class="form-input w-full" type="password" id="pwd_reset_pwd1" autocomplete="off" name="password" required/>
+            </label>
+            <button type="submit" class="block btn btn-blue">{{getText "reset"}}</button>
+        </form>
+    </div>
+</div>
 
 <script>
 

@@ -72,7 +72,7 @@ func (s *DB) internalToAuditLog(ctx context.Context, a *auditLog) (*kilonova.Aud
 		if err != nil {
 			return nil, err
 		}
-		author = fullAuthor.ToBrief()
+		author = fullAuthor.Brief()
 	}
 
 	return &kilonova.AuditLog{

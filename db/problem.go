@@ -356,11 +356,11 @@ func (s *DB) StripProblemAccess(ctx context.Context, pbid int, uid int) error {
 	return s.removeAccess(ctx, "problem_user_access", "problem_id", pbid, uid)
 }
 
-func (s *DB) ProblemEditors(ctx context.Context, pbid int) ([]*User, error) {
+func (s *DB) ProblemEditors(ctx context.Context, pbid int) ([]*kilonova.UserFull, error) {
 	return s.getAccessUsers(ctx, "problem_user_access", "problem_id", pbid, accessEditor)
 }
 
-func (s *DB) ProblemViewers(ctx context.Context, pbid int) ([]*User, error) {
+func (s *DB) ProblemViewers(ctx context.Context, pbid int) ([]*kilonova.UserFull, error) {
 	return s.getAccessUsers(ctx, "problem_user_access", "problem_id", pbid, accessViewer)
 }
 
