@@ -1,7 +1,8 @@
 {{ define "login_modal" }}
 
 <form class="segment-panel" id="login_form">
-    <h1 class="mb-2">{{getText "authenticate"}}</h1>
+    <!-- <img src="/static/logo.png" alt="Logo" class="w-20 h-20 mb-2 mx-auto"/> -->
+    <h1 class="mb-4 text-center">{{getText "authenticate"}}</h1>
 	<label class="block mb-2">
 		<span class="form-label">{{getText "username_email"}}</span>
 		<input class="form-input w-full" type="text" id="login_uname" name="username" />
@@ -10,7 +11,7 @@
 		<span class="form-label">{{getText "password"}}</span>
 		<input class="form-input w-full" type="password" id="login_upwd" name="password" />
 	</label>
-	<button class="block btn btn-blue">{{getText "auth.login"}}</button>
+	<button class="block btn btn-blue mb-3">{{getText "auth.login"}}</button>
     {{ if (boolFlag "feature.platform.signup") }}
 	    <p class="text-gray-600 dark:text-gray-300">{{getText "signupReminder" | safeHTML}}</p>
     {{ end }}

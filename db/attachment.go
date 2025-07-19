@@ -126,6 +126,9 @@ func (a *DB) UpdateAttachment(ctx context.Context, id int, upd *kilonova.Attachm
 	}
 	query, args, err := qb.ToSql()
 	if err != nil {
+		if err.Error() == "update statements must have at least one Set clause" {
+			return kilonova.ErrNoUpdates
+		}
 		return err
 	}
 	_, err = a.conn.Exec(ctx, query, args...)

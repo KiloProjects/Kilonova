@@ -90,6 +90,9 @@ func (s *DB) UpdateBlogPost(ctx context.Context, id int, upd kilonova.BlogPostUp
 	}
 	query, args, err := qb.ToSql()
 	if err != nil {
+		if err.Error() == "update statements must have at least one Set clause" {
+			return kilonova.ErrNoUpdates
+		}
 		return err
 	}
 	_, err = s.conn.Exec(ctx, query, args...)

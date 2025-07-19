@@ -12,7 +12,8 @@
 <div class="flex items-center justify-center min-h-[70vh]">
     <div style="width: 500px;">
         <form class="segment-panel" id="signup_form">
-            <h1 class="mb-2">{{getText "auth.signup"}}</h1>
+            <!-- <img src="/static/logo.png" alt="Logo" class="w-20 h-20 mb-2 mx-auto"/> -->
+            <h1 class="mb-4 text-center">{{getText "auth.signup"}}</h1>
             <label class="block mb-2">
                 <span>{{getText "email"}}</span>
                 <input class="form-input w-full" type="email" id="email" name="email" autocomplete="email" required />
@@ -78,7 +79,7 @@
             </script>
             {{end}}
 
-            <button type="submit" class="block btn btn-blue">{{getText "auth.signup"}}</button>
+            <button type="submit" class="block btn btn-blue mb-3">{{getText "auth.signup"}}</button>
             <p class="text-gray-500 dark:text-gray-300"> {{getText "loginReminder" | safeHTML}}</p>
         </form>
     </div>

@@ -5,7 +5,8 @@
 <div class="flex items-center justify-center min-h-[70vh]">
     <div style="width: 500px;">
         <form class="segment-panel" id="pwd_reset_form" autocomplete="off">
-            <h1 class="mb-2">{{getText "resetTitle" .User.Name}}</h1>
+            <!-- <img src="/static/logo.png" alt="Logo" class="w-20 h-20 mb-2 mx-auto"/> -->
+            <h1 class="mb-4 text-center">{{getText "resetTitle" .User.Name}}</h1>
             <input type="hidden" id="pwd_reset_reqid" name="req_id" value="{{.RequestID}}" />
             <input type="email" class="hidden" value="{{.User.Email}}"/>
             <label class="block mb-2">

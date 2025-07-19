@@ -189,6 +189,9 @@ func (s *DB) BulkUpdateProblems(ctx context.Context, filter kilonova.ProblemFilt
 	ub = problemUpdateQuery(&upd, ub)
 	query, args, err := ub.ToSql()
 	if err != nil {
+		if err.Error() == "update statements must have at least one Set clause" {
+			return nil, kilonova.ErrNoUpdates
+		}
 		return nil, err
 	}
 	rows, _ := s.conn.Query(ctx, query, args...)
