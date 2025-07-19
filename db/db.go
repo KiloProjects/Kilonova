@@ -11,8 +11,9 @@ import (
 
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/repository"
-	"github.com/davecgh/go-spew/spew"
+	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/multitracer"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -82,10 +83,10 @@ func NewPSQL(ctx context.Context, dsn string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	// pgconf.ConnConfig.Tracer = multitracer.New(
-	// 	&tracelog.TraceLog{Logger: tracelog.LoggerFunc(log), LogLevel: tracelog.LogLevelDebug},
-	// 	otelpgx.NewTracer(otelpgx.WithTrimSQLInSpanName()),
-	// )
+	pgconf.ConnConfig.Tracer = multitracer.New(
+		otelpgx.NewTracer(otelpgx.WithTrimSQLInSpanName()),
+		&tracelog.TraceLog{Logger: tracelog.LoggerFunc(log), LogLevel: tracelog.LogLevelDebug},
+	)
 
 	pgconf.MaxConns = 40
 	pgconf.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
@@ -188,8 +189,8 @@ func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[stri
 			dbLogger.WarnContext(ctx, "Really slow operation", slog.Duration("duration", dur), slog.Any("query", data["sql"]), slog.Any("args", data["args"]))
 		}
 	} else {
-		spew.Dump(data)
-		slog.WarnContext(ctx, "DB time is not duration", slog.Any("time", data["time"]))
+		//spew.Dump(data)
+		//slog.WarnContext(ctx, "DB time is not duration", slog.Any("time", data["time"]))
 	}
 
 	if CountQueries.Value() {

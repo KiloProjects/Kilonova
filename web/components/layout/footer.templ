@@ -115,32 +115,17 @@ templ Footer(prepareDuration time.Duration, renderStart time.Time, hashNamer Has
 	if domain := flags.GoatCounterDomain.Value(); len(domain) > 0 {
 		<script data-goatcounter={ domain + "/count" } async src={ domain + "/count.js" }></script>
 	}
+	<script>
+		localStorage.setItem("visa-use-ssrworker-v2", "true")
+	</script>
 	if val := flags.TwiplaID.Value();len(val) > 0 {
 		@TwiplaScript(val)
 	}
+	<!-- TWIPLA Tracking Code for kilonova.ro -->
+	<script>(function(v,i,s,a,t){v[t]=v[t]||function(){(v[t].v=v[t].v||[]).push(arguments)};if(!v._visaSettings){v._visaSettings={}}v._visaSettings[a]={v:'1.0',s:a,a:'1',t:t};var b=i.getElementsByTagName('body')[0];var p=i.createElement('script');p.defer=1;p.async=1;p.src=s+'?s='+a;b.appendChild(p)})(window,document,'//dev-worker.va-endpoint.com/main.js','4ddf9142-ae2a-11ef-905d-1249b64a8300','va')</script>
+	<!-- TWIPLA Tracking Code for kilonova.ro -->
 }
 
 templ TwiplaScript(websiteID string) {
-	<script>
-	(function(v, i, s, a, t) {
-        v[t] = v[t] || function() {
-            (v[t].v = v[t].v || []).push(arguments)
-        };
-        if (!v._visaSettings) {
-            v._visaSettings = {}
-        }
-        v._visaSettings[a] = {
-            v: '1.0',
-            s: a,
-            a: '1',
-            t: t
-        };
-        var b = i.getElementsByTagName('body')[0];
-        var p = i.createElement('script');
-        p.defer = 1;
-        p.async = 1;
-        p.src = s + '?s=' + a;
-        b.appendChild(p)
-    })(window, document, '//app-worker.visitor-analytics.io/main.js', {{ websiteID }}, 'va')
-	</script>
+	<script>(function(v,i,s,a,t){v[t]=v[t]||function(){(v[t].v=v[t].v||[]).push(arguments)};if(!v._visaSettings){v._visaSettings={}}v._visaSettings[a]={v:'1.0',s:a,a:'1',t:t};var b=i.getElementsByTagName('body')[0];var p=i.createElement('script');p.defer=1;p.async=1;p.src=s+'?s='+a;b.appendChild(p)})(window,document,'//app-worker.visitor-analytics.io/main.js',{{ websiteID }},'va')</script>
 }
