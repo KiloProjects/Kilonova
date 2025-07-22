@@ -10,12 +10,16 @@ var T = tutils.T
 templ LoginPage(
 	oidcID string,
 	back string,
+	errorMessage string,
 ) {
 	<div class="flex items-center justify-center min-h-[70vh]">
 		<div style="width: 500px;">
 			<form class="segment-panel" id="login_form" method="POST">
 				<!-- <img src="/static/logo.png" alt="Logo" class="w-20 h-20 mb-2 mx-auto"/> -->
 				<h1 class="mb-4 text-center">{ T(ctx, "authenticate") }</h1>
+				if errorMessage != "" {
+					<p class="text-red-500">{ errorMessage }</p>
+				}
 				if oidcID != "" {
 					<input type="hidden" name="oidcID" value={ oidcID }/>
 				}

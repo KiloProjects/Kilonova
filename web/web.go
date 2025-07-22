@@ -158,7 +158,7 @@ func (rt *Web) Handler() http.Handler {
 		r.Get("/privacyPolicy", rt.justRender("util/privacyPolicy.html"))
 
 		r.Get("/login", rt.getLogin)
-		r.With(op.NewIssuerInterceptor(rt.base.OIDCProvider().IssuerFromRequest).Handler).Post("/login", rt.postLogin)
+		r.With(op.NewIssuerInterceptor(rt.base.OIDCProvider().IssuerFromRequest).Handler).Post("/login", rt.handleLogin)
 		r.With(rt.mustBeVisitor).Get("/signup", rt.justRender("auth/signup.html"))
 		r.With(rt.mustBeVisitor).Get("/forgot_pwd", rt.justRender("auth/forgot_pwd_send.html"))
 

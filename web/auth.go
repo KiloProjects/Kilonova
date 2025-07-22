@@ -3,6 +3,8 @@ package web
 import (
 	"log/slog"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
@@ -12,13 +14,13 @@ import (
 )
 
 func (rt *Web) getLogin(w http.ResponseWriter, r *http.Request) {
-	back := rt.hostURL.JoinPath(r.URL.Query().Get("back")).String()
+	back := r.URL.Query().Get("back")
 	oidcID := r.URL.Query().Get("id")
 	if util.UserBrief(r) == nil {
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "auth.login"),
 			Head:    utilviews.CanonicalURL("/login"),
-			Content: authviews.LoginPage(oidcID, back),
+			Content: authviews.LoginPage(oidcID, back, ""),
 		})
 		return
 	}
@@ -31,13 +33,13 @@ func (rt *Web) getLogin(w http.ResponseWriter, r *http.Request) {
 
 	request, err := rt.base.GetAuthRequest(r.Context(), oidcID)
 	if err != nil {
-		rt.statusPage(w, r, http.StatusInternalServerError, "Invalid auth request")
+		rt.statusPage(w, r, http.StatusBadRequest, "Invalid auth request")
 		return
 	}
 
 	client, err := rt.base.GetOAuthClient(r.Context(), request.ApplicationID)
 	if err != nil {
-		rt.statusPage(w, r, http.StatusInternalServerError, "Invalid auth request")
+		rt.statusPage(w, r, http.StatusBadRequest, "Invalid auth request")
 		return
 	}
 
@@ -49,7 +51,77 @@ func (rt *Web) getLogin(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (rt *Web) handleLogin(w http.ResponseWriter, r *http.Request) {
+	switch r.FormValue("form_type") {
+	case "login":
+		rt.postLogin(w, r)
+	case "oauth_grant":
+		rt.postOAuthGrant(w, r)
+	}
+}
+
 func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+	oidcID := r.FormValue("oidcID")
+	back := r.FormValue("back")
+
+	user, status := rt.base.Login(r.Context(), username, password)
+	if status != nil {
+		w.WriteHeader(kilonova.ErrorCode(status))
+		rt.runLayout(w, r, &LayoutParams{
+			Title:   kilonova.GetText(util.Language(r), "auth.login"),
+			Head:    utilviews.CanonicalURL("/login"),
+			Content: authviews.LoginPage(oidcID, back, status.Error()),
+		})
+		return
+	}
+
+	if user.LockedLogin && !user.Admin {
+		// Lockout but don't lockout admins
+		w.WriteHeader(401)
+		rt.runLayout(w, r, &LayoutParams{
+			Title:   kilonova.GetText(util.Language(r), "auth.login"),
+			Head:    utilviews.CanonicalURL("/login"),
+			Content: authviews.LoginPage(oidcID, back, "Login for this account has been restricted by an administrator"),
+		})
+		return
+	}
+
+	sid, err := rt.base.CreateSession(r.Context(), user.ID)
+	if err != nil {
+		w.WriteHeader(kilonova.ErrorCode(err))
+		rt.runLayout(w, r, &LayoutParams{
+			Title:   kilonova.GetText(util.Language(r), "auth.login"),
+			Head:    utilviews.CanonicalURL("/login"),
+			Content: authviews.LoginPage(oidcID, back, err.Error()),
+		})
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "kn-sessionid",
+		Value:    sid,
+		Expires:  time.Now().Add(29 * 24 * time.Hour),
+		SameSite: http.SameSiteLaxMode,
+	})
+	checkDate := time.Now().Add(10 * 24 * time.Hour)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "kn-session-check-date",
+		Value:    strconv.FormatInt(checkDate.UnixMilli(), 10),
+		Expires:  time.Now().Add(29 * 24 * time.Hour),
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	if back == "" {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+
+	http.Redirect(w, r, rt.hostURL.JoinPath(back).String(), http.StatusFound)
+}
+
+func (rt *Web) postOAuthGrant(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("authRequestID")
 
 	if err := rt.base.ApproveAuthRequest(r.Context(), id, util.UserBrief(r).ID); err != nil {
