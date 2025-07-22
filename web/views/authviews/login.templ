@@ -1,0 +1,46 @@
+package authviews
+
+import (
+	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/KiloProjects/kilonova/web/tutils"
+)
+
+var T = tutils.T
+
+templ LoginPage(
+	oidcID string,
+	back string,
+) {
+	<div class="flex items-center justify-center min-h-[70vh]">
+		<div style="width: 500px;">
+			<form class="segment-panel" id="login_form" method="POST">
+				<!-- <img src="/static/logo.png" alt="Logo" class="w-20 h-20 mb-2 mx-auto"/> -->
+				<h1 class="mb-4 text-center">{ T(ctx, "authenticate") }</h1>
+				if oidcID != "" {
+					<input type="hidden" name="oidcID" value={ oidcID }/>
+				}
+				if back != "" {
+					<input type="hidden" name="back" value={ back }/>
+				}
+				<input type="hidden" name="form_type" value="login"/>
+				<label class="block mb-2">
+					<span class="form-label">{ T(ctx, "username_email") }</span>
+					<input class="form-input w-full" type="text" id="login_uname" name="username"/>
+				</label>
+				<label class="block mb-2">
+					<span class="form-label">{ T(ctx, "password") }</span>
+					<input class="form-input w-full" type="password" id="login_upwd" name="password"/>
+				</label>
+				<button class="block btn btn-blue mb-3">{ T(ctx, "auth.login") }</button>
+				if sudoapi.SignupEnabled.Value() {
+					<p class="text-gray-600 dark:text-gray-300">
+						@templ.Raw(T(ctx, "signupReminder"))
+					</p>
+				}
+				<p class="text-gray-600 dark:text-gray-300">
+					@templ.Raw(T(ctx, "forgot_pwd_announcement"))
+				</p>
+			</form>
+		</div>
+	</div>
+}

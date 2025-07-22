@@ -14,18 +14,18 @@ var _ op.AuthRequest = (*AuthRequest)(nil)
 
 type AuthRequest struct {
 	ID            uuid.UUID         `db:"id"`
-	AuthTime      time.Time         `db:"auth_time"`
+	AuthTime      *time.Time        `db:"auth_time"`
 	ApplicationID uuid.UUID         `db:"application_id"`
 	CallbackURI   string            `db:"callback_uri"`
 	TransferState string            `db:"transfer_state"`
-	UserID        int               `db:"user_id"`
+	UserID        *int              `db:"user_id"`
 	Scopes        []string          `db:"scopes"`
 	ResponseType  oidc.ResponseType `db:"response_type"`
 	ResponseMode  oidc.ResponseMode `db:"response_mode"`
 	Nonce         string            `db:"nonce"`
 
-	RequestDone bool   `db:"request_done"`
-	RequestCode string `db:"request_code"`
+	RequestDone bool    `db:"request_done"`
+	RequestCode *string `db:"request_code"`
 
 	// CodeChallenge is either:
 	// - empty string - no code challenge
@@ -61,7 +61,10 @@ func (a *AuthRequest) GetAudience() []string {
 }
 
 func (a *AuthRequest) GetAuthTime() time.Time {
-	return a.AuthTime
+	if a.AuthTime == nil {
+		return time.Time{}
+	}
+	return *a.AuthTime
 }
 
 func (a *AuthRequest) GetClientID() string {
@@ -107,7 +110,10 @@ func (a *AuthRequest) GetState() string {
 }
 
 func (a *AuthRequest) GetSubject() string {
-	return strconv.Itoa(a.UserID)
+	if a.UserID == nil {
+		return ""
+	}
+	return strconv.Itoa(*a.UserID)
 }
 
 func (a *AuthRequest) Done() bool {

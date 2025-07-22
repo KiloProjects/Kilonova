@@ -3147,3 +3147,15 @@ ro = "Format nou"
 [misconfigured_modal]
 en = "This modal was misconfigured. Please report this bug."
 ro = "Acest modal a fost configurat gresit. Vă rugăm să raportați acest bug."
+
+[authorize_application]
+en = "Authorize application"
+ro = "Autorizează aplicație"
+
+[authorize_application.description]
+en = "You are about to authorize the application <code>%s</code> to access your account. This will allow the application to access your account and perform actions on your behalf."
+ro = "Vă rugăm să vă autorizați aplicația <code>%s</code> să acceseze contul dumneavoastră. Aceasta va permite aplicației să acceseze contul dumneavoastră și să efectueze acțiuni în numele dumneavoastră."
+
+[authorize_application.scopes]
+en = "Requested scopes"
+ro = "Scopuri solicitate"

@@ -64,7 +64,45 @@
 
         {{ if boolFlag "feature.frontend.main_page_login" }}
         {{ if not authed}}
-            {{template "login_modal" .}}
+            <!-- Login modal is copy-pasted here-->
+            <form class="segment-panel" id="login_form">
+                <h1 class="mb-4">{{getText "authenticate"}}</h1>
+                <label class="block mb-2">
+                    <span class="form-label">{{getText "username_email"}}</span>
+                    <input class="form-input w-full" type="text" id="login_uname" name="username" />
+                </label>
+                <label class="block mb-2">
+                    <span class="form-label">{{getText "password"}}</span>
+                    <input class="form-input w-full" type="password" id="login_upwd" name="password" />
+                </label>
+                <button class="block btn btn-blue mb-3">{{getText "auth.login"}}</button>
+                {{ if (boolFlag "feature.platform.signup") }}
+                    <p class="text-gray-600 dark:text-gray-300">{{getText "signupReminder" | safeHTML}}</p>
+                {{ end }}
+                <p class="text-gray-600 dark:text-gray-300">{{getText "forgot_pwd_announcement" | safeHTML}}</p>
+            </form>
+
+            <script>
+            document.getElementById("login_form").addEventListener("submit", login)
+            async function login(e) {
+                e.preventDefault()
+                let username = document.getElementById("login_uname").value;
+                let password = document.getElementById("login_upwd").value;
+                
+                let res = await bundled.postCall("/auth/login", {username, password})
+                if(res.status == "error") {
+                    bundled.apiToast(res)
+                    return
+                }
+                bundled.setSession(res.data)
+                console.log(window.location.pathname)
+                if(window.location.pathname.startsWith("/login")) {
+                    bundled.navigateBack()
+                } else {
+                    window.location.reload()
+                }
+            }
+            </script>
         {{ end }}        
         {{ end }}
         

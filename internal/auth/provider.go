@@ -3,7 +3,6 @@ package auth
 import (
 	"crypto/sha256"
 	"log/slog"
-	"net/http"
 
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
@@ -11,7 +10,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-func GetProvider(storage *AuthStorage) (http.Handler, error) {
+func GetProvider(storage *AuthStorage) (*op.Provider, error) {
 	opConfig := &op.Config{
 		CryptoKey:                sha256.Sum256([]byte(CryptoKey.Value())),
 		DefaultLogoutRedirectURI: "/",

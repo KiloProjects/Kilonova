@@ -78,7 +78,7 @@ func (rt *Web) discordLink() http.HandlerFunc {
 }
 
 func (rt *Web) index() http.HandlerFunc {
-	templ := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html", "modals/contest_brief.html", "modals/login.html")
+	templ := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html", "modals/contest_brief.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		runningContests, err := rt.base.VisibleRunningContests(r.Context(), util.UserBrief(r))
 		if err != nil {

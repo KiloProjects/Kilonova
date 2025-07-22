@@ -35,6 +35,8 @@ type Client struct {
 
 	CreatedAt time.Time `db:"created_at"`
 	AuthorID  *int      `db:"author_id"`
+
+	Name string `db:"name"`
 }
 
 // GetID must return the client_id

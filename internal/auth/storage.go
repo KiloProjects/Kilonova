@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -21,7 +22,10 @@ import (
 	"golang.org/x/text/language"
 )
 
-const accessTokenLifetime = 5 * time.Minute
+const (
+	accessTokenLifetime  = 5 * time.Minute
+	refreshTokenLifetime = 48 * time.Hour
+)
 
 var _ op.Storage = (*AuthStorage)(nil)
 
@@ -67,10 +71,11 @@ func (s *AuthStorage) CreateAuthRequest(ctx context.Context, authReq *oidc.AuthR
 	}
 
 	if userID != "" {
-		req.UserID, err = strconv.Atoi(userID)
+		uid, err := strconv.Atoi(userID)
 		if err != nil {
 			return nil, err
 		}
+		req.UserID = &uid
 	}
 
 	if err := s.conn.QueryRow(ctx, `
@@ -117,7 +122,12 @@ func (s *AuthStorage) getAccessToken(ctx context.Context, tokenID uuid.UUID) (*T
 	return pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[Token])
 }
 
-func (s *AuthStorage) createAccessToken(ctx context.Context, applicationID uuid.UUID, refreshTokenID *uuid.UUID, userID *int, audience []string, scopes []string) (uuid.UUID, time.Time, error) {
+func (s *AuthStorage) getRefreshToken(ctx context.Context, tokenID uuid.UUID) (*Token, error) {
+	rows, _ := s.conn.Query(ctx, "SELECT * FROM oauth_tokens WHERE id = $1 AND token_type = $2", tokenID, TokenTypeRefresh)
+	return pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[Token])
+}
+
+func (s *AuthStorage) createAccessToken(ctx context.Context, applicationID uuid.UUID, refreshTokenID *uuid.UUID, userID *int, audience []string, scopes []string) (*Token, error) {
 	token := &Token{
 		ID:            uuid.Must(uuid.NewV7()),
 		CreatedAt:     time.Now(),
@@ -130,23 +140,95 @@ func (s *AuthStorage) createAccessToken(ctx context.Context, applicationID uuid.
 		TokenType:     TokenTypeAccess,
 	}
 
-	if err := s.conn.QueryRow(ctx, `
-		INSERT INTO oauth_tokens (id, created_at, expires_at, application_id, parent_token, user_id, audience, scopes, token_type)
+	if _, err := s.conn.Exec(ctx, `
+		INSERT INTO oauth_tokens (id, created_at, expires_at, application_id, from_token, user_id, audience, scopes, token_type)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id
-	`, token.ID, token.CreatedAt, token.ExpiresAt, token.ApplicationID, token.ParentToken, token.UserID, token.Audience, token.Scopes, token.TokenType).Scan(); err != nil {
-		return uuid.Nil, time.Time{}, err
+	`, token.ID, token.CreatedAt, token.ExpiresAt, token.ApplicationID, token.ParentToken, token.UserID, token.Audience, token.Scopes, token.TokenType); err != nil {
+		return nil, err
 	}
 
-	return token.ID, token.ExpiresAt, nil
+	return token, nil
 }
 
-func (s *AuthStorage) createRefreshToken() {
-	panic("not implemented") // TODO: Implement
+func (s *AuthStorage) createRefreshToken(ctx context.Context, accessToken *Token, amr []string, authTime time.Time) (*Token, error) {
+	token := &Token{
+		ID:            uuid.Must(uuid.NewV7()),
+		CreatedAt:     time.Now(),
+		ExpiresAt:     time.Now().Add(refreshTokenLifetime),
+		ApplicationID: accessToken.ApplicationID,
+		ParentToken:   &accessToken.ID,
+		UserID:        accessToken.UserID,
+		Scopes:        accessToken.Scopes,
+		Audience:      accessToken.Audience,
+		TokenType:     TokenTypeRefresh,
+
+		AMR:      amr,
+		AuthTime: &authTime,
+	}
+
+	if _, err := s.conn.Exec(ctx, `
+		INSERT INTO oauth_tokens (id, created_at, expires_at, application_id, from_token, user_id, audience, scopes, token_type, amr, auth_time)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+	`, token.ID, token.CreatedAt, token.ExpiresAt, token.ApplicationID, token.ParentToken, token.UserID, token.Audience, token.Scopes, token.TokenType, token.AMR, token.AuthTime); err != nil {
+		return nil, err
+	}
+
+	return token, nil
 }
 
-func (s *AuthStorage) exchangeRefreshToken(ctx context.Context, req op.TokenExchangeRequest) (accessTokenID string, newRefreshTokenID string, expiration time.Time, err error) {
-	panic("not implemented") // TODO: Implement
+func (s *AuthStorage) renewRefreshToken(ctx context.Context, currentRefreshTokenID uuid.UUID, newRefreshTokenID uuid.UUID, accessTokenID uuid.UUID) error {
+	return pgx.BeginFunc(ctx, s.conn, func(tx pgx.Tx) error {
+		rows, _ := tx.Query(ctx, "SELECT * FROM oauth_tokens WHERE id = $1 AND token_type = $2", currentRefreshTokenID, TokenTypeRefresh)
+		refreshToken, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[Token])
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.Exec(ctx, "DELETE FROM oauth_tokens WHERE id = $1", currentRefreshTokenID)
+		if err != nil {
+			return err
+		}
+
+		refreshToken.ID = newRefreshTokenID
+		refreshToken.ExpiresAt = time.Now().Add(refreshTokenLifetime)
+		refreshToken.ParentToken = &accessTokenID
+
+		if _, err = tx.Exec(ctx, `INSERT INTO oauth_tokens 
+		(id, created_at, expires_at, application_id, from_token, user_id, audience, scopes, token_type, amr, auth_time)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		`, newRefreshTokenID, refreshToken.CreatedAt, refreshToken.ExpiresAt, refreshToken.ApplicationID, refreshToken.ParentToken, refreshToken.UserID, refreshToken.Audience, refreshToken.Scopes, refreshToken.TokenType, refreshToken.AMR, refreshToken.AuthTime); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (s *AuthStorage) exchangeRefreshToken(ctx context.Context, req op.TokenExchangeRequest) (accessTokenID uuid.UUID, newRefreshTokenID uuid.UUID, expiration time.Time, err error) {
+	applicationID, err := uuid.Parse(req.GetClientID())
+	if err != nil {
+		return uuid.Nil, uuid.Nil, time.Time{}, err
+	}
+
+	authTime := req.GetAuthTime()
+
+	slog.InfoContext(ctx, "Exchange refresh token", slog.String("subject", req.GetSubject()))
+	userID, err := strconv.Atoi(req.GetSubject())
+	if err != nil {
+		return uuid.Nil, uuid.Nil, time.Time{}, err
+	}
+
+	accessToken, err := s.createAccessToken(ctx, applicationID, nil, &userID, req.GetAudience(), req.GetScopes())
+	if err != nil {
+		return uuid.Nil, uuid.Nil, time.Time{}, err
+	}
+
+	refreshToken, err := s.createRefreshToken(ctx, accessToken, nil, authTime)
+	if err != nil {
+		return uuid.Nil, uuid.Nil, time.Time{}, err
+	}
+
+	return accessToken.ID, refreshToken.ID, refreshToken.ExpiresAt, nil
 }
 
 // The TokenRequest parameter of CreateAccessToken can be any of:
@@ -172,16 +254,17 @@ func (s *AuthStorage) CreateAccessToken(ctx context.Context, req op.TokenRequest
 		}
 	}
 
+	slog.InfoContext(ctx, "Create access token", slog.String("subject", req.GetSubject()))
 	userID, err := strconv.Atoi(req.GetSubject())
 	if err != nil {
 		return "", time.Time{}, err
 	}
 
-	accessTokenID, expiration, err := s.createAccessToken(ctx, appID, nil, &userID, req.GetAudience(), req.GetScopes())
+	token, err := s.createAccessToken(ctx, appID, nil, &userID, req.GetAudience(), req.GetScopes())
 	if err != nil {
 		return "", time.Time{}, err
 	}
-	return accessTokenID.String(), expiration, nil
+	return token.ID.String(), token.ExpiresAt, nil
 }
 
 // The TokenRequest parameter of CreateAccessAndRefreshTokens can be any of:
@@ -198,13 +281,78 @@ func (s *AuthStorage) CreateAccessToken(ctx context.Context, req op.TokenRequest
 func (s *AuthStorage) CreateAccessAndRefreshTokens(ctx context.Context, request op.TokenRequest, currentRefreshToken string) (accessTokenID string, newRefreshTokenID string, expiration time.Time, err error) {
 	// generate tokens via token exchange flow if request is relevant
 	if teReq, ok := request.(op.TokenExchangeRequest); ok {
-		return s.exchangeRefreshToken(ctx, teReq)
+		accessTokenID, newRefreshTokenID, expiration, err := s.exchangeRefreshToken(ctx, teReq)
+		if err != nil {
+			return "", "", time.Time{}, err
+		}
+		return accessTokenID.String(), newRefreshTokenID.String(), expiration, nil
 	}
-	panic("TODO: Implement")
+
+	// get the information depending on the request type / implementation
+	applicationID, authTime, userID, amr := getInfoFromRequest(request)
+
+	// if currentRefreshToken is empty (Code Flow) we will have to create a new refresh token
+	if currentRefreshToken == "" {
+		accessToken, err := s.createAccessToken(ctx, applicationID, nil, userID, request.GetAudience(), request.GetScopes())
+		if err != nil {
+			return "", "", time.Time{}, err
+		}
+		refreshToken, err := s.createRefreshToken(ctx, accessToken, amr, authTime)
+		if err != nil {
+			return "", "", time.Time{}, err
+		}
+		return accessToken.ID.String(), refreshToken.ID.String(), refreshToken.ExpiresAt, nil
+	}
+
+	// if we get here, the currentRefreshToken was not empty, so the call is a refresh token request
+	// we therefore will have to check the currentRefreshToken and renew the refresh token
+
+	refreshTokenID, err := uuid.Parse(currentRefreshToken)
+	if err != nil {
+		return "", "", time.Time{}, err
+	}
+
+	newRefreshToken := uuid.Must(uuid.NewV7())
+
+	accessToken, err := s.createAccessToken(ctx, applicationID, &newRefreshToken, userID, request.GetAudience(), request.GetScopes())
+	if err != nil {
+		return "", "", time.Time{}, err
+	}
+
+	if err := s.renewRefreshToken(ctx, refreshTokenID, newRefreshToken, accessToken.ID); err != nil {
+		return "", "", time.Time{}, err
+	}
+
+	return accessToken.ID.String(), newRefreshToken.String(), accessToken.ExpiresAt, nil
+}
+
+// getInfoFromRequest returns the clientID, authTime and amr depending on the op.TokenRequest type / implementation
+func getInfoFromRequest(req op.TokenRequest) (applicationID uuid.UUID, authTime time.Time, userID *int, amr []string) {
+	authReq, ok := req.(*AuthRequest) // Code Flow (with scope offline_access)
+	if ok {
+		t := time.Time{}
+		if authReq.AuthTime != nil {
+			t = *authReq.AuthTime
+		}
+		return authReq.ApplicationID, t, authReq.UserID, authReq.GetAMR()
+	}
+	refreshReq, ok := req.(*RefreshTokenRequest) // Refresh Token Request
+	if ok {
+		return refreshReq.ApplicationID, refreshReq.GetAuthTime(), refreshReq.UserID, refreshReq.AMR
+	}
+	return uuid.Nil, time.Time{}, nil, nil
 }
 
 func (s *AuthStorage) TokenRequestByRefreshToken(ctx context.Context, refreshTokenID string) (op.RefreshTokenRequest, error) {
-	panic("not implemented") // TODO: Implement
+	val, err := uuid.Parse(refreshTokenID)
+	if err != nil {
+		return nil, err
+	}
+	token, err := s.getRefreshToken(ctx, val)
+	if err != nil {
+		return nil, err
+	}
+	return &RefreshTokenRequest{Token: token}, nil
 }
 
 func (s *AuthStorage) TerminateSession(ctx context.Context, userID string, clientID string) error {
@@ -215,7 +363,21 @@ func (s *AuthStorage) TerminateSession(ctx context.Context, userID string, clien
 // GetRefreshTokenInfo must return ErrInvalidRefreshToken when presented
 // with a token that is not a refresh token.
 func (s *AuthStorage) GetRefreshTokenInfo(ctx context.Context, clientID string, token string) (userID string, tokenID string, err error) {
-	panic("not implemented") // TODO: Implement
+	val, err := uuid.Parse(token)
+	if err != nil {
+		return "", "", op.ErrInvalidRefreshToken
+	}
+	refreshToken, err := s.getRefreshToken(ctx, val)
+	if err != nil {
+		return "", "", op.ErrInvalidRefreshToken
+	}
+	if refreshToken.TokenType != TokenTypeRefresh {
+		return "", "", op.ErrInvalidRefreshToken
+	}
+	if refreshToken.UserID != nil {
+		userID = strconv.Itoa(*refreshToken.UserID)
+	}
+	return userID, refreshToken.ID.String(), nil
 }
 
 // RevokeToken should revoke a token. In the situation that the original request was to
@@ -246,7 +408,14 @@ func (s *AuthStorage) KeySet(ctx context.Context) ([]op.Key, error) {
 
 func (s *AuthStorage) getClient(ctx context.Context, clientID string) (*Client, error) {
 	rows, _ := s.conn.Query(ctx, "SELECT * FROM oauth_clients WHERE id = $1", clientID)
-	return pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[Client])
+	client, err := pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[Client])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, oidc.ErrInvalidClient()
+		}
+		return nil, err
+	}
+	return client, nil
 }
 
 // GetClientByClientID loads a Client. The returned Client is never cached and is only used to

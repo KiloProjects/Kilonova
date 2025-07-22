@@ -53,6 +53,11 @@ var migrations = []migration{
 		name:    "External resources language support",
 		handler: runFile("006.external_resource_lang.sql"),
 	},
+	{
+		id:      7,
+		name:    "OAuth/OIDC support",
+		handler: runFile("007.oauth2_oidc.sql"),
+	},
 }
 
 var specialMigrations = []migration{

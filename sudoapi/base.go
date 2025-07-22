@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
 	"path"
 	"time"
@@ -19,6 +18,7 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer"
 	"github.com/Yiling-J/theine-go"
 	"github.com/bwmarrin/discordgo"
+	"github.com/zitadel/oidc/v3/pkg/op"
 )
 
 var (
@@ -61,6 +61,8 @@ type BaseAPI struct {
 	attachmentCacheBucket datastore.Bucket
 	subtestBucket         datastore.Bucket
 	avatarBucket          datastore.Bucket
+
+	oidcProvider *op.Provider
 }
 
 func (s *BaseAPI) Start(ctx context.Context) {
@@ -87,16 +89,7 @@ func (s *BaseAPI) Close() error {
 	return nil
 }
 
-func (s *BaseAPI) GetOIDCProvider(ctx context.Context) (http.Handler, error) {
-	storage := auth.NewAuthStorage(ctx, s.db.GetPool())
-	handler, err := auth.GetProvider(storage)
-	if err != nil {
-		return nil, err
-	}
-	return handler, nil
-}
-
-func GetBaseAPI(db *db.DB, mgr *datastore.Manager, mailer kilonova.Mailer) (*BaseAPI, error) {
+func GetBaseAPI(ctx context.Context, db *db.DB, mgr *datastore.Manager, mailer kilonova.Mailer) (*BaseAPI, error) {
 	base := &BaseAPI{
 		db:     db,
 		mailer: mailer,
@@ -129,6 +122,13 @@ func GetBaseAPI(db *db.DB, mgr *datastore.Manager, mailer kilonova.Mailer) (*Bas
 		return nil, fmt.Errorf("could not build session user cache: %w", err)
 	}
 	base.sessionUserCache = sUserCache
+
+	storage := auth.NewAuthStorage(ctx, base.db.GetPool())
+	provider, err := auth.GetProvider(storage)
+	if err != nil {
+		return nil, err
+	}
+	base.oidcProvider = provider
 	return base, nil
 }
 
@@ -168,7 +168,7 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, error) {
 		}
 	}
 
-	return GetBaseAPI(dbClient, mgr, knMailer)
+	return GetBaseAPI(ctx, dbClient, mgr, knMailer)
 }
 
 func InitQueryCounter(ctx context.Context) context.Context {

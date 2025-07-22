@@ -1,0 +1,29 @@
+package authviews
+
+import "github.com/KiloProjects/kilonova/internal/auth"
+
+templ OAuthGrant(authRequest *auth.AuthRequest, client *auth.Client) {
+	<div class="flex items-center justify-center min-h-[70vh]">
+		<div style="width: 500px;">
+			<form class="segment-panel" id="login_form">
+				<h1 class="mb-4 text-center">{ T(ctx, "authorize_application") }</h1>
+				<p>
+					@templ.Raw(T(ctx, "authorize_application.description", client.Name))
+				</p>
+				<p class="reset-list">
+					<strong>{ T(ctx, "authorize_application.scopes") }</strong>
+					<ul>
+						for _, scope := range authRequest.Scopes {
+							<li>{ scope }</li>
+						}
+					</ul>
+				</p>
+				<input type="hidden" name="form_type" value="oauth_grant"/>
+				<input type="hidden" name="client_id" value={ client.ID.String() }/>
+				<input type="hidden" name="request_id" value={ authRequest.ID.String() }/>
+				<button type="submit" class="btn btn-blue">{ T(ctx, "authorize") }</button>
+				<a href="/" class="btn">{ T(ctx, "cancel") }</a>
+			</form>
+		</div>
+	</div>
+}

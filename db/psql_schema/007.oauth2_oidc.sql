@@ -3,20 +3,22 @@ CREATE TABLE IF NOT EXISTS oauth_clients (
     id uuid PRIMARY KEY,
     allowed_redirects text[] NOT NULL,
     allowed_post_logout_redirects text[] NOT NULL,
-    app_type number NOT NULL,
+    app_type integer NOT NULL,
     developer_mode boolean NOT NULL,
 
     secret_hash text,
 
     created_at timestamp NOT NULL DEFAULT now(),
-    author_id bigint REFERENCES users(id) ON DELETE SET NULL
+    author_id bigint REFERENCES users(id) ON DELETE SET NULL,
+
+    name text NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS oauth_requests (
     id uuid PRIMARY KEY,
     created_at timestamp NOT NULL DEFAULT NOW(),
-    auth_time timestamp NOT NULL,
-    application_id uuid NOT NULL REFERENCES oauth_clients(id) ON DELETE CASCASE,
+    auth_time timestamp,
+    application_id uuid NOT NULL REFERENCES oauth_clients(id) ON DELETE CASCADE,
     callback_uri text NOT NULL,
     user_id bigint REFERENCES users(id) ON DELETE CASCADE,
     scopes text[] NOT NULL,
@@ -47,5 +49,8 @@ CREATE TABLE IF NOT EXISTS oauth_tokens (
     audience text[] NOT NULL,
     -- from_token is used to track the token that was used to create this specific token
     -- if the token is revoked, this token is also revoked
-    from_token uuid REFERENCES oauth_tokens(id) ON DELETE CASCADE
+    from_token uuid REFERENCES oauth_tokens(id) ON DELETE CASCADE,
+
+    amr text[],
+    auth_time timestamp
 );

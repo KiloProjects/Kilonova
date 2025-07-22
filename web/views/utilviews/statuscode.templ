@@ -3,7 +3,9 @@ package utilviews
 import (
 	"net/http"
 
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/web/tutils"
+	"net/url"
 )
 
 type StatusCodeParams struct {
@@ -24,4 +26,9 @@ templ StatusCode(params StatusCodeParams) {
 
 templ NoRobotsHead() {
 	<meta name="robots" content="none"/>
+}
+
+templ CanonicalURL(path string) {
+	{{ prefurl, _ := url.Parse(config.Common.HostPrefix) }}
+	<link rel="canonical" href={ prefurl.JoinPath(path).String() }/>
 }

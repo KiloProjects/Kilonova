@@ -29,6 +29,7 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/views/utilviews"
 	"github.com/a-h/templ"
+	"github.com/zitadel/oidc/v3/pkg/op"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/integrations/maxmind"
@@ -63,7 +64,8 @@ var fsys = hashfs.NewFS(embedded)
 type Web struct {
 	funcs template.FuncMap
 
-	base *sudoapi.BaseAPI
+	base    *sudoapi.BaseAPI
+	hostURL *url.URL
 }
 
 func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int, errMessage string) {
@@ -155,17 +157,13 @@ func (rt *Web) Handler() http.Handler {
 		r.Get("/termsOfService", rt.justRender("util/termsOfService.html"))
 		r.Get("/privacyPolicy", rt.justRender("util/privacyPolicy.html"))
 
-		r.With(rt.mustBeVisitor).Get("/login", rt.justRender("auth/login.html", "modals/login.html"))
+		r.Get("/login", rt.getLogin)
+		r.With(op.NewIssuerInterceptor(rt.base.OIDCProvider().IssuerFromRequest).Handler).Post("/login", rt.postLogin)
 		r.With(rt.mustBeVisitor).Get("/signup", rt.justRender("auth/signup.html"))
 		r.With(rt.mustBeVisitor).Get("/forgot_pwd", rt.justRender("auth/forgot_pwd_send.html"))
 
 		r.With(rt.mustBeAuthed).Get("/logout", rt.logout)
-		provider, err := rt.base.GetOIDCProvider(context.Background())
-		if err != nil {
-			slog.ErrorContext(context.Background(), "Failed to get OIDC provider", slog.Any("err", err))
-		} else {
-			r.Mount("/", provider)
-		}
+		r.Mount("/", rt.base.OIDCProvider())
 	})
 
 	r.Group(func(r chi.Router) {
@@ -623,9 +621,8 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"titleName": func(s string) string {
 			return cases.Title(language.English).String(s)
 		},
-		"hashedName": fsys.HashName,
-		"version":    func() string { return kilonova.Version },
-		"debug":      func() bool { return config.Common.Debug },
+		"version": func() string { return kilonova.Version },
+		"debug":   func() bool { return config.Common.Debug },
 
 		"formatCanonical": func(path string) string {
 			return hostURL.JoinPath(path).String()
@@ -853,10 +850,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			slog.ErrorContext(ctx, "Uninitialized `language`")
 			return "en"
 		},
-		"isDarkMode": func() bool {
-			slog.ErrorContext(ctx, "Uninitialized `isDarkMode`")
-			return true
-		},
 		"authed": func() bool {
 			slog.ErrorContext(ctx, "Uninitialized `authed`")
 			return false
@@ -918,7 +911,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return "", nil
 		},
 	}
-	return &Web{funcs, base}
+	return &Web{funcs, base, hostURL}
 }
 
 // staticFileServer is a modification of the original hashfs
