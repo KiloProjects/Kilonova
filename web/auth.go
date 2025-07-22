@@ -15,7 +15,7 @@ import (
 
 func (rt *Web) getLogin(w http.ResponseWriter, r *http.Request) {
 	back := r.URL.Query().Get("back")
-	oidcID := r.URL.Query().Get("id")
+	oidcID := r.URL.Query().Get("authRequestID")
 	if util.UserBrief(r) == nil {
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "auth.login"),

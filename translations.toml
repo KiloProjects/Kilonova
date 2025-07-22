@@ -3159,3 +3159,11 @@ ro = "Vă rugăm să vă autorizați aplicația <code>%s</code> să acceseze con
 [authorize_application.scopes]
 en = "Requested scopes"
 ro = "Scopuri solicitate"
+
+[auth.oauth_grant]
+en = "Authorize application"
+ro = "Autorizează aplicație"
+
+[button.authorize]
+en = "Authorize"
+ro = "Autorizează"
