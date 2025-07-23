@@ -355,7 +355,12 @@ func (s *AuthStorage) TokenRequestByRefreshToken(ctx context.Context, refreshTok
 }
 
 func (s *AuthStorage) TerminateSession(ctx context.Context, userID string, clientID string) error {
-	_, err := s.conn.Exec(ctx, "DELETE FROM oauth_tokens WHERE user_id = $1 AND application_id = $2", userID, clientID)
+	userIDInt, err := strconv.Atoi(userID)
+	if err != nil || clientID == "" {
+		return oidc.ErrInvalidRequest()
+	}
+
+	_, err = s.conn.Exec(ctx, "DELETE FROM oauth_tokens WHERE user_id = $1 AND application_id = $2", userIDInt, clientID)
 	return err
 }
 
