@@ -30,9 +30,13 @@ func (s *AuthStorage) CreateClient(ctx context.Context, name string, appType App
 func (s *AuthStorage) ApproveAuthRequest(ctx context.Context, reqID string, userID int) error {
 	_, err := s.conn.Exec(ctx, `
 		UPDATE oauth_requests
-		SET request_done = true, user_id = $2
+		SET request_done = true, user_id = $2, auth_time = NOW()
 		WHERE id = $1
 	`, reqID, userID)
 
 	return err
+}
+
+func (s *AuthStorage) GetAccessToken(ctx context.Context, tokenID uuid.UUID) (*Token, error) {
+	return s.getAccessToken(ctx, tokenID)
 }

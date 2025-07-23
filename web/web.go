@@ -29,7 +29,6 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/views/utilviews"
 	"github.com/a-h/templ"
-	"github.com/zitadel/oidc/v3/pkg/op"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/integrations/maxmind"
@@ -158,7 +157,7 @@ func (rt *Web) Handler() http.Handler {
 		r.Get("/privacyPolicy", rt.justRender("util/privacyPolicy.html"))
 
 		r.Get("/login", rt.getLogin)
-		r.With(op.NewIssuerInterceptor(rt.base.OIDCProvider().IssuerFromRequest).Handler).Post("/login", rt.handleLogin)
+		r.Post("/login", rt.handleLogin)
 		r.With(rt.mustBeVisitor).Get("/signup", rt.justRender("auth/signup.html"))
 		r.With(rt.mustBeVisitor).Get("/forgot_pwd", rt.justRender("auth/forgot_pwd_send.html"))
 
@@ -796,7 +795,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return code
 		},
 
-		"httpstatus":         http.StatusText,
 		"dump":               spew.Sdump,
 		"canJoinContest":     base.CanJoinContest,
 		"canSubmitInContest": base.CanSubmitInContest,

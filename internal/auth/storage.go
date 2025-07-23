@@ -254,7 +254,6 @@ func (s *AuthStorage) CreateAccessToken(ctx context.Context, req op.TokenRequest
 		}
 	}
 
-	slog.InfoContext(ctx, "Create access token", slog.String("subject", req.GetSubject()))
 	userID, err := strconv.Atoi(req.GetSubject())
 	if err != nil {
 		return "", time.Time{}, err
@@ -457,9 +456,7 @@ func (s *AuthStorage) setUserInfo(ctx context.Context, userinfo *oidc.UserInfo, 
 			userinfo.EmailVerified = oidc.Bool(user.VerifiedEmail)
 		case oidc.ScopeProfile:
 			userinfo.PreferredUsername = user.Name
-			userinfo.Name = user.Name
-			userinfo.FamilyName = user.Name
-			userinfo.GivenName = user.Name
+			userinfo.Picture = config.Common.HostPrefix + "/api/user/byName/" + user.Name + "/avatar?s=128"
 			switch user.PreferredLanguage {
 			case "en":
 				userinfo.Locale = oidc.NewLocale(language.English)
@@ -475,6 +472,8 @@ func (s *AuthStorage) setUserInfo(ctx context.Context, userinfo *oidc.UserInfo, 
 					userinfo.Locale = oidc.NewLocale(language.English)
 				}
 			}
+			userinfo.AppendClaims("admin", user.Admin)
+			userinfo.AppendClaims("proposer", user.Proposer)
 		case oidc.ScopePhone:
 			// We don't have phone numbers
 			// userInfo.PhoneNumber =

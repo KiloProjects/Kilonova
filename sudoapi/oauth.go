@@ -35,3 +35,7 @@ func (s *BaseAPI) GetOAuthClient(ctx context.Context, clientID uuid.UUID) (*auth
 	}
 	return client.(*auth.Client), nil
 }
+
+func (s *BaseAPI) GetAccessToken(ctx context.Context, tokenID uuid.UUID) (*auth.Token, error) {
+	return s.oidcProvider.Storage().(*auth.AuthStorage).GetAccessToken(ctx, tokenID)
+}

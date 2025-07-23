@@ -45,6 +45,12 @@ const (
 	BucketKey = KNContextType("bucket")
 	// ThemeKey is the key to be used for adding the user's preferred theme to context
 	ThemeKey = KNContextType("theme")
+
+	// ScopesKey is the key to be used for adding the scopes to context
+	ScopesKey = KNContextType("scopes")
+
+	// AuthMethodKey is the key to be used for adding the auth method to context
+	AuthMethodKey = KNContextType("authMethod")
 )
 
 func userBrief(ctx context.Context, key KNContextType) *kilonova.UserBrief {

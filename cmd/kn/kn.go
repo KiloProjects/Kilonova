@@ -17,6 +17,7 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/riandyrn/otelchi"
 	slogmulti "github.com/samber/slog-multi"
+	"github.com/zitadel/oidc/v3/pkg/op"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"gopkg.in/natefinch/lumberjack.v2"
 
@@ -202,6 +203,7 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 	*/
 	r.Use(middleware.RequestID)
 	r.Use(otelchi.Middleware("kilonova-web", otelchi.WithChiRoutes(r)))
+	r.Use(op.NewIssuerInterceptor(base.OIDCProvider().IssuerFromRequest).Handler)
 
 	r.Mount("/api", api.New(base).HandlerV1())
 	//r.Mount("/api/v2", api.New(base).HandlerV2())

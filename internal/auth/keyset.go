@@ -1,11 +1,13 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
-	"log"
+	"log/slog"
+	"os"
 
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/go-jose/go-jose/v4"
@@ -23,7 +25,8 @@ func getKey() (*rsa.PrivateKey, error) {
 	if RSAPrivateKey.Value() == "" {
 		rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
 		if err != nil {
-			log.Fatal(err)
+			slog.ErrorContext(context.Background(), "Failed to generate RSA key", slog.Any("err", err))
+			os.Exit(1)
 		}
 		privKey := x509.MarshalPKCS1PrivateKey(rsaKey)
 		RSAPrivateKey.Update(base64.StdEncoding.EncodeToString(privKey))

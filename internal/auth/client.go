@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -118,7 +119,7 @@ func (c *Client) RestrictAdditionalAccessTokenScopes() func(scopes []string) []s
 }
 
 func (c *Client) IsScopeAllowed(scope string) bool {
-	return false // TODO: Custom scopes
+	return slices.Contains(Scopes, scope)
 }
 
 func (c *Client) IDTokenUserinfoClaimsAssertion() bool {

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -27,7 +28,7 @@ func (rt *Web) getLogin(w http.ResponseWriter, r *http.Request) {
 
 	if oidcID == "" {
 		// authed, no openid flow, just redirect back
-		http.Redirect(w, r, back, http.StatusFound)
+		http.Redirect(w, r, rt.hostURL.JoinPath(back).String(), http.StatusFound)
 		return
 	}
 
@@ -113,12 +114,35 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	if back == "" {
-		http.Redirect(w, r, "/", http.StatusFound)
+	r = r.WithContext(context.WithValue(r.Context(), util.AuthedUserKey, user))
+
+	if oidcID == "" {
+		// authed, no openid flow, just redirect back
+		if back == "" {
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+		http.Redirect(w, r, rt.hostURL.JoinPath(back).String(), http.StatusFound)
 		return
 	}
 
-	http.Redirect(w, r, rt.hostURL.JoinPath(back).String(), http.StatusFound)
+	request, err := rt.base.GetAuthRequest(r.Context(), oidcID)
+	if err != nil {
+		rt.statusPage(w, r, http.StatusBadRequest, "Invalid auth request")
+		return
+	}
+
+	client, err := rt.base.GetOAuthClient(r.Context(), request.ApplicationID)
+	if err != nil {
+		rt.statusPage(w, r, http.StatusBadRequest, "Invalid auth request")
+		return
+	}
+
+	rt.runLayout(w, r, &LayoutParams{
+		Title:   kilonova.GetText(util.Language(r), "auth.oauth_grant"),
+		Head:    utilviews.CanonicalURL("/login"),
+		Content: authviews.OAuthGrant(request, client),
+	})
 }
 
 func (rt *Web) postOAuthGrant(w http.ResponseWriter, r *http.Request) {

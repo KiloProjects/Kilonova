@@ -56,7 +56,8 @@ func (s *API) HandlerV2() http.Handler {
 	}
 	r := chi.NewRouter()
 	api := humachi.New(r, humaConf)
-	api.UseMiddleware(s.SetupSessionV2)
+	api.UseMiddleware(s.SetupSessionV2(api))
+	api.UseMiddleware(s.CheckScopes(api))
 
 	return r
 }
