@@ -125,6 +125,10 @@ func ExecuteTask(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, req
 		return resp, nil
 	}
 
+	if bResp.Stats.MemoryLimitExceeded {
+		resp.Comments = "translate:memory_limit"
+	}
+
 	if _, ok := bResp.BucketFiles[boxOut]; !ok {
 		resp.Comments = "No output file found"
 		return resp, nil

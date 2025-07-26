@@ -81,4 +81,5 @@ type RunStats struct {
 
 	InternalMessage string `json:"internal_msg"`
 	// WallTime float64 `json:"wall_time"`
+	MemoryLimitExceeded bool `json:"memory_limit_exceeded"`
 }

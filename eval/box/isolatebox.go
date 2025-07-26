@@ -367,7 +367,9 @@ func parseMetaFile(ctx context.Context, r io.Reader, out bytes.Buffer) *eval.Run
 		case "time-wall":
 			// file.WallTime, _ = strconv.ParseFloat(val, 32)
 			continue
-		case "max-rss", "csw-voluntary", "csw-forced", "cg-enabled", "cg-oom-killed":
+		case "cg-oom-killed":
+			file.MemoryLimitExceeded = true
+		case "max-rss", "csw-voluntary", "csw-forced", "cg-enabled":
 			continue
 		default:
 			slog.InfoContext(ctx, "Unknown isolate stat", slog.String("key", key), slog.String("value", val))
