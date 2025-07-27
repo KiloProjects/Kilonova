@@ -55,6 +55,10 @@ type customChecker struct {
 	legacy bool
 }
 
+func (c *customChecker) Language() *eval.Language {
+	return c.mgr.LanguageFromFilename(c.filename)
+}
+
 // Prepare compiles the checker for the submission
 func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	var shouldCompile bool
@@ -78,7 +82,7 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	checkerPrepareMu.Lock()
 	defer checkerPrepareMu.Unlock()
 
-	lang := c.mgr.LanguageFromFilename(c.filename)
+	lang := c.Language()
 	if lang == nil {
 		slog.WarnContext(ctx, "Language not found for custom checker compilation", slog.String("filename", c.filename))
 		return "Couldn't compile checker", errors.New("unknown checker language")

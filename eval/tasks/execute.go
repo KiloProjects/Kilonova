@@ -3,7 +3,6 @@ package tasks
 import (
 	"cmp"
 	"context"
-	"errors"
 	"log/slog"
 	"maps"
 	"math"
@@ -134,12 +133,8 @@ type CommunicationResponse struct {
 	Score decimal.Decimal
 }
 
-func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, cName string, memQuota int64, req *CommunicationRequest, logger *slog.Logger) (*CommunicationResponse, error) {
+func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, req *CommunicationRequest, logger *slog.Logger) (*CommunicationResponse, error) {
 	logger.InfoContext(ctx, "Executing communication subtest", slog.Int("subtest_id", req.SubtestID), slog.Int("sub_id", req.SubID))
-
-	if cName == "" {
-		return nil, errors.New("no checker name provided")
-	}
 
 	managerBucketExec := bucketFileFromID(-req.SubID, 0777)
 	userBucketExec := bucketFileFromID(req.SubID, 0777)

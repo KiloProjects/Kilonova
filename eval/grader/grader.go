@@ -443,6 +443,16 @@ func (sh *submissionHandler) handleSubTest(ctx context.Context, checker checkers
 		}
 	}
 
+	// Hide fatal signals for ICPC submissions
+	if sh.sub.SubmissionType == kilonova.EvalTypeICPC {
+		if strings.Contains(output.Comments, "signal 9") {
+			output.Comments = "translate:memory_limit"
+		}
+		if strings.Contains(output.Comments, "Caught fatal signal") || strings.Contains(output.Comments, "Exited with error status") {
+			output.Comments = "translate:runtime_error"
+		}
+	}
+
 	if err := sh.base.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{Memory: &output.Memory, Percentage: &output.Score, Time: &output.Time, Verdict: &output.Comments, Done: &True}); err != nil {
 		return decimal.Zero, "", fmt.Errorf("error during evaltest updating: %w", err)
 	}
@@ -489,16 +499,6 @@ func (sh *submissionHandler) handleBatchSubTest(ctx context.Context, checker che
 		resp.Comments, testScore = checker.RunChecker(ctx, subTest.ID, *subTest.TestID)
 	}
 
-	// Hide fatal signals for ICPC submissions
-	if sh.sub.SubmissionType == kilonova.EvalTypeICPC {
-		if strings.Contains(resp.Comments, "signal 9") {
-			resp.Comments = "translate:memory_limit"
-		}
-		if strings.Contains(resp.Comments, "Caught fatal signal") || strings.Contains(resp.Comments, "Exited with error status") {
-			resp.Comments = "translate:runtime_error"
-		}
-	}
-
 	output := &subtestOutput{
 		Memory:   resp.Memory,
 		Time:     resp.Time,
@@ -510,7 +510,45 @@ func (sh *submissionHandler) handleBatchSubTest(ctx context.Context, checker che
 }
 
 func (sh *submissionHandler) handleCommunicationSubTest(ctx context.Context, checker checkers.Checker, subTest *kilonova.SubTest) (*subtestOutput, error) {
-	panic("TODO")
+	execRequest := &tasks.CommunicationRequest{
+		SubID:     sh.sub.ID,
+		SubtestID: subTest.ID,
+
+		UseStdin: sh.pb.ConsoleInput,
+
+		MemoryLimit: sh.pb.MemoryLimit,
+		TimeLimit:   sh.pb.TimeLimit,
+
+		SubLang:     sh.lang,
+		CheckerLang: checker.Language(),
+
+		TestID:           *subTest.TestID,
+		NumUserSandboxes: int64(sh.pb.CommunicationProcesses),
+	}
+
+	if execRequest.CheckerLang == nil {
+		return nil, fmt.Errorf("checker language not found")
+	}
+
+	resp, err := tasks.ExecuteCommunication(ctx, sh.runner, int64(sh.pb.MemoryLimit), execRequest, graderLogger)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't execute subtest: %w", err)
+	}
+
+	// Make sure TLEs are fully handled
+	if resp.Time > sh.pb.TimeLimit {
+		resp.Time = sh.pb.TimeLimit
+		resp.Comments = "translate:timeout"
+	}
+
+	output := &subtestOutput{
+		Memory:   resp.Memory,
+		Time:     resp.Time,
+		Comments: resp.Comments,
+		Score:    resp.Score,
+	}
+
+	return output, nil
 }
 
 func (sh *submissionHandler) markSubtestsDone(ctx context.Context) error {
