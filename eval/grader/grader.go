@@ -301,7 +301,6 @@ func (sh *submissionHandler) handleClassicSubmission(ctx context.Context, checke
 	var wg sync.WaitGroup
 
 	for _, subTest := range subTests {
-		subTest := subTest
 		wg.Add(1)
 
 		go func() {
@@ -430,22 +429,53 @@ func (sh *submissionHandler) handleSubTest(ctx context.Context, checker checkers
 		return decimal.Zero, "", kilonova.Statusf(400, "Trying to handle subtest whose test was purged. This should never happen")
 	}
 
-	execRequest := &tasks.ExecRequest{
+	var output *subtestOutput
+	var err error
+	if sh.pb.TaskType == kilonova.TaskTypeBatch {
+		output, err = sh.handleBatchSubTest(ctx, checker, subTest)
+		if err != nil {
+			return decimal.Zero, "", err
+		}
+	} else {
+		output, err = sh.handleCommunicationSubTest(ctx, checker, subTest)
+		if err != nil {
+			return decimal.Zero, "", err
+		}
+	}
+
+	if err := sh.base.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{Memory: &output.Memory, Percentage: &output.Score, Time: &output.Time, Verdict: &output.Comments, Done: &True}); err != nil {
+		return decimal.Zero, "", fmt.Errorf("error during evaltest updating: %w", err)
+	}
+
+	return output.Score, output.Comments, nil
+}
+
+type subtestOutput struct {
+	Memory   int
+	Time     float64
+	Comments string
+	Score    decimal.Decimal
+}
+
+func (sh *submissionHandler) handleBatchSubTest(ctx context.Context, checker checkers.Checker, subTest *kilonova.SubTest) (*subtestOutput, error) {
+	execRequest := &tasks.BatchRequest{
 		SubID:       sh.sub.ID,
 		SubtestID:   subTest.ID,
-		Filename:    sh.pb.TestName,
+		InputName:   sh.pb.TestName + ".in",
+		OutputName:  sh.pb.TestName + ".out",
 		MemoryLimit: sh.pb.MemoryLimit,
 		TimeLimit:   sh.pb.TimeLimit,
 		Lang:        sh.lang,
 		TestID:      *subTest.TestID,
 	}
 	if sh.pb.ConsoleInput {
-		execRequest.Filename = "stdin"
+		execRequest.InputName = "stdin"
+		execRequest.OutputName = "stdout"
 	}
 
-	resp, err := tasks.ExecuteTask(ctx, sh.runner, int64(sh.pb.MemoryLimit), execRequest, graderLogger)
+	resp, err := tasks.ExecuteBatch(ctx, sh.runner, int64(sh.pb.MemoryLimit), execRequest, graderLogger)
 	if err != nil {
-		return decimal.Zero, "", fmt.Errorf("couldn't execute subtest: %w", err)
+		return nil, fmt.Errorf("couldn't execute subtest: %w", err)
 	}
 	var testScore decimal.Decimal
 
@@ -469,10 +499,18 @@ func (sh *submissionHandler) handleSubTest(ctx context.Context, checker checkers
 		}
 	}
 
-	if err := sh.base.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{Memory: &resp.Memory, Percentage: &testScore, Time: &resp.Time, Verdict: &resp.Comments, Done: &True}); err != nil {
-		return decimal.Zero, "", fmt.Errorf("error during evaltest updating: %w", err)
+	output := &subtestOutput{
+		Memory:   resp.Memory,
+		Time:     resp.Time,
+		Comments: resp.Comments,
+		Score:    testScore,
 	}
-	return testScore, resp.Comments, nil
+
+	return output, nil
+}
+
+func (sh *submissionHandler) handleCommunicationSubTest(ctx context.Context, checker checkers.Checker, subTest *kilonova.SubTest) (*subtestOutput, error) {
+	panic("TODO")
 }
 
 func (sh *submissionHandler) markSubtestsDone(ctx context.Context) error {

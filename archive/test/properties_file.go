@@ -49,6 +49,9 @@ type PropertiesRaw struct {
 
 	ScorePrecision  *int32  `props:"score_precision"`
 	ScoringStrategy *string `props:"scoring_strategy"`
+	TaskType        *string `props:"task_type"`
+
+	CommunicationProcesses *int `props:"communication_processes"`
 }
 
 func ParsePropertiesFile(r io.Reader) (*PropertiesRaw, bool, error) {
@@ -196,6 +199,12 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, r io.Reader) error {
 	}
 	if rawProps.MergeAttachments != nil && (*rawProps.MergeAttachments == "true" || *rawProps.MergeAttachments == "false") {
 		ctx.params.MergeAttachments = (*rawProps.MergeAttachments == "true")
+	}
+	if rawProps.TaskType != nil && (*rawProps.TaskType == string(kilonova.TaskTypeBatch) || *rawProps.TaskType == string(kilonova.TaskTypeCommunication)) {
+		props.TaskType = kilonova.TaskType(*rawProps.TaskType)
+	}
+	if rawProps.CommunicationProcesses != nil {
+		props.CommunicationProcesses = rawProps.CommunicationProcesses
 	}
 
 	// handle subtasks

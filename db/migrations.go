@@ -58,6 +58,11 @@ var migrations = []migration{
 		name:    "OAuth/OIDC support",
 		handler: runFile("007.oauth2_oidc.sql"),
 	},
+	{
+		id:      8,
+		name:    "Communication tasks support",
+		handler: runFile("008.problem_task_type.sql"),
+	},
 }
 
 var specialMigrations = []migration{

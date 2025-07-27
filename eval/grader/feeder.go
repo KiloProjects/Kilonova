@@ -80,31 +80,27 @@ func (h *Handler) Languages() map[string]*eval.Language {
 }
 
 func (h *Handler) runSubmission(runner eval.BoxScheduler, sub *kilonova.Submission) error {
-	var subRunner eval.BoxScheduler
-	if sub.SubmissionType == kilonova.EvalTypeClassic {
-		r, err := runner.SubRunner(h.ctx, runner.NumConcurrent())
-		if err != nil {
-			return err
-		} else {
-			subRunner = r
-		}
-	} else {
-		r, err := runner.SubRunner(h.ctx, 1)
-		if err != nil {
-			return err
-		} else {
-			subRunner = r
-		}
-	}
+	// TODO: Do this in a smarter way
+	// var numConc int64
+	// if sub.SubmissionType == kilonova.EvalTypeClassic {
+	// 	numConc = runner.NumConcurrent()
+	// } else {
+	// 	numConc = 1
+	// }
+	// runner, err := runner.SubRunner(h.ctx, numConc)
+	// if err != nil {
+	// 	return err
+	// }
+
 	if err := h.base.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
 		return err
 	}
-	go func(sub *kilonova.Submission, r eval.BoxScheduler) {
-		defer r.Close(h.ctx)
-		if err := executeSubmission(h.ctx, h.base, r, sub); err != nil {
-			slog.WarnContext(h.ctx, "Couldn't run submission", slog.Any("err", err))
-		}
-	}(sub, subRunner)
+	// go func(sub *kilonova.Submission, runner eval.BoxScheduler) {
+	// defer runner.Close(h.ctx)
+	if err := executeSubmission(h.ctx, h.base, runner, sub); err != nil {
+		slog.WarnContext(h.ctx, "Couldn't run submission", slog.Any("err", err))
+	}
+	// }(sub, runner)
 	return nil
 }
 

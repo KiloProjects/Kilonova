@@ -41,6 +41,10 @@ type dbProblem struct {
 	DigitPrecision int32 `db:"digit_precision"`
 
 	ScoringStrategy kilonova.ScoringType `db:"scoring_strategy"`
+
+	TaskType kilonova.TaskType `db:"task_type"`
+
+	CommunicationProcesses int `db:"communication_num_processes"`
 }
 
 type dbScoredProblem struct {
@@ -141,9 +145,9 @@ ORDER BY cpbs.position ASC`, contestID, userID, freezeTime)
 }
 
 const problemCreateQuery = `INSERT INTO problems (
-	name, console_input, test_name, memory_limit, source_size, time_limit, visible, source_credits, default_points
+	name, console_input, test_name, memory_limit, source_size, time_limit, visible, source_credits, default_points, task_type
 ) VALUES (
-	$1, $2, $3, $4, $5, $6, $7, $8, $9
+	$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 ) RETURNING id;`
 
 func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID int) error {
@@ -162,8 +166,11 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID in
 	if p.SourceSize == 0 {
 		p.SourceSize = kilonova.DefaultSourceSize.Value()
 	}
+	if p.TaskType == kilonova.TaskTypeNone {
+		p.TaskType = kilonova.TaskTypeBatch
+	}
 	var id int
-	err := s.conn.QueryRow(ctx, problemCreateQuery, p.Name, p.ConsoleInput, p.TestName, p.MemoryLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.DefaultPoints).Scan(&id)
+	err := s.conn.QueryRow(ctx, problemCreateQuery, p.Name, p.ConsoleInput, p.TestName, p.MemoryLimit, p.SourceSize, p.TimeLimit, p.Visible, p.SourceCredits, p.DefaultPoints, p.TaskType).Scan(&id)
 	if err == nil {
 		p.ID = id
 	}
@@ -351,6 +358,12 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate, ub sq.UpdateBuilder) sq.Upd
 	if v := upd.ScorePrecision; v != nil {
 		ub = ub.Set("digit_precision", v)
 	}
+	if v := upd.TaskType; v != kilonova.TaskTypeNone {
+		ub = ub.Set("task_type", v)
+	}
+	if v := upd.CommunicationProcesses; v != nil {
+		ub = ub.Set("communication_num_processes", v)
+	}
 	return ub
 }
 
@@ -405,6 +418,10 @@ func (s *DB) internalToProblem(pb *dbProblem) *kilonova.Problem {
 
 		PublishedAt:     pb.PublishedAt,
 		ScoringStrategy: pb.ScoringStrategy,
+
+		TaskType: pb.TaskType,
+
+		CommunicationProcesses: pb.CommunicationProcesses,
 	}
 }
 

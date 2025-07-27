@@ -37,11 +37,6 @@ type customCheckerInput struct {
 	testID    int
 }
 
-type checkerResult struct {
-	Percentage decimal.Decimal
-	Output     string
-}
-
 // note that customChecker should not be used between submissions
 type customChecker struct {
 	mgr      eval.BoxScheduler
@@ -116,26 +111,18 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 func (c *customChecker) RunChecker(ctx context.Context, subtestID int, testID int) (string, decimal.Decimal) {
 	checkerPrepareMu.RLock()
 	defer checkerPrepareMu.RUnlock()
-	var out checkerResult
 
 	var task = standardCheckerTask
 	if c.legacy {
 		task = legacyCheckerTask
 	}
 
-	resp, err := task(ctx, c.mgr, &customCheckerInput{
+	return task(ctx, c.mgr, &customCheckerInput{
 		c: c,
 
 		subtestID: subtestID,
 		testID:    testID,
 	}, slog.Default())
-	if err != nil || resp == nil {
-		return ErrOut, decimal.Zero
-	}
-
-	out = *resp
-
-	return out.Output, out.Percentage
 }
 
 func (c *customChecker) Cleanup(_ context.Context) error {

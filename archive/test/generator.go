@@ -207,11 +207,14 @@ func (ag *archiveGenerator) addGraderProperties(ctx context.Context) error {
 		fmt.Fprintf(&buf, "console_input=%t\n", ag.pb.ConsoleInput)
 		fmt.Fprintf(&buf, "test_name=%s\n", ag.testName)
 		fmt.Fprintf(&buf, "scoring_strategy=%s\n", ag.pb.ScoringStrategy)
-
+		fmt.Fprintf(&buf, "task_type=%s\n", ag.pb.TaskType)
 		fmt.Fprintf(&buf, "problem_name=%s\n", ag.pb.Name)
 
 		if ag.pb.SourceCredits != "" {
 			fmt.Fprintf(&buf, "source=%s\n", ag.pb.SourceCredits)
+		}
+		if ag.pb.TaskType == kilonova.TaskTypeCommunication {
+			fmt.Fprintf(&buf, "communication_processes=%d\n", ag.pb.CommunicationProcesses)
 		}
 	}
 

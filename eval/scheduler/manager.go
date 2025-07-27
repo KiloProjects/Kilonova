@@ -4,13 +4,16 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"maps"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -19,12 +22,21 @@ import (
 	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"golang.org/x/sync/semaphore"
+	"golang.org/x/sys/unix"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
 	cmdAuditLogger *slog.Logger
-	loggerOnce     sync.Once
+	initLogger     = sync.OnceFunc(func() {
+		cmdAuditLogger = slog.New(slog.NewJSONHandler(&lumberjack.Logger{
+			Filename: path.Join(config.Common.LogDir, "sandbox_runs.log"),
+			MaxSize:  200, // MB
+			Compress: true,
+		}, &slog.HandlerOptions{
+			AddSource: false,
+		}))
+	})
 )
 
 type BoxFunc func(ctx context.Context, id int, mem int64, logger *slog.Logger) (eval.Sandbox, error)
@@ -44,8 +56,6 @@ type BoxManager struct {
 
 	availableIDs chan int
 
-	parentMgr *BoxManager
-
 	boxGenerator BoxFunc
 
 	languageVersionsMu sync.RWMutex
@@ -53,31 +63,6 @@ type BoxManager struct {
 	supportedLanguages map[string]*eval.Language
 
 	store *datastore.Manager
-}
-
-func (b *BoxManager) SubRunner(ctx context.Context, numConc int64) (eval.BoxScheduler, error) {
-	if err := b.concSem.Acquire(ctx, numConc); err != nil {
-		return nil, err
-	}
-
-	return &BoxManager{
-		numConcurrent: numConc,
-		concSem:       semaphore.NewWeighted(numConc),
-		memSem:        b.memSem,
-
-		logger: b.logger,
-
-		availableIDs: b.availableIDs,
-
-		parentMgr: b,
-
-		boxGenerator: b.boxGenerator,
-
-		languageVersions:   b.languageVersions,
-		supportedLanguages: b.supportedLanguages,
-
-		store: b.store,
-	}, nil
 }
 
 func (b *BoxManager) NumConcurrent() int64 {
@@ -115,11 +100,7 @@ func (b *BoxManager) releaseBox(ctx context.Context, sb eval.Sandbox) {
 // Close waits for all boxes to finish running
 func (b *BoxManager) Close(ctx context.Context) error {
 	b.concSem.Acquire(ctx, b.numConcurrent)
-	if b.parentMgr != nil {
-		b.parentMgr.concSem.Release(b.numConcurrent)
-	} else {
-		close(b.availableIDs)
-	}
+	close(b.availableIDs)
 	return nil
 }
 
@@ -143,8 +124,6 @@ func New(startingNumber int, count int, maxMemory int64, logger *slog.Logger, da
 		numConcurrent: int64(count),
 
 		logger: logger,
-
-		parentMgr: nil,
 
 		boxGenerator: boxGenerator,
 
@@ -219,8 +198,7 @@ func (mgr *BoxManager) LanguageFromFilename(filename string) *eval.Language {
 	}
 	// bestLang heuristic to match .cpp to cpp17
 	if fileExt == ".cpp" {
-		x := mgr.Language("cpp17")
-		if x != nil {
+		if x := mgr.Language("cpp17"); x != nil {
 			return x
 		}
 		// Otherwise fall back to earliest cpp version
@@ -244,17 +222,9 @@ func (mgr *BoxManager) LanguageFromFilename(filename string) *eval.Language {
 }
 
 func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQuota int64) (*eval.Box2Response, error) {
-	loggerOnce.Do(func() {
-		cmdAuditLogger = slog.New(slog.NewJSONHandler(&lumberjack.Logger{
-			Filename: path.Join(config.Common.LogDir, "sandbox_runs.log"),
-			MaxSize:  200, // MB
-			Compress: true,
-		}, &slog.HandlerOptions{
-			AddSource: false,
-		}))
-	})
+	initLogger()
 
-	goodCmd, err := makeGoodCommand(req.Command)
+	goodCmd, err := makeGoodCommand(req)
 	if err != nil {
 		slog.ErrorContext(ctx, "Error running MakeGoodCommand", slog.Any("err", err))
 		return nil, err
@@ -271,12 +241,216 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 	}
 	defer mgr.releaseBox(ctx, box)
 
+	if err := mgr.setupSandbox(ctx, box, req); err != nil {
+		return nil, err
+	}
+
+	stats, err := box.RunCommand(ctx, goodCmd, req.RunConfig)
+	if err != nil {
+		return nil, err
+	}
+	cmdAuditLogger.InfoContext(ctx, "Ran command",
+		slog.Any("command", goodCmd),
+		slog.Any("stats", stats),
+		slog.Any("output_byte_files", req.OutputByteFiles),
+		slog.Int64("mem_quota", memQuota),
+	)
+
+	return mgr.collectResponse(ctx, box, req, stats)
+}
+
+func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxRequest, managerMemQuota int64, individualMemQuota int64) (*eval.Box2Response, []*eval.RunStats, error) {
+	initLogger()
+
+	if managerMemQuota+int64(len(req.UserSandboxConfigs))*individualMemQuota > mgr.maxMemory {
+		return nil, nil, errors.New("total memory quota exceeds max memory")
+	}
+	if int64(len(req.UserSandboxConfigs)+1) > mgr.numConcurrent {
+		return nil, nil, errors.New("number of sandboxes exceeds max concurrent")
+	}
+
+	// Format commands for the sandboxes
+	var err error
+	req.ManagerSandbox.Command, err = makeGoodCommand(req.ManagerSandbox)
+	if err != nil {
+		slog.ErrorContext(ctx, "Error running MakeGoodCommand", slog.Any("err", err))
+		return nil, nil, err
+	}
+	for i := range req.UserSandboxConfigs {
+		req.UserSandboxConfigs[i].Command, err = makeGoodCommand(req.UserSandboxConfigs[i])
+		if err != nil {
+			slog.ErrorContext(ctx, "Error running MakeGoodCommand", slog.Any("err", err))
+			return nil, nil, err
+		}
+	}
+
+	// Acquire the semaphores for the manager and the user sandboxes
+	if err := mgr.concSem.Acquire(ctx, int64(len(req.UserSandboxConfigs)+1)); err != nil {
+		return nil, nil, err
+	}
+	defer mgr.concSem.Release(int64(len(req.UserSandboxConfigs) + 1))
+
+	// Initialize the communication FIFOs
+	fifoDirs := make([]string, len(req.UserSandboxConfigs))
+	fifoUserToManager := make([]string, len(req.UserSandboxConfigs))
+	fifoManagerToUser := make([]string, len(req.UserSandboxConfigs))
+	for i := range fifoDirs {
+		dir, err := os.MkdirTemp("", "comm-fifo-*")
+		if err != nil {
+			return nil, nil, err
+		}
+		defer os.RemoveAll(dir)
+
+		if err := os.Chmod(dir, 0755); err != nil {
+			return nil, nil, err
+		}
+		fifoDirs[i] = dir
+
+		fifoUserToManager[i] = path.Join(dir, fmt.Sprintf("u%d_to_m", i))
+		if err := unix.Mkfifo(fifoUserToManager[i], 0666); err != nil {
+			return nil, nil, err
+		}
+		fifoManagerToUser[i] = path.Join(dir, fmt.Sprintf("m%d_to_u", i))
+		if err := unix.Mkfifo(fifoManagerToUser[i], 0666); err != nil {
+			return nil, nil, err
+		}
+	}
+	sandboxFifoDirs := make([]string, len(req.UserSandboxConfigs))
+	sandboxFifoUserToManager := make([]string, len(req.UserSandboxConfigs))
+	sandboxFifoManagerToUser := make([]string, len(req.UserSandboxConfigs))
+	for i := range sandboxFifoDirs {
+		sandboxFifoDirs[i] = fmt.Sprintf("/fifo%d", i)
+		sandboxFifoUserToManager[i] = path.Join(sandboxFifoDirs[i], fmt.Sprintf("u%d_to_m", i))
+		sandboxFifoManagerToUser[i] = path.Join(sandboxFifoDirs[i], fmt.Sprintf("m%d_to_u", i))
+
+		req.ManagerSandbox.Command = append(req.ManagerSandbox.Command, sandboxFifoUserToManager[i], sandboxFifoManagerToUser[i])
+		req.ManagerSandbox.RunConfig.Directories = append(req.ManagerSandbox.RunConfig.Directories, eval.Directory{
+			In:   fifoDirs[i],
+			Out:  sandboxFifoDirs[i],
+			Opts: "rw",
+		})
+
+		req.UserSandboxConfigs[i].RunConfig.Directories = append(req.UserSandboxConfigs[i].RunConfig.Directories, eval.Directory{
+			In:   fifoDirs[i],
+			Out:  sandboxFifoDirs[i],
+			Opts: "rw",
+		})
+
+		if req.UseStdin {
+			req.UserSandboxConfigs[i].RunConfig.InputPath = sandboxFifoManagerToUser[i]
+			req.UserSandboxConfigs[i].RunConfig.OutputPath = sandboxFifoUserToManager[i]
+		} else {
+			req.UserSandboxConfigs[i].Command = append(req.UserSandboxConfigs[i].Command, sandboxFifoUserToManager[i], sandboxFifoManagerToUser[i])
+		}
+
+		if len(req.UserSandboxConfigs) > 1 {
+			req.UserSandboxConfigs[i].Command = append(req.UserSandboxConfigs[i].Command, strconv.Itoa(i))
+		}
+	}
+
+	// Initialize the sandboxes
+	managerBox, err := mgr.getBox(ctx, managerMemQuota)
+	if err != nil {
+		slog.WarnContext(ctx, "Could not get box", slog.Any("err", err))
+		return nil, nil, err
+	}
+	defer mgr.releaseBox(ctx, managerBox)
+
+	if err := mgr.setupSandbox(ctx, managerBox, req.ManagerSandbox); err != nil {
+		return nil, nil, err
+	}
+
+	userBoxes := make([]eval.Sandbox, len(req.UserSandboxConfigs))
+	for i := range req.UserSandboxConfigs {
+		userBoxes[i], err = mgr.getBox(ctx, individualMemQuota)
+		if err != nil {
+			slog.WarnContext(ctx, "Could not get box", slog.Any("err", err))
+			return nil, nil, err
+		}
+		defer mgr.releaseBox(ctx, userBoxes[i])
+
+		if err := mgr.setupSandbox(ctx, userBoxes[i], req.UserSandboxConfigs[i]); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	var wg sync.WaitGroup
+	userStats := make([]*eval.RunStats, len(req.UserSandboxConfigs))
+	wg.Add(len(req.UserSandboxConfigs) + 1)
+
+	errChan := make(chan error, len(req.UserSandboxConfigs)+1)
+	respChan := make(chan *eval.Box2Response, 1)
+
+	go func() {
+		defer wg.Done()
+		stats, err := managerBox.RunCommand(ctx, req.ManagerSandbox.Command, req.ManagerSandbox.RunConfig)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		cmdAuditLogger.InfoContext(ctx, "Ran manager command",
+			slog.Any("command", req.ManagerSandbox.Command),
+			slog.Any("stats", stats),
+			slog.Any("output_byte_files", req.ManagerSandbox.OutputByteFiles),
+			slog.Int64("mem_quota", managerMemQuota),
+		)
+
+		resp, err := mgr.collectResponse(ctx, managerBox, req.ManagerSandbox, stats)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		respChan <- resp
+	}()
+
+	for i := range req.UserSandboxConfigs {
+		go func(i int) {
+			defer wg.Done()
+			stats, err := userBoxes[i].RunCommand(ctx, req.UserSandboxConfigs[i].Command, req.UserSandboxConfigs[i].RunConfig)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			cmdAuditLogger.InfoContext(ctx, "Ran communication user command",
+				slog.Any("command", req.UserSandboxConfigs[i].Command),
+				slog.Any("stats", stats),
+				slog.Int64("mem_quota", individualMemQuota),
+			)
+			userStats[i] = stats
+		}(i)
+	}
+
+	wg.Wait()
+	close(errChan)
+	close(respChan)
+
+	var errs []error
+	for err := range errChan {
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(errs) > 0 {
+		return nil, userStats, errors.Join(errs...)
+	}
+
+	resp, ok := <-respChan
+	if !ok {
+		return nil, userStats, errors.New("no response from manager")
+	}
+
+	return resp, userStats, nil
+}
+
+// setupSandbox copies the request files into the sandbox.
+func (mgr *BoxManager) setupSandbox(ctx context.Context, box eval.Sandbox, req *eval.Box2Request) error {
 	for fpath, val := range req.InputByteFiles {
 		if val.Mode == 0 {
 			val.Mode = 0666
 		}
 		if err := box.WriteFile(fpath, bytes.NewReader(val.Data), val.Mode); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -295,21 +469,14 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 					slog.String("target_path", fpath), slog.Int("box_id", box.GetID()),
 				)
 			}
-			return nil, err
+			return err
 		}
 	}
 
-	stats, err := box.RunCommand(ctx, goodCmd, req.RunConfig)
-	if err != nil {
-		return nil, err
-	}
-	cmdAuditLogger.InfoContext(ctx, "Ran command",
-		slog.Any("command", goodCmd),
-		slog.Any("stats", stats),
-		slog.Any("output_byte_files", req.OutputByteFiles),
-		slog.Int64("mem_quota", memQuota),
-	)
+	return nil
+}
 
+func (mgr *BoxManager) collectResponse(ctx context.Context, box eval.Sandbox, req *eval.Box2Request, stats *eval.RunStats) (*eval.Box2Response, error) {
 	resp := &eval.Box2Response{
 		Stats:       stats,
 		ByteFiles:   make(map[string][]byte),
@@ -377,8 +544,8 @@ func copyInBox(b eval.Sandbox, bucket eval.Bucket, filename string, p2 string, m
 
 // makeGoodCommand makes sure it's a full path (with no symlinks) for the command.
 // Some languages (like java) are hidden pretty deep in symlinks, and we don't want a hardcoded path that could be different on other platforms.
-func makeGoodCommand(command []string) ([]string, error) {
-	tmp := slices.Clone(command)
+func makeGoodCommand(req *eval.Box2Request) ([]string, error) {
+	tmp := slices.Clone(req.Command)
 
 	if strings.HasPrefix(tmp[0], "/box") {
 		return tmp, nil
@@ -393,6 +560,7 @@ func makeGoodCommand(command []string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Latest fedora fix
 	if !strings.Contains(cmd2, "ccache") {
 		cmd = cmd2
 	}

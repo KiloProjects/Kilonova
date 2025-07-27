@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"maps"
 	"slices"
@@ -34,13 +35,20 @@ type CompileResponse struct {
 
 const compileOutputLimit = 4500 // runes
 
-// returns the filename to save with and the bucket to save into
-func bucketFromIDExec(id int) (datastore.BucketType, string) {
+func bucketFileFromID(id int, mode fs.FileMode) *eval.BucketFile {
 	if id < 0 { // checker
 		// use -id to turn back positive
-		return datastore.BucketTypeCheckers, fmt.Sprintf("%d.bin", -id)
+		return &eval.BucketFile{
+			Bucket:   datastore.BucketTypeCheckers,
+			Filename: fmt.Sprintf("%d.bin", -id),
+			Mode:     mode,
+		}
 	}
-	return datastore.BucketTypeCompiles, fmt.Sprintf("%d.bin", id)
+	return &eval.BucketFile{
+		Bucket:   datastore.BucketTypeCompiles,
+		Filename: fmt.Sprintf("%d.bin", id),
+		Mode:     mode,
+	}
 }
 
 func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest, logger *slog.Logger) (*CompileResponse, error) {
@@ -52,7 +60,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 		return resp, errors.New("no language found")
 	}
 
-	bucket, outName := bucketFromIDExec(req.ID)
+	bucketFile := bucketFileFromID(req.ID, 0777)
 	resp.Success = true
 
 	// If the language is interpreted, just save the code and leave
@@ -62,11 +70,11 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 			slog.WarnContext(ctx, "More than one file specified for non-compiled language. This is not properly supported")
 		}
 		for _, fData := range req.CodeFiles {
-			b, err := req.Store.Get(bucket)
+			b, err := req.Store.Get(bucketFile.Bucket)
 			if err != nil {
 				resp.Other = err.Error()
 				resp.Success = false
-			} else if err := b.WriteFile(outName, bytes.NewBuffer(fData), 0644); err != nil {
+			} else if err := b.WriteFile(bucketFile.Filename, bytes.NewBuffer(fData), 0644); err != nil {
 				resp.Other = err.Error()
 				resp.Success = false
 			}
@@ -81,11 +89,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 
 		// Compilation output
 		OutputBucketFiles: map[string]*eval.BucketFile{
-			req.Lang.CompiledName: {
-				Bucket:   bucket,
-				Filename: outName,
-				Mode:     0777,
-			},
+			req.Lang.CompiledName: bucketFile,
 		},
 		OutputByteFiles: []string{outputPath},
 

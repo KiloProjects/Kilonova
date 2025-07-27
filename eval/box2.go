@@ -34,6 +34,17 @@ type Box2Request struct {
 	OutputBucketFiles map[string]*BucketFile
 }
 
+type MultiboxRequest struct {
+	ManagerSandbox *Box2Request
+
+	// OutputByteFiles/OutputBucketFiles are ignored.
+	UserSandboxConfigs []*Box2Request
+
+	// UseStdin is true if the user sandboxes read from stdin and write to stdout.
+	// Otherwise, user processes read from and write to fifos whose paths are given as extra arguments.
+	UseStdin bool
+}
+
 type Box2Response struct {
 	Stats *RunStats
 

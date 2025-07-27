@@ -47,4 +47,4 @@ Editors and testers:
 
 ## Notes
 
--   USACO and ICPC features do not properly work the way people think, since ICPC scores are calculated using the contest's start time instead of the user start time.
+-   USACO and ICPC features do not properly work together, since ICPC scores are calculated using the contest's start time instead of the user start time.

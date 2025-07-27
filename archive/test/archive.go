@@ -59,6 +59,10 @@ type properties struct {
 
 	ScorePrecision  *int32
 	ScoringStrategy kilonova.ScoringType
+
+	TaskType kilonova.TaskType
+
+	CommunicationProcesses *int
 }
 
 func NewArchiveCtx(ctx context.Context, params *TestProcessParams, filesystem fs.FS) *ArchiveCtx {
@@ -498,6 +502,12 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 		}
 		if aCtx.props.ScoringStrategy != kilonova.ScoringTypeNone {
 			upd.ScoringStrategy, shouldUpd = aCtx.props.ScoringStrategy, true
+		}
+		if aCtx.props.TaskType != kilonova.TaskTypeNone {
+			upd.TaskType, shouldUpd = aCtx.props.TaskType, true
+		}
+		if aCtx.props.CommunicationProcesses != nil {
+			upd.CommunicationProcesses, shouldUpd = aCtx.props.CommunicationProcesses, true
 		}
 		if aCtx.props.ScorePrecision != nil {
 			upd.ScorePrecision, shouldUpd = aCtx.props.ScorePrecision, true

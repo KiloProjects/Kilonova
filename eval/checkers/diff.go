@@ -31,15 +31,15 @@ func (d *DiffChecker) RunChecker(ctx context.Context, subtestID int, testID int)
 	if err != nil {
 		return ErrOut, decimal.Zero
 	}
-	defer tf.Close()
 	defer os.Remove(tf.Name())
+	defer tf.Close()
 
 	cf, err := os.CreateTemp("", "correct-out-*")
 	if err != nil {
 		return ErrOut, decimal.Zero
 	}
-	defer cf.Close()
 	defer os.Remove(cf.Name())
+	defer cf.Close()
 
 	if err := redirBucketFile(tf, d.Store.Subtests(), strconv.Itoa(subtestID)); err != nil {
 		return ErrOut, decimal.Zero

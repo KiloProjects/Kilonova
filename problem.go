@@ -22,6 +22,14 @@ const (
 	ScoringTypeICPC        ScoringType = "acm-icpc"
 )
 
+type TaskType string
+
+const (
+	TaskTypeNone          TaskType = ""
+	TaskTypeBatch         TaskType = "batch"
+	TaskTypeCommunication TaskType = "communication"
+)
+
 type Problem struct {
 	ID        int       `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
@@ -49,6 +57,11 @@ type Problem struct {
 
 	PublishedAt     *time.Time  `json:"published_at"`
 	ScoringStrategy ScoringType `json:"scoring_strategy"`
+
+	TaskType TaskType `json:"task_type"`
+
+	// CommunicationProcesses is the number of processes that will be run in parallel for communication tasks
+	CommunicationProcesses int `json:"communication_processes"`
 }
 
 func (pb *Problem) LogValue() slog.Value {
@@ -159,6 +172,10 @@ type ProblemUpdate struct {
 
 	ScorePrecision  *int32      `json:"score_precision"`
 	ScoringStrategy ScoringType `json:"scoring_strategy"`
+
+	TaskType TaskType `json:"task_type"`
+
+	CommunicationProcesses *int `json:"communication_processes"`
 }
 
 type Attachment struct {
