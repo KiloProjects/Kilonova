@@ -5,6 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/KiloProjects/kilonova/datastore"
+	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/eval/tasks"
+	"github.com/KiloProjects/kilonova/internal/config"
+	"golang.org/x/sync/semaphore"
+	"golang.org/x/sys/unix"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"io/fs"
 	"log/slog"
 	"maps"
@@ -16,14 +23,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/KiloProjects/kilonova/datastore"
-	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/eval/tasks"
-	"github.com/KiloProjects/kilonova/internal/config"
-	"golang.org/x/sync/semaphore"
-	"golang.org/x/sys/unix"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
@@ -310,8 +309,14 @@ func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxReques
 		if err := unix.Mkfifo(fifoUserToManager[i], 0666); err != nil {
 			return nil, nil, err
 		}
-		fifoManagerToUser[i] = path.Join(dir, fmt.Sprintf("m%d_to_u", i))
+		if err := os.Chmod(fifoUserToManager[i], 0666); err != nil {
+			return nil, nil, err
+		}
+		fifoManagerToUser[i] = path.Join(dir, fmt.Sprintf("m_to_u%d", i))
 		if err := unix.Mkfifo(fifoManagerToUser[i], 0666); err != nil {
+			return nil, nil, err
+		}
+		if err := os.Chmod(fifoManagerToUser[i], 0666); err != nil {
 			return nil, nil, err
 		}
 	}
@@ -321,18 +326,18 @@ func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxReques
 	for i := range sandboxFifoDirs {
 		sandboxFifoDirs[i] = fmt.Sprintf("/fifo%d", i)
 		sandboxFifoUserToManager[i] = path.Join(sandboxFifoDirs[i], fmt.Sprintf("u%d_to_m", i))
-		sandboxFifoManagerToUser[i] = path.Join(sandboxFifoDirs[i], fmt.Sprintf("m%d_to_u", i))
+		sandboxFifoManagerToUser[i] = path.Join(sandboxFifoDirs[i], fmt.Sprintf("m_to_u%d", i))
 
-		req.ManagerSandbox.Command = append(req.ManagerSandbox.Command, sandboxFifoUserToManager[i], sandboxFifoManagerToUser[i])
 		req.ManagerSandbox.RunConfig.Directories = append(req.ManagerSandbox.RunConfig.Directories, eval.Directory{
-			In:   fifoDirs[i],
-			Out:  sandboxFifoDirs[i],
+			In:   sandboxFifoDirs[i],
+			Out:  fifoDirs[i],
 			Opts: "rw",
 		})
+		req.ManagerSandbox.Command = append(req.ManagerSandbox.Command, sandboxFifoUserToManager[i], sandboxFifoManagerToUser[i])
 
 		req.UserSandboxConfigs[i].RunConfig.Directories = append(req.UserSandboxConfigs[i].RunConfig.Directories, eval.Directory{
-			In:   fifoDirs[i],
-			Out:  sandboxFifoDirs[i],
+			In:   sandboxFifoDirs[i],
+			Out:  fifoDirs[i],
 			Opts: "rw",
 		})
 
@@ -340,7 +345,7 @@ func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxReques
 			req.UserSandboxConfigs[i].RunConfig.InputPath = sandboxFifoManagerToUser[i]
 			req.UserSandboxConfigs[i].RunConfig.OutputPath = sandboxFifoUserToManager[i]
 		} else {
-			req.UserSandboxConfigs[i].Command = append(req.UserSandboxConfigs[i].Command, sandboxFifoUserToManager[i], sandboxFifoManagerToUser[i])
+			req.UserSandboxConfigs[i].Command = append(req.UserSandboxConfigs[i].Command, sandboxFifoManagerToUser[i], sandboxFifoUserToManager[i])
 		}
 
 		if len(req.UserSandboxConfigs) > 1 {

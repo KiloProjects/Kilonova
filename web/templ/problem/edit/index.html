@@ -72,6 +72,19 @@
                             value="{{.Problem.SourceSize}}" />
                         <span class="ml-1 text-xl">Bytes</span>
                     </label>
+
+                    <label class="block my-2">
+                        <span class="form-label">{{getText "taskType"}}:</span>
+                        <select id="taskType" class="form-select">
+                            <option value="batch" {{if eq .Problem.TaskType `batch`}}selected{{end}}>{{getText "taskTypeBatch"}}</option>
+                            <option value="communication" {{if eq .Problem.TaskType `communication`}}selected{{end}}>{{getText "taskTypeCommunication"}}</option>
+                        </select>
+                    </label>
+                    <label class="block my-2">
+                        <span class="form-label">{{getText "communicationProcesses"}}:</span>
+                        <input id="communicationProcesses" class="form-input" type="number" min="1" max="5" step="1" pattern="[\d]*"
+                            value="{{.Problem.CommunicationProcesses}}" />
+                    </label>
                 </details>
 
                 <label class="block my-2">
@@ -237,6 +250,8 @@
             source_size: parseFloat(document.getElementById("sourceSize").value || "0"),
             score_precision: parseInt(document.getElementById("scorePrecision").value || "0"),
             visible_tests: document.getElementById("visibleTests").checked,
+            task_type: document.getElementById("taskType").value,
+            communication_processes: parseInt(document.getElementById("communicationProcesses").value || "1"),
         }
 
         if (data.name === "") {

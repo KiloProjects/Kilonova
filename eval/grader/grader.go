@@ -511,6 +511,7 @@ func (sh *submissionHandler) handleBatchSubTest(ctx context.Context, checker che
 
 func (sh *submissionHandler) handleCommunicationSubTest(ctx context.Context, checker checkers.Checker, subTest *kilonova.SubTest) (*subtestOutput, error) {
 	execRequest := &tasks.CommunicationRequest{
+		ProblemID: sh.pb.ID,
 		SubID:     sh.sub.ID,
 		SubtestID: subTest.ID,
 

@@ -3167,3 +3167,20 @@ ro = "Autorizează aplicație"
 [button.authorize]
 en = "Authorize"
 ro = "Autorizează"
+
+
+[taskType]
+en = "Task evaluation type"
+ro = "Tip evaluare problemă"
+
+[taskTypeBatch]
+en = "Batch"
+ro = "Batch"
+
+[taskTypeCommunication]
+en = "Communication"
+ro = "Comunicare"
+
+[communicationProcesses]
+en = "Number of submission communication processes"
+ro = "Număr de procese de comunicare ale submisiei"

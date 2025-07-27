@@ -17,7 +17,7 @@ import (
 
 const (
 	managerMemoryLimit = 512 * 1024
-	managerTimeLimit   = 20
+	managerTimeLimit   = 5
 )
 
 type BatchResponse struct {
@@ -97,7 +97,7 @@ func ExecuteBatch(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, re
 		resp := &BatchResponse{}
 		resp.Comments = "translate:internal_error"
 		if err != nil {
-			resp.Comments += "(" + err.Error() + ")"
+			resp.Comments += " (" + err.Error() + ")"
 		}
 		return resp, nil
 	}
@@ -112,6 +112,8 @@ func ExecuteBatch(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, re
 }
 
 type CommunicationRequest struct {
+	ProblemID int
+
 	SubID     int
 	SubtestID int
 	UseStdin  bool
@@ -136,7 +138,7 @@ type CommunicationResponse struct {
 func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, req *CommunicationRequest, logger *slog.Logger) (*CommunicationResponse, error) {
 	logger.InfoContext(ctx, "Executing communication subtest", slog.Int("subtest_id", req.SubtestID), slog.Int("sub_id", req.SubID))
 
-	managerBucketExec := bucketFileFromID(-req.SubID, 0777)
+	managerBucketExec := bucketFileFromID(-req.ProblemID, 0777)
 	userBucketExec := bucketFileFromID(req.SubID, 0777)
 
 	managerReq := &eval.Box2Request{
@@ -163,6 +165,7 @@ func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota i
 
 		OutputByteFiles: []string{"/box/verdict.out", "/box/verdict.err"},
 	}
+	managerReq.RunConfig.WallTimeLimit = managerReq.RunConfig.TimeLimit*2 + 1
 
 	// if our specified language is not compiled, then it means that
 	// the mounts specified should be added at runtime
@@ -210,7 +213,7 @@ func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota i
 		resp := &CommunicationResponse{}
 		resp.Comments = "translate:internal_error"
 		if err != nil {
-			resp.Comments += "(" + err.Error() + ")"
+			resp.Comments += " (" + err.Error() + ")"
 		}
 		return resp, nil
 	}
