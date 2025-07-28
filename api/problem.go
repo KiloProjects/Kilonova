@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -532,4 +533,84 @@ func (s *API) problemLanguages(ctx context.Context, _ struct{}) ([]*sudoapi.Lang
 
 func (s *API) getProblem(ctx context.Context, _ struct{}) (*kilonova.Problem, error) {
 	return util.ProblemContext(ctx), nil
+}
+
+// v2
+
+type ProblemGetInput struct {
+	Body struct {
+		//ID  *int  `json:"id"`
+		IDs []int `json:"ids"`
+		//ConsoleInput *bool `json:"console_input"`
+		//Visible *bool `json:"visible"`
+		Name *string `json:"name"`
+
+		FuzzyName *string `json:"name_fuzzy"`
+
+		//// DeepListID - the list ID in which to search recursively for problems
+		//DeepListID *int `json:"deep_list_id"`
+		//
+		//// EditorUserID filter marks if the user is part of the *editors* of the problem
+		//// Note that it excludes factors like admin or contest editor, it's just the editors in the access section.
+		//EditorUserID *int `json:"editor_user_id"`
+
+		Tags []*kilonova.TagGroup `json:"tags"`
+
+		// Should be "en" or "ro", if non-nil
+		Language *string `json:"lang"`
+
+		//UnsolvedBy  *int `json:"unsolved_by"`
+		//SolvedBy    *int `json:"solved_by"`
+		//AttemptedBy *int `json:"attempted_by"`
+
+		// This is actually not used during filtering in DB, it's used by (*api.API).searchProblems
+		//ScoreUserID *int `json:"score_user_id"`
+
+		Limit  uint64 `json:"limit"`
+		Offset uint64 `json:"offset"`
+
+		Ordering   string `json:"ordering"`
+		Descending bool   `json:"descending"`
+	}
+}
+
+type ProblemGetOutput struct {
+	Body problemSearchResult
+}
+
+func (s *API) problemGet(ctx context.Context, input *ProblemGetInput) (*ProblemGetOutput, error) {
+	args := kilonova.ProblemFilter{
+		IDs:       input.Body.IDs,
+		Name:      input.Body.Name,
+		FuzzyName: input.Body.FuzzyName,
+		Tags:      input.Body.Tags,
+		Language:  input.Body.Language,
+
+		Limit:  cmp.Or(input.Body.Limit, 10),
+		Offset: input.Body.Offset,
+
+		Ordering:   input.Body.Ordering,
+		Descending: input.Body.Descending,
+	}
+	args.Look = true
+	args.LookingUser = util.UserBriefContext(ctx)
+
+	if args.Limit == 0 || args.Limit > 50 {
+		args.Limit = 50
+	}
+
+	var scoreUser = util.UserBriefContext(ctx)
+	if args.ScoreUserID != nil {
+		user, err := s.base.UserBrief(ctx, *args.ScoreUserID)
+		if err != nil {
+			return nil, err
+		}
+		scoreUser = user
+	}
+
+	problems, cnt, err := s.base.SearchProblems(ctx, args, scoreUser, util.UserBriefContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+	return &ProblemGetOutput{problemSearchResult{Problems: problems, Count: cnt}}, nil
 }

@@ -206,7 +206,7 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 	r.Use(op.NewIssuerInterceptor(base.OIDCProvider().IssuerFromRequest).Handler)
 
 	r.Mount("/api", api.New(base).HandlerV1())
-	//r.Mount("/api/v2", api.New(base).HandlerV2())
+	r.Mount("/api/v2", api.New(base).HandlerV2())
 	r.Mount("/assets", api.NewAssets(base).AssetsRouter())
 
 	if templWeb {

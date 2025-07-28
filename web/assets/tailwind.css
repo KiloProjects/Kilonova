@@ -4,7 +4,17 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme {
+:root {
+	--border: var(--color-gray-700);
+}
+
+.dark {
+	--border: var(--color-gray-200);
+}
+
+@theme inline {
+	--color-border: var(--border);
+
 	--color-gray-50: oklch(0.985 0 0);
 	--color-gray-100: oklch(0.967 0.001 286.375);
 	--color-gray-200: oklch(0.92 0.004 286.32);
@@ -209,10 +219,6 @@
 	}
 }
 
-@utility kn-border {
-	@apply border-gray-700 dark:border-gray-200;
-}
-
 @utility border-gr {
 	@apply border-gray-300 dark:border-gray-700;
 }
@@ -316,7 +322,7 @@
 }
 
 @utility kn-table {
-	@apply border-2 border-collapse table-auto w-full mb-2 kn-border;
+	@apply border-2 border-collapse table-auto w-full mb-2 border-border;
 }
 
 @utility kn-table-slim {
@@ -324,7 +330,7 @@
 }
 
 @utility kn-table-simple-border {
-	@apply border-t kn-border;
+	@apply border-t border-border;
 }
 
 @utility kn-table-simple {
@@ -336,7 +342,7 @@
 }
 
 @utility kn-table-cell-notext {
-	@apply border-r px-4 py-2 kn-border;
+	@apply border-r px-4 py-2 border-border;
 }
 
 @utility kn-table-cell {

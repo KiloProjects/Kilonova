@@ -59,6 +59,12 @@ func (s *API) HandlerV2() http.Handler {
 	api.UseMiddleware(s.SetupSessionV2(api))
 	api.UseMiddleware(s.CheckScopes(api))
 
+	huma.Register(api, huma.Operation{
+		OperationID: "get-problems",
+		Method:      http.MethodGet,
+		Path:        "/problems",
+	}, s.problemGet)
+
 	return r
 }
 
