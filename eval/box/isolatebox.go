@@ -176,7 +176,8 @@ func (b *IsolateBox) runCommand(ctx context.Context, params []string, metaFile *
 	cmd.Stdout = &isolateOut
 	cmd.Stderr = &isolateOut
 	err := cmd.Run()
-	if _, ok := err.(*exec.ExitError); err != nil && !ok {
+	var exitError *exec.ExitError
+	if err != nil && !errors.As(err, &exitError) {
 		spew.Dump(err)
 		return nil, err
 	}

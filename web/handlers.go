@@ -802,7 +802,7 @@ func (rt *Web) problem() http.HandlerFunc {
 			atts = newAtts
 		}
 
-		langs, err := rt.base.ProblemLanguages(r.Context(), util.Problem(r).ID)
+		langs, err := rt.base.ProblemLanguages(r.Context(), util.Problem(r))
 		if err != nil {
 			slog.WarnContext(r.Context(), "Error getting problem languages", slog.Any("err", err), slog.Any("problem", util.Problem(r)))
 			rt.statusPage(w, r, 500, "Couldn't get supported problem languages.")
@@ -907,7 +907,7 @@ func (rt *Web) problemStatistics() http.HandlerFunc {
 func (rt *Web) problemSubmit() http.HandlerFunc {
 	templ := rt.parse(nil, "problem/pb_submit.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		langs, err := rt.base.ProblemLanguages(r.Context(), util.Problem(r).ID)
+		langs, err := rt.base.ProblemLanguages(r.Context(), util.Problem(r))
 		if err != nil {
 			slog.WarnContext(r.Context(), "Error getting problem languages", slog.Any("err", err), slog.Any("problem", util.Problem(r)))
 			rt.statusPage(w, r, 500, "Couldn't get supported problem languages.")
@@ -936,7 +936,7 @@ func (rt *Web) problemArchive() http.HandlerFunc {
 				tests = tests2
 			}
 		}
-		settings, err := rt.base.ProblemSettings(r.Context(), util.Problem(r).ID)
+		settings, err := rt.base.ProblemSettings(r.Context(), util.Problem(r))
 		if err != nil {
 			slog.WarnContext(r.Context(), "Could not get problem settings", slog.Any("err", err))
 			settings = nil

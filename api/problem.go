@@ -527,7 +527,7 @@ func (s *API) getProblemAccessControl(ctx context.Context, _ struct{}) (*problem
 }
 
 func (s *API) problemLanguages(ctx context.Context, _ struct{}) ([]*sudoapi.Language, error) {
-	return s.base.ProblemLanguages(ctx, util.ProblemContext(ctx).ID)
+	return s.base.ProblemLanguages(ctx, util.ProblemContext(ctx))
 }
 
 func (s *API) getProblem(ctx context.Context, _ struct{}) (*kilonova.Problem, error) {

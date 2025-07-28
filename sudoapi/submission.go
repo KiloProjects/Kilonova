@@ -420,7 +420,7 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 		return -1, Statusf(400, "Empty code")
 	}
 
-	langs, err := s.ProblemLanguages(ctx, problem.ID)
+	langs, err := s.ProblemLanguages(ctx, problem)
 	if err != nil {
 		return -1, fmt.Errorf("could not get problem languages: %w", err)
 	}

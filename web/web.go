@@ -318,8 +318,8 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 	}
 
 	funcs := template.FuncMap{
-		"problemSettings": func(problemID int) *kilonova.ProblemEvalSettings {
-			settings, err := base.ProblemSettings(ctx, problemID)
+		"problemSettings": func(problem *kilonova.Problem) *kilonova.ProblemEvalSettings {
+			settings, err := base.ProblemSettings(ctx, problem)
 			if err != nil {
 				slog.WarnContext(ctx, "Could not get problem settings", slog.Any("err", err))
 				return nil

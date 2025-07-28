@@ -202,7 +202,7 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		return fmt.Errorf("couldn't get submission problem: %w", err)
 	}
 
-	problemSettings, err := base.ProblemSettings(ctx, sub.ProblemID)
+	problemSettings, err := base.ProblemSettings(ctx, problem)
 	if err != nil {
 		return fmt.Errorf("couldn't get problem settings: %w", err)
 	}

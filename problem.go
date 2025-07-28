@@ -221,9 +221,10 @@ type ProblemEvalSettings struct {
 	HeaderFiles []string `json:"header_files"`
 	// List of all grader files detected in attachments. Further processing is required to filter by language on evaluation
 	GraderFiles []string `json:"grader_files"`
-	// If problem has custom checker, this is non-empty
+	// If the problem has a custom checker, this is non-empty.
+	// If the problem is of type Communication, CheckerName will have "manager" as stem instead of "checker"
 	CheckerName string `json:"has_checker"`
-	// If problem has custom checker that is marked as legacy
+	// If the problem has a custom checker marked as legacy
 	LegacyChecker bool `json:"legacy_checker"`
 
 	// Stores the list of languages that are allowed to be submitted based on existing attachments

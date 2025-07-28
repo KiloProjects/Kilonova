@@ -340,9 +340,9 @@ func (s *BaseAPI) RenderedBlogPostDesc(ctx context.Context, post *kilonova.BlogP
 	}
 }
 
-func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova.ProblemEvalSettings, error) {
+func (s *BaseAPI) ProblemSettings(ctx context.Context, problem *kilonova.Problem) (*kilonova.ProblemEvalSettings, error) {
 	var settings = &kilonova.ProblemEvalSettings{}
-	atts, err := s.ProblemAttachments(ctx, problemID)
+	atts, err := s.ProblemAttachments(ctx, problem.ID)
 	if err != nil {
 		slog.WarnContext(ctx, "Could not get problem settings", slog.Any("err", err))
 		return nil, fmt.Errorf("couldn't get problem settings: %w", err)
@@ -350,6 +350,10 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 
 	var whitelistC, whitelistCPP bool
 	var biggestCPP string
+	checkerStem := "checker"
+	if problem.TaskType == kilonova.TaskTypeCommunication {
+		checkerStem = "manager"
+	}
 
 	for _, att := range atts {
 		if !att.Exec {
@@ -357,12 +361,12 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 		}
 		filename := path.Base(att.Name)
 		filename = strings.TrimSuffix(filename, path.Ext(filename))
-		if filename == "checker_legacy" && s.LanguageFromFilename(ctx, att.Name) != "" {
+		if filename == checkerStem+"legacy" && s.LanguageFromFilename(ctx, att.Name) != "" {
 			settings.CheckerName = att.Name
 			settings.LegacyChecker = true
 			continue
 		}
-		if filename == "checker" && s.LanguageFromFilename(ctx, att.Name) != "" {
+		if filename == checkerStem && s.LanguageFromFilename(ctx, att.Name) != "" {
 			settings.CheckerName = att.Name
 			settings.LegacyChecker = false
 			continue
@@ -424,8 +428,8 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problemID int) (*kilonova
 
 // ProblemLanguages wraps around ProblemSettings to provide a better interface to expose to the API
 // And deduplicate separate code that handles allowed submission languages
-func (s *BaseAPI) ProblemLanguages(ctx context.Context, problemID int) ([]*Language, error) {
-	settings, err := s.ProblemSettings(ctx, problemID)
+func (s *BaseAPI) ProblemLanguages(ctx context.Context, problem *kilonova.Problem) ([]*Language, error) {
+	settings, err := s.ProblemSettings(ctx, problem)
 	if err != nil {
 		return nil, err
 	}
