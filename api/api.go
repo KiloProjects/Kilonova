@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/zitadel/oidc/v3/pkg/oidc"
 	"log/slog"
 	"mime"
 	"net/http"
@@ -48,10 +49,14 @@ func (s *API) HandlerV2() http.Handler {
 		{URL: prefixURL.JoinPath("api/v2").String()},
 	}
 	humaConf.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
-		"session": {
-			Type: "apiKey",
-			In:   "cookie",
-			Name: "kn-sessionid",
+		//"session": {
+		//	Type: "apiKey",
+		//	In:   "cookie",
+		//	Name: "kn-sessionid",
+		//},
+		"oauth": {
+			Type:             "openIdConnect",
+			OpenIDConnectURL: prefixURL.JoinPath(oidc.DiscoveryEndpoint).String(),
 		},
 	}
 	r := chi.NewRouter()
@@ -63,6 +68,7 @@ func (s *API) HandlerV2() http.Handler {
 		OperationID: "get-problems",
 		Method:      http.MethodGet,
 		Path:        "/problems",
+		Security:    []map[string][]string{{"oauth": {"api"}}},
 	}, s.problemGet)
 
 	return r
