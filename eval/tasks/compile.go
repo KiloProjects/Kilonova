@@ -99,8 +99,9 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 			InheritEnv:  true,
 			Directories: slices.Clone(req.Lang.Mounts),
 
-			TimeLimit:   60,         // 60 seconds
-			MemoryLimit: 512 * 1024, // 1024MB
+			TimeLimit:     20,         // 20 seconds
+			WallTimeLimit: 30,         // 30 seconds
+			MemoryLimit:   512 * 1024, // 1024MB
 
 			StderrToStdout: true,
 			OutputPath:     outputPath,

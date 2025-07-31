@@ -379,16 +379,20 @@ func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxReques
 		}
 	}
 
-	var wg sync.WaitGroup
+	var wg, userWg sync.WaitGroup
 	userStats := make([]*eval.RunStats, len(req.UserSandboxConfigs))
 	wg.Add(len(req.UserSandboxConfigs) + 1)
+	userWg.Add(len(req.UserSandboxConfigs))
 
 	errChan := make(chan error, len(req.UserSandboxConfigs)+1)
 	respChan := make(chan *eval.Box2Response, 1)
 
+	managerCtx, cancelManager := context.WithCancel(ctx)
+	userCtx, cancelUser := context.WithCancel(ctx)
+
 	go func() {
 		defer wg.Done()
-		stats, err := managerBox.RunCommand(ctx, req.ManagerSandbox.Command, req.ManagerSandbox.RunConfig)
+		stats, err := managerBox.RunCommand(managerCtx, req.ManagerSandbox.Command, req.ManagerSandbox.RunConfig)
 		if err != nil {
 			errChan <- err
 			return
@@ -406,12 +410,13 @@ func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxReques
 			return
 		}
 		respChan <- resp
+		cancelUser()
 	}()
 
 	for i := range req.UserSandboxConfigs {
 		go func(i int) {
 			defer wg.Done()
-			stats, err := userBoxes[i].RunCommand(ctx, req.UserSandboxConfigs[i].Command, req.UserSandboxConfigs[i].RunConfig)
+			stats, err := userBoxes[i].RunCommand(userCtx, req.UserSandboxConfigs[i].Command, req.UserSandboxConfigs[i].RunConfig)
 			if err != nil {
 				errChan <- err
 				return
@@ -424,6 +429,11 @@ func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxReques
 			userStats[i] = stats
 		}(i)
 	}
+
+	go func() {
+		userWg.Wait()
+		cancelManager()
+	}()
 
 	wg.Wait()
 	close(errChan)

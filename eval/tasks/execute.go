@@ -217,6 +217,7 @@ func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota i
 		}
 		return resp, nil
 	}
+	//spew.Dump(bResp.Stats, userStats)
 	userResp := parseResponse(ctx, mergeStats(true, userStats...), logger, req.SubtestID)
 	mgrResp := parseResponse(ctx, bResp.Stats, logger, req.SubtestID)
 	mgrResp.Time = userResp.Time
@@ -284,6 +285,10 @@ func mergeStats(concurrent bool, stats ...*eval.RunStats) *eval.RunStats {
 	var mergedStats eval.RunStats
 
 	for _, stat := range stats {
+		if stat == nil {
+			slog.WarnContext(context.Background(), "nil stat encountered")
+			continue
+		}
 		if concurrent {
 			mergedStats.Memory += stat.Memory
 			mergedStats.Time = max(mergedStats.Time, stat.Time)

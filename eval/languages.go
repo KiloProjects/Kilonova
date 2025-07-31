@@ -19,7 +19,7 @@ var Langs = map[string]Language{
 		InternalName:  "c",
 		MOSSName:      "cc", // Treat C as C++. Not necessarily correct but might help
 
-		CompileCommand: []string{"gcc", "-fuse-ld=mold", "-std=c11", "-O2", "-lm", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
+		CompileCommand: []string{"gcc", "-fuse-ld=mold", "-std=gnu11", "-O2", "-lm", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
 		RunCommand:     []string{"/box/output"},
 		SourceName:     "/box/main.c",
 		CompiledName:   "/box/output",

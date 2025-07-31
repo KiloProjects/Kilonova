@@ -21,7 +21,7 @@ var rowreg = /row-att-([0-9]+)/;
 const apiPrefix = {{.APIPrefix}};
 function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
     let isChanging = false;
-    if(name.startsWith("checker") || name.startsWith("grader")) {
+    if(name.startsWith("checker") || name.startsWith("grader") || name.startsWith("manager")) {
         if(cPrivate.checked === false || cExec.checked === false) {
             isChanging = true;
         }
@@ -35,14 +35,14 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
         cVisible.checked = true
         cExec.checked = false
     }
-    if(name.endsWith(".h")) {
+    if(name.endsWith(".h") || name.startsWith("stub")) {
         if(cVisible.checked === false || cExec.checked === false) {
             isChanging = true;
         }
         cVisible.checked = true
         cExec.checked = true
     }
-    if(name == ".output_only") {
+    if(name === ".output_only") {
         if(cVisible.checked != false || cExec.checked != true || cPrivate.checked != true) {
             isChanging = true
         }

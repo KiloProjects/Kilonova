@@ -131,6 +131,10 @@ func (rt *Web) Handler() http.Handler {
 	r.Use(rt.initLanguage)
 	r.Use(rt.initTheme)
 
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		rt.statusPage(w, r, 404, "")
+	})
+
 	r.Group(func(r chi.Router) {
 		// Util group. Will never be locked out
 
@@ -253,10 +257,6 @@ func (rt *Web) Handler() http.Handler {
 			"proposer/createproblem.html", "proposer/importproblem.html",
 			"proposer/createpblist.html", "proposer/createcontest.html",
 		))
-	})
-
-	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		rt.statusPage(w, r, 404, "")
 	})
 
 	rt.checkUsedFunctions()
