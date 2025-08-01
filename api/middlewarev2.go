@@ -1,6 +1,7 @@
 package api
 
 import (
+	"cmp"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -23,6 +24,7 @@ func (s *API) SetupSessionV2(api huma.API) func(ctx huma.Context, next func(huma
 		if h == "guest" {
 			h = ""
 		}
+		h = cmp.Or(h, ctx.Header("X-Api-Key"))
 
 		// Handle OAuth token
 		if strings.HasPrefix(h, "Bearer ") {
@@ -64,12 +66,15 @@ func (s *API) SetupSessionV2(api huma.API) func(ctx huma.Context, next func(huma
 				next(ctx)
 				return
 			}
+
 			trace.SpanFromContext(ctx.Context()).SetAttributes(attribute.Int("user.id", user.ID), attribute.String("user.name", user.Name))
 
 			next(huma.WithValue(
-				huma.WithValue(ctx, util.AuthedUserKey, user),
+				huma.WithValue(huma.WithValue(ctx, util.ScopesKey, token.Scopes),
+					util.AuthedUserKey, user),
 				util.AuthMethodKey, "oauth",
 			))
+			return
 		}
 
 		r, _ := humachi.Unwrap(ctx)

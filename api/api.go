@@ -54,6 +54,11 @@ func (s *API) HandlerV2() http.Handler {
 		//	In:   "cookie",
 		//	Name: "kn-sessionid",
 		//},
+		"apiKey": {
+			Type: "apiKey",
+			In:   "header",
+			Name: "X-Api-Key",
+		},
 		"oauth": {
 			Type:             "openIdConnect",
 			OpenIDConnectURL: prefixURL.JoinPath(oidc.DiscoveryEndpoint).String(),
@@ -70,6 +75,13 @@ func (s *API) HandlerV2() http.Handler {
 		Path:        "/problems",
 		Security:    []map[string][]string{{"oauth": {"api"}}},
 	}, s.problemGet)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "get-problems-by-id",
+		Method:      http.MethodGet,
+		Path:        "/problems/{problemID}",
+		Security:    []map[string][]string{{"oauth": {"api"}}},
+	}, s.problemSingleGet)
 
 	return r
 }

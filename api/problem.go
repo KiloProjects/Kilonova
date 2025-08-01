@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/danielgtaylor/huma/v2"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -538,7 +539,7 @@ func (s *API) getProblem(ctx context.Context, _ struct{}) (*kilonova.Problem, er
 // v2
 
 type ProblemGetInput struct {
-	Body struct {
+	Body *struct {
 		//ID  *int  `json:"id"`
 		IDs []int `json:"ids"`
 		//ConsoleInput *bool `json:"console_input"`
@@ -579,18 +580,21 @@ type ProblemGetOutput struct {
 }
 
 func (s *API) problemGet(ctx context.Context, input *ProblemGetInput) (*ProblemGetOutput, error) {
-	args := kilonova.ProblemFilter{
-		IDs:       input.Body.IDs,
-		Name:      input.Body.Name,
-		FuzzyName: input.Body.FuzzyName,
-		Tags:      input.Body.Tags,
-		Language:  input.Body.Language,
+	var args kilonova.ProblemFilter
+	if input.Body != nil {
+		args = kilonova.ProblemFilter{
+			IDs:       input.Body.IDs,
+			Name:      input.Body.Name,
+			FuzzyName: input.Body.FuzzyName,
+			Tags:      input.Body.Tags,
+			Language:  input.Body.Language,
 
-		Limit:  cmp.Or(input.Body.Limit, 10),
-		Offset: input.Body.Offset,
+			Limit:  cmp.Or(input.Body.Limit, 10),
+			Offset: input.Body.Offset,
 
-		Ordering:   input.Body.Ordering,
-		Descending: input.Body.Descending,
+			Ordering:   input.Body.Ordering,
+			Descending: input.Body.Descending,
+		}
 	}
 	args.Look = true
 	args.LookingUser = util.UserBriefContext(ctx)
@@ -613,4 +617,25 @@ func (s *API) problemGet(ctx context.Context, input *ProblemGetInput) (*ProblemG
 		return nil, err
 	}
 	return &ProblemGetOutput{problemSearchResult{Problems: problems, Count: cnt}}, nil
+}
+
+type ProblemSingleGetInput struct {
+	ProblemID int `path:"problemID"`
+}
+
+type ProblemSingleGetOutput struct {
+	Body *kilonova.Problem
+}
+
+func (s *API) problemSingleGet(ctx context.Context, input *ProblemSingleGetInput) (*ProblemSingleGetOutput, error) {
+	problem, err := s.base.Problem(ctx, input.ProblemID)
+	if err != nil {
+		return nil, huma.Error404NotFound("problem does not exist")
+	}
+
+	if !s.base.IsProblemVisible(util.UserBriefContext(ctx), problem) {
+		return nil, huma.Error401Unauthorized("You are not allowed to access this problem")
+	}
+
+	return &ProblemSingleGetOutput{problem}, nil
 }
