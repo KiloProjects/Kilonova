@@ -139,3 +139,38 @@ func (s *API) CheckScopes(api huma.API) func(ctx huma.Context, next func(huma.Co
 		}
 	}
 }
+
+// validateProblemID pre-emptively returns if there isn't a valid problem ID in the URL params
+// Also, it fetches the problem from the DB and makes sure it exists
+func (s *API) validateProblemIDv2(api huma.API) func(ctx huma.Context, next func(huma.Context)) {
+	return func(ctx huma.Context, next func(huma.Context)) {
+		problemID, err := strconv.Atoi(ctx.Param("problemID"))
+		if err != nil {
+			huma.WriteErr(api, ctx, http.StatusBadRequest, "Invalid problem ID", err)
+			return
+		}
+
+		problem, err := s.base.Problem(ctx.Context(), problemID)
+		if err != nil {
+			huma.WriteErr(api, ctx, http.StatusBadRequest, "Problem does not exist")
+			return
+		}
+
+		if !s.base.IsProblemVisible(util.UserBriefContext(ctx.Context()), problem) {
+			huma.WriteErr(api, ctx, http.StatusUnauthorized, "You are not allowed to access this problem")
+			return
+		}
+		next(huma.WithValue(ctx, util.ProblemKey, problem))
+	}
+}
+
+// MustBeAuthedV2 is middleware to make sure the user creating the request is authenticated
+func (s *API) MustBeAuthedV2(api huma.API) func(ctx huma.Context, next func(huma.Context)) {
+	return func(ctx huma.Context, next func(huma.Context)) {
+		if !util.UserBriefContext(ctx.Context()).IsAuthed() {
+			huma.WriteErr(api, ctx, http.StatusUnauthorized, "You must be authenticated to do this")
+			return
+		}
+		next(ctx)
+	}
+}

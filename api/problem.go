@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/danielgtaylor/huma/v2"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -619,23 +618,19 @@ func (s *API) problemGet(ctx context.Context, input *ProblemGetInput) (*ProblemG
 	return &ProblemGetOutput{problemSearchResult{Problems: problems, Count: cnt}}, nil
 }
 
-type ProblemSingleGetInput struct {
-	ProblemID int `path:"problemID"`
-}
-
 type ProblemSingleGetOutput struct {
 	Body *kilonova.Problem
 }
 
-func (s *API) problemSingleGet(ctx context.Context, input *ProblemSingleGetInput) (*ProblemSingleGetOutput, error) {
-	problem, err := s.base.Problem(ctx, input.ProblemID)
-	if err != nil {
-		return nil, huma.Error404NotFound("problem does not exist")
-	}
+func (s *API) problemSingleGet(ctx context.Context, _ *struct{}) (*ProblemSingleGetOutput, error) {
+	return &ProblemSingleGetOutput{util.ProblemContext(ctx)}, nil
+}
 
-	if !s.base.IsProblemVisible(util.UserBriefContext(ctx), problem) {
-		return nil, huma.Error401Unauthorized("You are not allowed to access this problem")
-	}
+type ProblemLanguagesOutput struct {
+	Body []*sudoapi.Language
+}
 
-	return &ProblemSingleGetOutput{problem}, nil
+func (s *API) problemLanguagesV2(ctx context.Context, _ *struct{}) (*ProblemLanguagesOutput, error) {
+	languages, err := s.base.ProblemLanguages(ctx, util.ProblemContext(ctx))
+	return &ProblemLanguagesOutput{languages}, err
 }

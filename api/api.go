@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/zitadel/oidc/v3/pkg/oidc"
 	"log/slog"
 	"mime"
 	"net/http"
 	"net/url"
 	"sync"
+
+	"github.com/zitadel/oidc/v3/pkg/oidc"
 
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/danielgtaylor/huma/v2"
@@ -73,15 +74,41 @@ func (s *API) HandlerV2() http.Handler {
 		OperationID: "get-problems",
 		Method:      http.MethodGet,
 		Path:        "/problems",
-		Security:    []map[string][]string{{"oauth": {"api"}}},
+		Security:    []map[string][]string{},
 	}, s.problemGet)
 
-	huma.Register(api, huma.Operation{
+	problemsGroup := huma.NewGroup(api, "/problems")
+	problemsGroup.UseMiddleware(s.validateProblemIDv2(problemsGroup))
+	problemsGroup.UseSimpleModifier(func(o *huma.Operation) {
+		o.Parameters = append(o.Parameters, &huma.Param{
+			Name:     "problemID",
+			In:       "path",
+			Required: true,
+			Example:  1,
+		})
+	})
+
+	huma.Register(problemsGroup, huma.Operation{
 		OperationID: "get-problems-by-id",
 		Method:      http.MethodGet,
-		Path:        "/problems/{problemID}",
-		Security:    []map[string][]string{{"oauth": {"api"}}},
+		Path:        "/{problemID}",
+		Security:    []map[string][]string{},
 	}, s.problemSingleGet)
+
+	huma.Register(problemsGroup, huma.Operation{
+		OperationID: "get-problems-languages",
+		Method:      http.MethodGet,
+		Path:        "/{problemID}/languages",
+		Security:    []map[string][]string{},
+	}, s.problemLanguagesV2)
+
+	huma.Register(problemsGroup, huma.Operation{
+		OperationID: "create-submission",
+		Method:      http.MethodPost,
+		Path:        "/{problemID}/submit",
+		Security:    []map[string][]string{},
+		Middlewares: huma.Middlewares{s.MustBeAuthedV2(problemsGroup)},
+	}, s.createSubmissionV2)
 
 	return r
 }

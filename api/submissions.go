@@ -10,6 +10,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/danielgtaylor/huma/v2"
 )
 
 func (s *API) fullSubmission(ctx context.Context, id int, lookingUser *kilonova.UserBrief, looking bool) (sub *sudoapi.FullSubmission, err error) {
@@ -144,4 +145,44 @@ func (s *API) exportSubmissions(ctx context.Context, args kilonova.SubmissionFil
 		exp[i] = &ExportedSubmission{sub, string(code)}
 	}
 	return exp, nil
+}
+
+type SubmissionCreateInput struct {
+	RawBody huma.MultipartFormFiles[struct {
+		Language  string        `form:"language" required:"true"`
+		Code      huma.FormFile `form:"code" required:"true"`
+		ContestID int           `form:"contest_id"`
+	}]
+}
+
+type SubmissionCreateOutput struct {
+	Body int
+}
+
+func (s *API) createSubmissionV2(ctx context.Context, args *SubmissionCreateInput) (*SubmissionCreateOutput, error) {
+	data := args.RawBody.Data()
+	defer data.Code.Close()
+
+	lang := s.base.Language(ctx, data.Language)
+	if lang == nil {
+		return nil, huma.Error400BadRequest("Invalid language")
+	}
+
+	code, err := io.ReadAll(data.Code)
+	if err != nil {
+		slog.WarnContext(ctx, "Could not read source code", slog.Any("err", err))
+		return nil, huma.Error500InternalServerError("Could not read source code", err)
+	}
+
+	var cid *int
+	if data.ContestID > 0 {
+		cid = &data.ContestID
+	}
+
+	id, err := s.base.CreateSubmission(context.WithoutCancel(ctx), util.UserFullContext(ctx), util.ProblemContext(ctx), code, lang, cid, false)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Could not create submission", err)
+	}
+
+	return &SubmissionCreateOutput{id}, nil
 }
