@@ -77,6 +77,13 @@ func (s *API) HandlerV2() http.Handler {
 		Security:    []map[string][]string{},
 	}, s.problemGet)
 
+	huma.Register(api, huma.Operation{
+		OperationID: "get-submission",
+		Method:      http.MethodGet,
+		Path:        "/submissions/{subID}",
+		Security:    []map[string][]string{},
+	}, s.submissionGet)
+
 	problemsGroup := huma.NewGroup(api, "/problems")
 	problemsGroup.UseMiddleware(s.validateProblemIDv2(problemsGroup))
 	problemsGroup.UseSimpleModifier(func(o *huma.Operation) {

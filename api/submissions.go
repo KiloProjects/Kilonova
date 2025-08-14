@@ -186,3 +186,21 @@ func (s *API) createSubmissionV2(ctx context.Context, args *SubmissionCreateInpu
 
 	return &SubmissionCreateOutput{id}, nil
 }
+
+type SubmissionGetInput struct {
+	SubmissionID int `path:"subID"`
+}
+
+type SubmissionGetOutput struct {
+	Body *sudoapi.FullSubmission
+}
+
+// submissionGet returns a submission based on an ID
+func (s *API) submissionGet(ctx context.Context, args *SubmissionGetInput) (*SubmissionGetOutput, error) {
+	sub, err := s.fullSubmission(ctx, args.SubmissionID, util.UserBriefContext(ctx), true)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Could not get submission", err)
+	}
+
+	return &SubmissionGetOutput{sub}, nil
+}
