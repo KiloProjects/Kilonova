@@ -16,7 +16,7 @@ TODO FOR 1.0:
     - [~] Eh... Allow tests to have names
     - [~] Eh... Selector to choose archive type (Classic, CMS, Polygon)
 - [x] Fractional score
-- [ ] OAuth API
+- [x] OAuth API
 
 - [ ] Custom contest registration types (ex: official, official at home, unofficial)
     - [ ] Leaderboard filtering based on these types
