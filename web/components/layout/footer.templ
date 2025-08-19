@@ -65,7 +65,7 @@ templ Footer(prepareDuration time.Duration, renderStart time.Time, hashNamer Has
 							<li><span class="black-span"><i class="text-red-600 fas fa-fw fa-exclamation-triangle"></i> Debug Mode active</span></li>
 						}
 						if len(flags.DiscordInviteID.Value()) > 0 {
-							<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href={ templ.URL("https://discord.gg/" + flags.DiscordInviteID.Value()) }><i class="fab fa-fw fa-discord"></i> Discord Server</a></li>
+							<li><a class="black-anchor" target="_blank" href="/links/discord"><i class="fab fa-fw fa-discord"></i> Discord Server</a></li>
 						}
 						<li><a class="black-anchor" target="_blank" rel="noopener noreferrer" href="https://github.com/KiloProjects/Kilonova"><i class="fab fa-fw fa-github"></i> GitHub</a></li>
 						<li><a class="black-anchor" rel="noopener noreferrer" href="/termsOfService"><i class="fas fa-fw fa-gavel"></i> { T(ctx, "termsOfService") }</a></li>

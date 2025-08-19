@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -47,11 +48,12 @@ type EvalConf struct {
 
 // CommonConf is the data required for all services
 type CommonConf struct {
-	LogDir      string `toml:"log_dir"`
-	DataDir     string `toml:"data_dir"`
-	Debug       bool   `toml:"debug"`
-	HostPrefix  string `toml:"host_prefix"`
-	DefaultLang string `toml:"default_language"`
+	LogDir      string   `toml:"log_dir"`
+	DataDir     string   `toml:"data_dir"`
+	Debug       bool     `toml:"debug"`
+	HostPrefix  string   `toml:"host_prefix"`
+	HostURL     *url.URL `toml:"-"`
+	DefaultLang string   `toml:"default_language"`
 
 	DBDSN string `toml:"db_dsn"`
 
@@ -130,6 +132,9 @@ func Load(ctx context.Context) error {
 	}
 	if !(c.Common.DefaultLang == "en" || c.Common.DefaultLang == "ro") {
 		slog.WarnContext(ctx, "Invalid language", slog.String("lang", c.Common.DefaultLang))
+	}
+	if c.Common.HostURL, err = url.Parse(c.Common.HostPrefix); err != nil {
+		slog.WarnContext(ctx, "Invalid host prefix", slog.String("prefix", c.Common.HostPrefix), slog.Any("err", err))
 	}
 	spread()
 	return nil

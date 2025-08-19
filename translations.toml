@@ -1,6 +1,6 @@
 [announcement]
-en = "Feel free to join our %s and reach out if you have any suggestions, wish to become a contributor or would like to collaborate with us."
-ro = "Nu ezitați să vă alăturați %s-ului nostru și să ne contactați dacă aveți sugestii, doriți să deveniți un contribuitor sau doriți să colaborați cu noi."
+en = 'Feel free to join our <a target="_blank" rel="noopener noreferrer" href="/links/discord">Discord</a> and reach out if you have any suggestions, wish to become a contributor or would like to collaborate with us.'
+ro = 'Nu ezitați să vă alăturați <a target="_blank" rel="noopener noreferrer" href="/links/discord">Discord</a>-ului nostru și să ne contactați dacă aveți sugestii, doriți să deveniți un contribuitor sau doriți să colaborați cu noi.'
 
 [all_checklists_announcement]
 en = "View all archive progress reports [on this page](/problem_lists/progress)."
@@ -1793,14 +1793,6 @@ ro = "Creare paste"
 [del_paste]
 en = "Remove paste"
 ro = "Ștergere paste"
-
-[paste_url_copied]
-en = "Paste URL copied to clipboard."
-ro = "URL-ul paste-ului a fost copiat în clipboard."
-
-[go_to_paste]
-en = "Go to paste"
-ro = "Accesați-l"
 
 [shared_by]
 en = "Shared by"

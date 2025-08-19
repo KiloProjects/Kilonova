@@ -2,6 +2,7 @@ package views
 
 import (
 	"context"
+	"github.com/KiloProjects/kilonova"
 	"github.com/alecthomas/chroma/v2"
 	chtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/lexers"
@@ -14,9 +15,35 @@ import (
 templ Submission() {
 }
 
+// forceShow = preact isPaste
+templ SubmissionCode(sub *kilonova.FullSubmission, code []byte, forceShow bool) {
+	if !(forceShow || sub.CodeTrulyVisible) {
+		<div class="segment-panel">
+			<h2>{ T(ctx, "showSourceCodeQ") }</h2>
+			<p class="mb-4">{ T(ctx, "showSourceCodeExpl") }</p>
+			<a class="inline-block btn btn-blue mx-auto" hx-boost="true" href="?forceCode=1">
+				{ T(ctx, "showSourceCodeBtn") }
+			</a>
+		</div>
+		return
+	}
+	<div class="segment-panel">
+		<h2>{ T(ctx, "sourceCode") }</h2>
+		@SyntaxHighlight(code, sub.Language)
+		<div class="block my-2">
+			<a href="/submission/{sub.ID}/download" class="btn btn-blue text-semibold text-lg">
+				{ T(ctx, "download") }
+			</a>
+		</div>
+	</div>
+}
+
 var fmt = chtml.New(chtml.WithClasses(true), chtml.TabWidth(4))
 
 func SyntaxHighlight(code []byte, lang string) templ.Component {
+	if code == nil {
+		return templ.NopComponent
+	}
 	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
 		if lang == "pascal" {
 			lang = "pas"

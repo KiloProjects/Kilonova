@@ -194,3 +194,10 @@ type FullSubmission struct {
 
 	CodeTrulyVisible bool `json:"truly_visible"`
 }
+
+func (sub *FullSubmission) CanDelete(user *UserBrief) bool {
+	if sub == nil {
+		return false
+	}
+	return user.IsAdmin() || sub.ProblemEditor
+}

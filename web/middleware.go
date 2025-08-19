@@ -218,7 +218,7 @@ func (rt *Web) ValidateContestVisible(next http.Handler) http.Handler {
 // ValidateSubmissionID puts the ID and the Submission in the router context
 func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		subID, err := strconv.Atoi(trimNonDigits(r.PathValue("id")))
+		subID, err := strconv.Atoi(trimNonDigits(r.PathValue("subID")))
 		if err != nil {
 			rt.statusPage(w, r, 400, "ID submisie invalid")
 			return
@@ -239,7 +239,7 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 // ValidatePasteID puts the ID and the Paste in the router context
 func (rt *Web) ValidatePasteID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		paste, err := rt.base.SubmissionPaste(r.Context(), r.PathValue("id"))
+		paste, err := rt.base.SubmissionPaste(r.Context(), r.PathValue("pasteID"))
 		if err != nil {
 			rt.statusPage(w, r, 400, "Paste-ul nu există")
 			return

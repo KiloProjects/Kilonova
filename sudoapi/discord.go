@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -56,7 +57,7 @@ func (s *BaseAPI) AnnounceProblemPublished(ctx context.Context, problemID int) {
 		return // noop
 	}
 
-	_, err := s.dSess.ChannelMessageSend(ProblemAnnouncementChannel.Value(), fmt.Sprintf("New problem was just published: %s/problems/%d", config.Common.HostPrefix, problemID))
+	_, err := s.dSess.ChannelMessageSend(ProblemAnnouncementChannel.Value(), "New problem was just published: "+config.Common.HostURL.JoinPath("problems", strconv.Itoa(problemID)).String())
 	if err != nil {
 		slog.WarnContext(ctx, "Could not announce problem publish", slog.Any("err", err))
 	}
@@ -156,7 +157,7 @@ func (s *BaseAPI) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) 
 	}
 	s.LogVerbose(ctx, "User linked Discord identity", userAttr, slog.String("discord_id", dUser.ID), slog.String("discord_user", dUser.Mention()))
 
-	http.Redirect(w, r, config.Common.HostPrefix+"/profile/linked", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, config.Common.HostURL.JoinPath("profile/linked").String(), http.StatusTemporaryRedirect)
 }
 
 func (s *BaseAPI) discordConfig() *oauth2.Config {
@@ -168,7 +169,7 @@ func (s *BaseAPI) discordConfig() *oauth2.Config {
 
 		Scopes: []string{"identify"},
 
-		RedirectURL: config.Common.HostPrefix + "/api/webhook/discord_callback",
+		RedirectURL: config.Common.HostURL.JoinPath("api/webhook/discord_callback").String(),
 	}
 }
 

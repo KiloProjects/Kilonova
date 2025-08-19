@@ -230,7 +230,8 @@ func (s *BaseAPI) parseVariants(atts []*kilonova.Attachment, getPrivate bool) []
 			Format:   matches[3],
 			Private:  att.Private,
 
-			LastUpdatedAt: att.LastUpdatedAt,
+			AttachmentName: att.Name,
+			LastUpdatedAt:  att.LastUpdatedAt,
 		})
 	}
 

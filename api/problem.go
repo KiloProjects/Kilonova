@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"text/template"
@@ -17,8 +18,10 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/integrations/llm"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/shopspring/decimal"
 )
 
@@ -545,26 +548,26 @@ type ProblemGetInput struct {
 		//Visible *bool `json:"visible"`
 		Name *string `json:"name"`
 
-		FuzzyName *string `json:"name_fuzzy"`
+		FuzzyName *string `json:"fuzzyName"`
 
 		//// DeepListID - the list ID in which to search recursively for problems
-		//DeepListID *int `json:"deep_list_id"`
+		//DeepListID *int `json:"deepListID"`
 		//
 		//// EditorUserID filter marks if the user is part of the *editors* of the problem
 		//// Note that it excludes factors like admin or contest editor, it's just the editors in the access section.
-		//EditorUserID *int `json:"editor_user_id"`
+		//EditorUserID *int `json:"editorUserID"`
 
 		Tags []*kilonova.TagGroup `json:"tags"`
 
 		// Should be "en" or "ro", if non-nil
 		Language *string `json:"lang"`
 
-		//UnsolvedBy  *int `json:"unsolved_by"`
-		//SolvedBy    *int `json:"solved_by"`
-		//AttemptedBy *int `json:"attempted_by"`
+		//UnsolvedBy  *int `json:"unsolvedBy"`
+		//SolvedBy    *int `json:"solvedBy"`
+		//AttemptedBy *int `json:"attemptedBy"`
 
 		// This is actually not used during filtering in DB, it's used by (*api.API).searchProblems
-		//ScoreUserID *int `json:"score_user_id"`
+		//ScoreUserID *int `json:"scoreUserID"`
 
 		Limit  uint64 `json:"limit"`
 		Offset uint64 `json:"offset"`
@@ -633,4 +636,43 @@ type ProblemLanguagesOutput struct {
 func (s *API) problemLanguagesV2(ctx context.Context, _ *struct{}) (*ProblemLanguagesOutput, error) {
 	languages, err := s.base.ProblemLanguages(ctx, util.ProblemContext(ctx))
 	return &ProblemLanguagesOutput{languages}, err
+}
+
+type StatementVariant struct {
+	Language string `json:"language" enum:"en,ro" doc:"Statement language"`
+	Format   string `json:"format" enum:"md,pdf" doc:"Statement format. Markdown is the recommended one to interpret, as PDFs are usually served only for historical purposes."`
+	Type     string `json:"type" doc:"Usually empty, can be used to distinguish between multiple loose types of variants."`
+
+	Permalink string `json:"permalink" doc:"Link to the statement's contents, raw. It is not guaranteed that this URL will remain the same."`
+	RenderURL string `json:"renderURL" doc:"For markdown statements, this URL represents the HTML rendered version of this statement. See additional documentation for how to correctly render the HTML. It is not guaranteed that this URL will remain the same."`
+
+	LastUpdatedAt time.Time `json:"lastUpdatedAt" doc:"Last updated time of the underlying file for the statement."`
+}
+
+type StatementVariantsOutput struct {
+	Body []StatementVariant
+}
+
+func (s *API) statementVariants(ctx context.Context, _ *struct{}) (*StatementVariantsOutput, error) {
+	variant, err := s.base.ProblemDescVariants(ctx, util.ProblemContext(ctx).ID, s.base.IsProblemEditor(util.UserBriefContext(ctx), util.ProblemContext(ctx)))
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Could not get variants", err)
+	}
+	var outVariants []StatementVariant
+	for _, v := range variant {
+
+		out := StatementVariant{
+			Language: v.Language,
+			Format:   v.Format,
+			Type:     v.Type,
+
+			Permalink:     config.Common.HostURL.JoinPath("assets/problem", strconv.Itoa(util.ProblemContext(ctx).ID), "attachment", v.AttachmentName).String(),
+			LastUpdatedAt: v.LastUpdatedAt,
+		}
+		if v.Format == "md" {
+			out.RenderURL = out.Permalink + "?format=html"
+		}
+		outVariants = append(outVariants, out)
+	}
+	return &StatementVariantsOutput{outVariants}, nil
 }

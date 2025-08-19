@@ -510,6 +510,7 @@ CREATE INDEX IF NOT EXISTS problem_user_submissions_index ON submissions (user_i
 CREATE INDEX IF NOT EXISTS problem_submissions_index ON submissions (problem_id);
 CREATE INDEX IF NOT EXISTS contest_submissions_index ON submissions (contest_id);
 CREATE INDEX IF NOT EXISTS null_contest_submissions_index ON submissions (contest_id) WHERE contest_id IS NULL;
+CREATE INDEX IF NOT EXISTS submission_created_at_index ON submissions (created_at, user_id);
 
 CREATE INDEX IF NOT EXISTS submission_subtests_index ON submission_tests (submission_id);
 CREATE INDEX IF NOT EXISTS submission_subtests_tests_index ON submission_tests (test_id);

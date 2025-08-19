@@ -83,6 +83,8 @@ type StatementVariant struct {
 	Private bool `json:"public"`
 
 	LastUpdatedAt time.Time `json:"last_updated_at"`
+
+	AttachmentName string `json:"-"`
 }
 
 // Used for comparing in templates if the right option is selected.

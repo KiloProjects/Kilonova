@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"mime"
 	"net/http"
-	"net/url"
 	"sync"
 
 	"github.com/zitadel/oidc/v3/pkg/oidc"
@@ -40,14 +39,9 @@ func New(base *sudoapi.BaseAPI) *API {
 }
 
 func (s *API) HandlerV2() http.Handler {
-	prefixURL, err := url.Parse(config.Common.HostPrefix)
-	if err != nil {
-		panic(err)
-	}
-
 	humaConf := huma.DefaultConfig("Kilonova", "2.0")
 	humaConf.Servers = []*huma.Server{
-		{URL: prefixURL.JoinPath("api/v2").String()},
+		{URL: config.Common.HostURL.JoinPath("api/v2").String()},
 	}
 	humaConf.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
 		//"session": {
@@ -62,7 +56,7 @@ func (s *API) HandlerV2() http.Handler {
 		},
 		"oauth": {
 			Type:             "openIdConnect",
-			OpenIDConnectURL: prefixURL.JoinPath(oidc.DiscoveryEndpoint).String(),
+			OpenIDConnectURL: config.Common.HostURL.JoinPath(oidc.DiscoveryEndpoint).String(),
 		},
 	}
 	r := chi.NewRouter()
@@ -103,11 +97,18 @@ func (s *API) HandlerV2() http.Handler {
 	}, s.problemSingleGet)
 
 	huma.Register(problemsGroup, huma.Operation{
-		OperationID: "get-problems-languages",
+		OperationID: "get-problem-languages",
 		Method:      http.MethodGet,
 		Path:        "/{problemID}/languages",
 		Security:    []map[string][]string{},
 	}, s.problemLanguagesV2)
+
+	huma.Register(problemsGroup, huma.Operation{
+		OperationID: "get-problem-statement-variants",
+		Method:      http.MethodGet,
+		Path:        "/{problemID}/statements",
+		Security:    []map[string][]string{},
+	}, s.statementVariants)
 
 	huma.Register(problemsGroup, huma.Operation{
 		OperationID: "create-submission",

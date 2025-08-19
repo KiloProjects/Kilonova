@@ -13,56 +13,20 @@
 <div class="mb-2"></div>
 
 {{ if authed }}
-    {{ if or (isAdmin) .Submission.ProblemEditor }}
-    <button onclick="deleteSubmission()" class="btn btn-red mb-2">{{getText "removeSub"}}</button>
-    <button onclick="reevaluateSubmission()" class="btn btn-blue mb-2">{{getText "reevaluate"}}</button>
+    {{ if .Submission.CanDelete authedUser }}
+    <button hx-delete="/submissions/{{.Submission.ID}}" class="btn btn-red mb-2">{{getText "removeSub"}}</button>
+    <form method="post" action="/submissions/{{.Submission.ID}}/reevaluate">
+        <button type="submit" class="btn btn-blue mb-2">{{getText "reevaluate"}}</button>
+    </form>
     {{ end }}
     {{ if boolFlag "feature.pastes.enabled" }}
         {{ if .Submission.Submission.IsEditor authedUser }}
-            <button id="pasteCreateBtn" class="btn btn-blue mb-2">{{getText "create_paste"}}</button>
+            <form method="post" action="/submissions/{{.Submission.ID}}/paste">
+                <button type="submit" class="btn btn-blue mb-2">{{getText "create_paste"}}</button>
+            </form>
         {{ end }}
     {{ end }}
 {{ end }}
 
-<script>
-const sub_id = {{.Submission.ID}};
-document.getElementById("pasteCreateBtn")?.addEventListener("click", async e => {
-    const res = await bundled.postCall(`/submissions/${sub_id}/createPaste`, {});
-    if (res.status === "error") {
-        apiToast(res);
-    }
-    const url = `${window.location.origin}/pastes/${res.data}`;
-    await navigator.clipboard.writeText(url).then(
-        () => {
-            bundled.createToast({ status: "success", description: `${bundled.getText("paste_url_copied")} <a href="${url}">${bundled.getText("go_to_paste")}</a>` });
-        },
-        (err) => {
-            bundled.createToast({ status: "error", description: bundled.getText("notCopied") });
-            console.error(err);
-        }
-    );
-
-})
-
-async function deleteSubmission() {
-    if(!(await bundled.confirm(bundled.getText("subDeleteConfirm")))) {
-        return;
-    }
-    let res = await bundled.postCall(`/submissions/${sub_id}/delete`, {})
-    if(res.status === "success") {
-        window.history.back();
-        return
-    }
-    bundled.apiToast(res)
-}
-async function reevaluateSubmission() {
-    let res = await bundled.postCall(`/submissions/${sub_id}/reevaluate`, {});
-    if(res.status === "success") {
-        window.location.reload();
-        return
-    }
-    bundled.apiToast(res);
-}
-</script>
 
 {{ end }}

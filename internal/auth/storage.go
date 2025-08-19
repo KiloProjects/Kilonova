@@ -461,7 +461,7 @@ func (s *AuthStorage) setUserInfo(ctx context.Context, userinfo *oidc.UserInfo, 
 			userinfo.EmailVerified = oidc.Bool(user.VerifiedEmail)
 		case oidc.ScopeProfile:
 			userinfo.PreferredUsername = user.Name
-			userinfo.Picture = config.Common.HostPrefix + "/api/user/byName/" + user.Name + "/avatar?s=128"
+			userinfo.Picture = config.Common.HostURL.JoinPath("api/user/byName", user.Name, "avatar").String() + "?s=128"
 			switch user.PreferredLanguage {
 			case "en":
 				userinfo.Locale = oidc.NewLocale(language.English)

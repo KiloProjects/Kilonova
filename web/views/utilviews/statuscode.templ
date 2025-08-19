@@ -5,7 +5,6 @@ import (
 
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/web/tutils"
-	"net/url"
 )
 
 type StatusCodeParams struct {
@@ -29,6 +28,5 @@ templ NoRobotsHead() {
 }
 
 templ CanonicalURL(path string) {
-	{{ prefurl, _ := url.Parse(config.Common.HostPrefix) }}
-	<link rel="canonical" href={ prefurl.JoinPath(path).String() }/>
+	<link rel="canonical" href={ config.Common.HostURL.JoinPath(path).String() }/>
 }

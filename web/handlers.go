@@ -1,6 +1,7 @@
 package web
 
 import (
+	"bytes"
 	"cmp"
 	"context"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"io"
 	"log/slog"
 	"math/rand/v2"
+	"mime"
 	"net/http"
 	"net/netip"
 	"net/url"
@@ -560,6 +562,66 @@ func (rt *Web) submission() http.HandlerFunc {
 	}
 }
 
+func (rt *Web) downloadSubmission(w http.ResponseWriter, r *http.Request) {
+	if len(util.Submission(r).Code) == 0 {
+		rt.statusPage(w, r, 400, "Code is either unavailable or doesn't exist.")
+		return
+	}
+	extension := rt.base.Language(r.Context(), util.Submission(r).Language).Extensions()[0]
+	if extension == ".outputOnly" {
+		extension = ".txt"
+	}
+	filename := fmt.Sprintf("%d-%s%s", util.Submission(r).ID, kilonova.MakeSlug(util.Submission(r).Problem.Name), extension)
+	w.Header().Add("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": filename}))
+	http.ServeContent(w, r, filename, util.Submission(r).CreatedAt, bytes.NewReader(util.Submission(r).Code))
+}
+
+func (rt *Web) deleteSubmission(w http.ResponseWriter, r *http.Request) {
+	// Check submission permissions
+	if !util.Submission(r).CanDelete(util.UserBrief(r)) {
+		rt.statusPage(w, r, 403, "You can't delete this submission!")
+		return
+	}
+
+	if err := rt.base.DeleteSubmission(r.Context(), util.Submission(r).ID); err != nil {
+		rt.statusPage(w, r, 500, "Could not delete submission")
+		return
+	}
+
+	http.Redirect(w, r, "/submissions", http.StatusFound)
+}
+
+func (rt *Web) reevaluateSubmission(w http.ResponseWriter, r *http.Request) {
+	// Check submission permissions
+	if !util.Submission(r).CanDelete(util.UserBrief(r)) {
+		rt.statusPage(w, r, 403, "You can't reevaluate this submission!")
+		return
+	}
+
+	if err := rt.base.ResetSubmission(r.Context(), util.Submission(r).ID); err != nil {
+		rt.statusPage(w, r, 500, "Could not reevaluate submission")
+		return
+	}
+
+	htmxSuccessToast(w, r, "Reset submission")
+	w.Header().Set("HX-Refresh", "true")
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (rt *Web) createPaste(w http.ResponseWriter, r *http.Request) {
+	if !util.Submission(r).IsEditor(util.UserBrief(r)) {
+		rt.statusPage(w, r, 403, "You can't create a paste for this submission!")
+		return
+	}
+
+	id, err := rt.base.CreatePaste(r.Context(), &util.Submission(r).Submission, util.UserBrief(r))
+	if err != nil {
+		rt.statusPage(w, r, 500, "Could not create paste")
+		return
+	}
+	http.Redirect(w, r, "/pastes/"+id, http.StatusFound)
+}
+
 func (rt *Web) submissions() http.HandlerFunc {
 	templ := rt.parse(nil, "submissions.html")
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -588,7 +650,36 @@ func (rt *Web) paste() http.HandlerFunc {
 			rt.statusPage(w, r, 500, "N-am putut obține submisia aferentă")
 			return
 		}
-		rt.runTempl(w, r, templ, &PasteParams{util.Paste(r), fullSub})
+		code, err := rt.base.SubmissionCode(r.Context(), &fullSub.Submission, fullSub.Problem, nil, false)
+		if err != nil {
+			slog.WarnContext(r.Context(), "Could not get submission code", slog.Any("err", err))
+			code = nil
+		}
+
+		rt.runTempl(w, r, templ, &PasteParams{util.Paste(r), fullSub, views.SyntaxHighlight(code, fullSub.Language)})
+	}
+}
+
+func (rt *Web) downloadPaste() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fullSub, err := rt.base.FullSubmission(r.Context(), util.Paste(r).Submission.ID)
+		if err != nil {
+			rt.statusPage(w, r, 500, "N-am putut obține submisia aferentă")
+			return
+		}
+		code, err := rt.base.SubmissionCode(r.Context(), &fullSub.Submission, fullSub.Problem, nil, false)
+		if err != nil {
+			slog.WarnContext(r.Context(), "Could not get submission code", slog.Any("err", err))
+			code = nil
+		}
+
+		extension := rt.base.Language(r.Context(), fullSub.Language).Extensions()[0]
+		if extension == ".outputOnly" {
+			extension = ".txt"
+		}
+		filename := fmt.Sprintf("%s-%s%s", util.Paste(r).ID, kilonova.MakeSlug(fullSub.Problem.Name), extension)
+		w.Header().Add("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": filename}))
+		http.ServeContent(w, r, filename, fullSub.CreatedAt, bytes.NewReader(code))
 	}
 }
 
@@ -1879,6 +1970,16 @@ func (rt *Web) resetPassword() http.HandlerFunc {
 
 		rt.runTempl(w, r, templ, &PasswordResetParams{user, reqid})
 	}
+}
+
+func (rt *Web) redirectDiscord(w http.ResponseWriter, r *http.Request) {
+	id := flags.DiscordInviteID.Value()
+	if id == "" {
+		rt.statusPage(w, r, 500, "Discord was not configured on this instance")
+		return
+	}
+
+	http.Redirect(w, r, "https://discord.gg/"+id, http.StatusFound)
 }
 
 func (rt *Web) checkLockout() func(next http.Handler) http.Handler {

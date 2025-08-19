@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/web/views/authviews"
 	"github.com/KiloProjects/kilonova/web/views/utilviews"
@@ -28,7 +29,7 @@ func (rt *Web) getLogin(w http.ResponseWriter, r *http.Request) {
 
 	if oidcID == "" {
 		// authed, no openid flow, just redirect back
-		http.Redirect(w, r, rt.hostURL.JoinPath(back).String(), http.StatusFound)
+		http.Redirect(w, r, config.Common.HostURL.JoinPath(back).String(), http.StatusFound)
 		return
 	}
 
@@ -122,7 +123,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
-		http.Redirect(w, r, rt.hostURL.JoinPath(back).String(), http.StatusFound)
+		http.Redirect(w, r, config.Common.HostURL.JoinPath(back).String(), http.StatusFound)
 		return
 	}
 

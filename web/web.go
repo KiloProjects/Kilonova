@@ -63,8 +63,7 @@ var fsys = hashfs.NewFS(embedded)
 type Web struct {
 	funcs template.FuncMap
 
-	base    *sudoapi.BaseAPI
-	hostURL *url.URL
+	base *sudoapi.BaseAPI
 }
 
 func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int, errMessage string) {
@@ -72,7 +71,8 @@ func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
-	if isHTMXRequest(r) {
+	if isHTMXRequest(r) && r.Method != "GET" {
+		htmxErrorToast(w, r, errMessage)
 		http.Error(w, errMessage, statusCode)
 		return
 	}
@@ -130,6 +130,7 @@ func (rt *Web) Handler() http.Handler {
 	r.Use(rt.initSession)
 	r.Use(rt.initLanguage)
 	r.Use(rt.initTheme)
+	r.Use(http.NewCrossOriginProtection().Handler)
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		rt.statusPage(w, r, 404, "")
@@ -144,6 +145,10 @@ func (rt *Web) Handler() http.Handler {
 		r.Route("/verify", func(r chi.Router) {
 			r.With(rt.mustBeAuthed).Get("/resend", rt.resendEmail())
 			r.Get("/{vid}", rt.verifyEmail())
+		})
+
+		r.Route("/links", func(r chi.Router) {
+			r.Get("/discord", rt.redirectDiscord)
 		})
 
 		// Password reset
@@ -228,10 +233,22 @@ func (rt *Web) Handler() http.Handler {
 
 		r.Route("/submissions", func(r chi.Router) {
 			r.Get("/", rt.submissions())
-			r.With(rt.ValidateSubmissionID).Get("/{id}", rt.submission())
+			r.Route("/{subID}", func(r chi.Router) {
+				r.Use(rt.ValidateSubmissionID)
+				r.Get("/", rt.submission())
+				r.Get("/download", rt.downloadSubmission)
+				r.Post("/paste", rt.createPaste)
+				r.Delete("/", rt.deleteSubmission)
+				r.Post("/reevaluate", rt.reevaluateSubmission)
+			})
 		})
 
-		r.With(rt.checkFlag(sudoapi.PastesEnabled), rt.ValidatePasteID).Get("/pastes/{id}", rt.paste())
+		r.Route("/pastes/{pasteID}", func(r chi.Router) {
+			r.Use(rt.checkFlag(sudoapi.PastesEnabled))
+			r.Use(rt.ValidatePasteID)
+			r.Get("/", rt.paste())
+			r.Get("/download", rt.downloadPaste())
+		})
 
 		r.Route("/problem_lists", func(r chi.Router) {
 			r.Get("/", rt.pbListIndex())
@@ -311,11 +328,6 @@ func (rt *Web) checkUsedTemplateFiles() {
 // NewWeb returns a new web instance
 func NewWeb(base *sudoapi.BaseAPI) *Web {
 	ctx := context.Background()
-	hostURL, err := url.Parse(config.Common.HostPrefix)
-	if err != nil {
-		hostURL, _ = url.Parse("localhost:8080")
-		slog.ErrorContext(ctx, "Invalid host prefix", slog.Any("err", err))
-	}
 
 	funcs := template.FuncMap{
 		"problemSettings": func(problem *kilonova.Problem) *kilonova.ProblemEvalSettings {
@@ -624,7 +636,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"debug":   func() bool { return config.Common.Debug },
 
 		"formatCanonical": func(path string) string {
-			return hostURL.JoinPath(path).String()
+			return config.Common.HostURL.JoinPath(path).String()
 		},
 
 		"tagsByType": func(g string) []*kilonova.Tag {
@@ -909,7 +921,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return "", nil
 		},
 	}
-	return &Web{funcs, base, hostURL}
+	return &Web{funcs, base}
 }
 
 // staticFileServer is a modification of the original hashfs

@@ -383,6 +383,8 @@ type PasteParams struct {
 	Paste *kilonova.SubmissionPaste
 
 	FullSub *sudoapi.FullSubmission
+
+	SyntaxHighlight templ.Component
 }
 
 // HTMX modals

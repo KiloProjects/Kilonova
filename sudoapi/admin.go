@@ -220,14 +220,13 @@ type webhookSender struct {
 }
 
 func (ws *webhookSender) getWebhookEmbed(entry *logEntry, showRepeatCount bool) *discordgo.MessageEmbed {
-	hostPrefix := config.Common.HostPrefix
 	embed := &discordgo.MessageEmbed{
 		Title:       entry.Message,
 		Description: "New action",
 		Fields:      make([]*discordgo.MessageEmbedField, 0, len(entry.Attrs)+2),
 	}
 	if entry.Author != nil {
-		embed.Description += " (by [" + entry.Author.AppropriateName() + "](" + hostPrefix + "/profile/" + entry.Author.Name + ")"
+		embed.Description += " (by [" + entry.Author.AppropriateName() + "](" + config.Common.HostURL.JoinPath("profile", entry.Author.Name).String() + ")"
 		if entry.Author.DiscordID != nil {
 			embed.Description += " / <@" + *entry.Author.DiscordID + ">"
 		}
@@ -243,17 +242,23 @@ func (ws *webhookSender) getWebhookEmbed(entry *logEntry, showRepeatCount bool) 
 			if v.DiscordID != nil {
 				dID = " / <@" + *v.DiscordID + ">"
 			}
-			val = fmt.Sprintf("[%s (#%d)](%s/profile/%s)", v.AppropriateName(), v.ID, hostPrefix, v.Name) + dID
+			endURL := config.Common.HostURL.JoinPath("profile", v.Name).String()
+			val = fmt.Sprintf("[%s (#%d)](%s)", v.AppropriateName(), v.ID, endURL) + dID
 		case *kilonova.Problem:
-			val = fmt.Sprintf("[%s (#%d)](%s/problems/%d)", v.Name, v.ID, hostPrefix, v.ID)
+			endURL := config.Common.HostURL.JoinPath("problems", strconv.Itoa(v.ID)).String()
+			val = fmt.Sprintf("[%s (#%d)](%s)", v.Name, v.ID, endURL)
 		case *kilonova.Contest:
-			val = fmt.Sprintf("[%s (#%d)](%s/contests/%d)", v.Name, v.ID, hostPrefix, v.ID)
+			endURL := config.Common.HostURL.JoinPath("contests", strconv.Itoa(v.ID)).String()
+			val = fmt.Sprintf("[%s (#%d)](%s)", v.Name, v.ID, endURL)
 		case *kilonova.Tag:
-			val = fmt.Sprintf("[%s (#%d)](%s/tags/%d)", v.Name, v.ID, hostPrefix, v.ID)
+			endURL := config.Common.HostURL.JoinPath("tags", strconv.Itoa(v.ID)).String()
+			val = fmt.Sprintf("[%s (#%d)](%s)", v.Name, v.ID, endURL)
 		case *kilonova.BlogPost:
-			val = fmt.Sprintf("[%s (#%d)](%s/posts/%s)", v.Title, v.ID, hostPrefix, v.Slug)
+			endURL := config.Common.HostURL.JoinPath("posts", v.Slug).String()
+			val = fmt.Sprintf("[%s (#%d)](%s)", v.Title, v.ID, endURL)
 		case *kilonova.ProblemList:
-			val = fmt.Sprintf("[%s (#%d)](%s/problem_lists/%d)", v.Title, v.ID, hostPrefix, v.ID)
+			endURL := config.Common.HostURL.JoinPath("problem_lists", strconv.Itoa(v.ID)).String()
+			val = fmt.Sprintf("[%s (#%d)](%s)", v.Title, v.ID, endURL)
 		case slog.LogValuer:
 			val = v.LogValue().String()
 		}
