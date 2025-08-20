@@ -66,7 +66,7 @@ func (s *API) HandlerV2() http.Handler {
 
 	huma.Register(api, huma.Operation{
 		OperationID: "get-problems",
-		Method:      http.MethodGet,
+		Method:      http.MethodPost,
 		Path:        "/problems",
 		Security:    []map[string][]string{},
 	}, s.problemGet)
