@@ -542,38 +542,38 @@ func (s *API) getProblem(ctx context.Context, _ struct{}) (*kilonova.Problem, er
 
 type ProblemGetInput struct {
 	Body *struct {
-		//ID  *int  `json:"id"`
-		IDs []int `json:"ids"`
-		//ConsoleInput *bool `json:"console_input"`
-		//Visible *bool `json:"visible"`
-		Name *string `json:"name"`
+		//ID  *int  `json:"id,omitempty"`
+		IDs []int `json:"ids,omitempty" nullable:"false"`
+		//ConsoleInput *bool `json:"console_input,omitempty"`
+		//Visible *bool `json:"visible,omitempty"`
+		Name *string `json:"name,omitempty"`
 
-		FuzzyName *string `json:"fuzzyName"`
+		FuzzyName *string `json:"fuzzyName,omitempty"`
 
 		//// DeepListID - the list ID in which to search recursively for problems
-		//DeepListID *int `json:"deepListID"`
+		//DeepListID *int `json:"deepListID,omitempty"`
 		//
 		//// EditorUserID filter marks if the user is part of the *editors* of the problem
 		//// Note that it excludes factors like admin or contest editor, it's just the editors in the access section.
-		//EditorUserID *int `json:"editorUserID"`
+		//EditorUserID *int `json:"editorUserID,omitempty"`
 
-		Tags []*kilonova.TagGroup `json:"tags"`
+		Tags []*kilonova.TagGroup `json:"tags,omitempty" nullable:"false"`
 
 		// Should be "en" or "ro", if non-nil
-		Language *string `json:"lang"`
+		Language *string `json:"lang,omitempty"`
 
-		//UnsolvedBy  *int `json:"unsolvedBy"`
-		//SolvedBy    *int `json:"solvedBy"`
-		//AttemptedBy *int `json:"attemptedBy"`
+		//UnsolvedBy  *int `json:"unsolvedBy,omitempty"`
+		//SolvedBy    *int `json:"solvedBy,omitempty"`
+		//AttemptedBy *int `json:"attemptedBy,omitempty"`
 
 		// This is actually not used during filtering in DB, it's used by (*api.API).searchProblems
-		//ScoreUserID *int `json:"scoreUserID"`
+		//ScoreUserID *int `json:"scoreUserID,omitempty"`
 
-		Limit  uint64 `json:"limit"`
-		Offset uint64 `json:"offset"`
+		Limit  uint64 `json:"limit,omitempty"`
+		Offset uint64 `json:"offset,omitempty"`
 
-		Ordering   string `json:"ordering"`
-		Descending bool   `json:"descending"`
+		Ordering   string `json:"ordering,omitempty"`
+		Descending bool   `json:"descending,omitempty"`
 	}
 }
 

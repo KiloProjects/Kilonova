@@ -248,7 +248,7 @@ func Footer(prepareDuration time.Duration, renderStart time.Time, hashNamer Hash
 			}
 		}
 		if len(flags.DiscordInviteID.Value()) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<li><a class=\"black-anchor\" target=\"_blank\" rel=\"noopener noreferrer\" href=\"/links/discord\"><i class=\"fab fa-fw fa-discord\"></i> Discord Server</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<li><a class=\"black-anchor\" target=\"_blank\" href=\"/links/discord\"><i class=\"fab fa-fw fa-discord\"></i> Discord Server</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
