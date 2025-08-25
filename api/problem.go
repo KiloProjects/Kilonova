@@ -621,12 +621,30 @@ func (s *API) problemGet(ctx context.Context, input *ProblemGetInput) (*ProblemG
 	return &ProblemGetOutput{problemSearchResult{Problems: problems, Count: cnt}}, nil
 }
 
+type apiProblem struct {
+	*kilonova.Problem
+	Languages         []*sudoapi.Language `json:"submitLanguages"`
+	StatementVariants []StatementVariant  `json:"statementVariants"`
+}
+
 type ProblemSingleGetOutput struct {
-	Body *kilonova.Problem
+	Body *apiProblem
 }
 
 func (s *API) problemSingleGet(ctx context.Context, _ *struct{}) (*ProblemSingleGetOutput, error) {
-	return &ProblemSingleGetOutput{util.ProblemContext(ctx)}, nil
+	var pb apiProblem
+	pb.Problem = util.ProblemContext(ctx)
+	languages, err := s.base.ProblemLanguages(ctx, util.ProblemContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+	pb.Languages = languages
+	pb.StatementVariants, err = s.getStatementVariants(ctx, pb.Problem, util.UserBriefContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return &ProblemSingleGetOutput{&pb}, nil
 }
 
 type ProblemLanguagesOutput struct {
@@ -653,8 +671,8 @@ type StatementVariantsOutput struct {
 	Body []StatementVariant
 }
 
-func (s *API) statementVariants(ctx context.Context, _ *struct{}) (*StatementVariantsOutput, error) {
-	variant, err := s.base.ProblemDescVariants(ctx, util.ProblemContext(ctx).ID, s.base.IsProblemEditor(util.UserBriefContext(ctx), util.ProblemContext(ctx)))
+func (s *API) getStatementVariants(ctx context.Context, problem *kilonova.Problem, user *kilonova.UserBrief) ([]StatementVariant, error) {
+	variant, err := s.base.ProblemDescVariants(ctx, problem.ID, s.base.IsProblemEditor(user, problem))
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Could not get variants", err)
 	}
@@ -666,7 +684,7 @@ func (s *API) statementVariants(ctx context.Context, _ *struct{}) (*StatementVar
 			Format:   v.Format,
 			Type:     v.Type,
 
-			Permalink:     config.Common.HostURL.JoinPath("assets/problem", strconv.Itoa(util.ProblemContext(ctx).ID), "attachment", v.AttachmentName).String(),
+			Permalink:     config.Common.HostURL.JoinPath("assets/problem", strconv.Itoa(problem.ID), "attachment", v.AttachmentName).String(),
 			LastUpdatedAt: v.LastUpdatedAt,
 		}
 		if v.Format == "md" {
@@ -674,5 +692,10 @@ func (s *API) statementVariants(ctx context.Context, _ *struct{}) (*StatementVar
 		}
 		outVariants = append(outVariants, out)
 	}
-	return &StatementVariantsOutput{outVariants}, nil
+	return outVariants, nil
+}
+
+func (s *API) statementVariants(ctx context.Context, _ *struct{}) (*StatementVariantsOutput, error) {
+	variants, err := s.getStatementVariants(ctx, util.ProblemContext(ctx), util.UserBriefContext(ctx))
+	return &StatementVariantsOutput{variants}, err
 }

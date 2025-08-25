@@ -54,12 +54,17 @@ func Statusf(status int, format string, args ...any) error {
 }
 
 func ErrorCode(err error) int {
+	code, _ := MaybeErrorCode(err)
+	return code
+}
+
+func MaybeErrorCode(err error) (int, bool) {
 	if err == nil {
-		return 200
+		return 200, false
 	}
 	var sErr *statusError
 	if errors.As(err, &sErr) {
-		return sErr.Code
+		return sErr.Code, true
 	}
-	return 500
+	return 500, false
 }

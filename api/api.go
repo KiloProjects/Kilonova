@@ -575,3 +575,16 @@ func parseRequest[T any](r *http.Request, output *T) error {
 	}
 	return nil
 }
+
+func newHumaError(_ huma.Context, status int, msg string, errs ...error) huma.StatusError {
+	for _, err := range errs {
+		if statusCode, ok := kilonova.MaybeErrorCode(err); ok {
+			status = statusCode
+		}
+	}
+	return huma.NewError(status, msg, errs...)
+}
+
+func init() {
+	huma.NewErrorWithContext = newHumaError
+}
