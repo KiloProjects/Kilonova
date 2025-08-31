@@ -1,7 +1,21 @@
 import CopyButtonPlugin from "highlightjs-copy";
 import htmx from "htmx.org";
 import {Idiomorph} from 'idiomorph';
+import * as Sentry from "@sentry/browser";
 
+(() => {
+	var platformInfo = JSON.parse(document.getElementById("platform_info")?.textContent ?? "{}");
+	if(typeof platformInfo.sentryDSN == 'string') {
+		console.log("starting sentry", platformInfo.sentryDSN)
+		Sentry.init({
+			dsn: platformInfo.sentryDSN,
+			sendDefaultPii: true,
+			debug: true,
+			environment: platformInfo.debug ? "development" : "production",
+			release: platformInfo.version ?? "unknown",
+		})
+	}
+})()
 
 function createMorphConfig(swapStyle) {
 	if (swapStyle === "morph" || swapStyle === "morph:outerHTML") {

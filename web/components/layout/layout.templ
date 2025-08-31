@@ -5,7 +5,10 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"io"
+	"runtime/debug"
+	"sync"
 	"time"
 )
 
@@ -23,13 +26,37 @@ type platformInfoValue struct {
 	UserID           int                 `json:"user_id"`
 	Language         string              `json:"language"`
 	EnabledLanguages map[string]string   `json:"langs"`
+	SentryDSN        *string             `json:"sentryDSN"`
+	InternalVersion  string              `json:"internalVersion"`
 }
+
+var buildInfo = sync.OnceValue(func() string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return ""
+	}
+	for _, setting := range info.Settings {
+		if setting.Key == "vcs.revision" {
+			val := setting.Value
+			if len(val) > 7 {
+				val = val[:7]
+			}
+			return "-" + val
+		}
+	}
+	return ""
+})
 
 func platformInfo(ctx context.Context, enabledLanguages map[string]string) platformInfoValue {
 	user := util.UserBriefContext(ctx)
 	var userID int = 0
 	if user != nil {
 		userID = user.ID
+	}
+
+	var sentryDSN *string
+	if val := flags.SentryDSN.Value(); flags.Sentry.Value() && len(val) > 0 {
+		sentryDSN = &val
 	}
 
 	return platformInfoValue{
@@ -39,6 +66,8 @@ func platformInfo(ctx context.Context, enabledLanguages map[string]string) platf
 		UserID:           userID,
 		Language:         language(ctx),
 		EnabledLanguages: enabledLanguages,
+		SentryDSN:        sentryDSN,
+		InternalVersion:  kilonova.Version + buildInfo(),
 	}
 }
 
@@ -74,10 +103,10 @@ templ mainHeadTags(enabledLanguages map[string]string, title string, description
 	<meta property="og:site_name" content="Kilonova"/>
 	<meta property="og:image" content={ "/" + hashNamer.HashName("static/ogimage.jpeg") }/>
 	<!--Dependency bundle-->
-	<script src={ "/" + hashNamer.HashName("static/bundle.js") }></script>
-	<script src={ "/" + hashNamer.HashName("static/vendored.js") }></script>
 	@templ.JSONScript("server_time", time.Now().Format(time.RFC3339Nano))
 	@templ.JSONScript("platform_info", platformInfo(ctx, enabledLanguages))
+	<script src={ "/" + hashNamer.HashName("static/bundle.js") }></script>
+	<script src={ "/" + hashNamer.HashName("static/vendored.js") }></script>
 	<script>
         const server_time = JSON.parse(document.getElementById("server_time").textContent);
         var platform_info = JSON.parse(document.getElementById("platform_info").textContent);

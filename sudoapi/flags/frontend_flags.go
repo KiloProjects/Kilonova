@@ -28,6 +28,9 @@ var (
 
 	FeedbackURL    = config.GenFlag("feature.frontend.feedback_url", "", "Feedback URL for main page")
 	QuickSearchBox = config.GenFlag("feature.frontend.quick_search", false, "Quick search box on main page")
+
+	Sentry    = config.GenFlag("feature.frontend.sentry", false, "Enable Sentry error reporting")
+	SentryDSN = config.GenFlag("feature.frontend.sentry_dsn", "", "DSN for sentry error reporting")
 )
 
 var (
