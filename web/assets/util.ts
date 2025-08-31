@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 // import "dayjs/locale/ro";
 import relativeTime from "dayjs/plugin/relativeTime";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import {initMaxscoreBreakdown} from "./components";
 
 dayjs.extend(relativeTime);
 dayjs.extend(customParseFormat);
@@ -101,7 +102,7 @@ export function navigateBack() {
 	window.location.assign(locURL);
 }
 
-export function initialLoad(el: ParentNode) {
+export function initialLoad(el: HTMLElement) {
 	el.querySelectorAll(".score-cell").forEach((val) => {
 		const x = val as HTMLTableCellElement;
 		var score = parseFloat(x.dataset.score || "0");
@@ -114,8 +115,9 @@ export function initialLoad(el: ParentNode) {
 		}
 		val.classList.remove("score-cell");
 	});
+	initMaxscoreBreakdown(el)
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-	initialLoad(document);
+	initialLoad(document.documentElement);
 });

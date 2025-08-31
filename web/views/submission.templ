@@ -1,44 +1,508 @@
 package views
 
 import (
+	"cmp"
 	"context"
+	"fmt"
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/KiloProjects/kilonova/web/views/modals"
 	"github.com/alecthomas/chroma/v2"
 	chtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
+	"github.com/dustin/go-humanize"
+	"github.com/shopspring/decimal"
 	"io"
+	"math"
+	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 	"unicode"
 )
 
-templ Submission() {
+func authed(ctx context.Context) bool {
+	return util.UserBriefContext(ctx) != nil
 }
 
-// forceShow = preact isPaste
-templ SubmissionCode(sub *kilonova.FullSubmission, code []byte, forceShow bool) {
-	if !(forceShow || sub.CodeTrulyVisible) {
-		<div class="segment-panel">
-			<h2>{ T(ctx, "showSourceCodeQ") }</h2>
-			<p class="mb-4">{ T(ctx, "showSourceCodeExpl") }</p>
-			<a class="inline-block btn btn-blue mx-auto" hx-boost="true" href="?forceCode=1">
-				{ T(ctx, "showSourceCodeBtn") }
-			</a>
-		</div>
-		return
+type SubmissionPageParams struct {
+	Submission    *kilonova.FullSubmission
+	ForceShowCode bool
+
+	LanguageFormatter func(string) string
+	OlderSubmissions  *modals.OlderSubmissionsParams
+}
+
+type PastePageParams struct {
+	SubmissionPageParams
+	Paste *kilonova.SubmissionPaste
+}
+
+func cond(cond bool, then string, otherwise string) string {
+	if cond {
+		return then
 	}
-	<div class="segment-panel">
-		<h2>{ T(ctx, "sourceCode") }</h2>
-		@SyntaxHighlight(code, sub.Language)
-		<div class="block my-2">
-			<a href="/submission/{sub.ID}/download" class="btn btn-blue text-semibold text-lg">
-				{ T(ctx, "download") }
-			</a>
+	return otherwise
+}
+
+templ Submission(params SubmissionPageParams) {
+	<div id="sub-holder" hx-select="#sub-holder" hx-get={ templ.URL(fmt.Sprintf("/submissions/%d", params.Submission.ID)) } hx-swap="morph:outerHTML" hx-trigger={ "kn-poll" + cond(params.Submission.Status != "finished", ", every 1s", "") }>
+		<h1>{ T(ctx, "sub") } #{ params.Submission.ID }</h1>
+		<div class="page-holder">
+			<aside class="page-sidebar lg:order-last">
+				@SubmissionSummary(params.Submission, nil, params.LanguageFormatter)
+				if params.OlderSubmissions != nil {
+					<div class="segment-panel">
+						@modals.OlderSubmissions(params.OlderSubmissions)
+					</div>
+				}
+			</aside>
+			<div class="page-content-wrapper">
+				@SubmissionScoreBreakdown(params)
+			</div>
+		</div>
+		@SubmissionCode(params.Submission, params.Submission.Code, params.ForceShowCode)
+		<div class="my-2">
+			if authed(ctx) {
+				if params.Submission.CanDelete(util.UserBriefContext(ctx)) {
+					<div class="inline-block">
+						<button
+							hx-delete={ templ.URL(fmt.Sprintf("/submissions/%d", params.Submission.ID)) }
+							class="btn btn-red"
+							hx-target="body"
+							hx-swap="outerHTML"
+							hx-confirm={ T(ctx, "subDeleteConfirm") }
+						>{ T(ctx, "removeSub") }</button>
+					</div>
+					{ " " }
+					<form method="post" action={ templ.URL(fmt.Sprintf("/submissions/%d/reevaluate", params.Submission.ID)) } class="inline-block">
+						<button type="submit" class="btn btn-blue">{ T(ctx, "reevaluate") }</button>
+					</form>
+				}
+				if sudoapi.PastesEnabled.Value() && params.Submission.IsEditor(util.UserBriefContext(ctx)) {
+					<form method="post" action={ templ.URL(fmt.Sprintf("/submissions/%d/paste", params.Submission.ID)) } class="inline-block">
+						<button type="submit" class="btn btn-blue">{ T(ctx, "create_paste") }</button>
+					</form>
+				}
+			}
 		</div>
 	</div>
 }
 
-var fmt = chtml.New(chtml.WithClasses(true), chtml.TabWidth(4))
+templ Paste(params PastePageParams) {
+	<div id="paste-holder" hx-trigger={ "kn-poll" + cond(params.Submission.Status != "finished", ", every 1s", "") }>
+		<h1>
+			{ T(ctx, "paste_title") } #{ params.Paste.ID }
+		</h1>
+		<div class="page-holder">
+			<aside class="page-sidebar lg:order-last">
+				@SubmissionSummary(params.Submission, nil, params.LanguageFormatter)
+				if params.OlderSubmissions != nil {
+					<div class="segment-panel">
+						@modals.OlderSubmissions(params.OlderSubmissions)
+					</div>
+				}
+			</aside>
+			<div class="page-content-wrapper">
+				@SubmissionCode(params.Submission, params.Submission.Code, params.ForceShowCode)
+			</div>
+		</div>
+		@SubmissionScoreBreakdown(params.SubmissionPageParams)
+		if params.Paste.IsEditor(util.UserBriefContext(ctx)) {
+			<button
+				hx-delete={ templ.URL(fmt.Sprintf("/pastes/%s", params.Paste.ID)) }
+				hx-target="body"
+				hx-swap="outerHTML"
+				class="btn btn-red"
+				hx-confirm={ T(ctx, "pasteDeleteConfirm") }
+			>{ T(ctx, "del_paste") }</button>
+		}
+	</div>
+}
+
+templ SubmissionScoreBreakdown(params SubmissionPageParams) {
+	<div class="segment-panel">
+		@CompileErrorInfo(params.Submission)
+		if params.Submission.CompileError == nil || !*params.Submission.CompileError {
+			if len(params.Submission.SubTasks)>0&&params.Submission.SubmissionType == kilonova.EvalTypeClassic {
+				@SubmissionSubTasks(params.Submission, false)
+			} else {
+				<h2>{ T(ctx, "tests") }</h2>
+				@SubmissionTestTable(SubmissionTestTableParams{
+					Subtests:      params.Submission.SubTests,
+					Subtasks:      params.Submission.SubTasks,
+					ProblemEditor: params.Submission.ProblemEditor,
+					Precision:     params.Submission.ScorePrecision,
+					SubType:       params.Submission.SubmissionType,
+					Subtask:       nil,
+				})
+			}
+		}
+	</div>
+}
+
+type SubmissionSubTaskParams struct {
+	SubTask       *kilonova.SubmissionSubTask
+	Precision     int32
+	Subtests      []*kilonova.SubTest
+	ProblemEditor bool
+	DefaultOpen   bool
+	BreakdownMode bool
+}
+
+templ SubmissionSubTask(params SubmissionSubTaskParams) {
+	<details id={ fmt.Sprintf("sub-subtask-%d", params.SubTask.ID) } class="list-group-item" open?={ params.DefaultOpen }>
+		<summary class="pb-1 mt-1">
+			<span>
+				{ T(ctx, "nthSubTask", params.SubTask.VisibleID) }{ " " }
+				if params.BreakdownMode {
+					({ T(ctx,"from_sub") } <a href={ templ.URL(fmt.Sprintf("/submissions/%d", params.SubTask.SubmissionID)) }>#{ params.SubTask.SubmissionID }</a>)
+				}
+			</span>
+			if params.SubTask.FinalPercentage != nil {
+				<span class="float-right badge score-cell" data-score={ params.SubTask.FinalPercentage.String() }>
+					{ removeTrailingZeros(params.SubTask.FinalPercentage.Shift(-2).Mul(params.SubTask.Score).StringFixed(params.Precision)) } /{ " " }
+					{ removeTrailingZeros(params.SubTask.Score.StringFixed(params.Precision)) }
+				</span>
+			} else {
+				<span class="float-right badge">
+					<i class="fas fa-cog animate-spin"></i>
+				</span>
+			}
+		</summary>
+		@SubmissionTestTable(SubmissionTestTableParams{
+			Subtests:      params.Subtests,
+			Subtasks:      nil,
+			ProblemEditor: params.ProblemEditor,
+			Precision:     params.Precision,
+			SubType:       kilonova.EvalTypeClassic,
+			Subtask:       params.SubTask,
+		})
+	</details>
+}
+
+templ SubmissionSubTasks(sub *kilonova.FullSubmission, expandedTests bool) {
+	<details id="sub-subtasks" open?={ true }>
+		<summary>
+			<h2 class="inline-block">{ T(ctx,"subTasks") }</h2>
+		</summary>
+		<div class="list-group mb-2">
+			for _, subtask := range sub.SubTasks {
+				@SubmissionSubTask(SubmissionSubTaskParams{
+					SubTask:       subtask,
+					Subtests:      sub.SubTests,
+					ProblemEditor: sub.ProblemEditor,
+					Precision:     sub.ScorePrecision,
+					DefaultOpen:   len(sub.SubTasks) == 1,
+				})
+			}
+		</div>
+	</details>
+	<details id="expanded-tests" open?={ expandedTests }>
+		<summary>
+			<h2 class="inline-block">{ T(ctx,"individualTests") }</h2>
+		</summary>
+		@SubmissionTestTable(SubmissionTestTableParams{
+			Subtests:      sub.SubTests,
+			Subtasks:      sub.SubTasks,
+			ProblemEditor: sub.ProblemEditor,
+			Precision:     sub.ScorePrecision,
+			SubType:       sub.SubmissionType,
+			Subtask:       nil,
+		})
+	</details>
+}
+
+type SubmissionTestTableParams struct {
+	Subtests      []*kilonova.SubTest
+	Subtasks      []*kilonova.SubmissionSubTask
+	Subtask       *kilonova.SubmissionSubTask
+	ProblemEditor bool
+	Precision     int32
+	SubType       kilonova.EvalType
+}
+
+templ SubmissionTestTable(params SubmissionTestTableParams) {
+	<table class={ "kn-table", templ.KV("default-background", params.Subtask != nil), "mb-2" }>
+		<thead>
+			<tr>
+				<th class="py-2" scope="col">
+					{ T(ctx,"id") }
+				</th>
+				<th scope="col">{ T(ctx,"time") }</th>
+				<th scope="col">{ T(ctx,"memory") }</th>
+				<th scope="col">{ T(ctx,"verdict") }</th>
+				if params.SubType == kilonova.EvalTypeClassic {
+					<th scope="col">{ T(ctx,"score") }</th>
+					if len(params.Subtasks) > 0 {
+						<th scope="col">{ T(ctx,"subTasks") }</th>
+					}
+				}
+				if params.ProblemEditor {
+					<th scope="col">{ T(ctx,"output") }</th>
+				}
+			</tr>
+		</thead>
+		<tbody>
+			{{
+		if params.Subtask != nil {
+			var newSubtests []*kilonova.SubTest
+			for _, subtest := range params.Subtests {
+				if slices.Contains(params.Subtask.Subtests, subtest.ID) {
+					newSubtests = append(newSubtests, subtest)
+				}
+			}
+			params.Subtests = newSubtests
+		}
+		slices.SortFunc(params.Subtests, func(a, b *kilonova.SubTest) int {
+			return cmp.Compare(a.VisibleID, b.VisibleID)
+		})
+			}}
+			for _, subtest := range params.Subtests {
+				{{
+		var maxScore = subtest.Score
+		if params.Subtask != nil {
+			maxScore = params.Subtask.Score
+		}
+				}}
+				<tr class="kn-table-row">
+					<th class="py-1" scope="row" id={ fmt.Sprintf("test-%d", subtest.VisibleID) }>
+						{ subtest.VisibleID }
+					</th>
+					if subtest.Skipped {
+						<td>-</td>
+						<td>-</td>
+						<td>
+							@testVerdictString(subtest.Verdict)
+						</td>
+						if params.SubType == kilonova.EvalTypeClassic {
+							<td>-</td>
+						}
+					} else if subtest.Done {
+						<td>{ math.Floor(subtest.Time * 1000) } ms</td>
+						<td>{ humanize.IBytes(uint64(subtest.Memory * 1024)) }</td>
+						<td>
+							@testVerdictString(subtest.Verdict)
+						</td>
+						if params.SubType == kilonova.EvalTypeClassic {
+							<td class="text-black score-cell" data-score={ subtest.Percentage.String() }>
+								if len(params.Subtasks) > 0 {
+									{ subtest.Percentage.String() }% { T(ctx,"correct") }
+								} else {
+									{ removeTrailingZeros(subtest.Percentage.Shift(-2).Mul(maxScore).StringFixed(params.Precision)) } /{ " " }
+									{ removeTrailingZeros(maxScore.StringFixed(params.Precision)) }
+								}
+							</td>
+						}
+					} else {
+						<td></td>
+						<td></td>
+						<td>
+							<div class="fas fa-spinner animate-spin" role="status"></div>{ " " } { T(ctx,"waiting") }
+						</td>
+						if params.SubType == kilonova.EvalTypeClassic {
+							<td>-</td>
+						}
+					}
+					if params.SubType == kilonova.EvalTypeClassic && len(params.Subtasks) > 0 {
+						{{
+	var stks []string
+	for _, subtask := range params.Subtasks {
+		if slices.Contains(subtask.Subtests, subtest.ID) {
+			stks = append(stks, strconv.Itoa(subtask.VisibleID))
+		}
+	}
+						}}
+						<td>{ strings.Join(stks, ", ") }</td>
+					}
+					if params.ProblemEditor {
+						<td>
+							<a href={ templ.URL(fmt.Sprintf("/assets/subtest/%d", subtest.ID)) }>{ T(ctx,"output") }</a>
+						</td>
+					}
+				</tr>
+			}
+		</tbody>
+	</table>
+}
+
+templ CompileErrorInfo(sub *kilonova.FullSubmission) {
+	if sub.CompileError != nil && *sub.CompileError {
+		<h2>{ T(ctx, "compileErr") }</h2>
+		<details id="compile-error-details" open?={ true }>
+			<summary>
+				<h2 class="inline-block">{ T(ctx, "compileMsg") }</h2>
+			</summary>
+			<pre class="mb-2" style="word-break: break-all;">
+				if msg := sub.CompileMessage; msg != nil && len(*msg) > 0 {
+					{ *msg }
+				} else {
+					No compilation message available
+				}
+			</pre>
+		</details>
+	} else if msg := sub.CompileMessage; msg != nil && len(*msg) > 0 {
+		<details id="compile-error-details">
+			<summary>
+				<h2 class="inline-block">{ T(ctx, "compileMsg") }</h2>
+			</summary>
+			<pre class="mb-2" style="word-break: break-all;">
+				{ *msg }
+			</pre>
+		</details>
+	}
+}
+
+templ SubmissionSummary(sub *kilonova.FullSubmission, pasteAuthor *kilonova.UserBrief, langFmt func(string) string) {
+	<div class="segment-panel">
+		<h2>{ T(ctx, "info") }</h2>
+		<table class="kn-table">
+			<tbody>
+				if pasteAuthor != nil {
+					<tr class="kn-table-simple-border">
+						<td class="kn-table-cell">{ T(ctx, "shared_by") }</td>
+						<td class="kn-table-cell">
+							<a href={ templ.URL(fmt.Sprintf("/profile/%s", pasteAuthor.Name)) }>{ pasteAuthor.Name }</a>
+						</td>
+					</tr>
+					<tr class="kn-table-simple-border">
+						<td class="kn-table-cell">{ T(ctx, "sub_id") }</td>
+						<td class="kn-table-cell">
+							<a href={ templ.URL(fmt.Sprintf("/submissions/%d", sub.ID)) }>#{ sub.ID }</a>
+						</td>
+					</tr>
+				}
+				<tr class="kn-table-simple-border">
+					<td class="kn-table-cell">{ T(ctx, "sub_author") }</td>
+					<td class="kn-table-cell">
+						<a href={ templ.URL(fmt.Sprintf("/profile/%s", sub.Author.Name)) }>{ sub.Author.Name }</a>
+					</td>
+				</tr>
+				<tr class="kn-table-simple-border">
+					<td class="kn-table-cell">{ T(ctx, "problemSingle") }</td>
+					<td class="kn-table-cell">
+						{{ problemURL := fmt.Sprintf("/problems/%d", sub.Problem.ID) }}
+						if sub.ContestID != nil {
+							{{ problemURL = fmt.Sprintf("/contests/%d%s", *sub.ContestID, problemURL) }}
+						}
+						<a href={ templ.URL(problemURL) }>
+							{ sub.Problem.Name }
+						</a>
+					</td>
+				</tr>
+				<tr class="kn-table-simple-border">
+					<td class="kn-table-cell">{ T(ctx, "uploadDate") }</td>
+					<td class="kn-table-cell">
+						<server-timestamp timestamp={ sub.CreatedAt.UnixMilli() }></server-timestamp>
+					</td>
+				</tr>
+				if sub.Status == "finished" || sub.Status == "reevaling" {
+					if sub.SubmissionType == "classic" {
+						<tr class="kn-table-simple-border">
+							<td class="kn-table-cell">{ T(ctx, "score") }</td>
+							<td class="kn-table-cell">
+								<span class="badge-lite font-bold score-cell" data-score={ sub.Score.String() }>
+									@modals.FormatScore(sub.Problem, &sub.Score)
+								</span>
+							</td>
+						</tr>
+					} else {
+						<tr class="kn-table-simple-border">
+							<td class="kn-table-cell">{ T(ctx, "verdict") }</td>
+							<td class="kn-table-cell">
+								<span class="badge-lite font-bold">
+									if sub.Score.Equal(decimal.NewFromInt(100)) {
+										<i class="fas fa-fw fa-check"></i> { T(ctx, "accepted") }
+									} else {
+										if sub.ICPCVerdict != nil && len(*sub.ICPCVerdict) > 0 {
+											@icpcVerdictString(*sub.ICPCVerdict)
+										} else {
+											{ T(ctx, "rejected") }
+										}
+									}
+								</span>
+							</td>
+						</tr>
+					}
+					<tr class="kn-table-simple-border">
+						<td class="kn-table-cell">{ T(ctx, "time") }</td>
+						if sub.MaxTime == -1 {
+							<td class="kn-table-cell">-</td>
+						} else {
+							<td class="kn-table-cell">{ math.Floor(sub.MaxTime * 1000) } ms</td>
+						}
+					</tr>
+					<tr class="kn-table-simple-border">
+						<td class="kn-table-cell">{ T(ctx, "memory") }</td>
+						if sub.MaxMemory == -1 {
+							<td class="kn-table-cell">-</td>
+						} else {
+							<td class="kn-table-cell">{ humanize.IBytes(uint64(sub.MaxMemory * 1024)) }</td>
+						}
+					</tr>
+				}
+				if sub.Problem.DefaultPoints.IsPositive() {
+					<tr class="kn-table-simple-border">
+						<td class="kn-table-cell">{ T(ctx, "defaultPoints") }</td>
+						<td class="kn-table-cell">{ sub.Problem.DefaultPoints.String() }</td>
+					</tr>
+				}
+				<tr class="kn-table-simple-border">
+					<td class="kn-table-cell">{ T(ctx, "language") }</td>
+					<td class="kn-table-cell">{ langFmt(sub.Language) }</td>
+				</tr>
+				if sub.CodeSize > 0 {
+					<tr class="kn-table-simple-border">
+						<td class="kn-table-cell">{ T(ctx, "codeSize") }</td>
+						<td class="kn-table-cell">{ humanize.IBytes(uint64(sub.CodeSize)) }</td>
+					</tr>
+				}
+				<tr class="kn-table-simple-border">
+					<td class="kn-table-cell">{ T(ctx, "status") }</td>
+					<td class="kn-table-cell">{ sub.Status }</td>
+				</tr>
+				if sub.CompileTime != nil {
+					<tr class="kn-table-simple-border">
+						<td class="kn-table-cell">{ T(ctx, "compileTime") }</td>
+						<td class="kn-table-cell">{ math.Floor(*sub.CompileTime * 1000) } ms</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}
+
+// forceShow = preact isPaste
+templ SubmissionCode(sub *kilonova.FullSubmission, code []byte, forceShow bool) {
+	{{
+	if len(code) == 0 {
+		return
+	}
+	}}
+	if !(forceShow || sub.CodeTrulyVisible) {
+		<div class="segment-panel">
+			<h2>{ T(ctx, "showSourceCodeQ") }</h2>
+			<p class="mb-4">{ T(ctx, "showSourceCodeExpl") }</p>
+			<a class="inline-block btn btn-blue mx-auto" href="?forceCode=1">
+				{ T(ctx, "showSourceCodeBtn") }
+			</a>
+		</div>
+	} else {
+		<div class="segment-panel">
+			<h2>{ T(ctx, "sourceCode") }:</h2>
+			@SyntaxHighlight(code, sub.Language)
+			<div class="block my-2">
+				<a href={ templ.URL(fmt.Sprintf("/submissions/%d/download", sub.ID)) } class="btn btn-blue text-semibold text-lg">
+					{ T(ctx, "download") }
+				</a>
+			</div>
+		</div>
+	}
+}
+
+var chromeFmt = chtml.New(chtml.WithClasses(true), chtml.TabWidth(4))
 
 func SyntaxHighlight(code []byte, lang string) templ.Component {
 	if code == nil {
@@ -62,10 +526,48 @@ func SyntaxHighlight(code []byte, lang string) templ.Component {
 		if err != nil {
 			return err
 		}
-		if err := fmt.Format(w, styles.Get("github"), it); err != nil {
+		if err := chromeFmt.Format(w, styles.Get("github"), it); err != nil {
 			return err
 		}
 
 		return nil
 	})
+}
+
+var (
+	icpcVerdictRe = regexp.MustCompile(`test_verdict.([a-z_]+)`)
+	testVerdictRe = regexp.MustCompile(`translate:([a-z_]+)`)
+)
+
+func icpcVerdictString(verdict string) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		_, err := io.WriteString(w, templ.EscapeString(icpcVerdictRe.ReplaceAllStringFunc(verdict, func(s string) string {
+			return kilonova.MaybeGetText(util.LanguageContext(ctx), s)
+		})))
+		return err
+	})
+}
+
+func testVerdictString(verdict string) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		translated := testVerdictRe.ReplaceAllStringFunc(verdict, func(s string) string {
+			return kilonova.MaybeGetText(
+				util.LanguageContext(ctx),
+				strings.ReplaceAll(s, "translate:", "test_verdict."),
+			)
+		})
+		lines := strings.Split(translated, "\n")
+		for i := range lines {
+			lines[i] = templ.EscapeString(lines[i])
+		}
+		_, err := io.WriteString(w, strings.Join(lines, "<br/>"))
+		return err
+	})
+}
+
+func removeTrailingZeros(score string) string {
+	if !strings.ContainsRune(score, '.') {
+		return score
+	}
+	return strings.TrimSuffix(strings.TrimRight(score, "0"), ".")
 }

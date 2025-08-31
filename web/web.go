@@ -235,7 +235,7 @@ func (rt *Web) Handler() http.Handler {
 			r.Get("/", rt.submissions())
 			r.Route("/{subID}", func(r chi.Router) {
 				r.Use(rt.ValidateSubmissionID)
-				r.Get("/", rt.submission())
+				r.Get("/", rt.submission)
 				r.Get("/download", rt.downloadSubmission)
 				r.Post("/paste", rt.createPaste)
 				r.Delete("/", rt.deleteSubmission)
@@ -246,7 +246,8 @@ func (rt *Web) Handler() http.Handler {
 		r.Route("/pastes/{pasteID}", func(r chi.Router) {
 			r.Use(rt.checkFlag(sudoapi.PastesEnabled))
 			r.Use(rt.ValidatePasteID)
-			r.Get("/", rt.paste())
+			r.Get("/", rt.paste)
+			r.Delete("/", rt.deletePaste)
 			r.Get("/download", rt.downloadPaste())
 		})
 

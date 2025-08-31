@@ -90,7 +90,7 @@ export function confirm(message: string): Promise<boolean> {
 
 
 document.addEventListener("htmx:confirm", e => {
-	if (!e.detail.target.hasAttribute("hx-confirm")) return
+	if (!e.target?.hasAttribute("hx-confirm")) return
 
 	e.preventDefault();
 	confirm(e.detail.question).then(ok => {

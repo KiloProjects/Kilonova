@@ -10,6 +10,7 @@
 
 .dark {
 	--border: var(--color-gray-200);
+    color-scheme: dark;
 }
 
 @theme inline {

@@ -133,8 +133,8 @@ export function buildScoreBreakdownModal(problemID: number, contestID: number | 
 	document.getElementById("modals")!.appendChild(newVal);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-	Array.from(document.getElementsByClassName("max_score_breakdown")).forEach((val) => {
+export function initMaxscoreBreakdown(el: HTMLElement) {
+	Array.from(el.getElementsByClassName("max_score_breakdown")).forEach((val) => {
 		val.addEventListener("click", (e) => {
 			e.preventDefault();
 			if (e.currentTarget == null) {
@@ -153,4 +153,4 @@ document.addEventListener("DOMContentLoaded", () => {
 			buildScoreBreakdownModal(problemID, contestID);
 		});
 	});
-});
+}

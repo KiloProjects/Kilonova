@@ -4,23 +4,8 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 )
-
-func (s *API) createPaste(w http.ResponseWriter, r *http.Request) {
-	if !util.Submission(r).IsEditor(util.UserBrief(r)) {
-		errorData(w, "You can't create a paste for this submission!", 403)
-		return
-	}
-
-	id, err := s.base.CreatePaste(r.Context(), &util.Submission(r).Submission, util.UserBrief(r))
-	if err != nil {
-		statusError(w, err)
-		return
-	}
-	returnData(w, id)
-}
 
 func (s *API) getPaste(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("pasteID")
@@ -46,26 +31,4 @@ func (s *API) getPaste(w http.ResponseWriter, r *http.Request) {
 		Submission: sub,
 		Author:     paste.Author,
 	})
-}
-
-func (s *API) deletePaste(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("pasteID")
-
-	paste, err := s.base.SubmissionPaste(r.Context(), id)
-	if err != nil {
-		statusError(w, err)
-		return
-	}
-
-	if !paste.IsEditor(util.UserBrief(r)) {
-		errorData(w, "You can't delete this paste", 403)
-		return
-	}
-
-	if err := s.base.DeletePaste(r.Context(), paste.ID); err != nil {
-		statusError(w, err)
-		return
-	}
-
-	returnData(w, "Deleted.")
 }

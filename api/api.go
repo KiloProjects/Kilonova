@@ -311,33 +311,10 @@ func (s *API) HandlerV1() http.Handler {
 		r.Get("/get", s.filterSubs())
 		r.Get("/getByID", s.getSubmissionByID())
 
-		r.Route("/{subID}", func(r chi.Router) {
-			r.Use(s.validateSubmissionID)
-
-			r.With(s.MustBeAuthed).Post("/createPaste", s.createPaste)
-			r.With(s.MustBeAuthed).Post("/delete", webMessageWrapper("Deleted submission", func(ctx context.Context, _ struct{}) error {
-				// Check submission permissions
-				if !(util.UserBriefContext(ctx).Admin || util.SubmissionContext(ctx).ProblemEditor) {
-					return kilonova.Statusf(403, "You cannot delete this submission!")
-				}
-
-				return s.base.DeleteSubmission(ctx, util.SubmissionContext(ctx).ID)
-			}))
-			r.With(s.MustBeAuthed).Post("/reevaluate", webMessageWrapper("Reset submission", func(ctx context.Context, _ struct{}) error {
-				// Check submission permissions
-				if !(util.UserBriefContext(ctx).Admin || util.SubmissionContext(ctx).ProblemEditor) {
-					return kilonova.Statusf(403, "You cannot reevaluate this submission!")
-				}
-
-				return s.base.ResetSubmission(context.WithoutCancel(ctx), util.SubmissionContext(ctx).ID)
-			}))
-		})
-
 		r.With(s.MustBeAuthed).Post("/submit", s.createSubmission)
 	})
 	r.Route("/paste/{pasteID}", func(r chi.Router) {
 		r.Get("/", s.getPaste)
-		r.With(s.MustBeAuthed).Post("/delete", s.deletePaste)
 	})
 	r.Route("/tags", func(r chi.Router) {
 		r.Get("/", s.getTags)

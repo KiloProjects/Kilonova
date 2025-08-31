@@ -123,7 +123,7 @@ templ Layout(params LayoutParams) {
 			@mainHeadTags(params.EnabledLanguages, params.Title, params.Description, params.HashNamer)
 			@params.Head
 		</head>
-		<body>
+		<body hx-ext="morph">
 			// TODO: Use component directly
 			@params.Navbar
 			if user := util.UserFullContext(ctx); user != nil {

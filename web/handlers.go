@@ -22,6 +22,7 @@ import (
 
 	"github.com/KiloProjects/kilonova/web/views"
 	"github.com/KiloProjects/kilonova/web/views/modals"
+	"github.com/KiloProjects/kilonova/web/views/utilviews"
 
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/components/layout"
@@ -555,11 +556,41 @@ func (rt *Web) debugPage() http.HandlerFunc {
 	}
 }
 
-func (rt *Web) submission() http.HandlerFunc {
-	templ := rt.parse(nil, "submission.html")
-	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, templ, &SubParams{util.Submission(r)})
+func (rt *Web) submission(w http.ResponseWriter, r *http.Request) {
+	sub := util.Submission(r)
+
+	var olderSubs *modals.OlderSubmissionsParams = nil
+	var err error
+	if util.UserBrief(r) != nil {
+		var contest *kilonova.Contest
+		if sub.ContestID != nil {
+			contest, err = rt.base.Contest(r.Context(), *sub.ContestID)
+			if err != nil {
+				slog.WarnContext(r.Context(), "Couldn't get contest", slog.Any("err", err))
+			}
+		}
+
+		olderSubs, err = rt.getOlderSubmissions(r.Context(), util.UserBrief(r), sub.UserID, sub.Problem, contest, 5)
+		if err != nil {
+			slog.WarnContext(r.Context(), "Couldn't get submissions", slog.Any("err", err))
+		}
 	}
+	if olderSubs != nil {
+		olderSubs.AutoReload = false
+	}
+
+	rt.runLayout(w, r, &LayoutParams{
+		Title: fmt.Sprintf("%s %d", kilonova.GetText(util.Language(r), "sub"), sub.ID),
+		Head:  utilviews.NoRobotsHead(),
+		Content: views.Submission(views.SubmissionPageParams{
+			Submission:    sub,
+			ForceShowCode: r.URL.Query().Get("forceCode") == "1",
+			LanguageFormatter: func(lang string) string {
+				return rt.base.Language(r.Context(), lang).PrintableName
+			},
+			OlderSubmissions: olderSubs,
+		}),
+	})
 }
 
 func (rt *Web) downloadSubmission(w http.ResponseWriter, r *http.Request) {
@@ -588,7 +619,8 @@ func (rt *Web) deleteSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/submissions", http.StatusFound)
+	w.Header().Set("HX-Redirect", "/submissions")
+	http.Redirect(w, r, "/submissions", http.StatusNoContent)
 }
 
 func (rt *Web) reevaluateSubmission(w http.ResponseWriter, r *http.Request) {
@@ -605,7 +637,7 @@ func (rt *Web) reevaluateSubmission(w http.ResponseWriter, r *http.Request) {
 
 	htmxSuccessToast(w, r, "Reset submission")
 	w.Header().Set("HX-Refresh", "true")
-	w.WriteHeader(http.StatusNoContent)
+	http.Redirect(w, r, "/submissions/"+strconv.Itoa(util.Submission(r).ID), http.StatusFound)
 }
 
 func (rt *Web) createPaste(w http.ResponseWriter, r *http.Request) {
@@ -642,22 +674,62 @@ func (rt *Web) canViewAllSubs(user *kilonova.UserBrief) bool {
 	return user.IsProposer()
 }
 
-func (rt *Web) paste() http.HandlerFunc {
-	templ := rt.parse(nil, "paste.html")
-	return func(w http.ResponseWriter, r *http.Request) {
-		fullSub, err := rt.base.FullSubmission(r.Context(), util.Paste(r).Submission.ID)
-		if err != nil {
-			rt.statusPage(w, r, 500, "N-am putut obține submisia aferentă")
-			return
-		}
-		code, err := rt.base.SubmissionCode(r.Context(), &fullSub.Submission, fullSub.Problem, nil, false)
-		if err != nil {
-			slog.WarnContext(r.Context(), "Could not get submission code", slog.Any("err", err))
-			code = nil
+func (rt *Web) paste(w http.ResponseWriter, r *http.Request) {
+	sub, err := rt.base.FullSubmission(r.Context(), util.Paste(r).Submission.ID)
+	if err != nil {
+		rt.statusPage(w, r, 500, "N-am putut obține submisia aferentă")
+		return
+	}
+
+	var olderSubs *modals.OlderSubmissionsParams
+	if util.UserBrief(r) != nil {
+		var contest *kilonova.Contest
+		if sub.ContestID != nil {
+			contest, err = rt.base.Contest(r.Context(), *sub.ContestID)
+			if err != nil {
+				slog.WarnContext(r.Context(), "Couldn't get contest", slog.Any("err", err))
+			}
 		}
 
-		rt.runTempl(w, r, templ, &PasteParams{util.Paste(r), fullSub, views.SyntaxHighlight(code, fullSub.Language)})
+		olderSubs, err = rt.getOlderSubmissions(r.Context(), util.UserBrief(r), sub.UserID, sub.Problem, contest, 5)
+		if err != nil {
+			slog.WarnContext(r.Context(), "Couldn't get submissions", slog.Any("err", err))
+		}
 	}
+	if olderSubs != nil {
+		olderSubs.AutoReload = false
+	}
+
+	rt.runLayout(w, r, &LayoutParams{
+		Title: fmt.Sprintf("%s #%d", kilonova.GetText(util.Language(r), "sub"), sub.ID),
+		Content: views.Paste(views.PastePageParams{
+			Paste: util.Paste(r),
+			SubmissionPageParams: views.SubmissionPageParams{
+				Submission:    sub,
+				ForceShowCode: true,
+				LanguageFormatter: func(lang string) string {
+					return rt.base.Language(r.Context(), lang).PrintableName
+				},
+				OlderSubmissions: olderSubs,
+			},
+		}),
+	})
+}
+
+func (rt *Web) deletePaste(w http.ResponseWriter, r *http.Request) {
+	// Check paste permissions
+	if !util.Paste(r).IsEditor(util.UserBrief(r)) {
+		rt.statusPage(w, r, 403, "You can't delete this paste!")
+		return
+	}
+
+	if err := rt.base.DeletePaste(r.Context(), util.Paste(r).ID); err != nil {
+		rt.statusPage(w, r, 500, "Could not delete submission")
+		return
+	}
+
+	w.Header().Set("HX-Redirect", "/submissions")
+	http.Redirect(w, r, "/submissions", http.StatusNoContent)
 }
 
 func (rt *Web) downloadPaste() http.HandlerFunc {
@@ -2281,6 +2353,9 @@ func (rt *Web) runLayout(w io.Writer, r *http.Request, params *LayoutParams) {
 		HashNamer:        fsys,
 		HideFooter:       false,
 	}
+	if layoutParams.Head == nil {
+		layoutParams.Head = templ.NopComponent
+	}
 
 	if err := layout.Layout(layoutParams).Render(r.Context(), w); err != nil {
 		slog.WarnContext(r.Context(), "Error rendering layout", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", util.UserBrief(r)))
@@ -2397,5 +2472,6 @@ func (rt *Web) getOlderSubmissions(ctx context.Context, lookingUser *kilonova.Us
 		Submissions: subs,
 		NumHidden:   subs.Count - len(subs.Submissions),
 		AllFinished: allFinished,
+		AutoReload:  true,
 	}, nil
 }

@@ -19,6 +19,7 @@ type OlderSubmissionsParams struct {
 	Submissions *sudoapi.Submissions
 	NumHidden   int
 	AllFinished bool
+	AutoReload bool
 }
 
 func removeTrailingZeros(score string) string {
@@ -52,13 +53,13 @@ func cond(cond bool, then string, otherwise string) string {
 }
 
 templ OlderSubmissions(params *OlderSubmissionsParams) {
-	<details hx-ext="morph" open>
+	<details open>
 		{{ url := fmt.Sprintf("/problems/%d/submissions/?user_id=%d", params.Problem.ID, params.UserID) }}
 		if params.Contest != nil {
 			{{ url = fmt.Sprintf("/contests/%d/problems/%d/submissions/?user_id=%d", params.Contest.ID, params.Problem.ID, params.UserID) }}
 		}
 		<summary><h2 class="inline-block mb-2">{ tutils.T(ctx, "oldSubs") }</h2></summary>
-		<div id="older_subs" hx-select="#older_subs" hx-get={ templ.URL(url) } hx-swap="outerHTML" hx-trigger={ "kn-poll" + cond(!params.AllFinished, ",load delay:1s", "") }>
+		<div id="older_subs" hx-select="#older_subs" hx-get={ templ.URL(url) } hx-swap="outerHTML" hx-trigger={ "kn-poll" + cond(!params.AllFinished && params.AutoReload, ",every 1s", "") }>
 			if len(params.Submissions.Submissions) > 0 {
 				for _, submission := range params.Submissions.Submissions {
 					<a href={ templ.URL(fmt.Sprintf("/submissions/%d", submission.ID)) } class="black-anchor flex justify-between items-center rounded-sm py-1 px-2 hoverable">

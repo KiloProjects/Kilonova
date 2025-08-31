@@ -27,6 +27,7 @@ type OlderSubmissionsParams struct {
 	Submissions *sudoapi.Submissions
 	NumHidden   int
 	AllFinished bool
+	AutoReload  bool
 }
 
 func removeTrailingZeros(score string) string {
@@ -79,7 +80,7 @@ func FormatScore(problem *kilonova.Problem, score *decimal.Decimal) templ.Compon
 				var templ_7745c5c3_Var2 string
 				templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(removeTrailingZeros(score.StringFixed(problem.ScorePrecision)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 42, Col: 67}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 43, Col: 67}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 				if templ_7745c5c3_Err != nil {
@@ -119,7 +120,7 @@ func OlderSubmissions(params *OlderSubmissionsParams) templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<details hx-ext=\"morph\" open>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<details open>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -134,7 +135,7 @@ func OlderSubmissions(params *OlderSubmissionsParams) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(tutils.T(ctx, "oldSubs"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 60, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 61, Col: 67}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -147,7 +148,7 @@ func OlderSubmissions(params *OlderSubmissionsParams) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(templ.URL(url))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 61, Col: 70}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 62, Col: 70}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -158,9 +159,9 @@ func OlderSubmissions(params *OlderSubmissionsParams) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 string
-		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs("kn-poll" + cond(!params.AllFinished, ",load delay:1s", ""))
+		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs("kn-poll" + cond(!params.AllFinished && params.AutoReload, ",every 1s", ""))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 61, Col: 165}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 62, Col: 181}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -179,7 +180,7 @@ func OlderSubmissions(params *OlderSubmissionsParams) templ.Component {
 				var templ_7745c5c3_Var7 templ.SafeURL
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/submissions/%d", submission.ID)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 64, Col: 71}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 65, Col: 71}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -192,7 +193,7 @@ func OlderSubmissions(params *OlderSubmissionsParams) templ.Component {
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(submission.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 66, Col: 23}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 67, Col: 23}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -205,7 +206,7 @@ func OlderSubmissions(params *OlderSubmissionsParams) templ.Component {
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(submission.CreatedAt.UnixMilli())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 66, Col: 89}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 67, Col: 89}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
@@ -255,7 +256,7 @@ func OlderSubmissions(params *OlderSubmissionsParams) templ.Component {
 			var templ_7745c5c3_Var10 templ.SafeURL
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(url))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 83, Col: 41}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 84, Col: 41}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -269,7 +270,7 @@ func OlderSubmissions(params *OlderSubmissionsParams) templ.Component {
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(tutils.T(ctx, "seeOne"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 85, Col: 31}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 86, Col: 31}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -279,7 +280,7 @@ func OlderSubmissions(params *OlderSubmissionsParams) templ.Component {
 				var templ_7745c5c3_Var12 string
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(tutils.T(ctx, "seeU20", params.NumHidden))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 87, Col: 49}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 88, Col: 49}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
@@ -289,7 +290,7 @@ func OlderSubmissions(params *OlderSubmissionsParams) templ.Component {
 				var templ_7745c5c3_Var13 string
 				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(tutils.T(ctx, "seeMany", params.NumHidden))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 89, Col: 50}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/modals/older_subs.templ`, Line: 90, Col: 50}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {

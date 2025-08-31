@@ -14,7 +14,6 @@ export class ServerTimestamp extends LitElement {
 		if (typeof this.timestamp === "undefined") {
 			return html`<span>...</span>`;
 		}
-		console.log(this.timestamp, this.extended);
 		return html`<span>${parseTime(this.timestamp, this.extended)}</span>`;
 	}
 }
