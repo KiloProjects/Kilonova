@@ -570,7 +570,7 @@ func (rt *Web) submission(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		olderSubs, err = rt.getOlderSubmissions(r.Context(), util.UserBrief(r), sub.UserID, sub.Problem, contest, 5)
+		olderSubs, err = rt.getOlderSubmissions(r.Context(), util.UserBrief(r), util.UserBrief(r).ID, sub.Problem, contest, 5)
 		if err != nil {
 			slog.WarnContext(r.Context(), "Couldn't get submissions", slog.Any("err", err))
 		}
@@ -691,7 +691,7 @@ func (rt *Web) paste(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		olderSubs, err = rt.getOlderSubmissions(r.Context(), util.UserBrief(r), sub.UserID, sub.Problem, contest, 5)
+		olderSubs, err = rt.getOlderSubmissions(r.Context(), util.UserBrief(r), util.UserBrief(r).ID, sub.Problem, contest, 5)
 		if err != nil {
 			slog.WarnContext(r.Context(), "Couldn't get submissions", slog.Any("err", err))
 		}
