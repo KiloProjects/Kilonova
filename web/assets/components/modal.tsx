@@ -102,8 +102,16 @@ document.addEventListener("DOMContentLoaded", e => {
 	const observer = new MutationObserver(records => {
 		for (let record of records) {
 			for (let node of record.addedNodes) {
+				if (!(node instanceof Element)) {
+					continue
+				}
+
 				if (node instanceof HTMLDialogElement) {
 					node.showModal();
+				}
+
+				for (let dNode of node.querySelectorAll("dialog")) {
+					dNode.showModal();
 				}
 			}
 		}
