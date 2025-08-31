@@ -2,10 +2,24 @@ import CopyButtonPlugin from "highlightjs-copy";
 import htmx from "htmx.org";
 import {Idiomorph} from 'idiomorph';
 import * as Sentry from "@sentry/browser";
+import "katex/contrib/copy-tex";
+import CodeMirror from "codemirror";
+import "codemirror/addon/mode/overlay";
+import "codemirror/mode/meta";
+import "codemirror/mode/markdown/markdown";
+import "codemirror/mode/gfm/gfm";
+import "codemirror/mode/clike/clike";
+import "codemirror/mode/pascal/pascal";
+import "codemirror/mode/go/go";
+import "codemirror/mode/python/python";
+import "codemirror/mode/haskell/haskell";
+import "codemirror/mode/javascript/javascript";
+import "codemirror/mode/php/php";
+import "codemirror/mode/rust/rust";
 
 (() => {
 	var platformInfo = JSON.parse(document.getElementById("platform_info")?.textContent ?? "{}");
-	if(typeof platformInfo.sentryDSN == 'string') {
+	if (typeof platformInfo.sentryDSN == 'string') {
 		console.log("starting sentry", platformInfo.sentryDSN)
 		Sentry.init({
 			dsn: platformInfo.sentryDSN,
@@ -13,6 +27,7 @@ import * as Sentry from "@sentry/browser";
 			debug: true,
 			environment: platformInfo.debug ? "development" : "production",
 			release: platformInfo.internalVersion ?? "unknown",
+			ignoreErrors: ["visitor-analytics", "twipla", "va-endpoint", "domPath are required"],
 		})
 	}
 })()
@@ -23,7 +38,7 @@ function createMorphConfig(swapStyle) {
 			morphStyle: "outerHTML",
 		};
 	} else if (swapStyle === "morph:innerHTML") {
-		return { morphStyle: "innerHTML" };
+		return {morphStyle: "innerHTML"};
 	} else if (swapStyle.startsWith("morph:")) {
 		return Function("return (" + swapStyle.slice(6) + ")")();
 	}
@@ -39,29 +54,14 @@ htmx.defineExtension("morph", {
 		let config = createMorphConfig(swapStyle);
 		if (config) {
 			config.callbacks = config.callbacks || {};
-			config.callbacks.beforeAttributeUpdated = (attName: string, node: Element, mutationType: 'update'|'remove'): boolean => {
-				if(typeof node == 'undefined') return true;
+			config.callbacks.beforeAttributeUpdated = (attName: string, node: Element, mutationType: 'update' | 'remove'): boolean => {
+				if (typeof node == 'undefined') return true;
 				return !(node.nodeName == "DETAILS" && attName == "open")
 			}
 			return Idiomorph.morph(target, fragment.children, config);
 		}
 	},
 });
-
-import "katex/contrib/copy-tex";
-import CodeMirror from "codemirror";
-import "codemirror/addon/mode/overlay";
-import "codemirror/mode/meta";
-import "codemirror/mode/markdown/markdown";
-import "codemirror/mode/gfm/gfm";
-import "codemirror/mode/clike/clike";
-import "codemirror/mode/pascal/pascal";
-import "codemirror/mode/go/go";
-import "codemirror/mode/python/python";
-import "codemirror/mode/haskell/haskell";
-import "codemirror/mode/javascript/javascript";
-import "codemirror/mode/php/php";
-import "codemirror/mode/rust/rust";
 
 window.htmx = htmx;
 
