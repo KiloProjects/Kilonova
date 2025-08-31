@@ -12,7 +12,7 @@ import * as Sentry from "@sentry/browser";
 			sendDefaultPii: true,
 			debug: true,
 			environment: platformInfo.debug ? "development" : "production",
-			release: platformInfo.version ?? "unknown",
+			release: platformInfo.internalVersion ?? "unknown",
 		})
 	}
 })()
