@@ -121,7 +121,7 @@
         bundled.setCodeLangPreference(e.target.value)
         let lang = bundled.languages[e.target.value]
         if (lang !== null) {
-            cm.setOption("mode", lang)
+            cm.setLanguage(lang)
         }
     })
 
