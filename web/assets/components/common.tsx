@@ -144,109 +144,11 @@ export function BigSpinner() {
 	);
 }
 
-export function InlineSpinner() {
-	return (
-		<div class="mx-auto w-full text-center">
-			<div>
-				<i class="fas fa-spinner animate-spin"></i> {getText("loading")}
-			</div>
-		</div>
-	);
-}
-
 export function formatScoreStr(score: string): string {
 	if (score.includes(".")) {
 		return score.replace(/\.?0+$/, "");
 	}
 	return score;
-}
-
-function SubmissionStatus({ sub }: { sub: Submission }) {
-	switch (sub.status) {
-		case "finished":
-			if (sub.submission_type == "classic") {
-				return <>{formatScoreStr(sub.score.toFixed(sub.score_precision))}</>;
-			}
-			if (sub.score == 100) return <i class="fas fa-fw fa-check"></i>;
-			return <i class="fas fa-fw fa-xmark"></i>;
-		case "working":
-			return <i class="fas fa-cog animate-spin"></i>;
-		default:
-			return <i class="fas fa-clock"></i>;
-	}
-}
-
-export function OlderSubmissions({
-	userID,
-	problemID,
-	contestID,
-	limit = 5,
-	initialData,
-}: {
-	userID: number;
-	problemID: number;
-	contestID?: number;
-	limit?: number;
-	initialData?: Submissions;
-}) {
-	let [subs, setSubs] = useState<Submissions | undefined>(initialData);
-	let [numHidden, setNumHidden] = useState(initialData?.count ? initialData?.count - limit : 0);
-
-	async function load() {
-		var data = await defaultClient.getSubmissions({ user_id: userID, problem_id: problemID, contest_id: contestID, limit, page: 1 });
-		setSubs(data);
-		setNumHidden(Math.max(data.count - limit, 0));
-	}
-
-	useEffect(() => {
-		// TODO: Test
-		if (typeof initialData === "undefined") {
-			load().catch(console.error);
-		}
-	}, [userID, problemID, contestID, limit]);
-
-	useEffect(() => {
-		const poll = async (e) => load();
-		document.addEventListener("kn-poll", poll);
-		return () => document.removeEventListener("kn-poll", poll);
-	}, []);
-
-	return (
-		<details open>
-			<summary>
-				<h2 class="inline-block mb-2">{getText("oldSubs")}</h2>
-			</summary>
-			{typeof subs == "undefined" ? (
-				<InlineSpinner />
-			) : (
-				<>
-					{subs?.submissions.length > 0 ? (
-						<div>
-							{subs.submissions.map((sub) => (
-								<a
-									href={`/submissions/${sub.id}`}
-									class="black-anchor flex justify-between items-center rounded-sm py-1 px-2 hoverable"
-									key={sub.id}
-								>
-									<span>{`#${sub.id}: ${dayjs(sub.created_at).format("DD/MM/YYYY HH:mm")}`}</span>
-									<span class="badge-lite text-sm">
-										<SubmissionStatus sub={sub} />
-									</span>
-								</a>
-							))}
-						</div>
-					) : (
-						<p class="px-2">{getText("noSub")}</p>
-					)}
-					{numHidden > 0 && (
-						<a class="px-2" href={`${contestID ? `/contests/${contestID}` : ""}/problems/${problemID}/submissions/?user_id=${userID}`}>
-							{getText(numHidden == 1 ? "seeOne" : numHidden < 20 ? "seeU20" : "seeMany", numHidden)}
-						</a>
-					)}
-				</>
-			)}
-		</details>
-	);
 }
 
 function ProgressChecker({ id }: { id: number }) {

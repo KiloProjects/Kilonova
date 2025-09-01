@@ -34,12 +34,14 @@ export declare global {
 	}
 
 	let bundled: typeof import("./app");
+	let vendored: typeof import("./vendored");
 
 	interface Window {
 		platform_info: PlatformInfo;
 		katex: katex;
 		htmx: typeof htmx;
 		bundled: typeof import("./app");
+		vendored: typeof import("./vendored");
 	}
 
 	interface Document {

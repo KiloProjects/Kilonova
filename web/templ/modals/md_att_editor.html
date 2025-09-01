@@ -67,12 +67,6 @@
     </details>
 </div>
 
-<style>
-    .CodeMirror {
-        min-height: 250px;
-    }
-</style>
-
 <script>
     let changed = false;
     window.addEventListener("beforeunload", e => {
@@ -139,19 +133,16 @@
 
 <script>
     const apiPrefix = {{.APIPrefix}};
-    var cm = CodeMirror.fromTextArea(document.getElementById("description"), {
-        mode: {
-            name: "gfm",
-            gitHubSpice: false,
-            emoji: false,
-        },
-    });
-    cm.setSize(null, "100%");
-    cm.focus();
-    cm.on("change", () => changed = true)
+    let cm = new vendored.KNEditor({
+	    textArea: document.getElementById("description"),
+	    language: "md",
+        dynamicSize: true,
+        autoFocus: true,
+    })
+    cm.onChange(() => changed = true)
 
     document.getElementById("formatDocumentButton").addEventListener("click", () => {
-        let val = cm.getValue();
+        let val = cm.getText();
         let newVal = rewriteLaTeXMarkdown(val);
         if(val === newVal) {
             bundled.createToast({
@@ -160,24 +151,22 @@
             })
             return
         }
-        cm.setValue(newVal);
+        cm.setText(newVal);
         bundled.createToast({
             status: "success",
             description: bundled.getText("notif.edit.rewrote_rule")
         })
     })
 
-    cm.on('beforeChange', (cm, event) => {
-        if(event.origin === "paste") {
-            if(document.getElementById("autoformat_paste").checked) {
-                let newVal = event.text.map(rewriteLaTeXMarkdown);
-                if(!bundled.isEqual(newVal, event.text)) {
-                    event.update(null, null, newVal);
-                    bundled.createToast({
-                        status: "success",
-                        description: bundled.getText("notif.edit.rewrote_rule")
-                    })
-                }
+    cm.onPaste((pasteText) => {
+	    if(document.getElementById("autoformat_paste")?.checked) {
+            let newVal = pasteText.map(rewriteLaTeXMarkdown);
+            if(!bundled.isEqual(newVal, pasteText)) {
+                bundled.createToast({
+                    status: "success",
+                    description: bundled.getText("notif.edit.rewrote_rule")
+                })
+	            return newVal
             }
         }
     })
@@ -208,7 +197,7 @@
             currentLang = newLang
             setType(newType)
             if (document.getElementById("attID").value != -1) {
-                cm.setValue("")
+                cm.setText("")
                 changed = false
             }
             document.getElementById("attID").value = -1
@@ -236,7 +225,7 @@
 
     async function updateStatement(e) {
         e.preventDefault();
-        let content = cm.getValue();
+        let content = cm.getText();
         let filename = formatStatement(document.getElementById("variantSelect").value, document.getElementById("variantType").value);
         let id = document.getElementById("attID").value
 

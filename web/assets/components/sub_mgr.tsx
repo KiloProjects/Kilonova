@@ -1,21 +1,10 @@
-import { h, Fragment, render, Component } from "preact";
-import { useState } from "preact/hooks";
-import register from "preact-custom-element";
-import { prettyLanguages } from "../langs";
+import { h } from "preact";
 
 import getText, { maybeGetText } from "../translation";
-import { createToast, apiToast } from "../toast";
-const slugify = (str) =>
-	str
-		.toLowerCase()
-		.trim()
-		.replace(/[^\w\s-]/g, "")
-		.replace(/[\s_-]+/g, "-")
-		.replace(/^-+|-+$/g, "");
 
-import { BigSpinner, OlderSubmissions, formatScoreStr } from "./common";
+import { formatScoreStr } from "./common";
 
-import { parseTime, sizeFormatter, getGradient, fromBase64 } from "../util";
+import { sizeFormatter, getGradient } from "../util";
 
 function testVerdictString(verdict: string): string | h.JSX.Element {
 	let txt = verdict

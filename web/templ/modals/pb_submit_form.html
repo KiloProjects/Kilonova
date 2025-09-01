@@ -74,17 +74,25 @@
 </form>
 
 <script>
-    let problemID = {{.Problem.ID}};
+    const problemID = {{.Problem.ID}};
+    const pageName = {{.Topbar.Page}};
 
     function isOutputOnly() {
         const languages = Object.values(document.getElementById("sub_language").options).map(x => x.value);
         return languages.length == 1 && languages[0] == "outputOnly"
     }
 
-    // cm name should remain, or be updated in pb_submit.html as well
-    var cm = CodeMirror.fromTextArea(document.getElementById("SubArea"), {
-        mode: bundled.languages[bundled.getCodeLangPreference()],
-    });
+    let cmConfig = {
+        textArea: document.getElementById("SubArea"),
+        language: bundled.languages[bundled.getCodeLangPreference()],
+    }
+
+    if(pageName === "pb_submit") {
+        cmConfig.dynamicSize = true;
+        cmConfig.autoFocus = true;
+    }
+
+    let cm = new vendored.KNEditor(cmConfig)
 
     document.getElementById("submit_style").addEventListener("change", (e) => {
         const val = e.currentTarget.value;
@@ -123,7 +131,7 @@
         form.set("language", document.getElementById("sub_language").value)
 
         if(document.getElementById("submit_style").value == "code") {
-            const code = cm.getValue().trim()
+            const code = cm.getText().trim()
             if(code.length == 0) {
                 bundled.apiToast({status: "error", data: bundled.getText("no_code")})
                 return;

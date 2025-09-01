@@ -11,11 +11,6 @@
     <div class="segment-panel">ERROR</div>
 {{end}}
 
-<style>
-    #addDetails .CodeMirror {
-        min-height: 250px;
-    }
-</style>
 <script>
 var rowreg = /row-att-([0-9]+)/;
 const apiPrefix = {{.APIPrefix}};
@@ -233,18 +228,19 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
         </details>
         <script>
             let editCMChanged = false
-            var editCM = CodeMirror.fromTextArea(document.getElementById("attEditContent"), {
-                mode: "text/plain",
-            });
-            // editCM.setSize(null, "100%");
+            var editCM = new vendored.KNEditor({
+	            textArea: document.getElementById("attEditContent"),
+	            language: "text",
+	            // dynamicSize: true,
+            })
+            editCM.onChange(() => editCMChanged = true)
             document.getElementById("addDetails").addEventListener("toggle", () => {
                 editCM.refresh()
             })
-            editCM.on("change", () => editCMChanged = true)
-            
+
             async function editAttachment(e) {
                 e.preventDefault();
-                let content = editCM.getValue();
+                let content = editCM.getText();
                 let filename = document.getElementById("editAttName").value;
         
                 let form = new FormData();
@@ -283,8 +279,8 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
                 document.getElementById("editAttID").value = id
                 document.getElementById("editAttName").value = rez.data.metadata.name
                 document.getElementById("ediAttNameView").innerText = rez.data.metadata.name
-                editCM.setValue(bundled.fromBase64(rez.data.data))
-                editCM.setOption("mode", bundled.get_cm_mode(rez.data.metadata.name));
+                editCM.setText(bundled.fromBase64(rez.data.data))
+                editCM.setLanguage(bundled.get_cm_mode(rez.data.metadata.name));
                 editCMChanged = false
         
                 document.getElementById("editAttView").classList.toggle("hidden", false);
@@ -303,26 +299,27 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
                 document.getElementById("editAttView").classList.toggle("hidden", true);
                 document.getElementById("editAttID").value = ""
                 document.getElementById("editAttName").value = ""
-                editCM.setValue("")
+                editCM.setText("")
             }
         
             document.getElementById("editAttForm").addEventListener("submit", editAttachment)
         </script>
         <script>
             let addCMChanged = false
-            var addCM = CodeMirror.fromTextArea(document.getElementById("attCreateContent"), {
-                mode: "text/plain",
-            });
-            addCM.setSize(null, "100%");
-            addCM.on("change", () => addCMChanged = true)
+            var addCM = new vendored.KNEditor({
+	            textArea: document.getElementById("attCreateContent"),
+	            language: "text",
+	            dynamicSize: true,
+            })
+            addCM.onChange(() => addCMChanged = true)
             document.getElementById("addDetails").addEventListener("toggle", () => {
                 addCM.refresh()
             })
             document.getElementById("attCreateName").addEventListener("input", e => {
                 let newMode = bundled.get_cm_mode(e.target.value);
                 console.log(newMode)
-                if(addCM.getOption("mode") !== newMode) {
-                    addCM.setOption("mode", newMode)
+                if(addCM.getLanguage() !== newMode) {
+                    addCM.setLanguage(newMode)
                 }
 
                 updateAttFlagsFromName(
@@ -335,7 +332,7 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
             
             async function createNewAttachment(e) {
                 e.preventDefault();
-                let content = addCM.getValue();
+                let content = addCM.getText();
                 let filename = document.getElementById("attCreateName").value;
         
                 let form = new FormData();

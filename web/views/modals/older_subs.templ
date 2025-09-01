@@ -78,7 +78,7 @@ templ OlderSubmissions(params *OlderSubmissionsParams) {
 					</a>
 				}
 			} else {
-				<p class="px-2">{{ tutils.T(ctx, "noSub") }}</p>
+				<p class="px-2">{ tutils.T(ctx, "noSub") }</p>
 			}
 			if params.NumHidden > 0 {
 				<a class="px-2" href={ templ.URL(url) }>

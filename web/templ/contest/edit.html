@@ -321,12 +321,6 @@
     </div>
 </div>
 
-<style>
-    .CodeMirror {
-        min-height: 250px;
-    }
-</style>
-
 <script>
     // invite handling
 
@@ -408,14 +402,14 @@ async function updateContest(e) {
             max_subs: fd.get("max_subs"),
             public_join: document.getElementById("c_public_join").checked,
             visible: document.getElementById("c_visible").checked,
-            start_time: bundled.formatISO3601(fd.get("start_time")),
-            end_time: bundled.formatISO3601(fd.get("end_time")),
+            start_time: bundled.formatISO8601(fd.get("start_time")),
+            end_time: bundled.formatISO8601(fd.get("end_time")),
 
             public_leaderboard: document.getElementById("c_public_leaderboard").checked,
             leaderboard_advanced_filter: document.getElementById("c_advanced_filters").checked,
             leaderboard_style: fd.get("leaderboard_style"),
             change_leaderboard_freeze: true,
-            leaderboard_freeze: leaderboardFreeze ? bundled.formatISO3601(fd.get("freeze_time")) : undefined,
+            leaderboard_freeze: leaderboardFreeze ? bundled.formatISO8601(fd.get("freeze_time")) : undefined,
             icpc_submission_penalty: fd.get("icpc_submission_penalty"),
 
             question_cooldown: parseInt(fd.get("question_cooldown"))*1000,
@@ -473,19 +467,16 @@ window.addEventListener("beforeunload", e => {
         return true
     }
 })
-var desc_cm = CodeMirror.fromTextArea(document.getElementById("contestDesc"), {
-    mode: {
-        name: "gfm",
-        gitHubSpice: false,
-        emoji: false,
-    },
-});
-desc_cm.setSize(null, "100%");
-desc_cm.on("change", () => descCMChanged = true)
+var desc_cm = new vendored.KNEditor({
+	textarea: document.getElementById("contestDesc"),
+	language: "md",
+	dynamicSize: true,
+})
+desc_cm.onChange(() => descCMChanged = true)
 
 async function updateContestDesc(e) {
     e.preventDefault()
-    const rez = await bundled.postCall(`/contest/${contest_id}/update`, {description: desc_cm.getValue()})
+    const rez = await bundled.postCall(`/contest/${contest_id}/update`, {description: desc_cm.getText()})
     bundled.apiToast(rez)
     if(rez.status === "success") {
         descCMChanged = false

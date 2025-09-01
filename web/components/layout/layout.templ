@@ -118,10 +118,6 @@ templ mainHeadTags(enabledLanguages map[string]string, title string, description
             window.htmx.logAll();
         }
 
-        CodeMirror.defineInitHook(bundled.CodeMirrorThemeHook)
-        if(bundled.isDarkMode()) {  // Dark Mode
-            CodeMirror.defaults.theme = "monokai";
-        }
     </script>
 	<link rel="stylesheet" href={ "/" + hashNamer.HashName("static/chroma.css") }/>
 	<link rel="stylesheet" href={ "/" + hashNamer.HashName("static/vendored.css") }/>

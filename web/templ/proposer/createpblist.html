@@ -52,14 +52,11 @@
 
 
 <script>
-var cr_pblist_cm = CodeMirror.fromTextArea(document.getElementById("cr_pblist_desc_tarea"), {
-	mode: {
-		name: "gfm",
-		gitHubSpice: false,
-		emoji: false,
-	}
-});
-cr_pblist_cm.setSize(null, "100%");
+var cr_pblist_cm = new vendored.KNEditor({
+	textArea: document.getElementById("cr_pblist_desc_tarea"),
+	language: "md",
+	dynamicSize: true,
+})
 
 async function createProblemList(e) {
 	e.preventDefault()
@@ -68,7 +65,7 @@ async function createProblemList(e) {
 
 	let data = {
 		title: document.getElementById("cr_pblist_title").value,
-		description: cr_pblist_cm.getValue(),
+		description: cr_pblist_cm.getText(),
 		ids: bundled.stringIntToNumber(document.getElementById("cr_pblist_pbs").value.split(',')),
         sublists: bundled.stringIntToNumber(document.getElementById("cr_pblist_sublists").value.split(',')),
         sidebar_hidable: document.getElementById("cr_sidebar_hidable").checked,

@@ -88,12 +88,93 @@ htmx.on(("htmx:afterSwap"), (el) => {
 	}
 });
 
+CodeMirror.defaults.lineNumbers = true;
+CodeMirror.defaults.indentUnit = 4;
+CodeMirror.defaults.tabSize = 4;
+CodeMirror.defaults.indentWithTabs = true;
+CodeMirror.defaults.lineWrapping = true;
+CodeMirror.defaults.viewportMargin = Infinity;
+CodeMirror.defineInitHook(bundled.CodeMirrorThemeHook);
+if (bundled.isDarkMode()) {  // Dark Mode
+	CodeMirror.defaults.theme = "monokai";
+}
 window.CodeMirror = CodeMirror;
-window.CodeMirror.defaults.lineNumbers = true;
-window.CodeMirror.defaults.indentUnit = 4;
-window.CodeMirror.defaults.tabSize = 4;
-window.CodeMirror.defaults.indentWithTabs = true;
-window.CodeMirror.defaults.lineWrapping = true;
-window.CodeMirror.defaults.viewportMargin = Infinity;
 
 // import "codemirror/mode/stex/stex";
+
+export type KNEditorOptions = {
+	textArea: HTMLTextAreaElement;
+	language: "md" | "text" | string;
+
+	dynamicSize?: boolean;
+	autoFocus?: boolean;
+}
+
+export class KNEditor {
+	cm: CodeMirror.EditorFromTextArea;
+	// TODO:
+	//  - Check all codemirror function calls have been adapted
+	//  - Migrate to CM6
+	//  - Eliminate unnecessary wrappers for get/setLanguage (modes)
+	//     - Abstract away language internals
+
+	constructor(opts: KNEditorOptions) {
+		let cmSettings: CodeMirror.EditorConfiguration = {}
+		if (opts.language == "md") {
+			cmSettings.mode = {
+				name: "gfm",
+				gitHubSpice: false,
+				emoji: false
+			}
+		} else if(opts.language == "text" || opts.language == "text/plain") {
+			cmSettings.mode = "text/plain";
+		} else {
+			cmSettings.mode = opts.language;
+		}
+		this.cm = CodeMirror.fromTextArea(opts.textArea, cmSettings)
+
+		if (opts.dynamicSize) {
+			this.cm.setSize(null, "100%");
+			// min-height: 250px;
+			this.cm.getWrapperElement().style.minHeight = "250px";
+		}
+		if (opts.autoFocus) {
+			this.cm.focus();
+		}
+	}
+
+	getText() {
+		return this.cm.getValue();
+	}
+
+	setText(content: string) {
+		this.cm.setValue(content);
+	}
+
+	onChange(callback: () => void) {
+		this.cm.on("change", callback);
+	}
+
+	onPaste(cb: (pasteText: string[]) => undefined | string[]) {
+		this.cm.on('beforeChange', (cm, event) => {
+			if(event.origin === "paste") {
+				let newVal = cb(event.text);
+				if(typeof newVal !== 'undefined') {
+					event.update?.(undefined, undefined, newVal);
+				}
+			}
+		})
+	}
+
+	setLanguage(lang: string) {
+		this.cm.setOption("mode", lang);
+	}
+
+	getLanguage() {
+		return this.cm.getOption("mode");
+	}
+
+	refresh() {
+		this.cm.refresh();
+	}
+}

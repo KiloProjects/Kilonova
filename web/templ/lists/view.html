@@ -97,8 +97,8 @@
                 }
                 let startTime = bundled.dayjs(), endTime = startTime.add(dur, 'minute')
                 res = await bundled.postCall(`/contest/${id}/update`, {
-                    start_time: bundled.formatISO3601(startTime),
-                    end_time: bundled.formatISO3601(endTime)
+                    start_time: bundled.formatISO8601(startTime),
+                    end_time: bundled.formatISO8601(endTime)
                 })
                 if(res.status === "error") {
                     bundled.apiTost(res)
@@ -189,20 +189,18 @@ document.getElementById("problemBulkVizForm").addEventListener("submit", updateP
 {{ end }}
 <script>
 let problemListID = {{.ID}};
-var cm = CodeMirror.fromTextArea(document.getElementById("desc_tarea"), {
-	mode: {
-		name: "gfm",
-		gitHubSpice: false,
-		emoji: false,
-	}
+var cm = new vendored.KNEditor({
+	textArea: document.getElementById("desc_tarea"),
+	language: "md",
+
+	dynamicSize: true
 });
-cm.setSize(null, "100%");
 
 async function updateProblemList(e) {
 	e.preventDefault();
 	let data = {
 		title: document.getElementById("pblist-title").value,
-		description: cm.getValue(),
+		description: cm.getText(),
 		list: bundled.stringIntToNumber(document.getElementById("pblist-list").value.split(',')),
         sublists: bundled.stringIntToNumber(document.getElementById("pblist-sublists").value.split(',')),
         sidebar_hidable: document.getElementById("sidebar_hidable").checked,

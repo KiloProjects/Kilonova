@@ -562,15 +562,7 @@ func (rt *Web) submission(w http.ResponseWriter, r *http.Request) {
 	var olderSubs *modals.OlderSubmissionsParams = nil
 	var err error
 	if util.UserBrief(r) != nil {
-		var contest *kilonova.Contest
-		if sub.ContestID != nil {
-			contest, err = rt.base.Contest(r.Context(), *sub.ContestID)
-			if err != nil {
-				slog.WarnContext(r.Context(), "Couldn't get contest", slog.Any("err", err))
-			}
-		}
-
-		olderSubs, err = rt.getOlderSubmissions(r.Context(), util.UserBrief(r), util.UserBrief(r).ID, sub.Problem, contest, 5)
+		olderSubs, err = rt.getOlderSubmissions(r.Context(), util.UserBrief(r), util.UserBrief(r).ID, sub.Problem, nil, 5)
 		if err != nil {
 			slog.WarnContext(r.Context(), "Couldn't get submissions", slog.Any("err", err))
 		}
@@ -683,15 +675,7 @@ func (rt *Web) paste(w http.ResponseWriter, r *http.Request) {
 
 	var olderSubs *modals.OlderSubmissionsParams
 	if util.UserBrief(r) != nil {
-		var contest *kilonova.Contest
-		if sub.ContestID != nil {
-			contest, err = rt.base.Contest(r.Context(), *sub.ContestID)
-			if err != nil {
-				slog.WarnContext(r.Context(), "Couldn't get contest", slog.Any("err", err))
-			}
-		}
-
-		olderSubs, err = rt.getOlderSubmissions(r.Context(), util.UserBrief(r), util.UserBrief(r).ID, sub.Problem, contest, 5)
+		olderSubs, err = rt.getOlderSubmissions(r.Context(), util.UserBrief(r), util.UserBrief(r).ID, sub.Problem, nil, 5)
 		if err != nil {
 			slog.WarnContext(r.Context(), "Couldn't get submissions", slog.Any("err", err))
 		}

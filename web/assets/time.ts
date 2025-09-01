@@ -50,8 +50,8 @@ export function formatDuration(targetTime: Dayjs | number, hideSeconds: boolean 
 	return sprintf("%02d:%02d", hours, minutes) + (hideSeconds ? "" : sprintf(":%02d", seconds));
 }
 
-// Formats datetime-local input into an ISO3601 timezone-aware string
-export function formatISO3601(timestamp: string | dayjs.Dayjs): string {
+// Formats datetime-local input into an ISO8601 timezone-aware string
+export function formatISO8601(timestamp: string | dayjs.Dayjs): string {
 	const djs = dayjs(timestamp, "YYYY-MM-DDTHH:mm", true);
 	if (!djs.isValid()) {
 		throw new Error("Invalid timestamp");
