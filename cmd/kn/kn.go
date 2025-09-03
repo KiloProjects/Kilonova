@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova/integrations/otel"
@@ -186,9 +187,15 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 	r := chi.NewRouter()
 
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{config.Common.HostPrefix}, // TODO: Do better
+		AllowOriginFunc: func(r *http.Request, origin string) bool {
+			if strings.HasPrefix(r.URL.Path, "/assets") {
+				return true
+			}
+			return strings.ToLower(origin) == config.Common.HostPrefix
+		},
+		//AllowedOrigins:   []string{config.Common.HostPrefix}, // TODO: Do better
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Api-Key"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300,

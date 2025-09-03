@@ -27,7 +27,7 @@ import "codemirror/mode/rust/rust";
 			debug: true,
 			environment: platformInfo.debug ? "development" : "production",
 			release: platformInfo.internalVersion ?? "unknown",
-			ignoreErrors: ["visitor-analytics", "twipla", "va-endpoint", "domPath are required"],
+			ignoreErrors: ["visitor-analytics", "twipla", "va-endpoint", "domPath are required", "Server is under maintenance"],
 		})
 	}
 })()

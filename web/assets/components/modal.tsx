@@ -116,6 +116,9 @@ document.addEventListener("DOMContentLoaded", e => {
 			}
 		}
 	})
-	observer.observe(document.getElementById("modals")!, {childList: true})
+	const modals = document.getElementById("modals")
+	if(modals != null) {
+		observer.observe(modals, {childList: true})
+	}
 })
 
