@@ -35,6 +35,22 @@
     
             {{ if authedUser.Admin }}
                 <button id="tag_del_btn" type="submit" class="btn btn-red">{{getText "button.delete"}}</button>
+				<script>
+					async function deleteTag(e) {
+						e.preventDefault()
+						if(!(await bundled.confirm(bundled.getText("tagDeleteConfirm")))) {
+							return
+						}
+						let res = await bundled.postCall("/tags/delete", {id: tag.id})
+						if(res.status === "error") {
+							bundled.apiToast(res)
+							return
+						}
+
+						window.history.back()
+					}
+        			document.getElementById("tag_del_btn")?.addEventListener("click", deleteTag)
+				</script>
             {{ end }}
         </form>
     </details>
@@ -56,22 +72,8 @@
 
             window.location.reload()
         }
-        async function deleteTag(e) {
-            e.preventDefault()
-            if(!(await bundled.confirm(bundled.getText("tagDeleteConfirm")))) {
-                return
-            }
-            let res = await bundled.postCall("/tags/delete", {id: tag.id})
-            if(res.status === "error") {
-                bundled.apiToast(res)
-                return
-            }
 
-            window.history.back()
-        }
-
-        document.getElementById("tag_update_form").addEventListener("submit", updateTag)
-        document.getElementById("tag_del_btn").addEventListener("click", deleteTag)
+        document.getElementById("tag_update_form")?.addEventListener("submit", updateTag)
     </script>
 </div>
 
