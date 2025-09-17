@@ -4,11 +4,11 @@ import (
 	"cmp"
 	"context"
 	"errors"
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"net/http"
 
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
 	"github.com/sashabaranov/go-openai"
 )
 
