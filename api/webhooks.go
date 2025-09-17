@@ -11,11 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/KiloProjects/kilonova/internal/config"
-)
-
-var (
-	BMACWebhookSecret = config.GenFlag[string]("frontend.donation.bmac_webhook_secret", "", "Secret validation ID for Buy Me a Coffee notifications")
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
 
 type bmacEvent struct {
@@ -42,7 +38,7 @@ type membershipDonationData struct {
 
 // bmacEvent handles an event from Buy Me A Coffee
 func (s *API) bmacEvent(w http.ResponseWriter, r *http.Request) {
-	if BMACWebhookSecret.Value() == "" {
+	if flags.BMACWebhookSecret.Value() == "" {
 		slog.WarnContext(r.Context(), "bmac_event was POSTed but no secret was specified in config file")
 		errorData(w, "BMAC secret not rolled out", 400)
 		return
@@ -52,7 +48,7 @@ func (s *API) bmacEvent(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "Invalid Signature", 400)
 		return
 	}
-	mac := hmac.New(sha256.New, []byte(BMACWebhookSecret.Value()))
+	mac := hmac.New(sha256.New, []byte(flags.BMACWebhookSecret.Value()))
 	var buf bytes.Buffer
 	if _, err := io.Copy(&buf, r.Body); err != nil {
 		slog.WarnContext(r.Context(), "Couldn't read body to buffer", slog.Any("err", err))

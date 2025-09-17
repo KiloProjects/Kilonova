@@ -6,11 +6,10 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/oschwald/maxminddb-golang/v2"
 )
 
-var MaxMindPath = config.GenFlag("integrations.maxmind.db_path", "/usr/share/GeoIP/GeoLite2-City.mmdb", "Path to MaxMind GeoLite2-City database for IPs.")
 var reader *maxminddb.Reader
 
 type Data struct {
@@ -56,7 +55,7 @@ func IPData(ip netip.Addr) (*Data, error) {
 
 func Initialize(ctx context.Context) {
 	var err error
-	reader, err = maxminddb.Open(MaxMindPath.Value())
+	reader, err = maxminddb.Open(flags.MaxMindPath.Value())
 	if err != nil {
 		slog.InfoContext(ctx, "Could not open MaxMind DB")
 		slog.DebugContext(ctx, "MaxMind DB error", slog.Any("err", err))

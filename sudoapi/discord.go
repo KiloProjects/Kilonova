@@ -10,22 +10,12 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/bwmarrin/discordgo"
 	"golang.org/x/oauth2"
 )
 
 var (
-	DiscordEnabled = config.GenFlag("integrations.discord.enabled", false, "Enable Discord integration. If checked, you must provide client ID/secret and bot token.")
-
-	Token = config.GenFlag("integrations.discord.token", "", "Discord token for bot")
-
-	// ProposerRoleID = config.GenFlag("integrations.discord.role_ids.proposer", "", "asdf")
-
-	DiscordClientID     = config.GenFlag("integrations.discord.client_id", "", "Discord Client ID")
-	DiscordClientSecret = config.GenFlag("integrations.discord.client_secret", "", "Discord Client Secret")
-
-	ProblemAnnouncementChannel = config.GenFlag("integrations.discord.publish_announcement_channel", "", "Discord channel to announce new problems")
-
 	ErrDisconnected = Statusf(401, "Not connected to Discord")
 )
 
@@ -34,13 +24,13 @@ func (s *BaseAPI) initDiscord(ctx context.Context) error {
 	// 	return Statusf(406, "No Discord token provided")
 	// }
 
-	discord, err := discordgo.New("Bot " + Token.Value())
+	discord, err := discordgo.New("Bot " + flags.DiscordToken.Value())
 	if err != nil {
 		return fmt.Errorf("could not connect to Discord: %w", err)
 	}
 	s.dSess = discord
 
-	if DiscordEnabled.Value() {
+	if flags.DiscordEnabled.Value() {
 		if err := s.dSess.Open(); err != nil {
 			return fmt.Errorf("could not open gateway: %w", err)
 		}
@@ -53,11 +43,11 @@ func (s *BaseAPI) initDiscord(ctx context.Context) error {
 
 func (s *BaseAPI) AnnounceProblemPublished(ctx context.Context, problemID int) {
 	slog.DebugContext(ctx, "Announcing problem publish", slog.Int("problem_id", problemID))
-	if !DiscordEnabled.Value() || ProblemAnnouncementChannel.Value() == "" {
+	if !flags.DiscordEnabled.Value() || flags.ProblemAnnouncementChannel.Value() == "" {
 		return // noop
 	}
 
-	_, err := s.dSess.ChannelMessageSend(ProblemAnnouncementChannel.Value(), "New problem was just published: "+config.Common.HostURL.JoinPath("problems", strconv.Itoa(problemID)).String())
+	_, err := s.dSess.ChannelMessageSend(flags.ProblemAnnouncementChannel.Value(), "New problem was just published: "+config.Common.HostURL.JoinPath("problems", strconv.Itoa(problemID)).String())
 	if err != nil {
 		slog.WarnContext(ctx, "Could not announce problem publish", slog.Any("err", err))
 	}
@@ -66,7 +56,7 @@ func (s *BaseAPI) AnnounceProblemPublished(ctx context.Context, problemID int) {
 // If both user and error is nil, it means that a user doesn't have a Discord account attached (or that Discord integration is disabled)
 // TODO: Cache output
 func (s *BaseAPI) GetDiscordIdentity(ctx context.Context, userID int) (*discordgo.User, error) {
-	if !DiscordEnabled.Value() {
+	if !flags.DiscordEnabled.Value() {
 		return nil, nil
 	}
 	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &userID})
@@ -96,7 +86,7 @@ func (s *BaseAPI) UnlinkDiscordIdentity(ctx context.Context, userID int) error {
 }
 
 func (s *BaseAPI) DiscordAuthURL(ctx context.Context, userID int) (string, error) {
-	if !DiscordEnabled.Value() {
+	if !flags.DiscordEnabled.Value() {
 		return "/", nil
 	}
 	st, err := s.db.CreateDiscordState(ctx, userID)
@@ -164,8 +154,8 @@ func (s *BaseAPI) discordConfig() *oauth2.Config {
 	return &oauth2.Config{
 		Endpoint: discordEndpoint,
 
-		ClientID:     DiscordClientID.Value(),
-		ClientSecret: DiscordClientSecret.Value(),
+		ClientID:     flags.DiscordClientID.Value(),
+		ClientSecret: flags.DiscordClientSecret.Value(),
 
 		Scopes: []string{"identify"},
 

@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/views/modals"
 	"github.com/alecthomas/chroma/v2"
 	chtml "github.com/alecthomas/chroma/v2/formatters/html"
@@ -259,7 +259,7 @@ func Submission(params SubmissionPageParams) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if sudoapi.PastesEnabled.Value() && params.Submission.IsEditor(util.UserBriefContext(ctx)) {
+			if flags.PastesEnabled.Value() && params.Submission.IsEditor(util.UserBriefContext(ctx)) {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<form method=\"post\" action=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err

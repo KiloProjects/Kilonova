@@ -98,7 +98,7 @@ func (rt *Web) problemRouter(inContest bool) func(r chi.Router) {
 			r.With(rt.ValidateProblemFullyVisible).Get("/statistics", rt.problemStatistics())
 			r.Route("/externalResources", func(r chi.Router) {
 				r.Use(rt.ValidateProblemFullyVisible)
-				r.Use(rt.checkFlag(sudoapi.ExternalResourcesEnabled))
+				r.Use(rt.checkFlag(flags.ExternalResourcesEnabled))
 				r.Get("/", rt.externalResources())
 				r.With(rt.mustBeProblemEditor).Get("/create", rt.createExternalResourceView())
 				r.With(rt.mustBeProblemEditor).Post("/create", rt.createExternalResource())
@@ -244,7 +244,7 @@ func (rt *Web) Handler() http.Handler {
 		})
 
 		r.Route("/pastes/{pasteID}", func(r chi.Router) {
-			r.Use(rt.checkFlag(sudoapi.PastesEnabled))
+			r.Use(rt.checkFlag(flags.PastesEnabled))
 			r.Use(rt.ValidatePasteID)
 			r.Get("/", rt.paste)
 			r.Delete("/", rt.deletePaste)

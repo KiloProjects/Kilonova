@@ -10,12 +10,10 @@ import (
 	"net"
 	"strings"
 
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
 
 var (
-	MossUserID = config.GenFlag("integrations.moss.user_id", -1, "User ID for MOSS Plagiarism Checker")
-
 	ErrUnauthed        = errors.New("unauthenticated to MOSS")
 	ErrUnsupportedLang = errors.New("unsupported language")
 
@@ -70,7 +68,7 @@ func NewFile(langName string, filename string, data []byte) *File {
 }
 
 func (m *Conn) Process(conf *Options) (string, error) {
-	if _, err := fmt.Fprintf(m.conn, "moss %d\n", MossUserID.Value()); err != nil {
+	if _, err := fmt.Fprintf(m.conn, "moss %d\n", flags.MossUserID.Value()); err != nil {
 		return "", err
 	}
 	if _, err := fmt.Fprintf(m.conn, "directory 0\n"); err != nil {
@@ -135,7 +133,7 @@ func (m *Conn) Close() error {
 }
 
 func New(ctx context.Context) (*Conn, error) {
-	if MossUserID.Value() <= 0 {
+	if flags.MossUserID.Value() <= 0 {
 		return nil, ErrUnauthed
 	}
 	conn, err := defaultDialer.DialContext(ctx, "tcp", serverAddr)

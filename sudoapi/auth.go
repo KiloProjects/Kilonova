@@ -11,12 +11,9 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/asaskevich/govalidator"
 	"golang.org/x/crypto/bcrypt"
-)
-
-var (
-	SignupEnabled = config.GenFlag("feature.platform.signup", true, "Manual signup")
 )
 
 // Login
@@ -61,7 +58,7 @@ func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserF
 var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 
 func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, theme kilonova.PreferredTheme, ip *netip.Addr, userAgent *string) (int, error) {
-	if !SignupEnabled.Value() {
+	if !flags.SignupEnabled.Value() {
 		return -1, kilonova.ErrFeatureDisabled
 	}
 

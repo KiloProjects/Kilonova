@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/go-logr/logr"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
@@ -18,10 +18,8 @@ import (
 	"go.opentelemetry.io/otel/trace/noop"
 )
 
-var OtelEnabled = config.GenFlag("integrations.otel.enabled", false, "Enable OpenTelemetry collectors")
-
 func SetupOpenTelemetry(ctx context.Context) (shutdown func(context.Context) error, err error) {
-	if !OtelEnabled.Value() {
+	if !flags.OtelEnabled.Value() {
 		return func(context.Context) error { return nil }, nil
 	}
 	var shutdownFuncs []func(context.Context) error

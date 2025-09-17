@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/views/modals"
 	"github.com/alecthomas/chroma/v2"
 	chtml "github.com/alecthomas/chroma/v2/formatters/html"
@@ -81,7 +81,7 @@ templ Submission(params SubmissionPageParams) {
 						<button type="submit" class="btn btn-blue">{ T(ctx, "reevaluate") }</button>
 					</form>
 				}
-				if sudoapi.PastesEnabled.Value() && params.Submission.IsEditor(util.UserBriefContext(ctx)) {
+				if flags.PastesEnabled.Value() && params.Submission.IsEditor(util.UserBriefContext(ctx)) {
 					<form method="post" action={ templ.URL(fmt.Sprintf("/submissions/%d/paste", params.Submission.ID)) } class="inline-block">
 						<button type="submit" class="btn btn-blue">{ T(ctx, "create_paste") }</button>
 					</form>

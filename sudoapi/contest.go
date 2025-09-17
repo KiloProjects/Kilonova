@@ -10,12 +10,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/integrations/moss"
-	"github.com/KiloProjects/kilonova/internal/config"
-)
-
-var (
-	NormalUserVirtualContests = config.GenFlag[bool]("behavior.contests.anyone_virtual", false, "Anyone can create virtual contests")
-	NormalUserVCLimit         = config.GenFlag[int]("behavior.contests.normal_user_max_day", 10, "Number of maximum contests a non-proposer can create per day")
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
 
 func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova.ContestType, author *kilonova.UserBrief) (int, error) {
@@ -33,7 +28,7 @@ func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova
 	}
 
 	if !author.IsProposer() {
-		if !NormalUserVirtualContests.Value() {
+		if !flags.NormalUserVirtualContests.Value() {
 			return -1, Statusf(403, "Creation of contests by non-proposers has been disabled")
 		}
 
@@ -43,11 +38,11 @@ func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova
 			Since:    &since,
 			EditorID: &author.ID,
 		})
-		if err != nil || (cnt >= NormalUserVCLimit.Value() && NormalUserVCLimit.Value() >= 0) {
+		if err != nil || (cnt >= flags.NormalUserVCLimit.Value() && flags.NormalUserVCLimit.Value() >= 0) {
 			if err != nil {
 				slog.WarnContext(ctx, "Couldn't fetch contest count", slog.Any("err", err))
 			}
-			return -1, Statusf(400, "You can create at most %d contests per day", NormalUserVCLimit.Value())
+			return -1, Statusf(400, "You can create at most %d contests per day", flags.NormalUserVCLimit.Value())
 		}
 	}
 	id, err := s.db.CreateContest(ctx, name, cType)

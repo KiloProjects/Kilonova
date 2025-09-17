@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
@@ -164,7 +165,7 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID in
 		p.TimeLimit = 1 // 1s
 	}
 	if p.SourceSize == 0 {
-		p.SourceSize = kilonova.DefaultSourceSize.Value()
+		p.SourceSize = flags.DefaultSourceSize.Value()
 	}
 	if p.TaskType == kilonova.TaskTypeNone {
 		p.TaskType = kilonova.TaskTypeBatch

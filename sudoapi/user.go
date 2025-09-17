@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"crypto/md5"
 	"crypto/sha256"
@@ -18,6 +19,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/KiloProjects/kilonova"
@@ -26,10 +28,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	_ "embed"
-)
-
-var (
-	CanChangeNames = config.GenFlag("feature.username_changes.enabled", true, "Anyone can change their usernames")
 )
 
 func (s *BaseAPI) UserBrief(ctx context.Context, id int) (*kilonova.UserBrief, error) {
@@ -143,7 +141,7 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserFull, n
 	usernameChangeMu.Lock()
 	defer usernameChangeMu.Unlock()
 
-	if !(CanChangeNames.Value() || fromAdmin) {
+	if !(flags.UserCanChangeNames.Value() || fromAdmin) {
 		return Statusf(401, "Username changes have been disabled by administrator")
 	}
 
@@ -397,14 +395,12 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 			Password:   args.Password,
 			Contest:    contest,
 			HostPrefix: config.Common.HostPrefix,
-			Branding:   EmailBranding.Value(),
+			Branding:   flags.EmailBranding.Value(),
 		}
 		if user.DisplayName != "" {
 			emailArgs.Name = user.DisplayName
 		}
-		if val, ok := config.GetFlagVal[string]("frontend.navbar.branding"); ok && len(val) > 0 {
-			emailArgs.Branding = val
-		}
+		emailArgs.Branding = cmp.Or(emailArgs.Branding, flags.NavbarBranding.Value(), "Kilonova")
 		var b bytes.Buffer
 		if err := generatedUserTempl.ExecuteTemplate(&b, user.PreferredLanguage, emailArgs); err != nil {
 			slog.ErrorContext(ctx, "Error rendering password send email", slog.Any("err", err))

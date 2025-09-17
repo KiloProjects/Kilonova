@@ -10,6 +10,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
@@ -18,10 +19,6 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"golang.org/x/text/language"
-)
-
-var (
-	AnyoneTags = config.GenFlag("feature.frontend.anyone_tags", true, "Anyone can view the list of tags")
 )
 
 // Language stuff
@@ -146,7 +143,7 @@ func (rt *Web) ValidateTagID(next http.Handler) http.Handler {
 // canViewTags makes sure the user can view tags
 func (rt *Web) canViewTags(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !(AnyoneTags.Value() || util.UserBrief(r).IsProposer()) {
+		if !(flags.AnyoneTags.Value() || util.UserBrief(r).IsProposer()) {
 			rt.authedStatusPage(w, r, 400, "Nu ai voie să accesezi etichetele!")
 			return
 		}

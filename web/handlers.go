@@ -965,7 +965,7 @@ func (rt *Web) problem() http.HandlerFunc {
 				slog.WarnContext(r.Context(), "Couldn't get tags", slog.Any("err", err))
 				tags = []*kilonova.Tag{}
 			}
-			if sudoapi.ExternalResourcesEnabled.Value() {
+			if flags.ExternalResourcesEnabled.Value() {
 				accepted := true
 				externalResources, err = rt.base.ExternalResources(r.Context(), kilonova.ExternalResourceFilter{
 					ProblemID: &util.Problem(r).ID,
@@ -1425,7 +1425,7 @@ func (rt *Web) contests() http.HandlerFunc {
 func (rt *Web) createContest() http.HandlerFunc {
 	templ := rt.parse(nil, "contest/create.html", "proposer/createcontest.html", "contest/index_topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !(util.UserBrief(r).IsProposer() || sudoapi.NormalUserVirtualContests.Value()) {
+		if !(util.UserBrief(r).IsProposer() || flags.NormalUserVirtualContests.Value()) {
 			rt.statusPage(w, r, 403, "Nu poți crea concursuri!")
 			return
 		}

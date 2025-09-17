@@ -10,17 +10,8 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/shopspring/decimal"
-)
-
-var (
-	SubForEveryoneConfig    = config.GenFlag("behavior.everyone_subs", true, "Anyone can view others' source code")
-	SubForEveryoneBlacklist = config.GenFlag("behavior.everyone_subs.blacklist", []int{}, "Blacklist of problems where nobody should see eachother's source code")
-
-	PastesEnabled = config.GenFlag("feature.pastes.enabled", true, "Pastes")
-
-	LimitedSubCount = config.GenFlag[int]("behavior.submissions.max_viewing_count", 9999, "Maximum number of submissions to count on subs page. Set to < 0 to disable")
 )
 
 // Submission stuff
@@ -138,7 +129,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		return nil, ErrUnknownError
 	}
 
-	maxCnt := LimitedSubCount.Value()
+	maxCnt := flags.LimitedSubCount.Value()
 	if filter.ContestID != nil || filter.ProblemID != nil || filter.UserID != nil {
 		// Never filter on these, for now.
 		maxCnt = -100
@@ -321,12 +312,6 @@ func (s *BaseAPI) LastSubmissionTime(ctx context.Context, filter kilonova.Submis
 	return t, nil
 }
 
-var (
-	WaitingSubLimit    = config.GenFlag[int]("behavior.submissions.user_max_waiting", 5, "Maximum number of unfinished submissions in the eval queue (for a single user)")
-	TotalSubLimit      = config.GenFlag[int]("behavior.submissions.user_max_minute", 20, "Maximum number of submissions uploaded per minute (for a single user with verified email)")
-	UnverifiedSubLimit = config.GenFlag[int]("behavior.submissions.user_max_unverified", 5, "Maximum number of submissions uploaded per minute (for a single user with unverified email)")
-)
-
 // CreateSubmission produces a new submission and also creates the necessary subtests
 func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFull, problem *kilonova.Problem, code []byte, lang *Language, contestID *int, bypassSubCount bool) (int, error) {
 	if author == nil {
@@ -352,8 +337,8 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 			return -1, fmt.Errorf("couldn't get unfinished submission count")
 		}
 
-		if WaitingSubLimit.Value() > 0 && cnt >= WaitingSubLimit.Value() {
-			return -1, Statusf(400, "You cannot have more than %d submissions to the evaluation queue at once", WaitingSubLimit.Value())
+		if flags.WaitingSubLimit.Value() > 0 && cnt >= flags.WaitingSubLimit.Value() {
+			return -1, Statusf(400, "You cannot have more than %d submissions to the evaluation queue at once", flags.WaitingSubLimit.Value())
 		}
 
 		t := time.Now().Add(-1 * time.Minute)
@@ -365,14 +350,14 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 			return -1, fmt.Errorf("couldn't get recent submission count")
 		}
 
-		if TotalSubLimit.Value() > 0 && cnt > TotalSubLimit.Value() {
+		if flags.TotalSubLimit.Value() > 0 && cnt > flags.TotalSubLimit.Value() {
 			s.LogToDiscord(ctx, "User tried to exceed submission send limit, something might be fishy")
-			return -1, Statusf(401, "You cannot submit more than %d submissions in a minute, please wait a bit", TotalSubLimit.Value())
+			return -1, Statusf(401, "You cannot submit more than %d submissions in a minute, please wait a bit", flags.TotalSubLimit.Value())
 		}
 
-		if !author.VerifiedEmail && UnverifiedSubLimit.Value() > 0 && cnt > UnverifiedSubLimit.Value() {
+		if !author.VerifiedEmail && flags.UnverifiedSubLimit.Value() > 0 && cnt > flags.UnverifiedSubLimit.Value() {
 			s.LogVerbose(ctx, "Unverified user exceeded their submission limit")
-			return -1, Statusf(401, "Users with unverified email cannot submit more than %d times per minute, please verify your email or wait", UnverifiedSubLimit.Value())
+			return -1, Statusf(401, "Users with unverified email cannot submit more than %d times per minute, please verify your email or wait", flags.UnverifiedSubLimit.Value())
 		}
 	}
 
@@ -501,8 +486,8 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 
 	// If enabled that people see all source code
 	// IsProblemFullyVisible is a workaround for when a contest is running but there are submissions that were not sent in the contest
-	if SubForEveryoneConfig.Value() && s.IsProblemFullyVisible(user, subProblem) &&
-		!slices.Contains(SubForEveryoneBlacklist.Value(), sub.ProblemID) {
+	if flags.SubForEveryoneConfig.Value() && s.IsProblemFullyVisible(user, subProblem) &&
+		!slices.Contains(flags.SubForEveryoneBlacklist.Value(), sub.ProblemID) {
 
 		if user != nil {
 			// Get number of running virtual contests where user is participant for this problem and the person trying to look is not a contest editor
@@ -558,7 +543,7 @@ func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission
 }
 
 func (s *BaseAPI) CreatePaste(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief) (string, error) {
-	if !PastesEnabled.Value() {
+	if !flags.PastesEnabled.Value() {
 		return "", kilonova.ErrFeatureDisabled
 	}
 	paste := &kilonova.SubmissionPaste{Submission: sub, Author: user}
@@ -569,7 +554,7 @@ func (s *BaseAPI) CreatePaste(ctx context.Context, sub *kilonova.Submission, use
 }
 
 func (s *BaseAPI) SubmissionPaste(ctx context.Context, id string) (*kilonova.SubmissionPaste, error) {
-	if !PastesEnabled.Value() {
+	if !flags.PastesEnabled.Value() {
 		return nil, kilonova.ErrFeatureDisabled
 	}
 	paste, err := s.db.SubmissionPaste(ctx, id)
@@ -583,7 +568,7 @@ func (s *BaseAPI) SubmissionPaste(ctx context.Context, id string) (*kilonova.Sub
 }
 
 func (s *BaseAPI) DeletePaste(ctx context.Context, id string) error {
-	if !PastesEnabled.Value() {
+	if !flags.PastesEnabled.Value() {
 		return kilonova.ErrFeatureDisabled
 	}
 	if err := s.db.DeleteSubPaste(ctx, id); err != nil {

@@ -6,13 +6,10 @@ import (
 	"log/slog"
 	"os/exec"
 
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
 
 var (
-	EnsureCGKeeper    = config.GenFlag("feature.grader.ensure_keeper", false, "Ensure isolate-cg-keeper is running")
-	IsolateConfigPath = config.GenFlag("feature.grader.isolate_config_path", "/usr/local/etc/isolate", "Configuration path for isolate sandbox")
-
 	isolatePath = ""
 )
 
@@ -31,7 +28,7 @@ func InitKeeper(ctx context.Context) error {
 
 	slog.InfoContext(ctx, "Initialized sandbox binary path", slog.String("path", isolatePath))
 
-	if !EnsureCGKeeper.Value() {
+	if !flags.EnsureCGKeeper.Value() {
 		return nil
 	}
 

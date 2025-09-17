@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -168,10 +168,8 @@ func (s *DB) RemoveSession(ctx context.Context, sess string) error {
 	return err
 }
 
-var MaxSessionCount = config.GenFlag[int]("behavior.sessions.max_concurrent", 10, "Maximum number of sessions a user can have in total")
-
 func (s *DB) RemoveOldSessions(ctx context.Context, userID int) ([]string, error) {
-	q, _ := s.conn.Query(ctx, `DELETE FROM sessions WHERE user_id = $1 AND NOT (id = ANY(SELECT id FROM sessions WHERE user_id = $1 ORDER BY expires_at DESC LIMIT $2))`, userID, MaxSessionCount.Value())
+	q, _ := s.conn.Query(ctx, `DELETE FROM sessions WHERE user_id = $1 AND NOT (id = ANY(SELECT id FROM sessions WHERE user_id = $1 ORDER BY expires_at DESC LIMIT $2))`, userID, flags.MaxSessionCount.Value())
 	return pgx.CollectRows(q, pgx.RowTo[string])
 }
 

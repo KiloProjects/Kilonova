@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova/datastore"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -33,13 +34,6 @@ const (
 	logLevelWarning
 	logLevelInfo
 	logLevelVerbose
-)
-
-var (
-	ImportantUpdatesWebhook = config.GenFlag[string]("admin.important_webhook", "", "Webhook URL for audit log-level events")
-	VerboseUpdatesWebhook   = config.GenFlag[string]("admin.verbose_webhook", "", "Webhook URL for verbose platform information")
-
-	EmailBranding = config.GenFlag("admin.mailer.branding", "Kilonova", "Branding to use at the end of emails")
 )
 
 func (s *BaseAPI) DataStore() *datastore.Manager {
@@ -390,8 +384,8 @@ func (s *BaseAPI) processLogEntry(ctx context.Context, val *logEntry, importantW
 }
 
 func (s *BaseAPI) ingestAuditLogs(ctx context.Context) error {
-	importantWebhook := s.newWebhookSender(ctx, ImportantUpdatesWebhook.Value(), "Kilonova Audit Log")
-	verboseWebhook := s.newWebhookSender(ctx, VerboseUpdatesWebhook.Value(), "Kilonova Verbose Log")
+	importantWebhook := s.newWebhookSender(ctx, flags.ImportantUpdatesWebhook.Value(), "Kilonova Audit Log")
+	verboseWebhook := s.newWebhookSender(ctx, flags.VerboseUpdatesWebhook.Value(), "Kilonova Verbose Log")
 	for {
 		select {
 		case <-ctx.Done():

@@ -1,7 +1,7 @@
 package authviews
 
 import (
-	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/tutils"
 )
 
@@ -36,7 +36,7 @@ templ LoginPage(
 					<input class="form-input w-full" type="password" id="login_upwd" name="password"/>
 				</label>
 				<button class="block btn btn-blue mb-3">{ T(ctx, "auth.login") }</button>
-				if sudoapi.SignupEnabled.Value() {
+				if flags.SignupEnabled.Value() {
 					<p class="text-gray-600 dark:text-gray-300">
 						@templ.Raw(T(ctx, "signupReminder"))
 					</p>

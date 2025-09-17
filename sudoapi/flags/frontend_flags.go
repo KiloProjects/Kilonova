@@ -54,3 +54,11 @@ var (
 	PinnedProblemList = config.GenFlag("frontend.front_page.pinned_problem_list", 0, "Pinned problem list (front page sidebar)")
 	RootProblemList   = config.GenFlag("frontend.front_page.root_problem_list", 0, "Root problem list (front page main content)")
 )
+
+var (
+	AnyoneTags = config.GenFlag("feature.frontend.anyone_tags", true, "Anyone can view the list of tags")
+)
+
+var (
+	DefaultSourceSize = config.GenFlag[int]("behavior.problem.default_source_size", 30000, "Default maximum source code size for problems")
+)

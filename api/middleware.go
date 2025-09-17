@@ -2,24 +2,23 @@ package api
 
 import (
 	"context"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/datastore"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 )
 
-var FilterUserAgent = config.GenFlag[bool]("behavior.user_agent_filter", true, "Filter user agent in API (block python requests from non-admins)")
-
 func (s *API) filterUserAgent(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if FilterUserAgent.Value() && (util.UserBrief(r) == nil || !util.UserBrief(r).Admin) {
+		if flags.FilterUserAgent.Value() && (util.UserBrief(r) == nil || !util.UserBrief(r).Admin) {
 			// If filtering is enabled and user is not admin, disallow common software for bots
 			if strings.Contains(r.Header.Get("User-Agent"), "python") {
 				errorData(w, "Request blocked", http.StatusForbidden)

@@ -15,14 +15,11 @@ import (
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/internal/auth"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer"
 	"github.com/Yiling-J/theine-go"
 	"github.com/bwmarrin/discordgo"
 	"github.com/zitadel/oidc/v3/pkg/op"
-)
-
-var (
-	MigrateOnStart = config.GenFlag("behavior.db.run_migrations", true, "Run PostgreSQL migrations on platform start")
 )
 
 type Submissions struct {
@@ -162,7 +159,7 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, error) {
 	}
 	slog.InfoContext(ctx, "Connected to DB")
 
-	if MigrateOnStart.Value() {
+	if flags.MigrateOnStart.Value() {
 		if err := dbClient.RunMigrations(ctx); err != nil {
 			return nil, fmt.Errorf("couldn't run migrations: %w", err)
 		}

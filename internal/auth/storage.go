@@ -12,6 +12,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/repository"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -588,7 +589,7 @@ func NewAuthStorage(ctx context.Context, conn *pgxpool.Pool) *AuthStorage {
 	}
 	return &AuthStorage{
 		conn:     conn,
-		key:      &signingKey{pkey: key, kid: RSAPrivateKeyID.Value()},
+		key:      &signingKey{pkey: key, kid: flags.AuthRSAPrivateKeyID.Value()},
 		userRepo: repository.NewUserRepository(conn),
 	}
 }

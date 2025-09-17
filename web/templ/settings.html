@@ -89,7 +89,7 @@
 
 <script>
 async function updateBio(e) {
-	e.preventDefault()
+	e?.preventDefault()
 	var bio = document.getElementById("newBio").value;
 
 	let res = await bundled.postCall("/user/self/setBio", {bio})

@@ -16,6 +16,7 @@ import (
 
 	"github.com/KiloProjects/kilonova/integrations/otel"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/riandyrn/otelchi"
 	slogmulti "github.com/samber/slog-multi"
 	"github.com/zitadel/oidc/v3/pkg/op"
@@ -176,11 +177,6 @@ func launchProfiler() error {
 	return http.ListenAndServe(":6080", mux)
 }
 
-var (
-	listenHost = config.GenFlag[string]("server.listen.host", "localhost", "Host to listen to")
-	listenPort = config.GenFlag[int]("server.listen.port", 8070, "Port to listen on")
-)
-
 // initialize webserver for public api+web
 func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 	// Initialize router
@@ -221,7 +217,7 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 	}
 
 	return &http.Server{
-		Addr:              net.JoinHostPort(listenHost.Value(), strconv.Itoa(listenPort.Value())),
+		Addr:              net.JoinHostPort(flags.ListenHost.Value(), strconv.Itoa(flags.ListenPort.Value())),
 		Handler:           r,
 		ReadHeaderTimeout: 1 * time.Minute,
 	}

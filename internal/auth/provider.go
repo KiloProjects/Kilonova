@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 	"github.com/zitadel/oidc/v3/pkg/op"
 	"golang.org/x/text/language"
@@ -12,7 +13,7 @@ import (
 
 func GetProvider(storage *AuthStorage) (*op.Provider, error) {
 	opConfig := &op.Config{
-		CryptoKey:                sha256.Sum256([]byte(CryptoKey.Value())),
+		CryptoKey:                sha256.Sum256([]byte(flags.AuthCryptoKey.Value())),
 		DefaultLogoutRedirectURI: "/",
 		CodeMethodS256:           true,
 

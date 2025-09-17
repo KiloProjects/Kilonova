@@ -10,11 +10,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
-	"github.com/KiloProjects/kilonova/internal/config"
-)
-
-var (
-	TrueIPHeader = config.GenFlag[string]("server.listen.true_ip_header", "", "True IP header. Leave empty if not behind reverse proxy, the proxy's remote ip header (X-Forwarded-For, for example) otherwise")
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
 
 func (s *BaseAPI) CreateSession(ctx context.Context, uid int) (string, error) {
@@ -83,8 +79,8 @@ func (s *BaseAPI) GetRequestInfo(r *http.Request) (ip *netip.Addr, ua string) {
 		ip2 := hostport.Addr()
 		ip = &ip2
 	}
-	if len(TrueIPHeader.Value()) > 0 && len(r.Header.Get(TrueIPHeader.Value())) > 0 {
-		addr, err := netip.ParseAddr(r.Header.Get(TrueIPHeader.Value()))
+	if h := flags.TrueIPHeader.Value(); len(h) > 0 && len(r.Header.Get(h)) > 0 {
+		addr, err := netip.ParseAddr(r.Header.Get(h))
 		if err != nil {
 			slog.WarnContext(r.Context(), "Invalid address in reverse proxy header", slog.Any("err", err))
 		} else {

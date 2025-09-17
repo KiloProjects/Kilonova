@@ -11,6 +11,7 @@ import (
 
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/repository"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/multitracer"
@@ -30,11 +31,6 @@ type dbCtx string
 
 const (
 	queryCount = dbCtx("queryCount")
-)
-
-var (
-	LogQueries   = config.GenFlag("behavior.db.log_sql", false, "Log SQL Requests (for debugging purposes)")
-	CountQueries = config.GenFlag("behavior.db.count_queries", false, "Count SQL Queries (for debugging purposes)")
 )
 
 type DB struct {
@@ -193,13 +189,13 @@ func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[stri
 		//slog.WarnContext(ctx, "DB time is not duration", slog.Any("time", data["time"]))
 	}
 
-	if CountQueries.Value() {
+	if flags.CountDBQueries.Value() {
 		if v, ok := ctx.Value(queryCount).(*atomic.Int64); ok {
 			v.Add(1)
 		}
 	}
 
-	if LogQueries.Value() {
+	if flags.LogDBQueries.Value() {
 		fields := make([]slog.Attr, 0, len(data))
 		for k, v := range data {
 			fields = append(fields, slog.Any(k, v))

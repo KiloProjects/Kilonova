@@ -9,31 +9,24 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/go-jose/go-jose/v4"
-	"github.com/google/uuid"
 	"github.com/zitadel/oidc/v3/pkg/op"
 )
 
-var (
-	RSAPrivateKey   = config.GenFlag("oidc.rsaKey.private", "", "RSA private key for the auth server")
-	RSAPrivateKeyID = config.GenFlag("oidc.rsaKey.id", uuid.Must(uuid.NewV7()).String(), "RSA private key ID for the auth server")
-	CryptoKey       = config.GenFlag("oidc.cryptoKey", rand.Text(), "Crypto key for the auth server")
-)
-
 func getKey() (*rsa.PrivateKey, error) {
-	if RSAPrivateKey.Value() == "" {
+	if flags.AuthRSAPrivateKey.Value() == "" {
 		rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
 		if err != nil {
 			slog.ErrorContext(context.Background(), "Failed to generate RSA key", slog.Any("err", err))
 			os.Exit(1)
 		}
 		privKey := x509.MarshalPKCS1PrivateKey(rsaKey)
-		RSAPrivateKey.Update(base64.StdEncoding.EncodeToString(privKey))
+		flags.AuthRSAPrivateKey.Update(base64.StdEncoding.EncodeToString(privKey))
 		return rsaKey, nil
 	}
 
-	privKey, err := base64.StdEncoding.DecodeString(RSAPrivateKey.Value())
+	privKey, err := base64.StdEncoding.DecodeString(flags.AuthRSAPrivateKey.Value())
 	if err != nil {
 		return nil, err
 	}

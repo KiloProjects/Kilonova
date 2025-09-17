@@ -1,8 +1,10 @@
 package llm
 
 import (
+	"cmp"
 	"context"
 	"errors"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"net/http"
 
@@ -11,10 +13,6 @@ import (
 )
 
 var (
-	BaseURL      = config.GenFlag("integrations.openai.base_url", "", "Base URL for OpenAI API (`https://openrouter.ai/api/v1` can be used for OpenRouter)")
-	Token        = config.GenFlag("integrations.openai.token", "", "API Key for OpenAI access (used in translating statements)")
-	DefaultModel = config.GenFlag("integrations.openai.default_model", "gpt-4o", "Default model for LLM translations")
-
 	ErrUnauthed = errors.New("unauthenticated to OpenAI endpoint")
 )
 
@@ -33,15 +31,15 @@ After you are done with translating, please double check the statement and fix p
 // TranslateStatement translates a statement from Romanian to English.
 // English to Romanian and other language ordered pairs are still a TODO
 func TranslateStatement(ctx context.Context, text string, model string) (string, error) {
-	if len(Token.Value()) < 2 {
+	if len(flags.OpenAIToken.Value()) < 2 {
 		return "", ErrUnauthed
 	}
 	if model == "" {
-		model = DefaultModel.Value()
+		model = flags.OpenAIDefaultModel.Value()
 	}
-	config := openai.DefaultConfig(Token.Value())
+	config := openai.DefaultConfig(flags.OpenAIToken.Value())
 	config.HTTPClient = defaultClient
-	if v := BaseURL.Value(); len(v) > 0 {
+	if v := flags.OpenAIBaseURL.Value(); len(v) > 0 {
 		config.BaseURL = v
 	}
 	client := openai.NewClientWithConfig(config)
@@ -68,10 +66,7 @@ type openRouterHeaderTransport struct {
 }
 
 func (adt *openRouterHeaderTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	branding, ok := config.GetFlagVal[string]("frontend.navbar.branding")
-	if !ok || len(branding) == 0 {
-		branding = "Kilonova"
-	}
+	branding := cmp.Or(flags.NavbarBranding.Value(), "Kilonova")
 	req.Header.Add("HTTP-Referer", branding)
 	req.Header.Add("X-Title", "Kilonova")
 	return adt.T.RoundTrip(req)

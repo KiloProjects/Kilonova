@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
 
@@ -49,7 +48,7 @@ templ Navbar(viewAllSubs bool, reqPath string) {
 				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable" href="/submissions">{ T(ctx, "submission.list") }</a>
 			}
 			if !authed(ctx) {
-				if sudoapi.SignupEnabled.Value() {
+				if flags.SignupEnabled.Value() {
 					<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable" href={ templ.URL("/signup?back=" + reqPath) }>{ T(ctx, "auth.signup") }</a>
 				}
 				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable" href={ templ.URL("/login?back=" + reqPath) }>{ T(ctx, "auth.login") }</a>

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/dominikbraun/graph"
 	"github.com/dominikbraun/graph/draw"
 
@@ -43,8 +44,6 @@ type submissionHandler struct {
 
 	lang *eval.Language
 }
-
-var GraphvizSave = config.GenFlag("experimental.grader.save_graphviz", false, "Save graphviz .dot files to tmp directory for run graph debugging purposes")
 
 func (sh *submissionHandler) buildRunGraph(ctx context.Context, subtests []*kilonova.SubTest) (graph.Graph[int, *kilonova.SubTest], error) {
 	g := graph.New(func(sub *kilonova.SubTest) int {
@@ -251,7 +250,7 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 
 	if g, err := sh.buildRunGraph(ctx, subTests); err != nil {
 		slog.WarnContext(ctx, "Error building experimental run graph", slog.Any("err", err))
-	} else if GraphvizSave.Value() {
+	} else if flags.GraphvizSave.Value() {
 		go func(g graph.Graph[int, *kilonova.SubTest]) {
 			f, err := os.CreateTemp("", fmt.Sprintf("submission-graph-%d-*.gv", sub.ID))
 			if err != nil {
@@ -627,15 +626,13 @@ func (sh *submissionHandler) scoreTests(ctx context.Context) error {
 	return sh.base.UpdateSubmission(ctx, sh.sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score, MaxTime: &time, MaxMemory: &memory})
 }
 
-var ForceSecureSandbox = config.GenFlag[bool]("feature.grader.force_secure_sandbox", true, "Force use of secure sandbox only. Should be always enabled in production environments")
-
 func (h *Handler) getAppropriateRunner(ctx context.Context) (eval.BoxScheduler, error) {
 	var boxFunc scheduler.BoxFunc
 	var boxVersion = "NONE"
 	if scheduler.CheckCanRun(ctx, box.New) {
 		boxFunc = box.New
 		boxVersion = box.IsolateVersion()
-	} else if scheduler.CheckCanRun(ctx, box.NewStupid) && !ForceSecureSandbox.Value() {
+	} else if scheduler.CheckCanRun(ctx, box.NewStupid) && !flags.ForceSecureSandbox.Value() {
 		slog.WarnContext(ctx, "Secure sandbox not found. Using stupid sandbox")
 		boxFunc = box.NewStupid
 		boxVersion = "stupid"

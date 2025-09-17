@@ -7,13 +7,8 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/dchest/captcha"
-)
-
-var (
-	captchaEnabled = config.GenFlag("feature.captcha.enabled", false, "Enable prompting for CAPTCHAs")
-	triggerCount   = config.GenFlag("feature.captcha.min_trigger", 10, "Maximum number of sign ups from an ip in 10 minutes before all requests trigger a CAPTCHA")
 )
 
 func (s *BaseAPI) CaptchaImageHandler() http.Handler {
@@ -29,7 +24,7 @@ func (s *BaseAPI) NewCaptchaID() string {
 }
 
 func (s *BaseAPI) MustSolveCaptcha(ctx context.Context, ip *netip.Addr) bool {
-	if !captchaEnabled.Value() {
+	if !flags.CaptchaEnabled.Value() {
 		return false
 	}
 	if ip == nil {
@@ -41,9 +36,9 @@ func (s *BaseAPI) MustSolveCaptcha(ctx context.Context, ip *netip.Addr) bool {
 		slog.WarnContext(ctx, "Could not count signups", slog.Any("err", err))
 		return true // Err on the side of caution
 	}
-	return cnt > triggerCount.Value()
+	return cnt > flags.CaptchaTriggerCount.Value()
 }
 
 func (s *BaseAPI) CaptchaEnabled() bool {
-	return captchaEnabled.Value()
+	return flags.CaptchaEnabled.Value()
 }
