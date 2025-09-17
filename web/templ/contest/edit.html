@@ -500,7 +500,7 @@ async function deleteContest(e) {
     }
     bundled.apiToast(res)
 }
-document.getElementById("deleteContestButton").addEventListener("click", deleteContest);
+document.getElementById("deleteContestButton")?.addEventListener("click", deleteContest);
 </script>
 <script>
 // Contest problems-specific stuff

@@ -78,7 +78,11 @@ var precision = {{.Problem.ScorePrecision}}
 const mgr = new bundled.CheckboxManager(document.getElementById("selectAllBox"), document.querySelectorAll("[id^='pb-test-']"))
 
 function updateFinalScore() {
-	var score = 0;
+    if(document.getElementById("scoreOutput") === null) {
+        return
+    }
+
+    var score = 0;
 	var defaultPoints = {{.Problem.DefaultPoints}};
 	score += defaultPoints;
 	for(let e of scores) {
@@ -98,9 +102,7 @@ function updateFinalScore() {
 }
 
 
-if(document.getElementById("scoreOutput") !== null) {
-    updateFinalScore();
-}
+updateFinalScore();
 
 async function deleteTests() {
 	var tests = [];
