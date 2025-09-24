@@ -823,8 +823,8 @@ en = "Are you sure you want to do this? This feature is currently experimental. 
 ro = "Ești sigur că vrei să faci asta? Acest feature este, momentan, experimental. Enunțurile create pot avea diferențe halucinate de LLM-uri. Te rog să asiguri faptul că textul tradus este corect înainte să devină public."
 
 [aiTranslationWarning]
-en = "Warning: This statement was translated by an LLM (like ChatGPT). Results might not be fully accurate or faithful to the original statement. Please report any potential errors on our Discord."
-ro = "Avertisment: Acest enunț a fost tradus de către un LLM (precum ChatGPT). Este probabil ca rezultatele să nu fie 100%% corecte sau ca în enunțul original. Vă rugăm raportați eventual erori pe serverul nostru de Discord."
+en = "Warning: This statement was translated using an AI. Results might not be fully accurate or faithful to the original statement. Please report any potential errors on our Discord."
+ro = "Avertisment: Acest enunț a fost tradus de către un AI. Este posibil ca rezultatele să nu fie 100%% corecte sau ca în enunțul original. Vă rugăm raportați eventuale erori pe serverul nostru de Discord."
 
 [existingVariants]
 en = "Existing variants"

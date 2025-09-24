@@ -18,7 +18,7 @@ import "codemirror/mode/php/php";
 import "codemirror/mode/rust/rust";
 
 (() => {
-	var platformInfo = JSON.parse(document.getElementById("platform_info")?.textContent ?? "{}");
+	var platformInfo: PlatformInfo = JSON.parse(document.getElementById("platform_info")?.textContent ?? "{}");
 	if (typeof platformInfo.sentryDSN == 'string') {
 		console.log("starting sentry", platformInfo.sentryDSN)
 		Sentry.init({
@@ -28,6 +28,10 @@ import "codemirror/mode/rust/rust";
 			environment: platformInfo.debug ? "development" : "production",
 			release: platformInfo.internalVersion ?? "unknown",
 			ignoreErrors: ["visitor-analytics", "twipla", "va-endpoint", "domPath are required", "Server is under maintenance"],
+		})
+		Sentry.setUser({
+			id: platformInfo.user_id,
+			username: platformInfo.user?.name,
 		})
 	}
 })()

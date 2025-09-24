@@ -379,10 +379,10 @@ setDatetime("end_time", {{printf "%s" .Contest.EndTime.MarshalText}});
 </script>
 <script>
 // contest option hiding handling
-document.getElementById("c_freeze_enabled").addEventListener("change", (e) => {
+document.getElementById("c_freeze_enabled")?.addEventListener("change", (e) => {
     document.getElementById("freezeLabel").classList.toggle("hidden", !e.currentTarget.checked)
 })
-document.getElementById("leaderboard_style").addEventListener("change", (e) => {
+document.getElementById("leaderboard_style")?.addEventListener("change", (e) => {
     document.getElementById("icpcPenaltyLabel").classList.toggle("hidden", e.currentTarget.value !== "acm-icpc")
 })
 </script>
@@ -483,9 +483,9 @@ async function updateContestDesc(e) {
     }
 }
 
-document.getElementById("contest_update_form").addEventListener("submit", updateContest)
-document.getElementById("contest_description_form").addEventListener("submit", updateContestDesc)
-document.getElementById("contest_pblist_form").addEventListener("submit", createPblistFromContest)
+document.getElementById("contest_update_form")?.addEventListener("submit", updateContest)
+document.getElementById("contest_description_form")?.addEventListener("submit", updateContestDesc)
+document.getElementById("contest_pblist_form")?.addEventListener("submit", createPblistFromContest)
 </script>
 <script>
 async function deleteContest(e) {
@@ -516,7 +516,7 @@ async function updateContestProblems(e) {
     }
     bundled.apiToast(res)
 }
-document.getElementById("contest_problems_form").addEventListener("submit", updateContestProblems)
+document.getElementById("contest_problems_form")?.addEventListener("submit", updateContestProblems)
 </script>
 
 <script>

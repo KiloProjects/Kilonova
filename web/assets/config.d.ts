@@ -26,6 +26,8 @@ export declare global {
 		user?: UserBrief;
 		language: "en" | "ro";
 		langs: { [name: string]: string };
+		sentryDSN?: string;
+		internalVersion: string;
 	}
 
 	interface WebLanguage {
