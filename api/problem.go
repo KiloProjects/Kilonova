@@ -625,6 +625,7 @@ type apiProblem struct {
 	*kilonova.Problem
 	Languages         []*sudoapi.Language `json:"submitLanguages"`
 	StatementVariants []StatementVariant  `json:"statementVariants"`
+	Tags              []*kilonova.Tag     `json:"tags"`
 }
 
 type ProblemSingleGetOutput struct {
@@ -640,6 +641,10 @@ func (s *API) problemSingleGet(ctx context.Context, _ *struct{}) (*ProblemSingle
 	}
 	pb.Languages = languages
 	pb.StatementVariants, err = s.getStatementVariants(ctx, pb.Problem, util.UserBriefContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+	pb.Tags, err = s.base.ProblemTags(ctx, util.ProblemContext(ctx).ID)
 	if err != nil {
 		return nil, err
 	}
