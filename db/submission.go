@@ -13,14 +13,15 @@ import (
 )
 
 type dbSubmission struct {
-	ID        int       `db:"id"`
-	CreatedAt time.Time `db:"created_at"`
-	UserID    int       `db:"user_id"`
-	ProblemID int       `db:"problem_id"`
-	Language  string    `db:"language"`
-	Code      string    `db:"code"`
-	CodeSize  int       `db:"code_size"`
-	Status    string    `db:"status"`
+	ID           int       `db:"id"`
+	CreatedAt    time.Time `db:"created_at"`
+	UserID       int       `db:"user_id"`
+	ProblemID    int       `db:"problem_id"`
+	Language     string    `db:"language"`
+	Code         string    `db:"code"`
+	CodeFilename string    `db:"code_filename"`
+	CodeSize     int       `db:"code_size"`
+	Status       string    `db:"status"`
 
 	CompileError   *bool   `db:"compile_error"`
 	CompileMessage *string `db:"compile_message"`
@@ -123,14 +124,14 @@ func (s *DB) LastSubmissionTime(ctx context.Context, filter kilonova.SubmissionF
 	return val, nil
 }
 
-const createSubQuery = "INSERT INTO submissions (user_id, problem_id, contest_id, language, code) VALUES ($1, $2, $3, $4, $5) RETURNING id;"
+const createSubQuery = "INSERT INTO submissions (user_id, problem_id, contest_id, language, code, code_filename) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;"
 
-func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, langName string, code string, contestID *int) (int, error) {
+func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, langName string, code string, codeFilename string, contestID *int) (int, error) {
 	if authorID <= 0 || problem == nil || langName == "" || code == "" {
 		return -1, kilonova.ErrMissingRequired
 	}
 	var id int
-	err := s.conn.QueryRow(ctx, createSubQuery, authorID, problem.ID, contestID, langName, code).Scan(&id)
+	err := s.conn.QueryRow(ctx, createSubQuery, authorID, problem.ID, contestID, langName, code, codeFilename).Scan(&id)
 	return id, err
 }
 
@@ -336,6 +337,7 @@ func (s *DB) internalToSubmission(sub *dbSubmission) *kilonova.Submission {
 		ProblemID: sub.ProblemID,
 		Language:  sub.Language,
 		// Code:           sub.Code,
+		CodeFilename:   sub.CodeFilename,
 		CodeSize:       sub.CodeSize,
 		Status:         kilonova.Status(sub.Status),
 		CompileError:   sub.CompileError,

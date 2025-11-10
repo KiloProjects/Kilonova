@@ -19,7 +19,12 @@ func legacyCheckerTask(ctx context.Context, mgr eval.BoxScheduler, job *customCh
 
 	req := initRequest(lang, job)
 
-	req.Command = append(slices.Clone(lang.RunCommand), "/box/program.out", "/box/correct.out", "/box/correct.in")
+	req.Command = append(
+		makeGoodSandboxCommand(ctx, lang.RunCommand, []string{lang.ExecuteName(job.c.filename)}),
+		"/box/program.out",
+		"/box/correct.out",
+		"/box/correct.in",
+	)
 	req.RunConfig.OutputPath = "/box/verdict.out"
 	req.OutputByteFiles = []string{"/box/verdict.out"}
 
@@ -46,4 +51,20 @@ func legacyCheckerTask(ctx context.Context, mgr eval.BoxScheduler, job *customCh
 		output = val
 	}
 	return output, decimal.NewFromFloat(percentage)
+}
+
+func makeGoodSandboxCommand(ctx context.Context, command []string, files []string) []string {
+	cmd := slices.Clone(command)
+	for i := range cmd {
+		if cmd[i] == eval.MagicReplace {
+			x := []string{}
+			x = append(x, cmd[:i]...)
+			x = append(x, files...)
+			x = append(x, cmd[i+1:]...)
+			return x
+		}
+	}
+
+	slog.WarnContext(ctx, "Did not replace any fields in command", slog.Any("command", command))
+	return cmd
 }

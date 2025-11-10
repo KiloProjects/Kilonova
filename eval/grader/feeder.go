@@ -51,7 +51,7 @@ func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, error) {
 		if config.Common.Debug {
 			lvl = slog.LevelDebug
 		}
-		graderLogger = slog.New(slog.NewTextHandler(logFile, &slog.HandlerOptions{
+		graderLogger = slog.New(slog.NewJSONHandler(logFile, &slog.HandlerOptions{
 			AddSource: true,
 			Level:     lvl,
 		}))

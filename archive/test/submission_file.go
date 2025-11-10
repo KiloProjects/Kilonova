@@ -13,6 +13,8 @@ import (
 type submissionStub struct {
 	code []byte
 	lang string
+
+	filename string
 }
 
 func ProcessSubmissionFile(ctx *ArchiveCtx, fpath string, r io.Reader, base *sudoapi.BaseAPI) error {
@@ -32,6 +34,8 @@ func ProcessSubmissionFile(ctx *ArchiveCtx, fpath string, r io.Reader, base *sud
 	ctx.submissions = append(ctx.submissions, &submissionStub{
 		code: data,
 		lang: lang,
+
+		filename: path.Base(fpath),
 	})
 	return nil
 }

@@ -313,7 +313,7 @@ func (s *BaseAPI) LastSubmissionTime(ctx context.Context, filter kilonova.Submis
 }
 
 // CreateSubmission produces a new submission and also creates the necessary subtests
-func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFull, problem *kilonova.Problem, code []byte, lang *Language, contestID *int, bypassSubCount bool) (int, error) {
+func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFull, problem *kilonova.Problem, code []byte, codeFilename string, lang *Language, contestID *int, bypassSubCount bool) (int, error) {
 	if author == nil {
 		return -1, Statusf(400, "Invalid submission author")
 	}
@@ -413,8 +413,14 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 		return -1, Statusf(400, "Language not supported by problem")
 	}
 
+	fname := lang.DefaultFilename
+	// For now, accept this only for Java files
+	if lang.InternalName == "java" && codeFilename != "" {
+		fname = codeFilename
+	}
+
 	// Add submission
-	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang.InternalName, string(code), contestID)
+	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang.InternalName, string(code), fname, contestID)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't create submission", slog.Any("err", err))
 		return -1, fmt.Errorf("couldn't create submission")

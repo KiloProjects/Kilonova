@@ -158,7 +158,7 @@ func initLogger(debug, writeFile bool) {
 			loglevel = slog.LevelDebug
 		}
 
-		handlers = append(handlers, slog.NewTextHandler(file, &slog.HandlerOptions{
+		handlers = append(handlers, slog.NewJSONHandler(file, &slog.HandlerOptions{
 			AddSource: true,
 			Level:     loglevel,
 		}))

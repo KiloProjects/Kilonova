@@ -45,7 +45,7 @@ require github.com/dustin/go-humanize v1.0.1
 
 require (
 	github.com/Masterminds/squirrel v1.5.4
-	github.com/a-h/templ v0.3.943
+	github.com/a-h/templ v0.3.960
 	github.com/bwmarrin/discordgo v0.29.0
 	github.com/danielgtaylor/huma/v2 v2.34.1
 	github.com/dominikbraun/graph v0.23.0

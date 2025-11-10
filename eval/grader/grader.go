@@ -1,6 +1,7 @@
 package grader
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -118,6 +119,8 @@ func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.C
 		CodeFiles:   make(map[string][]byte),
 		HeaderFiles: make(map[string][]byte),
 
+		OriginalFilename: sh.sub.CodeFilename,
+
 		Store: sh.base.DataStore(),
 	}
 	atts, err := sh.base.ProblemAttachments(ctx, sh.pb.ID)
@@ -149,10 +152,10 @@ func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.C
 	if len(sh.settings.GraderFiles) > 0 && sh.sub.Language == "pascal" {
 		// In interactive problems, include the source code as header
 		// Apparently the fpc compiler allows only one file as parameter, this should solve it
-		req.HeaderFiles[sh.lang.SourceName] = subCode
+		req.HeaderFiles[sh.lang.SourceName(sh.sub.CodeFilename)] = subCode
 	} else {
 		// But by default it should be a code file
-		req.CodeFiles[sh.lang.SourceName] = subCode
+		req.CodeFiles[sh.lang.SourceName(sh.sub.CodeFilename)] = subCode
 	}
 	for _, headerFile := range sh.settings.HeaderFiles {
 		for _, att := range atts {
@@ -472,10 +475,12 @@ func (sh *submissionHandler) handleBatchSubTest(ctx context.Context, checker che
 		SubtestID:   subTest.ID,
 		InputName:   sh.pb.TestName + ".in",
 		OutputName:  sh.pb.TestName + ".out",
-		MemoryLimit: sh.pb.MemoryLimit,
-		TimeLimit:   sh.pb.TimeLimit,
+		MemoryLimit: int(float64(sh.pb.MemoryLimit) * cmp.Or(sh.lang.MemoryLimitMultiplier, 1.0)),
+		TimeLimit:   sh.pb.TimeLimit * cmp.Or(sh.lang.TimeLimitMultiplier, 1.0),
 		Lang:        sh.lang,
 		TestID:      *subTest.TestID,
+
+		CodeFilename: sh.sub.CodeFilename,
 	}
 	if sh.pb.ConsoleInput {
 		execRequest.InputName = "stdin"
@@ -516,11 +521,14 @@ func (sh *submissionHandler) handleCommunicationSubTest(ctx context.Context, che
 
 		UseStdin: sh.pb.ConsoleInput,
 
-		MemoryLimit: sh.pb.MemoryLimit,
-		TimeLimit:   sh.pb.TimeLimit,
+		MemoryLimit: int(float64(sh.pb.MemoryLimit) * cmp.Or(sh.lang.MemoryLimitMultiplier, 1.0)),
+		TimeLimit:   sh.pb.TimeLimit * cmp.Or(sh.lang.TimeLimitMultiplier, 1.0),
 
 		SubLang:     sh.lang,
 		CheckerLang: checker.Language(),
+
+		CodeFilename:    sh.sub.CodeFilename,
+		CheckerFilename: checker.CodeFilename(),
 
 		TestID:           *subTest.TestID,
 		NumUserSandboxes: int64(sh.pb.CommunicationProcesses),

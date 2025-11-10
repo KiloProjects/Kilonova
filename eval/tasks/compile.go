@@ -12,6 +12,7 @@ import (
 
 	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/davecgh/go-spew/spew"
 )
 
 const outputPath = "/box/compilation.out"
@@ -23,6 +24,8 @@ type CompileRequest struct {
 	HeaderFiles map[string][]byte
 	Lang        *eval.Language
 	Store       *datastore.Manager
+
+	OriginalFilename string
 }
 
 type CompileResponse struct {
@@ -89,7 +92,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 
 		// Compilation output
 		OutputBucketFiles: map[string]*eval.BucketFile{
-			req.Lang.CompiledName: bucketFile,
+			req.Lang.CompiledName(req.OriginalFilename): bucketFile,
 		},
 		OutputByteFiles: []string{outputPath},
 
@@ -125,16 +128,12 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 	}
 
 	// Init compilation command
-	goodCmd, err := makeGoodCompileCommand(ctx, req.Lang.CompileCommand, sourceFiles)
-	if err != nil {
-		slog.WarnContext(ctx, "error in makeGoodCompileCommand. This is not good, so we'll use the command from the config file", slog.Any("err", err), slog.Any("command", req.Lang.CompileCommand))
-		goodCmd = req.Lang.CompileCommand
-	}
-	bReq.Command = goodCmd
+	bReq.Command = makeGoodSandboxCommand(ctx, req.Lang.CompileCommand, sourceFiles)
 
 	// TODO: Maybe define a max memory quota for compilations?
 	bResp, err := mgr.RunBox2(ctx, bReq, 0)
 	if bResp == nil {
+		spew.Dump(bReq)
 		resp.Output = "Internal runner error"
 		resp.Success = false
 		return resp, nil
@@ -152,7 +151,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 		return resp, nil
 	}
 
-	if _, ok := bResp.BucketFiles[req.Lang.CompiledName]; !ok {
+	if _, ok := bResp.BucketFiles[req.Lang.CompiledName(req.OriginalFilename)]; !ok {
 		resp.Other = "Could not save compilation output"
 		resp.Success = false
 	}
@@ -176,7 +175,7 @@ func compilationOutput(resp *eval.Box2Response) string {
 	return string(combinedOutRunes)
 }
 
-func makeGoodCompileCommand(ctx context.Context, command []string, files []string) ([]string, error) {
+func makeGoodSandboxCommand(ctx context.Context, command []string, files []string) []string {
 	cmd := slices.Clone(command)
 	for i := range cmd {
 		if cmd[i] == eval.MagicReplace {
@@ -184,10 +183,10 @@ func makeGoodCompileCommand(ctx context.Context, command []string, files []strin
 			x = append(x, cmd[:i]...)
 			x = append(x, files...)
 			x = append(x, cmd[i+1:]...)
-			return x, nil
+			return x
 		}
 	}
 
 	slog.WarnContext(ctx, "Did not replace any fields in command", slog.Any("command", command))
-	return cmd, nil
+	return cmd
 }

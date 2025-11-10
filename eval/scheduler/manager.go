@@ -5,13 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/KiloProjects/kilonova/datastore"
-	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/eval/tasks"
-	"github.com/KiloProjects/kilonova/internal/config"
-	"golang.org/x/sync/semaphore"
-	"golang.org/x/sys/unix"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"io/fs"
 	"log/slog"
 	"maps"
@@ -23,6 +16,14 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/KiloProjects/kilonova/datastore"
+	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/eval/tasks"
+	"github.com/KiloProjects/kilonova/internal/config"
+	"golang.org/x/sync/semaphore"
+	"golang.org/x/sys/unix"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
@@ -154,6 +155,10 @@ func (mgr *BoxManager) getLangVersions(ctx context.Context) map[string]string {
 		if lang.Disabled {
 			continue
 		}
+		if !slices.Contains(lang.RunCommand, eval.MagicReplace) {
+			slog.WarnContext(ctx, "Language run command does not contain MagicReplace", slog.String("lang", name))
+		}
+
 		ver, err := tasks.VersionTask(ctx, mgr, lang)
 		if err != nil {
 			slog.WarnContext(ctx, "Could not get version for language", slog.String("lang", name))

@@ -408,7 +408,7 @@ func (s *BaseAPI) cleanupBucketsJob(ctx context.Context, interval time.Duration)
 	if config.Common.Debug {
 		lvl = slog.LevelDebug
 	}
-	s.evictionLogger = slog.New(slog.NewTextHandler(logFile, &slog.HandlerOptions{
+	s.evictionLogger = slog.New(slog.NewJSONHandler(logFile, &slog.HandlerOptions{
 		AddSource: true,
 		Level:     lvl,
 	}))

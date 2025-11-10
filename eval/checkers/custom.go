@@ -59,6 +59,10 @@ func (c *customChecker) Language() *eval.Language {
 	return c.mgr.LanguageFromFilename(c.filename)
 }
 
+func (c *customChecker) CodeFilename() string {
+	return c.filename
+}
+
 // Prepare compiles the checker for the submission
 func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	var shouldCompile bool
@@ -91,11 +95,13 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	resp, err := tasks.CompileTask(ctx, c.mgr, &tasks.CompileRequest{
 		ID: -c.pb.ID,
 		CodeFiles: map[string][]byte{
-			lang.SourceName: c.code,
+			lang.SourceName(c.filename): c.code,
 		}, HeaderFiles: map[string][]byte{
 			"/box/testlib.h": testlibFile,
 		},
 		Lang: lang,
+
+		OriginalFilename: c.filename,
 
 		Store: c.store,
 	}, c.Logger)
@@ -160,7 +166,7 @@ func initRequest(lang *eval.Language, job *customCheckerInput) *eval.Box2Request
 				Filename: strconv.Itoa(job.testID) + ".out",
 				Mode:     0666,
 			},
-			lang.CompiledName: {
+			lang.CompiledName(job.c.filename): {
 				Bucket:   datastore.BucketTypeCheckers,
 				Filename: fmt.Sprintf("%d.bin", job.c.pb.ID),
 				Mode:     0000,

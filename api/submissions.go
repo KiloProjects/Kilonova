@@ -95,7 +95,7 @@ func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, _, err := r.FormFile("code")
+	f, fh, err := r.FormFile("code")
 	if err != nil {
 		if errors.Is(err, http.ErrMissingFile) {
 			errorData(w, "Missing `code` file with source code", 400)
@@ -113,7 +113,7 @@ func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.base.CreateSubmission(context.WithoutCancel(r.Context()), util.UserFull(r), problem, code, lang, args.ContestID, false)
+	id, err := s.base.CreateSubmission(context.WithoutCancel(r.Context()), util.UserFull(r), problem, code, fh.Filename, lang, args.ContestID, false)
 	if err != nil {
 		statusError(w, err)
 		return
@@ -179,7 +179,7 @@ func (s *API) createSubmissionV2(ctx context.Context, args *SubmissionCreateInpu
 		cid = &data.ContestID
 	}
 
-	id, err := s.base.CreateSubmission(context.WithoutCancel(ctx), util.UserFullContext(ctx), util.ProblemContext(ctx), code, lang, cid, false)
+	id, err := s.base.CreateSubmission(context.WithoutCancel(ctx), util.UserFullContext(ctx), util.ProblemContext(ctx), code, data.Code.Filename, lang, cid, false)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Could not create submission", err)
 	}

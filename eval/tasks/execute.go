@@ -36,6 +36,8 @@ type BatchRequest struct {
 	MemoryLimit int
 	TimeLimit   float64
 
+	CodeFilename string
+
 	Lang   *eval.Language
 	TestID int
 }
@@ -54,7 +56,7 @@ func ExecuteBatch(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, re
 				Mode:     0666,
 			},
 			// User executable
-			req.Lang.CompiledName: bucketFile,
+			req.Lang.CompiledName(req.CodeFilename): bucketFile,
 		},
 
 		RunConfig: &eval.RunConfig{
@@ -72,7 +74,7 @@ func ExecuteBatch(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, re
 			},
 		},
 
-		Command: slices.Clone(req.Lang.RunCommand),
+		Command: makeGoodSandboxCommand(ctx, req.Lang.RunCommand, []string{req.Lang.ExecuteName(req.CodeFilename)}),
 	}
 
 	// if our specified language is not compiled, then it means that
@@ -126,6 +128,9 @@ type CommunicationRequest struct {
 	CheckerLang *eval.Language
 	TestID      int
 
+	CodeFilename    string
+	CheckerFilename string
+
 	NumUserSandboxes int64
 }
 
@@ -150,10 +155,10 @@ func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota i
 				Mode:     0666,
 			},
 			// Manager executable
-			req.CheckerLang.CompiledName: managerBucketExec,
+			req.CheckerLang.CompiledName(req.CheckerFilename): managerBucketExec,
 		},
 
-		Command: slices.Clone(req.CheckerLang.RunCommand),
+		Command: makeGoodSandboxCommand(ctx, req.CheckerLang.RunCommand, []string{req.CheckerLang.ExecuteName(req.CheckerFilename)}),
 		RunConfig: &eval.RunConfig{
 			InputPath:  "/box/input.txt",
 			OutputPath: "/box/verdict.out",
@@ -179,7 +184,7 @@ func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota i
 		userReqs[i] = &eval.Box2Request{
 			InputBucketFiles: map[string]*eval.BucketFile{
 				// User executable
-				req.SubLang.CompiledName: userBucketExec,
+				req.SubLang.CompiledName(req.CodeFilename): userBucketExec,
 			},
 
 			RunConfig: &eval.RunConfig{
@@ -189,7 +194,7 @@ func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota i
 				WallTimeLimit: 2*req.TimeLimit + 1,
 			},
 
-			Command: slices.Clone(req.SubLang.RunCommand),
+			Command: makeGoodSandboxCommand(ctx, req.SubLang.RunCommand, []string{req.CheckerLang.ExecuteName(req.CheckerFilename)}),
 		}
 
 		// if our specified language is not compiled, then it means that

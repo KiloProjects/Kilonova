@@ -31,6 +31,8 @@ func (d *DiffChecker) Prepare(_ context.Context) (string, error) { return "", ni
 
 func (d *DiffChecker) Cleanup(_ context.Context) error { return nil }
 
+func (d *DiffChecker) CodeFilename() string { return "" }
+
 func (d *DiffChecker) RunChecker(ctx context.Context, subtestID int, testID int) (string, decimal.Decimal) {
 	tf, err := os.CreateTemp("", "prog-out-*")
 	if err != nil {

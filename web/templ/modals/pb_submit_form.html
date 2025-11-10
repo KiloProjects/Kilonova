@@ -62,6 +62,13 @@
     </label>
 
     <div id="cm_label" class="block mb-2">
+	    <label id="filename_label" class="block mb-2 hidden">
+		    <!-- Momentarily only for java-->
+		    <span class="form-label">{{getText "codeFilename"}}</span>
+	        <input class="form-input" id="filename" type="text" value="Main.java" autocomplete="off" />
+		    <span class="block text-sm text-muted">{{getText "filename_explanation" | renderMarkdown}}</span>
+	    </label>
+
         <textarea id="SubArea" style="display: none;" autocomplete="off" aria-hidden="true"></textarea>
     </div>
 
@@ -79,7 +86,11 @@
 
     function isOutputOnly() {
         const languages = Object.values(document.getElementById("sub_language").options).map(x => x.value);
-        return languages.length == 1 && languages[0] == "outputOnly"
+        return languages.length === 1 && languages[0] === "outputOnly"
+    }
+
+    function isJava() {
+        return document.getElementById("sub_language")?.value === "java";
     }
 
     let cmConfig = {
@@ -101,6 +112,7 @@
         }
         document.getElementById("file_label")?.classList.toggle("hidden", val === "code");
         document.getElementById("cm_label")?.classList.toggle("hidden", val !== "code");
+        document.getElementById("filename_label")?.classList.toggle("hidden", !isJava());
     })
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -110,11 +122,12 @@
         document.getElementById("submit_style").value = val;
         document.getElementById("file_label")?.classList.toggle("hidden", val === "code");
         document.getElementById("cm_label")?.classList.toggle("hidden", val !== "code");
-        
+
         var pref = bundled.getCodeLangPreference();
         if(Object.values(document.getElementById("sub_language").options).map(x => x.value).includes(pref)) {
             document.getElementById("sub_language").value = pref
         }
+        document.getElementById("filename_label")?.classList.toggle("hidden", !isJava());
     })
 
     document.getElementById("sub_language").addEventListener("change", (e) => {
@@ -123,6 +136,8 @@
         if (lang !== null) {
             cm.setLanguage(lang)
         }
+        console.log(isJava());
+        document.getElementById("filename_label")?.classList.toggle("hidden", !isJava());
     })
 
     async function sendSub() {
@@ -130,13 +145,21 @@
         form.set("problem_id", problemID);
         form.set("language", document.getElementById("sub_language").value)
 
-        if(document.getElementById("submit_style").value == "code") {
+        if(document.getElementById("submit_style").value === "code") {
             const code = cm.getText().trim()
-            if(code.length == 0) {
+            if(code.length === 0) {
                 bundled.apiToast({status: "error", data: bundled.getText("no_code")})
                 return;
             }
-            form.set("code", new File([code], "code", {type: "text/plain;charset=utf-8"}));
+            let filename = "code";
+            if(isJava()) {
+                filename = document.getElementById("filename").value;
+                if(filename.length === 0 || filename.endsWith(".java") === false) {
+                    bundled.apiToast({status: "error", data: bundled.getText("no_filename")})
+                    return;
+                }
+            }
+            form.set("code", new File([code], filename, {type: "text/plain;charset=utf-8"}));
         } else {
             const fInput = document.getElementById("submit_file");
             if(fInput.files.length > 1) {

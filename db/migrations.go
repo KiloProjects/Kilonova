@@ -63,6 +63,11 @@ var migrations = []migration{
 		name:    "Communication tasks support",
 		handler: runFile("008.problem_task_type.sql"),
 	},
+	{
+		id:      9,
+		name:    "Add support for setting custom filenames to submission code",
+		handler: runFile("009.source_file_name.sql"),
+	},
 }
 
 var specialMigrations = []migration{

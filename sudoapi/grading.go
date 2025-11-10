@@ -15,6 +15,8 @@ type Language struct {
 	InternalName  string `json:"internal_name"`
 	PrintableName string `json:"printable_name"`
 
+	DefaultFilename string `json:"-"`
+
 	lang *eval.Language
 	ctx  context.Context
 }
@@ -24,8 +26,9 @@ func (s *BaseAPI) evalLangToInternal(ctx context.Context, lang *eval.Language) *
 		return nil
 	}
 	return &Language{
-		InternalName:  lang.InternalName,
-		PrintableName: lang.PrintableName,
+		InternalName:    lang.InternalName,
+		PrintableName:   lang.PrintableName,
+		DefaultFilename: lang.DefaultFilename(),
 
 		lang: lang,
 		ctx:  ctx,
@@ -98,7 +101,7 @@ func (s *BaseAPI) GraderLanguages(ctx context.Context) []*GraderLanguage {
 			}
 			for i := range cmds {
 				if cmds[i] == eval.MagicReplace {
-					cmds[i] = lang.SourceName
+					cmds[i] = lang.SourceName("")
 				}
 				cmds[i] = strings.TrimPrefix(cmds[i], "/box/")
 			}

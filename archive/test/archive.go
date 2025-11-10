@@ -609,7 +609,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 				slog.InfoContext(ctx, "Skipping submission, unknown language")
 				continue
 			}
-			if _, err := base.CreateSubmission(ctx, params.Requestor, pb, sub.code, lang, nil, true); err != nil {
+			if _, err := base.CreateSubmission(ctx, params.Requestor, pb, sub.code, sub.filename, lang, nil, true); err != nil {
 				slog.WarnContext(ctx, "Couldn't create submission", slog.Any("err", err))
 			}
 		}

@@ -463,6 +463,12 @@ templ SubmissionSummary(sub *kilonova.FullSubmission, pasteAuthor *kilonova.User
 					<td class="kn-table-cell">{ T(ctx, "status") }</td>
 					<td class="kn-table-cell">{ sub.Status }</td>
 				</tr>
+				if len(sub.CodeFilename) > 0 {
+					<tr class="kn-table-simple-border">
+						<td class="kn-table-cell">{ T(ctx, "codeFilename") }</td>
+						<td class="kn-table-cell"><code>{ sub.CodeFilename }</code></td>
+					</tr>
+				}
 				if sub.CompileTime != nil {
 					<tr class="kn-table-simple-border">
 						<td class="kn-table-cell">{ T(ctx, "compileTime") }</td>

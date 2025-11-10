@@ -1264,6 +1264,18 @@ ro = "Data încărcării"
 en = "Compilation time"
 ro = "Timp compilare"
 
+[codeFilename]
+en = "File name"
+ro = "Numele fișierului"
+
+[no_filename]
+en = "Filename provided is not valid!"
+ro = "Nu a fost pus un nume valid!"
+
+[filename_explanation]
+en = "File name should be `<Class name>.java`"
+ro = "Numele fișierului ar trebui să fie `<Numele clasei>.java`"
+
 [noSubFound]
 en = "No submission found"
 ro = "Nicio submisie găsită"

@@ -12,6 +12,8 @@ type Checker interface {
 	Prepare(context.Context) (string, error)
 	Cleanup(context.Context) error
 
+	CodeFilename() string
+
 	// RunChecker returns a comment and a decimal number [0, 100] signifying the percentage of correctness of the subtest
 	RunChecker(ctx context.Context, subtestID int, testID int) (string, decimal.Decimal)
 
