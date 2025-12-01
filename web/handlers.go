@@ -20,9 +20,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/web/views"
 	"github.com/KiloProjects/kilonova/web/views/modals"
 	"github.com/KiloProjects/kilonova/web/views/utilviews"
+	"github.com/skip2/go-qrcode"
 
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/components/layout"
@@ -1511,6 +1513,25 @@ func (rt *Web) contestInvite() http.HandlerFunc {
 			AlreadyRegistered: alreadyRegistered,
 		})
 	}
+}
+
+func (rt *Web) contestInviteQRCode(w http.ResponseWriter, r *http.Request) {
+	inv, err := rt.base.ContestInvitation(r.Context(), r.PathValue("inviteID"))
+	if err != nil || inv == nil {
+		slog.WarnContext(r.Context(), "Couldn't get contest invitation", slog.Any("err", err))
+		rt.statusPage(w, r, 404, "Invite not found")
+		return
+	}
+
+	inviteURL := config.Common.HostURL.JoinPath("contests/invite", inv.ID).String()
+	data, err := qrcode.Encode(inviteURL, qrcode.High, 256)
+	if err != nil {
+		slog.WarnContext(r.Context(), "Couldn't encode QR code", slog.Any("err", err))
+		http.Error(w, "Couldn't generate QR code", 500)
+		return
+	}
+
+	http.ServeContent(w, r, "qr.png", inv.CreatedAt, bytes.NewReader(data))
 }
 
 func (rt *Web) contestCommunication() http.HandlerFunc {

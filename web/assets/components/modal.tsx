@@ -88,6 +88,27 @@ export function confirm(message: string): Promise<boolean> {
 	});
 }
 
+export function inviteQRCode(inviteID: string) {
+	const par = document.createElement("div");
+	document.getElementById("modals")!.append(par);
+
+	function callback() {
+		par.parentElement?.removeChild(par)
+	}
+
+	render(
+		<KNModal open={true} title={getText("invite_qr_code")}
+		         closeCallback={() => callback()}
+		         footer={
+			         <button onClick={() => callback()} class="btn btn-blue mr-2">
+				         {getText("button.close")}
+			         </button>
+		         }>
+			<img class="object-contain mx-auto max-w-full max-h-full" src={`/contests/invite/${inviteID}/qr`} alt="QR Code for contest invitation"/>
+		</KNModal>,
+		par);
+}
+
 
 document.addEventListener("htmx:confirm", e => {
 	if (!e.target?.hasAttribute("hx-confirm")) return
@@ -117,7 +138,7 @@ document.addEventListener("DOMContentLoaded", e => {
 		}
 	})
 	const modals = document.getElementById("modals")
-	if(modals != null) {
+	if (modals != null) {
 		observer.observe(modals, {childList: true})
 	}
 })

@@ -198,6 +198,7 @@
                                 <th class="kn-table-cell" scope="row">
                                     <a href="/contests/invite/{{.ID}}">{{if .Invalid}}<s>{{.ID}}</s>{{else}}{{.ID}}{{end}}</a> 
                                     <button onclick="copyInvitationURL({{.ID}})" class="ml-2 tag tag-other"><i class="fas fa-copy"></i></button>
+                                    <button onclick="bundled.inviteQRCode({{.ID}})" class="ml-1 tag tag-author"><i class="fas fa-qrcode"></i></button>
                                 </th>
                                 <td class="kn-table-cell">
                                     <server-timestamp timestamp="{{.CreatedAt.UnixMilli}}"></server-timestamp>

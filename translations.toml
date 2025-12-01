@@ -2143,6 +2143,10 @@ ro = "Răspunde"
 en = "Cancel"
 ro = "Anulare"
 
+[button.close]
+en = "Close"
+ro = "Închide"
+
 [questions]
 en = "Questions"
 ro = "Întrebări"
@@ -3188,3 +3192,7 @@ ro = "Comunicare"
 [communicationProcesses]
 en = "Number of submission communication processes"
 ro = "Număr de procese de comunicare ale submisiei"
+
+[invite_qr_code]
+en = "Share QR Code"
+ro = "Afișare Cod QR"

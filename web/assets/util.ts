@@ -19,8 +19,6 @@ export { dayjs };
 
 export { fromBase64 } from "js-base64";
 
-export const JSONTimestamp = "YYYY-MM-DDTHH:mm:ss.SSSSSSZ";
-
 // if max_step is 0, it will format until the MB region
 // else if max_step is 1, it will only format until the KB region
 // else if max_step >= 2, it will append a " B" to the end of the number

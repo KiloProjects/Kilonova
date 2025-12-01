@@ -212,6 +212,7 @@ func (rt *Web) Handler() http.Handler {
 			r.Get("/", rt.contests())
 			r.With(rt.mustBeAuthed).Get("/create", rt.createContest())
 			r.With(rt.mustBeAuthed).Get("/invite/{inviteID}", rt.contestInvite())
+			r.Get("/invite/{inviteID}/qr", rt.contestInviteQRCode)
 			r.Route("/{contestID}", func(r chi.Router) {
 				r.Use(rt.ValidateContestID)
 				r.Use(rt.ValidateContestVisible)
