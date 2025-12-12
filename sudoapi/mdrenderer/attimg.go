@@ -90,6 +90,8 @@ func (att *imgAttRenderer) renderAttachment(writer util.BufWriter, source []byte
 				}
 			} else if key == "inline" {
 				inline = true
+			} else if key == "noTransparency" {
+				rmTransparency = true
 			}
 		}
 	}
