@@ -2,19 +2,19 @@
 en = 'Feel free to join our <a target="_blank" rel="noopener noreferrer" href="/links/discord">Discord</a> and reach out if you have any suggestions, wish to become a contributor or would like to collaborate with us.'
 ro = 'Nu ezitați să vă alăturați <a target="_blank" rel="noopener noreferrer" href="/links/discord">Discord</a>-ului nostru și să ne contactați dacă aveți sugestii, doriți să deveniți un contribuitor sau doriți să colaborați cu noi.'
 
-[all_checklists_announcement]
+[announcements.all_checklists]
 en = "View all archive progress reports [on this page](/problem_lists/progress)."
 ro = "Poți să vezi progresul de rezolvare al arhivei [pe pagina aceasta](/problem_lists/progress)."
 
-[all_problems_announcement]
+[announcements.all_problems]
 en = "You can also view all problems ordered by ID [on this page](/problems)."
 ro = "Poți, de asemenea, să vezi toate problemele ordonate după ID [pe pagina aceasta](/problems)."
 
-[latest_problems_announcement]
+[announcements.latest_problems]
 en = "You can view a longer list [on this page](/problems?ordering=published_at&descending=true)."
 ro = "Poți să vezi o listă mai lungă [pe pagina aceasta](/problems?ordering=published_at&descending=true)."
 
-[all_contests_announcement]
+[announcements.all_contests]
 en = "You can also view all available contests [on this page](/contests)."
 ro = "Poți, de asemenea, să vezi toate concursurile disponibile [pe pagina aceasta](/contests)."
 

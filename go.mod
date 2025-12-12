@@ -100,6 +100,7 @@ require (
 	github.com/muhlemmer/gu v0.3.1 // indirect
 	github.com/muhlemmer/httpforwarded v0.1.0 // indirect
 	github.com/natefinch/atomic v1.0.1 // indirect
+	github.com/nicksnyder/go-i18n/v2 v2.6.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
@@ -144,5 +145,6 @@ require (
 
 tool (
 	github.com/a-h/templ/cmd/templ
+	github.com/nicksnyder/go-i18n/v2/goi18n
 	github.com/tomwright/dasel/v2/cmd/dasel
 )

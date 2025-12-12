@@ -256,6 +256,7 @@ func (s *DB) contestMaxScores(contestID int, freezeTime *time.Time, userID *int,
 		"FIRST_VALUE(computed_score * (leaderboard_score_scale / 100)) OVER w AS max_score",
 		"FIRST_VALUE(created_at) OVER w AS mintime").Distinct().
 		From("submission_subtasks").Where("contest_id = ?", contestID).Where("subtask_id IS NOT NULL").
+		Where("created_at <= COALESCE(?, NOW())", freezeTime).
 		Suffix("WINDOW w AS (PARTITION BY user_id, subtask_id, problem_id ORDER BY computed_score DESC, created_at ASC)")
 
 	sumSubtasksStrat := sq.Select("user_id", "problem_id", "coalesce(SUM(max_score), -1) AS max_score", "MAX(mintime) AS mintime").

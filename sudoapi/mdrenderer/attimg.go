@@ -67,6 +67,7 @@ func (att *imgAttRenderer) renderAttachment(writer util.BufWriter, source []byte
 	align := "left"
 	width := ""
 	var inline bool
+	var rmTransparency bool
 
 	node := n.(*ImageAttNode)
 	parts := strings.Split(node.Filename, "|")
@@ -84,6 +85,8 @@ func (att *imgAttRenderer) renderAttachment(writer util.BufWriter, source []byte
 					width = val
 				case "inline":
 					inline = true
+				case "noTransparency":
+					rmTransparency = true
 				}
 			} else if key == "inline" {
 				inline = true
@@ -96,6 +99,9 @@ func (att *imgAttRenderer) renderAttachment(writer util.BufWriter, source []byte
 	extra := ""
 	if inline {
 		extra += ` data-imginline="true" `
+	}
+	if rmTransparency {
+		link += "?rmTransparency=true"
 	}
 	if width != "" {
 		extra += ` style="width:` + html.EscapeString(width) + `" `

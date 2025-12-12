@@ -12,10 +12,11 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 )
 
-type Translation map[string]string
-type Translations map[string]Translation
+// v1
 
-var translations Translations
+type translation map[string]string
+
+var translations map[string]translation
 
 //go:generate go run -v ./scripts/toml_gen --target ./_translations.json --target ./web/assets/_translations.json
 
@@ -52,7 +53,7 @@ func recurse(prefix string, val map[string]any) {
 	for name, val := range val {
 		if str, ok := val.(string); ok {
 			if _, ok = translations[prefix]; !ok {
-				translations[prefix] = make(Translation)
+				translations[prefix] = make(translation)
 			}
 			translations[prefix][name] = str
 		} else if deeper, ok := val.(map[string]any); ok {
@@ -65,7 +66,7 @@ func recurse(prefix string, val map[string]any) {
 }
 
 func init() {
-	translations = make(Translations)
+	translations = make(map[string]translation)
 	var elems = make(map[string]map[string]any)
 	err := json.Unmarshal(keys, &elems)
 	if err != nil {

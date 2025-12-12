@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"image/color"
+	"image/draw"
 	"io"
 	"io/fs"
 	"log/slog"
@@ -19,6 +21,9 @@ import (
 	"sync"
 	"time"
 
+	"image/jpeg"
+	"image/png"
+
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/archive/test"
 	"github.com/KiloProjects/kilonova/internal/util"
@@ -27,8 +32,6 @@ import (
 	"github.com/disintegration/gift"
 	"github.com/go-chi/chi/v5"
 	"github.com/shopspring/decimal"
-	"image/jpeg"
-	"image/png"
 )
 
 type Assets struct {
@@ -111,9 +114,15 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	mimeType := http.DetectContentType(attData)
-	if (mimeType == "image/png" || mimeType == "image/jpeg") && (r.FormValue("w") != "" || r.FormValue("h") != "") {
+	if (mimeType == "image/png" || mimeType == "image/jpeg") && (r.FormValue("w") != "" || r.FormValue("h") != "" || r.FormValue("rmTransparency") == "true") {
 		var ok = true
-		width, height := 0, 0
+		cfg, _, err := image.DecodeConfig(bytes.NewReader(attData))
+		if err != nil {
+			slog.DebugContext(r.Context(), "Could not decode image config", slog.Any("err", err))
+			ok = false
+		}
+
+		width, height := cfg.Width, cfg.Height
 		if r.FormValue("w") != "" {
 			width2, err := strconv.Atoi(r.FormValue("w"))
 			if err != nil {
@@ -133,7 +142,7 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 			ok = false
 		}
 
-		renderType := fmt.Sprintf("img_%dx%d", width, height)
+		renderType := fmt.Sprintf("img_%dx%d_%t", width, height, r.FormValue("rmTransparency") == "true")
 		data, err := s.base.GetAttachmentRender(att.ID, renderType)
 		if err != nil {
 			if !errors.Is(err, fs.ErrNotExist) {
@@ -153,7 +162,12 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 		if ok {
 			g := gift.New(gift.Resize(width, height, gift.LanczosResampling))
 			dst := image.NewRGBA(g.Bounds(src.Bounds()))
-			g.Draw(dst, src)
+			if r.FormValue("rmTransparency") == "true" {
+				draw.Draw(dst, dst.Bounds(), image.NewUniform(color.White), image.Point{}, draw.Src)
+				g.DrawAt(dst, src, image.Point{}, gift.OverOperator)
+			} else {
+				g.Draw(dst, src)
+			}
 			var buf bytes.Buffer
 			switch mimeType {
 			case "image/png":
