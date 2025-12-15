@@ -21,7 +21,10 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"github.com/KiloProjects/kilonova/web/tutils"
 )
+
+var T = tutils.T
 
 func authed(ctx context.Context) bool {
 	return util.UserBriefContext(ctx) != nil

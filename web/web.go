@@ -27,6 +27,7 @@ import (
 	"unicode"
 
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/KiloProjects/kilonova/web/views/proposer"
 	"github.com/KiloProjects/kilonova/web/views/utilviews"
 	"github.com/a-h/templ"
 
@@ -92,7 +93,6 @@ func (rt *Web) problemRouter(inContest bool) func(r chi.Router) {
 		r.Use(rt.ValidateProblemID)
 		r.Use(rt.ValidateProblemVisible)
 		r.Get("/", rt.problem())
-		r.Get("/print", rt.problemPrint())
 		r.Get("/submissions", rt.problemSubmissions())
 		if !inContest {
 			r.With(rt.ValidateProblemFullyVisible).Get("/statistics", rt.problemStatistics())
@@ -274,7 +274,7 @@ func (rt *Web) Handler() http.Handler {
 		r.With(rt.mustBeProposer).Get("/proposer", rt.justRender(
 			"proposer/index.html",
 			"proposer/createproblem.html", "proposer/importproblem.html",
-			"proposer/createpblist.html", "proposer/createcontest.html",
+			"proposer/createpblist.html",
 		))
 	})
 
@@ -922,6 +922,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			slog.ErrorContext(ctx, "Uninitialized `renderComponent`")
 			return "", nil
 		},
+		"createContestComponent": proposer.CreateContestForm,
 	}
 	return &Web{funcs, base}
 }

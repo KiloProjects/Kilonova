@@ -1,18 +1,23 @@
-import { h, Fragment, Component } from "preact";
+import {Fragment, h} from "preact";
 import register from "preact-custom-element";
-import { Reducer, useEffect, useMemo, useReducer, useState } from "preact/hooks";
-import { dayjs, getGradient } from "../util";
+import {Reducer, useEffect, useMemo, useReducer, useState} from "preact/hooks";
+import {dayjs, getGradient} from "../util";
 import getText from "../translation";
-import { sprintf } from "sprintf-js";
-import { fromBase64 } from "js-base64";
-import { answerQuestion, getAllQuestions, getUserQuestions, getAnnouncements, updateAnnouncement, deleteAnnouncement } from "../api/contest";
-import { apiToast, createToast } from "../toast";
-import { BigSpinner, Paginator } from "./common";
-import { getCall, postCall } from "../api/client";
-import { buildScoreBreakdownModal } from "./maxscore_breakdown";
-import { confirm } from "./modal";
-import { defaultClient } from "../api/client";
-import { formatDuration, serverTime } from "../time";
+import {fromBase64} from "js-base64";
+import {
+	answerQuestion,
+	deleteAnnouncement,
+	getAllQuestions,
+	getAnnouncements,
+	getUserQuestions,
+	updateAnnouncement
+} from "../api/contest";
+import {apiToast, createToast} from "../toast";
+import {BigSpinner, Paginator} from "./common";
+import {defaultClient, getCall, postCall} from "../api/client";
+import {buildScoreBreakdownModal} from "./maxscore_breakdown";
+import {confirm} from "./modal";
+import {formatDuration, serverTime} from "../time";
 
 export function ContestRemainingTime({ target_time, reload }: { target_time: dayjs.Dayjs; reload: boolean }) {
 	let [text, setText] = useState<string>(formatDuration(target_time));
@@ -720,7 +725,9 @@ function ContestRegistrations(params: { contestid: string; usacomode: string }) 
 											class="inline-block mr-2 rounded-sm align-middle"
 											src={`/api/user/byName/${user.user.name}/avatar?s=32`}
 										/>{" "}
-										<span class="align-middle">{user.user.name}</span>
+										<span class="align-middle">
+											{user.user.name} {user.user.display_name?.length > 0 && `(${user.user.display_name})`}
+										</span>
 									</a>
 								</td>
 								{usacoMode && (

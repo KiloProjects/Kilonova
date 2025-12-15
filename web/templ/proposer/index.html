@@ -7,7 +7,9 @@
 
 {{ template "createpblist.html" . }}
 
-{{ template "createcontest.html" . }}
+<div class="segment-panel">
+    {{createContestComponent | renderComponent}}
+</div>
 
 {{ template "importproblem.html" . }}
 

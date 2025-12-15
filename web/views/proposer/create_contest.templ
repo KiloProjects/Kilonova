@@ -1,0 +1,63 @@
+package proposer
+
+import (
+	"context"
+	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/web/tutils"
+)
+
+var TC = tutils.TC
+
+func admin(ctx context.Context) bool {
+	return util.UserBriefContext(ctx).IsAdmin()
+}
+
+templ CreateContestForm() {
+	<h2>
+		@TC("createContest")
+	</h2>
+	<form id="contest_form">
+		<label class="block my-2">
+			<span class="form-label">
+				@TC("name")
+				: 
+			</span>
+			<input id="contest_title" type="text" class="form-input" required/>
+		</label>
+		<label class="block my-2">
+			<span class={ "form-label", templ.KV("text-muted", !admin(ctx)) }>
+				@TC("contest_type")
+				: 
+			</span>
+			<select id="contest_type" type="text" class="form-select" value="virtual" required autocomplete="off">
+				<option value="official" disabled?={ !admin(ctx) }>
+					@TC("official")
+				</option>
+				<option value="virtual" selected>
+					@TC("virtual")
+				</option>
+			</select>
+			<p class="block text-muted text-sm">
+				@TC("contest_type_warn")
+			</p>
+		</label>
+		<button type="submit" class="btn btn-blue">
+			@TC("button.create")
+		</button>
+	</form>
+	<script>
+        // TODO: Remove and use htmx instead
+        async function createContest(e) {
+            e.preventDefault();
+            let name = document.getElementById("contest_title").value;
+            let type = document.getElementById("contest_type").value;
+            let res = await bundled.postCall("/contest/create", {name, type})
+            if(res.status === "error") {
+                bundled.apiToast(res)
+                return
+            }
+            window.location.assign(`/contests/${res.data}`)
+        }
+        document.getElementById("contest_form").addEventListener("submit", createContest)
+    </script>
+}

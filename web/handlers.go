@@ -854,50 +854,6 @@ func (rt *Web) appropriateDescriptionVariant(r *http.Request, variants []*kilono
 	return variants[0]
 }
 
-func (rt *Web) problemPrint() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		problem := util.Problem(r)
-
-		var statement = []byte("This problem doesn't have a statement.")
-
-		variants, err := rt.base.ProblemDescVariants(r.Context(), problem.ID, rt.base.IsProblemEditor(util.UserBrief(r), problem))
-		if err != nil {
-			slog.WarnContext(r.Context(), "Couldn't get problem desc variants", slog.Any("err", err))
-		}
-
-		descVariant := rt.appropriateDescriptionVariant(r, variants)
-
-		assetLink := fmt.Sprintf("/assets/problem/%d/attachment/%s?t=%d", problem.ID, rt.base.FormatDescName(descVariant), descVariant.LastUpdatedAt.UnixMilli())
-		switch descVariant.Format {
-		case "md":
-			statement, err = rt.base.RenderedProblemDesc(r.Context(), problem, descVariant)
-			if err != nil {
-				slog.WarnContext(r.Context(), "Error getting problem markdown", slog.Any("err", err), slog.Any("variant", descVariant), slog.Any("problem", problem))
-				statement = []byte("Error loading markdown.")
-			}
-		case "pdf":
-			statement = []byte(fmt.Sprintf(
-				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>
-					<embed class="mx-2 my-2" type="application/pdf" src="%s"
-					style="width:95%%; height: 90vh; background: white; object-fit: contain;"></embed>`,
-				assetLink, kilonova.GetText(util.Language(r), "desc_link"), assetLink,
-			))
-		case "":
-		default:
-			statement = []byte(fmt.Sprintf(
-				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>`,
-				assetLink, kilonova.GetText(util.Language(r), "desc_link"),
-			))
-		}
-
-		rt.printLayout(w, r, &PrintLayoutParams{
-			Title:     problem.Name,
-			ExtraHead: views.PrintHeader(),
-			Component: views.PrintStatement(statement, problem, descVariant, nil),
-		})
-	}
-}
-
 func (rt *Web) problem() http.HandlerFunc {
 	pageTempl := rt.parse(nil, "problem/summary.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -1425,7 +1381,7 @@ func (rt *Web) contests() http.HandlerFunc {
 }
 
 func (rt *Web) createContest() http.HandlerFunc {
-	templ := rt.parse(nil, "contest/create.html", "proposer/createcontest.html", "contest/index_topbar.html")
+	templ := rt.parse(nil, "contest/create.html", "contest/index_topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !(util.UserBrief(r).IsProposer() || flags.NormalUserVirtualContests.Value()) {
 			rt.statusPage(w, r, 403, "Nu poți crea concursuri!")
@@ -2423,26 +2379,6 @@ func (rt *Web) componentModal(w http.ResponseWriter, r *http.Request, component 
 	w.Header().Add("Content-Type", "text/html; charset=utf-8")
 	if err := component.Render(r.Context(), w); err != nil {
 		slog.WarnContext(r.Context(), "Error rendering modal", slog.Any("err", err))
-	}
-}
-
-type PrintLayoutParams struct {
-	Title       string
-	Description string
-	ExtraHead   templ.Component
-	Component   templ.Component
-}
-
-func (rt *Web) printLayout(w http.ResponseWriter, r *http.Request, params *PrintLayoutParams) {
-	w.Header().Add("Content-Type", "text/html; charset=utf-8")
-	if err := layout.PrintLayout(
-		rt.base.EnabledLanguages(),
-		params.Title, params.Description,
-		params.ExtraHead,
-		params.Component,
-		fsys,
-	).Render(r.Context(), w); err != nil {
-		slog.WarnContext(r.Context(), "Error rendering layout", slog.Any("err", err))
 	}
 }
 

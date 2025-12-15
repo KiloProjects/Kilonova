@@ -1,9 +1,9 @@
-import { h, Fragment, Component } from "preact";
+import {Fragment, h} from "preact";
 import register from "preact-custom-element";
-import { useEffect, useState } from "preact/hooks";
-import { getCall } from "../api/client";
-import { apiToast } from "../toast";
-import { Paginator } from "./common";
+import {useEffect, useState} from "preact/hooks";
+import {getCall} from "../api/client";
+import {apiToast} from "../toast";
+import {Paginator} from "./common";
 import getText from "../translation";
 
 function UserTable({ users }: { users: UserBrief[] }) {
@@ -34,7 +34,8 @@ function UserTable({ users }: { users: UserBrief[] }) {
 						<td class="kn-table-cell">{user.id}</td>
 						<td class="kn-table-cell">
 							<a href={`/profile/${user.name}`} class="inline-flex align-middle items-center">
-								<img width={32} height={32} class="flex-none mr-2 rounded-sm" src={`/api/user/byName/${user.name}/avatar?s=32`} /> {user.name}
+								<img width={32} height={32} class="flex-none mr-2 rounded-sm" src={`/api/user/byName/${user.name}/avatar?s=32`} /> {user.name}{" "}
+								{user.display_name?.length > 0 && `(${user.display_name})`}
 							</a>
 						</td>
 						<td class="kn-table-cell">{user.admin ? <span class="text-lg">✅</span> : <span class="text-lg">❌</span>}</td>

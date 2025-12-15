@@ -172,19 +172,3 @@ templ Layout(params LayoutParams) {
 		</body>
 	</html>
 }
-
-templ PrintLayout(enabledLanguages map[string]string, title string, description string, head templ.Component, content templ.Component, hashNamer HashNamer) {
-	<!DOCTYPE html>
-	<html
-		lang={ util.LanguageContext(ctx) }
-		class="light"
-	>
-		<head>
-			@mainHeadTags(enabledLanguages, title, description, hashNamer)
-			@head
-		</head>
-		<body>
-			@content
-		</body>
-	</html>
-}

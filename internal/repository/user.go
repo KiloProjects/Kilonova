@@ -251,7 +251,7 @@ func userFilterQuery(filter *kilonova.UserFilter, sb sq.SelectBuilder) sq.Select
 		where = append(where, sq.Expr("lower(name) = lower(?)", v))
 	}
 	if v := filter.FuzzyName; v != nil {
-		where = append(where, sq.Expr("position(lower(unaccent(?)) in format('#%s %s', id, lower(unaccent(name)))) > 0", v))
+		where = append(where, sq.Expr("position(lower(unaccent(?)) in format('#%s %s %s', id, lower(unaccent(name)), lower(unaccent(COALESCE(display_name, ''))))) > 0", v))
 	}
 	if v := filter.Email; v != nil {
 		where = append(where, sq.Expr("lower(email) = lower(?)", v))

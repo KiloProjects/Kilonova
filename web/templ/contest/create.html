@@ -6,6 +6,8 @@
 
 {{ template "index_topbar.html" . }}
 
-{{ template "createcontest.html" . }}
+<div class="segment-panel">
+    {{createContestComponent | renderComponent}}
+</div>
 
 {{ end }}
