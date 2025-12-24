@@ -407,7 +407,7 @@ templ SubmissionSummary(sub *kilonova.FullSubmission, pasteAuthor *kilonova.User
 							<td class="kn-table-cell">{ T(ctx, "score") }</td>
 							<td class="kn-table-cell">
 								<span class="badge-lite font-bold score-cell" data-score={ sub.Score.String() }>
-									@modals.FormatScore(sub.Problem, &sub.Score)
+									@tutils.Score(sub.Problem, &sub.Score)
 								</span>
 							</td>
 						</tr>

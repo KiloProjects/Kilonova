@@ -1,5 +1,5 @@
-import type { katex } from "katex";
-import type { UserBrief } from "./api/submissions";
+import type {katex} from "katex";
+import type {UserBrief} from "./api/submissions";
 
 import type htmx from "htmx.org";
 
@@ -44,6 +44,7 @@ export declare global {
 		htmx: typeof htmx;
 		bundled: typeof import("./app");
 		vendored: typeof import("./vendored");
+		Alpine: typeof import("alpinejs");
 	}
 
 	interface Document {

@@ -1,6 +1,202 @@
 package problems
 
+import (
+	"fmt"
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/web/tutils"
+	"github.com/shopspring/decimal"
+)
 
-templ Topbar() {
-	
+var TC = tutils.TC
+
+templ ContestDisclaimer(tags []*kilonova.Tag) {
+	<section id="disclaimer_section" class="segment-panel hidden">
+		<div class="modal-header">
+			<h2 style="margin: 0.25rem;">
+				<i class="fas fa-triangle-exclamation"></i>{ " " }
+				@TC("contestDisclaimerTitle")
+			</h2>
+			<button id="disclaimer_close">
+				<i class="modal-close fas fa-xmark"></i>
+			</button>
+		</div>
+		<div class="px-2 py-2">
+			@TC("contestDisclaimerBody")
+		</div>
+		<script>
+            let unauthedStorageKey = "contest_disclaimer_dismissed:unauthed";
+            let storageKey = `contest_disclaimer_dismissed:${window.platform_info.user_id}`
+            if(window.platform_info.user_id === 0) {
+                storageKey = unauthedStorageKey
+            }
+            document.getElementById("disclaimer_close").addEventListener("click", () => {
+                window.localStorage.setItem(storageKey, "disabled");
+                document.getElementById("disclaimer_section").remove();
+            })
+            if(window.localStorage.getItem(storageKey) === null) {
+                if(window.localStorage.getItem(unauthedStorageKey) !== null) {
+                    window.localStorage.removeItem(unauthedStorageKey);
+                    window.localStorage.setItem(storageKey, "disabled");
+                } else {
+                    document.getElementById("disclaimer_section").classList.remove("hidden");
+                }
+            }
+        </script>
+	</section>
+}
+
+type InfoParams struct {
+	Problem  *kilonova.Problem
+	IsEditor bool
+	Editors  []*kilonova.UserBrief
+	Viewers  []*kilonova.UserBrief
+	Tags     []*kilonova.Tag
+	// If viewing user is not authed, MaxScore should be nil
+	MaxScore     *decimal.Decimal
+	CanViewTests bool
+	Contest      *kilonova.Contest // for URL prefix
+}
+
+templ InfoSidebar(params *InfoParams) {
+	<section class="segment-panel font-semibold">
+		<h2 class="font-normal">
+			@TC("problemInfo")
+		</h2>
+		<div class="px-2">
+			<p>
+				@TC("id")
+				: { params.Problem.ID }
+			</p>
+			if len(params.Editors) == 1 {
+				<p>
+					@TC("editor")
+					:
+					<a href={ templ.URL("/profile/" + params.Editors[0].Name) }>{ params.Editors[0].Name }</a>
+				</p>
+			} else {
+				<details class="reset-list" open?={ params.IsEditor }>
+					<summary>
+						@TC("editors")
+						:
+					</summary>
+					<ul>
+						for _, editor := range params.Editors {
+							<li><a href={ templ.URL("/profile/" + editor.Name) }>{ editor.Name }</a></li>
+						}
+					</ul>
+				</details>
+			}
+			if params.IsEditor {
+				if len(params.Viewers) > 0 {
+					<details class="reset-list">
+						<summary>
+							@TC("viewers")
+							:
+						</summary>
+						<ul>
+							for _, viewer := range params.Viewers {
+								<li><a href={ templ.URL("/profile/" + viewer.Name) }>{ viewer.Name }</a></li>
+							}
+						</ul>
+					</details>
+				}
+				<p>
+					@TC("visibility")
+					:
+					if params.Problem.Visible {
+						<span class="badge-lite bg-green-700 text-sm">
+							@TC("published")
+						</span>
+					} else {
+						<span class="badge-lite bg-red-700 text-sm">
+							@TC("unpublished")
+						</span>
+					}
+				</p>
+			}
+			{{
+				var authorTags []*kilonova.Tag
+				var otherTags []*kilonova.Tag
+				for _, tag := range params.Tags {
+					if tag.Type == kilonova.TagTypeAuthor {
+						authorTags = append(authorTags, tag)
+					} else {
+						otherTags = append(otherTags, tag)
+					}
+				}
+			}}
+			if len(authorTags) > 0 {
+				<p>
+					@TC("author")
+					:
+					for _, author := range authorTags {
+						@Tag(author, false, "text-sm")
+					}
+				</p>
+			}
+			if len(params.Problem.SourceCredits) > 0 {
+				<p>
+					@TC("source")
+					: { params.Problem.SourceCredits }
+				</p>
+			}
+			if len(otherTags) > 0 {
+				{{
+					openMap := map[string]any{"open": false}
+					if params.MaxScore != nil && params.MaxScore.Equal(decimal.NewFromInt(100)) {
+						openMap["open"] = true
+					}
+				}}
+				<p x-data={ templ.JSONString(openMap) }>
+					@TC("tags")
+					{ ": " }
+					<span x-show="open" x-cloak>
+						for _, tag := range otherTags {
+							@Tag(tag, false, "text-sm")
+						}
+						{ " " }
+						<a href="#" @click.prevent="open = !open">
+							@TC("hide")
+						</a>
+					</span>
+					<a href="#" @click.prevent="open = !open" x-show="!open" x-cloak>
+						@TC("view")
+					</a>
+				</p>
+			}
+			if util.UserBriefContext(ctx).IsAuthed() {
+				<p>
+					if params.Problem.ScoringStrategy == kilonova.ScoringTypeICPC {
+						@TC("verdict")
+					} else {
+						@TC("score")
+					}
+					{ ": " }
+					if params.Problem.ScoringStrategy == kilonova.ScoringTypeSumSubtasks {
+						<a class="max_score_breakdown" href="#" data-problemid={ params.Problem.ID }>
+							<span data-pbid-reload={ params.Problem.ID }>
+								@tutils.Score(params.Problem, params.MaxScore, true)
+							</span>
+						</a>
+					} else {
+						<span data-pbid-reload={ params.Problem.ID }>
+							@tutils.Score(params.Problem, params.MaxScore, true)
+						</span>
+					}
+				</p>
+			}
+			if params.CanViewTests {
+				{{
+					archiveURL := fmt.Sprintf("/problems/%d/archive", params.Problem.ID)
+					if params.Contest != nil {
+						archiveURL = fmt.Sprintf("/contests/%d%s", params.Contest.ID, archiveURL)
+					}
+				}}
+				<a href={ templ.URL(archiveURL) }>
+					@TC("downloadArchive")
+				</a>
+			}
+		</div>
+	</section>
 }

@@ -2,12 +2,10 @@ package modals
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/web/tutils"
-	"github.com/shopspring/decimal"
 )
 
 type OlderSubmissionsParams struct {
@@ -20,29 +18,6 @@ type OlderSubmissionsParams struct {
 	NumHidden   int
 	AllFinished bool
 	AutoReload  bool
-}
-
-func removeTrailingZeros(score string) string {
-	if !strings.ContainsRune(score, '.') {
-		return score
-	}
-	return strings.TrimSuffix(strings.TrimRight(score, "0"), ".")
-}
-
-templ FormatScore(problem *kilonova.Problem, score *decimal.Decimal) {
-	if score == nil || score.IsNegative() {
-		-
-	} else {
-		if problem.ScoringStrategy == kilonova.ScoringTypeICPC {
-			if score.Equal(decimal.NewFromInt(100)) {
-				<i class="fas fa-fw fa-check"></i>
-			} else {
-				<i class="fas fa-fw fa-xmark"></i>
-			}
-		} else {
-			{ removeTrailingZeros(score.StringFixed(problem.ScorePrecision)) }
-		}
-	}
 }
 
 func cond(cond bool, then string, otherwise string) string {
@@ -68,7 +43,7 @@ templ OlderSubmissions(params *OlderSubmissionsParams) {
 						</span>
 						<span class="badge-lite text-sm">
 							if submission.Status == "finished" {
-								@FormatScore(params.Problem, &submission.Score)
+								@tutils.Score(params.Problem, &submission.Score)
 							} else if submission.Status == "working" {
 								<i class="fas fa-cog animate-spin"></i>
 							} else {

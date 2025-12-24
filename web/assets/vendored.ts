@@ -17,6 +17,11 @@ import "codemirror/mode/javascript/javascript";
 import "codemirror/mode/php/php";
 import "codemirror/mode/rust/rust";
 
+import Alpine from "alpinejs";
+
+window.Alpine = Alpine;
+Alpine.start();
+
 (() => {
 	var platformInfo: PlatformInfo = JSON.parse(document.getElementById("platform_info")?.textContent ?? "{}");
 	if (typeof platformInfo.sentryDSN == 'string') {

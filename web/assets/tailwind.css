@@ -13,6 +13,8 @@
     color-scheme: dark;
 }
 
+[x-cloak] { display: none !important; }
+
 @theme inline {
 	--color-border: var(--border);
 

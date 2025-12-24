@@ -1,12 +1,12 @@
-import { h, Fragment, render } from "preact";
-import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import {Fragment, h, render} from "preact";
+import {useCallback, useEffect, useState} from "preact/hooks";
 import register from "preact-custom-element";
 import getText from "../translation";
-import { apiToast } from "../toast";
-import { bodyCall, getCall, postCall } from "../api/client";
-import { fromBase64 } from "js-base64";
-import { KNModal } from "./modal";
-import { BigSpinner } from "./common";
+import {apiToast} from "../toast";
+import {bodyCall, getCall, postCall} from "../api/client";
+import {fromBase64} from "js-base64";
+import {KNModal} from "./modal";
+import {BigSpinner} from "./common";
 
 export type TagType = "author" | "contest" | "method" | "other";
 
@@ -189,50 +189,6 @@ function ProblemTagEditDOM({ enc, pbid }: { enc: string; pbid: string }) {
 }
 
 register(ProblemTagEditDOM, "kn-pb-tag-edit", ["enc"]);
-
-function ProblemTags({ tags, defaultOpen }: { tags: Tag[]; defaultOpen: boolean }) {
-	let [open, setOpen] = useState(defaultOpen);
-
-	if (!open) {
-		return (
-			<a
-				href="#"
-				onClick={(e) => {
-					e.preventDefault();
-					setOpen(true);
-				}}
-			>
-				{getText("view")}
-			</a>
-		);
-	}
-
-	return (
-		<>
-			{tags.map((tag) => (
-				<>
-					<TagView tag={tag} key={tag.id} wide={false} extraClasses="text-sm" />{" "}
-				</>
-			))}
-			<a
-				href="#"
-				onClick={(e) => {
-					e.preventDefault();
-					setOpen(false);
-				}}
-			>
-				{getText("hide")}
-			</a>
-		</>
-	);
-}
-
-function ProblemTagsDOM({ enc, open }: { enc: string; open: string }) {
-	const tags: Tag[] = JSON.parse(fromBase64(enc));
-	return <ProblemTags tags={tags} defaultOpen={open !== "false"}></ProblemTags>;
-}
-
-register(ProblemTagsDOM, "kn-pb-tags", ["enc", "open"]);
 
 export function selectTags(initialSelected: Tag[], canCreate: boolean = false, titleKey: string = "select_tags"): Promise<{ tags: Tag[]; updated: boolean }> {
 	return new Promise((resolve) => {

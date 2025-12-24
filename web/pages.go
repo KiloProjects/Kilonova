@@ -160,7 +160,11 @@ type ProblemParams struct {
 	Languages []*sudoapi.Language
 	Variants  []*kilonova.StatementVariant
 
-	OlderSubmissions templ.Component
+	InfoSidebar       templ.Component
+	ContestDisclaimer templ.Component
+	OlderSubmissions  templ.Component
+
+	FromContest bool
 
 	SelectedVariant *kilonova.StatementVariant
 

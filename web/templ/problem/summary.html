@@ -3,309 +3,226 @@
 {{ define "description" }} {{- .Problem.Name}} {{- if .Problem.SourceCredits}} - propusă la {{.Problem.SourceCredits}} {{- end}}{{with authorsFromTags .Tags}} - de către {{.}}{{end -}} {{ end }}
 
 {{ define "head" }}
-<link rel="canonical" href='{{printf "/problems/%d" .Problem.ID | formatCanonical}}'>
+	<link rel="canonical" href='{{printf "/problems/%d" .Problem.ID | formatCanonical}}'>
 {{ end }}
 
 {{ define "content" }}
 
 
-{{ template "topbar.html" . }}
+    {{ template "topbar.html" . }}
 
-<div class="page-holder">
-    <div class="page-content reset-list enhance-tables statement-content">
-        {{ if gt (len .Variants) 1 }}
-            <label class="block my-2">
-                <span class="form-label">{{getText "statementFormat"}}:</span>
-                <select id="variant-select" class="form-select" autocomplete="off">
-                    {{ range .Variants }}
-                        <option value="{{.Language}}-{{.Format}}-{{.Type}}" {{if $.SelectedVariant.Equals .}}selected{{end}}>{{formatStmtVariant .}}</option>
-                    {{ end }}
-                </select>
-            </label>
-        {{ end }}
-        <div class="w-full mb-6 mt-2 text-center">
-			<!--<h1>{{.Problem.Name}}</h1>-->
-            <span class="block">{{getText "timeLimit"}}: {{.Problem.TimeLimit}}s</span>
-            <span class="block">{{getText "memoryLimit"}}: {{KBtoMB .Problem.MemoryLimit}}MB</span>
-            <span class="block">{{getText "input"}}: {{if .Problem.ConsoleInput}}<kn-glossary name="stdin" content="stdin"></kn-glossary>{{else}}{{.Problem.TestName}}.in{{end}}</span>
-            <span class="block">{{getText "output"}}: {{if .Problem.ConsoleInput}}<kn-glossary name="stdin" content="stdout"></kn-glossary>{{else}}{{.Problem.TestName}}.out{{end}}</span>
-            {{- if not .Problem.DefaultPoints.IsZero -}}
-            <span class="block">{{getText "defaultPoints"}}: {{.Problem.DefaultPoints}}p</span>
-            {{- end -}}
-        </div>
-        <article class="text-justify">
-            {{with .SelectedVariant}}
-            {{if eq .Type "llm"}}
-            <blockquote>{{getText "aiTranslationWarning"}}</blockquote>
-            {{end}}
-            {{end}}
-            {{.Statement}}
-        </article>
-        <div style="clear: both"></div>
-    </div>
-
-    <aside class="page-sidebar">
-        {{ if .Topbar.Contest }}
-        {{ template "contest_sidebar.html" .Topbar.Contest }}
-        {{ else }}
-        {{- with filterTags .Tags "contest" false -}}
-            <section id="disclaimer_section" class="segment-panel hidden">
-                <div class="modal-header">
-                    <h2 style="margin: 0.25rem;"><i class="fas fa-triangle-exclamation"></i> {{getText "contestDisclaimerTitle"}} </h2>
-                    <button id="disclaimer_close"><i class="modal-close fas fa-xmark"></i></button>
-                </div>
-                <div class="px-2 py-2">{{getText "contestDisclaimerBody"}}</div>
-                <script>
-                    let unauthedStorageKey = "contest_disclaimer_dismissed:unauthed";
-                    let storageKey = `contest_disclaimer_dismissed:${window.platform_info.user_id}`
-                    if(window.platform_info.user_id === 0) {
-                        storageKey = unauthedStorageKey
-                    }
-                    document.getElementById("disclaimer_close").addEventListener("click", function () {
-                        window.localStorage.setItem(storageKey, "disabled");
-                        document.getElementById("disclaimer_section").remove();
-                    })
-                    if(window.localStorage.getItem(storageKey) === null) {
-                        if(window.localStorage.getItem(unauthedStorageKey) !== null) {
-                            window.localStorage.removeItem(unauthedStorageKey);
-                            window.localStorage.setItem(storageKey, "disabled");
-                        } else {
-                            document.getElementById("disclaimer_section").classList.remove("hidden");
-                        }
-                    }
-                </script>
-            </section>
-        {{- end -}}
-        <section class="segment-panel font-semibold">
-            <h2 class="font-normal">
-                {{getText "problemInfo"}}
-            </h2>
-            <div class="px-2">
-                <p>{{getText "id"}}: {{.Problem.ID}}</p>
-                {{ $pbEditors := problemEditors .Problem }}
-                {{ if (eq (len $pbEditors) 1) }}
-                <p>
-                    {{getText "editor"}}:
-                    {{ range $pbEditors }}
-                    <a href="/profile/{{.Name}}">{{.Name}}</a>
-                    {{ end }}
-                </p>
-                {{ else }}
-                <details class="reset-list" {{ if .Topbar.IsProblemEditor }}open{{end}}>
-                    <summary>{{getText "editors"}}:</summary>
-                    <ul>
-                        {{ range $pbEditors }}
-                        <li><a href="/profile/{{.Name}}">{{.Name}}</a></li>
+	<div class="page-holder">
+		<div class="page-content reset-list enhance-tables statement-content">
+            {{ if gt (len .Variants) 1 }}
+				<label class="block my-2">
+					<span class="form-label">{{getText "statementFormat"}}:</span>
+					<select id="variant-select" class="form-select" autocomplete="off">
+                        {{ range .Variants }}
+							<option value="{{.Language}}-{{.Format}}-{{.Type}}"
+                                    {{if $.SelectedVariant.Equals .}}selected{{end}}>{{formatStmtVariant .}}</option>
                         {{ end }}
-                    </ul>
-                </details>
-                {{ end }}
-                {{ if .Topbar.IsProblemEditor }}
-                {{ with (problemViewers .Problem) }}
-                <details class="reset-list">
-                    <summary>{{getText "viewers"}}:</summary>
-                    <ul>
-                        {{ range . }}
-                        <li><a href="/profile/{{.Name}}">{{.Name}}</a></li>
-                        {{ end }}
-                    </ul>
-                </details>
-                {{ end }}
-                <p>{{getText "visibility"}}:
-                    {{if .Problem.Visible}}
-                    <span class="badge-lite bg-green-700 text-sm">{{getText "published"}}</span>
-                    {{else}}
-                    <span class="badge-lite bg-red-700 text-sm">{{getText "unpublished"}}</span>
+					</select>
+				</label>
+            {{ end }}
+			<div class="w-full mb-6 mt-2 text-center">
+				<!--<h1>{{.Problem.Name}}</h1>-->
+				<span class="block">{{getText "timeLimit"}}: {{.Problem.TimeLimit}}s</span>
+				<span class="block">{{getText "memoryLimit"}}: {{KBtoMB .Problem.MemoryLimit}}MB</span>
+				<span class="block">{{getText "input"}}: {{if .Problem.ConsoleInput}}
+						<kn-glossary name="stdin" content="stdin"></kn-glossary>{{else}}{{.Problem.TestName}}.in{{end}}</span>
+				<span class="block">{{getText "output"}}: {{if .Problem.ConsoleInput}}
+						<kn-glossary name="stdin"
+						             content="stdout"></kn-glossary>{{else}}{{.Problem.TestName}}.out{{end}}</span>
+                {{- if not .Problem.DefaultPoints.IsZero -}}
+					<span class="block">{{getText "defaultPoints"}}: {{.Problem.DefaultPoints}}p</span>
+                {{- end -}}
+			</div>
+			<article class="text-justify">
+                {{with .SelectedVariant}}
+                    {{if eq .Type "llm"}}
+						<blockquote>{{getText "aiTranslationWarning"}}</blockquote>
                     {{end}}
-                </p>
                 {{end}}
-                {{- with filterTags .Tags "author" false -}}
-                <p>{{getText "author"}}: {{range .}} <kn-tag enc="{{. | encodeJSON}}" wide="false" cls="text-sm"></kn-tag> {{ end}}</p>
-                {{- end -}}
-                {{- if .Problem.SourceCredits -}}
-                <p>{{getText "source"}}: {{.Problem.SourceCredits}}</p>
-                {{- end -}}
-                {{- $isEditor := .Topbar.IsProblemEditor -}}
-                {{ $maxScore := decimalFromInt -1 }}
-                {{- if authed -}}
-                    {{- $maxScore = actualMaxScore .Problem authedUser -}}
-                {{- end -}}
-                {{- with filterTags .Tags "author" true -}}
-                <p>{{getText "tags"}}: <kn-pb-tags enc="{{. | encodeJSON}}" open="{{if authed}}{{or ($isEditor) ($maxScore.Equal (decimalFromInt 100))}}{{else}}false{{end}}"></kn-pb-tags> </p>
-                {{- end -}}
-                {{ if authed }}
-                {{if eq .Problem.ScoringStrategy `acm-icpc`}}
-                <p>{{getText "verdict"}}: <span data-pbid-reload="{{.Problem.ID}}">{{subScore .Problem authedUser}}</span></p>
-                {{else}}
-                <p>{{getText "score"}}: {{if eq .Problem.ScoringStrategy `sum_subtasks`}}<a class="max_score_breakdown" href="#" data-problemid="{{.Problem.ID}}">{{end}}<span data-pbid-reload="{{.Problem.ID}}">{{subScore .Problem authedUser}}</span> {{if eq .Problem.ScoringStrategy `sum_subtasks`}}</a>{{end}}</p>
-                {{end}}
-                {{ end }}
-                {{if .Topbar.CanViewTests}}
-                <p><a href="{{.Topbar.URLPrefix}}/problems/{{.Topbar.Problem.ID}}/archive">{{getText "downloadArchive"}}</a></p>
-                {{end}}
+                {{.Statement}}
+			</article>
+			<div style="clear: both"></div>
+		</div>
 
-            </div>
-        </section>
-        {{ range pbParentPblists .Problem }}
-        <details class="segment-panel" open role="region">
-            <summary>
-                <h2 class="font-normal inline-block">
-                    <a href="/problem_lists/{{.ID}}">{{.Title}}</a>
-                </h2>
-            </summary>
-            <div class="reset-list text-lg">
-                {{$listID := .ID}}
-                {{ with listProblems authedUser . }}
-                <ul>
-                    {{ range . }}
-                    {{ $score := spbMaxScore . true }}
-                    <li>
-                        <a {{ if eq $.Problem.ID .ID }} class="topbar-selected p-0" {{end}}
-                            href="/problems/{{.ID}}?list_id={{$listID}}">
-                            {{.Name}}
-                        </a>
-                        {{ if not (eq $score "")}}
-                            (
-                                {{- if eq .ScoringStrategy `sum_subtasks` -}}
-                                    <a class="max_score_breakdown" href="#" data-problemid="{{.ID}}" data-pbid-reload="{{.ID}}">
-                                {{- else -}}
-                                    <span data-pbid-reload="{{.ID}}">
-                                {{- end -}}
-                                {{$score}}
-                                {{- if eq .ScoringStrategy `sum_subtasks` -}}
-                                    </a>
-                                {{- else -}}
-                                    </span>
-                                {{- end -}}
-                            )
-                        {{ end }}
-                    </li>
-                    {{ end }}
-                </ul>
-                {{ end }}
-            </div>
-        </details>
-        {{ end }}
-        {{ end }}
-        {{ with $.OlderSubmissions }}
-        <section class="segment-panel">
-            {{renderComponent $.OlderSubmissions}}
-        </section>
-        {{ end }}
-        {{ with .Attachments }}
-        <details class="segment-panel" open role="region"> <!-- Attachments -->
-            <summary>
-                <h2 class="inline-block">{{getText "attachments"}}</h2>
-            </summary>
-            <div class="px-2">
-                <div class="list-group">
-                    {{ range . }}
-                    <a style="word-wrap: anywhere;" href="/assets/problem/{{$.Problem.ID}}/attachment/{{.Name}}"
-                        class="list-group-item flex justify-between">
-                        <span id="att-name-{{.ID}}">{{.Name}}</span>
-                        <span class="badge-lite text-sm" id="att-size-{{.ID}}">
-                            {{.Size}}
-                        </span>
-                    </a>
-                    {{ end }}
-                </div>
-            </div>
-        </details>
-        {{ end }}
-        {{ if and (not .Topbar.Contest) .ShowExternalResources }}
-            <details class="segment-panel" {{if gt (len .ExternalResources) 0}}open{{end}} role="region"> <!-- External resources -->
-                <summary>
-                    <h2 class="inline-block">{{getText "external_resources"}}</h2>
-                </summary>
-                <div class="px-2">
-                        <div class="list-group mb-2">
-                        {{with .ExternalResources}}
-                            {{ range . }}
-                                <a style="text-overflow: ellipsis;" href="{{formatResourceURL .URL}}" class="list-group-item flex justify-between" title="{{printf "external_resource.type.%s" .Type | getText}}">
-                                    <span><i class="fas fa-fw {{.Type.FontAwesomeIcon}}"></i> {{.Name}}</span>
-                                </a>
+		<aside class="page-sidebar">
+            {{ if .Topbar.Contest }}
+                {{ template "contest_sidebar.html" .Topbar.Contest }}
+            {{ else }}
+                {{if $.FromContest}}
+                    {{renderComponent $.ContestDisclaimer}}
+                {{end }}
+                {{renderComponent $.InfoSidebar}}
+                {{ range pbParentPblists .Problem }}
+					<details class="segment-panel" open role="region">
+						<summary>
+							<h2 class="font-normal inline-block">
+								<a href="/problem_lists/{{.ID}}">{{.Title}}</a>
+							</h2>
+						</summary>
+						<div class="reset-list text-lg">
+                            {{$listID := .ID}}
+                            {{ with listProblems authedUser . }}
+								<ul>
+                                    {{ range . }}
+                                        {{ $score := spbMaxScore . true }}
+										<li>
+											<a {{ if eq $.Problem.ID .ID }} class="topbar-selected p-0" {{end}}
+													href="/problems/{{.ID}}?list_id={{$listID}}">
+                                                {{.Name}}
+											</a>
+                                            {{ if not (eq $score "")}}
+												(
+                                                {{- if eq .ScoringStrategy `sum_subtasks` -}}
+													<a class="max_score_breakdown" href="#" data-problemid="{{.ID}}" data-pbid-reload="{{.ID}}">
+                                                {{- else -}}
+													<span data-pbid-reload="{{.ID}}">
+                                                {{- end -}}
+                                                {{$score}}
+                                                {{- if eq .ScoringStrategy `sum_subtasks` -}}
+													</a>
+                                                {{- else -}}
+													</span>
+                                                {{- end -}}
+												)
+                                            {{ end }}
+										</li>
+                                    {{ end }}
+								</ul>
                             {{ end }}
-                        {{else}}
-                            <div class="list-group-head">
-                                {{getText "no_resources"}}
-                            </div>
-                        {{end}}
-                        </div>
-                </div>
-                {{if .Topbar.IsProblemEditor}}
-                    <div class="grid grid-cols-1 lg:grid-cols-2 justify-between">
-                        <a href="{{.Topbar.URLPrefix}}/problems/{{.Problem.ID}}/externalResources">{{getText "view_details"}}</a>
-                        <a class="lg:text-right" href="{{.Topbar.URLPrefix}}/problems/{{.Problem.ID}}/externalResources/create">{{getText "suggest_resource"}}</a>
-                    </div>
-                {{end}}
-            </details>
-        {{ end }}
-    </aside>
-</div>
+						</div>
+					</details>
+                {{ end }}
+            {{ end }}
+            {{ with $.OlderSubmissions }}
+				<section class="segment-panel">
+                    {{renderComponent $.OlderSubmissions}}
+				</section>
+            {{ end }}
+            {{ with .Attachments }}
+				<details class="segment-panel" open role="region"> <!-- Attachments -->
+					<summary>
+						<h2 class="inline-block">{{getText "attachments"}}</h2>
+					</summary>
+					<div class="px-2">
+						<div class="list-group">
+                            {{ range . }}
+								<a style="word-wrap: anywhere;"
+								   href="/assets/problem/{{$.Problem.ID}}/attachment/{{.Name}}"
+								   class="list-group-item flex justify-between">
+									<span id="att-name-{{.ID}}">{{.Name}}</span>
+									<span class="badge-lite text-sm" id="att-size-{{.ID}}">
+        {{.Size}}
+		</span>
+								</a>
+                            {{ end }}
+						</div>
+					</div>
+				</details>
+            {{ end }}
+            {{ if and (not .Topbar.Contest) .ShowExternalResources }}
+				<details class="segment-panel" {{if gt (len .ExternalResources) 0}}open{{end}} role="region">
+					<!-- External resources -->
+					<summary>
+						<h2 class="inline-block">{{getText "external_resources"}}</h2>
+					</summary>
+					<div class="px-2">
+						<div class="list-group mb-2">
+                            {{with .ExternalResources}}
+                                {{ range . }}
+									<a style="text-overflow: ellipsis;" href="{{formatResourceURL .URL}}"
+									   class="list-group-item flex justify-between"
+									   title="{{printf "external_resource.type.%s" .Type | getText}}">
+										<span><i class="fas fa-fw {{.Type.FontAwesomeIcon}}"></i> {{.Name}}</span>
+									</a>
+                                {{ end }}
+                            {{else}}
+								<div class="list-group-head">
+                                    {{getText "no_resources"}}
+								</div>
+                            {{end}}
+						</div>
+					</div>
+                    {{if .Topbar.IsProblemEditor}}
+						<div class="grid grid-cols-1 lg:grid-cols-2 justify-between">
+							<a href="{{.Topbar.URLPrefix}}/problems/{{.Problem.ID}}/externalResources">{{getText "view_details"}}</a>
+							<a class="lg:text-right"
+							   href="{{.Topbar.URLPrefix}}/problems/{{.Problem.ID}}/externalResources/create">{{getText "suggest_resource"}}</a>
+						</div>
+                    {{end}}
+				</details>
+            {{ end }}
+		</aside>
+	</div>
 
-<script>
-    (() => {
-        for (let el of document.querySelectorAll("[id^='att-name-']")) {
-            el.innerHTML = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerText}`
-        }
-        for (let el of document.querySelectorAll("[id^='att-size-']")) {
-            el.innerText = bundled.sizeFormatter(Number(el.innerText))
-        }
-    })()
-</script>
+	<script>
+        (() => {
+            for (let el of document.querySelectorAll("[id^='att-name-']")) {
+                el.innerHTML = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerText}`
+            }
+            for (let el of document.querySelectorAll("[id^='att-size-']")) {
+                el.innerText = bundled.sizeFormatter(Number(el.innerText))
+            }
+        })()
+	</script>
 
-<script>
-    document.getElementById("variant-select")?.addEventListener("change", e => {
-        var params = new URLSearchParams(window.location.search);
-        params.set("var", e.target.value.replace(/-+$/, ""))
-        window.location.search = params.toString()
-    })
-    let prec = {{.Problem.ScorePrecision}};
-    let strat = {{.Problem.ScoringStrategy}};
-    function formatMaxScore(maxScore) {
-        let score = parseInt(maxScore);
-        if(isNaN(score)) {
-            console.error("Unknown value for maxScore")
-            return "ERR";
-        }
-        if(maxScore < 0) {
-            return "-"
-        }
-        if(strat == "acm-icpc") {
-            if(maxScore == 100) {
-                return `<i class="fas fa-fw fa-check"></i>`;
-            }
-            return `<i class="fas fa-fw fa-xmark"></i>`;
-        }
-        return bundled.formatScoreStr(maxScore.toFixed(prec)) + "p";
-    }
-    const reloaders = document.querySelectorAll(`[data-pbid-reload="{{.Problem.ID}}"]`)
-    if(reloaders.length > 0) {
-        document.addEventListener("kn-poll", async () => {
-            // Update max score on poll
-            const res = await bundled.getCall("/problem/{{.Problem.ID}}/maxScore", {})
-            if(res.status === "error") {
-                console.error(res.data)
-                return
-            }
-            let val = formatMaxScore(res.data)
-            for(let reloader of reloaders) {
-                if("contest_id" in reloader.dataset) {
-                    // TODO
-                } else {
-                    reloader.innerHTML = val
-                }
-            }
+	<script>
+        document.getElementById("variant-select")?.addEventListener("change", e => {
+            var params = new URLSearchParams(window.location.search);
+            params.set("var", e.target.value.replace(/-+$/, ""))
+            window.location.search = params.toString()
         })
-    }
-</script>
+        let prec = {{.Problem.ScorePrecision}};
+        let strat = {{.Problem.ScoringStrategy}};
 
-{{ if authed }}
-{{ template "pb_submit_form.html" .}}
-{{ else }}
+        function formatMaxScore(maxScore) {
+            let score = parseInt(maxScore);
+            if (isNaN(score)) {
+                console.error("Unknown value for maxScore")
+                return "ERR";
+            }
+            if (maxScore < 0) {
+                return "-"
+            }
+            if (strat == "acm-icpc") {
+                if (maxScore == 100) {
+                    return `<i class="fas fa-fw fa-check"></i>`;
+                }
+                return `<i class="fas fa-fw fa-xmark"></i>`;
+            }
+            return bundled.formatScoreStr(maxScore.toFixed(prec)) + "p";
+        }
 
-<h2 class="mt-3 mb-5">{{getText "submitLogin" | safeHTML}}</h2>
+        const reloaders = document.querySelectorAll(`[data-pbid-reload="{{.Problem.ID}}"]`)
+        if (reloaders.length > 0) {
+            document.addEventListener("kn-poll", async () => {
+                // Update max score on poll
+                const res = await bundled.getCall("/problem/{{.Problem.ID}}/maxScore", {})
+                if (res.status === "error") {
+                    console.error(res.data)
+                    return
+                }
+                let val = formatMaxScore(res.data)
+                for (let reloader of reloaders) {
+                    if ("contest_id" in reloader.dataset) {
+                        // TODO
+                    } else {
+                        reloader.innerHTML = val
+                    }
+                }
+            })
+        }
+	</script>
 
-{{ end }}
+    {{ if authed }}
+        {{ template "pb_submit_form.html" .}}
+    {{ else }}
+
+		<h2 class="mt-3 mb-5">{{getText "submitLogin" | safeHTML}}</h2>
+
+    {{ end }}
 
 {{ end }}

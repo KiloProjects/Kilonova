@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
+	"runtime/debug"
 	"runtime/metrics"
 	"slices"
 	"strconv"
@@ -23,7 +24,9 @@ import (
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/web/views"
 	"github.com/KiloProjects/kilonova/web/views/modals"
+	"github.com/KiloProjects/kilonova/web/views/problems"
 	"github.com/KiloProjects/kilonova/web/views/utilviews"
+	"github.com/shopspring/decimal"
 	"github.com/skip2/go-qrcode"
 
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
@@ -946,6 +949,21 @@ func (rt *Web) problem() http.HandlerFunc {
 			}
 		}
 
+		problemEditors, err := rt.base.ProblemEditors(r.Context(), problem.ID)
+		if err != nil {
+			problemEditors = nil
+		}
+		problemViewers, err := rt.base.ProblemViewers(r.Context(), problem.ID)
+		if err != nil {
+			problemViewers = nil
+		}
+
+		var maxScore *decimal.Decimal
+		if user := util.UserBrief(r); user.IsAuthed() {
+			actualMaxScore := rt.base.MaxScore(r.Context(), user.ID, problem.ID)
+			maxScore = &actualMaxScore
+		}
+
 		rt.runTempl(w, r, pageTempl, &ProblemParams{
 			Topbar: rt.problemTopbar(r, "pb_statement", -1),
 
@@ -957,7 +975,22 @@ func (rt *Web) problem() http.HandlerFunc {
 			Languages: langs,
 			Variants:  variants,
 
-			OlderSubmissions: olderSubmissions,
+			InfoSidebar: problems.InfoSidebar(&problems.InfoParams{
+				Problem:      util.Problem(r),
+				IsEditor:     rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
+				Editors:      problemEditors,
+				Viewers:      problemViewers,
+				Tags:         tags,
+				MaxScore:     maxScore,
+				CanViewTests: rt.base.CanViewTests(util.UserBrief(r), util.Problem(r)),
+				Contest:      util.Contest(r),
+			}),
+			ContestDisclaimer: problems.ContestDisclaimer(),
+			OlderSubmissions:  olderSubmissions,
+
+			FromContest: slices.ContainsFunc(tags, func(tag *kilonova.Tag) bool {
+				return tag.Type == kilonova.TagTypeContest
+			}),
 
 			SelectedVariant: descVariant,
 
@@ -2253,6 +2286,12 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 			return name == "modal"
 		},
 		"renderComponent": func(c templ.Component) (template.HTML, error) {
+			defer func() {
+				if err := recover(); err != nil {
+					fmt.Println(err)
+					fmt.Println(string(debug.Stack()))
+				}
+			}()
 			return templ.ToGoHTML(r.Context(), c)
 		},
 	})

@@ -1697,7 +1697,7 @@ func SubmissionSummary(sub *kilonova.FullSubmission, pasteAuthor *kilonova.UserB
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = modals.FormatScore(sub.Problem, &sub.Score).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = tutils.Score(sub.Problem, &sub.Score).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

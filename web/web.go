@@ -588,20 +588,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			}
 			return user
 		},
-		"problemEditors": func(problem *kilonova.Problem) []*kilonova.UserBrief {
-			users, err := base.ProblemEditors(ctx, problem.ID)
-			if err != nil {
-				return nil
-			}
-			return users
-		},
-		"problemViewers": func(problem *kilonova.Problem) []*kilonova.UserBrief {
-			users, err := base.ProblemViewers(ctx, problem.ID)
-			if err != nil {
-				return nil
-			}
-			return users
-		},
 		"problemTests": func(problem *kilonova.Problem) []*kilonova.Test {
 			tests, err := base.Tests(ctx, problem.ID)
 			if err != nil {
@@ -669,15 +655,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 				}
 			}
 			return strings.Join(names, ", ")
-		},
-		"filterTags": func(tags []*kilonova.Tag, tp string, negate bool) []*kilonova.Tag {
-			rez := make([]*kilonova.Tag, 0, len(tags))
-			for _, tag := range tags {
-				if (negate && tag.Type != kilonova.TagType(tp)) || (!negate && tag.Type == kilonova.TagType(tp)) {
-					rez = append(rez, tag)
-				}
-			}
-			return rez
 		},
 
 		"intFlag": func(name string) int {

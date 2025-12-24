@@ -1,0 +1,22 @@
+package problems
+
+import (
+	"fmt"
+	"github.com/KiloProjects/kilonova"
+)
+
+var tagTypes = map[kilonova.TagType]string{
+	kilonova.TagTypeAuthor:  "tag-author",
+	kilonova.TagTypeContest: "tag-contest",
+	kilonova.TagTypeMethod:  "tag-method",
+	kilonova.TagTypeOther:   "tag-other",
+}
+
+templ Tag(tag *kilonova.Tag, wide bool, classes ...string) {
+	{{ tagType, ok := tagTypes[tag.Type] }}
+	<a href={ templ.URL(fmt.Sprintf("/tags/%d", tag.ID)) }>
+		<span class={ templ.Classes(templ.KV("mx-1", wide), "tag", templ.KV(tagType, ok), templ.KV("bg-teal-700", !ok), classes) }>
+			{ tag.Name }
+		</span>
+	</a>
+}
