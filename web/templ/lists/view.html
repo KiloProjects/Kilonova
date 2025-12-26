@@ -229,7 +229,14 @@ document.getElementById("pblist-update").addEventListener("submit", updateProble
 document.getElementById("delButton").addEventListener("click", deleteProblemList);
 </script>
 
-{{ template "createpblist.html" $}}
+<details class="segment-panel" open>
+    <summary>
+        <h2 class="inline-block">
+            {{getText "createNestedPbList"}}
+        </h2>
+    </summary>
+    {{createPblistComponent $.ProblemList | renderComponent}}
+</details>
 
     {{if authedUser.IsAdmin}}
         {{$.ProblemSources | renderComponent}}

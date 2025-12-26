@@ -5,7 +5,13 @@
 
 {{ template "createproblem.html" . }}
 
-{{ template "createpblist.html" . }}
+
+<div class="segment-panel">
+	<h2>
+		{{getText "createPbList"}}
+	</h2>
+	{{createPblistComponent nil | renderComponent}}
+</div>
 
 <div class="segment-panel">
     {{createContestComponent | renderComponent}}

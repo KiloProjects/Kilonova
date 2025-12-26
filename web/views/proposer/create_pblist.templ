@@ -1,0 +1,97 @@
+package proposer
+
+import "github.com/KiloProjects/kilonova"
+
+templ CreateProblemList(parentList *kilonova.ProblemList) {
+	<form id="cr_pblist_form">
+		<label class="block my-2">
+			<span class="form-label">
+				@TC("name")
+				:
+			</span>
+			<input id="cr_pblist_title" type="text" class="form-input" required/>
+		</label>
+		<label class="block my-2">
+			<span class="form-label">
+				@TC("desc")
+				: 
+			</span>
+			<textarea id="cr_pblist_desc_tarea" class="hidden"></textarea>
+		</label>
+		<label class="block my-2">
+			<span class="form-label">
+				@TC("sublist_label")
+				:
+			</span>
+			<input type="text" id="cr_pblist_sublists" class="form-input" pattern="([0-9]+,?)+"/>
+		</label>
+		<label class="block my-2">
+			<span class="form-label">
+				@TC("pbs")
+				:
+			</span>
+			<input id="cr_pblist_pbs" type="text" class="form-input" pattern="([0-9]+,?)+"/>
+		</label>
+		if parentList != nil {
+			<input id="cr_pblist_parent_id" type="hidden" value={ parentList.ID }/>
+		} else {
+			<label class="block my-2">
+				<span class="form-label">
+					@TC("list_parent_id")
+					:
+				</span>
+				<input id="cr_pblist_parent_id" type="number" class="form-input"/>
+			</label>
+		}
+		<div class="block my-2">
+			<label class="inline-flex items-center text-lg">
+				<input class="form-checkbox" name="sidebar_hidable" id="cr_sidebar_hidable" type="checkbox"/>
+				<span class="ml-2">
+					@TC("sidebar_hidable")
+				</span>
+			</label>
+		</div>
+		<button type="submit" class="btn btn-blue">
+			@TC("button.create")
+		</button>
+	</form>
+	<script>
+    var cr_pblist_cm = new vendored.KNEditor({
+    	textArea: document.getElementById("cr_pblist_desc_tarea"),
+    	language: "md",
+    	dynamicSize: true,
+    })
+
+    async function createProblemList(e) {
+    	e.preventDefault()
+
+        const parentID = parseInt(document.getElementById("cr_pblist_parent_id").value);
+
+    	let data = {
+    		title: document.getElementById("cr_pblist_title").value,
+    		description: cr_pblist_cm.getText(),
+    		ids: bundled.stringIntToNumber(document.getElementById("cr_pblist_pbs").value.split(',')),
+            sublists: bundled.stringIntToNumber(document.getElementById("cr_pblist_sublists").value.split(',')),
+            sidebar_hidable: document.getElementById("cr_sidebar_hidable").checked,
+        };
+
+        if(!isNaN(parentID)) {
+            data.parent_id = parentID
+        }
+
+    	let res = await bundled.bodyCall("/problemList/create", data)
+    	if(res.status === "success") {
+            if(res.data.nested) {
+                // go to parent instead
+                window.location.assign(`/problem_lists/${parentID}`);
+                return
+            }
+    		window.location.assign(`/problem_lists/${res.data.id}`);
+    		return
+    	}
+    	bundled.apiToast(res)
+    }
+
+    document.getElementById("cr_pblist_form").addEventListener("submit", createProblemList)
+    </script>
+}

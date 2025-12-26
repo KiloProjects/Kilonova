@@ -210,6 +210,9 @@ func (rt *Web) Handler() http.Handler {
 
 		r.Route("/contests", func(r chi.Router) {
 			r.Get("/", rt.contests())
+			r.Get("/official", rt.contests())
+			r.Get("/virtual", rt.contests())
+			r.Get("/personal", rt.contests())
 			r.With(rt.mustBeAuthed).Get("/create", rt.createContest())
 			r.With(rt.mustBeAuthed).Get("/invite/{inviteID}", rt.contestInvite())
 			r.Get("/invite/{inviteID}/qr", rt.contestInviteQRCode)
@@ -267,14 +270,12 @@ func (rt *Web) Handler() http.Handler {
 			r.Get("/auditLog", rt.auditLog())
 			r.Get("/debug", rt.debugPage())
 			r.Get("/sessions", rt.sessionsFilter())
-			r.Get("/problemQueue", rt.problemQueue())
 		})
 
 		// Proposer panel
 		r.With(rt.mustBeProposer).Get("/proposer", rt.justRender(
 			"proposer/index.html",
 			"proposer/createproblem.html", "proposer/importproblem.html",
-			"proposer/createpblist.html",
 		))
 	})
 
@@ -900,6 +901,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return "", nil
 		},
 		"createContestComponent": proposer.CreateContestForm,
+		"createPblistComponent":  proposer.CreateProblemList,
 	}
 	return &Web{funcs, base}
 }

@@ -42,7 +42,7 @@ templ Navbar(viewAllSubs bool, reqPath string) {
 				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable" href="/problems">{ T(ctx, "problem.list") }</a>
 			}
 			if flags.NavbarContests.Value() {
-				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable" href="/contests?page=official">{ T(ctx, "contests") }</a>
+				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable" href="/contests/official">{ T(ctx, "contests") }</a>
 			}
 			if viewAllSubs && flags.NavbarSubmissions.Value() {
 				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable" href="/submissions">{ T(ctx, "submission.list") }</a>
@@ -69,7 +69,7 @@ templ Navbar(viewAllSubs bool, reqPath string) {
 							</a>
 						}
 						if !flags.NavbarContests.Value() {
-							<a class="dropdown-list-item" href="/contests?page=official">
+							<a class="dropdown-list-item" href="/contests/official">
 								<i class="ml-n2 fas fa-medal fa-fw"></i> { T(ctx, "contests") }
 							</a>
 						}

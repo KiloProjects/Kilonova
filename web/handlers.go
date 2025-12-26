@@ -446,7 +446,7 @@ func (rt *Web) pbListProgressView() http.HandlerFunc {
 }
 
 func (rt *Web) pbListView() http.HandlerFunc {
-	templ := rt.parse(nil, "lists/view.html", "modals/pblist.html", "modals/pbs.html", "proposer/createpblist.html")
+	templ := rt.parse(nil, "lists/view.html", "modals/pblist.html", "modals/pbs.html")
 	fragmentTempl := rt.parse(nil, "modals/pblist.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		listIDs := []int{util.ProblemList(r).ID}
@@ -985,7 +985,7 @@ func (rt *Web) problem() http.HandlerFunc {
 				CanViewTests: rt.base.CanViewTests(util.UserBrief(r), util.Problem(r)),
 				Contest:      util.Contest(r),
 			}),
-			ContestDisclaimer: problems.ContestDisclaimer(),
+			ContestDisclaimer: problems.ContestDisclaimer(tags),
 			OlderSubmissions:  olderSubmissions,
 
 			FromContest: slices.ContainsFunc(tags, func(tag *kilonova.Tag) bool {
@@ -1356,27 +1356,27 @@ func (rt *Web) contests() http.HandlerFunc {
 				filter.ContestantID = &user.ID
 			}
 		}
-
-		page := "all"
 		switch v := r.FormValue("page"); v {
-		case "virtual", "official":
-			page = v
-		case "personal":
+		case "virtual", "official", "personal":
+			// Compatibility with old URL format (`/contests?page=official`)
+			http.Redirect(w, r, fmt.Sprintf("/contests/%s", v), http.StatusPermanentRedirect)
+		}
+
+		page := strings.TrimSuffix(r.URL.Path, "/")
+		switch page {
+		case "/contests":
+			// no additional filter
+		case "/contests/official":
+			filter.Type = kilonova.ContestTypeOfficial
+		case "/contests/virtual":
+			filter.Type = kilonova.ContestTypeVirtual
+		case "/contests/personal":
 			if !util.UserBrief(r).IsAuthed() {
 				// Important to redirect and return, since we will dereference for ID later
-				http.Redirect(w, r, "/contests?page=official", http.StatusTemporaryRedirect)
+				http.Redirect(w, r, "/contests/official", http.StatusTemporaryRedirect)
 				return
 			}
-			page = v
-		}
-		switch page {
-		case "all":
-			// no additional filter
-		case "official":
-			filter.Type = kilonova.ContestTypeOfficial
-		case "virtual":
-			filter.Type = kilonova.ContestTypeVirtual
-		case "personal":
+
 			filter.ImportantContestsUID = &util.UserBrief(r).ID
 		default:
 			slog.WarnContext(r.Context(), "Unknown page type", slog.String("type", page))
@@ -1863,13 +1863,6 @@ func (rt *Web) userSessions() http.HandlerFunc {
 		}
 
 		rt.userSessionsPage(w, r, templ, user)
-	}
-}
-
-func (rt *Web) problemQueue() http.HandlerFunc {
-	templ := rt.parse(nil, "admin/problemQueue.html")
-	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, templ, nil)
 	}
 }
 
