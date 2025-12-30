@@ -832,10 +832,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			slog.ErrorContext(ctx, "Uninitialized `reqPath`")
 			return "/"
 		},
-		"htmxRequest": func() bool {
-			slog.ErrorContext(ctx, "Uninitialized `htmxRequest`")
-			return false
-		},
 		"language": func() string {
 			slog.ErrorContext(ctx, "Uninitialized `language`")
 			return "en"

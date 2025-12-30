@@ -31,11 +31,6 @@
 	--color-gray-950: oklch(0.141 0.005 285.823);
 }
 
-.hljs-copy-button {
-	@apply bg-[#333]!;
-	/*@apply top-2;*/
-}
-
 @utility bg-hljs {
 	background: #f0f0f0;
 	@apply dark:bg-[#333];

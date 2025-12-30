@@ -86,6 +86,23 @@ function initialVendoredLoad(el: Element) {
 	});
 }
 
+const themeObserver = new MutationObserver(() => {
+	document.querySelectorAll(".hljs-copy-container").forEach(el => {
+		// Update hardcoded custom property.
+		const container = el as HTMLDivElement;
+		container.style.setProperty(
+			"--hljs-theme-background",
+			window.getComputedStyle(container.parentElement!).backgroundColor
+		);
+		container.style.setProperty(
+			"--hljs-theme-color",
+			window.getComputedStyle(container.parentElement!).color
+		);
+	})
+});
+
+themeObserver.observe(document.documentElement, {attributes: true, attributeFilter: ["class"]});
+
 
 document.addEventListener("DOMContentLoaded", () => {
 	initialVendoredLoad(document.documentElement);

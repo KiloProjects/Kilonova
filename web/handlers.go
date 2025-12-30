@@ -2150,9 +2150,6 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 		"reqPath": func() string {
 			return reqPath(r)
 		},
-		"htmxRequest": func() bool {
-			return isHTMXRequest(r)
-		},
 		"language": func() string {
 			return lang
 		},
