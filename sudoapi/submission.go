@@ -176,6 +176,15 @@ func (s *BaseAPI) RawSubmissions(ctx context.Context, filter kilonova.Submission
 	return subs, nil
 }
 
+func (s *BaseAPI) RawSubmissionFiles(ctx context.Context, subid int) ([]*kilonova.SubmissionFile, error) {
+	files, err := s.db.SubmissionFiles(ctx, subid)
+	if err != nil {
+		slog.WarnContext(ctx, "Couldn't get raw submission files", slog.Any("err", err))
+		return nil, fmt.Errorf("couldn't get submission files: %w", err)
+	}
+	return files, nil
+}
+
 func (s *BaseAPI) RawSubmissionCode(ctx context.Context, subid int) ([]byte, error) {
 	data, err := s.db.SubmissionCode(ctx, subid)
 	if err != nil {
@@ -198,6 +207,21 @@ func (s *BaseAPI) SubmissionCode(ctx context.Context, sub *kilonova.Submission, 
 		return nil, fmt.Errorf("couldn't get submission code: %w", err)
 	}
 	return data, nil
+}
+
+func (s *BaseAPI) SubmissionFiles(ctx context.Context, sub *kilonova.Submission, subProblem *kilonova.Problem, lookingUser *kilonova.UserBrief, isLooking bool) ([]*kilonova.SubmissionFile, error) {
+	if sub == nil || subProblem == nil || sub.ProblemID != subProblem.ID {
+		return nil, Statusf(400, "Invalid submission file parameters")
+	}
+	if isLooking && !s.isSubmissionVisible(ctx, sub, subProblem, lookingUser) {
+		return []*kilonova.SubmissionFile{}, nil
+	}
+	files, err := s.RawSubmissionFiles(ctx, sub.ID)
+	if err != nil {
+		slog.WarnContext(ctx, "Couldn't get submission files", slog.Any("err", err))
+		return nil, fmt.Errorf("couldn't get submission files: %w", err)
+	}
+	return files, nil
 }
 
 type FullSubmission = kilonova.FullSubmission
@@ -253,12 +277,6 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *kil
 		return nil, err
 	}
 	rez.Author = author
-
-	code, err := s.SubmissionCode(ctx, sub, problem, lookingUser, isLooking)
-	if err != nil {
-		return nil, err
-	}
-	rez.Code = code
 
 	rez.Problem = problem
 	rez.ProblemEditor = s.IsProblemEditor(lookingUser, rez.Problem)
@@ -420,7 +438,7 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 	}
 
 	// Add submission
-	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang.InternalName, string(code), fname, contestID)
+	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang.InternalName, code, fname, contestID)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't create submission", slog.Any("err", err))
 		return -1, fmt.Errorf("couldn't create submission")

@@ -42,8 +42,23 @@ type submissionHandler struct {
 	settings *kilonova.ProblemEvalSettings
 	pb       *kilonova.Problem
 	sub      *kilonova.Submission
+	files    []*kilonova.SubmissionFile
 
 	lang *eval.Language
+}
+
+func (sh *submissionHandler) getCode() []byte {
+	if len(sh.files) == 0 {
+		return []byte{}
+	}
+	return sh.files[0].Data
+}
+
+func (sh *submissionHandler) getFilename() string {
+	if len(sh.files) == 0 {
+		return "none.txt"
+	}
+	return sh.files[0].Filename
 }
 
 func (sh *submissionHandler) buildRunGraph(ctx context.Context, subtests []*kilonova.SubTest) (graph.Graph[int, *kilonova.SubTest], error) {
@@ -119,7 +134,7 @@ func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.C
 		CodeFiles:   make(map[string][]byte),
 		HeaderFiles: make(map[string][]byte),
 
-		OriginalFilename: sh.sub.CodeFilename,
+		OriginalFilename: sh.getFilename(),
 
 		Store: sh.base.DataStore(),
 	}
@@ -145,17 +160,14 @@ func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.C
 			}
 		}
 	}
-	subCode, err := sh.base.RawSubmissionCode(ctx, sh.sub.ID)
-	if err != nil {
-		return nil, err
-	}
+	subCode := sh.getCode()
 	if len(sh.settings.GraderFiles) > 0 && sh.sub.Language == "pascal" {
 		// In interactive problems, include the source code as header
 		// Apparently the fpc compiler allows only one file as parameter, this should solve it
-		req.HeaderFiles[sh.lang.SourceName(sh.sub.CodeFilename)] = subCode
+		req.HeaderFiles[sh.lang.SourceName(sh.getFilename())] = subCode
 	} else {
 		// But by default it should be a code file
-		req.CodeFiles[sh.lang.SourceName(sh.sub.CodeFilename)] = subCode
+		req.CodeFiles[sh.lang.SourceName(sh.getFilename())] = subCode
 	}
 	for _, headerFile := range sh.settings.HeaderFiles {
 		for _, att := range atts {
@@ -209,9 +221,14 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		return fmt.Errorf("couldn't get problem settings: %w", err)
 	}
 
+	files, err := base.RawSubmissionFiles(ctx, sub.ID)
+	if err != nil {
+		return fmt.Errorf("couldn't get submission files: %w", err)
+	}
+
 	sh.pb = problem
 	sh.settings = problemSettings
-
+	sh.files = files
 	if err := sh.compileSubmission(ctx); err != nil {
 		if kilonova.ErrorCode(err) != 204 { // Skip
 			slog.WarnContext(ctx, "Non-skip error code", slog.Any("err", err))
@@ -480,7 +497,7 @@ func (sh *submissionHandler) handleBatchSubTest(ctx context.Context, checker che
 		Lang:        sh.lang,
 		TestID:      *subTest.TestID,
 
-		CodeFilename: sh.sub.CodeFilename,
+		CodeFilename: sh.getFilename(),
 	}
 	if sh.pb.ConsoleInput {
 		execRequest.InputName = "stdin"
@@ -527,7 +544,7 @@ func (sh *submissionHandler) handleCommunicationSubTest(ctx context.Context, che
 		SubLang:     sh.lang,
 		CheckerLang: checker.Language(),
 
-		CodeFilename:    sh.sub.CodeFilename,
+		CodeFilename:    sh.getFilename(),
 		CheckerFilename: checker.CodeFilename(),
 
 		TestID:           *subTest.TestID,
@@ -672,10 +689,7 @@ func (sh *submissionHandler) getAppropriateChecker(ctx context.Context) (checker
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get problem checker code: %w", err)
 	}
-	subCode, err := sh.base.RawSubmissionCode(ctx, sh.sub.ID)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't get submission source code: %w", err)
-	}
+	subCode := sh.getCode()
 	if sh.settings.LegacyChecker {
 		return checkers.NewLegacyCustomChecker(sh.runner, sh.base.DataStore(), graderLogger, sh.pb, sh.settings.CheckerName, data, subCode, att.LastUpdatedAt), nil
 	}

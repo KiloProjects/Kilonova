@@ -576,6 +576,14 @@ func (rt *Web) submission(w http.ResponseWriter, r *http.Request) {
 		olderSubs.AutoReload = false
 	}
 
+	subFiles, err := rt.base.SubmissionFiles(r.Context(), &sub.Submission, sub.Problem, util.UserBrief(r), true)
+	if err != nil {
+		if kilonova.ErrorCode(err) != 400 {
+			slog.WarnContext(r.Context(), "Could not get submission files", slog.Any("err", err))
+		}
+		subFiles = []*kilonova.SubmissionFile{}
+	}
+
 	rt.runLayout(w, r, &LayoutParams{
 		Title: fmt.Sprintf("%s %d", kilonova.GetText(util.Language(r), "sub"), sub.ID),
 		Head:  utilviews.NoRobotsHead(),
@@ -586,12 +594,18 @@ func (rt *Web) submission(w http.ResponseWriter, r *http.Request) {
 				return rt.base.Language(r.Context(), lang).PrintableName
 			},
 			OlderSubmissions: olderSubs,
+			SubmissionFiles:  subFiles,
 		}),
 	})
 }
 
 func (rt *Web) downloadSubmission(w http.ResponseWriter, r *http.Request) {
-	if len(util.Submission(r).Code) == 0 {
+	code, err := rt.base.SubmissionCode(r.Context(), &util.Submission(r).Submission, util.Submission(r).Problem, nil, false)
+	if err != nil {
+		rt.statusPage(w, r, 500, "Failed to retrieve submission code")
+		return
+	}
+	if len(code) == 0 {
 		rt.statusPage(w, r, 400, "Code is either unavailable or doesn't exist.")
 		return
 	}
@@ -601,7 +615,7 @@ func (rt *Web) downloadSubmission(w http.ResponseWriter, r *http.Request) {
 	}
 	filename := fmt.Sprintf("%d-%s%s", util.Submission(r).ID, kilonova.MakeSlug(util.Submission(r).Problem.Name), extension)
 	w.Header().Add("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": filename}))
-	http.ServeContent(w, r, filename, util.Submission(r).CreatedAt, bytes.NewReader(util.Submission(r).Code))
+	http.ServeContent(w, r, filename, util.Submission(r).CreatedAt, bytes.NewReader(code))
 }
 
 func (rt *Web) deleteSubmission(w http.ResponseWriter, r *http.Request) {
@@ -689,6 +703,14 @@ func (rt *Web) paste(w http.ResponseWriter, r *http.Request) {
 		olderSubs.AutoReload = false
 	}
 
+	subFiles, err := rt.base.SubmissionFiles(r.Context(), &sub.Submission, sub.Problem, util.UserBrief(r), true)
+	if err != nil {
+		if kilonova.ErrorCode(err) != 400 {
+			slog.WarnContext(r.Context(), "Could not get submission files", slog.Any("err", err))
+		}
+		subFiles = []*kilonova.SubmissionFile{}
+	}
+
 	rt.runLayout(w, r, &LayoutParams{
 		Title: fmt.Sprintf("%s #%d", kilonova.GetText(util.Language(r), "sub"), sub.ID),
 		Content: views.Paste(views.PastePageParams{
@@ -700,6 +722,7 @@ func (rt *Web) paste(w http.ResponseWriter, r *http.Request) {
 					return rt.base.Language(r.Context(), lang).PrintableName
 				},
 				OlderSubmissions: olderSubs,
+				SubmissionFiles:  subFiles,
 			},
 		}),
 	})

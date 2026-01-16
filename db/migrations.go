@@ -68,6 +68,11 @@ var migrations = []migration{
 		name:    "Add support for setting custom filenames to submission code",
 		handler: runFile("009.source_file_name.sql"),
 	},
+	{
+		id:      10,
+		name:    "Add support for submissions having multiple files",
+		handler: runFile("010.split_submission_code.sql"),
+	},
 }
 
 var specialMigrations = []migration{

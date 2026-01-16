@@ -33,10 +33,8 @@ type Submission struct {
 	UserID    int       `json:"user_id"`
 	ProblemID int       `json:"problem_id"`
 	Language  string    `json:"language"`
-	// Code      string    `json:"code,omitempty"`
-	CodeFilename string `json:"code_filename"`
-	CodeSize     int    `json:"code_size"`
-	Status       Status `json:"status"`
+	CodeSize  int       `json:"code_size"`
+	Status    Status    `json:"status"`
 
 	CompileError   *bool   `json:"compile_error"`
 	CompileMessage *string `json:"compile_message,omitempty"`
@@ -55,6 +53,15 @@ type Submission struct {
 
 	SubmissionType EvalType `json:"submission_type"`
 	ICPCVerdict    *string  `json:"icpc_verdict"`
+}
+
+type SubmissionFile struct {
+	ID           int       `json:"id"`
+	CreatedAt    time.Time `json:"created_at"`
+	SubmissionID int       `json:"submission_id"`
+	Filename     string    `json:"filename"`
+	Data         []byte    `json:"data"`
+	Size         int       `json:"size"`
 }
 
 func (sub *Submission) IsEditor(user *UserBrief) bool {
@@ -187,7 +194,8 @@ type FullSubmission struct {
 
 	SubTasks []*SubmissionSubTask `json:"subtasks"`
 
-	// TODO: maybe remove?
+	// Deprecated: Use SubmissionFiles instead
+	// NOTE: This value is non-empty ONLY on api requests, following [api.API.fullSubmission]
 	Code []byte `json:"code"`
 
 	// ProblemEditor returns whether the looking user is a problem editor

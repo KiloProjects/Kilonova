@@ -23,6 +23,12 @@ func (s *API) fullSubmission(ctx context.Context, id int, lookingUser *kilonova.
 		return nil, err
 	}
 
+	code, err := s.base.SubmissionCode(ctx, &sub.Submission, sub.Problem, lookingUser, looking)
+	if err != nil {
+		return nil, err
+	}
+	sub.Code = code
+
 	return sub, nil
 }
 
@@ -120,31 +126,6 @@ func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
 	}
 
 	returnData(w, id)
-}
-
-type ExportedSubmission struct {
-	*kilonova.Submission
-
-	Code string `json:"code"`
-}
-
-func (s *API) exportSubmissions(ctx context.Context, args kilonova.SubmissionFilter) ([]*ExportedSubmission, error) {
-	if args.Limit > 1000 {
-		args.Limit = 1000
-	}
-	subs, err := s.base.RawSubmissions(ctx, args)
-	if err != nil {
-		return nil, err
-	}
-	exp := make([]*ExportedSubmission, len(subs))
-	for i, sub := range subs {
-		code, err := s.base.RawSubmissionCode(ctx, sub.ID)
-		if err != nil {
-			return nil, err
-		}
-		exp[i] = &ExportedSubmission{sub, string(code)}
-	}
-	return exp, nil
 }
 
 type SubmissionCreateInput struct {

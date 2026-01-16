@@ -13,15 +13,13 @@ import (
 )
 
 type dbSubmission struct {
-	ID           int       `db:"id"`
-	CreatedAt    time.Time `db:"created_at"`
-	UserID       int       `db:"user_id"`
-	ProblemID    int       `db:"problem_id"`
-	Language     string    `db:"language"`
-	Code         string    `db:"code"`
-	CodeFilename string    `db:"code_filename"`
-	CodeSize     int       `db:"code_size"`
-	Status       string    `db:"status"`
+	ID        int       `db:"id"`
+	CreatedAt time.Time `db:"created_at"`
+	UserID    int       `db:"user_id"`
+	ProblemID int       `db:"problem_id"`
+	Language  string    `db:"language"`
+	CodeSize  int       `db:"code_size"`
+	Status    string    `db:"status"`
 
 	CompileError   *bool   `db:"compile_error"`
 	CompileMessage *string `db:"compile_message"`
@@ -40,6 +38,16 @@ type dbSubmission struct {
 
 	SubmissionType kilonova.EvalType `db:"submission_type"`
 	ICPCVerdict    *string           `db:"icpc_verdict"`
+}
+
+type dbSubmissionFile struct {
+	ID           int       `db:"id"`
+	CreatedAt    time.Time `db:"created_at"`
+	SubmissionID int       `db:"submission_id"`
+	Filename     string    `db:"filename"`
+	Data         []byte    `db:"data"`
+
+	DataSize int `db:"data_size"`
 }
 
 func (s *DB) Submission(ctx context.Context, id int) (*kilonova.Submission, error) {
@@ -84,10 +92,20 @@ func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) 
 	return mapper(subs, s.internalToSubmission), nil
 }
 
+// Deprecated: Use [DB.SubmissionFiles] and extract code. This does best-effort fetching
 func (s *DB) SubmissionCode(ctx context.Context, subID int) ([]byte, error) {
 	var code []byte
-	err := s.conn.QueryRow(ctx, "SELECT code FROM submissions WHERE id = $1 LIMIT 1", subID).Scan(&code)
+	err := s.conn.QueryRow(ctx, "SELECT data FROM submission_files WHERE submission_id = $1 ORDER BY id LIMIT 1", subID).Scan(&code)
 	return code, err
+}
+
+func (s *DB) SubmissionFiles(ctx context.Context, subID int) ([]*kilonova.SubmissionFile, error) {
+	rows, _ := s.conn.Query(ctx, "SELECT * FROM submission_files WHERE submission_id = $1", subID)
+	files, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[dbSubmissionFile])
+	if errors.Is(err, pgx.ErrNoRows) {
+		return []*kilonova.SubmissionFile{}, nil
+	}
+	return mapper(files, s.internalToSubmissionFile), err
 }
 
 func (s *DB) SubmissionCount(ctx context.Context, filter kilonova.SubmissionFilter, limit int) (int, error) {
@@ -124,15 +142,37 @@ func (s *DB) LastSubmissionTime(ctx context.Context, filter kilonova.SubmissionF
 	return val, nil
 }
 
-const createSubQuery = "INSERT INTO submissions (user_id, problem_id, contest_id, language, code, code_filename) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;"
-
-func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, langName string, code string, codeFilename string, contestID *int) (int, error) {
-	if authorID <= 0 || problem == nil || langName == "" || code == "" {
+func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, langName string, code []byte, codeFilename string, contestID *int) (int, error) {
+	if authorID <= 0 || problem == nil || langName == "" || len(code) == 0 {
 		return -1, kilonova.ErrMissingRequired
 	}
 	var id int
-	err := s.conn.QueryRow(ctx, createSubQuery, authorID, problem.ID, contestID, langName, code, codeFilename).Scan(&id)
-	return id, err
+	err := pgx.BeginFunc(ctx, s.conn, func(tx pgx.Tx) error {
+		if err := tx.QueryRow(
+			ctx,
+			"INSERT INTO submissions (user_id, problem_id, contest_id, language, code_size) VALUES ($1, $2, $3, $4, $5) RETURNING id;",
+			authorID,
+			problem.ID,
+			contestID,
+			langName,
+			len(code),
+		).Scan(&id); err != nil {
+			return err
+		}
+
+		_, err := tx.Exec(
+			ctx,
+			"INSERT INTO submission_files (submission_id, filename, data) VALUES ($1, $2, $3)",
+			id,
+			codeFilename,
+			code,
+		)
+		return err
+	})
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 func (s *DB) UpdateSubmission(ctx context.Context, id int, upd kilonova.SubmissionUpdate) error {
@@ -331,13 +371,11 @@ func (s *DB) internalToSubmission(sub *dbSubmission) *kilonova.Submission {
 	}
 
 	return &kilonova.Submission{
-		ID:        sub.ID,
-		CreatedAt: sub.CreatedAt,
-		UserID:    sub.UserID,
-		ProblemID: sub.ProblemID,
-		Language:  sub.Language,
-		// Code:           sub.Code,
-		CodeFilename:   sub.CodeFilename,
+		ID:             sub.ID,
+		CreatedAt:      sub.CreatedAt,
+		UserID:         sub.UserID,
+		ProblemID:      sub.ProblemID,
+		Language:       sub.Language,
 		CodeSize:       sub.CodeSize,
 		Status:         kilonova.Status(sub.Status),
 		CompileError:   sub.CompileError,
@@ -353,5 +391,16 @@ func (s *DB) internalToSubmission(sub *dbSubmission) *kilonova.Submission {
 
 		SubmissionType: sub.SubmissionType,
 		ICPCVerdict:    sub.ICPCVerdict,
+	}
+}
+
+func (s *DB) internalToSubmissionFile(subFile *dbSubmissionFile) *kilonova.SubmissionFile {
+	return &kilonova.SubmissionFile{
+		ID:           subFile.ID,
+		CreatedAt:    subFile.CreatedAt,
+		SubmissionID: subFile.SubmissionID,
+		Filename:     subFile.Filename,
+		Data:         subFile.Data,
+		Size:         subFile.DataSize,
 	}
 }

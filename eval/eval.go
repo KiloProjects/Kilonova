@@ -68,6 +68,8 @@ type RunConfig struct {
 	EnvToInherit []string
 	EnvToSet     map[string]string
 
+	EnableInternet bool
+
 	Directories []Directory
 }
 

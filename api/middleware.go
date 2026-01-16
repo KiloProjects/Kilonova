@@ -347,22 +347,6 @@ func (s *API) validateBlogPostID(next http.Handler) http.Handler {
 	})
 }
 
-func (s *API) validateSubmissionID(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		subID, err := strconv.Atoi(r.PathValue("subID"))
-		if err != nil {
-			errorData(w, "invalid submission ID", http.StatusBadRequest)
-			return
-		}
-		sub, err := s.base.Submission(r.Context(), subID, util.UserBrief(r))
-		if err != nil {
-			errorData(w, "submission does not exist or can't be found", http.StatusNotFound)
-			return
-		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.SubKey, sub)))
-	})
-}
-
 func (s *API) validateBlogPostName(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		bpName := strings.TrimSpace(r.PathValue("bpName"))

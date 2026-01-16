@@ -7,6 +7,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/KiloProjects/kilonova/web/tutils"
 	"github.com/KiloProjects/kilonova/web/views/modals"
 	"github.com/alecthomas/chroma/v2"
 	chtml "github.com/alecthomas/chroma/v2/formatters/html"
@@ -21,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-	"github.com/KiloProjects/kilonova/web/tutils"
 )
 
 var T = tutils.T
@@ -31,11 +31,19 @@ func authed(ctx context.Context) bool {
 }
 
 type SubmissionPageParams struct {
-	Submission    *kilonova.FullSubmission
-	ForceShowCode bool
+	Submission      *kilonova.FullSubmission
+	SubmissionFiles []*kilonova.SubmissionFile
+	ForceShowCode   bool
 
 	LanguageFormatter func(string) string
 	OlderSubmissions  *modals.OlderSubmissionsParams
+}
+
+func (sp *SubmissionPageParams) GetCodeFile() *kilonova.SubmissionFile {
+	if len(sp.SubmissionFiles) == 0 {
+		return nil
+	}
+	return sp.SubmissionFiles[0]
 }
 
 type PastePageParams struct {
@@ -66,7 +74,7 @@ templ Submission(params SubmissionPageParams) {
 				@SubmissionScoreBreakdown(params)
 			</div>
 		</div>
-		@SubmissionCode(params.Submission, params.Submission.Code, params.ForceShowCode)
+		@SubmissionCode(params.Submission, params.GetCodeFile(), params.ForceShowCode)
 		<div class="my-2">
 			if authed(ctx) {
 				if params.Submission.CanDelete(util.UserBriefContext(ctx)) {
@@ -109,7 +117,7 @@ templ Paste(params PastePageParams) {
 				}
 			</aside>
 			<div class="page-content-wrapper">
-				@SubmissionCode(params.Submission, params.Submission.Code, params.ForceShowCode)
+				@SubmissionCode(params.Submission, params.GetCodeFile(), params.ForceShowCode)
 			</div>
 		</div>
 		@SubmissionScoreBreakdown(params.SubmissionPageParams)
@@ -250,25 +258,25 @@ templ SubmissionTestTable(params SubmissionTestTableParams) {
 		</thead>
 		<tbody>
 			{{
-		if params.Subtask != nil {
-			var newSubtests []*kilonova.SubTest
-			for _, subtest := range params.Subtests {
-				if slices.Contains(params.Subtask.Subtests, subtest.ID) {
-					newSubtests = append(newSubtests, subtest)
+				if params.Subtask != nil {
+					var newSubtests []*kilonova.SubTest
+					for _, subtest := range params.Subtests {
+						if slices.Contains(params.Subtask.Subtests, subtest.ID) {
+							newSubtests = append(newSubtests, subtest)
+						}
+					}
+					params.Subtests = newSubtests
 				}
-			}
-			params.Subtests = newSubtests
-		}
-		slices.SortFunc(params.Subtests, func(a, b *kilonova.SubTest) int {
-			return cmp.Compare(a.VisibleID, b.VisibleID)
-		})
+				slices.SortFunc(params.Subtests, func(a, b *kilonova.SubTest) int {
+					return cmp.Compare(a.VisibleID, b.VisibleID)
+				})
 			}}
 			for _, subtest := range params.Subtests {
 				{{
-		var maxScore = subtest.Score
-		if params.Subtask != nil {
-			maxScore = params.Subtask.Score
-		}
+					var maxScore = subtest.Score
+					if params.Subtask != nil {
+						maxScore = params.Subtask.Score
+					}
 				}}
 				<tr class="kn-table-row">
 					<th class="py-1" scope="row" id={ fmt.Sprintf("test-%d", subtest.VisibleID) }>
@@ -311,12 +319,12 @@ templ SubmissionTestTable(params SubmissionTestTableParams) {
 					}
 					if params.SubType == kilonova.EvalTypeClassic && len(params.Subtasks) > 0 {
 						{{
-	var stks []string
-	for _, subtask := range params.Subtasks {
-		if slices.Contains(subtask.Subtests, subtest.ID) {
-			stks = append(stks, strconv.Itoa(subtask.VisibleID))
-		}
-	}
+							var stks []string
+							for _, subtask := range params.Subtasks {
+								if slices.Contains(subtask.Subtests, subtest.ID) {
+									stks = append(stks, strconv.Itoa(subtask.VisibleID))
+								}
+							}
 						}}
 						<td>{ strings.Join(stks, ", ") }</td>
 					}
@@ -466,12 +474,6 @@ templ SubmissionSummary(sub *kilonova.FullSubmission, pasteAuthor *kilonova.User
 					<td class="kn-table-cell">{ T(ctx, "status") }</td>
 					<td class="kn-table-cell">{ sub.Status }</td>
 				</tr>
-				if len(sub.CodeFilename) > 0 {
-					<tr class="kn-table-simple-border">
-						<td class="kn-table-cell">{ T(ctx, "codeFilename") }</td>
-						<td class="kn-table-cell"><code>{ sub.CodeFilename }</code></td>
-					</tr>
-				}
 				if sub.CompileTime != nil {
 					<tr class="kn-table-simple-border">
 						<td class="kn-table-cell">{ T(ctx, "compileTime") }</td>
@@ -484,11 +486,11 @@ templ SubmissionSummary(sub *kilonova.FullSubmission, pasteAuthor *kilonova.User
 }
 
 // forceShow = preact isPaste
-templ SubmissionCode(sub *kilonova.FullSubmission, code []byte, forceShow bool) {
+templ SubmissionCode(sub *kilonova.FullSubmission, file *kilonova.SubmissionFile, forceShow bool) {
 	{{
-	if len(code) == 0 {
-		return
-	}
+		if file == nil || len(file.Data) == 0 {
+			return
+		}
 	}}
 	if !(forceShow || sub.CodeTrulyVisible) {
 		<div class="segment-panel">
@@ -500,8 +502,8 @@ templ SubmissionCode(sub *kilonova.FullSubmission, code []byte, forceShow bool) 
 		</div>
 	} else {
 		<div class="segment-panel">
-			<h2>{ T(ctx, "sourceCode") }:</h2>
-			@SyntaxHighlight(code, sub.Language)
+			<h2>{ T(ctx, "sourceCode") } (<code>{ file.Filename }</code>):</h2>
+			@SyntaxHighlight(file.Data, sub.Language)
 			<div class="block my-2">
 				<a href={ templ.URL(fmt.Sprintf("/submissions/%d/download", sub.ID)) } class="btn btn-blue text-semibold text-lg">
 					{ T(ctx, "download") }

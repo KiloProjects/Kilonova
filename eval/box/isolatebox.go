@@ -79,6 +79,10 @@ func (b *IsolateBox) buildRunFlags(ctx context.Context, c *eval.RunConfig, metaF
 		}
 	}
 
+	if c.EnableInternet {
+		res = append(res, "--share-net")
+	}
+
 	if c.TimeLimit != 0 {
 		res = append(res, "--time="+strconv.FormatFloat(c.TimeLimit, 'f', -1, 64))
 	}
