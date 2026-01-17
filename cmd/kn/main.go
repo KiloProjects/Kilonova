@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/joho/godotenv"
 	"log/slog"
 	"os"
+
+	"github.com/KiloProjects/kilonova/integrations/prometheus"
+	"github.com/joho/godotenv"
 
 	"github.com/KiloProjects/kilonova/internal/config"
 )
@@ -52,6 +54,8 @@ func main() {
 		slog.ErrorContext(ctx, "Error saving flags", slog.Any("err", err))
 		os.Exit(1)
 	}
+
+	prometheus.InitMetrics()
 
 	if err := Kilonova(); err != nil {
 		slog.ErrorContext(ctx, "Error running Kilonova", slog.Any("err", err))
