@@ -504,7 +504,7 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 		return false
 	}
 
-	if !user.IsAuthed() {
+	if user == nil || !user.IsAuthed() {
 		return false
 	}
 
@@ -513,23 +513,21 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 	if flags.SubForEveryoneConfig.Value() && s.IsProblemFullyVisible(user, subProblem) &&
 		!slices.Contains(flags.SubForEveryoneBlacklist.Value(), sub.ProblemID) {
 
-		if user != nil {
-			// Get number of running virtual contests where user is participant for this problem and the person trying to look is not a contest editor
-			// If it returns a nonzero number of results, then we need to filter out
-			numContests, err := s.ContestCount(ctx, kilonova.ContestFilter{
-				Running:      true,
-				ContestantID: &user.ID,
-				ProblemID:    &subProblem.ID,
-				Type:         kilonova.ContestTypeVirtual,
+		// Get number of running virtual contests where user is participant for this problem and the person trying to look is not a contest editor
+		// If it returns a nonzero number of results, then we need to filter out
+		numContests, err := s.ContestCount(ctx, kilonova.ContestFilter{
+			Running:      true,
+			ContestantID: &user.ID,
+			ProblemID:    &subProblem.ID,
+			Type:         kilonova.ContestTypeVirtual,
 
-				EditorID:  &user.ID,
-				NotEditor: true,
-			})
-			if err != nil {
-				slog.WarnContext(ctx, "Couldn't get running contests", slog.Any("err", err))
-			} else if numContests > 0 {
-				return false
-			}
+			EditorID:  &user.ID,
+			NotEditor: true,
+		})
+		if err != nil {
+			slog.WarnContext(ctx, "Couldn't get running contests", slog.Any("err", err))
+		} else if numContests > 0 {
+			return false
 		}
 
 		if sub.ContestID == nil {

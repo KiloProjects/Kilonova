@@ -703,7 +703,8 @@ func (rt *Web) paste(w http.ResponseWriter, r *http.Request) {
 		olderSubs.AutoReload = false
 	}
 
-	subFiles, err := rt.base.SubmissionFiles(r.Context(), &sub.Submission, sub.Problem, util.UserBrief(r), true)
+	// Get submission files without checking the looking user
+	subFiles, err := rt.base.SubmissionFiles(r.Context(), &sub.Submission, sub.Problem, nil, false)
 	if err != nil {
 		if kilonova.ErrorCode(err) != 400 {
 			slog.WarnContext(r.Context(), "Could not get submission files", slog.Any("err", err))

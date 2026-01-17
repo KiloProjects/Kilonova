@@ -160,8 +160,13 @@
 
     cm.onPaste((pasteText) => {
 	    if(document.getElementById("autoformat_paste")?.checked) {
-            let newVal = pasteText.map(rewriteLaTeXMarkdown);
-            if(!bundled.isEqual(newVal, pasteText)) {
+            let updated = false;
+            let newVal = pasteText.map((val) => {
+                const transformed = rewriteLaTeXMarkdown(val);
+                if(transformed !== val) updated = true;
+                return transformed;
+            });
+            if(updated) {
                 bundled.createToast({
                     status: "success",
                     description: bundled.getText("notif.edit.rewrote_rule")
