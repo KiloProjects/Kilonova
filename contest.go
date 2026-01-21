@@ -235,6 +235,9 @@ type ContestUpdate struct {
 
 	Type ContestType `json:"type"`
 
+	IPManagementEnabled *bool `json:"ip_management_enabled"`
+	WhitelistEnabled    *bool `json:"whitelist_enabled"`
+
 	PerUserTime *int `json:"per_user_time"` // Seconds
 }
 

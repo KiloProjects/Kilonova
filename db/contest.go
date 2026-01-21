@@ -185,12 +185,12 @@ func contestFilterQuery(filter *kilonova.ContestFilter, sb sq.SelectBuilder) sq.
 			From("session_clients").
 			Where(sq.And{
 				sq.Eq{"ip_addr": v},
-				sq.Expr("tsrange(created_at, last_checked_at) && tsrange(contests.start_time - '1h'::interval, contests.end_time)"),
+				sq.Expr("tstzrange(created_at, last_checked_at, '[]') && tstzrange(contests.start_time - '1h'::interval, contests.end_time, '[]')"),
 			})
 		subQuery := sq.Select("1").
 			From("contest_registrations").
 			JoinClause(ipSq.Prefix("INNER JOIN (").Suffix(") sclients ON contest_registrations.user_id = sclients.user_id")).
-			Where(sq.Eq{"contest_registrations.contest_id": "contests.id"})
+			Where(sq.Expr("contest_registrations.contest_id = contests.id"))
 		where = append(where, subQuery.Prefix("EXISTS (").Suffix(")"))
 		where = append(where, sq.Eq{"whitelist_enabled": true})
 	}
@@ -614,6 +614,12 @@ func contestUpdateQuery(upd *kilonova.ContestUpdate, ub *updateBuilder) {
 	}
 	if v := upd.Type; v != kilonova.ContestTypeNone {
 		ub.AddUpdate("type = %s", v)
+	}
+	if v := upd.IPManagementEnabled; v != nil {
+		ub.AddUpdate("ip_management_enabled = %s", v)
+	}
+	if v := upd.WhitelistEnabled; v != nil {
+		ub.AddUpdate("whitelist_enabled = %s", v)
 	}
 }
 

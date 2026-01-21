@@ -26,7 +26,7 @@ func (s *DB) ContestIPs(ctx context.Context, contestID int, startTime, endTime t
 		Where(
 			sq.And{
 				sq.Expr(
-					"tsrange(created_at, last_checked_at) && tsrange(?, ?)",
+					"tstzrange(created_at, last_checked_at, '[]') && tstzrange(?, ?, '[]')",
 					startTime, endTime,
 				),
 				sq.Expr("EXISTS (SELECT 1 FROM contest_registrations WHERE contest_registrations.user_id = session_clients.user_id AND contest_registrations.contest_id = ?)", contestID),

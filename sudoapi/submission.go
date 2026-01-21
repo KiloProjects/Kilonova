@@ -272,7 +272,7 @@ func (s *BaseAPI) getSubmission(ctx context.Context, subid int, lookingUser *kil
 		problem = problem2
 	}
 
-	rez := &FullSubmission{Submission: *sub, CodeTrulyVisible: s.subVisibleRegardless(ctx, sub, lookingUser, problem)}
+	rez := &FullSubmission{Submission: *sub, CodeTrulyVisible: s.subVisibleRegardless(ctx, sub, lookingUser, problem, true)}
 	author, err := s.UserBrief(ctx, sub.UserID)
 	if err != nil {
 		return nil, err
@@ -479,7 +479,7 @@ func (s *BaseAPI) ResetProblemSubmissions(ctx context.Context, problem *kilonova
 	return nil
 }
 
-func (s *BaseAPI) subVisibleRegardless(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief, subProblem *kilonova.Problem) bool {
+func (s *BaseAPI) subVisibleRegardless(ctx context.Context, sub *kilonova.Submission, user *kilonova.UserBrief, subProblem *kilonova.Problem, checkSolved bool) bool {
 	if sub == nil {
 		return false
 	}
@@ -496,6 +496,10 @@ func (s *BaseAPI) subVisibleRegardless(ctx context.Context, sub *kilonova.Submis
 		return true
 	}
 
+	if !checkSolved {
+		return false
+	}
+
 	score := s.db.MaxScore(ctx, user.ID, sub.ProblemID)
 	return score.Equal(decimal.NewFromInt(100))
 }
@@ -508,6 +512,8 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 	if user == nil || !user.IsAuthed() {
 		return false
 	}
+
+	checkSolved := true
 
 	if util.IPContext(ctx) != nil {
 		whitelistedContests, err := s.db.Contests(ctx, kilonova.ContestFilter{
@@ -547,6 +553,8 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 				return false
 			}
 
+			// Don't show just because the user got 100
+			checkSolved = false
 		}
 	}
 
@@ -589,7 +597,7 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 		}
 	}
 
-	return s.subVisibleRegardless(ctx, sub, user, subProblem)
+	return s.subVisibleRegardless(ctx, sub, user, subProblem, checkSolved)
 }
 
 func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission, subProblem *kilonova.Problem, user *kilonova.UserBrief) {

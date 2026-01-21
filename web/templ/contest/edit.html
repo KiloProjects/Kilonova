@@ -73,6 +73,20 @@
                         <input class="form-input" name="submission_cooldown" type="number" min="0" step="1" value="{{.Contest.SubmissionCooldown.Seconds}}" required>
                         <span class="form-label">{{getText "seconds"}}</span>
                     </label>
+
+                    <div class="block mb-2">
+                        <label class="inline-flex items-center text-lg">
+                            <input class="form-checkbox" id="c_ip_mgmt" name="ip_management_enabled" type="checkbox" {{if .Contest.IPManagementEnabled}}checked{{end}} {{if not isAdmin}}disabled{{ end }}>
+                            <span class="ml-2 {{if not isAdmin}} text-muted {{ end }}">{{getText "ip_management_enabled"}}</span>
+                        </label>
+                    </div>
+                    <div class="block mb-2">
+                        <label class="inline-flex items-center text-lg">
+                            <input class="form-checkbox" id="c_whitelist" name="whitelist_enabled" type="checkbox" {{if .Contest.WhitelistEnabled}}checked{{end}} {{if not isAdmin}}disabled{{ end }}>
+                            <span class="ml-2 {{if not isAdmin}} text-muted {{ end }}">{{getText "whitelist_enabled"}}</span>
+                        </label>
+                    </div>
+                    <p class="block text-muted text-sm">{{getText "whitelist_enabled_explanation"}}</p>
                 </div>
                 <div class="segment-panel lg:col-span-2">
                     <h2>{{getText "header.contest.leaderboard"}}</h2>
@@ -418,6 +432,9 @@ async function updateContest(e) {
             
             per_user_time: fd.get("per_user_time"),
             register_during_contest: document.getElementById("c_reg").checked,
+
+            ip_management_enabled: document.getElementById("c_ip_mgmt").checked,
+            whitelist_enabled: document.getElementById("c_whitelist").checked,
         }
 
         if(!document.getElementById("contest_type").disabled) {

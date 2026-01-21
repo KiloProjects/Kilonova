@@ -35,9 +35,19 @@ func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if args.Type != kilonova.ContestTypeNone && args.Type != util.Contest(r).Type && !util.UserBrief(r).IsAdmin() {
-		errorData(w, "You aren't allowed to change contest type!", 400)
-		return
+	if !util.UserBrief(r).IsAdmin() {
+		if args.Type != kilonova.ContestTypeNone && args.Type != util.Contest(r).Type {
+			errorData(w, "You aren't allowed to change contest type!", 400)
+			return
+		}
+		if args.WhitelistEnabled != nil && *args.WhitelistEnabled != util.Contest(r).WhitelistEnabled {
+			errorData(w, "You aren't allowed to change whitelist status!", 400)
+			return
+		}
+		if args.IPManagementEnabled != nil && *args.IPManagementEnabled != util.Contest(r).IPManagementEnabled {
+			errorData(w, "You aren't allowed to change whitelist status!", 400)
+			return
+		}
 	}
 	st := util.Contest(r).StartTime
 	et := util.Contest(r).EndTime

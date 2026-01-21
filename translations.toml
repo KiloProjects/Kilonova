@@ -2444,6 +2444,18 @@ ro = "Timp individual (stil USACO)"
 en = "Warning: setting the individual user time parameter to a nonzero value will turn the contest into an USACO-style contest."
 ro = "Warning: setarea parametrului pentru timp individual la o valoare nenulă va transforma concursul în unul tip USACO."
 
+[ip_management_enabled]
+en = "IP management menu enabled"
+ro = "Meniu administrare IP-uri activat"
+
+[whitelist_enabled]
+en = "Enable IP submission whitelist"
+ro = "Activare whitelist submisii pe IP"
+
+[whitelist_enabled_explanation]
+en = "Only administrators can toggle IP options. When enabled, contestants (or users on the same IP as a contestant) will be able to view only their own submissions"
+ro = "Doar administratorii pot să modifice opțiunile de IP. Când e activat, concurenții (sau utilizatori pe același IP ca și concurenții) vor putea vedea doar submisiile din concursuri în desfășurare"
+
 [leaderboard.style]
 en = "Leaderboard type"
 ro = "Tip clasament"
