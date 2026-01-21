@@ -201,7 +201,7 @@ type FullSubmission struct {
 	// ProblemEditor returns whether the looking user is a problem editor
 	ProblemEditor bool `json:"problem_editor"`
 
-	CodeTrulyVisible bool `json:"truly_visible"`
+	CodeTrulyVisible bool `json:"-"`
 }
 
 func (sub *FullSubmission) CanDelete(user *UserBrief) bool {

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/shopspring/decimal"
 )
@@ -506,6 +507,47 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 
 	if user == nil || !user.IsAuthed() {
 		return false
+	}
+
+	if util.IPContext(ctx) != nil {
+		whitelistedContests, err := s.db.Contests(ctx, kilonova.ContestFilter{
+			Running:       true,
+			Type:          kilonova.ContestTypeOfficial,
+			WhitelistedIP: util.IPContext(ctx),
+		})
+		if err != nil {
+			slog.WarnContext(ctx, "Couldn't check IP whitelist", slog.Any("err", err))
+		} else if len(whitelistedContests) > 0 {
+			// If IP is among the ones used by users inside a contest with whitelisted enabled
+			// We distinguish two cases:
+			//  1. It's the user's own submission inside the contest, in which case it's fine
+			//  2. It's the user's own submission outside the contest, in which case we need to block
+
+			// If the user is an editor for ALL contests at the IP, fallthrough to normal case
+			editorAll := true
+			contestSubmission := false
+			for _, contest := range whitelistedContests {
+				if !contest.IsEditor(user) {
+					editorAll = false
+				}
+				if sub.ContestID != nil && contest.ID == *sub.ContestID {
+					contestSubmission = true
+				}
+			}
+			if !editorAll {
+				if !contestSubmission {
+					// If submission not in one of the contests mentioned, block
+					return false
+				}
+				if sub.UserID == user.ID {
+					// If submission is from the user themselves, allow
+					return true
+				}
+				// Otherwise, block
+				return false
+			}
+
+		}
 	}
 
 	// If enabled that people see all source code

@@ -3,6 +3,7 @@ package util
 import (
 	"context"
 	"net/http"
+	"net/netip"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/datastore"
@@ -51,6 +52,9 @@ const (
 
 	// AuthMethodKey is the key to be used for adding the auth method to context
 	AuthMethodKey = KNContextType("authMethod")
+
+	// IPKey is the key to be used for adding the IP address to context
+	IPKey = KNContextType("ip")
 )
 
 func userBrief(ctx context.Context, key KNContextType) *kilonova.UserBrief {
@@ -177,6 +181,10 @@ func Tag(r *http.Request) *kilonova.Tag {
 
 func Language(r *http.Request) string {
 	return LanguageContext(r.Context())
+}
+
+func IPContext(ctx context.Context) *netip.Addr {
+	return getValueContext[netip.Addr](ctx, IPKey)
 }
 
 func LanguageContext(ctx context.Context) string {

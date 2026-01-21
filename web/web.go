@@ -778,14 +778,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 				return d.Amount
 			}
 		},
-		"forceSubCode": func(sub *kilonova.FullSubmission) []byte {
-			code, err := base.SubmissionCode(ctx, &sub.Submission, sub.Problem, nil, false)
-			if err != nil {
-				slog.WarnContext(ctx, "Could not get submission code", slog.Any("err", err))
-				code = nil
-			}
-			return code
-		},
 
 		"dump":               spew.Sdump,
 		"canJoinContest":     base.CanJoinContest,

@@ -73,6 +73,11 @@ var migrations = []migration{
 		name:    "Add support for submissions having multiple files",
 		handler: runFile("010.split_submission_code.sql"),
 	},
+	{
+		id:      11,
+		name:    "Add support for whitelisting IPs in contests",
+		handler: runFile("011.contest_whitelist.sql"),
+	},
 }
 
 var specialMigrations = []migration{

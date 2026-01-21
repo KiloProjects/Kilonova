@@ -77,6 +77,12 @@ type Contest struct {
 
 	Type ContestType `json:"type"`
 
+	// IPManagementEnabled says whether the UI is available for the contest
+	// Editors can see the IPs of users, and also other accounts associated with the IPs during the contest
+	IPManagementEnabled bool `json:"ip_management_enabled"`
+	// WhitelistEnabled limits the people on IPs associated with the contest from accessing others' submissions
+	WhitelistEnabled bool `json:"whitelist_enabled"`
+
 	// MaxSubs is the maximum number of submissions
 	// that someone is allowed to send to a problem during a contest.
 	// Any number < 0 means no limit
@@ -184,6 +190,10 @@ type ContestFilter struct {
 	//   - Virtual contests the user organizes (editor/tester)
 	// This is used in filtering the contests for the main page
 	ImportantContestsUID *int `json:"important_contest_uid"`
+
+	// WhitelistedIP filters for the contests that have this IP associated with them and that have whitelisting enabled
+	// an IP is associated with a contest if there is a registered user that has used the IP in the interval [start_time-1h, end_time]
+	WhitelistedIP *netip.Addr `json:"whitelisted_ip"`
 
 	Since *time.Time `json:"-"`
 
@@ -315,19 +325,6 @@ type ContestLeaderboard struct {
 
 	FreezeTime *time.Time      `json:"freeze_time"`
 	Type       LeaderboardType `json:"type"`
-}
-
-type ContestLimitConfig struct {
-	ContestID              int  `json:"contest_id"`
-	IPManagementEnabled    bool `json:"ip_management_enabled"`
-	WhitelistingEnabled    bool `json:"whitelisting_enabled"`
-	PastSubmissionsEnabled bool `json:"past_submissions_enabled"`
-}
-
-type ContestLimitConfigUpdate struct {
-	IPManagementEnabled    *bool `json:"ip_management_enabled"`
-	WhitelistingEnabled    *bool `json:"whitelisting_enabled"`
-	PastSubmissionsEnabled *bool `json:"past_submissions_enabled"`
 }
 
 type ContestUserIPs struct {

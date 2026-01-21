@@ -41,6 +41,9 @@ type dbContest struct {
 	SubmissionCooldown int `db:"submission_cooldown_ms"`
 	QuestionCooldown   int `db:"question_cooldown_ms"`
 
+	IPManagementEnabled bool `db:"ip_management_enabled"`
+	WhitelistEnabled    bool `db:"whitelist_enabled"`
+
 	Type kilonova.ContestType `db:"type"`
 }
 
@@ -175,6 +178,21 @@ func contestFilterQuery(filter *kilonova.ContestFilter, sb sq.SelectBuilder) sq.
 				OR
 				EXISTS (SELECT 1 FROM contest_user_access acc WHERE contests.id = acc.contest_id AND acc.user_id = ?)
 			)`, v, v))
+	}
+
+	if v := filter.WhitelistedIP; v != nil {
+		ipSq := sq.Select("user_id").
+			From("session_clients").
+			Where(sq.And{
+				sq.Eq{"ip_addr": v},
+				sq.Expr("tsrange(created_at, last_checked_at) && tsrange(contests.start_time - '1h'::interval, contests.end_time)"),
+			})
+		subQuery := sq.Select("1").
+			From("contest_registrations").
+			JoinClause(ipSq.Prefix("INNER JOIN (").Suffix(") sclients ON contest_registrations.user_id = sclients.user_id")).
+			Where(sq.Eq{"contest_registrations.contest_id": "contests.id"})
+		where = append(where, subQuery.Prefix("EXISTS (").Suffix(")"))
+		where = append(where, sq.Eq{"whitelist_enabled": true})
 	}
 
 	return sb.Where(where)
@@ -658,5 +676,8 @@ func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilono
 
 		Visible: contest.Visible,
 		Type:    contest.Type,
+
+		IPManagementEnabled: contest.IPManagementEnabled,
+		WhitelistEnabled:    contest.WhitelistEnabled,
 	}, nil
 }
