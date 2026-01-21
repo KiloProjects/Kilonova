@@ -78,6 +78,11 @@ var migrations = []migration{
 		name:    "Add support for whitelisting IPs in contests",
 		handler: runFile("011.contest_whitelist.sql"),
 	},
+	{
+		id:      12,
+		name:    "Add IPs to submissions",
+		handler: runFile("012.submission_ip.sql"),
+	},
 }
 
 var specialMigrations = []migration{

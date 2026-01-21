@@ -1,6 +1,7 @@
 package kilonova
 
 import (
+	"net/netip"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -48,6 +49,8 @@ type Submission struct {
 	ScorePrecision int32           `json:"score_precision"`
 	// Used only for leaderboard scoring right now
 	ScoreScale decimal.Decimal `json:"score_scale"`
+
+	IP *netip.Addr `json:"-"`
 
 	CompileTime *float64 `json:"compile_time"`
 

@@ -1264,6 +1264,10 @@ ro = "Data încărcării"
 en = "Compilation time"
 ro = "Timp compilare"
 
+[ipAddr]
+en = "IP Address"
+ro = "Adresă IP"
+
 [codeFilename]
 en = "File name"
 ro = "Numele fișierului"

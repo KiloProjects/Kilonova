@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/netip"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 )
@@ -31,6 +33,8 @@ type dbSubmission struct {
 
 	Score          decimal.Decimal `db:"score"`
 	ScorePrecision int32           `db:"digit_precision"`
+
+	IP *netip.Addr `db:"sent_ip"`
 
 	CompileDuration *float64 `db:"compile_duration"`
 
@@ -150,12 +154,13 @@ func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilono
 	err := pgx.BeginFunc(ctx, s.conn, func(tx pgx.Tx) error {
 		if err := tx.QueryRow(
 			ctx,
-			"INSERT INTO submissions (user_id, problem_id, contest_id, language, code_size) VALUES ($1, $2, $3, $4, $5) RETURNING id;",
+			"INSERT INTO submissions (user_id, problem_id, contest_id, language, code_size, sent_ip) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;",
 			authorID,
 			problem.ID,
 			contestID,
 			langName,
 			len(code),
+			util.IPContext(ctx),
 		).Scan(&id); err != nil {
 			return err
 		}
@@ -391,6 +396,8 @@ func (s *DB) internalToSubmission(sub *dbSubmission) *kilonova.Submission {
 
 		SubmissionType: sub.SubmissionType,
 		ICPCVerdict:    sub.ICPCVerdict,
+
+		IP: sub.IP,
 	}
 }
 

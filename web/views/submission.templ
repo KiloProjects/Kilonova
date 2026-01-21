@@ -480,6 +480,12 @@ templ SubmissionSummary(sub *kilonova.FullSubmission, pasteAuthor *kilonova.User
 						<td class="kn-table-cell">{ math.Floor(*sub.CompileTime * 1000) } ms</td>
 					</tr>
 				}
+				if util.UserBriefContext(ctx).IsAdmin() && sub.IP != nil {
+					<tr class="kn-table-simple-border">
+	                    <td class="kn-table-cell">{ T(ctx, "ipAddr") }</td>
+	                    <td class="kn-table-cell">{ sub.IP.String() }</td>
+	                </tr>
+				}
 			</tbody>
 		</table>
 	</div>
