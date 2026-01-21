@@ -542,6 +542,9 @@ CREATE INDEX IF NOT EXISTS contest_registrations_index ON contest_registrations 
 CREATE INDEX IF NOT EXISTS contest_questions_index ON contest_questions (contest_id);
 CREATE INDEX IF NOT EXISTS contest_announcements_index ON contest_announcements (contest_id);
 
+-- session clients
+CREATE INDEX IF NOT EXISTS session_clients_last_checked_user_id ON session_clients (user_id, last_checked_at);
+
 ---- tags
 
 CREATE INDEX IF NOT EXISTS problem_tag_problems ON problem_tags (problem_id);

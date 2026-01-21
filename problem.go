@@ -227,6 +227,8 @@ type ProblemEvalSettings struct {
 	// If the problem has a custom checker marked as legacy
 	LegacyChecker bool `json:"legacy_checker"`
 
+	HasUv bool `json:"has_uv"`
+
 	// Stores the list of languages that are allowed to be submitted based on existing attachments
 	LanguageWhitelist []string `json:"lang_whitelist"`
 }

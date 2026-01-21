@@ -2,6 +2,7 @@ package kilonova
 
 import (
 	"log/slog"
+	"net/netip"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -314,4 +315,22 @@ type ContestLeaderboard struct {
 
 	FreezeTime *time.Time      `json:"freeze_time"`
 	Type       LeaderboardType `json:"type"`
+}
+
+type ContestLimitConfig struct {
+	ContestID              int  `json:"contest_id"`
+	IPManagementEnabled    bool `json:"ip_management_enabled"`
+	WhitelistingEnabled    bool `json:"whitelisting_enabled"`
+	PastSubmissionsEnabled bool `json:"past_submissions_enabled"`
+}
+
+type ContestLimitConfigUpdate struct {
+	IPManagementEnabled    *bool `json:"ip_management_enabled"`
+	WhitelistingEnabled    *bool `json:"whitelisting_enabled"`
+	PastSubmissionsEnabled *bool `json:"past_submissions_enabled"`
+}
+
+type ContestUserIPs struct {
+	User *UserBrief
+	IPs  []*netip.Addr
 }

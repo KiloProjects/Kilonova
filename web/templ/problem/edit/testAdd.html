@@ -66,30 +66,30 @@
     document.getElementById(type+"_textarea_label")?.classList.toggle("hidden", val !== "text")
 }))
 
-async function getValue(type) {
-    if(document.getElementById(type+"_submit_style").value == "text") {
-        return document.getElementById(type+"_textarea").value
+function getValue(type) {
+    if(document.getElementById(type+"_submit_style").value === "text") {
+        return new File([document.getElementById(type+"_textarea").value], "test."+type)
     }
     const files = document.getElementById(type+"_file").files
     if(files.length > 1) {
         throw new Error(bundled.getText("invalid_file"))
     }
-    if(files.length == 0) {
+    if(files.length === 0) {
         throw new Error(bundled.getText("no_file"))
     }
-    return await files[0].text()
+    return files[0]
 }
 
 async function addTest(e) {
 	e.preventDefault()
     try {
-        var q = {
-            visibleID: document.getElementById("vID").value, 
-            input: await getValue("input"),
-            output: await getValue("output"),
-            score: document.getElementById("score").value,
-        };
-        let res = await bundled.postCall("/problem/{{ .Problem.ID }}/update/addTest", q)
+        var data = new FormData();
+        data.append("visibleID", document.getElementById("vID").value);
+        data.append("score", document.getElementById("score").value);
+        data.append("input", getValue("input"));
+        data.append("output", getValue("output"));
+
+        let res = await bundled.multipartCall("/problem/{{ .Problem.ID }}/update/addTest", data)
         if(res.status === "success") {
             window.location.reload();
         }

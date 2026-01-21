@@ -389,6 +389,10 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problem *kilonova.Problem
 			settings.HeaderFiles = append(settings.HeaderFiles, att.Name)
 		}
 
+		if att.Name == "pyproject.toml" || att.Name == "uv.lock" {
+			settings.HasUv = true
+		}
+
 		if lang := s.LanguageFromFilename(ctx, att.Name); lang != "" {
 			if strings.HasPrefix(lang, "cpp") {
 				whitelistCPP = true

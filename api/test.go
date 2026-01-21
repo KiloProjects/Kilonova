@@ -2,7 +2,6 @@ package api
 
 import (
 	"archive/zip"
-	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
@@ -80,6 +79,7 @@ func (s *API) getTest(ctx context.Context, args struct{ ID int }) (*kilonova.Tes
 // createTest inserts a new test to the problem
 // TODO: Move most stuff to logic
 func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
+	r.ParseMultipartForm(20 * 1024 * 1024)
 	score, err := strconv.ParseFloat(r.FormValue("score"), 64)
 	if err != nil {
 		errorData(w, "Score not float", http.StatusBadRequest)
@@ -106,12 +106,26 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.base.SaveTestInput(test.ID, bytes.NewBufferString(r.FormValue("input"))); err != nil {
+	input, _, err := r.FormFile("input")
+	if err != nil {
+		errorData(w, "No input file", 400)
+		return
+	}
+	defer input.Close()
+
+	output, _, err := r.FormFile("output")
+	if err != nil {
+		errorData(w, "No output file", 400)
+		return
+	}
+	defer output.Close()
+
+	if err := s.base.SaveTestInput(test.ID, input); err != nil {
 		slog.WarnContext(r.Context(), "Couldn't create test input", slog.Any("err", err))
 		errorData(w, "Couldn't create test input", 500)
 		return
 	}
-	if err := s.base.SaveTestOutput(test.ID, bytes.NewBufferString(r.FormValue("output"))); err != nil {
+	if err := s.base.SaveTestOutput(test.ID, output); err != nil {
 		slog.WarnContext(r.Context(), "Couldn't create test output", slog.Any("err", err))
 		errorData(w, "Couldn't create test output", 500)
 		return

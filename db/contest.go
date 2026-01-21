@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -79,13 +78,18 @@ func (s *DB) Contest(ctx context.Context, id int) (*kilonova.Contest, error) {
 }
 
 func (s *DB) Contests(ctx context.Context, filter kilonova.ContestFilter) ([]*kilonova.Contest, error) {
-	fb := newFilterBuilder()
-	contestFilterQuery(&filter, fb)
-
-	rows, _ := s.conn.Query(ctx, fmt.Sprintf(
-		"SELECT * FROM contests WHERE %s %s %s",
-		fb.Where(), getContestOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset),
-	), fb.Args()...)
+	qb := sq.Select("*").From("contests")
+	qb = contestFilterQuery(&filter, qb)
+	qb = LimitOffset(qb, uint64(filter.Limit), uint64(filter.Offset))
+	qb = qb.OrderBy(getContestOrdering(filter.Ordering, filter.Ascending))
+	sql, args, err := qb.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := s.conn.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
 	contests, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[dbContest])
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.Contest{}, nil
@@ -97,11 +101,15 @@ func (s *DB) Contests(ctx context.Context, filter kilonova.ContestFilter) ([]*ki
 }
 
 func (s *DB) ContestCount(ctx context.Context, filter kilonova.ContestFilter) (int, error) {
-	fb := newFilterBuilder()
-	contestFilterQuery(&filter, fb)
-	var val int
-	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM contests WHERE "+fb.Where(), fb.Args()...).Scan(&val)
+	qb := sq.Select("COUNT(*)").From("contests")
+	qb = contestFilterQuery(&filter, qb)
+	sql, args, err := qb.ToSql()
 	if err != nil {
+		return -1, err
+	}
+
+	var val int
+	if err := s.conn.QueryRow(ctx, sql, args...).Scan(&val); err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return -1, err
 		}
@@ -110,65 +118,66 @@ func (s *DB) ContestCount(ctx context.Context, filter kilonova.ContestFilter) (i
 	return val, nil
 }
 
-func contestFilterQuery(filter *kilonova.ContestFilter, fb *filterBuilder) {
+func contestFilterQuery(filter *kilonova.ContestFilter, sb sq.SelectBuilder) sq.SelectBuilder {
+	where := sq.And{}
 	if v := filter.ID; v != nil {
-		fb.AddConstraint("id = %s", v)
+		where = append(where, sq.Eq{"id": v})
 	}
 	if v := filter.IDs; v != nil {
-		fb.AddConstraint("id = ANY(%s)", v)
+		where = append(where, sq.Expr("id = ANY(?)", v))
 	}
 	if filter.Look {
 		var id int
 		if filter.LookingUser != nil {
 			id = filter.LookingUser.ID
 		}
-		fb.AddConstraint("EXISTS (SELECT 1 FROM visible_contests(%s) viz WHERE contests.id = viz.contest_id)", id)
+		where = append(where, sq.Expr("EXISTS (SELECT 1 FROM visible_contests(?) viz WHERE contests.id = viz.contest_id)", id))
 	}
 
 	if v := filter.ProblemID; v != nil {
-		fb.AddConstraint("EXISTS (SELECT 1 FROM contest_problems pbs WHERE contests.id = pbs.contest_id AND pbs.problem_id = %s)", v)
+		where = append(where, sq.Expr("EXISTS (SELECT 1 FROM contest_problems pbs WHERE contests.id = pbs.contest_id AND pbs.problem_id = ?)", v))
 	}
 	if v := filter.ContestantID; v != nil {
-		fb.AddConstraint("EXISTS (SELECT 1 FROM contest_registrations regs WHERE contests.id = regs.contest_id AND regs.user_id = %s)", v)
+		where = append(where, sq.Expr("EXISTS (SELECT 1 FROM contest_registrations regs WHERE contests.id = regs.contest_id AND regs.user_id = ?)", v))
 	}
 	if v := filter.EditorID; v != nil {
 		if filter.NotEditor {
-			fb.AddConstraint("NOT EXISTS (SELECT 1 FROM contest_user_access acc WHERE contests.id = acc.contest_id AND acc.user_id = %s AND acc.access = 'editor')", v)
+			where = append(where, sq.Expr("NOT EXISTS (SELECT 1 FROM contest_user_access acc WHERE contests.id = acc.contest_id AND acc.user_id = ? AND acc.access = 'editor')", v))
 		} else {
-			fb.AddConstraint("EXISTS (SELECT 1 FROM contest_user_access acc WHERE contests.id = acc.contest_id AND acc.user_id = %s AND acc.access = 'editor')", v)
+			where = append(where, sq.Expr("EXISTS (SELECT 1 FROM contest_user_access acc WHERE contests.id = acc.contest_id AND acc.user_id = ? AND acc.access = 'editor')", v))
 		}
 	}
 
 	if filter.Future {
-		fb.AddConstraint("NOW() < start_time")
+		where = append(where, sq.Expr("NOW() < start_time"))
 	}
 	if filter.Running {
-		fb.AddConstraint("start_time <= NOW()")
-		fb.AddConstraint("NOW() < end_time")
+		where = append(where, sq.Expr("start_time <= NOW()"), sq.Expr("NOW() < end_time"))
 	}
 	if filter.Ended {
-		fb.AddConstraint("end_time <= NOW()")
+		where = append(where, sq.Expr("end_time <= NOW()"))
 	}
 
 	if v := filter.Type; v != kilonova.ContestTypeNone {
-		fb.AddConstraint("type = %s", v)
+		where = append(where, sq.Eq{"type": v})
 	}
 
 	if v := filter.Since; v != nil {
-		fb.AddConstraint("created_at > %s", v)
+		where = append(where, sq.Gt{"created_at": v})
 	}
 
 	// See field comment for details
 	if v := filter.ImportantContestsUID; v != nil {
-		fb.AddConstraint(`(
+		where = append(where, sq.Expr(`(
 				(type = 'official' AND end_time >= NOW()) 
 				OR 
-				EXISTS (SELECT 1 FROM contest_registrations regs WHERE contests.id = regs.contest_id AND regs.user_id = %s)
+				EXISTS (SELECT 1 FROM contest_registrations regs WHERE contests.id = regs.contest_id AND regs.user_id = ?)
 				OR
-				EXISTS (SELECT 1 FROM contest_user_access acc WHERE contests.id = acc.contest_id AND acc.user_id = %s)
-			)`, v, v)
+				EXISTS (SELECT 1 FROM contest_user_access acc WHERE contests.id = acc.contest_id AND acc.user_id = ?)
+			)`, v, v))
 	}
 
+	return sb.Where(where)
 }
 
 func (s *DB) UpdateContest(ctx context.Context, id int, upd kilonova.ContestUpdate) error {
@@ -597,11 +606,11 @@ func getContestOrdering(ordering string, ascending bool) string {
 	}
 	switch ordering {
 	case "id":
-		return "ORDER BY id" + ord
+		return "id" + ord
 	case "end_time":
-		return "ORDER BY end_time" + ord + ", id ASC"
+		return "end_time" + ord + ", id ASC"
 	default: // case "start_time":
-		return "ORDER BY start_time" + ord + ", id ASC"
+		return "start_time" + ord + ", id ASC"
 	}
 }
 
