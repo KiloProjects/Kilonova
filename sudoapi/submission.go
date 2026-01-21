@@ -604,7 +604,7 @@ func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission
 	if sub == nil {
 		return
 	}
-	if !s.isSubmissionVisible(ctx, sub, subProblem, user) {
+	if !s.subVisibleRegardless(ctx, sub, user, subProblem, false) {
 		// sub.Code = ""
 		sub.CompileMessage = nil
 		sub.CodeSize = 0
