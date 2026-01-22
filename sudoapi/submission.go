@@ -199,7 +199,7 @@ func (s *BaseAPI) SubmissionCode(ctx context.Context, sub *kilonova.Submission, 
 	if sub == nil || subProblem == nil || sub.ProblemID != subProblem.ID {
 		return nil, Statusf(400, "Invalid source code parameters")
 	}
-	if isLooking && !s.isSubmissionVisible(ctx, sub, subProblem, lookingUser) {
+	if isLooking && !s.isSubmissionVisible(ctx, sub, subProblem, lookingUser, true) {
 		return []byte{}, nil
 	}
 	data, err := s.db.SubmissionCode(ctx, sub.ID)
@@ -214,7 +214,7 @@ func (s *BaseAPI) SubmissionFiles(ctx context.Context, sub *kilonova.Submission,
 	if sub == nil || subProblem == nil || sub.ProblemID != subProblem.ID {
 		return nil, Statusf(400, "Invalid submission file parameters")
 	}
-	if isLooking && !s.isSubmissionVisible(ctx, sub, subProblem, lookingUser) {
+	if isLooking && !s.isSubmissionVisible(ctx, sub, subProblem, lookingUser, true) {
 		return []*kilonova.SubmissionFile{}, nil
 	}
 	files, err := s.RawSubmissionFiles(ctx, sub.ID)
@@ -504,7 +504,7 @@ func (s *BaseAPI) subVisibleRegardless(ctx context.Context, sub *kilonova.Submis
 	return score.Equal(decimal.NewFromInt(100))
 }
 
-func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submission, subProblem *kilonova.Problem, user *kilonova.UserBrief) bool {
+func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submission, subProblem *kilonova.Problem, user *kilonova.UserBrief, checkIP bool) bool {
 	if sub == nil {
 		return false
 	}
@@ -515,7 +515,7 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 
 	checkSolved := true
 
-	if util.IPContext(ctx) != nil {
+	if checkIP && util.IPContext(ctx) != nil {
 		whitelistedContests, err := s.db.Contests(ctx, kilonova.ContestFilter{
 			Running:       true,
 			Type:          kilonova.ContestTypeOfficial,
@@ -604,7 +604,7 @@ func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission
 	if sub == nil {
 		return
 	}
-	if !s.subVisibleRegardless(ctx, sub, user, subProblem, false) {
+	if !s.isSubmissionVisible(ctx, sub, subProblem, user, false) {
 		// sub.Code = ""
 		sub.CompileMessage = nil
 		sub.CodeSize = 0
