@@ -577,7 +577,9 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 		if err != nil {
 			slog.WarnContext(ctx, "Couldn't get running contests", slog.Any("err", err))
 		} else if numContests > 0 {
-			return false
+			// Only if it's their own submission
+			// TODO: Ensure that submission contest is part of those contests
+			return sub.ContestID != nil && sub.IsEditor(user)
 		}
 
 		if sub.ContestID == nil {
