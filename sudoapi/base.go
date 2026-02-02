@@ -19,6 +19,7 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer"
 	"github.com/Yiling-J/theine-go"
 	"github.com/bwmarrin/discordgo"
+	"github.com/spf13/afero"
 	"github.com/zitadel/oidc/v3/pkg/op"
 )
 
@@ -137,8 +138,9 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, error) {
 	if err := os.MkdirAll(config.Common.DataDir, 0755); err != nil {
 		return nil, fmt.Errorf("couldn't create data dir: %w", err)
 	}
+	dataFs := afero.NewBasePathFs(afero.NewOsFs(), config.Common.DataDir)
 
-	mgr, err := datastore.New(config.Common.DataDir)
+	mgr, err := datastore.New(dataFs)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't initialize data store: %w", err)
 	}

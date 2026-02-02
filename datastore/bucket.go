@@ -15,6 +15,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/klauspost/compress/zstd"
+	"github.com/spf13/afero"
 )
 
 var (
@@ -23,8 +24,8 @@ var (
 )
 
 type localBucket struct {
-	rootPath string
-	name     string
+	rootFS afero.Fs
+	name   string
 
 	persistent bool
 	cache      bool
@@ -82,24 +83,19 @@ func (b *localBucket) Statistics(refresh bool) *BucketStats {
 		slog.WarnContext(context.Background(), "Couldn't get file listing", slog.Any("err", err))
 	}
 	for _, entry := range entries {
-		info, err := entry.Info()
-		if err != nil {
-			slog.WarnContext(context.Background(), "Couldn't get entry info", slog.Any("err", err))
-			return nil
-		}
 		b.lastStats.NumItems++
-		b.lastStats.OnDiskSize += info.Size()
+		b.lastStats.OnDiskSize += entry.Size()
 	}
 	b.lastStats.CreatedAt = time.Now()
 	return b.lastStats
 }
 
 func (b *localBucket) init() error {
-	return os.MkdirAll(path.Join(b.rootPath, b.name), 0755)
+	return b.rootFS.MkdirAll(b.name, 0755)
 }
 
 func (b *localBucket) Stat(name string) (fs.FileInfo, error) {
-	stat, err := os.Stat(b.filePath(name) + ".zst")
+	stat, err := b.rootFS.Stat(b.filePath(name) + ".zst")
 	if err == nil {
 		return stat, nil
 	}
@@ -107,7 +103,7 @@ func (b *localBucket) Stat(name string) (fs.FileInfo, error) {
 		return nil, err
 	}
 
-	stat, err = os.Stat(b.filePath(name) + ".gz")
+	stat, err = b.rootFS.Stat(b.filePath(name) + ".gz")
 	if err == nil {
 		return stat, nil
 	}
@@ -115,7 +111,7 @@ func (b *localBucket) Stat(name string) (fs.FileInfo, error) {
 		return nil, err
 	}
 
-	return os.Stat(b.filePath(name))
+	return b.rootFS.Stat(b.filePath(name))
 }
 
 func (b *localBucket) WriteFile(name string, r io.Reader, mode fs.FileMode) error {
@@ -124,7 +120,7 @@ func (b *localBucket) WriteFile(name string, r io.Reader, mode fs.FileMode) erro
 		filename += ".zst"
 	}
 
-	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+	f, err := b.rootFS.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
 	if err != nil {
 		return err
 	}
@@ -153,7 +149,7 @@ func (b *localBucket) WriteFile(name string, r io.Reader, mode fs.FileMode) erro
 }
 
 func (b *localBucket) Reader(name string) (io.ReadCloser, error) {
-	f, err := os.Open(b.filePath(name) + ".zst")
+	f, err := b.rootFS.Open(b.filePath(name) + ".zst")
 	if err == nil {
 		return &zstdFileReader{f, newZstdReader(f)}, nil
 	}
@@ -161,7 +157,7 @@ func (b *localBucket) Reader(name string) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	f, err = os.Open(b.filePath(name))
+	f, err = b.rootFS.Open(b.filePath(name))
 	if err == nil {
 		return f, nil
 	}
@@ -169,7 +165,7 @@ func (b *localBucket) Reader(name string) (io.ReadCloser, error) {
 		return nil, fs.ErrNotExist
 	}
 
-	if _, err := os.Stat(b.filePath(name) + ".gz"); err == nil {
+	if _, err := b.rootFS.Stat(b.filePath(name) + ".gz"); err == nil {
 		return nil, errors.New("can't open file: gzip support removed")
 	}
 	return nil, err
@@ -204,20 +200,20 @@ func (b *localBucket) ReadSeeker(name string) (io.ReadSeekCloser, error) {
 }
 
 func (b *localBucket) RemoveFile(name string) error {
-	if err := os.Remove(b.filePath(name) + ".zst"); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if err := b.rootFS.Remove(b.filePath(name) + ".zst"); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
-	if err := os.Remove(b.filePath(name) + ".gz"); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if err := b.rootFS.Remove(b.filePath(name) + ".gz"); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
-	if err := os.Remove(b.filePath(name)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if err := b.rootFS.Remove(b.filePath(name)); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
 	return nil
 }
 
-func (b *localBucket) FileList() ([]fs.DirEntry, error) {
-	entries, err := os.ReadDir(path.Join(b.rootPath, b.name))
+func (b *localBucket) FileList() ([]fs.FileInfo, error) {
+	entries, err := afero.ReadDir(b.rootFS, b.name)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}
@@ -240,7 +236,7 @@ func (b *localBucket) RunEvictionPolicy(ctx context.Context, logger *slog.Logger
 	}
 	b.lastStatsMu.Lock()
 	defer b.lastStatsMu.Unlock()
-	entries, err := os.ReadDir(path.Join(b.rootPath, b.name))
+	entries, err := afero.ReadDir(b.rootFS, b.name)
 	if err != nil {
 		return -1, err
 	}
@@ -248,11 +244,7 @@ func (b *localBucket) RunEvictionPolicy(ctx context.Context, logger *slog.Logger
 	// Get directory size and file entries
 	evictionEntries := make([]evictionEntry, len(entries))
 	for i := range entries {
-		info, err := entries[i].Info()
-		if err != nil {
-			slog.WarnContext(ctx, "Couldn't get dir entry info", slog.Any("err", err))
-			return -1, nil
-		}
+		info := entries[i]
 		evictionEntries[i].name = info.Name()
 		evictionEntries[i].modTime = info.ModTime()
 		evictionEntries[i].size = info.Size()
@@ -282,7 +274,7 @@ func (b *localBucket) RunEvictionPolicy(ctx context.Context, logger *slog.Logger
 			break
 		}
 		dirSize -= evictionEntries[0].size
-		if err := os.Remove(b.filePath(evictionEntries[0].name)); err != nil {
+		if err := b.rootFS.Remove(b.filePath(evictionEntries[0].name)); err != nil {
 			return numDeleted, err
 		}
 		numDeleted++
@@ -332,9 +324,9 @@ func (b *localBucket) LogValue() slog.Value {
 	return slog.StringValue(b.name)
 }
 
-func newBucket(path string, name string, useCompression bool, cache bool, persistent bool, maxSize int64, maxTTL time.Duration) (*localBucket, error) {
+func newBucket(rootFS afero.Fs, name string, useCompression bool, cache bool, persistent bool, maxSize int64, maxTTL time.Duration) (*localBucket, error) {
 	b := &localBucket{
-		rootPath:   path,
+		rootFS:     rootFS,
 		name:       name,
 		persistent: persistent,
 		cache:      cache,
@@ -347,7 +339,7 @@ func newBucket(path string, name string, useCompression bool, cache bool, persis
 }
 
 func (b *localBucket) filePath(name string) string {
-	return path.Join(b.rootPath, b.name, name)
+	return path.Join(b.name, name)
 }
 
 type deletingClosedFile struct {

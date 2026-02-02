@@ -2,13 +2,12 @@ package datastore
 
 import (
 	"io"
-	"os"
 
 	"github.com/klauspost/compress/zstd"
 )
 
 type zstdFileReader struct {
-	f  *os.File
+	f  io.Closer
 	zr *zstd.Decoder
 }
 

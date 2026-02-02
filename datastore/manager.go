@@ -3,11 +3,13 @@ package datastore
 import (
 	"context"
 	"errors"
+
 	"github.com/KiloProjects/kilonova"
+	"github.com/spf13/afero"
+
 	"io"
 	"io/fs"
 	"log/slog"
-	"os"
 	"time"
 )
 
@@ -96,7 +98,7 @@ type Bucket interface {
 	Reader(name string) (io.ReadCloser, error)
 	ReadSeeker(name string) (io.ReadSeekCloser, error)
 	RemoveFile(name string) error
-	FileList() ([]fs.DirEntry, error)
+	FileList() ([]fs.FileInfo, error)
 	Evictable() bool
 	RunEvictionPolicy(ctx context.Context, logger *slog.Logger) (int, error)
 	ResetCache() error
@@ -157,17 +159,14 @@ func (m *Manager) GetAll() (buckets []Bucket) {
 	return
 }
 
-func New(rootPath string) (*Manager, error) {
+func New(rootFS afero.Fs) (*Manager, error) {
 	if initialized {
 		return nil, errors.New("buckets already initialized")
 	}
 	initialized = true
-	if err := os.MkdirAll(rootPath, 0777); err != nil {
-		return nil, err
-	}
 	buckets := make(map[BucketType]Bucket)
 	for _, b := range bucketData {
-		bucket, err := newBucket(rootPath, string(b.Name), b.UseCompression, b.IsCache, b.IsPersistent, b.MaxSize, b.MaxTTL)
+		bucket, err := newBucket(rootFS, string(b.Name), b.UseCompression, b.IsCache, b.IsPersistent, b.MaxSize, b.MaxTTL)
 		if err != nil {
 			return nil, err
 		}
