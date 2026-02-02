@@ -11,12 +11,12 @@ mkdir "$TEMPDIR/data"
 mkdir "$TEMPDIR/logs"
 mkdir "$TEMPDIR/instance"
 
-cp -r $DATA_DIR "$TEMPDIR/data"
-cp -r $LOG_DIR "$TEMPDIR/logs"
+cp -r "$DATA_DIR" "$TEMPDIR/data"
+cp -r "$LOG_DIR" "$TEMPDIR/logs"
 cp -r "$SCRIPT_DIR/.." "$TEMPDIR/instance"
 
 pg_dump "$DSN" >"$TEMPDIR/dump.sql"
 
-tar -C $TEMPDIR --zstd -cf kilonova.tar.zst .
+tar -C "$TEMPDIR" --zstd -cf kilonova.tar.zst .
 
-rm -rf $TEMPDIR
+rm -rf "$TEMPDIR"
