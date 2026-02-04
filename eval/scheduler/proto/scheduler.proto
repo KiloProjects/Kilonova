@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/KiloProjects/kilonova/eval/scheduler/proto";
+
+import "google/protobuf/empty.proto";
+
+message BucketFile {
+  int32 bucket = 1;
+  string filename = 2;
+  uint32 mode = 3;
+}
+
+message ByteFile {
+  bytes data = 1;
+  uint32 mode = 2;
+}
+
+message Box2Request {
+  map<string, BucketFile> input_bucket_files = 1;
+  map<string, ByteFile> input_byte_files = 2;
+  repeated string command = 3;
+  RunConfig run_config = 4;
+  repeated string output_byte_files = 5;
+  map<string, BucketFile> output_bucket_files = 6;
+}
+
+message RunStats {
+  int32 memory = 1;
+
+  int32 exit_code = 2;
+  int32 exit_signal = 3;
+  bool killed = 4;
+
+  string message = 5;
+  string status = 6;
+
+  double time = 7;
+
+  string internal_message = 8;
+  bool memory_limit_exceeded = 9;
+}
+
+message Box2Response {
+  RunStats stats = 1;
+  map<string, bytes> byte_files = 2;
+  map<string, BucketFile> bucket_files = 3;
+}
+
+message RunBox2Request {
+  Box2Request req = 1;
+  int64 mem_quota = 2;
+}
+
+message RunMultiboxRequest {
+  Box2Request manager_sandbox = 1;
+  repeated Box2Request user_sandbox_configs = 2;
+  bool use_stdin = 3;
+}
+
+message LanguageRequest {
+  string name = 1;
+}
+
+message Directory {
+  string in = 1;
+  string out = 2;
+  string opts = 3;
+  bool removes = 4;
+  bool verbatim = 5;
+}
+
+message RunConfig {
+  bool stderr_to_stdout = 1;
+
+  string input_path = 2;
+  string output_path = 3;
+  string stderr_path = 4;
+
+  int32 memory_limit = 5;
+
+  double time_limit = 6;
+  double wall_time_limit = 7;
+
+  bool inherit_env = 8;
+  repeated string env_to_inherit = 9;
+  map<string, string> env_to_set = 10;
+
+  bool enable_internet = 11;
+
+  repeated Directory directories = 12;
+}
+
+message LanguagesResponse {
+  map<string, bool> enabled_languages = 1;
+}
+
+message LanguageVersionsResponse {
+  map<string, string> versions = 1;
+}
+
+
+service SchedulerService {
+  rpc RunBox2(RunBox2Request) returns (Box2Response) {}
+  rpc RunMultibox(RunMultiboxRequest) returns (Box2Response) {}
+
+  rpc Languages(google.protobuf.Empty) returns (LanguagesResponse) {}
+  rpc LanguageVersions(google.protobuf.Empty) returns (LanguageVersionsResponse) {}
+}

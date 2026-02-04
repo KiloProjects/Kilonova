@@ -35,7 +35,6 @@ type Sandbox interface {
 }
 
 type BoxScheduler interface {
-	NumConcurrent() int64
 	RunBox2(ctx context.Context, req *Box2Request, memQuota int64) (*Box2Response, error)
 	// RunMultibox is used for communication type problems.
 	// It is used to run the manager's sandbox and the user's sandbox in parallel.
