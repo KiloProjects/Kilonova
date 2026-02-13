@@ -27,6 +27,14 @@ func main() {
 
 	config.SetConfigPath(*confPath)
 	config.SetConfigV2Path(*flagPath)
+
+	if len(os.Getenv("KN_CONF_PATH")) > 0 {
+		config.SetConfigPath(os.Getenv("KN_CONF_PATH"))
+	}
+	if len(os.Getenv("KN_FLAGS_PATH")) > 0 {
+		config.SetConfigV2Path(os.Getenv("KN_FLAGS_PATH"))
+	}
+
 	if err := config.Load(ctx); err != nil {
 		slog.ErrorContext(ctx, "Could not load config", slog.Any("err", err))
 		os.Exit(1)

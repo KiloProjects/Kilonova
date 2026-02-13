@@ -1,0 +1,10 @@
+web/assets/node_modules
+web/static/*.js
+web/static/*.js.map
+web/static/styles.css
+web/static/vendored.css
+web/static/*.ttf
+web/static/*.woff2
+web/static/*.woff
+web/static/misc
+web/static/chroma.css

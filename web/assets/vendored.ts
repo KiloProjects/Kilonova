@@ -32,7 +32,7 @@ Alpine.start();
 			debug: true,
 			environment: platformInfo.debug ? "development" : "production",
 			release: platformInfo.internalVersion ?? "unknown",
-			ignoreErrors: ["visitor-analytics", "twipla", "va-endpoint", "domPath are required", "Server is under maintenance"],
+			ignoreErrors: ["domPath are required", "Server is under maintenance"],
 		})
 		Sentry.setUser({
 			id: platformInfo.user_id,
