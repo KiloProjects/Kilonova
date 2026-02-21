@@ -210,9 +210,7 @@ func (rt *Web) problems() http.HandlerFunc {
 
 			var allTags []int
 
-			groups := strings.Split(*q.Tags, ",")
-			for _, group := range groups {
-				group := group
+			for group := range strings.SplitSeq(*q.Tags, ",") {
 				if len(group) == 0 {
 					continue
 				}
@@ -904,18 +902,18 @@ func (rt *Web) problem() http.HandlerFunc {
 				statement = []byte("Error loading markdown.")
 			}
 		case "pdf":
-			statement = []byte(fmt.Sprintf(
+			statement = fmt.Appendf(nil,
 				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>
 					<embed class="mx-2 my-2" type="application/pdf" src="%s"
 					style="width:95%%; height: 90vh; background: white; object-fit: contain;"></embed>`,
 				assetLink, kilonova.GetText(util.Language(r), "desc_link"), assetLink,
-			))
+			)
 		case "":
 		default:
-			statement = []byte(fmt.Sprintf(
+			statement = fmt.Appendf(nil,
 				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>`,
 				assetLink, kilonova.GetText(util.Language(r), "desc_link"),
-			))
+			)
 		}
 
 		atts, err := rt.base.ProblemAttachments(r.Context(), problem.ID)
@@ -1209,18 +1207,18 @@ func (rt *Web) blogPost() http.HandlerFunc {
 				statement = []byte("Error loading markdown.")
 			}
 		case "pdf":
-			statement = []byte(fmt.Sprintf(
+			statement = fmt.Appendf(nil,
 				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>
 					<embed class="mx-2 my-2" type="application/pdf" src="%s"
 					style="width:95%%; height: 90vh; background: white; object-fit: contain;"></embed>`,
 				assetLink, kilonova.GetText(util.Language(r), "desc_link_post"), assetLink,
-			))
+			)
 		case "":
 		default:
-			statement = []byte(fmt.Sprintf(
+			statement = fmt.Appendf(nil,
 				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>`,
 				assetLink, kilonova.GetText(util.Language(r), "desc_link_post"),
-			))
+			)
 		}
 
 		atts, err := rt.base.BlogPostAttachments(r.Context(), post.ID)
@@ -2253,14 +2251,7 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 					if err != nil {
 						slog.WarnContext(r.Context(), "Couldn't get problem list", slog.Any("err", err))
 					} else {
-						var ok bool
-						for _, pbid := range list.ProblemIDs() {
-							if pbid == problem.ID {
-								ok = true
-								break
-							}
-						}
-						if ok {
+						if slices.Contains(list.ProblemIDs(), problem.ID) {
 							topList = list
 						}
 					}

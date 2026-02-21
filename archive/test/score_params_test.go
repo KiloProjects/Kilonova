@@ -24,7 +24,6 @@ var scoreParameterExamples = map[string]scoreParameterTest{
 
 func TestParseScoreParameters(t *testing.T) {
 	for k, v := range scoreParameterExamples {
-		v := v
 		t.Run(k, func(t *testing.T) {
 			t.Parallel()
 			val, err := test.ParseScoreParameters([]byte(v.Str))

@@ -463,6 +463,12 @@ func hashPassword(password string) (string, error) {
 	return string(hash), err
 }
 
+var gravatarClient *http.Client
+
+func init() {
+	gravatarClient = &http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport, otelhttp.WithServerName("gravatar"))}
+}
+
 func getGravatar(ctx context.Context, email string, size int) (io.ReadSeekCloser, time.Time, error) {
 	v := url.Values{}
 	v.Add("s", strconv.Itoa(size))
@@ -472,7 +478,7 @@ func getGravatar(ctx context.Context, email string, size int) (io.ReadSeekCloser
 	req, _ := http.NewRequestWithContext(context.WithoutCancel(ctx), "GET", fmt.Sprintf("https://gravatar.com/avatar/%s.png?%s", hex.EncodeToString(bSum[:]), v.Encode()), nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
-	resp, err := otelhttp.DefaultClient.Do(req)
+	resp, err := gravatarClient.Do(req)
 	if err != nil {
 		return nil, time.Unix(0, 0), err
 	}
@@ -550,7 +556,7 @@ func getDiscordAvatar(ctx context.Context, dUser *discordgo.User, size int) (io.
 	req, _ := http.NewRequestWithContext(context.WithoutCancel(ctx), "GET", dUser.AvatarURL(strconv.Itoa(size)), nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
-	resp, err := otelhttp.DefaultClient.Do(req)
+	resp, err := gravatarClient.Do(req)
 	if err != nil {
 		return nil, time.Unix(0, 0), err
 	}

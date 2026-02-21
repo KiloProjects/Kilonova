@@ -238,7 +238,6 @@ func (s *BaseAPI) ContestProblem(ctx context.Context, contest *kilonova.Contest,
 		return nil, fmt.Errorf("couldn't get problems: %w", err)
 	}
 	for _, problem := range problems {
-		problem := problem
 		if problem.ID == problemID {
 			return problem, nil
 		}

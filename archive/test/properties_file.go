@@ -86,8 +86,7 @@ func ParsePropertiesFile(r io.Reader) (*PropertiesRaw, bool, error) {
 // item is the item that we wish to split, field is for error reporting purposes
 func parsePropListItem(item string, field string) ([]int, error) {
 	glist := []int{}
-	gg := strings.Split(item, ";")
-	for _, g := range gg {
+	for g := range strings.SplitSeq(item, ";") {
 		vals := strings.Split(g, "-")
 		if len(vals) > 2 {
 			return nil, kilonova.Statusf(400, "Invalid %q string in properties, too many dashes", field)

@@ -14,6 +14,7 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
+	"maps"
 	"math"
 	"net/http"
 	"net/netip"
@@ -289,9 +290,7 @@ func (rt *Web) parseModal(optFuncs template.FuncMap, files ...string) *template.
 	if optFuncs == nil {
 		return parseModal(rt.funcs, files...)
 	}
-	for k, v := range rt.funcs {
-		optFuncs[k] = v
-	}
+	maps.Copy(optFuncs, rt.funcs)
 	return parseModal(optFuncs, files...)
 }
 
@@ -299,9 +298,7 @@ func (rt *Web) parse(optFuncs template.FuncMap, files ...string) *template.Templ
 	if optFuncs == nil {
 		return parse(rt.funcs, files...)
 	}
-	for k, v := range rt.funcs {
-		optFuncs[k] = v
-	}
+	maps.Copy(optFuncs, rt.funcs)
 	return parse(optFuncs, files...)
 }
 
@@ -520,7 +517,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		},
 		"hasField": func(v any, name string) bool {
 			rv := reflect.ValueOf(v)
-			if rv.Kind() == reflect.Ptr {
+			if rv.Kind() == reflect.Pointer {
 				rv = rv.Elem()
 			}
 			if rv.Kind() != reflect.Struct {

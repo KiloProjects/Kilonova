@@ -176,19 +176,19 @@ func (ag *archiveGenerator) addGraderProperties(ctx context.Context) error {
 			weights := []string{}
 
 			for _, st := range subtasks {
-				group := ""
+				var group strings.Builder
 				for i, t := range st.Tests {
 					if i > 0 {
-						group += ";"
+						group.WriteString(";")
 					}
 					tt, ok := tmap[t]
 					if !ok {
 						slog.WarnContext(ctx, "Couldn't find test in test map", slog.Int("test", t))
 					} else {
-						group += strconv.Itoa(tt.VisibleID)
+						group.WriteString(strconv.Itoa(tt.VisibleID))
 					}
 				}
-				groups = append(groups, group)
+				groups = append(groups, group.String())
 				weights = append(weights, st.Score.String())
 			}
 			fmt.Fprintf(&buf, "groups=%s\n", strings.Join(groups, ","))

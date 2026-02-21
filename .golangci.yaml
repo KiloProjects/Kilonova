@@ -1,10 +1,29 @@
-linters-settings:
-  sloglint:
-    no-mixed-args: true
-    attr-only: true
-    context: "all"
+version: "2"
 linters:
   enable:
     - sloglint
   disable:
     - errcheck
+  settings:
+    sloglint:
+      no-mixed-args: true
+      attr-only: true
+      context: all
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

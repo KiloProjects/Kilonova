@@ -256,7 +256,6 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 		if idMode == idModeParse || idMode == idModeParseSort {
 			tests = make([]archiveTest, 0, len(aCtx.tests))
 			for k, v := range aCtx.tests {
-				v := v
 				// Error ommited since deduceTestIDMode already checks for error on parse mode
 				v.VisibleID, _ = getTestID(k)
 				v.Key = fmt.Sprintf("%04d", v.VisibleID)

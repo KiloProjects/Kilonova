@@ -14,6 +14,7 @@ import (
 	"reflect"
 	"slices"
 	"strconv"
+	"strings"
 	tparse "text/template/parse"
 
 	"github.com/KiloProjects/kilonova"
@@ -222,22 +223,18 @@ func (s *SubTaskEditParams) TestSubTasks(id int) string {
 	if err != nil || sts == nil || len(sts) == 0 {
 		return "-"
 	}
-	out := strconv.Itoa(sts[0].VisibleID)
+	var out strings.Builder
+	out.WriteString(strconv.Itoa(sts[0].VisibleID))
 	for id, st := range sts {
 		if id > 0 {
-			out += fmt.Sprintf(", %d", st.VisibleID)
+			out.WriteString(fmt.Sprintf(", %d", st.VisibleID))
 		}
 	}
-	return out
+	return out.String()
 }
 
 func (s *SubTaskEditParams) TestInSubTask(test *kilonova.Test) bool {
-	for _, id := range s.SubTask.Tests {
-		if id == test.ID {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(s.SubTask.Tests, test.ID)
 }
 
 type TestEditParams struct {

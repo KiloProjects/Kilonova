@@ -25,7 +25,6 @@ func (s *DB) ProblemsStatistics(ctx context.Context, problemIDs []int) (map[int]
 		mp[id] = &ProblemStats{ProblemID: id, NumSolvedBy: 0, NumAttemptedBy: 0}
 	}
 	for _, stat := range stats {
-		stat := stat
 		mp[stat.ProblemID] = stat
 	}
 	return mp, nil

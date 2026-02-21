@@ -185,8 +185,7 @@ func LoadConfigV2(ctx context.Context, skipUnknown bool) error {
 		}
 	}
 
-	overrides := strings.Split(os.Getenv("KN_FLAG_OVERRIDES"), ",")
-	for _, override := range overrides {
+	for override := range strings.SplitSeq(os.Getenv("KN_FLAG_OVERRIDES"), ",") {
 		if override == "" {
 			continue
 		}

@@ -549,7 +549,6 @@ func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, user := range users {
-		user := user
 		val, ok := regMap[user.ID]
 		if !ok {
 			slog.WarnContext(r.Context(), "Couldn't find user in registrations", slog.Any("user", user))

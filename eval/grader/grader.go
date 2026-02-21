@@ -320,15 +320,13 @@ func (sh *submissionHandler) handleClassicSubmission(ctx context.Context, checke
 	var wg sync.WaitGroup
 
 	for _, subTest := range subTests {
-		wg.Add(1)
 
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			_, _, err := sh.handleSubTest(ctx, checker, subTest)
 			if err != nil {
 				slog.WarnContext(ctx, "Error handling subtest", slog.Any("err", err))
 			}
-		}()
+		})
 	}
 
 	wg.Wait()

@@ -32,7 +32,6 @@ func ProcessProblemXMLFile(actx *ArchiveCtx, file io.Reader) error {
 	// Kilonova doesn't support more than one testset
 	var testsetNode *xmlquery.Node
 	for _, node := range xmlquery.Find(node, "//judging/testset") {
-		node := node
 		if node.SelectAttr("name") == "tests" {
 			testsetNode = node
 			break

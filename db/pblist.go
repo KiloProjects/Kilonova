@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -219,10 +220,8 @@ func (s *DB) UpdateProblemListProblems(ctx context.Context, id int, problemIDs [
 
 func (s *DB) UpdateProblemListSublists(ctx context.Context, id int, listIDs []int) error {
 	// Quick sanity check first
-	for _, listID := range listIDs {
-		if id == listID {
-			return kilonova.Statusf(400, "List %d cannot nest itself!", id)
-		}
+	if slices.Contains(listIDs, id) {
+		return kilonova.Statusf(400, "List %d cannot nest itself!", id)
 	}
 
 	return s.updateManyToMany(ctx, "problem_list_pblists", "parent_id", "child_id", id, listIDs, true)
