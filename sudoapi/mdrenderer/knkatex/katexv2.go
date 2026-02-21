@@ -144,7 +144,7 @@ func (r *katexV2Renderer) renderInlineMath(w util.BufWriter, source []byte, n as
 
 		val, err := r.inlineCache.Get(context.WithValue(context.Background(), passthroughRenderCtxNode, n), rawVal)
 		if err != nil {
-			w.WriteString(fmt.Sprintf("ERROR rendering latex: %v", err))
+			fmt.Fprintf(w, "ERROR rendering latex: %v", err)
 			return ast.WalkSkipChildren, nil
 		}
 		w.Write(val)
@@ -171,7 +171,7 @@ func (r *katexV2Renderer) renderBlockMath(w util.BufWriter, source []byte, n ast
 		rawVal = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(rawVal, n.Delimiters.Open), n.Delimiters.Close))
 		val, err := r.displayCache.Get(context.WithValue(context.Background(), passthroughRenderCtxNode, n), rawVal)
 		if err != nil {
-			w.WriteString(fmt.Sprintf("ERROR rendering latex: %v", err))
+			fmt.Fprintf(w, "ERROR rendering latex: %v", err)
 			return ast.WalkSkipChildren, nil
 		}
 		w.Write(val)

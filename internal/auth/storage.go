@@ -66,7 +66,7 @@ func (s *AuthStorage) CreateAuthRequest(ctx context.Context, authReq *oidc.AuthR
 		CodeChallengeMethod: authReq.CodeChallengeMethod,
 
 		Prompt:    promptToInternal(authReq.Prompt),
-		UiLocales: authReq.UILocales,
+		UILocales: authReq.UILocales,
 		LoginHint: authReq.LoginHint,
 		ExpiresAt: maxAgeToInternal(time.Now(), authReq.MaxAge),
 	}
@@ -83,7 +83,7 @@ func (s *AuthStorage) CreateAuthRequest(ctx context.Context, authReq *oidc.AuthR
 		INSERT INTO oauth_requests (id, application_id, callback_uri, transfer_state, user_id, scopes, response_type, response_mode, nonce, code_challenge, code_challenge_method, prompt, ui_locales, login_hint, expires_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		RETURNING created_at
-	`, req.ID, req.ApplicationID, req.CallbackURI, req.TransferState, req.UserID, req.Scopes, req.ResponseType, req.ResponseMode, req.Nonce, req.CodeChallenge, req.CodeChallengeMethod, req.Prompt, req.UiLocales, req.LoginHint, req.ExpiresAt).Scan(&req.CreatedAt); err != nil {
+	`, req.ID, req.ApplicationID, req.CallbackURI, req.TransferState, req.UserID, req.Scopes, req.ResponseType, req.ResponseMode, req.Nonce, req.CodeChallenge, req.CodeChallengeMethod, req.Prompt, req.UILocales, req.LoginHint, req.ExpiresAt).Scan(&req.CreatedAt); err != nil {
 		return nil, err
 	}
 

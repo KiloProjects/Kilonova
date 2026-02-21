@@ -950,7 +950,7 @@ func (rt *Web) problem() http.HandlerFunc {
 			}
 			if flags.ExternalResourcesEnabled.Value() {
 				accepted := true
-				externalResources, err = rt.base.ExternalResources(r.Context(), kilonova.ExternalResourceFilter{
+				externalResources, _ = rt.base.ExternalResources(r.Context(), kilonova.ExternalResourceFilter{
 					ProblemID: &util.Problem(r).ID,
 					Accepted:  &accepted,
 					// Technically not needed but just for safety
@@ -1623,6 +1623,7 @@ func (rt *Web) externalResources() http.HandlerFunc {
 	}
 }
 
+//nolint:unused
 func (rt *Web) externalResource() http.HandlerFunc {
 	templ := rt.parse(nil, "externalResources/view.html")
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -2368,6 +2369,7 @@ func (rt *Web) runLayout(w io.Writer, r *http.Request, params *LayoutParams) {
 	}
 }
 
+//nolint:unused
 func (rt *Web) runEmptyPage(w io.Writer, r *http.Request, params *LayoutParams) {
 	layoutParams := layout.LayoutParams{
 		EnabledLanguages: rt.base.EnabledLanguages(),

@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Yiling-J/theine-go"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/Yiling-J/theine-go"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
@@ -252,6 +253,7 @@ func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getSolvedProblems(w http.ResponseWriter, r *http.Request) {
+	//nolint:staticcheck
 	pbs, err := s.base.SolvedProblems(r.Context(), util.ContentUserBrief(r), util.UserBrief(r))
 	if err != nil {
 		statusError(w, err)

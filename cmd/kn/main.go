@@ -63,7 +63,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	prometheus.InitMetrics()
+	prometheus.InitMetrics(ctx)
 
 	if err := Kilonova(); err != nil {
 		slog.ErrorContext(ctx, "Error running Kilonova", slog.Any("err", err))

@@ -67,7 +67,7 @@ func (s *DB) SubmissionLookingUser(ctx context.Context, id int, user *kilonova.U
 	if user.IsAdmin() {
 		return s.Submission(ctx, id)
 	}
-	var userID int = 0
+	var userID = 0
 	if user != nil {
 		userID = user.ID
 	}
@@ -274,7 +274,7 @@ func subFilterQuery(filter *kilonova.SubmissionFilter, fb *filterBuilder) {
 
 	// Should keep in mind to sync with lateralVisibleSubs
 	if filter.Look {
-		var id int = 0
+		var id = 0
 		if filter.LookingUser != nil {
 			id = filter.LookingUser.ID
 		}

@@ -150,6 +150,7 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserFull, n
 	}
 
 	if !fromAdmin {
+		//nolint:staticcheck
 		chAt, err := s.db.LastUsernameChange(ctx, user.ID)
 		if err != nil {
 			slog.WarnContext(ctx, "Couldn't get last username change date", slog.Any("err", err))
@@ -174,6 +175,7 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserFull, n
 			slog.WarnContext(ctx, "Couldn't check if name was used before", slog.Any("err", err))
 		}
 		if used {
+			//nolint:staticcheck
 			userIDs, err := s.db.HistoricalUsernameHolders(ctx, newName)
 			if err != nil && !errors.Is(err, context.Canceled) {
 				userIDs = []int{-1, -2}
@@ -201,6 +203,7 @@ func (s *BaseAPI) SetUserLockout(ctx context.Context, userID int, lockout bool) 
 }
 
 func (s *BaseAPI) UsernameChangeHistory(ctx context.Context, userID int) ([]*kilonova.UsernameChange, error) {
+	//nolint:staticcheck
 	changes, err := s.db.UsernameChangeHistory(ctx, userID)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't get username change history", slog.Any("err", err))
@@ -212,6 +215,7 @@ func (s *BaseAPI) UsernameChangeHistory(ctx context.Context, userID int) ([]*kil
 // Returns the people that last held the given username
 // Used for redirecting on the frontend the profile page
 func (s *BaseAPI) HistoricalUsernameHolder(ctx context.Context, name string) (*kilonova.UserBrief, error) {
+	//nolint:staticcheck
 	userIDs, err := s.db.HistoricalUsernameHolders(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get username holders: %w", err)
@@ -257,6 +261,7 @@ func (s *BaseAPI) UpdateUserPassword(ctx context.Context, uid int, password stri
 	}
 
 	// TODO: Replace UpdateUserPasswordHash with a key in UserFullUpdate
+	//nolint:staticcheck
 	if err := s.db.UpdateUserPasswordHash(ctx, uid, hash); err != nil {
 		return fmt.Errorf("couldn't update password: %w", err)
 	}

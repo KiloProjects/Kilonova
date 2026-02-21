@@ -122,7 +122,7 @@ func blogPostParams(filter kilonova.BlogPostFilter, fb *filterBuilder) {
 	}
 
 	if filter.Look {
-		var id int = 0
+		var id = 0
 		if filter.LookingUser != nil {
 			id = filter.LookingUser.ID
 		}

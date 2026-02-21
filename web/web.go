@@ -286,14 +286,6 @@ func (rt *Web) Handler() http.Handler {
 	return r
 }
 
-func (rt *Web) parseModal(optFuncs template.FuncMap, files ...string) *template.Template {
-	if optFuncs == nil {
-		return parseModal(rt.funcs, files...)
-	}
-	maps.Copy(optFuncs, rt.funcs)
-	return parseModal(optFuncs, files...)
-}
-
 func (rt *Web) parse(optFuncs template.FuncMap, files ...string) *template.Template {
 	if optFuncs == nil {
 		return parse(rt.funcs, files...)

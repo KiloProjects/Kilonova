@@ -184,9 +184,6 @@ func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[stri
 		if dur > 1*time.Second {
 			dbLogger.WarnContext(ctx, "Really slow operation", slog.Duration("duration", dur), slog.Any("query", data["sql"]), slog.Any("args", data["args"]))
 		}
-	} else {
-		//spew.Dump(data)
-		//slog.WarnContext(ctx, "DB time is not duration", slog.Any("time", data["time"]))
 	}
 
 	if flags.CountDBQueries.Value() {

@@ -36,7 +36,7 @@ type AuthRequest struct {
 	// These are all meant for the UI, not important to the flow
 	CreatedAt time.Time      `db:"created_at"`
 	Prompt    []string       `db:"prompt"`
-	UiLocales []language.Tag `db:"ui_locales"`
+	UILocales []language.Tag `db:"ui_locales"`
 	LoginHint string         `db:"login_hint"`
 	ExpiresAt *time.Time     `db:"expires_at"`
 }

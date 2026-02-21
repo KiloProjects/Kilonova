@@ -298,7 +298,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 			precision = *aCtx.props.ScorePrecision
 		}
 
-		var mustAutofillTests bool = false
+		var mustAutofillTests = false
 		for i := range tests {
 			val, ok := aCtx.testScores[tests[i].VisibleID]
 			if !ok {
@@ -452,7 +452,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 			}
 		} else if aCtx.props != nil && aCtx.props.Subtasks != nil {
 			// Else, decide subtasks based on grader.properties
-			for stkId, stk := range aCtx.props.Subtasks {
+			for stkID, stk := range aCtx.props.Subtasks {
 				tests := make([]int, 0, len(stk.Tests))
 				for _, test := range stk.Tests {
 					if tt, exists := createdTests[test]; !exists {
@@ -464,7 +464,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 
 				if err := base.CreateSubTask(ctx, &kilonova.SubTask{
 					ProblemID: pb.ID,
-					VisibleID: stkId,
+					VisibleID: stkID,
 					Score:     stk.Score,
 					Tests:     tests,
 				}); err != nil {

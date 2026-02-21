@@ -187,6 +187,7 @@ func (s *BaseAPI) RawSubmissionFiles(ctx context.Context, subid int) ([]*kilonov
 }
 
 func (s *BaseAPI) RawSubmissionCode(ctx context.Context, subid int) ([]byte, error) {
+	//nolint:staticcheck
 	data, err := s.db.SubmissionCode(ctx, subid)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't get raw submission code", slog.Any("err", err))
@@ -202,6 +203,7 @@ func (s *BaseAPI) SubmissionCode(ctx context.Context, sub *kilonova.Submission, 
 	if isLooking && !s.isSubmissionVisible(ctx, sub, subProblem, lookingUser, true) {
 		return []byte{}, nil
 	}
+	//nolint:staticcheck
 	data, err := s.db.SubmissionCode(ctx, sub.ID)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't get submission code", slog.Any("err", err))

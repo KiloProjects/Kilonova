@@ -86,14 +86,6 @@ func newFilterBuilder() *filterBuilder {
 	}
 }
 
-func newFilterBuilderFromPos(args ...any) *filterBuilder {
-	return &filterBuilder{
-		where: []string{},
-		args:  slices.Clone(args),
-		pos:   len(args) + 1,
-	}
-}
-
 type updateBuilder struct {
 	mu sync.Mutex
 

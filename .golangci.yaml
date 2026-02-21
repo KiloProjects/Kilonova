@@ -9,6 +9,10 @@ linters:
       no-mixed-args: true
       attr-only: true
       context: all
+    staticcheck:
+      checks:
+        - all
+        - -QF1001
   exclusions:
     generated: lax
     presets:

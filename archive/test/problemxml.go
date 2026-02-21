@@ -43,7 +43,7 @@ func ProcessProblemXMLFile(actx *ArchiveCtx, file io.Reader) error {
 	}
 
 	// Get task points and subtask
-	var isICPC bool = true
+	var isICPC = true
 	var subtasks = make(map[string]parsedSubtask)
 	for id, test := range xmlquery.Find(testsetNode, "//tests/test") {
 		if points := test.SelectAttr("points"); points != "" {

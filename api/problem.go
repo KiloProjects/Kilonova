@@ -192,11 +192,12 @@ func (s *API) addStubStatement(ctx context.Context, pb *kilonova.Problem, lang *
 	}
 
 	var attTempl *template.Template
-	if *lang == "en" {
+	switch *lang {
+	case "en":
 		attTempl = defaultEnProblemStatement
-	} else if *lang == "ro" {
+	case "ro":
 		attTempl = defaultRoProblemStatement
-	} else {
+	default:
 		slog.WarnContext(ctx, "Unknown language", slog.String("lang", *lang))
 		return nil
 	}

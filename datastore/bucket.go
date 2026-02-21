@@ -261,7 +261,7 @@ func (b *localBucket) RunEvictionPolicy(ctx context.Context, logger *slog.Logger
 
 	var numDeleted int
 	for len(evictionEntries) > 0 {
-		var ok bool = true
+		var ok = true
 		// If maxTTL is big enough and file is earlier than that policy, mark for deletion
 		if b.maxTTL > time.Second && time.Since(evictionEntries[0].modTime) > b.maxTTL {
 			ok = false

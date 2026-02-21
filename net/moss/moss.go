@@ -74,7 +74,7 @@ func (m *Conn) Process(conf *Options) (string, error) {
 	if _, err := fmt.Fprintf(m.conn, "directory 0\n"); err != nil {
 		return "", err
 	}
-	var exp int = 0
+	var exp = 0
 	if conf.ExperimentalServer {
 		exp = 1
 	}

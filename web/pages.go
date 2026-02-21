@@ -227,7 +227,7 @@ func (s *SubTaskEditParams) TestSubTasks(id int) string {
 	out.WriteString(strconv.Itoa(sts[0].VisibleID))
 	for id, st := range sts {
 		if id > 0 {
-			out.WriteString(fmt.Sprintf(", %d", st.VisibleID))
+			fmt.Fprintf(&out, ", %d", st.VisibleID)
 		}
 	}
 	return out.String()
@@ -560,10 +560,6 @@ func parseTempl(optFuncs template.FuncMap, modal bool, files ...string) *templat
 		}
 	}
 	return template.Must(t.ParseFS(templs, files...))
-}
-
-func parseModal(optFuncs template.FuncMap, files ...string) *template.Template {
-	return parseTempl(optFuncs, true, slices.Concat([]string{"modals/htmx/helpers.html"}, files)...)
 }
 
 func parse(optFuncs template.FuncMap, files ...string) *template.Template {

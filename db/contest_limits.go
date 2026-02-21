@@ -47,7 +47,7 @@ func (s *DB) ContestIPs(ctx context.Context, contestID int, startTime, endTime t
 	ips := make([]*kilonova.ContestUserIPs, len(vals))
 	for i, val := range vals {
 		ips[i] = &kilonova.ContestUserIPs{
-			User: val.User.Brief(),
+			User: val.Brief(),
 			IPs:  val.IPs,
 		}
 	}

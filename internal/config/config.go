@@ -130,6 +130,7 @@ func Load(ctx context.Context) error {
 		slog.WarnContext(ctx, "No default language set, defaulting to English")
 		c.Common.DefaultLang = "en"
 	}
+	//nolint:staticcheck
 	if !(c.Common.DefaultLang == "en" || c.Common.DefaultLang == "ro") {
 		slog.WarnContext(ctx, "Invalid language", slog.String("lang", c.Common.DefaultLang))
 	}

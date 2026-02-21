@@ -10,7 +10,6 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
-	"github.com/shopspring/decimal"
 )
 
 // Problem stuff
@@ -441,7 +440,7 @@ func (s *BaseAPI) ProblemDiagnostics(ctx context.Context, problem *kilonova.Prob
 		})
 	}
 
-	var totalScore decimal.Decimal = problem.DefaultPoints.Copy()
+	var totalScore = problem.DefaultPoints.Copy()
 	if len(subtasks) == 0 {
 		for _, test := range tests {
 			totalScore = totalScore.Add(test.Score)

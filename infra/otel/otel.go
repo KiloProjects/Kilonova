@@ -55,6 +55,15 @@ func SetupOpenTelemetry(ctx context.Context) (shutdown func(context.Context) err
 	shutdownFuncs = append(shutdownFuncs, tracerProvider.Shutdown)
 	otel.SetTracerProvider(tracerProvider)
 
+	// Set up meter provider.
+	meterProvider, err := newMeterProvider(ctx)
+	if err != nil {
+		handleErr(err)
+		return
+	}
+	shutdownFuncs = append(shutdownFuncs, meterProvider.Shutdown)
+	otel.SetMeterProvider(meterProvider)
+
 	// Set up log provider.
 	logProvider, err := newLoggerProvider(ctx)
 	if err != nil {

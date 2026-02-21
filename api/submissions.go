@@ -27,6 +27,7 @@ func (s *API) fullSubmission(ctx context.Context, id int, lookingUser *kilonova.
 	if err != nil {
 		return nil, err
 	}
+	//nolint:staticcheck
 	sub.Code = code
 
 	return sub, nil
