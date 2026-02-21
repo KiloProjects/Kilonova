@@ -14,7 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/KiloProjects/kilonova/integrations/otel"
+	"github.com/KiloProjects/kilonova/infra/maxmind"
+	"github.com/KiloProjects/kilonova/infra/otel"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/riandyrn/otelchi"
@@ -26,7 +27,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/api"
 	"github.com/KiloProjects/kilonova/eval/grader"
-	"github.com/KiloProjects/kilonova/integrations/maxmind"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/web"

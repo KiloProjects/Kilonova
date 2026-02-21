@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/integrations/moss"
+	"github.com/KiloProjects/kilonova/net/moss"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
 

@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/KiloProjects/kilonova/integrations/prometheus"
+	"github.com/KiloProjects/kilonova/infra/prometheus"
 	"github.com/joho/godotenv"
 
 	"github.com/KiloProjects/kilonova/internal/config"
