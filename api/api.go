@@ -90,7 +90,7 @@ func (s *API) HandlerV2() http.Handler {
 	})
 
 	huma.Register(problemsGroup, huma.Operation{
-		OperationID: "get-problems-by-id",
+		OperationID: "get-problem-by-id",
 		Method:      http.MethodGet,
 		Path:        "/{problemID}",
 		Security:    []map[string][]string{},

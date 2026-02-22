@@ -2,6 +2,7 @@ package mdrenderer
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer/knkatex"
@@ -31,6 +32,9 @@ func (r *Renderer) Render(src []byte, ctx *kilonova.MarkdownRenderContext) ([]by
 	doc := r.md.Parser().Parse(text.NewReader(src), parser.WithContext(pctx))
 	doc.OwnerDocument().Meta()["ctx"] = ctx
 	err := r.md.Renderer().Render(&buf, src, doc)
+	if err != nil {
+		err = fmt.Errorf("couldn't render markdown: %w", err)
+	}
 	return buf.Bytes(), err
 }
 
