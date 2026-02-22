@@ -3,163 +3,88 @@ package db
 import (
 	"context"
 	"embed"
-	"fmt"
-	"log/slog"
 	"path"
 
+	"github.com/KiloProjects/kilonova/infra/postgres"
 	"github.com/jackc/pgx/v5"
 )
-
-// Inspired by https://github.com/miniflux/v2/blob/main/internal/database/database.go
 
 //go:embed psql_schema
 var migrationFiles embed.FS
 
-type migration struct {
-	id      int
-	name    string
-	handler func(ctx context.Context, tx pgx.Tx) error
-}
-
-// Order is important. Add new migrations at the end of the list.
-var migrations = []migration{
-	{
-		id:      1,
-		name:    "Base schema",
-		handler: runFile("001.base.sql"),
+var Migrations = postgres.MigrationConfig{
+	SchemaTable: "kn_schema_version",
+	// Order is important. Add new migrations at the end of the list.
+	Migrations: []postgres.Migration{
+		{
+			ID:      1,
+			Name:    "Base schema",
+			Handler: runFile("001.base.sql"),
+		},
+		{
+			ID:      2,
+			Name:    "Discord Integration",
+			Handler: runFile("002.discord_oauth_secret.sql"),
+		},
+		{
+			ID:      3,
+			Name:    "Discord Avatar as main",
+			Handler: runFile("003.use_discord_avatar.sql"),
+		},
+		{
+			ID:      4,
+			Name:    "Add Stripe support to donations workflow",
+			Handler: runFile("004.stripe.sql"),
+		},
+		{
+			ID:      5,
+			Name:    "External resources support",
+			Handler: runFile("005.external_resources.sql"),
+		},
+		{
+			ID:      6,
+			Name:    "External resources language support",
+			Handler: runFile("006.external_resource_lang.sql"),
+		},
+		{
+			ID:      7,
+			Name:    "OAuth/OIDC support",
+			Handler: runFile("007.oauth2_oidc.sql"),
+		},
+		{
+			ID:      8,
+			Name:    "Communication tasks support",
+			Handler: runFile("008.problem_task_type.sql"),
+		},
+		{
+			ID:      9,
+			Name:    "Add support for setting custom filenames to submission code",
+			Handler: runFile("009.source_file_name.sql"),
+		},
+		{
+			ID:      10,
+			Name:    "Add support for submissions having multiple files",
+			Handler: runFile("010.split_submission_code.sql"),
+		},
+		{
+			ID:      11,
+			Name:    "Add support for whitelisting IPs in contests",
+			Handler: runFile("011.contest_whitelist.sql"),
+		},
+		{
+			ID:      12,
+			Name:    "Add IPs to submissions",
+			Handler: runFile("012.submission_ip.sql"),
+		},
 	},
-	{
-		id:      2,
-		name:    "Discord Integration",
-		handler: runFile("002.discord_oauth_secret.sql"),
+	// Run every time a migrate up happens
+	SpecialMigrations: []postgres.Migration{
+		{
+			ID:      999,
+			Name:    "Views",
+			Handler: runFile("999.views.sql"),
+		},
 	},
-	{
-		id:      3,
-		name:    "Discord Avatar as main",
-		handler: runFile("003.use_discord_avatar.sql"),
-	},
-	{
-		id:      4,
-		name:    "Add Stripe support to donations workflow",
-		handler: runFile("004.stripe.sql"),
-	},
-	{
-		id:      5,
-		name:    "External resources support",
-		handler: runFile("005.external_resources.sql"),
-	},
-	{
-		id:      6,
-		name:    "External resources language support",
-		handler: runFile("006.external_resource_lang.sql"),
-	},
-	{
-		id:      7,
-		name:    "OAuth/OIDC support",
-		handler: runFile("007.oauth2_oidc.sql"),
-	},
-	{
-		id:      8,
-		name:    "Communication tasks support",
-		handler: runFile("008.problem_task_type.sql"),
-	},
-	{
-		id:      9,
-		name:    "Add support for setting custom filenames to submission code",
-		handler: runFile("009.source_file_name.sql"),
-	},
-	{
-		id:      10,
-		name:    "Add support for submissions having multiple files",
-		handler: runFile("010.split_submission_code.sql"),
-	},
-	{
-		id:      11,
-		name:    "Add support for whitelisting IPs in contests",
-		handler: runFile("011.contest_whitelist.sql"),
-	},
-	{
-		id:      12,
-		name:    "Add IPs to submissions",
-		handler: runFile("012.submission_ip.sql"),
-	},
-}
-
-var specialMigrations = []migration{
-	{
-		id:      999,
-		name:    "Views",
-		handler: runFile("999.views.sql"),
-	},
-}
-
-func (s *DB) RunMigrations(ctx context.Context) error {
-	if err := s.checkLegacy(ctx); err != nil {
-		return err
-	}
-	var databaseSchema int
-	var runSpecial bool
-	s.conn.QueryRow(ctx, "SELECT version FROM kn_schema_version").Scan(&databaseSchema)
-	slog.DebugContext(ctx, "Checked DB schema", slog.Int("version", databaseSchema))
-	for _, mig := range migrations {
-		if mig.id <= databaseSchema {
-			continue
-		}
-		runSpecial = true
-		slog.InfoContext(ctx, "Executing migration", slog.Int("migration_id", mig.id))
-
-		if err := pgx.BeginFunc(ctx, s.conn, func(tx pgx.Tx) error {
-			if err := mig.handler(ctx, tx); err != nil {
-				return err
-			}
-
-			if _, err := tx.Exec(ctx, `DELETE FROM kn_schema_version`); err != nil {
-				return fmt.Errorf("could not clear schema version: %w", err)
-			}
-
-			if _, err := tx.Exec(ctx, `INSERT INTO kn_schema_version (version) VALUES ($1)`, mig.id); err != nil {
-				return fmt.Errorf("could not update schema version: %w", err)
-			}
-
-			return nil
-		}); err != nil {
-			return err
-		}
-
-	}
-
-	if runSpecial {
-		for _, mig := range specialMigrations {
-			pgx.BeginFunc(ctx, s.conn, func(tx pgx.Tx) error {
-				return mig.handler(ctx, tx)
-			})
-		}
-	}
-
-	return nil
-}
-
-// Check if database was created before current migration system
-// If so, set database version to 1 to skip base
-// The `max_score_view` view is the discriminator, since it's been removed in the current psql_schema/
-func (s *DB) checkLegacy(ctx context.Context) error {
-	var schemaVersion int
-	s.conn.QueryRow(ctx, "SELECT version FROM kn_schema_version").Scan(&schemaVersion)
-	var hasMSV bool
-	if err := s.conn.QueryRow(ctx, "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'max_score_view');").Scan(&hasMSV); err != nil {
-		return err
-	}
-	if !hasMSV || schemaVersion > 0 {
-		return nil
-	}
-	slog.InfoContext(ctx, "Legacy database detected. Initialized as schema version 1")
-	_, err := s.conn.Exec(ctx, `
-		CREATE TABLE IF NOT EXISTS kn_schema_version (
-			version integer not null
-		);
-		INSERT INTO kn_schema_version (version) VALUES (1);
-	`)
-	return err
 }
 
 func runFile(name string) func(ctx context.Context, tx pgx.Tx) error {

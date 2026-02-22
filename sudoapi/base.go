@@ -12,6 +12,7 @@ import (
 	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/infra/postgres"
 	"github.com/KiloProjects/kilonova/internal/auth"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/net/email"
@@ -40,6 +41,7 @@ type Grader interface {
 }
 
 type BaseAPI struct {
+	pgx    *postgres.DB
 	db     *db.DB
 	mailer kilonova.Mailer
 	rd     *mdrenderer.Renderer
@@ -74,7 +76,7 @@ func (s *BaseAPI) Start(ctx context.Context) {
 }
 
 func (s *BaseAPI) Close() error {
-	if err := s.db.Close(); err != nil {
+	if err := s.pgx.Close(); err != nil {
 		return fmt.Errorf("couldn't close DB: %w", err)
 	}
 
@@ -87,9 +89,9 @@ func (s *BaseAPI) Close() error {
 	return nil
 }
 
-func GetBaseAPI(ctx context.Context, db *db.DB, mgr *datastore.Manager, mailer kilonova.Mailer) (*BaseAPI, error) {
+func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, mailer kilonova.Mailer) (*BaseAPI, error) {
 	base := &BaseAPI{
-		db:     db,
+		db:     db.NewPSQL(pgx),
 		mailer: mailer,
 		rd:     mdrenderer.NewRenderer(),
 
@@ -121,7 +123,7 @@ func GetBaseAPI(ctx context.Context, db *db.DB, mgr *datastore.Manager, mailer k
 	}
 	base.sessionUserCache = sUserCache
 
-	storage := auth.NewAuthStorage(ctx, base.db.GetPool())
+	storage := auth.NewAuthStorage(ctx, base.pgx)
 	provider, err := auth.GetProvider(storage)
 	if err != nil {
 		return nil, err
@@ -155,25 +157,29 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, error) {
 	}
 
 	// DB Initialization
-	dbClient, err := db.NewPSQL(ctx, config.Common.DBDSN)
+	pgxDB, err := postgres.NewDB(ctx, postgres.Config{
+		DSN:          config.Common.DBDSN,
+		CountQueries: flags.CountDBQueries.Value(),
+		LogQueries:   flags.LogDBQueries.Value(),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("couldn't connect to DB: %w", err)
 	}
 	slog.InfoContext(ctx, "Connected to DB")
 
 	if flags.MigrateOnStart.Value() {
-		if err := dbClient.RunMigrations(ctx); err != nil {
+		if err := postgres.RunMigrations(ctx, pgxDB, db.Migrations); err != nil {
 			return nil, fmt.Errorf("couldn't run migrations: %w", err)
 		}
 	}
 
-	return GetBaseAPI(ctx, dbClient, mgr, knMailer)
+	return GetBaseAPI(ctx, pgxDB, mgr, knMailer)
 }
 
 func InitQueryCounter(ctx context.Context) context.Context {
-	return db.InitContextCounter(ctx)
+	return postgres.InitContextCounter(ctx)
 }
 
 func GetQueryCounter(ctx context.Context) int64 {
-	return db.GetContextQueryCount(ctx)
+	return postgres.GetContextQueryCount(ctx)
 }

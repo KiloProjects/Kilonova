@@ -3,49 +3,17 @@ package db
 import (
 	"context"
 	"fmt"
-	"log/slog"
-	"path"
-	"sync"
-	"sync/atomic"
-	"time"
 
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/infra/postgres"
 	"github.com/KiloProjects/kilonova/internal/repository"
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
-	"github.com/exaring/otelpgx"
+	"github.com/KiloProjects/kilonova/util/slicealg"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/multitracer"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/tracelog"
-	"gopkg.in/natefinch/lumberjack.v2"
-
-	pgxdecimal "github.com/jackc/pgx-shopspring-decimal"
-)
-
-var (
-	loggerOnce sync.Once
-	dbLogger   *slog.Logger
-)
-
-type dbCtx string
-
-const (
-	queryCount = dbCtx("queryCount")
 )
 
 type DB struct {
 	conn     *pgxpool.Pool
 	userRepo *repository.UserRepository
-}
-
-func (s *DB) Close() error {
-	s.conn.Close()
-	return nil
-}
-
-// GetPool returns the underlying pgxpool.Pool. It's used for internal purposes.
-func (s *DB) GetPool() *pgxpool.Pool {
-	return s.conn
 }
 
 type Queryer interface {
@@ -74,28 +42,8 @@ func Select[T any](pgconn Queryer, ctx context.Context, dest *[]*T, query string
 	return nil
 }
 
-func NewPSQL(ctx context.Context, dsn string) (*DB, error) {
-	pgconf, err := pgxpool.ParseConfig(dsn)
-	if err != nil {
-		return nil, err
-	}
-	pgconf.ConnConfig.Tracer = multitracer.New(
-		otelpgx.NewTracer(otelpgx.WithTrimSQLInSpanName()),
-		&tracelog.TraceLog{Logger: tracelog.LoggerFunc(log), LogLevel: tracelog.LogLevelDebug},
-	)
-
-	pgconf.MaxConns = 40
-	pgconf.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
-		pgxdecimal.Register(c.TypeMap())
-		return nil
-	}
-
-	pgconn, err := pgxpool.NewWithConfig(ctx, pgconf)
-	if err != nil {
-		return nil, err
-	}
-
-	return &DB{pgconn, repository.NewUserRepository(pgconn)}, nil
+func NewPSQL(conn *postgres.DB) *DB {
+	return &DB{conn.Pool(), repository.NewUserRepository(conn.Pool())}
 }
 
 func FormatLimitOffset(limit int, offset int) string {
@@ -114,30 +62,14 @@ func FormatLimitOffset(limit int, offset int) string {
 	return ""
 }
 
+// Deprecated: use slicealg.Map instead
 func mapper[T1 any, T2 any](lst []T1, f func(T1) T2) []T2 {
-	if len(lst) == 0 {
-		return []T2{}
-	}
-	rez := make([]T2, len(lst))
-	for i := range rez {
-		rez[i] = f(lst[i])
-	}
-	return rez
+	return slicealg.Map(lst, f)
 }
 
+// Deprecated: use slicealg.MapCtx instead
 func mapperCtx[T1 any, T2 any](ctx context.Context, lst []T1, f func(context.Context, T1) (T2, error)) []T2 {
-	if len(lst) == 0 {
-		return []T2{}
-	}
-	rez := make([]T2, len(lst))
-	for i := range rez {
-		var err error
-		rez[i], err = f(ctx, lst[i])
-		if err != nil {
-			slog.WarnContext(ctx, "Error running mapper", slog.Any("err", err))
-		}
-	}
-	return rez
+	return slicealg.MapCtx(ctx, lst, f)
 }
 
 func toSingular[T1, T2 any](ctx context.Context, filter T1, f func(ctx context.Context, filter T1) ([]*T2, error)) (*T2, error) {
@@ -146,75 +78,4 @@ func toSingular[T1, T2 any](ctx context.Context, filter T1, f func(ctx context.C
 		return nil, err
 	}
 	return many[0], nil
-}
-
-func InitContextCounter(rootCtx context.Context) context.Context {
-	return context.WithValue(rootCtx, queryCount, &atomic.Int64{})
-}
-
-func GetContextQueryCount(ctx context.Context) int64 {
-	cnt, ok := ctx.Value(queryCount).(*atomic.Int64)
-	if !ok {
-		return -1
-	}
-	return cnt.Load()
-}
-
-func log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]any) {
-	loggerOnce.Do(func() {
-		lvl := slog.LevelInfo
-		if config.Common.Debug {
-			lvl = slog.LevelDebug
-		}
-		dbLogger = slog.New(slog.NewJSONHandler(&lumberjack.Logger{
-			Filename: path.Join(config.Common.LogDir, "db.log"),
-			MaxSize:  200, // MB
-			Compress: true,
-		}, &slog.HandlerOptions{
-			Level: lvl,
-		}))
-	})
-
-	if msg == "Prepare" {
-		return
-	}
-
-	dur, ok := data["time"].(time.Duration)
-	if ok {
-		if dur > 1*time.Second {
-			dbLogger.WarnContext(ctx, "Really slow operation", slog.Duration("duration", dur), slog.Any("query", data["sql"]), slog.Any("args", data["args"]))
-		}
-	}
-
-	if flags.CountDBQueries.Value() {
-		if v, ok := ctx.Value(queryCount).(*atomic.Int64); ok {
-			v.Add(1)
-		}
-	}
-
-	if flags.LogDBQueries.Value() {
-		fields := make([]slog.Attr, 0, len(data))
-		for k, v := range data {
-			fields = append(fields, slog.Any(k, v))
-		}
-
-		var lvl slog.Level
-		switch level {
-		case tracelog.LogLevelTrace:
-			lvl = slog.LevelDebug - 1
-			fields = append(fields, slog.Any("PGX_LOG_LEVEL", level))
-		case tracelog.LogLevelDebug:
-			lvl = slog.LevelDebug
-		case tracelog.LogLevelInfo:
-			lvl = slog.LevelInfo
-		case tracelog.LogLevelWarn:
-			lvl = slog.LevelWarn
-		case tracelog.LogLevelError:
-			lvl = slog.LevelError
-		default:
-			lvl = slog.LevelError
-			fields = append(fields, slog.Any("PGX_LOG_LEVEL", level))
-		}
-		dbLogger.LogAttrs(ctx, lvl, msg, fields...)
-	}
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/infra/postgres"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/repository"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
@@ -581,16 +582,16 @@ func (s *AuthStorage) Health(ctx context.Context) error {
 	return s.conn.Ping(ctx)
 }
 
-func NewAuthStorage(ctx context.Context, conn *pgxpool.Pool) *AuthStorage {
+func NewAuthStorage(ctx context.Context, pgx *postgres.DB) *AuthStorage {
 	key, err := getKey()
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to get RSA key", slog.Any("error", err))
 		os.Exit(1)
 	}
 	return &AuthStorage{
-		conn:     conn,
+		conn:     pgx.Pool(),
 		key:      &signingKey{pkey: key, kid: flags.AuthRSAPrivateKeyID.Value()},
-		userRepo: repository.NewUserRepository(conn),
+		userRepo: repository.NewUserRepository(pgx.Pool()),
 	}
 }
 
