@@ -7,98 +7,96 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/datastore"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/internal/ctxt"
 )
 
-// KNContextType is the string type for all context values
-type KNContextType string
+type knContextType string
 
 const (
 	// AuthedUserKey is the key to be used for adding (AUTHENTICATED) user objects to context
-	AuthedUserKey = KNContextType("authed")
+	// Deprecated: use [user.AuthedUserKey] instead
+	AuthedUserKey = user.AuthedUserKey
 	// ContentUserKey is the key to be used for adding CONTENT user objects to context
-	ContentUserKey = KNContextType("user")
+	// Deprecated: use [user.ContentUserKey] instead
+	ContentUserKey = user.ContentUserKey
 	// ProblemKey is the key to be used for adding problems to context
-	ProblemKey = KNContextType("problem")
+	ProblemKey = knContextType("problem")
 	// BlogPostKey is the key to be used for adding blog posts to context
-	BlogPostKey = KNContextType("blogPost")
+	BlogPostKey = knContextType("blogPost")
 	// SubKey is the key to be used for adding submissions to context
-	SubKey = KNContextType("submission")
+	SubKey = knContextType("submission")
 	// PasteKey is the key to be used for adding pastes to context
-	PasteKey = KNContextType("paste")
+	PasteKey = knContextType("paste")
 	// TestKey is the key to be used for adding tests to context
-	TestKey = KNContextType("test")
+	TestKey = knContextType("test")
 	// SubTaskKey is the key to be used for adding subtasks to context
-	SubTaskKey = KNContextType("subtask")
+	SubTaskKey = knContextType("subtask")
 	// ProblemListKey is the key to be used for adding problem lists to context
-	ProblemListKey = KNContextType("problemList")
+	ProblemListKey = knContextType("problemList")
 	// ExternalResourceKey is the key to be used for adding external resources to context
-	ExternalResourceKey = KNContextType("externalResource")
+	ExternalResourceKey = knContextType("externalResource")
 	// AttachmentKey is the key to be used for adding attachments to context
-	AttachmentKey = KNContextType("attachment")
+	AttachmentKey = knContextType("attachment")
 	// TagKey is the key to be used for adding tags to context
-	TagKey = KNContextType("tag")
+	TagKey = knContextType("tag")
 	// ContestKey is the key to be used for adding contests to context
-	ContestKey = KNContextType("contest")
+	ContestKey = knContextType("contest")
 	// LangKey is the key to be used for adding the user language to context
-	LangKey = KNContextType("language")
+	LangKey = knContextType("language")
 	// BucketKey is the key to be used for adding the requested bucket to context
-	BucketKey = KNContextType("bucket")
+	BucketKey = knContextType("bucket")
 	// ThemeKey is the key to be used for adding the user's preferred theme to context
-	ThemeKey = KNContextType("theme")
+	ThemeKey = knContextType("theme")
 
 	// ScopesKey is the key to be used for adding the scopes to context
-	ScopesKey = KNContextType("scopes")
+	ScopesKey = knContextType("scopes")
 
 	// AuthMethodKey is the key to be used for adding the auth method to context
-	AuthMethodKey = KNContextType("authMethod")
+	AuthMethodKey = knContextType("authMethod")
 
 	// IPKey is the key to be used for adding the IP address to context
-	IPKey = KNContextType("ip")
+	IPKey = knContextType("ip")
 )
 
-func userBrief(ctx context.Context, key KNContextType) *kilonova.UserBrief {
-	b := getValueContext[kilonova.UserFull](ctx, key).Brief()
-	if b == nil {
-		b = getValueContext[kilonova.UserBrief](ctx, key)
-	}
-	return b
-}
-
+// Deprecated: use [user.UserBriefContext] instead
 func UserBriefContext(ctx context.Context) *kilonova.UserBrief {
-	return userBrief(ctx, AuthedUserKey)
+	return user.UserBriefContext(ctx)
 }
 
+// Deprecated: use [user.UserBrief] instead
 func UserBrief(r *http.Request) *kilonova.UserBrief {
-	return UserBriefContext(r.Context())
+	return user.UserBrief(r)
 }
 
+// Deprecated: use [user.UserFullContext] instead
 func UserFullContext(ctx context.Context) *kilonova.UserFull {
-	return getValueContext[kilonova.UserFull](ctx, AuthedUserKey)
+	return user.UserFullContext(ctx)
 }
 
+// Deprecated: use [user.UserFull] instead
 func UserFull(r *http.Request) *kilonova.UserFull {
-	return UserFullContext(r.Context())
+	return user.UserFull(r)
 }
 
-func ContentUserFullContext(ctx context.Context) *kilonova.UserFull {
-	return getValueContext[kilonova.UserFull](ctx, ContentUserKey)
-}
-
+// Deprecated: use [user.ContentUserFull] instead
 func ContentUserFull(r *http.Request) *kilonova.UserFull {
-	return ContentUserFullContext(r.Context())
+	return user.ContentUserFull(r)
 }
 
+// Deprecated: use [user.ContentUserBriefContext] instead
 func ContentUserBriefContext(ctx context.Context) *kilonova.UserBrief {
-	return userBrief(ctx, ContentUserKey)
+	return user.ContentUserBriefContext(ctx)
 }
 
+// Deprecated: use [user.ContentUserBrief] instead
 func ContentUserBrief(r *http.Request) *kilonova.UserBrief {
-	return ContentUserBriefContext(r.Context())
+	return user.ContentUserBrief(r)
 }
 
 func ProblemContext(ctx context.Context) *kilonova.Problem {
-	return getValueContext[kilonova.Problem](ctx, ProblemKey)
+	return ctxt.Value[kilonova.Problem, knContextType](ctx, ProblemKey)
 }
 
 func Problem(r *http.Request) *kilonova.Problem {
@@ -106,7 +104,7 @@ func Problem(r *http.Request) *kilonova.Problem {
 }
 
 func BlogPostContext(ctx context.Context) *kilonova.BlogPost {
-	return getValueContext[kilonova.BlogPost](ctx, BlogPostKey)
+	return ctxt.Value[kilonova.BlogPost, knContextType](ctx, BlogPostKey)
 }
 
 func BlogPost(r *http.Request) *kilonova.BlogPost {
@@ -114,14 +112,14 @@ func BlogPost(r *http.Request) *kilonova.BlogPost {
 }
 
 func SubmissionContext(ctx context.Context) *kilonova.FullSubmission {
-	return getValueContext[kilonova.FullSubmission](ctx, SubKey)
+	return ctxt.Value[kilonova.FullSubmission, knContextType](ctx, SubKey)
 }
 func Submission(r *http.Request) *kilonova.FullSubmission {
 	return SubmissionContext(r.Context())
 }
 
 func ContestContext(ctx context.Context) *kilonova.Contest {
-	return getValueContext[kilonova.Contest](ctx, ContestKey)
+	return ctxt.Value[kilonova.Contest, knContextType](ctx, ContestKey)
 }
 
 func Contest(r *http.Request) *kilonova.Contest {
@@ -129,11 +127,11 @@ func Contest(r *http.Request) *kilonova.Contest {
 }
 
 func Paste(r *http.Request) *kilonova.SubmissionPaste {
-	return getValueContext[kilonova.SubmissionPaste](r.Context(), PasteKey)
+	return ctxt.Value[kilonova.SubmissionPaste, knContextType](r.Context(), PasteKey)
 }
 
 func ExternalResource(r *http.Request) *kilonova.ExternalResource {
-	return getValueContext[kilonova.ExternalResource](r.Context(), ExternalResourceKey)
+	return ctxt.Value[kilonova.ExternalResource, knContextType](r.Context(), ExternalResourceKey)
 }
 
 func Test(r *http.Request) *kilonova.Test {
@@ -141,11 +139,11 @@ func Test(r *http.Request) *kilonova.Test {
 }
 
 func TestContext(ctx context.Context) *kilonova.Test {
-	return getValueContext[kilonova.Test](ctx, TestKey)
+	return ctxt.Value[kilonova.Test, knContextType](ctx, TestKey)
 }
 
 func SubTask(r *http.Request) *kilonova.SubTask {
-	return getValueContext[kilonova.SubTask](r.Context(), SubTaskKey)
+	return ctxt.Value[kilonova.SubTask, knContextType](r.Context(), SubTaskKey)
 }
 
 func ProblemList(r *http.Request) *kilonova.ProblemList {
@@ -153,7 +151,7 @@ func ProblemList(r *http.Request) *kilonova.ProblemList {
 }
 
 func ProblemListContext(ctx context.Context) *kilonova.ProblemList {
-	return getValueContext[kilonova.ProblemList](ctx, ProblemListKey)
+	return ctxt.Value[kilonova.ProblemList, knContextType](ctx, ProblemListKey)
 }
 
 func Attachment(r *http.Request) *kilonova.Attachment {
@@ -161,7 +159,7 @@ func Attachment(r *http.Request) *kilonova.Attachment {
 }
 
 func AttachmentContext(ctx context.Context) *kilonova.Attachment {
-	return getValueContext[kilonova.Attachment](ctx, AttachmentKey)
+	return ctxt.Value[kilonova.Attachment, knContextType](ctx, AttachmentKey)
 }
 
 func BucketContext(ctx context.Context) datastore.Bucket {
@@ -176,7 +174,7 @@ func BucketContext(ctx context.Context) datastore.Bucket {
 }
 
 func Tag(r *http.Request) *kilonova.Tag {
-	return getValueContext[kilonova.Tag](r.Context(), TagKey)
+	return ctxt.Value[kilonova.Tag, knContextType](r.Context(), TagKey)
 }
 
 func Language(r *http.Request) string {
@@ -184,7 +182,7 @@ func Language(r *http.Request) string {
 }
 
 func IPContext(ctx context.Context) *netip.Addr {
-	return getValueContext[netip.Addr](ctx, IPKey)
+	return ctxt.Value[netip.Addr, knContextType](ctx, IPKey)
 }
 
 func LanguageContext(ctx context.Context) string {
@@ -210,16 +208,5 @@ func Theme(ctx context.Context) kilonova.PreferredTheme {
 		return *v
 	default:
 		return kilonova.PreferredThemeDark
-	}
-}
-
-func getValueContext[T any](ctx context.Context, key KNContextType) *T {
-	switch v := ctx.Value(key).(type) {
-	case *T:
-		return v
-	case T:
-		return &v
-	default:
-		return nil
 	}
 }

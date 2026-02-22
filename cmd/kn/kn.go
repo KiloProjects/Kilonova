@@ -122,21 +122,15 @@ func initLogger(debug, writeFile bool) {
 	})
 
 	skipContextCanceled := slogmulti.NewHandleInlineMiddleware(func(ctx context.Context, record slog.Record, next func(context.Context, slog.Record) error) error {
-		ok := true
 		for attr := range record.Attrs {
 			if attr.Key != "err" {
 				continue
 			}
 			if err, isErr := attr.Value.Any().(error); isErr {
-				var opErr *net.OpError
-				if errors.As(err, &opErr) || errors.Is(err, context.Canceled) || errors.Is(err, kilonova.ErrNotFound) || errors.Is(err, kilonova.ErrNoUpdates) {
-					ok = false
-					break
+				if _, ok := errors.AsType[*net.OpError](err); ok || errors.Is(err, context.Canceled) || errors.Is(err, kilonova.ErrNotFound) || errors.Is(err, kilonova.ErrNoUpdates) {
+					return nil
 				}
 			}
-		}
-		if !ok {
-			return nil
 		}
 		return next(ctx, record)
 	})
