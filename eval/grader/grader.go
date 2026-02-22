@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/dominikbraun/graph"
 	"github.com/dominikbraun/graph/draw"
@@ -22,7 +23,6 @@ import (
 	"github.com/KiloProjects/kilonova/eval/checkers"
 	"github.com/KiloProjects/kilonova/eval/scheduler"
 	"github.com/KiloProjects/kilonova/eval/tasks"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/shopspring/decimal"

@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/web/views"
 	"github.com/KiloProjects/kilonova/web/views/modals"
 	"github.com/KiloProjects/kilonova/web/views/problems"

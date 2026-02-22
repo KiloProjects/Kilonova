@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/domain/config"
 )
 
 type ConfigUpdate struct {

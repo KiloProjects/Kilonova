@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/exaring/otelpgx"
 	pgxdecimal "github.com/jackc/pgx-shopspring-decimal"
 	"github.com/jackc/pgx/v5"

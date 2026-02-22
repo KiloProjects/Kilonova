@@ -6,10 +6,9 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/infra/prometheus"
 	"github.com/joho/godotenv"
-
-	"github.com/KiloProjects/kilonova/internal/config"
 )
 
 var (

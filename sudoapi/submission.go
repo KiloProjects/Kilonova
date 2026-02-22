@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/shopspring/decimal"
 )
@@ -506,22 +506,22 @@ func (s *BaseAPI) subVisibleRegardless(ctx context.Context, sub *kilonova.Submis
 	return score.Equal(decimal.NewFromInt(100))
 }
 
-func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submission, subProblem *kilonova.Problem, user *kilonova.UserBrief, checkIP bool) bool {
+func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submission, subProblem *kilonova.Problem, userBrief *kilonova.UserBrief, checkIP bool) bool {
 	if sub == nil {
 		return false
 	}
 
-	if user == nil || !user.IsAuthed() {
+	if userBrief == nil || !userBrief.IsAuthed() {
 		return false
 	}
 
 	checkSolved := true
 
-	if checkIP && util.IPContext(ctx) != nil {
+	if checkIP && user.IPContext(ctx) != nil {
 		whitelistedContests, err := s.db.Contests(ctx, kilonova.ContestFilter{
 			Running:       true,
 			Type:          kilonova.ContestTypeOfficial,
-			WhitelistedIP: util.IPContext(ctx),
+			WhitelistedIP: user.IPContext(ctx),
 		})
 		if err != nil {
 			slog.WarnContext(ctx, "Couldn't check IP whitelist", slog.Any("err", err))
@@ -535,7 +535,7 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 			editorAll := true
 			contestSubmission := false
 			for _, contest := range whitelistedContests {
-				if !contest.IsEditor(user) {
+				if !contest.IsEditor(userBrief) {
 					editorAll = false
 				}
 				if sub.ContestID != nil && contest.ID == *sub.ContestID {
@@ -547,7 +547,7 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 					// If submission not in one of the contests mentioned, block
 					return false
 				}
-				if sub.UserID == user.ID {
+				if sub.UserID == userBrief.ID {
 					// If submission is from the user themselves, allow
 					return true
 				}
@@ -562,18 +562,18 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 
 	// If enabled that people see all source code
 	// IsProblemFullyVisible is a workaround for when a contest is running but there are submissions that were not sent in the contest
-	if flags.SubForEveryoneConfig.Value() && s.IsProblemFullyVisible(user, subProblem) &&
+	if flags.SubForEveryoneConfig.Value() && s.IsProblemFullyVisible(userBrief, subProblem) &&
 		!slices.Contains(flags.SubForEveryoneBlacklist.Value(), sub.ProblemID) {
 
 		// Get number of running virtual contests where user is participant for this problem and the person trying to look is not a contest editor
 		// If it returns a nonzero number of results, then we need to filter out
 		numContests, err := s.ContestCount(ctx, kilonova.ContestFilter{
 			Running:      true,
-			ContestantID: &user.ID,
+			ContestantID: &userBrief.ID,
 			ProblemID:    &subProblem.ID,
 			Type:         kilonova.ContestTypeVirtual,
 
-			EditorID:  &user.ID,
+			EditorID:  &userBrief.ID,
 			NotEditor: true,
 		})
 		if err != nil {
@@ -581,7 +581,7 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 		} else if numContests > 0 {
 			// Only if it's their own submission
 			// TODO: Ensure that submission contest is part of those contests
-			return sub.ContestID != nil && sub.IsEditor(user)
+			return sub.ContestID != nil && sub.IsEditor(userBrief)
 		}
 
 		if sub.ContestID == nil {
@@ -594,14 +594,14 @@ func (s *BaseAPI) isSubmissionVisible(ctx context.Context, sub *kilonova.Submiss
 				// Or if it's from a contest that ended
 				return true
 			}
-			if contest.IsEditor(user) {
+			if contest.IsEditor(userBrief) {
 				// Contest editors should always be able to view submissions
 				return true
 			}
 		}
 	}
 
-	return s.subVisibleRegardless(ctx, sub, user, subProblem, checkSolved)
+	return s.subVisibleRegardless(ctx, sub, userBrief, subProblem, checkSolved)
 }
 
 func (s *BaseAPI) filterSubmission(ctx context.Context, sub *kilonova.Submission, subProblem *kilonova.Problem, user *kilonova.UserBrief) {

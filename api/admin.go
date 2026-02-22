@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/domain/config"
 )
 
 func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {

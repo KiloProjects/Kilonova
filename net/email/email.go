@@ -8,12 +8,12 @@ import (
 	"path"
 	"sync"
 
+	"github.com/KiloProjects/kilonova/domain/config"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/jordan-wright/email"
 )
 

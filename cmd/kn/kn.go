@@ -13,11 +13,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/infra/maxmind"
 	"github.com/KiloProjects/kilonova/infra/otel"
 	"github.com/KiloProjects/kilonova/infra/profiler"
-	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/riandyrn/otelchi"
 	slogmulti "github.com/samber/slog-multi"
@@ -28,7 +28,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/api"
 	"github.com/KiloProjects/kilonova/eval/grader"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/web"
 	"github.com/go-chi/chi/v5"
@@ -116,7 +115,7 @@ func initLogger(debug, writeFile bool) {
 		if user := user.UserBriefContext(ctx); user != nil {
 			record.AddAttrs(slog.Any("user", user))
 		}
-		if contentUser := util.ContentUserBriefContext(ctx); contentUser != nil {
+		if contentUser := user.ContentUserBriefContext(ctx); contentUser != nil {
 			record.AddAttrs(slog.Any("contentUser", contentUser))
 		}
 		return next(ctx, record)
@@ -195,7 +194,7 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			addr, _ := base.GetRequestInfo(r)
-			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.IPKey, addr)))
+			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), user.IPKey, addr)))
 		})
 	})
 

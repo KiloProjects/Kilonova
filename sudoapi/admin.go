@@ -15,11 +15,11 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova/datastore"
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/bwmarrin/discordgo"
 	"golang.org/x/text/cases"

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 

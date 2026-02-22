@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"net/http"
+	"net/netip"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/ctxt"
@@ -15,6 +16,9 @@ const (
 	AuthedUserKey = userContextType("authed")
 	// ContentUserKey is the key to be used for adding CONTENT user objects to context
 	ContentUserKey = userContextType("user")
+
+	// IPKey is the key to be used for adding the user's IP address to context
+	IPKey = userContextType("ip")
 )
 
 func userBrief(ctx context.Context, key userContextType) *kilonova.UserBrief {
@@ -55,4 +59,11 @@ func ContentUserBriefContext(ctx context.Context) *kilonova.UserBrief {
 
 func ContentUserBrief(r *http.Request) *kilonova.UserBrief {
 	return ContentUserBriefContext(r.Context())
+}
+
+// IPContext returns the IP from context
+// TODO: IPContext and IPKey would probably be better suited for another package
+// But for agility reasons, they are kept here for now
+func IPContext(ctx context.Context) *netip.Addr {
+	return ctxt.Value[netip.Addr, userContextType](ctx, IPKey)
 }

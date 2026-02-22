@@ -19,11 +19,11 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/bwmarrin/discordgo"
 	"golang.org/x/crypto/bcrypt"
 

@@ -16,7 +16,7 @@ import (
 	"unicode"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/davecgh/go-spew/spew"
 	"golang.org/x/text/runes"

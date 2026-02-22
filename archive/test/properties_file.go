@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/gorilla/schema"
 	"github.com/shopspring/decimal"
 )

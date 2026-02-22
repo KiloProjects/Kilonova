@@ -18,9 +18,9 @@ import (
 	"sync"
 
 	"github.com/KiloProjects/kilonova/datastore"
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/tasks"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"golang.org/x/sync/semaphore"
 	"golang.org/x/sys/unix"
 	"gopkg.in/natefinch/lumberjack.v2"

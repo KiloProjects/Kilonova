@@ -9,7 +9,7 @@ import (
 
 	_ "embed"
 
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/domain/config"
 )
 
 // v1

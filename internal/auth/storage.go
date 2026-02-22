@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/infra/postgres"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/repository"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/go-jose/go-jose/v4"

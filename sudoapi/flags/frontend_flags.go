@@ -1,6 +1,8 @@
 package flags
 
-import "github.com/KiloProjects/kilonova/internal/config"
+import (
+	"github.com/KiloProjects/kilonova/domain/config"
+)
 
 var (
 	CCDisclaimer    = config.GenFlag("frontend.footer.cc_disclaimer", true, "CC disclaimer in footer")

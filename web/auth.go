@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/web/views/authviews"
 	"github.com/KiloProjects/kilonova/web/views/utilviews"

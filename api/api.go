@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 

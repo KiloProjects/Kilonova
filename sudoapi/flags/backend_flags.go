@@ -1,6 +1,8 @@
 package flags
 
-import "github.com/KiloProjects/kilonova/internal/config"
+import (
+	"github.com/KiloProjects/kilonova/domain/config"
+)
 
 var (
 	ImportantUpdatesWebhook = config.GenFlag[string]("admin.important_webhook", "", "Webhook URL for audit log-level events")

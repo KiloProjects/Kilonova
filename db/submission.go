@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 )
@@ -160,7 +160,7 @@ func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilono
 			contestID,
 			langName,
 			len(code),
-			util.IPContext(ctx),
+			user.IPContext(ctx),
 		).Scan(&id); err != nil {
 			return err
 		}

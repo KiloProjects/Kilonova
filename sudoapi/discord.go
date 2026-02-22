@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/bwmarrin/discordgo"
 	"golang.org/x/oauth2"

@@ -27,6 +27,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/infra/maxmind"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/views/proposer"
@@ -34,7 +35,6 @@ import (
 	"github.com/a-h/templ"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/alecthomas/chroma/v2"
 	chtml "github.com/alecthomas/chroma/v2/formatters/html"
