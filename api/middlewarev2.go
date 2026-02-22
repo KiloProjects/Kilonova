@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
@@ -156,7 +157,7 @@ func (s *API) validateProblemIDv2(api huma.API) func(ctx huma.Context, next func
 			return
 		}
 
-		if !s.base.IsProblemVisible(util.UserBriefContext(ctx.Context()), problem) {
+		if !s.base.IsProblemVisible(user.UserBriefContext(ctx.Context()), problem) {
 			huma.WriteErr(api, ctx, http.StatusUnauthorized, "You are not allowed to access this problem")
 			return
 		}
@@ -167,7 +168,7 @@ func (s *API) validateProblemIDv2(api huma.API) func(ctx huma.Context, next func
 // MustBeAuthedV2 is middleware to make sure the user creating the request is authenticated
 func (s *API) MustBeAuthedV2(api huma.API) func(ctx huma.Context, next func(huma.Context)) {
 	return func(ctx huma.Context, next func(huma.Context)) {
-		if !util.UserBriefContext(ctx.Context()).IsAuthed() {
+		if !user.UserBriefContext(ctx.Context()).IsAuthed() {
 			huma.WriteErr(api, ctx, http.StatusUnauthorized, "You must be authenticated to do this")
 			return
 		}

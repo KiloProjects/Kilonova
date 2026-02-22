@@ -10,14 +10,14 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"context"
-	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/web/tutils"
 )
 
 var TC = tutils.TC
 
 func admin(ctx context.Context) bool {
-	return util.UserBriefContext(ctx).IsAdmin()
+	return user.UserBriefContext(ctx).IsAdmin()
 }
 
 func CreateContestForm() templ.Component {

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova/datastore"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 
 	"github.com/KiloProjects/kilonova"
@@ -162,7 +163,7 @@ func (s *BaseAPI) logAction(ctx context.Context, level logLevel, msg string, arg
 	s.logChan <- &logEntry{
 		Message: msg,
 		Attrs:   args,
-		Author:  util.UserBriefContext(ctx),
+		Author:  user.UserBriefContext(ctx),
 		Level:   level,
 	}
 }

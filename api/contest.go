@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 )
 
@@ -310,10 +311,10 @@ func (s *API) deleteContestAnnouncement(ctx context.Context, args struct {
 }
 
 func (s *API) contestUserQuestions(ctx context.Context, _ struct{}) ([]*kilonova.ContestQuestion, error) {
-	if util.UserBriefContext(ctx) == nil {
+	if user.UserBriefContext(ctx) == nil {
 		return []*kilonova.ContestQuestion{}, nil
 	}
-	return s.base.ContestUserQuestions(ctx, util.ContestContext(ctx).ID, util.UserBriefContext(ctx).ID)
+	return s.base.ContestUserQuestions(ctx, util.ContestContext(ctx).ID, user.UserBriefContext(ctx).ID)
 }
 
 func (s *API) contestAllQuestions(ctx context.Context, _ struct{}) ([]*kilonova.ContestQuestion, error) {
@@ -399,7 +400,7 @@ func (s *API) acceptContestInvitation(ctx context.Context, args struct {
 	if !contest.RegisterDuringContest && contest.Running() {
 		return kilonova.Statusf(400, "Cannot register while contest is running")
 	}
-	return s.base.RegisterContestUser(ctx, contest, util.UserBriefContext(ctx).ID, &inv.ID, true)
+	return s.base.RegisterContestUser(ctx, contest, user.UserBriefContext(ctx).ID, &inv.ID, true)
 }
 
 func (s *API) updateContestInvitation(ctx context.Context, args struct {
@@ -414,7 +415,7 @@ func (s *API) updateContestInvitation(ctx context.Context, args struct {
 	if err != nil {
 		return err
 	}
-	if !contest.IsEditor(util.UserBriefContext(ctx)) {
+	if !contest.IsEditor(user.UserBriefContext(ctx)) {
 		return kilonova.Statusf(400, "Only contest editors can update the invitation")
 	}
 	return s.base.UpdateContestInvitation(ctx, inv.ID, args.Expired)
@@ -464,7 +465,7 @@ func (s *API) forceRegisterForContest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) checkRegistration(ctx context.Context, _ struct{}) (*kilonova.ContestRegistration, error) {
-	return s.base.ContestRegistration(ctx, util.ContestContext(ctx).ID, util.UserBriefContext(ctx).ID)
+	return s.base.ContestRegistration(ctx, util.ContestContext(ctx).ID, user.UserBriefContext(ctx).ID)
 }
 
 func (s *API) stripContestRegistration(w http.ResponseWriter, r *http.Request) {

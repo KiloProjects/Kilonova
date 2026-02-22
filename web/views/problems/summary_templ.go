@@ -11,7 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"fmt"
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/web/tutils"
 	"github.com/shopspring/decimal"
 )
@@ -467,7 +467,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		if util.UserBriefContext(ctx).IsAuthed() {
+		if user.UserBriefContext(ctx).IsAuthed() {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "<p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

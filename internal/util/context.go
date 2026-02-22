@@ -60,11 +60,6 @@ const (
 	IPKey = knContextType("ip")
 )
 
-// Deprecated: use [user.UserBriefContext] instead
-func UserBriefContext(ctx context.Context) *kilonova.UserBrief {
-	return user.UserBriefContext(ctx)
-}
-
 // Deprecated: use [user.UserBrief] instead
 func UserBrief(r *http.Request) *kilonova.UserBrief {
 	return user.UserBrief(r)

@@ -3,7 +3,7 @@ package problems
 import (
 	"fmt"
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/web/tutils"
 	"github.com/shopspring/decimal"
 )
@@ -165,7 +165,7 @@ templ InfoSidebar(params *InfoParams) {
 					</a>
 				</p>
 			}
-			if util.UserBriefContext(ctx).IsAuthed() {
+			if user.UserBriefContext(ctx).IsAuthed() {
 				<p>
 					if params.Problem.ScoringStrategy == kilonova.ScoringTypeICPC {
 						@TC("verdict")

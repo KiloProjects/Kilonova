@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/infra/maxmind"
 	"github.com/KiloProjects/kilonova/infra/otel"
 	"github.com/KiloProjects/kilonova/internal/util"
@@ -112,7 +113,7 @@ func Kilonova() error {
 func initLogger(debug, writeFile bool) {
 
 	showUser := slogmulti.NewHandleInlineMiddleware(func(ctx context.Context, record slog.Record, next func(context.Context, slog.Record) error) error {
-		if user := util.UserBriefContext(ctx); user != nil {
+		if user := user.UserBriefContext(ctx); user != nil {
 			record.AddAttrs(slog.Any("user", user))
 		}
 		if contentUser := util.ContentUserBriefContext(ctx); contentUser != nil {

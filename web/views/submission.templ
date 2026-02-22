@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/tutils"
@@ -27,7 +28,7 @@ import (
 var T = tutils.T
 
 func authed(ctx context.Context) bool {
-	return util.UserBriefContext(ctx) != nil
+	return user.UserBriefContext(ctx) != nil
 }
 
 type SubmissionPageParams struct {
@@ -77,7 +78,7 @@ templ Submission(params SubmissionPageParams) {
 		@SubmissionCode(params.Submission, params.GetCodeFile(), params.ForceShowCode)
 		<div class="my-2">
 			if authed(ctx) {
-				if params.Submission.CanDelete(util.UserBriefContext(ctx)) {
+				if params.Submission.CanDelete(user.UserBriefContext(ctx)) {
 					<div class="inline-block">
 						<button
 							hx-delete={ templ.URL(fmt.Sprintf("/submissions/%d", params.Submission.ID)) }
@@ -92,7 +93,7 @@ templ Submission(params SubmissionPageParams) {
 						<button type="submit" class="btn btn-blue">{ T(ctx, "reevaluate") }</button>
 					</form>
 				}
-				if flags.PastesEnabled.Value() && params.Submission.IsEditor(util.UserBriefContext(ctx)) {
+				if flags.PastesEnabled.Value() && params.Submission.IsEditor(user.UserBriefContext(ctx)) {
 					<form method="post" action={ templ.URL(fmt.Sprintf("/submissions/%d/paste", params.Submission.ID)) } class="inline-block">
 						<button type="submit" class="btn btn-blue">{ T(ctx, "create_paste") }</button>
 					</form>
@@ -121,7 +122,7 @@ templ Paste(params PastePageParams) {
 			</div>
 		</div>
 		@SubmissionScoreBreakdown(params.SubmissionPageParams)
-		if params.Paste.IsEditor(util.UserBriefContext(ctx)) {
+		if params.Paste.IsEditor(user.UserBriefContext(ctx)) {
 			<button
 				hx-delete={ templ.URL(fmt.Sprintf("/pastes/%s", params.Paste.ID)) }
 				hx-target="body"
@@ -480,11 +481,11 @@ templ SubmissionSummary(sub *kilonova.FullSubmission, pasteAuthor *kilonova.User
 						<td class="kn-table-cell">{ math.Floor(*sub.CompileTime * 1000) } ms</td>
 					</tr>
 				}
-				if util.UserBriefContext(ctx).IsAdmin() && sub.IP != nil {
+				if user.UserBriefContext(ctx).IsAdmin() && sub.IP != nil {
 					<tr class="kn-table-simple-border">
-	                    <td class="kn-table-cell">{ T(ctx, "ipAddr") }</td>
-	                    <td class="kn-table-cell">{ sub.IP.String() }</td>
-	                </tr>
+						<td class="kn-table-cell">{ T(ctx, "ipAddr") }</td>
+						<td class="kn-table-cell">{ sub.IP.String() }</td>
+					</tr>
 				}
 			</tbody>
 		</table>

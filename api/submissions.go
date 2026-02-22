@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/danielgtaylor/huma/v2"
@@ -179,7 +180,7 @@ type SubmissionGetOutput struct {
 
 // submissionGet returns a submission based on an ID
 func (s *API) submissionGet(ctx context.Context, args *SubmissionGetInput) (*SubmissionGetOutput, error) {
-	sub, err := s.fullSubmission(ctx, args.SubmissionID, util.UserBriefContext(ctx), true)
+	sub, err := s.fullSubmission(ctx, args.SubmissionID, user.UserBriefContext(ctx), true)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Could not get submission", err)
 	}

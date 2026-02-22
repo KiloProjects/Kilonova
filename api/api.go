@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 
 	"github.com/KiloProjects/kilonova/internal/config"
@@ -439,7 +440,7 @@ func (s *API) HandlerV1() http.Handler {
 				if args.MaxUses > 0 {
 					cnt = &args.MaxUses
 				}
-				return s.base.CreateContestInvitation(ctx, util.ContestContext(ctx).ID, util.UserBriefContext(ctx), cnt)
+				return s.base.CreateContestInvitation(ctx, util.ContestContext(ctx).ID, user.UserBriefContext(ctx), cnt)
 			}))
 
 			r.With(s.MustBeAuthed).Get("/checkRegistration", webWrapper(s.checkRegistration))

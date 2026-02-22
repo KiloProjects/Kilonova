@@ -11,6 +11,7 @@ import (
 	"unicode"
 
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/KiloProjects/kilonova/web/components/layout"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
@@ -361,7 +362,7 @@ func (rt *Web) checkFlag(flag config.Flag[bool]) func(next http.Handler) http.Ha
 
 func (rt *Web) initSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), MiddlewareStartKey, time.Now())
+		ctx := context.WithValue(r.Context(), layout.MiddlewareStartKey, time.Now())
 		ctx = sudoapi.InitQueryCounter(ctx)
 		user, err := rt.base.SessionUser(ctx, rt.base.GetSessCookie(r), r)
 		if err != nil || user == nil {

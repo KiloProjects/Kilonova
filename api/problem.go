@@ -17,6 +17,7 @@ import (
 	_ "embed"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/net/llm"
@@ -319,7 +320,7 @@ func (s *API) importProblemArchive(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) getProblems(ctx context.Context, args kilonova.ProblemFilter) ([]*kilonova.Problem, error) {
 	args.Look = true
-	args.LookingUser = util.UserBriefContext(ctx)
+	args.LookingUser = user.UserBriefContext(ctx)
 
 	return s.base.Problems(ctx, args)
 }
@@ -332,13 +333,13 @@ type problemSearchResult struct {
 
 func (s *API) searchProblems(ctx context.Context, args kilonova.ProblemFilter) (*problemSearchResult, error) {
 	args.Look = true
-	args.LookingUser = util.UserBriefContext(ctx)
+	args.LookingUser = user.UserBriefContext(ctx)
 
 	if args.Limit == 0 || args.Limit > 50 {
 		args.Limit = 50
 	}
 
-	var scoreUser = util.UserBriefContext(ctx)
+	var scoreUser = user.UserBriefContext(ctx)
 	if args.ScoreUserID != nil {
 		user, err := s.base.UserBrief(ctx, *args.ScoreUserID)
 		if err != nil {
@@ -347,7 +348,7 @@ func (s *API) searchProblems(ctx context.Context, args kilonova.ProblemFilter) (
 		scoreUser = user
 	}
 
-	problems, cnt, err := s.base.SearchProblems(ctx, args, scoreUser, util.UserBriefContext(ctx))
+	problems, cnt, err := s.base.SearchProblems(ctx, args, scoreUser, user.UserBriefContext(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +356,7 @@ func (s *API) searchProblems(ctx context.Context, args kilonova.ProblemFilter) (
 }
 
 func (s *API) updateProblem(ctx context.Context, args kilonova.ProblemUpdate) error {
-	return s.base.UpdateProblem(ctx, util.ProblemContext(ctx).ID, args, util.UserBriefContext(ctx))
+	return s.base.UpdateProblem(ctx, util.ProblemContext(ctx).ID, args, user.UserBriefContext(ctx))
 }
 
 func (s *API) translateProblemStatement() http.HandlerFunc {
@@ -502,7 +503,7 @@ func (s *API) addProblemViewer(w http.ResponseWriter, r *http.Request) {
 func (s *API) stripProblemAccess(ctx context.Context, args struct {
 	UserID int `json:"user_id"`
 }) error {
-	if args.UserID == util.UserBriefContext(ctx).ID {
+	if args.UserID == user.UserBriefContext(ctx).ID {
 		return kilonova.Statusf(400, "You can't strip your own access!")
 	}
 
@@ -600,13 +601,13 @@ func (s *API) problemGet(ctx context.Context, input *ProblemGetInput) (*ProblemG
 		}
 	}
 	args.Look = true
-	args.LookingUser = util.UserBriefContext(ctx)
+	args.LookingUser = user.UserBriefContext(ctx)
 
 	if args.Limit == 0 || args.Limit > 50 {
 		args.Limit = 50
 	}
 
-	var scoreUser = util.UserBriefContext(ctx)
+	var scoreUser = user.UserBriefContext(ctx)
 	if args.ScoreUserID != nil {
 		user, err := s.base.UserBrief(ctx, *args.ScoreUserID)
 		if err != nil {
@@ -615,7 +616,7 @@ func (s *API) problemGet(ctx context.Context, input *ProblemGetInput) (*ProblemG
 		scoreUser = user
 	}
 
-	problems, cnt, err := s.base.SearchProblems(ctx, args, scoreUser, util.UserBriefContext(ctx))
+	problems, cnt, err := s.base.SearchProblems(ctx, args, scoreUser, user.UserBriefContext(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -641,7 +642,7 @@ func (s *API) problemSingleGet(ctx context.Context, _ *struct{}) (*ProblemSingle
 		return nil, err
 	}
 	pb.Languages = languages
-	pb.StatementVariants, err = s.getStatementVariants(ctx, pb.Problem, util.UserBriefContext(ctx))
+	pb.StatementVariants, err = s.getStatementVariants(ctx, pb.Problem, user.UserBriefContext(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -702,6 +703,6 @@ func (s *API) getStatementVariants(ctx context.Context, problem *kilonova.Proble
 }
 
 func (s *API) statementVariants(ctx context.Context, _ *struct{}) (*StatementVariantsOutput, error) {
-	variants, err := s.getStatementVariants(ctx, util.ProblemContext(ctx), util.UserBriefContext(ctx))
+	variants, err := s.getStatementVariants(ctx, util.ProblemContext(ctx), user.UserBriefContext(ctx))
 	return &StatementVariantsOutput{variants}, err
 }

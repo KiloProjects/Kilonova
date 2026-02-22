@@ -3,6 +3,7 @@ package layout
 import (
 	"context"
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
@@ -98,7 +99,7 @@ templ Footer(prepareDuration time.Duration, renderStart time.Time, hashNamer Has
 					<ul>
 						<li>{ T(ctx, "prepareDuration") }: { prepareDuration.String() }</li>
 						<li>{ T(ctx, "renderDuration") }: { time.Since(renderStart).String() }</li>
-						if util.UserBriefContext(ctx).IsAdmin() {
+						if user.UserBriefContext(ctx).IsAdmin() {
 							<li>{ T(ctx, "queryCount") }: ~{ strconv.FormatInt(sudoapi.GetQueryCounter(ctx), 10) }</li>
 						}
 					</ul>

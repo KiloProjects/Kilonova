@@ -43,10 +43,10 @@ import (
 	"golang.org/x/text/language"
 )
 
-const (
-	PblistCntCacheKey = util.KNContextType("pblist_cache")
+type webContextType string
 
-	MiddlewareStartKey = util.KNContextType("middleware_start")
+const (
+	PblistCntCacheKey = webContextType("pblist_cache")
 )
 
 func (rt *Web) buildPblistCache(r *http.Request, listIDs []int) *http.Request {

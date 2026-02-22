@@ -91,6 +91,7 @@ func (s *BaseAPI) Close() error {
 
 func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, mailer kilonova.Mailer) (*BaseAPI, error) {
 	base := &BaseAPI{
+		pgx:    pgx,
 		db:     db.NewPSQL(pgx),
 		mailer: mailer,
 		rd:     mdrenderer.NewRenderer(),

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/config"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"io"
@@ -47,8 +48,12 @@ var buildInfo = sync.OnceValue(func() string {
 	return ""
 })
 
+type middlewareStartCtx string
+
+const MiddlewareStartKey = middlewareStartCtx("middleware_start")
+
 func platformInfo(ctx context.Context, enabledLanguages map[string]string) platformInfoValue {
-	user := util.UserBriefContext(ctx)
+	user := user.UserBriefContext(ctx)
 	var userID int = 0
 	if user != nil {
 		userID = user.ID
@@ -167,7 +172,7 @@ templ Layout(params LayoutParams) {
 			</main>
 			<div id="modals"></div>
 			if !params.HideFooter {
-				@Footer(renderStart.Sub(ctx.Value(util.KNContextType("middleware_start")).(time.Time)), renderStart, params.HashNamer)
+				@Footer(renderStart.Sub(ctx.Value(MiddlewareStartKey).(time.Time)), renderStart, params.HashNamer)
 			}
 		</body>
 	</html>

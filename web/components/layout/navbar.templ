@@ -3,12 +3,13 @@ package layout
 import (
 	"context"
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
 
 func authed(ctx context.Context) bool {
-	return util.UserBriefContext(ctx) != nil
+	return user.UserBriefContext(ctx) != nil
 }
 
 templ Navbar(viewAllSubs bool, reqPath string) {
@@ -53,7 +54,7 @@ templ Navbar(viewAllSubs bool, reqPath string) {
 				}
 				<a class="block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable" href={ templ.URL("/login?back=" + reqPath) }>{ T(ctx, "auth.login") }</a>
 			} else {
-				{{ authedUser := util.UserBriefContext(ctx) }}
+				{{ authedUser := user.UserBriefContext(ctx) }}
 				<div id="pr-dropdown" class="relative">
 					<button onclick="navbar_mgr.toggleDropdown()" id="profile-dropdown-button" class="relative z-10 block black-anchor mt-1 md:mt-0 md:ml-1 px-2 py-1 rounded-sm hoverable">{ authedUser.Name }<i id="dropdown-caret" class="ml-1 fas fa-caret-down"></i></button>
 					<div id="profile-dropdown" class="dropdown-list hidden">
