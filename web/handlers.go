@@ -1805,6 +1805,88 @@ func (rt *Web) profile() http.HandlerFunc {
 	}
 }
 
+func (rt *Web) serveGravatar(w http.ResponseWriter, r *http.Request, user *kilonova.UserFull, size int) {
+	// Read from cache
+	rd, lastmod, valid, err := rt.base.GetGravatar(r.Context(), user.Email, size, time.Now().Add(-12*time.Hour))
+	if !valid || err != nil {
+		slog.WarnContext(r.Context(), "BaseAPI GetGravatar is not valid or returned error", slog.Bool("valid", valid), slog.Any("err", err))
+		http.Error(w, "", 500)
+		return
+	}
+	defer rd.Close()
+	w.Header().Add("ETag", fmt.Sprintf("\"kn-%s-%d\"", user.Name, lastmod.Unix()))
+	// Cache for 1 day
+	w.Header().Add("Cache-Control", "public, max-age=86400, immutable")
+
+	http.ServeContent(w, r, "gravatar.png", lastmod, rd)
+}
+
+func (rt *Web) avatarUserSize(w http.ResponseWriter, r *http.Request) (*kilonova.UserFull, int, bool) {
+	user, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(r.PathValue("user")))
+	if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
+		slog.WarnContext(r.Context(), "Could not get user", slog.Any("err", err))
+		http.Error(w, "could not get user", 500)
+		return nil, -1, false
+	}
+	if user == nil {
+		http.Error(w, "user not found", 500)
+		return nil, -1, false
+	}
+
+	size, err := strconv.Atoi(r.FormValue("s"))
+	if err != nil || size == 0 {
+		size = 128
+	}
+	return user, size, true
+}
+
+func (rt *Web) gravatar(w http.ResponseWriter, r *http.Request) {
+	user, size, ok := rt.avatarUserSize(w, r)
+	if !ok {
+		return
+	}
+
+	rt.serveGravatar(w, r, user, size)
+}
+
+func (rt *Web) serveDiscordAvatar(w http.ResponseWriter, r *http.Request, user *kilonova.UserFull, size int) {
+	// Read from cache
+	rd, lastmod, valid, err := rt.base.GetDiscordAvatar(r.Context(), user, size, time.Now().Add(-12*time.Hour))
+	if !valid || err != nil {
+		// slog.WarnContext(r.Context(), "BaseAPI GetDiscordAvatar is not valid or returned error", slog.Bool("valid", valid), slog.Any("err", err))
+		http.Error(w, "discord not properly linked", 400)
+		return
+	}
+	defer rd.Close()
+	w.Header().Add("ETag", fmt.Sprintf("\"kn-discord-%s-%d\"", user.Name, lastmod.Unix()))
+	// Cache for 1 day
+	w.Header().Add("Cache-Control", "public, max-age=86400, immutable")
+
+	http.ServeContent(w, r, "discordAvatar.png", lastmod, rd)
+}
+
+func (rt *Web) discordAvatar(w http.ResponseWriter, r *http.Request) {
+	user, size, ok := rt.avatarUserSize(w, r)
+	if !ok {
+		return
+	}
+
+	rt.serveGravatar(w, r, user, size)
+}
+
+func (rt *Web) profilePicture(w http.ResponseWriter, r *http.Request) {
+	user, size, ok := rt.avatarUserSize(w, r)
+	if !ok {
+		return
+	}
+
+	if user.AvatarType == "discord" && user.DiscordID != nil {
+		rt.serveDiscordAvatar(w, r, user, size)
+	} else {
+		rt.serveGravatar(w, r, user, size)
+	}
+}
+
 func (rt *Web) linkStatusPage(w http.ResponseWriter, r *http.Request, templ *template.Template, user *kilonova.UserFull) {
 	dUser, err := rt.base.GetDiscordIdentity(r.Context(), user.ID)
 	if err != nil {

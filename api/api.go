@@ -354,9 +354,6 @@ func (s *API) HandlerV1() http.Handler {
 		userRouter := chi.NewMux()
 		userRouter.Get("/", func(w http.ResponseWriter, r *http.Request) { returnData(w, util.ContentUserBrief(r)) })
 		userRouter.Get("/solvedProblems", s.getSolvedProblems)
-		userRouter.Get("/gravatar", s.getGravatar)
-		userRouter.Get("/avatar", s.getAvatar)
-		userRouter.Get("/discordAvatar", s.getDiscordAvatar)
 		userRouter.With(s.selfOrAdmin).Post("/deauthAll", s.deauthAllSessions)
 
 		userRouter.With(s.selfOrAdmin).Post("/setBio", s.setBio())

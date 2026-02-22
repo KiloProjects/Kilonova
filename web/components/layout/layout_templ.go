@@ -10,14 +10,8 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"context"
-	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/domain/user"
-	"github.com/KiloProjects/kilonova/internal/config"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"io"
-	"runtime/debug"
-	"sync"
 	"time"
 )
 
@@ -28,61 +22,9 @@ func stringComponent(s string) templ.Component {
 	})
 }
 
-type platformInfoValue struct {
-	Debug            bool                `json:"debug"`
-	User             *kilonova.UserBrief `json:"user"`
-	Admin            bool                `json:"admin"`
-	UserID           int                 `json:"user_id"`
-	Language         string              `json:"language"`
-	EnabledLanguages map[string]string   `json:"langs"`
-	SentryDSN        *string             `json:"sentryDSN"`
-	InternalVersion  string              `json:"internalVersion"`
-}
-
-var buildInfo = sync.OnceValue(func() string {
-	info, ok := debug.ReadBuildInfo()
-	if !ok {
-		return ""
-	}
-	for _, setting := range info.Settings {
-		if setting.Key == "vcs.revision" {
-			val := setting.Value
-			if len(val) > 7 {
-				val = val[:7]
-			}
-			return "-" + val
-		}
-	}
-	return ""
-})
-
 type middlewareStartCtx string
 
 const MiddlewareStartKey = middlewareStartCtx("middleware_start")
-
-func platformInfo(ctx context.Context, enabledLanguages map[string]string) platformInfoValue {
-	user := user.UserBriefContext(ctx)
-	var userID int = 0
-	if user != nil {
-		userID = user.ID
-	}
-
-	var sentryDSN *string
-	if val := flags.SentryDSN.Value(); flags.Sentry.Value() && len(val) > 0 {
-		sentryDSN = &val
-	}
-
-	return platformInfoValue{
-		Debug:            config.Common.Debug,
-		User:             user,
-		Admin:            user.IsAdmin(),
-		UserID:           userID,
-		Language:         language(ctx),
-		EnabledLanguages: enabledLanguages,
-		SentryDSN:        sentryDSN,
-		InternalVersion:  kilonova.Version + buildInfo(),
-	}
-}
 
 func mainHeadTags(enabledLanguages map[string]string, title string, description string, hashNamer HashNamer) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -118,7 +60,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 90, Col: 15}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 32, Col: 15}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -131,7 +73,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var3 templ.SafeURL
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs("/" + hashNamer.HashName("static/favicons/favicon.ico"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 91, Col: 108}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 33, Col: 108}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -144,7 +86,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var4 templ.SafeURL
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs("/" + hashNamer.HashName("static/favicons/favicon-32x32.png"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 92, Col: 117}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 34, Col: 117}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -157,7 +99,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var5 templ.SafeURL
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs("/" + hashNamer.HashName("static/favicons/favicon-16x16.png"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 93, Col: 117}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 35, Col: 117}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -170,7 +112,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var6 templ.SafeURL
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs("/" + hashNamer.HashName("static/favicons/favicon.ico"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 96, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 38, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -183,7 +125,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 103, Col: 42}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 45, Col: 42}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -196,7 +138,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 105, Col: 54}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 47, Col: 54}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -209,7 +151,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 106, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 48, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -222,7 +164,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs("/" + hashNamer.HashName("static/ogimage.jpeg"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 109, Col: 84}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 51, Col: 84}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -247,7 +189,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs("/" + hashNamer.HashName("static/bundle.js"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 113, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 55, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -260,7 +202,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs("/" + hashNamer.HashName("static/vendored.js"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 114, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 56, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -273,7 +215,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var13 templ.SafeURL
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs("/" + hashNamer.HashName("static/chroma.css"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 127, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 69, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -286,7 +228,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var14 templ.SafeURL
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinURLErrs("/" + hashNamer.HashName("static/vendored.css"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 128, Col: 78}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 70, Col: 78}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -299,7 +241,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var15 templ.SafeURL
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs("/" + hashNamer.HashName("static/styles.css"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 129, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 71, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -362,7 +304,7 @@ func Layout(params LayoutParams) templ.Component {
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(util.LanguageContext(ctx))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 149, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 89, Col: 34}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {

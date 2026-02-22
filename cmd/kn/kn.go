@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"net/http/pprof"
 	"os"
 	"os/signal"
 	"path"
@@ -17,6 +16,7 @@ import (
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/infra/maxmind"
 	"github.com/KiloProjects/kilonova/infra/otel"
+	"github.com/KiloProjects/kilonova/infra/profiler"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/riandyrn/otelchi"
@@ -88,7 +88,7 @@ func Kilonova() error {
 	// for graceful setup and shutdown
 	server := webV1(true, base)
 
-	go launchProfiler()
+	go profiler.StartProfiler(ctx, 6080)
 	go func() {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.ErrorContext(ctx, "Error initializing web server", slog.Any("err", err))
@@ -160,16 +160,6 @@ func initLogger(debug, writeFile bool) {
 	}
 
 	slog.SetDefault(slog.New(slogmulti.Pipe(showUser).Handler(slogmulti.Fanout(handlers...))))
-}
-
-func launchProfiler() error {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/debug/pprof/", pprof.Index)
-	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	return http.ListenAndServe(":6080", mux)
 }
 
 // initialize webserver for public api+web

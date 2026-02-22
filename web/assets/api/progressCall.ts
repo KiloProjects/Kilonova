@@ -1,6 +1,6 @@
-import { createToast, dismissToast } from "../toast";
+import {createToast, dismissToast} from "../toast";
 import getText from "../translation";
-import { Response, defaultClient } from "./client";
+import {defaultClient, Response} from "./client";
 
 export async function multipartProgressCall<T = any>(call: string, formdata: FormData): Promise<Response<T>> {
 	if (call.startsWith("/")) {
@@ -15,7 +15,7 @@ export async function multipartProgressCall<T = any>(call: string, formdata: For
 		});
 		const xhr = new XMLHttpRequest();
 		const resp = await new Promise<Response<T>>((resolve) => {
-			xhr.open("POST", `/api/${call}`, true);
+			xhr.open("POST", `${window.platform_info.apiPrefix ?? "/api"}/${call}`, true);
 			xhr.responseType = "json";
 			xhr.upload.addEventListener("progress", (e) => {
 				document.dispatchEvent(

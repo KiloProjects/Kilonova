@@ -162,6 +162,9 @@ func (rt *Web) Handler() http.Handler {
 		r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFileFS(w, r, embedded, "static/favicons/favicon.ico")
 		})
+		r.Get("/profile/{user}/avatar", rt.profilePicture)
+		r.Get("/profile/{user}/gravatar", rt.gravatar)
+		r.Get("/profile/{user}/discordAvatar", rt.discordAvatar)
 
 		r.Get("/termsOfService", rt.justRender("util/termsOfService.html"))
 		r.Get("/privacyPolicy", rt.justRender("util/privacyPolicy.html"))

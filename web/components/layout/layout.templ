@@ -2,14 +2,8 @@ package layout
 
 import (
 	"context"
-	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/config"
-	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"io"
-	"runtime/debug"
-	"sync"
 	"time"
 )
 
@@ -20,70 +14,18 @@ func stringComponent(s string) templ.Component {
 	})
 }
 
-type platformInfoValue struct {
-	Debug            bool                `json:"debug"`
-	User             *kilonova.UserBrief `json:"user"`
-	Admin            bool                `json:"admin"`
-	UserID           int                 `json:"user_id"`
-	Language         string              `json:"language"`
-	EnabledLanguages map[string]string   `json:"langs"`
-	SentryDSN        *string             `json:"sentryDSN"`
-	InternalVersion  string              `json:"internalVersion"`
-}
-
-var buildInfo = sync.OnceValue(func() string {
-	info, ok := debug.ReadBuildInfo()
-	if !ok {
-		return ""
-	}
-	for _, setting := range info.Settings {
-		if setting.Key == "vcs.revision" {
-			val := setting.Value
-			if len(val) > 7 {
-				val = val[:7]
-			}
-			return "-" + val
-		}
-	}
-	return ""
-})
-
 type middlewareStartCtx string
 
 const MiddlewareStartKey = middlewareStartCtx("middleware_start")
 
-func platformInfo(ctx context.Context, enabledLanguages map[string]string) platformInfoValue {
-	user := user.UserBriefContext(ctx)
-	var userID int = 0
-	if user != nil {
-		userID = user.ID
-	}
-
-	var sentryDSN *string
-	if val := flags.SentryDSN.Value(); flags.Sentry.Value() && len(val) > 0 {
-		sentryDSN = &val
-	}
-
-	return platformInfoValue{
-		Debug:            config.Common.Debug,
-		User:             user,
-		Admin:            user.IsAdmin(),
-		UserID:           userID,
-		Language:         language(ctx),
-		EnabledLanguages: enabledLanguages,
-		SentryDSN:        sentryDSN,
-		InternalVersion:  kilonova.Version + buildInfo(),
-	}
-}
-
 templ mainHeadTags(enabledLanguages map[string]string, title string, description string, hashNamer HashNamer) {
 	{{
-	if len(title) == 0 {
-		title = "Kilonova"
-	}
-	if len(description) == 0 {
-		description = "Modern competitive programming platform"
-	}
+		if len(title) == 0 {
+			title = "Kilonova"
+		}
+		if len(description) == 0 {
+			description = "Modern competitive programming platform"
+		}
 	}}
 	<meta charset="utf-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -141,9 +83,7 @@ type LayoutParams struct {
 }
 
 templ Layout(params LayoutParams) {
-	{{
-	renderStart := time.Now()
-	}}
+	{{ renderStart := time.Now() }}
 	<!DOCTYPE html>
 	<html
 		lang={ util.LanguageContext(ctx) }

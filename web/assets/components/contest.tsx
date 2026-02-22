@@ -723,7 +723,7 @@ function ContestRegistrations(params: { contestid: string; usacomode: string }) 
 											width={32}
 											height={32}
 											class="inline-block mr-2 rounded-sm align-middle"
-											src={`/api/user/byName/${user.user.name}/avatar?s=32`}
+											src={`/profile/${user.user.name}/avatar?s=32`}
 										/>{" "}
 										<span class="align-middle">
 											{user.user.name} {user.user.display_name?.length > 0 && `(${user.user.display_name})`}

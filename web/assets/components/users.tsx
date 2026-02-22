@@ -34,7 +34,7 @@ function UserTable({ users }: { users: UserBrief[] }) {
 						<td class="kn-table-cell">{user.id}</td>
 						<td class="kn-table-cell">
 							<a href={`/profile/${user.name}`} class="inline-flex align-middle items-center">
-								<img width={32} height={32} class="flex-none mr-2 rounded-sm" src={`/api/user/byName/${user.name}/avatar?s=32`} /> {user.name}{" "}
+								<img width={32} height={32} class="flex-none mr-2 rounded-sm" src={`/profile/${user.name}/avatar?s=32`} /> {user.name}{" "}
 								{user.display_name?.length > 0 && `(${user.display_name})`}
 							</a>
 						</td>

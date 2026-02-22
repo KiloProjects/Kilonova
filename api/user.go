@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -24,63 +23,6 @@ import (
 var (
 	bm = bluemonday.StrictPolicy()
 )
-
-func (s *API) serveGravatar(w http.ResponseWriter, r *http.Request, user *kilonova.UserFull, size int) {
-	// Read from cache
-	rd, lastmod, valid, err := s.base.GetGravatar(r.Context(), user.Email, size, time.Now().Add(-12*time.Hour))
-	if !valid || err != nil {
-		slog.WarnContext(r.Context(), "BaseAPI GetGravatar is not valid or returned error", slog.Bool("valid", valid), slog.Any("err", err))
-		http.Error(w, "", 500)
-		return
-	}
-	defer rd.Close()
-	w.Header().Add("ETag", fmt.Sprintf("\"kn-%s-%d\"", user.Name, lastmod.Unix()))
-	// Cache for 1 day
-	w.Header().Add("Cache-Control", "public, max-age=86400, immutable")
-
-	http.ServeContent(w, r, "gravatar.png", lastmod, rd)
-}
-
-func (s *API) getGravatar(w http.ResponseWriter, r *http.Request) {
-	size, err := strconv.Atoi(r.FormValue("s"))
-	if err != nil || size == 0 {
-		size = 128
-	}
-	s.serveGravatar(w, r, util.ContentUserFull(r), size)
-}
-
-func (s *API) serveDiscordAvatar(w http.ResponseWriter, r *http.Request, user *kilonova.UserFull, size int) {
-	// Read from cache
-	rd, lastmod, valid, err := s.base.GetDiscordAvatar(r.Context(), user, size, time.Now().Add(-12*time.Hour))
-	if !valid || err != nil {
-		// slog.WarnContext(r.Context(), "BaseAPI GetDiscordAvatar is not valid or returned error", slog.Bool("valid", valid), slog.Any("err", err))
-		http.Error(w, "", 500)
-		return
-	}
-	defer rd.Close()
-	w.Header().Add("ETag", fmt.Sprintf("\"kn-discord-%s-%d\"", user.Name, lastmod.Unix()))
-	// Cache for 1 day
-	w.Header().Add("Cache-Control", "public, max-age=86400, immutable")
-
-	http.ServeContent(w, r, "discordAvatar.png", lastmod, rd)
-}
-
-func (s *API) getDiscordAvatar(w http.ResponseWriter, r *http.Request) {
-	size, err := strconv.Atoi(r.FormValue("s"))
-	if err != nil || size == 0 {
-		size = 128
-	}
-	s.serveDiscordAvatar(w, r, util.ContentUserFull(r), size)
-}
-
-func (s *API) getAvatar(w http.ResponseWriter, r *http.Request) {
-	user := util.ContentUserFull(r)
-	if user.AvatarType == "discord" && user.DiscordID != nil {
-		s.getDiscordAvatar(w, r)
-		return
-	}
-	s.getGravatar(w, r)
-}
 
 func (s *API) deauthAllSessions(w http.ResponseWriter, r *http.Request) {
 	if err := s.base.RemoveUserSessions(r.Context(), util.ContentUserBrief(r).ID); err != nil {

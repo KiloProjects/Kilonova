@@ -28,6 +28,7 @@ export declare global {
 		langs: { [name: string]: string };
 		sentryDSN?: string;
 		internalVersion: string;
+		apiPrefix: string;
 	}
 
 	interface WebLanguage {

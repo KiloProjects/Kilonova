@@ -60,7 +60,7 @@ export class KNClient {
 			params.url = params.url.substring(1);
 		}
 		try {
-			let resp = await fetch(`/api/${params.url}?${qs.stringify(params.queryParams)}`, {
+			let resp = await fetch(`${window.platform_info.apiPrefix ?? "/api"}/${params.url}?${qs.stringify(params.queryParams)}`, {
 				method: params.method,
 				headers: {
 					Accept: "application/json",
