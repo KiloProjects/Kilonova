@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/exaring/otelpgx"
 	pgxdecimal "github.com/jackc/pgx-shopspring-decimal"
@@ -43,7 +44,7 @@ func (db *DB) Pool() *pgxpool.Pool {
 
 func (db *DB) initLogger() {
 	lvl := slog.LevelInfo
-	if config.Common.Debug {
+	if kilonova.DebugMode() {
 		lvl = slog.LevelDebug
 	}
 	db.logger = slog.New(slog.NewJSONHandler(&lumberjack.Logger{

@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 
@@ -42,7 +41,7 @@ func New(base *sudoapi.BaseAPI) *API {
 func (s *API) HandlerV2() http.Handler {
 	humaConf := huma.DefaultConfig("Kilonova", "2.0")
 	humaConf.Servers = []*huma.Server{
-		{URL: config.Common.HostURL.JoinPath("api/v2").String()},
+		{URL: kilonova.HostURL().JoinPath("api/v2").String()},
 	}
 	humaConf.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
 		//"session": {
@@ -57,7 +56,7 @@ func (s *API) HandlerV2() http.Handler {
 		},
 		"oauth": {
 			Type:             "openIdConnect",
-			OpenIDConnectURL: config.Common.HostURL.JoinPath(oidc.DiscoveryEndpoint).String(),
+			OpenIDConnectURL: kilonova.HostURL().JoinPath(oidc.DiscoveryEndpoint).String(),
 		},
 	}
 	r := chi.NewRouter()

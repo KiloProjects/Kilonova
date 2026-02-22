@@ -11,7 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"net/http"
 
-	"github.com/KiloProjects/kilonova/domain/config"
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/web/tutils"
 )
 
@@ -171,9 +171,9 @@ func CanonicalURL(path string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var8 templ.SafeURL
-		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(config.Common.HostURL.JoinPath(path).String())
+		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(kilonova.HostURL().JoinPath(path).String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/utilviews/statuscode.templ`, Line: 31, Col: 75}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/utilviews/statuscode.templ`, Line: 31, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {

@@ -21,7 +21,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/web/views"
 	"github.com/KiloProjects/kilonova/web/views/modals"
 	"github.com/KiloProjects/kilonova/web/views/problems"
@@ -1534,7 +1533,7 @@ func (rt *Web) contestInviteQRCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inviteURL := config.Common.HostURL.JoinPath("contests/invite", inv.ID).String()
+	inviteURL := kilonova.HostURL().JoinPath("contests/invite", inv.ID).String()
 	data, err := qrcode.Encode(inviteURL, qrcode.High, 256)
 	if err != nil {
 		slog.WarnContext(r.Context(), "Couldn't encode QR code", slog.Any("err", err))

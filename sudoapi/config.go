@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/config"
 )
 
@@ -20,7 +21,7 @@ type ConfigUpdate struct {
 
 func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) error {
 	if upd.DefaultLanguage != nil {
-		config.Common.DefaultLang = *upd.DefaultLanguage
+		kilonova.SetDefaultLanguage(*upd.DefaultLanguage)
 	}
 	if upd.TestMaxMem != nil {
 		config.Common.TestMaxMemKB = *upd.TestMaxMem

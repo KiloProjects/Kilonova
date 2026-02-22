@@ -3,7 +3,7 @@ package utilviews
 import (
 	"net/http"
 
-	"github.com/KiloProjects/kilonova/domain/config"
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/web/tutils"
 )
 
@@ -28,5 +28,5 @@ templ NoRobotsHead() {
 }
 
 templ CanonicalURL(path string) {
-	<link rel="canonical" href={ config.Common.HostURL.JoinPath(path).String() }/>
+	<link rel="canonical" href={ kilonova.HostURL().JoinPath(path).String() }/>
 }

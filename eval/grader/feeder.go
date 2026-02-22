@@ -48,7 +48,7 @@ func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, error) {
 			Compress: true,
 		}
 		lvl := slog.LevelInfo
-		if config.Common.Debug {
+		if kilonova.DebugMode() {
 			lvl = slog.LevelDebug
 		}
 		graderLogger = slog.New(slog.NewJSONHandler(logFile, &slog.HandlerOptions{

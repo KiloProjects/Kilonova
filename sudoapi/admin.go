@@ -221,7 +221,7 @@ func (ws *webhookSender) getWebhookEmbed(entry *logEntry, showRepeatCount bool) 
 		Fields:      make([]*discordgo.MessageEmbedField, 0, len(entry.Attrs)+2),
 	}
 	if entry.Author != nil {
-		embed.Description += " (by [" + entry.Author.AppropriateName() + "](" + config.Common.HostURL.JoinPath("profile", entry.Author.Name).String() + ")"
+		embed.Description += " (by [" + entry.Author.AppropriateName() + "](" + kilonova.HostURL().JoinPath("profile", entry.Author.Name).String() + ")"
 		if entry.Author.DiscordID != nil {
 			embed.Description += " / <@" + *entry.Author.DiscordID + ">"
 		}
@@ -237,22 +237,22 @@ func (ws *webhookSender) getWebhookEmbed(entry *logEntry, showRepeatCount bool) 
 			if v.DiscordID != nil {
 				dID = " / <@" + *v.DiscordID + ">"
 			}
-			endURL := config.Common.HostURL.JoinPath("profile", v.Name).String()
+			endURL := kilonova.HostURL().JoinPath("profile", v.Name).String()
 			val = fmt.Sprintf("[%s (#%d)](%s)", v.AppropriateName(), v.ID, endURL) + dID
 		case *kilonova.Problem:
-			endURL := config.Common.HostURL.JoinPath("problems", strconv.Itoa(v.ID)).String()
+			endURL := kilonova.HostURL().JoinPath("problems", strconv.Itoa(v.ID)).String()
 			val = fmt.Sprintf("[%s (#%d)](%s)", v.Name, v.ID, endURL)
 		case *kilonova.Contest:
-			endURL := config.Common.HostURL.JoinPath("contests", strconv.Itoa(v.ID)).String()
+			endURL := kilonova.HostURL().JoinPath("contests", strconv.Itoa(v.ID)).String()
 			val = fmt.Sprintf("[%s (#%d)](%s)", v.Name, v.ID, endURL)
 		case *kilonova.Tag:
-			endURL := config.Common.HostURL.JoinPath("tags", strconv.Itoa(v.ID)).String()
+			endURL := kilonova.HostURL().JoinPath("tags", strconv.Itoa(v.ID)).String()
 			val = fmt.Sprintf("[%s (#%d)](%s)", v.Name, v.ID, endURL)
 		case *kilonova.BlogPost:
-			endURL := config.Common.HostURL.JoinPath("posts", v.Slug).String()
+			endURL := kilonova.HostURL().JoinPath("posts", v.Slug).String()
 			val = fmt.Sprintf("[%s (#%d)](%s)", v.Title, v.ID, endURL)
 		case *kilonova.ProblemList:
-			endURL := config.Common.HostURL.JoinPath("problem_lists", strconv.Itoa(v.ID)).String()
+			endURL := kilonova.HostURL().JoinPath("problem_lists", strconv.Itoa(v.ID)).String()
 			val = fmt.Sprintf("[%s (#%d)](%s)", v.Title, v.ID, endURL)
 		case slog.LogValuer:
 			val = v.LogValue().String()
@@ -406,7 +406,7 @@ func (s *BaseAPI) cleanupBucketsJob(ctx context.Context, interval time.Duration)
 		Compress: true,
 	}
 	lvl := slog.LevelInfo
-	if config.Common.Debug {
+	if kilonova.DebugMode() {
 		lvl = slog.LevelDebug
 	}
 	s.evictionLogger = slog.New(slog.NewJSONHandler(logFile, &slog.HandlerOptions{

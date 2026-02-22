@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+	"github.com/KiloProjects/kilonova"
 )
 
 var (
@@ -48,12 +49,15 @@ type EvalConf struct {
 
 // CommonConf is the data required for all services
 type CommonConf struct {
-	LogDir      string   `toml:"log_dir"`
-	DataDir     string   `toml:"data_dir"`
-	Debug       bool     `toml:"debug"`
-	HostPrefix  string   `toml:"host_prefix"`
-	HostURL     *url.URL `toml:"-"`
-	DefaultLang string   `toml:"default_language"`
+	LogDir  string `toml:"log_dir"`
+	DataDir string `toml:"data_dir"`
+	// Debug is deprecated: use [kilonova.DebugMode] for debug state instead
+	Debug bool `toml:"debug"`
+	// HostPrefix is deprecated: use [kilonova.HostPrefix] for host prefix instead
+	HostPrefix string   `toml:"host_prefix"`
+	HostURL    *url.URL `toml:"-"`
+	// DefaultLang is deprecated: use [kilonova.DefaultLang] for default language instead
+	DefaultLang string `toml:"default_language"`
 
 	DBDSN string `toml:"db_dsn"`
 
@@ -71,6 +75,9 @@ type FrontendConf struct {
 var c configStruct
 
 func spread() {
+	kilonova.SetDebugMode(c.Common.Debug)
+	kilonova.SetHostPrefix(c.Common.HostPrefix)
+	kilonova.SetDefaultLanguage(c.Common.DefaultLang)
 	Common = c.Common
 	Email = c.Email
 	Eval = c.Eval
@@ -78,6 +85,9 @@ func spread() {
 }
 
 func compactify() {
+	c.Common.Debug = kilonova.DebugMode()
+	c.Common.DefaultLang = kilonova.DefaultLanguage()
+	c.Common.HostPrefix = kilonova.HostPrefix()
 	c.Common = Common
 	c.Email = Email
 	c.Eval = Eval
@@ -129,13 +139,6 @@ func Load(ctx context.Context) error {
 	if c.Common.DefaultLang == "" {
 		slog.WarnContext(ctx, "No default language set, defaulting to English")
 		c.Common.DefaultLang = "en"
-	}
-	//nolint:staticcheck
-	if !(c.Common.DefaultLang == "en" || c.Common.DefaultLang == "ro") {
-		slog.WarnContext(ctx, "Invalid language", slog.String("lang", c.Common.DefaultLang))
-	}
-	if c.Common.HostURL, err = url.Parse(c.Common.HostPrefix); err != nil {
-		slog.WarnContext(ctx, "Invalid host prefix", slog.String("prefix", c.Common.HostPrefix), slog.Any("err", err))
 	}
 	spread()
 	return nil

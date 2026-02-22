@@ -9,7 +9,6 @@ import (
 	"text/template"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 
 	_ "embed"
@@ -42,7 +41,7 @@ func (s *BaseAPI) SendPasswordResetEmail(ctx context.Context, userID int, name, 
 	}{
 		Name:       name,
 		VID:        vid,
-		HostPrefix: config.Common.HostPrefix,
+		HostPrefix: kilonova.HostPrefix(),
 		Branding:   flags.EmailBranding.Value(),
 	}); err != nil {
 		slog.ErrorContext(ctx, "Error rendering password request email", slog.Any("err", err))

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/infra/prometheus"
 	"github.com/joho/godotenv"
@@ -48,7 +49,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	initLogger(config.Common.Debug, true)
+	initLogger(kilonova.DebugMode(), true)
 
 	// save the config for formatting
 	if err := config.Save(); err != nil {

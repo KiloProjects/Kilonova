@@ -614,10 +614,10 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return cases.Title(language.English).String(s)
 		},
 		"version": func() string { return kilonova.Version },
-		"debug":   func() bool { return config.Common.Debug },
+		"debug":   func() bool { return kilonova.DebugMode() },
 
 		"formatCanonical": func(path string) string {
-			return config.Common.HostURL.JoinPath(path).String()
+			return kilonova.HostURL().JoinPath(path).String()
 		},
 
 		"tagsByType": func(g string) []*kilonova.Tag {
@@ -673,7 +673,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		},
 
 		// for admin configuration
-		"defaultLang":  func() string { return config.Common.DefaultLang },
+		"defaultLang":  func() string { return kilonova.DefaultLanguage() },
 		"testMaxMemMB": func() int { return config.Common.TestMaxMemKB / 1024 },
 		"globalMaxMem": func() int64 { return config.Eval.GlobalMaxMem / 1024 },
 		"numWorkers":   func() int { return config.Eval.NumConcurrent },

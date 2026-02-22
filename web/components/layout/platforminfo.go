@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
@@ -53,7 +52,7 @@ func platformInfo(ctx context.Context, enabledLanguages map[string]string) platf
 	}
 
 	return platformInfoValue{
-		Debug:            config.Common.Debug,
+		Debug:            kilonova.DebugMode(),
 		User:             userBrief,
 		Admin:            userBrief.IsAdmin(),
 		UserID:           userID,

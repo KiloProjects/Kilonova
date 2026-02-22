@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/bwmarrin/discordgo"
 	"golang.org/x/oauth2"
@@ -47,7 +46,7 @@ func (s *BaseAPI) AnnounceProblemPublished(ctx context.Context, problemID int) {
 		return // noop
 	}
 
-	_, err := s.dSess.ChannelMessageSend(flags.ProblemAnnouncementChannel.Value(), "New problem was just published: "+config.Common.HostURL.JoinPath("problems", strconv.Itoa(problemID)).String())
+	_, err := s.dSess.ChannelMessageSend(flags.ProblemAnnouncementChannel.Value(), "New problem was just published: "+kilonova.HostURL().JoinPath("problems", strconv.Itoa(problemID)).String())
 	if err != nil {
 		slog.WarnContext(ctx, "Could not announce problem publish", slog.Any("err", err))
 	}
@@ -147,7 +146,7 @@ func (s *BaseAPI) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) 
 	}
 	s.LogVerbose(ctx, "User linked Discord identity", userAttr, slog.String("discord_id", dUser.ID), slog.String("discord_user", dUser.Mention()))
 
-	http.Redirect(w, r, config.Common.HostURL.JoinPath("profile/linked").String(), http.StatusTemporaryRedirect)
+	http.Redirect(w, r, kilonova.HostURL().JoinPath("profile/linked").String(), http.StatusTemporaryRedirect)
 }
 
 func (s *BaseAPI) discordConfig() *oauth2.Config {
@@ -159,7 +158,7 @@ func (s *BaseAPI) discordConfig() *oauth2.Config {
 
 		Scopes: []string{"identify"},
 
-		RedirectURL: config.Common.HostURL.JoinPath("api/webhook/discord_callback").String(),
+		RedirectURL: kilonova.HostURL().JoinPath("api/webhook/discord_callback").String(),
 	}
 }
 

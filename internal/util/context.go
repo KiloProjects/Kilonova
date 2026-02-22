@@ -6,7 +6,6 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/datastore"
-	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/ctxt"
 )
@@ -179,7 +178,7 @@ func LanguageContext(ctx context.Context) string {
 	case *string:
 		return *v
 	default:
-		return config.Common.DefaultLang
+		return kilonova.DefaultLanguage()
 	}
 }
 

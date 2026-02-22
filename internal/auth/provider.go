@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"log/slog"
 
-	"github.com/KiloProjects/kilonova/domain/config"
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 	"github.com/zitadel/oidc/v3/pkg/op"
@@ -41,11 +41,11 @@ func GetProvider(storage *AuthStorage) (*op.Provider, error) {
 	opts := []op.Option{
 		op.WithLogger(slog.Default().WithGroup("oidc")),
 	}
-	if config.Common.Debug {
+	if kilonova.DebugMode() {
 		opts = append(opts, op.WithAllowInsecure())
 	}
 
-	handler, err := op.NewProvider(opConfig, storage, op.StaticIssuer(config.Common.HostPrefix), opts...)
+	handler, err := op.NewProvider(opConfig, storage, op.StaticIssuer(kilonova.HostPrefix()), opts...)
 	if err != nil {
 		return nil, err
 	}

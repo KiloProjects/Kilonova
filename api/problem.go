@@ -17,7 +17,6 @@ import (
 	_ "embed"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/net/llm"
@@ -691,7 +690,7 @@ func (s *API) getStatementVariants(ctx context.Context, problem *kilonova.Proble
 			Format:   v.Format,
 			Type:     v.Type,
 
-			Permalink:     config.Common.HostURL.JoinPath("assets/problem", strconv.Itoa(problem.ID), "attachment", v.AttachmentName).String(),
+			Permalink:     kilonova.HostURL().JoinPath("assets/problem", strconv.Itoa(problem.ID), "attachment", v.AttachmentName).String(),
 			LastUpdatedAt: v.LastUpdatedAt,
 		}
 		if v.Format == "md" {

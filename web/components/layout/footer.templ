@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
-	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
@@ -62,7 +61,7 @@ templ Footer(prepareDuration time.Duration, renderStart time.Time, hashNamer Has
 					<ul>
 						<li><span class="black-span"><i class="fas fa-fw fa-code-branch"></i> Kilonova { kilonova.Version }</span></li>
 						<li><span class="black-span"><i class="fas fa-fw fa-clock"></i> { T(ctx, "serverTime") }: <span id="footer_server_time">{ time.Now().Format("15:04:05") }</span></span></li>
-						if config.Common.Debug {
+						if kilonova.DebugMode() {
 							<li><span class="black-span"><i class="text-red-600 fas fa-fw fa-exclamation-triangle"></i> Debug Mode active</span></li>
 						}
 						if len(flags.DiscordInviteID.Value()) > 0 {

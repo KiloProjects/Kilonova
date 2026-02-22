@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/infra/postgres"
 	"github.com/KiloProjects/kilonova/internal/repository"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
@@ -463,14 +462,14 @@ func (s *AuthStorage) setUserInfo(ctx context.Context, userinfo *oidc.UserInfo, 
 			userinfo.EmailVerified = oidc.Bool(user.VerifiedEmail)
 		case oidc.ScopeProfile:
 			userinfo.PreferredUsername = user.Name
-			userinfo.Picture = config.Common.HostURL.JoinPath("profile", user.Name, "avatar").String() + "?s=128"
+			userinfo.Picture = kilonova.HostURL().JoinPath("profile", user.Name, "avatar").String() + "?s=128"
 			switch user.PreferredLanguage {
 			case "en":
 				userinfo.Locale = oidc.NewLocale(language.English)
 			case "ro":
 				userinfo.Locale = oidc.NewLocale(language.Romanian)
 			default:
-				switch config.Common.DefaultLang {
+				switch kilonova.DefaultLanguage() {
 				case "en":
 					userinfo.Locale = oidc.NewLocale(language.English)
 				case "ro":

@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	config "github.com/KiloProjects/kilonova/domain/config"
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/internal/auth"
 	"github.com/KiloProjects/kilonova/sudoapi"
 )

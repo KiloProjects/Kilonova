@@ -8,8 +8,6 @@ import (
 	"os"
 
 	_ "embed"
-
-	"github.com/KiloProjects/kilonova/domain/config"
 )
 
 // v1
@@ -34,7 +32,7 @@ func GetText(lang, line string, args ...any) string {
 		return line
 	}
 	if _, ok := translations[line][lang]; !ok {
-		return fmt.Sprintf(translations[line][config.Common.DefaultLang], args...)
+		return fmt.Sprintf(translations[line][DefaultLanguage()], args...)
 	}
 	return fmt.Sprintf(translations[line][lang], args...)
 }
@@ -44,7 +42,7 @@ func MaybeGetText(lang, line string, args ...any) string {
 		return line
 	}
 	if _, ok := translations[line][lang]; !ok {
-		return fmt.Sprintf(translations[line][config.Common.DefaultLang], args...)
+		return fmt.Sprintf(translations[line][DefaultLanguage()], args...)
 	}
 	return fmt.Sprintf(translations[line][lang], args...)
 }

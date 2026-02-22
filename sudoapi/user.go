@@ -19,7 +19,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
@@ -289,7 +288,7 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 	}
 
 	if lang == "" {
-		lang = config.Common.DefaultLang
+		lang = kilonova.DefaultLanguage()
 	}
 	if theme == kilonova.PreferredThemeNone {
 		theme = kilonova.PreferredThemeDark
@@ -399,7 +398,7 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 			Username:   user.Name,
 			Password:   args.Password,
 			Contest:    contest,
-			HostPrefix: config.Common.HostPrefix,
+			HostPrefix: kilonova.HostPrefix(),
 			Branding:   flags.EmailBranding.Value(),
 		}
 		if user.DisplayName != "" {

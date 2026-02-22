@@ -51,7 +51,7 @@ func Kilonova() error {
 	// Print welcome message
 	slog.InfoContext(ctx, "Starting Kilonova", slog.String("version", kilonova.Version))
 
-	if config.Common.Debug {
+	if kilonova.DebugMode() {
 		slog.WarnContext(ctx, "Debug mode activated, expect worse performance")
 	}
 
@@ -171,9 +171,9 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 			if strings.HasPrefix(r.URL.Path, "/assets") {
 				return true
 			}
-			return strings.ToLower(origin) == config.Common.HostPrefix
+			return strings.ToLower(origin) == kilonova.HostPrefix()
 		},
-		//AllowedOrigins:   []string{config.Common.HostPrefix}, // TODO: Do better
+		//AllowedOrigins:   []string{kilonova.HostPrefix()}, // TODO: Do better
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Api-Key"},
 		ExposedHeaders:   []string{"Link"},

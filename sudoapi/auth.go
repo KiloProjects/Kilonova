@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/asaskevich/govalidator"
 	"golang.org/x/crypto/bcrypt"
@@ -84,7 +83,7 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 	}
 
 	if lang == "" {
-		lang = config.Common.DefaultLang
+		lang = kilonova.DefaultLanguage()
 	}
 	if theme == kilonova.PreferredThemeNone {
 		theme = kilonova.PreferredThemeDark
