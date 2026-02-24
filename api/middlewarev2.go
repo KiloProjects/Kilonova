@@ -165,6 +165,28 @@ func (s *API) validateProblemIDv2(api huma.API) func(ctx huma.Context, next func
 	}
 }
 
+func (s *API) validateContestIDv2(api huma.API) func(ctx huma.Context, next func(huma.Context)) {
+	return func(ctx huma.Context, next func(huma.Context)) {
+		contestID, err := strconv.Atoi(ctx.Param("contestID"))
+		if err != nil {
+			huma.WriteErr(api, ctx, http.StatusBadRequest, "Invalid contest ID")
+			return
+		}
+		contest, err := s.base.Contest(ctx.Context(), contestID)
+		if err != nil {
+			huma.WriteErr(api, ctx, http.StatusBadRequest, "Contest does not exist")
+			return
+		}
+
+		if !s.base.IsContestVisible(user.UserBriefContext(ctx.Context()), contest) {
+			huma.WriteErr(api, ctx, http.StatusUnauthorized, "You are not allowed to access this contest")
+			return
+		}
+
+		next(huma.WithValue(ctx, util.ContestKey, contest))
+	}
+}
+
 // MustBeAuthedV2 is middleware to make sure the user creating the request is authenticated
 func (s *API) MustBeAuthedV2(api huma.API) func(ctx huma.Context, next func(huma.Context)) {
 	return func(ctx huma.Context, next func(huma.Context)) {

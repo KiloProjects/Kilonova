@@ -1,13 +1,16 @@
 package api
 
 import (
+	"cmp"
 	"context"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/util/slicealg"
 )
 
 func (s *API) createContest(w http.ResponseWriter, r *http.Request) {
@@ -569,4 +572,133 @@ func (s *API) runMOSS(ctx context.Context, _ struct{}) error {
 		return kilonova.Statusf(400, "MOSS can't run on virtual contests, for now")
 	}
 	return s.base.RunMOSS(context.WithoutCancel(ctx), util.ContestContext(ctx))
+}
+
+///
+
+type ContestGetInput struct {
+	Body *struct {
+		Type    kilonova.ContestType `json:"type" oneOf:"official,virtual"`
+		Future  bool                 `json:"future"`
+		Running bool                 `json:"running"`
+		Ended   bool                 `json:"ended"`
+
+		Limit  int `json:"limit" maximum:"50"`
+		Offset int `json:"offset"`
+	}
+}
+
+type apiContest struct {
+	ID        int                   `json:"id"`
+	CreatedAt time.Time             `json:"created_at"`
+	Name      string                `json:"name"`
+	Editors   []*kilonova.UserBrief `json:"editors"`
+	Testers   []*kilonova.UserBrief `json:"testers"`
+
+	Description string `json:"description"`
+
+	// PublicJoin indicates whether a user can freely join a contest
+	// or he needs to be manually added
+	PublicJoin bool `json:"public_join"`
+
+	// RegisterDuringContest indicates whether a user can join a contest while it's running
+	// It is useless without PublicJoin set to true
+	RegisterDuringContest bool `json:"register_during_contest"`
+
+	// Visible indicates whether a contest can be seen by others
+	// Contestants may be able to see the contest
+	Visible bool `json:"hidden"`
+
+	// PublicLeaderboard controls whether the contest's leaderboard
+	// is viewable by everybody or just admins
+	PublicLeaderboard bool `json:"public_leaderboard"`
+
+	LeaderboardStyle      kilonova.LeaderboardType `json:"leaderboard_style"`
+	LeaderboardFreeze     *time.Time               `json:"leaderboard_freeze"`
+	ICPCSubmissionPenalty int                      `json:"icpc_submission_penalty"`
+
+	LeaderboardAdvancedFilter bool `json:"leaderboard_advanced_filter"`
+
+	SubmissionCooldown time.Duration `json:"submission_cooldown"`
+	QuestionCooldown   time.Duration `json:"question_cooldown"`
+
+	StartTime time.Time `json:"start_time"`
+	EndTime   time.Time `json:"end_time"`
+
+	// PerUserTime records the number of seconds a user has in an USACO-style participation
+	// Setting it to 0 will make contests behave "normally"
+	PerUserTime int `json:"per_user_time"`
+
+	Type kilonova.ContestType `json:"type"`
+
+	// MaxSubs is the maximum number of submissions
+	// that someone is allowed to send to a problem during a contest.
+	// Any number < 0 means no limit
+	MaxSubs int `json:"max_subs"`
+}
+
+func contestFromDomain(c *kilonova.Contest) *apiContest {
+	return &apiContest{
+		ID:                        c.ID,
+		CreatedAt:                 c.CreatedAt,
+		Name:                      c.Name,
+		Editors:                   c.Editors,
+		Testers:                   c.Testers,
+		Description:               c.Description,
+		PublicJoin:                c.PublicJoin,
+		RegisterDuringContest:     c.RegisterDuringContest,
+		Visible:                   c.Visible,
+		PublicLeaderboard:         c.PublicLeaderboard,
+		LeaderboardStyle:          c.LeaderboardStyle,
+		LeaderboardFreeze:         c.LeaderboardFreeze,
+		ICPCSubmissionPenalty:     c.ICPCSubmissionPenalty,
+		LeaderboardAdvancedFilter: c.LeaderboardAdvancedFilter,
+		SubmissionCooldown:        c.SubmissionCooldown,
+		QuestionCooldown:          c.QuestionCooldown,
+		StartTime:                 c.StartTime,
+		EndTime:                   c.EndTime,
+		PerUserTime:               c.PerUserTime,
+		Type:                      c.Type,
+		MaxSubs:                   c.MaxSubs,
+	}
+}
+
+type contestSearchResult struct {
+	Contests []*apiContest
+}
+
+type ContestGetOutput struct {
+	Body contestSearchResult
+}
+
+func (s *API) contestGet(ctx context.Context, input *ContestGetInput) (*ContestGetOutput, error) {
+	var args kilonova.ContestFilter
+	if input.Body != nil {
+		args = kilonova.ContestFilter{
+			Future:  input.Body.Future,
+			Running: input.Body.Running,
+			Ended:   input.Body.Ended,
+			Type:    input.Body.Type,
+			Limit:   cmp.Or(max(min(input.Body.Limit, 50), 0), 25),
+			Offset:  input.Body.Offset,
+		}
+	}
+	args.Look = true
+	args.LookingUser = user.UserBriefContext(ctx)
+
+	contests, err := s.base.Contests(ctx, args)
+	if err != nil {
+		return nil, err
+	}
+	return &ContestGetOutput{
+		Body: contestSearchResult{Contests: slicealg.Map(contests, contestFromDomain)},
+	}, nil
+}
+
+type ContestSingleGetOutput struct {
+	Body *apiContest
+}
+
+func (s *API) contestSingleGet(ctx context.Context, _ *struct{}) (*ContestSingleGetOutput, error) {
+	return &ContestSingleGetOutput{contestFromDomain(util.ContestContext(ctx))}, nil
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/net/llm"
 	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/KiloProjects/kilonova/util/slicealg"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/shopspring/decimal"
 )
@@ -324,10 +325,61 @@ func (s *API) getProblems(ctx context.Context, args kilonova.ProblemFilter) ([]*
 	return s.base.Problems(ctx, args)
 }
 
+type fullSearchProblem struct {
+	ID        int       `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	Name      string    `json:"name"`
+
+	Visible      bool `json:"visible"`
+	VisibleTests bool `json:"visible_tests"`
+
+	TimeLimit     float64 `json:"time_limit"`
+	MemoryLimit   int     `json:"memory_limit"`
+	SourceSize    int     `json:"source_size"`
+	SourceCredits string  `json:"source_credits"`
+
+	PublishedAt *time.Time `json:"published_at"`
+
+	TaskType kilonova.TaskType `json:"task_type"`
+
+	ScoreUserID *int `json:"score_user_id"`
+
+	MaxScore *decimal.Decimal `json:"max_score"`
+	// For showing the published/unpublished label
+	IsEditor bool `json:"is_editor"`
+
+	Tags []*kilonova.Tag `json:"tags"`
+
+	SolvedBy    int `json:"solved_by"`
+	AttemptedBy int `json:"attempted_by"`
+}
+
 type problemSearchResult struct {
-	Problems []*sudoapi.FullProblem `json:"problems"`
+	Problems []*fullSearchProblem `json:"problems"`
 
 	Count int `json:"count"`
+}
+
+func getSearchProblem(pb *sudoapi.FullProblem) *fullSearchProblem {
+	return &fullSearchProblem{
+		ID:            pb.ID,
+		CreatedAt:     pb.CreatedAt,
+		Name:          pb.Name,
+		Visible:       pb.Visible,
+		VisibleTests:  pb.VisibleTests,
+		TimeLimit:     pb.TimeLimit,
+		MemoryLimit:   pb.MemoryLimit,
+		SourceSize:    pb.SourceSize,
+		SourceCredits: pb.SourceCredits,
+		PublishedAt:   pb.PublishedAt,
+		TaskType:      pb.TaskType,
+		ScoreUserID:   pb.ScoreUserID,
+		MaxScore:      pb.MaxScore,
+		IsEditor:      pb.IsEditor,
+		Tags:          pb.Tags,
+		SolvedBy:      pb.SolvedBy,
+		AttemptedBy:   pb.AttemptedBy,
+	}
 }
 
 func (s *API) searchProblems(ctx context.Context, args kilonova.ProblemFilter) (*problemSearchResult, error) {
@@ -351,7 +403,7 @@ func (s *API) searchProblems(ctx context.Context, args kilonova.ProblemFilter) (
 	if err != nil {
 		return nil, err
 	}
-	return &problemSearchResult{Problems: problems, Count: cnt}, nil
+	return &problemSearchResult{Problems: slicealg.Map(problems, getSearchProblem), Count: cnt}, nil
 }
 
 func (s *API) updateProblem(ctx context.Context, args kilonova.ProblemUpdate) error {
@@ -619,11 +671,38 @@ func (s *API) problemGet(ctx context.Context, input *ProblemGetInput) (*ProblemG
 	if err != nil {
 		return nil, err
 	}
-	return &ProblemGetOutput{problemSearchResult{Problems: problems, Count: cnt}}, nil
+	return &ProblemGetOutput{problemSearchResult{Problems: slicealg.Map(problems, getSearchProblem), Count: cnt}}, nil
 }
 
 type apiProblem struct {
-	*kilonova.Problem
+	ID        int       `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	Name      string    `json:"name"`
+	TestName  string    `json:"test_name"`
+
+	DefaultPoints decimal.Decimal `json:"default_points"`
+
+	Visible      bool `json:"visible"`
+	VisibleTests bool `json:"visible_tests"`
+
+	TimeLimit   float64 `json:"time_limit"`
+	MemoryLimit int     `json:"memory_limit"`
+	SourceSize  int     `json:"source_size"`
+
+	SourceCredits string `json:"source_credits"`
+
+	ScoreScale decimal.Decimal `json:"score_scale"`
+
+	ConsoleInput   bool  `json:"console_input"`
+	ScorePrecision int32 `json:"score_precision"`
+
+	PublishedAt     *time.Time           `json:"published_at"`
+	ScoringStrategy kilonova.ScoringType `json:"scoring_strategy"`
+
+	TaskType kilonova.TaskType `json:"task_type"`
+
+	//CommunicationProcesses int `json:"communication_processes"`
+
 	Languages         []*sudoapi.Language `json:"submitLanguages"`
 	StatementVariants []StatementVariant  `json:"statementVariants"`
 	Tags              []*kilonova.Tag     `json:"tags"`
@@ -634,20 +713,45 @@ type ProblemSingleGetOutput struct {
 }
 
 func (s *API) problemSingleGet(ctx context.Context, _ *struct{}) (*ProblemSingleGetOutput, error) {
-	var pb apiProblem
-	pb.Problem = util.ProblemContext(ctx)
 	languages, err := s.base.ProblemLanguages(ctx, util.ProblemContext(ctx))
 	if err != nil {
 		return nil, err
 	}
-	pb.Languages = languages
-	pb.StatementVariants, err = s.getStatementVariants(ctx, pb.Problem, user.UserBriefContext(ctx))
+	statementVariants, err := s.getStatementVariants(ctx, util.ProblemContext(ctx), user.UserBriefContext(ctx))
 	if err != nil {
 		return nil, err
 	}
-	pb.Tags, err = s.base.ProblemTags(ctx, util.ProblemContext(ctx).ID)
+	tags, err := s.base.ProblemTags(ctx, util.ProblemContext(ctx).ID)
 	if err != nil {
 		return nil, err
+	}
+
+	problem := util.ProblemContext(ctx)
+	pb := apiProblem{
+		// Problem fields
+		ID:              problem.ID,
+		CreatedAt:       problem.CreatedAt,
+		Name:            problem.Name,
+		TestName:        problem.TestName,
+		DefaultPoints:   problem.DefaultPoints,
+		Visible:         problem.Visible,
+		VisibleTests:    problem.VisibleTests,
+		TimeLimit:       problem.TimeLimit,
+		MemoryLimit:     problem.MemoryLimit,
+		SourceSize:      problem.SourceSize,
+		SourceCredits:   problem.SourceCredits,
+		ScoreScale:      problem.ScoreScale,
+		ConsoleInput:    problem.ConsoleInput,
+		ScorePrecision:  problem.ScorePrecision,
+		PublishedAt:     problem.PublishedAt,
+		ScoringStrategy: problem.ScoringStrategy,
+		TaskType:        problem.TaskType,
+		//CommunicationProcesses: problem.CommunicationProcesses,
+
+		// Extra fields
+		Languages:         languages,
+		StatementVariants: statementVariants,
+		Tags:              tags,
 	}
 
 	return &ProblemSingleGetOutput{&pb}, nil

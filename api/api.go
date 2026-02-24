@@ -72,6 +72,13 @@ func (s *API) HandlerV2() http.Handler {
 	}, s.problemGet)
 
 	huma.Register(api, huma.Operation{
+		OperationID: "get-contests",
+		Method:      http.MethodPost,
+		Path:        "/contests",
+		Security:    []map[string][]string{},
+	}, s.contestGet)
+
+	huma.Register(api, huma.Operation{
 		OperationID: "get-submission",
 		Method:      http.MethodGet,
 		Path:        "/submissions/{subID}",
@@ -117,6 +124,24 @@ func (s *API) HandlerV2() http.Handler {
 		Security:    []map[string][]string{},
 		Middlewares: huma.Middlewares{s.MustBeAuthedV2(problemsGroup)},
 	}, s.createSubmissionV2)
+
+	contestsGroup := huma.NewGroup(api, "/contests")
+	contestsGroup.UseMiddleware(s.validateContestIDv2(contestsGroup))
+	contestsGroup.UseSimpleModifier(func(o *huma.Operation) {
+		o.Parameters = append(o.Parameters, &huma.Param{
+			Name:     "contestID",
+			In:       "path",
+			Required: true,
+			Example:  1,
+		})
+	})
+
+	huma.Register(contestsGroup, huma.Operation{
+		OperationID: "get-contest-by-id",
+		Method:      http.MethodGet,
+		Path:        "/{contestID}",
+		Security:    []map[string][]string{},
+	}, s.contestSingleGet)
 
 	return r
 }
