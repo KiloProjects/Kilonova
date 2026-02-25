@@ -168,6 +168,9 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 
 	r.Use(cors.Handler(cors.Options{
 		AllowOriginFunc: func(r *http.Request, origin string) bool {
+			if strings.HasPrefix(r.URL.Path, "/api/v2") {
+				return true
+			}
 			if strings.HasPrefix(r.URL.Path, "/assets") {
 				return true
 			}
