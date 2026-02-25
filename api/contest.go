@@ -578,13 +578,13 @@ func (s *API) runMOSS(ctx context.Context, _ struct{}) error {
 
 type ContestGetInput struct {
 	Body *struct {
-		Type    kilonova.ContestType `json:"type" oneOf:"official,virtual"`
-		Future  bool                 `json:"future"`
-		Running bool                 `json:"running"`
-		Ended   bool                 `json:"ended"`
+		Type    kilonova.ContestType `json:"type" required:"false" oneOf:"official,virtual"`
+		Future  bool                 `json:"future" required:"false"`
+		Running bool                 `json:"running" required:"false"`
+		Ended   bool                 `json:"ended" required:"false"`
 
-		Limit  int `json:"limit" maximum:"50"`
-		Offset int `json:"offset"`
+		Limit  int `json:"limit" maximum:"50" required:"false"`
+		Offset int `json:"offset" required:"false"`
 	}
 }
 
@@ -664,7 +664,7 @@ func contestFromDomain(c *kilonova.Contest) *apiContest {
 }
 
 type contestSearchResult struct {
-	Contests []*apiContest
+	Contests []*apiContest `json:"contests"`
 }
 
 type ContestGetOutput struct {

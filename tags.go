@@ -15,7 +15,7 @@ const (
 type Tag struct {
 	ID   int     `json:"id"`
 	Name string  `json:"name"`
-	Type TagType `json:"type"`
+	Type TagType `json:"type" oneOf:"author,contest,method,other"`
 }
 
 func (t *Tag) LogValue() slog.Value {
