@@ -468,6 +468,7 @@ func (s *API) HandlerV1() http.Handler {
 			r.With(s.validateContestEditor).Get("/registrations", s.contestRegistrations)
 			r.With(s.validateContestEditor).Post("/kickUser", s.stripContestRegistration)
 			r.With(s.MustBeAdmin).Post("/forceRegister", s.forceRegisterForContest)
+			r.With(s.validateContestEditor).Post("/clone", s.cloneContest)
 			r.With(s.validateContestEditor).Post("/delete", webMessageWrapper("Deleted contest", func(ctx context.Context, _ struct{}) error {
 				return s.base.DeleteContest(ctx, util.ContestContext(ctx))
 			}))

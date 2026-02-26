@@ -11,6 +11,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/net/moss"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/KiloProjects/kilonova/util/slicealg"
 )
 
 func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova.ContestType, author *kilonova.UserBrief) (int, error) {
@@ -53,6 +54,82 @@ func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova
 		slog.WarnContext(ctx, "Couldn't add author to contest editors", slog.Any("err", err))
 		return id, fmt.Errorf("couldn't add author to contest editors: %w", err)
 	}
+	return id, nil
+}
+
+func (s *BaseAPI) CloneContest(ctx context.Context, contest *kilonova.Contest, name string, author *kilonova.UserBrief) (int, error) {
+	if contest == nil {
+		return -1, Statusf(400, "Invalid contest")
+	}
+	if name == "" {
+		name = contest.Name + " - Clone"
+	}
+
+	id, err := s.CreateContest(ctx, name, contest.Type, author)
+	if err != nil {
+		return -1, err
+	}
+
+	upd := kilonova.ContestUpdate{
+		PublicJoin:                new(contest.PublicJoin),
+		Visible:                   new(contest.Visible),
+		Description:               new(contest.Description),
+		StartTime:                 new(contest.StartTime),
+		EndTime:                   new(contest.EndTime),
+		MaxSubs:                   new(contest.MaxSubs),
+		RegisterDuringContest:     new(contest.RegisterDuringContest),
+		PublicLeaderboard:         new(contest.PublicLeaderboard),
+		LeaderboardStyle:          contest.LeaderboardStyle,
+		ICPCSubmissionPenalty:     new(contest.ICPCSubmissionPenalty),
+		LeaderboardAdvancedFilter: new(contest.LeaderboardAdvancedFilter),
+		ChangeLeaderboardFreeze:   true,
+		LeaderboardFreeze:         contest.LeaderboardFreeze,
+		SubmissionCooldown:        new(int(contest.SubmissionCooldown / time.Millisecond)),
+		QuestionCooldown:          new(int(contest.QuestionCooldown / time.Millisecond)),
+		PerUserTime:               new(contest.PerUserTime),
+	}
+
+	if author != nil && author.IsAdmin() {
+		upd.IPManagementEnabled = new(contest.IPManagementEnabled)
+		upd.WhitelistEnabled = new(contest.WhitelistEnabled)
+	}
+
+	if err := s.UpdateContest(ctx, id, upd); err != nil {
+		return id, fmt.Errorf("couldn't clone contest settings: %w", err)
+	}
+
+	pbs, err := s.db.ContestProblems(ctx, contest.ID)
+	if err != nil {
+		return id, fmt.Errorf("couldn't fetch contest problems: %w", err)
+	}
+	if err := s.UpdateContestProblems(ctx, id, slicealg.Map(pbs, func(pb *kilonova.Problem) int {
+		return pb.ID
+	})); err != nil {
+		return id, fmt.Errorf("couldn't clone contest problems: %w", err)
+	}
+
+	for _, editor := range contest.Editors {
+		if author != nil && editor.ID == author.ID {
+			continue
+		}
+		if err := s.AddContestEditor(ctx, id, editor.ID); err != nil {
+			return id, fmt.Errorf("couldn't clone contest editors: %w", err)
+		}
+	}
+
+	for _, tester := range contest.Testers {
+		if author != nil && tester.ID == author.ID {
+			continue
+		}
+		if err := s.AddContestTester(ctx, id, tester.ID); err != nil {
+			return id, fmt.Errorf("couldn't clone contest testers: %w", err)
+		}
+	}
+
+	s.LogUserAction(ctx, "Cloned contest",
+		slog.Any("contest_id", contest),
+		slog.Int("new_contest_id", id),
+	)
 	return id, nil
 }
 

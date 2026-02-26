@@ -32,6 +32,24 @@ func (s *API) createContest(w http.ResponseWriter, r *http.Request) {
 	returnData(w, id)
 }
 
+func (s *API) cloneContest(w http.ResponseWriter, r *http.Request) {
+	var args struct {
+		Name string `json:"name"`
+	}
+	if err := parseRequest(r, &args); err != nil {
+		errorData(w, err, 500)
+		return
+	}
+
+	id, err := s.base.CloneContest(r.Context(), util.Contest(r), args.Name, util.UserBrief(r))
+	if err != nil {
+		statusError(w, err)
+		return
+	}
+
+	returnData(w, id)
+}
+
 func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
 	var args kilonova.ContestUpdate
 	if err := parseRequest(r, &args); err != nil {

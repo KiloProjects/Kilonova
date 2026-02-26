@@ -129,6 +129,7 @@
             </div>
             <div>
                 <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
+                <button type="button" id="cloneContestButton" class="btn btn-blue ml-2">{{getText "cloneContest"}}</button>
                 {{if not .Contest.Started}}
                 <div class="block my-2">
                     <button type="button" id="deleteContestButton" class="btn btn-red mr-2">{{getText "deleteContest"}}</button>
@@ -504,6 +505,19 @@ async function updateContestDesc(e) {
 document.getElementById("contest_update_form")?.addEventListener("submit", updateContest)
 document.getElementById("contest_description_form")?.addEventListener("submit", updateContestDesc)
 document.getElementById("contest_pblist_form")?.addEventListener("submit", createPblistFromContest)
+</script>
+<script>
+async function cloneContest(e) {
+    e.preventDefault();
+    const defaultName = `${document.getElementById("contest_name_upd").value} (copy)`;
+    const res = await bundled.postCall(`/contest/${contest_id}/clone`, {name: name.trim()});
+    if (res.status === "success") {
+        window.location.assign(`/contests/${res.data}/manage/edit`);
+        return;
+    }
+    bundled.apiToast(res);
+}
+document.getElementById("cloneContestButton")?.addEventListener("click", cloneContest);
 </script>
 <script>
 async function deleteContest(e) {

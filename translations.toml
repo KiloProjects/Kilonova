@@ -935,6 +935,10 @@ ro = "Actualizare date problemă"
 en = "Delete problem"
 ro = "Șterge problema"
 
+[cloneContest]
+en = "Clone contest"
+ro = "Clonare concurs"
+
 [deleteContest]
 en = "Delete contest"
 ro = "Șterge concurs"
