@@ -3,7 +3,7 @@
     <form id="problem_import_form" autocomplete="off">
         <label class="block mb-2">
             <span class="mr-2 text-xl">{{getText "file"}}: </span>
-            <input class="form-input" id="importArchiveFile" type="file" accept=".zip" required/>
+            <input class="form-input" id="importArchiveFile" type="file" accept=".zip" required multiple/>
         </label>
         <label class="block my-2">
             <span class="mr-2 text-xl"> {{getText "scoreParams"}}:</span>
@@ -28,30 +28,32 @@
 <script>
 async function importProblem(e) {
 	e.preventDefault()
-	var form = new FormData();
 	var files = document.getElementById("importArchiveFile").files;
 	if(files === null || files.length === 0) {
 		bundled.createToast({status: "error", title: '{{getText "noFiles"}}'})
 		return
 	}
-	form.append("testArchive", files[0]);
-    form.append("statementLang", document.getElementById("statementImport").value);
-    const scoreParams = document.getElementById("importScoreParams").value;
-    if(scoreParams.length > 0) {
-        form.append("scoreParameters", scoreParams);
-    }
-    const pblistID = parseInt(document.getElementById("pb_import_pblist").value);
-    if(!isNaN(pblistID)) {
-        form.append("pblistID", pblistID);
-    }
+	for(const file of files) {
+		var form = new FormData();
+		form.append("testArchive", file);
+	    form.append("statementLang", document.getElementById("statementImport").value);
+	    const scoreParams = document.getElementById("importScoreParams").value;
+	    if(scoreParams.length > 0) {
+	        form.append("scoreParameters", scoreParams);
+	    }
+	    const pblistID = parseInt(document.getElementById("pb_import_pblist").value);
+	    if(!isNaN(pblistID)) {
+	        form.append("pblistID", pblistID);
+	    }
 
-	let res = await bundled.multipartProgressCall("/problem/import", form)
-	if(res.status === "success") {
-		window.location.assign(`/problems/${res.data}`);
-		return
+		let res = await bundled.multipartProgressCall("/problem/import", form)
+		if(res.status === "success" && files.length === 1) {
+			window.location.assign(`/problems/${res.data}`);
+			return
+		}
+		bundled.apiToast(res)
 	}
-	bundled.apiToast(res)
-}    
+}
 
 document.getElementById("problem_import_form").addEventListener("submit", importProblem)
 </script>
