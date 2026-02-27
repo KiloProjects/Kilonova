@@ -243,13 +243,11 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	}
 
 	if info, err := checker.Prepare(ctx); err != nil {
-		t := true
 		info = "Checker compile error:\n" + info
-		internalErr := "test_verdict.internal_error"
 		if err := base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{
 			Status: kilonova.StatusFinished, Score: &problem.DefaultPoints,
-			CompileError: &t, CompileMessage: &info,
-			ChangeVerdict: true, ICPCVerdict: &internalErr,
+			CompileError: new(true), CompileMessage: &info,
+			ChangeVerdict: true, ICPCVerdict: new("test_verdict.internal_error"),
 		}); err != nil {
 			return fmt.Errorf("error during update of compile information: %w", err)
 		}
@@ -258,10 +256,9 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 
 	subTests, err := base.SubTests(ctx, sub.ID)
 	if err != nil {
-		internalErr := "test_verdict.internal_error"
 		if err := base.UpdateSubmission(ctx, sub.ID, kilonova.SubmissionUpdate{
 			Status: kilonova.StatusFinished, Score: &problem.DefaultPoints,
-			ChangeVerdict: true, ICPCVerdict: &internalErr,
+			ChangeVerdict: true, ICPCVerdict: new("test_verdict.internal_error"),
 		}); err != nil {
 			return fmt.Errorf("could not update submission after subtest fetch fail: %w", err)
 		}
@@ -370,8 +367,7 @@ func (sh *submissionHandler) handleICPCSubmission(ctx context.Context, checker c
 	}
 
 	if !failed {
-		hundred := decimal.NewFromInt(100)
-		upd.Score = &hundred
+		upd.Score = new(decimal.NewFromInt(100))
 		upd.ChangeVerdict = true
 		upd.ICPCVerdict = &acceptedVerdict
 	}
@@ -410,19 +406,17 @@ func (sh *submissionHandler) compileSubmission(ctx context.Context) error {
 	if resp.Stats != nil {
 		compileTime = &resp.Stats.Time
 	}
-	compileError := !resp.Success
 	if err := sh.base.UpdateSubmission(ctx, sh.sub.ID, kilonova.SubmissionUpdate{
-		CompileError: &compileError, CompileMessage: &resp.Output, CompileTime: compileTime,
+		CompileError: new(!resp.Success), CompileMessage: &resp.Output, CompileTime: compileTime,
 	}); err != nil {
 		spew.Dump(err)
 		return fmt.Errorf("couldn't update submission: %w", err)
 	}
 
 	if !resp.Success {
-		compileErrVerdict := "test_verdict.compile_error"
 		if err := sh.base.UpdateSubmission(ctx, sh.sub.ID, kilonova.SubmissionUpdate{
 			Status: kilonova.StatusFinished, Score: &sh.pb.DefaultPoints,
-			ChangeVerdict: true, ICPCVerdict: &compileErrVerdict,
+			ChangeVerdict: true, ICPCVerdict: new("test_verdict.compile_error"),
 		}); err != nil {
 			return fmt.Errorf("couldn't finalize submission with compiler error: %w", err)
 		}
@@ -448,16 +442,19 @@ func (sh *submissionHandler) handleSubTest(ctx context.Context, checker checkers
 
 	var output *subtestOutput
 	var err error
-	if sh.pb.TaskType == kilonova.TaskTypeBatch {
+	switch sh.pb.TaskType {
+	case kilonova.TaskTypeBatch:
 		output, err = sh.handleBatchSubTest(ctx, checker, subTest)
 		if err != nil {
 			return decimal.Zero, "", err
 		}
-	} else {
+	case kilonova.TaskTypeCommunication:
 		output, err = sh.handleCommunicationSubTest(ctx, checker, subTest)
 		if err != nil {
 			return decimal.Zero, "", err
 		}
+	default:
+		return decimal.Zero, "", errors.New("invalid task type")
 	}
 
 	// Hide fatal signals for ICPC submissions

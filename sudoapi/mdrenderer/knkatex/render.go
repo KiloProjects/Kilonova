@@ -52,8 +52,7 @@ func Render(ctx context.Context, w io.Writer, src []byte, display bool) error {
 	}
 	val, err := vm.RunProgram(cmd)
 	if err != nil {
-		var exception *goja.Exception
-		if errors.As(err, &exception) {
+		if exception, ok := errors.AsType[*goja.Exception](err); ok {
 			val := exception.Value()
 			var msg string
 			if val != nil {

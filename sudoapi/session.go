@@ -76,8 +76,7 @@ func (s *BaseAPI) SessionUser(ctx context.Context, sid string, r *http.Request) 
 func (s *BaseAPI) GetRequestInfo(r *http.Request) (ip *netip.Addr, ua string) {
 	hostport, err := netip.ParseAddrPort(r.RemoteAddr)
 	if err == nil {
-		ip2 := hostport.Addr()
-		ip = &ip2
+		ip = new(hostport.Addr())
 	}
 	if h := flags.TrueIPHeader.Value(); len(h) > 0 && len(r.Header.Get(h)) > 0 {
 		addr, err := netip.ParseAddr(r.Header.Get(h))

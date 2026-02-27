@@ -78,8 +78,7 @@ func (s *API) updateSubTask(w http.ResponseWriter, r *http.Request) {
 
 	var score *decimal.Decimal
 	if args.Score != nil {
-		val := decimal.NewFromFloat(*args.Score)
-		score = &val
+		score = new(decimal.NewFromFloat(*args.Score))
 	}
 
 	if err := s.base.UpdateSubTask(r.Context(), stk.ID, kilonova.SubTaskUpdate{

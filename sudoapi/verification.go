@@ -30,12 +30,10 @@ func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, e
 	if s.mailer == nil || !s.MailerEnabled() || userID == 1 {
 		slog.InfoContext(ctx, "Auto confirming email for user as valid", slog.Int("userID", userID))
 
-		t := true
-		now := time.Now()
 		if err := s.updateUser(ctx, userID, kilonova.UserFullUpdate{
 			Email:            &email,
-			VerifiedEmail:    &t,
-			EmailVerifSentAt: &now,
+			VerifiedEmail:    new(true),
+			EmailVerifSentAt: new(time.Now()),
 		}); err != nil {
 			return err
 		}
@@ -50,12 +48,10 @@ func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, e
 		return Statusf(400, "Email is already in use")
 	}
 
-	f := false
-	now := time.Now()
 	if err := s.updateUser(ctx, userID, kilonova.UserFullUpdate{
 		Email:            &email,
-		VerifiedEmail:    &f,
-		EmailVerifSentAt: &now,
+		VerifiedEmail:    new(false),
+		EmailVerifSentAt: new(time.Now()),
 	}); err != nil {
 		return err
 	}
@@ -109,8 +105,7 @@ func (s *BaseAPI) ConfirmVerificationEmail(ctx context.Context, vid string, user
 		return fmt.Errorf("couldn't delete verification code: %w", err)
 	}
 
-	ttrue := true
-	return s.updateUser(ctx, user.ID, kilonova.UserFullUpdate{VerifiedEmail: &ttrue})
+	return s.updateUser(ctx, user.ID, kilonova.UserFullUpdate{VerifiedEmail: new(true)})
 }
 
 func (s *BaseAPI) MailerEnabled() bool {

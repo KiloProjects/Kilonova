@@ -362,10 +362,9 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 			return -1, Statusf(400, "You cannot have more than %d submissions to the evaluation queue at once", flags.WaitingSubLimit.Value())
 		}
 
-		t := time.Now().Add(-1 * time.Minute)
 		cnt, err = s.db.SubmissionCount(ctx, kilonova.SubmissionFilter{
 			UserID: &author.ID,
-			Since:  &t,
+			Since:  new(time.Now().Add(-1 * time.Minute)),
 		}, -1)
 		if err != nil {
 			return -1, fmt.Errorf("couldn't get recent submission count")

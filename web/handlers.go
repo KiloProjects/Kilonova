@@ -533,11 +533,9 @@ func (rt *Web) debugPage() http.HandlerFunc {
 			}
 			switch sample.Value.Kind() {
 			case metrics.KindFloat64:
-				v := sample.Value.Float64()
-				m.Float = &v
+				m.Float = new(sample.Value.Float64())
 			case metrics.KindUint64:
-				v := sample.Value.Uint64()
-				m.Int = &v
+				m.Int = new(sample.Value.Uint64())
 			default:
 				slog.WarnContext(r.Context(), "Unknown metric type", slog.String("name", sample.Name), slog.Any("kind", sample.Value.Kind()))
 			}
@@ -948,10 +946,9 @@ func (rt *Web) problem() http.HandlerFunc {
 				tags = []*kilonova.Tag{}
 			}
 			if flags.ExternalResourcesEnabled.Value() {
-				accepted := true
 				externalResources, _ = rt.base.ExternalResources(r.Context(), kilonova.ExternalResourceFilter{
 					ProblemID: &util.Problem(r).ID,
-					Accepted:  &accepted,
+					Accepted:  new(true),
 					// Technically not needed but just for safety
 					Look:        true,
 					LookingUser: util.UserBrief(r),
@@ -981,8 +978,7 @@ func (rt *Web) problem() http.HandlerFunc {
 
 		var maxScore *decimal.Decimal
 		if user := util.UserBrief(r); user.IsAuthed() {
-			actualMaxScore := rt.base.MaxScore(r.Context(), user.ID, problem.ID)
-			maxScore = &actualMaxScore
+			maxScore = new(rt.base.MaxScore(r.Context(), user.ID, problem.ID))
 		}
 
 		rt.runTempl(w, r, pageTempl, &ProblemParams{

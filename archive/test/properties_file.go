@@ -183,8 +183,7 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, r io.Reader) error {
 		props.DefaultPoints = &val
 	}
 	if rawProps.Memory != nil {
-		mem := int((*rawProps.Memory) * 1024.0)
-		props.MemoryLimit = &mem
+		props.MemoryLimit = new(int((*rawProps.Memory) * 1024.0))
 		if *props.MemoryLimit > config.Common.TestMaxMemKB {
 			return kilonova.Statusf(400, "Maximum memory must not exceed %f MB", float64(config.Common.TestMaxMemKB)/1024.0)
 		}
@@ -193,11 +192,10 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, r io.Reader) error {
 		props.ScoringStrategy = kilonova.ScoringType(*rawProps.ScoringStrategy)
 	}
 	if rawProps.ConsoleInput != nil && (*rawProps.ConsoleInput == "true" || *rawProps.ConsoleInput == "false") {
-		val := *rawProps.ConsoleInput == "true"
-		props.ConsoleInput = &val
+		props.ConsoleInput = new(*rawProps.ConsoleInput == "true")
 	}
 	if rawProps.MergeAttachments != nil && (*rawProps.MergeAttachments == "true" || *rawProps.MergeAttachments == "false") {
-		ctx.params.MergeAttachments = (*rawProps.MergeAttachments == "true")
+		ctx.params.MergeAttachments = *rawProps.MergeAttachments == "true"
 	}
 	if rawProps.TaskType != nil && (*rawProps.TaskType == string(kilonova.TaskTypeBatch) || *rawProps.TaskType == string(kilonova.TaskTypeCommunication)) {
 		props.TaskType = kilonova.TaskType(*rawProps.TaskType)

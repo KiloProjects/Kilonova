@@ -612,6 +612,5 @@ func maxAgeToInternal(createdAt time.Time, maxAge *uint) *time.Time {
 	if maxAge == nil {
 		return nil
 	}
-	expiresAt := createdAt.Add(time.Duration(*maxAge) * time.Second)
-	return &expiresAt
+	return new(createdAt.Add(time.Duration(*maxAge) * time.Second))
 }

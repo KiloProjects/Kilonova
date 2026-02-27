@@ -146,7 +146,6 @@ func (s *API) getRemainingSubmissionCount(w http.ResponseWriter, r *http.Request
 		statusError(w, err)
 		return
 	}
-	user := util.UserBrief(r)
 	//if s.base.IsContestEditor(util.UserBrief(r), util.Contest(r)) {
 	//
 	//}
@@ -171,7 +170,7 @@ func (s *API) getRemainingSubmissionCount(w http.ResponseWriter, r *http.Request
 		UserID int                    `json:"user_id"`
 		Counts map[int]subCountResult `json:"counts"`
 	}{
-		UserID: user.ID,
+		UserID: util.UserBrief(r).ID,
 		Counts: remainingCount,
 	})
 }
@@ -217,13 +216,13 @@ func (s *API) addContestEditor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.base.UserBriefByName(r.Context(), args.Username)
+	userBrief, err := s.base.UserBriefByName(r.Context(), args.Username)
 	if err != nil {
 		statusError(w, err)
 		return
 	}
 
-	if err := s.base.AddContestEditor(r.Context(), util.Contest(r).ID, user.ID); err != nil {
+	if err := s.base.AddContestEditor(r.Context(), util.Contest(r).ID, userBrief.ID); err != nil {
 		statusError(w, err)
 		return
 	}
@@ -240,18 +239,18 @@ func (s *API) addContestTester(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.base.UserBriefByName(r.Context(), args.Username)
+	userBrief, err := s.base.UserBriefByName(r.Context(), args.Username)
 	if err != nil {
 		statusError(w, err)
 		return
 	}
 
-	if user.ID == util.UserBrief(r).ID {
+	if userBrief.ID == util.UserBrief(r).ID {
 		errorData(w, "You can't demote yourself to tester rank!", 400)
 		return
 	}
 
-	if err := s.base.AddContestTester(r.Context(), util.Contest(r).ID, user.ID); err != nil {
+	if err := s.base.AddContestTester(r.Context(), util.Contest(r).ID, userBrief.ID); err != nil {
 		statusError(w, err)
 		return
 	}
@@ -467,18 +466,18 @@ func (s *API) forceRegisterForContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.base.UserBriefByName(r.Context(), args.Username)
+	userBrief, err := s.base.UserBriefByName(r.Context(), args.Username)
 	if err != nil {
 		statusError(w, err)
 		return
 	}
 
-	if _, err := s.base.ContestRegistration(r.Context(), util.Contest(r).ID, user.ID); err == nil {
+	if _, err := s.base.ContestRegistration(r.Context(), util.Contest(r).ID, userBrief.ID); err == nil {
 		errorData(w, "User is already registered", 400)
 		return
 	}
 
-	if err := s.base.RegisterContestUser(r.Context(), util.Contest(r), user.ID, nil, true); err != nil {
+	if err := s.base.RegisterContestUser(r.Context(), util.Contest(r), userBrief.ID, nil, true); err != nil {
 		statusError(w, err)
 		return
 	}
@@ -498,13 +497,13 @@ func (s *API) stripContestRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.base.UserBriefByName(r.Context(), args.Username)
+	userBrief, err := s.base.UserBriefByName(r.Context(), args.Username)
 	if err != nil {
 		statusError(w, err)
 		return
 	}
 
-	if err := s.base.KickUserFromContest(r.Context(), util.Contest(r).ID, user.ID); err != nil {
+	if err := s.base.KickUserFromContest(r.Context(), util.Contest(r).ID, userBrief.ID); err != nil {
 		statusError(w, err)
 		return
 	}
@@ -570,12 +569,12 @@ func (s *API) contestRegistrations(w http.ResponseWriter, r *http.Request) {
 		slog.WarnContext(r.Context(), "mismatched user and reg length", slog.Int("users_len", len(users)), slog.Int("regs_len", len(regs)))
 	}
 
-	for _, user := range users {
-		val, ok := regMap[user.ID]
+	for _, userBrief := range users {
+		val, ok := regMap[userBrief.ID]
 		if !ok {
-			slog.WarnContext(r.Context(), "Couldn't find user in registrations", slog.Any("user", user))
+			slog.WarnContext(r.Context(), "Couldn't find user in registrations", slog.Any("user", userBrief))
 		}
-		rez = append(rez, regRez{User: user, Reg: val})
+		rez = append(rez, regRez{User: userBrief, Reg: val})
 	}
 
 	returnData(w, struct {

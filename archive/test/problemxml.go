@@ -23,8 +23,7 @@ func ProcessProblemXMLFile(actx *ArchiveCtx, file io.Reader) error {
 	// Select problem name
 	for _, node := range xmlquery.Find(node, "//names/name") {
 		if lang := node.SelectAttr("language"); lang == "english" || lang == "romanian" {
-			val := node.SelectAttr("value")
-			actx.props.ProblemName = &val
+			actx.props.ProblemName = new(node.SelectAttr("value"))
 		}
 	}
 
@@ -111,8 +110,7 @@ func ProcessProblemXMLFile(actx *ArchiveCtx, file io.Reader) error {
 	if node := xmlquery.FindOne(testsetNode, "//time-limit"); node != nil {
 		timeLimit, err := strconv.Atoi(node.InnerText())
 		if err == nil {
-			timeLimitF := float64(timeLimit) / 1000.0
-			actx.props.TimeLimit = &timeLimitF
+			actx.props.TimeLimit = new(float64(timeLimit) / 1000.0)
 		}
 	}
 

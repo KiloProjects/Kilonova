@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/KiloProjects/kilonova/util/slicealg"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/KiloProjects/kilonova"
@@ -89,18 +90,7 @@ func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([
 		slog.WarnContext(ctx, "Couldn't get users", slog.Any("err", err))
 		return nil, fmt.Errorf("couldn't get users: %w", err)
 	}
-	return mapUsersBrief(users), nil
-}
-
-func mapUsersBrief(users []*kilonova.UserFull) []*kilonova.UserBrief {
-	var usersBrief []*kilonova.UserBrief
-	for _, user := range users {
-		usersBrief = append(usersBrief, user.Brief())
-	}
-	if len(usersBrief) == 0 {
-		return []*kilonova.UserBrief{}
-	}
-	return usersBrief
+	return slicealg.Map(users, (*kilonova.UserFull).Brief), nil
 }
 
 func (s *BaseAPI) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, error) {
@@ -185,8 +175,7 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserFull, n
 		}
 	}
 
-	f := false
-	if err := s.updateUser(ctx, user.ID, kilonova.UserFullUpdate{Name: &newName, NameChangeRequired: &f}); err != nil {
+	if err := s.updateUser(ctx, user.ID, kilonova.UserFullUpdate{Name: &newName, NameChangeRequired: new(false)}); err != nil {
 		return err
 	}
 
@@ -296,8 +285,7 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 
 	if email == nil {
 		// Dummy email
-		genEmail := fmt.Sprintf("email_%s@kilonova.ro", uname)
-		email = &genEmail
+		email = new(fmt.Sprintf("email_%s@kilonova.ro", uname))
 	}
 
 	dName := ""

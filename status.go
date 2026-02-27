@@ -62,8 +62,7 @@ func MaybeErrorCode(err error) (int, bool) {
 	if err == nil {
 		return 200, false
 	}
-	var sErr *statusError
-	if errors.As(err, &sErr) {
+	if sErr, ok := errors.AsType[*statusError](err); ok {
 		return sErr.Code, true
 	}
 	return 500, false

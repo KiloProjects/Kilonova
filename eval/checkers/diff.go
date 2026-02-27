@@ -56,8 +56,7 @@ func (d *DiffChecker) RunChecker(ctx context.Context, subtestID int, testID int)
 	}
 
 	if err := exec.CommandContext(ctx, "diff", "-qBbEa", tf.Name(), cf.Name()).Run(); err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
+		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 			if exitErr.ExitCode() == 0 {
 				return CorrectOut, decimal.NewFromInt(100)
 			}

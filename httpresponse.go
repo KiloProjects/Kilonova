@@ -13,8 +13,7 @@ func StatusData(w http.ResponseWriter, status string, retData any, statusCode in
 	if err, ok := retData.(error); ok {
 		retData = err.Error()
 
-		var sErr *statusError
-		if errors.As(err, &sErr) {
+		if sErr, ok2 := errors.AsType[*statusError](err); ok2 {
 			statusCode = sErr.Code
 		}
 	}

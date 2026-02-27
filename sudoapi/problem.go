@@ -10,6 +10,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
+	"github.com/KiloProjects/kilonova/util/slicealg"
 )
 
 // Problem stuff
@@ -314,7 +315,7 @@ func (s *BaseAPI) ProblemEditors(ctx context.Context, pbid int) ([]*kilonova.Use
 	if err != nil {
 		return []*kilonova.UserBrief{}, fmt.Errorf("couldn't get problem editors: %w", err)
 	}
-	return mapUsersBrief(users), nil
+	return slicealg.Map(users, (*kilonova.UserFull).Brief), nil
 }
 
 func (s *BaseAPI) ProblemViewers(ctx context.Context, pbid int) ([]*kilonova.UserBrief, error) {
@@ -322,7 +323,7 @@ func (s *BaseAPI) ProblemViewers(ctx context.Context, pbid int) ([]*kilonova.Use
 	if err != nil {
 		return []*kilonova.UserBrief{}, fmt.Errorf("couldn't get problem viewers: %w", err)
 	}
-	return mapUsersBrief(users), nil
+	return slicealg.Map(users, (*kilonova.UserFull).Brief), nil
 }
 
 func (s *BaseAPI) ProblemChecklist(ctx context.Context, pbid int) (*kilonova.ProblemChecklist, error) {

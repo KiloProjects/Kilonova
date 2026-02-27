@@ -437,8 +437,7 @@ func doWalk(filename string, nodes ...tparse.Node) bool {
 			}
 		}
 		if val := tp.FieldByName("BranchNode"); val.IsValid() {
-			node := val.Interface().(tparse.BranchNode)
-			doWalk(filename, &node)
+			doWalk(filename, new(val.Interface().(tparse.BranchNode)))
 		}
 		if val := tp.FieldByName("List"); val.IsValid() {
 			if val.Kind() == reflect.Pointer {

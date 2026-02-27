@@ -19,8 +19,9 @@ func (rt *Web) updateProblemSources() http.HandlerFunc {
 
 		var numUpdated int
 		for i, id := range util.ProblemList(r).ProblemIDs() {
-			source := fmt.Sprintf(r.FormValue("new_format"), i+1)
-			if err := rt.base.UpdateProblem(r.Context(), id, kilonova.ProblemUpdate{SourceCredits: &source}, util.UserBrief(r)); err != nil {
+			if err := rt.base.UpdateProblem(r.Context(), id, kilonova.ProblemUpdate{
+				SourceCredits: new(fmt.Sprintf(r.FormValue("new_format"), i+1)),
+			}, util.UserBrief(r)); err != nil {
 				slog.WarnContext(r.Context(), "Could not update problem", slog.Any("err", err))
 			} else {
 				numUpdated++
