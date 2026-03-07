@@ -17,9 +17,8 @@ import (
 )
 
 var (
-	configV2Path string
-	flagMapMu    sync.RWMutex
-	allFlags     map[string]any = make(map[string]any)
+	flagMapMu sync.RWMutex
+	allFlags  map[string]any = make(map[string]any)
 )
 
 type configFlag interface {
@@ -147,7 +146,7 @@ func GetFlags[T any]() []Flag[T] {
 	return flags
 }
 
-func LoadConfigV2(ctx context.Context, skipUnknown bool) error {
+func LoadConfigV2(ctx context.Context, configV2Path string, skipUnknown bool) error {
 	flagMapMu.RLock()
 	defer flagMapMu.RUnlock()
 	if configV2Path == "" {
@@ -215,7 +214,7 @@ func LoadConfigV2(ctx context.Context, skipUnknown bool) error {
 	return nil
 }
 
-func SaveConfigV2(ctx context.Context) error {
+func SaveConfigV2(ctx context.Context, configV2Path string) error {
 	if configV2Path == "" {
 		return errors.New("invalid config path")
 	}
@@ -249,8 +248,4 @@ func SaveConfigV2(ctx context.Context) error {
 	}
 
 	return file.Close()
-}
-
-func SetConfigV2Path(path string) {
-	configV2Path = path
 }

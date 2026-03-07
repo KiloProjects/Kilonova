@@ -13,11 +13,10 @@ import (
 )
 
 var (
-	configPath string
-	Common     CommonConf
-	Eval       EvalConf
-	Email      EmailConf
-	Frontend   FrontendConf
+	Common   CommonConf
+	Eval     EvalConf
+	Email    EmailConf
+	Frontend FrontendConf
 )
 
 // configStruct is the glue for all configuration sections when unmarshaling
@@ -94,11 +93,7 @@ func compactify() {
 	c.Frontend = Frontend
 }
 
-func SetConfigPath(path string) {
-	configPath = path
-}
-
-func Save() error {
+func Save(configPath string) error {
 	compactify()
 	if configPath == "" {
 		return errors.New("invalid config path")
@@ -124,7 +119,7 @@ func Save() error {
 	return file.Close()
 }
 
-func Load(ctx context.Context) error {
+func Load(ctx context.Context, configPath string) error {
 	if configPath == "" {
 		return errors.New("invalid config path")
 	}

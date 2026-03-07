@@ -1,4 +1,4 @@
-// NOTE: This document is meant to be compiled only with run.sh
+// NOTE: This document is meant to be compiled via the kn printable-contestants command.
 
 #set page("a4", margin: 1.5cm, numbering: "1 / 1")
 
@@ -9,8 +9,6 @@
     Username: #text(font: "DejaVu Sans Mono")[#entry.at("Username")] \
     Password: #text(font: "DejaVu Sans Mono")[#entry.at("Password")]
 ])
-
-
 
 #table(
     columns: 2,

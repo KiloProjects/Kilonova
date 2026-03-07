@@ -65,6 +65,7 @@ require (
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/spf13/afero v1.15.0
+	github.com/urfave/cli/v3 v3.7.0
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
 	github.com/zitadel/oidc/v3 v3.45.4
 	go.opentelemetry.io/contrib/bridges/otelslog v0.15.0

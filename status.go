@@ -40,7 +40,7 @@ func (s *statusError) Unwrap() error {
 }
 
 func (s *statusError) Is(target error) bool {
-	if err, ok := target.(*statusError); ok {
+	if err, ok := errors.AsType[*statusError](target); ok {
 		return err.Text == s.Text
 	}
 	return false
