@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/domain/config"
-	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/domain/datastore"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/infra/postgres"
 	"github.com/KiloProjects/kilonova/internal/auth"
 	"github.com/KiloProjects/kilonova/net/email"
@@ -36,8 +36,8 @@ type Submissions struct {
 
 type Grader interface {
 	Wake()
-	Language(string) *eval.Language
-	Languages() map[string]*eval.Language
+	Language(string) *language.Language
+	Languages() map[string]*language.Language
 	LanguageVersions(ctx context.Context) map[string]string
 }
 

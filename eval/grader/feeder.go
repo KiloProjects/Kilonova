@@ -10,6 +10,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -71,11 +72,11 @@ func (h *Handler) LanguageVersions(ctx context.Context) map[string]string {
 	return h.runner.LanguageVersions(ctx)
 }
 
-func (h *Handler) Language(name string) *eval.Language {
+func (h *Handler) Language(name string) *language.Language {
 	return h.runner.Language(name)
 }
 
-func (h *Handler) Languages() map[string]*eval.Language {
+func (h *Handler) Languages() map[string]*language.Language {
 	return h.runner.Languages()
 }
 

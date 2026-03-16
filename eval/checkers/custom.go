@@ -13,8 +13,9 @@ import (
 	_ "embed"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/datastore"
+	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/shopspring/decimal"
 )
@@ -55,7 +56,7 @@ type customChecker struct {
 	legacy bool
 }
 
-func (c *customChecker) Language() *eval.Language {
+func (c *customChecker) Language() *language.Language {
 	return c.mgr.LanguageFromFilename(c.filename)
 }
 
@@ -148,7 +149,7 @@ func NewStandardCustomChecker(mgr eval.BoxScheduler, store *datastore.Manager, l
 	return &customChecker{mgr, pb, filename, code, subCode, lastUpdatedAt, logger, store, false}
 }
 
-func initRequest(lang *eval.Language, job *customCheckerInput) *eval.Box2Request {
+func initRequest(lang *language.Language, job *customCheckerInput) *eval.Box2Request {
 	return &eval.Box2Request{
 		InputBucketFiles: map[string]*eval.BucketFile{
 			"/box/program.out": {

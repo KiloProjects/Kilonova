@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/datastore"
+	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/ctxt"
 )

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/go-chi/chi/v5"

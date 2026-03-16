@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/web/views"
 	"github.com/KiloProjects/kilonova/web/views/modals"
 	"github.com/KiloProjects/kilonova/web/views/problems"
@@ -33,7 +34,6 @@ import (
 	"github.com/a-h/templ"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/bwmarrin/discordgo"
@@ -586,7 +586,7 @@ func (rt *Web) submission(w http.ResponseWriter, r *http.Request) {
 			Submission:    sub,
 			ForceShowCode: r.URL.Query().Get("forceCode") == "1",
 			LanguageFormatter: func(lang string) string {
-				return rt.base.Language(r.Context(), lang).PrintableName
+				return rt.base.Language(lang).PrintableName()
 			},
 			OlderSubmissions: olderSubs,
 			SubmissionFiles:  subFiles,
@@ -604,7 +604,7 @@ func (rt *Web) downloadSubmission(w http.ResponseWriter, r *http.Request) {
 		rt.statusPage(w, r, 400, "Code is either unavailable or doesn't exist.")
 		return
 	}
-	extension := rt.base.Language(r.Context(), util.Submission(r).Language).Extensions()[0]
+	extension := rt.base.Language(util.Submission(r).Language).Extensions()[0]
 	if extension == ".outputOnly" {
 		extension = ".txt"
 	}
@@ -715,7 +715,7 @@ func (rt *Web) paste(w http.ResponseWriter, r *http.Request) {
 				Submission:    sub,
 				ForceShowCode: true,
 				LanguageFormatter: func(lang string) string {
-					return rt.base.Language(r.Context(), lang).PrintableName
+					return rt.base.Language(lang).PrintableName()
 				},
 				OlderSubmissions: olderSubs,
 				SubmissionFiles:  subFiles,
@@ -753,7 +753,7 @@ func (rt *Web) downloadPaste() http.HandlerFunc {
 			code = nil
 		}
 
-		extension := rt.base.Language(r.Context(), fullSub.Language).Extensions()[0]
+		extension := rt.base.Language(fullSub.Language).Extensions()[0]
 		if extension == ".outputOnly" {
 			extension = ".txt"
 		}

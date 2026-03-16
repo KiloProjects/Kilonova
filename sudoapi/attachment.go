@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/internal/util"
 )
 
@@ -362,12 +363,12 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problem *kilonova.Problem
 		}
 		filename := path.Base(att.Name)
 		filename = strings.TrimSuffix(filename, path.Ext(filename))
-		if filename == checkerStem+"_legacy" && s.LanguageFromFilename(ctx, att.Name) != "" {
+		if filename == checkerStem+"_legacy" && s.LanguageFromFilename(att.Name) != "" {
 			settings.CheckerName = att.Name
 			settings.LegacyChecker = true
 			continue
 		}
-		if filename == checkerStem && s.LanguageFromFilename(ctx, att.Name) != "" {
+		if filename == checkerStem && s.LanguageFromFilename(att.Name) != "" {
 			settings.CheckerName = att.Name
 			settings.LegacyChecker = false
 			continue
@@ -393,7 +394,7 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problem *kilonova.Problem
 			settings.HasUv = true
 		}
 
-		if lang := s.LanguageFromFilename(ctx, att.Name); lang != "" {
+		if lang := s.LanguageFromFilename(att.Name); lang != "" {
 			if strings.HasPrefix(lang, "cpp") {
 				whitelistCPP = true
 				if lang > biggestCPP {
@@ -433,19 +434,19 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problem *kilonova.Problem
 
 // ProblemLanguages wraps around ProblemSettings to provide a better interface to expose to the API
 // And deduplicate separate code that handles allowed submission languages
-func (s *BaseAPI) ProblemLanguages(ctx context.Context, problem *kilonova.Problem) ([]*Language, error) {
+func (s *BaseAPI) ProblemLanguages(ctx context.Context, problem *kilonova.Problem) ([]language.Lang, error) {
 	settings, err := s.ProblemSettings(ctx, problem)
 	if err != nil {
 		return nil, err
 	}
-	langs := make([]*Language, 0, len(s.EnabledLanguages()))
+	langs := make([]language.Lang, 0, len(s.EnabledLanguages()))
 	if len(settings.LanguageWhitelist) == 0 {
 		for name := range s.EnabledLanguages() {
-			langs = append(langs, s.Language(ctx, name))
+			langs = append(langs, s.Language(name))
 		}
 	} else {
 		for _, val := range settings.LanguageWhitelist {
-			v := s.Language(ctx, val)
+			v := s.Language(val)
 			if v == nil {
 				slog.WarnContext(ctx, "Language found in whitelist but not enabled", slog.String("wh_value", val))
 			}
@@ -453,6 +454,6 @@ func (s *BaseAPI) ProblemLanguages(ctx context.Context, problem *kilonova.Proble
 		}
 	}
 
-	slices.SortFunc(langs, func(a, b *Language) int { return cmp.Compare(a.InternalName, b.InternalName) })
+	slices.SortFunc(langs, func(a, b language.Lang) int { return cmp.Compare(a.InternalName(), b.InternalName()) })
 	return langs, nil
 }

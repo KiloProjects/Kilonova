@@ -603,7 +603,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 	// Do submissions at the end after all changes have been merged
 	if len(aCtx.submissions) > 0 {
 		for _, sub := range aCtx.submissions {
-			lang := base.Language(ctx, sub.lang)
+			lang := base.Language(sub.lang)
 			if lang == nil {
 				slog.InfoContext(ctx, "Skipping submission, unknown language")
 				continue

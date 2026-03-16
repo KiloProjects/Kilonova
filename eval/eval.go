@@ -4,6 +4,8 @@ import (
 	"context"
 	"io"
 	"io/fs"
+
+	"github.com/KiloProjects/kilonova/eval/language"
 )
 
 type Bucket interface {
@@ -43,9 +45,9 @@ type BoxScheduler interface {
 	RunMultibox(ctx context.Context, req *MultiboxRequest, managerMemQuota int64, individualMemQuota int64) (*Box2Response, []*RunStats, error)
 	Close(context.Context) error
 
-	Language(name string) *Language
-	Languages() map[string]*Language
-	LanguageFromFilename(filename string) *Language
+	Language(name string) *language.Language
+	Languages() map[string]*language.Language
+	LanguageFromFilename(filename string) *language.Language
 	LanguageVersions(ctx context.Context) map[string]string
 }
 
@@ -69,7 +71,7 @@ type RunConfig struct {
 
 	EnableInternet bool
 
-	Directories []Directory
+	Directories []language.Directory
 }
 
 type RunStats struct {

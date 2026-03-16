@@ -17,9 +17,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/domain/config"
+	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/eval/tasks"
 	"golang.org/x/sync/semaphore"
 	"golang.org/x/sys/unix"
@@ -60,7 +61,7 @@ type BoxManager struct {
 
 	languageVersionsMu sync.RWMutex
 	languageVersions   map[string]string
-	supportedLanguages map[string]*eval.Language
+	supportedLanguages map[string]*language.Language
 
 	store *datastore.Manager
 }
@@ -155,7 +156,7 @@ func (mgr *BoxManager) getLangVersions(ctx context.Context) map[string]string {
 		if lang.Disabled {
 			continue
 		}
-		if !slices.Contains(lang.RunCommand, eval.MagicReplace) {
+		if !slices.Contains(lang.RunCommand, language.MagicReplace) {
 			slog.WarnContext(ctx, "Language run command does not contain MagicReplace", slog.String("lang", name))
 		}
 
@@ -172,7 +173,7 @@ func (mgr *BoxManager) getLangVersions(ctx context.Context) map[string]string {
 	return mgr.languageVersions
 }
 
-func (mgr *BoxManager) Language(name string) *eval.Language {
+func (mgr *BoxManager) Language(name string) *language.Language {
 	lang, ok := mgr.supportedLanguages[name]
 	if !ok {
 		return nil
@@ -180,7 +181,7 @@ func (mgr *BoxManager) Language(name string) *eval.Language {
 	return lang
 }
 
-func (mgr *BoxManager) Languages() map[string]*eval.Language {
+func (mgr *BoxManager) Languages() map[string]*language.Language {
 	// TODO: maybe a maps.Clone()?
 	return mgr.supportedLanguages
 }
@@ -195,7 +196,7 @@ func (mgr *BoxManager) LanguageVersions(ctx context.Context) map[string]string {
 }
 
 // TODO: Improve
-func (mgr *BoxManager) LanguageFromFilename(filename string) *eval.Language {
+func (mgr *BoxManager) LanguageFromFilename(filename string) *language.Language {
 	fileExt := path.Ext(filename)
 	if fileExt == "" {
 		return nil
@@ -333,14 +334,14 @@ func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxReques
 		sandboxFifoUserToManager[i] = path.Join(sandboxFifoDirs[i], fmt.Sprintf("u%d_to_m", i))
 		sandboxFifoManagerToUser[i] = path.Join(sandboxFifoDirs[i], fmt.Sprintf("m_to_u%d", i))
 
-		req.ManagerSandbox.RunConfig.Directories = append(req.ManagerSandbox.RunConfig.Directories, eval.Directory{
+		req.ManagerSandbox.RunConfig.Directories = append(req.ManagerSandbox.RunConfig.Directories, language.Directory{
 			In:   sandboxFifoDirs[i],
 			Out:  fifoDirs[i],
 			Opts: "rw",
 		})
 		req.ManagerSandbox.Command = append(req.ManagerSandbox.Command, sandboxFifoUserToManager[i], sandboxFifoManagerToUser[i])
 
-		req.UserSandboxConfigs[i].RunConfig.Directories = append(req.UserSandboxConfigs[i].RunConfig.Directories, eval.Directory{
+		req.UserSandboxConfigs[i].RunConfig.Directories = append(req.UserSandboxConfigs[i].RunConfig.Directories, language.Directory{
 			In:   sandboxFifoDirs[i],
 			Out:  fifoDirs[i],
 			Opts: "rw",
@@ -591,9 +592,9 @@ func makeGoodCommand(req *eval.Box2Request) ([]string, error) {
 
 // supportedLanguages disables all languages that are *not* detected by the system in the current configuration
 // It should be run at the start of the execution (and implemented more nicely tbh)
-func supportedLanguages(ctx context.Context) map[string]*eval.Language {
-	langs := make(map[string]*eval.Language)
-	for k, v := range eval.Langs {
+func supportedLanguages(ctx context.Context) map[string]*language.Language {
+	langs := make(map[string]*language.Language)
+	for k, v := range language.Langs {
 		if v.Disabled { // Skip search if already disabled
 			continue
 		}

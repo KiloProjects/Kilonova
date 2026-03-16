@@ -3,7 +3,7 @@ package test_test
 import (
 	"testing"
 
-	"github.com/KiloProjects/kilonova/archive/test"
+	"github.com/KiloProjects/kilonova/domain/archive/test"
 )
 
 type scoreParameterTest struct {

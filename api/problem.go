@@ -18,6 +18,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/net/llm"
 	"github.com/KiloProjects/kilonova/sudoapi"
@@ -583,8 +584,12 @@ func (s *API) getProblemAccessControl(ctx context.Context, _ struct{}) (*problem
 	}, nil
 }
 
-func (s *API) problemLanguages(ctx context.Context, _ struct{}) ([]*sudoapi.Language, error) {
-	return s.base.ProblemLanguages(ctx, util.ProblemContext(ctx))
+func (s *API) problemLanguages(ctx context.Context, _ struct{}) ([]*apiLanguage, error) {
+	langs, err := s.base.ProblemLanguages(ctx, util.ProblemContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+	return slicealg.Map(langs, apiLanguageFromDomain), nil
 }
 
 func (s *API) getProblem(ctx context.Context, _ struct{}) (*kilonova.Problem, error) {
@@ -674,6 +679,18 @@ func (s *API) problemGet(ctx context.Context, input *ProblemGetInput) (*ProblemG
 	return &ProblemGetOutput{problemSearchResult{Problems: slicealg.Map(problems, getSearchProblem), Count: cnt}}, nil
 }
 
+type apiLanguage struct {
+	InternalName  string `json:"internal_name"`
+	PrintableName string `json:"printable_name"`
+}
+
+func apiLanguageFromDomain(lang language.Lang) *apiLanguage {
+	return &apiLanguage{
+		InternalName:  lang.InternalName(),
+		PrintableName: lang.PrintableName(),
+	}
+}
+
 type apiProblem struct {
 	ID        int       `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
@@ -703,9 +720,9 @@ type apiProblem struct {
 
 	//CommunicationProcesses int `json:"communication_processes"`
 
-	Languages         []*sudoapi.Language `json:"submitLanguages"`
-	StatementVariants []StatementVariant  `json:"statementVariants"`
-	Tags              []*kilonova.Tag     `json:"tags"`
+	Languages         []*apiLanguage     `json:"submitLanguages"`
+	StatementVariants []StatementVariant `json:"statementVariants"`
+	Tags              []*kilonova.Tag    `json:"tags"`
 }
 
 type ProblemSingleGetOutput struct {
@@ -749,7 +766,7 @@ func (s *API) problemSingleGet(ctx context.Context, _ *struct{}) (*ProblemSingle
 		//CommunicationProcesses: problem.CommunicationProcesses,
 
 		// Extra fields
-		Languages:         languages,
+		Languages:         slicealg.Map(languages, apiLanguageFromDomain),
 		StatementVariants: statementVariants,
 		Tags:              tags,
 	}
@@ -758,12 +775,12 @@ func (s *API) problemSingleGet(ctx context.Context, _ *struct{}) (*ProblemSingle
 }
 
 type ProblemLanguagesOutput struct {
-	Body []*sudoapi.Language
+	Body []*apiLanguage
 }
 
 func (s *API) problemLanguagesV2(ctx context.Context, _ *struct{}) (*ProblemLanguagesOutput, error) {
 	languages, err := s.base.ProblemLanguages(ctx, util.ProblemContext(ctx))
-	return &ProblemLanguagesOutput{languages}, err
+	return &ProblemLanguagesOutput{Body: slicealg.Map(languages, apiLanguageFromDomain)}, err
 }
 
 type StatementVariant struct {

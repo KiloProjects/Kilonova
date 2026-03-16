@@ -3,7 +3,7 @@ package checkers
 import (
 	"context"
 
-	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/shopspring/decimal"
 )
 
@@ -17,5 +17,5 @@ type Checker interface {
 	// RunChecker returns a comment and a decimal number [0, 100] signifying the percentage of correctness of the subtest
 	RunChecker(ctx context.Context, subtestID int, testID int) (string, decimal.Decimal)
 
-	Language() *eval.Language
+	Language() *language.Language
 }

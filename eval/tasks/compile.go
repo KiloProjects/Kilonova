@@ -10,8 +10,9 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/KiloProjects/kilonova/datastore"
+	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/davecgh/go-spew/spew"
 )
 
@@ -22,7 +23,7 @@ type CompileRequest struct {
 	ID          int
 	CodeFiles   map[string][]byte
 	HeaderFiles map[string][]byte
-	Lang        *eval.Language
+	Lang        *language.Language
 	Store       *datastore.Manager
 
 	OriginalFilename string
@@ -178,7 +179,7 @@ func compilationOutput(resp *eval.Box2Response) string {
 func makeGoodSandboxCommand(ctx context.Context, command []string, files []string) []string {
 	cmd := slices.Clone(command)
 	for i := range cmd {
-		if cmd[i] == eval.MagicReplace {
+		if cmd[i] == language.MagicReplace {
 			x := []string{}
 			x = append(x, cmd[:i]...)
 			x = append(x, files...)

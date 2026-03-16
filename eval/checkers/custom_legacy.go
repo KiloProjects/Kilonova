@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/shopspring/decimal"
 )
 
@@ -56,7 +57,7 @@ func legacyCheckerTask(ctx context.Context, mgr eval.BoxScheduler, job *customCh
 func makeGoodSandboxCommand(ctx context.Context, command []string, files []string) []string {
 	cmd := slices.Clone(command)
 	for i := range cmd {
-		if cmd[i] == eval.MagicReplace {
+		if cmd[i] == language.MagicReplace {
 			x := []string{}
 			x = append(x, cmd[:i]...)
 			x = append(x, files...)

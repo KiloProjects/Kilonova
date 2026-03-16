@@ -3,7 +3,7 @@ package eval
 import (
 	"io/fs"
 
-	"github.com/KiloProjects/kilonova/datastore"
+	"github.com/KiloProjects/kilonova/domain/datastore"
 )
 
 type BucketFile struct {

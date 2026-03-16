@@ -6,9 +6,10 @@ import (
 	"slices"
 
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/eval/language"
 )
 
-func VersionTask(ctx context.Context, mgr eval.BoxScheduler, lang *eval.Language) (string, error) {
+func VersionTask(ctx context.Context, mgr eval.BoxScheduler, lang *language.Language) (string, error) {
 	resp, err := mgr.RunBox2(ctx, &eval.Box2Request{
 		RunConfig: &eval.RunConfig{
 			EnvToSet:    maps.Clone(lang.BuildEnv),

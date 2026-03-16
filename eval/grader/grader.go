@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/KiloProjects/kilonova/domain/config"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/dominikbraun/graph"
 	"github.com/dominikbraun/graph/draw"
@@ -44,7 +45,7 @@ type submissionHandler struct {
 	sub      *kilonova.Submission
 	files    []*kilonova.SubmissionFile
 
-	lang *eval.Language
+	lang *language.Language
 }
 
 func (sh *submissionHandler) getCode() []byte {

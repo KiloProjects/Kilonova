@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/klauspost/compress/zip"
 	"github.com/urfave/cli/v3"
@@ -68,7 +69,7 @@ var submissionSaver = &cli.Command{
 				return err
 			}
 
-			ext := base.Language(ctx, sub.Language).Extension()
+			ext := language.Extension(base.Language(sub.Language))
 			w, err := wr.Create(fmt.Sprintf("%d-%s-%dp%s", sub.ID, pb.TestName, sub.Score.IntPart(), ext))
 			if err != nil {
 				return err

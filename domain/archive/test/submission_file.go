@@ -23,7 +23,7 @@ func ProcessSubmissionFile(ctx *ArchiveCtx, fpath string, r io.Reader, base *sud
 		return fmt.Errorf("couldn't read submission file: %w", err)
 	}
 
-	lang := base.LanguageFromFilename(ctx.ctx, path.Base(fpath))
+	lang := base.LanguageFromFilename(path.Base(fpath))
 	if lang == "" {
 		if !strings.HasSuffix(fpath, ".desc") { // Don't show for polygon description files
 			slog.WarnContext(ctx.ctx, "Unrecognized submisison language for archive file", slog.String("filename", path.Base(fpath)))

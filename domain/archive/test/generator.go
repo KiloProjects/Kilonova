@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
@@ -276,12 +277,12 @@ func (ag *archiveGenerator) addSubmissions(ctx context.Context) error {
 		return err
 	}
 	for _, sub := range subs {
-		lang := ag.base.Language(ctx, sub.Language)
+		lang := ag.base.Language(sub.Language)
 		if lang == nil {
 			slog.InfoContext(ctx, "Skipping submission due to unknown/disabled language", slog.String("lang", sub.Language), slog.Any("submission", sub.ID))
 			continue
 		}
-		f, err := ag.ar.Create(fmt.Sprintf("submissions/%d-%sp%s", sub.ID, sub.Score.String(), lang.Extension()))
+		f, err := ag.ar.Create(fmt.Sprintf("submissions/%d-%sp%s", sub.ID, sub.Score.String(), language.Extension(lang)))
 		if err != nil {
 			return fmt.Errorf("couldn't create archive submission file: %w", err)
 		}

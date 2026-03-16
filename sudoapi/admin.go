@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/KiloProjects/kilonova/datastore"
 	"github.com/KiloProjects/kilonova/domain/config"
+	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 

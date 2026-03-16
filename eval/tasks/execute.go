@@ -10,8 +10,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/KiloProjects/kilonova/datastore"
+	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/shopspring/decimal"
 )
 
@@ -38,7 +39,7 @@ type BatchRequest struct {
 
 	CodeFilename string
 
-	Lang   *eval.Language
+	Lang   *language.Language
 	TestID int
 }
 
@@ -124,8 +125,8 @@ type CommunicationRequest struct {
 	MemoryLimit int
 	TimeLimit   float64
 
-	SubLang     *eval.Language
-	CheckerLang *eval.Language
+	SubLang     *language.Language
+	CheckerLang *language.Language
 	TestID      int
 
 	CodeFilename    string

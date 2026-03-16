@@ -18,6 +18,7 @@ import (
 	tparse "text/template/parse"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/a-h/templ"
@@ -158,7 +159,7 @@ type ProblemParams struct {
 	Tags        []*kilonova.Tag
 
 	Statement template.HTML
-	Languages []*sudoapi.Language
+	Languages []language.Lang
 	Variants  []*kilonova.StatementVariant
 
 	InfoSidebar       templ.Component
@@ -176,7 +177,7 @@ type ProblemParams struct {
 type ProblemTopbarParams struct {
 	Topbar *ProblemTopbar
 
-	Languages []*sudoapi.Language
+	Languages []language.Lang
 	Problem   *kilonova.Problem
 }
 

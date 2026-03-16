@@ -11,6 +11,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/shopspring/decimal"
 )
@@ -334,7 +335,7 @@ func (s *BaseAPI) LastSubmissionTime(ctx context.Context, filter kilonova.Submis
 }
 
 // CreateSubmission produces a new submission and also creates the necessary subtests
-func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFull, problem *kilonova.Problem, code []byte, codeFilename string, lang *Language, contestID *int, bypassSubCount bool) (int, error) {
+func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFull, problem *kilonova.Problem, code []byte, codeFilename string, lang language.Lang, contestID *int, bypassSubCount bool) (int, error) {
 	if author == nil {
 		return -1, Statusf(400, "Invalid submission author")
 	}
@@ -429,18 +430,18 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 	if err != nil {
 		return -1, fmt.Errorf("could not get problem languages: %w", err)
 	}
-	if !slices.ContainsFunc(langs, func(a *Language) bool { return a.InternalName == lang.InternalName }) {
+	if !slices.ContainsFunc(langs, func(a language.Lang) bool { return a.InternalName() == lang.InternalName() }) {
 		return -1, Statusf(400, "Language not supported by problem")
 	}
 
-	fname := lang.DefaultFilename
+	fname := lang.DefaultFilename()
 	// For now, accept this only for Java files
-	if lang.InternalName == "java" && codeFilename != "" {
+	if lang.InternalName() == "java" && codeFilename != "" {
 		fname = codeFilename
 	}
 
 	// Add submission
-	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang.InternalName, code, fname, contestID)
+	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang.InternalName(), code, fname, contestID)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't create submission", slog.Any("err", err))
 		return -1, fmt.Errorf("couldn't create submission")

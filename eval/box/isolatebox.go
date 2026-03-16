@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/davecgh/go-spew/spew"
 )
 
@@ -238,8 +239,8 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 
 	if conf.MemoryLimit > 0 {
 		for i := range command {
-			if strings.Contains(command[i], eval.MemoryReplace) {
-				command[i] = strings.ReplaceAll(command[i], eval.MemoryReplace, strconv.Itoa(conf.MemoryLimit))
+			if strings.Contains(command[i], language.MemoryReplace) {
+				command[i] = strings.ReplaceAll(command[i], language.MemoryReplace, strconv.Itoa(conf.MemoryLimit))
 			}
 		}
 	}

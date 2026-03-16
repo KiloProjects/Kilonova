@@ -48,7 +48,7 @@
         <span class="form-label">{{getText "language"}}:</span>
         <select id="sub_language" class="form-select">
             {{ range .Languages }}
-            <option value="{{.InternalName}}" {{if eq .InternalName "cpp17" }}selected{{end}}>{{.PrintableName}}</option>
+            <option value="{{.InternalName}}" {{if eq (.InternalName) "cpp17" }}selected{{end}}>{{.PrintableName}}</option>
             {{ end }}
         </select>
     </label>

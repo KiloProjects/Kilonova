@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/net/moss"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/util/slicealg"
@@ -387,7 +388,7 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) error 
 			}
 			users[sub.UserID] = true
 
-			name := s.Language(ctx, sub.Language).MOSSName()
+			name := s.Language(sub.Language).MOSSName()
 			// TODO: See if this can be simplified?
 			_, ok := mossSubs[name]
 			if !ok {
@@ -401,12 +402,12 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) error 
 			lang := s.LanguageFromMOSS(ctx, mossLang)
 
 			slog.InfoContext(ctx, "Running MOSS", slog.Any("problem", pb), slog.Any("lang", lang), slog.Int("sub_count", len(subs)))
-			mossID, err := s.db.InsertMossSubmission(ctx, contest.ID, pb.ID, lang.InternalName, len(subs))
+			mossID, err := s.db.InsertMossSubmission(ctx, contest.ID, pb.ID, lang.InternalName(), len(subs))
 			if err != nil {
 				return fmt.Errorf("could not add MOSS stub to DB: %w", err)
 			}
 
-			go func(mossID int, lang *Language, mossLang string, subs []*kilonova.Submission) {
+			go func(mossID int, lang language.Lang, mossLang string, subs []*kilonova.Submission) {
 				conn, err := moss.New(ctx)
 				if err != nil {
 					slog.WarnContext(ctx, "Could not initialize MOSS", slog.Any("err", err))
@@ -415,7 +416,7 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) error 
 
 				url, err := conn.Process(&moss.Options{
 					LanguageName: mossLang,
-					Comment:      fmt.Sprintf("%s - %s (%s)", contest.Name, pb.Name, lang.PrintableName),
+					Comment:      fmt.Sprintf("%s - %s (%s)", contest.Name, pb.Name, lang.PrintableName()),
 
 					Files: iter.Seq[*moss.File](func(yield func(*moss.File) bool) {
 						for _, sub := range subs {

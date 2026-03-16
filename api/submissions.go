@@ -97,7 +97,7 @@ func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lang := s.base.Language(r.Context(), args.Lang)
+	lang := s.base.Language(args.Lang)
 	if lang == nil {
 		errorData(w, "Invalid language", 400)
 		return
@@ -146,7 +146,7 @@ func (s *API) createSubmissionV2(ctx context.Context, args *SubmissionCreateInpu
 	data := args.RawBody.Data()
 	defer data.Code.Close()
 
-	lang := s.base.Language(ctx, data.Language)
+	lang := s.base.Language(data.Language)
 	if lang == nil {
 		return nil, huma.Error400BadRequest("Invalid language")
 	}

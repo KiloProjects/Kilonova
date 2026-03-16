@@ -8,8 +8,8 @@ import (
 	"os/exec"
 	"strconv"
 
-	"github.com/KiloProjects/kilonova/datastore"
-	"github.com/KiloProjects/kilonova/eval"
+	"github.com/KiloProjects/kilonova/domain/datastore"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/shopspring/decimal"
 )
 
@@ -23,7 +23,7 @@ var _ Checker = &DiffChecker{}
 
 type DiffChecker struct{ Store *datastore.Manager }
 
-func (d *DiffChecker) Language() *eval.Language {
+func (d *DiffChecker) Language() *language.Language {
 	return nil
 }
 

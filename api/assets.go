@@ -25,7 +25,7 @@ import (
 	"image/png"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/archive/test"
+	"github.com/KiloProjects/kilonova/domain/archive/test"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/Yiling-J/theine-go"
