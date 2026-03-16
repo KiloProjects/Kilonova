@@ -28,9 +28,8 @@ import (
 )
 
 var (
-	cmdAuditLogger *slog.Logger
-	initLogger     = sync.OnceFunc(func() {
-		cmdAuditLogger = slog.New(slog.NewJSONHandler(&lumberjack.Logger{
+	cmdAuditLogger = sync.OnceValue(func() *slog.Logger {
+		return slog.New(slog.NewJSONHandler(&lumberjack.Logger{
 			Filename: path.Join(config.Common.LogDir, "sandbox_runs.log"),
 			MaxSize:  200, // MB
 			Compress: true,
@@ -225,8 +224,6 @@ func (mgr *BoxManager) LanguageFromFilename(filename string) language.GraderLang
 }
 
 func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQuota int64) (*eval.Box2Response, error) {
-	initLogger()
-
 	goodCmd, err := makeGoodCommand(req)
 	if err != nil {
 		slog.ErrorContext(ctx, "Error running MakeGoodCommand", slog.Any("err", err))
@@ -252,7 +249,7 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 	if err != nil {
 		return nil, err
 	}
-	cmdAuditLogger.InfoContext(ctx, "Ran command",
+	cmdAuditLogger().InfoContext(ctx, "Ran command",
 		slog.Any("command", goodCmd),
 		slog.Any("stats", stats),
 		slog.Any("output_byte_files", req.OutputByteFiles),
@@ -263,8 +260,6 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 }
 
 func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxRequest, managerMemQuota int64, individualMemQuota int64) (*eval.Box2Response, []*eval.RunStats, error) {
-	initLogger()
-
 	if managerMemQuota+int64(len(req.UserSandboxConfigs))*individualMemQuota > mgr.maxMemory {
 		return nil, nil, errors.New("total memory quota exceeds max memory")
 	}
@@ -401,7 +396,7 @@ func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxReques
 			errChan <- err
 			return
 		}
-		cmdAuditLogger.InfoContext(ctx, "Ran manager command",
+		cmdAuditLogger().InfoContext(ctx, "Ran manager command",
 			slog.Any("command", req.ManagerSandbox.Command),
 			slog.Any("stats", stats),
 			slog.Any("output_byte_files", req.ManagerSandbox.OutputByteFiles),
@@ -425,7 +420,7 @@ func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxReques
 				errChan <- err
 				return
 			}
-			cmdAuditLogger.InfoContext(ctx, "Ran communication user command",
+			cmdAuditLogger().InfoContext(ctx, "Ran communication user command",
 				slog.Any("command", req.UserSandboxConfigs[i].Command),
 				slog.Any("stats", stats),
 				slog.Int64("mem_quota", individualMemQuota),

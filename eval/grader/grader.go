@@ -12,20 +12,18 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/KiloProjects/kilonova/domain/config"
-	"github.com/KiloProjects/kilonova/eval/language"
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
-	"github.com/dominikbraun/graph"
-	"github.com/dominikbraun/graph/draw"
-
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/box"
 	"github.com/KiloProjects/kilonova/eval/checkers"
+	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/eval/scheduler"
 	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/dominikbraun/graph"
 	"github.com/shopspring/decimal"
 )
 
@@ -266,26 +264,10 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		return fmt.Errorf("could not fetch subtests: %w", err)
 	}
 
-	if g, err := sh.buildRunGraph(ctx, subTests); err != nil {
-		slog.WarnContext(ctx, "Error building experimental run graph", slog.Any("err", err))
-	} else if flags.GraphvizSave.Value() {
-		go func(g graph.Graph[int, *kilonova.SubTest]) {
-			f, err := os.CreateTemp("", fmt.Sprintf("submission-graph-%d-*.gv", sub.ID))
-			if err != nil {
-				slog.WarnContext(ctx, "Couldn't save graph file", slog.Any("err", err))
-				return
-			}
-			defer func() {
-				if err := f.Close(); err != nil {
-					slog.WarnContext(ctx, "Could not close graph file", slog.Any("err", err))
-				}
-			}()
-			if err := draw.DOT(g, f); err != nil {
-				slog.WarnContext(ctx, "Couldn't write graph file", slog.Any("err", err))
-				return
-			}
-		}(g)
-	}
+	// TODO: Go through tests in topological sort
+	//if _, err := sh.buildRunGraph(ctx, subTests); err != nil {
+	//	slog.WarnContext(ctx, "Error building experimental run graph", slog.Any("err", err))
+	//}
 
 	// TODO: This is shit.
 	// It is basically 2 implementations for ~ the same thing. It could be merged neater

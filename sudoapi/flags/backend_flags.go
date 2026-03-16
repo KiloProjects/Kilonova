@@ -34,7 +34,6 @@ var (
 
 // grader
 var (
-	GraphvizSave       = config.GenFlag("experimental.grader.save_graphviz", false, "Save graphviz .dot files to tmp directory for run graph debugging purposes")
 	ForceSecureSandbox = config.GenFlag[bool]("feature.grader.force_secure_sandbox", true, "Force use of secure sandbox only. Should be always enabled in production environments")
 )
 
