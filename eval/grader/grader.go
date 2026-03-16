@@ -9,11 +9,13 @@ import (
 	"os"
 	"path"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/config"
+	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/box"
 	"github.com/KiloProjects/kilonova/eval/checkers"
@@ -128,7 +130,11 @@ func (sh *submissionHandler) buildRunGraph(ctx context.Context, subtests []*kilo
 
 func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.CompileRequest, error) {
 	req := &tasks.CompileRequest{
-		ID:          sh.sub.ID,
+		File: &eval.BucketFile{
+			Bucket:   datastore.BucketTypeCompiles,
+			Filename: fmt.Sprintf("%d.bin", sh.sub.ID),
+			Mode:     0777,
+		},
 		Lang:        sh.lang,
 		CodeFiles:   make(map[string][]byte),
 		HeaderFiles: make(map[string][]byte),
@@ -466,14 +472,26 @@ type subtestOutput struct {
 
 func (sh *submissionHandler) handleBatchSubTest(ctx context.Context, checker checkers.Checker, subTest *kilonova.SubTest) (*subtestOutput, error) {
 	execRequest := &tasks.BatchRequest{
-		SubID:       sh.sub.ID,
-		SubtestID:   subTest.ID,
+		ExecFile: &eval.BucketFile{
+			Bucket:   datastore.BucketTypeCompiles,
+			Filename: fmt.Sprintf("%d.bin", sh.sub.ID),
+			Mode:     0777,
+		},
+		OutputFile: &eval.BucketFile{
+			Bucket:   datastore.BucketTypeSubtests,
+			Filename: strconv.Itoa(subTest.ID),
+			Mode:     0644,
+		},
 		InputName:   sh.pb.TestName + ".in",
 		OutputName:  sh.pb.TestName + ".out",
 		MemoryLimit: int(float64(sh.pb.MemoryLimit) * cmp.Or(sh.lang.MemoryLimitMultiplier(), 1.0)),
 		TimeLimit:   sh.pb.TimeLimit * cmp.Or(sh.lang.TimeLimitMultiplier(), 1.0),
 		Lang:        sh.lang,
-		TestID:      *subTest.TestID,
+		InputFile: &eval.BucketFile{
+			Bucket:   datastore.BucketTypeTests,
+			Filename: strconv.Itoa(*subTest.TestID) + ".in",
+			Mode:     0666,
+		},
 
 		CodeFilename: sh.getFilename(),
 	}
@@ -511,7 +529,17 @@ func (sh *submissionHandler) handleBatchSubTest(ctx context.Context, checker che
 func (sh *submissionHandler) handleCommunicationSubTest(ctx context.Context, checker checkers.Checker, subTest *kilonova.SubTest) (*subtestOutput, error) {
 	execRequest := &tasks.CommunicationRequest{
 		ProblemID: sh.pb.ID,
-		SubID:     sh.sub.ID,
+		GraderFile: &eval.BucketFile{
+			Bucket:   datastore.BucketTypeCheckers,
+			Filename: fmt.Sprintf("%d.bin", sh.pb.ID),
+			Mode:     0777,
+		},
+		SubID: sh.sub.ID,
+		SubFile: &eval.BucketFile{
+			Bucket:   datastore.BucketTypeCompiles,
+			Filename: fmt.Sprintf("%d.bin", sh.sub.ID),
+			Mode:     0777,
+		},
 		SubtestID: subTest.ID,
 
 		UseStdin: sh.pb.ConsoleInput,

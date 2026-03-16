@@ -94,7 +94,11 @@ func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	}
 
 	resp, err := tasks.CompileTask(ctx, c.mgr, &tasks.CompileRequest{
-		ID: -c.pb.ID,
+		File: &eval.BucketFile{
+			Bucket:   datastore.BucketTypeCheckers,
+			Filename: fmt.Sprintf("%d.bin", c.pb.ID),
+			Mode:     0777,
+		},
 		CodeFiles: map[string][]byte{
 			lang.SourceName(c.filename): c.code,
 		}, HeaderFiles: map[string][]byte{

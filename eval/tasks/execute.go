@@ -26,8 +26,6 @@ type BatchResponse struct {
 }
 
 type BatchRequest struct {
-	SubID      int
-	SubtestID  int
 	InputName  string
 	OutputName string
 
@@ -37,25 +35,21 @@ type BatchRequest struct {
 
 	CodeFilename string
 
-	Lang   language.GraderLang
-	TestID int
+	Lang       language.GraderLang
+	ExecFile   *eval.BucketFile
+	InputFile  *eval.BucketFile
+	OutputFile *eval.BucketFile
 }
 
 func ExecuteBatch(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, req *BatchRequest, logger *slog.Logger) (*BatchResponse, error) {
-	logger.InfoContext(ctx, "Executing batch subtest", slog.Int("subtest_id", req.SubtestID), slog.Int("sub_id", req.SubID))
-
-	bucketFile := bucketFileFromID(req.SubID, 0777)
+	logger.InfoContext(ctx, "Executing batch subtest", slog.Any("output_file", req.OutputFile), slog.Any("sub_file", req.InputFile))
 
 	bReq := &eval.Box2Request{
 		InputBucketFiles: map[string]*eval.BucketFile{
 			// Test input
-			"/box/" + req.InputName: {
-				Bucket:   datastore.BucketTypeTests,
-				Filename: strconv.Itoa(req.TestID) + ".in",
-				Mode:     0666,
-			},
+			"/box/" + req.InputName: req.InputFile,
 			// User executable
-			req.Lang.CompiledName(req.CodeFilename): bucketFile,
+			req.Lang.CompiledName(req.CodeFilename): req.ExecFile,
 		},
 
 		RunConfig: &eval.RunConfig{
@@ -66,11 +60,7 @@ func ExecuteBatch(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, re
 		},
 
 		OutputBucketFiles: map[string]*eval.BucketFile{
-			"/box/" + req.OutputName: {
-				Bucket:   datastore.BucketTypeSubtests,
-				Filename: strconv.Itoa(req.SubtestID),
-				Mode:     0644,
-			},
+			"/box/" + req.OutputName: req.OutputFile,
 		},
 
 		Command: req.Lang.RunCommand([]string{req.Lang.ExecuteName(req.CodeFilename)}, req.MemoryLimit),
@@ -103,7 +93,7 @@ func ExecuteBatch(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, re
 		return resp, nil
 	}
 
-	resp := parseResponse(ctx, bResp.Stats, logger, req.SubtestID)
+	resp := parseResponse(ctx, bResp.Stats, logger, req.OutputFile.Filename)
 
 	if _, ok := bResp.BucketFiles["/box/"+req.OutputName]; !ok {
 		resp.Comments = "No output file found"
@@ -113,9 +103,11 @@ func ExecuteBatch(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, re
 }
 
 type CommunicationRequest struct {
-	ProblemID int
+	ProblemID  int
+	GraderFile *eval.BucketFile
 
 	SubID     int
+	SubFile   *eval.BucketFile
 	SubtestID int
 	UseStdin  bool
 
@@ -142,9 +134,6 @@ type CommunicationResponse struct {
 func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, req *CommunicationRequest, logger *slog.Logger) (*CommunicationResponse, error) {
 	logger.InfoContext(ctx, "Executing communication subtest", slog.Int("subtest_id", req.SubtestID), slog.Int("sub_id", req.SubID))
 
-	managerBucketExec := bucketFileFromID(-req.ProblemID, 0777)
-	userBucketExec := bucketFileFromID(req.SubID, 0777)
-
 	managerReq := &eval.Box2Request{
 		InputBucketFiles: map[string]*eval.BucketFile{
 			// Test input
@@ -154,7 +143,7 @@ func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota i
 				Mode:     0666,
 			},
 			// Manager executable
-			req.CheckerLang.CompiledName(req.CheckerFilename): managerBucketExec,
+			req.CheckerLang.CompiledName(req.CheckerFilename): req.GraderFile,
 		},
 
 		Command: req.CheckerLang.RunCommand([]string{req.CheckerLang.ExecuteName(req.CheckerFilename)}, managerMemoryLimit),
@@ -183,7 +172,7 @@ func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota i
 		userReqs[i] = &eval.Box2Request{
 			InputBucketFiles: map[string]*eval.BucketFile{
 				// User executable
-				req.SubLang.CompiledName(req.CodeFilename): userBucketExec,
+				req.SubLang.CompiledName(req.CodeFilename): req.SubFile,
 			},
 
 			RunConfig: &eval.RunConfig{
@@ -222,8 +211,8 @@ func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota i
 		return resp, nil
 	}
 	//spew.Dump(bResp.Stats, userStats)
-	userResp := parseResponse(ctx, mergeStats(true, userStats...), logger, req.SubtestID)
-	mgrResp := parseResponse(ctx, bResp.Stats, logger, req.SubtestID)
+	userResp := parseResponse(ctx, mergeStats(true, userStats...), logger, strconv.Itoa(req.SubtestID))
+	mgrResp := parseResponse(ctx, bResp.Stats, logger, strconv.Itoa(req.SubtestID))
 	mgrResp.Time = userResp.Time
 	mgrResp.Memory = userResp.Memory
 
@@ -250,7 +239,7 @@ func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota i
 	}, nil
 }
 
-func parseResponse(ctx context.Context, stats *eval.RunStats, logger *slog.Logger, subtestID int) BatchResponse {
+func parseResponse(ctx context.Context, stats *eval.RunStats, logger *slog.Logger, outputName string) BatchResponse {
 	resp := BatchResponse{}
 
 	resp.Time, resp.Memory = stats.Time, stats.Memory
@@ -269,8 +258,8 @@ func parseResponse(ctx context.Context, stats *eval.RunStats, logger *slog.Logge
 		resp.Comments = msg
 	case "XX":
 		resp.Comments = "Sandbox Error: " + msg
-		slog.WarnContext(ctx, "Sandbox error detected, check grader.log for more details", slog.Int("subtest_id", subtestID))
-		logger.WarnContext(ctx, "Sandbox error", slog.Int("subtest_id", subtestID), slog.Any("metadata", stats))
+		slog.WarnContext(ctx, "Sandbox error detected, check grader.log for more details", slog.Any("output_name", outputName))
+		logger.WarnContext(ctx, "Sandbox error", slog.Any("output_name", outputName), slog.Any("metadata", stats))
 	default:
 		okExit = true
 	}

@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
-	"io/fs"
 	"log/slog"
 
 	"github.com/KiloProjects/kilonova/domain/datastore"
@@ -17,8 +15,7 @@ import (
 const outputPath = "/box/compilation.out"
 
 type CompileRequest struct {
-	// TODO: Better identifier for such requests
-	ID          int
+	File        *eval.BucketFile
 	CodeFiles   map[string][]byte
 	HeaderFiles map[string][]byte
 	Lang        language.GraderLang
@@ -37,32 +34,20 @@ type CompileResponse struct {
 
 const compileOutputLimit = 4500 // runes
 
-func bucketFileFromID(id int, mode fs.FileMode) *eval.BucketFile {
-	if id < 0 { // checker
-		// use -id to turn back positive
-		return &eval.BucketFile{
-			Bucket:   datastore.BucketTypeCheckers,
-			Filename: fmt.Sprintf("%d.bin", -id),
-			Mode:     mode,
-		}
-	}
-	return &eval.BucketFile{
-		Bucket:   datastore.BucketTypeCompiles,
-		Filename: fmt.Sprintf("%d.bin", id),
-		Mode:     mode,
-	}
-}
-
 func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest, logger *slog.Logger) (*CompileResponse, error) {
 	resp := &CompileResponse{}
 
 	// TODO: I don't think we need this anymore
 	if req.Lang == nil {
-		slog.WarnContext(ctx, "Could not find language for submission", slog.Any("sub_id", req.ID), slog.Any("lang", req.Lang))
+		slog.WarnContext(ctx, "Could not find language for submission", slog.Any("sub_file", req.File), slog.Any("lang", req.Lang))
 		return resp, errors.New("no language found")
 	}
 
-	bucketFile := bucketFileFromID(req.ID, 0777)
+	if req.File == nil {
+		slog.WarnContext(ctx, "Could not find file for submission")
+		return resp, errors.New("no file found")
+	}
+
 	resp.Success = true
 
 	// If the language is interpreted, just save the code and leave
@@ -72,11 +57,11 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 			slog.WarnContext(ctx, "More than one file specified for non-compiled language. This is not properly supported")
 		}
 		for _, fData := range req.CodeFiles {
-			b, err := req.Store.Get(bucketFile.Bucket)
+			b, err := req.Store.Get(req.File.Bucket)
 			if err != nil {
 				resp.Other = err.Error()
 				resp.Success = false
-			} else if err := b.WriteFile(bucketFile.Filename, bytes.NewBuffer(fData), 0644); err != nil {
+			} else if err := b.WriteFile(req.File.Filename, bytes.NewBuffer(fData), 0644); err != nil {
 				resp.Other = err.Error()
 				resp.Success = false
 			}
@@ -84,14 +69,14 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 		return resp, nil
 	}
 
-	logger.InfoContext(ctx, "Compiling file", slog.Int("req_id", req.ID))
+	logger.InfoContext(ctx, "Compiling file", slog.Any("req_file", req.File))
 
 	bReq := &eval.Box2Request{
 		InputByteFiles: make(map[string]*eval.ByteFile),
 
 		// Compilation output
 		OutputBucketFiles: map[string]*eval.BucketFile{
-			req.Lang.CompiledName(req.OriginalFilename): bucketFile,
+			req.Lang.CompiledName(req.OriginalFilename): req.File,
 		},
 		OutputByteFiles: []string{outputPath},
 
