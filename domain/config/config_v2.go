@@ -70,8 +70,8 @@ func (f *flag[T]) MarshalJSON() ([]byte, error) {
 
 func (f *flag[T]) Update(newVal T) {
 	defer func() {
-		if err := SaveConfigV2(context.Background()); err != nil {
-			slog.WarnContext(context.Background(), "Couldn't save flag", slog.Any("err", err))
+		if onFlagUpdate != nil {
+			onFlagUpdate()
 		}
 	}()
 	f.mu.Lock()
@@ -248,4 +248,10 @@ func SaveConfigV2(ctx context.Context, configV2Path string) error {
 	}
 
 	return file.Close()
+}
+
+var onFlagUpdate = func() {}
+
+func SetOnFlagUpdate(f func()) {
+	onFlagUpdate = f
 }

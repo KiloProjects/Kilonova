@@ -33,7 +33,7 @@ func main() {
 				Name:    "flags",
 				Aliases: []string{"f"},
 				Usage:   "Path to flags file",
-				Value:   "./flags.toml",
+				Value:   "./flags.json",
 				Sources: cli.EnvVars("KN_FLAGS_PATH"),
 			},
 		},
@@ -47,6 +47,11 @@ func main() {
 			if err := config.LoadConfigV2(ctx, flagsPath, false); err != nil {
 				return nil, fmt.Errorf("error loading flags: %w", err)
 			}
+			config.SetOnFlagUpdate(func() {
+				if err := config.SaveConfigV2(context.Background(), flagsPath); err != nil {
+					slog.WarnContext(context.Background(), "Couldn't save flag", slog.Any("err", err))
+				}
+			})
 
 			// save the config for formatting
 			if err := config.Save(configPath); err != nil {
@@ -68,7 +73,7 @@ func main() {
 
 			prometheus.InitMetrics(ctx)
 
-			if err := Kilonova(); err != nil {
+			if err := Kilonova(ctx, command); err != nil {
 				return fmt.Errorf("error running Kilonova: %w", err)
 			}
 			return nil

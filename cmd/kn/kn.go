@@ -21,6 +21,7 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/riandyrn/otelchi"
 	slogmulti "github.com/samber/slog-multi"
+	"github.com/urfave/cli/v3"
 	"github.com/zitadel/oidc/v3/pkg/op"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -35,7 +36,7 @@ import (
 	"github.com/go-chi/cors"
 )
 
-func Kilonova() error {
+func Kilonova(ctx context.Context, command *cli.Command) error {
 
 	// Setup context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -57,7 +58,7 @@ func Kilonova() error {
 
 	maxmind.Initialize(ctx)
 
-	base, err := sudoapi.InitializeBaseAPI(ctx)
+	base, err := sudoapi.InitializeBaseAPI(ctx, command)
 	if err != nil {
 		slog.ErrorContext(ctx, "Could not initialize BaseAPI", slog.Any("err", err))
 		return err

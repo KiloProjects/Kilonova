@@ -40,9 +40,18 @@ func (s *BaseAPI) UpdateConfig(ctx context.Context, upd ConfigUpdate) error {
 			}
 		}()
 	}
-	if err := config.Save(); err != nil {
-		slog.WarnContext(ctx, "Couldn't update config", slog.Any("err", err))
-		return fmt.Errorf("couldn't update config. This is *very* bad: %w", err)
+	if s.cmd == nil {
+		slog.WarnContext(ctx, "Command not initialized, cannot persist config update")
+		return nil
+	}
+
+	if cfg := s.cmd.String("config"); len(cfg) > 0 {
+		if err := config.Save(cfg); err != nil {
+			slog.WarnContext(ctx, "Couldn't update config", slog.Any("err", err))
+			return fmt.Errorf("couldn't update config. This is *very* bad: %w", err)
+		}
+	} else {
+		slog.WarnContext(ctx, "Couldn't update config, config file not found")
 	}
 	return nil
 }

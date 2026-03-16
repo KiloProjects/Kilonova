@@ -21,6 +21,7 @@ import (
 	"github.com/Yiling-J/theine-go"
 	"github.com/bwmarrin/discordgo"
 	"github.com/spf13/afero"
+	"github.com/urfave/cli/v3"
 	"github.com/zitadel/oidc/v3/pkg/op"
 )
 
@@ -45,6 +46,7 @@ type BaseAPI struct {
 	db     *db.DB
 	mailer kilonova.Mailer
 	rd     *mdrenderer.Renderer
+	cmd    *cli.Command
 
 	mgr *datastore.Manager
 
@@ -89,12 +91,13 @@ func (s *BaseAPI) Close() error {
 	return nil
 }
 
-func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, mailer kilonova.Mailer) (*BaseAPI, error) {
+func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, mailer kilonova.Mailer, cmd *cli.Command) (*BaseAPI, error) {
 	base := &BaseAPI{
 		pgx:    pgx,
 		db:     db.NewPSQL(pgx),
 		mailer: mailer,
 		rd:     mdrenderer.NewRenderer(),
+		cmd:    cmd,
 
 		mgr: mgr,
 
@@ -133,7 +136,7 @@ func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, m
 	return base, nil
 }
 
-func InitializeBaseAPI(ctx context.Context) (*BaseAPI, error) {
+func InitializeBaseAPI(ctx context.Context, cmd *cli.Command) (*BaseAPI, error) {
 	// Data directory setup
 	if !path.IsAbs(config.Common.DataDir) {
 		return nil, Statusf(400, "dataDir is not absolute")
@@ -174,7 +177,7 @@ func InitializeBaseAPI(ctx context.Context) (*BaseAPI, error) {
 		}
 	}
 
-	return GetBaseAPI(ctx, pgxDB, mgr, knMailer)
+	return GetBaseAPI(ctx, pgxDB, mgr, knMailer, cmd)
 }
 
 func InitQueryCounter(ctx context.Context) context.Context {

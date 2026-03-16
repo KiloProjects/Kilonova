@@ -12,11 +12,11 @@ import (
 
 var problemDiagnostics = &cli.Command{
 	Name: "problem-diagnostics",
-	Action: func(ctx context.Context, _ *cli.Command) error {
+	Action: func(ctx context.Context, command *cli.Command) error {
 		// Print welcome message
 		slog.InfoContext(ctx, "Starting Kilonova Quick Problem Diagnostics Runner")
 
-		base, err := sudoapi.InitializeBaseAPI(ctx)
+		base, err := sudoapi.InitializeBaseAPI(ctx, command)
 		if err != nil {
 			return err
 		}

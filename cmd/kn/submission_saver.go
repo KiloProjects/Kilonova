@@ -27,7 +27,7 @@ var submissionSaver = &cli.Command{
 		slog.InfoContext(ctx, "Starting Kilonova Submission Exporter")
 		slog.InfoContext(ctx, "Saving for user", slog.Any("user", cmd.String("username")))
 
-		base, err := sudoapi.InitializeBaseAPI(ctx)
+		base, err := sudoapi.InitializeBaseAPI(ctx, cmd)
 		if err != nil {
 			return err
 		}
