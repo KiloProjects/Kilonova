@@ -3,12 +3,10 @@ package checkers
 import (
 	"context"
 	"log/slog"
-	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/shopspring/decimal"
 )
 
@@ -21,7 +19,7 @@ func legacyCheckerTask(ctx context.Context, mgr eval.BoxScheduler, job *customCh
 	req := initRequest(lang, job)
 
 	req.Command = append(
-		makeGoodSandboxCommand(ctx, lang.RunCommand, []string{lang.ExecuteName(job.c.filename)}),
+		lang.RunCommand([]string{lang.ExecuteName(job.c.filename)}, checkerMemoryLimit),
 		"/box/program.out",
 		"/box/correct.out",
 		"/box/correct.in",
@@ -52,20 +50,4 @@ func legacyCheckerTask(ctx context.Context, mgr eval.BoxScheduler, job *customCh
 		output = val
 	}
 	return output, decimal.NewFromFloat(percentage)
-}
-
-func makeGoodSandboxCommand(ctx context.Context, command []string, files []string) []string {
-	cmd := slices.Clone(command)
-	for i := range cmd {
-		if cmd[i] == language.MagicReplace {
-			x := []string{}
-			x = append(x, cmd[:i]...)
-			x = append(x, files...)
-			x = append(x, cmd[i+1:]...)
-			return x
-		}
-	}
-
-	slog.WarnContext(ctx, "Did not replace any fields in command", slog.Any("command", command))
-	return cmd
 }

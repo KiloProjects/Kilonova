@@ -22,15 +22,43 @@ type Lang interface {
 	MOSSName() string
 }
 
-//type GraderLang interface{
-//	Lang
-//
-//	Compile(files []string, memory int)
-//}
+type GraderLang interface {
+	Lang
+
+	Compiled() bool
+	CompileCommand(files []string) []string
+	RunCommand(files []string, memoryLimit int) []string
+
+	SourceName(userFilename string) string
+	CompiledName(userFilename string) string
+	ExecuteName(userFilename string) string
+
+	VersionCommand() []string
+	ParseVersion(version []byte) string
+
+	// BuildEnv returns the environment variables to be set when compiling
+	// These are safe to modify
+	BuildEnv() map[string]string
+	RunEnv() map[string]string
+	Mounts() []Directory
+
+	TimeLimitMultiplier() float64
+	MemoryLimitMultiplier() float64
+
+	// SimilarLanguages returns the list of recognized similar languages to this one
+	SimilarLanguages() []string
+}
 
 func Extension(lang Lang) string {
 	if lang == nil || len(lang.Extensions()) == 0 {
 		return ".txt"
 	}
 	return lang.Extensions()[len(lang.Extensions())-1]
+}
+
+func FirstExtension(lang Lang) string {
+	if lang == nil || len(lang.Extensions()) == 0 {
+		return ".txt"
+	}
+	return lang.Extensions()[0]
 }

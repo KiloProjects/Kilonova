@@ -45,9 +45,9 @@ type BoxScheduler interface {
 	RunMultibox(ctx context.Context, req *MultiboxRequest, managerMemQuota int64, individualMemQuota int64) (*Box2Response, []*RunStats, error)
 	Close(context.Context) error
 
-	Language(name string) *language.Language
-	Languages() map[string]*language.Language
-	LanguageFromFilename(filename string) *language.Language
+	Language(name string) language.GraderLang
+	Languages() map[string]language.GraderLang
+	LanguageFromFilename(filename string) language.GraderLang
 	LanguageVersions(ctx context.Context) map[string]string
 }
 

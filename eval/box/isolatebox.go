@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/davecgh/go-spew/spew"
 )
 
@@ -233,14 +232,6 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 				slog.WarnContext(ctx, "Executable does not exist in sandbox and will probably error", slog.Int("box_id", b.boxID))
 			} else {
 				slog.WarnContext(ctx, "Could not find file to run in sandbox", slog.Any("err", err))
-			}
-		}
-	}
-
-	if conf.MemoryLimit > 0 {
-		for i := range command {
-			if strings.Contains(command[i], language.MemoryReplace) {
-				command[i] = strings.ReplaceAll(command[i], language.MemoryReplace, strconv.Itoa(conf.MemoryLimit))
 			}
 		}
 	}

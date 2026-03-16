@@ -72,11 +72,11 @@ func (h *Handler) LanguageVersions(ctx context.Context) map[string]string {
 	return h.runner.LanguageVersions(ctx)
 }
 
-func (h *Handler) Language(name string) *language.Language {
+func (h *Handler) Language(name string) language.GraderLang {
 	return h.runner.Language(name)
 }
 
-func (h *Handler) Languages() map[string]*language.Language {
+func (h *Handler) Languages() map[string]language.GraderLang {
 	return h.runner.Languages()
 }
 

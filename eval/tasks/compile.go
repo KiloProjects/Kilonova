@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
-	"maps"
-	"slices"
 
 	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/eval"
@@ -23,7 +21,7 @@ type CompileRequest struct {
 	ID          int
 	CodeFiles   map[string][]byte
 	HeaderFiles map[string][]byte
-	Lang        *language.Language
+	Lang        language.GraderLang
 	Store       *datastore.Manager
 
 	OriginalFilename string
@@ -68,7 +66,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 	resp.Success = true
 
 	// If the language is interpreted, just save the code and leave
-	if !req.Lang.Compiled {
+	if !req.Lang.Compiled() {
 		// It should only be one file here anyway
 		if len(req.CodeFiles) > 1 {
 			slog.WarnContext(ctx, "More than one file specified for non-compiled language. This is not properly supported")
@@ -99,9 +97,9 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 
 		// Run config
 		RunConfig: &eval.RunConfig{
-			EnvToSet:    maps.Clone(req.Lang.BuildEnv),
+			EnvToSet:    req.Lang.BuildEnv(),
 			InheritEnv:  true,
-			Directories: slices.Clone(req.Lang.Mounts),
+			Directories: req.Lang.Mounts(),
 
 			TimeLimit:     20,         // 20 seconds
 			WallTimeLimit: 30,         // 30 seconds
@@ -129,7 +127,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 	}
 
 	// Init compilation command
-	bReq.Command = makeGoodSandboxCommand(ctx, req.Lang.CompileCommand, sourceFiles)
+	bReq.Command = req.Lang.CompileCommand(sourceFiles)
 
 	// TODO: Maybe define a max memory quota for compilations?
 	bResp, err := mgr.RunBox2(ctx, bReq, 0)
@@ -174,20 +172,4 @@ func compilationOutput(resp *eval.Box2Response) string {
 		combinedOutRunes = append(combinedOutRunes[:compileOutputLimit], []rune("... (compilation output trimmed)")...)
 	}
 	return string(combinedOutRunes)
-}
-
-func makeGoodSandboxCommand(ctx context.Context, command []string, files []string) []string {
-	cmd := slices.Clone(command)
-	for i := range cmd {
-		if cmd[i] == language.MagicReplace {
-			x := []string{}
-			x = append(x, cmd[:i]...)
-			x = append(x, files...)
-			x = append(x, cmd[i+1:]...)
-			return x
-		}
-	}
-
-	slog.WarnContext(ctx, "Did not replace any fields in command", slog.Any("command", command))
-	return cmd
 }

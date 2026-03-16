@@ -45,7 +45,7 @@ type submissionHandler struct {
 	sub      *kilonova.Submission
 	files    []*kilonova.SubmissionFile
 
-	lang *language.Language
+	lang language.GraderLang
 }
 
 func (sh *submissionHandler) getCode() []byte {
@@ -146,7 +146,7 @@ func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.C
 
 	for _, codeFile := range sh.settings.GraderFiles {
 		lang := sh.runner.LanguageFromFilename(codeFile)
-		if lang == nil || (lang.InternalName != sh.lang.InternalName && !slices.Contains(sh.lang.SimilarLangs, lang.InternalName)) {
+		if lang == nil || (lang.InternalName() != sh.lang.InternalName() && !slices.Contains(sh.lang.SimilarLanguages(), lang.InternalName())) {
 			continue
 		}
 		for _, att := range atts {
@@ -156,7 +156,7 @@ func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.C
 					slog.WarnContext(ctx, "Couldn't get attachment data", slog.Any("err", err))
 					return nil, errors.New("couldn't get grader data")
 				}
-				name := strings.Replace(path.Base(att.Name), path.Ext(att.Name), lang.Extensions[0], 1)
+				name := strings.Replace(path.Base(att.Name), path.Ext(att.Name), language.FirstExtension(lang), 1)
 				req.CodeFiles[path.Join("/box", name)] = data
 			}
 		}
@@ -488,8 +488,8 @@ func (sh *submissionHandler) handleBatchSubTest(ctx context.Context, checker che
 		SubtestID:   subTest.ID,
 		InputName:   sh.pb.TestName + ".in",
 		OutputName:  sh.pb.TestName + ".out",
-		MemoryLimit: int(float64(sh.pb.MemoryLimit) * cmp.Or(sh.lang.MemoryLimitMultiplier, 1.0)),
-		TimeLimit:   sh.pb.TimeLimit * cmp.Or(sh.lang.TimeLimitMultiplier, 1.0),
+		MemoryLimit: int(float64(sh.pb.MemoryLimit) * cmp.Or(sh.lang.MemoryLimitMultiplier(), 1.0)),
+		TimeLimit:   sh.pb.TimeLimit * cmp.Or(sh.lang.TimeLimitMultiplier(), 1.0),
 		Lang:        sh.lang,
 		TestID:      *subTest.TestID,
 
@@ -534,8 +534,8 @@ func (sh *submissionHandler) handleCommunicationSubTest(ctx context.Context, che
 
 		UseStdin: sh.pb.ConsoleInput,
 
-		MemoryLimit: int(float64(sh.pb.MemoryLimit) * cmp.Or(sh.lang.MemoryLimitMultiplier, 1.0)),
-		TimeLimit:   sh.pb.TimeLimit * cmp.Or(sh.lang.TimeLimitMultiplier, 1.0),
+		MemoryLimit: int(float64(sh.pb.MemoryLimit) * cmp.Or(sh.lang.MemoryLimitMultiplier(), 1.0)),
+		TimeLimit:   sh.pb.TimeLimit * cmp.Or(sh.lang.TimeLimitMultiplier(), 1.0),
 
 		SubLang:     sh.lang,
 		CheckerLang: checker.Language(),

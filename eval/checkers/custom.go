@@ -56,7 +56,7 @@ type customChecker struct {
 	legacy bool
 }
 
-func (c *customChecker) Language() *language.Language {
+func (c *customChecker) Language() language.GraderLang {
 	return c.mgr.LanguageFromFilename(c.filename)
 }
 
@@ -149,7 +149,7 @@ func NewStandardCustomChecker(mgr eval.BoxScheduler, store *datastore.Manager, l
 	return &customChecker{mgr, pb, filename, code, subCode, lastUpdatedAt, logger, store, false}
 }
 
-func initRequest(lang *language.Language, job *customCheckerInput) *eval.Box2Request {
+func initRequest(lang language.GraderLang, job *customCheckerInput) *eval.Box2Request {
 	return &eval.Box2Request{
 		InputBucketFiles: map[string]*eval.BucketFile{
 			"/box/program.out": {

@@ -36,8 +36,8 @@ type Submissions struct {
 
 type Grader interface {
 	Wake()
-	Language(string) *language.Language
-	Languages() map[string]*language.Language
+	Language(string) language.GraderLang
+	Languages() map[string]language.GraderLang
 	LanguageVersions(ctx context.Context) map[string]string
 }
 

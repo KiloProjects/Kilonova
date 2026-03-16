@@ -29,6 +29,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/skip2/go-qrcode"
 
+	knlanguage "github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/components/layout"
 	"github.com/a-h/templ"
@@ -604,7 +605,7 @@ func (rt *Web) downloadSubmission(w http.ResponseWriter, r *http.Request) {
 		rt.statusPage(w, r, 400, "Code is either unavailable or doesn't exist.")
 		return
 	}
-	extension := rt.base.Language(util.Submission(r).Language).Extensions()[0]
+	extension := knlanguage.FirstExtension(rt.base.Language(util.Submission(r).Language))
 	if extension == ".outputOnly" {
 		extension = ".txt"
 	}
@@ -753,7 +754,7 @@ func (rt *Web) downloadPaste() http.HandlerFunc {
 			code = nil
 		}
 
-		extension := rt.base.Language(fullSub.Language).Extensions()[0]
+		extension := knlanguage.FirstExtension(rt.base.Language(fullSub.Language))
 		if extension == ".outputOnly" {
 			extension = ".txt"
 		}

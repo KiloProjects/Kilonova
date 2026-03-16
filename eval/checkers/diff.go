@@ -23,7 +23,7 @@ var _ Checker = &DiffChecker{}
 
 type DiffChecker struct{ Store *datastore.Manager }
 
-func (d *DiffChecker) Language() *language.Language {
+func (d *DiffChecker) Language() language.GraderLang {
 	return nil
 }
 

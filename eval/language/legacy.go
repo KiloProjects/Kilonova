@@ -6,22 +6,30 @@ import (
 )
 
 const (
-	MagicReplace  = "<REPLACE>"
-	MemoryReplace = "<MEMORY>"
+	magicReplace  = "<REPLACE>"
+	memoryReplace = "<MEMORY>"
 )
+
+type langer interface {
+	Disabled() bool
+	Lang() Lang
+	GraderLang() GraderLang
+}
+
+var _ langer = (*legacyLanguage)(nil)
 
 // NOTE: Last extension MUST be unique (for proper detection of submissions in problem archives)
 // TODO: remove Disabled
-var Langs = map[string]Language{
-	"c": {
+var Langs = map[string]langer{
+	"c": legacyLanguage{
 		Extensions:    []string{".c"},
 		Compiled:      true,
 		PrintableName: "C",
 		InternalName:  "c",
 		MOSSName:      "cc", // Treat C as C++. Not necessarily correct but might help
 
-		CompileCommand: []string{"gcc", "-fuse-ld=mold", "-std=gnu11", "-O2", "-lm", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
-		RunCommand:     []string{MagicReplace},
+		CompileCommand: []string{"gcc", "-fuse-ld=mold", "-std=gnu11", "-O2", "-lm", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", magicReplace, "-o", "/box/output"},
+		RunCommand:     []string{magicReplace},
 		sourceName:     "/box/main.c",
 		compiledName:   "/box/output",
 		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
@@ -31,15 +39,15 @@ var Langs = map[string]Language{
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
-	"cpp11": {
+	"cpp11": legacyLanguage{
 		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx", ".cpp11"},
 		Compiled:      true,
 		PrintableName: "C++11",
 		InternalName:  "cpp11",
 		MOSSName:      "cc",
 
-		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++11", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
-		RunCommand:     []string{MagicReplace},
+		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++11", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", magicReplace, "-o", "/box/output"},
+		RunCommand:     []string{magicReplace},
 		sourceName:     "/box/main.cpp",
 		compiledName:   "/box/output",
 		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
@@ -49,15 +57,15 @@ var Langs = map[string]Language{
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
-	"cpp14": {
+	"cpp14": legacyLanguage{
 		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx", ".cpp14"},
 		Compiled:      true,
 		PrintableName: "C++14",
 		InternalName:  "cpp14",
 		MOSSName:      "cc",
 
-		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++14", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
-		RunCommand:     []string{MagicReplace},
+		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++14", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", magicReplace, "-o", "/box/output"},
+		RunCommand:     []string{magicReplace},
 		sourceName:     "/box/main.cpp",
 		compiledName:   "/box/output",
 		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
@@ -67,15 +75,15 @@ var Langs = map[string]Language{
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
-	"cpp17": {
+	"cpp17": legacyLanguage{
 		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx", ".cpp17"},
 		Compiled:      true,
 		PrintableName: "C++17",
 		InternalName:  "cpp17",
 		MOSSName:      "cc",
 
-		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++17", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
-		RunCommand:     []string{MagicReplace},
+		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++17", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", magicReplace, "-o", "/box/output"},
+		RunCommand:     []string{magicReplace},
 		sourceName:     "/box/main.cpp",
 		compiledName:   "/box/output",
 		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
@@ -85,15 +93,15 @@ var Langs = map[string]Language{
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
-	"cpp20": {
+	"cpp20": legacyLanguage{
 		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx", ".cpp20"},
 		Compiled:      true,
 		PrintableName: "C++20",
 		InternalName:  "cpp20",
 		MOSSName:      "cc",
 
-		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++20", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", MagicReplace, "-o", "/box/output"},
-		RunCommand:     []string{MagicReplace},
+		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++20", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", magicReplace, "-o", "/box/output"},
+		RunCommand:     []string{magicReplace},
 		sourceName:     "/box/main.cpp",
 		compiledName:   "/box/output",
 		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
@@ -103,7 +111,7 @@ var Langs = map[string]Language{
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
-	"pascal": {
+	"pascal": legacyLanguage{
 		// NOTE: fpc compiler is in the `fp-compiler` package on Ubuntu.
 		// The `fpc` package would also install the IDE, which depends on x11 and other unnecessary fluff
 
@@ -113,8 +121,8 @@ var Langs = map[string]Language{
 		InternalName:  "pascal",
 		MOSSName:      "pascal",
 
-		CompileCommand: []string{"fpc", "-O2", "-XSst", "-Mobjfpc", "-vw", "-dKNOVA", "-dONLINE_JUDGE", MagicReplace, "-o/box/output"},
-		RunCommand:     []string{MagicReplace},
+		CompileCommand: []string{"fpc", "-O2", "-XSst", "-Mobjfpc", "-vw", "-dKNOVA", "-dONLINE_JUDGE", magicReplace, "-o/box/output"},
+		RunCommand:     []string{magicReplace},
 		sourceName:     "/box/main.pas",
 		compiledName:   "/box/output",
 
@@ -123,7 +131,7 @@ var Langs = map[string]Language{
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
-	"golang": {
+	"golang": legacyLanguage{
 		// Disabled:      true, // Doesn't work
 		Extensions:    []string{".go"},
 		Compiled:      true,
@@ -131,8 +139,8 @@ var Langs = map[string]Language{
 		InternalName:  "golang",
 		MOSSName:      "ascii", // MOSS doesn't support go
 
-		CompileCommand: []string{"/usr/bin/go", "build", MagicReplace},
-		RunCommand:     []string{MagicReplace},
+		CompileCommand: []string{"/usr/bin/go", "build", magicReplace},
+		RunCommand:     []string{magicReplace},
 		sourceName:     "/box/main.go",
 		compiledName:   "/box/main",
 
@@ -145,23 +153,23 @@ var Langs = map[string]Language{
 		// TODO: Find way to nicely mount compilation cache so it doesn't take 10 seconds to compile stdlib.
 		Mounts: []Directory{{In: "/go", Opts: "tmp", Verbatim: true}},
 	},
-	"haskell": {
-		Disabled:      true, // For now
+	"haskell": legacyLanguage{
+		disabled:      true, // For now
 		Extensions:    []string{".hs", ".lhs"},
 		Compiled:      true,
 		PrintableName: "Haskell",
 		InternalName:  "haskell",
 		MOSSName:      "haskell",
 
-		CompileCommand: []string{"ghc", "-o", "/box/output", MagicReplace},
-		RunCommand:     []string{MagicReplace},
+		CompileCommand: []string{"ghc", "-o", "/box/output", magicReplace},
+		RunCommand:     []string{magicReplace},
 		sourceName:     "/box/main.hs",
 		compiledName:   "/box/output",
 
 		VersionCommand: []string{"ghc", "--numeric-version"},
 		VersionParser:  nil,
 	},
-	"java": {
+	"java": legacyLanguage{
 		//Disabled:      true, // For now
 		Extensions:    []string{".java"},
 		Compiled:      true,
@@ -169,8 +177,8 @@ var Langs = map[string]Language{
 		InternalName:  "java",
 		MOSSName:      "java",
 
-		CompileCommand: []string{"javac", MagicReplace},
-		RunCommand:     []string{"java", MagicReplace},
+		CompileCommand: []string{"javac", magicReplace},
+		RunCommand:     []string{"java", magicReplace},
 		sourceName:     "/box/Main.java",
 		//compiledName:   "/Main.class",
 		compiledNameFunc: func(s string) string {
@@ -185,15 +193,15 @@ var Langs = map[string]Language{
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
-	"kotlin": {
+	"kotlin": legacyLanguage{
 		Extensions:    []string{".kt"},
 		Compiled:      true,
 		PrintableName: "Kotlin",
 		InternalName:  "kotlin",
 		MOSSName:      "ascii", // MOSS doesn't support kotlin
 
-		CompileCommand: []string{"kotlinc", MagicReplace, "-include-runtime", "-d", "output.jar"},
-		RunCommand:     []string{"java", "-Xmx" + MemoryReplace + "K", "-DKNOVA", "-DONLINE_JUDGE", "-jar", MagicReplace},
+		CompileCommand: []string{"kotlinc", magicReplace, "-include-runtime", "-d", "output.jar"},
+		RunCommand:     []string{"java", "-Xmx" + memoryReplace + "K", "-DKNOVA", "-DONLINE_JUDGE", "-jar", magicReplace},
 		sourceName:     "/box/main.kt",
 		compiledName:   "/box/output.jar",
 
@@ -202,14 +210,14 @@ var Langs = map[string]Language{
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
-	"python3": {
+	"python3": legacyLanguage{
 		Extensions:    []string{".py", ".py3"},
 		Compiled:      false,
 		PrintableName: "Python 3",
 		InternalName:  "python3",
 		MOSSName:      "python",
 
-		RunCommand:   []string{"python3", MagicReplace},
+		RunCommand:   []string{"python3", magicReplace},
 		sourceName:   "/box/main.py",
 		compiledName: "/box/main.py",
 
@@ -218,7 +226,7 @@ var Langs = map[string]Language{
 		VersionCommand: []string{"python3", "--version"},
 		VersionParser:  nil,
 	},
-	"nodejs": {
+	"nodejs": legacyLanguage{
 		// Disabled: true, // For now
 
 		Extensions:    []string{".js"},
@@ -227,15 +235,15 @@ var Langs = map[string]Language{
 		InternalName:  "nodejs",
 		MOSSName:      "javascript",
 
-		CompileCommand: []string{"node", "-c", MagicReplace},
-		RunCommand:     []string{"node", MagicReplace},
+		CompileCommand: []string{"node", "-c", magicReplace},
+		RunCommand:     []string{"node", magicReplace},
 		sourceName:     "/box/index.js",
 		compiledName:   "/box/index.js",
 
 		VersionCommand: []string{"node", "--version"},
 		VersionParser:  nil,
 	},
-	"php": {
+	"php": legacyLanguage{
 		// NOTE: Requires the php-cli package
 		Extensions:    []string{".php"},
 		Compiled:      true,
@@ -243,11 +251,11 @@ var Langs = map[string]Language{
 		InternalName:  "php",
 		MOSSName:      "ascii", // MOSS doesn't support php
 
-		CompileCommand: []string{"php", "-l", MagicReplace},
+		CompileCommand: []string{"php", "-l", magicReplace},
 		RunCommand: []string{"php", "-n",
 			"-d", "ONLINE_JUDGE=true", "-d", "KNOVA=true", "-d", "display_errors=Off", "-d", "error_reporting=0",
-			"-d", "memory_limit=" + MemoryReplace + "K",
-			MagicReplace,
+			"-d", "memory_limit=" + memoryReplace + "K",
+			magicReplace,
 		},
 		sourceName:   "/box/index.php",
 		compiledName: "/box/index.php",
@@ -255,7 +263,7 @@ var Langs = map[string]Language{
 		VersionCommand: []string{"php", "--version"},
 		VersionParser:  getFirstLine,
 	},
-	"rust": {
+	"rust": legacyLanguage{
 		Extensions: []string{".rs"},
 
 		Compiled:      true,
@@ -264,9 +272,9 @@ var Langs = map[string]Language{
 		MOSSName:      "ascii", // MOSS doesn't support rust
 
 		CompileCommand: []string{"rustc", "--edition", "2021", "-O", "-C", "strip=symbols",
-			"--cfg", "ONLINE_JUDGE", "--cfg", "KNOVA", MagicReplace, "-o", "/box/output",
+			"--cfg", "ONLINE_JUDGE", "--cfg", "KNOVA", magicReplace, "-o", "/box/output",
 		},
-		RunCommand:   []string{MagicReplace},
+		RunCommand:   []string{magicReplace},
 		sourceName:   "/box/main.rs",
 		compiledName: "/box/output",
 
@@ -274,14 +282,14 @@ var Langs = map[string]Language{
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
-	"outputOnly": {
+	"outputOnly": legacyLanguage{
 		Extensions:    []string{".output_only"},
 		Compiled:      false,
 		PrintableName: "Output Only",
 		InternalName:  "outputOnly",
 		MOSSName:      "ascii", // Though MOSS isn't required for output only problems
 
-		RunCommand:   []string{"cat", MagicReplace},
+		RunCommand:   []string{"cat", magicReplace},
 		sourceName:   "/box/output_src",
 		compiledName: "/box/output",
 
@@ -290,9 +298,9 @@ var Langs = map[string]Language{
 	},
 }
 
-// Language is the data available for a language
-type Language struct {
-	Disabled bool `json:"disabled"`
+// legacyLanguage is the data available for a language
+type legacyLanguage struct {
+	disabled bool `json:"disabled"`
 
 	// Useful to categorize by file upload
 	Extensions []string `json:"extensions"`
@@ -334,11 +342,7 @@ type Language struct {
 	compiledNameFunc func(string) string
 }
 
-func (l Language) DefaultFilename() string {
-	return path.Base(l.sourceName)
-}
-
-func (l Language) SourceName(userFilename string) string {
+func (l legacyLanguage) SourceName(userFilename string) string {
 	if !l.UseSubmittedFilename || userFilename == "" {
 		return l.sourceName
 	}
@@ -346,18 +350,30 @@ func (l Language) SourceName(userFilename string) string {
 	return path.Join(dir, userFilename)
 }
 
-func (l Language) CompiledName(userFilename string) string {
+func (l legacyLanguage) CompiledName(userFilename string) string {
 	if l.compiledName != "" {
 		return l.compiledName
 	}
 	return l.compiledNameFunc(l.SourceName(userFilename))
 }
 
-func (l Language) ExecuteName(userFilename string) string {
+func (l legacyLanguage) ExecuteName(userFilename string) string {
 	if l.InternalName == "java" {
 		return strings.ReplaceAll(userFilename, ".java", "")
 	}
 	return l.CompiledName(userFilename)
+}
+
+func (l legacyLanguage) Disabled() bool {
+	return l.disabled
+}
+
+func (l legacyLanguage) Lang() Lang {
+	return legacyLanguageAdapter{&l}
+}
+
+func (l legacyLanguage) GraderLang() GraderLang {
+	return legacyLanguageAdapter{&l}
 }
 
 // Directory represents a directory rule

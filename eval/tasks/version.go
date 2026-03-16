@@ -2,18 +2,16 @@ package tasks
 
 import (
 	"context"
-	"maps"
-	"slices"
 
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/language"
 )
 
-func VersionTask(ctx context.Context, mgr eval.BoxScheduler, lang *language.Language) (string, error) {
+func VersionTask(ctx context.Context, mgr eval.BoxScheduler, lang language.GraderLang) (string, error) {
 	resp, err := mgr.RunBox2(ctx, &eval.Box2Request{
 		RunConfig: &eval.RunConfig{
-			EnvToSet:    maps.Clone(lang.BuildEnv),
-			Directories: slices.Clone(lang.Mounts),
+			EnvToSet:    lang.BuildEnv(),
+			Directories: lang.Mounts(),
 
 			WallTimeLimit:  5, // seconds
 			OutputPath:     "/box/version.out",
@@ -22,7 +20,7 @@ func VersionTask(ctx context.Context, mgr eval.BoxScheduler, lang *language.Lang
 
 		OutputByteFiles: []string{"/box/version.out"},
 
-		Command: slices.Clone(lang.VersionCommand),
+		Command: lang.VersionCommand(),
 	}, 0)
 	if err != nil {
 		return "", err
@@ -33,10 +31,5 @@ func VersionTask(ctx context.Context, mgr eval.BoxScheduler, lang *language.Lang
 		return "???", nil
 	}
 
-	s := string(data)
-	if lang.VersionParser != nil {
-		s = lang.VersionParser(s)
-	}
-
-	return s, nil
+	return lang.ParseVersion(data), nil
 }

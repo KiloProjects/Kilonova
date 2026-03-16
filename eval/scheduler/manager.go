@@ -61,7 +61,7 @@ type BoxManager struct {
 
 	languageVersionsMu sync.RWMutex
 	languageVersions   map[string]string
-	supportedLanguages map[string]*language.Language
+	supportedLanguages map[string]language.GraderLang
 
 	store *datastore.Manager
 }
@@ -153,12 +153,10 @@ func (mgr *BoxManager) getLangVersions(ctx context.Context) map[string]string {
 	defer mgr.languageVersionsMu.Unlock()
 	mgr.languageVersions = make(map[string]string)
 	for name, lang := range mgr.supportedLanguages {
-		if lang.Disabled {
-			continue
-		}
-		if !slices.Contains(lang.RunCommand, language.MagicReplace) {
-			slog.WarnContext(ctx, "Language run command does not contain MagicReplace", slog.String("lang", name))
-		}
+		// disabled languages are not added to supportedLanguages
+		//if lang.Disabled {
+		//	continue
+		//}
 
 		ver, err := tasks.VersionTask(ctx, mgr, lang)
 		if err != nil {
@@ -173,7 +171,7 @@ func (mgr *BoxManager) getLangVersions(ctx context.Context) map[string]string {
 	return mgr.languageVersions
 }
 
-func (mgr *BoxManager) Language(name string) *language.Language {
+func (mgr *BoxManager) Language(name string) language.GraderLang {
 	lang, ok := mgr.supportedLanguages[name]
 	if !ok {
 		return nil
@@ -181,7 +179,7 @@ func (mgr *BoxManager) Language(name string) *language.Language {
 	return lang
 }
 
-func (mgr *BoxManager) Languages() map[string]*language.Language {
+func (mgr *BoxManager) Languages() map[string]language.GraderLang {
 	// TODO: maybe a maps.Clone()?
 	return mgr.supportedLanguages
 }
@@ -196,7 +194,7 @@ func (mgr *BoxManager) LanguageVersions(ctx context.Context) map[string]string {
 }
 
 // TODO: Improve
-func (mgr *BoxManager) LanguageFromFilename(filename string) *language.Language {
+func (mgr *BoxManager) LanguageFromFilename(filename string) language.GraderLang {
 	fileExt := path.Ext(filename)
 	if fileExt == "" {
 		return nil
@@ -209,15 +207,15 @@ func (mgr *BoxManager) LanguageFromFilename(filename string) *language.Language 
 		// Otherwise fall back to earliest cpp version
 		best := ""
 		for _, lang := range mgr.supportedLanguages {
-			if strings.HasPrefix(lang.InternalName, ".cpp") && (best == "" || lang.InternalName < best) {
-				best = lang.InternalName
+			if strings.HasPrefix(lang.InternalName(), ".cpp") && (best == "" || lang.InternalName() < best) {
+				best = lang.InternalName()
 			}
 		}
 		return mgr.Language(best)
 	}
 	bestLang := ""
 	for k, v := range mgr.Languages() {
-		for _, ext := range v.Extensions {
+		for _, ext := range v.Extensions() {
 			if ext == fileExt && (bestLang == "" || k < bestLang) {
 				bestLang = k
 			}
@@ -592,17 +590,17 @@ func makeGoodCommand(req *eval.Box2Request) ([]string, error) {
 
 // supportedLanguages disables all languages that are *not* detected by the system in the current configuration
 // It should be run at the start of the execution (and implemented more nicely tbh)
-func supportedLanguages(ctx context.Context) map[string]*language.Language {
-	langs := make(map[string]*language.Language)
+func supportedLanguages(ctx context.Context) map[string]language.GraderLang {
+	langs := make(map[string]language.GraderLang)
 	for k, v := range language.Langs {
-		if v.Disabled { // Skip search if already disabled
+		if v.Disabled() { // Skip search if already disabled
 			continue
 		}
 		var toSearch []string
-		if v.Compiled {
-			toSearch = v.CompileCommand
+		if v.GraderLang().Compiled() {
+			toSearch = v.GraderLang().CompileCommand([]string{""})
 		} else {
-			toSearch = v.RunCommand
+			toSearch = v.GraderLang().RunCommand([]string{""}, 0)
 		}
 		if len(toSearch) == 0 {
 			slog.InfoContext(ctx, "Disabled language - empty line", slog.String("lang", k))
@@ -618,7 +616,7 @@ func supportedLanguages(ctx context.Context) map[string]*language.Language {
 			continue
 		}
 
-		langs[k] = &v
+		langs[k] = v.GraderLang()
 	}
 	return langs
 }

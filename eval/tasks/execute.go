@@ -4,9 +4,7 @@ import (
 	"cmp"
 	"context"
 	"log/slog"
-	"maps"
 	"math"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -39,7 +37,7 @@ type BatchRequest struct {
 
 	CodeFilename string
 
-	Lang   *language.Language
+	Lang   language.GraderLang
 	TestID int
 }
 
@@ -61,7 +59,7 @@ func ExecuteBatch(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, re
 		},
 
 		RunConfig: &eval.RunConfig{
-			EnvToSet:      maps.Clone(req.Lang.RunEnv),
+			EnvToSet:      req.Lang.RunEnv(),
 			MemoryLimit:   req.MemoryLimit,
 			TimeLimit:     req.TimeLimit,
 			WallTimeLimit: 2*req.TimeLimit + 1,
@@ -75,13 +73,13 @@ func ExecuteBatch(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, re
 			},
 		},
 
-		Command: makeGoodSandboxCommand(ctx, req.Lang.RunCommand, []string{req.Lang.ExecuteName(req.CodeFilename)}),
+		Command: req.Lang.RunCommand([]string{req.Lang.ExecuteName(req.CodeFilename)}, req.MemoryLimit),
 	}
 
 	// if our specified language is not compiled, then it means that
 	// the mounts specified should be added at runtime
-	if !req.Lang.Compiled {
-		bReq.RunConfig.Directories = slices.Clone(req.Lang.Mounts)
+	if !req.Lang.Compiled() {
+		bReq.RunConfig.Directories = req.Lang.Mounts()
 	}
 
 	if req.TimeLimit == 0 {
@@ -125,8 +123,8 @@ type CommunicationRequest struct {
 	MemoryLimit int
 	TimeLimit   float64
 
-	SubLang     *language.Language
-	CheckerLang *language.Language
+	SubLang     language.GraderLang
+	CheckerLang language.GraderLang
 	TestID      int
 
 	CodeFilename    string
@@ -159,7 +157,7 @@ func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota i
 			req.CheckerLang.CompiledName(req.CheckerFilename): managerBucketExec,
 		},
 
-		Command: makeGoodSandboxCommand(ctx, req.CheckerLang.RunCommand, []string{req.CheckerLang.ExecuteName(req.CheckerFilename)}),
+		Command: req.CheckerLang.RunCommand([]string{req.CheckerLang.ExecuteName(req.CheckerFilename)}, managerMemoryLimit),
 		RunConfig: &eval.RunConfig{
 			InputPath:  "/box/input.txt",
 			OutputPath: "/box/verdict.out",
@@ -175,8 +173,8 @@ func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota i
 
 	// if our specified language is not compiled, then it means that
 	// the mounts specified should be added at runtime
-	if !req.CheckerLang.Compiled {
-		managerReq.RunConfig.Directories = slices.Clone(req.CheckerLang.Mounts)
+	if !req.CheckerLang.Compiled() {
+		managerReq.RunConfig.Directories = req.CheckerLang.Mounts()
 	}
 
 	userReqs := make([]*eval.Box2Request, req.NumUserSandboxes)
@@ -189,19 +187,19 @@ func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota i
 			},
 
 			RunConfig: &eval.RunConfig{
-				EnvToSet:      maps.Clone(req.SubLang.RunEnv),
+				EnvToSet:      req.SubLang.RunEnv(),
 				MemoryLimit:   req.MemoryLimit,
 				TimeLimit:     req.TimeLimit,
 				WallTimeLimit: 2*req.TimeLimit + 1,
 			},
 
-			Command: makeGoodSandboxCommand(ctx, req.SubLang.RunCommand, []string{req.CheckerLang.ExecuteName(req.CheckerFilename)}),
+			Command: req.SubLang.RunCommand([]string{req.CheckerLang.ExecuteName(req.CheckerFilename)}, req.MemoryLimit),
 		}
 
 		// if our specified language is not compiled, then it means that
 		// the mounts specified should be added at runtime
-		if !req.SubLang.Compiled {
-			userReqs[i].RunConfig.Directories = slices.Clone(req.SubLang.Mounts)
+		if !req.SubLang.Compiled() {
+			userReqs[i].RunConfig.Directories = req.SubLang.Mounts()
 		}
 
 		if req.TimeLimit == 0 {

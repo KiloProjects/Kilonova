@@ -18,7 +18,7 @@ func standardCheckerTask(ctx context.Context, mgr eval.BoxScheduler, job *custom
 	req := initRequest(lang, job)
 
 	req.Command = append(
-		makeGoodSandboxCommand(ctx, lang.RunCommand, []string{lang.ExecuteName(job.c.filename)}),
+		lang.RunCommand([]string{lang.ExecuteName(job.c.filename)}, checkerMemoryLimit),
 		"/box/correct.in",
 		"/box/correct.out",
 		"/box/program.out",
