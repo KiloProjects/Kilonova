@@ -437,8 +437,7 @@ func (s *BaseAPI) createUser(ctx context.Context, username, email, password, lan
 	}
 
 	if id == 1 {
-		var True = true
-		if err := s.updateUser(ctx, id, kilonova.UserFullUpdate{Admin: &True, Proposer: &True}); err != nil {
+		if err := s.updateUser(ctx, id, kilonova.UserFullUpdate{Admin: new(true), Proposer: new(true)}); err != nil {
 			slog.WarnContext(ctx, "Couldn't set first user as admin", slog.Any("err", err))
 			return id, err
 		}

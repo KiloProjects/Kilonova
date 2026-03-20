@@ -560,8 +560,16 @@ func copyInBox(b eval.Sandbox, bucket eval.Bucket, filename string, p2 string, m
 // Some languages (like java) are hidden pretty deep in symlinks, and we don't want a hardcoded path that could be different on other platforms.
 func makeGoodCommand(req *eval.Box2Request) ([]string, error) {
 	tmp := slices.Clone(req.Command)
+	if len(tmp) == 0 {
+		return nil, errors.New("no command given")
+	}
 
 	if strings.HasPrefix(tmp[0], "/box") {
+		return tmp, nil
+	}
+
+	if strings.HasSuffix(tmp[0], "uv") {
+		tmp[0] = "/mnt/uv/bin/uv"
 		return tmp, nil
 	}
 

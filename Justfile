@@ -22,3 +22,7 @@ maxmind:
 
 
 	echo "Updated configuration file with correct path."
+
+uv:
+	# TODO use data dir path dynamically
+	curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL="/home/alexv/src/kninfo/data/uv/bin" UV_NO_MODIFY_PATH=1 sh

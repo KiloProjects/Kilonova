@@ -26,6 +26,7 @@ const (
 	TaskTypeNone          TaskType = ""
 	TaskTypeBatch         TaskType = "batch"
 	TaskTypeCommunication TaskType = "communication"
+	TaskTypeAI            TaskType = "ai"
 )
 
 type Problem struct {

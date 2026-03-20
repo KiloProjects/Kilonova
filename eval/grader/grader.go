@@ -29,8 +29,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var (
-	True            = true
+const (
 	skippedVerdict  = "translate:skipped"
 	acceptedVerdict = "test_verdict.accepted"
 )
@@ -332,8 +331,8 @@ func (sh *submissionHandler) handleICPCSubmission(ctx context.Context, checker c
 	for _, subTest := range subTests {
 		if failed {
 			if err := sh.base.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{
-				Done: &True, Skipped: &True,
-				Verdict: &skippedVerdict,
+				Done: new(true), Skipped: new(true),
+				Verdict: new(skippedVerdict),
 			}); err != nil {
 				slog.WarnContext(ctx, "Couldn't update skipped subtest", slog.Any("err", err))
 			}
@@ -358,7 +357,7 @@ func (sh *submissionHandler) handleICPCSubmission(ctx context.Context, checker c
 	if !failed {
 		upd.Score = new(decimal.NewFromInt(100))
 		upd.ChangeVerdict = true
-		upd.ICPCVerdict = &acceptedVerdict
+		upd.ICPCVerdict = new(acceptedVerdict)
 	}
 
 	subTests, err := sh.base.SubTests(ctx, sh.sub.ID)
@@ -456,7 +455,7 @@ func (sh *submissionHandler) handleSubTest(ctx context.Context, checker checkers
 		}
 	}
 
-	if err := sh.base.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{Memory: &output.Memory, Percentage: &output.Score, Time: &output.Time, Verdict: &output.Comments, Done: &True}); err != nil {
+	if err := sh.base.UpdateSubTest(ctx, subTest.ID, kilonova.SubTestUpdate{Memory: &output.Memory, Percentage: &output.Score, Time: &output.Time, Verdict: &output.Comments, Done: new(true)}); err != nil {
 		return decimal.Zero, "", fmt.Errorf("error during evaltest updating: %w", err)
 	}
 
@@ -591,7 +590,7 @@ func (sh *submissionHandler) markSubtestsDone(ctx context.Context) error {
 		if st.Done {
 			continue
 		}
-		if err := sh.base.UpdateSubTest(ctx, st.ID, kilonova.SubTestUpdate{Done: &True}); err != nil {
+		if err := sh.base.UpdateSubTest(ctx, st.ID, kilonova.SubTestUpdate{Done: new(true)}); err != nil {
 			slog.WarnContext(ctx, "Couldn't mark subtest done", slog.Any("subtest", st), slog.Any("err", err))
 		}
 	}
@@ -696,8 +695,53 @@ func (sh *submissionHandler) getAppropriateChecker(ctx context.Context) (checker
 		return nil, fmt.Errorf("couldn't get problem checker code: %w", err)
 	}
 	subCode := sh.getCode()
-	if sh.settings.LegacyChecker {
-		return checkers.NewLegacyCustomChecker(sh.runner, sh.base.DataStore(), graderLogger, sh.pb, sh.settings.CheckerName, data, subCode, att.LastUpdatedAt), nil
+
+	// AI tasks
+	if sh.settings.HasUv {
+		uvToml, err := sh.base.ProblemAttDataByName(ctx, sh.pb.ID, "pyproject.toml")
+		if err != nil {
+			return nil, fmt.Errorf("couldn't get UV checker metadata: %w", err)
+		}
+		uvLock, err := sh.base.ProblemAttDataByName(ctx, sh.pb.ID, "uv.lock")
+		if err != nil {
+			return nil, fmt.Errorf("couldn't get UV checker lockfile: %w", err)
+		}
+
+		return checkers.NewAIChecker(
+			sh.runner,
+			sh.base.DataStore(),
+			graderLogger,
+			sh.pb,
+			sh.settings.CheckerName,
+			data,
+			uvToml,
+			uvLock,
+		), nil
 	}
-	return checkers.NewStandardCustomChecker(sh.runner, sh.base.DataStore(), graderLogger, sh.pb, sh.settings.CheckerName, data, subCode, att.LastUpdatedAt), nil
+
+	// Legacy checker
+	if sh.settings.LegacyChecker {
+		return checkers.NewLegacyCustomChecker(
+			sh.runner,
+			sh.base.DataStore(),
+			graderLogger,
+			sh.pb,
+			sh.settings.CheckerName,
+			data,
+			subCode,
+			att.LastUpdatedAt,
+		), nil
+	}
+
+	// Standard checker
+	return checkers.NewStandardCustomChecker(
+		sh.runner,
+		sh.base.DataStore(),
+		graderLogger,
+		sh.pb,
+		sh.settings.CheckerName,
+		data,
+		subCode,
+		att.LastUpdatedAt,
+	), nil
 }

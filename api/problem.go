@@ -179,9 +179,12 @@ var (
 	enPbStatementStr string
 	//go:embed templData/default_ro_statement.md
 	roPbStatementStr string
+	//go:embed templData/default_de_statement.md
+	dePbStatementStr string
 
 	defaultEnProblemStatement = template.Must(template.New("enStmt").Parse(enPbStatementStr))
 	defaultRoProblemStatement = template.Must(template.New("enStmt").Parse(roPbStatementStr))
+	defaultDeProblemStatement = template.Must(template.New("enStmt").Parse(dePbStatementStr))
 )
 
 func (s *API) addStubStatement(ctx context.Context, pb *kilonova.Problem, lang *string, author *kilonova.UserBrief) error {
@@ -199,6 +202,8 @@ func (s *API) addStubStatement(ctx context.Context, pb *kilonova.Problem, lang *
 		attTempl = defaultEnProblemStatement
 	case "ro":
 		attTempl = defaultRoProblemStatement
+	case "de":
+		attTempl = defaultDeProblemStatement
 	default:
 		slog.WarnContext(ctx, "Unknown language", slog.String("lang", *lang))
 		return nil

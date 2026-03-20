@@ -80,9 +80,12 @@ func RunMigrations(ctx context.Context, db *DB, config MigrationConfig) error {
 
 	if runSpecial {
 		for _, mig := range config.SpecialMigrations {
-			pgx.BeginFunc(ctx, db.conn, func(tx pgx.Tx) error {
+			err := pgx.BeginFunc(ctx, db.conn, func(tx pgx.Tx) error {
 				return mig.Handler(ctx, tx)
 			})
+			if err != nil {
+				slog.WarnContext(ctx, "Error running special migration", slog.Any("err", err))
+			}
 		}
 	}
 

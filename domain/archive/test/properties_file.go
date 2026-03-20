@@ -197,7 +197,7 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, r io.Reader) error {
 	if rawProps.MergeAttachments != nil && (*rawProps.MergeAttachments == "true" || *rawProps.MergeAttachments == "false") {
 		ctx.params.MergeAttachments = *rawProps.MergeAttachments == "true"
 	}
-	if rawProps.TaskType != nil && (*rawProps.TaskType == string(kilonova.TaskTypeBatch) || *rawProps.TaskType == string(kilonova.TaskTypeCommunication)) {
+	if rawProps.TaskType != nil && (*rawProps.TaskType == string(kilonova.TaskTypeBatch) || *rawProps.TaskType == string(kilonova.TaskTypeCommunication) || *rawProps.TaskType == string(kilonova.TaskTypeAI)) {
 		props.TaskType = kilonova.TaskType(*rawProps.TaskType)
 	}
 	if rawProps.CommunicationProcesses != nil {
