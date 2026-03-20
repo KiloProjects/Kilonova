@@ -98,6 +98,8 @@ func ProcessPolygonPDFStatement(ctx *ArchiveCtx, fpath string) error {
 		filename = "statement-en.pdf"
 	case "romanian":
 		filename = "statement-ro.pdf"
+	case "german":
+		filename = "statement-de.pdf"
 	default:
 		return nil
 	}

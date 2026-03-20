@@ -2221,6 +2221,8 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 				b.WriteString("🇷🇴 Română")
 			case "hu":
 				b.WriteString("🇭🇺 Magyar")
+			case "de":
+				b.WriteString("🇩🇪 Deutsch")
 			default:
 				b.WriteString(fmt.Language)
 			}

@@ -33,6 +33,7 @@
             <select id="variantSelect" class="form-select" autocomplete="off">
                 <option value="ro" {{if (eq "ro" .Variant.Language)}} selected {{end}}>🇷🇴 Română</option>
                 <option value="en" {{if (eq "en" .Variant.Language)}} selected {{end}}>🇬🇧 English</option>
+                <option value="de" {{if (eq "de" .Variant.Language)}} selected {{end}}>🇩🇪 Deutsch</option>
             </select>
         </label>
         <input type="hidden" id="attID" value="{{if not .Att}}-1{{else}}{{.Att.ID}}{{end}}"/>

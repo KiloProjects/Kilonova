@@ -1,14 +1,14 @@
-import { h, Fragment, render } from "preact";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import {Fragment, h} from "preact";
+import {useEffect, useMemo, useRef, useState} from "preact/hooks";
 import register from "preact-custom-element";
 import getText from "../translation";
-import { apiToast, createToast } from "../toast";
-import { bodyCall, getCall } from "../api/client";
-import { fromBase64 } from "js-base64";
-import { Tag, TagView, selectTags } from "./tags";
-import { Paginator } from "./common";
-import { rezStr } from "./subs_view";
-import { parseTime } from "../util";
+import {apiToast, createToast} from "../toast";
+import {bodyCall, getCall} from "../api/client";
+import {fromBase64} from "js-base64";
+import {selectTags, Tag, TagView} from "./tags";
+import {Paginator} from "./common";
+import {rezStr} from "./subs_view";
+import {parseTime} from "../util";
 
 type FullProblem = Problem & {
 	tags: Tag[];
@@ -676,6 +676,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 							<option value="">-</option>
 							<option value="ro">🇷🇴 Română</option>
 							<option value="en">🇬🇧 English</option>
+							<option value="en">🇩🇪 Deutsch</option>
 						</select>
 					</label>
 				</div>
