@@ -35,6 +35,7 @@ type EmailConf struct {
 	Host     string `toml:"host"`
 	Username string `toml:"username"`
 	Password string `toml:"password"`
+	SendAs   string `toml:"sendAs"`
 }
 
 // EvalConf is the data required for the eval service

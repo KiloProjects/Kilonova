@@ -17,6 +17,7 @@
  host = "HOST:PORT"
  username = "USERNAME"
  password = "PASSWORD"
+ sendAs = "EMAIL"
 
 [frontend]
  banned_hot_problems = []
