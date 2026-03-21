@@ -1,6 +1,7 @@
 package email
 
 import (
+	"cmp"
 	"context"
 	"log/slog"
 	"net"
@@ -70,5 +71,5 @@ func NewMailer() (kilonova.Mailer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &emailer{config.Email.Host, smtp.PlainAuth("", config.Email.Username, config.Email.Password, host), config.Email.Username}, nil
+	return &emailer{config.Email.Host, smtp.PlainAuth("", config.Email.Username, config.Email.Password, host), cmp.Or(config.Email.SendAs, config.Email.Username)}, nil
 }

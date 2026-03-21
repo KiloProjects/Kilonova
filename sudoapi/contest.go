@@ -9,11 +9,14 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/net/moss"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/util/slicealg"
 )
+
+var FrontPageContestsAscending = config.GenFlag[bool]("feature.frontend.ascending_contests", true, "Show contests in ascending order of start time on front page")
 
 func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova.ContestType, author *kilonova.UserBrief) (int, error) {
 	if author == nil {
@@ -194,7 +197,7 @@ func (s *BaseAPI) VisibleFutureContests(ctx context.Context, user *kilonova.User
 		Future:      true,
 		Look:        true,
 		LookingUser: user,
-		Ascending:   true,
+		Ascending:   FrontPageContestsAscending.Value(),
 	}
 	var uid = -1
 	if user != nil {
