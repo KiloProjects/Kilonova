@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+package knbox.v1;
+
+option go_package = "github.com/KiloProjects/kilonova/eval/scheduler/proto;schedulerpb";
+
+// BoxSchedulerService exposes sandbox execution over the network.
+// It is implemented by the knbox service and consumed by the monolith's grader handler.
+service BoxSchedulerService {
+  // RunBox executes a single sandbox request.
+  rpc RunBox(RunBoxRequest) returns (RunBoxResponse);
+  // RunMultibox runs a manager sandbox alongside one or more user sandboxes in parallel.
+  rpc RunMultibox(RunMultiboxRequest) returns (RunMultiboxResponse);
+  // GetLanguageVersions runs the version command for each supported language and returns the results.
+  rpc GetLanguageVersions(GetLanguageVersionsRequest) returns (GetLanguageVersionsResponse);
+  // Ping returns a health check response.
+  rpc Ping(PingRequest) returns (PingResponse);
+}
+
+// ------- Shared sub-types -------
+
+// BucketFile refers to a file in a named storage bucket on the shared filesystem.
+message BucketFile {
+  string bucket_type = 1;
+  string filename    = 2;
+  uint32 mode        = 3;
+}
+
+// ByteFile is an inline file payload (used for small files like source code).
+message ByteFile {
+  bytes  data = 1;
+  uint32 mode = 2;
+}
+
+// Directory is a filesystem mount rule for the sandbox.
+message Directory {
+  string in       = 1;
+  string out      = 2;
+  string opts     = 3;
+  bool   removes  = 4;
+  bool   verbatim = 5;
+}
+
+// RunConfig controls the sandbox execution environment.
+message RunConfig {
+  bool              stderr_to_stdout = 1;
+  string            input_path       = 2;
+  string            output_path      = 3;
+  string            stderr_path      = 4;
+  int32             memory_limit     = 5;
+  double            time_limit       = 6;
+  double            wall_time_limit  = 7;
+  bool              inherit_env      = 8;
+  repeated string   env_to_inherit   = 9;
+  map<string,string> env_to_set      = 10;
+  bool              enable_internet  = 11;
+  repeated Directory directories     = 12;
+}
+
+// RunStats contains the execution results from a sandbox run.
+message RunStats {
+  int32  memory               = 1;
+  int32  exit_code            = 2;
+  int32  exit_signal          = 3;
+  bool   killed               = 4;
+  string message              = 5;
+  string status               = 6;
+  double time                 = 7;
+  string internal_message     = 8;
+  bool   memory_limit_exceeded = 9;
+}
+
+// Box2Request describes a single sandbox execution.
+message Box2Request {
+  map<string, BucketFile> input_bucket_files  = 1; // files to read from shared storage
+  map<string, ByteFile>   input_byte_files    = 2; // inline file payloads
+  repeated string         command             = 3;
+  RunConfig               run_config          = 4;
+  repeated string         output_byte_files   = 5; // paths whose contents should be returned inline
+  map<string, BucketFile> output_bucket_files = 6; // paths to write back to shared storage
+}
+
+// Box2Response contains the results of a single sandbox execution.
+message Box2Response {
+  RunStats                stats        = 1;
+  map<string, bytes>      byte_files   = 2; // contents of requested output paths
+  map<string, BucketFile> bucket_files = 3; // confirmed written bucket files
+}
+
+// ------- RunBox -------
+
+message RunBoxRequest {
+  Box2Request request   = 1;
+  int64       mem_quota = 2;
+}
+
+message RunBoxResponse {
+  Box2Response response = 1;
+}
+
+// ------- RunMultibox -------
+
+message RunMultiboxRequest {
+  Box2Request           manager_sandbox      = 1;
+  repeated Box2Request  user_sandbox_configs = 2;
+  bool                  use_stdin            = 3;
+  int64                 manager_mem_quota    = 4;
+  int64                 individual_mem_quota = 5;
+}
+
+message RunMultiboxResponse {
+  Box2Response       manager_response = 1;
+  repeated RunStats  user_stats       = 2;
+}
+
+// ------- GetLanguageVersions -------
+
+message GetLanguageVersionsRequest {}
+
+message GetLanguageVersionsResponse {
+  map<string, string> versions = 1;
+}
+
+// ------- Ping -------
+
+message PingRequest {}
+
+message PingResponse {
+  string version = 1;
+}

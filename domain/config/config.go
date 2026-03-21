@@ -44,6 +44,22 @@ type EvalConf struct {
 	GlobalMaxMem  int64 `toml:"global_max_mem_kb"`
 
 	StartingBox int `toml:"starting_box"`
+
+	// RemoteBoxScheduler configures an external knbox service.
+	// When URL is set, the grader delegates all sandbox execution to that
+	// service instead of running a local BoxManager.
+	// Both the monolith and the knbox service must mount the same data directory.
+	RemoteBoxScheduler RemoteBoxSchedulerConf `toml:"remote_box_scheduler"`
+}
+
+// RemoteBoxSchedulerConf holds connection settings for the knbox service.
+type RemoteBoxSchedulerConf struct {
+	// URL is the base URL of the knbox service (e.g. "http://box-host:8091").
+	// Leave empty to use a local sandbox.
+	URL string `toml:"url"`
+	// AuthToken is the shared secret sent as "Authorization: Bearer <token>".
+	// Leave empty if the knbox service has auth disabled.
+	AuthToken string `toml:"auth_token"`
 }
 
 // CommonConf is the data required for all services

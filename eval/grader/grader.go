@@ -21,6 +21,7 @@ import (
 	"github.com/KiloProjects/kilonova/eval/checkers"
 	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/eval/scheduler"
+	"github.com/KiloProjects/kilonova/eval/scheduler/remote"
 	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
@@ -658,6 +659,12 @@ func (sh *submissionHandler) scoreTests(ctx context.Context) error {
 }
 
 func (h *Handler) getAppropriateRunner(ctx context.Context) (eval.BoxScheduler, error) {
+	// If a remote knbox service is configured, use it instead of a local sandbox.
+	if url := config.Eval.RemoteBoxScheduler.URL; url != "" {
+		slog.InfoContext(ctx, "Using remote BoxScheduler", slog.String("url", url))
+		return remote.NewClient(url, config.Eval.RemoteBoxScheduler.AuthToken), nil
+	}
+
 	var boxFunc scheduler.BoxFunc
 	var boxVersion = "NONE"
 	if scheduler.CheckCanRun(ctx, box.New) {
@@ -669,7 +676,7 @@ func (h *Handler) getAppropriateRunner(ctx context.Context) (eval.BoxScheduler, 
 		boxVersion = "stupid"
 	}
 	if boxFunc == nil {
-		slog.ErrorContext(ctx, "Remote grader has not been implemented. No grader available!")
+		slog.ErrorContext(ctx, "No sandbox available. Either install isolate on this host or configure eval.remote_box_scheduler.url to point to a knbox service.")
 		os.Exit(1)
 	}
 
