@@ -80,7 +80,7 @@ type BlogPostIndexParams struct {
 	Posts   []*kilonova.BlogPost
 	Authors map[int]*kilonova.UserBrief
 
-	Page     int
+	Page     uint64
 	NumPages int
 }
 

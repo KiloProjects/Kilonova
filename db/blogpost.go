@@ -29,11 +29,14 @@ func (s *DB) BlogPost(ctx context.Context, filter kilonova.BlogPostFilter) (*kil
 }
 
 func (s *DB) BlogPosts(ctx context.Context, filter kilonova.BlogPostFilter) ([]*kilonova.BlogPost, error) {
-	fb := newFilterBuilder()
-	blogPostParams(filter, fb)
+	qb := sq.Select("*").From("blog_posts").OrderBy(getBlogPostOrdering(filter.Ordering, filter.Ascending))
+	qb = blogPostParams(filter, qb)
+	sql, args, err := qb.ToSql()
+	if err != nil {
+		return nil, err
+	}
 
-	q := fmt.Sprintf("SELECT * FROM blog_posts WHERE %s %s %s", fb.Where(), getBlogPostOrdering(filter.Ordering, filter.Ascending), FormatLimitOffset(filter.Limit, filter.Offset))
-	rows, _ := s.conn.Query(ctx, q, fb.Args()...)
+	rows, _ := s.conn.Query(ctx, sql, args...)
 	posts, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[dbBlogPost])
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
@@ -45,11 +48,15 @@ func (s *DB) BlogPosts(ctx context.Context, filter kilonova.BlogPostFilter) ([]*
 }
 
 func (s *DB) CountBlogPosts(ctx context.Context, filter kilonova.BlogPostFilter) (int, error) {
-	fb := newFilterBuilder()
-	blogPostParams(filter, fb)
+	qb := sq.Select("COUNT(*)").From("blog_posts")
+	qb = blogPostParams(filter, qb)
+	sql, args, err := qb.ToSql()
+	if err != nil {
+		return -1, err
+	}
 
 	var cnt int
-	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM blog_posts WHERE "+fb.Where(), fb.Args()...).Scan(&cnt)
+	err = s.conn.QueryRow(ctx, sql, args...).Scan(&cnt)
 	if errors.Is(err, pgx.ErrNoRows) { // Should never happen
 		return 0, nil
 	}
@@ -104,21 +111,22 @@ func (s *DB) DeleteBlogPost(ctx context.Context, id int) error {
 	return err
 }
 
-func blogPostParams(filter kilonova.BlogPostFilter, fb *filterBuilder) {
+func blogPostParams(filter kilonova.BlogPostFilter, sb sq.SelectBuilder) sq.SelectBuilder {
+	where := sq.And{}
 	if v := filter.ID; v != nil {
-		fb.AddConstraint("id = %s", v)
+		where = append(where, sq.Eq{"id": v})
 	}
 	if v := filter.IDs; v != nil {
-		fb.AddConstraint("id = ANY(%s)", v)
+		where = append(where, sq.Expr("id = ANY(?)", v))
 	}
 	if v := filter.AuthorID; v != nil {
-		fb.AddConstraint("author_id = %s", v)
+		where = append(where, sq.Eq{"author_id": v})
 	}
 	if v := filter.Slug; v != nil {
-		fb.AddConstraint("slug = %s", v)
+		where = append(where, sq.Eq{"slug": v})
 	}
 	if v := filter.AttachmentID; v != nil {
-		fb.AddConstraint("EXISTS (SELECT 1 FROM blog_post_attachments_m2m WHERE attachment_id = %s AND blog_post_id = id)", v)
+		where = append(where, sq.Expr("EXISTS (SELECT 1 FROM blog_post_attachments_m2m WHERE attachment_id = ? AND blog_post_id = id)", v))
 	}
 
 	if filter.Look {
@@ -127,8 +135,17 @@ func blogPostParams(filter kilonova.BlogPostFilter, fb *filterBuilder) {
 			id = filter.LookingUser.ID
 		}
 
-		fb.AddConstraint("EXISTS (SELECT 1 FROM visible_posts(%s) WHERE post_id = blog_posts.id)", id)
+		where = append(where, sq.Expr("EXISTS (SELECT 1 FROM visible_posts(?) WHERE post_id = blog_posts.id)", id))
 	}
+
+	if v := filter.Limit; v > 0 {
+		sb = sb.Limit(v)
+	}
+	if v := filter.Offset; v > 0 {
+		sb = sb.Offset(v)
+	}
+
+	return sb.Where(where)
 }
 
 func getBlogPostOrdering(ordering string, ascending bool) string {

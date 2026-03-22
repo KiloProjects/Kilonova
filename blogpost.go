@@ -33,8 +33,8 @@ type BlogPostFilter struct {
 
 	Slug *string `json:"slug"`
 
-	Limit  int `json:"limit"`
-	Offset int `json:"offset"`
+	Limit  uint64 `json:"limit"`
+	Offset uint64 `json:"offset"`
 
 	Look        bool       `json:"-"`
 	LookingUser *UserBrief `json:"-"`

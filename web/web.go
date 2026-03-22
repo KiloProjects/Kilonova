@@ -175,7 +175,8 @@ func (rt *Web) Handler() http.Handler {
 
 		// TODO: This is very vulnerable to a CSRF attack. Fix
 		r.With(rt.mustBeAuthed).Get("/logout", rt.logout)
-		r.Mount("/", rt.base.OIDCProvider())
+
+		rt.base.RegisterOIDCRoutes(r)
 	})
 
 	r.Group(func(r chi.Router) {

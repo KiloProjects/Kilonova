@@ -103,18 +103,6 @@ export class KNClient {
 		return res.data;
 	}
 
-	async getSubmission(id: number) {
-		let res = await this.request<FullSubmission>({
-			url: "/submissions/getByID",
-			method: "GET",
-			queryParams: { id: id },
-		});
-		if (res.status === "error") {
-			throw new Error(res.data);
-		}
-		return res.data;
-	}
-
 	async getUser(id: number) {
 		let res = await this.request<UserBrief>({
 			url: `/user/byID/${id}`,

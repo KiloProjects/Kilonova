@@ -1108,12 +1108,12 @@ func (rt *Web) problemArchive() http.HandlerFunc {
 	}
 }
 
-var maxPostsPerPage = 10
+var maxPostsPerPage uint64 = 10
 
 func (rt *Web) blogPosts() http.HandlerFunc {
 	templ := rt.parse(nil, "blogpost/index.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		page, err := strconv.Atoi(r.FormValue("page"))
+		page, err := strconv.ParseUint(r.FormValue("page"), 10, 64)
 		if err != nil {
 			page = 1
 		}
@@ -1139,8 +1139,8 @@ func (rt *Web) blogPosts() http.HandlerFunc {
 			numPosts = 0
 		}
 
-		numPages := numPosts / maxPostsPerPage
-		if numPosts%maxPostsPerPage > 0 {
+		numPages := numPosts / int(maxPostsPerPage)
+		if numPosts%int(maxPostsPerPage) > 0 {
 			numPages++
 		}
 
