@@ -57,6 +57,10 @@
                 <span class="mr-2 text-xl"> {{getText "scoreParams"}}:</span>
                 <input id="scoreParams" type="text" class="form-input" autocomplete="off" />
             </label>
+			<label class="block my-2">
+				<input id="forceStringIDs" class="form-checkbox" type="checkbox">
+				<span class="form-label ml-2">{{getText "forceStringIDs"}}</span>
+			</label>
             <button class="btn btn-blue mb-2">{{getText "button.upload"}}</button>
             <p class="text-muted text-sm">{{getText "polygonArchiveWarn" | safeHTML}}</p>
         </form>
@@ -168,6 +172,7 @@ async function uploadTests(e) {
     if(scoreParams.length > 0) {
         form.append("scoreParameters", scoreParams);
     }
+	form.append("forceStringIDs", document.getElementById("forceStringIDs").checked ? "true" : "false");
 
 	let res = await bundled.multipartProgressCall("/problem/{{.Problem.ID}}/update/processTestArchive", form)
 	if(res.status === "success") {

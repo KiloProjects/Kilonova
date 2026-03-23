@@ -106,6 +106,10 @@ func getTestID(name string) (int, error) {
 }
 
 func deduceTestIDMode(ctx *ArchiveCtx) testIDMode {
+	if ctx.params.ForceStringIDs {
+		return idModeSort
+	}
+
 	// Get initial mode by analyzing test IDs
 	mode := idModeParse
 	for key := range ctx.tests {

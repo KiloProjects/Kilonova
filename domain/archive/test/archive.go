@@ -193,6 +193,9 @@ type TestProcessParams struct {
 	Polygon          bool
 	MergeAttachments bool
 
+	// ForceStringIDs overrides to make sure that the mode is ONLY sorting based on the key, regardless of how it looks
+	ForceStringIDs bool
+
 	// It's used when importing problems, since they use a stub name and, if not set, should be updated anyway, if available.
 	// Also when uploading ICPC archive decide if importing as ICPC or not
 	FirstImport bool

@@ -165,6 +165,8 @@ func (s *API) processArchive(r *http.Request, firstImport bool) error {
 		ScoreParamsStr: r.FormValue("scoreParameters"),
 
 		FirstImport: firstImport,
+
+		ForceStringIDs: r.FormValue("forceStringIDs") == "true",
 	}
 
 	return test.ProcessTestArchive(context.WithoutCancel(r.Context()), util.Problem(r), ar, s.base, params)
