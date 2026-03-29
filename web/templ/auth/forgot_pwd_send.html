@@ -10,6 +10,48 @@
                 <span class="form-label">{{getText "email"}}</span>
                 <input class="form-input w-full" type="email" id="pwd_email" name="email" required/>
             </label>
+
+            {{if boolFlag "feature.captcha.enabled"}}
+            {{$captcha := getCaptchaID}}
+            <div id="captcha_container" class="segment-panel">
+                <p>
+                    {{getText "auth.captcha.title"}}:<br/>
+                    <img id="captcha_img" class="rounded-sm" src="/api/auth/captcha/{{$captcha}}.png" alt="Captcha image" width="240" height="80" style="background-color: white;" />
+                </p>
+                <input type="hidden" id="captcha_id" value="{{$captcha}}" />
+                <label class="block my-2">
+                    <span>{{getText "response"}}</span>
+                    <input type="text" id="captcha_response" class="form-input w-full" pattern="[0-9]*" value="" autocomplete="off" />
+                </label>
+                <button id="captcha_reload_btn" class="btn btn-blue" type="button"><i class="fas fa-fw fa-rotate"></i> {{getText "reload"}}</button>
+            </div>
+            <script>
+                function reloadCaptcha() {
+                    document.getElementById("captcha_img").src = `/api/auth/captcha/${document.getElementById("captcha_id").value}.png?reload=${bundled.dayjs().valueOf()}`
+                }
+                document.getElementById("captcha_reload_btn").addEventListener("click", reloadCaptcha)
+                function resetCaptcha(newID) {
+                    document.getElementById("captcha_container").style.display = "block"
+                    document.getElementById("captcha_id").value = newID
+                    document.getElementById("captcha_response").value = ""
+                    reloadCaptcha()
+                }
+                function getCaptchaData() {
+                    return {captcha_id: document.getElementById("captcha_id").value, captcha_response: document.getElementById("captcha_response").value}
+                }
+            </script>
+            {{else}}
+            <script>
+                function resetCaptcha() {
+                    // CAPTCHA module not loaded in, prompt a page reload
+                    window.location.reload();
+                }
+                function getCaptchaData() {
+                    return {captcha_id: "", captcha_response: ""}
+                }
+            </script>
+            {{end}}
+
             <button type="submit" class="block btn btn-blue">{{getText "recover"}}</button>
         </form>
     </div>
@@ -22,7 +64,23 @@ document.getElementById("pwd_forgot_form").addEventListener("submit", sendReques
 async function sendRequest(e) {
     e.preventDefault();
     let email = document.getElementById("pwd_email").value;
-    let res = await bundled.postCall("/auth/forgotPassword", {email})
+    let res = await bundled.postCall("/auth/forgotPassword", {
+        email,
+        ...getCaptchaData(),
+    })
+    if(res.status == "error") {
+        if(typeof res.data === "object") {
+            resetCaptcha(res.data.captcha_id)
+            if(res.data.hasOwnProperty("translation_key")) {
+                bundled.apiToast({"status": "error", "data": bundled.getText(res.data.translation_key)})
+            } else {
+                bundled.apiToast({"status": "error", "data": res.data.text})
+            }
+        } else {
+            bundled.apiToast(res)
+        }
+        return
+    }
     bundled.apiToast(res)
 }
 
