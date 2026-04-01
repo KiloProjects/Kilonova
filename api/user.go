@@ -285,6 +285,9 @@ func (s *API) sendForgotPwdMail() http.HandlerFunc {
 		defer mu.Unlock()
 		var args struct {
 			Email string `json:"email"`
+
+			CaptchaID       string `json:"captcha_id"`
+			CaptchaResponse string `json:"captcha_response"`
 		}
 		if err := parseRequest(r, &args); err != nil {
 			errorData(w, err, 500)
@@ -298,6 +301,31 @@ func (s *API) sendForgotPwdMail() http.HandlerFunc {
 			errorData(w, "Mailing subsystem was disabled by administrator", 400)
 			return
 		}
+
+		// CAPTCHA check
+		if s.base.CaptchaEnabled() {
+			if args.CaptchaID == "" || args.CaptchaResponse == "" {
+				errorData(w, struct {
+					ID  string `json:"captcha_id"`
+					Key string `json:"translation_key"`
+				}{
+					ID:  s.base.NewCaptchaID(),
+					Key: "auth.captcha.must_solve",
+				}, http.StatusPreconditionRequired)
+				return
+			}
+			if !s.base.CheckCaptcha(args.CaptchaID, args.CaptchaResponse) {
+				errorData(w, struct {
+					ID  string `json:"captcha_id"`
+					Key string `json:"translation_key"`
+				}{
+					ID:  s.base.NewCaptchaID(),
+					Key: "auth.captcha.invalid",
+				}, http.StatusBadRequest)
+				return
+			}
+		}
+
 		if lastUpdated, ok := throttler.Get(args.Email); ok && time.Since(lastUpdated) <= 2*time.Minute {
 			errorData(w, "Please wait a little longer until requesting another password reset email!", 401)
 			return

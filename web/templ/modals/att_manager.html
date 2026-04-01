@@ -108,6 +108,11 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
                         </td>
                         <td class="kn-table-cell">
                             <button class="btn btn-blue" onclick="toggleEdit({{.ID}})"><i class="fas fa-edit"></i></button>
+                            {{if $pbid}}
+                                {{if or (eq .Name "statement-ro.pdf") (eq .Name "statement-en.pdf")}}
+                                    <button class="btn btn-blue" onclick="transcribeStatement({{.Name}})">Transcribe</button>
+                                {{end}}
+                            {{end}}
                         </td>
                     </tr>
                     {{ end }}
@@ -294,6 +299,13 @@ function updateAttFlagsFromName(name, cVisible, cPrivate, cExec) {
                     initAttEdit(id)
                 }
             }
+
+			async function transcribeStatement(name) {
+				const res = await bundled.postCall(apiPrefix+"/update/transcribeStatement", {
+					"filename": name
+				})
+				bundled.apiToast(res)
+			}
         
             async function closeAttEdit() {
                 document.getElementById("editAttView").classList.toggle("hidden", true);

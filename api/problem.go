@@ -471,6 +471,73 @@ func (s *API) translateProblemStatement() http.HandlerFunc {
 	}
 }
 
+func (s *API) transcribeProblemPDF() http.HandlerFunc {
+	var transcribeMu sync.Mutex
+	return func(w http.ResponseWriter, r *http.Request) {
+		var args struct {
+			Model    string `json:"model"`
+			Filename string `json:"filename"`
+		}
+		if err := parseRequest(r, &args); err != nil {
+			statusError(w, err)
+			return
+		}
+		if !transcribeMu.TryLock() {
+			errorData(w, "Will not process more than one pending transcription at once. Please try again later.", 400)
+			return
+		}
+		defer transcribeMu.Unlock()
+		if args.Filename == "" {
+			errorData(w, "Filename is required", 400)
+			return
+		}
+		if !strings.HasSuffix(args.Filename, ".pdf") {
+			errorData(w, "Filename must end with .pdf", 400)
+			return
+		}
+
+		att, err := s.base.ProblemAttByName(r.Context(), util.Problem(r).ID, args.Filename)
+		if err != nil {
+			statusError(w, err)
+			return
+		}
+		data, err := s.base.AttachmentData(r.Context(), att.ID)
+		if err != nil {
+			statusError(w, err)
+			return
+		}
+		t := time.Now()
+		output, err := llm.TranscribeStatement(r.Context(), bytes.NewReader(data), args.Model)
+		if err != nil {
+			errorData(w, err, 400)
+			return
+		}
+		targetFilename := strings.ReplaceAll(args.Filename, ".pdf", ".md")
+
+		s.base.LogUserAction(r.Context(), "Triggered LLM transcription", slog.String("model", args.Model), slog.Any("problem", util.Problem(r)), slog.Duration("duration", time.Since(t)))
+		att2, err := s.base.ProblemAttByName(r.Context(), util.Problem(r).ID, targetFilename)
+		if err == nil {
+			// Save old statement
+			if err := s.base.UpdateAttachment(r.Context(), att2.ID, &kilonova.AttachmentUpdate{
+				Name:    new(strings.ReplaceAll(args.Filename, ".pdf", "_old.md")),
+				Private: new(true),
+			}); err != nil {
+				statusError(w, err)
+				return
+			}
+		}
+
+		att2 = &kilonova.Attachment{Name: targetFilename}
+		err = s.base.CreateProblemAttachment(r.Context(), att2, util.Problem(r).ID, strings.NewReader(output), &util.UserBrief(r).ID)
+		if err != nil {
+			statusError(w, err)
+			return
+		}
+		returnData(w, "Created transcription")
+		return
+	}
+}
+
 func boolPtrString(val *bool) string {
 	if val == nil {
 		return "N/A"

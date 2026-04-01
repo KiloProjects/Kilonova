@@ -265,6 +265,7 @@ func (s *API) HandlerV1() http.Handler {
 					r.Post("/bulkUpdateAttachmentInfo", s.bulkUpdateAttachmentInfo)
 
 					r.Post("/translateStatement", s.translateProblemStatement())
+					r.Post("/transcribeStatement", s.transcribeProblemPDF())
 
 					r.Post("/bulkDeleteTests", s.bulkDeleteTests)
 					r.Post("/bulkUpdateTestScores", s.bulkUpdateTestScores)
