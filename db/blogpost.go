@@ -155,13 +155,13 @@ func getBlogPostOrdering(ordering string, ascending bool) string {
 	}
 	switch ordering {
 	case "slug":
-		return "ORDER BY slug" + ord + ", id DESC"
+		return "slug" + ord + ", id DESC"
 	case "published_at":
-		return "ORDER BY published_at" + ord + ", id DESC"
+		return "published_at" + ord + ", id DESC"
 	case "author_id":
-		return "ORDER BY author_id" + ord + ", id DESC"
+		return "author_id" + ord + ", id DESC"
 	default:
-		return "ORDER BY id" + ord
+		return "id" + ord
 	}
 }
 
