@@ -139,6 +139,7 @@
 	    language: "md",
         dynamicSize: true,
         autoFocus: true,
+        vimMode: localStorage.getItem("vimMode") === "true",
     })
     cm.onChange(() => changed = true)
 

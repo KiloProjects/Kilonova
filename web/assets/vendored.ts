@@ -16,6 +16,7 @@ import "codemirror/mode/haskell/haskell";
 import "codemirror/mode/javascript/javascript";
 import "codemirror/mode/php/php";
 import "codemirror/mode/rust/rust";
+import "codemirror/keymap/vim";
 
 import Alpine from "alpinejs";
 
@@ -134,6 +135,7 @@ export type KNEditorOptions = {
 
 	dynamicSize?: boolean;
 	autoFocus?: boolean;
+	vimMode?: boolean;
 }
 
 export class KNEditor {
@@ -156,6 +158,9 @@ export class KNEditor {
 			cmSettings.mode = "text/plain";
 		} else {
 			cmSettings.mode = opts.language;
+		}
+		if(opts.vimMode) {
+			cmSettings.keyMap = "vim";
 		}
 		this.cm = CodeMirror.fromTextArea(opts.textArea, cmSettings)
 
