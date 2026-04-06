@@ -27,7 +27,7 @@ func (t *Tag) LogValue() slog.Value {
 
 // Should be used for problem filtering
 type TagGroup struct {
-	// Negate instructs wether the filtered problem should have
+	// Negate instructs whether the filtered problem should have
 	// or NOT have the corresponding tags in order for it to match
 	Negate bool `json:"negate"`
 	// TagIDs represents the set of tags which, when intersected with

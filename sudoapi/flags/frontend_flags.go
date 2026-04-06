@@ -54,6 +54,8 @@ var (
 
 	PinnedProblemList = config.GenFlag("frontend.front_page.pinned_problem_list", 0, "Pinned problem list (front page sidebar)")
 	RootProblemList   = config.GenFlag("frontend.front_page.root_problem_list", 0, "Root problem list (front page main content)")
+
+	ProblemStatistics = config.GenFlag("frontend.problem_statistics", true, "Show problem statistics on problem page")
 )
 
 var (

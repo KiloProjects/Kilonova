@@ -95,7 +95,10 @@ func (rt *Web) problemRouter(inContest bool) func(r chi.Router) {
 		r.Get("/", rt.problem())
 		r.Get("/submissions", rt.problemSubmissions())
 		if !inContest {
-			r.With(rt.ValidateProblemFullyVisible).Get("/statistics", rt.problemStatistics())
+			r.With(
+				rt.checkFlag(flags.ProblemStatistics),
+				rt.ValidateProblemFullyVisible,
+			).Get("/statistics", rt.problemStatistics())
 			r.Route("/externalResources", func(r chi.Router) {
 				r.Use(rt.ValidateProblemFullyVisible)
 				r.Use(rt.checkFlag(flags.ExternalResourcesEnabled))

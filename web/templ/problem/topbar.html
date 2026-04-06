@@ -117,7 +117,7 @@
             {{getText "submissions"}}
         </a>
     {{ end }}
-    {{ if and problemFullyVisible (not .Topbar.Contest) }}
+    {{ if and problemFullyVisible (not .Topbar.Contest) (boolFlag "frontend.problem_statistics") }}
         <div class="topbar-separator"></div>
         <a class="p-1 {{if (eq .Topbar.Page `pb_statistics`)}} topbar-selected {{end}}" hx-swap="none" hx-get="/problems/{{.Topbar.Problem.ID}}/statistics?hx_modal=true" href="{{.Topbar.URLPrefix}}/problems/{{.Topbar.Problem.ID}}/statistics">{{getText "problemStats"}}</a>
     {{ end }}

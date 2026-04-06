@@ -40,7 +40,7 @@ func (u *UserBrief) IsAuthed() bool {
 }
 
 func (u *UserBrief) IsAdmin() bool {
-	if !u.IsAuthed() {
+	if u == nil || !u.IsAuthed() {
 		return false
 	}
 	return u.Admin
