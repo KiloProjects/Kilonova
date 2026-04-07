@@ -477,6 +477,8 @@ func (s *Assets) ExportSubmissions() http.HandlerFunc {
 			}
 		}
 
+		cw.Flush()
+
 		http.ServeContent(w, r, "export.csv", time.Now(), bytes.NewReader(buf.Bytes()))
 	}
 }
