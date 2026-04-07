@@ -7,6 +7,7 @@ import {BigSpinner, formatScoreStr, Paginator} from "./common";
 import {dayjs, getGradient, sizeFormatter} from "../util";
 import {defaultClient, SubmissionQuery, Submissions} from "../api/client";
 import {icpcVerdictString} from "./sub_mgr";
+import qs from "query-string";
 
 export function rezStr(count: number, truncatedCount: boolean = false): string {
 	if (count < 0) {
@@ -145,6 +146,24 @@ function SubsView(props: SubsViewProps) {
 	};
 
 	const numPages = useMemo(() => Math.floor(count / 50) + (count % 50 != 0 ? 1 : 0), [count]);
+
+	const queryParams = useMemo(() => {
+		// TODO: Remove
+		const q = query;
+		const qp = {
+			ordering: typeof q.ordering !== "undefined" ? q.ordering : "id",
+			ascending: (typeof q.ordering !== "undefined" && q.ascending) || false,
+			user_id: typeof q.user_id !== "undefined" && q.user_id > 0 ? q.user_id : undefined,
+			problem_id: typeof q.problem_id !== "undefined" && q.problem_id > 0 ? q.problem_id : undefined,
+			problem_list_id: typeof q.problem_list_id !== "undefined" && q.problem_list_id > 0 ? q.problem_list_id : undefined,
+			contest_id: typeof q.contest_id !== "undefined" && q.contest_id > 0 ? q.contest_id : undefined,
+			status: q.status !== "" ? q.status : undefined,
+			score: typeof q.score !== "undefined" && q.score >= 0 ? q.score : undefined,
+			lang: typeof q.lang !== "undefined" && q.lang !== "" ? q.lang : undefined,
+			compile_error: q.compile_error,
+		};
+		return qs.stringify(qp);
+	}, [query]);
 
 	async function poll(noLoad?: boolean) {
 		if (typeof noLoad === "undefined" || !noLoad) {
@@ -483,7 +502,7 @@ function SubsView(props: SubsViewProps) {
 					<button class="btn mb-4 mr-2" onClick={async () => await copyQuery()}>
 						{getText("filterLink")}
 					</button>
-					{window.platform_info.admin && (<a class="btn" href={"/assets/submissions/export?" + getQuery().toString()}>
+					{window.platform_info.admin && (<a class="btn" href={"/assets/submissions/export?" + queryParams}>
 						{getText("exportSubs")}
 					</a>)}
 				</div>
