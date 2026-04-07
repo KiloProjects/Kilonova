@@ -1320,6 +1320,10 @@ ro = "bara de filtrare"
 en = "Copy filter link"
 ro = "Copiere link filtre"
 
+[exportSubs]
+en = "Export submissions"
+ro = "Export submisii"
+
 [filters]
 en = "Filters"
 ro = "Filtre"

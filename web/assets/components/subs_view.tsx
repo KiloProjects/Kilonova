@@ -1,12 +1,12 @@
-import { h, Fragment } from "preact";
+import {Fragment, h} from "preact";
 import getText from "../translation";
 import register from "preact-custom-element";
-import { useEffect, useMemo, useState } from "preact/hooks";
-import { apiToast, createToast } from "../toast";
-import { BigSpinner, Paginator, formatScoreStr } from "./common";
-import { dayjs, getGradient, sizeFormatter } from "../util";
-import { SubmissionQuery, Submissions, defaultClient } from "../api/client";
-import { icpcVerdictString } from "./sub_mgr";
+import {useEffect, useMemo, useState} from "preact/hooks";
+import {apiToast, createToast} from "../toast";
+import {BigSpinner, formatScoreStr, Paginator} from "./common";
+import {dayjs, getGradient, sizeFormatter} from "../util";
+import {defaultClient, SubmissionQuery, Submissions} from "../api/client";
+import {icpcVerdictString} from "./sub_mgr";
 
 export function rezStr(count: number, truncatedCount: boolean = false): string {
 	if (count < 0) {
@@ -128,7 +128,7 @@ export type SubsViewProps = {
 };
 
 function SubsView(props: SubsViewProps) {
-	let overwrites: Overwrites = { problemID: props.problemid, userID: props.userid, contestID: props.contestid };
+	let overwrites: Overwrites = {problemID: props.problemid, userID: props.userid, contestID: props.contestid};
 	let [loading, setLoading] = useState(true);
 	let [query, updQuery] = useState<SubmissionQuery>(getInitialData(overwrites));
 	let [subs, setSubs] = useState<Submissions | undefined>(undefined);
@@ -154,7 +154,7 @@ function SubsView(props: SubsViewProps) {
 		try {
 			var data = await defaultClient.getSubmissions(query);
 		} catch (e) {
-			apiToast({ data: (e as Error).message, status: "error" });
+			apiToast({data: (e as Error).message, status: "error"});
 			setLoading(false);
 			return;
 		}
@@ -239,10 +239,10 @@ function SubsView(props: SubsViewProps) {
 		let url = window.location.origin + window.location.pathname + "?" + getQuery().toString();
 		try {
 			await navigator.clipboard.writeText(url);
-			createToast({ status: "success", title: getText("copied") });
+			createToast({status: "success", title: getText("copied")});
 		} catch (e) {
 			console.error(e);
-			createToast({ status: "error", title: getText("notCopied") });
+			createToast({status: "error", title: getText("notCopied")});
 		}
 	}
 
@@ -257,7 +257,7 @@ function SubsView(props: SubsViewProps) {
 			ascending = false;
 		}
 
-		setQuery({ ...query, ascending, ordering });
+		setQuery({...query, ascending, ordering});
 	}
 
 	function sortIndicator(type: string) {
@@ -306,9 +306,9 @@ function SubsView(props: SubsViewProps) {
 							checked={query.status === "finished" && query.score === 100}
 							onInput={(e) => {
 								if (e.currentTarget.checked) {
-									setQuery({ ...query, page: 1, status: "finished", score: 100 });
+									setQuery({...query, page: 1, status: "finished", score: 100});
 								} else {
-									setQuery({ ...query, page: 1, status: undefined, score: undefined });
+									setQuery({...query, page: 1, status: undefined, score: undefined});
 								}
 							}}
 						/>
@@ -480,9 +480,12 @@ function SubsView(props: SubsViewProps) {
 					<button class="btn btn-blue mb-4 mr-2" onClick={() => poll()}>
 						{getText("fetch")}
 					</button>
-					<button class="btn mb-4" onClick={async () => await copyQuery()}>
+					<button class="btn mb-4 mr-2" onClick={async () => await copyQuery()}>
 						{getText("filterLink")}
 					</button>
+					{window.platform_info.admin && (<a class="btn" href={"/assets/submissions/export?" + getQuery().toString()}>
+						{getText("exportSubs")}
+					</a>)}
 				</div>
 			</aside>
 			<div class="page-content">
@@ -496,13 +499,14 @@ function SubsView(props: SubsViewProps) {
 									page={query.page}
 									numpages={numPages}
 									setPage={(num) => {
-										setQuery({ ...query, page: num }, true);
+										setQuery({...query, page: num}, true);
 									}}
 									ctxSize={2}
 									showArrows={true}
 								/>
 							) : typeof subs !== "undefined" && subs.submissions.length > 0 ? (
-								<Paginator page={1} numpages={1} setPage={() => {}} ctxSize={2} showArrows={true} />
+								<Paginator page={1} numpages={1} setPage={() => {
+								}} ctxSize={2} showArrows={true}/>
 							) : (
 								<></>
 							)}
@@ -522,95 +526,96 @@ function SubsView(props: SubsViewProps) {
 					)}
 				{initialLoad ? (
 					<>
-						<div class="lg:mt-6" />
-						<BigSpinner />
+						<div class="lg:mt-6"/>
+						<BigSpinner/>
 					</>
 				) : typeof subs !== "undefined" && subs.submissions.length > 0 ? (
 					<div>
 						<table class="kn-table">
 							<thead>
-								<tr>
-									<th scope="col" class="w-20 text-center px-4 py-2">
-										{getText("id")}
+							<tr>
+								<th scope="col" class="w-20 text-center px-4 py-2">
+									{getText("id")}
+								</th>
+								<th scope="col">{getText("author")}</th>
+								<th scope="col" class="cursor-pointer" onClick={() => doSort("id")}>
+									{getText("uploadDate")} {sortIndicator("id")}
+								</th>
+								{((query.problem_id == 0 || query.problem_id == null) &&
+                                    <th scope="col">{getText("problemSingle")}</th>) || (
+									<th scope="col" class="cursor-pointer" onClick={() => doSort("code_size")}>
+										{getText("codeSize")} {sortIndicator("code_size")}
 									</th>
-									<th scope="col">{getText("author")}</th>
-									<th scope="col" class="cursor-pointer" onClick={() => doSort("id")}>
-										{getText("uploadDate")} {sortIndicator("id")}
-									</th>
-									{((query.problem_id == 0 || query.problem_id == null) && <th scope="col">{getText("problemSingle")}</th>) || (
-										<th scope="col" class="cursor-pointer" onClick={() => doSort("code_size")}>
-											{getText("codeSize")} {sortIndicator("code_size")}
-										</th>
-									)}
-									<th scope="col" class="cursor-pointer" onClick={() => doSort("max_time")}>
-										{getText("time")} {sortIndicator("max_time")}
-									</th>
-									<th scope="col" class="cursor-pointer" onClick={() => doSort("max_mem")}>
-										{getText("memory")} {sortIndicator("max_mem")}
-									</th>
-									<th scope="col" class="w-1/6 cursor-pointer" onClick={() => doSort("score")}>
-										{getText("status")} {sortIndicator("score")}
-									</th>
-								</tr>
+								)}
+								<th scope="col" class="cursor-pointer" onClick={() => doSort("max_time")}>
+									{getText("time")} {sortIndicator("max_time")}
+								</th>
+								<th scope="col" class="cursor-pointer" onClick={() => doSort("max_mem")}>
+									{getText("memory")} {sortIndicator("max_mem")}
+								</th>
+								<th scope="col" class="w-1/6 cursor-pointer" onClick={() => doSort("score")}>
+									{getText("status")} {sortIndicator("score")}
+								</th>
+							</tr>
 							</thead>
 							{loading ? (
 								<tbody>
-									<tr class="my-6">
-										<td colSpan={20}>
-											<BigSpinner />
-										</td>
-									</tr>
+								<tr class="my-6">
+									<td colSpan={20}>
+										<BigSpinner/>
+									</td>
+								</tr>
 								</tbody>
 							) : (
 								<tbody>
-									{subs.submissions.map((sub) => (
-										<tr class="kn-table-row" key={sub.id}>
-											<th scope="row" class="text-center px-2 py-1">
-												{sub.id}
-											</th>
-											<td class="px-2 py-1">
-												<a href={"/profile/" + subs.users[sub.user_id].name}>{subs.users[sub.user_id].name}</a>
+								{subs.submissions.map((sub) => (
+									<tr class="kn-table-row" key={sub.id}>
+										<th scope="row" class="text-center px-2 py-1">
+											{sub.id}
+										</th>
+										<td class="px-2 py-1">
+											<a href={"/profile/" + subs.users[sub.user_id].name}>{subs.users[sub.user_id].name}</a>
+										</td>
+										<td class="text-center px-2 py-1">{dayjs(sub.created_at).format("DD/MM/YYYY HH:mm")}</td>
+										{((query.problem_id == 0 || query.problem_id == null) && (
+											<td class="text-center px-2 py-1">
+												{subs.problems[sub.problem_id] ? (
+													<>
+														<a
+															href={
+																(typeof sub.contest_id === "number" ? `/contests/${sub.contest_id}` : "") +
+																`/problems/${subs.problems[sub.problem_id].id}`
+															}
+														>
+															{subs!.problems[sub.problem_id].name}
+														</a>
+													</>
+												) : (
+													<>-</>
+												)}
 											</td>
-											<td class="text-center px-2 py-1">{dayjs(sub.created_at).format("DD/MM/YYYY HH:mm")}</td>
-											{((query.problem_id == 0 || query.problem_id == null) && (
-												<td class="text-center px-2 py-1">
-													{subs.problems[sub.problem_id] ? (
-														<>
-															<a
-																href={
-																	(typeof sub.contest_id === "number" ? `/contests/${sub.contest_id}` : "") +
-																	`/problems/${subs.problems[sub.problem_id].id}`
-																}
-															>
-																{subs!.problems[sub.problem_id].name}
-															</a>
-														</>
-													) : (
-														<>-</>
-													)}
-												</td>
-											)) || (
-												<td class="text-center px-2 py-1">
-													<span>{sub.code_size > 0 ? sizeFormatter(sub.code_size) : "-"}</span>
-												</td>
-											)}
-											<td class="text-center px-2 py-1">{sub.max_time == -1 ? "-" : Math.floor(sub.max_time * 1000) + "ms"}</td>
-											<td class="text-center px-2 py-1">{sub.max_memory == -1 ? "-" : sizeFormatter(sub.max_memory * 1024)}</td>
-											<td
-												class={(sub.status === "finished" ? "text-black" : "") + " text-center"}
-												style={
-													sub.status == "finished"
-														? "background-color: " +
-														  (sub.submission_type == "classic"
-																? getGradient(sub.score, 100)
-																: getGradient(sub.score == 100 ? 1 : 0, 1))
-														: ""
-												}
-											>
-												<a href={"/submissions/" + sub.id}>{status(sub, subs.problems[sub.problem_id])}</a>
+										)) || (
+											<td class="text-center px-2 py-1">
+												<span>{sub.code_size > 0 ? sizeFormatter(sub.code_size) : "-"}</span>
 											</td>
-										</tr>
-									))}
+										)}
+										<td class="text-center px-2 py-1">{sub.max_time == -1 ? "-" : Math.floor(sub.max_time * 1000) + "ms"}</td>
+										<td class="text-center px-2 py-1">{sub.max_memory == -1 ? "-" : sizeFormatter(sub.max_memory * 1024)}</td>
+										<td
+											class={(sub.status === "finished" ? "text-black" : "") + " text-center"}
+											style={
+												sub.status == "finished"
+													? "background-color: " +
+													(sub.submission_type == "classic"
+														? getGradient(sub.score, 100)
+														: getGradient(sub.score == 100 ? 1 : 0, 1))
+													: ""
+											}
+										>
+											<a href={"/submissions/" + sub.id}>{status(sub, subs.problems[sub.problem_id])}</a>
+										</td>
+									</tr>
+								))}
 								</tbody>
 							)}
 						</table>
@@ -625,4 +630,4 @@ function SubsView(props: SubsViewProps) {
 
 register(SubsView, "kn-sub-viewer", ["problemid", "userid", "contestid", "title"]);
 
-export { SubsView };
+export {SubsView};

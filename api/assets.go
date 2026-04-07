@@ -80,6 +80,8 @@ func (s *Assets) AssetsRouter() http.Handler {
 		r.With(s.api.validateAttachmentID).Get("/attachmentByID/{aID}", s.ServeAttachment)
 	})
 
+	r.With(s.api.MustBeAdmin).Get("/submissions/export", s.ExportSubmissions())
+
 	r.With(s.api.MustBeProposer).Get("/subtest/{subtestID}", s.ServeSubtest)
 
 	r.With(s.api.validateContestID).Get("/contest/{contestID}/leaderboard.csv", s.ServeContestLeaderboard)
@@ -414,5 +416,67 @@ func (s *Assets) ServeProblemArchive() http.HandlerFunc {
 		if err := wr.Flush(); err != nil {
 			slog.WarnContext(r.Context(), "Could not finish writing problem archive", slog.Any("err", err))
 		}
+	}
+}
+
+// For tamio
+
+func (s *Assets) ExportSubmissions() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var args kilonova.SubmissionFilter
+		if err := parseRequest(r, &args); err != nil {
+			errorData(w, err, http.StatusBadRequest)
+			return
+		}
+
+		subs, err := s.base.RawSubmissions(r.Context(), args)
+		if err != nil {
+			statusError(w, err)
+			return
+		}
+
+		var buf bytes.Buffer
+		cw := csv.NewWriter(&buf)
+		if err := cw.Write([]string{"user", "problem", "score", "timestamp"}); err != nil {
+			statusError(w, err)
+			return
+		}
+
+		var userCache = make(map[int]*kilonova.UserBrief)
+		var problemCache = make(map[int]*kilonova.Problem)
+
+		for _, sub := range subs {
+			userBrief, ok := userCache[sub.UserID]
+			if !ok {
+				userBrief, err = s.base.UserBrief(r.Context(), sub.UserID)
+				if err != nil {
+					statusError(w, err)
+					return
+				}
+				userCache[sub.UserID] = userBrief
+			}
+
+			problem, ok := problemCache[sub.ProblemID]
+			if !ok {
+				problem, err = s.base.Problem(r.Context(), sub.ProblemID)
+				if err != nil {
+					statusError(w, err)
+					return
+				}
+				problemCache[sub.ProblemID] = problem
+			}
+
+			if err := cw.Write([]string{
+				userBrief.Name,
+				problem.Name,
+				sub.Score.StringFixed(sub.ScorePrecision),
+				sub.CreatedAt.Format(time.RFC3339),
+			}); err != nil {
+				statusError(w, err)
+				return
+			}
+		}
+
+		http.ServeContent(w, r, "export.csv", time.Now(), bytes.NewReader(buf.Bytes()))
 	}
 }
