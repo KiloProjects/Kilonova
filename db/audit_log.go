@@ -68,7 +68,7 @@ func (s *DB) internalToAuditLog(ctx context.Context, a *auditLog) (*kilonova.Aud
 	}
 	var author *kilonova.UserBrief
 	if a.AuthorID != nil {
-		fullAuthor, err := s.User(ctx, kilonova.UserFilter{ID: a.AuthorID})
+		fullAuthor, err := s.userRepo.User(ctx, kilonova.UserFilter{ID: a.AuthorID})
 		if err != nil {
 			return nil, err
 		}

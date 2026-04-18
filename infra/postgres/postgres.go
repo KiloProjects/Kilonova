@@ -9,6 +9,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/config"
+	"github.com/Masterminds/squirrel"
 	"github.com/exaring/otelpgx"
 	pgxdecimal "github.com/jackc/pgx-shopspring-decimal"
 	"github.com/jackc/pgx/v5"
@@ -129,4 +130,9 @@ func (db *DB) log(ctx context.Context, level tracelog.LogLevel, msg string, data
 		}
 		db.logger.LogAttrs(ctx, lvl, msg, fields...)
 	}
+}
+
+func init() {
+	// Set dollar placeholder format for squirrel
+	squirrel.StatementBuilder = squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 }

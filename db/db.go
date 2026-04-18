@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/KiloProjects/kilonova/domain/user/userpg"
 	"github.com/KiloProjects/kilonova/infra/postgres"
-	"github.com/KiloProjects/kilonova/internal/repository"
 	"github.com/KiloProjects/kilonova/util/slicealg"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -13,7 +13,7 @@ import (
 
 type DB struct {
 	conn     *pgxpool.Pool
-	userRepo *repository.UserRepository
+	userRepo *userpg.Repository
 }
 
 type Queryer interface {
@@ -43,7 +43,7 @@ func Select[T any](pgconn Queryer, ctx context.Context, dest *[]*T, query string
 }
 
 func NewPSQL(conn *postgres.DB) *DB {
-	return &DB{conn.Pool(), repository.NewUserRepository(conn.Pool())}
+	return &DB{conn.Pool(), userpg.NewRepository(conn)}
 }
 
 func FormatLimitOffset(limit int, offset int) string {

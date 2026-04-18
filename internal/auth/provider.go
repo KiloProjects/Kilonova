@@ -4,16 +4,22 @@ import (
 	"crypto/sha256"
 	"log/slog"
 
-	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 	"github.com/zitadel/oidc/v3/pkg/op"
 	"golang.org/x/text/language"
 )
 
-func GetProvider(storage *AuthStorage) (*op.Provider, error) {
+type OauthProviderConfig struct {
+	Storage    *AuthStorage
+	Debug      bool
+	HostPrefix string
+
+	CryptoKey []byte
+}
+
+func GetProvider(cfg OauthProviderConfig) (*op.Provider, error) {
 	opConfig := &op.Config{
-		CryptoKey:                sha256.Sum256([]byte(flags.AuthCryptoKey.Value())),
+		CryptoKey:                sha256.Sum256(cfg.CryptoKey),
 		DefaultLogoutRedirectURI: "/",
 		CodeMethodS256:           true,
 
@@ -41,11 +47,11 @@ func GetProvider(storage *AuthStorage) (*op.Provider, error) {
 	opts := []op.Option{
 		op.WithLogger(slog.Default().WithGroup("oidc")),
 	}
-	if kilonova.DebugMode() {
+	if cfg.Debug {
 		opts = append(opts, op.WithAllowInsecure())
 	}
 
-	handler, err := op.NewProvider(opConfig, storage, op.StaticIssuer(kilonova.HostPrefix()), opts...)
+	handler, err := op.NewProvider(opConfig, cfg.Storage, op.StaticIssuer(cfg.HostPrefix), opts...)
 	if err != nil {
 		return nil, err
 	}

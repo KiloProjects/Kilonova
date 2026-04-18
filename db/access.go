@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/repository"
+	"github.com/KiloProjects/kilonova/domain/user/userpg"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -38,7 +38,7 @@ func (s *DB) getAccessUsers(ctx context.Context, tableName, colName string, colV
 	if err != nil {
 		return nil, err
 	}
-	users, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[repository.User])
+	users, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[userpg.User])
 	if err != nil {
 		return nil, err
 	}

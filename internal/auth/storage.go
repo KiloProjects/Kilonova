@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user/userpg"
 	"github.com/KiloProjects/kilonova/infra/postgres"
-	"github.com/KiloProjects/kilonova/internal/repository"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/google/uuid"
@@ -39,7 +39,7 @@ var _ op.Storage = (*AuthStorage)(nil)
 type AuthStorage struct {
 	conn     *pgxpool.Pool
 	key      *signingKey
-	userRepo *repository.UserRepository
+	userRepo *userpg.Repository
 }
 
 func (s *AuthStorage) CreateAuthRequest(ctx context.Context, authReq *oidc.AuthRequest, userID string) (op.AuthRequest, error) {
@@ -590,7 +590,7 @@ func NewAuthStorage(ctx context.Context, pgx *postgres.DB) *AuthStorage {
 	return &AuthStorage{
 		conn:     pgx.Pool(),
 		key:      &signingKey{pkey: key, kid: flags.AuthRSAPrivateKeyID.Value()},
-		userRepo: repository.NewUserRepository(pgx.Pool()),
+		userRepo: userpg.NewRepository(pgx),
 	}
 }
 

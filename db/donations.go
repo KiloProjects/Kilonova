@@ -58,7 +58,7 @@ func (s *DB) Donations(ctx context.Context) ([]*kilonova.Donation, error) {
 func (s *DB) internalToDonation(ctx context.Context, d *donation) (*kilonova.Donation, error) {
 	var user *kilonova.UserBrief
 	if d.UserID != nil {
-		user1, err := s.User(ctx, kilonova.UserFilter{ID: d.UserID})
+		user1, err := s.userRepo.User(ctx, kilonova.UserFilter{ID: d.UserID})
 		if err != nil {
 			return nil, err
 		}

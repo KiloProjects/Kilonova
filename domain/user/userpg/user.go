@@ -1,4 +1,4 @@
-package repository
+package userpg
 
 import (
 	"context"
@@ -8,21 +8,22 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/infra/postgres"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type UserRepository struct {
+type Repository struct {
 	conn *pgxpool.Pool
 }
 
-func NewUserRepository(conn *pgxpool.Pool) *UserRepository {
-	return &UserRepository{conn: conn}
+func NewRepository(conn *postgres.DB) *Repository {
+	return &Repository{conn: conn.Pool()}
 }
 
 // User looks up a user by ID.
-func (s *UserRepository) User(ctx context.Context, filter kilonova.UserFilter) (*kilonova.UserFull, error) {
+func (s *Repository) User(ctx context.Context, filter kilonova.UserFilter) (*kilonova.UserFull, error) {
 	filter.Limit = 1
 	users, err := s.Users(ctx, filter)
 	if err != nil || len(users) == 0 {
@@ -31,7 +32,7 @@ func (s *UserRepository) User(ctx context.Context, filter kilonova.UserFilter) (
 	return users[0], nil
 }
 
-func (s *UserRepository) HashedPassword(ctx context.Context, userID int) (string, error) {
+func (s *Repository) HashedPassword(ctx context.Context, userID int) (string, error) {
 	var password string
 	err := s.conn.QueryRow(ctx, "SELECT password FROM users WHERE id = $1", userID).Scan(&password)
 	if err != nil {
@@ -41,7 +42,7 @@ func (s *UserRepository) HashedPassword(ctx context.Context, userID int) (string
 }
 
 // Users retrieves users based on a filter.
-func (s *UserRepository) Users(ctx context.Context, filter kilonova.UserFilter) ([]*kilonova.UserFull, error) {
+func (s *Repository) Users(ctx context.Context, filter kilonova.UserFilter) ([]*kilonova.UserFull, error) {
 	sb := sq.Select("*").From("users")
 	sb = userFilterQuery(&filter, sb)
 	query, args, err := sb.OrderBy("id ASC").ToSql()
@@ -63,7 +64,7 @@ func (s *UserRepository) Users(ctx context.Context, filter kilonova.UserFilter) 
 }
 
 // CountUsers retrieves the number of users matching a filter. It ignores the limit fields in `filter`.
-func (s *UserRepository) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, error) {
+func (s *Repository) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, error) {
 	sb := sq.Select("COUNT(*)").From("users")
 	sb = userFilterQuery(&filter, sb).RemoveLimit().RemoveOffset()
 	query, args, err := sb.ToSql()
@@ -76,8 +77,8 @@ func (s *UserRepository) CountUsers(ctx context.Context, filter kilonova.UserFil
 	return count, err
 }
 
-// UserExists says wether or not a user matches either a specific username (case-insensitive), either a specific email address.
-func (s *UserRepository) UserExists(ctx context.Context, username string, email string) (bool, error) {
+// UserExists says whether or not a user matches either a specific username (case-insensitive), either a specific email address.
+func (s *Repository) UserExists(ctx context.Context, username string, email string) (bool, error) {
 	count, err := s.CountUsers(ctx, kilonova.UserFilter{Name: &username})
 	if err == nil && count > 0 {
 		return true, nil
@@ -86,7 +87,7 @@ func (s *UserRepository) UserExists(ctx context.Context, username string, email 
 	return count > 0, err
 }
 
-func (s *UserRepository) LastUsernameChange(ctx context.Context, userID int) (time.Time, error) {
+func (s *Repository) LastUsernameChange(ctx context.Context, userID int) (time.Time, error) {
 	var changedAt time.Time
 	err := s.conn.QueryRow(ctx, "SELECT MAX(changed_at) FROM username_change_history WHERE user_id = $1", userID).Scan(&changedAt)
 	if err != nil {
@@ -98,7 +99,7 @@ func (s *UserRepository) LastUsernameChange(ctx context.Context, userID int) (ti
 	return changedAt, nil
 }
 
-func (s *UserRepository) NameUsedBefore(ctx context.Context, name string) (bool, error) {
+func (s *Repository) NameUsedBefore(ctx context.Context, name string) (bool, error) {
 	var cnt int
 	err := s.conn.QueryRow(ctx, "SELECT COUNT(name) FROM username_change_history WHERE lower(name) = lower($1)", name).Scan(&cnt)
 	if err != nil {
@@ -107,7 +108,7 @@ func (s *UserRepository) NameUsedBefore(ctx context.Context, name string) (bool,
 	return cnt > 0, nil
 }
 
-func (s *UserRepository) UsernameChangeHistory(ctx context.Context, userID int) ([]*kilonova.UsernameChange, error) {
+func (s *Repository) UsernameChangeHistory(ctx context.Context, userID int) ([]*kilonova.UsernameChange, error) {
 	rows, _ := s.conn.Query(ctx, "SELECT * FROM username_change_history WHERE user_id = $1 ORDER BY changed_at DESC", userID)
 	changes, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[kilonova.UsernameChange])
 	if err != nil {
@@ -119,7 +120,7 @@ func (s *UserRepository) UsernameChangeHistory(ctx context.Context, userID int) 
 	return changes, nil
 }
 
-func (s *UserRepository) HistoricalUsernameHolders(ctx context.Context, name string) ([]int, error) {
+func (s *Repository) HistoricalUsernameHolders(ctx context.Context, name string) ([]int, error) {
 	rows, _ := s.conn.Query(ctx, "SELECT user_id, MAX(changed_at) FROM username_change_history WHERE lower(name) = lower($1) GROUP BY user_id ORDER BY MAX(changed_at) DESC", name)
 	entries, err := pgx.CollectRows(rows, pgx.RowToStructByPos[struct {
 		UserID    int
@@ -137,7 +138,7 @@ func (s *UserRepository) HistoricalUsernameHolders(ctx context.Context, name str
 
 // UpdateUser updates a user.
 // Returns ENOTFOUND if the user does not exist
-func (s *UserRepository) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate) error {
+func (s *Repository) UpdateUser(ctx context.Context, id int, upd kilonova.UserFullUpdate) error {
 	updQuery := sq.Update("users").Where(sq.Eq{"id": id})
 
 	if v := upd.Name; v != nil {
@@ -197,19 +198,19 @@ func (s *UserRepository) UpdateUser(ctx context.Context, id int, upd kilonova.Us
 	return err
 }
 
-func (s *UserRepository) UpdateUserPasswordHash(ctx context.Context, userID int, hash string) error {
+func (s *Repository) UpdateUserPasswordHash(ctx context.Context, userID int, hash string) error {
 	_, err := s.conn.Exec(ctx, "UPDATE users SET password = $1 WHERE id = $2", hash, userID)
 	return err
 }
 
 // DeleteUser permanently deletes a user from the system.
-func (s *UserRepository) DeleteUser(ctx context.Context, id int) error {
+func (s *Repository) DeleteUser(ctx context.Context, id int) error {
 	_, err := s.conn.Exec(ctx, "DELETE FROM users WHERE id = $1", id)
 	return err
 }
 
 // CreateUser creates a new user with the specified data.
-func (s *UserRepository) CreateUser(ctx context.Context, name, passwordHash, email, preferredLanguage string, theme kilonova.PreferredTheme, displayName string, bio string, generated bool) (int, error) {
+func (s *Repository) CreateUser(ctx context.Context, name, passwordHash, email, preferredLanguage string, theme kilonova.PreferredTheme, displayName string, bio string, generated bool) (int, error) {
 	if name == "" || passwordHash == "" || email == "" || preferredLanguage == "" {
 		return -1, kilonova.ErrMissingRequired
 	}
@@ -222,12 +223,12 @@ func (s *UserRepository) CreateUser(ctx context.Context, name, passwordHash, ema
 	return id, err
 }
 
-func (s *UserRepository) LogSignup(ctx context.Context, userID int, ip *netip.Addr, userAgent *string) error {
+func (s *Repository) LogSignup(ctx context.Context, userID int, ip *netip.Addr, userAgent *string) error {
 	_, err := s.conn.Exec(ctx, `INSERT INTO signup_logs (user_id, ip_addr, user_agent) VALUES ($1, $2, $3)`, userID, ip, userAgent)
 	return err
 }
 
-func (s *UserRepository) CountSignups(ctx context.Context, ip netip.Addr, since time.Time) (int, error) {
+func (s *Repository) CountSignups(ctx context.Context, ip netip.Addr, since time.Time) (int, error) {
 	var cnt int
 	err := s.conn.QueryRow(ctx, "SELECT COUNT(*) FROM signup_logs WHERE ip_addr = $1 AND created_at >= $2", ip, since).Scan(&cnt)
 	if err != nil {

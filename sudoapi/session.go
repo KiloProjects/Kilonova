@@ -47,7 +47,7 @@ func (s *BaseAPI) GetSession(ctx context.Context, sid string) (int, error) {
 
 // Uncached function
 func (s *BaseAPI) sessionUser(ctx context.Context, sid string) (*kilonova.UserFull, error) {
-	user, err := s.db.User(ctx, kilonova.UserFilter{SessionID: &sid})
+	user, err := s.userRepo.User(ctx, kilonova.UserFilter{SessionID: &sid})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get session user: %w", err)
 	}

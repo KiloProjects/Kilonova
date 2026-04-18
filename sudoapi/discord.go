@@ -58,7 +58,7 @@ func (s *BaseAPI) GetDiscordIdentity(ctx context.Context, userID int) (*discordg
 	if !flags.DiscordEnabled.Value() {
 		return nil, nil
 	}
-	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &userID})
+	user, err := s.userRepo.User(ctx, kilonova.UserFilter{ID: &userID})
 	if err != nil {
 		return nil, fmt.Errorf("could not get user: %w", err)
 	}
@@ -73,7 +73,7 @@ func (s *BaseAPI) GetDiscordIdentity(ctx context.Context, userID int) (*discordg
 }
 
 func (s *BaseAPI) UnlinkDiscordIdentity(ctx context.Context, userID int) error {
-	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &userID})
+	user, err := s.userRepo.User(ctx, kilonova.UserFilter{ID: &userID})
 	if err != nil || user == nil {
 		return fmt.Errorf("could not get user: %w", err)
 	}
@@ -140,7 +140,7 @@ func (s *BaseAPI) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) 
 	}
 
 	userAttr := slog.Any("userID", uid)
-	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &uid})
+	user, err := s.userRepo.User(ctx, kilonova.UserFilter{ID: &uid})
 	if err == nil && user != nil {
 		userAttr = slog.Any("user", user.Brief())
 	}

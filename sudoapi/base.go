@@ -12,6 +12,7 @@ import (
 	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/domain/datastore"
+	"github.com/KiloProjects/kilonova/domain/user/userpg"
 	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/infra/postgres"
 	"github.com/KiloProjects/kilonova/internal/auth"
@@ -47,6 +48,8 @@ type BaseAPI struct {
 	mailer kilonova.Mailer
 	rd     *mdrenderer.Renderer
 	cmd    *cli.Command
+
+	userRepo *userpg.Repository
 
 	mgr *datastore.Manager
 
@@ -101,6 +104,8 @@ func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, m
 
 		mgr: mgr,
 
+		userRepo: userpg.NewRepository(pgx),
+
 		sessionUserCache: nil,
 
 		grader:  nil,
@@ -127,8 +132,13 @@ func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, m
 	}
 	base.sessionUserCache = sUserCache
 
-	storage := auth.NewAuthStorage(ctx, base.pgx)
-	provider, err := auth.GetProvider(storage)
+	provider, err := auth.GetProvider(auth.OauthProviderConfig{
+		Storage:    auth.NewAuthStorage(ctx, base.pgx),
+		Debug:      kilonova.DebugMode(),
+		HostPrefix: kilonova.HostPrefix(),
+
+		CryptoKey: []byte(flags.AuthCryptoKey.Value()),
+	})
 	if err != nil {
 		return nil, err
 	}

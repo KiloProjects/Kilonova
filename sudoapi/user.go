@@ -39,7 +39,7 @@ func (s *BaseAPI) UserBrief(ctx context.Context, id int) (*kilonova.UserBrief, e
 }
 
 func (s *BaseAPI) UserFull(ctx context.Context, id int) (*kilonova.UserFull, error) {
-	user, err := s.db.User(ctx, kilonova.UserFilter{ID: &id})
+	user, err := s.userRepo.User(ctx, kilonova.UserFilter{ID: &id})
 	if err != nil || user == nil {
 		if err != nil {
 			slog.WarnContext(ctx, "Couldn't get user", slog.Any("err", err))
@@ -65,7 +65,7 @@ func (s *BaseAPI) UserFullByName(ctx context.Context, name string) (*kilonova.Us
 	if name == "" {
 		return nil, Statusf(400, "Username not specified")
 	}
-	user, err := s.db.User(ctx, kilonova.UserFilter{Name: &name})
+	user, err := s.userRepo.User(ctx, kilonova.UserFilter{Name: &name})
 	if err != nil || user == nil {
 		return nil, fmt.Errorf("user not found: %w", ErrNotFound)
 	}
@@ -77,7 +77,7 @@ func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*kilonova.
 	if email == "" {
 		return nil, Statusf(400, "Email not specified")
 	}
-	user, err := s.db.User(ctx, kilonova.UserFilter{Email: &email})
+	user, err := s.userRepo.User(ctx, kilonova.UserFilter{Email: &email})
 	if err != nil || user == nil {
 		return nil, fmt.Errorf("user not found: %w", ErrNotFound)
 	}
@@ -85,7 +85,7 @@ func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*kilonova.
 }
 
 func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([]*kilonova.UserBrief, error) {
-	users, err := s.db.Users(ctx, filter)
+	users, err := s.userRepo.Users(ctx, filter)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't get users", slog.Any("err", err))
 		return nil, fmt.Errorf("couldn't get users: %w", err)
@@ -94,7 +94,7 @@ func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([
 }
 
 func (s *BaseAPI) CountUsers(ctx context.Context, filter kilonova.UserFilter) (int, error) {
-	cnt, err := s.db.CountUsers(ctx, filter)
+	cnt, err := s.userRepo.CountUsers(ctx, filter)
 	if err != nil {
 		return -1, fmt.Errorf("couldn't get user count: %w", err)
 	}
@@ -106,7 +106,7 @@ func (s *BaseAPI) UpdateUser(ctx context.Context, userID int, upd kilonova.UserU
 }
 
 func (s *BaseAPI) updateUser(ctx context.Context, userID int, upd kilonova.UserFullUpdate) error {
-	if err := s.db.UpdateUser(ctx, userID, upd); err != nil {
+	if err := s.userRepo.UpdateUser(ctx, userID, upd); err != nil {
 		slog.WarnContext(ctx, "Couldn't update user", slog.Any("err", err))
 		return fmt.Errorf("couldn't update user: %w", err)
 	}
@@ -140,7 +140,7 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserFull, n
 
 	if !fromAdmin {
 		//nolint:staticcheck
-		chAt, err := s.db.LastUsernameChange(ctx, user.ID)
+		chAt, err := s.userRepo.LastUsernameChange(ctx, user.ID)
 		if err != nil {
 			slog.WarnContext(ctx, "Couldn't get last username change date", slog.Any("err", err))
 			return fmt.Errorf("couldn't get last change date: %w", err)
@@ -159,13 +159,13 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserFull, n
 	}
 
 	if checkUsed {
-		used, err := s.db.NameUsedBefore(ctx, newName)
+		used, err := s.userRepo.NameUsedBefore(ctx, newName)
 		if err != nil {
 			slog.WarnContext(ctx, "Couldn't check if name was used before", slog.Any("err", err))
 		}
 		if used {
 			//nolint:staticcheck
-			userIDs, err := s.db.HistoricalUsernameHolders(ctx, newName)
+			userIDs, err := s.userRepo.HistoricalUsernameHolders(ctx, newName)
 			if err != nil && !errors.Is(err, context.Canceled) {
 				userIDs = []int{-1, -2}
 			}
@@ -192,7 +192,7 @@ func (s *BaseAPI) SetUserLockout(ctx context.Context, userID int, lockout bool) 
 
 func (s *BaseAPI) UsernameChangeHistory(ctx context.Context, userID int) ([]*kilonova.UsernameChange, error) {
 	//nolint:staticcheck
-	changes, err := s.db.UsernameChangeHistory(ctx, userID)
+	changes, err := s.userRepo.UsernameChangeHistory(ctx, userID)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't get username change history", slog.Any("err", err))
 		return []*kilonova.UsernameChange{}, fmt.Errorf("couldn't get change history: %w", err)
@@ -204,7 +204,7 @@ func (s *BaseAPI) UsernameChangeHistory(ctx context.Context, userID int) ([]*kil
 // Used for redirecting on the frontend the profile page
 func (s *BaseAPI) HistoricalUsernameHolder(ctx context.Context, name string) (*kilonova.UserBrief, error) {
 	//nolint:staticcheck
-	userIDs, err := s.db.HistoricalUsernameHolders(ctx, name)
+	userIDs, err := s.userRepo.HistoricalUsernameHolders(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get username holders: %w", err)
 	}
@@ -215,7 +215,7 @@ func (s *BaseAPI) HistoricalUsernameHolder(ctx context.Context, name string) (*k
 }
 
 func (s *BaseAPI) VerifyUserPassword(ctx context.Context, uid int, password string) error {
-	hashedPassword, err := s.db.HashedPassword(ctx, uid)
+	hashedPassword, err := s.userRepo.HashedPassword(ctx, uid)
 	if err != nil || hashedPassword == "" {
 		return fmt.Errorf("user not found: %w", ErrNotFound)
 	}
@@ -231,7 +231,7 @@ func (s *BaseAPI) VerifyUserPassword(ctx context.Context, uid int, password stri
 }
 
 func (s *BaseAPI) DeleteUser(ctx context.Context, user *kilonova.UserBrief) error {
-	if err := s.db.DeleteUser(ctx, user.ID); err != nil {
+	if err := s.userRepo.DeleteUser(ctx, user.ID); err != nil {
 		return fmt.Errorf("couldn't delete user: %w", err)
 	}
 	s.LogUserAction(ctx, "Deleted user", slog.Any("user", user))
@@ -250,7 +250,7 @@ func (s *BaseAPI) UpdateUserPassword(ctx context.Context, uid int, password stri
 
 	// TODO: Replace UpdateUserPasswordHash with a key in UserFullUpdate
 	//nolint:staticcheck
-	if err := s.db.UpdateUserPasswordHash(ctx, uid, hash); err != nil {
+	if err := s.userRepo.UpdateUserPasswordHash(ctx, uid, hash); err != nil {
 		return fmt.Errorf("couldn't update password: %w", err)
 	}
 	return nil
@@ -272,7 +272,7 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 		return nil, Statusf(400, "Invalid theme.")
 	}
 
-	if exists, err := s.db.UserExists(ctx, uname, "INVALID_EMAIL"); err != nil || exists {
+	if exists, err := s.userRepo.UserExists(ctx, uname, "INVALID_EMAIL"); err != nil || exists {
 		return nil, Statusf(400, "User matching username already exists!")
 	}
 
@@ -430,7 +430,7 @@ func (s *BaseAPI) createUser(ctx context.Context, username, email, password, lan
 		return -1, err
 	}
 
-	id, err := s.db.CreateUser(ctx, username, hash, email, lang, theme, displayName, bio, generated)
+	id, err := s.userRepo.CreateUser(ctx, username, hash, email, lang, theme, displayName, bio, generated)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't create user", slog.Any("err", err))
 		return -1, err

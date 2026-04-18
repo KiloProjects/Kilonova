@@ -32,7 +32,7 @@ func (s *BaseAPI) MustSolveCaptcha(ctx context.Context, ip *netip.Addr) bool {
 		return true // Err on the side of caution
 	}
 	//nolint:staticcheck
-	cnt, err := s.db.CountSignups(ctx, *ip, time.Now().Add(-10*time.Minute))
+	cnt, err := s.userRepo.CountSignups(ctx, *ip, time.Now().Add(-10*time.Minute))
 	if err != nil {
 		slog.WarnContext(ctx, "Could not count signups", slog.Any("err", err))
 		return true // Err on the side of caution

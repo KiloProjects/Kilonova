@@ -227,7 +227,7 @@ type databaseClassicEntry struct {
 }
 
 func (s *DB) classicToLeaderboardEntry(ctx context.Context, entry *databaseClassicEntry) (*kilonova.LeaderboardEntry, error) {
-	user, err := s.User(ctx, kilonova.UserFilter{ID: &entry.UserID})
+	user, err := s.userRepo.User(ctx, kilonova.UserFilter{ID: &entry.UserID})
 	if err != nil {
 		return nil, err
 	}
@@ -424,7 +424,7 @@ type databaseICPCEntry struct {
 }
 
 func (s *DB) icpcToLeaderboardEntry(ctx context.Context, entry *databaseICPCEntry) (*kilonova.LeaderboardEntry, error) {
-	user, err := s.User(ctx, kilonova.UserFilter{ID: &entry.UserID})
+	user, err := s.userRepo.User(ctx, kilonova.UserFilter{ID: &entry.UserID})
 	if err != nil {
 		return nil, err
 	}

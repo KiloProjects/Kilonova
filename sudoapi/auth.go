@@ -18,14 +18,14 @@ import (
 // Login
 
 func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserFull, error) {
-	user, err := s.db.User(ctx, kilonova.UserFilter{Name: &uname})
+	user, err := s.userRepo.User(ctx, kilonova.UserFilter{Name: &uname})
 	if err != nil {
 		slog.WarnContext(ctx, "Could not get user by username", slog.Any("err", err))
 		return nil, Statusf(400, "Invalid login details")
 	}
 	// Maybe the user is trying to log in by email
 	if user == nil {
-		user, err = s.db.User(ctx, kilonova.UserFilter{Email: &uname})
+		user, err = s.userRepo.User(ctx, kilonova.UserFilter{Email: &uname})
 		if err != nil {
 			slog.WarnContext(ctx, "Could not get user by email", slog.Any("err", err))
 			return nil, Statusf(400, "Invalid login details")
@@ -36,7 +36,7 @@ func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserF
 		return nil, Statusf(400, "Invalid login details")
 	}
 
-	hashedPassword, err := s.db.HashedPassword(ctx, user.ID)
+	hashedPassword, err := s.userRepo.HashedPassword(ctx, user.ID)
 	if err != nil {
 		return nil, Statusf(400, "Invalid login details")
 	}
@@ -78,7 +78,7 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 		return -1, Statusf(400, "Invalid email.")
 	}
 
-	if exists, err := s.db.UserExists(ctx, uname, email); err != nil || exists {
+	if exists, err := s.userRepo.UserExists(ctx, uname, email); err != nil || exists {
 		return -1, Statusf(400, "User matching email or username already exists!")
 	}
 
@@ -116,7 +116,7 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 
 func (s *BaseAPI) LogSignup(ctx context.Context, userID int, ip *netip.Addr, userAgent *string) error {
 	//nolint:staticcheck
-	if err := s.db.LogSignup(ctx, userID, ip, userAgent); err != nil {
+	if err := s.userRepo.LogSignup(ctx, userID, ip, userAgent); err != nil {
 		return fmt.Errorf("could not log signup: %w", err)
 	}
 	return nil

@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/repository"
+	"github.com/KiloProjects/kilonova/domain/user/userpg"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 )
 
 type userContestIPs struct {
-	*repository.User
+	*userpg.User
 	IPs []*netip.Addr `db:"ips"`
 }
 
