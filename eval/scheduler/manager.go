@@ -605,6 +605,9 @@ func supportedLanguages(ctx context.Context) map[string]language.GraderLang {
 		} else {
 			toSearch = v.GraderLang().RunCommand([]string{""}, 0)
 		}
+		if v.Lang().InternalName() == "java" {
+			toSearch = []string{"javac"}
+		}
 		if len(toSearch) == 0 {
 			slog.InfoContext(ctx, "Disabled language - empty line", slog.String("lang", k))
 			continue

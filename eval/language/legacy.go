@@ -22,12 +22,11 @@ var _ langer = (*legacyLanguage)(nil)
 // TODO: remove Disabled
 var Langs = map[string]langer{
 	"c": legacyLanguage{
-		Extensions:    []string{".c"},
-		Compiled:      true,
-		PrintableName: "C",
-		InternalName:  "c",
-		MOSSName:      "cc", // Treat C as C++. Not necessarily correct but might help
-
+		Extensions:     []string{".c"},
+		Compiled:       true,
+		PrintableName:  "C",
+		InternalName:   "c",
+		MOSSName:       "cc", // Treat C as C++. Not necessarily correct but might help
 		CompileCommand: []string{"gcc", "-fuse-ld=mold", "-std=gnu11", "-O2", "-lm", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", magicReplace, "-o", "/box/output"},
 		RunCommand:     []string{magicReplace},
 		sourceName:     "/box/main.c",
@@ -169,30 +168,7 @@ var Langs = map[string]langer{
 		VersionCommand: []string{"ghc", "--numeric-version"},
 		VersionParser:  nil,
 	},
-	"java": legacyLanguage{
-		//Disabled:      true, // For now
-		Extensions:    []string{".java"},
-		Compiled:      true,
-		PrintableName: "Java",
-		InternalName:  "java",
-		MOSSName:      "java",
-
-		CompileCommand: []string{"javac", magicReplace},
-		RunCommand:     []string{"java", magicReplace},
-		sourceName:     "/box/Main.java",
-		//compiledName:   "/Main.class",
-		compiledNameFunc: func(s string) string {
-			return strings.ReplaceAll(s, "java", "class")
-		},
-
-		VersionCommand: []string{"javac", "--version"},
-		VersionParser:  nil,
-
-		UseSubmittedFilename: true,
-		TimeLimitMultiplier:  2.0,
-
-		Mounts: []Directory{{In: "/etc"}},
-	},
+	"java": Java{},
 	"kotlin": legacyLanguage{
 		Extensions:    []string{".kt"},
 		Compiled:      true,
@@ -331,9 +307,6 @@ type legacyLanguage struct {
 	Mounts     []Directory `json:"-"`
 	sourceName string
 
-	// UseSubmittedFilename is used only by java to change the filename to the class name.
-	UseSubmittedFilename bool `json:"-"`
-
 	// If 0, then the default value is 1
 	TimeLimitMultiplier   float64 `json:"time_limit_multiplier"`
 	MemoryLimitMultiplier float64 `json:"memory_limit_multiplier"`
@@ -343,7 +316,7 @@ type legacyLanguage struct {
 }
 
 func (l legacyLanguage) SourceName(userFilename string) string {
-	if !l.UseSubmittedFilename || userFilename == "" {
+	if userFilename == "" {
 		return l.sourceName
 	}
 	dir, _ := path.Split(l.sourceName)
