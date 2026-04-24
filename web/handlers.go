@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova/domain/datastore"
+	"github.com/KiloProjects/kilonova/web/tutils"
 	"github.com/KiloProjects/kilonova/web/views"
 	"github.com/KiloProjects/kilonova/web/views/modals"
 	"github.com/KiloProjects/kilonova/web/views/problems"
@@ -472,7 +473,7 @@ func (rt *Web) pbListView() http.HandlerFunc {
 }
 
 func (rt *Web) auditLog() http.HandlerFunc {
-	templ := rt.parse(nil, "admin/audit_log.html")
+	toRender := rt.parse(nil, "admin/audit_log.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		pageStr := r.FormValue("page")
 		page, err := strconv.Atoi(pageStr)
@@ -497,7 +498,19 @@ func (rt *Web) auditLog() http.HandlerFunc {
 			numPages++
 		}
 
-		rt.runTempl(w, r, templ, &AuditLogParams{logs, page, numPages})
+		var pagination templ.Component
+		if numPages > 1 {
+			pagination = tutils.Paginator(tutils.PaginatorConfig{
+				Page:       page,
+				NumPages:   numPages,
+				ShowArrows: true,
+			})
+		}
+
+		rt.runTempl(w, r, toRender, &AuditLogParams{
+			Logs:       logs,
+			Pagination: pagination,
+		})
 	}
 }
 
@@ -1111,7 +1124,7 @@ func (rt *Web) problemArchive() http.HandlerFunc {
 var maxPostsPerPage uint64 = 10
 
 func (rt *Web) blogPosts() http.HandlerFunc {
-	templ := rt.parse(nil, "blogpost/index.html")
+	toRender := rt.parse(nil, "blogpost/index.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		page, err := strconv.ParseUint(r.FormValue("page"), 10, 64)
 		if err != nil {
@@ -1165,12 +1178,20 @@ func (rt *Web) blogPosts() http.HandlerFunc {
 			}
 		}
 
-		rt.runTempl(w, r, templ, &BlogPostIndexParams{
+		var pagination templ.Component
+		if numPages > 1 {
+			pagination = tutils.Paginator(tutils.PaginatorConfig{
+				Page:       int(page),
+				NumPages:   numPages,
+				ShowArrows: true,
+			})
+		}
+
+		rt.runTempl(w, r, toRender, &BlogPostIndexParams{
 			Posts:   posts,
 			Authors: authorMap,
 
-			Page:     page,
-			NumPages: numPages,
+			Pagination: pagination,
 		})
 	}
 }
@@ -1357,7 +1378,7 @@ func (rt *Web) editBlogPostAtts() http.HandlerFunc {
 }
 
 func (rt *Web) contests() http.HandlerFunc {
-	templ := rt.parse(nil, "contest/index.html", "modals/contest_brief.html", "contest/index_topbar.html")
+	toRender := rt.parse(nil, "contest/index.html", "modals/contest_brief.html", "contest/index_topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		filter := kilonova.ContestFilter{Look: true, LookingUser: util.UserBrief(r)}
 
@@ -1374,10 +1395,22 @@ func (rt *Web) contests() http.HandlerFunc {
 				filter.ContestantID = &user.ID
 			}
 		}
+
+		pageNum, err := strconv.Atoi(r.FormValue("p"))
+		if err != nil {
+			pageNum = 1
+		}
+
 		switch v := r.FormValue("page"); v {
 		case "virtual", "official", "personal":
 			// Compatibility with old URL format (`/contests?page=official`)
 			http.Redirect(w, r, fmt.Sprintf("/contests/%s", v), http.StatusPermanentRedirect)
+		default:
+			// Interpret as page number
+			pageNum, err = strconv.Atoi(v)
+			if err != nil {
+				pageNum = 1
+			}
 		}
 
 		page := strings.TrimSuffix(r.URL.Path, "/")
@@ -1406,11 +1439,6 @@ func (rt *Web) contests() http.HandlerFunc {
 			cnt = -1
 		}
 
-		pageNum, err := strconv.Atoi(r.FormValue("p"))
-		if err != nil {
-			pageNum = 1
-		}
-
 		filter.Limit = 60
 		filter.Offset = filter.Limit * (pageNum - 1)
 
@@ -1421,12 +1449,25 @@ func (rt *Web) contests() http.HandlerFunc {
 			return
 		}
 
-		rt.runTempl(w, r, templ, &ContestsIndexParams{
+		numPages := cnt / filter.Limit
+		if cnt%filter.Limit > 0 {
+			numPages++
+		}
+
+		var pagination templ.Component
+		if numPages > 1 {
+			pagination = tutils.Paginator(tutils.PaginatorConfig{
+				Page:       pageNum,
+				NumPages:   numPages,
+				ShowArrows: true,
+			})
+		}
+
+		rt.runTempl(w, r, toRender, &ContestsIndexParams{
 			Contests: contests,
 			Page:     page,
 
-			ContestCount: cnt,
-			PageNum:      pageNum,
+			Pagination: pagination,
 		})
 	}
 }
@@ -1968,7 +2009,7 @@ func (rt *Web) userSessions() http.HandlerFunc {
 }
 
 func (rt *Web) sessionsFilter() http.HandlerFunc {
-	templ := rt.parse(nil, "auth/sessions.html")
+	toRender := rt.parse(nil, "auth/sessions.html")
 	decoder := schema.NewDecoder()
 	decoder.IgnoreUnknownKeys(true)
 	decoder.SetAliasTag("json")
@@ -2036,11 +2077,19 @@ func (rt *Web) sessionsFilter() http.HandlerFunc {
 			numPages++
 		}
 
-		rt.runTempl(w, r, templ, &SessionsParams{
+		var pagination templ.Component
+		if numPages > 1 {
+			pagination = tutils.Paginator(tutils.PaginatorConfig{
+				Page:       q.Page,
+				NumPages:   numPages,
+				ShowArrows: true,
+			})
+		}
+
+		rt.runTempl(w, r, toRender, &SessionsParams{
 			ContentUser: nil,
 			Sessions:    sessions,
-			Page:        q.Page,
-			NumPages:    numPages,
+			Pagination:  pagination,
 		})
 	}
 }

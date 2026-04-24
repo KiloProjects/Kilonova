@@ -80,8 +80,7 @@ type BlogPostIndexParams struct {
 	Posts   []*kilonova.BlogPost
 	Authors map[int]*kilonova.UserBrief
 
-	Page     uint64
-	NumPages int
+	Pagination templ.Component
 }
 
 type BlogPostParams struct {
@@ -102,10 +101,8 @@ type BlogPostParams struct {
 type ContestsIndexParams struct {
 	Contests []*kilonova.Contest
 
-	Page string
-
-	ContestCount int
-	PageNum      int
+	Page       string
+	Pagination templ.Component
 }
 
 type GraderInfoParams struct {
@@ -349,14 +346,14 @@ type DiscordLinkParams struct {
 type SessionsParams struct {
 	ContentUser *kilonova.UserFull
 	Sessions    []*sudoapi.Session
-	Page        int
-	NumPages    int
+
+	Pagination templ.Component
 }
 
 type AuditLogParams struct {
-	Logs     []*kilonova.AuditLog
-	Page     int
-	NumPages int
+	Logs []*kilonova.AuditLog
+
+	Pagination templ.Component
 }
 
 type ProblemSearchParams struct {

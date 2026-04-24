@@ -1,0 +1,83 @@
+package tutils
+
+type PaginatorConfig struct{
+	Page int
+	NumPages int
+
+	// Optional
+	ContextSize int
+	ClassName string
+	ShowArrows bool
+}
+
+templ Paginator(cfg PaginatorConfig) {
+	{{
+	cfg.NumPages = max(cfg.NumPages, 1)
+	cfg.Page = min(max(cfg.Page, 1), cfg.NumPages)
+	if cfg.ContextSize <= 0 {
+		cfg.ContextSize = 2
+	}
+	}}
+
+	<div class={templ.Classes("paginator", cfg.ClassName)}>
+		if cfg.ShowArrows {
+			<button class="paginator-item" data-paginate="1">
+				<i class="fas fa-angle-double-left"></i>
+			</button>
+			<button class="paginator-item" data-paginate={cfg.Page-1}>
+				<i class="fas fa-angle-left"></i>
+			</button>
+		}
+
+		if cfg.Page > cfg.ContextSize + 1 {
+			for i := 1; i <= 1 + cfg.ContextSize && cfg.Page - i >= 1 + cfg.ContextSize; i++ {
+				<button class="paginator-item" data-paginate={i}>
+	                {i}
+	            </button>
+			}
+			if cfg.Page > 2 * (cfg.ContextSize + 1) {
+				<span class="paginator-item">
+		            ...
+		        </span>
+			}
+		}
+
+		for i := max(1, cfg.Page - cfg.ContextSize); i < cfg.Page; i++ {
+	        <button class="paginator-item" data-paginate={i}>
+	           {i}
+	        </button>
+	    }
+	    <button class="paginator-item paginator-item-active">
+	        {cfg.Page}
+	    </button>
+	    for i := cfg.Page + 1; i <= min(cfg.NumPages, cfg.Page + cfg.ContextSize); i++ {
+	        <button class="paginator-item" data-paginate={i}>
+	            {i}
+	        </button>
+	    }
+
+	    if cfg.NumPages - cfg.Page >= cfg.ContextSize + 1 {
+	        if cfg.NumPages - cfg.Page > 2 * cfg.ContextSize + 1 {
+	            <span class="paginator-item">
+	                ...
+	            </span>
+	        }
+
+	        for i := max(cfg.NumPages - cfg.ContextSize, cfg.ContextSize + cfg.Page + 1); i <= cfg.NumPages; i++ {
+	            <button class="paginator-item" data-paginate={i}>
+	                {i}
+	            </button>
+	        }
+	    }
+
+	    if cfg.ShowArrows {
+	        <button class="paginator-item" data-paginate={cfg.Page+1}>
+	            <i class="fas fa-angle-right"></i>
+	        </button>
+	        <button class="paginator-item" data-paginate={cfg.NumPages}>
+	            <i class="fas fa-angle-double-right"></i>
+	        </button>
+	    }
+	</div>
+
+}

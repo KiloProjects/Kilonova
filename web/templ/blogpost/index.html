@@ -10,7 +10,9 @@
     </div>
     {{ end }}
 
-    <div id="blog_post_paginator"></div>
+    {{if .Pagination}}
+        {{renderComponent .Pagination}}
+    {{end}}
 
     {{ range .Posts }}
         <div class="segment-panel">
@@ -31,17 +33,6 @@
     {{ end }}
 </div>
 
-<script>
-const page = {{.Page}};
-const numpages = {{.NumPages}};
-if(numpages > 1) {
-    bundled.preactRender(bundled.Paginator({page, numpages, setPage: (page) => {
-        const params = new URLSearchParams(window.location.search)
-        params.set("page", page)
-        window.location.search = params.toString()
-    }}), document.getElementById("blog_post_paginator"))
-}
-</script>
 
 
 {{ end }}

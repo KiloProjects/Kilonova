@@ -15,9 +15,9 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 */
 
-export { dayjs };
+export {dayjs};
 
-export { fromBase64 } from "js-base64";
+export {fromBase64} from "js-base64";
 
 // if max_step is 0, it will format until the MB region
 // else if max_step is 1, it will only format until the KB region
@@ -114,6 +114,19 @@ export function initialLoad(el: HTMLElement) {
 		val.classList.remove("score-cell");
 	});
 	initMaxscoreBreakdown(el)
+
+	el.querySelectorAll("[data-paginate]").forEach((val) => {
+		const btn = val as HTMLButtonElement;
+		btn.addEventListener("click", (e) => {
+			const params = new URLSearchParams(window.location.search)
+			if(!("paginate" in btn.dataset)) {
+				console.error("paginate button without data-paginate attribute");
+				return;
+			}
+			params.set("page", btn.dataset.paginate!)
+			window.location.search = params.toString()
+		})
+	})
 }
 
 document.addEventListener("DOMContentLoaded", () => {

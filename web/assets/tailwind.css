@@ -6,6 +6,17 @@
 
 :root {
 	--border: var(--color-gray-700);
+	--gray-50: oklch(0.985 0 0);
+	--gray-100: oklch(0.967 0.001 286.375);
+	--gray-200: oklch(0.92 0.004 286.32);
+	--gray-300: oklch(0.871 0.006 286.286);
+	--gray-400: oklch(0.705 0.015 286.067);
+	--gray-500: oklch(0.552 0.016 285.938);
+	--gray-600: oklch(0.442 0.017 285.786);
+	--gray-700: oklch(0.37 0.013 285.805);
+	--gray-800: oklch(0.274 0.006 286.033);
+	--gray-900: oklch(0.21 0.006 285.885);
+	--gray-950: oklch(0.141 0.005 285.823);
 }
 
 .dark {
@@ -18,17 +29,17 @@
 @theme inline {
 	--color-border: var(--border);
 
-	--color-gray-50: oklch(0.985 0 0);
-	--color-gray-100: oklch(0.967 0.001 286.375);
-	--color-gray-200: oklch(0.92 0.004 286.32);
-	--color-gray-300: oklch(0.871 0.006 286.286);
-	--color-gray-400: oklch(0.705 0.015 286.067);
-	--color-gray-500: oklch(0.552 0.016 285.938);
-	--color-gray-600: oklch(0.442 0.017 285.786);
-	--color-gray-700: oklch(0.37 0.013 285.805);
-	--color-gray-800: oklch(0.274 0.006 286.033);
-	--color-gray-900: oklch(0.21 0.006 285.885);
-	--color-gray-950: oklch(0.141 0.005 285.823);
+	--color-gray-50: var(--gray-50);
+	--color-gray-100: var(--gray-100);
+	--color-gray-200: var(--gray-200);
+	--color-gray-300: var(--gray-300);
+	--color-gray-400: var(--gray-400);
+	--color-gray-500: var(--gray-500);
+	--color-gray-600: var(--gray-600);
+	--color-gray-700: var(--gray-700);
+	--color-gray-800: var(--gray-800);
+	--color-gray-900: var(--gray-900);
+	--color-gray-950: var(--gray-950);
 }
 
 @utility bg-hljs {

@@ -1,7 +1,5 @@
 import "preact/debug";
 
-export { render as preactRender } from "preact";
-
 export * from "./common";
 export * from "./sub_mgr";
 export * from "./users";
