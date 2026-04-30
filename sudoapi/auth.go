@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log/slog"
 	"net/netip"
-	"regexp"
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/asaskevich/govalidator"
 	"golang.org/x/crypto/bcrypt"
@@ -54,15 +54,13 @@ func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserF
 
 // Signup
 
-var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
-
 func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, theme kilonova.PreferredTheme, ip *netip.Addr, userAgent *string) (int, error) {
 	if !flags.SignupEnabled.Value() {
 		return -1, kilonova.ErrFeatureDisabled
 	}
 
 	uname = strings.TrimSpace(uname)
-	if err := s.CheckValidUsername(uname); err != nil {
+	if err := user.ValidUsername(uname); err != nil {
 		return -1, err
 	}
 	if err := s.CheckValidPassword(pwd); err != nil {
@@ -125,16 +123,6 @@ func (s *BaseAPI) LogSignup(ctx context.Context, userID int, ip *netip.Addr, use
 func (s *BaseAPI) CheckValidPassword(pwd string) error {
 	if len(pwd) < 6 || len(pwd) > 72 {
 		return Statusf(400, "Invalid password length.")
-	}
-	return nil
-}
-
-func (s *BaseAPI) CheckValidUsername(name string) error {
-	if !usernameRegex.MatchString(name) {
-		return Statusf(400, "Username must contain only letters, digits, underlines, dashes and dots.")
-	}
-	if !(len(name) >= 3 && len(name) <= 24) {
-		return Statusf(400, "Username must be between 3 and 24 characters long.")
 	}
 	return nil
 }

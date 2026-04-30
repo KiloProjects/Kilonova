@@ -1,0 +1,67 @@
+package utilviews
+
+import (
+	"github.com/KiloProjects/kilonova/domain/user"
+	"github.com/KiloProjects/kilonova/web/tutils"
+)
+
+templ UserLockout() {
+	<div class="flex items-center justify-center min-h-[70vh]">
+		<div style="width: 500px;">
+			<form id="forceUpdateForm" class="segment-panel" autocomplete="off">
+				<h1>
+					@tutils.TC("usernameChangeForced")
+				</h1>
+				<p class="my-2">
+					@tutils.TC("usernameChangeDetails")
+				</p>
+				<p>
+					@tutils.TC("usernameChangeUniqueRemark")
+				</p>
+				<div class="block my-2">
+					<span class="form-label">
+						{ tutils.T(ctx, "currentUsername") }:
+					</span>
+					<strong class="text-lg">{ user.UserBriefContext(ctx).Name }</strong>
+				</div>
+				<label class="block my-2">
+					<span class="form-label">
+						{ tutils.T(ctx, "newUsername") }:
+					</span>
+					<input id="forcedNewUsername" type="text" class="form-input" required/>
+				</label>
+				/* Add if clause so usernames made before old changes are not scared off. */
+				if user.ValidUsername(user.UserBriefContext(ctx).Name) == nil {
+					<p class="text-sm text-muted mb-2">
+						@tutils.TC("usernameChangeWarning")
+					</p>
+				}
+				<button class="btn btn-blue mr-2">
+					@tutils.TC("button.update")
+				</button>
+				<a class="btn" href="/logout">
+					@tutils.TC("auth.logout")
+				</a>
+			</form>
+		</div>
+	</div>
+	// TODO: don't use this JS for updating usernames
+	<script>
+		async function updateUsername(e) {
+			e.preventDefault();
+			const data = {
+				newName: document.getElementById("forcedNewUsername").value,
+			};
+			const rez = await bundled.postCall("/user/updateName", data);
+			if (rez.status == "error") {
+				bundled.apiToast(rez);
+				return;
+			}
+			window.location.reload();
+		}
+
+		document
+			.getElementById("forceUpdateForm")
+			.addEventListener("submit", updateUsername);
+	</script>
+}

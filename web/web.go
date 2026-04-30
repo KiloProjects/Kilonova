@@ -690,8 +690,6 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"stringFlags": config.GetFlags[string],
 		"intFlags":    config.GetFlags[int],
 
-		"validUsername": func(name string) bool { return base.CheckValidUsername(name) == nil },
-
 		"sessionDevices": func(sid string) []*sudoapi.SessionDevice {
 			devices, err := base.SessionDevices(ctx, sid)
 			if err != nil {

@@ -19,6 +19,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/util/slicealg"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -126,7 +127,7 @@ func (s *BaseAPI) updateUser(ctx context.Context, userID int, upd kilonova.UserF
 var usernameChangeMu sync.Mutex
 
 // fromAdmin also should include the forced username changes
-func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserFull, newName string, checkUsed bool, fromAdmin bool) error {
+func (s *BaseAPI) UpdateUsername(ctx context.Context, targetUser *kilonova.UserFull, newName string, checkUsed bool, fromAdmin bool) error {
 	usernameChangeMu.Lock()
 	defer usernameChangeMu.Unlock()
 
@@ -134,19 +135,19 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserFull, n
 		return Statusf(401, "Username changes have been disabled by administrator")
 	}
 
-	if err := s.CheckValidUsername(newName); err != nil {
+	if err := user.ValidUsername(newName); err != nil {
 		return err
 	}
 
 	if !fromAdmin {
 		//nolint:staticcheck
-		chAt, err := s.userRepo.LastUsernameChange(ctx, user.ID)
+		chAt, err := s.userRepo.LastUsernameChange(ctx, targetUser.ID)
 		if err != nil {
 			slog.WarnContext(ctx, "Couldn't get last username change date", slog.Any("err", err))
 			return fmt.Errorf("couldn't get last change date: %w", err)
 		}
 		var nextEligibleDate time.Time
-		if !chAt.Equal(user.CreatedAt) {
+		if !chAt.Equal(targetUser.CreatedAt) {
 			nextEligibleDate = chAt.Add(14 * 24 * time.Hour)
 		}
 		if nextEligibleDate.After(time.Now()) {
@@ -169,17 +170,17 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, user *kilonova.UserFull, n
 			if err != nil && !errors.Is(err, context.Canceled) {
 				userIDs = []int{-1, -2}
 			}
-			if !(len(userIDs) == 0 || (len(userIDs) == 1 && userIDs[0] == user.ID)) {
+			if !(len(userIDs) == 0 || (len(userIDs) == 1 && userIDs[0] == targetUser.ID)) {
 				return Statusf(400, "New name must have never been used by anyone else. Contact us on Discord if you want to take the name for yourself.")
 			}
 		}
 	}
 
-	if err := s.updateUser(ctx, user.ID, kilonova.UserFullUpdate{Name: &newName, NameChangeRequired: new(false)}); err != nil {
+	if err := s.updateUser(ctx, targetUser.ID, kilonova.UserFullUpdate{Name: &newName, NameChangeRequired: new(false)}); err != nil {
 		return err
 	}
 
-	s.LogInfo(ctx, "Username was changed", slog.Any("user", user), slog.String("new_name", newName))
+	s.LogInfo(ctx, "Username was changed", slog.Any("user", targetUser), slog.String("new_name", newName))
 	return nil
 }
 
@@ -259,7 +260,7 @@ func (s *BaseAPI) UpdateUserPassword(ctx context.Context, uid int, password stri
 // TODO: displayName probably doesn't have to be *string, can be just string, but this was implemented quickly
 func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, theme kilonova.PreferredTheme, displayName *string, email *string, bio string) (*kilonova.UserFull, error) {
 	uname = strings.TrimSpace(uname)
-	if err := s.CheckValidUsername(uname); err != nil {
+	if err := user.ValidUsername(uname); err != nil {
 		return nil, err
 	}
 	if err := s.CheckValidPassword(pwd); err != nil {

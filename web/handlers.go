@@ -2192,7 +2192,6 @@ func (rt *Web) redirectDiscord(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Web) checkLockout() func(next http.Handler) http.Handler {
-	templ := rt.parse(nil, "util/lockout.html")
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if flags.ForceLogin.Value() && !util.UserBrief(r).IsAuthed() {
@@ -2201,7 +2200,10 @@ func (rt *Web) checkLockout() func(next http.Handler) http.Handler {
 			}
 
 			if util.UserFull(r) != nil && util.UserFull(r).NameChangeForced {
-				rt.runTempl(w, r, templ, struct{}{})
+				rt.runLayout(w, r, &LayoutParams{
+					Title:   kilonova.GetText(util.Language(r), "usernameChangeForced"),
+					Content: utilviews.UserLockout(),
+				})
 				return
 			}
 

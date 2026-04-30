@@ -15,6 +15,7 @@ import (
 	"unicode"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/urfave/cli/v3"
@@ -130,7 +131,7 @@ var contestUtils = &cli.Command{
 				))
 			}
 			fmt.Println(config.Profiles[i].Slug)
-			if err := base.CheckValidUsername(config.Profiles[i].Slug); err != nil {
+			if err := user.ValidUsername(config.Profiles[i].Slug); err != nil {
 				return err
 			}
 			if config.Profiles[i].ExternalID != nil {
