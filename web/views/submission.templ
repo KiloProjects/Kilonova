@@ -40,13 +40,6 @@ type SubmissionPageParams struct {
 	OlderSubmissions  *modals.OlderSubmissionsParams
 }
 
-func (sp *SubmissionPageParams) GetCodeFile() *kilonova.SubmissionFile {
-	if len(sp.SubmissionFiles) == 0 {
-		return nil
-	}
-	return sp.SubmissionFiles[0]
-}
-
 type PastePageParams struct {
 	SubmissionPageParams
 	Paste *kilonova.SubmissionPaste
@@ -75,10 +68,12 @@ templ Submission(params SubmissionPageParams) {
 				@SubmissionScoreBreakdown(params)
 			</div>
 		</div>
-		if params.Submission.Language == "outputOnly" {
-			@SubmissionOutputOnlyCode(params.Submission, params.GetCodeFile())
-		} else {
-			@SubmissionCode(params.Submission, params.GetCodeFile(), params.ForceShowCode)
+		for _, file := range params.SubmissionFiles {
+			if params.Submission.Language == "outputOnly" || params.Submission.Language == "ai" {
+                @SubmissionOutputOnlyCode(params.Submission, file)
+            } else {
+                @SubmissionCode(params.Submission, file, params.ForceShowCode)
+            }
 		}
 		<div class="my-2">
 			if authed(ctx) {
@@ -122,7 +117,9 @@ templ Paste(params PastePageParams) {
 				}
 			</aside>
 			<div class="page-content-wrapper">
-				@SubmissionCode(params.Submission, params.GetCodeFile(), params.ForceShowCode)
+				for _, file := range params.SubmissionFiles {
+					@SubmissionCode(params.Submission, file, params.ForceShowCode)
+				}
 			</div>
 		</div>
 		@SubmissionScoreBreakdown(params.SubmissionPageParams)

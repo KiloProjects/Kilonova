@@ -146,12 +146,19 @@ func (s *DB) LastSubmissionTime(ctx context.Context, filter kilonova.SubmissionF
 	return val, nil
 }
 
-func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, langName string, code []byte, codeFilename string, contestID *int) (int, error) {
-	if authorID <= 0 || problem == nil || langName == "" || len(code) == 0 {
+type SubmissionUploadFile struct {
+	Filename string
+	Data     []byte
+}
+
+func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilonova.Problem, langName string, files []SubmissionUploadFile, contestID *int) (int, error) {
+
+	if authorID <= 0 || problem == nil || langName == "" || len(files) == 0 || len(files[0].Data) == 0 {
 		return -1, kilonova.ErrMissingRequired
 	}
 	var id int
 	err := pgx.BeginFunc(ctx, s.conn, func(tx pgx.Tx) error {
+
 		if err := tx.QueryRow(
 			ctx,
 			"INSERT INTO submissions (user_id, problem_id, contest_id, language, code_size, sent_ip) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;",
@@ -159,20 +166,26 @@ func (s *DB) CreateSubmission(ctx context.Context, authorID int, problem *kilono
 			problem.ID,
 			contestID,
 			langName,
-			len(code),
+			len(files[0].Data),
 			user.IPContext(ctx),
 		).Scan(&id); err != nil {
 			return err
 		}
 
-		_, err := tx.Exec(
-			ctx,
-			"INSERT INTO submission_files (submission_id, filename, data) VALUES ($1, $2, $3)",
-			id,
-			codeFilename,
-			code,
-		)
-		return err
+		for _, file := range files {
+			_, err := tx.Exec(
+				ctx,
+				"INSERT INTO submission_files (submission_id, filename, data) VALUES ($1, $2, $3)",
+				id,
+				file.Filename,
+				file.Data,
+			)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
 	})
 	if err != nil {
 		return 0, err

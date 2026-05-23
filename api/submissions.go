@@ -121,7 +121,22 @@ func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.base.CreateSubmission(context.WithoutCancel(r.Context()), util.UserFull(r), problem, code, fh.Filename, lang, args.ContestID, false)
+	var extraCode []byte
+	var extraCodeFilename string
+	if problem.TaskType == kilonova.TaskTypeAI {
+		f, fh, err := r.FormFile("extra_code")
+		if err == nil {
+			extraCodeFilename = fh.Filename
+			extraCode, err = io.ReadAll(f)
+			if err != nil {
+				slog.WarnContext(r.Context(), "Could not read extra code", slog.Any("err", err))
+				errorData(w, "Could not read extra code", 500)
+				return
+			}
+		}
+	}
+
+	id, err := s.base.CreateSubmission(context.WithoutCancel(r.Context()), util.UserFull(r), problem, code, fh.Filename, lang, args.ContestID, false, extraCode, extraCodeFilename)
 	if err != nil {
 		statusError(w, err)
 		return
@@ -132,8 +147,10 @@ func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
 
 type SubmissionCreateInput struct {
 	RawBody huma.MultipartFormFiles[struct {
-		Language  string        `form:"language" required:"true"`
-		Code      huma.FormFile `form:"code" required:"true"`
+		Language string        `form:"language" required:"true"`
+		Code     huma.FormFile `form:"code" required:"true"`
+		// Currently, ExtraCode is meant only for AI problems
+		ExtraCode huma.FormFile `form:"extra_code" required:"false"`
 		ContestID int           `form:"contest_id"`
 	}]
 }
@@ -157,12 +174,24 @@ func (s *API) createSubmissionV2(ctx context.Context, args *SubmissionCreateInpu
 		return nil, huma.Error500InternalServerError("Could not read source code", err)
 	}
 
+	if data.ExtraCode.IsSet && util.ProblemContext(ctx).TaskType != kilonova.TaskTypeAI {
+		return nil, huma.Error400BadRequest("Extra code is only allowed for AI tasks")
+	}
+	var extraCode []byte
+	if data.ExtraCode.IsSet {
+		extraCode, err = io.ReadAll(data.ExtraCode)
+		if err != nil {
+			slog.WarnContext(ctx, "Could not read extra code", slog.Any("err", err))
+			return nil, huma.Error500InternalServerError("Could not read extra code", err)
+		}
+	}
+
 	var cid *int
 	if data.ContestID > 0 {
 		cid = &data.ContestID
 	}
 
-	id, err := s.base.CreateSubmission(context.WithoutCancel(ctx), util.UserFullContext(ctx), util.ProblemContext(ctx), code, data.Code.Filename, lang, cid, false)
+	id, err := s.base.CreateSubmission(context.WithoutCancel(ctx), util.UserFullContext(ctx), util.ProblemContext(ctx), code, data.Code.Filename, lang, cid, false, extraCode, data.ExtraCode.Filename)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Could not create submission", err)
 	}

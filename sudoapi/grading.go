@@ -13,6 +13,9 @@ import (
 
 // Language returns nil if the language was not found
 func (s *BaseAPI) Language(name string) language.Lang {
+	if name == "ai" {
+		return language.AI
+	}
 	return s.grader.Language(name)
 }
 

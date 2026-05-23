@@ -86,7 +86,7 @@
 
     function isOutputOnly() {
         const languages = Object.values(document.getElementById("sub_language").options).map(x => x.value);
-        return languages.length === 1 && languages[0] === "outputOnly"
+        return languages.length === 1 && (languages[0] === "outputOnly" || languages[0] === "ai")
     }
 
     function isJava() {

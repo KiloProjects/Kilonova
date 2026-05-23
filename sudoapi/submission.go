@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
@@ -335,7 +336,7 @@ func (s *BaseAPI) LastSubmissionTime(ctx context.Context, filter kilonova.Submis
 }
 
 // CreateSubmission produces a new submission and also creates the necessary subtests
-func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFull, problem *kilonova.Problem, code []byte, codeFilename string, lang language.Lang, contestID *int, bypassSubCount bool) (int, error) {
+func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFull, problem *kilonova.Problem, code []byte, codeFilename string, lang language.Lang, contestID *int, bypassSubCount bool, extraCode []byte, extraCodeFilename string) (int, error) {
 	if author == nil {
 		return -1, Statusf(400, "Invalid submission author")
 	}
@@ -440,8 +441,21 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 		fname = codeFilename
 	}
 
+	files := []db.SubmissionUploadFile{
+		{
+			Filename: fname,
+			Data:     code,
+		},
+	}
+	if extraCode != nil {
+		files = append(files, db.SubmissionUploadFile{
+			Filename: extraCodeFilename,
+			Data:     extraCode,
+		})
+	}
+
 	// Add submission
-	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang.InternalName(), code, fname, contestID)
+	id, err := s.db.CreateSubmission(ctx, author.ID, problem, lang.InternalName(), files, contestID)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't create submission", slog.Any("err", err))
 		return -1, fmt.Errorf("couldn't create submission")

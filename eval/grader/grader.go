@@ -203,6 +203,10 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 		sub:    sub,
 		lang:   runner.Language(sub.Language),
 	}
+	if sub.Language == "ai" {
+		sh.lang = runner.Language("outputOnly")
+	}
+
 	if sh.lang == nil {
 		slog.WarnContext(ctx, "Could not find submission language when evaluating", slog.String("lang", sub.Language))
 		return fmt.Errorf("language not found for submission")
@@ -431,7 +435,7 @@ func (sh *submissionHandler) handleSubTest(ctx context.Context, checker checkers
 	var output *subtestOutput
 	var err error
 	switch sh.pb.TaskType {
-	case kilonova.TaskTypeBatch:
+	case kilonova.TaskTypeBatch, kilonova.TaskTypeAI:
 		output, err = sh.handleBatchSubTest(ctx, checker, subTest)
 		if err != nil {
 			return decimal.Zero, "", err
