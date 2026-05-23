@@ -78,6 +78,7 @@
                         <select id="taskType" class="form-select">
                             <option value="batch" {{if eq .Problem.TaskType `batch`}}selected{{end}}>{{getText "taskTypeBatch"}}</option>
                             <option value="communication" {{if eq .Problem.TaskType `communication`}}selected{{end}}>{{getText "taskTypeCommunication"}}</option>
+                            <option value="ai" {{if eq .Problem.TaskType `ai`}}selected{{end}}>{{getText "taskTypeAI"}}</option>
                         </select>
                     </label>
                     <label class="block my-2">

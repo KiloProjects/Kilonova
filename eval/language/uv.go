@@ -44,9 +44,9 @@ func (u uv) CompileCommand(_ []string) []string {
 
 func (u uv) RunCommand(files []string, _ int) []string {
 	if len(files) == 0 {
-		return []string{"uv", "run", "main.py"}
+		return []string{"uv", "run", "-q", "main.py"}
 	}
-	return []string{"uv", "run", files[0]}
+	return []string{"uv", "run", "-q", files[0]}
 }
 
 func (u uv) SourceName(userFilename string) string {
@@ -103,6 +103,7 @@ func (u uv) Mounts() []Directory {
 		{In: "/etc"},
 		{In: "/run"}, // For resolv.conf
 		{In: "/mnt/uv", Out: path.Join(config.Common.DataDir, "uv"), Opts: "rw"},
+		{In: "/opt"}, // MacOS resolv.conf
 	}
 }
 

@@ -3217,6 +3217,10 @@ ro = "Batch"
 en = "Communication"
 ro = "Comunicare"
 
+[taskTypeAI]
+en = "AI"
+ro = "AI"
+
 [communicationProcesses]
 en = "Number of submission communication processes"
 ro = "Număr de procese de comunicare ale submisiei"

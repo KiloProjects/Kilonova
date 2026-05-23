@@ -76,6 +76,11 @@ var Migrations = postgres.MigrationConfig{
 			Name:    "Add IPs to submissions",
 			Handler: runFile("012.submission_ip.sql"),
 		},
+		{
+			ID:      14,
+			Name:    "Add AI as a valid problem type",
+			Handler: runFile("013.ai_type.sql"),
+		},
 	},
 	// Run every time a migrate up happens
 	SpecialMigrations: []postgres.Migration{

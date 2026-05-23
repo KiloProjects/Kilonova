@@ -92,6 +92,8 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 
 			StderrToStdout: true,
 			OutputPath:     outputPath,
+
+			EnableInternet: true,
 		},
 	}
 

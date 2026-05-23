@@ -75,7 +75,11 @@ templ Submission(params SubmissionPageParams) {
 				@SubmissionScoreBreakdown(params)
 			</div>
 		</div>
-		@SubmissionCode(params.Submission, params.GetCodeFile(), params.ForceShowCode)
+		if params.Submission.Language == "outputOnly" {
+			@SubmissionOutputOnlyCode(params.Submission, params.GetCodeFile())
+		} else {
+			@SubmissionCode(params.Submission, params.GetCodeFile(), params.ForceShowCode)
+		}
 		<div class="my-2">
 			if authed(ctx) {
 				if params.Submission.CanDelete(user.UserBriefContext(ctx)) {
@@ -490,6 +494,32 @@ templ SubmissionSummary(sub *kilonova.FullSubmission, pasteAuthor *kilonova.User
 			</tbody>
 		</table>
 	</div>
+}
+
+templ SubmissionOutputOnlyCode(sub *kilonova.FullSubmission, file *kilonova.SubmissionFile) {
+	{{
+		if file == nil || len(file.Data) == 0 {
+			return
+		}
+	}}
+	if !sub.CodeTrulyVisible {
+        <div class="segment-panel">
+            <h2>{ T(ctx, "showSourceCodeQ") }</h2>
+            <p class="mb-4">{ T(ctx, "showSourceCodeExpl") }</p>
+            <a class="inline-block btn btn-blue mx-auto" href="?forceCode=1">
+                { T(ctx, "showSourceCodeBtn") }
+            </a>
+        </div>
+    } else {
+        <div class="segment-panel">
+            <h2>{ T(ctx, "sourceCode") } (<code>{ file.Filename }</code>)</h2>
+            <div class="block my-2">
+                <a href={ templ.URL(fmt.Sprintf("/submissions/%d/download", sub.ID)) } class="btn btn-blue text-semibold text-lg">
+                    { T(ctx, "download") }
+                </a>
+            </div>
+        </div>
+    }
 }
 
 // forceShow = preact isPaste

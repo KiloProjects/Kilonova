@@ -261,7 +261,7 @@ CREATE OR REPLACE FUNCTION visible_submissions_ex(user_id bigint, problem_id big
         AND contests.end_time <= NOW()) -- if the contest ended and the problem is visible, show the submission
 $$ LANGUAGE SQL STABLE;
 
-DROP VIEW IF EXISTS problem_list_deep_problems CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS problem_list_deep_problems CASCADE;
 CREATE MATERIALIZED VIEW IF NOT EXISTS problem_list_deep_problems (list_id, problem_id) AS
     WITH RECURSIVE pblist_tree(list_id, problem_id) AS (
         SELECT pblist_id AS list_id, problem_id FROM problem_list_problems

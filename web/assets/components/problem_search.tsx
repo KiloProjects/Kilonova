@@ -676,7 +676,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 							<option value="">-</option>
 							<option value="ro">🇷🇴 Română</option>
 							<option value="en">🇬🇧 English</option>
-							<option value="en">🇩🇪 Deutsch</option>
+							<option value="de">🇩🇪 Deutsch</option>
 						</select>
 					</label>
 				</div>

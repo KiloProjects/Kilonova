@@ -435,6 +435,10 @@ func (s *BaseAPI) ProblemSettings(ctx context.Context, problem *kilonova.Problem
 // ProblemLanguages wraps around ProblemSettings to provide a better interface to expose to the API
 // And deduplicate separate code that handles allowed submission languages
 func (s *BaseAPI) ProblemLanguages(ctx context.Context, problem *kilonova.Problem) ([]language.Lang, error) {
+	if problem.TaskType == kilonova.TaskTypeAI {
+		return []language.Lang{language.AI}, nil
+	}
+
 	settings, err := s.ProblemSettings(ctx, problem)
 	if err != nil {
 		return nil, err
