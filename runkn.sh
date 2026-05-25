@@ -5,14 +5,14 @@ go generate ./...
 
 if [[ $* == *--css* ]]; then
     echo "Regenerating CSS"
-    yarn --cwd ./web/assets prodCSS
+    pnpm -C ./web/assets prodCSS
 fi
 
 echo "Building js bundle"
-yarn --cwd ./web/assets prodJS
+pnpm -C ./web/assets prodJS
 
 echo "Vendoring js dependencies"
-yarn --cwd ./web/assets vendor
+pnpm -C ./web/assets vendor
 
 
 #go build -race -v ./cmd/kn || exit 2
