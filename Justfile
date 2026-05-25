@@ -3,7 +3,7 @@ default:
 	just --list
 
 katex:
-	yarn --cwd ./web/assets install
+	pnpm -C ./web/assets install
 	cp web/assets/node_modules/katex/dist/katex.min.js sudoapi/mdrenderer/knkatex/katex.min.js && \
 		echo "Copied katex.min.js to target directory" || \
 		echo "Failed to copy katex.min.js to target directory"
