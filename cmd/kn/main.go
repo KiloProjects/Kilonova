@@ -83,6 +83,7 @@ func main() {
 			printableContestants,
 			problemDiagnostics,
 			submissionSaver,
+			aiTools,
 		},
 	}
 
