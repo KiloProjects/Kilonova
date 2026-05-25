@@ -16,6 +16,14 @@ func (s *BaseAPI) Language(name string) language.Lang {
 	if name == "ai" {
 		return language.AI
 	}
+	if s.grader == nil {
+		for langName, lang := range language.Langs {
+			if langName == name {
+				return lang.Lang()
+			}
+		}
+	}
+
 	return s.grader.Language(name)
 }
 
@@ -95,6 +103,18 @@ func (s *BaseAPI) GraderLanguages(ctx context.Context) []*GraderLanguage {
 }
 
 func (s *BaseAPI) EnabledLanguages() map[string]string {
+	if s.grader == nil {
+		langs := make(map[string]string)
+		for _, lang := range language.Langs {
+			if lang.Disabled() {
+				continue
+			}
+
+			langs[lang.GraderLang().InternalName()] = lang.GraderLang().PrintableName()
+		}
+		return langs
+	}
+
 	langs := make(map[string]string)
 	for _, lang := range s.grader.Languages() {
 		langs[lang.InternalName()] = lang.PrintableName()
