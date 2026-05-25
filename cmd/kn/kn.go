@@ -185,7 +185,7 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 		MaxAge:           300,
 	}))
 
-	// r.Use(middleware.RealIP)
+	// r.Use(middleware.ClientIP)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.StripSlashes)
 	//r.Use(middleware.Timeout(1 * time.Minute))
