@@ -1,0 +1,78 @@
+package adminviews
+
+import (
+	"fmt"
+
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/web/tutils"
+)
+
+var T = tutils.T
+
+type UsersListParams struct {
+	Users      []*kilonova.UserBrief
+	Name       string
+	Pagination templ.Component
+}
+
+templ UsersList(params UsersListParams) {
+	<div class="segment-panel">
+		<h1>{ T(ctx, "users") }</h1>
+
+		<form class="block my-2" method="GET" hx-boost="true">
+			<label>
+				<span class="form-label">{ T(ctx, "name") }:</span>
+				<input class="form-input my-1 block" type="text" name="name" placeholder="AlexVasiluta" autocomplete="off" value={ params.Name }/>
+			</label>
+			<button type="submit" class="btn btn-blue">{T(ctx, "search_user")}</button>
+		</form>
+
+		if params.Pagination != nil {
+			@params.Pagination
+		}
+
+		if len(params.Users) > 0 {
+			<table class="kn-table">
+				<thead>
+					<tr>
+						<th class="kn-table-cell w-1/12" scope="col">{ T(ctx, "id") }</th>
+						<th class="kn-table-cell" scope="col">User</th>
+						<th class="kn-table-cell" scope="col">{ T(ctx, "admin") }</th>
+						<th class="kn-table-cell" scope="col">{ T(ctx, "proposer") }</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, u := range params.Users {
+						<tr class="kn-table-row">
+							<td class="kn-table-cell">{ fmt.Sprint(u.ID) }</td>
+							<td class="kn-table-cell">
+								<a href={ templ.URL(fmt.Sprintf("/profile/%s", u.Name)) } class="inline-flex align-middle items-center">
+									<img width="32" height="32" class="flex-none mr-2 rounded-sm" src={ templ.URL(fmt.Sprintf("/profile/%s/avatar?s=32", u.Name)) } loading="lazy"/> { u.Name }
+									if u.DisplayName != "" {
+										({ u.DisplayName })
+									}
+								</a>
+							</td>
+							<td class="kn-table-cell">
+								if u.Admin {
+									<span class="text-lg">✅</span>
+								} else {
+									<span class="text-lg">❌</span>
+								}
+							</td>
+							<td class="kn-table-cell">
+								if u.Proposer {
+									<span class="text-lg">✅</span>
+								} else {
+									<span class="text-lg">❌</span>
+								}
+							</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		} else {
+			<div class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center">{ T(ctx, "noUserFound") }</div>
+		}
+	</div>
+}

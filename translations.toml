@@ -2664,6 +2664,10 @@ ro = "Probleme cu această etichetă"
 en = "Search"
 ro = "Căutare"
 
+[search_user]
+en = "Search"
+ro = "Căutare"
+
 [name_or_id]
 en = "Name or ID"
 ro = "Nume sau ID"

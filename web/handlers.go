@@ -24,6 +24,7 @@ import (
 	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/web/tutils"
 	"github.com/KiloProjects/kilonova/web/views"
+	"github.com/KiloProjects/kilonova/web/views/adminviews"
 	"github.com/KiloProjects/kilonova/web/views/modals"
 	"github.com/KiloProjects/kilonova/web/views/problems"
 	"github.com/KiloProjects/kilonova/web/views/utilviews"
@@ -468,6 +469,61 @@ func (rt *Web) pbListView() http.HandlerFunc {
 		rt.runTempl(w, r, templ, &ProblemListParams{
 			util.ProblemList(r), nil, -1,
 			modals.ProblemSources(util.ProblemList(r), problems),
+		})
+	}
+}
+
+func (rt *Web) usersList() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		pageStr := r.FormValue("page")
+		page, err := strconv.Atoi(pageStr)
+		if err != nil {
+			page = 1
+		}
+		name := r.FormValue("name")
+
+		var fuzzyName *string
+		if len(name) > 0 {
+			fuzzyName = &name
+		}
+
+		users, err := rt.base.UsersBrief(r.Context(), kilonova.UserFilter{
+			FuzzyName: fuzzyName,
+			Limit:     50,
+			Offset:    uint64(50 * (page - 1)),
+		})
+		if err != nil {
+			rt.statusPage(w, r, 500, "Couldn't fetch users")
+			return
+		}
+
+		cnt, err := rt.base.CountUsers(r.Context(), kilonova.UserFilter{FuzzyName: fuzzyName})
+		if err != nil {
+			rt.statusPage(w, r, 500, "Couldn't count users")
+			return
+		}
+
+		numPages := cnt / 50
+		if cnt%50 > 0 {
+			numPages++
+		}
+
+		var pagination templ.Component
+		if numPages > 1 {
+			pagination = tutils.Paginator(tutils.PaginatorConfig{
+				Page:       page,
+				NumPages:   numPages,
+				ShowArrows: true,
+			})
+		}
+
+		rt.runLayout(w, r, &LayoutParams{
+			Title: kilonova.GetText(util.Language(r), "users"),
+			Content: adminviews.UsersList(adminviews.UsersListParams{
+				Users:      users,
+				Name:       name,
+				Pagination: pagination,
+			}),
 		})
 	}
 }
