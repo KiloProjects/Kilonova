@@ -6,22 +6,22 @@ func AI() Lang {
 
 type ai struct{}
 
-func (A ai) InternalName() string {
+func (ai) InternalName() string {
 	return "ai"
 }
 
-func (A ai) PrintableName() string {
+func (ai) PrintableName() string {
 	return "AI"
 }
 
-func (A ai) Extensions() []string {
+func (ai) Extensions() []string {
 	return []string{".txt", ".csv", ".py", ".ai"}
 }
 
-func (A ai) DefaultFilename() string {
+func (ai) DefaultFilename() string {
 	return "submit.csv"
 }
 
-func (A ai) MOSSName() string {
+func (ai) MOSSName() string {
 	return "text"
 }

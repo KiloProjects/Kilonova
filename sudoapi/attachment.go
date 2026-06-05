@@ -161,7 +161,7 @@ func (s *BaseAPI) DeleteProblemAtts(ctx context.Context, problemID int, attIDs [
 	for _, att := range attIDs {
 		s.DelAttachmentRenders(att)
 	}
-	return int(num), nil
+	return num, nil
 }
 
 func (s *BaseAPI) DeleteBlogPostAtts(ctx context.Context, postID int, attIDs []int) (int, error) {
@@ -173,7 +173,7 @@ func (s *BaseAPI) DeleteBlogPostAtts(ctx context.Context, postID int, attIDs []i
 	for _, att := range attIDs {
 		s.DelAttachmentRenders(att)
 	}
-	return int(num), nil
+	return num, nil
 }
 
 func (s *BaseAPI) ProblemAttachments(ctx context.Context, problemID int) ([]*kilonova.Attachment, error) {

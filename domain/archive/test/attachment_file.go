@@ -92,7 +92,7 @@ func ProcessPolygonPDFStatement(ctx *ArchiveCtx, fpath string) error {
 		slog.WarnContext(ctx.ctx, "Sanity check failed: Polygon PDF statement is not 4 parts")
 		return nil
 	}
-	filename := ""
+	var filename string
 	switch parts[2] {
 	case "english":
 		filename = "statement-en.pdf"

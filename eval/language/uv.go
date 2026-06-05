@@ -35,8 +35,8 @@ func (u uv) MOSSName() string {
 
 func (u uv) Compiled() bool {
 	// TODO: Uv sync does not work due to permission issues
-	//// For uv sync
-	//return true
+	// // For uv sync
+	// return true
 	return false
 }
 

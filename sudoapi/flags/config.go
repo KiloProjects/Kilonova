@@ -38,7 +38,7 @@ var OtelEnabled = config.GenFlag("integrations.otel.enabled", false, "Enable Ope
 // openai
 var (
 	// New sdk doesnt support openrouter
-	//OpenAIBaseURL      = config.GenFlag("integrations.openai.base_url", "", "Base URL for OpenAI API (`https://openrouter.ai/api/v1` can be used for OpenRouter)")
+	// OpenAIBaseURL      = config.GenFlag("integrations.openai.base_url", "", "Base URL for OpenAI API (`https://openrouter.ai/api/v1` can be used for OpenRouter)")
 	OpenAIToken        = config.GenFlag("integrations.openai.token", "", "API Key for OpenAI access (used in translating statements)")
 	OpenAIDefaultModel = config.GenFlag("integrations.openai.default_model", "gpt-5.4", "Default model for LLM translations")
 	OpenAIVisionModel  = config.GenFlag("integrations.openai.vision_model", "gpt-5.4", "Default model for LLM statement transcriptions")

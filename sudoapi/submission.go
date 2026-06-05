@@ -415,12 +415,10 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 				}
 			}
 		}
-	} else {
+	} else if !s.IsProblemFullyVisible(author.Brief(), problem) {
 		// Check that the problem is fully visible (ie. outside of a contest medium)
 		// Users may be able to bypass icpc penalties otherwise
-		if !s.IsProblemFullyVisible(author.Brief(), problem) {
-			return -1, Statusf(400, "You cannot submit to a problem outside a contest while it's running")
-		}
+		return -1, Statusf(400, "You cannot submit to a problem outside a contest while it's running")
 	}
 
 	if len(code) == 0 {

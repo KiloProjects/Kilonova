@@ -167,7 +167,7 @@ func (r *katexV2Renderer) renderBlockMath(w util.BufWriter, source []byte, n ast
 			buf.WriteString(string(line.Value(source)))
 		}
 
-		rawVal := string(buf.String())
+		rawVal := buf.String()
 		rawVal = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(rawVal, n.Delimiters.Open), n.Delimiters.Close))
 		val, err := r.displayCache.Get(context.WithValue(context.Background(), passthroughRenderCtxNode, n), rawVal)
 		if err != nil {

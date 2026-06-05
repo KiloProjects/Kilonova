@@ -207,9 +207,9 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	}
 
 	// TODO: Go through tests in topological sort
-	//if _, err := sh.buildRunGraph(ctx, subTests); err != nil {
+	// if _, err := sh.buildRunGraph(ctx, subTests); err != nil {
 	//	slog.WarnContext(ctx, "Error building experimental run graph", slog.Any("err", err))
-	//}
+	// }
 
 	// TODO: This is shit.
 	// It is basically 2 implementations for ~ the same thing. It could be merged neater
@@ -255,6 +255,7 @@ func (sh *submissionHandler) handleClassicSubmission(ctx context.Context, checke
 
 	if err := sh.scoreTests(ctx); err != nil {
 		slog.WarnContext(ctx, "Couldn't score test", slog.Any("err", err))
+		return err
 	}
 
 	return nil

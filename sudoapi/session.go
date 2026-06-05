@@ -65,7 +65,7 @@ func (s *BaseAPI) SessionUser(ctx context.Context, sid string, r *http.Request) 
 	if user != nil {
 		go func(uid int, r *http.Request) {
 			ip, ua := s.GetRequestInfo(r)
-			if err := s.db.UpdateSessionDevice(context.Background(), sid, user.ID, ip, &ua); err != nil {
+			if err := s.db.UpdateSessionDevice(context.Background(), sid, uid, ip, &ua); err != nil {
 				slog.WarnContext(ctx, "Couldn't update session device", slog.Any("err", err))
 			}
 		}(user.ID, r)

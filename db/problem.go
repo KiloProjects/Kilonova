@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"math"
 	"slices"
 	"strings"
@@ -109,7 +108,7 @@ func (s *DB) ScoredProblems(ctx context.Context, filter kilonova.ProblemFilter, 
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.ScoredProblem{}, nil
 	}
-	return s.internalToScoredProblems(ctx, pbs, scoreUID), err
+	return s.internalToScoredProblems(pbs, scoreUID), err
 }
 
 func (s *DB) CountProblems(ctx context.Context, filter kilonova.ProblemFilter) (int, error) {
@@ -143,7 +142,7 @@ ORDER BY cpbs.position ASC`, contestID, userID, freezeTime)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.ScoredProblem{}, nil
 	}
-	return s.internalToScoredProblems(ctx, pbs, userID), err
+	return s.internalToScoredProblems(pbs, userID), err
 }
 
 const problemCreateQuery = `INSERT INTO problems (
@@ -427,7 +426,7 @@ func (s *DB) internalToProblem(pb *dbProblem) *kilonova.Problem {
 	}
 }
 
-func (s *DB) internalToScoredProblem(spb *dbScoredProblem, scoreUID int) (*kilonova.ScoredProblem, error) {
+func (s *DB) internalToScoredProblem(spb *dbScoredProblem, scoreUID int) *kilonova.ScoredProblem {
 	pb := s.internalToProblem(&spb.dbProblem)
 	var uid *int
 	if scoreUID > 0 {
@@ -439,20 +438,16 @@ func (s *DB) internalToScoredProblem(spb *dbScoredProblem, scoreUID int) (*kilon
 		ScoreUserID: uid,
 		MaxScore:    spb.MaxScore,
 		IsEditor:    spb.IsEditor,
-	}, nil
+	}
 }
 
-func (s *DB) internalToScoredProblems(ctx context.Context, spbs []*dbScoredProblem, scoreUID int) []*kilonova.ScoredProblem {
+func (s *DB) internalToScoredProblems(spbs []*dbScoredProblem, scoreUID int) []*kilonova.ScoredProblem {
 	if len(spbs) == 0 {
 		return []*kilonova.ScoredProblem{}
 	}
 	rez := make([]*kilonova.ScoredProblem, len(spbs))
 	for i := range rez {
-		var err error
-		rez[i], err = s.internalToScoredProblem(spbs[i], scoreUID)
-		if err != nil {
-			slog.WarnContext(ctx, "Could not convert to scored problem", slog.Any("err", err))
-		}
+		rez[i] = s.internalToScoredProblem(spbs[i], scoreUID)
 	}
 	return rez
 }

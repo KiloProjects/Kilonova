@@ -89,7 +89,7 @@ func (rt *Web) discordLink() http.HandlerFunc {
 }
 
 func (rt *Web) index() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html", "modals/contest_brief.html")
+	parsedTempl := rt.parse("modals/pblist.html", "modals/pbs.html", "modals/contest_brief.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		runningContests, err := rt.base.VisibleRunningContests(r.Context(), user.UserBrief(r))
 		if err != nil {
@@ -174,7 +174,7 @@ func (rt *Web) index() http.HandlerFunc {
 }
 
 func (rt *Web) problems() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "pbs.html", "modals/pbs.html")
+	parsedTempl := rt.parse("pbs.html", "modals/pbs.html")
 	decoder := schema.NewDecoder()
 	decoder.IgnoreUnknownKeys(true)
 	decoder.SetAliasTag("json")
@@ -305,7 +305,7 @@ func (rt *Web) problems() http.HandlerFunc {
 }
 
 func (rt *Web) tags() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "tags/index.html")
+	parsedTempl := rt.parse("tags/index.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, parsedTempl, struct{}{})
 	}
@@ -320,7 +320,7 @@ type TagPageParams struct {
 }
 
 func (rt *Web) tag() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "tags/tag.html", "modals/pbs.html")
+	parsedTempl := rt.parse("tags/tag.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		pbs, pbsCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
 			LookingUser: user.UserBrief(r), Look: true, LookFullyVisible: true,
@@ -343,14 +343,14 @@ func (rt *Web) tag() http.HandlerFunc {
 }
 
 func (rt *Web) justRender(files ...string) http.HandlerFunc {
-	parsedTempl := rt.parse(nil, files...)
+	parsedTempl := rt.parse(files...)
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, parsedTempl, struct{}{})
 	}
 }
 
 func (rt *Web) pbListIndex() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "lists/index.html", "modals/pblist.html", "modals/pbs.html")
+	parsedTempl := rt.parse("lists/index.html", "modals/pblist.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		pblists, err := rt.base.ProblemLists(r.Context(), kilonova.ProblemListFilter{Root: true})
 		if err != nil {
@@ -376,7 +376,7 @@ func (rt *Web) pbListIndex() http.HandlerFunc {
 }
 
 func (rt *Web) pbListProgressIndex() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "lists/pIndex.html")
+	parsedTempl := rt.parse("lists/pIndex.html")
 	t := true
 	return func(w http.ResponseWriter, r *http.Request) {
 		pblists, err := rt.base.ProblemLists(r.Context(), kilonova.ProblemListFilter{FeaturedChecklist: &t})
@@ -419,7 +419,7 @@ func computeChecklistSpan(list *sudoapi.FullProblemList) int {
 }
 
 func (rt *Web) pbListProgressView() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "lists/progress.html")
+	parsedTempl := rt.parse("lists/progress.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		// listIDs := []int{util.ProblemList(r).ID}
 		// for _, slist := range util.ProblemList(r).SubLists {
@@ -447,8 +447,8 @@ func (rt *Web) pbListProgressView() http.HandlerFunc {
 }
 
 func (rt *Web) pbListView() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "lists/view.html", "modals/pblist.html", "modals/pbs.html")
-	fragmentTempl := rt.parse(nil, "modals/pblist.html", "modals/pbs.html")
+	parsedTempl := rt.parse("lists/view.html", "modals/pblist.html", "modals/pbs.html")
+	fragmentTempl := rt.parse("modals/pblist.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		listIDs := []int{util.ProblemList(r).ID}
 		for _, slist := range util.ProblemList(r).SubLists {
@@ -530,7 +530,7 @@ func (rt *Web) usersList() http.HandlerFunc {
 }
 
 func (rt *Web) auditLog() http.HandlerFunc {
-	toRender := rt.parse(nil, "admin/audit_log.html")
+	toRender := rt.parse("admin/audit_log.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		pageStr := r.FormValue("page")
 		page, err := strconv.Atoi(pageStr)
@@ -572,7 +572,7 @@ func (rt *Web) auditLog() http.HandlerFunc {
 }
 
 func (rt *Web) debugPage() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "admin/debug.html")
+	parsedTempl := rt.parse("admin/debug.html")
 	type Metric struct {
 		Name        string
 		Description string
@@ -633,7 +633,7 @@ func (rt *Web) submission(w http.ResponseWriter, r *http.Request) {
 	var olderSubs *modals.OlderSubmissionsParams = nil
 	var err error
 	if user.UserBrief(r) != nil {
-		olderSubs, err = rt.getOlderSubmissions(r.Context(), user.UserBrief(r), user.UserBrief(r).ID, sub.Problem, nil, 5)
+		olderSubs, err = rt.getOlderSubmissions(r.Context(), user.UserBrief(r), user.UserBrief(r).ID, sub.Problem, nil)
 		if err != nil {
 			slog.WarnContext(r.Context(), "Couldn't get submissions", slog.Any("err", err))
 		}
@@ -777,7 +777,7 @@ func (rt *Web) paste(w http.ResponseWriter, r *http.Request) {
 
 	var olderSubs *modals.OlderSubmissionsParams
 	if user.UserBrief(r) != nil {
-		olderSubs, err = rt.getOlderSubmissions(r.Context(), user.UserBrief(r), user.UserBrief(r).ID, sub.Problem, nil, 5)
+		olderSubs, err = rt.getOlderSubmissions(r.Context(), user.UserBrief(r), user.UserBrief(r).ID, sub.Problem, nil)
 		if err != nil {
 			slog.WarnContext(r.Context(), "Couldn't get submissions", slog.Any("err", err))
 		}
@@ -965,7 +965,7 @@ func (rt *Web) appropriateDescriptionVariant(r *http.Request, variants []*kilono
 }
 
 func (rt *Web) problem() http.HandlerFunc {
-	pageTempl := rt.parse(nil, "problem/summary.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
+	pageTempl := rt.parse("problem/summary.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		problem := util.Problem(r)
 
@@ -1047,7 +1047,7 @@ func (rt *Web) problem() http.HandlerFunc {
 
 		var olderSubmissions templ.Component = nil
 		if user.UserBrief(r) != nil {
-			olderSubs, err := rt.getOlderSubmissions(r.Context(), user.UserBrief(r), user.UserBrief(r).ID, util.Problem(r), util.Contest(r), 5)
+			olderSubs, err := rt.getOlderSubmissions(r.Context(), user.UserBrief(r), user.UserBrief(r).ID, util.Problem(r), util.Contest(r))
 			if err != nil {
 				slog.WarnContext(r.Context(), "Couldn't get submissions", slog.Any("err", err))
 			} else {
@@ -1106,13 +1106,13 @@ func (rt *Web) problem() http.HandlerFunc {
 }
 
 func (rt *Web) problemSubmissions() http.HandlerFunc {
-	normalTempl := rt.parse(nil, "problem/pb_submissions.html", "problem/topbar.html")
+	normalTempl := rt.parse("problem/pb_submissions.html", "problem/topbar.html")
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// OlderSubs HTMX fragment
 		userID, err := strconv.Atoi(r.FormValue("user_id"))
 		if isHTMXRequest(r) && err == nil {
-			olderSubs, err := rt.getOlderSubmissions(r.Context(), user.UserBrief(r), userID, util.Problem(r), util.Contest(r), 5)
+			olderSubs, err := rt.getOlderSubmissions(r.Context(), user.UserBrief(r), userID, util.Problem(r), util.Contest(r))
 			if err != nil {
 				rt.statusPage(w, r, kilonova.ErrorCode(err), err.Error())
 				return
@@ -1152,7 +1152,7 @@ func (rt *Web) problemSubmissions() http.HandlerFunc {
 }
 
 func (rt *Web) problemStatistics() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "problem/statistics.html", "problem/topbar.html", "modals/htmx/helpers.html")
+	parsedTempl := rt.parse("problem/statistics.html", "problem/topbar.html", "modals/htmx/helpers.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		stats, err := rt.base.ProblemStatistics(r.Context(), util.Problem(r), user.UserBrief(r))
 		if err != nil {
@@ -1170,7 +1170,7 @@ func (rt *Web) problemStatistics() http.HandlerFunc {
 }
 
 func (rt *Web) problemSubmit() http.HandlerFunc {
-	toRender := rt.parse(nil, "problem/pb_submit.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
+	toRender := rt.parse("problem/pb_submit.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		langs, err := rt.base.ProblemLanguages(r.Context(), util.Problem(r))
 		if err != nil {
@@ -1218,7 +1218,7 @@ func (rt *Web) problemSubmit() http.HandlerFunc {
 }
 
 func (rt *Web) problemArchive() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "problem/pb_archive.html", "problem/topbar.html")
+	parsedTempl := rt.parse("problem/pb_archive.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		topbar := rt.problemTopbar(r, "pb_archive", -1)
 		var tests []*kilonova.Test
@@ -1249,7 +1249,7 @@ func (rt *Web) problemArchive() http.HandlerFunc {
 var maxPostsPerPage uint64 = 10
 
 func (rt *Web) blogPosts() http.HandlerFunc {
-	toRender := rt.parse(nil, "blogpost/index.html")
+	toRender := rt.parse("blogpost/index.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		page, err := strconv.ParseUint(r.FormValue("page"), 10, 64)
 		if err != nil {
@@ -1322,7 +1322,7 @@ func (rt *Web) blogPosts() http.HandlerFunc {
 }
 
 func (rt *Web) blogPost() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "blogpost/view.html", "blogpost/topbar.html")
+	parsedTempl := rt.parse("blogpost/view.html", "blogpost/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		post := util.BlogPost(r)
 		var statement = []byte("Post is empty.")
@@ -1438,7 +1438,7 @@ func (rt *Web) getFinalVariant(prefLang string, prefType string, variants []*kil
 }
 
 func (rt *Web) editBlogPostIndex() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "blogpost/editIndex.html", "modals/md_att_editor.html", "blogpost/topbar.html")
+	parsedTempl := rt.parse("blogpost/editIndex.html", "modals/md_att_editor.html", "blogpost/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		variants, err := rt.base.BlogPostDescVariants(r.Context(), util.BlogPost(r).ID, true)
@@ -1484,7 +1484,7 @@ func (rt *Web) editBlogPostIndex() http.HandlerFunc {
 }
 
 func (rt *Web) editBlogPostAtts() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "blogpost/editAttachments.html", "modals/att_manager.html", "blogpost/topbar.html")
+	parsedTempl := rt.parse("blogpost/editAttachments.html", "modals/att_manager.html", "blogpost/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		atts, err := rt.base.BlogPostAttachments(r.Context(), util.BlogPost(r).ID)
 		if err != nil || len(atts) == 0 {
@@ -1503,7 +1503,7 @@ func (rt *Web) editBlogPostAtts() http.HandlerFunc {
 }
 
 func (rt *Web) contests() http.HandlerFunc {
-	toRender := rt.parse(nil, "contest/index.html", "modals/contest_brief.html", "contest/index_topbar.html")
+	toRender := rt.parse("contest/index.html", "modals/contest_brief.html", "contest/index_topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		filter := kilonova.ContestFilter{Look: true, LookingUser: user.UserBrief(r)}
 
@@ -1598,7 +1598,7 @@ func (rt *Web) contests() http.HandlerFunc {
 }
 
 func (rt *Web) createContest() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "contest/create.html", "contest/index_topbar.html")
+	parsedTempl := rt.parse("contest/create.html", "contest/index_topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !(user.UserBrief(r).IsProposer() || flags.NormalUserVirtualContests.Value()) {
 			rt.statusPage(w, r, 403, "Nu poți crea concursuri!")
@@ -1612,7 +1612,7 @@ func (rt *Web) createContest() http.HandlerFunc {
 }
 
 func (rt *Web) contest() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "contest/view.html", "problem/topbar.html", "modals/pbs.html", "modals/contest_sidebar.html")
+	parsedTempl := rt.parse("contest/view.html", "problem/topbar.html", "modals/pbs.html", "modals/contest_sidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, parsedTempl, &ContestParams{
 			Topbar: rt.problemTopbar(r, "contest_general", -1),
@@ -1623,7 +1623,7 @@ func (rt *Web) contest() http.HandlerFunc {
 }
 
 func (rt *Web) contestEdit() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "contest/edit.html", "problem/topbar.html")
+	parsedTempl := rt.parse("contest/edit.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		invitations, err := rt.base.ContestInvitations(r.Context(), util.Contest(r).ID)
 		if err != nil {
@@ -1649,7 +1649,7 @@ func (rt *Web) contestEdit() http.HandlerFunc {
 }
 
 func (rt *Web) contestInvite() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "contest/invite.html")
+	parsedTempl := rt.parse("contest/invite.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		inv, err := rt.base.ContestInvitation(r.Context(), r.PathValue("inviteID"))
 		if err != nil {
@@ -1708,7 +1708,7 @@ func (rt *Web) contestInviteQRCode(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Web) contestCommunication() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "contest/communication.html", "problem/topbar.html")
+	parsedTempl := rt.parse("contest/communication.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, parsedTempl, &ContestParams{
 			Topbar: rt.problemTopbar(r, "contest_communication", -1),
@@ -1719,7 +1719,7 @@ func (rt *Web) contestCommunication() http.HandlerFunc {
 }
 
 func (rt *Web) contestRegistrations() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "contest/registrations.html", "problem/topbar.html")
+	parsedTempl := rt.parse("contest/registrations.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, parsedTempl, &ContestParams{
 			Topbar: rt.problemTopbar(r, "contest_registrations", -1),
@@ -1730,7 +1730,7 @@ func (rt *Web) contestRegistrations() http.HandlerFunc {
 }
 
 func (rt *Web) contestLeaderboard() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "contest/leaderboard.html", "problem/topbar.html")
+	parsedTempl := rt.parse("contest/leaderboard.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		// This is assumed to be called from a context in which
 		// IsContestVisible is already true
@@ -1747,7 +1747,7 @@ func (rt *Web) contestLeaderboard() http.HandlerFunc {
 }
 
 func (rt *Web) graderInfo() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "admin/grader.html")
+	parsedTempl := rt.parse("admin/grader.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		langs := rt.base.GraderLanguages(r.Context())
 		rt.runTempl(w, r, parsedTempl, &GraderInfoParams{langs})
@@ -1755,7 +1755,7 @@ func (rt *Web) graderInfo() http.HandlerFunc {
 }
 
 func (rt *Web) donationPage() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "donate.html")
+	parsedTempl := rt.parse("donate.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		donations, err := rt.base.Donations(r.Context())
 		if err != nil {
@@ -1772,7 +1772,7 @@ func (rt *Web) donationPage() http.HandlerFunc {
 }
 
 func (rt *Web) externalResources() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "externalResources/index.html")
+	parsedTempl := rt.parse("externalResources/index.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		problemResources, err := rt.base.ExternalResources(r.Context(), kilonova.ExternalResourceFilter{
 			ProblemID: &util.Problem(r).ID,
@@ -1787,7 +1787,7 @@ func (rt *Web) externalResources() http.HandlerFunc {
 
 //nolint:unused
 func (rt *Web) externalResource() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "externalResources/view.html")
+	parsedTempl := rt.parse("externalResources/view.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		var author *kilonova.UserBrief
 		if res := util.ExternalResource(r); res.ProposedBy != nil {
@@ -1806,7 +1806,7 @@ func (rt *Web) externalResource() http.HandlerFunc {
 }
 
 func (rt *Web) createExternalResourceView() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "externalResources/new.html")
+	parsedTempl := rt.parse("externalResources/new.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, parsedTempl, &ResourcesNewParams{util.Problem(r)})
 	}
@@ -1861,7 +1861,7 @@ func (rt *Web) createExternalResource() http.HandlerFunc {
 	}
 }
 
-//func (rt *Web) updateExternalResource() http.HandlerFunc {
+// func (rt *Web) updateExternalResource() http.HandlerFunc {
 //	templ := rt.parse(nil, "externalResources/view.html")
 //	return func(w http.ResponseWriter, r *http.Request) {
 //		var author *kilonova.UserBrief
@@ -1878,8 +1878,8 @@ func (rt *Web) createExternalResource() http.HandlerFunc {
 //			author,
 //		})
 //	}
-//}
-//func (rt *Web) deleteExternalResource() http.HandlerFunc {
+// }
+// func (rt *Web) deleteExternalResource() http.HandlerFunc {
 //	templ := rt.parse(nil, "externalResources/view.html")
 //	return func(w http.ResponseWriter, r *http.Request) {
 //		var author *kilonova.UserBrief
@@ -1896,7 +1896,7 @@ func (rt *Web) createExternalResource() http.HandlerFunc {
 //			author,
 //		})
 //	}
-//}
+// }
 
 func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *template.Template, userFull *kilonova.UserFull) {
 	if !(flags.ViewOtherProfiles.Value() || user.UserBrief(r).IsAdmin() || (user.UserBrief(r) != nil && user.UserBrief(r).ID == userFull.ID)) {
@@ -1937,14 +1937,14 @@ func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *templa
 }
 
 func (rt *Web) selfProfile() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "profile.html", "modals/pbs.html")
+	parsedTempl := rt.parse("profile.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.profilePage(w, r, parsedTempl, user.UserFull(r))
 	}
 }
 
 func (rt *Web) profile() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "profile.html", "modals/pbs.html")
+	parsedTempl := rt.parse("profile.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		username := strings.TrimSpace(r.PathValue("user"))
 		userFull, err := rt.base.UserFullByName(r.Context(), username)
@@ -2062,14 +2062,14 @@ func (rt *Web) linkStatusPage(w http.ResponseWriter, r *http.Request, templ *tem
 }
 
 func (rt *Web) selfLinkStatus() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "discordLink.html")
+	parsedTempl := rt.parse("discordLink.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.linkStatusPage(w, r, parsedTempl, user.UserFull(r))
 	}
 }
 
 func (rt *Web) linkStatus() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "discordLink.html")
+	parsedTempl := rt.parse("discordLink.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		userFull, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(r.PathValue("user")))
 		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
@@ -2105,14 +2105,14 @@ func (rt *Web) userSessionsPage(w http.ResponseWriter, r *http.Request, templ *t
 }
 
 func (rt *Web) selfSessions() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "auth/sessions.html")
+	parsedTempl := rt.parse("auth/sessions.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.userSessionsPage(w, r, parsedTempl, user.UserFull(r))
 	}
 }
 
 func (rt *Web) userSessions() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "auth/sessions.html")
+	parsedTempl := rt.parse("auth/sessions.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		userFull, err := rt.base.UserFullByName(r.Context(), strings.TrimSpace(r.PathValue("user")))
 		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
@@ -2134,7 +2134,7 @@ func (rt *Web) userSessions() http.HandlerFunc {
 }
 
 func (rt *Web) sessionsFilter() http.HandlerFunc {
-	toRender := rt.parse(nil, "auth/sessions.html")
+	toRender := rt.parse("auth/sessions.html")
 	decoder := schema.NewDecoder()
 	decoder.IgnoreUnknownKeys(true)
 	decoder.SetAliasTag("json")
@@ -2220,7 +2220,7 @@ func (rt *Web) sessionsFilter() http.HandlerFunc {
 }
 
 func (rt *Web) resendEmail() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "util/sent.html")
+	parsedTempl := rt.parse("util/sent.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		u := user.UserFull(r)
 		if u.VerifiedEmail {
@@ -2244,7 +2244,7 @@ func (rt *Web) resendEmail() http.HandlerFunc {
 }
 
 func (rt *Web) verifyEmail() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "verified-email.html")
+	parsedTempl := rt.parse("verified-email.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		vid := r.PathValue("vid")
 		if !rt.base.CheckVerificationEmail(r.Context(), vid) {
@@ -2280,7 +2280,7 @@ func (rt *Web) verifyEmail() http.HandlerFunc {
 }
 
 func (rt *Web) resetPassword() http.HandlerFunc {
-	parsedTempl := rt.parse(nil, "auth/forgot_pwd_reset.html")
+	parsedTempl := rt.parse("auth/forgot_pwd_reset.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqid := r.PathValue("reqid")
 		if !rt.base.CheckPasswordResetRequest(r.Context(), reqid) {
@@ -2374,8 +2374,7 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 	fullAuthedUser := user.UserFull(r)
 	authedUser := user.UserBrief(r)
 	var pblistCache map[int]int
-	switch v := r.Context().Value(PblistCntCacheKey).(type) {
-	case map[int]int:
+	if v, ok := r.Context().Value(PblistCntCacheKey).(map[int]int); ok {
 		pblistCache = v
 	}
 
@@ -2507,10 +2506,8 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 					list, err := rt.base.ProblemList(r.Context(), id)
 					if err != nil {
 						slog.WarnContext(r.Context(), "Couldn't get problem list", slog.Any("err", err))
-					} else {
-						if slices.Contains(list.ProblemIDs(), problem.ID) {
-							topList = list
-						}
+					} else if slices.Contains(list.ProblemIDs(), problem.ID) {
+						topList = list
 					}
 				}
 			}
@@ -2684,16 +2681,14 @@ func (rt *Web) componentModal(w http.ResponseWriter, r *http.Request, component 
 	}
 }
 
-func (rt *Web) getOlderSubmissions(ctx context.Context, lookingUser *kilonova.UserBrief, userID int, problem *kilonova.Problem, contest *kilonova.Contest, limit int) (*modals.OlderSubmissionsParams, error) {
+func (rt *Web) getOlderSubmissions(ctx context.Context, lookingUser *kilonova.UserBrief, userID int, problem *kilonova.Problem, contest *kilonova.Contest) (*modals.OlderSubmissionsParams, error) {
 	var filter = kilonova.SubmissionFilter{
 		UserID:    &userID,
 		ProblemID: &problem.ID,
+		Limit:     5,
 	}
 	if contest != nil {
 		filter.ContestID = &contest.ID
-	}
-	if limit > 0 {
-		filter.Limit = limit
 	}
 	subs, err := rt.base.Submissions(ctx, filter, true, lookingUser)
 	if err != nil {
@@ -2710,7 +2705,7 @@ func (rt *Web) getOlderSubmissions(ctx context.Context, lookingUser *kilonova.Us
 		UserID:  userID,
 		Problem: problem,
 		Contest: contest,
-		Limit:   limit,
+		Limit:   5,
 
 		Submissions: subs,
 		NumHidden:   subs.Count - len(subs.Submissions),

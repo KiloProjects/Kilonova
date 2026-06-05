@@ -309,7 +309,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 				mustAutofillTests = true
 				tests[i].Score = decimal.NewFromInt(-1)
 			} else {
-				tests[i].Score = val.Round(int32(precision))
+				tests[i].Score = val.Round(precision)
 			}
 		}
 
@@ -330,7 +330,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 			// We'd like test scores to be in ascending order instead of descending
 			// Also, totalScore should also subtract default points when autofilling
 
-			perTest := totalScore.Div(n).RoundDown(int32(precision))
+			perTest := totalScore.Div(n).RoundDown(precision)
 			toAdd := decimal.Zero
 			dif := totalScore.Sub(perTest.Mul(n))
 			if !dif.IsZero() {
@@ -340,7 +340,7 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 
 				// divide the difference by its ceiling to get the delta to insert to scores
 				// we'll handle with rounding approximations later.
-				toAdd = dif.DivRound(dif.Ceil(), int32(precision))
+				toAdd = dif.DivRound(dif.Ceil(), precision)
 			}
 			k := 0
 

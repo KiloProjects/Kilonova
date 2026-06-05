@@ -2,6 +2,13 @@ version: "2"
 linters:
   enable:
     - sloglint
+    - gocritic
+    - govet
+    - unconvert
+    - unparam
+    - ineffassign
+    - sqlclosecheck
+    - wastedassign
 #    - gochecknoglobals
   disable:
     - errcheck
@@ -14,6 +21,10 @@ linters:
       checks:
         - all
         - -QF1001
+    gocritic:
+      disabled-checks:
+        - commentFormatting
+        - ifElseChain
   exclusions:
     generated: lax
     presets:

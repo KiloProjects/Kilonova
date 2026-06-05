@@ -451,7 +451,7 @@ func (s *AuthStorage) setUserInfo(ctx context.Context, userinfo *oidc.UserInfo, 
 		return err
 	}
 	if user == nil {
-		return fmt.Errorf("user not found")
+		return fmt.Errorf("user not found. Client ID: %q", clientID)
 	}
 	for _, scope := range scopes {
 		switch scope {

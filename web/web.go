@@ -14,7 +14,6 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
-	"maps"
 	"math"
 	"net/http"
 	"net/netip"
@@ -105,9 +104,9 @@ func (rt *Web) problemRouter(inContest bool) func(r chi.Router) {
 				r.Get("/", rt.externalResources())
 				r.With(rt.mustBeProblemEditor).Get("/create", rt.createExternalResourceView())
 				r.With(rt.mustBeProblemEditor).Post("/create", rt.createExternalResource())
-				//r.With(rt.ValidateExternalResourceID).Route("/externalResources/{resID}", func(r chi.Router) {
+				// r.With(rt.ValidateExternalResourceID).Route("/externalResources/{resID}", func(r chi.Router) {
 				//	r.Get("/", rt.externalResource())
-				//})
+				// })
 			})
 		}
 		r.With(rt.mustBeAuthed).Get("/submit", rt.problemSubmit())
@@ -295,12 +294,8 @@ func (rt *Web) Handler() http.Handler {
 	return r
 }
 
-func (rt *Web) parse(optFuncs template.FuncMap, files ...string) *template.Template {
-	if optFuncs == nil {
-		return parse(rt.funcs, files...)
-	}
-	maps.Copy(optFuncs, rt.funcs)
-	return parse(optFuncs, files...)
+func (rt *Web) parse(files ...string) *template.Template {
+	return parse(rt.funcs, files...)
 }
 
 func (rt *Web) checkUsedFunctions() {
@@ -620,7 +615,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return cases.Title(language.English).String(s)
 		},
 		"version": func() string { return kilonova.Version },
-		"debug":   func() bool { return kilonova.DebugMode() },
+		"debug":   kilonova.DebugMode,
 
 		"formatCanonical": func(path string) string {
 			return kilonova.HostURL().JoinPath(path).String()
@@ -634,7 +629,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			}
 			return tags
 		},
-		//NOTE: problemTags does no checking whether the tags are visible. It must be used only after making sure that the problem is Fully Visible.
+		// NOTE: problemTags does no checking whether the tags are visible. It must be used only after making sure that the problem is Fully Visible.
 		"problemTags": func(pb *kilonova.Problem) []*kilonova.Tag {
 			if pb == nil {
 				return nil
@@ -679,7 +674,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		},
 
 		// for admin configuration
-		"defaultLang":  func() string { return kilonova.DefaultLanguage() },
+		"defaultLang":  kilonova.DefaultLanguage,
 		"testMaxMemMB": func() int { return config.Common.TestMaxMemKB / 1024 },
 		"globalMaxMem": func() int64 { return config.Eval.GlobalMaxMem / 1024 },
 		"numWorkers":   func() int { return config.Eval.NumConcurrent },
