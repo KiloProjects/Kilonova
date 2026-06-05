@@ -534,7 +534,6 @@ func (s *API) transcribeProblemPDF() http.HandlerFunc {
 			return
 		}
 		returnData(w, "Created transcription")
-		return
 	}
 }
 

@@ -11,6 +11,7 @@ import (
 	"unicode"
 
 	"github.com/KiloProjects/kilonova/domain/config"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/components/layout"
 	"go.opentelemetry.io/otel/attribute"
@@ -364,21 +365,21 @@ func (rt *Web) initSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), layout.MiddlewareStartKey, time.Now())
 		ctx = sudoapi.InitQueryCounter(ctx)
-		user, err := rt.base.SessionUser(ctx, rt.base.GetSessCookie(r), r)
-		if err != nil || user == nil {
+		sessionUser, err := rt.base.SessionUser(ctx, rt.base.GetSessCookie(r), r)
+		if err != nil || sessionUser == nil {
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
-		trace.SpanFromContext(ctx).SetAttributes(attribute.Int("user.id", user.ID), attribute.String("user.name", user.Name))
-		next.ServeHTTP(w, r.WithContext(context.WithValue(ctx, util.AuthedUserKey, user)))
+		trace.SpanFromContext(ctx).SetAttributes(attribute.Int("user.id", sessionUser.ID), attribute.String("user.name", sessionUser.Name))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(ctx, user.AuthedUserKey, sessionUser)))
 	})
 }
 
 func (rt *Web) initLanguage(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userLang := ""
-		if util.UserFull(r) != nil {
-			userLang = util.UserFull(r).PreferredLanguage
+		if user.UserFull(r) != nil {
+			userLang = user.UserFull(r).PreferredLanguage
 		}
 		// get language
 		lang, _ := r.Cookie("kn-lang")
@@ -398,8 +399,8 @@ func (rt *Web) initLanguage(next http.Handler) http.Handler {
 func (rt *Web) initTheme(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var userTheme kilonova.PreferredTheme = kilonova.PreferredThemeNone
-		if util.UserFull(r) != nil {
-			userTheme = util.UserFull(r).PreferredTheme
+		if user.UserFull(r) != nil {
+			userTheme = user.UserFull(r).PreferredTheme
 		}
 
 		// get cookie that overrides

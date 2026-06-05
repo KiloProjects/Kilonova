@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova/domain/datastore"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -76,16 +77,16 @@ func (s *API) MustBeProposer(next http.Handler) http.Handler {
 // SetupSession adds the user with the specified user ID to context
 func (s *API) SetupSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := s.base.SessionUser(r.Context(), getAuthHeader(r), r)
-		if err != nil || user == nil {
+		sessionUser, err := s.base.SessionUser(r.Context(), getAuthHeader(r), r)
+		if err != nil || sessionUser == nil {
 			if err != nil {
 				slog.WarnContext(r.Context(), "Error getting session user", slog.Any("err", err))
 			}
 			next.ServeHTTP(w, r)
 			return
 		}
-		trace.SpanFromContext(r.Context()).SetAttributes(attribute.Int("user.id", user.ID), attribute.String("user.name", user.Name))
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AuthedUserKey, user)))
+		trace.SpanFromContext(r.Context()).SetAttributes(attribute.Int("user.id", sessionUser.ID), attribute.String("user.name", sessionUser.Name))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), user.AuthedUserKey, sessionUser)))
 	})
 }
 
@@ -275,12 +276,12 @@ func (s *API) validateUserID(next http.Handler) http.Handler {
 			errorData(w, "Invalid user ID", http.StatusBadRequest)
 			return
 		}
-		user, err := s.base.UserFull(r.Context(), userID)
+		userFull, err := s.base.UserFull(r.Context(), userID)
 		if err != nil {
 			errorData(w, "User was not found", http.StatusNotFound)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ContentUserKey, user)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), user.ContentUserKey, userFull)))
 	})
 }
 
@@ -288,7 +289,7 @@ func (s *API) selfOrAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// ContentUser must not be nil, requesting user must be authenticated
 		// and the requesting user must EITHER be an admin or the user that is being operated on
-		if util.ContentUserBrief(r) == nil || !util.UserBrief(r).IsAuthed() || !(util.UserBrief(r).IsAdmin() || util.ContentUserBrief(r).ID == util.UserBrief(r).ID) {
+		if user.ContentUserBrief(r) == nil || !user.UserBrief(r).IsAuthed() || !(user.UserBrief(r).IsAdmin() || user.ContentUserBrief(r).ID == user.UserBrief(r).ID) {
 			errorData(w, "You aren't allowed to do this!", http.StatusForbidden)
 			return
 		}
@@ -298,12 +299,12 @@ func (s *API) selfOrAdmin(next http.Handler) http.Handler {
 
 func (s *API) validateUsername(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := s.base.UserFullByName(r.Context(), strings.TrimSpace(r.PathValue("cUName")))
+		userFull, err := s.base.UserFullByName(r.Context(), strings.TrimSpace(r.PathValue("cUName")))
 		if err != nil {
 			errorData(w, "User was not found", http.StatusNotFound)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ContentUserKey, user)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), user.ContentUserKey, userFull)))
 	})
 }
 
@@ -322,12 +323,12 @@ func (s *API) validateBucket(next http.Handler) http.Handler {
 
 func (s *API) authedContentUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if util.UserFull(r) == nil {
+		if user.UserFull(r) == nil {
 			slog.WarnContext(r.Context(), "authedContentUser got nil UserFull in context")
 			errorData(w, "User was not found", http.StatusNotFound)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ContentUserKey, util.UserFull(r))))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), user.ContentUserKey, user.UserFull(r))))
 	})
 }
 

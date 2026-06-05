@@ -26,6 +26,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/archive/test"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/Yiling-J/theine-go"
@@ -45,12 +46,12 @@ func NewAssets(base *sudoapi.BaseAPI) *Assets {
 
 func (s *Assets) initSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := s.base.SessionUser(r.Context(), s.base.GetSessCookie(r), r)
-		if err != nil || user == nil {
+		sessionUser, err := s.base.SessionUser(r.Context(), s.base.GetSessCookie(r), r)
+		if err != nil || sessionUser == nil {
 			next.ServeHTTP(w, r)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.AuthedUserKey, user)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), user.AuthedUserKey, sessionUser)))
 	})
 }
 
@@ -198,7 +199,7 @@ func (s *Assets) ServeContestLeaderboard(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	ld, err := s.api.leaderboard(r.Context(), util.Contest(r), util.UserBrief(r), &args)
+	ld, err := s.api.leaderboard(r.Context(), util.Contest(r), user.UserBrief(r), &args)
 	if err != nil {
 		http.Error(w, err.Error(), kilonova.ErrorCode(err))
 		return
@@ -311,14 +312,14 @@ func (s *Assets) ServeSubtest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid subtest", 400)
 		return
 	}
-	sub, err := s.base.Submission(r.Context(), subtest.SubmissionID, util.UserBrief(r))
+	sub, err := s.base.Submission(r.Context(), subtest.SubmissionID, user.UserBrief(r))
 	if err != nil {
 		slog.WarnContext(r.Context(), "Error loading submission", slog.Any("err", err))
 		http.Error(w, "Couldn't get submission", 500)
 		return
 	}
 
-	if !s.base.IsProblemEditor(util.UserBrief(r), sub.Problem) {
+	if !s.base.IsProblemEditor(user.UserBrief(r), sub.Problem) {
 		http.Error(w, "You aren't allowed to do that!", http.StatusUnauthorized)
 		return
 	}
@@ -381,7 +382,7 @@ func (s *Assets) ServeProblemArchive() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		mu, err := pbArchiveUserCache.Get(r.Context(), util.UserBrief(r).ID)
+		mu, err := pbArchiveUserCache.Get(r.Context(), user.UserBrief(r).ID)
 		if err != nil || mu == nil {
 			slog.WarnContext(r.Context(), "Could hit archive cache", slog.Any("err", err))
 			http.Error(w, "Could not aquire mutex", 500)
@@ -398,11 +399,11 @@ func (s *Assets) ServeProblemArchive() http.HandlerFunc {
 			return
 		}
 
-		args.Tests = args.Tests && s.base.CanViewTests(util.UserBrief(r), util.Problem(r))
-		args.PrivateAttachments = args.PrivateAttachments && s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r))
-		args.AllSubmissions = args.AllSubmissions && s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r))
+		args.Tests = args.Tests && s.base.CanViewTests(user.UserBrief(r), util.Problem(r))
+		args.PrivateAttachments = args.PrivateAttachments && s.base.IsProblemEditor(user.UserBrief(r), util.Problem(r))
+		args.AllSubmissions = args.AllSubmissions && s.base.IsProblemEditor(user.UserBrief(r), util.Problem(r))
 		args.SubsLook = true
-		args.SubsLookingUser = util.UserBrief(r)
+		args.SubsLookingUser = user.UserBrief(r)
 
 		w.Header().Add("Content-Type", "application/zip")
 		w.Header().Add("Content-Disposition", fmt.Sprintf(`attachment; filename="%d-%s.zip"`, util.Problem(r).ID, kilonova.MakeSlug(util.Problem(r).Name)))

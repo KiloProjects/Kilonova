@@ -14,6 +14,25 @@ interface PaginatorParams {
 	showArrows?: boolean;
 }
 
+export function rezStr(count: number, truncatedCount: boolean = false): string {
+	if (count < 0) {
+		return `- ${getText("u20Results")}`;
+	}
+	if (count == 0) {
+		return `0 ${getText("u20Results")}`;
+	}
+	if (count == 1) {
+		return getText("oneResult");
+	}
+	if (count < 20) {
+		return `${count} ${getText("u20Results")}`;
+	}
+	if (truncatedCount) {
+		return getText("results");
+	}
+	return `${count} ${getText("manyResults")}`;
+}
+
 export function Paginator({ page, numpages, setPage, ctxSize, className, showArrows }: PaginatorParams) {
 	if (page < 1) {
 		page = 1;

@@ -62,32 +62,32 @@ func (s *API) SetupSessionV2(api huma.API) func(ctx huma.Context, next func(huma
 				return
 			}
 
-			user, err := s.base.UserFull(ctx.Context(), userID)
+			userFull, err := s.base.UserFull(ctx.Context(), userID)
 			if err != nil {
 				next(ctx)
 				return
 			}
 
-			trace.SpanFromContext(ctx.Context()).SetAttributes(attribute.Int("user.id", user.ID), attribute.String("user.name", user.Name))
+			trace.SpanFromContext(ctx.Context()).SetAttributes(attribute.Int("user.id", userFull.ID), attribute.String("user.name", userFull.Name))
 
 			next(huma.WithValue(
 				huma.WithValue(huma.WithValue(ctx, util.ScopesKey, token.Scopes),
-					util.AuthedUserKey, user),
+					user.AuthedUserKey, userFull),
 				util.AuthMethodKey, "oauth",
 			))
 			return
 		}
 
 		r, _ := humachi.Unwrap(ctx)
-		user, err := s.base.SessionUser(ctx.Context(), h, r)
-		if err != nil || user == nil {
+		sessionUser, err := s.base.SessionUser(ctx.Context(), h, r)
+		if err != nil || sessionUser == nil {
 			next(huma.WithValue(ctx, util.AuthMethodKey, "none"))
 			return
 		}
-		trace.SpanFromContext(ctx.Context()).SetAttributes(attribute.Int("user.id", user.ID), attribute.String("user.name", user.Name))
+		trace.SpanFromContext(ctx.Context()).SetAttributes(attribute.Int("user.id", sessionUser.ID), attribute.String("user.name", sessionUser.Name))
 		// TODO: Scopes
 		next(huma.WithValue(
-			huma.WithValue(ctx, util.AuthedUserKey, user),
+			huma.WithValue(ctx, user.AuthedUserKey, sessionUser),
 			util.AuthMethodKey, "session",
 		))
 	}

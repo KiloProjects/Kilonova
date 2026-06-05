@@ -9,6 +9,7 @@ import (
 	"path"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 )
 
@@ -44,13 +45,13 @@ func (s *API) createAttachment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if util.Problem(r) != nil {
-		if err := s.base.CreateProblemAttachment(r.Context(), &att, util.Problem(r).ID, file, &util.UserBrief(r).ID); err != nil {
+		if err := s.base.CreateProblemAttachment(r.Context(), &att, util.Problem(r).ID, file, &user.UserBrief(r).ID); err != nil {
 			statusError(w, err)
 			return
 		}
 		returnData(w, att.ID)
 	} else if util.BlogPost(r) != nil {
-		if err := s.base.CreateBlogPostAttachment(r.Context(), &att, util.BlogPost(r).ID, file, &util.UserBrief(r).ID); err != nil {
+		if err := s.base.CreateBlogPostAttachment(r.Context(), &att, util.BlogPost(r).ID, file, &user.UserBrief(r).ID); err != nil {
 			statusError(w, err)
 			return
 		}
@@ -163,7 +164,7 @@ func (s *API) updateAttachmentData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.base.UpdateAttachmentData(r.Context(), att.ID, val, util.UserBrief(r)); err != nil {
+	if err := s.base.UpdateAttachmentData(r.Context(), att.ID, val, user.UserBrief(r)); err != nil {
 		statusError(w, err)
 		return
 	}

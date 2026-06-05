@@ -20,9 +20,7 @@
         </aside>
     {{ end }}
     <div class="page-content-full-wrapper pt-0">
-        <kn-sub-viewer problemID="{{.Problem.ID}}" userID="{{authedUser.ID}}"
-            {{if .Topbar.Contest}}contestID="{{.Topbar.Contest.ID}}"{{end}}
-            title='{{getText "header.past_submissions"}}'></kn-sub-viewer>
+        {{ renderComponent .SubViewer }}
     </div>
 </div>
 

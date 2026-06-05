@@ -21,7 +21,10 @@ import "codemirror/keymap/vim";
 import Alpine from "alpinejs";
 
 window.Alpine = Alpine;
-Alpine.start();
+
+window.addEventListener("load", () => {
+	Alpine.start();
+});
 
 (() => {
 	var platformInfo: PlatformInfo = JSON.parse(document.getElementById("platform_info")?.textContent ?? "{}");
@@ -54,7 +57,6 @@ function createMorphConfig(swapStyle) {
 	}
 }
 
-// @ts-ignore
 htmx.defineExtension("morph", {
 	isInlineSwap: function (swapStyle) {
 		let config = createMorphConfig(swapStyle);
@@ -154,12 +156,12 @@ export class KNEditor {
 				gitHubSpice: false,
 				emoji: false
 			}
-		} else if(opts.language == "text" || opts.language == "text/plain") {
+		} else if (opts.language == "text" || opts.language == "text/plain") {
 			cmSettings.mode = "text/plain";
 		} else {
 			cmSettings.mode = opts.language;
 		}
-		if(opts.vimMode) {
+		if (opts.vimMode) {
 			cmSettings.keyMap = "vim";
 		}
 		this.cm = CodeMirror.fromTextArea(opts.textArea, cmSettings)
@@ -188,9 +190,9 @@ export class KNEditor {
 
 	onPaste(cb: (pasteText: string[]) => undefined | string[]) {
 		this.cm.on('beforeChange', (cm, event) => {
-			if(event.origin === "paste") {
+			if (event.origin === "paste") {
 				let newVal = cb(event.text);
-				if(typeof newVal !== 'undefined') {
+				if (typeof newVal !== 'undefined') {
 					event.update?.(undefined, undefined, newVal);
 				}
 			}

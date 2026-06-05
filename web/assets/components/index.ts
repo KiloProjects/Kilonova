@@ -2,7 +2,6 @@ import "preact/debug";
 
 export * from "./common";
 export * from "./sub_mgr";
-export * from "./subs_view";
 export * from "./contest";
 export * from "./att_renamer";
 export * from "./maxscore_breakdown";

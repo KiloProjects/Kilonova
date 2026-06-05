@@ -41,7 +41,7 @@ var buildInfo = sync.OnceValue(func() string {
 
 func platformInfo(ctx context.Context, enabledLanguages map[string]string) platformInfoValue {
 	userBrief := user.UserBriefContext(ctx)
-	var userID int = 0
+	var userID int
 	if userBrief != nil {
 		userID = userBrief.ID
 	}

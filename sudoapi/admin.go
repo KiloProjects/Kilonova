@@ -20,7 +20,6 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/bwmarrin/discordgo"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -368,7 +367,7 @@ func (s *BaseAPI) processLogEntry(ctx context.Context, val *logEntry, importantW
 	}
 
 	if val.Level != logLevelDiscord {
-		slog.LogAttrs(context.WithValue(ctx, util.ContentUserKey, val.Author), val.Level.toSlog(), val.Message, val.Attrs...)
+		slog.LogAttrs(context.WithValue(ctx, user.ContentUserKey, val.Author), val.Level.toSlog(), val.Message, val.Attrs...)
 	}
 
 	if val.Level.IsAuditLogLvl() && importantWebhook != nil {

@@ -22,11 +22,12 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova/domain/datastore"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/web/tutils"
-	"github.com/KiloProjects/kilonova/web/views"
 	"github.com/KiloProjects/kilonova/web/views/adminviews"
 	"github.com/KiloProjects/kilonova/web/views/modals"
 	"github.com/KiloProjects/kilonova/web/views/problems"
+	"github.com/KiloProjects/kilonova/web/views/submissions"
 	"github.com/KiloProjects/kilonova/web/views/utilviews"
 	"github.com/shopspring/decimal"
 	"github.com/skip2/go-qrcode"
@@ -52,10 +53,10 @@ const (
 )
 
 func (rt *Web) buildPblistCache(r *http.Request, listIDs []int) *http.Request {
-	if util.UserBrief(r) == nil {
+	if user.UserBrief(r) == nil {
 		return r
 	}
-	cache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r))
+	cache, err := rt.base.NumSolvedFromPblists(r.Context(), listIDs, user.UserBrief(r))
 	if err == nil {
 		return r.WithContext(context.WithValue(r.Context(), PblistCntCacheKey, cache))
 	}
@@ -73,11 +74,11 @@ func (rt *Web) buildPblistCache(r *http.Request, listIDs []int) *http.Request {
 
 func (rt *Web) discordLink() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if util.UserFull(r).DiscordID != nil {
+		if user.UserFull(r).DiscordID != nil {
 			http.Redirect(w, r, "/profile/linked", http.StatusTemporaryRedirect)
 			return
 		}
-		st, err := rt.base.DiscordAuthURL(r.Context(), util.UserBrief(r).ID)
+		st, err := rt.base.DiscordAuthURL(r.Context(), user.UserBrief(r).ID)
 		if err != nil {
 			rt.statusPage(w, r, kilonova.ErrorCode(err), err.Error())
 			return
@@ -90,11 +91,11 @@ func (rt *Web) discordLink() http.HandlerFunc {
 func (rt *Web) index() http.HandlerFunc {
 	templ := rt.parse(nil, "index.html", "modals/pblist.html", "modals/pbs.html", "modals/contest_brief.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		runningContests, err := rt.base.VisibleRunningContests(r.Context(), util.UserBrief(r))
+		runningContests, err := rt.base.VisibleRunningContests(r.Context(), user.UserBrief(r))
 		if err != nil {
 			runningContests = []*kilonova.Contest{}
 		}
-		futureContests, err := rt.base.VisibleFutureContests(r.Context(), util.UserBrief(r))
+		futureContests, err := rt.base.VisibleFutureContests(r.Context(), user.UserBrief(r))
 		if err != nil {
 			futureContests = []*kilonova.Contest{}
 		}
@@ -429,9 +430,9 @@ func (rt *Web) pbListProgressView() http.HandlerFunc {
 
 		var checkedUser = util.UserBrief(r)
 		if uname := r.FormValue("username"); len(uname) > 0 {
-			user, err := rt.base.UserBriefByName(r.Context(), uname)
+			userBrief, err := rt.base.UserBriefByName(r.Context(), uname)
 			if err == nil {
-				checkedUser = user
+				checkedUser = userBrief
 			}
 		}
 
@@ -441,7 +442,7 @@ func (rt *Web) pbListProgressView() http.HandlerFunc {
 			rt.statusPage(w, r, kilonova.ErrorCode(err), err.Error())
 			return
 		}
-		rt.runTempl(w, r.WithContext(context.WithValue(r.Context(), util.ContentUserKey, checkedUser)), templ, &ProblemListProgressParams{list, checkedUser})
+		rt.runTempl(w, r.WithContext(context.WithValue(r.Context(), user.ContentUserKey, checkedUser)), templ, &ProblemListProgressParams{list, checkedUser})
 	}
 }
 
@@ -652,7 +653,7 @@ func (rt *Web) submission(w http.ResponseWriter, r *http.Request) {
 	rt.runLayout(w, r, &LayoutParams{
 		Title: fmt.Sprintf("%s %d", kilonova.GetText(util.Language(r), "sub"), sub.ID),
 		Head:  utilviews.NoRobotsHead(),
-		Content: views.Submission(views.SubmissionPageParams{
+		Content: submissions.Submission(submissions.SubmissionPageParams{
 			Submission:    sub,
 			ForceShowCode: r.URL.Query().Get("forceCode") == "1",
 			LanguageFormatter: func(lang string) string {
@@ -731,13 +732,30 @@ func (rt *Web) createPaste(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Web) submissions() http.HandlerFunc {
-	templ := rt.parse(nil, "submissions.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !rt.canViewAllSubs(util.UserBrief(r)) {
 			rt.statusPage(w, r, 401, "Cannot view all submissions")
 			return
 		}
-		rt.runTempl(w, r, templ, struct{}{})
+		query := parseSubsViewerQuery(r)
+		filter := buildSubsFilter(query)
+		subs, err := rt.base.Submissions(r.Context(), filter, true, util.UserBrief(r))
+		if err != nil {
+			rt.statusPage(w, r, 500, "Couldn't fetch submissions")
+			return
+		}
+		numPages := (subs.Count + 49) / 50
+		rt.runLayout(w, r, &LayoutParams{
+			Title: kilonova.GetText(util.Language(r), "submissions"),
+			// TODO: Canonical URL
+			Content: submissions.SubsPage(submissions.SubsViewerParams{
+				Submissions: subs,
+				Query:       query,
+				NumPages:    numPages,
+				Languages:   rt.base.EnabledLanguages(),
+				IsAdmin:     util.UserBrief(r) != nil && util.UserBrief(r).IsAdmin(),
+			}),
+		})
 	}
 }
 
@@ -779,9 +797,9 @@ func (rt *Web) paste(w http.ResponseWriter, r *http.Request) {
 
 	rt.runLayout(w, r, &LayoutParams{
 		Title: fmt.Sprintf("%s #%d", kilonova.GetText(util.Language(r), "sub"), sub.ID),
-		Content: views.Paste(views.PastePageParams{
+		Content: submissions.Paste(submissions.PastePageParams{
 			Paste: util.Paste(r),
-			SubmissionPageParams: views.SubmissionPageParams{
+			SubmissionPageParams: submissions.SubmissionPageParams{
 				Submission:    sub,
 				ForceShowCode: true,
 				LanguageFormatter: func(lang string) string {
@@ -1103,10 +1121,32 @@ func (rt *Web) problemSubmissions() http.HandlerFunc {
 			return
 		}
 
-		rt.runTempl(w, r, normalTempl, &ProblemTopbarParams{
-			Topbar: rt.problemTopbar(r, "pb_submissions", -1),
+		problem := util.Problem(r)
+		query := parseSubsViewerQuery(r)
+		query.ProblemID = &problem.ID
+		overwrites := submissions.SubsViewerOverwrites{ProblemID: true}
+		if contest := util.Contest(r); contest != nil {
+			query.ContestID = &contest.ID
+			overwrites.ContestID = true
+		}
+		filter := buildSubsFilter(query)
+		subs, err := rt.base.Submissions(r.Context(), filter, true, util.UserBrief(r))
+		if err != nil {
+			rt.statusPage(w, r, 500, "Couldn't fetch submissions")
+			return
+		}
 
-			Problem: util.Problem(r),
+		rt.runTempl(w, r, normalTempl, &ProblemTopbarParams{
+			Topbar:  rt.problemTopbar(r, "pb_submissions", -1),
+			Problem: problem,
+			SubViewer: submissions.SubsViewer(submissions.SubsViewerParams{
+				Submissions: subs,
+				Query:       query,
+				Overwrites:  overwrites,
+				NumPages:    (subs.Count + 49) / 50,
+				Languages:   rt.base.EnabledLanguages(),
+				IsAdmin:     util.UserBrief(r) != nil && util.UserBrief(r).IsAdmin(),
+			}),
 		})
 	}
 }
@@ -1130,7 +1170,7 @@ func (rt *Web) problemStatistics() http.HandlerFunc {
 }
 
 func (rt *Web) problemSubmit() http.HandlerFunc {
-	templ := rt.parse(nil, "problem/pb_submit.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
+	toRender := rt.parse(nil, "problem/pb_submit.html", "problem/topbar.html", "modals/contest_sidebar.html", "modals/pb_submit_form.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		langs, err := rt.base.ProblemLanguages(r.Context(), util.Problem(r))
 		if err != nil {
@@ -1139,11 +1179,40 @@ func (rt *Web) problemSubmit() http.HandlerFunc {
 			return
 		}
 
-		rt.runTempl(w, r, templ, &ProblemTopbarParams{
+		problem := util.Problem(r)
+		user := util.UserBrief(r)
+		query := parseSubsViewerQuery(r)
+		query.ProblemID = &problem.ID
+		query.UserID = &user.ID
+		overwrites := submissions.SubsViewerOverwrites{ProblemID: true, UserID: true}
+		if contest := util.Contest(r); contest != nil {
+			query.ContestID = &contest.ID
+			overwrites.ContestID = true
+		}
+		filter := buildSubsFilter(query)
+		subs, subsErr := rt.base.Submissions(r.Context(), filter, true, user)
+		if subsErr != nil {
+			slog.WarnContext(r.Context(), "Couldn't fetch past submissions", slog.Any("err", subsErr))
+		}
+		var subViewer templ.Component
+		if subs != nil {
+			subViewer = submissions.SubsViewer(submissions.SubsViewerParams{
+				Submissions: subs,
+				Query:       query,
+				Overwrites:  overwrites,
+				NumPages:    (subs.Count + 49) / 50,
+				Title:       kilonova.GetText(util.Language(r), "header.past_submissions"),
+				Languages:   rt.base.EnabledLanguages(),
+				IsAdmin:     user.IsAdmin(),
+			})
+		}
+
+		rt.runTempl(w, r, toRender, &ProblemTopbarParams{
 			Topbar: rt.problemTopbar(r, "pb_submit", -1),
 
 			Languages: langs,
 			Problem:   util.Problem(r),
+			SubViewer: subViewer,
 		})
 	}
 }
@@ -1870,7 +1939,7 @@ func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *templa
 func (rt *Web) selfProfile() http.HandlerFunc {
 	templ := rt.parse(nil, "profile.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.profilePage(w, r, templ, util.UserFull(r))
+		rt.profilePage(w, r, templ, user.UserFull(r))
 	}
 }
 
@@ -1995,7 +2064,7 @@ func (rt *Web) linkStatusPage(w http.ResponseWriter, r *http.Request, templ *tem
 func (rt *Web) selfLinkStatus() http.HandlerFunc {
 	templ := rt.parse(nil, "discordLink.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.linkStatusPage(w, r, templ, util.UserFull(r))
+		rt.linkStatusPage(w, r, templ, user.UserFull(r))
 	}
 }
 
@@ -2038,7 +2107,7 @@ func (rt *Web) userSessionsPage(w http.ResponseWriter, r *http.Request, templ *t
 func (rt *Web) selfSessions() http.HandlerFunc {
 	templ := rt.parse(nil, "auth/sessions.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.userSessionsPage(w, r, templ, util.UserFull(r))
+		rt.userSessionsPage(w, r, templ, user.UserFull(r))
 	}
 }
 
@@ -2153,7 +2222,7 @@ func (rt *Web) sessionsFilter() http.HandlerFunc {
 func (rt *Web) resendEmail() http.HandlerFunc {
 	templ := rt.parse(nil, "util/sent.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		u := util.UserFull(r)
+		u := user.UserFull(r)
 		if u.VerifiedEmail {
 			rt.statusPage(w, r, 403, "Deja ai verificat emailul!")
 			return
@@ -2250,12 +2319,12 @@ func (rt *Web) redirectDiscord(w http.ResponseWriter, r *http.Request) {
 func (rt *Web) checkLockout() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if flags.ForceLogin.Value() && !util.UserBrief(r).IsAuthed() {
+			if flags.ForceLogin.Value() && !user.UserBrief(r).IsAuthed() {
 				http.Redirect(w, r, "/login?back="+url.PathEscape(r.URL.Path), http.StatusTemporaryRedirect)
 				return
 			}
 
-			if util.UserFull(r) != nil && util.UserFull(r).NameChangeForced {
+			if user.UserFull(r) != nil && user.UserFull(r).NameChangeForced {
 				rt.runLayout(w, r, &LayoutParams{
 					Title:   kilonova.GetText(util.Language(r), "usernameChangeForced"),
 					Content: utilviews.UserLockout(),
@@ -2302,8 +2371,8 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 
 	// "cache" most util.* calls
 	lang := util.Language(r)
-	fullAuthedUser := util.UserFull(r)
-	authedUser := util.UserBrief(r)
+	fullAuthedUser := user.UserFull(r)
+	authedUser := user.UserBrief(r)
 	var pblistCache map[int]int
 	switch v := r.Context().Value(PblistCntCacheKey).(type) {
 	case map[int]int:
@@ -2367,7 +2436,7 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 			return authedUser != nil
 		},
 		"contentUser": func() *kilonova.UserBrief {
-			return util.ContentUserBrief(r)
+			return user.ContentUserBrief(r)
 		},
 		"fullAuthedUser": func() *kilonova.UserFull {
 			return fullAuthedUser
@@ -2648,4 +2717,72 @@ func (rt *Web) getOlderSubmissions(ctx context.Context, lookingUser *kilonova.Us
 		AllFinished: allFinished,
 		AutoReload:  true,
 	}, nil
+}
+
+func parseSubsViewerQuery(r *http.Request) submissions.SubsViewerQuery {
+	q := r.URL.Query()
+	query := submissions.SubsViewerQuery{
+		Status:    q.Get("status"),
+		Lang:      q.Get("lang"),
+		Ordering:  q.Get("ordering"),
+		Ascending: q.Get("ascending") == "true",
+		Page:      1,
+	}
+	if page, err := strconv.Atoi(q.Get("page")); err == nil && page > 0 {
+		query.Page = page
+	}
+	if uid, err := strconv.Atoi(q.Get("user_id")); err == nil && uid > 0 {
+		query.UserID = &uid
+	}
+	if pid, err := strconv.Atoi(q.Get("problem_id")); err == nil && pid > 0 {
+		query.ProblemID = &pid
+	}
+	if plid, err := strconv.Atoi(q.Get("problem_list_id")); err == nil && plid > 0 {
+		query.ProblemListID = &plid
+	}
+	if cid, err := strconv.Atoi(q.Get("contest_id")); err == nil && cid > 0 {
+		query.ContestID = &cid
+	}
+	if scoreStr := q.Get("score"); scoreStr != "" {
+		if score, err := decimal.NewFromString(scoreStr); err == nil {
+			query.Score = &score
+		}
+	}
+	switch ce := q.Get("compile_error"); ce {
+	case "true":
+		t := true
+		query.CompileError = &t
+	case "false":
+		f := false
+		query.CompileError = &f
+	}
+	if q.Get("accepted_only") == "true" {
+		query.Status = "finished"
+		s := decimal.NewFromInt(100)
+		query.Score = &s
+	}
+	if query.Ordering == "" {
+		query.Ordering = "id"
+	}
+	return query
+}
+
+func buildSubsFilter(query submissions.SubsViewerQuery) kilonova.SubmissionFilter {
+	filter := kilonova.SubmissionFilter{
+		UserID:        query.UserID,
+		ProblemID:     query.ProblemID,
+		ProblemListID: query.ProblemListID,
+		ContestID:     query.ContestID,
+		Status:        kilonova.Status(query.Status),
+		Score:         query.Score,
+		CompileError:  query.CompileError,
+		Ordering:      query.Ordering,
+		Ascending:     query.Ascending,
+		Limit:         50,
+		Offset:        50 * (query.Page - 1),
+	}
+	if query.Lang != "" {
+		filter.Lang = &query.Lang
+	}
+	return filter
 }

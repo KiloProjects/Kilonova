@@ -39,7 +39,7 @@ import (
 func Kilonova(ctx context.Context, command *cli.Command) error {
 
 	// Setup context
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, os.Kill)
 

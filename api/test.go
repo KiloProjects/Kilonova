@@ -10,6 +10,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/archive/test"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/shopspring/decimal"
 )
@@ -161,7 +162,7 @@ func (s *API) processArchive(r *http.Request, firstImport bool) error {
 	}
 
 	params := &test.TestProcessParams{
-		Requestor:      util.UserFull(r),
+		Requestor:      user.UserFull(r),
 		ScoreParamsStr: r.FormValue("scoreParameters"),
 
 		FirstImport: firstImport,

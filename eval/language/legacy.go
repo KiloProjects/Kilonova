@@ -276,7 +276,7 @@ var Langs = map[string]langer{
 
 // legacyLanguage is the data available for a language
 type legacyLanguage struct {
-	disabled bool `json:"disabled"`
+	disabled bool
 
 	// Useful to categorize by file upload
 	Extensions []string `json:"extensions"`

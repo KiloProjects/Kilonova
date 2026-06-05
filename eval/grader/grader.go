@@ -25,7 +25,6 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/dominikbraun/graph"
 	"github.com/shopspring/decimal"
 )
 
@@ -59,72 +58,6 @@ func (sh *submissionHandler) getFilename() string {
 		return "none.txt"
 	}
 	return sh.files[0].Filename
-}
-
-func (sh *submissionHandler) buildRunGraph(ctx context.Context, subtests []*kilonova.SubTest) (graph.Graph[int, *kilonova.SubTest], error) {
-	g := graph.New(func(sub *kilonova.SubTest) int {
-		if sub == nil {
-			return -1
-		}
-		return sub.ID
-	}, graph.Acyclic(), graph.PreventCycles(), graph.Directed(), graph.Rooted())
-	_ = g.AddVertex(nil)
-	for _, test := range subtests {
-		if err := g.AddVertex(test); err != nil && !errors.Is(err, graph.ErrVertexAlreadyExists) {
-			return nil, err
-		}
-	}
-	switch sh.sub.SubmissionType {
-	case kilonova.EvalTypeClassic:
-		stks, err := sh.base.SubmissionSubTasks(ctx, sh.sub.ID)
-		if err != nil {
-			return nil, err
-		}
-		if len(stks) == 0 {
-			for _, subtest := range subtests {
-				if err := g.AddEdge(-1, subtest.ID); err != nil && !errors.Is(err, graph.ErrEdgeAlreadyExists) {
-					return nil, err
-				}
-			}
-		} else {
-			for _, subtask := range stks {
-				// Only do it if sequential
-				//if subtask.Ordering = kilonova.SubtaskOrderingSequential {
-				lastVertex := -1
-				for i := range subtask.Subtests {
-					if err := g.AddEdge(lastVertex, subtask.Subtests[i]); err != nil && !errors.Is(err, graph.ErrEdgeAlreadyExists) {
-						return nil, err
-					}
-					lastVertex = subtask.Subtests[i]
-				}
-				//}
-			}
-		}
-	case kilonova.EvalTypeICPC:
-		lastsVertex := -1
-		for i := range subtests {
-			if err := g.AddEdge(lastsVertex, subtests[i].ID); err != nil && !errors.Is(err, graph.ErrEdgeAlreadyExists) {
-				return nil, err
-			}
-			lastsVertex = subtests[i].ID
-		}
-	}
-
-	edges, err := g.Edges()
-	if err != nil {
-		return nil, err
-	}
-	satisfiedSubtests := make(map[int]bool)
-	for _, edge := range edges {
-		satisfiedSubtests[edge.Target] = true
-	}
-	for _, subtest := range subtests {
-		if _, ok := satisfiedSubtests[subtest.ID]; !ok {
-			_ = g.AddEdge(-1, subtest.ID)
-		}
-	}
-
-	return g, nil
 }
 
 func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.CompileRequest, error) {

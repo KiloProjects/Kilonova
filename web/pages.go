@@ -176,6 +176,7 @@ type ProblemTopbarParams struct {
 
 	Languages []language.Lang
 	Problem   *kilonova.Problem
+	SubViewer templ.Component
 }
 
 type ProblemStatisticsParams struct {

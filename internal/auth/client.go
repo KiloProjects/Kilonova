@@ -106,6 +106,7 @@ func (c *Client) DevMode() bool {
 	return c.DeveloperMode
 }
 
+//nolint:staticcheck
 func (c *Client) RestrictAdditionalIdTokenScopes() func(scopes []string) []string {
 	return func(scopes []string) []string {
 		return scopes

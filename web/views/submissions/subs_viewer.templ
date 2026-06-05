@@ -1,0 +1,517 @@
+package submissions
+
+import (
+	"context"
+	"fmt"
+	"math"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/KiloProjects/kilonova/web/tutils"
+	"github.com/shopspring/decimal"
+)
+
+type SubsViewerQuery struct {
+	UserID        *int
+	ProblemID     *int
+	ProblemListID *int
+	ContestID     *int
+	Status        string
+	Score         *decimal.Decimal
+	Lang          string
+	CompileError  *bool
+	Ordering      string
+	Ascending     bool
+	Page          int
+}
+
+// Fields that are pre-set and hidden from the filter form
+// TODO: Replace vibecoded solution with better
+type SubsViewerOverwrites struct {
+	UserID    bool
+	ProblemID bool
+	ContestID bool
+}
+
+type SubsViewerParams struct {
+	Submissions *sudoapi.Submissions
+	Query       SubsViewerQuery
+	Overwrites  SubsViewerOverwrites
+	NumPages    int
+	Title       string
+	Languages   map[string]string
+	IsAdmin     bool
+}
+
+func buildSortURL(q SubsViewerQuery, ordering string) string {
+	ascending := false
+	if q.Ordering == ordering {
+		ascending = !q.Ascending
+	}
+	return buildQueryURL(q, map[string]string{
+		"ordering":  ordering,
+		"ascending": strconv.FormatBool(ascending),
+		"page":      "1",
+	})
+}
+
+func buildQueryURL(q SubsViewerQuery, overrides map[string]string) string {
+	params := url.Values{}
+
+	if q.UserID != nil {
+		params.Set("user_id", strconv.Itoa(*q.UserID))
+	}
+	if q.ProblemID != nil {
+		params.Set("problem_id", strconv.Itoa(*q.ProblemID))
+	}
+	if q.ProblemListID != nil {
+		params.Set("problem_list_id", strconv.Itoa(*q.ProblemListID))
+	}
+	if q.ContestID != nil {
+		params.Set("contest_id", strconv.Itoa(*q.ContestID))
+	}
+	if q.Status != "" {
+		params.Set("status", q.Status)
+	}
+	if q.Score != nil {
+		params.Set("score", q.Score.String())
+	}
+	if q.Lang != "" {
+		params.Set("lang", q.Lang)
+	}
+	if q.CompileError != nil {
+		params.Set("compile_error", strconv.FormatBool(*q.CompileError))
+	}
+	if q.Ordering != "" && q.Ordering != "id" {
+		params.Set("ordering", q.Ordering)
+	}
+	if q.Ascending {
+		params.Set("ascending", "true")
+	}
+	if q.Page > 1 {
+		params.Set("page", strconv.Itoa(q.Page))
+	}
+
+	for k, v := range overrides {
+		if v == "" {
+			params.Del(k)
+		} else {
+			params.Set(k, v)
+		}
+	}
+
+	if len(params) == 0 {
+		return ""
+	}
+	return "?" + params.Encode()
+}
+
+func formatScoreStr(score string) string {
+	if strings.Contains(score, ".") {
+		score = strings.TrimRight(score, "0")
+		score = strings.TrimRight(score, ".")
+	}
+	return score
+}
+
+func sizeFormatter(size int) string {
+	if size > 1024*1024 {
+		return fmt.Sprintf("%.2f MB", float64(size)/1024/1024)
+	}
+	if size > 1024 {
+		return fmt.Sprintf("%.2f KB", float64(size)/1024)
+	}
+	return fmt.Sprintf("%d B", size)
+}
+
+func getGradient(score, maxScore float64) string {
+	if maxScore == 0 || score == 0 {
+		if score == 0 {
+			return "#f11722"
+		}
+		return "#e3dd71"
+	}
+	rap := score / maxScore
+	if rap == 1.0 {
+		return "#7fff00"
+	}
+	if rap > 0.8 {
+		return "#67cf39"
+	}
+	if rap > 0.6 {
+		return "#9fdd2e"
+	}
+	if rap > 0.4 {
+		return "#d2eb19"
+	}
+	if rap > 0.2 {
+		return "#f1d011"
+	}
+	if rap > 0 {
+		return "#f6881e"
+	}
+	return "#f11722"
+}
+
+func rezStr(ctx context.Context, count int, truncated bool) string {
+	if count < 0 {
+		return fmt.Sprintf("- %s", tutils.T(ctx, "u20Results"))
+	}
+	if count == 0 {
+		return fmt.Sprintf("0 %s", tutils.T(ctx, "u20Results"))
+	}
+	if count == 1 {
+		return tutils.T(ctx, "oneResult")
+	}
+	if count < 20 {
+		return fmt.Sprintf("%d %s", count, tutils.T(ctx, "u20Results"))
+	}
+	if truncated {
+		return tutils.T(ctx, "results")
+	}
+	return fmt.Sprintf("%d %s", count, tutils.T(ctx, "manyResults"))
+}
+
+func formatTime(t time.Time) string {
+	return t.Format("02/01/2006 15:04")
+}
+
+func submissionStatus(ctx context.Context, sub *kilonova.Submission, problem *kilonova.Problem) string {
+	if sub.Status == kilonova.StatusFinished {
+		if sub.SubmissionType == kilonova.EvalTypeClassic {
+			afterText := fmt.Sprintf(" %s", tutils.T(ctx, "points"))
+			if problem != nil && math.Abs(problem.ScoreScale.InexactFloat64()-100.0) > 0.01 {
+				afterText = fmt.Sprintf("%% %s", tutils.T(ctx, "correct"))
+			}
+			score := formatScoreStr(sub.Score.StringFixed(sub.ScorePrecision))
+			return fmt.Sprintf("%s: %s%s", tutils.T(ctx, "evaluated"), score, afterText)
+		}
+		if sub.Score.InexactFloat64() == 100 {
+			return tutils.T(ctx, "accepted")
+		}
+		if sub.ICPCVerdict != nil {
+			return icpcVerdictText(*sub.ICPCVerdict)
+		}
+		return tutils.T(ctx, "rejected")
+	} else if sub.Status == kilonova.StatusWorking {
+		return tutils.T(ctx, "evaluating")
+	} else if sub.Status == kilonova.StatusReevaling {
+		return tutils.T(ctx, "reevaling")
+	}
+	return tutils.T(ctx, "waiting")
+}
+
+func icpcVerdictText(verdict string) string {
+	re := strings.NewReplacer(
+		"test_verdict.", "",
+		"_", " ",
+	)
+	return re.Replace(verdict)
+}
+
+func contestProblemURL(contestID *int, problemID int) string {
+	if contestID != nil {
+		return fmt.Sprintf("/contests/%d/problems/%d", *contestID, problemID)
+	}
+	return fmt.Sprintf("/problems/%d", problemID)
+}
+
+func statusStyle(sub *kilonova.Submission) string {
+	if sub.Status != kilonova.StatusFinished {
+		return ""
+	}
+	score := sub.Score.InexactFloat64()
+	maxScore := 100.0
+	if sub.SubmissionType == kilonova.EvalTypeICPC && score != 100 {
+		score = 0
+	}
+	return fmt.Sprintf("background-color: %s", getGradient(score, maxScore))
+}
+
+templ sortIndicator(q SubsViewerQuery, ordering string) {
+	if q.Ordering != ordering {
+		{" "}<i class="fas fa-sort"></i>
+	} else if q.Ascending {
+		{" "}<i class="fas fa-sort-up"></i>
+	} else {
+		{" "}<i class="fas fa-sort-down"></i>
+	}
+}
+
+templ SubsPage(params SubsViewerParams) {
+	<h1>{ T(ctx, "subStatus") }</h1>
+	@SubsViewer(params)
+}
+
+templ SubsViewer(params SubsViewerParams) {
+	<div class="page-holder mt-0">
+		<aside class="page-sidebar lg:order-last">
+			<div class="segment-panel">
+				<h2>{ T(ctx, "filters") }</h2>
+				<form method="GET" hx-boost="true">
+					if params.Overwrites.UserID && params.Query.UserID != nil {
+						<input type="hidden" name="user_id" value={ strconv.Itoa(*params.Query.UserID) }/>
+					}
+					if params.Overwrites.ProblemID && params.Query.ProblemID != nil {
+						<input type="hidden" name="problem_id" value={ strconv.Itoa(*params.Query.ProblemID) }/>
+					}
+					if params.Overwrites.ContestID && params.Query.ContestID != nil {
+						<input type="hidden" name="contest_id" value={ strconv.Itoa(*params.Query.ContestID) }/>
+					}
+					<label class="block mb-2">
+						<span class="form-label">{ T(ctx, "language") }:</span>
+						<select class="form-select" name="lang">
+							<option value="">-</option>
+							for name, humanName := range params.Languages {
+								if name == params.Query.Lang {
+									<option value={ name } selected>{ humanName }</option>
+								} else {
+									<option value={ name }>{ humanName }</option>
+								}
+							}
+						</select>
+					</label>
+					<label class="block mb-2">
+						<input
+							type="checkbox"
+							class="form-checkbox mr-2"
+							name="accepted_only"
+							value="true"
+							if params.Query.Status == "finished" && params.Query.Score != nil && params.Query.Score.InexactFloat64() == 100 {
+								checked
+							}
+						/>
+						<span class="form-label">{ T(ctx, "acceptedSubs") }</span>
+					</label>
+					<details class="block mb-2">
+						<summary class="form-label">{ T(ctx, "advancedOptions") }</summary>
+						<label class="block mb-2">
+							<span class="form-label">{ T(ctx, "status") }:</span>
+							<select class="form-select" name="status">
+								<option value="">-</option>
+								for _, s := range []string{"finished", "working", "waiting", "reevaling"} {
+									if s == params.Query.Status {
+										<option value={ s } selected>{ T(ctx, s) }</option>
+									} else {
+										<option value={ s }>{ T(ctx, s) }</option>
+									}
+								}
+							</select>
+						</label>
+						if !params.Overwrites.UserID {
+							<label class="block mb-2">
+								<span class="form-label">{ T(ctx, "userID") }:</span>
+								<input
+									class="form-input"
+									type="number"
+									min="0"
+									name="user_id"
+									if params.Query.UserID != nil {
+										value={ strconv.Itoa(*params.Query.UserID) }
+									}
+								/>
+							</label>
+						}
+						if !params.Overwrites.ProblemID {
+							<label class="block mb-2">
+								<span class="form-label">{ T(ctx, "problemID") }:</span>
+								<input
+									class="form-input"
+									type="number"
+									min="0"
+									name="problem_id"
+									if params.Query.ProblemID != nil {
+										value={ strconv.Itoa(*params.Query.ProblemID) }
+									}
+								/>
+							</label>
+						}
+						<label class="block mb-2">
+							<span class="form-label">{ T(ctx, "problemListID") }:</span>
+							<input
+								class="form-input"
+								type="number"
+								min="0"
+								name="problem_list_id"
+								if params.Query.ProblemListID != nil {
+									value={ strconv.Itoa(*params.Query.ProblemListID) }
+								}
+							/>
+						</label>
+						if !params.Overwrites.ContestID {
+							<label class="block mb-2">
+								<span class="form-label">{ T(ctx, "contestID") }:</span>
+								<input
+									class="form-input"
+									type="number"
+									min="0"
+									name="contest_id"
+									if params.Query.ContestID != nil {
+										value={ strconv.Itoa(*params.Query.ContestID) }
+									}
+								/>
+							</label>
+						}
+						<label class="block mb-2">
+							<span class="form-label">{ T(ctx, "score") }:</span>
+							<input
+								class="form-input"
+								type="number"
+								min="-1"
+								max="100"
+								step="0.0001"
+								name="score"
+								if params.Query.Score != nil {
+									value={ params.Query.Score.String() }
+								}
+							/>
+						</label>
+						<label class="block mb-2">
+							<span class="form-label">{ T(ctx, "compileErr") }:</span>
+							<select class="form-select" name="compile_error">
+								<option value="">-</option>
+								if params.Query.CompileError != nil && *params.Query.CompileError {
+									<option value="true" selected>{ T(ctx, "yes") }</option>
+								} else {
+									<option value="true">{ T(ctx, "yes") }</option>
+								}
+								if params.Query.CompileError != nil && !*params.Query.CompileError {
+									<option value="false" selected>{ T(ctx, "no") }</option>
+								} else {
+									<option value="false">{ T(ctx, "no") }</option>
+								}
+							</select>
+						</label>
+					</details>
+					<button type="submit" class="btn btn-blue mb-4 mr-2">{ T(ctx, "fetch") }</button>
+					<button type="button" class="btn mb-4 mr-2" onclick={ copyQueryJS() }>{ T(ctx, "filterLink") }</button>
+					if params.IsAdmin {
+						<a class="btn" href={ templ.URL("/assets/submissions/export" + buildQueryURL(params.Query, nil)) }>{ T(ctx, "exportSubs") }</a>
+					}
+				</form>
+			</div>
+		</aside>
+		<div class="page-content">
+			if params.Title != "" {
+				<h1>{ params.Title }</h1>
+			}
+			<h2 class="inline-block">{ rezStr(ctx, params.Submissions.Count, params.Submissions.Truncated) }</h2>
+			<div class="flex justify-center">
+				@tutils.Paginator(tutils.PaginatorConfig{
+					Page:        params.Query.Page,
+					NumPages:    params.NumPages,
+					ContextSize: 2,
+					ShowArrows:  true,
+				})
+			</div>
+			if !params.Overwrites.ProblemID && params.Query.ProblemID != nil && *params.Query.ProblemID > 0 && len(params.Submissions.Problems) > 0 {
+				for _, p := range params.Submissions.Problems {
+					<p>{ T(ctx, "problemSingle") } <a href={ templ.URL(fmt.Sprintf("/problems/%d", p.ID)) }>{ p.Name }</a></p>
+					break
+				}
+			}
+			if len(params.Submissions.Submissions) > 0 {
+				<div>
+					<table class="kn-table">
+						<thead>
+							<tr>
+								<th scope="col" class="w-20 text-center px-4 py-2">{ T(ctx, "id") }</th>
+								<th scope="col">{ T(ctx, "author") }</th>
+								<th scope="col" class="cursor-pointer">
+									<a class="block nostyle" href={ templ.URL(buildSortURL(params.Query, "id")) }>
+										{ T(ctx, "uploadDate") } @sortIndicator(params.Query, "id")
+									</a>
+								</th>
+								if params.Query.ProblemID == nil || (params.Query.ProblemID != nil && *params.Query.ProblemID == 0) {
+									<th scope="col">{ T(ctx, "problemSingle") }</th>
+								} else {
+									<th scope="col" class="cursor-pointer">
+										<a class="block nostyle" href={ templ.URL(buildSortURL(params.Query, "code_size")) }>
+											{ T(ctx, "codeSize") } @sortIndicator(params.Query, "code_size")
+										</a>
+									</th>
+								}
+								<th scope="col" class="cursor-pointer">
+									<a class="block nostyle" href={ templ.URL(buildSortURL(params.Query, "max_time")) }>
+										{ T(ctx, "time") } @sortIndicator(params.Query, "max_time")
+									</a>
+								</th>
+								<th scope="col" class="cursor-pointer">
+									<a class="block nostyle" href={ templ.URL(buildSortURL(params.Query, "max_memory")) }>
+										{ T(ctx, "memory") } @sortIndicator(params.Query, "max_memory")
+									</a>
+								</th>
+								<th scope="col" class="w-1/6 cursor-pointer">
+									<a class="block nostyle" href={ templ.URL(buildSortURL(params.Query, "score")) }>
+										{ T(ctx, "status") } @sortIndicator(params.Query, "score")
+									</a>
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							for _, sub := range params.Submissions.Submissions {
+								<tr class="kn-table-row">
+									<th scope="row" class="text-center px-2 py-1">{ fmt.Sprint(sub.ID) }</th>
+									<td class="px-2 py-1">
+										if user, ok := params.Submissions.Users[sub.UserID]; ok {
+											<a href={ templ.URL(fmt.Sprintf("/profile/%s", user.Name)) }>{ user.Name }</a>
+										} else {
+											-
+										}
+									</td>
+									<td class="text-center px-2 py-1">{ formatTime(sub.CreatedAt) }</td>
+									if params.Query.ProblemID == nil || (params.Query.ProblemID != nil && *params.Query.ProblemID == 0) {
+										<td class="text-center px-2 py-1">
+											if prob, ok := params.Submissions.Problems[sub.ProblemID]; ok {
+												<a href={ templ.URL(contestProblemURL(sub.ContestID, prob.ID)) }>{ prob.Name }</a>
+											} else {
+												-
+											}
+										</td>
+									} else {
+										<td class="text-center px-2 py-1">
+											if sub.CodeSize > 0 {
+												<span>{ sizeFormatter(sub.CodeSize) }</span>
+											} else {
+												<span>-</span>
+											}
+										</td>
+									}
+									<td class="text-center px-2 py-1">
+										if sub.MaxTime == -1 {
+											-
+										} else {
+											{ fmt.Sprintf("%.0fms", math.Floor(sub.MaxTime*1000)) }
+										}
+									</td>
+									<td class="text-center px-2 py-1">
+										if sub.MaxMemory == -1 {
+											-
+										} else {
+											{ sizeFormatter(sub.MaxMemory * 1024) }
+										}
+									</td>
+									<td class="text-center" style={ statusStyle(sub) }>
+										<a href={ templ.URL(fmt.Sprintf("/submissions/%d", sub.ID)) }>{ submissionStatus(ctx, sub, params.Submissions.Problems[sub.ProblemID]) }</a>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			} else {
+				<div class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center">{ T(ctx, "noSubFound") }</div>
+			}
+		</div>
+	</div>
+}
+
+func copyQueryJS() templ.ComponentScript {
+	return templ.ComponentScript{
+		Call: templ.SafeScript("navigator.clipboard.writeText(window.location.origin+window.location.pathname+window.location.search).then(function(){bundled.createToast({status:'success',title:bundled.getText('copied')})}).catch(function(){bundled.createToast({status:'error',title:bundled.getText('notCopied')})})"),
+	}
+}

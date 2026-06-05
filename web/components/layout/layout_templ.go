@@ -10,6 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"context"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"io"
 	"time"
@@ -60,7 +61,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 32, Col: 15}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 33, Col: 15}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -73,7 +74,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var3 templ.SafeURL
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs("/" + hashNamer.HashName("static/favicons/favicon.ico"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 33, Col: 108}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 34, Col: 108}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -86,7 +87,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var4 templ.SafeURL
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs("/" + hashNamer.HashName("static/favicons/favicon-32x32.png"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 34, Col: 117}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 35, Col: 117}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -99,7 +100,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var5 templ.SafeURL
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs("/" + hashNamer.HashName("static/favicons/favicon-16x16.png"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 35, Col: 117}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 36, Col: 117}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -112,7 +113,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var6 templ.SafeURL
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs("/" + hashNamer.HashName("static/favicons/favicon.ico"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 38, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 39, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -125,7 +126,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.ResolveAttributeValue(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 45, Col: 42}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 46, Col: 42}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 		if templ_7745c5c3_Err != nil {
@@ -138,7 +139,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.ResolveAttributeValue(description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 47, Col: 54}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 48, Col: 54}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var8)
 		if templ_7745c5c3_Err != nil {
@@ -151,7 +152,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.ResolveAttributeValue(description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 48, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 49, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var9)
 		if templ_7745c5c3_Err != nil {
@@ -164,7 +165,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.ResolveAttributeValue("/" + hashNamer.HashName("static/ogimage.jpeg"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 51, Col: 84}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 52, Col: 84}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var10)
 		if templ_7745c5c3_Err != nil {
@@ -189,7 +190,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.ResolveAttributeValue("/" + hashNamer.HashName("static/bundle.js"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 55, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 56, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var11)
 		if templ_7745c5c3_Err != nil {
@@ -202,7 +203,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.ResolveAttributeValue("/" + hashNamer.HashName("static/vendored.js"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 56, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 57, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var12)
 		if templ_7745c5c3_Err != nil {
@@ -215,7 +216,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var13 templ.SafeURL
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs("/" + hashNamer.HashName("static/chroma.css"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 69, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 70, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -228,7 +229,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var14 templ.SafeURL
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinURLErrs("/" + hashNamer.HashName("static/vendored.css"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 70, Col: 78}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 71, Col: 78}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -241,7 +242,7 @@ func mainHeadTags(enabledLanguages map[string]string, title string, description 
 		var templ_7745c5c3_Var15 templ.SafeURL
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs("/" + hashNamer.HashName("static/styles.css"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 71, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 72, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -304,7 +305,7 @@ func Layout(params LayoutParams) templ.Component {
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.ResolveAttributeValue(util.LanguageContext(ctx))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 89, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `components/layout/layout.templ`, Line: 90, Col: 34}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
 		if templ_7745c5c3_Err != nil {
@@ -343,8 +344,8 @@ func Layout(params LayoutParams) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if user := util.UserFullContext(ctx); user != nil {
-			if !user.VerifiedEmail {
+		if userFull := user.UserFullContext(ctx); userFull != nil {
+			if !userFull.VerifiedEmail {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<div class=\"w-full py-1 px-2 bg-green-200 dark:bg-green-700 text-black dark:text-white text-center\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err

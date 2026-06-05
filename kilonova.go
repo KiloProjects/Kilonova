@@ -1,6 +1,7 @@
 package kilonova
 
 import (
+	"context"
 	"log/slog"
 	"net/url"
 	"time"
@@ -37,7 +38,7 @@ func DebugMode() bool {
 
 func DefaultLanguage() string {
 	if defaultLanguage == "" {
-		slog.Warn("No default language set, defaulting to English")
+		slog.WarnContext(context.Background(), "No default language set, defaulting to English")
 		defaultLanguage = "en"
 	}
 	return defaultLanguage
@@ -60,7 +61,7 @@ func SetDefaultLanguage(lng string) {
 	switch lng {
 	case "en", "ro":
 	case "":
-		slog.Warn("No default language set, defaulting to English")
+		slog.WarnContext(context.Background(), "No default language set, defaulting to English")
 		defaultLanguage = "en"
 	default:
 		panic("invalid language (only 'en' and 'ro' allowed): " + lng)

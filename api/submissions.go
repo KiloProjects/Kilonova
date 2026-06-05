@@ -136,7 +136,7 @@ func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	id, err := s.base.CreateSubmission(context.WithoutCancel(r.Context()), util.UserFull(r), problem, code, fh.Filename, lang, args.ContestID, false, extraCode, extraCodeFilename)
+	id, err := s.base.CreateSubmission(context.WithoutCancel(r.Context()), user.UserFull(r), problem, code, fh.Filename, lang, args.ContestID, false, extraCode, extraCodeFilename)
 	if err != nil {
 		statusError(w, err)
 		return
@@ -191,7 +191,7 @@ func (s *API) createSubmissionV2(ctx context.Context, args *SubmissionCreateInpu
 		cid = &data.ContestID
 	}
 
-	id, err := s.base.CreateSubmission(context.WithoutCancel(ctx), util.UserFullContext(ctx), util.ProblemContext(ctx), code, data.Code.Filename, lang, cid, false, extraCode, data.ExtraCode.Filename)
+	id, err := s.base.CreateSubmission(context.WithoutCancel(ctx), user.UserFullContext(ctx), util.ProblemContext(ctx), code, data.Code.Filename, lang, cid, false, extraCode, data.ExtraCode.Filename)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Could not create submission", err)
 	}

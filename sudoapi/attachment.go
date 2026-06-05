@@ -13,8 +13,8 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/eval/language"
-	"github.com/KiloProjects/kilonova/internal/util"
 )
 
 // Expected attachment behavior:
@@ -121,7 +121,7 @@ func (s *BaseAPI) UpdateAttachmentData(ctx context.Context, aid int, data []byte
 	}
 	s.DelAttachmentRenders(aid)
 	go func() {
-		ctx = context.WithValue(context.WithoutCancel(ctx), util.AuthedUserKey, author)
+		ctx = context.WithValue(context.WithoutCancel(ctx), user.AuthedUserKey, author)
 		att, err := s.Attachment(ctx, aid)
 		if err != nil {
 			slog.WarnContext(ctx, "Could not get attachment", slog.Any("err", err), slog.Int("attachmentID", aid))

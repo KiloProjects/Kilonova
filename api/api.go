@@ -377,7 +377,7 @@ func (s *API) HandlerV1() http.Handler {
 		r.With(s.MustBeAuthed).Post("/resendEmail", s.resendVerificationEmail)
 
 		userRouter := chi.NewMux()
-		userRouter.Get("/", func(w http.ResponseWriter, r *http.Request) { returnData(w, util.ContentUserBrief(r)) })
+		userRouter.Get("/", func(w http.ResponseWriter, r *http.Request) { returnData(w, user.ContentUserBrief(r)) })
 		userRouter.Get("/solvedProblems", s.getSolvedProblems)
 		userRouter.With(s.selfOrAdmin).Post("/deauthAll", s.deauthAllSessions)
 

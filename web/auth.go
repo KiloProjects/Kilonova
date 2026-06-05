@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/web/views/authviews"
 	"github.com/KiloProjects/kilonova/web/views/utilviews"
@@ -17,7 +18,7 @@ import (
 func (rt *Web) getLogin(w http.ResponseWriter, r *http.Request) {
 	back := r.URL.Query().Get("back")
 	oidcID := r.URL.Query().Get("authRequestID")
-	if util.UserBrief(r) == nil {
+	if user.UserBrief(r) == nil {
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "auth.login"),
 			Head:    utilviews.CanonicalURL("/login"),
@@ -67,7 +68,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 	oidcID := r.FormValue("oidcID")
 	back := r.FormValue("back")
 
-	user, status := rt.base.Login(r.Context(), username, password)
+	loggedUser, status := rt.base.Login(r.Context(), username, password)
 	if status != nil {
 		w.WriteHeader(kilonova.ErrorCode(status))
 		rt.runLayout(w, r, &LayoutParams{
@@ -78,7 +79,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.LockedLogin && !user.Admin {
+	if loggedUser.LockedLogin && !loggedUser.Admin {
 		// Lockout but don't lockout admins
 		w.WriteHeader(401)
 		rt.runLayout(w, r, &LayoutParams{
@@ -89,7 +90,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sid, err := rt.base.CreateSession(r.Context(), user.ID)
+	sid, err := rt.base.CreateSession(r.Context(), loggedUser.ID)
 	if err != nil {
 		w.WriteHeader(kilonova.ErrorCode(err))
 		rt.runLayout(w, r, &LayoutParams{
@@ -114,7 +115,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	r = r.WithContext(context.WithValue(r.Context(), util.AuthedUserKey, user))
+	r = r.WithContext(context.WithValue(r.Context(), user.AuthedUserKey, loggedUser))
 
 	if oidcID == "" {
 		// authed, no openid flow, just redirect back
@@ -148,7 +149,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 func (rt *Web) postOAuthGrant(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("authRequestID")
 
-	if err := rt.base.ApproveAuthRequest(r.Context(), id, util.UserBrief(r).ID); err != nil {
+	if err := rt.base.ApproveAuthRequest(r.Context(), id, user.UserBrief(r).ID); err != nil {
 		slog.ErrorContext(r.Context(), "Failed to approve auth request", slog.Any("error", err))
 		rt.statusPage(w, r, http.StatusInternalServerError, "Invalid auth request")
 		return

@@ -65,21 +65,21 @@ type BoxManager struct {
 	store *datastore.Manager
 }
 
-func (b *BoxManager) NumConcurrent() int64 {
-	return b.numConcurrent
+func (mgr *BoxManager) NumConcurrent() int64 {
+	return mgr.numConcurrent
 }
 
-func (b *BoxManager) getBox(ctx context.Context, memQuota int64) (eval.Sandbox, error) {
-	if b.boxGenerator == nil {
+func (mgr *BoxManager) getBox(ctx context.Context, memQuota int64) (eval.Sandbox, error) {
+	if mgr.boxGenerator == nil {
 		slog.WarnContext(ctx, "Empty box generator")
 		return nil, errors.New("empty box generator")
 	}
 	if memQuota > 0 {
-		if err := b.memSem.Acquire(ctx, memQuota); err != nil {
+		if err := mgr.memSem.Acquire(ctx, memQuota); err != nil {
 			return nil, err
 		}
 	}
-	box, err := b.boxGenerator(ctx, <-b.availableIDs, memQuota, b.logger)
+	box, err := mgr.boxGenerator(ctx, <-mgr.availableIDs, memQuota, mgr.logger)
 	if err != nil {
 		return nil, err
 	}
@@ -87,20 +87,20 @@ func (b *BoxManager) getBox(ctx context.Context, memQuota int64) (eval.Sandbox, 
 	return box, nil
 }
 
-func (b *BoxManager) releaseBox(ctx context.Context, sb eval.Sandbox) {
+func (mgr *BoxManager) releaseBox(ctx context.Context, sb eval.Sandbox) {
 	q := sb.MemoryQuota()
 	if err := sb.Close(); err != nil {
 		slog.WarnContext(ctx, "Could not release sandbox", slog.Any("box_id", sb.GetID()), slog.Any("err", err))
 	}
 	// b.logger.Infof("Yielded back box %d", sb.GetID())
-	b.availableIDs <- sb.GetID()
-	b.memSem.Release(q)
+	mgr.availableIDs <- sb.GetID()
+	mgr.memSem.Release(q)
 }
 
 // Close waits for all boxes to finish running
-func (b *BoxManager) Close(ctx context.Context) error {
-	b.concSem.Acquire(ctx, b.numConcurrent)
-	close(b.availableIDs)
+func (mgr *BoxManager) Close(ctx context.Context) error {
+	mgr.concSem.Acquire(ctx, mgr.numConcurrent)
+	close(mgr.availableIDs)
 	return nil
 }
 

@@ -13,12 +13,6 @@ import (
 type knContextType string
 
 const (
-	// AuthedUserKey is the key to be used for adding (AUTHENTICATED) user objects to context
-	// Deprecated: use [user.AuthedUserKey] instead
-	AuthedUserKey = user.AuthedUserKey
-	// ContentUserKey is the key to be used for adding CONTENT user objects to context
-	// Deprecated: use [user.ContentUserKey] instead
-	ContentUserKey = user.ContentUserKey
 	// ProblemKey is the key to be used for adding problems to context
 	ProblemKey = knContextType("problem")
 	// BlogPostKey is the key to be used for adding blog posts to context
@@ -58,31 +52,6 @@ const (
 // Deprecated: use [user.UserBrief] instead
 func UserBrief(r *http.Request) *kilonova.UserBrief {
 	return user.UserBrief(r)
-}
-
-// Deprecated: use [user.UserFullContext] instead
-func UserFullContext(ctx context.Context) *kilonova.UserFull {
-	return user.UserFullContext(ctx)
-}
-
-// Deprecated: use [user.UserFull] instead
-func UserFull(r *http.Request) *kilonova.UserFull {
-	return user.UserFull(r)
-}
-
-// Deprecated: use [user.ContentUserFull] instead
-func ContentUserFull(r *http.Request) *kilonova.UserFull {
-	return user.ContentUserFull(r)
-}
-
-// Deprecated: use [user.ContentUserBriefContext] instead
-func ContentUserBriefContext(ctx context.Context) *kilonova.UserBrief {
-	return user.ContentUserBriefContext(ctx)
-}
-
-// Deprecated: use [user.ContentUserBrief] instead
-func ContentUserBrief(r *http.Request) *kilonova.UserBrief {
-	return user.ContentUserBrief(r)
 }
 
 func ProblemContext(ctx context.Context) *kilonova.Problem {

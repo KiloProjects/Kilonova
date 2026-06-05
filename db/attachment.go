@@ -13,33 +13,33 @@ import (
 
 const createAttachmentQuery = "INSERT INTO attachments (visible, private, execable, name, data, last_updated_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;"
 
-func (a *DB) createAttachment(ctx context.Context, att *kilonova.Attachment, data []byte, authorID *int) (int, error) {
+func (s *DB) createAttachment(ctx context.Context, att *kilonova.Attachment, data []byte, authorID *int) (int, error) {
 	if data == nil {
 		return -1, kilonova.ErrMissingRequired
 	}
 
 	var id int
-	err := a.conn.QueryRow(ctx, createAttachmentQuery, att.Visible, att.Private, att.Exec, att.Name, data, authorID).Scan(&id)
+	err := s.conn.QueryRow(ctx, createAttachmentQuery, att.Visible, att.Private, att.Exec, att.Name, data, authorID).Scan(&id)
 	if err != nil {
 		return -1, err
 	}
 	return id, nil
 }
 
-func (a *DB) CreateProblemAttachment(ctx context.Context, att *kilonova.Attachment, problemID int, data []byte, authorID *int) error {
+func (s *DB) CreateProblemAttachment(ctx context.Context, att *kilonova.Attachment, problemID int, data []byte, authorID *int) error {
 	if problemID == 0 {
 		return kilonova.ErrMissingRequired
 	}
-	if _, err := a.Attachments(ctx, &kilonova.AttachmentFilter{ProblemID: &problemID, Name: &att.Name}); err != nil {
+	if _, err := s.Attachments(ctx, &kilonova.AttachmentFilter{ProblemID: &problemID, Name: &att.Name}); err != nil {
 		return kilonova.ErrAttachmentExists
 	}
 
-	id, err := a.createAttachment(ctx, att, data, authorID)
+	id, err := s.createAttachment(ctx, att, data, authorID)
 	if err != nil {
 		return err
 	}
 
-	_, err = a.conn.Exec(ctx, "INSERT INTO problem_attachments_m2m (problem_id, attachment_id) VALUES ($1, $2)", problemID, id)
+	_, err = s.conn.Exec(ctx, "INSERT INTO problem_attachments_m2m (problem_id, attachment_id) VALUES ($1, $2)", problemID, id)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't associate problem with attachment", slog.Any("err", err))
 		return err
@@ -48,20 +48,20 @@ func (a *DB) CreateProblemAttachment(ctx context.Context, att *kilonova.Attachme
 	return nil
 }
 
-func (a *DB) CreateBlogPostAttachment(ctx context.Context, att *kilonova.Attachment, postID int, data []byte, authorID *int) error {
+func (s *DB) CreateBlogPostAttachment(ctx context.Context, att *kilonova.Attachment, postID int, data []byte, authorID *int) error {
 	if postID == 0 {
 		return kilonova.ErrMissingRequired
 	}
-	if _, err := a.Attachments(ctx, &kilonova.AttachmentFilter{BlogPostID: &postID, Name: &att.Name}); err != nil {
+	if _, err := s.Attachments(ctx, &kilonova.AttachmentFilter{BlogPostID: &postID, Name: &att.Name}); err != nil {
 		return kilonova.ErrAttachmentExists
 	}
 
-	id, err := a.createAttachment(ctx, att, data, authorID)
+	id, err := s.createAttachment(ctx, att, data, authorID)
 	if err != nil {
 		return err
 	}
 
-	_, err = a.conn.Exec(ctx, "INSERT INTO blog_post_attachments_m2m (blog_post_id, attachment_id) VALUES ($1, $2)", postID, id)
+	_, err = s.conn.Exec(ctx, "INSERT INTO blog_post_attachments_m2m (blog_post_id, attachment_id) VALUES ($1, $2)", postID, id)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't associate blog post with attachment", slog.Any("err", err))
 		return err
@@ -72,16 +72,16 @@ func (a *DB) CreateBlogPostAttachment(ctx context.Context, att *kilonova.Attachm
 
 var selectedAttFields = []string{"id", "created_at", "last_updated_at", "last_updated_by", "visible", "private", "execable", "name", "data_size"} // Make sure to keep this in sync
 
-func (a *DB) Attachment(ctx context.Context, filter *kilonova.AttachmentFilter) (*kilonova.Attachment, error) {
+func (s *DB) Attachment(ctx context.Context, filter *kilonova.AttachmentFilter) (*kilonova.Attachment, error) {
 	if filter == nil {
 		filter = &kilonova.AttachmentFilter{}
 	}
 	filter.Limit = 1
-	return toSingular(ctx, filter, a.Attachments)
+	return toSingular(ctx, filter, s.Attachments)
 }
 
 // TODO: Remove problem_attachments and blog_post_attachments views from DB
-func (a *DB) Attachments(ctx context.Context, filter *kilonova.AttachmentFilter) ([]*kilonova.Attachment, error) {
+func (s *DB) Attachments(ctx context.Context, filter *kilonova.AttachmentFilter) ([]*kilonova.Attachment, error) {
 	qb := sq.Select(selectedAttFields...).From("attachments").Where(attachmentFilterQuery(filter)).OrderBy("name ASC")
 	qb = LimitOffset(qb, filter.Limit, filter.Offset)
 	query, args, err := qb.ToSql()
@@ -89,7 +89,7 @@ func (a *DB) Attachments(ctx context.Context, filter *kilonova.AttachmentFilter)
 		return []*kilonova.Attachment{}, err
 	}
 
-	rows, _ := a.conn.Query(ctx, query, args...)
+	rows, _ := s.conn.Query(ctx, query, args...)
 	attachments, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[dbAttachment])
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.Attachment{}, nil
@@ -97,20 +97,20 @@ func (a *DB) Attachments(ctx context.Context, filter *kilonova.AttachmentFilter)
 	return mapper(attachments, internalToAttachment), err
 }
 
-func (a *DB) AttachmentData(ctx context.Context, filter *kilonova.AttachmentFilter) ([]byte, error) {
+func (s *DB) AttachmentData(ctx context.Context, filter *kilonova.AttachmentFilter) ([]byte, error) {
 	var data []byte
 	query, args, err := sq.Select("data").From("attachments").Where(attachmentFilterQuery(filter)).Limit(1).ToSql()
 	if err != nil {
 		return []byte{}, err
 	}
-	err = a.conn.QueryRow(ctx, query, args...).Scan(&data)
+	err = s.conn.QueryRow(ctx, query, args...).Scan(&data)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []byte{}, nil
 	}
 	return data, err
 }
 
-func (a *DB) UpdateAttachment(ctx context.Context, id int, upd *kilonova.AttachmentUpdate) error {
+func (s *DB) UpdateAttachment(ctx context.Context, id int, upd *kilonova.AttachmentUpdate) error {
 	qb := sq.Update("attachments").Where(sq.Eq{"id": id})
 	if v := upd.Name; v != nil {
 		qb = qb.Set("name", v)
@@ -131,22 +131,22 @@ func (a *DB) UpdateAttachment(ctx context.Context, id int, upd *kilonova.Attachm
 		}
 		return err
 	}
-	_, err = a.conn.Exec(ctx, query, args...)
+	_, err = s.conn.Exec(ctx, query, args...)
 	return err
 }
 
-func (a *DB) UpdateAttachmentData(ctx context.Context, id int, data []byte, updatedBy *int) error {
-	_, err := a.conn.Exec(ctx, "UPDATE attachments SET data = $1, last_updated_at = NOW(), last_updated_by = COALESCE($3, last_updated_by) WHERE id = $2", data, id, updatedBy)
+func (s *DB) UpdateAttachmentData(ctx context.Context, id int, data []byte, updatedBy *int) error {
+	_, err := s.conn.Exec(ctx, "UPDATE attachments SET data = $1, last_updated_at = NOW(), last_updated_by = COALESCE($3, last_updated_by) WHERE id = $2", data, id, updatedBy)
 	return err
 }
 
-func (a *DB) DeleteAttachments(ctx context.Context, filter *kilonova.AttachmentFilter) (int, error) {
+func (s *DB) DeleteAttachments(ctx context.Context, filter *kilonova.AttachmentFilter) (int, error) {
 	qb := sq.Delete("attachments").Where(attachmentFilterQuery(filter))
 	query, args, err := qb.ToSql()
 	if err != nil {
 		return -1, err
 	}
-	result, err := a.conn.Exec(ctx, query, args...)
+	result, err := s.conn.Exec(ctx, query, args...)
 	if err != nil {
 		return -1, err
 	}

@@ -7,7 +7,7 @@ import {bodyCall, getCall} from "../api/client";
 import {fromBase64} from "js-base64";
 import {selectTags, Tag, TagView} from "./tags";
 import {Paginator} from "./common";
-import {rezStr} from "./subs_view";
+import {rezStr} from "./common";
 import {parseTime} from "../util";
 
 type FullProblem = Problem & {

@@ -84,6 +84,7 @@ func main() {
 			problemDiagnostics,
 			submissionSaver,
 			aiTools,
+			contestUtils,
 		},
 	}
 

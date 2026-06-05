@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/Yiling-J/theine-go"
 
 	"github.com/KiloProjects/kilonova"
@@ -25,7 +26,7 @@ var (
 )
 
 func (s *API) deauthAllSessions(w http.ResponseWriter, r *http.Request) {
-	if err := s.base.RemoveUserSessions(r.Context(), util.ContentUserBrief(r).ID); err != nil {
+	if err := s.base.RemoveUserSessions(r.Context(), user.ContentUserBrief(r).ID); err != nil {
 		statusError(w, err)
 		return
 	}
@@ -48,7 +49,7 @@ func (s *API) setPreferredLanguage() func(w http.ResponseWriter, r *http.Request
 
 		if err := s.base.UpdateUser(
 			r.Context(),
-			util.ContentUserBrief(r).ID,
+			user.ContentUserBrief(r).ID,
 			kilonova.UserUpdate{PreferredLanguage: safe},
 		); err != nil {
 			statusError(w, err)
@@ -75,7 +76,7 @@ func (s *API) setPreferredTheme() func(w http.ResponseWriter, r *http.Request) {
 
 		if err := s.base.UpdateUser(
 			r.Context(),
-			util.ContentUserBrief(r).ID,
+			user.ContentUserBrief(r).ID,
 			kilonova.UserUpdate{PreferredTheme: kilonova.PreferredTheme(safe)},
 		); err != nil {
 			statusError(w, err)
@@ -103,7 +104,7 @@ func (s *API) setBio() func(w http.ResponseWriter, r *http.Request) {
 
 		if err := s.base.UpdateUser(
 			r.Context(),
-			util.ContentUserBrief(r).ID,
+			user.ContentUserBrief(r).ID,
 			kilonova.UserUpdate{Bio: &safe},
 		); err != nil {
 			statusError(w, err)
@@ -129,7 +130,7 @@ func (s *API) setAvatarType() func(w http.ResponseWriter, r *http.Request) {
 
 		if err := s.base.UpdateUser(
 			r.Context(),
-			util.ContentUserBrief(r).ID,
+			user.ContentUserBrief(r).ID,
 			kilonova.UserUpdate{AvatarType: &safe},
 		); err != nil {
 			statusError(w, err)
@@ -152,24 +153,24 @@ func (s *API) manageUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := util.ContentUserFull(r)
-	if args.NewName != nil && len(*args.NewName) > 2 && user.Name != *args.NewName {
+	userValue := user.ContentUserFull(r)
+	if args.NewName != nil && len(*args.NewName) > 2 && userValue.Name != *args.NewName {
 		// Admins can change to formerly existing names
-		if err := s.base.UpdateUsername(r.Context(), user, *args.NewName, false, true); err != nil {
+		if err := s.base.UpdateUsername(r.Context(), userValue, *args.NewName, false, true); err != nil {
 			statusError(w, err)
 			return
 		}
 	}
 
 	if args.ForceUsernameChange != nil {
-		if err := s.base.SetForceUsernameChange(r.Context(), user.ID, *args.ForceUsernameChange); err != nil {
+		if err := s.base.SetForceUsernameChange(r.Context(), userValue.ID, *args.ForceUsernameChange); err != nil {
 			statusError(w, err)
 			return
 		}
 	}
 
 	if args.Lockout != nil {
-		if err := s.base.SetUserLockout(r.Context(), user.ID, *args.Lockout); err != nil {
+		if err := s.base.SetUserLockout(r.Context(), userValue.ID, *args.Lockout); err != nil {
 			statusError(w, err)
 			return
 		}
@@ -179,14 +180,14 @@ func (s *API) manageUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
-	user := util.ContentUserBrief(r)
+	userValue := user.ContentUserBrief(r)
 
-	if user.Admin {
+	if userValue.Admin {
 		errorData(w, "You can't delete an admin account!", 400)
 		return
 	}
 
-	if err := s.base.DeleteUser(r.Context(), user); err != nil {
+	if err := s.base.DeleteUser(r.Context(), userValue); err != nil {
 		statusError(w, err)
 		return
 	}
@@ -196,7 +197,7 @@ func (s *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) getSolvedProblems(w http.ResponseWriter, r *http.Request) {
 	//nolint:staticcheck
-	pbs, err := s.base.SolvedProblems(r.Context(), util.ContentUserBrief(r), util.UserBrief(r))
+	pbs, err := s.base.SolvedProblems(r.Context(), user.ContentUserBrief(r), user.UserBrief(r))
 	if err != nil {
 		statusError(w, err)
 		return
@@ -215,25 +216,25 @@ func (s *API) updateUsername(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, 500)
 		return
 	}
-	user := util.UserFull(r)
-	if args.UserID != nil && util.UserBrief(r).Admin {
+	userFull := user.UserFull(r)
+	if args.UserID != nil && user.UserBrief(r).Admin {
 		newUser, err := s.base.UserFull(r.Context(), *args.UserID)
 		if err != nil {
 			statusError(w, err)
 			return
 		}
-		user = newUser
+		userFull = newUser
 	}
 
-	fromAdmin := util.UserBrief(r).Admin || util.UserFull(r).NameChangeForced
+	fromAdmin := user.UserBrief(r).Admin || user.UserFull(r).NameChangeForced
 	if !fromAdmin {
-		if err := s.base.VerifyUserPassword(r.Context(), user.ID, args.Password); err != nil {
+		if err := s.base.VerifyUserPassword(r.Context(), userFull.ID, args.Password); err != nil {
 			statusError(w, err)
 			return
 		}
 	}
 
-	if err := s.base.UpdateUsername(r.Context(), user, args.NewName, !util.UserBrief(r).Admin, fromAdmin); err != nil {
+	if err := s.base.UpdateUsername(r.Context(), userFull, args.NewName, !user.UserBrief(r).Admin, fromAdmin); err != nil {
 		statusError(w, err)
 		return
 	}
@@ -374,7 +375,7 @@ func (s *API) resetPassword(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) refreshPassword(ctx context.Context, _ struct{}) (string, error) {
 	pwd := s.base.RandomPassword()
-	return pwd, s.base.UpdateUserPassword(ctx, util.ContentUserBriefContext(ctx).ID, pwd)
+	return pwd, s.base.UpdateUserPassword(ctx, user.ContentUserBriefContext(ctx).ID, pwd)
 }
 
 // ChangeEmail changes the email of the saved user
@@ -395,13 +396,13 @@ func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.base.UserFullByEmail(r.Context(), email)
+	userFull, err := s.base.UserFullByEmail(r.Context(), email)
 	if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
 		statusError(w, err)
 		return
 	}
-	if user != nil {
-		if user.ID == util.UserBrief(r).ID {
+	if userFull != nil {
+		if userFull.ID == user.UserBrief(r).ID {
 			errorData(w, "You already use this email!", 400)
 			return
 		}
@@ -409,7 +410,7 @@ func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.base.SendVerificationEmail(r.Context(), util.UserBrief(r).ID, util.UserBrief(r).Name, email, util.UserFull(r).PreferredLanguage); err != nil {
+	if err := s.base.SendVerificationEmail(r.Context(), user.UserBrief(r).ID, user.UserBrief(r).Name, email, user.UserFull(r).PreferredLanguage); err != nil {
 		if kilonova.ErrorCode(err) != 400 {
 			slog.WarnContext(r.Context(), "Could not send verification email", slog.Any("err", err))
 		}
@@ -420,7 +421,7 @@ func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) resendVerificationEmail(w http.ResponseWriter, r *http.Request) {
-	u := util.UserFull(r)
+	u := user.UserFull(r)
 	if u.VerifiedEmail {
 		errorData(w, "You already have a verified email!", 400)
 		return
