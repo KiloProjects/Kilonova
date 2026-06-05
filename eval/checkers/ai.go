@@ -159,5 +159,5 @@ func (c *aiChecker) RunChecker(ctx context.Context, subtestID int, testID int) (
 }
 
 func (c *aiChecker) Language() language.GraderLang {
-	return language.Uv
+	return language.Uv()
 }

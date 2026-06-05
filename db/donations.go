@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/util/slicealg"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -52,7 +53,7 @@ func (s *DB) Donations(ctx context.Context) ([]*kilonova.Donation, error) {
 		return nil, err
 	}
 
-	return mapperCtx(ctx, donations, s.internalToDonation), nil
+	return slicealg.MapCtx(ctx, donations, s.internalToDonation), nil
 }
 
 func (s *DB) internalToDonation(ctx context.Context, d *donation) (*kilonova.Donation, error) {

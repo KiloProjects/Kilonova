@@ -6,7 +6,9 @@ import (
 	"github.com/KiloProjects/kilonova/domain/config"
 )
 
-var Uv GraderLang = &uv{}
+func Uv() GraderLang {
+	return &uv{}
+}
 
 type uv struct {
 }

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/util/slicealg"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -62,7 +63,7 @@ func (s *DB) ProblemLists(ctx context.Context, filter kilonova.ProblemListFilter
 		return []*kilonova.ProblemList{}, err
 	}
 
-	return mapperCtx(ctx, lists, s.internalToPbList), nil
+	return slicealg.MapCtx(ctx, lists, s.internalToPbList), nil
 }
 
 func (s *DB) ProblemListsByProblemID(ctx context.Context, problemID int, showHidable bool) ([]*kilonova.ProblemList, error) {
@@ -83,7 +84,7 @@ func (s *DB) ProblemListsByProblemID(ctx context.Context, problemID int, showHid
 		return []*kilonova.ProblemList{}, err
 	}
 
-	return mapperCtx(ctx, lists, s.internalToPbList), nil
+	return slicealg.MapCtx(ctx, lists, s.internalToPbList), nil
 }
 
 func (s *DB) ParentProblemListsByPblistID(ctx context.Context, pblistID int) ([]*kilonova.ProblemList, error) {
@@ -99,7 +100,7 @@ func (s *DB) ParentProblemListsByPblistID(ctx context.Context, pblistID int) ([]
 		return []*kilonova.ProblemList{}, err
 	}
 
-	return mapperCtx(ctx, lists, s.internalToPbList), nil
+	return slicealg.MapCtx(ctx, lists, s.internalToPbList), nil
 }
 
 func (s *DB) ChildrenProblemListsByPblistID(ctx context.Context, pblistID int) ([]*kilonova.ProblemList, error) {
@@ -118,7 +119,7 @@ func (s *DB) ChildrenProblemListsByPblistID(ctx context.Context, pblistID int) (
 		return []*kilonova.ProblemList{}, err
 	}
 
-	return mapperCtx(ctx, lists, s.internalToPbList), nil
+	return slicealg.MapCtx(ctx, lists, s.internalToPbList), nil
 }
 
 func (s *DB) shallowProblemLists(ctx context.Context, parentID int) ([]*kilonova.ShallowProblemList, error) {
@@ -133,7 +134,7 @@ func (s *DB) shallowProblemLists(ctx context.Context, parentID int) ([]*kilonova
 		return []*kilonova.ShallowProblemList{}, nil
 	}
 	// TODO: This doesn't match the pattern used by others
-	return mapper(lists, s.internalToShallowProblemList), err
+	return slicealg.Map(lists, s.internalToShallowProblemList), err
 }
 
 func (s *DB) NumSolvedPblistProblems(ctx context.Context, listID, userID int) (int, error) {

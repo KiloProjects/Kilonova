@@ -1,6 +1,8 @@
 package language
 
-var AI Lang = ai{}
+func AI() Lang {
+	return ai{}
+}
 
 type ai struct{}
 

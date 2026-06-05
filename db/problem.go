@@ -11,6 +11,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/KiloProjects/kilonova/util/slicealg"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
@@ -90,7 +91,7 @@ func (s *DB) Problems(ctx context.Context, filter kilonova.ProblemFilter) ([]*ki
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.Problem{}, nil
 	}
-	return mapper(pbs, s.internalToProblem), err
+	return slicealg.Map(pbs, s.internalToProblem), err
 }
 
 func (s *DB) ScoredProblems(ctx context.Context, filter kilonova.ProblemFilter, scoreUID, editorUID int) ([]*kilonova.ScoredProblem, error) {
@@ -128,7 +129,7 @@ func (s *DB) ContestProblems(ctx context.Context, contestID int) ([]*kilonova.Pr
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.Problem{}, nil
 	}
-	return mapper(pbs, s.internalToProblem), err
+	return slicealg.Map(pbs, s.internalToProblem), err
 }
 
 func (s *DB) ScoredContestProblems(ctx context.Context, contestID int, userID int, freezeTime *time.Time) ([]*kilonova.ScoredProblem, error) {

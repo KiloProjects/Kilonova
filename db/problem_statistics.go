@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/util/slicealg"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -40,7 +41,7 @@ func (s *DB) ProblemStatisticsSize(ctx context.Context, problemID int) ([]*kilon
 	if err != nil {
 		return []*kilonova.Submission{}, err
 	}
-	return mapper(subs, s.internalToSubmission), nil
+	return slicealg.Map(subs, s.internalToSubmission), nil
 }
 
 func (s *DB) ProblemStatisticsMemory(ctx context.Context, problemID int) ([]*kilonova.Submission, error) {
@@ -53,7 +54,7 @@ func (s *DB) ProblemStatisticsMemory(ctx context.Context, problemID int) ([]*kil
 	if err != nil {
 		return []*kilonova.Submission{}, err
 	}
-	return mapper(subs, s.internalToSubmission), nil
+	return slicealg.Map(subs, s.internalToSubmission), nil
 }
 
 func (s *DB) ProblemStatisticsTime(ctx context.Context, problemID int) ([]*kilonova.Submission, error) {
@@ -66,5 +67,5 @@ func (s *DB) ProblemStatisticsTime(ctx context.Context, problemID int) ([]*kilon
 	if err != nil {
 		return []*kilonova.Submission{}, err
 	}
-	return mapper(subs, s.internalToSubmission), nil
+	return slicealg.Map(subs, s.internalToSubmission), nil
 }

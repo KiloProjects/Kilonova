@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/util/slicealg"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -71,7 +72,7 @@ func (s *DB) ContestQuestions(ctx context.Context, filter QuestionFilter) ([]*ki
 	if err != nil {
 		return nil, err
 	}
-	return mapper(qs, s.internalToContestQuestion), nil
+	return slicealg.Map(qs, s.internalToContestQuestion), nil
 
 }
 
@@ -101,7 +102,7 @@ func (s *DB) ContestAnnouncements(ctx context.Context, contestID int) ([]*kilono
 	} else if err != nil {
 		return []*kilonova.ContestAnnouncement{}, err
 	}
-	return mapper(answers, s.internalToContestAnnouncement), nil
+	return slicealg.Map(answers, s.internalToContestAnnouncement), nil
 }
 
 func (s *DB) ContestAnnouncement(ctx context.Context, id int) (*kilonova.ContestAnnouncement, error) {

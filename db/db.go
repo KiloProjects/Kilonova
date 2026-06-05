@@ -6,7 +6,6 @@ import (
 
 	"github.com/KiloProjects/kilonova/domain/user/userpg"
 	"github.com/KiloProjects/kilonova/infra/postgres"
-	"github.com/KiloProjects/kilonova/util/slicealg"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -60,16 +59,6 @@ func FormatLimitOffset(limit int, offset int) string {
 	}
 
 	return ""
-}
-
-// Deprecated: use slicealg.Map instead
-func mapper[T1 any, T2 any](lst []T1, f func(T1) T2) []T2 {
-	return slicealg.Map(lst, f)
-}
-
-// Deprecated: use slicealg.MapCtx instead
-func mapperCtx[T1 any, T2 any](ctx context.Context, lst []T1, f func(context.Context, T1) (T2, error)) []T2 {
-	return slicealg.MapCtx(ctx, lst, f)
 }
 
 func toSingular[T1, T2 any](ctx context.Context, filter T1, f func(ctx context.Context, filter T1) ([]*T2, error)) (*T2, error) {

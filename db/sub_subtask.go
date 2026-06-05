@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/util/slicealg"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 )
@@ -44,7 +45,7 @@ func (s *DB) SubmissionSubTasksBySubID(ctx context.Context, subid int) ([]*kilon
 		return []*kilonova.SubmissionSubTask{}, err
 	}
 
-	return mapperCtx(ctx, subtasks, s.internalToSubmissionSubTask), nil
+	return slicealg.MapCtx(ctx, subtasks, s.internalToSubmissionSubTask), nil
 }
 
 func getSubmissionSubtaskQuery(inContest bool) string {
@@ -76,7 +77,7 @@ func (s *DB) MaximumScoreSubTasks(ctx context.Context, problemID int, userID int
 		return []*kilonova.SubmissionSubTask{}, err
 	}
 
-	return mapperCtx(ctx, subtasks, s.internalToSubmissionSubTask), nil
+	return slicealg.MapCtx(ctx, subtasks, s.internalToSubmissionSubTask), nil
 }
 
 func (s *DB) internalToSubmissionSubTask(ctx context.Context, st *subSubtask) (*kilonova.SubmissionSubTask, error) {

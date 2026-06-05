@@ -16,6 +16,8 @@ var (
 	FrontPagePbDetails      = config.GenFlag("feature.frontend.front_page_pbs_links", true, "On the front page problems, show links to other resources")
 	FrontPageRandomProblem  = config.GenFlag("feature.frontend.front_page_random_pb", true, "On the front page problems, show buttons to draw a random problem")
 
+	FrontPageContestsAscending = config.GenFlag[bool]("feature.frontend.ascending_contests", true, "Show contests in ascending order of start time on front page")
+
 	FrontPageAnnouncement = config.GenFlag("frontend.front_page_announcement", "default", `Custom front page announcement ("default" = default text)`)
 
 	SidebarContests = config.GenFlag("feature.frontend.front_page_csidebar", true, "Show contests in sidebar on the front page")

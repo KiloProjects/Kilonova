@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/util/slicealg"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 )
@@ -70,8 +71,6 @@ func (s *DB) CreateBlogPostAttachment(ctx context.Context, att *kilonova.Attachm
 	return nil
 }
 
-var selectedAttFields = []string{"id", "created_at", "last_updated_at", "last_updated_by", "visible", "private", "execable", "name", "data_size"} // Make sure to keep this in sync
-
 func (s *DB) Attachment(ctx context.Context, filter *kilonova.AttachmentFilter) (*kilonova.Attachment, error) {
 	if filter == nil {
 		filter = &kilonova.AttachmentFilter{}
@@ -82,7 +81,7 @@ func (s *DB) Attachment(ctx context.Context, filter *kilonova.AttachmentFilter) 
 
 // TODO: Remove problem_attachments and blog_post_attachments views from DB
 func (s *DB) Attachments(ctx context.Context, filter *kilonova.AttachmentFilter) ([]*kilonova.Attachment, error) {
-	qb := sq.Select(selectedAttFields...).From("attachments").Where(attachmentFilterQuery(filter)).OrderBy("name ASC")
+	qb := sq.Select("id", "created_at", "last_updated_at", "last_updated_by", "visible", "private", "execable", "name", "data_size").From("attachments").Where(attachmentFilterQuery(filter)).OrderBy("name ASC")
 	qb = LimitOffset(qb, filter.Limit, filter.Offset)
 	query, args, err := qb.ToSql()
 	if err != nil {
@@ -94,7 +93,7 @@ func (s *DB) Attachments(ctx context.Context, filter *kilonova.AttachmentFilter)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.Attachment{}, nil
 	}
-	return mapper(attachments, internalToAttachment), err
+	return slicealg.Map(attachments, internalToAttachment), err
 }
 
 func (s *DB) AttachmentData(ctx context.Context, filter *kilonova.AttachmentFilter) ([]byte, error) {

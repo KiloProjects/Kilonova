@@ -10,7 +10,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/components/layout"
@@ -349,7 +348,9 @@ func (rt *Web) mustBeContestEditor(next http.Handler) http.Handler {
 	})
 }
 
-func (rt *Web) checkFlag(flag config.Flag[bool]) func(next http.Handler) http.Handler {
+type flagValuer interface{ Value() bool }
+
+func (rt *Web) checkFlag(flag flagValuer) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !flag.Value() {

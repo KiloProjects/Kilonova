@@ -10,6 +10,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
+	"github.com/KiloProjects/kilonova/util/slicealg"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 )
@@ -93,7 +94,7 @@ func (s *DB) Submissions(ctx context.Context, filter kilonova.SubmissionFilter) 
 		slog.WarnContext(ctx, "Could not load submisions", slog.Any("err", err))
 		return []*kilonova.Submission{}, err
 	}
-	return mapper(subs, s.internalToSubmission), nil
+	return slicealg.Map(subs, s.internalToSubmission), nil
 }
 
 // Deprecated: Use [DB.SubmissionFiles] and extract code. This does best-effort fetching
@@ -109,7 +110,7 @@ func (s *DB) SubmissionFiles(ctx context.Context, subID int) ([]*kilonova.Submis
 	if errors.Is(err, pgx.ErrNoRows) {
 		return []*kilonova.SubmissionFile{}, nil
 	}
-	return mapper(files, s.internalToSubmissionFile), err
+	return slicealg.Map(files, s.internalToSubmissionFile), err
 }
 
 func (s *DB) SubmissionCount(ctx context.Context, filter kilonova.SubmissionFilter, limit int) (int, error) {

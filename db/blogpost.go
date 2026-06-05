@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/util/slicealg"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 )
@@ -44,7 +45,7 @@ func (s *DB) BlogPosts(ctx context.Context, filter kilonova.BlogPostFilter) ([]*
 	if err != nil {
 		return nil, err
 	}
-	return mapper(posts, s.internalToBlogPost), nil
+	return slicealg.Map(posts, s.internalToBlogPost), nil
 }
 
 func (s *DB) CountBlogPosts(ctx context.Context, filter kilonova.BlogPostFilter) (int, error) {

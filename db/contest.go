@@ -8,6 +8,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/util/slicealg"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
@@ -100,7 +101,7 @@ func (s *DB) Contests(ctx context.Context, filter kilonova.ContestFilter) ([]*ki
 		return []*kilonova.Contest{}, err
 	}
 
-	return mapperCtx(ctx, contests, s.internalToContest), nil
+	return slicealg.MapCtx(ctx, contests, s.internalToContest), nil
 }
 
 func (s *DB) ContestCount(ctx context.Context, filter kilonova.ContestFilter) (int, error) {
@@ -170,14 +171,14 @@ func contestFilterQuery(filter *kilonova.ContestFilter, sb sq.SelectBuilder) sq.
 	}
 
 	// See field comment for details
-	if v := filter.ImportantContestsUID; v != nil {
+	if v := filter.ImportantContestsUser; v != nil && v.ID > 0 {
 		where = append(where, sq.Expr(`(
 				(type = 'official' AND end_time >= NOW()) 
 				OR 
 				EXISTS (SELECT 1 FROM contest_registrations regs WHERE contests.id = regs.contest_id AND regs.user_id = ?)
 				OR
 				EXISTS (SELECT 1 FROM contest_user_access acc WHERE contests.id = acc.contest_id AND acc.user_id = ?)
-			)`, v, v))
+			)`, v.ID, v.ID))
 	}
 
 	if v := filter.WhitelistedIP; v != nil {
@@ -374,7 +375,7 @@ func (s *DB) ContestClassicLeaderboard(ctx context.Context, contest *kilonova.Co
 	}
 
 	leaderboard := &kilonova.ContestLeaderboard{
-		ProblemOrder: mapper(pbs, func(pb *kilonova.Problem) int { return pb.ID }),
+		ProblemOrder: slicealg.Map(pbs, func(pb *kilonova.Problem) int { return pb.ID }),
 		ProblemNames: make(map[int]string),
 
 		AdvancedFilter: contest.LeaderboardAdvancedFilter,
@@ -405,7 +406,7 @@ func (s *DB) ContestClassicLeaderboard(ctx context.Context, contest *kilonova.Co
 		return nil, err
 	}
 
-	leaderboard.Entries = mapperCtx(ctx, topList, s.classicToLeaderboardEntry)
+	leaderboard.Entries = slicealg.MapCtx(ctx, topList, s.classicToLeaderboardEntry)
 
 	return leaderboard, nil
 }
@@ -479,7 +480,7 @@ func (s *DB) ContestICPCLeaderboard(ctx context.Context, contest *kilonova.Conte
 	}
 
 	leaderboard := &kilonova.ContestLeaderboard{
-		ProblemOrder: mapper(pbs, func(pb *kilonova.Problem) int { return pb.ID }),
+		ProblemOrder: slicealg.Map(pbs, func(pb *kilonova.Problem) int { return pb.ID }),
 		ProblemNames: make(map[int]string),
 
 		AdvancedFilter: contest.LeaderboardAdvancedFilter,
@@ -505,7 +506,7 @@ func (s *DB) ContestICPCLeaderboard(ctx context.Context, contest *kilonova.Conte
 		return nil, err
 	}
 
-	leaderboard.Entries = mapperCtx(context.WithValue(ctx, util.ContestKey, contest), topList, s.icpcToLeaderboardEntry)
+	leaderboard.Entries = slicealg.MapCtx(context.WithValue(ctx, util.ContestKey, contest), topList, s.icpcToLeaderboardEntry)
 
 	return leaderboard, nil
 }
@@ -656,8 +657,8 @@ func (s *DB) internalToContest(ctx context.Context, contest *dbContest) (*kilono
 		ID:         contest.ID,
 		CreatedAt:  contest.CreatedAt,
 		Name:       contest.Name,
-		Editors:    mapper(editors, (*kilonova.UserFull).Brief),
-		Testers:    mapper(viewers, (*kilonova.UserFull).Brief),
+		Editors:    slicealg.Map(editors, (*kilonova.UserFull).Brief),
+		Testers:    slicealg.Map(viewers, (*kilonova.UserFull).Brief),
 		PublicJoin: contest.PublicJoin,
 		StartTime:  contest.StartTime,
 		EndTime:    contest.EndTime,

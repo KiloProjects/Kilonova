@@ -1547,13 +1547,13 @@ func (rt *Web) contests() http.HandlerFunc {
 		case "/contests/virtual":
 			filter.Type = kilonova.ContestTypeVirtual
 		case "/contests/personal":
-			if !util.UserBrief(r).IsAuthed() {
+			if !user.UserBrief(r).IsAuthed() {
 				// Important to redirect and return, since we will dereference for ID later
 				http.Redirect(w, r, "/contests/official", http.StatusTemporaryRedirect)
 				return
 			}
 
-			filter.ImportantContestsUID = &util.UserBrief(r).ID
+			filter.ImportantContestsUser = user.UserBrief(r)
 		default:
 			slog.WarnContext(r.Context(), "Unknown page type", slog.String("type", page))
 		}
