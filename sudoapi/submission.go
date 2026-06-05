@@ -56,8 +56,8 @@ func (s *BaseAPI) fillSubmissions(ctx context.Context, cnt int, subs []*kilonova
 		slog.WarnContext(ctx, "Error getting users", slog.Any("err", err))
 		return nil, fmt.Errorf("couldn't get users: %w", err)
 	}
-	for _, user := range users {
-		usersMap[user.ID] = user
+	for _, u := range users {
+		usersMap[u.ID] = u
 	}
 
 	problemIDs := make([]int, 0, len(subs))

@@ -50,7 +50,7 @@ func (rt *Web) ValidateProblemID(next http.Handler) http.Handler {
 			}
 			pb = problem
 		} else {
-			problem, err := rt.base.ContestProblem(r.Context(), util.Contest(r), util.UserBrief(r), problemID)
+			problem, err := rt.base.ContestProblem(r.Context(), util.Contest(r), user.UserBrief(r), problemID)
 			if err != nil || problem == nil {
 				rt.statusPage(w, r, 404, "Problema nu a fost găsită sau nu aparține concursului")
 				return
@@ -105,7 +105,7 @@ func (rt *Web) ValidateExternalResourceID(next http.Handler) http.Handler {
 			ID: &resourceID,
 
 			Look:        true,
-			LookingUser: util.UserBrief(r),
+			LookingUser: user.UserBrief(r),
 		})
 		if err != nil || len(resources) != 1 {
 			rt.statusPage(w, r, 404, "Eticheta nu există sau nu ai acces la aceasta")
@@ -144,7 +144,7 @@ func (rt *Web) ValidateTagID(next http.Handler) http.Handler {
 // canViewTags makes sure the user can view tags
 func (rt *Web) canViewTags(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !(flags.AnyoneTags.Value() || util.UserBrief(r).IsProposer()) {
+		if !(flags.AnyoneTags.Value() || user.UserBrief(r).IsProposer()) {
 			rt.authedStatusPage(w, r, 400, "Nu ai voie să accesezi etichetele!")
 			return
 		}
@@ -155,7 +155,7 @@ func (rt *Web) canViewTags(next http.Handler) http.Handler {
 // ValidateProblemVisible checks if the problem from context is visible from the logged in user
 func (rt *Web) ValidateProblemVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !rt.base.IsProblemVisible(util.UserBrief(r), util.Problem(r)) {
+		if !rt.base.IsProblemVisible(user.UserBrief(r), util.Problem(r)) {
 			rt.authedStatusPage(w, r, 403, "Nu ai voie să accesezi problema!")
 			return
 		}
@@ -166,7 +166,7 @@ func (rt *Web) ValidateProblemVisible(next http.Handler) http.Handler {
 // ValidateProblemFullyVisible checks if the problem from context is FULLY visible from the logged in user
 func (rt *Web) ValidateProblemFullyVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !rt.base.IsProblemFullyVisible(util.UserBrief(r), util.Problem(r)) {
+		if !rt.base.IsProblemFullyVisible(user.UserBrief(r), util.Problem(r)) {
 			rt.authedStatusPage(w, r, 403, "Nu ai voie să accesezi această pagină!")
 			return
 		}
@@ -177,7 +177,7 @@ func (rt *Web) ValidateProblemFullyVisible(next http.Handler) http.Handler {
 // ValidateBlogPostVisible checks if the post from context is visible from the logged in user
 func (rt *Web) ValidateBlogPostVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !rt.base.IsBlogPostVisible(util.UserBrief(r), util.BlogPost(r)) {
+		if !rt.base.IsBlogPostVisible(user.UserBrief(r), util.BlogPost(r)) {
 			rt.authedStatusPage(w, r, 403, "Nu ai voie să accesezi articolul!")
 			return
 		}
@@ -205,7 +205,7 @@ func (rt *Web) ValidateContestID(next http.Handler) http.Handler {
 // ValidateContestVisible checks if the problem from context is visible from the logged in user
 func (rt *Web) ValidateContestVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !rt.base.IsContestVisible(util.UserBrief(r), util.Contest(r)) {
+		if !rt.base.IsContestVisible(user.UserBrief(r), util.Contest(r)) {
 			rt.authedStatusPage(w, r, 403, "Nu ai voie să accesezi concursul!")
 			return
 		}
@@ -221,7 +221,7 @@ func (rt *Web) ValidateSubmissionID(next http.Handler) http.Handler {
 			rt.statusPage(w, r, 400, "ID submisie invalid")
 			return
 		}
-		sub, err := rt.base.Submission(r.Context(), subID, util.UserBrief(r))
+		sub, err := rt.base.Submission(r.Context(), subID, user.UserBrief(r))
 		if err != nil {
 			if kilonova.ErrorCode(err) != 404 {
 				slog.WarnContext(r.Context(), "Could not get submission", slog.Any("err", err), slog.Int("subID", subID))
@@ -260,7 +260,7 @@ func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
 			http.Error(w, "Atașamentul nu a fost găsit", 404)
 			return
 		}
-		if att.Private && !rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
+		if att.Private && !rt.base.IsProblemEditor(user.UserBrief(r), util.Problem(r)) {
 			rt.authedStatusPage(w, r, 403, "Nu ai voie să accesezi acest atașament")
 			return
 		}
@@ -270,7 +270,7 @@ func (rt *Web) ValidateAttachmentID(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !util.UserBrief(r).IsAuthed() {
+		if !user.UserBrief(r).IsAuthed() {
 			http.Redirect(w, r, "/login?back="+url.PathEscape(r.URL.Path), http.StatusTemporaryRedirect)
 			return
 		}
@@ -280,7 +280,7 @@ func (rt *Web) mustBeAuthed(next http.Handler) http.Handler {
 
 // maybe the user is just not authed, let's give them another chance before actually returning an error
 func (rt *Web) authedStatusPage(w http.ResponseWriter, r *http.Request, code int, message string) {
-	if !util.UserBrief(r).IsAuthed() {
+	if !user.UserBrief(r).IsAuthed() {
 		http.Redirect(w, r, "/login?back="+url.PathEscape(r.URL.Path), http.StatusTemporaryRedirect)
 		return
 	}
@@ -289,7 +289,7 @@ func (rt *Web) authedStatusPage(w http.ResponseWriter, r *http.Request, code int
 
 func (rt *Web) mustBeProposer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !util.UserBrief(r).IsProposer() {
+		if !user.UserBrief(r).IsProposer() {
 			rt.statusPage(w, r, 401, "Trebuie să fii propunător")
 			return
 		}
@@ -299,7 +299,7 @@ func (rt *Web) mustBeProposer(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 	return rt.mustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !util.UserBrief(r).IsAdmin() {
+		if !user.UserBrief(r).IsAdmin() {
 			rt.statusPage(w, r, 401, "Trebuie să fii admin")
 			return
 		}
@@ -309,7 +309,7 @@ func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if util.UserBrief(r).IsAuthed() {
+		if user.UserBrief(r).IsAuthed() {
 			http.Redirect(w, r, "/", http.StatusFound)
 			//rt.statusPage(w, r, 401, "Trebuie să fii delogat")
 			return
@@ -320,7 +320,7 @@ func (rt *Web) mustBeVisitor(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeProblemEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
+		if !rt.base.IsProblemEditor(user.UserBrief(r), util.Problem(r)) {
 			rt.statusPage(w, r, 401, "Trebuie să fii un editor al problemei")
 			return
 		}
@@ -330,7 +330,7 @@ func (rt *Web) mustBeProblemEditor(next http.Handler) http.Handler {
 
 func (rt *Web) mustBePostEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !rt.base.IsBlogPostEditor(util.UserBrief(r), util.BlogPost(r)) {
+		if !rt.base.IsBlogPostEditor(user.UserBrief(r), util.BlogPost(r)) {
 			rt.statusPage(w, r, 401, "Trebuie să fii editor al articolului")
 			return
 		}
@@ -340,7 +340,7 @@ func (rt *Web) mustBePostEditor(next http.Handler) http.Handler {
 
 func (rt *Web) mustBeContestEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !util.Contest(r).IsEditor(util.UserBrief(r)) {
+		if !util.Contest(r).IsEditor(user.UserBrief(r)) {
 			rt.statusPage(w, r, 401, "Trebuie să fii un administrator al concursului")
 			return
 		}
@@ -391,9 +391,9 @@ func (rt *Web) initLanguage(next http.Handler) http.Handler {
 
 		accept := r.Header.Get("Accept-Language")
 		tag, _ := language.MatchStrings(langMatcher, cookieLang, userLang, accept)
-		language, _ := tag.Base()
+		baseLang, _ := tag.Base()
 
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.LangKey, language.String())))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.LangKey, baseLang.String())))
 	})
 }
 

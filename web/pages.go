@@ -18,6 +18,7 @@ import (
 	tparse "text/template/parse"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
@@ -45,9 +46,9 @@ func (rt *Web) problemTopbar(r *http.Request, page string, pageID int) *ProblemT
 		prefix = fmt.Sprintf("/contests/%d", util.Contest(r).ID)
 	}
 	return &ProblemTopbar{
-		IsProblemEditor: rt.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
-		IsContestEditor: util.Contest(r).IsEditor(util.UserBrief(r)),
-		CanViewTests:    rt.base.CanViewTests(util.UserBrief(r), util.Problem(r)),
+		IsProblemEditor: rt.base.IsProblemEditor(user.UserBrief(r), util.Problem(r)),
+		IsContestEditor: util.Contest(r).IsEditor(user.UserBrief(r)),
+		CanViewTests:    rt.base.CanViewTests(user.UserBrief(r), util.Problem(r)),
 
 		Contest: util.Contest(r),
 		Problem: util.Problem(r),
@@ -69,7 +70,7 @@ type PostTopbar struct {
 
 func (rt *Web) postTopbar(r *http.Request, page string) *PostTopbar {
 	return &PostTopbar{
-		IsPostEditor: rt.base.IsBlogPostEditor(util.UserBrief(r), util.BlogPost(r)),
+		IsPostEditor: rt.base.IsBlogPostEditor(user.UserBrief(r), util.BlogPost(r)),
 
 		Post: util.BlogPost(r),
 		Page: page,

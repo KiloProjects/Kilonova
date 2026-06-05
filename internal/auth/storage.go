@@ -52,7 +52,7 @@ func (s *AuthStorage) CreateAuthRequest(ctx context.Context, authReq *oidc.AuthR
 		return nil, err
 	}
 
-	req := &AuthRequest{
+	req := &Request{
 		ID:            uuid.Must(uuid.NewV7()),
 		ApplicationID: appID,
 		CallbackURI:   authReq.RedirectURI,
@@ -92,7 +92,7 @@ func (s *AuthStorage) CreateAuthRequest(ctx context.Context, authReq *oidc.AuthR
 
 func (s *AuthStorage) AuthRequestByID(ctx context.Context, reqID string) (op.AuthRequest, error) {
 	rows, _ := s.conn.Query(ctx, "SELECT * FROM oauth_requests WHERE id = $1", reqID)
-	val, err := pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[AuthRequest])
+	val, err := pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[Request])
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (s *AuthStorage) AuthRequestByID(ctx context.Context, reqID string) (op.Aut
 
 func (s *AuthStorage) AuthRequestByCode(ctx context.Context, reqCode string) (op.AuthRequest, error) {
 	rows, _ := s.conn.Query(ctx, "SELECT * FROM oauth_requests WHERE request_code = $1", reqCode)
-	val, err := pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[AuthRequest])
+	val, err := pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[Request])
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +245,7 @@ func (s *AuthStorage) exchangeRefreshToken(ctx context.Context, req op.TokenExch
 func (s *AuthStorage) CreateAccessToken(ctx context.Context, req op.TokenRequest) (string, time.Time, error) {
 	var appID uuid.UUID
 	switch req := req.(type) {
-	case *AuthRequest:
+	case *Request:
 		appID = req.ApplicationID
 	case op.TokenExchangeRequest:
 		var err error
@@ -328,7 +328,7 @@ func (s *AuthStorage) CreateAccessAndRefreshTokens(ctx context.Context, request 
 
 // getInfoFromRequest returns the clientID, authTime and amr depending on the op.TokenRequest type / implementation
 func getInfoFromRequest(req op.TokenRequest) (applicationID uuid.UUID, authTime time.Time, userID *int, amr []string) {
-	authReq, ok := req.(*AuthRequest) // Code Flow (with scope offline_access)
+	authReq, ok := req.(*Request) // Code Flow (with scope offline_access)
 	if ok {
 		t := time.Time{}
 		if authReq.AuthTime != nil {

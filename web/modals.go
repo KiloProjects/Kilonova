@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/web/views/modals"
 
 	"github.com/KiloProjects/kilonova"
@@ -21,7 +22,7 @@ func (rt *Web) updateProblemSources() http.HandlerFunc {
 		for i, id := range util.ProblemList(r).ProblemIDs() {
 			if err := rt.base.UpdateProblem(r.Context(), id, kilonova.ProblemUpdate{
 				SourceCredits: new(fmt.Sprintf(r.FormValue("new_format"), i+1)),
-			}, util.UserBrief(r)); err != nil {
+			}, user.UserBrief(r)); err != nil {
 				slog.WarnContext(r.Context(), "Could not update problem", slog.Any("err", err))
 			} else {
 				numUpdated++
@@ -37,7 +38,7 @@ func (rt *Web) updateProblemSources() http.HandlerFunc {
 		}
 
 		if isHTMXRequest(r) {
-			problems, err := rt.base.ProblemListProblems(r.Context(), util.ProblemList(r).List, util.UserBrief(r))
+			problems, err := rt.base.ProblemListProblems(r.Context(), util.ProblemList(r).List, user.UserBrief(r))
 			if err != nil {
 				slog.ErrorContext(r.Context(), "Could not get problems", slog.Any("err", err))
 				return

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 )
 
@@ -19,7 +20,7 @@ func (s *API) userBlogPosts(w http.ResponseWriter, r *http.Request) {
 		errorData(w, err, http.StatusBadRequest)
 		return
 	}
-	posts, err := s.base.UserBlogPosts(r.Context(), args.UserID, util.UserBrief(r))
+	posts, err := s.base.UserBlogPosts(r.Context(), args.UserID, user.UserBrief(r))
 	if err != nil {
 		statusError(w, err)
 		return
@@ -39,7 +40,7 @@ func (s *API) blogPostBySlug(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !s.base.IsBlogPostVisible(util.UserBrief(r), post) {
+	if !s.base.IsBlogPostVisible(user.UserBrief(r), post) {
 		errorData(w, "can't view this post", http.StatusForbidden)
 		return
 	}
@@ -49,7 +50,7 @@ func (s *API) blogPostBySlug(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) validateBlogPostEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !s.base.IsBlogPostEditor(util.UserBrief(r), util.BlogPost(r)) {
+		if !s.base.IsBlogPostEditor(user.UserBrief(r), util.BlogPost(r)) {
 			errorData(w, "You must be authorized to edit blog posts", http.StatusUnauthorized)
 			return
 		}
@@ -75,7 +76,7 @@ func (s *API) createBlogPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, slug, err := s.base.CreateBlogPost(r.Context(), args.Title, util.UserBrief(r))
+	id, slug, err := s.base.CreateBlogPost(r.Context(), args.Title, user.UserBrief(r))
 	if err != nil {
 		statusError(w, err)
 		return
@@ -86,7 +87,7 @@ func (s *API) createBlogPost(w http.ResponseWriter, r *http.Request) {
 			Private: false,
 			Exec:    false,
 			Name:    fmt.Sprintf("statement-%s.md", *args.BodyLang),
-		}, id, strings.NewReader(*args.Body), &util.UserBrief(r).ID,
+		}, id, strings.NewReader(*args.Body), &user.UserBrief(r).ID,
 		); err != nil {
 			slog.WarnContext(r.Context(), "Couldn't initialize blog post attachment", slog.Any("err", err), slog.Any("post_id", id))
 		}

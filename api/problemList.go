@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 )
 
@@ -32,7 +33,7 @@ func (s *API) problemListByName(w http.ResponseWriter, r *http.Request) {
 func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
 	list := util.ProblemList(r)
 
-	pbs, err := s.base.ProblemListProblems(r.Context(), list.List, util.UserBrief(r))
+	pbs, err := s.base.ProblemListProblems(r.Context(), list.List, user.UserBrief(r))
 	if err != nil {
 		errorData(w, err, 500)
 		return
@@ -40,12 +41,12 @@ func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
 
 	numSolved := -1
 	numSubSolved := map[int]int{}
-	if util.UserBrief(r).IsAuthed() {
+	if user.UserBrief(r).IsAuthed() {
 		listIDs := []int{list.ID}
 		for _, sublists := range list.SubLists {
 			listIDs = append(listIDs, sublists.ID)
 		}
-		numSubSolved, err = s.base.NumSolvedFromPblists(r.Context(), listIDs, util.UserBrief(r))
+		numSubSolved, err = s.base.NumSolvedFromPblists(r.Context(), listIDs, user.UserBrief(r))
 		if err != nil {
 			slog.WarnContext(r.Context(), "NumSolvedFromPblists fail", slog.Any("err", err))
 			numSubSolved = map[int]int{}
@@ -119,7 +120,7 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	actualIDs, err := s.filterProblems(r.Context(), listData.ProblemIDs, util.UserBrief(r), false, false)
+	actualIDs, err := s.filterProblems(r.Context(), listData.ProblemIDs, user.UserBrief(r), false, false)
 	if err != nil {
 		statusError(w, err)
 		return
@@ -128,7 +129,7 @@ func (s *API) initProblemList(w http.ResponseWriter, r *http.Request) {
 	var list kilonova.ProblemList
 	list.Title = listData.Title
 	list.Description = listData.Description
-	list.AuthorID = util.UserBrief(r).ID
+	list.AuthorID = user.UserBrief(r).ID
 	list.List = actualIDs
 	if listData.SidebarHidable != nil {
 		list.SidebarHidable = *listData.SidebarHidable
@@ -198,7 +199,7 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 	}
 	orgList := util.ProblemList(r)
 
-	if !(util.UserBrief(r).Admin || util.UserBrief(r).ID == orgList.AuthorID) {
+	if !(user.UserBrief(r).Admin || user.UserBrief(r).ID == orgList.AuthorID) {
 		errorData(w, "You can't update this problem list!", 403)
 		return
 	}
@@ -215,7 +216,7 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if args.List != nil {
-		list, err := s.filterProblems(r.Context(), args.List, util.UserBrief(r), false, false)
+		list, err := s.filterProblems(r.Context(), args.List, user.UserBrief(r), false, false)
 		if err != nil {
 			statusError(w, err)
 			return
@@ -240,7 +241,7 @@ func (s *API) updateProblemList(w http.ResponseWriter, r *http.Request) {
 func (s *API) deleteProblemList(w http.ResponseWriter, r *http.Request) {
 	list := util.ProblemList(r)
 
-	if !(util.UserBrief(r).Admin || util.UserBrief(r).ID == list.AuthorID) {
+	if !(user.UserBrief(r).Admin || user.UserBrief(r).ID == list.AuthorID) {
 		errorData(w, "You can't delete this problem list!", 403)
 		return
 	}

@@ -6,7 +6,6 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/datastore"
-	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/ctxt"
 )
 
@@ -48,11 +47,6 @@ const (
 	// AuthMethodKey is the key to be used for adding the auth method to context
 	AuthMethodKey = knContextType("authMethod")
 )
-
-// Deprecated: use [user.UserBrief] instead
-func UserBrief(r *http.Request) *kilonova.UserBrief {
-	return user.UserBrief(r)
-}
 
 func ProblemContext(ctx context.Context) *kilonova.Problem {
 	return ctxt.Value[kilonova.Problem, knContextType](ctx, ProblemKey)

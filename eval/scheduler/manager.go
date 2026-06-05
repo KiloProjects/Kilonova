@@ -498,19 +498,19 @@ func (mgr *BoxManager) collectResponse(ctx context.Context, box eval.Sandbox, re
 	}
 
 	var b bytes.Buffer
-	for _, path := range req.OutputByteFiles {
+	for _, filePath := range req.OutputByteFiles {
 		b.Reset()
-		if !box.FileExists(path) {
+		if !box.FileExists(filePath) {
 			continue
 		}
-		if err := box.ReadFile(path, &b); err != nil {
+		if err := box.ReadFile(filePath, &b); err != nil {
 			return resp, err
 		}
-		resp.ByteFiles[path] = bytes.Clone(b.Bytes())
+		resp.ByteFiles[filePath] = bytes.Clone(b.Bytes())
 	}
 
-	for path, file := range req.OutputBucketFiles {
-		if !box.FileExists(path) {
+	for filePath, file := range req.OutputBucketFiles {
+		if !box.FileExists(filePath) {
 			continue
 		}
 		if file.Mode == 0 {
@@ -523,11 +523,11 @@ func (mgr *BoxManager) collectResponse(ctx context.Context, box eval.Sandbox, re
 			continue
 		}
 
-		if err := box.SaveFile(path, bucket, file.Filename, file.Mode); err != nil {
-			slog.WarnContext(ctx, "Error saving box file", slog.Any("err", err), slog.String("path", path), slog.Any("bucket", file.Bucket))
+		if err := box.SaveFile(filePath, bucket, file.Filename, file.Mode); err != nil {
+			slog.WarnContext(ctx, "Error saving box file", slog.Any("err", err), slog.String("path", filePath), slog.Any("bucket", file.Bucket))
 			return resp, err
 		}
-		resp.BucketFiles[path] = &eval.BucketFile{
+		resp.BucketFiles[filePath] = &eval.BucketFile{
 			Bucket:   file.Bucket,
 			Filename: file.Filename,
 			Mode:     file.Mode,

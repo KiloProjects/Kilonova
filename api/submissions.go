@@ -45,7 +45,7 @@ func (s *API) getSubmissionByID() func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		sub, err := s.fullSubmission(r.Context(), args.SubID, util.UserBrief(r), true)
+		sub, err := s.fullSubmission(r.Context(), args.SubID, user.UserBrief(r), true)
 		if err != nil {
 			statusError(w, err)
 			return
@@ -63,7 +63,7 @@ func (s *API) filterSubs() http.HandlerFunc {
 			return
 		}
 
-		subs, err := s.base.Submissions(r.Context(), args, true, util.UserBrief(r))
+		subs, err := s.base.Submissions(r.Context(), args, true, user.UserBrief(r))
 		if err != nil {
 			statusError(w, err)
 			return
@@ -92,7 +92,7 @@ func (s *API) createSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !s.base.IsProblemVisible(util.UserBrief(r), problem) {
+	if !s.base.IsProblemVisible(user.UserBrief(r), problem) {
 		errorData(w, "Problem is not visible", 401)
 		return
 	}

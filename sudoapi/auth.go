@@ -18,25 +18,25 @@ import (
 // Login
 
 func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserFull, error) {
-	user, err := s.userRepo.User(ctx, kilonova.UserFilter{Name: &uname})
+	userFull, err := s.userRepo.User(ctx, kilonova.UserFilter{Name: &uname})
 	if err != nil {
 		slog.WarnContext(ctx, "Could not get user by username", slog.Any("err", err))
 		return nil, Statusf(400, "Invalid login details")
 	}
 	// Maybe the user is trying to log in by email
-	if user == nil {
-		user, err = s.userRepo.User(ctx, kilonova.UserFilter{Email: &uname})
+	if userFull == nil {
+		userFull, err = s.userRepo.User(ctx, kilonova.UserFilter{Email: &uname})
 		if err != nil {
 			slog.WarnContext(ctx, "Could not get user by email", slog.Any("err", err))
 			return nil, Statusf(400, "Invalid login details")
 		}
 	}
 
-	if user == nil {
+	if userFull == nil {
 		return nil, Statusf(400, "Invalid login details")
 	}
 
-	hashedPassword, err := s.userRepo.HashedPassword(ctx, user.ID)
+	hashedPassword, err := s.userRepo.HashedPassword(ctx, userFull.ID)
 	if err != nil {
 		return nil, Statusf(400, "Invalid login details")
 	}
@@ -49,7 +49,7 @@ func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserF
 		return nil, ErrUnknownError
 	}
 
-	return user, nil
+	return userFull, nil
 }
 
 // Signup
@@ -93,18 +93,18 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 		return -1, fmt.Errorf("couldn't create user")
 	}
 
-	user, err := s.UserFull(ctx, id)
+	userFull, err := s.UserFull(ctx, id)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't get user", slog.Any("err", err))
 		return -1, err
 	}
 
-	if err := s.LogSignup(context.WithoutCancel(ctx), user.ID, ip, userAgent); err != nil {
+	if err := s.LogSignup(context.WithoutCancel(ctx), userFull.ID, ip, userAgent); err != nil {
 		slog.WarnContext(ctx, "Couldn't log signup", slog.Any("err", err))
 	}
 
 	go func() {
-		if err := s.SendVerificationEmail(context.WithoutCancel(ctx), user.ID, user.Name, user.Email, user.PreferredLanguage); err != nil {
+		if err := s.SendVerificationEmail(context.WithoutCancel(ctx), userFull.ID, userFull.Name, userFull.Email, userFull.PreferredLanguage); err != nil {
 			slog.WarnContext(ctx, "Couldn't send user verification email", slog.Any("err", err))
 		}
 	}()

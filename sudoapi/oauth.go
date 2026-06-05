@@ -83,12 +83,12 @@ func (s *BaseAPI) CreateClient(ctx context.Context, name string, appType auth.Ap
 	return s.oidcProvider.Storage().(*auth.AuthStorage).CreateClient(ctx, name, appType, authorID, devMode, allowedRedirects, allowedPostLogoutRedirects)
 }
 
-func (s *BaseAPI) GetAuthRequest(ctx context.Context, reqID string) (*auth.AuthRequest, error) {
+func (s *BaseAPI) GetAuthRequest(ctx context.Context, reqID string) (*auth.Request, error) {
 	req, err := s.oidcProvider.Storage().(*auth.AuthStorage).AuthRequestByID(ctx, reqID)
 	if err != nil {
 		return nil, err
 	}
-	return req.(*auth.AuthRequest), nil
+	return req.(*auth.Request), nil
 }
 
 func (s *BaseAPI) GetOAuthClient(ctx context.Context, clientID uuid.UUID) (*auth.Client, error) {

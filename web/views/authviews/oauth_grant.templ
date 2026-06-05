@@ -2,7 +2,7 @@ package authviews
 
 import "github.com/KiloProjects/kilonova/internal/auth"
 
-templ OAuthGrant(authRequest *auth.AuthRequest, client *auth.Client) {
+templ OAuthGrant(authRequest *auth.Request, client *auth.Client) {
 	<div class="flex items-center justify-center min-h-[70vh]">
 		<div style="width: 500px;">
 			<form class="segment-panel" id="login_form" method="POST">

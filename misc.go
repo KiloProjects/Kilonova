@@ -2,6 +2,7 @@ package kilonova
 
 import (
 	"context"
+
 	"github.com/gosimple/slug"
 )
 

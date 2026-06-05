@@ -23,7 +23,7 @@ func (s *API) createContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.base.CreateContest(r.Context(), args.Name, args.Type, util.UserBrief(r))
+	id, err := s.base.CreateContest(r.Context(), args.Name, args.Type, user.UserBrief(r))
 	if err != nil {
 		statusError(w, err)
 		return
@@ -41,7 +41,7 @@ func (s *API) cloneContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.base.CloneContest(r.Context(), util.Contest(r), args.Name, util.UserBrief(r))
+	id, err := s.base.CloneContest(r.Context(), util.Contest(r), args.Name, user.UserBrief(r))
 	if err != nil {
 		statusError(w, err)
 		return
@@ -57,7 +57,7 @@ func (s *API) updateContest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !util.UserBrief(r).IsAdmin() {
+	if !user.UserBrief(r).IsAdmin() {
 		if args.Type != kilonova.ContestTypeNone && args.Type != util.Contest(r).Type {
 			errorData(w, "You aren't allowed to change contest type!", 400)
 			return
@@ -106,7 +106,7 @@ func (s *API) updateContestProblems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	list, err := s.filterProblems(r.Context(), args.List, util.UserBrief(r), util.Contest(r).Type == kilonova.ContestTypeOfficial, true)
+	list, err := s.filterProblems(r.Context(), args.List, user.UserBrief(r), util.Contest(r).Type == kilonova.ContestTypeOfficial, true)
 	if err != nil {
 		statusError(w, err)
 		return
@@ -125,7 +125,7 @@ func (s *API) getContest(ctx context.Context, _ struct{}) (*kilonova.Contest, er
 }
 
 func (s *API) getContestProblems(w http.ResponseWriter, r *http.Request) {
-	pbs, err := s.base.ContestProblems(r.Context(), util.Contest(r), util.UserBrief(r))
+	pbs, err := s.base.ContestProblems(r.Context(), util.Contest(r), user.UserBrief(r))
 	if err != nil {
 		statusError(w, err)
 		return
@@ -146,17 +146,17 @@ func (s *API) getRemainingSubmissionCount(w http.ResponseWriter, r *http.Request
 		statusError(w, err)
 		return
 	}
-	//if s.base.IsContestEditor(util.UserBrief(r), util.Contest(r)) {
+	//if s.base.IsContestEditor(user.UserBrief(r), util.Contest(r)) {
 	//
 	//}
-	pbs, err := s.base.ContestProblems(r.Context(), util.Contest(r), util.UserBrief(r))
+	pbs, err := s.base.ContestProblems(r.Context(), util.Contest(r), user.UserBrief(r))
 	if err != nil {
 		statusError(w, err)
 		return
 	}
 	var remainingCount = make(map[int]subCountResult)
 	for _, pb := range pbs {
-		cnt, limited, err := s.base.RemainingSubmissionCount(r.Context(), util.Contest(r), pb.ID, util.UserBrief(r).ID)
+		cnt, limited, err := s.base.RemainingSubmissionCount(r.Context(), util.Contest(r), pb.ID, user.UserBrief(r).ID)
 		if err != nil {
 			statusError(w, err)
 			return
@@ -170,7 +170,7 @@ func (s *API) getRemainingSubmissionCount(w http.ResponseWriter, r *http.Request
 		UserID int                    `json:"user_id"`
 		Counts map[int]subCountResult `json:"counts"`
 	}{
-		UserID: util.UserBrief(r).ID,
+		UserID: user.UserBrief(r).ID,
 		Counts: remainingCount,
 	})
 }
@@ -199,7 +199,7 @@ func (s *API) contestLeaderboard(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Can't decode parameters", 400)
 		return
 	}
-	ld, err := s.leaderboard(r.Context(), util.Contest(r), util.UserBrief(r), &args)
+	ld, err := s.leaderboard(r.Context(), util.Contest(r), user.UserBrief(r), &args)
 	if err != nil {
 		statusError(w, err)
 		return
@@ -245,7 +245,7 @@ func (s *API) addContestTester(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if userBrief.ID == util.UserBrief(r).ID {
+	if userBrief.ID == user.UserBrief(r).ID {
 		errorData(w, "You can't demote yourself to tester rank!", 400)
 		return
 	}
@@ -267,7 +267,7 @@ func (s *API) stripContestAccess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if args.UserID == util.UserBrief(r).ID {
+	if args.UserID == user.UserBrief(r).ID {
 		errorData(w, "You can't strip your own access!", 400)
 		return
 	}
@@ -355,7 +355,7 @@ func (s *API) askContestQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := s.base.CreateContestQuestion(r.Context(), util.Contest(r), util.UserBrief(r).ID, args.Text); err != nil {
+	if _, err := s.base.CreateContestQuestion(r.Context(), util.Contest(r), user.UserBrief(r).ID, args.Text); err != nil {
 		statusError(w, err)
 		return
 	}
@@ -442,7 +442,7 @@ func (s *API) updateContestInvitation(ctx context.Context, args struct {
 }
 
 func (s *API) registerForContest(w http.ResponseWriter, r *http.Request) {
-	if err := s.base.RegisterContestUser(r.Context(), util.Contest(r), util.UserBrief(r).ID, nil, false); err != nil {
+	if err := s.base.RegisterContestUser(r.Context(), util.Contest(r), user.UserBrief(r).ID, nil, false); err != nil {
 		statusError(w, err)
 		return
 	}
@@ -450,7 +450,7 @@ func (s *API) registerForContest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) startContestRegistration(w http.ResponseWriter, r *http.Request) {
-	if err := s.base.StartContestRegistration(r.Context(), util.Contest(r), util.UserBrief(r).ID); err != nil {
+	if err := s.base.StartContestRegistration(r.Context(), util.Contest(r), user.UserBrief(r).ID); err != nil {
 		statusError(w, err)
 		return
 	}

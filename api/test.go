@@ -98,11 +98,11 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 		visibleID = s.base.NextVID(r.Context(), util.Problem(r).ID)
 	}
 
-	var test kilonova.Test
-	test.ProblemID = util.Problem(r).ID
-	test.VisibleID = visibleID
-	test.Score = decimal.NewFromFloat(score).Round(kilonova.MaxScoreRoundingPlaces)
-	if err := s.base.CreateTest(r.Context(), &test); err != nil {
+	var newTest kilonova.Test
+	newTest.ProblemID = util.Problem(r).ID
+	newTest.VisibleID = visibleID
+	newTest.Score = decimal.NewFromFloat(score).Round(kilonova.MaxScoreRoundingPlaces)
+	if err := s.base.CreateTest(r.Context(), &newTest); err != nil {
 		statusError(w, err)
 		return
 	}
@@ -121,12 +121,12 @@ func (s *API) createTest(w http.ResponseWriter, r *http.Request) {
 	}
 	defer output.Close()
 
-	if err := s.base.SaveTestInput(test.ID, input); err != nil {
+	if err := s.base.SaveTestInput(newTest.ID, input); err != nil {
 		slog.WarnContext(r.Context(), "Couldn't create test input", slog.Any("err", err))
 		errorData(w, "Couldn't create test input", 500)
 		return
 	}
-	if err := s.base.SaveTestOutput(test.ID, output); err != nil {
+	if err := s.base.SaveTestOutput(newTest.ID, output); err != nil {
 		slog.WarnContext(r.Context(), "Couldn't create test output", slog.Any("err", err))
 		errorData(w, "Couldn't create test output", 500)
 		return

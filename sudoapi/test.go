@@ -76,12 +76,12 @@ func (s *BaseAPI) DeleteTest(ctx context.Context, id int) error {
 }
 
 func (s *BaseAPI) NextVID(ctx context.Context, problemID int) int {
-	max, err := s.db.BiggestVID(ctx, problemID)
+	biggestVID, err := s.db.BiggestVID(ctx, problemID)
 	if err != nil {
-		max = 0
+		biggestVID = 0
 	}
-	if max <= 0 {
+	if biggestVID <= 0 {
 		return 1
 	}
-	return max + 1
+	return biggestVID + 1
 }

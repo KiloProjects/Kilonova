@@ -325,12 +325,12 @@ func (s *BaseAPI) newWebhookSender(ctx context.Context, webhookURL string, name 
 	if webhookURL == "" {
 		return nil
 	}
-	url, err := url.Parse(webhookURL)
+	parsedURL, err := url.Parse(webhookURL)
 	if err != nil {
 		slog.WarnContext(ctx, "Invalid webhook URL", slog.Any("err", err))
 		return nil
 	}
-	parts := strings.Split(url.Path, "/")
+	parts := strings.Split(parsedURL.Path, "/")
 	if len(parts) < 2 {
 		slog.WarnContext(ctx, "Invalid webhook URL", slog.Any("err", err))
 		return nil

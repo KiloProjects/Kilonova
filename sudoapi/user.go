@@ -32,16 +32,16 @@ import (
 )
 
 func (s *BaseAPI) UserBrief(ctx context.Context, id int) (*kilonova.UserBrief, error) {
-	user, err := s.UserFull(ctx, id)
+	userFull, err := s.UserFull(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return &user.UserBrief, nil
+	return &userFull.UserBrief, nil
 }
 
 func (s *BaseAPI) UserFull(ctx context.Context, id int) (*kilonova.UserFull, error) {
-	user, err := s.userRepo.User(ctx, kilonova.UserFilter{ID: &id})
-	if err != nil || user == nil {
+	userFull, err := s.userRepo.User(ctx, kilonova.UserFilter{ID: &id})
+	if err != nil || userFull == nil {
 		if err != nil {
 			slog.WarnContext(ctx, "Couldn't get user", slog.Any("err", err))
 		}
@@ -50,15 +50,15 @@ func (s *BaseAPI) UserFull(ctx context.Context, id int) (*kilonova.UserFull, err
 		}
 		return nil, fmt.Errorf("user not found: %w", ErrNotFound)
 	}
-	return user, nil
+	return userFull, nil
 }
 
 func (s *BaseAPI) UserBriefByName(ctx context.Context, name string) (*kilonova.UserBrief, error) {
-	user, err := s.UserFullByName(ctx, name)
+	userFull, err := s.UserFullByName(ctx, name)
 	if err != nil {
 		return nil, err
 	}
-	return &user.UserBrief, nil
+	return &userFull.UserBrief, nil
 }
 
 func (s *BaseAPI) UserFullByName(ctx context.Context, name string) (*kilonova.UserFull, error) {
@@ -66,11 +66,11 @@ func (s *BaseAPI) UserFullByName(ctx context.Context, name string) (*kilonova.Us
 	if name == "" {
 		return nil, Statusf(400, "Username not specified")
 	}
-	user, err := s.userRepo.User(ctx, kilonova.UserFilter{Name: &name})
-	if err != nil || user == nil {
+	userFull, err := s.userRepo.User(ctx, kilonova.UserFilter{Name: &name})
+	if err != nil || userFull == nil {
 		return nil, fmt.Errorf("user not found: %w", ErrNotFound)
 	}
-	return user, nil
+	return userFull, nil
 }
 
 func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*kilonova.UserFull, error) {
@@ -78,11 +78,11 @@ func (s *BaseAPI) UserFullByEmail(ctx context.Context, email string) (*kilonova.
 	if email == "" {
 		return nil, Statusf(400, "Email not specified")
 	}
-	user, err := s.userRepo.User(ctx, kilonova.UserFilter{Email: &email})
-	if err != nil || user == nil {
+	userFull, err := s.userRepo.User(ctx, kilonova.UserFilter{Email: &email})
+	if err != nil || userFull == nil {
 		return nil, fmt.Errorf("user not found: %w", ErrNotFound)
 	}
-	return user, nil
+	return userFull, nil
 }
 
 func (s *BaseAPI) UsersBrief(ctx context.Context, filter kilonova.UserFilter) ([]*kilonova.UserBrief, error) {
@@ -300,12 +300,12 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 		return nil, fmt.Errorf("couldn't create user: %w", err)
 	}
 
-	user, err := s.UserFull(ctx, id)
+	userFull, err := s.UserFull(ctx, id)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't get full user", slog.Any("err", err))
 	}
 
-	return user, err
+	return userFull, err
 }
 
 //go:embed emails/generated.html
@@ -363,14 +363,14 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 		contest = contest2
 	}
 
-	user, err := s.GenerateUser(ctx, args.Name, args.Password, args.Lang, kilonova.PreferredThemeDark, args.DisplayName, args.Email, args.Bio)
+	userFull, err := s.GenerateUser(ctx, args.Name, args.Password, args.Lang, kilonova.PreferredThemeDark, args.DisplayName, args.Email, args.Bio)
 	if err != nil {
 		return "", nil, err
 	}
 
 	if contest != nil {
-		if err := s.RegisterContestUser(ctx, contest, user.ID, nil, true); err != nil {
-			return args.Password, user, err
+		if err := s.RegisterContestUser(ctx, contest, userFull.ID, nil, true); err != nil {
+			return args.Password, userFull, err
 		}
 	}
 
@@ -383,21 +383,21 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 			HostPrefix string
 			Branding   string
 		}{
-			Name:       user.Name,
-			Username:   user.Name,
+			Name:       userFull.Name,
+			Username:   userFull.Name,
 			Password:   args.Password,
 			Contest:    contest,
 			HostPrefix: kilonova.HostPrefix(),
 			Branding:   flags.EmailBranding.Value(),
 		}
-		if user.DisplayName != "" {
-			emailArgs.Name = user.DisplayName
+		if userFull.DisplayName != "" {
+			emailArgs.Name = userFull.DisplayName
 		}
 		emailArgs.Branding = cmp.Or(emailArgs.Branding, flags.NavbarBranding.Value(), "Kilonova")
 		var b bytes.Buffer
-		if err := generatedUserTempl.ExecuteTemplate(&b, user.PreferredLanguage, emailArgs); err != nil {
+		if err := generatedUserTempl.ExecuteTemplate(&b, userFull.PreferredLanguage, emailArgs); err != nil {
 			slog.ErrorContext(ctx, "Error rendering password send email", slog.Any("err", err))
-			return args.Password, user, fmt.Errorf("could not render email: %w", err)
+			return args.Password, userFull, fmt.Errorf("could not render email: %w", err)
 		}
 		var sendTo string
 		if args.Email != nil {
@@ -407,7 +407,7 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 			sendTo = *args.PasswordByMailTo
 		}
 
-		var subject = kilonova.GetText(user.PreferredLanguage, "mail.subject.generated")
+		var subject = kilonova.GetText(userFull.PreferredLanguage, "mail.subject.generated")
 		if args.MailSubject != nil {
 			subject = *args.MailSubject
 		}
@@ -418,11 +418,11 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 			HTMLContent: b.String(),
 		}); err != nil {
 			slog.WarnContext(ctx, "Could not send email", slog.Any("err", err))
-			return args.Password, user, err
+			return args.Password, userFull, err
 		}
 	}
 
-	return args.Password, user, nil
+	return args.Password, userFull, nil
 }
 
 func (s *BaseAPI) createUser(ctx context.Context, username, email, password, lang string, theme kilonova.PreferredTheme, displayName string, bio string, generated bool) (int, error) {
@@ -483,8 +483,8 @@ func getGravatar(ctx context.Context, email string, size int) (io.ReadSeekCloser
 	if err != nil {
 		return nil, time.Unix(0, 0), err
 	}
-	time, _ := http.ParseTime(resp.Header.Get("last-modified"))
-	return &bytesReaderCloser{bytes.NewReader(buf)}, time, nil
+	modTime, _ := http.ParseTime(resp.Header.Get("last-modified"))
+	return &bytesReaderCloser{bytes.NewReader(buf)}, modTime, nil
 }
 
 func gravatarBucketName(email string, size int) string {
@@ -561,8 +561,8 @@ func getDiscordAvatar(ctx context.Context, dUser *discordgo.User, size int) (io.
 	if err != nil {
 		return nil, time.Unix(0, 0), err
 	}
-	time, _ := http.ParseTime(resp.Header.Get("last-modified"))
-	return &bytesReaderCloser{bytes.NewReader(buf)}, time, nil
+	modTime, _ := http.ParseTime(resp.Header.Get("last-modified"))
+	return &bytesReaderCloser{bytes.NewReader(buf)}, modTime, nil
 }
 
 // if r is nil, it fetches the gravatar from the web

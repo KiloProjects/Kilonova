@@ -202,8 +202,7 @@ func saveProblemList(ctx context.Context, cmd *cli.Command, base *sudoapi.BaseAP
 			if err != nil {
 				zap.S().Fatal(err)
 			}
-			uid := 1
-			alexvSubs, err := base.RawSubmissions(ctx, kilonova.SubmissionFilter{ProblemID: &pb.ID, UserID: &uid, Score: &hundred})
+			alexvSubs, err := base.RawSubmissions(ctx, kilonova.SubmissionFilter{ProblemID: &pb.ID, UserID: new(1), Score: &hundred})
 			if err != nil {
 				zap.S().Fatal(err)
 			}

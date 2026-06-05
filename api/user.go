@@ -14,7 +14,6 @@ import (
 	"github.com/Yiling-J/theine-go"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
@@ -258,14 +257,14 @@ func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
 		errorData(w, "You must provide a new password", http.StatusBadRequest)
 		return
 	}
-	if err := s.base.VerifyUserPassword(r.Context(), util.UserBrief(r).ID, args.PasswordOld); err != nil {
+	if err := s.base.VerifyUserPassword(r.Context(), user.UserBrief(r).ID, args.PasswordOld); err != nil {
 		statusError(w, err)
 		return
 	}
 
 	if err := s.base.UpdateUserPassword(
 		r.Context(),
-		util.UserBrief(r).ID,
+		user.UserBrief(r).ID,
 		args.Password,
 	); err != nil {
 		statusError(w, err)
@@ -335,7 +334,7 @@ func (s *API) sendForgotPwdMail() http.HandlerFunc {
 			fmt.Println("bruh")
 		}
 
-		user, err := s.base.UserFullByEmail(r.Context(), args.Email)
+		userFull, err := s.base.UserFullByEmail(r.Context(), args.Email)
 		if err != nil {
 			if errors.Is(err, kilonova.ErrNotFound) {
 				returnData(w, "If the provided email address is correct, an email should arrive shortly.")
@@ -349,7 +348,7 @@ func (s *API) sendForgotPwdMail() http.HandlerFunc {
 			if err := s.base.SendPasswordResetEmail(context.WithoutCancel(r.Context()), user.ID, user.Name, user.Email, user.PreferredLanguage); err != nil {
 				slog.InfoContext(r.Context(), "Could not send password reset email", slog.Any("err", err), slog.String("email", args.Email))
 			}
-		}(user)
+		}(userFull)
 
 		returnData(w, "If the provided email address is correct, an email should arrive shortly.")
 	}
@@ -391,7 +390,7 @@ func (s *API) changeEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.base.VerifyUserPassword(r.Context(), util.UserBrief(r).ID, password); err != nil {
+	if err := s.base.VerifyUserPassword(r.Context(), user.UserBrief(r).ID, password); err != nil {
 		statusError(w, err)
 		return
 	}
@@ -446,7 +445,7 @@ func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pwd, user, err := s.base.GenerateUserFlow(r.Context(), args)
+	pwd, userFull, err := s.base.GenerateUserFlow(r.Context(), args)
 	if err != nil {
 		statusError(w, err)
 		return
@@ -457,6 +456,6 @@ func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
 		User     *kilonova.UserFull `json:"user"`
 	}{
 		Password: pwd,
-		User:     user,
+		User:     userFull,
 	})
 }

@@ -37,11 +37,11 @@ func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if args.UserID <= 0 {
-		if util.UserBrief(r) == nil {
+		if user.UserBrief(r) == nil {
 			errorData(w, "No user specified", 400)
 			return
 		}
-		args.UserID = util.UserBrief(r).ID
+		args.UserID = user.UserBrief(r).ID
 	}
 
 	returnData(w, s.base.MaxScore(r.Context(), args.UserID, util.Problem(r).ID))
@@ -84,15 +84,15 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 	// This endpoint may leak stuff that shouldn't be generally seen (like in contests), so restrict this option to editors only
 	// OR to contest editors/testers when ContestID is supplied
 	// It isn't used anywhere right now, but it might be useful in the future
-	if !(s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) || (contest != nil && contest.IsTester(util.UserBrief(r)))) {
+	if !(s.base.IsProblemEditor(user.UserBrief(r), util.Problem(r)) || (contest != nil && contest.IsTester(user.UserBrief(r)))) {
 		args.UserID = -1
 	}
 	if args.UserID <= 0 {
-		if util.UserBrief(r) == nil {
+		if user.UserBrief(r) == nil {
 			errorData(w, "No user specified", 400)
 			return
 		}
-		args.UserID = util.UserBrief(r).ID
+		args.UserID = user.UserBrief(r).ID
 	}
 
 	var maxScore decimal.Decimal
@@ -101,7 +101,7 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 	} else {
 		maxScore = s.base.ContestMaxScore(
 			r.Context(), args.UserID, util.Problem(r).ID, contest.ID,
-			s.base.UserContestFreezeTime(util.UserBrief(r), contest, args.ViewFrozen),
+			s.base.UserContestFreezeTime(user.UserBrief(r), contest, args.ViewFrozen),
 		)
 	}
 
@@ -119,11 +119,11 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 				Subtasks: []*kilonova.SubmissionSubTask{},
 				Subtests: []*kilonova.SubTest{},
 
-				ProblemEditor: s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
+				ProblemEditor: s.base.IsProblemEditor(user.UserBrief(r), util.Problem(r)),
 			})
 			return
 		}
-		sub, err := s.base.Submission(r.Context(), id, util.UserBrief(r))
+		sub, err := s.base.Submission(r.Context(), id, user.UserBrief(r))
 		if err != nil {
 			statusError(w, err)
 			return
@@ -135,7 +135,7 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 			Subtasks: sub.SubTasks,
 			Subtests: sub.SubTests,
 
-			ProblemEditor: s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
+			ProblemEditor: s.base.IsProblemEditor(user.UserBrief(r), util.Problem(r)),
 		})
 	case kilonova.ScoringTypeSumSubtasks:
 		stks, err := s.base.MaximumScoreSubTasks(r.Context(), util.Problem(r).ID, args.UserID, args.ContestID)
@@ -156,7 +156,7 @@ func (s *API) maxScoreBreakdown(w http.ResponseWriter, r *http.Request) {
 			Subtasks: stks,
 			Subtests: tests,
 
-			ProblemEditor: s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)),
+			ProblemEditor: s.base.IsProblemEditor(user.UserBrief(r), util.Problem(r)),
 		})
 	default:
 		slog.WarnContext(r.Context(), "Unknown problem scoring type", slog.Any("type", util.Problem(r).ScoringStrategy))
@@ -253,7 +253,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pb, err := s.base.CreateProblem(r.Context(), args.Title, util.UserBrief(r), args.ConsoleInput)
+	pb, err := s.base.CreateProblem(r.Context(), args.Title, user.UserBrief(r), args.ConsoleInput)
 	if err != nil {
 		statusError(w, err)
 		return
@@ -269,7 +269,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := s.addStubStatement(r.Context(), pb, args.StatementLang, util.UserBrief(r)); err != nil {
+	if err := s.addStubStatement(r.Context(), pb, args.StatementLang, user.UserBrief(r)); err != nil {
 		statusError(w, err)
 		return
 	}
@@ -278,7 +278,7 @@ func (s *API) initProblem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) importProblemArchive(w http.ResponseWriter, r *http.Request) {
-	pb, err := s.base.CreateProblem(r.Context(), "unnamed", util.UserBrief(r), true)
+	pb, err := s.base.CreateProblem(r.Context(), "unnamed", user.UserBrief(r), true)
 	if err != nil {
 		statusError(w, err)
 		return
@@ -316,7 +316,7 @@ func (s *API) importProblemArchive(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := s.addStubStatement(r.Context(), pb, args.StatementLang, util.UserBrief(r)); err != nil {
+	if err := s.addStubStatement(r.Context(), pb, args.StatementLang, user.UserBrief(r)); err != nil {
 		statusError(w, err)
 		return
 	}
@@ -398,11 +398,11 @@ func (s *API) searchProblems(ctx context.Context, args kilonova.ProblemFilter) (
 
 	var scoreUser = user.UserBriefContext(ctx)
 	if args.ScoreUserID != nil {
-		user, err := s.base.UserBrief(ctx, *args.ScoreUserID)
+		userBrief, err := s.base.UserBrief(ctx, *args.ScoreUserID)
 		if err != nil {
 			return nil, err
 		}
-		scoreUser = user
+		scoreUser = userBrief
 	}
 
 	problems, cnt, err := s.base.SearchProblems(ctx, args, scoreUser, user.UserBriefContext(ctx))
@@ -452,7 +452,7 @@ func (s *API) translateProblemStatement() http.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, kilonova.ErrNotFound) {
 				att2 = &kilonova.Attachment{Name: "statement-en-llm.md"}
-				err = s.base.CreateProblemAttachment(r.Context(), att2, util.Problem(r).ID, strings.NewReader(output), &util.UserBrief(r).ID)
+				err = s.base.CreateProblemAttachment(r.Context(), att2, util.Problem(r).ID, strings.NewReader(output), &user.UserBrief(r).ID)
 				if err != nil {
 					statusError(w, err)
 				}
@@ -462,7 +462,7 @@ func (s *API) translateProblemStatement() http.HandlerFunc {
 			statusError(w, err)
 			return
 		}
-		if err := s.base.UpdateAttachmentData(r.Context(), att2.ID, []byte(output), util.UserBrief(r)); err != nil {
+		if err := s.base.UpdateAttachmentData(r.Context(), att2.ID, []byte(output), user.UserBrief(r)); err != nil {
 			statusError(w, err)
 			return
 		}
@@ -528,7 +528,7 @@ func (s *API) transcribeProblemPDF() http.HandlerFunc {
 		}
 
 		att2 = &kilonova.Attachment{Name: targetFilename}
-		err = s.base.CreateProblemAttachment(r.Context(), att2, util.Problem(r).ID, strings.NewReader(output), &util.UserBrief(r).ID)
+		err = s.base.CreateProblemAttachment(r.Context(), att2, util.Problem(r).ID, strings.NewReader(output), &user.UserBrief(r).ID)
 		if err != nil {
 			statusError(w, err)
 			return
@@ -581,13 +581,13 @@ func (s *API) addProblemEditor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.base.UserBriefByName(r.Context(), args.Username)
+	userBrief, err := s.base.UserBriefByName(r.Context(), args.Username)
 	if err != nil {
 		statusError(w, err)
 		return
 	}
 
-	if err := s.base.AddProblemEditor(r.Context(), util.Problem(r).ID, user.ID); err != nil {
+	if err := s.base.AddProblemEditor(r.Context(), util.Problem(r).ID, userBrief.ID); err != nil {
 		statusError(w, err)
 		return
 	}
@@ -604,18 +604,18 @@ func (s *API) addProblemViewer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.base.UserBriefByName(r.Context(), args.Username)
+	userBrief, err := s.base.UserBriefByName(r.Context(), args.Username)
 	if err != nil {
 		statusError(w, err)
 		return
 	}
 
-	if user.ID == util.UserBrief(r).ID {
+	if userBrief.ID == user.UserBrief(r).ID {
 		errorData(w, "You can't demote yourself to viewer rank!", 400)
 		return
 	}
 
-	if err := s.base.AddProblemViewer(r.Context(), util.Problem(r).ID, user.ID); err != nil {
+	if err := s.base.AddProblemViewer(r.Context(), util.Problem(r).ID, userBrief.ID); err != nil {
 		statusError(w, err)
 		return
 	}
@@ -736,11 +736,11 @@ func (s *API) problemGet(ctx context.Context, input *ProblemGetInput) (*ProblemG
 
 	var scoreUser = user.UserBriefContext(ctx)
 	if args.ScoreUserID != nil {
-		user, err := s.base.UserBrief(ctx, *args.ScoreUserID)
+		userBrief, err := s.base.UserBrief(ctx, *args.ScoreUserID)
 		if err != nil {
 			return nil, err
 		}
-		scoreUser = user
+		scoreUser = userBrief
 	}
 
 	problems, cnt, err := s.base.SearchProblems(ctx, args, scoreUser, user.UserBriefContext(ctx))

@@ -67,15 +67,15 @@ func Kilonova(ctx context.Context, command *cli.Command) error {
 	defer base.Close()
 
 	// Initialize components
-	grader, err := grader.NewHandler(ctx, base)
+	graderHandler, err := grader.NewHandler(ctx, base)
 	if err != nil {
 		slog.ErrorContext(ctx, "Could not initialize grader", slog.Any("err", err))
 		return err
 	}
-	defer grader.Close()
+	defer graderHandler.Close()
 
 	go func() {
-		err := grader.Start()
+		err := graderHandler.Start()
 		if err != nil {
 			slog.ErrorContext(ctx, "Could not start grader", slog.Any("err", err))
 		}
@@ -113,8 +113,8 @@ func Kilonova(ctx context.Context, command *cli.Command) error {
 func initLogger(debug, writeFile bool) {
 
 	showUser := slogmulti.NewHandleInlineMiddleware(func(ctx context.Context, record slog.Record, next func(context.Context, slog.Record) error) error {
-		if user := user.UserBriefContext(ctx); user != nil {
-			record.AddAttrs(slog.Any("user", user))
+		if userBrief := user.UserBriefContext(ctx); userBrief != nil {
+			record.AddAttrs(slog.Any("user", userBrief))
 		}
 		if contentUser := user.ContentUserBriefContext(ctx); contentUser != nil {
 			record.AddAttrs(slog.Any("contentUser", contentUser))

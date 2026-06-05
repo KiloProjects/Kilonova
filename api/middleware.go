@@ -19,7 +19,7 @@ import (
 
 func (s *API) filterUserAgent(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if flags.FilterUserAgent.Value() && (util.UserBrief(r) == nil || !util.UserBrief(r).Admin) {
+		if flags.FilterUserAgent.Value() && (user.UserBrief(r) == nil || !user.UserBrief(r).Admin) {
 			// If filtering is enabled and user is not admin, disallow common software for bots
 			if strings.Contains(r.Header.Get("User-Agent"), "python") {
 				errorData(w, "Request blocked", http.StatusForbidden)
@@ -33,7 +33,7 @@ func (s *API) filterUserAgent(next http.Handler) http.Handler {
 // MustBeVisitor is middleware to make sure the user creating the request is not authenticated
 func (s *API) MustBeVisitor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if util.UserBrief(r).IsAuthed() {
+		if user.UserBrief(r).IsAuthed() {
 			errorData(w, "You must not be logged in to do this", http.StatusUnauthorized)
 			return
 		}
@@ -44,7 +44,7 @@ func (s *API) MustBeVisitor(next http.Handler) http.Handler {
 // MustBeAdmin is middleware to make sure the user creating the request is an admin
 func (s *API) MustBeAdmin(next http.Handler) http.Handler {
 	return s.MustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !util.UserBrief(r).IsAdmin() {
+		if !user.UserBrief(r).IsAdmin() {
 			errorData(w, "You must be an admin to do this", http.StatusUnauthorized)
 			return
 		}
@@ -55,7 +55,7 @@ func (s *API) MustBeAdmin(next http.Handler) http.Handler {
 // MustBeAuthed is middleware to make sure the user creating the request is authenticated
 func (s *API) MustBeAuthed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !util.UserBrief(r).IsAuthed() {
+		if !user.UserBrief(r).IsAuthed() {
 			errorData(w, "You must be authenticated to do this", http.StatusUnauthorized)
 			return
 		}
@@ -66,7 +66,7 @@ func (s *API) MustBeAuthed(next http.Handler) http.Handler {
 // MustBeProposer is middleware to make sure the user creating the request is a proposer
 func (s *API) MustBeProposer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !util.UserBrief(r).IsProposer() {
+		if !user.UserBrief(r).IsProposer() {
 			errorData(w, "You must be a proposer to do this", http.StatusUnauthorized)
 			return
 		}
@@ -92,7 +92,7 @@ func (s *API) SetupSession(next http.Handler) http.Handler {
 
 func (s *API) validateProblemEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
+		if !s.base.IsProblemEditor(user.UserBrief(r), util.Problem(r)) {
 			errorData(w, "You must be authorized to access internal problem data", http.StatusUnauthorized)
 			return
 		}
@@ -103,7 +103,7 @@ func (s *API) validateProblemEditor(next http.Handler) http.Handler {
 
 func (s *API) validateContestParticipant(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !s.base.CanSubmitInContest(util.UserBrief(r), util.Contest(r)) {
+		if !s.base.CanSubmitInContest(user.UserBrief(r), util.Contest(r)) {
 			errorData(w, "You must be registered and during a contest to do this", http.StatusUnauthorized)
 			return
 		}
@@ -113,7 +113,7 @@ func (s *API) validateContestParticipant(next http.Handler) http.Handler {
 }
 func (s *API) validateContestEditor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !util.Contest(r).IsEditor(util.UserBrief(r)) {
+		if !util.Contest(r).IsEditor(user.UserBrief(r)) {
 			errorData(w, "You must be authorized to access this contest data", http.StatusUnauthorized)
 			return
 		}
@@ -123,7 +123,7 @@ func (s *API) validateContestEditor(next http.Handler) http.Handler {
 }
 func (s *API) validateContestVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !s.base.IsContestVisible(util.UserBrief(r), util.Contest(r)) {
+		if !s.base.IsContestVisible(user.UserBrief(r), util.Contest(r)) {
 			errorData(w, "You are not allowed to access this contest", http.StatusUnauthorized)
 			return
 		}
@@ -133,7 +133,7 @@ func (s *API) validateContestVisible(next http.Handler) http.Handler {
 }
 func (s *API) validateProblemVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !s.base.IsProblemVisible(util.UserBrief(r), util.Problem(r)) {
+		if !s.base.IsProblemVisible(user.UserBrief(r), util.Problem(r)) {
 			errorData(w, "You are not allowed to access this problem", http.StatusUnauthorized)
 			return
 		}
@@ -143,7 +143,7 @@ func (s *API) validateProblemVisible(next http.Handler) http.Handler {
 }
 func (s *API) validateVisibleTests(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !s.base.CanViewTests(util.UserBrief(r), util.Problem(r)) {
+		if !s.base.CanViewTests(user.UserBrief(r), util.Problem(r)) {
 			errorData(w, "You are not allowed to access this problem's tests", http.StatusUnauthorized)
 			return
 		}
@@ -153,7 +153,7 @@ func (s *API) validateVisibleTests(next http.Handler) http.Handler {
 }
 func (s *API) validateProblemFullyVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !s.base.IsProblemFullyVisible(util.UserBrief(r), util.Problem(r)) {
+		if !s.base.IsProblemFullyVisible(user.UserBrief(r), util.Problem(r)) {
 			errorData(w, "You are not allowed to access this problem data", http.StatusUnauthorized)
 			return
 		}
@@ -163,7 +163,7 @@ func (s *API) validateProblemFullyVisible(next http.Handler) http.Handler {
 }
 func (s *API) validateBlogPostVisible(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !s.base.IsBlogPostVisible(util.UserBrief(r), util.BlogPost(r)) {
+		if !s.base.IsBlogPostVisible(user.UserBrief(r), util.BlogPost(r)) {
 			errorData(w, "You are not allowed to access this post", http.StatusUnauthorized)
 			return
 		}
@@ -211,7 +211,7 @@ func (s *API) validateAttachmentID(next http.Handler) http.Handler {
 				errorData(w, "attachment does not exist", http.StatusBadRequest)
 				return
 			}
-			if att.Private && !s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
+			if att.Private && !s.base.IsProblemEditor(user.UserBrief(r), util.Problem(r)) {
 				errorData(w, "you cannot access attachment data!", http.StatusBadRequest)
 				return
 			}
@@ -222,7 +222,7 @@ func (s *API) validateAttachmentID(next http.Handler) http.Handler {
 				errorData(w, "attachment does not exist", http.StatusBadRequest)
 				return
 			}
-			if att.Private && !s.base.IsBlogPostEditor(util.UserBrief(r), util.BlogPost(r)) {
+			if att.Private && !s.base.IsBlogPostEditor(user.UserBrief(r), util.BlogPost(r)) {
 				errorData(w, "you cannot access attachment data!", http.StatusBadRequest)
 				return
 			}
@@ -248,7 +248,7 @@ func (s *API) validateAttachmentName(next http.Handler) http.Handler {
 				errorData(w, "attachment does not exist", http.StatusBadRequest)
 				return
 			}
-			if att.Private && !s.base.IsProblemEditor(util.UserBrief(r), util.Problem(r)) {
+			if att.Private && !s.base.IsProblemEditor(user.UserBrief(r), util.Problem(r)) {
 				errorData(w, "you cannot access attachment data!", http.StatusBadRequest)
 				return
 			}
@@ -259,7 +259,7 @@ func (s *API) validateAttachmentName(next http.Handler) http.Handler {
 				errorData(w, "attachment does not exist", http.StatusBadRequest)
 				return
 			}
-			if att.Private && !s.base.IsBlogPostEditor(util.UserBrief(r), util.BlogPost(r)) {
+			if att.Private && !s.base.IsBlogPostEditor(user.UserBrief(r), util.BlogPost(r)) {
 				errorData(w, "you cannot access attachment data!", http.StatusBadRequest)
 				return
 			}

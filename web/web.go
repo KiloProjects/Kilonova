@@ -535,7 +535,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			return time.Now().Format(time.RFC3339Nano)
 		},
 		"syntaxHighlight": func(code []byte, lang string) (string, error) {
-			fmt := chtml.New(chtml.WithClasses(true), chtml.TabWidth(4))
+			cfmt := chtml.New(chtml.WithClasses(true), chtml.TabWidth(4))
 			if lang == "pascal" {
 				lang = "pas"
 			}
@@ -552,7 +552,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			if err != nil {
 				return "", err
 			}
-			if err := fmt.Format(&buf, styles.Get("github"), it); err != nil {
+			if err := cfmt.Format(&buf, styles.Get("github"), it); err != nil {
 				return "", err
 			}
 			return buf.String(), nil

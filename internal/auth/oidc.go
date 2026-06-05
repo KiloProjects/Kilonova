@@ -10,9 +10,9 @@ import (
 	"golang.org/x/text/language"
 )
 
-var _ op.AuthRequest = (*AuthRequest)(nil)
+var _ op.AuthRequest = (*Request)(nil)
 
-type AuthRequest struct {
+type Request struct {
 	ID            uuid.UUID         `db:"id"`
 	AuthTime      *time.Time        `db:"auth_time"`
 	ApplicationID uuid.UUID         `db:"application_id"`
@@ -41,37 +41,37 @@ type AuthRequest struct {
 	ExpiresAt *time.Time     `db:"expires_at"`
 }
 
-func (a *AuthRequest) GetID() string {
+func (a *Request) GetID() string {
 	return a.ID.String()
 }
 
-func (a *AuthRequest) GetACR() string {
+func (a *Request) GetACR() string {
 	return "" // ACR not implemented
 }
 
-func (a *AuthRequest) GetAMR() []string {
+func (a *Request) GetAMR() []string {
 	if a.RequestDone {
 		return []string{"pwd"}
 	}
 	return []string{}
 }
 
-func (a *AuthRequest) GetAudience() []string {
+func (a *Request) GetAudience() []string {
 	return []string{a.ApplicationID.String()}
 }
 
-func (a *AuthRequest) GetAuthTime() time.Time {
+func (a *Request) GetAuthTime() time.Time {
 	if a.AuthTime == nil {
 		return time.Time{}
 	}
 	return *a.AuthTime
 }
 
-func (a *AuthRequest) GetClientID() string {
+func (a *Request) GetClientID() string {
 	return a.ApplicationID.String()
 }
 
-func (a *AuthRequest) GetCodeChallenge() *oidc.CodeChallenge {
+func (a *Request) GetCodeChallenge() *oidc.CodeChallenge {
 	if a.CodeChallenge == "" {
 		return nil
 	}
@@ -85,38 +85,38 @@ func (a *AuthRequest) GetCodeChallenge() *oidc.CodeChallenge {
 	}
 }
 
-func (a *AuthRequest) GetNonce() string {
+func (a *Request) GetNonce() string {
 	return a.Nonce
 }
 
-func (a *AuthRequest) GetRedirectURI() string {
+func (a *Request) GetRedirectURI() string {
 	return a.CallbackURI
 }
 
-func (a *AuthRequest) GetResponseType() oidc.ResponseType {
+func (a *Request) GetResponseType() oidc.ResponseType {
 	return a.ResponseType
 }
 
-func (a *AuthRequest) GetResponseMode() oidc.ResponseMode {
+func (a *Request) GetResponseMode() oidc.ResponseMode {
 	return a.ResponseMode
 }
 
-func (a *AuthRequest) GetScopes() []string {
+func (a *Request) GetScopes() []string {
 	return a.Scopes
 }
 
-func (a *AuthRequest) GetState() string {
+func (a *Request) GetState() string {
 	return a.TransferState
 }
 
-func (a *AuthRequest) GetSubject() string {
+func (a *Request) GetSubject() string {
 	if a.UserID == nil {
 		return ""
 	}
 	return strconv.Itoa(*a.UserID)
 }
 
-func (a *AuthRequest) Done() bool {
+func (a *Request) Done() bool {
 	return a.RequestDone
 }
 
