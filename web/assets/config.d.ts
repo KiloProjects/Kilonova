@@ -8,6 +8,7 @@ interface CustomEventMap {
 	"kn-upload-update": CustomEvent;
 	"kn-contest-question-reload": CustomEvent;
 	"kn-contest-announcement-reload": CustomEvent;
+	"kn-theme-change": CustomEvent;
 }
 
 export declare global {

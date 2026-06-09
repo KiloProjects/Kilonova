@@ -9,7 +9,7 @@
         "buildJS": "esbuild app.ts --bundle --target=es2022 --outfile=../static/bundle.js --global-name=bundled --sourcemap=inline ",
         "prodJS": "esbuild app.ts  --bundle --target=es2022 --outfile=../static/bundle.js --global-name=bundled --sourcemap --minify ",
         "vendor": "esbuild vendored.ts --bundle --target=es2022 --outfile=../static/vendored.js --global-name=vendored --sourcemap --minify",
-        "prod": "pnpm run prodJS && pnpm run prodCSS",
+        "prod": "pnpm run prodJS && pnpm run vendor && pnpm run prodCSS",
         "build": "pnpm run buildJS && pnpm run buildCSS",
         "esv": "esbuild --version"
     },

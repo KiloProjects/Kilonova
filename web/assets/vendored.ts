@@ -117,16 +117,6 @@ htmx.on(("htmx:afterSwap"), (el) => {
 	}
 });
 
-CodeMirror.defaults.lineNumbers = true;
-CodeMirror.defaults.indentUnit = 4;
-CodeMirror.defaults.tabSize = 4;
-CodeMirror.defaults.indentWithTabs = true;
-CodeMirror.defaults.lineWrapping = true;
-CodeMirror.defaults.viewportMargin = Infinity;
-CodeMirror.defineInitHook(bundled.CodeMirrorThemeHook);
-if (bundled.isDarkMode()) {  // Dark Mode
-	CodeMirror.defaults.theme = "monokai";
-}
 window.CodeMirror = CodeMirror;
 
 // import "codemirror/mode/stex/stex";
@@ -149,7 +139,14 @@ export class KNEditor {
 	//     - Abstract away language internals
 
 	constructor(opts: KNEditorOptions) {
-		let cmSettings: CodeMirror.EditorConfiguration = {}
+		let cmSettings: CodeMirror.EditorConfiguration = {
+			lineNumbers: true,
+			indentUnit: 4,
+			tabSize: 4,
+			indentWithTabs: true,
+			lineWrapping: true,
+			viewportMargin: Infinity,
+		}
 		if (opts.language == "md") {
 			cmSettings.mode = {
 				name: "gfm",
@@ -164,6 +161,9 @@ export class KNEditor {
 		if (opts.vimMode) {
 			cmSettings.keyMap = "vim";
 		}
+		if(bundled.isDarkMode()) {
+			cmSettings.theme = "monokai";
+		}
 		this.cm = CodeMirror.fromTextArea(opts.textArea, cmSettings)
 
 		if (opts.dynamicSize) {
@@ -174,6 +174,18 @@ export class KNEditor {
 		if (opts.autoFocus) {
 			this.cm.focus();
 		}
+
+		document.addEventListener('kn-theme-change', (e: CustomEvent) => {
+			if(e.detail == 'light' || e.detail == 'dark') {
+				this.setTheme(e.detail)
+			} else {
+				console.error("Invalid theme change event: " + e.detail)
+			}
+		})
+	}
+
+	setTheme(theme: 'light' | 'dark') {
+		this.cm.setOption("theme", theme === "dark" ? "monokai" : "default");
 	}
 
 	getText() {

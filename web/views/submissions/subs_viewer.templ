@@ -277,21 +277,32 @@ templ SubsViewer(params SubsViewerParams) {
 					</label>
 					<label class="block mb-2">
 						<input
+							id="accepted_only"
 							type="checkbox"
 							class="form-checkbox mr-2"
-							name="accepted_only"
 							value="true"
 							if params.Query.Status == "finished" && params.Query.Score != nil && params.Query.Score.InexactFloat64() == 100 {
 								checked
 							}
 						/>
 						<span class="form-label">{ T(ctx, "acceptedSubs") }</span>
+						<script>
+							document.getElementById("accepted_only").addEventListener("change", e => {
+								if(e.target.checked) {
+									document.getElementById("sub_status").value = "finished"
+									document.getElementById("sub_score").value = "100"
+								} else {
+	                                document.getElementById("sub_status").value = ""
+	                                document.getElementById("sub_score").value = ""
+	                            }
+							})
+						</script>
 					</label>
 					<details class="block mb-2">
 						<summary class="form-label">{ T(ctx, "advancedOptions") }</summary>
 						<label class="block mb-2">
 							<span class="form-label">{ T(ctx, "status") }:</span>
-							<select class="form-select" name="status">
+							<select id="sub_status" class="form-select" name="status">
 								<option value="">-</option>
 								for _, s := range []string{"finished", "working", "waiting", "reevaling"} {
 									if s == params.Query.Status {
@@ -359,6 +370,7 @@ templ SubsViewer(params SubsViewerParams) {
 						<label class="block mb-2">
 							<span class="form-label">{ T(ctx, "score") }:</span>
 							<input
+								id="sub_score"
 								class="form-input"
 								type="number"
 								min="-1"

@@ -1,7 +1,6 @@
 import cookie from "js-cookie";
 import { postCall } from "./api/client";
 import dayjs from "dayjs";
-import type { Editor } from "codemirror";
 import { languages } from "./langs";
 
 export function setSession(sessionID: string) {
@@ -61,12 +60,6 @@ export function isDarkMode() {
 	return getTheme() == "dark";
 }
 
-var editors: Editor[] = [];
-
-export function CodeMirrorThemeHook(cm: Editor) {
-	editors.push(cm);
-}
-
 export function setTheme(theme: "light" | "dark") {
 	cookie.set("kn-theme", theme, { expires: 1000, sameSite: "lax" });
 	document.documentElement.classList.toggle("dark", theme === "dark");
@@ -83,9 +76,7 @@ export function setTheme(theme: "light" | "dark") {
 			})
 			.catch(console.error);
 	}
-	for (let cm of editors) {
-		cm.setOption("theme", theme === "dark" ? "monokai" : "default");
-	}
+	document.dispatchEvent(new CustomEvent("kn-theme-change", {detail: theme}))
 }
 
 document.addEventListener("DOMContentLoaded", () => {
