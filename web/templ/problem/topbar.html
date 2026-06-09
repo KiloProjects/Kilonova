@@ -162,24 +162,26 @@
             </span>    
         </span>
         <script>
-            let force_open = {{$editProblemPage}};
+            (() => {
+                let force_open = {{$editProblemPage}};
 
-            if(force_open === false) {
-                document.getElementById("topbar_edit_toggle")?.addEventListener("click", (e) => {
-                    force_open = true;
-                    e.preventDefault();
-                    document.getElementById("topbar_edit_toggle").classList.toggle("hidden", force_open)
-                    document.getElementById("pb_edit_context").classList.toggle("hidden", !force_open)
-                });
-                document.getElementById("problem_topbar_wrapper").addEventListener("mouseenter", (e) => {
-                    document.getElementById("topbar_edit_toggle").classList.toggle("hidden", true)
-                    document.getElementById("pb_edit_context").classList.toggle("hidden", false)    
-                })
-                document.getElementById("topbar_wrapper").addEventListener("mouseleave", (e) => {
-                    document.getElementById("topbar_edit_toggle").classList.toggle("hidden", force_open)
-                    document.getElementById("pb_edit_context").classList.toggle("hidden", !force_open)    
-                })
-            }
+                if(force_open === false) {
+                    document.getElementById("topbar_edit_toggle")?.addEventListener("click", (e) => {
+                        force_open = true;
+                        e.preventDefault();
+                        document.getElementById("topbar_edit_toggle").classList.toggle("hidden", force_open)
+                        document.getElementById("pb_edit_context").classList.toggle("hidden", !force_open)
+                    });
+                    document.getElementById("problem_topbar_wrapper").addEventListener("mouseenter", (e) => {
+                        document.getElementById("topbar_edit_toggle").classList.toggle("hidden", true)
+                        document.getElementById("pb_edit_context").classList.toggle("hidden", false)
+                    })
+                    document.getElementById("topbar_wrapper").addEventListener("mouseleave", (e) => {
+                        document.getElementById("topbar_edit_toggle").classList.toggle("hidden", force_open)
+                        document.getElementById("pb_edit_context").classList.toggle("hidden", !force_open)
+                    })
+                }
+            })()
         </script>
     {{ else }}
     
