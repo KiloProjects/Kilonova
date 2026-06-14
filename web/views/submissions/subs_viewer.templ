@@ -252,7 +252,7 @@ templ SubsViewer(params SubsViewerParams) {
 		<aside class="page-sidebar lg:order-last">
 			<div class="segment-panel">
 				<h2>{ T(ctx, "filters") }</h2>
-				<form method="GET" hx-boost="true">
+				<form id="sub-filters" method="GET" hx-boost="true">
 					if params.Overwrites.UserID && params.Query.UserID != nil {
 						<input type="hidden" name="user_id" value={ strconv.Itoa(*params.Query.UserID) }/>
 					}
@@ -295,6 +295,7 @@ templ SubsViewer(params SubsViewerParams) {
 	                                document.getElementById("sub_status").value = ""
 	                                document.getElementById("sub_score").value = ""
 	                            }
+	                            document.getElementById("sub-filters").submit()
 							})
 						</script>
 					</label>
