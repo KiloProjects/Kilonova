@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html"
 	"html/template"
 	"io"
 	"log/slog"
@@ -2365,7 +2366,7 @@ func (rt *Web) logout(w http.ResponseWriter, r *http.Request) {
 func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Template, name string, data any) {
 	hTempl, err := hTempl.Clone()
 	if err != nil {
-		fmt.Fprintf(w, "Error cloning template, report to admin: %s", err)
+		fmt.Fprintf(w, "Error cloning template, report to admin: %s", html.EscapeString(err.Error()))
 		return
 	}
 
@@ -2557,7 +2558,7 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 
 	if name != "" {
 		if err := hTempl.ExecuteTemplate(w, name, data); err != nil {
-			fmt.Fprintf(w, "Error executing template, report to admin: %s", err)
+			fmt.Fprintf(w, "Error executing template, report to admin: %s", html.EscapeString(err.Error()))
 			slog.WarnContext(r.Context(), "Error executing template", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", user.UserBrief(r)))
 		}
 		return
@@ -2618,7 +2619,7 @@ func (rt *Web) runLayout(w io.Writer, r *http.Request, params *LayoutParams) {
 
 	if err := layout.Layout(layoutParams).Render(r.Context(), w); err != nil {
 		slog.WarnContext(r.Context(), "Error rendering layout", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", user.UserBrief(r)))
-		fmt.Fprintf(w, "Error rendering layout, report to admin: %s", err)
+		fmt.Fprintf(w, "Error rendering layout, report to admin: %s", html.EscapeString(err.Error()))
 	}
 }
 
@@ -2637,7 +2638,7 @@ func (rt *Web) runEmptyPage(w io.Writer, r *http.Request, params *LayoutParams) 
 
 	if err := layout.Layout(layoutParams).Render(r.Context(), w); err != nil {
 		slog.WarnContext(r.Context(), "Error rendering layout", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", user.UserBrief(r)))
-		fmt.Fprintf(w, "Error rendering layout, report to admin: %s", err)
+		fmt.Fprintf(w, "Error rendering layout, report to admin: %s", html.EscapeString(err.Error()))
 	}
 }
 

@@ -105,6 +105,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 		Name:     "kn-sessionid",
 		Value:    sid,
 		Expires:  time.Now().Add(29 * 24 * time.Hour),
+		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	})
 	checkDate := time.Now().Add(10 * 24 * time.Hour)
@@ -112,6 +113,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 		Name:     "kn-session-check-date",
 		Value:    strconv.FormatInt(checkDate.UnixMilli(), 10),
 		Expires:  time.Now().Add(29 * 24 * time.Hour),
+		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	})
 

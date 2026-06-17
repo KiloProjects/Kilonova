@@ -189,6 +189,7 @@ type ContestFilter struct {
 	//   - Virtual contests with participation
 	//   - Virtual contests the user organizes (editor/tester)
 	// This is used in filtering the contests for the main page
+	ImportantContests     bool
 	ImportantContestsUser *UserBrief `json:"-"`
 
 	// WhitelistedIP filters for the contests that have this IP associated with them and that have whitelisting enabled

@@ -171,14 +171,18 @@ func contestFilterQuery(filter *kilonova.ContestFilter, sb sq.SelectBuilder) sq.
 	}
 
 	// See field comment for details
-	if v := filter.ImportantContestsUser; v != nil && v.ID > 0 {
+	if v := filter.ImportantContestsUser; filter.ImportantContests {
+		var userID = -1
+		if v != nil {
+			userID = v.ID
+		}
 		where = append(where, sq.Expr(`(
 				(type = 'official' AND end_time >= NOW()) 
 				OR 
 				EXISTS (SELECT 1 FROM contest_registrations regs WHERE contests.id = regs.contest_id AND regs.user_id = ?)
 				OR
 				EXISTS (SELECT 1 FROM contest_user_access acc WHERE contests.id = acc.contest_id AND acc.user_id = ?)
-			)`, v.ID, v.ID))
+			)`, userID, userID))
 	}
 
 	if v := filter.WhitelistedIP; v != nil {
