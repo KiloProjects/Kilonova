@@ -196,6 +196,7 @@ func (s *BaseAPI) VisibleFutureContests(ctx context.Context, user *kilonova.User
 		LookingUser: user,
 		Ascending:   flags.FrontPageContestsAscending.Value(),
 
+		ImportantContests:     true,
 		ImportantContestsUser: user,
 	}
 	return s.Contests(ctx, filter)
@@ -209,6 +210,7 @@ func (s *BaseAPI) VisibleRunningContests(ctx context.Context, user *kilonova.Use
 		Ascending:   true,
 		Ordering:    "end_time",
 
+		ImportantContests:     true,
 		ImportantContestsUser: user,
 	}
 	return s.Contests(ctx, filter)
