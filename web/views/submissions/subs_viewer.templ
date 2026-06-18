@@ -12,6 +12,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/web/tutils"
+	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/shopspring/decimal"
 )
 
@@ -194,7 +195,7 @@ func submissionStatus(ctx context.Context, sub *kilonova.Submission, problem *ki
 			return tutils.T(ctx, "accepted")
 		}
 		if sub.ICPCVerdict != nil {
-			return icpcVerdictText(*sub.ICPCVerdict)
+			return icpcVerdictText(ctx, *sub.ICPCVerdict)
 		}
 		return tutils.T(ctx, "rejected")
 	} else if sub.Status == kilonova.StatusWorking {
@@ -205,12 +206,10 @@ func submissionStatus(ctx context.Context, sub *kilonova.Submission, problem *ki
 	return tutils.T(ctx, "waiting")
 }
 
-func icpcVerdictText(verdict string) string {
-	re := strings.NewReplacer(
-		"test_verdict.", "",
-		"_", " ",
-	)
-	return re.Replace(verdict)
+func icpcVerdictText(ctx context.Context, verdict string) string {
+	 return icpcVerdictRe.ReplaceAllStringFunc(verdict, func(s string) string {
+        return kilonova.MaybeGetText(util.LanguageContext(ctx), s)
+    })
 }
 
 func contestProblemURL(contestID *int, problemID int) string {
