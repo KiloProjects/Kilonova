@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	checkerMemoryLimit = 512 * 1024
+	checkerMemoryLimit = 768 * 1024
 )
 
 var checkerPrepareMu sync.RWMutex
