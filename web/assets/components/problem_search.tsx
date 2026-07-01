@@ -6,8 +6,7 @@ import {apiToast, createToast} from "../toast";
 import {bodyCall, getCall} from "../api/client";
 import {fromBase64} from "js-base64";
 import {selectTags, Tag, TagView} from "./tags";
-import {Paginator} from "./common";
-import {rezStr} from "./common";
+import {Paginator, rezStr} from "./common";
 import {parseTime} from "../util";
 
 type FullProblem = Problem & {
@@ -24,11 +23,11 @@ function numPagesF(count: number, max: number): number {
 }
 
 export function ProblemView({
-	problems,
-	showTags,
-	scoreView,
-	latestView,
-}: {
+	                            problems,
+	                            showTags,
+	                            scoreView,
+	                            latestView,
+                            }: {
 	problems: FullProblem[];
 	showTags: boolean;
 	scoreView: boolean;
@@ -45,81 +44,87 @@ export function ProblemView({
 	return (
 		<table class="kn-table table-fixed">
 			<thead>
-				<tr>
-					<th class={`${sizes[0]} py-2`} scope="col">
-						#
+			<tr>
+				<th class={`${sizes[0]} py-2`} scope="col">
+					#
+				</th>
+				<th class={sizes[1]} scope="col">
+					{getText("name")}
+				</th>
+				{showTags ? (
+					<th class={authed ? "w-3/12" : "w-4/12"} scope="col">
+						{getText("tags")}
 					</th>
-					<th class={sizes[1]} scope="col">
-						{getText("name")}
+				) : (
+					<th class={authed ? "w-3/12" : "w-4/12"} scope="col">
+						{getText("source")}
 					</th>
-					{showTags ? (
-						<th class={authed ? "w-3/12" : "w-4/12"} scope="col">
-							{getText("tags")}
-						</th>
-					) : (
-						<th class={authed ? "w-3/12" : "w-4/12"} scope="col">
-							{getText("source")}
-						</th>
-					)}
-					{(authed || scoreView) && (
-						<th class={sizes[2]} scope="col">
-							{getText("score")}
-						</th>
-					)}
-					{!scoreView && !latestView && (
-						<th class={sizes[3]} scope="col">
-							{getText("num_att_solved")}
-						</th>
-					)}
-					{latestView && (
-						<th class={sizes[3]} scope="col">
-							{getText("published_at")}
-						</th>
-					)}
-				</tr>
+				)}
+				{(authed || scoreView) && (
+					<th class={sizes[2]} scope="col">
+						{getText("score")}
+					</th>
+				)}
+				{!scoreView && !latestView && (
+					<th class={sizes[3]} scope="col">
+						{getText("num_att_solved")}
+					</th>
+				)}
+				{latestView && (
+					<th class={sizes[3]} scope="col">
+						{getText("published_at")}
+					</th>
+				)}
+			</tr>
 			</thead>
 			<tbody>
-				{problems.length == 0 && (
-					<tr class="kn-table-row">
-						<td class="kn-table-cell" colSpan={99}>
-							<h1>{getText("noPbFound")}</h1>
-						</td>
-					</tr>
-				)}
-				{problems.map((pb) => (
-					<tr class="kn-table-row" key={pb.id}>
-						<td class="text-lg py-2">{pb.id}</td>
+			{problems.length == 0 && (
+				<tr class="kn-table-row">
+					<td class="kn-table-cell" colSpan={99}>
+						<h1>{getText("noPbFound")}</h1>
+					</td>
+				</tr>
+			)}
+			{problems.map((pb) => (
+				<tr class="kn-table-row" key={pb.id}>
+					<td class="text-lg py-2">{pb.id}</td>
+					<td>
+						<a class="text-lg" href={`/problems/${pb.id}`}>
+							{pb.name}
+						</a>{" "}
+						{((!scoreView && pb.is_editor) || window.platform_info.admin) && (<>
+							{(pb.visible ? (
+								<span class="badge badge-green text-sm ml-2">{getText("published")}</span>
+							) : (
+								<span class="badge badge-red text-sm ml-2">{getText("unpublished")}</span>
+							))}
+							{typeof pb.review_requested_at === 'string' && !pb.visible && (
+								<span class="badge badge-yellow text-sm ml-2" title={"Requested at " + pb.review_requested_at}><i className="fas fa-exclamation-triangle"></i></span>
+							)}
+
+						</>)}
+					</td>
+					{showTags ? (
+						<td>{pb.tags.length == 0 ? "-" : pb.tags.map((tag) => <TagView tag={tag}
+						                                                               extraClasses="text-sm"></TagView>)}</td>
+					) : (
+						<td>{pb.source_credits == "" ? "-" : pb.source_credits}</td>
+					)}
+					{(authed || scoreView) && (
 						<td>
-							<a class="text-lg" href={`/problems/${pb.id}`}>
-								{pb.name}
-							</a>{" "}
-							{((!scoreView && pb.is_editor) || window.platform_info.admin) &&
-								(pb.visible ? (
-									<span class="badge badge-green text-sm ml-2">{getText("published")}</span>
-								) : (
-									<span class="badge badge-red text-sm ml-2">{getText("unpublished")}</span>
-								))}
+							<span class="badge">{pb.max_score < 0 ? "-" : pb.max_score}</span>
 						</td>
-						{showTags ? (
-							<td>{pb.tags.length == 0 ? "-" : pb.tags.map((tag) => <TagView tag={tag} extraClasses="text-sm"></TagView>)}</td>
-						) : (
-							<td>{pb.source_credits == "" ? "-" : pb.source_credits}</td>
-						)}
-						{(authed || scoreView) && (
-							<td>
-								<span class="badge">{pb.max_score < 0 ? "-" : pb.max_score}</span>
-							</td>
-						)}
-						{!scoreView && !latestView && (
-							<td>
+					)}
+					{!scoreView && !latestView && (
+						<td>
 								<span class="badge">
 									{pb.solved_by} {" / "} {pb.attempted_by}
 								</span>
-							</td>
-						)}
-						{latestView && <td>{parseTime(pb.published_at) || "N/A"}</td>}
-					</tr>
-				))}
+						</td>
+					)}
+					{latestView && <td>{parseTime(pb.published_at) || "N/A"}</td>}
+				</tr>
+			))}
 			</tbody>
 		</table>
 	);
@@ -149,7 +154,7 @@ export function CustomProblemListing(params: {
 	async function load() {
 		const rez = await bodyCall<{ problems: FullProblem[]; count: number }>(
 			"/problem/search",
-			serializeQuery({ ...params.filter, page }, params.maxCount ?? MAX_PER_PAGE)
+			serializeQuery({...params.filter, page}, params.maxCount ?? MAX_PER_PAGE)
 		);
 		if (rez.status === "error") {
 			apiToast(rez);
@@ -196,8 +201,10 @@ export function CustomProblemListing(params: {
 
 	return (
 		<>
-			{params.showPages && numPagesF(count, MAX_PER_PAGE) > 1 && <Paginator numpages={numPagesF(count, MAX_PER_PAGE)} page={page} setPage={setPage} />}
-			<ProblemView problems={problems} showTags={params.showTags} scoreView={params.scoreView} latestView={params.latestView} />
+			{params.showPages && numPagesF(count, MAX_PER_PAGE) > 1 &&
+                <Paginator numpages={numPagesF(count, MAX_PER_PAGE)} page={page} setPage={setPage}/>}
+			<ProblemView problems={problems} showTags={params.showTags} scoreView={params.scoreView}
+			             latestView={params.latestView}/>
 		</>
 	);
 }
@@ -207,7 +214,7 @@ type TagGroup = {
 	tag_ids: number[];
 };
 
-type ProblemOrdering = "" | "id" | "name" | "published_at" | "hot";
+type ProblemOrdering = "" | "id" | "name" | "published_at" | "hot" | "requested_review";
 
 type ProblemQuery = {
 	textQuery: string;
@@ -222,6 +229,8 @@ type ProblemQuery = {
 
 	solved_by?: number;
 	attempted_by?: number;
+
+	review_requested?: boolean;
 
 	lang?: "ro" | "en";
 
@@ -243,6 +252,12 @@ function initialQuery(params: URLSearchParams, groups: TagGroup[]): ProblemQuery
 		published = published_str === "true";
 	}
 
+	let review_requested: boolean | undefined;
+	let review_requested_str = params.get("review_requested");
+	if (review_requested_str === "true" || review_requested_str === "false") {
+		review_requested = review_requested_str === "true";
+	}
+
 	const editorUserID = parseInt(params.get("editor_user") ?? "");
 	const deepListID = parseInt(params.get("deep_list_id") ?? "");
 
@@ -253,6 +268,7 @@ function initialQuery(params: URLSearchParams, groups: TagGroup[]): ProblemQuery
 		case "name":
 		case "published_at":
 		case "hot":
+		case "requested_review":
 			ordering = ord;
 			break;
 		default:
@@ -275,6 +291,8 @@ function initialQuery(params: URLSearchParams, groups: TagGroup[]): ProblemQuery
 		editor_user: !isNaN(editorUserID) ? editorUserID : undefined,
 		tags: groups,
 
+		review_requested: review_requested,
+
 		lang: language,
 
 		ordering: ordering,
@@ -295,6 +313,8 @@ function serializeQuery(f: ProblemQuery, max_cnt: number = MAX_PER_PAGE): any {
 		solved_by: f.solved_by,
 		attempted_by: f.attempted_by,
 
+		review_requested: f.review_requested,
+
 		lang: f.lang,
 
 		score_user_id: typeof f.score_user_id !== "undefined" ? f.score_user_id : undefined,
@@ -313,7 +333,13 @@ function getModeByGroups(groups: TagGroup[]): TagFilterMode {
 	return groups.some((val) => val.negate || val.tag_ids.length > 1) ? "complex" : "simple";
 }
 
-function ProblemSearch(params: { count: number; problems: FullProblem[]; groups: TagGroup[]; initialTags: Tag[]; pblist: ProblemList | null }) {
+function ProblemSearch(params: {
+	count: number;
+	problems: FullProblem[];
+	groups: TagGroup[];
+	initialTags: Tag[];
+	pblist: ProblemList | null
+}) {
 	let [query, setQuery] = useState<ProblemQuery>(initialQuery(new URLSearchParams(window.location.search), params.groups));
 	let [problems, setProblems] = useState<FullProblem[]>(params.problems);
 	let [count, setCount] = useState<number>(params.count);
@@ -331,7 +357,10 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 	let [advOptions, setAdvOptions] = useState<boolean>(false);
 
 	async function load() {
-		const rez = await bodyCall<{ problems: FullProblem[]; count: number }>("/problem/search", serializeQuery(query));
+		const rez = await bodyCall<{
+			problems: FullProblem[];
+			count: number
+		}>("/problem/search", serializeQuery(query));
 		if (rez.status === "error") {
 			apiToast(rez);
 			return;
@@ -387,10 +416,10 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 		let url = window.location.origin + window.location.pathname + "?" + getQuery().toString();
 		try {
 			await navigator.clipboard.writeText(url);
-			createToast({ status: "success", title: getText("copied") });
+			createToast({status: "success", title: getText("copied")});
 		} catch (e) {
 			console.error(e);
-			createToast({ status: "error", title: getText("notCopied") });
+			createToast({status: "error", title: getText("notCopied")});
 		}
 	}
 
@@ -400,7 +429,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 		if (newMode == "simple") {
 			if (getModeByGroups(query.tags) == "complex") {
 				// It's not possible to turn a complex query into a simple one
-				setQuery({ ...query, tags: [] });
+				setQuery({...query, tags: []});
 			}
 		}
 	}
@@ -454,7 +483,8 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 					autofocus={true}
 				/>
 				<button class="btn btn-blue" onClick={() => setAdvOptions(!advOptions)}>
-					{getText("advancedFilters")} <i class={`ml-1 fas ${advOptions ? "fa-caret-up" : "fa-caret-down"}`}></i>
+					{getText("advancedFilters")} <i
+					class={`ml-1 fas ${advOptions ? "fa-caret-up" : "fa-caret-down"}`}></i>
 				</button>
 			</div>
 
@@ -508,7 +538,8 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 					)}
 					<div class="block my-2">
 						<span class="form-label">{getText("filter_tags")}</span>
-						<select class="form-select" value={tagFilterMode} onChange={(e) => updateTagMode(e.currentTarget.value as TagFilterMode)}>
+						<select class="form-select" value={tagFilterMode}
+						        onChange={(e) => updateTagMode(e.currentTarget.value as TagFilterMode)}>
 							<option value={"simple"}>{getText("tag_filter_simple_mode")}</option>
 							<option value={"complex"}>{getText("tag_filter_complex_mode")}</option>
 						</select>
@@ -517,7 +548,8 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 							<>
 								{query.tags.length == 0
 									? getText("no_selected_tags")
-									: query.tags.map((gr) => gr.tag_ids.map((id) => <TagView tag={tags.find((t) => t.id == id)!} link={false} />))}
+									: query.tags.map((gr) => gr.tag_ids.map((id) => <TagView
+										tag={tags.find((t) => t.id == id)!} link={false}/>))}
 								<a
 									class="mx-1"
 									href="#"
@@ -528,7 +560,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 												setTags(rez.tags);
 												setQuery({
 													...query,
-													tags: rez.tags.map((t) => ({ negate: false, tag_ids: [t.id] })),
+													tags: rez.tags.map((t) => ({negate: false, tag_ids: [t.id]})),
 												});
 											}
 										});
@@ -546,7 +578,10 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 											<span
 												onClick={(e) => {
 													e.preventDefault();
-													setQuery({ ...query, tags: query.tags.filter((_, idx1) => idx != idx1) });
+													setQuery({
+														...query,
+														tags: query.tags.filter((_, idx1) => idx != idx1)
+													});
 												}}
 												class="light-btn fas fa-xmark text-red-600"
 											></span>{" "}
@@ -558,7 +593,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 														...query,
 														tags: query.tags.map((val, idx1) => {
 															if (idx != idx1) return val;
-															return { negate: !val.negate, tag_ids: val.tag_ids };
+															return {negate: !val.negate, tag_ids: val.tag_ids};
 														}),
 													});
 												}}
@@ -568,7 +603,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 											</span>{" "}
 											{val.negate && getText("tag_complex_not")}{" "}
 											{val.tag_ids.map((id) => (
-												<TagView tag={tags.find((t) => t.id == id)!} link={false} />
+												<TagView tag={tags.find((t) => t.id == id)!} link={false}/>
 											))}
 											<a
 												class="mx-1"
@@ -592,7 +627,10 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 																...query,
 																tags: query.tags.map((val, idx1) => {
 																	if (idx != idx1) return val;
-																	return { negate: val.negate, tag_ids: rez.tags.map((t) => t.id) };
+																	return {
+																		negate: val.negate,
+																		tag_ids: rez.tags.map((t) => t.id)
+																	};
 																}),
 															});
 														}
@@ -621,7 +659,10 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 														console.log(tags);
 														setQuery({
 															...query,
-															tags: [...query.tags, { negate: false, tag_ids: rez.tags.map((t) => t.id) }],
+															tags: [...query.tags, {
+																negate: false,
+																tag_ids: rez.tags.map((t) => t.id)
+															}],
 														});
 													}
 												});
@@ -670,7 +711,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 										val = undefined;
 									}
 								}
-								setQuery({ ...query, page: 1, lang: val });
+								setQuery({...query, page: 1, lang: val});
 							}}
 						>
 							<option value="">-</option>
@@ -704,7 +745,7 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 						numpages={numPages}
 						page={query.page}
 						setPage={(num) => {
-							setQuery({ ...query, page: num });
+							setQuery({...query, page: num});
 						}}
 						showArrows={true}
 					/>
@@ -721,12 +762,18 @@ function ProblemSearch(params: { count: number; problems: FullProblem[]; groups:
 					</label>
 				</div>
 			)}
-			<ProblemView problems={problems} showTags={showTags} scoreView={false} latestView={false} />
+			<ProblemView problems={problems} showTags={showTags} scoreView={false} latestView={false}/>
 		</div>
 	);
 }
 
-function ProblemSearchDOM({ enc, count, groupenc, tagenc, pblistenc }: { enc: string; count: string; groupenc: string; tagenc: string; pblistenc: string }) {
+function ProblemSearchDOM({enc, count, groupenc, tagenc, pblistenc}: {
+	enc: string;
+	count: string;
+	groupenc: string;
+	tagenc: string;
+	pblistenc: string
+}) {
 	let pbs: FullProblem[] = JSON.parse(fromBase64(enc));
 	let cnt = parseInt(count);
 	if (isNaN(cnt)) {
@@ -735,21 +782,22 @@ function ProblemSearchDOM({ enc, count, groupenc, tagenc, pblistenc }: { enc: st
 	let groups: TagGroup[] = JSON.parse(fromBase64(groupenc));
 	let tags: Tag[] = JSON.parse(fromBase64(tagenc));
 	let pblist: ProblemList | null = JSON.parse(fromBase64(pblistenc));
-	return <ProblemSearch problems={pbs} count={cnt} groups={groups} initialTags={tags} pblist={pblist}></ProblemSearch>;
+	return <ProblemSearch problems={pbs} count={cnt} groups={groups} initialTags={tags}
+	                      pblist={pblist}></ProblemSearch>;
 }
 
 function ProblemListingWrapper({
-	enc,
-	count,
-	showTags,
-	showfull,
-	filter,
-	scoreView,
-	latestView,
-	saveHistory,
-	showPages,
-	maxCount,
-}: {
+	                               enc,
+	                               count,
+	                               showTags,
+	                               showfull,
+	                               filter,
+	                               scoreView,
+	                               latestView,
+	                               saveHistory,
+	                               showPages,
+	                               maxCount,
+                               }: {
 	enc: string;
 	count: string;
 	showTags: boolean;
@@ -782,7 +830,7 @@ function ProblemListingWrapper({
 	);
 }
 
-function TagProblemsDOM({ enc, count, tagid }: { enc: string; count: string; tagid: string }) {
+function TagProblemsDOM({enc, count, tagid}: { enc: string; count: string; tagid: string }) {
 	let tagID = parseInt(tagid);
 	if (isNaN(tagID)) {
 		throw new Error("Invalid tag ID");
@@ -813,7 +861,13 @@ function TagProblemsDOM({ enc, count, tagid }: { enc: string; count: string; tag
 					count={count}
 					showTags={showTags}
 					showfull="true"
-					filter={{ textQuery: "", tags: [{ tag_ids: [tagID], negate: false }], page: 1, descending: false, ordering: "" }}
+					filter={{
+						textQuery: "",
+						tags: [{tag_ids: [tagID], negate: false}],
+						page: 1,
+						descending: false,
+						ordering: ""
+					}}
 					scoreView={false}
 					saveHistory={true}
 					latestView={false}
@@ -823,7 +877,7 @@ function TagProblemsDOM({ enc, count, tagid }: { enc: string; count: string; tag
 	);
 }
 
-function ProblemSolvedByDOM({ enc, count, userid }: { enc: string; count: string; userid: string }) {
+function ProblemSolvedByDOM({enc, count, userid}: { enc: string; count: string; userid: string }) {
 	let uid = parseInt(userid);
 	if (isNaN(uid)) {
 		throw new Error("Invalid user ID");
@@ -833,7 +887,15 @@ function ProblemSolvedByDOM({ enc, count, userid }: { enc: string; count: string
 			enc={enc}
 			count={count}
 			showfull="false"
-			filter={{ textQuery: "", tags: [], page: 1, solved_by: uid, score_user_id: uid, descending: false, ordering: "" }}
+			filter={{
+				textQuery: "",
+				tags: [],
+				page: 1,
+				solved_by: uid,
+				score_user_id: uid,
+				descending: false,
+				ordering: ""
+			}}
 			scoreView={true}
 			showTags={false}
 			saveHistory={false}
@@ -842,7 +904,7 @@ function ProblemSolvedByDOM({ enc, count, userid }: { enc: string; count: string
 	);
 }
 
-function ProblemAttemptedByDOM({ enc, count, userid }: { enc: string; count: string; userid: string }) {
+function ProblemAttemptedByDOM({enc, count, userid}: { enc: string; count: string; userid: string }) {
 	let uid = parseInt(userid);
 	if (isNaN(uid)) {
 		throw new Error("Invalid user ID");
@@ -852,7 +914,15 @@ function ProblemAttemptedByDOM({ enc, count, userid }: { enc: string; count: str
 			enc={enc}
 			count={count}
 			showfull="false"
-			filter={{ textQuery: "", tags: [], page: 1, attempted_by: uid, score_user_id: uid, descending: false, ordering: "" }}
+			filter={{
+				textQuery: "",
+				tags: [],
+				page: 1,
+				attempted_by: uid,
+				score_user_id: uid,
+				descending: false,
+				ordering: ""
+			}}
 			scoreView={true}
 			showTags={false}
 			saveHistory={false}
@@ -860,7 +930,7 @@ function ProblemAttemptedByDOM({ enc, count, userid }: { enc: string; count: str
 	);
 }
 
-function LatestProblemsDOM({ enc }: { enc: string }) {
+function LatestProblemsDOM({enc}: { enc: string }) {
 	let [showTags, setShowTags] = useState<boolean>(false);
 	return (
 		<>
@@ -880,7 +950,7 @@ function LatestProblemsDOM({ enc }: { enc: string }) {
 				enc={enc}
 				count={"-1"}
 				showfull="true"
-				filter={{ textQuery: "", tags: [], page: 1, descending: true, ordering: "published_at" }}
+				filter={{textQuery: "", tags: [], page: 1, descending: true, ordering: "published_at"}}
 				scoreView={false}
 				latestView={true}
 				showTags={showTags}

@@ -31,6 +31,9 @@ declare global {
 		published_at?: string;
 
 		score_scale: number;
+
+		review_requested_at?: string;
+		review_requested_by?: number;
 	};
 
 	type ShallowProblemList = {

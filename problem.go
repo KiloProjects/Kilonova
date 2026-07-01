@@ -61,6 +61,9 @@ type Problem struct {
 
 	// CommunicationProcesses is the number of processes that will be run in parallel for communication tasks
 	CommunicationProcesses int `json:"communication_processes"`
+
+	ReviewRequestedAt *time.Time `json:"review_requested_at"`
+	ReviewRequestedBy *int       `json:"review_requested_by"`
 }
 
 func (pb *Problem) LogValue() slog.Value {
@@ -140,6 +143,8 @@ type ProblemFilter struct {
 	SolvedBy    *int `json:"solved_by"`
 	AttemptedBy *int `json:"attempted_by"`
 
+	ReviewRequested *bool `json:"review_requested"`
+
 	// Unassociated filter ensures that all returned problems are not "bound" to a problem list
 	Unassociated bool `json:"-"`
 
@@ -170,6 +175,8 @@ type ProblemUpdate struct {
 	ConsoleInput *bool `json:"console_input"`
 	Visible      *bool `json:"visible"`
 	VisibleTests *bool `json:"visible_tests"`
+
+	ReviewRequested *bool `json:"review_requested"`
 
 	ScorePrecision  *int32      `json:"score_precision"`
 	ScoringStrategy ScoringType `json:"scoring_strategy"`

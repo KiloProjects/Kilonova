@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/util/slicealg"
 	sq "github.com/Masterminds/squirrel"
@@ -46,6 +47,9 @@ type dbProblem struct {
 	TaskType kilonova.TaskType `db:"task_type"`
 
 	CommunicationProcesses int `db:"communication_num_processes"`
+
+	ReviewRequestedAt *time.Time `db:"review_requested_at"`
+	ReviewRequestedBy *int       `db:"review_requested_by"`
 }
 
 type dbScoredProblem struct {
@@ -181,45 +185,51 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID in
 	return s.AddProblemEditor(ctx, id, authorID)
 }
 
-func (s *DB) UpdateProblem(ctx context.Context, id int, upd kilonova.ProblemUpdate) ([]int, error) {
+func (s *DB) UpdateProblem(ctx context.Context, id int, upd kilonova.ProblemUpdate) ([]int, []int, error) {
 	return s.BulkUpdateProblems(ctx, kilonova.ProblemFilter{ID: &id}, upd)
 }
 
 type problemUpdateInfo struct {
-	ID          int        `db:"id"`
-	Visible     bool       `db:"visible"`
-	PublishedAt *time.Time `db:"published_at"`
-	Now         time.Time  `db:"now"`
+	ID                int        `db:"id"`
+	Visible           bool       `db:"visible"`
+	PublishedAt       *time.Time `db:"published_at"`
+	ReviewRequestedAt *time.Time `db:"review_requested_at"`
+	Now               time.Time  `db:"now"`
 }
 
-func (s *DB) BulkUpdateProblems(ctx context.Context, filter kilonova.ProblemFilter, upd kilonova.ProblemUpdate) ([]int, error) {
-	ub := sq.Update("problems").Where(problemFilterQuery(&filter)).Suffix("RETURNING id, visible, published_at, NOW() as now")
-	ub = problemUpdateQuery(&upd, ub)
+func (s *DB) BulkUpdateProblems(ctx context.Context, filter kilonova.ProblemFilter, upd kilonova.ProblemUpdate) ([]int, []int, error) {
+	ub := sq.Update("problems").Where(problemFilterQuery(&filter)).Suffix("RETURNING id, visible, published_at, review_requested_at, NOW() as now")
+	ub = problemUpdateQuery(ctx, &upd, ub)
 	query, args, err := ub.ToSql()
 	if err != nil {
 		if err.Error() == "update statements must have at least one Set clause" {
-			return nil, kilonova.ErrNoUpdates
+			return nil, nil, kilonova.ErrNoUpdates
 		}
-		return nil, err
+		return nil, nil, err
 	}
 	rows, _ := s.conn.Query(ctx, query, args...)
 	updatedInfo, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[problemUpdateInfo])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
+			return nil, nil, nil
 		}
-		return nil, err
+		return nil, nil, err
 	}
 
 	var updatedProblems = make([]int, 0, len(updatedInfo))
+	var reviewRequestedProblems = make([]int, 0, len(updatedInfo))
 	for _, pb := range updatedInfo {
 		if pb.Visible && pb.PublishedAt != nil && pb.PublishedAt.Equal(pb.Now) {
 			updatedProblems = append(updatedProblems, pb.ID)
 		}
+		if !pb.Visible && pb.ReviewRequestedAt != nil && pb.ReviewRequestedAt.Equal(pb.Now) {
+			reviewRequestedProblems = append(reviewRequestedProblems, pb.ID)
+		}
 	}
 	slices.Sort(updatedProblems)
+	slices.Sort(reviewRequestedProblems)
 
-	return updatedProblems, nil
+	return updatedProblems, reviewRequestedProblems, nil
 }
 
 func (s *DB) DeleteProblem(ctx context.Context, id int) error {
@@ -302,13 +312,21 @@ func problemFilterQuery(filter *kilonova.ProblemFilter) sq.And {
 		sb = append(sb, sq.Expr("EXISTS (SELECT 1 FROM max_scores WHERE score != 100 AND score >= 0 AND problem_id = problems.id AND user_id = ?)", v))
 	}
 
+	if v := filter.ReviewRequested; v != nil {
+		if *v {
+			sb = append(sb, sq.Expr("review_requested_at IS NOT NULL"))
+		} else {
+			sb = append(sb, sq.Expr("review_requested_at IS NULL"))
+		}
+	}
+
 	if filter.Unassociated {
 		sb = append(sb, sq.Expr("NOT EXISTS (SELECT 1 FROM problem_list_problems WHERE problem_id = problems.id)"))
 	}
 	return sb
 }
 
-func problemUpdateQuery(upd *kilonova.ProblemUpdate, ub sq.UpdateBuilder) sq.UpdateBuilder {
+func problemUpdateQuery(ctx context.Context, upd *kilonova.ProblemUpdate, ub sq.UpdateBuilder) sq.UpdateBuilder {
 	if v := upd.Name; v != nil {
 		ub = ub.Set("name", v)
 	}
@@ -348,6 +366,17 @@ func problemUpdateQuery(upd *kilonova.ProblemUpdate, ub sq.UpdateBuilder) sq.Upd
 		if *v {
 			// Published at - first time it was set visible
 			ub = ub.Set("published_at", sq.Expr("COALESCE(published_at, NOW())"))
+		}
+	}
+	if v := upd.ReviewRequested; v != nil {
+		if *v {
+			ub = ub.Set("review_requested_at", sq.Expr("COALESCE(review_requested_at, NOW())"))
+			if usr := user.UserBriefContext(ctx); usr != nil {
+				ub = ub.Set("review_requested_by", usr.ID)
+			}
+		} else {
+			ub = ub.Set("review_requested_at", "NULL")
+			ub = ub.Set("review_requested_by", "NULL")
 		}
 	}
 	if v := upd.VisibleTests; v != nil {
@@ -423,6 +452,9 @@ func (s *DB) internalToProblem(pb *dbProblem) *kilonova.Problem {
 		TaskType: pb.TaskType,
 
 		CommunicationProcesses: pb.CommunicationProcesses,
+
+		ReviewRequestedAt: pb.ReviewRequestedAt,
+		ReviewRequestedBy: pb.ReviewRequestedBy,
 	}
 }
 
@@ -464,6 +496,8 @@ func getProblemOrdering(ordering string, descending bool) string {
 		return "published_at" + ord + " NULLS LAST, created_at " + ord + ", id ASC"
 	case "hot":
 		return "(SELECT hot_cnt FROM hot_problems WHERE problem_id = id) " + ord + " NULLS LAST, published_at" + ord + " NULLS LAST, id ASC"
+	case "requested_review":
+		return "review_requested_at" + ord + " NULLS LAST, id" + ord
 	default:
 		return "id" + ord
 	}

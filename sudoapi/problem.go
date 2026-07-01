@@ -10,6 +10,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/util/slicealg"
 )
 
@@ -38,7 +39,7 @@ func (s *BaseAPI) UpdateProblem(ctx context.Context, id int, args kilonova.Probl
 		return Statusf(400, "Invalid scoring strategy!")
 	}
 
-	newlyPublished, err := s.db.UpdateProblem(ctx, id, args)
+	newlyPublished, newlyRequested, err := s.db.UpdateProblem(ctx, id, args)
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't update problem", slog.Any("err", err))
 		return fmt.Errorf("couldn't update problem: %w", err)
@@ -47,6 +48,13 @@ func (s *BaseAPI) UpdateProblem(ctx context.Context, id int, args kilonova.Probl
 		go func() {
 			for _, id := range newlyPublished {
 				go s.AnnounceProblemPublished(ctx, id)
+			}
+		}()
+	}
+	if len(newlyRequested) > 0 {
+		go func() {
+			for _, id := range newlyRequested {
+				go s.AnnounceProblemReviewRequested(ctx, id, updater)
 			}
 		}()
 	}
@@ -61,7 +69,11 @@ func (s *BaseAPI) ToggleDeepPbListProblems(ctx context.Context, list *kilonova.P
 	} else {
 		filter.IDs = list.List
 	}
-	newlyPublished, err := s.db.BulkUpdateProblems(ctx, filter, kilonova.ProblemUpdate{Visible: upd.Visible, VisibleTests: upd.VisibleTests})
+	newlyPublished, newlyRequested, err := s.db.BulkUpdateProblems(ctx, filter, kilonova.ProblemUpdate{
+		Visible:         upd.Visible,
+		VisibleTests:    upd.VisibleTests,
+		ReviewRequested: upd.ReviewRequested,
+	})
 	if err != nil {
 		return fmt.Errorf("couldn't update list problem visibility: %w", err)
 	}
@@ -69,6 +81,13 @@ func (s *BaseAPI) ToggleDeepPbListProblems(ctx context.Context, list *kilonova.P
 		go func() {
 			for _, id := range newlyPublished {
 				go s.AnnounceProblemPublished(ctx, id)
+			}
+		}()
+	}
+	if len(newlyRequested) > 0 {
+		go func() {
+			for _, id := range newlyRequested {
+				go s.AnnounceProblemReviewRequested(ctx, id, user.UserBriefContext(ctx))
 			}
 		}()
 	}

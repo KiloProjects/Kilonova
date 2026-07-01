@@ -634,6 +634,11 @@ ro = "Registru acțiuni"
 en = "Debugging Panel"
 ro = "Panou Debugging"
 
+[panel.review]
+en = "Problem approval"
+ro = "Aprobare probleme"
+
+
 [panel.grader]
 en = "Grader Panel"
 ro = "Panou Grader"
@@ -1563,6 +1568,14 @@ ro = "teste: vizibile"
 [updateProblemTestsHidden]
 en = "tests: hidden"
 ro = "teste: ascunse"
+
+[updateProblemReviewRequested]
+en = "review requested"
+ro = "review cerut"
+
+[updateProblemReviewRescinded]
+en = "review requested: removed"
+ro = "review cerut: eliminat"
 
 [download]
 en = "Download"
@@ -3232,3 +3245,7 @@ ro = "Număr de procese de comunicare ale submisiei"
 [invite_qr_code]
 en = "Share QR Code"
 ro = "Afișare Cod QR"
+
+[request_review]
+en = "Request publish review"
+ro = "Cere review publicare"

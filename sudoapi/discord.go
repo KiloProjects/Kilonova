@@ -52,6 +52,16 @@ func (s *BaseAPI) AnnounceProblemPublished(ctx context.Context, problemID int) {
 	}
 }
 
+func (s *BaseAPI) AnnounceProblemReviewRequested(ctx context.Context, problemID int, requestedBy *kilonova.UserBrief) {
+	slog.DebugContext(ctx, "Announcing problem request", slog.Int("problem_id", problemID))
+	problem, err := s.Problem(ctx, problemID)
+	if err != nil {
+		s.LogUserAction(ctx, "Requested problem review (could not fetch problem)", slog.Int("problem_id", problemID), slog.Any("requested_by", requestedBy))
+	} else {
+		s.LogUserAction(ctx, "Requested problem review", slog.Any("problem", problem), slog.Any("requested_by", requestedBy))
+	}
+}
+
 // If both user and error is nil, it means that a user doesn't have a Discord account attached (or that Discord integration is disabled)
 // TODO: Cache output
 func (s *BaseAPI) GetDiscordIdentity(ctx context.Context, userID int) (*discordgo.User, error) {

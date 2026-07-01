@@ -358,6 +358,8 @@ type fullSearchProblem struct {
 
 	SolvedBy    int `json:"solved_by"`
 	AttemptedBy int `json:"attempted_by"`
+
+	ReviewRequestedAt *time.Time `json:"review_requested_at"`
 }
 
 type problemSearchResult struct {
@@ -368,23 +370,24 @@ type problemSearchResult struct {
 
 func getSearchProblem(pb *sudoapi.FullProblem) *fullSearchProblem {
 	return &fullSearchProblem{
-		ID:            pb.ID,
-		CreatedAt:     pb.CreatedAt,
-		Name:          pb.Name,
-		Visible:       pb.Visible,
-		VisibleTests:  pb.VisibleTests,
-		TimeLimit:     pb.TimeLimit,
-		MemoryLimit:   pb.MemoryLimit,
-		SourceSize:    pb.SourceSize,
-		SourceCredits: pb.SourceCredits,
-		PublishedAt:   pb.PublishedAt,
-		TaskType:      pb.TaskType,
-		ScoreUserID:   pb.ScoreUserID,
-		MaxScore:      pb.MaxScore,
-		IsEditor:      pb.IsEditor,
-		Tags:          pb.Tags,
-		SolvedBy:      pb.SolvedBy,
-		AttemptedBy:   pb.AttemptedBy,
+		ID:                pb.ID,
+		CreatedAt:         pb.CreatedAt,
+		Name:              pb.Name,
+		Visible:           pb.Visible,
+		VisibleTests:      pb.VisibleTests,
+		TimeLimit:         pb.TimeLimit,
+		MemoryLimit:       pb.MemoryLimit,
+		SourceSize:        pb.SourceSize,
+		SourceCredits:     pb.SourceCredits,
+		PublishedAt:       pb.PublishedAt,
+		TaskType:          pb.TaskType,
+		ScoreUserID:       pb.ScoreUserID,
+		MaxScore:          pb.MaxScore,
+		IsEditor:          pb.IsEditor,
+		Tags:              pb.Tags,
+		SolvedBy:          pb.SolvedBy,
+		AttemptedBy:       pb.AttemptedBy,
+		ReviewRequestedAt: pb.ReviewRequestedAt,
 	}
 }
 
@@ -549,23 +552,26 @@ func boolPtrString(val *bool) string {
 
 func (s *API) togglePblistProblems(w http.ResponseWriter, r *http.Request) {
 	var args struct {
-		Deep         bool  `json:"deep"`
-		Visible      *bool `json:"visible"`
-		VisibleTests *bool `json:"visibleTests"`
+		Deep            bool  `json:"deep"`
+		Visible         *bool `json:"visible"`
+		VisibleTests    *bool `json:"visibleTests"`
+		ReviewRequested *bool `json:"reviewRequested"`
 	}
 	if err := parseRequest(r, &args); err != nil {
 		errorData(w, err, 400)
 		return
 	}
 
-	if err := s.base.ToggleDeepPbListProblems(r.Context(), util.ProblemList(r), args.Deep, kilonova.ProblemUpdate{Visible: args.Visible, VisibleTests: args.VisibleTests}); err != nil {
+	if err := s.base.ToggleDeepPbListProblems(r.Context(), util.ProblemList(r), args.Deep, kilonova.ProblemUpdate{Visible: args.Visible, VisibleTests: args.VisibleTests, ReviewRequested: args.ReviewRequested}); err != nil {
 		statusError(w, err)
 		return
 	}
 
 	s.base.LogUserAction(r.Context(), "Bulk updated problem lists",
 		slog.Any("problem_list", util.ProblemList(r)),
-		slog.String("visible_problems", boolPtrString(args.Visible)), slog.String("downloadable_tests", boolPtrString(args.VisibleTests)),
+		slog.String("visible_problems", boolPtrString(args.Visible)),
+		slog.String("downloadable_tests", boolPtrString(args.VisibleTests)),
+		slog.String("review_requested", boolPtrString(args.ReviewRequested)),
 		slog.Bool("deep", args.Deep),
 	)
 
@@ -671,32 +677,32 @@ func (s *API) getProblem(ctx context.Context, _ struct{}) (*kilonova.Problem, er
 
 type ProblemGetInput struct {
 	Body *struct {
-		//ID  *int  `json:"id,omitempty"`
+		// ID  *int  `json:"id,omitempty"`
 		IDs []int `json:"ids,omitempty" nullable:"false"`
-		//ConsoleInput *bool `json:"console_input,omitempty"`
-		//Visible *bool `json:"visible,omitempty"`
+		// ConsoleInput *bool `json:"console_input,omitempty"`
+		// Visible *bool `json:"visible,omitempty"`
 		Name *string `json:"name,omitempty"`
 
 		FuzzyName *string `json:"fuzzyName,omitempty"`
 
-		//// DeepListID - the list ID in which to search recursively for problems
-		//DeepListID *int `json:"deepListID,omitempty"`
+		// // DeepListID - the list ID in which to search recursively for problems
+		// DeepListID *int `json:"deepListID,omitempty"`
 		//
-		//// EditorUserID filter marks if the user is part of the *editors* of the problem
-		//// Note that it excludes factors like admin or contest editor, it's just the editors in the access section.
-		//EditorUserID *int `json:"editorUserID,omitempty"`
+		// // EditorUserID filter marks if the user is part of the *editors* of the problem
+		// // Note that it excludes factors like admin or contest editor, it's just the editors in the access section.
+		// EditorUserID *int `json:"editorUserID,omitempty"`
 
 		Tags []*kilonova.TagGroup `json:"tags,omitempty" nullable:"false"`
 
 		// Should be "en" or "ro", if non-nil
 		Language *string `json:"lang,omitempty"`
 
-		//UnsolvedBy  *int `json:"unsolvedBy,omitempty"`
-		//SolvedBy    *int `json:"solvedBy,omitempty"`
-		//AttemptedBy *int `json:"attemptedBy,omitempty"`
+		// UnsolvedBy  *int `json:"unsolvedBy,omitempty"`
+		// SolvedBy    *int `json:"solvedBy,omitempty"`
+		// AttemptedBy *int `json:"attemptedBy,omitempty"`
 
 		// This is actually not used during filtering in DB, it's used by (*api.API).searchProblems
-		//ScoreUserID *int `json:"scoreUserID,omitempty"`
+		// ScoreUserID *int `json:"scoreUserID,omitempty"`
 
 		Limit  uint64 `json:"limit,omitempty"`
 		Offset uint64 `json:"offset,omitempty"`
@@ -789,7 +795,7 @@ type apiProblem struct {
 
 	TaskType kilonova.TaskType `json:"task_type"`
 
-	//CommunicationProcesses int `json:"communication_processes"`
+	// CommunicationProcesses int `json:"communication_processes"`
 
 	Languages         []*apiLanguage     `json:"submitLanguages"`
 	StatementVariants []StatementVariant `json:"statementVariants"`
@@ -834,7 +840,7 @@ func (s *API) problemSingleGet(ctx context.Context, _ *struct{}) (*ProblemSingle
 		PublishedAt:     problem.PublishedAt,
 		ScoringStrategy: problem.ScoringStrategy,
 		TaskType:        problem.TaskType,
-		//CommunicationProcesses: problem.CommunicationProcesses,
+		// CommunicationProcesses: problem.CommunicationProcesses,
 
 		// Extra fields
 		Languages:         slicealg.Map(languages, apiLanguageFromDomain),

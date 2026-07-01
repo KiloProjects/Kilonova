@@ -142,6 +142,13 @@
                 </li>
             </ul>
 
+            <button type="button" class="block my-2 btn {{if not .Problem.ReviewRequestedAt}}btn-blue{{end}}" id="review_request_btn" {{if .Problem.ReviewRequestedAt}}disabled{{end}}>{{getText "request_review"}}</button>
+            {{if .Problem.ReviewRequestedAt}}
+            <span>
+                Review requested at: <server-timestamp timestamp="{{.Problem.ReviewRequestedAt.UnixMilli}}"></server-timestamp>
+            </span>
+            {{end}}
+
             <form class="segment-panel" id="visibility_form" autocomplete="off">
                 <h2>{{getText "toggle_visibility"}}</h2>
                 {{ if not isAdmin }}
@@ -166,6 +173,24 @@
                 bundled.apiToast(res)
             }
             document.getElementById("visibility_form").addEventListener("submit", updateVisibility)
+
+            async function requestReview(e) {
+                e.preventDefault()
+                if(!(await bundled.confirm("Are you sure you want to request a review? Make sure the problem is fully ready first!"))) {
+                    return;
+                }
+
+                let result = await bundled.postCall(`/problem/${problem.id}/update/`, {
+                    review_requested: true,
+                });
+                if(result.status === "success") {
+                    window.location.reload();
+                    return
+                }
+                bundled.apiToast(result);
+            }
+            document.getElementById("review_request_btn").addEventListener("click", requestReview)
+
         </script>
     </div>
     <aside class="page-sidebar">

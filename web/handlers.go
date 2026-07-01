@@ -189,6 +189,8 @@ func (rt *Web) problems() http.HandlerFunc {
 		Ordering   string `json:"ordering"`
 		Descending bool   `json:"descending"`
 
+		ReviewRequested *bool `json:"review_requested"`
+
 		Language string `json:"lang"`
 
 		Tags *string `json:"tags"`
@@ -290,6 +292,7 @@ func (rt *Web) problems() http.HandlerFunc {
 			LookingUser: user.UserBrief(r), Look: true,
 			FuzzyName: q.Query, EditorUserID: q.Editor, Visible: q.Visible,
 			DeepListID: q.DeepListID, Language: lang,
+			ReviewRequested: q.ReviewRequested,
 
 			Tags:  gr,
 			Limit: 50, Offset: (q.Page - 1) * 50,

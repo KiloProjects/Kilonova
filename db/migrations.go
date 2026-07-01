@@ -81,6 +81,11 @@ var Migrations = postgres.MigrationConfig{
 			Name:    "Add AI as a valid problem type",
 			Handler: runFile("013.ai_type.sql"),
 		},
+		{
+			ID:      15,
+			Name:    "Add column for problem review",
+			Handler: runFile("014.review_ready.sql"),
+		},
 	},
 	// Run every time a migrate up happens
 	SpecialMigrations: []postgres.Migration{
