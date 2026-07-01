@@ -159,7 +159,7 @@ func (rt *Web) testAdd() func(w http.ResponseWriter, r *http.Request) {
 func (rt *Web) testEdit() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse("problem/edit/testEdit.html", "problem/topbar.html", "problem/edit/testSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, tmpl, &TestEditParams{util.Problem(r), util.Test(r), rt.problemTopbar(r, "tests", util.Test(r).VisibleID), rt.base, r.Context()})
+		rt.runTempl(w, r, tmpl, &TestEditParams{util.Problem(r), util.Test(r), rt.problemTopbar(r, "tests", util.Test(r).ID), rt.base, r.Context()})
 	}
 }
 
@@ -180,7 +180,7 @@ func (rt *Web) subtaskAdd() func(w http.ResponseWriter, r *http.Request) {
 func (rt *Web) subtaskEdit() func(w http.ResponseWriter, r *http.Request) {
 	tmpl := rt.parse("problem/edit/subtaskEdit.html", "problem/topbar.html", "problem/edit/subtaskSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, tmpl, &SubTaskEditParams{util.Problem(r), util.SubTask(r), rt.problemTopbar(r, "subtasks", util.SubTask(r).VisibleID), r.Context(), rt.base})
+		rt.runTempl(w, r, tmpl, &SubTaskEditParams{util.Problem(r), util.SubTask(r), rt.problemTopbar(r, "subtasks", util.SubTask(r).ID), r.Context(), rt.base})
 	}
 }
 
@@ -209,7 +209,7 @@ func (rt *Web) TestIDValidator() func(next http.Handler) http.Handler {
 				rt.statusPage(w, r, 400, "Test invalid")
 				return
 			}
-			test, err := rt.base.Test(r.Context(), util.Problem(r).ID, testID)
+			test, err := rt.base.Test(r.Context(), testID)
 			if err != nil {
 				slog.WarnContext(r.Context(), "Couldn't get test", slog.Any("err", err))
 				rt.statusPage(w, r, 500, "")
@@ -217,6 +217,10 @@ func (rt *Web) TestIDValidator() func(next http.Handler) http.Handler {
 			}
 			if test == nil {
 				rt.statusPage(w, r, 404, "Testul nu există")
+				return
+			}
+			if test.ProblemID != util.Problem(r).ID {
+				rt.statusPage(w, r, 404, "Testul nu aparține problemei")
 				return
 			}
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.TestKey, test)))
@@ -232,13 +236,17 @@ func (rt *Web) SubTaskValidator() func(next http.Handler) http.Handler {
 				rt.statusPage(w, r, http.StatusBadRequest, "ID invalid")
 				return
 			}
-			subtask, err := rt.base.SubTask(r.Context(), util.Problem(r).ID, subtaskID)
+			subtask, err := rt.base.SubTask(r.Context(), subtaskID)
 			if err != nil {
 				rt.statusPage(w, r, 500, "")
 				return
 			}
 			if subtask == nil {
 				rt.statusPage(w, r, 404, "SubTask-ul nu există")
+				return
+			}
+			if subtask.ProblemID != util.Problem(r).ID {
+				rt.statusPage(w, r, 404, "SubTask-ul nu aparține problemei")
 				return
 			}
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.SubTaskKey, subtask)))

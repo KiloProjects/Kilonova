@@ -9,8 +9,16 @@ import (
 	"github.com/KiloProjects/kilonova"
 )
 
-func (s *BaseAPI) Test(ctx context.Context, pbID int, testVID int) (*kilonova.Test, error) {
-	test, err := s.db.Test(ctx, pbID, testVID)
+func (s *BaseAPI) ProblemTest(ctx context.Context, pbID int, testVID int) (*kilonova.Test, error) {
+	test, err := s.db.ProblemTest(ctx, pbID, testVID)
+	if err != nil || test == nil {
+		return nil, fmt.Errorf("test not found: %w", ErrNotFound)
+	}
+	return test, nil
+}
+
+func (s *BaseAPI) Test(ctx context.Context, id int) (*kilonova.Test, error) {
+	test, err := s.db.Test(ctx, id)
 	if err != nil || test == nil {
 		return nil, fmt.Errorf("test not found: %w", ErrNotFound)
 	}

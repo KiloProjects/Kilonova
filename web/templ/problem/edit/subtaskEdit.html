@@ -29,9 +29,9 @@
                     </thead>
                     <tbody>
                     {{ range . }}
-                        <tr id="row-test-{{.VisibleID}}" class="kn-table-row">
+                        <tr id="row-test-{{.ID}}" class="kn-table-row">
                             <td class="kn-table-cell">
-                                <input class="form-checkbox" type="checkbox" id="pb-test-{{.VisibleID}}" autocomplete="off" {{if $.TestInSubTask .}}checked{{end}}>
+                                <input class="form-checkbox" type="checkbox" id="pb-test-{{.ID}}" autocomplete="off" {{if $.TestInSubTask .}}checked{{end}}>
                             </td>
                             <td class="kn-table-cell">
                                 {{.VisibleID}}
@@ -58,7 +58,7 @@ const mgr = new bundled.CheckboxManager(document.getElementById("selectAllBox"),
 async function updateSubTask(e) {
 	e.preventDefault();
 	let data = {
-		subtask_id: {{.SubTask.VisibleID}},
+		subtask_id: {{.SubTask.ID}},
 		new_id: parseInt(document.getElementById('subtask-id').value),
 		score: parseInt(document.getElementById('subtask-score').value),
 		tests: []
@@ -82,10 +82,6 @@ async function updateSubTask(e) {
 	}
 
 	let res = await bundled.bodyCall(`/problem/${pbid}/update/updateSubTask`, data)
-	if(res.status === "success" && data.new_id !== data.subtask_id) {
-		window.location.assign( `${pref}/problems/${pbid}/edit/subtasks/${data.new_id}`);
-		return;
-	}
 	bundled.apiToast(res);
 }
 

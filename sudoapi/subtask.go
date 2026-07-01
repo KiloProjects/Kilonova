@@ -26,8 +26,16 @@ func (s *BaseAPI) SubTasksByTest(ctx context.Context, problemID, testID int) ([]
 	return stks, nil
 }
 
-func (s *BaseAPI) SubTask(ctx context.Context, problemID int, subtaskVID int) (*kilonova.SubTask, error) {
+func (s *BaseAPI) ProblemSubTask(ctx context.Context, problemID int, subtaskVID int) (*kilonova.SubTask, error) {
 	stk, err := s.db.SubTask(ctx, problemID, subtaskVID)
+	if err != nil || stk == nil {
+		return nil, fmt.Errorf("couldn't find subtask: %w", ErrNotFound)
+	}
+	return stk, nil
+}
+
+func (s *BaseAPI) SubTask(ctx context.Context, id int) (*kilonova.SubTask, error) {
+	stk, err := s.db.SubTaskByID(ctx, id)
 	if err != nil || stk == nil {
 		return nil, fmt.Errorf("couldn't find subtask: %w", ErrNotFound)
 	}

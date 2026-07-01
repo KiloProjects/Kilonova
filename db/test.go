@@ -21,9 +21,18 @@ func (s *DB) CreateTest(ctx context.Context, test *kilonova.Test) error {
 	return err
 }
 
-func (s *DB) Test(ctx context.Context, pbID, testVID int) (*kilonova.Test, error) {
+func (s *DB) ProblemTest(ctx context.Context, pbID, testVID int) (*kilonova.Test, error) {
 	var test kilonova.Test
 	err := Get(s.conn, ctx, &test, "SELECT * FROM tests WHERE problem_id = $1 AND visible_id = $2 ORDER BY visible_id LIMIT 1", pbID, testVID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	return &test, err
+}
+
+func (s *DB) Test(ctx context.Context, id int) (*kilonova.Test, error) {
+	var test kilonova.Test
+	err := Get(s.conn, ctx, &test, "SELECT * FROM tests WHERE id = $1 ORDER BY visible_id LIMIT 1", id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}

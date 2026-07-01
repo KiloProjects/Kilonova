@@ -7,8 +7,8 @@
             </a>
             <a class="list-group-item col-span-full {{if (eq .Topbar.PageID -1)}} list-group-selected {{end}}" href="{{.Topbar.URLPrefix}}/problems/{{$id}}/edit/test/add">{{getText "createTest"}}</a>
             {{ range problemTests .Problem }}
-                <a class="list-group-item {{if (eq $.Topbar.PageID .VisibleID)}} list-group-selected {{end}}"
-                    href="{{$.Topbar.URLPrefix}}/problems/{{$id}}/edit/test/{{.VisibleID}}">
+                <a class="list-group-item {{if (eq $.Topbar.PageID .ID)}} list-group-selected {{end}}"
+                    href="{{$.Topbar.URLPrefix}}/problems/{{$id}}/edit/test/{{.ID}}">
                     {{getText "nthTest" .VisibleID}}
                 </a>
             {{ end }}

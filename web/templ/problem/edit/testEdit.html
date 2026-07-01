@@ -67,12 +67,7 @@ async function updateID(e) {
         score: document.getElementById("score").value
 	}
 	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/info", q);
-	if(res.status === "success") {
-        if(q.id != {{.Test.VisibleID}}) {
-            window.location.assign(pref + "/problems/{{.Problem.ID}}/edit/test/"+q.id)
-            return
-        }
-	}
+
 	bundled.apiToast(res)
 }
 
@@ -97,7 +92,7 @@ async function updateData(e) {
     }
     {{end}}
 
-	let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/data", formdata)
+	let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/test/{{.Test.ID}}/data", formdata)
 	bundled.apiToast(res);
 }
 
@@ -127,7 +122,7 @@ async function uploadReplacementData(e) {
         formdata.set("output", newOut.files[0])
     }
 
-    let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/data", formdata)
+    let res = await bundled.multipartCall("/problem/{{.Problem.ID}}/update/test/{{.Test.ID}}/data", formdata)
     if(res.status === "success") {
         window.location.reload();
         return
@@ -141,7 +136,7 @@ async function removeTest(e) {
 	if(!(await bundled.confirm(bundled.getText("confirmTestDelete")))) {
 		return
 	}
-	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.VisibleID}}/delete", {})
+	let res = await bundled.postCall("/problem/{{.Problem.ID}}/update/test/{{.Test.ID}}/delete", {})
 	if(res.status === "success") {
 		window.location.assign(pref + "/problems/{{.Problem.ID}}/edit/test")
 		return

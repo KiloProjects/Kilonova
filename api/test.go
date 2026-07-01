@@ -47,7 +47,7 @@ func (s *API) updateTestInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if util.Test(r).VisibleID != args.ID {
-		if t, err := s.base.Test(r.Context(), util.Problem(r).ID, args.ID); err == nil && t != nil {
+		if t, err := s.base.ProblemTest(r.Context(), util.Problem(r).ID, args.ID); err == nil && t != nil {
 			errorData(w, "Test with that visible id already exists!", 400)
 			return
 		}
@@ -67,14 +67,6 @@ func (s *API) updateTestInfo(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) deleteTest(ctx context.Context, _ struct{}) error {
 	return s.base.DeleteTest(ctx, util.TestContext(ctx).ID)
-}
-
-func (s *API) getTests(ctx context.Context, _ struct{}) ([]*kilonova.Test, error) {
-	return s.base.Tests(ctx, util.ProblemContext(ctx).ID)
-}
-
-func (s *API) getTest(ctx context.Context, args struct{ ID int }) (*kilonova.Test, error) {
-	return s.base.Test(ctx, util.ProblemContext(ctx).ID, args.ID)
 }
 
 // createTest inserts a new test to the problem
@@ -189,7 +181,11 @@ func (s *API) bulkDeleteTests(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, id := range testIDs {
-		if t, err := s.base.Test(r.Context(), util.Problem(r).ID, id); err == nil {
+		if t, err := s.base.Test(r.Context(), id); err == nil {
+			if t.ProblemID != util.Problem(r).ID {
+				continue
+			}
+
 			if err := s.base.DeleteTest(r.Context(), t.ID); err == nil {
 				removedTests++
 			}
@@ -217,7 +213,11 @@ func (s *API) bulkUpdateTestScores(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for k, v := range data {
-		if t, err := s.base.Test(r.Context(), util.Problem(r).ID, k); err == nil {
+		if t, err := s.base.Test(r.Context(), k); err == nil {
+			if t.ProblemID != util.Problem(r).ID {
+				continue
+			}
+
 			if err := s.base.UpdateTest(r.Context(), t.ID, kilonova.TestUpdate{Score: &v}); err == nil {
 				updatedTests++
 			}

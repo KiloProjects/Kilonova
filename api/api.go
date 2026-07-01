@@ -296,9 +296,6 @@ func (s *API) HandlerV1() http.Handler {
 				}))
 
 				r.Get("/accessControl", webWrapper(s.getProblemAccessControl))
-
-				r.Get("/tests", webWrapper(s.getTests))
-				r.Get("/test", webWrapper(s.getTest))
 			})
 		})
 	})

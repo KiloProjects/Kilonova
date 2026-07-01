@@ -56,7 +56,7 @@ func (s *BaseAPI) AnnounceProblemReviewRequested(ctx context.Context, problemID 
 	slog.DebugContext(ctx, "Announcing problem request", slog.Int("problem_id", problemID))
 	problem, err := s.Problem(ctx, problemID)
 	if err != nil {
-		s.LogUserAction(ctx, "Requested problem review (could not fetch problem)", slog.Int("problem_id", problemID), slog.Any("requested_by", requestedBy))
+		s.LogUserAction(ctx, "Requested problem review (could not fetch problem)", slog.Int("problem_id", problemID), slog.Any("requested_by", requestedBy), slog.Any("error", err))
 	} else {
 		s.LogUserAction(ctx, "Requested problem review", slog.Any("problem", problem), slog.Any("requested_by", requestedBy))
 	}

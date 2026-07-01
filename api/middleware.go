@@ -182,9 +182,13 @@ func (s *API) validateTestID(next http.Handler) http.Handler {
 			errorData(w, "invalid test ID", http.StatusBadRequest)
 			return
 		}
-		test, err := s.base.Test(r.Context(), util.Problem(r).ID, testID)
+		test, err := s.base.Test(r.Context(), testID)
 		if err != nil {
 			errorData(w, "test does not exist", http.StatusBadRequest)
+			return
+		}
+		if test.ProblemID != util.Problem(r).ID {
+			errorData(w, "test does not belong to this problem", http.StatusBadRequest)
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.TestKey, test)))
