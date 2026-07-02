@@ -110,7 +110,7 @@ func (rt *Web) problemRouter(inContest bool) func(r chi.Router) {
 			})
 		}
 		r.With(rt.mustBeAuthed).Get("/submit", rt.problemSubmit())
-		r.With(rt.ValidateProblemFullyVisible).Get("/archive", rt.problemArchive())
+		r.With(rt.mustBeAuthed, rt.ValidateProblemFullyVisible).Get("/archive", rt.problemArchive())
 		r.With(rt.mustBeProblemEditor).Route("/edit", rt.ProblemEditRouter)
 	}
 }

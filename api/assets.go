@@ -382,6 +382,20 @@ func (s *Assets) ServeProblemArchive() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		if s.base.CaptchaEnabled() {
+			if err := r.ParseForm(); err != nil {
+				http.Error(w, "Can't decode parameters", 400)
+				return
+			}
+			if !s.base.CheckCaptcha(r.Form.Get("captcha_id"), r.Form.Get("captcha_response")) && !user.UserBrief(r).IsAdmin() {
+				http.Error(w, "Invalid CAPTCHA response", http.StatusBadRequest)
+				return
+			}
+			// Remove so the schema decoder below doesn't reject the unknown keys
+			r.Form.Del("captcha_id")
+			r.Form.Del("captcha_response")
+		}
+
 		mu, err := pbArchiveUserCache.Get(r.Context(), user.UserBrief(r).ID)
 		if err != nil || mu == nil {
 			slog.WarnContext(r.Context(), "Could hit archive cache", slog.Any("err", err))
@@ -404,6 +418,12 @@ func (s *Assets) ServeProblemArchive() http.HandlerFunc {
 		args.AllSubmissions = args.AllSubmissions && s.base.IsProblemEditor(user.UserBrief(r), util.Problem(r))
 		args.SubsLook = true
 		args.SubsLookingUser = user.UserBrief(r)
+
+		s.base.LogVerbose(r.Context(), "Problem archive downloaded",
+			slog.Any("user", user.UserBrief(r)),
+			slog.Any("problem", util.Problem(r)),
+			slog.Bool("tests", args.Tests),
+		)
 
 		w.Header().Add("Content-Type", "application/zip")
 		w.Header().Add("Content-Disposition", fmt.Sprintf(`attachment; filename="%d-%s.zip"`, util.Problem(r).ID, kilonova.MakeSlug(util.Problem(r).Name)))

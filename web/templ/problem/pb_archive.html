@@ -80,6 +80,35 @@
     <input class="hidden" id="aAllSubs" type="checkbox"/>
     {{end}}
 
+    {{if and (boolFlag "feature.captcha.enabled") (not isAdmin)}}
+    {{$captcha := getCaptchaID}}
+    <div id="captcha_container" class="segment-panel my-2">
+        <p>
+            {{getText "auth.captcha.title"}}:<br/>
+            <img id="captcha_img" class="rounded-sm" src="/api/auth/captcha/{{$captcha}}.png" alt="Captcha image" width="240" height="80" style="background-color: white;" />
+        </p>
+        <input type="hidden" id="captcha_id" value="{{$captcha}}" />
+        <label class="block my-2">
+            <span>{{getText "response"}}</span>
+            <input type="text" id="captcha_response" class="form-input w-full" pattern="[0-9]*" value="" autocomplete="off" />
+        </label>
+        <button id="captcha_reload_btn" class="btn btn-blue" type="button"><i class="fas fa-fw fa-rotate"></i> {{getText "reload"}}</button>
+    </div>
+    <script>
+        function reloadCaptcha() {
+            document.getElementById("captcha_img").src = `/api/auth/captcha/${document.getElementById("captcha_id").value}.png?reload=${bundled.dayjs().valueOf()}`
+        }
+        document.getElementById("captcha_reload_btn").addEventListener("click", reloadCaptcha)
+        function getCaptchaData() {
+            return {captcha_id: document.getElementById("captcha_id").value, captcha_response: document.getElementById("captcha_response").value}
+        }
+    </script>
+    {{else}}
+    <script>
+        function getCaptchaData() { return {} }
+    </script>
+    {{end}}
+
     <button class="btn btn-blue" type="submit">{{getText "download"}}</button>
 
 </form>
@@ -101,13 +130,20 @@
 
             submissions: document.getElementById("aSubs").checked,
             all_submissions: document.getElementById("aAllSubs").checked,
+
+            ...getCaptchaData(),
         }).toString()
-        console.log(url, url.toString())
         let a = document.createElement("a")
         a.href = url.toString()
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)
+
+        // The CAPTCHA is single-use, re-arm it for the next download
+        if (typeof reloadCaptcha === "function") {
+            document.getElementById("captcha_response").value = ""
+            reloadCaptcha()
+        }
     }
     document.getElementById("problemArchiveForm").addEventListener("submit", startArchiveDownload)
 </script>
