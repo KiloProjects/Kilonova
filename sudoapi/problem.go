@@ -47,14 +47,14 @@ func (s *BaseAPI) UpdateProblem(ctx context.Context, id int, args kilonova.Probl
 	if len(newlyPublished) > 0 {
 		go func() {
 			for _, id := range newlyPublished {
-				go s.AnnounceProblemPublished(ctx, id)
+				go s.AnnounceProblemPublished(context.WithoutCancel(ctx), id)
 			}
 		}()
 	}
 	if len(newlyRequested) > 0 {
 		go func() {
 			for _, id := range newlyRequested {
-				go s.AnnounceProblemReviewRequested(ctx, id, updater)
+				go s.AnnounceProblemReviewRequested(context.WithoutCancel(ctx), id, updater)
 			}
 		}()
 	}
@@ -80,14 +80,14 @@ func (s *BaseAPI) ToggleDeepPbListProblems(ctx context.Context, list *kilonova.P
 	if len(newlyPublished) > 0 {
 		go func() {
 			for _, id := range newlyPublished {
-				go s.AnnounceProblemPublished(ctx, id)
+				go s.AnnounceProblemPublished(context.WithoutCancel(ctx), id)
 			}
 		}()
 	}
 	if len(newlyRequested) > 0 {
 		go func() {
 			for _, id := range newlyRequested {
-				go s.AnnounceProblemReviewRequested(ctx, id, user.UserBriefContext(ctx))
+				go s.AnnounceProblemReviewRequested(context.WithoutCancel(ctx), id, user.UserBriefContext(ctx))
 			}
 		}()
 	}
