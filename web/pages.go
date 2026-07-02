@@ -337,6 +337,10 @@ type ProfileParams struct {
 	AttemptedCount    int
 
 	ChangeHistory []*kilonova.UsernameChange
+
+	SubViewer templ.Component
+
+	Page string
 }
 
 type DiscordLinkParams struct {

@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/web/tutils"
-	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/shopspring/decimal"
 )
 
@@ -207,9 +207,9 @@ func submissionStatus(ctx context.Context, sub *kilonova.Submission, problem *ki
 }
 
 func icpcVerdictText(ctx context.Context, verdict string) string {
-	 return icpcVerdictRe.ReplaceAllStringFunc(verdict, func(s string) string {
-        return kilonova.MaybeGetText(util.LanguageContext(ctx), s)
-    })
+	return icpcVerdictRe.ReplaceAllStringFunc(verdict, func(s string) string {
+		return kilonova.MaybeGetText(util.LanguageContext(ctx), s)
+	})
 }
 
 func contestProblemURL(contestID *int, problemID int) string {
@@ -233,11 +233,11 @@ func statusStyle(sub *kilonova.Submission) string {
 
 templ sortIndicator(q SubsViewerQuery, ordering string) {
 	if q.Ordering != ordering {
-		{" "}<i class="fas fa-sort"></i>
+		{ " " }<i class="fas fa-sort"></i>
 	} else if q.Ascending {
-		{" "}<i class="fas fa-sort-up"></i>
+		{ " " }<i class="fas fa-sort-up"></i>
 	} else {
-		{" "}<i class="fas fa-sort-down"></i>
+		{ " " }<i class="fas fa-sort-down"></i>
 	}
 }
 
@@ -286,16 +286,18 @@ templ SubsViewer(params SubsViewerParams) {
 						/>
 						<span class="form-label">{ T(ctx, "acceptedSubs") }</span>
 						<script>
-							document.getElementById("accepted_only").addEventListener("change", e => {
-								if(e.target.checked) {
-									document.getElementById("sub_status").value = "finished"
-									document.getElementById("sub_score").value = "100"
-								} else {
-	                                document.getElementById("sub_status").value = ""
-	                                document.getElementById("sub_score").value = ""
-	                            }
-	                            document.getElementById("sub-filters").submit()
-							})
+							document
+								.getElementById("accepted_only")
+								.addEventListener("change", (e) => {
+									if (e.target.checked) {
+										document.getElementById("sub_status").value = "finished";
+										document.getElementById("sub_score").value = "100";
+									} else {
+										document.getElementById("sub_status").value = "";
+										document.getElementById("sub_score").value = "";
+									}
+									document.getElementById("sub-filters").submit();
+								});
 						</script>
 					</label>
 					<details class="block mb-2">
@@ -400,7 +402,7 @@ templ SubsViewer(params SubsViewerParams) {
 						</label>
 					</details>
 					<button type="submit" class="btn btn-blue mb-4 mr-2">{ T(ctx, "fetch") }</button>
-					<button type="button" class="btn mb-4 mr-2" onclick={ copyQueryJS() }>{ T(ctx, "filterLink") }</button>
+					<button type="button" class="btn mb-4 mr-2" onclick={ templ.JSFuncCall("copyQuery") }>{ T(ctx, "filterLink") }</button>
 					if params.IsAdmin {
 						<a class="btn" href={ templ.URL("/assets/submissions/export" + buildQueryURL(params.Query, nil)) }>{ T(ctx, "exportSubs") }</a>
 					}
@@ -519,11 +521,27 @@ templ SubsViewer(params SubsViewerParams) {
 				<div class="text-4xl mx-auto my-auto w-full mt-10 mb-10 text-center">{ T(ctx, "noSubFound") }</div>
 			}
 		</div>
+		<script>
+			function copyQuery() {
+				navigator.clipboard
+					.writeText(
+						window.location.origin +
+							window.location.pathname +
+							window.location.search,
+					)
+					.then(function () {
+						bundled.createToast({
+							status: "success",
+							title: bundled.getText("copied"),
+						});
+					})
+					.catch(function () {
+						bundled.createToast({
+							status: "error",
+							title: bundled.getText("notCopied"),
+						});
+					});
+			}
+		</script>
 	</div>
-}
-
-func copyQueryJS() templ.ComponentScript {
-	return templ.ComponentScript{
-		Call: templ.SafeScript("navigator.clipboard.writeText(window.location.origin+window.location.pathname+window.location.search).then(function(){bundled.createToast({status:'success',title:bundled.getText('copied')})}).catch(function(){bundled.createToast({status:'error',title:bundled.getText('notCopied')})})"),
-	}
 }

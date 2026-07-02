@@ -1936,19 +1936,26 @@ func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *templa
 	}
 
 	rt.runTempl(w, r, templ, &ProfileParams{
-		userFull, solvedPbs, solvedCnt, attemptedPbs, attemptedCnt, changeHistory,
+		ContentUser:       userFull,
+		SolvedProblems:    solvedPbs,
+		SolvedCount:       solvedCnt,
+		AttemptedProblems: attemptedPbs,
+		AttemptedCount:    attemptedCnt,
+		ChangeHistory:     changeHistory,
+
+		Page: "overview",
 	})
 }
 
 func (rt *Web) selfProfile() http.HandlerFunc {
-	parsedTempl := rt.parse("profile.html", "modals/pbs.html")
+	parsedTempl := rt.parse("user/profile.html", "user/topbar.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.profilePage(w, r, parsedTempl, user.UserFull(r))
 	}
 }
 
 func (rt *Web) profile() http.HandlerFunc {
-	parsedTempl := rt.parse("profile.html", "modals/pbs.html")
+	parsedTempl := rt.parse("user/profile.html", "user/topbar.html", "modals/pbs.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		username := strings.TrimSpace(r.PathValue("user"))
 		userFull, err := rt.base.UserFullByName(r.Context(), username)
@@ -1968,6 +1975,64 @@ func (rt *Web) profile() http.HandlerFunc {
 		}
 
 		rt.profilePage(w, r, parsedTempl, userFull)
+	}
+}
+
+func (rt *Web) userSubmissions() http.HandlerFunc {
+	parsedTempl := rt.parse("user/submissions.html", "user/topbar.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		username := strings.TrimSpace(r.PathValue("user"))
+		userFull, err := rt.base.UserFullByName(r.Context(), username)
+		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
+			slog.WarnContext(r.Context(), "Could not get user", slog.Any("err", err))
+			rt.statusPage(w, r, 500, "")
+			return
+		}
+		if userFull == nil {
+			user2, err := rt.base.HistoricalUsernameHolder(r.Context(), username)
+			if err != nil || user2 == nil {
+				rt.statusPage(w, r, 404, "")
+			} else {
+				http.Redirect(w, r, "/profile/"+user2.Name+"/submissions", http.StatusMovedPermanently)
+			}
+			return
+		}
+
+		query := parseSubsViewerQuery(r)
+		query.UserID = &userFull.ID
+		overwrites := submissions.SubsViewerOverwrites{UserID: true}
+		filter := buildSubsFilter(query)
+		subs, err := rt.base.Submissions(r.Context(), filter, true, user.UserBrief(r))
+		if err != nil {
+			rt.statusPage(w, r, 500, "Couldn't fetch submissions")
+			return
+		}
+		numPages := (subs.Count + 49) / 50
+
+		rt.runTempl(w, r, parsedTempl, &ProfileParams{
+			ContentUser: userFull,
+			SubViewer: submissions.SubsViewer(submissions.SubsViewerParams{
+				Submissions: subs,
+				Query:       query,
+				NumPages:    numPages,
+				Overwrites:  overwrites,
+				Languages:   rt.base.EnabledLanguages(),
+				IsAdmin:     user.UserBrief(r) != nil && user.UserBrief(r).IsAdmin(),
+			}),
+
+			Page: "submissions",
+		})
+	}
+}
+
+func (rt *Web) userSettings() http.HandlerFunc {
+	parsedTempl := rt.parse("user/settings.html", "user/topbar.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		rt.runTempl(w, r, parsedTempl, &ProfileParams{
+			ContentUser: user.UserFull(r),
+
+			Page: "settings",
+		})
 	}
 }
 

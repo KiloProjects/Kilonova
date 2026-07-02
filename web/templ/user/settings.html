@@ -1,6 +1,10 @@
 {{ define "title" }}{{getText "settings"}}{{ end }}
 {{ define "content" }}
 
+
+{{template "topbar.html" .}}
+
+	<div class="segment-panel">
 <h1> {{getText "settingsHeader"}} </h1>
 <div class="segment-panel">
 	<h2> {{getText "updateBio"}} </h2>
@@ -160,5 +164,5 @@ document.getElementById("avatar_change_form").addEventListener("submit", updateA
 document.getElementById("pwd_change_form").addEventListener("submit", updatePassword)
 document.getElementById("email_change_form").addEventListener("submit", updateEmail)
 </script>
-
+	</div>
 {{end}}

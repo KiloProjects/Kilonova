@@ -1,0 +1,14 @@
+{{ define "title" }} {{getText "title.user_past_submissions" .ContentUser.Name}} {{ end }}
+
+{{ define "head" }}
+	<meta name="robots" content="none">
+{{ end }}
+
+{{ define "content" }}
+
+    {{ template "topbar.html" . }}
+
+    {{  renderComponent .SubViewer }}
+
+
+{{ end }}

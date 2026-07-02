@@ -24,12 +24,15 @@ func (s *BaseAPI) NewCaptchaID() string {
 }
 
 func (s *BaseAPI) MustSolveCaptcha(ctx context.Context, ip *netip.Addr) bool {
-	if !flags.CaptchaEnabled.Value() {
+	if !s.CaptchaEnabled() {
 		return false
 	}
 	if ip == nil {
 		slog.WarnContext(ctx, "nil ip given to MustSolveCaptcha")
 		return true // Err on the side of caution
+	}
+	if flags.CaptchaTriggerCount.Value() <= 0 {
+		return true
 	}
 	//nolint:staticcheck
 	cnt, err := s.userRepo.CountSignups(ctx, *ip, time.Now().Add(-10*time.Minute))

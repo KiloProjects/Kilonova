@@ -264,7 +264,7 @@ func sortIndicator(q SubsViewerQuery, ordering string) templ.Component {
 			var templ_7745c5c3_Var2 string
 			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(" ")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 236, Col: 6}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 236, Col: 7}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 			if templ_7745c5c3_Err != nil {
@@ -278,7 +278,7 @@ func sortIndicator(q SubsViewerQuery, ordering string) templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(" ")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 238, Col: 6}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 238, Col: 7}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -292,7 +292,7 @@ func sortIndicator(q SubsViewerQuery, ordering string) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(" ")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 240, Col: 6}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 240, Col: 7}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -553,14 +553,14 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</span><script>\n\t\t\t\t\t\t\tdocument.getElementById(\"accepted_only\").addEventListener(\"change\", e => {\n\t\t\t\t\t\t\t\tif(e.target.checked) {\n\t\t\t\t\t\t\t\t\tdocument.getElementById(\"sub_status\").value = \"finished\"\n\t\t\t\t\t\t\t\t\tdocument.getElementById(\"sub_score\").value = \"100\"\n\t\t\t\t\t\t\t\t} else {\n\t                                document.getElementById(\"sub_status\").value = \"\"\n\t                                document.getElementById(\"sub_score\").value = \"\"\n\t                            }\n\t                            document.getElementById(\"sub-filters\").submit()\n\t\t\t\t\t\t\t})\n\t\t\t\t\t\t</script></label> <details class=\"block mb-2\"><summary class=\"form-label\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</span><script>\n\t\t\t\t\t\t\tdocument\n\t\t\t\t\t\t\t\t.getElementById(\"accepted_only\")\n\t\t\t\t\t\t\t\t.addEventListener(\"change\", (e) => {\n\t\t\t\t\t\t\t\t\tif (e.target.checked) {\n\t\t\t\t\t\t\t\t\t\tdocument.getElementById(\"sub_status\").value = \"finished\";\n\t\t\t\t\t\t\t\t\t\tdocument.getElementById(\"sub_score\").value = \"100\";\n\t\t\t\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t\t\t\tdocument.getElementById(\"sub_status\").value = \"\";\n\t\t\t\t\t\t\t\t\t\tdocument.getElementById(\"sub_score\").value = \"\";\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t\tdocument.getElementById(\"sub-filters\").submit();\n\t\t\t\t\t\t\t\t});\n\t\t\t\t\t\t</script></label> <details class=\"block mb-2\"><summary class=\"form-label\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "advancedOptions"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 302, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 304, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
@@ -573,7 +573,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 		var templ_7745c5c3_Var19 string
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "status"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 304, Col: 50}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 306, Col: 50}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
@@ -592,7 +592,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var20 string
 				templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.ResolveAttributeValue(s)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 309, Col: 27}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 311, Col: 27}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20)
 				if templ_7745c5c3_Err != nil {
@@ -605,7 +605,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var21 string
 				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, s))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 309, Col: 50}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 311, Col: 50}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 				if templ_7745c5c3_Err != nil {
@@ -623,7 +623,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var22 string
 				templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.ResolveAttributeValue(s)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 311, Col: 27}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 313, Col: 27}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var22)
 				if templ_7745c5c3_Err != nil {
@@ -636,7 +636,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var23 string
 				templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, s))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 311, Col: 41}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 313, Col: 41}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 				if templ_7745c5c3_Err != nil {
@@ -660,7 +660,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var24 string
 			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "userID"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 318, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 320, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 			if templ_7745c5c3_Err != nil {
@@ -678,7 +678,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var25 string
 				templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(*params.Query.UserID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 325, Col: 52}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 327, Col: 52}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var25)
 				if templ_7745c5c3_Err != nil {
@@ -702,7 +702,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var26 string
 			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "problemID"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 332, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 334, Col: 54}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 			if templ_7745c5c3_Err != nil {
@@ -720,7 +720,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var27 string
 				templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(*params.Query.ProblemID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 339, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 341, Col: 55}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var27)
 				if templ_7745c5c3_Err != nil {
@@ -743,7 +743,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 		var templ_7745c5c3_Var28 string
 		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "problemListID"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 345, Col: 57}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 347, Col: 57}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 		if templ_7745c5c3_Err != nil {
@@ -761,7 +761,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var29 string
 			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(*params.Query.ProblemListID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 352, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 354, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var29)
 			if templ_7745c5c3_Err != nil {
@@ -784,7 +784,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var30 string
 			templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "contestID"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 358, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 360, Col: 54}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 			if templ_7745c5c3_Err != nil {
@@ -802,7 +802,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var31 string
 				templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.ResolveAttributeValue(strconv.Itoa(*params.Query.ContestID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 365, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 367, Col: 55}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var31)
 				if templ_7745c5c3_Err != nil {
@@ -825,7 +825,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 		var templ_7745c5c3_Var32 string
 		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "score"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 371, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 373, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 		if templ_7745c5c3_Err != nil {
@@ -843,7 +843,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var33 string
 			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.ResolveAttributeValue(params.Query.Score.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 381, Col: 44}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 383, Col: 44}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var33)
 			if templ_7745c5c3_Err != nil {
@@ -861,7 +861,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 		var templ_7745c5c3_Var34 string
 		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "compileErr"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 386, Col: 54}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 388, Col: 54}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 		if templ_7745c5c3_Err != nil {
@@ -879,7 +879,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var35 string
 			templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "yes"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 390, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 392, Col: 54}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 			if templ_7745c5c3_Err != nil {
@@ -897,7 +897,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var36 string
 			templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "yes"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 392, Col: 45}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 394, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 			if templ_7745c5c3_Err != nil {
@@ -916,7 +916,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var37 string
 			templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "no"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 395, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 397, Col: 54}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 			if templ_7745c5c3_Err != nil {
@@ -934,7 +934,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var38 string
 			templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "no"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 397, Col: 45}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 399, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 			if templ_7745c5c3_Err != nil {
@@ -952,7 +952,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 		var templ_7745c5c3_Var39 string
 		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "fetch"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 402, Col: 75}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 404, Col: 75}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 		if templ_7745c5c3_Err != nil {
@@ -962,7 +962,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templ.RenderScriptItems(ctx, templ_7745c5c3_Buffer, copyQueryJS())
+		templ_7745c5c3_Err = templ.RenderScriptItems(ctx, templ_7745c5c3_Buffer, templ.JSFuncCall("copyQuery"))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -970,7 +970,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var40 templ.ComponentScript = copyQueryJS()
+		var templ_7745c5c3_Var40 templ.ComponentScript = templ.JSFuncCall("copyQuery")
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var40.Call)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -982,7 +982,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 		var templ_7745c5c3_Var41 string
 		templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "filterLink"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 403, Col: 97}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 405, Col: 113}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 		if templ_7745c5c3_Err != nil {
@@ -1000,7 +1000,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var42 templ.SafeURL
 			templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/assets/submissions/export" + buildQueryURL(params.Query, nil)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 405, Col: 102}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 407, Col: 102}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 			if templ_7745c5c3_Err != nil {
@@ -1013,7 +1013,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var43 string
 			templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "exportSubs"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 405, Col: 127}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 407, Col: 127}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 			if templ_7745c5c3_Err != nil {
@@ -1036,7 +1036,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var44 string
 			templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(params.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 412, Col: 22}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 414, Col: 22}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 			if templ_7745c5c3_Err != nil {
@@ -1054,7 +1054,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 		var templ_7745c5c3_Var45 string
 		templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(rezStr(ctx, params.Submissions.Count, params.Submissions.Truncated))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 414, Col: 97}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 416, Col: 97}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 		if templ_7745c5c3_Err != nil {
@@ -1086,7 +1086,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var46 string
 				templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "problemSingle"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 425, Col: 33}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 427, Col: 33}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 				if templ_7745c5c3_Err != nil {
@@ -1099,7 +1099,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var47 templ.SafeURL
 				templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/problems/%d", p.ID)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 425, Col: 90}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 427, Col: 90}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 				if templ_7745c5c3_Err != nil {
@@ -1112,7 +1112,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var48 string
 				templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(p.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 425, Col: 101}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 427, Col: 101}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 				if templ_7745c5c3_Err != nil {
@@ -1132,7 +1132,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var49 string
 			templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "id"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 434, Col: 73}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 436, Col: 73}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 			if templ_7745c5c3_Err != nil {
@@ -1145,7 +1145,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var50 string
 			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "author"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 435, Col: 42}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 437, Col: 42}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 			if templ_7745c5c3_Err != nil {
@@ -1158,7 +1158,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var51 templ.SafeURL
 			templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(buildSortURL(params.Query, "id")))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 437, Col: 84}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 439, Col: 84}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 			if templ_7745c5c3_Err != nil {
@@ -1171,7 +1171,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var52 string
 			templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "uploadDate"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 438, Col: 32}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 440, Col: 32}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
 			if templ_7745c5c3_Err != nil {
@@ -1193,7 +1193,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var53 string
 				templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "problemSingle"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 442, Col: 50}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 444, Col: 50}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 				if templ_7745c5c3_Err != nil {
@@ -1211,7 +1211,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var54 templ.SafeURL
 				templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(buildSortURL(params.Query, "code_size")))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 445, Col: 92}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 447, Col: 92}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 				if templ_7745c5c3_Err != nil {
@@ -1224,7 +1224,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var55 string
 				templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "codeSize"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 446, Col: 31}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 448, Col: 31}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 				if templ_7745c5c3_Err != nil {
@@ -1246,7 +1246,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var56 templ.SafeURL
 			templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(buildSortURL(params.Query, "max_time")))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 451, Col: 90}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 453, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 			if templ_7745c5c3_Err != nil {
@@ -1259,7 +1259,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var57 string
 			templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "time"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 452, Col: 26}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 454, Col: 26}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 			if templ_7745c5c3_Err != nil {
@@ -1276,7 +1276,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var58 templ.SafeURL
 			templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(buildSortURL(params.Query, "max_memory")))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 456, Col: 92}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 458, Col: 92}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 			if templ_7745c5c3_Err != nil {
@@ -1289,7 +1289,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var59 string
 			templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "memory"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 457, Col: 28}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 459, Col: 28}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 			if templ_7745c5c3_Err != nil {
@@ -1306,7 +1306,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var60 templ.SafeURL
 			templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(buildSortURL(params.Query, "score")))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 461, Col: 87}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 463, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 			if templ_7745c5c3_Err != nil {
@@ -1319,7 +1319,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var61 string
 			templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "status"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 462, Col: 28}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 464, Col: 28}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
 			if templ_7745c5c3_Err != nil {
@@ -1341,7 +1341,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var62 string
 				templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(sub.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 470, Col: 75}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 472, Col: 75}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
 				if templ_7745c5c3_Err != nil {
@@ -1359,7 +1359,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 					var templ_7745c5c3_Var63 templ.SafeURL
 					templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/profile/%s", user.Name)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 473, Col: 69}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 475, Col: 69}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 					if templ_7745c5c3_Err != nil {
@@ -1372,7 +1372,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 					var templ_7745c5c3_Var64 string
 					templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(user.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 473, Col: 83}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 475, Col: 83}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 					if templ_7745c5c3_Err != nil {
@@ -1395,7 +1395,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var65 string
 				templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(formatTime(sub.CreatedAt))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 478, Col: 70}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 480, Col: 70}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 				if templ_7745c5c3_Err != nil {
@@ -1418,7 +1418,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 						var templ_7745c5c3_Var66 templ.SafeURL
 						templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(contestProblemURL(sub.ContestID, prob.ID)))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 482, Col: 74}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 484, Col: 74}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var66))
 						if templ_7745c5c3_Err != nil {
@@ -1431,7 +1431,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 						var templ_7745c5c3_Var67 string
 						templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinStringErrs(prob.Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 482, Col: 88}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 484, Col: 88}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
 						if templ_7745c5c3_Err != nil {
@@ -1464,7 +1464,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 						var templ_7745c5c3_Var68 string
 						templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.JoinStringErrs(sizeFormatter(sub.CodeSize))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 490, Col: 47}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 492, Col: 47}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var68))
 						if templ_7745c5c3_Err != nil {
@@ -1498,7 +1498,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 					var templ_7745c5c3_Var69 string
 					templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%.0fms", math.Floor(sub.MaxTime*1000)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 500, Col: 64}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 502, Col: 64}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var69))
 					if templ_7745c5c3_Err != nil {
@@ -1518,7 +1518,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 					var templ_7745c5c3_Var70 string
 					templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.JoinStringErrs(sizeFormatter(sub.MaxMemory * 1024))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 507, Col: 48}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 509, Col: 48}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var70))
 					if templ_7745c5c3_Err != nil {
@@ -1532,7 +1532,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var71 string
 				templ_7745c5c3_Var71, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(statusStyle(sub))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 510, Col: 57}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 512, Col: 57}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
 				if templ_7745c5c3_Err != nil {
@@ -1545,7 +1545,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var72 templ.SafeURL
 				templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/submissions/%d", sub.ID)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 511, Col: 69}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 513, Col: 69}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 				if templ_7745c5c3_Err != nil {
@@ -1558,7 +1558,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				var templ_7745c5c3_Var73 string
 				templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.JoinStringErrs(submissionStatus(ctx, sub, params.Submissions.Problems[sub.ProblemID]))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 511, Col: 144}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 513, Col: 144}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var73))
 				if templ_7745c5c3_Err != nil {
@@ -1581,7 +1581,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			var templ_7745c5c3_Var74 string
 			templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.JoinStringErrs(T(ctx, "noSubFound"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 519, Col: 95}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 521, Col: 95}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var74))
 			if templ_7745c5c3_Err != nil {
@@ -1592,18 +1592,12 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "</div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "</div><script>\n\t\t\tfunction copyQuery() {\n\t\t\t\tnavigator.clipboard\n\t\t\t\t\t.writeText(\n\t\t\t\t\t\twindow.location.origin +\n\t\t\t\t\t\t\twindow.location.pathname +\n\t\t\t\t\t\t\twindow.location.search,\n\t\t\t\t\t)\n\t\t\t\t\t.then(function () {\n\t\t\t\t\t\tbundled.createToast({\n\t\t\t\t\t\t\tstatus: \"success\",\n\t\t\t\t\t\t\ttitle: bundled.getText(\"copied\"),\n\t\t\t\t\t\t});\n\t\t\t\t\t})\n\t\t\t\t\t.catch(function () {\n\t\t\t\t\t\tbundled.createToast({\n\t\t\t\t\t\t\tstatus: \"error\",\n\t\t\t\t\t\t\ttitle: bundled.getText(\"notCopied\"),\n\t\t\t\t\t\t});\n\t\t\t\t\t});\n\t\t\t}\n\t\t</script></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		return nil
 	})
-}
-
-func copyQueryJS() templ.ComponentScript {
-	return templ.ComponentScript{
-		Call: templ.SafeScript("navigator.clipboard.writeText(window.location.origin+window.location.pathname+window.location.search).then(function(){bundled.createToast({status:'success',title:bundled.getText('copied')})}).catch(function(){bundled.createToast({status:'error',title:bundled.getText('notCopied')})})"),
-	}
 }
 
 var _ = templruntime.GeneratedTemplate

@@ -1,0 +1,44 @@
+
+<div class="segment-panel">
+	<img class="rounded-lg float-right" width="128" height="128" src="/profile/{{.ContentUser.Name}}/avatar?s=128" alt="{{getText `profilePic`}} {{.ContentUser.Name}}"/>
+	<h1>{{if isAdmin}} <span class="tag rounded-lg font-semibold badge-blue">#{{.ContentUser.ID}}</span> {{end}} {{if .ContentUser.DisplayName}} {{.ContentUser.DisplayName}} ({{.ContentUser.Name}}) {{else}} {{.ContentUser.Name}} {{ end }}</h1>
+	<p>{{getText "created_at"}}: <server-timestamp timestamp="{{.ContentUser.CreatedAt.UnixMilli}}"></server-timestamp></p>
+    {{ if .ContentUser.Generated }}
+		<p>!!!{{getText "generated_acc"}}</p>
+    {{ end }}
+    {{ if authed -}} {{if (or isAdmin (eq authedUser.ID .ContentUser.ID)) -}}
+		<p>{{getText "email"}}: {{.ContentUser.Email}}
+			({{getText "email.verified"}}?
+            {{ if .ContentUser.VerifiedEmail -}}
+            {{getText "yes"}}
+        {{- else -}}
+            {{getText "no"}} | <a href="#" onclick="resendEmail()">{{getText "resend"}}</a>
+        {{- end -}})
+		</p>
+    {{- end -}} {{ end -}}
+	<script>
+        async function resendEmail() {
+            bundled.apiToast(await bundled.postCall('/user/resendEmail'))
+        }
+	</script>
+
+	<div style="clear: both;"></div>
+	<nav id="topbar_wrapper" class="mt-1">
+		<a class="p-1 {{if (eq .Page `overview`)}} topbar-selected {{end}}" href="/profile/{{.ContentUser.Name}}">
+			{{getText "profile_nav"}}
+		</a>
+		<div class="topbar-separator"></div>
+		<a class="p-1 {{if (eq .Page `submissions`)}} topbar-selected {{end}}" href="/profile/{{.ContentUser.Name}}/submissions">
+            {{getText "submissions"}}
+		</a>
+		{{if authed}}
+			{{if eq authedUser.ID .ContentUser.ID}}
+			<div class="topbar-separator"></div>
+			<a class="p-1 {{if (eq .Page `settings`)}} topbar-selected {{end}}" href="/settings">
+	            {{getText "settings"}}
+			</a>
+			{{end}}
+		{{end}}
+	</nav>
+
+</div>

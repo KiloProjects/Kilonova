@@ -242,9 +242,13 @@ ro = "Submisii pentru"
 en = "Upload code | Problem #%d: %s"
 ro = "Încărcare cod | Problema #%d: %s"
 
-[title.past_submissions]
+[title.problem_past_submissions]
 en = "Past submissions | Problem #%d: %s"
 ro = "Submisii anterioare | Problema #%d: %s"
+
+[title.user_past_submissions]
+en = "Past submissions | Problem %s"
+ro = "Submisii anterioare | Problema %s"
 
 [title.problem_archive]
 en = "Download problem archive | Problem #%d: %s"
@@ -3249,3 +3253,7 @@ ro = "Afișare Cod QR"
 [request_review]
 en = "Request publish review"
 ro = "Cere review publicare"
+
+[profile_nav]
+en = "Profile"
+ro = "Profil"

@@ -193,9 +193,10 @@ func (rt *Web) Handler() http.Handler {
 		r.With(rt.mustBeAuthed).Get("/profile/linked", rt.selfLinkStatus())
 		r.With(rt.mustBeAuthed).Get("/profile/sessions", rt.selfSessions())
 		r.Get("/profile/{user}", rt.profile())
+		r.Get("/profile/{user}/submissions", rt.userSubmissions())
 		r.With(rt.mustBeAuthed).Get("/profile/{user}/linked", rt.linkStatus())
 		r.With(rt.mustBeAuthed).Get("/profile/{user}/sessions", rt.userSessions())
-		r.With(rt.mustBeAuthed).Get("/settings", rt.justRender("settings.html"))
+		r.With(rt.mustBeAuthed).Get("/settings", rt.userSettings())
 		r.With(rt.checkFlag(flags.DonationsEnabled)).Get("/donate", rt.donationPage())
 		r.Get("/grader", rt.graderInfo())
 
