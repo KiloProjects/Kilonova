@@ -326,38 +326,36 @@ func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, bas
 				}
 			}
 
-			// TODO: Round up and make a toSubtract instead of toAdd
-			// We'd like test scores to be in ascending order instead of descending
-			// Also, totalScore should also subtract default points when autofilling
+			// TODO: totalScore should also subtract default points when autofilling
 
-			perTest := totalScore.Div(n).RoundDown(precision)
-			toAdd := decimal.Zero
-			dif := totalScore.Sub(perTest.Mul(n))
+			// Round up and subtract the excess from the first tests,
+			// so scores end up in ascending order
+			perTest := totalScore.Div(n).RoundUp(precision)
+			toSubtract := decimal.Zero
+			dif := perTest.Mul(n).Sub(totalScore)
 			if !dif.IsZero() {
 				// If not zero, we need to compensate on some tests
 				// But keep the delta <= 1.0 points
-				// totalScore > perTest*n, since we rounded down
+				// perTest*n > totalScore, since we rounded up
 
-				// divide the difference by its ceiling to get the delta to insert to scores
+				// divide the difference by its ceiling to get the delta to subtract from scores
 				// we'll handle with rounding approximations later.
-				toAdd = dif.DivRound(dif.Ceil(), precision)
+				toSubtract = dif.DivRound(dif.Ceil(), precision)
 			}
-			k := 0
 
 			for i := range tests {
 				if tests[i].Score.Equal(decimal.NewFromInt(-1)) {
 					tests[i].Score = perTest
 					if !dif.IsZero() {
-						tests[i].Score = tests[i].Score.Add(toAdd)
-						dif = dif.Sub(toAdd)
-						if !dif.IsZero() && dif.Abs().LessThan(toAdd) {
+						tests[i].Score = tests[i].Score.Sub(toSubtract)
+						dif = dif.Sub(toSubtract)
+						if !dif.IsZero() && dif.Abs().LessThan(toSubtract) {
 							// Pour the remaining difference here
 							// This should fix the roundings
-							tests[i].Score = tests[i].Score.Add(dif)
-							toAdd = decimal.Zero
+							tests[i].Score = tests[i].Score.Sub(dif)
+							toSubtract = decimal.Zero
 						}
 					}
-					k++
 				}
 			}
 		}
