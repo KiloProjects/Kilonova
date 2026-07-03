@@ -133,17 +133,7 @@
 
             ...getCaptchaData(),
         }).toString()
-        let a = document.createElement("a")
-        a.href = url.toString()
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-
-        // The CAPTCHA is single-use, re-arm it for the next download
-        if (typeof reloadCaptcha === "function") {
-            document.getElementById("captcha_response").value = ""
-            reloadCaptcha()
-        }
+        window.location.assign(url.toString())
     }
     document.getElementById("problemArchiveForm").addEventListener("submit", startArchiveDownload)
 </script>

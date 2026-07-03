@@ -56,6 +56,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/lmittmann/tint v1.1.3
 	github.com/mattn/go-isatty v0.0.22
+	github.com/mileusna/useragent v1.3.5
 	github.com/openai/openai-go/v3 v3.37.0
 	github.com/oschwald/maxminddb-golang/v2 v2.3.0
 	github.com/prometheus/client_golang v1.23.2
@@ -139,7 +140,6 @@ require (
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mileusna/useragent v1.3.5 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/moby/api v1.54.2 // indirect
 	github.com/moby/moby/client v0.4.1 // indirect

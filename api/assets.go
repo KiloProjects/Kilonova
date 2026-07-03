@@ -102,6 +102,7 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Cache-Control", `public, max-age=3600`)
+	w.Header().Set("Content-Disposition", "attachment")
 
 	// If markdown file and client asks for HTML format, render the markdown
 	// TODO: Extract from cache if able to

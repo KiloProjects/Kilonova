@@ -58,7 +58,7 @@ document.getElementById("variant-select")?.addEventListener("change", e => {
 });
 (() => {
     for (let el of document.querySelectorAll("[id^='att-name-']")) {
-        el.innerHTML = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerText}`
+        el.innerHTML = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerHTML}`
     }
     for (let el of document.querySelectorAll("[id^='att-size-']")) {
         el.innerText = bundled.sizeFormatter(Number(el.innerText))

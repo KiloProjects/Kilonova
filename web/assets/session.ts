@@ -5,8 +5,8 @@ import { languages } from "./langs";
 
 export function setSession(sessionID: string) {
 	const checkTimestamp = dayjs().add(10, "day").unix() * 1000;
-	cookie.set("kn-session-check-date", checkTimestamp.toString(), { expires: 29, sameSite: "lax" });
-	cookie.set("kn-sessionid", sessionID, { expires: 29, sameSite: "lax" });
+	cookie.set("kn-session-check-date", checkTimestamp.toString(), { expires: 29, sameSite: "lax", secure: true });
+	cookie.set("kn-sessionid", sessionID, { expires: 29, sameSite: "lax", secure: true });
 }
 
 function getSession(): string {
@@ -21,12 +21,12 @@ async function extendSession() {
 
 	const checkTimestamp = dayjs().add(10, "day").unix() * 1000;
 	// Refresh session cookie expiration
-	cookie.set("kn-sessionid", getSession(), { expires: 29, sameSite: "lax" });
-	cookie.set("kn-session-check-date", checkTimestamp.toString(), { expires: 29, sameSite: "lax" });
+	cookie.set("kn-sessionid", getSession(), { expires: 29, sameSite: "lax", secure: true });
+	cookie.set("kn-session-check-date", checkTimestamp.toString(), { expires: 29, sameSite: "lax", secure: true });
 }
 
 export function setLanguage(lang: "en" | "ro") {
-	cookie.set("kn-lang", lang, { expires: 1000, sameSite: "lax" });
+	cookie.set("kn-lang", lang, { expires: 1000, sameSite: "lax", secure: true });
 	window.location.reload();
 }
 
@@ -35,7 +35,7 @@ export function clearLanguageCookie() {
 }
 
 export function setSubmitStyle(style: "code" | "file") {
-	cookie.set("kn-sub-style", style, { expires: 1000, sameSite: "lax" });
+	cookie.set("kn-sub-style", style, { expires: 1000, sameSite: "lax", secure: true });
 }
 
 export function getSubmitStyle(): "code" | "file" {
@@ -61,7 +61,7 @@ export function isDarkMode() {
 }
 
 export function setTheme(theme: "light" | "dark") {
-	cookie.set("kn-theme", theme, { expires: 1000, sameSite: "lax" });
+	cookie.set("kn-theme", theme, { expires: 1000, sameSite: "lax", secure: true });
 	document.documentElement.classList.toggle("dark", theme === "dark");
 	document.documentElement.classList.toggle("light", theme !== "dark");
 
@@ -131,5 +131,5 @@ export function setCodeLangPreference(lang: string) {
 		console.warn("Skipping invalid lang preference", lang);
 		return;
 	}
-	cookie.set("kn-lang-pref", lang, { expires: 1000, sameSite: "lax" });
+	cookie.set("kn-lang-pref", lang, { expires: 1000, sameSite: "lax", secure: true });
 }
