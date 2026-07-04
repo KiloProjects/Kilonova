@@ -177,10 +177,6 @@ func rezStr(ctx context.Context, count int, truncated bool) string {
 	return fmt.Sprintf("%d %s", count, tutils.T(ctx, "manyResults"))
 }
 
-func formatTime(t time.Time) string {
-	return t.Format("02/01/2006 15:04")
-}
-
 func submissionStatus(ctx context.Context, sub *kilonova.Submission, problem *kilonova.Problem) string {
 	if sub.Status == kilonova.StatusFinished {
 		if sub.SubmissionType == kilonova.EvalTypeClassic {
@@ -477,7 +473,7 @@ templ SubsViewer(params SubsViewerParams) {
 											-
 										}
 									</td>
-									<td class="text-center px-2 py-1">{ formatTime(sub.CreatedAt) }</td>
+									<td class="text-center px-2 py-1"><server-timestamp timestamp={ sub.CreatedAt.UnixMilli() }></server-timestamp></td>
 									if params.Query.ProblemID == nil || (params.Query.ProblemID != nil && *params.Query.ProblemID == 0) {
 										<td class="text-center px-2 py-1">
 											if prob, ok := params.Submissions.Problems[sub.ProblemID]; ok {
