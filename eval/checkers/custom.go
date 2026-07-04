@@ -67,13 +67,13 @@ func (c *customChecker) CodeFilename() string {
 // Prepare compiles the checker for the submission
 func (c *customChecker) Prepare(ctx context.Context) (string, error) {
 	var shouldCompile bool
-	stat, err := c.store.Checkers().Stat(fmt.Sprintf("%d.bin", c.pb.ID))
+	modtime, err := c.store.Checkers().Modtime(fmt.Sprintf("%d.bin", c.pb.ID))
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
 			slog.WarnContext(ctx, "Checker stat error", slog.Any("err", err))
 		}
 		shouldCompile = true
-	} else if stat.ModTime().Before(c.lastUpdatedAt) {
+	} else if modtime.Before(c.lastUpdatedAt) {
 		shouldCompile = true
 	}
 
@@ -174,7 +174,7 @@ func initRequest(lang language.GraderLang, job *customCheckerInput) *eval.Box2Re
 			lang.CompiledName(job.c.filename): {
 				Bucket:   datastore.BucketTypeCheckers,
 				Filename: fmt.Sprintf("%d.bin", job.c.pb.ID),
-				Mode:     0000,
+				Mode:     0777,
 			},
 		},
 		InputByteFiles: map[string]*eval.ByteFile{

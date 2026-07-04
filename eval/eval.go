@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/fs"
 
+	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/eval/language"
 )
 
@@ -17,11 +18,19 @@ type Bucket interface {
 	WriteFile(name string, r io.Reader, mode fs.FileMode) error
 }
 
+type Store interface {
+	Reader(bucketType datastore.BucketType, name string) (io.ReadCloser, error)
+	Mode(bucketType datastore.BucketType, name string) (fs.FileMode, error)
+	WriteFile(bucketType datastore.BucketType, name string, r io.Reader, mode fs.FileMode) error
+}
+
+type WriteFilter = func(name string, r io.Reader, mode fs.FileMode) error
+
 type Sandbox interface {
 	// ReadFile reads contents of path from sandbox and pipes them to the given writer
 	ReadFile(path string, w io.Writer) error
 	// SaveFile reads contents of path from sandbox and saves them in the given bucket by calling WriteFile
-	SaveFile(path string, bucket Bucket, filename string, mode fs.FileMode) error
+	SaveFile(path string, wf WriteFilter, filename string, mode fs.FileMode) error
 	// WriteFile saves the io.Reader into that file in the box
 	WriteFile(path string, r io.Reader, mode fs.FileMode) error
 

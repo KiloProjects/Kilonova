@@ -22,14 +22,14 @@ func readFile(p string, w io.Writer) error {
 	return err
 }
 
-func saveFile(p string, bucket eval.Bucket, filename string, mode fs.FileMode) error {
+func saveFile(p string, wf eval.WriteFilter, filename string, mode fs.FileMode) error {
 	f, err := os.Open(p)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	return bucket.WriteFile(filename, f, mode)
+	return wf(filename, f, mode)
 }
 
 func writeFile(p string, r io.Reader, mode fs.FileMode) error {

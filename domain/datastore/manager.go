@@ -3,6 +3,7 @@ package datastore
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/spf13/afero"
@@ -36,44 +37,38 @@ var (
 
 			MaxSize: 2 * 1024 * 1024 * 1024, // 2GB
 
-			IsPersistent:   false,
-			UseCompression: false,
+			IsPersistent: false,
 		},
 		{
 			Name:    BucketTypeTests,
 			IsCache: false,
 
-			IsPersistent:   true,
-			UseCompression: true,
+			IsPersistent: true,
 		},
 		{
 			Name:    BucketTypeAttachments,
 			IsCache: true,
 
-			IsPersistent:   false,
-			UseCompression: false,
+			IsPersistent: false,
 		},
 		{
 			Name:    BucketTypeAvatars,
 			IsCache: true,
 
-			MaxTTL:         31 * 24 * time.Hour, // 31d
-			IsPersistent:   false,
-			UseCompression: false,
+			MaxTTL:       31 * 24 * time.Hour, // 31d
+			IsPersistent: false,
 		},
 		{
 			Name:    BucketTypeCheckers,
 			IsCache: true,
 
-			IsPersistent:   false,
-			UseCompression: false,
+			IsPersistent: false,
 		},
 		{
 			Name:    BucketTypeCompiles,
 			IsCache: false, // Well it kind of is but not really since it's cleaned up in the grader
 
-			IsPersistent:   false,
-			UseCompression: false,
+			IsPersistent: false,
 		},
 	}
 )
@@ -85,15 +80,15 @@ type bucketDef struct {
 	IsPersistent bool
 	MaxSize      int64
 	MaxTTL       time.Duration
-
-	UseCompression bool
 }
 
 type Bucket interface {
 	Persistent() bool
 	Cache() bool
 	Statistics(refresh bool) *BucketStats
-	Stat(name string) (fs.FileInfo, error)
+	Modtime(name string) (time.Time, error)
+	// Deprecated: TODO: Not rely on mode anymore
+	Mode(name string) (fs.FileMode, error)
 	WriteFile(name string, r io.Reader, mode fs.FileMode) error
 	Reader(name string) (io.ReadCloser, error)
 	ReadSeeker(name string) (io.ReadSeekCloser, error)
@@ -142,21 +137,37 @@ func (m *Manager) Get(bt BucketType) (Bucket, error) {
 	}
 }
 
-//func (m *Manager) MustGet(bt BucketType) *Bucket {
-//	bucket, err := m.Get(bt)
-//	if err != nil {
-//		slog.ErrorContext(context.Background(), "No bucket found", slog.Any("type", bt))
-//		panic("No bucket found")
-//	}
-//	return bucket
-//}
-
 func (m *Manager) GetAll() (buckets []Bucket) {
 	buckets = make([]Bucket, 0, len(m.buckets))
 	for _, val := range m.buckets {
 		buckets = append(buckets, val)
 	}
 	return
+}
+
+func (m *Manager) Reader(bucketType BucketType, name string) (io.ReadCloser, error) {
+	bucket, err := m.Get(bucketType)
+	if err != nil {
+		return nil, err
+	}
+	return bucket.Reader(name)
+}
+
+// Deprecated: No stat should be necessary anymore.
+func (m *Manager) Mode(bucketType BucketType, name string) (fs.FileMode, error) {
+	bucket, err := m.Get(bucketType)
+	if err != nil {
+		return 0, fmt.Errorf("error getting bucket: %w", err)
+	}
+	return bucket.Mode(name)
+}
+
+func (m *Manager) WriteFile(bucketType BucketType, name string, r io.Reader, mode fs.FileMode) error {
+	bucket, err := m.Get(bucketType)
+	if err != nil {
+		return err
+	}
+	return bucket.WriteFile(name, r, mode)
 }
 
 func New(rootFS afero.Fs) (*Manager, error) {
@@ -166,7 +177,7 @@ func New(rootFS afero.Fs) (*Manager, error) {
 	initialized = true
 	buckets := make(map[BucketType]Bucket)
 	for _, b := range bucketData {
-		bucket, err := newBucket(rootFS, string(b.Name), b.UseCompression, b.IsCache, b.IsPersistent, b.MaxSize, b.MaxTTL)
+		bucket, err := newBucket(rootFS, string(b.Name), b.IsCache, b.IsPersistent, b.MaxSize, b.MaxTTL)
 		if err != nil {
 			return nil, err
 		}

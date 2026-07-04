@@ -87,10 +87,10 @@ func (b *StupidSandbox) ReadFile(fpath string, w io.Writer) error {
 	return readFile(b.getFilePath(fpath), w)
 }
 
-func (b *StupidSandbox) SaveFile(fpath string, bucket eval.Bucket, filename string, mode fs.FileMode) error {
+func (b *StupidSandbox) SaveFile(fpath string, wf eval.WriteFilter, filename string, mode fs.FileMode) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return saveFile(b.getFilePath(fpath), bucket, filename, mode)
+	return saveFile(b.getFilePath(fpath), wf, filename, mode)
 }
 
 func (b *StupidSandbox) WriteFile(fpath string, r io.Reader, mode fs.FileMode) error {

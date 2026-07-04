@@ -153,9 +153,9 @@ func (mgr *BoxManager) getLangVersions(ctx context.Context) map[string]string {
 	mgr.languageVersions = make(map[string]string)
 	for name, lang := range mgr.supportedLanguages {
 		// disabled languages are not added to supportedLanguages
-		//if lang.Disabled {
+		// if lang.Disabled {
 		//	continue
-		//}
+		// }
 
 		ver, err := tasks.VersionTask(ctx, mgr, lang)
 		if err != nil {
@@ -469,14 +469,8 @@ func (mgr *BoxManager) setupSandbox(ctx context.Context, box eval.Sandbox, req *
 	}
 
 	for fpath, val := range req.InputBucketFiles {
-		bucket, err := mgr.store.Get(val.Bucket)
-		if err != nil {
-			slog.ErrorContext(ctx, "Error getting bucket", slog.Any("err", err))
-			continue
-		}
-
 		// Do not reset val.Mode here, since CopyInBox stats and sets the proper mode
-		if err := copyInBox(box, bucket, val.Filename, fpath, val.Mode); err != nil {
+		if err := copyInBox(box, mgr.store, val.Bucket, val.Filename, fpath, val.Mode); err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
 				slog.WarnContext(ctx, "Bucket file doesn't exist when copying in sandbox",
 					slog.Any("bucket", val.Bucket), slog.String("filename", val.Filename),
@@ -523,7 +517,7 @@ func (mgr *BoxManager) collectResponse(ctx context.Context, box eval.Sandbox, re
 			continue
 		}
 
-		if err := box.SaveFile(filePath, bucket, file.Filename, file.Mode); err != nil {
+		if err := box.SaveFile(filePath, bucket.WriteFile, file.Filename, file.Mode); err != nil {
 			slog.WarnContext(ctx, "Error saving box file", slog.Any("err", err), slog.String("path", filePath), slog.Any("bucket", file.Bucket))
 			return resp, err
 		}
@@ -538,19 +532,20 @@ func (mgr *BoxManager) collectResponse(ctx context.Context, box eval.Sandbox, re
 }
 
 // Copies in box an object from a bucket
-func copyInBox(b eval.Sandbox, bucket eval.Bucket, filename string, p2 string, mode fs.FileMode) error {
-	file, err := bucket.Reader(filename)
+func copyInBox(b eval.Sandbox, store eval.Store, bucket datastore.BucketType, filename string, p2 string, mode fs.FileMode) error {
+	file, err := store.Reader(bucket, filename)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
 	if mode == 0000 {
-		stat, err := bucket.Stat(filename)
+		slog.WarnContext(context.Background(), "File mode is 0000, getting mode from store. Will want to deprecate this.")
+		storeMode, err := store.Mode(bucket, filename)
 		if err != nil {
 			return err
 		}
-		mode = stat.Mode()
+		mode = storeMode
 	}
 
 	return b.WriteFile(p2, file, mode)

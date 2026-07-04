@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"github.com/klauspost/compress/zstd"
 	"github.com/spf13/afero"
 )
 
@@ -32,8 +31,6 @@ type localBucket struct {
 
 	maxSize int64         // Maximum size in bytes. Values < 1024 mean system is off
 	maxTTL  time.Duration // Maximum duration before emptying
-
-	useCompression bool
 
 	lastStatsMu sync.RWMutex
 	lastStats   *BucketStats
@@ -94,7 +91,7 @@ func (b *localBucket) init() error {
 	return b.rootFS.MkdirAll(b.name, 0755)
 }
 
-func (b *localBucket) Stat(name string) (fs.FileInfo, error) {
+func (b *localBucket) stat(name string) (fs.FileInfo, error) {
 	stat, err := b.rootFS.Stat(b.filePath(name) + ".zst")
 	if err == nil {
 		return stat, nil
@@ -114,34 +111,33 @@ func (b *localBucket) Stat(name string) (fs.FileInfo, error) {
 	return b.rootFS.Stat(b.filePath(name))
 }
 
+func (b *localBucket) Modtime(name string) (time.Time, error) {
+	stat, err := b.stat(name)
+	if err != nil {
+		return time.Now(), err
+	}
+	return stat.ModTime(), nil
+}
+
+func (b *localBucket) Mode(name string) (fs.FileMode, error) {
+	stat, err := b.stat(name)
+	if err != nil {
+		return 0, err
+	}
+	return stat.Mode(), nil
+}
+
 func (b *localBucket) WriteFile(name string, r io.Reader, mode fs.FileMode) error {
 	filename := b.filePath(name)
-	if b.useCompression {
-		filename += ".zst"
+	if err := b.rootFS.RemoveAll(filename + ".zst"); err != nil {
+		return err
 	}
 
 	f, err := b.rootFS.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
 	if err != nil {
 		return err
 	}
-	if !b.useCompression {
-		_, err = io.Copy(f, r)
-		if err1 := f.Close(); err1 != nil && err == nil {
-			err = err1
-		}
-		return err
-	}
-
-	zw, err := zstd.NewWriter(f, zstd.WithEncoderConcurrency(1))
-	if err != nil {
-		f.Close()
-		return err
-	}
-
-	_, err = io.Copy(zw, r)
-	if err1 := zw.Close(); err1 != nil && err == nil {
-		err = err1
-	}
+	_, err = io.Copy(f, r)
 	if err1 := f.Close(); err1 != nil && err == nil {
 		err = err1
 	}
@@ -324,7 +320,7 @@ func (b *localBucket) LogValue() slog.Value {
 	return slog.StringValue(b.name)
 }
 
-func newBucket(rootFS afero.Fs, name string, useCompression bool, cache bool, persistent bool, maxSize int64, maxTTL time.Duration) (*localBucket, error) {
+func newBucket(rootFS afero.Fs, name string, cache bool, persistent bool, maxSize int64, maxTTL time.Duration) (*localBucket, error) {
 	b := &localBucket{
 		rootFS:     rootFS,
 		name:       name,
@@ -332,8 +328,6 @@ func newBucket(rootFS afero.Fs, name string, useCompression bool, cache bool, pe
 		cache:      cache,
 		maxSize:    maxSize,
 		maxTTL:     maxTTL,
-
-		useCompression: useCompression,
 	}
 	return b, b.init()
 }

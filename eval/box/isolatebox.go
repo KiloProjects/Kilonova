@@ -45,7 +45,7 @@ func (b *IsolateBox) buildRunFlags(ctx context.Context, c *eval.RunConfig, metaF
 	res = append(res, "--box-id="+strconv.Itoa(b.boxID))
 
 	res = append(res, "--cg", "--processes")
-	//res = append(res, "--cg-timing")
+	// res = append(res, "--cg-timing")
 	for _, dir := range c.Directories {
 		if dir.Removes {
 			res = append(res, "--dir="+dir.In+"=")
@@ -142,10 +142,10 @@ func (b *IsolateBox) ReadFile(fpath string, w io.Writer) error {
 	return readFile(b.getFilePath(fpath), w)
 }
 
-func (b *IsolateBox) SaveFile(fpath string, bucket eval.Bucket, filename string, mode fs.FileMode) error {
+func (b *IsolateBox) SaveFile(fpath string, wf eval.WriteFilter, filename string, mode fs.FileMode) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return saveFile(b.getFilePath(fpath), bucket, filename, mode)
+	return saveFile(b.getFilePath(fpath), wf, filename, mode)
 }
 
 func (b *IsolateBox) GetID() int {

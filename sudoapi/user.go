@@ -511,15 +511,15 @@ func (s *BaseAPI) avatarFromBucket(filename string, maxLastMod time.Time) (io.Re
 	if err != nil {
 		return nil, time.Unix(0, 0), false, err
 	}
-	stat, err := s.avatarBucket.Stat(filename)
+	modtime, err := s.avatarBucket.Modtime(filename)
 	if err != nil {
 		f.Close()
 		return nil, time.Unix(0, 0), false, err
 	}
-	if stat.ModTime().Before(maxLastMod) {
-		return f, stat.ModTime(), false, nil
+	if modtime.Before(maxLastMod) {
+		return f, modtime, false, nil
 	}
-	return f, stat.ModTime(), true, nil
+	return f, modtime, true, nil
 }
 
 // if manager.GetGravatar errors out or is not valid, it fetches the gravatar from the web
