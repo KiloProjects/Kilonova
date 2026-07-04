@@ -41,7 +41,7 @@ func Navbar(viewAllSubs bool, reqPath string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header class=\"text-2xl bg-gray-100 dark:bg-gray-800 border-b-2 border-gr md:flex md:justify-between md:px-5 md:py-3 md:items-center\"><div class=\"flex items-center justify-between px-4 py-3 md:p-0\"><div class=\"inline-block\"><a class=\"roboto h-8 black-anchor\" href=\"/\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header class=\"segment-panel my-1 text-2xl md:flex md:justify-between md:px-5 md:py-3 md:items-center\"><div class=\"flex items-center justify-between px-4 py-3 md:p-0\"><div class=\"inline-block\"><a class=\"roboto h-8 black-anchor\" href=\"/\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

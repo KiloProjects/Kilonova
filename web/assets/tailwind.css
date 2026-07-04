@@ -210,7 +210,7 @@
 
 @utility c-container {
 	max-width: 98%;
-	@apply mx-auto min-h-screen mt-6;
+	@apply mx-auto min-h-screen my-2;
 	@media (min-width: 576px) {
 		& {
 			max-width: 97%;

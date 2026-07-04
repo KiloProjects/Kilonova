@@ -78,31 +78,6 @@ export class KNClient {
 		}
 	}
 
-	async getSubmissions(q: SubmissionQuery) {
-		let res = await this.request<Submissions>({
-			url: "/submissions/get",
-			method: "GET",
-			queryParams: {
-				ordering: typeof q.ordering !== "undefined" ? q.ordering : "id",
-				ascending: (typeof q.ordering !== "undefined" && q.ascending) || false,
-				user_id: typeof q.user_id !== "undefined" && q.user_id > 0 ? q.user_id : undefined,
-				problem_id: typeof q.problem_id !== "undefined" && q.problem_id > 0 ? q.problem_id : undefined,
-				problem_list_id: typeof q.problem_list_id !== "undefined" && q.problem_list_id > 0 ? q.problem_list_id : undefined,
-				contest_id: typeof q.contest_id !== "undefined" && q.contest_id > 0 ? q.contest_id : undefined,
-				status: q.status !== "" ? q.status : undefined,
-				score: typeof q.score !== "undefined" && q.score >= 0 ? q.score : undefined,
-				lang: typeof q.lang !== "undefined" && q.lang !== "" ? q.lang : undefined,
-				compile_error: q.compile_error,
-				offset: (q.page - 1) * 50,
-				limit: typeof q.limit !== "undefined" && q.limit > 0 ? q.limit : 50,
-			},
-		});
-		if (res.status === "error") {
-			throw new Error(res.data);
-		}
-		return res.data;
-	}
-
 	async getUser(id: number) {
 		let res = await this.request<UserBrief>({
 			url: `/user/byID/${id}`,

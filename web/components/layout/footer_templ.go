@@ -51,7 +51,7 @@ func Footer(prepareDuration time.Duration, renderStart time.Time, hashNamer Hash
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<footer class=\"w-full bg-gray-200 dark:bg-gray-800 py-2 mt-6\"><div class=\"c-container min-h-0 mx-auto\"><div class=\"grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mb-2 justify-between\"><div class=\"h-auto mb-2\"><div class=\"text-lg\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<footer class=\"segment-panel my-1\"><div class=\"min-h-0 mx-auto\"><div class=\"grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mb-2 justify-between\"><div class=\"h-auto mb-2\"><div class=\"text-lg\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -292,12 +292,12 @@ func Footer(prepareDuration time.Duration, renderStart time.Time, hashNamer Hash
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</div><ul><li><a class=\"black-anchor\" target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://github.com/AlexVasiluta\">Platform made with <i class=\"fas fa-fw fa-heart\"></i> by Alex Vasiluță </a></li><li class=\"black-span\">Problems generously uploaded by the Kilonova community</li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</div><ul><li class=\"pl-0\"><a class=\"black-anchor\" target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://github.com/AlexVasiluta\">Platform made with <i class=\"fas fa-fw fa-heart\"></i> by Alex Vasiluță </a></li><li class=\"black-span pl-0\">Problems generously uploaded by the Kilonova community</li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if flags.CCDisclaimer.Value() {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<li class=\"black-anchor\">Cu excepția cazurilor unde este specificat diferit, conținutul platformei este publicat sub licența <a rel=\"license\" href=\"https://creativecommons.org/licenses/by-nc-sa/4.0/\">CC BY-NC-SA 4.0</a>. Vedeți <a href=\"https://kilonova.ro/posts/creative-commons\">aici</a> mai multe detalii. <a rel=\"license\" href=\"https://creativecommons.org/licenses/by-nc-sa/4.0/\"><img alt=\"Creative Commons Licence\" style=\"border-width:0\" width=\"88\" height=\"31\" src=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<li class=\"black-anchor pl-0\">Cu excepția cazurilor unde este specificat diferit, conținutul platformei este publicat sub licența <a rel=\"license\" href=\"https://creativecommons.org/licenses/by-nc-sa/4.0/\">CC BY-NC-SA 4.0</a>. Vedeți <a href=\"https://kilonova.ro/posts/creative-commons\">aici</a> mai multe detalii. <a rel=\"license\" href=\"https://creativecommons.org/licenses/by-nc-sa/4.0/\"><img alt=\"Creative Commons Licence\" style=\"border-width:0\" width=\"88\" height=\"31\" src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
