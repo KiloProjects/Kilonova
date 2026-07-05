@@ -130,6 +130,5 @@ func makeGoodSandboxCommand(command []string, files []string) []string {
 		}
 	}
 
-	slog.WarnContext(context.Background(), "Did not replace any fields in command", slog.Any("command", command))
 	return slices.Clone(command)
 }
