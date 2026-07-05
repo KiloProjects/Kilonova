@@ -111,17 +111,24 @@ templ Navbar(viewAllSubs bool, reqPath string) {
 							</a>
 						}
 						<div class="dropdown-divider"></div>
-						<a class="dropdown-list-item" href={ templ.URL("/logout?back=" + reqPath) }>
-							<i class="ml-n2 fas fa-sign-out-alt fa-fw"></i> { T(ctx, "auth.logout") }
-						</a>
+						<form method="POST" action="/logout" class="dropdown-list-item">
+							<input type="hidden" name="back" value={ reqPath }/>
+							<button type="submit">
+								<i class="ml-n2 fas fa-sign-out-alt fa-fw"></i> { T(ctx, "auth.logout") }
+							</button>
+						</form>
 					</div>
 				</div>
 			}
 		</nav>
 	</header>
 	<script>
-    var navbar_mgr = new bundled.NavBarManager()
-    document.getElementById("theme_button").addEventListener("click", bundled.toggleTheme)
-    document.getElementById("theme_button_mobile").addEventListener("click", bundled.toggleTheme)
-    </script>
+		var navbar_mgr = new bundled.NavBarManager();
+		document
+			.getElementById("theme_button")
+			.addEventListener("click", bundled.toggleTheme);
+		document
+			.getElementById("theme_button_mobile")
+			.addEventListener("click", bundled.toggleTheme);
+	</script>
 }

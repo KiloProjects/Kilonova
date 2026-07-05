@@ -44,11 +44,11 @@ func (s *API) HandlerV2() http.Handler {
 		{URL: kilonova.HostURL().JoinPath("api/v2").String()},
 	}
 	humaConf.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
-		//"session": {
+		// "session": {
 		//	Type: "apiKey",
 		//	In:   "cookie",
 		//	Name: "kn-sessionid",
-		//},
+		// },
 		"apiKey": {
 			Type: "apiKey",
 			In:   "header",
@@ -410,7 +410,6 @@ func (s *API) HandlerV1() http.Handler {
 		r.Route("/{pblistID}", func(r chi.Router) {
 			r.Use(s.validateProblemListID)
 			r.Get("/", webWrapper(s.getProblemList))
-			r.Get("/complex", s.getComplexProblemList)
 
 			r.With(s.MustBeAuthed).Post("/update", s.updateProblemList)
 			r.With(s.MustBeAuthed).Post("/delete", s.deleteProblemList)

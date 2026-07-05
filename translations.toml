@@ -687,6 +687,10 @@ ro = "Logare"
 en = "Log Out"
 ro = "Log Out"
 
+[auth.confirm_logout]
+en = "Confirm log out"
+ro = "Confirmă delogare"
+
 [title.edit.problem]
 en = "Editing problem"
 ro = "Editare problemă"

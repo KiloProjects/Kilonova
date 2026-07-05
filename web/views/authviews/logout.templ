@@ -1,0 +1,19 @@
+package authviews
+
+import "github.com/KiloProjects/kilonova/web/tutils"
+
+var TC = tutils.TC
+
+templ ConfirmLogout(back string) {
+	@tutils.CenteredLayout() {
+		<form class="segment-panel" method="POST" action="/logout">
+			<h1 class="mb-4">
+				@TC("auth.confirm_logout")
+			</h1>
+			<input type="hidden" name="back" value={ back }/>
+			<button type="submit" class="btn btn-blue">
+				@TC("auth.logout")
+			</button>
+		</form>
+	}
+}

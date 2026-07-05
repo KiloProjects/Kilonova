@@ -26,6 +26,7 @@ import (
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/web/tutils"
 	"github.com/KiloProjects/kilonova/web/views/adminviews"
+	"github.com/KiloProjects/kilonova/web/views/authviews"
 	"github.com/KiloProjects/kilonova/web/views/modals"
 	"github.com/KiloProjects/kilonova/web/views/problems"
 	"github.com/KiloProjects/kilonova/web/views/submissions"
@@ -2406,6 +2407,14 @@ func (rt *Web) checkLockout() func(next http.Handler) http.Handler {
 	}
 }
 
+func (rt *Web) confirmLogout(w http.ResponseWriter, r *http.Request) {
+	rt.runLayout(w, r, &LayoutParams{
+		Title:   kilonova.GetText(util.Language(r), "auth.logout"),
+		Head:    utilviews.NoRobotsHead(),
+		Content: authviews.ConfirmLogout(r.FormValue("back")),
+	})
+}
+
 func (rt *Web) logout(w http.ResponseWriter, r *http.Request) {
 	emptyCookie := &http.Cookie{
 		Name:    "kn-sessionid",
@@ -2421,14 +2430,7 @@ func (rt *Web) logout(w http.ResponseWriter, r *http.Request) {
 	}
 	rt.base.RemoveSession(r.Context(), c.Value)
 
-	redirect := "/"
-	back := r.FormValue("back")
-	backURL, err := url.Parse(back)
-	if err == nil && backURL.Path != "" {
-		redirect = backURL.Path
-	}
-
-	http.Redirect(w, r, redirect+"?logout=1", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, kilonova.HostURL().JoinPath(r.FormValue("back")).String()+"?logout=1", http.StatusSeeOther)
 }
 
 func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Template, name string, data any) {

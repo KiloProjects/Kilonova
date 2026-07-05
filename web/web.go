@@ -134,7 +134,7 @@ func (rt *Web) Handler() http.Handler {
 	r.Use(rt.initSession)
 	r.Use(rt.initLanguage)
 	r.Use(rt.initTheme)
-	cors := http.NewCrossOriginProtection()
+	csrf := http.NewCrossOriginProtection()
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		rt.statusPage(w, r, 404, "")
@@ -156,7 +156,7 @@ func (rt *Web) Handler() http.Handler {
 		})
 
 		// Password reset
-		r.With(rt.mustBeVisitor, cors.Handler).Get("/resetPassword/{reqid}", rt.resetPassword())
+		r.With(rt.mustBeVisitor, csrf.Handler).Get("/resetPassword/{reqid}", rt.resetPassword())
 
 		r.Get("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFileFS(w, r, embedded, "static/robots.txt")
@@ -172,19 +172,19 @@ func (rt *Web) Handler() http.Handler {
 		r.Get("/termsOfService", rt.justRender("util/termsOfService.html"))
 		r.Get("/privacyPolicy", rt.justRender("util/privacyPolicy.html"))
 
-		r.Get("/login", rt.getLogin)
-		r.Post("/login", rt.handleLogin)
-		r.With(rt.mustBeVisitor, cors.Handler).Get("/signup", rt.justRender("auth/signup.html"))
-		r.With(rt.mustBeVisitor, cors.Handler).Get("/forgot_pwd", rt.justRender("auth/forgot_pwd_send.html"))
+		r.With(csrf.Handler).Get("/login", rt.getLogin)
+		r.With(csrf.Handler).Post("/login", rt.handleLogin)
+		r.With(rt.mustBeVisitor, csrf.Handler).Get("/signup", rt.justRender("auth/signup.html"))
+		r.With(rt.mustBeVisitor, csrf.Handler).Get("/forgot_pwd", rt.justRender("auth/forgot_pwd_send.html"))
 
-		// TODO: This is very vulnerable to a CSRF attack. Fix
-		r.With(rt.mustBeAuthed).Get("/logout", rt.logout)
+		r.With(rt.mustBeAuthed, csrf.Handler).Post("/logout", rt.logout)
+		r.With(rt.mustBeAuthed, csrf.Handler).Get("/logout", rt.confirmLogout)
 
 		rt.base.RegisterOIDCRoutes(r)
 	})
 
 	r.Group(func(r chi.Router) {
-		r.Use(cors.Handler)
+		r.Use(csrf.Handler)
 
 		// Page group, can be locked out
 		r.Use(rt.checkLockout())

@@ -30,54 +30,6 @@ func (s *API) problemListByName(w http.ResponseWriter, r *http.Request) {
 	returnData(w, list)
 }
 
-func (s *API) getComplexProblemList(w http.ResponseWriter, r *http.Request) {
-	list := util.ProblemList(r)
-
-	pbs, err := s.base.ProblemListProblems(r.Context(), list.List, user.UserBrief(r))
-	if err != nil {
-		errorData(w, err, 500)
-		return
-	}
-
-	numSolved := -1
-	numSubSolved := map[int]int{}
-	if user.UserBrief(r).IsAuthed() {
-		listIDs := []int{list.ID}
-		for _, sublists := range list.SubLists {
-			listIDs = append(listIDs, sublists.ID)
-		}
-		numSubSolved, err = s.base.NumSolvedFromPblists(r.Context(), listIDs, user.UserBrief(r))
-		if err != nil {
-			slog.WarnContext(r.Context(), "NumSolvedFromPblists fail", slog.Any("err", err))
-			numSubSolved = map[int]int{}
-		}
-		if val, ok := numSubSolved[list.ID]; ok {
-			numSolved = val
-		}
-	}
-
-	desc, err := s.base.RenderMarkdown([]byte(list.Description), nil)
-	if err != nil {
-		errorData(w, err, 500)
-		return
-	}
-
-	returnData(w, struct {
-		List         *kilonova.ProblemList     `json:"list"`
-		NumSolved    int                       `json:"numSolved"`
-		Problems     []*kilonova.ScoredProblem `json:"problems"`
-		RenderedDesc string                    `json:"description"`
-		NumSubSolved map[int]int               `json:"numSubSolved"`
-	}{
-		List:         list,
-		NumSolved:    numSolved,
-		Problems:     pbs,
-		RenderedDesc: string(desc),
-		NumSubSolved: numSubSolved,
-	})
-	// returnData(w, list)
-}
-
 func (s *API) problemLists(w http.ResponseWriter, r *http.Request) {
 	var args struct {
 		Root bool `json:"root"`
