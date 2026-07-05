@@ -688,9 +688,9 @@ func SubmissionSubTask(params SubmissionSubTaskParams) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var31 string
-			templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(removeTrailingZeros(params.SubTask.FinalPercentage.Shift(-2).Mul(params.SubTask.Score).StringFixed(params.Precision)))
+			templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(tutils.RemoveTrailingZeros(params.SubTask.FinalPercentage.Shift(-2).Mul(params.SubTask.Score).StringFixed(params.Precision)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/submission.templ`, Line: 179, Col: 124}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/submission.templ`, Line: 179, Col: 131}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 			if templ_7745c5c3_Err != nil {
@@ -703,7 +703,7 @@ func SubmissionSubTask(params SubmissionSubTaskParams) templ.Component {
 			var templ_7745c5c3_Var32 string
 			templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(" ")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/submission.templ`, Line: 179, Col: 133}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/submission.templ`, Line: 179, Col: 140}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 			if templ_7745c5c3_Err != nil {
@@ -714,9 +714,9 @@ func SubmissionSubTask(params SubmissionSubTaskParams) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var33 string
-			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(removeTrailingZeros(params.SubTask.Score.StringFixed(params.Precision)))
+			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(tutils.RemoveTrailingZeros(params.SubTask.Score.StringFixed(params.Precision)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/submission.templ`, Line: 180, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/submission.templ`, Line: 180, Col: 85}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 			if templ_7745c5c3_Err != nil {
@@ -1174,9 +1174,9 @@ func SubmissionTestTable(params SubmissionTestTableParams) templ.Component {
 						}
 					} else {
 						var templ_7745c5c3_Var54 string
-						templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(removeTrailingZeros(subtest.Percentage.Shift(-2).Mul(maxScore).StringFixed(params.Precision)))
+						templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(tutils.RemoveTrailingZeros(subtest.Percentage.Shift(-2).Mul(maxScore).StringFixed(params.Precision)))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/submission.templ`, Line: 307, Col: 104}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/submission.templ`, Line: 307, Col: 111}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 						if templ_7745c5c3_Err != nil {
@@ -1189,7 +1189,7 @@ func SubmissionTestTable(params SubmissionTestTableParams) templ.Component {
 						var templ_7745c5c3_Var55 string
 						templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(" ")
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/submission.templ`, Line: 307, Col: 113}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/submission.templ`, Line: 307, Col: 120}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 						if templ_7745c5c3_Err != nil {
@@ -1200,9 +1200,9 @@ func SubmissionTestTable(params SubmissionTestTableParams) templ.Component {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var56 string
-						templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(removeTrailingZeros(maxScore.StringFixed(params.Precision)))
+						templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(tutils.RemoveTrailingZeros(maxScore.StringFixed(params.Precision)))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/submission.templ`, Line: 308, Col: 70}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/submission.templ`, Line: 308, Col: 77}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 						if templ_7745c5c3_Err != nil {
@@ -2386,13 +2386,6 @@ func testVerdictString(verdict string) templ.Component {
 		_, err := io.WriteString(w, strings.Join(lines, "<br/>"))
 		return err
 	})
-}
-
-func removeTrailingZeros(score string) string {
-	if !strings.ContainsRune(score, '.') {
-		return score
-	}
-	return strings.TrimSuffix(strings.TrimRight(score, "0"), ".")
 }
 
 var _ = templruntime.GeneratedTemplate

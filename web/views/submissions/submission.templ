@@ -176,8 +176,8 @@ templ SubmissionSubTask(params SubmissionSubTaskParams) {
 			</span>
 			if params.SubTask.FinalPercentage != nil {
 				<span class="float-right badge score-cell" data-score={ params.SubTask.FinalPercentage.String() }>
-					{ removeTrailingZeros(params.SubTask.FinalPercentage.Shift(-2).Mul(params.SubTask.Score).StringFixed(params.Precision)) } /{ " " }
-					{ removeTrailingZeros(params.SubTask.Score.StringFixed(params.Precision)) }
+					{ tutils.RemoveTrailingZeros(params.SubTask.FinalPercentage.Shift(-2).Mul(params.SubTask.Score).StringFixed(params.Precision)) } /{ " " }
+					{ tutils.RemoveTrailingZeros(params.SubTask.Score.StringFixed(params.Precision)) }
 				</span>
 			} else {
 				<span class="float-right badge">
@@ -304,8 +304,8 @@ templ SubmissionTestTable(params SubmissionTestTableParams) {
 								if len(params.Subtasks) > 0 {
 									{ subtest.Percentage.String() }% { T(ctx,"correct") }
 								} else {
-									{ removeTrailingZeros(subtest.Percentage.Shift(-2).Mul(maxScore).StringFixed(params.Precision)) } /{ " " }
-									{ removeTrailingZeros(maxScore.StringFixed(params.Precision)) }
+									{ tutils.RemoveTrailingZeros(subtest.Percentage.Shift(-2).Mul(maxScore).StringFixed(params.Precision)) } /{ " " }
+									{ tutils.RemoveTrailingZeros(maxScore.StringFixed(params.Precision)) }
 								}
 							</td>
 						}
@@ -608,11 +608,4 @@ func testVerdictString(verdict string) templ.Component {
 		_, err := io.WriteString(w, strings.Join(lines, "<br/>"))
 		return err
 	})
-}
-
-func removeTrailingZeros(score string) string {
-	if !strings.ContainsRune(score, '.') {
-		return score
-	}
-	return strings.TrimSuffix(strings.TrimRight(score, "0"), ".")
 }

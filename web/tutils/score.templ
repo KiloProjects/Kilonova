@@ -3,7 +3,6 @@ package tutils
 import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/shopspring/decimal"
-	"strings"
 )
 
 templ Score(problem *kilonova.Problem, score *decimal.Decimal, showP ...bool) {
@@ -18,17 +17,10 @@ templ Score(problem *kilonova.Problem, score *decimal.Decimal, showP ...bool) {
 			}
 		} else {
 			if len(showP) > 0 && showP[0] == true {
-				{ removeTrailingZeros(score.StringFixed(problem.ScorePrecision)) }p
+				{ RemoveTrailingZeros(score.StringFixed(problem.ScorePrecision)) }p
 			} else {
-				{ removeTrailingZeros(score.StringFixed(problem.ScorePrecision)) }
+				{ RemoveTrailingZeros(score.StringFixed(problem.ScorePrecision)) }
 			}
 		}
 	}
-}
-
-func removeTrailingZeros(score string) string {
-	if !strings.ContainsRune(score, '.') {
-		return score
-	}
-	return strings.TrimSuffix(strings.TrimRight(score, "0"), ".")
 }

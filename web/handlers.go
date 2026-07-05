@@ -90,7 +90,7 @@ func (rt *Web) discordLink() http.HandlerFunc {
 }
 
 func (rt *Web) index() http.HandlerFunc {
-	parsedTempl := rt.parse("index.html", "modals/pblist.html", "modals/pbs.html", "modals/contest_brief.html")
+	parsedTempl := rt.parse("index.html", "modals/pblist.html", "modals/contest_brief.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		runningContests, err := rt.base.VisibleRunningContests(r.Context(), user.UserBrief(r))
 		if err != nil {
@@ -175,7 +175,7 @@ func (rt *Web) index() http.HandlerFunc {
 }
 
 func (rt *Web) problems() http.HandlerFunc {
-	parsedTempl := rt.parse("pbs.html", "modals/pbs.html")
+	parsedTempl := rt.parse("pbs.html")
 	decoder := schema.NewDecoder()
 	decoder.IgnoreUnknownKeys(true)
 	decoder.SetAliasTag("json")
@@ -324,7 +324,7 @@ type TagPageParams struct {
 }
 
 func (rt *Web) tag() http.HandlerFunc {
-	parsedTempl := rt.parse("tags/tag.html", "modals/pbs.html")
+	parsedTempl := rt.parse("tags/tag.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		pbs, pbsCnt, err := rt.base.SearchProblems(r.Context(), kilonova.ProblemFilter{
 			LookingUser: user.UserBrief(r), Look: true, LookFullyVisible: true,
@@ -354,7 +354,7 @@ func (rt *Web) justRender(files ...string) http.HandlerFunc {
 }
 
 func (rt *Web) pbListIndex() http.HandlerFunc {
-	parsedTempl := rt.parse("lists/index.html", "modals/pblist.html", "modals/pbs.html")
+	parsedTempl := rt.parse("lists/index.html", "modals/pblist.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		pblists, err := rt.base.ProblemLists(r.Context(), kilonova.ProblemListFilter{Root: true})
 		if err != nil {
@@ -451,8 +451,8 @@ func (rt *Web) pbListProgressView() http.HandlerFunc {
 }
 
 func (rt *Web) pbListView() http.HandlerFunc {
-	parsedTempl := rt.parse("lists/view.html", "modals/pblist.html", "modals/pbs.html")
-	fragmentTempl := rt.parse("modals/pblist.html", "modals/pbs.html")
+	parsedTempl := rt.parse("lists/view.html", "modals/pblist.html")
+	fragmentTempl := rt.parse("modals/pblist.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		listIDs := []int{util.ProblemList(r).ID}
 		for _, slist := range util.ProblemList(r).SubLists {
@@ -1616,7 +1616,7 @@ func (rt *Web) createContest() http.HandlerFunc {
 }
 
 func (rt *Web) contest() http.HandlerFunc {
-	parsedTempl := rt.parse("contest/view.html", "problem/topbar.html", "modals/pbs.html", "modals/contest_sidebar.html")
+	parsedTempl := rt.parse("contest/view.html", "problem/topbar.html", "modals/contest_sidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.runTempl(w, r, parsedTempl, &ContestParams{
 			Topbar: rt.problemTopbar(r, "contest_general", -1),
@@ -1948,14 +1948,14 @@ func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *templa
 }
 
 func (rt *Web) selfProfile() http.HandlerFunc {
-	parsedTempl := rt.parse("user/profile.html", "user/topbar.html", "modals/pbs.html")
+	parsedTempl := rt.parse("user/profile.html", "user/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rt.profilePage(w, r, parsedTempl, user.UserFull(r))
 	}
 }
 
 func (rt *Web) profile() http.HandlerFunc {
-	parsedTempl := rt.parse("user/profile.html", "user/topbar.html", "modals/pbs.html")
+	parsedTempl := rt.parse("user/profile.html", "user/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		username := strings.TrimSpace(r.PathValue("user"))
 		userFull, err := rt.base.UserFullByName(r.Context(), username)
@@ -2526,8 +2526,8 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 		"isContestEditor": func(c *kilonova.Contest) bool {
 			return c.IsEditor(authedUser)
 		},
-		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *ProblemListingParams {
-			return &ProblemListingParams{pbs, contest.IsEditor(authedUser) || contest.Ended(), true, contest.ID, -1}
+		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *problems.ProblemListingParams {
+			return &problems.ProblemListingParams{Problems: pbs, ShowID: contest.IsEditor(authedUser) || contest.Ended(), ShowPublished: true, ContestIDScore: new(contest.ID), ListID: nil}
 		},
 		"contestLeaderboardVisible": func(c *kilonova.Contest) bool {
 			return rt.base.CanViewContestLeaderboard(authedUser, c)

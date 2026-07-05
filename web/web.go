@@ -31,6 +31,8 @@ import (
 	"github.com/KiloProjects/kilonova/infra/maxmind"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/KiloProjects/kilonova/web/tutils"
+	vproblems "github.com/KiloProjects/kilonova/web/views/problems"
 	"github.com/KiloProjects/kilonova/web/views/proposer"
 	"github.com/KiloProjects/kilonova/web/views/utilviews"
 	"github.com/a-h/templ"
@@ -395,30 +397,13 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 				}
 				return `<i class="fas fa-fw fa-xmark"></i>`
 			}
-			return template.HTML(removeTrailingZeros(score.StringFixed(pb.ScorePrecision)) + "p")
+			return template.HTML(tutils.RemoveTrailingZeros(score.StringFixed(pb.ScorePrecision)) + "p")
 		},
 		"actualMaxScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) decimal.Decimal {
 			return base.MaxScore(ctx, user.ID, pb.ID)
 		},
 		"spbMaxScore": func(pb *kilonova.ScoredProblem, summaryDisplay bool) template.HTML {
-			if pb.ScoreUserID == nil {
-				return ""
-			}
-			if pb.MaxScore == nil || pb.MaxScore.IsNegative() {
-				return "-"
-			}
-			if pb.ScoringStrategy == kilonova.ScoringTypeICPC {
-				if pb.MaxScore.Equal(decimal.NewFromInt(100)) {
-					return `<i class="fas fa-fw fa-check"></i>`
-				}
-				return `<i class="fas fa-fw fa-xmark"></i>`
-			}
-			val := removeTrailingZeros(pb.MaxScore.StringFixed(pb.ScorePrecision))
-			if summaryDisplay {
-				// Add the unit at the end
-				val += "p"
-			}
-			return template.HTML(val)
+			return template.HTML(tutils.ScoredProblemMaxScore(pb, summaryDisplay))
 		},
 		"checklistMaxScore": func(pb *kilonova.ScoredProblem) string {
 			if pb.ScoreUserID == nil {
@@ -427,7 +412,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			if pb.MaxScore == nil || pb.MaxScore.IsNegative() {
 				return "-1"
 			}
-			return removeTrailingZeros(pb.MaxScore.StringFixed(pb.ScorePrecision))
+			return tutils.RemoveTrailingZeros(pb.MaxScore.StringFixed(pb.ScorePrecision))
 		},
 		"computeChecklistSpan": computeChecklistSpan,
 		"scoreStep": func(pb *kilonova.Problem) string {
@@ -553,13 +538,14 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 			}
 			return buf.String(), nil
 		},
-		"genProblemsParams": func(pbs []*kilonova.ScoredProblem, showPublished bool) *ProblemListingParams {
-			return &ProblemListingParams{pbs, true, showPublished, -1, -1}
+		"problemsTemplate": vproblems.ProblemListGroup,
+		"genProblemsParams": func(pbs []*kilonova.ScoredProblem, showPublished bool) *vproblems.ProblemListingParams {
+			return &vproblems.ProblemListingParams{Problems: pbs, ShowID: true, ShowPublished: showPublished, ContestIDScore: nil, ListID: nil}
 		},
-		"genListProblemsParams": func(pbs []*kilonova.ScoredProblem, showPublished bool, listID int) *ProblemListingParams {
-			return &ProblemListingParams{pbs, true, showPublished, -1, listID}
+		"genListProblemsParams": func(pbs []*kilonova.ScoredProblem, showPublished bool, listID int) *vproblems.ProblemListingParams {
+			return &vproblems.ProblemListingParams{Problems: pbs, ShowID: true, ShowPublished: showPublished, ContestIDScore: nil, ListID: new(listID)}
 		},
-		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *ProblemListingParams {
+		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *vproblems.ProblemListingParams {
 			slog.ErrorContext(ctx, "Uninitialized `genContestProblemsParams`")
 			return nil
 		},
@@ -943,13 +929,6 @@ func staticFileServer(w http.ResponseWriter, r *http.Request) {
 			io.Copy(w, f)
 		}
 	}
-}
-
-func removeTrailingZeros(score string) string {
-	if !strings.ContainsRune(score, '.') {
-		return score
-	}
-	return strings.TrimSuffix(strings.TrimRight(score, "0"), ".")
 }
 
 func isHTMXRequest(r *http.Request) bool {

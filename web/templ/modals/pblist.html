@@ -59,7 +59,7 @@
         {{$listID := .ID}}
         {{ with (listProblems authedUser .) }}
             <div class="mt-2">
-                {{ template "pb_list_group" (genListProblemsParams . true $listID) }}
+                {{ problemsTemplate (genListProblemsParams . true $listID) | renderComponent }}
             </div>
         {{ end }}
     </details>

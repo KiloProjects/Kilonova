@@ -313,17 +313,6 @@ type IndexParams struct {
 	PinnedLists []*kilonova.ProblemList
 }
 
-type ProblemListingParams struct {
-	Problems []*kilonova.ScoredProblem
-	ShowID   bool
-
-	ShowPublished bool
-
-	ContestIDScore int
-
-	ListID int
-}
-
 type PblistParams struct {
 	Pblist *kilonova.ProblemList
 	Open   bool

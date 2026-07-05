@@ -1,0 +1,61 @@
+package problems
+
+import (
+	"fmt"
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
+	"github.com/KiloProjects/kilonova/web/tutils"
+)
+
+type ProblemListingParams struct {
+	Problems []*kilonova.ScoredProblem
+	ShowID   bool
+
+	ShowPublished bool
+
+	ContestIDScore *int
+
+	ListID *int
+}
+
+templ ProblemListGroup(params *ProblemListingParams) {
+	<div class="list-group grid grid-cols-1">
+		for _, pb := range params.Problems {
+			{{
+				var pbURL = fmt.Sprintf("/problems/%d", pb.ID)
+				if params.ContestIDScore != nil {
+					pbURL = fmt.Sprintf("/contests/%d%s", *params.ContestIDScore, pbURL)
+				}
+				if params.ListID != nil {
+					pbURL += fmt.Sprintf("?list_id=%d", *params.ListID)
+				}
+			}}
+			<a href={ templ.SafeURL(pbURL) } class="list-group-item flex justify-between">
+				<span>
+					{ pb.Name } { " " }
+					if params.ShowID {
+						(#{ pb.ID })
+					}
+				</span>
+				<div>
+					if params.ShowPublished && user.UserBriefContext(ctx).IsAuthed() && pb.IsEditor {
+						if pb.Visible {
+							<span class="badge badge-green">
+								@TC("published")
+							</span>
+						} else {
+							<span class="badge badge-red">
+								@TC("unpublished")
+							</span>
+						}
+					}
+					if ms := tutils.ScoredProblemMaxScore(pb, false); len(ms) > 0 {
+						<span class="badge">
+							@templ.Raw(ms)
+						</span>
+					}
+				</div>
+			</a>
+		}
+	</div>
+}

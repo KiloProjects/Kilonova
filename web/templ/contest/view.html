@@ -16,7 +16,7 @@
         <div class="segment-panel">
             {{ with contestProblems authedUser .Contest }}
                 <h2> {{ getText "problems" }} </h2>
-                {{ template "pb_list_group" (genContestProblemsParams . $.Contest) }}
+                {{ problemsTemplate (genContestProblemsParams . $.Contest) | renderComponent }}
             {{ else }}
                 {{ if not (.Contest.Started) }}
                     <p>{{getText "contest_problems_soon"}}</p>

@@ -143,7 +143,7 @@
                             </summary>
                             {{ with . }}
                                 <div class="mt-2">
-                                    {{ template "pb_list_group" (genProblemsParams . true) }}
+                                    {{ problemsTemplate (genProblemsParams . true) | renderComponent }}
                                 </div>
                             {{ end }}
                         </details>
@@ -240,7 +240,7 @@
         {{if .HotProblems}}
         <div class="segment-panel">
             <h2>{{getText "hot_problems"}}</h2>
-            {{ template "pb_list_group" (genProblemsParams .HotProblems false) }}
+            {{ problemsTemplate (genProblemsParams .HotProblems false) | renderComponent }}
             {{ if .MoreHotProblems }}
             <p class="mt-2"><a href="/problems/?ordering=hot&descending=true">{{getText "view_more"}}</a></p>
             {{ end }}
