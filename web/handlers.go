@@ -2417,10 +2417,12 @@ func (rt *Web) confirmLogout(w http.ResponseWriter, r *http.Request) {
 
 func (rt *Web) logout(w http.ResponseWriter, r *http.Request) {
 	emptyCookie := &http.Cookie{
-		Name:    "kn-sessionid",
-		Value:   "",
-		Path:    "/",
-		Expires: time.Unix(0, 0),
+		Name:     "kn-sessionid",
+		Value:    "",
+		Path:     "/",
+		Expires:  time.Unix(0, 0),
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(w, emptyCookie)
 
