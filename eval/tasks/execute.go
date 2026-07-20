@@ -5,6 +5,7 @@ import (
 	"context"
 	"log/slog"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -95,7 +96,7 @@ func ExecuteBatch(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, re
 
 	resp := parseResponse(ctx, bResp.Stats, logger, req.OutputFile.Filename)
 
-	if _, ok := bResp.BucketFiles["/box/"+req.OutputName]; !ok {
+	if !slices.Contains(bResp.BucketFiles, "/box/"+req.OutputName) {
 		resp.Comments = "No output file found"
 	}
 
@@ -196,7 +197,7 @@ func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota i
 		}
 	}
 
-	bResp, userStats, err := mgr.RunMultibox(ctx, &eval.MultiboxRequest{
+	bResp, userStats, err := mgr.RunMultibox2(ctx, &eval.Multibox2Request{
 		ManagerSandbox:     managerReq,
 		UserSandboxConfigs: userReqs,
 
@@ -210,7 +211,7 @@ func ExecuteCommunication(ctx context.Context, mgr eval.BoxScheduler, memQuota i
 		}
 		return resp, nil
 	}
-	//spew.Dump(bResp.Stats, userStats)
+	// spew.Dump(bResp.Stats, userStats)
 	userResp := parseResponse(ctx, mergeStats(true, userStats...), logger, strconv.Itoa(req.SubtestID))
 	mgrResp := parseResponse(ctx, bResp.Stats, logger, strconv.Itoa(req.SubtestID))
 	mgrResp.Time = userResp.Time

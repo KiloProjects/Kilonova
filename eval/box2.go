@@ -34,7 +34,7 @@ type Box2Request struct {
 	OutputBucketFiles map[string]*BucketFile
 }
 
-type MultiboxRequest struct {
+type Multibox2Request struct {
 	ManagerSandbox *Box2Request
 
 	// OutputByteFiles/OutputBucketFiles are ignored.
@@ -51,6 +51,6 @@ type Box2Response struct {
 	// Files specified in the Request and not present in the response were not found (did not exist)
 	// key - path, value - contents
 	ByteFiles map[string][]byte
-	// key - path, value - reference to bucket file
-	BucketFiles map[string]*BucketFile
+	// path of saved file
+	BucketFiles []string
 }

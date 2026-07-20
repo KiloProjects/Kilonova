@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"slices"
 
 	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/eval"
@@ -137,7 +138,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 		return resp, nil
 	}
 
-	if _, ok := bResp.BucketFiles[req.Lang.CompiledName(req.OriginalFilename)]; !ok {
+	if !slices.Contains(bResp.BucketFiles, req.Lang.CompiledName(req.OriginalFilename)) {
 		resp.Other = "Could not save compilation output"
 		resp.Success = false
 	}

@@ -142,10 +142,10 @@ func (b *IsolateBox) ReadFile(fpath string, w io.Writer) error {
 	return readFile(b.getFilePath(fpath), w)
 }
 
-func (b *IsolateBox) SaveFile(fpath string, wf eval.WriteFilter, filename string, mode fs.FileMode) error {
+func (b *IsolateBox) SaveFile(fpath string, wf eval.SaveFiler) (string, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return saveFile(b.getFilePath(fpath), wf, filename, mode)
+	return saveFile(b.getFilePath(fpath), wf)
 }
 
 func (b *IsolateBox) GetID() int {

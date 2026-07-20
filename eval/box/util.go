@@ -22,14 +22,14 @@ func readFile(p string, w io.Writer) error {
 	return err
 }
 
-func saveFile(p string, wf eval.WriteFilter, filename string, mode fs.FileMode) error {
+func saveFile(p string, wf eval.SaveFiler) (string, error) {
 	f, err := os.Open(p)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer f.Close()
 
-	return wf(filename, f, mode)
+	return wf(f)
 }
 
 func writeFile(p string, r io.Reader, mode fs.FileMode) error {

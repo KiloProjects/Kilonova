@@ -21,11 +21,14 @@ import (
 	"github.com/KiloProjects/kilonova/eval/checkers"
 	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/eval/scheduler"
+	"github.com/KiloProjects/kilonova/eval/scratch"
 	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
+	"github.com/spf13/afero"
 )
 
 const (
@@ -612,14 +615,21 @@ func (h *Handler) getAppropriateRunner(ctx context.Context) (eval.BoxScheduler, 
 		os.Exit(1)
 	}
 
+	baseDir := path.Join(os.TempDir(), uuid.New().String())
+	if err := os.MkdirAll(baseDir, 0777); err != nil {
+		return nil, fmt.Errorf("couldn't create scratch dir: %w", err)
+	}
+
+	scratchDir := scratch.New(afero.NewBasePathFs(afero.NewOsFs(), baseDir))
+
 	slog.InfoContext(ctx, "Trying to spin up local grader")
-	bm, err := scheduler.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, graderLogger, h.base.DataStore(), boxFunc)
+	bm, err := scheduler.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, graderLogger, scratchDir, boxFunc)
 	if err != nil {
 		return nil, err
 	}
 	slog.InfoContext(ctx, "Running local grader", slog.String("version", boxVersion))
 
-	return bm, nil
+	return scheduler.NewAdapter(scratchDir, h.base.DataStore(), bm), nil
 }
 
 func (sh *submissionHandler) getAppropriateChecker(ctx context.Context) (checkers.Checker, error) {

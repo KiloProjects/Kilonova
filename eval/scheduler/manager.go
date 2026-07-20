@@ -1,11 +1,9 @@
 package scheduler
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -17,7 +15,6 @@ import (
 	"sync"
 
 	"github.com/KiloProjects/kilonova/domain/config"
-	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/eval/language"
 	"golang.org/x/sync/semaphore"
@@ -39,12 +36,12 @@ var (
 
 type BoxFunc func(ctx context.Context, id int, mem int64, logger *slog.Logger) (eval.Sandbox, error)
 
-var _ eval.BoxScheduler = &BoxManager{}
+var _ eval.Box3Scheduler = &BoxManager{}
 
 // BoxManager manages a box with eval-based submissions
 type BoxManager struct {
 	numConcurrent int64
-	// concSem measures the number of running Box2 requests.
+	// concSem measures the number of running Box3 requests.
 	// Since a request will be able to have multiple boxes (communication type submissions), it does not reflect the number of concurrent boxes running.
 	concSem   *semaphore.Weighted
 	memSem    *semaphore.Weighted
@@ -56,11 +53,7 @@ type BoxManager struct {
 
 	boxGenerator BoxFunc
 
-	store *datastore.Manager
-}
-
-func (mgr *BoxManager) NumConcurrent() int64 {
-	return mgr.numConcurrent
+	scratch eval.Scratch
 }
 
 func (mgr *BoxManager) getBox(ctx context.Context, memQuota int64) (eval.Sandbox, error) {
@@ -99,7 +92,7 @@ func (mgr *BoxManager) Close(ctx context.Context) error {
 }
 
 // New creates a new box manager
-func New(startingNumber int, count int, maxMemory int64, logger *slog.Logger, dataStore *datastore.Manager, boxGenerator BoxFunc) (*BoxManager, error) {
+func New(startingNumber int, count int, maxMemory int64, logger *slog.Logger, scratch eval.Scratch, boxGenerator BoxFunc) (eval.Box3Scheduler, error) {
 
 	if startingNumber < 0 {
 		startingNumber = 0
@@ -121,7 +114,7 @@ func New(startingNumber int, count int, maxMemory int64, logger *slog.Logger, da
 
 		boxGenerator: boxGenerator,
 
-		store: dataStore,
+		scratch: scratch,
 	}
 	return bm, nil
 }
@@ -139,7 +132,7 @@ func CheckCanRun(ctx context.Context, boxFunc BoxFunc) bool {
 	return true
 }
 
-func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQuota int64) (*eval.Box2Response, error) {
+func (mgr *BoxManager) RunBox3(ctx context.Context, req *eval.Box3Request, memQuota int64) (*eval.Box3Response, error) {
 	goodCmd, err := makeGoodCommand(req)
 	if err != nil {
 		slog.ErrorContext(ctx, "Error running MakeGoodCommand", slog.Any("err", err))
@@ -157,7 +150,7 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 	}
 	defer mgr.releaseBox(ctx, box)
 
-	if err := mgr.setupSandbox(ctx, box, req); err != nil {
+	if err := mgr.setupSandbox(box, req); err != nil {
 		return nil, err
 	}
 
@@ -168,14 +161,14 @@ func (mgr *BoxManager) RunBox2(ctx context.Context, req *eval.Box2Request, memQu
 	cmdAuditLogger().InfoContext(ctx, "Ran command",
 		slog.Any("command", goodCmd),
 		slog.Any("stats", stats),
-		slog.Any("output_byte_files", req.OutputByteFiles),
+		slog.Any("output_files", req.OutputFilePaths),
 		slog.Int64("mem_quota", memQuota),
 	)
 
-	return mgr.collectResponse(ctx, box, req, stats)
+	return mgr.collectResponse(box, req, stats)
 }
 
-func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxRequest, managerMemQuota int64, individualMemQuota int64) (*eval.Box2Response, []*eval.RunStats, error) {
+func (mgr *BoxManager) RunMultibox3(ctx context.Context, req *eval.Multibox3Request, managerMemQuota int64, individualMemQuota int64) (*eval.Box3Response, []*eval.RunStats, error) {
 	if managerMemQuota+int64(len(req.UserSandboxConfigs))*individualMemQuota > mgr.maxMemory {
 		return nil, nil, errors.New("total memory quota exceeds max memory")
 	}
@@ -276,7 +269,7 @@ func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxReques
 	}
 	defer mgr.releaseBox(ctx, managerBox)
 
-	if err := mgr.setupSandbox(ctx, managerBox, req.ManagerSandbox); err != nil {
+	if err := mgr.setupSandbox(managerBox, req.ManagerSandbox); err != nil {
 		return nil, nil, err
 	}
 
@@ -289,7 +282,7 @@ func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxReques
 		}
 		defer mgr.releaseBox(ctx, userBoxes[i])
 
-		if err := mgr.setupSandbox(ctx, userBoxes[i], req.UserSandboxConfigs[i]); err != nil {
+		if err := mgr.setupSandbox(userBoxes[i], req.UserSandboxConfigs[i]); err != nil {
 			return nil, nil, err
 		}
 	}
@@ -300,7 +293,7 @@ func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxReques
 	userWg.Add(len(req.UserSandboxConfigs))
 
 	errChan := make(chan error, len(req.UserSandboxConfigs)+1)
-	respChan := make(chan *eval.Box2Response, 1)
+	respChan := make(chan *eval.Box3Response, 1)
 
 	managerCtx, cancelManager := context.WithCancel(ctx)
 	userCtx, cancelUser := context.WithCancel(ctx)
@@ -315,11 +308,11 @@ func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxReques
 		cmdAuditLogger().InfoContext(ctx, "Ran manager command",
 			slog.Any("command", req.ManagerSandbox.Command),
 			slog.Any("stats", stats),
-			slog.Any("output_byte_files", req.ManagerSandbox.OutputByteFiles),
+			slog.Any("output_files", req.ManagerSandbox.OutputFilePaths),
 			slog.Int64("mem_quota", managerMemQuota),
 		)
 
-		resp, err := mgr.collectResponse(ctx, managerBox, req.ManagerSandbox, stats)
+		resp, err := mgr.collectResponse(managerBox, req.ManagerSandbox, stats)
 		if err != nil {
 			errChan <- err
 			return
@@ -373,26 +366,23 @@ func (mgr *BoxManager) RunMultibox(ctx context.Context, req *eval.MultiboxReques
 	return resp, userStats, nil
 }
 
-// setupSandbox copies the request files into the sandbox.
-func (mgr *BoxManager) setupSandbox(ctx context.Context, box eval.Sandbox, req *eval.Box2Request) error {
-	for fpath, val := range req.InputByteFiles {
-		if val.Mode == 0 {
-			val.Mode = 0666
-		}
-		if err := box.WriteFile(fpath, bytes.NewReader(val.Data), val.Mode); err != nil {
-			return err
-		}
+func (mgr *BoxManager) copyScratchFile(box eval.Sandbox, sf eval.ScratchFile) error {
+	rc, err := mgr.scratch.ReadFile(sf.Identifier)
+	if err != nil {
+		return err
 	}
+	defer rc.Close()
 
-	for fpath, val := range req.InputBucketFiles {
-		// Do not reset val.Mode here, since CopyInBox stats and sets the proper mode
-		if err := copyInBox(box, mgr.store, val.Bucket, val.Filename, fpath, val.Mode); err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				slog.WarnContext(ctx, "Bucket file doesn't exist when copying in sandbox",
-					slog.Any("bucket", val.Bucket), slog.String("filename", val.Filename),
-					slog.String("target_path", fpath), slog.Int("box_id", box.GetID()),
-				)
-			}
+	return box.WriteFile(sf.BoxPath, rc, sf.Mode)
+}
+
+// setupSandbox copies the request files into the sandbox.
+func (mgr *BoxManager) setupSandbox(box eval.Sandbox, req *eval.Box3Request) error {
+	for _, file := range req.InputFiles {
+		if file.Mode == 0 {
+			file.Mode = 0666
+		}
+		if err := mgr.copyScratchFile(box, file); err != nil {
 			return err
 		}
 	}
@@ -400,76 +390,29 @@ func (mgr *BoxManager) setupSandbox(ctx context.Context, box eval.Sandbox, req *
 	return nil
 }
 
-func (mgr *BoxManager) collectResponse(ctx context.Context, box eval.Sandbox, req *eval.Box2Request, stats *eval.RunStats) (*eval.Box2Response, error) {
-	resp := &eval.Box2Response{
-		Stats:       stats,
-		ByteFiles:   make(map[string][]byte),
-		BucketFiles: make(map[string]*eval.BucketFile),
+func (mgr *BoxManager) collectResponse(box eval.Sandbox, req *eval.Box3Request, stats *eval.RunStats) (*eval.Box3Response, error) {
+	resp := &eval.Box3Response{
+		Stats: stats,
+		Files: make(map[string]string),
 	}
 
-	var b bytes.Buffer
-	for _, filePath := range req.OutputByteFiles {
-		b.Reset()
+	for _, filePath := range req.OutputFilePaths {
 		if !box.FileExists(filePath) {
 			continue
 		}
-		if err := box.ReadFile(filePath, &b); err != nil {
-			return resp, err
-		}
-		resp.ByteFiles[filePath] = bytes.Clone(b.Bytes())
-	}
-
-	for filePath, file := range req.OutputBucketFiles {
-		if !box.FileExists(filePath) {
-			continue
-		}
-		if file.Mode == 0 {
-			file.Mode = 0666
-		}
-
-		bucket, err := mgr.store.Get(file.Bucket)
+		identifier, err := box.SaveFile(filePath, mgr.scratch.SaveFile)
 		if err != nil {
-			slog.ErrorContext(ctx, "Error getting bucket", slog.Any("err", err))
-			continue
+			return nil, err
 		}
-
-		if err := box.SaveFile(filePath, bucket.WriteFile, file.Filename, file.Mode); err != nil {
-			slog.WarnContext(ctx, "Error saving box file", slog.Any("err", err), slog.String("path", filePath), slog.Any("bucket", file.Bucket))
-			return resp, err
-		}
-		resp.BucketFiles[filePath] = &eval.BucketFile{
-			Bucket:   file.Bucket,
-			Filename: file.Filename,
-			Mode:     file.Mode,
-		}
+		resp.Files[filePath] = identifier
 	}
 
 	return resp, nil
 }
 
-// Copies in box an object from a bucket
-func copyInBox(b eval.Sandbox, store eval.Store, bucket datastore.BucketType, filename string, p2 string, mode fs.FileMode) error {
-	file, err := store.Reader(bucket, filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	if mode == 0000 {
-		slog.WarnContext(context.Background(), "File mode is 0000, getting mode from store. Will want to deprecate this.")
-		storeMode, err := store.Mode(bucket, filename)
-		if err != nil {
-			return err
-		}
-		mode = storeMode
-	}
-
-	return b.WriteFile(p2, file, mode)
-}
-
 // makeGoodCommand makes sure it's a full path (with no symlinks) for the command.
 // Some languages (like java) are hidden pretty deep in symlinks, and we don't want a hardcoded path that could be different on other platforms.
-func makeGoodCommand(req *eval.Box2Request) ([]string, error) {
+func makeGoodCommand(req *eval.Box3Request) ([]string, error) {
 	tmp := slices.Clone(req.Command)
 	if len(tmp) == 0 {
 		return nil, errors.New("no command given")

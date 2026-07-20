@@ -24,13 +24,13 @@ type Store interface {
 	WriteFile(bucketType datastore.BucketType, name string, r io.Reader, mode fs.FileMode) error
 }
 
-type WriteFilter = func(name string, r io.Reader, mode fs.FileMode) error
+type SaveFiler = func(r io.Reader) (string, error)
 
 type Sandbox interface {
 	// ReadFile reads contents of path from sandbox and pipes them to the given writer
 	ReadFile(path string, w io.Writer) error
-	// SaveFile reads contents of path from sandbox and saves them in the given bucket by calling WriteFile
-	SaveFile(path string, wf WriteFilter, filename string, mode fs.FileMode) error
+	// SaveFile reads contents of path from sandbox and saves them in the scratch
+	SaveFile(path string, wf SaveFiler) (string, error)
 	// WriteFile saves the io.Reader into that file in the box
 	WriteFile(path string, r io.Reader, mode fs.FileMode) error
 
@@ -47,12 +47,24 @@ type Sandbox interface {
 
 type BoxScheduler interface {
 	RunBox2(ctx context.Context, req *Box2Request, memQuota int64) (*Box2Response, error)
-	// RunMultibox is used for communication type problems.
+	// RunMultibox2 is used for communication type problems.
 	// It is used to run the manager's sandbox and the user's sandbox in parallel.
 	// The response is returned for the manager sandbox.
 	// The stats are returned for the user sandboxes.
-	RunMultibox(ctx context.Context, req *MultiboxRequest, managerMemQuota int64, individualMemQuota int64) (*Box2Response, []*RunStats, error)
+	RunMultibox2(ctx context.Context, req *Multibox2Request, managerMemQuota int64, individualMemQuota int64) (*Box2Response, []*RunStats, error)
+
 	Close(context.Context) error
+}
+
+type Box3Scheduler interface {
+	RunBox3(ctx context.Context, req *Box3Request, memQuota int64) (*Box3Response, error)
+	// RunMultibox3 is used for communication type problems.
+	// It is used to run the manager's sandbox and the user's sandbox in parallel.
+	// The response is returned for the manager sandbox.
+	// The stats are returned for the user sandboxes.
+	RunMultibox3(ctx context.Context, req *Multibox3Request, managerMemQuota int64, individualMemQuota int64) (*Box3Response, []*RunStats, error)
+
+	Close(ctx context.Context) error
 }
 
 type LanguageManager interface {
