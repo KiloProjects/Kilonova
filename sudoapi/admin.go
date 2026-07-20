@@ -17,6 +17,7 @@ import (
 	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/domain/user"
+	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 
 	"github.com/KiloProjects/kilonova"
@@ -482,7 +483,7 @@ func (s *BaseAPI) refreshHotProblemsJob(ctx context.Context, interval time.Durat
 }
 
 func (s *BaseAPI) LanguageVersions(ctx context.Context) map[string]string {
-	return s.grader.LanguageVersions(ctx)
+	return s.langMgr.LanguageVersions(ctx)
 }
 
 func (s *BaseAPI) WakeGrader() {
@@ -493,6 +494,10 @@ func (s *BaseAPI) WakeGrader() {
 
 func (s *BaseAPI) RegisterGrader(gr Grader) {
 	s.grader = gr
+}
+
+func (s *BaseAPI) RegisterLanguageManager(langMgr eval.LanguageManager) {
+	s.langMgr = langMgr
 	// Initial load
 	go s.LanguageVersions(context.Background())
 }

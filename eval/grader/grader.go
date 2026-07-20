@@ -36,7 +36,8 @@ const (
 type submissionHandler struct {
 	base *sudoapi.BaseAPI
 
-	runner eval.BoxScheduler
+	runner  eval.BoxScheduler
+	langMgr eval.LanguageManager
 
 	settings *kilonova.ProblemEvalSettings
 	pb       *kilonova.Problem
@@ -81,7 +82,7 @@ func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.C
 	}
 
 	for _, codeFile := range sh.settings.GraderFiles {
-		lang := sh.runner.LanguageFromFilename(codeFile)
+		lang := sh.langMgr.LanguageFromFilename(codeFile)
 		if lang == nil || (lang.InternalName() != sh.lang.InternalName() && !slices.Contains(sh.lang.SimilarLanguages(), lang.InternalName())) {
 			continue
 		}
@@ -121,7 +122,7 @@ func (sh *submissionHandler) genSubCompileRequest(ctx context.Context) (*tasks.C
 	return req, nil
 }
 
-func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, sub *kilonova.Submission) error {
+func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.BoxScheduler, langMgr eval.LanguageManager, sub *kilonova.Submission) error {
 	graderLogger.InfoContext(ctx, "Executing submission", slog.Int("id", sub.ID), slog.Any("status", sub.Status))
 	defer func() {
 		// In case anything ever happens, make sure it is at least marked as finished
@@ -131,13 +132,14 @@ func executeSubmission(ctx context.Context, base *sudoapi.BaseAPI, runner eval.B
 	}()
 
 	sh := submissionHandler{
-		base:   base,
-		runner: runner,
-		sub:    sub,
-		lang:   runner.Language(sub.Language),
+		base:    base,
+		runner:  runner,
+		langMgr: langMgr,
+		sub:     sub,
+		lang:    langMgr.Language(sub.Language),
 	}
 	if sub.Language == "ai" {
-		sh.lang = runner.Language("outputOnly")
+		sh.lang = langMgr.Language("outputOnly")
 	}
 
 	if sh.lang == nil {
@@ -661,6 +663,7 @@ func (sh *submissionHandler) getAppropriateChecker(ctx context.Context) (checker
 	if sh.settings.LegacyChecker {
 		return checkers.NewLegacyCustomChecker(
 			sh.runner,
+			sh.langMgr,
 			sh.base.DataStore(),
 			graderLogger,
 			sh.pb,
@@ -674,6 +677,7 @@ func (sh *submissionHandler) getAppropriateChecker(ctx context.Context) (checker
 	// Standard checker
 	return checkers.NewStandardCustomChecker(
 		sh.runner,
+		sh.langMgr,
 		sh.base.DataStore(),
 		graderLogger,
 		sh.pb,

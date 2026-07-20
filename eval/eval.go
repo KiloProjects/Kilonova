@@ -53,7 +53,9 @@ type BoxScheduler interface {
 	// The stats are returned for the user sandboxes.
 	RunMultibox(ctx context.Context, req *MultiboxRequest, managerMemQuota int64, individualMemQuota int64) (*Box2Response, []*RunStats, error)
 	Close(context.Context) error
+}
 
+type LanguageManager interface {
 	Language(name string) language.GraderLang
 	Languages() map[string]language.GraderLang
 	LanguageFromFilename(filename string) language.GraderLang

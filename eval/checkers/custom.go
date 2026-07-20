@@ -41,6 +41,7 @@ type customCheckerInput struct {
 // note that customChecker should not be used between submissions
 type customChecker struct {
 	mgr      eval.BoxScheduler
+	langMgr  eval.LanguageManager
 	pb       *kilonova.Problem
 	filename string
 	code     []byte
@@ -56,8 +57,9 @@ type customChecker struct {
 	legacy bool
 }
 
+// TODO: Remove
 func (c *customChecker) Language() language.GraderLang {
-	return c.mgr.LanguageFromFilename(c.filename)
+	return c.langMgr.LanguageFromFilename(c.filename)
 }
 
 func (c *customChecker) CodeFilename() string {
@@ -132,7 +134,7 @@ func (c *customChecker) RunChecker(ctx context.Context, subtestID int, testID in
 		task = legacyCheckerTask
 	}
 
-	return task(ctx, c.mgr, &customCheckerInput{
+	return task(ctx, c.mgr, c.langMgr, &customCheckerInput{
 		c: c,
 
 		subtestID: subtestID,
@@ -145,12 +147,12 @@ func (c *customChecker) Cleanup(_ context.Context) error {
 	return nil // eval.CleanCompilation(-c.sub.ID)
 }
 
-func NewLegacyCustomChecker(mgr eval.BoxScheduler, store *datastore.Manager, logger *slog.Logger, pb *kilonova.Problem, filename string, code []byte, subCode []byte, lastUpdatedAt time.Time) Checker {
-	return &customChecker{mgr, pb, filename, code, subCode, lastUpdatedAt, logger, store, true}
+func NewLegacyCustomChecker(mgr eval.BoxScheduler, langMgr eval.LanguageManager, store *datastore.Manager, logger *slog.Logger, pb *kilonova.Problem, filename string, code []byte, subCode []byte, lastUpdatedAt time.Time) Checker {
+	return &customChecker{mgr, langMgr, pb, filename, code, subCode, lastUpdatedAt, logger, store, true}
 }
 
-func NewStandardCustomChecker(mgr eval.BoxScheduler, store *datastore.Manager, logger *slog.Logger, pb *kilonova.Problem, filename string, code []byte, subCode []byte, lastUpdatedAt time.Time) Checker {
-	return &customChecker{mgr, pb, filename, code, subCode, lastUpdatedAt, logger, store, false}
+func NewStandardCustomChecker(mgr eval.BoxScheduler, langMgr eval.LanguageManager, store *datastore.Manager, logger *slog.Logger, pb *kilonova.Problem, filename string, code []byte, subCode []byte, lastUpdatedAt time.Time) Checker {
+	return &customChecker{mgr, langMgr, pb, filename, code, subCode, lastUpdatedAt, logger, store, false}
 }
 
 func initRequest(lang language.GraderLang, job *customCheckerInput) *eval.Box2Request {

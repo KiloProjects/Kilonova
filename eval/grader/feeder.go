@@ -10,7 +10,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/eval/language"
+	"github.com/KiloProjects/kilonova/eval/scheduler"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -45,7 +45,7 @@ func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, error) {
 	openAction.Do(func() {
 		logFile = &lumberjack.Logger{
 			Filename: path.Join(config.Common.LogDir, "grader.log"),
-			MaxSize:  80, //MB. Since most rows are really similar it gets compressed really small
+			MaxSize:  80, // MB. Since most rows are really similar it gets compressed really small
 			Compress: true,
 		}
 		lvl := slog.LevelInfo
@@ -68,19 +68,7 @@ func (h *Handler) Wake() {
 	}
 }
 
-func (h *Handler) LanguageVersions(ctx context.Context) map[string]string {
-	return h.runner.LanguageVersions(ctx)
-}
-
-func (h *Handler) Language(name string) language.GraderLang {
-	return h.runner.Language(name)
-}
-
-func (h *Handler) Languages() map[string]language.GraderLang {
-	return h.runner.Languages()
-}
-
-func (h *Handler) runSubmission(runner eval.BoxScheduler, sub *kilonova.Submission) error {
+func (h *Handler) runSubmission(runner eval.BoxScheduler, langMgr eval.LanguageManager, sub *kilonova.Submission) error {
 	// TODO: Do this in a smarter way
 	// var numConc int64
 	// if sub.SubmissionType == kilonova.EvalTypeClassic {
@@ -98,18 +86,18 @@ func (h *Handler) runSubmission(runner eval.BoxScheduler, sub *kilonova.Submissi
 	}
 	// go func(sub *kilonova.Submission, runner eval.BoxScheduler) {
 	// defer runner.Close(h.ctx)
-	if err := executeSubmission(h.ctx, h.base, runner, sub); err != nil {
+	if err := executeSubmission(h.ctx, h.base, runner, langMgr, sub); err != nil {
 		slog.WarnContext(h.ctx, "Couldn't run submission", slog.Any("err", err))
 	}
 	// }(sub, runner)
 	return nil
 }
 
-func (h *Handler) ScheduleSubmission(runner eval.BoxScheduler, sub *kilonova.Submission) error {
-	return h.runSubmission(runner, sub)
+func (h *Handler) ScheduleSubmission(runner eval.BoxScheduler, langMgr eval.LanguageManager, sub *kilonova.Submission) error {
+	return h.runSubmission(runner, langMgr, sub)
 }
 
-func (h *Handler) handle(runner eval.BoxScheduler) error {
+func (h *Handler) handle(runner eval.BoxScheduler, langMgr eval.LanguageManager) error {
 	for {
 		select {
 		case <-h.ctx.Done():
@@ -130,7 +118,7 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 					rewake = true
 				}
 				for _, sub := range subs {
-					if err := h.ScheduleSubmission(runner, sub); err != nil {
+					if err := h.ScheduleSubmission(runner, langMgr, sub); err != nil {
 						slog.WarnContext(h.ctx, "Couldn't schedule waiting submission", slog.Any("err", err))
 					}
 				}
@@ -155,7 +143,7 @@ func (h *Handler) handle(runner eval.BoxScheduler) error {
 						slog.WarnContext(h.ctx, "Error refetching submission for reeval", slog.Any("err", err))
 						sub2 = sub
 					}
-					if err := h.ScheduleSubmission(runner, sub2); err != nil {
+					if err := h.ScheduleSubmission(runner, langMgr, sub2); err != nil {
 						slog.WarnContext(h.ctx, "Couldn't schedule reevaluation submission", slog.Any("err", err))
 					}
 				}
@@ -176,7 +164,10 @@ func (h *Handler) Start() error {
 	}
 
 	h.runner = runner
+	langMgr := scheduler.NewLanguageManager(h.ctx, runner, graderLogger)
+
 	h.base.RegisterGrader(h) // To allow waking from outside grader
+	h.base.RegisterLanguageManager(langMgr)
 
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
@@ -193,7 +184,7 @@ func (h *Handler) Start() error {
 	defer runner.Close(h.ctx)
 	slog.InfoContext(h.ctx, "Connected to eval")
 
-	if err = h.handle(runner); err != nil {
+	if err = h.handle(runner, langMgr); err != nil {
 		slog.ErrorContext(h.ctx, "Handling error", slog.Any("err", err))
 		return err
 	}

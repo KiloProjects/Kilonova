@@ -16,7 +16,7 @@ func (s *BaseAPI) Language(name string) language.Lang {
 	if name == "ai" {
 		return language.AI()
 	}
-	if s.grader == nil {
+	if s.langMgr == nil {
 		for langName, lang := range language.Langs {
 			if langName == name {
 				return lang.Lang()
@@ -24,7 +24,7 @@ func (s *BaseAPI) Language(name string) language.Lang {
 		}
 	}
 
-	return s.grader.Language(name)
+	return s.langMgr.Language(name)
 }
 
 // TODO: Just use the one from grader.LanguageFromFilename maybe? Reduce code duplication
@@ -50,7 +50,7 @@ func (s *BaseAPI) LanguageFromFilename(filename string) string {
 
 func (s *BaseAPI) LanguageFromMOSS(ctx context.Context, mossLang string) language.Lang {
 	var lang language.Lang
-	for _, elang := range s.grader.Languages() {
+	for _, elang := range s.langMgr.Languages() {
 		if elang.MOSSName() == mossLang && (lang == nil || lang.InternalName() < elang.InternalName()) {
 			lang = elang
 		}
@@ -70,7 +70,7 @@ type GraderLanguage struct {
 
 // TODO: Refactor
 func (s *BaseAPI) GraderLanguages(ctx context.Context) []*GraderLanguage {
-	versions := s.grader.LanguageVersions(ctx)
+	versions := s.langMgr.LanguageVersions(ctx)
 	langs := make([]*GraderLanguage, 0, len(versions))
 	for name := range s.EnabledLanguages() {
 		if _, ok := versions[name]; !ok {
@@ -80,7 +80,7 @@ func (s *BaseAPI) GraderLanguages(ctx context.Context) []*GraderLanguage {
 	for langName, version := range versions {
 		name, cmd := langName, "-"
 
-		if lang := s.grader.Language(langName); lang != nil {
+		if lang := s.langMgr.Language(langName); lang != nil {
 			name = lang.PrintableName()
 			cmds := lang.CompileCommand([]string{lang.DefaultFilename()})
 			if !lang.Compiled() {
@@ -103,7 +103,7 @@ func (s *BaseAPI) GraderLanguages(ctx context.Context) []*GraderLanguage {
 }
 
 func (s *BaseAPI) EnabledLanguages() map[string]string {
-	if s.grader == nil {
+	if s.langMgr == nil {
 		langs := make(map[string]string)
 		for _, lang := range language.Langs {
 			if lang.Disabled() {
@@ -116,7 +116,7 @@ func (s *BaseAPI) EnabledLanguages() map[string]string {
 	}
 
 	langs := make(map[string]string)
-	for _, lang := range s.grader.Languages() {
+	for _, lang := range s.langMgr.Languages() {
 		langs[lang.InternalName()] = lang.PrintableName()
 	}
 	return langs

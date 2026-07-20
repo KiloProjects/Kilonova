@@ -13,7 +13,7 @@ import (
 	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/domain/user/userpg"
-	"github.com/KiloProjects/kilonova/eval/language"
+	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/infra/postgres"
 	"github.com/KiloProjects/kilonova/internal/auth"
 	"github.com/KiloProjects/kilonova/net/email"
@@ -37,9 +37,6 @@ type Submissions struct {
 
 type Grader interface {
 	Wake()
-	Language(string) language.GraderLang
-	Languages() map[string]language.GraderLang
-	LanguageVersions(ctx context.Context) map[string]string
 }
 
 type BaseAPI struct {
@@ -55,7 +52,8 @@ type BaseAPI struct {
 
 	sessionUserCache *theine.LoadingCache[string, *kilonova.UserFull]
 
-	grader Grader
+	grader  Grader
+	langMgr eval.LanguageManager
 
 	logChan chan *logEntry
 

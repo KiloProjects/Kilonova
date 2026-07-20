@@ -9,8 +9,8 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func standardCheckerTask(ctx context.Context, mgr eval.BoxScheduler, job *customCheckerInput, _ *slog.Logger) (string, decimal.Decimal) {
-	lang := mgr.LanguageFromFilename(job.c.filename)
+func standardCheckerTask(ctx context.Context, mgr eval.BoxScheduler, evalMgr eval.LanguageManager, job *customCheckerInput, _ *slog.Logger) (string, decimal.Decimal) {
+	lang := evalMgr.LanguageFromFilename(job.c.filename)
 	if lang == nil {
 		return ErrOut, decimal.Zero
 	}

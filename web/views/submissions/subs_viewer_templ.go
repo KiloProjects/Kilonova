@@ -1269,9 +1269,9 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var58 templ.SafeURL
-			templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(buildSortURL(params.Query, "max_memory")))
+			templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(buildSortURL(params.Query, "max_mem")))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 453, Col: 92}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/submissions/subs_viewer.templ`, Line: 453, Col: 89}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 			if templ_7745c5c3_Err != nil {
@@ -1290,7 +1290,7 @@ func SubsViewer(params SubsViewerParams) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = sortIndicator(params.Query, "max_memory").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = sortIndicator(params.Query, "max_mem").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
