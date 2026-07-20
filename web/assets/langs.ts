@@ -5,6 +5,7 @@ export const languages = {
 	cpp14: "text/x-c++src",
 	cpp17: "text/x-c++src",
 	cpp20: "text/x-c++src",
+	cpp23: "text/x-c++src",
 	golang: "text/x-go",
 	haskell: "text/x-haskell",
 	java: "text/x-java",
@@ -24,6 +25,7 @@ export const prettyLanguages = {
 	cpp14: "C++14",
 	cpp17: "C++17",
 	cpp20: "C++20",
+	cpp23: "C++23",
 	golang: "Go",
 	haskell: "Haskell",
 	java: "Java",
@@ -51,7 +53,7 @@ export const cm_modes: { [name: string]: CMMode } = {
 	cpp: {
 		mimeType: "text/x-c++src",
 		prettyName: "C++",
-		extensions: ["cpp", "cxx", "cpp11", "cpp14", "cpp17", "cpp20", "h", "hpp", "hxx"],
+		extensions: ["cpp", "cxx", "cpp11", "cpp14", "cpp17", "cpp20", "cpp23", "h", "hpp", "hxx"],
 	},
 	golang: {
 		mimeType: "text/x-go",
