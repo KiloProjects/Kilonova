@@ -27,11 +27,11 @@ var Langs = map[string]langer{
 		PrintableName:  "C",
 		InternalName:   "c",
 		MOSSName:       "cc", // Treat C as C++. Not necessarily correct but might help
-		CompileCommand: []string{"gcc", "-fuse-ld=mold", "-std=gnu11", "-O2", "-lm", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", magicReplace, "-o", "/box/output"},
+		CompileCommand: []string{"gcc", "-fuse-ld=mold", "-std=gnu23", "-O2", "-lm", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", magicReplace, "-o", "/box/output"},
 		RunCommand:     []string{magicReplace},
 		sourceName:     "/box/main.c",
 		compiledName:   "/box/output",
-		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
+		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20", "cpp23"},
 
 		VersionCommand: []string{"gcc", "--version"},
 		VersionParser:  getFirstLine,
@@ -49,7 +49,7 @@ var Langs = map[string]langer{
 		RunCommand:     []string{magicReplace},
 		sourceName:     "/box/main.cpp",
 		compiledName:   "/box/output",
-		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
+		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20", "cpp23"},
 
 		VersionCommand: []string{"g++", "--version"},
 		VersionParser:  getFirstLine,
@@ -67,7 +67,7 @@ var Langs = map[string]langer{
 		RunCommand:     []string{magicReplace},
 		sourceName:     "/box/main.cpp",
 		compiledName:   "/box/output",
-		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
+		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20", "cpp23"},
 
 		VersionCommand: []string{"g++", "--version"},
 		VersionParser:  getFirstLine,
@@ -85,7 +85,7 @@ var Langs = map[string]langer{
 		RunCommand:     []string{magicReplace},
 		sourceName:     "/box/main.cpp",
 		compiledName:   "/box/output",
-		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
+		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20", "cpp23"},
 
 		VersionCommand: []string{"g++", "--version"},
 		VersionParser:  getFirstLine,
@@ -103,7 +103,25 @@ var Langs = map[string]langer{
 		RunCommand:     []string{magicReplace},
 		sourceName:     "/box/main.cpp",
 		compiledName:   "/box/output",
-		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20"},
+		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20", "cpp23"},
+
+		VersionCommand: []string{"g++", "--version"},
+		VersionParser:  getFirstLine,
+
+		Mounts: []Directory{{In: "/etc"}},
+	},
+	"cpp23": legacyLanguage{
+		Extensions:    []string{".cpp", ".c++", ".cc", ".cxx", ".cpp23"},
+		Compiled:      true,
+		PrintableName: "C++23",
+		InternalName:  "cpp23",
+		MOSSName:      "cc",
+
+		CompileCommand: []string{"g++", "-fuse-ld=mold", "-std=c++23", "-O2", "-s", "-static", "-DKNOVA", "-DONLINE_JUDGE", magicReplace, "-o", "/box/output"},
+		RunCommand:     []string{magicReplace},
+		sourceName:     "/box/main.cpp",
+		compiledName:   "/box/output",
+		SimilarLangs:   []string{"c", "cpp", "cpp11", "cpp14", "cpp17", "cpp20", "cpp23"},
 
 		VersionCommand: []string{"g++", "--version"},
 		VersionParser:  getFirstLine,
