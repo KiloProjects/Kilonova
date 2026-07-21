@@ -105,7 +105,6 @@ func NewLanguageManager(ctx context.Context, scheduler eval.BoxScheduler, logger
 		scheduler: scheduler,
 		logger:    logger,
 
-		languageVersions:   make(map[string]string),
 		supportedLanguages: supportedLanguages(ctx),
 	}
 }
