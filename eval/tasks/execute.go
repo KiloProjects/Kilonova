@@ -96,7 +96,7 @@ func ExecuteBatch(ctx context.Context, mgr eval.BoxScheduler, memQuota int64, re
 
 	resp := parseResponse(ctx, bResp.Stats, logger, req.OutputFile.Filename)
 
-	if !slices.Contains(bResp.BucketFiles, "/box/"+req.OutputName) {
+	if resp.Comments == "" && !slices.Contains(bResp.BucketFiles, "/box/"+req.OutputName) {
 		resp.Comments = "No output file found"
 	}
 

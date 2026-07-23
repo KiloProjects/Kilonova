@@ -413,6 +413,11 @@ type subtestOutput struct {
 }
 
 func (sh *submissionHandler) handleBatchSubTest(ctx context.Context, checker checkers.Checker, subTest *kilonova.SubTest) (*subtestOutput, error) {
+	memoryLimit := int(float64(sh.pb.MemoryLimit) * cmp.Or(sh.lang.MemoryLimitMultiplier(), 1.0))
+	if sh.lang.InternalName() == "python3" {
+		memoryLimit = max(memoryLimit, 8*1024)
+	}
+
 	execRequest := &tasks.BatchRequest{
 		ExecFile: &eval.BucketFile{
 			Bucket:   datastore.BucketTypeCompiles,
@@ -426,7 +431,7 @@ func (sh *submissionHandler) handleBatchSubTest(ctx context.Context, checker che
 		},
 		InputName:   sh.pb.TestName + ".in",
 		OutputName:  sh.pb.TestName + ".out",
-		MemoryLimit: int(float64(sh.pb.MemoryLimit) * cmp.Or(sh.lang.MemoryLimitMultiplier(), 1.0)),
+		MemoryLimit: memoryLimit,
 		TimeLimit:   sh.pb.TimeLimit * cmp.Or(sh.lang.TimeLimitMultiplier(), 1.0),
 		Lang:        sh.lang,
 		InputFile: &eval.BucketFile{
@@ -442,7 +447,7 @@ func (sh *submissionHandler) handleBatchSubTest(ctx context.Context, checker che
 		execRequest.OutputName = "stdout"
 	}
 
-	resp, err := tasks.ExecuteBatch(ctx, sh.runner, int64(sh.pb.MemoryLimit), execRequest, graderLogger)
+	resp, err := tasks.ExecuteBatch(ctx, sh.runner, int64(memoryLimit), execRequest, graderLogger)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't execute subtest: %w", err)
 	}
