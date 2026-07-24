@@ -10,7 +10,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/eval/scheduler"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -158,13 +157,12 @@ func (h *Handler) handle(runner eval.BoxScheduler, langMgr eval.LanguageManager)
 }
 
 func (h *Handler) Start() error {
-	runner, err := h.getAppropriateRunner(h.ctx)
+	runner, langMgr, err := h.getAppropriateRunner(h.ctx)
 	if err != nil {
 		return err
 	}
 
 	h.runner = runner
-	langMgr := scheduler.NewLanguageManager(h.ctx, runner, graderLogger)
 
 	h.base.RegisterGrader(h) // To allow waking from outside grader
 	h.base.RegisterLanguageManager(langMgr)

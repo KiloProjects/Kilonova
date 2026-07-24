@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package kilonova.grader.v1;
+
+option go_package = "github.com/KiloProjects/kilonova/eval/scheduler/proto/kilonova/grader/v1;graderv1";
+
+// GraderService mirrors eval.Box3Scheduler + the grader-authoritative slice of
+// eval.LanguageManager.
+service GraderService {
+  rpc RunBox3(RunBox3Request) returns (RunBox3Response);
+  rpc RunMultibox3(RunMultibox3Request) returns (RunMultibox3Response);
+  // Languages returns the grader-supported language names mapped to their
+  // installed version string. The platform rebuilds full language behavior from
+  // its own compiled-in registry, filtered to these names.
+  rpc Languages(LanguagesRequest) returns (LanguagesResponse);
+}
+
+// Directory mirrors eval/language.Directory.
+message Directory {
+  string in = 1;
+  string out = 2;
+  string opts = 3;
+  bool removes = 4;
+  bool verbatim = 5;
+}
+
+// ScratchFile mirrors eval.ScratchFile. mode is an fs.FileMode bit pattern.
+message ScratchFile {
+  string identifier = 1;
+  string box_path = 2;
+  uint32 mode = 3;
+}
+
+// RunConfig mirrors eval.RunConfig.
+message RunConfig {
+  bool stderr_to_stdout = 1;
+  string input_path = 2;
+  string output_path = 3;
+  string stderr_path = 4;
+  int32 memory_limit = 5;
+  double time_limit = 6;
+  double wall_time_limit = 7;
+  bool inherit_env = 8;
+  repeated string env_to_inherit = 9;
+  map<string, string> env_to_set = 10;
+  bool enable_internet = 11;
+  repeated Directory directories = 12;
+}
+
+// RunStats mirrors eval.RunStats.
+message RunStats {
+  int32 memory = 1;
+  int32 exit_code = 2;
+  int32 exit_signal = 3;
+  bool killed = 4;
+  string message = 5;
+  string status = 6;
+  double time = 7;
+  string internal_message = 8;
+  bool memory_limit_exceeded = 9;
+}
+
+// Box3Request mirrors eval.Box3Request.
+message Box3Request {
+  repeated ScratchFile input_files = 1;
+  repeated string command = 2;
+  RunConfig run_config = 3;
+  repeated string output_file_paths = 4;
+}
+
+// Box3Response mirrors eval.Box3Response. files maps output box path -> scratch id.
+message Box3Response {
+  RunStats stats = 1;
+  map<string, string> files = 2;
+}
+
+message RunBox3Request {
+  Box3Request request = 1;
+  int64 mem_quota = 2;
+}
+
+message RunBox3Response {
+  Box3Response response = 1;
+}
+
+// Multibox3Request mirrors eval.Multibox3Request.
+message Multibox3Request {
+  Box3Request manager_sandbox = 1;
+  repeated Box3Request user_sandbox_configs = 2;
+  bool use_stdin = 3;
+}
+
+message RunMultibox3Request {
+  Multibox3Request request = 1;
+  int64 manager_mem_quota = 2;
+  int64 individual_mem_quota = 3;
+}
+
+// RunMultibox3Response carries the manager sandbox response plus per-user stats.
+message RunMultibox3Response {
+  Box3Response manager_response = 1;
+  repeated RunStats user_stats = 2;
+}
+
+message LanguagesRequest {}
+
+message LanguagesResponse {
+  // versions maps supported language name -> installed version string.
+  map<string, string> versions = 1;
+}

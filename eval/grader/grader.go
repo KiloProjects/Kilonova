@@ -6,12 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"path"
 	"slices"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/config"
@@ -604,7 +606,14 @@ func (sh *submissionHandler) scoreTests(ctx context.Context) error {
 	return sh.base.UpdateSubmission(ctx, sh.sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score, MaxTime: &time, MaxMemory: &memory})
 }
 
-func (h *Handler) getAppropriateRunner(ctx context.Context) (eval.BoxScheduler, error) {
+func (h *Handler) getAppropriateRunner(ctx context.Context) (eval.BoxScheduler, eval.LanguageManager, error) {
+	if config.Eval.IsRemote() {
+		return h.getRemoteRunner(ctx)
+	}
+	return h.getLocalRunner(ctx)
+}
+
+func (h *Handler) getLocalRunner(ctx context.Context) (eval.BoxScheduler, eval.LanguageManager, error) {
 	var boxFunc scheduler.BoxFunc
 	var boxVersion = "NONE"
 	if scheduler.CheckCanRun(ctx, box.New) {
@@ -616,13 +625,13 @@ func (h *Handler) getAppropriateRunner(ctx context.Context) (eval.BoxScheduler, 
 		boxVersion = "stupid"
 	}
 	if boxFunc == nil {
-		slog.ErrorContext(ctx, "Remote grader has not been implemented. No grader available!")
+		slog.ErrorContext(ctx, "No local sandbox available and eval mode is not remote!")
 		os.Exit(1)
 	}
 
 	baseDir := path.Join(os.TempDir(), uuid.New().String())
 	if err := os.MkdirAll(baseDir, 0777); err != nil {
-		return nil, fmt.Errorf("couldn't create scratch dir: %w", err)
+		return nil, nil, fmt.Errorf("couldn't create scratch dir: %w", err)
 	}
 
 	scratchDir := scratch.New(afero.NewBasePathFs(afero.NewOsFs(), baseDir))
@@ -630,11 +639,51 @@ func (h *Handler) getAppropriateRunner(ctx context.Context) (eval.BoxScheduler, 
 	slog.InfoContext(ctx, "Trying to spin up local grader")
 	bm, err := scheduler.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, graderLogger, scratchDir, boxFunc)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	slog.InfoContext(ctx, "Running local grader", slog.String("version", boxVersion))
 
-	return scheduler.NewAdapter(scratchDir, h.base.DataStore(), bm), nil
+	runner := scheduler.NewBox2Wrapper(scratchDir, h.base.DataStore(), bm)
+	langMgr := scheduler.NewLanguageManager(ctx, runner, graderLogger)
+	return runner, langMgr, nil
+}
+
+// getRemoteRunner wires the platform against a remote grader: RPC control plane
+// (GraderClient) + SFTP data plane (scratch). No local sandbox is created.
+func (h *Handler) getRemoteRunner(ctx context.Context) (eval.BoxScheduler, eval.LanguageManager, error) {
+	rc := config.Eval.Remote
+	key, err := os.ReadFile(rc.SFTP.KeyPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("couldn't read sftp key: %w", err)
+	}
+	var hostKey []byte
+	if rc.SFTP.HostKeyPath != "" {
+		if hostKey, err = os.ReadFile(rc.SFTP.HostKeyPath); err != nil {
+			return nil, nil, fmt.Errorf("couldn't read sftp host key: %w", err)
+		}
+	}
+
+	remoteScratch, err := scratch.NewSFTP(scratch.SFTPConfig{
+		Addr:       rc.SFTP.Addr,
+		User:       rc.SFTP.User,
+		PrivateKey: key,
+		HostKey:    hostKey,
+		BaseDir:    rc.SFTP.ScratchBase,
+		MaxConns:   rc.SFTP.MaxConns,
+		Timeout:    time.Duration(rc.SFTP.TimeoutSec) * time.Second,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("couldn't set up remote scratch: %w", err)
+	}
+
+	client := scheduler.NewGraderClient(http.DefaultClient, rc.Endpoint, rc.Token)
+	langMgr, err := scheduler.NewRemoteLanguageManager(ctx, client, graderLogger)
+	if err != nil {
+		return nil, nil, fmt.Errorf("couldn't fetch remote language inventory: %w", err)
+	}
+
+	slog.InfoContext(ctx, "Running remote grader", slog.String("endpoint", rc.Endpoint))
+	return scheduler.NewBox2Wrapper(remoteScratch, h.base.DataStore(), client), langMgr, nil
 }
 
 func (sh *submissionHandler) getAppropriateChecker(ctx context.Context) (checkers.Checker, error) {

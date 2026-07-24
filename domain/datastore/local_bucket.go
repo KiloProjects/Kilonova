@@ -1,7 +1,6 @@
 package datastore
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"io"
@@ -9,10 +8,10 @@ import (
 	"log/slog"
 	"os"
 	"path"
-	"slices"
 	"sync"
 	"time"
 
+	"github.com/KiloProjects/kilonova/internal/fsevict"
 	"github.com/dustin/go-humanize"
 	"github.com/spf13/afero"
 )
@@ -216,12 +215,6 @@ func (b *localBucket) FileList() ([]fs.FileInfo, error) {
 	return entries, err
 }
 
-type evictionEntry struct {
-	name    string
-	modTime time.Time
-	size    int64
-}
-
 func (b *localBucket) Evictable() bool {
 	return !b.persistent && (b.maxSize > 1024 || b.maxTTL > time.Second)
 }
@@ -232,63 +225,32 @@ func (b *localBucket) RunEvictionPolicy(ctx context.Context, logger *slog.Logger
 	}
 	b.lastStatsMu.Lock()
 	defer b.lastStatsMu.Unlock()
-	entries, err := afero.ReadDir(b.rootFS, b.name)
+
+	res, err := fsevict.Sweep(b.rootFS, b.name, b.maxSize, b.maxTTL)
 	if err != nil {
-		return -1, err
+		return res.Deleted, err
 	}
-	var dirSize int64
-	// Get directory size and file entries
-	evictionEntries := make([]evictionEntry, len(entries))
-	for i := range entries {
-		info := entries[i]
-		evictionEntries[i].name = info.Name()
-		evictionEntries[i].modTime = info.ModTime()
-		evictionEntries[i].size = info.Size()
-		dirSize += info.Size()
-	}
-	// Order entries ascending based on file last modified date
-	slices.SortFunc(evictionEntries, func(a, b evictionEntry) int {
-		return cmp.Compare(a.modTime.UnixMicro(), b.modTime.UnixMicro())
-	})
 
 	if logger != nil {
-		logger.InfoContext(ctx, "Before cleanup", slog.Any("bucket", b), slog.Int("object_count", len(evictionEntries)), slog.String("bucket_size", humanize.IBytes(uint64(dirSize))))
-	}
-
-	var numDeleted int
-	for len(evictionEntries) > 0 {
-		var ok = true
-		// If maxTTL is big enough and file is earlier than that policy, mark for deletion
-		if b.maxTTL > time.Second && time.Since(evictionEntries[0].modTime) > b.maxTTL {
-			ok = false
-		}
-		// If directory size is still bigger than maximum
-		if b.maxSize > 1024 && dirSize > b.maxSize {
-			ok = false
-		}
-		if ok {
-			break
-		}
-		dirSize -= evictionEntries[0].size
-		if err := b.rootFS.Remove(b.filePath(evictionEntries[0].name)); err != nil {
-			return numDeleted, err
-		}
-		numDeleted++
-		evictionEntries = evictionEntries[1:]
+		logger.InfoContext(ctx, "Before cleanup", slog.Any("bucket", b),
+			slog.Int("object_count", res.Deleted+res.Remaining),
+			slog.String("bucket_size", humanize.IBytes(uint64(res.DeletedSize+res.RemainingSize))))
 	}
 
 	b.lastStats = &BucketStats{
 		Name: b.name, Cache: b.cache,
 		Persistent: b.persistent, MaxSize: b.maxSize, MaxTTL: b.maxTTL,
-		NumItems: len(evictionEntries), OnDiskSize: dirSize,
+		NumItems: res.Remaining, OnDiskSize: res.RemainingSize,
 		CreatedAt: time.Now(),
 	}
 
 	if logger != nil {
-		logger.InfoContext(ctx, "After cleanup", slog.Any("bucket", b), slog.Int("object_count", len(evictionEntries)), slog.String("bucket_size", humanize.IBytes(uint64(dirSize))))
+		logger.InfoContext(ctx, "After cleanup", slog.Any("bucket", b),
+			slog.Int("object_count", res.Remaining),
+			slog.String("bucket_size", humanize.IBytes(uint64(res.RemainingSize))))
 	}
 
-	return numDeleted, nil
+	return res.Deleted, nil
 }
 
 func (b *localBucket) ResetCache() error {

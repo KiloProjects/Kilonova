@@ -10,21 +10,26 @@ import (
 	"github.com/KiloProjects/kilonova/eval"
 )
 
-type Box3Adapter struct {
+// Box2Wrapper is the platform-side convenience layer that presents the
+// datastore-aware Box2 interface on top of a (local or remote) Box3Scheduler.
+// It owns moving bytes in/out of the scratch — tasks/ never touch scratch
+// directly — and cleans up scratch identifiers it creates. In remote mode mgr
+// and scratch are the RPC client + SFTP scratch; nothing else here changes.
+type Box2Wrapper struct {
 	scratch eval.Scratch
 	store   eval.Store
 	mgr     eval.Box3Scheduler
 }
 
-func NewAdapter(scratch eval.Scratch, store eval.Store, mgr eval.Box3Scheduler) eval.BoxScheduler {
-	return &Box3Adapter{
+func NewBox2Wrapper(scratch eval.Scratch, store eval.Store, mgr eval.Box3Scheduler) eval.BoxScheduler {
+	return &Box2Wrapper{
 		scratch: scratch,
 		store:   store,
 		mgr:     mgr,
 	}
 }
 
-func (b *Box3Adapter) RunBox2(ctx context.Context, b2Req *eval.Box2Request, memQuota int64) (*eval.Box2Response, error) {
+func (b *Box2Wrapper) RunBox2(ctx context.Context, b2Req *eval.Box2Request, memQuota int64) (*eval.Box2Response, error) {
 	b3Req, err := b.convertRequest(ctx, b2Req)
 	if b3Req != nil {
 		// Setup the defer here for cleaning up identifiers
@@ -43,7 +48,7 @@ func (b *Box3Adapter) RunBox2(ctx context.Context, b2Req *eval.Box2Request, memQ
 	return b.convertResponse(ctx, b2Req, result)
 }
 
-func (b *Box3Adapter) RunMultibox2(ctx context.Context, b2Req *eval.Multibox2Request, managerMemQuota int64, individualMemQuota int64) (*eval.Box2Response, []*eval.RunStats, error) {
+func (b *Box2Wrapper) RunMultibox2(ctx context.Context, b2Req *eval.Multibox2Request, managerMemQuota int64, individualMemQuota int64) (*eval.Box2Response, []*eval.RunStats, error) {
 	managerRequest, err := b.convertRequest(ctx, b2Req.ManagerSandbox)
 	if err != nil {
 		return nil, nil, err
@@ -73,7 +78,7 @@ func (b *Box3Adapter) RunMultibox2(ctx context.Context, b2Req *eval.Multibox2Req
 	return resp2, stats, err
 }
 
-func (b *Box3Adapter) convertRequest(ctx context.Context, b2Req *eval.Box2Request) (*eval.Box3Request, error) {
+func (b *Box2Wrapper) convertRequest(ctx context.Context, b2Req *eval.Box2Request) (*eval.Box3Request, error) {
 	b3Req := &eval.Box3Request{
 		InputFiles:      make([]eval.ScratchFile, 0, len(b2Req.InputBucketFiles)+len(b2Req.InputByteFiles)),
 		Command:         b2Req.Command,
@@ -128,7 +133,7 @@ func (b *Box3Adapter) convertRequest(ctx context.Context, b2Req *eval.Box2Reques
 	return b3Req, nil
 }
 
-func (b *Box3Adapter) convertResponse(ctx context.Context, req *eval.Box2Request, result *eval.Box3Response) (*eval.Box2Response, error) {
+func (b *Box2Wrapper) convertResponse(ctx context.Context, req *eval.Box2Request, result *eval.Box3Response) (*eval.Box2Response, error) {
 	if result == nil || req == nil {
 		return nil, nil
 	}
@@ -161,7 +166,7 @@ func (b *Box3Adapter) convertResponse(ctx context.Context, req *eval.Box2Request
 	return resp, nil
 }
 
-func (b *Box3Adapter) readDeleteScratch(ctx context.Context, identifier string) ([]byte, error) {
+func (b *Box2Wrapper) readDeleteScratch(ctx context.Context, identifier string) ([]byte, error) {
 	defer func(identifier string) {
 		err := b.scratch.DeleteFile(identifier)
 		if err != nil {
@@ -178,7 +183,7 @@ func (b *Box3Adapter) readDeleteScratch(ctx context.Context, identifier string) 
 	return io.ReadAll(rc)
 }
 
-func (b *Box3Adapter) copyDeleteScratch(ctx context.Context, identifier string, file *eval.BucketFile) error {
+func (b *Box2Wrapper) copyDeleteScratch(ctx context.Context, identifier string, file *eval.BucketFile) error {
 	defer func(identifier string) {
 		err := b.scratch.DeleteFile(identifier)
 		if err != nil {
@@ -195,7 +200,7 @@ func (b *Box3Adapter) copyDeleteScratch(ctx context.Context, identifier string, 
 	return b.store.WriteFile(file.Bucket, file.Filename, rc, file.Mode)
 }
 
-func (b *Box3Adapter) clearInput(ctx context.Context, req *eval.Box3Request) {
+func (b *Box2Wrapper) clearInput(ctx context.Context, req *eval.Box3Request) {
 	for _, file := range req.InputFiles {
 		err := b.scratch.DeleteFile(file.Identifier)
 		if err != nil {
@@ -204,6 +209,6 @@ func (b *Box3Adapter) clearInput(ctx context.Context, req *eval.Box3Request) {
 	}
 }
 
-func (b *Box3Adapter) Close(ctx context.Context) error {
+func (b *Box2Wrapper) Close(ctx context.Context) error {
 	return b.mgr.Close(ctx)
 }

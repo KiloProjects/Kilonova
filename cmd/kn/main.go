@@ -85,6 +85,7 @@ func main() {
 			submissionSaver,
 			aiTools,
 			contestUtils,
+			graderServe,
 		},
 	}
 

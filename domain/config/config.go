@@ -40,11 +40,39 @@ type EmailConf struct {
 
 // EvalConf is the data required for the eval service
 type EvalConf struct {
-	// Address       string `toml:"address"`
+	// Mode selects the grader: "local" (default, in-process) or "remote".
+	// In local mode the fields below drive the in-process BoxManager and Remote
+	// is ignored; in remote mode execution settings live in the grader's own
+	// config file and only Remote is used.
+	Mode string `toml:"mode"`
+
 	NumConcurrent int   `toml:"num_concurrent"`
 	GlobalMaxMem  int64 `toml:"global_max_mem_kb"`
 
 	StartingBox int `toml:"starting_box"`
+
+	Remote RemoteEvalConf `toml:"remote"`
+}
+
+// IsRemote reports whether the platform should talk to a remote grader.
+func (e EvalConf) IsRemote() bool { return e.Mode == "remote" }
+
+// RemoteEvalConf tells the platform how to reach a remote grader.
+type RemoteEvalConf struct {
+	Endpoint string   `toml:"endpoint"` // ConnectRPC base URL, e.g. https://grader:9000
+	Token    string   `toml:"token"`    // grader-minted bearer token for this platform instance
+	SFTP     SFTPConf `toml:"sftp"`
+}
+
+// SFTPConf is the data-plane connection to the grader's scratch directory.
+type SFTPConf struct {
+	Addr        string `toml:"addr"`          // grader host:port for the sftp subsystem
+	User        string `toml:"user"`          // ssh user
+	KeyPath     string `toml:"key_path"`      // path to the ssh private key
+	HostKeyPath string `toml:"host_key_path"` // optional authorized host key for pinning
+	ScratchBase string `toml:"scratch_base"`  // remote scratch dir prefix ("" if the user is chrooted to it)
+	MaxConns    int    `toml:"max_conns"`     // pooled ssh connections (default 4)
+	TimeoutSec  int    `toml:"timeout_sec"`   // per-operation deadline in seconds (default 30)
 }
 
 // CommonConf is the data required for all services
