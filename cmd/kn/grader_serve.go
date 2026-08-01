@@ -73,6 +73,10 @@ var graderServe = &cli.Command{
 		mux := http.NewServeMux()
 		mux.Handle(path, handler)
 
+		// Data plane: file bytes over the same TLS+token endpoint as the RPC.
+		scratchPath, scratchHandler := scheduler.ScratchHandler(scratchFS, registry)
+		mux.Handle(scratchPath, scratchHandler)
+
 		httpSrv := &http.Server{Addr: g.Listen, Handler: mux}
 		slog.InfoContext(ctx, "Remote grader listening", slog.String("addr", g.Listen), slog.Int("clients", len(g.Clients)))
 		if err := httpSrv.ListenAndServeTLS(g.CertFile, g.KeyFile); err != nil {

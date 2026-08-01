@@ -40,26 +40,14 @@ token = "<another token>"
 The grader process also reads the standard `config.toml` (via the global `--config`
 flag) for `[common] log_dir` etc. — ship it a minimal one; it needs no DB DSN.
 
-## Data plane (SFTP)
+## Data plane (HTTP /scratch)
 
-Bytes move over the operator's `sshd`, **not** through the RPC. Configure an sftp
-subsystem chrooted to the scratch dir so the platform's ssh user can only see
-scratch:
-
-```
-# /etc/ssh/sshd_config
-Match User kilonova-scratch
-    ChrootDirectory /var/lib/kilonova/scratch
-    ForceCommand internal-sftp
-    AllowTcpForwarding no
-    X11Forwarding no
-    PermitTunnel no
-```
-
-Chroot requires the chroot dir be root-owned; put the writable scratch in a
-subdirectory owned by `kilonova-scratch`, and set `scratch_dir` (grader) +
-`scratch_base` (platform) to that subdir. Add the platform's ssh public key to
-`kilonova-scratch`'s `authorized_keys`.
+Bytes move over the **same** `listen` endpoint as the RPC, behind the same TLS
+cert and the same bearer token — `PUT`/`GET`/`DELETE https://grader:9000/scratch/{id}`,
+where `{id}` is a platform-minted UUID. No `sshd`, no SSH keys, no host-key
+management, no second listening service. Path traversal is impossible: the grader
+parses `{id}` as a UUID and rejects anything else, so a client can only ever name
+a flat file in the scratch dir.
 
 ## Platform side
 
@@ -68,21 +56,9 @@ subdirectory owned by `kilonova-scratch`, and set `scratch_dir` (grader) +
 mode = "remote"
 
 [eval.remote]
-endpoint = "https://grader.internal:9000"
+endpoint = "https://grader.internal:9000"   # RPC and /scratch both live here
 token    = "<the token minted for this instance>"
-
-[eval.remote.sftp]
-addr          = "grader.internal:22"
-user          = "kilonova-scratch"
-key_path      = "/etc/kilonova/scratch_id_ed25519"
-host_key_path = "/etc/kilonova/grader_host_key.pub"   # optional; pins the host key
-scratch_base  = ""                                    # "" when chrooted
-max_conns     = 4
-timeout_sec   = 30
 ```
-
-Leaving `host_key_path` empty skips host-key verification (relying on segmentation);
-set it in production.
 
 ## Rollback
 

@@ -37,7 +37,7 @@ Verified constraints from the code:
 - Run the grader as a separate process (one remote server) holding no platform credentials.
 - Keep all connections platform→grader; the grader only ever answers.
 - Make `adapter`, `tasks/`, `BoxManager`, `box/` change by ~zero lines — swap concrete impls for client stubs behind existing interfaces.
-- Keep the RPC surface **unary** (identifiers only); move bytes over SFTP so no streaming RPC code is written.
+- Keep the RPC surface **unary** (identifiers only); move bytes over a separate HTTP `/scratch` endpoint so no streaming RPC code is written.
 - Preserve today's single-machine dev experience under `mode = local`.
 - Split config by role and seed (not build) future priority queuing.
 
@@ -52,28 +52,19 @@ Verified constraints from the code:
 ### D1. The wire boundary is the `Box3Scheduler` + `LanguageManager` interfaces, exposed as unary ConnectRPC
 The platform holds client stubs implementing `eval.Box3Scheduler` and `eval.LanguageManager`; the grader hosts a ConnectRPC service wrapping the real `BoxManager` and language manager. RPC messages carry `Box3Request`/`Box3Response`/`RunConfig`/`RunStats`/`ScratchFile` and the language map — all small, all unary.
 
-**Why not stream files through the RPC?** It forces hand-rolled chunking (the thing we're avoiding) and buys nothing while the data plane is SFTP. Deferred to a future `grader-local-scratch` service if we ever drop SFTP.
+**Why not stream files through the RPC?** ConnectRPC streaming forces hand-rolled chunking (the thing we're avoiding). A separate plain-HTTP endpoint (D2) avoids both that *and* SFTP, and buys nothing to defer.
 
-### D2. Data plane is a remote `eval.Scratch` over SFTP (`github.com/pkg/sftp`), not FUSE
-`eval.Scratch` is three methods behind an `afero.Fs`. The remote impl is either `sftpfs.New(client)` behind the existing `afero.NewBasePathFs`, or a ~20-line direct impl on `*sftp.Client` (`Create`+`io.Copy`+`Close` / `Open` / `Remove`). The grader owns the scratch directory locally; the platform reaches it over SFTP against the grader's `sshd` (sftp subsystem, chrooted to the scratch dir).
+### D2. Data plane is a remote `eval.Scratch` over a plain HTTP `/scratch` endpoint
 
-**Why SFTP-library over sshfs/FUSE** (same transport, same trust direction, but):
+> **Superseded SFTP.** The original plan moved bytes over the grader's `sshd` via `github.com/pkg/sftp` (chrooted sftp subsystem, SSH-key auth, a redialing SSH connection pool). That was rejected once we noticed the "no streaming code" argument it rested on applies equally to a plain `net/http` handler — `io.Copy(w, file)` / `io.Copy(file, r.Body)` streams with zero chunking, and the http stack pools connections for free. SFTP's advanced features (seek, resume, dir ops) are all unused: `eval.Scratch` is just whole-file put/get/delete. So SFTP bought a second listening service, a second auth system (SSH keys + host-key management), a new dependency, and ~250 lines of pool code — for nothing the HTTP endpoint doesn't do in ~60. The comparison against sshfs/FUSE that justified SFTP never considered "an endpoint on the server we already run."
 
-```
-                     │ sshfs (FUSE)              │ pkg/sftp adapter
-─────────────────────┼──────────────────────────┼──────────────────────────────
-where it runs        │ kernel FUSE, privileged   │ userspace, unprivileged
-drop mid-eval        │ hung syscall / EIO        │ Go error + ctx timeout, redial
-platform container   │ needs FUSE device + mount │ plain container
-chunking             │ kernel does it            │ library does it — you write io.Copy
-app code             │ ~0                         │ ~20 lines (or 2, via sftpfs)
-```
+`eval.Scratch` is three methods (`SaveFile`/`ReadFile`/`DeleteFile`). The remote impl is an `http.Client` speaking `PUT`/`GET`/`DELETE /scratch/{id}` against the grader's existing TLS server; the handler `io.Copy`s to/from a file in the grader's scratch dir. The grader owns the scratch directory locally and serves it on the **same** `listen` endpoint as the RPC — one port, one cert, one bearer token.
 
-The library gives streamed transfer with **zero streaming code**, keeps the RPC unary, shrinks the platform's own attack surface (no privileged mount), and turns "supervise the mount" into ordinary Go connection handling. sshfs is recorded as an alternative considered, rejected on ops + failure-mode + platform-surface grounds.
+**Path traversal** is the one thing the transport swap moves onto us (SFTP had chroot). Ids are platform-minted UUIDv7; the grader `uuid.Parse`s the `{id}` and rejects anything else, so a client can only ever name a flat file in the scratch dir. No slashes, no `..`. One line.
 
-**Ordering guarantee:** the platform waits for SFTP `Close()` to return (server has flushed to its disk) before firing `RunBox3`; the grader then reads its authoritative local file. No sshfs attr-cache staleness.
+**Ordering guarantee:** the `PUT` handler `Close()`s the file before writing its `204`, so the platform's `SaveFile` returns only after the bytes are on the grader's disk — same durability barrier the SFTP `Close()` gave, before any `RunBox3` references the id.
 
-**Concurrency:** `pkg/sftp` is concurrency-safe over one channel but a single channel is a throughput ceiling; use a small pool of SSH connections with health-check/redial for parallel evals.
+**Concurrency:** `http.Client`'s default transport pools and reuses keep-alive connections across parallel evals — no hand-rolled pool.
 
 ### D3. Role-split configuration; execution config moves to the grader
 `[eval]`'s `num_concurrent` / `global_max_mem_kb` / `starting_box` are box-runner settings and move to the grader's config in remote mode. The platform keeps only "how to reach the grader."
@@ -86,13 +77,13 @@ The library gives streamed transfer with **zero streaming code**, keeps the RPC 
                                                        # priority = "…"  (future field)
    config.toml (PLATFORM, REMOTE)            [[grader.client]] name, token
    [eval] mode = "remote"
-          endpoint, token, sftp{host,user,key,scratch_base}
+          endpoint, token   # RPC + /scratch both live on endpoint
 ```
 
 The commented-out `// Address string` already in `EvalConf` (config.go:43) anticipated this. Per-client blocks (name+token) are needed for auth and observability **now**; `priority` is a documented-but-unconsumed field so the future queue is a one-field add, not a schema refactor.
 
-### D4. Authentication: grader-minted bearer token over TLS; SSH key for SFTP
-TLS authenticates the grader to the platform (server cert). A per-platform-instance bearer token (minted on the grader, stored on the platform, sent via a ConnectRPC interceptor) authenticates the platform to the grader. SFTP uses SSH key auth. All platform→grader.
+### D4. Authentication: one grader-minted bearer token over TLS
+TLS authenticates the grader to the platform (server cert). A per-platform-instance bearer token (minted on the grader, stored on the platform) authenticates the platform to the grader — carried on the ConnectRPC interceptor **and** the `/scratch` requests, since both hit the same endpoint. One secret, one auth system. (The SFTP data plane would have needed a second one — SSH keys + host-key pinning; folding data onto HTTP deleted it.) All platform→grader.
 
 **Why token, not mTLS (day one):** token + TLS is the least machinery that fits "multiple platform instances, one grader, grader authoritative." mTLS (per-platform cryptographic identity, cert-based revocation) is the upgrade path when audit/revocation needs it, at the cost of running a CA.
 
@@ -126,11 +117,10 @@ POSIX `unlink` protects an already-open read (inode survives the fd), so this pa
 ## Risks / Trade-offs
 
 - **[Leaked token → grader RCE]** → TLS + network segmentation / IP allowlist are mandatory alongside the token, not optional. Tokens are per-instance and revocable via the grader's client registry.
-- **[SFTP connection drop mid-eval]** → explicit: wrap SFTP ops in a context with a deadline, redial via the pool, fail the eval fast and let it retry. No hung syscalls (the FUSE failure mode we rejected).
-- **[Two auth mechanisms — token+TLS for RPC, SSH key for SFTP]** → both platform→grader, both well-trodden; accepted for the SFTP-library's other wins.
-- **[Bandwidth: every submission re-uploads the same test inputs over SFTP]** → accepted for the MVP; content-addressed caching (deferred, see D6) is the eventual fix.
+- **[HTTP scratch drop mid-eval]** → the platform's scratch `http.Client` carries a 60s `Timeout`, so a dropped transfer becomes a Go error and the eval fails fast and retries. No hung syscalls (the FUSE failure mode we rejected). The RPC client keeps no global timeout — `RunBox3` is legitimately long — so hang-protection there stays server-side (mem/time quotas).
+- **[Path traversal via a crafted scratch id]** → the grader `uuid.Parse`s `{id}` and rejects non-UUIDs, so a client can only name a flat file in the scratch dir. Covered by `TestHTTPScratchRejectsPathTraversal`.
+- **[Bandwidth: every submission re-uploads the same test inputs]** → accepted for the MVP; content-addressed caching (deferred, see D6) is the eventual fix.
 - **[Config drift between platform's grader endpoint and grader's client registry]** → surfaced by a clear auth-failure error; `openspec`/ops docs to describe token provisioning (grader mints, platform stores).
-- **[afero/sftpfs quirks (modes, atomic rename)]** → scratch only needs create/read/remove; if `sftpfs` fights us, drop to the direct 3-method impl on `*sftp.Client`.
 
 ## Migration Plan
 

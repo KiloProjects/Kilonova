@@ -60,7 +60,6 @@ require (
 	github.com/mileusna/useragent v1.3.5
 	github.com/openai/openai-go/v3 v3.37.0
 	github.com/oschwald/maxminddb-golang/v2 v2.3.0
-	github.com/pkg/sftp v1.13.11
 	github.com/prometheus/client_golang v1.23.2
 	github.com/riandyrn/otelchi v0.12.3
 	github.com/rs/cors v1.11.1
@@ -139,7 +138,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jdx/go-netrc v1.0.0 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
-	github.com/kr/fs v0.1.0 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect

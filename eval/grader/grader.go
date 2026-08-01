@@ -649,29 +649,15 @@ func (h *Handler) getLocalRunner(ctx context.Context) (eval.BoxScheduler, eval.L
 }
 
 // getRemoteRunner wires the platform against a remote grader: RPC control plane
-// (GraderClient) + SFTP data plane (scratch). No local sandbox is created.
+// (GraderClient) + HTTP data plane (scratch), both on the grader's one TLS+token
+// endpoint. No local sandbox is created.
 func (h *Handler) getRemoteRunner(ctx context.Context) (eval.BoxScheduler, eval.LanguageManager, error) {
 	rc := config.Eval.Remote
-	key, err := os.ReadFile(rc.SFTP.KeyPath)
-	if err != nil {
-		return nil, nil, fmt.Errorf("couldn't read sftp key: %w", err)
-	}
-	var hostKey []byte
-	if rc.SFTP.HostKeyPath != "" {
-		if hostKey, err = os.ReadFile(rc.SFTP.HostKeyPath); err != nil {
-			return nil, nil, fmt.Errorf("couldn't read sftp host key: %w", err)
-		}
-	}
-
-	remoteScratch, err := scratch.NewSFTP(scratch.SFTPConfig{
-		Addr:       rc.SFTP.Addr,
-		User:       rc.SFTP.User,
-		PrivateKey: key,
-		HostKey:    hostKey,
-		BaseDir:    rc.SFTP.ScratchBase,
-		MaxConns:   rc.SFTP.MaxConns,
-		Timeout:    time.Duration(rc.SFTP.TimeoutSec) * time.Second,
-	})
+	// Bounded per-transfer so a dropped connection fails the eval fast instead of
+	// hanging (design D2). ponytail: 60s covers the largest test file; lift to a
+	// config field if real transfers approach it.
+	scratchClient := &http.Client{Timeout: 60 * time.Second}
+	remoteScratch, err := scratch.NewHTTP(scratchClient, rc.Endpoint+"/scratch", rc.Token)
 	if err != nil {
 		return nil, nil, fmt.Errorf("couldn't set up remote scratch: %w", err)
 	}

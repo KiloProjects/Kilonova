@@ -57,22 +57,12 @@ type EvalConf struct {
 // IsRemote reports whether the platform should talk to a remote grader.
 func (e EvalConf) IsRemote() bool { return e.Mode == "remote" }
 
-// RemoteEvalConf tells the platform how to reach a remote grader.
+// RemoteEvalConf tells the platform how to reach a remote grader. The RPC
+// control plane and the /scratch data plane both live on Endpoint, behind the
+// same TLS cert and bearer token — no separate data-plane connection.
 type RemoteEvalConf struct {
-	Endpoint string   `toml:"endpoint"` // ConnectRPC base URL, e.g. https://grader:9000
-	Token    string   `toml:"token"`    // grader-minted bearer token for this platform instance
-	SFTP     SFTPConf `toml:"sftp"`
-}
-
-// SFTPConf is the data-plane connection to the grader's scratch directory.
-type SFTPConf struct {
-	Addr        string `toml:"addr"`          // grader host:port for the sftp subsystem
-	User        string `toml:"user"`          // ssh user
-	KeyPath     string `toml:"key_path"`      // path to the ssh private key
-	HostKeyPath string `toml:"host_key_path"` // optional authorized host key for pinning
-	ScratchBase string `toml:"scratch_base"`  // remote scratch dir prefix ("" if the user is chrooted to it)
-	MaxConns    int    `toml:"max_conns"`     // pooled ssh connections (default 4)
-	TimeoutSec  int    `toml:"timeout_sec"`   // per-operation deadline in seconds (default 30)
+	Endpoint string `toml:"endpoint"` // grader base URL, e.g. https://grader:9000
+	Token    string `toml:"token"`    // grader-minted bearer token for this platform instance
 }
 
 // CommonConf is the data required for all services

@@ -1,5 +1,9 @@
 syntax = "proto3";
 
+// Package grader.v1 is the control plane between the platform and a remote
+// grader. Messages carry only scratch identifiers, commands, run config, run
+// stats and language versions — never file bytes. File bytes move over the
+// grader's HTTP /scratch endpoint (see the split-grader-rpc design).
 package kilonova.grader.v1;
 
 option go_package = "github.com/KiloProjects/kilonova/eval/scheduler/proto/kilonova/grader/v1;graderv1";

@@ -14,7 +14,7 @@ import (
 // datastore-aware Box2 interface on top of a (local or remote) Box3Scheduler.
 // It owns moving bytes in/out of the scratch — tasks/ never touch scratch
 // directly — and cleans up scratch identifiers it creates. In remote mode mgr
-// and scratch are the RPC client + SFTP scratch; nothing else here changes.
+// and scratch are the RPC client + HTTP scratch; nothing else here changes.
 type Box2Wrapper struct {
 	scratch eval.Scratch
 	store   eval.Store

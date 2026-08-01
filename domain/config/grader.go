@@ -17,7 +17,7 @@ type GraderSection struct {
 	Listen     string `toml:"listen"`      // host:port for the ConnectRPC server
 	CertFile   string `toml:"cert_file"`   // TLS server cert
 	KeyFile    string `toml:"key_file"`    // TLS server key
-	ScratchDir string `toml:"scratch_dir"` // local scratch dir (also served over sftp)
+	ScratchDir string `toml:"scratch_dir"` // local scratch dir (also served over the HTTP /scratch endpoint)
 
 	// Execution settings, moved off the platform in remote mode.
 	NumConcurrent int   `toml:"num_concurrent"`

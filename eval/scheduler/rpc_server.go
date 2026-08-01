@@ -87,6 +87,23 @@ func (r *ClientRegistry) Add(token, name, priority string) error {
 	return nil
 }
 
+// authMiddleware wraps a plain http.Handler with the same bearer-token check as
+// the RPC interceptor, so the scratch data plane shares one auth system.
+func (r *ClientRegistry) authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		token, ok := strings.CutPrefix(req.Header.Get("Authorization"), "Bearer ")
+		if !ok || token == "" {
+			http.Error(w, "missing bearer token", http.StatusUnauthorized)
+			return
+		}
+		if _, ok := r.byToken[token]; !ok {
+			http.Error(w, "unregistered token", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, req)
+	})
+}
+
 type clientNameKey struct{}
 
 // ClientName returns the authenticated client name attached by the interceptor.

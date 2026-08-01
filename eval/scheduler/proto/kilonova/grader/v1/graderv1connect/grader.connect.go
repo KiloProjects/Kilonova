@@ -4,8 +4,8 @@
 
 // Package grader.v1 is the control plane between the platform and a remote
 // grader. Messages carry only scratch identifiers, commands, run config, run
-// stats and language versions — never file bytes. File bytes move over SFTP
-// (see the split-grader-rpc design).
+// stats and language versions — never file bytes. File bytes move over the
+// grader's HTTP /scratch endpoint (see the split-grader-rpc design).
 package graderv1connect
 
 import (
