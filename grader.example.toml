@@ -1,0 +1,12 @@
+[grader]
+listen = ":9000"
+cert_file = "/etc/kilonova/grader.crt"
+key_file = "/etc/kilonova/grader.key"
+scratch_dir = "/var/lib/kilonova/scratch"
+num_concurrent = 3
+global_max_mem_kb = 2097152 # 2 GB
+starting_box = 1
+
+[[grader.client]]
+name = "kilonova"
+token = "<token>"

@@ -662,7 +662,10 @@ func (rt *Web) submission(w http.ResponseWriter, r *http.Request) {
 			Submission:    sub,
 			ForceShowCode: r.URL.Query().Get("forceCode") == "1",
 			LanguageFormatter: func(lang string) string {
-				return rt.base.Language(lang).PrintableName()
+				if lng := rt.base.AnyLanguage(lang); lng != nil {
+					return lng.PrintableName()
+				}
+				return "Unknown"
 			},
 			OlderSubmissions: olderSubs,
 			SubmissionFiles:  subFiles,
@@ -680,7 +683,7 @@ func (rt *Web) downloadSubmission(w http.ResponseWriter, r *http.Request) {
 		rt.statusPage(w, r, 400, "Code is either unavailable or doesn't exist.")
 		return
 	}
-	extension := knlanguage.FirstExtension(rt.base.Language(util.Submission(r).Language))
+	extension := knlanguage.FirstExtension(rt.base.AnyLanguage(util.Submission(r).Language))
 	if extension == ".outputOnly" {
 		extension = ".txt"
 	}
@@ -808,7 +811,10 @@ func (rt *Web) paste(w http.ResponseWriter, r *http.Request) {
 				Submission:    sub,
 				ForceShowCode: true,
 				LanguageFormatter: func(lang string) string {
-					return rt.base.Language(lang).PrintableName()
+					if lng := rt.base.AnyLanguage(lang); lng != nil {
+						return lng.PrintableName()
+					}
+					return "Unknown"
 				},
 				OlderSubmissions: olderSubs,
 				SubmissionFiles:  subFiles,
@@ -846,7 +852,7 @@ func (rt *Web) downloadPaste() http.HandlerFunc {
 			code = nil
 		}
 
-		extension := knlanguage.FirstExtension(rt.base.Language(fullSub.Language))
+		extension := knlanguage.FirstExtension(rt.base.AnyLanguage(fullSub.Language))
 		if extension == ".outputOnly" {
 			extension = ".txt"
 		}

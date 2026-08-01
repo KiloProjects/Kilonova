@@ -384,7 +384,7 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) error 
 			}
 			users[sub.UserID] = true
 
-			name := s.Language(sub.Language).MOSSName()
+			name := s.AnyLanguage(sub.Language).MOSSName()
 			// TODO: See if this can be simplified?
 			_, ok := mossSubs[name]
 			if !ok {

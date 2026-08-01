@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Role-split configuration
-Configuration SHALL be split by role. In remote mode the grader SHALL run from its own config file holding box-execution settings (`num_concurrent`, `global_max_mem_kb`, `starting_box`), its scratch directory, its listen/TLS settings, and a per-client registry. The platform config SHALL hold a `mode = local|remote` switch and, in remote mode, the grader endpoint, its bearer token, and SFTP connection settings. In `local` mode the existing single `config.toml` (including in-process `[eval]` execution settings) SHALL continue to work unchanged.
+Configuration SHALL be split by role. In remote mode the grader SHALL run from its own config file holding box-execution settings (`num_concurrent`, `global_max_mem_kb`, `starting_box`), its scratch directory, its listen/TLS settings, and a per-client registry. The platform config SHALL hold a `mode = local|remote` switch and, in remote mode, only the grader endpoint and its bearer token — the RPC control plane and the `/scratch` data plane share that one endpoint, so no separate data-plane connection settings are needed. In `local` mode the existing single `config.toml` (including in-process `[eval]` execution settings) SHALL continue to work unchanged.
 
 #### Scenario: Grader owns execution settings in remote mode
 - **WHEN** the grader starts in remote mode
@@ -23,7 +23,7 @@ The grader SHALL maintain a registry of allowed platform clients, each entry car
 - **THEN** the grader accepts the config but does not yet alter admission ordering based on it
 
 ### Requirement: Authenticated, single-direction transport
-Every RPC SHALL be authenticated by a grader-minted bearer token presented over TLS via a ConnectRPC interceptor; SFTP SHALL authenticate via SSH key. The grader SHALL initiate no connections back to the platform and SHALL hold no platform credentials. Operators SHALL treat the token as insufficient on its own and MUST additionally restrict grader network reachability to the platform (segmentation / IP allowlist).
+Every request SHALL be authenticated by a single grader-minted bearer token presented over TLS — carried on the ConnectRPC interceptor for RPC calls and on the `Authorization` header for `/scratch` requests, since both hit the same endpoint. The grader SHALL initiate no connections back to the platform and SHALL hold no platform credentials. Operators SHALL treat the token as insufficient on its own and MUST additionally restrict grader network reachability to the platform (segmentation / IP allowlist).
 
 #### Scenario: Request with a valid token is served
 - **WHEN** a platform presents a registered token over TLS

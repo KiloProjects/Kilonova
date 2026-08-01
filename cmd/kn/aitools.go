@@ -233,7 +233,7 @@ func saveProblemList(ctx context.Context, cmd *cli.Command, base *sudoapi.BaseAP
 			}
 
 			for _, sub := range subs {
-				lang := base.Language(sub.Language)
+				lang := base.AnyLanguage(sub.Language)
 				extensions := lang.Extensions()
 				f, err := os.Create(path.Join(dataPath, "submissions", strconv.Itoa(pb.ID), fmt.Sprintf("%d-%sp%s", sub.ID, sub.Score.String(), extensions[len(extensions)-1])))
 				if err != nil {

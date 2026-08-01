@@ -277,7 +277,7 @@ func (ag *archiveGenerator) addSubmissions(ctx context.Context) error {
 		return err
 	}
 	for _, sub := range subs {
-		lang := ag.base.Language(sub.Language)
+		lang := ag.base.AnyLanguage(sub.Language)
 		if lang == nil {
 			slog.InfoContext(ctx, "Skipping submission due to unknown/disabled language", slog.String("lang", sub.Language), slog.Any("submission", sub.ID))
 			continue

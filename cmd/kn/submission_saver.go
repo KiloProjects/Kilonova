@@ -69,7 +69,7 @@ var submissionSaver = &cli.Command{
 				return err
 			}
 
-			ext := language.Extension(base.Language(sub.Language))
+			ext := language.Extension(base.AnyLanguage(sub.Language))
 			w, err := wr.Create(fmt.Sprintf("%d-%s-%dp%s", sub.ID, pb.TestName, sub.Score.IntPart(), ext))
 			if err != nil {
 				return err

@@ -2,6 +2,8 @@ node_modules
 .vscode
 .idea
 /config.*
+/grader.toml
+!/grader.example.toml
 /flags.json
 !/config.example.toml
 .env

@@ -12,11 +12,11 @@ The grader SHALL expose the `Box3Scheduler` surface (`RunBox3`, `RunMultibox3`) 
 - **THEN** the grader runs them in parallel with its local FIFO setup and returns the manager response plus per-user-sandbox stats
 
 ### Requirement: Mode switch selects local or remote grader
-The platform SHALL select between an in-process grader (`mode = local`) and remote client stubs (`mode = remote`) at the existing wiring point. In `local` mode behavior SHALL be identical to the pre-change in-process path, with no token, no SFTP, and no new runtime dependency exercised.
+The platform SHALL select between an in-process grader (`mode = local`) and remote client stubs (`mode = remote`) at the existing wiring point. In `local` mode behavior SHALL be identical to the pre-change in-process path, with no token, no remote scratch endpoint, and no new runtime dependency exercised.
 
 #### Scenario: Local mode preserves current behavior
 - **WHEN** the platform starts with `mode = local`
-- **THEN** it constructs the in-process `BoxManager` and local scratch exactly as before, requiring no grader config file, token, or SFTP connection
+- **THEN** it constructs the in-process `BoxManager` and local scratch exactly as before, requiring no grader config file, token, or remote scratch connection
 
 #### Scenario: Remote mode uses client stubs
 - **WHEN** the platform starts with `mode = remote`

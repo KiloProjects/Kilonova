@@ -11,7 +11,7 @@ import (
 	"github.com/KiloProjects/kilonova/eval/language"
 )
 
-// Language returns nil if the language was not found
+// Language returns nil if the language is not supported by grader.
 func (s *BaseAPI) Language(name string) language.Lang {
 	if name == "ai" {
 		return language.AI()
@@ -27,7 +27,22 @@ func (s *BaseAPI) Language(name string) language.Lang {
 	return s.langMgr.Language(name)
 }
 
+// AnyLanguage returns nil if the language was not found
+func (s *BaseAPI) AnyLanguage(name string) language.Lang {
+	if name == "ai" {
+		return language.AI()
+	}
+	for langName, lang := range language.Langs {
+		if langName == name {
+			return lang.Lang()
+		}
+	}
+
+	return nil
+}
+
 // TODO: Just use the one from grader.LanguageFromFilename maybe? Reduce code duplication
+// NOTE: LanguageFromFilename returns only languages that are gradeable
 func (s *BaseAPI) LanguageFromFilename(filename string) string {
 	fileExt := path.Ext(filename)
 	if fileExt == "" {
@@ -39,7 +54,7 @@ func (s *BaseAPI) LanguageFromFilename(filename string) string {
 	}
 	bestLang := ""
 	for k := range s.EnabledLanguages() {
-		for _, ext := range s.Language(k).Extensions() {
+		for _, ext := range s.AnyLanguage(k).Extensions() {
 			if ext == fileExt && (bestLang == "" || k < bestLang) {
 				bestLang = k
 			}
