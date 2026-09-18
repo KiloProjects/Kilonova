@@ -10,7 +10,6 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer"
 	chtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/styles"
-	"github.com/evanw/esbuild/pkg/api"
 )
 
 var (
@@ -27,22 +26,11 @@ func main() {
 	if err := formatter.WriteCSS(&darkBuf, styles.Get("github-dark")); err != nil {
 		log.Println("Could not write `github-dark` theme")
 	}
-	css := fmt.Sprintf(".light {%s} .dark {%s}", lightBuf.String(), darkBuf.String())
-	rez := api.Transform(css, api.TransformOptions{
-		Loader: api.LoaderCSS,
-		// MinifyWhitespace: true,
-		Engines: []api.Engine{
-			{Name: api.EngineChrome, Version: "100"},
-			{Name: api.EngineFirefox, Version: "100"},
-			{Name: api.EngineSafari, Version: "11"},
-		},
-	})
+	// Emitted with CSS nesting. Vite lowers it for whatever build.target says, so
+	// this only has to be valid CSS, not portable CSS.
+	css := fmt.Sprintf(".light {%s}\n.dark {%s}\n", lightBuf.String(), darkBuf.String())
 
-	if len(rez.Errors) > 0 {
-		log.Fatalf("Found %d errors in chroma.css: %#v", len(rez.Errors), rez.Errors)
-	}
-
-	if err := os.WriteFile(*outFile, rez.Code, 0644); err != nil {
+	if err := os.WriteFile(*outFile, []byte(css), 0644); err != nil {
 		log.Fatalf("Could not write `%s`", *outFile)
 	}
 }

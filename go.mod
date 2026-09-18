@@ -29,7 +29,6 @@ require (
 	github.com/antchfx/xmlquery v1.5.1
 	github.com/disintegration/gift v1.2.1
 	github.com/dop251/goja v0.0.0-20260311135729-065cd970411c
-	github.com/evanw/esbuild v0.28.0
 	github.com/go-chi/chi/v5 v5.3.0
 	github.com/jackc/pgx-shopspring-decimal v0.0.0-20220624020537-1d36b5a1853e
 	github.com/jackc/pgx/v5 v5.9.2

@@ -34,7 +34,7 @@ export default defineConfig({
 		// go:embed skips dot-directories, so keep the manifest out of .vite/
 		manifest: `manifest.${bundle}.json`,
 		sourcemap: true,
-		target: "es2022",
+		target: "baseline-widely-available",
 		// lib mode ignores assetsDir, so spell the paths out
 		rollupOptions: {
 			output: {
