@@ -1,0 +1,50 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: pnpm
+          cache-dependency-path: web/assets/pnpm-lock.yaml
+
+      - run: pnpm -C web/assets install --frozen-lockfile
+
+      # _translations.json and web/assets/chroma.css are generated and gitignored,
+      # and both are inputs to the steps below: the first is embedded into the Go
+      # binary, the second is an entry of the Vite CSS bundle.
+      - run: go generate ./...
+
+      # web/static/misc and the Vite manifests are gitignored too, and web/assets_test.go
+      # checks that the manifests point at files that really got embedded, so the assets
+      # have to be built before anything Go runs.
+      - run: pnpm -C web/assets build
+
+      - run: go build ./...
+      - run: go vet ./...
+      - run: go test ./...
