@@ -27,7 +27,7 @@ type LanguageManager struct {
 	languageVersions map[string]string
 
 	// refetch is set in remote mode: it pulls the grader's supported set +
-	// versions over RPC. nil in local mode (versions come from the scheduler).
+	// versions over HTTP. nil in local mode (versions come from the scheduler).
 	refetch func(ctx context.Context) (map[string]language.GraderLang, map[string]string, error)
 }
 
@@ -79,7 +79,7 @@ func (mgr *LanguageManager) LanguageVersions(ctx context.Context) map[string]str
 }
 
 // Resync refreshes the language inventory. In remote mode it re-pulls the
-// grader's supported set + versions over RPC and replaces the cache; in local
+// grader's supported set + versions over HTTP and replaces the cache; in local
 // mode it recomputes versions via the scheduler.
 func (mgr *LanguageManager) Resync(ctx context.Context) error {
 	if mgr.refetch == nil {

@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"reflect"
 	"strings"
@@ -39,10 +40,10 @@ func (e *echoSched) RunMultibox3(context.Context, *eval.Multibox3Request, int64,
 }
 func (e *echoSched) Close(context.Context) error { return nil }
 
-// TestScratchRoundTripOverConversion drives SaveFile -> RunBox3 -> ReadFile ->
-// DeleteFile through the exact proto conversion helpers used on the wire, so a
-// dropped/renamed field fails here instead of silently in production.
-func TestScratchRoundTripOverConversion(t *testing.T) {
+// TestScratchRoundTripOverWire drives SaveFile -> RunBox3 -> ReadFile ->
+// DeleteFile through the real GraderClient/GraderServer pair over httptest, so a
+// field that doesn't survive JSON fails here instead of silently in production.
+func TestScratchRoundTripOverWire(t *testing.T) {
 	sc := scratch.New(afero.NewMemMapFs())
 	const payload = "hello grader"
 
@@ -51,29 +52,22 @@ func TestScratchRoundTripOverConversion(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req := &eval.Box3Request{
+	url := startTestGrader(t, &echoSched{scratch: sc}, nil, "tok")
+	got, err := NewGraderClient(nil, url, "tok").RunBox3(context.Background(), &eval.Box3Request{
 		InputFiles: []eval.ScratchFile{{Identifier: inID, BoxPath: "/box/in.txt", Mode: 0o644}},
 		Command:    []string{"/bin/cat", "/box/in.txt"},
 		RunConfig:  &eval.RunConfig{MemoryLimit: 65536, TimeLimit: 1.5, EnvToSet: map[string]string{"A": "b"}},
-	}
-
-	// Client side: eval -> proto. Server side: proto -> eval, run, eval -> proto.
-	wireReq := box3RequestToProto(req)
-	server := &GraderServer{sched: &echoSched{scratch: sc}}
-	resp, err := server.sched.RunBox3(context.Background(), box3RequestFromProto(wireReq), 0)
+	}, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	wireResp := box3ResponseToProto(resp)
-	// Client side: proto -> eval.
-	got := box3ResponseFromProto(wireResp)
 
 	outID, ok := got.Files["/box/in.txt"]
 	if !ok {
 		t.Fatalf("output identifier missing from response files: %v", got.Files)
 	}
 	if got.Stats.Status != "OK" || got.Stats.Time != 0.5 {
-		t.Fatalf("stats did not survive conversion: %+v", got.Stats)
+		t.Fatalf("stats did not survive the wire: %+v", got.Stats)
 	}
 
 	rc, err := sc.ReadFile(outID)
@@ -94,18 +88,30 @@ func TestScratchRoundTripOverConversion(t *testing.T) {
 	}
 }
 
-// TestRunConfigConversionIsLossless guards the widest message against field drift.
-func TestRunConfigConversionIsLossless(t *testing.T) {
-	in := &eval.RunConfig{
-		StderrToStdout: true,
-		InputPath:      "/box/in", OutputPath: "/box/out", StderrPath: "/box/err",
-		MemoryLimit: 131072, TimeLimit: 2.0, WallTimeLimit: 5.0,
-		InheritEnv: true, EnvToInherit: []string{"PATH"}, EnvToSet: map[string]string{"K": "V"},
-		EnableInternet: true,
-		Directories:    []language.Directory{{In: "/a", Out: "/b", Opts: "rw", Removes: true, Verbatim: true}},
+// TestRunConfigJSONIsLossless guards the widest message against JSON surprises.
+func TestRunConfigJSONIsLossless(t *testing.T) {
+	in := &eval.Box3Request{
+		InputFiles: []eval.ScratchFile{{Identifier: "id", BoxPath: "/box/in", Mode: 0o600}},
+		Command:    []string{"/bin/true", "-x"},
+		RunConfig: &eval.RunConfig{
+			StderrToStdout: true,
+			InputPath:      "/box/in", OutputPath: "/box/out", StderrPath: "/box/err",
+			MemoryLimit: 131072, TimeLimit: 2.0, WallTimeLimit: 5.0,
+			InheritEnv: true, EnvToInherit: []string{"PATH"}, EnvToSet: map[string]string{"K": "V"},
+			EnableInternet: true,
+			Directories:    []language.Directory{{In: "/a", Out: "/b", Opts: "rw", Removes: true, Verbatim: true}},
+		},
+		OutputFilePaths: []string{"/box/out"},
 	}
-	got := runConfigFromProto(runConfigToProto(in))
-	if !reflect.DeepEqual(in, got) {
-		t.Fatalf("RunConfig changed across conversion:\n in: %+v\ngot: %+v", in, got)
+	buf, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got eval.Box3Request
+	if err := json.Unmarshal(buf, &got); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(in, &got) {
+		t.Fatalf("Box3Request changed across JSON:\n in: %+v\ngot: %+v", in, &got)
 	}
 }

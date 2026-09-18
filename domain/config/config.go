@@ -57,7 +57,7 @@ type EvalConf struct {
 // IsRemote reports whether the platform should talk to a remote grader.
 func (e EvalConf) IsRemote() bool { return e.Mode == "remote" }
 
-// RemoteEvalConf tells the platform how to reach a remote grader. The RPC
+// RemoteEvalConf tells the platform how to reach a remote grader. The JSON
 // control plane and the /scratch data plane both live on Endpoint, behind the
 // same TLS cert and bearer token — no separate data-plane connection.
 type RemoteEvalConf struct {

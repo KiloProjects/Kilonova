@@ -648,7 +648,7 @@ func (h *Handler) getLocalRunner(ctx context.Context) (eval.BoxScheduler, eval.L
 	return runner, langMgr, nil
 }
 
-// getRemoteRunner wires the platform against a remote grader: RPC control plane
+// getRemoteRunner wires the platform against a remote grader: JSON control plane
 // (GraderClient) + HTTP data plane (scratch), both on the grader's one TLS+token
 // endpoint. No local sandbox is created.
 func (h *Handler) getRemoteRunner(ctx context.Context) (eval.BoxScheduler, eval.LanguageManager, error) {

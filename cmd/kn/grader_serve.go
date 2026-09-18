@@ -68,16 +68,13 @@ var graderServe = &cli.Command{
 		ttl := time.Duration(g.ScratchTTLSec) * time.Second
 		go scratch.PeriodicSweep(ctx, scratchFS, ttl/4, ttl, slog.Default())
 
-		srv := scheduler.NewGraderServer(bm, langMgr)
-		path, handler := srv.Handler(registry)
+		// Control plane (JSON) and data plane (/scratch) on one listener, behind
+		// one bearer-token check.
 		mux := http.NewServeMux()
-		mux.Handle(path, handler)
+		mux.Handle("/", scheduler.NewGraderServer(bm, langMgr).Handler())
+		mux.Handle(scheduler.ScratchHandler(scratchFS))
 
-		// Data plane: file bytes over the same TLS+token endpoint as the RPC.
-		scratchPath, scratchHandler := scheduler.ScratchHandler(scratchFS, registry)
-		mux.Handle(scratchPath, scratchHandler)
-
-		httpSrv := &http.Server{Addr: g.Listen, Handler: mux}
+		httpSrv := &http.Server{Addr: g.Listen, Handler: registry.Auth(mux)}
 		slog.InfoContext(ctx, "Remote grader listening", slog.String("addr", g.Listen), slog.Int("clients", len(g.Clients)))
 		if err := httpSrv.ListenAndServeTLS(g.CertFile, g.KeyFile); err != nil {
 			return fmt.Errorf("grader server: %w", err)

@@ -11,15 +11,14 @@ import (
 	"github.com/spf13/afero"
 )
 
-// ScratchHandler serves the grader's scratch dir as an HTTP data plane over the
-// same TLS+token channel as the RPC control plane, replacing the old SFTP
-// subsystem. It speaks PUT/GET/DELETE on /scratch/{id}, where {id} is a
-// platform-minted UUID naming a file directly in the grader's scratch fs (the
-// same fs the BoxManager reads). Parsing {id} as a UUID is the path-traversal
-// guard — no slashes, no "..", nothing but a flat file name.
-func ScratchHandler(fsys afero.Fs, reg *ClientRegistry) (string, http.Handler) {
-	h := &scratchServer{fs: fsys}
-	return "/scratch/", reg.authMiddleware(http.StripPrefix("/scratch/", h))
+// ScratchHandler serves the grader's scratch dir as an HTTP data plane on the
+// same listener as the JSON control plane. It speaks PUT/GET/DELETE on
+// /scratch/{id}, where {id} is a platform-minted UUID naming a file directly in
+// the grader's scratch fs (the same fs the BoxManager reads). Parsing {id} as a
+// UUID is the path-traversal guard — no slashes, no "..", nothing but a flat
+// file name. Mount it behind ClientRegistry.Auth.
+func ScratchHandler(fsys afero.Fs) (string, http.Handler) {
+	return "/scratch/", http.StripPrefix("/scratch/", &scratchServer{fs: fsys})
 }
 
 type scratchServer struct{ fs afero.Fs }

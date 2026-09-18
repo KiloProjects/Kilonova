@@ -48,3 +48,9 @@ jobs:
       - run: go build ./...
       - run: go vet ./...
       - run: go test ./...
+
+      # Runs after generate + asset build: golangci-lint typechecks, and the
+      # go:embed directives fail without the generated files.
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest

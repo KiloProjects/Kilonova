@@ -1,12 +1,6 @@
-# grader-transport Specification
+## MODIFIED Requirements
 
-## Purpose
-
-Defines how the platform reaches the grader's execution and language-inventory surfaces over JSON-over-HTTP endpoints, and how the local/remote mode switch selects between an in-process grader and remote client stubs.
-
-## Requirements
-
-### Requirement: Grader execution and language inventory are reachable over JSON-over-HTTP
+### Requirement: Grader execution and language inventory are reachable over ConnectRPC
 The grader SHALL expose the `Box3Scheduler` surface (`RunBox3`, `RunMultibox3`) and the `LanguageManager` surface (language list and versions) as JSON-over-HTTP endpoints on its listener: `POST /run/box3`, `POST /run/multibox3`, and `GET /languages`. Request and response bodies SHALL be `encoding/json` encodings of the existing `eval` structs (`Box3Request`, `Multibox3Request`, `Box3Response`, `RunStats`) wrapped in envelope structs that carry the memory quotas; no separate wire schema, codegen, or conversion layer SHALL exist. All calls SHALL be request/response (no streaming) and SHALL carry only scratch identifiers, commands, run configuration, run statistics, and language metadata — never file bytes. A non-2xx response SHALL be surfaced to the platform as a Go error carrying the HTTP status and the response body. Platform and grader SHALL be deployed from the same build, since the `eval` struct shape is the wire contract; `GET /languages` SHALL return the grader's build identifier and the platform SHALL refuse to use a grader whose identifier differs from its own.
 
 #### Scenario: Platform runs a box on the remote grader
@@ -43,21 +37,3 @@ The platform SHALL select between an in-process grader (`mode = local`) and remo
 #### Scenario: Remote mode uses client stubs
 - **WHEN** the platform starts with `mode = remote`
 - **THEN** it constructs client stubs implementing `eval.Box3Scheduler`, `eval.LanguageManager`, and `eval.Scratch`, all speaking plain HTTP(S) to the configured grader endpoint with no RPC framework or generated code involved
-
-### Requirement: Remote Close does not affect a shared grader
-The remote `Box3Scheduler.Close` SHALL be a client-side no-op (or at most a per-session drain). One platform instance shutting down SHALL NOT cause the grader to drain boxes or stop serving other platform instances.
-
-#### Scenario: One platform disconnects, grader keeps serving
-- **WHEN** a platform instance calls `Close` on its remote scheduler and shuts down
-- **THEN** the grader continues accepting and serving `RunBox3` requests from other connected platform instances
-
-### Requirement: Language metadata is pulled and cached with manual resync
-The platform SHALL obtain the grader's language list and versions over RPC, cache them, and expose a manual resync action. The grader remains authoritative about which languages and versions are installed.
-
-#### Scenario: Platform caches language metadata
-- **WHEN** the platform connects to the grader
-- **THEN** it fetches the language inventory once and serves subsequent lookups from cache
-
-#### Scenario: Manual resync after grader redeploy
-- **WHEN** an operator triggers a language resync on the platform
-- **THEN** the platform re-fetches the inventory from the grader and replaces its cache

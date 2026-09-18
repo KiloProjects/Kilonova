@@ -21,10 +21,9 @@ func startScratchServer(t *testing.T) (base string, fs afero.Fs) {
 	if err := reg.Add(scratchTok, "platform", ""); err != nil {
 		t.Fatal(err)
 	}
-	path, h := scheduler.ScratchHandler(fs, reg)
 	mux := http.NewServeMux()
-	mux.Handle(path, h)
-	srv := httptest.NewServer(mux)
+	mux.Handle(scheduler.ScratchHandler(fs))
+	srv := httptest.NewServer(reg.Auth(mux))
 	t.Cleanup(srv.Close)
 	return srv.URL + "/scratch", fs
 }

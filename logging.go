@@ -1,12 +1,13 @@
 package kilonova
 
 import (
-	"github.com/lmittmann/tint"
-	"github.com/mattn/go-isatty"
 	"io"
 	"log/slog"
 	"os"
 	"time"
+
+	"github.com/lmittmann/tint"
+	"github.com/mattn/go-isatty"
 )
 
 func logColors(w io.Writer) bool {

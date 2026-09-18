@@ -2,27 +2,74 @@ package scheduler
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
+	"runtime/debug"
 	"strings"
+	"sync"
 
-	"connectrpc.com/connect"
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
-	graderv1 "github.com/KiloProjects/kilonova/eval/scheduler/proto/kilonova/grader/v1"
-	"github.com/KiloProjects/kilonova/eval/scheduler/proto/kilonova/grader/v1/graderv1connect"
 )
 
-var (
-	errMissingToken = errors.New("missing or malformed bearer token")
-	errUnknownToken = errors.New("unregistered client token")
-)
+// Wire envelopes. eval.* structs are encoded directly; these only add the
+// quotas that Box3Scheduler takes as extra arguments. Both sides share these
+// types, so the wire shape is a Go type, not a doc.
+type runBox3Req struct {
+	Request  *eval.Box3Request `json:"request"`
+	MemQuota int64             `json:"mem_quota"`
+}
 
-// GraderServer exposes a local BoxManager + LanguageManager over ConnectRPC.
-// It holds no platform credentials; every method just runs the in-process grader.
+type runMultibox3Req struct {
+	Request            *eval.Multibox3Request `json:"request"`
+	ManagerMemQuota    int64                  `json:"manager_mem_quota"`
+	IndividualMemQuota int64                  `json:"individual_mem_quota"`
+}
+
+type runMultibox3Resp struct {
+	ManagerResponse *eval.Box3Response `json:"manager_response"`
+	UserStats       []*eval.RunStats   `json:"user_stats"`
+}
+
+type languagesResp struct {
+	Build    string            `json:"build"`
+	Versions map[string]string `json:"versions"`
+}
+
+// maxBodySize bounds a control-plane request body. Legit requests are kilobytes.
+const maxBodySize = 1 << 20
+
+// BuildID identifies this binary: platform and grader must match, since the
+// eval.* struct shape is the wire contract.
+var BuildID = sync.OnceValue(func() string {
+	id := kilonova.Version
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return id
+	}
+	var rev, dirty string
+	for _, s := range info.Settings {
+		switch s.Key {
+		case "vcs.revision":
+			rev = s.Value
+		case "vcs.modified":
+			if s.Value == "true" {
+				dirty = "-dirty"
+			}
+		}
+	}
+	if rev != "" {
+		id += "+" + rev
+	}
+	// ponytail: two dirty trees at different edits both pass. Dev-only.
+	return id + dirty
+})
+
+// GraderServer exposes a local BoxManager + LanguageManager as JSON-over-HTTP.
+// It holds no platform credentials; every handler just runs the in-process grader.
 type GraderServer struct {
-	graderv1connect.UnimplementedGraderServiceHandler
-
 	sched eval.Box3Scheduler
 	langs eval.LanguageManager
 }
@@ -31,33 +78,56 @@ func NewGraderServer(sched eval.Box3Scheduler, langs eval.LanguageManager) *Grad
 	return &GraderServer{sched: sched, langs: langs}
 }
 
-// Handler returns the mount path and http.Handler, wrapped in the given auth
-// interceptor. Mount it on the grader's TLS server.
-func (s *GraderServer) Handler(reg *ClientRegistry) (string, http.Handler) {
-	return graderv1connect.NewGraderServiceHandler(s, connect.WithInterceptors(newAuthInterceptor(reg)))
+// Handler returns the control-plane routes. Mount it behind ClientRegistry.Auth.
+func (s *GraderServer) Handler() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /run/box3", s.runBox3)
+	mux.HandleFunc("POST /run/multibox3", s.runMultibox3)
+	mux.HandleFunc("GET /languages", s.languages)
+	return mux
 }
 
-func (s *GraderServer) RunBox3(ctx context.Context, req *connect.Request[graderv1.RunBox3Request]) (*connect.Response[graderv1.RunBox3Response], error) {
-	resp, err := s.sched.RunBox3(ctx, box3RequestFromProto(req.Msg.GetRequest()), req.Msg.GetMemQuota())
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+func decode(w http.ResponseWriter, r *http.Request, v any) bool {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxBodySize)).Decode(v); err != nil {
+		http.Error(w, "bad request body: "+err.Error(), http.StatusBadRequest)
+		return false
 	}
-	return connect.NewResponse(&graderv1.RunBox3Response{Response: box3ResponseToProto(resp)}), nil
+	return true
 }
 
-func (s *GraderServer) RunMultibox3(ctx context.Context, req *connect.Request[graderv1.RunMultibox3Request]) (*connect.Response[graderv1.RunMultibox3Response], error) {
-	resp, stats, err := s.sched.RunMultibox3(ctx, multibox3RequestFromProto(req.Msg.GetRequest()), req.Msg.GetManagerMemQuota(), req.Msg.GetIndividualMemQuota())
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+func encode(w http.ResponseWriter, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(v)
+}
+
+func (s *GraderServer) runBox3(w http.ResponseWriter, r *http.Request) {
+	var in runBox3Req
+	if !decode(w, r, &in) {
+		return
 	}
-	return connect.NewResponse(&graderv1.RunMultibox3Response{
-		ManagerResponse: box3ResponseToProto(resp),
-		UserStats:       statsSliceToProto(stats),
-	}), nil
+	resp, err := s.sched.RunBox3(r.Context(), in.Request, in.MemQuota)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	encode(w, resp)
 }
 
-func (s *GraderServer) Languages(ctx context.Context, req *connect.Request[graderv1.LanguagesRequest]) (*connect.Response[graderv1.LanguagesResponse], error) {
-	return connect.NewResponse(&graderv1.LanguagesResponse{Versions: s.langs.LanguageVersions(ctx)}), nil
+func (s *GraderServer) runMultibox3(w http.ResponseWriter, r *http.Request) {
+	var in runMultibox3Req
+	if !decode(w, r, &in) {
+		return
+	}
+	resp, stats, err := s.sched.RunMultibox3(r.Context(), in.Request, in.ManagerMemQuota, in.IndividualMemQuota)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	encode(w, runMultibox3Resp{ManagerResponse: resp, UserStats: stats})
+}
+
+func (s *GraderServer) languages(w http.ResponseWriter, r *http.Request) {
+	encode(w, languagesResp{Build: BuildID(), Versions: s.langs.LanguageVersions(r.Context())})
 }
 
 // --- auth ---
@@ -87,45 +157,30 @@ func (r *ClientRegistry) Add(token, name, priority string) error {
 	return nil
 }
 
-// authMiddleware wraps a plain http.Handler with the same bearer-token check as
-// the RPC interceptor, so the scratch data plane shares one auth system.
-func (r *ClientRegistry) authMiddleware(next http.Handler) http.Handler {
+type clientNameKey struct{}
+
+// ClientName returns the authenticated client name attached by Auth.
+func ClientName(ctx context.Context) string {
+	name, _ := ctx.Value(clientNameKey{}).(string)
+	return name
+}
+
+// Auth is the one bearer-token check for every path on the grader listener:
+// control plane and /scratch data plane alike.
+func (r *ClientRegistry) Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		token, ok := strings.CutPrefix(req.Header.Get("Authorization"), "Bearer ")
 		if !ok || token == "" {
 			http.Error(w, "missing bearer token", http.StatusUnauthorized)
 			return
 		}
-		if _, ok := r.byToken[token]; !ok {
+		ident, ok := r.byToken[token]
+		if !ok {
 			http.Error(w, "unregistered token", http.StatusUnauthorized)
 			return
 		}
-		next.ServeHTTP(w, req)
+		ctx := context.WithValue(req.Context(), clientNameKey{}, ident.Name)
+		slog.DebugContext(ctx, "Authenticated grader request", slog.String("client", ident.Name), slog.String("path", req.URL.Path))
+		next.ServeHTTP(w, req.WithContext(ctx))
 	})
-}
-
-type clientNameKey struct{}
-
-// ClientName returns the authenticated client name attached by the interceptor.
-func ClientName(ctx context.Context) string {
-	name, _ := ctx.Value(clientNameKey{}).(string)
-	return name
-}
-
-func newAuthInterceptor(reg *ClientRegistry) connect.UnaryInterceptorFunc {
-	return func(next connect.UnaryFunc) connect.UnaryFunc {
-		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-			token, ok := strings.CutPrefix(req.Header().Get("Authorization"), "Bearer ")
-			if !ok || token == "" {
-				return nil, connect.NewError(connect.CodeUnauthenticated, errMissingToken)
-			}
-			ident, ok := reg.byToken[token]
-			if !ok {
-				return nil, connect.NewError(connect.CodeUnauthenticated, errUnknownToken)
-			}
-			ctx = context.WithValue(ctx, clientNameKey{}, ident.Name)
-			slog.DebugContext(ctx, "Authenticated grader RPC", slog.String("client", ident.Name), slog.String("procedure", req.Spec().Procedure))
-			return next(ctx, req)
-		}
-	}
 }
