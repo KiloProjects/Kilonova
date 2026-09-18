@@ -2,12 +2,6 @@
 default:
 	just --list
 
-katex:
-	pnpm -C ./web/assets install
-	cp web/assets/node_modules/katex/dist/katex.min.js sudoapi/mdrenderer/knkatex/katex.min.js && \
-		echo "Copied katex.min.js to target directory" || \
-		echo "Failed to copy katex.min.js to target directory"
-
 export MAXMIND_PATH := x"~/.local/share/GeoIP/GeoLite2-City.mmdb"
 maxmind:
 	mkdir -p $HOME/.local/share/GeoIP

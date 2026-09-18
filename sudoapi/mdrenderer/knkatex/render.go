@@ -14,6 +14,10 @@ import (
 	"github.com/dop251/goja"
 )
 
+// Refreshed from the pinned KaTeX in web/assets/package.json. The file is checked
+// in so that building Go needs no Node; re-run this after bumping the dependency.
+//go:generate sh -c "cp ../../../web/assets/node_modules/katex/dist/katex.min.js katex.min.js || echo 'KaTeX not refreshed, run: pnpm -C web/assets install'"
+
 //go:embed katex.min.js
 var code string
 
