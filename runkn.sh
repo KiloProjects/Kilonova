@@ -3,16 +3,8 @@
 echo "Regenerating translation strings..."
 go generate ./...
 
-if [[ $* == *--css* ]]; then
-    echo "Regenerating CSS"
-    pnpm -C ./web/assets prodCSS
-fi
-
-echo "Building js bundle"
-pnpm -C ./web/assets prodJS
-
-echo "Vendoring js dependencies"
-pnpm -C ./web/assets vendor
+echo "Building assets"
+pnpm -C ./web/assets build
 
 
 #go build -race -v ./cmd/kn || exit 2

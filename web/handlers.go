@@ -2688,7 +2688,7 @@ func (rt *Web) runLayout(w io.Writer, r *http.Request, params *LayoutParams) {
 		Navbar:           layout.Navbar(rt.canViewAllSubs(user.UserBrief(r)), reqPath(r)),
 		Head:             params.Head,
 		Content:          params.Content,
-		HashNamer:        fsys,
+		Assets:           assets,
 		HideFooter:       false,
 	}
 	if layoutParams.Head == nil {
@@ -2710,7 +2710,7 @@ func (rt *Web) runEmptyPage(w io.Writer, r *http.Request, params *LayoutParams) 
 		Navbar:           templ.NopComponent,
 		Head:             params.Head,
 		Content:          params.Content,
-		HashNamer:        fsys,
+		Assets:           assets,
 		HideFooter:       true,
 	}
 

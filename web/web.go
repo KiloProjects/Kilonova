@@ -11,14 +11,12 @@ import (
 	"fmt"
 	"html"
 	"html/template"
-	"io"
 	"io/fs"
 	"log/slog"
 	"math"
 	"net/http"
 	"net/netip"
 	"net/url"
-	"os"
 	"path"
 	"reflect"
 	"strconv"
@@ -40,7 +38,6 @@ import (
 	chtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
-	"github.com/benbjohnson/hashfs"
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dustin/go-humanize"
@@ -50,7 +47,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-//go:generate go run ../scripts/chroma_gen -o ./static/chroma.css
+//go:generate go run ../scripts/chroma_gen -o ./assets/chroma.css
 //go:generate go tool templ generate
 
 //go:embed static
@@ -58,8 +55,6 @@ var embedded embed.FS
 
 //go:embed templ
 var templateDir embed.FS
-
-var fsys = hashfs.NewFS(embedded)
 
 // Web is the struct representing this whole package
 type Web struct {
@@ -872,63 +867,21 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 	return &Web{funcs, base}
 }
 
-// staticFileServer is a modification of the original hashfs
-// This may cause problems if the misc/ directory is updated, but that should be done on rare occasions (since it's mostly fonts)
 func staticFileServer(w http.ResponseWriter, r *http.Request) {
-	// Clean up filename based on URL path.
-	filename := r.URL.Path
-	if filename == "/" {
-		filename = "."
+	name := path.Clean(strings.TrimPrefix(r.URL.Path, "/"))
+	// Don't let http.ServeFileFS list the embedded directories.
+	if stat, err := fs.Stat(embedded, name); err != nil || stat.IsDir() {
+		http.NotFound(w, r)
+		return
+	}
+	if strings.HasPrefix(name, "static/misc/") {
+		// Vite content-hashes everything it writes in there, so it can never go stale.
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 	} else {
-		filename = strings.TrimPrefix(filename, "/")
+		w.Header().Set("Cache-Control", "public, max-age=3600")
 	}
-	filename = path.Clean(filename)
-
-	// Read file from attached file system.
-	f, err := fsys.Open(filename)
-	if os.IsNotExist(err) {
-		http.Error(w, "404 page not found", http.StatusNotFound)
-		return
-	} else if err != nil {
-		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-	defer f.Close()
-
-	// Fetch file info. Disallow directories from being displayed.
-	fi, err := f.Stat()
-	if err != nil {
-		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
-		return
-	} else if fi.IsDir() {
-		http.Error(w, "403 Forbidden", http.StatusForbidden)
-		return
-	}
-
-	trueName, orgHash := hashfs.ParseName(filename)
-	_, trueHash := hashfs.ParseName(fsys.HashName(trueName))
-
-	// Cache the file aggressively if the file contains a hash.
-	// Note that all files created in static/misc should have a hash generated automatically by the bundler
-	if orgHash != "" || strings.HasPrefix(trueName, "static/misc/") {
-		w.Header().Set("Cache-Control", `public, max-age=31536000, immutable`)
-		w.Header().Set("ETag", "\""+trueHash+"\"")
-	}
-
-	// Flush header and write content.
-	switch f := f.(type) {
-	case io.ReadSeeker:
-		http.ServeContent(w, r, filename, fi.ModTime(), f)
-	default:
-		// Set content length.
-		w.Header().Set("Content-Length", strconv.FormatInt(fi.Size(), 10))
-
-		// Flush header and write content.
-		w.WriteHeader(http.StatusOK)
-		if r.Method != "HEAD" {
-			io.Copy(w, f)
-		}
-	}
+	w.Header().Del("Content-Type")
+	http.ServeFileFS(w, r, embedded, name)
 }
 
 func isHTMXRequest(r *http.Request) bool {

@@ -19,7 +19,7 @@ type middlewareStartCtx string
 
 const MiddlewareStartKey = middlewareStartCtx("middleware_start")
 
-templ mainHeadTags(enabledLanguages map[string]string, title string, description string, hashNamer HashNamer) {
+templ mainHeadTags(enabledLanguages map[string]string, title string, description string, assets Assets) {
 	{{
 		if len(title) == 0 {
 			title = "Kilonova"
@@ -31,12 +31,12 @@ templ mainHeadTags(enabledLanguages map[string]string, title string, description
 	<meta charset="utf-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
 	<title>{ title }</title>
-	<link rel="apple-touch-icon" sizes="180x180" href={ "/" + hashNamer.HashName("static/favicons/favicon.ico") }/>
-	<link rel="icon" type="image/png" sizes="32x32" href={ "/" + hashNamer.HashName("static/favicons/favicon-32x32.png") }/>
-	<link rel="icon" type="image/png" sizes="16x16" href={ "/" + hashNamer.HashName("static/favicons/favicon-16x16.png") }/>
+	<link rel="apple-touch-icon" sizes="180x180" href={ "/static/favicons/favicon.ico" }/>
+	<link rel="icon" type="image/png" sizes="32x32" href={ "/static/favicons/favicon-32x32.png" }/>
+	<link rel="icon" type="image/png" sizes="16x16" href={ "/static/favicons/favicon-16x16.png" }/>
 	<link rel="manifest" href="/static/favicons/site.webmanifest?v=4"/>
 	<link rel="mask-icon" href="/static/favicons/safari-pinned-tab.svg?v=4" color="#5bbad5"/>
-	<link rel="shortcut icon" href={ "/" + hashNamer.HashName("static/favicons/favicon.ico") }/>
+	<link rel="shortcut icon" href={ "/static/favicons/favicon.ico" }/>
 	<meta name="apple-mobile-web-app-title" content="Kilonova"/>
 	<meta name="application-name" content="Kilonova"/>
 	<meta name="msapplication-TileColor" content="#da532c"/>
@@ -49,12 +49,12 @@ templ mainHeadTags(enabledLanguages map[string]string, title string, description
 	<meta name="description" content={ description }/>
 	<meta property="og:locale" content="ro_RO"/>
 	<meta property="og:site_name" content="Kilonova"/>
-	<meta property="og:image" content={ "/" + hashNamer.HashName("static/ogimage.jpeg") }/>
+	<meta property="og:image" content={ "/static/ogimage.jpeg" }/>
 	<!--Dependency bundle-->
 	@templ.JSONScript("server_time", time.Now().Format(time.RFC3339Nano))
 	@templ.JSONScript("platform_info", platformInfo(ctx, enabledLanguages))
-	<script src={ "/" + hashNamer.HashName("static/bundle.js") }></script>
-	<script src={ "/" + hashNamer.HashName("static/vendored.js") }></script>
+	<script src={ assets.Asset("app.ts") }></script>
+	<script src={ assets.Asset("vendored.ts") }></script>
 	<script>
         const server_time = JSON.parse(document.getElementById("server_time").textContent);
         var platform_info = JSON.parse(document.getElementById("platform_info").textContent);
@@ -67,9 +67,9 @@ templ mainHeadTags(enabledLanguages map[string]string, title string, description
         }
 
     </script>
-	<link rel="stylesheet" href={ "/" + hashNamer.HashName("static/chroma.css") }/>
-	<link rel="stylesheet" href={ "/" + hashNamer.HashName("static/vendored.css") }/>
-	<link rel="stylesheet" href={ "/" + hashNamer.HashName("static/styles.css") }/>
+	<link rel="stylesheet" href={ assets.Asset("chroma.css") }/>
+	<link rel="stylesheet" href={ assets.Asset("vendor.css") }/>
+	<link rel="stylesheet" href={ assets.Asset("tailwind.css") }/>
 }
 
 type LayoutParams struct {
@@ -79,7 +79,7 @@ type LayoutParams struct {
 	Navbar           templ.Component
 	Head             templ.Component
 	Content          templ.Component
-	HashNamer        HashNamer
+	Assets           Assets
 	HideFooter       bool
 }
 
@@ -91,7 +91,7 @@ templ Layout(params LayoutParams) {
 		class={ templ.Class(string(util.Theme(ctx))) }
 	>
 		<head>
-			@mainHeadTags(params.EnabledLanguages, params.Title, params.Description, params.HashNamer)
+			@mainHeadTags(params.EnabledLanguages, params.Title, params.Description, params.Assets)
 			@params.Head
 		</head>
 		<body hx-ext="morph">
@@ -113,7 +113,7 @@ templ Layout(params LayoutParams) {
 			</main>
 			<div id="modals"></div>
 			if !params.HideFooter {
-				@Footer(renderStart.Sub(ctx.Value(MiddlewareStartKey).(time.Time)), renderStart, params.HashNamer)
+				@Footer(renderStart.Sub(ctx.Value(MiddlewareStartKey).(time.Time)), renderStart)
 			}
 		</body>
 	</html>
