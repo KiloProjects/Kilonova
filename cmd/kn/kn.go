@@ -143,7 +143,7 @@ func initLogger(debug, writeFile bool) {
 
 	if writeFile {
 		file := &lumberjack.Logger{
-			Filename: path.Join(config.Common.LogDir, "run.log"),
+			Filename: path.Join(config.Common.LogDir(), "run.log"),
 			MaxSize:  80, //MB
 			Compress: true,
 		}

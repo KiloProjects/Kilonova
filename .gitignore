@@ -3,10 +3,9 @@ node_modules
 .idea
 /config.*
 /grader.toml
-!/grader.example.toml
 /flags.json
-!/config.example.toml
 .env
+!.env.example
 
 /kn
 knnnn
@@ -21,6 +20,7 @@ teamsOut*
 # Mkdocs
 .cache
 docs_site
+/site
 
 # General
 .DS_Store

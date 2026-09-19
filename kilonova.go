@@ -64,8 +64,10 @@ func SetDefaultLanguage(lng string) {
 		slog.WarnContext(context.Background(), "No default language set, defaulting to English")
 		defaultLanguage = "en"
 	default:
-		panic("invalid language (only 'en' and 'ro' allowed): " + lng)
+		slog.WarnContext(context.Background(), "Invalid default language, defaulting to English", slog.String("lang", lng))
+		defaultLanguage = "en"
 	}
+
 }
 
 func SetHostPrefix(prefix string) {

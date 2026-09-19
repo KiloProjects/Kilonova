@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -146,9 +145,10 @@ func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, m
 
 func InitializeBaseAPI(ctx context.Context, cmd *cli.Command) (*BaseAPI, error) {
 	// Data directory setup
-	if !path.IsAbs(config.Common.DataDir) {
-		return nil, Statusf(400, "dataDir is not absolute")
+	if err := config.RequireDataDir(); err != nil {
+		return nil, err
 	}
+
 	if err := os.MkdirAll(config.Common.DataDir, 0755); err != nil {
 		return nil, fmt.Errorf("couldn't create data dir: %w", err)
 	}
@@ -160,7 +160,8 @@ func InitializeBaseAPI(ctx context.Context, cmd *cli.Command) (*BaseAPI, error) 
 	}
 
 	var knMailer kilonova.Mailer
-	if config.Email.Enabled {
+	if config.Email.Enabled() {
+
 		mailer, err := email.NewMailer()
 		if err != nil {
 			slog.WarnContext(ctx, "Couldn't initialize mailer. Make sure you entered the correct information", slog.Any("err", err))

@@ -1,59 +1,60 @@
 package config
 
 import (
-	"context"
-	"errors"
-	"log/slog"
-
-	"github.com/BurntSushi/toml"
+	"cmp"
+	"fmt"
+	"slices"
+	"strings"
 )
 
-// GraderConf is the remote grader's own configuration file.
+// GraderConf is the remote grader process's own configuration (kn grader-serve).
+// Its root directory is Common.DataDir, holding scratch/ (served over the HTTP
+// /scratch endpoint) and logs/. Sandbox capacity comes from the shared Eval
+// fields; clients come from GraderClientsFromEnv.
 type GraderConf struct {
-	Grader GraderSection `toml:"grader"`
-}
-
-type GraderSection struct {
-	Listen     string `toml:"listen"`      // host:port for the grader HTTP server
-	CertFile   string `toml:"cert_file"`   // TLS server cert
-	KeyFile    string `toml:"key_file"`    // TLS server key
-	ScratchDir string `toml:"scratch_dir"` // local scratch dir (also served over the HTTP /scratch endpoint)
-
-	// Execution settings, moved off the platform in remote mode.
-	NumConcurrent int   `toml:"num_concurrent"`
-	GlobalMaxMem  int64 `toml:"global_max_mem_kb"`
-	StartingBox   int   `toml:"starting_box"`
+	Listen   string // host:port for the grader HTTP server
+	CertFile string // TLS server cert
+	KeyFile  string // TLS server key
 
 	// ScratchTTLSec is the orphan GC TTL; must be >> max eval duration.
-	ScratchTTLSec int `toml:"scratch_ttl_sec"`
-
-	Clients []GraderClientConf `toml:"client"`
+	ScratchTTLSec int
 }
 
 // GraderClientConf is one entry in the token registry: a named platform client
-// with its bearer token. Priority is reserved (documented, unconsumed).
+// with its bearer token.
 type GraderClientConf struct {
-	Name     string `toml:"name"`
-	Token    string `toml:"token"`
-	Priority string `toml:"priority"`
+	Name  string
+	Token string
 }
 
-// LoadGrader reads a grader.toml.
-func LoadGrader(ctx context.Context, configPath string) (*GraderConf, error) {
-	if configPath == "" {
-		return nil, errors.New("invalid grader config path")
+func (conf GraderClientConf) Compare(other GraderClientConf) int {
+	return cmp.Compare(conf.Name, other.Name)
+}
+
+// GraderClientEnvPrefix is the per-client variable prefix: KN_GRADER_CLIENT_<NAME>=<token>.
+const GraderClientEnvPrefix = "KN_GRADER_CLIENT_"
+
+// GraderClientsFromEnv builds the client registry from every
+// KN_GRADER_CLIENT_<NAME>=<token> variable in environ (as returned by
+// os.Environ). NAME is lowercased to form the client name. An empty registry
+// is an error: a grader nobody can talk to is a misconfiguration.
+func GraderClientsFromEnv(environ []string) ([]GraderClientConf, error) {
+	var out []GraderClientConf
+	for _, kv := range environ {
+		key, token, _ := strings.Cut(kv, "=")
+		name, ok := strings.CutPrefix(key, GraderClientEnvPrefix)
+		if !ok {
+			continue
+		}
+		if name == "" || token == "" {
+			return nil, fmt.Errorf("%s: expected %s<NAME>=<token> with a non-empty name and token", key, GraderClientEnvPrefix)
+		}
+		out = append(out, GraderClientConf{Name: strings.ToLower(name), Token: token})
 	}
-	var gc GraderConf
-	md, err := toml.DecodeFile(configPath, &gc)
-	if err != nil {
-		slog.ErrorContext(ctx, "Couldn't load grader config file", slog.Any("err", err))
-		return nil, err
+	if len(out) == 0 {
+		return nil, fmt.Errorf("no %s<NAME>=<token> variables set; the grader needs at least one client", GraderClientEnvPrefix)
 	}
-	if len(md.Undecoded()) > 0 {
-		slog.InfoContext(ctx, "Grader config: undecoded keys", slog.Any("keys", md.Undecoded()))
-	}
-	if gc.Grader.ScratchTTLSec <= 0 {
-		gc.Grader.ScratchTTLSec = 3600 // 1h default: orders of magnitude over any eval
-	}
-	return &gc, nil
+
+	slices.SortFunc(out, GraderClientConf.Compare)
+	return out, nil
 }

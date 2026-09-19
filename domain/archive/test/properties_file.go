@@ -12,7 +12,8 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/domain/config"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
+
 	"github.com/gorilla/schema"
 	"github.com/shopspring/decimal"
 )
@@ -184,8 +185,8 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, r io.Reader) error {
 	}
 	if rawProps.Memory != nil {
 		props.MemoryLimit = new(int((*rawProps.Memory) * 1024.0))
-		if *props.MemoryLimit > config.Common.TestMaxMemKB {
-			return kilonova.Statusf(400, "Maximum memory must not exceed %f MB", float64(config.Common.TestMaxMemKB)/1024.0)
+		if maxMem := flags.TestMaxMemKB.Value(); *props.MemoryLimit > maxMem {
+			return kilonova.Statusf(400, "Maximum memory must not exceed %f MB", float64(maxMem)/1024.0)
 		}
 	}
 	if rawProps.ScoringStrategy != nil && (*rawProps.ScoringStrategy == string(kilonova.ScoringTypeMaxSub) || *rawProps.ScoringStrategy == string(kilonova.ScoringTypeSumSubtasks) || *rawProps.ScoringStrategy == string(kilonova.ScoringTypeICPC)) {

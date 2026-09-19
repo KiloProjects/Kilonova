@@ -25,7 +25,7 @@ import (
 var (
 	cmdAuditLogger = sync.OnceValue(func() *slog.Logger {
 		return slog.New(slog.NewJSONHandler(&lumberjack.Logger{
-			Filename: path.Join(config.Common.LogDir, "sandbox_runs.log"),
+			Filename: path.Join(config.Common.LogDir(), "sandbox_runs.log"),
 			MaxSize:  200, // MB
 			Compress: true,
 		}, &slog.HandlerOptions{

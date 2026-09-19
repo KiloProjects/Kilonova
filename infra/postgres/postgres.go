@@ -49,7 +49,7 @@ func (db *DB) initLogger() {
 		lvl = slog.LevelDebug
 	}
 	db.logger = slog.New(slog.NewJSONHandler(&lumberjack.Logger{
-		Filename: path.Join(config.Common.LogDir, "db.log"),
+		Filename: path.Join(config.Common.LogDir(), "db.log"),
 		MaxSize:  200, // MB
 		Compress: true,
 	}, &slog.HandlerOptions{
@@ -64,7 +64,10 @@ func NewDB(ctx context.Context, conf Config) (*DB, error) {
 	}
 	db.initLogger()
 
+	// An empty DSN makes pgx resolve the libpq PG* environment variables
+	// (PGHOST, PGUSER, PGPASSWORD, PGDATABASE, PGSSLMODE, ...).
 	pgconf, err := pgxpool.ParseConfig(conf.DSN)
+
 	if err != nil {
 		return nil, err
 	}

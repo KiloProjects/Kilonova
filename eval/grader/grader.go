@@ -653,6 +653,9 @@ func (h *Handler) getLocalRunner(ctx context.Context) (eval.BoxScheduler, eval.L
 // endpoint. No local sandbox is created.
 func (h *Handler) getRemoteRunner(ctx context.Context) (eval.BoxScheduler, eval.LanguageManager, error) {
 	rc := config.Eval.Remote
+	if rc.Endpoint == "" || rc.Token == "" {
+		return nil, nil, fmt.Errorf("KN_EVAL_MODE=remote requires KN_EVAL_REMOTE_ENDPOINT and KN_EVAL_REMOTE_TOKEN")
+	}
 	// Bounded per-transfer so a dropped connection fails the eval fast instead of
 	// hanging (design D2). ponytail: 60s covers the largest test file; lift to a
 	// config field if real transfers approach it.

@@ -34,7 +34,7 @@ type emailer struct {
 func (e *emailer) SendEmail(ctx context.Context, msg *kilonova.MailerMessage) error {
 	loggerOnce.Do(func() {
 		emailLogger = slog.New(slog.NewJSONHandler(&lumberjack.Logger{
-			Filename: path.Join(config.Common.LogDir, "email.log"),
+			Filename: path.Join(config.Common.LogDir(), "email.log"),
 			MaxSize:  200, // MB
 			Compress: true,
 		}, &slog.HandlerOptions{

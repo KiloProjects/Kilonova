@@ -67,3 +67,9 @@ var (
 var (
 	DefaultSourceSize = config.GenFlag[int]("behavior.problem.default_source_size", 30000, "Default maximum source code size for problems")
 )
+
+// Admin-editable instance settings, formerly in config.toml.
+var (
+	DefaultLanguage   = config.GenFlag("frontend.default_language", "en", "Default UI language (en/ro)")
+	BannedHotProblems = config.GenFlag("frontend.banned_hot_problems", []int{}, "Problem IDs excluded from the hot problems list")
+)

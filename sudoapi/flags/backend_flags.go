@@ -87,3 +87,5 @@ var (
 	TotalSubLimit      = config.GenFlag[int]("behavior.submissions.user_max_minute", 20, "Maximum number of submissions uploaded per minute (for a single user with verified email)")
 	UnverifiedSubLimit = config.GenFlag[int]("behavior.submissions.user_max_unverified", 5, "Maximum number of submissions uploaded per minute (for a single user with unverified email)")
 )
+
+var TestMaxMemKB = config.GenFlag("eval.test_max_mem_kb", 1048576, "Maximum memory limit (KB) a problem may request per test")

@@ -401,7 +401,7 @@ func (s *BaseAPI) cleanupBucketsJob(ctx context.Context, interval time.Duration)
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	logFile := &lumberjack.Logger{
-		Filename: path.Join(config.Common.LogDir, "eviction.log"),
+		Filename: path.Join(config.Common.LogDir(), "eviction.log"),
 		MaxSize:  80, //MB
 		Compress: true,
 	}
@@ -469,7 +469,7 @@ func (s *BaseAPI) refreshHotProblemsJob(ctx context.Context, interval time.Durat
 	go func() {
 		// Initial refresh
 		slog.DebugContext(ctx, "Refreshing hot problems")
-		s.db.RefreshHotProblems(ctx, config.Frontend.BannedHotProblems)
+		s.db.RefreshHotProblems(ctx, flags.BannedHotProblems.Value())
 	}()
 	for {
 		select {
@@ -477,8 +477,9 @@ func (s *BaseAPI) refreshHotProblemsJob(ctx context.Context, interval time.Durat
 			return ctx.Err()
 		case <-t.C:
 			slog.DebugContext(ctx, "Refreshing hot problems")
-			s.db.RefreshHotProblems(ctx, config.Frontend.BannedHotProblems)
+			s.db.RefreshHotProblems(ctx, flags.BannedHotProblems.Value())
 		}
+
 	}
 }
 

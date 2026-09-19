@@ -636,7 +636,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		"intFlag": func(name string) int {
 			val, ok := config.GetFlagVal[int](name)
 			if !ok {
-				slog.WarnContext(ctx, "Flag is not int", slog.String("name", name))
+				slog.WarnContext(ctx, "Flag is not proper type", slog.String("name", name))
 			}
 			return val
 		},
@@ -657,11 +657,9 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 
 		// for admin configuration
 		"defaultLang":  kilonova.DefaultLanguage,
-		"testMaxMemMB": func() int { return config.Common.TestMaxMemKB / 1024 },
-		"globalMaxMem": func() int64 { return config.Eval.GlobalMaxMem / 1024 },
-		"numWorkers":   func() int { return config.Eval.NumConcurrent },
+		"testMaxMemMB": func() int { return flags.TestMaxMemKB.Value() / 1024 },
 
-		"bannedHotProblems": func() []int { return config.Frontend.BannedHotProblems },
+		"bannedHotProblems": flags.BannedHotProblems.Value,
 
 		"boolFlags":   config.GetFlags[bool],
 		"stringFlags": config.GetFlags[string],
@@ -687,7 +685,7 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 		},
 
 		// for problem edit page
-		"maxMemMB": func() float64 { return float64(config.Common.TestMaxMemKB) / 1024.0 },
+		"maxMemMB": func() float64 { return float64(flags.TestMaxMemKB.Value()) / 1024.0 },
 
 		"intList": func(ids []int) string {
 			if len(ids) == 0 {

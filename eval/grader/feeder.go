@@ -43,7 +43,7 @@ func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, error) {
 
 	openAction.Do(func() {
 		logFile = &lumberjack.Logger{
-			Filename: path.Join(config.Common.LogDir, "grader.log"),
+			Filename: path.Join(config.Common.LogDir(), "grader.log"),
 			MaxSize:  80, // MB. Since most rows are really similar it gets compressed really small
 			Compress: true,
 		}

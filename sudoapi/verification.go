@@ -109,5 +109,6 @@ func (s *BaseAPI) ConfirmVerificationEmail(ctx context.Context, vid string, user
 }
 
 func (s *BaseAPI) MailerEnabled() bool {
-	return config.Email.Enabled && s.mailer != nil
+	return config.Email.Enabled() && s.mailer != nil
+
 }
