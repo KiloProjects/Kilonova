@@ -6,7 +6,7 @@ export MAXMIND_PATH := x"~/.local/share/GeoIP/GeoLite2-City.mmdb"
 maxmind:
 	mkdir -p $HOME/.local/share/GeoIP
 
-	curl -sSL "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb" -o '${MAXMIND_PATH}'
+	curl -sSL "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb" -o ${MAXMIND_PATH}"
 
 	@echo "Downloaded GeoLite2-City database."
 
