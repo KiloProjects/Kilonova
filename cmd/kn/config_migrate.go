@@ -331,7 +331,7 @@ func migrateConfig(cfgPath, graderPath, flagsPath string, out, errOut io.Writer)
 
 		// Admin-editable values go to the flags file, not the environment.
 		if lc.Common.DefaultLang != "" {
-			fl.set(flags.DefaultLanguage.InternalName(), lc.Common.DefaultLang, errOut)
+			fl.set(flags.DefaultLang.InternalName(), lc.Common.DefaultLang, errOut)
 		}
 		if lc.Common.TestMaxMemKB != 0 {
 			fl.set(flags.TestMaxMemKB.InternalName(), lc.Common.TestMaxMemKB, errOut)

@@ -469,7 +469,7 @@ func (s *AuthStorage) setUserInfo(ctx context.Context, userinfo *oidc.UserInfo, 
 			case "ro":
 				userinfo.Locale = oidc.NewLocale(language.Romanian)
 			default:
-				switch kilonova.DefaultLanguage() {
+				switch flags.DefaultLanguage() {
 				case "en":
 					userinfo.Locale = oidc.NewLocale(language.English)
 				case "ro":

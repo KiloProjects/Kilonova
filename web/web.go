@@ -657,7 +657,7 @@ func NewWeb(base *sudoapi.BaseAPI, llmProvider llm.Provider) *Web {
 		},
 
 		// for admin configuration
-		"defaultLang":  kilonova.DefaultLanguage,
+		"defaultLang":  flags.DefaultLanguage,
 		"testMaxMemMB": func() int { return flags.TestMaxMemKB.Value() / 1024 },
 
 		"bannedHotProblems": flags.BannedHotProblems.Value,
@@ -665,8 +665,9 @@ func NewWeb(base *sudoapi.BaseAPI, llmProvider llm.Provider) *Web {
 		"llmEnabled": func() bool { return llmProvider != nil },
 		"boolFlags":  config.GetFlags[bool],
 
-		"stringFlags": config.GetFlags[string],
-		"intFlags":    config.GetFlags[int],
+		"stringFlags":   config.GetFlags[string],
+		"intFlags":      config.GetFlags[int],
+		"intArrayFlags": config.GetFlags[[]int],
 
 		"sessionDevices": func(sid string) []*sudoapi.SessionDevice {
 			devices, err := base.SessionDevices(ctx, sid)

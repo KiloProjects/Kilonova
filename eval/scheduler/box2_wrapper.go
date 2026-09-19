@@ -3,7 +3,9 @@ package scheduler
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
+	"io/fs"
 	"log/slog"
 	"slices"
 
@@ -111,7 +113,7 @@ func (b *Box2Wrapper) convertRequest(ctx context.Context, b2Req *eval.Box2Reques
 		if err != nil {
 			return nil, err
 		}
-		if err := rc.Close(); err != nil {
+		if err := rc.Close(); err != nil && !errors.Is(err, fs.ErrClosed) {
 			slog.WarnContext(ctx, "Could not clean up bucket file read", slog.Any("err", err))
 		}
 		b3Req.InputFiles = append(b3Req.InputFiles, eval.ScratchFile{

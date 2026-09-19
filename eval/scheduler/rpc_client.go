@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 )
 
@@ -96,7 +97,7 @@ func (c *GraderClient) languageVersions(ctx context.Context) (map[string]string,
 	if err := c.call(ctx, http.MethodGet, "/languages", nil, &out); err != nil {
 		return nil, err
 	}
-	if out.Build != BuildID() {
+	if out.Build != BuildID() && !kilonova.DebugMode() {
 		return nil, fmt.Errorf("grader build %q does not match platform build %q; deploy both from the same build", out.Build, BuildID())
 	}
 	return out.Versions, nil

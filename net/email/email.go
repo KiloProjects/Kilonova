@@ -42,7 +42,7 @@ func (e *emailer) SendEmail(ctx context.Context, msg *kilonova.MailerMessage) er
 
 	em := email.NewEmail()
 
-	em.From = "noreply@kilonova.ro"
+	em.From = e.from
 	em.To = []string{msg.To}
 	if msg.ReplyTo != "" {
 		em.ReplyTo = []string{msg.ReplyTo}

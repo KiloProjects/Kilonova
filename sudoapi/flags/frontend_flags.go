@@ -1,6 +1,8 @@
 package flags
 
 import (
+	"cmp"
+
 	"github.com/KiloProjects/kilonova/domain/config"
 )
 
@@ -70,6 +72,10 @@ var (
 
 // Admin-editable instance settings, formerly in config.toml.
 var (
-	DefaultLanguage   = config.GenFlag("frontend.default_language", "en", "Default UI language (en/ro)")
+	DefaultLang       = config.GenFlag("frontend.default_language", "en", "Default UI language (en/ro)")
 	BannedHotProblems = config.GenFlag("frontend.banned_hot_problems", []int{}, "Problem IDs excluded from the hot problems list")
 )
+
+func DefaultLanguage() string {
+	return cmp.Or(DefaultLang.Value(), "en")
+}

@@ -15,7 +15,6 @@ import (
 	"github.com/KiloProjects/kilonova/net/discord"
 	"github.com/KiloProjects/kilonova/net/email"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/spf13/afero"
 )
 
@@ -93,10 +92,8 @@ func loadFlags(ctx context.Context, store config.FlagStore) error {
 		}
 	}
 	config.ApplyFlagOverrides(ctx)
-	kilonova.SetDefaultLanguage(flags.DefaultLanguage.Value())
 
 	config.SetOnFlagUpdate(func(name string) {
-		kilonova.SetDefaultLanguage(flags.DefaultLanguage.Value())
 		ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 		defer cancel()
 		if err := config.PersistFlag(ctx, store, name); err != nil {

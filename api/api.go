@@ -159,7 +159,6 @@ func (s *API) HandlerV1() http.Handler {
 		r.Post("/setAdmin", s.setAdmin)
 		r.Post("/setProposer", s.setProposer)
 
-		r.Post("/updateConfig", webMessageWrapper("Updated config. Some changes may only apply after a restart", s.base.UpdateConfig))
 		r.Post("/updateFlags", s.updateBoolFlags)
 
 		r.Route("/maintenance", func(r chi.Router) {

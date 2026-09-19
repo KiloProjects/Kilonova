@@ -81,7 +81,7 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 	}
 
 	if lang == "" {
-		lang = kilonova.DefaultLanguage()
+		lang = flags.DefaultLanguage()
 	}
 	if theme == kilonova.PreferredThemeNone {
 		theme = kilonova.PreferredThemeDark

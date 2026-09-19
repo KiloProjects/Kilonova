@@ -1,230 +1,224 @@
 {{ define "title" }} {{getText "panel.admin"}} {{ end }}
 {{ define "content" }}
 
-<h1>
-	{{getText "panel.admin"}}
-</h1>
+	<h1>
+        {{getText "panel.admin"}}
+	</h1>
 
-<div class="segment-panel">
-	<h2>{{getText "changeRoles"}}:</h2>
-	<label class="block">
-		<span class="form-label">{{getText "username"}}:</span>
-		<input class="form-input my-1 block" type="text" id="userToChange" placeholder="AlexVasiluta" autocomplete="off">
-	</label>
-	<div class="my-2 inline-flex">
-		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-l-sm" onclick="setFormAdmin(true)">{{getText "makeAdmin"}}</button>
-		<button type="button" class="btn-blue font-bold py-2 px-4 rounded-r-sm" onclick="setFormProposer(true)">{{getText "makeProposer"}}</button>
+	<div class="segment-panel">
+		<h2>{{getText "changeRoles"}}:</h2>
+		<label class="block">
+			<span class="form-label">{{getText "username"}}:</span>
+			<input class="form-input my-1 block" type="text" id="userToChange" placeholder="AlexVasiluta"
+			       autocomplete="off">
+		</label>
+		<div class="my-2 inline-flex">
+			<button type="button" class="btn-blue font-bold py-2 px-4 rounded-l-sm"
+			        onclick="setFormAdmin(true)">{{getText "makeAdmin"}}</button>
+			<button type="button" class="btn-blue font-bold py-2 px-4 rounded-r-sm"
+			        onclick="setFormProposer(true)">{{getText "makeProposer"}}</button>
+		</div>
 	</div>
-</div>
 
-<script>
-	async function setAdmin(id, set) {
-		let res = await bundled.postCall("/admin/setAdmin", {id, set})
-		bundled.apiToast(res)
-		if(res.status == "error") {
-			return
-		}
-		loadUsers({admin: true}, "admin-group", "setAdmin");
-		loadUsers({proposer: true}, "proposer-group", "setProposer");
-	}
-	async function setProposer(id, set) {
-		let res = await bundled.bodyCall("/admin/setProposer", {id, set})
-		bundled.apiToast(res)
-		if(res.status == "error") {
-			return
-		}
-		loadUsers({proposer: true}, "proposer-group", "setProposer");
-	}
+	<script>
+        async function setAdmin(id, set) {
+            let res = await bundled.postCall("/admin/setAdmin", {id, set})
+            bundled.apiToast(res)
+            if (res.status == "error") {
+                return
+            }
+            loadUsers({admin: true}, "admin-group", "setAdmin");
+            loadUsers({proposer: true}, "proposer-group", "setProposer");
+        }
 
-	async function setFormAdmin(toSet) {
-		let user = document.getElementById("userToChange").value;
-		let res = await bundled.getCall(`/user/byName/${user}`, {})
-		if(res.status == "error") {
-			bundled.apiToast(res)
-			return
-		}
-		await setAdmin(res.data.id, toSet)
-	}
-	async function setFormProposer(toSet) {
-		let user = document.getElementById("userToChange").value;
-		let res = await bundled.getCall(`/user/byName/${user}`, {})
-		if(res.status == "error") {
-			bundled.apiToast(res)
-			return
-		}
-		await setProposer(res.data.id, toSet)
-	}
-</script>
+        async function setProposer(id, set) {
+            let res = await bundled.bodyCall("/admin/setProposer", {id, set})
+            bundled.apiToast(res)
+            if (res.status == "error") {
+                return
+            }
+            loadUsers({proposer: true}, "proposer-group", "setProposer");
+        }
 
-<div class="segment-panel">
-	<h2 class="text-2xl">{{getText "admins"}}:</h2>
-	<div id="admin-group" class="block list-group mb-2">
-		<div class="list-group-head">
-            {{getText "loading"}}
-        </div>
+        async function setFormAdmin(toSet) {
+            let user = document.getElementById("userToChange").value;
+            let res = await bundled.getCall(`/user/byName/${user}`, {})
+            if (res.status == "error") {
+                bundled.apiToast(res)
+                return
+            }
+            await setAdmin(res.data.id, toSet)
+        }
+
+        async function setFormProposer(toSet) {
+            let user = document.getElementById("userToChange").value;
+            let res = await bundled.getCall(`/user/byName/${user}`, {})
+            if (res.status == "error") {
+                bundled.apiToast(res)
+                return
+            }
+            await setProposer(res.data.id, toSet)
+        }
+	</script>
+
+	<div class="segment-panel">
+		<h2 class="text-2xl">{{getText "admins"}}:</h2>
+		<div id="admin-group" class="block list-group mb-2">
+			<div class="list-group-head">
+                {{getText "loading"}}
+			</div>
+		</div>
+		<h2 class="text-2xl">{{getText "proposers"}}:</h2>
+		<div id="proposer-group" class="block list-group mb-2">
+			<div class="list-group-head">
+                {{getText "loading"}}
+			</div>
+		</div>
 	</div>
-	<h2 class="text-2xl">{{getText "proposers"}}:</h2>
-	<div id="proposer-group" class="block list-group mb-2">
-		<div class="list-group-head">
-            {{getText "loading"}}
-        </div>
-	</div>
-</div>
-<script>
-	async function loadUsers(q, id = "admin-group", cb) {
-		document.getElementById(id).innerHTML = `<div class="list-group-head">${bundled.getText("loading")}</div>`
-		let res = await bundled.getCall("/admin/getAllUsers", q)
-		if(res.status == "error") {
-			bundled.apiToast(res)
-			return
-		}
-		let outhtml = ""
-		for(let user of res.data.users) {
-			outhtml += `<div class="list-group-item flex justify-between items-center"><a href="/profile/${user.name}"><img class="rounded-sm inline-block mr-2" src="/profile/${user.name}/avatar?s=32" width="32" height="32" alt="Avatar"/>${user.name}</a>`
-			if(user.id != 1 && {{authedUser.ID}} == 1) {
-				outhtml += `<span style="cursor: pointer;" onclick="${cb}(${user.id}, false)">X</span>`
-			}
-			outhtml += `</div>`
-		}
-		document.getElementById(id).innerHTML = outhtml
-	}
-	loadUsers({admin: true}, "admin-group", "setAdmin");
-	loadUsers({proposer: true}, "proposer-group", "setProposer");
-</script>
-
-<form id="configForm" class="segment-panel" autocomplete="off">
-    <h2 class="text-2xl">{{getText "config.title"}}</h2>
-
-    <label class="block my-2">
-		<span class="form-label">{{getText "config.defaultLang"}}:</span>
-        <select name="default_lang" id="default_lang" class="form-select">
-            <option value="ro" {{if eq defaultLang "ro"}}selected{{end}}>🇷🇴 Română</option>
-            <option value="en" {{if eq defaultLang "en"}}selected{{end}}>🇬🇧 English</option>
-        </select>
-    </label>
-
-    <label class="block my-2">
-		<span class="form-label">{{getText "config.testMaxMemKB"}}:</span>
-        <input type="number" id="test_max_mem" name="test_max_mem" class="form-input" value="{{testMaxMemMB}}" /> 
-        <span class="form-label">MB</span>
-    </label>
-
-    <label class="block my-2">
-        <span class="form-label">{{getText "config.bannedHotProblems"}}:</span>
-        <input type="text" id="banned_hot_pbs" class="form-input" pattern="([0-9]+,?)+" value="{{intList bannedHotProblems}}">
-    </label>
-    <button class="btn btn-blue" type="submit">{{getText "button.update"}}</button>
-</form>
-
-<script>
-    document.getElementById("configForm").addEventListener("submit",async (e) => {
-        e.preventDefault()
-        const data = {
-            default_lang: document.getElementById("default_lang").value,
-            test_max_mem: document.getElementById("test_max_mem").value * 1024,
-            banned_hot_pbs: bundled.stringIntToNumber(document.getElementById("banned_hot_pbs").value.split(','))
-        };
-        bundled.apiToast(await bundled.postCall("/admin/updateConfig", data))
-    })
-</script>
-
-<form id="flagsForm" class="segment-panel" autocomplete="off">
-    <h2>{{getText "updateFlags"}}</h2>
-    <div class="segment-panel">
-        <h3>{{getText "boolFlags"}}</h3>
-        
-        <div id="boolFlagsDiv" class="mb-2">
-            {{range boolFlags}}
-            <div class="block">
-                <label class="inline-flex items-center text-lg">
-                    <input class="form-checkbox" type="checkbox" data-name="{{.InternalName}}" data-org_value="{{.Value}}" {{if .Value}}checked{{end}} autocomplete="off"/>
-                    <span class="ml-2">{{.HumanName}}</span>
-                    <span class="ml-2 text-sm text-muted">({{.InternalName}})</span>
-                </label>
-            </div>
-            {{else}}<span class="text-lg my-2">N/A</span>{{end}}
-        </div>
-    </div>
-
-    <div class="segment-panel">
-        <h3>{{getText "stringFlags"}}</h3>
-        
-        <div id="stringFlagsDiv" class="mb-2">
-            {{range stringFlags}}
-            <label class="block my-2">
-                <span>{{.HumanName}}</span>
-                <span class="mr-2 text-sm text-muted">({{.InternalName}})</span>
-                <input class="form-input w-full" type="text" data-name="{{.InternalName}}" data-org_value="{{.Value}}" value="{{.Value}}" autocomplete="off"/>
-            </label>
-            {{else}}<span class="text-lg my-2">N/A</span>{{end}}
-        </div>
-    </div>
-
-    <div class="segment-panel">
-        <h3>{{getText "intFlags"}}</h3>
-        
-        <div id="intFlagsDiv" class="mb-2">
-            {{range intFlags}}
-            <label class="block my-2">
-                <span>{{.HumanName}}</span>
-                <span class="mr-2 text-sm text-muted">({{.InternalName}})</span>
-                <input class="form-input w-full" type="number" data-name="{{.InternalName}}" data-org_value="{{.Value}}" value="{{.Value}}" autocomplete="off"/>
-            </label>
-            {{else}}<span class="text-lg my-2">N/A</span>{{end}}
-        </div>
-    </div>
-
-    <button type="submit" class="btn btn-blue">{{getText "button.update"}}</button>
-</form>
-
-<script>
-    function wrapFunc(func) {
-        return async (e) => {
-            if(!e.submitter) {
-            console.log(e.submitter)
-                return func(e)
+	<script>
+        async function loadUsers(q, id = "admin-group", cb) {
+            document.getElementById(id).innerHTML = `<div class="list-group-head">${bundled.getText("loading")}</div>`
+            let res = await bundled.getCall("/admin/getAllUsers", q)
+            if (res.status == "error") {
+                bundled.apiToast(res)
+                return
             }
-            e.submitter.disabled = true
-            e.submitter.classList.add('btn-loading')
-            await func(e)
-            e.submitter.classList.remove('btn-loading')
-            e.submitter.disabled = false
+            let outhtml = ""
+            for (let user of res.data.users) {
+                outhtml += `<div class="list-group-item flex justify-between items-center"><a href="/profile/${user.name}"><img class="rounded-sm inline-block mr-2" src="/profile/${user.name}/avatar?s=32" width="32" height="32" alt="Avatar"/>${user.name}</a>`
+                if (user.id != 1 && {{authedUser.ID}} == 1) {
+                    outhtml += `<span style="cursor: pointer;" onclick="${cb}(${user.id}, false)">X</span>`
+                }
+                outhtml += `</div>`
+            }
+            document.getElementById(id).innerHTML = outhtml
         }
-    }
 
-    document.getElementById("flagsForm").addEventListener("submit", wrapFunc(async (e) => {
-        e.preventDefault()
-        let data = {bool_flags: {}, string_flags: {}, int_flags: {}}
-        for(let checkbox of document.getElementById("boolFlagsDiv").getElementsByTagName("input")) {
-            if(checkbox.checked != (checkbox.dataset.org_value === "true") ) {
-                data.bool_flags[checkbox.dataset.name] = checkbox.checked;
+        loadUsers({admin: true}, "admin-group", "setAdmin");
+        loadUsers({proposer: true}, "proposer-group", "setProposer");
+	</script>
+
+	<form id="flagsForm" class="segment-panel" autocomplete="off">
+		<h2 class="text-2xl">{{getText "config.title"}}</h2>
+
+		<div class="segment-panel">
+			<h3>{{getText "boolFlags"}}</h3>
+
+			<div id="boolFlagsDiv" class="mb-2">
+                {{range boolFlags}}
+					<div class="block">
+						<label class="inline-flex items-center text-lg">
+							<input class="form-checkbox" type="checkbox" data-name="{{.InternalName}}"
+							       data-org_value="{{.Value}}" {{if .Value}}checked{{end}} autocomplete="off"/>
+							<span class="ml-2">{{.HumanName}}</span>
+							<span class="ml-2 text-sm text-muted">({{.InternalName}})</span>
+						</label>
+					</div>
+                {{else}}<span class="text-lg my-2">N/A</span>{{end}}
+			</div>
+		</div>
+
+		<div class="segment-panel">
+			<h3>{{getText "stringFlags"}}</h3>
+
+			<div id="stringFlagsDiv" class="mb-2">
+                {{range stringFlags}}
+					<label class="block my-2">
+						<span>{{.HumanName}}</span>
+						<span class="mr-2 text-sm text-muted">({{.InternalName}})</span>
+						<input class="form-input w-full" type="text" data-name="{{.InternalName}}"
+						       data-org_value="{{.Value}}" value="{{.Value}}" autocomplete="off"/>
+					</label>
+                {{else}}<span class="text-lg my-2">N/A</span>{{end}}
+			</div>
+		</div>
+
+		<div class="segment-panel">
+			<h3>{{getText "intFlags"}}</h3>
+
+			<div id="intFlagsDiv" class="mb-2">
+                {{range intFlags}}
+					<label class="block my-2">
+						<span>{{.HumanName}}</span>
+						<span class="mr-2 text-sm text-muted">({{.InternalName}})</span>
+						<input class="form-input w-full" type="number" data-name="{{.InternalName}}"
+						       data-org_value="{{.Value}}" value="{{.Value}}" autocomplete="off"/>
+					</label>
+                {{else}}<span class="text-lg my-2">N/A</span>{{end}}
+			</div>
+		</div>
+
+		<div class="segment-panel">
+			<h3>{{getText "intArrayFlags"}}</h3>
+
+			<div id="intFlagsDiv" class="mb-2">
+                {{range intArrayFlags}}
+					<label class="block my-2">
+						<span>{{.HumanName}}</span>
+						<span class="mr-2 text-sm text-muted">({{.InternalName}})</span>
+						<input class="form-input w-full" type="text" pattern="([0-9]+,?)+" data-name="{{.InternalName}}"
+						       data-org_value="{{intList .Value}}" value="{{intList .Value}}" autocomplete="off"/>
+					</label>
+                {{else}}<span class="text-lg my-2">N/A</span>{{end}}
+			</div>
+		</div>
+
+		<button type="submit" class="btn btn-blue">{{getText "button.update"}}</button>
+	</form>
+
+	<script>
+        function wrapFunc(func) {
+            return async (e) => {
+                if (!e.submitter) {
+                    console.log(e.submitter)
+                    return func(e)
+                }
+                e.submitter.disabled = true
+                e.submitter.classList.add('btn-loading')
+                await func(e)
+                e.submitter.classList.remove('btn-loading')
+                e.submitter.disabled = false
             }
         }
-        for(let input of document.getElementById("stringFlagsDiv").getElementsByTagName("input")) {
-            if(input.value != input.dataset.org_value) {
-                data.string_flags[input.dataset.name] = input.value;
+
+        document.getElementById("flagsForm").addEventListener("submit", wrapFunc(async (e) => {
+            e.preventDefault()
+            let data = {bool_flags: {}, string_flags: {}, int_flags: {}, int_array_flags: {}}
+            for (let checkbox of document.getElementById("boolFlagsDiv").getElementsByTagName("input")) {
+                if (checkbox.checked != (checkbox.dataset.org_value === "true")) {
+                    data.bool_flags[checkbox.dataset.name] = checkbox.checked;
+                }
             }
-        }
-        for(let input of document.getElementById("intFlagsDiv").getElementsByTagName("input")) {
-            if(input.value != input.dataset.org_value) {
-                data.int_flags[input.dataset.name] = parseInt(input.value);
+            for (let input of document.getElementById("stringFlagsDiv").getElementsByTagName("input")) {
+                if (input.value != input.dataset.org_value) {
+                    data.string_flags[input.dataset.name] = input.value;
+                }
             }
-        }
-        // console.log(Object.fromEntries(data.entries()))
-        const res = await bundled.bodyCall("/admin/updateFlags", data)
-        bundled.apiToast(res)
-        if(res.status === "success") {
-            for(let checkbox of document.getElementById("boolFlagsDiv").getElementsByTagName("input")) {
-                checkbox.dataset.org_value = checkbox.checked 
+            for (let input of document.getElementById("intFlagsDiv").getElementsByTagName("input")) {
+                if (input.value != input.dataset.org_value) {
+                    data.int_flags[input.dataset.name] = parseInt(input.value);
+                }
             }
-            for(let input of document.getElementById("stringFlagsDiv").getElementsByTagName("input")) {
-                input.dataset.org_value = input.value
+            for (let input of document.getElementById("intArrayFlagsDiv").getElementsByTagName("input")) {
+                if (input.value != input.dataset.org_value) {
+                    data.int_array_flags[input.dataset.name] = bundled.stringIntToNumber(input.value.split(','));
+                }
             }
-            for(let input of document.getElementById("intFlagsDiv").getElementsByTagName("input")) {
-                input.dataset.org_value = input.value
+            // console.log(Object.fromEntries(data.entries()))
+            const res = await bundled.bodyCall("/admin/updateFlags", data)
+            bundled.apiToast(res)
+            if (res.status === "success") {
+                for (let checkbox of document.getElementById("boolFlagsDiv").getElementsByTagName("input")) {
+                    checkbox.dataset.org_value = checkbox.checked
+                }
+                for (let input of document.getElementById("stringFlagsDiv").getElementsByTagName("input")) {
+                    input.dataset.org_value = input.value
+                }
+                for (let input of document.getElementById("intFlagsDiv").getElementsByTagName("input")) {
+                    input.dataset.org_value = input.value
+                }
             }
-        }
-    }))
-</script>
+        }))
+	</script>
 
 {{ end }}

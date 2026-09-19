@@ -1,8 +1,6 @@
 package kilonova
 
 import (
-	"context"
-	"log/slog"
 	"net/url"
 	"time"
 
@@ -26,22 +24,13 @@ func init() {
 }
 
 var (
-	debug           bool
-	defaultLanguage string
-	hostPrefix      string
-	hostURL         *url.URL
+	debug      bool
+	hostPrefix string
+	hostURL    *url.URL
 )
 
 func DebugMode() bool {
 	return debug
-}
-
-func DefaultLanguage() string {
-	if defaultLanguage == "" {
-		slog.WarnContext(context.Background(), "No default language set, defaulting to English")
-		defaultLanguage = "en"
-	}
-	return defaultLanguage
 }
 
 func HostPrefix() string {
@@ -54,20 +43,6 @@ func HostURL() *url.URL {
 
 func SetDebugMode(dbg bool) {
 	debug = dbg
-}
-
-func SetDefaultLanguage(lng string) {
-	defaultLanguage = lng
-	switch lng {
-	case "en", "ro":
-	case "":
-		slog.WarnContext(context.Background(), "No default language set, defaulting to English")
-		defaultLanguage = "en"
-	default:
-		slog.WarnContext(context.Background(), "Invalid default language, defaulting to English", slog.String("lang", lng))
-		defaultLanguage = "en"
-	}
-
 }
 
 func SetHostPrefix(prefix string) {

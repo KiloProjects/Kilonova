@@ -1895,6 +1895,10 @@ ro = "Flag-uri string"
 en = "Number flags"
 ro = "Flag-uri numere"
 
+[intArrayFlags]
+en = "Number list flags"
+ro = "Flag-uri liste de numere"
+
 [tagDeleteConfirm]
 en = "Are you sure you want to delete this tag?"
 ro = "Ești sigur că vrei să ștergi această etichetă?"

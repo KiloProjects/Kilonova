@@ -2,7 +2,6 @@ package datastore
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/KiloProjects/kilonova"
@@ -27,8 +26,6 @@ const (
 )
 
 var (
-	initialized = false
-
 	// TODO: Do better...
 	bucketData = []bucketDef{
 		{
@@ -171,10 +168,6 @@ func (m *Manager) WriteFile(bucketType BucketType, name string, r io.Reader, mod
 }
 
 func New(rootFS afero.Fs) (*Manager, error) {
-	if initialized {
-		return nil, errors.New("buckets already initialized")
-	}
-	initialized = true
 	buckets := make(map[BucketType]Bucket)
 	for _, b := range bucketData {
 		bucket, err := newBucket(rootFS, string(b.Name), b.IsCache, b.IsPersistent, b.MaxSize, b.MaxTTL)

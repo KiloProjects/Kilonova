@@ -278,7 +278,7 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 	}
 
 	if lang == "" {
-		lang = kilonova.DefaultLanguage()
+		lang = flags.DefaultLanguage()
 	}
 	if theme == kilonova.PreferredThemeNone {
 		theme = kilonova.PreferredThemeDark

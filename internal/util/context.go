@@ -7,6 +7,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/internal/ctxt"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
 
 type knContextType string
@@ -141,7 +142,7 @@ func LanguageContext(ctx context.Context) string {
 	case *string:
 		return *v
 	default:
-		return kilonova.DefaultLanguage()
+		return flags.DefaultLanguage()
 	}
 }
 
