@@ -9,7 +9,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-const Version = "v0.25.2"
+const Version = "v26.09"
 
 type AuditLog struct {
 	ID        int        `json:"id"`
