@@ -4,24 +4,19 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
-	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/domain/user/userpg"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/infra/postgres"
 	"github.com/KiloProjects/kilonova/internal/auth"
-	"github.com/KiloProjects/kilonova/net/email"
+	"github.com/KiloProjects/kilonova/net/discord"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer"
 	"github.com/Yiling-J/theine-go"
-	"github.com/bwmarrin/discordgo"
-	"github.com/spf13/afero"
-	"github.com/urfave/cli/v3"
 	"github.com/zitadel/oidc/v3/pkg/op"
 )
 
@@ -43,7 +38,6 @@ type BaseAPI struct {
 	db     *db.DB
 	mailer kilonova.Mailer
 	rd     *mdrenderer.Renderer
-	cmd    *cli.Command
 
 	userRepo *userpg.Repository
 
@@ -56,7 +50,7 @@ type BaseAPI struct {
 
 	logChan chan *logEntry
 
-	dSess *discordgo.Session
+	discord discord.Provider
 
 	evictionLogger        *slog.Logger
 	testBucket            datastore.Bucket
@@ -68,8 +62,8 @@ type BaseAPI struct {
 }
 
 func (s *BaseAPI) Start(ctx context.Context) {
-	if err := s.initDiscord(ctx); err != nil {
-		slog.WarnContext(ctx, "Could not initialize Discord", slog.Any("err", err))
+	if err := s.discord.Open(); err != nil {
+		slog.WarnContext(ctx, "Could not connect to Discord", slog.Any("err", err))
 	}
 	go s.ingestAuditLogs(ctx)
 	go s.cleanupBucketsJob(ctx, 30*time.Minute)
@@ -82,22 +76,20 @@ func (s *BaseAPI) Close() error {
 		return fmt.Errorf("couldn't close DB: %w", err)
 	}
 
-	if s.dSess != nil {
-		if err := s.dSess.Close(); err != nil {
-			return fmt.Errorf("couldn't close Discord session: %w", err)
-		}
+	if err := s.discord.Close(); err != nil {
+		return fmt.Errorf("couldn't close Discord session: %w", err)
 	}
 
 	return nil
 }
 
-func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, mailer kilonova.Mailer, cmd *cli.Command) (*BaseAPI, error) {
+func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, mailer kilonova.Mailer, dc discord.Provider) (*BaseAPI, error) {
 	base := &BaseAPI{
-		pgx:    pgx,
-		db:     db.NewPSQL(pgx),
-		mailer: mailer,
-		rd:     mdrenderer.NewRenderer(),
-		cmd:    cmd,
+		pgx:     pgx,
+		db:      db.NewPSQL(pgx),
+		mailer:  mailer,
+		rd:      mdrenderer.NewRenderer(),
+		discord: dc,
 
 		mgr: mgr,
 
@@ -141,52 +133,6 @@ func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, m
 	}
 	base.oidcProvider = provider
 	return base, nil
-}
-
-func InitializeBaseAPI(ctx context.Context, cmd *cli.Command) (*BaseAPI, error) {
-	// Data directory setup
-	if err := config.RequireDataDir(); err != nil {
-		return nil, err
-	}
-
-	if err := os.MkdirAll(config.Common.DataDir, 0755); err != nil {
-		return nil, fmt.Errorf("couldn't create data dir: %w", err)
-	}
-	dataFs := afero.NewBasePathFs(afero.NewOsFs(), config.Common.DataDir)
-
-	mgr, err := datastore.New(dataFs)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't initialize data store: %w", err)
-	}
-
-	var knMailer kilonova.Mailer
-	if config.Email.Enabled() {
-
-		mailer, err := email.NewMailer()
-		if err != nil {
-			slog.WarnContext(ctx, "Couldn't initialize mailer. Make sure you entered the correct information", slog.Any("err", err))
-		}
-		knMailer = mailer
-	}
-
-	// DB Initialization
-	pgxDB, err := postgres.NewDB(ctx, postgres.Config{
-		DSN:          config.Common.DBDSN,
-		CountQueries: flags.CountDBQueries.Value(),
-		LogQueries:   flags.LogDBQueries.Value(),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("couldn't connect to DB: %w", err)
-	}
-	slog.InfoContext(ctx, "Connected to DB")
-
-	if flags.MigrateOnStart.Value() {
-		if err := postgres.RunMigrations(ctx, pgxDB, db.Migrations); err != nil {
-			return nil, fmt.Errorf("couldn't run migrations: %w", err)
-		}
-	}
-
-	return GetBaseAPI(ctx, pgxDB, mgr, knMailer, cmd)
 }
 
 func InitQueryCounter(ctx context.Context) context.Context {

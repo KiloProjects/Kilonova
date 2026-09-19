@@ -12,7 +12,6 @@ import (
 	_ "embed"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
 
@@ -109,6 +108,6 @@ func (s *BaseAPI) ConfirmVerificationEmail(ctx context.Context, vid string, user
 }
 
 func (s *BaseAPI) MailerEnabled() bool {
-	return config.Email.Enabled() && s.mailer != nil
+	return s.mailer != nil // only constructed when SMTP is configured (cmd/kn)
 
 }

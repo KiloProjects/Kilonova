@@ -66,10 +66,11 @@ func (e *emailer) SendEmail(ctx context.Context, msg *kilonova.MailerMessage) er
 	return err
 }
 
-func NewMailer() (kilonova.Mailer, error) {
-	host, _, err := net.SplitHostPort(config.Email.Host)
+// NewMailer builds an SMTP mailer. hostPort is "host:port"; sendAs defaults to username.
+func NewMailer(hostPort, username, password, sendAs string) (kilonova.Mailer, error) {
+	host, _, err := net.SplitHostPort(hostPort)
 	if err != nil {
 		return nil, err
 	}
-	return &emailer{config.Email.Host, smtp.PlainAuth("", config.Email.Username, config.Email.Password, host), cmp.Or(config.Email.SendAs, config.Email.Username)}, nil
+	return &emailer{hostPort, smtp.PlainAuth("", username, password, host), cmp.Or(sendAs, username)}, nil
 }

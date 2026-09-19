@@ -97,3 +97,18 @@ The platform SHALL NOT read `config.toml`, the grader SHALL NOT read `grader.tom
 #### Scenario: Only flags.json is written at boot
 - **WHEN** `kn main` starts in an empty directory with the required variables set
 - **THEN** after startup the directory contains `flags.json`, and logs are under `<KN_DATA_DIR>/logs`; no `config.toml` is created
+
+### Requirement: Startup-only settings are never flags
+Settings that are read once at process start or that describe the host SHALL be `KN_*` environment variables, not `flags.json` entries: the web listen address (`KN_LISTEN`), the reverse-proxy client IP header (`KN_TRUE_IP_HEADER`), the Prometheus exporter address (`KN_PROMETHEUS_LISTEN`), migration and SQL debugging switches (`KN_DB_RUN_MIGRATIONS`, `KN_DB_LOG_SQL`, `KN_DB_COUNT_QUERIES`), the MaxMind database path (`KN_MAXMIND_DB`), the OpenTelemetry toggle (`KN_OTEL_ENABLED`), sandbox policy (`KN_SANDBOX_ENSURE_CG_KEEPER`, `KN_SANDBOX_ALLOW_INSECURE`), and the Discord and OpenAI credentials (`KN_DISCORD_TOKEN`, `KN_DISCORD_CLIENT_ID`, `KN_DISCORD_CLIENT_SECRET`, `KN_OPENAI_TOKEN`, `KN_OPENAI_MODEL`, `KN_OPENAI_VISION_MODEL`). An integration SHALL be enabled by the presence of its token. Secrets held in these variables SHALL NOT be readable from templates. `kn config-migrate` SHALL convert the corresponding retired keys found in an existing `flags.json`, and the platform SHALL drop retired keys from `flags.json` when it next rewrites the file.
+
+#### Scenario: Retired flag keys are converted
+- **WHEN** `kn config-migrate -f flags.json` runs against a file containing `server.listen.port: 8080` and `integrations.openai.token: "sk-x"`
+- **THEN** stdout contains `KN_LISTEN=localhost:8080` and `KN_OPENAI_TOKEN=sk-x`
+
+#### Scenario: Discord enabled by token
+- **WHEN** `KN_DISCORD_TOKEN` is set
+- **THEN** the Discord gateway session is opened at start, and when it is empty no Discord features are offered
+
+#### Scenario: OpenAI key stays server-side
+- **WHEN** the problem edit page is rendered with `KN_OPENAI_TOKEN` set
+- **THEN** the LLM tools section is shown without the token value being available to the template

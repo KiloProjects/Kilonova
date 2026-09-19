@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"os/exec"
 
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/KiloProjects/kilonova/domain/config"
 )
 
 var (
@@ -28,7 +28,8 @@ func InitKeeper(ctx context.Context) error {
 
 	slog.InfoContext(ctx, "Initialized sandbox binary path", slog.String("path", isolatePath))
 
-	if !flags.EnsureCGKeeper.Value() {
+	if !config.Eval.EnsureCGKeeper {
+
 		return nil
 	}
 

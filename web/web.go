@@ -27,6 +27,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/infra/maxmind"
+	"github.com/KiloProjects/kilonova/net/llm"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/tutils"
@@ -320,7 +321,7 @@ func (rt *Web) checkUsedTemplateFiles() {
 }
 
 // NewWeb returns a new web instance
-func NewWeb(base *sudoapi.BaseAPI) *Web {
+func NewWeb(base *sudoapi.BaseAPI, llmProvider llm.Provider) *Web {
 	ctx := context.Background()
 
 	funcs := template.FuncMap{
@@ -661,7 +662,9 @@ func NewWeb(base *sudoapi.BaseAPI) *Web {
 
 		"bannedHotProblems": flags.BannedHotProblems.Value,
 
-		"boolFlags":   config.GetFlags[bool],
+		"llmEnabled": func() bool { return llmProvider != nil },
+		"boolFlags":  config.GetFlags[bool],
+
 		"stringFlags": config.GetFlags[string],
 		"intFlags":    config.GetFlags[int],
 

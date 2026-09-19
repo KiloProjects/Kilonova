@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"log/slog"
@@ -9,7 +10,6 @@ import (
 	"os"
 	"os/signal"
 	"path"
-	"strconv"
 	"strings"
 	"time"
 
@@ -18,10 +18,11 @@ import (
 	"github.com/KiloProjects/kilonova/infra/maxmind"
 	"github.com/KiloProjects/kilonova/infra/otel"
 	"github.com/KiloProjects/kilonova/infra/profiler"
+	"github.com/KiloProjects/kilonova/net/llm"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
+
 	"github.com/riandyrn/otelchi"
 	slogmulti "github.com/samber/slog-multi"
-	"github.com/urfave/cli/v3"
 	"github.com/zitadel/oidc/v3/pkg/op"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -36,14 +37,14 @@ import (
 	"github.com/go-chi/cors"
 )
 
-func Kilonova(ctx context.Context, command *cli.Command) error {
+func Kilonova(ctx context.Context) error {
 
 	// Setup context
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, os.Kill)
 
-	shutdown, err := otel.SetupOpenTelemetry(ctx)
+	shutdown, err := otel.SetupOpenTelemetry(ctx, config.Integrations.OtelEnabled)
 	if err != nil {
 		return err
 	}
@@ -56,9 +57,9 @@ func Kilonova(ctx context.Context, command *cli.Command) error {
 		slog.WarnContext(ctx, "Debug mode activated, expect worse performance")
 	}
 
-	maxmind.Initialize(ctx)
+	maxmind.Initialize(ctx, config.Integrations.MaxMindDB)
 
-	base, err := sudoapi.InitializeBaseAPI(ctx, command)
+	base, err := initBase(ctx)
 	if err != nil {
 		slog.ErrorContext(ctx, "Could not initialize BaseAPI", slog.Any("err", err))
 		return err
@@ -85,8 +86,15 @@ func Kilonova(ctx context.Context, command *cli.Command) error {
 		slog.WarnContext(ctx, "Couldn't reset initial working submissions", slog.Any("err", err))
 	}
 
+	// Optional integrations are built here, at the composition root, and
+	// handed down; a nil provider means "not configured".
+	var llmProvider llm.Provider
+	if config.Integrations.OpenAIToken != "" {
+		llmProvider = llm.NewOpenAI(config.Integrations.OpenAIToken, config.Integrations.OpenAIModel, config.Integrations.OpenAIVisionModel, cmp.Or(flags.NavbarBranding.Value(), "Kilonova"))
+	}
+
 	// for graceful setup and shutdown
-	server := webV1(true, base)
+	server := webV1(true, base, llmProvider)
 
 	go profiler.StartProfiler(ctx, 6080)
 	go func() {
@@ -163,7 +171,7 @@ func initLogger(debug, writeFile bool) {
 }
 
 // initialize webserver for public api+web
-func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
+func webV1(templWeb bool, base *sudoapi.BaseAPI, llmProvider llm.Provider) *http.Server {
 	// Initialize router
 	r := chi.NewRouter()
 
@@ -202,16 +210,18 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI) *http.Server {
 		})
 	})
 
-	r.Mount("/api", api.New(base).HandlerV1())
-	r.Mount("/api/v2", api.New(base).HandlerV2())
+	apiSrv := api.New(base, llmProvider)
+	r.Mount("/api", apiSrv.HandlerV1())
+	r.Mount("/api/v2", apiSrv.HandlerV2())
 	r.Mount("/assets", api.NewAssets(base).AssetsRouter())
 
 	if templWeb {
-		r.Mount("/", web.NewWeb(base).Handler())
+		r.Mount("/", web.NewWeb(base, llmProvider).Handler())
 	}
 
 	return &http.Server{
-		Addr:              net.JoinHostPort(flags.ListenHost.Value(), strconv.Itoa(flags.ListenPort.Value())),
+		Addr: config.Server.Listen,
+
 		Handler:           r,
 		ReadHeaderTimeout: 1 * time.Minute,
 	}

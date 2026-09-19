@@ -8,7 +8,6 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval/language"
-	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/klauspost/compress/zip"
 	"github.com/urfave/cli/v3"
 )
@@ -28,7 +27,7 @@ var submissionSaver = &cli.Command{
 		slog.InfoContext(ctx, "Starting Kilonova Submission Exporter")
 		slog.InfoContext(ctx, "Saving for user", slog.Any("user", cmd.String("username")))
 
-		base, err := sudoapi.InitializeBaseAPI(ctx, cmd)
+		base, err := initBase(ctx)
 		if err != nil {
 			return err
 		}

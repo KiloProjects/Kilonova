@@ -6,7 +6,6 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/oschwald/maxminddb-golang/v2"
 )
 
@@ -53,10 +52,13 @@ func IPData(ip netip.Addr) (*Data, error) {
 	return &data, nil
 }
 
-func Initialize(ctx context.Context) {
+// Initialize opens the GeoLite2-City database at dbPath. Lookups return no
+// data if it cannot be opened.
+func Initialize(ctx context.Context, dbPath string) {
 	var err error
-	reader, err = maxminddb.Open(flags.MaxMindPath.Value())
+	reader, err = maxminddb.Open(dbPath)
 	if err != nil {
+
 		slog.InfoContext(ctx, "Could not open MaxMind DB")
 		slog.DebugContext(ctx, "MaxMind DB error", slog.Any("err", err))
 		return

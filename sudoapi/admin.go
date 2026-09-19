@@ -274,7 +274,7 @@ func (ws *webhookSender) getWebhookEmbed(entry *logEntry, showRepeatCount bool) 
 
 func (ws *webhookSender) editLastMessage() error {
 	ws.lastMessageCount++
-	if _, err := ws.base.dSess.WebhookMessageEdit(ws.webhookID, ws.webhookToken, ws.lastMessageID, &discordgo.WebhookEdit{
+	if err := ws.base.discord.EditWebhookMessage(ws.webhookID, ws.webhookToken, ws.lastMessageID, &discordgo.WebhookEdit{
 		Embeds: &[]*discordgo.MessageEmbed{
 			ws.getWebhookEmbed(ws.lastMessageEntry, true),
 		},
@@ -296,7 +296,7 @@ func (ws *webhookSender) Send(ctx context.Context, entry *logEntry) error {
 		}
 	}
 
-	msg, err := ws.base.dSess.WebhookExecute(ws.webhookID, ws.webhookToken, true, &discordgo.WebhookParams{
+	msg, err := ws.base.discord.ExecuteWebhook(ws.webhookID, ws.webhookToken, &discordgo.WebhookParams{
 		Username: ws.name,
 
 		Embeds: []*discordgo.MessageEmbed{

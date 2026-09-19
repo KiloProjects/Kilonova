@@ -20,7 +20,6 @@ import (
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/KiloProjects/kilonova/net/llm"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/util/slicealg"
 	"github.com/danielgtaylor/huma/v2"
@@ -422,11 +421,8 @@ func (s *API) updateProblem(ctx context.Context, args kilonova.ProblemUpdate) er
 func (s *API) translateProblemStatement() http.HandlerFunc {
 	var translateMu sync.Mutex
 	return func(w http.ResponseWriter, r *http.Request) {
-		var args struct {
-			Model string `json:"model"`
-		}
-		if err := parseRequest(r, &args); err != nil {
-			statusError(w, err)
+		if s.llm == nil {
+			errorData(w, "LLM integration is not configured on this instance", 400)
 			return
 		}
 		if !translateMu.TryLock() {
@@ -445,12 +441,12 @@ func (s *API) translateProblemStatement() http.HandlerFunc {
 			return
 		}
 		t := time.Now()
-		output, err := llm.TranslateStatement(r.Context(), string(data), args.Model)
+		output, err := s.llm.TranslateStatement(r.Context(), string(data))
 		if err != nil {
 			errorData(w, err, 400)
 			return
 		}
-		s.base.LogUserAction(r.Context(), "Triggered LLM translation", slog.String("model", args.Model), slog.Any("problem", util.Problem(r)), slog.Duration("duration", time.Since(t)))
+		s.base.LogUserAction(r.Context(), "Triggered LLM translation", slog.Any("problem", util.Problem(r)), slog.Duration("duration", time.Since(t)))
 		att2, err := s.base.ProblemAttByName(r.Context(), util.Problem(r).ID, "statement-en-llm.md")
 		if err != nil {
 			if errors.Is(err, kilonova.ErrNotFound) {
@@ -478,14 +474,18 @@ func (s *API) transcribeProblemPDF() http.HandlerFunc {
 	var transcribeMu sync.Mutex
 	return func(w http.ResponseWriter, r *http.Request) {
 		var args struct {
-			Model    string `json:"model"`
 			Filename string `json:"filename"`
 		}
 		if err := parseRequest(r, &args); err != nil {
 			statusError(w, err)
 			return
 		}
+		if s.llm == nil {
+			errorData(w, "LLM integration is not configured on this instance", 400)
+			return
+		}
 		if !transcribeMu.TryLock() {
+
 			errorData(w, "Will not process more than one pending transcription at once. Please try again later.", 400)
 			return
 		}
@@ -510,14 +510,14 @@ func (s *API) transcribeProblemPDF() http.HandlerFunc {
 			return
 		}
 		t := time.Now()
-		output, err := llm.TranscribeStatement(r.Context(), bytes.NewReader(data), args.Model)
+		output, err := s.llm.TranscribeStatement(r.Context(), bytes.NewReader(data))
 		if err != nil {
 			errorData(w, err, 400)
 			return
 		}
 		targetFilename := strings.ReplaceAll(args.Filename, ".pdf", ".md")
 
-		s.base.LogUserAction(r.Context(), "Triggered LLM transcription", slog.String("model", args.Model), slog.Any("problem", util.Problem(r)), slog.Duration("duration", time.Since(t)))
+		s.base.LogUserAction(r.Context(), "Triggered LLM transcription", slog.Any("problem", util.Problem(r)), slog.Duration("duration", time.Since(t)))
 		att2, err := s.base.ProblemAttByName(r.Context(), util.Problem(r).ID, targetFilename)
 		if err == nil {
 			// Save old statement

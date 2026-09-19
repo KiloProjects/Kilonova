@@ -2,16 +2,12 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
-
-	"github.com/KiloProjects/kilonova/domain/config"
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
 
 const fixtureConfig = `[common]
@@ -57,17 +53,38 @@ name = "staging"
 token = "t2"
 `
 
+const fixtureFlags = `{
+	"server.listen.host": "0.0.0.0",
+	"server.listen.port": 8080,
+	"server.listen.true_ip_header": "X-Forwarded-For",
+	"behavior.db.run_migrations": false,
+	"behavior.db.log_sql": false,
+	"behavior.db.count_queries": true,
+	"integrations.maxmind.db_path": "/opt/geo.mmdb",
+	"integrations.prometheus.enabled": true,
+	"integrations.prometheus.port": 9100,
+	"feature.grader.force_secure_sandbox": false,
+	"feature.grader.isolate_config_path": "/usr/local/etc/isolate",
+	"integrations.discord.enabled": false,
+	"integrations.discord.token": "should-not-appear",
+	"integrations.openai.token": "sk-test",
+	"integrations.openai.vision_model": "gpt-vision",
+	"feature.platform.signup": true
+}`
+
 func TestMigrateConfig(t *testing.T) {
 	dir := t.TempDir()
 	cfg := filepath.Join(dir, "config.toml")
 	grd := filepath.Join(dir, "grader.toml")
+	flg := filepath.Join(dir, "legacy_flags.json")
 	os.WriteFile(cfg, []byte(fixtureConfig), 0o644)
 	os.WriteFile(grd, []byte(fixtureGrader), 0o644)
+	os.WriteFile(flg, []byte(fixtureFlags), 0o644)
 	before1, _ := os.Stat(cfg)
 	before2, _ := os.Stat(grd)
 
 	var out, errOut bytes.Buffer
-	if err := migrateConfig(cfg, grd, &out, &errOut); err != nil {
+	if err := migrateConfig(cfg, grd, flg, &out, &errOut); err != nil {
 		t.Fatal(err)
 	}
 	got := strings.Split(strings.TrimSpace(out.String()), "\n")
@@ -78,6 +95,16 @@ func TestMigrateConfig(t *testing.T) {
 		"KN_SANDBOX_NUM_CONCURRENT=4",
 		"KN_SANDBOX_GLOBAL_MAX_MEM_KB=3145728",
 		"KN_SANDBOX_STARTING_BOX=1",
+		"KN_LISTEN=0.0.0.0:8080",
+		"KN_TRUE_IP_HEADER=X-Forwarded-For",
+		"KN_DB_RUN_MIGRATIONS=false",
+		"KN_DB_COUNT_QUERIES=true",
+		"KN_MAXMIND_DB=/opt/geo.mmdb",
+		"KN_PROMETHEUS_LISTEN=:9100",
+		"KN_SANDBOX_ALLOW_INSECURE=true",
+		"KN_OPENAI_TOKEN=sk-test",
+		"KN_OPENAI_VISION_MODEL=gpt-vision",
+
 		"KN_GRADER_LISTEN=:9000",
 		"KN_GRADER_TLS_CERT=/etc/kilonova/grader.crt",
 		"KN_GRADER_TLS_KEY=/etc/kilonova/grader.key",
@@ -87,29 +114,26 @@ func TestMigrateConfig(t *testing.T) {
 	if !slices.Equal(got, want) {
 		t.Fatalf("stdout mismatch:\n got: %q\nwant: %q", got, want)
 	}
-	if !strings.Contains(errOut.String(), "legacy_unknown") || !strings.Contains(errOut.String(), "log_dir") {
+	if !strings.Contains(errOut.String(), "legacy_unknown") || !strings.Contains(errOut.String(), "log_dir") || !strings.Contains(errOut.String(), "Discord integration was disabled") {
 
 		t.Errorf("unmapped key not reported: %s", errOut.String())
 	}
 
-	// Flag-bound values landed in the registry (and therefore flags.json).
-	if flags.DefaultLanguage.Value() != "ro" || flags.TestMaxMemKB.Value() != 655360 || !slices.Equal(flags.BannedHotProblems.Value(), []int{5, 7}) {
-		t.Fatalf("flags not updated: %q %d %v", flags.DefaultLanguage.Value(), flags.TestMaxMemKB.Value(), flags.BannedHotProblems.Value())
-	}
-	fp := filepath.Join(dir, "flags.json")
-	if err := config.SaveConfigV2(context.Background(), fp); err != nil {
-		t.Fatal(err)
-	}
-	raw, _ := os.ReadFile(fp)
+	// Flag-bound values landed in the flags file; retired keys are still there
+	// (the platform drops them, not the tool).
+	raw, _ := os.ReadFile(flg)
 	var saved struct {
 		Lang   string `json:"frontend.default_language"`
+		MaxMem int    `json:"eval.test_max_mem_kb"`
 		Banned []int  `json:"frontend.banned_hot_problems"`
+		Listen string `json:"server.listen.host"`
+		Signup bool   `json:"feature.platform.signup"`
 	}
 	if err := json.Unmarshal(raw, &saved); err != nil {
 		t.Fatal(err)
 	}
-	if saved.Lang != "ro" || !slices.Equal(saved.Banned, []int{5, 7}) {
-		t.Fatalf("flags.json: %q %v", saved.Lang, saved.Banned)
+	if saved.Lang != "ro" || saved.MaxMem != 655360 || !slices.Equal(saved.Banned, []int{5, 7}) || saved.Listen != "0.0.0.0" || !saved.Signup {
+		t.Fatalf("flags file: %+v", saved)
 	}
 
 	// Inputs untouched; second run identical.
@@ -119,12 +143,16 @@ func TestMigrateConfig(t *testing.T) {
 		t.Fatal("source files were modified")
 	}
 	var again bytes.Buffer
-	if err := migrateConfig(cfg, grd, &again, &errOut); err != nil {
+	if err := migrateConfig(cfg, grd, flg, &again, &errOut); err != nil {
 		t.Fatal(err)
 	}
 	if again.String() != out.String() {
 		t.Fatal("second run differs")
 	}
+	if raw2, _ := os.ReadFile(flg); string(raw2) != string(raw) {
+		t.Fatal("second run rewrote the flags file")
+	}
+
 }
 
 func TestMigrateConfigMissingFile(t *testing.T) {
@@ -132,7 +160,8 @@ func TestMigrateConfigMissingFile(t *testing.T) {
 	grd := filepath.Join(dir, "grader.toml")
 	os.WriteFile(grd, []byte(fixtureGrader), 0o644)
 	var out, errOut bytes.Buffer
-	if err := migrateConfig(filepath.Join(dir, "config.toml"), grd, &out, &errOut); err != nil {
+	if err := migrateConfig(filepath.Join(dir, "config.toml"), grd, filepath.Join(dir, "flags.json"), &out, &errOut); err != nil {
+
 		t.Fatal(err)
 	}
 	if !strings.Contains(errOut.String(), "config.toml not found") {

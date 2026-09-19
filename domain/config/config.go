@@ -11,10 +11,43 @@ import (
 )
 
 var (
-	Common CommonConf
-	Eval   EvalConf
-	Email  EmailConf
+	Common       CommonConf
+	Server       ServerConf
+	DB           DBConf
+	Eval         EvalConf
+	Email        EmailConf
+	Integrations IntegrationsConf
 )
+
+// ServerConf is the HTTP listener wiring.
+type ServerConf struct {
+	Listen           string // host:port for the web server
+	TrueIPHeader     string // reverse-proxy client IP header; empty when not behind a proxy
+	PrometheusListen string // host:port for /metrics; empty disables the exporter
+}
+
+// DBConf is the PostgreSQL wiring. An empty DSN makes pgx use the libpq PG* variables.
+type DBConf struct {
+	DSN           string
+	RunMigrations bool
+	LogQueries    bool
+	CountQueries  bool
+}
+
+// IntegrationsConf holds third-party credentials and paths that are fixed per
+// deployment. Presence of a token is what enables the integration.
+type IntegrationsConf struct {
+	MaxMindDB   string
+	OtelEnabled bool
+
+	DiscordToken        string
+	DiscordClientID     string
+	DiscordClientSecret string
+
+	OpenAIToken       string
+	OpenAIModel       string // statement translation
+	OpenAIVisionModel string // PDF statement transcription
+}
 
 // EmailConf is the SMTP wiring for the mailer.
 type EmailConf struct {
@@ -39,6 +72,9 @@ type EvalConf struct {
 	GlobalMaxMem  int64
 	StartingBox   int
 
+	EnsureCGKeeper       bool // make sure isolate-cg-keeper is running
+	AllowInsecureSandbox bool // permit the stupidbox fallback when isolate is missing (never in production)
+
 	Remote RemoteEvalConf
 }
 
@@ -56,7 +92,6 @@ type RemoteEvalConf struct {
 // CommonConf is the data required for all services
 type CommonConf struct {
 	DataDir string
-	DBDSN   string
 }
 
 // LogDir is where rotating log files go: always <DataDir>/logs.

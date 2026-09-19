@@ -95,7 +95,7 @@ var contestUtils = &cli.Command{
 		// Print welcome message
 		slog.InfoContext(ctx, "Starting Kilonova Contest Registration Manager")
 
-		base, err := sudoapi.InitializeBaseAPI(ctx, command)
+		base, err := initBase(ctx)
 		if err != nil {
 			return err
 		}

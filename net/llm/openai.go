@@ -1,25 +1,20 @@
+// Package llm provides LLM-backed statement tooling behind a Provider
+// interface. The composition root (cmd/kn) decides whether a provider exists;
+// a nil Provider means the integration is not configured.
 package llm
 
 import (
-	"cmp"
 	"context"
-	"errors"
 	"io"
 	"net/http"
 
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
 	"github.com/openai/openai-go/v3/packages/param"
 	"github.com/openai/openai-go/v3/responses"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
-	"github.com/openai/openai-go/v3"
-
 	_ "embed"
-)
-
-var (
-	ErrUnauthed = errors.New("unauthenticated to OpenAI endpoint")
 )
 
 //go:embed prompts/translate.md
@@ -28,20 +23,32 @@ var translateRoSystemPrompt string
 //go:embed prompts/transcribe.md
 var transcribeStatement string
 
-func TranscribeStatement(ctx context.Context, pdfFile io.Reader, model string) (string, error) {
-	if len(flags.OpenAIToken.Value()) < 2 {
-		return "", ErrUnauthed
-	}
-	if model == "" {
-		model = flags.OpenAIVisionModel.Value()
-	}
-	client := openai.NewClient(
-		option.WithAPIKey(flags.OpenAIToken.Value()),
-		//option.WithBaseURL(flags.OpenAIBaseURL.Value()),
-		option.WithHTTPClient(defaultClient),
-	)
+type Provider interface {
+	// TranscribeStatement turns a PDF task statement into Markdown.
+	TranscribeStatement(ctx context.Context, pdf io.Reader) (string, error)
+	// TranslateStatement translates a Romanian statement to English.
+	// Other language pairs are still a TODO.
+	TranslateStatement(ctx context.Context, text string) (string, error)
+}
 
-	fResp, err := client.Files.New(ctx, openai.FileNewParams{
+type openAI struct {
+	client      openai.Client
+	textModel   string
+	visionModel string
+}
+
+// NewOpenAI builds a Provider over the OpenAI Responses API. referer is sent
+// as HTTP-Referer / X-Title for OpenRouter-style attribution.
+func NewOpenAI(token, textModel, visionModel, referer string) Provider {
+	client := openai.NewClient(
+		option.WithAPIKey(token),
+		option.WithHTTPClient(&http.Client{Transport: &refererTransport{referer: referer, T: otelhttp.NewTransport(http.DefaultTransport)}}),
+	)
+	return &openAI{client: client, textModel: textModel, visionModel: visionModel}
+}
+
+func (o *openAI) TranscribeStatement(ctx context.Context, pdfFile io.Reader) (string, error) {
+	fResp, err := o.client.Files.New(ctx, openai.FileNewParams{
 		File:    openai.File(pdfFile, "statement.pdf", "application/pdf"),
 		Purpose: "user_data",
 	})
@@ -49,8 +56,8 @@ func TranscribeStatement(ctx context.Context, pdfFile io.Reader, model string) (
 		return "", err
 	}
 
-	resp, err := client.Responses.New(ctx, responses.ResponseNewParams{
-		Model: model,
+	resp, err := o.client.Responses.New(ctx, responses.ResponseNewParams{
+		Model: o.visionModel,
 		Input: responses.ResponseNewParamsInputUnion{OfInputItemList: responses.ResponseInputParam{
 			{
 				OfMessage: &responses.EasyInputMessageParam{
@@ -87,23 +94,9 @@ func TranscribeStatement(ctx context.Context, pdfFile io.Reader, model string) (
 	return resp.OutputText(), nil
 }
 
-// TranslateStatement translates a statement from Romanian to English.
-// English to Romanian and other language ordered pairs are still a TODO
-func TranslateStatement(ctx context.Context, text string, model string) (string, error) {
-	if len(flags.OpenAIToken.Value()) < 2 {
-		return "", ErrUnauthed
-	}
-	if model == "" {
-		model = flags.OpenAIDefaultModel.Value()
-	}
-	client := openai.NewClient(
-		option.WithAPIKey(flags.OpenAIToken.Value()),
-		//option.WithBaseURL(flags.OpenAIBaseURL.Value()),
-		option.WithHTTPClient(defaultClient),
-	)
-
-	resp, err := client.Responses.New(ctx, responses.ResponseNewParams{
-		Model: model,
+func (o *openAI) TranslateStatement(ctx context.Context, text string) (string, error) {
+	resp, err := o.client.Responses.New(ctx, responses.ResponseNewParams{
+		Model: o.textModel,
 		Input: responses.ResponseNewParamsInputUnion{OfInputItemList: responses.ResponseInputParam{
 			{
 				OfMessage: &responses.EasyInputMessageParam{
@@ -126,21 +119,16 @@ func TranslateStatement(ctx context.Context, text string, model string) (string,
 	if err != nil {
 		return "", err
 	}
-
 	return resp.OutputText(), nil
 }
 
-var defaultClient = &http.Client{
-	Transport: &openRouterHeaderTransport{T: otelhttp.NewTransport(http.DefaultTransport)},
+type refererTransport struct {
+	referer string
+	T       http.RoundTripper
 }
 
-type openRouterHeaderTransport struct {
-	T http.RoundTripper
-}
-
-func (adt *openRouterHeaderTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	branding := cmp.Or(flags.NavbarBranding.Value(), "Kilonova")
-	req.Header.Add("HTTP-Referer", branding)
+func (t *refererTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Add("HTTP-Referer", t.referer)
 	req.Header.Add("X-Title", "Kilonova")
-	return adt.T.RoundTrip(req)
+	return t.T.RoundTrip(req)
 }

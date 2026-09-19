@@ -6,7 +6,6 @@ import (
 	"log/slog"
 
 	"github.com/KiloProjects/kilonova/internal/auth"
-	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/urfave/cli/v3"
 )
 
@@ -52,7 +51,7 @@ var newOauth = &cli.Command{
 		// Print welcome message
 		slog.InfoContext(ctx, "Starting Kilonova OAuth Client Creator")
 
-		base, err := sudoapi.InitializeBaseAPI(ctx, command)
+		base, err := initBase(ctx)
 		if err != nil {
 			return err
 		}

@@ -9,12 +9,11 @@ First release under the new `YY.MM` versioning scheme. Everything since v0.25.2.
 - `config.toml` and `grader.toml` are gone. Host-bound settings are `KN_*` environment variables (see `.env.example`,
   `kn --help`, `kn grader-serve --help`); a `.env` file in the working directory is read by the process. Default
   language, per-test memory cap and banned hot problems moved to `flags.json`. Sandbox capacity is no longer editable
-  from the admin page. The log directory is no longer configurable: both processes write to `$KN_DATA_DIR/logs`, and `grader-serve` uses `KN_DATA_DIR` as its root (`scratch/` and `logs/`). See the *Configuration* docs page.
+  from the admin page. The log directory is no longer configurable: both processes write to `$KN_DATA_DIR/logs`, and `grader-serve` uses `KN_DATA_DIR` as its root (`scratch/` and `logs/`). See the *Configuration* docs page. Thirteen startup-only flags left `flags.json` for the environment too: listen address and true-IP header, migration and SQL debug switches, MaxMind path, OpenTelemetry and Prometheus toggles, sandbox policy, and the Discord and OpenAI credentials (the OpenAI key is no longer exposed to templates). `kn config-migrate` converts them from an existing `flags.json`.
   Migration: run `./kn config-migrate -c config.toml --grader-config grader.toml -f flags.json > .env` on each host
   (only `--grader-config` on a grader host), start the new binary, then delete the TOML files. The tool never modifies
   them, so the previous binary still starts if you need to roll back.
-- Go 1.27 required. `yarn` replaced with `pnpm`; `esbuild` replaced with Vite (one build per bundle, KaTeX is now
-  bundled instead of loaded from a CDN).
+- Go 1.27 required. `yarn` replaced with `pnpm`; `esbuild` replaced with Vite (one build per bundle).
 - The `contrib/` tools are now `kn` subcommands (`kn new-oauth`, `kn printable-contestants`, `kn problem-diagnostics`,
   `kn submission-saver`, `kn statement-export`, `kn contest-utils`, `kn grader-serve`, `kn config-migrate`).
 - Removed TWIPLA analytics. Added Sentry error reporting (behind flags) and OpenTelemetry logs + Prometheus metrics.

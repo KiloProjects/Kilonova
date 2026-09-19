@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/go-logr/logr"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
@@ -19,10 +18,13 @@ import (
 	"go.opentelemetry.io/otel/trace/noop"
 )
 
-func SetupOpenTelemetry(ctx context.Context) (shutdown func(context.Context) error, err error) {
-	if !flags.OtelEnabled.Value() {
+// SetupOpenTelemetry installs the trace/log exporters when enabled. The
+// exporter endpoint comes from the standard OTEL_* environment variables.
+func SetupOpenTelemetry(ctx context.Context, enabled bool) (shutdown func(context.Context) error, err error) {
+	if !enabled {
 		return func(context.Context) error { return nil }, nil
 	}
+
 	var shutdownFuncs []func(context.Context) error
 
 	// shutdown calls cleanup functions registered via shutdownFuncs.

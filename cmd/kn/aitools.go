@@ -258,7 +258,7 @@ func saveProblemList(ctx context.Context, cmd *cli.Command, base *sudoapi.BaseAP
 
 func AITools(ctx context.Context, command *cli.Command) error {
 	dataPath := command.String("outputPath")
-	base, err := sudoapi.InitializeBaseAPI(ctx, command)
+	base, err := initBase(ctx)
 	if err != nil {
 		return err
 	}

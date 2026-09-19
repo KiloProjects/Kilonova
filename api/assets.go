@@ -41,7 +41,7 @@ type Assets struct {
 }
 
 func NewAssets(base *sudoapi.BaseAPI) *Assets {
-	return &Assets{base, New(base)}
+	return &Assets{base, New(base, nil)}
 }
 
 func (s *Assets) initSession(next http.Handler) http.Handler {

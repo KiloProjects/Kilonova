@@ -1,11 +1,17 @@
 package main
 
 import (
+	"bytes"
+	"cmp"
+
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
+
 	"path/filepath"
 	"strconv"
 
@@ -78,8 +84,128 @@ var configMigrate = &cli.Command{
 		&cli.StringFlag{Name: "grader-config", Usage: "Legacy grader config", Value: "./grader.toml"},
 	},
 	Action: func(ctx context.Context, command *cli.Command) error {
-		return migrateConfig(command.String("config"), command.String("grader-config"), os.Stdout, os.Stderr)
+		return migrateConfig(command.String("config"), command.String("grader-config"), flagsPath, os.Stdout, os.Stderr)
 	},
+}
+
+// retiredFlagKeys are flags.json keys that became KN_* variables in v26.09.
+// The platform drops them from the file on its next start; this converts
+// their values first so nothing is lost.
+var retiredFlagKeys = []string{
+	"server.listen.host", "server.listen.port", "server.listen.true_ip_header",
+	"behavior.db.run_migrations", "behavior.db.log_sql", "behavior.db.count_queries",
+	"integrations.maxmind.db_path", "integrations.otel.enabled",
+	"integrations.prometheus.enabled", "integrations.prometheus.port",
+	"feature.grader.ensure_keeper", "feature.grader.force_secure_sandbox", "feature.grader.isolate_config_path",
+	"integrations.discord.enabled", "integrations.discord.token", "integrations.discord.client_id", "integrations.discord.client_secret",
+	"integrations.openai.token", "integrations.openai.default_model", "integrations.openai.vision_model",
+}
+
+// flagsFile edits flags.json as a plain document, deliberately bypassing the
+// flag registry: keys this binary no longer knows (retired flags) must survive
+// until they have been converted, and the platform drops them on its next save.
+type flagsFile struct {
+	path  string
+	data  map[string]json.RawMessage
+	dirty bool
+}
+
+func openFlagsFile(path string, errOut io.Writer) (*flagsFile, error) {
+	f := &flagsFile{path: path, data: map[string]json.RawMessage{}}
+	if path == "" {
+		return f, nil
+	}
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		fmt.Fprintf(errOut, "notice: %s not found, it will be created if needed\n", path)
+		return f, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(raw, &f.data); err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
+	return f, nil
+}
+
+func (f *flagsFile) set(key string, val any, errOut io.Writer) {
+	b, _ := json.Marshal(val)
+	fmt.Fprintf(errOut, "flag %s = %s\n", key, b)
+	if !bytes.Equal(f.data[key], b) {
+		f.data[key] = b
+		f.dirty = true
+	}
+}
+
+func (f *flagsFile) save() error {
+	if !f.dirty || f.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(f.path), 0o755); err != nil {
+		return err
+	}
+	out, err := json.MarshalIndent(f.data, "", "\t")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(f.path, append(out, '\n'), 0o644)
+}
+
+func migrateRetiredFlags(fl *flagsFile, em *envEmitter, errOut io.Writer) {
+	f := fl.data
+	present := 0
+	for _, k := range retiredFlagKeys {
+		if _, ok := f[k]; ok {
+			present++
+		}
+	}
+	if present == 0 {
+		return
+	}
+	str := func(k string) (s string) { json.Unmarshal(f[k], &s); return }
+	num := func(k string) (n int) { json.Unmarshal(f[k], &n); return }
+	boolean := func(k string) (b, ok bool) {
+		v, ok := f[k]
+		if ok {
+			json.Unmarshal(v, &b)
+		}
+		return b, ok
+	}
+
+	if _, ok := f["server.listen.host"]; ok || f["server.listen.port"] != nil {
+		em.set("KN_LISTEN", net.JoinHostPort(cmp.Or(str("server.listen.host"), "localhost"), strconv.Itoa(cmp.Or(num("server.listen.port"), 8070))))
+	}
+	em.set("KN_TRUE_IP_HEADER", str("server.listen.true_ip_header"))
+	if b, ok := boolean("behavior.db.run_migrations"); ok && !b {
+		em.set("KN_DB_RUN_MIGRATIONS", "false") // default is true, so only "false" carries information
+	}
+	em.set("KN_DB_LOG_SQL", func() bool { b, _ := boolean("behavior.db.log_sql"); return b }())
+	em.set("KN_DB_COUNT_QUERIES", func() bool { b, _ := boolean("behavior.db.count_queries"); return b }())
+	em.set("KN_MAXMIND_DB", str("integrations.maxmind.db_path"))
+	em.set("KN_OTEL_ENABLED", func() bool { b, _ := boolean("integrations.otel.enabled"); return b }())
+	if b, _ := boolean("integrations.prometheus.enabled"); b {
+		em.set("KN_PROMETHEUS_LISTEN", ":"+strconv.Itoa(cmp.Or(num("integrations.prometheus.port"), 8071)))
+	}
+	em.set("KN_SANDBOX_ENSURE_CG_KEEPER", func() bool { b, _ := boolean("feature.grader.ensure_keeper"); return b }())
+	if b, ok := boolean("feature.grader.force_secure_sandbox"); ok && !b {
+		em.set("KN_SANDBOX_ALLOW_INSECURE", "true")
+	}
+	if _, ok := f["feature.grader.isolate_config_path"]; ok {
+		fmt.Fprintf(errOut, "notice: feature.grader.isolate_config_path was never used and is dropped\n")
+	}
+	if enabled, _ := boolean("integrations.discord.enabled"); enabled {
+		em.set("KN_DISCORD_TOKEN", str("integrations.discord.token"))
+		em.set("KN_DISCORD_CLIENT_ID", str("integrations.discord.client_id"))
+		em.set("KN_DISCORD_CLIENT_SECRET", str("integrations.discord.client_secret"))
+	} else if str("integrations.discord.token") != "" {
+		fmt.Fprintf(errOut, "notice: Discord integration was disabled; its token was not emitted (set KN_DISCORD_TOKEN to enable)\n")
+	}
+	em.set("KN_OPENAI_TOKEN", str("integrations.openai.token"))
+	em.set("KN_OPENAI_MODEL", str("integrations.openai.default_model"))
+	em.set("KN_OPENAI_VISION_MODEL", str("integrations.openai.vision_model"))
+
+	fmt.Fprintf(errOut, "flags: %d retired keys in %s converted to environment variables; the platform removes them from the file on its next start\n", present, fl.path)
 }
 
 // envEmitter collects KEY=value lines in first-seen order, deduplicating keys
@@ -171,8 +297,12 @@ func decodeLegacy(path string, v any, errOut io.Writer) (found bool, err error) 
 	return true, nil
 }
 
-func migrateConfig(cfgPath, graderPath string, out, errOut io.Writer) error {
+func migrateConfig(cfgPath, graderPath, flagsPath string, out, errOut io.Writer) error {
 	em := &envEmitter{values: map[string]string{}, errOut: errOut}
+	fl, err := openFlagsFile(flagsPath, errOut)
+	if err != nil {
+		return err
+	}
 
 	var lc legacyConfig
 	if found, err := decodeLegacy(cfgPath, &lc, errOut); err != nil {
@@ -201,18 +331,17 @@ func migrateConfig(cfgPath, graderPath string, out, errOut io.Writer) error {
 
 		// Admin-editable values go to the flags file, not the environment.
 		if lc.Common.DefaultLang != "" {
-			flags.DefaultLanguage.Update(lc.Common.DefaultLang)
-			fmt.Fprintf(errOut, "flag %s = %q\n", flags.DefaultLanguage.InternalName(), lc.Common.DefaultLang)
+			fl.set(flags.DefaultLanguage.InternalName(), lc.Common.DefaultLang, errOut)
 		}
 		if lc.Common.TestMaxMemKB != 0 {
-			flags.TestMaxMemKB.Update(lc.Common.TestMaxMemKB)
-			fmt.Fprintf(errOut, "flag %s = %d\n", flags.TestMaxMemKB.InternalName(), lc.Common.TestMaxMemKB)
+			fl.set(flags.TestMaxMemKB.InternalName(), lc.Common.TestMaxMemKB, errOut)
 		}
 		if lc.Frontend.BannedHotProblems != nil {
-			flags.BannedHotProblems.Update(lc.Frontend.BannedHotProblems)
-			fmt.Fprintf(errOut, "flag %s = %v\n", flags.BannedHotProblems.InternalName(), lc.Frontend.BannedHotProblems)
+			fl.set(flags.BannedHotProblems.InternalName(), lc.Frontend.BannedHotProblems, errOut)
 		}
 	}
+
+	migrateRetiredFlags(fl, em, errOut)
 
 	var lg legacyGrader
 	if found, err := decodeLegacy(graderPath, &lg, errOut); err != nil {
@@ -244,5 +373,5 @@ func migrateConfig(cfgPath, graderPath string, out, errOut io.Writer) error {
 	}
 
 	em.write(out)
-	return nil
+	return fl.save()
 }

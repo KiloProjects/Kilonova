@@ -2,7 +2,6 @@ package sudoapi
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -11,43 +10,15 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/bwmarrin/discordgo"
-	"golang.org/x/oauth2"
 )
-
-var (
-	ErrDisconnected = Statusf(401, "Not connected to Discord")
-)
-
-func (s *BaseAPI) initDiscord(ctx context.Context) error {
-	// if len(Token.Value()) < 2 {
-	// 	return Statusf(406, "No Discord token provided")
-	// }
-
-	discord, err := discordgo.New("Bot " + flags.DiscordToken.Value())
-	if err != nil {
-		return fmt.Errorf("could not connect to Discord: %w", err)
-	}
-	s.dSess = discord
-
-	if flags.DiscordEnabled.Value() {
-		if err := s.dSess.Open(); err != nil {
-			return fmt.Errorf("could not open gateway: %w", err)
-		}
-	} else {
-		slog.InfoContext(ctx, "Initializing Discord session unauthed")
-	}
-
-	return nil
-}
 
 func (s *BaseAPI) AnnounceProblemPublished(ctx context.Context, problemID int) {
 	slog.DebugContext(ctx, "Announcing problem publish", slog.Int("problem_id", problemID))
-	if !flags.DiscordEnabled.Value() || flags.ProblemAnnouncementChannel.Value() == "" {
+	if !s.discord.Enabled() || flags.ProblemAnnouncementChannel.Value() == "" {
 		return // noop
 	}
-
-	_, err := s.dSess.ChannelMessageSend(flags.ProblemAnnouncementChannel.Value(), "New problem was just published: "+kilonova.HostURL().JoinPath("problems", strconv.Itoa(problemID)).String())
-	if err != nil {
+	url := kilonova.HostURL().JoinPath("problems", strconv.Itoa(problemID)).String()
+	if err := s.discord.SendChannelMessage(flags.ProblemAnnouncementChannel.Value(), "New problem was just published: "+url); err != nil {
 		slog.WarnContext(ctx, "Could not announce problem publish", slog.Any("err", err))
 	}
 }
@@ -65,7 +36,7 @@ func (s *BaseAPI) AnnounceProblemReviewRequested(ctx context.Context, problemID 
 // If both user and error is nil, it means that a user doesn't have a Discord account attached (or that Discord integration is disabled)
 // TODO: Cache output
 func (s *BaseAPI) GetDiscordIdentity(ctx context.Context, userID int) (*discordgo.User, error) {
-	if !flags.DiscordEnabled.Value() {
+	if !s.discord.Enabled() {
 		return nil, nil
 	}
 	user, err := s.userRepo.User(ctx, kilonova.UserFilter{ID: &userID})
@@ -75,7 +46,7 @@ func (s *BaseAPI) GetDiscordIdentity(ctx context.Context, userID int) (*discordg
 	if user == nil || user.DiscordID == nil {
 		return nil, nil
 	}
-	dUser, err := s.dSess.User(*user.DiscordID)
+	dUser, err := s.discord.User(*user.DiscordID)
 	if err != nil {
 		return nil, fmt.Errorf("could not get Discord user: %w", err)
 	}
@@ -95,17 +66,15 @@ func (s *BaseAPI) UnlinkDiscordIdentity(ctx context.Context, userID int) error {
 }
 
 func (s *BaseAPI) DiscordAuthURL(ctx context.Context, userID int) (string, error) {
-	if !flags.DiscordEnabled.Value() {
+	if !s.discord.Enabled() {
 		return "/", nil
 	}
 	st, err := s.db.CreateDiscordState(ctx, userID)
 	if err != nil {
 		return "", fmt.Errorf("could not initialize Discord request: %w", err)
 	}
-	return s.discordConfig().AuthCodeURL(st), nil
+	return s.discord.AuthCodeURL(st), nil
 }
-
-// TODO: Reset discord connection
 
 func (s *BaseAPI) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	uid, err := s.db.GetDiscordState(r.Context(), r.FormValue("state"))
@@ -116,29 +85,9 @@ func (s *BaseAPI) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) 
 	ctx := context.WithoutCancel(r.Context())
 	defer s.db.RemoveDiscordState(ctx, r.FormValue("state"))
 
-	conf := s.discordConfig()
-
-	token, err := conf.Exchange(ctx, r.FormValue("code"))
+	dUser, err := s.discord.ExchangeIdentity(ctx, r.FormValue("code"))
 	if err != nil {
-		kilonova.StatusData(w, "error", "Could not get Discord token: "+err.Error(), 500)
-		return
-	}
-
-	res, err := conf.Client(ctx, token).Get("https://discord.com/api/users/@me")
-	if err != nil {
-		kilonova.StatusData(w, "error", "Could not get user: "+err.Error(), 500)
-		return
-	}
-	defer res.Body.Close()
-	if res.StatusCode != 200 {
-		kilonova.StatusData(w, "error", res.Status, 500)
-		return
-	}
-
-	// Should be able to unmarshal directly into discordgo user
-	var dUser discordgo.User
-	if err := json.NewDecoder(res.Body).Decode(&dUser); err != nil {
-		kilonova.StatusData(w, "error", "Could not decode Discord response: "+err.Error(), 500)
+		kilonova.StatusData(w, "error", err.Error(), 500)
 		return
 	}
 
@@ -157,24 +106,4 @@ func (s *BaseAPI) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) 
 	s.LogVerbose(ctx, "User linked Discord identity", userAttr, slog.String("discord_id", dUser.ID), slog.String("discord_user", dUser.Mention()))
 
 	http.Redirect(w, r, kilonova.HostURL().JoinPath("profile/linked").String(), http.StatusTemporaryRedirect)
-}
-
-func (s *BaseAPI) discordConfig() *oauth2.Config {
-	return &oauth2.Config{
-		Endpoint: discordEndpoint,
-
-		ClientID:     flags.DiscordClientID.Value(),
-		ClientSecret: flags.DiscordClientSecret.Value(),
-
-		Scopes: []string{"identify"},
-
-		RedirectURL: kilonova.HostURL().JoinPath("api/webhook/discord_callback").String(),
-	}
-}
-
-var discordEndpoint = oauth2.Endpoint{
-	AuthURL:  "https://discord.com/oauth2/authorize",
-	TokenURL: "https://discord.com/api/oauth2/token",
-
-	AuthStyle: oauth2.AuthStyleInParams,
 }

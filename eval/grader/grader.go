@@ -26,7 +26,6 @@ import (
 	"github.com/KiloProjects/kilonova/eval/scratch"
 	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -619,7 +618,8 @@ func (h *Handler) getLocalRunner(ctx context.Context) (eval.BoxScheduler, eval.L
 	if scheduler.CheckCanRun(ctx, box.New) {
 		boxFunc = box.New
 		boxVersion = box.IsolateVersion()
-	} else if scheduler.CheckCanRun(ctx, box.NewStupid) && !flags.ForceSecureSandbox.Value() {
+	} else if scheduler.CheckCanRun(ctx, box.NewStupid) && config.Eval.AllowInsecureSandbox {
+
 		slog.WarnContext(ctx, "Secure sandbox not found. Using stupid sandbox")
 		boxFunc = box.NewStupid
 		boxVersion = "stupid"

@@ -18,6 +18,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/net/llm"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/schema"
@@ -28,14 +29,15 @@ var decoder *schema.Decoder
 // API is the base struct for the project's API
 type API struct {
 	base *sudoapi.BaseAPI
+	llm  llm.Provider // nil when the LLM integration is not configured
 
 	signupLock      sync.Mutex
 	testArchiveLock sync.Mutex
 }
 
-// New declares a new API instance
-func New(base *sudoapi.BaseAPI) *API {
-	return &API{base: base}
+// New declares a new API instance. llm may be nil.
+func New(base *sudoapi.BaseAPI, llm llm.Provider) *API {
+	return &API{base: base, llm: llm}
 }
 
 func (s *API) HandlerV2() http.Handler {

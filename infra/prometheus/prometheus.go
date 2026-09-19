@@ -2,29 +2,23 @@ package prometheus
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
 
-	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-var (
-	enabled = config.GenFlag[bool]("integrations.prometheus.enabled", false, "Enable Prometheus metrics")
-	port    = config.GenFlag[int]("integrations.prometheus.port", 8071, "Prometheus metrics port")
-)
-
-func InitMetrics(ctx context.Context) {
-	if !enabled.Value() {
+// InitMetrics serves /metrics on listen (host:port); empty disables the exporter.
+func InitMetrics(ctx context.Context, listen string) {
+	if listen == "" {
 		return
 	}
 	mux := http.NewServeMux()
 	mux.Handle("GET /metrics", promhttp.Handler())
 	go func() {
 		s := &http.Server{
-			Addr:              fmt.Sprintf(":%d", port.Value()),
+			Addr:              listen,
 			Handler:           mux,
 			ReadHeaderTimeout: 1 * time.Minute,
 		}
