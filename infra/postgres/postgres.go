@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"log/slog"
-	"path"
 	"sync/atomic"
 	"time"
 
@@ -16,7 +15,6 @@ import (
 	"github.com/jackc/pgx/v5/multitracer"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type Config struct {
@@ -48,11 +46,7 @@ func (db *DB) initLogger() {
 	if kilonova.DebugMode() {
 		lvl = slog.LevelDebug
 	}
-	db.logger = slog.New(slog.NewJSONHandler(&lumberjack.Logger{
-		Filename: path.Join(config.Common.LogDir(), "db.log"),
-		MaxSize:  200, // MB
-		Compress: true,
-	}, &slog.HandlerOptions{
+	db.logger = slog.New(slog.NewJSONHandler(config.LogWriter("db.log", 200), &slog.HandlerOptions{
 		Level: lvl,
 	}))
 }

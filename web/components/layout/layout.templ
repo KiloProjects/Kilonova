@@ -53,8 +53,8 @@ templ mainHeadTags(enabledLanguages map[string]string, title string, description
 	<!--Dependency bundle-->
 	@templ.JSONScript("server_time", time.Now().Format(time.RFC3339Nano))
 	@templ.JSONScript("platform_info", platformInfo(ctx, enabledLanguages))
-	<script src={ assets.Asset("app.ts") }></script>
-	<script src={ assets.Asset("vendored.ts") }></script>
+	<script src={ assets.Asset(ctx, "app.ts") }></script>
+	<script src={ assets.Asset(ctx, "vendored.ts") }></script>
 	<script>
         const server_time = JSON.parse(document.getElementById("server_time").textContent);
         var platform_info = JSON.parse(document.getElementById("platform_info").textContent);
@@ -67,9 +67,9 @@ templ mainHeadTags(enabledLanguages map[string]string, title string, description
         }
 
     </script>
-	<link rel="stylesheet" href={ assets.Asset("chroma.css") }/>
-	<link rel="stylesheet" href={ assets.Asset("vendor.css") }/>
-	<link rel="stylesheet" href={ assets.Asset("tailwind.css") }/>
+	<link rel="stylesheet" href={ assets.Asset(ctx, "chroma.css") }/>
+	<link rel="stylesheet" href={ assets.Asset(ctx, "vendor.css") }/>
+	<link rel="stylesheet" href={ assets.Asset(ctx, "tailwind.css") }/>
 }
 
 type LayoutParams struct {

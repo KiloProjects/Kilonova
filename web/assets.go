@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"encoding/json"
 	"io/fs"
 	"log/slog"
@@ -16,26 +17,26 @@ type viteChunk struct {
 // is run per bundle, so there is one manifest per bundle to merge.
 type viteAssets map[string]viteChunk
 
-var assets = loadAssets()
+var assets = loadAssets(context.Background())
 
-func loadAssets() viteAssets {
+func loadAssets(ctx context.Context) viteAssets {
 	all := viteAssets{}
 	manifests, err := fs.Glob(embedded, "static/manifest.*.json")
 	if err != nil {
-		slog.Error("Could not look for Vite manifests", slog.Any("err", err))
+		slog.ErrorContext(ctx, "Could not look for Vite manifests", slog.Any("err", err))
 	}
 	for _, name := range manifests {
 		data, err := fs.ReadFile(embedded, name)
 		if err != nil {
-			slog.Error("Could not read Vite manifest", slog.String("name", name), slog.Any("err", err))
+			slog.ErrorContext(ctx, "Could not read Vite manifest", slog.String("name", name), slog.Any("err", err))
 			continue
 		}
 		if err := json.Unmarshal(data, &all); err != nil {
-			slog.Error("Could not parse Vite manifest", slog.String("name", name), slog.Any("err", err))
+			slog.ErrorContext(ctx, "Could not parse Vite manifest", slog.String("name", name), slog.Any("err", err))
 		}
 	}
 	if len(all) == 0 {
-		slog.Error("No Vite manifest was embedded, assets will 404. Run `pnpm -C web/assets build` and rebuild.")
+		slog.ErrorContext(ctx, "No Vite manifest was embedded, assets will 404. Run `pnpm -C web/assets build` and rebuild.")
 	}
 	return all
 }
@@ -43,10 +44,10 @@ func loadAssets() viteAssets {
 // Asset returns the public URL of a file built by Vite, addressed by its source
 // path. Everything it points at lives under /static/misc and is content-hashed,
 // so it can be cached forever.
-func (a viteAssets) Asset(src string) string {
+func (a viteAssets) Asset(ctx context.Context, src string) string {
 	chunk, ok := a[src]
 	if !ok {
-		slog.Warn("Asset missing from the Vite manifest", slog.String("src", src))
+		slog.WarnContext(ctx, "Asset missing from the Vite manifest", slog.String("src", src))
 		return "/static/" + src
 	}
 	return "/static/" + chunk.File

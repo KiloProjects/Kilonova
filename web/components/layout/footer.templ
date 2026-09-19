@@ -16,7 +16,7 @@ var T = tutils.T
 
 // Assets resolves a source path from web/assets to the hashed file Vite built.
 type Assets interface {
-	Asset(src string) string
+	Asset(ctx context.Context, src string) string
 }
 
 func language(ctx context.Context) string {

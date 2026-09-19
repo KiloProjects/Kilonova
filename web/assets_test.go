@@ -13,7 +13,7 @@ import (
 // matches what the templates ask for.
 func TestAssetsResolveToEmbeddedFiles(t *testing.T) {
 	for _, src := range []string{"app.ts", "vendored.ts", "chroma.css", "vendor.css", "tailwind.css"} {
-		url := assets.Asset(src)
+		url := assets.Asset(t.Context(), src)
 		if !strings.HasPrefix(url, "/static/misc/") {
 			t.Errorf("%s: not in the manifest, got %q", src, url)
 			continue
@@ -26,8 +26,8 @@ func TestAssetsResolveToEmbeddedFiles(t *testing.T) {
 
 func TestStaticCacheHeaders(t *testing.T) {
 	for url, want := range map[string]string{
-		assets.Asset("app.ts"):         "public, max-age=31536000, immutable",
-		"/static/favicons/favicon.ico": "public, max-age=3600",
+		assets.Asset(t.Context(), "app.ts"): "public, max-age=31536000, immutable",
+		"/static/favicons/favicon.ico":      "public, max-age=3600",
 	} {
 		w := httptest.NewRecorder()
 		staticFileServer(w, httptest.NewRequest(http.MethodGet, url, nil))
@@ -56,7 +56,7 @@ func TestStaticNoDirectoryListing(t *testing.T) {
 func TestCSSAssetURLsResolve(t *testing.T) {
 	url := regexp.MustCompile(`url\(\s*['"]?([^'")]+)['"]?\s*\)`)
 	for _, src := range []string{"chroma.css", "vendor.css", "tailwind.css"} {
-		css, err := fs.ReadFile(embedded, strings.TrimPrefix(assets.Asset(src), "/"))
+		css, err := fs.ReadFile(embedded, strings.TrimPrefix(assets.Asset(t.Context(), src), "/"))
 		if err != nil {
 			t.Fatalf("%s: %v", src, err)
 		}

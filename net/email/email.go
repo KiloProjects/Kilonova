@@ -6,13 +6,11 @@ import (
 	"log/slog"
 	"net"
 	"net/smtp"
-	"path"
 	"sync"
 
 	"github.com/KiloProjects/kilonova/domain/config"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/jordan-wright/email"
@@ -33,11 +31,7 @@ type emailer struct {
 
 func (e *emailer) SendEmail(ctx context.Context, msg *kilonova.MailerMessage) error {
 	loggerOnce.Do(func() {
-		emailLogger = slog.New(slog.NewJSONHandler(&lumberjack.Logger{
-			Filename: path.Join(config.Common.LogDir(), "email.log"),
-			MaxSize:  200, // MB
-			Compress: true,
-		}, &slog.HandlerOptions{
+		emailLogger = slog.New(slog.NewJSONHandler(config.LogWriter("email.log", 200), &slog.HandlerOptions{
 			Level: slog.LevelInfo,
 		}))
 	})
