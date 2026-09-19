@@ -1,10 +1,48 @@
+# The image builds everything from sources: generated assets and binaries from
+# the host must never leak in, or the image ships something the build did not
+# produce. See openspec container-images spec.
+
+# Version control and editor state
+.git
+.github
+.gitignore
+.idea
+.vscode
+.DS_Store
+**/.DS_Store
+
+# Dependencies and build output, all regenerated inside the builder
 web/assets/node_modules
-web/static/*.js
-web/static/*.js.map
+node_modules
+web/static/misc
+web/static/manifest.*.json
+web/static/chroma.css
 web/static/styles.css
 web/static/vendored.css
+web/static/*.js
+web/static/*.js.map
 web/static/*.ttf
-web/static/*.woff2
 web/static/*.woff
-web/static/misc
-web/static/chroma.css
+web/static/*.woff2
+web/assets/chroma.css
+_translations.json
+web/assets/_translations.json
+docs_site
+site
+
+# Host binaries and local state
+/kn
+knnnn
+.playwright
+.shannon
+
+# Local configuration and secrets: these arrive as environment variables
+.env
+flags.json
+config.toml
+grader.toml
+
+# Planning notes that no build step reads. Markdown in general is NOT excluded:
+# net/llm/prompts/*.md and api/templData/*.md are go:embed-ed into the binary.
+openspec
+docs

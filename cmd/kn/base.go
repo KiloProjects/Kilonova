@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
@@ -14,6 +15,7 @@ import (
 	"github.com/KiloProjects/kilonova/net/discord"
 	"github.com/KiloProjects/kilonova/net/email"
 	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/spf13/afero"
 )
 
@@ -56,6 +58,10 @@ func initBase(ctx context.Context) (*sudoapi.BaseAPI, error) {
 		}
 	}
 
+	if err := loadFlags(ctx, db.NewPSQL(pgxDB)); err != nil {
+		return nil, err
+	}
+
 	dc, err := discord.New(discord.Config{
 		Token:        config.Integrations.DiscordToken,
 		ClientID:     config.Integrations.DiscordClientID,
@@ -67,4 +73,35 @@ func initBase(ctx context.Context) (*sudoapi.BaseAPI, error) {
 	}
 
 	return sudoapi.GetBaseAPI(ctx, pgxDB, mgr, mailer, dc)
+}
+
+// loadFlags brings the runtime flag registry up now that a database exists:
+// stored values first, then the one-time import of a legacy flags.json for
+// deployments upgrading from the file, then this process's overrides. It also
+// registers the persistence callback, so an admin edit writes exactly one row.
+//
+// A failure to read the store is fatal on purpose: continuing on compiled-in
+// defaults would silently undo every setting an admin ever changed.
+func loadFlags(ctx context.Context, store config.FlagStore) error {
+	empty, err := config.LoadFlagsFromDB(ctx, store)
+	if err != nil {
+		return fmt.Errorf("couldn't load flags: %w", err)
+	}
+	if empty {
+		if err := config.ImportFlagsFile(ctx, store, flagsPath); err != nil {
+			return fmt.Errorf("couldn't import flags file: %w", err)
+		}
+	}
+	config.ApplyFlagOverrides(ctx)
+	kilonova.SetDefaultLanguage(flags.DefaultLanguage.Value())
+
+	config.SetOnFlagUpdate(func(name string) {
+		kilonova.SetDefaultLanguage(flags.DefaultLanguage.Value())
+		ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+		if err := config.PersistFlag(ctx, store, name); err != nil {
+			slog.WarnContext(ctx, "Couldn't persist flag", slog.String("flag", name), slog.Any("err", err))
+		}
+	})
+	return nil
 }

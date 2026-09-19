@@ -3,6 +3,7 @@ package grader
 import (
 	"cmp"
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -656,16 +657,25 @@ func (h *Handler) getRemoteRunner(ctx context.Context) (eval.BoxScheduler, eval.
 	if rc.Endpoint == "" || rc.Token == "" {
 		return nil, nil, fmt.Errorf("KN_EVAL_MODE=remote requires KN_EVAL_REMOTE_ENDPOINT and KN_EVAL_REMOTE_TOKEN")
 	}
+	// One transport for both planes: the control plane and the /scratch data
+	// plane must never disagree about whether the grader is verified.
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	if config.Eval.AllowInsecureSandbox {
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // opt-in, local/dev only
+		slog.WarnContext(ctx, "Grader certificate verification is DISABLED (KN_SANDBOX_ALLOW_INSECURE). Never do this in production",
+			slog.String("endpoint", rc.Endpoint))
+	}
+
 	// Bounded per-transfer so a dropped connection fails the eval fast instead of
 	// hanging (design D2). ponytail: 60s covers the largest test file; lift to a
 	// config field if real transfers approach it.
-	scratchClient := &http.Client{Timeout: 60 * time.Second}
+	scratchClient := &http.Client{Timeout: 60 * time.Second, Transport: transport}
 	remoteScratch, err := scratch.NewHTTP(scratchClient, rc.Endpoint+"/scratch", rc.Token)
 	if err != nil {
 		return nil, nil, fmt.Errorf("couldn't set up remote scratch: %w", err)
 	}
 
-	client := scheduler.NewGraderClient(http.DefaultClient, rc.Endpoint, rc.Token)
+	client := scheduler.NewGraderClient(&http.Client{Transport: transport}, rc.Endpoint, rc.Token)
 	langMgr, err := scheduler.NewRemoteLanguageManager(ctx, client, graderLogger)
 	if err != nil {
 		return nil, nil, fmt.Errorf("couldn't fetch remote language inventory: %w", err)

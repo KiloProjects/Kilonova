@@ -1,0 +1,87 @@
+# Kilonova stack: Postgres, the platform, and one grader.
+#
+# The platform image carries no toolchains and cannot sandbox in-process, so
+# remote eval is the only container topology. To run against a grader that
+# lives elsewhere, point KN_EVAL_REMOTE_ENDPOINT at it and start only the
+# platform: `docker compose up platform`.
+#
+#   cp .env.example .env   # set KN_GRADER_TOKEN and POSTGRES_PASSWORD
+#   docker compose up --build
+#
+# See docs/deployment.md, especially before exposing this to anyone.
+
+name: kilonova
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kilonova}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-kilonova}
+    volumes:
+      # Postgres 18+ images want the mount at the parent, not .../data: they
+      # store each major version in its own subdirectory.
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kilonova} -d ${POSTGRES_DB:-kilonova}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  grader:
+    build:
+      context: .
+      target: grader
+    # isolate creates and manages cgroup v2 subtrees per sandbox, and kn does
+    # the cgroup setup itself (KN_SANDBOX_ENSURE_CG_KEEPER, baked into the
+    # image) instead of relying on a systemd keeper unit.
+    privileged: true
+    cgroup: host
+    # Deliberately no `ports:`. /run/box3 is arbitrary code execution as a
+    # service: a leaked token is RCE, so the grader must only ever be reachable
+    # from the platform.
+    environment:
+      KN_GRADER_CLIENT_KILONOVA: ${KN_GRADER_TOKEN:?set KN_GRADER_TOKEN in .env}
+      KN_GRADER_CERT_HOST: grader
+      KN_SANDBOX_NUM_CONCURRENT: ${KN_SANDBOX_NUM_CONCURRENT:-3}
+      KN_SANDBOX_GLOBAL_MAX_MEM_KB: ${KN_SANDBOX_GLOBAL_MAX_MEM_KB:-2097152}
+    volumes:
+      - grader-data:/var/lib/kilonova/data
+    restart: unless-stopped
+
+  platform:
+    build:
+      context: .
+      target: platform
+    depends_on:
+      db:
+        condition: service_healthy
+      grader:
+        condition: service_healthy
+    ports:
+      - "${KN_PORT:-8070}:8070"
+    environment:
+      KN_DB_DSN: "host=db user=${POSTGRES_USER:-kilonova} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB:-kilonova} sslmode=disable application_name=kilonova"
+      KN_HOST_PREFIX: ${KN_HOST_PREFIX:-http://localhost:8070}
+      KN_EVAL_MODE: remote
+      KN_EVAL_REMOTE_ENDPOINT: ${KN_EVAL_REMOTE_ENDPOINT:-https://grader:9000}
+      KN_EVAL_REMOTE_TOKEN: ${KN_GRADER_TOKEN}
+      # The grader generates its own self-signed certificate, which nothing
+      # trusts. This skips verifying it — acceptable on a private compose
+      # network, never in production: mount a real certificate and drop this.
+      KN_SANDBOX_ALLOW_INSECURE: "true"
+      # The OIDC provider refuses a non-https issuer unless debug is on, so an
+      # out-of-the-box http://localhost stack needs this. A real deployment sets
+      # KN_HOST_PREFIX to its https URL behind a TLS-terminating proxy and
+      # KN_DEBUG=false.
+      KN_DEBUG: ${KN_DEBUG:-true}
+    volumes:
+      - platform-data:/var/lib/kilonova/data
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  platform-data:
+  grader-data:

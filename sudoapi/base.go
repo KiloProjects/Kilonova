@@ -71,6 +71,12 @@ func (s *BaseAPI) Start(ctx context.Context) {
 	go s.refreshHotProblemsJob(ctx, 4*time.Hour)
 }
 
+// PingDB reports whether the database is reachable. Used by the health endpoint,
+// which must not reach past sudoapi into the pool itself.
+func (s *BaseAPI) PingDB(ctx context.Context) error {
+	return s.pgx.Pool().Ping(ctx)
+}
+
 func (s *BaseAPI) Close() error {
 	if err := s.pgx.Close(); err != nil {
 		return fmt.Errorf("couldn't close DB: %w", err)

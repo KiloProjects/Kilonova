@@ -122,9 +122,7 @@ func (b *Box2Wrapper) convertRequest(ctx context.Context, b2Req *eval.Box2Reques
 	}
 
 	// Then set up the mappings
-	for _, val := range b2Req.OutputByteFiles {
-		b3Req.OutputFilePaths = append(b3Req.OutputFilePaths, val)
-	}
+	b3Req.OutputFilePaths = append(b3Req.OutputFilePaths, b2Req.OutputByteFiles...)
 
 	for path := range b2Req.OutputBucketFiles {
 		b3Req.OutputFilePaths = append(b3Req.OutputFilePaths, path)

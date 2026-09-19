@@ -2,10 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/KiloProjects/kilonova/domain/config"
@@ -86,10 +90,48 @@ var graderServe = &cli.Command{
 		mux.Handle("/", scheduler.NewGraderServer(bm, langMgr).Handler())
 		mux.Handle(scheduler.ScratchHandler(scratchFS))
 
-		httpSrv := &http.Server{Addr: g.Listen, Handler: registry.Auth(mux)}
-		slog.InfoContext(ctx, "Remote grader listening", slog.String("addr", g.Listen), slog.Int("clients", len(clients)))
-		if err := httpSrv.ListenAndServeTLS(g.CertFile, g.KeyFile); err != nil {
-			return fmt.Errorf("grader server: %w", err)
+		// /healthz is the one unauthenticated path: an orchestrator has no token.
+		// It hangs off an outer mux so everything else still goes through Auth.
+		// The sandbox was proven usable by CheckCanRun above, so this is a static
+		// answer rather than a per-probe isolate run.
+		var draining atomic.Bool
+		outer := http.NewServeMux()
+		outer.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+			if draining.Load() {
+				http.Error(w, "draining", http.StatusServiceUnavailable)
+				return
+			}
+			w.Header().Set("Content-Type", "text/plain")
+			fmt.Fprintln(w, "ok")
+		})
+		outer.Handle("/", registry.Auth(mux))
+
+		ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+		defer stop()
+
+		httpSrv := &http.Server{Addr: g.Listen, Handler: outer}
+		errCh := make(chan error, 1)
+		go func() {
+			slog.InfoContext(ctx, "Remote grader listening", slog.String("addr", g.Listen), slog.Int("clients", len(clients)))
+			if err := httpSrv.ListenAndServeTLS(g.CertFile, g.KeyFile); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				errCh <- fmt.Errorf("grader server: %w", err)
+				return
+			}
+			errCh <- nil
+		}()
+
+		select {
+		case err := <-errCh:
+			return err
+		case <-ctx.Done():
+		}
+
+		slog.InfoContext(ctx, "Shutting down remote grader")
+		draining.Store(true)
+		shutCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
+		defer cancel()
+		if err := httpSrv.Shutdown(shutCtx); err != nil {
+			return fmt.Errorf("grader shutdown: %w", err)
 		}
 		return nil
 	},

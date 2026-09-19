@@ -9,7 +9,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/infra/prometheus"
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/joho/godotenv"
 	"github.com/urfave/cli/v3"
 )
@@ -19,6 +18,7 @@ var (
 	debugMode  bool
 	hostPrefix string
 	flagsPath  string
+	logToFile  bool
 )
 
 // envFlags declares the platform's KN_* environment contract. Each entry writes
@@ -31,6 +31,7 @@ func envFlags() []cli.Flag {
 		&cli.StringFlag{Name: "data-dir", Usage: "Absolute root directory: datastore buckets and logs/ for the platform, scratch/ and logs/ for grader-serve",
 			Sources: cli.EnvVars("KN_DATA_DIR"), Destination: &config.Common.DataDir},
 		&cli.BoolFlag{Name: "debug", Usage: "Debug mode (verbose logs, slower)", Sources: cli.EnvVars("KN_DEBUG"), Destination: &debugMode},
+		&cli.BoolFlag{Name: "log-file", Usage: "Also write a rotating log file to $KN_DATA_DIR/logs; stdout always gets the logs. Containers set this false", Value: true, Sources: cli.EnvVars("KN_LOG_FILE"), Destination: &logToFile},
 		&cli.StringFlag{Name: "host-prefix", Usage: "Public URL of this instance", Value: "http://localhost:8070", Sources: cli.EnvVars("KN_HOST_PREFIX"), Destination: &hostPrefix},
 		&cli.StringFlag{Name: "listen", Usage: "host:port for the web server", Value: "localhost:8070", Sources: cli.EnvVars("KN_LISTEN"), Destination: &config.Server.Listen},
 		&cli.StringFlag{Name: "true-ip-header", Usage: "Header carrying the client IP when behind a reverse proxy (e.g. X-Forwarded-For); empty otherwise", Sources: cli.EnvVars("KN_TRUE_IP_HEADER"), Destination: &config.Server.TrueIPHeader},
@@ -64,7 +65,7 @@ func envFlags() []cli.Flag {
 		&cli.Int64Flag{Name: "sandbox-global-max-mem-kb", Usage: "Memory budget in KB across all sandboxes (local grader and grader-serve)", Value: 2097152, Sources: cli.EnvVars("KN_SANDBOX_GLOBAL_MAX_MEM_KB"), Destination: &config.Eval.GlobalMaxMem},
 		&cli.IntFlag{Name: "sandbox-starting-box", Usage: "First isolate box ID (local grader and grader-serve)", Value: 1, Sources: cli.EnvVars("KN_SANDBOX_STARTING_BOX"), Destination: &config.Eval.StartingBox},
 		&cli.BoolFlag{Name: "sandbox-ensure-cg-keeper", Usage: "Ensure isolate-cg-keeper is running (local grader and grader-serve)", Sources: cli.EnvVars("KN_SANDBOX_ENSURE_CG_KEEPER"), Destination: &config.Eval.EnsureCGKeeper},
-		&cli.BoolFlag{Name: "sandbox-allow-insecure", Usage: "Allow the insecure stupidbox fallback when isolate is missing; never in production", Sources: cli.EnvVars("KN_SANDBOX_ALLOW_INSECURE"), Destination: &config.Eval.AllowInsecureSandbox},
+		&cli.BoolFlag{Name: "sandbox-allow-insecure", Usage: "Accept an insecure eval path; never in production. Local mode: allow the stupidbox fallback when isolate is missing. Remote mode: skip verification of the grader's TLS certificate", Sources: cli.EnvVars("KN_SANDBOX_ALLOW_INSECURE"), Destination: &config.Eval.AllowInsecureSandbox},
 	}
 }
 
@@ -83,26 +84,23 @@ func main() {
 				return nil, fmt.Errorf("KN_EVAL_MODE must be local or remote, got %q", m)
 			}
 			kilonova.SetDebugMode(debugMode)
+			config.SetLogToFile(logToFile)
 			kilonova.SetHostPrefix(hostPrefix)
 
-			if err := config.LoadConfigV2(ctx, flagsPath, false); err != nil {
-				return nil, fmt.Errorf("error loading flags: %w", err)
-			}
-			kilonova.SetDefaultLanguage(flags.DefaultLanguage.Value())
-			config.SetOnFlagUpdate(func() {
-				kilonova.SetDefaultLanguage(flags.DefaultLanguage.Value())
-				if err := config.SaveConfigV2(context.Background(), flagsPath); err != nil {
-					slog.WarnContext(context.Background(), "Couldn't save flag", slog.Any("err", err))
-				}
-			})
+			// Stored flags live in the database, so they can only be loaded once the
+			// pool exists (initBase). Overrides need nothing and apply everywhere,
+			// including commands that never open a database.
+			config.ApplyFlagOverrides(ctx)
 			return ctx, nil
 		},
 		Action: func(ctx context.Context, command *cli.Command) error {
 			if err := config.RequireDataDir(); err != nil {
 				return err
 			}
-			if err := os.MkdirAll(config.Common.LogDir(), 0755); err != nil {
-				return fmt.Errorf("error creating log directory: %w", err)
+			if config.LogToFile() {
+				if err := os.MkdirAll(config.Common.LogDir(), 0755); err != nil {
+					return fmt.Errorf("error creating log directory: %w", err)
+				}
 			}
 
 			initLogger(kilonova.DebugMode(), true)

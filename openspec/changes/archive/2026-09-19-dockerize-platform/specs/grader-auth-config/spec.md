@@ -1,36 +1,6 @@
-# grader-auth-config Specification
+# Spec Delta
 
-## Purpose
-
-Defines the role-split configuration between platform and grader in remote mode, the per-client token registry, and the single-direction authenticated transport that keeps platform credentials off the grader.
-
-## Requirements
-
-### Requirement: Role-split configuration
-Configuration SHALL be split by role and supplied through environment variables as defined by the `env-config` capability. In remote mode the grader SHALL run from its own variables holding box-execution settings (`KN_SANDBOX_NUM_CONCURRENT`, `KN_SANDBOX_GLOBAL_MAX_MEM_KB`, `KN_SANDBOX_STARTING_BOX`), its root directory and scratch TTL (`KN_DATA_DIR`, under which `scratch/` and `logs/` live, and `KN_GRADER_SCRATCH_TTL_SEC`), its listen/TLS settings (`KN_GRADER_LISTEN`, `KN_GRADER_TLS_CERT`, `KN_GRADER_TLS_KEY`), and a per-client registry (one `KN_GRADER_CLIENT_<NAME>=<token>` variable per client, `NAME` lowercased being the client name). The platform SHALL hold a `KN_EVAL_MODE=local|remote` switch and, in remote mode, only the grader endpoint and its bearer token (`KN_EVAL_REMOTE_ENDPOINT`, `KN_EVAL_REMOTE_TOKEN`) — the JSON control plane and the `/scratch` data plane share that one endpoint, so no separate data-plane connection settings are needed. In `local` mode the platform SHALL read the in-process box-execution settings from the same `KN_SANDBOX_*` variables, and no grader-specific variables are required. Neither process SHALL require a configuration file for these settings.
-
-#### Scenario: Grader owns execution settings in remote mode
-- **WHEN** the grader starts in remote mode
-- **THEN** it reads box-execution settings from its own `KN_SANDBOX_*` variables, and the platform does not need them
-
-#### Scenario: Local mode needs no grader variables
-- **WHEN** the platform runs with `KN_EVAL_MODE=local`
-- **THEN** it reads `KN_SANDBOX_*` for the in-process grader and starts without any `KN_GRADER_*` or `KN_EVAL_REMOTE_*` variable set
-
-#### Scenario: Client registry from environment
-- **WHEN** `KN_GRADER_CLIENT_KILONOVA=abc123` and `KN_GRADER_CLIENT_STAGING=def456` are set
-- **THEN** the grader registers two clients, `kilonova` and `staging`, with those tokens
-
-### Requirement: Per-client token registry with identity
-The grader SHALL maintain a registry of allowed platform clients, each entry carrying a name and a token. The registry SHALL support multiple platform instances connecting to a single grader. Client identity SHALL be available for observability (attributing runs and metrics to a named client). The registry entry MAY carry a priority-class field that is documented but unconsumed by this change.
-
-#### Scenario: Multiple platform instances share one grader
-- **WHEN** two platform instances each present their own registered token
-- **THEN** the grader accepts both and can attribute each run to the issuing client by name
-
-#### Scenario: Priority field is reserved, not enforced
-- **WHEN** a client registry entry declares a priority class
-- **THEN** the grader accepts the config but does not yet alter admission ordering based on it
+## MODIFIED Requirements
 
 ### Requirement: Authenticated, single-direction transport
 Every request SHALL be authenticated by a single grader-minted bearer token presented over TLS in the `Authorization: Bearer` header. One HTTP middleware on the grader listener SHALL enforce this for every path — the `/run/*` and `/languages` control endpoints and the `/scratch/{id}` data endpoint alike — and SHALL attach the authenticated client name to the request context for attribution. The grader SHALL initiate no connections back to the platform and SHALL hold no platform credentials. Operators SHALL treat the token as insufficient on its own and MUST additionally restrict grader network reachability to the platform (segmentation / IP allowlist).

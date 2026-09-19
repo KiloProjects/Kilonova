@@ -4,13 +4,15 @@ import (
 	"cmp"
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
 	"strings"
+	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/KiloProjects/kilonova/domain/config"
@@ -25,7 +27,6 @@ import (
 	slogmulti "github.com/samber/slog-multi"
 	"github.com/zitadel/oidc/v3/pkg/op"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
-	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/api"
@@ -42,7 +43,7 @@ func Kilonova(ctx context.Context) error {
 	// Setup context
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, os.Kill)
+	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 
 	shutdown, err := otel.SetupOpenTelemetry(ctx, config.Integrations.OtelEnabled)
 	if err != nil {
@@ -96,6 +97,27 @@ func Kilonova(ctx context.Context) error {
 	// for graceful setup and shutdown
 	server := webV1(true, base, llmProvider)
 
+	// /healthz sits on an outer mux so it answers without CORS, the OIDC issuer
+	// interceptor or session lookup, and keeps answering while we drain.
+	var draining atomic.Bool
+	mux := http.NewServeMux()
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		if draining.Load() {
+			http.Error(w, "draining", http.StatusServiceUnavailable)
+			return
+		}
+		pingCtx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		if err := base.PingDB(pingCtx); err != nil {
+			http.Error(w, "database unreachable", http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprintln(w, "ok")
+	})
+	mux.Handle("/", server.Handler)
+	server.Handler = mux
+
 	go profiler.StartProfiler(ctx, 6080)
 	go func() {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -108,7 +130,12 @@ func Kilonova(ctx context.Context) error {
 
 	defer func() {
 		slog.InfoContext(ctx, "Shutting Down")
-		if err := server.Shutdown(ctx); err != nil {
+		// ctx is the signal context and is already cancelled by the time we get
+		// here, so Shutdown needs an independent deadline or it drains nothing.
+		draining.Store(true)
+		shutCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
+		defer cancel()
+		if err := server.Shutdown(shutCtx); err != nil {
 			slog.ErrorContext(ctx, "Error shutting down", slog.Any("err", err))
 		}
 	}()
@@ -149,12 +176,8 @@ func initLogger(debug, writeFile bool) {
 		otelslog.NewHandler("kilonova"),
 	}
 
-	if writeFile {
-		file := &lumberjack.Logger{
-			Filename: path.Join(config.Common.LogDir(), "run.log"),
-			MaxSize:  80, //MB
-			Compress: true,
-		}
+	if writeFile && config.LogToFile() {
+		file := config.LogWriter("run.log", 80)
 
 		loglevel := slog.LevelInfo
 		if debug {

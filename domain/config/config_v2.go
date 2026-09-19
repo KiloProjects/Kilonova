@@ -9,8 +9,6 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"path/filepath"
-	"reflect"
 	"slices"
 	"strings"
 	"sync"
@@ -71,7 +69,7 @@ func (f *flag[T]) MarshalJSON() ([]byte, error) {
 func (f *flag[T]) Update(newVal T) {
 	defer func() {
 		if onFlagUpdate != nil {
-			onFlagUpdate()
+			onFlagUpdate(f.name)
 		}
 	}()
 	f.mu.Lock()
@@ -146,14 +144,121 @@ func GetFlags[T any]() []Flag[T] {
 	return flags
 }
 
+// FlagStore persists runtime flags. It is implemented by the database layer;
+// declared here as an interface because db imports this package.
+type FlagStore interface {
+	GetFlags(ctx context.Context) (map[string]json.RawMessage, error)
+	SetFlag(ctx context.Context, key string, value json.RawMessage) error
+}
+
+// importSentinel marks a database whose flags were already seeded from a legacy
+// flags.json. Keys starting with "_" are never registered flags, so the sentinel
+// cannot collide with one.
+const importSentinel = "_flags_file_imported"
+
+// LoadFlagsFromDB applies stored flag values over the compiled-in defaults.
+// A value that does not decode, or a key no longer registered in this build, is
+// logged and skipped: neither aborts startup, and unknown keys are left in the
+// store so a rollback still sees them. It reports whether the store held anything,
+// which is what decides if a legacy file still needs importing.
+func LoadFlagsFromDB(ctx context.Context, store FlagStore) (empty bool, err error) {
+	stored, err := store.GetFlags(ctx)
+	if err != nil {
+		return false, err
+	}
+	if len(stored) == 0 {
+		return true, nil
+	}
+
+	flagMapMu.RLock()
+	defer flagMapMu.RUnlock()
+	for key, val := range stored {
+		if strings.HasPrefix(key, "_") {
+			continue
+		}
+		flg, ok := allFlags[key]
+		if !ok {
+			slog.WarnContext(ctx, "Unknown flag in store, ignoring", slog.String("key", key))
+			continue
+		}
+		v, ok := flg.(configFlag)
+		if !ok {
+			slog.WarnContext(ctx, "Could not sneak update", slog.String("key", key))
+			continue
+		}
+		if err := v.sneakUpdate(val); err != nil {
+			slog.WarnContext(ctx, "Couldn't apply stored flag, keeping default", slog.String("key", key), slog.Any("err", err))
+		}
+	}
+	return false, nil
+}
+
+// ImportFlagsFile seeds an empty flag store from a legacy flags.json. The file is
+// only ever read: after this runs, the store is the source of truth and the file
+// is inert. Every registered flag is written, so the store is non-empty afterwards
+// even when the file was missing and the sentinel is the only thing that changed.
+func ImportFlagsFile(ctx context.Context, store FlagStore, configV2Path string) error {
+	if err := LoadConfigV2(ctx, configV2Path, true); err != nil {
+		slog.WarnContext(ctx, "Couldn't read flags file for import, seeding defaults instead",
+			slog.String("path", configV2Path), slog.Any("err", err))
+	}
+
+	flagMapMu.RLock()
+	defer flagMapMu.RUnlock()
+	for key, flg := range allFlags {
+		v, ok := flg.(configFlag)
+		if !ok {
+			continue
+		}
+		val, err := json.Marshal(v.getPtr())
+		if err != nil {
+			slog.WarnContext(ctx, "Couldn't encode flag for import", slog.String("key", key), slog.Any("err", err))
+			continue
+		}
+		if err := store.SetFlag(ctx, key, val); err != nil {
+			return fmt.Errorf("import flag %q: %w", key, err)
+		}
+	}
+	if err := store.SetFlag(ctx, importSentinel, json.RawMessage(`true`)); err != nil {
+		return fmt.Errorf("mark flags file as imported: %w", err)
+	}
+	slog.InfoContext(ctx, "Imported flags into the database", slog.String("path", configV2Path), slog.Int("flags", len(allFlags)))
+	return nil
+}
+
+// PersistFlag writes one flag's current value to the store. Used as the update
+// callback, so an admin edit touches exactly the flag that changed.
+func PersistFlag(ctx context.Context, store FlagStore, name string) error {
+	flagMapMu.RLock()
+	flg, ok := allFlags[name]
+	flagMapMu.RUnlock()
+	if !ok {
+		return fmt.Errorf("unknown flag %q", name)
+	}
+	v, ok := flg.(configFlag)
+	if !ok {
+		return fmt.Errorf("flag %q is not persistable", name)
+	}
+	val, err := json.Marshal(v.getPtr())
+	if err != nil {
+		return err
+	}
+	return store.SetFlag(ctx, name, val)
+}
+
 func LoadConfigV2(ctx context.Context, configV2Path string, skipUnknown bool) error {
 	flagMapMu.RLock()
 	defer flagMapMu.RUnlock()
 	if configV2Path == "" {
 		return errors.New("invalid config path")
 	}
-	f, err := os.OpenFile(configV2Path, os.O_RDONLY|os.O_CREATE, 0644)
+	// Read-only, and never created: the flag store is the database, this file is
+	// only ever an import source.
+	f, err := os.Open(configV2Path)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
 		return err
 	}
 	defer f.Close()
@@ -184,6 +289,15 @@ func LoadConfigV2(ctx context.Context, configV2Path string, skipUnknown bool) er
 		}
 	}
 
+	return nil
+}
+
+// ApplyFlagOverrides applies the per-process KN_FLAG_OVERRIDES escape hatch.
+// Overrides are never persisted, and apply in processes with no flag store at all.
+func ApplyFlagOverrides(ctx context.Context) {
+	flagMapMu.RLock()
+	defer flagMapMu.RUnlock()
+
 	for override := range strings.SplitSeq(os.Getenv("KN_FLAG_OVERRIDES"), ",") {
 		if override == "" {
 			continue
@@ -210,48 +324,12 @@ func LoadConfigV2(ctx context.Context, configV2Path string, skipUnknown bool) er
 			slog.WarnContext(ctx, "Unknown flag type")
 		}
 	}
-
-	return nil
 }
 
-func SaveConfigV2(ctx context.Context, configV2Path string) error {
-	if configV2Path == "" {
-		return errors.New("invalid config path")
-	}
-	// Make the directories just in case they don't exist
-	if err := os.MkdirAll(filepath.Dir(configV2Path), 0666); err != nil {
-		return err
-	}
-	flagMapMu.RLock()
-	defer flagMapMu.RUnlock()
+var onFlagUpdate = func(string) {}
 
-	file, err := os.Create(configV2Path)
-	if err != nil {
-		return err
-	}
-
-	var data = make(map[string]any)
-	for key, flg := range allFlags {
-		switch v := flg.(type) {
-		case configFlag:
-			data[key] = v.getPtr()
-		default:
-			slog.WarnContext(ctx, "Unknown flag type", slog.Any("type", reflect.TypeOf(v)))
-		}
-	}
-
-	enc := json.NewEncoder(file)
-	enc.SetIndent("", "\t")
-	if err := enc.Encode(data); err != nil {
-		file.Close() // We don't care if it errors out, the JSON is errored
-		return err
-	}
-
-	return file.Close()
-}
-
-var onFlagUpdate = func() {}
-
-func SetOnFlagUpdate(f func()) {
+// SetOnFlagUpdate registers the persistence callback. It is handed the dotted
+// name of the flag that changed, so only that flag is written.
+func SetOnFlagUpdate(f func(name string)) {
 	onFlagUpdate = f
 }

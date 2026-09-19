@@ -2,8 +2,8 @@ package grader
 
 import (
 	"context"
+	"io"
 	"log/slog"
-	"path"
 	"sync"
 	"time"
 
@@ -11,7 +11,6 @@ import (
 	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
@@ -23,7 +22,7 @@ var (
 	// I have only one question: "Why are you doing it?"
 	openAction   sync.Once
 	closeAction  sync.Once
-	logFile      *lumberjack.Logger
+	logFile      io.Writer
 	graderLogger *slog.Logger
 )
 
@@ -42,11 +41,8 @@ func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, error) {
 	wCh := make(chan struct{}, 1)
 
 	openAction.Do(func() {
-		logFile = &lumberjack.Logger{
-			Filename: path.Join(config.Common.LogDir(), "grader.log"),
-			MaxSize:  80, // MB. Since most rows are really similar it gets compressed really small
-			Compress: true,
-		}
+		// 80 MB: most rows are near-identical so they compress very small.
+		logFile = config.LogWriter("grader.log", 80)
 		lvl := slog.LevelInfo
 		if kilonova.DebugMode() {
 			lvl = slog.LevelDebug
@@ -191,8 +187,11 @@ func (h *Handler) Start() error {
 
 func (h *Handler) Close() {
 	closeAction.Do(func() {
-		if err := logFile.Close(); err != nil {
-			slog.WarnContext(h.ctx, "Error closing grader.log", slog.Any("err", err))
+		// Nothing to close when logs go to stdout (KN_LOG_FILE=false).
+		if c, ok := logFile.(io.Closer); ok {
+			if err := c.Close(); err != nil {
+				slog.WarnContext(h.ctx, "Error closing grader.log", slog.Any("err", err))
+			}
 		}
 		close(h.wakeChan)
 	})

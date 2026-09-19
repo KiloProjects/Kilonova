@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"path"
 	"reflect"
 	"strconv"
 	"strings"
@@ -24,7 +23,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type logLevel int
@@ -400,11 +398,7 @@ func (s *BaseAPI) ingestAuditLogs(ctx context.Context) error {
 func (s *BaseAPI) cleanupBucketsJob(ctx context.Context, interval time.Duration) error {
 	t := time.NewTicker(interval)
 	defer t.Stop()
-	logFile := &lumberjack.Logger{
-		Filename: path.Join(config.Common.LogDir(), "eviction.log"),
-		MaxSize:  80, //MB
-		Compress: true,
-	}
+	logFile := config.LogWriter("eviction.log", 80)
 	lvl := slog.LevelInfo
 	if kilonova.DebugMode() {
 		lvl = slog.LevelDebug

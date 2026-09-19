@@ -19,16 +19,11 @@ import (
 	"github.com/KiloProjects/kilonova/eval/language"
 	"golang.org/x/sync/semaphore"
 	"golang.org/x/sys/unix"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
 	cmdAuditLogger = sync.OnceValue(func() *slog.Logger {
-		return slog.New(slog.NewJSONHandler(&lumberjack.Logger{
-			Filename: path.Join(config.Common.LogDir(), "sandbox_runs.log"),
-			MaxSize:  200, // MB
-			Compress: true,
-		}, &slog.HandlerOptions{
+		return slog.New(slog.NewJSONHandler(config.LogWriter("sandbox_runs.log", 200), &slog.HandlerOptions{
 			AddSource: false,
 		}))
 	})

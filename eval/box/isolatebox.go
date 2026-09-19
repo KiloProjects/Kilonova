@@ -282,16 +282,17 @@ func (b *IsolateBox) RunCommand(ctx context.Context, command []string, conf *eva
 	return meta, nil
 }
 
-var keeperOnce sync.Once
-
-// New returns a new box instance from the specified ID
+// New returns a new box instance from the specified ID.
+//
+// Keeper setup happens once, on first use. A failure is returned rather than
+// fatal: CheckCanRun probes this function precisely to find out whether a
+// secure sandbox is available, and killing the process here would deny the
+// caller that answer (grader-serve refuses to start on its own, and the local
+// grader falls back or exits by its own rules).
 func New(ctx context.Context, id int, memQuota int64, logger *slog.Logger) (eval.Sandbox, error) {
-	keeperOnce.Do(func() {
-		if err := InitKeeper(ctx); err != nil {
-			slog.ErrorContext(ctx, "Could not initialize keeper", slog.Any("err", err))
-			os.Exit(1)
-		}
-	})
+	if err := keeperInit(ctx); err != nil {
+		return nil, err
+	}
 	ret, err := exec.Command(isolatePath, "--cg", fmt.Sprintf("--box-id=%d", id), "--init").CombinedOutput()
 	if strings.HasPrefix(string(ret), "Box already exists") {
 		slog.InfoContext(ctx, "Box reset", slog.Int("id", id))

@@ -86,6 +86,11 @@ var Migrations = postgres.MigrationConfig{
 			Name:    "Add column for problem review",
 			Handler: runFile("014.review_ready.sql"),
 		},
+		{
+			ID:      16,
+			Name:    "Runtime flag store",
+			Handler: runFile("015.flags.sql"),
+		},
 	},
 	// Run every time a migrate up happens
 	SpecialMigrations: []postgres.Migration{
