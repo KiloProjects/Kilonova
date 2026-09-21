@@ -12,6 +12,7 @@ export * from "./langs";
 export { default as getText, maybeGetText } from "./translation";
 
 export * from "./session";
+export * from "./flash";
 export { NavBarManager } from "./navbar";
 export { CheckboxManager } from "./checkbox_mgr";
 export { getFileIcon } from "./cdn_mgr";

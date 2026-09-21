@@ -10,39 +10,20 @@ import (
 
 var TC = tutils.TC
 
-templ ContestDisclaimer(tags []*kilonova.Tag) {
-	<section id="disclaimer_section" class="segment-panel hidden">
+templ ContestDisclaimer() {
+	<section data-flashname="contest_disclaimer" class="segment-panel hidden">
 		<div class="modal-header">
 			<h2 style="margin: 0.25rem;">
 				<i class="fas fa-triangle-exclamation"></i>{ " " }
 				@TC("contestDisclaimerTitle")
 			</h2>
-			<button id="disclaimer_close">
+			<button data-flashdiscard="contest_disclaimer">
 				<i class="modal-close fas fa-xmark"></i>
 			</button>
 		</div>
 		<div class="px-2 py-2">
 			@TC("contestDisclaimerBody")
 		</div>
-		<script>
-            let unauthedStorageKey = "contest_disclaimer_dismissed:unauthed";
-            let storageKey = `contest_disclaimer_dismissed:${window.platform_info.user_id}`
-            if(window.platform_info.user_id === 0) {
-                storageKey = unauthedStorageKey
-            }
-            document.getElementById("disclaimer_close").addEventListener("click", () => {
-                window.localStorage.setItem(storageKey, "disabled");
-                document.getElementById("disclaimer_section").remove();
-            })
-            if(window.localStorage.getItem(storageKey) === null) {
-                if(window.localStorage.getItem(unauthedStorageKey) !== null) {
-                    window.localStorage.removeItem(unauthedStorageKey);
-                    window.localStorage.setItem(storageKey, "disabled");
-                } else {
-                    document.getElementById("disclaimer_section").classList.remove("hidden");
-                }
-            }
-        </script>
 	</section>
 }
 

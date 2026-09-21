@@ -2,10 +2,10 @@ package layout
 
 import (
 	"context"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"io"
 	"time"
-	"github.com/KiloProjects/kilonova/domain/user"
 )
 
 func stringComponent(s string) templ.Component {
@@ -53,20 +53,25 @@ templ mainHeadTags(enabledLanguages map[string]string, title string, description
 	<!--Dependency bundle-->
 	@templ.JSONScript("server_time", time.Now().Format(time.RFC3339Nano))
 	@templ.JSONScript("platform_info", platformInfo(ctx, enabledLanguages))
+	<script>
+		window.platform_info = JSON.parse(
+			document.getElementById("platform_info").textContent,
+		);
+	</script>
 	<script src={ assets.Asset(ctx, "app.ts") }></script>
 	<script src={ assets.Asset(ctx, "vendored.ts") }></script>
 	<script>
-        const server_time = JSON.parse(document.getElementById("server_time").textContent);
-        var platform_info = JSON.parse(document.getElementById("platform_info").textContent);
-        bundled.initTime(bundled.dayjs(), bundled.dayjs(server_time));
-        window.htmx.on(("htmx:afterSwap"), (el) => {
-            bundled.initialLoad(el.target);
-        });
-        if(platform_info.debug) {
-            window.htmx.logAll();
-        }
-
-    </script>
+		const server_time = JSON.parse(
+			document.getElementById("server_time").textContent,
+		);
+		bundled.initTime(bundled.dayjs(), bundled.dayjs(server_time));
+		window.htmx.on("htmx:afterSwap", (el) => {
+			bundled.initialLoad(el.target);
+		});
+		if (platform_info.debug) {
+			window.htmx.logAll();
+		}
+	</script>
 	<link rel="stylesheet" href={ assets.Asset(ctx, "chroma.css") }/>
 	<link rel="stylesheet" href={ assets.Asset(ctx, "vendor.css") }/>
 	<link rel="stylesheet" href={ assets.Asset(ctx, "tailwind.css") }/>

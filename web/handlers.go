@@ -1101,7 +1101,7 @@ func (rt *Web) problem() http.HandlerFunc {
 				CanViewTests: rt.base.CanViewTests(user.UserBrief(r), util.Problem(r)),
 				Contest:      util.Contest(r),
 			}),
-			ContestDisclaimer: problems.ContestDisclaimer(tags),
+			ContestDisclaimer: problems.ContestDisclaimer(),
 			OlderSubmissions:  olderSubmissions,
 
 			FromContest: slices.ContainsFunc(tags, func(tag *kilonova.Tag) bool {

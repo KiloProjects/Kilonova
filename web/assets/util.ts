@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import {initMaxscoreBreakdown} from "./components";
+import {initFlashes} from "./flash";
 
 dayjs.extend(relativeTime);
 dayjs.extend(customParseFormat);
@@ -101,8 +102,7 @@ export function navigateBack() {
 }
 
 export function initialLoad(el: HTMLElement) {
-	el.querySelectorAll(".score-cell").forEach((val) => {
-		const x = val as HTMLTableCellElement;
+	el.querySelectorAll<HTMLElement>(".score-cell").forEach((x) => {
 		var score = parseFloat(x.dataset.score || "0");
 		if (isNaN(score)) {
 			score = -1;
@@ -111,12 +111,11 @@ export function initialLoad(el: HTMLElement) {
 			// console.log(x.innerText, score);
 			x.style.backgroundColor = getGradient(score, 100);
 		}
-		val.classList.remove("score-cell");
+		x.classList.remove("score-cell");
 	});
 	initMaxscoreBreakdown(el)
 
-	el.querySelectorAll("[data-paginate]").forEach((val) => {
-		const btn = val as HTMLButtonElement;
+	el.querySelectorAll<HTMLElement>("[data-paginate]").forEach((btn) => {
 		btn.addEventListener("click", (e) => {
 			const params = new URLSearchParams(window.location.search)
 			if(!("paginate" in btn.dataset)) {
@@ -127,6 +126,8 @@ export function initialLoad(el: HTMLElement) {
 			window.location.search = params.toString()
 		})
 	})
+
+	initFlashes(el);
 }
 
 document.addEventListener("DOMContentLoaded", () => {

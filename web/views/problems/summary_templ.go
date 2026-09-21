@@ -18,7 +18,7 @@ import (
 
 var TC = tutils.TC
 
-func ContestDisclaimer(tags []*kilonova.Tag) templ.Component {
+func ContestDisclaimer() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -39,7 +39,7 @@ func ContestDisclaimer(tags []*kilonova.Tag) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section id=\"disclaimer_section\" class=\"segment-panel hidden\"><div class=\"modal-header\"><h2 style=\"margin: 0.25rem;\"><i class=\"fas fa-triangle-exclamation\"></i>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section data-flashname=\"contest_disclaimer\" class=\"segment-panel hidden\"><div class=\"modal-header\"><h2 style=\"margin: 0.25rem;\"><i class=\"fas fa-triangle-exclamation\"></i>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -56,7 +56,7 @@ func ContestDisclaimer(tags []*kilonova.Tag) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</h2><button id=\"disclaimer_close\"><i class=\"modal-close fas fa-xmark\"></i></button></div><div class=\"px-2 py-2\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</h2><button data-flashdiscard=\"contest_disclaimer\"><i class=\"modal-close fas fa-xmark\"></i></button></div><div class=\"px-2 py-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -64,7 +64,7 @@ func ContestDisclaimer(tags []*kilonova.Tag) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><script>\n            let unauthedStorageKey = \"contest_disclaimer_dismissed:unauthed\";\n            let storageKey = `contest_disclaimer_dismissed:${window.platform_info.user_id}`\n            if(window.platform_info.user_id === 0) {\n                storageKey = unauthedStorageKey\n            }\n            document.getElementById(\"disclaimer_close\").addEventListener(\"click\", () => {\n                window.localStorage.setItem(storageKey, \"disabled\");\n                document.getElementById(\"disclaimer_section\").remove();\n            })\n            if(window.localStorage.getItem(storageKey) === null) {\n                if(window.localStorage.getItem(unauthedStorageKey) !== null) {\n                    window.localStorage.removeItem(unauthedStorageKey);\n                    window.localStorage.setItem(storageKey, \"disabled\");\n                } else {\n                    document.getElementById(\"disclaimer_section\").classList.remove(\"hidden\");\n                }\n            }\n        </script></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -128,7 +128,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(params.Problem.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 69, Col: 25}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 50, Col: 25}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -154,7 +154,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 			var templ_7745c5c3_Var5 templ.SafeURL
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/profile/" + params.Editors[0].Name))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 75, Col: 62}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 56, Col: 62}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -167,7 +167,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(params.Editors[0].Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 75, Col: 89}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 56, Col: 89}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -208,7 +208,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 				var templ_7745c5c3_Var7 templ.SafeURL
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/profile/" + editor.Name))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 85, Col: 57}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 66, Col: 57}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -221,7 +221,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(editor.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 85, Col: 73}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 66, Col: 73}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -259,7 +259,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 					var templ_7745c5c3_Var9 templ.SafeURL
 					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/profile/" + viewer.Name))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 99, Col: 58}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 80, Col: 58}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 					if templ_7745c5c3_Err != nil {
@@ -272,7 +272,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 					var templ_7745c5c3_Var10 string
 					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(viewer.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 99, Col: 74}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 80, Col: 74}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 					if templ_7745c5c3_Err != nil {
@@ -381,7 +381,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(params.Problem.SourceCredits)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 141, Col: 37}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 122, Col: 37}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -404,7 +404,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.JSONString(openMap))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 151, Col: 41}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 132, Col: 41}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var12)
 			if templ_7745c5c3_Err != nil {
@@ -421,7 +421,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(": ")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 153, Col: 11}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 134, Col: 11}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -440,7 +440,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(" ")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 158, Col: 11}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 139, Col: 11}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -486,7 +486,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(": ")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 175, Col: 11}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 156, Col: 11}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -504,7 +504,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 				var templ_7745c5c3_Var16 string
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.ResolveAttributeValue(params.Problem.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 177, Col: 80}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 158, Col: 80}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
 				if templ_7745c5c3_Err != nil {
@@ -517,7 +517,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 				var templ_7745c5c3_Var17 string
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.ResolveAttributeValue(params.Problem.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 178, Col: 49}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 159, Col: 49}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
 				if templ_7745c5c3_Err != nil {
@@ -543,7 +543,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 				var templ_7745c5c3_Var18 string
 				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.ResolveAttributeValue(params.Problem.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 183, Col: 48}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 164, Col: 48}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
 				if templ_7745c5c3_Err != nil {
@@ -579,7 +579,7 @@ func InfoSidebar(params *InfoParams) templ.Component {
 			var templ_7745c5c3_Var19 templ.SafeURL
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(archiveURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 196, Col: 35}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/problems/summary.templ`, Line: 177, Col: 35}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
