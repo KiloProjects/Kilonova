@@ -171,6 +171,9 @@ func (rt *Web) index() http.HandlerFunc {
 			hotProblems, moreHotProblems,
 			latestProblems, problemCount > 20,
 			pinnedLists,
+			[]templ.Component{
+				modals.GPCAnnouncement(),
+			},
 		})
 	}
 }

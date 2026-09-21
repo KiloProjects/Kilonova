@@ -1,0 +1,29 @@
+package modals
+
+import (
+	"github.com/KiloProjects/kilonova/web/tutils"
+	"time"
+)
+
+var TC = tutils.TC
+
+var gpcEndTime = time.Date(2026, 9, 28, 02, 59, 59, 0, time.UTC)
+
+templ GPCAnnouncement() {
+	{{
+		if time.Now().Compare(gpcEndTime) > 0 {
+			return
+		}
+	}}
+	<section data-flashname="gpc_announcement" class="segment-panel hidden">
+		<div class="flex justify-between">
+			<p style="margin: 0.1rem;">
+				<i class="fas fa-circle-exclamation"></i>{ " " }
+				<span class="text-muted">Dacă eşti o fată pasionată de informatică, te poţi califica la Girls' Programming Camp după Olimpiada Naţională de Informatică! <a href="https://sepi.ro/news/rGSJp5?utm_source=kilonova&utm_medium=alert&utm_campaign=gpc">Află mai multe!</a></span>
+			</p>
+			<button data-flashdiscard="gpc_announcement">
+				<i class="modal-close fas fa-xmark"></i>
+			</button>
+		</div>
+	</section>
+}

@@ -182,6 +182,11 @@
         {{end}}
     </div>
     <aside class="page-sidebar">
+
+        {{range .Announcements}}
+            {{renderComponent .}}
+        {{end}}
+
         {{ if boolFlag "feature.frontend.quick_search" }}
             <form class="segment-panel" action="/problems">
                 <label>

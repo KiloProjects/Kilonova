@@ -311,6 +311,8 @@ type IndexParams struct {
 	MoreLatestProblems bool
 
 	PinnedLists []*kilonova.ProblemList
+
+	Announcements []templ.Component
 }
 
 type PblistParams struct {
