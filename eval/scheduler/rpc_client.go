@@ -97,7 +97,12 @@ func (c *GraderClient) languageVersions(ctx context.Context) (map[string]string,
 	if err := c.call(ctx, http.MethodGet, "/languages", nil, &out); err != nil {
 		return nil, err
 	}
-	if out.Build != BuildID() && !kilonova.DebugMode() {
+	// Compare only the release version: images built without .git carry no
+	// "+revision" suffix. NOTE: same version at different commits passes;
+	// stamp the revision via -ldflags in the Dockerfile if that bites.
+	grader, _, _ := strings.Cut(out.Build, "+")
+	platform, _, _ := strings.Cut(BuildID(), "+")
+	if grader != platform && !kilonova.DebugMode() {
 		return nil, fmt.Errorf("grader build %q does not match platform build %q; deploy both from the same build", out.Build, BuildID())
 	}
 	return out.Versions, nil

@@ -163,7 +163,8 @@ func initLogger(debug, writeFile bool) {
 				continue
 			}
 			if err, isErr := attr.Value.Any().(error); isErr {
-				if _, ok := errors.AsType[*net.OpError](err); ok || errors.Is(err, context.Canceled) || errors.Is(err, kilonova.ErrNotFound) || errors.Is(err, kilonova.ErrNoUpdates) {
+				// Listen failures are fatal startup errors, not client disconnect noise.
+				if opErr, ok := errors.AsType[*net.OpError](err); (ok && opErr.Op != "listen") || errors.Is(err, context.Canceled) || errors.Is(err, kilonova.ErrNotFound) || errors.Is(err, kilonova.ErrNoUpdates) {
 					return nil
 				}
 			}

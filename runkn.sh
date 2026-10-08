@@ -15,7 +15,7 @@ while true
 do
 	echo "Starting server..."
     # Preserve overrides flag
-	sudo KN_FLAG_OVERRIDES=$KN_FLAG_OVERRIDES ./kn main
+	sudo KN_FLAG_OVERRIDES=$KN_FLAG_OVERRIDES SSL_CERT_DIR="$SSL_CERT_DIR" ./kn main
 	echo "Server stopped..."
 	sleep 2
 done
