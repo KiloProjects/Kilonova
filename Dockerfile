@@ -58,8 +58,12 @@ RUN make isolate
 # Geolite2
 FROM debian:trixie-slim AS build_geo
 WORKDIR /tmp
-RUN wget "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb"
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/* \
+
+RUN curl -fsSL -o /tmp/GeoLite2-City.mmdb "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb"
 
 # ---------------------------------------------------------------------------
 # Toolchains for the grader, downloaded rather than apt-installed.
