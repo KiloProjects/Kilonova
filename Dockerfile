@@ -176,7 +176,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN mkdir -p /var/lib/kilonova/data
 
 COPY --from=builder /out/kn /usr/local/bin/kn
-COPY --from=build_geo /tmp/GeoLite2-City.mmdb /usr/share/GeoIP/
+COPY --from=build_geo /tmp/GeoLite2-City.mmdb /usr/share/GeoIP/GeoLite2-City.mmdb
 
 ENV KN_DATA_DIR=/var/lib/kilonova/data \
     KN_LISTEN=0.0.0.0:8070 \

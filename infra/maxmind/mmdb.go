@@ -58,9 +58,7 @@ func Initialize(ctx context.Context, dbPath string) {
 	var err error
 	reader, err = maxminddb.Open(dbPath)
 	if err != nil {
-
-		slog.InfoContext(ctx, "Could not open MaxMind DB")
-		slog.DebugContext(ctx, "MaxMind DB error", slog.Any("err", err))
+		slog.InfoContext(ctx, "Could not open MaxMind DB", slog.Any("err", err))
 		return
 	}
 
