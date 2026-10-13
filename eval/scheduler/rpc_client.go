@@ -7,14 +7,20 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
 )
 
 var _ eval.Box3Scheduler = (*GraderClient)(nil)
+
+// retryAttempts bounds how often a request is retried on transport errors;
+// with backoff capped at 10s this rides out ~35s of grader downtime.
+const retryAttempts = 8
 
 // ErrUnauthenticated is returned when the grader rejects our bearer token.
 var ErrUnauthenticated = errors.New("grader rejected bearer token")
@@ -37,23 +43,14 @@ func NewGraderClient(httpClient *http.Client, baseURL, token string) *GraderClie
 // call does one JSON request/response. A nil in means GET; out is decoded from
 // a 2xx body. Any other status becomes an error carrying status and body.
 func (c *GraderClient) call(ctx context.Context, method, path string, in, out any) error {
-	var body io.Reader
+	var buf []byte
 	if in != nil {
-		buf, err := json.Marshal(in)
-		if err != nil {
+		var err error
+		if buf, err = json.Marshal(in); err != nil {
 			return err
 		}
-		body = bytes.NewReader(buf)
 	}
-	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, body)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	if in != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-	resp, err := c.client.Do(req)
+	resp, err := c.do(ctx, method, path, buf)
 	if err != nil {
 		return err
 	}
@@ -66,6 +63,37 @@ func (c *GraderClient) call(ctx context.Context, method, path string, in, out an
 		return fmt.Errorf("grader %s %s: %s: %s", method, path, resp.Status, strings.TrimSpace(string(msg)))
 	}
 	return json.NewDecoder(resp.Body).Decode(out)
+}
+
+// do sends the request, retrying transport errors (e.g. the grader is
+// restarting) with exponential backoff until retryAttempts or ctx runs out.
+func (c *GraderClient) do(ctx context.Context, method, path string, buf []byte) (*http.Response, error) {
+	delay := 500 * time.Millisecond
+	for attempt := 1; ; attempt++ {
+		var body io.Reader
+		if buf != nil {
+			body = bytes.NewReader(buf)
+		}
+		req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, body)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", "Bearer "+c.token)
+		if buf != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		resp, err := c.client.Do(req)
+		if err == nil || attempt == retryAttempts || ctx.Err() != nil {
+			return resp, err
+		}
+		slog.WarnContext(ctx, "Grader request failed, retrying", slog.String("path", path), slog.Int("attempt", attempt), slog.Any("err", err))
+		select {
+		case <-ctx.Done():
+			return nil, err
+		case <-time.After(delay):
+		}
+		delay = min(delay*2, 10*time.Second)
+	}
 }
 
 func (c *GraderClient) RunBox3(ctx context.Context, req *eval.Box3Request, memQuota int64) (*eval.Box3Response, error) {
