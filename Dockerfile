@@ -55,6 +55,12 @@ WORKDIR /src/isolate
 # Binary only: `make install` would also build man pages, dragging in asciidoc.
 RUN make isolate
 
+# Geolite2
+FROM debian:trixie-slim AS build_geo
+WORKDIR /tmp
+RUN wget "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb"
+
+
 # ---------------------------------------------------------------------------
 # Toolchains for the grader, downloaded rather than apt-installed.
 # ---------------------------------------------------------------------------
@@ -170,6 +176,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN mkdir -p /var/lib/kilonova/data
 
 COPY --from=builder /out/kn /usr/local/bin/kn
+COPY --from=build_geo /tmp/GeoLite2-City.mmdb /usr/share/GeoIP/
 
 ENV KN_DATA_DIR=/var/lib/kilonova/data \
     KN_LISTEN=0.0.0.0:8070 \
