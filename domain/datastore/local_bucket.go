@@ -222,12 +222,3 @@ func newBucket(rootFS afero.Fs, name string, cache bool, persistent bool, maxSiz
 func (b *localBucket) filePath(name string) string {
 	return path.Join(b.name, name)
 }
-
-type deletingClosedFile struct {
-	*os.File
-}
-
-func (f *deletingClosedFile) Close() error {
-	defer os.Remove(f.Name())
-	return f.File.Close()
-}
