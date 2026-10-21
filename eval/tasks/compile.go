@@ -62,7 +62,7 @@ func CompileTask(ctx context.Context, mgr eval.BoxScheduler, req *CompileRequest
 			if err != nil {
 				resp.Other = err.Error()
 				resp.Success = false
-			} else if err := b.WriteFile(req.File.Filename, bytes.NewBuffer(fData), 0644); err != nil {
+			} else if err := b.WriteFile(req.File.Filename, bytes.NewBuffer(fData)); err != nil {
 				resp.Other = err.Error()
 				resp.Success = false
 			}

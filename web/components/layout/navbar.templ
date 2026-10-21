@@ -100,6 +100,9 @@ templ Navbar(viewAllSubs bool, reqPath string) {
 							<a class="dropdown-list-item" href="/admin/auditLog">
 								<i class="ml-n2 fas fa-file-medical-alt fa-fw"></i> { T(ctx, "panel.audit_log") }
 							</a>
+							<a class="dropdown-list-item" href="/admin/oauth">
+								<i class="ml-n2 fas fa-key fa-fw"></i> { T(ctx, "oauth_clients") }
+							</a>
 							<a class="dropdown-list-item" href="/admin/debug">
 								<i class="ml-n2 fas fa-bug-slash fa-fw"></i> { T(ctx, "panel.debug") }
 							</a>

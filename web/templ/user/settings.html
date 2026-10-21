@@ -6,6 +6,10 @@
 
 	<div class="segment-panel">
 <h1> {{getText "settingsHeader"}} </h1>
+<p>
+	<a href="/settings/integrations">{{getText "authorized_apps"}}</a>
+	{{if isAdmin}} | <a href="/settings/oauth">{{getText "oauth_clients"}}</a>{{end}}
+</p>
 <div class="segment-panel">
 	<h2> {{getText "updateBio"}} </h2>
 	<form id="bio_form">

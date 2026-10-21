@@ -2,6 +2,7 @@ package sudoapi
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova/internal/auth"
@@ -80,7 +81,25 @@ func (s *BaseAPI) ApproveAuthRequest(ctx context.Context, reqID string, userID i
 }
 
 func (s *BaseAPI) CreateClient(ctx context.Context, name string, appType auth.ApplicationType, authorID int, devMode bool, allowedRedirects []string, allowedPostLogoutRedirects []string) (uuid.UUID, string, error) {
-	return s.oidcProvider.Storage().(*auth.AuthStorage).CreateClient(ctx, name, appType, authorID, devMode, allowedRedirects, allowedPostLogoutRedirects)
+	id, secret, err := s.oidcProvider.Storage().(*auth.AuthStorage).CreateClient(ctx, name, appType, authorID, devMode, allowedRedirects, allowedPostLogoutRedirects)
+	if err != nil {
+		return uuid.Nil, "", err
+	}
+	s.LogUserAction(ctx, "Created OAuth client", slog.String("id", id.String()), slog.String("name", name))
+	return id, secret, nil
+}
+
+// OAuthClients returns all clients, or only those authored by authorID if it is not nil
+func (s *BaseAPI) OAuthClients(ctx context.Context, authorID *int) ([]*auth.Client, error) {
+	return s.oidcProvider.Storage().(*auth.AuthStorage).ListClients(ctx, authorID)
+}
+
+func (s *BaseAPI) DeleteOAuthClient(ctx context.Context, id uuid.UUID) error {
+	if err := s.oidcProvider.Storage().(*auth.AuthStorage).DeleteClient(ctx, id); err != nil {
+		return err
+	}
+	s.LogUserAction(ctx, "Deleted OAuth client", slog.String("id", id.String()))
+	return nil
 }
 
 func (s *BaseAPI) GetAuthRequest(ctx context.Context, reqID string) (*auth.Request, error) {
@@ -101,4 +120,12 @@ func (s *BaseAPI) GetOAuthClient(ctx context.Context, clientID uuid.UUID) (*auth
 
 func (s *BaseAPI) GetAccessToken(ctx context.Context, tokenID uuid.UUID) (*auth.Token, error) {
 	return s.oidcProvider.Storage().(*auth.AuthStorage).GetAccessToken(ctx, tokenID)
+}
+
+func (s *BaseAPI) AuthorizedOAuthClients(ctx context.Context, userID int) ([]*auth.Client, error) {
+	return s.oidcProvider.Storage().(*auth.AuthStorage).ListAuthorizedClients(ctx, userID)
+}
+
+func (s *BaseAPI) RevokeOAuthClient(ctx context.Context, userID int, clientID uuid.UUID) error {
+	return s.oidcProvider.Storage().(*auth.AuthStorage).RevokeClientTokens(ctx, userID, clientID)
 }

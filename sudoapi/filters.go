@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/auth"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
 
@@ -164,4 +165,20 @@ func (s *BaseAPI) UserContestFreezeTime(user *kilonova.UserBrief, contest *kilon
 		return nil
 	}
 	return contest.LeaderboardFreeze
+}
+
+// CanManageOAuthClients reports whether the user may create and manage OAuth applications.
+// ponytail: admin-only for now, swap for a granular permission when one exists
+func (s *BaseAPI) CanManageOAuthClients(user *kilonova.UserBrief) bool {
+	return user.IsAdmin()
+}
+
+func (s *BaseAPI) IsOAuthClientEditor(user *kilonova.UserBrief, client *auth.Client) bool {
+	if !user.IsAuthed() {
+		return false
+	}
+	if user.IsAdmin() {
+		return true
+	}
+	return client != nil && client.AuthorID != nil && *client.AuthorID == user.ID
 }

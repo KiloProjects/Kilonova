@@ -3265,3 +3265,59 @@ ro = "Cere review publicare"
 [profile_nav]
 en = "Profile"
 ro = "Profil"
+
+[oauth_clients]
+en = "OAuth applications"
+ro = "Aplicații OAuth"
+
+[oauth_clients.create]
+en = "Create application"
+ro = "Creează aplicație"
+
+[oauth_clients.created]
+en = "Application created"
+ro = "Aplicație creată"
+
+[oauth_clients.secret_warning]
+en = "Copy the client secret now. It will not be shown again."
+ro = "Copiați secretul clientului acum. Nu va mai fi afișat."
+
+[oauth_clients.app_type]
+en = "Application type"
+ro = "Tip aplicație"
+
+[oauth_clients.redirects]
+en = "Allowed redirect URIs (one per line)"
+ro = "URI-uri de redirecționare permise (câte unul pe linie)"
+
+[oauth_clients.post_logout_redirects]
+en = "Allowed post-logout redirect URIs (one per line, optional)"
+ro = "URI-uri de redirecționare după delogare (câte unul pe linie, opțional)"
+
+[oauth_clients.dev_mode]
+en = "Developer mode (allows insecure redirect URIs)"
+ro = "Mod dezvoltator (permite URI-uri de redirecționare nesigure)"
+
+[oauth_clients.delete_confirm]
+en = "Are you sure you want to delete this application? All of its tokens will be revoked."
+ro = "Sigur doriți să ștergeți această aplicație? Toate token-urile sale vor fi revocate."
+
+[oauth_clients.none]
+en = "No applications found."
+ro = "Nu au fost găsite aplicații."
+
+[authorized_apps]
+en = "Authorized applications"
+ro = "Aplicații autorizate"
+
+[authorized_apps.revoke_confirm]
+en = "Revoke this application's access to your account?"
+ro = "Revocați accesul acestei aplicații la contul dumneavoastră?"
+
+[authorized_apps.none]
+en = "You have not authorized any applications."
+ro = "Nu ați autorizat nicio aplicație."
+
+[button.revoke]
+en = "Revoke"
+ro = "Revocă"

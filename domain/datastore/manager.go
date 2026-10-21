@@ -2,7 +2,6 @@ package datastore
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/spf13/afero"
@@ -84,11 +83,8 @@ type Bucket interface {
 	Cache() bool
 	Statistics(refresh bool) *BucketStats
 	Modtime(name string) (time.Time, error)
-	// Deprecated: TODO: Not rely on mode anymore
-	Mode(name string) (fs.FileMode, error)
-	WriteFile(name string, r io.Reader, mode fs.FileMode) error
-	Reader(name string) (io.ReadCloser, error)
-	ReadSeeker(name string) (io.ReadSeekCloser, error)
+	WriteFile(name string, r io.Reader) error
+	Reader(name string) (io.ReadSeekCloser, error)
 	RemoveFile(name string) error
 	FileList() ([]fs.FileInfo, error)
 	Evictable() bool
@@ -150,21 +146,12 @@ func (m *Manager) Reader(bucketType BucketType, name string) (io.ReadCloser, err
 	return bucket.Reader(name)
 }
 
-// Deprecated: No stat should be necessary anymore.
-func (m *Manager) Mode(bucketType BucketType, name string) (fs.FileMode, error) {
-	bucket, err := m.Get(bucketType)
-	if err != nil {
-		return 0, fmt.Errorf("error getting bucket: %w", err)
-	}
-	return bucket.Mode(name)
-}
-
-func (m *Manager) WriteFile(bucketType BucketType, name string, r io.Reader, mode fs.FileMode) error {
+func (m *Manager) WriteFile(bucketType BucketType, name string, r io.Reader) error {
 	bucket, err := m.Get(bucketType)
 	if err != nil {
 		return err
 	}
-	return bucket.WriteFile(name, r, mode)
+	return bucket.WriteFile(name, r)
 }
 
 func New(rootFS afero.Fs) (*Manager, error) {

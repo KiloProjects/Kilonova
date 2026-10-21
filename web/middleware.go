@@ -419,3 +419,14 @@ func (rt *Web) initTheme(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), util.ThemeKey, userTheme)))
 	})
 }
+
+// mustManageOAuthClients gates the OAuth application management pages
+func (rt *Web) mustManageOAuthClients(next http.Handler) http.Handler {
+	return rt.mustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !rt.base.CanManageOAuthClients(user.UserBrief(r)) {
+			rt.statusPage(w, r, 403, "You are not allowed to manage OAuth applications")
+			return
+		}
+		next.ServeHTTP(w, r)
+	}))
+}

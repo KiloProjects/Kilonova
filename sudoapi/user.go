@@ -495,19 +495,19 @@ func gravatarBucketName(email string, size int) string {
 // if r is nil, it fetches the gravatar from the web
 func (s *BaseAPI) saveGravatar(ctx context.Context, email string, size int, r io.Reader) error {
 	if r != nil {
-		return s.avatarBucket.WriteFile(gravatarBucketName(email, size), r, 0644)
+		return s.avatarBucket.WriteFile(gravatarBucketName(email, size), r)
 	}
 
 	r, _, err := getGravatar(ctx, email, size)
 	if err != nil {
 		return err
 	}
-	return s.avatarBucket.WriteFile(gravatarBucketName(email, size), r, 0644)
+	return s.avatarBucket.WriteFile(gravatarBucketName(email, size), r)
 }
 
 // valid is true only if maxLastMod is greater than the saved value and if the avatar is saved
 func (s *BaseAPI) avatarFromBucket(filename string, maxLastMod time.Time) (io.ReadSeekCloser, time.Time, bool, error) {
-	f, err := s.avatarBucket.ReadSeeker(filename)
+	f, err := s.avatarBucket.Reader(filename)
 	if err != nil {
 		return nil, time.Unix(0, 0), false, err
 	}
@@ -568,14 +568,14 @@ func getDiscordAvatar(ctx context.Context, dUser *discordgo.User, size int) (io.
 // if r is nil, it fetches the gravatar from the web
 func (s *BaseAPI) saveDiscordAvatar(ctx context.Context, user *kilonova.UserFull, dUser *discordgo.User, size int, r io.Reader) error {
 	if r != nil {
-		return s.avatarBucket.WriteFile(discordAvatarBucketName(user, size), r, 0644)
+		return s.avatarBucket.WriteFile(discordAvatarBucketName(user, size), r)
 	}
 
 	r, _, err := getDiscordAvatar(ctx, dUser, size)
 	if err != nil {
 		return err
 	}
-	return s.avatarBucket.WriteFile(discordAvatarBucketName(user, size), r, 0644)
+	return s.avatarBucket.WriteFile(discordAvatarBucketName(user, size), r)
 }
 
 // if manager.GetDiscordAvatar errors out or is not valid, it fetches the gravatar from the web

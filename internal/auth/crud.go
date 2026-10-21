@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -39,4 +40,30 @@ func (s *AuthStorage) ApproveAuthRequest(ctx context.Context, reqID string, user
 
 func (s *AuthStorage) GetAccessToken(ctx context.Context, tokenID uuid.UUID) (*Token, error) {
 	return s.getAccessToken(ctx, tokenID)
+}
+
+// ListClients returns all clients, or only those authored by authorID if it is not nil
+func (s *AuthStorage) ListClients(ctx context.Context, authorID *int) ([]*Client, error) {
+	rows, _ := s.conn.Query(ctx, "SELECT * FROM oauth_clients WHERE ($1::bigint IS NULL OR author_id = $1) ORDER BY created_at DESC", authorID)
+	return pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[Client])
+}
+
+func (s *AuthStorage) DeleteClient(ctx context.Context, id uuid.UUID) error {
+	_, err := s.conn.Exec(ctx, "DELETE FROM oauth_clients WHERE id = $1", id)
+	return err
+}
+
+// ListAuthorizedClients returns the clients that still hold live tokens for the user
+func (s *AuthStorage) ListAuthorizedClients(ctx context.Context, userID int) ([]*Client, error) {
+	rows, _ := s.conn.Query(ctx, `
+		SELECT * FROM oauth_clients WHERE id IN (
+			SELECT application_id FROM oauth_tokens WHERE user_id = $1 AND expires_at > NOW()
+		) ORDER BY name`, userID)
+	return pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[Client])
+}
+
+// RevokeClientTokens deletes all of the user's tokens for the client
+func (s *AuthStorage) RevokeClientTokens(ctx context.Context, userID int, clientID uuid.UUID) error {
+	_, err := s.conn.Exec(ctx, "DELETE FROM oauth_tokens WHERE user_id = $1 AND application_id = $2", userID, clientID)
+	return err
 }

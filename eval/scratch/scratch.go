@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/KiloProjects/kilonova/domain/datastore/fsevict"
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/internal/fsevict"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 )

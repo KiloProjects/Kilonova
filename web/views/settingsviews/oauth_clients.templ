@@ -1,0 +1,173 @@
+package settingsviews
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/internal/auth"
+	"github.com/KiloProjects/kilonova/web/tutils"
+)
+
+var T = tutils.T
+
+type OAuthClientsParams struct {
+	Clients []*auth.Client
+	// Authors is only set on the admin overview, where the author column is shown
+	Authors map[int]*kilonova.UserBrief
+	// ShowCreate enables the creation form (settings page)
+	ShowCreate bool
+
+	// Set right after creation, the secret is shown only once
+	CreatedID     string
+	CreatedSecret string
+	Error         string
+}
+
+func appTypeName(t auth.ApplicationType) string {
+	switch t {
+	case auth.ApplicationTypeWeb:
+		return "Web"
+	case auth.ApplicationTypeNative:
+		return "Native"
+	case auth.ApplicationTypeUserAgent:
+		return "User Agent (SPA)"
+	default:
+		return "?"
+	}
+}
+
+templ OAuthClients(params OAuthClientsParams) {
+	<div class="segment-panel">
+		<h1>{ T(ctx, "oauth_clients") }</h1>
+
+		if params.Error != "" {
+			<div class="segment-panel text-red-600">{ params.Error }</div>
+		}
+
+		if params.CreatedSecret != "" {
+			<div class="segment-panel">
+				<h2>{ T(ctx, "oauth_clients.created") }</h2>
+				<p>{ T(ctx, "oauth_clients.secret_warning") }</p>
+				<p>Client ID: <code>{ params.CreatedID }</code></p>
+				<p>Client Secret: <code>{ params.CreatedSecret }</code></p>
+			</div>
+		}
+
+		if params.ShowCreate {
+			<form class="segment-panel" method="POST" action="/settings/oauth" autocomplete="off">
+				<h2>{ T(ctx, "oauth_clients.create") }</h2>
+				<label class="block my-2">
+					<span class="form-label">{ T(ctx, "name") }:</span>
+					<input class="form-input block w-full" type="text" name="name" required/>
+				</label>
+				<label class="block my-2">
+					<span class="form-label">{ T(ctx, "oauth_clients.app_type") }:</span>
+					<select class="form-select block" name="app_type">
+						<option value="web" selected>{ appTypeName(auth.ApplicationTypeWeb) }</option>
+						<option value="native">{ appTypeName(auth.ApplicationTypeNative) }</option>
+						<option value="userAgent">{ appTypeName(auth.ApplicationTypeUserAgent) }</option>
+					</select>
+				</label>
+				<label class="block my-2">
+					<span class="form-label">{ T(ctx, "oauth_clients.redirects") }:</span>
+					<textarea class="form-textarea block w-full" name="redirects" rows="3" required placeholder="https://example.com/callback"></textarea>
+				</label>
+				<label class="block my-2">
+					<span class="form-label">{ T(ctx, "oauth_clients.post_logout_redirects") }:</span>
+					<textarea class="form-textarea block w-full" name="post_logout_redirects" rows="2"></textarea>
+				</label>
+				<label class="inline-flex items-center my-2">
+					<input class="form-checkbox" type="checkbox" name="dev_mode" value="true"/>
+					<span class="ml-2">{ T(ctx, "oauth_clients.dev_mode") }</span>
+				</label>
+				<div>
+					<button type="submit" class="btn btn-blue">{ T(ctx, "button.create") }</button>
+				</div>
+			</form>
+		}
+
+		if len(params.Clients) > 0 {
+			<table class="kn-table">
+				<thead>
+					<tr>
+						<th class="kn-table-cell" scope="col">{ T(ctx, "name") }</th>
+						<th class="kn-table-cell" scope="col">Client ID</th>
+						<th class="kn-table-cell" scope="col">{ T(ctx, "oauth_clients.app_type") }</th>
+						<th class="kn-table-cell" scope="col">{ T(ctx, "oauth_clients.redirects") }</th>
+						if params.Authors != nil {
+							<th class="kn-table-cell" scope="col">{ T(ctx, "author") }</th>
+						}
+						<th class="kn-table-cell" scope="col">{ T(ctx, "created_at") }</th>
+						<th class="kn-table-cell" scope="col"></th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, c := range params.Clients {
+						<tr class="kn-table-row">
+							<td class="kn-table-cell">
+								{ c.Name }
+								if c.DeveloperMode {
+									<span class="badge-lite text-sm">dev</span>
+								}
+							</td>
+							<td class="kn-table-cell"><code>{ c.ID.String() }</code></td>
+							<td class="kn-table-cell">{ appTypeName(c.AppType) }</td>
+							<td class="kn-table-cell">{ strings.Join(c.AllowedRedirects, ", ") }</td>
+							if params.Authors != nil {
+								<td class="kn-table-cell">
+									if c.AuthorID != nil && params.Authors[*c.AuthorID] != nil {
+										<a href={ templ.URL(fmt.Sprintf("/profile/%s", params.Authors[*c.AuthorID].Name)) }>{ params.Authors[*c.AuthorID].Name }</a>
+									} else {
+										-
+									}
+								</td>
+							}
+							<td class="kn-table-cell"><server-timestamp timestamp={ fmt.Sprint(c.CreatedAt.UnixMilli()) }></server-timestamp></td>
+							<td class="kn-table-cell">
+								<form method="POST" action={ templ.SafeURL(fmt.Sprintf("/settings/oauth/%s/delete", c.ID)) } data-confirm={ T(ctx, "oauth_clients.delete_confirm") } onsubmit="return confirm(this.dataset.confirm)">
+									if params.Authors != nil {
+										<input type="hidden" name="back" value="admin"/>
+									}
+									<button type="submit" class="btn btn-red">{ T(ctx, "button.delete") }</button>
+								</form>
+							</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		} else {
+			<div class="text-2xl text-center my-6">{ T(ctx, "oauth_clients.none") }</div>
+		}
+	</div>
+}
+
+templ AuthorizedApps(clients []*auth.Client) {
+	<div class="segment-panel">
+		<h1>{ T(ctx, "authorized_apps") }</h1>
+		if len(clients) > 0 {
+			<table class="kn-table">
+				<thead>
+					<tr>
+						<th class="kn-table-cell" scope="col">{ T(ctx, "name") }</th>
+						<th class="kn-table-cell" scope="col"></th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, c := range clients {
+						<tr class="kn-table-row">
+							<td class="kn-table-cell">{ c.Name }</td>
+							<td class="kn-table-cell">
+								<form method="POST" action={ templ.SafeURL(fmt.Sprintf("/settings/integrations/%s/revoke", c.ID)) } data-confirm={ T(ctx, "authorized_apps.revoke_confirm") } onsubmit="return confirm(this.dataset.confirm)">
+									<button type="submit" class="btn btn-red">{ T(ctx, "button.revoke") }</button>
+								</form>
+							</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		} else {
+			<div class="text-2xl text-center my-6">{ T(ctx, "authorized_apps.none") }</div>
+		}
+	</div>
+}

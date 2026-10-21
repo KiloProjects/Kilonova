@@ -195,6 +195,13 @@ func (rt *Web) Handler() http.Handler {
 		r.With(rt.mustBeAuthed).Get("/profile/{user}/linked", rt.linkStatus())
 		r.With(rt.mustBeAuthed).Get("/profile/{user}/sessions", rt.userSessions())
 		r.With(rt.mustBeAuthed).Get("/settings", rt.userSettings())
+		r.With(rt.mustBeAuthed).Get("/settings/integrations", rt.authorizedApps)
+		r.With(rt.mustBeAuthed).Post("/settings/integrations/{clientID}/revoke", rt.revokeAuthorizedApp)
+		r.With(rt.mustManageOAuthClients).Route("/settings/oauth", func(r chi.Router) {
+			r.Get("/", rt.oauthClientsSettings)
+			r.Post("/", rt.createOAuthClient)
+			r.Post("/{clientID}/delete", rt.deleteOAuthClient)
+		})
 		r.With(rt.checkFlag(flags.DonationsEnabled)).Get("/donate", rt.donationPage())
 		r.Get("/grader", rt.graderInfo())
 
@@ -278,6 +285,7 @@ func (rt *Web) Handler() http.Handler {
 			r.Get("/auditLog", rt.auditLog())
 			r.Get("/debug", rt.debugPage())
 			r.Get("/sessions", rt.sessionsFilter())
+			r.Get("/oauth", rt.adminOAuthClients)
 		})
 
 		// Proposer panel

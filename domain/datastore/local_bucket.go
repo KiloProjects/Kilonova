@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/KiloProjects/kilonova/internal/fsevict"
+	"github.com/KiloProjects/kilonova/domain/datastore/fsevict"
 	"github.com/dustin/go-humanize"
 	"github.com/spf13/afero"
 )
@@ -91,22 +91,6 @@ func (b *localBucket) init() error {
 }
 
 func (b *localBucket) stat(name string) (fs.FileInfo, error) {
-	stat, err := b.rootFS.Stat(b.filePath(name) + ".zst")
-	if err == nil {
-		return stat, nil
-	}
-	if !errors.Is(err, fs.ErrNotExist) {
-		return nil, err
-	}
-
-	stat, err = b.rootFS.Stat(b.filePath(name) + ".gz")
-	if err == nil {
-		return stat, nil
-	}
-	if !errors.Is(err, fs.ErrNotExist) {
-		return nil, err
-	}
-
 	return b.rootFS.Stat(b.filePath(name))
 }
 
@@ -118,21 +102,8 @@ func (b *localBucket) Modtime(name string) (time.Time, error) {
 	return stat.ModTime(), nil
 }
 
-func (b *localBucket) Mode(name string) (fs.FileMode, error) {
-	stat, err := b.stat(name)
-	if err != nil {
-		return 0, err
-	}
-	return stat.Mode(), nil
-}
-
-func (b *localBucket) WriteFile(name string, r io.Reader, mode fs.FileMode) error {
-	filename := b.filePath(name)
-	if err := b.rootFS.RemoveAll(filename + ".zst"); err != nil {
-		return err
-	}
-
-	f, err := b.rootFS.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+func (b *localBucket) WriteFile(name string, r io.Reader) error {
+	f, err := b.rootFS.OpenFile(b.filePath(name), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}
@@ -143,64 +114,18 @@ func (b *localBucket) WriteFile(name string, r io.Reader, mode fs.FileMode) erro
 	return err
 }
 
-func (b *localBucket) Reader(name string) (io.ReadCloser, error) {
-	f, err := b.rootFS.Open(b.filePath(name) + ".zst")
-	if err == nil {
-		return &zstdFileReader{f, newZstdReader(f)}, nil
-	}
-	if !errors.Is(err, fs.ErrNotExist) {
-		return nil, err
-	}
-
-	f, err = b.rootFS.Open(b.filePath(name))
+func (b *localBucket) Reader(name string) (io.ReadSeekCloser, error) {
+	f, err := b.rootFS.Open(b.filePath(name))
 	if err == nil {
 		return f, nil
 	}
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, fs.ErrNotExist
 	}
-
-	if _, err := b.rootFS.Stat(b.filePath(name) + ".gz"); err == nil {
-		return nil, errors.New("can't open file: gzip support removed")
-	}
 	return nil, err
 }
 
-// ReadSeeker tries to open the given file using the normal reader function. If the output implements ReadSeekCloser,
-// then it is used directly. Otherwise, we decompress on the fly into a temp file and return that instead (it will be deleted on Close()).
-// TODO: Better caching, maybe some kind of sub-bucket concept?
-func (b *localBucket) ReadSeeker(name string) (io.ReadSeekCloser, error) {
-	rc, err := b.Reader(name)
-	if err != nil {
-		return nil, err
-	}
-	if rsc, ok := rc.(io.ReadSeekCloser); ok {
-		return rsc, nil
-	}
-	slog.DebugContext(context.Background(), "ReadSeeker called on compressed file")
-	defer rc.Close()
-	f, err := os.CreateTemp("", "bucket-temp-*")
-	if err != nil {
-		return nil, err
-	}
-	if _, err := io.Copy(f, rc); err != nil {
-		f.Close()
-		return nil, err
-	}
-	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		f.Close()
-		return nil, err
-	}
-	return &deletingClosedFile{f}, nil
-}
-
 func (b *localBucket) RemoveFile(name string) error {
-	if err := b.rootFS.Remove(b.filePath(name) + ".zst"); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return err
-	}
-	if err := b.rootFS.Remove(b.filePath(name) + ".gz"); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return err
-	}
 	if err := b.rootFS.Remove(b.filePath(name)); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
