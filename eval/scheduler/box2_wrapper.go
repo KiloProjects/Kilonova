@@ -197,7 +197,7 @@ func (b *Box2Wrapper) copyDeleteScratch(ctx context.Context, identifier string, 
 	}
 	defer rc.Close()
 
-	return b.store.WriteFile(file.Bucket, file.Filename, rc, file.Mode)
+	return b.store.WriteFile(file.Bucket, file.Filename, rc)
 }
 
 func (b *Box2Wrapper) clearInput(ctx context.Context, req *eval.Box3Request) {

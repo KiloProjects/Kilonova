@@ -1,7 +1,6 @@
 package language
 
 import (
-	"path"
 	"strings"
 )
 
@@ -329,23 +328,17 @@ type legacyLanguage struct {
 	TimeLimitMultiplier   float64 `json:"time_limit_multiplier"`
 	MemoryLimitMultiplier float64 `json:"memory_limit_multiplier"`
 
-	compiledName     string
-	compiledNameFunc func(string) string
+	compiledName string
 }
 
-func (l legacyLanguage) SourceName(userFilename string) string {
-	if userFilename == "" {
-		return l.sourceName
-	}
-	dir, _ := path.Split(l.sourceName)
-	return path.Join(dir, userFilename)
+// SourceName ignores the submitted filename: compilers infer the language from
+// the extension, so e.g. "checker.cpp17" must still be written as main.cpp.
+func (l legacyLanguage) SourceName(_ string) string {
+	return l.sourceName
 }
 
-func (l legacyLanguage) CompiledName(userFilename string) string {
-	if l.compiledName != "" {
-		return l.compiledName
-	}
-	return l.compiledNameFunc(l.SourceName(userFilename))
+func (l legacyLanguage) CompiledName(_ string) string {
+	return l.compiledName
 }
 
 func (l legacyLanguage) ExecuteName(userFilename string) string {

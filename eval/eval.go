@@ -20,8 +20,7 @@ type Bucket interface {
 
 type Store interface {
 	Reader(bucketType datastore.BucketType, name string) (io.ReadCloser, error)
-	Mode(bucketType datastore.BucketType, name string) (fs.FileMode, error)
-	WriteFile(bucketType datastore.BucketType, name string, r io.Reader, mode fs.FileMode) error
+	WriteFile(bucketType datastore.BucketType, name string, r io.Reader) error
 }
 
 type SaveFiler = func(r io.Reader) (string, error)
