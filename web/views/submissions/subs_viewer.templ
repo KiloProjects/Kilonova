@@ -17,6 +17,7 @@ import (
 
 type SubsViewerQuery struct {
 	UserID        *int
+	Username      *string
 	ProblemID     *int
 	ProblemListID *int
 	ContestID     *int
@@ -33,6 +34,7 @@ type SubsViewerQuery struct {
 // TODO: Replace vibecoded solution with better
 type SubsViewerOverwrites struct {
 	UserID    bool
+	Username  bool
 	ProblemID bool
 	ContestID bool
 }
@@ -64,6 +66,9 @@ func buildQueryURL(q SubsViewerQuery, overrides map[string]string) string {
 
 	if q.UserID != nil {
 		params.Set("user_id", strconv.Itoa(*q.UserID))
+	}
+	if q.Username != nil {
+		params.Set("username", *q.Username)
 	}
 	if q.ProblemID != nil {
 		params.Set("problem_id", strconv.Itoa(*q.ProblemID))
@@ -323,6 +328,19 @@ templ SubsViewer(params SubsViewerParams) {
 									}
 								/>
 							</label>
+							if !params.Overwrites.Username {
+								<label class="block mb-2">
+                                    <span class="form-label">{ T(ctx, "username") }:</span>
+                                    <input
+                                        class="form-input"
+                                        type="text"
+                                        name="username"
+                                        if params.Query.Username != nil {
+                                            value={ params.Query.Username }
+                                        }
+                                    />
+                                </label>
+							}
 						}
 						if !params.Overwrites.ProblemID {
 							<label class="block mb-2">

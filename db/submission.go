@@ -272,6 +272,9 @@ func subFilterQuery(filter *kilonova.SubmissionFilter, fb *filterBuilder) {
 	if v := filter.UserID; v != nil {
 		fb.AddConstraint("user_id = %s", v)
 	}
+	if v := filter.Username; v != nil {
+		fb.AddConstraint("user_id IN (SELECT id FROM users WHERE lower(name) = lower(%s))", v)
+	}
 	if v := filter.ProblemID; v != nil {
 		fb.AddConstraint("problem_id = %s", v)
 	}

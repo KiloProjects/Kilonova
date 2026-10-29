@@ -133,7 +133,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 	}
 
 	maxCnt := flags.LimitedSubCount.Value()
-	if filter.ContestID != nil || filter.ProblemID != nil || filter.UserID != nil {
+	if filter.ContestID != nil || filter.ProblemID != nil || filter.UserID != nil || filter.Username != nil {
 		// Never filter on these, for now.
 		maxCnt = -100
 	}

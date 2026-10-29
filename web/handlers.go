@@ -2811,6 +2811,9 @@ func parseSubsViewerQuery(r *http.Request) submissions.SubsViewerQuery {
 	if uid, err := strconv.Atoi(q.Get("user_id")); err == nil && uid > 0 {
 		query.UserID = &uid
 	}
+	if username := q.Get("username"); username != "" {
+		query.Username = &username
+	}
 	if pid, err := strconv.Atoi(q.Get("problem_id")); err == nil && pid > 0 {
 		query.ProblemID = &pid
 	}
@@ -2844,6 +2847,7 @@ func parseSubsViewerQuery(r *http.Request) submissions.SubsViewerQuery {
 func buildSubsFilter(query submissions.SubsViewerQuery) kilonova.SubmissionFilter {
 	filter := kilonova.SubmissionFilter{
 		UserID:        query.UserID,
+		Username:      query.Username,
 		ProblemID:     query.ProblemID,
 		ProblemListID: query.ProblemListID,
 		ContestID:     query.ContestID,
