@@ -1,5 +1,7 @@
 package language
 
+import "cmp"
+
 // Lang provides the base metadata for an evaluation language.
 // It is safe to be used anywhere, not just the grader.
 type Lang interface {
@@ -61,4 +63,18 @@ func FirstExtension(lang Lang) string {
 		return ".txt"
 	}
 	return lang.Extensions()[0]
+}
+
+// MemoryLimit is the sandbox memory limit (KB) for a problem limit of problemLimit KB.
+func MemoryLimit(lang GraderLang, problemLimit int) int {
+	limit := int(float64(problemLimit) * cmp.Or(lang.MemoryLimitMultiplier(), 1.0))
+	switch lang.InternalName() {
+	case "python3":
+		limit = max(limit, 8*1024)
+	case "julia":
+		// The runtime alone peaks at ~105MB (sysimage pages count against the cgroup),
+		// so it gets a fixed allowance on top of the problem limit, not a multiplier.
+		limit += 128 * 1024
+	}
+	return limit
 }

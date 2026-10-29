@@ -219,6 +219,30 @@ var Langs = map[string]langer{
 		VersionCommand: []string{"python3", "--version"},
 		VersionParser:  nil,
 	},
+	"julia": legacyLanguage{
+		Extensions:    []string{".jl"},
+		Compiled:      false,
+		PrintableName: "Julia",
+		InternalName:  "julia",
+		MOSSName:      "ascii", // MOSS doesn't support julia
+
+		RunCommand: []string{"julia", "--startup-file=no", "--history-file=no",
+			"--heap-size-hint=" + memoryReplace + "K",
+			magicReplace,
+		},
+		sourceName:   "/box/main.jl",
+		compiledName: "/box/main.jl",
+
+		// Julia JIT-compiles everything on first call, startup alone is ~0.2s
+		TimeLimitMultiplier: 2.0,
+
+		// The depot (compile caches, logs) must be writable and the sandbox has no $HOME.
+		// The trailing ':' keeps the bundled depot with the precompiled stdlib.
+		RunEnv: map[string]string{"JULIA_DEPOT_PATH": "/tmp/julia:", "JULIA_NUM_THREADS": "1"},
+
+		VersionCommand: []string{"julia", "--version"},
+		VersionParser:  nil,
+	},
 	"nodejs": legacyLanguage{
 		// Disabled: true, // For now
 

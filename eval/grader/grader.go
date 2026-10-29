@@ -415,10 +415,7 @@ type subtestOutput struct {
 }
 
 func (sh *submissionHandler) handleBatchSubTest(ctx context.Context, checker checkers.Checker, subTest *kilonova.SubTest) (*subtestOutput, error) {
-	memoryLimit := int(float64(sh.pb.MemoryLimit) * cmp.Or(sh.lang.MemoryLimitMultiplier(), 1.0))
-	if sh.lang.InternalName() == "python3" {
-		memoryLimit = max(memoryLimit, 8*1024)
-	}
+	memoryLimit := language.MemoryLimit(sh.lang, sh.pb.MemoryLimit)
 
 	execRequest := &tasks.BatchRequest{
 		ExecFile: &eval.BucketFile{
@@ -493,7 +490,7 @@ func (sh *submissionHandler) handleCommunicationSubTest(ctx context.Context, che
 
 		UseStdin: sh.pb.ConsoleInput,
 
-		MemoryLimit: int(float64(sh.pb.MemoryLimit) * cmp.Or(sh.lang.MemoryLimitMultiplier(), 1.0)),
+		MemoryLimit: language.MemoryLimit(sh.lang, sh.pb.MemoryLimit),
 		TimeLimit:   sh.pb.TimeLimit * cmp.Or(sh.lang.TimeLimitMultiplier(), 1.0),
 
 		SubLang:     sh.lang,

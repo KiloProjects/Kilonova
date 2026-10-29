@@ -9,6 +9,7 @@ export const languages = {
 	golang: "text/x-go",
 	haskell: "text/x-haskell",
 	java: "text/x-java",
+	julia: "text/x-julia",
 	kotlin: "text/x-kotlin",
 	nodejs: "text/javascript",
 	python3: "text/x-python",
@@ -29,6 +30,7 @@ export const prettyLanguages = {
 	golang: "Go",
 	haskell: "Haskell",
 	java: "Java",
+	julia: "Julia",
 	kotlin: "Kotlin",
 	nodejs: "Node.js",
 	python3: "Python 3",
@@ -69,6 +71,11 @@ export const cm_modes: { [name: string]: CMMode } = {
 		mimeType: "text/x-java",
 		prettyName: "Java",
 		extensions: ["java"],
+	},
+	julia: {
+		mimeType: "text/x-julia",
+		prettyName: "Julia",
+		extensions: ["jl"],
 	},
 	kotlin: {
 		mimeType: "text/x-kotlin",

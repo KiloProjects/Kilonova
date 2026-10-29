@@ -72,6 +72,7 @@ FROM debian:trixie-slim AS toolchain-downloader
 
 ARG KOTLIN_VERSION=2.4.20
 ARG UV_VERSION=0.12.17
+ARG JULIA_VERSION=1.13.3
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates curl unzip \
@@ -96,6 +97,18 @@ RUN arch="$(dpkg --print-architecture)" \
     && mkdir -p /opt/uv \
     && tar -xzf /tmp/uv.tar.gz -C /opt/uv --strip-components=1 \
     && rm /tmp/uv.tar.gz
+
+RUN arch="$(dpkg --print-architecture)" \
+    && case "$arch" in \
+         amd64) julia_dir=x64; julia_target=x86_64 ;; \
+         arm64) julia_dir=aarch64; julia_target=aarch64 ;; \
+         *) echo "unsupported architecture $arch" >&2; exit 1 ;; \
+       esac \
+    && curl -fsSL -o /tmp/julia.tar.gz \
+        "https://julialang-s3.julialang.org/bin/linux/${julia_dir}/${JULIA_VERSION%.*}/julia-${JULIA_VERSION}-linux-${julia_target}.tar.gz" \
+    && mkdir -p /usr/local/julia \
+    && tar -xzf /tmp/julia.tar.gz -C /usr/local/julia --strip-components=1 \
+    && rm /tmp/julia.tar.gz
 
 # ---------------------------------------------------------------------------
 # Grader runtime. Deliberately fat: languages are discovered by probing for
@@ -123,12 +136,14 @@ COPY --from=isolate-builder /src/isolate/isolate /usr/local/bin/isolate
 # Upstream diagnostic script, handy when a host refuses to grade.
 COPY --from=isolate-builder /src/isolate/isolate-check-environment /usr/local/bin/isolate-check-environment
 COPY --from=toolchain-downloader /usr/local/kotlinc /usr/local/kotlinc
+COPY --from=toolchain-downloader /usr/local/julia /usr/local/julia
 COPY --from=toolchain-downloader /opt/uv/uv /usr/local/bin/uv
 COPY --from=toolchain-downloader /opt/uv/uvx /usr/local/bin/uvx
 COPY --from=builder /out/kn /usr/local/bin/kn
 
 RUN ln -s /usr/local/kotlinc/bin/kotlinc /usr/local/bin/kotlinc \
-    && ln -s /usr/local/kotlinc/bin/kotlin /usr/local/bin/kotlin
+    && ln -s /usr/local/kotlinc/bin/kotlin /usr/local/bin/kotlin \
+    && ln -s /usr/local/julia/bin/julia /usr/local/bin/julia
 
 # Explicit uid/gid range instead of subid_user, so the image needs no
 # /etc/subuid bookkeeping. cg_root is the `auto:` form: kn writes the resolved
