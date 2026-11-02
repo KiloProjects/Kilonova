@@ -22,7 +22,7 @@ func (s *DB) GetFlags(ctx context.Context) (map[string]json.RawMessage, error) {
 		if err := rows.Scan(&key, &value); err != nil {
 			return nil, err
 		}
-		flags[key] = json.RawMessage(value)
+		flags[key] = value
 	}
 	return flags, rows.Err()
 }

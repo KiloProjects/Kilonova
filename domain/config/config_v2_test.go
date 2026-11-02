@@ -3,8 +3,6 @@ package config
 import (
 	"context"
 	"encoding/json"
-	"os"
-	"path/filepath"
 	"slices"
 	"testing"
 )
@@ -38,12 +36,9 @@ func TestSliceFlagRoundTrip(t *testing.T) {
 	}
 
 	f.Update([]int{})
-	empty, err := LoadFlagsFromDB(ctx, store)
+	err := LoadFlagsFromDB(ctx, store)
 	if err != nil {
 		t.Fatal(err)
-	}
-	if empty {
-		t.Fatal("store reported empty after a write")
 	}
 	if got := f.Value(); !slices.Equal(got, []int{1, 2}) {
 		t.Fatalf("after load: got %v, want [1 2]", got)
@@ -93,53 +88,5 @@ func TestLoadFlagsFromDBTolerance(t *testing.T) {
 	}
 	if _, ok := store.data["test.gone"]; !ok {
 		t.Fatal("unknown key must be left in the store for rollback")
-	}
-}
-
-// The legacy file is an import source only: it is read, never written or created.
-func TestImportFlagsFileLeavesFileAlone(t *testing.T) {
-	ctx := context.Background()
-	f := GenFlag("test.imported", "default", "imported flag")
-	store := newMemStore()
-
-	p := filepath.Join(t.TempDir(), "flags.json")
-	contents := []byte(`{"test.imported": "from file"}`)
-	if err := os.WriteFile(p, contents, 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := ImportFlagsFile(ctx, store, p); err != nil {
-		t.Fatal(err)
-	}
-	if got := f.Value(); got != "from file" {
-		t.Fatalf("import did not apply the file: got %q", got)
-	}
-	if _, ok := store.data[importSentinel]; !ok {
-		t.Fatal("import sentinel not written")
-	}
-
-	after, err := os.ReadFile(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(after) != string(contents) {
-		t.Fatalf("file was rewritten:\n got %s\nwant %s", after, contents)
-	}
-}
-
-// A missing file must not fail startup, and must not be created.
-func TestImportFlagsFileMissing(t *testing.T) {
-	ctx := context.Background()
-	store := newMemStore()
-	p := filepath.Join(t.TempDir(), "flags.json")
-
-	if err := ImportFlagsFile(ctx, store, p); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(p); !os.IsNotExist(err) {
-		t.Fatalf("flags file must not be created, stat err: %v", err)
-	}
-	if _, ok := store.data[importSentinel]; !ok {
-		t.Fatal("sentinel must be written even with no file, so import runs once")
 	}
 }

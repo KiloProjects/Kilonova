@@ -99,7 +99,7 @@ func (s *API) getAllUsers(w http.ResponseWriter, r *http.Request) {
 	}{Users: rez, Count: cnt})
 }
 
-func (s *API) updateBoolFlags(w http.ResponseWriter, r *http.Request) {
+func (s *API) updateFlags(w http.ResponseWriter, r *http.Request) {
 	var args struct {
 		BoolFlags    map[string]bool   `json:"bool_flags"`
 		StringFlags  map[string]string `json:"string_flags"`

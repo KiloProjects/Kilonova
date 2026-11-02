@@ -158,7 +158,7 @@ func (s *API) HandlerV1() http.Handler {
 		r.Post("/setAdmin", s.setAdmin)
 		r.Post("/setProposer", s.setProposer)
 
-		r.Post("/updateFlags", s.updateBoolFlags)
+		r.Post("/updateFlags", s.updateFlags)
 
 		r.Route("/maintenance", func(r chi.Router) {
 			r.Post("/resetWaitingSubs", webMessageWrapper("Reset waiting subs", func(ctx context.Context, _ struct{}) error {

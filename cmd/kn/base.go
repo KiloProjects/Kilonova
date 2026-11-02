@@ -82,14 +82,9 @@ func initBase(ctx context.Context) (*sudoapi.BaseAPI, error) {
 // A failure to read the store is fatal on purpose: continuing on compiled-in
 // defaults would silently undo every setting an admin ever changed.
 func loadFlags(ctx context.Context, store config.FlagStore) error {
-	empty, err := config.LoadFlagsFromDB(ctx, store)
+	err := config.LoadFlagsFromDB(ctx, store)
 	if err != nil {
 		return fmt.Errorf("couldn't load flags: %w", err)
-	}
-	if empty {
-		if err := config.ImportFlagsFile(ctx, store, flagsPath); err != nil {
-			return fmt.Errorf("couldn't import flags file: %w", err)
-		}
 	}
 	config.ApplyFlagOverrides(ctx)
 

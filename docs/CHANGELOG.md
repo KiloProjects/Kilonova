@@ -1,5 +1,18 @@
 # Changelog
 
+## v26.11 (2026-11-02)
+
+- `flags.json` support is fully removed. If import is needed, please use `kn config-migrate` to convert it to `.env` using v26.09;
+- Support for Julia;
+- Support for usernames in the submission filter;
+- Added new Huma handler for v2 admin endpoints, will be used for better contest tooling;
+- Support for proper flash announcements;
+- Docker images are now published and battle tested on https://kilonova.ro.
+- Fix for geolite databases;
+- Proper manager for OAuth applications;
+- Simplified some more legacy code around data stores;
+- Various bug fixes.
+
 ## v26.09 (2026-09-19)
 
 First release under the new `YY.MM` versioning scheme. Everything since v0.25.2.

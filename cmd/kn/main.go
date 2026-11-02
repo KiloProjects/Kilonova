@@ -17,7 +17,6 @@ import (
 var (
 	debugMode  bool
 	hostPrefix string
-	flagsPath  string
 	logToFile  bool
 )
 
@@ -26,8 +25,6 @@ var (
 // Validation of required values happens where they are consumed (design D4).
 func envFlags() []cli.Flag {
 	return []cli.Flag{
-		&cli.StringFlag{Name: "flags", Aliases: []string{"f"}, Usage: "Path to the runtime flags file", Value: "./flags.json", Sources: cli.EnvVars("KN_FLAGS_PATH"), Destination: &flagsPath},
-
 		&cli.StringFlag{Name: "data-dir", Usage: "Absolute root directory: datastore buckets and logs/ for the platform, scratch/ and logs/ for grader-serve",
 			Sources: cli.EnvVars("KN_DATA_DIR"), Destination: &config.Common.DataDir},
 		&cli.BoolFlag{Name: "debug", Usage: "Debug mode (verbose logs, slower)", Sources: cli.EnvVars("KN_DEBUG"), Destination: &debugMode},
@@ -119,7 +116,6 @@ func main() {
 			submissionSaver,
 			contestUtils,
 			graderServe,
-			configMigrate,
 		},
 	}
 
