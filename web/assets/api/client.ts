@@ -78,6 +78,38 @@ export class KNClient {
 		}
 	}
 
+	async requestV2<T = any>(params: RequestParams): Promise<Response<T>> {
+		if (params.url.startsWith("/")) {
+			params.url = params.url.substring(1);
+		}
+		try {
+			let resp = await fetch(`${window.platform_info.apiPrefix ?? "/api"}/${params.url}?${qs.stringify(params.queryParams)}`, {
+				method: params.method,
+				headers: {
+					Accept: "application/json",
+					Authorization: this.session,
+					...params.headers,
+				},
+				body: params.body || null,
+				signal: params.signal,
+			});
+			if(resp.ok) {
+				return ({
+					data: (await resp.json()) as T,
+					status: "success",
+					statusCode: resp.status,
+				}) as Response<T>;
+			}
+			return ({
+				data: (await resp.json()).errors.map(val => val.message).join("; "),
+				status: "error",
+				statusCode: resp.status,
+			}) as Response<T>;
+		} catch (e: any) {
+			return { status: "error", data: e.toString(), statusCode: 999 };
+		}
+	}
+
 	async getUser(id: number) {
 		let res = await this.request<UserBrief>({
 			url: `/user/byID/${id}`,
@@ -115,6 +147,17 @@ export async function postCall<T = any>(call: string, params: any): Promise<Resp
 
 export async function bodyCall<T = any>(call: string, body: any): Promise<Response<T>> {
 	return defaultClient.request<T>({
+		url: call,
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(body),
+	});
+}
+
+export async function postCallV2<T = any>(call: string, body: any): Promise<Response<T>> {
+	return defaultClient.requestV2<T>({
 		url: call,
 		method: "POST",
 		headers: {

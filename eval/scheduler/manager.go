@@ -318,6 +318,7 @@ func (mgr *BoxManager) RunMultibox3(ctx context.Context, req *eval.Multibox3Requ
 
 	for i := range req.UserSandboxConfigs {
 		go func(i int) {
+			defer userWg.Done()
 			defer wg.Done()
 			stats, err := userBoxes[i].RunCommand(userCtx, req.UserSandboxConfigs[i].Command, req.UserSandboxConfigs[i].RunConfig)
 			if err != nil {

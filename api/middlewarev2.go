@@ -197,3 +197,16 @@ func (s *API) MustBeAuthedV2(api huma.API) func(ctx huma.Context, next func(huma
 		next(ctx)
 	}
 }
+
+// MustBeAdminV2 is middleware to make sure the user creating the request is an admin
+func (s *API) MustBeAdminV2(api huma.API) func(ctx huma.Context, next func(huma.Context)) {
+	return func(ctx huma.Context, next func(huma.Context)) {
+		s.MustBeAuthedV2(api)(ctx, func(ctx huma.Context) {
+			if !user.UserBriefContext(ctx.Context()).IsAdmin() {
+				huma.WriteErr(api, ctx, http.StatusUnauthorized, "You must be an admin to do this")
+				return
+			}
+			next(ctx)
+		})
+	}
+}

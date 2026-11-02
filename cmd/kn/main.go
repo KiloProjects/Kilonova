@@ -117,7 +117,6 @@ func main() {
 			printableContestants,
 			problemDiagnostics,
 			submissionSaver,
-			aiTools,
 			contestUtils,
 			graderServe,
 			configMigrate,

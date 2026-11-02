@@ -107,7 +107,7 @@
                 mail_subject: strOrUndefinedValue("pwd_email_subject"),
             }
 
-            let res = await bundled.postCall("/user/generateUser", data)
+            let res = await bundled.postCallV2("/admin/v2/generateUser", data)
             if (res.status === "error") {
                 bundled.apiToast(res)
                 return

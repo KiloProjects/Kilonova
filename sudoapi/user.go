@@ -317,21 +317,21 @@ const userPasswordAlphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ1234
 
 type UserGenerationRequest struct {
 	Name     string `json:"username"`
-	Password string `json:"password"`
-	Lang     string `json:"language"`
+	Password string `json:"password" required:"false"`
+	Lang     string `json:"language" required:"false"`
 
-	Bio string `json:"bio"`
+	Bio string `json:"bio" required:"false"`
 
-	Email       *string `json:"email"`
-	DisplayName *string `json:"display_name"`
+	Email       *string `json:"email" required:"false"`
+	DisplayName *string `json:"display_name" required:"false"`
 
-	ContestID *int `json:"contest_id"`
+	ContestID *int `json:"contest_id" required:"false"`
 
-	PasswordByMail bool `json:"password_by_mail"`
+	PasswordByMail bool `json:"password_by_mail" required:"false"`
 	// PasswordByMailTo overrides whom to send the email to
-	PasswordByMailTo *string `json:"password_by_mail_to"`
+	PasswordByMailTo *string `json:"password_by_mail_to" required:"false"`
 
-	MailSubject *string `json:"mail_subject"`
+	MailSubject *string `json:"mail_subject" required:"false"`
 }
 
 func (s *BaseAPI) RandomPassword() string {

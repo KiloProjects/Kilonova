@@ -173,7 +173,7 @@ func initLogger(debug, writeFile bool) {
 	})
 
 	handlers := []slog.Handler{
-		slogmulti.Pipe(skipContextCanceled).Handler(kilonova.GetSlogHandler(debug, os.Stdout)),
+		skipContextCanceled(kilonova.GetSlogHandler(debug, os.Stdout)),
 		otelslog.NewHandler("kilonova"),
 	}
 
@@ -191,7 +191,7 @@ func initLogger(debug, writeFile bool) {
 		}))
 	}
 
-	slog.SetDefault(slog.New(slogmulti.Pipe(showUser).Handler(slogmulti.Fanout(handlers...))))
+	slog.SetDefault(slog.New(showUser(slog.NewMultiHandler(handlers...))))
 }
 
 // initialize webserver for public api+web
@@ -209,7 +209,7 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI, llmProvider llm.Provider) *http
 			}
 			return strings.ToLower(origin) == kilonova.HostPrefix()
 		},
-		//AllowedOrigins:   []string{kilonova.HostPrefix()}, // TODO: Do better
+		// AllowedOrigins:   []string{kilonova.HostPrefix()}, // TODO: Do better
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Api-Key"},
 		ExposedHeaders:   []string{"Link"},
@@ -220,7 +220,7 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI, llmProvider llm.Provider) *http
 	// r.Use(middleware.ClientIP)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.StripSlashes)
-	//r.Use(middleware.Timeout(1 * time.Minute))
+	// r.Use(middleware.Timeout(1 * time.Minute))
 	/*
 		r.Use(middleware.Compress(flate.DefaultCompression))
 	*/
@@ -237,6 +237,7 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI, llmProvider llm.Provider) *http
 	apiSrv := api.New(base, llmProvider)
 	r.Mount("/api", apiSrv.HandlerV1())
 	r.Mount("/api/v2", apiSrv.HandlerV2())
+	r.Mount("/api/admin/v2", apiSrv.AdminV2())
 	r.Mount("/assets", api.NewAssets(base).AssetsRouter())
 
 	if templWeb {

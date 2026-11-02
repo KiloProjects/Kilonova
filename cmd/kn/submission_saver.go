@@ -6,9 +6,10 @@ import (
 	"log/slog"
 	"os"
 
+	"archive/zip"
+
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval/language"
-	"github.com/klauspost/compress/zip"
 	"github.com/urfave/cli/v3"
 )
 

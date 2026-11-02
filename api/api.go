@@ -63,8 +63,7 @@ func (s *API) HandlerV2() http.Handler {
 	}
 	r := chi.NewRouter()
 	api := humachi.New(r, humaConf)
-	api.UseMiddleware(s.SetupSessionV2(api))
-	api.UseMiddleware(s.CheckScopes(api))
+	api.UseMiddleware(s.SetupSessionV2(api), s.CheckScopes(api))
 
 	huma.Register(api, huma.Operation{
 		OperationID: "get-problems",
@@ -396,8 +395,6 @@ func (s *API) HandlerV1() http.Handler {
 		r.With(s.validateUsername).Mount("/byName/{cUName}", userRouter)
 
 		r.With(s.MustBeAuthed).Post("/updateName", s.updateUsername)
-
-		r.With(s.MustBeAdmin).Post("/generateUser", s.generateUser)
 
 		// TODO: Make this secure and maybe with email stuff
 		r.With(s.MustBeAuthed).Post("/changeEmail", s.changeEmail)

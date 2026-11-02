@@ -336,7 +336,7 @@ templ SubsViewer(params SubsViewerParams) {
                                         type="text"
                                         name="username"
                                         if params.Query.Username != nil {
-                                            value={ params.Query.Username }
+                                            value={ *params.Query.Username }
                                         }
                                     />
                                 </label>

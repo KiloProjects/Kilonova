@@ -438,24 +438,29 @@ func (s *API) resendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Verification email resent")
 }
 
-func (s *API) generateUser(w http.ResponseWriter, r *http.Request) {
-	var args sudoapi.UserGenerationRequest
-	if err := parseRequest(r, &args); err != nil {
-		errorData(w, err, 500)
-		return
-	}
+type GenerateUserRequest struct {
+	Body sudoapi.UserGenerationRequest `required:"true"`
+}
 
-	pwd, userFull, err := s.base.GenerateUserFlow(r.Context(), args)
+type generatedUser struct {
+	Password string             `json:"password"`
+	User     *kilonova.UserFull `json:"user"`
+}
+
+type GenerateUserResponse struct {
+	Body generatedUser
+}
+
+func (s *API) generateUser(ctx context.Context, args *GenerateUserRequest) (*GenerateUserResponse, error) {
+	pwd, userFull, err := s.base.GenerateUserFlow(ctx, args.Body)
 	if err != nil {
-		statusError(w, err)
-		return
+		return nil, err
 	}
 
-	returnData(w, struct {
-		Password string             `json:"password"`
-		User     *kilonova.UserFull `json:"user"`
-	}{
-		Password: pwd,
-		User:     userFull,
-	})
+	return &GenerateUserResponse{
+		Body: generatedUser{
+			Password: pwd,
+			User:     userFull,
+		},
+	}, nil
 }
