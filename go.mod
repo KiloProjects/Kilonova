@@ -24,7 +24,6 @@ require (
 	github.com/go-logr/logr v1.4.4
 	github.com/go-ozzo/ozzo-validation/v4 v4.5.0
 	github.com/gohugoio/hugo-goldmark-extensions/passthrough v0.6.0
-	github.com/google/uuid v1.6.0
 	github.com/gorilla/schema v1.4.1
 	github.com/gosimple/slug v1.15.0
 	github.com/jackc/pgx-shopspring-decimal v0.0.0-20220624020537-1d36b5a1853e
@@ -87,6 +86,7 @@ require (
 	github.com/go-sourcemap/sourcemap v2.1.4+incompatible // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/pprof v0.0.0-20261026192309-dbd0ed30aa88 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect

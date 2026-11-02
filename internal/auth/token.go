@@ -3,8 +3,8 @@ package auth
 import (
 	"strconv"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/zitadel/oidc/v3/pkg/op"
 )
 

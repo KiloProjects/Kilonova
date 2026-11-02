@@ -9,12 +9,13 @@ import (
 	"strconv"
 	"time"
 
+	"uuid"
+
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user/userpg"
 	"github.com/KiloProjects/kilonova/infra/postgres"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/go-jose/go-jose/v4"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
@@ -53,7 +54,7 @@ func (s *AuthStorage) CreateAuthRequest(ctx context.Context, authReq *oidc.AuthR
 	}
 
 	req := &Request{
-		ID:            uuid.Must(uuid.NewV7()),
+		ID:            uuid.NewV7(),
 		ApplicationID: appID,
 		CallbackURI:   authReq.RedirectURI,
 		TransferState: authReq.State,
@@ -130,7 +131,7 @@ func (s *AuthStorage) getRefreshToken(ctx context.Context, tokenID uuid.UUID) (*
 
 func (s *AuthStorage) createAccessToken(ctx context.Context, applicationID uuid.UUID, refreshTokenID *uuid.UUID, userID *int, audience []string, scopes []string) (*Token, error) {
 	token := &Token{
-		ID:            uuid.Must(uuid.NewV7()),
+		ID:            uuid.NewV7(),
 		CreatedAt:     time.Now(),
 		ExpiresAt:     time.Now().Add(accessTokenLifetime),
 		ApplicationID: applicationID,
@@ -153,7 +154,7 @@ func (s *AuthStorage) createAccessToken(ctx context.Context, applicationID uuid.
 
 func (s *AuthStorage) createRefreshToken(ctx context.Context, accessToken *Token, amr []string, authTime time.Time) (*Token, error) {
 	token := &Token{
-		ID:            uuid.Must(uuid.NewV7()),
+		ID:            uuid.NewV7(),
 		CreatedAt:     time.Now(),
 		ExpiresAt:     time.Now().Add(refreshTokenLifetime),
 		ApplicationID: accessToken.ApplicationID,
@@ -208,7 +209,7 @@ func (s *AuthStorage) renewRefreshToken(ctx context.Context, currentRefreshToken
 func (s *AuthStorage) exchangeRefreshToken(ctx context.Context, req op.TokenExchangeRequest) (accessTokenID uuid.UUID, newRefreshTokenID uuid.UUID, expiration time.Time, err error) {
 	applicationID, err := uuid.Parse(req.GetClientID())
 	if err != nil {
-		return uuid.Nil, uuid.Nil, time.Time{}, err
+		return uuid.Nil(), uuid.Nil(), time.Time{}, err
 	}
 
 	authTime := req.GetAuthTime()
@@ -216,17 +217,17 @@ func (s *AuthStorage) exchangeRefreshToken(ctx context.Context, req op.TokenExch
 	slog.InfoContext(ctx, "Exchange refresh token", slog.String("subject", req.GetSubject()))
 	userID, err := strconv.Atoi(req.GetSubject())
 	if err != nil {
-		return uuid.Nil, uuid.Nil, time.Time{}, err
+		return uuid.Nil(), uuid.Nil(), time.Time{}, err
 	}
 
 	accessToken, err := s.createAccessToken(ctx, applicationID, nil, &userID, req.GetAudience(), req.GetScopes())
 	if err != nil {
-		return uuid.Nil, uuid.Nil, time.Time{}, err
+		return uuid.Nil(), uuid.Nil(), time.Time{}, err
 	}
 
 	refreshToken, err := s.createRefreshToken(ctx, accessToken, nil, authTime)
 	if err != nil {
-		return uuid.Nil, uuid.Nil, time.Time{}, err
+		return uuid.Nil(), uuid.Nil(), time.Time{}, err
 	}
 
 	return accessToken.ID, refreshToken.ID, refreshToken.ExpiresAt, nil
@@ -312,7 +313,7 @@ func (s *AuthStorage) CreateAccessAndRefreshTokens(ctx context.Context, request 
 		return "", "", time.Time{}, err
 	}
 
-	newRefreshToken := uuid.Must(uuid.NewV7())
+	newRefreshToken := uuid.NewV7()
 
 	accessToken, err := s.createAccessToken(ctx, applicationID, &newRefreshToken, userID, request.GetAudience(), request.GetScopes())
 	if err != nil {
@@ -340,7 +341,7 @@ func getInfoFromRequest(req op.TokenRequest) (applicationID uuid.UUID, authTime 
 	if ok {
 		return refreshReq.ApplicationID, refreshReq.GetAuthTime(), refreshReq.UserID, refreshReq.AMR
 	}
-	return uuid.Nil, time.Time{}, nil, nil
+	return uuid.Nil(), time.Time{}, nil, nil
 }
 
 func (s *AuthStorage) TokenRequestByRefreshToken(ctx context.Context, refreshTokenID string) (op.RefreshTokenRequest, error) {
@@ -507,7 +508,11 @@ func (s *AuthStorage) SetUserinfoFromRequest(ctx context.Context, userinfo *oidc
 }
 
 func (s *AuthStorage) SetUserinfoFromToken(ctx context.Context, userinfo *oidc.UserInfo, tokenID string, subject string, origin string) error {
-	token, err := s.getAccessToken(ctx, uuid.Must(uuid.Parse(tokenID)))
+	tokenUUID, err := uuid.Parse(tokenID)
+	if err != nil {
+		return fmt.Errorf("invalid token ID: %w", err)
+	}
+	token, err := s.getAccessToken(ctx, tokenUUID)
 	if err != nil {
 		return fmt.Errorf("invalid token ID: %w", err)
 	}

@@ -4,7 +4,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/google/uuid"
+	"uuid"
+
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 	"github.com/zitadel/oidc/v3/pkg/op"
 )

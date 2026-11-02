@@ -6,9 +6,10 @@ import (
 	"log/slog"
 	"time"
 
+	"uuid"
+
 	"github.com/KiloProjects/kilonova/domain/datastore/fsevict"
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/google/uuid"
 	"github.com/spf13/afero"
 )
 
@@ -52,7 +53,7 @@ func PeriodicSweep(ctx context.Context, fs afero.Fs, interval, maxTTL time.Durat
 }
 
 func (s *scratch) genIdentifier() string {
-	return uuid.Must(uuid.NewV7()).String()
+	return uuid.NewV7().String()
 }
 
 func (s *scratch) SaveFile(r io.Reader) (string, error) {

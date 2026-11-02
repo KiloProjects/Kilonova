@@ -8,8 +8,9 @@ import (
 	"net/url"
 	"strings"
 
+	"uuid"
+
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/google/uuid"
 )
 
 var _ eval.Scratch = (*httpScratch)(nil)
@@ -47,7 +48,7 @@ func (s *httpScratch) do(method, identifier string, body io.Reader) (*http.Respo
 }
 
 func (s *httpScratch) SaveFile(r io.Reader) (string, error) {
-	identifier := uuid.Must(uuid.NewV7()).String()
+	identifier := uuid.NewV7().String()
 	// PUT returns only after the grader has flushed the file to its disk, so the
 	// identifier is durable before any RunBox3 references it.
 	resp, err := s.do(http.MethodPut, identifier, r)

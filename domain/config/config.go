@@ -97,7 +97,7 @@ type CommonConf struct {
 // LogDir is where rotating log files go: always <DataDir>/logs.
 func (c CommonConf) LogDir() string { return filepath.Join(c.DataDir, "logs") }
 
-// ScratchDir is the remote grader's scratch root: always <DataDir>/scratch.
+// ScratchDir is the grader's scratch root (local or remote): always <DataDir>/scratch.
 func (c CommonConf) ScratchDir() string { return filepath.Join(c.DataDir, "scratch") }
 
 // RequireDataDir is the single check every process runs before touching disk.

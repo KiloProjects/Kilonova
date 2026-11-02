@@ -28,7 +28,6 @@ import (
 	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"github.com/spf13/afero"
 )
@@ -627,12 +626,15 @@ func (h *Handler) getLocalRunner(ctx context.Context) (eval.BoxScheduler, eval.L
 		os.Exit(1)
 	}
 
-	baseDir := path.Join(os.TempDir(), uuid.New().String())
+	baseDir := config.Common.ScratchDir()
 	if err := os.MkdirAll(baseDir, 0777); err != nil {
 		return nil, nil, fmt.Errorf("couldn't create scratch dir: %w", err)
 	}
-
-	scratchDir := scratch.New(afero.NewBasePathFs(afero.NewOsFs(), baseDir))
+	scratchFS := afero.NewBasePathFs(afero.NewOsFs(), baseDir)
+	scratchDir := scratch.New(scratchFS)
+	// Fixed dir + orphan janitor, so files left by a crash are reaped on the next run.
+	// NOTE: TTL hardcoded to grader-serve's default
+	go scratch.PeriodicSweep(ctx, scratchFS, 15*time.Minute, time.Hour, graderLogger)
 
 	slog.InfoContext(ctx, "Trying to spin up local grader")
 	bm, err := scheduler.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, graderLogger, scratchDir, boxFunc)

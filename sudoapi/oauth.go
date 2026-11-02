@@ -5,9 +5,10 @@ import (
 	"log/slog"
 	"net/http"
 
+	"uuid"
+
 	"github.com/KiloProjects/kilonova/internal/auth"
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/rs/cors"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 	"github.com/zitadel/oidc/v3/pkg/op"
@@ -45,8 +46,8 @@ func (s *BaseAPI) RegisterOIDCRoutes(r chi.Router) {
 			},
 		}).Handler)
 		r.Use(op.NewIssuerInterceptor(s.oidcProvider.IssuerFromRequest).Handler)
-		//r.HandleFunc(healthEndpoint, healthHandler)
-		//r.HandleFunc(readinessEndpoint, readyHandler(o.Probes()))
+		// r.HandleFunc(healthEndpoint, healthHandler)
+		// r.HandleFunc(readinessEndpoint, readyHandler(o.Probes()))
 		r.HandleFunc(oidc.DiscoveryEndpoint, func(w http.ResponseWriter, r *http.Request) {
 			op.Discover(w, op.CreateDiscoveryConfig(r.Context(), s.oidcProvider, s.oidcProvider.Storage()))
 		})
@@ -83,7 +84,7 @@ func (s *BaseAPI) ApproveAuthRequest(ctx context.Context, reqID string, userID i
 func (s *BaseAPI) CreateClient(ctx context.Context, name string, appType auth.ApplicationType, authorID int, devMode bool, allowedRedirects []string, allowedPostLogoutRedirects []string) (uuid.UUID, string, error) {
 	id, secret, err := s.oidcProvider.Storage().(*auth.AuthStorage).CreateClient(ctx, name, appType, authorID, devMode, allowedRedirects, allowedPostLogoutRedirects)
 	if err != nil {
-		return uuid.Nil, "", err
+		return uuid.Nil(), "", err
 	}
 	s.LogUserAction(ctx, "Created OAuth client", slog.String("id", id.String()), slog.String("name", name))
 	return id, secret, nil

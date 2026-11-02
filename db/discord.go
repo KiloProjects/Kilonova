@@ -2,19 +2,13 @@ package db
 
 import (
 	"context"
-	"log/slog"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 func (s *DB) CreateDiscordState(ctx context.Context, id int) (string, error) {
-	vid, err := uuid.NewV7()
-	if err != nil {
-		slog.WarnContext(ctx, "Could not generate UUID", slog.Any("err", err))
-		return "", err
-	}
-	_, err = s.conn.Exec(ctx, `INSERT INTO discord_oauth_secrets (id, user_id) VALUES ($1, $2)`, vid.String(), id)
+	vid := uuid.NewV7()
+	_, err := s.conn.Exec(ctx, `INSERT INTO discord_oauth_secrets (id, user_id) VALUES ($1, $2)`, vid.String(), id)
 	return vid.String(), err
 }
 

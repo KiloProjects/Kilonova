@@ -3,8 +3,9 @@ package flags
 import (
 	"crypto/rand"
 
+	"uuid"
+
 	"github.com/KiloProjects/kilonova/domain/config"
-	"github.com/google/uuid"
 )
 
 var (
@@ -15,7 +16,7 @@ var FilterUserAgent = config.GenFlag[bool]("behavior.user_agent_filter", true, "
 
 var (
 	AuthRSAPrivateKey   = config.GenFlag("oidc.rsaKey.private", "", "RSA private key for the auth server")
-	AuthRSAPrivateKeyID = config.GenFlag("oidc.rsaKey.id", uuid.Must(uuid.NewV7()).String(), "RSA private key ID for the auth server")
+	AuthRSAPrivateKeyID = config.GenFlag("oidc.rsaKey.id", uuid.NewV7().String(), "RSA private key ID for the auth server")
 	AuthCryptoKey       = config.GenFlag("oidc.cryptoKey", rand.Text(), "Crypto key for the auth server")
 )
 

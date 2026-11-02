@@ -6,12 +6,13 @@ import (
 	"net/url"
 	"strings"
 
+	"uuid"
+
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/auth"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/web/views/settingsviews"
-	"github.com/google/uuid"
 )
 
 func (rt *Web) renderOAuthClients(w http.ResponseWriter, r *http.Request, params settingsviews.OAuthClientsParams) {

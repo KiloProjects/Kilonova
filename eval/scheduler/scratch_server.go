@@ -7,7 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/google/uuid"
+	"uuid"
+
 	"github.com/spf13/afero"
 )
 
