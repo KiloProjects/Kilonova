@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/metric"
@@ -73,27 +72,7 @@ func SetupOpenTelemetry(ctx context.Context, enabled bool) (shutdown func(contex
 		return
 	}
 	shutdownFuncs = append(shutdownFuncs, logProvider.Shutdown)
-	global.SetLoggerProvider(logProvider)
-
-	// Set up meter provider.
-	/*
-		meterProvider, err := newMeterProvider(ctx)
-		if err != nil {
-			handleErr(err)
-			return
-		}
-		shutdownFuncs = append(shutdownFuncs, meterProvider.Shutdown)
-		otel.SetMeterProvider(meterProvider)
-
-		// Set up logger provider.
-		loggerProvider, err := newLoggerProvider(ctx)
-		if err != nil {
-			handleErr(err)
-			return
-		}
-		shutdownFuncs = append(shutdownFuncs, loggerProvider.Shutdown)
-		global.SetLoggerProvider(loggerProvider)
-	*/
+	otel.SetLoggerProvider(logProvider)
 
 	return
 }
@@ -107,7 +86,7 @@ func newPropagator() propagation.TextMapPropagator {
 
 func newTraceProvider(ctx context.Context) (*trace.TracerProvider, error) {
 	traceExporter, err := otlptracegrpc.New(ctx)
-	//traceExporter, err := stdouttrace.New(
+	// traceExporter, err := stdouttrace.New(
 	//	stdouttrace.WithPrettyPrint())
 	if err != nil {
 		return nil, err

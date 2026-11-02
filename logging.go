@@ -33,7 +33,7 @@ func GetSlogHandler(debug bool, out io.Writer) slog.Handler {
 		level = slog.LevelDebug
 	}
 
-	return tint.NewHandler(out, &tint.Options{
+	return tint.NewTextHandler(out, &tint.Options{
 		AddSource: true,
 		Level:     level,
 		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {

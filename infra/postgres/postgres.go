@@ -66,7 +66,7 @@ func NewDB(ctx context.Context, conf Config) (*DB, error) {
 		return nil, err
 	}
 	pgconf.ConnConfig.Tracer = multitracer.New(
-		otelpgx.NewTracer(otelpgx.WithTrimSQLInSpanName()),
+		otelpgx.NewTracer(),
 		&tracelog.TraceLog{Logger: tracelog.LoggerFunc(db.log), LogLevel: tracelog.LogLevelDebug},
 	)
 
