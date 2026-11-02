@@ -80,7 +80,7 @@ func TestLoadFlagsFromDBTolerance(t *testing.T) {
 	store.data["test.gone"] = json.RawMessage(`42`)
 	store.data[importSentinel] = json.RawMessage(`true`)
 
-	if _, err := LoadFlagsFromDB(ctx, store); err != nil {
+	if err := LoadFlagsFromDB(ctx, store); err != nil {
 		t.Fatalf("load must not fail on bad data: %v", err)
 	}
 	if got := f.Value(); got != 7 {
