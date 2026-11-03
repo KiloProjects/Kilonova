@@ -16,7 +16,6 @@ import (
 	"math"
 	"net/http"
 	"net/netip"
-	"net/url"
 	"path"
 	"reflect"
 	"strconv"
@@ -101,10 +100,13 @@ func (rt *Web) problemRouter(inContest bool) func(r chi.Router) {
 				r.Use(rt.checkFlag(flags.ExternalResourcesEnabled))
 				r.Get("/", rt.externalResources())
 				r.With(rt.mustBeProblemEditor).Get("/create", rt.createExternalResourceView())
-				r.With(rt.mustBeProblemEditor).Post("/create", rt.createExternalResource())
-				// r.With(rt.ValidateExternalResourceID).Route("/externalResources/{resID}", func(r chi.Router) {
-				//	r.Get("/", rt.externalResource())
-				// })
+				r.With(rt.mustBeProblemEditor).Post("/create", rt.saveExternalResource(true))
+				r.With(rt.mustBeProblemEditor).Route("/{resID}", func(r chi.Router) {
+					r.Use(rt.ValidateExternalResourceID)
+					r.Get("/edit", rt.editExternalResourceView())
+					r.Post("/update", rt.saveExternalResource(false))
+					r.Post("/delete", rt.deleteExternalResource())
+				})
 			})
 		}
 		r.With(rt.mustBeAuthed).Get("/submit", rt.problemSubmit())
@@ -773,18 +775,6 @@ func NewWeb(base *sudoapi.BaseAPI, llmProvider llm.Provider) *Web {
 			return (time.Duration(c.PerUserTime) * time.Second).String()
 		},
 		"add1": func(i int) int { return i + 1 },
-		"formatResourceURL": func(orgURL string) string {
-			u, err := url.Parse(orgURL)
-			if err != nil {
-				return orgURL
-			}
-			q := u.Query()
-			q.Set("utm_source", "resource")
-			q.Set("utm_medium", "external_resource")
-			q.Set("utm_campaign", "kilonova")
-			u.RawQuery = q.Encode()
-			return u.String()
-		},
 
 		"getCaptchaID": base.NewCaptchaID,
 		"pLanguages": func() map[string]string {

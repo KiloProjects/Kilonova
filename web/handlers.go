@@ -1048,13 +1048,10 @@ func (rt *Web) problem() http.HandlerFunc {
 				tags = []*kilonova.Tag{}
 			}
 			if flags.ExternalResourcesEnabled.Value() {
-				externalResources, _ = rt.base.ExternalResources(r.Context(), kilonova.ExternalResourceFilter{
-					ProblemID: &util.Problem(r).ID,
-					Accepted:  new(true),
-					// Technically not needed but just for safety
-					Look:        true,
-					LookingUser: user.UserBrief(r),
-				})
+				externalResources, err = rt.base.ProblemExternalResources(r.Context(), problem, user.UserBrief(r), descVariant.Language)
+				if err != nil {
+					slog.WarnContext(r.Context(), "Couldn't get problem resources", slog.Any("err", err))
+				}
 				showExternalResources = len(externalResources) > 0 || rt.base.IsProblemEditor(user.UserBrief(r), util.Problem(r))
 			}
 		}
@@ -1786,131 +1783,109 @@ func (rt *Web) donationPage() http.HandlerFunc {
 }
 
 func (rt *Web) externalResources() http.HandlerFunc {
-	parsedTempl := rt.parse("externalResources/index.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		problemResources, err := rt.base.ExternalResources(r.Context(), kilonova.ExternalResourceFilter{
-			ProblemID: &util.Problem(r).ID,
-		})
+		language := r.FormValue("language")
+		resources, err := rt.base.ProblemExternalResources(r.Context(), util.Problem(r), user.UserBrief(r), language)
 		if err != nil {
-			slog.WarnContext(r.Context(), "Couldn't get problem resources", slog.Any("err", err))
-			problemResources = []*kilonova.ExternalResource{}
+			rt.statusPage(w, r, kilonova.ErrorCode(err), err.Error())
+			return
 		}
-		rt.runTempl(w, r, parsedTempl, &ResourcesIndexParams{problemResources})
-	}
-}
-
-//nolint:unused
-func (rt *Web) externalResource() http.HandlerFunc {
-	parsedTempl := rt.parse("externalResources/view.html")
-	return func(w http.ResponseWriter, r *http.Request) {
-		var author *kilonova.UserBrief
-		if res := util.ExternalResource(r); res.ProposedBy != nil {
-			if proposer, err := rt.base.UserBrief(r.Context(), *res.ProposedBy); err != nil {
-				slog.WarnContext(r.Context(), "Couldn't get external resource author", slog.Any("err", err))
-			} else {
-				author = proposer
-			}
-		}
-		rt.runTempl(w, r, parsedTempl, &ResourcesPageParams{
-			util.ExternalResource(r),
-			util.Problem(r),
-			author,
+		rt.runLayout(w, r, &LayoutParams{
+			Title: tutils.T(r.Context(), "external_resources"),
+			Content: problems.ExternalResources(&problems.ExternalResourcesParams{
+				Problem: util.Problem(r), Resources: resources,
+				IsEditor: rt.base.IsProblemEditor(user.UserBrief(r), util.Problem(r)), Language: language,
+			}),
 		})
 	}
 }
 
 func (rt *Web) createExternalResourceView() http.HandlerFunc {
-	parsedTempl := rt.parse("externalResources/new.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, parsedTempl, &ResourcesNewParams{util.Problem(r)})
+		rt.runLayout(w, r, &LayoutParams{
+			Title: tutils.T(r.Context(), "external_resources"),
+			Content: problems.ExternalResourceForm(&problems.ExternalResourceFormParams{
+				Problem:  util.Problem(r),
+				Resource: &kilonova.ExternalResource{Type: kilonova.ResourceTypeEditorial, Accepted: true, Visible: true},
+				Action:   fmt.Sprintf("/problems/%d/externalResources/create", util.Problem(r).ID),
+			}),
+		})
 	}
 }
 
-func (rt *Web) createExternalResource() http.HandlerFunc {
+func (rt *Web) editExternalResourceView() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		rt.runLayout(w, r, &LayoutParams{
+			Title: tutils.T(r.Context(), "external_resources"),
+			Content: problems.ExternalResourceForm(&problems.ExternalResourceFormParams{
+				Problem: util.Problem(r), Resource: util.ExternalResource(r),
+				Action: fmt.Sprintf("/problems/%d/externalResources/%d/update", util.Problem(r).ID, util.ExternalResource(r).ID),
+			}),
+		})
+	}
+}
+
+func (rt *Web) saveExternalResource(create bool) http.HandlerFunc {
 	decoder := schema.NewDecoder()
 	decoder.IgnoreUnknownKeys(true)
 	decoder.SetAliasTag("json")
 	return func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, 32<<10)
 		var params struct {
 			Name        string                `json:"name"`
 			Description string                `json:"description"`
 			URL         string                `json:"url"`
+			Language    string                `json:"language"`
 			Type        kilonova.ResourceType `json:"type"`
-			PreApproved bool                  `json:"preApproved"`
+			Visible     bool                  `json:"visible"`
+			Accepted    bool                  `json:"accepted"`
+			Position    int                   `json:"position"`
 		}
-		r.ParseForm()
-		if err := decoder.Decode(&params, r.Form); err != nil {
-			htmxErrorToast(w, r, "Invalid request body")
+		if err := r.ParseForm(); err != nil {
 			rt.statusPage(w, r, 400, "Invalid request body")
 			return
 		}
-		if params.Name == "" || params.URL == "" || params.Type == "" {
-			htmxErrorToast(w, r, "Invalid request body")
+		if err := decoder.Decode(&params, r.PostForm); err != nil {
 			rt.statusPage(w, r, 400, "Invalid request body")
 			return
 		}
-		if params.PreApproved {
-			params.PreApproved = user.UserBrief(r).IsAdmin()
+		var err error
+		if create {
+			resource := &kilonova.ExternalResource{
+				Name: params.Name, Description: params.Description, URL: params.URL, Language: params.Language,
+				Type: params.Type, Visible: params.Visible, Accepted: params.Accepted, Position: params.Position,
+			}
+			err = rt.base.CreateExternalResource(r.Context(), resource, util.Problem(r))
+			if err == nil {
+				w.Header().Set("X-Resource-ID", strconv.Itoa(resource.ID))
+			}
+		} else {
+			err = rt.base.UpdateExternalResource(r.Context(), util.Problem(r), util.ExternalResource(r).ID, kilonova.ExternalResourceUpdate{
+				Name: &params.Name, Description: &params.Description, URL: &params.URL, Language: &params.Language,
+				Type: params.Type, Visible: &params.Visible, Accepted: &params.Accepted, Position: &params.Position,
+			})
 		}
-
-		res, err := rt.base.CreateExternalResource(
-			r.Context(),
-			params.Name, params.Description,
-			params.URL,
-			params.Type,
-			user.UserBrief(r),
-			util.Problem(r),
-			params.PreApproved,
-		)
 		if err != nil {
-			slog.WarnContext(r.Context(), "Couldn't create external resource", slog.Any("err", err))
-			htmxErrorToast(w, r, "Couldn't create external resource")
-			rt.statusPage(w, r, 500, "Couldn't create external resource")
+			rt.statusPage(w, r, kilonova.ErrorCode(err), err.Error())
 			return
 		}
-		w.Header().Add("X-Resource-ID", fmt.Sprintf("%d", res.ID))
-		htmxSuccessToast(w, r, "External resource created")
-		w.Header().Add("HX-Redirect", fmt.Sprintf("/problems/%d", util.Problem(r).ID))
-		http.Redirect(w, r, fmt.Sprintf("/problems/%d", util.Problem(r).ID), http.StatusOK)
+		destination := fmt.Sprintf("/problems/%d/externalResources", util.Problem(r).ID)
+		w.Header().Set("HX-Redirect", destination)
+		http.Redirect(w, r, destination, http.StatusSeeOther)
 	}
 }
 
-// func (rt *Web) updateExternalResource() http.HandlerFunc {
-//	templ := rt.parse(nil, "externalResources/view.html")
-//	return func(w http.ResponseWriter, r *http.Request) {
-//		var author *kilonova.UserBrief
-//		if res := util.ExternalResource(r); res.ProposedBy != nil {
-//			if proposer, err := rt.base.UserBrief(r.Context(), *res.ProposedBy); err != nil {
-//				slog.WarnContext(r.Context(), "Couldn't get external resource author", slog.Any("err", err))
-//			} else {
-//				author = proposer
-//			}
-//		}
-//		rt.runTempl(w, r, templ, &ResourcesPageParams{
-//			util.ExternalResource(r),
-//			util.Problem(r),
-//			author,
-//		})
-//	}
-// }
-// func (rt *Web) deleteExternalResource() http.HandlerFunc {
-//	templ := rt.parse(nil, "externalResources/view.html")
-//	return func(w http.ResponseWriter, r *http.Request) {
-//		var author *kilonova.UserBrief
-//		if res := util.ExternalResource(r); res.ProposedBy != nil {
-//			if proposer, err := rt.base.UserBrief(r.Context(), *res.ProposedBy); err != nil {
-//				slog.WarnContext(r.Context(), "Couldn't get external resource author", slog.Any("err", err))
-//			} else {
-//				author = proposer
-//			}
-//		}
-//		rt.runTempl(w, r, templ, &ResourcesPageParams{
-//			util.ExternalResource(r),
-//			util.Problem(r),
-//			author,
-//		})
-//	}
-// }
+func (rt *Web) deleteExternalResource() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := rt.base.DeleteExternalResource(r.Context(), util.Problem(r), util.ExternalResource(r).ID); err != nil {
+			rt.statusPage(w, r, kilonova.ErrorCode(err), err.Error())
+			return
+		}
+		destination := fmt.Sprintf("/problems/%d/externalResources", util.Problem(r).ID)
+		w.Header().Set("HX-Redirect", destination)
+		http.Redirect(w, r, destination, http.StatusSeeOther)
+	}
+}
 
 func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, templ *template.Template, userFull *kilonova.UserFull) {
 	if !(flags.ViewOtherProfiles.Value() || user.UserBrief(r).IsAdmin() || (user.UserBrief(r) != nil && user.UserBrief(r).ID == userFull.ID)) {

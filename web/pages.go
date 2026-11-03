@@ -116,20 +116,6 @@ type DonateParams struct {
 	Status string
 }
 
-type ResourcesIndexParams struct {
-	Resources []*kilonova.ExternalResource
-}
-
-type ResourcesPageParams struct {
-	Resource *kilonova.ExternalResource
-	Problem  *kilonova.Problem
-	Author   *kilonova.UserBrief
-}
-
-type ResourcesNewParams struct {
-	Problem *kilonova.Problem
-}
-
 type ContestParams struct {
 	Topbar *ProblemTopbar
 

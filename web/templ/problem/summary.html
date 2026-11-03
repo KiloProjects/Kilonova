@@ -133,10 +133,10 @@
 						<div class="list-group mb-2">
                             {{with .ExternalResources}}
                                 {{ range . }}
-									<a style="text-overflow: ellipsis;" href="{{formatResourceURL .URL}}"
+									<a style="text-overflow: ellipsis;" href="{{.URL}}" target="_blank" rel="noopener noreferrer"
 									   class="list-group-item flex justify-between"
 									   title="{{printf "external_resource.type.%s" .Type | getText}}">
-										<span><i class="fas fa-fw {{.Type.FontAwesomeIcon}}"></i> {{.Name}}</span>
+										<span><i aria-hidden="true" class="fas fa-fw {{.Type.FontAwesomeIcon}}"></i> {{.Name}} {{if .Language}}<span class="badge-lite">{{.Language}}</span>{{end}}</span>
 									</a>
                                 {{ end }}
                             {{else}}
@@ -146,13 +146,10 @@
                             {{end}}
 						</div>
 					</div>
-                    {{if .Topbar.IsProblemEditor}}
 						<div class="grid grid-cols-1 lg:grid-cols-2 justify-between">
-							<a href="{{.Topbar.URLPrefix}}/problems/{{.Problem.ID}}/externalResources">{{getText "view_details"}}</a>
-							<a class="lg:text-right"
-							   href="{{.Topbar.URLPrefix}}/problems/{{.Problem.ID}}/externalResources/create">{{getText "suggest_resource"}}</a>
+							<a href="/problems/{{.Problem.ID}}/externalResources">{{getText "view_details"}}</a>
+							{{if .Topbar.IsProblemEditor}}<a class="lg:text-right" href="/problems/{{.Problem.ID}}/externalResources/create">{{getText "suggest_resource"}}</a>{{end}}
 						</div>
-                    {{end}}
 				</details>
             {{ end }}
 		</aside>

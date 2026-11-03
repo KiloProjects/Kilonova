@@ -3321,3 +3321,11 @@ ro = "Nu ați autorizat nicio aplicație."
 [button.revoke]
 en = "Revoke"
 ro = "Revocă"
+
+[resource.all_languages]
+en = "All languages"
+ro = "Toate limbile"
+
+[resource.unspecified_language]
+en = "Language-independent"
+ro = "Independent de limbă"
