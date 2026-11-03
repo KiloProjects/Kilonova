@@ -3321,3 +3321,47 @@ ro = "Nu ați autorizat nicio aplicație."
 [button.revoke]
 en = "Revoke"
 ro = "Revocă"
+
+[submission_test.files]
+en = "Test files"
+ro = "Fișiere test"
+
+[submission_test.view_test]
+en = "View the associated test"
+ro = "Vezi testul asociat"
+
+[submission_test.input]
+en = "Download test input"
+ro = "Descarcă datele de intrare ale testului"
+
+[submission_test.output]
+en = "Download submission output"
+ro = "Descarcă ieșirea submisiei"
+
+[submission_test.expected]
+en = "Download expected output"
+ro = "Descarcă ieșirea așteptată"
+
+[submission_test.waiting]
+en = "The output is not ready yet."
+ro = "Ieșirea nu este încă disponibilă."
+
+[submission_test.waiting_short]
+en = "pending"
+ro = "în așteptare"
+
+[submission_test.unavailable]
+en = "The output was not produced or is no longer retained."
+ro = "Ieșirea nu a fost generată sau nu mai este păstrată."
+
+[submission_test.unavailable_short]
+en = "unavailable"
+ro = "indisponibilă"
+
+[submission_test.retention_note]
+en = "Submission outputs may not be produced and are retained only temporarily; older outputs can be removed to save storage."
+ro = "Este posibil ca ieșirile submisiilor să nu fie generate; ele sunt păstrate temporar și pot fi șterse pentru a economisi spațiu."
+
+[submission_test.deleted]
+en = "The associated test no longer exists."
+ro = "Testul asociat nu mai există."

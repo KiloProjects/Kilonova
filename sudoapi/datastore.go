@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"strconv"
 	"strings"
@@ -32,6 +33,18 @@ func (s *BaseAPI) TestOutput(testID int) (io.ReadCloser, error) {
 }
 func (s *BaseAPI) SubtestReader(subtest int) (io.ReadCloser, error) {
 	return s.subtestBucket.Reader(strconv.Itoa(subtest))
+}
+
+// SubtestOutputAvailable checks whether a retained output file still exists.
+func (s *BaseAPI) SubtestOutputAvailable(subtest int) (bool, error) {
+	_, err := s.subtestBucket.Modtime(strconv.Itoa(subtest))
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("could not check subtest output: %w", err)
+	}
+	return true, nil
 }
 
 func (s *BaseAPI) SaveTestInput(testID int, input io.Reader) error {

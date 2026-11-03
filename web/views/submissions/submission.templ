@@ -35,9 +35,17 @@ type SubmissionPageParams struct {
 	Submission      *kilonova.FullSubmission
 	SubmissionFiles []*kilonova.SubmissionFile
 	ForceShowCode   bool
+	TestAccess      *SubmissionTestAccess
 
 	LanguageFormatter func(string) string
 	OlderSubmissions  *modals.OlderSubmissionsParams
+}
+
+// SubmissionTestAccess is populated only after test visibility has been checked.
+type SubmissionTestAccess struct {
+	ProblemID       int
+	CanEdit         bool
+	OutputAvailable map[int]bool
 }
 
 type PastePageParams struct {
@@ -140,13 +148,13 @@ templ SubmissionScoreBreakdown(params SubmissionPageParams) {
 		@CompileErrorInfo(params.Submission)
 		if params.Submission.CompileError == nil || !*params.Submission.CompileError {
 			if len(params.Submission.SubTasks)>0&&params.Submission.SubmissionType == kilonova.EvalTypeClassic {
-				@SubmissionSubTasks(params.Submission, false)
+				@SubmissionSubTasks(params.Submission, false, params.TestAccess)
 			} else {
 				<h2>{ T(ctx, "tests") }</h2>
 				@SubmissionTestTable(SubmissionTestTableParams{
 					Subtests:      params.Submission.SubTests,
 					Subtasks:      params.Submission.SubTasks,
-					ProblemEditor: params.Submission.ProblemEditor,
+					TestAccess:    params.TestAccess,
 					Precision:     params.Submission.ScorePrecision,
 					SubType:       params.Submission.SubmissionType,
 					Subtask:       nil,
@@ -160,7 +168,7 @@ type SubmissionSubTaskParams struct {
 	SubTask       *kilonova.SubmissionSubTask
 	Precision     int32
 	Subtests      []*kilonova.SubTest
-	ProblemEditor bool
+	TestAccess    *SubmissionTestAccess
 	DefaultOpen   bool
 	BreakdownMode bool
 }
@@ -188,7 +196,7 @@ templ SubmissionSubTask(params SubmissionSubTaskParams) {
 		@SubmissionTestTable(SubmissionTestTableParams{
 			Subtests:      params.Subtests,
 			Subtasks:      nil,
-			ProblemEditor: params.ProblemEditor,
+			TestAccess:    params.TestAccess,
 			Precision:     params.Precision,
 			SubType:       kilonova.EvalTypeClassic,
 			Subtask:       params.SubTask,
@@ -196,7 +204,7 @@ templ SubmissionSubTask(params SubmissionSubTaskParams) {
 	</details>
 }
 
-templ SubmissionSubTasks(sub *kilonova.FullSubmission, expandedTests bool) {
+templ SubmissionSubTasks(sub *kilonova.FullSubmission, expandedTests bool, testAccess *SubmissionTestAccess) {
 	<details id="sub-subtasks" open?={ true }>
 		<summary>
 			<h2 class="inline-block">{ T(ctx,"subTasks") }</h2>
@@ -206,7 +214,7 @@ templ SubmissionSubTasks(sub *kilonova.FullSubmission, expandedTests bool) {
 				@SubmissionSubTask(SubmissionSubTaskParams{
 					SubTask:       subtask,
 					Subtests:      sub.SubTests,
-					ProblemEditor: sub.ProblemEditor,
+					TestAccess:    testAccess,
 					Precision:     sub.ScorePrecision,
 					DefaultOpen:   len(sub.SubTasks) == 1,
 				})
@@ -220,7 +228,7 @@ templ SubmissionSubTasks(sub *kilonova.FullSubmission, expandedTests bool) {
 		@SubmissionTestTable(SubmissionTestTableParams{
 			Subtests:      sub.SubTests,
 			Subtasks:      sub.SubTasks,
-			ProblemEditor: sub.ProblemEditor,
+			TestAccess:    testAccess,
 			Precision:     sub.ScorePrecision,
 			SubType:       sub.SubmissionType,
 			Subtask:       nil,
@@ -232,7 +240,7 @@ type SubmissionTestTableParams struct {
 	Subtests      []*kilonova.SubTest
 	Subtasks      []*kilonova.SubmissionSubTask
 	Subtask       *kilonova.SubmissionSubTask
-	ProblemEditor bool
+	TestAccess    *SubmissionTestAccess
 	Precision     int32
 	SubType       kilonova.EvalType
 }
@@ -253,8 +261,8 @@ templ SubmissionTestTable(params SubmissionTestTableParams) {
 						<th scope="col">{ T(ctx,"subTasks") }</th>
 					}
 				}
-				if params.ProblemEditor {
-					<th scope="col">{ T(ctx,"output") }</th>
+				if params.TestAccess != nil {
+					<th scope="col">{ T(ctx, "submission_test.files") }</th>
 				}
 			</tr>
 		</thead>
@@ -282,7 +290,11 @@ templ SubmissionTestTable(params SubmissionTestTableParams) {
 				}}
 				<tr class="kn-table-row">
 					<th class="py-1" scope="row" id={ fmt.Sprintf("test-%d", subtest.VisibleID) }>
-						{ subtest.VisibleID }
+						if params.TestAccess != nil && params.TestAccess.CanEdit && subtest.TestID != nil {
+							<a href={ templ.URL(fmt.Sprintf("/problems/%d/edit/test/%d", params.TestAccess.ProblemID, *subtest.TestID)) } title={ T(ctx, "submission_test.view_test") }>{ subtest.VisibleID }</a>
+						} else {
+							{ subtest.VisibleID }
+						}
 					</th>
 					if subtest.Skipped {
 						<td>-</td>
@@ -330,15 +342,36 @@ templ SubmissionTestTable(params SubmissionTestTableParams) {
 						}}
 						<td>{ strings.Join(stks, ", ") }</td>
 					}
-					if params.ProblemEditor {
-						<td>
-							<a href={ templ.URL(fmt.Sprintf("/assets/subtest/%d", subtest.ID)) }>{ T(ctx,"output") }</a>
+					if params.TestAccess != nil {
+						<td class="whitespace-nowrap">
+							if subtest.TestID != nil {
+								<a href={ templ.URL(fmt.Sprintf("/assets/problem/%d/test/%d/input", params.TestAccess.ProblemID, *subtest.TestID)) } title={ T(ctx, "submission_test.input") } aria-label={ T(ctx, "submission_test.input") } download>in</a>
+							} else {
+								<span title={ T(ctx, "submission_test.deleted") }>in</span>
+							}
+							{ " / " }
+							if subtest.Done && !subtest.Skipped && params.TestAccess.OutputAvailable[subtest.ID] {
+								<a href={ templ.URL(fmt.Sprintf("/assets/subtest/%d", subtest.ID)) } title={ T(ctx, "submission_test.output") } aria-label={ T(ctx, "submission_test.output") } download>out</a>
+							} else if !subtest.Done && !subtest.Skipped {
+								<span title={ T(ctx, "submission_test.waiting") }>out ({ T(ctx, "submission_test.waiting_short") })</span>
+							} else {
+								<span title={ T(ctx, "submission_test.unavailable") }>out ({ T(ctx, "submission_test.unavailable_short") })</span>
+							}
+							{ " / " }
+							if subtest.TestID != nil {
+								<a href={ templ.URL(fmt.Sprintf("/assets/problem/%d/test/%d/output", params.TestAccess.ProblemID, *subtest.TestID)) } title={ T(ctx, "submission_test.expected") } aria-label={ T(ctx, "submission_test.expected") } download>ok</a>
+							} else {
+								<span title={ T(ctx, "submission_test.deleted") }>ok</span>
+							}
 						</td>
 					}
 				</tr>
 			}
 		</tbody>
 	</table>
+	if params.TestAccess != nil && params.Subtask == nil {
+		<p class="text-muted text-sm mb-2">{ T(ctx, "submission_test.retention_note") }</p>
+	}
 }
 
 templ CompileErrorInfo(sub *kilonova.FullSubmission) {
