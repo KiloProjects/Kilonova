@@ -78,7 +78,7 @@ func (att *imgAttRenderer) renderAttachment(writer util.BufWriter, source []byte
 			if found {
 				switch key {
 				case "align":
-					if align == "left" || align == "right" || align == "center" {
+					if val == "left" || val == "right" || val == "center" {
 						align = val
 					}
 				case "width":
