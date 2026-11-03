@@ -66,6 +66,7 @@ First release under the new `YY.MM` versioning scheme. Everything since v0.25.2.
   schemes.
 - Session cookie is always `Secure`; all client cookies set `secure`; CSRF protection on logout (#67, #71).
 - CAPTCHA on the forgot-password form and on problem archive downloads; asset downloads are served as attachments.
+- Reject invalid Markdown attachment alignments to prevent injected HTML attributes in rendered user content.
 - Better support for Scaleway TEM as the SMTP provider.
 
 ### API v2
