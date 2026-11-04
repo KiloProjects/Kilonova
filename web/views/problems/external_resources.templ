@@ -1,0 +1,144 @@
+package problems
+
+import (
+	"fmt"
+
+	"github.com/KiloProjects/kilonova"
+)
+
+type ExternalResourcesParams struct {
+	Problem   *kilonova.Problem
+	Resources []*kilonova.ExternalResource
+	IsEditor  bool
+	Language  string
+}
+
+templ ExternalResources(params *ExternalResourcesParams) {
+	<section class="segment-panel">
+		<h1>
+			@TC("external_resources")
+			{ " — " }
+			{ params.Problem.Name }
+		</h1>
+		<p>
+			<a href={ templ.URL(fmt.Sprintf("/problems/%d", params.Problem.ID)) }>@TC("statement")</a>
+		</p>
+		<form method="get" class="my-2">
+			<label>
+				@TC("language")
+				<select class="form-select" name="language">
+					<option value="" selected?={ params.Language == "" }>@TC("resource.all_languages")</option>
+					<option value="en" selected?={ params.Language == "en" }>English</option>
+					<option value="ro" selected?={ params.Language == "ro" }>Română</option>
+				</select>
+			</label>
+			<button class="btn btn-blue" type="submit">@TC("button.filter")</button>
+		</form>
+		if params.IsEditor {
+			<a class="btn btn-blue" href={ templ.URL(fmt.Sprintf("/problems/%d/externalResources/create", params.Problem.ID)) }>@TC("suggest_resource")</a>
+		}
+		<ul class="list-group my-2">
+			for _, resource := range params.Resources {
+				<li class="list-group-item">
+					<a href={ templ.URL(resource.URL) } target="_blank" rel="noopener noreferrer">
+						<i aria-hidden="true" class={ "fas fa-fw " + resource.Type.FontAwesomeIcon() }></i>
+						{ " " }
+						{ resource.Name }
+					</a>
+					<span class="badge-lite">@TC(fmt.Sprintf("external_resource.type.%s", resource.Type))</span>
+					if resource.Language != "" {
+						<span class="badge-lite">{ resource.Language }</span>
+					}
+					if resource.Description != "" {
+						<p>{ resource.Description }</p>
+					}
+					if params.IsEditor {
+						<p>
+							@TC("visible")
+							{ fmt.Sprintf(": %t · ", resource.Visible) }
+							@TC("accepted")
+							{ fmt.Sprintf(": %t · ", resource.Accepted) }
+							@TC("position")
+							{ fmt.Sprintf(": %d", resource.Position) }
+						</p>
+						<a href={ templ.URL(fmt.Sprintf("/problems/%d/externalResources/%d/edit", params.Problem.ID, resource.ID)) }>@TC("edit")</a>
+						<form method="post" action={ templ.URL(fmt.Sprintf("/problems/%d/externalResources/%d/delete", params.Problem.ID, resource.ID)) } class="inline-block">
+							<button class="btn btn-red" type="submit">@TC("button.delete")</button>
+						</form>
+					}
+				</li>
+			}
+			if len(params.Resources) == 0 {
+				<li class="list-group-item">@TC("no_resources")</li>
+			}
+		</ul>
+	</section>
+}
+
+type ExternalResourceFormParams struct {
+	Problem  *kilonova.Problem
+	Resource *kilonova.ExternalResource
+	Action   string
+}
+
+templ ExternalResourceForm(params *ExternalResourceFormParams) {
+	<form class="segment-panel" method="post" action={ templ.URL(params.Action) }>
+		<h1>
+			@TC("external_resources")
+			{ " — " }
+			{ params.Problem.Name }
+		</h1>
+		<label class="block my-2">
+			<span class="form-label">@TC("name")</span>
+			<input class="form-input" type="text" name="name" value={ params.Resource.Name } maxlength="200" required/>
+		</label>
+		<label class="block my-2">
+			<span class="form-label">@TC("description")</span>
+			<textarea class="form-input" name="description" maxlength="10000">{ params.Resource.Description }</textarea>
+		</label>
+		<label class="block my-2">
+			<span class="form-label">@TC("url")</span>
+			<input class="form-input" type="url" name="url" value={ params.Resource.URL } maxlength="4096" required/>
+		</label>
+		<label class="block my-2">
+			<span class="form-label">@TC("external_resource.type.label")</span>
+			<select class="form-select" name="type">
+				<option value="editorial" selected?={ params.Resource.Type == kilonova.ResourceTypeEditorial }>@TC("external_resource.type.editorial")</option>
+				<option value="video" selected?={ params.Resource.Type == kilonova.ResourceTypeVideo }>@TC("external_resource.type.video")</option>
+				<option value="solution" selected?={ params.Resource.Type == kilonova.ResourceTypeSolution }>@TC("external_resource.type.solution")</option>
+				<option value="article" selected?={ params.Resource.Type == kilonova.ResourceTypeArticle }>@TC("external_resource.type.article")</option>
+				<option value="other" selected?={ params.Resource.Type == kilonova.ResourceTypeOther }>@TC("external_resource.type.other")</option>
+			</select>
+		</label>
+		<label class="block my-2">
+			<span class="form-label">@TC("language")</span>
+			<select class="form-select" name="language">
+				<option value="" selected?={ params.Resource.Language == "" }>@TC("resource.unspecified_language")</option>
+				<option value="en" selected?={ params.Resource.Language == "en" }>English</option>
+				<option value="ro" selected?={ params.Resource.Language == "ro" }>Română</option>
+			</select>
+		</label>
+		<label class="block my-2">
+			<span class="form-label">@TC("position")</span>
+			<input class="form-input" type="number" name="position" value={ fmt.Sprintf("%d", params.Resource.Position) } required/>
+		</label>
+		<label class="block my-2">
+			<input class="form-checkbox" type="checkbox" name="visible" value="true" checked?={ params.Resource.Visible }/>
+			{ " " }
+			@TC("visible")
+		</label>
+		<label class="block my-2">
+			<input class="form-checkbox" type="checkbox" name="accepted" value="true" checked?={ params.Resource.Accepted }/>
+			{ " " }
+			@TC("accepted")
+		</label>
+		<button class="btn btn-blue" type="submit">
+			if params.Resource.ID != 0 {
+				@TC("button.update")
+			} else {
+				@TC("button.create")
+			}
+		</button>
+		<a href={ templ.URL(fmt.Sprintf("/problems/%d/externalResources", params.Problem.ID)) }>@TC("button.cancel")</a>
+	</form>
+}

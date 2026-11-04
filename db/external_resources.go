@@ -90,7 +90,7 @@ func externalResourceUpdateQuery(upd *kilonova.ExternalResourceUpdate, fb *updat
 	if v := upd.URL; v != nil {
 		fb.AddUpdate("url = %s", v)
 	}
-	if v := upd.Visible; v != nil {
+	if v := upd.Language; v != nil {
 		fb.AddUpdate("language = %s", v)
 	}
 	if v := upd.Visible; v != nil {

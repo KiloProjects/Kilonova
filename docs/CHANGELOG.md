@@ -71,6 +71,7 @@ First release under the new `YY.MM` versioning scheme. Everything since v0.25.2.
 - Flag to hide the statistics tab.
 - Experimental vim mode in the Markdown attachment editor; `noTransparency` option for images.
 - Internal submission export.
+- Problem external resources are now fully editable by problem editors and exposed on problem pages with per-language filtering.
 - Fixes: problem edit page, PDF downloads, checker stem handling, multipart form for adding files.
 
 ### Auth & security

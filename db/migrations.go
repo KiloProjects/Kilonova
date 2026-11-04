@@ -91,6 +91,11 @@ var Migrations = postgres.MigrationConfig{
 			Name:    "Runtime flag store",
 			Handler: runFile("015.flags.sql"),
 		},
+		{
+			ID:      230,
+			Name:    "External resource language defaults",
+			Handler: runFile("230.external_resource_language.sql"),
+		},
 	},
 	// Run every time a migrate up happens
 	SpecialMigrations: []postgres.Migration{
