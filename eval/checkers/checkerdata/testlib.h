@@ -3137,7 +3137,7 @@ NORETURN void InStream::quit(TResult result, const char *msg) {
     }
     else if (result == _points) {
         std::string stringPoints(removeDoubleTrailingZeroes(
-            format("%.10f", __testlib_points)));
+            testlib_format_("%.10f", __testlib_points)));
         std::fprintf(stdout, "%s\n", stringPoints.c_str());
         std::fprintf(stderr, "translate:partial");
     }
