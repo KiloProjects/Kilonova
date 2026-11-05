@@ -1567,6 +1567,7 @@ func (rt *Web) contests() http.HandlerFunc {
 				return
 			}
 
+			filter.ImportantContests = true
 			filter.ImportantContestsUser = user.UserBrief(r)
 		default:
 			slog.WarnContext(r.Context(), "Unknown page type", slog.String("type", page))
