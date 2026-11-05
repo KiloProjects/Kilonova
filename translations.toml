@@ -1353,9 +1353,13 @@ ro = "Opțiuni avansate"
 en = "Viewing problems from"
 ro = "Se vizualizează probleme din"
 
-[submitLogin]
-en = '<a href="/login">Log in</a> or <a href="/signup">sign up</a> to be able to send submissions!'
-ro = '<a href="/login">Autentifică-te</a> sau <a href="/signup">înregistrează-te</a> pentru a putea trimite submisii!'
+[submitLogin1]
+en = "or"
+ro = "sau"
+
+[submitLogin2]
+en = "to be able to send submissions!"
+ro = "pentru a putea trimite submisii!"
 
 [settingsHeader]
 en = "Profile settings"
