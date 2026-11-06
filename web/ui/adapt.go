@@ -22,8 +22,11 @@ func ToTempl(n Node) templ.Component {
 }
 
 // FromTempl embeds a templ component in a gomponents tree. ctx is the request context,
-// since templ components read the language/user from it.
+// since templ components read the language/user from it. A nil component renders nothing.
 func FromTempl(ctx context.Context, c templ.Component) Node {
+	if c == nil {
+		return nil
+	}
 	return NodeFunc(func(w io.Writer) error {
 		return c.Render(ctx, w)
 	})

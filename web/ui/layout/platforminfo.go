@@ -7,6 +7,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
+	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
 
@@ -56,7 +57,7 @@ func platformInfo(ctx context.Context, enabledLanguages map[string]string) platf
 		User:             userBrief,
 		Admin:            userBrief.IsAdmin(),
 		UserID:           userID,
-		Language:         language(ctx),
+		Language:         util.LanguageContext(ctx),
 		EnabledLanguages: enabledLanguages,
 		SentryDSN:        sentryDSN,
 		InternalVersion:  kilonova.Version + buildInfo(),

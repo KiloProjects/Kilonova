@@ -32,9 +32,9 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/tutils"
 	"github.com/KiloProjects/kilonova/web/ui"
+	"github.com/KiloProjects/kilonova/web/ui/statuscode"
 	vproblems "github.com/KiloProjects/kilonova/web/views/problems"
 	"github.com/KiloProjects/kilonova/web/views/proposer"
-	"github.com/KiloProjects/kilonova/web/views/utilviews"
 	"github.com/a-h/templ"
 	"github.com/alecthomas/chroma/v2"
 	chtml "github.com/alecthomas/chroma/v2/formatters/html"
@@ -78,11 +78,8 @@ func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int
 	rt.runLayout(w, r, &LayoutParams{
 		Title:       fmt.Sprintf("Error %d | Kilonova", statusCode),
 		Description: errMessage,
-		Head:        utilviews.NoRobotsHead(),
-		Content: utilviews.StatusCode(utilviews.StatusCodeParams{
-			Code:    statusCode,
-			Message: errMessage,
-		}),
+		Head:        ui.NoRobots(),
+		Content:     ui.ToTempl(statuscode.View(r.Context(), statusCode, errMessage)),
 	})
 }
 

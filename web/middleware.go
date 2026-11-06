@@ -12,7 +12,7 @@ import (
 
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
-	"github.com/KiloProjects/kilonova/web/components/layout"
+	"github.com/KiloProjects/kilonova/web/ui/layout"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 

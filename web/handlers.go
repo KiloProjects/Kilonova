@@ -36,8 +36,11 @@ import (
 
 	knlanguage "github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
-	"github.com/KiloProjects/kilonova/web/components/layout"
+	"github.com/KiloProjects/kilonova/web/ui"
+	"github.com/KiloProjects/kilonova/web/ui/layout"
+	"github.com/KiloProjects/kilonova/web/ui/navbar"
 	"github.com/a-h/templ"
+	g "maragu.dev/gomponents"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
@@ -660,7 +663,7 @@ func (rt *Web) submission(w http.ResponseWriter, r *http.Request) {
 
 	rt.runLayout(w, r, &LayoutParams{
 		Title: fmt.Sprintf("%s %d", kilonova.GetText(util.Language(r), "sub"), sub.ID),
-		Head:  utilviews.NoRobotsHead(),
+		Head:  ui.NoRobots(),
 		Content: submissions.Submission(submissions.SubmissionPageParams{
 			Submission:    sub,
 			ForceShowCode: r.URL.Query().Get("forceCode") == "1",
@@ -758,7 +761,7 @@ func (rt *Web) submissions() http.HandlerFunc {
 		numPages := (subs.Count + 49) / 50
 		rt.runLayout(w, r, &LayoutParams{
 			Title: kilonova.GetText(util.Language(r), "submissions"),
-			Head:  utilviews.CanonicalURL("/submissions"),
+			Head:  ui.CanonicalURL("/submissions"),
 			Content: submissions.SubsPage(submissions.SubsViewerParams{
 				Submissions: subs,
 				Query:       query,
@@ -2420,7 +2423,7 @@ func (rt *Web) checkLockout() func(next http.Handler) http.Handler {
 func (rt *Web) confirmLogout(w http.ResponseWriter, r *http.Request) {
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "auth.logout"),
-		Head:    utilviews.NoRobotsHead(),
+		Head:    ui.NoRobots(),
 		Content: authviews.ConfirmLogout(r.FormValue("back")),
 	})
 }
@@ -2664,9 +2667,9 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 		description = descriptionBuf.String()
 	}
 
-	var head templ.Component = templ.NopComponent
+	var head g.Node
 	if hTempl.Lookup("head") != nil {
-		head = templ.FromGoHTML(hTempl.Lookup("head"), data)
+		head = ui.FromGoTmpl(hTempl.Lookup("head"), data)
 	}
 
 	rt.runLayout(w, r, &LayoutParams{
@@ -2680,46 +2683,36 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 type LayoutParams struct {
 	Title       string
 	Description string
-	Head        templ.Component
+	Head        g.Node
 	Content     templ.Component
 }
 
 func (rt *Web) runLayout(w io.Writer, r *http.Request, params *LayoutParams) {
-	layoutParams := layout.LayoutParams{
-		EnabledLanguages: rt.base.EnabledLanguages(),
-		Title:            params.Title,
-		Description:      params.Description,
-		Navbar:           layout.Navbar(rt.canViewAllSubs(user.UserBrief(r)), reqPath(r)),
-		Head:             params.Head,
-		Content:          params.Content,
-		Assets:           assets,
-		HideFooter:       false,
-	}
-	if layoutParams.Head == nil {
-		layoutParams.Head = templ.NopComponent
-	}
-
-	if err := layout.Layout(layoutParams).Render(r.Context(), w); err != nil {
-		slog.WarnContext(r.Context(), "Error rendering layout", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", user.UserBrief(r)))
-		fmt.Fprintf(w, "Error rendering layout, report to admin: %s", html.EscapeString(err.Error()))
-	}
+	rt.renderLayout(w, r, params, true)
 }
 
 //nolint:unused
 func (rt *Web) runEmptyPage(w io.Writer, r *http.Request, params *LayoutParams) {
-	layoutParams := layout.LayoutParams{
+	rt.renderLayout(w, r, params, false)
+}
+
+// renderLayout wraps params in the page layout; chrome adds the navbar and footer.
+func (rt *Web) renderLayout(w io.Writer, r *http.Request, params *LayoutParams, chrome bool) {
+	ctx := r.Context()
+	props := layout.Props{
 		EnabledLanguages: rt.base.EnabledLanguages(),
 		Title:            params.Title,
 		Description:      params.Description,
-		Navbar:           templ.NopComponent,
 		Head:             params.Head,
-		Content:          params.Content,
+		Content:          ui.FromTempl(ctx, params.Content),
 		Assets:           assets,
-		HideFooter:       true,
+		HideFooter:       !chrome,
 	}
-
-	if err := layout.Layout(layoutParams).Render(r.Context(), w); err != nil {
-		slog.WarnContext(r.Context(), "Error rendering layout", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", user.UserBrief(r)))
+	if chrome {
+		props.Navbar = navbar.View(ctx, rt.canViewAllSubs(user.UserBrief(r)), reqPath(r))
+	}
+	if err := layout.View(ctx, props).Render(w); err != nil {
+		slog.WarnContext(ctx, "Error rendering layout", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", user.UserBrief(r)))
 		fmt.Fprintf(w, "Error rendering layout, report to admin: %s", html.EscapeString(err.Error()))
 	}
 }
