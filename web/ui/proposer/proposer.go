@@ -21,7 +21,7 @@ func CreateContestForm(ctx context.Context) Node {
 		Form(ID("contest_form"),
 			field(ctx, "name", Input(ID("contest_title"), Type("text"), Class("form-input"), Required())),
 			Label(Class("block my-2"),
-				Span(Classes{"form-label": true, "text-muted": !admin}, ui.T(ctx, "contest_type"), Text(":")),
+				Span(Classes{"form-label": true, "text-muted": !admin}, ui.T(ctx, "contest_type"), Text(":")), Text(" "),
 				Select(ID("contest_type"), Class("form-select"), Required(), AutoComplete("off"),
 					Option(Value("official"), If(!admin, Disabled()), ui.T(ctx, "official")),
 					Option(Value("virtual"), Selected(), ui.T(ctx, "virtual")),
@@ -63,7 +63,7 @@ func CreateProblemList(ctx context.Context, parentList *kilonova.ProblemList) No
 			parent,
 			Div(Class("block my-2"),
 				Label(Class("inline-flex items-center text-lg"),
-					Input(Class("form-checkbox"), Name("sidebar_hidable"), ID("cr_sidebar_hidable"), Type("checkbox")),
+					Input(Class("form-checkbox"), Name("sidebar_hidable"), ID("cr_sidebar_hidable"), Type("checkbox")), Text(" "),
 					Span(Class("ml-2"), ui.T(ctx, "sidebar_hidable")),
 				),
 			),
@@ -112,7 +112,7 @@ document.getElementById("cr_pblist_form").addEventListener("submit", createProbl
 // field is a labelled form row: "<label>: <input>".
 func field(ctx context.Context, labelKey string, input Node) Node {
 	return Label(Class("block my-2"),
-		Span(Class("form-label"), ui.T(ctx, labelKey), Text(":")),
+		Span(Class("form-label"), ui.T(ctx, labelKey), Text(":")), Text(" "),
 		input,
 	)
 }

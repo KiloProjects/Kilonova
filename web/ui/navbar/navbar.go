@@ -27,7 +27,7 @@ func View(ctx context.Context, viewAllSubs bool, reqPath string) Node {
 					A(Class("roboto h-8 black-anchor"), Href("/"), Text(flags.NavbarBranding.Value())),
 				),
 				Div(Class("md:hidden inline-block"),
-					A(ID("theme_button_mobile"), Class(mobileButtonClass), Href("#"), themeIcon(ctx)),
+					A(ID("theme_button_mobile"), Class(mobileButtonClass), Href("#"), themeIcon(ctx)), Text(" "),
 					Button(ID("nav-toggler"), Type("button"), Attr("onclick", "navbar_mgr.toggleNavbar()"),
 						Class("fas fa-bars "+mobileButtonClass), Aria("label", ui.TS(ctx, "toggleNavbar"))),
 				),

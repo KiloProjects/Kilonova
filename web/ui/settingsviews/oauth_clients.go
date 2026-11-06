@@ -82,7 +82,7 @@ func OAuthClients(ctx context.Context, params OAuthClientsParams) Node {
 
 func createForm(ctx context.Context) Node {
 	field := func(key string, input Node) Node {
-		return Label(Class("block my-2"), Span(Class("form-label"), ui.T(ctx, key), Text(":")), input)
+		return Label(Class("block my-2"), Span(Class("form-label"), ui.T(ctx, key), Text(":")), Text(" "), input)
 	}
 	return Form(Class("segment-panel"), Method("POST"), Action("/settings/oauth"), AutoComplete("off"),
 		H2(ui.T(ctx, "oauth_clients.create")),
@@ -95,7 +95,7 @@ func createForm(ctx context.Context) Node {
 		field("oauth_clients.redirects", Textarea(Class("form-textarea block w-full"), Name("redirects"), Rows("3"), Required(), Placeholder("https://example.com/callback"))),
 		field("oauth_clients.post_logout_redirects", Textarea(Class("form-textarea block w-full"), Name("post_logout_redirects"), Rows("2"))),
 		Label(Class("inline-flex items-center my-2"),
-			Input(Class("form-checkbox"), Type("checkbox"), Name("dev_mode"), Value("true")),
+			Input(Class("form-checkbox"), Type("checkbox"), Name("dev_mode"), Value("true")), Text(" "),
 			Span(Class("ml-2"), ui.T(ctx, "oauth_clients.dev_mode")),
 		),
 		Div(ui.SubmitButton(ui.T(ctx, "button.create"))),

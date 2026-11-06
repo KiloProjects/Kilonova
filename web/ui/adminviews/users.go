@@ -23,7 +23,7 @@ func UsersList(ctx context.Context, params UsersListParams) Node {
 		H1(ui.T(ctx, "users")),
 		Form(Class("block my-2"), Method("GET"), Attr("hx-boost", "true"),
 			Label(
-				Span(Class("form-label"), ui.T(ctx, "name"), Text(":")),
+				Span(Class("form-label"), ui.T(ctx, "name"), Text(":")), Text(" "),
 				Input(Class("form-input my-1 block"), Type("text"), Name("name"), Placeholder("AlexVasiluta"), AutoComplete("off"), Value(params.Name)),
 			),
 			ui.SubmitButton(ui.T(ctx, "search_user")),

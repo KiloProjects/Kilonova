@@ -1,27 +1,25 @@
 package ui
 
 import (
-	"context"
 	"html/template"
-	"strings"
 	"testing"
 
-	"github.com/a-h/templ"
 	. "maragu.dev/gomponents"
 )
 
-// Round-trips a button through every adapter; output must survive unescaped.
+// Round-trips a button through both adapters; output must survive unescaped.
 func TestAdapters(t *testing.T) {
 	btn := Button(Text("Go"))
 	want := render(t, btn)
 
 	tmpl := template.Must(template.New("t").Funcs(template.FuncMap{"node": ToGoHTML}).Parse(`{{ node . }}`))
-	got := render(t, Group{
-		FromTempl(context.Background(), ToTempl(btn)),
-		FromGoTmpl(tmpl, btn),
-		FromTempl(context.Background(), templ.FromGoHTML(tmpl, btn)),
-	})
-	if got != strings.Repeat(want, 3) {
-		t.Fatalf("got %s", got)
+	if got := render(t, FromGoTmpl(tmpl, btn)); got != want {
+		t.Fatalf("got %s, want %s", got, want)
+	}
+	if got := render(t, Group{FromGoTmpl(nil, nil)}); got != "" {
+		t.Fatalf("nil template rendered %q", got)
+	}
+	if got, err := ToGoHTML(nil); got != "" || err != nil {
+		t.Fatalf("nil node rendered %q, %v", got, err)
 	}
 }

@@ -91,7 +91,7 @@ func ProblemSources(ctx context.Context, problemList *kilonova.ProblemList, prob
 			If(len(problems) == 0, Div(ui.T(ctx, "noPbFound"))),
 		),
 		Label(Class("block mb-2"),
-			Span(Class("form-label"), ui.T(ctx, "new_format"), Text(":")),
+			Span(Class("form-label"), ui.T(ctx, "new_format"), Text(":")), Text(" "),
 			Input(Class("form-input"), ID("new_format"), Name("new_format"), Type("text"), Attr("hx-preserve", "true"),
 				Value(ui.TS(ctx, "bulk_update_templ", problemList.Title)), Attr("hx-disabled-elt", "this"), Required()),
 		),

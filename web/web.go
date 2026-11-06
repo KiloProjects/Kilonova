@@ -33,7 +33,6 @@ import (
 	"github.com/KiloProjects/kilonova/web/ui"
 	"github.com/KiloProjects/kilonova/web/ui/problems"
 	"github.com/KiloProjects/kilonova/web/ui/statuscode"
-	"github.com/a-h/templ"
 	"github.com/alecthomas/chroma/v2"
 	chtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/lexers"
@@ -49,7 +48,6 @@ import (
 )
 
 //go:generate go run ../scripts/chroma_gen -o ./assets/chroma.css
-//go:generate go tool templ generate
 
 //go:embed static
 var embedded embed.FS
@@ -74,6 +72,8 @@ func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int
 		http.Error(w, errMessage, statusCode)
 		return
 	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(statusCode)
 	rt.runLayout(w, r, &LayoutParams{
 		Title:       fmt.Sprintf("Error %d | Kilonova", statusCode),
 		Description: errMessage,
@@ -127,6 +127,7 @@ func (rt *Web) Handler() http.Handler {
 	r.Use(rt.initSession)
 	r.Use(rt.initLanguage)
 	r.Use(rt.initTheme)
+	r.Use(rt.recover)
 	csrf := http.NewCrossOriginProtection()
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
@@ -862,10 +863,7 @@ func NewWeb(base *sudoapi.BaseAPI, llmProvider llm.Provider) *Web {
 			return nil
 		},
 		"node": ui.ToGoHTML,
-		"renderComponent": func(c templ.Component) (template.HTML, error) {
-			slog.ErrorContext(ctx, "Uninitialized `renderComponent`")
-			return "", nil
-		},
+
 		"createContestComponent": func() g.Node {
 			slog.ErrorContext(ctx, "Uninitialized `createContestComponent`")
 			return nil

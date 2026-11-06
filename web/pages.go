@@ -22,7 +22,6 @@ import (
 	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"github.com/a-h/templ"
 	"github.com/bwmarrin/discordgo"
 	g "maragu.dev/gomponents"
 )
@@ -178,7 +177,7 @@ type ProblemTopbarParams struct {
 
 	Languages []language.Lang
 	Problem   *kilonova.Problem
-	SubViewer templ.Component
+	SubViewer g.Node
 }
 
 type ProblemStatisticsParams struct {
@@ -330,7 +329,7 @@ type ProfileParams struct {
 
 	ChangeHistory []*kilonova.UsernameChange
 
-	SubViewer templ.Component
+	SubViewer g.Node
 
 	Page string
 }
@@ -370,18 +369,6 @@ type VerifiedEmailParams struct {
 type PasswordResetParams struct {
 	User      *kilonova.UserFull
 	RequestID string
-}
-
-type SubParams struct {
-	Submission *kilonova.FullSubmission
-}
-
-type PasteParams struct {
-	Paste *kilonova.SubmissionPaste
-
-	FullSub *sudoapi.FullSubmission
-
-	SyntaxHighlight templ.Component
 }
 
 // HTMX modals

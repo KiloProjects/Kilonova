@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
-	"runtime/debug"
 	"runtime/metrics"
 	"slices"
 	"strconv"
@@ -29,8 +28,8 @@ import (
 	"github.com/KiloProjects/kilonova/web/ui/modals"
 	"github.com/KiloProjects/kilonova/web/ui/problems"
 	"github.com/KiloProjects/kilonova/web/ui/proposer"
+	"github.com/KiloProjects/kilonova/web/ui/submissions"
 	"github.com/KiloProjects/kilonova/web/ui/utilviews"
-	"github.com/KiloProjects/kilonova/web/views/submissions"
 	"github.com/shopspring/decimal"
 	"github.com/skip2/go-qrcode"
 
@@ -39,7 +38,6 @@ import (
 	"github.com/KiloProjects/kilonova/web/ui"
 	"github.com/KiloProjects/kilonova/web/ui/layout"
 	"github.com/KiloProjects/kilonova/web/ui/navbar"
-	"github.com/a-h/templ"
 	g "maragu.dev/gomponents"
 
 	"github.com/KiloProjects/kilonova"
@@ -664,7 +662,7 @@ func (rt *Web) submission(w http.ResponseWriter, r *http.Request) {
 	rt.runLayout(w, r, &LayoutParams{
 		Title: fmt.Sprintf("%s %d", kilonova.GetText(util.Language(r), "sub"), sub.ID),
 		Head:  ui.NoRobots(),
-		Content: ui.FromTempl(r.Context(), submissions.Submission(submissions.SubmissionPageParams{
+		Content: submissions.Submission(r.Context(), submissions.SubmissionPageParams{
 			Submission:    sub,
 			ForceShowCode: r.URL.Query().Get("forceCode") == "1",
 			LanguageFormatter: func(lang string) string {
@@ -675,7 +673,7 @@ func (rt *Web) submission(w http.ResponseWriter, r *http.Request) {
 			},
 			OlderSubmissions: olderSubs,
 			SubmissionFiles:  subFiles,
-		})),
+		}),
 	})
 }
 
@@ -762,13 +760,13 @@ func (rt *Web) submissions() http.HandlerFunc {
 		rt.runLayout(w, r, &LayoutParams{
 			Title: kilonova.GetText(util.Language(r), "submissions"),
 			Head:  ui.CanonicalURL("/submissions"),
-			Content: ui.FromTempl(r.Context(), submissions.SubsPage(submissions.SubsViewerParams{
+			Content: submissions.SubsPage(r.Context(), submissions.SubsViewerParams{
 				Submissions: subs,
 				Query:       query,
 				NumPages:    numPages,
 				Languages:   rt.base.EnabledLanguages(),
 				IsAdmin:     user.UserBrief(r) != nil && user.UserBrief(r).IsAdmin(),
-			})),
+			}),
 		})
 	}
 }
@@ -811,21 +809,19 @@ func (rt *Web) paste(w http.ResponseWriter, r *http.Request) {
 
 	rt.runLayout(w, r, &LayoutParams{
 		Title: fmt.Sprintf("%s #%d", kilonova.GetText(util.Language(r), "sub"), sub.ID),
-		Content: ui.FromTempl(r.Context(), submissions.Paste(submissions.PastePageParams{
-			Paste: util.Paste(r),
-			SubmissionPageParams: submissions.SubmissionPageParams{
-				Submission:    sub,
-				ForceShowCode: true,
-				LanguageFormatter: func(lang string) string {
-					if lng := rt.base.AnyLanguage(lang); lng != nil {
-						return lng.PrintableName()
-					}
-					return "Unknown"
-				},
-				OlderSubmissions: olderSubs,
-				SubmissionFiles:  subFiles,
+		Content: submissions.Paste(r.Context(), submissions.PastePageParams{
+			Paste:         util.Paste(r),
+			Submission:    sub,
+			ForceShowCode: true,
+			LanguageFormatter: func(lang string) string {
+				if lng := rt.base.AnyLanguage(lang); lng != nil {
+					return lng.PrintableName()
+				}
+				return "Unknown"
 			},
-		})),
+			OlderSubmissions: olderSubs,
+			SubmissionFiles:  subFiles,
+		}),
 	})
 }
 
@@ -1156,7 +1152,7 @@ func (rt *Web) problemSubmissions() http.HandlerFunc {
 		rt.runTempl(w, r, normalTempl, &ProblemTopbarParams{
 			Topbar:  rt.problemTopbar(r, "pb_submissions", -1),
 			Problem: problem,
-			SubViewer: submissions.SubsViewer(submissions.SubsViewerParams{
+			SubViewer: submissions.SubsViewer(r.Context(), submissions.SubsViewerParams{
 				Submissions: subs,
 				Query:       query,
 				Overwrites:  overwrites,
@@ -1211,9 +1207,9 @@ func (rt *Web) problemSubmit() http.HandlerFunc {
 		if subsErr != nil {
 			slog.WarnContext(r.Context(), "Couldn't fetch past submissions", slog.Any("err", subsErr))
 		}
-		var subViewer templ.Component
+		var subViewer g.Node
 		if subs != nil {
-			subViewer = submissions.SubsViewer(submissions.SubsViewerParams{
+			subViewer = submissions.SubsViewer(r.Context(), submissions.SubsViewerParams{
 				Submissions: subs,
 				Query:       query,
 				Overwrites:  overwrites,
@@ -2025,7 +2021,7 @@ func (rt *Web) userSubmissions() http.HandlerFunc {
 
 		rt.runTempl(w, r, parsedTempl, &ProfileParams{
 			ContentUser: userFull,
-			SubViewer: submissions.SubsViewer(submissions.SubsViewerParams{
+			SubViewer: submissions.SubsViewer(r.Context(), submissions.SubsViewerParams{
 				Submissions: subs,
 				Query:       query,
 				NumPages:    numPages,
@@ -2638,15 +2634,6 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 		},
 		"inModal": func() bool {
 			return name == "modal"
-		},
-		"renderComponent": func(c templ.Component) (template.HTML, error) {
-			defer func() {
-				if err := recover(); err != nil {
-					fmt.Println(err)
-					fmt.Println(string(debug.Stack()))
-				}
-			}()
-			return templ.ToGoHTML(r.Context(), c)
 		},
 	})
 

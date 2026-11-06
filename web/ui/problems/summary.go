@@ -68,6 +68,7 @@ func InfoSidebar(ctx context.Context, params *InfoParams) Node {
 					tagList(otherTags), Text(" "),
 					A(Href("#"), Attr("@click.prevent", "open = !open"), ui.T(ctx, "hide")),
 				),
+				Text(" "),
 				A(Href("#"), Attr("@click.prevent", "open = !open"), Attr("x-show", "!open"), Attr("x-cloak"), ui.T(ctx, "view")),
 			)),
 			If(user.UserBriefContext(ctx).IsAuthed(), P(scoreLabel(ctx, pb), Text(": "), score(params))),

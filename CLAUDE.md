@@ -9,7 +9,7 @@ Kilonova is a competitive programming platform: a Go monolith (HTTP frontend + J
 Build order matters — generated files are `go:embed`ed, so generation and asset builds must run **before** `go build`/`go test`:
 
 ```sh
-go generate ./...            # translations.toml -> _translations.json (x2), chroma.css, templ generate
+go generate ./...            # translations.toml -> _translations.json (x2), chroma.css
 pnpm -C web/assets install
 pnpm -C web/assets build     # -> web/static/misc + manifest.{bundled,vendored,css}.json
 go build ./cmd/kn            # produces ./kn
@@ -22,7 +22,7 @@ golangci-lint run            # config in .golangci.yaml
 - Containers: one `Dockerfile`, two targets — `--target platform` (`kn main`, no toolchains) and `--target grader` (`kn grader-serve`, isolate + every language). `compose.yaml` runs Postgres + platform + grader; the platform image cannot sandbox, so containers always run `KN_EVAL_MODE=remote`. See `docs/deployment.md`.
 - `pnpm -C web/assets watch` rebuilds assets on change (three parallel Vite builds, one per bundle).
 - `./kn main` runs the platform; `./kn grader-serve` runs a standalone remote grader. Startup config is `KN_*` environment variables (`.env` in the cwd is loaded by the process; `.env.example` and `kn --help` list them); runtime-editable settings live in the `flags` table in Postgres, seeded once from `flags.json` (`-f`) if that file exists. `./kn config-migrate` converts a legacy `config.toml`/`grader.toml`.
-- CLI tools are Go tool deps (`go tool templ`).
+- CLI tools are Go tool deps (`go tool goi18n`).
 - Docs site: `mkdocs` (see mkdocs.yml, `scripts/build_docs.sh`).
 
 ## Architecture
@@ -31,7 +31,9 @@ Layering is strict, top to bottom: **transport (`web`, `api`) → `sudoapi` → 
 
 - **`sudoapi`** — `BaseAPI` is the god object holding the pgx pool, `db.DB`, datastore buckets, mailer, markdown renderer, session cache, Discord session, OIDC provider, and the grader hook. Everything is wired in `InitializeBaseAPI`/`GetBaseAPI` and passed down to `web`, `api`, and `eval/grader`. Methods here do permission checks and return errors created with `kilonova.Statusf(code, ...)`.
 - **Errors** — `kilonova.Statusf` attaches an HTTP status to an error; status 500 falls back to a plain `fmt.Errorf`. `kilonova.ErrorCode`/`MaybeErrorCode` recover it at the transport layer. Package-level sentinels (`ErrNotFound`, …) live in `status.go`.
-- **`web`** — server-rendered pages on chi. Two template systems coexist: legacy `html/template` files under `web/templ` (embedded) and newer [templ](https://templ.guide) components under `web/views`, `web/components`, `web/tutils` (`*.templ` + generated `*_templ.go`, both committed). HTMX + Alpine drive interactivity. `web/handlers.go` and `web/web.go` are large; routing lives in `web.go`.
+- **`web`** — server-rendered pages on chi. Two template systems coexist: legacy `html/template` files under `web/templ` (embedded) and [gomponents](https://www.gomponents.com) components under `web/ui`. HTMX + Alpine drive interactivity. `web/handlers.go` and `web/web.go` are large; routing lives in `web.go`.
+- **`web/ui`** — the component library and every gomponents view. Shared pieces (buttons, `Paginator`, `Score`, `ServerTimestamp`, `CenteredLayout`, `NoRobots`/`CanonicalURL`) live in package `ui`; pages and fragments live in subpackages (`layout`, `navbar`, `footer`, `submissions`, …). Views take the request `ctx` explicitly and translate with `ui.T` (escaped node), `ui.TRaw` (trusted markup) or `ui.TS` (string, for attributes). Dot-import gomponents only inside `web/ui`; elsewhere import it as `g`. Inside package `ui` itself, `html` is aliased `h` because `ui.Button` clashes with `html.Button`.
+- **html/template ↔ gomponents** — `LayoutParams.Head`/`Content` and page-struct fields are `g.Node`; html/template renders them with `{{ node . }}` (`ui.ToGoHTML`), and `ui.FromGoTmpl` embeds a template block in a node. FuncMap entries that build a view needing `ctx` go in the per-request map in `runTemplate` (with a logging placeholder of the same name in the static map in `web.go`). `If` builds its node eagerly and `Iff` only skips work when false — to defer work to render time (e.g. the footer's timings), use `NodeFunc`.
 - **`api`** — `/api` is the legacy hand-rolled JSON API (`api.go`, `StatusData` envelopes); `/api/v2` is [huma](https://huma.rocks) with OpenAPI, session/scope middleware in `middlewarev2.go`.
 - **`db`** — thin pgx layer, one file per entity, raw SQL with `pgx.RowToStructByNameLax`. Schema changes are **append-only migration files** in `db/psql_schema/NNN.name.sql` registered in the `Migrations` list in `db/migrations.go` (IDs are the ordering key and must not be reused); `999.views.sql` is a special migration re-run on every startup. Migrations run at boot when the `behavior.db.run_migrations` flag is on.
 - **`domain/`** — newer, more isolated pieces: `config` (env-populated startup structs + flag registry), `datastore` (afero-backed buckets for tests/subtests/attachments/avatars), `user`, `archive` (problem import/export).
