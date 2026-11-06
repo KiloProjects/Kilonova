@@ -18,6 +18,11 @@ func TestButton(t *testing.T) {
 			t.Fatalf("missing type/attrs/text: %s", got)
 		}
 	})
+	t.Run("danger submit is red and submits", func(t *testing.T) {
+		if got := render(t, DangerSubmitButton(Text("Delete"))); got != `<button type="submit" class="btn btn-red">Delete</button>` {
+			t.Fatalf("got %s", got)
+		}
+	})
 	t.Run("defaults to type=button", func(t *testing.T) {
 		if got := render(t, Button(Text("Go"))); got != `<button type="button" class="btn btn-blue">Go</button>` {
 			t.Fatalf("got %s", got)

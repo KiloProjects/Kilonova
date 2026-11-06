@@ -12,8 +12,7 @@ import (
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/auth"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/KiloProjects/kilonova/web/ui"
-	"github.com/KiloProjects/kilonova/web/views/settingsviews"
+	"github.com/KiloProjects/kilonova/web/ui/settingsviews"
 )
 
 func (rt *Web) renderOAuthClients(w http.ResponseWriter, r *http.Request, params settingsviews.OAuthClientsParams) {
@@ -28,7 +27,7 @@ func (rt *Web) renderOAuthClients(w http.ResponseWriter, r *http.Request, params
 	params.ShowCreate = true
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "oauth_clients"),
-		Content: ui.FromTempl(r.Context(), settingsviews.OAuthClients(params)),
+		Content: settingsviews.OAuthClients(r.Context(), params),
 	})
 }
 
@@ -152,10 +151,10 @@ func (rt *Web) adminOAuthClients(w http.ResponseWriter, r *http.Request) {
 	}
 	rt.runLayout(w, r, &LayoutParams{
 		Title: kilonova.GetText(util.Language(r), "oauth_clients"),
-		Content: ui.FromTempl(r.Context(), settingsviews.OAuthClients(settingsviews.OAuthClientsParams{
+		Content: settingsviews.OAuthClients(r.Context(), settingsviews.OAuthClientsParams{
 			Clients: clients,
 			Authors: authors,
-		})),
+		}),
 	})
 }
 
@@ -168,7 +167,7 @@ func (rt *Web) authorizedApps(w http.ResponseWriter, r *http.Request) {
 	}
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "authorized_apps"),
-		Content: ui.FromTempl(r.Context(), settingsviews.AuthorizedApps(clients)),
+		Content: settingsviews.AuthorizedApps(r.Context(), clients),
 	})
 }
 

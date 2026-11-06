@@ -4,7 +4,6 @@ package modals
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -44,7 +43,7 @@ func OlderSubmissions(ctx context.Context, params *OlderSubmissionsParams) Node 
 		Div(ID("older_subs"), Attr("hx-select", "#older_subs"), Attr("hx-get", url), Attr("hx-swap", "outerHTML"), Attr("hx-trigger", trigger),
 			Map(subs, func(sub *kilonova.Submission) Node {
 				return A(Href(fmt.Sprintf("/submissions/%d", sub.ID)), Class("black-anchor flex justify-between items-center rounded-sm py-1 px-2 hoverable"),
-					Span(Textf("#%d: ", sub.ID), El("server-timestamp", Attr("timestamp", strconv.FormatInt(sub.CreatedAt.UnixMilli(), 10)))),
+					Span(Textf("#%d: ", sub.ID), ui.ServerTimestamp(sub.CreatedAt)),
 					Span(Class("badge-lite text-sm"), submissionStatus(params.Problem, sub)),
 				)
 			}),
