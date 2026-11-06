@@ -3,48 +3,21 @@
 package web
 
 import (
-	"bytes"
-	"context"
 	"embed"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"html"
-	"html/template"
 	"io/fs"
 	"log/slog"
-	"math"
 	"net/http"
-	"net/netip"
-	"net/url"
 	"path"
-	"reflect"
-	"strconv"
 	"strings"
-	"time"
-	"unicode"
 
-	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/domain/config"
-	"github.com/KiloProjects/kilonova/infra/maxmind"
 	"github.com/KiloProjects/kilonova/net/llm"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/ui"
-	"github.com/KiloProjects/kilonova/web/ui/problems"
 	"github.com/KiloProjects/kilonova/web/ui/statuscode"
-	"github.com/alecthomas/chroma/v2"
-	chtml "github.com/alecthomas/chroma/v2/formatters/html"
-	"github.com/alecthomas/chroma/v2/lexers"
-	"github.com/alecthomas/chroma/v2/styles"
-	"github.com/bwmarrin/discordgo"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/dustin/go-humanize"
 	"github.com/go-chi/chi/v5"
-	"github.com/shopspring/decimal"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-	g "maragu.dev/gomponents"
 )
 
 //go:generate go run ../scripts/chroma_gen -o ./assets/chroma.css
@@ -52,14 +25,11 @@ import (
 //go:embed static
 var embedded embed.FS
 
-//go:embed templ
-var templateDir embed.FS
-
 // Web is the struct representing this whole package
 type Web struct {
-	funcs template.FuncMap
-
 	base *sudoapi.BaseAPI
+
+	llmEnabled bool
 }
 
 func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int, errMessage string) {
@@ -163,13 +133,13 @@ func (rt *Web) Handler() http.Handler {
 		r.Get("/profile/{user}/gravatar", rt.gravatar)
 		r.Get("/profile/{user}/discordAvatar", rt.discordAvatar)
 
-		r.Get("/termsOfService", rt.justRender("util/termsOfService.html"))
-		r.Get("/privacyPolicy", rt.justRender("util/privacyPolicy.html"))
+		r.Get("/termsOfService", rt.termsOfService)
+		r.Get("/privacyPolicy", rt.privacyPolicy)
 
 		r.With(csrf.Handler).Get("/login", rt.getLogin)
 		r.With(csrf.Handler).Post("/login", rt.handleLogin)
-		r.With(rt.mustBeVisitor, csrf.Handler).Get("/signup", rt.justRender("auth/signup.html"))
-		r.With(rt.mustBeVisitor, csrf.Handler).Get("/forgot_pwd", rt.justRender("auth/forgot_pwd_send.html"))
+		r.With(rt.mustBeVisitor, csrf.Handler).Get("/signup", rt.signup)
+		r.With(rt.mustBeVisitor, csrf.Handler).Get("/forgot_pwd", rt.forgotPassword)
 
 		r.With(rt.mustBeAuthed, csrf.Handler).Post("/logout", rt.logout)
 		r.With(rt.mustBeAuthed, csrf.Handler).Get("/logout", rt.confirmLogout)
@@ -214,7 +184,7 @@ func (rt *Web) Handler() http.Handler {
 			r.Route("/{postslug}", rt.blogPostRouter)
 		})
 		// not /posts/create since there could be a post that is slugged "create"
-		r.With(rt.mustBeProposer).Get("/createPost", rt.justRender("blogpost/create.html"))
+		r.With(rt.mustBeProposer).Get("/createPost", rt.createPost())
 
 		r.With(rt.canViewTags).Route("/tags", func(r chi.Router) {
 			r.Get("/", rt.tags())
@@ -277,9 +247,9 @@ func (rt *Web) Handler() http.Handler {
 		})
 
 		r.With(rt.mustBeAdmin).Route("/admin", func(r chi.Router) {
-			r.Get("/", rt.justRender("admin/admin.html"))
+			r.Get("/", rt.adminPanel)
 			r.Get("/users", rt.usersList())
-			r.Get("/user_gen", rt.justRender("admin/user_gen.html"))
+			r.Get("/user_gen", rt.userGen)
 			r.Get("/auditLog", rt.auditLog())
 			r.Get("/debug", rt.debugPage())
 			r.Get("/sessions", rt.sessionsFilter())
@@ -287,593 +257,15 @@ func (rt *Web) Handler() http.Handler {
 		})
 
 		// Proposer panel
-		r.With(rt.mustBeProposer).Get("/proposer", rt.justRender(
-			"proposer/index.html",
-			"proposer/createproblem.html", "proposer/importproblem.html",
-		))
+		r.With(rt.mustBeProposer).Get("/proposer", rt.proposerPanel)
 	})
-
-	rt.checkUsedFunctions()
-	rt.checkUsedTemplateFiles()
 
 	return r
 }
 
-func (rt *Web) parse(files ...string) *template.Template {
-	return parse(rt.funcs, files...)
-}
-
-func (rt *Web) checkUsedFunctions() {
-	for key := range rt.funcs {
-		if _, ok := calledFunctions[key]; !ok {
-			slog.DebugContext(context.Background(), "Possibly unused template function", slog.String("name", key))
-		}
-	}
-}
-
-func (rt *Web) checkUsedTemplateFiles() {
-	fs.WalkDir(templateDir, ".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		if _, ok := addedTemplates[path]; !ok {
-			slog.DebugContext(context.Background(), "Possibly unused template file", slog.String("name", path))
-		}
-		return nil
-	})
-}
-
 // NewWeb returns a new web instance
 func NewWeb(base *sudoapi.BaseAPI, llmProvider llm.Provider) *Web {
-	ctx := context.Background()
-
-	funcs := template.FuncMap{
-		"problemSettings": func(problem *kilonova.Problem) *kilonova.ProblemEvalSettings {
-			settings, err := base.ProblemSettings(ctx, problem)
-			if err != nil {
-				slog.WarnContext(ctx, "Could not get problem settings", slog.Any("err", err))
-				return nil
-			}
-			return settings
-		},
-		"problemList": func(id int) *kilonova.ProblemList {
-			list, err := base.ProblemList(ctx, id)
-			if err != nil {
-				return nil
-			}
-			return list
-		},
-		"unassociatedProblems": func(user *kilonova.UserBrief) []*kilonova.ScoredProblem {
-			pbs, err := base.ScoredProblems(ctx, kilonova.ProblemFilter{
-				LookingUser: user, Look: true, Unassociated: true,
-			}, user, user)
-			if err != nil {
-				return nil
-			}
-			return pbs
-		},
-		"contestProblems": func(user *kilonova.UserBrief, c *kilonova.Contest) []*kilonova.ScoredProblem {
-			pbs, err := base.ContestProblems(ctx, c, user)
-			if err != nil {
-				return []*kilonova.ScoredProblem{}
-			}
-			return pbs
-		},
-		"problemFromList": func(pbs []*kilonova.ScoredProblem, id int) *kilonova.ScoredProblem {
-			for _, pb := range pbs {
-				if pb.ID == id {
-					return pb
-				}
-			}
-			return nil
-		},
-		"problemContests": func(user *kilonova.UserBrief, pb *kilonova.Problem) []*kilonova.Contest {
-			contests, err := base.ProblemRunningContests(ctx, pb.ID)
-			if err != nil {
-				slog.WarnContext(ctx, "Couldn't get running contests", slog.Any("err", err))
-				return nil
-			}
-			actualContests := make([]*kilonova.Contest, 0, len(contests))
-			for _, contest := range contests {
-				if base.CanSubmitInContest(user, contest) {
-					actualContests = append(actualContests, contest)
-				}
-			}
-			return actualContests
-		},
-		"decimalFromInt": decimal.NewFromInt,
-		"subScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) (template.HTML, error) {
-			if user == nil {
-				return "", nil
-			}
-			score := base.MaxScore(ctx, user.ID, pb.ID)
-			return ui.ToGoHTML(ui.Score(pb, &score, true))
-		},
-		"actualMaxScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) decimal.Decimal {
-			return base.MaxScore(ctx, user.ID, pb.ID)
-		},
-		"spbMaxScore": func(pb *kilonova.ScoredProblem, summaryDisplay bool) (template.HTML, error) {
-			if pb.ScoreUserID == nil { // no score was loaded for this user
-				return "", nil
-			}
-			return ui.ToGoHTML(ui.Score(&pb.Problem, pb.MaxScore, summaryDisplay))
-		},
-		"checklistMaxScore": func(pb *kilonova.ScoredProblem) string {
-			if pb.ScoreUserID == nil {
-				return "-1"
-			}
-			if pb.MaxScore == nil || pb.MaxScore.IsNegative() {
-				return "-1"
-			}
-			return ui.RemoveTrailingZeros(pb.MaxScore.StringFixed(pb.ScorePrecision))
-		},
-		"computeChecklistSpan": computeChecklistSpan,
-		"scoreStep": func(pb *kilonova.Problem) string {
-			return decimal.NewFromInt(1).Shift(-pb.ScorePrecision).String()
-		},
-		"contestAnnouncements": func(c *kilonova.Contest) []*kilonova.ContestAnnouncement {
-			announcements, err := base.ContestAnnouncements(ctx, c.ID)
-			if err != nil {
-				return []*kilonova.ContestAnnouncement{}
-			}
-			return announcements
-		},
-		"isUSACOstyle": func(c *kilonova.Contest) bool {
-			return c.PerUserTime > 0
-		},
-		"startedUSACO": func(c *kilonova.Contest, reg *kilonova.ContestRegistration) bool {
-			if c.PerUserTime == 0 {
-				return false
-			}
-			return reg.IndividualStartTime != nil
-		},
-		"endedUSACO": func(c *kilonova.Contest, reg *kilonova.ContestRegistration) bool {
-			if c.PerUserTime == 0 {
-				return false
-			}
-			return reg.IndividualStartTime != nil && reg.IndividualEndTime.Before(time.Now())
-		},
-		"remainingContestTime": func(c *kilonova.Contest, reg *kilonova.ContestRegistration) time.Time {
-			if c.PerUserTime == 0 || reg == nil || reg.IndividualStartTime == nil {
-				return c.EndTime
-			}
-			if time.Now().Before(*reg.IndividualEndTime) {
-				return *reg.IndividualEndTime
-			}
-			return c.EndTime
-		},
-		"allContestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {
-			questions, err := base.ContestQuestions(ctx, c.ID)
-			if err != nil {
-				return []*kilonova.ContestQuestion{}
-			}
-			return questions
-		},
-		"listProblems": func(user *kilonova.UserBrief, list *kilonova.ProblemList) []*kilonova.ScoredProblem {
-			pbs, err := base.ProblemListProblems(ctx, list.List, user)
-			if err != nil {
-				return nil
-			}
-			return pbs
-		},
-		"pbParentPblists": func(problem *kilonova.Problem) []*kilonova.ProblemList {
-			slog.ErrorContext(ctx, "Uninitialized `pbParentPblists`")
-			return nil
-		},
-		"pblistParent": func(pblist *kilonova.ProblemList) []*kilonova.ProblemList {
-			lists, err := base.PblistParentLists(ctx, pblist.ID)
-			if err != nil {
-				return nil
-			}
-			if len(lists) > 5 {
-				lists = lists[:5]
-			}
-			return lists
-		},
-		"renderMarkdown": func(body any) template.HTML {
-			var bd []byte
-			switch body := body.(type) {
-			case string:
-				bd = []byte(body)
-			case []byte:
-				bd = body
-			case template.HTML:
-				bd = []byte(body)
-			default:
-				slog.ErrorContext(ctx, "Unknown renderMarkdown type")
-				return "[Fatal error rendering markdown]"
-			}
-			val, err := base.RenderMarkdown(bd, nil)
-			if err != nil {
-				slog.WarnContext(ctx, "Error rendering markdown", slog.Any("err", err))
-				return "[Error rendering markdown]"
-			}
-			return template.HTML(val)
-		},
-		"hasField": func(v any, name string) bool {
-			rv := reflect.ValueOf(v)
-			if rv.Kind() == reflect.Pointer {
-				rv = rv.Elem()
-			}
-			if rv.Kind() != reflect.Struct {
-				return false
-			}
-			return rv.FieldByName(name).IsValid()
-		},
-		"safeHTML": func(s string) template.HTML {
-			return template.HTML(s)
-		},
-		"unescapeHTML": html.UnescapeString,
-		"escapeHTML":   html.EscapeString,
-		"serverTime": func() string {
-			return time.Now().Format(time.RFC3339Nano)
-		},
-		"syntaxHighlight": func(code []byte, lang string) (string, error) {
-			cfmt := chtml.New(chtml.WithClasses(true), chtml.TabWidth(4))
-			if lang == "pascal" {
-				lang = "pas"
-			}
-			if lang == "nodejs" {
-				lang = "js"
-			}
-			lm := lexers.Get(strings.TrimFunc(lang, unicode.IsDigit))
-			if lm == nil {
-				lm = lexers.Fallback
-			}
-			lm = chroma.Coalesce(lm)
-			var buf bytes.Buffer
-			it, err := lm.Tokenise(nil, string(code))
-			if err != nil {
-				return "", err
-			}
-			if err := cfmt.Format(&buf, styles.Get("github"), it); err != nil {
-				return "", err
-			}
-			return buf.String(), nil
-		},
-		"problemsTemplate": func(params *problems.ProblemListingParams) g.Node {
-			slog.ErrorContext(ctx, "Uninitialized `problemsTemplate`")
-			return nil
-		},
-		"genProblemsParams": func(pbs []*kilonova.ScoredProblem, showPublished bool) *problems.ProblemListingParams {
-			return &problems.ProblemListingParams{Problems: pbs, ShowID: true, ShowPublished: showPublished, ContestIDScore: nil, ListID: nil}
-		},
-		"genListProblemsParams": func(pbs []*kilonova.ScoredProblem, showPublished bool, listID int) *problems.ProblemListingParams {
-			return &problems.ProblemListingParams{Problems: pbs, ShowID: true, ShowPublished: showPublished, ContestIDScore: nil, ListID: new(listID)}
-		},
-		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *problems.ProblemListingParams {
-			slog.ErrorContext(ctx, "Uninitialized `genContestProblemsParams`")
-			return nil
-		},
-		"genPblistParams": func(pblist *kilonova.ProblemList, open bool) *PblistParams {
-			return &PblistParams{pblist, open}
-		},
-		"numSolvedPbs": func(pbs []*kilonova.ScoredProblem) int {
-			var cnt int
-			hundred := decimal.NewFromInt(100)
-			for _, pb := range pbs {
-				if pb.MaxScore != nil && pb.MaxScore.Equal(hundred) {
-					cnt++
-				}
-			}
-			return cnt
-		},
-		"user": func(uid int) *kilonova.UserBrief {
-			user, err := base.UserBrief(ctx, uid)
-			if err != nil {
-				return nil
-			}
-			return user
-		},
-		"problemTests": func(problem *kilonova.Problem) []*kilonova.Test {
-			tests, err := base.Tests(ctx, problem.ID)
-			if err != nil {
-				return nil
-			}
-			return tests
-		},
-		"problemSubtasks": func(problem *kilonova.Problem) []*kilonova.SubTask {
-			sts, err := base.SubTasks(ctx, problem.ID)
-			if err != nil {
-				return nil
-			}
-			return sts
-		},
-		"encodeJSON": func(data any) (string, error) {
-			d, err := json.Marshal(data)
-			return base64.StdEncoding.EncodeToString(d), err
-		},
-		"KBtoMB": func(kb int) float64 {
-			return math.Round(float64(kb)/1024.0*100) / 100.0
-		},
-		"humanizeBytes": func(cnt int64) string {
-			return humanize.IBytes(uint64(cnt))
-		},
-		"humanizeMaxSize":  func(cnt int) string { return humanize.IBytes(uint64(cnt) * 1024) },
-		"humanizeCodeSize": func(cnt int) string { return humanize.IBytes(uint64(cnt)) },
-		"formatMs": func(seconds float64) string {
-			return fmt.Sprintf("%dms", int(math.Floor(seconds*1000)))
-		},
-		"titleName": func(s string) string {
-			return cases.Title(language.English).String(s)
-		},
-		"version": func() string { return kilonova.Version },
-		"debug":   kilonova.DebugMode,
-
-		"formatCanonical": func(path string) string {
-			return kilonova.HostURL().JoinPath(path).String()
-		},
-
-		"tagsByType": func(g string) []*kilonova.Tag {
-			tags, err := base.TagsByType(ctx, kilonova.TagType(g))
-			if err != nil {
-				slog.WarnContext(ctx, "Couldn't get tags", slog.String("tag_type", g))
-				return nil
-			}
-			return tags
-		},
-		// NOTE: problemTags does no checking whether the tags are visible. It must be used only after making sure that the problem is Fully Visible.
-		"problemTags": func(pb *kilonova.Problem) []*kilonova.Tag {
-			if pb == nil {
-				return nil
-			}
-			tags, err := base.ProblemTags(ctx, pb.ID)
-			if err != nil {
-				slog.WarnContext(ctx, "Couldn't get problem tags", slog.Any("err", err))
-				return nil
-			}
-			return tags
-		},
-		"authorsFromTags": func(tags []*kilonova.Tag) string {
-			names := []string{}
-			for _, tag := range tags {
-				if tag.Type == kilonova.TagTypeAuthor {
-					names = append(names, tag.Name)
-				}
-			}
-			return strings.Join(names, ", ")
-		},
-
-		"intFlag": func(name string) int {
-			val, ok := config.GetFlagVal[int](name)
-			if !ok {
-				slog.WarnContext(ctx, "Flag is not proper type", slog.String("name", name))
-			}
-			return val
-		},
-		"boolFlag": func(name string) bool {
-			val, ok := config.GetFlagVal[bool](name)
-			if !ok {
-				slog.WarnContext(ctx, "Flag is not bool", slog.String("name", name))
-			}
-			return val
-		},
-		"stringFlag": func(name string) string {
-			val, ok := config.GetFlagVal[string](name)
-			if !ok {
-				slog.WarnContext(ctx, "Flag is not string", slog.String("name", name))
-			}
-			return val
-		},
-
-		// for admin configuration
-		"defaultLang":  flags.DefaultLanguage,
-		"testMaxMemMB": func() int { return flags.TestMaxMemKB.Value() / 1024 },
-
-		"bannedHotProblems": flags.BannedHotProblems.Value,
-
-		"llmEnabled": func() bool { return llmProvider != nil },
-		"boolFlags":  config.GetFlags[bool],
-
-		"stringFlags":   config.GetFlags[string],
-		"intFlags":      config.GetFlags[int],
-		"intArrayFlags": config.GetFlags[[]int],
-
-		"sessionDevices": func(sid string) []*sudoapi.SessionDevice {
-			devices, err := base.SessionDevices(ctx, sid)
-			if err != nil {
-				slog.WarnContext(ctx, "Could not get session devices", slog.Any("err", err))
-				return nil
-			}
-			return devices
-		},
-		"ipData": func(ip *netip.Addr) *maxmind.Data {
-			if ip == nil {
-				return nil
-			}
-			data, err := maxmind.IPData(*ip)
-			if err == nil && data != nil {
-				return data
-			}
-			return nil
-		},
-
-		// for problem edit page
-		"maxMemMB": func() float64 { return float64(flags.TestMaxMemKB.Value()) / 1024.0 },
-
-		"intList": func(ids []int) string {
-			if len(ids) == 0 {
-				return ""
-			}
-			var b strings.Builder
-			for i, id := range ids {
-				b.WriteString(strconv.Itoa(id))
-				if i != len(ids)-1 {
-					b.WriteRune(',')
-				}
-			}
-			return b.String()
-		},
-		"stringList": func(vals []string) string {
-			return strings.Join(vals, ", ")
-		},
-		"problemIDs": func(pbs []*kilonova.ScoredProblem) []int {
-			ids := make([]int, 0, len(pbs))
-			for _, pb := range pbs {
-				ids = append(ids, pb.ID)
-			}
-			return ids
-		},
-		"shallowPblistIDs": func(lists []*kilonova.ShallowProblemList) []int {
-			rez := []int{}
-			for _, l := range lists {
-				rez = append(rez, l.ID)
-			}
-			return rez
-		},
-		"formatStmtVariant": func(fmt *kilonova.StatementVariant) string {
-			slog.ErrorContext(ctx, "Uninitialized `formatStmtVariant`")
-			return ""
-		},
-		"mdVariantCount": func(sv []*kilonova.StatementVariant) int {
-			var cnt int
-			for _, v := range sv {
-				if v.Format == "md" {
-					cnt++
-				}
-			}
-			return cnt
-		},
-		"computeDonationSum": func(d *kilonova.Donation) float64 {
-			endTime := time.Now()
-			if d.CancelledAt != nil {
-				endTime = *d.CancelledAt
-			}
-			numMonths := (endTime.Year()-d.DonatedAt.Year())*12 + int(endTime.Month()-d.DonatedAt.Month()) + 1
-			if endTime.Day() < d.DonatedAt.Day() {
-				numMonths--
-			}
-			switch d.Type {
-			case kilonova.DonationTypeMonthly:
-				return d.Amount * float64(numMonths)
-			case kilonova.DonationTypeYearly:
-				numMonths /= 12
-				return d.Amount * float64(numMonths)
-			default:
-				return d.Amount
-			}
-		},
-
-		"dump":               spew.Sdump,
-		"canJoinContest":     base.CanJoinContest,
-		"canSubmitInContest": base.CanSubmitInContest,
-		"contestDuration": func(c *kilonova.Contest) string {
-			d := c.EndTime.Sub(c.StartTime).Round(time.Minute)
-			return d.String()
-		},
-		"usacoDuration": func(c *kilonova.Contest) string {
-			return (time.Duration(c.PerUserTime) * time.Second).String()
-		},
-		"add1": func(i int) int { return i + 1 },
-		"formatResourceURL": func(orgURL string) string {
-			u, err := url.Parse(orgURL)
-			if err != nil {
-				return orgURL
-			}
-			q := u.Query()
-			q.Set("utm_source", "resource")
-			q.Set("utm_medium", "external_resource")
-			q.Set("utm_campaign", "kilonova")
-			u.RawQuery = q.Encode()
-			return u.String()
-		},
-
-		"getCaptchaID": base.NewCaptchaID,
-		"pLanguages": func() map[string]string {
-			slog.ErrorContext(ctx, "Uninitialized `pLanguages`")
-			return make(map[string]string)
-		},
-		"mustSolveCaptcha": func() bool {
-			slog.ErrorContext(ctx, "Uninitialized `mustSolveCaptcha`")
-			return false
-		},
-		"inModal": func() bool {
-			slog.ErrorContext(ctx, "Uninitialized `inModal`")
-			return false
-		},
-		"getText": func(key string, vals ...any) string {
-			slog.ErrorContext(ctx, "Uninitialized `getText`")
-			return "FATAL ERR"
-		},
-		"reqPath": func() string {
-			slog.ErrorContext(ctx, "Uninitialized `reqPath`")
-			return "/"
-		},
-		"language": func() string {
-			slog.ErrorContext(ctx, "Uninitialized `language`")
-			return "en"
-		},
-		"authed": func() bool {
-			slog.ErrorContext(ctx, "Uninitialized `authed`")
-			return false
-		},
-		"contentUser": func() *kilonova.UserBrief {
-			slog.ErrorContext(ctx, "Uninitialized `contentUser`")
-			return nil
-		},
-		"fullAuthedUser": func() *kilonova.UserFull {
-			slog.ErrorContext(ctx, "Uninitialized `fullAuthedUser`")
-			return nil
-		},
-		"authedUser": func() *kilonova.UserBrief {
-			slog.ErrorContext(ctx, "Uninitialized `authedUser`")
-			return nil
-		},
-		"isAdmin": func() bool {
-			slog.ErrorContext(ctx, "Uninitialized `isAdmin`")
-			return false
-		},
-		"discordIdentity": func(user *kilonova.UserFull) *discordgo.User {
-			slog.ErrorContext(ctx, "Uninitialized `discordIdentity`")
-			return nil
-		},
-		"isContestEditor": func(c *kilonova.Contest) bool {
-			slog.ErrorContext(ctx, "Uninitialized `isContestEditor`")
-			return false
-		},
-		"contestLeaderboardVisible": func(c *kilonova.Contest) bool {
-			slog.ErrorContext(ctx, "Uninitialized `contestLeaderboardVisible`")
-			return false
-		},
-		"contestQuestions": func(c *kilonova.Contest) []*kilonova.ContestQuestion {
-			slog.ErrorContext(ctx, "Uninitialized `contestQuestions`")
-			return nil
-		},
-		"currentProblem": func() *kilonova.Problem {
-			slog.ErrorContext(ctx, "Uninitialized `currentProblem`")
-			return nil
-		},
-		"contestRegistration": func(c *kilonova.Contest) *kilonova.ContestRegistration {
-			slog.ErrorContext(ctx, "Uninitialized `contestRegistration`")
-			return nil
-		},
-		"problemFullyVisible": func() bool {
-			slog.ErrorContext(ctx, "Uninitialized `problemFullyVisible`")
-			return false
-		},
-		"numSolvedPblist": func(listID int) int {
-			slog.ErrorContext(ctx, "Uninitialized `numSolvedPblist`")
-			return -1
-		},
-		"subCode": func(sub *kilonova.FullSubmission) []byte {
-			slog.ErrorContext(ctx, "Uninitialized `subCode`")
-			return nil
-		},
-		"node": ui.ToGoHTML,
-
-		"createContestComponent": func() g.Node {
-			slog.ErrorContext(ctx, "Uninitialized `createContestComponent`")
-			return nil
-		},
-		"createPblistComponent": func(parent *kilonova.ProblemList) g.Node {
-			slog.ErrorContext(ctx, "Uninitialized `createPblistComponent`")
-			return nil
-		},
-	}
-	return &Web{funcs, base}
+	return &Web{base: base, llmEnabled: llmProvider != nil}
 }
 
 func staticFileServer(w http.ResponseWriter, r *http.Request) {

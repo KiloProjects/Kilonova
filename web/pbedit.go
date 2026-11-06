@@ -1,73 +1,72 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/KiloProjects/kilonova/sudoapi"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/KiloProjects/kilonova/web/ui/editors"
+	"github.com/KiloProjects/kilonova/web/ui/pbedit"
+	"github.com/KiloProjects/kilonova/web/ui/problems"
 	"github.com/go-chi/chi/v5"
+	g "maragu.dev/gomponents"
 )
 
-type StatementEditorParams struct {
-	Variants []*kilonova.StatementVariant
-	Variant  *kilonova.StatementVariant
-	Data     string
-	Att      *kilonova.Attachment
-
-	APIPrefix string
-}
-
-type AttachmentEditorParams struct {
-	Attachments []*kilonova.Attachment
-	Problem     *kilonova.Problem
-	BlogPost    *kilonova.BlogPost
-
-	APIPrefix string
-}
-
-type ProblemEditParams struct {
-	Problem *kilonova.Problem
-	Topbar  *ProblemTopbar
-
-	Diagnostics []*sudoapi.ProblemDiagnostic
-	Checklist   *kilonova.ProblemChecklist
-
-	AttachmentEditor *AttachmentEditorParams
-	StatementEditor  *StatementEditorParams
-}
-
 func (rt *Web) editIndex() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := rt.parse("problem/edit/index.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		chk, err := rt.base.ProblemChecklist(r.Context(), util.Problem(r).ID)
-		if err != nil {
-			chk = nil
+		ctx := r.Context()
+		pb := util.Problem(r)
+		chk, err := rt.base.ProblemChecklist(ctx, pb.ID)
+		if err != nil || chk == nil {
+			chk = &kilonova.ProblemChecklist{}
 		}
 
-		diagnostics, err := rt.base.ProblemDiagnostics(r.Context(), util.Problem(r))
+		diagnostics, err := rt.base.ProblemDiagnostics(ctx, pb)
 		if err != nil {
-			slog.WarnContext(r.Context(), "Error getting diagnostics", slog.Any("err", err))
-			diagnostics = nil
+			slog.WarnContext(ctx, "Error getting diagnostics", slog.Any("err", err))
+		}
+		diagLines := make([]string, 0, len(diagnostics))
+		for _, d := range diagnostics {
+			diagLines = append(diagLines, d.Level.String()+": "+d.Message)
 		}
 
-		rt.runTempl(w, r, tmpl, &ProblemEditParams{
-			Problem: util.Problem(r),
-			Topbar:  rt.problemTopbar(r, "general", -1),
+		settings, err := rt.base.ProblemSettings(ctx, pb)
+		if err != nil {
+			slog.WarnContext(ctx, "Could not get problem settings", slog.Any("err", err))
+			settings = nil
+		}
 
-			Checklist:   chk,
-			Diagnostics: diagnostics,
+		tags, err := rt.base.ProblemTags(ctx, pb.ID)
+		if err != nil {
+			slog.WarnContext(ctx, "Couldn't get problem tags", slog.Any("err", err))
+			tags = nil
+		}
+
+		rt.runLayout(w, r, &LayoutParams{
+			Title: kilonova.GetText(util.Language(r), "title.edit.index", pb.ID, pb.Name),
+			Content: pbedit.General(ctx, pbedit.GeneralParams{
+				Problem:     pb,
+				Topbar:      rt.problemTopbar(r, "general", -1),
+				Checklist:   chk,
+				Diagnostics: diagLines,
+				Settings:    settings,
+				Tags:        tags,
+				MaxMemMB:    float64(flags.TestMaxMemKB.Value()) / 1024.0,
+				LLMEnabled:  rt.llmEnabled,
+			}),
 		})
 	}
 }
 
 func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := rt.parse("problem/edit/desc.html", "modals/md_att_editor.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		variants, err := rt.base.ProblemDescVariants(r.Context(), util.Problem(r).ID, true)
 		if err != nil {
@@ -96,91 +95,176 @@ func (rt *Web) editDesc() func(w http.ResponseWriter, r *http.Request) {
 			statementData = string(val)
 		}
 
-		rt.runTempl(w, r, tmpl, &ProblemEditParams{
-			Problem: util.Problem(r),
-			Topbar:  rt.problemTopbar(r, "desc", -1),
+		pb := util.Problem(r)
+		rt.runLayout(w, r, &LayoutParams{
+			Title: kilonova.GetText(util.Language(r), "title.edit.description", pb.ID, pb.Name),
+			Content: g.Group{
+				problems.Topbar(r.Context(), rt.problemTopbar(r, "desc", -1)),
+				editors.StatementEditor(r.Context(), editors.StatementEditorParams{
+					Variants: variants,
+					Variant:  finalVariant,
+					Data:     statementData,
+					Att:      att,
 
-			StatementEditor: &StatementEditorParams{
-				Variants: variants,
-				Variant:  finalVariant,
-				Data:     statementData,
-				Att:      att,
-
-				APIPrefix: fmt.Sprintf("/problem/%d", util.Problem(r).ID),
+					APIPrefix: fmt.Sprintf("/problem/%d", pb.ID),
+				}),
 			},
 		})
 	}
 }
 
 func (rt *Web) editAttachments() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := rt.parse("problem/edit/attachments.html", "modals/att_manager.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
 		atts, err := rt.base.ProblemAttachments(r.Context(), util.Problem(r).ID)
 		if err != nil || len(atts) == 0 {
 			atts = nil
 		}
-		rt.runTempl(w, r, tmpl, &ProblemEditParams{
-			Problem: util.Problem(r),
-			Topbar:  rt.problemTopbar(r, "attachments", -1),
-
-			AttachmentEditor: &AttachmentEditorParams{
-				Attachments: atts,
-				Problem:     util.Problem(r),
-				APIPrefix:   fmt.Sprintf("/problem/%d", util.Problem(r).ID),
+		pb := util.Problem(r)
+		rt.runLayout(w, r, &LayoutParams{
+			Title: kilonova.GetText(util.Language(r), "title.edit.attachments", pb.ID, pb.Name),
+			Content: g.Group{
+				problems.Topbar(r.Context(), rt.problemTopbar(r, "attachments", -1)),
+				editors.AttachmentEditor(r.Context(), editors.AttachmentEditorParams{
+					Attachments: atts,
+					Problem:     pb,
+					Updaters:    rt.attUpdaters(r.Context(), atts),
+					APIPrefix:   fmt.Sprintf("/problem/%d", pb.ID),
+				}),
 			},
 		})
 	}
 }
 
 func (rt *Web) editAccessControl() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := rt.parse("problem/edit/access.html", "problem/topbar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, tmpl, &ProblemEditParams{
-			Problem: util.Problem(r),
-			Topbar:  rt.problemTopbar(r, "access", -1),
+		pb := util.Problem(r)
+		rt.runLayout(w, r, &LayoutParams{
+			Title:   kilonova.GetText(util.Language(r), "title.edit.access_control", pb.ID, pb.Name),
+			Content: pbedit.Access(r.Context(), pb, rt.problemTopbar(r, "access", -1)),
 		})
 	}
 }
 
+func (rt *Web) testsParams(r *http.Request, pageID int) pbedit.TestsParams {
+	pb := util.Problem(r)
+	tests, err := rt.base.Tests(r.Context(), pb.ID)
+	if err != nil {
+		tests = nil
+	}
+	return pbedit.TestsParams{Problem: pb, Topbar: rt.problemTopbar(r, "tests", pageID), Tests: tests}
+}
+
 func (rt *Web) testIndex() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := rt.parse("problem/edit/testScores.html", "problem/topbar.html", "problem/edit/testSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, tmpl, &TestEditParams{util.Problem(r), nil, rt.problemTopbar(r, "tests", -2), rt.base, r.Context()})
+		pb := util.Problem(r)
+		rt.runLayout(w, r, &LayoutParams{
+			Title:   kilonova.GetText(util.Language(r), "title.edit.tests", pb.ID, pb.Name),
+			Content: pbedit.TestScores(r.Context(), rt.testsParams(r, -2)),
+		})
 	}
 }
 
 func (rt *Web) testAdd() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := rt.parse("problem/edit/testAdd.html", "problem/topbar.html", "problem/edit/testSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, tmpl, &TestEditParams{util.Problem(r), nil, rt.problemTopbar(r, "tests", -1), rt.base, r.Context()})
+		pb := util.Problem(r)
+		params := rt.testsParams(r, -1)
+		params.NextVID = rt.base.NextVID(r.Context(), pb.ID)
+		rt.runLayout(w, r, &LayoutParams{
+			Title:   kilonova.GetText(util.Language(r), "title.edit.test_add", pb.ID, pb.Name),
+			Content: pbedit.TestAdd(r.Context(), params),
+		})
 	}
 }
 
 func (rt *Web) testEdit() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := rt.parse("problem/edit/testEdit.html", "problem/topbar.html", "problem/edit/testSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, tmpl, &TestEditParams{util.Problem(r), util.Test(r), rt.problemTopbar(r, "tests", util.Test(r).ID), rt.base, r.Context()})
+		pb, test := util.Problem(r), util.Test(r)
+		params := rt.testsParams(r, test.ID)
+		params.Test = test
+		params.Data = rt.testData(r.Context(), test.ID)
+		rt.runLayout(w, r, &LayoutParams{
+			Title:   kilonova.GetText(util.Language(r), "title.edit.test_edit", test.VisibleID, pb.ID, pb.Name),
+			Content: pbedit.TestEdit(r.Context(), params),
+		})
 	}
 }
 
+// testData reads a test's input and output, replacing either with a message if it is too large or unreadable.
+func (rt *Web) testData(ctx context.Context, testID int) pbedit.TestData {
+	in, err := rt.base.TestInput(testID)
+	if err != nil {
+		return pbedit.TestData{In: "err", Out: "err"}
+	}
+	defer in.Close()
+
+	out, err := rt.base.TestOutput(testID)
+	if err != nil {
+		return pbedit.TestData{In: "err", Out: "err"}
+	}
+	defer out.Close()
+
+	inData, okIn := readOrTruncate(ctx, in)
+	outData, okOut := readOrTruncate(ctx, out)
+	return pbedit.TestData{In: string(inData), OkIn: okIn, Out: string(outData), OkOut: okOut}
+}
+
+const readLimit = 1024 * 1024 // 1MB
+
+func readOrTruncate(ctx context.Context, r io.Reader) ([]byte, bool) {
+	var buf bytes.Buffer
+	if _, err := io.CopyN(&buf, r, readLimit); err != nil {
+		if errors.Is(err, io.EOF) {
+			return buf.Bytes(), true
+		}
+		slog.WarnContext(ctx, "Could not read until limit", slog.Any("err", err))
+		return []byte("err"), false
+	}
+
+	return []byte("Files larger than 1MB cannot be displayed"), false
+}
+
+func (rt *Web) subtasksParams(r *http.Request, pageID int) pbedit.SubtasksParams {
+	pb := util.Problem(r)
+	sts, err := rt.base.SubTasks(r.Context(), pb.ID)
+	if err != nil {
+		sts = nil
+	}
+	tests, err := rt.base.Tests(r.Context(), pb.ID)
+	if err != nil {
+		tests = nil
+	}
+	return pbedit.SubtasksParams{Problem: pb, Topbar: rt.problemTopbar(r, "subtasks", pageID), Subtasks: sts, Tests: tests}
+}
+
 func (rt *Web) subtaskIndex() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := rt.parse("problem/edit/subtaskIndex.html", "problem/topbar.html", "problem/edit/subtaskSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, tmpl, &SubTaskEditParams{util.Problem(r), nil, rt.problemTopbar(r, "subtasks", -2), r.Context(), rt.base})
+		pb := util.Problem(r)
+		rt.runLayout(w, r, &LayoutParams{
+			Title:   kilonova.GetText(util.Language(r), "title.edit.subtask", pb.ID, pb.Name),
+			Content: pbedit.SubtaskIndex(r.Context(), rt.subtasksParams(r, -2)),
+		})
 	}
 }
 
 func (rt *Web) subtaskAdd() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := rt.parse("problem/edit/subtaskAdd.html", "problem/topbar.html", "problem/edit/subtaskSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, tmpl, &SubTaskEditParams{util.Problem(r), nil, rt.problemTopbar(r, "subtasks", -1), r.Context(), rt.base})
+		pb := util.Problem(r)
+		rt.runLayout(w, r, &LayoutParams{
+			Title:   kilonova.GetText(util.Language(r), "title.edit.subtask_add", pb.ID, pb.Name),
+			Content: pbedit.SubtaskAdd(r.Context(), rt.subtasksParams(r, -1)),
+		})
 	}
 }
 
 func (rt *Web) subtaskEdit() func(w http.ResponseWriter, r *http.Request) {
-	tmpl := rt.parse("problem/edit/subtaskEdit.html", "problem/topbar.html", "problem/edit/subtaskSidebar.html")
 	return func(w http.ResponseWriter, r *http.Request) {
-		rt.runTempl(w, r, tmpl, &SubTaskEditParams{util.Problem(r), util.SubTask(r), rt.problemTopbar(r, "subtasks", util.SubTask(r).ID), r.Context(), rt.base})
+		pb, st := util.Problem(r), util.SubTask(r)
+		params := rt.subtasksParams(r, st.ID)
+		params.SubTask = st
+		rt.runLayout(w, r, &LayoutParams{
+			Title:   kilonova.GetText(util.Language(r), "title.edit.subtask_edit", st.VisibleID, pb.ID, pb.Name),
+			Content: pbedit.SubtaskEdit(r.Context(), params),
+		})
 	}
 }
 

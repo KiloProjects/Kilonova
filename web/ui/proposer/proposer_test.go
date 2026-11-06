@@ -58,3 +58,9 @@ func mustNot(t *testing.T, got string, bad ...string) {
 		}
 	}
 }
+
+func TestPanel(t *testing.T) {
+	got := render(t, Panel(context.WithValue(base, user.AuthedUserKey, &kilonova.UserBrief{ID: 5})))
+	must(t, got, `href="/problems?editor_user=5"`, `id="problem_create_form"`, `id="problem_import_form"`, `id="cr_pblist_form"`, `id="contest_form"`,
+		`<option value="ro" selected>`, `<option value="" selected>`, `title: "No files`)
+}

@@ -1,7 +1,0 @@
-{{ define "title" }} {{getText "title.edit.description" .Problem.ID .Problem.Name}} {{ end }}
-{{ define "content" }}
-{{ template "topbar.html" . }}
-
-{{template "md_att_editor.html" .StatementEditor }}
-
-{{ end }}
