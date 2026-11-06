@@ -63,6 +63,7 @@ require (
 	golang.org/x/sys v0.49.0
 	golang.org/x/text v0.43.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
+	maragu.dev/gomponents v1.4.0
 	vimagination.zapto.org/dos2unix v1.0.2
 )
 

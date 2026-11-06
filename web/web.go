@@ -31,6 +31,7 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/tutils"
+	"github.com/KiloProjects/kilonova/web/ui"
 	vproblems "github.com/KiloProjects/kilonova/web/views/problems"
 	"github.com/KiloProjects/kilonova/web/views/proposer"
 	"github.com/KiloProjects/kilonova/web/views/utilviews"
@@ -867,6 +868,7 @@ func NewWeb(base *sudoapi.BaseAPI, llmProvider llm.Provider) *Web {
 			slog.ErrorContext(ctx, "Uninitialized `subCode`")
 			return nil
 		},
+		"node": ui.ToGoHTML,
 		"renderComponent": func(c templ.Component) (template.HTML, error) {
 			slog.ErrorContext(ctx, "Uninitialized `renderComponent`")
 			return "", nil

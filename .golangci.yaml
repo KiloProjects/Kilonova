@@ -21,6 +21,10 @@ linters:
       checks:
         - all
         - -QF1001
+      dot-import-whitelist:
+        - "maragu.dev/gomponents"
+        - "maragu.dev/gomponents/components"
+        - "maragu.dev/gomponents/html"
     gocritic:
       disabled-checks:
         - commentFormatting
