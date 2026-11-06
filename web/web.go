@@ -79,7 +79,7 @@ func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int
 		Title:       fmt.Sprintf("Error %d | Kilonova", statusCode),
 		Description: errMessage,
 		Head:        ui.NoRobots(),
-		Content:     ui.ToTempl(statuscode.View(r.Context(), statusCode, errMessage)),
+		Content:     statuscode.View(r.Context(), statusCode, errMessage),
 	})
 }
 

@@ -22,7 +22,7 @@ func (rt *Web) getLogin(w http.ResponseWriter, r *http.Request) {
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "auth.login"),
 			Head:    ui.CanonicalURL("/login"),
-			Content: authviews.LoginPage(oidcID, back, ""),
+			Content: ui.FromTempl(r.Context(), authviews.LoginPage(oidcID, back, "")),
 		})
 		return
 	}
@@ -48,7 +48,7 @@ func (rt *Web) getLogin(w http.ResponseWriter, r *http.Request) {
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "auth.oauth_grant"),
 		Head:    ui.CanonicalURL("/login"),
-		Content: authviews.OAuthGrant(request, client),
+		Content: ui.FromTempl(r.Context(), authviews.OAuthGrant(request, client)),
 	})
 
 }
@@ -74,7 +74,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "auth.login"),
 			Head:    ui.CanonicalURL("/login"),
-			Content: authviews.LoginPage(oidcID, back, status.Error()),
+			Content: ui.FromTempl(r.Context(), authviews.LoginPage(oidcID, back, status.Error())),
 		})
 		return
 	}
@@ -85,7 +85,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "auth.login"),
 			Head:    ui.CanonicalURL("/login"),
-			Content: authviews.LoginPage(oidcID, back, "Login for this account has been restricted by an administrator"),
+			Content: ui.FromTempl(r.Context(), authviews.LoginPage(oidcID, back, "Login for this account has been restricted by an administrator")),
 		})
 		return
 	}
@@ -96,7 +96,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "auth.login"),
 			Head:    ui.CanonicalURL("/login"),
-			Content: authviews.LoginPage(oidcID, back, err.Error()),
+			Content: ui.FromTempl(r.Context(), authviews.LoginPage(oidcID, back, err.Error())),
 		})
 		return
 	}
@@ -144,7 +144,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "auth.oauth_grant"),
 		Head:    ui.CanonicalURL("/login"),
-		Content: authviews.OAuthGrant(request, client),
+		Content: ui.FromTempl(r.Context(), authviews.OAuthGrant(request, client)),
 	})
 }
 

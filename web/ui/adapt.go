@@ -33,8 +33,11 @@ func FromTempl(ctx context.Context, c templ.Component) Node {
 }
 
 // FromGoTmpl embeds an html/template in a gomponents tree. For a named
-// block, pass t.Lookup("name").
+// block, pass t.Lookup("name"); a nil template (an undefined block) renders nothing.
 func FromGoTmpl(t *template.Template, data any) Node {
+	if t == nil {
+		return nil
+	}
 	return NodeFunc(func(w io.Writer) error {
 		return t.Execute(w, data)
 	})

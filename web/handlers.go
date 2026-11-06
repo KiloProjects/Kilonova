@@ -531,11 +531,11 @@ func (rt *Web) usersList() http.HandlerFunc {
 
 		rt.runLayout(w, r, &LayoutParams{
 			Title: kilonova.GetText(util.Language(r), "users"),
-			Content: adminviews.UsersList(adminviews.UsersListParams{
+			Content: ui.FromTempl(r.Context(), adminviews.UsersList(adminviews.UsersListParams{
 				Users:      users,
 				Name:       name,
 				Pagination: pagination,
-			}),
+			})),
 		})
 	}
 }
@@ -664,7 +664,7 @@ func (rt *Web) submission(w http.ResponseWriter, r *http.Request) {
 	rt.runLayout(w, r, &LayoutParams{
 		Title: fmt.Sprintf("%s %d", kilonova.GetText(util.Language(r), "sub"), sub.ID),
 		Head:  ui.NoRobots(),
-		Content: submissions.Submission(submissions.SubmissionPageParams{
+		Content: ui.FromTempl(r.Context(), submissions.Submission(submissions.SubmissionPageParams{
 			Submission:    sub,
 			ForceShowCode: r.URL.Query().Get("forceCode") == "1",
 			LanguageFormatter: func(lang string) string {
@@ -675,7 +675,7 @@ func (rt *Web) submission(w http.ResponseWriter, r *http.Request) {
 			},
 			OlderSubmissions: olderSubs,
 			SubmissionFiles:  subFiles,
-		}),
+		})),
 	})
 }
 
@@ -762,13 +762,13 @@ func (rt *Web) submissions() http.HandlerFunc {
 		rt.runLayout(w, r, &LayoutParams{
 			Title: kilonova.GetText(util.Language(r), "submissions"),
 			Head:  ui.CanonicalURL("/submissions"),
-			Content: submissions.SubsPage(submissions.SubsViewerParams{
+			Content: ui.FromTempl(r.Context(), submissions.SubsPage(submissions.SubsViewerParams{
 				Submissions: subs,
 				Query:       query,
 				NumPages:    numPages,
 				Languages:   rt.base.EnabledLanguages(),
 				IsAdmin:     user.UserBrief(r) != nil && user.UserBrief(r).IsAdmin(),
-			}),
+			})),
 		})
 	}
 }
@@ -811,7 +811,7 @@ func (rt *Web) paste(w http.ResponseWriter, r *http.Request) {
 
 	rt.runLayout(w, r, &LayoutParams{
 		Title: fmt.Sprintf("%s #%d", kilonova.GetText(util.Language(r), "sub"), sub.ID),
-		Content: submissions.Paste(submissions.PastePageParams{
+		Content: ui.FromTempl(r.Context(), submissions.Paste(submissions.PastePageParams{
 			Paste: util.Paste(r),
 			SubmissionPageParams: submissions.SubmissionPageParams{
 				Submission:    sub,
@@ -825,7 +825,7 @@ func (rt *Web) paste(w http.ResponseWriter, r *http.Request) {
 				OlderSubmissions: olderSubs,
 				SubmissionFiles:  subFiles,
 			},
-		}),
+		})),
 	})
 }
 
@@ -2410,7 +2410,7 @@ func (rt *Web) checkLockout() func(next http.Handler) http.Handler {
 			if user.UserFull(r) != nil && user.UserFull(r).NameChangeForced {
 				rt.runLayout(w, r, &LayoutParams{
 					Title:   kilonova.GetText(util.Language(r), "usernameChangeForced"),
-					Content: utilviews.UserLockout(),
+					Content: ui.FromTempl(r.Context(), utilviews.UserLockout()),
 				})
 				return
 			}
@@ -2424,7 +2424,7 @@ func (rt *Web) confirmLogout(w http.ResponseWriter, r *http.Request) {
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "auth.logout"),
 		Head:    ui.NoRobots(),
-		Content: authviews.ConfirmLogout(r.FormValue("back")),
+		Content: ui.FromTempl(r.Context(), authviews.ConfirmLogout(r.FormValue("back"))),
 	})
 }
 
@@ -2676,7 +2676,7 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 		Title:       title,
 		Description: description,
 		Head:        head,
-		Content:     templ.FromGoHTML(hTempl.Lookup("content"), data),
+		Content:     ui.FromGoTmpl(hTempl.Lookup("content"), data),
 	})
 }
 
@@ -2684,7 +2684,7 @@ type LayoutParams struct {
 	Title       string
 	Description string
 	Head        g.Node
-	Content     templ.Component
+	Content     g.Node
 }
 
 func (rt *Web) runLayout(w io.Writer, r *http.Request, params *LayoutParams) {
@@ -2704,7 +2704,7 @@ func (rt *Web) renderLayout(w io.Writer, r *http.Request, params *LayoutParams, 
 		Title:            params.Title,
 		Description:      params.Description,
 		Head:             params.Head,
-		Content:          ui.FromTempl(ctx, params.Content),
+		Content:          params.Content,
 		Assets:           assets,
 		HideFooter:       !chrome,
 	}
