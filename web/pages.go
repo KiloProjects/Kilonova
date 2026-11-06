@@ -161,8 +161,8 @@ type ProblemParams struct {
 	Languages []language.Lang
 	Variants  []*kilonova.StatementVariant
 
-	InfoSidebar       templ.Component
-	ContestDisclaimer templ.Component
+	InfoSidebar       g.Node
+	ContestDisclaimer g.Node
 	OlderSubmissions  g.Node
 
 	FromContest bool

@@ -27,10 +27,9 @@ import (
 	"github.com/KiloProjects/kilonova/web/ui/adminviews"
 	"github.com/KiloProjects/kilonova/web/ui/authviews"
 	"github.com/KiloProjects/kilonova/web/ui/modals"
-	uiproblems "github.com/KiloProjects/kilonova/web/ui/problems"
+	"github.com/KiloProjects/kilonova/web/ui/problems"
 	"github.com/KiloProjects/kilonova/web/ui/proposer"
 	"github.com/KiloProjects/kilonova/web/ui/utilviews"
-	"github.com/KiloProjects/kilonova/web/views/problems"
 	"github.com/KiloProjects/kilonova/web/views/submissions"
 	"github.com/shopspring/decimal"
 	"github.com/skip2/go-qrcode"
@@ -1098,7 +1097,7 @@ func (rt *Web) problem() http.HandlerFunc {
 			Languages: langs,
 			Variants:  variants,
 
-			InfoSidebar: problems.InfoSidebar(&problems.InfoParams{
+			InfoSidebar: problems.InfoSidebar(r.Context(), &problems.InfoParams{
 				Problem:      util.Problem(r),
 				IsEditor:     rt.base.IsProblemEditor(user.UserBrief(r), util.Problem(r)),
 				Editors:      problemEditors,
@@ -1108,7 +1107,7 @@ func (rt *Web) problem() http.HandlerFunc {
 				CanViewTests: rt.base.CanViewTests(user.UserBrief(r), util.Problem(r)),
 				Contest:      util.Contest(r),
 			}),
-			ContestDisclaimer: problems.ContestDisclaimer(),
+			ContestDisclaimer: problems.ContestDisclaimer(r.Context()),
 			OlderSubmissions:  olderSubmissions,
 
 			FromContest: slices.ContainsFunc(tags, func(tag *kilonova.Tag) bool {
@@ -2544,8 +2543,8 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 		"isContestEditor": func(c *kilonova.Contest) bool {
 			return c.IsEditor(authedUser)
 		},
-		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *uiproblems.ProblemListingParams {
-			return &uiproblems.ProblemListingParams{Problems: pbs, ShowID: contest.IsEditor(authedUser) || contest.Ended(), ShowPublished: true, ContestIDScore: new(contest.ID), ListID: nil}
+		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *problems.ProblemListingParams {
+			return &problems.ProblemListingParams{Problems: pbs, ShowID: contest.IsEditor(authedUser) || contest.Ended(), ShowPublished: true, ContestIDScore: new(contest.ID), ListID: nil}
 		},
 		"contestLeaderboardVisible": func(c *kilonova.Contest) bool {
 			return rt.base.CanViewContestLeaderboard(authedUser, c)
@@ -2628,8 +2627,8 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 			ip, _ := rt.base.GetRequestInfo(r)
 			return rt.base.MustSolveCaptcha(r.Context(), ip)
 		},
-		"problemsTemplate": func(params *uiproblems.ProblemListingParams) g.Node {
-			return uiproblems.ProblemListGroup(r.Context(), params)
+		"problemsTemplate": func(params *problems.ProblemListingParams) g.Node {
+			return problems.ProblemListGroup(r.Context(), params)
 		},
 		"createContestComponent": func() g.Node {
 			return proposer.CreateContestForm(r.Context())

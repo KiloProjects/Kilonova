@@ -53,9 +53,9 @@
                 {{ template "contest_sidebar.html" .Topbar.Contest }}
             {{ else }}
                 {{if $.FromContest}}
-                    {{renderComponent $.ContestDisclaimer}}
+                    {{node $.ContestDisclaimer}}
                 {{end }}
-                {{renderComponent $.InfoSidebar}}
+                {{node $.InfoSidebar}}
                 {{ range pbParentPblists .Problem }}
 					<details class="segment-panel" open role="region">
 						<summary>

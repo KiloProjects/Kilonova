@@ -31,7 +31,7 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/ui"
-	vproblems "github.com/KiloProjects/kilonova/web/ui/problems"
+	"github.com/KiloProjects/kilonova/web/ui/problems"
 	"github.com/KiloProjects/kilonova/web/ui/statuscode"
 	"github.com/a-h/templ"
 	"github.com/alecthomas/chroma/v2"
@@ -533,17 +533,17 @@ func NewWeb(base *sudoapi.BaseAPI, llmProvider llm.Provider) *Web {
 			}
 			return buf.String(), nil
 		},
-		"problemsTemplate": func(params *vproblems.ProblemListingParams) g.Node {
+		"problemsTemplate": func(params *problems.ProblemListingParams) g.Node {
 			slog.ErrorContext(ctx, "Uninitialized `problemsTemplate`")
 			return nil
 		},
-		"genProblemsParams": func(pbs []*kilonova.ScoredProblem, showPublished bool) *vproblems.ProblemListingParams {
-			return &vproblems.ProblemListingParams{Problems: pbs, ShowID: true, ShowPublished: showPublished, ContestIDScore: nil, ListID: nil}
+		"genProblemsParams": func(pbs []*kilonova.ScoredProblem, showPublished bool) *problems.ProblemListingParams {
+			return &problems.ProblemListingParams{Problems: pbs, ShowID: true, ShowPublished: showPublished, ContestIDScore: nil, ListID: nil}
 		},
-		"genListProblemsParams": func(pbs []*kilonova.ScoredProblem, showPublished bool, listID int) *vproblems.ProblemListingParams {
-			return &vproblems.ProblemListingParams{Problems: pbs, ShowID: true, ShowPublished: showPublished, ContestIDScore: nil, ListID: new(listID)}
+		"genListProblemsParams": func(pbs []*kilonova.ScoredProblem, showPublished bool, listID int) *problems.ProblemListingParams {
+			return &problems.ProblemListingParams{Problems: pbs, ShowID: true, ShowPublished: showPublished, ContestIDScore: nil, ListID: new(listID)}
 		},
-		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *vproblems.ProblemListingParams {
+		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *problems.ProblemListingParams {
 			slog.ErrorContext(ctx, "Uninitialized `genContestProblemsParams`")
 			return nil
 		},
