@@ -37,7 +37,7 @@ func (rt *Web) statusPage(w http.ResponseWriter, r *http.Request, statusCode int
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
-	if isHTMXRequest(r) && r.Method != "GET" {
+	if isHTMXRequest(r) {
 		htmxErrorToast(w, r, errMessage)
 		http.Error(w, errMessage, statusCode)
 		return
@@ -286,7 +286,7 @@ func staticFileServer(w http.ResponseWriter, r *http.Request) {
 }
 
 func isHTMXRequest(r *http.Request) bool {
-	return (r.Header.Get("HX-Request") == "true" || r.FormValue("force_htmx") == "true") && r.FormValue("HX-Boosted") != "true"
+	return (r.Header.Get("HX-Request") == "true" || r.FormValue("force_htmx") == "true") && r.Header.Get("HX-Boosted") != "true"
 }
 
 type htmxShowToast struct {

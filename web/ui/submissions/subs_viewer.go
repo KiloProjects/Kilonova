@@ -377,7 +377,7 @@ func filterForm(ctx context.Context, params SubsViewerParams) Node {
 		document.getElementById("sub_status").value = "";
 		document.getElementById("sub_score").value = "";
 	}
-	document.getElementById("sub-filters").submit();
+	document.getElementById("sub-filters").requestSubmit();
 });`)),
 		),
 		Details(Class("block mb-2"),

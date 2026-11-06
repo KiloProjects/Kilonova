@@ -600,11 +600,21 @@ func (rt *Web) avatarUserSize(w http.ResponseWriter, r *http.Request) (*kilonova
 		return nil, -1, false
 	}
 
-	size, err := strconv.Atoi(r.FormValue("s"))
+	return userFull, avatarSize(r.FormValue("s")), true
+}
+
+// avatarSize snaps the requested size up to a power of two in [16, 512],
+// so ?s= can't mint unbounded upstream fetches and cache entries.
+func avatarSize(s string) int {
+	size, err := strconv.Atoi(s)
 	if err != nil || size == 0 {
-		size = 128
+		return 128
 	}
-	return userFull, size, true
+	p := 16
+	for p < min(size, 512) {
+		p *= 2
+	}
+	return p
 }
 
 func (rt *Web) gravatar(w http.ResponseWriter, r *http.Request) {
@@ -620,8 +630,8 @@ func (rt *Web) serveDiscordAvatar(w http.ResponseWriter, r *http.Request, user *
 	// Read from cache
 	rd, lastmod, valid, err := rt.base.GetDiscordAvatar(r.Context(), user, size, time.Now().Add(-12*time.Hour))
 	if !valid || err != nil {
-		// slog.WarnContext(r.Context(), "BaseAPI GetDiscordAvatar is not valid or returned error", slog.Bool("valid", valid), slog.Any("err", err))
-		http.Error(w, "discord not properly linked", 400)
+		// Discord not linked or unreachable: fall back to gravatar.
+		rt.serveGravatar(w, r, user, size)
 		return
 	}
 	defer rd.Close()
@@ -635,6 +645,11 @@ func (rt *Web) serveDiscordAvatar(w http.ResponseWriter, r *http.Request, user *
 func (rt *Web) discordAvatar(w http.ResponseWriter, r *http.Request) {
 	userFull, size, ok := rt.avatarUserSize(w, r)
 	if !ok {
+		return
+	}
+	// Only the Discord-link page (self or admin) needs this; others see profilePicture.
+	if viewer := user.UserBrief(r); !viewer.IsAdmin() && (!viewer.IsAuthed() || viewer.ID != userFull.ID) {
+		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
 

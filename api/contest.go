@@ -121,7 +121,14 @@ func (s *API) updateContestProblems(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) getContest(ctx context.Context, _ struct{}) (*kilonova.Contest, error) {
-	return util.ContestContext(ctx), nil
+	c := util.ContestContext(ctx)
+	if c.IsEditor(user.UserBriefContext(ctx)) {
+		return c, nil
+	}
+	// The testers list is private early access, only editors may see it.
+	stripped := *c
+	stripped.Testers = nil
+	return &stripped, nil
 }
 
 func (s *API) getContestProblems(w http.ResponseWriter, r *http.Request) {

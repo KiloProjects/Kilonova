@@ -115,6 +115,7 @@ func main() {
 			problemDiagnostics,
 			submissionSaver,
 			contestUtils,
+			contestUtilsRemote,
 			graderServe,
 		},
 	}

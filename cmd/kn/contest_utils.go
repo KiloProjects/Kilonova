@@ -75,230 +75,251 @@ var contestUtils = &cli.Command{
 		},
 	},
 	Action: func(ctx context.Context, command *cli.Command) error {
-
-		auditLogFile, err := os.Create("./generator-" + time.Now().Format(time.RFC3339) + ".log")
-		if err != nil {
-			return err
-		}
-		defer func() {
-			if err := auditLogFile.Close(); err != nil {
-				slog.WarnContext(ctx, "Error closing audit log", slog.Any("err", err))
-			}
-		}()
-
-		handler := slog.NewJSONHandler(auditLogFile, &slog.HandlerOptions{
-			AddSource: true,
-		})
-
-		auditLog := slog.New(handler)
-
-		// Print welcome message
-		slog.InfoContext(ctx, "Starting Kilonova Contest Registration Manager")
-
 		base, err := initBase(ctx)
 		if err != nil {
 			return err
 		}
 		defer base.Close()
 
-		var config ContestConfiguration
-		configDataRaw, err := os.ReadFile(command.String("profiles"))
-		if err != nil {
-			return err
-		}
-		if err := json.Unmarshal(configDataRaw, &config); err != nil {
-			return err
-		}
-
-		if !(config.Language == "en" || config.Language == "ro") {
-			return fmt.Errorf("invalid language: %q", config.Language)
-		}
-
-		if config.ContestID > 0 {
-			if _, err := base.Contest(ctx, config.ContestID); err != nil {
+		return runContestUtils(ctx, command, contestBackend{
+			checkContest: func(ctx context.Context, id int) error {
+				_, err := base.Contest(ctx, id)
 				return err
-			}
-		}
-
-		var anyExternalID bool
-		for i := range config.Profiles {
-			if len(config.Profiles[i].Slug) == 0 {
-				t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
-				normalized, _, _ := transform.String(t, config.Profiles[i].Name)
-				config.Profiles[i].Slug = strings.TrimSpace(strings.ReplaceAll(
-					strings.ReplaceAll(normalized, " ", "_"),
-					"-", "_",
-				))
-			}
-			fmt.Println(config.Profiles[i].Slug)
-			if err := user.ValidUsername(config.Profiles[i].Slug); err != nil {
-				return err
-			}
-			if config.Profiles[i].ExternalID != nil {
-				anyExternalID = true
-			}
-		}
-
-		outTeams := make([]ContestProfile, 0, len(config.Profiles))
-
-		if command.Bool("dryRun") {
-			outTeams = config.Profiles
-			spew.Dump(config.Profiles)
-		} else {
-			var subject *string
-			if len(config.MailSubject) > 0 {
-				subject = &config.MailSubject
-			}
-			for _, team := range config.Profiles {
-				if len(team.Password) > 0 {
-					slog.InfoContext(ctx, "Skipping already created account", slog.String("slug", team.Slug))
-					continue
-				}
-
-				if len(team.Email) == 0 {
-					if config.SendMail {
-						slog.ErrorContext(ctx, "SendMail is set but no email specified for user, skipping..", slog.String("slug", team.Slug))
-						auditLog.ErrorContext(ctx, "SendMail is set but no email specified for user, skipping..", slog.String("slug", team.Slug))
-						continue
-					}
-					team.Email = "email_" + team.Slug + "@kilonova.ro"
-				}
-
-				user, err := base.UserFullByName(ctx, team.Slug)
+			},
+			generate: func(ctx context.Context, req sudoapi.UserGenerationRequest) (string, error) {
+				user, err := base.UserFullByName(ctx, req.Name)
 				if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
-					slog.ErrorContext(ctx, "Could not test user existence", slog.Any("err", err))
-					continue
-				} else if user != nil && user.Email == team.Email {
-					slog.InfoContext(ctx, "Skipping already created account, even though it has no password in profile", slog.String("slug", team.Slug))
-					continue
+					return "", fmt.Errorf("could not test user existence: %w", err)
+				} else if user != nil && user.Email == *req.Email {
+					return "", errAlreadyCreated
 				}
-
-				var bio strings.Builder
-				if config.WriteBio {
-					fmt.Fprintf(&bio, "Name: %s\n", team.Name)
-					if config.Hybrid {
-						fmt.Fprintf(&bio, "Online: %t\n", team.Online)
-					}
-					if config.Teams {
-						fmt.Fprintf(&bio, "Contestants: %s\n", strings.Join(team.MemberNames, ", "))
-					}
-
-				}
-				if len(team.BioData) > 0 {
-					fmt.Fprintln(&bio, "\n", team.BioData)
-				}
-
-				displayName := team.Name
-
-				if config.Teams && len(team.MemberNames) > 0 {
-					var lastNames []string
-					for _, name := range team.MemberNames {
-						first, _, _ := strings.Cut(name, " ")
-						lastNames = append(lastNames, first)
-					}
-					displayName = strings.Join(lastNames, ", ")
-				}
-
-				contestID := config.ContestID
-				if team.ContestID > 0 {
-					contestID = team.ContestID
-				}
-
-				if contestID <= 0 {
-					auditLog.ErrorContext(ctx, "Did not create: no contest ID for user", slog.String("email", team.Email), slog.String("slug", team.Slug))
-					slog.ErrorContext(ctx, "Did not create: no contest ID for user", slog.String("email", team.Email), slog.String("slug", team.Slug))
-					continue
-				}
-
-				req := sudoapi.UserGenerationRequest{
-					Name: team.Slug,
-					Lang: config.Language,
-
-					Bio: bio.String(),
-
-					Email:       &team.Email,
-					DisplayName: &displayName,
-
-					ContestID:      &contestID,
-					PasswordByMail: config.SendMail,
-					MailSubject:    subject,
-				}
-
 				pwd, _, err := base.GenerateUserFlow(ctx, req)
-				if err != nil {
-					slog.ErrorContext(ctx, "Error creating user", slog.Any("err", err))
+				return pwd, err
+			},
+		})
+	},
+}
+
+var errAlreadyCreated = errors.New("account already created")
+
+// contestBackend abstracts where accounts get created: directly in the database or through the API.
+type contestBackend struct {
+	checkContest func(ctx context.Context, id int) error
+	generate     func(ctx context.Context, req sudoapi.UserGenerationRequest) (string, error)
+}
+
+func runContestUtils(ctx context.Context, command *cli.Command, backend contestBackend) error {
+	auditLogFile, err := os.Create("./generator-" + time.Now().Format(time.RFC3339) + ".log")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := auditLogFile.Close(); err != nil {
+			slog.WarnContext(ctx, "Error closing audit log", slog.Any("err", err))
+		}
+	}()
+
+	handler := slog.NewJSONHandler(auditLogFile, &slog.HandlerOptions{
+		AddSource: true,
+	})
+
+	auditLog := slog.New(handler)
+
+	// Print welcome message
+	slog.InfoContext(ctx, "Starting Kilonova Contest Registration Manager")
+
+	var config ContestConfiguration
+	configDataRaw, err := os.ReadFile(command.String("profiles"))
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(configDataRaw, &config); err != nil {
+		return err
+	}
+
+	if !(config.Language == "en" || config.Language == "ro") {
+		return fmt.Errorf("invalid language: %q", config.Language)
+	}
+
+	if config.ContestID > 0 {
+		if err := backend.checkContest(ctx, config.ContestID); err != nil {
+			return err
+		}
+	}
+
+	var anyExternalID bool
+	for i := range config.Profiles {
+		if len(config.Profiles[i].Slug) == 0 {
+			t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+			normalized, _, _ := transform.String(t, config.Profiles[i].Name)
+			config.Profiles[i].Slug = strings.TrimSpace(strings.ReplaceAll(
+				strings.ReplaceAll(normalized, " ", "_"),
+				"-", "_",
+			))
+		}
+		fmt.Println(config.Profiles[i].Slug)
+		if err := user.ValidUsername(config.Profiles[i].Slug); err != nil {
+			return err
+		}
+		if config.Profiles[i].ExternalID != nil {
+			anyExternalID = true
+		}
+	}
+
+	outTeams := make([]ContestProfile, 0, len(config.Profiles))
+
+	if command.Bool("dryRun") {
+		outTeams = config.Profiles
+		spew.Dump(config.Profiles)
+	} else {
+		var subject *string
+		if len(config.MailSubject) > 0 {
+			subject = &config.MailSubject
+		}
+		for _, team := range config.Profiles {
+			if len(team.Password) > 0 {
+				slog.InfoContext(ctx, "Skipping already created account", slog.String("slug", team.Slug))
+				continue
+			}
+
+			if len(team.Email) == 0 {
+				if config.SendMail {
+					slog.ErrorContext(ctx, "SendMail is set but no email specified for user, skipping..", slog.String("slug", team.Slug))
+					auditLog.ErrorContext(ctx, "SendMail is set but no email specified for user, skipping..", slog.String("slug", team.Slug))
 					continue
 				}
-				auditLog.InfoContext(ctx, "Created user", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug), slog.Int("contestID", contestID))
-				slog.InfoContext(ctx, "Created user", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug), slog.Int("contestID", contestID))
+				team.Email = "email_" + team.Slug + "@kilonova.ro"
+			}
 
-				team.Password = pwd
-				outTeams = append(outTeams, team)
-
-				if config.SendMail {
-					time.Sleep(100 * time.Millisecond)
+			var bio strings.Builder
+			if config.WriteBio {
+				fmt.Fprintf(&bio, "Name: %s\n", team.Name)
+				if config.Hybrid {
+					fmt.Fprintf(&bio, "Online: %t\n", team.Online)
 				}
+				if config.Teams {
+					fmt.Fprintf(&bio, "Contestants: %s\n", strings.Join(team.MemberNames, ", "))
+				}
+
+			}
+			if len(team.BioData) > 0 {
+				fmt.Fprintln(&bio, "\n", team.BioData)
+			}
+
+			displayName := team.Name
+
+			if config.Teams && len(team.MemberNames) > 0 {
+				var lastNames []string
+				for _, name := range team.MemberNames {
+					first, _, _ := strings.Cut(name, " ")
+					lastNames = append(lastNames, first)
+				}
+				displayName = strings.Join(lastNames, ", ")
+			}
+
+			contestID := config.ContestID
+			if team.ContestID > 0 {
+				contestID = team.ContestID
+			}
+
+			if contestID <= 0 {
+				auditLog.ErrorContext(ctx, "Did not create: no contest ID for user", slog.String("email", team.Email), slog.String("slug", team.Slug))
+				slog.ErrorContext(ctx, "Did not create: no contest ID for user", slog.String("email", team.Email), slog.String("slug", team.Slug))
+				continue
+			}
+
+			req := sudoapi.UserGenerationRequest{
+				Name: team.Slug,
+				Lang: config.Language,
+
+				Bio: bio.String(),
+
+				Email:       &team.Email,
+				DisplayName: &displayName,
+
+				ContestID:      &contestID,
+				PasswordByMail: config.SendMail,
+				MailSubject:    subject,
+			}
+
+			pwd, err := backend.generate(ctx, req)
+			if errors.Is(err, errAlreadyCreated) {
+				slog.InfoContext(ctx, "Skipping already created account, even though it has no password in profile", slog.String("slug", team.Slug))
+				continue
+			}
+			if err != nil {
+				slog.ErrorContext(ctx, "Error creating user", slog.Any("err", err))
+				continue
+			}
+			auditLog.InfoContext(ctx, "Created user", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug), slog.Int("contestID", contestID))
+			slog.InfoContext(ctx, "Created user", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug), slog.Int("contestID", contestID))
+
+			team.Password = pwd
+			outTeams = append(outTeams, team)
+
+			if config.SendMail {
+				time.Sleep(100 * time.Millisecond)
 			}
 		}
+	}
 
-		if len(outTeams) == 0 {
-			return nil
+	if len(outTeams) == 0 {
+		return nil
+	}
+
+	teamsRaw, err := json.Marshal(outTeams)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile("./teamsOut.json", teamsRaw, 0644); err != nil {
+		return err
+	}
+
+	var buf bytes.Buffer
+	cw := csv.NewWriter(&buf)
+
+	headers := []string{"Team Name", "Online/Physical", "Members", "Contact Email", "Username", "Password"}
+	if !config.Hybrid {
+		headers = slices.Delete(headers, 1, 2)
+	}
+	if !config.Teams {
+		headers = slices.Delete(headers, 1, 2)
+	}
+	if anyExternalID {
+		headers = append(headers, "External ID")
+	}
+	cw.Write(headers)
+	for _, t := range outTeams {
+		status := "Physical"
+		if t.Online {
+			status = "Online"
 		}
 
-		teamsRaw, err := json.Marshal(outTeams)
-		if err != nil {
-			return err
+		values := []string{
+			t.Name, status, strings.Join(t.MemberNames, ", "), t.Email, t.Slug, t.Password,
 		}
-		if err := os.WriteFile("./teamsOut.json", teamsRaw, 0644); err != nil {
-			return err
-		}
-
-		var buf bytes.Buffer
-		cw := csv.NewWriter(&buf)
-
-		headers := []string{"Team Name", "Online/Physical", "Members", "Contact Email", "Username", "Password"}
 		if !config.Hybrid {
-			headers = slices.Delete(headers, 1, 2)
+			values = slices.Delete(values, 1, 2)
 		}
 		if !config.Teams {
-			headers = slices.Delete(headers, 1, 2)
+			values = slices.Delete(values, 1, 2)
 		}
 		if anyExternalID {
-			headers = append(headers, "External ID")
-		}
-		cw.Write(headers)
-		for _, t := range outTeams {
-			status := "Physical"
-			if t.Online {
-				status = "Online"
+			val, err := json.Marshal(t.ExternalID)
+			if err != nil {
+				val = []byte(err.Error())
 			}
+			values = append(values, string(val))
+		}
+		cw.Write(values)
+	}
+	cw.Flush()
+	if err := cw.Error(); err != nil {
+		return err
+	}
+	if err := os.WriteFile("./teamsOut.csv", buf.Bytes(), 0644); err != nil {
+		return err
+	}
 
-			values := []string{
-				t.Name, status, strings.Join(t.MemberNames, ", "), t.Email, t.Slug, t.Password,
-			}
-			if !config.Hybrid {
-				values = slices.Delete(values, 1, 2)
-			}
-			if !config.Teams {
-				values = slices.Delete(values, 1, 2)
-			}
-			if anyExternalID {
-				val, err := json.Marshal(t.ExternalID)
-				if err != nil {
-					val = []byte(err.Error())
-				}
-				values = append(values, string(val))
-			}
-			cw.Write(values)
-		}
-		cw.Flush()
-		if err := cw.Error(); err != nil {
-			return err
-		}
-		if err := os.WriteFile("./teamsOut.csv", buf.Bytes(), 0644); err != nil {
-			return err
-		}
-
-		return nil
-	},
+	return nil
 }

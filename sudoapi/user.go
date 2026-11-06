@@ -322,16 +322,16 @@ type UserGenerationRequest struct {
 
 	Bio string `json:"bio" required:"false"`
 
-	Email       *string `json:"email" required:"false"`
-	DisplayName *string `json:"display_name" required:"false"`
+	Email       *string `json:"email,omitempty" required:"false"`
+	DisplayName *string `json:"display_name,omitempty" required:"false"`
 
-	ContestID *int `json:"contest_id" required:"false"`
+	ContestID *int `json:"contest_id,omitempty" required:"false"`
 
 	PasswordByMail bool `json:"password_by_mail" required:"false"`
 	// PasswordByMailTo overrides whom to send the email to
-	PasswordByMailTo *string `json:"password_by_mail_to" required:"false"`
+	PasswordByMailTo *string `json:"password_by_mail_to,omitempty" required:"false"`
 
-	MailSubject *string `json:"mail_subject" required:"false"`
+	MailSubject *string `json:"mail_subject,omitempty" required:"false"`
 }
 
 func (s *BaseAPI) RandomPassword() string {
