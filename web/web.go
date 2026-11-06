@@ -31,9 +31,8 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/ui"
+	vproblems "github.com/KiloProjects/kilonova/web/ui/problems"
 	"github.com/KiloProjects/kilonova/web/ui/statuscode"
-	vproblems "github.com/KiloProjects/kilonova/web/views/problems"
-	"github.com/KiloProjects/kilonova/web/views/proposer"
 	"github.com/a-h/templ"
 	"github.com/alecthomas/chroma/v2"
 	chtml "github.com/alecthomas/chroma/v2/formatters/html"
@@ -46,6 +45,7 @@ import (
 	"github.com/shopspring/decimal"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	g "maragu.dev/gomponents"
 )
 
 //go:generate go run ../scripts/chroma_gen -o ./assets/chroma.css
@@ -533,7 +533,10 @@ func NewWeb(base *sudoapi.BaseAPI, llmProvider llm.Provider) *Web {
 			}
 			return buf.String(), nil
 		},
-		"problemsTemplate": vproblems.ProblemListGroup,
+		"problemsTemplate": func(params *vproblems.ProblemListingParams) g.Node {
+			slog.ErrorContext(ctx, "Uninitialized `problemsTemplate`")
+			return nil
+		},
 		"genProblemsParams": func(pbs []*kilonova.ScoredProblem, showPublished bool) *vproblems.ProblemListingParams {
 			return &vproblems.ProblemListingParams{Problems: pbs, ShowID: true, ShowPublished: showPublished, ContestIDScore: nil, ListID: nil}
 		},
@@ -863,8 +866,14 @@ func NewWeb(base *sudoapi.BaseAPI, llmProvider llm.Provider) *Web {
 			slog.ErrorContext(ctx, "Uninitialized `renderComponent`")
 			return "", nil
 		},
-		"createContestComponent": proposer.CreateContestForm,
-		"createPblistComponent":  proposer.CreateProblemList,
+		"createContestComponent": func() g.Node {
+			slog.ErrorContext(ctx, "Uninitialized `createContestComponent`")
+			return nil
+		},
+		"createPblistComponent": func(parent *kilonova.ProblemList) g.Node {
+			slog.ErrorContext(ctx, "Uninitialized `createPblistComponent`")
+			return nil
+		},
 	}
 	return &Web{funcs, base}
 }

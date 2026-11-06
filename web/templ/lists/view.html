@@ -237,11 +237,11 @@ document.getElementById("delButton").addEventListener("click", deleteProblemList
             {{getText "createNestedPbList"}}
         </h2>
     </summary>
-    {{createPblistComponent $.ProblemList | renderComponent}}
+    {{createPblistComponent $.ProblemList | node}}
 </details>
 
     {{if authedUser.IsAdmin}}
-        {{$.ProblemSources | renderComponent}}
+        {{$.ProblemSources | node}}
     {{end}}
 	{{ end }}
 	{{ end }}

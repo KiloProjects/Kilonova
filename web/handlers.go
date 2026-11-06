@@ -24,13 +24,14 @@ import (
 
 	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/domain/user"
-	"github.com/KiloProjects/kilonova/web/tutils"
-	"github.com/KiloProjects/kilonova/web/views/adminviews"
-	"github.com/KiloProjects/kilonova/web/views/authviews"
-	"github.com/KiloProjects/kilonova/web/views/modals"
+	"github.com/KiloProjects/kilonova/web/ui/adminviews"
+	"github.com/KiloProjects/kilonova/web/ui/authviews"
+	"github.com/KiloProjects/kilonova/web/ui/modals"
+	uiproblems "github.com/KiloProjects/kilonova/web/ui/problems"
+	"github.com/KiloProjects/kilonova/web/ui/proposer"
+	"github.com/KiloProjects/kilonova/web/ui/utilviews"
 	"github.com/KiloProjects/kilonova/web/views/problems"
 	"github.com/KiloProjects/kilonova/web/views/submissions"
-	"github.com/KiloProjects/kilonova/web/views/utilviews"
 	"github.com/shopspring/decimal"
 	"github.com/skip2/go-qrcode"
 
@@ -174,7 +175,7 @@ func (rt *Web) index() http.HandlerFunc {
 			hotProblems, moreHotProblems,
 			latestProblems, problemCount > 20,
 			pinnedLists,
-			[]templ.Component{
+			[]g.Node{
 				modals.GPCAnnouncement(),
 			},
 		})
@@ -480,7 +481,7 @@ func (rt *Web) pbListView() http.HandlerFunc {
 
 		rt.runTempl(w, r, parsedTempl, &ProblemListParams{
 			util.ProblemList(r), nil, -1,
-			modals.ProblemSources(util.ProblemList(r), listProblems),
+			modals.ProblemSources(r.Context(), util.ProblemList(r), listProblems),
 		})
 	}
 }
@@ -520,9 +521,9 @@ func (rt *Web) usersList() http.HandlerFunc {
 			numPages++
 		}
 
-		var pagination templ.Component
+		var pagination g.Node
 		if numPages > 1 {
-			pagination = tutils.Paginator(tutils.PaginatorConfig{
+			pagination = ui.Paginator(ui.PaginatorConfig{
 				Page:       page,
 				NumPages:   numPages,
 				ShowArrows: true,
@@ -531,11 +532,11 @@ func (rt *Web) usersList() http.HandlerFunc {
 
 		rt.runLayout(w, r, &LayoutParams{
 			Title: kilonova.GetText(util.Language(r), "users"),
-			Content: ui.FromTempl(r.Context(), adminviews.UsersList(adminviews.UsersListParams{
+			Content: adminviews.UsersList(r.Context(), adminviews.UsersListParams{
 				Users:      users,
 				Name:       name,
 				Pagination: pagination,
-			})),
+			}),
 		})
 	}
 }
@@ -566,9 +567,9 @@ func (rt *Web) auditLog() http.HandlerFunc {
 			numPages++
 		}
 
-		var pagination templ.Component
+		var pagination g.Node
 		if numPages > 1 {
-			pagination = tutils.Paginator(tutils.PaginatorConfig{
+			pagination = ui.Paginator(ui.PaginatorConfig{
 				Page:       page,
 				NumPages:   numPages,
 				ShowArrows: true,
@@ -1062,13 +1063,13 @@ func (rt *Web) problem() http.HandlerFunc {
 			}
 		}
 
-		var olderSubmissions templ.Component = nil
+		var olderSubmissions g.Node
 		if user.UserBrief(r) != nil {
 			olderSubs, err := rt.getOlderSubmissions(r.Context(), user.UserBrief(r), user.UserBrief(r).ID, util.Problem(r), util.Contest(r))
 			if err != nil {
 				slog.WarnContext(r.Context(), "Couldn't get submissions", slog.Any("err", err))
 			} else {
-				olderSubmissions = modals.OlderSubmissions(olderSubs)
+				olderSubmissions = modals.OlderSubmissions(r.Context(), olderSubs)
 			}
 		}
 
@@ -1134,7 +1135,7 @@ func (rt *Web) problemSubmissions() http.HandlerFunc {
 				rt.statusPage(w, r, kilonova.ErrorCode(err), err.Error())
 				return
 			}
-			rt.componentModal(w, r, modals.OlderSubmissions(olderSubs))
+			rt.componentModal(w, r, modals.OlderSubmissions(r.Context(), olderSubs))
 			return
 		}
 
@@ -1320,9 +1321,9 @@ func (rt *Web) blogPosts() http.HandlerFunc {
 			}
 		}
 
-		var pagination templ.Component
+		var pagination g.Node
 		if numPages > 1 {
-			pagination = tutils.Paginator(tutils.PaginatorConfig{
+			pagination = ui.Paginator(ui.PaginatorConfig{
 				Page:       int(page),
 				NumPages:   numPages,
 				ShowArrows: true,
@@ -1597,9 +1598,9 @@ func (rt *Web) contests() http.HandlerFunc {
 			numPages++
 		}
 
-		var pagination templ.Component
+		var pagination g.Node
 		if numPages > 1 {
-			pagination = tutils.Paginator(tutils.PaginatorConfig{
+			pagination = ui.Paginator(ui.PaginatorConfig{
 				Page:       pageNum,
 				NumPages:   numPages,
 				ShowArrows: true,
@@ -2285,9 +2286,9 @@ func (rt *Web) sessionsFilter() http.HandlerFunc {
 			numPages++
 		}
 
-		var pagination templ.Component
+		var pagination g.Node
 		if numPages > 1 {
-			pagination = tutils.Paginator(tutils.PaginatorConfig{
+			pagination = ui.Paginator(ui.PaginatorConfig{
 				Page:       q.Page,
 				NumPages:   numPages,
 				ShowArrows: true,
@@ -2410,7 +2411,7 @@ func (rt *Web) checkLockout() func(next http.Handler) http.Handler {
 			if user.UserFull(r) != nil && user.UserFull(r).NameChangeForced {
 				rt.runLayout(w, r, &LayoutParams{
 					Title:   kilonova.GetText(util.Language(r), "usernameChangeForced"),
-					Content: ui.FromTempl(r.Context(), utilviews.UserLockout()),
+					Content: utilviews.UserLockout(r.Context()),
 				})
 				return
 			}
@@ -2424,7 +2425,7 @@ func (rt *Web) confirmLogout(w http.ResponseWriter, r *http.Request) {
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "auth.logout"),
 		Head:    ui.NoRobots(),
-		Content: ui.FromTempl(r.Context(), authviews.ConfirmLogout(r.FormValue("back"))),
+		Content: authviews.ConfirmLogout(r.Context(), r.FormValue("back")),
 	})
 }
 
@@ -2543,8 +2544,8 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 		"isContestEditor": func(c *kilonova.Contest) bool {
 			return c.IsEditor(authedUser)
 		},
-		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *problems.ProblemListingParams {
-			return &problems.ProblemListingParams{Problems: pbs, ShowID: contest.IsEditor(authedUser) || contest.Ended(), ShowPublished: true, ContestIDScore: new(contest.ID), ListID: nil}
+		"genContestProblemsParams": func(pbs []*kilonova.ScoredProblem, contest *kilonova.Contest) *uiproblems.ProblemListingParams {
+			return &uiproblems.ProblemListingParams{Problems: pbs, ShowID: contest.IsEditor(authedUser) || contest.Ended(), ShowPublished: true, ContestIDScore: new(contest.ID), ListID: nil}
 		},
 		"contestLeaderboardVisible": func(c *kilonova.Contest) bool {
 			return rt.base.CanViewContestLeaderboard(authedUser, c)
@@ -2626,6 +2627,15 @@ func (rt *Web) runTemplate(w io.Writer, r *http.Request, hTempl *template.Templa
 		"mustSolveCaptcha": func() bool {
 			ip, _ := rt.base.GetRequestInfo(r)
 			return rt.base.MustSolveCaptcha(r.Context(), ip)
+		},
+		"problemsTemplate": func(params *uiproblems.ProblemListingParams) g.Node {
+			return uiproblems.ProblemListGroup(r.Context(), params)
+		},
+		"createContestComponent": func() g.Node {
+			return proposer.CreateContestForm(r.Context())
+		},
+		"createPblistComponent": func(parent *kilonova.ProblemList) g.Node {
+			return proposer.CreateProblemList(r.Context(), parent)
 		},
 		"inModal": func() bool {
 			return name == "modal"
@@ -2750,9 +2760,9 @@ func (rt *Web) runModal(w http.ResponseWriter, r *http.Request, templ *template.
 	rt.runTemplate(w, r, templ, name, data)
 }
 
-func (rt *Web) componentModal(w http.ResponseWriter, r *http.Request, component templ.Component) {
+func (rt *Web) componentModal(w http.ResponseWriter, r *http.Request, component g.Node) {
 	w.Header().Add("Content-Type", "text/html; charset=utf-8")
-	if err := component.Render(r.Context(), w); err != nil {
+	if err := component.Render(w); err != nil {
 		slog.WarnContext(r.Context(), "Error rendering modal", slog.Any("err", err))
 	}
 }

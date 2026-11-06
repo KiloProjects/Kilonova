@@ -7,7 +7,7 @@
 {{ template "index_topbar.html" . }}
 
 {{if .Pagination}}
-    {{renderComponent .Pagination}}
+    {{node .Pagination}}
 {{end}}
 <div class="contest-grid">
     {{ range .Contests }}

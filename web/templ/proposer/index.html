@@ -10,11 +10,11 @@
 	<h2>
 		{{getText "createPbList"}}
 	</h2>
-	{{createPblistComponent nil | renderComponent}}
+	{{createPblistComponent nil | node}}
 </div>
 
 <div class="segment-panel">
-    {{createContestComponent | renderComponent}}
+    {{createContestComponent | node}}
 </div>
 
 {{ template "importproblem.html" . }}

@@ -7,7 +7,7 @@
     <h1>{{getText "manage_sessions"}}</h1>
 
     {{if .Pagination}}
-        {{renderComponent .Pagination}}
+        {{node .Pagination}}
     {{end}}
 
     {{range .Sessions}}

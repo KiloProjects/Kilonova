@@ -24,6 +24,7 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/a-h/templ"
 	"github.com/bwmarrin/discordgo"
+	g "maragu.dev/gomponents"
 )
 
 type ProblemTopbar struct {
@@ -81,7 +82,7 @@ type BlogPostIndexParams struct {
 	Posts   []*kilonova.BlogPost
 	Authors map[int]*kilonova.UserBrief
 
-	Pagination templ.Component
+	Pagination g.Node
 }
 
 type BlogPostParams struct {
@@ -103,7 +104,7 @@ type ContestsIndexParams struct {
 	Contests []*kilonova.Contest
 
 	Page       string
-	Pagination templ.Component
+	Pagination g.Node
 }
 
 type GraderInfoParams struct {
@@ -162,7 +163,7 @@ type ProblemParams struct {
 
 	InfoSidebar       templ.Component
 	ContestDisclaimer templ.Component
-	OlderSubmissions  templ.Component
+	OlderSubmissions  g.Node
 
 	FromContest bool
 
@@ -201,7 +202,7 @@ type ProblemListParams struct {
 
 	RootProblemList int
 
-	ProblemSources templ.Component
+	ProblemSources g.Node
 }
 
 type ProblemListProgressParams struct {
@@ -312,7 +313,7 @@ type IndexParams struct {
 
 	PinnedLists []*kilonova.ProblemList
 
-	Announcements []templ.Component
+	Announcements []g.Node
 }
 
 type PblistParams struct {
@@ -344,13 +345,13 @@ type SessionsParams struct {
 	ContentUser *kilonova.UserFull
 	Sessions    []*sudoapi.Session
 
-	Pagination templ.Component
+	Pagination g.Node
 }
 
 type AuditLogParams struct {
 	Logs []*kilonova.AuditLog
 
-	Pagination templ.Component
+	Pagination g.Node
 }
 
 type ProblemSearchParams struct {

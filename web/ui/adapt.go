@@ -15,7 +15,11 @@ import (
 // and html/template -> templ is templ.FromGoHTML.
 
 // ToTempl lets a templ component (or the templ layout) render a gomponents node.
+// A nil node renders nothing.
 func ToTempl(n Node) templ.Component {
+	if n == nil {
+		return templ.NopComponent
+	}
 	return templ.ComponentFunc(func(_ context.Context, w io.Writer) error {
 		return n.Render(w)
 	})
@@ -44,7 +48,11 @@ func FromGoTmpl(t *template.Template, data any) Node {
 }
 
 // ToGoHTML renders a gomponents node for html/template; exposed there as {{ node . }}.
+// A nil node renders nothing.
 func ToGoHTML(n Node) (template.HTML, error) {
+	if n == nil {
+		return "", nil
+	}
 	var sb strings.Builder
 	err := n.Render(&sb)
 	return template.HTML(sb.String()), err //nolint:gosec // gomponents output is already escaped

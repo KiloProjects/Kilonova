@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/KiloProjects/kilonova/domain/user"
-	"github.com/KiloProjects/kilonova/web/views/modals"
+	"github.com/KiloProjects/kilonova/web/ui/modals"
 
 	"github.com/KiloProjects/kilonova"
 
@@ -44,7 +44,7 @@ func (rt *Web) updateProblemSources() http.HandlerFunc {
 				return
 			}
 
-			rt.componentModal(w, r, modals.ProblemSources(util.ProblemList(r), problems))
+			rt.componentModal(w, r, modals.ProblemSources(r.Context(), util.ProblemList(r), problems))
 
 			return
 		}

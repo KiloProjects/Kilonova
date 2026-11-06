@@ -11,7 +11,7 @@
     {{ end }}
 
     {{if .Pagination}}
-        {{renderComponent .Pagination}}
+        {{node .Pagination}}
     {{end}}
 
     {{ range .Posts }}

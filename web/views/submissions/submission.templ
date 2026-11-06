@@ -9,7 +9,8 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/tutils"
-	"github.com/KiloProjects/kilonova/web/views/modals"
+	"github.com/KiloProjects/kilonova/web/ui"
+	"github.com/KiloProjects/kilonova/web/ui/modals"
 	"github.com/alecthomas/chroma/v2"
 	chtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/lexers"
@@ -60,7 +61,7 @@ templ Submission(params SubmissionPageParams) {
 				@SubmissionSummary(params.Submission, nil, params.LanguageFormatter)
 				if params.OlderSubmissions != nil {
 					<div class="segment-panel">
-						@modals.OlderSubmissions(params.OlderSubmissions)
+						@ui.ToTempl(modals.OlderSubmissions(ctx, params.OlderSubmissions))
 					</div>
 				}
 			</aside>
@@ -112,7 +113,7 @@ templ Paste(params PastePageParams) {
 				@SubmissionSummary(params.Submission, nil, params.LanguageFormatter)
 				if params.OlderSubmissions != nil {
 					<div class="segment-panel">
-						@modals.OlderSubmissions(params.OlderSubmissions)
+						@ui.ToTempl(modals.OlderSubmissions(ctx, params.OlderSubmissions))
 					</div>
 				}
 			</aside>

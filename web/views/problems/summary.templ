@@ -5,6 +5,8 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/web/tutils"
+	"github.com/KiloProjects/kilonova/web/ui"
+	uiproblems "github.com/KiloProjects/kilonova/web/ui/problems"
 	"github.com/shopspring/decimal"
 )
 
@@ -108,7 +110,7 @@ templ InfoSidebar(params *InfoParams) {
 				<p>
 					{ T(ctx, "author") }:
 					for _, author := range authorTags {
-						@Tag(author, false, "text-sm")
+						@ui.ToTempl(uiproblems.Tag(author, false, "text-sm"))
 					}
 				</p>
 			}
@@ -128,7 +130,7 @@ templ InfoSidebar(params *InfoParams) {
 					{ T(ctx, "tags") }:
 					<span x-show="open" x-cloak>
 						for _, tag := range otherTags {
-							@Tag(tag, false, "text-sm")
+							@ui.ToTempl(uiproblems.Tag(tag, false, "text-sm"))
 						}
 						{ " " }
 						<a href="#" @click.prevent="open = !open">
