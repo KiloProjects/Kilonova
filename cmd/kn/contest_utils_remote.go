@@ -56,7 +56,9 @@ var contestUtilsRemote = &cli.Command{
 			// v1 reads Authorization, v2 reads X-Api-Key.
 			req.Header.Set("Authorization", key)
 			req.Header.Set("X-Api-Key", key)
-			req.Header.Set("Content-Type", "application/json")
+			if method != http.MethodGet {
+				req.Header.Set("Content-Type", "application/json")
+			}
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
 				return err

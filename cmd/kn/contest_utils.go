@@ -17,7 +17,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/text/runes"
 	"golang.org/x/text/transform"
@@ -168,99 +167,109 @@ func runContestUtils(ctx context.Context, command *cli.Command, backend contestB
 
 	outTeams := make([]ContestProfile, 0, len(config.Profiles))
 
-	if command.Bool("dryRun") {
-		outTeams = config.Profiles
-		spew.Dump(config.Profiles)
-	} else {
-		var subject *string
-		if len(config.MailSubject) > 0 {
-			subject = &config.MailSubject
+	dryRun := command.Bool("dryRun")
+	var dryRequests []sudoapi.UserGenerationRequest
+	var subject *string
+	if len(config.MailSubject) > 0 {
+		subject = &config.MailSubject
+	}
+	for _, team := range config.Profiles {
+		if len(team.Password) > 0 {
+			slog.InfoContext(ctx, "Skipping already created account", slog.String("slug", team.Slug))
+			continue
 		}
-		for _, team := range config.Profiles {
-			if len(team.Password) > 0 {
-				slog.InfoContext(ctx, "Skipping already created account", slog.String("slug", team.Slug))
-				continue
-			}
 
-			if len(team.Email) == 0 {
-				if config.SendMail {
-					slog.ErrorContext(ctx, "SendMail is set but no email specified for user, skipping..", slog.String("slug", team.Slug))
-					auditLog.ErrorContext(ctx, "SendMail is set but no email specified for user, skipping..", slog.String("slug", team.Slug))
-					continue
-				}
-				team.Email = "email_" + team.Slug + "@kilonova.ro"
-			}
-
-			var bio strings.Builder
-			if config.WriteBio {
-				fmt.Fprintf(&bio, "Name: %s\n", team.Name)
-				if config.Hybrid {
-					fmt.Fprintf(&bio, "Online: %t\n", team.Online)
-				}
-				if config.Teams {
-					fmt.Fprintf(&bio, "Contestants: %s\n", strings.Join(team.MemberNames, ", "))
-				}
-
-			}
-			if len(team.BioData) > 0 {
-				fmt.Fprintln(&bio, "\n", team.BioData)
-			}
-
-			displayName := team.Name
-
-			if config.Teams && len(team.MemberNames) > 0 {
-				var lastNames []string
-				for _, name := range team.MemberNames {
-					first, _, _ := strings.Cut(name, " ")
-					lastNames = append(lastNames, first)
-				}
-				displayName = strings.Join(lastNames, ", ")
-			}
-
-			contestID := config.ContestID
-			if team.ContestID > 0 {
-				contestID = team.ContestID
-			}
-
-			if contestID <= 0 {
-				auditLog.ErrorContext(ctx, "Did not create: no contest ID for user", slog.String("email", team.Email), slog.String("slug", team.Slug))
-				slog.ErrorContext(ctx, "Did not create: no contest ID for user", slog.String("email", team.Email), slog.String("slug", team.Slug))
-				continue
-			}
-
-			req := sudoapi.UserGenerationRequest{
-				Name: team.Slug,
-				Lang: config.Language,
-
-				Bio: bio.String(),
-
-				Email:       &team.Email,
-				DisplayName: &displayName,
-
-				ContestID:      &contestID,
-				PasswordByMail: config.SendMail,
-				MailSubject:    subject,
-			}
-
-			pwd, err := backend.generate(ctx, req)
-			if errors.Is(err, errAlreadyCreated) {
-				slog.InfoContext(ctx, "Skipping already created account, even though it has no password in profile", slog.String("slug", team.Slug))
-				continue
-			}
-			if err != nil {
-				slog.ErrorContext(ctx, "Error creating user", slog.Any("err", err))
-				continue
-			}
-			auditLog.InfoContext(ctx, "Created user", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug), slog.Int("contestID", contestID))
-			slog.InfoContext(ctx, "Created user", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug), slog.Int("contestID", contestID))
-
-			team.Password = pwd
-			outTeams = append(outTeams, team)
-
+		if len(team.Email) == 0 {
 			if config.SendMail {
-				time.Sleep(100 * time.Millisecond)
+				slog.ErrorContext(ctx, "SendMail is set but no email specified for user, skipping..", slog.String("slug", team.Slug))
+				auditLog.ErrorContext(ctx, "SendMail is set but no email specified for user, skipping..", slog.String("slug", team.Slug))
+				continue
 			}
+			team.Email = "email_" + team.Slug + "@kilonova.ro"
 		}
+
+		var bio strings.Builder
+		if config.WriteBio {
+			fmt.Fprintf(&bio, "Name: %s\n", team.Name)
+			if config.Hybrid {
+				fmt.Fprintf(&bio, "Online: %t\n", team.Online)
+			}
+			if config.Teams {
+				fmt.Fprintf(&bio, "Contestants: %s\n", strings.Join(team.MemberNames, ", "))
+			}
+
+		}
+		if len(team.BioData) > 0 {
+			fmt.Fprintln(&bio, "\n", team.BioData)
+		}
+
+		displayName := team.Name
+
+		if config.Teams && len(team.MemberNames) > 0 && len(displayName) == 0 {
+			var lastNames []string
+			for _, name := range team.MemberNames {
+				first, _, _ := strings.Cut(name, " ")
+				lastNames = append(lastNames, first)
+			}
+			displayName = strings.Join(lastNames, ", ")
+		}
+
+		if team.ContestID <= 0 {
+			team.ContestID = config.ContestID
+		}
+
+		if team.ContestID <= 0 {
+			auditLog.ErrorContext(ctx, "Did not create: no contest ID for user", slog.String("email", team.Email), slog.String("slug", team.Slug))
+			slog.ErrorContext(ctx, "Did not create: no contest ID for user", slog.String("email", team.Email), slog.String("slug", team.Slug))
+			continue
+		}
+
+		req := sudoapi.UserGenerationRequest{
+			Name: team.Slug,
+			Lang: config.Language,
+
+			Bio: bio.String(),
+
+			Email:       &team.Email,
+			DisplayName: &displayName,
+
+			ContestID:      &team.ContestID,
+			PasswordByMail: config.SendMail,
+			MailSubject:    subject,
+		}
+
+		if dryRun {
+			dryRequests = append(dryRequests, req)
+			continue
+		}
+
+		pwd, err := backend.generate(ctx, req)
+		if errors.Is(err, errAlreadyCreated) {
+			slog.InfoContext(ctx, "Skipping already created account, even though it has no password in profile", slog.String("slug", team.Slug))
+			continue
+		}
+		if err != nil {
+			slog.ErrorContext(ctx, "Error creating user", slog.Any("err", err))
+			continue
+		}
+		auditLog.InfoContext(ctx, "Created user", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug), slog.Int("contestID", team.ContestID))
+		slog.InfoContext(ctx, "Created user", slog.String("email", team.Email), slog.String("password", pwd), slog.String("slug", team.Slug), slog.Int("contestID", team.ContestID))
+
+		team.Password = pwd
+		outTeams = append(outTeams, team)
+
+		if config.SendMail {
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+
+	if dryRun {
+		reqsRaw, err := json.MarshalIndent(dryRequests, "", "\t")
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(reqsRaw))
+		return os.WriteFile("./requestsOut.json", reqsRaw, 0644)
 	}
 
 	if len(outTeams) == 0 {
