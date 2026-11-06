@@ -19,7 +19,7 @@ const editInviteScript = `
     async function invalidateInvite(id) {
         let res = await bundled.postCall("/contest/updateInvitation", {invite_id: id, expired: true})
         if(res.status === "error") {
-            bundled.apiToat(res)
+            bundled.apiToast(res)
             return
         }
         window.location.reload()
@@ -172,7 +172,7 @@ const editCloneScript = `
 async function cloneContest(e) {
     e.preventDefault();
     const defaultName = ` + "`" + `${document.getElementById("contest_name_upd").value} (copy)` + "`" + `;
-    const res = await bundled.postCall(` + "`" + `/contest/${contest_id}/clone` + "`" + `, {name: name.trim()});
+    const res = await bundled.postCall(` + "`" + `/contest/${contest_id}/clone` + "`" + `, {name: defaultName.trim()});
     if (res.status === "success") {
         window.location.assign(` + "`" + `/contests/${res.data}/manage/edit` + "`" + `);
         return;

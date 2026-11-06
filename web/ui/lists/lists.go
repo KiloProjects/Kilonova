@@ -327,7 +327,7 @@ async function createSimulation(e) {
 	res = await bundled.postCall(` + "`/contest/${id}/register`" + `, {});
 	if (res.status === "error") {
 		res.data = ` + "`Contest created with errors: ${res.data}. <a href=\"/contests/${id}\">View it here</a>`" + `
-		apiToast(res);
+		bundled.apiToast(res);
 		return;
 	}
 	let startTime = bundled.dayjs(), endTime = startTime.add(dur, 'minute')
@@ -336,7 +336,7 @@ async function createSimulation(e) {
 		end_time: bundled.formatISO8601(endTime)
 	})
 	if(res.status === "error") {
-		bundled.apiTost(res)
+		bundled.apiToast(res)
 		return
 	}
 	window.location.assign(` + "`/contests/${id}`" + `)

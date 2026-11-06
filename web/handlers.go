@@ -638,7 +638,7 @@ func (rt *Web) discordAvatar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rt.serveGravatar(w, r, userFull, size)
+	rt.serveDiscordAvatar(w, r, userFull, size)
 }
 
 func (rt *Web) profilePicture(w http.ResponseWriter, r *http.Request) {
