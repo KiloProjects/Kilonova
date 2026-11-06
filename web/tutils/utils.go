@@ -1,51 +1,44 @@
+// Package tutils holds templ shims over web/ui, for templ views that haven't been
+// ported yet. Delete it together with the last .templ file.
 package tutils
 
 import (
 	"context"
 	"io"
-	"strings"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/web/ui"
 	"github.com/a-h/templ"
 	"github.com/shopspring/decimal"
 )
 
+type PaginatorConfig = ui.PaginatorConfig
+
+var RemoveTrailingZeros = ui.RemoveTrailingZeros
+
 func T(ctx context.Context, key string, vals ...any) string {
-	return kilonova.GetText(util.LanguageContext(ctx), key, vals...)
+	return ui.TS(ctx, key, vals...)
 }
 
 func TC(key string, vals ...any) templ.ComponentFunc {
 	return func(ctx context.Context, w io.Writer) error {
-		_, err := io.WriteString(w, templ.EscapeString(kilonova.GetText(util.LanguageContext(ctx), key, vals...)))
-		return err
+		return ui.T(ctx, key, vals...).Render(w)
 	}
 }
 
-func RemoveTrailingZeros(score string) string {
-	if !strings.ContainsRune(score, '.') {
-		return score
-	}
-	return strings.TrimSuffix(strings.TrimRight(score, "0"), ".")
+func Paginator(cfg PaginatorConfig) templ.Component {
+	return ui.ToTempl(ui.Paginator(cfg))
 }
 
-func ScoredProblemMaxScore(pb *kilonova.ScoredProblem, summaryDisplay bool) string {
-	if pb.ScoreUserID == nil {
-		return ""
-	}
-	if pb.MaxScore == nil || pb.MaxScore.IsNegative() {
-		return "-"
-	}
-	if pb.ScoringStrategy == kilonova.ScoringTypeICPC {
-		if pb.MaxScore.Equal(decimal.NewFromInt(100)) {
-			return `<i class="fas fa-fw fa-check"></i>`
-		}
-		return `<i class="fas fa-fw fa-xmark"></i>`
-	}
-	val := RemoveTrailingZeros(pb.MaxScore.StringFixed(pb.ScorePrecision))
-	if summaryDisplay {
-		// Add the unit at the end
-		val += "p"
-	}
-	return val
+func Score(problem *kilonova.Problem, score *decimal.Decimal, showP ...bool) templ.Component {
+	return ui.ToTempl(ui.Score(problem, score, len(showP) > 0 && showP[0]))
+}
+
+// CenteredLayout wraps the templ children passed with @tutils.CenteredLayout() { ... }.
+func CenteredLayout() templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		children := templ.GetChildren(ctx)
+		ctx = templ.ClearChildren(ctx)
+		return ui.CenteredLayout(ui.FromTempl(ctx, children)).Render(w)
+	})
 }

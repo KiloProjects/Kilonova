@@ -151,12 +151,12 @@ func ProblemListGroup(params *ProblemListingParams) templ.Component {
 					}
 				}
 			}
-			if ms := tutils.ScoredProblemMaxScore(pb, false); len(ms) > 0 {
+			if pb.ScoreUserID != nil {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<span class=\"badge\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templ.Raw(ms).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = tutils.Score(&pb.Problem, pb.MaxScore).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

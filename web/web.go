@@ -30,7 +30,6 @@ import (
 	"github.com/KiloProjects/kilonova/net/llm"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
-	"github.com/KiloProjects/kilonova/web/tutils"
 	"github.com/KiloProjects/kilonova/web/ui"
 	"github.com/KiloProjects/kilonova/web/ui/statuscode"
 	vproblems "github.com/KiloProjects/kilonova/web/views/problems"
@@ -385,27 +384,21 @@ func NewWeb(base *sudoapi.BaseAPI, llmProvider llm.Provider) *Web {
 			return actualContests
 		},
 		"decimalFromInt": decimal.NewFromInt,
-		"subScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) template.HTML {
+		"subScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) (template.HTML, error) {
 			if user == nil {
-				return ""
+				return "", nil
 			}
 			score := base.MaxScore(ctx, user.ID, pb.ID)
-			if score.IsNegative() {
-				return "-"
-			}
-			if pb.ScoringStrategy == kilonova.ScoringTypeICPC {
-				if score.Equal(decimal.NewFromInt(100)) {
-					return `<i class="fas fa-fw fa-check"></i>`
-				}
-				return `<i class="fas fa-fw fa-xmark"></i>`
-			}
-			return template.HTML(tutils.RemoveTrailingZeros(score.StringFixed(pb.ScorePrecision)) + "p")
+			return ui.ToGoHTML(ui.Score(pb, &score, true))
 		},
 		"actualMaxScore": func(pb *kilonova.Problem, user *kilonova.UserBrief) decimal.Decimal {
 			return base.MaxScore(ctx, user.ID, pb.ID)
 		},
-		"spbMaxScore": func(pb *kilonova.ScoredProblem, summaryDisplay bool) template.HTML {
-			return template.HTML(tutils.ScoredProblemMaxScore(pb, summaryDisplay))
+		"spbMaxScore": func(pb *kilonova.ScoredProblem, summaryDisplay bool) (template.HTML, error) {
+			if pb.ScoreUserID == nil { // no score was loaded for this user
+				return "", nil
+			}
+			return ui.ToGoHTML(ui.Score(&pb.Problem, pb.MaxScore, summaryDisplay))
 		},
 		"checklistMaxScore": func(pb *kilonova.ScoredProblem) string {
 			if pb.ScoreUserID == nil {
@@ -414,7 +407,7 @@ func NewWeb(base *sudoapi.BaseAPI, llmProvider llm.Provider) *Web {
 			if pb.MaxScore == nil || pb.MaxScore.IsNegative() {
 				return "-1"
 			}
-			return tutils.RemoveTrailingZeros(pb.MaxScore.StringFixed(pb.ScorePrecision))
+			return ui.RemoveTrailingZeros(pb.MaxScore.StringFixed(pb.ScorePrecision))
 		},
 		"computeChecklistSpan": computeChecklistSpan,
 		"scoreStep": func(pb *kilonova.Problem) string {

@@ -49,9 +49,9 @@ templ ProblemListGroup(params *ProblemListingParams) {
 							</span>
 						}
 					}
-					if ms := tutils.ScoredProblemMaxScore(pb, false); len(ms) > 0 {
+					if pb.ScoreUserID != nil {
 						<span class="badge">
-							@templ.Raw(ms)
+							@tutils.Score(&pb.Problem, pb.MaxScore)
 						</span>
 					}
 				</div>
