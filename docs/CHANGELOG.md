@@ -93,6 +93,8 @@ First release under the new `YY.MM` versioning scheme. Everything since v0.25.2.
   info and contest disclaimer, submission and paste pages (now server-side rendered), plus a server-rendered pagination
   component.
 - Dedicated per-user submissions page; trending problems tab optimized.
+- For users allowed to view tests, submission details link to associated test files and retained submission output.
+  Missing or pending outputs are identified explicitly.
 - Navbar and footer styling refresh; login modal fixes; `server-timestamp` custom element replaces the
   `server_timestamp` class; CodeMirror logic abstracted.
 - Fixes: submissions page checkbox, submission timestamp formatting, hljs copy button colouring on theme change,

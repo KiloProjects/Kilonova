@@ -660,12 +660,31 @@ func (rt *Web) submission(w http.ResponseWriter, r *http.Request) {
 		}
 		subFiles = []*kilonova.SubmissionFile{}
 	}
+	var testAccess *submissions.SubmissionTestAccess
+	if rt.base.CanViewTests(user.UserBrief(r), sub.Problem) {
+		testAccess = &submissions.SubmissionTestAccess{
+			ProblemID:       sub.Problem.ID,
+			CanEdit:         rt.base.IsProblemEditor(user.UserBrief(r), sub.Problem),
+			OutputAvailable: make(map[int]bool, len(sub.SubTests)),
+		}
+		for _, subtest := range sub.SubTests {
+			if !subtest.Done || subtest.Skipped {
+				continue
+			}
+			available, err := rt.base.SubtestOutputAvailable(subtest.ID)
+			if err != nil {
+				slog.WarnContext(r.Context(), "Could not check subtest output", slog.Int("subtestID", subtest.ID), slog.Any("err", err))
+			}
+			testAccess.OutputAvailable[subtest.ID] = available
+		}
+	}
 
 	rt.runLayout(w, r, &LayoutParams{
 		Title: fmt.Sprintf("%s %d", kilonova.GetText(util.Language(r), "sub"), sub.ID),
 		Head:  ui.NoRobots(),
 		Content: submissions.Submission(submissions.SubmissionPageParams{
 			Submission:    sub,
+			TestAccess:    testAccess,
 			ForceShowCode: r.URL.Query().Get("forceCode") == "1",
 			LanguageFormatter: func(lang string) string {
 				if lng := rt.base.AnyLanguage(lang); lng != nil {

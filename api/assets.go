@@ -83,7 +83,7 @@ func (s *Assets) AssetsRouter() http.Handler {
 
 	r.With(s.api.MustBeAdmin).Get("/submissions/export", s.ExportSubmissions())
 
-	r.With(s.api.MustBeProposer).Get("/subtest/{subtestID}", s.ServeSubtest)
+	r.Get("/subtest/{subtestID}", s.ServeSubtest)
 
 	r.With(s.api.validateContestID).Get("/contest/{contestID}/leaderboard.csv", s.ServeContestLeaderboard)
 
@@ -315,13 +315,16 @@ func (s *Assets) ServeSubtest(w http.ResponseWriter, r *http.Request) {
 	}
 	sub, err := s.base.Submission(r.Context(), subtest.SubmissionID, user.UserBrief(r))
 	if err != nil {
-		slog.WarnContext(r.Context(), "Error loading submission", slog.Any("err", err))
-		http.Error(w, "Couldn't get submission", 500)
+		http.Error(w, "Submission not found or not accessible", kilonova.ErrorCode(err))
 		return
 	}
 
-	if !s.base.IsProblemEditor(user.UserBrief(r), sub.Problem) {
-		http.Error(w, "You aren't allowed to do that!", http.StatusUnauthorized)
+	if !s.base.CanViewTests(user.UserBrief(r), sub.Problem) {
+		http.Error(w, "You aren't allowed to view this problem's tests", http.StatusForbidden)
+		return
+	}
+	if !subtest.Done || subtest.Skipped {
+		http.Error(w, "The subtest output has not been produced", http.StatusNotFound)
 		return
 	}
 
@@ -331,7 +334,10 @@ func (s *Assets) ServeSubtest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer rc.Close()
-	w.WriteHeader(200)
+	w.Header().Set("Cache-Control", "private, no-store")
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", fmt.Sprintf("test-%d.out", subtest.VisibleID)))
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	io.Copy(w, rc)
 }
 
@@ -345,6 +351,9 @@ func (s *Assets) ServeTestInput(w http.ResponseWriter, r *http.Request) {
 	defer rr.Close()
 
 	tname := fmt.Sprintf("%d-%s.in", util.Test(r).VisibleID, util.Problem(r).TestName)
+	w.Header().Set("Cache-Control", "private, no-store")
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 
 	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=%q", tname))
 	w.WriteHeader(200)
@@ -361,6 +370,9 @@ func (s *Assets) ServeTestOutput(w http.ResponseWriter, r *http.Request) {
 	defer rr.Close()
 
 	tname := fmt.Sprintf("%d-%s.out", util.Test(r).VisibleID, util.Problem(r).TestName)
+	w.Header().Set("Cache-Control", "private, no-store")
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 
 	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=%q", tname))
 	w.WriteHeader(200)
