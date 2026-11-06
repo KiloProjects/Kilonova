@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/web/ui/problems"
@@ -39,6 +40,11 @@ func TestChecklist(t *testing.T) {
 			{ProblemList: kilonova.ProblemList{ID: 3, Title: "Empty"}, DepthLevel: 1},
 		},
 	}
+	t.Run("other-user lookup only for logged-in viewers", func(t *testing.T) {
+		mustNot(t, render(t, Checklist(ctx, ProgressParams{List: list})), "otherUserForm")
+		authed := context.WithValue(ctx, user.AuthedUserKey, &kilonova.UserBrief{ID: 2})
+		must(t, render(t, Checklist(authed, ProgressParams{List: list})), `id="otherUserForm"`)
+	})
 	t.Run("rows, spans and scores", func(t *testing.T) {
 		got := render(t, Checklist(ctx, ProgressParams{List: list, CheckedUser: &kilonova.UserBrief{Name: "bob"}}))
 		must(t, got, `rowspan="1"`, `>Sub</a> (0/1)`, `data-score="50"`, `href="/problems/9?list_id=2" title="Score: 50p"`, `href="/profile/bob"`)

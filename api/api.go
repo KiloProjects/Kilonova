@@ -295,7 +295,7 @@ func (s *API) HandlerV1() http.Handler {
 					return s.base.ProblemChecklist(ctx, util.ProblemContext(ctx).ID)
 				}))
 
-				r.Get("/accessControl", webWrapper(s.getProblemAccessControl))
+				r.With(s.validateProblemEditor).Get("/accessControl", webWrapper(s.getProblemAccessControl))
 			})
 		})
 	})

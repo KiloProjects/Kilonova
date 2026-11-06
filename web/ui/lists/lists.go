@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/web/ui"
 	"github.com/KiloProjects/kilonova/web/ui/problems"
@@ -106,15 +107,18 @@ func Checklist(ctx context.Context, p ProgressParams) Node {
 				TBody(checklistRows(ctx, l, cu != nil)),
 			),
 		),
-		Form(ID("otherUserForm"), Class("segment-panel"), Method("GET"),
-			H2(ui.T(ctx, "list.view_as_user")),
-			Label(Class("block my-2"),
-				Span(Class("form-label"), ui.T(ctx, "username")),
-				Input(ID("otherUsername"), Name("username"), Type("text"), Class("form-input")),
+		// The lookup goes through /api/user/byName, which may require a login.
+		If(user.UserBriefContext(ctx).IsAuthed(), Group{
+			Form(ID("otherUserForm"), Class("segment-panel"), Method("GET"),
+				H2(ui.T(ctx, "list.view_as_user")),
+				Label(Class("block my-2"),
+					Span(Class("form-label"), ui.T(ctx, "username")),
+					Input(ID("otherUsername"), Name("username"), Type("text"), Class("form-input")),
+				),
+				Button(Class("btn btn-blue"), Type("submit"), ui.T(ctx, "view")),
 			),
-			Button(Class("btn btn-blue"), Type("submit"), ui.T(ctx, "view")),
-		),
-		Script(Raw(otherUserScript)),
+			Script(Raw(otherUserScript)),
+		}),
 	}
 }
 
