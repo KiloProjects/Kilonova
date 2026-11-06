@@ -168,9 +168,10 @@ export class KNEditor {
 		this.cm = CodeMirror.fromTextArea(opts.textArea, cmSettings)
 
 		if (opts.dynamicSize) {
-			this.cm.setSize(null, "100%");
-			// min-height: 250px;
-			this.cm.getWrapperElement().style.minHeight = "250px";
+			// Grow with the content, never below 250px. The minimum goes on the scroller:
+			// on the wrapper, the gutter and the clickable area stop after the last line.
+			this.cm.setSize(null, "auto");
+			this.cm.getScrollerElement().style.minHeight = "250px";
 		}
 		if (opts.autoFocus) {
 			this.cm.focus();

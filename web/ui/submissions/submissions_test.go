@@ -58,6 +58,12 @@ func TestSubsViewer(t *testing.T) {
 		must(t, got, `href="/problems/8">Sum</a>`)
 		mustNot(t, got, "Other", "break")
 	})
+	t.Run("in-place mode swaps only the viewer", func(t *testing.T) {
+		got := render(t, SubsViewer(ctx, SubsViewerParams{Submissions: subs, Query: SubsViewerQuery{ProblemID: &pid}, InPlace: true}))
+		must(t, got, `id="subs-viewer"`, `data-inplace`, `hx-target="this"`, `hx-select="#subs-viewer"`, `hx-replace-url="true"`, `class="block nostyle" href="?`)
+		must(t, got, `hx-boost="true"`)
+		mustNot(t, render(t, SubsViewer(ctx, SubsViewerParams{Submissions: subs, Query: SubsViewerQuery{ProblemID: &pid}})), "data-inplace", `hx-target="this"`)
+	})
 	t.Run("sort links flip direction on the active column", func(t *testing.T) {
 		got := render(t, SubsViewer(ctx, SubsViewerParams{Submissions: subs, Query: SubsViewerQuery{Ordering: "max_time"}}))
 		must(t, got, `href="?ascending=true&amp;ordering=max_time&amp;page=1"`, "fa-sort-down", `background-color: #7fff00;`)

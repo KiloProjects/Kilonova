@@ -156,6 +156,17 @@ if(pageName === "pb_submit") {
 
 let cm = new vendored.KNEditor(cmConfig)
 
+// Warn before leaving the page with code that hasn't been sent.
+let sentCode = "";
+window.addEventListener("beforeunload", (e) => {
+	if (document.getElementById("submit_style").value !== "code") return;
+	const code = cm.getText().trim();
+	if (code.length > 0 && code !== sentCode) {
+		e.preventDefault();
+		e.returnValue = "";
+	}
+});
+
 document.getElementById("submit_style").addEventListener("change", (e) => {
 	const val = e.currentTarget.value;
 	if(!isOutputOnly()) {
@@ -236,6 +247,9 @@ async function sendSub() {
 	if (res.status == "error") {
 		bundled.apiToast(res)
 		return
+	}
+	if (document.getElementById("submit_style").value === "code") {
+		sentCode = cm.getText().trim();
 	}
 	bundled.createToast({ title: bundled.getText("uploaded"), description: ` + "`" + `<a href="/submissions/${res.data}">${bundled.getText("view")}</btn>` + "`" + ` })
 	console.log(res.data, bundled.makeSubWaiter(res.data));

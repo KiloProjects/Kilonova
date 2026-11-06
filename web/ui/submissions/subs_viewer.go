@@ -52,6 +52,10 @@ type SubsViewerParams struct {
 	Title       string
 	Languages   map[string]string
 	IsAdmin     bool
+	// InPlace makes sorting, filtering and paging swap only the viewer instead of reloading
+	// the page, so the rest of the page keeps its state. The URL is replaced, not pushed:
+	// pushing would let htmx restore a whole-page snapshot on Back, re-running page scripts.
+	InPlace bool
 }
 
 func buildSortURL(q SubsViewerQuery, ordering string) string {
@@ -246,11 +250,15 @@ func SubsViewer(ctx context.Context, params SubsViewerParams) Node {
 
 	sortHeader := func(class, key, ordering string) Node {
 		return Th(Scope("col"), Class(class),
-			A(Class("block nostyle"), Href(buildSortURL(q, ordering)), ui.T(ctx, key), sortIndicator(q, ordering)),
+			A(Class("block nostyle"), Href(buildSortURL(q, ordering)), If(params.InPlace, Attr("hx-boost", "true")), ui.T(ctx, key), sortIndicator(q, ordering)),
 		)
 	}
 
 	return Div(Class("page-holder mt-0"),
+		If(params.InPlace, Group{
+			ID("subs-viewer"), Data("inplace", ""),
+			Attr("hx-target", "this"), Attr("hx-select", "#subs-viewer"), Attr("hx-swap", "outerHTML"), Attr("hx-replace-url", "true"),
+		}),
 		Aside(Class("page-sidebar lg:order-last"),
 			Div(Class("segment-panel"), H2(ui.T(ctx, "filters")), filterForm(ctx, params)),
 		),

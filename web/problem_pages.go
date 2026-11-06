@@ -317,6 +317,7 @@ func (rt *Web) problemSubmit() http.HandlerFunc {
 				Title:       kilonova.GetText(util.Language(r), "header.past_submissions"),
 				Languages:   rt.base.EnabledLanguages(),
 				IsAdmin:     userBrief.IsAdmin(),
+				InPlace:     true, // keep the code in the editor while browsing past submissions
 			})
 		}
 

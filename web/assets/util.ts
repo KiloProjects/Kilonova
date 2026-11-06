@@ -123,6 +123,11 @@ export function initialLoad(el: HTMLElement) {
 				return;
 			}
 			params.set("page", btn.dataset.paginate!)
+			// Inside an in-place region (data-inplace), swap just that region instead of reloading.
+			if (btn.closest("[data-inplace]") && window.htmx) {
+				window.htmx.ajax("GET", window.location.pathname + "?" + params.toString(), { source: btn });
+				return;
+			}
 			window.location.search = params.toString()
 		})
 	})
