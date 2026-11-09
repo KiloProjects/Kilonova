@@ -9,7 +9,6 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/ui"
 	. "maragu.dev/gomponents"
-	. "maragu.dev/gomponents/components"
 	. "maragu.dev/gomponents/html"
 )
 
@@ -52,17 +51,18 @@ func Topbar(ctx context.Context, t *TopbarParams) Node {
 		nav = append(nav, problemTabs(ctx, t, editProblemPage)...)
 	}
 
-	return Div(Class("segment-panel"),
+	// Running contests poll Q&A; editors faster. Handled in web/assets/topbar.ts.
+	pollMs := ""
+	if t.Contest != nil && !t.Contest.Ended() {
+		pollMs = "10000"
+		if t.IsContestEditor {
+			pollMs = "5000"
+		}
+	}
+	return Div(Class("segment-panel"), If(pollMs != "", Data("qna-poll", pollMs)),
 		H1(topbarHeading(ctx, t)),
-		Nav(ID("topbar_wrapper"), Class("mt-1"), spaced(nav)),
-		If(problemPage && t.Contest != nil && t.Contest.Ended(), Group{
-			Div(ui.TRaw(ctx, "problem_contest_page_warning")),
-			Script(Raw(`
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("pb_link_rewrite_a").setAttribute("href", window.location.href.replace(/contests\/[0-9]+\//, ''))
-        })
-    `)),
-		}),
+		Nav(Class("mt-1"), spaced(nav)),
+		If(problemPage && t.Contest != nil && t.Contest.Ended(), Div(ui.TRaw(ctx, "problem_contest_page_warning"))),
 	)
 }
 
@@ -93,125 +93,63 @@ func topbarHeading(ctx context.Context, t *TopbarParams) Node {
 }
 
 func contestTabs(ctx context.Context, t *TopbarParams, problemPage bool) []Node {
-	c := t.Contest
-	tabs := []Node{
-		tab(t, "contest_general", "/", ui.T(ctx, "contest_info")),
-		separator(),
-		tab(t, "contest_communication", "/communication", Span(
+	c, pre := t.Contest, t.URLPrefix
+	tabs := []Node{ui.Tabs(t.Page,
+		ui.Tab{Key: "contest_general", Href: pre + "/", Label: ui.T(ctx, "contest_info")},
+		ui.Tab{Key: "contest_communication", Href: pre + "/communication", Label: Span(
 			ui.T(ctx, "communication"),
 			If(!c.Ended() && t.Page != "contest_communication", Group{
 				Text(" "),
 				El("kn-comm-announcer", Class("inline-block"),
 					Attr("contestID", strconv.Itoa(c.ID)), Attr("contestEditor", strconv.FormatBool(t.IsContestEditor))),
 			}),
-		)),
-	}
-	if t.IsContestEditor {
-		tabs = append(tabs,
-			separator(), tab(t, "contest_edit", "/manage/edit", ui.T(ctx, "contest_edit")),
-			separator(), tab(t, "contest_registrations", "/manage/registrations", ui.T(ctx, "contest_registrations")),
-		)
-	}
-	if t.LeaderboardVisible {
-		tabs = append(tabs, separator(), tab(t, "contest_leaderboard", "/leaderboard", ui.T(ctx, "leaderboard")))
-	}
+		)},
+		ui.Tab{Key: "contest_edit", Href: pre + "/manage/edit", Label: ui.T(ctx, "contest_edit"), Hide: !t.IsContestEditor},
+		ui.Tab{Key: "contest_registrations", Href: pre + "/manage/registrations", Label: ui.T(ctx, "contest_registrations"), Hide: !t.IsContestEditor},
+		ui.Tab{Key: "contest_leaderboard", Href: pre + "/leaderboard", Label: ui.T(ctx, "leaderboard"), Hide: !t.LeaderboardVisible},
+	)}
 	if problemPage {
-		tabs = append(tabs, Div(Class("topbar-separator topbar-separator-lg")))
-	}
-	if !c.Ended() {
-		pollTime := "10000; // 10 seconds"
-		if t.IsContestEditor {
-			pollTime = "5000; // 5 seconds for editors"
-		}
-		tabs = append(tabs, Script(Raw(`
-                (()=>{
-                    let pollTime = `+pollTime+`
-                    bundled.startReloadingQnA(pollTime); // Trigger reload at specified interval
-                })()
-            `)))
+		tabs = append(tabs, ui.TabGroupSeparator())
 	}
 	return tabs
 }
 
 func problemTabs(ctx context.Context, t *TopbarParams, editProblemPage bool) []Node {
 	pb := fmt.Sprintf("/problems/%d", t.Problem.ID)
-	tabs := []Node{tab(t, "pb_statement", pb+"/", ui.T(ctx, "statement"))}
-	if t.Authed {
-		tabs = append(tabs, separator(), tab(t, "pb_submit", pb+"/submit", ui.T(ctx, "submit")))
-	}
-	if t.Contest == nil || t.Contest.Ended() || t.CanSubmitInContest {
-		tabs = append(tabs, separator(), tab(t, "pb_submissions", pb+"/submissions", ui.T(ctx, "submissions")))
-	}
-	if t.FullyVisible && t.Contest == nil && flags.ProblemStatistics.Value() {
-		tabs = append(tabs, separator(), A(
-			Classes{"p-1": true, "topbar-selected": t.Page == "pb_statistics"},
-			Attr("hx-swap", "none"), Attr("hx-get", pb+"/statistics?hx_modal=true"),
-			Href(t.URLPrefix+pb+"/statistics"),
-			ui.T(ctx, "problemStats"),
-		))
-	}
-
+	pre := t.URLPrefix + pb
+	tabs := []Node{ui.Tabs(t.Page,
+		ui.Tab{Key: "pb_statement", Href: pre + "/", Label: ui.T(ctx, "statement")},
+		ui.Tab{Key: "pb_submit", Href: pre + "/submit", Label: ui.T(ctx, "submit"), Hide: !t.Authed},
+		ui.Tab{Key: "pb_submissions", Href: pre + "/submissions", Label: ui.T(ctx, "submissions"),
+			Hide: t.Contest != nil && !t.Contest.Ended() && !t.CanSubmitInContest},
+		ui.Tab{Key: "pb_statistics", Href: pre + "/statistics", Label: ui.T(ctx, "problemStats"),
+			Hide:  !t.FullyVisible || t.Contest != nil || !flags.ProblemStatistics.Value(),
+			Attrs: Group{Attr("hx-swap", "none"), Attr("hx-get", pb+"/statistics?hx_modal=true")}},
+		// Non-editors only reach the archive via a direct link; show the tab while they're on it.
+		ui.Tab{Key: "pb_archive", Href: pre + "/archive", Label: ui.T(ctx, "archive"), Hide: t.IsProblemEditor || t.Page != "pb_archive"},
+	)}
 	if !t.IsProblemEditor {
-		if t.Page == "pb_archive" {
-			tabs = append(tabs, separator(), A(Class("p-1 topbar-selected"), Href(t.URLPrefix+pb+"/archive"), ui.T(ctx, "archive")))
-		}
 		return tabs
 	}
 
-	editTab := func(selected bool, path, key string) Node {
-		return A(Classes{"p-1": true, "topbar-selected": selected}, Href(t.URLPrefix+pb+path), ui.T(ctx, key))
+	// Test and subtask tabs are only selected on their index pages, not on a single test/subtask.
+	cur := t.Page
+	if (cur == "tests" || cur == "subtasks") && t.PageID != -2 {
+		cur = ""
 	}
 	return append(tabs,
-		Div(Class("topbar-separator topbar-separator-lg")),
-		Span(ID("problem_topbar_wrapper"),
-			A(ID("topbar_edit_toggle"), Classes{"p-1": true, "hidden": editProblemPage}, Href("#"), ui.T(ctx, "topbar.edit")),
-			Text(" "),
-			Span(ID("pb_edit_context"), Classes{"hidden": !editProblemPage}, spaced([]Node{
-				editTab(t.Page == "general", "/edit", "general"),
-				separator(),
-				editTab(t.Page == "desc", "/edit/desc", "stmt"),
-				separator(),
-				editTab(t.Page == "access", "/edit/access", "access_control_short"),
-				separator(),
-				editTab(t.Page == "attachments", "/edit/attachments", "attachments"),
-				separator(),
-				editTab(t.Page == "tests" && t.PageID == -2, "/edit/test", "tests"),
-				separator(),
-				editTab(t.Page == "pb_archive", "/archive", "archive"),
-				separator(),
-				editTab(t.Page == "subtasks" && t.PageID == -2, "/edit/subtasks", "subTasks"),
-			})),
-		),
-		Script(Raw(`
-            (() => {
-                let force_open = `+strconv.FormatBool(editProblemPage)+`;
-
-                if(force_open === false) {
-                    document.getElementById("topbar_edit_toggle")?.addEventListener("click", (e) => {
-                        force_open = true;
-                        e.preventDefault();
-                        document.getElementById("topbar_edit_toggle").classList.toggle("hidden", force_open)
-                        document.getElementById("pb_edit_context").classList.toggle("hidden", !force_open)
-                    });
-                    document.getElementById("problem_topbar_wrapper").addEventListener("mouseenter", (e) => {
-                        document.getElementById("topbar_edit_toggle").classList.toggle("hidden", true)
-                        document.getElementById("pb_edit_context").classList.toggle("hidden", false)
-                    })
-                    document.getElementById("topbar_wrapper").addEventListener("mouseleave", (e) => {
-                        document.getElementById("topbar_edit_toggle").classList.toggle("hidden", force_open)
-                        document.getElementById("pb_edit_context").classList.toggle("hidden", !force_open)
-                    })
-                }
-            })()
-        `)),
+		ui.TabGroupSeparator(),
+		ui.CollapsedTabs(ui.T(ctx, "topbar.edit"), editProblemPage, ui.Tabs(cur,
+			ui.Tab{Key: "general", Href: pre + "/edit", Label: ui.T(ctx, "general")},
+			ui.Tab{Key: "desc", Href: pre + "/edit/desc", Label: ui.T(ctx, "stmt")},
+			ui.Tab{Key: "access", Href: pre + "/edit/access", Label: ui.T(ctx, "access_control_short")},
+			ui.Tab{Key: "attachments", Href: pre + "/edit/attachments", Label: ui.T(ctx, "attachments")},
+			ui.Tab{Key: "tests", Href: pre + "/edit/test", Label: ui.T(ctx, "tests")},
+			ui.Tab{Key: "pb_archive", Href: pre + "/archive", Label: ui.T(ctx, "archive")},
+			ui.Tab{Key: "subtasks", Href: pre + "/edit/subtasks", Label: ui.T(ctx, "subTasks")},
+		)),
 	)
 }
-
-func tab(t *TopbarParams, page, path string, label Node) Node {
-	return A(Classes{"p-1": true, "topbar-selected": t.Page == page}, Href(t.URLPrefix+path), label)
-}
-
-func separator() Node { return Div(Class("topbar-separator")) }
 
 // spaced puts a space between siblings, as the template's source newlines did.
 func spaced(nodes []Node) Group {

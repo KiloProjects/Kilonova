@@ -4,6 +4,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import {initMaxscoreBreakdown} from "./components";
 import {initFlashes} from "./flash";
+import {initTopbar} from "./topbar";
 
 dayjs.extend(relativeTime);
 dayjs.extend(customParseFormat);
@@ -133,6 +134,7 @@ export function initialLoad(el: HTMLElement) {
 	})
 
 	initFlashes(el);
+	initTopbar(el);
 }
 
 document.addEventListener("DOMContentLoaded", () => {

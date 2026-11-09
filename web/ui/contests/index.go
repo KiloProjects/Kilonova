@@ -6,7 +6,6 @@ import (
 	"github.com/KiloProjects/kilonova/web/ui"
 	"github.com/KiloProjects/kilonova/web/ui/proposer"
 	. "maragu.dev/gomponents"
-	. "maragu.dev/gomponents/components"
 	. "maragu.dev/gomponents/html"
 )
 
@@ -48,20 +47,14 @@ func Create(ctx context.Context, p TabsParams) Node {
 
 // Tabs is the contest index tab bar.
 func Tabs(ctx context.Context, p TabsParams) Node {
-	tab := func(page, href, key string) Node {
-		return A(Classes{"p-1": true, "topbar-selected": p.Page == page}, Href(href), ui.T(ctx, key))
-	}
-	sep := Text(" | ")
 	return Div(Class("segment-panel"),
 		H1(ui.T(ctx, "contests")),
-		Div(Class("mt-1"),
-			tab("/contests", "/contests", "contest_index.all"), sep,
-			tab("/contests/official", "/contests/official", "contest_index.official"), sep,
-			tab("/contests/virtual", "/contests/virtual", "contest_index.virtual"),
-			If(p.Authed, Group{
-				sep, tab("/contests/personal", "/contests/personal", "contest_index.personal"),
-				If(p.CanCreate, Group{sep, tab("create", "/contests/create", "contest_index.create")}),
-			}),
-		),
+		Div(Class("mt-1"), ui.Tabs(p.Page,
+			ui.Tab{Key: "/contests", Href: "/contests", Label: ui.T(ctx, "contest_index.all")},
+			ui.Tab{Key: "/contests/official", Href: "/contests/official", Label: ui.T(ctx, "contest_index.official")},
+			ui.Tab{Key: "/contests/virtual", Href: "/contests/virtual", Label: ui.T(ctx, "contest_index.virtual")},
+			ui.Tab{Key: "/contests/personal", Href: "/contests/personal", Label: ui.T(ctx, "contest_index.personal"), Hide: !p.Authed},
+			ui.Tab{Key: "create", Href: "/contests/create", Label: ui.T(ctx, "contest_index.create"), Hide: !p.Authed || !p.CanCreate},
+		)),
 	)
 }

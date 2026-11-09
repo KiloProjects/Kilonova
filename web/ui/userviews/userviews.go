@@ -12,7 +12,6 @@ import (
 	"github.com/KiloProjects/kilonova/web/ui"
 	"github.com/bwmarrin/discordgo"
 	. "maragu.dev/gomponents"
-	. "maragu.dev/gomponents/components"
 	. "maragu.dev/gomponents/html"
 )
 
@@ -22,9 +21,6 @@ func Topbar(ctx context.Context, u *kilonova.UserFull, page string) Node {
 	authed := user.UserBriefContext(ctx)
 	admin := authed.IsAdmin()
 	self := authed.IsAuthed() && authed.ID == u.ID
-	tab := func(name, href, key string) Node {
-		return A(Classes{"p-1": true, "topbar-selected": page == name}, Href(href), ui.T(ctx, key))
-	}
 	name := Text(u.Name)
 	if u.DisplayName != "" {
 		name = Text(u.DisplayName + " (" + u.Name + ")")
@@ -49,12 +45,11 @@ async function resendEmail() {
 }
 `)),
 		Div(Style("clear: both;")),
-		Nav(ID("topbar_wrapper"), Class("mt-1"),
-			tab("overview", "/profile/"+u.Name, "profile_nav"), Text(" "),
-			Div(Class("topbar-separator")), Text(" "),
-			tab("submissions", "/profile/"+u.Name+"/submissions", "submissions"),
-			If(self, Group{Text(" "), Div(Class("topbar-separator")), Text(" "), tab("settings", "/settings", "settings")}),
-		),
+		Nav(Class("mt-1"), ui.Tabs(page,
+			ui.Tab{Key: "overview", Href: "/profile/" + u.Name, Label: ui.T(ctx, "profile_nav")},
+			ui.Tab{Key: "submissions", Href: "/profile/" + u.Name + "/submissions", Label: ui.T(ctx, "submissions")},
+			ui.Tab{Key: "settings", Href: "/settings", Label: ui.T(ctx, "settings"), Hide: !self},
+		)),
 	)
 }
 

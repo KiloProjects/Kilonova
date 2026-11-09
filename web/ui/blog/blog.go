@@ -12,7 +12,6 @@ import (
 	"github.com/KiloProjects/kilonova/web/ui"
 	"github.com/KiloProjects/kilonova/web/ui/editors"
 	. "maragu.dev/gomponents"
-	. "maragu.dev/gomponents/components"
 	. "maragu.dev/gomponents/html"
 )
 
@@ -34,19 +33,14 @@ func Topbar(ctx context.Context, p TopbarParams) Node {
 	case "editAttachments":
 		title = B(Text(p.Post.Title+" | "), ui.T(ctx, "postEditAttachments"))
 	}
-	tab := func(page, href, key string) Node {
-		return A(Classes{"p-1": true, "topbar-selected": p.Page == page}, Href(href), ui.T(ctx, key))
-	}
 	base := "/posts/" + p.Post.Slug
 	return Div(Class("segment-panel"),
 		H1(title),
-		If(p.IsPostEditor, Div(Class("mt-1"),
-			tab("view", base, "post.nav.view"), Text(" "),
-			Div(Class("topbar-separator")), Text(" "),
-			tab("editIndex", base+"/edit", "post.nav.edit"), Text(" "),
-			Div(Class("topbar-separator")), Text(" "),
-			tab("editAttachments", base+"/edit/attachments", "post.nav.attachments"),
-		)),
+		If(p.IsPostEditor, Div(Class("mt-1"), ui.Tabs(p.Page,
+			ui.Tab{Key: "view", Href: base, Label: ui.T(ctx, "post.nav.view")},
+			ui.Tab{Key: "editIndex", Href: base + "/edit", Label: ui.T(ctx, "post.nav.edit")},
+			ui.Tab{Key: "editAttachments", Href: base + "/edit/attachments", Label: ui.T(ctx, "post.nav.attachments")},
+		))),
 	)
 }
 
