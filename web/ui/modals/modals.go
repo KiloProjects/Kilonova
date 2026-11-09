@@ -4,7 +4,6 @@ package modals
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi"
@@ -99,13 +98,8 @@ func ProblemSources(ctx context.Context, problemList *kilonova.ProblemList, prob
 	)
 }
 
-var gpcEndTime = time.Date(2026, 9, 28, 2, 59, 59, 0, time.UTC)
-
 // GPCAnnouncement is a dismissable banner, shown until gpcEndTime.
 func GPCAnnouncement() Node {
-	if time.Now().After(gpcEndTime) {
-		return nil
-	}
 	return Section(Data("flashname", "gpc_announcement"), Class("segment-panel hidden"),
 		Div(Class("flex justify-between"),
 			P(Style("margin: 0.1rem;"),
