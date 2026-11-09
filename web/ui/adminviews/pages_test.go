@@ -66,3 +66,10 @@ func TestGraderInfo(t *testing.T) {
 	got := render(t, GraderInfo(enCtx, []*sudoapi.GraderLanguage{{Name: "C++", Command: "g++ <x>", Version: "13"}}))
 	must(t, got, "<code>g++ &lt;x&gt;</code>", "<code>13</code>")
 }
+
+func TestContestGen(t *testing.T) {
+	t.Run("posts a multipart bundle with a dry run toggle", func(t *testing.T) {
+		got := render(t, ContestGen(enCtx))
+		must(t, got, `action="/admin/contest_gen"`, `enctype="multipart/form-data"`, `name="bundle"`, `name="dryRun"`)
+	})
+}

@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/KiloProjects/kilonova/internal/contestgen"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/urfave/cli/v3"
 )
@@ -77,11 +78,11 @@ var contestUtilsRemote = &cli.Command{
 			return json.Unmarshal(data, out)
 		}
 
-		return runContestUtils(ctx, command, contestBackend{
-			checkContest: func(ctx context.Context, id int) error {
+		return runContestUtils(ctx, command, contestgen.Backend{
+			CheckContest: func(ctx context.Context, id int) error {
 				return do(ctx, http.MethodGet, "/api/contest/"+strconv.Itoa(id)+"/", nil, nil)
 			},
-			generate: func(ctx context.Context, req sudoapi.UserGenerationRequest) (string, error) {
+			Generate: func(ctx context.Context, req sudoapi.UserGenerationRequest) (string, error) {
 				var out struct {
 					Password string `json:"password"`
 				}

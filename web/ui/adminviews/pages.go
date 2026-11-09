@@ -322,3 +322,22 @@ func GraderInfo(ctx context.Context, langs []*sudoapi.GraderLanguage) Node {
 		Div(Class("segment-panel"), Text("Note: Page still WIP")),
 	}
 }
+
+// ContestGen is the bulk contest account generator: it uploads a profiles bundle and downloads the results as a zip.
+func ContestGen(ctx context.Context) Node {
+	return Div(Class("segment-panel"),
+		H1(ui.T(ctx, "contest_gen.title")),
+		P(Class("text-muted"), ui.T(ctx, "contest_gen.description")),
+		Form(Method("post"), Action("/admin/contest_gen"), EncType("multipart/form-data"),
+			Label(Class("block my-2"),
+				Span(Class("form-label"), ui.T(ctx, "contest_gen.bundle"), Text(":")), Text(" "),
+				Input(Class("form-input"), Type("file"), Name("bundle"), Accept(".json,application/json"), Required()),
+			),
+			Label(Class("inline-flex items-center text-lg my-2"),
+				Input(Class("form-checkbox"), Type("checkbox"), Name("dryRun"), Value("1")),
+				Span(Class("ml-2"), ui.T(ctx, "contest_gen.dry_run")),
+			),
+			Div(Button(Class("btn btn-blue"), Type("submit"), ui.T(ctx, "contest_gen.submit"))),
+		),
+	)
+}

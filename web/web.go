@@ -250,6 +250,8 @@ func (rt *Web) Handler() http.Handler {
 			r.Get("/", rt.adminPanel)
 			r.Get("/users", rt.usersList())
 			r.Get("/user_gen", rt.userGen)
+			r.Get("/contest_gen", rt.contestGen)
+			r.With(csrf.Handler).Post("/contest_gen", rt.contestGenRun)
 			r.Get("/auditLog", rt.auditLog())
 			r.Get("/debug", rt.debugPage())
 			r.Get("/sessions", rt.sessionsFilter())

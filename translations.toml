@@ -3145,6 +3145,26 @@ ro = "Poți să vezi o problemă aleatorie [apăsând aici](/problems/random)."
 en = "You can draw a random, unsolved problem by [clicking here](/problems/random?unsolved=true)."
 ro = "Poți să vezi o problemă aleatorie, nerezolvată [apăsând aici](/problems/random?unsolved=true)."
 
+[contest_gen.title]
+en = "Generate contest accounts"
+ro = "Generare conturi de concurs"
+
+[contest_gen.description]
+en = "Upload a profiles bundle (the same JSON file used by kn contest-utils). The accounts are created and a zip with the CSV, the JSON and the generation log is downloaded. A dry run only returns the requests that would be sent."
+ro = "Încarcă un fișier de profiluri (același JSON folosit de kn contest-utils). Conturile sunt create și se descarcă o arhivă zip cu CSV-ul, JSON-ul și jurnalul generării. O simulare returnează doar cererile care ar fi trimise."
+
+[contest_gen.bundle]
+en = "Profiles bundle"
+ro = "Fișier de profiluri"
+
+[contest_gen.dry_run]
+en = "Dry run (don't create accounts)"
+ro = "Simulare (nu crea conturi)"
+
+[contest_gen.submit]
+en = "Generate"
+ro = "Generează"
+
 [user_gen.title]
 en = "Generate user"
 ro = "Generare utilizator"

@@ -1,8 +1,12 @@
 package web
 
 import (
+	"archive/zip"
+	"bytes"
 	"cmp"
+	"context"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/netip"
@@ -10,12 +14,14 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/infra/maxmind"
+	"github.com/KiloProjects/kilonova/internal/contestgen"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
@@ -44,6 +50,68 @@ func (rt *Web) userGen(w http.ResponseWriter, r *http.Request) {
 		Title:   kilonova.GetText(util.Language(r), "user_gen.title"),
 		Content: adminviews.UserGen(r.Context(), flags.DefaultLanguage()),
 	})
+}
+
+func (rt *Web) contestGen(w http.ResponseWriter, r *http.Request) {
+	rt.runLayout(w, r, &LayoutParams{
+		Title:   kilonova.GetText(util.Language(r), "contest_gen.title"),
+		Content: adminviews.ContestGen(r.Context()),
+	})
+}
+
+// contestGenRun creates the accounts in an uploaded profiles bundle and replies with a zip of the results and the audit log.
+func (rt *Web) contestGenRun(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 20<<20)
+	f, _, err := r.FormFile("bundle")
+	if err != nil {
+		rt.statusPage(w, r, http.StatusBadRequest, "Missing profiles bundle")
+		return
+	}
+	defer f.Close()
+	raw, err := io.ReadAll(f)
+	if err != nil {
+		rt.statusPage(w, r, http.StatusBadRequest, "Could not read profiles bundle")
+		return
+	}
+	cfg, err := contestgen.Parse(raw)
+	if err != nil {
+		rt.statusPage(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var logBuf bytes.Buffer
+	auditLog := slog.New(slog.NewJSONHandler(&logBuf, nil))
+	// Don't stop halfway through if the admin closes the tab: created accounts would be left without their passwords.
+	ctx := context.WithoutCancel(r.Context())
+	slog.InfoContext(ctx, "Running contest account generation", slog.Any("user", user.UserBrief(r)), slog.Int("profiles", len(cfg.Profiles)))
+	res, err := contestgen.Run(ctx, cfg, contestgen.LocalBackend(rt.base), auditLog, r.FormValue("dryRun") != "")
+	if err != nil {
+		rt.statusPage(w, r, kilonova.ErrorCode(err), err.Error())
+		return
+	}
+	files, err := res.Files()
+	if err != nil {
+		rt.statusPage(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	files["generator.log"] = logBuf.Bytes()
+
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", `attachment; filename="contest-gen-`+time.Now().Format("2006-01-02T15-04-05")+`.zip"`)
+	zw := zip.NewWriter(w)
+	for name, data := range files {
+		fw, err := zw.Create(name)
+		if err == nil {
+			_, err = fw.Write(data)
+		}
+		if err != nil {
+			slog.ErrorContext(ctx, "Could not write contest generation archive", slog.Any("err", err))
+			return
+		}
+	}
+	if err := zw.Close(); err != nil {
+		slog.ErrorContext(ctx, "Could not write contest generation archive", slog.Any("err", err))
+	}
 }
 
 func (rt *Web) auditLog() http.HandlerFunc {
