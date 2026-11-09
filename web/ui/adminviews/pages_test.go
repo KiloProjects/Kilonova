@@ -73,3 +73,8 @@ func TestContestGen(t *testing.T) {
 		must(t, got, `action="/admin/contest_gen"`, `enctype="multipart/form-data"`, `name="bundle"`, `name="dryRun"`)
 	})
 }
+
+func TestTabs(t *testing.T) {
+	got := render(t, Tabs(enCtx, "/admin/user_gen"))
+	must(t, got, `<a class="p-1 topbar-selected" href="/admin/user_gen">`, `href="/admin/contest_gen"`, `href="/admin/sessions"`, `<a class="p-1" href="/admin">`)
+}

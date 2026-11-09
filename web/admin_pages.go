@@ -35,27 +35,27 @@ import (
 func (rt *Web) adminPanel(w http.ResponseWriter, r *http.Request) {
 	rt.runLayout(w, r, &LayoutParams{
 		Title: kilonova.GetText(util.Language(r), "panel.admin"),
-		Content: adminviews.Panel(r.Context(), adminviews.PanelParams{
+		Content: g.Group{adminviews.Tabs(r.Context(), "/admin"), adminviews.Panel(r.Context(), adminviews.PanelParams{
 			AuthedUserID:  user.UserBrief(r).ID,
 			BoolFlags:     config.GetFlags[bool](),
 			StringFlags:   config.GetFlags[string](),
 			IntFlags:      config.GetFlags[int](),
 			IntArrayFlags: config.GetFlags[[]int](),
-		}),
+		})},
 	})
 }
 
 func (rt *Web) userGen(w http.ResponseWriter, r *http.Request) {
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "user_gen.title"),
-		Content: adminviews.UserGen(r.Context(), flags.DefaultLanguage()),
+		Content: g.Group{adminviews.Tabs(r.Context(), "/admin/user_gen"), adminviews.UserGen(r.Context(), flags.DefaultLanguage())},
 	})
 }
 
 func (rt *Web) contestGen(w http.ResponseWriter, r *http.Request) {
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "contest_gen.title"),
-		Content: adminviews.ContestGen(r.Context()),
+		Content: g.Group{adminviews.Tabs(r.Context(), "/admin/contest_gen"), adminviews.ContestGen(r.Context())},
 	})
 }
 
@@ -135,10 +135,10 @@ func (rt *Web) auditLog() http.HandlerFunc {
 
 		rt.runLayout(w, r, &LayoutParams{
 			Title: kilonova.GetText(util.Language(r), "panel.audit_log"),
-			Content: adminviews.AuditLog(r.Context(), adminviews.AuditLogParams{
+			Content: g.Group{adminviews.Tabs(r.Context(), "/admin/auditLog"), adminviews.AuditLog(r.Context(), adminviews.AuditLogParams{
 				Logs:       logs,
 				Pagination: pageNav(page, numLogs, 50),
-			}),
+			})},
 		})
 	}
 }
@@ -194,7 +194,7 @@ func (rt *Web) debugPage() http.HandlerFunc {
 
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "debug_info"),
-			Content: adminviews.Debug(r.Context(), adminviews.DebugParams{Metrics: finalMetrics, BucketStats: stats}),
+			Content: g.Group{adminviews.Tabs(r.Context(), "/admin/debug"), adminviews.Debug(r.Context(), adminviews.DebugParams{Metrics: finalMetrics, BucketStats: stats})},
 		})
 	}
 }
@@ -204,7 +204,7 @@ func (rt *Web) graderInfo() http.HandlerFunc {
 		langs := rt.base.GraderLanguages(r.Context())
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "panel.grader"),
-			Content: adminviews.GraderInfo(r.Context(), langs),
+			Content: g.Group{g.Iff(user.UserBrief(r).IsAdmin(), func() g.Node { return adminviews.Tabs(r.Context(), "/grader") }), adminviews.GraderInfo(r.Context(), langs)},
 		})
 	}
 }
@@ -240,16 +240,19 @@ func (rt *Web) renderSessions(w http.ResponseWriter, r *http.Request, contentUse
 	}
 
 	title := kilonova.GetText(util.Language(r), "manage_sessions")
+	var tabs g.Node // the admin bar only belongs on the /admin/sessions filter page
 	if contentUser != nil {
 		title += ": " + contentUser.Name
+	} else {
+		tabs = adminviews.Tabs(r.Context(), "/admin/sessions")
 	}
 	rt.runLayout(w, r, &LayoutParams{
 		Title: title,
-		Content: authviews.Sessions(r.Context(), authviews.SessionsParams{
+		Content: g.Group{tabs, authviews.Sessions(r.Context(), authviews.SessionsParams{
 			IsAdmin:    isAdmin,
 			Sessions:   entries,
 			Pagination: pagination,
-		}),
+		})},
 	})
 }
 

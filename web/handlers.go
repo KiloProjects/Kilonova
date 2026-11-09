@@ -125,11 +125,11 @@ func (rt *Web) usersList() http.HandlerFunc {
 
 		rt.runLayout(w, r, &LayoutParams{
 			Title: kilonova.GetText(util.Language(r), "users"),
-			Content: adminviews.UsersList(r.Context(), adminviews.UsersListParams{
+			Content: g.Group{adminviews.Tabs(r.Context(), "/admin/users"), adminviews.UsersList(r.Context(), adminviews.UsersListParams{
 				Users:      users,
 				Name:       name,
 				Pagination: pagination,
-			}),
+			})},
 		})
 	}
 }

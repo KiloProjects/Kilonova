@@ -12,7 +12,9 @@ import (
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/auth"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/web/ui/adminviews"
 	"github.com/KiloProjects/kilonova/web/ui/settingsviews"
+	g "maragu.dev/gomponents"
 )
 
 func (rt *Web) renderOAuthClients(w http.ResponseWriter, r *http.Request, params settingsviews.OAuthClientsParams) {
@@ -151,10 +153,10 @@ func (rt *Web) adminOAuthClients(w http.ResponseWriter, r *http.Request) {
 	}
 	rt.runLayout(w, r, &LayoutParams{
 		Title: kilonova.GetText(util.Language(r), "oauth_clients"),
-		Content: settingsviews.OAuthClients(r.Context(), settingsviews.OAuthClientsParams{
+		Content: g.Group{adminviews.Tabs(r.Context(), "/admin/oauth"), settingsviews.OAuthClients(r.Context(), settingsviews.OAuthClientsParams{
 			Clients: clients,
 			Authors: authors,
-		}),
+		})},
 	})
 }
 
