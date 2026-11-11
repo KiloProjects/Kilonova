@@ -203,6 +203,23 @@ var Langs = map[string]langer{
 
 		Mounts: []Directory{{In: "/etc"}},
 	},
+	"lean": legacyLanguage{
+		Extensions:    []string{".lean"},
+		Compiled:      true,
+		PrintableName: "Lean 4",
+		InternalName:  "lean",
+		MOSSName:      "ascii", // MOSS doesn't support lean
+
+		// lean emits C, leanc (the toolchain's bundled clang) links it against the static Lean runtime.
+		// Peaks at ~490MB RSS with just Init, ~760MB with `import Std` (mostly mmapped .olean files).
+		CompileCommand: []string{"sh", "-c", "lean -c /box/main.c /box/main.lean && leanc -O3 -DNDEBUG -DKNOVA /box/main.c -o /box/output"},
+		RunCommand:     []string{magicReplace},
+		sourceName:     "/box/main.lean",
+		compiledName:   "/box/output",
+
+		VersionCommand: []string{"lean", "--version"},
+		VersionParser:  nil,
+	},
 	"python3": legacyLanguage{
 		Extensions:    []string{".py", ".py3"},
 		Compiled:      false,

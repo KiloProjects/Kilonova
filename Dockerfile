@@ -73,9 +73,10 @@ FROM debian:trixie-slim AS toolchain-downloader
 ARG KOTLIN_VERSION=2.4.20
 ARG UV_VERSION=0.12.17
 ARG JULIA_VERSION=1.13.3
+ARG LEAN_VERSION=4.35.0
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        ca-certificates curl unzip \
+        ca-certificates curl unzip zstd \
     && rm -rf /var/lib/apt/lists/*
 
 # Unpacked under /usr/local, not /opt: isolate mounts /usr into the sandbox by
@@ -110,6 +111,16 @@ RUN arch="$(dpkg --print-architecture)" \
     && tar -xzf /tmp/julia.tar.gz -C /usr/local/julia --strip-components=1 \
     && rm /tmp/julia.tar.gz
 
+RUN arch="$(dpkg --print-architecture)" \
+    && case "$arch" in \
+         amd64) lean_target=linux ;; \
+         arm64) lean_target=linux_aarch64 ;; \
+         *) echo "unsupported architecture $arch" >&2; exit 1 ;; \
+       esac \
+    && mkdir -p /usr/local/lean \
+    && curl -fsSL "https://github.com/leanprover/lean4/releases/download/v${LEAN_VERSION}/lean-${LEAN_VERSION}-${lean_target}.tar.zst" \
+        | tar --zstd -x -C /usr/local/lean --strip-components=1
+
 # ---------------------------------------------------------------------------
 # Grader runtime. Deliberately fat: languages are discovered by probing for
 # their binaries, so a toolchain missing here silently disappears from the
@@ -137,13 +148,16 @@ COPY --from=isolate-builder /src/isolate/isolate /usr/local/bin/isolate
 COPY --from=isolate-builder /src/isolate/isolate-check-environment /usr/local/bin/isolate-check-environment
 COPY --from=toolchain-downloader /usr/local/kotlinc /usr/local/kotlinc
 COPY --from=toolchain-downloader /usr/local/julia /usr/local/julia
+COPY --from=toolchain-downloader /usr/local/lean /usr/local/lean
 COPY --from=toolchain-downloader /opt/uv/uv /usr/local/bin/uv
 COPY --from=toolchain-downloader /opt/uv/uvx /usr/local/bin/uvx
 COPY --from=builder /out/kn /usr/local/bin/kn
 
 RUN ln -s /usr/local/kotlinc/bin/kotlinc /usr/local/bin/kotlinc \
     && ln -s /usr/local/kotlinc/bin/kotlin /usr/local/bin/kotlin \
-    && ln -s /usr/local/julia/bin/julia /usr/local/bin/julia
+    && ln -s /usr/local/julia/bin/julia /usr/local/bin/julia \
+    && ln -s /usr/local/lean/bin/lean /usr/local/bin/lean \
+    && ln -s /usr/local/lean/bin/leanc /usr/local/bin/leanc
 
 # Explicit uid/gid range instead of subid_user, so the image needs no
 # /etc/subuid bookkeeping. cg_root is the `auto:` form: kn writes the resolved

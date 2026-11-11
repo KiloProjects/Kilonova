@@ -10,6 +10,7 @@ export const languages = {
 	haskell: "text/x-haskell",
 	java: "text/x-java",
 	julia: "text/x-julia",
+	lean: "text/plain",
 	kotlin: "text/x-kotlin",
 	nodejs: "text/javascript",
 	python3: "text/x-python",
@@ -31,6 +32,7 @@ export const prettyLanguages = {
 	haskell: "Haskell",
 	java: "Java",
 	julia: "Julia",
+	lean: "Lean 4",
 	kotlin: "Kotlin",
 	nodejs: "Node.js",
 	python3: "Python 3",
@@ -76,6 +78,11 @@ export const cm_modes: { [name: string]: CMMode } = {
 		mimeType: "text/x-julia",
 		prettyName: "Julia",
 		extensions: ["jl"],
+	},
+	lean: {
+		mimeType: "text/plain", // CodeMirror 5 has no Lean mode
+		prettyName: "Lean 4",
+		extensions: ["lean"],
 	},
 	kotlin: {
 		mimeType: "text/x-kotlin",
