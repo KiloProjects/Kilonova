@@ -343,8 +343,12 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 	if problem == nil {
 		return -1, Statusf(400, "Invalid submission problem")
 	}
-	if len(code) > problem.SourceSize { // Maximum admitted by problem
-		return -1, Statusf(400, "Code exceeds %d characters", problem.SourceSize)
+	sourceSizeMultiplier := 1
+	if lang.InternalName() == "lean" {
+		sourceSizeMultiplier = 10
+	}
+	if len(code) > problem.SourceSize*sourceSizeMultiplier { // Maximum admitted by problem
+		return -1, Statusf(400, "Code exceeds %d characters", problem.SourceSize*sourceSizeMultiplier)
 	}
 	if !s.IsProblemVisible(author.Brief(), problem) {
 		return -1, Statusf(400, "Submitter can't see the problem!")
