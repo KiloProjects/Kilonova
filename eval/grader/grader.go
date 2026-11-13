@@ -3,33 +3,24 @@ package grader
 import (
 	"cmp"
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"log/slog"
-	"net/http"
-	"os"
 	"path"
 	"slices"
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/eval"
-	"github.com/KiloProjects/kilonova/eval/box"
 	"github.com/KiloProjects/kilonova/eval/checkers"
 	"github.com/KiloProjects/kilonova/eval/language"
-	"github.com/KiloProjects/kilonova/eval/scheduler"
-	"github.com/KiloProjects/kilonova/eval/scratch"
 	"github.com/KiloProjects/kilonova/eval/tasks"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/shopspring/decimal"
-	"github.com/spf13/afero"
 )
 
 const (
@@ -600,88 +591,6 @@ func (sh *submissionHandler) scoreTests(ctx context.Context) error {
 	}
 
 	return sh.base.UpdateSubmission(ctx, sh.sub.ID, kilonova.SubmissionUpdate{Status: kilonova.StatusFinished, Score: &score, MaxTime: &time, MaxMemory: &memory})
-}
-
-func (h *Handler) getAppropriateRunner(ctx context.Context) (eval.BoxScheduler, eval.LanguageManager, error) {
-	if config.Eval.IsRemote() {
-		return h.getRemoteRunner(ctx)
-	}
-	return h.getLocalRunner(ctx)
-}
-
-func (h *Handler) getLocalRunner(ctx context.Context) (eval.BoxScheduler, eval.LanguageManager, error) {
-	var boxFunc scheduler.BoxFunc
-	var boxVersion = "NONE"
-	if scheduler.CheckCanRun(ctx, box.New) {
-		boxFunc = box.New
-		boxVersion = box.IsolateVersion()
-	} else if scheduler.CheckCanRun(ctx, box.NewStupid) && config.Eval.AllowInsecureSandbox {
-
-		slog.WarnContext(ctx, "Secure sandbox not found. Using stupid sandbox")
-		boxFunc = box.NewStupid
-		boxVersion = "stupid"
-	}
-	if boxFunc == nil {
-		slog.ErrorContext(ctx, "No local sandbox available and eval mode is not remote!")
-		os.Exit(1)
-	}
-
-	baseDir := config.Common.ScratchDir()
-	if err := os.MkdirAll(baseDir, 0777); err != nil {
-		return nil, nil, fmt.Errorf("couldn't create scratch dir: %w", err)
-	}
-	scratchFS := afero.NewBasePathFs(afero.NewOsFs(), baseDir)
-	scratchDir := scratch.New(scratchFS)
-	// Fixed dir + orphan janitor, so files left by a crash are reaped on the next run.
-	// NOTE: TTL hardcoded to grader-serve's default
-	go scratch.PeriodicSweep(ctx, scratchFS, 15*time.Minute, time.Hour, graderLogger)
-
-	slog.InfoContext(ctx, "Trying to spin up local grader")
-	bm, err := scheduler.New(config.Eval.StartingBox, config.Eval.NumConcurrent, config.Eval.GlobalMaxMem, graderLogger, scratchDir, boxFunc)
-	if err != nil {
-		return nil, nil, err
-	}
-	slog.InfoContext(ctx, "Running local grader", slog.String("version", boxVersion))
-
-	runner := scheduler.NewBox2Wrapper(scratchDir, h.base.DataStore(), bm)
-	langMgr := scheduler.NewLanguageManager(ctx, runner, graderLogger)
-	return runner, langMgr, nil
-}
-
-// getRemoteRunner wires the platform against a remote grader: JSON control plane
-// (GraderClient) + HTTP data plane (scratch), both on the grader's one TLS+token
-// endpoint. No local sandbox is created.
-func (h *Handler) getRemoteRunner(ctx context.Context) (eval.BoxScheduler, eval.LanguageManager, error) {
-	rc := config.Eval.Remote
-	if rc.Endpoint == "" || rc.Token == "" {
-		return nil, nil, fmt.Errorf("KN_EVAL_MODE=remote requires KN_EVAL_REMOTE_ENDPOINT and KN_EVAL_REMOTE_TOKEN")
-	}
-	// One transport for both planes: the control plane and the /scratch data
-	// plane must never disagree about whether the grader is verified.
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	if config.Eval.AllowInsecureSandbox {
-		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // opt-in, local/dev only
-		slog.WarnContext(ctx, "Grader certificate verification is DISABLED (KN_SANDBOX_ALLOW_INSECURE). Never do this in production",
-			slog.String("endpoint", rc.Endpoint))
-	}
-
-	// Bounded per-transfer so a dropped connection fails the eval fast instead of
-	// hanging (design D2). ponytail: 60s covers the largest test file; lift to a
-	// config field if real transfers approach it.
-	scratchClient := &http.Client{Timeout: 60 * time.Second, Transport: transport}
-	remoteScratch, err := scratch.NewHTTP(scratchClient, rc.Endpoint+"/scratch", rc.Token)
-	if err != nil {
-		return nil, nil, fmt.Errorf("couldn't set up remote scratch: %w", err)
-	}
-
-	client := scheduler.NewGraderClient(&http.Client{Transport: transport}, rc.Endpoint, rc.Token)
-	langMgr, err := scheduler.NewRemoteLanguageManager(ctx, client, graderLogger)
-	if err != nil {
-		return nil, nil, fmt.Errorf("couldn't fetch remote language inventory: %w", err)
-	}
-
-	slog.InfoContext(ctx, "Running remote grader", slog.String("endpoint", rc.Endpoint))
-	return scheduler.NewBox2Wrapper(remoteScratch, h.base.DataStore(), client), langMgr, nil
 }
 
 func (sh *submissionHandler) getAppropriateChecker(ctx context.Context) (checkers.Checker, error) {

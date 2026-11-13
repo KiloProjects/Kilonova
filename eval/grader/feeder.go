@@ -18,8 +18,7 @@ var (
 	reevalingSubs = kilonova.SubmissionFilter{Status: kilonova.StatusReevaling, Ascending: true, Limit: 6}
 	workingUpdate = kilonova.SubmissionUpdate{Status: kilonova.StatusWorking}
 
-	// If future me is running multiple grader handlers
-	// I have only one question: "Why are you doing it?"
+	// grader.log is process-wide: one Backend and possibly one Handler per tenant share it.
 	openAction   sync.Once
 	closeAction  sync.Once
 	logFile      io.Writer
@@ -34,12 +33,12 @@ type Handler struct {
 	wakeChan chan struct{}
 
 	runner eval.BoxScheduler
+
+	closeOnce sync.Once
 }
 
-func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, error) {
-	ch := make(chan *kilonova.Submission, 1)
-	wCh := make(chan struct{}, 1)
-
+// initLogger opens grader.log once per process; Backend and every Handler share it.
+func initLogger() {
 	openAction.Do(func() {
 		// 80 MB: most rows are near-identical so they compress very small.
 		logFile = config.LogWriter("grader.log", 80)
@@ -52,8 +51,13 @@ func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, error) {
 			Level:     lvl,
 		}))
 	})
+}
 
-	return &Handler{ctx, ch, base, wCh, nil}, nil
+// NewHandler is one tenant's grader: it feeds base's waiting submissions to the
+// shared Backend passed to Start.
+func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, error) {
+	initLogger()
+	return &Handler{ctx: ctx, sChan: make(chan *kilonova.Submission, 1), base: base, wakeChan: make(chan struct{}, 1)}, nil
 }
 
 func (h *Handler) Wake() {
@@ -152,12 +156,10 @@ func (h *Handler) handle(runner eval.BoxScheduler, langMgr eval.LanguageManager)
 	}
 }
 
-func (h *Handler) Start() error {
-	runner, langMgr, err := h.getAppropriateRunner(h.ctx)
-	if err != nil {
-		return err
-	}
-
+// Start runs this tenant's feed loop on backend until ctx ends. It does not close
+// backend, which other tenants may share.
+func (h *Handler) Start(backend *Backend) error {
+	runner, langMgr := backend.runner(h.base.DataStore()), backend.langs
 	h.runner = runner
 
 	h.base.RegisterGrader(h) // To allow waking from outside grader
@@ -175,10 +177,9 @@ func (h *Handler) Start() error {
 		}
 	}()
 
-	defer runner.Close(h.ctx)
 	slog.InfoContext(h.ctx, "Connected to eval")
 
-	if err = h.handle(runner, langMgr); err != nil {
+	if err := h.handle(runner, langMgr); err != nil {
 		slog.ErrorContext(h.ctx, "Handling error", slog.Any("err", err))
 		return err
 	}
@@ -186,6 +187,7 @@ func (h *Handler) Start() error {
 }
 
 func (h *Handler) Close() {
+	h.closeOnce.Do(func() { close(h.wakeChan) })
 	closeAction.Do(func() {
 		// Nothing to close when logs go to stdout (KN_LOG_FILE=false).
 		if c, ok := logFile.(io.Closer); ok {
@@ -193,6 +195,5 @@ func (h *Handler) Close() {
 				slog.WarnContext(h.ctx, "Error closing grader.log", slog.Any("err", err))
 			}
 		}
-		close(h.wakeChan)
 	})
 }
