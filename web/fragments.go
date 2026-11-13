@@ -1,6 +1,7 @@
 package web
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -25,7 +26,9 @@ func (rt *Web) contestInfo(r *http.Request, c *kilonova.Contest) contests.Info {
 	if u != nil {
 		reg, err := rt.base.ContestRegistration(r.Context(), c.ID, u.ID)
 		if err != nil {
-			slog.WarnContext(r.Context(), "Couldn't get contest registration", slog.Any("err", err))
+			if !errors.Is(err, kilonova.ErrNotFound) {
+				slog.WarnContext(r.Context(), "Couldn't get contest registration", slog.Any("err", err))
+			}
 			reg = nil
 		}
 		info.Registration = reg
