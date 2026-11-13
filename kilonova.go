@@ -1,7 +1,6 @@
 package kilonova
 
 import (
-	"net/url"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -23,33 +22,12 @@ func init() {
 	decimal.MarshalJSONWithoutQuotes = true
 }
 
-var (
-	debug      bool
-	hostPrefix string
-	hostURL    *url.URL
-)
+var debug bool
 
 func DebugMode() bool {
 	return debug
 }
 
-func HostPrefix() string {
-	return hostPrefix
-}
-
-func HostURL() *url.URL {
-	return hostURL
-}
-
 func SetDebugMode(dbg bool) {
 	debug = dbg
-}
-
-func SetHostPrefix(prefix string) {
-	hostPrefix = prefix
-	var err error
-	hostURL, err = url.Parse(prefix)
-	if err != nil {
-		panic("invalid host prefix: " + err.Error())
-	}
 }

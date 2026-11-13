@@ -29,11 +29,11 @@ var problemDiagnostics = &cli.Command{
 		for _, pb := range pbs {
 			diags, err := base.ProblemDiagnostics(ctx, pb)
 			if err != nil {
-				fmt.Printf("- Error loading problem diagnostics for %d (URL: %s/problems/%d ): %v\n", pb.ID, kilonova.HostPrefix(), pb.ID, err)
+				fmt.Printf("- Error loading problem diagnostics for %d (URL: %s/problems/%d ): %v\n", pb.ID, base.HostURL(), pb.ID, err)
 				continue
 			}
 			if len(diags) > 0 {
-				fmt.Printf("- Diagnostics for problem %d (URL: %s/problems/%d, published: %t):\n", pb.ID, kilonova.HostPrefix(), pb.ID, pb.Visible)
+				fmt.Printf("- Diagnostics for problem %d (URL: %s/problems/%d, published: %t):\n", pb.ID, base.HostURL(), pb.ID, pb.Visible)
 				for _, diag := range diags {
 					fmt.Printf("\t- %s: %s\n", diag.Level.String(), diag.Message)
 				}

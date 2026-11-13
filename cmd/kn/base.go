@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 
 	"github.com/KiloProjects/kilonova"
@@ -19,8 +20,8 @@ import (
 
 // initBase is the composition root for the platform stack: everything that
 // comes from the environment contract is turned into a dependency here and
-// handed to sudoapi, which never reads config itself. The returned context
-// carries the instance's flagset; callers must use it from then on.
+// handed to sudoapi. The returned context carries the instance's flagset; callers
+// must use it from then on.
 func initBase(ctx context.Context) (context.Context, *sudoapi.BaseAPI, error) {
 	if err := config.RequireDataDir(); err != nil {
 		return nil, nil, err
@@ -64,19 +65,29 @@ func initBase(ctx context.Context) (context.Context, *sudoapi.BaseAPI, error) {
 		return nil, nil, fmt.Errorf("couldn't load flags: %w", err)
 	}
 
+	hostURL, err := url.Parse(hostPrefix)
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid KN_HOST_PREFIX: %w", err)
+	}
 	dc, err := discord.New(discord.Config{
 		Token:        config.Integrations.DiscordToken,
 		ClientID:     config.Integrations.DiscordClientID,
 		ClientSecret: config.Integrations.DiscordClientSecret,
-		RedirectURL:  kilonova.HostURL().JoinPath("api/webhook/discord_callback").String(),
+		RedirectURL:  hostURL.JoinPath("api/webhook/discord_callback").String(),
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("discord: %w", err)
 	}
 
-	base, err := sudoapi.GetBaseAPI(ctx, pgxDB, mgr, mailer, dc, flagset)
+	base, err := sudoapi.GetBaseAPI(ctx, pgxDB, mgr, mailer, dc, flagset, hostURL)
 	if err != nil {
 		return nil, nil, err
 	}
-	return config.WithFlagset(ctx, flagset), base, nil
+	return instanceContext(ctx, base), base, nil
+}
+
+// instanceContext attaches everything that is per instance (currently the flagset) to ctx.
+// Used for the root context and for every request, so both see the same instance.
+func instanceContext(ctx context.Context, base *sudoapi.BaseAPI) context.Context {
+	return config.WithFlagset(ctx, base.Flagset())
 }

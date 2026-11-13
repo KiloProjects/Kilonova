@@ -43,7 +43,7 @@ func New(base *sudoapi.BaseAPI, llm llm.Provider) *API {
 func (s *API) HandlerV2() http.Handler {
 	humaConf := huma.DefaultConfig("Kilonova", "2.0")
 	humaConf.Servers = []*huma.Server{
-		{URL: kilonova.HostURL().JoinPath("api/v2").String()},
+		{URL: s.base.HostURL().JoinPath("api/v2").String()},
 	}
 	humaConf.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
 		// "session": {
@@ -58,7 +58,7 @@ func (s *API) HandlerV2() http.Handler {
 		},
 		"oauth": {
 			Type:             "openIdConnect",
-			OpenIDConnectURL: kilonova.HostURL().JoinPath(oidc.DiscoveryEndpoint).String(),
+			OpenIDConnectURL: s.base.HostURL().JoinPath(oidc.DiscoveryEndpoint).String(),
 		},
 	}
 	r := chi.NewRouter()

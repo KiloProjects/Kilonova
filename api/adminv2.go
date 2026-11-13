@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 
-	"github.com/KiloProjects/kilonova"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/chi/v5"
@@ -13,7 +12,7 @@ import (
 func (s *API) AdminV2() http.Handler {
 	humaConf := huma.DefaultConfig("Kilonova Admin", "2.0")
 	humaConf.Servers = []*huma.Server{
-		{URL: kilonova.HostURL().JoinPath("api/admin/v2").String()},
+		{URL: s.base.HostURL().JoinPath("api/admin/v2").String()},
 	}
 	humaConf.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
 		// "session": {
@@ -28,7 +27,7 @@ func (s *API) AdminV2() http.Handler {
 		},
 		"oauth": {
 			Type:             "openIdConnect",
-			OpenIDConnectURL: kilonova.HostURL().JoinPath(oidc.DiscoveryEndpoint).String(),
+			OpenIDConnectURL: s.base.HostURL().JoinPath(oidc.DiscoveryEndpoint).String(),
 		},
 	}
 

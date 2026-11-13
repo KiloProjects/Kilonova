@@ -17,7 +17,7 @@ func (s *BaseAPI) AnnounceProblemPublished(ctx context.Context, problemID int) {
 	if !s.discord.Enabled() || flags.ProblemAnnouncementChannel.Of(s.flagset) == "" {
 		return // noop
 	}
-	url := kilonova.HostURL().JoinPath("problems", strconv.Itoa(problemID)).String()
+	url := s.hostURL.JoinPath("problems", strconv.Itoa(problemID)).String()
 	if err := s.discord.SendChannelMessage(flags.ProblemAnnouncementChannel.Of(s.flagset), "New problem was just published: "+url); err != nil {
 		slog.WarnContext(ctx, "Could not announce problem publish", slog.Any("err", err))
 	}
@@ -105,5 +105,5 @@ func (s *BaseAPI) HandleDiscordCallback(w http.ResponseWriter, r *http.Request) 
 	}
 	s.LogVerbose(ctx, "User linked Discord identity", userAttr, slog.String("discord_id", dUser.ID), slog.String("discord_user", dUser.Mention()))
 
-	http.Redirect(w, r, kilonova.HostURL().JoinPath("profile/linked").String(), http.StatusTemporaryRedirect)
+	http.Redirect(w, r, s.hostURL.JoinPath("profile/linked").String(), http.StatusTemporaryRedirect)
 }

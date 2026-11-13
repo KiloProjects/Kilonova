@@ -12,6 +12,7 @@ import (
 
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/KiloProjects/kilonova/web/ui"
 	"github.com/KiloProjects/kilonova/web/ui/layout"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -20,6 +21,7 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"golang.org/x/text/language"
+	g "maragu.dev/gomponents"
 )
 
 // Language stuff
@@ -346,6 +348,11 @@ func (rt *Web) mustBeContestEditor(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// canonicalURL is the <link rel="canonical"> for path on this instance.
+func (rt *Web) canonicalURL(path string) g.Node {
+	return ui.CanonicalURL(rt.base.HostURL().JoinPath(path).String())
 }
 
 type flagValuer interface {

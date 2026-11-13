@@ -11,7 +11,6 @@ import (
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
-	"github.com/KiloProjects/kilonova/web/ui"
 	"github.com/KiloProjects/kilonova/web/ui/authviews"
 )
 
@@ -34,7 +33,7 @@ func (rt *Web) signup(w http.ResponseWriter, r *http.Request) {
 	}
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "auth.signup"),
-		Head:    ui.CanonicalURL("/signup"),
+		Head:    rt.canonicalURL("/signup"),
 		Content: authviews.SignupPage(r.Context(), params),
 	})
 }

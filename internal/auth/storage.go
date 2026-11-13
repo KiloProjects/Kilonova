@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -41,6 +42,7 @@ type AuthStorage struct {
 	userRepo *userpg.Repository
 
 	defaultLanguage func(ctx context.Context) string
+	hostURL         *url.URL
 }
 
 func (s *AuthStorage) CreateAuthRequest(ctx context.Context, authReq *oidc.AuthRequest, userID string) (op.AuthRequest, error) {
@@ -463,7 +465,7 @@ func (s *AuthStorage) setUserInfo(ctx context.Context, userinfo *oidc.UserInfo, 
 			userinfo.EmailVerified = oidc.Bool(user.VerifiedEmail)
 		case oidc.ScopeProfile:
 			userinfo.PreferredUsername = user.Name
-			userinfo.Picture = kilonova.HostURL().JoinPath("profile", user.Name, "avatar").String() + "?s=128"
+			userinfo.Picture = s.hostURL.JoinPath("profile", user.Name, "avatar").String() + "?s=128"
 			switch user.PreferredLanguage {
 			case "en":
 				userinfo.Locale = oidc.NewLocale(language.English)
@@ -595,6 +597,8 @@ type StorageConfig struct {
 
 	// DefaultLanguage is the locale fallback for users with no preferred language.
 	DefaultLanguage func(ctx context.Context) string
+	// HostURL is the instance's public URL, used to build absolute links in claims.
+	HostURL *url.URL
 }
 
 func NewAuthStorage(pgx *postgres.DB, conf StorageConfig) (*AuthStorage, error) {
@@ -603,6 +607,9 @@ func NewAuthStorage(pgx *postgres.DB, conf StorageConfig) (*AuthStorage, error) 
 	}
 	if conf.DefaultLanguage == nil {
 		return nil, errors.New("auth storage needs a default language source")
+	}
+	if conf.HostURL == nil {
+		return nil, errors.New("auth storage needs a host URL")
 	}
 	key, err := parsePrivateKey(conf.PrivateKey)
 	if err != nil {
@@ -614,6 +621,7 @@ func NewAuthStorage(pgx *postgres.DB, conf StorageConfig) (*AuthStorage, error) 
 		userRepo: userpg.NewRepository(pgx),
 
 		defaultLanguage: conf.DefaultLanguage,
+		hostURL:         conf.HostURL,
 	}, nil
 }
 

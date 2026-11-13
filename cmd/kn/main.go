@@ -82,7 +82,6 @@ func main() {
 			}
 			kilonova.SetDebugMode(debugMode)
 			config.SetLogToFile(logToFile)
-			kilonova.SetHostPrefix(hostPrefix)
 			return ctx, nil
 		},
 		Action: func(ctx context.Context, command *cli.Command) error {

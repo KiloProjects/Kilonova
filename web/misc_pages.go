@@ -18,7 +18,7 @@ import (
 func (rt *Web) privacyPolicy(w http.ResponseWriter, r *http.Request) {
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "privacyPolicy"),
-		Content: static.PrivacyPolicy(r.Context(), kilonova.HostURL().JoinPath("").String()),
+		Content: static.PrivacyPolicy(r.Context(), rt.base.HostURL().JoinPath("").String()),
 	})
 }
 

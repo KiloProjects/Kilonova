@@ -198,6 +198,12 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI, llmProvider llm.Provider) *http
 	// Initialize router
 	r := chi.NewRouter()
 
+	// Every request reads this instance's flags; per-tenant resolution would pick the instance here.
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			next.ServeHTTP(w, r.WithContext(instanceContext(r.Context(), base)))
+		})
+	})
 	r.Use(cors.Handler(cors.Options{
 		AllowOriginFunc: func(r *http.Request, origin string) bool {
 			if strings.HasPrefix(r.URL.Path, "/api/v2") {
@@ -206,9 +212,8 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI, llmProvider llm.Provider) *http
 			if strings.HasPrefix(r.URL.Path, "/assets") {
 				return true
 			}
-			return strings.ToLower(origin) == kilonova.HostPrefix()
+			return strings.ToLower(origin) == base.HostURL().String()
 		},
-		// AllowedOrigins:   []string{kilonova.HostPrefix()}, // TODO: Do better
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Api-Key"},
 		ExposedHeaders:   []string{"Link"},
@@ -226,12 +231,6 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI, llmProvider llm.Provider) *http
 	r.Use(middleware.RequestID)
 	r.Use(otelchi.Middleware("kilonova-web", otelchi.WithChiRoutes(r)))
 	r.Use(op.NewIssuerInterceptor(base.OIDCProvider().IssuerFromRequest).Handler)
-	// Every request reads this instance's flags; per-tenant resolution would pick the set here.
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			next.ServeHTTP(w, r.WithContext(config.WithFlagset(r.Context(), base.Flagset())))
-		})
-	})
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			addr, _ := base.GetRequestInfo(r)

@@ -153,7 +153,7 @@ func (rt *Web) problem() http.HandlerFunc {
 		rt.runLayout(w, r, &LayoutParams{
 			Title:       kilonova.GetText(util.Language(r), "problem", problem.ID, problem.Name),
 			Description: problempages.StatementDescription(problem, tags),
-			Head:        ui.CanonicalURL(fmt.Sprintf("/problems/%d", problem.ID)),
+			Head:        rt.canonicalURL(fmt.Sprintf("/problems/%d", problem.ID)),
 			Content:     problempages.Statement(ctx, params),
 		})
 	}

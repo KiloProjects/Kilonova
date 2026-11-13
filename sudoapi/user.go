@@ -387,7 +387,7 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 			Username:   userFull.Name,
 			Password:   args.Password,
 			Contest:    contest,
-			HostPrefix: kilonova.HostPrefix(),
+			HostPrefix: s.hostURL.String(),
 			Branding:   flags.EmailBranding.Of(s.flagset),
 		}
 		if userFull.DisplayName != "" {

@@ -10,7 +10,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
-	"github.com/KiloProjects/kilonova/web/ui"
 	"github.com/KiloProjects/kilonova/web/ui/authviews"
 	"github.com/zitadel/oidc/v3/pkg/op"
 )
@@ -21,7 +20,7 @@ func (rt *Web) getLogin(w http.ResponseWriter, r *http.Request) {
 	if user.UserBrief(r) == nil {
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "auth.login"),
-			Head:    ui.CanonicalURL("/login"),
+			Head:    rt.canonicalURL("/login"),
 			Content: authviews.LoginPage(r.Context(), oidcID, back, ""),
 		})
 		return
@@ -29,7 +28,7 @@ func (rt *Web) getLogin(w http.ResponseWriter, r *http.Request) {
 
 	if oidcID == "" {
 		// authed, no openid flow, just redirect back
-		http.Redirect(w, r, kilonova.HostURL().JoinPath(back).String(), http.StatusFound)
+		http.Redirect(w, r, rt.base.HostURL().JoinPath(back).String(), http.StatusFound)
 		return
 	}
 
@@ -47,7 +46,7 @@ func (rt *Web) getLogin(w http.ResponseWriter, r *http.Request) {
 
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "auth.oauth_grant"),
-		Head:    ui.CanonicalURL("/login"),
+		Head:    rt.canonicalURL("/login"),
 		Content: authviews.OAuthGrant(r.Context(), request, client),
 	})
 
@@ -73,7 +72,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(kilonova.ErrorCode(status))
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "auth.login"),
-			Head:    ui.CanonicalURL("/login"),
+			Head:    rt.canonicalURL("/login"),
 			Content: authviews.LoginPage(r.Context(), oidcID, back, status.Error()),
 		})
 		return
@@ -84,7 +83,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(401)
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "auth.login"),
-			Head:    ui.CanonicalURL("/login"),
+			Head:    rt.canonicalURL("/login"),
 			Content: authviews.LoginPage(r.Context(), oidcID, back, "Login for this account has been restricted by an administrator"),
 		})
 		return
@@ -95,7 +94,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(kilonova.ErrorCode(err))
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "auth.login"),
-			Head:    ui.CanonicalURL("/login"),
+			Head:    rt.canonicalURL("/login"),
 			Content: authviews.LoginPage(r.Context(), oidcID, back, err.Error()),
 		})
 		return
@@ -125,7 +124,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
-		http.Redirect(w, r, kilonova.HostURL().JoinPath(back).String(), http.StatusFound)
+		http.Redirect(w, r, rt.base.HostURL().JoinPath(back).String(), http.StatusFound)
 		return
 	}
 
@@ -143,7 +142,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "auth.oauth_grant"),
-		Head:    ui.CanonicalURL("/login"),
+		Head:    rt.canonicalURL("/login"),
 		Content: authviews.OAuthGrant(r.Context(), request, client),
 	})
 }

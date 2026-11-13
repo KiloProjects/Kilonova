@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"time"
 
 	"uuid"
@@ -65,6 +66,12 @@ type BaseAPI struct {
 	oidcProvider *op.Provider
 
 	flagset *config.Flagset
+	hostURL *url.URL
+}
+
+// HostURL is this instance's public URL.
+func (s *BaseAPI) HostURL() *url.URL {
+	return s.hostURL.Clone()
 }
 
 // Flagset is this instance's runtime flag values. Request and job contexts carry it
@@ -101,7 +108,7 @@ func (s *BaseAPI) Close() error {
 	return nil
 }
 
-func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, mailer kilonova.Mailer, dc discord.Provider, flagset *config.Flagset) (*BaseAPI, error) {
+func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, mailer kilonova.Mailer, dc discord.Provider, flagset *config.Flagset, hostURL *url.URL) (*BaseAPI, error) {
 	base := &BaseAPI{
 		pgx:     pgx,
 		db:      db.NewPSQL(pgx),
@@ -109,6 +116,7 @@ func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, m
 		rd:      mdrenderer.NewRenderer(),
 		discord: dc,
 		flagset: flagset,
+		hostURL: hostURL,
 
 		mgr: mgr,
 
@@ -148,6 +156,7 @@ func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, m
 		KeyID:      flags.AuthRSAPrivateKeyID.Of(base.flagset),
 
 		DefaultLanguage: flags.DefaultLanguage,
+		HostURL:         base.hostURL,
 	})
 	if err != nil {
 		return nil, err
@@ -155,7 +164,7 @@ func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, m
 	provider, err := auth.GetProvider(auth.OauthProviderConfig{
 		Storage:    authStorage,
 		Debug:      kilonova.DebugMode(),
-		HostPrefix: kilonova.HostPrefix(),
+		HostPrefix: base.hostURL.String(),
 
 		CryptoKey: []byte(flags.AuthCryptoKey.Of(base.flagset)),
 	})

@@ -69,7 +69,7 @@ func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, e
 	}{
 		Name:       name,
 		VID:        vid,
-		HostPrefix: kilonova.HostPrefix(),
+		HostPrefix: s.hostURL.String(),
 		Branding:   flags.EmailBranding.Of(s.flagset),
 	}); err != nil {
 		slog.WarnContext(ctx, "Error rendering verification email", slog.Any("err", err))

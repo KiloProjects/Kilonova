@@ -12,7 +12,6 @@ import (
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
-	"github.com/KiloProjects/kilonova/web/ui"
 	"github.com/KiloProjects/kilonova/web/ui/lists"
 	"github.com/KiloProjects/kilonova/web/ui/modals"
 	"github.com/KiloProjects/kilonova/web/ui/problems"
@@ -151,7 +150,7 @@ func (rt *Web) problems() http.HandlerFunc {
 		}
 		rt.runLayout(w, r, &LayoutParams{
 			Title: kilonova.GetText(util.Language(r), "problems"),
-			Head:  ui.CanonicalURL("/problems"),
+			Head:  rt.canonicalURL("/problems"),
 			Content: lists.ProblemSearch(lists.SearchParams{
 				ProblemList: pblist, Results: pbs, Groups: gr, GroupTags: tags, Count: cnt,
 			}),
@@ -237,7 +236,7 @@ func (rt *Web) pbListIndex() http.HandlerFunc {
 		}
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "lists"),
-			Head:    ui.CanonicalURL("/problem_lists"),
+			Head:    rt.canonicalURL("/problem_lists"),
 			Content: lists.Index(r.Context(), p),
 		})
 	}
@@ -332,7 +331,7 @@ func (rt *Web) pbListView() http.HandlerFunc {
 
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   list.Title,
-			Head:    ui.CanonicalURL("/problem_lists/" + strconv.Itoa(list.ID)),
+			Head:    rt.canonicalURL("/problem_lists/" + strconv.Itoa(list.ID)),
 			Content: lists.View(ctx, p),
 		})
 	}

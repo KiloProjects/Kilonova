@@ -257,7 +257,7 @@ func (rt *Web) submissions() http.HandlerFunc {
 		numPages := (subs.Count + 49) / 50
 		rt.runLayout(w, r, &LayoutParams{
 			Title: kilonova.GetText(util.Language(r), "submissions"),
-			Head:  ui.CanonicalURL("/submissions"),
+			Head:  rt.canonicalURL("/submissions"),
 			Content: submissions.SubsPage(r.Context(), submissions.SubsViewerParams{
 				Submissions: subs,
 				Query:       query,
@@ -524,7 +524,7 @@ func (rt *Web) contestInviteQRCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inviteURL := kilonova.HostURL().JoinPath("contests/invite", inv.ID).String()
+	inviteURL := rt.base.HostURL().JoinPath("contests/invite", inv.ID).String()
 	data, err := qrcode.Encode(inviteURL, qrcode.High, 256)
 	if err != nil {
 		slog.WarnContext(r.Context(), "Couldn't encode QR code", slog.Any("err", err))
@@ -725,7 +725,7 @@ func (rt *Web) logout(w http.ResponseWriter, r *http.Request) {
 	}
 	rt.base.RemoveSession(r.Context(), c.Value)
 
-	http.Redirect(w, r, kilonova.HostURL().JoinPath(r.FormValue("back")).String()+"?logout=1", http.StatusSeeOther)
+	http.Redirect(w, r, rt.base.HostURL().JoinPath(r.FormValue("back")).String()+"?logout=1", http.StatusSeeOther)
 }
 
 type LayoutParams struct {

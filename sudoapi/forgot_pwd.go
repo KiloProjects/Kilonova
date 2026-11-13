@@ -41,7 +41,7 @@ func (s *BaseAPI) SendPasswordResetEmail(ctx context.Context, userID int, name, 
 	}{
 		Name:       name,
 		VID:        vid,
-		HostPrefix: kilonova.HostPrefix(),
+		HostPrefix: s.hostURL.String(),
 		Branding:   flags.EmailBranding.Of(s.flagset),
 	}); err != nil {
 		slog.ErrorContext(ctx, "Error rendering password request email", slog.Any("err", err))

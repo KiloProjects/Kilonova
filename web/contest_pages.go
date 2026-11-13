@@ -115,7 +115,7 @@ func (rt *Web) contests() http.HandlerFunc {
 
 		rt.runLayout(w, r, &LayoutParams{
 			Title: kilonova.GetText(util.Language(r), "contests"),
-			Head:  ui.CanonicalURL("/contests"),
+			Head:  rt.canonicalURL("/contests"),
 			Content: contests.Index(r.Context(), contests.IndexParams{
 				TabsParams: rt.contestTabs(r, page),
 				Contests:   infos,
@@ -133,7 +133,7 @@ func (rt *Web) createContest() http.HandlerFunc {
 		}
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "createContest"),
-			Head:    ui.CanonicalURL("/contests/create"),
+			Head:    rt.canonicalURL("/contests/create"),
 			Content: contests.Create(r.Context(), rt.contestTabs(r, "create")),
 		})
 	}
@@ -153,7 +153,7 @@ func (rt *Web) contest() http.HandlerFunc {
 		}
 		rt.runLayout(w, r, &LayoutParams{
 			Title: c.Name,
-			Head:  ui.CanonicalURL(fmt.Sprintf("/contests/%d", c.ID)),
+			Head:  rt.canonicalURL(fmt.Sprintf("/contests/%d", c.ID)),
 			Content: contests.View(r.Context(), contests.ViewParams{
 				Topbar:          rt.problemTopbar(r, "contest_general", -1),
 				DescriptionHTML: desc,
