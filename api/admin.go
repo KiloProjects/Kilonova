@@ -1,6 +1,9 @@
 package api
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -111,47 +114,33 @@ func (s *API) updateFlags(w http.ResponseWriter, r *http.Request) {
 		statusError(w, err)
 		return
 	}
-	for k, v := range args.BoolFlags {
-		flg, ok := config.GetFlag[bool](k)
-		if !ok {
-			slog.WarnContext(r.Context(), "Flag not found", slog.String("name", k))
-			continue
-		}
-		flg.Update(r.Context(), v)
-	}
-	for k, v := range args.StringFlags {
-		flg, ok := config.GetFlag[string](k)
-		if !ok {
-			slog.WarnContext(r.Context(), "Flag not found", slog.String("name", k))
-			continue
-		}
-		flg.Update(r.Context(), v)
-	}
-	for k, v := range args.IntFlags {
-		flg, ok := config.GetFlag[int](k)
-		if !ok {
-			slog.WarnContext(r.Context(), "Flag not found", slog.String("name", k))
-			continue
-		}
-		flg.Update(r.Context(), v)
-	}
-	for k, v := range args.IntListFlags {
-		flg, ok := config.GetFlag[[]int](k)
-		if !ok {
-			slog.WarnContext(r.Context(), "Flag not found", slog.String("name", k))
-			continue
-		}
-		flg.Update(r.Context(), v)
-	}
-	for k, v := range args.StrListFlags {
-		flg, ok := config.GetFlag[[]string](k)
-		if !ok {
-			slog.WarnContext(r.Context(), "Flag not found", slog.String("name", k))
-			continue
-		}
-		flg.Update(r.Context(), v)
+	if err := errors.Join(
+		updateFlagMap(r.Context(), args.BoolFlags),
+		updateFlagMap(r.Context(), args.StringFlags),
+		updateFlagMap(r.Context(), args.IntFlags),
+		updateFlagMap(r.Context(), args.IntListFlags),
+		updateFlagMap(r.Context(), args.StrListFlags),
+	); err != nil {
+		// The new values are active either way; only persisting some of them failed.
+		statusError(w, fmt.Errorf("flags updated but not all were saved, they will revert on restart: %w", err))
+		return
 	}
 	returnData(w, "Updated flags. Some changes may only apply after a restart")
+}
+
+// updateFlagMap applies every known flag in vals, skipping unknown names, and
+// joins the persistence errors.
+func updateFlagMap[T any](ctx context.Context, vals map[string]T) error {
+	var errs []error
+	for k, v := range vals {
+		flg, ok := config.GetFlag[T](k)
+		if !ok {
+			slog.WarnContext(ctx, "Flag not found", slog.String("name", k))
+			continue
+		}
+		errs = append(errs, flg.Update(ctx, v))
+	}
+	return errors.Join(errs...)
 }
 
 func (s *API) addDonation(w http.ResponseWriter, r *http.Request) {

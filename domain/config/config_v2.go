@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"maps"
 	"slices"
@@ -25,8 +26,9 @@ type Flag[T any] interface {
 	Get(ctx context.Context) T
 	// Of reads the given flagset.
 	Of(fs *Flagset) T
-	// Update sets the value in the flagset carried by ctx and persists it.
-	Update(ctx context.Context, newVal T)
+	// Update sets the value in the flagset carried by ctx and persists it. On a
+	// persistence error the new value stays active until restart.
+	Update(ctx context.Context, newVal T) error
 	InternalName() string
 	HumanName() string
 }
@@ -107,12 +109,12 @@ func (f *flag[T]) Of(fs *Flagset) T {
 
 // Update sets the value and writes it through to the flagset's store, if one is attached.
 // The store write happens outside the lock, so readers never wait on the database.
+// A failed write is returned, but the new value stays active until restart.
 // ponytail: two concurrent edits of the same flag may persist out of order; fine for admin edits.
-func (f *flag[T]) Update(ctx context.Context, newVal T) {
+func (f *flag[T]) Update(ctx context.Context, newVal T) error {
 	data, err := json.Marshal(newVal)
 	if err != nil {
-		slog.WarnContext(ctx, "Couldn't encode flag", slog.String("flag", f.name), slog.Any("err", err))
-		return
+		return fmt.Errorf("couldn't encode flag %q: %w", f.name, err)
 	}
 	fs := flagsetFrom(ctx, f.name)
 	fs.mu.Lock()
@@ -122,13 +124,14 @@ func (f *flag[T]) Update(ctx context.Context, newVal T) {
 
 	if store == nil {
 		slog.DebugContext(ctx, "No flag store attached, not persisting", slog.String("flag", f.name))
-		return
+		return nil
 	}
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 	defer cancel()
 	if err := store.SetFlag(ctx, f.name, data); err != nil {
-		slog.WarnContext(ctx, "Couldn't persist flag", slog.String("flag", f.name), slog.Any("err", err))
+		return fmt.Errorf("couldn't persist flag %q: %w", f.name, err)
 	}
+	return nil
 }
 
 func (f *flag[T]) decode(raw json.RawMessage) (any, error) {

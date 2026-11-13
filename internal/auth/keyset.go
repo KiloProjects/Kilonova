@@ -1,37 +1,30 @@
 package auth
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
-	"log/slog"
-	"os"
 
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/zitadel/oidc/v3/pkg/op"
 )
 
-func getKey() (*rsa.PrivateKey, error) {
-	if flags.AuthRSAPrivateKey.Value() == "" {
-		rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
-		if err != nil {
-			slog.ErrorContext(context.Background(), "Failed to generate RSA key", slog.Any("err", err))
-			os.Exit(1)
-		}
-		privKey := x509.MarshalPKCS1PrivateKey(rsaKey)
-		flags.AuthRSAPrivateKey.Update(context.Background(), base64.StdEncoding.EncodeToString(privKey))
-		return rsaKey, nil
+// GeneratePrivateKey returns a new RSA signing key in the encoding StorageConfig expects.
+func GeneratePrivateKey() (string, error) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return "", err
 	}
+	return base64.StdEncoding.EncodeToString(x509.MarshalPKCS1PrivateKey(key)), nil
+}
 
-	privKey, err := base64.StdEncoding.DecodeString(flags.AuthRSAPrivateKey.Value())
+func parsePrivateKey(encoded string) (*rsa.PrivateKey, error) {
+	der, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
 		return nil, err
 	}
-
-	return x509.ParsePKCS1PrivateKey(privKey)
+	return x509.ParsePKCS1PrivateKey(der)
 }
 
 var _ op.Key = (*publicKey)(nil)

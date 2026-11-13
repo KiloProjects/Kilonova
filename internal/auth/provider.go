@@ -2,6 +2,7 @@ package auth
 
 import (
 	"crypto/sha256"
+	"errors"
 	"log/slog"
 
 	"github.com/zitadel/oidc/v3/pkg/oidc"
@@ -18,6 +19,9 @@ type OauthProviderConfig struct {
 }
 
 func GetProvider(cfg OauthProviderConfig) (*op.Provider, error) {
+	if len(cfg.CryptoKey) == 0 {
+		return nil, errors.New("OIDC provider needs a crypto key")
+	}
 	opConfig := &op.Config{
 		CryptoKey:                sha256.Sum256(cfg.CryptoKey),
 		DefaultLogoutRedirectURI: "/",

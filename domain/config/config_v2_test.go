@@ -39,7 +39,7 @@ func TestSliceFlagRoundTrip(t *testing.T) {
 
 	fs := NewFlagset()
 	require.NoError(t, fs.InitializeFlags(t.Context(), store))
-	f.Update(WithFlagset(t.Context(), fs), []int{1, 2})
+	require.NoError(t, f.Update(WithFlagset(t.Context(), fs), []int{1, 2}))
 
 	restarted := NewFlagset()
 	require.NoError(t, restarted.InitializeFlags(t.Context(), store))
@@ -55,7 +55,7 @@ func TestUpdateWritesOneRow(t *testing.T) {
 	fs := NewFlagset()
 	require.NoError(t, fs.InitializeFlags(t.Context(), store))
 
-	one.Update(WithFlagset(t.Context(), fs), 5)
+	require.NoError(t, one.Update(WithFlagset(t.Context(), fs), 5))
 	require.Equal(t, map[string]json.RawMessage{"test.one": json.RawMessage(`5`)}, store.data)
 }
 
@@ -67,7 +67,7 @@ func TestFlagsetsAreIsolated(t *testing.T) {
 	require.NoError(t, a.InitializeFlags(t.Context(), storeA))
 	require.NoError(t, b.InitializeFlags(t.Context(), storeB))
 
-	f.Update(WithFlagset(t.Context(), a), "tenant a")
+	require.NoError(t, f.Update(WithFlagset(t.Context(), a), "tenant a"))
 	require.Equal(t, "tenant a", f.Get(WithFlagset(t.Context(), a)))
 	require.Equal(t, "default", f.Of(b))
 	require.Equal(t, "default", f.Value(), "global flagset must be untouched")
@@ -98,7 +98,7 @@ func TestConcurrentUpdateAndLoad(t *testing.T) {
 
 	var wg sync.WaitGroup
 	for i := range 50 {
-		wg.Go(func() { f.Update(ctx, i) })
+		wg.Go(func() { require.NoError(t, f.Update(ctx, i)) })
 		wg.Go(func() { _ = f.Get(ctx) })
 	}
 	wg.Go(func() { require.NoError(t, fs.InitializeFlags(ctx, store)) })

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"strconv"
 	"time"
 
@@ -14,7 +13,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user/userpg"
 	"github.com/KiloProjects/kilonova/infra/postgres"
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -41,6 +39,8 @@ type AuthStorage struct {
 	conn     *pgxpool.Pool
 	key      *signingKey
 	userRepo *userpg.Repository
+
+	defaultLanguage func(ctx context.Context) string
 }
 
 func (s *AuthStorage) CreateAuthRequest(ctx context.Context, authReq *oidc.AuthRequest, userID string) (op.AuthRequest, error) {
@@ -470,7 +470,7 @@ func (s *AuthStorage) setUserInfo(ctx context.Context, userinfo *oidc.UserInfo, 
 			case "ro":
 				userinfo.Locale = oidc.NewLocale(language.Romanian)
 			default:
-				switch flags.DefaultLanguage(ctx) {
+				switch s.defaultLanguage(ctx) {
 				case "en":
 					userinfo.Locale = oidc.NewLocale(language.English)
 				case "ro":
@@ -586,17 +586,35 @@ func (s *AuthStorage) Health(ctx context.Context) error {
 	return s.conn.Ping(ctx)
 }
 
-func NewAuthStorage(ctx context.Context, pgx *postgres.DB) *AuthStorage {
-	key, err := getKey()
+// StorageConfig holds the signing key material. The caller owns generating and
+// persisting it; NewAuthStorage only validates it.
+type StorageConfig struct {
+	// PrivateKey is a base64 PKCS#1 RSA key, as produced by GeneratePrivateKey.
+	PrivateKey string
+	KeyID      string
+
+	// DefaultLanguage is the locale fallback for users with no preferred language.
+	DefaultLanguage func(ctx context.Context) string
+}
+
+func NewAuthStorage(pgx *postgres.DB, conf StorageConfig) (*AuthStorage, error) {
+	if conf.PrivateKey == "" || conf.KeyID == "" {
+		return nil, errors.New("auth storage needs both a private key and a key ID")
+	}
+	if conf.DefaultLanguage == nil {
+		return nil, errors.New("auth storage needs a default language source")
+	}
+	key, err := parsePrivateKey(conf.PrivateKey)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to get RSA key", slog.Any("error", err))
-		os.Exit(1)
+		return nil, fmt.Errorf("invalid RSA private key: %w", err)
 	}
 	return &AuthStorage{
 		conn:     pgx.Pool(),
-		key:      &signingKey{pkey: key, kid: flags.AuthRSAPrivateKeyID.Value()},
+		key:      &signingKey{pkey: key, kid: conf.KeyID},
 		userRepo: userpg.NewRepository(pgx),
-	}
+
+		defaultLanguage: conf.DefaultLanguage,
+	}, nil
 }
 
 func promptToInternal(oidcPrompt oidc.SpaceDelimitedArray) []string {

@@ -2,9 +2,12 @@ package sudoapi
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"log/slog"
 	"time"
+
+	"uuid"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
@@ -137,8 +140,20 @@ func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, m
 	}
 	base.sessionUserCache = sUserCache
 
+	if err := base.ensureOIDCKeys(ctx); err != nil {
+		return nil, fmt.Errorf("couldn't set up OIDC keys: %w", err)
+	}
+	authStorage, err := auth.NewAuthStorage(base.pgx, auth.StorageConfig{
+		PrivateKey: flags.AuthRSAPrivateKey.Of(base.flagset),
+		KeyID:      flags.AuthRSAPrivateKeyID.Of(base.flagset),
+
+		DefaultLanguage: flags.DefaultLanguage,
+	})
+	if err != nil {
+		return nil, err
+	}
 	provider, err := auth.GetProvider(auth.OauthProviderConfig{
-		Storage:    auth.NewAuthStorage(ctx, base.pgx),
+		Storage:    authStorage,
 		Debug:      kilonova.DebugMode(),
 		HostPrefix: kilonova.HostPrefix(),
 
@@ -149,6 +164,31 @@ func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, m
 	}
 	base.oidcProvider = provider
 	return base, nil
+}
+
+// ensureOIDCKeys generates and persists any missing OIDC secret.
+func (s *BaseAPI) ensureOIDCKeys(ctx context.Context) error {
+	ctx = config.WithFlagset(ctx, s.flagset)
+	if flags.AuthRSAPrivateKey.Of(s.flagset) == "" {
+		key, err := auth.GeneratePrivateKey()
+		if err != nil {
+			return fmt.Errorf("couldn't generate RSA key: %w", err)
+		}
+		if err := flags.AuthRSAPrivateKey.Update(ctx, key); err != nil {
+			return err
+		}
+	}
+	if flags.AuthRSAPrivateKeyID.Of(s.flagset) == "" {
+		if err := flags.AuthRSAPrivateKeyID.Update(ctx, uuid.NewV7().String()); err != nil {
+			return err
+		}
+	}
+	if flags.AuthCryptoKey.Of(s.flagset) == "" {
+		if err := flags.AuthCryptoKey.Update(ctx, rand.Text()); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func InitQueryCounter(ctx context.Context) context.Context {

@@ -1,10 +1,6 @@
 package flags
 
 import (
-	"crypto/rand"
-
-	"uuid"
-
 	"github.com/KiloProjects/kilonova/domain/config"
 )
 
@@ -15,9 +11,10 @@ var (
 var FilterUserAgent = config.GenFlag[bool]("behavior.user_agent_filter", true, "Filter user agent in API (block python requests from non-admins)")
 
 var (
+	// Generated and persisted on first start when empty (sudoapi.ensureOIDCKeys).
 	AuthRSAPrivateKey   = config.GenFlag("oidc.rsaKey.private", "", "RSA private key for the auth server")
-	AuthRSAPrivateKeyID = config.GenFlag("oidc.rsaKey.id", uuid.NewV7().String(), "RSA private key ID for the auth server")
-	AuthCryptoKey       = config.GenFlag("oidc.cryptoKey", rand.Text(), "Crypto key for the auth server")
+	AuthRSAPrivateKeyID = config.GenFlag("oidc.rsaKey.id", "", "RSA private key ID for the auth server")
+	AuthCryptoKey       = config.GenFlag("oidc.cryptoKey", "", "Crypto key for the auth server")
 )
 
 var MossUserID = config.GenFlag("integrations.moss.user_id", -1, "User ID for MOSS Plagiarism Checker")
