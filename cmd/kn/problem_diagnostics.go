@@ -15,7 +15,7 @@ var problemDiagnostics = &cli.Command{
 		// Print welcome message
 		slog.InfoContext(ctx, "Starting Kilonova Quick Problem Diagnostics Runner")
 
-		base, err := initBase(ctx)
+		ctx, base, err := initBase(ctx)
 		if err != nil {
 			return err
 		}

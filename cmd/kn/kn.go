@@ -58,13 +58,12 @@ func Kilonova(ctx context.Context) error {
 
 	maxmind.Initialize(ctx, config.Integrations.MaxMindDB)
 
-	base, err := initBase(ctx)
+	ctx, base, err := initBase(ctx)
 	if err != nil {
 		slog.ErrorContext(ctx, "Could not initialize BaseAPI", slog.Any("err", err))
 		return err
 	}
 	// Background jobs and the grader inherit ctx, so they read this instance's flags.
-	ctx = config.WithFlagset(ctx, base.Flagset())
 	base.Start(ctx)
 	defer base.Close()
 

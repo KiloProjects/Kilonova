@@ -18,10 +18,8 @@ import (
 
 // Flag definitions (name, default, description) are compiled in and shared by
 // every instance; their values live in a Flagset, one per instance. Reads go
-// through Get(ctx) or Of(fs); Value() is the transitional read of the global set.
+// through Get(ctx) or Of(fs).
 type Flag[T any] interface {
-	// Value reads the process-wide flagset. Transitional: migrate callers to Get or Of.
-	Value() T
 	// Get reads the flagset carried by ctx (see WithFlagset).
 	Get(ctx context.Context) T
 	// Of reads the given flagset.
@@ -69,7 +67,7 @@ func NewFlagset() *Flagset {
 	return &Flagset{vals: map[string]any{}}
 }
 
-// globalFlags backs Value() and any ctx without a flagset until every caller is migrated.
+// globalFlags serves any ctx without a flagset (counted by flagsetFallbacks).
 var globalFlags = NewFlagset()
 
 var flagsetFallbacks = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -92,7 +90,6 @@ func flagsetFrom(ctx context.Context, name string) *Flagset {
 	return globalFlags
 }
 
-func (f *flag[T]) Value() T                  { return f.Of(globalFlags) }
 func (f *flag[T]) Get(ctx context.Context) T { return f.Of(flagsetFrom(ctx, f.name)) }
 func (f *flag[T]) InternalName() string      { return f.name }
 func (f *flag[T]) HumanName() string         { return f.humanName }
@@ -235,9 +232,9 @@ func (fs *Flagset) InitializeFlags(ctx context.Context, store FlagStore) error {
 	return nil
 }
 
-// GlobalFlagset returns the process-wide flagset. Transitional: the platform must
-// hand this exact set to BaseAPI while any caller still reads through Value(),
-// or admin edits and Value() reads would see different values.
+// GlobalFlagset returns the process-wide flagset. Transitional: the platform hands
+// this exact set to BaseAPI so a ctx that falls back to it still sees the instance's
+// values. Once kn_flagset_fallback_total stays at zero, switch to NewFlagset and drop it.
 func GlobalFlagset() *Flagset {
 	return globalFlags
 }

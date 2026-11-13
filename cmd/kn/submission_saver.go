@@ -28,7 +28,7 @@ var submissionSaver = &cli.Command{
 		slog.InfoContext(ctx, "Starting Kilonova Submission Exporter")
 		slog.InfoContext(ctx, "Saving for user", slog.Any("user", cmd.String("username")))
 
-		base, err := initBase(ctx)
+		ctx, base, err := initBase(ctx)
 		if err != nil {
 			return err
 		}

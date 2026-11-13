@@ -51,7 +51,7 @@ var newOauth = &cli.Command{
 		// Print welcome message
 		slog.InfoContext(ctx, "Starting Kilonova OAuth Client Creator")
 
-		base, err := initBase(ctx)
+		ctx, base, err := initBase(ctx)
 		if err != nil {
 			return err
 		}

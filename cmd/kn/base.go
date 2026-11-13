@@ -19,17 +19,18 @@ import (
 
 // initBase is the composition root for the platform stack: everything that
 // comes from the environment contract is turned into a dependency here and
-// handed to sudoapi, which never reads config itself.
-func initBase(ctx context.Context) (*sudoapi.BaseAPI, error) {
+// handed to sudoapi, which never reads config itself. The returned context
+// carries the instance's flagset; callers must use it from then on.
+func initBase(ctx context.Context) (context.Context, *sudoapi.BaseAPI, error) {
 	if err := config.RequireDataDir(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := os.MkdirAll(config.Common.DataDir, 0o755); err != nil {
-		return nil, fmt.Errorf("couldn't create data dir: %w", err)
+		return nil, nil, fmt.Errorf("couldn't create data dir: %w", err)
 	}
 	mgr, err := datastore.New(afero.NewBasePathFs(afero.NewOsFs(), config.Common.DataDir))
 	if err != nil {
-		return nil, fmt.Errorf("couldn't initialize data store: %w", err)
+		return nil, nil, fmt.Errorf("couldn't initialize data store: %w", err)
 	}
 
 	// A nil mailer means mail is not configured.
@@ -47,12 +48,12 @@ func initBase(ctx context.Context) (*sudoapi.BaseAPI, error) {
 		LogQueries:   config.DB.LogQueries,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("couldn't connect to DB: %w", err)
+		return nil, nil, fmt.Errorf("couldn't connect to DB: %w", err)
 	}
 	slog.InfoContext(ctx, "Connected to DB")
 	if config.DB.RunMigrations {
 		if err := postgres.RunMigrations(ctx, pgxDB, db.Migrations); err != nil {
-			return nil, fmt.Errorf("couldn't run migrations: %w", err)
+			return nil, nil, fmt.Errorf("couldn't run migrations: %w", err)
 		}
 	}
 
@@ -60,7 +61,7 @@ func initBase(ctx context.Context) (*sudoapi.BaseAPI, error) {
 	// defaults would silently undo every setting an admin ever changed.
 	flagset := config.GlobalFlagset()
 	if err := flagset.InitializeFlags(ctx, db.NewPSQL(pgxDB)); err != nil {
-		return nil, fmt.Errorf("couldn't load flags: %w", err)
+		return nil, nil, fmt.Errorf("couldn't load flags: %w", err)
 	}
 
 	dc, err := discord.New(discord.Config{
@@ -70,8 +71,12 @@ func initBase(ctx context.Context) (*sudoapi.BaseAPI, error) {
 		RedirectURL:  kilonova.HostURL().JoinPath("api/webhook/discord_callback").String(),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("discord: %w", err)
+		return nil, nil, fmt.Errorf("discord: %w", err)
 	}
 
-	return sudoapi.GetBaseAPI(ctx, pgxDB, mgr, mailer, dc, flagset)
+	base, err := sudoapi.GetBaseAPI(ctx, pgxDB, mgr, mailer, dc, flagset)
+	if err != nil {
+		return nil, nil, err
+	}
+	return config.WithFlagset(ctx, flagset), base, nil
 }

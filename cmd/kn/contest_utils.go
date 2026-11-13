@@ -26,7 +26,7 @@ var contestUtils = &cli.Command{
 		},
 	},
 	Action: func(ctx context.Context, command *cli.Command) error {
-		base, err := initBase(ctx)
+		ctx, base, err := initBase(ctx)
 		if err != nil {
 			return err
 		}
