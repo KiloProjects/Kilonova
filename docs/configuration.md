@@ -11,39 +11,17 @@ Starting with v26.09, Kilonova no longer reads `config.toml` or `grader.toml`. C
 | Host wiring, set once per deployment | `KN_*` environment variables | database DSN, data and log directories, SMTP credentials, sandbox capacity, remote grader endpoint and TLS files |
 | Instance settings, editable at runtime | the `flags` table in PostgreSQL (admin UI → *Flags*, or the config form on the admin page) | default language, per-test memory cap, banned hot problems, every feature toggle |
 
-The process never writes a configuration file at all: flags are stored in the database, and `flags.json` is only ever read, once, to seed an empty flag store (see *Flag storage* below). Environment variables are documented by the binary itself: `kn --help` lists the platform variables, `kn grader-serve --help` the grader ones, and `.env.example` in the repository has all of them with comments.
+The process never reads or writes a configuration file: flags are stored in the database (see *Flag storage* below). Environment variables are documented by the binary itself: `kn --help` lists the platform variables, `kn grader-serve --help` the grader ones, and `.env.example` in the repository has all of them with comments.
 
 !!! note "Precedence"
     An explicit CLI flag (`--data-dir /srv/kn`) wins over the process environment, which wins over a `.env` file in the working directory, which wins over the built-in default. `.env` is read by the process itself, so it also works under `sudo ./kn main`.
 
 # Migrating an existing deployment
 
-The new binary refuses to start without `KN_DATA_DIR` (and, in remote mode, the grader endpoint and token). Convert your files first:
-
-```sh
-# platform host
-./kn config-migrate -c config.toml --grader-config grader.toml -f flags.json > .env
-
-# grader host (no config.toml there)
-./kn config-migrate --grader-config grader.toml > .env
-```
-
-The command:
-
-- prints one `KEY=value` line per non-empty legacy value to **stdout**, quoted where needed, so redirecting to `.env` is enough;
-- writes `default_language`, `test_max_mem_kb` and `banned_hot_problems` into the flags file given by `-f` instead of emitting them;
-- reads the same flags file for keys that stopped being flags (listen address, migrations, DB debugging, MaxMind path, OpenTelemetry, Prometheus, sandbox policy, Discord and OpenAI credentials) and emits their `KN_*` lines; those keys are ignored when the file is imported into the flag store;
-- reports on **stderr** which flags it wrote, any file it could not find, and any legacy key that has no equivalent (the never-used `priority` field on grader clients is dropped);
-- never modifies or deletes the TOML files, and gives identical output when run twice.
-
-Then start `kn main` / `kn grader-serve` as before, check the boot log, and delete the TOML files. If both files are present on one host and both set sandbox capacity, the grader's value wins and a warning is printed.
+`config.toml`, `grader.toml` and `flags.json` are no longer read. To convert them, run `kn config-migrate` from v26.09, then upgrade.
 
 !!! tip "Docker and orchestrators"
     You don't need `.env` at all. Pass the variables through `environment:` / `env_file:` in Compose, or as secrets in Kubernetes, and mount only the data directory — flags live in the database, so nothing else needs to be writable. Leaving `KN_DB_DSN` empty makes the driver use the standard libpq variables (`PGHOST`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`, `PGSSLMODE`, ...), which most Postgres images and operators already provide.
-
-## Rollback
-
-The migration tool leaves `config.toml` and `grader.toml` untouched, so the previous binary starts exactly as before. `flags.json` gains three keys the old binary logs as unknown and ignores, and the flag-store import never modifies the file either, so it is still there to roll back to.
 
 # Variable reference
 
@@ -51,7 +29,6 @@ The migration tool leaves `config.toml` and `grader.toml` untouched, so the prev
 
 | Variable | Default | Replaces | Notes |
 |---|---|---|---|
-| `KN_FLAGS_PATH` | `./flags.json` | `-f` | import source only; read once when the flag store is empty, never written |
 | `KN_DATA_DIR` | *(required)* | `common.data_dir` | absolute root directory: datastore buckets plus `logs/` |
 | `KN_DEBUG` | `false` | `common.debug` | |
 | `KN_LOG_FILE` | `true` | *(new)* | also write rotating logs under `$KN_DATA_DIR/logs`; stdout always gets them. Containers set this `false`, which sends the dedicated logs (`db.log`, `grader.log`, ...) to stdout too |
@@ -109,8 +86,6 @@ These were editable from the admin page before v26.09 but only took effect after
 ## Flag storage
 
 Runtime flags live in the `flags` table of the platform database, one row per flag. They are loaded after migrations run and before the first request is served; an admin edit writes exactly that one row.
-
-The first start against a database with no flags imports `KN_FLAGS_PATH` if that file exists, logs what it imported, and records that the import happened. Every later start ignores the file, so an admin's changes always win. The file is never modified, so rolling back to an older binary finds it exactly as it was. Once you have confirmed the import, the file can be deleted.
 
 ## Moved to the flag store
 

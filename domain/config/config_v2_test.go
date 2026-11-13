@@ -3,84 +3,95 @@ package config
 import (
 	"context"
 	"encoding/json"
-	"slices"
+	"maps"
+	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // memStore is an in-memory FlagStore standing in for the database layer.
 type memStore struct {
+	mu   sync.Mutex
 	data map[string]json.RawMessage
 }
 
 func newMemStore() *memStore { return &memStore{data: make(map[string]json.RawMessage)} }
 
 func (m *memStore) GetFlags(_ context.Context) (map[string]json.RawMessage, error) {
-	return m.data, nil
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return maps.Clone(m.data), nil
 }
 
 func (m *memStore) SetFlag(_ context.Context, key string, value json.RawMessage) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.data[key] = value
 	return nil
 }
 
 // Guards the list-typed flags (frontend.banned_hot_problems) through the store
-// persistence path.
+// persistence path: an Update must survive a "restart" into a fresh flagset.
 func TestSliceFlagRoundTrip(t *testing.T) {
-	ctx := context.Background()
-	f := GenFlag("test.slice", []int{}, "test slice flag")
+	ctx := t.Context()
 	store := newMemStore()
 
-	f.Update([]int{1, 2})
-	if err := PersistFlag(ctx, store, "test.slice"); err != nil {
-		t.Fatal(err)
-	}
+	fs := newFlagset()
+	f := fs.GenFlag("test.slice", []int{}, "test slice flag")
+	require.NoError(t, fs.InitializeFlags(ctx, store))
+	f.Update(ctx, []int{1, 2})
 
-	f.Update([]int{})
-	err := LoadFlagsFromDB(ctx, store)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := f.Value(); !slices.Equal(got, []int{1, 2}) {
-		t.Fatalf("after load: got %v, want [1 2]", got)
-	}
+	restarted := newFlagset()
+	f2 := restarted.GenFlag("test.slice", []int{}, "test slice flag")
+	require.NoError(t, restarted.InitializeFlags(ctx, store))
+	require.Equal(t, []int{1, 2}, f2.Value())
 }
 
 // An edit persists only the flag that changed, so a concurrent edit to another
 // flag cannot be clobbered by a stale whole-file rewrite.
-func TestPersistFlagWritesOneRow(t *testing.T) {
-	ctx := context.Background()
-	GenFlag("test.one", 1, "first")
-	GenFlag("test.two", 2, "second")
+func TestUpdateWritesOneRow(t *testing.T) {
+	ctx := t.Context()
 	store := newMemStore()
+	fs := newFlagset()
+	one := fs.GenFlag("test.one", 1, "first")
+	fs.GenFlag("test.two", 2, "second")
+	require.NoError(t, fs.InitializeFlags(ctx, store))
 
-	if err := PersistFlag(ctx, store, "test.one"); err != nil {
-		t.Fatal(err)
-	}
-	if len(store.data) != 1 {
-		t.Fatalf("wrote %d rows, want 1: %v", len(store.data), store.data)
-	}
-	if _, ok := store.data["test.one"]; !ok {
-		t.Fatalf("wrong row written: %v", store.data)
-	}
+	one.Update(ctx, 5)
+	require.Equal(t, map[string]json.RawMessage{"test.one": json.RawMessage(`5`)}, store.data)
 }
 
-// A corrupt value, an unknown key and the import sentinel must all be survivable:
+// A corrupt value and an unknown key must both be survivable:
 // startup keeps going and the affected flag keeps its default.
-func TestLoadFlagsFromDBTolerance(t *testing.T) {
-	ctx := context.Background()
-	f := GenFlag("test.tolerant", 7, "tolerant flag")
+func TestInitializeFlagsTolerance(t *testing.T) {
+	ctx := t.Context()
 	store := newMemStore()
 	store.data["test.tolerant"] = json.RawMessage(`"not a number"`)
 	store.data["test.gone"] = json.RawMessage(`42`)
-	store.data[importSentinel] = json.RawMessage(`true`)
 
-	if err := LoadFlagsFromDB(ctx, store); err != nil {
-		t.Fatalf("load must not fail on bad data: %v", err)
+	fs := newFlagset()
+	f := fs.GenFlag("test.tolerant", 7, "tolerant flag")
+	require.NoError(t, fs.InitializeFlags(ctx, store), "load must not fail on bad data")
+	require.Equal(t, 7, f.Value(), "undecodable value should keep the default")
+	require.Contains(t, store.data, "test.gone", "unknown key must be left in the store for rollback")
+}
+
+// Update and InitializeFlags take the flagset and flag locks; run them together
+// under -race to catch a lock-order inversion or an unguarded store read.
+func TestConcurrentUpdateAndLoad(t *testing.T) {
+	ctx := t.Context()
+	fs := newFlagset()
+	f := fs.GenFlag("test.concurrent", 0, "concurrent flag")
+
+	store := newMemStore()
+	store.data["test.concurrent"] = json.RawMessage(`-1`) // so InitializeFlags takes the flag lock too
+
+	var wg sync.WaitGroup
+	for i := range 50 {
+		wg.Go(func() { f.Update(ctx, i) })
+		wg.Go(func() { _ = f.Value() })
 	}
-	if got := f.Value(); got != 7 {
-		t.Fatalf("undecodable value should keep the default, got %v", got)
-	}
-	if _, ok := store.data["test.gone"]; !ok {
-		t.Fatal("unknown key must be left in the store for rollback")
-	}
+	wg.Go(func() { require.NoError(t, fs.InitializeFlags(ctx, store)) })
+	wg.Wait()
 }

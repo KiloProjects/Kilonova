@@ -6,8 +6,7 @@ import (
 )
 
 // GetFlags returns every stored runtime flag, keyed by its dotted internal name.
-// Values are the same JSON encoding the legacy flags.json held, so they can be
-// fed straight into the flag registry.
+// Values are JSON-encoded, so they can be fed straight into the flag registry.
 func (s *DB) GetFlags(ctx context.Context) (map[string]json.RawMessage, error) {
 	rows, err := s.conn.Query(ctx, "SELECT key, value FROM flags")
 	if err != nil {

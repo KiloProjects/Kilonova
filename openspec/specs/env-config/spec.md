@@ -88,26 +88,18 @@ The default UI language, the per-test maximum memory cap and the banned hot-prob
 - **THEN** the field is ignored and sandbox capacity remains what `KN_SANDBOX_NUM_CONCURRENT` set at boot
 
 ### Requirement: The process never reads or writes a platform config file
-The platform SHALL NOT read `config.toml`, the grader SHALL NOT read `grader.toml`, and no command SHALL write either file. The platform SHALL write no configuration file at all: runtime flags live in the database-backed flag store, and the file named by `KN_FLAGS_PATH` SHALL be read at most once per database, for the one-time import defined by the `flag-store` capability, and never written. The `KN_CONF_PATH` and `KN_GRADER_CONF_PATH` variables and the `-c/--config` and `--grader-config` options of `kn main` / `kn grader-serve` SHALL be removed.
+The platform SHALL NOT read `config.toml`, the grader SHALL NOT read `grader.toml`, and no command SHALL write either file. The platform SHALL write no configuration file at all: runtime flags live in the database-backed flag store, and `flags.json` SHALL NOT be read. The `KN_CONF_PATH` and `KN_GRADER_CONF_PATH` variables and the `-c/--config` and `--grader-config` options of `kn main` / `kn grader-serve` SHALL be removed.
 
 #### Scenario: Stale config.toml is ignored
 - **WHEN** a `config.toml` with a different `db_dsn` exists in the working directory and `KN_DB_DSN` is set
 - **THEN** the platform connects using `KN_DB_DSN` and the file is left untouched
 
-#### Scenario: Only flags.json is written at boot
+#### Scenario: No configuration file is written at boot
 - **WHEN** `kn main` starts in an empty directory with the required variables set
 - **THEN** no configuration file is written at all: the directory contains neither `config.toml` nor `flags.json` after startup
 
-#### Scenario: An existing flags file is never rewritten
-- **WHEN** a `flags.json` is present and an admin then changes a flag
-- **THEN** the change is persisted to the flag store and the file on disk stays byte-identical
-
 ### Requirement: Startup-only settings are never flags
-Settings that are read once at process start or that describe the host SHALL be `KN_*` environment variables, not flag-store entries: the web listen address (`KN_LISTEN`), the reverse-proxy client IP header (`KN_TRUE_IP_HEADER`), the Prometheus exporter address (`KN_PROMETHEUS_LISTEN`), migration and SQL debugging switches (`KN_DB_RUN_MIGRATIONS`, `KN_DB_LOG_SQL`, `KN_DB_COUNT_QUERIES`), the rotating-file log switch (`KN_LOG_FILE`, default enabled), the MaxMind database path (`KN_MAXMIND_DB`), the OpenTelemetry toggle (`KN_OTEL_ENABLED`), sandbox policy (`KN_SANDBOX_ENSURE_CG_KEEPER`, `KN_SANDBOX_ALLOW_INSECURE`), and the Discord and OpenAI credentials (`KN_DISCORD_TOKEN`, `KN_DISCORD_CLIENT_ID`, `KN_DISCORD_CLIENT_SECRET`, `KN_OPENAI_TOKEN`, `KN_OPENAI_MODEL`, `KN_OPENAI_VISION_MODEL`). An integration SHALL be enabled by the presence of its token. Secrets held in these variables SHALL NOT be readable from templates. `kn config-migrate` SHALL convert the corresponding retired keys found in an existing `flags.json`, and retired keys SHALL be ignored when that file is imported into the flag store.
-
-#### Scenario: Retired flag keys are converted
-- **WHEN** `kn config-migrate -f flags.json` runs against a file containing `server.listen.port: 8080` and `integrations.openai.token: "sk-x"`
-- **THEN** stdout contains `KN_LISTEN=localhost:8080` and `KN_OPENAI_TOKEN=sk-x`
+Settings that are read once at process start or that describe the host SHALL be `KN_*` environment variables, not flag-store entries: the web listen address (`KN_LISTEN`), the reverse-proxy client IP header (`KN_TRUE_IP_HEADER`), the Prometheus exporter address (`KN_PROMETHEUS_LISTEN`), migration and SQL debugging switches (`KN_DB_RUN_MIGRATIONS`, `KN_DB_LOG_SQL`, `KN_DB_COUNT_QUERIES`), the rotating-file log switch (`KN_LOG_FILE`, default enabled), the MaxMind database path (`KN_MAXMIND_DB`), the OpenTelemetry toggle (`KN_OTEL_ENABLED`), sandbox policy (`KN_SANDBOX_ENSURE_CG_KEEPER`, `KN_SANDBOX_ALLOW_INSECURE`), and the Discord and OpenAI credentials (`KN_DISCORD_TOKEN`, `KN_DISCORD_CLIENT_ID`, `KN_DISCORD_CLIENT_SECRET`, `KN_OPENAI_TOKEN`, `KN_OPENAI_MODEL`, `KN_OPENAI_VISION_MODEL`). An integration SHALL be enabled by the presence of its token. Secrets held in these variables SHALL NOT be readable from templates.
 
 #### Scenario: Discord enabled by token
 - **WHEN** `KN_DISCORD_TOKEN` is set

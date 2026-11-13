@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Defines where runtime-editable flags are persisted now that the platform must run as a disposable container: the database-backed flag store, its load and update semantics, the one-time import of a legacy flags file, and how processes without a database behave.
+Defines where runtime-editable flags are persisted now that the platform must run as a disposable container: the database-backed flag store, its load and update semantics, and how processes without a database behave.
 
 ## Requirements
 
@@ -43,21 +43,6 @@ When a flag is updated at runtime — from the admin UI or any other caller — 
 #### Scenario: Write failure is non-fatal
 - **WHEN** the database rejects the write
 - **THEN** an error is logged, the process keeps running, and the new value remains active until the next restart
-
-### Requirement: A legacy flags file is imported once
-On startup, when the flag table is empty and the file named by `KN_FLAGS_PATH` exists and parses, the platform SHALL import its entries into the flag store, log what it imported, and SHALL NOT write to that file afterwards. On every subsequent startup the file SHALL be ignored, including when the table has been deliberately emptied back to defaults; the import SHALL be recorded so that it happens at most once per database. A missing, empty or unparsable file SHALL be reported and SHALL NOT prevent startup.
-
-#### Scenario: First boot imports the file
-- **WHEN** a pre-existing `flags.json` is present and the database has no flags yet
-- **THEN** its values are visible in the admin UI after startup and the file is left byte-identical on disk
-
-#### Scenario: Second boot ignores the file
-- **WHEN** the same platform is restarted after an admin has changed a flag
-- **THEN** the admin's value wins and the file's value is not re-applied
-
-#### Scenario: No file is fine
-- **WHEN** the container has no flags file at all
-- **THEN** startup proceeds on compiled-in defaults with no error
 
 ### Requirement: Processes without flags run without the database
 There SHALL be no per-process flag override mechanism; the flag store is the only source of flag values besides compiled-in defaults. A process that consumes no flags — `kn grader-serve` — SHALL start and run correctly with no flag store and no database.

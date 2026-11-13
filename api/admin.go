@@ -117,7 +117,7 @@ func (s *API) updateFlags(w http.ResponseWriter, r *http.Request) {
 			slog.WarnContext(r.Context(), "Flag not found", slog.String("name", k))
 			continue
 		}
-		flg.Update(v)
+		flg.Update(r.Context(), v)
 	}
 	for k, v := range args.StringFlags {
 		flg, ok := config.GetFlag[string](k)
@@ -125,7 +125,7 @@ func (s *API) updateFlags(w http.ResponseWriter, r *http.Request) {
 			slog.WarnContext(r.Context(), "Flag not found", slog.String("name", k))
 			continue
 		}
-		flg.Update(v)
+		flg.Update(r.Context(), v)
 	}
 	for k, v := range args.IntFlags {
 		flg, ok := config.GetFlag[int](k)
@@ -133,7 +133,7 @@ func (s *API) updateFlags(w http.ResponseWriter, r *http.Request) {
 			slog.WarnContext(r.Context(), "Flag not found", slog.String("name", k))
 			continue
 		}
-		flg.Update(v)
+		flg.Update(r.Context(), v)
 	}
 	for k, v := range args.IntListFlags {
 		flg, ok := config.GetFlag[[]int](k)
@@ -141,7 +141,7 @@ func (s *API) updateFlags(w http.ResponseWriter, r *http.Request) {
 			slog.WarnContext(r.Context(), "Flag not found", slog.String("name", k))
 			continue
 		}
-		flg.Update(v)
+		flg.Update(r.Context(), v)
 	}
 	for k, v := range args.StrListFlags {
 		flg, ok := config.GetFlag[[]string](k)
@@ -149,7 +149,7 @@ func (s *API) updateFlags(w http.ResponseWriter, r *http.Request) {
 			slog.WarnContext(r.Context(), "Flag not found", slog.String("name", k))
 			continue
 		}
-		flg.Update(v)
+		flg.Update(r.Context(), v)
 	}
 	returnData(w, "Updated flags. Some changes may only apply after a restart")
 }

@@ -1,7 +1,7 @@
 // Package config holds the process-wide configuration: startup-only settings
 // populated from KN_* environment variables (declared as CLI flags in cmd/kn,
 // documented in .env.example) and the runtime-editable flag registry persisted
-// to flags.json (config_v2.go). Nothing here is read from or written to a
+// to the database (config_v2.go). Nothing here is read from or written to a
 // config file.
 package config
 
@@ -103,7 +103,7 @@ func (c CommonConf) ScratchDir() string { return filepath.Join(c.DataDir, "scrat
 // RequireDataDir is the single check every process runs before touching disk.
 func RequireDataDir() error {
 	if !filepath.IsAbs(Common.DataDir) {
-		return errors.New("KN_DATA_DIR must be set to an absolute path (run `kn config-migrate` to convert a legacy config.toml)")
+		return errors.New("KN_DATA_DIR must be set to an absolute path")
 	}
 	return nil
 }

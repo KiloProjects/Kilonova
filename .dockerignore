@@ -38,7 +38,6 @@ knnnn
 
 # Local configuration and secrets: these arrive as environment variables
 .env
-flags.json
 config.toml
 grader.toml
 

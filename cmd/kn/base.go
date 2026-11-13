@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
@@ -74,25 +73,16 @@ func initBase(ctx context.Context) (*sudoapi.BaseAPI, error) {
 	return sudoapi.GetBaseAPI(ctx, pgxDB, mgr, mailer, dc)
 }
 
-// loadFlags brings the runtime flag registry up now that a database exists:
-// stored values first, then the one-time import of a legacy flags.json for
-// deployments upgrading from the file, then this process's overrides. It also
+// loadFlags brings the runtime flag registry up now that a database exists and
 // registers the persistence callback, so an admin edit writes exactly one row.
 //
 // A failure to read the store is fatal on purpose: continuing on compiled-in
 // defaults would silently undo every setting an admin ever changed.
 func loadFlags(ctx context.Context, store config.FlagStore) error {
-	err := config.LoadFlagsFromDB(ctx, store)
+	err := config.InitializeFlags(ctx, store)
 	if err != nil {
 		return fmt.Errorf("couldn't load flags: %w", err)
 	}
 
-	config.SetOnFlagUpdate(func(name string) {
-		ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-		defer cancel()
-		if err := config.PersistFlag(ctx, store, name); err != nil {
-			slog.WarnContext(ctx, "Couldn't persist flag", slog.String("flag", name), slog.Any("err", err))
-		}
-	})
 	return nil
 }

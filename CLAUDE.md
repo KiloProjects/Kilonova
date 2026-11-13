@@ -21,7 +21,7 @@ golangci-lint run            # config in .golangci.yaml
 - `./runkn.sh` does generate → asset build → build → run in a restart loop (needs `sudo` for isolate sandboxing).
 - Containers: one `Dockerfile`, two targets — `--target platform` (`kn main`, no toolchains) and `--target grader` (`kn grader-serve`, isolate + every language). `compose.yaml` runs Postgres + platform + grader; the platform image cannot sandbox, so containers always run `KN_EVAL_MODE=remote`. See `docs/deployment.md`.
 - `pnpm -C web/assets watch` rebuilds assets on change (three parallel Vite builds, one per bundle).
-- `./kn main` runs the platform; `./kn grader-serve` runs a standalone remote grader. Startup config is `KN_*` environment variables (`.env` in the cwd is loaded by the process; `.env.example` and `kn --help` list them); runtime-editable settings live in the `flags` table in Postgres, seeded once from `flags.json` (`-f`) if that file exists. `./kn config-migrate` converts a legacy `config.toml`/`grader.toml`.
+- `./kn main` runs the platform; `./kn grader-serve` runs a standalone remote grader. Startup config is `KN_*` environment variables (`.env` in the cwd is loaded by the process; `.env.example` and `kn --help` list them); runtime-editable settings live in the `flags` table in Postgres.
 - CLI tools are Go tool deps (`go tool goi18n`).
 - Docs site: `mkdocs` (see mkdocs.yml, `scripts/build_docs.sh`).
 

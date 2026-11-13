@@ -150,10 +150,6 @@ Everything is environment variables — see `.env.example` and
 flags live in the database, so a platform container needs no writable
 configuration state at all.
 
-A deployment upgrading from a `flags.json` should bring that file along once
-(`KN_FLAGS_PATH`): the first start imports it into the database and never
-touches it again.
-
 ## Going to production
 
 The shipped compose file is a working stack, not a hardened one. Before real use:

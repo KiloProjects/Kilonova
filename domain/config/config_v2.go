@@ -9,21 +9,29 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"time"
 )
 
-var (
-	flagMapMu sync.RWMutex
-	allFlags  = make(map[string]any)
-)
+type flagset struct {
+	mu    sync.RWMutex
+	flags map[string]any
+
+	store FlagStore
+}
+
+var globalFlags = newFlagset()
+
+func newFlagset() *flagset {
+	return &flagset{flags: map[string]any{}}
+}
 
 type configFlag interface {
-	getPtr() any
 	sneakUpdate(newVal any) error
 }
 
 type Flag[T any] interface {
 	Value() T
-	Update(T)
+	Update(context.Context, T)
 	InternalName() string
 	HumanName() string
 }
@@ -33,6 +41,7 @@ type flag[T any] struct {
 	name      string
 	val       T
 	humanName string
+	fs        *flagset
 }
 
 func (f *flag[T]) Value() T {
@@ -63,19 +72,21 @@ func (f *flag[T]) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (f *flag[T]) Update(newVal T) {
-	defer func() {
-		if onFlagUpdate != nil {
-			onFlagUpdate(f.name)
-		}
-	}()
+// Update sets the value and writes it through to the flag store, if one is attached.
+// The store write happens outside every lock, so readers never wait on the database.
+// ponytail: two concurrent edits of the same flag may persist out of order; fine for admin edits.
+func (f *flag[T]) Update(ctx context.Context, newVal T) {
 	f.mu.Lock()
-	defer f.mu.Unlock()
 	f.val = newVal
-}
-
-func (f *flag[T]) getPtr() any {
-	return &f.val
+	data, err := json.Marshal(newVal)
+	f.mu.Unlock()
+	if err != nil {
+		slog.WarnContext(ctx, "Couldn't encode flag", slog.String("flag", f.name), slog.Any("err", err))
+		return
+	}
+	if f.fs != nil {
+		f.fs.persist(ctx, f.name, data)
+	}
 }
 
 func (f *flag[T]) sneakUpdate(newVal any) error {
@@ -93,31 +104,22 @@ func (f *flag[T]) sneakUpdate(newVal any) error {
 	}
 }
 
-func GenFlag[T any](name string, defaultVal T, readableName string) Flag[T] {
-	flagMapMu.Lock()
-	defer flagMapMu.Unlock()
-	f := &flag[T]{name: name, val: defaultVal, humanName: readableName}
-	allFlags[name] = f
+func (fs *flagset) GenFlag[T any](name string, defaultVal T, readableName string) Flag[T] {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+	f := &flag[T]{name: name, val: defaultVal, humanName: readableName, fs: fs}
+	fs.flags[name] = f
 	return f
 }
 
-func GetFlagVal[T any](name string) (T, bool) {
-	flagMapMu.RLock()
-	defer flagMapMu.RUnlock()
-	flg, ok := allFlags[name]
-	if !ok {
-		return *new(T), false
-	}
-	if v, ok := flg.(*flag[T]); ok {
-		return v.Value(), true
-	}
-	return *new(T), false
+func GenFlag[T any](name string, defaultVal T, readableName string) Flag[T] {
+	return globalFlags.GenFlag(name, defaultVal, readableName)
 }
 
-func GetFlag[T any](name string) (Flag[T], bool) {
-	flagMapMu.RLock()
-	defer flagMapMu.RUnlock()
-	flg, ok := allFlags[name]
+func (fs *flagset) GetFlag[T any](name string) (Flag[T], bool) {
+	fs.mu.RLock()
+	defer fs.mu.RUnlock()
+	flg, ok := fs.flags[name]
 	if !ok {
 		return nil, false
 	}
@@ -125,11 +127,15 @@ func GetFlag[T any](name string) (Flag[T], bool) {
 	return v, ok
 }
 
-func GetFlags[T any]() []Flag[T] {
-	flagMapMu.RLock()
-	defer flagMapMu.RUnlock()
+func GetFlag[T any](name string) (Flag[T], bool) {
+	return globalFlags.GetFlag[T](name)
+}
+
+func (fs *flagset) GetFlags[T any]() []Flag[T] {
+	fs.mu.RLock()
+	defer fs.mu.RUnlock()
 	var flags []Flag[T]
-	for _, flg := range allFlags {
+	for _, flg := range fs.flags {
 		flag, ok := flg.(*flag[T])
 		if ok {
 			flags = append(flags, flag)
@@ -141,6 +147,10 @@ func GetFlags[T any]() []Flag[T] {
 	return flags
 }
 
+func GetFlags[T any]() []Flag[T] {
+	return globalFlags.GetFlags[T]()
+}
+
 // FlagStore persists runtime flags. It is implemented by the database layer;
 // declared here as an interface because db imports this package.
 type FlagStore interface {
@@ -148,32 +158,21 @@ type FlagStore interface {
 	SetFlag(ctx context.Context, key string, value json.RawMessage) error
 }
 
-// importSentinel marks a database whose flags were already seeded from a legacy
-// flags.json. Keys starting with "_" are never registered flags, so the sentinel
-// cannot collide with one.
-const importSentinel = "_flags_file_imported"
+func (fs *flagset) InitializeFlags(ctx context.Context, store FlagStore) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+	fs.store = store
 
-// LoadFlagsFromDB applies stored flag values over the compiled-in defaults.
-// A value that does not decode, or a key no longer registered in this build, is
-// logged and skipped: neither aborts startup, and unknown keys are left in the
-// store so a rollback still sees them. It reports whether the store held anything,
-// which is what decides if a legacy file still needs importing.
-func LoadFlagsFromDB(ctx context.Context, store FlagStore) (err error) {
-	stored, err := store.GetFlags(ctx)
+	stored, err := fs.store.GetFlags(ctx)
 	if err != nil {
 		return err
 	}
-	if len(stored) == 0 {
-		return nil
-	}
 
-	flagMapMu.RLock()
-	defer flagMapMu.RUnlock()
 	for key, val := range stored {
 		if strings.HasPrefix(key, "_") {
 			continue
 		}
-		flg, ok := allFlags[key]
+		flg, ok := fs.flags[key]
 		if !ok {
 			slog.WarnContext(ctx, "Unknown flag in store, ignoring", slog.String("key", key))
 			continue
@@ -190,30 +189,27 @@ func LoadFlagsFromDB(ctx context.Context, store FlagStore) (err error) {
 	return nil
 }
 
-// PersistFlag writes one flag's current value to the store. Used as the update
-// callback, so an admin edit touches exactly the flag that changed.
-func PersistFlag(ctx context.Context, store FlagStore, name string) error {
-	flagMapMu.RLock()
-	flg, ok := allFlags[name]
-	flagMapMu.RUnlock()
-	if !ok {
-		return fmt.Errorf("unknown flag %q", name)
-	}
-	v, ok := flg.(configFlag)
-	if !ok {
-		return fmt.Errorf("flag %q is not persistable", name)
-	}
-	val, err := json.Marshal(v.getPtr())
-	if err != nil {
-		return err
-	}
-	return store.SetFlag(ctx, name, val)
+// InitializeFlags applies stored flag values over the compiled-in defaults.
+// A value that does not decode, or a key no longer registered in this build, is
+// logged and skipped: neither aborts startup, and unknown keys are left in the
+// store so a rollback still sees them.
+func InitializeFlags(ctx context.Context, store FlagStore) error {
+	return globalFlags.InitializeFlags(ctx, store)
 }
 
-var onFlagUpdate = func(string) {}
-
-// SetOnFlagUpdate registers the persistence callback. It is handed the dotted
-// name of the flag that changed, so only that flag is written.
-func SetOnFlagUpdate(f func(name string)) {
-	onFlagUpdate = f
+// persist writes one flag's encoded value to the store, so an edit touches exactly
+// the flag that changed. A write failure is logged, never fatal.
+func (fs *flagset) persist(ctx context.Context, name string, data json.RawMessage) {
+	fs.mu.RLock()
+	store := fs.store
+	fs.mu.RUnlock()
+	if store == nil {
+		slog.DebugContext(ctx, "No flag store attached, not persisting", slog.String("flag", name))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	if err := store.SetFlag(ctx, name, data); err != nil {
+		slog.WarnContext(ctx, "Couldn't persist flag", slog.String("flag", name), slog.Any("err", err))
+	}
 }

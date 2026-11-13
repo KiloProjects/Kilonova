@@ -22,8 +22,8 @@ func TestView(t *testing.T) {
 	})
 
 	t.Run("donate link follows its flag", func(t *testing.T) {
-		defer flags.DonationsEnabled.Update(flags.DonationsEnabled.Value())
-		flags.DonationsEnabled.Update(false)
+		defer flags.DonationsEnabled.Update(t.Context(), flags.DonationsEnabled.Value())
+		flags.DonationsEnabled.Update(t.Context(), false)
 		if got := render(t, View(ctx, 0, time.Now())); strings.Contains(got, `href="/donate"`) {
 			t.Fatalf("donate link shown while disabled")
 		}

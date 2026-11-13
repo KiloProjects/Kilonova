@@ -22,7 +22,7 @@ func getKey() (*rsa.PrivateKey, error) {
 			os.Exit(1)
 		}
 		privKey := x509.MarshalPKCS1PrivateKey(rsaKey)
-		flags.AuthRSAPrivateKey.Update(base64.StdEncoding.EncodeToString(privKey))
+		flags.AuthRSAPrivateKey.Update(context.Background(), base64.StdEncoding.EncodeToString(privKey))
 		return rsaKey, nil
 	}
 

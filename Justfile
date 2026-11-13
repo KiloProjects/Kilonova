@@ -10,12 +10,7 @@ maxmind:
 
 	@echo "Downloaded GeoLite2-City database."
 
-	tmp=$(mktemp) \
-	echo '$tmp' && \
-	jq ".\"integrations.maxmind.db_path\" = \"${MAXMIND_PATH}\"" flags.json > '$tmp' && mv '$tmp' flags.json
-
-
-	echo "Updated configuration file with correct path."
+	@echo "Set KN_MAXMIND_DB=${MAXMIND_PATH} in your .env."
 
 uv:
 	# TODO use data dir path dynamically
