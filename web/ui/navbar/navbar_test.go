@@ -6,13 +6,12 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
-	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/web/ui/uitest"
 	"github.com/stretchr/testify/require"
 )
 
 func TestView(t *testing.T) {
-	base := context.WithValue(context.Background(), util.LangKey, "en")
+	base := uitest.Ctx("en")
 	as := func(u *kilonova.UserBrief) context.Context { return context.WithValue(base, user.AuthedUserKey, u) }
 
 	t.Run("visitor gets login with back link and no dropdown", func(t *testing.T) {

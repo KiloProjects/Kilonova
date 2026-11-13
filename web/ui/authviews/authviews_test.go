@@ -1,15 +1,13 @@
 package authviews
 
 import (
-	"context"
 	"testing"
 
 	"github.com/KiloProjects/kilonova/internal/auth"
-	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/web/ui/uitest"
 )
 
-var ctx = context.WithValue(context.Background(), util.LangKey, "en")
+var ctx = uitest.Ctx("en")
 
 func TestLoginPage(t *testing.T) {
 	t.Run("hidden fields only when set, error escaped", func(t *testing.T) {

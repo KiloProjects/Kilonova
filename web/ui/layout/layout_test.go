@@ -9,7 +9,6 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
-	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/web/ui/uitest"
 	"github.com/stretchr/testify/require"
 	. "maragu.dev/gomponents"
@@ -21,7 +20,7 @@ type fakeAssets struct{}
 func (fakeAssets) Asset(_ context.Context, s string) string { return "/static/misc/" + s }
 
 func TestView(t *testing.T) {
-	base := context.WithValue(context.Background(), util.LangKey, "en")
+	base := uitest.Ctx("en")
 	base = context.WithValue(base, MiddlewareStartKey, time.Now())
 	as := func(u *kilonova.UserFull) context.Context { return context.WithValue(base, user.AuthedUserKey, u) }
 

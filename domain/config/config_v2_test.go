@@ -71,7 +71,7 @@ func TestFlagsetsAreIsolated(t *testing.T) {
 	require.NoError(t, f.Update(WithFlagset(t.Context(), a), "tenant a"))
 	require.Equal(t, "tenant a", f.Get(WithFlagset(t.Context(), a)))
 	require.Equal(t, "default", f.Of(b))
-	require.Equal(t, "default", f.Of(GlobalFlagset()), "global flagset must be untouched")
+	require.Equal(t, "default", f.Get(t.Context()), "a ctx without a flagset reads the default")
 	require.Empty(t, storeB.data)
 }
 

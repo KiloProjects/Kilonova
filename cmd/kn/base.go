@@ -60,7 +60,7 @@ func initBase(ctx context.Context) (context.Context, *sudoapi.BaseAPI, error) {
 
 	// A failure to read the flag store is fatal on purpose: continuing on compiled-in
 	// defaults would silently undo every setting an admin ever changed.
-	flagset := config.GlobalFlagset()
+	flagset := config.NewFlagset()
 	if err := flagset.InitializeFlags(ctx, db.NewPSQL(pgxDB)); err != nil {
 		return nil, nil, fmt.Errorf("couldn't load flags: %w", err)
 	}

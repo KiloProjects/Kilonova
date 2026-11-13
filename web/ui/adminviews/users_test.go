@@ -1,16 +1,14 @@
 package adminviews
 
 import (
-	"context"
 	"testing"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/web/ui/uitest"
 )
 
 func TestUsersList(t *testing.T) {
-	ctx := context.WithValue(context.Background(), util.LangKey, "en")
+	ctx := uitest.Ctx("en")
 	t.Run("rows show roles and display name", func(t *testing.T) {
 		got := uitest.Render(t, UsersList(ctx, UsersListParams{Users: []*kilonova.UserBrief{{ID: 1, Name: "alice", DisplayName: "Al", Admin: true}}}))
 		uitest.Contains(t, got, `href="/profile/alice"`, "alice (Al)", "✅", "❌")

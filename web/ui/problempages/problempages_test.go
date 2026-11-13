@@ -1,11 +1,9 @@
 package problempages
 
 import (
-	"context"
 	"testing"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/web/ui"
 	"github.com/KiloProjects/kilonova/web/ui/contests"
@@ -15,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var ctx = context.WithValue(context.Background(), util.LangKey, "en")
+var ctx = uitest.Ctx("en")
 
 func problem() *kilonova.Problem {
 	return &kilonova.Problem{ID: 7, Name: "<sum>", TestName: "sum", TimeLimit: 0.5, MemoryLimit: 65536, ScoringStrategy: kilonova.ScoringTypeMaxSub}

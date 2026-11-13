@@ -1,7 +1,6 @@
 package adminviews
 
 import (
-	"context"
 	"strings"
 	"testing"
 	"time"
@@ -9,13 +8,12 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/domain/datastore"
-	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/web/ui/uitest"
 	"github.com/stretchr/testify/require"
 )
 
-var enCtx = context.WithValue(context.Background(), util.LangKey, "en")
+var enCtx = uitest.Ctx("en")
 
 func TestPanel(t *testing.T) {
 	t.Run("renders flags with original values and the authed user id in the script", func(t *testing.T) {

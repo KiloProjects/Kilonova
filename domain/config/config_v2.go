@@ -11,9 +11,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 // Flag definitions (name, default, description) are compiled in and shared by
@@ -67,14 +64,6 @@ func NewFlagset() *Flagset {
 	return &Flagset{vals: map[string]any{}}
 }
 
-// globalFlags serves any ctx without a flagset (counted by flagsetFallbacks).
-var globalFlags = NewFlagset()
-
-var flagsetFallbacks = promauto.NewCounterVec(prometheus.CounterOpts{
-	Name: "kn_flagset_fallback_total",
-	Help: "Flag reads/updates through a context without a flagset, served from the global flagset",
-}, []string{"flag"})
-
 type flagsetKey struct{}
 
 // WithFlagset returns a context whose flag reads and updates go to fs.
@@ -82,17 +71,24 @@ func WithFlagset(ctx context.Context, fs *Flagset) context.Context {
 	return context.WithValue(ctx, flagsetKey{}, fs)
 }
 
-func flagsetFrom(ctx context.Context, name string) *Flagset {
-	if fs, ok := ctx.Value(flagsetKey{}).(*Flagset); ok && fs != nil {
-		return fs
-	}
-	flagsetFallbacks.WithLabelValues(name).Inc()
-	return globalFlags
+func flagsetFrom(ctx context.Context) *Flagset {
+	fs, _ := ctx.Value(flagsetKey{}).(*Flagset)
+	return fs
 }
 
-func (f *flag[T]) Get(ctx context.Context) T { return f.Of(flagsetFrom(ctx, f.name)) }
-func (f *flag[T]) InternalName() string      { return f.name }
-func (f *flag[T]) HumanName() string         { return f.humanName }
+// Get reads the flagset carried by ctx. A ctx without one is a wiring bug: it is
+// logged and the compiled-in default is returned, so a page still renders.
+func (f *flag[T]) Get(ctx context.Context) T {
+	fs := flagsetFrom(ctx)
+	if fs == nil {
+		slog.ErrorContext(ctx, "Flag read through a context without a flagset, using default", slog.String("flag", f.name))
+		return f.def
+	}
+	return f.Of(fs)
+}
+
+func (f *flag[T]) InternalName() string { return f.name }
+func (f *flag[T]) HumanName() string    { return f.humanName }
 
 func (f *flag[T]) Of(fs *Flagset) T {
 	fs.mu.RLock()
@@ -113,7 +109,10 @@ func (f *flag[T]) Update(ctx context.Context, newVal T) error {
 	if err != nil {
 		return fmt.Errorf("couldn't encode flag %q: %w", f.name, err)
 	}
-	fs := flagsetFrom(ctx, f.name)
+	fs := flagsetFrom(ctx)
+	if fs == nil {
+		return fmt.Errorf("couldn't update flag %q: no flagset in context", f.name)
+	}
 	fs.mu.Lock()
 	fs.vals[f.name] = newVal
 	store := fs.store
@@ -230,11 +229,4 @@ func (fs *Flagset) InitializeFlags(ctx context.Context, store FlagStore) error {
 	maps.Copy(fs.vals, vals)
 	fs.store = store
 	return nil
-}
-
-// GlobalFlagset returns the process-wide flagset. Transitional: the platform hands
-// this exact set to BaseAPI so a ctx that falls back to it still sees the instance's
-// values. Once kn_flagset_fallback_total stays at zero, switch to NewFlagset and drop it.
-func GlobalFlagset() *Flagset {
-	return globalFlags
 }
