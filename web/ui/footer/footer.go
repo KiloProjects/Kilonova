@@ -29,7 +29,7 @@ func View(ctx context.Context, prepareDuration time.Duration, renderStart time.T
 						Div(Class("text-lg"), ui.T(ctx, "usefulInfo")),
 						Ul(
 							Li(link("/", ui.T(ctx, "frontPage"))),
-							If(flags.DonationsEnabled.Value(), Li(link("/donate", ui.T(ctx, "donate")))),
+							If(flags.DonationsEnabled.Get(ctx), Li(link("/donate", ui.T(ctx, "donate")))),
 							Li(link("/problems", ui.T(ctx, "problem.list"))),
 							Li(link("/contests/official", ui.T(ctx, "contests"))),
 							Li(link("/submissions", ui.T(ctx, "submission.list"))),
@@ -50,7 +50,7 @@ func View(ctx context.Context, prepareDuration time.Duration, renderStart time.T
 							Li(Span(Class("black-span"), icon("fas fa-clock"), Text(" "), ui.T(ctx, "serverTime"), Text(": "),
 								Span(ID("footer_server_time"), Text(time.Now().Format("15:04:05"))))),
 							If(kilonova.DebugMode(), Li(Span(Class("black-span"), icon("text-red-600 fas fa-exclamation-triangle"), Text(" Debug Mode active")))),
-							If(flags.DiscordInviteID.Value() != "", Li(link("/links/discord", icon("fab fa-discord"), Text(" Discord Server"), Target("_blank")))),
+							If(flags.DiscordInviteID.Get(ctx) != "", Li(link("/links/discord", icon("fab fa-discord"), Text(" Discord Server"), Target("_blank")))),
 							Li(externalLink("https://github.com/KiloProjects/Kilonova", icon("fab fa-github"), Text(" GitHub"))),
 							Li(link("/termsOfService", icon("fas fa-gavel"), Text(" "), ui.T(ctx, "termsOfService"), Rel("noopener noreferrer"))),
 							Li(link("/privacyPolicy", icon("fas fa-unlock"), Text(" "), ui.T(ctx, "privacyPolicy"), Rel("noopener noreferrer"))),
@@ -62,7 +62,7 @@ func View(ctx context.Context, prepareDuration time.Duration, renderStart time.T
 						Ul(
 							Li(Class("pl-0"), externalLink("https://github.com/AlexVasiluta", Text("Platform made with "), icon("fas fa-heart"), Text(" by Alex Vasiluță "))),
 							Li(Class("black-span pl-0"), Text("Problems generously uploaded by the Kilonova community")),
-							If(flags.CCDisclaimer.Value(), Li(Class("black-anchor pl-0"),
+							If(flags.CCDisclaimer.Get(ctx), Li(Class("black-anchor pl-0"),
 								Text("Cu excepția cazurilor unde este specificat diferit, conținutul platformei este publicat sub licența "),
 								A(Rel("license"), Href("https://creativecommons.org/licenses/by-nc-sa/4.0/"), Text("CC BY-NC-SA 4.0")),
 								Text(". Vedeți "), A(Href("https://kilonova.ro/posts/creative-commons"), Text("aici")), Text(" mai multe detalii. "),
@@ -73,7 +73,7 @@ func View(ctx context.Context, prepareDuration time.Duration, renderStart time.T
 						),
 					),
 				),
-				Iff(flags.FooterTimings.Value(), func() Node {
+				Iff(flags.FooterTimings.Get(ctx), func() Node {
 					return Details(Class("text-muted reset-list"),
 						Summary(ui.T(ctx, "requestStats")),
 						Ul(
@@ -91,7 +91,7 @@ func View(ctx context.Context, prepareDuration time.Duration, renderStart time.T
 	e.preventDefault();
 	bundled.setLanguage(e.currentTarget.value);
 })`)),
-		If(flags.GoatCounterDomain.Value() != "", Script(Data("goatcounter", flags.GoatCounterDomain.Value()+"/count"), Async(), Src(flags.GoatCounterDomain.Value()+"/count.js"))),
+		If(flags.GoatCounterDomain.Get(ctx) != "", Script(Data("goatcounter", flags.GoatCounterDomain.Get(ctx)+"/count"), Async(), Src(flags.GoatCounterDomain.Get(ctx)+"/count.js"))),
 	}
 }
 

@@ -144,7 +144,7 @@ func (rt *Web) ValidateTagID(next http.Handler) http.Handler {
 // canViewTags makes sure the user can view tags
 func (rt *Web) canViewTags(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !(flags.AnyoneTags.Value() || user.UserBrief(r).IsProposer()) {
+		if !(flags.AnyoneTags.Get(r.Context()) || user.UserBrief(r).IsProposer()) {
 			rt.authedStatusPage(w, r, 400, "Nu ai voie să accesezi etichetele!")
 			return
 		}
@@ -348,12 +348,14 @@ func (rt *Web) mustBeContestEditor(next http.Handler) http.Handler {
 	})
 }
 
-type flagValuer interface{ Value() bool }
+type flagValuer interface {
+	Get(ctx context.Context) bool
+}
 
 func (rt *Web) checkFlag(flag flagValuer) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !flag.Value() {
+			if !flag.Get(r.Context()) {
 				rt.statusPage(w, r, http.StatusPreconditionFailed, "Page has been disabled on this instance.")
 				return
 			}

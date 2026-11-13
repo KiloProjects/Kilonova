@@ -29,7 +29,7 @@ func LoginPage(ctx context.Context, oidcID, back, errorMessage string) Node {
 				Input(Class("form-input w-full"), Type("password"), ID("login_upwd"), Name("password")),
 			),
 			ui.SubmitButton(Class("block mb-3"), ui.T(ctx, "auth.login")),
-			If(flags.SignupEnabled.Value(), P(Class("text-gray-600 dark:text-gray-300"), ui.TRaw(ctx, "signupReminder"))),
+			If(flags.SignupEnabled.Get(ctx), P(Class("text-gray-600 dark:text-gray-300"), ui.TRaw(ctx, "signupReminder"))),
 			P(Class("text-gray-600 dark:text-gray-300"), ui.TRaw(ctx, "forgot_pwd_announcement")),
 		),
 	)

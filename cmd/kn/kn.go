@@ -63,6 +63,8 @@ func Kilonova(ctx context.Context) error {
 		slog.ErrorContext(ctx, "Could not initialize BaseAPI", slog.Any("err", err))
 		return err
 	}
+	// Background jobs and the grader inherit ctx, so they read this instance's flags.
+	ctx = config.WithFlagset(ctx, base.Flagset())
 	base.Start(ctx)
 	defer base.Close()
 
@@ -225,6 +227,12 @@ func webV1(templWeb bool, base *sudoapi.BaseAPI, llmProvider llm.Provider) *http
 	r.Use(middleware.RequestID)
 	r.Use(otelchi.Middleware("kilonova-web", otelchi.WithChiRoutes(r)))
 	r.Use(op.NewIssuerInterceptor(base.OIDCProvider().IssuerFromRequest).Handler)
+	// Every request reads this instance's flags; per-tenant resolution would pick the set here.
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			next.ServeHTTP(w, r.WithContext(config.WithFlagset(r.Context(), base.Flagset())))
+		})
+	})
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			addr, _ := base.GetRequestInfo(r)

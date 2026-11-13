@@ -49,11 +49,11 @@ func (rt *Web) donationPage() http.HandlerFunc {
 			Content: static.Donate(r.Context(), static.DonateParams{
 				Donations:         donations,
 				Status:            r.FormValue("status"),
-				StripeButtonID:    flags.StripeButtonID.Value(),
-				StripePK:          flags.StripePK.Value(),
-				StripePaymentLink: flags.StripePaymentLink.Value(),
-				PaypalID:          flags.PaypalID.Value(),
-				BMACName:          flags.BuyMeACoffeeName.Value(),
+				StripeButtonID:    flags.StripeButtonID.Get(r.Context()),
+				StripePK:          flags.StripePK.Get(r.Context()),
+				StripePaymentLink: flags.StripePaymentLink.Get(r.Context()),
+				PaypalID:          flags.PaypalID.Get(r.Context()),
+				BMACName:          flags.BuyMeACoffeeName.Get(r.Context()),
 			}),
 		})
 	}

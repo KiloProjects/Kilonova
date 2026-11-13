@@ -162,7 +162,7 @@ func (s *API) processArchive(r *http.Request, firstImport bool) error {
 
 		ForceStringIDs: r.FormValue("forceStringIDs") == "true",
 
-		MaxMemoryKB: flags.TestMaxMemKB.Value(),
+		MaxMemoryKB: flags.TestMaxMemKB.Get(r.Context()),
 	}
 
 	return test.ProcessTestArchive(context.WithoutCancel(r.Context()), util.Problem(r), ar, s.base, params)

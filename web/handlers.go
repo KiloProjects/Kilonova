@@ -243,7 +243,7 @@ func (rt *Web) createPaste(w http.ResponseWriter, r *http.Request) {
 
 func (rt *Web) submissions() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !rt.canViewAllSubs(user.UserBrief(r)) {
+		if !rt.canViewAllSubs(r.Context(), user.UserBrief(r)) {
 			rt.statusPage(w, r, 401, "Cannot view all submissions")
 			return
 		}
@@ -271,8 +271,8 @@ func (rt *Web) submissions() http.HandlerFunc {
 
 // canViewAllSubs is just for the text in the navbar and the submissions page
 // TODO: Restrict on the backend, as well.
-func (rt *Web) canViewAllSubs(user *kilonova.UserBrief) bool {
-	if flags.AllSubsPage.Value() {
+func (rt *Web) canViewAllSubs(ctx context.Context, user *kilonova.UserBrief) bool {
+	if flags.AllSubsPage.Get(ctx) {
 		return true
 	}
 	return user.IsProposer()
@@ -670,7 +670,7 @@ func (rt *Web) profilePicture(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Web) redirectDiscord(w http.ResponseWriter, r *http.Request) {
-	id := flags.DiscordInviteID.Value()
+	id := flags.DiscordInviteID.Get(r.Context())
 	if id == "" {
 		rt.statusPage(w, r, 500, "Discord was not configured on this instance")
 		return
@@ -682,7 +682,7 @@ func (rt *Web) redirectDiscord(w http.ResponseWriter, r *http.Request) {
 func (rt *Web) checkLockout() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if flags.ForceLogin.Value() && !user.UserBrief(r).IsAuthed() {
+			if flags.ForceLogin.Get(r.Context()) && !user.UserBrief(r).IsAuthed() {
 				http.Redirect(w, r, "/login?back="+url.PathEscape(r.URL.Path), http.StatusTemporaryRedirect)
 				return
 			}
@@ -757,7 +757,7 @@ func (rt *Web) renderLayout(w io.Writer, r *http.Request, params *LayoutParams, 
 		HideFooter:       !chrome,
 	}
 	if chrome {
-		props.Navbar = navbar.View(ctx, rt.canViewAllSubs(user.UserBrief(r)), reqPath(r))
+		props.Navbar = navbar.View(ctx, rt.canViewAllSubs(r.Context(), user.UserBrief(r)), reqPath(r))
 	}
 	if err := layout.View(ctx, props).Render(w); err != nil {
 		slog.WarnContext(ctx, "Error rendering layout", slog.Any("err", err), slog.String("path", r.URL.Path), slog.Any("user", user.UserBrief(r)))

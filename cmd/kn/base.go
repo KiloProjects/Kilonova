@@ -56,8 +56,11 @@ func initBase(ctx context.Context) (*sudoapi.BaseAPI, error) {
 		}
 	}
 
-	if err := loadFlags(ctx, db.NewPSQL(pgxDB)); err != nil {
-		return nil, err
+	// A failure to read the flag store is fatal on purpose: continuing on compiled-in
+	// defaults would silently undo every setting an admin ever changed.
+	flagset := config.GlobalFlagset()
+	if err := flagset.InitializeFlags(ctx, db.NewPSQL(pgxDB)); err != nil {
+		return nil, fmt.Errorf("couldn't load flags: %w", err)
 	}
 
 	dc, err := discord.New(discord.Config{
@@ -70,19 +73,5 @@ func initBase(ctx context.Context) (*sudoapi.BaseAPI, error) {
 		return nil, fmt.Errorf("discord: %w", err)
 	}
 
-	return sudoapi.GetBaseAPI(ctx, pgxDB, mgr, mailer, dc)
-}
-
-// loadFlags brings the runtime flag registry up now that a database exists and
-// registers the persistence callback, so an admin edit writes exactly one row.
-//
-// A failure to read the store is fatal on purpose: continuing on compiled-in
-// defaults would silently undo every setting an admin ever changed.
-func loadFlags(ctx context.Context, store config.FlagStore) error {
-	err := config.InitializeFlags(ctx, store)
-	if err != nil {
-		return fmt.Errorf("couldn't load flags: %w", err)
-	}
-
-	return nil
+	return sudoapi.GetBaseAPI(ctx, pgxDB, mgr, mailer, dc, flagset)
 }

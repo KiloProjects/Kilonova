@@ -21,7 +21,7 @@ func (rt *Web) contestTabs(r *http.Request, page string) contests.TabsParams {
 	return contests.TabsParams{
 		Page:      page,
 		Authed:    u != nil,
-		CanCreate: flags.NormalUserVirtualContests.Value() || u.IsProposer(),
+		CanCreate: flags.NormalUserVirtualContests.Get(r.Context()) || u.IsProposer(),
 	}
 }
 
@@ -127,7 +127,7 @@ func (rt *Web) contests() http.HandlerFunc {
 
 func (rt *Web) createContest() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !(user.UserBrief(r).IsProposer() || flags.NormalUserVirtualContests.Value()) {
+		if !(user.UserBrief(r).IsProposer() || flags.NormalUserVirtualContests.Get(r.Context())) {
 			rt.statusPage(w, r, 403, "Nu poți crea concursuri!")
 			return
 		}

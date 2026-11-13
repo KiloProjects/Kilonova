@@ -261,7 +261,7 @@ func (rt *Web) pbListProgressIndex() http.HandlerFunc {
 		rt.runLayout(w, r, &LayoutParams{
 			Title: kilonova.GetText(util.Language(r), "progress_overview"),
 			Content: lists.ProgressIndex(r.Context(), lists.ProgressIndexParams{
-				RootList: flags.RootProblemList.Value(), Lists: pblists,
+				RootList: flags.RootProblemList.Get(r.Context()), Lists: pblists,
 				Authed: user.UserBrief(r) != nil, NumSolved: rt.numSolvedPblists(r, ids),
 			}),
 		})

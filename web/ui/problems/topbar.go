@@ -123,7 +123,7 @@ func problemTabs(ctx context.Context, t *TopbarParams, editProblemPage bool) []N
 		ui.Tab{Key: "pb_submissions", Href: pre + "/submissions", Label: ui.T(ctx, "submissions"),
 			Hide: t.Contest != nil && !t.Contest.Ended() && !t.CanSubmitInContest},
 		ui.Tab{Key: "pb_statistics", Href: pre + "/statistics", Label: ui.T(ctx, "problemStats"),
-			Hide:  !t.FullyVisible || t.Contest != nil || !flags.ProblemStatistics.Value(),
+			Hide:  !t.FullyVisible || t.Contest != nil || !flags.ProblemStatistics.Get(ctx),
 			Attrs: Group{Attr("hx-swap", "none"), Attr("hx-get", pb+"/statistics?hx_modal=true")}},
 		// Non-editors only reach the archive via a direct link; show the tab while they're on it.
 		ui.Tab{Key: "pb_archive", Href: pre + "/archive", Label: ui.T(ctx, "archive"), Hide: t.IsProblemEditor || t.Page != "pb_archive"},

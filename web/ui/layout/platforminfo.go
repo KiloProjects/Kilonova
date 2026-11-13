@@ -48,7 +48,7 @@ func platformInfo(ctx context.Context, enabledLanguages map[string]string) platf
 	}
 
 	var sentryDSN *string
-	if val := flags.SentryDSN.Value(); flags.Sentry.Value() && len(val) > 0 {
+	if val := flags.SentryDSN.Get(ctx); flags.Sentry.Get(ctx) && len(val) > 0 {
 		sentryDSN = &val
 	}
 

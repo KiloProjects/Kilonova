@@ -8,6 +8,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
+	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/domain/user/userpg"
 	"github.com/KiloProjects/kilonova/eval"
@@ -59,6 +60,14 @@ type BaseAPI struct {
 	avatarBucket          datastore.Bucket
 
 	oidcProvider *op.Provider
+
+	flagset *config.Flagset
+}
+
+// Flagset is this instance's runtime flag values. Request and job contexts carry it
+// through config.WithFlagset.
+func (s *BaseAPI) Flagset() *config.Flagset {
+	return s.flagset
 }
 
 func (s *BaseAPI) Start(ctx context.Context) {
@@ -89,13 +98,14 @@ func (s *BaseAPI) Close() error {
 	return nil
 }
 
-func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, mailer kilonova.Mailer, dc discord.Provider) (*BaseAPI, error) {
+func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, mailer kilonova.Mailer, dc discord.Provider, flagset *config.Flagset) (*BaseAPI, error) {
 	base := &BaseAPI{
 		pgx:     pgx,
 		db:      db.NewPSQL(pgx),
 		mailer:  mailer,
 		rd:      mdrenderer.NewRenderer(),
 		discord: dc,
+		flagset: flagset,
 
 		mgr: mgr,
 

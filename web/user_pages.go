@@ -52,7 +52,7 @@ func (rt *Web) contentUserByName(w http.ResponseWriter, r *http.Request, suffix 
 }
 
 func (rt *Web) profilePage(w http.ResponseWriter, r *http.Request, userFull *kilonova.UserFull) {
-	if !(flags.ViewOtherProfiles.Value() || user.UserBrief(r).IsAdmin() || (user.UserBrief(r) != nil && user.UserBrief(r).ID == userFull.ID)) {
+	if !(flags.ViewOtherProfiles.Get(r.Context()) || user.UserBrief(r).IsAdmin() || (user.UserBrief(r) != nil && user.UserBrief(r).ID == userFull.ID)) {
 		rt.statusPage(w, r, 400, "You are not allowed to view other profiles!")
 		return
 	}

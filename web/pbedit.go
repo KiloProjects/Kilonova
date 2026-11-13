@@ -59,7 +59,7 @@ func (rt *Web) editIndex() func(w http.ResponseWriter, r *http.Request) {
 				Diagnostics: diagLines,
 				Settings:    settings,
 				Tags:        tags,
-				MaxMemMB:    float64(flags.TestMaxMemKB.Value()) / 1024.0,
+				MaxMemMB:    float64(flags.TestMaxMemKB.Get(r.Context())) / 1024.0,
 				LLMEnabled:  rt.llmEnabled,
 			}),
 		})

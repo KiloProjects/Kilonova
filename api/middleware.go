@@ -19,7 +19,7 @@ import (
 
 func (s *API) filterUserAgent(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if flags.FilterUserAgent.Value() && (user.UserBrief(r) == nil || !user.UserBrief(r).Admin) {
+		if flags.FilterUserAgent.Get(r.Context()) && (user.UserBrief(r) == nil || !user.UserBrief(r).Admin) {
 			// If filtering is enabled and user is not admin, disallow common software for bots
 			if strings.Contains(r.Header.Get("User-Agent"), "python") {
 				errorData(w, "Request blocked", http.StatusForbidden)

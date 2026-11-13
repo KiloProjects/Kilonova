@@ -16,17 +16,17 @@ import (
 )
 
 // captchaID returns a fresh CAPTCHA ID, or "" when CAPTCHAs are disabled.
-func (rt *Web) captchaID() string {
-	if !flags.CaptchaEnabled.Value() {
+func (rt *Web) captchaID(ctx context.Context) string {
+	if !flags.CaptchaEnabled.Get(ctx) {
 		return ""
 	}
 	return rt.base.NewCaptchaID()
 }
 
 func (rt *Web) signup(w http.ResponseWriter, r *http.Request) {
-	params := authviews.SignupParams{Enabled: flags.SignupEnabled.Value()}
+	params := authviews.SignupParams{Enabled: flags.SignupEnabled.Get(r.Context())}
 	if params.Enabled {
-		params.CaptchaID = rt.captchaID()
+		params.CaptchaID = rt.captchaID(r.Context())
 		if params.CaptchaID != "" {
 			ip, _ := rt.base.GetRequestInfo(r)
 			params.ShowCaptcha = rt.base.MustSolveCaptcha(r.Context(), ip)
@@ -42,7 +42,7 @@ func (rt *Web) signup(w http.ResponseWriter, r *http.Request) {
 func (rt *Web) forgotPassword(w http.ResponseWriter, r *http.Request) {
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "auth.forgot_pwd"),
-		Content: authviews.ForgotPasswordPage(r.Context(), rt.captchaID()),
+		Content: authviews.ForgotPasswordPage(r.Context(), rt.captchaID(r.Context())),
 	})
 }
 

@@ -28,7 +28,7 @@ func (rt *Web) index() http.HandlerFunc {
 		}
 
 		var pblists []*kilonova.ProblemList
-		if val := flags.RootProblemList.Value(); val > 0 {
+		if val := flags.RootProblemList.Get(r.Context()); val > 0 {
 			pblists, err = rt.base.PblistChildrenLists(ctx, val)
 			if err != nil {
 				slog.WarnContext(ctx, "Couldn't get index page problem lists", slog.Any("err", err))
@@ -37,7 +37,7 @@ func (rt *Web) index() http.HandlerFunc {
 		}
 
 		var pinnedLists []*kilonova.ProblemList
-		if val := flags.PinnedProblemList.Value(); val > 0 {
+		if val := flags.PinnedProblemList.Get(r.Context()); val > 0 {
 			pinnedLists, err = rt.base.PblistChildrenLists(ctx, val)
 			if err != nil {
 				slog.WarnContext(ctx, "Couldn't get pinned problem lists", slog.Any("err", err))
@@ -63,7 +63,7 @@ func (rt *Web) index() http.HandlerFunc {
 
 		var hotProblems []*kilonova.ScoredProblem
 		var moreHotProblems bool
-		if flags.ShowTrending.Value() {
+		if flags.ShowTrending.Get(r.Context()) {
 			hotProblems, err = rt.base.ScoredProblems(ctx, kilonova.ProblemFilter{
 				LookingUser: u, Look: true,
 				Ordering: "hot", Descending: true,
@@ -80,7 +80,7 @@ func (rt *Web) index() http.HandlerFunc {
 
 		var latestProblems []*sudoapi.FullProblem
 		var problemCount int
-		if flags.FrontPageLatestProblems.Value() {
+		if flags.FrontPageLatestProblems.Get(r.Context()) {
 			latestProblems, problemCount, err = rt.base.SearchProblems(ctx, kilonova.ProblemFilter{
 				LookingUser: u, Look: true,
 
@@ -94,7 +94,7 @@ func (rt *Web) index() http.HandlerFunc {
 		}
 
 		var others []*kilonova.ScoredProblem
-		if flags.FrontPageProblems.Value() {
+		if flags.FrontPageProblems.Get(r.Context()) {
 			others = rt.unassociatedProblems(ctx, u)
 		}
 
@@ -116,39 +116,39 @@ func (rt *Web) index() http.HandlerFunc {
 			Version: kilonova.Version,
 			Authed:  u != nil,
 
-			ContestSidebar: flags.SidebarContests.Value(),
-			MainPageLogin:  flags.MainPageLogin.Value(),
-			SignupEnabled:  flags.SignupEnabled.Value(),
+			ContestSidebar: flags.SidebarContests.Get(r.Context()),
+			MainPageLogin:  flags.MainPageLogin.Get(r.Context()),
+			SignupEnabled:  flags.SignupEnabled.Get(r.Context()),
 
-			ShowProblems:  flags.FrontPageProblems.Value(),
+			ShowProblems:  flags.FrontPageProblems.Get(r.Context()),
 			OtherProblems: others,
-			ShowPbLinks:   flags.FrontPagePbDetails.Value(),
-			ShowRandomPb:  flags.FrontPageRandomProblem.Value(),
+			ShowPbLinks:   flags.FrontPagePbDetails.Get(r.Context()),
+			ShowRandomPb:  flags.FrontPageRandomProblem.Get(r.Context()),
 
-			ShowLatest:         flags.FrontPageLatestProblems.Value(),
+			ShowLatest:         flags.FrontPageLatestProblems.Get(r.Context()),
 			LatestProblems:     latestProblems,
 			MoreLatestProblems: problemCount > 20,
 
 			Announcements: []g.Node{modals.GPCAnnouncement()},
-			QuickSearch:   flags.QuickSearchBox.Value(),
+			QuickSearch:   flags.QuickSearchBox.Get(r.Context()),
 
 			PinnedLists:     pinnedLists,
 			PinnedNumSolved: rt.numSolvedPblists(r, pinnedIDs),
 
-			ShowTrending:    flags.ShowTrending.Value(),
+			ShowTrending:    flags.ShowTrending.Get(r.Context()),
 			HotProblems:     hotProblems,
 			MoreHotProblems: moreHotProblems,
 
-			DonationNag: flags.DonationsEnabled.Value() && flags.DonationsNag.Value(),
+			DonationNag: flags.DonationsEnabled.Get(r.Context()) && flags.DonationsNag.Get(r.Context()),
 			MD:          mdKeys,
 		}
-		if ann := flags.FrontPageAnnouncement.Value(); ann != "" {
+		if ann := flags.FrontPageAnnouncement.Get(r.Context()); ann != "" {
 			p.ShowAnnouncement = true
 			if ann != "default" {
 				p.AnnouncementHTML = md(ann)
 			}
 		}
-		if url := flags.FeedbackURL.Value(); url != "" {
+		if url := flags.FeedbackURL.Get(r.Context()); url != "" {
 			p.FeedbackHTML = md(kilonova.GetText(lang, "feedbackCallToArms", url))
 		}
 		for _, c := range runningContests {

@@ -232,7 +232,9 @@ func (fs *Flagset) InitializeFlags(ctx context.Context, store FlagStore) error {
 	return nil
 }
 
-// InitializeFlags initializes the global flagset. Transitional, like Value().
-func InitializeFlags(ctx context.Context, store FlagStore) error {
-	return globalFlags.InitializeFlags(ctx, store)
+// GlobalFlagset returns the process-wide flagset. Transitional: the platform must
+// hand this exact set to BaseAPI while any caller still reads through Value(),
+// or admin edits and Value() reads would see different values.
+func GlobalFlagset() *Flagset {
+	return globalFlags
 }

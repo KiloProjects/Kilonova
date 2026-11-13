@@ -81,7 +81,7 @@ func (rt *Web) problem() http.HandlerFunc {
 				slog.WarnContext(ctx, "Couldn't get tags", slog.Any("err", err))
 				tags = []*kilonova.Tag{}
 			}
-			if flags.ExternalResourcesEnabled.Value() {
+			if flags.ExternalResourcesEnabled.Get(r.Context()) {
 				externalResources, _ = rt.base.ExternalResources(ctx, kilonova.ExternalResourceFilter{
 					ProblemID: &problem.ID,
 					Accepted:  new(true),
@@ -356,7 +356,7 @@ func (rt *Web) problemArchive() http.HandlerFunc {
 			settings = nil
 		}
 		var captchaID string
-		if flags.CaptchaEnabled.Value() && !user.UserBrief(r).IsAdmin() {
+		if flags.CaptchaEnabled.Get(r.Context()) && !user.UserBrief(r).IsAdmin() {
 			captchaID = rt.base.NewCaptchaID()
 		}
 

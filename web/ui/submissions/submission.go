@@ -80,7 +80,7 @@ func Submission(ctx context.Context, params SubmissionPageParams) Node {
 					Text(" "),
 					postForm(fmt.Sprintf("/submissions/%d/reevaluate", sub.ID), ui.T(ctx, "reevaluate")),
 				}),
-				If(flags.PastesEnabled.Value() && sub.IsEditor(u), postForm(fmt.Sprintf("/submissions/%d/paste", sub.ID), ui.T(ctx, "create_paste"))),
+				If(flags.PastesEnabled.Get(ctx) && sub.IsEditor(u), postForm(fmt.Sprintf("/submissions/%d/paste", sub.ID), ui.T(ctx, "create_paste"))),
 			}
 		})),
 	)
