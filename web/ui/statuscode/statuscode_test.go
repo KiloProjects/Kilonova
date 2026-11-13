@@ -2,31 +2,22 @@ package statuscode
 
 import (
 	"context"
-	"strings"
 	"testing"
 
-	. "maragu.dev/gomponents"
+	"github.com/KiloProjects/kilonova/web/ui/uitest"
+	"github.com/stretchr/testify/require"
 )
 
 func TestView(t *testing.T) {
 	t.Run("shows the escaped message", func(t *testing.T) {
-		got := render(t, View(context.Background(), 404, "<nope>"))
-		if !strings.Contains(got, "<h2>404: Not Found</h2>") || !strings.Contains(got, "<h1>&lt;nope&gt;</h1>") || strings.Contains(got, "<p>") {
-			t.Fatalf("got %s", got)
-		}
+		got := uitest.Render(t, View(context.Background(), 404, "<nope>"))
+		require.Contains(t, got, "<h2>404: Not Found</h2>")
+		require.Contains(t, got, "<h1>&lt;nope&gt;</h1>")
+		require.NotContains(t, got, "<p>")
 	})
 	t.Run("falls back to the generic hint", func(t *testing.T) {
-		if got := render(t, View(context.Background(), 500, "")); !strings.Contains(got, "<p>") || strings.Contains(got, "<h1>") {
-			t.Fatalf("got %s", got)
-		}
+		got := uitest.Render(t, View(context.Background(), 500, ""))
+		require.Contains(t, got, "<p>")
+		require.NotContains(t, got, "<h1>")
 	})
-}
-
-func render(t *testing.T, n Node) string {
-	t.Helper()
-	var b strings.Builder
-	if err := n.Render(&b); err != nil {
-		t.Fatal(err)
-	}
-	return b.String()
 }

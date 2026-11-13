@@ -1,8 +1,9 @@
 package kilonova
 
 import (
-	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestRandomString(t *testing.T) {
@@ -10,13 +11,9 @@ func TestRandomString(t *testing.T) {
 
 	for _, size := range sizes {
 		str := RandomString(size)
-		if len(str) != size {
-			t.Fatalf("Wanted string of size %d, got %d", size, len(str))
-		}
+		require.Len(t, str, size)
 		for _, chr := range str {
-			if !strings.ContainsRune(randomCharacters, chr) {
-				t.Fatal("String contains characters other than the specified ones")
-			}
+			require.Contains(t, randomCharacters, string(chr), "String contains characters other than the specified ones")
 		}
 	}
 }

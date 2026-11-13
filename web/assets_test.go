@@ -7,6 +7,9 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Catches a missing/stale Vite build as well as a manifest key that no longer
@@ -14,13 +17,11 @@ import (
 func TestAssetsResolveToEmbeddedFiles(t *testing.T) {
 	for _, src := range []string{"app.ts", "vendored.ts", "chroma.css", "vendor.css", "tailwind.css"} {
 		url := assets.Asset(t.Context(), src)
-		if !strings.HasPrefix(url, "/static/misc/") {
-			t.Errorf("%s: not in the manifest, got %q", src, url)
+		if !assert.True(t, strings.HasPrefix(url, "/static/misc/"), "%s: not in the manifest, got %q", src, url) {
 			continue
 		}
-		if _, err := fs.Stat(embedded, strings.TrimPrefix(url, "/")); err != nil {
-			t.Errorf("%s: %v", src, err)
-		}
+		_, err := fs.Stat(embedded, strings.TrimPrefix(url, "/"))
+		assert.NoError(t, err, src)
 	}
 }
 
@@ -31,12 +32,8 @@ func TestStaticCacheHeaders(t *testing.T) {
 	} {
 		w := httptest.NewRecorder()
 		staticFileServer(w, httptest.NewRequest(http.MethodGet, url, nil))
-		if w.Code != http.StatusOK {
-			t.Errorf("%s: status %d", url, w.Code)
-		}
-		if got := w.Header().Get("Cache-Control"); got != want {
-			t.Errorf("%s: Cache-Control = %q, want %q", url, got, want)
-		}
+		assert.Equal(t, http.StatusOK, w.Code, url)
+		assert.Equal(t, want, w.Header().Get("Cache-Control"), url)
 	}
 }
 
@@ -44,9 +41,7 @@ func TestStaticNoDirectoryListing(t *testing.T) {
 	for _, url := range []string{"/static", "/static/misc", "/static/../go.mod"} {
 		w := httptest.NewRecorder()
 		staticFileServer(w, httptest.NewRequest(http.MethodGet, url, nil))
-		if w.Code == http.StatusOK {
-			t.Errorf("%s: served %q", url, w.Body.String())
-		}
+		assert.NotEqual(t, http.StatusOK, w.Code, "%s: served %q", url, w.Body.String())
 	}
 }
 
@@ -57,9 +52,7 @@ func TestCSSAssetURLsResolve(t *testing.T) {
 	url := regexp.MustCompile(`url\(\s*['"]?([^'")]+)['"]?\s*\)`)
 	for _, src := range []string{"chroma.css", "vendor.css", "tailwind.css"} {
 		css, err := fs.ReadFile(embedded, strings.TrimPrefix(assets.Asset(t.Context(), src), "/"))
-		if err != nil {
-			t.Fatalf("%s: %v", src, err)
-		}
+		require.NoError(t, err, src)
 		found := 0
 		for _, m := range url.FindAllStringSubmatch(string(css), -1) {
 			ref := m[1]
@@ -67,16 +60,14 @@ func TestCSSAssetURLsResolve(t *testing.T) {
 				continue
 			}
 			found++
-			if !strings.HasPrefix(ref, "/static/misc/") {
-				t.Errorf("%s: %q is not served from /static/misc", src, ref)
+			if !assert.True(t, strings.HasPrefix(ref, "/static/misc/"), "%s: %q is not served from /static/misc", src, ref) {
 				continue
 			}
-			if _, err := fs.Stat(embedded, strings.TrimPrefix(ref, "/")); err != nil {
-				t.Errorf("%s: %q: %v", src, ref, err)
-			}
+			_, err := fs.Stat(embedded, strings.TrimPrefix(ref, "/"))
+			assert.NoError(t, err, "%s: %q", src, ref)
 		}
-		if src == "vendor.css" && found == 0 {
-			t.Error("vendor.css: no webfont references found, the check is not testing anything")
+		if src == "vendor.css" {
+			assert.NotZero(t, found, "vendor.css: no webfont references found, the check is not testing anything")
 		}
 	}
 }

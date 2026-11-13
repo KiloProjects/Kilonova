@@ -2,48 +2,34 @@ package footer
 
 import (
 	"context"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
-	. "maragu.dev/gomponents"
+	"github.com/KiloProjects/kilonova/web/ui/uitest"
+	"github.com/stretchr/testify/require"
 )
 
 func TestView(t *testing.T) {
 	ctx := context.WithValue(context.Background(), util.LangKey, "ro")
 
 	t.Run("selects the session language", func(t *testing.T) {
-		got := render(t, View(ctx, 0, time.Now()))
-		if !strings.Contains(got, `<option value="ro" selected>`) || strings.Contains(got, `<option value="en" selected>`) {
-			t.Fatalf("wrong language selected: %s", got)
-		}
+		got := uitest.Render(t, View(ctx, 0, time.Now()))
+		require.Contains(t, got, `<option value="ro" selected>`)
+		require.NotContains(t, got, `<option value="en" selected>`)
 	})
 
 	t.Run("donate link follows its flag", func(t *testing.T) {
 		ctx := config.WithFlagset(ctx, config.NewFlagset())
-		if err := flags.DonationsEnabled.Update(ctx, false); err != nil {
-			t.Fatal(err)
-		}
-		if got := render(t, View(ctx, 0, time.Now())); strings.Contains(got, `href="/donate"`) {
-			t.Fatalf("donate link shown while disabled")
-		}
+		require.NoError(t, flags.DonationsEnabled.Update(ctx, false))
+		require.NotContains(t, uitest.Render(t, View(ctx, 0, time.Now())), `href="/donate"`, "donate link shown while disabled")
 	})
 
 	t.Run("query count is admin-only", func(t *testing.T) {
-		if got := render(t, View(ctx, 0, time.Now())); !strings.Contains(got, "<details") || strings.Contains(got, "~") {
-			t.Fatalf("timings missing or query count shown to visitor: %s", got)
-		}
+		got := uitest.Render(t, View(ctx, 0, time.Now()))
+		require.Contains(t, got, "<details", "timings missing")
+		require.NotContains(t, got, "~", "query count shown to visitor")
 	})
-}
-
-func render(t *testing.T, n Node) string {
-	t.Helper()
-	var b strings.Builder
-	if err := n.Render(&b); err != nil {
-		t.Fatal(err)
-	}
-	return b.String()
 }

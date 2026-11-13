@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseCgRoot(t *testing.T) {
@@ -20,9 +22,7 @@ func TestParseCgRoot(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := parseCgRoot(tt.contents); got != tt.want {
-				t.Fatalf("got %q, want %q", got, tt.want)
-			}
+			require.Equal(t, tt.want, parseCgRoot(tt.contents))
 		})
 	}
 }
@@ -30,27 +30,17 @@ func TestParseCgRoot(t *testing.T) {
 // A missing config must not be an error: isolate has a compiled-in default.
 func TestReadCgRootFallsBackToDefault(t *testing.T) {
 	got, err := readCgRoot([]string{filepath.Join(t.TempDir(), "absent")})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got != defaultCgRoot {
-		t.Fatalf("got %q, want %q", got, defaultCgRoot)
-	}
+	require.NoError(t, err)
+	require.Equal(t, defaultCgRoot, got)
 }
 
 func TestReadCgRootPicksFirstExisting(t *testing.T) {
 	dir := t.TempDir()
 	second := filepath.Join(dir, "isolate")
-	if err := os.WriteFile(second, []byte("cg_root = /sys/fs/cgroup/custom\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(second, []byte("cg_root = /sys/fs/cgroup/custom\n"), 0o644))
 	got, err := readCgRoot([]string{filepath.Join(dir, "absent"), second})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got != "/sys/fs/cgroup/custom" {
-		t.Fatalf("got %q", got)
-	}
+	require.NoError(t, err)
+	require.Equal(t, "/sys/fs/cgroup/custom", got)
 }
 
 // Both cgroup namespace modes have to resolve to a real path: host mode gives an
@@ -80,46 +70,31 @@ func TestOwnCgroup(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := ownCgroup(tt.contents, "/sys/fs/cgroup")
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got != tt.want {
-				t.Fatalf("got %q, want %q", got, tt.want)
-			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
 
 func TestOwnCgroupMissingUnifiedLine(t *testing.T) {
-	if _, err := ownCgroup("12:pids:/user.slice\n", "/sys/fs/cgroup"); err == nil {
-		t.Fatal("expected an error when there is no 0:: line")
-	}
+	_, err := ownCgroup("12:pids:/user.slice\n", "/sys/fs/cgroup")
+	require.Error(t, err, "expected an error when there is no 0:: line")
 }
 
 func TestCheckCgroupV2(t *testing.T) {
 	t.Run("rejects hybrid", func(t *testing.T) {
 		dir := t.TempDir()
-		if err := os.Mkdir(filepath.Join(dir, "unified"), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := checkCgroupV2(dir); err == nil {
-			t.Fatal("hybrid cgroup layout must be rejected")
-		}
+		require.NoError(t, os.Mkdir(filepath.Join(dir, "unified"), 0o755))
+		require.Error(t, checkCgroupV2(dir), "hybrid cgroup layout must be rejected")
 	})
 
 	t.Run("rejects v1", func(t *testing.T) {
-		if err := checkCgroupV2(t.TempDir()); err == nil {
-			t.Fatal("missing cgroup.subtree_control must be rejected")
-		}
+		require.Error(t, checkCgroupV2(t.TempDir()), "missing cgroup.subtree_control must be rejected")
 	})
 
 	t.Run("accepts v2", func(t *testing.T) {
 		dir := t.TempDir()
-		if err := os.WriteFile(filepath.Join(dir, "cgroup.subtree_control"), nil, 0o644); err != nil {
-			t.Fatal(err)
-		}
-		if err := checkCgroupV2(dir); err != nil {
-			t.Fatalf("valid v2 layout rejected: %v", err)
-		}
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "cgroup.subtree_control"), nil, 0o644))
+		require.NoError(t, checkCgroupV2(dir), "valid v2 layout rejected")
 	})
 }

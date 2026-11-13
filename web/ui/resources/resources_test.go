@@ -8,26 +8,22 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewForm(t *testing.T) {
 	base := context.WithValue(context.Background(), util.LangKey, "en")
 	render := func(ctx context.Context) string {
 		var b strings.Builder
-		if err := NewForm(ctx, 12).Render(&b); err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, NewForm(ctx, 12).Render(&b))
 		return b.String()
 	}
 	t.Run("posts to the problem and hides pre-approval from non-admins", func(t *testing.T) {
 		got := render(base)
-		if !strings.Contains(got, `hx-post="/problems/12/externalResources/create"`) || strings.Contains(got, "preApproved") {
-			t.Fatal(got)
-		}
+		require.Contains(t, got, `hx-post="/problems/12/externalResources/create"`)
+		require.NotContains(t, got, "preApproved")
 	})
 	t.Run("admins can pre-approve", func(t *testing.T) {
-		if got := render(context.WithValue(base, user.AuthedUserKey, &kilonova.UserBrief{ID: 1, Admin: true})); !strings.Contains(got, `name="preApproved" type="checkbox" checked`) {
-			t.Fatal(got)
-		}
+		require.Contains(t, render(context.WithValue(base, user.AuthedUserKey, &kilonova.UserBrief{ID: 1, Admin: true})), `name="preApproved" type="checkbox" checked`)
 	})
 }

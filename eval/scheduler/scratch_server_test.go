@@ -10,6 +10,7 @@ import (
 	"github.com/KiloProjects/kilonova/eval/scheduler"
 	"github.com/KiloProjects/kilonova/eval/scratch"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/require"
 )
 
 const scratchTok = "tok-scratch"
@@ -18,9 +19,7 @@ func startScratchServer(t *testing.T) (base string, fs afero.Fs) {
 	t.Helper()
 	fs = afero.NewMemMapFs()
 	reg := scheduler.NewClientRegistry()
-	if err := reg.Add(scratchTok, "platform", ""); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, reg.Add(scratchTok, "platform", ""))
 	mux := http.NewServeMux()
 	mux.Handle(scheduler.ScratchHandler(fs))
 	srv := httptest.NewServer(reg.Auth(mux))
@@ -31,36 +30,24 @@ func startScratchServer(t *testing.T) (base string, fs afero.Fs) {
 func TestHTTPScratchRoundTrip(t *testing.T) {
 	base, fs := startScratchServer(t)
 	sc, err := scratch.NewHTTP(http.DefaultClient, base, scratchTok)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	const want = "hello grader"
 	id, err := sc.SaveFile(strings.NewReader(want))
-	if err != nil {
-		t.Fatalf("SaveFile: %v", err)
-	}
+	require.NoError(t, err, "SaveFile")
 	// The bytes must be on the server's disk the moment SaveFile returns.
-	if ok, _ := afero.Exists(fs, id); !ok {
-		t.Fatal("file not durable on server after SaveFile returned")
-	}
+	ok, _ := afero.Exists(fs, id)
+	require.True(t, ok, "file not durable on server after SaveFile returned")
 
 	rc, err := sc.ReadFile(id)
-	if err != nil {
-		t.Fatalf("ReadFile: %v", err)
-	}
+	require.NoError(t, err, "ReadFile")
 	got, _ := io.ReadAll(rc)
 	rc.Close()
-	if string(got) != want {
-		t.Fatalf("round-trip mismatch: got %q want %q", got, want)
-	}
+	require.Equal(t, want, string(got))
 
-	if err := sc.DeleteFile(id); err != nil {
-		t.Fatalf("DeleteFile: %v", err)
-	}
-	if ok, _ := afero.Exists(fs, id); ok {
-		t.Fatal("file still present after DeleteFile")
-	}
+	require.NoError(t, sc.DeleteFile(id), "DeleteFile")
+	ok, _ = afero.Exists(fs, id)
+	require.False(t, ok, "file still present after DeleteFile")
 }
 
 func TestHTTPScratchRejectsPathTraversal(t *testing.T) {
@@ -72,14 +59,10 @@ func TestHTTPScratchRejectsPathTraversal(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, base+"/"+id, nil)
 		req.Header.Set("Authorization", "Bearer "+scratchTok)
 		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			t.Fatalf("GET %q: %v", id, err)
-		}
+		require.NoError(t, err, "GET %q", id)
 		body, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			t.Fatalf("non-UUID id %q served content: %q", id, body)
-		}
+		require.NotEqual(t, http.StatusOK, resp.StatusCode, "non-UUID id %q served content: %q", id, body)
 	}
 }
 
@@ -88,11 +71,7 @@ func TestHTTPScratchRejectsBadToken(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, base+"/00000000-0000-0000-0000-000000000000", nil)
 	req.Header.Set("Authorization", "Bearer wrong")
 	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	resp.Body.Close()
-	if resp.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("bad token got %d, want 401", resp.StatusCode)
-	}
+	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 }

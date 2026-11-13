@@ -4,37 +4,26 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/KiloProjects/kilonova/web/ui/uitest"
+	"github.com/stretchr/testify/require"
 	. "maragu.dev/gomponents"
 	h "maragu.dev/gomponents/html"
 )
 
 func TestButton(t *testing.T) {
 	t.Run("merges caller classes into one attribute", func(t *testing.T) {
-		got := render(t, SubmitButton(h.Class("mr-2"), h.ID("x"), Text("Go")))
-		if strings.Count(got, "class=") != 1 || !strings.Contains(got, "mr-2") || !strings.Contains(got, "btn btn-blue") {
-			t.Fatalf("classes not merged: %s", got)
-		}
-		if !strings.Contains(got, `type="submit"`) || !strings.Contains(got, `id="x"`) || !strings.Contains(got, ">Go</button>") {
-			t.Fatalf("missing type/attrs/text: %s", got)
-		}
+		got := uitest.Render(t, SubmitButton(h.Class("mr-2"), h.ID("x"), Text("Go")))
+		require.Equal(t, 1, strings.Count(got, "class="), "classes not merged: %s", got)
+		require.Contains(t, got, "mr-2")
+		require.Contains(t, got, "btn btn-blue")
+		require.Contains(t, got, `type="submit"`)
+		require.Contains(t, got, `id="x"`)
+		require.Contains(t, got, ">Go</button>")
 	})
 	t.Run("danger submit is red and submits", func(t *testing.T) {
-		if got := render(t, DangerSubmitButton(Text("Delete"))); got != `<button type="submit" class="btn btn-red">Delete</button>` {
-			t.Fatalf("got %s", got)
-		}
+		require.Equal(t, `<button type="submit" class="btn btn-red">Delete</button>`, uitest.Render(t, DangerSubmitButton(Text("Delete"))))
 	})
 	t.Run("defaults to type=button", func(t *testing.T) {
-		if got := render(t, Button(Text("Go"))); got != `<button type="button" class="btn btn-blue">Go</button>` {
-			t.Fatalf("got %s", got)
-		}
+		require.Equal(t, `<button type="button" class="btn btn-blue">Go</button>`, uitest.Render(t, Button(Text("Go"))))
 	})
-}
-
-func render(t *testing.T, n Node) string {
-	t.Helper()
-	var b strings.Builder
-	if err := n.Render(&b); err != nil {
-		t.Fatal(err)
-	}
-	return b.String()
 }

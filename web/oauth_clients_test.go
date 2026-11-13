@@ -1,15 +1,19 @@
 package web
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
 func TestParseRedirects(t *testing.T) {
 	got, err := parseRedirects("https://a.com/cb\r\n\n  com.example.app:/cb  \n")
-	if err != nil || len(got) != 2 || got[1] != "com.example.app:/cb" {
-		t.Fatalf("unexpected result: %v, %v", got, err)
-	}
+	require.NoError(t, err)
+	require.Len(t, got, 2)
+	require.Equal(t, "com.example.app:/cb", got[1])
 	for _, bad := range []string{"/relative", "https://a.com/cb#frag", "not a url"} {
-		if _, err := parseRedirects(bad); err == nil {
-			t.Errorf("expected %q to be rejected", bad)
-		}
+		_, err := parseRedirects(bad)
+		assert.Error(t, err, "expected %q to be rejected", bad)
 	}
 }

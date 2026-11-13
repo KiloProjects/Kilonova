@@ -13,6 +13,7 @@ import (
 	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/eval/scheduler"
 	"github.com/KiloProjects/kilonova/eval/scratch"
+	"github.com/stretchr/testify/require"
 )
 
 // TestRemoteLanguages runs a+b in a real sandbox on a live `kn grader-serve`, through
@@ -28,13 +29,9 @@ func TestRemoteLanguages(t *testing.T) {
 
 	client := scheduler.NewGraderClient(httpClient, endpoint, token)
 	langMgr, err := scheduler.NewRemoteLanguageManager(ctx, client, slog.Default())
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	sc, err := scratch.NewHTTP(httpClient, endpoint+"/scratch", token)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	runner := scheduler.NewBox2Wrapper(sc, nil, client)
 
 	for name, code := range map[string]string{
@@ -42,9 +39,7 @@ func TestRemoteLanguages(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			lang := langMgr.Language(name)
-			if lang == nil {
-				t.Fatalf("grader does not report %s", name)
-			}
+			require.NotNil(t, lang, "grader does not report %s", name)
 			t.Logf("version: %s", langMgr.LanguageVersions(ctx)[name])
 
 			memLimit := language.MemoryLimit(lang, 64*1024) // a typical 64MB problem
@@ -66,14 +61,11 @@ func TestRemoteLanguages(t *testing.T) {
 				},
 				OutputByteFiles: []string{"/box/stdout"},
 			}, 0)
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 			out := string(resp.ByteFiles["/box/stdout"])
 			t.Logf("stats: %+v", *resp.Stats)
-			if resp.Stats.Status != "" && resp.Stats.Status != "OK" || strings.TrimSpace(out) != "5" {
-				t.Fatalf("got status %q, output %q", resp.Stats.Status, out)
-			}
+			require.Contains(t, []string{"", "OK"}, resp.Stats.Status, "output %q", out)
+			require.Equal(t, "5", strings.TrimSpace(out))
 		})
 	}
 }

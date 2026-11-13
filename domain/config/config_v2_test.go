@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -98,9 +99,9 @@ func TestConcurrentUpdateAndLoad(t *testing.T) {
 
 	var wg sync.WaitGroup
 	for i := range 50 {
-		wg.Go(func() { require.NoError(t, f.Update(ctx, i)) })
+		wg.Go(func() { assert.NoError(t, f.Update(ctx, i)) })
 		wg.Go(func() { _ = f.Get(ctx) })
 	}
-	wg.Go(func() { require.NoError(t, fs.InitializeFlags(ctx, store)) })
+	wg.Go(func() { assert.NoError(t, fs.InitializeFlags(ctx, store)) })
 	wg.Wait()
 }

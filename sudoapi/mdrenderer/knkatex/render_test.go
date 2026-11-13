@@ -2,10 +2,10 @@ package knkatex_test
 
 import (
 	"bytes"
-	"strings"
 	"testing"
 
 	"github.com/KiloProjects/kilonova/sudoapi/mdrenderer/knkatex"
+	"github.com/stretchr/testify/assert"
 )
 
 type testCase struct {
@@ -44,17 +44,11 @@ func TestRender(t *testing.T) {
 				out := buf.String()
 				if test.Name == "error" {
 					// Malformed input is reported inline rather than rendered.
-					if !strings.Contains(out, "<code>") {
-						t.Errorf("display=%v: expected the error to be reported, got %q", display, out)
-					}
+					assert.Contains(t, out, "<code>", "display=%v: expected the error to be reported", display)
 					continue
 				}
-				if err != nil {
-					t.Errorf("display=%v: %v", display, err)
-				}
-				if !strings.Contains(out, "class=\"katex") {
-					t.Errorf("display=%v: no KaTeX markup: %.120q", display, out)
-				}
+				assert.NoError(t, err, "display=%v", display)
+				assert.Contains(t, out, "class=\"katex", "display=%v: no KaTeX markup", display)
 			}
 		})
 	}

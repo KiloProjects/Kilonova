@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/KiloProjects/kilonova/domain/archive/test"
+	"github.com/stretchr/testify/require"
 )
 
 type scoreParameterTest struct {
@@ -27,18 +28,12 @@ func TestParseScoreParameters(t *testing.T) {
 		t.Run(k, func(t *testing.T) {
 			t.Parallel()
 			val, err := test.ParseScoreParameters([]byte(v.Str))
-			if err != nil && !v.Error {
-				t.Fatalf("Error parsing score parameters: %#v", err)
+			if v.Error {
+				require.Error(t, err, "Test should not succeed")
+				return
 			}
-			if err == nil && v.Error {
-				t.Fatalf("Test should not succeed")
-			}
-			if !v.Error {
-				if len(val) != v.NumGroups {
-					t.Fatalf("Invalid number of groups, expected %d, got %d ", v.NumGroups, len(val))
-				}
-				// t.Log(spew.Sdump(val))
-			}
+			require.NoError(t, err, "Error parsing score parameters")
+			require.Len(t, val, v.NumGroups, "Invalid number of groups")
 		})
 	}
 }

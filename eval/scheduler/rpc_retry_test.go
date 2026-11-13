@@ -6,15 +6,15 @@ import (
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestGraderClientRetriesUntilGraderIsUp starts the grader only after the
 // client's first attempt has failed with connection refused.
 func TestGraderClientRetriesUntilGraderIsUp(t *testing.T) {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	addr := ln.Addr().String()
 	ln.Close()
 
@@ -33,7 +33,6 @@ func TestGraderClientRetriesUntilGraderIsUp(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	var out struct{ OK bool }
-	if err := c.call(ctx, http.MethodGet, "/x", nil, &out); err != nil || !out.OK {
-		t.Fatalf("call = %v, out = %+v", err, out)
-	}
+	require.NoError(t, c.call(ctx, http.MethodGet, "/x", nil, &out))
+	require.True(t, out.OK)
 }

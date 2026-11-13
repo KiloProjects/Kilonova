@@ -4,7 +4,9 @@ import (
 	"testing"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/web/ui/uitest"
 	"github.com/shopspring/decimal"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestScore(t *testing.T) {
@@ -25,8 +27,6 @@ func TestScore(t *testing.T) {
 		{"icpc solved", icpc, dec("100"), false, `<i class="fas fa-fw fa-check"></i>`},
 		{"icpc unsolved", icpc, dec("40"), true, `<i class="fas fa-fw fa-xmark"></i>`},
 	} {
-		if got := render(t, Score(c.pb, c.score, c.unit)); got != c.want {
-			t.Errorf("%s: got %q want %q", c.name, got, c.want)
-		}
+		assert.Equal(t, c.want, uitest.Render(t, Score(c.pb, c.score, c.unit)), c.name)
 	}
 }

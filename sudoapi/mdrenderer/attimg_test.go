@@ -1,8 +1,10 @@
 package mdrenderer
 
 import (
-	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAttachmentAlignValidation(t *testing.T) {
@@ -28,15 +30,11 @@ func TestAttachmentAlignValidation(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := NewRenderer().Render([]byte(tc.markdown), nil)
-			if err != nil {
-				t.Fatalf("Render() error = %v", err)
-			}
+			require.NoError(t, err)
 			rendered := string(got)
-			if !strings.Contains(rendered, tc.wantAlign) {
-				t.Errorf("Render() = %q, want %q", rendered, tc.wantAlign)
-			}
-			if tc.unexpected != "" && strings.Contains(rendered, tc.unexpected) {
-				t.Errorf("Render() = %q, unexpectedly contains %q", rendered, tc.unexpected)
+			assert.Contains(t, rendered, tc.wantAlign)
+			if tc.unexpected != "" {
+				assert.NotContains(t, rendered, tc.unexpected)
 			}
 		})
 	}

@@ -5,25 +5,21 @@ import (
 	"time"
 
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func write(t *testing.T, fsys afero.Fs, name string, size int, age time.Duration) {
 	t.Helper()
-	if err := afero.WriteFile(fsys, name, make([]byte, size), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, afero.WriteFile(fsys, name, make([]byte, size), 0o644))
 	mod := time.Now().Add(-age)
-	if err := fsys.Chtimes(name, mod, mod); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, fsys.Chtimes(name, mod, mod))
 }
 
 func exists(t *testing.T, fsys afero.Fs, name string) bool {
 	t.Helper()
 	ok, err := afero.Exists(fsys, name)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	return ok
 }
 
@@ -33,18 +29,11 @@ func TestSweepTTL(t *testing.T) {
 	write(t, fsys, "young", 10, time.Minute)
 
 	res, err := Sweep(fsys, ".", 0, time.Hour)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.Deleted != 1 || res.Remaining != 1 {
-		t.Fatalf("want 1 deleted / 1 remaining, got %+v", res)
-	}
-	if exists(t, fsys, "old") {
-		t.Error("expired file was not deleted")
-	}
-	if !exists(t, fsys, "young") {
-		t.Error("young file was deleted by TTL sweep")
-	}
+	require.NoError(t, err)
+	require.Equal(t, 1, res.Deleted)
+	require.Equal(t, 1, res.Remaining)
+	assert.False(t, exists(t, fsys, "old"), "expired file was not deleted")
+	assert.True(t, exists(t, fsys, "young"), "young file was deleted by TTL sweep")
 }
 
 func TestSweepSize(t *testing.T) {
@@ -55,18 +44,12 @@ func TestSweepSize(t *testing.T) {
 	write(t, fsys, "c", 2000, time.Minute)
 
 	res, err := Sweep(fsys, ".", 2500, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.Deleted != 2 || res.Remaining != 1 {
-		t.Fatalf("want 2 deleted / 1 remaining, got %+v", res)
-	}
-	if !exists(t, fsys, "c") {
-		t.Error("newest file evicted while over size — LRU order wrong")
-	}
-	if exists(t, fsys, "a") || exists(t, fsys, "b") {
-		t.Error("oldest files not evicted to meet size cap")
-	}
+	require.NoError(t, err)
+	require.Equal(t, 2, res.Deleted)
+	require.Equal(t, 1, res.Remaining)
+	assert.True(t, exists(t, fsys, "c"), "newest file evicted while over size — LRU order wrong")
+	assert.False(t, exists(t, fsys, "a"), "oldest files not evicted to meet size cap")
+	assert.False(t, exists(t, fsys, "b"), "oldest files not evicted to meet size cap")
 }
 
 func TestSweepDisabledCapsKeepEverything(t *testing.T) {
@@ -74,10 +57,7 @@ func TestSweepDisabledCapsKeepEverything(t *testing.T) {
 	write(t, fsys, "old", 10, 100*time.Hour)
 	// maxSize < 1024 and maxTTL <= 1s both disable the caps.
 	res, err := Sweep(fsys, ".", 0, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.Deleted != 0 || !exists(t, fsys, "old") {
-		t.Fatalf("disabled caps must not delete anything, got %+v", res)
-	}
+	require.NoError(t, err)
+	require.Zero(t, res.Deleted, "disabled caps must not delete anything")
+	require.True(t, exists(t, fsys, "old"), "disabled caps must not delete anything")
 }
