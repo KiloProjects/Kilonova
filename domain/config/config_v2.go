@@ -4,141 +4,161 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
+	"maps"
 	"slices"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-type flagset struct {
-	mu    sync.RWMutex
-	flags map[string]any
-
-	store FlagStore
-}
-
-var globalFlags = newFlagset()
-
-func newFlagset() *flagset {
-	return &flagset{flags: map[string]any{}}
-}
-
-type configFlag interface {
-	sneakUpdate(newVal any) error
-}
-
+// Flag definitions (name, default, description) are compiled in and shared by
+// every instance; their values live in a Flagset, one per instance. Reads go
+// through Get(ctx) or Of(fs); Value() is the transitional read of the global set.
 type Flag[T any] interface {
+	// Value reads the process-wide flagset. Transitional: migrate callers to Get or Of.
 	Value() T
-	Update(context.Context, T)
+	// Get reads the flagset carried by ctx (see WithFlagset).
+	Get(ctx context.Context) T
+	// Of reads the given flagset.
+	Of(fs *Flagset) T
+	// Update sets the value in the flagset carried by ctx and persists it.
+	Update(ctx context.Context, newVal T)
 	InternalName() string
 	HumanName() string
 }
 
 type flag[T any] struct {
-	mu        sync.RWMutex
 	name      string
-	val       T
 	humanName string
-	fs        *flagset
+	def       T
 }
 
-func (f *flag[T]) Value() T {
-	f.mu.RLock()
-	defer f.mu.RUnlock()
-	return f.val
+// flagDef is the type-erased view of a definition the registry needs.
+type flagDef interface {
+	decode(raw json.RawMessage) (any, error)
 }
 
-func (f *flag[T]) InternalName() string {
-	return f.name
+// flagRegistry holds the compiled-in flag definitions. Definitions are code,
+// not instance state, so one registry serves every Flagset.
+type flagRegistry struct {
+	mu   sync.RWMutex
+	defs map[string]flagDef
 }
 
-func (f *flag[T]) HumanName() string {
-	return f.humanName
+func newFlagRegistry() *flagRegistry {
+	return &flagRegistry{defs: map[string]flagDef{}}
 }
 
-func (f *flag[T]) MarshalJSON() ([]byte, error) {
-	f.mu.RLock()
-	defer f.mu.RUnlock()
-	return json.Marshal(&struct {
-		InternalName string `json:"internal_name"`
-		HumanName    string `json:"human_name"`
-		Value        T      `json:"value"`
-	}{
-		InternalName: f.name,
-		HumanName:    f.humanName,
-		Value:        f.val,
-	})
+var registry = newFlagRegistry()
+
+// Flagset holds one instance's flag values and the store they persist to.
+// A flag missing from vals reads as its compiled-in default.
+type Flagset struct {
+	mu    sync.RWMutex
+	vals  map[string]any
+	store FlagStore
 }
 
-// Update sets the value and writes it through to the flag store, if one is attached.
-// The store write happens outside every lock, so readers never wait on the database.
+func NewFlagset() *Flagset {
+	return &Flagset{vals: map[string]any{}}
+}
+
+// globalFlags backs Value() and any ctx without a flagset until every caller is migrated.
+var globalFlags = NewFlagset()
+
+var flagsetFallbacks = promauto.NewCounterVec(prometheus.CounterOpts{
+	Name: "kn_flagset_fallback_total",
+	Help: "Flag reads/updates through a context without a flagset, served from the global flagset",
+}, []string{"flag"})
+
+type flagsetKey struct{}
+
+// WithFlagset returns a context whose flag reads and updates go to fs.
+func WithFlagset(ctx context.Context, fs *Flagset) context.Context {
+	return context.WithValue(ctx, flagsetKey{}, fs)
+}
+
+func flagsetFrom(ctx context.Context, name string) *Flagset {
+	if fs, ok := ctx.Value(flagsetKey{}).(*Flagset); ok && fs != nil {
+		return fs
+	}
+	flagsetFallbacks.WithLabelValues(name).Inc()
+	return globalFlags
+}
+
+func (f *flag[T]) Value() T                  { return f.Of(globalFlags) }
+func (f *flag[T]) Get(ctx context.Context) T { return f.Of(flagsetFrom(ctx, f.name)) }
+func (f *flag[T]) InternalName() string      { return f.name }
+func (f *flag[T]) HumanName() string         { return f.humanName }
+
+func (f *flag[T]) Of(fs *Flagset) T {
+	fs.mu.RLock()
+	v, ok := fs.vals[f.name]
+	fs.mu.RUnlock()
+	if !ok {
+		return f.def
+	}
+	return v.(T)
+}
+
+// Update sets the value and writes it through to the flagset's store, if one is attached.
+// The store write happens outside the lock, so readers never wait on the database.
 // ponytail: two concurrent edits of the same flag may persist out of order; fine for admin edits.
 func (f *flag[T]) Update(ctx context.Context, newVal T) {
-	f.mu.Lock()
-	f.val = newVal
 	data, err := json.Marshal(newVal)
-	f.mu.Unlock()
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't encode flag", slog.String("flag", f.name), slog.Any("err", err))
 		return
 	}
-	if f.fs != nil {
-		f.fs.persist(ctx, f.name, data)
-	}
-}
-
-func (f *flag[T]) sneakUpdate(newVal any) error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	switch v := newVal.(type) {
-	case json.RawMessage:
-		if err := json.Unmarshal(v, &f.val); err != nil {
-			return fmt.Errorf("invalid key, flag expected %T", f.val)
-		}
-		return nil
-	default:
-		return fmt.Errorf("expected json.RawMessage, got %T", newVal)
-	}
-}
-
-func (fs *flagset) GenFlag[T any](name string, defaultVal T, readableName string) Flag[T] {
+	fs := flagsetFrom(ctx, f.name)
 	fs.mu.Lock()
-	defer fs.mu.Unlock()
-	f := &flag[T]{name: name, val: defaultVal, humanName: readableName, fs: fs}
-	fs.flags[name] = f
+	fs.vals[f.name] = newVal
+	store := fs.store
+	fs.mu.Unlock()
+
+	if store == nil {
+		slog.DebugContext(ctx, "No flag store attached, not persisting", slog.String("flag", f.name))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	if err := store.SetFlag(ctx, f.name, data); err != nil {
+		slog.WarnContext(ctx, "Couldn't persist flag", slog.String("flag", f.name), slog.Any("err", err))
+	}
+}
+
+func (f *flag[T]) decode(raw json.RawMessage) (any, error) {
+	var v T
+	err := json.Unmarshal(raw, &v)
+	return v, err
+}
+
+func (r *flagRegistry) GenFlag[T any](name string, defaultVal T, readableName string) Flag[T] {
+	f := &flag[T]{name: name, humanName: readableName, def: defaultVal}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.defs[name] = f
 	return f
 }
 
-func GenFlag[T any](name string, defaultVal T, readableName string) Flag[T] {
-	return globalFlags.GenFlag(name, defaultVal, readableName)
-}
-
-func (fs *flagset) GetFlag[T any](name string) (Flag[T], bool) {
-	fs.mu.RLock()
-	defer fs.mu.RUnlock()
-	flg, ok := fs.flags[name]
-	if !ok {
-		return nil, false
-	}
-	v, ok := flg.(*flag[T])
+func (r *flagRegistry) GetFlag[T any](name string) (Flag[T], bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	v, ok := r.defs[name].(*flag[T])
 	return v, ok
 }
 
-func GetFlag[T any](name string) (Flag[T], bool) {
-	return globalFlags.GetFlag[T](name)
-}
-
-func (fs *flagset) GetFlags[T any]() []Flag[T] {
-	fs.mu.RLock()
-	defer fs.mu.RUnlock()
+func (r *flagRegistry) GetFlags[T any]() []Flag[T] {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	var flags []Flag[T]
-	for _, flg := range fs.flags {
-		flag, ok := flg.(*flag[T])
-		if ok {
-			flags = append(flags, flag)
+	for _, def := range r.defs {
+		if f, ok := def.(*flag[T]); ok {
+			flags = append(flags, f)
 		}
 	}
 	slices.SortFunc(flags, func(a, b Flag[T]) int {
@@ -147,8 +167,42 @@ func (fs *flagset) GetFlags[T any]() []Flag[T] {
 	return flags
 }
 
+// decode parses stored values into their flags' types. Unknown keys and values
+// that don't decode are logged and skipped, never fatal.
+func (r *flagRegistry) decode(ctx context.Context, stored map[string]json.RawMessage) map[string]any {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	vals := make(map[string]any, len(stored))
+	for key, raw := range stored {
+		if strings.HasPrefix(key, "_") {
+			continue
+		}
+		def, ok := r.defs[key]
+		if !ok {
+			slog.WarnContext(ctx, "Unknown flag in store, ignoring", slog.String("key", key))
+			continue
+		}
+		v, err := def.decode(raw)
+		if err != nil {
+			slog.WarnContext(ctx, "Couldn't apply stored flag, keeping default", slog.String("key", key), slog.Any("err", err))
+			continue
+		}
+		vals[key] = v
+	}
+	return vals
+}
+
+// GenFlag registers a flag definition. Call it from package-level vars only.
+func GenFlag[T any](name string, defaultVal T, readableName string) Flag[T] {
+	return registry.GenFlag(name, defaultVal, readableName)
+}
+
+func GetFlag[T any](name string) (Flag[T], bool) {
+	return registry.GetFlag[T](name)
+}
+
 func GetFlags[T any]() []Flag[T] {
-	return globalFlags.GetFlags[T]()
+	return registry.GetFlags[T]()
 }
 
 // FlagStore persists runtime flags. It is implemented by the database layer;
@@ -158,58 +212,27 @@ type FlagStore interface {
 	SetFlag(ctx context.Context, key string, value json.RawMessage) error
 }
 
-func (fs *flagset) InitializeFlags(ctx context.Context, store FlagStore) error {
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
-	fs.store = store
-
-	stored, err := fs.store.GetFlags(ctx)
+// InitializeFlags applies stored flag values over the compiled-in defaults and
+// attaches the store, so later updates persist.
+// A value that does not decode, or a key no longer registered in this build, is
+// logged and skipped: neither aborts startup, and unknown keys are left in the
+// store so a rollback still sees them.
+func (fs *Flagset) InitializeFlags(ctx context.Context, store FlagStore) error {
+	stored, err := store.GetFlags(ctx)
 	if err != nil {
 		return err
 	}
 
-	for key, val := range stored {
-		if strings.HasPrefix(key, "_") {
-			continue
-		}
-		flg, ok := fs.flags[key]
-		if !ok {
-			slog.WarnContext(ctx, "Unknown flag in store, ignoring", slog.String("key", key))
-			continue
-		}
-		v, ok := flg.(configFlag)
-		if !ok {
-			slog.WarnContext(ctx, "Could not sneak update", slog.String("key", key))
-			continue
-		}
-		if err := v.sneakUpdate(val); err != nil {
-			slog.WarnContext(ctx, "Couldn't apply stored flag, keeping default", slog.String("key", key), slog.Any("err", err))
-		}
-	}
+	vals := registry.decode(ctx, stored)
+
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+	maps.Copy(fs.vals, vals)
+	fs.store = store
 	return nil
 }
 
-// InitializeFlags applies stored flag values over the compiled-in defaults.
-// A value that does not decode, or a key no longer registered in this build, is
-// logged and skipped: neither aborts startup, and unknown keys are left in the
-// store so a rollback still sees them.
+// InitializeFlags initializes the global flagset. Transitional, like Value().
 func InitializeFlags(ctx context.Context, store FlagStore) error {
 	return globalFlags.InitializeFlags(ctx, store)
-}
-
-// persist writes one flag's encoded value to the store, so an edit touches exactly
-// the flag that changed. A write failure is logged, never fatal.
-func (fs *flagset) persist(ctx context.Context, name string, data json.RawMessage) {
-	fs.mu.RLock()
-	store := fs.store
-	fs.mu.RUnlock()
-	if store == nil {
-		slog.DebugContext(ctx, "No flag store attached, not persisting", slog.String("flag", name))
-		return
-	}
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-	defer cancel()
-	if err := store.SetFlag(ctx, name, data); err != nil {
-		slog.WarnContext(ctx, "Couldn't persist flag", slog.String("flag", name), slog.Any("err", err))
-	}
 }

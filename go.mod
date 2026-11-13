@@ -42,6 +42,7 @@ require (
 	github.com/shopspring/decimal v1.6.0
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/spf13/afero v1.15.0
+	github.com/stretchr/testify v1.12.1
 	github.com/urfave/cli/v3 v3.14.0
 	github.com/yuin/goldmark v1.8.7
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
@@ -102,7 +103,6 @@ require (
 	github.com/prometheus/procfs v0.23.0 // indirect
 	github.com/samber/lo v1.53.0 // indirect
 	github.com/samber/slog-common v0.22.0 // indirect
-	github.com/stretchr/testify v1.12.1 // indirect
 	github.com/tidwall/gjson v1.20.0 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.2 // indirect
