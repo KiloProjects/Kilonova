@@ -49,7 +49,7 @@ func (rt *Web) adminPanel(w http.ResponseWriter, r *http.Request) {
 func (rt *Web) userGen(w http.ResponseWriter, r *http.Request) {
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "user_gen.title"),
-		Content: g.Group{adminviews.Tabs(r.Context(), "/admin/user_gen"), adminviews.UserGen(r.Context(), flags.DefaultLanguage())},
+		Content: g.Group{adminviews.Tabs(r.Context(), "/admin/user_gen"), adminviews.UserGen(r.Context(), flags.DefaultLanguage(r.Context()))},
 	})
 }
 

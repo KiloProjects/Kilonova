@@ -50,7 +50,7 @@ func (s *BaseAPI) IsProblemEditor(user *kilonova.UserBrief, problem *kilonova.Pr
 	if user.IsAdmin() {
 		return true
 	}
-	if problem == nil || (flags.LockdownProblemEditor.Value() && problem.Visible) {
+	if problem == nil || (flags.LockdownProblemEditor.Of(s.flagset) && problem.Visible) {
 		return false
 	}
 	ok, err := s.db.IsProblemEditor(context.Background(), problem.ID, user.ID)

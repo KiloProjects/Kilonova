@@ -2,6 +2,7 @@ package flags
 
 import (
 	"cmp"
+	"context"
 
 	"github.com/KiloProjects/kilonova/domain/config"
 )
@@ -76,6 +77,6 @@ var (
 	BannedHotProblems = config.GenFlag("frontend.banned_hot_problems", []int{}, "Problem IDs excluded from the hot problems list")
 )
 
-func DefaultLanguage() string {
-	return cmp.Or(DefaultLang.Value(), "en")
+func DefaultLanguage(ctx context.Context) string {
+	return cmp.Or(DefaultLang.Get(ctx), "en")
 }

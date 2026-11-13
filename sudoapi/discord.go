@@ -14,11 +14,11 @@ import (
 
 func (s *BaseAPI) AnnounceProblemPublished(ctx context.Context, problemID int) {
 	slog.DebugContext(ctx, "Announcing problem publish", slog.Int("problem_id", problemID))
-	if !s.discord.Enabled() || flags.ProblemAnnouncementChannel.Value() == "" {
+	if !s.discord.Enabled() || flags.ProblemAnnouncementChannel.Of(s.flagset) == "" {
 		return // noop
 	}
 	url := kilonova.HostURL().JoinPath("problems", strconv.Itoa(problemID)).String()
-	if err := s.discord.SendChannelMessage(flags.ProblemAnnouncementChannel.Value(), "New problem was just published: "+url); err != nil {
+	if err := s.discord.SendChannelMessage(flags.ProblemAnnouncementChannel.Of(s.flagset), "New problem was just published: "+url); err != nil {
 		slog.WarnContext(ctx, "Could not announce problem publish", slog.Any("err", err))
 	}
 }

@@ -55,7 +55,7 @@ func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserF
 // Signup
 
 func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, theme kilonova.PreferredTheme, ip *netip.Addr, userAgent *string) (int, error) {
-	if !flags.SignupEnabled.Value() {
+	if !flags.SignupEnabled.Of(s.flagset) {
 		return -1, kilonova.ErrFeatureDisabled
 	}
 
@@ -81,7 +81,7 @@ func (s *BaseAPI) Signup(ctx context.Context, email, uname, pwd, lang string, th
 	}
 
 	if lang == "" {
-		lang = flags.DefaultLanguage()
+		lang = flags.DefaultLanguage(ctx)
 	}
 	if theme == kilonova.PreferredThemeNone {
 		theme = kilonova.PreferredThemeDark

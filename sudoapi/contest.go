@@ -30,7 +30,7 @@ func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova
 	}
 
 	if !author.IsProposer() {
-		if !flags.NormalUserVirtualContests.Value() {
+		if !flags.NormalUserVirtualContests.Of(s.flagset) {
 			return -1, Statusf(403, "Creation of contests by non-proposers has been disabled")
 		}
 
@@ -40,11 +40,11 @@ func (s *BaseAPI) CreateContest(ctx context.Context, name string, cType kilonova
 			Since:    &since,
 			EditorID: &author.ID,
 		})
-		if err != nil || (cnt >= flags.NormalUserVCLimit.Value() && flags.NormalUserVCLimit.Value() >= 0) {
+		if err != nil || (cnt >= flags.NormalUserVCLimit.Of(s.flagset) && flags.NormalUserVCLimit.Of(s.flagset) >= 0) {
 			if err != nil {
 				slog.WarnContext(ctx, "Couldn't fetch contest count", slog.Any("err", err))
 			}
-			return -1, Statusf(400, "You can create at most %d contests per day", flags.NormalUserVCLimit.Value())
+			return -1, Statusf(400, "You can create at most %d contests per day", flags.NormalUserVCLimit.Of(s.flagset))
 		}
 	}
 	id, err := s.db.CreateContest(ctx, name, cType)
@@ -194,7 +194,7 @@ func (s *BaseAPI) VisibleFutureContests(ctx context.Context, user *kilonova.User
 		Future:      true,
 		Look:        true,
 		LookingUser: user,
-		Ascending:   flags.FrontPageContestsAscending.Value(),
+		Ascending:   flags.FrontPageContestsAscending.Of(s.flagset),
 
 		ImportantContests:     true,
 		ImportantContestsUser: user,
@@ -404,7 +404,7 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) error 
 			}
 
 			go func(mossID int, lang language.Lang, mossLang string, subs []*kilonova.Submission) {
-				conn, err := moss.New(ctx, flags.MossUserID.Value())
+				conn, err := moss.New(ctx, flags.MossUserID.Of(s.flagset))
 				if err != nil {
 					slog.WarnContext(ctx, "Could not initialize MOSS", slog.Any("err", err))
 				}

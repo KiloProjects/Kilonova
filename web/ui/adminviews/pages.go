@@ -73,23 +73,23 @@ func Panel(ctx context.Context, params PanelParams) Node {
 			flagSection(ctx, "boolFlags", len(params.BoolFlags), Map(params.BoolFlags, func(f config.Flag[bool]) Node {
 				return Div(Class("block"),
 					Label(Class("inline-flex items-center text-lg"),
-						Input(Class("form-checkbox"), Type("checkbox"), Data("name", f.InternalName()), Data("org_value", strconv.FormatBool(f.Value())), If(f.Value(), Checked()), AutoComplete("off")), Text(" "),
+						Input(Class("form-checkbox"), Type("checkbox"), Data("name", f.InternalName()), Data("org_value", strconv.FormatBool(f.Get(ctx))), If(f.Get(ctx), Checked()), AutoComplete("off")), Text(" "),
 						Span(Class("ml-2"), Text(f.HumanName())), Text(" "),
 						Span(Class("ml-2 text-sm text-muted"), Text("("+f.InternalName()+")")),
 					),
 				)
 			})),
 			flagSection(ctx, "stringFlags", len(params.StringFlags), Map(params.StringFlags, func(f config.Flag[string]) Node {
-				return valueFlag(f.HumanName(), f.InternalName(), f.Value(), Type("text"))
+				return valueFlag(f.HumanName(), f.InternalName(), f.Get(ctx), Type("text"))
 			})),
 			flagSection(ctx, "intFlags", len(params.IntFlags), Map(params.IntFlags, func(f config.Flag[int]) Node {
-				return valueFlag(f.HumanName(), f.InternalName(), strconv.Itoa(f.Value()), Type("number"))
+				return valueFlag(f.HumanName(), f.InternalName(), strconv.Itoa(f.Get(ctx)), Type("number"))
 			})),
 			flagSection(ctx, "intArrayFlags", len(params.IntArrayFlags), Map(params.IntArrayFlags, func(f config.Flag[[]int]) Node {
-				return valueFlag(f.HumanName(), f.InternalName(), jsonList(f.Value()), Type("text"))
+				return valueFlag(f.HumanName(), f.InternalName(), jsonList(f.Get(ctx)), Type("text"))
 			})),
 			flagSection(ctx, "strArrayFlags", len(params.StrArrayFlags), Map(params.StrArrayFlags, func(f config.Flag[[]string]) Node {
-				return valueFlag(f.HumanName(), f.InternalName(), jsonList(f.Value()), Type("text"))
+				return valueFlag(f.HumanName(), f.InternalName(), jsonList(f.Get(ctx)), Type("text"))
 			})),
 			Button(Type("submit"), Class("btn btn-blue"), ui.T(ctx, "button.update")),
 		),

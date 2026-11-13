@@ -280,7 +280,7 @@ func (s *BaseAPI) SolvedProblems(ctx context.Context, user *kilonova.UserBrief, 
 
 func (s *BaseAPI) insertProblem(ctx context.Context, problem *kilonova.Problem, authorID int) (int, error) {
 	if problem.SourceSize == 0 {
-		problem.SourceSize = flags.DefaultSourceSize.Value()
+		problem.SourceSize = flags.DefaultSourceSize.Of(s.flagset)
 	}
 	err := s.db.CreateProblem(ctx, problem, authorID)
 	if err != nil {

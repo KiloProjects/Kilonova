@@ -20,7 +20,7 @@ func (s *BaseAPI) CreateSession(ctx context.Context, uid int) (string, error) {
 		slog.WarnContext(ctx, "Failed to create session", slog.Any("err", err))
 		return "", fmt.Errorf("failed to create session: %w", err)
 	}
-	if sessions, err := s.db.RemoveOldSessions(ctx, uid, flags.MaxSessionCount.Value()); err != nil {
+	if sessions, err := s.db.RemoveOldSessions(ctx, uid, flags.MaxSessionCount.Of(s.flagset)); err != nil {
 		slog.WarnContext(ctx, "Failed to remove old sessions", slog.Any("err", err))
 	} else if len(sessions) > 0 {
 		for _, sess := range sessions {

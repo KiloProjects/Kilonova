@@ -131,7 +131,7 @@ func (s *BaseAPI) UpdateUsername(ctx context.Context, targetUser *kilonova.UserF
 	usernameChangeMu.Lock()
 	defer usernameChangeMu.Unlock()
 
-	if !(flags.UserCanChangeNames.Value() || fromAdmin) {
+	if !(flags.UserCanChangeNames.Of(s.flagset) || fromAdmin) {
 		return Statusf(401, "Username changes have been disabled by administrator")
 	}
 
@@ -278,7 +278,7 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 	}
 
 	if lang == "" {
-		lang = flags.DefaultLanguage()
+		lang = flags.DefaultLanguage(ctx)
 	}
 	if theme == kilonova.PreferredThemeNone {
 		theme = kilonova.PreferredThemeDark
@@ -388,12 +388,12 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 			Password:   args.Password,
 			Contest:    contest,
 			HostPrefix: kilonova.HostPrefix(),
-			Branding:   flags.EmailBranding.Value(),
+			Branding:   flags.EmailBranding.Of(s.flagset),
 		}
 		if userFull.DisplayName != "" {
 			emailArgs.Name = userFull.DisplayName
 		}
-		emailArgs.Branding = cmp.Or(emailArgs.Branding, flags.NavbarBranding.Value(), "Kilonova")
+		emailArgs.Branding = cmp.Or(emailArgs.Branding, flags.NavbarBranding.Of(s.flagset), "Kilonova")
 		var b bytes.Buffer
 		if err := generatedUserTempl.ExecuteTemplate(&b, userFull.PreferredLanguage, emailArgs); err != nil {
 			slog.ErrorContext(ctx, "Error rendering password send email", slog.Any("err", err))

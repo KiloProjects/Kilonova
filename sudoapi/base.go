@@ -142,7 +142,7 @@ func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, m
 		Debug:      kilonova.DebugMode(),
 		HostPrefix: kilonova.HostPrefix(),
 
-		CryptoKey: []byte(flags.AuthCryptoKey.Value()),
+		CryptoKey: []byte(flags.AuthCryptoKey.Of(base.flagset)),
 	})
 	if err != nil {
 		return nil, err

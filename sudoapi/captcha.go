@@ -31,7 +31,7 @@ func (s *BaseAPI) MustSolveCaptcha(ctx context.Context, ip *netip.Addr) bool {
 		slog.WarnContext(ctx, "nil ip given to MustSolveCaptcha")
 		return true // Err on the side of caution
 	}
-	if flags.CaptchaTriggerCount.Value() <= 0 {
+	if flags.CaptchaTriggerCount.Of(s.flagset) <= 0 {
 		return true
 	}
 	//nolint:staticcheck
@@ -40,9 +40,9 @@ func (s *BaseAPI) MustSolveCaptcha(ctx context.Context, ip *netip.Addr) bool {
 		slog.WarnContext(ctx, "Could not count signups", slog.Any("err", err))
 		return true // Err on the side of caution
 	}
-	return cnt > flags.CaptchaTriggerCount.Value()
+	return cnt > flags.CaptchaTriggerCount.Of(s.flagset)
 }
 
 func (s *BaseAPI) CaptchaEnabled() bool {
-	return flags.CaptchaEnabled.Value()
+	return flags.CaptchaEnabled.Of(s.flagset)
 }

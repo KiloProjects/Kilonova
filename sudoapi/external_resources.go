@@ -10,7 +10,7 @@ import (
 )
 
 func (s *BaseAPI) ExternalResources(ctx context.Context, filter kilonova.ExternalResourceFilter) ([]*kilonova.ExternalResource, error) {
-	if !flags.ExternalResourcesEnabled.Value() {
+	if !flags.ExternalResourcesEnabled.Of(s.flagset) {
 		return []*kilonova.ExternalResource{}, nil
 	}
 	resources, err := s.db.ExternalResources(ctx, filter)
@@ -21,7 +21,7 @@ func (s *BaseAPI) ExternalResources(ctx context.Context, filter kilonova.Externa
 }
 
 func (s *BaseAPI) UpdateExternalResource(ctx context.Context, id int, upd kilonova.ExternalResourceUpdate) error {
-	if !flags.ExternalResourcesEnabled.Value() {
+	if !flags.ExternalResourcesEnabled.Of(s.flagset) {
 		return kilonova.ErrFeatureDisabled
 	}
 	if err := s.db.UpdateExternalResources(ctx, kilonova.ExternalResourceFilter{ID: &id}, upd); err != nil {
@@ -43,7 +43,7 @@ func (s *BaseAPI) IsExternalResourceEditor(user *kilonova.UserBrief, resource *k
 }
 
 func (s *BaseAPI) CreateExternalResource(ctx context.Context, name, description, url string, resType kilonova.ResourceType, author *kilonova.UserBrief, problem *kilonova.Problem, preApproved bool) (*kilonova.ExternalResource, error) {
-	if !flags.ExternalResourcesEnabled.Value() {
+	if !flags.ExternalResourcesEnabled.Of(s.flagset) {
 		return nil, kilonova.ErrFeatureDisabled
 	}
 	res := &kilonova.ExternalResource{
@@ -69,7 +69,7 @@ func (s *BaseAPI) CreateExternalResource(ctx context.Context, name, description,
 }
 
 func (s *BaseAPI) DeleteExternalResource(ctx context.Context, id int) error {
-	if !flags.ExternalResourcesEnabled.Value() {
+	if !flags.ExternalResourcesEnabled.Of(s.flagset) {
 		return kilonova.ErrFeatureDisabled
 	}
 	if err := s.db.DeleteExternalResources(ctx, kilonova.ExternalResourceFilter{ID: &id}); err != nil {

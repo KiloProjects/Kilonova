@@ -470,7 +470,7 @@ func (s *AuthStorage) setUserInfo(ctx context.Context, userinfo *oidc.UserInfo, 
 			case "ro":
 				userinfo.Locale = oidc.NewLocale(language.Romanian)
 			default:
-				switch flags.DefaultLanguage() {
+				switch flags.DefaultLanguage(ctx) {
 				case "en":
 					userinfo.Locale = oidc.NewLocale(language.English)
 				case "ro":

@@ -383,8 +383,8 @@ func (s *BaseAPI) processLogEntry(ctx context.Context, val *logEntry, importantW
 }
 
 func (s *BaseAPI) ingestAuditLogs(ctx context.Context) error {
-	importantWebhook := s.newWebhookSender(ctx, flags.ImportantUpdatesWebhook.Value(), "Kilonova Audit Log")
-	verboseWebhook := s.newWebhookSender(ctx, flags.VerboseUpdatesWebhook.Value(), "Kilonova Verbose Log")
+	importantWebhook := s.newWebhookSender(ctx, flags.ImportantUpdatesWebhook.Of(s.flagset), "Kilonova Audit Log")
+	verboseWebhook := s.newWebhookSender(ctx, flags.VerboseUpdatesWebhook.Of(s.flagset), "Kilonova Verbose Log")
 	for {
 		select {
 		case <-ctx.Done():
@@ -463,7 +463,7 @@ func (s *BaseAPI) refreshHotProblemsJob(ctx context.Context, interval time.Durat
 	go func() {
 		// Initial refresh
 		slog.DebugContext(ctx, "Refreshing hot problems")
-		s.db.RefreshHotProblems(ctx, flags.BannedHotProblems.Value())
+		s.db.RefreshHotProblems(ctx, flags.BannedHotProblems.Of(s.flagset))
 	}()
 	for {
 		select {
@@ -471,7 +471,7 @@ func (s *BaseAPI) refreshHotProblemsJob(ctx context.Context, interval time.Durat
 			return ctx.Err()
 		case <-t.C:
 			slog.DebugContext(ctx, "Refreshing hot problems")
-			s.db.RefreshHotProblems(ctx, flags.BannedHotProblems.Value())
+			s.db.RefreshHotProblems(ctx, flags.BannedHotProblems.Of(s.flagset))
 		}
 
 	}
