@@ -124,7 +124,23 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		filter.LookingUser = lookingUser
 	}
 
+	maxCnt := flags.LimitedSubCount.Of(s.flagset)
+	if filter.ContestID != nil || filter.ProblemID != nil || filter.UserID != nil || filter.Username != nil {
+		// Never filter on these, for now.
+		maxCnt = -100
+	}
+
+	// Run the count concurrently with the listing; both can be slow.
+	var cnt int
+	var cntErr error
+	cntDone := make(chan struct{})
+	go func() {
+		defer close(cntDone)
+		cnt, cntErr = s.db.SubmissionCount(ctx, filter, maxCnt+1)
+	}()
+
 	subs, err := s.db.Submissions(ctx, filter)
+	<-cntDone
 	if err != nil {
 		slog.WarnContext(ctx, "Couldn't get submissions", slog.Any("err", err))
 		if errors.Is(err, context.Canceled) {
@@ -133,14 +149,7 @@ func (s *BaseAPI) Submissions(ctx context.Context, filter kilonova.SubmissionFil
 		return nil, ErrUnknownError
 	}
 
-	maxCnt := flags.LimitedSubCount.Of(s.flagset)
-	if filter.ContestID != nil || filter.ProblemID != nil || filter.UserID != nil || filter.Username != nil {
-		// Never filter on these, for now.
-		maxCnt = -100
-	}
-
-	cnt, err := s.db.SubmissionCount(ctx, filter, maxCnt+1)
-	if err != nil {
+	if err := cntErr; err != nil {
 		slog.WarnContext(ctx, "Couldn't get submission count", slog.Any("err", err))
 		if errors.Is(err, context.Canceled) {
 			return nil, err
